@@ -16,26 +16,26 @@
 #undef size_t
 
 /* Define if you have the ANSI C header files.  */
-#define STDC_HEADERS	1
+#define STDC_HEADERS    1
 
 /* Define if you can safely include both <sys/time.h> and <time.h>.  */
 #undef TIME_WITH_SYS_TIME
 
 /* Define if your processor stores words with the most significant
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
-#undef WORDS_BIGENDIAN	
+#undef WORDS_BIGENDIAN  
 
 /* Define if DBL_EPSILON is not defined in float.h */
 #undef BLT_DBL_EPSILON
 
 /* Define if drand48 is declared in math.h. */
-#define HAVE_DECL_DRAND48	0
+#define HAVE_DECL_DRAND48       0
 
 /* Define if srand48 is declared in math.h. */
-#define HAVE_DECL_SRAND48	0
+#define HAVE_DECL_SRAND48       0
 
 /* Define if j1 is declared in a standard header file. */
-#define HAVE_DECL_J1		0
+#define HAVE_DECL_J1            0
 
 /* Define if union wait type is defined incorrectly.  */
 #undef HAVE_UNION_WAIT
@@ -44,45 +44,45 @@
 #undef HAVE_ISFINITE
 
 /* The number of bytes in a long.  */
-#define SIZEOF_LONG		4
+#define SIZEOF_LONG             4
 
 /* The number of bytes in a long long.  */
-#define SIZEOF_LONG_LONG	8
+#define SIZEOF_LONG_LONG        8
 
 /* The number of bytes in a void *.  */
-#define SIZEOF_VOID_P		4
+#define SIZEOF_VOID_P           4
 
 /* Define if you have the XExtendedMaxRequestSize function.  */
 #undef HAVE_XEXTENDEDMAXREQUESTSIZE
 
 /* Define if you have the drand48 function.  */
-#define HAVE_DRAND48		0
+#define HAVE_DRAND48            0
 
 /* Define if you have the finite function.  */
 #undef HAVE_FINITE
 
 /* Define if you have the srand48 function.  */
-#define HAVE_SRAND48		0
+#define HAVE_SRAND48            0
 
 /* Define if you have the strdup function.  */
-#define HAVE_STRDUP		1
+#define HAVE_STRDUP             1
 
 #ifndef __BORLANDC__
 /* Define if you have the strcasecmp function.  */
-#define HAVE_STRCASECMP		1
+#define HAVE_STRCASECMP         1
 
 /* Define if you have the strncasecmp function.  */
-#define HAVE_STRNCASECMP		1
+#define HAVE_STRNCASECMP                1
 #endif
 
 /* Define if you have the <ctype.h> header file.  */
-#define HAVE_CTYPE_H		1
+#define HAVE_CTYPE_H            1
 
 /* Define if you have the <errno.h> header file.  */
-#define HAVE_ERRNO_H		1
+#define HAVE_ERRNO_H            1
 
 /* Define if you have the <float.h> header file.  */
-#define HAVE_FLOAT_H		1
+#define HAVE_FLOAT_H            1
 
 /* Define if you have the <ieeefp.h> header file.  */
 #undef HAVE_IEEEFP_H
@@ -92,31 +92,31 @@
 /* #undef HAVE_JPEGLIB_H */
 
 /* Define if you have the <limits.h> header file.  */
-#define HAVE_LIMITS_H		1
+#define HAVE_LIMITS_H           1
 
 /* Define if you have the <malloc.h> header file.  */
-#define HAVE_MALLOC_H		1
+#define HAVE_MALLOC_H           1
 
 /* Define if you have the <math.h> header file.  */
-#define HAVE_MATH_H		1
+#define HAVE_MATH_H             1
 
 /* Define if you have the <memory.h> header file.  */
-#define HAVE_MEMORY_H		1
+#define HAVE_MEMORY_H           1
 
 /* Define if you have the <setjmp.h> header file.  */
-#define HAVE_SETJMP_H		1
+#define HAVE_SETJMP_H           1
 
 /* Define if you have the <stdlib.h> header file.  */
-#define HAVE_STDLIB_H		1
+#define HAVE_STDLIB_H           1
 
 /* Define if you have the <string.h> header file.  */
-#define HAVE_STRING_H		1
+#define HAVE_STRING_H           1
 
 /* Define if you have the <sys/param.h> header file.  */
 #undef HAVE_SYS_PARAM_H
 
 /* Define if you have the <sys/time.h> header file.  */
-#undef HAVE_SYS_TIME_H		
+#undef HAVE_SYS_TIME_H          
 
 /* Define if you have the <sys/wait.h> header file.  */
 #undef HAVE_SYS_WAIT_H
@@ -128,7 +128,7 @@
 #undef HAVE_WAITFLAGS_H
 
 /* Define if you have the m library (-lm).  */
-#define HAVE_LIBM		1
+#define HAVE_LIBM               1
 
 /* Define if you have the nsl library (-lnsl).  */
 #undef HAVE_LIBNSL
@@ -143,5 +143,5 @@
 #define HAVE_SPRINTF_S
 #endif
 
-#define WIN32	1
+#define WIN32   1
 #endif _BLT_WIN_CONFIG_H

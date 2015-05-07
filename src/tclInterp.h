@@ -258,8 +258,8 @@ typedef struct Interp {
 
 #if (_TCL_VERSION >= _VERSION(8,4,1))
 #ifdef TCL_COMPILE_STATS
-    ByteCodeStats stats;	
-#endif /* TCL_COMPILE_STATS */	  
+    ByteCodeStats stats;        
+#endif /* TCL_COMPILE_STATS */    
 #endif /* >= 8.4.1 */
 
 } Interp;
@@ -267,12 +267,12 @@ typedef struct Interp {
 /*
  * EvalFlag bits for Interp structures:
  *
- * TCL_BRACKET_TERM	1 means that the current script is terminated by
- *			a close bracket rather than the end of the string.
- * TCL_ALLOW_EXCEPTIONS	1 means it's OK for the script to terminate with
- *			a code other than TCL_OK or TCL_ERROR;  0 means
- *			codes other than these should be turned into errors.
+ * TCL_BRACKET_TERM     1 means that the current script is terminated by
+ *                      a close bracket rather than the end of the string.
+ * TCL_ALLOW_EXCEPTIONS 1 means it's OK for the script to terminate with
+ *                      a code other than TCL_OK or TCL_ERROR;  0 means
+ *                      codes other than these should be turned into errors.
  */
 
-#define TCL_BRACKET_TERM	  1
-#define TCL_ALLOW_EXCEPTIONS	  4
+#define TCL_BRACKET_TERM          1
+#define TCL_ALLOW_EXCEPTIONS      4

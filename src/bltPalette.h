@@ -43,28 +43,28 @@
  * Blt_Palette --
  *
  *      Represents a gradient color palette.  The color palette is made up
- *	of an array of palette entries.  There can also be an array opacity
- *	entries.
+ *      of an array of palette entries.  There can also be an array opacity
+ *      entries.
  *
  *---------------------------------------------------------------------------
  */
 typedef struct _Blt_Palette *Blt_Palette;
 
 typedef void (Blt_Palette_NotifyProc) (Blt_Palette palette, 
-	ClientData clientData, unsigned int flags);
+        ClientData clientData, unsigned int flags);
 
-#define PALETTE_CHANGE_NOTIFY	(1<<0)
-#define PALETTE_DELETE_NOTIFY	(1<<1)
+#define PALETTE_CHANGE_NOTIFY   (1<<0)
+#define PALETTE_DELETE_NOTIFY   (1<<1)
 
 BLT_EXTERN int Blt_Palette_GetFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Blt_Palette *palPtr);
+        Blt_Palette *palPtr);
 BLT_EXTERN int Blt_Palette_GetFromString(Tcl_Interp *interp, const char *string,
-	Blt_Palette *palPtr);
+        Blt_Palette *palPtr);
 BLT_EXTERN int Blt_Palette_GetAssociatedColor(Blt_Palette palette, double val);
 BLT_EXTERN void Blt_Palette_CreateNotifier(Blt_Palette palette, 
-	Blt_Palette_NotifyProc *proc, ClientData clientData);
+        Blt_Palette_NotifyProc *proc, ClientData clientData);
 BLT_EXTERN void Blt_Palette_DeleteNotifier(Blt_Palette palette, 
-	ClientData clientData);
+        ClientData clientData);
 BLT_EXTERN const char *Blt_Palette_Name(Blt_Palette palette);
 BLT_EXTERN Blt_Palette Blt_Palette_TwoColorPalette(int low, int high);
 BLT_EXTERN void Blt_Palette_Free(Blt_Palette palette);

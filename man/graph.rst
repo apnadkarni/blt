@@ -3077,9 +3077,9 @@ command and the **element create** operation.
     # Create a new element named "line1"
 
     .g element create line1 \
-	    -xdata { 0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 } \
-	    -ydata { 26.18 50.46 72.85 93.31 111.86 128.47 143.14 
-		    155.85 166.60 175.38 }
+            -xdata { 0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 } \
+            -ydata { 26.18 50.46 72.85 93.31 111.86 128.47 143.14 
+                    155.85 166.60 175.38 }
 
 The element's X-Y coordinates are specified using lists of numbers.
 Alternately, BLT vectors could be used to hold the X-Y coordinates.
@@ -3091,7 +3091,7 @@ Alternately, BLT vectors could be used to hold the X-Y coordinates.
     blt::vector xVec yVec
     xVec set { 0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 }
     yVec set { 26.18 50.46 72.85 93.31 111.86 128.47 143.14 155.85 
-	    166.60 175.38 }
+            166.60 175.38 }
     .g element create line1 -xdata xVec -ydata yVec
 
 The advantage of using vectors is that when you modify one, the graph is
@@ -3189,8 +3189,8 @@ command.  To convert between screen and graph coordinates, use the
     # Click the button to set a new minimum 
 
     bind .g <ButtonPress-1> { 
-	%W axis configure x -min [%W axis invtransform x %x]
-	%W axis configure x -min [%W axis invtransform x %y]
+        %W axis configure x -min [%W axis invtransform x %x]
+        %W axis configure x -min [%W axis invtransform x %y]
     }
 
 By default, the limits of the axis are determined from data values.
@@ -3265,7 +3265,7 @@ You can add cross hairs or grid lines using the **crosshairs** and
     # Set up a binding to reposition the crosshairs.
 
     bind .g <Motion> {
-	.g crosshairs configure -position @%x,%y
+        .g crosshairs configure -position @%x,%y
     }
 
 The crosshairs are repositioned as the mouse pointer is moved
@@ -3323,18 +3323,18 @@ redrawn automatically.
 
     /* Get the BLT vectors "X" and "Y" (created above from TCL) */
     if ((Blt_GetVector(interp, "X", &xVec) != TCL_OK) ||
-	(Blt_GetVector(interp, "Y", &yVec) != TCL_OK)) {
-	return TCL_ERROR;
+        (Blt_GetVector(interp, "Y", &yVec) != TCL_OK)) {
+        return TCL_ERROR;
     }
 
     for (i = 0; i < 50; i++) {
-	x[i] = i * 0.02;
-	y[i] = sin(x[i]);
-    }	
+        x[i] = i * 0.02;
+        y[i] = sin(x[i]);
+    }   
 
     /* Put the data into BLT vectors */
     if ((Blt_ResetVector(xVec, x, 50, 50, TCL_VOLATILE) != TCL_OK) ||
-	(Blt_ResetVector(yVec, y, 50, 50, TCL_VOLATILE) != TCL_OK)) {
+        (Blt_ResetVector(yVec, y, 50, 50, TCL_VOLATILE) != TCL_OK)) {
        return TCL_ERROR;
     }
 

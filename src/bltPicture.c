@@ -73,14 +73,14 @@
 
 #ifndef ALIGN
 #define ALIGN(a) \
-	(((size_t)a + (sizeof(void *) - 1)) & (~(sizeof(void *) - 1)))
+        (((size_t)a + (sizeof(void *) - 1)) & (~(sizeof(void *) - 1)))
 #endif /* ALIGN */
 
-#define ALIGNMENT	16
+#define ALIGNMENT       16
 
-#define JCLAMP(c)	((((c) < 0.0) ? 0.0 : ((c) > 1.0) ? 1.0 : (c)))
+#define JCLAMP(c)       ((((c) < 0.0) ? 0.0 : ((c) > 1.0) ? 1.0 : (c)))
 
-#define CLAMP(c)	((((c) < 0.0) ? 0.0 : ((c) > 255.0) ? 255.0 : (c)))
+#define CLAMP(c)        ((((c) < 0.0) ? 0.0 : ((c) > 255.0) ? 255.0 : (c)))
 
 #define imul8x8(a,b,t) ((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
 
@@ -132,37 +132,37 @@ Blt_PictureProcs *bltPictProcsPtr = &stdPictureProcs;
 
 void 
 Blt_ApplyPictureToPicture(Blt_Picture dest, Blt_Picture src, 
-			  int x, int y, int w, int h, int dx, int dy,
-			  Blt_PictureArithOps op)
+                          int x, int y, int w, int h, int dx, int dy,
+                          Blt_PictureArithOps op)
 {
     (*bltPictProcsPtr->applyPictureToPictureProc)(dest, src, x, y, w, h, 
-	dx, dy, op);
+        dx, dy, op);
 }
 
 void 
 Blt_ApplyScalarToPicture(Blt_Picture dest, Blt_Pixel *colorPtr,
-			 Blt_PictureArithOps op)
+                         Blt_PictureArithOps op)
 {
     (*bltPictProcsPtr->applyScalarToPictureProc)(dest, colorPtr, op);
 }
 
 void
 Blt_ApplyPictureToPictureWithMask(Blt_Picture dest, Blt_Picture src, 
-				  Blt_Picture mask, int x, int y, int w, int h,
-				  int dx, int dy, int invert, 
-				  Blt_PictureArithOps op)
+                                  Blt_Picture mask, int x, int y, int w, int h,
+                                  int dx, int dy, int invert, 
+                                  Blt_PictureArithOps op)
 {
     (*bltPictProcsPtr->applyPictureToPictureWithMaskProc)(dest, src, mask,
-	x, y, w, h, dx, dy, invert, op);
+        x, y, w, h, dx, dy, invert, op);
 }
 
 void
 Blt_ApplyScalarToPictureWithMask(Blt_Picture dest, Blt_Pixel *colorPtr,
-				 Blt_Picture mask, int invert, 
-				 Blt_PictureArithOps op)
+                                 Blt_Picture mask, int invert, 
+                                 Blt_PictureArithOps op)
 {
     (*bltPictProcsPtr->applyScalarToPictureWithMaskProc)(dest, colorPtr, 
-	mask, invert, op);
+        mask, invert, op);
 }
 
 void 
@@ -179,7 +179,7 @@ Blt_TentVertically(Blt_Picture dest, Blt_Picture src)
 
 void 
 Blt_ZoomHorizontally(Blt_Picture dest, Blt_Picture src, 
-		     Blt_ResampleFilter filter)
+                     Blt_ResampleFilter filter)
 {
     (*bltPictProcsPtr->zoomHorizontallyProc)(dest, src, filter);
 }
@@ -192,14 +192,14 @@ Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
 
 void 
 Blt_BlendRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w, int h,
-		  int dx, int dy)
+                  int dx, int dy)
 {
     (*bltPictProcsPtr->blendRegionProc)(dest, src, x, y, w, h, dx, dy);
 }
 
 void 
 Blt_SelectPixels(Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowPtr, 
-		 Blt_Pixel *highPtr)
+                 Blt_Pixel *highPtr)
 {
     (*bltPictProcsPtr->selectPixelsProc)(dest, src, lowPtr, highPtr);
 }
@@ -218,7 +218,7 @@ Blt_UnassociateColors(Blt_Picture picture)
 
 void 
 Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, int x, int y, int w, 
-		    int h, int dx, int dy)
+                    int h, int dx, int dy)
 {
     (*bltPictProcsPtr->copyPictureBitsProc)(dest, src, x, y, w, h, dx, dy);
 }
@@ -228,8 +228,8 @@ Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
  *
  * http://www.shadlen.org/ichbin/random/generators.htm#quick 
  */
-#define JITTER_SEED	31337
-#define JITTER_A	1099087573U
+#define JITTER_SEED     31337
+#define JITTER_A        1099087573U
 #define RANDOM_SCALE    2.3283064370807974e-10
 
 static INLINE void 
@@ -252,7 +252,7 @@ RandomNumber(Blt_Random *randomPtr)
 #else
     /* on machines where int is 32-bits, no need to mask */
     randomPtr->value = (JITTER_A  * randomPtr->value);
-#endif	/* SIZEOF_INT == 8 */
+#endif  /* SIZEOF_INT == 8 */
     return (double)randomPtr->value * RANDOM_SCALE;
 }
 
@@ -261,7 +261,7 @@ JitterInit(Blt_Jitter *jitterPtr)
 {
     RandomInit(&jitterPtr->random);
     jitterPtr->range = 0.1;
-    jitterPtr->offset = -0.05;		/* Jitter +/-  */
+    jitterPtr->offset = -0.05;          /* Jitter +/-  */
 }
 
 static INLINE double 
@@ -279,8 +279,8 @@ Jitter(Blt_Jitter *jitterPtr) {
  *
  *      Allocates a picture of a designated height and width.
  *
- *	This routine will be augmented with other types of information such
- *	as a color table, etc.
+ *      This routine will be augmented with other types of information such
+ *      as a color table, etc.
  *
  * Results:
  *      Returns the new color pict.
@@ -302,8 +302,8 @@ Blt_CreatePicture(int w, int h)
      * Be careful. There's a bunch of picture routines that assume an even
      * number of pixels per row.
      */
-    pixelsPerRow = (w + 3) & ~3;	/* Align each row on a 16-byte
-					 * boundary. */
+    pixelsPerRow = (w + 3) & ~3;        /* Align each row on a 16-byte
+                                         * boundary. */
     destPtr = Blt_AssertMalloc(sizeof(Pict));
     destPtr->pixelsPerRow = pixelsPerRow;
     destPtr->width  = w;
@@ -345,10 +345,10 @@ Blt_FreePicture(Pict *pictPtr)
  *
  * Blt_ClonePicture --
  *
- *	Creates a copy of the given picture.  
+ *      Creates a copy of the given picture.  
  *
  * Results:  
- *	Returns the new copy.
+ *      Returns the new copy.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -359,7 +359,7 @@ Blt_ClonePicture(Pict *srcPtr)
 
     destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
     Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 
-	0, 0);
+        0, 0);
     destPtr->delay = srcPtr->delay;
     return destPtr;
 }
@@ -372,77 +372,77 @@ Blt_SizeOfPicture(Pict *pictPtr, int *widthPtr , int *heightPtr)
 }
 
 void
-Blt_ResizePicture(Pict *srcPtr, int w, int h)	
+Blt_ResizePicture(Pict *srcPtr, int w, int h)   
 {
     assert((w > 0) && (w <= SHRT_MAX));
     assert((h > 0) && (h <= SHRT_MAX));
     if ((w != srcPtr->width) || (h != srcPtr->height)) {
-	int pixelsPerRow;
-	size_t size;
-	ptrdiff_t ptr;
-	void *buffer;
+        int pixelsPerRow;
+        size_t size;
+        ptrdiff_t ptr;
+        void *buffer;
 
-	pixelsPerRow = (w + 3) & ~3;	/* Align each row on a 16-byte
-					 * boundary. */
-	size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-	buffer = Blt_Realloc(srcPtr->buffer, size);
-	assert(buffer != NULL);
-	srcPtr->pixelsPerRow = pixelsPerRow;
-	srcPtr->width = w;
-	srcPtr->height = h;
-	ptr = (ptrdiff_t)buffer;
-	srcPtr->bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
-	srcPtr->flags = BLT_PIC_DIRTY;
-	srcPtr->buffer = buffer;
+        pixelsPerRow = (w + 3) & ~3;    /* Align each row on a 16-byte
+                                         * boundary. */
+        size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
+        buffer = Blt_Realloc(srcPtr->buffer, size);
+        assert(buffer != NULL);
+        srcPtr->pixelsPerRow = pixelsPerRow;
+        srcPtr->width = w;
+        srcPtr->height = h;
+        ptr = (ptrdiff_t)buffer;
+        srcPtr->bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
+        srcPtr->flags = BLT_PIC_DIRTY;
+        srcPtr->buffer = buffer;
     }
 }
 
 void
-Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)	
+Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)       
 {
     assert((w > 0) && (w <= SHRT_MAX));
     assert((h > 0) && (h <= SHRT_MAX));
     if ((w != srcPtr->width) || (h != srcPtr->height)) {
-	int pixelsPerRow;
-	int bytesPerRow;
-	size_t size;
-	void *buffer;
-	ptrdiff_t ptr;
-	Blt_Pixel *bits;
+        int pixelsPerRow;
+        int bytesPerRow;
+        size_t size;
+        void *buffer;
+        ptrdiff_t ptr;
+        Blt_Pixel *bits;
 
-	/* 
-	 * Be careful. There's a bunch of picture routines that assume an
-	 * even number of pixels per row.
-	 */
-	pixelsPerRow = (w + 3) & ~3;	/* Align each row on a 16-byte
-					 * boundary. */
-	
-	size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-	buffer = Blt_AssertMalloc(size);
-	ptr = (ptrdiff_t)buffer;
-	bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
-	if (srcPtr->bits != NULL && (srcPtr->pixelsPerRow > 0)) {
-	    Blt_Pixel *srcRowPtr, *destRowPtr;
-	    int y, numRows;
+        /* 
+         * Be careful. There's a bunch of picture routines that assume an
+         * even number of pixels per row.
+         */
+        pixelsPerRow = (w + 3) & ~3;    /* Align each row on a 16-byte
+                                         * boundary. */
+        
+        size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
+        buffer = Blt_AssertMalloc(size);
+        ptr = (ptrdiff_t)buffer;
+        bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
+        if (srcPtr->bits != NULL && (srcPtr->pixelsPerRow > 0)) {
+            Blt_Pixel *srcRowPtr, *destRowPtr;
+            int y, numRows;
 
-	    bytesPerRow = sizeof(Blt_Pixel) * 
-		MIN(pixelsPerRow, srcPtr->pixelsPerRow);
-	    numRows = MIN(srcPtr->height, h);
-	    
-	    srcRowPtr = srcPtr->bits, destRowPtr = bits;
-	    for (y = 0; y < numRows; y++) {
-		memcpy(destRowPtr, srcRowPtr, bytesPerRow);
-		destRowPtr += pixelsPerRow;
-		srcRowPtr  += srcPtr->pixelsPerRow;
-	    }
-	    Blt_Free(srcPtr->buffer);
-	}
-	srcPtr->pixelsPerRow = pixelsPerRow;
-	srcPtr->width = w;
-	srcPtr->height = h;
-	srcPtr->bits = bits;
-	srcPtr->buffer = buffer;
-	srcPtr->flags = BLT_PIC_DIRTY;
+            bytesPerRow = sizeof(Blt_Pixel) * 
+                MIN(pixelsPerRow, srcPtr->pixelsPerRow);
+            numRows = MIN(srcPtr->height, h);
+            
+            srcRowPtr = srcPtr->bits, destRowPtr = bits;
+            for (y = 0; y < numRows; y++) {
+                memcpy(destRowPtr, srcRowPtr, bytesPerRow);
+                destRowPtr += pixelsPerRow;
+                srcRowPtr  += srcPtr->pixelsPerRow;
+            }
+            Blt_Free(srcPtr->buffer);
+        }
+        srcPtr->pixelsPerRow = pixelsPerRow;
+        srcPtr->width = w;
+        srcPtr->height = h;
+        srcPtr->bits = bits;
+        srcPtr->buffer = buffer;
+        srcPtr->flags = BLT_PIC_DIRTY;
     }
 }
 
@@ -456,21 +456,21 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
     numPixels = destPtr->height * destPtr->pixelsPerRow;
     color.u32 = value;
     for (bp = destPtr->bits, bend = bp + numPixels; bp < bend; bp++) {
-	bp->u32 = color.u32;
+        bp->u32 = color.u32;
     }
     destPtr->flags |= BLT_PIC_DIRTY;
     destPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK);
     if (color.Alpha == 0x00) {
-	destPtr->flags |= BLT_PIC_MASK;
+        destPtr->flags |= BLT_PIC_MASK;
     } else if (color.Alpha != 0xFF) {
-	destPtr->flags |= BLT_PIC_BLEND;
+        destPtr->flags |= BLT_PIC_BLEND;
     }
     destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
 }
 
 void
 Blt_BlankRegion(Pict *destPtr, int x, int y, int w, int h, 
-		unsigned int colorValue) 
+                unsigned int colorValue) 
 {
     Blt_Pixel *destRowPtr;
     int y1, x1;
@@ -478,45 +478,45 @@ Blt_BlankRegion(Pict *destPtr, int x, int y, int w, int h,
 
     assert ((x >= 0) && (y >= 0));
     if ((x >= destPtr->width) || (y >= destPtr->height)) {
-	return;
+        return;
     }
     x1 = x + w;
     y1 = y + h;
     if (x1 > destPtr->width) {
-	x1 = destPtr->width;
+        x1 = destPtr->width;
     }
     if (y1 > destPtr->height) {
-	y1 = destPtr->height;
+        y1 = destPtr->height;
     }
     w = x1 - x;
     h = y1 - y;
     destRowPtr = destPtr->bits + (y * destPtr->pixelsPerRow) + x;
     for (y = 0; y < h; y++) {
-	int n;
-	Blt_Pixel *dp;
+        int n;
+        Blt_Pixel *dp;
 
-	dp = destRowPtr;
-	n = (w + 7) / 8;		/* width > 0 assumed */
-	switch (w & 0x7) {
-	case 0:        do {  dp->u32 = colorValue, dp++;
-	case 7:              dp->u32 = colorValue, dp++;
-	case 6:              dp->u32 = colorValue, dp++;
-	case 5:              dp->u32 = colorValue, dp++;
-	case 4:              dp->u32 = colorValue, dp++;
-	case 3:              dp->u32 = colorValue, dp++;
-	case 2:              dp->u32 = colorValue, dp++;
-	case 1:              dp->u32 = colorValue, dp++;
-			} while (--n > 0);
-	}
-	destRowPtr += destPtr->pixelsPerRow;
+        dp = destRowPtr;
+        n = (w + 7) / 8;                /* width > 0 assumed */
+        switch (w & 0x7) {
+        case 0:        do {  dp->u32 = colorValue, dp++;
+        case 7:              dp->u32 = colorValue, dp++;
+        case 6:              dp->u32 = colorValue, dp++;
+        case 5:              dp->u32 = colorValue, dp++;
+        case 4:              dp->u32 = colorValue, dp++;
+        case 3:              dp->u32 = colorValue, dp++;
+        case 2:              dp->u32 = colorValue, dp++;
+        case 1:              dp->u32 = colorValue, dp++;
+                        } while (--n > 0);
+        }
+        destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags |= BLT_PIC_DIRTY;
     destPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK);
     color.u32 = colorValue;
     if (color.Alpha == 0x00) {
-	destPtr->flags |= BLT_PIC_MASK;
+        destPtr->flags |= BLT_PIC_MASK;
     } else if (color.Alpha != 0xFF) {
-	destPtr->flags |= BLT_PIC_BLEND;
+        destPtr->flags |= BLT_PIC_BLEND;
     }
 }
 
@@ -529,10 +529,10 @@ ComputeGammaTable(float gamma, unsigned char lut[])
 
     iGamma = 1.0 / (double)gamma;
     for (i = 0; i < 256; i++) {
-	double value;
+        double value;
 
-	value = 255.0 * pow((double)i / 255.0, iGamma);
-	lut[i] = (unsigned char)CLAMP(value);
+        value = 255.0 * pow((double)i / 255.0, iGamma);
+        lut[i] = (unsigned char)CLAMP(value);
     }
 }
 #endif
@@ -548,16 +548,16 @@ ComputeGammaTable2(float gamma, unsigned char lut[])
     cutoff = 0.018;
     exp = (1.099 * pow(cutoff, iGamma) - 0.099) / cutoff;
     for (i = 0; i < 256; i++) {
-	double value, intensity;
+        double value, intensity;
 
-	intensity = (double)i / 255.0;
-	if (intensity < cutoff) {
-	    intensity *= exp;
-	} else {
-	    intensity = (1.099 * pow(intensity, iGamma) - 0.099);
-	}
-	value = 255.0 * intensity;
-	lut[i] = (unsigned char)CLAMP(value);
+        intensity = (double)i / 255.0;
+        if (intensity < cutoff) {
+            intensity *= exp;
+        } else {
+            intensity = (1.099 * pow(intensity, iGamma) - 0.099);
+        }
+        value = 255.0 * intensity;
+        lut[i] = (unsigned char)CLAMP(value);
     }
 }
 
@@ -572,16 +572,16 @@ Blt_GammaCorrectPicture(Pict *destPtr, Pict *srcPtr, float gamma)
     srcRowPtr = srcPtr->bits;
     destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *dp, *send;
+        Blt_Pixel *sp, *dp, *send;
 
-	sp = srcRowPtr, dp = destRowPtr;
-	for (send = sp + srcPtr->width; sp < send; sp++, dp++) {
-	    dp->Red = lut[(unsigned int)sp->Red];
-	    dp->Green = lut[(unsigned int)sp->Green];
-	    dp->Blue = lut[(unsigned int)sp->Blue];
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        sp = srcRowPtr, dp = destRowPtr;
+        for (send = sp + srcPtr->width; sp < send; sp++, dp++) {
+            dp->Red = lut[(unsigned int)sp->Red];
+            dp->Green = lut[(unsigned int)sp->Green];
+            dp->Blue = lut[(unsigned int)sp->Blue];
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
 }
 
@@ -590,17 +590,17 @@ Blt_GammaCorrectPicture(Pict *destPtr, Pict *srcPtr, float gamma)
  *
  * Blt_GreyscalePicture --
  *
- *	Returns a new picture converted to grey scale.  All three picture
- *	color components will have the same value.
+ *      Returns a new picture converted to grey scale.  All three picture
+ *      color components will have the same value.
  *
- *	Luminosity is computed using the formula,
+ *      Luminosity is computed using the formula,
  *
- *	    Y = 0.212671 * Red + 0.715160 * Green + 0.072169 * Blue
+ *          Y = 0.212671 * Red + 0.715160 * Green + 0.072169 * Blue
  *
- *	which is supposed to better represent contemporary monitors.
+ *      which is supposed to better represent contemporary monitors.
  *
  * Results:
- *	Returns a new greyscale picture.
+ *      Returns a new greyscale picture.
  *
  *---------------------------------------------------------------------------
  */
@@ -616,29 +616,29 @@ Blt_GreyscalePicture(Pict *srcPtr)
      * luminosity with reasonable accuracy considering it's stored in an
      * 8-bit result.
      */
-#define YR	223002		/* 0.212671 */
-#define YG	749900		/* 0.715160 */
-#define YB	75675		/* 0.072169 */
-#define YMAX	267386880	/* 255.0 */
+#define YR      223002          /* 0.212671 */
+#define YG      749900          /* 0.715160 */
+#define YB      75675           /* 0.072169 */
+#define YMAX    267386880       /* 255.0 */
 #define YCLAMP(s) \
-	(unsigned char)((s) > YMAX) ? 255 : ((((s) + 524288) >> 20))
+        (unsigned char)((s) > YMAX) ? 255 : ((((s) + 524288) >> 20))
 
     destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
     srcRowPtr = srcPtr->bits;
     destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *dp, *send;
+        Blt_Pixel *sp, *dp, *send;
 
-	sp = srcRowPtr, dp = destRowPtr;
-	for (send = sp + srcPtr->width; sp < send; sp++, dp++) {
-	    unsigned int Y;
+        sp = srcRowPtr, dp = destRowPtr;
+        for (send = sp + srcPtr->width; sp < send; sp++, dp++) {
+            unsigned int Y;
 
-	    Y = YR * sp->Red + YG * sp->Green + YB * sp->Blue;
-	    dp->Red = dp->Green = dp->Blue = YCLAMP(Y);
-	    dp->Alpha = sp->Alpha;
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+            Y = YR * sp->Red + YG * sp->Green + YB * sp->Blue;
+            dp->Red = dp->Green = dp->Blue = YCLAMP(Y);
+            dp->Alpha = sp->Alpha;
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags = srcPtr->flags;
     destPtr->flags |= BLT_PIC_DIRTY;
@@ -653,22 +653,22 @@ Blt_FadePicture(Pict *srcPtr, int x, int y, int w, int h, double factor)
     int alpha;
 
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_AssociateColors(srcPtr);
+        Blt_AssociateColors(srcPtr);
     }
     alpha = (int)((1.0 - factor) * 255.0 + 0.5);
     srcRowPtr = srcPtr->bits + ((y * srcPtr->pixelsPerRow) + x);
     for (y = 0; y < h; y++) {
-	Blt_Pixel *sp, *send;
+        Blt_Pixel *sp, *send;
 
-	for (sp = srcRowPtr, send = sp + w; sp < send; sp++) {
-	    int t;
+        for (sp = srcRowPtr, send = sp + w; sp < send; sp++) {
+            int t;
 
-	    sp->Red   = imul8x8(sp->Red,   alpha, t);
-	    sp->Green = imul8x8(sp->Green, alpha, t);
-	    sp->Blue  = imul8x8(sp->Blue,  alpha, t);
-	    sp->Alpha = imul8x8(sp->Alpha, alpha, t);
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+            sp->Red   = imul8x8(sp->Red,   alpha, t);
+            sp->Green = imul8x8(sp->Green, alpha, t);
+            sp->Blue  = imul8x8(sp->Blue,  alpha, t);
+            sp->Alpha = imul8x8(sp->Alpha, alpha, t);
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
     srcPtr->flags |= BLT_PIC_BLEND;
 }
@@ -687,11 +687,11 @@ void
 Blt_AssociateColor(Blt_Pixel *colorPtr)
 {
     if (colorPtr->Alpha != 0xFF) {
-	int t;
-		    
-	colorPtr->Red   = imul8x8(colorPtr->Alpha, colorPtr->Red, t);
-	colorPtr->Green = imul8x8(colorPtr->Alpha, colorPtr->Green, t);
-	colorPtr->Blue  = imul8x8(colorPtr->Alpha, colorPtr->Blue, t);
+        int t;
+                    
+        colorPtr->Red   = imul8x8(colorPtr->Alpha, colorPtr->Red, t);
+        colorPtr->Green = imul8x8(colorPtr->Alpha, colorPtr->Green, t);
+        colorPtr->Blue  = imul8x8(colorPtr->Alpha, colorPtr->Blue, t);
     }
 }
 
@@ -700,12 +700,12 @@ Blt_UnassociateColor(Blt_Pixel *colorPtr)
 {
     /* No conversion necessary if 100% transparent or opaque. */
     if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
-	int bias;
-	
-	bias = colorPtr->Alpha >> 1;
-	colorPtr->Red   = (mul255(colorPtr->Red)   + bias) / colorPtr->Alpha;
-	colorPtr->Green = (mul255(colorPtr->Green) + bias) / colorPtr->Alpha;
-	colorPtr->Blue  = (mul255(colorPtr->Blue)  + bias) / colorPtr->Alpha;
+        int bias;
+        
+        bias = colorPtr->Alpha >> 1;
+        colorPtr->Red   = (mul255(colorPtr->Red)   + bias) / colorPtr->Alpha;
+        colorPtr->Green = (mul255(colorPtr->Green) + bias) / colorPtr->Alpha;
+        colorPtr->Blue  = (mul255(colorPtr->Blue)  + bias) / colorPtr->Alpha;
     }
 }
 
@@ -713,20 +713,20 @@ static void
 AssociateColors(Pict *srcPtr)
 {
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_Pixel *srcRowPtr;
-	int y;
-	
-	srcRowPtr = srcPtr->bits;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
-	    
-	    sp = srcRowPtr;
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		Blt_AssociateColor(sp);
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	srcPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+        Blt_Pixel *srcRowPtr;
+        int y;
+        
+        srcRowPtr = srcPtr->bits;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
+            
+            sp = srcRowPtr;
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                Blt_AssociateColor(sp);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        srcPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
     }
 }
 
@@ -734,20 +734,20 @@ static void
 UnassociateColors(Pict *srcPtr)
 {
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_Pixel *srcRowPtr;
-	int y;
+        Blt_Pixel *srcRowPtr;
+        int y;
 
-	srcRowPtr = srcPtr->bits;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
-	    
-	    sp = srcRowPtr;
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		Blt_UnassociateColor(sp);
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	srcPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
+        srcRowPtr = srcPtr->bits;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
+            
+            sp = srcRowPtr;
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                Blt_UnassociateColor(sp);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        srcPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
     }
 }
 
@@ -758,79 +758,79 @@ UnassociateColors(Pict *srcPtr)
  *
  *  x,y------+
  *   |       |
- *   |	*----+------------+
+ *   |  *----+------------+
  *   |  |    |            |
  *   |  |    |            |
  */  
 static void
 BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
-	    int dx, int dy)
+            int dx, int dy)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
 
     if (((dx + w) < 0) || ((dy + h) < 0)) {
-	return;
+        return;
     }
     if (dx < 0) {
-	w += dx;
-	sx -= dx;
-	dx = 0;
+        w += dx;
+        sx -= dx;
+        dx = 0;
     }
     if (dy < 0) {
-	h += dy;
-	sy -= dy;
-	dy = 0;
+        h += dy;
+        sy -= dy;
+        dy = 0;
     }
     if (destPtr->width < (dx + w)) {
-	w = destPtr->width - dx;
+        w = destPtr->width - dx;
     }
     if (destPtr->height < (dy + h)) {
-	h = destPtr->height - dy;
+        h = destPtr->height - dy;
     }
     if (srcPtr->width < w) {
-	w = srcPtr->width;
+        w = srcPtr->width;
     }
     if (srcPtr->height < h) {
-	h = srcPtr->height;
+        h = srcPtr->height;
     }
     /* Convert the pictures to use associated colors if not already. */
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_AssociateColors(srcPtr);
+        Blt_AssociateColors(srcPtr);
     }
     if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_AssociateColors(destPtr);
+        Blt_AssociateColors(destPtr);
     }
     
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
     srcRowPtr  = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
 
     for (y = 0; y < h; y++) {
-	Blt_Pixel *sp, *dp, *dend;
+        Blt_Pixel *sp, *dp, *dend;
 
-	sp = srcRowPtr;
-	for (dp = destRowPtr, dend = dp + w; dp < dend; dp++, sp++) {
-	    /* Blend the foreground and background together. */
-	    if ((dp->Alpha == 0x0) || (sp->Alpha == 0xFF)) {
-		dp->u32 = sp->u32;
-	    } else if (sp->Alpha != 0x00) {
-		int alpha, beta, t;
-		int r, g, b, a;
+        sp = srcRowPtr;
+        for (dp = destRowPtr, dend = dp + w; dp < dend; dp++, sp++) {
+            /* Blend the foreground and background together. */
+            if ((dp->Alpha == 0x0) || (sp->Alpha == 0xFF)) {
+                dp->u32 = sp->u32;
+            } else if (sp->Alpha != 0x00) {
+                int alpha, beta, t;
+                int r, g, b, a;
 
-		alpha = sp->Alpha;
-		beta = alpha ^ 0xFF; /* beta = 1 - alpha */
-		r = sp->Red   + imul8x8(beta, dp->Red, t);
-		g = sp->Green + imul8x8(beta, dp->Green,t);
-		b = sp->Blue  + imul8x8(beta, dp->Blue, t);
-		a = alpha     + imul8x8(beta, dp->Alpha, t);
-		dp->Red   = UCLAMP(r);
-		dp->Green = UCLAMP(g);
-		dp->Blue  = UCLAMP(b);
-		dp->Alpha = UCLAMP(a);
-	    }
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+                alpha = sp->Alpha;
+                beta = alpha ^ 0xFF; /* beta = 1 - alpha */
+                r = sp->Red   + imul8x8(beta, dp->Red, t);
+                g = sp->Green + imul8x8(beta, dp->Green,t);
+                b = sp->Blue  + imul8x8(beta, dp->Blue, t);
+                a = alpha     + imul8x8(beta, dp->Alpha, t);
+                dp->Red   = UCLAMP(r);
+                dp->Green = UCLAMP(g);
+                dp->Blue  = UCLAMP(b);
+                dp->Alpha = UCLAMP(a);
+            }
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
 }
 
@@ -1069,26 +1069,26 @@ Exclusion(int src, int dst)
 
 static void
 ColorBlendRegion(
-    Pict *destPtr,			/* (in/out) Background picture.
-					 * Composite overwrites region in
-					 * background. */
-    Pict *srcPtr,			/* Foreground picture. */
-    Blt_BlendingMode mode,		/* Blend mode. */
-    int sx, int sy,			/* Origin of foreground region in
-					 * source. */
-    int w, int h,			/* Dimension of region to be
-					   blended. */
-    int dx, int dy)			/* Origin of background region in
-					 * destination. */
+    Pict *destPtr,                      /* (in/out) Background picture.
+                                         * Composite overwrites region in
+                                         * background. */
+    Pict *srcPtr,                       /* Foreground picture. */
+    Blt_BlendingMode mode,              /* Blend mode. */
+    int sx, int sy,                     /* Origin of foreground region in
+                                         * source. */
+    int w, int h,                       /* Dimension of region to be
+                                           blended. */
+    int dx, int dy)                     /* Origin of background region in
+                                         * destination. */
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
 
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_AssociateColors(srcPtr);
+        Blt_AssociateColors(srcPtr);
     }
     if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_AssociateColors(destPtr);
+        Blt_AssociateColors(destPtr);
     }
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
     srcRowPtr  = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
@@ -1115,9 +1115,9 @@ ColorBlendRegion(
             for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
                 int t;
 
-		dp->Red   = imul8x8(dp->Red, sp->Red, t);
-		dp->Green = imul8x8(dp->Green, sp->Green, t);
-		dp->Blue  = imul8x8(dp->Blue, sp->Blue, t);
+                dp->Red   = imul8x8(dp->Red, sp->Red, t);
+                dp->Green = imul8x8(dp->Green, sp->Green, t);
+                dp->Blue  = imul8x8(dp->Blue, sp->Blue, t);
                 dp->Alpha = imul8x8(dp->Alpha, sp->Alpha, t);
             }
             srcRowPtr += srcPtr->pixelsPerRow;
@@ -1162,7 +1162,7 @@ ColorBlendRegion(
         break;
 
     case BLT_BLEND_OVERLAY:             /* Multiplies or screens depending
-					 * upon background color. */
+                                         * upon background color. */
         for (y = 0; y < h; y++) {
             Blt_Pixel *sp, *send, *dp;
 
@@ -1206,9 +1206,9 @@ ColorBlendRegion(
             for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
                 int t;
 
-		dp->Red   = MIN(sp->Red,   dp->Red);
-		dp->Green = MIN(sp->Green, dp->Green);
-		dp->Blue  = MIN(sp->Blue,  dp->Blue);
+                dp->Red   = MIN(sp->Red,   dp->Red);
+                dp->Green = MIN(sp->Green, dp->Green);
+                dp->Blue  = MIN(sp->Blue,  dp->Blue);
                 dp->Alpha = imul8x8(dp->Alpha, sp->Alpha, t);
             }
             srcRowPtr += srcPtr->pixelsPerRow;
@@ -1224,9 +1224,9 @@ ColorBlendRegion(
             for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
                 int t;
 
-		dp->Red   = MIN(sp->Red,   dp->Red);
-		dp->Green = MIN(sp->Green, dp->Green);
-		dp->Blue  = MIN(sp->Blue,  dp->Blue);
+                dp->Red   = MIN(sp->Red,   dp->Red);
+                dp->Green = MIN(sp->Green, dp->Green);
+                dp->Blue  = MIN(sp->Blue,  dp->Blue);
                 dp->Alpha = imul8x8(dp->Alpha, sp->Alpha, t);
             }
             srcRowPtr += srcPtr->pixelsPerRow;
@@ -1242,9 +1242,9 @@ ColorBlendRegion(
             for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
                 int t;
 
-		dp->Red   = ABS(sp->Red   - dp->Red);
-		dp->Green = ABS(sp->Green - dp->Green);
-		dp->Blue  = ABS(sp->Blue  - dp->Blue);
+                dp->Red   = ABS(sp->Red   - dp->Red);
+                dp->Green = ABS(sp->Green - dp->Green);
+                dp->Blue  = ABS(sp->Blue  - dp->Blue);
                 dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
             }
             srcRowPtr += srcPtr->pixelsPerRow;
@@ -1478,7 +1478,7 @@ Blt_ColorBlendPictures(Pict *destPtr, Pict *srcPtr, Blt_BlendingMode mode)
 }
 
 /*
- *	filter function definitions
+ *      filter function definitions
  */
 
 /*
@@ -1486,10 +1486,10 @@ Blt_ColorBlendPictures(Pict *destPtr, Pict *srcPtr, Blt_BlendingMode mode)
  *
  * ByteToAsciiHex --
  *
- *	Convert a byte to its ASCII hexidecimal equivalent.
+ *      Convert a byte to its ASCII hexidecimal equivalent.
  *
  * Results:
- *	The converted 2 ASCII character string is returned.
+ *      The converted 2 ASCII character string is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1507,16 +1507,16 @@ ByteToAsciiHex(unsigned char byte, char *string)
  *
  * Blt_PictureToDBuffer --
  *
- *	Converts a picture to PostScript RGB (3 components) or Greyscale (1
- *	component) output.  With 3 components, we assume the "colorimage"
- *	operator is available.
+ *      Converts a picture to PostScript RGB (3 components) or Greyscale (1
+ *      component) output.  With 3 components, we assume the "colorimage"
+ *      operator is available.
  *
- *	Note: The picture is converted from bottom to top, to conform with
- *	      the PostScript coordinate system.
+ *      Note: The picture is converted from bottom to top, to conform with
+ *            the PostScript coordinate system.
  *
  * Results:
- *	The PostScript data comprising the picture is written into the dynamic
- *	string.
+ *      The PostScript data comprising the picture is written into the dynamic
+ *      string.
  *
  *---------------------------------------------------------------------------
  */
@@ -1530,38 +1530,38 @@ Blt_PictureToDBuffer(Pict *srcPtr, int numComponents)
     length = srcPtr->width * srcPtr->height * numComponents;
     Blt_DBuffer_Resize(dBuffer, length);
     if (numComponents == 3) {
-	Blt_Pixel *srcRowPtr;
-	int y;
-	unsigned char *bp;
-	
-	bp = Blt_DBuffer_Pointer(dBuffer);
-	srcRowPtr = srcPtr->bits + ((srcPtr->height-1) * srcPtr->pixelsPerRow);
-	for (y = (srcPtr->height - 1); y >= 0; y--) {
-	    Blt_Pixel *sp, *send;
-	    
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		bp[0] = sp->Red;
-		bp[1] = sp->Green;
-		bp[2] = sp->Blue;
-		bp += 3;
-	    }
-	    srcRowPtr -= srcPtr->pixelsPerRow;
-	}
+        Blt_Pixel *srcRowPtr;
+        int y;
+        unsigned char *bp;
+        
+        bp = Blt_DBuffer_Pointer(dBuffer);
+        srcRowPtr = srcPtr->bits + ((srcPtr->height-1) * srcPtr->pixelsPerRow);
+        for (y = (srcPtr->height - 1); y >= 0; y--) {
+            Blt_Pixel *sp, *send;
+            
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                bp[0] = sp->Red;
+                bp[1] = sp->Green;
+                bp[2] = sp->Blue;
+                bp += 3;
+            }
+            srcRowPtr -= srcPtr->pixelsPerRow;
+        }
     } else if (numComponents == 1) {
-	Blt_Pixel *srcRowPtr;
-	int y;
-	unsigned char *bp;
-	
-	bp = Blt_DBuffer_Pointer(dBuffer);
-	srcRowPtr = srcPtr->bits + ((srcPtr->height-1) * srcPtr->pixelsPerRow);
-	for (y = (srcPtr->height - 1); y >= 0; y--) {
-	    Blt_Pixel *sp, *send;
-	    
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		*bp++ = sp->Red;
-	    }
-	    srcRowPtr -= srcPtr->pixelsPerRow;
-	}
+        Blt_Pixel *srcRowPtr;
+        int y;
+        unsigned char *bp;
+        
+        bp = Blt_DBuffer_Pointer(dBuffer);
+        srcRowPtr = srcPtr->bits + ((srcPtr->height-1) * srcPtr->pixelsPerRow);
+        for (y = (srcPtr->height - 1); y >= 0; y--) {
+            Blt_Pixel *sp, *send;
+            
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                *bp++ = sp->Red;
+            }
+            srcRowPtr -= srcPtr->pixelsPerRow;
+        }
     }
     Blt_DBuffer_SetLength(dBuffer, length);
     return dBuffer;
@@ -1572,101 +1572,101 @@ Blt_PictureToDBuffer(Pict *srcPtr, int numComponents)
  *
  * Blt_PictureToPsData --
  *
- *	Converts a picture to PostScript RGB (3 components) or Greyscale (1
- *	component) output.  With 3 components, we assume the "colorimage"
- *	operator is available.
+ *      Converts a picture to PostScript RGB (3 components) or Greyscale (1
+ *      component) output.  With 3 components, we assume the "colorimage"
+ *      operator is available.
  *
- *	Note: The picture is converted from bottom to top, to conform with
- *	      the PostScript coordinate system.
+ *      Note: The picture is converted from bottom to top, to conform with
+ *            the PostScript coordinate system.
  *
  * Results:
- *	The PostScript data comprising the picture is written into the
- *	dynamic string.
+ *      The PostScript data comprising the picture is written into the
+ *      dynamic string.
  *
  *---------------------------------------------------------------------------
  */
 int
 Blt_PictureToPsData(
-    Pict *srcPtr,			/* Picture to be represented in
-					 * PostScript. */
-    int numComponents,			/* # of color components (1 or 3).
-					 * If it's 1, we only look at red
-					 * for color information. */
-    Tcl_DString *resultPtr,		/* (out) Holds the generated
-					 * postscript */
-    const char *prefix)			/* Indicates how to prefix the
-					 * start of each line of
-					 * output. This is normally used
-					 * for PostScript previews, where
-					 * each line is * comment "% ". */
+    Pict *srcPtr,                       /* Picture to be represented in
+                                         * PostScript. */
+    int numComponents,                  /* # of color components (1 or 3).
+                                         * If it's 1, we only look at red
+                                         * for color information. */
+    Tcl_DString *resultPtr,             /* (out) Holds the generated
+                                         * postscript */
+    const char *prefix)                 /* Indicates how to prefix the
+                                         * start of each line of
+                                         * output. This is normally used
+                                         * for PostScript previews, where
+                                         * each line is * comment "% ". */
 {
     int count, numLines;
 
     numLines = count = 0;
     if (numComponents == 3) {
-	Blt_Pixel *srcRowPtr;
-	int y;
+        Blt_Pixel *srcRowPtr;
+        int y;
 
-	srcRowPtr = srcPtr->bits + ((srcPtr->height-1) * srcPtr->pixelsPerRow);
-	for (y = (srcPtr->height - 1); y >= 0; y--) {
-	    Blt_Pixel *sp, *send;
+        srcRowPtr = srcPtr->bits + ((srcPtr->height-1) * srcPtr->pixelsPerRow);
+        for (y = (srcPtr->height - 1); y >= 0; y--) {
+            Blt_Pixel *sp, *send;
 
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		char string[10];
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                char string[10];
 
-		if (count == 0) {
-		    Tcl_DStringAppend(resultPtr, prefix, -1);
-		    Tcl_DStringAppend(resultPtr, " ", -1);
-		}
-		count += 6;
-		ByteToAsciiHex(sp->Red, string);
-		ByteToAsciiHex(sp->Green, string + 2);
-		ByteToAsciiHex(sp->Blue, string + 4);
-		string[6] = '\0';
-		if (count >= 60) {
-		    string[6] = '\n';
-		    string[7] = '\0';
-		    count = 0;
-		    numLines++;
-		}
-		Tcl_DStringAppend(resultPtr, string, -1);
-	    }
-	    srcRowPtr -= srcPtr->pixelsPerRow;
-	}
+                if (count == 0) {
+                    Tcl_DStringAppend(resultPtr, prefix, -1);
+                    Tcl_DStringAppend(resultPtr, " ", -1);
+                }
+                count += 6;
+                ByteToAsciiHex(sp->Red, string);
+                ByteToAsciiHex(sp->Green, string + 2);
+                ByteToAsciiHex(sp->Blue, string + 4);
+                string[6] = '\0';
+                if (count >= 60) {
+                    string[6] = '\n';
+                    string[7] = '\0';
+                    count = 0;
+                    numLines++;
+                }
+                Tcl_DStringAppend(resultPtr, string, -1);
+            }
+            srcRowPtr -= srcPtr->pixelsPerRow;
+        }
     } else if (numComponents == 1) {
-	int y;
-	Blt_Pixel *srcRowPtr;
+        int y;
+        Blt_Pixel *srcRowPtr;
 
-	srcRowPtr = srcPtr->bits + ((srcPtr->height-1) * srcPtr->pixelsPerRow);
-	for (y = (srcPtr->height - 1); y >= 0; y--) {
-	    Blt_Pixel *sp, *send;
+        srcRowPtr = srcPtr->bits + ((srcPtr->height-1) * srcPtr->pixelsPerRow);
+        for (y = (srcPtr->height - 1); y >= 0; y--) {
+            Blt_Pixel *sp, *send;
 
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		char string[10];
-		char byte;
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                char string[10];
+                char byte;
 
-		if (count == 0) {
-		    Tcl_DStringAppend(resultPtr, prefix, -1);
-		    Tcl_DStringAppend(resultPtr, " ", -1);
-		}
-		count += 2;
-		byte = ~(sp->Red);
-		ByteToAsciiHex(byte, string);
-		string[2] = '\0';
-		if (count >= 60) {
-		    string[2] = '\n';
-		    string[3] = '\0';
-		    count = 0;
-		    numLines++;
-		}
-		Tcl_DStringAppend(resultPtr, string, -1);
-	    }
-	    srcRowPtr -= srcPtr->pixelsPerRow;
-	}
+                if (count == 0) {
+                    Tcl_DStringAppend(resultPtr, prefix, -1);
+                    Tcl_DStringAppend(resultPtr, " ", -1);
+                }
+                count += 2;
+                byte = ~(sp->Red);
+                ByteToAsciiHex(byte, string);
+                string[2] = '\0';
+                if (count >= 60) {
+                    string[2] = '\n';
+                    string[3] = '\0';
+                    count = 0;
+                    numLines++;
+                }
+                Tcl_DStringAppend(resultPtr, string, -1);
+            }
+            srcRowPtr -= srcPtr->pixelsPerRow;
+        }
     }
     if (count != 0) {
-	Tcl_DStringAppend(resultPtr, "\n", -1);
-	numLines++;
+        Tcl_DStringAppend(resultPtr, "\n", -1);
+        numLines++;
     }
     return numLines;
 }
@@ -1675,11 +1675,11 @@ static double
 DefaultFilter(double x)
 {
     if (x < 0.0) {
-	x = -x;
+        x = -x;
     }
     if (x < 1.0) {
-	/* f(x) = 2x^3 - 3x^2 + 1, -1 <= x <= 1 */
-	return (2.0 * x - 3.0) * x * x + 1.0;
+        /* f(x) = 2x^3 - 3x^2 + 1, -1 <= x <= 1 */
+        return (2.0 * x - 3.0) * x * x + 1.0;
     }
     return 0.0;
 }
@@ -1694,17 +1694,17 @@ DummyFilter(double x)
 /*
  *
  * Finite filters in increasing order:
- *	Box (constant)
- *	Triangle (linear)
- *	Bell
- *	BSpline (cubic)
+ *      Box (constant)
+ *      Triangle (linear)
+ *      Bell
+ *      BSpline (cubic)
  *
  */
 static double
 BoxFilter(double x)
 {
     if ((x < -0.5) || (x > 0.5)) {
-	return 0.0;
+        return 0.0;
     }
     return 1.0;
 }
@@ -1713,10 +1713,10 @@ static double
 TriangleFilter(double x)
 {
     if (x < 0.0) {
-	x = -x;
+        x = -x;
     }
     if (x < 1.0) {
-	return (1.0 - x);
+        return (1.0 - x);
     }
     return 0.0;
 }
@@ -1725,14 +1725,14 @@ static double
 BellFilter(double x)
 {
     if (x < 0.0) {
-	x = -x;
+        x = -x;
     }
     if (x < 0.5) {
-	return (0.75 - (x * x));
+        return (0.75 - (x * x));
     }
     if (x < 1.5) {
-	x = (x - 1.5);
-	return (0.5 * (x * x));
+        x = (x - 1.5);
+        return (0.5 * (x * x));
     }
     return 0.0;
 }
@@ -1743,14 +1743,14 @@ BSplineFilter(double x)
     double x2;
 
     if (x < 0.0) {
-	x = -x;
+        x = -x;
     }
     if (x < 1) {
-	x2 = x * x;
-	return ((.5 * x2 * x) - x2 + (2.0 / 3.0));
+        x2 = x * x;
+        return ((.5 * x2 * x) - x2 + (2.0 / 3.0));
     } else if (x < 2) {
-	x = 2 - x;
-	return ((x * x * x) / 6.0);
+        x = 2 - x;
+        return ((x * x * x) / 6.0);
     }
     return 0.0;
 }
@@ -1758,11 +1758,11 @@ BSplineFilter(double x)
 /*
  *
  * Infinite Filters:
- *	Sinc		perfect lowpass filter
- *	Bessel		circularly symmetric 2-D filter
- *	Gaussian
- *	Lanczos3
- *	Mitchell
+ *      Sinc            perfect lowpass filter
+ *      Bessel          circularly symmetric 2-D filter
+ *      Gaussian
+ *      Lanczos3
+ *      Mitchell
  */
 
 static double
@@ -1770,7 +1770,7 @@ SincFilter(double x)
 {
     x *= M_PI;
     if (x == 0.0) {
-	return 1.0;
+        return 1.0;
     }
     return (sin(x) / x);
 }
@@ -1790,7 +1790,7 @@ BesselFilter(double x)
 #endif
 }
 
-#define SQRT_2PI	0.79788456080286541	/* sqrt(2.0 / M_PI) */
+#define SQRT_2PI        0.79788456080286541     /* sqrt(2.0 / M_PI) */
 
 static double
 GaussianFilter(double x)
@@ -1802,16 +1802,16 @@ static double
 Lanczos3Filter(double x)
 {
     if (x < 0) {
-	x = -x;
+        x = -x;
     }
     if (x < 3.0) {
-	return (SincFilter(x) * SincFilter(x / 3.0));
+        return (SincFilter(x) * SincFilter(x / 3.0));
     }
     return 0.0;
 }
 
-#define	B		0.3333333333333333	/* (1.0 / 3.0) */
-#define	C		0.3333333333333333	/* (1.0 / 3.0) */
+#define B               0.3333333333333333      /* (1.0 / 3.0) */
+#define C               0.3333333333333333      /* (1.0 / 3.0) */
 
 static double
 MitchellFilter(double x)
@@ -1820,16 +1820,16 @@ MitchellFilter(double x)
 
     x2 = x * x;
     if (x < 0) {
-	x = -x;
+        x = -x;
     }
     if (x < 1.0) {
-	x = (((12.0 - 9.0 * B - 6.0 * C) * (x * x2)) +
-	    ((-18.0 + 12.0 * B + 6.0 * C) * x2) + (6.0 - 2 * B));
-	return (x / 6.0);
+        x = (((12.0 - 9.0 * B - 6.0 * C) * (x * x2)) +
+            ((-18.0 + 12.0 * B + 6.0 * C) * x2) + (6.0 - 2 * B));
+        return (x / 6.0);
     } else if (x < 2.0) {
-	x = (((-1.0 * B - 6.0 * C) * (x * x2)) + ((6.0 * B + 30.0 * C) * x2) +
-	    ((-12.0 * B - 48.0 * C) * x) + (8.0 * B + 24 * C));
-	return (x / 6.0);
+        x = (((-1.0 * B - 6.0 * C) * (x * x2)) + ((6.0 * B + 30.0 * C) * x2) +
+            ((-12.0 * B - 48.0 * C) * x) + (8.0 * B + 24 * C));
+        return (x / 6.0);
     }
     return 0.0;
 }
@@ -1841,19 +1841,19 @@ static double
 CatRomFilter(double x)
 {
     if (x < -2.) {
-	return 0.0;
+        return 0.0;
     }
     if (x < -1.0) {
-	return 0.5 * (4.0 + x * (8.0 + x * (5.0 + x)));
+        return 0.5 * (4.0 + x * (8.0 + x * (5.0 + x)));
     }
     if (x < 0.0) {
-	return 0.5 * (2.0 + x * x * (-5.0 + x * -3.0));
+        return 0.5 * (2.0 + x * x * (-5.0 + x * -3.0));
     }
     if (x < 1.0) {
-	return 0.5 * (2.0 + x * x * (-5.0 + x * 3.0));
+        return 0.5 * (2.0 + x * x * (-5.0 + x * 3.0));
     }
     if (x < 2.0) {
-	return 0.5 * (4.0 + x * (-8.0 + x * (5.0 - x)));
+        return 0.5 * (4.0 + x * (-8.0 + x * (5.0 - x)));
     }
     return 0.0;
 }
@@ -1863,48 +1863,48 @@ static double
 GiFilter(double x)
 {
     if (x > 1.5) {
-	return 0.0;
+        return 0.0;
     } else if (x < -1.5) {
-	return 1.0;
+        return 1.0;
     } else {
 #define I6 0.166666666666667
 #define I4 0.25
 #define I3 0.333333333333333
-	double x2 = x * x;
-	double x3 = x2 * x;
+        double x2 = x * x;
+        double x3 = x2 * x;
 
-	if (x > 0.5) {
-	    return .5625  - ( x3 * I6 - 3 * x2 * I4 + 1.125 * x);
-	} else if (x > -0.5) {
-	    return 0.5    - (0.75 * x - x3 * I3);
-	} else {
-	    return 0.4375 + (-x3 * I6 - 3 * x2 * I4 - 1.125 * x);
-	}
+        if (x > 0.5) {
+            return .5625  - ( x3 * I6 - 3 * x2 * I4 + 1.125 * x);
+        } else if (x > -0.5) {
+            return 0.5    - (0.75 * x - x3 * I3);
+        } else {
+            return 0.4375 + (-x3 * I6 - 3 * x2 * I4 - 1.125 * x);
+        }
     }
 }
 
 static ResampleFilter resampleFilters[] =
 {
-    /* Name,     Function,		     Support */
-    {"bell",     BellFilter,		     1.5	 },
-    {"bessel",   BesselFilter,		     3.2383      },
-    {"box",      BoxFilter,		     0.5         },
-    {"bspline",  BSplineFilter,		     2.0	 },
-    {"catrom",   CatRomFilter,		     2.0	 },
-    {"default",  DefaultFilter,		     1.0	 },
-    {"dummy",    DummyFilter,		     0.5	 },
-    {"gauss8",   GaussianFilter,	     8.0	 },
-    {"gaussian", GaussianFilter,	     1.25	 },
-    {"gi",	 GiFilter,		     4.0	 },
-    {"gi8",	 GiFilter,		     8.0	 },
-    {"lanczos3", Lanczos3Filter,	     3.0	 },
-    {"mitchell", MitchellFilter,	     2.0	 },
-    {"none",     (Blt_ResampleFilterProc *)NULL, 0.0	 },
-    {"sinc",     SincFilter,		     4.0	 },
-    {"sinc8",    SincFilter,		     8.0	 },
-    {"sinc12",   SincFilter,		     12.0	 }, 
-    {"tent",	 TriangleFilter,	     1.0	 },
-    {"triangle", TriangleFilter,	     1.0	 },
+    /* Name,     Function,                   Support */
+    {"bell",     BellFilter,                 1.5         },
+    {"bessel",   BesselFilter,               3.2383      },
+    {"box",      BoxFilter,                  0.5         },
+    {"bspline",  BSplineFilter,              2.0         },
+    {"catrom",   CatRomFilter,               2.0         },
+    {"default",  DefaultFilter,              1.0         },
+    {"dummy",    DummyFilter,                0.5         },
+    {"gauss8",   GaussianFilter,             8.0         },
+    {"gaussian", GaussianFilter,             1.25        },
+    {"gi",       GiFilter,                   4.0         },
+    {"gi8",      GiFilter,                   8.0         },
+    {"lanczos3", Lanczos3Filter,             3.0         },
+    {"mitchell", MitchellFilter,             2.0         },
+    {"none",     (Blt_ResampleFilterProc *)NULL, 0.0     },
+    {"sinc",     SincFilter,                 4.0         },
+    {"sinc8",    SincFilter,                 8.0         },
+    {"sinc12",   SincFilter,                 12.0        }, 
+    {"tent",     TriangleFilter,             1.0         },
+    {"triangle", TriangleFilter,             1.0         },
 };
 
 static int numFilters = sizeof(resampleFilters) / sizeof(ResampleFilter);
@@ -1938,21 +1938,21 @@ Blt_NameOfResampleFilter(ResampleFilter *filterPtr)
  */
 int
 Blt_GetResampleFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
-			     ResampleFilter **filterPtrPtr)
+                             ResampleFilter **filterPtrPtr)
 {
     ResampleFilter *fp, *fend;
     const char *string;
 
     string = Tcl_GetString(objPtr);
     for (fp = resampleFilters, fend = fp + numFilters; fp < fend; fp++) {
-	if (strcmp(string, fp->name) == 0) {
-	    *filterPtrPtr = (fp->proc == NULL) ? NULL : fp;
-	    return TCL_OK;
-	}
+        if (strcmp(string, fp->name) == 0) {
+            *filterPtrPtr = (fp->proc == NULL) ? NULL : fp;
+            return TCL_OK;
+        }
     }
     if (interp != NULL) {
-	Tcl_AppendResult(interp, "can't find filter \"", string, "\"", 
-		     (char *)NULL);
+        Tcl_AppendResult(interp, "can't find filter \"", string, "\"", 
+                     (char *)NULL);
     }
     return TCL_ERROR;
 }
@@ -1960,7 +1960,7 @@ Blt_GetResampleFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 #ifdef notdef
 int
 Blt_GetTableFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
-			  TableFilter **filterPtrPtr)
+                          TableFilter **filterPtrPtr)
 {
     TableFilter *filterPtr;
     Tcl_Obj **objv;
@@ -1969,30 +1969,30 @@ Blt_GetTableFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 
     /* Next see if it's a table (list of numbers) */
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;	/* Can't split object. */
+        return TCL_ERROR;       /* Can't split object. */
     }
     if (Tcl_GetDoubleFromObj(interp, objv[0], &scale) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     objc--, objv++;
     if ((objc & 0x1) == 0) {
-	Tcl_AppendResult(interp, "# of values in 1-D filter \"", string, 
-		"\" must be odd", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "# of values in 1-D filter \"", string, 
+                "\" must be odd", (char *)NULL);
+        return TCL_ERROR;
     }
     filterPtr = Blt_AssertMalloc(sizeof(TableFilter) + (sizeof(int) * objc));
     filterPtr->numWeights = objc;
     filterPtr->scale = (float)scale;
     { 
-	int *tp, *tend, i;
+        int *tp, *tend, i;
 
-	i = 0;
-	for (tp = filterPtr->table, tend < tp + objc; tp < tend; tp++, i++) {
-	    if (Tcl_GetIntFromObj(interp, objv[i], tp) != TCL_OK) {
-		Blt_Free(filterPtr);
-		return TCL_ERROR;
-	    }
-	}
+        i = 0;
+        for (tp = filterPtr->table, tend < tp + objc; tp < tend; tp++, i++) {
+            if (Tcl_GetIntFromObj(interp, objv[i], tp) != TCL_OK) {
+                Blt_Free(filterPtr);
+                return TCL_ERROR;
+            }
+        }
     }
     *filterPtrPtr = filterPtr;
     return TCL_OK;
@@ -2001,7 +2001,7 @@ Blt_GetTableFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 
 unsigned int
 Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
-		   Sample **samplePtrPtr)
+                   Sample **samplePtrPtr)
 {
     Sample *samples;
     double scale;
@@ -2010,133 +2010,133 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
     /* Pre-calculate filter contributions for a row or column. */
     scale = (double)dw / (double)sw;
     if (scale < 1.0) {
-	Sample *samplePtr;
-	double r, fscale;
-	int filterSize, x;
+        Sample *samplePtr;
+        double r, fscale;
+        int filterSize, x;
 
-	/* Downsample */
+        /* Downsample */
 
-	r = filterPtr->support / scale;
-	fscale = 1.0 / scale;
-	filterSize = (int)(r * 2 + 2);
+        r = filterPtr->support / scale;
+        fscale = 1.0 / scale;
+        filterSize = (int)(r * 2 + 2);
 
-	bytesPerSample = sizeof(Sample) + 
-	    ((filterSize - 1) * sizeof(PixelWeight));
-	samples = Blt_AssertCalloc(dw, bytesPerSample);
-	samplePtr = samples;
+        bytesPerSample = sizeof(Sample) + 
+            ((filterSize - 1) * sizeof(PixelWeight));
+        samples = Blt_AssertCalloc(dw, bytesPerSample);
+        samplePtr = samples;
 #define DEBUG 0
 #if DEBUG
-	fprintf(stderr, "downscale=%g, fscale=%g, radius=%g\n", 
-		scale, fscale, r);
+        fprintf(stderr, "downscale=%g, fscale=%g, radius=%g\n", 
+                scale, fscale, r);
 #endif
-	for (x = 0; x < (int)dw; x++) {
-	    PixelWeight *wp;
-	    double sum, center, factor;
-	    int i, left, right;		/* filter bounds */
+        for (x = 0; x < (int)dw; x++) {
+            PixelWeight *wp;
+            double sum, center, factor;
+            int i, left, right;         /* filter bounds */
 
-	    center = ((double)x) * fscale;
+            center = ((double)x) * fscale;
 
-	    /* Determine bounds of filter and its density */
+            /* Determine bounds of filter and its density */
 #ifndef notdef
-	    left = (int)/*floor*/(center - r);
+            left = (int)/*floor*/(center - r);
 #else
-	    left = CRoundToInt(center - r);
+            left = CRoundToInt(center - r);
 #endif
-	    if (left < 0) {
-		left = 0;
-	    }
+            if (left < 0) {
+                left = 0;
+            }
 #ifndef notdef
-	    right = (int)/*floor*/(center + r);
+            right = (int)/*floor*/(center + r);
 #else
-	    right = CRoundToInt(center + r);
+            right = CRoundToInt(center + r);
 #endif
-	    if (right >= sw) {
-		right = sw - 1;
-	    }
-	    samplePtr->start = left;
-	    samplePtr->wend = samplePtr->weights + (right - left + 1);
+            if (right >= sw) {
+                right = sw - 1;
+            }
+            samplePtr->start = left;
+            samplePtr->wend = samplePtr->weights + (right - left + 1);
 
-	    sum = 0.0;
-	    for (wp = samplePtr->weights, i = left; i <= right; i++, wp++) {
-		double val = ((double)i - center) * scale;
-		wp->f32 = (float)(*filterPtr->proc)(val);
-		sum += wp->f32;
-	    }
+            sum = 0.0;
+            for (wp = samplePtr->weights, i = left; i <= right; i++, wp++) {
+                double val = ((double)i - center) * scale;
+                wp->f32 = (float)(*filterPtr->proc)(val);
+                sum += wp->f32;
+            }
 
-	    factor = (sum == 0.0) ? 1.0 : (1.0 / sum);
-	    for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
-		wp->f32 = (float)(wp->f32 * factor);
-		wp->i32 = float2si(wp->f32);
-	    }
-	    samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
-	}
+            factor = (sum == 0.0) ? 1.0 : (1.0 / sum);
+            for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
+                wp->f32 = (float)(wp->f32 * factor);
+                wp->i32 = float2si(wp->f32);
+            }
+            samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
+        }
     } else {
-	Sample *samplePtr;
-	double fscale;
-	int filterSize, x;
+        Sample *samplePtr;
+        double fscale;
+        int filterSize, x;
 
-	/* Upsample */
+        /* Upsample */
 
-	filterSize = (int)(filterPtr->support * 2 + 2);
-	bytesPerSample = sizeof(Sample) + 
-	    ((filterSize - 1) * sizeof(PixelWeight));
-	samples = Blt_AssertCalloc(dw, bytesPerSample);
-	fscale = 1.0 / scale;
+        filterSize = (int)(filterPtr->support * 2 + 2);
+        bytesPerSample = sizeof(Sample) + 
+            ((filterSize - 1) * sizeof(PixelWeight));
+        samples = Blt_AssertCalloc(dw, bytesPerSample);
+        fscale = 1.0 / scale;
 
-	samplePtr = samples;
+        samplePtr = samples;
 #if DEBUG
-	fprintf(stderr, "upscale=%g, fscale=%g, radius=%g\n",
-		    scale, fscale, filterPtr->support);
+        fprintf(stderr, "upscale=%g, fscale=%g, radius=%g\n",
+                    scale, fscale, filterPtr->support);
 #endif
-	for (x = 0; x < (int)dw; x++) {
-	    PixelWeight *wp;
-	    double sum, center, factor;
-	    int i, left, right;		/* filter bounds */
+        for (x = 0; x < (int)dw; x++) {
+            PixelWeight *wp;
+            double sum, center, factor;
+            int i, left, right;         /* filter bounds */
 
-	    center = ((double)x) * fscale;
+            center = ((double)x) * fscale;
 #ifndef notdef
-	    left = (int)(center - filterPtr->support);
+            left = (int)(center - filterPtr->support);
 #else
-	    left = CRoundToInt(center - filterPtr->support);
+            left = CRoundToInt(center - filterPtr->support);
 #endif
-	    if (left < 0) {
-		left = 0;
-	    }
+            if (left < 0) {
+                left = 0;
+            }
 #ifndef notdef
-	    right = (int)(center + filterPtr->support);
+            right = (int)(center + filterPtr->support);
 #else
-	    right = CRoundToInt(center + filterPtr->support);
+            right = CRoundToInt(center + filterPtr->support);
 #endif
-	    if (right >= sw) {
-		right = sw - 1;
-	    }
-	    samplePtr->start = left;
-	    samplePtr->wend = samplePtr->weights + (right - left + 1);
+            if (right >= sw) {
+                right = sw - 1;
+            }
+            samplePtr->start = left;
+            samplePtr->wend = samplePtr->weights + (right - left + 1);
 
-	    /* Sum the contributions for each pixel in the filter. */
-	    sum = 0.0;
-	    for (wp = samplePtr->weights, i = left; i <= right;i++, wp++) {
-		wp->f32 = (float) (*filterPtr->proc) ((double)i - center);
-		sum += wp->f32;
-	    }
+            /* Sum the contributions for each pixel in the filter. */
+            sum = 0.0;
+            for (wp = samplePtr->weights, i = left; i <= right;i++, wp++) {
+                wp->f32 = (float) (*filterPtr->proc) ((double)i - center);
+                sum += wp->f32;
+            }
 
-	    /* The sum of the contributions should not be greater than 1.0 */
-	    factor = (sum == 0.0) ? 1.0 : (1.0 / sum);
+            /* The sum of the contributions should not be greater than 1.0 */
+            factor = (sum == 0.0) ? 1.0 : (1.0 / sum);
 
-	    for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
+            for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
 #ifdef notdef
-		fprintf(stderr, "w[%d]=%g, %g sum=%g\n", 
-			wp - samplePtr->weights, 
-			wp->f32, wp->f32 * factor, sum);
+                fprintf(stderr, "w[%d]=%g, %g sum=%g\n", 
+                        wp - samplePtr->weights, 
+                        wp->f32, wp->f32 * factor, sum);
 #endif
-		wp->f32 = (float)(wp->f32 * factor);
-		/* Convert each weight into a fixed-point scaled integer */
-		wp->i32 = float2si(wp->f32);
+                wp->f32 = (float)(wp->f32 * factor);
+                /* Convert each weight into a fixed-point scaled integer */
+                wp->i32 = float2si(wp->f32);
 
-	    }
-	    /* Go to the next sample. */
-	    samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
-	}
+            }
+            /* Go to the next sample. */
+            samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
+        }
     }
     *samplePtrPtr = samples;
     return bytesPerSample;
@@ -2147,47 +2147,47 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter filter)
 {
     Sample *samples, *send;
     int x;
-    int bytesPerSample;			/* Size of sample. */
+    int bytesPerSample;                 /* Size of sample. */
 
     /* Pre-calculate filter contributions for each row. */
     bytesPerSample = Blt_ComputeWeights(srcPtr->height, destPtr->height, 
-	filter, &samples);
+        filter, &samples);
     send = (Sample *)((char *)samples + (destPtr->height * bytesPerSample));
 
     /* Apply filter to each row. */
     for (x = 0; x < srcPtr->width; x++) {
-	Blt_Pixel *dp, *srcColPtr;
-	Sample *samplePtr;
+        Blt_Pixel *dp, *srcColPtr;
+        Sample *samplePtr;
 
-	srcColPtr = srcPtr->bits + x;
-	dp = destPtr->bits + x;
-	for (samplePtr = samples; samplePtr < send; 
-	     samplePtr = (Sample *)((char *)samplePtr + bytesPerSample)) {
-	    Blt_Pixel *sp;
-	    int r, g, b, a;
-	    PixelWeight *wp;
+        srcColPtr = srcPtr->bits + x;
+        dp = destPtr->bits + x;
+        for (samplePtr = samples; samplePtr < send; 
+             samplePtr = (Sample *)((char *)samplePtr + bytesPerSample)) {
+            Blt_Pixel *sp;
+            int r, g, b, a;
+            PixelWeight *wp;
 
-	    r = g = b = a = 0;
-	    sp = srcColPtr + (samplePtr->start * srcPtr->pixelsPerRow);
-	    for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
-		a += wp->i32 * sp->Alpha;
-		r += wp->i32 * sp->Red;
-		g += wp->i32 * sp->Green;
-		b += wp->i32 * sp->Blue;
-		sp += srcPtr->pixelsPerRow;
-	    }
-	    dp->Alpha = SICLAMP(a);
-	    dp->Red   = SICLAMP(r);
-	    dp->Green = SICLAMP(g);
-	    dp->Blue  = SICLAMP(b);
+            r = g = b = a = 0;
+            sp = srcColPtr + (samplePtr->start * srcPtr->pixelsPerRow);
+            for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
+                a += wp->i32 * sp->Alpha;
+                r += wp->i32 * sp->Red;
+                g += wp->i32 * sp->Green;
+                b += wp->i32 * sp->Blue;
+                sp += srcPtr->pixelsPerRow;
+            }
+            dp->Alpha = SICLAMP(a);
+            dp->Red   = SICLAMP(r);
+            dp->Green = SICLAMP(g);
+            dp->Blue  = SICLAMP(b);
 #ifdef notdef
-	    if (dp->Alpha != 0xFF) {
-		fprintf(stdout, "v1: alpha=0x%x\n", dp->Alpha);
-	    }
+            if (dp->Alpha != 0xFF) {
+                fprintf(stdout, "v1: alpha=0x%x\n", dp->Alpha);
+            }
 #endif
-	    dp += destPtr->pixelsPerRow;
+            dp += destPtr->pixelsPerRow;
 
-	}
+        }
     }
     /* Free the memory allocated for filter weights. */
     Blt_Free(samples);
@@ -2199,49 +2199,49 @@ ZoomHorizontally(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter filter)
     Sample *samples, *send;
     int y;
     Blt_Pixel *srcRowPtr, *destRowPtr;
-    int bytesPerSample;			/* Size of sample. */
+    int bytesPerSample;                 /* Size of sample. */
 
     /* Pre-calculate filter contributions for each column. */
     bytesPerSample = Blt_ComputeWeights(srcPtr->width, destPtr->width, 
-	filter, &samples);
+        filter, &samples);
     send = (Sample *)((char *)samples + (destPtr->width * bytesPerSample));
 
     /* Apply filter to each column. */
     srcRowPtr = srcPtr->bits;
     destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *dp;
-	Sample *samplePtr;
+        Blt_Pixel *dp;
+        Sample *samplePtr;
 
-	dp = destRowPtr;
-	for (samplePtr = samples; samplePtr < send; 
-	     samplePtr = (Sample *)((char *)samplePtr + bytesPerSample)) {
-	    Blt_Pixel *sp;
-	    int r, g, b, a;
-	    PixelWeight *wp;
+        dp = destRowPtr;
+        for (samplePtr = samples; samplePtr < send; 
+             samplePtr = (Sample *)((char *)samplePtr + bytesPerSample)) {
+            Blt_Pixel *sp;
+            int r, g, b, a;
+            PixelWeight *wp;
 
-	    r = g = b = a = 0;
-	    sp = srcRowPtr + samplePtr->start;
-	    for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
-		a += wp->i32 * sp->Alpha;
-		r += wp->i32 * sp->Red;
-		g += wp->i32 * sp->Green;
-		b += wp->i32 * sp->Blue;
-		sp++;
-	    }
-	    dp->Alpha = SICLAMP(a);
-	    dp->Red   = SICLAMP(r);
-	    dp->Green = SICLAMP(g);
-	    dp->Blue  = SICLAMP(b);
+            r = g = b = a = 0;
+            sp = srcRowPtr + samplePtr->start;
+            for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
+                a += wp->i32 * sp->Alpha;
+                r += wp->i32 * sp->Red;
+                g += wp->i32 * sp->Green;
+                b += wp->i32 * sp->Blue;
+                sp++;
+            }
+            dp->Alpha = SICLAMP(a);
+            dp->Red   = SICLAMP(r);
+            dp->Green = SICLAMP(g);
+            dp->Blue  = SICLAMP(b);
 #ifdef notdef
-	    if (dp->Alpha != 0xFF) {
-		fprintf(stdout, "h1: alpha=0x%x\n", dp->Alpha);
-	    }
+            if (dp->Alpha != 0xFF) {
+                fprintf(stdout, "h1: alpha=0x%x\n", dp->Alpha);
+            }
 #endif
-	    dp++;
-	}
-	srcRowPtr  += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+            dp++;
+        }
+        srcRowPtr  += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
     /* Free the memory allocated for horizontal filter weights. */
     Blt_Free(samples);
@@ -2262,18 +2262,18 @@ ZoomHorizontally(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter filter)
  */
 void
 Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter, 
-		    Blt_ResampleFilter vFilter)
+                    Blt_ResampleFilter vFilter)
 {
     Pict *tmpPtr;
 
     tmpPtr = Blt_CreatePicture(destPtr->width, srcPtr->height);
     if ((srcPtr->flags & (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS)) == 
-	BLT_PIC_BLEND) {
-	Blt_AssociateColors(srcPtr);
+        BLT_PIC_BLEND) {
+        Blt_AssociateColors(srcPtr);
     }
     if ((destPtr->flags & (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS)) == 
-	BLT_PIC_BLEND) {
-	Blt_AssociateColors(destPtr);
+        BLT_PIC_BLEND) {
+        Blt_AssociateColors(destPtr);
     }
 
     /* 
@@ -2290,12 +2290,12 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
 
 static void
 FillScaleTables(
-    int sw, int sh,			/* Dimension of source. */
-    int ax, int ay,			/* Origin of requested area. */
-    int aw, int ah,			/* Dimension of requested area. */
-    int dw, int destHeight,		/* Desired new dimension. */
-    int *mapX, int *mapY)		/* (out) Resulting mapping
-					   tables. */
+    int sw, int sh,                     /* Dimension of source. */
+    int ax, int ay,                     /* Origin of requested area. */
+    int aw, int ah,                     /* Dimension of requested area. */
+    int dw, int destHeight,             /* Desired new dimension. */
+    int *mapX, int *mapY)               /* (out) Resulting mapping
+                                           tables. */
 {
     int left, right, top, bottom;
     double xScale, yScale;
@@ -2308,25 +2308,25 @@ FillScaleTables(
 
     xScale = (double)aw / (double)dw;
     for (x = 0; x < dw; x++) {
-	int sx;
-	
-	sx = (int)(xScale * (double)x);
-	sx += left;
-	if (sx > right) {
-	    sx = right;
-	}
-	mapX[x] = sx;
+        int sx;
+        
+        sx = (int)(xScale * (double)x);
+        sx += left;
+        if (sx > right) {
+            sx = right;
+        }
+        mapX[x] = sx;
     }
     yScale = (double)ah / (double)destHeight;
     for (y = 0; y < destHeight; y++) {
-	int sy;
-	
-	sy = (int)(yScale * (double)y);
-	sy += top;
-	if (sy > bottom) {
-	    sy = bottom;
-	}
-	mapY[y] = sy;
+        int sy;
+        
+        sy = (int)(yScale * (double)y);
+        sy += top;
+        if (sy > bottom) {
+            sy = bottom;
+        }
+        mapY[y] = sy;
     }
 }
 
@@ -2335,9 +2335,9 @@ FillScaleTables(
  *
  * Blt_ScalePicture --
  *
- *	Scales the region of the source picture to the size requested.
- *	This routine performs raw scaling of the image and unlike
- *	Blt_ResamplePhoto does not do any filtering.
+ *      Scales the region of the source picture to the size requested.
+ *      This routine performs raw scaling of the image and unlike
+ *      Blt_ResamplePhoto does not do any filtering.
  *
  *          src picture
  *      +===================+
@@ -2355,9 +2355,9 @@ FillScaleTables(
  *      |                   |
  *      +===================+
  *
- *		x ratio = dest width / area width
- *		y ratio = dest height / area height
- *		
+ *              x ratio = dest width / area width
+ *              y ratio = dest height / area height
+ *              
  *
  * Results:
  *      Returns the new resized picture.  The original picture is left intact.
@@ -2366,12 +2366,12 @@ FillScaleTables(
  */
 Blt_Picture
 Blt_ScalePicture(
-    Pict *srcPtr,			/* Source picture to be scaled. */
-    int sx, int sy,			/* Area of source picture to
-					 * scaled. */
+    Pict *srcPtr,                       /* Source picture to be scaled. */
+    int sx, int sy,                     /* Area of source picture to
+                                         * scaled. */
     int sw, int sh,
-    int reqWidth, int reqHeight)	/* Requested dimensions of the
-					 * scaled picture. */
+    int reqWidth, int reqHeight)        /* Requested dimensions of the
+                                         * scaled picture. */
 {
     Pict *destPtr;
     Blt_Pixel *destRowPtr;
@@ -2381,25 +2381,25 @@ Blt_ScalePicture(
     mapX = (int *)Blt_AssertMalloc(sizeof(int) * reqWidth);
     mapY = (int *)Blt_AssertMalloc(sizeof(int) * reqHeight);
     FillScaleTables(srcPtr->width, srcPtr->height, sx, sy, sw, sh, 
-	reqWidth, reqHeight, mapX, mapY);
+        reqWidth, reqHeight, mapX, mapY);
 
     destPtr = Blt_CreatePicture(reqWidth, reqHeight);
     destRowPtr = destPtr->bits;
     for (y = 0; y < reqHeight; y++) {
-	Blt_Pixel *dp;
-	Blt_Pixel *srcRowPtr;
-	int x;
+        Blt_Pixel *dp;
+        Blt_Pixel *srcRowPtr;
+        int x;
 
-	dp = destRowPtr;
-	srcRowPtr = srcPtr->bits + (srcPtr->pixelsPerRow * mapY[y]);
-	for (x = 0; x < reqWidth; x++) {
-	    Blt_Pixel *sp;
+        dp = destRowPtr;
+        srcRowPtr = srcPtr->bits + (srcPtr->pixelsPerRow * mapY[y]);
+        for (x = 0; x < reqWidth; x++) {
+            Blt_Pixel *sp;
 
-	    sp = srcRowPtr + mapX[x];
-	    dp->u32 = sp->u32;		/* Copy the pixel. */
-	    dp++;
-	}
-	destRowPtr += destPtr->pixelsPerRow;
+            sp = srcRowPtr + mapX[x];
+            dp->u32 = sp->u32;          /* Copy the pixel. */
+            dp++;
+        }
+        destRowPtr += destPtr->pixelsPerRow;
     }
     Blt_Free(mapX), Blt_Free(mapY);
     destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
@@ -2411,9 +2411,9 @@ Blt_ScalePicture(
  *
  * Blt_ScalePictureArea --
  *
- *	Scales the region of the source picture to the size of the
- *	destination image.  This routine performs raw scaling of the image
- *	and unlike Blt_ResamplePhoto does not perform any antialiasing.
+ *      Scales the region of the source picture to the size of the
+ *      destination image.  This routine performs raw scaling of the image
+ *      and unlike Blt_ResamplePhoto does not perform any antialiasing.
  *
  * Results:
  *      Returns the new resized picture.  The original picture is left
@@ -2423,13 +2423,13 @@ Blt_ScalePicture(
  */
 Blt_Picture
 Blt_ScalePictureArea(
-    Pict *srcPtr,			/* Source picture to be scaled. */
-    int ax, int ay,			/* Origin of area in source
-					   picture. */
-    int aw, int ah,			/* Dimension of area to be
-					   scaled. */
-    int dw, int dh)			/* Dimensions of the destination
-					   scaled image. */
+    Pict *srcPtr,                       /* Source picture to be scaled. */
+    int ax, int ay,                     /* Origin of area in source
+                                           picture. */
+    int aw, int ah,                     /* Dimension of area to be
+                                           scaled. */
+    int dw, int dh)                     /* Dimensions of the destination
+                                           scaled image. */
 {
     Pict *destPtr;
     Blt_Pixel *srcRowPtr, *destRowPtr;
@@ -2444,39 +2444,39 @@ Blt_ScalePictureArea(
 
     /* Precompute scaling factors for each row and column. */
     for (x = 0; x < aw; x++) {
-	int sx;
+        int sx;
 
-	sx = (int)(xScale * (double)(x + ax));
-	if (sx >= srcPtr->width) {
-	    sx = srcPtr->width - 1;
-	} 
-	mapX[x] = sx;
+        sx = (int)(xScale * (double)(x + ax));
+        if (sx >= srcPtr->width) {
+            sx = srcPtr->width - 1;
+        } 
+        mapX[x] = sx;
     }
     for (y = 0; y < ah; y++) {
-	int sy;
+        int sy;
 
-	sy = (int)(yScale * (double)(y + ay));
-	if (sy > srcPtr->height) {
-	    sy = srcPtr->height - 1;
-	} 
-	mapY[y] = sy;
+        sy = (int)(yScale * (double)(y + ay));
+        if (sy > srcPtr->height) {
+            sy = srcPtr->height - 1;
+        } 
+        mapY[y] = sy;
     }
 
     destPtr = Blt_CreatePicture(aw, ah);
     destRowPtr = destPtr->bits;
     for (y = 0; y < ah; y++) {
-	Blt_Pixel *dp;
+        Blt_Pixel *dp;
 
-	dp = destRowPtr;
-	srcRowPtr = srcPtr->bits + (srcPtr->pixelsPerRow * mapY[y]);
-	for (x = 0; x < aw; x++) {
-	    Blt_Pixel *sp;
+        dp = destRowPtr;
+        srcRowPtr = srcPtr->bits + (srcPtr->pixelsPerRow * mapY[y]);
+        for (x = 0; x < aw; x++) {
+            Blt_Pixel *sp;
 
-	    sp = srcRowPtr + mapX[x];
-	    dp->u32 = sp->u32;		/* Copy the pixel. */
-	    dp++;
-	}
-	destRowPtr += destPtr->pixelsPerRow;
+            sp = srcRowPtr + mapX[x];
+            dp->u32 = sp->u32;          /* Copy the pixel. */
+            dp++;
+        }
+        destRowPtr += destPtr->pixelsPerRow;
     }
     Blt_Free(mapX), Blt_Free(mapY);
     return destPtr;
@@ -2488,14 +2488,14 @@ Blt_ScalePictureArea(
  *
  * ShearY --
  *
- *	Shears a row horizontally.  Antialiasing limited to filtering two
- *	adjacent pixels.  So the shear angle must be between +-45 degrees.
- *	
+ *      Shears a row horizontally.  Antialiasing limited to filtering two
+ *      adjacent pixels.  So the shear angle must be between +-45 degrees.
+ *      
  * Results:   
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The sheared image is drawn into the destination picture.
+ *      The sheared image is drawn into the destination picture.
  *
  *---------------------------------------------------------------------------
  */
@@ -2503,11 +2503,11 @@ static void
 ShearY(
     Pict *destPtr, 
     Pict *srcPtr,
-    int y,				/* Designates the row to be
-					   sheared */
-    int offset,				/* Difference between of.  Note:
-					 * don't assume that offset is
-					 * always positive.  */
+    int y,                              /* Designates the row to be
+                                           sheared */
+    int offset,                         /* Difference between of.  Note:
+                                         * don't assume that offset is
+                                         * always positive.  */
     double frac,
     Blt_Pixel *bg)
 {
@@ -2523,7 +2523,7 @@ ShearY(
     srcRowPtr = srcPtr->bits + (y * srcPtr->pixelsPerRow);
 
     for (dp = destRowPtr, x = 0; x < offset; x++, dp++) { 
-	dp->u32 = bg->u32;
+        dp->u32 = bg->u32;
     }
     dp = destRowPtr + offset;
     sp = srcRowPtr;
@@ -2536,39 +2536,39 @@ ShearY(
     left.Alpha = imul8x8(alpha, bg->Alpha, t);
 
     for (x = 0; x < srcPtr->width; x++, dx++) { /* Loop through row pixels */
-	Blt_Pixel right;
-	int t;
+        Blt_Pixel right;
+        int t;
 
-	right.Red   = imul8x8(alpha, sp->Red, t);
-	right.Green = imul8x8(alpha, sp->Green, t);
-	right.Blue  = imul8x8(alpha, sp->Blue, t);
-	right.Alpha = imul8x8(alpha, sp->Alpha, t);
-	if ((dx >= 0) && (dx < destPtr->width)) {
-	    int r, b, g, a;
+        right.Red   = imul8x8(alpha, sp->Red, t);
+        right.Green = imul8x8(alpha, sp->Green, t);
+        right.Blue  = imul8x8(alpha, sp->Blue, t);
+        right.Alpha = imul8x8(alpha, sp->Alpha, t);
+        if ((dx >= 0) && (dx < destPtr->width)) {
+            int r, b, g, a;
 
-	    r = sp->Red   - (right.Red   - left.Red);
-	    g = sp->Green - (right.Green - left.Green);
-	    b = sp->Blue  - (right.Blue  - left.Blue);
-	    a = sp->Alpha - (right.Alpha - left.Alpha);
-	    if (sp->Alpha == 0) {
-		a = 0;
-	    }
-	    dp->Red   = UCLAMP(r);
-	    dp->Green = UCLAMP(g);
-	    dp->Blue  = UCLAMP(b);
-	    dp->Alpha = UCLAMP(a);
-	}
-	left.u32 = right.u32;
-	sp++, dp++;
+            r = sp->Red   - (right.Red   - left.Red);
+            g = sp->Green - (right.Green - left.Green);
+            b = sp->Blue  - (right.Blue  - left.Blue);
+            a = sp->Alpha - (right.Alpha - left.Alpha);
+            if (sp->Alpha == 0) {
+                a = 0;
+            }
+            dp->Red   = UCLAMP(r);
+            dp->Green = UCLAMP(g);
+            dp->Blue  = UCLAMP(b);
+            dp->Alpha = UCLAMP(a);
+        }
+        left.u32 = right.u32;
+        sp++, dp++;
     }
     x = srcPtr->width + offset;  
     dp = destPtr->bits + (y * destPtr->pixelsPerRow) + x;
     if (x < destPtr->width) {
-	dp->u32 = left.u32;
-	dp++;
+        dp->u32 = left.u32;
+        dp++;
     }
     for (x++; x < destPtr->width; x++, dp++) {
-	dp->u32 = bg->u32;
+        dp->u32 = bg->u32;
     }
 }  
 
@@ -2577,14 +2577,14 @@ ShearY(
  *
  * ShearX --
  *
- *	Shears a column. Antialiasing is limited to filtering two adjacent
- *	pixels.  So the shear angle must be between +-45 degrees.
- *	
+ *      Shears a column. Antialiasing is limited to filtering two adjacent
+ *      pixels.  So the shear angle must be between +-45 degrees.
+ *      
  * Results:   
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The sheared image is drawn into the destination picture.
+ *      The sheared image is drawn into the destination picture.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -2592,23 +2592,23 @@ static void
 ShearX(
     Pict *destPtr, 
     Pict *srcPtr,
-    int x,				/* Column in source image to be
-					 * sheared. */
-    int offset,				/* Offset of */
-    double frac,			/* Fraction of subpixel. */
+    int x,                              /* Column in source image to be
+                                         * sheared. */
+    int offset,                         /* Offset of */
+    double frac,                        /* Fraction of subpixel. */
     Blt_Pixel *bg)
 {
     Blt_Pixel *sp, *dp;
     int y, dy;
     unsigned char alpha;
-    Blt_Pixel left;			/* Old left values of shear. */
+    Blt_Pixel left;                     /* Old left values of shear. */
     int t;
 
     assert(frac >= 0.0 && frac <= 1.0);
     dp = destPtr->bits + x;
     for (y = 0; y < offset; y++) {
-	dp->u32 = bg->u32;
-	dp += destPtr->pixelsPerRow;
+        dp->u32 = bg->u32;
+        dp += destPtr->pixelsPerRow;
     }
 
 
@@ -2620,43 +2620,43 @@ ShearX(
     left.Blue  = imul8x8(alpha, bg->Blue, t);
     left.Alpha = imul8x8(alpha, bg->Alpha, t);
     for (dy = offset, y = 0; y < srcPtr->height; y++, dy++) {
-	Blt_Pixel right;
-	int t;
+        Blt_Pixel right;
+        int t;
 
-	right.Red   = imul8x8(alpha, sp->Red, t);
-	right.Green = imul8x8(alpha, sp->Green, t);
-	right.Blue  = imul8x8(alpha, sp->Blue, t);
-	right.Alpha = imul8x8(alpha, sp->Alpha, t);
-	if ((dy >= 0) && (dy < destPtr->height)) {
-	    int r, g, b, a;
+        right.Red   = imul8x8(alpha, sp->Red, t);
+        right.Green = imul8x8(alpha, sp->Green, t);
+        right.Blue  = imul8x8(alpha, sp->Blue, t);
+        right.Alpha = imul8x8(alpha, sp->Alpha, t);
+        if ((dy >= 0) && (dy < destPtr->height)) {
+            int r, g, b, a;
 
-	    r = sp->Red   - (right.Red   - left.Red);
-	    g = sp->Green - (right.Green - left.Green);
-	    b = sp->Blue  - (right.Blue  - left.Blue);
-	    a = sp->Alpha - (right.Alpha - left.Alpha);
-	    if (sp->Alpha == 0) {
-		a = 0;
-	    }
-	    dp->Red   = UCLAMP(r);
-	    dp->Green = UCLAMP(g);
-	    dp->Blue  = UCLAMP(b);
-	    dp->Alpha = UCLAMP(a);
-	}
-	left.u32 = right.u32;
-	sp += srcPtr->pixelsPerRow; 
-	dp += destPtr->pixelsPerRow;
+            r = sp->Red   - (right.Red   - left.Red);
+            g = sp->Green - (right.Green - left.Green);
+            b = sp->Blue  - (right.Blue  - left.Blue);
+            a = sp->Alpha - (right.Alpha - left.Alpha);
+            if (sp->Alpha == 0) {
+                a = 0;
+            }
+            dp->Red   = UCLAMP(r);
+            dp->Green = UCLAMP(g);
+            dp->Blue  = UCLAMP(b);
+            dp->Alpha = UCLAMP(a);
+        }
+        left.u32 = right.u32;
+        sp += srcPtr->pixelsPerRow; 
+        dp += destPtr->pixelsPerRow;
     }
     y = srcPtr->height + offset;  
 
     dp = destPtr->bits + (y * destPtr->pixelsPerRow) + x;
     if (y < destPtr->height) {
-	dp->u32 = left.u32;
-	dp += destPtr->pixelsPerRow;
+        dp->u32 = left.u32;
+        dp += destPtr->pixelsPerRow;
     }
     
     for (y++; y < destPtr->height; y++) {
-	dp->u32 = bg->u32;
-	dp += destPtr->pixelsPerRow; 
+        dp->u32 = bg->u32;
+        dp += destPtr->pixelsPerRow; 
     }
 }  
 
@@ -2665,18 +2665,18 @@ ShearX(
  *
  * Rotate45 --
  *
- *	Rotates an image by a given angle.  The angle must be in the range
- *	-45.0 to 45.0 inclusive.  Anti-aliasing filtering is performed on
- *	two adjacent pixels, so the angle can't be so great as to force a
- *	sheared pixel to occupy 3 destination pixels.  Performs a three
- *	shear rotation described below.
+ *      Rotates an image by a given angle.  The angle must be in the range
+ *      -45.0 to 45.0 inclusive.  Anti-aliasing filtering is performed on
+ *      two adjacent pixels, so the angle can't be so great as to force a
+ *      sheared pixel to occupy 3 destination pixels.  Performs a three
+ *      shear rotation described below.
  *
- *	Reference: Alan W. Paeth, "A Fast Algorithm for General Raster
- *		   Rotation", Graphics Gems, pp 179-195.  
+ *      Reference: Alan W. Paeth, "A Fast Algorithm for General Raster
+ *                 Rotation", Graphics Gems, pp 179-195.  
  *
  *
  * Results:  
- *	Returns a newly allocated rotated image.
+ *      Returns a newly allocated rotated image.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -2700,34 +2700,34 @@ Rotate45(Pict *srcPtr, float angle, Blt_Pixel *bg)
     /* 1st shear */
 
     shear1Ptr = Blt_CreatePicture(shearWidth, shearHeight);
-    if (tanTheta >= 0.0) {		/* Positive angle */
-	for (y = 0; y < shearHeight; y++) {  
-	    skewf = (y + 0.5) * tanTheta;
-	    skewi = (int)floor(skewf);
-	    ShearY(shear1Ptr, srcPtr, y, skewi, skewf - skewi, bg);
-	}
-    } else {				/* Negative angle */
-	for (y = 0; y < shearHeight; y++) {  
-	    skewf = ((y - srcPtr->height) + 0.5) * tanTheta;
-	    skewi = (int)floor(skewf);
-	    ShearY(shear1Ptr, srcPtr, y, skewi, skewf - skewi, bg);
-	}
+    if (tanTheta >= 0.0) {              /* Positive angle */
+        for (y = 0; y < shearHeight; y++) {  
+            skewf = (y + 0.5) * tanTheta;
+            skewi = (int)floor(skewf);
+            ShearY(shear1Ptr, srcPtr, y, skewi, skewf - skewi, bg);
+        }
+    } else {                            /* Negative angle */
+        for (y = 0; y < shearHeight; y++) {  
+            skewf = ((y - srcPtr->height) + 0.5) * tanTheta;
+            skewi = (int)floor(skewf);
+            ShearY(shear1Ptr, srcPtr, y, skewi, skewf - skewi, bg);
+        }
     }
     shearHeight = 
-	(int)(srcPtr->width * FABS(sinTheta) + srcPtr->height * cosTheta) + 1;
+        (int)(srcPtr->width * FABS(sinTheta) + srcPtr->height * cosTheta) + 1;
 
     shear2Ptr = Blt_CreatePicture(shearWidth, shearHeight);
     /* 2nd shear */
 
-    if (sinTheta > 0.0) {		/* Positive angle */
-	skewf = (srcPtr->width - 1) * sinTheta;
-    } else {				/* Negative angle */
-	skewf = (srcPtr->width - shearWidth) * -sinTheta;
+    if (sinTheta > 0.0) {               /* Positive angle */
+        skewf = (srcPtr->width - 1) * sinTheta;
+    } else {                            /* Negative angle */
+        skewf = (srcPtr->width - shearWidth) * -sinTheta;
     }
     for (x = 0; x < shearWidth; x++) {
-	skewi = (int)floor(skewf);
-	ShearX(shear2Ptr, shear1Ptr, x, skewi, skewf - skewi, bg);
-	skewf -= sinTheta;
+        skewi = (int)floor(skewf);
+        ShearX(shear2Ptr, shear1Ptr, x, skewi, skewf - skewi, bg);
+        skewf -= sinTheta;
     }
 
     Blt_FreePicture(shear1Ptr);
@@ -2735,18 +2735,18 @@ Rotate45(Pict *srcPtr, float angle, Blt_Pixel *bg)
     /* 3rd shear */
 
     shearWidth = 
-	(int)(srcPtr->height * FABS(sinTheta) + srcPtr->width * cosTheta) + 1;
+        (int)(srcPtr->height * FABS(sinTheta) + srcPtr->width * cosTheta) + 1;
 
     destPtr = Blt_CreatePicture(shearWidth, shearHeight);
-    if (sinTheta >= 0.0) {		/* Positive angle */
-	skewf = (srcPtr->width - 1) * sinTheta * -tanTheta;
-    } else {				/* Negative angle */
-	skewf = tanTheta * ((srcPtr->width - 1) * -sinTheta - (shearHeight-1));
+    if (sinTheta >= 0.0) {              /* Positive angle */
+        skewf = (srcPtr->width - 1) * sinTheta * -tanTheta;
+    } else {                            /* Negative angle */
+        skewf = tanTheta * ((srcPtr->width - 1) * -sinTheta - (shearHeight-1));
     }
     for (y = 0; y < shearHeight; y++) {
-	skewi = (int)floor(skewf);
-	ShearY(destPtr, shear2Ptr, y, skewi, skewf - skewi, bg);
-	skewf += tanTheta;
+        skewi = (int)floor(skewf);
+        ShearY(destPtr, shear2Ptr, y, skewi, skewf - skewi, bg);
+        skewf += tanTheta;
     }
     Blt_FreePicture(shear2Ptr);
     destPtr->flags |= BLT_PIC_BLEND;
@@ -2758,12 +2758,12 @@ Rotate45(Pict *srcPtr, float angle, Blt_Pixel *bg)
  *
  * Rotate90 --
  *
- *	Rotates the given picture by 90 degrees.  This is part of the
- *	special case right-angle rotations that do not create subpixel
- *	aliasing.
+ *      Rotates the given picture by 90 degrees.  This is part of the
+ *      special case right-angle rotations that do not create subpixel
+ *      aliasing.
  *
  * Results:  
- *	Returns a newly allocated, rotated picture.
+ *      Returns a newly allocated, rotated picture.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -2779,15 +2779,15 @@ Rotate90(Pict *srcPtr)
     offset = (destPtr->height - 1) * destPtr->pixelsPerRow;
     srcRowPtr = srcPtr->bits;
     for (x = 0; x < destPtr->width; x++) {
-	Blt_Pixel *dp, *sp;
+        Blt_Pixel *dp, *sp;
 
-	sp = srcRowPtr;
-	dp = destPtr->bits + offset + x;
-	for (y = 0; y < destPtr->height; y++) {
-	    *dp = *sp++;
-	    dp -= destPtr->pixelsPerRow;
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+        sp = srcRowPtr;
+        dp = destPtr->bits + offset + x;
+        for (y = 0; y < destPtr->height; y++) {
+            *dp = *sp++;
+            dp -= destPtr->pixelsPerRow;
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
     destPtr->flags = srcPtr->flags;
     return destPtr;
@@ -2798,12 +2798,12 @@ Rotate90(Pict *srcPtr)
  *
  * Rotate180 --
  *
- *	Rotates the given picture by 180 degrees.  This is one of the
- *	special case orthogonal rotations that do not create subpixel
- *	aliasing.
+ *      Rotates the given picture by 180 degrees.  This is one of the
+ *      special case orthogonal rotations that do not create subpixel
+ *      aliasing.
  *
  * Results:  
- *	Returns a newly allocated, rotated picture.
+ *      Returns a newly allocated, rotated picture.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -2819,15 +2819,15 @@ Rotate180(Pict *srcPtr)
     offset = (destPtr->height - 1) * destPtr->pixelsPerRow;
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < destPtr->height; y++) {
-	Blt_Pixel *dp, *sp;
+        Blt_Pixel *dp, *sp;
 
-	sp = srcRowPtr;
-	dp = destPtr->bits + offset + destPtr->width - 1;
-	for (x = 0; x < destPtr->width; x++) {
-	    *dp-- = *sp++;
-	}
-	offset -= destPtr->pixelsPerRow;
-	srcRowPtr += srcPtr->pixelsPerRow;
+        sp = srcRowPtr;
+        dp = destPtr->bits + offset + destPtr->width - 1;
+        for (x = 0; x < destPtr->width; x++) {
+            *dp-- = *sp++;
+        }
+        offset -= destPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
     destPtr->flags = srcPtr->flags;
     return destPtr;
@@ -2838,12 +2838,12 @@ Rotate180(Pict *srcPtr)
  *
  * Rotate270 --
  *
- *	Rotates the given picture by 270 degrees.  This is part of the
- *	special case right-angle rotations that do not create subpixel
- *	aliasing.
+ *      Rotates the given picture by 270 degrees.  This is part of the
+ *      special case right-angle rotations that do not create subpixel
+ *      aliasing.
  *
  * Results:  
- *	Returns a newly allocated, rotated picture.
+ *      Returns a newly allocated, rotated picture.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -2858,15 +2858,15 @@ Rotate270(Pict *srcPtr)
 
     srcRowPtr = srcPtr->bits;
     for (x = destPtr->width - 1; x >= 0; x--) {
-	Blt_Pixel *sp, *dp;
+        Blt_Pixel *sp, *dp;
 
-	sp = srcRowPtr;
-	dp = destPtr->bits + x;
-	for (y = 0; y < destPtr->height; y++) {
-	    *dp = *sp++;
-	    dp += destPtr->pixelsPerRow;
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+        sp = srcRowPtr;
+        dp = destPtr->bits + x;
+        for (y = 0; y < destPtr->height; y++) {
+            *dp = *sp++;
+            dp += destPtr->pixelsPerRow;
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
     destPtr->flags = srcPtr->flags;
     return destPtr;
@@ -2899,16 +2899,16 @@ GetRotatedSize(int w, int h, float angle, int *rotWidthPtr, int *rotHeightPtr)
     /* Rotate the four corners and find the maximum X and Y coordinates */
 
     for (i = 0; i < 4; i++) {
-	double x, y;
+        double x, y;
 
-	x = (corner[i].x * cosTheta) - (corner[i].y * sinTheta);
-	y = (corner[i].x * sinTheta) + (corner[i].y * cosTheta);
-	if (x > xMax) {
-	    xMax = x;
-	}
-	if (y > yMax) {
-	    yMax = y;
-	}
+        x = (corner[i].x * cosTheta) - (corner[i].y * sinTheta);
+        y = (corner[i].x * sinTheta) + (corner[i].y * cosTheta);
+        if (x > xMax) {
+            xMax = x;
+        }
+        if (y > yMax) {
+            yMax = y;
+        }
     }
     /*
      * By symmetry, the width and height of the bounding box are twice the
@@ -2923,24 +2923,24 @@ GetRotatedSize(int w, int h, float angle, int *rotWidthPtr, int *rotHeightPtr)
  *
  * RotateByAreaMapping --
  *
- *	Rotates the given picture using area mapping.  
+ *      Rotates the given picture using area mapping.  
  *
  * Results:  
- *	Returns a newly allocated, rotated picture.
+ *      Returns a newly allocated, rotated picture.
  *
- *	Copyright (C) 2001 Leptonica.  All rights reserved.  This software
- *	is distributed in the hope that it will be useful, but with NO
- *	WARRANTY OF ANY KIND.
+ *      Copyright (C) 2001 Leptonica.  All rights reserved.  This software
+ *      is distributed in the hope that it will be useful, but with NO
+ *      WARRANTY OF ANY KIND.
  *
- *	No author or distributor accepts responsibility to anyone for the
- *	consequences of using this software, or for whether it serves any
- *	particular purpose or works at all, unless he or she says so in
- *	writing.  Everyone is granted permission to copy, modify and
- *	redistribute this source code, for commercial or non-commercial
- *	purposes, with the following restrictions: (1) the origin of this
- *	source code must not be misrepresented; (2) modified versions must
- *	be plainly marked as such; and (3) this notice may not be removed
- *	or altered from any source or modified source distribution.
+ *      No author or distributor accepts responsibility to anyone for the
+ *      consequences of using this software, or for whether it serves any
+ *      particular purpose or works at all, unless he or she says so in
+ *      writing.  Everyone is granted permission to copy, modify and
+ *      redistribute this source code, for commercial or non-commercial
+ *      purposes, with the following restrictions: (1) the origin of this
+ *      source code must not be misrepresented; (2) modified versions must
+ *      be plainly marked as such; and (3) this notice may not be removed
+ *      or altered from any source or modified source distribution.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -2952,12 +2952,12 @@ RotateByAreaMapping(Pict *srcPtr, float angle, Blt_Pixel *bg)
     Blt_Pixel *destRowPtr;
     Pict *destPtr;
     int rotWidth, rotHeight;
-    int srcCx, srcCy, destCx, destCy;	/* Centers of source and
-					 * destination picture. */
+    int srcCx, srcCy, destCx, destCy;   /* Centers of source and
+                                         * destination picture. */
 
     /* Find the new dimensions required to hold the image after rotation */
     GetRotatedSize(srcPtr->width, srcPtr->height, angle, &rotWidth, 
-		   &rotHeight);
+                   &rotHeight);
     destPtr = Blt_CreatePicture(rotWidth, rotHeight);
     srcCx = srcPtr->width / 2;
     srcCy = srcPtr->height / 2;
@@ -2970,61 +2970,61 @@ RotateByAreaMapping(Pict *srcPtr, float angle, Blt_Pixel *bg)
 
     destRowPtr = destPtr->bits;
     for (y = 0; y < destPtr->height; y++) {
-	Blt_Pixel *dp, *dend;
-	int deltaY;
-	int x;
+        Blt_Pixel *dp, *dend;
+        int deltaY;
+        int x;
 
-	deltaY = destCy - y;
-	for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
-	     dp++, x++) {
-	    int r, g, b, a;
-	    Blt_Pixel  *p00, *p01, *p10, *p11;
-	    Blt_Pixel *srcRowPtr;
-	    int srcX, srcY;
-	    int deltaX;
-	    int xpm, ypm, xf, yf;
+        deltaY = destCy - y;
+        for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
+             dp++, x++) {
+            int r, g, b, a;
+            Blt_Pixel  *p00, *p01, *p10, *p11;
+            Blt_Pixel *srcRowPtr;
+            int srcX, srcY;
+            int deltaX;
+            int xpm, ypm, xf, yf;
 
-	    deltaX = destCx - x;
-	    xpm = (int)(-deltaX * cosTheta - deltaY * sinTheta);
-	    ypm = (int)(-deltaY * cosTheta + deltaX * sinTheta);
-	    srcX = srcCx + (xpm >> 4);
-	    srcY = srcCy + (ypm >> 4);
-	    xf = xpm & 0x0f;
-	    yf = ypm & 0x0f;
+            deltaX = destCx - x;
+            xpm = (int)(-deltaX * cosTheta - deltaY * sinTheta);
+            ypm = (int)(-deltaY * cosTheta + deltaX * sinTheta);
+            srcX = srcCx + (xpm >> 4);
+            srcY = srcCy + (ypm >> 4);
+            xf = xpm & 0x0f;
+            yf = ypm & 0x0f;
 
-	    /* If outside of the source image, use the default color. */
-	    if ((srcX < 0) || (srcY < 0) || (srcX > wm2) || (srcY > hm2)) {
-		dp->u32 = bg->u32;
-		continue;
-	    }
-	    srcRowPtr = srcPtr->bits + srcY * srcPtr->pixelsPerRow;
-	    /* do area weighting.  Without this, we would
-	     * simply do:
-	     *   *(lined + x) = *(lines + srcX);
-	     * which is faster but gives lousy results!
-	     */
-	    p00 = srcRowPtr + srcX;
-	    p01 = p00 + 1;
-	    p10 = p00 + srcPtr->pixelsPerRow;
-	    p11 = p01 + srcPtr->pixelsPerRow;
-	    r = ((16 - xf) * (16 - yf) * p00->Red + 
-		 xf * (16 - yf) * p01->Red + (16 - xf) * yf * p10->Red +
-		 xf * yf * p11->Red + 128) / 256;
-	    g = ((16 - xf) * (16 - yf) * p00->Green +
-		 xf * (16 - yf) * p01->Green + (16 - xf) * yf * p10->Green +
-		 xf * yf * p11->Green + 128) / 256;
-	    b = ((16 - xf) * (16 - yf) * p00->Blue +
-		 xf * (16 - yf) * p01->Blue + (16 - xf) * yf * p10->Blue +
-		 xf * yf * p11->Blue + 128) / 256;
-	    a = ((16 - xf) * (16 - yf) * p00->Alpha +
-		 xf * (16 - yf) * p01->Alpha + (16 - xf) * yf * p10->Alpha +
-		 xf * yf * p11->Alpha + 128) / 256;
-	    dp->Red   = UCLAMP(r);
-	    dp->Green = UCLAMP(g);
-	    dp->Blue  = UCLAMP(b);
-	    dp->Alpha = UCLAMP(a);
-	}
-	destRowPtr += destPtr->pixelsPerRow;
+            /* If outside of the source image, use the default color. */
+            if ((srcX < 0) || (srcY < 0) || (srcX > wm2) || (srcY > hm2)) {
+                dp->u32 = bg->u32;
+                continue;
+            }
+            srcRowPtr = srcPtr->bits + srcY * srcPtr->pixelsPerRow;
+            /* do area weighting.  Without this, we would
+             * simply do:
+             *   *(lined + x) = *(lines + srcX);
+             * which is faster but gives lousy results!
+             */
+            p00 = srcRowPtr + srcX;
+            p01 = p00 + 1;
+            p10 = p00 + srcPtr->pixelsPerRow;
+            p11 = p01 + srcPtr->pixelsPerRow;
+            r = ((16 - xf) * (16 - yf) * p00->Red + 
+                 xf * (16 - yf) * p01->Red + (16 - xf) * yf * p10->Red +
+                 xf * yf * p11->Red + 128) / 256;
+            g = ((16 - xf) * (16 - yf) * p00->Green +
+                 xf * (16 - yf) * p01->Green + (16 - xf) * yf * p10->Green +
+                 xf * yf * p11->Green + 128) / 256;
+            b = ((16 - xf) * (16 - yf) * p00->Blue +
+                 xf * (16 - yf) * p01->Blue + (16 - xf) * yf * p10->Blue +
+                 xf * yf * p11->Blue + 128) / 256;
+            a = ((16 - xf) * (16 - yf) * p00->Alpha +
+                 xf * (16 - yf) * p01->Alpha + (16 - xf) * yf * p10->Alpha +
+                 xf * yf * p11->Alpha + 128) / 256;
+            dp->Red   = UCLAMP(r);
+            dp->Green = UCLAMP(g);
+            dp->Blue  = UCLAMP(b);
+            dp->Alpha = UCLAMP(a);
+        }
+        destRowPtr += destPtr->pixelsPerRow;
     }
     return destPtr;
 }
@@ -3034,10 +3034,10 @@ RotateByAreaMapping(Pict *srcPtr, float angle, Blt_Pixel *bg)
  *
  * Blt_RotatePictureByShear --
  *
- *	Rotates a picture by a given # of degrees.
+ *      Rotates a picture by a given # of degrees.
  *
  * Results:
- *	Returns a newly allocated, rotated picture.
+ *      Returns a newly allocated, rotated picture.
  *
  *---------------------------------------------------------------------------
  */
@@ -3047,25 +3047,25 @@ Blt_RotatePictureByShear(Pict *srcPtr, float angle)
     Pict *destPtr, *tmpPtr;
     int quadrant;
     
-    tmpPtr = srcPtr;			/* Suppress compiler warning. */
+    tmpPtr = srcPtr;                    /* Suppress compiler warning. */
 
     /* Make the angle positive between 0 and 360 degrees. */ 
     angle = FMOD(angle, 360.0f);
     if (angle < 0.0) {
-	angle += 360.0;
+        angle += 360.0;
     }
     quadrant = ROTATE_0;
     if ((angle > 45.0) && (angle <= 135.0)) {
-	quadrant = ROTATE_90;
-	angle -= 90.0;
+        quadrant = ROTATE_90;
+        angle -= 90.0;
     } else if ((angle > 135.0) && (angle <= 225.0)) { 
-	quadrant = ROTATE_180;
-	angle -= 180.0;
+        quadrant = ROTATE_180;
+        angle -= 180.0;
     } else if ((angle > 225.0) && (angle <= 315.0)) { 
-	quadrant = ROTATE_270;
-	angle -= 270.0;
+        quadrant = ROTATE_270;
+        angle -= 270.0;
     } else if (angle > 315.0) {
-	angle -= 360.0;
+        angle -= 360.0;
     }
     /* 
      * If necessary, create a temporary image that's rotated by a
@@ -3073,37 +3073,37 @@ Blt_RotatePictureByShear(Pict *srcPtr, float angle)
      * degrees to arrive at its final angle.
      */
     switch (quadrant) {
-    case ROTATE_270:			/* 270 degrees */
-	tmpPtr = Rotate270(srcPtr);
-	break;
+    case ROTATE_270:                    /* 270 degrees */
+        tmpPtr = Rotate270(srcPtr);
+        break;
 
-    case ROTATE_90:			/* 90 degrees */
-	tmpPtr = Rotate90(srcPtr);
-	break;
+    case ROTATE_90:                     /* 90 degrees */
+        tmpPtr = Rotate90(srcPtr);
+        break;
 
-    case ROTATE_180:			/* 180 degrees */
-	tmpPtr = Rotate180(srcPtr);
-	break;
+    case ROTATE_180:                    /* 180 degrees */
+        tmpPtr = Rotate180(srcPtr);
+        break;
 
-    case ROTATE_0:			/* 0 degrees */
-	if (angle == 0.0) {
-	    tmpPtr = Blt_ClonePicture(srcPtr); /* Make a copy of the source. */
-	} 
-	break;
+    case ROTATE_0:                      /* 0 degrees */
+        if (angle == 0.0) {
+            tmpPtr = Blt_ClonePicture(srcPtr); /* Make a copy of the source. */
+        } 
+        break;
     }
 
     assert((angle >= -45.0) && (angle <= 45.0));
 
     destPtr = tmpPtr;
     if (angle != 0.0) {
-	Blt_Pixel bg;
+        Blt_Pixel bg;
 
-	bg.u32 = 0x00000000;
-	angle *= DEG2RAD;
-	destPtr = Rotate45(tmpPtr, angle, &bg);
-	if (tmpPtr != srcPtr) {
-	    Blt_FreePicture(tmpPtr);
-	}
+        bg.u32 = 0x00000000;
+        angle *= DEG2RAD;
+        destPtr = Rotate45(tmpPtr, angle, &bg);
+        if (tmpPtr != srcPtr) {
+            Blt_FreePicture(tmpPtr);
+        }
     } 
     return destPtr;
 }
@@ -3113,10 +3113,10 @@ Blt_RotatePictureByShear(Pict *srcPtr, float angle)
  *
  * Blt_RotatePicture --
  *
- *	Rotates a picture by a given # of degrees.
+ *      Rotates a picture by a given # of degrees.
  *
  * Results:
- *	Returns a newly allocated, rotated picture.
+ *      Returns a newly allocated, rotated picture.
  *
  *---------------------------------------------------------------------------
  */
@@ -3132,33 +3132,33 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
     /* Make the angle positive between 0 and 360 degrees. */ 
     angle = FMOD(angle, 360.0f);
     if (angle < 0.0) {
-	angle += 360.0;
+        angle += 360.0;
     }
     /* 
      * Handle the easy cases.
      */
     angleInt = (int)angle;
     if ((angle - angleInt) < 0.05) {
-	switch (angleInt) {
-	case 270:                       /* 270 degrees */
-	    return Rotate270(srcPtr);
-	    break;
-	    
-	case 90:			/* 90 degrees */
-	    return Rotate90(srcPtr);
-	    break;
-	    
-	case 180:                       /* 180 degrees */
-	    return Rotate180(srcPtr);
-	    break;
-	    
-	case ROTATE_0:			/* 0 degrees */
-	    if (angle == 0.0) {
-		/* Just make a copy of the source. */
-		return Blt_ClonePicture(srcPtr);
-	    } 
-	    break;
-	}
+        switch (angleInt) {
+        case 270:                       /* 270 degrees */
+            return Rotate270(srcPtr);
+            break;
+            
+        case 90:                        /* 90 degrees */
+            return Rotate90(srcPtr);
+            break;
+            
+        case 180:                       /* 180 degrees */
+            return Rotate180(srcPtr);
+            break;
+            
+        case ROTATE_0:                  /* 0 degrees */
+            if (angle == 0.0) {
+                /* Just make a copy of the source. */
+                return Blt_ClonePicture(srcPtr);
+            } 
+            break;
+        }
     }
     destPtr = RotateByAreaMapping(srcPtr, -angle, &bg);
     destPtr->flags |= BLT_PIC_BLEND;
@@ -3170,7 +3170,7 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
  *
  * Blt_FlipPicture --
  *
- *	Flips a picture vertically or horizonally.
+ *      Flips a picture vertically or horizonally.
  *
  *---------------------------------------------------------------------------
  */
@@ -3178,46 +3178,46 @@ void
 Blt_FlipPicture(Pict *srcPtr, int vertically)
 {
     if (vertically) {
-	Blt_Pixel *s1RowPtr, *s2RowPtr;
-	int y;
-	
-	s1RowPtr = srcPtr->bits;
-	s2RowPtr = srcPtr->bits + ((srcPtr->height - 1) * srcPtr->pixelsPerRow);
-	for (y = 0; y < srcPtr->height / 2; y++) {
-	    Blt_Pixel *s1, *s2, *send;
-	    
-	    s1 = s1RowPtr, s2 = s2RowPtr;
-	    for (send = s1 + srcPtr->width; s1 < send; s1++, s2++) {
-		Blt_Pixel tmp;
-		
-		tmp.u32 = s1->u32;
-		s1->u32 = s2->u32;
-		s2->u32 = tmp.u32;
-	    }
-	    s1RowPtr += srcPtr->pixelsPerRow;
-	    s2RowPtr -= srcPtr->pixelsPerRow;
-	}
+        Blt_Pixel *s1RowPtr, *s2RowPtr;
+        int y;
+        
+        s1RowPtr = srcPtr->bits;
+        s2RowPtr = srcPtr->bits + ((srcPtr->height - 1) * srcPtr->pixelsPerRow);
+        for (y = 0; y < srcPtr->height / 2; y++) {
+            Blt_Pixel *s1, *s2, *send;
+            
+            s1 = s1RowPtr, s2 = s2RowPtr;
+            for (send = s1 + srcPtr->width; s1 < send; s1++, s2++) {
+                Blt_Pixel tmp;
+                
+                tmp.u32 = s1->u32;
+                s1->u32 = s2->u32;
+                s2->u32 = tmp.u32;
+            }
+            s1RowPtr += srcPtr->pixelsPerRow;
+            s2RowPtr -= srcPtr->pixelsPerRow;
+        }
     } else {
-	Blt_Pixel *s1ColumnPtr, *s2ColumnPtr;
-	int x;
-	
-	s1ColumnPtr = srcPtr->bits;
-	s2ColumnPtr = srcPtr->bits + (srcPtr->width - 1);
-	for (x = 0; x < srcPtr->width / 2; x++) {
-	    Blt_Pixel *s1, *s2, *send;
-	    
-	    s1 = s1ColumnPtr, s2 = s2ColumnPtr;
-	    for (send = s1 + (srcPtr->height * srcPtr->pixelsPerRow); s1 < send;
-		 s1 += srcPtr->pixelsPerRow, s2 += srcPtr->pixelsPerRow) {
-		Blt_Pixel tmp;
-		
-		tmp.u32 = s1->u32;
-		s1->u32 = s2->u32;
-		s2->u32 = tmp.u32;
-	    }
-	    s1ColumnPtr++;
-	    s2ColumnPtr--;
-	}
+        Blt_Pixel *s1ColumnPtr, *s2ColumnPtr;
+        int x;
+        
+        s1ColumnPtr = srcPtr->bits;
+        s2ColumnPtr = srcPtr->bits + (srcPtr->width - 1);
+        for (x = 0; x < srcPtr->width / 2; x++) {
+            Blt_Pixel *s1, *s2, *send;
+            
+            s1 = s1ColumnPtr, s2 = s2ColumnPtr;
+            for (send = s1 + (srcPtr->height * srcPtr->pixelsPerRow); s1 < send;
+                 s1 += srcPtr->pixelsPerRow, s2 += srcPtr->pixelsPerRow) {
+                Blt_Pixel tmp;
+                
+                tmp.u32 = s1->u32;
+                s1->u32 = s2->u32;
+                s2->u32 = tmp.u32;
+            }
+            s1ColumnPtr++;
+            s2ColumnPtr--;
+        }
     }
     srcPtr->flags |= BLT_PIC_DIRTY;
 }
@@ -3227,7 +3227,7 @@ Blt_FlipPicture(Pict *srcPtr, int vertically)
  *
  * Blt_ReflectPicture --
  *
- *	Reflects a picture vertically or horizonally.
+ *      Reflects a picture vertically or horizonally.
  *
  *---------------------------------------------------------------------------
  */
@@ -3240,105 +3240,105 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
     int y;
     int w2, h2;
 
-    h2 = w2 = 0;			/* Suppress compiler warning. */
+    h2 = w2 = 0;                        /* Suppress compiler warning. */
     if (side & (SIDE_BOTTOM | SIDE_TOP)) {
-	h2 = srcPtr->height / 2;
-	destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height + h2);
+        h2 = srcPtr->height / 2;
+        destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height + h2);
     } else {
-	w2 = srcPtr->width / 2;
-	destPtr = Blt_CreatePicture(srcPtr->width + w2, srcPtr->height);
+        w2 = srcPtr->width / 2;
+        destPtr = Blt_CreatePicture(srcPtr->width + w2, srcPtr->height);
     }
     switch (side) {
     case SIDE_BOTTOM:
-	srcRowPtr = srcPtr->bits + (srcPtr->height - 1) * srcPtr->pixelsPerRow;
-	destRowPtr = destPtr->bits + srcPtr->height * destPtr->pixelsPerRow;
-	for (y = 0; y < h2; y++) {
-	    Blt_Pixel *sp, *dp, *dend;
-	    double t;
+        srcRowPtr = srcPtr->bits + (srcPtr->height - 1) * srcPtr->pixelsPerRow;
+        destRowPtr = destPtr->bits + srcPtr->height * destPtr->pixelsPerRow;
+        for (y = 0; y < h2; y++) {
+            Blt_Pixel *sp, *dp, *dend;
+            double t;
 
-	    t = (double)y / (h2 - 1);
-	    alpha = 255 - (int)((255.0 * t) + 0.5);
-	    alpha -= 80;
-	    alpha = UCLAMP(alpha);
-	    for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
-		 dp < dend; sp++, dp++) {
-		dp->u32 = sp->u32;
-		dp->Alpha = alpha;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	    srcRowPtr -= srcPtr->pixelsPerRow;
-	}
-	break;
+            t = (double)y / (h2 - 1);
+            alpha = 255 - (int)((255.0 * t) + 0.5);
+            alpha -= 80;
+            alpha = UCLAMP(alpha);
+            for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
+                 dp < dend; sp++, dp++) {
+                dp->u32 = sp->u32;
+                dp->Alpha = alpha;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+            srcRowPtr -= srcPtr->pixelsPerRow;
+        }
+        break;
     case SIDE_TOP:
-	Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-		0, h2);
-	srcRowPtr = srcPtr->bits;
-	destRowPtr = destPtr->bits + (h2 - 1) * destPtr->pixelsPerRow;
-	for (y = 0; y < h2; y++) {
-	    Blt_Pixel *sp, *dp, *dend;
-	    double t;
+        Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+                0, h2);
+        srcRowPtr = srcPtr->bits;
+        destRowPtr = destPtr->bits + (h2 - 1) * destPtr->pixelsPerRow;
+        for (y = 0; y < h2; y++) {
+            Blt_Pixel *sp, *dp, *dend;
+            double t;
 
-	    t = (double)y / (h2 - 1);
-	    alpha = 255 - (int)((255.0 * t) + 0.5);
-	    alpha -= 30;
-	    alpha = UCLAMP(alpha);
-	    for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
-		 dp < dend; sp++, dp++) {
-		dp->u32 = sp->u32;
-		dp->Alpha = alpha;
-	    }
-	    destRowPtr -= destPtr->pixelsPerRow;
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+            t = (double)y / (h2 - 1);
+            alpha = 255 - (int)((255.0 * t) + 0.5);
+            alpha -= 30;
+            alpha = UCLAMP(alpha);
+            for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
+                 dp < dend; sp++, dp++) {
+                dp->u32 = sp->u32;
+                dp->Alpha = alpha;
+            }
+            destRowPtr -= destPtr->pixelsPerRow;
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
     case SIDE_LEFT:
-	Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, 
-		srcPtr->height, w2, 0);
-	srcRowPtr = srcPtr->bits;
-	destRowPtr = destPtr->bits + (w2 - 1);
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *dp;
-	    int x;
+        Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, 
+                srcPtr->height, w2, 0);
+        srcRowPtr = srcPtr->bits;
+        destRowPtr = destPtr->bits + (w2 - 1);
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *dp;
+            int x;
 
-	    for (x = 0, sp = srcRowPtr, dp = destRowPtr; x < w2; 
-		 sp++, dp--, x++) {
-		double t;
-		
-		t = (double)x / (w2 - 1);
-		alpha = 255 - (int)((255.0 * t) + 0.5);
-		alpha -= 30;
-		alpha = UCLAMP(alpha);
-		dp->u32 = sp->u32;
-		dp->Alpha = alpha;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+            for (x = 0, sp = srcRowPtr, dp = destRowPtr; x < w2; 
+                 sp++, dp--, x++) {
+                double t;
+                
+                t = (double)x / (w2 - 1);
+                alpha = 255 - (int)((255.0 * t) + 0.5);
+                alpha -= 30;
+                alpha = UCLAMP(alpha);
+                dp->u32 = sp->u32;
+                dp->Alpha = alpha;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
     case SIDE_RIGHT:
-	Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, 
-		srcPtr->height, 0, 0);
-	srcRowPtr = srcPtr->bits + (srcPtr->width - 1);
-	destRowPtr = destPtr->bits + srcPtr->width;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *dp;
-	    int x;
+        Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, 
+                srcPtr->height, 0, 0);
+        srcRowPtr = srcPtr->bits + (srcPtr->width - 1);
+        destRowPtr = destPtr->bits + srcPtr->width;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *dp;
+            int x;
 
-	    for (x = 0, sp = srcRowPtr, dp = destRowPtr; x < w2; 
-		 sp++, dp++, x++) {
-		double t;
-		
-		t = (double)x / (w2 - 1);
-		alpha = 255 - (int)((255.0 * t) + 0.5);
-		alpha -= 30;
-		alpha = UCLAMP(alpha);
-		dp->u32 = sp->u32;
-		dp->Alpha = alpha;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+            for (x = 0, sp = srcRowPtr, dp = destRowPtr; x < w2; 
+                 sp++, dp++, x++) {
+                double t;
+                
+                t = (double)x / (w2 - 1);
+                alpha = 255 - (int)((255.0 * t) + 0.5);
+                alpha -= 30;
+                alpha = UCLAMP(alpha);
+                dp->u32 = sp->u32;
+                dp->Alpha = alpha;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
     }
     destPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_BLEND;
     return destPtr;
@@ -3349,7 +3349,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
  *
  * Blt_FadePictureWithGradient --
  *
- *	Reflects a picture vertically or horizonally.
+ *      Reflects a picture vertically or horizonally.
  *
  *---------------------------------------------------------------------------
  */
@@ -3362,119 +3362,119 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
     int y;
     
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(srcPtr);
+        Blt_UnassociateColors(srcPtr);
     }
     srcRowPtr = srcPtr->bits;
 
     switch (side) {
     case SIDE_BOTTOM:
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
-	    double t;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
+            double t;
             int alpha;
             
-	    /* 1..0 */
-	    t = 1.0 - ((double)y / (srcPtr->height - 1));
-	    if (scale == SCALE_LOG) {
-		t = log10(9.0 * t + 1.0);
-	    }
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		int a, t1;
+            /* 1..0 */
+            t = 1.0 - ((double)y / (srcPtr->height - 1));
+            if (scale == SCALE_LOG) {
+                t = log10(9.0 * t + 1.0);
+            }
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                int a, t1;
                 double m;
                 
                 m = t;
-		if (jitterPtr->range > 0.0) {
-		    m += Jitter(jitterPtr);
-		    m = JCLAMP(m);
-		}
+                if (jitterPtr->range > 0.0) {
+                    m += Jitter(jitterPtr);
+                    m = JCLAMP(m);
+                }
                 alpha = (int)((low + ((high - low) * m)) * 255.0 + 0.5);
-		a = imul8x8(sp->Alpha, alpha, t1);
-		sp->Alpha = UCLAMP(a);
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+                a = imul8x8(sp->Alpha, alpha, t1);
+                sp->Alpha = UCLAMP(a);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
 
     case SIDE_TOP:
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
-	    double t;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
+            double t;
 
-	    /* 0..1 */
-	    t = 1.0 - ((double)y / (srcPtr->height - 1));
-	    if (scale == SCALE_LOG) {
-		t = log10(9.0 * t + 1.0);
-	    }
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		int a, t1;
+            /* 0..1 */
+            t = 1.0 - ((double)y / (srcPtr->height - 1));
+            if (scale == SCALE_LOG) {
+                t = log10(9.0 * t + 1.0);
+            }
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                int a, t1;
                 double m;
                 
                 m = t;
-		if (jitterPtr->range > 0.0) {
-		    m += Jitter(jitterPtr);
-		    m = JCLAMP(m);
-		}
+                if (jitterPtr->range > 0.0) {
+                    m += Jitter(jitterPtr);
+                    m = JCLAMP(m);
+                }
                 alpha = (int)((low + ((high - low) * m)) * 255.0 + 0.5);
-		a = imul8x8(sp->Alpha, alpha, t1);
-		sp->Alpha = UCLAMP(a);
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+                a = imul8x8(sp->Alpha, alpha, t1);
+                sp->Alpha = UCLAMP(a);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
 
     case SIDE_LEFT:
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
-	    int x;
-	    
-	    for (x = 0, sp = srcRowPtr, send = sp + srcPtr->width; sp < send; 
-		 sp++, x++) {
-		int a, alpha, t1;
-		double t;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
+            int x;
+            
+            for (x = 0, sp = srcRowPtr, send = sp + srcPtr->width; sp < send; 
+                 sp++, x++) {
+                int a, alpha, t1;
+                double t;
 
-		/* 0..1 */
-		t = (double)x / (srcPtr->width - 1);
+                /* 0..1 */
+                t = (double)x / (srcPtr->width - 1);
                 if (scale == SCALE_LOG) {
                     t = log10(9.0 * t + 1.0);
                 }
-		if (jitterPtr->range > 0.0) {
-		    t += Jitter(jitterPtr);
-		    t = JCLAMP(t);
-		}
+                if (jitterPtr->range > 0.0) {
+                    t += Jitter(jitterPtr);
+                    t = JCLAMP(t);
+                }
                 alpha = (int)((low + ((high - low) * t)) * 255.0 + 0.5);
                 a = imul8x8(sp->Alpha, alpha, t1);
-		sp->Alpha = UCLAMP(a);
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+                sp->Alpha = UCLAMP(a);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
 
     case SIDE_RIGHT:
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
-	    int x;
-	    
-	    for (x = 0, sp = srcRowPtr, send = sp + srcPtr->width; sp < send; 
-		 sp++, x++) {
-		int a, alpha, t1;
-		double t;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
+            int x;
+            
+            for (x = 0, sp = srcRowPtr, send = sp + srcPtr->width; sp < send; 
+                 sp++, x++) {
+                int a, alpha, t1;
+                double t;
 
-		/* 1..0 */
-		t = 1.0 - ((double)x / (srcPtr->width - 1));
+                /* 1..0 */
+                t = 1.0 - ((double)x / (srcPtr->width - 1));
                 if (scale == SCALE_LOG) {
                     t = log10(9.0 * t + 1.0);
                 }
-		if (jitterPtr->range > 0.0) {
-		    t += Jitter(jitterPtr);
-		    t = JCLAMP(t);
-		}
+                if (jitterPtr->range > 0.0) {
+                    t += Jitter(jitterPtr);
+                    t = JCLAMP(t);
+                }
                 alpha = (int)((low + ((high - low) * t)) * 255.0 + 0.5);
-		a = imul8x8(sp->Alpha, alpha, t1);
-		sp->Alpha = UCLAMP(a);
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+                a = imul8x8(sp->Alpha, alpha, t1);
+                sp->Alpha = UCLAMP(a);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
     }
     srcPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_BLEND;
 }
@@ -3484,7 +3484,7 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
  *
  * Blt_ReflectPicture2 --
  *
- *	Reflects a picture vertically or horizonally.
+ *      Reflects a picture vertically or horizonally.
  *
  *---------------------------------------------------------------------------
  */
@@ -3498,79 +3498,79 @@ Blt_ReflectPicture2(Pict *srcPtr, int side)
     destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
     switch (side) {
     case SIDE_BOTTOM:
-	srcRowPtr = srcPtr->bits + (srcPtr->height - 1) * srcPtr->pixelsPerRow;
-	destRowPtr = destPtr->bits;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *dp, *dend;
+        srcRowPtr = srcPtr->bits + (srcPtr->height - 1) * srcPtr->pixelsPerRow;
+        destRowPtr = destPtr->bits;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *dp, *dend;
 
-	    for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
-		 dp < dend; sp++, dp++) {
-		dp->u32 = sp->u32;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	    srcRowPtr -= srcPtr->pixelsPerRow;
-	}
-	break;
+            for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
+                 dp < dend; sp++, dp++) {
+                dp->u32 = sp->u32;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+            srcRowPtr -= srcPtr->pixelsPerRow;
+        }
+        break;
     case SIDE_TOP:
-	srcRowPtr = srcPtr->bits;
-	destRowPtr = destPtr->bits + (srcPtr->height-1) * destPtr->pixelsPerRow;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *dp, *dend;
+        srcRowPtr = srcPtr->bits;
+        destRowPtr = destPtr->bits + (srcPtr->height-1) * destPtr->pixelsPerRow;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *dp, *dend;
 
-	    for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
-		 dp < dend; sp++, dp++) {
-		dp->u32 = sp->u32;
-	    }
-	    destRowPtr -= destPtr->pixelsPerRow;
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+            for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
+                 dp < dend; sp++, dp++) {
+                dp->u32 = sp->u32;
+            }
+            destRowPtr -= destPtr->pixelsPerRow;
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
     case SIDE_LEFT:
-	srcRowPtr = srcPtr->bits;
-	destRowPtr = destPtr->bits + (srcPtr->width - 1);
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *dp, *dend;
+        srcRowPtr = srcPtr->bits;
+        destRowPtr = destPtr->bits + (srcPtr->width - 1);
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *dp, *dend;
 
-	    for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
-		 dp < dend; sp++, dp--) {
-		dp->u32 = sp->u32;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+            for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
+                 dp < dend; sp++, dp--) {
+                dp->u32 = sp->u32;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
     case SIDE_RIGHT:
-	srcRowPtr = srcPtr->bits + (srcPtr->width - 1);
-	destRowPtr = destPtr->bits + srcPtr->width;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *dp, *dend;
+        srcRowPtr = srcPtr->bits + (srcPtr->width - 1);
+        destRowPtr = destPtr->bits + srcPtr->width;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *dp, *dend;
 
-	    for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
-		 dp < dend; sp++, dp++) {
-		dp->u32 = sp->u32;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	break;
+            for (sp = srcRowPtr, dp = destRowPtr, dend = dp + destPtr->width; 
+                 dp < dend; sp++, dp++) {
+                dp->u32 = sp->u32;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        break;
     }
     destPtr->flags = srcPtr->flags;
     return destPtr;
 }
 
-#define NC		256
+#define NC              256
 enum ColorDirections { RED, GREEN, BLUE };
 
-#define R0	(cubePtr->r0)
-#define R1	(cubePtr->r1)
-#define G0	(cubePtr->g0)
-#define G1	(cubePtr->g1)
-#define B0	(cubePtr->b0)
-#define B1	(cubePtr->b1)
+#define R0      (cubePtr->r0)
+#define R1      (cubePtr->r1)
+#define G0      (cubePtr->g0)
+#define G1      (cubePtr->g1)
+#define B0      (cubePtr->b0)
+#define B1      (cubePtr->b1)
 
 typedef struct {
-    int r0, r1;				/* min, max values: min exclusive
-					 * max inclusive */
+    int r0, r1;                         /* min, max values: min exclusive
+                                         * max inclusive */
     int g0, g1;
     int b0, b1;
     int vol;
@@ -3585,14 +3585,14 @@ typedef struct {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    long int wt[33][33][33];		/* # pixels in voxel */
-    long int mR[33][33][33];		/* Sum over voxel of red pixel
-					   values */
-    long int mG[33][33][33];		/* Sum over voxel of green pixel
-					 * values */
-    long int mB[33][33][33];		/* Sum over voxel of blue pixel
-					 * values */
-    float gm2[33][33][33];		/* Variance */
+    long int wt[33][33][33];            /* # pixels in voxel */
+    long int mR[33][33][33];            /* Sum over voxel of red pixel
+                                           values */
+    long int mG[33][33][33];            /* Sum over voxel of green pixel
+                                         * values */
+    long int mB[33][33][33];            /* Sum over voxel of blue pixel
+                                         * values */
+    float gm2[33][33][33];              /* Variance */
 } PictStats;
 
 /*
@@ -3601,43 +3601,43 @@ typedef struct {
 static void
 Hist3d(PictStats *s, Pict *srcPtr)
 {
-#define MAX_INTENSITIES	256
+#define MAX_INTENSITIES 256
     Blt_Pixel *srcRowPtr;
     int y;
     float tab[MAX_INTENSITIES];
 
     {
-	int i;
+        int i;
 
-	/* Precompute table of squares. */
-	for (i = 0; i < MAX_INTENSITIES; i++) {
-	    tab[i] = (float)(i * i);
-	}
+        /* Precompute table of squares. */
+        for (i = 0; i < MAX_INTENSITIES; i++) {
+            tab[i] = (float)(i * i);
+        }
     }
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp;
-	int x;
+        Blt_Pixel *sp;
+        int x;
 
-	for (sp = srcRowPtr, x = 0; x < srcPtr->width; x++, sp++) {
-	    int r, g, b;
+        for (sp = srcRowPtr, x = 0; x < srcPtr->width; x++, sp++) {
+            int r, g, b;
 
-	    /*
-	     * Reduce the number of bits (5) per color component. This will
-	     * keep the table size (2^15) reasonable without perceptually
-	     * affecting the final image.
-	     */
-	    r = (sp->Red >> 3) + 1;
-	    g = (sp->Green >> 3) + 1;
-	    b = (sp->Blue >> 3) + 1;
-	    
-	    s->wt[r][g][b] += 1;
-	    s->mR[r][g][b] += sp->Red;
-	    s->mG[r][g][b] += sp->Green;
-	    s->mB[r][g][b] += sp->Blue;
-	    s->gm2[r][g][b] += tab[sp->Red] + tab[sp->Green] + tab[sp->Blue];
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+            /*
+             * Reduce the number of bits (5) per color component. This will
+             * keep the table size (2^15) reasonable without perceptually
+             * affecting the final image.
+             */
+            r = (sp->Red >> 3) + 1;
+            g = (sp->Green >> 3) + 1;
+            b = (sp->Blue >> 3) + 1;
+            
+            s->wt[r][g][b] += 1;
+            s->mR[r][g][b] += sp->Red;
+            s->mG[r][g][b] += sp->Green;
+            s->mB[r][g][b] += sp->Blue;
+            s->gm2[r][g][b] += tab[sp->Red] + tab[sp->Green] + tab[sp->Blue];
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
 }
 
@@ -3645,9 +3645,9 @@ Hist3d(PictStats *s, Pict *srcPtr)
  *---------------------------------------------------------------------------
  *
  *  At conclusion of the histogram step, we can interpret
- *	wt[r][g][b] = sum over voxel of P(c)
- *	mR[r][g][b] = sum over voxel of r*P(c)  ,  similarly for mG, mB
- *	m2[r][g][b] = sum over voxel of c^2*P(c)
+ *      wt[r][g][b] = sum over voxel of P(c)
+ *      mR[r][g][b] = sum over voxel of r*P(c)  ,  similarly for mG, mB
+ *      m2[r][g][b] = sum over voxel of c^2*P(c)
  * 
  *  Actually each of these should be divided by 'size' to give the usual
  *  interpretation of P() as ranging from 0 to 1, but we needn't do that
@@ -3673,39 +3673,39 @@ M3d(PictStats *s)
     float area2[33];
 
     for (r = 1, r0 = 0; r <= 32; r++, r0++) {
-	for (i = 0; i <= 32; ++i) {
-	    area2[i] = 0.0f;
-	    area[i] = rArea[i] = gArea[i] = bArea[i] = 0;
-	}
-	for (g = 1; g <= 32; g++) {
-	    long int line, rLine, gLine, bLine;
-	    float line2;
+        for (i = 0; i <= 32; ++i) {
+            area2[i] = 0.0f;
+            area[i] = rArea[i] = gArea[i] = bArea[i] = 0;
+        }
+        for (g = 1; g <= 32; g++) {
+            long int line, rLine, gLine, bLine;
+            float line2;
 
-	    line2 = 0.0f;
-	    line = rLine = gLine = bLine = 0;
-	    for (b = 1; b <= 32; b++) {
-		/* ind1 = RGBIndex(r, g, b); */
+            line2 = 0.0f;
+            line = rLine = gLine = bLine = 0;
+            for (b = 1; b <= 32; b++) {
+                /* ind1 = RGBIndex(r, g, b); */
 
-		line  += s->wt[r][g][b];
-		rLine += s->mR[r][g][b];
-		gLine += s->mG[r][g][b];
-		bLine += s->mB[r][g][b];
-		line2 += s->gm2[r][g][b];
+                line  += s->wt[r][g][b];
+                rLine += s->mR[r][g][b];
+                gLine += s->mG[r][g][b];
+                bLine += s->mB[r][g][b];
+                line2 += s->gm2[r][g][b];
 
-		area[b] += line;
-		rArea[b] += rLine;
-		gArea[b] += gLine;
-		bArea[b] += bLine;
-		area2[b] += line2;
+                area[b] += line;
+                rArea[b] += rLine;
+                gArea[b] += gLine;
+                bArea[b] += bLine;
+                area2[b] += line2;
 
-		/* ind2 = ind1 - 1089; [r0][g][b] */
-		s->wt[r][g][b] = s->wt[r0][g][b] + area[b];
-		s->mR[r][g][b] = s->mR[r0][g][b] + rArea[b];
-		s->mG[r][g][b] = s->mG[r0][g][b] + gArea[b];
-		s->mB[r][g][b] = s->mB[r0][g][b] + bArea[b];
-		s->gm2[r][g][b] = s->gm2[r0][g][b] + area2[b];
-	    }
-	}
+                /* ind2 = ind1 - 1089; [r0][g][b] */
+                s->wt[r][g][b] = s->wt[r0][g][b] + area[b];
+                s->mR[r][g][b] = s->mR[r0][g][b] + rArea[b];
+                s->mG[r][g][b] = s->mG[r0][g][b] + gArea[b];
+                s->mB[r][g][b] = s->mB[r0][g][b] + bArea[b];
+                s->gm2[r][g][b] = s->gm2[r0][g][b] + area2[b];
+            }
+        }
     }
 }
 
@@ -3714,7 +3714,7 @@ M3d(PictStats *s)
  *
  *  Vol --
  *
- *	Compute sum over a box of any given statistic
+ *      Compute sum over a box of any given statistic
  *
  *---------------------------------------------------------------------------
  */
@@ -3722,7 +3722,7 @@ static INLINE long int
 Vol(Cube *cubePtr, long int m[33][33][33])
 {
     return (m[R1][G1][B1] - m[R1][G1][B0] - m[R1][G0][B1] + m[R1][G0][B0] -
-	    m[R0][G1][B1] + m[R0][G1][B0] + m[R0][G0][B1] - m[R0][G0][B0]);
+            m[R0][G1][B1] + m[R0][G1][B0] + m[R0][G0][B1] - m[R0][G0][B0]);
 }
 
 /*
@@ -3730,10 +3730,10 @@ Vol(Cube *cubePtr, long int m[33][33][33])
  * 
  * Bottom -- 
  *
- *	The next two routines allow a slightly more efficient calculation
- *	of Vol() for a proposed subbox of a given box.  The sum of Top()
- *	and Bottom() is the Vol() of a subbox split in the given direction
- *	and with the specified new upper bound.
+ *      The next two routines allow a slightly more efficient calculation
+ *      of Vol() for a proposed subbox of a given box.  The sum of Top()
+ *      and Bottom() is the Vol() of a subbox split in the given direction
+ *      and with the specified new upper bound.
  *
  *---------------------------------------------------------------------------
  */
@@ -3744,15 +3744,15 @@ static long int
 Bottom(
     Cube *cubePtr,
     enum ColorDirections dir,
-    long int m[33][33][33])		/* Moment */
+    long int m[33][33][33])             /* Moment */
 {
     switch (dir) {
     case RED:
-	return -m[R0][G1][B1] + m[R0][G1][B0] + m[R0][G0][B1] - m[R0][G0][B0];
+        return -m[R0][G1][B1] + m[R0][G1][B0] + m[R0][G0][B1] - m[R0][G0][B0];
     case GREEN:
-	return -m[R1][G0][B1] + m[R1][G0][B0] + m[R0][G0][B1] - m[R0][G0][B0];
+        return -m[R1][G0][B1] + m[R1][G0][B0] + m[R0][G0][B1] - m[R0][G0][B0];
     case BLUE:
-	return -m[R1][G1][B0] + m[R1][G0][B0] + m[R0][G1][B0] - m[R0][G0][B0];
+        return -m[R1][G1][B0] + m[R1][G0][B0] + m[R0][G1][B0] - m[R0][G0][B0];
     }
     return 0;
 }
@@ -3762,8 +3762,8 @@ Bottom(
  *
  * Top --
  *
- *	Compute remainder of Vol(cubePtr, mmt), substituting pos for r1,
- *	g1, or b1 (depending on dir).
+ *      Compute remainder of Vol(cubePtr, mmt), substituting pos for r1,
+ *      g1, or b1 (depending on dir).
  *
  *---------------------------------------------------------------------------
  */
@@ -3772,16 +3772,16 @@ Top(Cube *cubePtr, enum ColorDirections dir, int pos, long int m[33][33][33])
 {
     switch (dir) {
     case RED:
-	return (m[pos][G1][B1] - m[pos][G1][B0] - 
-		m[pos][G0][B1] + m[pos][G0][B0]);
+        return (m[pos][G1][B1] - m[pos][G1][B0] - 
+                m[pos][G0][B1] + m[pos][G0][B0]);
 
     case GREEN:
-	return (m[R1][pos][B1] - m[R1][pos][B0] - 
-		m[R0][pos][B1] + m[R0][pos][B0]);
+        return (m[R1][pos][B1] - m[R1][pos][B0] - 
+                m[R0][pos][B1] + m[R0][pos][B0]);
 
     case BLUE:
-	return (m[R1][G1][pos] - m[R1][G0][pos] -
-		m[R0][G1][pos] + m[R0][G0][pos]);
+        return (m[R1][G1][pos] - m[R1][G0][pos] -
+                m[R0][G1][pos] + m[R0][G0][pos]);
     }
     return 0;
 }
@@ -3791,8 +3791,8 @@ Top(Cube *cubePtr, enum ColorDirections dir, int pos, long int m[33][33][33])
  * 
  * Var --
  *
- *	Compute the weighted variance of a box NB: as with the raw
- *	statistics, this is really the (variance * size)
+ *      Compute the weighted variance of a box NB: as with the raw
+ *      statistics, this is really the (variance * size)
  *
  *---------------------------------------------------------------------------
  */
@@ -3806,9 +3806,9 @@ Var(Cube *cubePtr, PictStats *s)
     dG = Vol(cubePtr, s->mG);
     dB = Vol(cubePtr, s->mB);
     xx = (s->gm2[R1][G1][B1] - s->gm2[R1][G1][B0] -
-	  s->gm2[R1][G0][B1] + s->gm2[R1][G0][B0] -
-	  s->gm2[R0][G1][B1] + s->gm2[R0][G1][B0] +
-	  s->gm2[R0][G0][B1] - s->gm2[R0][G0][B0]);
+          s->gm2[R1][G0][B1] + s->gm2[R1][G0][B0] -
+          s->gm2[R0][G1][B1] + s->gm2[R0][G1][B0] +
+          s->gm2[R0][G0][B1] - s->gm2[R0][G0][B0]);
     return (xx - (float)(dR * dR + dG * dG + dB * dB) / (float)Vol(cubePtr, s->wt));
 }
 
@@ -3817,11 +3817,11 @@ Var(Cube *cubePtr, PictStats *s)
  *
  * Maximize --
  *
- *	We want to minimize the sum of the variances of two subboxes.  The
- *	sum(c^2) terms can be ignored since their sum over both subboxes is
- *	the same (the sum for the whole box) no matter where we split.  The
- *	remaining terms have a minus sign in the variance formula, so we
- *	drop the minus sign and MAXIMIZE the sum of the two terms.
+ *      We want to minimize the sum of the variances of two subboxes.  The
+ *      sum(c^2) terms can be ignored since their sum over both subboxes is
+ *      the same (the sum for the whole box) no matter where we split.  The
+ *      remaining terms have a minus sign in the variance formula, so we
+ *      drop the minus sign and MAXIMIZE the sum of the two terms.
  *
  *---------------------------------------------------------------------------
  */
@@ -3845,32 +3845,32 @@ Maximize(
     max = 0.0;
     *cut = -1;
     for (i = first; i < last; i++) {
-	rHalf = rBase + Top(cubePtr, dir, i, s->mR);
-	gHalf = gBase + Top(cubePtr, dir, i, s->mG);
-	bHalf = bBase + Top(cubePtr, dir, i, s->mB);
-	wHalf = wBase + Top(cubePtr, dir, i, s->wt);
+        rHalf = rBase + Top(cubePtr, dir, i, s->mR);
+        gHalf = gBase + Top(cubePtr, dir, i, s->mG);
+        bHalf = bBase + Top(cubePtr, dir, i, s->mB);
+        wHalf = wBase + Top(cubePtr, dir, i, s->wt);
 
-	/* Now half_x is sum over lower half of box, if split at i */
-	if (wHalf == 0) {		/* subbox could be empty of pixels! */
-	    continue;			/* never split into an empty box */
-	} else {
-	    temp = ((float)rHalf * rHalf + (float)gHalf * gHalf +
-		    (float)bHalf * bHalf) / wHalf;
-	}
-	rHalf = rWhole - rHalf;
-	gHalf = gWhole - gHalf;
-	bHalf = bWhole - bHalf;
-	wHalf = wWhole - wHalf;
-	if (wHalf == 0) {		/* Subbox could be empty of pixels! */
-	    continue;			/* never split into an empty box */
-	} else {
-	    temp += ((float)rHalf * rHalf + (float)gHalf * gHalf +
-		(float)bHalf * bHalf) / wHalf;
-	}
-	if (temp > max) {
-	    max = temp;
-	    *cut = i;
-	}
+        /* Now half_x is sum over lower half of box, if split at i */
+        if (wHalf == 0) {               /* subbox could be empty of pixels! */
+            continue;                   /* never split into an empty box */
+        } else {
+            temp = ((float)rHalf * rHalf + (float)gHalf * gHalf +
+                    (float)bHalf * bHalf) / wHalf;
+        }
+        rHalf = rWhole - rHalf;
+        gHalf = gWhole - gHalf;
+        bHalf = bWhole - bHalf;
+        wHalf = wWhole - wHalf;
+        if (wHalf == 0) {               /* Subbox could be empty of pixels! */
+            continue;                   /* never split into an empty box */
+        } else {
+            temp += ((float)rHalf * rHalf + (float)gHalf * gHalf +
+                (float)bHalf * bHalf) / wHalf;
+        }
+        if (temp > max) {
+            max = temp;
+            *cut = i;
+        }
     }
     return max;
 }
@@ -3896,19 +3896,19 @@ Cut(Cube *set1, Cube *set2, PictStats *s)
     wWhole = Vol(set1, s->wt);
 
     rMax = Maximize(set1, RED, set1->r0 + 1, set1->r1, &rCut,
-	rWhole, gWhole, bWhole, wWhole, s);
+        rWhole, gWhole, bWhole, wWhole, s);
     gMax = Maximize(set1, GREEN, set1->g0 + 1, set1->g1, &gCut,
-	rWhole, gWhole, bWhole, wWhole, s);
+        rWhole, gWhole, bWhole, wWhole, s);
     bMax = Maximize(set1, BLUE, set1->b0 + 1, set1->b1, &bCut,
-	rWhole, gWhole, bWhole, wWhole, s);
+        rWhole, gWhole, bWhole, wWhole, s);
 
     if ((rMax >= gMax) && (rMax >= bMax)) {
-	dir = RED;
-	if (rCut < 0) {
-	    return 0;			/* can't split the box */
-	}
+        dir = RED;
+        if (rCut < 0) {
+            return 0;                   /* can't split the box */
+        }
     } else {
-	dir = ((gMax >= rMax) && (gMax >= bMax)) ? GREEN : BLUE;
+        dir = ((gMax >= rMax) && (gMax >= bMax)) ? GREEN : BLUE;
     }
     set2->r1 = set1->r1;
     set2->g1 = set1->g1;
@@ -3916,27 +3916,27 @@ Cut(Cube *set1, Cube *set2, PictStats *s)
 
     switch (dir) {
     case RED:
-	set2->r0 = set1->r1 = rCut;
-	set2->g0 = set1->g0;
-	set2->b0 = set1->b0;
-	break;
+        set2->r0 = set1->r1 = rCut;
+        set2->g0 = set1->g0;
+        set2->b0 = set1->b0;
+        break;
 
     case GREEN:
-	set2->g0 = set1->g1 = gCut;
-	set2->r0 = set1->r0;
-	set2->b0 = set1->b0;
-	break;
+        set2->g0 = set1->g1 = gCut;
+        set2->r0 = set1->r0;
+        set2->b0 = set1->b0;
+        break;
 
     case BLUE:
-	set2->b0 = set1->b1 = bCut;
-	set2->r0 = set1->r0;
-	set2->g0 = set1->g0;
-	break;
+        set2->b0 = set1->b1 = bCut;
+        set2->r0 = set1->r0;
+        set2->g0 = set1->g0;
+        break;
     }
     set1->vol = (set1->r1 - set1->r0) * (set1->g1 - set1->g0) *
-	(set1->b1 - set1->b0);
+        (set1->b1 - set1->b0);
     set2->vol = (set2->r1 - set2->r0) * (set2->g1 - set2->g0) *
-	(set2->b1 - set2->b0);
+        (set2->b1 - set2->b0);
     return 1;
 }
 
@@ -3962,28 +3962,28 @@ SplitCS(PictStats *s, Cube *cubes, int numReqColors)
     cubes[0].r1 = cubes[0].g1 = cubes[0].b1 = 32;
     next = 0;
     for (i = 1; i < numReqColors; i++) {
-	if (Cut(cubes + next, cubes + i, s)) {
-	    /* Volume test ensures we won't try to cut one-cell box */
-	    vv[next] = (cubes[next].vol > 1) ? Var(cubes + next, s) : 0.0f;
-	    vv[i]    = (cubes[i].vol > 1)    ? Var(cubes + i, s)    : 0.0f;
-	} else {
-	    vv[next] = 0.0f;		/* don't try to split this box again */
-	    i--;			/* didn't create box i */
-	}
-	
-	next = 0;
-	temp = vv[0];
-	for (k = 1; k <= i; k++) {
-	    if (vv[k] > temp) {
-		temp = vv[k];
-		next = k;
-	    }
-	}
-	if (temp <= 0.0) {
-	    nc = i + 1;
-	    Blt_Warn("Only got %d boxes\n", nc);
-	    break;
-	}
+        if (Cut(cubes + next, cubes + i, s)) {
+            /* Volume test ensures we won't try to cut one-cell box */
+            vv[next] = (cubes[next].vol > 1) ? Var(cubes + next, s) : 0.0f;
+            vv[i]    = (cubes[i].vol > 1)    ? Var(cubes + i, s)    : 0.0f;
+        } else {
+            vv[next] = 0.0f;            /* don't try to split this box again */
+            i--;                        /* didn't create box i */
+        }
+        
+        next = 0;
+        temp = vv[0];
+        for (k = 1; k <= i; k++) {
+            if (vv[k] > temp) {
+                temp = vv[k];
+                next = k;
+            }
+        }
+        if (temp <= 0.0) {
+            nc = i + 1;
+            Blt_Warn("Only got %d boxes\n", nc);
+            break;
+        }
     }
     Blt_Free(vv);
     return nc;
@@ -4002,11 +4002,11 @@ Mark(Cube *cubePtr, int label, Blt_ColorLookupTable tag)
     int r, g, b;
 
     for (r = R0 + 1; r <= R1; r++) {
-	for (g = G0 + 1; g <= G1; g++) {
-	    for (b = B0 + 1; b <= B1; b++) {
-		tag[r][g][b] = label;
-	    }
-	}
+        for (g = G0 + 1; g <= G1; g++) {
+            for (b = B0 + 1; b <= B1; b++) {
+                tag[r][g][b] = label;
+            }
+        }
     }
 }
 
@@ -4018,26 +4018,26 @@ MakeCLuT(PictStats *s, Cube *cubes, int numColors)
 
     clut = Blt_AssertCalloc(sizeof(unsigned int), 33 * 33 * 33);
     for (cp = cubes, cend = cp + numColors; cp < cend; cp++) {
-	unsigned int r, g, b;
-	long int weight;
-	Blt_Pixel pixel;
+        unsigned int r, g, b;
+        long int weight;
+        Blt_Pixel pixel;
 
-	weight = Vol(cp, s->wt);
-	if (weight) {
-	    r = (unsigned int)((Vol(cp, s->mR) / (float)weight) * (NC + 1));
-	    g = (unsigned int)((Vol(cp, s->mG) / (float)weight) * (NC + 1));
-	    b = (unsigned int)((Vol(cp, s->mB) / (float)weight) * (NC + 1));
-	} else {
+        weight = Vol(cp, s->wt);
+        if (weight) {
+            r = (unsigned int)((Vol(cp, s->mR) / (float)weight) * (NC + 1));
+            g = (unsigned int)((Vol(cp, s->mG) / (float)weight) * (NC + 1));
+            b = (unsigned int)((Vol(cp, s->mB) / (float)weight) * (NC + 1));
+        } else {
 #ifdef notdef
-	    Blt_Warn("bogus box %d\n", cp - cubes);
+            Blt_Warn("bogus box %d\n", cp - cubes);
 #endif
-	    r = g = b = 0;
-	}
-	pixel.Red = r / 257;
-	pixel.Green = g / 257;
-	pixel.Blue = b / 257;
-	pixel.Alpha = ALPHA_OPAQUE;
-	Mark(cp, pixel.u32, clut);
+            r = g = b = 0;
+        }
+        pixel.Red = r / 257;
+        pixel.Green = g / 257;
+        pixel.Blue = b / 257;
+        pixel.Alpha = ALPHA_OPAQUE;
+        Mark(cp, pixel.u32, clut);
     }
     return clut;
 }
@@ -4052,22 +4052,22 @@ Blt_MapColors(Pict *destPtr, Pict *srcPtr, Blt_ColorLookupTable clut)
     srcRowPtr = srcPtr->bits;    
     destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *dp, *sp, *send;
-	
-	sp = srcRowPtr, dp = destRowPtr;
-	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-	    int r, g, b, a;
+        Blt_Pixel *dp, *sp, *send;
+        
+        sp = srcRowPtr, dp = destRowPtr;
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            int r, g, b, a;
 
-	    r = (sp->Red >> 3) + 1;
-	    g = (sp->Green >> 3) + 1;
-	    b = (sp->Blue >> 3) + 1;
-	    a = sp->Alpha;
-	    dp->u32 = clut[r][g][b];
-	    dp->Alpha = a;
-	    dp++;
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+            r = (sp->Red >> 3) + 1;
+            g = (sp->Green >> 3) + 1;
+            b = (sp->Blue >> 3) + 1;
+            a = sp->Alpha;
+            dp->u32 = clut[r][g][b];
+            dp->Alpha = a;
+            dp++;
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
 }
 
@@ -4076,26 +4076,26 @@ Blt_MapColors(Pict *destPtr, Pict *srcPtr, Blt_ColorLookupTable clut)
  *
  * Blt_QuantizePicture --
  *
- *	C Implementation of Wu's Color Quantizer (v. 2) (see Graphics Gems
- *	vol. II, pp. 126-133)
+ *      C Implementation of Wu's Color Quantizer (v. 2) (see Graphics Gems
+ *      vol. II, pp. 126-133)
  *
- *	Author: Xiaolin Wu
- *		Dept. of Computer Science Univ. of Western
- *		Ontario London, Ontario
- *		N6A 5B7
- *		wu@csd.uwo.ca
+ *      Author: Xiaolin Wu
+ *              Dept. of Computer Science Univ. of Western
+ *              Ontario London, Ontario
+ *              N6A 5B7
+ *              wu@csd.uwo.ca
  *
- *		Greedy orthogonal bipartition of RGB space for variance
- *		minimization aided by inclusion-exclusion tricks.  For
- *		speed no nearest neighbor search is done. Slightly better
- *		performance can be expected by more sophisticated but more
- *		expensive versions.
+ *              Greedy orthogonal bipartition of RGB space for variance
+ *              minimization aided by inclusion-exclusion tricks.  For
+ *              speed no nearest neighbor search is done. Slightly better
+ *              performance can be expected by more sophisticated but more
+ *              expensive versions.
  *
- *		The author thanks Tom Lane at Tom_Lane@G.GP.CS.CMU.EDU for
- *		much of additional documentation and a cure to a previous
- *		bug.
+ *              The author thanks Tom Lane at Tom_Lane@G.GP.CS.CMU.EDU for
+ *              much of additional documentation and a cure to a previous
+ *              bug.
  *
- *		Free to distribute, comments and suggestions are appreciated.
+ *              Free to distribute, comments and suggestions are appreciated.
  *
  *---------------------------------------------------------------------------
  */
@@ -4133,27 +4133,27 @@ Blt_QuantizePicture(Pict *srcPtr, int numReqColors)
  *
  * Blt_QuantizePicture --
  *
- *	C Implementation of Wu's Color Quantizer (v. 2) (see Graphics Gems
- *	vol. II, pp. 126-133)
+ *      C Implementation of Wu's Color Quantizer (v. 2) (see Graphics Gems
+ *      vol. II, pp. 126-133)
  *
- *	Author: Xiaolin Wu
- *		Dept. of Computer Science Univ. of Western
- *		Ontario London, Ontario
- *		N6A 5B7
- *		wu@csd.uwo.ca
+ *      Author: Xiaolin Wu
+ *              Dept. of Computer Science Univ. of Western
+ *              Ontario London, Ontario
+ *              N6A 5B7
+ *              wu@csd.uwo.ca
  *
- *		Greedy orthogonal bipartition of RGB space for variance
- *		minimization aided by inclusion-exclusion tricks.  For
- *		speed no nearest neighbor search is done. Slightly better
- *		performance can be expected by more sophisticated but more
- *		expensive versions.
+ *              Greedy orthogonal bipartition of RGB space for variance
+ *              minimization aided by inclusion-exclusion tricks.  For
+ *              speed no nearest neighbor search is done. Slightly better
+ *              performance can be expected by more sophisticated but more
+ *              expensive versions.
  *
- *		The author thanks Tom Lane at Tom_Lane@G.GP.CS.CMU.EDU for
- *		much of additional documentation and a cure to a previous
- *		bug.
+ *              The author thanks Tom Lane at Tom_Lane@G.GP.CS.CMU.EDU for
+ *              much of additional documentation and a cure to a previous
+ *              bug.
  *
- *		Free to distribute, comments and suggestions are
- *		appreciated.
+ *              Free to distribute, comments and suggestions are
+ *              appreciated.
  *
  *---------------------------------------------------------------------------
  */
@@ -4171,11 +4171,11 @@ Blt_GetColorLookupTable(Blt_Chain chain, int numReqColors)
      */
     statsPtr = Blt_AssertCalloc(1, sizeof(PictStats));
     for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	Pict *srcPtr;
+         link = Blt_Chain_NextLink(link)) {
+        Pict *srcPtr;
 
-	srcPtr = Blt_Chain_GetValue(link);
-	Hist3d(statsPtr, srcPtr);
+        srcPtr = Blt_Chain_GetValue(link);
+        Hist3d(statsPtr, srcPtr);
     }
     M3d(statsPtr);
     cubes = Blt_AssertMalloc(sizeof(Cube) * numReqColors);
@@ -4193,16 +4193,16 @@ Blt_GetColorLookupTable(Blt_Chain chain, int numReqColors)
  *
  * CopyPictureBits --
  *
- *	Creates a copy of the given picture.  
+ *      Creates a copy of the given picture.  
  *
  * Results:  
- *	Returns the new copy.
+ *      Returns the new copy.
  *
  * -------------------------------------------------------------------------- 
  */
 static void
 CopyPictureBits(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, 
-		int dx, int dy)
+                int dx, int dy)
 {
     int *srcRowPtr, *destRowPtr;
     int bottom;
@@ -4210,27 +4210,27 @@ CopyPictureBits(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
     int width, height;
 
     if (((dx + w) < 0) || ((dy + h) < 0)) {
-	return;
+        return;
     }
     if (dx < 0) {
-	w += dx;
-	dx = 0;
+        w += dx;
+        dx = 0;
     }
     if (dy < 0) {
-	h += dy;
-	dy = 0;
+        h += dy;
+        dy = 0;
     }
     if (destPtr->width < (dx + w)) {
-	w = destPtr->width - dx;
+        w = destPtr->width - dx;
     }
     if (destPtr->height < (dy + h)) {
-	h = destPtr->height - dy;
+        h = destPtr->height - dy;
     }
     if (srcPtr->width < w) {
-	w = srcPtr->width;
+        w = srcPtr->width;
     }
     if (srcPtr->height < h) {
-	h = srcPtr->height;
+        h = srcPtr->height;
     }
 
     dw = destPtr->width - dx;
@@ -4244,24 +4244,24 @@ CopyPictureBits(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
     destRowPtr = (int *)(destPtr->bits + ((destPtr->pixelsPerRow * dy) + dx));
 
     for (/*empty*/; y < bottom; y++) {
-	int n;
-	int *sp, *dp;
+        int n;
+        int *sp, *dp;
 
-	sp = srcRowPtr, dp = destRowPtr;
-	n = (width + 7) / 8;		/* count > 0 assumed */
-	switch (width & 0x07) {
-	case 0:        do {  *dp++ = *sp++;
-	case 7:              *dp++ = *sp++;
-	case 6:              *dp++ = *sp++;
-	case 5:              *dp++ = *sp++;
-	case 4:              *dp++ = *sp++;
-	case 3:              *dp++ = *sp++;
-	case 2:              *dp++ = *sp++;
-	case 1:              *dp++ = *sp++;
-			} while (--n > 0);
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        sp = srcRowPtr, dp = destRowPtr;
+        n = (width + 7) / 8;            /* count > 0 assumed */
+        switch (width & 0x07) {
+        case 0:        do {  *dp++ = *sp++;
+        case 7:              *dp++ = *sp++;
+        case 6:              *dp++ = *sp++;
+        case 5:              *dp++ = *sp++;
+        case 4:              *dp++ = *sp++;
+        case 3:              *dp++ = *sp++;
+        case 2:              *dp++ = *sp++;
+        case 1:              *dp++ = *sp++;
+                        } while (--n > 0);
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
 }
@@ -4270,19 +4270,19 @@ CopyPictureBits(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
  * Image dithering routines.
  *
  * Reference: 
- *	Victor Ostromoukhov http://www.iro.umontreal.ca/~ostrom/.  
+ *      Victor Ostromoukhov http://www.iro.umontreal.ca/~ostrom/.  
  *
- *	Victor Ostromoukhov, "A Simple and Efficient Error-Diffusion
- *	Algorithm" SIGGRAPH'01
+ *      Victor Ostromoukhov, "A Simple and Efficient Error-Diffusion
+ *      Algorithm" SIGGRAPH'01
  *
- *	University of Montreal, http://www.iro.umontreal.ca/~ostrom/
+ *      University of Montreal, http://www.iro.umontreal.ca/~ostrom/
  *
  */
 typedef struct {
-    short int r;			/* Right */
-    short int dl;			/* Down-left */
-    short int d;			/* Down */
-    short int sum;			/* Sum */
+    short int r;                        /* Right */
+    short int dl;                       /* Down-left */
+    short int d;                        /* Down */
+    short int sum;                      /* Sum */
 } VarCoefs;
 
 static VarCoefs coefTable[256] = {
@@ -4638,7 +4638,7 @@ ShiftCarryBuffers(double (**cl0)[3], double (**cl1)[3], int width)
 
     /* Clear c11 */
     for (i = 0; i < width; ++i) {
-	(*cl1)[i][0] = (*cl1)[i][1] = (*cl1)[i][2] = 0.0;
+        (*cl1)[i][0] = (*cl1)[i][1] = (*cl1)[i][2] = 0.0;
     }
 }
 
@@ -4647,19 +4647,19 @@ ShiftCarryBuffers(double (**cl0)[3], double (**cl1)[3], int width)
  *
  * Blt_DitherPicture --
  *
- *	Dithers a 24-bit picture using a given reduced-color palette. 
+ *      Dithers a 24-bit picture using a given reduced-color palette. 
  *
- *	Reference: 
- *		Victor Ostromoukhov http://www.iro.umontreal.ca/~ostrom/.  
+ *      Reference: 
+ *              Victor Ostromoukhov http://www.iro.umontreal.ca/~ostrom/.  
  *
- *		Victor Ostromoukhov, "A Simple and Efficient
- *		Error-Diffusion Algorithm" SIGGRAPH'01
+ *              Victor Ostromoukhov, "A Simple and Efficient
+ *              Error-Diffusion Algorithm" SIGGRAPH'01
  *
- *		University of Montreal, http://www.iro.umontreal.ca/~ostrom/
+ *              University of Montreal, http://www.iro.umontreal.ca/~ostrom/
  *
  * Results:
- *	A new picture is allocated, dithered and returned. Returns NULL
- *	only if memory can't be allocated for the dithered picture.
+ *      A new picture is allocated, dithered and returned. Returns NULL
+ *      only if memory can't be allocated for the dithered picture.
  *
  *---------------------------------------------------------------------------
  */
@@ -4675,12 +4675,12 @@ Blt_DitherPicture(Pict *srcPtr, Blt_Pixel *palette)
     /* allocate carry_line_0 and carry_line_1 */
     cl0 = Blt_Calloc(srcPtr->width + 2, sizeof(*cl0));
     if (cl0 == NULL) {
-	return NULL;
+        return NULL;
     }
     cl1 = Blt_Calloc(srcPtr->width + 2, sizeof(*cl1));
     if (cl1 == NULL) {
-	Blt_Free(cl0);
-	return NULL;
+        Blt_Free(cl0);
+        return NULL;
     }
     ++cl0;
     ++cl1;
@@ -4689,46 +4689,46 @@ Blt_DitherPicture(Pict *srcPtr, Blt_Pixel *palette)
 
     srcRowPtr = srcPtr->bits, destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; ++y) {
-	Blt_Pixel *sp, *dp;
-	int start, finish, step;
-	int x;
+        Blt_Pixel *sp, *dp;
+        int start, finish, step;
+        int x;
 
-	if (y & 1) {
-	    start = srcPtr->width - 1;
-	    finish = -1;
-	    step = -1;
-	} else {
-	    start = 0;
-	    finish = srcPtr->width;
-	    step = 1;
-	}
-	sp = srcRowPtr + start, dp = destRowPtr + start;
-	for (x = start; x != finish; x += step) {
-	    double rCorrected, gCorrected, bCorrected;
-	    double rDiff, gDiff, bDiff;
-	    int rIntensity, gIntensity, bIntensity;
+        if (y & 1) {
+            start = srcPtr->width - 1;
+            finish = -1;
+            step = -1;
+        } else {
+            start = 0;
+            finish = srcPtr->width;
+            step = 1;
+        }
+        sp = srcRowPtr + start, dp = destRowPtr + start;
+        for (x = start; x != finish; x += step) {
+            double rCorrected, gCorrected, bCorrected;
+            double rDiff, gDiff, bDiff;
+            int rIntensity, gIntensity, bIntensity;
 
-	    rCorrected = sp->Red +   cl0[x][0];
-	    gCorrected = sp->Green + cl0[x][1];
-	    bCorrected = sp->Blue +  cl0[x][2];
+            rCorrected = sp->Red +   cl0[x][0];
+            gCorrected = sp->Green + cl0[x][1];
+            bCorrected = sp->Blue +  cl0[x][2];
 
-	    rIntensity = palette[(int)CLAMP(rCorrected)].Red;
-	    gIntensity = palette[(int)CLAMP(gCorrected)].Green;
-	    bIntensity = palette[(int)CLAMP(bCorrected)].Blue;
+            rIntensity = palette[(int)CLAMP(rCorrected)].Red;
+            gIntensity = palette[(int)CLAMP(gCorrected)].Green;
+            bIntensity = palette[(int)CLAMP(bCorrected)].Blue;
 
-	    rDiff = rCorrected - rIntensity;
-	    gDiff = gCorrected - gIntensity;
-	    bDiff = bCorrected - bIntensity;
+            rDiff = rCorrected - rIntensity;
+            gDiff = gCorrected - gIntensity;
+            bDiff = bCorrected - bIntensity;
 
-	    DistributeError(cl0, cl1, x, rDiff, gDiff, bDiff, step, sp); 
-	    dp->Red = rIntensity;
-	    dp->Green = gIntensity;
-	    dp->Blue = bIntensity;
-	    dp += step, sp += step;
-	}
-	ShiftCarryBuffers(&cl0, &cl1, srcPtr->width);
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+            DistributeError(cl0, cl1, x, rDiff, gDiff, bDiff, step, sp); 
+            dp->Red = rIntensity;
+            dp->Green = gIntensity;
+            dp->Blue = bIntensity;
+            dp += step, sp += step;
+        }
+        ShiftCarryBuffers(&cl0, &cl1, srcPtr->width);
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
     Blt_Free(cl0 - 1);
     Blt_Free(cl1 - 1);
@@ -4745,50 +4745,50 @@ BoxX(Pict *destPtr, Pict *srcPtr)
     srcRowPtr = srcPtr->bits;
     destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *dp, *send;
-	Blt_Pixel *lp, *cp, *rp;	/* Pointers to left, center, and
-					 * right pixels.  */
-	Blt_Pixel hold;
-	double r, g, b, a;
+        Blt_Pixel *dp, *send;
+        Blt_Pixel *lp, *cp, *rp;        /* Pointers to left, center, and
+                                         * right pixels.  */
+        Blt_Pixel hold;
+        double r, g, b, a;
 
-	dp = destRowPtr;
-	cp = lp = srcRowPtr, rp = srcRowPtr + 1;
-	r = (double)(lp->Red + cp->Red + rp->Red) * 0.333333333333333;
-	g = (double)(lp->Green + cp->Green + rp->Green) * 0.333333333333333;
-	b = (double)(lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
-	a = (double)(lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
-	hold = *lp;
-	dp->Red = (unsigned char)CLAMP(r);
-	dp->Green = (unsigned char)CLAMP(g);
-	dp->Blue = (unsigned char)CLAMP(b);
-	dp->Alpha = (unsigned char)CLAMP(a);
-	dp++, cp++, rp++;
+        dp = destRowPtr;
+        cp = lp = srcRowPtr, rp = srcRowPtr + 1;
+        r = (double)(lp->Red + cp->Red + rp->Red) * 0.333333333333333;
+        g = (double)(lp->Green + cp->Green + rp->Green) * 0.333333333333333;
+        b = (double)(lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
+        a = (double)(lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
+        hold = *lp;
+        dp->Red = (unsigned char)CLAMP(r);
+        dp->Green = (unsigned char)CLAMP(g);
+        dp->Blue = (unsigned char)CLAMP(b);
+        dp->Alpha = (unsigned char)CLAMP(a);
+        dp++, cp++, rp++;
 
-	for (send = srcRowPtr + srcPtr->width; rp < send; rp++, cp++, lp++) {
-	    r = (double)(lp->Red + cp->Red + rp->Red) * 0.333333333333333;
-	    g = (double)(lp->Green + cp->Green + rp->Green) * 0.333333333333333;
-	    b = (double)(lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
-	    a = (double)(lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
-	    dp->Red = (unsigned char)CLAMP(r);
-	    dp->Green = (unsigned char)CLAMP(g);
-	    dp->Blue = (unsigned char)CLAMP(b);
-	    dp->Alpha = (unsigned char)CLAMP(a);
-	    hold = *lp;
-	    dp++;
-	}
+        for (send = srcRowPtr + srcPtr->width; rp < send; rp++, cp++, lp++) {
+            r = (double)(lp->Red + cp->Red + rp->Red) * 0.333333333333333;
+            g = (double)(lp->Green + cp->Green + rp->Green) * 0.333333333333333;
+            b = (double)(lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
+            a = (double)(lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
+            dp->Red = (unsigned char)CLAMP(r);
+            dp->Green = (unsigned char)CLAMP(g);
+            dp->Blue = (unsigned char)CLAMP(b);
+            dp->Alpha = (unsigned char)CLAMP(a);
+            hold = *lp;
+            dp++;
+        }
 
-	rp = cp;
-	r = (double)(lp->Red + cp->Red + rp->Red) * 0.333333333333333;
-	g = (double)(lp->Green + cp->Green + rp->Green) * 0.333333333333333;
-	b = (double)(lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
-	a = (double)(lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
-	dp->Red = (unsigned char)CLAMP(r);
-	dp->Green = (unsigned char)CLAMP(g);
-	dp->Blue = (unsigned char)CLAMP(b);
-	dp->Alpha = (unsigned char)CLAMP(a);
+        rp = cp;
+        r = (double)(lp->Red + cp->Red + rp->Red) * 0.333333333333333;
+        g = (double)(lp->Green + cp->Green + rp->Green) * 0.333333333333333;
+        b = (double)(lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
+        a = (double)(lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
+        dp->Red = (unsigned char)CLAMP(r);
+        dp->Green = (unsigned char)CLAMP(g);
+        dp->Blue = (unsigned char)CLAMP(b);
+        dp->Alpha = (unsigned char)CLAMP(a);
 
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
 }
     
@@ -4801,51 +4801,51 @@ BoxY(Pict *destPtr, Pict *srcPtr)
     srcColPtr = srcPtr->bits;
     destColumnPtr = destPtr->bits;
     for (x = 0; x < srcPtr->width; x++) {
-	Blt_Pixel *dp, *rp, *lp, *cp, *send;
-	double r, g, b, a;
-	Blt_Pixel hold;
+        Blt_Pixel *dp, *rp, *lp, *cp, *send;
+        double r, g, b, a;
+        Blt_Pixel hold;
 
-	dp = destColumnPtr;
-	cp = lp = srcColPtr, rp = srcColPtr + srcPtr->pixelsPerRow;
-	r = (lp->Red + cp->Red + rp->Red) * 0.333333333333333;
-	g = (lp->Green + cp->Green + rp->Green) * 0.333333333333333;
-	b = (lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
-	a = (lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
-	hold = *lp;
-	dp->Red = (unsigned char)CLAMP(r);
-	dp->Green = (unsigned char)CLAMP(g);
-	dp->Blue = (unsigned char)CLAMP(b);
-	dp->Alpha = (unsigned char)CLAMP(a);
-	dp += destPtr->pixelsPerRow;
-	cp += srcPtr->pixelsPerRow;
-	rp += srcPtr->pixelsPerRow;
+        dp = destColumnPtr;
+        cp = lp = srcColPtr, rp = srcColPtr + srcPtr->pixelsPerRow;
+        r = (lp->Red + cp->Red + rp->Red) * 0.333333333333333;
+        g = (lp->Green + cp->Green + rp->Green) * 0.333333333333333;
+        b = (lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
+        a = (lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
+        hold = *lp;
+        dp->Red = (unsigned char)CLAMP(r);
+        dp->Green = (unsigned char)CLAMP(g);
+        dp->Blue = (unsigned char)CLAMP(b);
+        dp->Alpha = (unsigned char)CLAMP(a);
+        dp += destPtr->pixelsPerRow;
+        cp += srcPtr->pixelsPerRow;
+        rp += srcPtr->pixelsPerRow;
 
-	for (send = srcColPtr + (srcPtr->height * srcPtr->pixelsPerRow); 
-	     rp < send; /* empty */) {
-	    r = (lp->Red + cp->Red + rp->Red) * 0.333333333333333;
-	    g = (lp->Green + cp->Green + rp->Green) * 0.333333333333333;
-	    b = (lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
-	    a = (lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
-	    hold = *lp;
-	    dp->Red = (unsigned char)CLAMP(r);
-	    dp->Green = (unsigned char)CLAMP(g);
-	    dp->Blue = (unsigned char)CLAMP(b);
-	    dp->Alpha = (unsigned char)CLAMP(a);
-	    dp += destPtr->pixelsPerRow;
-	    rp += srcPtr->pixelsPerRow;
-	    lp += srcPtr->pixelsPerRow; 
-	    cp += srcPtr->pixelsPerRow;
-	}	
-	rp = cp;
-	r = (lp->Red + cp->Red + rp->Red) * 0.333333333333333;
-	g = (lp->Green + cp->Green + rp->Green) * 0.333333333333333;
-	b = (lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
-	a = (lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
-	dp->Red = (unsigned char)CLAMP(r);
-	dp->Green = (unsigned char)CLAMP(g);
-	dp->Blue = (unsigned char)CLAMP(b);
-	dp->Alpha = (unsigned char)CLAMP(a);
-	srcColPtr++, destColumnPtr++;
+        for (send = srcColPtr + (srcPtr->height * srcPtr->pixelsPerRow); 
+             rp < send; /* empty */) {
+            r = (lp->Red + cp->Red + rp->Red) * 0.333333333333333;
+            g = (lp->Green + cp->Green + rp->Green) * 0.333333333333333;
+            b = (lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
+            a = (lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
+            hold = *lp;
+            dp->Red = (unsigned char)CLAMP(r);
+            dp->Green = (unsigned char)CLAMP(g);
+            dp->Blue = (unsigned char)CLAMP(b);
+            dp->Alpha = (unsigned char)CLAMP(a);
+            dp += destPtr->pixelsPerRow;
+            rp += srcPtr->pixelsPerRow;
+            lp += srcPtr->pixelsPerRow; 
+            cp += srcPtr->pixelsPerRow;
+        }       
+        rp = cp;
+        r = (lp->Red + cp->Red + rp->Red) * 0.333333333333333;
+        g = (lp->Green + cp->Green + rp->Green) * 0.333333333333333;
+        b = (lp->Blue + cp->Blue + rp->Blue) * 0.333333333333333;
+        a = (lp->Alpha + cp->Alpha + rp->Alpha) * 0.333333333333333;
+        dp->Red = (unsigned char)CLAMP(r);
+        dp->Green = (unsigned char)CLAMP(g);
+        dp->Blue = (unsigned char)CLAMP(b);
+        dp->Alpha = (unsigned char)CLAMP(a);
+        srcColPtr++, destColumnPtr++;
     }
 }
 #endif
@@ -4859,38 +4859,38 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
     srcRowPtr = srcPtr->bits;
     destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel left, center, right;
-	Blt_Pixel *dp, *sp, *send;
+        Blt_Pixel left, center, right;
+        Blt_Pixel *dp, *sp, *send;
 
-	dp = destRowPtr;
-	sp = srcRowPtr + 1;
-	left = *srcRowPtr, center = left, right = *sp;
-	dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
-	dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
-	dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
-	dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
-	center = right;
-	dp++, sp++;
+        dp = destRowPtr;
+        sp = srcRowPtr + 1;
+        left = *srcRowPtr, center = left, right = *sp;
+        dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
+        dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
+        dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
+        dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
+        center = right;
+        dp++, sp++;
 
-	for (send = srcRowPtr + srcPtr->width; sp < send; /*empty*/) {
-	    right = *sp;
-	    dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
-	    dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
-	    dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
-	    dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
-	    left = center;
-	    center = right;
-	    dp++, sp++;
-	}
+        for (send = srcRowPtr + srcPtr->width; sp < send; /*empty*/) {
+            right = *sp;
+            dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
+            dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
+            dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
+            dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
+            left = center;
+            center = right;
+            dp++, sp++;
+        }
 
-	right = center;
-	dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
-	dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
-	dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
-	dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
+        right = center;
+        dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
+        dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
+        dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
+        dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
 
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
     return;
 }
@@ -4904,174 +4904,174 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
     srcColPtr = srcPtr->bits;
     destColumnPtr = destPtr->bits;
     for (x = 0; x < srcPtr->width; x++) {
-	Blt_Pixel left, center, right;
-	Blt_Pixel *dp, *sp, *send;
+        Blt_Pixel left, center, right;
+        Blt_Pixel *dp, *sp, *send;
 
-	dp = destColumnPtr;
-	sp = srcColPtr + srcPtr->pixelsPerRow;
-	left = *srcColPtr, center = left, right = *sp;
-	dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
-	dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
-	dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
-	dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
-	center = right;
-	dp += destPtr->pixelsPerRow;
-	sp += srcPtr->pixelsPerRow;
+        dp = destColumnPtr;
+        sp = srcColPtr + srcPtr->pixelsPerRow;
+        left = *srcColPtr, center = left, right = *sp;
+        dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
+        dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
+        dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
+        dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
+        center = right;
+        dp += destPtr->pixelsPerRow;
+        sp += srcPtr->pixelsPerRow;
 
-	for (send = srcColPtr + (srcPtr->height * srcPtr->pixelsPerRow); 
-	     sp < send; /* empty */) {
-	    right = *sp;
-	    dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
-	    dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
-	    dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
-	    dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
-	    left = center;
-	    center = right;
-	    dp += destPtr->pixelsPerRow;
-	    sp += srcPtr->pixelsPerRow;
-	}	
-	right = center;
-	dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
-	dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
-	dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
-	dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
+        for (send = srcColPtr + (srcPtr->height * srcPtr->pixelsPerRow); 
+             sp < send; /* empty */) {
+            right = *sp;
+            dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
+            dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
+            dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
+            dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
+            left = center;
+            center = right;
+            dp += destPtr->pixelsPerRow;
+            sp += srcPtr->pixelsPerRow;
+        }       
+        right = center;
+        dp->Red = (left.Red + (center.Red << 1) + right.Red) >> 2;
+        dp->Green = (left.Green + (center.Green << 1) + right.Green) >> 2;
+        dp->Blue = (left.Blue + (center.Blue << 1) + right.Blue) >> 2;
+        dp->Alpha = (left.Alpha + (center.Alpha << 1) + right.Alpha) >> 2;
 
-	srcColPtr++, destColumnPtr++;
+        srcColPtr++, destColumnPtr++;
     }
 }
 
 static void
 ApplyPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, 
-		      int w, int h, int dx, int dy, Blt_PictureArithOps op)
+                      int w, int h, int dx, int dy, Blt_PictureArithOps op)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
 
     if ((x + w) > srcPtr->width) {
-	w -= srcPtr->width - x;
+        w -= srcPtr->width - x;
     }
     if ((y + h) > srcPtr->height) {
-	h -= srcPtr->height - y;
+        h -= srcPtr->height - y;
     }
     if ((dx + w) > destPtr->width) {
-	w -= destPtr->width - dx;
+        w -= destPtr->width - dx;
     }
     if ((dy + h) > destPtr->height) {
-	h -= destPtr->height - dy;
+        h -= destPtr->height - dy;
     }
     srcRowPtr = srcPtr->bits + (srcPtr->pixelsPerRow * y) + x;
     destRowPtr = destPtr->bits + (destPtr->pixelsPerRow * dy) + dx;
     for (y = 0; y < h; y++) {
-	Blt_Pixel *sp, *dp, *dend;
-	
-	sp = srcRowPtr;
-	dp = destRowPtr, dend = dp + w;
-	switch(op) {
+        Blt_Pixel *sp, *dp, *dend;
+        
+        sp = srcRowPtr;
+        dp = destRowPtr, dend = dp + w;
+        switch(op) {
 
-	case PIC_ARITH_ADD:
-	    while (dp < dend) {
-		int i;
-		i = dp->Red + sp->Red;
-		dp->Red = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		i = dp->Green + sp->Green;
-		dp->Green = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		i = dp->Blue + sp->Blue;
-		dp->Blue =  (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		i = dp->Alpha + sp->Alpha;
-		dp->Alpha = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		sp++, dp++;
-	    }
-	    break;
-	    
-	case PIC_ARITH_SUB:
-	    while (dp < dend) {
-		int i;
+        case PIC_ARITH_ADD:
+            while (dp < dend) {
+                int i;
+                i = dp->Red + sp->Red;
+                dp->Red = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                i = dp->Green + sp->Green;
+                dp->Green = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                i = dp->Blue + sp->Blue;
+                dp->Blue =  (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                i = dp->Alpha + sp->Alpha;
+                dp->Alpha = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                sp++, dp++;
+            }
+            break;
+            
+        case PIC_ARITH_SUB:
+            while (dp < dend) {
+                int i;
 
-		i = dp->Red - sp->Red;
-		dp->Red =   (i < 0) ? 0 : i;
-		i = dp->Green - sp->Green;
-		dp->Green = (i < 0) ? 0 : i;
-		i = dp->Blue - sp->Blue;
-		dp->Blue =  (i < 0) ? 0 : i;
-		i = dp->Alpha - sp->Alpha;
-		dp->Alpha = (i < 0) ? 0 : i;
-		sp++, dp++;
-	    }
-	    break;
+                i = dp->Red - sp->Red;
+                dp->Red =   (i < 0) ? 0 : i;
+                i = dp->Green - sp->Green;
+                dp->Green = (i < 0) ? 0 : i;
+                i = dp->Blue - sp->Blue;
+                dp->Blue =  (i < 0) ? 0 : i;
+                i = dp->Alpha - sp->Alpha;
+                dp->Alpha = (i < 0) ? 0 : i;
+                sp++, dp++;
+            }
+            break;
 
-	case PIC_ARITH_RSUB:
-	    while (dp < dend) {
-		int i;
+        case PIC_ARITH_RSUB:
+            while (dp < dend) {
+                int i;
 
-		i = sp->Red - dp->Red;
-		dp->Red =   (i < 0) ? 0 : i;
-		i = sp->Green - dp->Green;
-		dp->Green = (i < 0) ? 0 : i;
-		i = sp->Blue - dp->Blue;
-		dp->Blue =  (i < 0) ? 0 : i;
-		i = sp->Alpha - dp->Alpha;
-		dp->Alpha = (i < 0) ? 0 : i;
-		sp++, dp++;
-	    }
-	    break;
+                i = sp->Red - dp->Red;
+                dp->Red =   (i < 0) ? 0 : i;
+                i = sp->Green - dp->Green;
+                dp->Green = (i < 0) ? 0 : i;
+                i = sp->Blue - dp->Blue;
+                dp->Blue =  (i < 0) ? 0 : i;
+                i = sp->Alpha - dp->Alpha;
+                dp->Alpha = (i < 0) ? 0 : i;
+                sp++, dp++;
+            }
+            break;
 
-	case PIC_ARITH_AND:
-	    while (dp < dend) {
-		dp->u32 &= sp->u32;
-		sp++, dp++;
-	    }
-	    break;
+        case PIC_ARITH_AND:
+            while (dp < dend) {
+                dp->u32 &= sp->u32;
+                sp++, dp++;
+            }
+            break;
 
-	case PIC_ARITH_OR:
-	    while (dp < dend) {
-		dp->u32 |= sp->u32;
-		sp++, dp++;
-	    }
-	    break;
+        case PIC_ARITH_OR:
+            while (dp < dend) {
+                dp->u32 |= sp->u32;
+                sp++, dp++;
+            }
+            break;
 
-	case PIC_ARITH_XOR:
-	    while (dp < dend) {
-		dp->u32 ^= sp->u32;
-		sp++, dp++;
-	    }
-	    break;
+        case PIC_ARITH_XOR:
+            while (dp < dend) {
+                dp->u32 ^= sp->u32;
+                sp++, dp++;
+            }
+            break;
 
-	case PIC_ARITH_NAND:
-	    while (dp < dend) {
-		dp->u32 = ~(dp->u32 & sp->u32);
-		sp++, dp++;
-	    }
-	    break;
+        case PIC_ARITH_NAND:
+            while (dp < dend) {
+                dp->u32 = ~(dp->u32 & sp->u32);
+                sp++, dp++;
+            }
+            break;
 
-	case PIC_ARITH_NOR:
-	    while (dp < dend) {
-		dp->u32 = ~(dp->u32 | sp->u32);
-		sp++, dp++;
-	    }
-	    break;
+        case PIC_ARITH_NOR:
+            while (dp < dend) {
+                dp->u32 = ~(dp->u32 | sp->u32);
+                sp++, dp++;
+            }
+            break;
 
-	case PIC_ARITH_MIN:
-	    while (dp < dend) {
-		dp->Red = MIN(dp->Red, sp->Red);
-		dp->Green = MIN(dp->Green, sp->Green);
-		dp->Blue = MIN(dp->Blue, sp->Blue);
-		dp->Alpha = MIN(dp->Alpha, sp->Alpha);
-		sp++, dp++;
-	    }
-	    break;
+        case PIC_ARITH_MIN:
+            while (dp < dend) {
+                dp->Red = MIN(dp->Red, sp->Red);
+                dp->Green = MIN(dp->Green, sp->Green);
+                dp->Blue = MIN(dp->Blue, sp->Blue);
+                dp->Alpha = MIN(dp->Alpha, sp->Alpha);
+                sp++, dp++;
+            }
+            break;
 
-	case PIC_ARITH_MAX:
-	    while (dp < dend) {
-		dp->Red = MAX(dp->Red, sp->Red);
-		dp->Green = MAX(dp->Green, sp->Green);
-		dp->Blue = MAX(dp->Blue, sp->Blue);
-		dp->Alpha = MAX(dp->Alpha, sp->Alpha);
-		sp++, dp++;
-	    }
-	    break;
+        case PIC_ARITH_MAX:
+            while (dp < dend) {
+                dp->Red = MAX(dp->Red, sp->Red);
+                dp->Green = MAX(dp->Green, sp->Green);
+                dp->Blue = MAX(dp->Blue, sp->Blue);
+                dp->Alpha = MAX(dp->Alpha, sp->Alpha);
+                sp++, dp++;
+            }
+            break;
 
-	}
-	destRowPtr += destPtr->pixelsPerRow;
-	srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        destRowPtr += destPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
 }
 
@@ -5083,16 +5083,16 @@ Blt_ApplyColorToPicture(Pict *srcPtr, Blt_Pixel *colorPtr)
     
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *send;
-	
-	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-	    if (sp->Alpha != 0x0) {
-		sp->Red = colorPtr->Red;
-		sp->Green = colorPtr->Green;
-		sp->Blue = colorPtr->Blue;
-	    }
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+        Blt_Pixel *sp, *send;
+        
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            if (sp->Alpha != 0x0) {
+                sp->Red = colorPtr->Red;
+                sp->Green = colorPtr->Green;
+                sp->Blue = colorPtr->Blue;
+            }
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
 }
 
@@ -5104,284 +5104,284 @@ ApplyScalarToPicture(Pict *srcPtr, Blt_Pixel *colorPtr, Blt_PictureArithOps op)
     
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *send;
-	
-	sp = srcRowPtr;
-	send = sp + srcPtr->width;
-	switch(op) {
-	    
-	case PIC_ARITH_ADD:
-	    while (sp < send) {
-		int i;
-		
-		i = sp->Red + colorPtr->Red;
-		sp->Red = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		i = sp->Green + colorPtr->Green;
-		sp->Green = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		i = sp->Blue + colorPtr->Blue;
-		sp->Blue =  (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		i = sp->Alpha + colorPtr->Alpha;
-		sp->Alpha = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		sp++;
-	    }
-	    break;
+        Blt_Pixel *sp, *send;
+        
+        sp = srcRowPtr;
+        send = sp + srcPtr->width;
+        switch(op) {
+            
+        case PIC_ARITH_ADD:
+            while (sp < send) {
+                int i;
+                
+                i = sp->Red + colorPtr->Red;
+                sp->Red = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                i = sp->Green + colorPtr->Green;
+                sp->Green = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                i = sp->Blue + colorPtr->Blue;
+                sp->Blue =  (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                i = sp->Alpha + colorPtr->Alpha;
+                sp->Alpha = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                sp++;
+            }
+            break;
 
-	case PIC_ARITH_SUB:
-	    while (sp < send) {
-		int i;
+        case PIC_ARITH_SUB:
+            while (sp < send) {
+                int i;
 
-		i = sp->Red - colorPtr->Red;
-		sp->Red =   (i < 0) ? 0 : i;
-		i = sp->Green - colorPtr->Green;
-		sp->Green = (i < 0) ? 0 : i;
-		i = sp->Blue - colorPtr->Blue;
-		sp->Blue =  (i < 0) ? 0 : i;
-		i = sp->Alpha - colorPtr->Alpha;
-		sp->Alpha = (i < 0) ? 0 : i;
-		sp++;
-	    }
-	    break;
+                i = sp->Red - colorPtr->Red;
+                sp->Red =   (i < 0) ? 0 : i;
+                i = sp->Green - colorPtr->Green;
+                sp->Green = (i < 0) ? 0 : i;
+                i = sp->Blue - colorPtr->Blue;
+                sp->Blue =  (i < 0) ? 0 : i;
+                i = sp->Alpha - colorPtr->Alpha;
+                sp->Alpha = (i < 0) ? 0 : i;
+                sp++;
+            }
+            break;
 
-	case PIC_ARITH_RSUB:
-	    while (sp < send) {
-		int i;
+        case PIC_ARITH_RSUB:
+            while (sp < send) {
+                int i;
 
-		i = colorPtr->Red - sp->Red;
-		sp->Red =   (i < 0) ? 0 : i;
-		i = colorPtr->Green - sp->Green;
-		sp->Green = (i < 0) ? 0 : i;
-		i = colorPtr->Blue - sp->Blue;
-		sp->Blue =  (i < 0) ? 0 : i;
-		i = colorPtr->Alpha - sp->Alpha;
-		sp->Alpha = (i < 0) ? 0 : i;
-		sp++;
-	    }
-	    break;
+                i = colorPtr->Red - sp->Red;
+                sp->Red =   (i < 0) ? 0 : i;
+                i = colorPtr->Green - sp->Green;
+                sp->Green = (i < 0) ? 0 : i;
+                i = colorPtr->Blue - sp->Blue;
+                sp->Blue =  (i < 0) ? 0 : i;
+                i = colorPtr->Alpha - sp->Alpha;
+                sp->Alpha = (i < 0) ? 0 : i;
+                sp++;
+            }
+            break;
 
-	case PIC_ARITH_AND:
-	    while (sp < send) {
-		sp->u32 &= colorPtr->u32;
-		sp++;
-	    }
-	    break;
+        case PIC_ARITH_AND:
+            while (sp < send) {
+                sp->u32 &= colorPtr->u32;
+                sp++;
+            }
+            break;
 
-	case PIC_ARITH_OR:
-	    while (sp < send) {
-		sp->u32 |= colorPtr->u32;
-		sp++;
-	    }
-	    break;
+        case PIC_ARITH_OR:
+            while (sp < send) {
+                sp->u32 |= colorPtr->u32;
+                sp++;
+            }
+            break;
 
-	case PIC_ARITH_XOR:
-	    while (sp < send) {
-		sp->u32 ^= colorPtr->u32;
-		sp++;
-	    }
-	    break;
+        case PIC_ARITH_XOR:
+            while (sp < send) {
+                sp->u32 ^= colorPtr->u32;
+                sp++;
+            }
+            break;
 
-	case PIC_ARITH_NAND:
-	    while (sp < send) {
-		sp->u32 = ~(sp->u32 & colorPtr->u32);
-		sp++;
-	    }
-	    break;
+        case PIC_ARITH_NAND:
+            while (sp < send) {
+                sp->u32 = ~(sp->u32 & colorPtr->u32);
+                sp++;
+            }
+            break;
 
-	case PIC_ARITH_NOR:
-	    while (sp < send) {
-		sp->u32 = ~(sp->u32 | colorPtr->u32);
-		sp++;
-	    }
-	    break;
+        case PIC_ARITH_NOR:
+            while (sp < send) {
+                sp->u32 = ~(sp->u32 | colorPtr->u32);
+                sp++;
+            }
+            break;
 
-	case PIC_ARITH_MIN:
-	    while (sp < send) {
-		sp->Red = MIN(sp->Red, colorPtr->Red);
-		sp->Green = MIN(sp->Green, colorPtr->Green);
-		sp->Blue = MIN(sp->Blue, colorPtr->Blue);
-		sp->Alpha = MIN(sp->Alpha, colorPtr->Alpha);
-		sp++;
-	    }
-	    break;
-	case PIC_ARITH_MAX:
-	    while (sp < send) {
-		sp->Red = MAX(sp->Red, colorPtr->Red);
-		sp->Green = MAX(sp->Green, colorPtr->Green);
-		sp->Blue = MAX(sp->Blue, colorPtr->Blue);
-		sp->Alpha = MAX(sp->Alpha, colorPtr->Alpha);
-		sp++;
-	    }
-	    break;
+        case PIC_ARITH_MIN:
+            while (sp < send) {
+                sp->Red = MIN(sp->Red, colorPtr->Red);
+                sp->Green = MIN(sp->Green, colorPtr->Green);
+                sp->Blue = MIN(sp->Blue, colorPtr->Blue);
+                sp->Alpha = MIN(sp->Alpha, colorPtr->Alpha);
+                sp++;
+            }
+            break;
+        case PIC_ARITH_MAX:
+            while (sp < send) {
+                sp->Red = MAX(sp->Red, colorPtr->Red);
+                sp->Green = MAX(sp->Green, colorPtr->Green);
+                sp->Blue = MAX(sp->Blue, colorPtr->Blue);
+                sp->Alpha = MAX(sp->Alpha, colorPtr->Alpha);
+                sp++;
+            }
+            break;
 
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
 }
 
 
 static void
 ApplyPictureToPictureWithMask(Pict *destPtr, Pict *srcPtr, Pict *maskPtr, 
-			      int x, int y, int w, int h, int dx, int dy, 
-			      int invert, Blt_PictureArithOps op)
+                              int x, int y, int w, int h, int dx, int dy, 
+                              int invert, Blt_PictureArithOps op)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr, *maskRowPtr;
     unsigned int off;
 
     if ((x + w) > srcPtr->width) {
-	w -= srcPtr->width - x;
+        w -= srcPtr->width - x;
     }
     if ((y + h) > srcPtr->height) {
-	h -= srcPtr->height - y;
+        h -= srcPtr->height - y;
     }
     if ((dx + w) > destPtr->width) {
-	w -= destPtr->width - dx;
+        w -= destPtr->width - dx;
     }
     if ((dy + h) > destPtr->height) {
-	h -= destPtr->height - dy;
+        h -= destPtr->height - dy;
     }
     off = (invert) ? (unsigned int)-1 : 0;
     maskRowPtr = maskPtr->bits;
     srcRowPtr = srcPtr->bits + (srcPtr->pixelsPerRow * y) + x;
     destRowPtr = destPtr->bits + (destPtr->pixelsPerRow * dy) + dx;
     for (y = 0; y < h; y++) {
-	Blt_Pixel *sp, *dp, *mp, *mend;
-	
-	sp = srcRowPtr, dp = destRowPtr;
-	mp = maskRowPtr, mend = mp + w;
-	switch(op) {
+        Blt_Pixel *sp, *dp, *mp, *mend;
+        
+        sp = srcRowPtr, dp = destRowPtr;
+        mp = maskRowPtr, mend = mp + w;
+        switch(op) {
 
-	case PIC_ARITH_ADD:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    int i;
+        case PIC_ARITH_ADD:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    int i;
 
-		    i = dp->Red + sp->Red;
-		    dp->Red = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		    i = dp->Green + sp->Green;
-		    dp->Green = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		    i = dp->Blue + sp->Blue;
-		    dp->Blue =  (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		    i = dp->Alpha + sp->Alpha;
-		    dp->Alpha = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-	    
-	case PIC_ARITH_SUB:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    int i;
-		    
-		    i = dp->Red - sp->Red;
-		    dp->Red =   (i < 0) ? 0 : i;
-		    i = dp->Green - sp->Green;
-		    dp->Green = (i < 0) ? 0 : i;
-		    i = dp->Blue - sp->Blue;
-		    dp->Blue =  (i < 0) ? 0 : i;
-		    i = dp->Alpha - sp->Alpha;
-		    dp->Alpha = (i < 0) ? 0 : i;
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-	    
-	case PIC_ARITH_RSUB:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    int i;
-		    
-		    i = sp->Red - dp->Red;
-		    dp->Red =   (i < 0) ? 0 : i;
-		    i = sp->Green - dp->Green;
-		    dp->Green = (i < 0) ? 0 : i;
-		    i = sp->Blue - dp->Blue;
-		    dp->Blue =  (i < 0) ? 0 : i;
-		    i = sp->Alpha - dp->Alpha;
-		    dp->Alpha = (i < 0) ? 0 : i;
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
+                    i = dp->Red + sp->Red;
+                    dp->Red = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                    i = dp->Green + sp->Green;
+                    dp->Green = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                    i = dp->Blue + sp->Blue;
+                    dp->Blue =  (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                    i = dp->Alpha + sp->Alpha;
+                    dp->Alpha = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+            
+        case PIC_ARITH_SUB:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    int i;
+                    
+                    i = dp->Red - sp->Red;
+                    dp->Red =   (i < 0) ? 0 : i;
+                    i = dp->Green - sp->Green;
+                    dp->Green = (i < 0) ? 0 : i;
+                    i = dp->Blue - sp->Blue;
+                    dp->Blue =  (i < 0) ? 0 : i;
+                    i = dp->Alpha - sp->Alpha;
+                    dp->Alpha = (i < 0) ? 0 : i;
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+            
+        case PIC_ARITH_RSUB:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    int i;
+                    
+                    i = sp->Red - dp->Red;
+                    dp->Red =   (i < 0) ? 0 : i;
+                    i = sp->Green - dp->Green;
+                    dp->Green = (i < 0) ? 0 : i;
+                    i = sp->Blue - dp->Blue;
+                    dp->Blue =  (i < 0) ? 0 : i;
+                    i = sp->Alpha - dp->Alpha;
+                    dp->Alpha = (i < 0) ? 0 : i;
+                }
+                sp++, dp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_AND:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    dp->u32 &= sp->u32;
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-	    
-	case PIC_ARITH_OR:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    dp->u32 |= sp->u32;
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-		
-	case PIC_ARITH_XOR:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    dp->u32 ^= sp->u32;
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-	    
-	case PIC_ARITH_NAND:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    dp->u32 = ~(dp->u32 & sp->u32);
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-	    
-	case PIC_ARITH_NOR:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    dp->u32 = ~(dp->u32 | sp->u32);
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-	    
-	case PIC_ARITH_MIN:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    dp->Red = MIN(dp->Red, sp->Red);
-		    dp->Green = MIN(dp->Green, sp->Green);
-		    dp->Blue = MIN(dp->Blue, sp->Blue);
-		    dp->Alpha = MIN(dp->Alpha, sp->Alpha);
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-	    
-	case PIC_ARITH_MAX:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    dp->Red = MAX(dp->Red, sp->Red);
-		    dp->Green = MAX(dp->Green, sp->Green);
-		    dp->Blue = MAX(dp->Blue, sp->Blue);
-		    dp->Alpha = MAX(dp->Alpha, sp->Alpha);
-		}
-		sp++, dp++, mp++;
-	    }
-	    break;
-	    
-	}
-	destRowPtr += destPtr->pixelsPerRow;
-	srcRowPtr += srcPtr->pixelsPerRow;
-	maskRowPtr += maskPtr->pixelsPerRow;
+        case PIC_ARITH_AND:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    dp->u32 &= sp->u32;
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+            
+        case PIC_ARITH_OR:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    dp->u32 |= sp->u32;
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+                
+        case PIC_ARITH_XOR:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    dp->u32 ^= sp->u32;
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+            
+        case PIC_ARITH_NAND:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    dp->u32 = ~(dp->u32 & sp->u32);
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+            
+        case PIC_ARITH_NOR:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    dp->u32 = ~(dp->u32 | sp->u32);
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+            
+        case PIC_ARITH_MIN:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    dp->Red = MIN(dp->Red, sp->Red);
+                    dp->Green = MIN(dp->Green, sp->Green);
+                    dp->Blue = MIN(dp->Blue, sp->Blue);
+                    dp->Alpha = MIN(dp->Alpha, sp->Alpha);
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+            
+        case PIC_ARITH_MAX:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    dp->Red = MAX(dp->Red, sp->Red);
+                    dp->Green = MAX(dp->Green, sp->Green);
+                    dp->Blue = MAX(dp->Blue, sp->Blue);
+                    dp->Alpha = MAX(dp->Alpha, sp->Alpha);
+                }
+                sp++, dp++, mp++;
+            }
+            break;
+            
+        }
+        destRowPtr += destPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow;
+        maskRowPtr += maskPtr->pixelsPerRow;
     }
 }
 
 static void
 ApplyScalarToPictureWithMask(Pict *srcPtr, Blt_Pixel *colorPtr, Pict *maskPtr, 
-			     int invert, Blt_PictureArithOps op)
+                             int invert, Blt_PictureArithOps op)
 {
     Blt_Pixel *srcRowPtr, *maskRowPtr;
     int width, height;
@@ -5394,137 +5394,137 @@ ApplyScalarToPictureWithMask(Pict *srcPtr, Blt_Pixel *colorPtr, Pict *maskPtr,
     maskRowPtr = maskPtr->bits;
     off = (invert) ? (unsigned int)-1 : 0;
     for (y = 0; y < height; y++) {
-	Blt_Pixel *sp, *mp, *mend;
-	
-	sp = srcRowPtr;
-	mp = maskRowPtr, mend = mp + width;
-	switch(op) {
+        Blt_Pixel *sp, *mp, *mend;
+        
+        sp = srcRowPtr;
+        mp = maskRowPtr, mend = mp + width;
+        switch(op) {
 
-	case PIC_ARITH_ADD:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    int i;
-		    
-		    i = sp->Red + colorPtr->Red;
-		    sp->Red = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		    i = sp->Green + colorPtr->Green;
-		    sp->Green = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		    i = sp->Blue + colorPtr->Blue;
-		    sp->Blue =  (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		    i = sp->Alpha + colorPtr->Alpha;
-		    sp->Alpha = (i > MAXINTENSITY) ? MAXINTENSITY : i;
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_ADD:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    int i;
+                    
+                    i = sp->Red + colorPtr->Red;
+                    sp->Red = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                    i = sp->Green + colorPtr->Green;
+                    sp->Green = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                    i = sp->Blue + colorPtr->Blue;
+                    sp->Blue =  (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                    i = sp->Alpha + colorPtr->Alpha;
+                    sp->Alpha = (i > MAXINTENSITY) ? MAXINTENSITY : i;
+                }
+                sp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_SUB:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    int i;
-		    
-		    i = sp->Red - colorPtr->Red;
-		    sp->Red =   (i < 0) ? 0 : i;
-		    i = sp->Green - colorPtr->Green;
-		    sp->Green = (i < 0) ? 0 : i;
-		    i = sp->Blue - colorPtr->Blue;
-		    sp->Blue =  (i < 0) ? 0 : i;
-		    i = sp->Alpha - colorPtr->Alpha;
-		    sp->Alpha = (i < 0) ? 0 : i;
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_SUB:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    int i;
+                    
+                    i = sp->Red - colorPtr->Red;
+                    sp->Red =   (i < 0) ? 0 : i;
+                    i = sp->Green - colorPtr->Green;
+                    sp->Green = (i < 0) ? 0 : i;
+                    i = sp->Blue - colorPtr->Blue;
+                    sp->Blue =  (i < 0) ? 0 : i;
+                    i = sp->Alpha - colorPtr->Alpha;
+                    sp->Alpha = (i < 0) ? 0 : i;
+                }
+                sp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_RSUB:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    int i;
-		    
-		    i = colorPtr->Red - sp->Red;
-		    sp->Red =   (i < 0) ? 0 : i;
-		    i = colorPtr->Green - sp->Green;
-		    sp->Green = (i < 0) ? 0 : i;
-		    i = colorPtr->Blue - sp->Blue;
-		    sp->Blue =  (i < 0) ? 0 : i;
-		    i = colorPtr->Alpha - sp->Alpha;
-		    sp->Alpha = (i < 0) ? 0 : i;
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_RSUB:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    int i;
+                    
+                    i = colorPtr->Red - sp->Red;
+                    sp->Red =   (i < 0) ? 0 : i;
+                    i = colorPtr->Green - sp->Green;
+                    sp->Green = (i < 0) ? 0 : i;
+                    i = colorPtr->Blue - sp->Blue;
+                    sp->Blue =  (i < 0) ? 0 : i;
+                    i = colorPtr->Alpha - sp->Alpha;
+                    sp->Alpha = (i < 0) ? 0 : i;
+                }
+                sp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_AND:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    sp->u32 &= colorPtr->u32;
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_AND:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    sp->u32 &= colorPtr->u32;
+                }
+                sp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_OR:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    sp->u32 |= colorPtr->u32;
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_OR:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    sp->u32 |= colorPtr->u32;
+                }
+                sp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_XOR:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    sp->u32 ^= colorPtr->u32;
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_XOR:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    sp->u32 ^= colorPtr->u32;
+                }
+                sp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_NAND:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    sp->u32 = ~(sp->u32 & colorPtr->u32);
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_NAND:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    sp->u32 = ~(sp->u32 & colorPtr->u32);
+                }
+                sp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_NOR:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    sp->u32 = ~(sp->u32 | colorPtr->u32);
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_NOR:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    sp->u32 = ~(sp->u32 | colorPtr->u32);
+                }
+                sp++, mp++;
+            }
+            break;
 
-	case PIC_ARITH_MIN:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    sp->Red = MIN(sp->Red, colorPtr->Red);
-		    sp->Green = MIN(sp->Green, colorPtr->Green);
-		    sp->Blue = MIN(sp->Blue, colorPtr->Blue);
-		    sp->Alpha = MIN(sp->Alpha, colorPtr->Alpha);
-		}
-		sp++, mp++;
-	    }
-	    break;
-	case PIC_ARITH_MAX:
-	    while (mp < mend) {
-		if (mp->u32 != off) {
-		    sp->Red = MAX(sp->Red, colorPtr->Red);
-		    sp->Green = MAX(sp->Green, colorPtr->Green);
-		    sp->Blue = MAX(sp->Blue, colorPtr->Blue);
-		    sp->Alpha = MAX(sp->Alpha, colorPtr->Alpha);
-		}
-		sp++, mp++;
-	    }
-	    break;
+        case PIC_ARITH_MIN:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    sp->Red = MIN(sp->Red, colorPtr->Red);
+                    sp->Green = MIN(sp->Green, colorPtr->Green);
+                    sp->Blue = MIN(sp->Blue, colorPtr->Blue);
+                    sp->Alpha = MIN(sp->Alpha, colorPtr->Alpha);
+                }
+                sp++, mp++;
+            }
+            break;
+        case PIC_ARITH_MAX:
+            while (mp < mend) {
+                if (mp->u32 != off) {
+                    sp->Red = MAX(sp->Red, colorPtr->Red);
+                    sp->Green = MAX(sp->Green, colorPtr->Green);
+                    sp->Blue = MAX(sp->Blue, colorPtr->Blue);
+                    sp->Alpha = MAX(sp->Alpha, colorPtr->Alpha);
+                }
+                sp++, mp++;
+            }
+            break;
 
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	maskRowPtr += maskPtr->pixelsPerRow;
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
+        maskRowPtr += maskPtr->pixelsPerRow;
     }
 }
 
@@ -5539,61 +5539,61 @@ Blt_MultiplyPixels(Pict *srcPtr, float scalar)
 
     x = FABS(scalar);
     if (FABS(x) > 127.0) {
-	return;
+        return;
     }
     /* Figure out how many bits we need. */
     numBits = 0;
     while ((1 << numBits) < x) {
-	numBits++;
+        numBits++;
     }
     numBits = 15 - numBits;
     bias = (1 << numBits) / 2;
     if (scalar < 0) {
-	bias = -bias;
+        bias = -bias;
     }
     
     s15 = (short int)((scalar * (float)(1 << numBits)) + 0.5);
 
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *send;
-	
-	sp = srcRowPtr;
-	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-	    short int r15, g15, b15, a15;
-	    int i31;
-	    short int i15;
-	    
-	    r15 = ((sp->Red << 8) + sp->Red) >> 1;
-	    g15 = ((sp->Green << 8) + sp->Green) >> 1;
-	    b15 = ((sp->Blue << 8) + sp->Blue) >> 1;
-	    a15 = ((sp->Alpha << 8) + sp->Alpha) >> 1;
-	    
-	    i31 = r15 * s15;
-	    i15 = i31 >> 16;		/* Truncate lower 16 bits */
-	    i15 += bias;
-	    i15 >>= numBits;
-	    sp->Red = (i15 > 255) ? 255 : i15;
-	    
-	    i31 = g15 * s15;
-	    i15 = i31 >> 16;		/* Truncate lower 16 bits */
-	    i15 += bias;
-	    i15 >>= numBits;
-	    sp->Green = (i15 > 255) ? 255 : i15;
-	    
-	    i31 = b15 * s15;
-	    i15 = i31 >> 16;		/* Truncate lower 16 bits */
-	    i15 += bias;
-	    i15 >>= numBits;
-	    sp->Green = (i15 > 255) ? 255 : i15;
-	    
-	    i31 = a15 * s15;
-	    i15 = i31 >> 16;		/* Truncate lower 16 bits */
-	    i15 += bias;
-	    i15 >>= numBits;
-	    sp->Alpha = (i15 > 255) ? 255 : i15;
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+        Blt_Pixel *sp, *send;
+        
+        sp = srcRowPtr;
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            short int r15, g15, b15, a15;
+            int i31;
+            short int i15;
+            
+            r15 = ((sp->Red << 8) + sp->Red) >> 1;
+            g15 = ((sp->Green << 8) + sp->Green) >> 1;
+            b15 = ((sp->Blue << 8) + sp->Blue) >> 1;
+            a15 = ((sp->Alpha << 8) + sp->Alpha) >> 1;
+            
+            i31 = r15 * s15;
+            i15 = i31 >> 16;            /* Truncate lower 16 bits */
+            i15 += bias;
+            i15 >>= numBits;
+            sp->Red = (i15 > 255) ? 255 : i15;
+            
+            i31 = g15 * s15;
+            i15 = i31 >> 16;            /* Truncate lower 16 bits */
+            i15 += bias;
+            i15 >>= numBits;
+            sp->Green = (i15 > 255) ? 255 : i15;
+            
+            i31 = b15 * s15;
+            i15 = i31 >> 16;            /* Truncate lower 16 bits */
+            i15 += bias;
+            i15 >>= numBits;
+            sp->Green = (i15 > 255) ? 255 : i15;
+            
+            i31 = a15 * s15;
+            i15 = i31 >> 16;            /* Truncate lower 16 bits */
+            i15 += bias;
+            i15 >>= numBits;
+            sp->Alpha = (i15 > 255) ? 255 : i15;
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
 }
 
@@ -5604,25 +5604,25 @@ SelectPixels(Pict *destPtr, Pict *srcPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr)
     int y;
 
     if (srcPtr != destPtr) {
-	Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
+        Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
     }
     destRowPtr = destPtr->bits, srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *dp, *sp, *send;
+        Blt_Pixel *dp, *sp, *send;
 
-	dp = destRowPtr;
-	for(sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++, dp++) {
-	    if ((sp->Red >= lowPtr->Red) && (sp->Red <= highPtr->Red) &&
-		(sp->Green >= lowPtr->Green) && (sp->Green <= highPtr->Green) &&
-		(sp->Blue >= lowPtr->Blue) && (sp->Blue <= highPtr->Blue) &&
-		(sp->Alpha >= lowPtr->Alpha) && (sp->Alpha <= highPtr->Alpha)) {
-		dp->u32 = 0xFFFFFFFF;
-	    } else {
-		dp->u32 = 0;
-	    }
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        dp = destRowPtr;
+        for(sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++, dp++) {
+            if ((sp->Red >= lowPtr->Red) && (sp->Red <= highPtr->Red) &&
+                (sp->Green >= lowPtr->Green) && (sp->Green <= highPtr->Green) &&
+                (sp->Blue >= lowPtr->Blue) && (sp->Blue <= highPtr->Blue) &&
+                (sp->Alpha >= lowPtr->Alpha) && (sp->Alpha <= highPtr->Alpha)) {
+                dp->u32 = 0xFFFFFFFF;
+            } else {
+                dp->u32 = 0;
+            }
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags &= ~BLT_PIC_BLEND;
     destPtr->flags |= BLT_PIC_MASK;
@@ -5647,8 +5647,8 @@ Blt_TentFilterPicture(Pict *destPtr, Pict *srcPtr)
 
 static unsigned int
 ComputeWeights(
-    unsigned int sw, unsigned int dw,	/* Source and destination
-					 * widths. */
+    unsigned int sw, unsigned int dw,   /* Source and destination
+                                         * widths. */
     ResampleFilter *filterPtr,
     Sample **samplePtrPtr)
 {
@@ -5659,94 +5659,94 @@ ComputeWeights(
     /* Pre-calculate filter contributions for a row */
     scale = (double)dw / (double)sw;
     if (scale < 1.0) {
-	Sample *samplePtr;
-	double radius, fscale;
-	int filterSize, x;
+        Sample *samplePtr;
+        double radius, fscale;
+        int filterSize, x;
 
-	/* Downsample */
+        /* Downsample */
 
-	radius = filterPtr->support / scale;
-	fscale = 1.0 / scale;
-	filterSize = (int)(radius * 2 + 2);
+        radius = filterPtr->support / scale;
+        fscale = 1.0 / scale;
+        filterSize = (int)(radius * 2 + 2);
 
-	bytesPerSample = sizeof(Sample) + 
-	    ((filterSize - 1) * sizeof(PixelWeight));
-	samples = Blt_AssertCalloc(dw, bytesPerSample);
-	samplePtr = samples;
+        bytesPerSample = sizeof(Sample) + 
+            ((filterSize - 1) * sizeof(PixelWeight));
+        samples = Blt_AssertCalloc(dw, bytesPerSample);
+        samplePtr = samples;
 #define DEBUG 0
 #if DEBUG
-	fprintf(stderr, "downscale=%g, fscale=%g, radius=%g\n",
-		    scale, fscale, radius);
+        fprintf(stderr, "downscale=%g, fscale=%g, radius=%g\n",
+                    scale, fscale, radius);
 #endif
-	for (x = 0; x < dw; x++) {
-	    PixelWeight *wp;
-	    double center;
-	    int i, left, right;	/* Filter bounds. */
+        for (x = 0; x < dw; x++) {
+            PixelWeight *wp;
+            double center;
+            int i, left, right; /* Filter bounds. */
 
-	    center = ((double)x + 0.5) * fscale;
+            center = ((double)x + 0.5) * fscale;
 
-	    /* Determine bounds of filter and its density. */
-	    left = (int)/*floor*/(center - radius);
-	    if (left < 0) {
-		left = 0;
-	    }
-	    right = (int)/*floor*/(center + radius);
-	    if (right >= sw) {
-		right = sw - 1;
-	    }
-	    samplePtr->start = left;
-	    samplePtr->wend = samplePtr->weights + (right - left + 1);
+            /* Determine bounds of filter and its density. */
+            left = (int)/*floor*/(center - radius);
+            if (left < 0) {
+                left = 0;
+            }
+            right = (int)/*floor*/(center + radius);
+            if (right >= sw) {
+                right = sw - 1;
+            }
+            samplePtr->start = left;
+            samplePtr->wend = samplePtr->weights + (right - left + 1);
 
-	    for (wp = samplePtr->weights, i = left; i <= right; i++, wp++) {
-		wp->f32 = (float)
-		    (*filterPtr->proc)(((double)i - center) * scale);
-		wp->i32 = float2si(wp->f32);
-	    }
-	    samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
-	}
+            for (wp = samplePtr->weights, i = left; i <= right; i++, wp++) {
+                wp->f32 = (float)
+                    (*filterPtr->proc)(((double)i - center) * scale);
+                wp->i32 = float2si(wp->f32);
+            }
+            samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
+        }
     } else {
-	Sample *samplePtr;
-	double fscale;
-	int filterSize, x;
+        Sample *samplePtr;
+        double fscale;
+        int filterSize, x;
 
-	/* Upsample */
+        /* Upsample */
 
-	filterSize = (int)(filterPtr->support * 2 + 2);
-	bytesPerSample = sizeof(Sample) + 
-	    ((filterSize - 1) * sizeof(PixelWeight));
-	samples = Blt_AssertCalloc(dw, bytesPerSample);
-	fscale = 1.0 / scale;
+        filterSize = (int)(filterPtr->support * 2 + 2);
+        bytesPerSample = sizeof(Sample) + 
+            ((filterSize - 1) * sizeof(PixelWeight));
+        samples = Blt_AssertCalloc(dw, bytesPerSample);
+        fscale = 1.0 / scale;
 
-	samplePtr = samples;
+        samplePtr = samples;
 #if DEBUG
-	fprintf(stderr, "upscale=%g, fscale=%g, radius=%g\n",
-		    scale, fscale, filterPtr->support);
+        fprintf(stderr, "upscale=%g, fscale=%g, radius=%g\n",
+                    scale, fscale, filterPtr->support);
 #endif
-	for (x = 0; x < dw; x++) {
-	    PixelWeight *wp;
-	    double center;
-	    int i, left, right;	/* Filter bounds. */
+        for (x = 0; x < dw; x++) {
+            PixelWeight *wp;
+            double center;
+            int i, left, right; /* Filter bounds. */
 
-	    center = ((double)x + 0.5) * fscale;
-	    left = (int)(center - filterPtr->support);
-	    if (left < 0) {
-		left = 0;
-	    }
-	    right = (int)(center + filterPtr->support);
-	    if (right >= sw) {
-		right = sw - 1;
-	    }
-	    samplePtr->start = left;
-	    samplePtr->wend = samplePtr->weights + (right - left + 1);
+            center = ((double)x + 0.5) * fscale;
+            left = (int)(center - filterPtr->support);
+            if (left < 0) {
+                left = 0;
+            }
+            right = (int)(center + filterPtr->support);
+            if (right >= sw) {
+                right = sw - 1;
+            }
+            samplePtr->start = left;
+            samplePtr->wend = samplePtr->weights + (right - left + 1);
 
-	    /* Sum the contributions for each pixel in the filter. */
-	    for (wp = samplePtr->weights, i = left; i <= right;i++, wp++) {
-		wp->f32 = (float) (*filterPtr->proc)((double)i - center);
-		wp->i32 = float2si(wp->f32);
-	    }
-	    /* Go get the next sample. */
-	    samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
-	}
+            /* Sum the contributions for each pixel in the filter. */
+            for (wp = samplePtr->weights, i = left; i <= right;i++, wp++) {
+                wp->f32 = (float) (*filterPtr->proc)((double)i - center);
+                wp->i32 = float2si(wp->f32);
+            }
+            /* Go get the next sample. */
+            samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
+        }
     }
     *samplePtrPtr = samples;
     return bytesPerSample;
@@ -5760,19 +5760,19 @@ CreateNeighborhoodMap(unsigned int size, unsigned int radius)
     unsigned int *map, *p;
     unsigned int i;
 
-    newSize = size + radius + radius;	
+    newSize = size + radius + radius;   
     map = Blt_AssertMalloc(sizeof(unsigned int) * newSize);
     p = map;
     for (i = 0; i < radius; i++, p++) {
-	*p = 0;				/* Before the picture. Replicate
-					 * the first pixel. */  
+        *p = 0;                         /* Before the picture. Replicate
+                                         * the first pixel. */  
     }
     for (i = 0; i < size; i++, p++) {
-	*p = i;		
+        *p = i;         
     }
     for (i = 0; i < radius; i++, p++) {
-	*p = size - 1;		      /* After the picture. Replicate the
-				       * last pixel */
+        *p = size - 1;                /* After the picture. Replicate the
+                                       * last pixel */
     }
     return map;
 }
@@ -5791,36 +5791,36 @@ ConvolveVertically(Pict *destPtr, Pict *srcPtr, TableFilter *filterPtr)
 
     /* Apply filter to each row. */
     for (x = 0; x < srcPtr->width; x++) {
-	Blt_Pixel *dp, *srcColPtr;
+        Blt_Pixel *dp, *srcColPtr;
 
-	srcColPtr = srcPtr->bits + x;
-	dp = destPtr->bits + x;
-	for (x = 0; x < mapSize; x++) {
-	    int i;
-	    int r, g, b, a;
-	    
-	    r = g = b = a = 0;
-	    for (i = 0; i < filterPtr->numWeights; i++) {
-		int sx;
-		Blt_Pixel *sp;
+        srcColPtr = srcPtr->bits + x;
+        dp = destPtr->bits + x;
+        for (x = 0; x < mapSize; x++) {
+            int i;
+            int r, g, b, a;
+            
+            r = g = b = a = 0;
+            for (i = 0; i < filterPtr->numWeights; i++) {
+                int sx;
+                Blt_Pixel *sp;
 
-		sx = map[x + i];
-		sp = srcColPtr + (srcPtr->pixelsPerRow * sx);
-		r += sp->Red * filterPtr->weights[i];
-		g += sp->Green * filterPtr->weights[i];
-		b += sp->Blue * filterPtr->weights[i];
-		a += sp->Alpha * filterPtr->weights[i];
-	    }
-	    r *= fscale;
-	    g *= fscale;
-	    b *= fscale;
-	    a *= fscale;
-	    dp->Red = (unsigned char)SICLAMP(r);
-	    dp->Green = (unsigned char)SICLAMP(g);
-	    dp->Blue = (unsigned char)SICLAMP(b);
-	    dp->Alpha = (unsigned char)SICLAMP(a);
-	    dp += destPtr->pixelsPerRow;
-	}
+                sx = map[x + i];
+                sp = srcColPtr + (srcPtr->pixelsPerRow * sx);
+                r += sp->Red * filterPtr->weights[i];
+                g += sp->Green * filterPtr->weights[i];
+                b += sp->Blue * filterPtr->weights[i];
+                a += sp->Alpha * filterPtr->weights[i];
+            }
+            r *= fscale;
+            g *= fscale;
+            b *= fscale;
+            a *= fscale;
+            dp->Red = (unsigned char)SICLAMP(r);
+            dp->Green = (unsigned char)SICLAMP(g);
+            dp->Blue = (unsigned char)SICLAMP(b);
+            dp->Alpha = (unsigned char)SICLAMP(a);
+            dp += destPtr->pixelsPerRow;
+        }
     }
     /* Free the memory allocated for filter weights. */
     Blt_Free(map);
@@ -5840,36 +5840,36 @@ ConvolveHorizontally(Pict *destPtr, Pict *srcPtr, TableFilter *filterPtr)
     destRowPtr = destPtr->bits;
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *dp;
-	int x;
+        Blt_Pixel *dp;
+        int x;
 
-	dp = destRowPtr;
-	for (x = 0; x < mapSize; x++) {
-	    int i;
-	    int r, g, b, a;
-	    
-	    r = g = b = a = 0;
-	    for (i = 0; i < filterPtr->numWeights; i++) {
-		Blt_Pixel *sp;
-		
-		sp = srcRowPtr + map[x + i];
-		r += sp->Red * filterPtr->weights[i];
-		g += sp->Green * filterPtr->weights[i];
-		b += sp->Blue * filterPtr->weights[i];
-		a += sp->Alpha * filterPtr->weights[i];
-	    }
-	    r *= fscale;
-	    g *= fscale;
-	    b *= fscale;
-	    a *= fscale;
-	    dp->Red = (unsigned char)SICLAMP(r);
-	    dp->Green = (unsigned char)SICLAMP(g);
-	    dp->Blue = (unsigned char)SICLAMP(b);
-	    dp->Alpha = (unsigned char)SICLAMP(a);
-	    dp++;
-	}
-	destRowPtr += destPtr->pixelsPerRow;
-	srcRowPtr += srcPtr->pixelsPerRow;
+        dp = destRowPtr;
+        for (x = 0; x < mapSize; x++) {
+            int i;
+            int r, g, b, a;
+            
+            r = g = b = a = 0;
+            for (i = 0; i < filterPtr->numWeights; i++) {
+                Blt_Pixel *sp;
+                
+                sp = srcRowPtr + map[x + i];
+                r += sp->Red * filterPtr->weights[i];
+                g += sp->Green * filterPtr->weights[i];
+                b += sp->Blue * filterPtr->weights[i];
+                a += sp->Alpha * filterPtr->weights[i];
+            }
+            r *= fscale;
+            g *= fscale;
+            b *= fscale;
+            a *= fscale;
+            dp->Red = (unsigned char)SICLAMP(r);
+            dp->Green = (unsigned char)SICLAMP(g);
+            dp->Blue = (unsigned char)SICLAMP(b);
+            dp->Alpha = (unsigned char)SICLAMP(a);
+            dp++;
+        }
+        destRowPtr += destPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
     /* Free the memory allocated for map. */
     Blt_Free(map);
@@ -5890,21 +5890,21 @@ ConvolveHorizontally(Pict *destPtr, Pict *srcPtr, TableFilter *filterPtr)
  */
 void
 Blt_ConvolvePicture(Pict *destPtr, Pict *srcPtr,
-		    struct _Blt_ConvolveFilter *xFilterPtr, 
-		    struct _Blt_ConvolveFilter *yFilterPtr)
+                    struct _Blt_ConvolveFilter *xFilterPtr, 
+                    struct _Blt_ConvolveFilter *yFilterPtr)
 {
     Pict *tmpPtr;
 
     tmpPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
     if (xFilterPtr->type == RESAMPLE_FILTER) {
-	Blt_ZoomHorizontally(tmpPtr, srcPtr, xFilterPtr->filter);
+        Blt_ZoomHorizontally(tmpPtr, srcPtr, xFilterPtr->filter);
     } else {
-	ConvolveHorizontally(tmpPtr, srcPtr, xFilterPtr->filter);
+        ConvolveHorizontally(tmpPtr, srcPtr, xFilterPtr->filter);
     }
     if (yFilterPtr->type == RESAMPLE_FILTER) {
-	Blt_ZoomVertically(destPtr, tmpPtr, yFilterPtr->filter);
+        Blt_ZoomVertically(destPtr, tmpPtr, yFilterPtr->filter);
     } else {
-	ConvolveVertically(destPtr, tmpPtr, yFilterPtr->filter);
+        ConvolveVertically(destPtr, tmpPtr, yFilterPtr->filter);
     }
     Blt_FreePicture(tmpPtr);
     destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
@@ -5915,7 +5915,7 @@ BoxCarVertically(Pict *destPtr, Pict *srcPtr, unsigned int r)
 {
     int x;
     unsigned int *map;
-    unsigned int fwidth;		/* Filter width */
+    unsigned int fwidth;                /* Filter width */
     float s;
 
     map = CreateNeighborhoodMap(srcPtr->height, r);
@@ -5923,47 +5923,47 @@ BoxCarVertically(Pict *destPtr, Pict *srcPtr, unsigned int r)
     s = 1.0f / fwidth;
     /* Apply filter to each row. */
     for (x = 0; x < srcPtr->width; x++) {
-	Blt_Pixel *dp, *srcColPtr;
-	int r, g, b, a;
-	int y;
+        Blt_Pixel *dp, *srcColPtr;
+        int r, g, b, a;
+        int y;
 
-	srcColPtr = srcPtr->bits + x;
-	r = g = b = a = 0;
-	/* Prime the pump. */
-	for (y = 0; y < fwidth - 1; y++) {
-	    Blt_Pixel *sp;
+        srcColPtr = srcPtr->bits + x;
+        r = g = b = a = 0;
+        /* Prime the pump. */
+        for (y = 0; y < fwidth - 1; y++) {
+            Blt_Pixel *sp;
 
-	    sp = srcColPtr + (srcPtr->pixelsPerRow * map[y]);
-	    r += sp->Red;
-	    g += sp->Green;
-	    b += sp->Blue;
-	    a += sp->Alpha;
-	}
-	dp = destPtr->bits + x;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp;
-	    float fr, fg, fb, fa;
+            sp = srcColPtr + (srcPtr->pixelsPerRow * map[y]);
+            r += sp->Red;
+            g += sp->Green;
+            b += sp->Blue;
+            a += sp->Alpha;
+        }
+        dp = destPtr->bits + x;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp;
+            float fr, fg, fb, fa;
 
-	    sp = srcColPtr + (srcPtr->pixelsPerRow * map[y + fwidth - 1]);
-	    r += sp->Red;
-	    g += sp->Green;
-	    b += sp->Blue;
-	    a += sp->Alpha;
-	    fr = r * s;
-	    fg = g * s;
-	    fb = b * s;
-	    fa = a * s;
-	    dp->Red = (unsigned char)CLAMP(fr);
-	    dp->Green = (unsigned char)CLAMP(fg);
-	    dp->Blue = (unsigned char)CLAMP(fb);
-	    dp->Alpha = (unsigned char)CLAMP(fa);
-	    sp = srcColPtr + (srcPtr->pixelsPerRow * map[y]);
-	    r -= sp->Red;
-	    g -= sp->Green;
-	    b -= sp->Blue;
-	    a -= sp->Alpha;
-	    dp += destPtr->pixelsPerRow;
-	}
+            sp = srcColPtr + (srcPtr->pixelsPerRow * map[y + fwidth - 1]);
+            r += sp->Red;
+            g += sp->Green;
+            b += sp->Blue;
+            a += sp->Alpha;
+            fr = r * s;
+            fg = g * s;
+            fb = b * s;
+            fa = a * s;
+            dp->Red = (unsigned char)CLAMP(fr);
+            dp->Green = (unsigned char)CLAMP(fg);
+            dp->Blue = (unsigned char)CLAMP(fb);
+            dp->Alpha = (unsigned char)CLAMP(fa);
+            sp = srcColPtr + (srcPtr->pixelsPerRow * map[y]);
+            r -= sp->Red;
+            g -= sp->Green;
+            b -= sp->Blue;
+            a -= sp->Alpha;
+            dp += destPtr->pixelsPerRow;
+        }
     }
     /* Free the memory allocated for filter weights. */
     Blt_Free(map);
@@ -5976,7 +5976,7 @@ BoxCarHorizontally(Pict *destPtr, Pict *srcPtr, unsigned int radius)
     float s;
     unsigned int *map;
     int y;
-    unsigned int fwidth;		/* Filter width */
+    unsigned int fwidth;                /* Filter width */
 
     fwidth = radius + radius + 1;
     map = CreateNeighborhoodMap(srcPtr->width, radius);
@@ -5984,52 +5984,52 @@ BoxCarHorizontally(Pict *destPtr, Pict *srcPtr, unsigned int radius)
     destRowPtr = destPtr->bits;
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *dp;
-	int x;
-	int r, g, b, a;
-	
-	/* Prime the pump. Get sums for each component for the first
-	 * (fwidth) pixels in the column. */
-	r = g = b = a = 0;
-	for (x = 0; x < fwidth - 1; x++) {
-	    Blt_Pixel *sp;
+        Blt_Pixel *dp;
+        int x;
+        int r, g, b, a;
+        
+        /* Prime the pump. Get sums for each component for the first
+         * (fwidth) pixels in the column. */
+        r = g = b = a = 0;
+        for (x = 0; x < fwidth - 1; x++) {
+            Blt_Pixel *sp;
 
-	    sp = srcRowPtr + map[x];
-	    r += sp->Red;
-	    g += sp->Green;
-	    b += sp->Blue;
-	    a += sp->Alpha;
-	}
-	dp = destRowPtr;
-	for (x = 0; x < srcPtr->width; x++) {
-	    Blt_Pixel *sp;
-	    float fr, fg, fb, fa;
+            sp = srcRowPtr + map[x];
+            r += sp->Red;
+            g += sp->Green;
+            b += sp->Blue;
+            a += sp->Alpha;
+        }
+        dp = destRowPtr;
+        for (x = 0; x < srcPtr->width; x++) {
+            Blt_Pixel *sp;
+            float fr, fg, fb, fa;
 
-	    sp = srcRowPtr + map[x + fwidth - 1];
-	    r += sp->Red;
-	    if (r < 0) {
-		dp->Red = 0;
-	    }
-	    g += sp->Green;
-	    b += sp->Blue;
-	    a += sp->Alpha;
-	    fr = r * s;
-	    fg = g * s;
-	    fb = b * s;
-	    fa = a * s;
-	    dp->Red   = (unsigned char)CLAMP(fr);
-	    dp->Green = (unsigned char)CLAMP(fg);
-	    dp->Blue  = (unsigned char)CLAMP(fb);
-	    dp->Alpha = (unsigned char)CLAMP(fa);
-	    sp = srcRowPtr + map[x];
-	    r -= sp->Red;
-	    g -= sp->Green;
-	    b -= sp->Blue;
-	    a -= sp->Alpha;
-	    dp++;
-	}
-	destRowPtr += destPtr->pixelsPerRow;
-	srcRowPtr += srcPtr->pixelsPerRow;
+            sp = srcRowPtr + map[x + fwidth - 1];
+            r += sp->Red;
+            if (r < 0) {
+                dp->Red = 0;
+            }
+            g += sp->Green;
+            b += sp->Blue;
+            a += sp->Alpha;
+            fr = r * s;
+            fg = g * s;
+            fb = b * s;
+            fa = a * s;
+            dp->Red   = (unsigned char)CLAMP(fr);
+            dp->Green = (unsigned char)CLAMP(fg);
+            dp->Blue  = (unsigned char)CLAMP(fb);
+            dp->Alpha = (unsigned char)CLAMP(fa);
+            sp = srcRowPtr + map[x];
+            r -= sp->Red;
+            g -= sp->Green;
+            b -= sp->Blue;
+            a -= sp->Alpha;
+            dp++;
+        }
+        destRowPtr += destPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
     /* Free the memory allocated for map. */
     Blt_Free(map);
@@ -6047,8 +6047,8 @@ BoxCarHorizontally(Pict *destPtr, Pict *srcPtr, unsigned int radius)
  * Results:
  *      None. 
  * Side Effects: 
- *	The original picture is left intact.  The destination picture
- *	contains the blurred image.
+ *      The original picture is left intact.  The destination picture
+ *      contains the blurred image.
  *
  *---------------------------------------------------------------------------
  */
@@ -6059,13 +6059,13 @@ Blt_BlurPicture(Pict *destPtr, Pict *srcPtr, int radius, int numPasses)
     int i;
 
     if (srcPtr != destPtr) {
-	Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
+        Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
     }
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_AssociateColors(srcPtr);
+        Blt_AssociateColors(srcPtr);
     }
     if (radius < 1) {
-	return;
+        return;
     }
 #ifdef notdef
     Blt_ResamplePicture(destPtr, srcPtr, bltGaussianFilter, bltGaussianFilter);
@@ -6073,8 +6073,8 @@ Blt_BlurPicture(Pict *destPtr, Pict *srcPtr, int radius, int numPasses)
 #endif
     tmpPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
     for (i = 0; i < numPasses; i++) {
-	BoxCarHorizontally(tmpPtr, srcPtr, radius);
-	BoxCarVertically(destPtr, tmpPtr, radius);
+        BoxCarHorizontally(tmpPtr, srcPtr, radius);
+        BoxCarVertically(destPtr, tmpPtr, radius);
     }
     Blt_FreePicture(tmpPtr);
     destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
@@ -6113,7 +6113,7 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
     Blt_AddPictures(tmp, srcPtr);
     Blt_FreePicture(blur);
     Blt_CopyPictureBits(destPtr, tmp, 0, 0, Blt_Picture_Width(tmp),
-	Blt_Picture_Height(tmp), 0, 0);
+        Blt_Picture_Height(tmp), 0, 0);
     Blt_FreePicture(tmp);
 }
 
@@ -6125,10 +6125,10 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
  *
  *      Tiles the designated region in the destination picture with the
  *      source picture.
- *	
- *	Please note that it is the responsibility of the caller to verify
- *	the region is valid (i.e. wholly contained by the destination
- *	picture).
+ *      
+ *      Please note that it is the responsibility of the caller to verify
+ *      the region is valid (i.e. wholly contained by the destination
+ *      picture).
  *
  * Results:
  *      The destination picture is tiled. The original picture is left
@@ -6138,95 +6138,95 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
  */
 void
 Blt_TilePicture(
-    Pict *destPtr,			/* Picture to be tiled. */
-    Pict *srcPtr,			/* Picture used as the tile. */
-    int xOrigin, int yOrigin,		/* Tile origin. */
-    int x, int y, int w, int h)		/* Region of destination picture to
-					 * be tiled. */
+    Pict *destPtr,                      /* Picture to be tiled. */
+    Pict *srcPtr,                       /* Picture used as the tile. */
+    int xOrigin, int yOrigin,           /* Tile origin. */
+    int x, int y, int w, int h)         /* Region of destination picture to
+                                         * be tiled. */
 {
-    int startX, startY;			/* Starting upper left corner of
-					 * region. */
+    int startX, startY;                 /* Starting upper left corner of
+                                         * region. */
     int delta;
 
     /* Compute the starting x and y offsets of the tile from the
      * coordinates of the origin. */
     startX = x;
     if (x < xOrigin) {
-	delta = (xOrigin - x) % srcPtr->width;
-	if (delta > 0) {
-	    startX -= (srcPtr->width - delta);
-	}
+        delta = (xOrigin - x) % srcPtr->width;
+        if (delta > 0) {
+            startX -= (srcPtr->width - delta);
+        }
     } else if (x > xOrigin) {
-	delta = (x - xOrigin) % srcPtr->width;
-	if (delta > 0) {
-	    startX -= delta;
-	}
+        delta = (x - xOrigin) % srcPtr->width;
+        if (delta > 0) {
+            startX -= delta;
+        }
     }
     startY = y;
     if (y < yOrigin) {
-	delta = (yOrigin - y) % srcPtr->height;
-	if (delta > 0) {
-	    startY -= (srcPtr->height - delta);
-	}
+        delta = (yOrigin - y) % srcPtr->height;
+        if (delta > 0) {
+            startY -= (srcPtr->height - delta);
+        }
     } else if (y >= yOrigin) {
-	delta = (y - yOrigin) % srcPtr->height;
-	if (delta > 0) {
-	    startY -= delta;
-	}
+        delta = (y - yOrigin) % srcPtr->height;
+        if (delta > 0) {
+            startY -= delta;
+        }
     }
 
 #ifdef notdef
     fprintf(stderr, "tile is (%d,%d,%d,%d)\n", 
-		 xOrigin, yOrigin, srcPtr->width, srcPtr->height);
+                 xOrigin, yOrigin, srcPtr->width, srcPtr->height);
     fprintf(stderr, "region is (%d,%d,%d,%d)\n", x, y, w, h);
     fprintf(stderr, "starting at %d,%d\n", startX, startY);
 #endif
     {
-	int left, top, right, bottom;
+        int left, top, right, bottom;
 
-	/* The region to be tiled. */
-	left = x;
-	right = x + w;
-	top = y;
-	bottom = y + h;
+        /* The region to be tiled. */
+        left = x;
+        right = x + w;
+        top = y;
+        bottom = y + h;
 
-	for (y = startY; y < bottom; y += srcPtr->height) {
-	    int sy, dy;
-	    int th;			/* Current tile height. */
-	    
-	    sy = 0;
-	    dy = y;
-	    th = srcPtr->height;
-	    if (y < top) {
-		sy = (top - y);
-		th = srcPtr->height - sy;
-		dy = top;
-	    } 
-	    if ((dy + th) > bottom) {
-		th = (bottom - dy);
-	    }
-	    for (x = startX; x < right; x += srcPtr->width) {
-		int sx, dx;
-		int tw;			/* Current tile width. */
-		
-		sx = 0;
-		dx = x;
-		tw = srcPtr->width;
-		if (x < left) {
-		    sx = (left - x);
-		    tw = srcPtr->width - sx;
-		    dx = left;
-		} 
-		if ((dx + tw) > right) {
-		    tw = (right - dx);
-		}
+        for (y = startY; y < bottom; y += srcPtr->height) {
+            int sy, dy;
+            int th;                     /* Current tile height. */
+            
+            sy = 0;
+            dy = y;
+            th = srcPtr->height;
+            if (y < top) {
+                sy = (top - y);
+                th = srcPtr->height - sy;
+                dy = top;
+            } 
+            if ((dy + th) > bottom) {
+                th = (bottom - dy);
+            }
+            for (x = startX; x < right; x += srcPtr->width) {
+                int sx, dx;
+                int tw;                 /* Current tile width. */
+                
+                sx = 0;
+                dx = x;
+                tw = srcPtr->width;
+                if (x < left) {
+                    sx = (left - x);
+                    tw = srcPtr->width - sx;
+                    dx = left;
+                } 
+                if ((dx + tw) > right) {
+                    tw = (right - dx);
+                }
 #ifdef notdef
-		fprintf(stderr, "drawing pattern (%d,%d,%d,%d) at %d,%d\n",
-			sx, sy, tw, th, dx, dy);
+                fprintf(stderr, "drawing pattern (%d,%d,%d,%d) at %d,%d\n",
+                        sx, sy, tw, th, dx, dy);
 #endif
-		Blt_BlendRegion(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
-	    }
-	}
+                Blt_BlendRegion(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
+            }
+        }
     }
 }
 
@@ -6242,49 +6242,49 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
 
     flags = 0;
     if (tablePtr == NULL) {
-	Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
-	tablePtr = &colorTable;
+        Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
+        tablePtr = &colorTable;
     }
     isAssociated = (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS);
     if (isAssociated) {
-	Blt_UnassociateColors(srcPtr);
+        Blt_UnassociateColors(srcPtr);
     }
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *send;
-	
-	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-	    int isNew;
-	    Blt_Pixel color;
-	    unsigned long key;
+        Blt_Pixel *sp, *send;
+        
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            int isNew;
+            Blt_Pixel color;
+            unsigned long key;
 
-	    if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
-		flags |= BLT_PIC_COLOR;
-	    }
-	    if (sp->Alpha != ALPHA_OPAQUE) {
+            if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
+                flags |= BLT_PIC_COLOR;
+            }
+            if (sp->Alpha != ALPHA_OPAQUE) {
 #ifdef notdef
-		fprintf(stderr, "Alpha at [%d,%d] = %x\n",
-			sp - srcRowPtr, y, sp->Alpha);
+                fprintf(stderr, "Alpha at [%d,%d] = %x\n",
+                        sp - srcRowPtr, y, sp->Alpha);
 #endif
-		if (sp->Alpha == ALPHA_TRANSPARENT) {
-		    flags |= BLT_PIC_MASK;
-		} else {
-		    flags |= BLT_PIC_BLEND;
-		}
-	    }
-	    color.u32 = sp->u32;
-	    /* color.Alpha = ALPHA_OPAQUE; */
-	    key = (unsigned long)color.u32;
-	    Blt_CreateHashEntry(tablePtr, (char *)key, &isNew);
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+                if (sp->Alpha == ALPHA_TRANSPARENT) {
+                    flags |= BLT_PIC_MASK;
+                } else {
+                    flags |= BLT_PIC_BLEND;
+                }
+            }
+            color.u32 = sp->u32;
+            /* color.Alpha = ALPHA_OPAQUE; */
+            key = (unsigned long)color.u32;
+            Blt_CreateHashEntry(tablePtr, (char *)key, &isNew);
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
     numColors = tablePtr->numEntries;
     if (tablePtr == &colorTable) {
-	Blt_DeleteHashTable(&colorTable);
+        Blt_DeleteHashTable(&colorTable);
     }
     if (isAssociated) {
-	Blt_AssociateColors(srcPtr);
+        Blt_AssociateColors(srcPtr);
     }
     srcPtr->flags |= flags;
     return numColors;
@@ -6293,8 +6293,8 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
 /*
  * ClassifyPicture --
  *
- *	Check the picture to see if it contain semi or fully transparent
- *	pixels.  Also check if it is color or greyscale.
+ *      Check the picture to see if it contain semi or fully transparent
+ *      pixels.  Also check if it is color or greyscale.
  */
 void
 Blt_ClassifyPicture(Pict *srcPtr)
@@ -6306,30 +6306,30 @@ Blt_ClassifyPicture(Pict *srcPtr)
     flags = 0;
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *send;
-	
-	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-	    if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
-		/* Stop after first non-greyscale pixel. */
-		flags |= BLT_PIC_COLOR;
-		goto checkOpacity;
-	    }
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+        Blt_Pixel *sp, *send;
+        
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
+                /* Stop after first non-greyscale pixel. */
+                flags |= BLT_PIC_COLOR;
+                goto checkOpacity;
+            }
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
  checkOpacity:
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *send;
-	
-	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-	    if ((sp->Alpha == 0x00) || (sp->Alpha != 0xFF)) {
-		/* Stop after first semi/fully-transparent pixel. */
-		flags |= BLT_PIC_BLEND;
-		goto setFlags;
-	    }
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+        Blt_Pixel *sp, *send;
+        
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            if ((sp->Alpha == 0x00) || (sp->Alpha != 0xFF)) {
+                /* Stop after first semi/fully-transparent pixel. */
+                flags |= BLT_PIC_BLEND;
+                goto setFlags;
+            }
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
  setFlags:
     srcPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK | BLT_PIC_COLOR);
@@ -6338,104 +6338,104 @@ Blt_ClassifyPicture(Pict *srcPtr)
 
 void 
 Blt_MaskPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, 
-		int dx, int dy, Blt_Pixel *colorPtr)
+                int dx, int dy, Blt_Pixel *colorPtr)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
 
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
     srcRowPtr  = srcPtr->bits + ((y * srcPtr->pixelsPerRow) + x);
     for (y = 0; y < h; y++) {
-	Blt_Pixel *sp, *dp, *send;
+        Blt_Pixel *sp, *dp, *send;
 
-	dp = destRowPtr;
-	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++, dp++) {
-	    if (sp->u32 != 0) {
-		dp->u32 = colorPtr->u32;
-	    }
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        dp = destRowPtr;
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++, dp++) {
+            if (sp->u32 != 0) {
+                dp->u32 = colorPtr->u32;
+            }
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
 }
 
 
 #ifdef notdef
 static int 
-BitWidth (unsigned int n)		/* Find "bit-width" needed to
-					   represent N. */
+BitWidth (unsigned int n)               /* Find "bit-width" needed to
+                                           represent N. */
 {
     int width;
     
-    width = 0;				/* Initially, no bits needed to
-					 * represent N */
-    while (n != 0) {			/* loop 'til N has been whittled
-					 * down to 0 */
-	n >>= 1;			/* Shift N right 1 bit (NB: N is
-					   unsigned) */
-	width++;			/* and remember how wide N is */
+    width = 0;                          /* Initially, no bits needed to
+                                         * represent N */
+    while (n != 0) {                    /* loop 'til N has been whittled
+                                         * down to 0 */
+        n >>= 1;                        /* Shift N right 1 bit (NB: N is
+                                           unsigned) */
+        width++;                        /* and remember how wide N is */
     } 
-    return width;			
+    return width;                       
 }
 
 
 static void
-dissolve2 (Pict *srcPtr, Pict *destPtr)	
+dissolve2 (Pict *srcPtr, Pict *destPtr) 
 {
-    int rWidth, cWidth;			/* bit width for rows, for columns */
-    int reqWidth;			/* "width" of sequence generator */
-    long mask;				/* Mask to XOR with to create
-					 * sequence */
-    int rowShift;			/* Shift distance to get row from
-					 * element */
-    int colMask;			/* Mask to extract column from
-					 * element */
-    unsigned long element;		/* One element of random sequence */
+    int rWidth, cWidth;                 /* bit width for rows, for columns */
+    int reqWidth;                       /* "width" of sequence generator */
+    long mask;                          /* Mask to XOR with to create
+                                         * sequence */
+    int rowShift;                       /* Shift distance to get row from
+                                         * element */
+    int colMask;                        /* Mask to extract column from
+                                         * element */
+    unsigned long element;              /* One element of random sequence */
 
     static int randMasks[32];
     int i;
 
     for(i = 0; i < 32; i--) {
-	randMasks[i] = (3 << i);
+        randMasks[i] = (3 << i);
     }
     /* Find the mask to produce all rows and columns. */
 
-    rWidth = BitWidth(srcPtr->height);	/* # of bits needed for height. */
-    cWidth = BitWidth(srcPtr->width);	/* # of bits needed for width. */
-    reqWidth = rWidth + cWidth;		/* How wide must the register be? */
-    mask = randmasks[reqWidth];		/* Which mask is for that width? */
+    rWidth = BitWidth(srcPtr->height);  /* # of bits needed for height. */
+    cWidth = BitWidth(srcPtr->width);   /* # of bits needed for width. */
+    reqWidth = rWidth + cWidth;         /* How wide must the register be? */
+    mask = randmasks[reqWidth];         /* Which mask is for that width? */
     /* Find values to extract row and col numbers from each element. */
-    rowShift = cWidth;			/* Find dist to shift to get top bits
-					 * (row) */
-    colMask = (1<<cWidth)-1;		/* Find mask to extract bottom bits
-					 * (col) */
+    rowShift = cWidth;                  /* Find dist to shift to get top bits
+                                         * (row) */
+    colMask = (1<<cWidth)-1;            /* Find mask to extract bottom bits
+                                         * (col) */
 
     /* Now cycle through all sequence elements. */
 
-    element = 1;			/* 1st element (could be any
-					 * nonzero) */
+    element = 1;                        /* 1st element (could be any
+                                         * nonzero) */
     do {
-	int x, y;			/* Row and column for one pixel */
+        int x, y;                       /* Row and column for one pixel */
 
-	y = element >> rowShift;	/* Find row number for this pixel */
-	x = element & colMask;		/* and how many columns across? */
-	if ((y < h) && (x < w)) {
-	    /* Does element fall in the array? Must check row AND column */
-	    srcPtr->Alpha = 0x00;
-	    copy (row, column);		/* In bounds: copy the (r,c)'th
-					 * pixel */
-	}
-	/* Compute the next sequence element */
-	if (element & 1) {		/* is the low bit set? */
-	    element = (element >>1)^mask; /* yes: shift value, XOR in mask */
-	} else {
-	    element = (element >>1);	/* no: just shift the value */
-	}
-    } while (element != 1);		/* Loop until we return to original
-					 * element */
+        y = element >> rowShift;        /* Find row number for this pixel */
+        x = element & colMask;          /* and how many columns across? */
+        if ((y < h) && (x < w)) {
+            /* Does element fall in the array? Must check row AND column */
+            srcPtr->Alpha = 0x00;
+            copy (row, column);         /* In bounds: copy the (r,c)'th
+                                         * pixel */
+        }
+        /* Compute the next sequence element */
+        if (element & 1) {              /* is the low bit set? */
+            element = (element >>1)^mask; /* yes: shift value, XOR in mask */
+        } else {
+            element = (element >>1);    /* no: just shift the value */
+        }
+    } while (element != 1);             /* Loop until we return to original
+                                         * element */
 
-    copy (0, 0);			/* Kludge: element never comes up
-					   zero */
-}	
+    copy (0, 0);                        /* Kludge: element never comes up
+                                           zero */
+}       
 #endif
 
 
@@ -6472,64 +6472,64 @@ SolveMatrix(float a[8][8], float b[8])
     memset(indexr, 0, sizeof(int) * 8);
     memset(indexc, 0, sizeof(int) * 8);
 
-    irow = icol = -1;			/* Suppress compiler warning. */
+    irow = icol = -1;                   /* Suppress compiler warning. */
     for (i = 0; i < 8; i++) {
-	float pivinv;
-	float big;
+        float pivinv;
+        float big;
 
-	big = 0.0;
-	for (j = 0; j < 8; j++) {
-	    if (ipivot[j] != 1) {
-		for (k = 0; k < 8; k++) {
-		    if (ipivot[k] == 0) {
-			if (fabs(a[j][k]) >= big) {
-			    big = fabs(a[j][k]);
-			    irow = j;
-			    icol = k;
-			}
-		    } else if (ipivot[k] > 1) {
-			return FALSE;
-		    }
-		}
-	    }
-	}
-	++(ipivot[icol]);
-	if (irow != icol) {
-	    for (l = 0; l < 8; l++) {
-		SWAP(a[irow][l], a[icol][l]);
-	    }
-	    SWAP(b[irow], b[icol]);
-	}
-	indexr[i] = irow;
-	indexc[i] = icol;
-	if (a[icol][icol] == 0.0) {
-	    return FALSE;
-	}
-	pivinv = 1.0 / a[icol][icol];
-	a[icol][icol] = 1.0;
-	for (l = 0; l < 8; l++) {
-	    a[icol][l] *= pivinv;
-	}
-	b[icol] *= pivinv;
-	for (ll = 0; ll < 8; ll++) {
-	    if (ll != icol) {
-		float dum;
+        big = 0.0;
+        for (j = 0; j < 8; j++) {
+            if (ipivot[j] != 1) {
+                for (k = 0; k < 8; k++) {
+                    if (ipivot[k] == 0) {
+                        if (fabs(a[j][k]) >= big) {
+                            big = fabs(a[j][k]);
+                            irow = j;
+                            icol = k;
+                        }
+                    } else if (ipivot[k] > 1) {
+                        return FALSE;
+                    }
+                }
+            }
+        }
+        ++(ipivot[icol]);
+        if (irow != icol) {
+            for (l = 0; l < 8; l++) {
+                SWAP(a[irow][l], a[icol][l]);
+            }
+            SWAP(b[irow], b[icol]);
+        }
+        indexr[i] = irow;
+        indexc[i] = icol;
+        if (a[icol][icol] == 0.0) {
+            return FALSE;
+        }
+        pivinv = 1.0 / a[icol][icol];
+        a[icol][icol] = 1.0;
+        for (l = 0; l < 8; l++) {
+            a[icol][l] *= pivinv;
+        }
+        b[icol] *= pivinv;
+        for (ll = 0; ll < 8; ll++) {
+            if (ll != icol) {
+                float dum;
 
-		dum = a[ll][icol];
-		a[ll][icol] = 0.0;
-		for (l = 0; l < 8; l++) {
-		    a[ll][l] -= a[icol][l] * dum;
-		}
-		b[ll] -= b[icol] * dum;
-	    }
-	}
+                dum = a[ll][icol];
+                a[ll][icol] = 0.0;
+                for (l = 0; l < 8; l++) {
+                    a[ll][l] -= a[icol][l] * dum;
+                }
+                b[ll] -= b[icol] * dum;
+            }
+        }
     }
     for (l = 7; l >= 0; l--) {
-	if (indexr[l] != indexc[l]) {
-	    for (k = 0; k < 8; k++) {
-		SWAP(a[k][indexr[l]], a[k][indexc[l]]);
-	    }
-	}
+        if (indexr[l] != indexc[l]) {
+            for (k = 0; k < 8; k++) {
+                SWAP(a[k][indexr[l]], a[k][indexc[l]]);
+            }
+        }
     }
     return TRUE;
 }
@@ -6592,7 +6592,7 @@ SolveMatrix(float a[8][8], float b[8])
 static int
 GetProjectiveCoeffs(float *srcPts, float *destPts, float *coeffs)
 {
-    float a[8][8];			/* 8x8 matrix A  */
+    float a[8][8];                      /* 8x8 matrix A  */
     
     coeffs[0] = destPts[0];
     coeffs[1] = destPts[1];
@@ -6667,7 +6667,7 @@ static inline Blt_Pixel *
 GetSrcPixel(Pict *srcPtr, int x, int y, Blt_Pixel *bgPtr)
 {
     if ((x < 0) || (y < 0) || (x >= srcPtr->width) || (y >= srcPtr->height)) {
-	return bgPtr;
+        return bgPtr;
     }
     return srcPtr->bits + (y * srcPtr->pixelsPerRow) + x;
 }
@@ -6686,18 +6686,18 @@ Blt_ProjectPicture(Pict *srcPtr, float *srcPts, float *destPts, Blt_Pixel *bg)
     x1 = x2 = srcPts[0];
     y1 = y2 = srcPts[1];
     for (i = 0; i < 8; i += 2) {
-	if (x1 > srcPts[i]) {
-	    x1 = srcPts[i];
-	}
-	if (x2 < srcPts[i]) {
-	    x2 = srcPts[i];
-	}
-	if (y1 > srcPts[i+1]) {
-	    y1 = srcPts[i+1];
-	}
-	if (y2 < srcPts[i+1]) {
-	    y2 = srcPts[i+1];
-	}
+        if (x1 > srcPts[i]) {
+            x1 = srcPts[i];
+        }
+        if (x2 < srcPts[i]) {
+            x2 = srcPts[i];
+        }
+        if (y1 > srcPts[i+1]) {
+            y1 = srcPts[i+1];
+        }
+        if (y2 < srcPts[i+1]) {
+            y2 = srcPts[i+1];
+        }
     }
     w = (int)(x2 - x1 + 0.5);
     h = (int)(y2 - y1 + 0.5);
@@ -6706,59 +6706,59 @@ Blt_ProjectPicture(Pict *srcPtr, float *srcPts, float *destPts, Blt_Pixel *bg)
 
     /* Get backwards transform from dest to src, and apply it */
     if (!GetProjectiveCoeffs(srcPts, destPts, coeffs)) {
-	return NULL;
+        return NULL;
     }
 
     /* Iterate over destination pixels */
     destRowPtr = destPtr->bits;
     for (y = 0; y < destPtr->height; y++) {
-	Blt_Pixel *dp, *dend;
-	int x;
+        Blt_Pixel *dp, *dend;
+        int x;
 
-	for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
-	     dp++, x++) {
-	    int r, g, b, a;
-	    Blt_Pixel  *p00, *p01, *p10, *p11;
-	    Point2d p;
-	    int sx, sy;
-	    int xpm, ypm, xf, yf;
-	    float factor;
+        for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
+             dp++, x++) {
+            int r, g, b, a;
+            Blt_Pixel  *p00, *p01, *p10, *p11;
+            Point2d p;
+            int sx, sy;
+            int xpm, ypm, xf, yf;
+            float factor;
 
-	    /* Compute float src pixel location corresponding to (x,y) */
+            /* Compute float src pixel location corresponding to (x,y) */
 
-	    factor = 1.0 / (coeffs[6] * x + coeffs[7] * y + 1.0);
-	    p.x = factor * (coeffs[0] * x + coeffs[1] * y + coeffs[2]);
-	    p.y = factor * (coeffs[3] * x + coeffs[4] * y + coeffs[5]);
+            factor = 1.0 / (coeffs[6] * x + coeffs[7] * y + 1.0);
+            p.x = factor * (coeffs[0] * x + coeffs[1] * y + coeffs[2]);
+            p.y = factor * (coeffs[3] * x + coeffs[4] * y + coeffs[5]);
 
-	    xpm = (int)(16.0 * p.x + 0.5);
-	    ypm = (int)(16.0 * p.y + 0.5);
-	    sx = xpm >> 4;
-	    sy = ypm >> 4;
-	    xf = xpm & 0x0f;
-	    yf = ypm & 0x0f;
+            xpm = (int)(16.0 * p.x + 0.5);
+            ypm = (int)(16.0 * p.y + 0.5);
+            sx = xpm >> 4;
+            sy = ypm >> 4;
+            xf = xpm & 0x0f;
+            yf = ypm & 0x0f;
 
-	    p00 = GetSrcPixel(srcPtr, sx,   sy,   bg);
-	    p01 = GetSrcPixel(srcPtr, sx+1, sy,   bg);
-	    p10 = GetSrcPixel(srcPtr, sx,   sy+1, bg);
-	    p11 = GetSrcPixel(srcPtr, sx+1, sy+1, bg);
-	    r = ((16 - xf) * (16 - yf) * p00->Red + 
-		 xf * (16 - yf) * p01->Red + (16 - xf) * yf * p10->Red +
-		 xf * yf * p11->Red + 128) / 256;
-	    g = ((16 - xf) * (16 - yf) * p00->Green +
-		 xf * (16 - yf) * p01->Green + (16 - xf) * yf * p10->Green +
-		 xf * yf * p11->Green + 128) / 256;
-	    b = ((16 - xf) * (16 - yf) * p00->Blue +
-		 xf * (16 - yf) * p01->Blue + (16 - xf) * yf * p10->Blue +
-		 xf * yf * p11->Blue + 128) / 256;
-	    a = ((16 - xf) * (16 - yf) * p00->Alpha +
-		 xf * (16 - yf) * p01->Alpha + (16 - xf) * yf * p10->Alpha +
-		 xf * yf * p11->Alpha + 128) / 256;
-	    dp->Red   = UCLAMP(r);
-	    dp->Green = UCLAMP(g);
-	    dp->Blue  = UCLAMP(b);
-	    dp->Alpha = UCLAMP(a);
-	}
-	destRowPtr += destPtr->pixelsPerRow;
+            p00 = GetSrcPixel(srcPtr, sx,   sy,   bg);
+            p01 = GetSrcPixel(srcPtr, sx+1, sy,   bg);
+            p10 = GetSrcPixel(srcPtr, sx,   sy+1, bg);
+            p11 = GetSrcPixel(srcPtr, sx+1, sy+1, bg);
+            r = ((16 - xf) * (16 - yf) * p00->Red + 
+                 xf * (16 - yf) * p01->Red + (16 - xf) * yf * p10->Red +
+                 xf * yf * p11->Red + 128) / 256;
+            g = ((16 - xf) * (16 - yf) * p00->Green +
+                 xf * (16 - yf) * p01->Green + (16 - xf) * yf * p10->Green +
+                 xf * yf * p11->Green + 128) / 256;
+            b = ((16 - xf) * (16 - yf) * p00->Blue +
+                 xf * (16 - yf) * p01->Blue + (16 - xf) * yf * p10->Blue +
+                 xf * yf * p11->Blue + 128) / 256;
+            a = ((16 - xf) * (16 - yf) * p00->Alpha +
+                 xf * (16 - yf) * p01->Alpha + (16 - xf) * yf * p10->Alpha +
+                 xf * yf * p11->Alpha + 128) / 256;
+            dp->Red   = UCLAMP(r);
+            dp->Green = UCLAMP(g);
+            dp->Blue  = UCLAMP(b);
+            dp->Alpha = UCLAMP(a);
+        }
+        destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags |= BLT_PIC_BLEND;
     return destPtr;
@@ -6773,39 +6773,39 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
     /* Iterate over destination pixels */
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-	Blt_Pixel *sp, *send;
+        Blt_Pixel *sp, *send;
 
-	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-	    int r, g, b, t, beta;
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            int r, g, b, t, beta;
 
-	    beta = sp->Alpha ^ 0xFF;	/* beta = 1 - alpha */
-	    if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
-		fprintf(stderr, "alpha=%d, beta=%d\n", sp->Alpha, beta);
-		fprintf(stderr, "before: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
-			sp->Blue);
-		
-	    }
-	    r = sp->Red   - imul8x8(beta, colorPtr->Red, t);
-	    g = sp->Green - imul8x8(beta, colorPtr->Green, t);
-	    b = sp->Blue  - imul8x8(beta, colorPtr->Blue, t);
-	    sp->Red   = UCLAMP(r);
-	    sp->Green = UCLAMP(g);
-	    sp->Blue  = UCLAMP(b);
-	    if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
-		fprintf(stderr, "after: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
-			sp->Blue);
-		
-	    }
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+            beta = sp->Alpha ^ 0xFF;    /* beta = 1 - alpha */
+            if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
+                fprintf(stderr, "alpha=%d, beta=%d\n", sp->Alpha, beta);
+                fprintf(stderr, "before: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
+                        sp->Blue);
+                
+            }
+            r = sp->Red   - imul8x8(beta, colorPtr->Red, t);
+            g = sp->Green - imul8x8(beta, colorPtr->Green, t);
+            b = sp->Blue  - imul8x8(beta, colorPtr->Blue, t);
+            sp->Red   = UCLAMP(r);
+            sp->Green = UCLAMP(g);
+            sp->Blue  = UCLAMP(b);
+            if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
+                fprintf(stderr, "after: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
+                        sp->Blue);
+                
+            }
+        }
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
 }    
 #ifndef notdef
 Blt_Picture
 Blt_EmbossPicture(
     Pict *srcPtr,                       /* Source picture treated as
-					 * alphamap. */
-    double azimuth, double elevation,	/* Light source direction */
+                                         * alphamap. */
+    double azimuth, double elevation,   /* Light source direction */
     unsigned short width45)             /* Filter width */
 {
     long Nx, Ny, Nz, Lx, Ly, Lz, Nz2, NzLz, NdotL;
@@ -6847,46 +6847,46 @@ Blt_EmbossPicture(
     destRowPtr = destPtr->bits + destPtr->pixelsPerRow;
     srcRowPtr = srcPtr->bits;
     for (y = 1; y < (destPtr->height - 2); y++) {
-	Blt_Pixel *dp;
-	int x;
+        Blt_Pixel *dp;
+        int x;
 
-	dp = destRowPtr;
-	for (x = 1; x < (destPtr->width-1); x++, dp++) {
-	    Blt_Pixel *s1     = srcRowPtr + x;
-	    Blt_Pixel *s2     = s1 + srcPtr->pixelsPerRow;
-	    Blt_Pixel *s3     = s2 + srcPtr->pixelsPerRow;
-	    unsigned char  shade  = 0;
+        dp = destRowPtr;
+        for (x = 1; x < (destPtr->width-1); x++, dp++) {
+            Blt_Pixel *s1     = srcRowPtr + x;
+            Blt_Pixel *s2     = s1 + srcPtr->pixelsPerRow;
+            Blt_Pixel *s3     = s2 + srcPtr->pixelsPerRow;
+            unsigned char  shade  = 0;
 
-	    /*
-	     * Compute the normal from the bump map. the type of the
-	     * expression before the cast is compiler dependent. In some
-	     * cases the sum is unsigned, in others it is signed. Ergo,
-	     * cast to signed.
-	     */
-	    Nx = (int)(s1[-1].Alpha + s2[-1].Alpha + 
-		       s3[-1].Alpha - s1[1].Alpha  - 
-		       s2[1].Alpha  - s3[1].Alpha);
-	    Ny = (int)(s3[-1].Alpha + s3[0].Alpha  + 
-		       s3[1].Alpha  - s1[-1].Alpha - 
-		       s1[0].Alpha - s1[1].Alpha);
+            /*
+             * Compute the normal from the bump map. the type of the
+             * expression before the cast is compiler dependent. In some
+             * cases the sum is unsigned, in others it is signed. Ergo,
+             * cast to signed.
+             */
+            Nx = (int)(s1[-1].Alpha + s2[-1].Alpha + 
+                       s3[-1].Alpha - s1[1].Alpha  - 
+                       s2[1].Alpha  - s3[1].Alpha);
+            Ny = (int)(s3[-1].Alpha + s3[0].Alpha  + 
+                       s3[1].Alpha  - s1[-1].Alpha - 
+                       s1[0].Alpha - s1[1].Alpha);
 
-	    /* Shade with distant light source. */
-	    if ((Nx == 0) && (Ny == 0)) {
-		shade = background;
-	    } else {
-		NdotL = (Nx*Lx + Ny*Ly + NzLz);
-		if (NdotL < 0) {
-		    shade = 0;
-		} else {
-		    shade = NdotL / sqrt(Nx*Nx + Ny*Ny + Nz2);
-		}
-	    }
-	    /* Do something with the shading result. */
-	    dp->Red = dp->Green = dp->Blue = shade;
-	    dp->Alpha = 0xFF;
-	}
-	srcRowPtr  += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+            /* Shade with distant light source. */
+            if ((Nx == 0) && (Ny == 0)) {
+                shade = background;
+            } else {
+                NdotL = (Nx*Lx + Ny*Ly + NzLz);
+                if (NdotL < 0) {
+                    shade = 0;
+                } else {
+                    shade = NdotL / sqrt(Nx*Nx + Ny*Ny + Nz2);
+                }
+            }
+            /* Do something with the shading result. */
+            dp->Red = dp->Green = dp->Blue = shade;
+            dp->Alpha = 0xFF;
+        }
+        srcRowPtr  += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags |= BLT_PIC_BLEND;
     return destPtr;
@@ -6904,76 +6904,76 @@ Blt_EmbossPicture(
 /*
  * Code fragment to advance from one element to the next.
  *
- * int reg;				current sequence element
- * reg = 1;				start in any non-zero state
- * if (reg & 1)				is the bottom bit set?
- * 	reg = (reg >>1) ^ MASK;		yes: toss out 1 bit; XOR in mask
- * else reg = reg >>1;			no: toss out 0 bit 
+ * int reg;                             current sequence element
+ * reg = 1;                             start in any non-zero state
+ * if (reg & 1)                         is the bottom bit set?
+ *      reg = (reg >>1) ^ MASK;         yes: toss out 1 bit; XOR in mask
+ * else reg = reg >>1;                  no: toss out 0 bit 
  */
 
 static size_t randMasks[32] = {
-    /* Mask				Bit Width	Maximum */ 
-    0x0,				/* 1			*/
-    0x03,				/* 2		      3 */
-    0x06,				/* 3		      7 */
-    0x0C,				/* 4		     15 */
-    0x14,				/* 5		     31 */
-    0x30,				/* 6		     63 */
-    0x60,				/* 7		    127 */
-    0xB8,				/* 8		    255 */
-    0x0110,				/* 9,		    511 */
-    0x0240,				/* 10,		   1023 */
-    0x0500,				/* 11,		   2047 */
-    0x0CA0,				/* 12		   4095 */
-    0x1B00,				/* 13		   8191 */
-    0x3500,				/* 14		  16383 */
-    0x6000,				/* 15		  32767 */
-    0xB400,				/* 16		  65535 */
-    0x00012000,				/* 17		 131071 */
-    0x00020400,				/* 18		 262143 */
-    0x00072000,				/* 19		 524287 */
-    0x00090000,				/* 20		1048575 */
-    0x00140000,				/* 21		2097151 */
-    0x00300000,				/* 22		4194303 */
-    0x00400000,				/* 23		8388607 */
-    0x00D80000,				/* 24	       16777215 */
-    0x01200000,				/* 25	       33554431 */
-    0x03880000,				/* 26	       67108863 */
-    0x07200000,				/* 27	      134217747 */
-    0x09000000,				/* 28	      268435455 */
-    0x14000000,				/* 29	      536870911 */
-    0x32800000,				/* 30	     1073741823 */
-    0x48000000,				/* 31	     2147483647 */
-    0xA3000000,				/* 32	     4294967295 */
+    /* Mask                             Bit Width       Maximum */ 
+    0x0,                                /* 1                    */
+    0x03,                               /* 2                  3 */
+    0x06,                               /* 3                  7 */
+    0x0C,                               /* 4                 15 */
+    0x14,                               /* 5                 31 */
+    0x30,                               /* 6                 63 */
+    0x60,                               /* 7                127 */
+    0xB8,                               /* 8                255 */
+    0x0110,                             /* 9,               511 */
+    0x0240,                             /* 10,             1023 */
+    0x0500,                             /* 11,             2047 */
+    0x0CA0,                             /* 12              4095 */
+    0x1B00,                             /* 13              8191 */
+    0x3500,                             /* 14             16383 */
+    0x6000,                             /* 15             32767 */
+    0xB400,                             /* 16             65535 */
+    0x00012000,                         /* 17            131071 */
+    0x00020400,                         /* 18            262143 */
+    0x00072000,                         /* 19            524287 */
+    0x00090000,                         /* 20           1048575 */
+    0x00140000,                         /* 21           2097151 */
+    0x00300000,                         /* 22           4194303 */
+    0x00400000,                         /* 23           8388607 */
+    0x00D80000,                         /* 24          16777215 */
+    0x01200000,                         /* 25          33554431 */
+    0x03880000,                         /* 26          67108863 */
+    0x07200000,                         /* 27         134217747 */
+    0x09000000,                         /* 28         268435455 */
+    0x14000000,                         /* 29         536870911 */
+    0x32800000,                         /* 30        1073741823 */
+    0x48000000,                         /* 31        2147483647 */
+    0xA3000000,                         /* 32        4294967295 */
 };
     
 /* Computes the number of bits needed for mask of n elements. */
 static int
-BitWidth(size_t n)	       /* find "bit-width" needed to represent N */
+BitWidth(size_t n)             /* find "bit-width" needed to represent N */
 {
-    int width = 0;		/* initially, no bits needed to represent N */
+    int width = 0;              /* initially, no bits needed to represent N */
 
-    while (n != 0) {		/* loop 'til N has been whittled down to 0 */
-	n >>= 1;		/* shift N right 1 bit (NB: N is unsigned) */
-	width++;		/* and remember how wide N is */
-    }				/* end of loop shrinking N down to nothing */
-    return width;		/* return bit positions counted */
+    while (n != 0) {            /* loop 'til N has been whittled down to 0 */
+        n >>= 1;                /* shift N right 1 bit (NB: N is unsigned) */
+        width++;                /* and remember how wide N is */
+    }                           /* end of loop shrinking N down to nothing */
+    return width;               /* return bit positions counted */
 } 
 
 /* Fast version of the dissolve algorithm */
 int
 Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, int numSteps) 
 {
-    int rowWidth2, colWidth2;		/* Bit width of rows and columns */
-    int regWidth;			/* "width" of sequence generator */
-    long mask;				/* Mask to XOR with to create
-					 * sequence */
-    int rowShift;			/* Shift distance to get row from
-					 * element */
-    int colMask;			/* Mask to extract column from
-					 * element */
-    size_t element;			/* One element of random
-					 * sequence */
+    int rowWidth2, colWidth2;           /* Bit width of rows and columns */
+    int regWidth;                       /* "width" of sequence generator */
+    long mask;                          /* Mask to XOR with to create
+                                         * sequence */
+    int rowShift;                       /* Shift distance to get row from
+                                         * element */
+    int colMask;                        /* Mask to extract column from
+                                         * element */
+    size_t element;                     /* One element of random
+                                         * sequence */
     long count;
 
     count = (srcPtr->height * srcPtr->width) / numSteps;
@@ -6983,36 +6983,36 @@ Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, int numSteps)
     colWidth2 = BitWidth(srcPtr->width);  
     regWidth = rowWidth2 + colWidth2;  
 
-    mask = randMasks[regWidth - 1];		
+    mask = randMasks[regWidth - 1];             
 
     /* Find values to extract row and col numbers from each element. */
-    rowShift = colWidth2;	     
+    rowShift = colWidth2;            
     colMask = (1 << colWidth2) - 1; 
 
     /* bottom bits (col) */
 
     /* Now cycle through all sequence elements. */
-    element = start;			/* 1st element (could be any
-					 * nonzero) */
+    element = start;                    /* 1st element (could be any
+                                         * nonzero) */
     while (count >= 0) {
-	size_t x, y;
-	
-	x = element >> rowShift;
-	y = element & colMask;
-	if ((y < srcPtr->height) && (x < srcPtr->width))	{
+        size_t x, y;
+        
+        x = element >> rowShift;
+        y = element & colMask;
+        if ((y < srcPtr->height) && (x < srcPtr->width))        {
             Blt_Pixel *sp, *dp;
             
             sp = Blt_Picture_Pixel(srcPtr, x, y);
             dp = Blt_Picture_Pixel(destPtr, x, y);
             dp->u32 = sp->u32;
             count--;
-	}
-	/* Compute the next sequence element */
-	if (element & 1) {		
-	    element = (element >>1) ^ mask; 
-	} else {
-	    element = (element >>1);	
-	}
+        }
+        /* Compute the next sequence element */
+        if (element & 1) {              
+            element = (element >>1) ^ mask; 
+        } else {
+            element = (element >>1);    
+        }
         if (element == 1) {
             element = 0;
             break;
@@ -7026,7 +7026,7 @@ Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, int numSteps)
         dp->u32 = sp->u32;
     }
     return element;
-}				 
+}                                
 
 /* Crossfade from into to leaving result in destination */
 void
@@ -7043,10 +7043,10 @@ Blt_CrossFade(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
     toRowPtr = toPtr->bits;
     destRowPtr = destPtr->bits;
     for (y = 0; y < destPtr->height; y++) {
-	Blt_Pixel *sp1, *sp2, *dp, *send;
+        Blt_Pixel *sp1, *sp2, *dp, *send;
 
-	sp1 = fromRowPtr, sp2 = toRowPtr, dp = destRowPtr;
-	for (send = sp1 + destPtr->width; sp1 < send; sp1++, sp2++, dp++) {
+        sp1 = fromRowPtr, sp2 = toRowPtr, dp = destRowPtr;
+        for (send = sp1 + destPtr->width; sp1 < send; sp1++, sp2++, dp++) {
             int r, g, b, t1, t2;
             
             r = imul8x8(beta, sp1->Red, t1) + imul8x8(alpha, sp2->Red, t2);
@@ -7056,12 +7056,12 @@ Blt_CrossFade(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
             dp->Green = UCLAMP(g);
             dp->Blue  = UCLAMP(b);
             dp->Alpha = 0xFF;
-	}
-	fromRowPtr += fromPtr->pixelsPerRow;
-	toRowPtr   += toPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        }
+        fromRowPtr += fromPtr->pixelsPerRow;
+        toRowPtr   += toPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
-}				 
+}                                
 
 /* Crossfade from into to leaving result in destination */
 void
@@ -7083,10 +7083,10 @@ Blt_FadeToColor(Pict *destPtr, Pict *fromPtr, Blt_Pixel *colorPtr,
     color.Green = imul8x8(alpha, colorPtr->Green, t);
     color.Blue = imul8x8(alpha, colorPtr->Blue, t);
     for (y = 0; y < destPtr->height; y++) {
-	Blt_Pixel *sp, *dp, *send;
+        Blt_Pixel *sp, *dp, *send;
 
-	sp = fromRowPtr, dp = destRowPtr;
-	for (send = sp + destPtr->width; sp < send; sp++, dp++) {
+        sp = fromRowPtr, dp = destRowPtr;
+        for (send = sp + destPtr->width; sp < send; sp++, dp++) {
             int r, g, b, t;
             
             r = imul8x8(beta, sp->Red, t) + color.Red;
@@ -7096,11 +7096,11 @@ Blt_FadeToColor(Pict *destPtr, Pict *fromPtr, Blt_Pixel *colorPtr,
             dp->Green = UCLAMP(g);
             dp->Blue  = UCLAMP(b);
             dp->Alpha = 0xFF;
-	}
-	fromRowPtr += fromPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        }
+        fromRowPtr += fromPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
-}				 
+}                                
 
 /* Crossfade from into to leaving result in destination */
 void
@@ -7122,10 +7122,10 @@ Blt_FadeFromColor(Pict *destPtr, Pict *toPtr, Blt_Pixel *colorPtr,
     color.Green = imul8x8(beta, colorPtr->Green, t);
     color.Blue = imul8x8(beta, colorPtr->Blue, t);
     for (y = 0; y < destPtr->height; y++) {
-	Blt_Pixel *sp, *dp, *send;
+        Blt_Pixel *sp, *dp, *send;
 
-	sp = toRowPtr, dp = destRowPtr;
-	for (send = sp + destPtr->width; sp < send; sp++, dp++) {
+        sp = toRowPtr, dp = destRowPtr;
+        for (send = sp + destPtr->width; sp < send; sp++, dp++) {
             int r, g, b, t;
             
             r = color.Red + imul8x8(alpha, sp->Red, t);
@@ -7135,11 +7135,11 @@ Blt_FadeFromColor(Pict *destPtr, Pict *toPtr, Blt_Pixel *colorPtr,
             dp->Green = UCLAMP(g);
             dp->Blue  = UCLAMP(b);
             dp->Alpha = 0xFF;
-	}
-	toRowPtr += toPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        }
+        toRowPtr += toPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
-}				 
+}                                
 
 void
 Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
@@ -7210,5 +7210,5 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
         }
         break;
     }
-}				 
+}                                
 

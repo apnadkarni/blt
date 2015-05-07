@@ -39,12 +39,12 @@
  */
 
 /* TODO:
- *	o fix margin padding, default should be 0.  (translate)
- *	o handle -maxpect flag.	(Scale)
- *	x fix date.
- *	x only write one image on one page.
+ *      o fix margin padding, default should be 0.  (translate)
+ *      o handle -maxpect flag. (Scale)
+ *      x fix date.
+ *      x only write one image on one page.
  *      x test greyscale images.
- *	x add softmask for alpha channel.
+ *      x add softmask for alpha channel.
  */
 #include "bltInt.h"
 #include <unistd.h>
@@ -82,30 +82,30 @@
 extern Tcl_AppInitProc Blt_PicturePdfInit;
 extern Tcl_AppInitProc Blt_PicturePdfInit;
 
-#define UCHAR(c)	((unsigned char) (c))
-#define ISASCII(c)	(UCHAR(c)<=0177)
-#define MIN(a,b)	(((a)<(b))?(a):(b))
+#define UCHAR(c)        ((unsigned char) (c))
+#define ISASCII(c)      (UCHAR(c)<=0177)
+#define MIN(a,b)        (((a)<(b))?(a):(b))
 
-#define div257(t)	(((t)+((t)>>8))>>8)
-#define GetBit(x)	 srcRowPtr[(x>>3)] &  (0x80 >> (x&7))
+#define div257(t)       (((t)+((t)>>8))>>8)
+#define GetBit(x)        srcRowPtr[(x>>3)] &  (0x80 >> (x&7))
 
 #define MAXCOLORS       256
 #define BUFFER_SIZE (1<<16)
 
 enum PbmVersions {
     PBM_UNKNOWN,
-    PBM_PLAIN,				/* Monochrome: 1-bit per pixel */
-    PGM_PLAIN,				/* 8-bits per pixel */
-    PPM_PLAIN,				/* 24-bits per pixel */
-    PBM_RAW,				/* 1-bit per pixel */
-    PGM_RAW,				/* 8/16-bits per pixel */
-    PPM_RAW				/* 24/48 bits per pixel */
+    PBM_PLAIN,                          /* Monochrome: 1-bit per pixel */
+    PGM_PLAIN,                          /* 8-bits per pixel */
+    PPM_PLAIN,                          /* 24-bits per pixel */
+    PBM_RAW,                            /* 1-bit per pixel */
+    PGM_RAW,                            /* 8/16-bits per pixel */
+    PPM_RAW                             /* 24/48 bits per pixel */
 };
     
 typedef struct {
-    unsigned int *xref;			/* Array of object numbers. */
-    int numObjects;			/* # of slots in above array. */
-    Blt_DBuffer dbuffer;		/* Holds output (PDF file). */
+    unsigned int *xref;                 /* Array of object numbers. */
+    int numObjects;                     /* # of slots in above array. */
+    Blt_DBuffer dbuffer;                /* Holds output (PDF file). */
 } Pdf;
     
 #ifdef notdef
@@ -123,7 +123,7 @@ static const char *pbmFormat[] = {
 typedef struct {
     Tcl_Obj *dataObjPtr;
     Tcl_Obj *fileObjPtr;
-    int flags;				/* Flag. */
+    int flags;                          /* Flag. */
     Blt_Pixel bg;
     PageSetup setup;
     int index;
@@ -132,18 +132,18 @@ typedef struct {
 typedef struct {
     Tcl_Obj *dataObjPtr;
     Tcl_Obj *fileObjPtr;
-    int dpi;				/* Dots per inch. */
-    const char *paperSize;		/* Papersize. */
+    int dpi;                            /* Dots per inch. */
+    const char *paperSize;              /* Papersize. */
     int crop;
 } PdfImportSwitches;
 
-#define PDF_CROP		(1<<0)
+#define PDF_CROP                (1<<0)
 #define EXPORT_ALPHA            (1<<1)
 
 typedef struct {
-    unsigned int width, height;		/* Dimensions of the image. */
-    unsigned int bitsPerPixel;		/* # bits per pixel. */
-    unsigned char *data;		/* Start of raw data */
+    unsigned int width, height;         /* Dimensions of the image. */
+    unsigned int bitsPerPixel;          /* # bits per pixel. */
+    unsigned char *data;                /* Start of raw data */
     unsigned int bytesPerRow;
     Blt_DBuffer dbuffer;
 } Pbm;
@@ -169,32 +169,32 @@ static Blt_SwitchCustom padSwitch = {
 static Blt_SwitchSpec exportSwitches[] = 
 {
     {BLT_SWITCH_BITMASK, "-alpha", "", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, flags),   0, EXPORT_ALPHA},
-    {BLT_SWITCH_CUSTOM,  "-background",		"color", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, bg),	   0, 0, &colorSwitch},
-    {BLT_SWITCH_OBJ,     "-data",	"varName", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, dataObjPtr),  0},
-    {BLT_SWITCH_OBJ,     "-file",	"fileName", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, fileObjPtr),  0},
+        Blt_Offset(PdfExportSwitches, flags),   0, EXPORT_ALPHA},
+    {BLT_SWITCH_CUSTOM,  "-background",         "color", (char *)NULL,
+        Blt_Offset(PdfExportSwitches, bg),         0, 0, &colorSwitch},
+    {BLT_SWITCH_OBJ,     "-data",       "varName", (char *)NULL,
+        Blt_Offset(PdfExportSwitches, dataObjPtr),  0},
+    {BLT_SWITCH_OBJ,     "-file",       "fileName", (char *)NULL,
+        Blt_Offset(PdfExportSwitches, fileObjPtr),  0},
     {BLT_SWITCH_LIST,    "-comments", "{key value...}", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.comments), BLT_SWITCH_NULL_OK},
+        Blt_Offset(PdfExportSwitches, setup.comments), BLT_SWITCH_NULL_OK},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, index), 0},
+        Blt_Offset(PdfExportSwitches, index), 0},
     {BLT_SWITCH_END}
 };
 
 static Blt_SwitchSpec importSwitches[] =
 {
-    {BLT_SWITCH_OBJ,     "-data",	"data", (char *)NULL,
-	Blt_Offset(PdfImportSwitches, dataObjPtr),  0},
-    {BLT_SWITCH_INT,      "-dpi",	"number", (char *)NULL,
-	Blt_Offset(PdfImportSwitches, dpi), 0},
-    {BLT_SWITCH_OBJ,     "-file",	"fileName", (char *)NULL,
-	Blt_Offset(PdfImportSwitches, fileObjPtr),  0},
-    {BLT_SWITCH_BITMASK,  "-nocrop",	"", (char *)NULL,
+    {BLT_SWITCH_OBJ,     "-data",       "data", (char *)NULL,
+        Blt_Offset(PdfImportSwitches, dataObjPtr),  0},
+    {BLT_SWITCH_INT,      "-dpi",       "number", (char *)NULL,
+        Blt_Offset(PdfImportSwitches, dpi), 0},
+    {BLT_SWITCH_OBJ,     "-file",       "fileName", (char *)NULL,
+        Blt_Offset(PdfImportSwitches, fileObjPtr),  0},
+    {BLT_SWITCH_BITMASK,  "-nocrop",    "", (char *)NULL,
         Blt_Offset(PdfImportSwitches, crop), 0, FALSE},
-    {BLT_SWITCH_STRING,  "-papersize",	"string", (char *)NULL,
-	Blt_Offset(PdfImportSwitches, paperSize),   0},
+    {BLT_SWITCH_STRING,  "-papersize",  "string", (char *)NULL,
+        Blt_Offset(PdfImportSwitches, paperSize),   0},
     {BLT_SWITCH_END}
 };
 
@@ -213,13 +213,13 @@ typedef pid_t ProcessId;
 #endif
 
 #ifdef WIN32
-#define close(fd)		CloseHandle((HANDLE)fd)
-#define kill			KillProcess
-#define waitpid			WaitProcess
+#define close(fd)               CloseHandle((HANDLE)fd)
+#define kill                    KillProcess
+#define waitpid                 WaitProcess
 #endif
 
-#define TRUE 	1
-#define FALSE 	0
+#define TRUE    1
+#define FALSE   0
 
 typedef struct _Blt_Picture Picture;
 
@@ -236,34 +236,34 @@ extern char *strptime(const char *buf, const char *fmt, struct tm *tm);
  *
  * ColorSwitchProc --
  *
- *	Convert a Tcl_Obj representing a Blt_Pixel color.
+ *      Convert a Tcl_Obj representing a Blt_Pixel color.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ColorSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Blt_Pixel *pixelPtr = (Blt_Pixel *)(record + offset);
     const char *string;
 
     string = Tcl_GetString(objPtr);
     if (string[0] == '\0') {
-	pixelPtr->u32 = 0x00;
-	return TCL_OK;
+        pixelPtr->u32 = 0x00;
+        return TCL_OK;
     }
     if (Blt_GetPixelFromObj(interp, objPtr, pixelPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -274,11 +274,11 @@ ColorSwitchProc(
  * variable but doesn't include any actual data).  These lines look
  * something like the following:
  *
- *		#define foo_width 16
- *		#define foo_height 16
- *		#define foo_x_hot 3
- *		#define foo_y_hot 3
- *		static char foo_bits[] = {
+ *              #define foo_width 16
+ *              #define foo_height 16
+ *              #define foo_x_hot 3
+ *              #define foo_y_hot 3
+ *              static char foo_bits[] = {
  *
  * The x_hot and y_hot lines may or may not be present.  It's important to
  * check for "char" in the last line, in order to reject old X10-style
@@ -303,25 +303,25 @@ ColorSwitchProc(
  *
  * PicaSwitchProc --
  *
- *	Convert a Tcl_Obj list of 2 or 4 numbers into representing a bounding
- *	box structure.
+ *      Convert a Tcl_Obj list of 2 or 4 numbers into representing a bounding
+ *      box structure.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *--------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 PicaSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     int *picaPtr = (int *)(record + offset);
     
@@ -333,25 +333,25 @@ PicaSwitchProc(
  *
  * PadSwitchProc --
  *
- *	Convert a Tcl_Obj list of 2 or 4 numbers into representing a
- *	bounding box structure.
+ *      Convert a Tcl_Obj list of 2 or 4 numbers into representing a
+ *      bounding box structure.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *--------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 PadSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Blt_Pad *padPtr = (Blt_Pad *)(record + offset);
     
@@ -366,10 +366,10 @@ PbmComment(char *bp)
 
     p = bp;
     if (*p == '#') {
-	/* Comment: file end of line */
-	while((*p != '\n') && (p != '\0')) {
-	    p++;
-	}
+        /* Comment: file end of line */
+        while((*p != '\n') && (p != '\0')) {
+            p++;
+        }
     }
     return p;
 }
@@ -387,140 +387,140 @@ PbmRawData(Pbm *pbmPtr)
     destPtr = Blt_CreatePicture(pbmPtr->width, pbmPtr->height);
     switch (pbmPtr->bitsPerPixel) {
     case 1: 
-	{
-	    /* Monochrome */
-	    Blt_Pixel *destRowPtr;
-	    unsigned int y;
-	    unsigned char *srcRowPtr;
-	    
-	    srcRowPtr = pbmPtr->data;
-	    destRowPtr = destPtr->bits;
-	    for (y = 0; y < pbmPtr->height; y++) {
-		unsigned int x;
-		Blt_Pixel *dp;
-		
-		dp = destRowPtr;
-		for (x = 0; x < pbmPtr->width; x++) {
-		    dp->Red = dp->Green = dp->Blue = (GetBit(x)) ? 0xFF : 0;
-		    dp->Alpha = ALPHA_OPAQUE;
-		    dp++;
-		}
-		srcRowPtr += pbmPtr->bytesPerRow;
-		destRowPtr += destPtr->pixelsPerRow;
-	    }
-	    break;
-	}
+        {
+            /* Monochrome */
+            Blt_Pixel *destRowPtr;
+            unsigned int y;
+            unsigned char *srcRowPtr;
+            
+            srcRowPtr = pbmPtr->data;
+            destRowPtr = destPtr->bits;
+            for (y = 0; y < pbmPtr->height; y++) {
+                unsigned int x;
+                Blt_Pixel *dp;
+                
+                dp = destRowPtr;
+                for (x = 0; x < pbmPtr->width; x++) {
+                    dp->Red = dp->Green = dp->Blue = (GetBit(x)) ? 0xFF : 0;
+                    dp->Alpha = ALPHA_OPAQUE;
+                    dp++;
+                }
+                srcRowPtr += pbmPtr->bytesPerRow;
+                destRowPtr += destPtr->pixelsPerRow;
+            }
+            break;
+        }
     case 8: 
-	{
-	    /* Greyscale (1 byte)  */
-	    Blt_Pixel *destRowPtr;
-	    unsigned int y;
-	    unsigned char *srcRowPtr;
-	    
-	    srcRowPtr = pbmPtr->data;
-	    destRowPtr = destPtr->bits;
-	    for (y = 0; y < pbmPtr->height; y++) {
-		unsigned char *sp;
-		Blt_Pixel *dp, *dend;
-		
-		sp = srcRowPtr;
-		for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend;
-		     sp++, dp++) {
-		    dp->Red = dp->Green = dp->Blue = *sp;
-		    dp->Alpha = ALPHA_OPAQUE;
-		}
-		srcRowPtr += pbmPtr->bytesPerRow;
-		destRowPtr += destPtr->pixelsPerRow;
-	    }
-	    break;
-	}
+        {
+            /* Greyscale (1 byte)  */
+            Blt_Pixel *destRowPtr;
+            unsigned int y;
+            unsigned char *srcRowPtr;
+            
+            srcRowPtr = pbmPtr->data;
+            destRowPtr = destPtr->bits;
+            for (y = 0; y < pbmPtr->height; y++) {
+                unsigned char *sp;
+                Blt_Pixel *dp, *dend;
+                
+                sp = srcRowPtr;
+                for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend;
+                     sp++, dp++) {
+                    dp->Red = dp->Green = dp->Blue = *sp;
+                    dp->Alpha = ALPHA_OPAQUE;
+                }
+                srcRowPtr += pbmPtr->bytesPerRow;
+                destRowPtr += destPtr->pixelsPerRow;
+            }
+            break;
+        }
     case 16: 
-	{ 
-	    /* Greyscale (2 bytes)  */
-	    Blt_Pixel *destRowPtr;
-	    unsigned int y;
-	    unsigned char *srcRowPtr;
-	    
-	    srcRowPtr = pbmPtr->data;
-	    destRowPtr = destPtr->bits;
-	    for (y = 0; y < pbmPtr->height; y++) {
-		unsigned char *sp;
-		Blt_Pixel *dp, *dend;
-		
-		sp = srcRowPtr;
-		for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend;
-		     sp += 2, dp++) {
-		    unsigned int value;
-		    
-		    value = PbmGetShort(sp);
-		    dp->Red = dp->Green = dp->Blue = div257(value);
-		    dp->Alpha = ALPHA_OPAQUE;
-		}
-		srcRowPtr += pbmPtr->bytesPerRow;
-		destRowPtr += destPtr->pixelsPerRow;
-	    }
-	    break;
-	}
+        { 
+            /* Greyscale (2 bytes)  */
+            Blt_Pixel *destRowPtr;
+            unsigned int y;
+            unsigned char *srcRowPtr;
+            
+            srcRowPtr = pbmPtr->data;
+            destRowPtr = destPtr->bits;
+            for (y = 0; y < pbmPtr->height; y++) {
+                unsigned char *sp;
+                Blt_Pixel *dp, *dend;
+                
+                sp = srcRowPtr;
+                for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend;
+                     sp += 2, dp++) {
+                    unsigned int value;
+                    
+                    value = PbmGetShort(sp);
+                    dp->Red = dp->Green = dp->Blue = div257(value);
+                    dp->Alpha = ALPHA_OPAQUE;
+                }
+                srcRowPtr += pbmPtr->bytesPerRow;
+                destRowPtr += destPtr->pixelsPerRow;
+            }
+            break;
+        }
     case 24: 
-	{ 
-	    /* Color (1 byte per color component) */
-	    Blt_Pixel *destRowPtr;
-	    unsigned int y;
-	    unsigned char *srcRowPtr;
-	    
-	    srcRowPtr = pbmPtr->data;
-	    destRowPtr = destPtr->bits;
-	    for (y = 0; y < pbmPtr->height; y++) {
-		unsigned char *sp;
-		Blt_Pixel *dp, *dend;
-		
-		sp = srcRowPtr;
-		for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend;
-		     sp += 3, dp++) {
-		    dp->Red   = sp[0];
-		    dp->Green = sp[1];
-		    dp->Blue  = sp[2];
-		    dp->Alpha = ALPHA_OPAQUE;
-		}
-		srcRowPtr += pbmPtr->bytesPerRow;
-		destRowPtr += destPtr->pixelsPerRow;
-	    }
-	    break;
-	}
+        { 
+            /* Color (1 byte per color component) */
+            Blt_Pixel *destRowPtr;
+            unsigned int y;
+            unsigned char *srcRowPtr;
+            
+            srcRowPtr = pbmPtr->data;
+            destRowPtr = destPtr->bits;
+            for (y = 0; y < pbmPtr->height; y++) {
+                unsigned char *sp;
+                Blt_Pixel *dp, *dend;
+                
+                sp = srcRowPtr;
+                for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend;
+                     sp += 3, dp++) {
+                    dp->Red   = sp[0];
+                    dp->Green = sp[1];
+                    dp->Blue  = sp[2];
+                    dp->Alpha = ALPHA_OPAQUE;
+                }
+                srcRowPtr += pbmPtr->bytesPerRow;
+                destRowPtr += destPtr->pixelsPerRow;
+            }
+            break;
+        }
     case 48: 
-	{
-	    /* Color (2 bytes per color component) */
-	    Blt_Pixel *destRowPtr;
-	    unsigned int y;
-	    unsigned char *srcRowPtr;
-	    
-	    srcRowPtr = pbmPtr->data;
-	    destRowPtr = destPtr->bits;
-	    for (y = 0; y < pbmPtr->height; y++) {
-		unsigned char *sp;
-		Blt_Pixel *dp, *dend;
-		
-		sp = srcRowPtr;
-		for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend;
-		     sp += 6, dp++) {
-		    unsigned int r, g, b;
-		    
-		    r = PbmGetShort(sp);
-		    g = PbmGetShort(sp+2);
-		    b = PbmGetShort(sp+4);
-		    dp->Red   = div257(r);
-		    dp->Green = div257(g);
-		    dp->Blue  = div257(b);
-		    dp->Alpha = ALPHA_OPAQUE;
-		}
-		srcRowPtr += pbmPtr->bytesPerRow;
-		destRowPtr += destPtr->pixelsPerRow;
-	    }
-	    break;
-	}
+        {
+            /* Color (2 bytes per color component) */
+            Blt_Pixel *destRowPtr;
+            unsigned int y;
+            unsigned char *srcRowPtr;
+            
+            srcRowPtr = pbmPtr->data;
+            destRowPtr = destPtr->bits;
+            for (y = 0; y < pbmPtr->height; y++) {
+                unsigned char *sp;
+                Blt_Pixel *dp, *dend;
+                
+                sp = srcRowPtr;
+                for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend;
+                     sp += 6, dp++) {
+                    unsigned int r, g, b;
+                    
+                    r = PbmGetShort(sp);
+                    g = PbmGetShort(sp+2);
+                    b = PbmGetShort(sp+4);
+                    dp->Red   = div257(r);
+                    dp->Green = div257(g);
+                    dp->Blue  = div257(b);
+                    dp->Alpha = ALPHA_OPAQUE;
+                }
+                srcRowPtr += pbmPtr->bytesPerRow;
+                destRowPtr += destPtr->pixelsPerRow;
+            }
+            break;
+        }
     }
     Blt_DBuffer_SetPointer(pbmPtr->dbuffer, pbmPtr->data + 
-			   (pbmPtr->height * pbmPtr->bytesPerRow));
+                           (pbmPtr->height * pbmPtr->bytesPerRow));
     destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
@@ -538,111 +538,111 @@ PbmToPicture(Tcl_Interp *interp, Blt_DBuffer dbuffer)
     size = Blt_DBuffer_BytesLeft(dbuffer);
     start = Blt_DBuffer_Pointer(dbuffer);
     if (size < 14) {
-	Tcl_AppendResult(interp, "can't read PBM bitmap: short file", 
-			 (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "can't read PBM bitmap: short file", 
+                         (char *)NULL);
+        return NULL;
     }
     bp = (char *)start;
     if ((bp[0] != 'P') || (bp[1] < '1') || (bp[1] > '6')) {
-	Tcl_AppendResult(interp, "unknown PBM bitmap header", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "unknown PBM bitmap header", (char *)NULL);
+        return NULL;
     }
     version = bp[1] - '0';
     isRaw = (version > 2);
-    switch(version) {	
-    case PBM_PLAIN:			/* P2 */
-    case PBM_RAW:			/* P5 */
-	pbm.bitsPerPixel = 8;
-	break;
-    case PGM_PLAIN:			/* P1 */
-    case PGM_RAW:			/* P4 */
-	pbm.bitsPerPixel = 1;
-	break;
-    case PPM_PLAIN:			/* P3 */
-    case PPM_RAW:			/* P6 */
-	pbm.bitsPerPixel = 24;
-	break;
+    switch(version) {   
+    case PBM_PLAIN:                     /* P2 */
+    case PBM_RAW:                       /* P5 */
+        pbm.bitsPerPixel = 8;
+        break;
+    case PGM_PLAIN:                     /* P1 */
+    case PGM_RAW:                       /* P4 */
+        pbm.bitsPerPixel = 1;
+        break;
+    case PPM_PLAIN:                     /* P3 */
+    case PPM_RAW:                       /* P6 */
+        pbm.bitsPerPixel = 24;
+        break;
     default:
-	Tcl_AppendResult(interp, "unknown PBM version \"", Blt_Itoa(version),
-			 "\"", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "unknown PBM version \"", Blt_Itoa(version),
+                         "\"", (char *)NULL);
+        return NULL;
     }
     if (!isspace(bp[2])) {
-	Tcl_AppendResult(interp, "no white space after version in pbm header.", 
-			 (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "no white space after version in pbm header.", 
+                         (char *)NULL);
+        return NULL;
     }
     p = bp + 3;
     if (*p == '#') {
-	p = PbmComment(p);
+        p = PbmComment(p);
     }
     pbm.width = strtoul(p, &p, 10);
     if (pbm.width == 0) {
-	Tcl_AppendResult(interp, "bad width specification ", bp+3, ".", 
-			 (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "bad width specification ", bp+3, ".", 
+                         (char *)NULL);
+        return NULL;
     }
     if (!isspace(*p)) {
-	Tcl_AppendResult(interp, "no white space after width in pbm header.", 
-		(char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "no white space after width in pbm header.", 
+                (char *)NULL);
+        return NULL;
     }
     p++;
     if (*p == '#') {
-	p = PbmComment(p);
+        p = PbmComment(p);
     }
     pbm.height = strtoul(p, &p, 10);
     if (pbm.height == 0) {
-	Tcl_AppendResult(interp, "bad height specification", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "bad height specification", (char *)NULL);
+        return NULL;
     }
     if (!isspace(*p)) {
-	Tcl_AppendResult(interp, "no white space after height in header.", 
-			 (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "no white space after height in header.", 
+                         (char *)NULL);
+        return NULL;
     }
     p++;
     if (*p == '#') {
-	p = PbmComment(p);
+        p = PbmComment(p);
     }
     if (pbm.bitsPerPixel != 1) {
-	unsigned int maxval;		/* Maximum intensity allowed. */
+        unsigned int maxval;            /* Maximum intensity allowed. */
 
-	maxval = strtoul(p, &p, 10);
-	if (maxval == 0) {
-	    Tcl_AppendResult(interp, "bad maxval specification", (char *)NULL);
-	    return NULL;
-	}
-	if (!isspace(*p)) {
-	    Tcl_AppendResult(interp, "no white space after maxval pbm header.", 
-			     (char *)NULL);
-	    return NULL;
-	}
-	p++;
-	if (*p == '#') {
-	    p = PbmComment(p);
-	}
-	if (maxval >= USHRT_MAX) {
-	    Tcl_AppendResult(interp, "invalid maxval specification", 
-			     (char *)NULL);
-	    return NULL;
-	}
-	if (maxval > 255) {
-	    pbm.bitsPerPixel <<= 1;	/* 16-bit greyscale or 48 bit
-					 * color. */
-	}
+        maxval = strtoul(p, &p, 10);
+        if (maxval == 0) {
+            Tcl_AppendResult(interp, "bad maxval specification", (char *)NULL);
+            return NULL;
+        }
+        if (!isspace(*p)) {
+            Tcl_AppendResult(interp, "no white space after maxval pbm header.", 
+                             (char *)NULL);
+            return NULL;
+        }
+        p++;
+        if (*p == '#') {
+            p = PbmComment(p);
+        }
+        if (maxval >= USHRT_MAX) {
+            Tcl_AppendResult(interp, "invalid maxval specification", 
+                             (char *)NULL);
+            return NULL;
+        }
+        if (maxval > 255) {
+            pbm.bitsPerPixel <<= 1;     /* 16-bit greyscale or 48 bit
+                                         * color. */
+        }
     }
     pbm.data = (unsigned char *)p;
     pbm.dbuffer = dbuffer;
     pbm.bytesPerRow = ((pbm.bitsPerPixel * pbm.width) + 7) / 8;
     want = (pbm.data - start) + pbm.height * pbm.bytesPerRow;
     if ((isRaw) && (want > Blt_DBuffer_BytesLeft(dbuffer))) {
-	Tcl_AppendResult(interp, "short pbm file", (char *)NULL);
-	return NULL;
-    }	    
+        Tcl_AppendResult(interp, "short pbm file", (char *)NULL);
+        return NULL;
+    }       
     if (!isRaw) {
-	Tcl_AppendResult(interp, "expected raw pbm file", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "expected raw pbm file", (char *)NULL);
+        return NULL;
     }
     return PbmRawData(&pbm);
 }
@@ -660,15 +660,15 @@ typedef struct {
  *
  * WriteBufferProc --
  *
- *	This function runs in a separate thread and write the data buffer
- *	as input to the ghostscript process.
+ *      This function runs in a separate thread and write the data buffer
+ *      as input to the ghostscript process.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Writes the buffer (PDF file) to the ghostscript standard input file
- *	descriptor.
+ *      Writes the buffer (PDF file) to the ghostscript standard input file
+ *      descriptor.
  *
  *---------------------------------------------------------------------------
  */
@@ -684,17 +684,17 @@ WriteBufferProc(void *clientData)
     hFile = (HANDLE)writerPtr->fd;
     bp = Blt_DBuffer_Bytes(writerPtr->dbuffer);
     for (bytesLeft = Blt_DBuffer_Length(writerPtr->dbuffer); bytesLeft > 0;
-	 bytesLeft -= count) {
-	if (!WriteFile(hFile, bp, bytesLeft, &count, NULL)) {
-	    writerPtr->lastError = GetLastError();
-	    break;
-	}
-	bp += count;
+         bytesLeft -= count) {
+        if (!WriteFile(hFile, bp, bytesLeft, &count, NULL)) {
+            writerPtr->lastError = GetLastError();
+            break;
+        }
+        bp += count;
     }
     Blt_DBuffer_Destroy(writerPtr->dbuffer);
     CloseHandle(hFile);
     if (bytesLeft > 0) {
-	ExitThread(1);
+        ExitThread(1);
     }
     ExitThread(0);
     /* NOTREACHED */
@@ -718,14 +718,14 @@ WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
     writer.lastError = 0;
     clientData = &writer;
     hThread = CreateThread(
-	NULL,				/* Security attributes */
-	8000,				/* Initial stack size. */
-	WriteBufferProc,		/* Address of thread routine */
-	clientData,			/* One-word of data passed to
-					 * routine. */
-	0,				/* Creation flags */
-	&id);				/* (out) Will contain Id of new
-					 * thread. */
+        NULL,                           /* Security attributes */
+        8000,                           /* Initial stack size. */
+        WriteBufferProc,                /* Address of thread routine */
+        clientData,                     /* One-word of data passed to
+                                         * routine. */
+        0,                              /* Creation flags */
+        &id);                           /* (out) Will contain Id of new
+                                         * thread. */
     return (int)hThread;
 }
 
@@ -741,27 +741,27 @@ ReadFromGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
     hFile = (HANDLE)fd;
     numBytes = 0;
     for (;;) {
-	DWORD numRead;
-	unsigned char *bp;
+        DWORD numRead;
+        unsigned char *bp;
 
-	bp = Blt_DBuffer_Extend(dbuffer, BUFFER_SIZE);
-	if (!ReadFile(hFile, (char *)bp, BUFFER_SIZE, &numRead, NULL)) {
-	    DWORD err;
+        bp = Blt_DBuffer_Extend(dbuffer, BUFFER_SIZE);
+        if (!ReadFile(hFile, (char *)bp, BUFFER_SIZE, &numRead, NULL)) {
+            DWORD err;
 
-	    err = GetLastError();
-	    if ((err != ERROR_BROKEN_PIPE) && (err != ERROR_HANDLE_EOF)) {
-		Tcl_AppendResult(interp, "error reading from ghostscript: ",
-				 Blt_LastError(), (char *)NULL);
-		result = TCL_ERROR;
-		break;
-	    }
-	}
-	if (numRead == 0) {
-	    result = TCL_OK;
-	    break;			/* EOF */
-	}
-	numBytes += numRead;
-	Blt_DBuffer_SetLength(dbuffer, numBytes);
+            err = GetLastError();
+            if ((err != ERROR_BROKEN_PIPE) && (err != ERROR_HANDLE_EOF)) {
+                Tcl_AppendResult(interp, "error reading from ghostscript: ",
+                                 Blt_LastError(), (char *)NULL);
+                result = TCL_ERROR;
+                break;
+            }
+        }
+        if (numRead == 0) {
+            result = TCL_OK;
+            break;                      /* EOF */
+        }
+        numBytes += numRead;
+        Blt_DBuffer_SetLength(dbuffer, numBytes);
     }
     Blt_DBuffer_SetLength(dbuffer, numBytes);
     CloseHandle(hFile);
@@ -777,25 +777,25 @@ WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
 
     child = fork();
     if (child == -1) {
-	Tcl_AppendResult(interp, "can't fork process: ", Tcl_PosixError(interp),
-			 (char *)NULL);
-	return 0;
+        Tcl_AppendResult(interp, "can't fork process: ", Tcl_PosixError(interp),
+                         (char *)NULL);
+        return 0;
     } else if (child > 0) {
-	close(fd);
-	return child;
+        close(fd);
+        return child;
     } else {
-	const unsigned char *bytes;
-	size_t numBytes;
-	ssize_t numWritten;
+        const unsigned char *bytes;
+        size_t numBytes;
+        ssize_t numWritten;
 
-	bytes = Blt_DBuffer_Bytes(dbuffer);
-	numBytes = Blt_DBuffer_Length(dbuffer);
-	numWritten = write(fd, bytes, numBytes);
-	close(fd);
-	if (numWritten != numBytes) {
-	    exit(1);
-	}
-	exit(0);
+        bytes = Blt_DBuffer_Bytes(dbuffer);
+        numBytes = Blt_DBuffer_Length(dbuffer);
+        numWritten = write(fd, bytes, numBytes);
+        close(fd);
+        if (numWritten != numBytes) {
+            exit(1);
+        }
+        exit(0);
     }
 }
 
@@ -807,35 +807,35 @@ ReadFromGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
     Blt_DBuffer_Free(dbuffer);
     numBytes = 0;
     for (;;) {
-	char *bp;
-	int numRead;
+        char *bp;
+        int numRead;
 
-	bp = (char *)Blt_DBuffer_Extend(dbuffer, BUFFER_SIZE);
-	numRead = read(fd, bp, BUFFER_SIZE);
-	if (numRead == 0) {
-	    break;		/* EOF */
-	} else if (numRead < 0) {
-	    Tcl_AppendResult(interp, "error reading from ghostscript: ",
-			     Tcl_PosixError(interp), (char *)NULL);
-	    return TCL_ERROR;
-	}
+        bp = (char *)Blt_DBuffer_Extend(dbuffer, BUFFER_SIZE);
+        numRead = read(fd, bp, BUFFER_SIZE);
+        if (numRead == 0) {
+            break;              /* EOF */
+        } else if (numRead < 0) {
+            Tcl_AppendResult(interp, "error reading from ghostscript: ",
+                             Tcl_PosixError(interp), (char *)NULL);
+            return TCL_ERROR;
+        }
 
-	numBytes += numRead;
-	Blt_DBuffer_SetLength(dbuffer, numBytes);
+        numBytes += numRead;
+        Blt_DBuffer_SetLength(dbuffer, numBytes);
     }
     Blt_DBuffer_SetLength(dbuffer, numBytes);
     close(fd);
     return TCL_OK;
 }
 
-#endif	/* WIN32 */
+#endif  /* WIN32 */
 
 static int
 PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
-	 PdfImportSwitches *switchesPtr)
+         PdfImportSwitches *switchesPtr)
 {
-    int in, out;			/* File descriptors for ghostscript
-					 * subprocess. */
+    int in, out;                        /* File descriptors for ghostscript
+                                         * subprocess. */
     char string1[200];
     char string2[200];
     int numPids;
@@ -844,60 +844,60 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     pid_t child;
     const char **p;
     const char *args[] = {
-	"gs",				/* Ghostscript command */
-	"-dEPSCrop",			/* (optional) crop page to bbox  */
-	"-dSAFER",			/*  */
-	"-q",				/* Quiet mode.  No GS messages.  */
-	"-sDEVICE=ppmraw",		/* Format is PPM raw */
-	"-dBATCH",			/* Batch mode. No "quit" necessary. */
-	"-sPAPERSIZE=letter",		/* (optional) Specify paper size. */
-	"-r100x100",			/* (optional) Specify DPI of screen */
-	"-dNOPAUSE",			/*  */
-	"-sOutputFile=-",		/* Output file is stdout. */
-	"-",
-	NULL
+        "gs",                           /* Ghostscript command */
+        "-dEPSCrop",                    /* (optional) crop page to bbox  */
+        "-dSAFER",                      /*  */
+        "-q",                           /* Quiet mode.  No GS messages.  */
+        "-sDEVICE=ppmraw",              /* Format is PPM raw */
+        "-dBATCH",                      /* Batch mode. No "quit" necessary. */
+        "-sPAPERSIZE=letter",           /* (optional) Specify paper size. */
+        "-r100x100",                    /* (optional) Specify DPI of screen */
+        "-dNOPAUSE",                    /*  */
+        "-sOutputFile=-",               /* Output file is stdout. */
+        "-",
+        NULL
     };
 
     args[1] = (switchesPtr->crop) ? "-dEPSCrop" : "-dSAFER";
     {
-	Tk_Window tkwin;
-	int xdpi, ydpi;
+        Tk_Window tkwin;
+        int xdpi, ydpi;
 
-	tkwin = Tk_MainWindow(interp);
-	if (switchesPtr->dpi > 0) {
-	    xdpi = ydpi = switchesPtr->dpi;
-	} else {
-	    Blt_ScreenDPI(tkwin, &xdpi, &ydpi);
-	}
-	sprintf(string1, "-r%dx%d", xdpi, ydpi);
-	args[7] = string1;
+        tkwin = Tk_MainWindow(interp);
+        if (switchesPtr->dpi > 0) {
+            xdpi = ydpi = switchesPtr->dpi;
+        } else {
+            Blt_ScreenDPI(tkwin, &xdpi, &ydpi);
+        }
+        sprintf(string1, "-r%dx%d", xdpi, ydpi);
+        args[7] = string1;
     }
     if (switchesPtr->paperSize != NULL) {
-	sprintf(string2, "-sPAPERSIZE=%s", switchesPtr->paperSize);
-	args[6] = string2;
+        sprintf(string2, "-sPAPERSIZE=%s", switchesPtr->paperSize);
+        args[6] = string2;
     }
     {
-	int i;
-	Tcl_Obj *objv[11];
-	int objc = 11;
+        int i;
+        Tcl_Obj *objv[11];
+        int objc = 11;
 
-	for (i = 0, p = args; *p != NULL; p++, i++) {
-	    objv[i] = Tcl_NewStringObj(*p, -1);
-	    Tcl_IncrRefCount(objv[i]);
-	}
-	numPids = Blt_CreatePipeline(interp, objc, objv, &pidPtr, &in, &out,
-		(int *)NULL);
-	for (i = 0; i < objc; i++) {
-	    Tcl_DecrRefCount(objv[i]);
-	}
+        for (i = 0, p = args; *p != NULL; p++, i++) {
+            objv[i] = Tcl_NewStringObj(*p, -1);
+            Tcl_IncrRefCount(objv[i]);
+        }
+        numPids = Blt_CreatePipeline(interp, objc, objv, &pidPtr, &in, &out,
+                (int *)NULL);
+        for (i = 0; i < objc; i++) {
+            Tcl_DecrRefCount(objv[i]);
+        }
     }
     if (numPids < 0) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_DetachPids(numPids, (Tcl_Pid *)pidPtr);
     child = WriteToGhostscript(interp, in, dbuffer);
     if (child == 0) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     result = ReadFromGhostscript(interp, out, dbuffer);
 #ifdef WIN32
@@ -908,32 +908,32 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     Blt_DBuffer_SaveFile(interp, "junk.ppm", dbuffer);
 #endif
     if (result != TCL_OK) {
-	Blt_DBuffer_Free(dbuffer);
-	return TCL_ERROR;
+        Blt_DBuffer_Free(dbuffer);
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
 
 static Blt_Chain
 PdfToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
-	     PdfImportSwitches *switchesPtr)
+             PdfImportSwitches *switchesPtr)
 {
     Blt_Chain chain;
 
     if (PdfToPbm(interp, fileName, dbuffer, switchesPtr) != TCL_OK) {
-	return NULL;
+        return NULL;
     }
     /* Can be more than one image in buffer. Save each picture in a list. */
     chain = Blt_Chain_Create();
     while (Blt_DBuffer_BytesLeft(dbuffer) > 0) {
-	Blt_Picture picture;
+        Blt_Picture picture;
 
-	picture = PbmToPicture(interp, dbuffer);
-	if (picture == NULL) {
-	    Blt_Chain_Destroy(chain);
-	    return NULL;
-	}
-	Blt_Chain_Append(chain, picture);
+        picture = PbmToPicture(interp, dbuffer);
+        if (picture == NULL) {
+            Blt_Chain_Destroy(chain);
+            return NULL;
+        }
+        Blt_Chain_Append(chain, picture);
     }
     return chain;
 }
@@ -953,7 +953,7 @@ enum PdfObjects {
     OBJ_SOFTMASK_LENGTH,
 };
 
-#define MAX_NUM_OBJS	OBJ_SOFTMASK_LENGTH
+#define MAX_NUM_OBJS    OBJ_SOFTMASK_LENGTH
 
 static Pdf *
 NewPdf()
@@ -981,10 +981,10 @@ AddComments(Pdf *pdfPtr, const char **comments)
     const char **p;
 
     for (p = comments; *p != NULL; p += 2) {
-	if (*(p+1) == NULL) {
-	    break;
-	}
-	Blt_DBuffer_Format(pdfPtr->dbuffer, "%% %s: %s\n", *p, *(p+1));
+        if (*(p+1) == NULL) {
+            break;
+        }
+        Blt_DBuffer_Format(pdfPtr->dbuffer, "%% %s: %s\n", *p, *(p+1));
     }
 }
 
@@ -993,10 +993,10 @@ AddComments(Pdf *pdfPtr, const char **comments)
  * LENGTH stream object 1
  * PAGE object 2
  * TRANS object 3 /Contents
- * PAGES	numObjects - 2
- * CATALOG	numObjects - 1
- * INFO		numObjects 
- * XREF		0
+ * PAGES        numObjects - 2
+ * CATALOG      numObjects - 1
+ * INFO         numObjects 
+ * XREF         0
  */
 
 #define SetXRefOffset(p,id) \
@@ -1018,16 +1018,16 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 
     srcPtr = original;
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
-			  "%PDF-1.4\n",
-			  (char *)NULL);
+                          "%PDF-1.4\n",
+                          (char *)NULL);
 
     if (setupPtr->comments != NULL) {
-	AddComments(pdfPtr, setupPtr->comments);
+        AddComments(pdfPtr, setupPtr->comments);
     }
 
     version = Tcl_GetVar(interp, "blt_version", TCL_GLOBAL_ONLY);
     if (version == NULL) {
-	version = "???";
+        version = "???";
     }
     ticks = time((time_t *) NULL);
     tmPtr = gmtime(&ticks);
@@ -1036,293 +1036,293 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
     /* Catalog object */
     SetXRefOffset(pdfPtr, OBJ_CATALOG);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n"
-		       "  <<\n"
-		       "    /Type /Catalog\n"
-		       "    /Pages %d 0 R\n"
-		       "  >>\n"
-		       "endobj\n", 
-		       OBJ_CATALOG, OBJ_PAGES);
+                       "%d 0 obj\n"
+                       "  <<\n"
+                       "    /Type /Catalog\n"
+                       "    /Pages %d 0 R\n"
+                       "  >>\n"
+                       "endobj\n", 
+                       OBJ_CATALOG, OBJ_PAGES);
 
     /* Information object */
     SetXRefOffset(pdfPtr, OBJ_INFO);
     Blt_DBuffer_Format(pdfPtr->dbuffer,
-		       "%d 0 obj\n"
-		       "  <<\n"
-		       "    /CreationDate (%s)\n"
-		       "    /Producer (BLT %s Picture)\n"
-		       "  >>\n"
-		       "endobj\n", 
-		       OBJ_INFO, 
-		       date, 
-		       version);
+                       "%d 0 obj\n"
+                       "  <<\n"
+                       "    /CreationDate (%s)\n"
+                       "    /Producer (BLT %s Picture)\n"
+                       "  >>\n"
+                       "endobj\n", 
+                       OBJ_INFO, 
+                       date, 
+                       version);
 
     /* Pages object */
     SetXRefOffset(pdfPtr, OBJ_PAGES);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n"
-		       "  <<\n"
-		       "    /Type /Pages\n"
-		       "    /Kids [ %d 0 R ]\n"
-		       "    /Count 1\n"
-		       "  >>\n"
-		       "endobj\n", 
-		       OBJ_PAGES,
-		       OBJ_PAGE); 
+                       "%d 0 obj\n"
+                       "  <<\n"
+                       "    /Type /Pages\n"
+                       "    /Kids [ %d 0 R ]\n"
+                       "    /Count 1\n"
+                       "  >>\n"
+                       "endobj\n", 
+                       OBJ_PAGES,
+                       OBJ_PAGE); 
 
     Blt_Ps_ComputeBoundingBox(setupPtr, srcPtr->width, srcPtr->height);
 
     SetXRefOffset(pdfPtr, OBJ_PAGE);
     /* Page object. */
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n" 
-		       "  <<\n" 
-		       "    /Type /Page\n"
-		       "    /Parent %d 0 R\n"
-		       "    /Resources %d 0 R\n"
-		       "    /MediaBox [ 0 0 %d %d ]\n"
-		       "    /Contents %d 0 R\n"
-		       "  >>\n"
-		       "endobj\n", 
-		       OBJ_PAGE, 
-		       OBJ_PAGES,
-		       OBJ_RESOURCES,
-		       setupPtr->right - setupPtr->left, 
-		       setupPtr->top - setupPtr->bottom,
-		       OBJ_CONTENT);
+                       "%d 0 obj\n" 
+                       "  <<\n" 
+                       "    /Type /Page\n"
+                       "    /Parent %d 0 R\n"
+                       "    /Resources %d 0 R\n"
+                       "    /MediaBox [ 0 0 %d %d ]\n"
+                       "    /Contents %d 0 R\n"
+                       "  >>\n"
+                       "endobj\n", 
+                       OBJ_PAGE, 
+                       OBJ_PAGES,
+                       OBJ_RESOURCES,
+                       setupPtr->right - setupPtr->left, 
+                       setupPtr->top - setupPtr->bottom,
+                       OBJ_CONTENT);
 
     SetXRefOffset(pdfPtr, OBJ_RESOURCES);
     /* Resource dictionary */
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n" 
-		       "  <<\n" 
-		       "    /ProcSet [ /PDF /ImageC /ImageB ]\n"
-		       "    /XObject << /Im1 %d 0 R >>\n"
-		       "  >>\n"
-		       "endobj\n", 
-		       OBJ_RESOURCES,
-		       OBJ_IMAGE);
+                       "%d 0 obj\n" 
+                       "  <<\n" 
+                       "    /ProcSet [ /PDF /ImageC /ImageB ]\n"
+                       "    /XObject << /Im1 %d 0 R >>\n"
+                       "  >>\n"
+                       "endobj\n", 
+                       OBJ_RESOURCES,
+                       OBJ_IMAGE);
     
     /* Content object.  */
     SetXRefOffset(pdfPtr, OBJ_CONTENT);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n"
-		       "  <<\n"
-		       "    /Length %d 0 R\n"
-		       "  >>\n"
-		       "stream\n",
-		       OBJ_CONTENT,
-		       OBJ_CONTENT_LENGTH);
+                       "%d 0 obj\n"
+                       "  <<\n"
+                       "    /Length %d 0 R\n"
+                       "  >>\n"
+                       "stream\n",
+                       OBJ_CONTENT,
+                       OBJ_CONTENT_LENGTH);
     length = Blt_DBuffer_Format(pdfPtr->dbuffer, 
-				" q\n" 
-				"   1 0 0 1 0 0 cm\n"  /* Translate */
-				"   %d 0 0 %d 0 0 cm\n"	 /* Scale */
-				"   /Im1 Do\n"
-				" Q\n", 
-				setupPtr->right - setupPtr->left, 
-				setupPtr->top - setupPtr->bottom);
+                                " q\n" 
+                                "   1 0 0 1 0 0 cm\n"  /* Translate */
+                                "   %d 0 0 %d 0 0 cm\n"  /* Scale */
+                                "   /Im1 Do\n"
+                                " Q\n", 
+                                setupPtr->right - setupPtr->left, 
+                                setupPtr->top - setupPtr->bottom);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
-			  "endstream\n"
-			  "endobj\n", (char *)NULL);
+                          "endstream\n"
+                          "endobj\n", (char *)NULL);
 
     /* Length of content stream. */
     SetXRefOffset(pdfPtr, OBJ_CONTENT_LENGTH);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n" 
-		       "  %ld\n"
-		       "endobj\n", 
-		       OBJ_CONTENT_LENGTH,
-		       length);
+                       "%d 0 obj\n" 
+                       "  %ld\n"
+                       "endobj\n", 
+                       OBJ_CONTENT_LENGTH,
+                       length);
 
     Blt_ClassifyPicture(srcPtr);
     if ((!Blt_Picture_IsOpaque(srcPtr)) &&
         ((exportPtr->flags & EXPORT_ALPHA) == 0)) {
-	Blt_Picture background;
-	
-	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
-	Blt_BlankPicture(background, exportPtr->bg.u32);
-	Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-			0, 0);
-	srcPtr = background;
+        Blt_Picture background;
+        
+        background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
+        Blt_BlankPicture(background, exportPtr->bg.u32);
+        Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+                        0, 0);
+        srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(srcPtr);
+        Blt_UnassociateColors(srcPtr);
     }
     if (Blt_Picture_IsGreyscale(srcPtr)) {
-	colorSpace = "DeviceGray";
-	numComponents = 1;
+        colorSpace = "DeviceGray";
+        numComponents = 1;
     } else {
-	colorSpace = "DeviceRGB";
-	numComponents = 3;
+        colorSpace = "DeviceRGB";
+        numComponents = 3;
     }
 
     /* Transfer image data to buffer. */
     imgData = Blt_AssertMalloc(srcPtr->width * srcPtr->height * numComponents);
     if (Blt_Picture_IsGreyscale(srcPtr)) {
-	Blt_Pixel *srcRowPtr;
-	int y;
-	unsigned char *dp;
+        Blt_Pixel *srcRowPtr;
+        int y;
+        unsigned char *dp;
 
-	srcRowPtr = srcPtr->bits;
-	dp = imgData;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
+        srcRowPtr = srcPtr->bits;
+        dp = imgData;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
 
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		*dp++ = sp->Red;
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                *dp++ = sp->Red;
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
     } else {
-	Blt_Pixel *srcRowPtr;
-	unsigned char *dp;
-	int y;
+        Blt_Pixel *srcRowPtr;
+        unsigned char *dp;
+        int y;
 
-	srcRowPtr = srcPtr->bits;
-	dp = imgData;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
+        srcRowPtr = srcPtr->bits;
+        dp = imgData;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
 
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		dp[0] = sp->Red;
-		dp[1] = sp->Green;
-		dp[2] = sp->Blue;
-		dp += 3;
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                dp[0] = sp->Red;
+                dp[1] = sp->Green;
+                dp[2] = sp->Blue;
+                dp += 3;
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
     }
 
     /* Image object */
     SetXRefOffset(pdfPtr, OBJ_IMAGE);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n"
-		       "  <<\n"
-		       "    /Type /XObject\n"
-		       "    /Subtype /Image\n"
-		       "    /Width %d\n"
-		       "    /Height %d\n"
-		       "    /ColorSpace /%s\n"
-		       "    /BitsPerComponent 8\n"
-		       "    /Filter /ASCII85Decode\n",
-		       OBJ_IMAGE, 
-		       srcPtr->width, srcPtr->height, colorSpace);
+                       "%d 0 obj\n"
+                       "  <<\n"
+                       "    /Type /XObject\n"
+                       "    /Subtype /Image\n"
+                       "    /Width %d\n"
+                       "    /Height %d\n"
+                       "    /ColorSpace /%s\n"
+                       "    /BitsPerComponent 8\n"
+                       "    /Filter /ASCII85Decode\n",
+                       OBJ_IMAGE, 
+                       srcPtr->width, srcPtr->height, colorSpace);
     
     if (!Blt_Picture_IsOpaque(srcPtr)) {
-	Blt_DBuffer_Format(pdfPtr->dbuffer, 
-			   "    /SMask %d 0 R\n",
-			   OBJ_SOFTMASK);
+        Blt_DBuffer_Format(pdfPtr->dbuffer, 
+                           "    /SMask %d 0 R\n",
+                           OBJ_SOFTMASK);
     }
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "    /Name /Im1\n"
-		       "    /Length %d 0 R\n" 
-		       "  >>\n",
-		       OBJ_IMAGE_LENGTH);
+                       "    /Name /Im1\n"
+                       "    /Length %d 0 R\n" 
+                       "  >>\n",
+                       OBJ_IMAGE_LENGTH);
     
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
     Blt_DBuffer_AppendBase85(pdfPtr->dbuffer, imgData, 
-	srcPtr->width * srcPtr->height * numComponents);
+        srcPtr->width * srcPtr->height * numComponents);
     length = Blt_DBuffer_Length(pdfPtr->dbuffer);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
-			  "\n"
-			  "endstream\n", 
-			  "endobj\n", (char *)NULL);
+                          "\n"
+                          "endstream\n", 
+                          "endobj\n", (char *)NULL);
 
     /* Length of image stream object. */
     SetXRefOffset(pdfPtr, OBJ_IMAGE_LENGTH);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n" 
-		       "  %ld\n"
-		       "endobj\n", 
-		       OBJ_IMAGE_LENGTH,
-		       length);
+                       "%d 0 obj\n" 
+                       "  %ld\n"
+                       "endobj\n", 
+                       OBJ_IMAGE_LENGTH,
+                       length);
     Blt_Free(imgData);
 
     if ((!Blt_Picture_IsOpaque(srcPtr)) && (exportPtr->flags & EXPORT_ALPHA)) {
-	unsigned char *maskData, *dp;
-	Blt_Pixel *srcRowPtr;
-	int y;
+        unsigned char *maskData, *dp;
+        Blt_Pixel *srcRowPtr;
+        int y;
 
-	maskData = Blt_AssertMalloc(srcPtr->width * srcPtr->height);
-	srcRowPtr = srcPtr->bits;
-	dp = maskData;
-	for (y = 0; y < srcPtr->height; y++) {
-	    Blt_Pixel *sp, *send;
+        maskData = Blt_AssertMalloc(srcPtr->width * srcPtr->height);
+        srcRowPtr = srcPtr->bits;
+        dp = maskData;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
 
-	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		*dp++ = sp->Alpha;
-	    }
-	    srcRowPtr += srcPtr->pixelsPerRow;
-	}
-	/* Softmask object */
-	SetXRefOffset(pdfPtr, OBJ_SOFTMASK);
-	Blt_DBuffer_Format(pdfPtr->dbuffer, 
-			   "%d 0 obj\n"
-			   "  <<\n"
-			   "    /Type /XObject\n"
-			   "    /Subtype /Image\n"
-			   "    /Width %d\n"
-			   "    /Height %d\n"
-			   "    /ColorSpace /DeviceGray\n"
-			   "    /BitsPerComponent 8\n"
-			   "    /Filter /ASCII85Decode\n"
-			   "    /Length %d 0 R\n" 
-			   "  >>\n",
-			   OBJ_SOFTMASK, 
-			   srcPtr->width, srcPtr->height, 
-			   OBJ_SOFTMASK_LENGTH);
-	Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
-	Blt_DBuffer_AppendBase85(pdfPtr->dbuffer, maskData,
-		srcPtr->width * srcPtr->height);
-	length = Blt_DBuffer_Length(pdfPtr->dbuffer);
-	Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
-			      "\n"
-			      "endstream\n", 
-			      "endobj\n", (char *)NULL);
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                *dp++ = sp->Alpha;
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+        /* Softmask object */
+        SetXRefOffset(pdfPtr, OBJ_SOFTMASK);
+        Blt_DBuffer_Format(pdfPtr->dbuffer, 
+                           "%d 0 obj\n"
+                           "  <<\n"
+                           "    /Type /XObject\n"
+                           "    /Subtype /Image\n"
+                           "    /Width %d\n"
+                           "    /Height %d\n"
+                           "    /ColorSpace /DeviceGray\n"
+                           "    /BitsPerComponent 8\n"
+                           "    /Filter /ASCII85Decode\n"
+                           "    /Length %d 0 R\n" 
+                           "  >>\n",
+                           OBJ_SOFTMASK, 
+                           srcPtr->width, srcPtr->height, 
+                           OBJ_SOFTMASK_LENGTH);
+        Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
+        Blt_DBuffer_AppendBase85(pdfPtr->dbuffer, maskData,
+                srcPtr->width * srcPtr->height);
+        length = Blt_DBuffer_Length(pdfPtr->dbuffer);
+        Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
+                              "\n"
+                              "endstream\n", 
+                              "endobj\n", (char *)NULL);
 
-	/* Length of softmask stream object. */
-	SetXRefOffset(pdfPtr, OBJ_SOFTMASK_LENGTH);
-	Blt_DBuffer_Format(pdfPtr->dbuffer, 
-			   "%d 0 obj\n" 
-			   "  %ld\n"
-			   "endobj\n", 
-			   OBJ_SOFTMASK_LENGTH,
-			   length);
-	Blt_Free(maskData);
-	pdfPtr->numObjects = OBJ_SOFTMASK_LENGTH;
+        /* Length of softmask stream object. */
+        SetXRefOffset(pdfPtr, OBJ_SOFTMASK_LENGTH);
+        Blt_DBuffer_Format(pdfPtr->dbuffer, 
+                           "%d 0 obj\n" 
+                           "  %ld\n"
+                           "endobj\n", 
+                           OBJ_SOFTMASK_LENGTH,
+                           length);
+        Blt_Free(maskData);
+        pdfPtr->numObjects = OBJ_SOFTMASK_LENGTH;
     }
 
     /* Xref */
     offset = Blt_DBuffer_Length(pdfPtr->dbuffer);
     Blt_DBuffer_Format(pdfPtr->dbuffer,
-		       "xref\n"
-		       "0 %d\n"
-		       "0000000000 65535 f \n",
-		       pdfPtr->numObjects + 1);
+                       "xref\n"
+                       "0 %d\n"
+                       "0000000000 65535 f \n",
+                       pdfPtr->numObjects + 1);
     for (i = 0; i < pdfPtr->numObjects; i++) {
-	Blt_DBuffer_Format(pdfPtr->dbuffer,
-			   "%010ld 00000 n \n", 
-			   pdfPtr->xref[i]);
+        Blt_DBuffer_Format(pdfPtr->dbuffer,
+                           "%010ld 00000 n \n", 
+                           pdfPtr->xref[i]);
     }
 
     /* Trailer */
     Blt_DBuffer_Format(pdfPtr->dbuffer,
-		       "trailer\n"
-		       "  <<\n"
-		       "    /Size %d\n"
-		       "    /Root %d 0 R\n"
-		       "    /Info %d 0 R\n"
-		       "  >>\n"
-		       "startxref\n"
-		       "%ld\n"
-		       "%%%%EOF\n", 
-		       pdfPtr->numObjects + 1,
-		       OBJ_CATALOG, 
-		       OBJ_INFO,
-		       offset);
+                       "trailer\n"
+                       "  <<\n"
+                       "    /Size %d\n"
+                       "    /Root %d 0 R\n"
+                       "    /Info %d 0 R\n"
+                       "  >>\n"
+                       "startxref\n"
+                       "%ld\n"
+                       "%%%%EOF\n", 
+                       pdfPtr->numObjects + 1,
+                       OBJ_CATALOG, 
+                       OBJ_INFO,
+                       offset);
 
     if (srcPtr != original) {
-	Blt_Free(srcPtr);
+        Blt_Free(srcPtr);
     }
     return TCL_OK;
 }
@@ -1334,7 +1334,7 @@ IsPdf(Blt_DBuffer dbuffer)
 
     Blt_DBuffer_Rewind(dbuffer);
     if (Blt_DBuffer_BytesLeft(dbuffer) < 4) {
-	return FALSE;
+        return FALSE;
     }
     bp = Blt_DBuffer_Pointer(dbuffer);
     return (strncmp("%PDF", (char *)bp, 4) == 0);
@@ -1367,7 +1367,7 @@ WritePdf(Tcl_Interp *interp, Blt_Picture picture)
     objPtr = NULL;
     pdfPtr = NewPdf();
     if (PictureToPdf(interp, picture, pdfPtr, &switches) == TCL_OK) {
-	objPtr = Blt_DBuffer_Base64EncodeToObj(pdfPtr->dbuffer);
+        objPtr = Blt_DBuffer_Base64EncodeToObj(pdfPtr->dbuffer);
     }
     FreePdf(pdfPtr);
     return objPtr;
@@ -1375,7 +1375,7 @@ WritePdf(Tcl_Interp *interp, Blt_Picture picture)
 
 static Blt_Chain
 ImportPdf(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, 
-	  const char **fileNamePtr)
+          const char **fileNamePtr)
 {
     Blt_Chain chain;
     Blt_DBuffer dbuffer;
@@ -1385,30 +1385,30 @@ ImportPdf(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     memset(&switches, 0, sizeof(switches));
     switches.crop = TRUE;
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return NULL;
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return NULL;
     }
     if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
-	Tcl_AppendResult(interp, "more than one import source: ",
-		"use only one -file or -data flag.", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "more than one import source: ",
+                "use only one -file or -data flag.", (char *)NULL);
+        return NULL;
     }
     chain = NULL;
     dbuffer = Blt_DBuffer_Create();
     if (switches.dataObjPtr != NULL) {
-	int numBytes;
+        int numBytes;
 
-	string = Tcl_GetStringFromObj(switches.dataObjPtr, &numBytes);
-	Blt_DBuffer_AppendData(dbuffer, (unsigned char *)string, numBytes);
-	string = "data buffer";
-	*fileNamePtr = NULL;
+        string = Tcl_GetStringFromObj(switches.dataObjPtr, &numBytes);
+        Blt_DBuffer_AppendData(dbuffer, (unsigned char *)string, numBytes);
+        string = "data buffer";
+        *fileNamePtr = NULL;
     } else {
-	string = Tcl_GetString(switches.fileObjPtr);
-	if (Blt_DBuffer_LoadFile(interp, string, dbuffer) != TCL_OK) {
-	    Blt_DBuffer_Destroy(dbuffer);
-	    return NULL;
-	}
-	*fileNamePtr = string;
+        string = Tcl_GetString(switches.fileObjPtr);
+        if (Blt_DBuffer_LoadFile(interp, string, dbuffer) != TCL_OK) {
+            Blt_DBuffer_Destroy(dbuffer);
+            return NULL;
+        }
+        *fileNamePtr = string;
     }
     chain = PdfToPicture(interp, string, dbuffer, &switches);
     Blt_DBuffer_Destroy(dbuffer);
@@ -1429,45 +1429,45 @@ ExportPdf(Tcl_Interp *interp, int index, Blt_Chain chain, int objc,
     memset(&switches, 0, sizeof(switches));
     switches.bg.u32 = 0xFFFFFFFF; /* Default bgcolor is white. */
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+        return TCL_ERROR;
     }
     if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
-	Tcl_AppendResult(interp, "more than one export destination: ",
-		"use only one -file or -data switch.", (char *)NULL);
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "more than one export destination: ",
+                "use only one -file or -data switch.", (char *)NULL);
+        Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+        return TCL_ERROR;
     }
     picture = Blt_GetNthPicture(chain, switches.index);
     pdfPtr = NewPdf();
     if (PictureToPdf(interp, picture, pdfPtr, &switches) != TCL_OK) {
-	Tcl_AppendResult(interp, "can't convert \"", 
-		Tcl_GetString(objv[2]), "\"", (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "can't convert \"", 
+                Tcl_GetString(objv[2]), "\"", (char *)NULL);
+        goto error;
     }
     if (switches.fileObjPtr != NULL) {
-	char *fileName;
+        char *fileName;
 
-	fileName = Tcl_GetString(switches.fileObjPtr);
-	fprintf(stderr, "writing out %s\n", fileName);
-	result = Blt_DBuffer_SaveFile(interp, fileName, pdfPtr->dbuffer);
+        fileName = Tcl_GetString(switches.fileObjPtr);
+        fprintf(stderr, "writing out %s\n", fileName);
+        result = Blt_DBuffer_SaveFile(interp, fileName, pdfPtr->dbuffer);
     } else if (switches.dataObjPtr != NULL) {
-	Tcl_Obj *objPtr;
+        Tcl_Obj *objPtr;
 
-	objPtr = Blt_DBuffer_ByteArrayObj(pdfPtr->dbuffer);
-	result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
-	if (objPtr != NULL) {
-	    Tcl_SetObjResult(interp, objPtr);
-	}
+        objPtr = Blt_DBuffer_ByteArrayObj(pdfPtr->dbuffer);
+        result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
+        if (objPtr != NULL) {
+            Tcl_SetObjResult(interp, objPtr);
+        }
     } else {
-	Tcl_Obj *objPtr;
+        Tcl_Obj *objPtr;
 
-	objPtr = Blt_DBuffer_Base64EncodeToObj(pdfPtr->dbuffer);
-	result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
-	if (objPtr != NULL) {
-	    Tcl_SetObjResult(interp, objPtr);
-	}
+        objPtr = Blt_DBuffer_Base64EncodeToObj(pdfPtr->dbuffer);
+        result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
+        if (objPtr != NULL) {
+            Tcl_SetObjResult(interp, objPtr);
+        }
     }  
  error:
     Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
@@ -1480,30 +1480,30 @@ Blt_PicturePdfInit(Tcl_Interp *interp)
 {
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #endif
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
     if (Blt_InitTkStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #endif    
     if (Tcl_PkgRequire(interp, "blt_tk", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_PkgProvide(interp, "blt_picture_pdf", BLT_VERSION) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return Blt_PictureRegisterFormat(interp,
-	"pdf",				/* Name of format. */
-	IsPdf,				/* Discovery routine. */
-	ReadPdf,			/* Read procedure. */
-	WritePdf,			/* Write procedure. */
-	ImportPdf,			/* Import procedure. */
-	ExportPdf);			/* Export procedure. */
+        "pdf",                          /* Name of format. */
+        IsPdf,                          /* Discovery routine. */
+        ReadPdf,                        /* Read procedure. */
+        WritePdf,                       /* Write procedure. */
+        ImportPdf,                      /* Import procedure. */
+        ExportPdf);                     /* Export procedure. */
 }
 
 int 

@@ -57,7 +57,7 @@ BLT_EXTERN Tcl_AppInitProc Blt_PictureGifSafeInit;
 #ifdef HAVE_LIBJPG
 BLT_EXTERN Tcl_AppInitProc Blt_PictureJpgInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureJpgSafeInit;
-#endif	/* HAVE_LIBJPG */
+#endif  /* HAVE_LIBJPG */
 BLT_EXTERN Tcl_AppInitProc Blt_PicturePbmInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PicturePbmSafeInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PicturePdfInit;
@@ -67,7 +67,7 @@ BLT_EXTERN Tcl_AppInitProc Blt_PicturePhotoSafeInit;
 #ifdef HAVE_LIBPNG
 BLT_EXTERN Tcl_AppInitProc Blt_PicturePngInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PicturePngSafeInit;
-#endif	/* HAVE_LIBPNG */
+#endif  /* HAVE_LIBPNG */
 BLT_EXTERN Tcl_AppInitProc Blt_PicturePsInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PicturePsSafeInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureTgaInit;
@@ -75,102 +75,102 @@ BLT_EXTERN Tcl_AppInitProc Blt_PictureTgaSafeInit;
 #ifdef HAVE_LIBTIF
 BLT_EXTERN Tcl_AppInitProc Blt_PictureTifInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureTifSafeInit;
-#endif	/* HAVE_LIBTIF */
+#endif  /* HAVE_LIBTIF */
 BLT_EXTERN Tcl_AppInitProc Blt_PictureXbmInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureXbmSafeInit;
 #ifdef HAVE_LIBXPM
 BLT_EXTERN Tcl_AppInitProc Blt_PictureXpmInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureXpmSafeInit;
-#endif	/* HAVE_LIBXPM */
+#endif  /* HAVE_LIBXPM */
 #ifdef HAVE_LIBFT2
 BLT_EXTERN Tcl_AppInitProc Blt_PictureTextInit;
-#endif	/* HAVE_LIBFT2 */
+#endif  /* HAVE_LIBFT2 */
 
 int
-Blt_TkPkgsInit(Tcl_Interp *interp)	/* Interpreter for application. */
+Blt_TkPkgsInit(Tcl_Interp *interp)      /* Interpreter for application. */
 {
     if (Tcl_PkgRequire(interp, "blt_tk", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     /* Picture packages. */
     if (Blt_PictureBmpInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_bmp", Blt_PictureBmpInit, 
-	Blt_PictureBmpSafeInit);
+        Blt_PictureBmpSafeInit);
 
     if (Blt_PictureGifInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_gif", Blt_PictureGifInit, 
-	Blt_PictureGifSafeInit);
+        Blt_PictureGifSafeInit);
 
 #ifdef HAVE_LIBJPG
     if (Blt_PictureJpgInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_jpg", Blt_PictureJpgInit, 
-		      Blt_PictureJpgSafeInit);
+                      Blt_PictureJpgSafeInit);
 #endif /*HAVE_LIBJPG*/
 
     if (Blt_PicturePbmInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_pbm", Blt_PicturePbmInit, 
-	Blt_PicturePbmSafeInit);
+        Blt_PicturePbmSafeInit);
 
     if (Blt_PicturePhotoInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_photo", Blt_PicturePhotoInit, 
-	Blt_PicturePhotoSafeInit);
+        Blt_PicturePhotoSafeInit);
 
 #ifdef HAVE_LIBPNG
     if (Blt_PicturePngInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_png", Blt_PicturePngInit, 
-	Blt_PicturePngSafeInit);
+        Blt_PicturePngSafeInit);
 #endif /*HAVE_LIBPNG*/
 
     if (Blt_PicturePsInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_ps", Blt_PicturePsInit, 
-	Blt_PicturePsSafeInit);
+        Blt_PicturePsSafeInit);
 
     if (Blt_PicturePdfInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_pdf", Blt_PicturePdfInit, 
-	Blt_PicturePdfSafeInit);
+        Blt_PicturePdfSafeInit);
 
     if (Blt_PictureTgaInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_tga", Blt_PictureTgaInit, 
-	Blt_PictureTgaSafeInit);
+        Blt_PictureTgaSafeInit);
 
 #ifdef HAVE_LIBTIF
     if (Blt_PictureTifInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_tif", Blt_PictureTifInit, 
-		      Blt_PictureTifSafeInit);
+                      Blt_PictureTifSafeInit);
 #endif /*HAVE_LIBTIF*/
 
     if (Blt_PictureXbmInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_xbm", Blt_PictureXbmInit, 
-	Blt_PictureXbmSafeInit);
+        Blt_PictureXbmSafeInit);
 
 #ifdef HAVE_LIBXPM
     if (Blt_PictureXpmInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_picture_xpm", Blt_PictureXpmInit, 
-	Blt_PictureXpmSafeInit);
+        Blt_PictureXpmSafeInit);
 #endif /*HAVE_LIBXPM*/
     return TCL_OK;
 }

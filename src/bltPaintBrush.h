@@ -50,33 +50,33 @@ typedef struct _Blt_PaintBrushClass Blt_PaintBrushClass;
  * Blt_PaintBrush --
  *
  *      Represents either a solid color, gradient, tile, or texture.  Used
- *	to paint basic geometric objects.
+ *      to paint basic geometric objects.
  *
  *---------------------------------------------------------------------------
  */
 typedef struct _Blt_PaintBrush *Blt_PaintBrush;
 typedef int (Blt_PaintBrushCalcProc)(ClientData clientData, int x, int y,
-	double *valuePtr);
+        double *valuePtr);
 
 struct _Blt_PaintBrush {
     Blt_PaintBrushClass *classPtr;
-    const char *name;			/* If non-NULL, the name of
+    const char *name;                   /* If non-NULL, the name of
                                          * brush. This is only for brushes
                                          * created by the blt::paintbrush
                                          * command. Points to hash table
                                          * key. */
-    int refCount;			/* # of clients using this brush.
-					 * If zero, this brush can be
-					 * deleted. */
-    int xOrigin, yOrigin;		/* Offset of gradient from top of
-					 * window. */
+    int refCount;                       /* # of clients using this brush.
+                                         * If zero, this brush can be
+                                         * deleted. */
+    int xOrigin, yOrigin;               /* Offset of gradient from top of
+                                         * window. */
     unsigned int flags;
-    int alpha;				/* Opacity of the brush. */
+    int alpha;                          /* Opacity of the brush. */
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
-    Blt_Palette palette;		/* If non-NULL, palette to use for
-					 * coloring the gradient. */
+    Blt_Palette palette;                /* If non-NULL, palette to use for
+                                         * coloring the gradient. */
 
     ClientData clientData;
 };
@@ -92,23 +92,23 @@ struct _Blt_PaintBrush {
  */
 typedef struct {
     Blt_PaintBrushClass *classPtr;
-    const char *name;			/* If non-NULL, the name of
+    const char *name;                   /* If non-NULL, the name of
                                          * brush. This is only for brushes
                                          * created by the blt::paintbrush
                                          * command. Points to hash table
                                          * key. */
-    int refCount;			/* # of clients using this brush.
-					 * If zero, this brush can be
-					 * deleted. */
-    int xOrigin, yOrigin;		/* Offset of gradient from top of
-					 * window. */
+    int refCount;                       /* # of clients using this brush.
+                                         * If zero, this brush can be
+                                         * deleted. */
+    int xOrigin, yOrigin;               /* Offset of gradient from top of
+                                         * window. */
     unsigned int flags;
-    int alpha;				/* Opacity of the brush. */
+    int alpha;                          /* Opacity of the brush. */
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
-    Blt_Pixel reqColor;			/* Requested color of the brush. */
+    Blt_Pixel reqColor;                 /* Requested color of the brush. */
     Blt_Pixel color;                    /* Color of the brush w/
                                          * opacity.  */
 } Blt_ColorBrush;
@@ -125,40 +125,40 @@ typedef struct {
  */
 typedef struct {
     Blt_PaintBrushClass *classPtr;
-    const char *name;			/* If non-NULL, the name of
+    const char *name;                   /* If non-NULL, the name of
                                          * brush. This is only for brushes
                                          * created by the blt::paintbrush
                                          * command. Points to hash table
                                          * key. */
-    int refCount;			/* # of clients using this brush.
-					 * If zero, this brush can be
-					 * deleted. */
-    int xOrigin, yOrigin;		/* Offset of gradient from top of
-					 * window. */
+    int refCount;                       /* # of clients using this brush.
+                                         * If zero, this brush can be
+                                         * deleted. */
+    int xOrigin, yOrigin;               /* Offset of gradient from top of
+                                         * window. */
     unsigned int flags;
-    int alpha;				/* Opacity of the brush. */
+    int alpha;                          /* Opacity of the brush. */
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
-    Blt_Palette palette;		/* If non-NULL, palette to use for
-					 * coloring the gradient. */
+    Blt_Palette palette;                /* If non-NULL, palette to use for
+                                         * coloring the gradient. */
     Blt_PaintBrushCalcProc *calcProc;
-    Blt_Pixel low, high;		/* Starting and ending colors of
-					 * the gradient. This is overridden
-					 * by the palette. */
-    int aRange, rRange, gRange, bRange;	/*  */
-    double angle;			/* Angle of rotation for the line
+    Blt_Pixel low, high;                /* Starting and ending colors of
+                                         * the gradient. This is overridden
+                                         * by the palette. */
+    int aRange, rRange, gRange, bRange; /*  */
+    double angle;                       /* Angle of rotation for the line
                                          * segment (not implemented). */
     Point2d from, to;                   /* Starting and ending positions of
-					 * a line segment defining the
-					 * gradient. The coordinates are
-					 * relative to the width and height
-					 * of the region. */
+                                         * a line segment defining the
+                                         * gradient. The coordinates are
+                                         * relative to the width and height
+                                         * of the region. */
     /* Computed values. */
     double length;                       /* Length of line segment. */
     int x1, y1, x2, y2;                  /* Line segment in pixels after
-					  * specifying the region. */
+                                          * specifying the region. */
     double scaleFactor;                  /* 1 / length  */
 } Blt_LinearGradientBrush;
 
@@ -175,30 +175,30 @@ typedef struct {
  */
 typedef struct {
     Blt_PaintBrushClass *classPtr;
-    const char *name;			/* If non-NULL, the name of
+    const char *name;                   /* If non-NULL, the name of
                                          * brush. This is only for brushes
                                          * created by the blt::paintbrush
                                          * command. Points to hash table
                                          * key. */
-    int refCount;			/* # of clients using this brush.
-					 * If zero, this brush can be
-					 * deleted. */
-    int xOrigin, yOrigin;		/* Offset of tile from top of
-					 * window. */
+    int refCount;                       /* # of clients using this brush.
+                                         * If zero, this brush can be
+                                         * deleted. */
+    int xOrigin, yOrigin;               /* Offset of tile from top of
+                                         * window. */
     unsigned int flags;
-    int alpha;				/* Opacity of the background
-					 * color. */
+    int alpha;                          /* Opacity of the background
+                                         * color. */
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
-    Tk_Image tkImage;			/* Tk image used for tiling. */
+    Tk_Image tkImage;                   /* Tk image used for tiling. */
     Blt_Picture tile;                   /* If non-NULL, picture to use for
-					 * tiling. This is converted from
-					 * the Tk image. */
-    Blt_Pixel color;			/* Color to display for the background
-					 * of the tile. */
-    int x, y;				/* Start of tile. */
+                                         * tiling. This is converted from
+                                         * the Tk image. */
+    Blt_Pixel color;                    /* Color to display for the background
+                                         * of the tile. */
+    int x, y;                           /* Start of tile. */
 } Blt_TileBrush;
 
 /*
@@ -213,23 +213,23 @@ typedef struct {
  */
 typedef struct {
     Blt_PaintBrushClass *classPtr;
-    const char *name;			/* If non-NULL, the name of
+    const char *name;                   /* If non-NULL, the name of
                                          * brush. This is only for brushes
                                          * created by the blt::paintbrush
                                          * command. Points to hash table
                                          * key. */
-    int refCount;			/* # of clients using this brush.
-					 * If zero, this brush can be
-					 * deleted. */
-    int xOrigin, yOrigin;		/* Offset of tile from top of
-					 * window. */
+    int refCount;                       /* # of clients using this brush.
+                                         * If zero, this brush can be
+                                         * deleted. */
+    int xOrigin, yOrigin;               /* Offset of tile from top of
+                                         * window. */
     unsigned int flags;
     int alpha;
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
-    Blt_Pixel low, high;		/* Texture or gradient colors. */
+    Blt_Pixel low, high;                /* Texture or gradient colors. */
     int aRange, rRange, gRange, bRange;
     int stride;
 } Blt_StripeBrush;
@@ -246,23 +246,23 @@ typedef struct {
  */
 typedef struct {
     Blt_PaintBrushClass *classPtr;
-    const char *name;			/* If non-NULL, the name of
+    const char *name;                   /* If non-NULL, the name of
                                          * brush. This is only for brushes
                                          * created by the blt::paintbrush
                                          * command. Points to hash table
                                          * key. */
-    int refCount;			/* # of clients using this brush.
-					 * If zero, this brush can be
-					 * deleted. */
-    int xOrigin, yOrigin;		/* Offset of tile from top of
-					 * window. */
+    int refCount;                       /* # of clients using this brush.
+                                         * If zero, this brush can be
+                                         * deleted. */
+    int xOrigin, yOrigin;               /* Offset of tile from top of
+                                         * window. */
     unsigned int flags;
     int alpha;
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
-    Blt_Pixel low, high;		/* Texture or gradient colors. */
+    Blt_Pixel low, high;                /* Texture or gradient colors. */
     int aRange, rRange, gRange, bRange;
     int stride;
     int x, y;
@@ -280,44 +280,44 @@ typedef struct {
  */
 typedef struct {
     Blt_PaintBrushClass *classPtr;
-    const char *name;			/* If non-NULL, the name of
+    const char *name;                   /* If non-NULL, the name of
                                          * brush. This is only for brushes
                                          * created by the blt::paintbrush
                                          * command. Points to hash table
                                          * key. */
-    int refCount;			/* # of clients using this brush.
-					 * If zero, this brush can be
-					 * deleted. */
-    int xOrigin, yOrigin;		/* Offset of gradient from top of
-					 * window. */
+    int refCount;                       /* # of clients using this brush.
+                                         * If zero, this brush can be
+                                         * deleted. */
+    int xOrigin, yOrigin;               /* Offset of gradient from top of
+                                         * window. */
     unsigned int flags;
-    int alpha;				/* Opacity of the brush. */
+    int alpha;                          /* Opacity of the brush. */
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
-    Blt_Palette palette;		/* If non-NULL, palette to use for
-					 * coloring the gradient. */
+    Blt_Palette palette;                /* If non-NULL, palette to use for
+                                         * coloring the gradient. */
     Blt_PaintBrushCalcProc *calcProc;
-    Blt_Pixel low, high;		/* Texture or gradient colors. */
+    Blt_Pixel low, high;                /* Texture or gradient colors. */
     int aRange, rRange, gRange, bRange;
-    double angle;			/* Angle of rotation for the
+    double angle;                       /* Angle of rotation for the
                                          * gradient. */
-    Point2d center;			/* Center of the radial
-					 * gradient. This point is a
-					 * relative to the size of the
-					 * region. */
-    double width, height;		/* Width and height of an
-					 * elliptical gradient. */
-    double diameter;			/* If non-zero, diameter of a
-					 * circular gradient. This
-					 * overrides the width and height
-					 * for elliptical gradients */
+    Point2d center;                     /* Center of the radial
+                                         * gradient. This point is a
+                                         * relative to the size of the
+                                         * region. */
+    double width, height;               /* Width and height of an
+                                         * elliptical gradient. */
+    double diameter;                    /* If non-zero, diameter of a
+                                         * circular gradient. This
+                                         * overrides the width and height
+                                         * for elliptical gradients */
     /* Computed values. */
     int cx, cy;                          /* Center of the gradient after
-					  * specifying the region. */
+                                          * specifying the region. */
     int a, b;                            /* Radii (x and y axis) of the
-					  * gradient. */
+                                          * gradient. */
 } Blt_RadialGradientBrush;
 
 /*
@@ -332,39 +332,39 @@ typedef struct {
  */
 typedef struct {
     Blt_PaintBrushClass *classPtr;
-    const char *name;			/* If non-NULL, the name of
+    const char *name;                   /* If non-NULL, the name of
                                          * brush. This is only for brushes
                                          * created by the blt::paintbrush
                                          * command. Points to hash table
                                          * key. */
-    int refCount;			/* # of clients using this brush.
-					 * If zero, this brush can be
-					 * deleted. */
-    int xOrigin, yOrigin;		/* Offset of gradient from top of
-					 * window. */
+    int refCount;                       /* # of clients using this brush.
+                                         * If zero, this brush can be
+                                         * deleted. */
+    int xOrigin, yOrigin;               /* Offset of gradient from top of
+                                         * window. */
     unsigned int flags;
-    int alpha;				/* Opacity of the brush. */
+    int alpha;                          /* Opacity of the brush. */
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
-    Blt_Palette palette;		/* If non-NULL, palette to use for
-					 * coloring the gradient. */
+    Blt_Palette palette;                /* If non-NULL, palette to use for
+                                         * coloring the gradient. */
 
     Blt_PaintBrushCalcProc *calcProc;
-    Blt_Pixel low, high;		/* Texture or gradient colors. */
+    Blt_Pixel low, high;                /* Texture or gradient colors. */
     int aRange, rRange, gRange, bRange;
-    double angle;			/* Angle of rotation for the
+    double angle;                       /* Angle of rotation for the
                                          * gradient. */
-    Point2d center;			/* Center of the conical
-					 * gradient. This point is a
-					 * relative to the size of the
-					 * region. */
+    Point2d center;                     /* Center of the conical
+                                         * gradient. This point is a
+                                         * relative to the size of the
+                                         * region. */
     /* Computed values. */
-    double theta;			/* Angle of rotation for the
+    double theta;                       /* Angle of rotation for the
                                          * gradient in radians. */
     int cx, cy;                          /* Center of the gradient after
-					  * specifying the region. */
+                                          * specifying the region. */
 } Blt_ConicalGradientBrush;
 
 typedef enum Blt_PaintBrushTypes {
@@ -406,40 +406,40 @@ BLT_EXTERN const char *Blt_GetBrushName(Blt_PaintBrush brush);
 BLT_EXTERN const char *Blt_GetBrushColor(Blt_PaintBrush brush);
 
 BLT_EXTERN int Blt_ConfigurePaintBrush(Tcl_Interp *interp,
-	Blt_PaintBrush brush);
+        Blt_PaintBrush brush);
 BLT_EXTERN int Blt_GetBrushTypeFromObj(Tcl_Interp *interp,
-	Tcl_Obj *objPtr, Blt_PaintBrushType *typePtr);
+        Tcl_Obj *objPtr, Blt_PaintBrushType *typePtr);
 
 BLT_EXTERN int Blt_GetBrushAlpha(Blt_PaintBrush brush);
 
 BLT_EXTERN void Blt_FreeBrush(Blt_PaintBrush brush);
 BLT_EXTERN int Blt_GetPaintBrushFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Blt_PaintBrush *brushPtr);
+        Blt_PaintBrush *brushPtr);
 
 BLT_EXTERN int Blt_GetPaintBrush(Tcl_Interp *interp, const char *string,
-	Blt_PaintBrush *brushPtr);
+        Blt_PaintBrush *brushPtr);
 BLT_EXTERN void Blt_SetLinearGradientBrushPalette(Blt_PaintBrush brush, 
-	Blt_Palette palette);
+        Blt_Palette palette);
 BLT_EXTERN void Blt_SetLinearGradientBrushCalcProc(Blt_PaintBrush brush, 
-	Blt_PaintBrushCalcProc *proc, ClientData clientData);
+        Blt_PaintBrushCalcProc *proc, ClientData clientData);
 BLT_EXTERN void Blt_SetLinearGradientBrushColors(Blt_PaintBrush brush, 
-	Blt_Pixel *lowPtr, Blt_Pixel *highPtr);
+        Blt_Pixel *lowPtr, Blt_Pixel *highPtr);
 BLT_EXTERN void Blt_SetBrushRegion(Blt_PaintBrush brush, int x, int y, 
-	int w, 	int h);
+        int w,  int h);
 BLT_EXTERN void Blt_SetTileBrushPicture(Blt_PaintBrush brush, Blt_Picture tile);
 BLT_EXTERN void Blt_SetColorBrushColor(Blt_PaintBrush brush,
-	unsigned int value);
+        unsigned int value);
 BLT_EXTERN void Blt_SetBrushOrigin(Blt_PaintBrush brush, int x, int y);
 BLT_EXTERN void Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr);
 BLT_EXTERN int Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, int x,
-	int y);
+        int y);
 
 BLT_EXTERN void Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, 
-	int h, int dx, int dy, Blt_PaintBrush brush);
+        int h, int dx, int dy, Blt_PaintBrush brush);
 
 #ifdef _BLT_INT_H
 BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,
-	Blt_PaintBrush brush);
-#endif	/* _BLT_INT_H */
+        Blt_PaintBrush brush);
+#endif  /* _BLT_INT_H */
 
 #endif /*_BLT_PAINT_BRUSH_H*/

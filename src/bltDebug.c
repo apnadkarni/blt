@@ -73,7 +73,7 @@ typedef struct {
 } Watch;
 
 typedef struct {
-    Blt_Chain chain; 	/* Chain of watches. */
+    Blt_Chain chain;    /* Chain of watches. */
     Tcl_Interp *interp;
     unsigned char *stack;
 } DebugCmdInterpData;
@@ -90,21 +90,21 @@ typedef struct {
  *
  * DebugInterpDeleteProc --
  *
- *	This is called when the interpreter hosting the "debug" command
- *	is deleted.
+ *      This is called when the interpreter hosting the "debug" command
+ *      is deleted.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Removes the hash table managing all debug names.
+ *      Removes the hash table managing all debug names.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static void
 DebugInterpDeleteProc(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp)
 {
     DebugCmdInterpData *dataPtr = clientData;
@@ -131,14 +131,14 @@ GetDebugCmdInterpData(Tcl_Interp *interp)
     Tcl_InterpDeleteProc *proc;
 
     dataPtr = (DebugCmdInterpData *)
-	Tcl_GetAssocData(interp, DEBUG_THREAD_KEY, &proc);
+        Tcl_GetAssocData(interp, DEBUG_THREAD_KEY, &proc);
     if (dataPtr == NULL) {
-	dataPtr = Blt_AssertMalloc(sizeof(DebugCmdInterpData));
-	dataPtr->interp = interp;
-	Tcl_SetAssocData(interp, DEBUG_THREAD_KEY, DebugInterpDeleteProc,
-		 dataPtr);
-	dataPtr->chain = Blt_Chain_Create();
-	dataPtr->stack = Blt_Malloc(MAX_STACK);
+        dataPtr = Blt_AssertMalloc(sizeof(DebugCmdInterpData));
+        dataPtr->interp = interp;
+        Tcl_SetAssocData(interp, DEBUG_THREAD_KEY, DebugInterpDeleteProc,
+                 dataPtr);
+        dataPtr->chain = Blt_Chain_Create();
+        dataPtr->stack = Blt_Malloc(MAX_STACK);
     }
     return dataPtr;
 }
@@ -154,12 +154,12 @@ GetWatch(DebugCmdInterpData *dataPtr, Tcl_Obj *objPtr)
     name = Tcl_GetString(objPtr);
     c = name[0];
     for (link = Blt_Chain_FirstLink(dataPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	watchPtr = Blt_Chain_GetValue(link);
-	string = Tcl_GetString(watchPtr->nameObjPtr);
-	if ((string[0] == c) && (strcmp(name, string) == 0)) {
-	    return watchPtr;
-	}
+        link = Blt_Chain_NextLink(link)) {
+        watchPtr = Blt_Chain_GetValue(link);
+        string = Tcl_GetString(watchPtr->nameObjPtr);
+        if ((string[0] == c) && (strcmp(name, string) == 0)) {
+            return watchPtr;
+        }
     }
     link = Blt_Chain_AllocLink(sizeof(Watch));
     watchPtr = Blt_Chain_GetValue(link);
@@ -180,31 +180,31 @@ DeleteWatch(DebugCmdInterpData *dataPtr, Tcl_Obj *objPtr)
     name = Tcl_GetString(objPtr);
     c = name[0];
     for (link = Blt_Chain_FirstLink(dataPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	Watch *watchPtr;
-	char *string;
+        link = Blt_Chain_NextLink(link)) {
+        Watch *watchPtr;
+        char *string;
 
-	watchPtr = Blt_Chain_GetValue(link);
-	string = Tcl_GetString(watchPtr->nameObjPtr);
-	if ((string[0] == c) && (strcmp(name, string) == 0)) {
-	    Tcl_DecrRefCount(watchPtr->nameObjPtr);
-	    Blt_Chain_DeleteLink(dataPtr->chain, link);
-	    return;
-	}
+        watchPtr = Blt_Chain_GetValue(link);
+        string = Tcl_GetString(watchPtr->nameObjPtr);
+        if ((string[0] == c) && (strcmp(name, string) == 0)) {
+            Tcl_DecrRefCount(watchPtr->nameObjPtr);
+            Blt_Chain_DeleteLink(dataPtr->chain, link);
+            return;
+        }
     }
 }
 
 /*ARGSUSED*/
 static int
 DebugProc(
-    ClientData clientData,	/* Interpreter-specific data. */
-    Tcl_Interp *interp,		/* Not used. */
-    int level,			/* Current level */
-    const char *command,	/* Command before substitution */
-    Tcl_Command token,		/* Not used. */
+    ClientData clientData,      /* Interpreter-specific data. */
+    Tcl_Interp *interp,         /* Not used. */
+    int level,                  /* Current level */
+    const char *command,        /* Command before substitution */
+    Tcl_Command token,          /* Not used. */
     int objc,
-    Tcl_Obj *const *objv)	/* Command after parsing, but before
-				 * evaluation */
+    Tcl_Obj *const *objv)       /* Command after parsing, but before
+                                 * evaluation */
 {
     DebugCmdInterpData *dataPtr = clientData;
     Tcl_Channel errChannel;
@@ -219,32 +219,32 @@ DebugProc(
 
     /* This is pretty crappy, but there's no way to trigger stack pops */
     for (i = level + 1; i < MAX_STACK; i++) {
-	UNSETBIT(i);
+        UNSETBIT(i);
     }
     if (Blt_Chain_GetLength(dataPtr->chain) > 0) {
-	int found;
-	Blt_ChainLink link;
+        int found;
+        Blt_ChainLink link;
 
-	found = FALSE;
-	for (link = Blt_Chain_FirstLink(dataPtr->chain); 
-	     link != NULL; link = Blt_Chain_NextLink(link)) {
-	    Watch *watchPtr;
-	    const char *cmd, *pattern;
+        found = FALSE;
+        for (link = Blt_Chain_FirstLink(dataPtr->chain); 
+             link != NULL; link = Blt_Chain_NextLink(link)) {
+            Watch *watchPtr;
+            const char *cmd, *pattern;
 
-	    watchPtr = Blt_Chain_GetValue(link);
-	    cmd = Tcl_GetString(objv[0]);
-	    pattern = Tcl_GetString(watchPtr->nameObjPtr);
-	    if (Tcl_StringMatch(cmd, pattern)) {
-		found = TRUE;
-		break;
-	    }
-	}
-	if ((found) && (level < MAX_STACK)) {
-	    SETBIT(level), SETBIT(level + 1);
-	}
-	if ((level >= MAX_STACK) || (!GETBIT(level))) {
-	    return TCL_OK;
-	}
+            watchPtr = Blt_Chain_GetValue(link);
+            cmd = Tcl_GetString(objv[0]);
+            pattern = Tcl_GetString(watchPtr->nameObjPtr);
+            if (Tcl_StringMatch(cmd, pattern)) {
+                found = TRUE;
+                break;
+            }
+        }
+        if ((found) && (level < MAX_STACK)) {
+            SETBIT(level), SETBIT(level + 1);
+        }
+        if ((level >= MAX_STACK) || (!GETBIT(level))) {
+            return TCL_OK;
+        }
     }
     /*
      * Use stderr channel, for compatibility with systems that don't have a
@@ -253,9 +253,9 @@ DebugProc(
      */
     errChannel = Tcl_GetStdChannel(TCL_STDERR);
     if (errChannel == NULL) {
-	Tcl_AppendResult(interp, "can't get stderr channel", (char *)NULL);
-	Tcl_BackgroundError(interp);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't get stderr channel", (char *)NULL);
+        Tcl_BackgroundError(interp);
+        return TCL_ERROR;
     }
     Tcl_DStringInit(&ds);
 
@@ -263,45 +263,45 @@ DebugProc(
     p = command;
     /* Skip leading spaces in command line. */
     while(isspace(UCHAR(*p))) {
-	p++;
+        p++;
     }
     lineStart = p;
     count = 0;
     while (*p != '\0') {
-	if (*p == '\n') {
-	    if (count > 0) {
-		Tcl_DStringAppend(&ds, "     ", -1);
-	    } else {
-		Tcl_DStringAppend(&ds, prompt, -1);
-	    }
-	    Tcl_DStringAppend(&ds, lineStart, p - lineStart);
-	    Tcl_DStringAppend(&ds, "\n", -1);
-	    p++;
-	    lineStart = p;
-	    count++;
-	    if (count > 6) {
-		break;		/* Stop after 6 lines. */
-	    }
-	} else {
-	    p++;
-	}
+        if (*p == '\n') {
+            if (count > 0) {
+                Tcl_DStringAppend(&ds, "     ", -1);
+            } else {
+                Tcl_DStringAppend(&ds, prompt, -1);
+            }
+            Tcl_DStringAppend(&ds, lineStart, p - lineStart);
+            Tcl_DStringAppend(&ds, "\n", -1);
+            p++;
+            lineStart = p;
+            count++;
+            if (count > 6) {
+                break;          /* Stop after 6 lines. */
+            }
+        } else {
+            p++;
+        }
     }   
     while (isspace(UCHAR(*lineStart))) {
-	lineStart++;
+        lineStart++;
     }
     if (lineStart < p) {
-	if (count > 0) {
-	    Tcl_DStringAppend(&ds, "     ", -1);
-	} else {
-	    Tcl_DStringAppend(&ds, prompt, -1);
-	}
-	Tcl_DStringAppend(&ds, lineStart, p - lineStart);
-	if (count <= 6) {
-	    Tcl_DStringAppend(&ds, "\n", -1);
-	}
+        if (count > 0) {
+            Tcl_DStringAppend(&ds, "     ", -1);
+        } else {
+            Tcl_DStringAppend(&ds, prompt, -1);
+        }
+        Tcl_DStringAppend(&ds, lineStart, p - lineStart);
+        if (count <= 6) {
+            Tcl_DStringAppend(&ds, "\n", -1);
+        }
     }
     if (count > 6) {
-	Tcl_DStringAppend(&ds, "     ...\n", -1);
+        Tcl_DStringAppend(&ds, "     ...\n", -1);
     }
     listObjPtr = Tcl_NewListObj(objc, objv);
     Tcl_IncrRefCount(listObjPtr);
@@ -311,51 +311,51 @@ DebugProc(
     objPtr = NULL;
 #endif
     if (objPtr == NULL) {
-	string = Tcl_GetString(listObjPtr);
+        string = Tcl_GetString(listObjPtr);
     } else {
-	Tcl_IncrRefCount(objPtr);
-	string = Tcl_GetString(objPtr);
+        Tcl_IncrRefCount(objPtr);
+        string = Tcl_GetString(objPtr);
     }
     lineStart = string;
     Blt_FormatString(prompt, 200, "  <- ");
     count = 0;
     for (p = string; *p != '\0'; /* empty */) {
-	if (*p == '\n') {
-	    if (count > 0) {
-		Tcl_DStringAppend(&ds, "     ", -1);
-	    } else {
-		Tcl_DStringAppend(&ds, prompt, -1);
-	    }
-	    count++;
-	    Tcl_DStringAppend(&ds, lineStart, p - lineStart);
-	    Tcl_DStringAppend(&ds, "\n", -1);
-	    p++;
-	    lineStart = p;
-	    if (count > 6) {
-		break;
-	    }
-	} else {
-	    p++;
-	}
+        if (*p == '\n') {
+            if (count > 0) {
+                Tcl_DStringAppend(&ds, "     ", -1);
+            } else {
+                Tcl_DStringAppend(&ds, prompt, -1);
+            }
+            count++;
+            Tcl_DStringAppend(&ds, lineStart, p - lineStart);
+            Tcl_DStringAppend(&ds, "\n", -1);
+            p++;
+            lineStart = p;
+            if (count > 6) {
+                break;
+            }
+        } else {
+            p++;
+        }
     }   
     if (lineStart < p) {
-	if (count > 0) {
-	    Tcl_DStringAppend(&ds, "     ", -1);
-	} else {
-	    Tcl_DStringAppend(&ds, prompt, -1);
-	}
-	Tcl_DStringAppend(&ds, lineStart, p - lineStart);
-	if (count <= 6) {
-	    Tcl_DStringAppend(&ds, "\n", -1);
-	}
+        if (count > 0) {
+            Tcl_DStringAppend(&ds, "     ", -1);
+        } else {
+            Tcl_DStringAppend(&ds, prompt, -1);
+        }
+        Tcl_DStringAppend(&ds, lineStart, p - lineStart);
+        if (count <= 6) {
+            Tcl_DStringAppend(&ds, "\n", -1);
+        }
     }
     if (count > 6) {
-	Tcl_DStringAppend(&ds, "      ...\n", -1);
+        Tcl_DStringAppend(&ds, "      ...\n", -1);
     }
     Tcl_DStringAppend(&ds, "\n", -1);
     Tcl_DecrRefCount(listObjPtr);
     if (objPtr != NULL) {
-	Tcl_DecrRefCount(objPtr);
+        Tcl_DecrRefCount(objPtr);
     }
     Tcl_Write(errChannel, (char *)Tcl_DStringValue(&ds), -1);
     Tcl_Flush(errChannel);
@@ -366,7 +366,7 @@ DebugProc(
 /*ARGSUSED*/
 static int
 DebugCmd(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,      /* Not used. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -384,51 +384,51 @@ DebugCmd(
     static int level;
 
     if (objc == 1) {
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), level);
-	return TCL_OK;
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), level);
+        return TCL_OK;
     }
     string = Tcl_GetStringFromObj(objv[1], &length);
     c = string[0];
     if ((c == 'w') && (strncmp(string, "watch", length) == 0)) {
-	/* Add patterns of command names to watch to the chain */
-	for (i = 2; i < objc; i++) {
-	    GetWatch(dataPtr, objv[i]);
-	}
+        /* Add patterns of command names to watch to the chain */
+        for (i = 2; i < objc; i++) {
+            GetWatch(dataPtr, objv[i]);
+        }
     } else if ((c == 'i') && (strncmp(string, "ignore", length) == 0)) {
-	for (i = 2; i < objc; i++) {
-	    DeleteWatch(dataPtr, objv[i]);
-	}
+        for (i = 2; i < objc; i++) {
+            DeleteWatch(dataPtr, objv[i]);
+        }
     } else {
-	goto levelTest;
+        goto levelTest;
     }
     /* Return the current watch patterns */
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (link = Blt_Chain_FirstLink(dataPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	watchPtr = Blt_Chain_GetValue(link);
-	Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->nameObjPtr);
+        link = Blt_Chain_NextLink(link)) {
+        watchPtr = Blt_Chain_GetValue(link);
+        Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->nameObjPtr);
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 
   levelTest:
     if (Tcl_GetBooleanFromObj(interp, objv[1], &newLevel) == TCL_OK) {
-	if (newLevel > 0) {
-	    newLevel = 10000;	/* Max out the level */
-	}
+        if (newLevel > 0) {
+            newLevel = 10000;   /* Max out the level */
+        }
     } else if (Tcl_GetIntFromObj(interp, objv[1], &newLevel) == TCL_OK) {
-	if (newLevel < 0) {
-	    newLevel = 0;
-	}
+        if (newLevel < 0) {
+            newLevel = 0;
+        }
     } else {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (token != 0) {
-	Tcl_DeleteTrace(interp, token);
+        Tcl_DeleteTrace(interp, token);
     }
     if (newLevel > 0) {
-	token = Tcl_CreateObjTrace(interp, newLevel, 0, DebugProc, 
-				   dataPtr, NULL);
+        token = Tcl_CreateObjTrace(interp, newLevel, 0, DebugProc, 
+                                   dataPtr, NULL);
     }
     level = newLevel;
     Tcl_SetIntObj(Tcl_GetObjResult(interp), level);

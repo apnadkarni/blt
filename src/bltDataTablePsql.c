@@ -65,16 +65,16 @@ DLLEXPORT extern Tcl_AppInitProc blt_table_psql_safe_init;
 
 typedef struct {
     const char *host;                   /* If non-NULL, name of remote host
-					 * of Postgres server.  Otherwise
-					 * "localhost" is used. */
+                                         * of Postgres server.  Otherwise
+                                         * "localhost" is used. */
     const char *user;                   /* If non-NULL, name of user
-					 * account to access Postgres server.
-					 * Otherwise the current username
-					 * is used. */
+                                         * account to access Postgres server.
+                                         * Otherwise the current username
+                                         * is used. */
     const char *pw;                     /* If non-NULL, is password to use
-					 * to access Postgres server. */
+                                         * to access Postgres server. */
     const char *db;                     /* If non-NULL, name of Postgres
-					 * SQL database to access. */
+                                         * SQL database to access. */
     const char *query;                  /* If non-NULL, query to make. */
     const char *options;                /* If non-NULL, query to make. */
     int port;                           /* Port number to use. */
@@ -92,28 +92,28 @@ typedef struct {
     Tcl_Interp *interp;
     unsigned int flags;
     char *buffer;                       /* Buffer to read data into. */
-    int numBytes;			/* # of bytes in the buffer. */
+    int numBytes;                       /* # of bytes in the buffer. */
     const char *tableName;
 } ImportArgs;
 
 static Blt_SwitchSpec importSwitches[] = 
 {
     {BLT_SWITCH_STRING, "-db",        "dbName", (char *)NULL,
-	Blt_Offset(ImportArgs, params.db), 0, 0},
+        Blt_Offset(ImportArgs, params.db), 0, 0},
     {BLT_SWITCH_STRING, "-host",      "hostName", (char *)NULL,
-	Blt_Offset(ImportArgs, params.host), 0, 0},
+        Blt_Offset(ImportArgs, params.host), 0, 0},
     {BLT_SWITCH_STRING, "-user",      "userName", (char *)NULL,
-	Blt_Offset(ImportArgs, params.user), 0, 0},
+        Blt_Offset(ImportArgs, params.user), 0, 0},
     {BLT_SWITCH_STRING, "-password",  "password", (char *)NULL,
-	Blt_Offset(ImportArgs, params.pw), 0, 0},
+        Blt_Offset(ImportArgs, params.pw), 0, 0},
     {BLT_SWITCH_INT_NNEG, "-port",    "number", (char *)NULL,
-	Blt_Offset(ImportArgs, params.port), 0, 0},
+        Blt_Offset(ImportArgs, params.port), 0, 0},
     {BLT_SWITCH_STRING,    "-options", "string", (char *)NULL,
-	Blt_Offset(ImportArgs, params.options), 0, 0},
+        Blt_Offset(ImportArgs, params.options), 0, 0},
     {BLT_SWITCH_STRING,    "-query",  "string", (char *)NULL,
-	Blt_Offset(ImportArgs, query), 0, 0},
+        Blt_Offset(ImportArgs, query), 0, 0},
     {BLT_SWITCH_STRING, "-table",     "tableName", (char *)NULL,
-	Blt_Offset(ImportArgs, table), 0, 0},
+        Blt_Offset(ImportArgs, table), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -129,7 +129,7 @@ typedef struct {
     unsigned int flags;
 } ExportArgs;
 
-#define EXPORT_ROWLABELS	(1<<0)
+#define EXPORT_ROWLABELS        (1<<0)
 
 static Blt_SwitchFreeProc ColumnIterFreeProc;
 static Blt_SwitchParseProc ColumnIterSwitchProc;
@@ -145,21 +145,21 @@ static Blt_SwitchCustom rowIterSwitch = {
 static Blt_SwitchSpec exportSwitches[] = 
 {
     {BLT_SWITCH_STRING, "-db",       "dbName", (char *)NULL,
-	Blt_Offset(ExportArgs, params.db), 0, 0},
+        Blt_Offset(ExportArgs, params.db), 0, 0},
     {BLT_SWITCH_STRING, "-host",     "hostName", (char *)NULL,
-	Blt_Offset(ExportArgs, params.host), 0, 0},
+        Blt_Offset(ExportArgs, params.host), 0, 0},
     {BLT_SWITCH_STRING, "-user",     "userName", (char *)NULL,
-	Blt_Offset(ExportArgs, params.user), 0, 0},
+        Blt_Offset(ExportArgs, params.user), 0, 0},
     {BLT_SWITCH_STRING, "-password", "password", (char *)NULL,
-	Blt_Offset(ExportArgs, params.pw), 0, 0},
+        Blt_Offset(ExportArgs, params.pw), 0, 0},
     {BLT_SWITCH_INT_NNEG, "-port",   "number", (char *)NULL,
-	Blt_Offset(ExportArgs, params.port), 0, 0},
+        Blt_Offset(ExportArgs, params.port), 0, 0},
     {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
-	Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
+        Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
-	Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
+        Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
     {BLT_SWITCH_STRING, "-table",    "tableName", (char *)NULL,
-	Blt_Offset(ExportArgs, table), 0, 0},
+        Blt_Offset(ExportArgs, table), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -192,10 +192,10 @@ static int numTypeConverts = sizeof(psqlTypeConverts) / sizeof(PsqlTypeConvert);
  *
  * ColumnIterFreeProc --
  *
- *	Free the storage associated with the -columns switch.
+ *      Free the storage associated with the -columns switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -213,10 +213,10 @@ ColumnIterFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * ColumnIterSwitchProc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -233,11 +233,11 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
 
     table = clientData;
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -248,10 +248,10 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * RowIterFreeProc --
  *
- *	Free the storage associated with the -rows switch.
+ *      Free the storage associated with the -rows switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -269,10 +269,10 @@ RowIterFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * RowIterSwitchProc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -289,11 +289,11 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
 
     table = clientData;
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -303,11 +303,11 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PsqlConvertToColumnType --
  *
- *	Convert the postgres type (represented by a string) in the 
+ *      Convert the postgres type (represented by a string) in the 
  *      the associated table column type.
  *
  * Results:
- *	The return value is the converted column type.
+ *      The return value is the converted column type.
  *
  *---------------------------------------------------------------------------
  */
@@ -319,19 +319,19 @@ PsqlConvertToColumnType(const char *string, size_t length)
     low = 0;
     high = numTypeConverts - 1;
     while (low <= high) {
-	int comp;
-	int median;
-	
-	median = (low + high) >> 1;
-	comp = strcasecmp(string, psqlTypeConverts[median].string);
-	if (comp == 0) {
-	    return psqlTypeConverts[median].type;
-	}
-	if (comp < 0) {
-	    high = median - 1;
-	} else if (comp > 0) {
-	    low = median + 1;
-	}
+        int comp;
+        int median;
+        
+        median = (low + high) >> 1;
+        comp = strcasecmp(string, psqlTypeConverts[median].string);
+        if (comp == 0) {
+            return psqlTypeConverts[median].type;
+        }
+        if (comp < 0) {
+            high = median - 1;
+        } else if (comp > 0) {
+            low = median + 1;
+        }
     }
     return TABLE_COLUMN_TYPE_STRING;        /* Default to string. */
 }
@@ -341,11 +341,11 @@ PsqlConvertToColumnType(const char *string, size_t length)
  *
  * PsqlConnect --
  *
- *	Connects to the postgres server by first constructing the 
+ *      Connects to the postgres server by first constructing the 
  *      parameters string for user, password, host,  post, etc.
  *
  * Results:
- *	The return value is a standard TCL result.  The connection
+ *      The return value is a standard TCL result.  The connection
  *      is returned via *connPtr*.
  *
  *---------------------------------------------------------------------------
@@ -382,12 +382,12 @@ PsqlConnect(Tcl_Interp *interp, PsqlConnection *paramsPtr, PGconn **connPtr)
     string = Blt_DBuffer_String(dbuffer);
     conn = PQconnectdb(string); 
     if (PQstatus(conn) != CONNECTION_OK) {
-	Tcl_AppendResult(interp, "can't connect to psql server \"",
-		string, "\": ", PQerrorMessage(conn), (char *)NULL);
+        Tcl_AppendResult(interp, "can't connect to psql server \"",
+                string, "\": ", PQerrorMessage(conn), (char *)NULL);
     }
     Blt_DBuffer_Destroy(dbuffer);
     if (PQstatus(conn) != CONNECTION_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     *connPtr = conn;
     return TCL_OK;
@@ -398,10 +398,10 @@ PsqlConnect(Tcl_Interp *interp, PsqlConnection *paramsPtr, PGconn **connPtr)
  *
  * PsqlQuery --
  *
- *	Executes the postgres command/query.
+ *      Executes the postgres command/query.
  *
  * Results:
- *	The return value is a standard TCL result.  The result set
+ *      The return value is a standard TCL result.  The result set
  *      is returned via *resultPtr*.
  *
  *---------------------------------------------------------------------------
@@ -414,10 +414,10 @@ PsqlQuery(Tcl_Interp *interp, PGconn *conn, const char *query,
     
     result = PQexec(conn, query);
     if (result == NULL) {
-	Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
-			 PQerrorMessage(conn), (char *)NULL);
-	PQclear(result);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
+                         PQerrorMessage(conn), (char *)NULL);
+        PQclear(result);
+        return TCL_ERROR;
     }
     *resultPtr = result;
     return TCL_OK;
@@ -428,28 +428,28 @@ PsqlQuery(Tcl_Interp *interp, PGconn *conn, const char *query,
  *
  * PsqlImportLabels --
  *
- *	Sets the column labels in the table for the new columns. The column
+ *      Sets the column labels in the table for the new columns. The column
  *      names are the postgres field names.
  *
  * Results:
- *	The return value is a standard TCL result.  
+ *      The return value is a standard TCL result.  
  *
  *---------------------------------------------------------------------------
  */
 static int
 PsqlImportLabels(Tcl_Interp *interp, BLT_TABLE table, PGresult *result, 
-		 size_t numCols, BLT_TABLE_COLUMN *cols) 
+                 size_t numCols, BLT_TABLE_COLUMN *cols) 
 {
     size_t i;
 
     for (i = 0; i < numCols; i++) {
-	const char *label;
+        const char *label;
 
-	label = PQfname(result, i);
-	if (blt_table_set_column_label(interp, table, cols[i], label) 
-	    != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        label = PQfname(result, i);
+        if (blt_table_set_column_label(interp, table, cols[i], label) 
+            != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -459,10 +459,10 @@ PsqlImportLabels(Tcl_Interp *interp, BLT_TABLE table, PGresult *result,
  *
  * PsqlImportValues --
  *
- *	Sets the cell values in the table for the new columns.  
+ *      Sets the cell values in the table for the new columns.  
  *
  * Results:
- *	The return value is a standard TCL result.  
+ *      The return value is a standard TCL result.  
  *
  *---------------------------------------------------------------------------
  */
@@ -486,20 +486,20 @@ PsqlImportValues(Tcl_Interp *interp, BLT_TABLE table, PGresult *result,
     }
     for (i = 0; i < numRows; i++) {
         BLT_TABLE_ROW row;
-	size_t j;
+        size_t j;
 
         row = blt_table_row(table, i);
-	for (j = 0; j < numCols; j++) {
-	    int length;
-	    const char *value;
+        for (j = 0; j < numCols; j++) {
+            int length;
+            const char *value;
 
-	    value = PQgetvalue(result, i, j);
-	    length = PQgetlength(result, i, j);
-	    if (blt_table_set_string_rep(interp, table, row, cols[j], value,
+            value = PQgetvalue(result, i, j);
+            length = PQgetlength(result, i, j);
+            if (blt_table_set_string_rep(interp, table, row, cols[j], value,
                         length) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	}
+                return TCL_ERROR;
+            }
+        }
     }
     return TCL_OK;
 }
@@ -510,11 +510,11 @@ PsqlImportValues(Tcl_Interp *interp, BLT_TABLE table, PGresult *result,
  * PsqlImportColumnTypes --
  *
  *      Set the table column types from the postgres scheme information.
- *	Postgres does not report the type with the field.  You can however
- *	query to column types for a particular table from the server.
+ *      Postgres does not report the type with the field.  You can however
+ *      query to column types for a particular table from the server.
  *
  * Results:
- *	The return value is a standard TCL result.  
+ *      The return value is a standard TCL result.  
  *
  *---------------------------------------------------------------------------
  */
@@ -540,7 +540,7 @@ PsqlImportColumnTypes(Tcl_Interp *interp, BLT_TABLE table, PGconn *conn,
         return TCL_ERROR;
     }
     if (PQresultStatus(result) != PGRES_TUPLES_OK) {
-	Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
+        Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
                 PQresultErrorMessage(result), (char *)NULL);
         Blt_DBuffer_Destroy(dbuffer);
         PQclear(result);
@@ -617,7 +617,7 @@ PsqlCreateTable(Tcl_Interp *interp, PGconn *conn, BLT_TABLE table,
     }        
     first = TRUE;
     for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL; 
-	 col = blt_table_next_tagged_column(&argsPtr->ci)) {
+         col = blt_table_next_tagged_column(&argsPtr->ci)) {
         int type;
         const char *label;
         
@@ -652,7 +652,7 @@ PsqlCreateTable(Tcl_Interp *interp, PGconn *conn, BLT_TABLE table,
         return TCL_ERROR;
     }
     if (PQresultStatus(result) != PGRES_TUPLES_OK) {
-	Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
+        Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
                 PQresultErrorMessage(result), (char *)NULL);
         Blt_DBuffer_Destroy(dbuffer);
         PQclear(result);
@@ -732,7 +732,7 @@ PsqlExportValues(Tcl_Interp *interp, PGconn *conn, BLT_TABLE table,
 
     Blt_DBuffer_Destroy(dbuffer);
     for (row = blt_table_first_tagged_row(&argsPtr->ri); row != NULL; 
-	 row = blt_table_next_tagged_row(&argsPtr->ri)) {
+         row = blt_table_next_tagged_row(&argsPtr->ri)) {
         int count;                      
         
         count = 0;                      
@@ -792,7 +792,7 @@ PsqlExportValues(Tcl_Interp *interp, PGconn *conn, BLT_TABLE table,
 
 static int
 ImportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
-	       Tcl_Obj *const *objv)
+               Tcl_Obj *const *objv)
 {
     ImportArgs args;
     PGconn *conn;
@@ -802,12 +802,12 @@ ImportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     memset(&args, 0, sizeof(args));
     args.params.port = 5432;
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
-		&args, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+                &args, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     if (args.query == NULL) {
         Tcl_AppendResult(interp, "-query switch is required.", (char *)NULL);
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     conn = NULL;
     resultset = NULL;
@@ -839,10 +839,10 @@ ImportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
             result = PsqlImportColumnTypes(interp, table, conn, numCols, cols,
                 args.table);
         }
-	Blt_Free(cols);
+        Blt_Free(cols);
     }
     if (resultset != NULL) {
-	PQclear(resultset);
+        PQclear(resultset);
     }
     if (conn != NULL) {
         PQfinish(conn);
@@ -853,7 +853,7 @@ ImportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 
 static int
 ExportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+                Tcl_Obj *const *objv)
 {
     ExportArgs args;
     PGconn *conn;
@@ -870,8 +870,8 @@ ExportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     blt_table_iterate_all_rows(table, &args.ri);
     blt_table_iterate_all_columns(table, &args.ci);
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
-		&args, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+                &args, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     if (args.table != NULL) {
         args.tableName = args.table;
@@ -898,26 +898,26 @@ blt_table_psql_init(Tcl_Interp *interp)
 {
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #endif
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else
     if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #endif    
     if (Tcl_PkgProvide(interp, "blt_datatable_psql", BLT_VERSION)
         != TCL_OK) { 
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-	"psql",                         /* Name of format. */
-	ImportPsqlProc,                 /* Import procedure. */
-	ExportPsqlProc);                /* Export procedure. */
+        "psql",                         /* Name of format. */
+        ImportPsqlProc,                 /* Import procedure. */
+        ExportPsqlProc);                /* Export procedure. */
 
 }
 

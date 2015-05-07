@@ -78,38 +78,38 @@
   blt::printer emum things
 */
 
-#define PRINTER_THREAD_KEY	"BLT Printer Data"
+#define PRINTER_THREAD_KEY      "BLT Printer Data"
 
 #ifdef notdef
 #define DM_SPECVERSION 0x0401
 
-#define DMPAPER_ISO_B4              42	/* B4 (ISO) 250 x 353 mm              */
-#define DMPAPER_JAPANESE_POSTCARD   43	/* Japanese Postcard 100 x 148 mm     */
-#define DMPAPER_9X11                44	/* 9 x 11 in                          */
-#define DMPAPER_10X11               45	/* 10 x 11 in                         */
-#define DMPAPER_15X11               46	/* 15 x 11 in                         */
-#define DMPAPER_ENV_INVITE          47	/* Envelope Invite 220 x 220 mm       */
-#define DMPAPER_RESERVED_48         48	/* RESERVED--DO NOT USE               */
-#define DMPAPER_RESERVED_49         49	/* RESERVED--DO NOT USE               */
-#define DMPAPER_LETTER_EXTRA        50	/* Letter Extra 9 \275 x 12 in        */
-#define DMPAPER_LEGAL_EXTRA         51	/* Legal Extra 9 \275 x 15 in         */
-#define DMPAPER_TABLOID_EXTRA       52	/* Tabloid Extra 11.69 x 18 in        */
-#define DMPAPER_A4_EXTRA            53	/* A4 Extra 9.27 x 12.69 in           */
-#define DMPAPER_LETTER_TRANSVERSE   54	/* Letter Transverse 8 \275 x 11 in   */
-#define DMPAPER_A4_TRANSVERSE       55	/* A4 Transverse 210 x 297 mm         */
-#define DMPAPER_LETTER_EXTRA_TRANSVERSE 56	/* Letter Extra Transverse 9\275 x 12 in */
-#define DMPAPER_A_PLUS              57	/* SuperA/SuperA/A4 227 x 356 mm      */
-#define DMPAPER_B_PLUS              58	/* SuperB/SuperB/A3 305 x 487 mm      */
-#define DMPAPER_LETTER_PLUS         59	/* Letter Plus 8.5 x 12.69 in         */
-#define DMPAPER_A4_PLUS             60	/* A4 Plus 210 x 330 mm               */
-#define DMPAPER_A5_TRANSVERSE       61	/* A5 Transverse 148 x 210 mm         */
-#define DMPAPER_B5_TRANSVERSE       62	/* B5 (JIS) Transverse 182 x 257 mm   */
-#define DMPAPER_A3_EXTRA            63	/* A3 Extra 322 x 445 mm              */
-#define DMPAPER_A5_EXTRA            64	/* A5 Extra 174 x 235 mm              */
-#define DMPAPER_B5_EXTRA            65	/* B5 (ISO) Extra 201 x 276 mm        */
-#define DMPAPER_A2                  66	/* A2 420 x 594 mm                    */
-#define DMPAPER_A3_TRANSVERSE       67	/* A3 Transverse 297 x 420 mm         */
-#define DMPAPER_A3_EXTRA_TRANSVERSE 68	/* A3 Extra Transverse 322 x 445 mm   */
+#define DMPAPER_ISO_B4              42  /* B4 (ISO) 250 x 353 mm              */
+#define DMPAPER_JAPANESE_POSTCARD   43  /* Japanese Postcard 100 x 148 mm     */
+#define DMPAPER_9X11                44  /* 9 x 11 in                          */
+#define DMPAPER_10X11               45  /* 10 x 11 in                         */
+#define DMPAPER_15X11               46  /* 15 x 11 in                         */
+#define DMPAPER_ENV_INVITE          47  /* Envelope Invite 220 x 220 mm       */
+#define DMPAPER_RESERVED_48         48  /* RESERVED--DO NOT USE               */
+#define DMPAPER_RESERVED_49         49  /* RESERVED--DO NOT USE               */
+#define DMPAPER_LETTER_EXTRA        50  /* Letter Extra 9 \275 x 12 in        */
+#define DMPAPER_LEGAL_EXTRA         51  /* Legal Extra 9 \275 x 15 in         */
+#define DMPAPER_TABLOID_EXTRA       52  /* Tabloid Extra 11.69 x 18 in        */
+#define DMPAPER_A4_EXTRA            53  /* A4 Extra 9.27 x 12.69 in           */
+#define DMPAPER_LETTER_TRANSVERSE   54  /* Letter Transverse 8 \275 x 11 in   */
+#define DMPAPER_A4_TRANSVERSE       55  /* A4 Transverse 210 x 297 mm         */
+#define DMPAPER_LETTER_EXTRA_TRANSVERSE 56      /* Letter Extra Transverse 9\275 x 12 in */
+#define DMPAPER_A_PLUS              57  /* SuperA/SuperA/A4 227 x 356 mm      */
+#define DMPAPER_B_PLUS              58  /* SuperB/SuperB/A3 305 x 487 mm      */
+#define DMPAPER_LETTER_PLUS         59  /* Letter Plus 8.5 x 12.69 in         */
+#define DMPAPER_A4_PLUS             60  /* A4 Plus 210 x 330 mm               */
+#define DMPAPER_A5_TRANSVERSE       61  /* A5 Transverse 148 x 210 mm         */
+#define DMPAPER_B5_TRANSVERSE       62  /* B5 (JIS) Transverse 182 x 257 mm   */
+#define DMPAPER_A3_EXTRA            63  /* A3 Extra 322 x 445 mm              */
+#define DMPAPER_A5_EXTRA            64  /* A5 Extra 174 x 235 mm              */
+#define DMPAPER_B5_EXTRA            65  /* B5 (ISO) Extra 201 x 276 mm        */
+#define DMPAPER_A2                  66  /* A2 420 x 594 mm                    */
+#define DMPAPER_A3_TRANSVERSE       67  /* A3 Transverse 297 x 420 mm         */
+#define DMPAPER_A3_EXTRA_TRANSVERSE 68  /* A3 Extra Transverse 322 x 445 mm   */
 #ifndef DMPAPER_LAST
 #define DMPAPER_LAST                DMPAPER_A3_EXTRA_TRANSVERSE
 #endif /*DMPAPER_LAST */
@@ -140,7 +140,7 @@
 #define DMBIN_LAST          DMBIN_FORMSOURCE
 #endif /*DMBIN_LAST*/
 
-#define DMBIN_USER          256	/* device specific bins start here */
+#define DMBIN_USER          256 /* device specific bins start here */
 
 /* print qualities */
 #define DMRES_DRAFT         (-1)
@@ -148,12 +148,12 @@
 #define DMRES_MEDIUM        (-3)
 #define DMRES_HIGH          (-4)
 
-#define DMTT_DOWNLOAD_OUTLINE 4	/* download TT fonts as outline soft fonts */
+#define DMTT_DOWNLOAD_OUTLINE 4 /* download TT fonts as outline soft fonts */
 #endif /* DM */
 
 typedef struct {
-    Blt_HashTable printerTable;	/* Hash table of printer structures keyed by 
-				 * the name of the printer. */
+    Blt_HashTable printerTable; /* Hash table of printer structures keyed by 
+                                 * the name of the printer. */
     int nextId;
 } PrinterInterpData;
 
@@ -164,7 +164,7 @@ typedef struct {
 
 typedef struct {
     Tcl_Interp *interp;
-    Tcl_Command cmdToken;	/* Token for vector's TCL command. */
+    Tcl_Command cmdToken;       /* Token for vector's TCL command. */
     char *name;
     char *fileName;
     PrintDrawable drawable;
@@ -455,13 +455,13 @@ GetPrinterInterpData(Tcl_Interp *interp)
     Tcl_InterpDeleteProc *proc;
 
     dataPtr = (PrinterInterpData *)
-	Tcl_GetAssocData(interp, PRINTER_THREAD_KEY, &proc);
+        Tcl_GetAssocData(interp, PRINTER_THREAD_KEY, &proc);
     if (dataPtr == NULL) {
-	dataPtr = Blt_AssertMalloc(sizeof(PrinterInterpData));
-	dataPtr->nextId = 0;
-	Tcl_SetAssocData(interp, PRINTER_THREAD_KEY, PrinterInterpDeleteProc,
-		dataPtr);
-	Blt_InitHashTable(&dataPtr->printerTable, BLT_STRING_KEYS);
+        dataPtr = Blt_AssertMalloc(sizeof(PrinterInterpData));
+        dataPtr->nextId = 0;
+        Tcl_SetAssocData(interp, PRINTER_THREAD_KEY, PrinterInterpDeleteProc,
+                dataPtr);
+        Blt_InitHashTable(&dataPtr->printerTable, BLT_STRING_KEYS);
     }
     return dataPtr;
 }
@@ -478,9 +478,9 @@ GetQueue(
     dataPtr = GetPrinterInterpData(interp);
     hPtr = Blt_FindHashEntry(&dataPtr->printerTable, name);
     if (hPtr == NULL) {
-	Tcl_AppendResult(interp, "can't find printer \"", name, "\"",
-	    (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't find printer \"", name, "\"",
+            (char *)NULL);
+        return TCL_ERROR;
     }
     *queuePtrPtr = Blt_GetHashValue(hPtr);
     return TCL_OK;
@@ -514,10 +514,10 @@ OpenQueue(
     ZeroMemory(&pd, sizeof(pd));
     pd.DesiredAccess = PRINTER_ALL_ACCESS;
     if (!OpenPrinter(queuePtr->printerName, &hPrinter, &pd)) {
-	Tcl_AppendResult(interp, "can't open printer \"", 
-		queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
-	queuePtr->hPrinter = NULL;
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't open printer \"", 
+                queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
+        queuePtr->hPrinter = NULL;
+        return TCL_ERROR;
     }
     queuePtr->hPrinter = hPrinter;
     return TCL_OK;
@@ -535,25 +535,25 @@ GetQueueProperties(
 
     hWnd = GetDesktopWindow();
     dmSize = DocumentProperties(hWnd, queuePtr->hPrinter, 
-	queuePtr->printerName, NULL, NULL, 0);
+        queuePtr->printerName, NULL, NULL, 0);
     if (dmSize == 0) {
-	Tcl_AppendResult(queuePtr->interp,
-		"can't get document properties for \"", 
-		queuePtr->printerName,
-		"\": ", Blt_LastError(), (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(queuePtr->interp,
+                "can't get document properties for \"", 
+                queuePtr->printerName,
+                "\": ", Blt_LastError(), (char *)NULL);
+        return NULL;
     }
     hMem = GlobalAlloc(GHND, dmSize);
     dmPtr = (DEVMODE *)GlobalLock(hMem);
     if (!DocumentProperties(hWnd, queuePtr->hPrinter, queuePtr->printerName, 
-	dmPtr, NULL, DM_OUT_BUFFER)) {
-	Tcl_AppendResult(queuePtr->interp,
-		"can't allocate document properties for \"",
-		queuePtr->printerName, "\": ", Blt_LastError(), 
-		(char *)NULL);
-	GlobalUnlock(hMem);
-	GlobalFree(hMem);
-	return NULL;
+        dmPtr, NULL, DM_OUT_BUFFER)) {
+        Tcl_AppendResult(queuePtr->interp,
+                "can't allocate document properties for \"",
+                queuePtr->printerName, "\": ", Blt_LastError(), 
+                (char *)NULL);
+        GlobalUnlock(hMem);
+        GlobalFree(hMem);
+        return NULL;
     }
     *dmPtrPtr = dmPtr;
     queuePtr->dmSize = dmSize;
@@ -571,14 +571,14 @@ SetQueueProperties(
 
     hWnd = GetDesktopWindow();
     result = DocumentProperties(hWnd, queuePtr->hPrinter, 
-	queuePtr->printerName, dmPtr, dmPtr, DM_IN_BUFFER | DM_OUT_BUFFER);
+        queuePtr->printerName, dmPtr, dmPtr, DM_IN_BUFFER | DM_OUT_BUFFER);
     if (result == 0) {
-	Tcl_AppendResult(interp, "can't set document properties for \"", 
-	    queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't set document properties for \"", 
+            queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
+        return TCL_ERROR;
     } 
     if (queuePtr->dmPtr != NULL) {
-	Blt_Free(queuePtr->dmPtr);
+        Blt_Free(queuePtr->dmPtr);
     }
     queuePtr->dmPtr = Blt_AssertMalloc(queuePtr->dmSize);
     *queuePtr->dmPtr = *dmPtr;
@@ -589,25 +589,25 @@ static void
 DestroyQueue(PrinterQueue *queuePtr)
 {
     if (queuePtr->drawable.hDC != NULL) {
-	DeleteDC(queuePtr->drawable.hDC);
+        DeleteDC(queuePtr->drawable.hDC);
     }
     if (queuePtr->printerName != NULL) {
-	Blt_Free(queuePtr->printerName);
+        Blt_Free(queuePtr->printerName);
     }
     if (queuePtr->deviceName != NULL) {
-	Blt_Free(queuePtr->deviceName);
+        Blt_Free(queuePtr->deviceName);
     }
     if (queuePtr->portName != NULL) {
-	Blt_Free(queuePtr->portName);
+        Blt_Free(queuePtr->portName);
     }
     if (queuePtr->driverName != NULL) {
-	Blt_Free(queuePtr->driverName);
+        Blt_Free(queuePtr->driverName);
     }
     if (queuePtr->hashPtr != NULL) {
-	Blt_DeleteHashEntry(queuePtr->tablePtr, queuePtr->hashPtr);
+        Blt_DeleteHashEntry(queuePtr->tablePtr, queuePtr->hashPtr);
     }
     if (queuePtr->dmPtr != NULL) {
-	Blt_Free(queuePtr->dmPtr);
+        Blt_Free(queuePtr->dmPtr);
     }
     Blt_Free(queuePtr);
 }
@@ -619,9 +619,9 @@ AttributesToString(DWORD attributes, Tcl_DString * resultPtr)
 
     Tcl_DStringInit(resultPtr);
     for (p = attributeTable; p->string != NULL; p++) {
-	if (attributes & p->token) {
-	    Tcl_DStringAppendElement(resultPtr, p->string);
-	}
+        if (attributes & p->token) {
+            Tcl_DStringAppendElement(resultPtr, p->string);
+        }
     }
     return Tcl_DStringValue(resultPtr);
 }
@@ -633,9 +633,9 @@ StatusToString(DWORD status, Tcl_DString * resultPtr)
 
     Tcl_DStringInit(resultPtr);
     for (p = statusTable; p->string != NULL; p++) {
-	if (status & p->token) {
-	    Tcl_DStringAppendElement(resultPtr, p->string);
-	}
+        if (status & p->token) {
+            Tcl_DStringAppendElement(resultPtr, p->string);
+        }
     }
     return Tcl_DStringValue(resultPtr);
 }
@@ -646,9 +646,9 @@ TokenToString(TokenString *table, DWORD token)
     TokenString *p;
 
     for (p = table; p->string != NULL; p++) {
-	if (token == p->token) {
-	    return p->string;
-	}
+        if (token == p->token) {
+            return p->string;
+        }
     }
     return "???";
 }
@@ -661,10 +661,10 @@ StringToToken(TokenString * table, char *string)
 
     c = toupper(string[0]);
     for (p = table; p->string != NULL; p++) {
-	if ((c == toupper(p->string[0])) && 
-	    (strcasecmp(string, p->string) == 0)) {
-	    return p->token;
-	}
+        if ((c == toupper(p->string[0])) && 
+            (strcasecmp(string, p->string) == 0)) {
+            return p->token;
+        }
     }
     return 0;
 }
@@ -672,25 +672,25 @@ StringToToken(TokenString * table, char *string)
 #ifdef notdef
 static void
 GetFormInfo(Tcl_Interp *interp, FORM_INFO_1 *infoArr, int numForms,
-	    const char *varName)
+            const char *varName)
 {
     Tcl_DString ds;
     int i;
 
     Tcl_DStringInit(&ds);
     for (i = 0; i < numForms; i++) {
-	Tcl_DStringAppendElement(&ds, infoArr[i].pName);
+        Tcl_DStringAppendElement(&ds, infoArr[i].pName);
     }
     Tcl_SetVar2(interp, varName, "EnumForms", Tcl_DStringValue(&ds),
-	TCL_LEAVE_ERR_MSG);
+        TCL_LEAVE_ERR_MSG);
     Tcl_DStringFree(&ds);
 }
 #endif
 
 static int
 GetPrinterAttributes(Tcl_Interp *interp, PrinterQueue *queuePtr, 
-		     Tcl_Obj *objPtr)
-{	
+                     Tcl_Obj *objPtr)
+{       
     const char *string;
     Tcl_DString ds;
     DEVMODE *dmPtr;
@@ -702,7 +702,7 @@ GetPrinterAttributes(Tcl_Interp *interp, PrinterQueue *queuePtr,
     const char *varName;
 
     if (OpenQueue(interp, queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_DStringInit(&ds);
     hMem2 = NULL;
@@ -715,23 +715,23 @@ GetPrinterAttributes(Tcl_Interp *interp, PrinterQueue *queuePtr,
 
     hMem1 = GlobalAlloc(GHND, bytesNeeded);
     if (hMem1 == NULL) {
-	Tcl_AppendResult(interp, "can't allocate memory for printer \"", 
-		queuePtr->name, "\": ", Blt_LastError(), (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "can't allocate memory for printer \"", 
+                queuePtr->name, "\": ", Blt_LastError(), (char *)NULL);
+        goto error;
     }
     buffer = (LPVOID)GlobalLock(hMem1);
     if (!GetPrinter(queuePtr->hPrinter, 2, buffer, bytesNeeded, 
-	&bytesNeeded)) {
-	Tcl_AppendResult(interp, "can't get printer \"", queuePtr->name, "\": ",
-	    Blt_LastError(), (char *)NULL);
-	goto error;
+        &bytesNeeded)) {
+        Tcl_AppendResult(interp, "can't get printer \"", queuePtr->name, "\": ",
+            Blt_LastError(), (char *)NULL);
+        goto error;
     }
     hMem2 = GetQueueProperties(queuePtr, &dmPtr);
     if (hMem2 == NULL) {
-	Tcl_AppendResult(interp, "can't allocate memory for printer \"", 
-		queuePtr->name, "\" properties: ", Blt_LastError(), 
-		(char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "can't allocate memory for printer \"", 
+                queuePtr->name, "\" properties: ", Blt_LastError(), 
+                (char *)NULL);
+        goto error;
     }
     pi2Ptr = (PRINTER_INFO_2 *)buffer;
     varName = Tcl_GetString(objPtr);
@@ -746,95 +746,95 @@ GetPrinterAttributes(Tcl_Interp *interp, PrinterQueue *queuePtr,
     Tcl_SetVar2(interp, varName, "Datatype", pi2Ptr->pDatatype, 0);
     Tcl_SetVar2(interp, varName, "Parameters", pi2Ptr->pParameters, 0);
     Tcl_SetVar2(interp, varName, "Attributes",
-	AttributesToString(pi2Ptr->Attributes, &ds), 0);
+        AttributesToString(pi2Ptr->Attributes, &ds), 0);
     Tcl_SetVar2(interp, varName, "Priority", Blt_Itoa(pi2Ptr->Priority), 0);
     Tcl_SetVar2(interp, varName, "DefaultPriority",
-	Blt_Itoa(pi2Ptr->DefaultPriority), 0);
+        Blt_Itoa(pi2Ptr->DefaultPriority), 0);
     Tcl_SetVar2(interp, varName, "StartTime", Blt_Itoa(pi2Ptr->StartTime), 0);
     Tcl_SetVar2(interp, varName, "UntilTime", Blt_Itoa(pi2Ptr->UntilTime), 0);
     Tcl_SetVar2(interp, varName, "Status",
-	StatusToString(pi2Ptr->Status, &ds), 0);
+        StatusToString(pi2Ptr->Status, &ds), 0);
     Tcl_SetVar2(interp, varName, "Jobs", Blt_Itoa(pi2Ptr->cJobs), 0);
     Tcl_SetVar2(interp, varName, "AveragePPM", Blt_Itoa(pi2Ptr->AveragePPM), 0);
 
     if (dmPtr->dmFields & DM_ORIENTATION) {
-	Tcl_SetVar2(interp, varName, "Orientation",
-	    TokenToString(orientationTable, dmPtr->dmOrientation), 0);
+        Tcl_SetVar2(interp, varName, "Orientation",
+            TokenToString(orientationTable, dmPtr->dmOrientation), 0);
     }
     if (dmPtr->dmFields & DM_PAPERSIZE) {
-	Tcl_SetVar2(interp, varName, "PaperSize",
-	    TokenToString(sizeTable, dmPtr->dmPaperSize), 0);
+        Tcl_SetVar2(interp, varName, "PaperSize",
+            TokenToString(sizeTable, dmPtr->dmPaperSize), 0);
     }
     if (dmPtr->dmFields & DM_PAPERWIDTH) {
-	Tcl_SetVar2(interp, varName, "PaperWidth",
-	    Blt_Itoa(dmPtr->dmPaperWidth), 0);
+        Tcl_SetVar2(interp, varName, "PaperWidth",
+            Blt_Itoa(dmPtr->dmPaperWidth), 0);
     }
     if (dmPtr->dmFields & DM_PAPERLENGTH) {
-	Tcl_SetVar2(interp, varName, "PaperLength",
-	    Blt_Itoa(dmPtr->dmPaperLength), 0);
+        Tcl_SetVar2(interp, varName, "PaperLength",
+            Blt_Itoa(dmPtr->dmPaperLength), 0);
     }
     if (dmPtr->dmFields & DM_SCALE) {
-	Tcl_SetVar2(interp, varName, "Scale", Blt_Itoa(dmPtr->dmScale), 0);
+        Tcl_SetVar2(interp, varName, "Scale", Blt_Itoa(dmPtr->dmScale), 0);
     }
     if (dmPtr->dmFields & DM_COPIES) {
-	Tcl_SetVar2(interp, varName, "Copies", Blt_Itoa(dmPtr->dmCopies), 0);
+        Tcl_SetVar2(interp, varName, "Copies", Blt_Itoa(dmPtr->dmCopies), 0);
     }
     if (dmPtr->dmFields & DM_DEFAULTSOURCE) {
-	Tcl_SetVar2(interp, varName, "DefaultSource",
-	    TokenToString(binTable, dmPtr->dmDefaultSource), 0);
+        Tcl_SetVar2(interp, varName, "DefaultSource",
+            TokenToString(binTable, dmPtr->dmDefaultSource), 0);
     }
     if (dmPtr->dmFields & DM_PRINTQUALITY) {
-	if (dmPtr->dmPrintQuality < 0) {
-	    string = TokenToString(qualityTable, dmPtr->dmPrintQuality);
-	} else {
-	    string = Blt_Itoa(dmPtr->dmPrintQuality);
-	}
-	Tcl_SetVar2(interp, varName, "PrintQuality", string, 0);
+        if (dmPtr->dmPrintQuality < 0) {
+            string = TokenToString(qualityTable, dmPtr->dmPrintQuality);
+        } else {
+            string = Blt_Itoa(dmPtr->dmPrintQuality);
+        }
+        Tcl_SetVar2(interp, varName, "PrintQuality", string, 0);
     }
     if (dmPtr->dmFields & DM_COLOR) {
-	Tcl_SetVar2(interp, varName, "Color",
-	    TokenToString(colorTable, dmPtr->dmColor), 0);
+        Tcl_SetVar2(interp, varName, "Color",
+            TokenToString(colorTable, dmPtr->dmColor), 0);
     }
     if (dmPtr->dmFields & DM_DUPLEX) {
-	Tcl_SetVar2(interp, varName, "Duplex",
-	    TokenToString(duplexTable, dmPtr->dmDuplex), 0);
+        Tcl_SetVar2(interp, varName, "Duplex",
+            TokenToString(duplexTable, dmPtr->dmDuplex), 0);
     }
     if (dmPtr->dmFields & DM_YRESOLUTION) {
-	Tcl_SetVar2(interp, varName, "YResolution",
-	    Blt_Itoa(dmPtr->dmYResolution), 0);
+        Tcl_SetVar2(interp, varName, "YResolution",
+            Blt_Itoa(dmPtr->dmYResolution), 0);
     }
     if (dmPtr->dmFields & DM_TTOPTION) {
-	Tcl_SetVar2(interp, varName, "TTOption",
-	    TokenToString(ttOptionTable, dmPtr->dmTTOption), 0);
+        Tcl_SetVar2(interp, varName, "TTOption",
+            TokenToString(ttOptionTable, dmPtr->dmTTOption), 0);
     }
     if (dmPtr->dmFields & DM_COLLATE) {
-	if (dmPtr->dmCollate == DMCOLLATE_TRUE) {
-	    string = "true";
-	} else if (dmPtr->dmCollate == DMCOLLATE_FALSE) {
-	    string = "false";
-	} else {
-	    string = "???";
-	}
-	Tcl_SetVar2(interp, varName, "Collate", string, 0);
+        if (dmPtr->dmCollate == DMCOLLATE_TRUE) {
+            string = "true";
+        } else if (dmPtr->dmCollate == DMCOLLATE_FALSE) {
+            string = "false";
+        } else {
+            string = "???";
+        }
+        Tcl_SetVar2(interp, varName, "Collate", string, 0);
     }
     if (dmPtr->dmFields & DM_FORMNAME) {
-	Tcl_SetVar2(interp, varName, "FormName", 
-		(const char *)dmPtr->dmFormName, 0);
+        Tcl_SetVar2(interp, varName, "FormName", 
+                (const char *)dmPtr->dmFormName, 0);
     }
     Tcl_SetVar2(interp, varName, "OutputFile", 
-	(const char *)dmPtr->dmDeviceName, 0);
+        (const char *)dmPtr->dmDeviceName, 0);
     result = TCL_OK;
 
  error:
     Tcl_DStringFree(&ds);
     CloseQueue(queuePtr);
     if (hMem1 != NULL) {
-	GlobalUnlock(hMem1);
-	GlobalFree(hMem1);
+        GlobalUnlock(hMem1);
+        GlobalFree(hMem1);
     }
     if (hMem2 != NULL) {
-	GlobalUnlock(hMem2);
-	GlobalFree(hMem2);
+        GlobalUnlock(hMem2);
+        GlobalFree(hMem2);
     }
     return result;
 }
@@ -853,7 +853,7 @@ SetQueueAttributes(
     char *varName;
 
     if (OpenQueue(interp, queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     hMem = GetQueueProperties(queuePtr, &dmPtr);
     CloseQueue(queuePtr);
@@ -864,118 +864,118 @@ SetQueueAttributes(
     varName = Tcl_GetString(objPtr);
     string = (char *)Tcl_GetVar2(interp, varName, "Orientation", 0);
     if (string != NULL) {
-	value = StringToToken(orientationTable, string);
-	if (value > 0) {
-	    dmPtr->dmFields |= DM_ORIENTATION;
-	    dmPtr->dmOrientation = value;
-	}
+        value = StringToToken(orientationTable, string);
+        if (value > 0) {
+            dmPtr->dmFields |= DM_ORIENTATION;
+            dmPtr->dmOrientation = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "PaperSize", 0);
     if (string != NULL) {
-	value = StringToToken(sizeTable, string);
-	if (value > 0) {
-	    dmPtr->dmFields |= DM_PAPERSIZE;
-	    dmPtr->dmPaperSize = value;
-	}
+        value = StringToToken(sizeTable, string);
+        if (value > 0) {
+            dmPtr->dmFields |= DM_PAPERSIZE;
+            dmPtr->dmPaperSize = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "PaperWidth", 0);
     if (string != NULL) {
-	if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
-	    dmPtr->dmFields |= DM_PAPERWIDTH;
-	    dmPtr->dmPaperWidth = value;
-	}
+        if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
+            dmPtr->dmFields |= DM_PAPERWIDTH;
+            dmPtr->dmPaperWidth = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "PaperLength", 0);
     if (string != NULL) {
-	if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
-	    dmPtr->dmFields |= DM_PAPERLENGTH;
-	    dmPtr->dmPaperLength = value;
-	}
+        if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
+            dmPtr->dmFields |= DM_PAPERLENGTH;
+            dmPtr->dmPaperLength = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "Scale", 0);
     if (string != NULL) {
-	if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
-	    dmPtr->dmFields |= DM_SCALE;
-	    dmPtr->dmScale = value;
-	}
+        if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
+            dmPtr->dmFields |= DM_SCALE;
+            dmPtr->dmScale = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "Copies", 0);
     if (string != NULL) {
-	if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
-	    dmPtr->dmFields |= DM_COPIES;
-	    dmPtr->dmCopies = value;
-	}
+        if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
+            dmPtr->dmFields |= DM_COPIES;
+            dmPtr->dmCopies = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "DefaultSource", 0);
     if (string != NULL) {
-	value = StringToToken(binTable, string);
-	if (value > 0) {
-	    dmPtr->dmFields |= DM_DEFAULTSOURCE;
-	    dmPtr->dmDefaultSource = value;
-	}
+        value = StringToToken(binTable, string);
+        if (value > 0) {
+            dmPtr->dmFields |= DM_DEFAULTSOURCE;
+            dmPtr->dmDefaultSource = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "PrintQuality", 0);
     if (string != NULL) {
-	value = StringToToken(qualityTable, string);
-	if (value > 0) {
-	    dmPtr->dmFields |= DM_PRINTQUALITY;
-	    dmPtr->dmPrintQuality = value;
-	}
+        value = StringToToken(qualityTable, string);
+        if (value > 0) {
+            dmPtr->dmFields |= DM_PRINTQUALITY;
+            dmPtr->dmPrintQuality = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "Color", 0);
     if (string != NULL) {
-	value = StringToToken(colorTable, string);
-	if (value > 0) {
-	    dmPtr->dmFields |= DM_COLOR;
-	    dmPtr->dmColor = value;
-	}
+        value = StringToToken(colorTable, string);
+        if (value > 0) {
+            dmPtr->dmFields |= DM_COLOR;
+            dmPtr->dmColor = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "Duplex", 0);
     if (string != NULL) {
-	value = StringToToken(duplexTable, string);
-	if (value > 0) {
-	    dmPtr->dmFields |= DM_DUPLEX;
-	    dmPtr->dmDuplex = value;
-	}
+        value = StringToToken(duplexTable, string);
+        if (value > 0) {
+            dmPtr->dmFields |= DM_DUPLEX;
+            dmPtr->dmDuplex = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "YResolution", 0);
     if (string != NULL) {
-	if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
-	    dmPtr->dmFields |= DM_YRESOLUTION;
-	    dmPtr->dmYResolution = value;
-	}
+        if (Tcl_GetInt(interp, string, &value) == TCL_OK) {
+            dmPtr->dmFields |= DM_YRESOLUTION;
+            dmPtr->dmYResolution = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "TTOption", 0);
     if (string != NULL) {
-	value = StringToToken(ttOptionTable, string);
-	if (value > 0) {
-	    dmPtr->dmFields |= DM_TTOPTION;
-	    dmPtr->dmTTOption = value;
-	}
+        value = StringToToken(ttOptionTable, string);
+        if (value > 0) {
+            dmPtr->dmFields |= DM_TTOPTION;
+            dmPtr->dmTTOption = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "Collate", 0);
     if (string != NULL) {
-	if (Tcl_GetBoolean(interp, string, &value) == TCL_OK) {
-	    dmPtr->dmFields |= DM_COLLATE;
-	    dmPtr->dmCollate = value;
-	}
+        if (Tcl_GetBoolean(interp, string, &value) == TCL_OK) {
+            dmPtr->dmFields |= DM_COLLATE;
+            dmPtr->dmCollate = value;
+        }
     }
     string = (char *)Tcl_GetVar2(interp, varName, "OutputFile", 0);
     if (string != NULL) {
-	if (queuePtr->fileName != NULL) {
-	    Blt_Free(queuePtr->fileName);
-	}
-	queuePtr->fileName = Blt_AssertStrdup(string);
+        if (queuePtr->fileName != NULL) {
+            Blt_Free(queuePtr->fileName);
+        }
+        queuePtr->fileName = Blt_AssertStrdup(string);
     }
     if (queuePtr->dmPtr != NULL) {
-	Blt_Free(queuePtr->dmPtr);
+        Blt_Free(queuePtr->dmPtr);
     }
     string = (char *)Tcl_GetVar2(interp, varName, "DocumentName", 0);
     if (string != NULL) {
-	if (queuePtr->docName != NULL) {
-	    Blt_Free(queuePtr->docName);
-	}
-	queuePtr->docName = Blt_AssertStrdup(string);
+        if (queuePtr->docName != NULL) {
+            Blt_Free(queuePtr->docName);
+        }
+        queuePtr->docName = Blt_AssertStrdup(string);
     }
     result = SetQueueProperties(interp, queuePtr, dmPtr);
     GlobalUnlock(hMem);
@@ -987,7 +987,7 @@ SetQueueAttributes(
 /*ARGSUSED*/
 static int
 EnumOp(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,      /* Not used. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -1000,27 +1000,27 @@ EnumOp(
     attr = Tcl_GetStringFromObj(objv[2], &length);
     c = attr[0];
     if ((c == 'p') && (strncmp(attr, "paper", length) == 0)) {
-	p = sizeTable;
+        p = sizeTable;
     } else if ((c == 'q') && (strncmp(attr, "quality", length) == 0)) {
-	p = qualityTable;
+        p = qualityTable;
     } else if ((c == 'b') && (strncmp(attr, "bin", length) == 0)) {
-	p = binTable;
+        p = binTable;
     } else if ((c == 'o') && (strncmp(attr, "orientation", length) == 0)) {
-	p = orientationTable;
+        p = orientationTable;
     } else if ((c == 'c') && (strncmp(attr, "color", length) == 0)) {
-	p = colorTable;
+        p = colorTable;
     } else if ((c == 'd') && (strncmp(attr, "duplex", length) == 0)) {
-	p = duplexTable;
+        p = duplexTable;
     } else if ((c == 't') && (strncmp(attr, "ttoption", length) == 0)) {
-	p = ttOptionTable;
+        p = ttOptionTable;
     } else {
-	Tcl_AppendResult(interp, "bad enumeration field \"", attr, 
+        Tcl_AppendResult(interp, "bad enumeration field \"", attr, 
 "\": should be \"paper\", \"quality\", \"bin\", \"orientation\", \"color\", \"duplex\", or \"ttoption\"",
-	    (char *)NULL);
-	return TCL_ERROR;
+            (char *)NULL);
+        return TCL_ERROR;
     }
     for ( /*empty*/ ; p->string != NULL; p++) {
-	Tcl_AppendElement(interp, p->string);
+        Tcl_AppendElement(interp, p->string);
     }
     return TCL_OK;
 }
@@ -1028,7 +1028,7 @@ EnumOp(
 /*ARGSUSED*/
 static int
 OpenOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -1046,50 +1046,50 @@ OpenOp(
     name = Tcl_GetString(objv[2]);
     hPtr = Blt_CreateHashEntry(&dataPtr->printerTable, name, &isNew);
     if (isNew) {
-	queuePtr = Blt_AssertCalloc(1, sizeof(PrinterQueue));
-	queuePtr->name = Blt_GetHashKey(&dataPtr->printerTable, hPtr);
-	queuePtr->interp = interp;
-	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
-	Blt_SetHashValue(hPtr, queuePtr);
-	queuePtr->hashPtr = hPtr;
-	queuePtr->tablePtr = &dataPtr->printerTable;
-	queuePtr->printerName = Blt_AssertStrdup(name);
+        queuePtr = Blt_AssertCalloc(1, sizeof(PrinterQueue));
+        queuePtr->name = Blt_GetHashKey(&dataPtr->printerTable, hPtr);
+        queuePtr->interp = interp;
+        Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
+        Blt_SetHashValue(hPtr, queuePtr);
+        queuePtr->hashPtr = hPtr;
+        queuePtr->tablePtr = &dataPtr->printerTable;
+        queuePtr->printerName = Blt_AssertStrdup(name);
     } else {
-	Tcl_AppendResult(interp, "printer \"", name, "\" is already open",
-			 (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "printer \"", name, "\" is already open",
+                         (char *)NULL);
+        return TCL_ERROR;
     }
     if (OpenQueue(interp, queuePtr) != TCL_OK) {
-	DestroyQueue(queuePtr);
-	return TCL_ERROR;
+        DestroyQueue(queuePtr);
+        return TCL_ERROR;
     }
     /* Call the first time to determine the amount of memory needed. */
     GetPrinter(queuePtr->hPrinter, 2, NULL, 0, &bytesNeeded);
     if ((bytesNeeded == 0) || (GetLastError() != ERROR_INSUFFICIENT_BUFFER)) {
-	Tcl_AppendResult(interp, "can't get size of attribute buffer for \"",
-			 name, "\": ", Blt_LastError(), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't get size of attribute buffer for \"",
+                         name, "\": ", Blt_LastError(), (char *)NULL);
+        return TCL_ERROR;
     }
     /* Allocate a buffer to contain all printer information. */
     hMem = GlobalAlloc(GHND, bytesNeeded);
     if (hMem == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     buffer = (LPVOID)GlobalLock(hMem);
 
     /* And call the again to actually get the printer. */
     if (!GetPrinter(queuePtr->hPrinter, 2, buffer, bytesNeeded, 
-		    &bytesNeeded)) {
-	Tcl_AppendResult(interp, "can't get printer attributes for \"",
-	    name, "\": ", Blt_LastError(), (char *)NULL);
-	GlobalUnlock(hMem);
-	GlobalFree(hMem);
-	return TCL_ERROR;
+                    &bytesNeeded)) {
+        Tcl_AppendResult(interp, "can't get printer attributes for \"",
+            name, "\": ", Blt_LastError(), (char *)NULL);
+        GlobalUnlock(hMem);
+        GlobalFree(hMem);
+        return TCL_ERROR;
     }
     pi2Ptr = (PRINTER_INFO_2 *)buffer;
     if (pi2Ptr->pDevMode != NULL) {
-	queuePtr->deviceName = 
-	    Blt_AssertStrdup((char *)pi2Ptr->pDevMode->dmDeviceName);
+        queuePtr->deviceName = 
+            Blt_AssertStrdup((char *)pi2Ptr->pDevMode->dmDeviceName);
     }
     queuePtr->driverName = Blt_AssertStrdup(pi2Ptr->pDriverName);
     /*
@@ -1104,10 +1104,10 @@ OpenOp(
 /*ARGSUSED*/
 static int
 NamesOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp,
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)	/* Not used. */
+    int objc,                   /* Not used. */
+    Tcl_Obj *const *objv)       /* Not used. */
 {
     DWORD numPrinters, bytesNeeded;
     int elemSize, level;
@@ -1116,67 +1116,67 @@ NamesOp(
     HANDLE hMem;
 
     if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
-	level = 4;
-	elemSize = sizeof(PRINTER_INFO_4);
-	flags = PRINTER_ENUM_NAME;
+        level = 4;
+        elemSize = sizeof(PRINTER_INFO_4);
+        flags = PRINTER_ENUM_NAME;
     } else {
-	level = 5;
-	elemSize = sizeof(PRINTER_INFO_5);
-	flags = PRINTER_ENUM_LOCAL;
+        level = 5;
+        elemSize = sizeof(PRINTER_INFO_5);
+        flags = PRINTER_ENUM_LOCAL;
     }
     result = EnumPrinters(
-	flags,			/* Flags */
-	NULL,			/* Printer name */
-	level,			/* Information level: 1, 2, 4, or 5 */
-	NULL,			/* Array of returned information */
-	0,			/* Size of array */
-	&bytesNeeded,		/* Size needed for array */
-	&numPrinters);		/* Number of structures returned */
+        flags,                  /* Flags */
+        NULL,                   /* Printer name */
+        level,                  /* Information level: 1, 2, 4, or 5 */
+        NULL,                   /* Array of returned information */
+        0,                      /* Size of array */
+        &bytesNeeded,           /* Size needed for array */
+        &numPrinters);          /* Number of structures returned */
 
     if ((!result) && (GetLastError() != ERROR_INSUFFICIENT_BUFFER)) {
-	Tcl_AppendResult(interp, "can't enumerate printers (memory alloc): ",
-	    Blt_LastError(), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't enumerate printers (memory alloc): ",
+            Blt_LastError(), (char *)NULL);
+        return TCL_ERROR;
     }
     hMem = GlobalAlloc(GHND, bytesNeeded);
     buffer = (unsigned char *)GlobalLock(hMem);
 
     result = EnumPrinters(
-	flags,			/* Flags */
-	NULL,			/* Printer name */
-	level,			/* Information level: 1, 2, 4, or 5 */
-	buffer,			/* Array of returned information */
-	bytesNeeded,		/* Size of array */
-	&bytesNeeded,		/* Size needed for array */
-	&numPrinters);		/* Number of structures returned */
+        flags,                  /* Flags */
+        NULL,                   /* Printer name */
+        level,                  /* Information level: 1, 2, 4, or 5 */
+        buffer,                 /* Array of returned information */
+        bytesNeeded,            /* Size of array */
+        &bytesNeeded,           /* Size needed for array */
+        &numPrinters);          /* Number of structures returned */
 
     if (!result) {
-	Tcl_AppendResult(interp, "can't enumerate printers: ",
-	    Blt_LastError(), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't enumerate printers: ",
+            Blt_LastError(), (char *)NULL);
+        return TCL_ERROR;
     }
-    if (objc > 2) {	
-	unsigned int i;
-	const char *pattern;
-	const unsigned char *p;
+    if (objc > 2) {     
+        unsigned int i;
+        const char *pattern;
+        const unsigned char *p;
 
-	p = buffer;
-	pattern = Tcl_GetString(objv[2]);
-	for (i = 0; i < numPrinters; i++) {
-	    if (Tcl_StringMatch((char *)p, pattern)) {
-		Tcl_AppendElement(interp, *(char **)p);
-	    }
-	    p += elemSize;
-	}
+        p = buffer;
+        pattern = Tcl_GetString(objv[2]);
+        for (i = 0; i < numPrinters; i++) {
+            if (Tcl_StringMatch((char *)p, pattern)) {
+                Tcl_AppendElement(interp, *(char **)p);
+            }
+            p += elemSize;
+        }
     } else {
-	unsigned int i;
-	const unsigned char *p;
+        unsigned int i;
+        const unsigned char *p;
 
-	p = buffer;
-	for (i = 0; i < numPrinters; i++) {
-	    Tcl_AppendElement(interp, *(char **)p);
-	    p += elemSize;
-	}
+        p = buffer;
+        for (i = 0; i < numPrinters; i++) {
+            Tcl_AppendElement(interp, *(char **)p);
+            p += elemSize;
+        }
     }
     GlobalUnlock(hMem);
     GlobalFree(hMem);
@@ -1186,15 +1186,15 @@ NamesOp(
 /*ARGSUSED*/
 static int
 CloseOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp,
-    int objc,			/* Not used. */
+    int objc,                   /* Not used. */
     Tcl_Obj *const *objv)
 {
     PrinterQueue *queuePtr;
 
     if (GetQueueFromObj(interp, objv[2], &queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     DestroyQueue(queuePtr);
     return TCL_OK;
@@ -1203,15 +1203,15 @@ CloseOp(
 /*ARGSUSED*/
 static int
 GetAttrOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp,
-    int objc,			/* Not used. */
+    int objc,                   /* Not used. */
     Tcl_Obj *const *objv)
 {
     PrinterQueue *queuePtr;
 
     if (GetQueueFromObj(interp, objv[2], &queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return GetPrinterAttributes(interp, queuePtr, objv[3]);
 }
@@ -1219,15 +1219,15 @@ GetAttrOp(
 /*ARGSUSED*/
 static int
 SetAttrOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp,
-    int objc,			/* Not used. */
+    int objc,                   /* Not used. */
     Tcl_Obj *const *objv)
 {
     PrinterQueue *queuePtr;
 
     if (GetQueueFromObj(interp, objv[2], &queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return SetQueueAttributes(interp, queuePtr, objv[3]);
 }
@@ -1237,18 +1237,18 @@ SetAttrOp(
  *
  * SnapOp --
  *
- *	Prints a snapshot of a Tk_Window to the designated printer.
+ *      Prints a snapshot of a Tk_Window to the designated printer.
  *
  * Results:
- *	Returns a standard TCL result.  If an error occurred
- *	TCL_ERROR is returned and interp->result will contain an
- *	error message.
+ *      Returns a standard TCL result.  If an error occurred
+ *      TCL_ERROR is returned and interp->result will contain an
+ *      error message.
  *
  *---------------------------------------------------------------------------
  */
 static int
 SnapOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -1274,15 +1274,15 @@ SnapOp(
 
     Tcl_DStringInit(&ds);
     if (GetQueueFromObj(interp, objv[2], &queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     path = Tcl_GetString(objv[3]);
     tkwin = Tk_NameToWindow(interp, path, Tk_MainWindow(interp));
     if (tkwin == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tk_WindowId(tkwin) == None) {
-	Tk_MakeWindowExist(tkwin);
+        Tk_MakeWindowExist(tkwin);
     }
     
     result = TCL_ERROR;
@@ -1300,54 +1300,54 @@ SnapOp(
     (void)SelectBitmap(memDC, hBitmap);
     hPalette = Blt_GetSystemPalette();
     if (hPalette != NULL) {
-	SelectPalette(hDC, hPalette, FALSE);
-	RealizePalette(hDC);
-	SelectPalette(memDC, hPalette, FALSE);
-	RealizePalette(memDC);
+        SelectPalette(hDC, hPalette, FALSE);
+        RealizePalette(hDC);
+        SelectPalette(memDC, hPalette, FALSE);
+        RealizePalette(memDC);
     }
     /* Copy the window contents to the memory surface. */
     if (!BitBlt(memDC, 0, 0, Tk_Width(tkwin), Tk_Height(tkwin), hDC, 0, 0,
-		SRCCOPY)) {
-	Tcl_AppendResult(interp, "can't blit \"", Tk_PathName(tkwin), "\": ",
-			 Blt_LastError(), (char *)NULL);
-	goto done;
+                SRCCOPY)) {
+        Tcl_AppendResult(interp, "can't blit \"", Tk_PathName(tkwin), "\": ",
+                         Blt_LastError(), (char *)NULL);
+        goto done;
     }
     /* Now that the DIB contains the image of the window, get the
      * databits and write them to the printer device, stretching the
      * image to the fit the printer's resolution.  */
     if (GetObject(hBitmap, sizeof(DIBSECTION), &dibs) == 0) {
-	Tcl_AppendResult(interp, "can't get DIB object: ", Blt_LastError(), 
-			 (char *)NULL);
-	goto done;
+        Tcl_AppendResult(interp, "can't get DIB object: ", Blt_LastError(), 
+                         (char *)NULL);
+        goto done;
     } 
     driverName = NULL;
     if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
-	driverName = queuePtr->driverName;
+        driverName = queuePtr->driverName;
     }
     if (OpenQueue(interp, queuePtr) != TCL_OK) {
-	goto done;
+        goto done;
     }
     hMem = GetQueueProperties(queuePtr, &dmPtr);
     if (hMem == NULL) {
-	goto done;
+        goto done;
     }
     printDC = CreateDC(driverName, queuePtr->deviceName, NULL, dmPtr);
     GlobalUnlock(hMem);
     GlobalFree(hMem);
     if (printDC == NULL) {
-	Tcl_AppendResult(interp, "can't allocate printer DC for \"",
-		queuePtr->name, "\": ", Blt_LastError(), (char *)NULL);
-	goto done;
+        Tcl_AppendResult(interp, "can't allocate printer DC for \"",
+                queuePtr->name, "\": ", Blt_LastError(), (char *)NULL);
+        goto done;
     }
     {
-	double scale, sx, sy;
+        double scale, sx, sy;
 
-	/* Get the resolution of the printer device. */
-	sx = (double)GetDeviceCaps(printDC, HORZRES)/(double)Tk_Width(tkwin);
-	sy = (double)GetDeviceCaps(printDC, VERTRES)/(double)Tk_Height(tkwin);
-	scale = MIN(sx, sy);
-	pageWidth = scale * Tk_Width(tkwin);
-	pageHeight = scale * Tk_Height(tkwin);
+        /* Get the resolution of the printer device. */
+        sx = (double)GetDeviceCaps(printDC, HORZRES)/(double)Tk_Width(tkwin);
+        sy = (double)GetDeviceCaps(printDC, VERTRES)/(double)Tk_Height(tkwin);
+        scale = MIN(sx, sy);
+        pageWidth = scale * Tk_Width(tkwin);
+        pageHeight = scale * Tk_Height(tkwin);
     }
     ZeroMemory(&di, sizeof(di));
     di.cbSize = sizeof(di);
@@ -1357,18 +1357,18 @@ SnapOp(
     di.lpszDocName = Tcl_DStringValue(&ds);
     jobId = StartDoc(printDC, &di);
     if (jobId <= 0) {
-	Tcl_AppendResult(interp, "can't start document: ", Blt_LastError(), 
-		(char *)NULL);
-	goto done;
+        Tcl_AppendResult(interp, "can't start document: ", Blt_LastError(), 
+                (char *)NULL);
+        goto done;
     }
     if (StartPage(printDC) <= 0) {
-	Tcl_AppendResult(interp, "error starting page: ", Blt_LastError(), 
-		(char *)NULL);
-	goto done;
+        Tcl_AppendResult(interp, "error starting page: ", Blt_LastError(), 
+                (char *)NULL);
+        goto done;
     }
     StretchDIBits(printDC, 0, 0, ROUND(pageWidth), ROUND(pageHeight), 0, 0, 
-	Tk_Width(tkwin), Tk_Height(tkwin), dibs.dsBm.bmBits, 
-	(LPBITMAPINFO)&dibs.dsBmih, DIB_RGB_COLORS, SRCCOPY);
+        Tk_Width(tkwin), Tk_Height(tkwin), dibs.dsBm.bmBits, 
+        (LPBITMAPINFO)&dibs.dsBmih, DIB_RGB_COLORS, SRCCOPY);
     EndPage(printDC);
     EndDoc(printDC);
     DeleteDC(printDC);
@@ -1378,13 +1378,13 @@ SnapOp(
   done:
     Tcl_DStringFree(&ds);
     if (queuePtr->hPrinter != NULL) {
-	CloseQueue(queuePtr);
+        CloseQueue(queuePtr);
     }    
     DeleteBitmap(hBitmap);
     DeleteDC(memDC);
     TkWinReleaseDrawableDC(Tk_WindowId(tkwin), hDC, &state);
     if (hPalette != NULL) {
-	DeletePalette(hPalette);
+        DeletePalette(hPalette);
     }
     return result;
 }
@@ -1392,9 +1392,9 @@ SnapOp(
 /*ARGSUSED*/
 static int
 WriteOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp,
-    int objc,			/* Not used. */
+    int objc,                   /* Not used. */
     Tcl_Obj *const *objv)
 {
     DWORD bytesLeft, numBytes;
@@ -1409,25 +1409,25 @@ WriteOp(
     int size;
 
     if (GetQueueFromObj(interp, objv[2], &queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (OpenQueue(interp, queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (objc == 5) {
-	title = Tcl_GetString(objv[3]);
-	data = Tcl_GetStringFromObj(objv[4], &size);
+        title = Tcl_GetString(objv[3]);
+        data = Tcl_GetStringFromObj(objv[4], &size);
     } else {
-	Blt_FormatString(string, 200, "Print Job #%d", nextJob++);
-	title = string;
-	data = Tcl_GetStringFromObj(objv[3], &size);
+        Blt_FormatString(string, 200, "Print Job #%d", nextJob++);
+        title = string;
+        data = Tcl_GetStringFromObj(objv[3], &size);
     }
     ZeroMemory(&di1, sizeof(DOC_INFO_1));
     di1.pDocName = title;
     if (queuePtr->fileName != NULL) {
-	di1.pOutputFile = queuePtr->fileName;
+        di1.pOutputFile = queuePtr->fileName;
     } else {
-	di1.pOutputFile = NULL;
+        di1.pOutputFile = NULL;
     }
     di1.pDatatype = (char *)"RAW";
 
@@ -1435,38 +1435,38 @@ WriteOp(
     /* Start new document */
     jobId = StartDocPrinter(queuePtr->hPrinter, 1, (unsigned char *)&di1);
     if (jobId == 0) {
-	Tcl_AppendResult(interp, "error starting document on \"", 
-	 queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "error starting document on \"", 
+         queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
+        goto error;
     }
     /* Start new page */
     if (!StartPagePrinter(queuePtr->hPrinter)) {
-	Tcl_AppendResult(interp, "error starting page on \"", 
-	 queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "error starting page on \"", 
+         queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
+        goto error;
     }
     bytesLeft = size;
     do {
-	if (!WritePrinter(queuePtr->hPrinter, data, bytesLeft, &numBytes)) {
-	    Tcl_AppendResult(interp, "can't write data to \"", 
-		queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
-	    EndDocPrinter(queuePtr->hPrinter);
-	    goto error;
-	}
-	data += numBytes;
-	bytesLeft -= numBytes;
+        if (!WritePrinter(queuePtr->hPrinter, data, bytesLeft, &numBytes)) {
+            Tcl_AppendResult(interp, "can't write data to \"", 
+                queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
+            EndDocPrinter(queuePtr->hPrinter);
+            goto error;
+        }
+        data += numBytes;
+        bytesLeft -= numBytes;
     } while (bytesLeft > 0);
     /* End last page */
     if (!EndPagePrinter(queuePtr->hPrinter)) {
-	Tcl_AppendResult(interp, "error ending page on \"", 
-		queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "error ending page on \"", 
+                queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
+        goto error;
     }
     /* End document */
     if (!EndDocPrinter(queuePtr->hPrinter)) {
-	Tcl_AppendResult(interp, "error ending document on \"", 
-		queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "error ending document on \"", 
+                queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
+        goto error;
     }
     result = TCL_OK;
  error:
@@ -1490,7 +1490,7 @@ static int numPrinterOps = sizeof(printerOps) / sizeof(Blt_OpSpec);
 /* ARGSUSED */
 static int
 PrinterCmd(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,      /* Not used. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -1499,9 +1499,9 @@ PrinterCmd(
     int result;
 
     proc = Blt_GetOpFromObj(interp, numPrinterOps, printerOps, BLT_OP_ARG1, 
-		    objc, objv, 0);
+                    objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     result = (*proc) (clientData, interp, objc, objv);
     return result;
@@ -1512,21 +1512,21 @@ PrinterCmd(
  *
  * PrinterInterpDeleteProc --
  *
- *	This is called when the interpreter hosting one or more printer 
- *	commands is destroyed.  
+ *      This is called when the interpreter hosting one or more printer 
+ *      commands is destroyed.  
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Closes and removes all open printers.
+ *      Closes and removes all open printers.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static void
 PrinterInterpDeleteProc(clientData, interp)
-    ClientData clientData;	/* Interpreter-specific data. */
+    ClientData clientData;      /* Interpreter-specific data. */
     Tcl_Interp *interp;
 {
     PrinterInterpData *dataPtr = clientData;
@@ -1534,12 +1534,12 @@ PrinterInterpDeleteProc(clientData, interp)
     Blt_HashSearch cursor;
 
     for (hPtr = Blt_FirstHashEntry(&dataPtr->printerTable, &cursor);
-	 hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	PrinterQueue *queuePtr;
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
+        PrinterQueue *queuePtr;
 
-	queuePtr = Blt_GetHashValue(hPtr);
-	queuePtr->hashPtr = NULL;
-	DestroyQueue(queuePtr);
+        queuePtr = Blt_GetHashValue(hPtr);
+        queuePtr->hashPtr = NULL;
+        DestroyQueue(queuePtr);
     }
     Blt_DeleteHashTable(&dataPtr->printerTable);
     Tcl_DeleteAssocData(interp, PRINTER_THREAD_KEY);
@@ -1567,40 +1567,40 @@ Blt_GetOpenPrinter(
     PrinterQueue *queuePtr;
     
     if (GetQueue(interp, name, &queuePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (queuePtr->drawable.hDC == NULL) {
-	char *driverName;
-	HGLOBAL hMem;
-	DEVMODE *dmPtr;
-	HDC hDC;
+        char *driverName;
+        HGLOBAL hMem;
+        DEVMODE *dmPtr;
+        HDC hDC;
 
-	driverName = NULL;
-	if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
-	    driverName = queuePtr->driverName;
-	}
-	if (OpenQueue(interp, queuePtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	hMem = GetQueueProperties(queuePtr, &dmPtr);
-	if (hMem == NULL) {
-	    CloseQueue(queuePtr);
-	    return TCL_ERROR;
-	}
-	if (queuePtr->dmPtr != NULL) {
-	    *dmPtr = *queuePtr->dmPtr;
-	}
-	hDC = CreateDC(driverName, queuePtr->deviceName, NULL, dmPtr);
-	GlobalUnlock(hMem);
-	GlobalFree(hMem);
-	CloseQueue(queuePtr);
-	if (hDC == NULL) {
-	    Tcl_AppendResult(interp, "can't allocate printer DC for \"",
-		queuePtr->name, "\": ", Blt_LastError(), (char *)NULL);
-	    return TCL_ERROR;
-	}
-	queuePtr->drawable.hDC = hDC;
-	queuePtr->drawable.type = TWD_WINDC;
+        driverName = NULL;
+        if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
+            driverName = queuePtr->driverName;
+        }
+        if (OpenQueue(interp, queuePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        hMem = GetQueueProperties(queuePtr, &dmPtr);
+        if (hMem == NULL) {
+            CloseQueue(queuePtr);
+            return TCL_ERROR;
+        }
+        if (queuePtr->dmPtr != NULL) {
+            *dmPtr = *queuePtr->dmPtr;
+        }
+        hDC = CreateDC(driverName, queuePtr->deviceName, NULL, dmPtr);
+        GlobalUnlock(hMem);
+        GlobalFree(hMem);
+        CloseQueue(queuePtr);
+        if (hDC == NULL) {
+            Tcl_AppendResult(interp, "can't allocate printer DC for \"",
+                queuePtr->name, "\": ", Blt_LastError(), (char *)NULL);
+            return TCL_ERROR;
+        }
+        queuePtr->drawable.hDC = hDC;
+        queuePtr->drawable.type = TWD_WINDC;
     }
     *drawablePtr = (Drawable)(&queuePtr->drawable);
     return TCL_OK;
@@ -1624,12 +1624,12 @@ Blt_PrintDialog(
     result = PrintDlg(&dlg);
     Tcl_SetServiceMode(mode);
     if (!result) {
-	if (!CommDlgExtendedError()) {
-	    return TCL_RETURN;	/* Canceled by user. */
-	}
-	Tcl_AppendResult(interp, "can't access printer:", Blt_LastError(), 
-			 (char *)NULL);
-	return TCL_ERROR;
+        if (!CommDlgExtendedError()) {
+            return TCL_RETURN;  /* Canceled by user. */
+        }
+        Tcl_AppendResult(interp, "can't access printer:", Blt_LastError(), 
+                         (char *)NULL);
+        return TCL_ERROR;
     } 
     *drawablePtr = (Drawable)&drawable;
     drawable.type = TWD_WINDC;
@@ -1651,9 +1651,9 @@ Blt_StartPrintJob(
     di.lpszDocName = "Unknown";
     jobId = StartDoc(drawPtr->hDC, &di);
     if (jobId == 0) {
-	Tcl_AppendResult(interp, "error starting document: ",
-			 Blt_LastError(), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "error starting document: ",
+                         Blt_LastError(), (char *)NULL);
+        return TCL_ERROR;
     }
     return TCL_OK;
 }

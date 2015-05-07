@@ -94,10 +94,10 @@ static int
 Initialize(Tcl_Interp *interp) 
 {
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_Init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #ifdef TCLLIBPATH
     /* 
@@ -111,18 +111,18 @@ Initialize(Tcl_Interp *interp)
 
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else
     if (Blt_TclInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*USE_BLT_STUBS*/
+#endif  /*USE_BLT_STUBS*/
 #ifdef STATIC_PKGS
     if (Blt_TclPkgsInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*STATIC_PACKAGES*/
+#endif  /*STATIC_PACKAGES*/
     Tcl_SetVar(interp, "tcl_rcFileName", "~/tclshrc.tcl", TCL_GLOBAL_ONLY);
     return TCL_OK;
 }
@@ -132,14 +132,14 @@ Initialize(Tcl_Interp *interp)
  *
  * main --
  *
- *	This is the main program for the application.
+ *      This is the main program for the application.
  *
  * Results:
- *	None: Tk_Main never returns here, so this procedure never
- *	returns either.
+ *      None: Tk_Main never returns here, so this procedure never
+ *      returns either.
  *
  * Side effects:
- *	Whatever the application does.
+ *      Whatever the application does.
  *
  *---------------------------------------------------------------------------
  */
@@ -147,7 +147,7 @@ int
 main(int argc, char **argv)
 {
     Tcl_Main(argc, argv, Initialize);
-    return 0;				/* Suppress compiler warning. */
+    return 0;                           /* Suppress compiler warning. */
 }
 
 #else 
@@ -166,13 +166,13 @@ static int
 Initialize(Tcl_Interp *interp) 
 {
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_Init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_PkgRequire(interp, "Tk", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #ifdef TCLLIBPATH
     /* 
@@ -185,27 +185,27 @@ Initialize(Tcl_Interp *interp)
 #endif /* TCLLIBPATH */
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
     if (Blt_InitTkStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else 
     if (Blt_TclInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_TkInit(interp)  != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*USE_BLT_STUBS*/
+#endif  /*USE_BLT_STUBS*/
 #ifdef STATIC_PKGS
     if (Blt_TclPkgsInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_TkPkgsInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*STATIC_PACKAGES*/
+#endif  /*STATIC_PACKAGES*/
     Tcl_SetVar(interp, "tcl_rcFileName", "~/wishrc.tcl", TCL_GLOBAL_ONLY);
     return TCL_OK;
 }
@@ -215,14 +215,14 @@ Initialize(Tcl_Interp *interp)
  *
  * main --
  *
- *	This is the main program for the application.
+ *      This is the main program for the application.
  *
  * Results:
- *	None: Tk_Main never returns here, so this procedure never
- *	returns either.
+ *      None: Tk_Main never returns here, so this procedure never
+ *      returns either.
  *
  * Side effects:
- *	Whatever the application does.
+ *      Whatever the application does.
  *
  *---------------------------------------------------------------------------
  */
@@ -233,24 +233,24 @@ main(int argc, char **argv)
 
     interp = Tcl_CreateInterp();
     if (Tcl_Init(interp) != TCL_OK) {
-	Tcl_Panic("can't initialize Tcl");
+        Tcl_Panic("can't initialize Tcl");
     }
 #ifdef HAVE_TCL_STUBS
 #undef Tcl_InitStubs
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	Tcl_Panic("Can't initialize TCL stubs");
+        Tcl_Panic("Can't initialize TCL stubs");
     }
 #endif
 #ifdef USE_TK_STUBS
     if (Tk_InitStubs(interp, TK_VERSION_COMPILED, PKG_ANY) == NULL) {
-	Tcl_Panic("Can't initialize Tk stubs");
+        Tcl_Panic("Can't initialize Tk stubs");
     }
 #else
     if (Tk_Init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #endif
     Tk_MainEx(argc, argv, Initialize, interp);
-    return 0;				/* Suppress compiler warning. */
+    return 0;                           /* Suppress compiler warning. */
 }
 #endif /*TCL_ONLY*/

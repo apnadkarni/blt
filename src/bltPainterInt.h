@@ -50,9 +50,9 @@
 #define _BLT_UNIX_PAINTER_H
 
 #ifdef notdef
-#define PAINTER_COLOR_WINDOW		(1<<0)
-#define PAINTER_BW			(1<<1)
-#define PAINTER_MAP_COLORS		(1<<2)
+#define PAINTER_COLOR_WINDOW            (1<<0)
+#define PAINTER_BW                      (1<<1)
+#define PAINTER_MAP_COLORS              (1<<2)
 #endif
 
 /*
@@ -69,42 +69,42 @@
  */
 
 struct _Blt_Painter {
-    Display *display;		/* Display of painter. Used to free colors
-				 * allocated. */
+    Display *display;           /* Display of painter. Used to free colors
+                                 * allocated. */
 
-    Visual *visualPtr;		/* Visual information for the class of windows
-				 * displaying the image. */
+    Visual *visualPtr;          /* Visual information for the class of windows
+                                 * displaying the image. */
 
-    Colormap colormap;		/* Colormap used.  This may be the default
-				 * colormap, or an allocated private map. */
+    Colormap colormap;          /* Colormap used.  This may be the default
+                                 * colormap, or an allocated private map. */
 
-    int depth;			/* Pixel depth of the display. */
+    int depth;                  /* Pixel depth of the display. */
 
-    float gamma;		/* Gamma correction value of monitor. */
+    float gamma;                /* Gamma correction value of monitor. */
 
-    unsigned int flags;		/* Flags listed below. */
+    unsigned int flags;         /* Flags listed below. */
 
-    int refCount;		/* # of clients using this painter. If zero,
-				 * # the painter is freed. */
+    int refCount;               /* # of clients using this painter. If zero,
+                                 * # the painter is freed. */
 
-    Blt_HashEntry *hashPtr;	/* Used to delete the painter entry from the
-				 * hash table of painters. */
+    Blt_HashEntry *hashPtr;     /* Used to delete the painter entry from the
+                                 * hash table of painters. */
 
-    int numColors;		/* # of colors allocated.  */
-    int numRed, numGreen, numBlue;	/* # of intensities for each RGB component. */
+    int numColors;              /* # of colors allocated.  */
+    int numRed, numGreen, numBlue;      /* # of intensities for each RGB component. */
 
-    unsigned long pixels[256];	/* Array of pixel values. Needed to deallocate
-				 * the color palette. Also contains the
-				 * mapping between linear pixel values (rBits,
-				 * gBits, bBits) and the actual pixel for
-				 * PsuedoColor, StaticColor, Greyscale, and
-				 * StaticGrey visuals.
-				 */
+    unsigned long pixels[256];  /* Array of pixel values. Needed to deallocate
+                                 * the color palette. Also contains the
+                                 * mapping between linear pixel values (rBits,
+                                 * gBits, bBits) and the actual pixel for
+                                 * PsuedoColor, StaticColor, Greyscale, and
+                                 * StaticGrey visuals.
+                                 */
 
-    int numPixels;		/* # of pixels allocated in above array. */
+    int numPixels;              /* # of pixels allocated in above array. */
 
 
-    GC gc;			/* GC used to draw the image. */
+    GC gc;                      /* GC used to draw the image. */
 
     /* 
      * The following arrays are used for DirectColor, PsuedoColor,
@@ -123,24 +123,24 @@ struct _Blt_Painter {
     unsigned int rMask, gMask, bMask;
 
     unsigned char gammaTable[256]; /* Input gamma lookup table. Used to map
-				 * non-linear monitor values back to RGB
-				 * values. This is used whenever we take a
-				 * snapshot of the screen (e.g. alpha
-				 * blending).  Computes the power mapping.  D
-				 * = I^gamma. */
+                                 * non-linear monitor values back to RGB
+                                 * values. This is used whenever we take a
+                                 * snapshot of the screen (e.g. alpha
+                                 * blending).  Computes the power mapping.  D
+                                 * = I^gamma. */
 
     unsigned char igammaTable[256]; /* Output gamma lookup table. Used to map
-				 * RGB values to non-linear monitor
-				 * values. Computes the inverse power mapping.
-				 * I~ = D^1/gamma. */
+                                 * RGB values to non-linear monitor
+                                 * values. Computes the inverse power mapping.
+                                 * I~ = D^1/gamma. */
 
-    int isMonochrome;		/* Indicates if the display uses a single
-				 * color component (e.g. 4-bit grayscale). */
+    int isMonochrome;           /* Indicates if the display uses a single
+                                 * color component (e.g. 4-bit grayscale). */
 
-    Blt_Pixel palette[256];	/* Maps the picture's 8-bit RGB values to the
-				 * RGB values of the colors actually
-				 * allocated. This is used for dithering the
-				 * picture. */
+    Blt_Pixel palette[256];     /* Maps the picture's 8-bit RGB values to the
+                                 * RGB values of the colors actually
+                                 * allocated. This is used for dithering the
+                                 * picture. */
 
 };
 

@@ -84,7 +84,7 @@
 
 #ifdef HAVE_TIME_H
 #  include <time.h>
-#endif	/* HAVE_TIME_H */
+#endif  /* HAVE_TIME_H */
 
 #ifdef HAVE_CTYPE_H
 #  include <ctype.h>
@@ -125,8 +125,8 @@ void
 Blt_LowerCase(char *s)
 {
     while (*s != '\0') {
-	*s = tolower(UCHAR(*s));
-	s++;
+        *s = tolower(UCHAR(*s));
+        s++;
     }
 }
 
@@ -134,8 +134,8 @@ void
 Blt_UpperCase(char *s)
 {
     while (*s != '\0') {
-	*s = toupper(UCHAR(*s));
-	s++;
+        *s = toupper(UCHAR(*s));
+        s++;
     }
 }
 
@@ -283,9 +283,9 @@ static unsigned char caseTable[] =
  * Results:
  *      Returns a signed integer representing the following:
  *
- *	zero      - two strings are equal
- *	negative  - first string is less than second
- *	positive  - first string is greater than second
+ *      zero      - two strings are equal
+ *      negative  - first string is less than second
+ *      positive  - first string is greater than second
  *
  *---------------------------------------------------------------------------
  */
@@ -296,9 +296,9 @@ strcasecmp(const char *s1, const char *s2)
     unsigned char *t = (unsigned char *)s2;
 
     for ( /* empty */ ; (caseTable[*s] == caseTable[*t]); s++, t++) {
-	if (*s == '\0') {
-	    return 0;
-	}
+        if (*s == '\0') {
+            return 0;
+        }
     }
     return (caseTable[*s] - caseTable[*t]);
 }
@@ -313,9 +313,9 @@ strcasecmp(const char *s1, const char *s2)
  * Results:
  *      Returns a signed integer representing the following:
  *
- *	zero      - two strings are equal
- *	negative  - first string is less than second
- *	positive  - first string is greater than second
+ *      zero      - two strings are equal
+ *      negative  - first string is less than second
+ *      positive  - first string is greater than second
  *
  *---------------------------------------------------------------------------
  */
@@ -326,12 +326,12 @@ strncasecmp(const char *s1, const char *s2, size_t length)
     unsigned char *t = (unsigned char *)s2;
 
     for ( /* empty */ ; (length > 0); s++, t++, length--) {
-	if (caseTable[*s] != caseTable[*t]) {
-	    return (caseTable[*s] - caseTable[*t]);
-	}
-	if (*s == '\0') {
-	    return 0;
-	}
+        if (caseTable[*s] != caseTable[*t]) {
+            return (caseTable[*s] - caseTable[*t]);
+        }
+        if (*s == '\0') {
+            return 0;
+        }
     }
     return 0;
 }
@@ -370,7 +370,7 @@ drand48(void)             /* Works only on compilers with long long int! */
 /*
  * Random number generator initialization parameters:
  *
- * 		s - seed
+ *              s - seed
  * return:
  */
 void 
@@ -399,7 +399,7 @@ Tcl_EvalObjv(Tcl_Interp *interp, int objc, Tcl_Obj **objv, int flags)
 
     Tcl_DStringInit(&ds);
     for (i = 0; i < objc; i++) {
-	Tcl_DStringAppendElement(&ds, Tcl_GetString(objv[i]));
+        Tcl_DStringAppendElement(&ds, Tcl_GetString(objv[i]));
     }
     result = Tcl_Eval(interp, Tcl_DStringValue(&ds)); 
     Tcl_DStringFree(&ds);
@@ -438,7 +438,7 @@ Tcl_GetVar2Ex(
     
     result = Tcl_GetVar2(interp, part1, part2, flags);
     if (result == NULL) {
-	return NULL;
+        return NULL;
     }
     return Tcl_NewStringObj(result, -1);
 }
@@ -451,18 +451,18 @@ Tcl_GetVar2Ex(
  *
  * Blt_GetLongFromString --
  *
- *	Given a string, produce the corresponding long integer value.  This
- *	differs from TclGetLong in that it doesn't accept octal values.
+ *      Given a string, produce the corresponding long integer value.  This
+ *      differs from TclGetLong in that it doesn't accept octal values.
  *
  * Results:
 
- *	The return value is normally TCL_OK; in this case *longPtr will be
- *	set to the long integer value equivalent to string. If string is
- *	improperly formed then TCL_ERROR is returned and an error message
- *	will be left in the interp's result if interp is non-NULL.
+ *      The return value is normally TCL_OK; in this case *longPtr will be
+ *      set to the long integer value equivalent to string. If string is
+ *      improperly formed then TCL_ERROR is returned and an error message
+ *      will be left in the interp's result if interp is non-NULL.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *----------------------------------------------------------------------
  */
@@ -470,12 +470,12 @@ Tcl_GetVar2Ex(
 int
 Blt_GetLong(interp, string, longPtr)
     Tcl_Interp *interp;                 /* Interpreter used for error
-					 * reporting if not NULL. */
+                                         * reporting if not NULL. */
     const char *string;                 /* String containing a (possibly
-					 * signed) long integer in a form
-					 * acceptable to strtoul. */
+                                         * signed) long integer in a form
+                                         * acceptable to strtoul. */
     long *longPtr;                      /* Place to store converted long
-					 * result. */
+                                         * result. */
 {
     char *end;
     const char *p;
@@ -487,41 +487,41 @@ Blt_GetLong(interp, string, longPtr)
      */
     p = string;
     errno = 0;
-    for ( ; isspace(UCHAR(*p)); p++) {	/* INTL: ISO space. */
-	/* Empty loop body. */
+    for ( ; isspace(UCHAR(*p)); p++) {  /* INTL: ISO space. */
+        /* Empty loop body. */
     }
     if (*p == '-') {
-	p++;
-	i = -(long)strtoul(p, &end, 10); /* INTL: TCL source. */
+        p++;
+        i = -(long)strtoul(p, &end, 10); /* INTL: TCL source. */
     } else if (*p == '+') {
-	p++;
-	i = strtoul(p, &end, 10);	/* INTL: TCL source. */
+        p++;
+        i = strtoul(p, &end, 10);       /* INTL: TCL source. */
     } else {
-	i = strtoul(p, &end, 10);	/* INTL: TCL source. */
+        i = strtoul(p, &end, 10);       /* INTL: TCL source. */
     }
     if (end == p) {
-	badInteger:
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "expected integer but got \"", string,
-		    "\"", (char *) NULL);
-	}
-	return TCL_ERROR;
+        badInteger:
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "expected integer but got \"", string,
+                    "\"", (char *) NULL);
+        }
+        return TCL_ERROR;
     }
     if (errno == ERANGE) {
-	if (interp != NULL) {
-	    Tcl_SetResult(interp,
+        if (interp != NULL) {
+            Tcl_SetResult(interp,
                         (char *)"integer value too large to represent",
-			  TCL_STATIC);
-	    Tcl_SetErrorCode(interp, "ARITH", "IOVERFLOW",
-		    Tcl_GetStringResult(interp), (char *) NULL);
-	}
-	return TCL_ERROR;
+                          TCL_STATIC);
+            Tcl_SetErrorCode(interp, "ARITH", "IOVERFLOW",
+                    Tcl_GetStringResult(interp), (char *) NULL);
+        }
+        return TCL_ERROR;
     }
     while ((*end != '\0') && isspace(UCHAR(*end))) { /* INTL: ISO space. */
-	end++;
+        end++;
     }
     if (*end != 0) {
-	goto badInteger;
+        goto badInteger;
     }
     *longPtr = i;
     return TCL_OK;
@@ -532,41 +532,41 @@ Blt_GetLong(interp, string, longPtr)
  *
  * Blt_GetLongFromObj --
  *
- *	Given an string, produce the corresponding long integer value.
- *	This differs from TclGetLong in that it doesn't accept octal
- *	values.
+ *      Given an string, produce the corresponding long integer value.
+ *      This differs from TclGetLong in that it doesn't accept octal
+ *      values.
  *
  * Results:
- *	The return value is normally TCL_OK; in this case *longPtr will be
- *	set to the long integer value equivalent to string. If string is
- *	improperly formed then TCL_ERROR is returned and an error message
- *	will be left in the interp's result if interp is non-NULL.
+ *      The return value is normally TCL_OK; in this case *longPtr will be
+ *      set to the long integer value equivalent to string. If string is
+ *      improperly formed then TCL_ERROR is returned and an error message
+ *      will be left in the interp's result if interp is non-NULL.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *----------------------------------------------------------------------
  */
 int
 Blt_GetLongFromObj(interp, objPtr, longPtr)
-    Tcl_Interp *interp;			/* Interpreter to report back to. */
-    Tcl_Obj *objPtr;		        /* Object containing a (possibly
-					 * signed) long integer in a form
-					 * acceptable to strtoul. */
-    long *longPtr;			/* Place to store converted long
-					 * result. */
+    Tcl_Interp *interp;                 /* Interpreter to report back to. */
+    Tcl_Obj *objPtr;                    /* Object containing a (possibly
+                                         * signed) long integer in a form
+                                         * acceptable to strtoul. */
+    long *longPtr;                      /* Place to store converted long
+                                         * result. */
 {
     static const Tcl_ObjType *tclStringTypePtr = NULL;
 
     if (tclStringTypePtr == NULL) {
-	Tcl_Obj *objPtr;
-	
-	objPtr = Tcl_NewStringObj("", -1);
-	tclStringTypePtr = objPtr->typePtr;
-	Tcl_DecrRefCount(objPtr);
+        Tcl_Obj *objPtr;
+        
+        objPtr = Tcl_NewStringObj("", -1);
+        tclStringTypePtr = objPtr->typePtr;
+        Tcl_DecrRefCount(objPtr);
     }
     if ((objPtr->typePtr == NULL) || (objPtr->typePtr == tclStringTypePtr)) {
-	return Blt_GetLong(interp, Tcl_GetString(objPtr), longPtr);
+        return Blt_GetLong(interp, Tcl_GetString(objPtr), longPtr);
     }
     /* It's OK to use Tcl_GetLongFromObj, since that can be no leading 0. */
     return Tcl_GetLongFromObj(interp, objPtr, longPtr);
@@ -578,8 +578,8 @@ Blt_GetLongFromObj(interp, objPtr, longPtr)
  * Blt_GetDoubleFromString --
  *
  *      Converts a string into a double precision number.  This differs
- *	from Tcl's version in that it also allows NaN and +/-Inf.  There
- *	are cases where NaNs are used to indicate holes in the data.
+ *      from Tcl's version in that it also allows NaN and +/-Inf.  There
+ *      are cases where NaNs are used to indicate holes in the data.
  *
  * Results:
  *      Returns a standard TCL result.
@@ -595,28 +595,28 @@ Blt_GetDoubleFromString(Tcl_Interp *interp, const char *s, double *valuePtr)
     errno = 0;
     d = strtod(s, &end); /* INTL: TCL source. */
     if (end == s) {
-	badDouble:
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "expected floating-point number "
+        badDouble:
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "expected floating-point number "
                 "but got \"", s, "\"", (char *) NULL);
-	}
-	return TCL_ERROR;
+        }
+        return TCL_ERROR;
     }
     if (errno != 0 && (d == HUGE_VAL || d == -HUGE_VAL || d == 0)) {
-	if (interp != NULL) {
-	    char msg[64 + TCL_INTEGER_SPACE];
-	
-	    sprintf(msg, "unknown floating-point error, errno = %d", errno);
-	    Tcl_AppendToObj(Tcl_GetObjResult(interp), msg, -1);
-	    Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", msg, (char *) NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            char msg[64 + TCL_INTEGER_SPACE];
+        
+            sprintf(msg, "unknown floating-point error, errno = %d", errno);
+            Tcl_AppendToObj(Tcl_GetObjResult(interp), msg, -1);
+            Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", msg, (char *) NULL);
+        }
+        return TCL_ERROR;
     }
     while ((*end != 0) && isspace(UCHAR(*end))) { /* INTL: ISO space. */
-	end++;
+        end++;
     }
     if (*end != 0) {
-	goto badDouble;
+        goto badDouble;
     }
     *valuePtr = d;
     return TCL_OK;
@@ -628,15 +628,15 @@ Blt_GetDoubleFromString(Tcl_Interp *interp, const char *s, double *valuePtr)
  * Blt_GetDoubleFromString --
  *
  *      Converts a Tcl_Obj into a double precision number.  This differs
- *	from Tcl's version in that it also allows NaN and +/-Inf.  There
- *	are cases where NaNs are used to indicate holes in the data.
+ *      from Tcl's version in that it also allows NaN and +/-Inf.  There
+ *      are cases where NaNs are used to indicate holes in the data.
  *
  * Results:
  *      Returns a standard TCL result.
  *
  * Side Effects:
- *	tclDoubleType is no longer available (in 8.5) as a global variable.
- *	We have to get a double obj and save its type pointer.
+ *      tclDoubleType is no longer available (in 8.5) as a global variable.
+ *      We have to get a double obj and save its type pointer.
  *
  *---------------------------------------------------------------------------
  */
@@ -647,15 +647,15 @@ Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
     static const Tcl_ObjType *tclDoubleTypePtr = NULL;
 
     if (tclDoubleTypePtr == NULL) {
-	Tcl_Obj *objPtr;
-	
-	objPtr = Tcl_NewDoubleObj(0.0);
-	tclDoubleTypePtr = objPtr->typePtr;
-	Tcl_DecrRefCount(objPtr);
+        Tcl_Obj *objPtr;
+        
+        objPtr = Tcl_NewDoubleObj(0.0);
+        tclDoubleTypePtr = objPtr->typePtr;
+        Tcl_DecrRefCount(objPtr);
     }
     if (objPtr->typePtr == tclDoubleTypePtr) {
-	*valuePtr = objPtr->internalRep.doubleValue;
-	return TCL_OK;
+        *valuePtr = objPtr->internalRep.doubleValue;
+        return TCL_OK;
     }
     string = Tcl_GetString(objPtr);
     return Blt_GetDoubleFromString(interp, string, valuePtr);
@@ -666,12 +666,12 @@ Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
  *
  * Blt_CompareDictionary
  *
- *	This function compares two strings as if they were being used in an
- *	index or card catalog.  The case of alphabetic characters is
- *	ignored, except to break ties.  Thus "B" comes before "b" but after
- *	"a".  Also, integers embedded in the strings compare in numerical
- *	order.  In other words, "x10y" comes after "x9y", not before it as
- *	it would when using strcmp().
+ *      This function compares two strings as if they were being used in an
+ *      index or card catalog.  The case of alphabetic characters is
+ *      ignored, except to break ties.  Thus "B" comes before "b" but after
+ *      "a".  Also, integers embedded in the strings compare in numerical
+ *      order.  In other words, "x10y" comes after "x9y", not before it as
+ *      it would when using strcmp().
  *
  * Results:
  *      A negative result means that the first element comes before the
@@ -680,7 +680,7 @@ Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
  *      it doesn't matter which comes first.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -694,107 +694,107 @@ Blt_DictionaryCompare(const char *left, const char *right)
     int secondaryDiff = 0;
 
     for(;;) {
-	if ((isdigit(UCHAR(*right))) && (isdigit(UCHAR(*left)))) { 
-	    /*
-	     * There are decimal numbers embedded in the two strings.
-	     * Compare them as numbers, rather than strings.  If one number
-	     * has more leading zeros than the other, the number with more
-	     * leading zeros sorts later, but only as a secondary choice.
-	     */
+        if ((isdigit(UCHAR(*right))) && (isdigit(UCHAR(*left)))) { 
+            /*
+             * There are decimal numbers embedded in the two strings.
+             * Compare them as numbers, rather than strings.  If one number
+             * has more leading zeros than the other, the number with more
+             * leading zeros sorts later, but only as a secondary choice.
+             */
 
-	    zeros = 0;
-	    while ((*right == '0') && (isdigit(UCHAR(right[1])))) {
-		right++;
-		zeros--;
-	    }
-	    while ((*left == '0') && (isdigit(UCHAR(left[1])))) {
-		left++;
-		zeros++;
-	    }
-	    if (secondaryDiff == 0) {
-		secondaryDiff = zeros;
-	    }
+            zeros = 0;
+            while ((*right == '0') && (isdigit(UCHAR(right[1])))) {
+                right++;
+                zeros--;
+            }
+            while ((*left == '0') && (isdigit(UCHAR(left[1])))) {
+                left++;
+                zeros++;
+            }
+            if (secondaryDiff == 0) {
+                secondaryDiff = zeros;
+            }
 
-	    /*
-	     * The code below compares the numbers in the two strings
-	     * without ever converting them to integers.  It does this by
-	     * first comparing the lengths of the numbers and then
-	     * comparing the digit values.
-	     */
+            /*
+             * The code below compares the numbers in the two strings
+             * without ever converting them to integers.  It does this by
+             * first comparing the lengths of the numbers and then
+             * comparing the digit values.
+             */
 
-	    diff = 0;
-	    for (;;) {
-		if (diff == 0) {
-		    diff = UCHAR(*left) - UCHAR(*right);
-		}
-		right++;
-		left++;
+            diff = 0;
+            for (;;) {
+                if (diff == 0) {
+                    diff = UCHAR(*left) - UCHAR(*right);
+                }
+                right++;
+                left++;
 
-		/* Ignore commas in numbers. */
-		if (*left == ',') {
-		    left++;
-		}
-		if (*right == ',') {
-		    right++;
-		}
+                /* Ignore commas in numbers. */
+                if (*left == ',') {
+                    left++;
+                }
+                if (*right == ',') {
+                    right++;
+                }
 
-		if (!isdigit(UCHAR(*right))) { /* INTL: digit */
-		    if (isdigit(UCHAR(*left))) { /* INTL: digit */
-			return 1;
-		    } else {
-			/*
-			 * The two numbers have the same length. See if
-			 * their values are different.
-			 */
+                if (!isdigit(UCHAR(*right))) { /* INTL: digit */
+                    if (isdigit(UCHAR(*left))) { /* INTL: digit */
+                        return 1;
+                    } else {
+                        /*
+                         * The two numbers have the same length. See if
+                         * their values are different.
+                         */
 
-			if (diff != 0) {
-			    return diff;
-			}
-			break;
-		    }
-		} else if (!isdigit(UCHAR(*left))) { /* INTL: digit */
-		    return -1;
-		}
-	    }
-	    continue;
-	}
+                        if (diff != 0) {
+                            return diff;
+                        }
+                        break;
+                    }
+                } else if (!isdigit(UCHAR(*left))) { /* INTL: digit */
+                    return -1;
+                }
+            }
+            continue;
+        }
 
-	/*
-	 * Convert character to Unicode for comparison purposes.  If either
-	 * string is at the terminating null, do a byte-wise comparison and
-	 * bail out immediately.
-	 */
-	if ((*left != '\0') && (*right != '\0')) {
-	    left += Tcl_UtfToUniChar(left, &uniLeft);
-	    right += Tcl_UtfToUniChar(right, &uniRight);
-	    /*
-	     * Convert both chars to lower for the comparison, because
-	     * dictionary sorts are case insensitve.  Convert to lower, not
-	     * upper, so chars between Z and a will sort before A (where
-	     * most other interesting punctuations occur)
-	     */
-	    uniLeftLower = Tcl_UniCharToLower(uniLeft);
-	    uniRightLower = Tcl_UniCharToLower(uniRight);
-	} else {
-	    diff = UCHAR(*left) - UCHAR(*right);
-	    break;
-	}
+        /*
+         * Convert character to Unicode for comparison purposes.  If either
+         * string is at the terminating null, do a byte-wise comparison and
+         * bail out immediately.
+         */
+        if ((*left != '\0') && (*right != '\0')) {
+            left += Tcl_UtfToUniChar(left, &uniLeft);
+            right += Tcl_UtfToUniChar(right, &uniRight);
+            /*
+             * Convert both chars to lower for the comparison, because
+             * dictionary sorts are case insensitve.  Convert to lower, not
+             * upper, so chars between Z and a will sort before A (where
+             * most other interesting punctuations occur)
+             */
+            uniLeftLower = Tcl_UniCharToLower(uniLeft);
+            uniRightLower = Tcl_UniCharToLower(uniRight);
+        } else {
+            diff = UCHAR(*left) - UCHAR(*right);
+            break;
+        }
 
-	diff = uniLeftLower - uniRightLower;
-	if (diff) {
-	    return diff;
-	} else if (secondaryDiff == 0) {
-	    if (Tcl_UniCharIsUpper(uniLeft) &&
-		    Tcl_UniCharIsLower(uniRight)) {
-		secondaryDiff = -1;
-	    } else if (Tcl_UniCharIsUpper(uniRight)
-		    && Tcl_UniCharIsLower(uniLeft)) {
-		secondaryDiff = 1;
-	    }
-	}
+        diff = uniLeftLower - uniRightLower;
+        if (diff) {
+            return diff;
+        } else if (secondaryDiff == 0) {
+            if (Tcl_UniCharIsUpper(uniLeft) &&
+                    Tcl_UniCharIsLower(uniRight)) {
+                secondaryDiff = -1;
+            } else if (Tcl_UniCharIsUpper(uniRight)
+                    && Tcl_UniCharIsLower(uniLeft)) {
+                secondaryDiff = 1;
+            }
+        }
     }
     if (diff == 0) {
-	diff = secondaryDiff;
+        diff = secondaryDiff;
     }
     return diff;
 }
@@ -808,95 +808,95 @@ Blt_DictionaryCompare(const char *left, const char *right)
     int secondaryDiff = 0;
 
     while (1) {
-	if (isdigit(UCHAR(*right)) && isdigit(UCHAR(*left))) {
-	    /*
-	     * There are decimal numbers embedded in the two strings.
-	     * Compare them as numbers, rather than strings.  If one number
-	     * has more leading zeros than the other, the number with more
-	     * leading zeros sorts later, but only as a secondary choice.
-	     */
-	    zeros = 0;
-	    while ((*right == '0') && (isdigit(UCHAR(right[1])))) {
-		right++;
-		zeros--;
-	    }
-	    while ((*left == '0') && (isdigit(UCHAR(left[1])))) {
-		left++;
-		zeros++;
-	    }
-	    if (secondaryDiff == 0) {
-		secondaryDiff = zeros;
-	    }
+        if (isdigit(UCHAR(*right)) && isdigit(UCHAR(*left))) {
+            /*
+             * There are decimal numbers embedded in the two strings.
+             * Compare them as numbers, rather than strings.  If one number
+             * has more leading zeros than the other, the number with more
+             * leading zeros sorts later, but only as a secondary choice.
+             */
+            zeros = 0;
+            while ((*right == '0') && (isdigit(UCHAR(right[1])))) {
+                right++;
+                zeros--;
+            }
+            while ((*left == '0') && (isdigit(UCHAR(left[1])))) {
+                left++;
+                zeros++;
+            }
+            if (secondaryDiff == 0) {
+                secondaryDiff = zeros;
+            }
 
-	    /*
-	     * The code below compares the numbers in the two strings
-	     * without ever converting them to integers.  It does this by
-	     * first comparing the lengths of the numbers and then
-	     * comparing the digit values.
-	     */
+            /*
+             * The code below compares the numbers in the two strings
+             * without ever converting them to integers.  It does this by
+             * first comparing the lengths of the numbers and then
+             * comparing the digit values.
+             */
 
-	    diff = 0;
-	    while (1) {
-		if (diff == 0) {
-		    diff = UCHAR(*left) - UCHAR(*right);
-		}
-		right++;
-		left++;
-		/* Ignore commas in numbers. */
-		if (*left == ',') {
-		    left++;
-		}
-		if (*right == ',') {
-		    right++;
-		}
-		if (!isdigit(UCHAR(*right))) {
-		    if (isdigit(UCHAR(*left))) {
-			return 1;
-		    } else {
-			/*
-			 * The two numbers have the same length. See if
-			 * their values are different.
-			 */
+            diff = 0;
+            while (1) {
+                if (diff == 0) {
+                    diff = UCHAR(*left) - UCHAR(*right);
+                }
+                right++;
+                left++;
+                /* Ignore commas in numbers. */
+                if (*left == ',') {
+                    left++;
+                }
+                if (*right == ',') {
+                    right++;
+                }
+                if (!isdigit(UCHAR(*right))) {
+                    if (isdigit(UCHAR(*left))) {
+                        return 1;
+                    } else {
+                        /*
+                         * The two numbers have the same length. See if
+                         * their values are different.
+                         */
 
-			if (diff != 0) {
-			    return diff;
-			}
-			break;
-		    }
-		} else if (!isdigit(UCHAR(*left))) {
-		    return -1;
-		}
-	    }
-	    continue;
-	}
-	diff = UCHAR(*left) - UCHAR(*right);
-	if (diff) {
-	    if (isupper(UCHAR(*left)) && islower(UCHAR(*right))) {
-		diff = UCHAR(tolower(*left)) - UCHAR(*right);
-		if (diff) {
-		    return diff;
-		} else if (secondaryDiff == 0) {
-		    secondaryDiff = -1;
-		}
-	    } else if (isupper(UCHAR(*right)) && islower(UCHAR(*left))) {
-		diff = UCHAR(*left) - UCHAR(tolower(UCHAR(*right)));
-		if (diff) {
-		    return diff;
-		} else if (secondaryDiff == 0) {
-		    secondaryDiff = 1;
-		}
-	    } else {
-		return diff;
-	    }
-	}
-	if (*left == 0) {
-	    break;
-	}
-	left++;
-	right++;
+                        if (diff != 0) {
+                            return diff;
+                        }
+                        break;
+                    }
+                } else if (!isdigit(UCHAR(*left))) {
+                    return -1;
+                }
+            }
+            continue;
+        }
+        diff = UCHAR(*left) - UCHAR(*right);
+        if (diff) {
+            if (isupper(UCHAR(*left)) && islower(UCHAR(*right))) {
+                diff = UCHAR(tolower(*left)) - UCHAR(*right);
+                if (diff) {
+                    return diff;
+                } else if (secondaryDiff == 0) {
+                    secondaryDiff = -1;
+                }
+            } else if (isupper(UCHAR(*right)) && islower(UCHAR(*left))) {
+                diff = UCHAR(*left) - UCHAR(tolower(UCHAR(*right)));
+                if (diff) {
+                    return diff;
+                } else if (secondaryDiff == 0) {
+                    secondaryDiff = 1;
+                }
+            } else {
+                return diff;
+            }
+        }
+        if (*left == 0) {
+            break;
+        }
+        left++;
+        right++;
     }
     if (diff == 0) {
-	diff = secondaryDiff;
+        diff = secondaryDiff;
     }
     return diff;
 }
@@ -909,14 +909,14 @@ Blt_Assert(const char *testExpr, const char *fileName, int lineNumber)
 {
 #ifdef WINDEBUG
     PurifyPrintf("line %d of %s: Assert \"%s\" failed\n", lineNumber,
-	fileName, testExpr);
+        fileName, testExpr);
 #endif
     fprintf(stderr, "line %d of %s: Assert \"%s\" failed\n",
-	lineNumber, fileName, testExpr);
+        lineNumber, fileName, testExpr);
     fflush(stderr);
     abort();
 }
-#endif	/* NDEBUG */
+#endif  /* NDEBUG */
 
 /*ARGSUSED*/
 void
@@ -937,13 +937,13 @@ Blt_Panic(const char *fmt, ...)
  *
  * Blt_Warn --
  *
- *	Display a message and exit.
+ *      Display a message and exit.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Exits the program.
+ *      Exits the program.
  *
  *---------------------------------------------------------------------------
  */
@@ -955,13 +955,13 @@ Blt_Warn(const char *fmt, ...)
     va_start(args, fmt);
 #ifdef WIN32
     {
-	char buf[1024];
+        char buf[1024];
 
-	vsnprintf(buf, 1024, fmt, args);
-	buf[1023] = '\0';
-	MessageBeep(MB_ICONEXCLAMATION);
-	MessageBox(NULL, buf, "Warning from BLT",
-		   MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+        vsnprintf(buf, 1024, fmt, args);
+        buf[1023] = '\0';
+        MessageBeep(MB_ICONEXCLAMATION);
+        MessageBox(NULL, buf, "Warning from BLT",
+                   MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
     }
 #else
     fprintf(stderr, "BLT Warning: ");
@@ -978,7 +978,7 @@ Blt_DStringAppendElements(Tcl_DString *dsPtr, ...)
 
     va_start(args, dsPtr);
     while ((elem = va_arg(args, const char *)) != NULL) {
-	Tcl_DStringAppendElement(dsPtr, elem);
+        Tcl_DStringAppendElement(dsPtr, elem);
     }
     va_end(args);
 }
@@ -993,7 +993,7 @@ Blt_FormatString(char *s, size_t size, const char *fmt, /*args*/ ...)
     va_start(ap, fmt);
     n = vsnprintf(s, size, fmt, ap);
     if ((n != (int)size) && (size > 0)) {
-	s[size-1] = '\0';
+        s[size-1] = '\0';
     }
     va_end(ap);
     return n;
@@ -1039,22 +1039,22 @@ Blt_OpenFile(Tcl_Interp *interp, const char *fileName, const char *mode)
 
     native = Tcl_TranslateFileName(interp, fileName, &nativeds);
     if (native == NULL) {
-	return NULL;
+        return NULL;
     }
     fileName = Tcl_UtfToExternalDString(NULL, native, -1, &ds);
     if (fileName == NULL) {
-	Tcl_AppendResult(interp, "can't convert filename \"", native, 
-		 "\" to system encoding", (char *)NULL);
-	Tcl_DStringFree(&nativeds);
-	return NULL;
+        Tcl_AppendResult(interp, "can't convert filename \"", native, 
+                 "\" to system encoding", (char *)NULL);
+        Tcl_DStringFree(&nativeds);
+        return NULL;
     }
     f = fopen(fileName, mode);
 #else
     f = fopen(fileName, mode);
 #endif
     if (f == NULL) {
-	Tcl_AppendResult(interp, "can't open \"", fileName, "\": ",
-			 Tcl_PosixError(interp), (char *)NULL);
+        Tcl_AppendResult(interp, "can't open \"", fileName, "\": ",
+                         Tcl_PosixError(interp), (char *)NULL);
     }
     Tcl_DStringFree(&ds);
     Tcl_DStringFree(&nativeds);
@@ -1066,19 +1066,19 @@ Blt_OpenFile(Tcl_Interp *interp, const char *fileName, const char *mode)
  *
  * Blt_InitHexTable --
  *
- *	Table index for the hex values. Initialized once, first time.  Used
- *	for translation value or delimiter significance lookup.
+ *      Table index for the hex values. Initialized once, first time.  Used
+ *      for translation value or delimiter significance lookup.
  *
- *	We build the table at run time for several reasons:
+ *      We build the table at run time for several reasons:
  *
- *     	  1.  portable to non-ASCII machines.
- *	  2.  still reentrant since we set the init flag after setting
+ *        1.  portable to non-ASCII machines.
+ *        2.  still reentrant since we set the init flag after setting
  *            table.
  *        3.  easier to extend.
  *        4.  less prone to bugs.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -1108,36 +1108,36 @@ int
 Blt_GetCountFromObj(
     Tcl_Interp *interp,
     Tcl_Obj *objPtr,
-    int check,				/* Can be COUNT_POS, COUNT_NNEG,
-					 * or COUNT_ANY, */
+    int check,                          /* Can be COUNT_POS, COUNT_NNEG,
+                                         * or COUNT_ANY, */
     long *valuePtr)
 {
     long count;
 
     if (Blt_GetLongFromObj(interp, objPtr, &count) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     switch (check) {
     case COUNT_NNEG:
-	if (count < 0) {
+        if (count < 0) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
                                  "\": can't be negative", (char *)NULL);
             }
-	    return TCL_ERROR;
-	}
-	break;
+            return TCL_ERROR;
+        }
+        break;
     case COUNT_POS:
-	if (count <= 0) {
+        if (count <= 0) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
                                  "\": must be positive", (char *)NULL);
             }
-	    return TCL_ERROR;
-	}
-	break;
+            return TCL_ERROR;
+        }
+        break;
     case COUNT_ANY:
-	break;
+        break;
     }
     *valuePtr = count;
     return TCL_OK;
@@ -1150,51 +1150,51 @@ Blt_GetCountFromObj(
  *
  * Blt_GetPosition --
  *
- *	Convert a string representing a numeric position.  A position can
- *	be in one of the following forms.
+ *      Convert a string representing a numeric position.  A position can
+ *      be in one of the following forms.
  *
- * 	  number	- number of the item in the hierarchy, indexed
- *			  from zero.
- *	  "end"		- last position in the hierarchy.
+ *        number        - number of the item in the hierarchy, indexed
+ *                        from zero.
+ *        "end"         - last position in the hierarchy.
  *
  * Results:
- *	A standard TCL result.  If "string" is a valid index, then
- *	*indexPtr is filled with the corresponding numeric index.  If "end"
- *	was selected then *indexPtr is set to -1.  Otherwise an error
- *	message is left in interp->result.
+ *      A standard TCL result.  If "string" is a valid index, then
+ *      *indexPtr is filled with the corresponding numeric index.  If "end"
+ *      was selected then *indexPtr is set to -1.  Otherwise an error
+ *      message is left in interp->result.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 int
 Blt_GetPosition(
-    Tcl_Interp *interp,			/* Interpreter to report results
-					 * back to. */
-    const char *string,			/* String representation of the
-					 * index.  Can be an integer or
-					 * "end" to refer to the last
-					 * index. */
-    long *indexPtr)			/* Holds the converted index. */
+    Tcl_Interp *interp,                 /* Interpreter to report results
+                                         * back to. */
+    const char *string,                 /* String representation of the
+                                         * index.  Can be an integer or
+                                         * "end" to refer to the last
+                                         * index. */
+    long *indexPtr)                     /* Holds the converted index. */
 {
     if ((string[0] == 'e') && (strcmp(string, "end") == 0)) {
-	*indexPtr = -1;			/* Indicates last position in
-					 * hierarchy. */
+        *indexPtr = -1;                 /* Indicates last position in
+                                         * hierarchy. */
     } else {
-	long position;
+        long position;
 
-	if (Blt_GetLong(interp, string, &position) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (position < 0) {
+        if (Blt_GetLong(interp, string, &position) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (position < 0) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad position \"", string, "\"",
                                  (char *)NULL);
             }
-	    return TCL_ERROR;
-	}
-	*indexPtr = position;
+            return TCL_ERROR;
+        }
+        *indexPtr = position;
     }
     return TCL_OK;
 }
@@ -1205,54 +1205,54 @@ Blt_GetPosition(
  *
  * Blt_GetPositionFromObj --
  *
- *	Convert a string representing a numeric position.  A position can
- *	be in one of the following forms.
+ *      Convert a string representing a numeric position.  A position can
+ *      be in one of the following forms.
  *
- * 	  number	- number of the item in the hierarchy, indexed
- *			  from zero.
- *	  "end"		- last position in the hierarchy.
+ *        number        - number of the item in the hierarchy, indexed
+ *                        from zero.
+ *        "end"         - last position in the hierarchy.
  *
  * Results:
- *	A standard TCL result.  If "string" is a valid index, then
- *	*indexPtr is filled with the corresponding numeric index.  If "end"
- *	was selected then *indexPtr is set to -1.  Otherwise an error
- *	message is left in interp->result.
+ *      A standard TCL result.  If "string" is a valid index, then
+ *      *indexPtr is filled with the corresponding numeric index.  If "end"
+ *      was selected then *indexPtr is set to -1.  Otherwise an error
+ *      message is left in interp->result.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 int
 Blt_GetPositionFromObj(
     Tcl_Interp *interp,                 /* Interpreter to report results
-					 * back to. */
+                                         * back to. */
     Tcl_Obj *objPtr,                    /* Tcl_Obj representation of the
-					 * index.  Can be an integer or
-					 * "end" to refer to the last
-					 * index. */
+                                         * index.  Can be an integer or
+                                         * "end" to refer to the last
+                                         * index. */
     long *indexPtr)                     /* Holds the converted index. */
 {
     const char *string;
 
     string = Tcl_GetString(objPtr);
     if ((string[0] == 'e') && (strcmp(string, "end") == 0)) {
-	*indexPtr = -1;                 /* Indicates last position in
-					 * hierarchy. */
+        *indexPtr = -1;                 /* Indicates last position in
+                                         * hierarchy. */
     } else {
-	long position;
+        long position;
 
-	if (Blt_GetLongFromObj(interp, objPtr, &position) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (position < 0) {
+        if (Blt_GetLongFromObj(interp, objPtr, &position) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (position < 0) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad position \"", string, "\"",
                                  (char *)NULL);
             }
-	    return TCL_ERROR;
-	}
-	*indexPtr = position;
+            return TCL_ERROR;
+        }
+        *indexPtr = position;
     }
     return TCL_OK;
 }
@@ -1269,40 +1269,40 @@ static int uidInitialized = 0;
  *
  * Blt_GetUid --
  *
- *	Given a string, returns a unique identifier for the string.  A
- *	reference count is maintained, so that the identifier can be freed
- *	when it is not needed any more. This can be used in many places to
- *	replace Tcl_GetUid.
+ *      Given a string, returns a unique identifier for the string.  A
+ *      reference count is maintained, so that the identifier can be freed
+ *      when it is not needed any more. This can be used in many places to
+ *      replace Tcl_GetUid.
  *
  * Results:
- *	This procedure returns a Blt_Uid corresponding to the "string"
- *	argument.  The Blt_Uid has a string value identical to string
- *	(strcmp will return 0), but it's guaranteed that any other calls to
- *	this procedure with a string equal to "string" will return exactly
- *	the same result (i.e. can compare Blt_Uid *values* directly,
- *	without having to call strcmp on what they point to).
+ *      This procedure returns a Blt_Uid corresponding to the "string"
+ *      argument.  The Blt_Uid has a string value identical to string
+ *      (strcmp will return 0), but it's guaranteed that any other calls to
+ *      this procedure with a string equal to "string" will return exactly
+ *      the same result (i.e. can compare Blt_Uid *values* directly,
+ *      without having to call strcmp on what they point to).
  *
  * Side effects:
- *	New information may be entered into the identifier table.
+ *      New information may be entered into the identifier table.
  *
  *---------------------------------------------------------------------------
  */
 Blt_Uid
-Blt_GetUid(const char *string)		/* String to convert. */
+Blt_GetUid(const char *string)          /* String to convert. */
 {
     Blt_HashEntry *hPtr;
     int isNew;
     size_t refCount;
     
     if (!uidInitialized) {
-	Blt_InitHashTable(&uidTable, BLT_STRING_KEYS);
-	uidInitialized = 1;
+        Blt_InitHashTable(&uidTable, BLT_STRING_KEYS);
+        uidInitialized = 1;
     }
     hPtr = Blt_CreateHashEntry(&uidTable, string, &isNew);
     if (isNew) {
-	refCount = 0;
+        refCount = 0;
     } else {
-	refCount = (size_t)Blt_GetHashValue(hPtr);
+        refCount = (size_t)Blt_GetHashValue(hPtr);
     }
     refCount++;
     Blt_SetHashValue(hPtr, (ClientData)refCount);
@@ -1314,38 +1314,38 @@ Blt_GetUid(const char *string)		/* String to convert. */
  *
  * Blt_FreeUid --
  *
- *	Frees the Blt_Uid if there are no more clients using this identifier.
+ *      Frees the Blt_Uid if there are no more clients using this identifier.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The identifier may be deleted from the identifier table.
+ *      The identifier may be deleted from the identifier table.
  *
  *---------------------------------------------------------------------------
  */
 void
-Blt_FreeUid(Blt_Uid uid)		/* Identifier to release. */
+Blt_FreeUid(Blt_Uid uid)                /* Identifier to release. */
 {
     Blt_HashEntry *hPtr;
 
     if (!uidInitialized) {
-	Blt_InitHashTable(&uidTable, BLT_STRING_KEYS);
-	uidInitialized = 1;
+        Blt_InitHashTable(&uidTable, BLT_STRING_KEYS);
+        uidInitialized = 1;
     }
     hPtr = Blt_FindHashEntry(&uidTable, uid);
     if (hPtr) {
-	size_t refCount;
+        size_t refCount;
 
-	refCount = (size_t)Blt_GetHashValue(hPtr);
-	refCount--;
-	if (refCount == 0) {
-	    Blt_DeleteHashEntry(&uidTable, hPtr);
-	} else {
-	    Blt_SetHashValue(hPtr, refCount);
-	}
+        refCount = (size_t)Blt_GetHashValue(hPtr);
+        refCount--;
+        if (refCount == 0) {
+            Blt_DeleteHashEntry(&uidTable, hPtr);
+        } else {
+            Blt_SetHashValue(hPtr, refCount);
+        }
     } else {
-	Blt_Warn("tried to release unknown identifier \"%s\"\n", uid);
+        Blt_Warn("tried to release unknown identifier \"%s\"\n", uid);
     }
 }
 
@@ -1354,25 +1354,25 @@ Blt_FreeUid(Blt_Uid uid)		/* Identifier to release. */
  *
  * Blt_FindUid --
  *
- *	Returns a Blt_Uid associated with a given string, if one exists.
+ *      Returns a Blt_Uid associated with a given string, if one exists.
  *
  * Results:
- *	A Blt_Uid for the string if one exists. Otherwise NULL.
+ *      A Blt_Uid for the string if one exists. Otherwise NULL.
  *
  *---------------------------------------------------------------------------
  */
 Blt_Uid
-Blt_FindUid(const char *string)		/* String to find. */
+Blt_FindUid(const char *string)         /* String to find. */
 {
     Blt_HashEntry *hPtr;
 
     if (!uidInitialized) {
-	Blt_InitHashTable(&uidTable, BLT_STRING_KEYS);
-	uidInitialized = 1;
+        Blt_InitHashTable(&uidTable, BLT_STRING_KEYS);
+        uidInitialized = 1;
     }
     hPtr = Blt_FindHashEntry(&uidTable, string);
     if (hPtr == NULL) {
-	return NULL;
+        return NULL;
     }
     return (Blt_Uid) Blt_GetHashKey(&uidTable, hPtr);
 }
@@ -1388,16 +1388,16 @@ Blt_FindUid(const char *string)		/* String to find. */
  *      operation string.
  *
  * Results:
- *	If the string matches unambiguously the index of the specification
- *	in the array is returned.  If the string does not match, even as an
- *	abbreviation, any operation, -1 is returned.  If the string
- *	matches, but ambiguously -2 is returned.
+ *      If the string matches unambiguously the index of the specification
+ *      in the array is returned.  If the string does not match, even as an
+ *      abbreviation, any operation, -1 is returned.  If the string
+ *      matches, but ambiguously -2 is returned.
  *
  *---------------------------------------------------------------------------
  */
 static int
 LinearOpSearch(Blt_OpSpec *specs, int low, int high, const char *string, 
-	       int length)
+               int length)
 {
     Blt_OpSpec *specPtr;
     char c;
@@ -1408,22 +1408,22 @@ LinearOpSearch(Blt_OpSpec *specs, int low, int high, const char *string,
     numMatches = 0;
     last = -1;
     for (specPtr = specs+low, i = low; i <= high; i++, specPtr++) {
-	if ((c == specPtr->name[0]) && 
-	    (strncmp(string, specPtr->name, length) == 0)) {
-	    last = i;
-	    numMatches++;
-	    if (length == specPtr->minChars) {
-		break;
-	    }
-	}
+        if ((c == specPtr->name[0]) && 
+            (strncmp(string, specPtr->name, length) == 0)) {
+            last = i;
+            numMatches++;
+            if (length == specPtr->minChars) {
+                break;
+            }
+        }
     }
     if (numMatches > 1) {
-	return -2;			/* Ambiguous operation name */
+        return -2;                      /* Ambiguous operation name */
     } 
     if (numMatches == 0) {
-	return -1;			/* Can't find operation */
+        return -1;                      /* Can't find operation */
     } 
-    return last;			/* Op found. */
+    return last;                        /* Op found. */
 }
 
 /*
@@ -1439,49 +1439,49 @@ LinearOpSearch(Blt_OpSpec *specs, int low, int high, const char *string,
  *      (example: "next" with commands next and nextsibling).
  *
  * Results:
- *	If the string matches unambiguously the index of the specification
- *	in the array is returned.  If the string does not match, even as an
- *	abbreviation, any operation, -1 is returned.  If the string
- *	matches, but ambiguously -2 is returned.
+ *      If the string matches unambiguously the index of the specification
+ *      in the array is returned.  If the string does not match, even as an
+ *      abbreviation, any operation, -1 is returned.  If the string
+ *      matches, but ambiguously -2 is returned.
  *
  *---------------------------------------------------------------------------
  */
 static int
 BinaryOpSearch(Blt_OpSpec *specs, int low, int high, const char *string, 
-	       int length)
+               int length)
 {
     char c;
 
     c = string[0];
     while (low <= high) {
-	Blt_OpSpec *specPtr;
-	int compare;
-	int median;
-	
-	median = (low + high) >> 1;
-	specPtr = specs + median;
+        Blt_OpSpec *specPtr;
+        int compare;
+        int median;
+        
+        median = (low + high) >> 1;
+        specPtr = specs + median;
 
-	/* Test the first character */
-	compare = c - specPtr->name[0];
-	if (compare == 0) {
-	    /* Now test the entire string */
-	    compare = strncmp(string, specPtr->name, length);
-	}
-	if (compare < 0) {
-	    high = median - 1;
-	} else if (compare > 0) {
-	    low = median + 1;
-	} else {
-	    if (length < specPtr->minChars) {
-		/* Verify that the string is either ambiguous or an exact
-		 * match of another command by doing a linear search over
-		 * the given interval. */
-		return LinearOpSearch(specs, low, high, string, length);	
-	    }
-	    return median;		/* Op found. */
-	}
+        /* Test the first character */
+        compare = c - specPtr->name[0];
+        if (compare == 0) {
+            /* Now test the entire string */
+            compare = strncmp(string, specPtr->name, length);
+        }
+        if (compare < 0) {
+            high = median - 1;
+        } else if (compare > 0) {
+            low = median + 1;
+        } else {
+            if (length < specPtr->minChars) {
+                /* Verify that the string is either ambiguous or an exact
+                 * match of another command by doing a linear search over
+                 * the given interval. */
+                return LinearOpSearch(specs, low, high, string, length);        
+            }
+            return median;              /* Op found. */
+        }
     }
-    return -1;				/* Can't find operation */
+    return -1;                          /* Can't find operation */
 }
 
 
@@ -1504,16 +1504,16 @@ BinaryOpSearch(Blt_OpSpec *specs, int low, int high, const char *string,
  */
 void *
 Blt_GetOpFromObj(
-    Tcl_Interp *interp,			/* Interpreter to report errors
-					 * to */
-    int numSpecs,			/* # of specifications in array */
-    Blt_OpSpec *specs,			/* Op specification array */
-    int operPos,			/* Position of operation in
-					 * argument list. */
-    int objc,				/* # of arguments in the argument *
-					 * vector.  This includes any
-					 * Prefixed arguments */
-    Tcl_Obj *const *objv,		/* Argument vector */
+    Tcl_Interp *interp,                 /* Interpreter to report errors
+                                         * to */
+    int numSpecs,                       /* # of specifications in array */
+    Blt_OpSpec *specs,                  /* Op specification array */
+    int operPos,                        /* Position of operation in
+                                         * argument list. */
+    int objc,                           /* # of arguments in the argument *
+                                         * vector.  This includes any
+                                         * Prefixed arguments */
+    Tcl_Obj *const *objv,               /* Argument vector */
     int flags)
 {
     Blt_OpSpec *specPtr;
@@ -1521,84 +1521,84 @@ Blt_GetOpFromObj(
     int length;
     int n;
 
-    if (objc <= operPos) {		/* No operation argument */
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "wrong # args: ", (char *)NULL);
-	usage:
-	    Tcl_AppendResult(interp, "should be one of...", (char *)NULL);
-	    for (n = 0; n < numSpecs; n++) {
-		int i;
-		
-		Tcl_AppendResult(interp, "\n  ", (char *)NULL);
-		for (i = 0; i < operPos; i++) {
-		    Tcl_AppendResult(interp, Tcl_GetString(objv[i]), " ", 
-				     (char *)NULL);
-		}
-		specPtr = specs + n;
-		Tcl_AppendResult(interp, specPtr->name, " ", specPtr->usage,
-				 (char *)NULL);
-	    }
-	}
-	return NULL;
+    if (objc <= operPos) {              /* No operation argument */
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "wrong # args: ", (char *)NULL);
+        usage:
+            Tcl_AppendResult(interp, "should be one of...", (char *)NULL);
+            for (n = 0; n < numSpecs; n++) {
+                int i;
+                
+                Tcl_AppendResult(interp, "\n  ", (char *)NULL);
+                for (i = 0; i < operPos; i++) {
+                    Tcl_AppendResult(interp, Tcl_GetString(objv[i]), " ", 
+                                     (char *)NULL);
+                }
+                specPtr = specs + n;
+                Tcl_AppendResult(interp, specPtr->name, " ", specPtr->usage,
+                                 (char *)NULL);
+            }
+        }
+        return NULL;
     }
     string = Tcl_GetStringFromObj(objv[operPos], &length);
     if (flags & BLT_OP_LINEAR_SEARCH) {
-	n = LinearOpSearch(specs, 0, numSpecs - 1, string, length);
+        n = LinearOpSearch(specs, 0, numSpecs - 1, string, length);
     } else {
-	n = BinaryOpSearch(specs, 0, numSpecs - 1, string, length);
+        n = BinaryOpSearch(specs, 0, numSpecs - 1, string, length);
     }
     if (n == -2) {
-	if (interp != NULL) {
-	    char c;
+        if (interp != NULL) {
+            char c;
 
-	    Tcl_AppendResult(interp, "ambiguous", (char *)NULL);
-	    if (operPos > 2) {
-		Tcl_AppendResult(interp, " ", Tcl_GetString(objv[operPos - 1]), 
-				 (char *)NULL);
-	    }
-	    Tcl_AppendResult(interp, " operation \"", string, "\" matches: ",
-			     (char *)NULL);
-	    
-	    c = string[0];
-	    for (n = 0; n < numSpecs; n++) {
-		specPtr = specs + n;
-		if ((c == specPtr->name[0]) &&
-		    (strncmp(string, specPtr->name, length) == 0)) {
-		    Tcl_AppendResult(interp, " ", specPtr->name, (char *)NULL);
-		}
-	    }
-	}
-	return NULL;
+            Tcl_AppendResult(interp, "ambiguous", (char *)NULL);
+            if (operPos > 2) {
+                Tcl_AppendResult(interp, " ", Tcl_GetString(objv[operPos - 1]), 
+                                 (char *)NULL);
+            }
+            Tcl_AppendResult(interp, " operation \"", string, "\" matches: ",
+                             (char *)NULL);
+            
+            c = string[0];
+            for (n = 0; n < numSpecs; n++) {
+                specPtr = specs + n;
+                if ((c == specPtr->name[0]) &&
+                    (strncmp(string, specPtr->name, length) == 0)) {
+                    Tcl_AppendResult(interp, " ", specPtr->name, (char *)NULL);
+                }
+            }
+        }
+        return NULL;
 
     } else if (n == -1) {               /* Can't find operation, display
-					 * help */
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "bad", (char *)NULL);
-	    if (operPos > 2) {
-		Tcl_AppendResult(interp, " ", Tcl_GetString(objv[operPos - 1]), 
-				 (char *)NULL);
-	    }
-	    Tcl_AppendResult(interp, " operation \"", string, "\": ", 
-			     (char *)NULL);
-	    goto usage;
-	}
-	return NULL;
+                                         * help */
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "bad", (char *)NULL);
+            if (operPos > 2) {
+                Tcl_AppendResult(interp, " ", Tcl_GetString(objv[operPos - 1]), 
+                                 (char *)NULL);
+            }
+            Tcl_AppendResult(interp, " operation \"", string, "\": ", 
+                             (char *)NULL);
+            goto usage;
+        }
+        return NULL;
     }
     specPtr = specs + n;
     if ((objc < specPtr->minArgs) || 
-	((specPtr->maxArgs > 0) && (objc > specPtr->maxArgs))) {
-	if (interp != NULL) {
-	    int i;
+        ((specPtr->maxArgs > 0) && (objc > specPtr->maxArgs))) {
+        if (interp != NULL) {
+            int i;
 
-	    Tcl_AppendResult(interp, "wrong # args: should be \"",(char *)NULL);
-	    for (i = 0; i < operPos; i++) {
-		Tcl_AppendResult(interp, Tcl_GetString(objv[i]), " ", 
-				 (char *)NULL);
-	    }
-	    Tcl_AppendResult(interp, specPtr->name, " ", specPtr->usage, "\"",
-			     (char *)NULL);
-	}
-	return NULL;
+            Tcl_AppendResult(interp, "wrong # args: should be \"",(char *)NULL);
+            for (i = 0; i < operPos; i++) {
+                Tcl_AppendResult(interp, Tcl_GetString(objv[i]), " ", 
+                                 (char *)NULL);
+            }
+            Tcl_AppendResult(interp, specPtr->name, " ", specPtr->usage, "\"",
+                             (char *)NULL);
+        }
+        return NULL;
     }
     return specPtr->proc;
 }
@@ -1607,7 +1607,7 @@ Blt_GetOpFromObj(
 /*ARGSUSED*/
 int
 Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath, 
-		const char *initProcName, const char *safeProcName)
+                const char *initProcName, const char *safeProcName)
 {
     Tcl_FSUnloadFileProc *unLoadProcPtr = NULL;
     Tcl_LoadHandle loadHandle;
@@ -1618,75 +1618,75 @@ Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath,
     objPtr = Tcl_NewStringObj(libPath, -1);
     Tcl_IncrRefCount(objPtr);
     result = Tcl_FSLoadFile(interp, objPtr, initProcName, safeProcName, 
-	&initProc, &safeProc, &loadHandle, &unLoadProcPtr);
+        &initProc, &safeProc, &loadHandle, &unLoadProcPtr);
     if (result != TCL_OK) {
-	goto done;
+        goto done;
     }
     if (initProc == NULL) {
-	Tcl_AppendResult(interp, "couldn't find procedure ", initProcName, 
-		(char *) NULL);
-	result = TCL_ERROR;
-	goto done;
+        Tcl_AppendResult(interp, "couldn't find procedure ", initProcName, 
+                (char *) NULL);
+        result = TCL_ERROR;
+        goto done;
     }
     if (Tcl_IsSafe(interp)) {
-	if (safeProc == NULL) {
-	    Tcl_AppendResult(interp, 
-		"can't use package in a safe interpreter: no ", safeProcName, 
-		" procedure", (char *) NULL);
-	    result = TCL_ERROR;
-	    goto done;
-	}
-	result = (*safeProc)(interp);
+        if (safeProc == NULL) {
+            Tcl_AppendResult(interp, 
+                "can't use package in a safe interpreter: no ", safeProcName, 
+                " procedure", (char *) NULL);
+            result = TCL_ERROR;
+            goto done;
+        }
+        result = (*safeProc)(interp);
     } else {
-	result = (*initProc)(interp);
+        result = (*initProc)(interp);
     }
  done:
     Tcl_DecrRefCount(objPtr);
     if (result != TCL_OK) {
-	if (unLoadProcPtr != NULL) {
-	    (*unLoadProcPtr)(loadHandle);
-	}
-	return TCL_ERROR;
-    }	
+        if (unLoadProcPtr != NULL) {
+            (*unLoadProcPtr)(loadHandle);
+        }
+        return TCL_ERROR;
+    }   
     return TCL_OK;
 }
 #else 
 int
 Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath, 
-		const char *initProcName, const char *safeProcName)
+                const char *initProcName, const char *safeProcName)
 {
     ClientData loadData;
     Tcl_PackageInitProc *initProc, *safeProc;
     int result;
 
     result = TclpLoadFile(interp, libPath, initProcName, safeProcName, 
-	&initProc, &safeProc, &loadData); 
+        &initProc, &safeProc, &loadData); 
     if (result != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (initProc == NULL) {
-	Tcl_AppendResult(interp, "couldn't find procedure ", initProcName, 
-		(char *) NULL);
-	result = TCL_ERROR;
-	goto done;
+        Tcl_AppendResult(interp, "couldn't find procedure ", initProcName, 
+                (char *) NULL);
+        result = TCL_ERROR;
+        goto done;
     }
     if (Tcl_IsSafe(interp)) {
-	if (safeProc == NULL) {
-	    Tcl_AppendResult(interp, 
-		"can't use package in a safe interpreter: ", "no ", 
-		safeProcName, " procedure", (char *) NULL);
-	    result = TCL_ERROR;
-	    goto done;
-	}
-	result = (*safeProc)(interp);
+        if (safeProc == NULL) {
+            Tcl_AppendResult(interp, 
+                "can't use package in a safe interpreter: ", "no ", 
+                safeProcName, " procedure", (char *) NULL);
+            result = TCL_ERROR;
+            goto done;
+        }
+        result = (*safeProc)(interp);
     } else {
-	result = (*initProc)(interp);
+        result = (*initProc)(interp);
     }
  done:
     if (result != TCL_OK) {
-	TclpUnloadFile(loadData);
-	return TCL_ERROR;
-    }	
+        TclpUnloadFile(loadData);
+        return TCL_ERROR;
+    }   
     return TCL_OK;
 }
 #endif
@@ -1730,9 +1730,9 @@ Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath,
  */
 
 #define MAXULPS 4
-#define SIGNBITMASK	0x8000000000000000UL
-#define FRACBITMASK	0x007FFFFFFFFFFFFFUL
-#define EXPBITMASK	0x7F80000000000000UL
+#define SIGNBITMASK     0x8000000000000000UL
+#define FRACBITMASK     0x007FFFFFFFFFFFFFUL
+#define EXPBITMASK      0x7F80000000000000UL
 #define INFBITMASK      0x7ff0000000000000UL
 
 typedef uint64_t Bits;
@@ -1764,9 +1764,9 @@ static INLINE Bits
 SignAndMagnitudeToBiased(const Bits sam)
 {
     if (SIGNBITMASK & sam) {
-	return ~sam + 1UL;		/* two's complement */
+        return ~sam + 1UL;              /* two's complement */
     } else {
-	return SIGNBITMASK | sam;	/* * 2 */
+        return SIGNBITMASK | sam;       /* * 2 */
     }
 }
 
@@ -1792,16 +1792,16 @@ Blt_AlmostEquals(double x, double y)
     a.value = x;
     b.value = y;
     if (a.bits == b.bits) {
-	return TRUE;
+        return TRUE;
     }
     if (IsNaN(a.bits) || IsNaN(b.bits)) {
-	return FALSE;
+        return FALSE;
     }
     ulps = DistanceBetweenSignAndMagnitudeNumber(a.bits, b.bits);
 #ifdef notdef
     if (ulps > MAXULPS) {
-	fprintf(stderr, "AlmostEquals ulps=%u x=%.17g y=%.17g\n", 
-		(Bits)ulps, x, y);
+        fprintf(stderr, "AlmostEquals ulps=%u x=%.17g y=%.17g\n", 
+                (Bits)ulps, x, y);
     }
 #endif
     return (ulps <= MAXULPS) ? TRUE : FALSE;
@@ -1825,7 +1825,7 @@ IsInfinite(double A)
     /* An infinity has an exponent of 255 (shift left 23 positions) and a
      * zero mantissa. There are two infinities - positive and negative. */
     if ((*longPtr & 0x7FFFFFFFFFFFFFFFL) == kInfAsInt)
-	return TRUE;
+        return TRUE;
     return FALSE;
 }
 #endif /*INFINITYCHECK*/
@@ -1842,7 +1842,7 @@ IsNan(double A)
     exp = *longPtr & 0x7F80000000000000L;
     mantissa = *longPtr & 0x007FFFFFFFFFFFFFL;
     if (exp == 0x7F80000000000000L && mantissa != 0) {
-	return TRUE;
+        return TRUE;
     }
     return FALSE;
 }
@@ -1878,7 +1878,7 @@ Blt_AlmostEquals2(double A, double B)
      * be generating infinities and you don't want them 'close' to numbers
      * near FLT_MAX. */
     if (IsInfinite(A) || IsInfinite(B))
-	return A == B;
+        return A == B;
 #endif
 
 #ifdef  NANCHECK
@@ -1887,7 +1887,7 @@ Blt_AlmostEquals2(double A, double B)
      * generating NANs and you use a maxUlps greater than 4 million or you
      * want to ensure that a NAN does not equal itself. */
     if (IsNan(A) || IsNan(B))
-	return FALSE;
+        return FALSE;
 #endif
 
 #ifdef  SIGNCHECK
@@ -1900,30 +1900,30 @@ Blt_AlmostEquals2(double A, double B)
      * and negative zero have different signs but are equal to each
      * other. */
     if (Sign(A) != Sign(B))
-	return A == B;
+        return A == B;
 #endif
     longPtr = (long *)&A;
     aInt = *longPtr;
     /* Make aInt lexicographically ordered as a twos-complement int */
     if (aInt < 0)
-	aInt = 0x8000000000000000 - aInt;
+        aInt = 0x8000000000000000 - aInt;
     /* Make bInt lexicographically ordered as a twos-complement int */
     longPtr = (long *)&B;
     bInt = *longPtr;
     if (bInt < 0)
-	bInt = 0x8000000000000000 - bInt;
+        bInt = 0x8000000000000000 - bInt;
 
     /* Now we can compare aInt and bInt to find out how far apart A and B
      * are. */
     intDiff = labs(aInt - bInt);
 #ifndef notdef
     if (intDiff > MAXULPS) {
-	fprintf(stderr, "AlmostEquals ulps=%ld x=%.17g y=%.17g\n", 
-		(long)intDiff, A, B);
+        fprintf(stderr, "AlmostEquals ulps=%ld x=%.17g y=%.17g\n", 
+                (long)intDiff, A, B);
     }
 #endif
     if (intDiff <= MAXULPS)
-	return TRUE;
+        return TRUE;
     return FALSE;
 }
 #endif
@@ -1933,13 +1933,13 @@ Blt_NameOfSide(int side)
 {
     switch (side) {
     case SIDE_LEFT:
-	return "left";
+        return "left";
     case SIDE_RIGHT:
-	return "right";
+        return "right";
     case SIDE_BOTTOM:
-	return "bottom";
+        return "bottom";
     case SIDE_TOP:
-	return "top";
+        return "top";
     }
     return "unknown side value";
 }
@@ -1949,9 +1949,9 @@ Blt_NameOfSide(int side)
  *
  * Blt_GetSideFromObj --
  *
- *	Converts the fill style string into its numeric representation.
+ *      Converts the fill style string into its numeric representation.
  *
- *	Valid style strings are "left", "right", "top", or  "bottom".
+ *      Valid style strings are "left", "right", "top", or  "bottom".
  *
  *---------------------------------------------------------------------------
  */
@@ -1959,11 +1959,11 @@ Blt_NameOfSide(int side)
 int
 Blt_GetSideFromObj(
     Tcl_Interp *interp,                 /* Interpreter to send results back
-					 * to */
+                                         * to */
     Tcl_Obj *objPtr,                    /* Value string */
     int *sidePtr)                       /* (out) Token representing side:
-					 * either SIDE_LEFT, SIDE_RIGHT,
-					 * SIDE_TOP, or SIDE_BOTTOM. */
+                                         * either SIDE_LEFT, SIDE_RIGHT,
+                                         * SIDE_TOP, or SIDE_BOTTOM. */
 {
     char c;
     const char *string;
@@ -1972,57 +1972,57 @@ Blt_GetSideFromObj(
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
     if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
-	*sidePtr = SIDE_LEFT;
+        *sidePtr = SIDE_LEFT;
     } else if ((c == 'r') && (strncmp(string, "right", length) == 0)) {
-	*sidePtr = SIDE_RIGHT;
+        *sidePtr = SIDE_RIGHT;
     } else if ((c == 't') && (strncmp(string, "top", length) == 0)) {
-	*sidePtr = SIDE_TOP;
+        *sidePtr = SIDE_TOP;
     } else if ((c == 'b') && (strncmp(string, "bottom", length) == 0)) {
-	*sidePtr = SIDE_BOTTOM;
+        *sidePtr = SIDE_BOTTOM;
     } else {
-	Tcl_AppendResult(interp, "bad side \"", string,
-	    "\": should be left, right, top, or bottom", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad side \"", string,
+            "\": should be left, right, top, or bottom", (char *)NULL);
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
 
 static double
-FindSplit(Point2d *points, int i, int j, int *split)	
+FindSplit(Point2d *points, int i, int j, int *split)    
 {    
     double maxDist2;
     
     maxDist2 = -1.0;
     if ((i + 1) < j) {
-	int k;
-	double a, b, c;	
+        int k;
+        double a, b, c; 
 
-	/* 
-	 * 
-	 *  dist2 P(k) =  |  1  P(i).x  P(i).y  |
-	 *		  |  1  P(j).x  P(j).y  |
-	 *                |  1  P(k).x  P(k).y  |
-	 *       ------------------------------------------
-	 *       (P(i).x - P(j).x)^2 + (P(i).y - P(j).y)^2
-	 */
+        /* 
+         * 
+         *  dist2 P(k) =  |  1  P(i).x  P(i).y  |
+         *                |  1  P(j).x  P(j).y  |
+         *                |  1  P(k).x  P(k).y  |
+         *       ------------------------------------------
+         *       (P(i).x - P(j).x)^2 + (P(i).y - P(j).y)^2
+         */
 
-	a = points[i].y - points[j].y;
-	b = points[j].x - points[i].x;
-	c = (points[i].x * points[j].y) - (points[i].y * points[j].x);
-	for (k = (i + 1); k < j; k++) {
-	    double dist2;
+        a = points[i].y - points[j].y;
+        b = points[j].x - points[i].x;
+        c = (points[i].x * points[j].y) - (points[i].y * points[j].x);
+        for (k = (i + 1); k < j; k++) {
+            double dist2;
 
-	    dist2 = (points[k].x * a) + (points[k].y * b) + c;
-	    if (dist2 < 0.0) {
-		dist2 = -dist2;	
-	    }
-	    if (dist2 > maxDist2) {
-		maxDist2 = dist2;	/* Track the maximum. */
-		*split = k;
-	    }
-	}
-	/* Correction for segment length---should be redone if can == 0 */
-	maxDist2 *= maxDist2 / (a * a + b * b);
+            dist2 = (points[k].x * a) + (points[k].y * b) + c;
+            if (dist2 < 0.0) {
+                dist2 = -dist2; 
+            }
+            if (dist2 > maxDist2) {
+                maxDist2 = dist2;       /* Track the maximum. */
+                *split = k;
+            }
+        }
+        /* Correction for segment length---should be redone if can == 0 */
+        maxDist2 *= maxDist2 / (a * a + b * b);
     } 
     return maxDist2;
 }
@@ -2030,16 +2030,16 @@ FindSplit(Point2d *points, int i, int j, int *split)
 /* Douglas-Peucker line simplification algorithm */
 int
 Blt_SimplifyLine(Point2d *inputPts, int low, int high, double tolerance,
-		 int *indices)
+                 int *indices)
 {
-#define StackPush(a)	s++, stack[s] = (a)
-#define StackPop(a)	(a) = stack[s], s--
-#define StackEmpty()	(s < 0)
-#define StackTop()	stack[s]
+#define StackPush(a)    s++, stack[s] = (a)
+#define StackPop(a)     (a) = stack[s], s--
+#define StackEmpty()    (s < 0)
+#define StackTop()      stack[s]
     int *stack;
     int split = -1; 
     double dist2, tolerance2;
-    int s = -1;			/* Points to top stack item. */
+    int s = -1;                 /* Points to top stack item. */
     int count;
 
     stack = Blt_AssertMalloc(sizeof(int) * (high - low + 1));
@@ -2048,13 +2048,13 @@ Blt_SimplifyLine(Point2d *inputPts, int low, int high, double tolerance,
     indices[count++] = 0;
     tolerance2 = tolerance * tolerance;
     while (!StackEmpty()) {
-	dist2 = FindSplit(inputPts, low, StackTop(), &split);
-	if (dist2 > tolerance2) {
-	    StackPush(split);
-	} else {
-	    indices[count++] = StackTop();
-	    StackPop(low);
-	}
+        dist2 = FindSplit(inputPts, low, StackTop(), &split);
+        if (dist2 > tolerance2) {
+            StackPush(split);
+        } else {
+            indices[count++] = StackTop();
+            StackPop(low);
+        }
     } 
     Blt_Free(stack);
     return count;

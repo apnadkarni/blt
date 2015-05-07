@@ -81,23 +81,23 @@ typedef struct {
     Tcl_Interp *interp;
     unsigned int flags;
     char *buffer;                       /* Buffer to read data into. */
-    int numBytes;			/* # of bytes in the buffer. */
+    int numBytes;                       /* # of bytes in the buffer. */
 } ImportArgs;
 
 static Blt_SwitchSpec importSwitches[] = 
 {
     {BLT_SWITCH_STRING, "-db",       "dbName", (char *)NULL,
-	Blt_Offset(ImportArgs, db), 0, 0},
+        Blt_Offset(ImportArgs, db), 0, 0},
     {BLT_SWITCH_STRING, "-host",     "hostName", (char *)NULL,
-	Blt_Offset(ImportArgs, host), 0, 0},
+        Blt_Offset(ImportArgs, host), 0, 0},
     {BLT_SWITCH_STRING, "-user",     "userName", (char *)NULL,
-	Blt_Offset(ImportArgs, user), 0, 0},
+        Blt_Offset(ImportArgs, user), 0, 0},
     {BLT_SWITCH_STRING, "-password", "password", (char *)NULL,
-	Blt_Offset(ImportArgs, pw), 0, 0},
+        Blt_Offset(ImportArgs, pw), 0, 0},
     {BLT_SWITCH_INT_NNEG, "-port",     "number", (char *)NULL,
-	Blt_Offset(ImportArgs, port), 0, 0},
+        Blt_Offset(ImportArgs, port), 0, 0},
     {BLT_SWITCH_OBJ,    "-query",    "string", (char *)NULL,
-	Blt_Offset(ImportArgs, queryObjPtr), 0, 0},
+        Blt_Offset(ImportArgs, queryObjPtr), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -124,7 +124,7 @@ typedef struct {
     unsigned int flags;
 } ExportArgs;
 
-#define EXPORT_ROWLABELS	(1<<0)
+#define EXPORT_ROWLABELS        (1<<0)
 
 static Blt_SwitchFreeProc ColumnIterFreeProc;
 static Blt_SwitchParseProc ColumnIterSwitchProc;
@@ -140,21 +140,21 @@ static Blt_SwitchCustom rowIterSwitch = {
 static Blt_SwitchSpec exportSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
-	Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
+        Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
     {BLT_SWITCH_STRING, "-db",       "dbName", (char *)NULL,
-	Blt_Offset(ExportArgs, db), 0, 0},
+        Blt_Offset(ExportArgs, db), 0, 0},
     {BLT_SWITCH_STRING, "-host",     "hostName", (char *)NULL,
-	Blt_Offset(ExportArgs, host), 0, 0},
+        Blt_Offset(ExportArgs, host), 0, 0},
     {BLT_SWITCH_STRING, "-password", "password", (char *)NULL,
-	Blt_Offset(ExportArgs, pw), 0, 0},
+        Blt_Offset(ExportArgs, pw), 0, 0},
     {BLT_SWITCH_INT_NNEG, "-port",     "number", (char *)NULL,
-	Blt_Offset(ExportArgs, port), 0, 0},
+        Blt_Offset(ExportArgs, port), 0, 0},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
-	Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
+        Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
     {BLT_SWITCH_OBJ, "-table", "tableName", (char *)NULL,
-	Blt_Offset(ExportArgs, tableObjPtr), 0, 0},
+        Blt_Offset(ExportArgs, tableObjPtr), 0, 0},
     {BLT_SWITCH_STRING, "-user",     "userName", (char *)NULL,
-	Blt_Offset(ExportArgs, user), 0, 0},
+        Blt_Offset(ExportArgs, user), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -170,10 +170,10 @@ static BLT_TABLE_IMPORT_PROC ImportMysqlProc;
  *
  * ColumnIterFreeProc --
  *
- *	Free the storage associated with the -columns switch.
+ *      Free the storage associated with the -columns switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -191,10 +191,10 @@ ColumnIterFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * ColumnIterSwitchProc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -211,11 +211,11 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
 
     table = clientData;
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -226,10 +226,10 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * RowIterFreeProc --
  *
- *	Free the storage associated with the -rows switch.
+ *      Free the storage associated with the -rows switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -247,10 +247,10 @@ RowIterFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * RowIterSwitchProc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -267,11 +267,11 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
 
     table = clientData;
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -286,15 +286,15 @@ MysqlFieldToColumnType(int type)
     case FIELD_TYPE_INT24:
     case FIELD_TYPE_LONG:
     case FIELD_TYPE_LONGLONG:
-	return TABLE_COLUMN_TYPE_LONG;
+        return TABLE_COLUMN_TYPE_LONG;
     case FIELD_TYPE_FLOAT:
     case FIELD_TYPE_DOUBLE:
-	return TABLE_COLUMN_TYPE_DOUBLE;
+        return TABLE_COLUMN_TYPE_DOUBLE;
     case FIELD_TYPE_TINY_BLOB:
     case FIELD_TYPE_MEDIUM_BLOB:
     case FIELD_TYPE_LONG_BLOB:
     case FIELD_TYPE_BLOB:
-	return TABLE_COLUMN_TYPE_BLOB;
+        return TABLE_COLUMN_TYPE_BLOB;
     case FIELD_TYPE_NULL:
     case FIELD_TYPE_TIMESTAMP:
     case FIELD_TYPE_DATE:
@@ -307,48 +307,48 @@ MysqlFieldToColumnType(int type)
     case FIELD_TYPE_VAR_STRING:
     case FIELD_TYPE_STRING:
     default:
-	return TABLE_COLUMN_TYPE_STRING;
+        return TABLE_COLUMN_TYPE_STRING;
     }
 }
 
 
 static int
 MysqlConnect(Tcl_Interp *interp, const char *host, const char *user, 
-	     const char *pw, const char *db, unsigned int port,
-	     unsigned long flags, MYSQL **cpPtr)			
+             const char *pw, const char *db, unsigned int port,
+             unsigned long flags, MYSQL **cpPtr)                        
 {
-    MYSQL  *cp;			/* Connection handler. */
+    MYSQL  *cp;                 /* Connection handler. */
 
     cp = mysql_init(NULL); 
     if (cp == NULL) {
-	Tcl_AppendResult(interp, "can't initialize mysql connection.",
-		(char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't initialize mysql connection.",
+                (char *)NULL);
+        return TCL_ERROR;
     }
     if (host == NULL) {
-	host = "localhost";
+        host = "localhost";
     }
     cp->reconnect = 1;
 #if defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID >= 32200 /* 3.22 and up */
     if (mysql_real_connect(cp, host, user, pw, db, port, NULL, flags) == NULL) {
-	Tcl_AppendResult(interp, "can't connect to mysql server on \"", host, 
-			"\": ", mysql_error(cp), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't connect to mysql server on \"", host, 
+                        "\": ", mysql_error(cp), (char *)NULL);
+        return TCL_ERROR;
     }
 #else              /* pre-3.22 */
     if (mysql_real_connect (cp, host, user, pw, port, NULL, flags) == NULL) {
-	Tcl_AppendResult(interp, "can't connect to mysql server on \"",
-			 host, "\": ", mysql_error(cp), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't connect to mysql server on \"",
+                         host, "\": ", mysql_error(cp), (char *)NULL);
+        return TCL_ERROR;
     }
     if (db != NULL) {
-	if (mysql_select_db(cp, db) != 0) {
-	    Tcl_AppendResult(interp, "can't select database \"", db, "\": ", 
-			     mysql_error(cp), (char *)NULL);
-	    mysql_close(cp);
-	    cp = NULL;
-	    return TCL_ERROR;
-	}
+        if (mysql_select_db(cp, db) != 0) {
+            Tcl_AppendResult(interp, "can't select database \"", db, "\": ", 
+                             mysql_error(cp), (char *)NULL);
+            mysql_close(cp);
+            cp = NULL;
+            return TCL_ERROR;
+        }
     }
 #endif
     *cpPtr = cp;
@@ -369,9 +369,9 @@ MysqlQueryFromObj(Tcl_Interp *interp, MYSQL *cp, Tcl_Obj *objPtr)
     
     query = Tcl_GetStringFromObj(objPtr, &numBytes);
     if (mysql_real_query(cp, query, (unsigned long)numBytes) != 0) {
-	Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
-			 mysql_error(cp), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
+                         mysql_error(cp), (char *)NULL);
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -384,19 +384,19 @@ MysqlFreeResults(MYSQL_RES *myResults)
 
 static int
 MysqlResults(Tcl_Interp *interp, MYSQL *cp, MYSQL_RES **resultsPtr, 
-	     long *numFieldsPtr) 
+             long *numFieldsPtr) 
 {
     MYSQL_RES *results;
 
     results = mysql_store_result(cp);
     if (results != NULL) {
-	*numFieldsPtr = mysql_num_fields(results);
+        *numFieldsPtr = mysql_num_fields(results);
     } else if (mysql_field_count(cp) == 0) {
-	*numFieldsPtr = 0;
+        *numFieldsPtr = 0;
     } else {
-	Tcl_AppendResult(interp, "error collecting results: ", mysql_error(cp), 
-			 (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "error collecting results: ", mysql_error(cp), 
+                         (char *)NULL);
+        return TCL_ERROR;
     }
     *resultsPtr = results;
     return TCL_OK;
@@ -405,30 +405,30 @@ MysqlResults(Tcl_Interp *interp, MYSQL *cp, MYSQL_RES **resultsPtr,
 
 static int
 MysqlImportLabels(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults, 
-		  size_t numCols, BLT_TABLE_COLUMN *cols) 
+                  size_t numCols, BLT_TABLE_COLUMN *cols) 
 {
     size_t i;
 
     for (i = 0; i < numCols; i++) {
-	MYSQL_FIELD *fp;
-	BLT_TABLE_COLUMN_TYPE type;
+        MYSQL_FIELD *fp;
+        BLT_TABLE_COLUMN_TYPE type;
 
-	fp = mysql_fetch_field(myResults);
-	if (blt_table_set_column_label(interp, table, cols[i], fp->name) 
-	    != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	type = MysqlFieldToColumnType(fp->type);
-	if (blt_table_set_column_type(interp, table, cols[i], type) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        fp = mysql_fetch_field(myResults);
+        if (blt_table_set_column_label(interp, table, cols[i], fp->name) 
+            != TCL_OK) {
+            return TCL_ERROR;
+        }
+        type = MysqlFieldToColumnType(fp->type);
+        if (blt_table_set_column_type(interp, table, cols[i], type) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
 
 static int
 MysqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults, 
-		size_t numCols, BLT_TABLE_COLUMN *cols) 
+                size_t numCols, BLT_TABLE_COLUMN *cols) 
 {
     size_t numRows;
     size_t i;
@@ -451,25 +451,25 @@ MysqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
         unsigned long *lengths;
 
         row = blt_table_row(table, i);
-	myRow = mysql_fetch_row(myResults);
-	if (myRow == NULL) {
-	    if (i < numRows) {
-		Tcl_AppendResult(interp, "didn't complete fetching all rows",
-				 (char *)NULL);
-		return TCL_ERROR;
-	    }
-	    break;
-	}
-	lengths = mysql_fetch_lengths(myResults);
-	for (j = 0; j < numCols; j++) {
-	    if (myRow[j] == NULL) {
-		continue;		/* Empty value. */
-	    }
-	    if (blt_table_set_string_rep(interp, table, row, cols[j], myRow[j],
+        myRow = mysql_fetch_row(myResults);
+        if (myRow == NULL) {
+            if (i < numRows) {
+                Tcl_AppendResult(interp, "didn't complete fetching all rows",
+                                 (char *)NULL);
+                return TCL_ERROR;
+            }
+            break;
+        }
+        lengths = mysql_fetch_lengths(myResults);
+        for (j = 0; j < numCols; j++) {
+            if (myRow[j] == NULL) {
+                continue;               /* Empty value. */
+            }
+            if (blt_table_set_string_rep(interp, table, row, cols[j], myRow[j],
                         lengths[j]) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	}
+                return TCL_ERROR;
+            }
+        }
     }
     return TCL_OK;
 }
@@ -503,7 +503,7 @@ MysqlCreateTable(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
     }        
     first = TRUE;
     for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL; 
-	 col = blt_table_next_tagged_column(&argsPtr->ci)) {
+         col = blt_table_next_tagged_column(&argsPtr->ci)) {
         int type;
         const char *label;
         
@@ -555,9 +555,9 @@ MysqlExportValues(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
     
     stmt = mysql_stmt_init(conn);
     if (stmt == NULL) {
-	Tcl_AppendResult(interp, "can't create statement \": ",
+        Tcl_AppendResult(interp, "can't create statement \": ",
                          mysql_error(conn), (char *)NULL);
-	return TCL_ERROR;
+        return TCL_ERROR;
 
     }
     dbuffer = Blt_DBuffer_Create();
@@ -605,7 +605,7 @@ MysqlExportValues(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
     assert(numParams == count);
     bind = Blt_AssertCalloc(count, sizeof(MYSQL_BIND));
     for (row = blt_table_first_tagged_row(&argsPtr->ri); row != NULL; 
-	 row = blt_table_next_tagged_row(&argsPtr->ri)) {
+         row = blt_table_next_tagged_row(&argsPtr->ri)) {
         int count;                      
         
         count = 0;                      /* mysql parameter indices start
@@ -662,7 +662,7 @@ MysqlExportValues(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
 
 static int
 ImportMysqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+                Tcl_Obj *const *objv)
 {
     ImportArgs args;
     MYSQL *conn;
@@ -673,17 +673,17 @@ ImportMysqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     conn = NULL;
     memset(&args, 0, sizeof(args));
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
-		&args, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+                &args, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     if (args.queryObjPtr == NULL) {
         Tcl_AppendResult(interp, "-query switch is required.", (char *)NULL);
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (MysqlConnect(interp, args.host, args.user, args.pw,
-	args.db, args.port, DEF_CLIENT_FLAGS, &conn) != TCL_OK) {
+        args.db, args.port, DEF_CLIENT_FLAGS, &conn) != TCL_OK) {
         Blt_FreeSwitches(importSwitches, &args, 0);
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     myResults = NULL;
     result = MysqlQueryFromObj(interp, conn, args.queryObjPtr);
@@ -714,7 +714,7 @@ ImportMysqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 
 static int
 ExportMysqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+                Tcl_Obj *const *objv)
 {
     ExportArgs args;
     MYSQL *conn;
@@ -730,8 +730,8 @@ ExportMysqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     blt_table_iterate_all_rows(table, &args.ri);
     blt_table_iterate_all_columns(table, &args.ci);
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
-		&args, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+                &args, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     if (args.tableObjPtr != NULL) {
         args.tableName = Tcl_GetString(args.tableObjPtr);
@@ -759,25 +759,25 @@ blt_table_mysql_init(Tcl_Interp *interp)
 {
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #endif
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else
     if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #endif    
     if (Tcl_PkgProvide(interp, "blt_datatable_mysql", BLT_VERSION) != TCL_OK) { 
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-	"mysql",                        /* Name of format. */
-	ImportMysqlProc,                /* Import procedure. */
-	ExportMysqlProc);               /* Export procedure. */
+        "mysql",                        /* Name of format. */
+        ImportMysqlProc,                /* Import procedure. */
+        ExportMysqlProc);               /* Export procedure. */
 
 }
 

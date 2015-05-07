@@ -47,23 +47,23 @@
  *
  * DllMain --
  *
- *	This wrapper function is used by Windows to invoke the
- *	initialization code for the DLL.
+ *      This wrapper function is used by Windows to invoke the
+ *      initialization code for the DLL.
  *
  * Results:
- *	Returns TRUE;
+ *      Returns TRUE;
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 
 BOOL APIENTRY
 DllMain(
-    HINSTANCE hInst,		/* Library instance handle. */
-    DWORD reason,		/* Reason this function is being called. */
-    LPVOID reserved)		/* Not used. */
+    HINSTANCE hInst,            /* Library instance handle. */
+    DWORD reason,               /* Reason this function is being called. */
+    LPVOID reserved)            /* Not used. */
 {
     return TRUE;
 }

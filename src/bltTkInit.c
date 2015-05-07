@@ -151,7 +151,7 @@ static Tcl_AppInitProc *cmdProcs[] =
 
 /*LINTLIBRARY*/
 int
-Blt_TkInit(Tcl_Interp *interp)	       /* Interpreter to add extra commands */
+Blt_TkInit(Tcl_Interp *interp)         /* Interpreter to add extra commands */
 {
     Tcl_Namespace *nsPtr;
     Tcl_AppInitProc **p;
@@ -162,41 +162,41 @@ Blt_TkInit(Tcl_Interp *interp)	       /* Interpreter to add extra commands */
 
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
-#endif	/*USE_TCL_STUBS*/
+#endif  /*USE_TCL_STUBS*/
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
 #ifdef USE_TK_STUBS
     if (Tk_InitStubs(interp, TK_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
-#endif	/*USE_TKSTUBS*/
+#endif  /*USE_TKSTUBS*/
     if (Tcl_PkgPresent(interp, "Tk", TK_VERSION_COMPILED, PKG_ANY) == NULL) {
-	Tcl_AppendResult(interp, "Tk package must be loaded", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "Tk package must be loaded", (char *)NULL);
+        return TCL_ERROR;
     } 
 #else
     if (Tcl_PkgRequire(interp, "Tk", TK_VERSION_COMPILED, PKG_ANY) == NULL) {
-	Tcl_ResetResult(interp);
-	return TCL_OK;
+        Tcl_ResetResult(interp);
+        return TCL_OK;
     } 
-#endif	/* TCL >= 8.1 */
+#endif  /* TCL >= 8.1 */
 
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*USE_BLT_STUBS*/
+#endif  /*USE_BLT_STUBS*/
     if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     nsPtr = Tcl_CreateNamespace(interp, "::blt::tk", NULL, NULL);
     if (nsPtr == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     nsPtr = Tcl_FindNamespace(interp, "::blt", NULL, TCL_LEAVE_ERR_MSG);
     if (nsPtr == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Blt_RegisterPictureImageType(interp);
     Blt_RegisterEpsCanvasItem();
@@ -204,10 +204,10 @@ Blt_TkInit(Tcl_Interp *interp)	       /* Interpreter to add extra commands */
 
     /* Initialize the BLT commands that only use Tk. */
     for (p = cmdProcs; *p != NULL; p++) {
-	if ((**p) (interp) != TCL_OK) {
-	    Tcl_DeleteNamespace(nsPtr);
-	    return TCL_ERROR;
-	}
+        if ((**p) (interp) != TCL_OK) {
+            Tcl_DeleteNamespace(nsPtr);
+            return TCL_ERROR;
+        }
     }
 #ifdef USE_BLT_STUBS
     result = Tcl_PkgProvideEx(interp, "blt_tk", BLT_VERSION, &bltTkProcs);

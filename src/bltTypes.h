@@ -43,7 +43,7 @@
  *
  * Point2f --
  *
- *	2-D coordinate in floats.
+ *      2-D coordinate in floats.
  *
  * -------------------------------------------------------------------
  */
@@ -56,7 +56,7 @@ typedef struct {
  *
  * Point2d --
  *
- *	2-D coordinate in doubles.
+ *      2-D coordinate in doubles.
  *
  * -------------------------------------------------------------------
  */
@@ -69,7 +69,7 @@ typedef struct {
  *
  * Point3d --
  *
- *	3-D coordinate in doubles.
+ *      3-D coordinate in doubles.
  *
  * -------------------------------------------------------------------
  */
@@ -82,12 +82,12 @@ typedef struct {
  *
  * Segment2d --
  *
- *	2-D line segment.
+ *      2-D line segment.
  *
  * -------------------------------------------------------------------
  */
 typedef struct {
-    Point2d p, q;		/* The two end points of the segment. */
+    Point2d p, q;               /* The two end points of the segment. */
 } Segment2d;
 
 /*
@@ -95,7 +95,7 @@ typedef struct {
  *
  * Dim2d --
  *
- *	2-D dimension.
+ *      2-D dimension.
  *
  * -------------------------------------------------------------------
  */
@@ -108,7 +108,7 @@ typedef struct {
  *
  * Box2d --
  *
- *	2D Bounding box in integer coordinates.
+ *      2D Bounding box in integer coordinates.
  *
  * -------------------------------------------------------------------
  */
@@ -147,16 +147,16 @@ typedef struct {
     double left, right, top, bottom, front, back;
 } Region3d;
 
-#define RegionWidth(r)		((r)->right - (r)->left + 1)
-#define RegionHeight(r)		((r)->bottom - (r)->top + 1)
+#define RegionWidth(r)          ((r)->right - (r)->left + 1)
+#define RegionHeight(r)         ((r)->bottom - (r)->top + 1)
 
 #define PointInRegion(e,x,y) \
-	(((x) <= (e)->right) && ((x) >= (e)->left) && \
-	 ((y) <= (e)->bottom) && ((y) >= (e)->top))
+        (((x) <= (e)->right) && ((x) >= (e)->left) && \
+         ((y) <= (e)->bottom) && ((y) >= (e)->top))
 
 #define PointInRectangle(r,x0,y0) \
-	(((x0) <= (int)((r)->x + (r)->width - 1)) && ((x0) >= (int)(r)->x) && \
-	 ((y0) <= (int)((r)->y + (r)->height - 1)) && ((y0) >= (int)(r)->y))
+        (((x0) <= (int)((r)->x + (r)->width - 1)) && ((x0) >= (int)(r)->x) && \
+         ((y0) <= (int)((r)->y + (r)->height - 1)) && ((y0) >= (int)(r)->y))
 
 /*
  *----------------------------------------------------------------------

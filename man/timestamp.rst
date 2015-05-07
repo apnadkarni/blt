@@ -130,7 +130,7 @@ the **blt::timestamp** command.
 
   - 1997-12-17 07:37:16-08
 
-    ISO 8601/SQL standard 	
+    ISO 8601/SQL standard       
 
   - 12/17/1997 07:37:16.00 PST
 
@@ -154,118 +154,118 @@ PERCENT SUBSTITUTIONS
 The following substitutions may be used to format a timestamp.
 
   **%%**
-	  Single percent sign (%)
+          Single percent sign (%)
 
   **%a**
-	  Abbreviated weekday. Example: "Sun".
+          Abbreviated weekday. Example: "Sun".
 
   **%A**
-	  Weekday. Example: "Sunday".
+          Weekday. Example: "Sunday".
 
   **%b**
-	  Abbreviated month. Example: "Jan".
+          Abbreviated month. Example: "Jan".
 
   **%h**
-	  Month. Example: "January".
+          Month. Example: "January".
 
   **%B**
-	  Month. Example: "Month".
+          Month. Example: "Month".
 
   **%c**
-	  Date and time. Example: "Thu Mar 3 23:05:25 2005".
+          Date and time. Example: "Thu Mar 3 23:05:25 2005".
 
   **%C**
-	  Century without last 2 digits. Example: "20".
+          Century without last 2 digits. Example: "20".
 
   **%d**
-	  Day of month, 2 digits. Example: "01".
+          Day of month, 2 digits. Example: "01".
 
   **%D**
-	  mm/dd/yy format. Example: "01/01/1970".
+          mm/dd/yy format. Example: "01/01/1970".
 
   **%e**
-	  Day of month, space padded. Example: " 1".
+          Day of month, space padded. Example: " 1".
 
   **%F**
-	  Full date yyyy-mm-dd. Example: "1970-01-01".
+          Full date yyyy-mm-dd. Example: "1970-01-01".
 
   **%g**
-	  Last 2 digits of ISO week year. Example: "70".
+          Last 2 digits of ISO week year. Example: "70".
 
   **%G**
-	  ISO week year. Example: "1970".
+          ISO week year. Example: "1970".
 
   **%H**
-	  Hour (0-23). Example: "0".
+          Hour (0-23). Example: "0".
 
   **%I**
-	  Hour (0-12). Example: "0".
+          Hour (0-12). Example: "0".
 
   **%j**
-	  Day of year. Example: "0".
+          Day of year. Example: "0".
 
   **%k**
-	  Hour (0-23), space padded. Example: " 1".
+          Hour (0-23), space padded. Example: " 1".
 
   **%l**
-	  Hour (1-12), space padded. Example: " 1".
+          Hour (1-12), space padded. Example: " 1".
 
   **%m**
-	  Month (01-12). Example: "01".
+          Month (01-12). Example: "01".
 
   **%M**
-	  Minute (00-59). Example: "00".
+          Minute (00-59). Example: "00".
 
   **%N**
-	  Nanoseconds (000000000..999999999). Example: "00000000000000".
+          Nanoseconds (000000000..999999999). Example: "00000000000000".
 
   **%P**
-	  AM or PM.  Example "AM".
+          AM or PM.  Example "AM".
 
   **%p**
-	  am or pm. Example "am".
+          am or pm. Example "am".
 
   **%R**
-	  24 hour clock time (hh:mm). Example "23:59".
+          24 hour clock time (hh:mm). Example "23:59".
 
   **%r**
-	  12 hour clock time (hh:mm:ss AM or PM). Example: "01:59:00 AM".
+          12 hour clock time (hh:mm:ss AM or PM). Example: "01:59:00 AM".
 
   **%s**
-	  Seconds since epoch, (may contain fraction). Example "".
+          Seconds since epoch, (may contain fraction). Example "".
 
   **%S**
-	  Seconds (00-59). Example: "00".
+          Seconds (00-59). Example: "00".
 
   **%T**
-	  The time as "**%H**:**%M**:**%S**". Example: "".
+          The time as "**%H**:**%M**:**%S**". Example: "".
 
   **%w**
-	  Day of week (0-6). Example: "0".
+          Day of week (0-6). Example: "0".
 
   **%u**
-	  Day of week (1-7). Example "1".
+          Day of week (1-7). Example "1".
 
   **%U**
-	  Week number (0-53). Sunday is first day of week. Example "".
+          Week number (0-53). Sunday is first day of week. Example "".
 
   **%W**
-	  Week number (0-53)					"00"
+          Week number (0-53)                                    "00"
 
   **%V**
-	  ISO Week number. Monday is first day of week.	Example: "".
+          ISO Week number. Monday is first day of week. Example: "".
 
   **%x**
-	  Date representation mm/dd/yy. Example: "".
+          Date representation mm/dd/yy. Example: "".
 
   **%y**
-	  Year, last 2 digits. Example: "70".
+          Year, last 2 digits. Example: "70".
 
   **%Y**
-	  Year. Example: "1970".
+          Year. Example: "1970".
 
   **%z**
-	  Numeric timezone (+hhmm). Example: "+0000".
+          Numeric timezone (+hhmm). Example: "+0000".
 
 
 EXAMPLE

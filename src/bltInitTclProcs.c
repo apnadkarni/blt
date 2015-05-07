@@ -15,8 +15,8 @@ Blt_InitTclStubs(Tcl_Interp *interp, const char *version)
 
     clientData = NULL;
     if (Tcl_PkgRequireEx(interp, "blt_tcl", version, PKG_EXACT, &clientData) 
-	== NULL) {
-	return NULL;
+        == NULL) {
+        return NULL;
     }
     bltTclProcsPtr = clientData;
     return version;

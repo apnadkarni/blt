@@ -135,14 +135,14 @@ process; further details are presented below:
 
      ::
 
-	proc package_list_item {lbox token} {
-	   set xy [drag&drop location]
-	   set y  [expr [lindex $xy 1]-[winfo rooty $lbox]]
+        proc package_list_item {lbox token} {
+           set xy [drag&drop location]
+           set y  [expr [lindex $xy 1]-[winfo rooty $lbox]]
 
-	   set str [$lbox get [$lbox nearest $y]]
-	   $token.value configure -text $str
-	   return $str
-	}
+           set str [$lbox get [$lbox nearest $y]]
+           $token.value configure -text $str
+           return $str
+        }
 
     The return value is available later when the source and target
     communicate.  If the source has a command associated with its
@@ -413,4 +413,4 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-	       
+               

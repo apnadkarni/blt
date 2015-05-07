@@ -41,12 +41,12 @@
 #include "bltPs.h"
 
 struct _Blt_Ps {
-    Tcl_Interp *interp;			/* Interpreter to report errors to. */
+    Tcl_Interp *interp;                 /* Interpreter to report errors to. */
     Blt_DBuffer dbuffer;                /* Dynamic buffer used to hold the
-					 * generated PostScript. */
+                                         * generated PostScript. */
     PageSetup *setupPtr;
 
-#define POSTSCRIPT_BUFSIZ	((BUFSIZ*2)-1)
+#define POSTSCRIPT_BUFSIZ       ((BUFSIZ*2)-1)
     /*
      * Utility space for building strings.  Currently used to create
      * PostScript output for the "postscript" command.

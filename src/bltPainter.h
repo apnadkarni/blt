@@ -56,29 +56,29 @@ BLT_EXTERN void Blt_FreePainter(Blt_Painter painter);
 BLT_EXTERN Blt_Painter Blt_GetPainter(Tk_Window tkwin, float gamma);
 
 BLT_EXTERN Blt_Painter Blt_GetPainterFromDrawable(Display *display, 
-	Drawable drawable, float gamma);
+        Drawable drawable, float gamma);
 
 BLT_EXTERN GC Blt_PainterGC(Blt_Painter painter);
 
 BLT_EXTERN int Blt_PainterDepth(Blt_Painter painter);
 
 BLT_EXTERN int Blt_PaintPicture(Blt_Painter painter, Drawable drawable, 
-	Blt_Picture src, int srcX, int srcY, int width, int height, 
-	int destX, int destY, unsigned int flags);
+        Blt_Picture src, int srcX, int srcY, int width, int height, 
+        int destX, int destY, unsigned int flags);
 
 BLT_EXTERN int Blt_PaintPictureWithBlend(Blt_Painter painter, Drawable drawable, 
-	Blt_Picture src, int srcX, int srcY, int width, int height, 
-	int destX, int destY, unsigned int flags);
+        Blt_Picture src, int srcX, int srcY, int width, int height, 
+        int destX, int destY, unsigned int flags);
 
 BLT_EXTERN Blt_Picture Blt_PaintCheckbox(int width, int height, 
-	XColor *fillColor, XColor *outlineColor, XColor *checkColor, int isOn);
+        XColor *fillColor, XColor *outlineColor, XColor *checkColor, int isOn);
 
 BLT_EXTERN Blt_Picture Blt_PaintRadioButton(int width, int height, Blt_Bg bg, 
-	XColor *fill, XColor *outline, int isOn);
+        XColor *fill, XColor *outline, int isOn);
 BLT_EXTERN Blt_Picture Blt_PaintRadioButtonOld(int width, int height, 
-	XColor *bg, XColor *fill, XColor *outline, XColor *check, int isOn);
+        XColor *bg, XColor *fill, XColor *outline, XColor *check, int isOn);
 
 BLT_EXTERN Blt_Picture Blt_PaintDelete(int width, int height, XColor *bgColor,
-	XColor *fillColor, XColor *symColor, int isActive);
+        XColor *fillColor, XColor *symColor, int isActive);
 
 #endif /* _BLT_PAINTER_H */

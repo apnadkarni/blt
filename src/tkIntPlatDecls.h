@@ -71,10 +71,10 @@
 #ifdef __WIN32__
 /* 16 */
 extern HDC TkWinGetDrawableDC(Display *display, Drawable drawable, 
-	TkWinDCState *state);
+        TkWinDCState *state);
 /* 22 */
 extern void TkWinReleaseDrawableDC(Drawable drawable, HDC hdc, 
-	TkWinDCState *state);
+        TkWinDCState *state);
 #endif /* __WIN32__ */
 
 typedef struct TkIntPlatStubs {
@@ -99,7 +99,7 @@ typedef struct TkIntPlatStubs {
     void *hook15;
 #ifdef WIN32
     HDC (*tkWinGetDrawableDC)(Display *display, Drawable drawable, 
-	TkWinDCState *state);	/* 16 */
+        TkWinDCState *state);   /* 16 */
 #else 
     void *hook16;
 #endif
@@ -110,7 +110,7 @@ typedef struct TkIntPlatStubs {
     void *hook21;
 #ifdef WIN32
     void (*tkWinReleaseDrawableDC)(Drawable drawable, HDC hdc, 
-	TkWinDCState *state);	/* 22 */
+        TkWinDCState *state);   /* 22 */
 #else
     void *hook22;
 #endif
@@ -176,11 +176,11 @@ extern TkIntPlatStubs *tkIntPlatStubsPtr;
 #ifdef __WIN32__
 #ifndef TkWinGetDrawableDC
 #define TkWinGetDrawableDC \
-	(tkIntPlatStubsPtr->tkWinGetDrawableDC) /* 16 */
+        (tkIntPlatStubsPtr->tkWinGetDrawableDC) /* 16 */
 #endif
 #ifndef TkWinReleaseDrawableDC
 #define TkWinReleaseDrawableDC \
-	(tkIntPlatStubsPtr->tkWinReleaseDrawableDC) /* 22 */
+        (tkIntPlatStubsPtr->tkWinReleaseDrawableDC) /* 22 */
 #endif
 #endif /* __WIN32__ */
 

@@ -98,8 +98,8 @@ going to fit.  Obviously, both vectors must be the same length.
     blt::vector x(10) y(10)
 
     for {set i 10} {$i > 0} {incr i -1} {
-	set x($i-1) [expr $i*$i]
-	set y($i-1) [expr sin($i*$i*$i)]
+        set x($i-1) [expr $i*$i]
+        set y($i-1) [expr sin($i*$i*$i)]
     }
 
 We now have two vectors "x" and "y" representing the ten data
@@ -170,7 +170,7 @@ REFERENCES
 ----------
 
 Numerical Analysis
-by R. Burden, J. Faires and A. Reynolds.	
+by R. Burden, J. Faires and A. Reynolds.        
 Prindle, Weber & Schmidt, 1981, pp. 112
 
 Shape Preserving Quadratic Splines 

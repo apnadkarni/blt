@@ -48,7 +48,7 @@
 
 #ifndef ALIGN
 #define ALIGN(a) \
-	(((size_t)a + (sizeof(double) - 1)) & (~(sizeof(double) - 1)))
+        (((size_t)a + (sizeof(double) - 1)) & (~(sizeof(double) - 1)))
 #endif /* ALIGN */
 
 typedef struct _Blt_ChainLink ChainLink;
@@ -59,11 +59,11 @@ typedef struct _Blt_Chain Chain;
  *
  * Blt_Chain_Create --
  *
- *	Creates a new linked list (chain) structure and initializes its
- *	pointers;
+ *      Creates a new linked list (chain) structure and initializes its
+ *      pointers;
  *
  * Results:
- *	Returns a pointer to the newly created chain structure.
+ *      Returns a pointer to the newly created chain structure.
  *
  *---------------------------------------------------------------------------
  */
@@ -74,7 +74,7 @@ Blt_Chain_Create(void)
 
     chainPtr = Blt_Malloc(sizeof(Chain));
     if (chainPtr != NULL) {
-	Blt_Chain_Init(chainPtr);
+        Blt_Chain_Init(chainPtr);
     }
     return chainPtr;
 }
@@ -84,11 +84,11 @@ Blt_Chain_Create(void)
  *
  * Blt_Chain_AllocLink --
  *
- *	Creates a new chain link.  Unlink Blt_Chain_NewLink, this routine
- *	also allocates extra memory in the node for data.
+ *      Creates a new chain link.  Unlink Blt_Chain_NewLink, this routine
+ *      also allocates extra memory in the node for data.
  *
  * Results:
- *	The return value is the pointer to the newly created entry.
+ *      The return value is the pointer to the newly created entry.
  *
  *---------------------------------------------------------------------------
  */
@@ -101,8 +101,8 @@ Blt_Chain_AllocLink(size_t extraSize)
     linkSize = ALIGN(sizeof(ChainLink));
     linkPtr = Blt_AssertCalloc(1, linkSize + extraSize);
     if (extraSize > 0) {
-	/* Point clientData at the memory beyond the normal structure. */
-	linkPtr->clientData = (ClientData)((char *)linkPtr + linkSize);
+        /* Point clientData at the memory beyond the normal structure. */
+        linkPtr->clientData = (ClientData)((char *)linkPtr + linkSize);
     }
     return linkPtr;
 }
@@ -112,11 +112,11 @@ Blt_Chain_AllocLink(size_t extraSize)
  *
  * Blt_Chain_InitLink --
  *
- *	Initializes the new link.  This routine is for applications that
- *	use their own memory allocation procedures to allocate links.
+ *      Initializes the new link.  This routine is for applications that
+ *      use their own memory allocation procedures to allocate links.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -132,10 +132,10 @@ Blt_Chain_InitLink(ChainLink *linkPtr)
  *
  * Blt_Chain_NewLink --
  *
- *	Creates a new link.
+ *      Creates a new link.
  *
  * Results:
- *	The return value is the pointer to the newly created link.
+ *      The return value is the pointer to the newly created link.
  *
  *---------------------------------------------------------------------------
  */
@@ -155,12 +155,12 @@ Blt_Chain_NewLink(void)
  *
  * Blt_Chain_Reset --
  *
- *	Removes all the links in the chain, freeing the memory used for
- *	each link.  Memory pointed to by the link (clientData) is not
- *	freed.  It's the caller's responsibility to deallocate it.
+ *      Removes all the links in the chain, freeing the memory used for
+ *      each link.  Memory pointed to by the link (clientData) is not
+ *      freed.  It's the caller's responsibility to deallocate it.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -168,15 +168,15 @@ void
 Blt_Chain_Reset(Chain *chainPtr)        /* Chain to clear */
 {
     if (chainPtr != NULL) {
-	ChainLink *oldPtr;
-	ChainLink *linkPtr = chainPtr->head;
+        ChainLink *oldPtr;
+        ChainLink *linkPtr = chainPtr->head;
 
-	while (linkPtr != NULL) {
-	    oldPtr = linkPtr;
-	    linkPtr = linkPtr->next;
-	    Blt_Free(oldPtr);
-	}
-	Blt_Chain_Init(chainPtr);
+        while (linkPtr != NULL) {
+            oldPtr = linkPtr;
+            linkPtr = linkPtr->next;
+            Blt_Free(oldPtr);
+        }
+        Blt_Chain_Init(chainPtr);
     }
 }
 
@@ -190,7 +190,7 @@ Blt_Chain_Reset(Chain *chainPtr)        /* Chain to clear */
  *     previously allocated by Blt_Chain_Create.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -198,8 +198,8 @@ void
 Blt_Chain_Destroy(Chain *chainPtr)
 {
     if (chainPtr != NULL) {
-	Blt_Chain_Reset(chainPtr);
-	Blt_Free(chainPtr);
+        Blt_Chain_Reset(chainPtr);
+        Blt_Free(chainPtr);
     }
 }
 
@@ -208,10 +208,10 @@ Blt_Chain_Destroy(Chain *chainPtr)
  *
  * Blt_Chain_Init --
  *
- *	Initializes a linked list.
+ *      Initializes a linked list.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -227,11 +227,11 @@ Blt_Chain_Init(Chain *chainPtr)
  *
  * Blt_Chain_LinkAfter --
  *
- *	Inserts a link after another link.  If afterPtr is NULL, then the
- *	new link is prepended to the beginning of the chain.
+ *      Inserts a link after another link.  If afterPtr is NULL, then the
+ *      new link is prepended to the beginning of the chain.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -239,26 +239,26 @@ void
 Blt_Chain_LinkAfter(Chain *chainPtr, ChainLink *linkPtr, ChainLink *afterPtr)
 {
     if (chainPtr->head == NULL) {
-	chainPtr->tail = chainPtr->head = linkPtr;
+        chainPtr->tail = chainPtr->head = linkPtr;
     } else {
-	if (afterPtr == NULL) {
-	    /* Append to the end of the chain. */
-	    linkPtr->next = NULL;
-	    linkPtr->prev = chainPtr->tail;
-	    if (chainPtr->tail != NULL) {
-		chainPtr->tail->next = linkPtr;
-	    }
-	    chainPtr->tail = linkPtr;
-	} else {
-	    linkPtr->next = afterPtr->next;
-	    linkPtr->prev = afterPtr;
-	    if (afterPtr == chainPtr->tail) {
-		chainPtr->tail = linkPtr;
-	    } else {
-		afterPtr->next->prev = linkPtr;
-	    }
-	    afterPtr->next = linkPtr;
-	}
+        if (afterPtr == NULL) {
+            /* Append to the end of the chain. */
+            linkPtr->next = NULL;
+            linkPtr->prev = chainPtr->tail;
+            if (chainPtr->tail != NULL) {
+                chainPtr->tail->next = linkPtr;
+            }
+            chainPtr->tail = linkPtr;
+        } else {
+            linkPtr->next = afterPtr->next;
+            linkPtr->prev = afterPtr;
+            if (afterPtr == chainPtr->tail) {
+                chainPtr->tail = linkPtr;
+            } else {
+                afterPtr->next->prev = linkPtr;
+            }
+            afterPtr->next = linkPtr;
+        }
     }
     chainPtr->numLinks++;
 }
@@ -268,11 +268,11 @@ Blt_Chain_LinkAfter(Chain *chainPtr, ChainLink *linkPtr, ChainLink *afterPtr)
  *
  * Blt_Chain_LinkBefore --
  *
- *	Inserts a new link preceding a given link in a chain.  If beforePtr
- *	is NULL, then the new link is placed at the beginning of the list.
+ *      Inserts a new link preceding a given link in a chain.  If beforePtr
+ *      is NULL, then the new link is placed at the beginning of the list.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -280,26 +280,26 @@ void
 Blt_Chain_LinkBefore(Chain *chainPtr, ChainLink *linkPtr, ChainLink *beforePtr)
 {
     if (chainPtr->head == NULL) {
-	chainPtr->tail = chainPtr->head = linkPtr;
+        chainPtr->tail = chainPtr->head = linkPtr;
     } else {
-	if (beforePtr == NULL) {
-	    /* Prepend to the front of the chain */
-	    linkPtr->next = chainPtr->head;
-	    linkPtr->prev = NULL;
-	    if (chainPtr->head != NULL) {
-		chainPtr->head->prev = linkPtr;
-	    }
-	    chainPtr->head = linkPtr;
-	} else {
-	    linkPtr->prev = beforePtr->prev;
-	    linkPtr->next = beforePtr;
-	    if (beforePtr == chainPtr->head) {
-		chainPtr->head = linkPtr;
-	    } else {
-		beforePtr->prev->next = linkPtr;
-	    }
-	    beforePtr->prev = linkPtr;
-	}
+        if (beforePtr == NULL) {
+            /* Prepend to the front of the chain */
+            linkPtr->next = chainPtr->head;
+            linkPtr->prev = NULL;
+            if (chainPtr->head != NULL) {
+                chainPtr->head->prev = linkPtr;
+            }
+            chainPtr->head = linkPtr;
+        } else {
+            linkPtr->prev = beforePtr->prev;
+            linkPtr->next = beforePtr;
+            if (beforePtr == chainPtr->head) {
+                chainPtr->head = linkPtr;
+            } else {
+                beforePtr->prev->next = linkPtr;
+            }
+            beforePtr->prev = linkPtr;
+        }
     }
     chainPtr->numLinks++;
 }
@@ -309,11 +309,11 @@ Blt_Chain_LinkBefore(Chain *chainPtr, ChainLink *linkPtr, ChainLink *beforePtr)
  *
  * Blt_Chain_UnlinkLink --
  *
- *	Unlinks a link from the chain. The link is not deallocated, but
- *	only removed from the chain.
+ *      Unlinks a link from the chain. The link is not deallocated, but
+ *      only removed from the chain.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -325,23 +325,23 @@ Blt_Chain_UnlinkLink(Chain *chainPtr, ChainLink *linkPtr)
                                          * chain. */
     unlinked = FALSE;
     if (chainPtr->head == linkPtr) {
-	chainPtr->head = linkPtr->next;
-	unlinked = TRUE;
+        chainPtr->head = linkPtr->next;
+        unlinked = TRUE;
     }
     if (chainPtr->tail == linkPtr) {
-	chainPtr->tail = linkPtr->prev;
-	unlinked = TRUE;
+        chainPtr->tail = linkPtr->prev;
+        unlinked = TRUE;
     }
     if (linkPtr->next != NULL) {
-	linkPtr->next->prev = linkPtr->prev;
-	unlinked = TRUE;
+        linkPtr->next->prev = linkPtr->prev;
+        unlinked = TRUE;
     }
     if (linkPtr->prev != NULL) {
-	linkPtr->prev->next = linkPtr->next;
-	unlinked = TRUE;
+        linkPtr->prev->next = linkPtr->next;
+        unlinked = TRUE;
     }
     if (unlinked) {
-	chainPtr->numLinks--;
+        chainPtr->numLinks--;
     }
     linkPtr->prev = linkPtr->next = NULL;
 }
@@ -351,12 +351,12 @@ Blt_Chain_UnlinkLink(Chain *chainPtr, ChainLink *linkPtr)
  *
  * Blt_Chain_DeleteLink --
  *
- *	Unlinks and frees the given link from the chain.  It's assumed that
- *	the link belong to the chain. No error checking is performed to
- *	verify this.
+ *      Unlinks and frees the given link from the chain.  It's assumed that
+ *      the link belong to the chain. No error checking is performed to
+ *      verify this.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -372,11 +372,11 @@ Blt_Chain_DeleteLink(Blt_Chain chain, Blt_ChainLink link)
  *
  * Blt_Chain_Append
  *
- *	Creates and new link with the given data and appends it to the end
- *	of the chain.
+ *      Creates and new link with the given data and appends it to the end
+ *      of the chain.
  *
  * Results:
- *	Returns a pointer to the link created.
+ *      Returns a pointer to the link created.
  *
  *---------------------------------------------------------------------------
  */
@@ -396,11 +396,11 @@ Blt_Chain_Append(Blt_Chain chain, ClientData clientData)
  *
  * Blt_Chain_Prepend
  *
- *	Creates and new link with the given data and prepends it to
- *	beginning of the chain.
+ *      Creates and new link with the given data and prepends it to
+ *      beginning of the chain.
  *
  * Results:
- *	Returns a pointer to the link created.
+ *      Returns a pointer to the link created.
  *
  *---------------------------------------------------------------------------
  */
@@ -420,13 +420,13 @@ Blt_Chain_Prepend(Blt_Chain chain, ClientData clientData)
  *
  * Blt_Chain_GetNthLink --
  *
- *	Find the link at the given position in the chain.  The position is
- *	number from 0.  If position is negative is returns the nth link
- *	from the back of the chain.
+ *      Find the link at the given position in the chain.  The position is
+ *      number from 0.  If position is negative is returns the nth link
+ *      from the back of the chain.
  *
  * Results:
- *	Returns the pointer to the link, if that numbered link
- *	exists. Otherwise NULL.
+ *      Returns the pointer to the link, if that numbered link
+ *      exists. Otherwise NULL.
  *
  *---------------------------------------------------------------------------
  */
@@ -434,28 +434,28 @@ Blt_ChainLink
 Blt_Chain_GetNthLink(Chain *chainPtr, long position)
 {
     if (chainPtr != NULL) {
-	if (position < 0) {
-	    ChainLink *linkPtr;
-	    int i;
+        if (position < 0) {
+            ChainLink *linkPtr;
+            int i;
 
-	    position = -position;
-	    for (i = 0, linkPtr = chainPtr->tail; linkPtr != NULL; 
-		 linkPtr = linkPtr->prev, i++) {
-		if (i == position) {
-		    return linkPtr;
-		}
-	    }
-	} else {
-	    ChainLink *linkPtr;
-	    int i;
+            position = -position;
+            for (i = 0, linkPtr = chainPtr->tail; linkPtr != NULL; 
+                 linkPtr = linkPtr->prev, i++) {
+                if (i == position) {
+                    return linkPtr;
+                }
+            }
+        } else {
+            ChainLink *linkPtr;
+            int i;
 
-	    for (i = 0, linkPtr = chainPtr->head; linkPtr != NULL; 
-		 linkPtr = linkPtr->next, i++) {
-		if (i == position) {
-		    return linkPtr;
-		}
-	    }
-	}
+            for (i = 0, linkPtr = chainPtr->head; linkPtr != NULL; 
+                 linkPtr = linkPtr->next, i++) {
+                if (i == position) {
+                    return linkPtr;
+                }
+            }
+        }
     }
     return NULL;
 }
@@ -465,13 +465,13 @@ Blt_Chain_GetNthLink(Chain *chainPtr, long position)
  *
  * Blt_Chain_Sort --
  *
- *	Sorts the chain according to the given comparison routine.  
+ *      Sorts the chain according to the given comparison routine.  
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The chain is reordered.
+ *      The chain is reordered.
  *
  *---------------------------------------------------------------------------
  */
@@ -483,28 +483,28 @@ Blt_Chain_Sort(Chain *chainPtr, Blt_ChainCompareProc *proc)
     long i;
 
     if (chainPtr->numLinks < 2) {
-	return;
+        return;
     }
     linkArr = Blt_Malloc(sizeof(Blt_ChainLink) * (chainPtr->numLinks + 1));
     if (linkArr == NULL) {
-	return;                         /* Out of memory. */
+        return;                         /* Out of memory. */
     }
     i = 0;
     for (linkPtr = chainPtr->head; linkPtr != NULL; 
-	 linkPtr = linkPtr->next) { 
-	linkArr[i++] = linkPtr;
+         linkPtr = linkPtr->next) { 
+        linkArr[i++] = linkPtr;
     }
     qsort((char *)linkArr, chainPtr->numLinks, sizeof(Blt_ChainLink),
-	(QSortCompareProc *)proc);
+        (QSortCompareProc *)proc);
 
     /* Rethread the chain. */
     linkPtr = linkArr[0];
     chainPtr->head = linkPtr;
     linkPtr->prev = NULL;
     for (i = 1; i < chainPtr->numLinks; i++) {
-	linkPtr->next = linkArr[i];
-	linkPtr->next->prev = linkPtr;
-	linkPtr = linkPtr->next;
+        linkPtr->next = linkArr[i];
+        linkPtr->next->prev = linkPtr;
+        linkPtr = linkPtr->next;
     }
     chainPtr->tail = linkPtr;
     linkPtr->next = NULL;
@@ -516,13 +516,13 @@ Blt_Chain_Sort(Chain *chainPtr, Blt_ChainCompareProc *proc)
  *
  * Blt_Chain_Reverse --
  *
- *	Reverse the order of the chain.  
+ *      Reverse the order of the chain.  
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The chain is reordered.
+ *      The chain is reordered.
  *
  *---------------------------------------------------------------------------
  */
@@ -533,10 +533,10 @@ Blt_Chain_Reverse(Chain *chainPtr)
 
     lastPtr = NULL;
     for (linkPtr = chainPtr->head; linkPtr != NULL; linkPtr = nextPtr) { 
-	nextPtr = linkPtr->next;
-	linkPtr->next = lastPtr;
-	linkPtr->prev = nextPtr;
-	lastPtr = linkPtr;
+        nextPtr = linkPtr->next;
+        linkPtr->next = lastPtr;
+        linkPtr->prev = nextPtr;
+        lastPtr = linkPtr;
     }
     /* Swap head and tail pointers. */
     linkPtr = chainPtr->head;
@@ -552,7 +552,7 @@ Blt_Chain_Reverse(Chain *chainPtr)
  *
  *
  * Results:
- *	Return boolean value if the first link comes before the second.
+ *      Return boolean value if the first link comes before the second.
  *
  *---------------------------------------------------------------------------
  */
@@ -562,9 +562,9 @@ Blt_Chain_IsBefore(ChainLink *firstPtr, ChainLink *lastPtr)
     ChainLink *linkPtr;
 
     for (linkPtr = firstPtr; linkPtr != NULL; linkPtr = linkPtr->next) {
-	if (linkPtr == lastPtr) {
-	    return TRUE;
-	}
+        if (linkPtr == lastPtr) {
+            return TRUE;
+        }
     }
     return FALSE;
 }

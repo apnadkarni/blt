@@ -43,7 +43,7 @@
  * for special variable resolvers.  
  */
 BLT_EXTERN Tcl_Var Blt_GetCachedVar(Blt_HashTable *tablePtr, const char *label,
-	Tcl_Obj *objPtr);
+        Tcl_Obj *objPtr);
 
 BLT_EXTERN void Blt_FreeCachedVars(Blt_HashTable *tablePtr);
 

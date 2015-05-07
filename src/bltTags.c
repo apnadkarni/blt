@@ -60,10 +60,10 @@ typedef struct {
  *
  * NewTagTable --
  *
- *	Creates a new tag table representing a single tag.
+ *      Creates a new tag table representing a single tag.
  *
  * Results:
- *	Returns a pointer to the newly created tag table.
+ *      Returns a pointer to the newly created tag table.
  *
  *---------------------------------------------------------------------------
  */
@@ -83,10 +83,10 @@ NewTagTable()
  *
  * FreeTagTable --
  *
- *	Frees the tag table representing a single tag.
+ *      Frees the tag table representing a single tag.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -94,9 +94,9 @@ static void
 FreeTagTable(TagTable *tagTablePtr)
 {
     if (tagTablePtr != NULL) {
-	Blt_Chain_Reset(&tagTablePtr->chain);
-	Blt_DeleteHashTable(&tagTablePtr->table);
-	Blt_Free(tagTablePtr);
+        Blt_Chain_Reset(&tagTablePtr->chain);
+        Blt_DeleteHashTable(&tagTablePtr->table);
+        Blt_Free(tagTablePtr);
     }
 }
 
@@ -105,10 +105,10 @@ FreeTagTable(TagTable *tagTablePtr)
  *
  * FindTagTable --
  *
- *	Searches for the tag table given by "tag".  
+ *      Searches for the tag table given by "tag".  
  *
  * Results:
- *	Returns the pointer to the tag table if found, otherwise NULL.
+ *      Returns the pointer to the tag table if found, otherwise NULL.
  *
  *---------------------------------------------------------------------------
  */
@@ -119,7 +119,7 @@ FindTagTable(struct _Blt_Tags *tagsPtr, const char *tag)
 
     hPtr = Blt_FindHashEntry(&tagsPtr->table, tag);
     if (hPtr == NULL) {
-	return NULL;			/* No tag by name. */
+        return NULL;                    /* No tag by name. */
     }
     return Blt_GetHashValue(hPtr);
 }
@@ -129,11 +129,11 @@ FindTagTable(struct _Blt_Tags *tagsPtr, const char *tag)
  *
  * GetTagTable --
  *
- *	Returns the tag table given by "tag".  May create the tag
- *	table is needed.
+ *      Returns the tag table given by "tag".  May create the tag
+ *      table is needed.
  *
  * Results:
- *	Returns the pointer to the tag table.
+ *      Returns the pointer to the tag table.
  *
  *---------------------------------------------------------------------------
  */
@@ -146,10 +146,10 @@ GetTagTable(Tags *tagsPtr, const char *tag)
 
     hPtr = Blt_CreateHashEntry(&tagsPtr->table, tag, &isNew);
     if (isNew) {
-	tagTablePtr = NewTagTable();
-	Blt_SetHashValue(hPtr, tagTablePtr);
+        tagTablePtr = NewTagTable();
+        Blt_SetHashValue(hPtr, tagTablePtr);
     } else {
-	tagTablePtr = Blt_GetHashValue(hPtr);
+        tagTablePtr = Blt_GetHashValue(hPtr);
     }
     return tagTablePtr;
 }
@@ -159,11 +159,11 @@ GetTagTable(Tags *tagsPtr, const char *tag)
  *
  * AddTagEntry --
  *
- *	Adds an entry for an item into the given tag table.  Tag entries
- *	consist of a hash table entry and a chain entry.
+ *      Adds an entry for an item into the given tag table.  Tag entries
+ *      consist of a hash table entry and a chain entry.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -176,7 +176,7 @@ AddTagEntry(TagTable *tagTablePtr, ClientData item)
 
     hPtr = Blt_CreateHashEntry(&tagTablePtr->table, (char *)item, &isNew);
     if (!isNew) {
-	return;
+        return;
     }
     link = Blt_Chain_Append(&tagTablePtr->chain, item);
     Blt_SetHashValue(hPtr, link);
@@ -187,10 +187,10 @@ AddTagEntry(TagTable *tagTablePtr, ClientData item)
  *
  * DeleteTagEntry --
  *
- *	Deletes the entry for an item in the given tag table.  
+ *      Deletes the entry for an item in the given tag table.  
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -202,7 +202,7 @@ DeleteTagEntry(TagTable *tablePtr, ClientData item)
 
     hPtr = Blt_FindHashEntry(&tablePtr->table, (char *)item);
     if (hPtr == NULL) {
-	return;
+        return;
     }
     link = Blt_GetHashValue(hPtr);
     Blt_Chain_DeleteLink(&tablePtr->chain, link);
@@ -214,10 +214,10 @@ DeleteTagEntry(TagTable *tablePtr, ClientData item)
  *
  * Blt_Tags_Create --
  *
- *	Creates a new tags structure and initializes its pointers;
+ *      Creates a new tags structure and initializes its pointers;
  *
  * Results:
- *	Returns a pointer to the newly created tags structure.
+ *      Returns a pointer to the newly created tags structure.
  *
  *---------------------------------------------------------------------------
  */
@@ -228,7 +228,7 @@ Blt_Tags_Create(void)
 
     tagsPtr = Blt_Malloc(sizeof(Tags));
     if (tagsPtr != NULL) {
-	Blt_Tags_Init(tagsPtr);
+        Blt_Tags_Init(tagsPtr);
     }
     return tagsPtr;
 }
@@ -243,7 +243,7 @@ Blt_Tags_Create(void)
  *     allocated by Blt_Tags_Create.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -254,11 +254,11 @@ Blt_Tags_Reset(Tags *tagsPtr)
     Blt_HashSearch iter;
 
     for (hPtr = Blt_FirstHashEntry(&tagsPtr->table, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	TagTable *tablePtr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	FreeTagTable(tablePtr);
+         hPtr = Blt_NextHashEntry(&iter)) {
+        TagTable *tablePtr;
+        
+        tablePtr = Blt_GetHashValue(hPtr);
+        FreeTagTable(tablePtr);
     }
     Blt_DeleteHashTable(&tagsPtr->table);
     Blt_InitHashTable(&tagsPtr->table, BLT_STRING_KEYS);
@@ -274,7 +274,7 @@ Blt_Tags_Reset(Tags *tagsPtr)
  *     allocated by Blt_Tags_Create.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -282,8 +282,8 @@ void
 Blt_Tags_Destroy(Tags *tagsPtr)
 {
     if (tagsPtr != NULL) {
-	Blt_Tags_Reset(tagsPtr);
-	Blt_Free(tagsPtr);
+        Blt_Tags_Reset(tagsPtr);
+        Blt_Free(tagsPtr);
     }
 }
 
@@ -292,10 +292,10 @@ Blt_Tags_Destroy(Tags *tagsPtr)
  *
  * Blt_Tags_Init --
  *
- *	Initializes a tags set.
+ *      Initializes a tags set.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -311,11 +311,11 @@ Blt_Tags_Init(Tags *tagsPtr)
  *
  * Blt_Tags_ItemHasTag --
  *
- *	Indicates if the item has the given tag.  If the tag doesn't 
- *	exist, 0 is returned.
+ *      Indicates if the item has the given tag.  If the tag doesn't 
+ *      exist, 0 is returned.
  *
  * Results:
- *	Returns 1 is the item has the tag, 0 otherwise.
+ *      Returns 1 is the item has the tag, 0 otherwise.
  *
  *---------------------------------------------------------------------------
  */
@@ -327,11 +327,11 @@ Blt_Tags_ItemHasTag(Tags *tagsPtr, ClientData item, const char *tag)
 
     tagTablePtr = FindTagTable(tagsPtr, tag);
     if (tagTablePtr == NULL) {
-	return FALSE;
+        return FALSE;
     }
     hPtr = Blt_FindHashEntry(&tagTablePtr->table, (char *)item);
     if (hPtr == NULL) {
-	return FALSE;
+        return FALSE;
     }
     return TRUE;
 }
@@ -341,12 +341,12 @@ Blt_Tags_ItemHasTag(Tags *tagsPtr, ClientData item, const char *tag)
  *
  * Blt_Tags_AddTag --
  *
- *	Add the tag to the table of tags.  There doesn't have to be any
- *	item associated with the tag.  It is not an error if the tag
- *	already exists.
+ *      Add the tag to the table of tags.  There doesn't have to be any
+ *      item associated with the tag.  It is not an error if the tag
+ *      already exists.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -361,11 +361,11 @@ Blt_Tags_AddTag(Tags *tagsPtr, const char *tag)
  *
  * Blt_Tags_AddItemToTag --
  *
- *	Add the item to the given tag.  If the tag doesn't already exist,
- *	it is automatically created.
+ *      Add the item to the given tag.  If the tag doesn't already exist,
+ *      it is automatically created.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -384,11 +384,11 @@ Blt_Tags_AddItemToTag(Tags *tagsPtr, const char *tag, ClientData item)
  *
  * Blt_Tags_ForgetTag --
  *
- *	Remove the tag for the tag table.  It is not an error if the
- *	the tag doesn't exist.
+ *      Remove the tag for the tag table.  It is not an error if the
+ *      the tag doesn't exist.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -400,7 +400,7 @@ Blt_Tags_ForgetTag(Tags *tagsPtr, const char *tag)
 
     hPtr = Blt_FindHashEntry(&tagsPtr->table, tag);
     if (hPtr == NULL) {
-	return;				/* No tag by name. */
+        return;                         /* No tag by name. */
     }
     tagTablePtr = Blt_GetHashValue(hPtr);
     FreeTagTable(tagTablePtr);
@@ -412,12 +412,12 @@ Blt_Tags_ForgetTag(Tags *tagsPtr, const char *tag)
  *
  * Blt_Tags_RemoveItemFromTag --
  *
- *	Removes the item from for the tag's list of items.  It is not an
- *	error if the the tag doesn't have the item or if the tag doesn't
- *	exist.
+ *      Removes the item from for the tag's list of items.  It is not an
+ *      error if the the tag doesn't have the item or if the tag doesn't
+ *      exist.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -431,7 +431,7 @@ Blt_Tags_RemoveItemFromTag(Tags *tagsPtr, const char *tag, ClientData item)
         TagTable *tagTablePtr;
     
         tagTablePtr = Blt_GetHashValue(hPtr);
-	DeleteTagEntry(tagTablePtr, item);
+        DeleteTagEntry(tagTablePtr, item);
     }
 }
 
@@ -440,11 +440,11 @@ Blt_Tags_RemoveItemFromTag(Tags *tagsPtr, const char *tag, ClientData item)
  *
  * Blt_Tags_ClearTagsFromItem --
  *
- *	Removes all the item from all the tag tables.  It is not an
- *	error if the the tag doesn't belong to any tag.
+ *      Removes all the item from all the tag tables.  It is not an
+ *      error if the the tag doesn't belong to any tag.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -455,11 +455,11 @@ Blt_Tags_ClearTagsFromItem(Tags *tagsPtr, ClientData item)
     Blt_HashSearch iter;
 
     for (hPtr = Blt_FirstHashEntry(&tagsPtr->table, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	TagTable *tagTablePtr;
-	
-	tagTablePtr = Blt_GetHashValue(hPtr);
-	DeleteTagEntry(tagTablePtr, item);
+         hPtr = Blt_NextHashEntry(&iter)) {
+        TagTable *tagTablePtr;
+        
+        tagTablePtr = Blt_GetHashValue(hPtr);
+        DeleteTagEntry(tagTablePtr, item);
     }
 }
 
@@ -468,10 +468,10 @@ Blt_Tags_ClearTagsFromItem(Tags *tagsPtr, ClientData item)
  *
  * Blt_Tags_AppendTagsToChain --
  *
- *	Appends to a list of all the tags an item is associated with.
+ *      Appends to a list of all the tags an item is associated with.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -482,15 +482,15 @@ Blt_Tags_AppendTagsToChain(Tags *tagsPtr, ClientData item, Blt_Chain list)
     Blt_HashSearch iter;
 
     for (hPtr = Blt_FirstHashEntry(&tagsPtr->table, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	TagTable *tagTablePtr;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        TagTable *tagTablePtr;
         const char *tag;
-	
-	tagTablePtr = Blt_GetHashValue(hPtr);
+        
+        tagTablePtr = Blt_GetHashValue(hPtr);
         tag = Blt_GetHashKey(&tagsPtr->table, hPtr);
-	if (Blt_FindHashEntry(&tagTablePtr->table, (char *)item) != NULL) {
-	    Blt_Chain_Append(list, (ClientData)tag);
-	}
+        if (Blt_FindHashEntry(&tagTablePtr->table, (char *)item) != NULL) {
+            Blt_Chain_Append(list, (ClientData)tag);
+        }
     }
 }
 
@@ -499,34 +499,34 @@ Blt_Tags_AppendTagsToChain(Tags *tagsPtr, ClientData item, Blt_Chain list)
  *
  * Blt_Tags_AppendTagsToObj --
  *
- *	Appends to a Tcl_Obj list all the tags an item is associated
- *	with.
+ *      Appends to a Tcl_Obj list all the tags an item is associated
+ *      with.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 void
 Blt_Tags_AppendTagsToObj(Tags *tagsPtr, ClientData item, 
-			  Tcl_Obj *listObjPtr)
+                          Tcl_Obj *listObjPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
 
     for (hPtr = Blt_FirstHashEntry(&tagsPtr->table, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	TagTable *tagTablePtr;
-	
-	tagTablePtr = Blt_GetHashValue(hPtr);
-	if (Blt_FindHashEntry(&tagTablePtr->table, (char *)item) != NULL) {
-	    Tcl_Obj *objPtr;
-	    const char *name;
-	    
-	    name = Blt_GetHashKey(&tagsPtr->table, hPtr);
-	    objPtr = Tcl_NewStringObj(name, -1);
-	    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-	}
+         hPtr = Blt_NextHashEntry(&iter)) {
+        TagTable *tagTablePtr;
+        
+        tagTablePtr = Blt_GetHashValue(hPtr);
+        if (Blt_FindHashEntry(&tagTablePtr->table, (char *)item) != NULL) {
+            Tcl_Obj *objPtr;
+            const char *name;
+            
+            name = Blt_GetHashKey(&tagsPtr->table, hPtr);
+            objPtr = Tcl_NewStringObj(name, -1);
+            Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+        }
     }
 }
 
@@ -541,10 +541,10 @@ Blt_Tags_GetTable(Tags *tagsPtr)
  *
  * Blt_Tags_AppendAllTagsToObj --
  *
- *	Appends to a Tcl_Obj list all the tags in the tag table.
+ *      Appends to a Tcl_Obj list all the tags in the tag table.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -555,13 +555,13 @@ Blt_Tags_AppendAllTagsToObj(Tags *tagsPtr, Tcl_Obj *listObjPtr)
     Blt_HashSearch iter;
 
     for (hPtr = Blt_FirstHashEntry(&tagsPtr->table, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	const char *name;
-	Tcl_Obj *objPtr;
-	
-	name = Blt_GetHashKey(&tagsPtr->table, hPtr);
-	objPtr = Tcl_NewStringObj(name, -1);
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+         hPtr = Blt_NextHashEntry(&iter)) {
+        const char *name;
+        Tcl_Obj *objPtr;
+        
+        name = Blt_GetHashKey(&tagsPtr->table, hPtr);
+        objPtr = Tcl_NewStringObj(name, -1);
+        Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
     }
 }
 
@@ -570,12 +570,12 @@ Blt_Tags_AppendAllTagsToObj(Tags *tagsPtr, Tcl_Obj *listObjPtr)
  *
  * Blt_Tags_GetItemList --
  *
- *	Returns the chain of all the items corresponding to a specific
- *	tag.  If the tag doesn't exist, NULL is return;
+ *      Returns the chain of all the items corresponding to a specific
+ *      tag.  If the tag doesn't exist, NULL is return;
  *
  * Results:
- *	A chain contains all the items that have the tag.  If no
- *	tag exists, then NULL is returned.
+ *      A chain contains all the items that have the tag.  If no
+ *      tag exists, then NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -587,7 +587,7 @@ Blt_Tags_GetItemList(Tags *tagsPtr, const char *tagName)
 
     hPtr = Blt_FindHashEntry(&tagsPtr->table, tagName);
     if (hPtr == NULL) {
-	return NULL;				/* No tag by name. */
+        return NULL;                            /* No tag by name. */
     }
     tagTablePtr = Blt_GetHashValue(hPtr);
     return &tagTablePtr->chain;

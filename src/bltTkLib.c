@@ -2,8 +2,8 @@
 /*
  * bltTkLib.c --
  *
- *	Stub object that will be statically linked into extensions that wish
- *	to access Tk-related routines in BLT.
+ *      Stub object that will be statically linked into extensions that wish
+ *      to access Tk-related routines in BLT.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *
@@ -71,15 +71,15 @@ IsDigit(const int c)
  *
  * Blt_InitTkStubs --
  *
- *	Checks that the correct version of Tk is loaded and that it supports
- *	stubs. It then initialises the stub table pointers.
+ *      Checks that the correct version of Tk is loaded and that it supports
+ *      stubs. It then initialises the stub table pointers.
  *
  * Results:
- *	The actual version of Tk that satisfies the request, or NULL to
- *	indicate that an error occurred.
+ *      The actual version of Tk that satisfies the request, or NULL to
+ *      indicate that an error occurred.
  *
  * Side effects:
- *	Sets the stub table pointers.
+ *      Sets the stub table pointers.
  *
  *----------------------------------------------------------------------
  */
@@ -96,45 +96,45 @@ Blt_InitTkStubs(Tcl_Interp *interp, const char *version, int exact)
 
     actual = Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_ANY, &clientData);
     if (actual == NULL) {
-	return NULL;
+        return NULL;
     }
     if (exact) {
-	const char *p;
-	int count = 0;
+        const char *p;
+        int count = 0;
 
-	p = version;
-	count = 0;
-	while (*p != '\0') {
-	    count += !IsDigit(*p++);
-	}
-	if (count == 1) {
-	    const char *q;
+        p = version;
+        count = 0;
+        while (*p != '\0') {
+            count += !IsDigit(*p++);
+        }
+        if (count == 1) {
+            const char *q;
 
-	    q = actual;
-	    p = version;
-	    while (*p && (*p == *q)) {
-		p++; q++;
-	    }
-	    if (*p) {
-		/* Construct error message */
-		Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_EXACT, NULL);
-		return NULL;
+            q = actual;
+            p = version;
+            while (*p && (*p == *q)) {
+                p++; q++;
+            }
+            if (*p) {
+                /* Construct error message */
+                Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_EXACT, NULL);
+                return NULL;
 
-	    }
-	} else {
-	    actual = Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_EXACT, 
-		NULL);
-	    if (actual == NULL) {
-		return NULL;
-	    }
-	}
+            }
+        } else {
+            actual = Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_EXACT, 
+                NULL);
+            if (actual == NULL) {
+                return NULL;
+            }
+        }
     }
 
     if (clientData == NULL) {
-	Tcl_AppendResult(interp,
-		"This implementation of Blt Tk does not support stubs",
-			 (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp,
+                "This implementation of Blt Tk does not support stubs",
+                         (char *)NULL);
+        return NULL;
     }
     bltTkProcsPtr = clientData;
     bltTkIntProcsPtr = bltTkProcsPtr->hooks->bltTkIntProcs;

@@ -54,12 +54,12 @@ DLLEXPORT extern Tcl_AppInitProc blt_table_sqlite_init;
 DLLEXPORT extern Tcl_AppInitProc blt_table_sqlite_safe_init;
 
 /*
- * Format	Import		Export
- * csv		file/data	file/data
- * tree		data		data
- * vector	data		data
- * xml		file/data	file/data
- * sqlite	file		file
+ * Format       Import          Export
+ * csv          file/data       file/data
+ * tree         data            data
+ * vector       data            data
+ * xml          file/data       file/data
+ * sqlite       file            file
  */
 
 /*
@@ -73,9 +73,9 @@ typedef struct {
 static Blt_SwitchSpec importSwitches[] = 
 {
     {BLT_SWITCH_OBJ, "-file",  "fileName", (char *)NULL,
-	Blt_Offset(ImportArgs, fileObjPtr), 0, 0},
+        Blt_Offset(ImportArgs, fileObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-query", "string", (char *)NULL,
-	Blt_Offset(ImportArgs, queryObjPtr), 0, 0},
+        Blt_Offset(ImportArgs, queryObjPtr), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -90,7 +90,7 @@ typedef struct {
     const char *tableName;
 } ExportArgs;
 
-#define EXPORT_ROWLABELS	(1<<0)
+#define EXPORT_ROWLABELS        (1<<0)
 
 static Blt_SwitchFreeProc ColumnIterFreeProc;
 static Blt_SwitchParseProc ColumnIterSwitchProc;
@@ -106,15 +106,15 @@ static Blt_SwitchCustom rowIterSwitch = {
 static Blt_SwitchSpec exportSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
-	Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
+        Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
-	Blt_Offset(ExportArgs, fileObjPtr), 0, 0},
+        Blt_Offset(ExportArgs, fileObjPtr), 0, 0},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
-	Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
+        Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
     {BLT_SWITCH_BITMASK, "-rowlabels",  "", (char *)NULL,
-	Blt_Offset(ExportArgs, flags), 0, EXPORT_ROWLABELS},
+        Blt_Offset(ExportArgs, flags), 0, EXPORT_ROWLABELS},
     {BLT_SWITCH_OBJ, "-table", "tableName", (char *)NULL,
-	Blt_Offset(ExportArgs, tableObjPtr), 0, 0},
+        Blt_Offset(ExportArgs, tableObjPtr), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -129,10 +129,10 @@ static BLT_TABLE_IMPORT_PROC ImportSqliteProc;
  *
  * ColumnIterFreeProc --
  *
- *	Free the storage associated with the -columns switch.
+ *      Free the storage associated with the -columns switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -150,10 +150,10 @@ ColumnIterFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * ColumnIterSwitchProc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -170,11 +170,11 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
 
     table = clientData;
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -185,10 +185,10 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * RowIterFreeProc --
  *
- *	Free the storage associated with the -rows switch.
+ *      Free the storage associated with the -rows switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -206,10 +206,10 @@ RowIterFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * RowIterSwitchProc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -226,11 +226,11 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
 
     table = clientData;
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -240,11 +240,11 @@ SqliteTypeToColumnType(int type)
 {
     switch(type) {
     case SQLITE_BLOB:                   /* 4 */
-	return TABLE_COLUMN_TYPE_BLOB;
+        return TABLE_COLUMN_TYPE_BLOB;
     case SQLITE_INTEGER:                /* 1 */
         return TABLE_COLUMN_TYPE_LONG;
     case SQLITE_FLOAT:                  /* 2 */
-	return TABLE_COLUMN_TYPE_DOUBLE;
+        return TABLE_COLUMN_TYPE_DOUBLE;
     case SQLITE_NULL:                   /* 0 */
         return TABLE_COLUMN_TYPE_STRING;
     case SQLITE_TEXT:                   /* 3 */
@@ -256,13 +256,13 @@ SqliteTypeToColumnType(int type)
 static int
 SqliteConnect(Tcl_Interp *interp, const char *fileName, sqlite3 **connPtr)
 {
-    sqlite3  *conn;			/* Connection handler. */
+    sqlite3  *conn;                     /* Connection handler. */
 
     if (sqlite3_open(fileName, &conn) != SQLITE_OK) {
-	Tcl_AppendResult(interp, "can't open sqlite database", "\"",
+        Tcl_AppendResult(interp, "can't open sqlite database", "\"",
                 fileName, "\": ", sqlite3_errmsg(conn), (char *)NULL);
-	sqlite3_close(conn);
-	return TCL_ERROR;
+        sqlite3_close(conn);
+        return TCL_ERROR;
     }
     *connPtr = conn;
     return TCL_OK;
@@ -455,7 +455,7 @@ SqliteCreateTable(Tcl_Interp *interp, sqlite3 *conn, BLT_TABLE table,
     }        
     first = TRUE;
     for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL; 
-	 col = blt_table_next_tagged_column(&argsPtr->ci)) {
+         col = blt_table_next_tagged_column(&argsPtr->ci)) {
         int type;
         const char *label;
         
@@ -563,7 +563,7 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *conn, BLT_TABLE table,
     }
     Blt_DBuffer_Destroy(dbuffer);
     for (row = blt_table_first_tagged_row(&argsPtr->ri); row != NULL; 
-	 row = blt_table_next_tagged_row(&argsPtr->ri)) {
+         row = blt_table_next_tagged_row(&argsPtr->ri)) {
         int count;                      /* sqlite3 result set index. */
         
         count = 1;                      /* sqlite3 parameter indices start
@@ -630,7 +630,7 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *conn, BLT_TABLE table,
 
 static int
 ImportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+                Tcl_Obj *const *objv)
 {
     ImportArgs args;
     sqlite3 *conn;
@@ -639,8 +639,8 @@ ImportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     
     memset(&args, 0, sizeof(args));
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
-		&args, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+                &args, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     if (args.fileObjPtr == NULL) {
         Tcl_AppendResult(interp, "-file switch is required.", (char *)NULL);
@@ -648,7 +648,7 @@ ImportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     }
     if (args.queryObjPtr == NULL) {
         Tcl_AppendResult(interp, "no -query switch found.", (char *)NULL);
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     conn = NULL;                          /* Suppress compiler warning. */
     fileName = Tcl_GetString(args.fileObjPtr);
@@ -663,7 +663,7 @@ ImportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 
 static int
 ExportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+                Tcl_Obj *const *objv)
 {
     ExportArgs args;
     sqlite3 *conn;
@@ -680,8 +680,8 @@ ExportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     blt_table_iterate_all_rows(table, &args.ri);
     blt_table_iterate_all_columns(table, &args.ci);
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
-		&args, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+                &args, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     if (args.tableObjPtr != NULL) {
         args.tableName = Tcl_GetString(args.tableObjPtr);
@@ -711,25 +711,25 @@ blt_table_sqlite_init(Tcl_Interp *interp)
 {
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #endif
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else
     if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #endif    
     if (Tcl_PkgProvide(interp, "blt_datatable_sqlite", BLT_VERSION) != TCL_OK) { 
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-	"sqlite",		/* Name of format. */
-	ImportSqliteProc,	/* Import procedure. */
-	ExportSqliteProc);      /* Export procedure. */
+        "sqlite",               /* Name of format. */
+        ImportSqliteProc,       /* Import procedure. */
+        ExportSqliteProc);      /* Export procedure. */
 
 }
 

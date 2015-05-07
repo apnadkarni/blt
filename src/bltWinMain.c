@@ -73,7 +73,7 @@
 #  include <windowsx.h>
 #endif /* WIN32 */
 
-#define vsnprintf		_vsnprintf
+#define vsnprintf               _vsnprintf
 
 /*
  * Forward declarations for procedures defined later in this file:
@@ -95,7 +95,7 @@ extern int Blt_ConsoleInit(Tcl_Interp *interp);
 #ifdef HAVE_TCL_STUBS
 #undef Tcl_InitStubs
 extern const char *Tcl_InitStubs(Tcl_Interp *interp, const char *version, 
-	int exact);
+        int exact);
 #endif
 
 /*
@@ -103,53 +103,53 @@ extern const char *Tcl_InitStubs(Tcl_Interp *interp, const char *version,
  *
  * setargv --
  *
- *	Parse the Windows command line string into argc/argv.  Done here
- *	because we don't trust the builtin argument parser in crt0.  Windows
- *	applications are responsible for breaking their command line into
- *	arguments.
+ *      Parse the Windows command line string into argc/argv.  Done here
+ *      because we don't trust the builtin argument parser in crt0.  Windows
+ *      applications are responsible for breaking their command line into
+ *      arguments.
  *
- *	2N backslashes + quote -> N backslashes + begin quoted string
- *	2N + 1 backslashes + quote -> literal
- *	N backslashes + non-quote -> literal
- *	quote + quote in a quoted string -> single quote
- *	quote + quote not in quoted string -> empty string
- *	quote -> begin quoted string
+ *      2N backslashes + quote -> N backslashes + begin quoted string
+ *      2N + 1 backslashes + quote -> literal
+ *      N backslashes + non-quote -> literal
+ *      quote + quote in a quoted string -> single quote
+ *      quote + quote not in quoted string -> empty string
+ *      quote -> begin quoted string
  *
  * Results:
- *	Fills argcPtr with the number of arguments and argvPtr with the
- *	array of arguments.
+ *      Fills argcPtr with the number of arguments and argvPtr with the
+ *      array of arguments.
  *
  * Side effects:
- *	Memory allocated.
+ *      Memory allocated.
  *
  *---------------------------------------------------------------------------
  */
 
 static void
 setargv(
-    int *argcPtr,		/* Filled with number of argument strings. */
+    int *argcPtr,               /* Filled with number of argument strings. */
     char ***argvPtr)
-{				/* Filled with argument strings (malloc'd). */
+{                               /* Filled with argument strings (malloc'd). */
     char *cmd, *p, *arg, *argSpace;
     char **argv;
     int argc, numArgs, inquote, copy, slashes;
 
-    cmd = GetCommandLine();	/* INTL: BUG */
+    cmd = GetCommandLine();     /* INTL: BUG */
     /*
      * Precompute an overly pessimistic guess at the number of arguments in
      * the command line by counting non-space spans.
      */
     numArgs = 2;
     for (p = cmd; *p != '\0'; p++) {
-	if ((*p == ' ') || (*p == '\t')) {	/* INTL: ISO space. */
-	    numArgs++;
-	    while ((*p == ' ') || (*p == '\t')) { /* INTL: ISO space. */
-		p++;
-	    }
-	    if (*p == '\0') {
-		break;
-	    }
-	}
+        if ((*p == ' ') || (*p == '\t')) {      /* INTL: ISO space. */
+            numArgs++;
+            while ((*p == ' ') || (*p == '\t')) { /* INTL: ISO space. */
+                p++;
+            }
+            if (*p == '\0') {
+                break;
+            }
+        }
     }
     argSpace = malloc(numArgs * sizeof(char *) + (p - cmd) + 1);
     argv = (char **)argSpace;
@@ -158,51 +158,51 @@ setargv(
 
     p = cmd;
     for (argc = 0; argc < numArgs; argc++) {
-	argv[argc] = arg = argSpace;
-	while ((*p == ' ') || (*p == '\t')) {	/* INTL: ISO space. */
-	    p++;
-	}
-	if (*p == '\0') {
-	    break;
-	}
-	inquote = 0;
-	slashes = 0;
-	while (1) {
-	    copy = 1;
-	    while (*p == '\\') {
-		slashes++;
-		p++;
-	    }
-	    if (*p == '"') {
-		if ((slashes & 1) == 0) {
-		    copy = 0;
-		    if ((inquote) && (p[1] == '"')) {
-			p++;
-			copy = 1;
-		    } else {
-			inquote = !inquote;
-		    }
-		}
-		slashes >>= 1;
-	    }
-	    while (slashes) {
-		*arg = '\\';
-		arg++;
-		slashes--;
-	    }
+        argv[argc] = arg = argSpace;
+        while ((*p == ' ') || (*p == '\t')) {   /* INTL: ISO space. */
+            p++;
+        }
+        if (*p == '\0') {
+            break;
+        }
+        inquote = 0;
+        slashes = 0;
+        while (1) {
+            copy = 1;
+            while (*p == '\\') {
+                slashes++;
+                p++;
+            }
+            if (*p == '"') {
+                if ((slashes & 1) == 0) {
+                    copy = 0;
+                    if ((inquote) && (p[1] == '"')) {
+                        p++;
+                        copy = 1;
+                    } else {
+                        inquote = !inquote;
+                    }
+                }
+                slashes >>= 1;
+            }
+            while (slashes) {
+                *arg = '\\';
+                arg++;
+                slashes--;
+            }
 
-	    if ((*p == '\0') || (!inquote && ((*p == ' ') || 
-	      (*p == '\t')))) {	/* INTL: ISO space. */
-		break;
-	    }
-	    if (copy != 0) {
-		*arg = *p;
-		arg++;
-	    }
-	    p++;
-	}
-	*arg = '\0';
-	argSpace = arg + 1;
+            if ((*p == '\0') || (!inquote && ((*p == ' ') || 
+              (*p == '\t')))) { /* INTL: ISO space. */
+                break;
+            }
+            if (copy != 0) {
+                *arg = *p;
+                arg++;
+            }
+            p++;
+        }
+        *arg = '\0';
+        argSpace = arg + 1;
     }
     argv[argc] = NULL;
 
@@ -215,13 +215,13 @@ extern Tcl_AppInitProc Blt_TclInit;
 extern Tcl_AppInitProc Blt_TclPkgsInit;
 
 static int
-Initialize(Tcl_Interp *interp)		/* Interpreter for application. */
+Initialize(Tcl_Interp *interp)          /* Interpreter for application. */
 {
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_Init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #ifdef TCLLIBPATH
     /* 
@@ -235,18 +235,18 @@ Initialize(Tcl_Interp *interp)		/* Interpreter for application. */
 
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else 
     if (Blt_TclInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*USE_BLT_STUBS*/
+#endif  /*USE_BLT_STUBS*/
 #ifdef STATIC_PKGS
     if (Blt_TclPkgsInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*STATIC_PACKAGES*/
+#endif  /*STATIC_PACKAGES*/
     Tcl_SetVar(interp, "tcl_rcFileName", "~/tclshrc.tcl", TCL_GLOBAL_ONLY);
     return TCL_OK;
 }
@@ -256,21 +256,21 @@ Initialize(Tcl_Interp *interp)		/* Interpreter for application. */
  *
  * main --
  *
- *	This is the main program for the application.
+ *      This is the main program for the application.
  *
  * Results:
- *	None: Tcl_Main never returns here, so this procedure never returns
- *	either.
+ *      None: Tcl_Main never returns here, so this procedure never returns
+ *      either.
  *
  * Side effects:
- *	Whatever the application does.
+ *      Whatever the application does.
  *
  *---------------------------------------------------------------------------
  */
 int
 main(argc, argv)
-    int argc;			/* Number of command-line arguments. */
-    char **argv;		/* Values of command-line arguments. */
+    int argc;                   /* Number of command-line arguments. */
+    char **argv;                /* Values of command-line arguments. */
 {
     char buffer[MAX_PATH +1];
     char *p;
@@ -291,12 +291,12 @@ main(argc, argv)
     GetModuleFileName(NULL, buffer, sizeof(buffer));
     argv[0] = buffer;
     for (p = buffer; *p != '\0'; p++) {
-	if (*p == '\\') {
-	    *p = '/';
-	}
+        if (*p == '\\') {
+            *p = '/';
+        }
     }
     Tcl_Main(argc, argv, Initialize);
-    return 0;			/* Needed only to prevent compiler warning. */
+    return 0;                   /* Needed only to prevent compiler warning. */
 }
 
 #else /* TCL_ONLY */
@@ -312,16 +312,16 @@ extern Tcl_AppInitProc Blt_TkPkgsInit;
 static Tcl_PanicProc WishPanic;
 
 static int
-Initialize(Tcl_Interp *interp)	/* Interpreter for application. */
+Initialize(Tcl_Interp *interp)  /* Interpreter for application. */
 {
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_Init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_PkgRequire(interp, "Tk", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #ifdef TCLLIBPATH
     /* 
@@ -334,33 +334,33 @@ Initialize(Tcl_Interp *interp)	/* Interpreter for application. */
 #endif /* TCLLIBPATH */
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
     if (Blt_InitTkStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else 
     if (Blt_TclInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_TkInit(interp)  != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*USE_BLT_STUBS*/
+#endif  /*USE_BLT_STUBS*/
 #ifdef STATIC_PKGS
     if (Blt_TclPkgsInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_TkPkgsInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
-#endif	/*STATIC_PACKAGES*/
+#endif  /*STATIC_PACKAGES*/
     Tcl_SetVar(interp, "tcl_rcFileName", "~/wishrc.tcl", TCL_GLOBAL_ONLY);
 #if (_TCL_VERSION >= _VERSION(8,2,0)) 
     if (consoleRequired) {
-	if (Tk_CreateConsoleWindow(interp) == TCL_ERROR) {
-	    goto error;
-	}
+        if (Tk_CreateConsoleWindow(interp) == TCL_ERROR) {
+            goto error;
+        }
     }
 #else
     /*
@@ -368,9 +368,9 @@ Initialize(Tcl_Interp *interp)	/* Interpreter for application. */
      * application.
      */
     if (Blt_ConsoleInit(interp) == TCL_ERROR) {
-	goto error;
+        goto error;
     }
-#endif	/* _TCL_VERSION >= 8.2.0 */
+#endif  /* _TCL_VERSION >= 8.2.0 */
     return TCL_OK;
   error:
     WishPanic(Tcl_GetStringResult(interp));
@@ -382,13 +382,13 @@ Initialize(Tcl_Interp *interp)	/* Interpreter for application. */
  *
  * WishPanic --
  *
- *	Display a message and exit.
+ *      Display a message and exit.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Exits the program.
+ *      Exits the program.
  *
  *---------------------------------------------------------------------------
  */
@@ -404,13 +404,13 @@ WishPanic(const char *fmt, ...)
     buf[1023] = '\0';
     MessageBeep(MB_ICONEXCLAMATION);
     MessageBox(NULL, buf, "Fatal Error in Wish",
-	MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+        MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
 #if defined(_MSC_VER) || defined(__BORLANDC__)
     DebugBreak();
-#ifdef notdef			/* Panics shouldn't cause exceptions.  Simply
-				 * let the program exit. */
+#ifdef notdef                   /* Panics shouldn't cause exceptions.  Simply
+                                 * let the program exit. */
     _asm {
-	int 3
+        int 3
     }
 #endif
 #endif /* _MSC_VER || __BORLANDC__ */
@@ -422,13 +422,13 @@ WishPanic(const char *fmt, ...)
  *
  * WinMain --
  *
- *	Main entry point from Windows.
+ *      Main entry point from Windows.
  *
  * Results:
- *	Returns false if initialization fails, otherwise it never returns.
+ *      Returns false if initialization fails, otherwise it never returns.
  *
  * Side effects:
- *	Just about anything, since from here we call arbitrary TCL code.
+ *      Just about anything, since from here we call arbitrary TCL code.
  *
  *---------------------------------------------------------------------------
  */
@@ -446,21 +446,21 @@ WinMain(
 
     interp = Tcl_CreateInterp();
     if (Tcl_Init(interp) != TCL_OK) {
-	Tcl_Panic("can't initialize Tcl");
+        Tcl_Panic("can't initialize Tcl");
     }
 #ifdef HAVE_TCL_STUBS
 #undef Tcl_InitStubs
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	Tcl_Panic("Can't initialize TCL stubs");
+        Tcl_Panic("Can't initialize TCL stubs");
     }
 #endif
 #ifdef USE_TK_STUBS
     if (Tk_InitStubs(interp, TK_VERSION_COMPILED, PKG_ANY) == NULL) {
-	Tcl_Panic("Can't initialize Tk stubs");
+        Tcl_Panic("Can't initialize Tk stubs");
     }
 #else
     if (Tk_Init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #endif
     Tcl_SetPanicProc(WishPanic);

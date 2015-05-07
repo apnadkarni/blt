@@ -59,11 +59,11 @@ WindowToHandle(Tk_Window tkwin)
     
     window = Tk_WindowId(tkwin);
     if (window == None) {
-	Tk_MakeWindowExist(tkwin);
+        Tk_MakeWindowExist(tkwin);
     }
     hWnd = Tk_GetHWND(Tk_WindowId(tkwin));
     if (Tk_IsTopLevel(tkwin)) {
-	hWnd = GetParent(hWnd);
+        hWnd = GetParent(hWnd);
     }
     return hWnd;
 }
@@ -73,20 +73,20 @@ WindowToHandle(Tk_Window tkwin)
  *
  * DoConfigureNotify --
  *
- *	Generate a ConfigureNotify event describing the current configuration
- *	of a window.
+ *      Generate a ConfigureNotify event describing the current configuration
+ *      of a window.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	An event is generated and processed by Tk_HandleEvent.
+ *      An event is generated and processed by Tk_HandleEvent.
  *
  *---------------------------------------------------------------------------
  */
 static void
 DoConfigureNotify(Tk_FakeWin *winPtr) /* Window whose configuration
-				       * was just changed. */
+                                       * was just changed. */
 {
     XEvent event;
 
@@ -102,9 +102,9 @@ DoConfigureNotify(Tk_FakeWin *winPtr) /* Window whose configuration
     event.xconfigure.height = winPtr->changes.height;
     event.xconfigure.border_width = winPtr->changes.border_width;
     if (winPtr->changes.stack_mode == Above) {
-	event.xconfigure.above = winPtr->changes.sibling;
+        event.xconfigure.above = winPtr->changes.sibling;
     } else {
-	event.xconfigure.above = None;
+        event.xconfigure.above = None;
     }
     event.xconfigure.override_redirect = winPtr->atts.override_redirect;
     Tk_HandleEvent(&event);
@@ -115,32 +115,32 @@ DoConfigureNotify(Tk_FakeWin *winPtr) /* Window whose configuration
  *
  * Blt_MakeTransparentWindowExist --
  *
- *	Similar to Tk_MakeWindowExist but instead creates a transparent window
- *	to block for user events from sibling windows.
+ *      Similar to Tk_MakeWindowExist but instead creates a transparent window
+ *      to block for user events from sibling windows.
  *
- *	Differences from Tk_MakeWindowExist.
+ *      Differences from Tk_MakeWindowExist.
  *
- *	1. This is always a "busy" window. There's never a platform-specific
- *	   class procedure to execute.
+ *      1. This is always a "busy" window. There's never a platform-specific
+ *         class procedure to execute.
  *
- *	2. The window is transparent and never will have children, so
- *	   colormap information is irrelevant.
+ *      2. The window is transparent and never will have children, so
+ *         colormap information is irrelevant.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the procedure returns, the internal window associated with tkwin
- *	is guaranteed to exist.  This may require the window's ancestors to be
- *	created too.
+ *      When the procedure returns, the internal window associated with tkwin
+ *      is guaranteed to exist.  This may require the window's ancestors to be
+ *      created too.
  *
  *---------------------------------------------------------------------------
  */
 void
 Blt_MakeTransparentWindowExist(
-    Tk_Window tkwin,		/* Token for window. */
-    Window parent,		/* Parent window. */
-    int isBusy)			/*  */
+    Tk_Window tkwin,            /* Token for window. */
+    Window parent,              /* Parent window. */
+    int isBusy)                 /*  */
 {
     TkWindow *winPtr = (TkWindow *) tkwin;
     TkWindow *winPtr2;
@@ -153,7 +153,7 @@ Blt_MakeTransparentWindowExist(
     HWND hWnd;
 
     if (winPtr->window != None) {
-	return;			/* Window already exists. */
+        return;                 /* Window already exists. */
     }
     /* Create a transparent window and put it on top.  */
 
@@ -162,13 +162,13 @@ Blt_MakeTransparentWindowExist(
     exStyle = (WS_EX_TRANSPARENT | WS_EX_TOPMOST);
 #define TK_WIN_CHILD_CLASS_NAME "TkChild"
     hWnd = CreateWindowEx(exStyle, TK_WIN_CHILD_CLASS_NAME, NULL, style,
-	Tk_X(tkwin), Tk_Y(tkwin), Tk_Width(tkwin), Tk_Height(tkwin),
-	hParent, NULL, (HINSTANCE)Tk_GetHINSTANCE(), NULL);
+        Tk_X(tkwin), Tk_Y(tkwin), Tk_Width(tkwin), Tk_Height(tkwin),
+        hParent, NULL, (HINSTANCE)Tk_GetHINSTANCE(), NULL);
     winPtr->window = Tk_AttachHWND(tkwin, hWnd);
 
     dispPtr = winPtr->dispPtr;
     hPtr = Tcl_CreateHashEntry(&dispPtr->winTable, (char *)winPtr->window,
-	&notUsed);
+        &notUsed);
     Tcl_SetHashValue(hPtr, winPtr);
     winPtr->dirtyAtts = 0;
     winPtr->dirtyChanges = 0;
@@ -176,27 +176,27 @@ Blt_MakeTransparentWindowExist(
     winPtr->inputContext = NULL;
 #endif /* TK_USE_INPUT_METHODS */
     if (!(winPtr->flags & TK_TOP_LEVEL)) {
-	/*
-	 * If any siblings higher up in the stacking order have already been
-	 * created then move this window to its rightful position in the
-	 * stacking order.
-	 *
-	 * NOTE: this code ignores any changes anyone might have made to the
-	 * sibling and stack_mode field of the window's attributes, so it
-	 * really isn't safe for these to be manipulated except by calling
-	 * Tk_RestackWindow.
-	 */
-	for (winPtr2 = winPtr->nextPtr; winPtr2 != NULL;
-	    winPtr2 = winPtr2->nextPtr) {
-	    if ((winPtr2->window != None) && !(winPtr2->flags & TK_TOP_LEVEL)) {
-		XWindowChanges changes;
-		changes.sibling = winPtr2->window;
-		changes.stack_mode = Below;
-		XConfigureWindow(winPtr->display, winPtr->window,
-		    CWSibling | CWStackMode, &changes);
-		break;
-	    }
-	}
+        /*
+         * If any siblings higher up in the stacking order have already been
+         * created then move this window to its rightful position in the
+         * stacking order.
+         *
+         * NOTE: this code ignores any changes anyone might have made to the
+         * sibling and stack_mode field of the window's attributes, so it
+         * really isn't safe for these to be manipulated except by calling
+         * Tk_RestackWindow.
+         */
+        for (winPtr2 = winPtr->nextPtr; winPtr2 != NULL;
+            winPtr2 = winPtr2->nextPtr) {
+            if ((winPtr2->window != None) && !(winPtr2->flags & TK_TOP_LEVEL)) {
+                XWindowChanges changes;
+                changes.sibling = winPtr2->window;
+                changes.stack_mode = Below;
+                XConfigureWindow(winPtr->display, winPtr->window,
+                    CWSibling | CWStackMode, &changes);
+                break;
+            }
+        }
     }
     /*
      * Issue a ConfigureNotify event if there were deferred configuration
@@ -205,9 +205,9 @@ Blt_MakeTransparentWindowExist(
      * Tk_DestroyWindow under some conditions).
      */
     if ((winPtr->flags & TK_NEED_CONFIG_NOTIFY)
-	&& !(winPtr->flags & TK_ALREADY_DEAD)) {
-	winPtr->flags &= ~TK_NEED_CONFIG_NOTIFY;
-	DoConfigureNotify((Tk_FakeWin *)tkwin);
+        && !(winPtr->flags & TK_ALREADY_DEAD)) {
+        winPtr->flags &= ~TK_NEED_CONFIG_NOTIFY;
+        DoConfigureNotify((Tk_FakeWin *)tkwin);
     }
 }
 
@@ -221,7 +221,7 @@ Blt_MakeTransparentWindowExist(
 /*ARGSUSED*/
 int
 Blt_GetWindowRegion(
-    Display *display,		/* Not used. */
+    Display *display,           /* Not used. */
     Window window,
     int *xPtr, int *yPtr, int *widthPtr, int *heightPtr)
 {
@@ -231,19 +231,19 @@ Blt_GetWindowRegion(
 
     result = GetWindowRect(winPtr->handle, &region);
     if (!result) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (xPtr != NULL) {
-	*xPtr = region.left;
+        *xPtr = region.left;
     }
     if (yPtr != NULL) {
-	*yPtr = region.top;
+        *yPtr = region.top;
     }
     if (widthPtr != NULL) {
-	*widthPtr = region.right - region.left;
+        *widthPtr = region.right - region.left;
     }
     if (heightPtr != NULL) {
-	*heightPtr = region.bottom - region.top;
+        *heightPtr = region.bottom - region.top;
     }
     return TCL_OK;
 }
@@ -251,7 +251,7 @@ Blt_GetWindowRegion(
 #ifdef notdef
 int
 Blt_GetRootCoords(Display *display, Window window, int *xPtr, int *yPtr, 
-		  int *widthPtr, int *heightPtr)
+                  int *widthPtr, int *heightPtr)
 {
     int result;
     RECT region;
@@ -259,19 +259,19 @@ Blt_GetRootCoords(Display *display, Window window, int *xPtr, int *yPtr,
 
     result = GetWindowRect(winPtr->handle, &region);
     if (!result) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (xPtr != NULL) {
-	*xPtr = region.left;
+        *xPtr = region.left;
     }
     if (yPtr != NULL) {
-	*yPtr = region.top;
+        *yPtr = region.top;
     }
     if (widthPtr != NULL) {
-	*widthPtr = region.right - region.left;
+        *widthPtr = region.right - region.left;
     }
     if (heightPtr != NULL) {
-	*heightPtr = region.bottom - region.top;
+        *heightPtr = region.bottom - region.top;
     }
     return TCL_OK;
 }
@@ -305,7 +305,7 @@ Blt_GetWindowId(Tk_Window tkwin)
  * Blt_RaiseTopLevelWindow --
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -313,7 +313,7 @@ void
 Blt_RaiseToplevelWindow(Tk_Window tkwin)
 {
     SetWindowPos(WindowToHandle(tkwin), HWND_TOP, 0, 0, 0, 0,
-	SWP_NOMOVE | SWP_NOSIZE);
+        SWP_NOMOVE | SWP_NOSIZE);
 }
 
 /*
@@ -322,7 +322,7 @@ Blt_RaiseToplevelWindow(Tk_Window tkwin)
  * Blt_LowerToplevelWindow --
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -330,7 +330,7 @@ void
 Blt_LowerToplevelWindow(Tk_Window tkwin)
 {
     SetWindowPos(WindowToHandle(tkwin), HWND_BOTTOM, 0, 0, 0, 0,
-	SWP_NOMOVE | SWP_NOSIZE);
+        SWP_NOMOVE | SWP_NOSIZE);
 }
 
 /*
@@ -339,7 +339,7 @@ Blt_LowerToplevelWindow(Tk_Window tkwin)
  * Blt_MapToplevelWindow --
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -355,7 +355,7 @@ Blt_MapToplevelWindow(Tk_Window tkwin)
  * Blt_UnmapToplevelWindow --
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -371,7 +371,7 @@ Blt_UnmapToplevelWindow(Tk_Window tkwin)
  * Blt_MoveResizeToplevelWindow --
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -387,7 +387,7 @@ Blt_MoveResizeToplevelWindow(Tk_Window tkwin, int x, int y, int w, int h)
  * Blt_MoveToplevelWindow --
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -395,7 +395,7 @@ void
 Blt_MoveToplevelWindow(Tk_Window tkwin, int x, int y)
 {
     SetWindowPos(WindowToHandle(tkwin), HWND_TOP, x, y, 0, 0, 
-		 SWP_NOSIZE | SWP_NOZORDER);
+                 SWP_NOSIZE | SWP_NOZORDER);
 }
 
 /*
@@ -404,7 +404,7 @@ Blt_MoveToplevelWindow(Tk_Window tkwin, int x, int y)
  * Blt_ResizeToplevelWindow --
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -412,7 +412,7 @@ void
 Blt_ResizeToplevelWindow(Tk_Window tkwin, int w, int h)
 {
     SetWindowPos(WindowToHandle(tkwin), HWND_TOP, 0, 0, w, h, 
-	SWP_NOMOVE | SWP_NOZORDER);
+        SWP_NOMOVE | SWP_NOZORDER);
 }
 
 int
@@ -433,30 +433,30 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
 
     string = Tcl_GetString(objPtr);
     if (string[0] == '.') {
-	Tk_Window tkwin;
+        Tk_Window tkwin;
 
-	tkwin = Tk_NameToWindow(interp, string, Tk_MainWindow(interp));
-	if (tkwin == NULL) {
-	    return TCL_ERROR;
-	}
-	if (Tk_WindowId(tkwin) == None) {
-	    Tk_MakeWindowExist(tkwin);
-	}
-	*windowPtr = (Tk_IsTopLevel(tkwin)) ? Blt_GetWindowId(tkwin) : 
-	    Tk_WindowId(tkwin);
+        tkwin = Tk_NameToWindow(interp, string, Tk_MainWindow(interp));
+        if (tkwin == NULL) {
+            return TCL_ERROR;
+        }
+        if (Tk_WindowId(tkwin) == None) {
+            Tk_MakeWindowExist(tkwin);
+        }
+        *windowPtr = (Tk_IsTopLevel(tkwin)) ? Blt_GetWindowId(tkwin) : 
+            Tk_WindowId(tkwin);
     } else if (strcmp(string, "root") == 0) {
-	*windowPtr = Tk_RootWindow(Tk_MainWindow(interp));
+        *windowPtr = Tk_RootWindow(Tk_MainWindow(interp));
     } else {
-	static TkWinWindow tkWinWindow;
-	int id;
+        static TkWinWindow tkWinWindow;
+        int id;
 
-	if (Tcl_GetIntFromObj(interp, objPtr, &id) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	tkWinWindow.handle = (HWND)id;
-	tkWinWindow.winPtr = NULL;
-	tkWinWindow.type = TWD_WINDOW;
-	*windowPtr = (Window)&tkWinWindow;
+        if (Tcl_GetIntFromObj(interp, objPtr, &id) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        tkWinWindow.handle = (HWND)id;
+        tkWinWindow.winPtr = NULL;
+        tkWinWindow.type = TWD_WINDOW;
+        *windowPtr = (Window)&tkWinWindow;
     }
     return TCL_OK;
 }
@@ -478,8 +478,8 @@ Blt_GetParentWindow(Display *display, Window window)
  *
  *  Blt_GetWindowStack --
  *
- *	Returns a list of the child windows according to their stacking
- *	order.  The window handles are ordered from top to bottom.
+ *      Returns a list of the child windows according to their stacking
+ *      order.  The window handles are ordered from top to bottom.
  *
  *---------------------------------------------------------------------------
  */
@@ -492,8 +492,8 @@ Blt_GetWindowStack(Display *display, ClientData clientData)
 
     chain = Blt_Chain_Create();
     for (hWnd = GetTopWindow(parent); hWnd != NULL;
-	hWnd = GetNextWindow(hWnd, GW_HWNDNEXT)) {
-	Blt_Chain_Append(chain, (ClientData)hWnd);
+        hWnd = GetNextWindow(hWnd, GW_HWNDNEXT)) {
+        Blt_Chain_Append(chain, (ClientData)hWnd);
     }
     return chain;
 }

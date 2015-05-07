@@ -74,26 +74,26 @@ name, tag or text label.
     They are described below:
 
       *number* 
-	The index of the tab.  Indices start from 0.  Tab indices may
-	change as tabs are added or removed.
+        The index of the tab.  Indices start from 0.  Tab indices may
+        change as tabs are added or removed.
 
       **@**\ *x*\ ,\ *y*
-	Tab that covers the point in the tabset window
-	specified by *x* and *y* (in screen coordinates).  If no
-	tab covers that point, then the index is ignored.
+        Tab that covers the point in the tabset window
+        specified by *x* and *y* (in screen coordinates).  If no
+        tab covers that point, then the index is ignored.
 
       **selected** 
-	The currently selected tab.  The **selected** index is 
-	typically changed by either clicking on the tab with the left mouse 
-	button or using the widget's **invoke** operation.
+        The currently selected tab.  The **selected** index is 
+        typically changed by either clicking on the tab with the left mouse 
+        button or using the widget's **invoke** operation.
 
       **active** 
-	The tab where the mouse pointer is currently located.  The label is
-	drawn using its active colors (see the **-activebackground** and
-	**-activeforeground** options).  The **active** index is typically
-	changed by moving the mouse pointer over a tab or using the widget's
-	**activate** operation. There can be only one active tab at a time.  If
-	there is no tab located under the mouse pointer, the index is ignored.
+        The tab where the mouse pointer is currently located.  The label is
+        drawn using its active colors (see the **-activebackground** and
+        **-activeforeground** options).  The **active** index is typically
+        changed by moving the mouse pointer over a tab or using the widget's
+        **activate** operation. There can be only one active tab at a time.  If
+        there is no tab located under the mouse pointer, the index is ignored.
 
       **focus** 
         Tab that currently has the widget's focus.  This tab is displayed with a
@@ -101,9 +101,9 @@ name, tag or text label.
         operation. If no tab has focus, then the index is ignored.
 
       **down** 
-	Tab immediately below the tab that currently has focus,
-	if there is one. If there is no tab below, the current 
-	tab is returned.
+        Tab immediately below the tab that currently has focus,
+        if there is one. If there is no tab below, the current 
+        tab is returned.
 
       **left**
         Tab immediately to the left the tab that currently has focus, if there
@@ -403,13 +403,13 @@ available for *tabset* widgets:
     the following values.
 
       **top**
-	Tabs are drawn along the top.
+        Tabs are drawn along the top.
       **left**
-	Tabs are drawn along the left side.
+        Tabs are drawn along the left side.
       **right**
-	Tabs are drawn along the right side.
+        Tabs are drawn along the right side.
       **both**
-	Tabs are drawn along the bottom side.
+        Tabs are drawn along the bottom side.
 
    The default value is "top".
 
@@ -419,13 +419,13 @@ available for *tabset* widgets:
     right sides. *TabSide* can be any of the following values.
 
       **none**
-	Tabs are drawn as a rectangle.  
+        Tabs are drawn as a rectangle.  
       **left**
-	The left side of the tab is slanted.  
+        The left side of the tab is slanted.  
       **right**
-	The right side of the tab is slanted.  
+        The right side of the tab is slanted.  
       **both**
-	Boths sides of the tab are slanted.
+        Boths sides of the tab are slanted.
 
     The default is "none".
 
@@ -942,7 +942,7 @@ and arranging the widget for you.
 
      graph .ts.graph
      .ts tab configure "f1" -window ".ts.graph" \\
-	-fill both -padx 0.25i -pady 0.25i
+        -fill both -padx 0.25i -pady 0.25i
 
 The size of the folder is determined the sizes of the Tk widgets
 embedded inside each folder.  The folder will be as wide as the widest

@@ -765,7 +765,7 @@ Create a *comboeditor* widget with the **blt::comboeditor** command.
 
     blt::comboeditor .file.m 
     .file.m add -text "New Window" -accelerator "Ctrl+N" -underline 0 \
-	-icon $image(new_window)
+        -icon $image(new_window)
     .file.m add -text "New Tab" -accelerator "Ctrl+T" -underline 4 \
         -icon $icon(new_tab)
     .file.m add -text "Open Location..." -accelerator "Ctrl+L" -underline 5

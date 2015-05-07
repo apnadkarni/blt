@@ -94,10 +94,10 @@ resizing, bound the size of the scrollbars between two values.
  ::
 
     blt::table . \
-	.title   0,0 -cspan 3 \
-	.canvas  1,1 -fill both \
-	.vscroll 1,2 -fill y \
-	.hscroll 2,1 -fill x
+        .title   0,0 -cspan 3 \
+        .canvas  1,1 -fill both \
+        .vscroll 1,2 -fill y \
+        .hscroll 2,1 -fill x
 
     # Bound the scrollbars between 1/8 and 1/2 inch
     blt::table configure . c2 -width { 0.125 0.5 }
@@ -736,9 +736,9 @@ have used a single **blt::table** command.
 
     # Create and pack the table
     blt::table . \
-	0,0  .title -cspan 2 \
-	1,0  .ok \
-	1,1 .cancel 
+        0,0  .title -cspan 2 \
+        1,0  .ok \
+        1,1 .cancel 
 
 The table will override the requested width and height of the container
 so that the window fits the table exactly.  This also means
@@ -876,10 +876,10 @@ remain the same width.
  ::
 
     blt::table . \
-	.title   0,0 -cspan 3 \
-	.canvas  1,1 -fill both \
-	.vscroll 1,2 -fill y \
-	.hscroll 2,1 -fill x
+        .title   0,0 -cspan 3 \
+        .canvas  1,1 -fill both \
+        .vscroll 1,2 -fill y \
+        .hscroll 2,1 -fill x
 
     # Don't let the scrollbars resize
     blt::table configure . c2 r2 -resize none
@@ -913,9 +913,9 @@ arranged in the same container ".", but using different geometry managers.
 
     blt::table . \
       0,0 .f1 
-	...
+        ...
     pack .f2
-	...
+        ...
     grid .f3
 
 This leads to bizarre window resizing, as each geometry manager applies its

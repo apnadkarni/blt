@@ -41,58 +41,58 @@
 /*
  * PageSetup --
  *
- * 	Structure contains information specific to the layout of the page for
- * 	printing the graph.
+ *      Structure contains information specific to the layout of the page for
+ *      printing the graph.
  *
  */
 typedef struct  {
     /* User configurable fields */
 
-    int reqWidth, reqHeight;	/* If greater than zero, represents the
-				 * requested dimensions of the printed graph */
+    int reqWidth, reqHeight;    /* If greater than zero, represents the
+                                 * requested dimensions of the printed graph */
     int reqPaperWidth;
-    int reqPaperHeight;		/* Requested dimensions for the PostScript
-				 * page. Can constrain the size of the graph
-				 * if the graph (plus padding) is larger than
-				 * the size of the page. */
-    Blt_Pad xPad, yPad;		/* Requested padding on the exterior of the
-				 * graph. This forms the bounding box for
-				 * the page. */
-    const char *colorVarName;	/* If non-NULL, is the name of a TCL array
-				 * variable containing X to output device color
-				 * translations */
-    const char *fontVarName;	/* If non-NULL, is the name of a TCL array
-				 * variable containing X to output device font
-				 * translations */
-    int level;			/* PostScript Language level 1-3 */
+    int reqPaperHeight;         /* Requested dimensions for the PostScript
+                                 * page. Can constrain the size of the graph
+                                 * if the graph (plus padding) is larger than
+                                 * the size of the page. */
+    Blt_Pad xPad, yPad;         /* Requested padding on the exterior of the
+                                 * graph. This forms the bounding box for
+                                 * the page. */
+    const char *colorVarName;   /* If non-NULL, is the name of a TCL array
+                                 * variable containing X to output device color
+                                 * translations */
+    const char *fontVarName;    /* If non-NULL, is the name of a TCL array
+                                 * variable containing X to output device font
+                                 * translations */
+    int level;                  /* PostScript Language level 1-3 */
     unsigned int flags;
 
-    const char **comments;	/* User supplied comments to be added. */
+    const char **comments;      /* User supplied comments to be added. */
 
     /* Computed fields */
 
-    short int left, bottom;	/* Bounding box of the plot in the page. */
+    short int left, bottom;     /* Bounding box of the plot in the page. */
     short int right, top;
 
-    float scale;		/* Scale of page. Set if "-maxpect" option
-				 * is set, otherwise 1.0. */
+    float scale;                /* Scale of page. Set if "-maxpect" option
+                                 * is set, otherwise 1.0. */
 
     int paperHeight;
     int paperWidth;
     
 } PageSetup;
 
-#define PS_GREYSCALE	(1<<0)
-#define PS_LANDSCAPE	(1<<2)
-#define PS_CENTER	(1<<3)
-#define PS_MAXPECT	(1<<4)
-#define PS_DECORATIONS	(1<<5)
-#define PS_FOOTER	(1<<6)
-#define PS_FMT_NONE	0
-#define PS_FMT_MASK	(PS_FMT_WMF|PS_FMT_EPSI|PS_FMT_TIFF)
-#define PS_FMT_WMF	(1<<8)
-#define PS_FMT_EPSI	(1<<9)
-#define PS_FMT_TIFF	(1<<10)
+#define PS_GREYSCALE    (1<<0)
+#define PS_LANDSCAPE    (1<<2)
+#define PS_CENTER       (1<<3)
+#define PS_MAXPECT      (1<<4)
+#define PS_DECORATIONS  (1<<5)
+#define PS_FOOTER       (1<<6)
+#define PS_FMT_NONE     0
+#define PS_FMT_MASK     (PS_FMT_WMF|PS_FMT_EPSI|PS_FMT_TIFF)
+#define PS_FMT_WMF      (1<<8)
+#define PS_FMT_EPSI     (1<<9)
+#define PS_FMT_TIFF     (1<<10)
 
 typedef struct _Blt_Ps *Blt_Ps;
 
@@ -121,26 +121,26 @@ BLT_EXTERN void Blt_Ps_Format(Blt_Ps ps, const char *fmt, ...);
 BLT_EXTERN void Blt_Ps_SetClearBackground(Blt_Ps ps);
 
 BLT_EXTERN int Blt_Ps_IncludeFile(Tcl_Interp *interp, Blt_Ps ps, 
-	const char *fileName);
+        const char *fileName);
 
 BLT_EXTERN int Blt_Ps_GetPicaFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	int *picaPtr);
+        int *picaPtr);
 
 BLT_EXTERN int Blt_Ps_GetPadFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Blt_Pad *padPtr);
+        Blt_Pad *padPtr);
 
 BLT_EXTERN int Blt_Ps_ComputeBoundingBox(PageSetup *setupPtr, int w, int h);
 
 #ifdef _BLT_PICTURE_H
 BLT_EXTERN void Blt_Ps_DrawPicture(Blt_Ps ps, Blt_Picture picture, 
-	double x, double y);
+        double x, double y);
 #endif
 
 BLT_EXTERN void Blt_Ps_Rectangle(Blt_Ps ps, int x, int y, int w, int h);
 
 
 BLT_EXTERN int Blt_Ps_SaveFile(Tcl_Interp *interp, Blt_Ps ps, 
-	const char *fileName);
+        const char *fileName);
 
 #ifdef _TK
 
@@ -152,7 +152,7 @@ BLT_EXTERN void Blt_Ps_XSetLineWidth(Blt_Ps ps, int lineWidth);
 BLT_EXTERN void Blt_Ps_XSetBackground(Blt_Ps ps, XColor *colorPtr);
 
 BLT_EXTERN void Blt_Ps_XSetBitmapData(Blt_Ps ps, Display *display, 
-	Pixmap bitmap, int width, int height);
+        Pixmap bitmap, int width, int height);
 
 BLT_EXTERN void Blt_Ps_XSetForeground(Blt_Ps ps, XColor *colorPtr);
 
@@ -161,7 +161,7 @@ BLT_EXTERN void Blt_Ps_XSetFont(Blt_Ps ps, Blt_Font font);
 BLT_EXTERN void Blt_Ps_XSetDashes(Blt_Ps ps, Blt_Dashes *dashesPtr);
 
 BLT_EXTERN void Blt_Ps_XSetLineAttributes(Blt_Ps ps, XColor *colorPtr,
-	int lineWidth, Blt_Dashes *dashesPtr, int capStyle, int joinStyle);
+        int lineWidth, Blt_Dashes *dashesPtr, int capStyle, int joinStyle);
 
 BLT_EXTERN void Blt_Ps_XSetStipple(Blt_Ps ps, Display *display, Pixmap bitmap);
 
@@ -176,29 +176,29 @@ BLT_EXTERN void Blt_Ps_DrawPolyline(Blt_Ps ps, int n, Point2d *points);
 BLT_EXTERN void Blt_Ps_DrawSegments2d(Blt_Ps ps, int n, Segment2d *segments);
 
 BLT_EXTERN void Blt_Ps_Draw3DRectangle(Blt_Ps ps, Tk_3DBorder border, 
-	double x, double y, int width, int height, int borderWidth, int relief);
+        double x, double y, int width, int height, int borderWidth, int relief);
 
 BLT_EXTERN void Blt_Ps_Fill3DRectangle(Blt_Ps ps, Tk_3DBorder border, double x,
-	 double y, int width, int height, int borderWidth, int relief);
+         double y, int width, int height, int borderWidth, int relief);
 
 BLT_EXTERN void Blt_Ps_XFillRectangle(Blt_Ps ps, double x, double y, 
-	int width, int height);
+        int width, int height);
 
 BLT_EXTERN void Blt_Ps_XFillRectangles(Blt_Ps ps, int n, XRectangle *rects);
 
 BLT_EXTERN void Blt_Ps_XFillPolygon(Blt_Ps ps, int n, Point2d *points);
 
 BLT_EXTERN void Blt_Ps_DrawPhoto(Blt_Ps ps, Tk_PhotoHandle photoToken,
-	double x, double y);
+        double x, double y);
 
 BLT_EXTERN void Blt_Ps_XDrawWindow(Blt_Ps ps, Tk_Window tkwin, 
-	double x, double y);
+        double x, double y);
 
 BLT_EXTERN void Blt_Ps_DrawText(Blt_Ps ps, const char *string, 
-	TextStyle *attrPtr, double x, double y);
+        TextStyle *attrPtr, double x, double y);
 
 BLT_EXTERN void Blt_Ps_DrawBitmap(Blt_Ps ps, Display *display, Pixmap bitmap, 
-	double scaleX, double scaleY);
+        double scaleX, double scaleY);
 
 BLT_EXTERN void Blt_Ps_XSetCapStyle(Blt_Ps ps, int capStyle);
 

@@ -47,6 +47,6 @@ BLT_EXTERN int Blt_Afm_GetMetrics(Blt_Font font, Blt_FontMetrics *fmPtr);
 
 BLT_EXTERN const char *Blt_Afm_GetPostscriptFamily(const char *family);
 BLT_EXTERN void Blt_Afm_GetPostscriptName(const char *family, int flags, 
-	Tcl_DString *resultPtr);
+        Tcl_DString *resultPtr);
 
 #endif /* BLT_PS_H */

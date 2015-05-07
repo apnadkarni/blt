@@ -50,9 +50,9 @@
  * valid Drawable types.
  */
 
-#define TWD_BITMAP	1
-#define TWD_WINDOW	2
-#define TWD_WINDC	3
+#define TWD_BITMAP      1
+#define TWD_WINDOW      2
+#define TWD_WINDC       3
 
 typedef struct {
     int type;
@@ -85,20 +85,20 @@ typedef union {
  */
 typedef struct {
     HPALETTE palette;
-    int bkmode;			/* This field was added in Tk
-				 * 8.3.1. Be careful that you don't 
-				 * use this structure in a context
-				 * where its size is important.  */
+    int bkmode;                 /* This field was added in Tk
+                                 * 8.3.1. Be careful that you don't 
+                                 * use this structure in a context
+                                 * where its size is important.  */
 } TkWinDCState;
 
 #ifdef USE_TK_STUBS
 #include "tkIntPlatDecls.h"
 #else 
 extern HDC TkWinGetDrawableDC(Display *display, Drawable drawable, 
-	TkWinDCState *state);
+        TkWinDCState *state);
 
 extern HDC TkWinReleaseDrawableDC(Drawable drawable, HDC dc, 
-	TkWinDCState *state);
+        TkWinDCState *state);
 
 extern HINSTANCE Tk_GetHINSTANCE(void);
 

@@ -43,13 +43,13 @@ extern int TclpHasSockets(Tcl_Interp *interp);
 #endif
 
 BLT_EXTERN FILE *Blt_OpenFile(Tcl_Interp *interp, const char *fileName, 
-	const char *mode);
+        const char *mode);
 
 BLT_EXTERN int Blt_ExprDoubleFromObj (Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	double *valuePtr);
+        double *valuePtr);
 
 BLT_EXTERN int Blt_ExprIntFromObj (Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	int *valuePtr);
+        int *valuePtr);
 
 BLT_EXTERN const char *Blt_Itoa(int value);
 
@@ -60,48 +60,48 @@ BLT_EXTERN const char *Blt_Utoa(unsigned int value);
 BLT_EXTERN const char *Blt_Dtoa(Tcl_Interp *interp, double value);
 
 BLT_EXTERN unsigned char *Blt_Base64_Decode(Tcl_Interp *interp, 
-	const char *string, size_t *lengthPtr);
+        const char *string, size_t *lengthPtr);
 
 BLT_EXTERN const char *Blt_Base64_Encode(const unsigned char *buffer, 
-	size_t bufsize);
+        size_t bufsize);
 
 BLT_EXTERN const char *Blt_Base85_Encode(const unsigned char *buffer, 
-	size_t bufsize);
+        size_t bufsize);
 
 BLT_EXTERN const char *Blt_Base16_Encode(const unsigned char *buffer, 
-	size_t bufsize);
+        size_t bufsize);
 
 BLT_EXTERN int Blt_IsBase64(const char *buf, size_t length);
 
 BLT_EXTERN int Blt_GlobalEvalObjv(Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
+        Tcl_Obj *const *objv);
 BLT_EXTERN int Blt_GlobalEvalListObj(Tcl_Interp *interp, Tcl_Obj *cmdObjPtr);
 
 BLT_EXTERN int Blt_GetDoubleFromString(Tcl_Interp *interp, const char *s, 
-	double *valuePtr);
+        double *valuePtr);
 BLT_EXTERN int Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	double *valuePtr);
+        double *valuePtr);
 
 BLT_EXTERN int Blt_GetTimeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	double *valuePtr);
+        double *valuePtr);
 BLT_EXTERN int Blt_GetTime(Tcl_Interp *interp, const char *string, 
-	double *valuePtr);
+        double *valuePtr);
 
 BLT_EXTERN int Blt_GetDateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	double *timePtr);
+        double *timePtr);
 BLT_EXTERN int Blt_GetDate(Tcl_Interp *interp, const char *string, 
-	double *timePtr);
+        double *timePtr);
 
 #ifndef USE_TCL_STUBS
 BLT_EXTERN int TclGetLong(Tcl_Interp *interp, const char *s, long *longPtr);
-#endif	/*USE_TCL_STUBS*/
+#endif  /*USE_TCL_STUBS*/
 
 BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s, long *longPtr);
 BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	long *longPtr);
+        long *longPtr);
 
 #ifndef HAVE_SPRINTF_S
 BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, /*args*/ ...);
-#endif	/* HAVE_SPRINTF_S */
+#endif  /* HAVE_SPRINTF_S */
 
 #endif /*BLT_UTIL_H*/

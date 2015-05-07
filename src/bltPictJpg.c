@@ -81,7 +81,7 @@ typedef struct _Blt_Picture Picture;
 
 #undef HAVE_STDLIB_H
 #ifdef WIN32
-#define XMD_H	1
+#define XMD_H   1
 #endif
 #undef EXTERN
 #undef FAR
@@ -89,18 +89,18 @@ typedef struct _Blt_Picture Picture;
 #include "jerror.h"
 #include <setjmp.h>
 
-#define PIC_PROGRESSIVE	(1<<0)
-#define PIC_NOQUANTIZE	(1<<1)
+#define PIC_PROGRESSIVE (1<<0)
+#define PIC_NOQUANTIZE  (1<<1)
 
-#define PIC_FMT_ISASCII	(1<<3)
+#define PIC_FMT_ISASCII (1<<3)
 
 typedef struct {
     Tcl_Obj *dataObjPtr;
     Tcl_Obj *fileObjPtr;
-    int quality;			/* Value 0..100 */
-    int smoothing;			/* Value 0..100 */
-    int compress;			/* Value 0..N */
-    int flags;				/* Flag. */
+    int quality;                        /* Value 0..100 */
+    int smoothing;                      /* Value 0..100 */
+    int compress;                       /* Value 0..N */
+    int flags;                          /* Flag. */
     Blt_Pixel bg;
     int index;
 } JpgExportSwitches;
@@ -131,51 +131,51 @@ static Blt_SwitchCustom percentSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,	   "-background", "color", (char *)NULL,
-	Blt_Offset(JpgExportSwitches, bg), 0, 0, &colorSwitch},
+    {BLT_SWITCH_CUSTOM,    "-background", "color", (char *)NULL,
+        Blt_Offset(JpgExportSwitches, bg), 0, 0, &colorSwitch},
     {BLT_SWITCH_OBJ,       "-data",        "varName", (char *)NULL,
-	Blt_Offset(JpgExportSwitches, dataObjPtr),0},
+        Blt_Offset(JpgExportSwitches, dataObjPtr),0},
     {BLT_SWITCH_OBJ,       "-file",        "fileName", (char *)NULL,
-	Blt_Offset(JpgExportSwitches, fileObjPtr),0},
+        Blt_Offset(JpgExportSwitches, fileObjPtr),0},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
-	Blt_Offset(JpgExportSwitches, index), 0},
+        Blt_Offset(JpgExportSwitches, index), 0},
     {BLT_SWITCH_CUSTOM,  "-quality",     "percent", (char *)NULL,
         Blt_Offset(JpgExportSwitches, quality), 0, 0, &percentSwitch},
     {BLT_SWITCH_INT_NNEG,  "-smooth",      "percent", (char *)NULL,
         Blt_Offset(JpgExportSwitches, smoothing), 0, 0, &percentSwitch},
     {BLT_SWITCH_BITMASK,   "-progressive", "", (char *)NULL,
-	Blt_Offset(JpgExportSwitches, flags), 0, PIC_PROGRESSIVE},
+        Blt_Offset(JpgExportSwitches, flags), 0, PIC_PROGRESSIVE},
     {BLT_SWITCH_END}
 };
 
 static Blt_SwitchSpec importSwitches[] = 
 {
     {BLT_SWITCH_OBJ, "-data", "data", (char *)NULL,
-	Blt_Offset(JpgImportSwitches, dataObjPtr), 0},
+        Blt_Offset(JpgImportSwitches, dataObjPtr), 0},
     {BLT_SWITCH_CUSTOM, "-dct", "method", (char *)NULL,
        Blt_Offset(JpgImportSwitches, method), 0, 0, &dctSwitch},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
-	Blt_Offset(JpgImportSwitches, fileObjPtr), 0},
+        Blt_Offset(JpgImportSwitches, fileObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
-#define JPG_BUF_SIZE  4096	       /* Choose an efficiently fwrite'able
-					* size */
+#define JPG_BUF_SIZE  4096             /* Choose an efficiently fwrite'able
+                                        * size */
 
 typedef struct {
-    struct jpeg_source_mgr pub;		/* Public fields */
+    struct jpeg_source_mgr pub;         /* Public fields */
 
-    Blt_DBuffer dBuffer;		/* Collects the converted data. */
+    Blt_DBuffer dBuffer;                /* Collects the converted data. */
 } JpgReader;
 
 typedef struct {
-    struct jpeg_destination_mgr pub;	/* Public fields */
-    Blt_DBuffer dBuffer;		/* Target stream */
-    JOCTET *bytes;			/* Start of buffer */
+    struct jpeg_destination_mgr pub;    /* Public fields */
+    Blt_DBuffer dBuffer;                /* Target stream */
+    JOCTET *bytes;                      /* Start of buffer */
 } JpgWriter;
 
 typedef struct {
-    struct jpeg_error_mgr pub;		/* "Public" fields */
+    struct jpeg_error_mgr pub;          /* "Public" fields */
     jmp_buf jmpbuf;
     Tcl_DString ds;
 } JpgErrorHandler;
@@ -188,34 +188,34 @@ DLLEXPORT extern Tcl_AppInitProc Blt_PictureJpgSafeInit;
  *
  * ColorSwitchProc --
  *
- *	Convert a Tcl_Obj representing a Blt_Pixel color.
+ *      Convert a Tcl_Obj representing a Blt_Pixel color.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ColorSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Blt_Pixel *pixelPtr = (Blt_Pixel *)(record + offset);
     const char *string;
 
     string = Tcl_GetString(objPtr);
     if (string[0] == '\0') {
-	pixelPtr->u32 = 0x00;
-	return TCL_OK;
+        pixelPtr->u32 = 0x00;
+        return TCL_OK;
     }
     if (Blt_GetPixelFromObj(interp, objPtr, pixelPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -225,17 +225,17 @@ ColorSwitchProc(
  *
  * DctSwitchProc --
  *
- *	Convert a Tcl_Obj representing a DCT method.
+ *      Convert a Tcl_Obj representing a DCT method.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 DctSwitchProc(ClientData clientData, Tcl_Interp *interp, const char *switchName,
-              Tcl_Obj *objPtr, char *record, int offset, int flags)	
+              Tcl_Obj *objPtr, char *record, int offset, int flags)     
 {
     int *methodPtr = (int *)(record + offset);
     const char *string;
@@ -262,10 +262,10 @@ DctSwitchProc(ClientData clientData, Tcl_Interp *interp, const char *switchName,
  *
  * PercentSwitchProc --
  *
- *	Convert a Tcl_Obj representing an integer percentage 0 to 100.
+ *      Convert a Tcl_Obj representing an integer percentage 0 to 100.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -273,7 +273,7 @@ DctSwitchProc(ClientData clientData, Tcl_Interp *interp, const char *switchName,
 static int
 PercentSwitchProc(ClientData clientData, Tcl_Interp *interp,
                   const char *switchName, Tcl_Obj *objPtr, char *record,
-                  int offset, int flags)	
+                  int offset, int flags)        
 {
     int *percentPtr = (int *)(record + offset);
     double value;
@@ -337,22 +337,22 @@ static void
 JpgSkipInputData(j_decompress_ptr commPtr, long numBytes)
 {
     if (numBytes > 0) {
-	JpgReader *readerPtr = (JpgReader *)commPtr->src; 
+        JpgReader *readerPtr = (JpgReader *)commPtr->src; 
 
-	if ((readerPtr->pub.next_input_byte + numBytes) >= 
-	    (Blt_DBuffer_Bytes(readerPtr->dBuffer) + 
-	     Blt_DBuffer_Length(readerPtr->dBuffer))) {
-	    char mesg[200];
-	    JpgErrorHandler *errorPtr = (JpgErrorHandler *)commPtr->err;
-	    
-	    sprintf(mesg, "short buffer: wanted %lu bytes, bytes left is %lu",
-		    numBytes, Blt_DBuffer_Length(readerPtr->dBuffer));
-	    Tcl_DStringAppend(&errorPtr->ds, " ", -1);
-	    Tcl_DStringAppend(&errorPtr->ds, mesg, -1);
-	    ERREXIT(commPtr, 10);
-	}
-	readerPtr->pub.next_input_byte += (size_t)numBytes;
-	readerPtr->pub.bytes_in_buffer -= (size_t)numBytes;
+        if ((readerPtr->pub.next_input_byte + numBytes) >= 
+            (Blt_DBuffer_Bytes(readerPtr->dBuffer) + 
+             Blt_DBuffer_Length(readerPtr->dBuffer))) {
+            char mesg[200];
+            JpgErrorHandler *errorPtr = (JpgErrorHandler *)commPtr->err;
+            
+            sprintf(mesg, "short buffer: wanted %lu bytes, bytes left is %lu",
+                    numBytes, Blt_DBuffer_Length(readerPtr->dBuffer));
+            Tcl_DStringAppend(&errorPtr->ds, " ", -1);
+            Tcl_DStringAppend(&errorPtr->ds, mesg, -1);
+            ERREXIT(commPtr, 10);
+        }
+        readerPtr->pub.next_input_byte += (size_t)numBytes;
+        readerPtr->pub.bytes_in_buffer -= (size_t)numBytes;
     }
 }
 
@@ -374,11 +374,11 @@ JpgSetSourceFromBuffer(j_decompress_ptr commPtr, Blt_DBuffer buffer)
      * to use this manager and a different source manager serially with the
      * same JPEG object.  Caveat programmer.
      */
-    if (commPtr->src == NULL) {	     /* First time for this JPEG object? */
-	commPtr->src = (struct jpeg_source_mgr *)
-	    (*commPtr->mem->alloc_small) ((j_common_ptr)commPtr, 
-		JPOOL_PERMANENT, sizeof(JpgReader));
-	readerPtr = (JpgReader *)commPtr->src;
+    if (commPtr->src == NULL) {      /* First time for this JPEG object? */
+        commPtr->src = (struct jpeg_source_mgr *)
+            (*commPtr->mem->alloc_small) ((j_common_ptr)commPtr, 
+                JPOOL_PERMANENT, sizeof(JpgReader));
+        readerPtr = (JpgReader *)commPtr->src;
     }
     readerPtr = (JpgReader *)commPtr->src;
     readerPtr->dBuffer = buffer;
@@ -396,7 +396,7 @@ JpgInitDestination (j_compress_ptr commPtr)
     JpgWriter *writerPtr = (JpgWriter *)commPtr->dest;
 
     writerPtr->bytes = (JOCTET *)(*commPtr->mem->alloc_small) 
-	((j_common_ptr) commPtr, JPOOL_IMAGE, JPG_BUF_SIZE * sizeof(JOCTET));
+        ((j_common_ptr) commPtr, JPOOL_IMAGE, JPG_BUF_SIZE * sizeof(JOCTET));
     writerPtr->pub.next_output_byte = writerPtr->bytes;
     writerPtr->pub.free_in_buffer = JPG_BUF_SIZE;
 }
@@ -407,8 +407,8 @@ JpgEmptyOutputBuffer(j_compress_ptr commPtr)
     JpgWriter *writerPtr = (JpgWriter *)commPtr->dest;
 
     if (!Blt_DBuffer_AppendData(writerPtr->dBuffer, writerPtr->bytes, 
-	JPG_BUF_SIZE)) {
-	ERREXIT(commPtr, 10);
+        JPG_BUF_SIZE)) {
+        ERREXIT(commPtr, 10);
     }
     writerPtr->pub.next_output_byte = writerPtr->bytes;
     writerPtr->pub.free_in_buffer = JPG_BUF_SIZE;
@@ -423,10 +423,10 @@ JpgTermDestination (j_compress_ptr commPtr)
     
     /* Write any data remaining in the buffer */
     if (numBytes > 0) {
-	if (!Blt_DBuffer_AppendData(writerPtr->dBuffer, writerPtr->bytes, 
-		numBytes)) {
-	    ERREXIT(commPtr, 10);
-	}
+        if (!Blt_DBuffer_AppendData(writerPtr->dBuffer, writerPtr->bytes, 
+                numBytes)) {
+            ERREXIT(commPtr, 10);
+        }
     }
 }
 
@@ -442,10 +442,10 @@ JpgSetDestinationToBuffer(j_compress_ptr commPtr, Blt_DBuffer buffer)
      * because their private object sizes may be different.  Caveat
      * programmer.
      */
-    if (commPtr->dest == NULL) {	/* first time for this JPEG object? */
-	commPtr->dest = (struct jpeg_destination_mgr *)
-	    (*commPtr->mem->alloc_small) ((j_common_ptr)commPtr, 
-			JPOOL_PERMANENT, sizeof(JpgWriter));
+    if (commPtr->dest == NULL) {        /* first time for this JPEG object? */
+        commPtr->dest = (struct jpeg_destination_mgr *)
+            (*commPtr->mem->alloc_small) ((j_common_ptr)commPtr, 
+                        JPOOL_PERMANENT, sizeof(JpgWriter));
     }
     writerPtr = (JpgWriter *)commPtr->dest;
     writerPtr->pub.init_destination = JpgInitDestination;
@@ -487,7 +487,7 @@ IsJpg(Blt_DBuffer buffer)
     bool = FALSE;
     Tcl_DStringInit(&error.ds);
     if (setjmp(error.jmpbuf)) {
-	goto done;
+        goto done;
     }
     jpeg_create_decompress(&cinfo);
     JpgSetSourceFromBuffer(&cinfo, buffer);
@@ -513,10 +513,10 @@ IsJpg(Blt_DBuffer buffer)
  */
 static Blt_Chain
 JpgToPicture(
-    Tcl_Interp *interp, 	/* Interpreter to report errors back to. */
-    const char *fileName,	/* Name of file used to fill the dynamic
-				 * buffer.  */
-    Blt_DBuffer buffer,		/* Contents of the above file. */
+    Tcl_Interp *interp,         /* Interpreter to report errors back to. */
+    const char *fileName,       /* Name of file used to fill the dynamic
+                                 * buffer.  */
+    Blt_DBuffer buffer,         /* Contents of the above file. */
     JpgImportSwitches *switchesPtr)
 {
     Blt_Chain chain;
@@ -546,22 +546,22 @@ JpgToPicture(
 
     if (setjmp(error.jmpbuf)) {
     error:
-	jpeg_destroy_decompress(&cinfo);
-	Tcl_DStringResult(interp, &error.ds);
-	return NULL;
+        jpeg_destroy_decompress(&cinfo);
+        Tcl_DStringResult(interp, &error.ds);
+        return NULL;
     }
     jpeg_create_decompress(&cinfo);
     JpgSetSourceFromBuffer(&cinfo, buffer);
 
-    jpeg_read_header(&cinfo, TRUE);	/* Step 3: read file parameters */
+    jpeg_read_header(&cinfo, TRUE);     /* Step 3: read file parameters */
 
-    jpeg_start_decompress(&cinfo);	/* Step 5: Start decompressor */
+    jpeg_start_decompress(&cinfo);      /* Step 5: Start decompressor */
     width = cinfo.output_width;
     height = cinfo.output_height;
     if ((width < 1) || (height < 1)) {
-	Tcl_AppendResult(interp, "error reading \"", fileName, 
-		"\": bad JPEG image size", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "error reading \"", fileName, 
+                "\": bad JPEG image size", (char *)NULL);
+        return NULL;
     }
     /* JSAMPLEs per row in output buffer */
     samplesPerRow = width * cinfo.output_components;
@@ -569,83 +569,83 @@ JpgToPicture(
     /* Make a one-row-high sample array that will go away when done with
      * image */
     rows = (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, 
-	samplesPerRow, 1);
+        samplesPerRow, 1);
     destPtr = Blt_CreatePicture(width, height);
     destRowPtr = destPtr->bits;
     switch (cinfo.output_components) {
     case 1:
-	while (cinfo.output_scanline < height) {
-	    JSAMPLE *bp;
-	    Blt_Pixel *dp;
-	    int i;
+        while (cinfo.output_scanline < height) {
+            JSAMPLE *bp;
+            Blt_Pixel *dp;
+            int i;
 
-	    dp = destRowPtr;
-	    jpeg_read_scanlines(&cinfo, rows, 1);
-	    bp = rows[0];
-	    for (i = 0; i < (int)width; i++) {
-		dp->Red = dp->Green = dp->Blue = *bp++;
-		dp->Alpha = ALPHA_OPAQUE;
-		dp++;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	}
-	break;
+            dp = destRowPtr;
+            jpeg_read_scanlines(&cinfo, rows, 1);
+            bp = rows[0];
+            for (i = 0; i < (int)width; i++) {
+                dp->Red = dp->Green = dp->Blue = *bp++;
+                dp->Alpha = ALPHA_OPAQUE;
+                dp++;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
     case 3:
-	while (cinfo.output_scanline < height) {
-	    JSAMPLE *bp;
-	    Blt_Pixel *dp;
-	    int i;
-	    
-	    dp = destRowPtr;
-	    jpeg_read_scanlines(&cinfo, rows, 1);
-	    bp = rows[0];
-	    for (i = 0; i < (int)width; i++) {
-		dp->Red = *bp++;
-		dp->Green = *bp++;
-		dp->Blue = *bp++;
-		dp->Alpha = ALPHA_OPAQUE;
-		dp++;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	}
-	destPtr->flags |= BLT_PIC_COLOR;
-	break;
+        while (cinfo.output_scanline < height) {
+            JSAMPLE *bp;
+            Blt_Pixel *dp;
+            int i;
+            
+            dp = destRowPtr;
+            jpeg_read_scanlines(&cinfo, rows, 1);
+            bp = rows[0];
+            for (i = 0; i < (int)width; i++) {
+                dp->Red = *bp++;
+                dp->Green = *bp++;
+                dp->Blue = *bp++;
+                dp->Alpha = ALPHA_OPAQUE;
+                dp++;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        destPtr->flags |= BLT_PIC_COLOR;
+        break;
     case 4:
-	while (cinfo.output_scanline < height) {
-	    JSAMPLE *bp;
-	    Blt_Pixel *dp;
-	    int i;
-	    
-	    dp = destRowPtr;
-	    jpeg_read_scanlines(&cinfo, rows, 1);
-	    bp = rows[0];
-	    for (i = 0; i < (int)width; i++) {
-		dp->Red = *bp++;
-		dp->Green = *bp++;
-		dp->Blue = *bp++;
-		dp->Alpha = *bp++;
-		dp++;
-	    }
-	    destRowPtr += destPtr->pixelsPerRow;
-	}
-	destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_BLEND;
-	break;
+        while (cinfo.output_scanline < height) {
+            JSAMPLE *bp;
+            Blt_Pixel *dp;
+            int i;
+            
+            dp = destRowPtr;
+            jpeg_read_scanlines(&cinfo, rows, 1);
+            bp = rows[0];
+            for (i = 0; i < (int)width; i++) {
+                dp->Red = *bp++;
+                dp->Green = *bp++;
+                dp->Blue = *bp++;
+                dp->Alpha = *bp++;
+                dp++;
+            }
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_BLEND;
+        break;
     default:
-	Tcl_AppendResult(interp, "\"", fileName, "\": ",
-			 "don't know how to handle JPEG image with ", 
-			Blt_Itoa(cinfo.output_components), 
-			" output components.", (char *)NULL);
-	Blt_FreePicture(destPtr);
-	goto error;
+        Tcl_AppendResult(interp, "\"", fileName, "\": ",
+                         "don't know how to handle JPEG image with ", 
+                        Blt_Itoa(cinfo.output_components), 
+                        " output components.", (char *)NULL);
+        Blt_FreePicture(destPtr);
+        goto error;
     }
     jpeg_finish_decompress(&cinfo);
     jpeg_destroy_decompress(&cinfo);
 
     if (error.pub.num_warnings > 0) {
-	Tcl_SetErrorCode(interp, "PICTURE", "JPG_READ_WARNINGS", 
-		Tcl_DStringValue(&error.ds), (char *)NULL);
+        Tcl_SetErrorCode(interp, "PICTURE", "JPG_READ_WARNINGS", 
+                Tcl_DStringValue(&error.ds), (char *)NULL);
     } else {
-	Tcl_SetErrorCode(interp, "NONE", (char *)NULL);
+        Tcl_SetErrorCode(interp, "NONE", (char *)NULL);
     }
     Tcl_DStringFree(&error.ds);
     chain = Blt_Chain_Create();
@@ -670,16 +670,16 @@ JpgToPicture(
  *      output of the image.
  *
  * Side Effects:
- *	Memory is allocated for the dynamic buffer.
+ *      Memory is allocated for the dynamic buffer.
  *
  *---------------------------------------------------------------------------
  */
 static int
 PictureToJpg(
-    Tcl_Interp *interp, 	/* Interpreter to report errors back to. */
-    Blt_Picture original,	/* Picture source. */
-    Blt_DBuffer buffer,		/* Destination buffer to contain the JPEG
-				 * image.  */
+    Tcl_Interp *interp,         /* Interpreter to report errors back to. */
+    Blt_Picture original,       /* Picture source. */
+    Blt_DBuffer buffer,         /* Destination buffer to contain the JPEG
+                                 * image.  */
     JpgExportSwitches *switchesPtr)
 {
     JpgErrorHandler error;
@@ -700,9 +700,9 @@ PictureToJpg(
     Tcl_DStringAppend(&error.ds, "error writing jpg: ", -1);
 
     if (setjmp(error.jmpbuf)) {
-	/* Transfer the error message to the interpreter result. */
-	Tcl_DStringResult(interp, &error.ds);
-	goto bad;
+        /* Transfer the error message to the interpreter result. */
+        Tcl_DStringResult(interp, &error.ds);
+        goto bad;
     }
 
     /* Now we can initialize the JPEG compression object. */
@@ -721,39 +721,39 @@ PictureToJpg(
     cinfo.image_height = srcPtr->height;
 
     if (!Blt_Picture_IsOpaque(srcPtr)) {
-	Blt_Picture background;
+        Blt_Picture background;
 
-	/* Blend picture with solid color background. */
-	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
-	Blt_BlankPicture(background, switchesPtr->bg.u32); 
-	Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-			0, 0);
-	if (srcPtr != original) {
-	    Blt_FreePicture(srcPtr);
-	}
-	srcPtr = background;
+        /* Blend picture with solid color background. */
+        background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
+        Blt_BlankPicture(background, switchesPtr->bg.u32); 
+        Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+                        0, 0);
+        if (srcPtr != original) {
+            Blt_FreePicture(srcPtr);
+        }
+        srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_Picture unassoc;
-	/* 
-	 * The picture has an alpha burned into the components.  Create a
-	 * temporary copy removing pre-multiplied alphas.
-	 */ 
-	unassoc = Blt_ClonePicture(srcPtr);
-	Blt_UnassociateColors(unassoc);
-	if (srcPtr != original) {
-	    Blt_FreePicture(srcPtr);
-	}
-	srcPtr = unassoc;
+        Blt_Picture unassoc;
+        /* 
+         * The picture has an alpha burned into the components.  Create a
+         * temporary copy removing pre-multiplied alphas.
+         */ 
+        unassoc = Blt_ClonePicture(srcPtr);
+        Blt_UnassociateColors(unassoc);
+        if (srcPtr != original) {
+            Blt_FreePicture(srcPtr);
+        }
+        srcPtr = unassoc;
     }
     Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     if (Blt_Picture_IsColor(srcPtr)) {
-	cinfo.input_components = 3;   /* # of color components per pixel */
-	cinfo.in_color_space = JCS_RGB;	/* Colorspace of input image */
+        cinfo.input_components = 3;   /* # of color components per pixel */
+        cinfo.in_color_space = JCS_RGB; /* Colorspace of input image */
     } else {
-	cinfo.input_components = 1;   /* # of color components per pixel */
-	cinfo.in_color_space = JCS_GRAYSCALE; /* Colorspace of input image */
-    }	
+        cinfo.input_components = 1;   /* # of color components per pixel */
+        cinfo.in_color_space = JCS_GRAYSCALE; /* Colorspace of input image */
+    }   
     jpeg_set_defaults(&cinfo);
 
     /* 
@@ -764,10 +764,10 @@ PictureToJpg(
     /* limit to baseline-JPEG values */
     jpeg_set_quality(&cinfo, switchesPtr->quality, TRUE);
     if (switchesPtr->flags & PIC_PROGRESSIVE) {
-	jpeg_simple_progression(&cinfo);
+        jpeg_simple_progression(&cinfo);
     }
     if (switchesPtr->smoothing > 0) {
-	cinfo.smoothing_factor = switchesPtr->smoothing;
+        cinfo.smoothing_factor = switchesPtr->smoothing;
     }
     /* Step 4: Start compressor */
 
@@ -776,49 +776,49 @@ PictureToJpg(
     /* Step 5: while (scan lines remain to be written) */
     /*           jpeg_write_scanlines(...); */
     {
-	int y;
-	int row_stride;
-	JSAMPLE *destRow;
-	Blt_Pixel *srcRowPtr;
-	JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
+        int y;
+        int row_stride;
+        JSAMPLE *destRow;
+        Blt_Pixel *srcRowPtr;
+        JSAMPROW row_pointer[1];        /* pointer to JSAMPLE row[s] */
 
-	/* JSAMPLEs per row in image_buffer */
-	row_stride = srcPtr->width * cinfo.input_components;
-	destRow = Blt_AssertMalloc(sizeof(JSAMPLE) * row_stride);
-	srcRowPtr = srcPtr->bits;
-	if (cinfo.input_components == 3) {
-	    for (y = 0; y < srcPtr->height; y++) {
-		Blt_Pixel *sp, *send;
-		JSAMPLE *dp;
-		
-		dp = destRow;
-		for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; 
-		     sp++) {
-		    dp[0] = sp->Red;
-		    dp[1] = sp->Green;
-		    dp[2] = sp->Blue;
-		    dp += 3;
-		}
-		row_pointer[0] = destRow;
-		jpeg_write_scanlines(&cinfo, row_pointer, 1);
-		srcRowPtr += srcPtr->pixelsPerRow;
-	    }
-	} else {
-	    for (y = 0; y < srcPtr->height; y++) {
-		Blt_Pixel *sp, *send;
-		JSAMPLE *dp;
-		
-		dp = destRow;
-		for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; 
-		     sp++) {
-		    *dp++ = sp->Red;
-		}
-		row_pointer[0] = destRow;
-		jpeg_write_scanlines(&cinfo, row_pointer, 1);
-		srcRowPtr += srcPtr->pixelsPerRow;
-	    }
-	}
-	Blt_Free(destRow);
+        /* JSAMPLEs per row in image_buffer */
+        row_stride = srcPtr->width * cinfo.input_components;
+        destRow = Blt_AssertMalloc(sizeof(JSAMPLE) * row_stride);
+        srcRowPtr = srcPtr->bits;
+        if (cinfo.input_components == 3) {
+            for (y = 0; y < srcPtr->height; y++) {
+                Blt_Pixel *sp, *send;
+                JSAMPLE *dp;
+                
+                dp = destRow;
+                for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; 
+                     sp++) {
+                    dp[0] = sp->Red;
+                    dp[1] = sp->Green;
+                    dp[2] = sp->Blue;
+                    dp += 3;
+                }
+                row_pointer[0] = destRow;
+                jpeg_write_scanlines(&cinfo, row_pointer, 1);
+                srcRowPtr += srcPtr->pixelsPerRow;
+            }
+        } else {
+            for (y = 0; y < srcPtr->height; y++) {
+                Blt_Pixel *sp, *send;
+                JSAMPLE *dp;
+                
+                dp = destRow;
+                for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; 
+                     sp++) {
+                    *dp++ = sp->Red;
+                }
+                row_pointer[0] = destRow;
+                jpeg_write_scanlines(&cinfo, row_pointer, 1);
+                srcRowPtr += srcPtr->pixelsPerRow;
+            }
+        }
+        Blt_Free(destRow);
     }
     /* Step 6: Finish compression */
     jpeg_finish_compress(&cinfo);
@@ -828,14 +828,14 @@ PictureToJpg(
     jpeg_destroy_compress(&cinfo);
 
     if (error.pub.num_warnings > 0) {
-	Tcl_SetErrorCode(interp, "PICTURE", "JPG_WRITE_WARNINGS", 
-		Tcl_DStringValue(&error.ds), (char *)NULL);
+        Tcl_SetErrorCode(interp, "PICTURE", "JPG_WRITE_WARNINGS", 
+                Tcl_DStringValue(&error.ds), (char *)NULL);
     } else {
-	Tcl_SetErrorCode(interp, "NONE", (char *)NULL);
+        Tcl_SetErrorCode(interp, "NONE", (char *)NULL);
     }
     Tcl_DStringFree(&error.ds);
     if (srcPtr != original) {
-	Blt_FreePicture(srcPtr);
+        Blt_FreePicture(srcPtr);
     }
     return result;
 }
@@ -860,13 +860,13 @@ WriteJpg(Tcl_Interp *interp, Blt_Picture picture)
     memset(&switches, 0, sizeof(switches));
     switches.quality = 100;
     switches.smoothing = 0;
-    switches.flags = 0;		       /* No progressive or compression. */
+    switches.flags = 0;                /* No progressive or compression. */
     switches.bg.u32 = 0xFFFFFFFF;      /* White */
 
     objPtr = NULL;
     dbuffer = Blt_DBuffer_Create();
     if (PictureToJpg(interp, picture, dbuffer, &switches) == TCL_OK) {
-	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
+        objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
     }
     Blt_DBuffer_Destroy(dbuffer);
     return objPtr;
@@ -874,7 +874,7 @@ WriteJpg(Tcl_Interp *interp, Blt_Picture picture)
 
 static Blt_Chain
 ImportJpg(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, 
-	  const char **fileNamePtr)
+          const char **fileNamePtr)
 {
     Blt_DBuffer dbuffer;
     Blt_Chain chain;
@@ -884,40 +884,40 @@ ImportJpg(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     memset(&switches, 0, sizeof(switches));
     switches.method = JDCT_ISLOW;       /* Default method. */
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
-	return NULL;
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+        return NULL;
     }
     if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
-	Tcl_AppendResult(interp, "more than one import source: ",
-		"use only one -file or -data flag.", (char *)NULL);
-	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
-	return NULL;
+        Tcl_AppendResult(interp, "more than one import source: ",
+                "use only one -file or -data flag.", (char *)NULL);
+        Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+        return NULL;
     }
     dbuffer = Blt_DBuffer_Create();
     chain = NULL;
     if (switches.dataObjPtr != NULL) {
-	unsigned char *bytes;
-	int numBytes;
+        unsigned char *bytes;
+        int numBytes;
 
-	bytes = Tcl_GetByteArrayFromObj(switches.dataObjPtr, &numBytes);
-	string = (const char *)bytes;
-	if (Blt_IsBase64(string, numBytes)) {
-	    if (Blt_DBuffer_Base64Decode(interp, string, numBytes, dbuffer) 
-		!= TCL_OK) {
-		goto error;
-	    }
-	} else {
-	    Blt_DBuffer_AppendData(dbuffer, bytes, numBytes);
-	} 
-	string = "data buffer";
-	*fileNamePtr = NULL;
+        bytes = Tcl_GetByteArrayFromObj(switches.dataObjPtr, &numBytes);
+        string = (const char *)bytes;
+        if (Blt_IsBase64(string, numBytes)) {
+            if (Blt_DBuffer_Base64Decode(interp, string, numBytes, dbuffer) 
+                != TCL_OK) {
+                goto error;
+            }
+        } else {
+            Blt_DBuffer_AppendData(dbuffer, bytes, numBytes);
+        } 
+        string = "data buffer";
+        *fileNamePtr = NULL;
     } else {
-	string = Tcl_GetString(switches.fileObjPtr);
-	*fileNamePtr = string;
-	if (Blt_DBuffer_LoadFile(interp, string, dbuffer) != TCL_OK) {
-	    goto error;
-	}
+        string = Tcl_GetString(switches.fileObjPtr);
+        *fileNamePtr = string;
+        if (Blt_DBuffer_LoadFile(interp, string, dbuffer) != TCL_OK) {
+            goto error;
+        }
     }
     chain = JpgToPicture(interp, string, dbuffer, &switches);
  error:
@@ -939,68 +939,68 @@ ExportJpg(Tcl_Interp *interp, int index, Blt_Chain chain, int objc,
     memset(&switches, 0, sizeof(switches));
     switches.quality = 100;
     switches.smoothing = 0;
-    switches.flags = 0;		       /* No progressive or compression. */
+    switches.flags = 0;                /* No progressive or compression. */
     switches.bg.u32 = 0xFFFFFFFF;      /* White */
     switches.index = index;
 
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+        return TCL_ERROR;
     }
     if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
-	Tcl_AppendResult(interp, "more than one export destination: ",
-		"use only one -file or -data flag.", (char *)NULL);
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "more than one export destination: ",
+                "use only one -file or -data flag.", (char *)NULL);
+        Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+        return TCL_ERROR;
     }
     picture = Blt_GetNthPicture(chain, switches.index);
     if (picture == NULL) {
-	Tcl_AppendResult(interp, "no picture at index ", 
-		Blt_Itoa(switches.index), (char *)NULL);
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "no picture at index ", 
+                Blt_Itoa(switches.index), (char *)NULL);
+        Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+        return TCL_ERROR;
     }
     if (switches.quality == 0) {
-	switches.quality = 100;		/* Default quality setting. */
+        switches.quality = 100;         /* Default quality setting. */
     } else if (switches.quality > 100) {
-	switches.quality = 100;		/* Maximum quality setting. */
+        switches.quality = 100;         /* Maximum quality setting. */
     }
     if (switches.smoothing > 100) {
-	switches.smoothing = 100;	/* Maximum smoothing setting. */
+        switches.smoothing = 100;       /* Maximum smoothing setting. */
     }
 
     dbuffer = Blt_DBuffer_Create();
     result = PictureToJpg(interp, picture, dbuffer, &switches);
     if (result != TCL_OK) {
-	Tcl_AppendResult(interp, "can't convert \"", 
-		Tcl_GetString(objv[2]), "\"", (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "can't convert \"", 
+                Tcl_GetString(objv[2]), "\"", (char *)NULL);
+        goto error;
     }
 
     if (switches.fileObjPtr != NULL) {
-	const char *fileName;
+        const char *fileName;
 
-	/* Write the image into the designated file. */
-	fileName = Tcl_GetString(switches.fileObjPtr);
-	result = Blt_DBuffer_SaveFile(interp, fileName, dbuffer);
+        /* Write the image into the designated file. */
+        fileName = Tcl_GetString(switches.fileObjPtr);
+        result = Blt_DBuffer_SaveFile(interp, fileName, dbuffer);
     } else if (switches.dataObjPtr != NULL) {
-	Tcl_Obj *objPtr;
+        Tcl_Obj *objPtr;
 
-	/* Write the image into the designated TCL variable. */
-	objPtr = Tcl_ObjSetVar2(interp, switches.dataObjPtr, NULL, 
-		Blt_DBuffer_ByteArrayObj(dbuffer), 0);
-	result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
+        /* Write the image into the designated TCL variable. */
+        objPtr = Tcl_ObjSetVar2(interp, switches.dataObjPtr, NULL, 
+                Blt_DBuffer_ByteArrayObj(dbuffer), 0);
+        result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
     } else {
-	Tcl_Obj *objPtr;
+        Tcl_Obj *objPtr;
 
-	/* Return the image as a base64 string in the interpreter result. */
-	result = TCL_ERROR;
-	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
-	if (objPtr != NULL) {
-	    Tcl_SetObjResult(interp, objPtr);
-	    result = TCL_OK;
-	}
+        /* Return the image as a base64 string in the interpreter result. */
+        result = TCL_ERROR;
+        objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
+        if (objPtr != NULL) {
+            Tcl_SetObjResult(interp, objPtr);
+            result = TCL_OK;
+        }
     }
  error:
     Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
@@ -1013,34 +1013,34 @@ Blt_PictureJpgInit(Tcl_Interp *interp)
 {
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #endif
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
     if (Blt_InitTkStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else
     if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_PkgRequire(interp, "blt_tk", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #endif    
     if (Tcl_PkgProvide(interp, "blt_picture_jpg", BLT_VERSION) != TCL_OK) { 
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return Blt_PictureRegisterFormat(interp,
-	"jpg",				/* Name of format. */
-	IsJpg,				/* Format discovery procedure. */
-	ReadJpg,			/* Read format procedure. */
-	WriteJpg,			/* Write format procedure. */
-	ImportJpg,			/* Import format procedure. */
-	ExportJpg);			/* Export format procedure. */
+        "jpg",                          /* Name of format. */
+        IsJpg,                          /* Format discovery procedure. */
+        ReadJpg,                        /* Read format procedure. */
+        WriteJpg,                       /* Write format procedure. */
+        ImportJpg,                      /* Import format procedure. */
+        ExportJpg);                     /* Export format procedure. */
 }
 
 int 

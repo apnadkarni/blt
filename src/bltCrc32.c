@@ -61,7 +61,7 @@
  * 64 lines of 4 values for a 256 dword table (1024 bytes)
  */
 static unsigned long crc32[256] =
-{				/* CRC polynomial 0xedb88320 */
+{                               /* CRC polynomial 0xedb88320 */
     0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F, 
     0xE963A535, 0x9E6495A3, 0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988,
     0x09B64C2B, 0x7EB17CBD, 0xE7B82D07, 0x90BF1D91, 0x1DB71064, 0x6AB020F2, 
@@ -119,7 +119,7 @@ Crc32FromObj(Tcl_Obj *objPtr, unsigned long *sumPtr)
     buffer = Tcl_GetStringFromObj(objPtr, &numBytes);
     sum = *sumPtr;
     for (bp = buffer, bend = bp + numBytes; bp < bend; bp++) {
-	sum = CRC32(sum, *bp);
+        sum = CRC32(sum, *bp);
     }
     *sumPtr = sum;
     return TCL_OK;
@@ -132,56 +132,56 @@ Crc32File(Tcl_Interp *interp, char *fileName, unsigned long *sumPtr)
     int closeChannel;
     int done;
     unsigned long sum;
-#define BUFFSIZE	8192
+#define BUFFSIZE        8192
 
     closeChannel = TRUE;
     if ((fileName[0] == '@') && (fileName[1] != '\0')) {
-	int mode;
-	
-	channel = Tcl_GetChannel(interp, fileName+1, &mode);
-	if (channel == NULL) {
-	    return TCL_ERROR;
-	}
-	if ((mode & TCL_WRITABLE) == 0) {
-	    Tcl_AppendResult(interp, "channel \"", fileName, 
-		"\" not opened for writing", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	closeChannel = FALSE;
+        int mode;
+        
+        channel = Tcl_GetChannel(interp, fileName+1, &mode);
+        if (channel == NULL) {
+            return TCL_ERROR;
+        }
+        if ((mode & TCL_WRITABLE) == 0) {
+            Tcl_AppendResult(interp, "channel \"", fileName, 
+                "\" not opened for writing", (char *)NULL);
+            return TCL_ERROR;
+        }
+        closeChannel = FALSE;
     } else {
-	channel = Tcl_OpenFileChannel(interp, fileName, "r", 0);
-	if (channel == NULL) {
-	    return TCL_ERROR;
-	}
+        channel = Tcl_OpenFileChannel(interp, fileName, "r", 0);
+        if (channel == NULL) {
+            return TCL_ERROR;
+        }
     }
     if (Tcl_SetChannelOption(interp, channel, "-translation", "binary") 
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     done = FALSE;
     sum = *sumPtr;
     while (!done) {
-	char *bp, *bend;
-	int numBytes;
-#define BUFFSIZE	8192
-	char buffer[BUFFSIZE];
+        char *bp, *bend;
+        int numBytes;
+#define BUFFSIZE        8192
+        char buffer[BUFFSIZE];
 
-	numBytes = Tcl_Read(channel, buffer, sizeof(char) * BUFFSIZE);
-	if (numBytes < 0) {
-	    Tcl_AppendResult(interp, "\nread error: ", Tcl_PosixError(interp),
-			     (char *)NULL);
-	    if (closeChannel) {
-		Tcl_Close(interp, channel);
-	    }
-	    return TCL_ERROR;
-	}
-	done = Tcl_Eof(channel);
-	for (bp = buffer, bend = bp + numBytes; bp < bend; bp++) {
-	    sum = CRC32(sum, *bp);
-	}
+        numBytes = Tcl_Read(channel, buffer, sizeof(char) * BUFFSIZE);
+        if (numBytes < 0) {
+            Tcl_AppendResult(interp, "\nread error: ", Tcl_PosixError(interp),
+                             (char *)NULL);
+            if (closeChannel) {
+                Tcl_Close(interp, channel);
+            }
+            return TCL_ERROR;
+        }
+        done = Tcl_Eof(channel);
+        for (bp = buffer, bend = bp + numBytes; bp < bend; bp++) {
+            sum = CRC32(sum, *bp);
+        }
     }
     if (closeChannel) {
-	Tcl_Close(interp, channel);
+        Tcl_Close(interp, channel);
     }
     *sumPtr = sum;
     return TCL_OK;
@@ -191,7 +191,7 @@ Crc32File(Tcl_Interp *interp, char *fileName, unsigned long *sumPtr)
 /*ARGSUSED*/
 static int
 Crc32Cmd(
-   ClientData clientData,	/* Not used. */
+   ClientData clientData,       /* Not used. */
    Tcl_Interp *interp, 
    int objc, 
    Tcl_Obj *const *objv)
@@ -201,35 +201,35 @@ Crc32Cmd(
     crc = 0L;
     crc = crc ^ 0xffffffffUL;
     if (objc == 2) {
-	if (Crc32File(interp, Tcl_GetString(objv[1]), &crc) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (Crc32File(interp, Tcl_GetString(objv[1]), &crc) != TCL_OK) {
+            return TCL_ERROR;
+        }
     } else if (objc == 3) {
-	char *string;
+        char *string;
 
-	string = Tcl_GetString(objv[1]);
-	if (strcmp(string, "-data") == 0) {
-	    if (Crc32FromObj(objv[2], &crc) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	 } else { 
-	    Tcl_AppendResult(interp, "wrong # args: should be \"", 
-		Tcl_GetString(objv[0]), " ?fileName? ?-data dataString?", 
-			     (char *)NULL);
-	    return TCL_ERROR;
-	}
+        string = Tcl_GetString(objv[1]);
+        if (strcmp(string, "-data") == 0) {
+            if (Crc32FromObj(objv[2], &crc) != TCL_OK) {
+                return TCL_ERROR;
+            }
+         } else { 
+            Tcl_AppendResult(interp, "wrong # args: should be \"", 
+                Tcl_GetString(objv[0]), " ?fileName? ?-data dataString?", 
+                             (char *)NULL);
+            return TCL_ERROR;
+        }
     } else {
-	Tcl_AppendResult(interp, "wrong # args: should be \"", 
-		Tcl_GetString(objv[0]), " ?fileName? ?-data dataString?", 
-		(char *)NULL);
-	    return TCL_ERROR;
+        Tcl_AppendResult(interp, "wrong # args: should be \"", 
+                Tcl_GetString(objv[0]), " ?fileName? ?-data dataString?", 
+                (char *)NULL);
+            return TCL_ERROR;
     }
     crc = crc ^ 0xffffffffUL;
     {
-	char buf[200];
+        char buf[200];
 
-	Blt_FormatString(buf, 200, "%lx", crc);
-	Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, -1);
+        Blt_FormatString(buf, 200, "%lx", crc);
+        Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, -1);
     }
     return TCL_OK;
 }

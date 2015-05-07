@@ -47,19 +47,19 @@ extern Tcl_AppInitProc Blt_TkPkgsInit;
 extern Tcl_AppInitProc Blt_StaticInit;
 
 int
-Blt_StaticInit(Tcl_Interp *interp)	/* Interpreter for application. */
+Blt_StaticInit(Tcl_Interp *interp)      /* Interpreter for application. */
 {
     if (Blt_TclInit(interp) == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_TclPkgsInit(interp) == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_TkInit(interp) == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_TkPkgsInit(interp) == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }

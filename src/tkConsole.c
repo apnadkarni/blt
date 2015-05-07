@@ -2,9 +2,9 @@
 /*
  * tkConsole.c --
  *
- *	This file implements a TCL console for systems that may not
- *	otherwise have access to a console.  It uses the Text widget
- *	and provides special access via a console command.
+ *      This file implements a TCL console for systems that may not
+ *      otherwise have access to a console.  It uses the Text widget
+ *      and provides special access via a console command.
  *
  * Copyright (c) 1995-1996 Sun Microsystems, Inc.
  *
@@ -56,7 +56,7 @@
 #include <string.h>
 #endif
 
-#define _VERSION(a,b,c)	    (((a) << 16) + ((b) << 8) + (c))
+#define _VERSION(a,b,c)     (((a) << 16) + ((b) << 8) + (c))
 
 #define _TCL_VERSION _VERSION(TCL_MAJOR_VERSION, TCL_MINOR_VERSION, TCL_RELEASE_SERIAL)
 #define _TK_VERSION _VERSION(TK_MAJOR_VERSION, TK_MINOR_VERSION, TK_RELEASE_SERIAL)
@@ -70,8 +70,8 @@
  */
 
 typedef struct {
-    Tcl_Interp *consoleInterp;	/* Interpreter for the console. */
-    Tcl_Interp *interp;		/* Interpreter to send console commands. */
+    Tcl_Interp *consoleInterp;  /* Interpreter for the console. */
+    Tcl_Interp *interp;         /* Interpreter to send console commands. */
 } ConsoleInfo;
 
 static Tcl_Interp *gStdoutInterp = NULL;
@@ -102,16 +102,16 @@ static Tcl_CmdProc InterpreterCmd;
 static Tk_EventProc ConsoleEventProc;
 
 static void ConsolePrint(Tcl_Interp *interp, int devId, const char *buffer, 
-	long size);
+        long size);
 
 static int ConsoleInput(ClientData instanceData, char *buf, int toRead, 
-	int *errorCode);
+        int *errorCode);
 static int ConsoleOutput(ClientData instanceData, char *buf, int toWrite, 
-	int *errorCode);
+        int *errorCode);
 static int ConsoleClose (ClientData instanceData, Tcl_Interp *interp);
 static void ConsoleWatch(ClientData instanceData, int mask);
 static int ConsoleHandle(ClientData instanceData, int direction, 
-	ClientData *handlePtr);
+        ClientData *handlePtr);
 
 /*
  * This structure describes the channel type structure for file based IO:
@@ -119,16 +119,16 @@ static int ConsoleHandle(ClientData instanceData, int direction,
 
 static Tcl_ChannelType consoleChannelType =
 {
-    "console",			/* Type name. */
-    NULL,			/* Always non-blocking.*/
-    ConsoleClose,		/* Close proc. */
-    ConsoleInput,		/* Input proc. */
-    ConsoleOutput,		/* Output proc. */
-    NULL,			/* Seek proc. */
-    NULL,			/* Set option proc. */
-    NULL,			/* Get option proc. */
-    ConsoleWatch,		/* Watch for events on console. */
-    ConsoleHandle,		/* Get a handle from the device. */
+    "console",                  /* Type name. */
+    NULL,                       /* Always non-blocking.*/
+    ConsoleClose,               /* Close proc. */
+    ConsoleInput,               /* Input proc. */
+    ConsoleOutput,              /* Output proc. */
+    NULL,                       /* Seek proc. */
+    NULL,                       /* Set option proc. */
+    NULL,                       /* Get option proc. */
+    ConsoleWatch,               /* Watch for events on console. */
+    ConsoleHandle,              /* Get a handle from the device. */
 };
 
 /*
@@ -136,16 +136,16 @@ static Tcl_ChannelType consoleChannelType =
  *
  * Blt_ConsoleCreate --
  *
- * 	Create the console channels and install them as the standard
- * 	channels.  All I/O will be discarded until Blt_ConsoleInit is
- * 	called to attach the console to a text widget.
+ *      Create the console channels and install them as the standard
+ *      channels.  All I/O will be discarded until Blt_ConsoleInit is
+ *      called to attach the console to a text widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Creates the console channel and installs it as the standard
- *	channels.
+ *      Creates the console channel and installs it as the standard
+ *      channels.
  *
  *---------------------------------------------------------------------------
  */
@@ -159,32 +159,32 @@ Blt_ConsoleCreate()
     TclInitSubsystems(NULL);
 #endif
     channel = Tcl_CreateChannel(&consoleChannelType, "console0",
-	(ClientData)TCL_STDIN, TCL_READABLE);
+        (ClientData)TCL_STDIN, TCL_READABLE);
     if (channel != NULL) {
-	Tcl_SetChannelOption(NULL, channel, "-translation", "lf");
-	Tcl_SetChannelOption(NULL, channel, "-buffering", "none");
+        Tcl_SetChannelOption(NULL, channel, "-translation", "lf");
+        Tcl_SetChannelOption(NULL, channel, "-buffering", "none");
 #ifdef HAVE_UTF
-	Tcl_SetChannelOption(NULL, channel, "-encoding", "utf-8");
+        Tcl_SetChannelOption(NULL, channel, "-encoding", "utf-8");
 #endif
     }
     Tcl_SetStdChannel(channel, TCL_STDIN);
     channel = Tcl_CreateChannel(&consoleChannelType, "console1",
-	(ClientData)TCL_STDOUT, TCL_WRITABLE);
+        (ClientData)TCL_STDOUT, TCL_WRITABLE);
     if (channel != NULL) {
-	Tcl_SetChannelOption(NULL, channel, "-translation", "lf");
-	Tcl_SetChannelOption(NULL, channel, "-buffering", "none");
+        Tcl_SetChannelOption(NULL, channel, "-translation", "lf");
+        Tcl_SetChannelOption(NULL, channel, "-buffering", "none");
 #ifdef HAVE_UTF
-	Tcl_SetChannelOption(NULL, channel, "-encoding", "utf-8");
+        Tcl_SetChannelOption(NULL, channel, "-encoding", "utf-8");
 #endif
     }
     Tcl_SetStdChannel(channel, TCL_STDOUT);
     channel = Tcl_CreateChannel(&consoleChannelType, "console2",
-	(ClientData)TCL_STDERR, TCL_WRITABLE);
+        (ClientData)TCL_STDERR, TCL_WRITABLE);
     if (channel != NULL) {
-	Tcl_SetChannelOption(NULL, channel, "-translation", "lf");
-	Tcl_SetChannelOption(NULL, channel, "-buffering", "none");
+        Tcl_SetChannelOption(NULL, channel, "-translation", "lf");
+        Tcl_SetChannelOption(NULL, channel, "-buffering", "none");
 #ifdef HAVE_UTF
-	Tcl_SetChannelOption(NULL, channel, "-encoding", "utf-8");
+        Tcl_SetChannelOption(NULL, channel, "-encoding", "utf-8");
 #endif
     }
     Tcl_SetStdChannel(channel, TCL_STDERR);
@@ -195,22 +195,22 @@ Blt_ConsoleCreate()
  *
  * Blt_ConsoleInit --
  *
- *	Initialize the console.  This code actually creates a new
- *	application and associated interpreter.  This effectivly hides
- *	the implementation from the main application.
+ *      Initialize the console.  This code actually creates a new
+ *      application and associated interpreter.  This effectivly hides
+ *      the implementation from the main application.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	A new console it created.
+ *      A new console it created.
  *
  *---------------------------------------------------------------------------
  */
 
 int
 Blt_ConsoleInit(interp)
-    Tcl_Interp *interp;		/* Interpreter to use for prompting. */
+    Tcl_Interp *interp;         /* Interpreter to use for prompting. */
 {
     Tcl_Interp *consoleInterp;
     ConsoleInfo *info;
@@ -224,20 +224,20 @@ Blt_ConsoleInit(interp)
 
     consoleInterp = Tcl_CreateInterp();
     if (consoleInterp == NULL) {
-	goto error;
+        goto error;
     } 
 #if defined(HAVE_BROKEN_LIB_PATH) && defined(TCLLIBPATH)
     Tcl_SetVar(consoleInterp, "tclDefaultLibrary", 
-	       TCLLIBPATH, TCL_GLOBAL_ONLY);
+               TCLLIBPATH, TCL_GLOBAL_ONLY);
 #endif
     /*
      * Initialized TCL and Tk.
      */
     if (Tcl_Init(consoleInterp) != TCL_OK) {
-	goto error;
+        goto error;
     }
     if (Tk_Init(consoleInterp) != TCL_OK) {
-	goto error;
+        goto error;
     }
     gStdoutInterp = interp;
 
@@ -248,23 +248,23 @@ Blt_ConsoleInit(interp)
     info->interp = interp;
     info->consoleInterp = consoleInterp;
     Tcl_CreateCommand(interp, "console", ConsoleCmd, info,
-	(Tcl_CmdDeleteProc *)ConsoleDeleteProc);
+        (Tcl_CmdDeleteProc *)ConsoleDeleteProc);
     Tcl_CreateCommand(consoleInterp, "consoleinterp", InterpreterCmd, info, 
-	(Tcl_CmdDeleteProc *)NULL);
+        (Tcl_CmdDeleteProc *)NULL);
 
     Tk_CreateEventHandler(tkMain, StructureNotifyMask, ConsoleEventProc, info);
 
     Tcl_Preserve(consoleInterp);
     if (Tcl_Eval(consoleInterp, initCmd) == TCL_ERROR) {
-	/* goto error; -- no problem for now... */
-	printf("Eval error: %s", consoleInterp->result);
+        /* goto error; -- no problem for now... */
+        printf("Eval error: %s", consoleInterp->result);
     }
     Tcl_Release((ClientData)consoleInterp);
     return TCL_OK;
 
   error:
     if (consoleInterp != NULL) {
-	Tcl_DeleteInterp(consoleInterp);
+        Tcl_DeleteInterp(consoleInterp);
     }
     return TCL_ERROR;
 }
@@ -274,26 +274,26 @@ Blt_ConsoleInit(interp)
  *
  * ConsolePrint --
  *
- *	Prints to the give text to the console.  Given the main interp
- *	this functions find the appropiate console interp and forwards
- *	the text to be added to that console.
+ *      Prints to the give text to the console.  Given the main interp
+ *      this functions find the appropiate console interp and forwards
+ *      the text to be added to that console.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 
 static void
 ConsolePrint(interp, devId, buffer, size)
-    Tcl_Interp *interp;		/* Main interpreter. */
-    int devId;			/* TCL_STDOUT for stdout, TCL_STDERR for
-				 * stderr. */
-    const char *buffer;		/* Text buffer. */
-    long size;			/* Size of text buffer. */
+    Tcl_Interp *interp;         /* Main interpreter. */
+    int devId;                  /* TCL_STDOUT for stdout, TCL_STDERR for
+                                 * stderr. */
+    const char *buffer;         /* Text buffer. */
+    long size;                  /* Size of text buffer. */
 {
     Tcl_DString command, output;
     Tcl_CmdInfo cmdInfo;
@@ -303,17 +303,17 @@ ConsolePrint(interp, devId, buffer, size)
     int result;
 
     if (interp == NULL) {
-	return;
+        return;
     }
     if (devId == TCL_STDERR) {
-	cmd = "tkConsoleOutput stderr ";
+        cmd = "tkConsoleOutput stderr ";
     } else {
-	cmd = "tkConsoleOutput stdout ";
+        cmd = "tkConsoleOutput stdout ";
     }
 
     result = Tcl_GetCommandInfo(interp, "console", &cmdInfo);
     if (result == 0) {
-	return;
+        return;
     }
     info = (ConsoleInfo *) cmdInfo.clientData;
 
@@ -338,31 +338,31 @@ ConsolePrint(interp, devId, buffer, size)
  *
  * ConsoleOutput--
  *
- *	Writes the given output on the IO channel. Returns count of how
- *	many characters were actually written, and an error indication.
+ *      Writes the given output on the IO channel. Returns count of how
+ *      many characters were actually written, and an error indication.
  *
  * Results:
- *	A count of how many characters were written is returned and an
- *	error indication is returned in an output argument.
+ *      A count of how many characters were written is returned and an
+ *      error indication is returned in an output argument.
  *
  * Side effects:
- *	Writes output on the actual channel.
+ *      Writes output on the actual channel.
  *
  *---------------------------------------------------------------------------
  */
 
 static int
 ConsoleOutput(instanceData, buf, toWrite, errorCode)
-    ClientData instanceData;	/* Indicates which device to use. */
-    char *buf;			/* The data buffer. */
-    int toWrite;		/* How many bytes to write? */
-    int *errorCode;		/* Where to store error code. */
+    ClientData instanceData;    /* Indicates which device to use. */
+    char *buf;                  /* The data buffer. */
+    int toWrite;                /* How many bytes to write? */
+    int *errorCode;             /* Where to store error code. */
 {
     *errorCode = 0;
     Tcl_SetErrno(0);
 
     if (gStdoutInterp != NULL) {
-	ConsolePrint(gStdoutInterp, (int)instanceData, buf, toWrite);
+        ConsolePrint(gStdoutInterp, (int)instanceData, buf, toWrite);
     }
     return toWrite;
 }
@@ -372,13 +372,13 @@ ConsoleOutput(instanceData, buf, toWrite, errorCode)
  *
  * ConsoleInput --
  *
- *	Read input from the console.  Not currently implemented.
+ *      Read input from the console.  Not currently implemented.
  *
  * Results:
- *	Always returns EOF.
+ *      Always returns EOF.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -386,13 +386,13 @@ ConsoleOutput(instanceData, buf, toWrite, errorCode)
  /* ARGSUSED */
 static int
 ConsoleInput(instanceData, buf, bufSize, errorCode)
-    ClientData instanceData;	/* Not Used.. */
-    char *buf;			/* Where to store data read. */
-    int bufSize;		/* How much space is available
-					 * in the buffer? */
-    int *errorCode;		/* Where to store error code. */
+    ClientData instanceData;    /* Not Used.. */
+    char *buf;                  /* Where to store data read. */
+    int bufSize;                /* How much space is available
+                                         * in the buffer? */
+    int *errorCode;             /* Where to store error code. */
 {
-    return 0;			/* Always return EOF. */
+    return 0;                   /* Always return EOF. */
 }
 
 /*
@@ -400,13 +400,13 @@ ConsoleInput(instanceData, buf, bufSize, errorCode)
  *
  * ConsoleClose --
  *
- *	Closes the IO channel.
+ *      Closes the IO channel.
  *
  * Results:
- *	Always returns 0 (success).
+ *      Always returns 0 (success).
  *
  * Side effects:
- *	Frees the dummy file associated with the channel.
+ *      Frees the dummy file associated with the channel.
  *
  *---------------------------------------------------------------------------
  */
@@ -414,8 +414,8 @@ ConsoleInput(instanceData, buf, bufSize, errorCode)
  /* ARGSUSED */
 static int
 ConsoleClose(instanceData, interp)
-    ClientData instanceData;	/* Not Used.. */
-    Tcl_Interp *interp;		/* Not Used.. */
+    ClientData instanceData;    /* Not Used.. */
+    Tcl_Interp *interp;         /* Not Used.. */
 {
     return 0;
 }
@@ -425,15 +425,15 @@ ConsoleClose(instanceData, interp)
  *
  * ConsoleWatch --
  *
- *	Called by the notifier to set up the console device so that
- *	events will be noticed. Since there are no events on the
- *	console, this routine just returns without doing anything.
+ *      Called by the notifier to set up the console device so that
+ *      events will be noticed. Since there are no events on the
+ *      console, this routine just returns without doing anything.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -441,11 +441,11 @@ ConsoleClose(instanceData, interp)
  /* ARGSUSED */
 static void
 ConsoleWatch(instanceData, mask)
-    ClientData instanceData;	/* Device ID for the channel. */
-    int mask;			/* OR-ed combination of
-					 * TCL_READABLE, TCL_WRITABLE and
-					 * TCL_EXCEPTION, for the events
-					 * we are interested in. */
+    ClientData instanceData;    /* Device ID for the channel. */
+    int mask;                   /* OR-ed combination of
+                                         * TCL_READABLE, TCL_WRITABLE and
+                                         * TCL_EXCEPTION, for the events
+                                         * we are interested in. */
 {
 }
 
@@ -454,15 +454,15 @@ ConsoleWatch(instanceData, mask)
  *
  * ConsoleHandle --
  *
- *	Invoked by the generic IO layer to get a handle from a channel.
- *	Because console channels are not devices, this function always
- *	fails.
+ *      Invoked by the generic IO layer to get a handle from a channel.
+ *      Because console channels are not devices, this function always
+ *      fails.
  *
  * Results:
- *	Always returns TCL_ERROR.
+ *      Always returns TCL_ERROR.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -470,11 +470,11 @@ ConsoleWatch(instanceData, mask)
  /* ARGSUSED */
 static int
 ConsoleHandle(instanceData, direction, handlePtr)
-    ClientData instanceData;	/* Device ID for the channel. */
-    int direction;		/* TCL_READABLE or TCL_WRITABLE to indicate
-				 * which direction of the channel is being
-				 * requested. */
-    ClientData *handlePtr;	/* Where to store handle */
+    ClientData instanceData;    /* Device ID for the channel. */
+    int direction;              /* TCL_READABLE or TCL_WRITABLE to indicate
+                                 * which direction of the channel is being
+                                 * requested. */
+    ClientData *handlePtr;      /* Where to store handle */
 {
     return TCL_ERROR;
 }
@@ -484,24 +484,24 @@ ConsoleHandle(instanceData, direction, handlePtr)
  *
  * ConsoleCmd --
  *
- *	The console command implements a TCL interface to the various console
- *	options.
+ *      The console command implements a TCL interface to the various console
+ *      options.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 
 static int
 ConsoleCmd(clientData, interp, argc, argv)
-    ClientData clientData;	/* Not used. */
-    Tcl_Interp *interp;		/* Current interpreter. */
-    int argc;			/* Number of arguments. */
-    char **argv;		/* Argument strings. */
+    ClientData clientData;      /* Not used. */
+    Tcl_Interp *interp;         /* Current interpreter. */
+    int argc;                   /* Number of arguments. */
+    char **argv;                /* Argument strings. */
 {
     ConsoleInfo *info = (ConsoleInfo *) clientData;
     char c;
@@ -510,9 +510,9 @@ ConsoleCmd(clientData, interp, argc, argv)
     Tcl_Interp *consoleInterp;
 
     if (argc < 2) {
-	Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-	    " option ?arg arg ...?\"", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+            " option ?arg arg ...?\"", (char *)NULL);
+        return TCL_ERROR;
     }
     c = argv[1][0];
     length = strlen(argv[1]);
@@ -520,32 +520,32 @@ ConsoleCmd(clientData, interp, argc, argv)
     consoleInterp = info->consoleInterp;
     Tcl_Preserve(consoleInterp);
     if ((c == 't') && (strncmp(argv[1], "title", length)) == 0) {
-	Tcl_DString ds;
+        Tcl_DString ds;
 
-	Tcl_DStringInit(&ds);
-	Tcl_DStringAppend(&ds, "wm title . ", -1);
-	if (argc == 3) {
-	    Tcl_DStringAppendElement(&ds, argv[2]);
-	}
-	Tcl_Eval(consoleInterp, Tcl_DStringValue(&ds));
-	Tcl_DStringFree(&ds);
+        Tcl_DStringInit(&ds);
+        Tcl_DStringAppend(&ds, "wm title . ", -1);
+        if (argc == 3) {
+            Tcl_DStringAppendElement(&ds, argv[2]);
+        }
+        Tcl_Eval(consoleInterp, Tcl_DStringValue(&ds));
+        Tcl_DStringFree(&ds);
     } else if ((c == 'h') && (strncmp(argv[1], "hide", length)) == 0) {
-	Tcl_Eval(info->consoleInterp, "wm withdraw .");
+        Tcl_Eval(info->consoleInterp, "wm withdraw .");
     } else if ((c == 's') && (strncmp(argv[1], "show", length)) == 0) {
-	Tcl_Eval(info->consoleInterp, "wm deiconify .");
+        Tcl_Eval(info->consoleInterp, "wm deiconify .");
     } else if ((c == 'e') && (strncmp(argv[1], "eval", length)) == 0) {
-	if (argc == 3) {
-	    Tcl_Eval(info->consoleInterp, argv[2]);
-	} else {
-	    Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		" eval command\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
+        if (argc == 3) {
+            Tcl_Eval(info->consoleInterp, argv[2]);
+        } else {
+            Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+                " eval command\"", (char *)NULL);
+            return TCL_ERROR;
+        }
     } else {
-	Tcl_AppendResult(interp, "bad option \"", argv[1],
-	    "\": should be hide, show, or title",
-	    (char *)NULL);
-	result = TCL_ERROR;
+        Tcl_AppendResult(interp, "bad option \"", argv[1],
+            "\": should be hide, show, or title",
+            (char *)NULL);
+        result = TCL_ERROR;
     }
     Tcl_Release(consoleInterp);
     return result;
@@ -556,24 +556,24 @@ ConsoleCmd(clientData, interp, argc, argv)
  *
  * InterpreterCmd --
  *
- *	This command allows the console interp to communicate with the
- *	main interpreter.
+ *      This command allows the console interp to communicate with the
+ *      main interpreter.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 
 static int
 InterpreterCmd(clientData, interp, argc, argv)
-    ClientData clientData;	/* Not used. */
-    Tcl_Interp *interp;		/* Current interpreter. */
-    int argc;			/* Number of arguments. */
-    char **argv;		/* Argument strings. */
+    ClientData clientData;      /* Not used. */
+    Tcl_Interp *interp;         /* Current interpreter. */
+    int argc;                   /* Number of arguments. */
+    char **argv;                /* Argument strings. */
 {
     ConsoleInfo *info = (ConsoleInfo *) clientData;
     char c;
@@ -582,26 +582,26 @@ InterpreterCmd(clientData, interp, argc, argv)
     Tcl_Interp *otherInterp;
 
     if (argc < 2) {
-	Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-	    " option ?arg arg ...?\"", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+            " option ?arg arg ...?\"", (char *)NULL);
+        return TCL_ERROR;
     }
     c = argv[1][0];
     length = strlen(argv[1]);
     otherInterp = info->interp;
     Tcl_Preserve(otherInterp);
     if ((c == 'e') && (strncmp(argv[1], "eval", length)) == 0) {
-	result = Tcl_GlobalEval(otherInterp, argv[2]);
-	Tcl_AppendResult(interp, otherInterp->result, (char *)NULL);
+        result = Tcl_GlobalEval(otherInterp, argv[2]);
+        Tcl_AppendResult(interp, otherInterp->result, (char *)NULL);
     } else if ((c == 'r') && (strncmp(argv[1], "record", length)) == 0) {
-	Tcl_RecordAndEval(otherInterp, argv[2], TCL_EVAL_GLOBAL);
-	result = TCL_OK;
-	Tcl_AppendResult(interp, otherInterp->result, (char *)NULL);
+        Tcl_RecordAndEval(otherInterp, argv[2], TCL_EVAL_GLOBAL);
+        result = TCL_OK;
+        Tcl_AppendResult(interp, otherInterp->result, (char *)NULL);
     } else {
-	Tcl_AppendResult(interp, "bad option \"", argv[1],
-	    "\": should be eval or record",
-	    (char *)NULL);
-	result = TCL_ERROR;
+        Tcl_AppendResult(interp, "bad option \"", argv[1],
+            "\": should be eval or record",
+            (char *)NULL);
+        result = TCL_ERROR;
     }
     Tcl_Release(otherInterp);
     return result;
@@ -612,14 +612,14 @@ InterpreterCmd(clientData, interp, argc, argv)
  *
  * ConsoleDeleteProc --
  *
- *	If the console command is deleted we destroy the console window
- *	and all associated data structures.
+ *      If the console command is deleted we destroy the console window
+ *      and all associated data structures.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	A new console it created.
+ *      A new console it created.
  *
  *---------------------------------------------------------------------------
  */
@@ -639,16 +639,16 @@ ConsoleDeleteProc(clientData)
  *
  * ConsoleEventProc --
  *
- *	This event procedure is registered on the main window of the
- *	slave interpreter.  If the user or a running script causes the
- *	main window to be destroyed, then we need to inform the console
- *	interpreter by invoking "tkConsoleExit".
+ *      This event procedure is registered on the main window of the
+ *      slave interpreter.  If the user or a running script causes the
+ *      main window to be destroyed, then we need to inform the console
+ *      interpreter by invoking "tkConsoleExit".
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Invokes the "tkConsoleExit" procedure in the console interp.
+ *      Invokes the "tkConsoleExit" procedure in the console interp.
  *
  *---------------------------------------------------------------------------
  */
@@ -660,21 +660,21 @@ ConsoleEventProc(ClientData clientData, XEvent *eventPtr)
     Tcl_Interp *consoleInterp;
 
     if (eventPtr->type == DestroyNotify) {
-	consoleInterp = info->consoleInterp;
+        consoleInterp = info->consoleInterp;
 
-	/*
-	 * It is possible that the console interpreter itself has
-	 * already been deleted. In that case the consoleInterp
-	 * field will be set to NULL. If the interpreter is already
-	 * gone, we do not have to do any work here.
-	 */
+        /*
+         * It is possible that the console interpreter itself has
+         * already been deleted. In that case the consoleInterp
+         * field will be set to NULL. If the interpreter is already
+         * gone, we do not have to do any work here.
+         */
 
-	if (consoleInterp == (Tcl_Interp *)NULL) {
-	    return;
-	}
-	Tcl_Preserve(consoleInterp);
-	Tcl_Eval(consoleInterp, "tkConsoleExit");
-	Tcl_Release(consoleInterp);
+        if (consoleInterp == (Tcl_Interp *)NULL) {
+            return;
+        }
+        Tcl_Preserve(consoleInterp);
+        Tcl_Eval(consoleInterp, "tkConsoleExit");
+        Tcl_Release(consoleInterp);
     }
 }
 

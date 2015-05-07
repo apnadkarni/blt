@@ -57,64 +57,64 @@
  * Under Windows, a "font family" is uniquely identified by its face name.
  */
 
-#define FONTMAP_SHIFT	    10
+#define FONTMAP_SHIFT       10
 
-#define FONTMAP_PAGES	    	(1 << (sizeof(Tcl_UniChar)*8 - FONTMAP_SHIFT))
-#define FONTMAP_BITSPERPAGE	(1 << FONTMAP_SHIFT)
+#define FONTMAP_PAGES           (1 << (sizeof(Tcl_UniChar)*8 - FONTMAP_SHIFT))
+#define FONTMAP_BITSPERPAGE     (1 << FONTMAP_SHIFT)
 
 
 typedef struct FontFamily {
-    struct FontFamily *nextPtr;	/* Next in list of all known font families. */
-    int refCount;		/* How many SubFonts are referring to this
-				 * FontFamily.  When the refCount drops to
-				 * zero, this FontFamily may be freed. */
+    struct FontFamily *nextPtr; /* Next in list of all known font families. */
+    int refCount;               /* How many SubFonts are referring to this
+                                 * FontFamily.  When the refCount drops to
+                                 * zero, this FontFamily may be freed. */
     /*
      * Key.
      */
      
-    Tk_Uid faceName;		/* Face name key for this FontFamily. */
+    Tk_Uid faceName;            /* Face name key for this FontFamily. */
 
     /*
      * Derived properties.
      */
      
-    Tcl_Encoding encoding;	/* Encoding for this font family. */
-    int isSymbolFont;		/* Non-zero if this is a symbol font. */
-    int isWideFont;		/* 1 if this is a double-byte font, 0 
-				 * otherwise. */
+    Tcl_Encoding encoding;      /* Encoding for this font family. */
+    int isSymbolFont;           /* Non-zero if this is a symbol font. */
+    int isWideFont;             /* 1 if this is a double-byte font, 0 
+                                 * otherwise. */
     BOOL (WINAPI *textOutProc)(HDC, int, int, TCHAR *, int);
-				/* The procedure to use to draw text after
-				 * it has been converted from UTF-8 to the 
-				 * encoding of this font. */
+                                /* The procedure to use to draw text after
+                                 * it has been converted from UTF-8 to the 
+                                 * encoding of this font. */
     BOOL (WINAPI *getTextExtentPoint32Proc)(HDC, TCHAR *, int, LPSIZE);
-				/* The procedure to use to measure text after
-				 * it has been converted from UTF-8 to the 
-				 * encoding of this font. */
+                                /* The procedure to use to measure text after
+                                 * it has been converted from UTF-8 to the 
+                                 * encoding of this font. */
 
     char *fontMap[FONTMAP_PAGES];
-				/* Two-level sparse table used to determine
-				 * quickly if the specified character exists.
-				 * As characters are encountered, more pages
-				 * in this table are dynamically added.  The
-				 * contents of each page is a bitmask
-				 * consisting of FONTMAP_BITSPERPAGE bits,
-				 * representing whether this font can be used
-				 * to display the given character at the
-				 * corresponding bit position.  The high bits
-				 * of the character are used to pick which
-				 * page of the table is used. */
+                                /* Two-level sparse table used to determine
+                                 * quickly if the specified character exists.
+                                 * As characters are encountered, more pages
+                                 * in this table are dynamically added.  The
+                                 * contents of each page is a bitmask
+                                 * consisting of FONTMAP_BITSPERPAGE bits,
+                                 * representing whether this font can be used
+                                 * to display the given character at the
+                                 * corresponding bit position.  The high bits
+                                 * of the character are used to pick which
+                                 * page of the table is used. */
 
     /*
      * Cached Truetype font info.
      */
      
-    int segCount;		/* The length of the following arrays. */
-    USHORT *startCount;		/* Truetype information about the font, */
-    USHORT *endCount;		/* indicating which characters this font
-				 * can display (malloced).  The format of
-				 * this information is (relatively) compact,
-				 * but would take longer to search than 
-				 * indexing into the fontMap[][] table. */
+    int segCount;               /* The length of the following arrays. */
+    USHORT *startCount;         /* Truetype information about the font, */
+    USHORT *endCount;           /* indicating which characters this font
+                                 * can display (malloced).  The format of
+                                 * this information is (relatively) compact,
+                                 * but would take longer to search than 
+                                 * indexing into the fontMap[][] table. */
 } FontFamily;
 
 /*
@@ -123,12 +123,12 @@ typedef struct FontFamily {
  * stream of multilingual characters.
  */
 typedef struct SubFont {
-    char **fontMap;		/* Pointer to font map from the FontFamily, 
-				 * cached here to save a dereference. */
-    HFONT hFont;		/* The specific screen font that will be
-				 * used when displaying/measuring chars
-				 * belonging to the FontFamily. */
-    FontFamily *familyPtr;	/* The FontFamily for this SubFont. */
+    char **fontMap;             /* Pointer to font map from the FontFamily, 
+                                 * cached here to save a dereference. */
+    HFONT hFont;                /* The specific screen font that will be
+                                 * used when displaying/measuring chars
+                                 * belonging to the FontFamily. */
+    FontFamily *familyPtr;      /* The FontFamily for this SubFont. */
 } SubFont;
 
 /*
@@ -136,34 +136,34 @@ typedef struct SubFont {
  * object.
  */
 
-#define SUBFONT_SPACE		3
-#define BASE_CHARS		128
+#define SUBFONT_SPACE           3
+#define BASE_CHARS              128
 
 typedef struct WinFont {
-    TkFont font;		/* Stuff used by generic font package.  Must
-				 * be first in structure. */
+    TkFont font;                /* Stuff used by generic font package.  Must
+                                 * be first in structure. */
     SubFont staticSubFonts[SUBFONT_SPACE];
-				/* Builtin space for a limited number of
-				 * SubFonts. */
-    int numSubFonts;		/* Length of following array. */
-    SubFont *subFontArray;	/* Array of SubFonts that have been loaded
-				 * in order to draw/measure all the characters
-				 * encountered by this font so far.  All fonts
-				 * start off with one SubFont initialized by
-				 * AllocFont() from the original set of font
-				 * attributes.  Usually points to
-				 * staticSubFonts, but may point to malloced
-				 * space if there are lots of SubFonts. */
+                                /* Builtin space for a limited number of
+                                 * SubFonts. */
+    int numSubFonts;            /* Length of following array. */
+    SubFont *subFontArray;      /* Array of SubFonts that have been loaded
+                                 * in order to draw/measure all the characters
+                                 * encountered by this font so far.  All fonts
+                                 * start off with one SubFont initialized by
+                                 * AllocFont() from the original set of font
+                                 * attributes.  Usually points to
+                                 * staticSubFonts, but may point to malloced
+                                 * space if there are lots of SubFonts. */
 
-    HWND hwnd;			/* Toplevel window of application that owns
-				 * this font, used for getting HDC for
-				 * offscreen measurements. */
-    int pixelSize;		/* Original pixel size used when font was
-				 * constructed. */
-    int widths[BASE_CHARS];	/* Widths of first 128 chars in the base
-				 * font, for handling common case.  The base
-				 * font is always used to draw characters
-				 * between 0x0000 and 0x007f. */
+    HWND hwnd;                  /* Toplevel window of application that owns
+                                 * this font, used for getting HDC for
+                                 * offscreen measurements. */
+    int pixelSize;              /* Original pixel size used when font was
+                                 * constructed. */
+    int widths[BASE_CHARS];     /* Widths of first 128 chars in the base
+                                 * font, for handling common case.  The base
+                                 * font is always used to draw characters
+                                 * between 0x0000 and 0x007f. */
 } WinFont;
 
 #endif /* _TK_WINFONT_H */

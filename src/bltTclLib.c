@@ -70,15 +70,15 @@ IsDigit(const int c)
  *
  * Blt_InitTclStubs --
  *
- *	Checks that the correct version of TCL is loaded and that it supports
- *	stubs. It then initialises the stub table pointers.
+ *      Checks that the correct version of TCL is loaded and that it supports
+ *      stubs. It then initialises the stub table pointers.
  *
  * Results:
- *	The actual version of TCL that satisfies the request, or NULL to
- *	indicate that an error occurred.
+ *      The actual version of TCL that satisfies the request, or NULL to
+ *      indicate that an error occurred.
  *
  * Side effects:
- *	Sets the stub table pointers.
+ *      Sets the stub table pointers.
  *
  *----------------------------------------------------------------------
  */
@@ -97,48 +97,48 @@ Blt_InitTclStubs(Tcl_Interp *interp, const char *version, int exact)
      * library.  The application may have initialized it's own stub table for
      * TCL, but that's different from the one we use in the BLT library. */
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	Tcl_Panic("Can't initialize TCL stubs");
+        Tcl_Panic("Can't initialize TCL stubs");
     }
     actual = Tcl_PkgRequireEx(interp, "blt_tcl", version, 0, &clientData);
     if (actual == NULL) {
-	return NULL;
+        return NULL;
     }
     if (exact) {
-	const char *p;
-	int count = 0;
+        const char *p;
+        int count = 0;
 
-	p = version;
-	count = 0;
-	while (*p != '\0') {
-	    count += !IsDigit(*p++);
-	}
-	if (count == 1) {
-	    const char *q;
+        p = version;
+        count = 0;
+        while (*p != '\0') {
+            count += !IsDigit(*p++);
+        }
+        if (count == 1) {
+            const char *q;
 
-	    q = actual;
-	    p = version;
-	    while (*p && (*p == *q)) {
-		p++; q++;
-	    }
-	    if (*p) {
-		/* Construct error message */
-		Tcl_PkgRequireEx(interp, "blt_tcl", version, 1, NULL);
-		return NULL;
+            q = actual;
+            p = version;
+            while (*p && (*p == *q)) {
+                p++; q++;
+            }
+            if (*p) {
+                /* Construct error message */
+                Tcl_PkgRequireEx(interp, "blt_tcl", version, 1, NULL);
+                return NULL;
 
-	    }
-	} else {
-	    actual = Tcl_PkgRequireEx(interp, "blt_tcl", version, 1,NULL);
-	    if (actual == NULL) {
-		return NULL;
-	    }
-	}
+            }
+        } else {
+            actual = Tcl_PkgRequireEx(interp, "blt_tcl", version, 1,NULL);
+            if (actual == NULL) {
+                return NULL;
+            }
+        }
     }
 
     if (clientData == NULL) {
-	Tcl_AppendResult(interp,
-		"This implementation of BLT TCL does not support stubs",
-			 (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp,
+                "This implementation of BLT TCL does not support stubs",
+                         (char *)NULL);
+        return NULL;
     }
     bltTclProcsPtr = clientData;
     bltTclIntProcsPtr = bltTclProcsPtr->hooks->bltTclIntProcs;

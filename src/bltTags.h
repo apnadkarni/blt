@@ -41,7 +41,7 @@
  * A Blt_Tags structure holds the tags for a data object or widget.
  */
 typedef struct _Blt_Tags {
-    Blt_HashTable table;		/* Hash table of tag tables */
+    Blt_HashTable table;                /* Hash table of tag tables */
 } *Blt_Tags;
 
 BLT_EXTERN Blt_Tags Blt_Tags_Create(void);
@@ -50,18 +50,18 @@ BLT_EXTERN void Blt_Tags_Init(Blt_Tags tags);
 BLT_EXTERN void Blt_Tags_Reset(Blt_Tags tags);
 
 BLT_EXTERN int Blt_Tags_ItemHasTag(Blt_Tags tags, ClientData item, 
-	const char *tag);
+        const char *tag);
 BLT_EXTERN void Blt_Tags_AddTag(Blt_Tags tags, const char *tag);
 BLT_EXTERN void Blt_Tags_AddItemToTag(Blt_Tags tags, const char *tag, 
-	ClientData item);
+        ClientData item);
 BLT_EXTERN void Blt_Tags_ForgetTag(Blt_Tags tags, const char *tag);
 BLT_EXTERN void Blt_Tags_RemoveItemFromTag(Blt_Tags tags, const char *tag, 
-	ClientData item);
+        ClientData item);
 BLT_EXTERN void Blt_Tags_ClearTagsFromItem(Blt_Tags tags, ClientData item);
 BLT_EXTERN void Blt_Tags_AppendTagsToChain(Blt_Tags tags, ClientData item,
-	Blt_Chain list);
+        Blt_Chain list);
 BLT_EXTERN void Blt_Tags_AppendTagsToObj(Blt_Tags tags, ClientData item, 
-	Tcl_Obj *objPtr);
+        Tcl_Obj *objPtr);
 BLT_EXTERN void Blt_Tags_AppendAllTagsToObj(Blt_Tags tags, Tcl_Obj *objPtr);
 BLT_EXTERN Blt_Chain Blt_Tags_GetItemList(Blt_Tags tags, const char *tag);
 BLT_EXTERN Blt_HashTable *Blt_Tags_GetTable(Blt_Tags tags);

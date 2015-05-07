@@ -186,9 +186,9 @@ The following operations are available for the **blt::paintbrush** command:
     or "logarithmic"".
 
     **linear**
-	Colors are interpolated on a linear scale between 0.0 and 1.0.
+        Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
-	Colors are interpolated using the log of the value.
+        Colors are interpolated using the log of the value.
     
   **-decreasing**
 
@@ -203,9 +203,9 @@ The following operations are available for the **blt::paintbrush** command:
 
      *anchor*
         The position is an anchor position: **nw**, **n**, **ne**,
-	**w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
-	represents a location in the reference window.  For example "nw"
-	is the upper left corner of the reference window.
+        **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+        represents a location in the reference window.  For example "nw"
+        is the upper left corner of the reference window.
 
      *side side*
         The position is a 2 element list. The first element can be **top**,
@@ -216,11 +216,11 @@ The following operations are available for the **blt::paintbrush** command:
 
      *number number*
         The position is a list of 2 numbers. *Number* is a real number from
-	0 to 1. The number represent relative x and y positions in the
-	reference window.  For example "0 0" is the upper left corner of
-	the reference window.
-	
-	
+        0 to 1. The number represent relative x and y positions in the
+        reference window.  For example "0 0" is the upper left corner of
+        the reference window.
+        
+        
   **-highcolor** *colorName*
 
     Specifies the high color of the gradient.  This is the color
@@ -289,9 +289,9 @@ The following operations are available for the **blt::paintbrush** command:
     or "logarithmic"".
 
     **linear**
-	Colors are interpolated on a linear scale between 0.0 and 1.0.
+        Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
-	Colors are interpolated using the log of the value.
+        Colors are interpolated using the log of the value.
     
   **-decreasing**
 
@@ -306,9 +306,9 @@ The following operations are available for the **blt::paintbrush** command:
 
      *anchor*
         The position is an anchor position: **nw**, **n**, **ne**,
-	**w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
-	represents a location in the reference window.  For example "nw"
-	is the upper left corner of the reference window.
+        **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+        represents a location in the reference window.  For example "nw"
+        is the upper left corner of the reference window.
 
      *side side*
         The position is a 2 element list. The first element can be **top**,
@@ -319,11 +319,11 @@ The following operations are available for the **blt::paintbrush** command:
 
      *number number*
         The position is a list of 2 numbers. *Number* is a real number from
-	0 to 1. The number represent relative x and y positions in the
-	reference window.  For example "0 0" is the upper left corner of
-	the reference window.
-	
-	
+        0 to 1. The number represent relative x and y positions in the
+        reference window.  For example "0 0" is the upper left corner of
+        the reference window.
+        
+        
   **-highcolor** *colorName*
 
     Specifies the high color of the gradient.  This is the color
@@ -360,9 +360,9 @@ The following operations are available for the **blt::paintbrush** command:
 
     *anchor*
         The position is an anchor position: **nw**, **n**, **ne**,
-	**w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
-	represents a location in the reference window.  For example "nw"
-	is the upper left corner of the reference window.
+        **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+        represents a location in the reference window.  For example "nw"
+        is the upper left corner of the reference window.
 
     *side side*
         The position is a 2 element list. The first element can be **top**,
@@ -373,9 +373,9 @@ The following operations are available for the **blt::paintbrush** command:
 
     *number number*
         The position is a list of 2 numbers. *Number* is a real number from
-	0 to 1. The number represent relative x and y positions in the
-	reference window.  For example "0 0" is the upper left corner of
-	the reference window.
+        0 to 1. The number represent relative x and y positions in the
+        reference window.  For example "0 0" is the upper left corner of
+        the reference window.
 
   **-xoffset** *numPixels*
 
@@ -417,9 +417,9 @@ The following operations are available for the **blt::paintbrush** command:
     or "logarithmic"".
 
     **linear**
-	Colors are interpolated on a linear scale between 0.0 and 1.0.
+        Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
-	Colors are interpolated using the log of the value.
+        Colors are interpolated using the log of the value.
     
   **-decreasing**
 
@@ -434,9 +434,9 @@ The following operations are available for the **blt::paintbrush** command:
 
      *anchor*
         The position is an anchor position: **nw**, **n**, **ne**,
-	**w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
-	represents a location in the reference window.  For example "nw"
-	is the upper left corner of the reference window.
+        **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+        represents a location in the reference window.  For example "nw"
+        is the upper left corner of the reference window.
 
      *side side*
         The position is a 2 element list. The first element can be **top**,
@@ -447,10 +447,10 @@ The following operations are available for the **blt::paintbrush** command:
 
      *number number*
         The position is a list of 2 numbers. *Number* is a real number from
-	0 to 1. The number represent relative x and y positions in the
-	reference window.  For example "0 0" is the upper left corner of
-	the reference window.
-	
+        0 to 1. The number represent relative x and y positions in the
+        reference window.  For example "0 0" is the upper left corner of
+        the reference window.
+        
   **-height** *number*
 
     Specifies the height of the gradient ellipse.  This is the color
@@ -630,9 +630,9 @@ Create a *paintbrush* object with the **blt::paintbrush** command.
 
     # Create a new linear gradient paintbrush.
     blt::paintbrush create linear myPaintbrush \
-	-from n -to s -lowcolor grey80 -highcolor grey95 \
-	-jitter 10
-	
+        -from n -to s -lowcolor grey80 -highcolor grey95 \
+        -jitter 10
+        
 Now we can create widgets that use the paintbrush.
 
  ::

@@ -46,14 +46,14 @@
  *
  * Blt_BeepCmd --
  *
- *	This procedure is invoked to process the "beep" command.
- *	See the user documentation for details on what it does.
+ *      This procedure is invoked to process the "beep" command.
+ *      See the user documentation for details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -63,28 +63,28 @@ static Tcl_ObjCmdProc BeepCmd;
 /* ARGSUSED */
 static int
 BeepCmd(
-    ClientData clientData,	/* Main window associated with interpreter.*/
-    Tcl_Interp *interp,		/* Current interpreter. */
-    int objc,			/* Number of arguments. */
-    Tcl_Obj *const *objv)	/* Argument strings. */
+    ClientData clientData,      /* Main window associated with interpreter.*/
+    Tcl_Interp *interp,         /* Current interpreter. */
+    int objc,                   /* Number of arguments. */
+    Tcl_Obj *const *objv)       /* Argument strings. */
 {
     int percent;
 
     if (objc > 2) {
-	Tcl_AppendResult(interp, "wrong # args: should be \"",
-		 Tcl_GetString(objv[0]), " ?volumePercent?\"", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+                 Tcl_GetString(objv[0]), " ?volumePercent?\"", (char *)NULL);
+        return TCL_ERROR;
     }
-    percent = 50;		/* Default setting */
+    percent = 50;               /* Default setting */
     if (objc == 2) {
-	if (Tcl_GetIntFromObj(interp, objv[1], &percent) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (percent < -100) {
-	    percent = -100;
-	} else if (percent > 100) {
-	    percent = 100;
-	}
+        if (Tcl_GetIntFromObj(interp, objv[1], &percent) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (percent < -100) {
+            percent = -100;
+        } else if (percent > 100) {
+            percent = 100;
+        }
     }
     XBell(Tk_Display(Tk_MainWindow(interp)), percent);
     return TCL_OK;

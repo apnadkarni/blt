@@ -43,7 +43,7 @@
 #include "bltHash.h"
 
 BLT_EXTERN int Blt_GetArrayFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Blt_HashTable **tablePtrPtr);
+        Blt_HashTable **tablePtrPtr);
 BLT_EXTERN Tcl_Obj *Blt_NewArrayObj(int objc, Tcl_Obj *objv[]);
 BLT_EXTERN void Blt_RegisterArrayObj(void);
 BLT_EXTERN int Blt_IsArrayObj(Tcl_Obj *obj);

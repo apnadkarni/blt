@@ -43,10 +43,10 @@ typedef struct _Blt_Bg *Blt_Bg;
 typedef void Blt_Bg_ChangedProc(ClientData clientData);
 
 BLT_EXTERN Blt_Bg Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin,
-	const char *styleName);
+        const char *styleName);
 
 BLT_EXTERN Blt_Bg Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr);
+        Tcl_Obj *objPtr);
 
 BLT_EXTERN XColor *Blt_Bg_BorderColor(Blt_Bg bg);
 
@@ -59,30 +59,30 @@ BLT_EXTERN const char *Blt_Bg_Name(Blt_Bg bg);
 BLT_EXTERN void Blt_FreeBg(Blt_Bg bg);
 
 BLT_EXTERN void Blt_Bg_DrawRectangle(Tk_Window tkwin, Drawable drawable,
-	Blt_Bg bg, int x, int y, int width, int height, int borderWidth,
-	int relief);
+        Blt_Bg bg, int x, int y, int width, int height, int borderWidth,
+        int relief);
 
 BLT_EXTERN void Blt_Bg_FillRectangle(Tk_Window tkwin, Drawable drawable,
-	Blt_Bg bg, int x, int y, int width, int height, int borderWidth, 
-	int relief);
+        Blt_Bg bg, int x, int y, int width, int height, int borderWidth, 
+        int relief);
 
 BLT_EXTERN void Blt_Bg_DrawPolygon(Tk_Window tkwin, Drawable drawable, 
-	Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, 
-	int leftRelief);
+        Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, 
+        int leftRelief);
 
 BLT_EXTERN void Blt_Bg_FillPolygon(Tk_Window tkwin, Drawable drawable, 
-	Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, 
-	int leftRelief);
+        Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, 
+        int leftRelief);
 
 BLT_EXTERN void Blt_Bg_GetOrigin(Blt_Bg bg, int *xPtr, int *yPtr);
 
 BLT_EXTERN void Blt_Bg_SetChangedProc(Blt_Bg bg, Blt_Bg_ChangedProc *notifyProc,
-	ClientData clientData);
+        ClientData clientData);
 
 BLT_EXTERN void Blt_Bg_SetOrigin(Tk_Window tkwin, Blt_Bg bg, int x, int y);
 
 BLT_EXTERN void Blt_Bg_DrawFocus(Tk_Window tkwin, Blt_Bg bg, 
-	int highlightWidth, Drawable drawable);
+        int highlightWidth, Drawable drawable);
 
 BLT_EXTERN GC Blt_Bg_BorderGC(Tk_Window tkwin, Blt_Bg bg, int which);
 

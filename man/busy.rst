@@ -119,8 +119,8 @@ The following operations are available for the **blt::busy** command:
 
   ::
 
-	"option add *frame.busyCursor gumby"
-	"option add *Frame.BusyCursor gumby"
+        "option add *frame.busyCursor gumby"
+        "option add *Frame.BusyCursor gumby"
 
 **blt::busy active**  ?\ *pattern* ... ?
   Returns the pathnames of all widgets that are currently busy (active).
@@ -232,9 +232,9 @@ an example.
      rename tkFocusOK tkFocusOK.orig
      proc tkFocusOK { w }  {
          if { [blt::busy isbusy $w] } {
-	     return 0
-	 }
-	 return [tkFocusOK.orig $w]
+             return 0
+         }
+         return [tkFocusOK.orig $w]
      }
 
 EXAMPLE
@@ -245,13 +245,13 @@ busy using the **hold** operation.
 
   ::
 
-	frame .top
-	button .top.button; canvas .top.canvas
-	pack .top.button .top.canvas
-	pack .top
-	  . . .
-	blt::busy hold .top
-	update
+        frame .top
+        button .top.button; canvas .top.canvas
+        pack .top.button .top.canvas
+        pack .top
+          . . .
+        blt::busy hold .top
+        update
 
 All the widgets within ".top" (including ".top") are now busy.  
 Using **update** insures that **blt::busy** command will take effect before
@@ -262,21 +262,21 @@ interactions again by the **release** operation.
 
  ::
 
-	blt::busy release .top 
+        blt::busy release .top 
 
 The busy window has a configurable cursor.  You can change the busy
 cursor using the **configure** operation.
 
   ::
 
-	blt::busy configure .top -cursor "watch
+        blt::busy configure .top -cursor "watch
 
 Finally, when you no longer need to the busy window, 
 invoke the **forget** operation to free any resources it allocated.
 
  ::
 
-	blt::busy forget .top 
+        blt::busy forget .top 
 
 Destroying the widget will also clean up any resources allocated by
 the busy command.

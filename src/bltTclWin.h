@@ -51,20 +51,20 @@ typedef float *TCHAR;
 #define Blt_Export __declspec(dllexport)
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
-#define fstat	 _fstat
-#define stat	 _stat
+#define fstat    _fstat
+#define stat     _stat
 #ifdef _MSC_VER
-#define fileno	 _fileno
+#define fileno   _fileno
 #endif
-#define isnan(x)		_isnan(x)
-#define strcasecmp(s1,s2)	_stricmp(s1,s2)
-#define strncasecmp(s1,s2,n)	_strnicmp(s1,s2,n)
-#define vsnprintf		_vsnprintf
-#define isascii(c)		__isascii(c)
+#define isnan(x)                _isnan(x)
+#define strcasecmp(s1,s2)       _stricmp(s1,s2)
+#define strncasecmp(s1,s2,n)    _strnicmp(s1,s2,n)
+#define vsnprintf               _vsnprintf
+#define isascii(c)              __isascii(c)
 #endif /* _MSC_VER || __BORLANDC__ */
 
 #ifdef __BORLANDC__
-#define isnan(x)		_isnan(x)
+#define isnan(x)                _isnan(x)
 #endif
 
 BLT_EXTERN double hypot(double x, double y);
@@ -72,15 +72,15 @@ BLT_EXTERN double hypot(double x, double y);
 #if defined(__BORLANDC__) || defined(_MSC_VER)
 #ifdef FINITE
 #undef FINITE
-#define FINITE(x)		_finite(x)
+#define FINITE(x)               _finite(x)
 #endif
 #endif /* __BORLANDC__ || _MSC_VER */
 
 BLT_EXTERN ssize_t Blt_AsyncRead(int fd, unsigned char *buffer, size_t size);
 BLT_EXTERN ssize_t Blt_AsyncWrite(int fd, const unsigned char *buffer, 
-	size_t size);
+        size_t size);
 BLT_EXTERN void Blt_CreateFileHandler(int fd, int flags, Tcl_FileProc *proc, 
-	ClientData clientData);
+        ClientData clientData);
 BLT_EXTERN void Blt_DeleteFileHandler(int fd);
 
 #endif /*_BLT_TCL_WIN_H*/

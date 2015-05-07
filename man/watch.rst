@@ -127,16 +127,16 @@ The following example use **blt::watch** to trace TCL commands
  ::
 
     proc preCmd { level command argv } {
-	set name [lindex $argv 0]
-	puts stderr "$level $name => $command"
+        set name [lindex $argv 0]
+        puts stderr "$level $name => $command"
     }
 
     proc postCmd { level command argv retcode results } {
-	set name [lindex $argv 0]
-	puts stderr "$level $name => $argv\n<= ($retcode) $results"
+        set name [lindex $argv 0]
+        puts stderr "$level $name => $argv\n<= ($retcode) $results"
     }
     blt::watch create trace \\
-	    -postcmd postCmd -precmd preCmd
+            -postcmd postCmd -precmd preCmd
 
 KEYWORDS
 --------

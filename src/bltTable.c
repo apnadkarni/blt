@@ -47,10 +47,10 @@
  *    requests.
  *
  *   Note: This problem continues in Tk 8.x.  It's possible for a widget to
- *	    be a container for two different geometry managers.  Each
- *	    manager will set its own requested geometry for the container
- *	    widget. The winner sets the geometry last (sometimes ad
- *	    infinitum).
+ *          be a container for two different geometry managers.  Each
+ *          manager will set its own requested geometry for the container
+ *          widget. The winner sets the geometry last (sometimes ad
+ *          infinitum).
  *
  * 7) Relative sizing of partitions?
  *
@@ -69,7 +69,7 @@
 
 #ifdef HAVE_LIMITS_H
 #  include <limits.h>
-#endif	/* HAVE_LIMITS_H */
+#endif  /* HAVE_LIMITS_H */
 
 #include "bltAlloc.h"
 #include "bltTable.h"
@@ -77,38 +77,38 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
-#define TABLE_THREAD_KEY	"BLT Table Data"
-#define TABLE_DEF_PAD		0
+#define TABLE_THREAD_KEY        "BLT Table Data"
+#define TABLE_DEF_PAD           0
 
 /*
  * Default values for widget attributes.
  */
-#define DEF_TABLE_ANCHOR	"center"
-#define DEF_TABLE_COLUMNS 	"0"
-#define DEF_TABLE_FILL		"none"
-#define DEF_TABLE_PAD		"0"
-#define DEF_TABLE_PROPAGATE 	"1"
-#define DEF_TABLE_RESIZE	"both"
-#define DEF_TABLE_ROWS		"0"
-#define DEF_TABLE_SPAN		"1"
-#define DEF_TABLE_CONTROL	"normal"
-#define DEF_TABLE_WEIGHT	"1.0"
+#define DEF_TABLE_ANCHOR        "center"
+#define DEF_TABLE_COLUMNS       "0"
+#define DEF_TABLE_FILL          "none"
+#define DEF_TABLE_PAD           "0"
+#define DEF_TABLE_PROPAGATE     "1"
+#define DEF_TABLE_RESIZE        "both"
+#define DEF_TABLE_ROWS          "0"
+#define DEF_TABLE_SPAN          "1"
+#define DEF_TABLE_CONTROL       "normal"
+#define DEF_TABLE_WEIGHT        "1.0"
 
-#define ENTRY_DEF_PAD		0
-#define ENTRY_DEF_ANCHOR	TK_ANCHOR_CENTER
-#define ENTRY_DEF_FILL		FILL_NONE
-#define ENTRY_DEF_SPAN		1
-#define ENTRY_DEF_CONTROL	CONTROL_NORMAL
-#define ENTRY_DEF_IPAD		0
+#define ENTRY_DEF_PAD           0
+#define ENTRY_DEF_ANCHOR        TK_ANCHOR_CENTER
+#define ENTRY_DEF_FILL          FILL_NONE
+#define ENTRY_DEF_SPAN          1
+#define ENTRY_DEF_CONTROL       CONTROL_NORMAL
+#define ENTRY_DEF_IPAD          0
 
-#define ROWCOL_DEF_RESIZE	(RESIZE_BOTH | RESIZE_VIRGIN)
-#define ROWCOL_DEF_PAD		0
-#define ROWCOL_DEF_WEIGHT	1.0
+#define ROWCOL_DEF_RESIZE       (RESIZE_BOTH | RESIZE_VIRGIN)
+#define ROWCOL_DEF_PAD          0
+#define ROWCOL_DEF_WEIGHT       1.0
 
-#define	MATCH_PATTERN   (1<<0)	/* Find widgets whose path names
-				 * match a given pattern */
-#define	MATCH_SPAN	(1<<1)	/* Find widgets that span index  */
-#define	MATCH_START	(1<<2)	/* Find widgets that start at index */
+#define MATCH_PATTERN   (1<<0)  /* Find widgets whose path names
+                                 * match a given pattern */
+#define MATCH_SPAN      (1<<1)  /* Find widgets that span index  */
+#define MATCH_START     (1<<2)  /* Find widgets that start at index */
 
 
 static Blt_Uid rowUid, columnUid;
@@ -118,11 +118,11 @@ static Tk_GeomLostSlaveProc WidgetCustodyProc;
 static Tk_GeomMgr tableMgrInfo =
 {
     (char *)"table",                    /* Name of geometry manager used by
-					 * winfo */
+                                         * winfo */
     WidgetGeometryProc,                 /* Procedure to for new geometry
-					 * requests */
+                                         * requests */
     WidgetCustodyProc,                  /* Procedure when widget is taken
-					 * away */
+                                         * away */
 };
 
 static Blt_OptionParseProc ObjToLimits;
@@ -142,27 +142,27 @@ static Blt_CustomOption controlOption =
 static Blt_ConfigSpec rowConfigSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-height", (char *)NULL, (char *)NULL, (char *)NULL, 
-	Blt_Offset(RowColumn, reqSize), 0, &limitsOption},
+        Blt_Offset(RowColumn, reqSize), 0, &limitsOption},
     {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL, DEF_TABLE_PAD, 
-	Blt_Offset(RowColumn, pad), BLT_CONFIG_DONT_SET_DEFAULT, },
+        Blt_Offset(RowColumn, pad), BLT_CONFIG_DONT_SET_DEFAULT, },
     {BLT_CONFIG_RESIZE, "-resize", (char *)NULL, (char *)NULL, DEF_TABLE_RESIZE,
-	Blt_Offset(RowColumn, resize), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(RowColumn, resize), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_FLOAT, "-weight", (char *)NULL, (char *)NULL, DEF_TABLE_WEIGHT,
-	Blt_Offset(RowColumn, weight), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(RowColumn, weight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
 static Blt_ConfigSpec columnConfigSpecs[] =
 {
     {BLT_CONFIG_PAD, "-padx", (char *)NULL, (char *)NULL, DEF_TABLE_PAD, 
-	Blt_Offset(RowColumn, pad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(RowColumn, pad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RESIZE, "-resize", (char *)NULL, (char *)NULL, DEF_TABLE_RESIZE,
-	Blt_Offset(RowColumn, resize), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(RowColumn, resize), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_FLOAT, "-weight", (char *)NULL, (char *)NULL, DEF_TABLE_WEIGHT,
-	Blt_Offset(RowColumn, weight), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&limitsOption},
+        Blt_Offset(RowColumn, weight), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &limitsOption},
     {BLT_CONFIG_CUSTOM, "-width", (char *)NULL, (char *)NULL, (char *)NULL, 
-	Blt_Offset(RowColumn, reqSize), 0, &limitsOption},
+        Blt_Offset(RowColumn, reqSize), 0, &limitsOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -170,45 +170,45 @@ static Blt_ConfigSpec columnConfigSpecs[] =
 static Blt_ConfigSpec entryConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", (char *)NULL, (char *)NULL,
-	DEF_TABLE_ANCHOR, Blt_Offset(TableEntry, anchor),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+        DEF_TABLE_ANCHOR, Blt_Offset(TableEntry, anchor),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT, "-columnspan", "columnSpan", (char *)NULL,
-	DEF_TABLE_SPAN, Blt_Offset(TableEntry, column.span),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+        DEF_TABLE_SPAN, Blt_Offset(TableEntry, column.span),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-columncontrol", "columnControl", (char *)NULL,
-	DEF_TABLE_CONTROL, Blt_Offset(TableEntry, column.control),
-	BLT_CONFIG_DONT_SET_DEFAULT, &controlOption},
+        DEF_TABLE_CONTROL, Blt_Offset(TableEntry, column.control),
+        BLT_CONFIG_DONT_SET_DEFAULT, &controlOption},
     {BLT_CONFIG_SYNONYM, "-cspan", "columnSpan", (char *)NULL, (char *)NULL, 
-	Blt_Offset(TableEntry, column.span), 0},
+        Blt_Offset(TableEntry, column.span), 0},
     {BLT_CONFIG_SYNONYM, "-ccontrol", "columnControl", (char *)NULL, 
-	(char *)NULL, Blt_Offset(TableEntry, column.control), 0},
+        (char *)NULL, Blt_Offset(TableEntry, column.control), 0},
     {BLT_CONFIG_FILL, "-fill", (char *)NULL, (char *)NULL, DEF_TABLE_FILL, 
-	Blt_Offset(TableEntry, fill), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(TableEntry, fill), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL,
-	(char *)NULL, Blt_Offset(TableEntry, reqHeight), 0},
+        (char *)NULL, Blt_Offset(TableEntry, reqHeight), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(TableEntry, ixPad), 0},
+        (char *)NULL, Blt_Offset(TableEntry, ixPad), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(TableEntry, iyPad), 0},
+        (char *)NULL, Blt_Offset(TableEntry, iyPad), 0},
     {BLT_CONFIG_PAD, "-padx", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(TableEntry, xPad), 0},
+        (char *)NULL, Blt_Offset(TableEntry, xPad), 0},
     {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(TableEntry, yPad), 0},
+        (char *)NULL, Blt_Offset(TableEntry, yPad), 0},
     {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
-	Blt_Offset(TableEntry, reqHeight), 0, &limitsOption},
+        Blt_Offset(TableEntry, reqHeight), 0, &limitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
-	Blt_Offset(TableEntry, reqWidth), 0, &limitsOption},
+        Blt_Offset(TableEntry, reqWidth), 0, &limitsOption},
     {BLT_CONFIG_INT, "-rowspan", "rowSpan", (char *)NULL, DEF_TABLE_SPAN, 
-	Blt_Offset(TableEntry, row.span), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(TableEntry, row.span), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-rowcontrol", "rowControl", (char *)NULL,
-	DEF_TABLE_CONTROL, Blt_Offset(TableEntry, row.control),
-	BLT_CONFIG_DONT_SET_DEFAULT, &controlOption},
+        DEF_TABLE_CONTROL, Blt_Offset(TableEntry, row.control),
+        BLT_CONFIG_DONT_SET_DEFAULT, &controlOption},
     {BLT_CONFIG_SYNONYM, "-rspan", "rowSpan", (char *)NULL, (char *)NULL, 
-	Blt_Offset(TableEntry, row.span), 0},
+        Blt_Offset(TableEntry, row.span), 0},
     {BLT_CONFIG_SYNONYM, "-rcontrol", "rowControl", (char *)NULL, (char *)NULL,
-	Blt_Offset(TableEntry, row.control), 0},
+        Blt_Offset(TableEntry, row.control), 0},
     {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
-	Blt_Offset(TableEntry, reqWidth), 0},
+        Blt_Offset(TableEntry, reqWidth), 0},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -216,18 +216,18 @@ static Blt_ConfigSpec entryConfigSpecs[] =
 static Blt_ConfigSpec tableConfigSpecs[] =
 {
     {BLT_CONFIG_PAD, "-padx", (char *)NULL, (char *)NULL,
-	DEF_TABLE_PAD, Blt_Offset(Table, xPad),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+        DEF_TABLE_PAD, Blt_Offset(Table, xPad),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL,
-	DEF_TABLE_PAD, Blt_Offset(Table, yPad),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+        DEF_TABLE_PAD, Blt_Offset(Table, yPad),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BOOLEAN, "-propagate", (char *)NULL, (char *)NULL,
-	DEF_TABLE_PROPAGATE, Blt_Offset(Table, propagate),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+        DEF_TABLE_PROPAGATE, Blt_Offset(Table, propagate),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(Table, reqHeight), 0, &limitsOption},
+        (char *)NULL, Blt_Offset(Table, reqHeight), 0, &limitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(Table, reqWidth), 0, &limitsOption},
+        (char *)NULL, Blt_Offset(Table, reqWidth), 0, &limitsOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -248,11 +248,11 @@ typedef struct {
 static Blt_SwitchSpec searchSwitches[] = 
 {
     {BLT_SWITCH_STRING, "-pattern", "pattern", (char *)NULL,
-	Blt_Offset(SearchSwitches, pattern), 0, 0,},
+        Blt_Offset(SearchSwitches, pattern), 0, 0,},
     {BLT_SWITCH_CUSTOM, "-span",    "int", (char *)NULL,
-	0, 0, 0, &positionSwitch},
+        0, 0, 0, &positionSwitch},
     {BLT_SWITCH_CUSTOM, "-start",   "position", (char *)NULL,
-	0, 0, 0, &positionSwitch},
+        0, 0, 0, &positionSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -264,9 +264,9 @@ typedef struct {
 static Blt_SwitchSpec namesSwitches[] = 
 {
     {BLT_SWITCH_STRING, "-pattern", "pattern", (char *)NULL,
-	Blt_Offset(NamesSwitches, pattern), 0, 0,},
+        Blt_Offset(NamesSwitches, pattern), 0, 0,},
     {BLT_SWITCH_STRING, "-slave", "widget", (char *)NULL,
-	Blt_Offset(NamesSwitches, slave), 0, 0},
+        Blt_Offset(NamesSwitches, slave), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -289,22 +289,22 @@ typedef struct {
 static Blt_SwitchSpec rowInsertSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-after", "index", (char *)NULL,
-	Blt_Offset(InsertSwitches, afterPtr), 0, 0, &rowSwitch},
+        Blt_Offset(InsertSwitches, afterPtr), 0, 0, &rowSwitch},
     {BLT_SWITCH_CUSTOM, "-before", "index", (char *)NULL,
-	Blt_Offset(InsertSwitches, beforePtr), 0, 0, &rowSwitch},
+        Blt_Offset(InsertSwitches, beforePtr), 0, 0, &rowSwitch},
     {BLT_SWITCH_INT_POS, "-numrows", "number", (char *)NULL,
-	Blt_Offset(InsertSwitches, count), 0, 0},
+        Blt_Offset(InsertSwitches, count), 0, 0},
     {BLT_SWITCH_END}
 };
 
 static Blt_SwitchSpec columnInsertSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-after", "index", (char *)NULL,
-	Blt_Offset(InsertSwitches, afterPtr), 0, 0, &columnSwitch},
+        Blt_Offset(InsertSwitches, afterPtr), 0, 0, &columnSwitch},
     {BLT_SWITCH_CUSTOM, "-before", "index", (char *)NULL,
-	Blt_Offset(InsertSwitches, beforePtr), 0, 0, &columnSwitch},
+        Blt_Offset(InsertSwitches, beforePtr), 0, 0, &columnSwitch},
     {BLT_SWITCH_INT_POS, "-numcolumns", "number", (char *)NULL,
-	Blt_Offset(InsertSwitches, count), 0, 0},
+        Blt_Offset(InsertSwitches, count), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -323,12 +323,12 @@ static void DestroyEntry(TableEntry * entryPtr);
 static void BinEntry(Table *tablePtr, TableEntry * entryPtr);
 static RowColumn *InitSpan(PartitionInfo * piPtr, int start, int span);
 static int ParseItem(Table *tablePtr, const char *string, int *rowPtr, 
-	int *colPtr);
+        int *colPtr);
 
 static EntrySearchProc FindEntry;
 
 typedef int (TableCmdProc)(TableInterpData *dataPtr, Tcl_Interp *interp, 
-	int objc, Tcl_Obj *const *objv);
+        int objc, Tcl_Obj *const *objv);
 
 
 static void
@@ -339,11 +339,11 @@ RenumberIndices(Blt_Chain chain)
     
     i = 0;
     for (link = Blt_Chain_FirstLink(chain);
-	link != NULL; link = Blt_Chain_NextLink(link)) {
+        link != NULL; link = Blt_Chain_NextLink(link)) {
         RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	rcPtr->index = i;
+        rcPtr = Blt_Chain_GetValue(link);
+        rcPtr->index = i;
         i++;
     }
 }
@@ -413,11 +413,11 @@ GetRowFromObj(Tcl_Interp *interp, Table *tablePtr, Tcl_Obj *objPtr,
  *
  * ColumnSearch --
  *
- * 	Searches for the row or column designated by an x or y coordinate.
+ *      Searches for the row or column designated by an x or y coordinate.
  *
  * Results:
- *	Returns a pointer to the row/column containing the given point.  If no
- *	row/column contains the coordinate, NULL is returned.
+ *      Returns a pointer to the row/column containing the given point.  If no
+ *      row/column contains the coordinate, NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -429,21 +429,21 @@ ColumnSearch(Table *tablePtr, int x)
 
     /* We assume that columns are organized in increasing order. */
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+         link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	/*
-	 *|         |offset    |offset+size  |        |
-	 *            ^
-	 *            x
-	 */
-	if (x < rcPtr->offset) { 
-	    return NULL;	/* Too far, can't find column. */
-	}
-	if (x < (rcPtr->offset + rcPtr->size)) {
-	    return rcPtr;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        /*
+         *|         |offset    |offset+size  |        |
+         *            ^
+         *            x
+         */
+        if (x < rcPtr->offset) { 
+            return NULL;        /* Too far, can't find column. */
+        }
+        if (x < (rcPtr->offset + rcPtr->size)) {
+            return rcPtr;
+        }
     }
     return NULL;
 }
@@ -453,11 +453,11 @@ ColumnSearch(Table *tablePtr, int x)
  *
  * RowSearch --
  *
- * 	Searches for the row or column designated by an x or y coordinate.
+ *      Searches for the row or column designated by an x or y coordinate.
  *
  * Results:
- *	Returns a pointer to the row/column containing the given point.  If
- *	no row/column contains the coordinate, NULL is returned.
+ *      Returns a pointer to the row/column containing the given point.  If
+ *      no row/column contains the coordinate, NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -469,21 +469,21 @@ RowSearch(Table *tablePtr, int y)
 
     /* We assume that rows are organized in increasing order. */
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+         link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	/*
-	 *|         |offset    |offset+size  |        |
-	 *            ^
-	 *            y
-	 */
-	if (y < rcPtr->offset) { 
-	    return NULL;	/* Too far, can't find row. */
-	}
-	if (y < (rcPtr->offset + rcPtr->size)) {
-	    return rcPtr;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        /*
+         *|         |offset    |offset+size  |        |
+         *            ^
+         *            y
+         */
+        if (y < rcPtr->offset) { 
+            return NULL;        /* Too far, can't find row. */
+        }
+        if (y < (rcPtr->offset + rcPtr->size)) {
+            return rcPtr;
+        }
     }
     return NULL;
 }
@@ -493,39 +493,39 @@ RowSearch(Table *tablePtr, int y)
  *
  * ObjToLimits --
  *
- *	Converts the list of elements into zero or more pixel values which
- *	determine the range of pixel values possible.  An element can be in
- *	any form accepted by Tk_GetPixels. The list has a different meaning
- *	based upon the number of elements.
+ *      Converts the list of elements into zero or more pixel values which
+ *      determine the range of pixel values possible.  An element can be in
+ *      any form accepted by Tk_GetPixels. The list has a different meaning
+ *      based upon the number of elements.
  *
- *	    # of elements:
+ *          # of elements:
  *
- *	    0 - the limits are reset to the defaults.
- *	    1 - the minimum and maximum values are set to this
- *		value, freezing the range at a single value.
- *	    2 - first element is the minimum, the second is the
- *		maximum.
- *	    3 - first element is the minimum, the second is the
- *		maximum, and the third is the nominal value.
+ *          0 - the limits are reset to the defaults.
+ *          1 - the minimum and maximum values are set to this
+ *              value, freezing the range at a single value.
+ *          2 - first element is the minimum, the second is the
+ *              maximum.
+ *          3 - first element is the minimum, the second is the
+ *              maximum, and the third is the nominal value.
  *
- *	Any element may be the empty string which indicates the default.
+ *      Any element may be the empty string which indicates the default.
  *
  * Results:
- *	The return value is a standard TCL result.  The min and max fields
- *	of the range are set.
+ *      The return value is a standard TCL result.  The min and max fields
+ *      of the range are set.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToLimits(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    Tk_Window tkwin,		/* Widget of table */
-    Tcl_Obj *objPtr,		/* New width list */
-    char *widgRec,		/* Widget record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Interpreter to send results back to */
+    Tk_Window tkwin,            /* Widget of table */
+    Tcl_Obj *objPtr,            /* New width list */
+    char *widgRec,              /* Widget record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     Limits *limitsPtr = (Limits *)(widgRec + offset);
     const char **argv;
@@ -545,47 +545,47 @@ ObjToLimits(
     limitsFlags = 0;
 
     if (objPtr != NULL) {
-	int size;
-	int i;
-	const char *string;
+        int size;
+        int i;
+        const char *string;
 
-	string = Tcl_GetString(objPtr);
-	if (Tcl_SplitList(interp, string, &argc, &argv) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (argc > 3) {
-	    Tcl_AppendResult(interp, "wrong # limits \"", string, "\"",
-		(char *)NULL);
-	    goto error;
-	}
-	for (i = 0; i < argc; i++) {
-	    if (argv[i][0] == '\0') {
-		continue;	/* Empty string: use default value */
-	    }
-	    limitsFlags |= (LIMITS_SET_BIT << i);
-	    if ((argv[i][0] == '.') &&
-		((argv[i][1] == '\0') || isalpha(UCHAR(argv[i][1])))) {
-		Tk_Window tkwin2;
+        string = Tcl_GetString(objPtr);
+        if (Tcl_SplitList(interp, string, &argc, &argv) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (argc > 3) {
+            Tcl_AppendResult(interp, "wrong # limits \"", string, "\"",
+                (char *)NULL);
+            goto error;
+        }
+        for (i = 0; i < argc; i++) {
+            if (argv[i][0] == '\0') {
+                continue;       /* Empty string: use default value */
+            }
+            limitsFlags |= (LIMITS_SET_BIT << i);
+            if ((argv[i][0] == '.') &&
+                ((argv[i][1] == '\0') || isalpha(UCHAR(argv[i][1])))) {
+                Tk_Window tkwin2;
 
-		/* Widget specified: save pointer to widget */
-		tkwin2 = Tk_NameToWindow(interp, argv[i], tkwin);
-		if (tkwin2 == NULL) {
-		    goto error;
-		}
-		winArr[i] = tkwin2;
-	    } else {
-		if (Tk_GetPixels(interp, tkwin, argv[i], &size) != TCL_OK) {
-		    goto error;
-		}
-		if ((size < LIMITS_MIN) || (size > LIMITS_MAX)) {
-		    Tcl_AppendResult(interp, "bad limits \"", string, "\"",
-			(char *)NULL);
-		    goto error;
-		}
-		limArr[i] = size;
-	    }
-	}
-	Blt_Free(argv);
+                /* Widget specified: save pointer to widget */
+                tkwin2 = Tk_NameToWindow(interp, argv[i], tkwin);
+                if (tkwin2 == NULL) {
+                    goto error;
+                }
+                winArr[i] = tkwin2;
+            } else {
+                if (Tk_GetPixels(interp, tkwin, argv[i], &size) != TCL_OK) {
+                    goto error;
+                }
+                if ((size < LIMITS_MIN) || (size > LIMITS_MAX)) {
+                    Tcl_AppendResult(interp, "bad limits \"", string, "\"",
+                        (char *)NULL);
+                    goto error;
+                }
+                limArr[i] = size;
+            }
+        }
+        Blt_Free(argv);
     }
     /*
     * Check the limits specified.  We can't check the requested
@@ -593,40 +593,40 @@ ObjToLimits(
     */
     switch (argc) {
     case 1:
-	limitsFlags |= (LIMITS_SET_MIN | LIMITS_SET_MAX);
-	if (winArr[0] == NULL) {
-	    limArr[1] = limArr[0];	/* Set minimum and maximum to value */
-	} else {
-	    winArr[1] = winArr[0];
-	}
-	break;
+        limitsFlags |= (LIMITS_SET_MIN | LIMITS_SET_MAX);
+        if (winArr[0] == NULL) {
+            limArr[1] = limArr[0];      /* Set minimum and maximum to value */
+        } else {
+            winArr[1] = winArr[0];
+        }
+        break;
 
     case 2:
-	if ((winArr[0] == NULL) && (winArr[1] == NULL) &&
-	    (limArr[1] < limArr[0])) {
-	    Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
-		"\": min > max", (char *)NULL);
-	    return TCL_ERROR;	/* Minimum is greater than maximum */
-	}
-	break;
+        if ((winArr[0] == NULL) && (winArr[1] == NULL) &&
+            (limArr[1] < limArr[0])) {
+            Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
+                "\": min > max", (char *)NULL);
+            return TCL_ERROR;   /* Minimum is greater than maximum */
+        }
+        break;
 
     case 3:
-	if ((winArr[0] == NULL) && (winArr[1] == NULL)) {
-	    if (limArr[1] < limArr[0]) {
-		Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
-		    "\": min > max", (char *)NULL);
-		return TCL_ERROR;	/* Minimum is greater than maximum */
-	    }
-	    if ((winArr[2] == NULL) &&
-		((limArr[2] < limArr[0]) || (limArr[2] > limArr[1]))) {
-		Tcl_AppendResult(interp, "nominal value \"", 
-		    Tcl_GetString(objPtr),
-		    "\" out of range", (char *)NULL);
-		return TCL_ERROR;	/* Nominal is outside of range defined
-					 * by minimum and maximum */
-	    }
-	}
-	break;
+        if ((winArr[0] == NULL) && (winArr[1] == NULL)) {
+            if (limArr[1] < limArr[0]) {
+                Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
+                    "\": min > max", (char *)NULL);
+                return TCL_ERROR;       /* Minimum is greater than maximum */
+            }
+            if ((winArr[2] == NULL) &&
+                ((limArr[2] < limArr[0]) || (limArr[2] > limArr[1]))) {
+                Tcl_AppendResult(interp, "nominal value \"", 
+                    Tcl_GetString(objPtr),
+                    "\" out of range", (char *)NULL);
+                return TCL_ERROR;       /* Nominal is outside of range defined
+                                         * by minimum and maximum */
+            }
+        }
+        break;
     }
     limitsPtr->min = limArr[0];
     limitsPtr->max = limArr[1];
@@ -646,15 +646,15 @@ ObjToLimits(
  *
  * ResetLimits --
  *
- *	Resets the limits to their default values.
+ *      Resets the limits to their default values.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 INLINE static void
-ResetLimits(Limits *limitsPtr)	/* Limits to be imposed on the value */
+ResetLimits(Limits *limitsPtr)  /* Limits to be imposed on the value */
 {
     limitsPtr->flags = 0;
     limitsPtr->min = LIMITS_MIN;
@@ -668,39 +668,39 @@ ResetLimits(Limits *limitsPtr)	/* Limits to be imposed on the value */
  *
  * GetBoundedWidth --
  *
- *	Bounds a given width value to the limits described in the limit
- *	structure.  The initial starting value may be overridden by the
- *	nominal value in the limits.
+ *      Bounds a given width value to the limits described in the limit
+ *      structure.  The initial starting value may be overridden by the
+ *      nominal value in the limits.
  *
  * Results:
- *	Returns the constrained value.
+ *      Returns the constrained value.
  *
  *---------------------------------------------------------------------------
  */
 static int
 GetBoundedWidth(
-    int width,			/* Initial value to be constrained */
-    Limits *limitsPtr)		/* Limits to be imposed on the value */
+    int width,                  /* Initial value to be constrained */
+    Limits *limitsPtr)          /* Limits to be imposed on the value */
 {
     /*
      * Check widgets for requested width values;
      */
     if (limitsPtr->wMin != NULL) {
-	limitsPtr->min = Tk_ReqWidth(limitsPtr->wMin);
+        limitsPtr->min = Tk_ReqWidth(limitsPtr->wMin);
     }
     if (limitsPtr->wMax != NULL) {
-	limitsPtr->max = Tk_ReqWidth(limitsPtr->wMax);
+        limitsPtr->max = Tk_ReqWidth(limitsPtr->wMax);
     }
     if (limitsPtr->wNom != NULL) {
-	limitsPtr->nom = Tk_ReqWidth(limitsPtr->wNom);
+        limitsPtr->nom = Tk_ReqWidth(limitsPtr->wNom);
     }
     if (limitsPtr->flags & LIMITS_SET_NOM) {
-	width = limitsPtr->nom;	/* Override initial value */
+        width = limitsPtr->nom; /* Override initial value */
     }
     if (width < limitsPtr->min) {
-	width = limitsPtr->min;	/* Bounded by minimum value */
+        width = limitsPtr->min; /* Bounded by minimum value */
     } else if (width > limitsPtr->max) {
-	width = limitsPtr->max;	/* Bounded by maximum value */
+        width = limitsPtr->max; /* Bounded by maximum value */
     }
     return width;
 }
@@ -710,39 +710,39 @@ GetBoundedWidth(
  *
  * GetBoundedHeight --
  *
- *	Bounds a given value to the limits described in the limit structure.
- *	The initial starting value may be overridden by the nominal value in
- *	the limits.
+ *      Bounds a given value to the limits described in the limit structure.
+ *      The initial starting value may be overridden by the nominal value in
+ *      the limits.
  *
  * Results:
- *	Returns the constrained value.
+ *      Returns the constrained value.
  *
  *---------------------------------------------------------------------------
  */
 static int
 GetBoundedHeight(
-    int height,			/* Initial value to be constrained */
-    Limits *limitsPtr)		/* Limits to be imposed on the value */
+    int height,                 /* Initial value to be constrained */
+    Limits *limitsPtr)          /* Limits to be imposed on the value */
 {
     /*
      * Check widgets for requested height values;
      */
     if (limitsPtr->wMin != NULL) {
-	limitsPtr->min = Tk_ReqHeight(limitsPtr->wMin);
+        limitsPtr->min = Tk_ReqHeight(limitsPtr->wMin);
     }
     if (limitsPtr->wMax != NULL) {
-	limitsPtr->max = Tk_ReqHeight(limitsPtr->wMax);
+        limitsPtr->max = Tk_ReqHeight(limitsPtr->wMax);
     }
     if (limitsPtr->wNom != NULL) {
-	limitsPtr->nom = Tk_ReqHeight(limitsPtr->wNom);
+        limitsPtr->nom = Tk_ReqHeight(limitsPtr->wNom);
     }
     if (limitsPtr->flags & LIMITS_SET_NOM) {
-	height = limitsPtr->nom;/* Override initial value */
+        height = limitsPtr->nom;/* Override initial value */
     }
     if (height < limitsPtr->min) {
-	height = limitsPtr->min;/* Bounded by minimum value */
+        height = limitsPtr->min;/* Bounded by minimum value */
     } else if (height > limitsPtr->max) {
-	height = limitsPtr->max;/* Bounded by maximum value */
+        height = limitsPtr->max;/* Bounded by maximum value */
     }
     return height;
 }
@@ -752,10 +752,10 @@ GetBoundedHeight(
  *
  * NameOfLimits --
  *
- *	Convert the values into a list representing the limits.
+ *      Convert the values into a list representing the limits.
  *
  * Results:
- *	The static string representation of the limits is returned.
+ *      The static string representation of the limits is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -769,27 +769,27 @@ NameOfLimits(Limits *limitsPtr)
     Tcl_DStringInit(&buffer);
 
     if (limitsPtr->wMin != NULL) {
-	Tcl_DStringAppendElement(&buffer, Tk_PathName(limitsPtr->wMin));
+        Tcl_DStringAppendElement(&buffer, Tk_PathName(limitsPtr->wMin));
     } else if (limitsPtr->flags & LIMITS_SET_MIN) {
-	Tcl_DStringAppendElement(&buffer, Blt_Itoa(limitsPtr->min));
+        Tcl_DStringAppendElement(&buffer, Blt_Itoa(limitsPtr->min));
     } else {
-	Tcl_DStringAppendElement(&buffer, "");
+        Tcl_DStringAppendElement(&buffer, "");
     }
 
     if (limitsPtr->wMax != NULL) {
-	Tcl_DStringAppendElement(&buffer, Tk_PathName(limitsPtr->wMax));
+        Tcl_DStringAppendElement(&buffer, Tk_PathName(limitsPtr->wMax));
     } else if (limitsPtr->flags & LIMITS_SET_MAX) {
-	Tcl_DStringAppendElement(&buffer, Blt_Itoa(limitsPtr->max));
+        Tcl_DStringAppendElement(&buffer, Blt_Itoa(limitsPtr->max));
     } else {
-	Tcl_DStringAppendElement(&buffer, "");
+        Tcl_DStringAppendElement(&buffer, "");
     }
 
     if (limitsPtr->wNom != NULL) {
-	Tcl_DStringAppendElement(&buffer, Tk_PathName(limitsPtr->wNom));
+        Tcl_DStringAppendElement(&buffer, Tk_PathName(limitsPtr->wNom));
     } else if (limitsPtr->flags & LIMITS_SET_NOM) {
-	Tcl_DStringAppendElement(&buffer, Blt_Itoa(limitsPtr->nom));
+        Tcl_DStringAppendElement(&buffer, Blt_Itoa(limitsPtr->nom));
     } else {
-	Tcl_DStringAppendElement(&buffer, "");
+        Tcl_DStringAppendElement(&buffer, "");
     }
     strncpy(string, Tcl_DStringValue(&buffer), STRING_SPACE);
     string[STRING_SPACE] = '\0';
@@ -801,22 +801,22 @@ NameOfLimits(Limits *limitsPtr)
  *
  * LimitsToObj --
  *
- *	Convert the limits of the pixel values allowed into a list.
+ *      Convert the limits of the pixel values allowed into a list.
  *
  * Results:
- *	The string representation of the limits is returned.
+ *      The string representation of the limits is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 LimitsToObj(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Not used. */
-    Tk_Window tkwin,		/* Not used. */
-    char *widgRec,		/* Row/column structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Not used. */
+    Tk_Window tkwin,            /* Not used. */
+    char *widgRec,              /* Row/column structure record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     Limits *limitsPtr = (Limits *)(widgRec + offset);
 
@@ -828,21 +828,21 @@ LimitsToObj(
  *
  * ObjToControl --
  *
- *	Converts the control string into its numeric representation.  Valid
- *	control strings are "none", "normal", and "full".
+ *      Converts the control string into its numeric representation.  Valid
+ *      control strings are "none", "normal", and "full".
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToControl(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    Tk_Window tkwin,		/* Not used. */
-    Tcl_Obj *objPtr,		/* Control style string */
-    char *widgRec,		/* Entry structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Interpreter to send results back to */
+    Tk_Window tkwin,            /* Not used. */
+    Tcl_Obj *objPtr,            /* Control style string */
+    char *widgRec,              /* Entry structure record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     const char *string;
     char c;
@@ -851,30 +851,30 @@ ObjToControl(
     int length;
 
     if (Tcl_GetBooleanFromObj(NULL, objPtr, &bool) == TCL_OK) {
-	*controlPtr = (float)bool;
-	return TCL_OK;
+        *controlPtr = (float)bool;
+        return TCL_OK;
     }
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
     if ((c == 'n') && (length > 1) &&
-	(strncmp(string, "normal", length) == 0)) {
-	*controlPtr = CONTROL_NORMAL;
+        (strncmp(string, "normal", length) == 0)) {
+        *controlPtr = CONTROL_NORMAL;
     } else if ((c == 'n') && (length > 1) &&
-	(strncmp(string, "none", length) == 0)) {
-	*controlPtr = CONTROL_NONE;
+        (strncmp(string, "none", length) == 0)) {
+        *controlPtr = CONTROL_NONE;
     } else if ((c == 'f') && (strncmp(string, "full", length) == 0)) {
-	*controlPtr = CONTROL_FULL;
+        *controlPtr = CONTROL_FULL;
     } else {
-	double control;
+        double control;
 
-	if ((Tcl_GetDoubleFromObj(interp, objPtr, &control) != TCL_OK) ||
-	    (control < 0.0)) {
-	    Tcl_AppendResult(interp, "bad control argument \"", string,
-		"\": should be \"normal\", \"none\", or \"full\"",
-		(char *)NULL);
-	    return TCL_ERROR;
-	}
-	*controlPtr = (float)control;
+        if ((Tcl_GetDoubleFromObj(interp, objPtr, &control) != TCL_OK) ||
+            (control < 0.0)) {
+            Tcl_AppendResult(interp, "bad control argument \"", string,
+                "\": should be \"normal\", \"none\", or \"full\"",
+                (char *)NULL);
+            return TCL_ERROR;
+        }
+        *controlPtr = (float)control;
     }
     return TCL_OK;
 }
@@ -884,10 +884,10 @@ ObjToControl(
  *
  * NameOfControl --
  *
- *	Converts the control value into its string representation.
+ *      Converts the control value into its string representation.
  *
  * Results:
- *	Returns a pointer to the static name string.
+ *      Returns a pointer to the static name string.
  *
  *---------------------------------------------------------------------------
  */
@@ -895,16 +895,16 @@ static const char *
 NameOfControl(float control)
 {
     if (control == CONTROL_NORMAL) {
-	return "normal";
+        return "normal";
     } else if (control == CONTROL_NONE) {
-	return "none";
+        return "none";
     } else if (control == CONTROL_FULL) {
-	return "full";
+        return "full";
     } else {
-	static char string[TCL_DOUBLE_SPACE];
+        static char string[TCL_DOUBLE_SPACE];
 
-	Blt_FormatString(string, TCL_DOUBLE_SPACE, "%g", (double)control);
-	return string;
+        Blt_FormatString(string, TCL_DOUBLE_SPACE, "%g", (double)control);
+        return string;
     }
 }
 
@@ -913,22 +913,22 @@ NameOfControl(float control)
  *
  * ControlToObj --
  *
- *	Returns control mode string based upon the control flags.
+ *      Returns control mode string based upon the control flags.
  *
  * Results:
- *	The control mode string is returned.
+ *      The control mode string is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 ControlToObj(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Not used. */
-    Tk_Window tkwin,		/* Not used. */
-    char *widgRec,		/* Row/column structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Not used. */
+    Tk_Window tkwin,            /* Not used. */
+    char *widgRec,              /* Row/column structure record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     float control = *(float *)(widgRec + offset);
 
@@ -940,37 +940,37 @@ ControlToObj(
  *
  * ObjToPosition --
  *
- *	Converts the position mode into its numeric representation.  
+ *      Converts the position mode into its numeric representation.  
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToPosition(
-    ClientData clientData,	/* Flag indicating if the node is considered
-				 * before or after the insertion position. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    const char *switchName,	/* Not used. */
-    Tcl_Obj *objPtr,		/* String representation */
-    char *record,		/* Structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,      /* Flag indicating if the node is considered
+                                 * before or after the insertion position. */
+    Tcl_Interp *interp,         /* Interpreter to send results back to */
+    const char *switchName,     /* Not used. */
+    Tcl_Obj *objPtr,            /* String representation */
+    char *record,               /* Structure record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     SearchSwitches *searchPtr = (SearchSwitches *)record;
     int row, column;
 
     if (ParseItem(searchPtr->tablePtr, Tcl_GetString(objPtr), &row, &column) 
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     if (strcmp(switchName, "-span") == 0) {
-	searchPtr->flags |= MATCH_SPAN;
-	searchPtr->rspan = row;
-	searchPtr->cspan = column;
+        searchPtr->flags |= MATCH_SPAN;
+        searchPtr->rspan = row;
+        searchPtr->cspan = column;
     } else if (strcmp(switchName, "-start") == 0) {
-	searchPtr->flags |= MATCH_START;
-	searchPtr->rstart = row;
-	searchPtr->cstart = column;
+        searchPtr->flags |= MATCH_START;
+        searchPtr->rstart = row;
+        searchPtr->cstart = column;
     }
     return TCL_OK;
 }
@@ -980,21 +980,21 @@ ObjToPosition(
  *
  * ObjToColumn --
  *
- *	Converts the column index into a pointer to the column.
+ *      Converts the column index into a pointer to the column.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToColumn(ClientData clientData, Tcl_Interp *interp, const char *switchName,
-            Tcl_Obj *objPtr, char *record, int offset, int flags)	
+            Tcl_Obj *objPtr, char *record, int offset, int flags)       
 {
     Table *tablePtr = clientData;
     RowColumn **colPtrPtr = (RowColumn **)(record + offset);
     RowColumn *colPtr;
 
     if (GetColumnFromObj(interp, tablePtr, objPtr, &colPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     *colPtrPtr = colPtr;
     return TCL_OK;
@@ -1005,21 +1005,21 @@ ObjToColumn(ClientData clientData, Tcl_Interp *interp, const char *switchName,
  *
  * ObjToRow --
  *
- *	Converts the row index into a pointer to the row.
+ *      Converts the row index into a pointer to the row.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToRow(ClientData clientData, Tcl_Interp *interp, const char *switchName,
-            Tcl_Obj *objPtr, char *record, int offset, int flags)	
+            Tcl_Obj *objPtr, char *record, int offset, int flags)       
 {
     Table *tablePtr = clientData;
     RowColumn **rowPtrPtr = (RowColumn **)(record + offset);
     RowColumn *rowPtr;
 
     if (GetRowFromObj(interp, tablePtr, objPtr, &rowPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     *rowPtrPtr = rowPtr;
     return TCL_OK;
@@ -1030,8 +1030,8 @@ static void
 EventuallyArrangeTable(Table *tablePtr)
 {
     if (!(tablePtr->flags & ARRANGE_PENDING)) {
-	tablePtr->flags |= ARRANGE_PENDING;
-	Tcl_DoWhenIdle(ArrangeTable, tablePtr);
+        tablePtr->flags |= ARRANGE_PENDING;
+        Tcl_DoWhenIdle(ArrangeTable, tablePtr);
     }
 }
 
@@ -1040,47 +1040,47 @@ EventuallyArrangeTable(Table *tablePtr)
  *
  * TableEventProc --
  *
- *	This procedure is invoked by the Tk event handler when the container
- *	widget is reconfigured or destroyed.
+ *      This procedure is invoked by the Tk event handler when the container
+ *      widget is reconfigured or destroyed.
  *
- *	The table will be rearranged at the next idle point if the container
- *	widget has been resized or moved. There's a distinction made between
- *	parent and non-parent container arrangements.  When the container is
- *	the parent of the embedded widgets, the widgets will automatically
- *	keep their positions relative to the container, even when the
- *	container is moved.  But if the container is not the parent, those
- *	widgets have to be moved manually.  This can be a performance hit in
- *	rare cases where we're scrolling the container (by moving the window)
- *	and there are lots of non-child widgets arranged inside.
+ *      The table will be rearranged at the next idle point if the container
+ *      widget has been resized or moved. There's a distinction made between
+ *      parent and non-parent container arrangements.  When the container is
+ *      the parent of the embedded widgets, the widgets will automatically
+ *      keep their positions relative to the container, even when the
+ *      container is moved.  But if the container is not the parent, those
+ *      widgets have to be moved manually.  This can be a performance hit in
+ *      rare cases where we're scrolling the container (by moving the window)
+ *      and there are lots of non-child widgets arranged inside.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Arranges for the table associated with tkwin to have its layout
- *	re-computed and drawn at the next idle point.
+ *      Arranges for the table associated with tkwin to have its layout
+ *      re-computed and drawn at the next idle point.
  *
  *---------------------------------------------------------------------------
  */
 static void
 TableEventProc(
-    ClientData clientData,	/* Information about widget */
-    XEvent *eventPtr)		/* Information about event */
+    ClientData clientData,      /* Information about widget */
+    XEvent *eventPtr)           /* Information about event */
 {
     Table *tablePtr = clientData;
 
     if (eventPtr->type == ConfigureNotify) {
-	if ((tablePtr->container.width != Tk_Width(tablePtr->tkwin)) ||
-	    (tablePtr->container.height != Tk_Height(tablePtr->tkwin))
-	    || (tablePtr->flags & NON_PARENT)) {
-	    EventuallyArrangeTable(tablePtr);
-	}
+        if ((tablePtr->container.width != Tk_Width(tablePtr->tkwin)) ||
+            (tablePtr->container.height != Tk_Height(tablePtr->tkwin))
+            || (tablePtr->flags & NON_PARENT)) {
+            EventuallyArrangeTable(tablePtr);
+        }
     } else if (eventPtr->type == DestroyNotify) {
-	if (tablePtr->flags & ARRANGE_PENDING) {
-	    Tcl_CancelIdleCall(ArrangeTable, tablePtr);
-	}
-	tablePtr->tkwin = NULL;
-	Tcl_EventuallyFree(tablePtr, DestroyTable);
+        if (tablePtr->flags & ARRANGE_PENDING) {
+            Tcl_CancelIdleCall(ArrangeTable, tablePtr);
+        }
+        tablePtr->tkwin = NULL;
+        Tcl_EventuallyFree(tablePtr, DestroyTable);
     }
 }
 
@@ -1089,45 +1089,45 @@ TableEventProc(
  *
  * WidgetEventProc --
  *
- *	This procedure is invoked by the Tk event handler when StructureNotify
- *	events occur in a widget managed by the table.
+ *      This procedure is invoked by the Tk event handler when StructureNotify
+ *      events occur in a widget managed by the table.
  *
- *	For example, when a managed widget is destroyed, it frees the
- *	corresponding entry structure and arranges for the table layout to be
- *	re-computed at the next idle point.
+ *      For example, when a managed widget is destroyed, it frees the
+ *      corresponding entry structure and arranges for the table layout to be
+ *      re-computed at the next idle point.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	If the managed widget was deleted, the Entry structure gets cleaned up
- *	and the table is rearranged.
+ *      If the managed widget was deleted, the Entry structure gets cleaned up
+ *      and the table is rearranged.
  *
  *---------------------------------------------------------------------------
  */
 static void
 WidgetEventProc(
-    ClientData clientData,	/* Pointer to Entry structure for widget
-				 * referred to by eventPtr. */
-    XEvent *eventPtr)		/* Describes what just happened. */
+    ClientData clientData,      /* Pointer to Entry structure for widget
+                                 * referred to by eventPtr. */
+    XEvent *eventPtr)           /* Describes what just happened. */
 {
     TableEntry *entryPtr = clientData;
     Table *tablePtr;
 
     tablePtr = entryPtr->tablePtr;
     if (eventPtr->type == ConfigureNotify) {
-	int borderWidth;
+        int borderWidth;
 
-	tablePtr->flags |= REQUEST_LAYOUT;
-	borderWidth = Tk_Changes(entryPtr->tkwin)->border_width;
-	if (entryPtr->borderWidth != borderWidth) {
-	    entryPtr->borderWidth = borderWidth;
-	    EventuallyArrangeTable(tablePtr);
-	}
+        tablePtr->flags |= REQUEST_LAYOUT;
+        borderWidth = Tk_Changes(entryPtr->tkwin)->border_width;
+        if (entryPtr->borderWidth != borderWidth) {
+            entryPtr->borderWidth = borderWidth;
+            EventuallyArrangeTable(tablePtr);
+        }
     } else if (eventPtr->type == DestroyNotify) {
-	DestroyEntry(entryPtr);
-	tablePtr->flags |= REQUEST_LAYOUT;
-	EventuallyArrangeTable(tablePtr);
+        DestroyEntry(entryPtr);
+        tablePtr->flags |= REQUEST_LAYOUT;
+        EventuallyArrangeTable(tablePtr);
     }
 }
 
@@ -1136,30 +1136,30 @@ WidgetEventProc(
  *
  * WidgetCustodyProc --
  *
- * 	This procedure is invoked when a widget has been stolen by another
- * 	geometry manager.  The information and memory associated with the
- * 	widget is released.
+ *      This procedure is invoked when a widget has been stolen by another
+ *      geometry manager.  The information and memory associated with the
+ *      widget is released.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Arranges for the table to have its layout re-arranged at the next idle
- *	point.
+ *      Arranges for the table to have its layout re-arranged at the next idle
+ *      point.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static void
 WidgetCustodyProc(
-    ClientData clientData,	/* Information about the widget */
-    Tk_Window tkwin)		/* Not used. */
+    ClientData clientData,      /* Information about the widget */
+    Tk_Window tkwin)            /* Not used. */
 {
     TableEntry *entryPtr = (TableEntry *) clientData;
     Table *tablePtr = entryPtr->tablePtr;
 
     if (Tk_IsMapped(entryPtr->tkwin)) {
-	Tk_UnmapWindow(entryPtr->tkwin);
+        Tk_UnmapWindow(entryPtr->tkwin);
     }
     Tk_UnmaintainGeometry(entryPtr->tkwin, tablePtr->tkwin);
     DestroyEntry(entryPtr);
@@ -1172,24 +1172,24 @@ WidgetCustodyProc(
  *
  * WidgetGeometryProc --
  *
- *	This procedure is invoked by Tk_GeometryRequest for widgets managed by
- *	the table geometry manager.
+ *      This procedure is invoked by Tk_GeometryRequest for widgets managed by
+ *      the table geometry manager.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Arranges for the table to have its layout re-computed and re-arranged
- *	at the next idle point.
+ *      Arranges for the table to have its layout re-computed and re-arranged
+ *      at the next idle point.
  *
  * ---------------------------------------------------------------------------- */
 /* ARGSUSED */
 static void
 WidgetGeometryProc(
-    ClientData clientData,	/* Information about widget that got new
-				 * preferred geometry.  */
-    Tk_Window tkwin)		/* Other Tk-related information about the
-				 * widget. */
+    ClientData clientData,      /* Information about widget that got new
+                                 * preferred geometry.  */
+    Tk_Window tkwin)            /* Other Tk-related information about the
+                                 * widget. */
 {
     TableEntry *entryPtr = (TableEntry *) clientData;
 
@@ -1202,24 +1202,24 @@ WidgetGeometryProc(
  *
  * FindEntry --
  *
- *	Searches for the table entry corresponding to the given widget.
+ *      Searches for the table entry corresponding to the given widget.
  *
  * Results:
- *	If a structure associated with the widget exists, a pointer to that
- *	structure is returned. Otherwise NULL.
+ *      If a structure associated with the widget exists, a pointer to that
+ *      structure is returned. Otherwise NULL.
  *
  *---------------------------------------------------------------------------
  */
 static TableEntry *
 FindEntry(
     Table *tablePtr,
-    Tk_Window tkwin)		/* Widget associated with table entry */
+    Tk_Window tkwin)            /* Widget associated with table entry */
 {
     Blt_HashEntry *hPtr;
 
     hPtr = Blt_FindHashEntry(&tablePtr->entryTable, (char *)tkwin);
     if (hPtr == NULL) {
-	return NULL;
+        return NULL;
     }
     return Blt_GetHashValue(hPtr);
 }
@@ -1227,20 +1227,20 @@ FindEntry(
 
 static int
 GetEntry(Tcl_Interp *interp, Table *tablePtr, const char *string, 
-	 TableEntry **entryPtrPtr)
+         TableEntry **entryPtrPtr)
 {
     Tk_Window tkwin;
     TableEntry *entryPtr;
 
     tkwin = Tk_NameToWindow(interp, string, tablePtr->tkwin);
     if (tkwin == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     entryPtr = FindEntry(tablePtr, tkwin);
     if (entryPtr == NULL) {
-	Tcl_AppendResult(interp, "\"", Tk_PathName(tkwin),
-	    "\" is not managed by any table", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "\"", Tk_PathName(tkwin),
+            "\" is not managed by any table", (char *)NULL);
+        return TCL_ERROR;
     }
     *entryPtrPtr = entryPtr;
     return TCL_OK;
@@ -1251,18 +1251,18 @@ GetEntry(Tcl_Interp *interp, Table *tablePtr, const char *string,
  *
  * CreateEntry --
  *
- *	This procedure creates and initializes a new Entry structure to hold a
- *	widget.  A valid widget has a parent widget that is either a) the
- *	container widget itself or b) a mutual ancestor of the container
- *	widget.
+ *      This procedure creates and initializes a new Entry structure to hold a
+ *      widget.  A valid widget has a parent widget that is either a) the
+ *      container widget itself or b) a mutual ancestor of the container
+ *      widget.
  *
  * Results:
- *	Returns a pointer to the new structure describing the new widget
- *	entry.  If an error occurred, then the return value is NULL and an
- *	error message is left in interp->result.
+ *      Returns a pointer to the new structure describing the new widget
+ *      entry.  If an error occurred, then the return value is NULL and an
+ *      error message is left in interp->result.
  *
  * Side effects:
- *	Memory is allocated and initialized for the Entry structure.
+ *      Memory is allocated and initialized for the Entry structure.
  *
  * ---------------------------------------------------------------------------- 
  */
@@ -1284,14 +1284,14 @@ CreateEntry(
      */
     ancestor = Tk_Parent(tkwin);
     for (parent = tablePtr->tkwin; (parent != ancestor) &&
-	(!Tk_IsTopLevel(parent)); parent = Tk_Parent(parent)) {
-	/* empty */
+        (!Tk_IsTopLevel(parent)); parent = Tk_Parent(parent)) {
+        /* empty */
     }
     if (ancestor != parent) {
-	Tcl_AppendResult(tablePtr->interp, "can't manage \"",
-	    Tk_PathName(tkwin), "\" in table \"", Tk_PathName(tablePtr->tkwin),
-	    "\"", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(tablePtr->interp, "can't manage \"",
+            Tk_PathName(tkwin), "\" in table \"", Tk_PathName(tablePtr->tkwin),
+            "\"", (char *)NULL);
+        return NULL;
     }
     entryPtr = Blt_AssertCalloc(1, sizeof(TableEntry));
 
@@ -1310,16 +1310,16 @@ CreateEntry(
     /*
      * Add the entry to the following data structures.
      *
-     * 	1) A chain of widgets managed by the table.
+     *  1) A chain of widgets managed by the table.
      *   2) A hash table of widgets managed by the table.
      */
     entryPtr->link = Blt_Chain_Append(tablePtr->chain, entryPtr);
     entryPtr->hashPtr = Blt_CreateHashEntry(&tablePtr->entryTable,
-	(char *)tkwin, &dummy);
+        (char *)tkwin, &dummy);
     Blt_SetHashValue(entryPtr->hashPtr, entryPtr);
 
     Tk_CreateEventHandler(tkwin, StructureNotifyMask, WidgetEventProc, 
-	entryPtr);
+        entryPtr);
     Tk_ManageGeometry(tkwin, &tableMgrInfo, entryPtr);
 
     return entryPtr;
@@ -1330,16 +1330,16 @@ CreateEntry(
  *
  * DestroyEntry --
  *
- *	Removes the Entry structure from the hash table and frees the memory
- *	allocated by it.  If the table is still in use (i.e. was not called
- *	from DestoryTable), remove its entries from the lists of row and
- *	column sorted partitions.
+ *      Removes the Entry structure from the hash table and frees the memory
+ *      allocated by it.  If the table is still in use (i.e. was not called
+ *      from DestoryTable), remove its entries from the lists of row and
+ *      column sorted partitions.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Everything associated with the entry is freed up.
+ *      Everything associated with the entry is freed up.
  *
  *---------------------------------------------------------------------------
  */
@@ -1349,29 +1349,29 @@ DestroyEntry(TableEntry *entryPtr)
     Table *tablePtr = entryPtr->tablePtr;
 
     if (entryPtr->row.link != NULL) {
-	Blt_Chain_DeleteLink(entryPtr->row.chain, entryPtr->row.link);
+        Blt_Chain_DeleteLink(entryPtr->row.chain, entryPtr->row.link);
     }
     if (entryPtr->column.link != NULL) {
-	Blt_Chain_DeleteLink(entryPtr->column.chain,
-	    entryPtr->column.link);
+        Blt_Chain_DeleteLink(entryPtr->column.chain,
+            entryPtr->column.link);
     }
     if (entryPtr->link != NULL) {
-	Blt_Chain_DeleteLink(tablePtr->chain, entryPtr->link);
+        Blt_Chain_DeleteLink(tablePtr->chain, entryPtr->link);
     }
     if (entryPtr->tkwin != NULL) {
-	Tk_DeleteEventHandler(entryPtr->tkwin, StructureNotifyMask, 
-		WidgetEventProc, entryPtr);
-	Tk_ManageGeometry(entryPtr->tkwin, (Tk_GeomMgr *)NULL, entryPtr);
-	if ((tablePtr->tkwin != NULL) && 
-	    (Tk_Parent(entryPtr->tkwin) != tablePtr->tkwin)) {
-	    Tk_UnmaintainGeometry(entryPtr->tkwin, tablePtr->tkwin);
-	}
-	if (Tk_IsMapped(entryPtr->tkwin)) {
-	    Tk_UnmapWindow(entryPtr->tkwin);
-	}
+        Tk_DeleteEventHandler(entryPtr->tkwin, StructureNotifyMask, 
+                WidgetEventProc, entryPtr);
+        Tk_ManageGeometry(entryPtr->tkwin, (Tk_GeomMgr *)NULL, entryPtr);
+        if ((tablePtr->tkwin != NULL) && 
+            (Tk_Parent(entryPtr->tkwin) != tablePtr->tkwin)) {
+            Tk_UnmaintainGeometry(entryPtr->tkwin, tablePtr->tkwin);
+        }
+        if (Tk_IsMapped(entryPtr->tkwin)) {
+            Tk_UnmapWindow(entryPtr->tkwin);
+        }
     }
     if (entryPtr->hashPtr != NULL) {
-	Blt_DeleteHashEntry(&tablePtr->entryTable, entryPtr->hashPtr);
+        Blt_DeleteHashEntry(&tablePtr->entryTable, entryPtr->hashPtr);
     }
     Blt_Free(entryPtr);
 }
@@ -1381,62 +1381,62 @@ DestroyEntry(TableEntry *entryPtr)
  *
  * ConfigureEntry --
  *
- *	This procedure is called to process an objv/objc list, plus the Tk
- *	option database, in order to configure (or reconfigure) one or more
- *	entries.  Entries hold information about widgets managed by the table
- *	geometry manager.
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) one or more
+ *      entries.  Entries hold information about widgets managed by the table
+ *      geometry manager.
  *
- * 	Note:	You can query only one widget at a time.  But several can be
- *		reconfigured at once.
+ *      Note:   You can query only one widget at a time.  But several can be
+ *              reconfigured at once.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *      The return value is a standard TCL result.  If TCL_ERROR is returned,
+ *      then interp->result contains an error message.
  *
  * Side effects:
- *	The table layout is recomputed and rearranged at the next idle point.
+ *      The table layout is recomputed and rearranged at the next idle point.
  *
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureEntry(Table *tablePtr, Tcl_Interp *interp, TableEntry *entryPtr,
-	       int objc, Tcl_Obj *const *objv)
+               int objc, Tcl_Obj *const *objv)
 {
     int oldRowSpan, oldColSpan;
 
     if (entryPtr->tablePtr != tablePtr) {
-	Tcl_AppendResult(interp, "widget  \"", Tk_PathName(entryPtr->tkwin),
-	    "\" does not belong to table \"", Tk_PathName(tablePtr->tkwin),
-	    "\"", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "widget  \"", Tk_PathName(entryPtr->tkwin),
+            "\" does not belong to table \"", Tk_PathName(tablePtr->tkwin),
+            "\"", (char *)NULL);
+        return TCL_ERROR;
     }
     if (objc == 0) {
-	return Blt_ConfigureInfoFromObj(interp, entryPtr->tkwin, 
-		entryConfigSpecs, (char *)entryPtr, (Tcl_Obj *)NULL, 0);
+        return Blt_ConfigureInfoFromObj(interp, entryPtr->tkwin, 
+                entryConfigSpecs, (char *)entryPtr, (Tcl_Obj *)NULL, 0);
     } else if (objc == 1) {
-	return Blt_ConfigureInfoFromObj(interp, entryPtr->tkwin, 
-		entryConfigSpecs, (char *)entryPtr, objv[0], 0);
+        return Blt_ConfigureInfoFromObj(interp, entryPtr->tkwin, 
+                entryConfigSpecs, (char *)entryPtr, objv[0], 0);
     }
     oldRowSpan = entryPtr->row.span;
     oldColSpan = entryPtr->column.span;
 
     if (Blt_ConfigureWidgetFromObj(interp, entryPtr->tkwin, entryConfigSpecs,
-	    objc, objv, (char *)entryPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	return TCL_ERROR;
+            objc, objv, (char *)entryPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+        return TCL_ERROR;
     }
     if ((entryPtr->column.span < 1) || (entryPtr->column.span > USHRT_MAX)) {
-	Tcl_AppendResult(interp, "bad column span specified for \"",
-	    Tk_PathName(entryPtr->tkwin), "\"", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad column span specified for \"",
+            Tk_PathName(entryPtr->tkwin), "\"", (char *)NULL);
+        return TCL_ERROR;
     }
     if ((entryPtr->row.span < 1) || (entryPtr->row.span > USHRT_MAX)) {
-	Tcl_AppendResult(interp, "bad row span specified for \"",
-	    Tk_PathName(entryPtr->tkwin), "\"", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad row span specified for \"",
+            Tk_PathName(entryPtr->tkwin), "\"", (char *)NULL);
+        return TCL_ERROR;
     }
     if ((oldColSpan != entryPtr->column.span) ||
-	(oldRowSpan != entryPtr->row.span)) {
-	BinEntry(tablePtr, entryPtr);
+        (oldRowSpan != entryPtr->row.span)) {
+        BinEntry(tablePtr, entryPtr);
     }
     return TCL_OK;
 }
@@ -1446,11 +1446,11 @@ ConfigureEntry(Table *tablePtr, Tcl_Interp *interp, TableEntry *entryPtr,
  *
  * PrintEntry --
  *
- *	Returns the name, position and options of a widget in the table.
+ *      Returns the name, position and options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the widget attributes is
- *	left in interp->result.
+ *      Returns a standard TCL result.  A list of the widget attributes is
+ *      left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -1463,53 +1463,53 @@ PrintEntry(TableEntry *entryPtr, Blt_DBuffer dbuffer)
                        entryPtr->column.rcPtr->index,
                        Tk_PathName(entryPtr->tkwin));
     if (entryPtr->ixPad != ENTRY_DEF_PAD) {
-	Blt_DBuffer_Format(dbuffer, " -ipadx %d", entryPtr->ixPad);
+        Blt_DBuffer_Format(dbuffer, " -ipadx %d", entryPtr->ixPad);
     }
     if (entryPtr->iyPad != ENTRY_DEF_PAD) {
-	Blt_DBuffer_Format(dbuffer, " -ipady %d", entryPtr->iyPad);
+        Blt_DBuffer_Format(dbuffer, " -ipady %d", entryPtr->iyPad);
     }
     if (entryPtr->row.span != ENTRY_DEF_SPAN) {
-	Blt_DBuffer_Format(dbuffer, " -rowspan %d", entryPtr->row.span);
+        Blt_DBuffer_Format(dbuffer, " -rowspan %d", entryPtr->row.span);
     }
     if (entryPtr->column.span != ENTRY_DEF_SPAN) {
-	Blt_DBuffer_Format(dbuffer, " -columnspan %d", entryPtr->column.span);
+        Blt_DBuffer_Format(dbuffer, " -columnspan %d", entryPtr->column.span);
     }
     if (entryPtr->anchor != ENTRY_DEF_ANCHOR) {
-	Blt_DBuffer_Format(dbuffer, " -anchor %s",
+        Blt_DBuffer_Format(dbuffer, " -anchor %s",
                            Tk_NameOfAnchor(entryPtr->anchor));
     }
     if ((entryPtr->padLeft != ENTRY_DEF_PAD) ||
-	(entryPtr->padRight != ENTRY_DEF_PAD)) {
-	Blt_DBuffer_Format(dbuffer, " -padx {%d %d}", entryPtr->padLeft,
+        (entryPtr->padRight != ENTRY_DEF_PAD)) {
+        Blt_DBuffer_Format(dbuffer, " -padx {%d %d}", entryPtr->padLeft,
                            entryPtr->padRight);
     }
     if ((entryPtr->padTop != ENTRY_DEF_PAD) ||
-	(entryPtr->padBottom != ENTRY_DEF_PAD)) {
-	Blt_DBuffer_Format(dbuffer, " -pady {%d %d}", entryPtr->padTop,
+        (entryPtr->padBottom != ENTRY_DEF_PAD)) {
+        Blt_DBuffer_Format(dbuffer, " -pady {%d %d}", entryPtr->padTop,
                            entryPtr->padBottom);
     }
     if (entryPtr->fill != ENTRY_DEF_FILL) {
-	Blt_DBuffer_Format(dbuffer, " -fill %s",
+        Blt_DBuffer_Format(dbuffer, " -fill %s",
                            Blt_NameOfFill(entryPtr->fill));
     }
     if (entryPtr->column.control != ENTRY_DEF_CONTROL) {
-	Blt_DBuffer_Format(dbuffer, " -columncontrol %s",
+        Blt_DBuffer_Format(dbuffer, " -columncontrol %s",
                            NameOfControl(entryPtr->column.control));
     }
     if (entryPtr->row.control != ENTRY_DEF_CONTROL) {
-	Blt_DBuffer_Format(dbuffer, " -rowcontrol %s",
+        Blt_DBuffer_Format(dbuffer, " -rowcontrol %s",
                            NameOfControl(entryPtr->row.control));
     }
     if ((entryPtr->reqWidth.nom != LIMITS_NOM) ||
-	(entryPtr->reqWidth.min != LIMITS_MIN) ||
-	(entryPtr->reqWidth.max != LIMITS_MAX)) {
-	Blt_DBuffer_Format(dbuffer, " -reqwidth %s",
+        (entryPtr->reqWidth.min != LIMITS_MIN) ||
+        (entryPtr->reqWidth.max != LIMITS_MAX)) {
+        Blt_DBuffer_Format(dbuffer, " -reqwidth %s",
                            NameOfLimits(&entryPtr->reqWidth));
     }
     if ((entryPtr->reqHeight.nom != LIMITS_NOM) ||
-	(entryPtr->reqHeight.min != LIMITS_MIN) ||
-	(entryPtr->reqHeight.max != LIMITS_MAX)) {
-	Blt_DBuffer_Format(dbuffer, " -reqheight %s",
+        (entryPtr->reqHeight.min != LIMITS_MIN) ||
+        (entryPtr->reqHeight.max != LIMITS_MAX)) {
+        Blt_DBuffer_Format(dbuffer, " -reqheight %s",
                            NameOfLimits(&entryPtr->reqHeight));
     }
 }
@@ -1519,11 +1519,11 @@ PrintEntry(TableEntry *entryPtr, Blt_DBuffer dbuffer)
  *
  * InfoEntry --
  *
- *	Returns the name, position and options of a widget in the table.
+ *      Returns the name, position and options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the widget attributes is
- *	left in interp->result.
+ *      Returns a standard TCL result.  A list of the widget attributes is
+ *      left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -1534,10 +1534,10 @@ InfoEntry(Tcl_Interp *interp, Table *tablePtr, TableEntry *entryPtr)
     Blt_DBuffer dbuffer;
 
     if (entryPtr->tablePtr != tablePtr) {
-	Tcl_AppendResult(interp, "widget  \"", Tk_PathName(entryPtr->tkwin),
-	    "\" does not belong to table \"", Tk_PathName(tablePtr->tkwin),
-	    "\"", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "widget  \"", Tk_PathName(entryPtr->tkwin),
+            "\" does not belong to table \"", Tk_PathName(tablePtr->tkwin),
+            "\"", (char *)NULL);
+        return TCL_ERROR;
     }
     dbuffer = Blt_DBuffer_Create();
     PrintEntry(entryPtr, dbuffer);
@@ -1551,13 +1551,13 @@ InfoEntry(Tcl_Interp *interp, Table *tablePtr, TableEntry *entryPtr)
  *
  * CreateRowColumn --
  *
- *	Creates and initializes a structure that manages the size of a row or
- *	column in the table. There will be one of these structures allocated
- *	for each row and column in the table, regardless if a widget is
- *	contained in it or not.
+ *      Creates and initializes a structure that manages the size of a row or
+ *      column in the table. There will be one of these structures allocated
+ *      for each row and column in the table, regardless if a widget is
+ *      contained in it or not.
  *
  * Results:
- *	Returns a pointer to the newly allocated row or column structure.
+ *      Returns a pointer to the newly allocated row or column structure.
  *
  *---------------------------------------------------------------------------
  */
@@ -1585,17 +1585,17 @@ ParseRowColumn2(Table *tablePtr, const char *string, int *numberPtr)
 
     c = tolower(string[0]);
     if (c == 'c') {
-	piPtr = &tablePtr->columns;
+        piPtr = &tablePtr->columns;
     } else if (c == 'r') {
-	piPtr = &tablePtr->rows;
+        piPtr = &tablePtr->rows;
     } else {
-	Tcl_AppendResult(tablePtr->interp, "bad index \"", string,
-	    "\": must start with \"r\" or \"c\"", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(tablePtr->interp, "bad index \"", string,
+            "\": must start with \"r\" or \"c\"", (char *)NULL);
+        return NULL;
     }
     /* Handle row or column configuration queries */
     if (Tcl_GetInt(tablePtr->interp, string + 1, &n) != TCL_OK) {
-	return NULL;
+        return NULL;
     }
     *numberPtr = (int)n;
     return piPtr;
@@ -1611,12 +1611,12 @@ ParseRowColumn(Table *tablePtr, Tcl_Obj *objPtr, int *numberPtr)
     string = Tcl_GetString(objPtr);
     piPtr = ParseRowColumn2(tablePtr, string, &n);
     if (piPtr == NULL) {
-	return NULL;
+        return NULL;
     }
     if ((n < 0) || (n >= Blt_Chain_GetLength(piPtr->chain))) {
-	Tcl_AppendResult(tablePtr->interp, "bad ", piPtr->type, " index \"",
-	    string, "\"", (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(tablePtr->interp, "bad ", piPtr->type, " index \"",
+            string, "\"", (char *)NULL);
+        return NULL;
     }
     *numberPtr = (int)n;
     return piPtr;
@@ -1627,12 +1627,12 @@ ParseRowColumn(Table *tablePtr, Tcl_Obj *objPtr, int *numberPtr)
  *
  * GetRowColumn --
  *
- *	Gets the designated row or column from the table.  If the row or
- *	column index is greater than the size of the table, new rows/columns
- *	will be automatically allocated.
+ *      Gets the designated row or column from the table.  If the row or
+ *      column index is greater than the size of the table, new rows/columns
+ *      will be automatically allocated.
  *
  * Results:
- *	Returns a pointer to the row or column structure.
+ *      Returns a pointer to the row or column structure.
  *
  *---------------------------------------------------------------------------
  */
@@ -1643,15 +1643,15 @@ GetRowColumn(PartitionInfo *piPtr, int n)
     int i;
 
     for (i = Blt_Chain_GetLength(piPtr->chain); i <= n; i++) {
-	RowColumn *rcPtr;
+        RowColumn *rcPtr;
 
-	rcPtr = CreateRowColumn();
-	rcPtr->index = i;
-	rcPtr->link = Blt_Chain_Append(piPtr->chain, rcPtr);
+        rcPtr = CreateRowColumn();
+        rcPtr->index = i;
+        rcPtr->link = Blt_Chain_Append(piPtr->chain, rcPtr);
     }
     link = Blt_Chain_GetNthLink(piPtr->chain, n);
     if (link == NULL) {
-	return NULL;
+        return NULL;
     }
     return Blt_Chain_GetValue(link);
 }
@@ -1661,15 +1661,15 @@ GetRowColumn(PartitionInfo *piPtr, int n)
  *
  * DeleteRowColumn --
  *
- *	Deletes a span of rows/columns from the table. The number of
- *	rows/columns to be deleted is given by span.
+ *      Deletes a span of rows/columns from the table. The number of
+ *      rows/columns to be deleted is given by span.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The size of the column partition array may be extended and
- *	initialized.
+ *      The size of the column partition array may be extended and
+ *      initialized.
  *
  *---------------------------------------------------------------------------
  */
@@ -1684,31 +1684,31 @@ DeleteRowColumn(
      * point to memory that will be freed.
      */
     if (piPtr->type == rowUid) {
-	Blt_ChainLink link, next;
+        Blt_ChainLink link, next;
 
-	for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
-	    link = next) {
-	    TableEntry *entryPtr;
+        for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
+            link = next) {
+            TableEntry *entryPtr;
 
-	    next = Blt_Chain_NextLink(link);
-	    entryPtr = Blt_Chain_GetValue(link);
-	    if (entryPtr->row.rcPtr->index == rcPtr->index) {
-		DestroyEntry(entryPtr);
-	    }
-	}
+            next = Blt_Chain_NextLink(link);
+            entryPtr = Blt_Chain_GetValue(link);
+            if (entryPtr->row.rcPtr->index == rcPtr->index) {
+                DestroyEntry(entryPtr);
+            }
+        }
     } else {
-	Blt_ChainLink link, next;
+        Blt_ChainLink link, next;
 
-	for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
-	    link = next) {
-	    TableEntry *entryPtr;
+        for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
+            link = next) {
+            TableEntry *entryPtr;
 
-	    next = Blt_Chain_NextLink(link);
-	    entryPtr = Blt_Chain_GetValue(link);
-	    if (entryPtr->column.rcPtr->index == rcPtr->index) {
-		DestroyEntry(entryPtr);
-	    }
-	}
+            next = Blt_Chain_NextLink(link);
+            entryPtr = Blt_Chain_GetValue(link);
+            if (entryPtr->column.rcPtr->index == rcPtr->index) {
+                DestroyEntry(entryPtr);
+            }
+        }
     }
 }
 
@@ -1717,75 +1717,75 @@ DeleteRowColumn(
  *
  * ConfigureRowColumn --
  *
- *	This procedure is called to process an objv/objc list in order to
- *	configure a row or column in the table geometry manager.
+ *      This procedure is called to process an objv/objc list in order to
+ *      configure a row or column in the table geometry manager.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result holds an error message.
+ *      The return value is a standard TCL result.  If TCL_ERROR is returned,
+ *      then interp->result holds an error message.
  *
  * Side effects:
- *	Partition configuration options (bounds, resize flags, etc) get set.
- *	New partitions may be created as necessary. The table is recalculated
- *	and arranged at the next idle point.
+ *      Partition configuration options (bounds, resize flags, etc) get set.
+ *      New partitions may be created as necessary. The table is recalculated
+ *      and arranged at the next idle point.
  *
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureRowColumn(Table *tablePtr, PartitionInfo *piPtr, const char *pattern,
-		   int objc, Tcl_Obj *const *objv)
+                   int objc, Tcl_Obj *const *objv)
 {
     Blt_ChainLink link;
     int numMatches;
 
     numMatches = 0;
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
-	char string[200];
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
+        char string[200];
 
-	rcPtr = Blt_Chain_GetValue(link);
-	Blt_FormatString(string, 200, "%c%d", pattern[0], rcPtr->index);
-	if (Tcl_StringMatch(string, pattern)) {
-	    if (objc == 0) {
-		return Blt_ConfigureInfoFromObj(tablePtr->interp, 
-			tablePtr->tkwin, piPtr->configSpecs, (char *)rcPtr, 
-			(Tcl_Obj *)NULL, 0);
-	    } else if (objc == 1) {
-		return Blt_ConfigureInfoFromObj(tablePtr->interp, 
-			tablePtr->tkwin, piPtr->configSpecs, (char *)rcPtr, 
-			objv[0], 0);
-	    } else {
-		if (Blt_ConfigureWidgetFromObj(tablePtr->interp, 
-			tablePtr->tkwin, piPtr->configSpecs, objc, objv, 
-			(char *)rcPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-		    return TCL_ERROR;
-		}
-	    }
-	    numMatches++;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        Blt_FormatString(string, 200, "%c%d", pattern[0], rcPtr->index);
+        if (Tcl_StringMatch(string, pattern)) {
+            if (objc == 0) {
+                return Blt_ConfigureInfoFromObj(tablePtr->interp, 
+                        tablePtr->tkwin, piPtr->configSpecs, (char *)rcPtr, 
+                        (Tcl_Obj *)NULL, 0);
+            } else if (objc == 1) {
+                return Blt_ConfigureInfoFromObj(tablePtr->interp, 
+                        tablePtr->tkwin, piPtr->configSpecs, (char *)rcPtr, 
+                        objv[0], 0);
+            } else {
+                if (Blt_ConfigureWidgetFromObj(tablePtr->interp, 
+                        tablePtr->tkwin, piPtr->configSpecs, objc, objv, 
+                        (char *)rcPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+            }
+            numMatches++;
+        }
     }
     if (numMatches == 0) {
-	int n;
-	RowColumn *rcPtr;
+        int n;
+        RowColumn *rcPtr;
 
-	/* 
-	 * We found no existing partitions matching this pattern, so see if
-	 * this designates an new partition (one beyond the current range).
-	 */
-	if ((Tcl_GetInt(NULL, pattern + 1, &n) != TCL_OK) || (n < 0)) {
-	    Tcl_AppendResult(tablePtr->interp, "pattern \"", pattern, 
-		     "\" matches no ", piPtr->type, " in table \"", 
-		     Tk_PathName(tablePtr->tkwin), "\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	rcPtr = GetRowColumn(piPtr, n);
-	assert(rcPtr);
-	if (Blt_ConfigureWidgetFromObj(tablePtr->interp, tablePtr->tkwin,
-	       piPtr->configSpecs, objc, objv, (char *)rcPtr,
-	       BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        /* 
+         * We found no existing partitions matching this pattern, so see if
+         * this designates an new partition (one beyond the current range).
+         */
+        if ((Tcl_GetInt(NULL, pattern + 1, &n) != TCL_OK) || (n < 0)) {
+            Tcl_AppendResult(tablePtr->interp, "pattern \"", pattern, 
+                     "\" matches no ", piPtr->type, " in table \"", 
+                     Tk_PathName(tablePtr->tkwin), "\"", (char *)NULL);
+            return TCL_ERROR;
+        }
+        rcPtr = GetRowColumn(piPtr, n);
+        assert(rcPtr);
+        if (Blt_ConfigureWidgetFromObj(tablePtr->interp, tablePtr->tkwin,
+               piPtr->configSpecs, objc, objv, (char *)rcPtr,
+               BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     EventuallyArrangeTable(tablePtr);
     return TCL_OK;
@@ -1798,27 +1798,27 @@ PrintRowColumn(Tcl_Interp *interp, PartitionInfo *piPtr, RowColumn *rcPtr,
     const char *padFmt, *sizeFmt;
 
     if (piPtr->type == rowUid) {
-	padFmt = " -pady {%d %d}";
-	sizeFmt = " -height {%s}";
+        padFmt = " -pady {%d %d}";
+        sizeFmt = " -height {%s}";
     } else {
-	padFmt = " -padx {%d %d}";
-	sizeFmt = " -width {%s}";
+        padFmt = " -padx {%d %d}";
+        sizeFmt = " -width {%s}";
     }
     if (rcPtr->resize != ROWCOL_DEF_RESIZE) {
         Blt_DBuffer_Format(dbuffer, " -resize %s",
                            Blt_NameOfResize(rcPtr->resize));
     }
     if ((rcPtr->pad.side1 != ROWCOL_DEF_PAD) ||
-	(rcPtr->pad.side2 != ROWCOL_DEF_PAD)) {
+        (rcPtr->pad.side2 != ROWCOL_DEF_PAD)) {
         Blt_DBuffer_Format(dbuffer, padFmt, rcPtr->pad.side1, rcPtr->pad.side2);
     }
     if (rcPtr->weight != ROWCOL_DEF_WEIGHT) {
         Blt_DBuffer_Format(dbuffer, " -weight %g", rcPtr->weight);
     }
     if ((rcPtr->reqSize.min != LIMITS_MIN) ||
-	(rcPtr->reqSize.nom != LIMITS_NOM) ||
-	(rcPtr->reqSize.max != LIMITS_MAX)) {
-	Blt_DBuffer_Format(dbuffer, sizeFmt, NameOfLimits(&rcPtr->reqSize));
+        (rcPtr->reqSize.nom != LIMITS_NOM) ||
+        (rcPtr->reqSize.max != LIMITS_MAX)) {
+        Blt_DBuffer_Format(dbuffer, sizeFmt, NameOfLimits(&rcPtr->reqSize));
     }
 }
 
@@ -1827,15 +1827,15 @@ PrintRowColumn(Tcl_Interp *interp, PartitionInfo *piPtr, RowColumn *rcPtr,
  *
  * InitSpan --
  *
- *	Checks the size of the column partitions and extends the size if a
- *	larger array is needed.
+ *      Checks the size of the column partitions and extends the size if a
+ *      larger array is needed.
  *
  * Results:
- *	Always return a RowColumn pointer.
+ *      Always return a RowColumn pointer.
  *
  * Side effects:
- *	The size of the column partition array may be extended and
- *	initialized.
+ *      The size of the column partition array may be extended and
+ *      initialized.
  *
  *---------------------------------------------------------------------------
  */
@@ -1848,11 +1848,11 @@ InitSpan(PartitionInfo *piPtr, int start, int span)
 
     length = Blt_Chain_GetLength(piPtr->chain);
     for (i = length; i < (start + span); i++) {
-	RowColumn *rcPtr;
+        RowColumn *rcPtr;
 
-	rcPtr = CreateRowColumn();
-	rcPtr->index = i;
-	rcPtr->link = Blt_Chain_Append(piPtr->chain, rcPtr);
+        rcPtr = CreateRowColumn();
+        rcPtr->index = i;
+        rcPtr->link = Blt_Chain_Append(piPtr->chain, rcPtr);
     }
     link = Blt_Chain_GetNthLink(piPtr->chain, start);
     return Blt_Chain_GetValue(link);
@@ -1863,16 +1863,16 @@ InitSpan(PartitionInfo *piPtr, int start, int span)
  *
  * Blt_GetTableFromObj --
  *
- *	Searches for a table associated by the path name of the widget
- *	container.
+ *      Searches for a table associated by the path name of the widget
+ *      container.
  *
- *	Errors may occur because
- *	  1) pathName isn't a valid for any Tk widget, or
- *	  2) there's no table associated with that widget as a container.
+ *      Errors may occur because
+ *        1) pathName isn't a valid for any Tk widget, or
+ *        2) there's no table associated with that widget as a container.
  *
  * Results:
- *	If a table entry exists, a pointer to the Table structure is
- *	returned. Otherwise NULL is returned.
+ *      If a table entry exists, a pointer to the Table structure is
+ *      returned. Otherwise NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1888,15 +1888,15 @@ Blt_GetTableFromObj(TableInterpData *dataPtr, Tcl_Interp *interp,
     pathName = Tcl_GetString(objPtr);
     tkwin = Tk_NameToWindow(interp, pathName, dataPtr->tkMain);
     if (tkwin == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     hPtr = Blt_FindHashEntry(&dataPtr->tableTable, (char *)tkwin);
     if (hPtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "no table associated with widget \"",
-		pathName, "\"", (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "no table associated with widget \"",
+                pathName, "\"", (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     *tablePtrPtr = Blt_GetHashValue(hPtr);
     return TCL_OK;
@@ -1907,18 +1907,18 @@ Blt_GetTableFromObj(TableInterpData *dataPtr, Tcl_Interp *interp,
  *
  * CreateTable --
  *
- *	This procedure creates and initializes a new Table structure with
- *	tkwin as its container widget. The internal structures associated with
- *	the table are initialized.
+ *      This procedure creates and initializes a new Table structure with
+ *      tkwin as its container widget. The internal structures associated with
+ *      the table are initialized.
  *
  * Results:
- *	Returns the pointer to the new Table structure describing the new
- *	table geometry manager.  If an error occurred, the return value will
- *	be NULL and an error message is left in interp->result.
+ *      Returns the pointer to the new Table structure describing the new
+ *      table geometry manager.  If an error occurred, the return value will
+ *      be NULL and an error message is left in interp->result.
  *
  * Side effects:
- *	Memory is allocated and initialized, an event handler is set up to
- *	watch tkwin, etc.
+ *      Memory is allocated and initialized, an event handler is set up to
+ *      watch tkwin, etc.
  *
  *---------------------------------------------------------------------------
  */
@@ -1932,7 +1932,7 @@ CreateTable(TableInterpData *dataPtr, Tcl_Interp *interp, const char *pathName)
 
     tkwin = Tk_NameToWindow(interp, pathName, dataPtr->tkMain);
     if (tkwin == NULL) {
-	return NULL;
+        return NULL;
     }
     tablePtr = Blt_AssertCalloc(1, sizeof(Table));
     tablePtr->tkwin = tkwin;
@@ -1957,7 +1957,7 @@ CreateTable(TableInterpData *dataPtr, Tcl_Interp *interp, const char *pathName)
     tablePtr->columns.list = Blt_List_Create(BLT_ONE_WORD_KEYS);
 
     Tk_CreateEventHandler(tablePtr->tkwin, StructureNotifyMask,
-	TableEventProc, tablePtr);
+        TableEventProc, tablePtr);
     hPtr = Blt_CreateHashEntry(&dataPtr->tableTable, (char *)tkwin, &dummy);
     tablePtr->hashPtr = hPtr;
     tablePtr->tablePtr = &dataPtr->tableTable;
@@ -1970,36 +1970,36 @@ CreateTable(TableInterpData *dataPtr, Tcl_Interp *interp, const char *pathName)
  *
  * ConfigureTable --
  *
- *	This procedure is called to process an objv/objc list in order to
- *	configure the table geometry manager.
+ *      This procedure is called to process an objv/objc list in order to
+ *      configure the table geometry manager.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *      The return value is a standard TCL result.  If TCL_ERROR is returned,
+ *      then interp->result contains an error message.
  *
  * Side effects:
- *	Table configuration options (-padx, -pady, etc.) get set.  The table
- *	is recalculated and arranged at the next idle point.
+ *      Table configuration options (-padx, -pady, etc.) get set.  The table
+ *      is recalculated and arranged at the next idle point.
  *
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureTable(
-    Table *tablePtr,		/* Table to be configured */
-    Tcl_Interp *interp,		/* Interpreter to report results back to */
+    Table *tablePtr,            /* Table to be configured */
+    Tcl_Interp *interp,         /* Interpreter to report results back to */
     int objc,
-    Tcl_Obj *const *objv)	/* Option-value pairs */
+    Tcl_Obj *const *objv)       /* Option-value pairs */
 {
     if (objc == 0) {
-	return Blt_ConfigureInfoFromObj(interp, tablePtr->tkwin, 
-		tableConfigSpecs, (char *)tablePtr, (Tcl_Obj *)NULL, 0);
+        return Blt_ConfigureInfoFromObj(interp, tablePtr->tkwin, 
+                tableConfigSpecs, (char *)tablePtr, (Tcl_Obj *)NULL, 0);
     } else if (objc == 1) {
-	return Blt_ConfigureInfoFromObj(interp, tablePtr->tkwin, 
-		tableConfigSpecs, (char *)tablePtr, objv[0], 0);
+        return Blt_ConfigureInfoFromObj(interp, tablePtr->tkwin, 
+                tableConfigSpecs, (char *)tablePtr, objv[0], 0);
     }
     if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin, tableConfigSpecs,
-	    objc, objv, (char *)tablePtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	return TCL_ERROR;
+            objc, objv, (char *)tablePtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+        return TCL_ERROR;
     }
     /* Arrange for the layout to be computed at the next idle point. */
     tablePtr->flags |= REQUEST_LAYOUT;
@@ -2011,27 +2011,27 @@ static void
 PrintTable(Table *tablePtr, Blt_DBuffer dbuffer)
 {
     if ((tablePtr->padLeft != TABLE_DEF_PAD) ||
-	(tablePtr->padRight != TABLE_DEF_PAD)) {
-	Blt_DBuffer_Format(dbuffer, " -padx {%d %d}", tablePtr->padLeft, 
+        (tablePtr->padRight != TABLE_DEF_PAD)) {
+        Blt_DBuffer_Format(dbuffer, " -padx {%d %d}", tablePtr->padLeft, 
                            tablePtr->padRight);
     }
     if ((tablePtr->padTop != TABLE_DEF_PAD) ||
-	(tablePtr->padBottom != TABLE_DEF_PAD)) {
-	Blt_DBuffer_Format(dbuffer, " -pady {%d %d}", tablePtr->padTop, 
+        (tablePtr->padBottom != TABLE_DEF_PAD)) {
+        Blt_DBuffer_Format(dbuffer, " -pady {%d %d}", tablePtr->padTop, 
                            tablePtr->padBottom);
     }
     if (!tablePtr->propagate) {
-	Blt_DBuffer_Format(dbuffer, " -propagate no");
+        Blt_DBuffer_Format(dbuffer, " -propagate no");
     }
     if ((tablePtr->reqWidth.min != LIMITS_MIN) ||
-	(tablePtr->reqWidth.nom != LIMITS_NOM) ||
-	(tablePtr->reqWidth.max != LIMITS_MAX)) {
+        (tablePtr->reqWidth.nom != LIMITS_NOM) ||
+        (tablePtr->reqWidth.max != LIMITS_MAX)) {
         Blt_DBuffer_Format(dbuffer, " -reqwidth {%s}",
                            NameOfLimits(&tablePtr->reqWidth));
     }
     if ((tablePtr->reqHeight.min != LIMITS_MIN) ||
-	(tablePtr->reqHeight.nom != LIMITS_NOM) ||
-	(tablePtr->reqHeight.max != LIMITS_MAX)) {
+        (tablePtr->reqHeight.nom != LIMITS_NOM) ||
+        (tablePtr->reqHeight.max != LIMITS_MAX)) {
         Blt_DBuffer_Format(dbuffer, " -reqheight {%s}",
                            NameOfLimits(&tablePtr->reqHeight));
     }
@@ -2042,9 +2042,9 @@ PrintTable(Table *tablePtr, Blt_DBuffer dbuffer)
  *
  * DestroyPartitions --
  *
- *	Clear each of the lists managing the entries.  The entries in the
- *	lists of row and column spans are themselves lists which need to be
- *	cleared.
+ *      Clear each of the lists managing the entries.  The entries in the
+ *      lists of row and column spans are themselves lists which need to be
+ *      cleared.
  *
  *---------------------------------------------------------------------------
  */
@@ -2052,30 +2052,30 @@ static void
 DestroyPartitions(PartitionInfo *piPtr)
 {
     if (piPtr->list != NULL) {
-	Blt_ListNode node;
+        Blt_ListNode node;
 
-	for (node = Blt_List_FirstNode(piPtr->list); node != NULL;
-	    node = Blt_List_NextNode(node)) {
-	    Blt_Chain chain;
+        for (node = Blt_List_FirstNode(piPtr->list); node != NULL;
+            node = Blt_List_NextNode(node)) {
+            Blt_Chain chain;
 
-	    chain = Blt_List_GetValue(node);
-	    if (chain != NULL) {
-		Blt_Chain_Destroy(chain);
-	    }
-	}
-	Blt_List_Destroy(piPtr->list);
+            chain = Blt_List_GetValue(node);
+            if (chain != NULL) {
+                Blt_Chain_Destroy(chain);
+            }
+        }
+        Blt_List_Destroy(piPtr->list);
     }
     if (piPtr->chain != NULL) {
-	Blt_ChainLink link;
+        Blt_ChainLink link;
 
-	for (link = Blt_Chain_FirstLink(piPtr->chain);
-	    link != NULL; link = Blt_Chain_NextLink(link)) {
-	    RowColumn *rcPtr;
+        for (link = Blt_Chain_FirstLink(piPtr->chain);
+            link != NULL; link = Blt_Chain_NextLink(link)) {
+            RowColumn *rcPtr;
 
-	    rcPtr = Blt_Chain_GetValue(link);
-	    Blt_Free(rcPtr);
-	}
-	Blt_Chain_Destroy(piPtr->chain);
+            rcPtr = Blt_Chain_GetValue(link);
+            Blt_Free(rcPtr);
+        }
+        Blt_Chain_Destroy(piPtr->chain);
     }
 }
 
@@ -2084,15 +2084,15 @@ DestroyPartitions(PartitionInfo *piPtr)
  *
  * DestroyTable --
  *
- *	This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
- *	clean up the Table structure at a safe time (when no-one is using
- *	it anymore).
+ *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
+ *      clean up the Table structure at a safe time (when no-one is using
+ *      it anymore).
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Everything associated with the table geometry manager is freed up.
+ *      Everything associated with the table geometry manager is freed up.
  *
  *---------------------------------------------------------------------------
  */
@@ -2104,12 +2104,12 @@ DestroyTable(DestroyData dataPtr) /* Table structure */
 
     /* Release the chain of entries. */
     for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL; 
-	 link = next) {
-	TableEntry *entryPtr;
+         link = next) {
+        TableEntry *entryPtr;
 
-	next = Blt_Chain_NextLink(link);
-	entryPtr = Blt_Chain_GetValue(link);
-	DestroyEntry(entryPtr);
+        next = Blt_Chain_NextLink(link);
+        entryPtr = Blt_Chain_GetValue(link);
+        DestroyEntry(entryPtr);
     }
     Blt_Chain_Destroy(tablePtr->chain);
 
@@ -2117,7 +2117,7 @@ DestroyTable(DestroyData dataPtr) /* Table structure */
     DestroyPartitions(&tablePtr->columns);
     Blt_DeleteHashTable(&tablePtr->entryTable);
     if (tablePtr->hashPtr != NULL) {
-	Blt_DeleteHashEntry(tablePtr->tablePtr, tablePtr->hashPtr);
+        Blt_DeleteHashEntry(tablePtr->tablePtr, tablePtr->hashPtr);
     }
     Blt_Free(tablePtr);
 }
@@ -2127,18 +2127,18 @@ DestroyTable(DestroyData dataPtr) /* Table structure */
  *
  * BinEntry --
  *
- *	Adds the entry to the lists of both row and column spans.  The
- *	layout of the table is done in order of partition spans, from
- *	shorted to longest.  The widgets spanning a particular number of
- *	partitions are stored in a linked list.  Each list is in turn,
- *	contained within a master list.
+ *      Adds the entry to the lists of both row and column spans.  The
+ *      layout of the table is done in order of partition spans, from
+ *      shorted to longest.  The widgets spanning a particular number of
+ *      partitions are stored in a linked list.  Each list is in turn,
+ *      contained within a master list.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The entry is added to both the lists of row and columns spans.  This
- *	will effect the layout of the widgets.
+ *      The entry is added to both the lists of row and columns spans.  This
+ *      will effect the layout of the widgets.
  *
  *---------------------------------------------------------------------------
  */
@@ -2155,70 +2155,70 @@ BinEntry(Table *tablePtr, TableEntry *entryPtr)
      * re-inserted into the table at the new position.
      */
     if (entryPtr->column.link != NULL) {
-	Blt_Chain_UnlinkLink(entryPtr->column.chain,
-	    entryPtr->column.link);
+        Blt_Chain_UnlinkLink(entryPtr->column.chain,
+            entryPtr->column.link);
     }
     if (entryPtr->row.link != NULL) {
-	Blt_Chain_UnlinkLink(entryPtr->row.chain, entryPtr->row.link);
+        Blt_Chain_UnlinkLink(entryPtr->row.chain, entryPtr->row.link);
     }
     list = tablePtr->rows.list;
-    key = 0;			/* Initialize key to bogus span */
+    key = 0;                    /* Initialize key to bogus span */
     for (node = Blt_List_FirstNode(list); node != NULL;
-	node = Blt_List_NextNode(node)) {
+        node = Blt_List_NextNode(node)) {
 
-	key = (long)Blt_List_GetKey(node);
-	if (entryPtr->row.span <= key) {
-	    break;
-	}
+        key = (long)Blt_List_GetKey(node);
+        if (entryPtr->row.span <= key) {
+            break;
+        }
     }
     if (key != entryPtr->row.span) {
-	Blt_ListNode newNode;
+        Blt_ListNode newNode;
 
-	/*
-	 * Create a new list (bucket) to hold entries of that size span and
-	 * and link it into the list of buckets.
-	 */
-	newNode = Blt_List_CreateNode(list, (char *)entryPtr->row.span);
-	Blt_List_SetValue(newNode, (char *)Blt_Chain_Create());
-	Blt_List_LinkBefore(list, newNode, node);
-	node = newNode;
+        /*
+         * Create a new list (bucket) to hold entries of that size span and
+         * and link it into the list of buckets.
+         */
+        newNode = Blt_List_CreateNode(list, (char *)entryPtr->row.span);
+        Blt_List_SetValue(newNode, (char *)Blt_Chain_Create());
+        Blt_List_LinkBefore(list, newNode, node);
+        node = newNode;
     }
     chain = Blt_List_GetValue(node);
     if (entryPtr->row.link == NULL) {
-	entryPtr->row.link = Blt_Chain_Append(chain, entryPtr);
+        entryPtr->row.link = Blt_Chain_Append(chain, entryPtr);
     } else {
-	Blt_Chain_LinkAfter(chain, entryPtr->row.link, NULL);
+        Blt_Chain_LinkAfter(chain, entryPtr->row.link, NULL);
     }
     entryPtr->row.chain = chain;
 
     list = tablePtr->columns.list;
     key = 0;
     for (node = Blt_List_FirstNode(list); node != NULL;
-	node = Blt_List_NextNode(node)) {
-	key = (long)Blt_List_GetKey(node);
-	if (entryPtr->column.span <= key) {
-	    break;
-	}
+        node = Blt_List_NextNode(node)) {
+        key = (long)Blt_List_GetKey(node);
+        if (entryPtr->column.span <= key) {
+            break;
+        }
     }
     if (key != entryPtr->column.span) {
-	Blt_ListNode newNode;
+        Blt_ListNode newNode;
 
-	/*
-	 * Create a new list (bucket) to hold entries of that size span and
-	 * and link it into the list of buckets.
-	 */
-	newNode = Blt_List_CreateNode(list, (char *)entryPtr->column.span);
-	Blt_List_SetValue(newNode, (char *)Blt_Chain_Create());
-	Blt_List_LinkBefore(list, newNode, node);
-	node = newNode;
+        /*
+         * Create a new list (bucket) to hold entries of that size span and
+         * and link it into the list of buckets.
+         */
+        newNode = Blt_List_CreateNode(list, (char *)entryPtr->column.span);
+        Blt_List_SetValue(newNode, (char *)Blt_Chain_Create());
+        Blt_List_LinkBefore(list, newNode, node);
+        node = newNode;
     }
     chain = Blt_List_GetValue(node);
 
     /* Add the new entry to the span bucket */
     if (entryPtr->column.link == NULL) {
-	entryPtr->column.link = Blt_Chain_Append(chain, entryPtr);
+        entryPtr->column.link = Blt_Chain_Append(chain, entryPtr);
     } else {
-	Blt_Chain_LinkAfter(chain, entryPtr->column.link, NULL);
+        Blt_Chain_LinkAfter(chain, entryPtr->column.link, NULL);
     }
     entryPtr->column.chain = chain;
 }
@@ -2228,14 +2228,14 @@ BinEntry(Table *tablePtr, TableEntry *entryPtr)
  *
  * ParseIndex --
  *
- *	Parse the entry index string and return the row and column numbers in
- *	their respective parameters.  The format of a table entry index is
- *	row,column where row is the row number and column is the column
- *	number.  Rows and columns are numbered starting from zero.
+ *      Parse the entry index string and return the row and column numbers in
+ *      their respective parameters.  The format of a table entry index is
+ *      row,column where row is the row number and column is the column
+ *      number.  Rows and columns are numbered starting from zero.
  *
  * Results:
- *	Returns a standard TCL result.  If TCL_OK is returned, the row and
- *	column numbers are returned via rowPtr and colPtr respectively.
+ *      Returns a standard TCL result.  If TCL_OK is returned, the row and
+ *      column numbers are returned via rowPtr and colPtr respectively.
  *
  *---------------------------------------------------------------------------
  */
@@ -2248,28 +2248,28 @@ ParseIndex(Tcl_Interp *interp, const char *string, int *rowPtr, int *colPtr)
 
     comma = (char *)strchr(string, ',');
     if (comma == NULL) {
-	Tcl_AppendResult(interp, "bad index \"", string,
-	    "\": should be \"row,column\"", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad index \"", string,
+            "\": should be \"row,column\"", (char *)NULL);
+        return TCL_ERROR;
 
     }
     *comma = '\0';
     result = ((Tcl_ExprLong(interp, string, &row) != TCL_OK) ||
-	(Tcl_ExprLong(interp, comma + 1, &column) != TCL_OK));
-    *comma = ',';		/* Repair the argument */
+        (Tcl_ExprLong(interp, comma + 1, &column) != TCL_OK));
+    *comma = ',';               /* Repair the argument */
     if (result) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if ((row < 0) || (row > (long)USHRT_MAX)) {
-	Tcl_AppendResult(interp, "bad index \"", string,
-	    "\": row is out of range", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad index \"", string,
+            "\": row is out of range", (char *)NULL);
+        return TCL_ERROR;
 
     }
     if ((column < 0) || (column > (long)USHRT_MAX)) {
-	Tcl_AppendResult(interp, "bad index \"", string,
-	    "\": column is out of range", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad index \"", string,
+            "\": column is out of range", (char *)NULL);
+        return TCL_ERROR;
     }
     *rowPtr = (int)row;
     *colPtr = (int)column;
@@ -2281,20 +2281,20 @@ ParseIndex(Tcl_Interp *interp, const char *string, int *rowPtr, int *colPtr)
  *
  * ManageEntry --
  *
- *	Inserts the given widget into the table at a given row and column
- *	position.  The widget can already be managed by this or another table.
- *	The widget will be simply moved to the new location in this table.
+ *      Inserts the given widget into the table at a given row and column
+ *      position.  The widget can already be managed by this or another table.
+ *      The widget will be simply moved to the new location in this table.
  *
- *	The new widget is inserted into both a hash table (this is used to
- *	locate the information associated with the widget) and a list (used to
- *	indicate relative ordering of widgets).
+ *      The new widget is inserted into both a hash table (this is used to
+ *      locate the information associated with the widget) and a list (used to
+ *      indicate relative ordering of widgets).
  *
  * Results:
- *	Returns a standard TCL result.  If an error occurred, TCL_ERROR is
- *	returned and an error message is left in interp->result.
+ *      Returns a standard TCL result.  If an error occurred, TCL_ERROR is
+ *      returned and an error message is left in interp->result.
  *
  * Side Effects:
- *	The table is re-computed and arranged at the next idle point.
+ *      The table is re-computed and arranged at the next idle point.
  *
  * ---------------------------------------------------------------------------- */
 static int
@@ -2311,27 +2311,27 @@ ManageEntry(
 
     entryPtr = FindEntry(tablePtr, tkwin);
     if ((entryPtr != NULL) && (entryPtr->tablePtr != tablePtr)) {
-	/* The entry for the widget already exists. If it's managed by another
-	 * table, delete it.  */
-	DestroyEntry(entryPtr);
-	entryPtr = NULL;
+        /* The entry for the widget already exists. If it's managed by another
+         * table, delete it.  */
+        DestroyEntry(entryPtr);
+        entryPtr = NULL;
     }
     if (entryPtr == NULL) {
-	entryPtr = CreateEntry(tablePtr, tkwin);
-	if (entryPtr == NULL) {
-	    return TCL_ERROR;
-	}
+        entryPtr = CreateEntry(tablePtr, tkwin);
+        if (entryPtr == NULL) {
+            return TCL_ERROR;
+        }
     }
     if (objc > 0) {
-	result = Blt_ConfigureWidgetFromObj(tablePtr->interp, entryPtr->tkwin,
-	    entryConfigSpecs, objc, objv, (char *)entryPtr,
-	    BLT_CONFIG_OBJV_ONLY);
+        result = Blt_ConfigureWidgetFromObj(tablePtr->interp, entryPtr->tkwin,
+            entryConfigSpecs, objc, objv, (char *)entryPtr,
+            BLT_CONFIG_OBJV_ONLY);
     }
     if ((entryPtr->column.span < 1) || (entryPtr->row.span < 1)) {
-	Tcl_AppendResult(tablePtr->interp, "bad span specified for \"",
-	    Tk_PathName(tkwin), "\"", (char *)NULL);
-	DestroyEntry(entryPtr);
-	return TCL_ERROR;
+        Tcl_AppendResult(tablePtr->interp, "bad span specified for \"",
+            Tk_PathName(tkwin), "\"", (char *)NULL);
+        DestroyEntry(entryPtr);
+        return TCL_ERROR;
     }
     entryPtr->column.rcPtr = InitSpan(&tablePtr->columns, column, entryPtr->column.span);
     entryPtr->row.rcPtr = InitSpan(&tablePtr->rows, row, entryPtr->row.span);
@@ -2346,29 +2346,29 @@ ManageEntry(
  *
  * BuildTable --
  *
- *	Processes an objv/objc list of table entries to add and configure new
- *	widgets into the table.  A table entry consists of the widget path
- *	name, table index, and optional configuration options.  The first
- *	argument in the objv list is the name of the table.  If no table
- *	exists for the given widget, a new one is created.
+ *      Processes an objv/objc list of table entries to add and configure new
+ *      widgets into the table.  A table entry consists of the widget path
+ *      name, table index, and optional configuration options.  The first
+ *      argument in the objv list is the name of the table.  If no table
+ *      exists for the given widget, a new one is created.
  *
  * Results:
- *	Returns a standard TCL result.  If an error occurred,
- *	TCL_ERROR is returned and an error message is left in
- *	interp->result.
+ *      Returns a standard TCL result.  If an error occurred,
+ *      TCL_ERROR is returned and an error message is left in
+ *      interp->result.
  *
  * Side Effects:
- *	Memory is allocated, a new table is possibly created, etc.
- *	The table is re-computed and arranged at the next idle point.
+ *      Memory is allocated, a new table is possibly created, etc.
+ *      The table is re-computed and arranged at the next idle point.
  *
  *---------------------------------------------------------------------------
  */
 static int
 BuildTable(
-    Table *tablePtr,		/* Table to manage new widgets */
-    Tcl_Interp *interp,		/* Interpreter to report errors back to */
-    int objc,			/*  */
-    Tcl_Obj *const *objv)	/* List of widgets, indices, and options */
+    Table *tablePtr,            /* Table to manage new widgets */
+    Tcl_Interp *interp,         /* Interpreter to report errors back to */
+    int objc,                   /*  */
+    Tcl_Obj *const *objv)       /* List of widgets, indices, and options */
 {
     Tk_Window tkwin;
     int row, column;
@@ -2377,89 +2377,89 @@ BuildTable(
 
     /* Process any options specific to the table */
     for (i = 2; i < objc; i += 2) {
-	const char *string;
+        const char *string;
 
-	string = Tcl_GetString(objv[i]);
-	if (string[0] != '-') {
-	    break;
-	}
+        string = Tcl_GetString(objv[i]);
+        if (string[0] != '-') {
+            break;
+        }
     }
     if (i > objc) {
-	i = objc;
+        i = objc;
     }
     if (i > 2) {
-	if (ConfigureTable(tablePtr, interp, i - 2, objv + 2) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (ConfigureTable(tablePtr, interp, i - 2, objv + 2) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     nextRow = NumRows(tablePtr);
     nextColumn = 0;
     objc -= i, objv += i;
     while (objc > 0) {
-	const char *string;
-	/*
-	 * Allow the name of the widget and row/column index to be specified
-	 * in any order.
-	 */
-	string = Tcl_GetString(objv[0]);
-	if (string[0] == '.') {
-	    tkwin = Tk_NameToWindow(interp, string, tablePtr->tkwin);
-	    if (tkwin == NULL) {
-		return TCL_ERROR;
-	    }
-	    if (objc == 1) {
-		/* No row,column index, use defaults instead */
-		row = nextRow, column = nextColumn;
-		objc--, objv++;
-	    } else {
-		string = Tcl_GetString(objv[1]);
-		if (string[0] == '-') {
-		    /* No row,column index, use defaults instead */
-		    row = nextRow, column = nextColumn;
-		    objc--, objv++;
-		} else {
-		    if (ParseIndex(interp, string, &row, &column) != TCL_OK) {
-			return TCL_ERROR;	/* Invalid row,column index */
-		    }
-		    /* Skip over the widget pathname and table index. */
-		    objc -= 2, objv += 2;
-		}
-	    }
-	} else {
-	    if (ParseIndex(interp, Tcl_GetString(objv[0]), &row, &column) 
-		!= TCL_OK) {
-		return TCL_ERROR;
-	    }
-	    if (objc == 1) {
-		Tcl_AppendResult(interp, "missing widget pathname after \"",
-			 Tcl_GetString(objv[0]), "\"", (char *)NULL);
-		return TCL_ERROR;
-	    }
-	    tkwin = Tk_NameToWindow(interp, Tcl_GetString(objv[1]), 
-			    tablePtr->tkwin);
-	    if (tkwin == NULL) {
-		return TCL_ERROR;
-	    }
-	    /* Skip over the widget pathname and table index. */
-	    objc -= 2, objv += 2;
-	}
+        const char *string;
+        /*
+         * Allow the name of the widget and row/column index to be specified
+         * in any order.
+         */
+        string = Tcl_GetString(objv[0]);
+        if (string[0] == '.') {
+            tkwin = Tk_NameToWindow(interp, string, tablePtr->tkwin);
+            if (tkwin == NULL) {
+                return TCL_ERROR;
+            }
+            if (objc == 1) {
+                /* No row,column index, use defaults instead */
+                row = nextRow, column = nextColumn;
+                objc--, objv++;
+            } else {
+                string = Tcl_GetString(objv[1]);
+                if (string[0] == '-') {
+                    /* No row,column index, use defaults instead */
+                    row = nextRow, column = nextColumn;
+                    objc--, objv++;
+                } else {
+                    if (ParseIndex(interp, string, &row, &column) != TCL_OK) {
+                        return TCL_ERROR;       /* Invalid row,column index */
+                    }
+                    /* Skip over the widget pathname and table index. */
+                    objc -= 2, objv += 2;
+                }
+            }
+        } else {
+            if (ParseIndex(interp, Tcl_GetString(objv[0]), &row, &column) 
+                != TCL_OK) {
+                return TCL_ERROR;
+            }
+            if (objc == 1) {
+                Tcl_AppendResult(interp, "missing widget pathname after \"",
+                         Tcl_GetString(objv[0]), "\"", (char *)NULL);
+                return TCL_ERROR;
+            }
+            tkwin = Tk_NameToWindow(interp, Tcl_GetString(objv[1]), 
+                            tablePtr->tkwin);
+            if (tkwin == NULL) {
+                return TCL_ERROR;
+            }
+            /* Skip over the widget pathname and table index. */
+            objc -= 2, objv += 2;
+        }
 
-	/* Find the end of the widget's option-value pairs */
-	for (i = 0; i < objc; i += 2) {
-	    string = Tcl_GetString(objv[i]);
-	    if (string[0] != '-') {
-		break;
-	    }
-	}
-	if (i > objc) {
-	    i = objc;
-	}
-	if (ManageEntry(interp, tablePtr, tkwin, row,
-		column, i, objv) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	nextColumn = column + 1;
-	objc -= i, objv += i;
+        /* Find the end of the widget's option-value pairs */
+        for (i = 0; i < objc; i += 2) {
+            string = Tcl_GetString(objv[i]);
+            if (string[0] != '-') {
+                break;
+            }
+        }
+        if (i > objc) {
+            i = objc;
+        }
+        if (ManageEntry(interp, tablePtr, tkwin, row,
+                column, i, objv) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        nextColumn = column + 1;
+        objc -= i, objv += i;
     }
     /* Arrange for the new table layout to be calculated. */
     tablePtr->flags |= REQUEST_LAYOUT;
@@ -2474,18 +2474,18 @@ BuildTable(
  *
  * ParseItem --
  *
- *	Parses a string representing an item in the table.  An item may be one
- *	of the following:
- *		Rn	- Row index, where n is the index of row
- *		Cn	- Column index, where n is the index of column
- *		r,c	- Cell index, where r is the row index and c
- *			  is the column index.
+ *      Parses a string representing an item in the table.  An item may be one
+ *      of the following:
+ *              Rn      - Row index, where n is the index of row
+ *              Cn      - Column index, where n is the index of column
+ *              r,c     - Cell index, where r is the row index and c
+ *                        is the column index.
  *
  * Results:
- *	Returns a standard TCL result.  If no error occurred, TCL_OK is
- *	returned.  *RowPtr* will return the row index.  *ColumnPtr* will
- *	return the column index.  If the row or column index is not
- *	applicable, -1 is returned via *rowPtr* or *colPtr*.
+ *      Returns a standard TCL result.  If no error occurred, TCL_OK is
+ *      returned.  *RowPtr* will return the row index.  *ColumnPtr* will
+ *      return the column index.  If the row or column index is not
+ *      applicable, -1 is returned via *rowPtr* or *colPtr*.
  *
  *---------------------------------------------------------------------------
  */
@@ -2498,35 +2498,35 @@ ParseItem(Table *tablePtr, const char *string, int *rowPtr, int *colPtr)
     c = tolower(string[0]);
     *rowPtr = *colPtr = -1;
     if (c == 'r') {
-	if (Tcl_ExprLong(tablePtr->interp, string + 1, &partNum) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if ((partNum < 0) || (partNum >= NumRows(tablePtr))) {
-	    Tcl_AppendResult(tablePtr->interp, "row index \"", string,
-		"\" is out of range", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	*rowPtr = (int)partNum;
+        if (Tcl_ExprLong(tablePtr->interp, string + 1, &partNum) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if ((partNum < 0) || (partNum >= NumRows(tablePtr))) {
+            Tcl_AppendResult(tablePtr->interp, "row index \"", string,
+                "\" is out of range", (char *)NULL);
+            return TCL_ERROR;
+        }
+        *rowPtr = (int)partNum;
     } else if (c == 'c') {
-	if (Tcl_ExprLong(tablePtr->interp, string + 1, &partNum) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if ((partNum < 0) || (partNum >= NumColumns(tablePtr))) {
-	    Tcl_AppendResult(tablePtr->interp, "column index \"", string,
-		"\" is out of range", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	*colPtr = (int)partNum;
+        if (Tcl_ExprLong(tablePtr->interp, string + 1, &partNum) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if ((partNum < 0) || (partNum >= NumColumns(tablePtr))) {
+            Tcl_AppendResult(tablePtr->interp, "column index \"", string,
+                "\" is out of range", (char *)NULL);
+            return TCL_ERROR;
+        }
+        *colPtr = (int)partNum;
     } else {
-	if (ParseIndex(tablePtr->interp, string, rowPtr, colPtr) != TCL_OK) {
-	    return TCL_ERROR;	/* Invalid row,column index */
-	}
-	if ((*rowPtr < 0) || (*rowPtr >= NumRows(tablePtr)) ||
-	    (*colPtr < 0) || (*colPtr >= NumColumns(tablePtr))) {
-	    Tcl_AppendResult(tablePtr->interp, "index \"", string,
-		"\" is out of range", (char *)NULL);
-	    return TCL_ERROR;
-	}
+        if (ParseIndex(tablePtr->interp, string, rowPtr, colPtr) != TCL_OK) {
+            return TCL_ERROR;   /* Invalid row,column index */
+        }
+        if ((*rowPtr < 0) || (*rowPtr >= NumRows(tablePtr)) ||
+            (*colPtr < 0) || (*colPtr >= NumColumns(tablePtr))) {
+            Tcl_AppendResult(tablePtr->interp, "index \"", string,
+                "\" is out of range", (char *)NULL);
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -2536,62 +2536,62 @@ ParseItem(Table *tablePtr, const char *string, int *rowPtr, int *colPtr)
  *
  * TranslateAnchor --
  *
- * 	Translate the coordinates of a given bounding box based upon the
- * 	anchor specified.  The anchor indicates where the given xy position is
- * 	in relation to the bounding box.
+ *      Translate the coordinates of a given bounding box based upon the
+ *      anchor specified.  The anchor indicates where the given xy position is
+ *      in relation to the bounding box.
  *
- *  		nw --- n --- ne
- *  		|            |     x,y ---+
- *  		w   center   e      |     |
- *  		|            |      +-----+
- *  		sw --- s --- se
+ *              nw --- n --- ne
+ *              |            |     x,y ---+
+ *              w   center   e      |     |
+ *              |            |      +-----+
+ *              sw --- s --- se
  *
  * Results:
- *	The translated coordinates of the bounding box are returned.
+ *      The translated coordinates of the bounding box are returned.
  *
  *---------------------------------------------------------------------------
  */
 static void
 TranslateAnchor(
-    int dx, int dy,		/* Difference between outer and inner
-				 * regions */
-    Tk_Anchor anchor,		/* Direction of the anchor */
+    int dx, int dy,             /* Difference between outer and inner
+                                 * regions */
+    Tk_Anchor anchor,           /* Direction of the anchor */
     int *xPtr, int *yPtr)
 {
     int x, y;
 
     x = y = 0;
     switch (anchor) {
-    case TK_ANCHOR_NW:		/* Upper left corner */
-	break;
-    case TK_ANCHOR_W:		/* Left center */
-	y = (dy / 2);
-	break;
-    case TK_ANCHOR_SW:		/* Lower left corner */
-	y = dy;
-	break;
-    case TK_ANCHOR_N:		/* Top center */
-	x = (dx / 2);
-	break;
-    case TK_ANCHOR_CENTER:	/* Centered */
-	x = (dx / 2);
-	y = (dy / 2);
-	break;
-    case TK_ANCHOR_S:		/* Bottom center */
-	x = (dx / 2);
-	y = dy;
-	break;
-    case TK_ANCHOR_NE:		/* Upper right corner */
-	x = dx;
-	break;
-    case TK_ANCHOR_E:		/* Right center */
-	x = dx;
-	y = (dy / 2);
-	break;
-    case TK_ANCHOR_SE:		/* Lower right corner */
-	x = dx;
-	y = dy;
-	break;
+    case TK_ANCHOR_NW:          /* Upper left corner */
+        break;
+    case TK_ANCHOR_W:           /* Left center */
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_SW:          /* Lower left corner */
+        y = dy;
+        break;
+    case TK_ANCHOR_N:           /* Top center */
+        x = (dx / 2);
+        break;
+    case TK_ANCHOR_CENTER:      /* Centered */
+        x = (dx / 2);
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_S:           /* Bottom center */
+        x = (dx / 2);
+        y = dy;
+        break;
+    case TK_ANCHOR_NE:          /* Upper right corner */
+        x = dx;
+        break;
+    case TK_ANCHOR_E:           /* Right center */
+        x = dx;
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_SE:          /* Lower right corner */
+        x = dx;
+        y = dy;
+        break;
     }
     *xPtr = (*xPtr) + x;
     *yPtr = (*yPtr) + y;
@@ -2602,15 +2602,15 @@ TranslateAnchor(
  *
  * GetReqWidth --
  *
- *	Returns the width requested by the widget starting in the given entry.
- *	The requested space also includes any internal padding which has been
- *	designated for this widget.
+ *      Returns the width requested by the widget starting in the given entry.
+ *      The requested space also includes any internal padding which has been
+ *      designated for this widget.
  *
- *	The requested width of the widget is always bounded by the limits set
- *	in entryPtr->reqWidth.
+ *      The requested width of the widget is always bounded by the limits set
+ *      in entryPtr->reqWidth.
  *
  * Results:
- *	Returns the requested width of the widget.
+ *      Returns the requested width of the widget.
  *
  *---------------------------------------------------------------------------
  */
@@ -2629,15 +2629,15 @@ GetReqWidth(TableEntry *entryPtr)
  *
  * GetReqHeight --
  *
- *	Returns the height requested by the widget starting in the given
- *	entry.  The requested space also includes any internal padding which
- *	has been designated for this widget.
+ *      Returns the height requested by the widget starting in the given
+ *      entry.  The requested space also includes any internal padding which
+ *      has been designated for this widget.
  *
- *	The requested height of the widget is always bounded by the limits set
- *	in entryPtr->reqHeight.
+ *      The requested height of the widget is always bounded by the limits set
+ *      in entryPtr->reqHeight.
  *
  * Results:
- *	Returns the requested height of the widget.
+ *      Returns the requested height of the widget.
  *
  *---------------------------------------------------------------------------
  */
@@ -2656,10 +2656,10 @@ GetReqHeight(TableEntry *entryPtr)
  *
  * GetTotalSpan --
  *
- *	Sums the row/column space requirements for the entire table.
+ *      Sums the row/column space requirements for the entire table.
  *
  * Results:
- *	Returns the space currently used in the span of partitions.
+ *      Returns the space currently used in the span of partitions.
  *
  *---------------------------------------------------------------------------
  */
@@ -2671,11 +2671,11 @@ GetTotalSpan(PartitionInfo *piPtr)
 
     spaceUsed = 0;
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;		/* Start of partitions */
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;               /* Start of partitions */
 
-	rcPtr = Blt_Chain_GetValue(link);
-	spaceUsed += rcPtr->size;
+        rcPtr = Blt_Chain_GetValue(link);
+        spaceUsed += rcPtr->size;
     }
     return spaceUsed;
 }
@@ -2685,10 +2685,10 @@ GetTotalSpan(PartitionInfo *piPtr)
  *
  * GetSpan --
  *
- *	Determines the space used by rows/columns for an entry.
+ *      Determines the space used by rows/columns for an entry.
  *
  * Results:
- *	Returns the space currently used in the span of partitions.
+ *      Returns the space currently used in the span of partitions.
  *
  *---------------------------------------------------------------------------
  */
@@ -2699,25 +2699,25 @@ GetSpan(PartitionInfo *piPtr, TableEntry *entryPtr)
     int spaceUsed;
     int count;
     Blt_ChainLink link;
-    RowColumn *rcPtr;		/* Start of partitions */
-    int span;			/* Number of partitions spanned */
+    RowColumn *rcPtr;           /* Start of partitions */
+    int span;                   /* Number of partitions spanned */
 
     if (piPtr->type == rowUid) {
-	rcPtr = entryPtr->row.rcPtr;
-	span = entryPtr->row.span;
+        rcPtr = entryPtr->row.rcPtr;
+        span = entryPtr->row.span;
     } else {
-	rcPtr = entryPtr->column.rcPtr;
-	span = entryPtr->column.span;
+        rcPtr = entryPtr->column.rcPtr;
+        span = entryPtr->column.span;
     }
 
     count = spaceUsed = 0;
     link = rcPtr->link;
     startPtr = Blt_Chain_GetValue(link);
     for ( /*empty*/ ; (link != NULL) && (count < span);
-	link = Blt_Chain_NextLink(link)) {
-	rcPtr = Blt_Chain_GetValue(link);
-	spaceUsed += rcPtr->size;
-	count++;
+        link = Blt_Chain_NextLink(link)) {
+        rcPtr = Blt_Chain_GetValue(link);
+        spaceUsed += rcPtr->size;
+        count++;
     }
     /*
      * Subtract off the padding on either side of the span, since the
@@ -2733,44 +2733,44 @@ GetSpan(PartitionInfo *piPtr, TableEntry *entryPtr)
  *
  * GrowSpan --
  *
- *	Expand the span by the amount of the extra space needed.  This
- *	procedure is used in LayoutPartitions to grow the partitions to their
- *	minimum nominal size, starting from a zero width and height space.
+ *      Expand the span by the amount of the extra space needed.  This
+ *      procedure is used in LayoutPartitions to grow the partitions to their
+ *      minimum nominal size, starting from a zero width and height space.
  *
- *	This looks more complicated than it really is.  The idea is to make
- *	the size of the partitions correspond to the smallest entry spans.
- *	For example, if widget A is in column 1 and widget B spans both
- *	columns 0 and 1, any extra space needed to fit widget B should come
- *	from column 0.
+ *      This looks more complicated than it really is.  The idea is to make
+ *      the size of the partitions correspond to the smallest entry spans.
+ *      For example, if widget A is in column 1 and widget B spans both
+ *      columns 0 and 1, any extra space needed to fit widget B should come
+ *      from column 0.
  *
- *	On the first pass we try to add space to partitions which have not
- *	been touched yet (i.e. have no nominal size).  Since the row and
- *	column lists are sorted in ascending order of the number of rows or
- *	columns spanned, the space is distributed amongst the smallest spans
- *	first.
+ *      On the first pass we try to add space to partitions which have not
+ *      been touched yet (i.e. have no nominal size).  Since the row and
+ *      column lists are sorted in ascending order of the number of rows or
+ *      columns spanned, the space is distributed amongst the smallest spans
+ *      first.
  *
- *	The second pass handles the case of widgets which have the same span.
- *	For example, if A and B, which span the same number of partitions are
- *	the only widgets to span column 1, column 1 would grow to contain the
- *	bigger of the two slices of space.
+ *      The second pass handles the case of widgets which have the same span.
+ *      For example, if A and B, which span the same number of partitions are
+ *      the only widgets to span column 1, column 1 would grow to contain the
+ *      bigger of the two slices of space.
  *
- *	If there is still extra space after the first two passes, this means
- *	that there were no partitions of with no widget spans or the same
- *	order span that could be expanded. The third pass will try to remedy
- *	this by parcelling out the left over space evenly among the rest of
- *	the partitions.
+ *      If there is still extra space after the first two passes, this means
+ *      that there were no partitions of with no widget spans or the same
+ *      order span that could be expanded. The third pass will try to remedy
+ *      this by parcelling out the left over space evenly among the rest of
+ *      the partitions.
  *
- *	On each pass, we have to keep iterating over the span, evenly doling
- *	out slices of extra space, because we may hit partition limits as
- *	space is donated.  In addition, if there are left over pixels because
- *	of round-off, this will distribute them as evenly as possible.  For
- *	the worst case, it will take *span* passes to expand the span.
+ *      On each pass, we have to keep iterating over the span, evenly doling
+ *      out slices of extra space, because we may hit partition limits as
+ *      space is donated.  In addition, if there are left over pixels because
+ *      of round-off, this will distribute them as evenly as possible.  For
+ *      the worst case, it will take *span* passes to expand the span.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- * 	The partitions in the span may be expanded.
+ *      The partitions in the span may be expanded.
  *
  *---------------------------------------------------------------------------
  */
@@ -2779,69 +2779,69 @@ GrowSpan(
     Table *tablePtr, 
     PartitionInfo *piPtr,
     TableEntry *entryPtr,
-    int growth)			/* The amount of extra space needed to grow
-				 * the span. */
+    int growth)                 /* The amount of extra space needed to grow
+                                 * the span. */
 {
     Blt_ChainLink link;
-    int numOpen;			/* # of partitions with space available */
+    int numOpen;                        /* # of partitions with space available */
     int n;
-    RowColumn *startPtr;	/* Starting (column/row) partition  */
-    int span;			/* Number of partitions in the span */
+    RowColumn *startPtr;        /* Starting (column/row) partition  */
+    int span;                   /* Number of partitions in the span */
 
     if (piPtr->type == rowUid) {
-	startPtr = entryPtr->row.rcPtr;
-	span = entryPtr->row.span;
+        startPtr = entryPtr->row.rcPtr;
+        span = entryPtr->row.span;
     } else {
-	startPtr = entryPtr->column.rcPtr;
-	span = entryPtr->column.span;
+        startPtr = entryPtr->column.rcPtr;
+        span = entryPtr->column.span;
     }
 
     /*
      * Pass 1: First add space to rows/columns that haven't determined
-     *	       their nominal sizes yet.
+     *         their nominal sizes yet.
      */
 
     numOpen = 0;
     /* Find out how many partitions have no size yet */
 
     for (n = 0, link = startPtr->link; (link != NULL) && (n < span); 
-	 n++, link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+         n++, link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	if ((rcPtr->nom == LIMITS_NOM) && (rcPtr->max > rcPtr->size)) {
-	    numOpen++;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        if ((rcPtr->nom == LIMITS_NOM) && (rcPtr->max > rcPtr->size)) {
+            numOpen++;
+        }
     }
 
     while ((numOpen > 0) && (growth > 0)) {
-	int ration;
+        int ration;
 
-	ration = growth / numOpen;
-	if (ration == 0) {
-	    ration = 1;
-	}
-	link = startPtr->link;
-	for (n = 0; (n < span) && (growth > 0); n++) {
-	    RowColumn *rcPtr;
-	    int avail;
+        ration = growth / numOpen;
+        if (ration == 0) {
+            ration = 1;
+        }
+        link = startPtr->link;
+        for (n = 0; (n < span) && (growth > 0); n++) {
+            RowColumn *rcPtr;
+            int avail;
 
-	    rcPtr = Blt_Chain_GetValue(link);
-	    avail = rcPtr->max - rcPtr->size;
-	    if ((rcPtr->nom == LIMITS_NOM) && (avail > 0)) {
-		if (ration < avail) {
-		    growth -= ration;
-		    rcPtr->size += ration;
-		} else {
-		    growth -= avail;
-		    rcPtr->size += avail;
-		    numOpen--;
-		}
-		rcPtr->minSpan = span;
-		rcPtr->control = entryPtr;
-	    }
-	    link = Blt_Chain_NextLink(link);
-	}
+            rcPtr = Blt_Chain_GetValue(link);
+            avail = rcPtr->max - rcPtr->size;
+            if ((rcPtr->nom == LIMITS_NOM) && (avail > 0)) {
+                if (ration < avail) {
+                    growth -= ration;
+                    rcPtr->size += ration;
+                } else {
+                    growth -= avail;
+                    rcPtr->size += avail;
+                    numOpen--;
+                }
+                rcPtr->minSpan = span;
+                rcPtr->control = entryPtr;
+            }
+            link = Blt_Chain_NextLink(link);
+        }
     }
 
     /*
@@ -2851,41 +2851,41 @@ GrowSpan(
     numOpen = 0;
     link = startPtr->link;
     for (n = 0; n < span; n++) {
-	RowColumn *rcPtr;
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	if ((rcPtr->minSpan == span) && (rcPtr->max > rcPtr->size)) {
-	    numOpen++;
-	}
-	link = Blt_Chain_NextLink(link);
+        rcPtr = Blt_Chain_GetValue(link);
+        if ((rcPtr->minSpan == span) && (rcPtr->max > rcPtr->size)) {
+            numOpen++;
+        }
+        link = Blt_Chain_NextLink(link);
     }
     while ((numOpen > 0) && (growth > 0)) {
-	int ration;
+        int ration;
 
-	ration = growth / numOpen;
-	if (ration == 0) {
-	    ration = 1;
-	}
-	link = startPtr->link;
-	for (n = 0; (n < span) && (growth > 0); n++) {
-	    RowColumn *rcPtr;
-	    int avail;
+        ration = growth / numOpen;
+        if (ration == 0) {
+            ration = 1;
+        }
+        link = startPtr->link;
+        for (n = 0; (n < span) && (growth > 0); n++) {
+            RowColumn *rcPtr;
+            int avail;
 
-	    rcPtr = Blt_Chain_GetValue(link);
-	    avail = rcPtr->max - rcPtr->size;
-	    if ((rcPtr->minSpan == span) && (avail > 0)) {
-		if (ration < avail) {
-		    growth -= ration;
-		    rcPtr->size += ration;
-		} else {
-		    growth -= avail;
-		    rcPtr->size += avail;
-		    numOpen--;
-		}
-		rcPtr->control = entryPtr;
-	    }
-	    link = Blt_Chain_NextLink(link);
-	}
+            rcPtr = Blt_Chain_GetValue(link);
+            avail = rcPtr->max - rcPtr->size;
+            if ((rcPtr->minSpan == span) && (avail > 0)) {
+                if (ration < avail) {
+                    growth -= ration;
+                    rcPtr->size += ration;
+                } else {
+                    growth -= avail;
+                    rcPtr->size += avail;
+                    numOpen--;
+                }
+                rcPtr->control = entryPtr;
+            }
+            link = Blt_Chain_NextLink(link);
+        }
     }
 
     /*
@@ -2896,47 +2896,47 @@ GrowSpan(
     numOpen = 0;
     link = startPtr->link;
     for (n = 0; n < span; n++) {
-	RowColumn *rcPtr;
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	if ((rcPtr->resize & RESIZE_EXPAND) && (rcPtr->max > rcPtr->size)) {
-	    numOpen++;
-	}
-	/* Set the nominal size of the row/column. */
-	rcPtr->nom = rcPtr->size;
-	link = Blt_Chain_NextLink(link);
+        rcPtr = Blt_Chain_GetValue(link);
+        if ((rcPtr->resize & RESIZE_EXPAND) && (rcPtr->max > rcPtr->size)) {
+            numOpen++;
+        }
+        /* Set the nominal size of the row/column. */
+        rcPtr->nom = rcPtr->size;
+        link = Blt_Chain_NextLink(link);
     }
     while ((numOpen > 0) && (growth > 0)) {
-	int ration;
+        int ration;
 
-	ration = growth / numOpen;
-	if (ration == 0) {
-	    ration = 1;
-	}
-	link = startPtr->link;
-	for (n = 0; (n < span) && (growth > 0); n++) {
-	    RowColumn *rcPtr;
-	    int avail;
+        ration = growth / numOpen;
+        if (ration == 0) {
+            ration = 1;
+        }
+        link = startPtr->link;
+        for (n = 0; (n < span) && (growth > 0); n++) {
+            RowColumn *rcPtr;
+            int avail;
 
-	    rcPtr = Blt_Chain_GetValue(link);
-	    link = Blt_Chain_NextLink(link);
-	    if (!(rcPtr->resize & RESIZE_EXPAND)) {
-		continue;
-	    }
-	    avail = rcPtr->max - rcPtr->size;
-	    if (avail > 0) {
-		if (ration < avail) {
-		    growth -= ration;
-		    rcPtr->size += ration;
-		} else {
-		    growth -= avail;
-		    rcPtr->size += avail;
-		    numOpen--;
-		}
-		rcPtr->nom = rcPtr->size;
-		rcPtr->control = entryPtr;
-	    }
-	}
+            rcPtr = Blt_Chain_GetValue(link);
+            link = Blt_Chain_NextLink(link);
+            if (!(rcPtr->resize & RESIZE_EXPAND)) {
+                continue;
+            }
+            avail = rcPtr->max - rcPtr->size;
+            if (avail > 0) {
+                if (ration < avail) {
+                    growth -= ration;
+                    rcPtr->size += ration;
+                } else {
+                    growth -= avail;
+                    rcPtr->size += avail;
+                    numOpen--;
+                }
+                rcPtr->nom = rcPtr->size;
+                rcPtr->control = entryPtr;
+            }
+        }
     }
 }
 
@@ -2945,38 +2945,38 @@ GrowSpan(
  *
  * GrowPartitions --
  *
- *	Grow the span by the designated amount.  Size constraints on the
- *	partitions may prevent any or all of the spacing adjustments.
+ *      Grow the span by the designated amount.  Size constraints on the
+ *      partitions may prevent any or all of the spacing adjustments.
  *
- *	This is very much like the GrowSpan procedure, but in this case we are
- *	expanding all the (row or column) partitions. It uses a two pass
- *	approach, first giving space to partitions which are smaller than
- *	their nominal sizes. This is because constraints on the partitions may
- *	cause resizing to be non-linear.
+ *      This is very much like the GrowSpan procedure, but in this case we are
+ *      expanding all the (row or column) partitions. It uses a two pass
+ *      approach, first giving space to partitions which are smaller than
+ *      their nominal sizes. This is because constraints on the partitions may
+ *      cause resizing to be non-linear.
  *
- *	If there is still extra space, this means that all partitions are at
- *	least to their nominal sizes.  The second pass will try to add the
- *	left over space evenly among all the partitions which still have space
- *	available (i.e. haven't reached their specified max sizes).
+ *      If there is still extra space, this means that all partitions are at
+ *      least to their nominal sizes.  The second pass will try to add the
+ *      left over space evenly among all the partitions which still have space
+ *      available (i.e. haven't reached their specified max sizes).
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The size of the partitions may be increased.
+ *      The size of the partitions may be increased.
  *
  *---------------------------------------------------------------------------
  */
 static void
 GrowPartitions(
-    PartitionInfo *piPtr,	/* Array of (column/row) partitions  */
-    int adjustment)		/* The amount of extra space to grow the
-				 * span. If negative, it represents the amount
-				 * of space to add. */
+    PartitionInfo *piPtr,       /* Array of (column/row) partitions  */
+    int adjustment)             /* The amount of extra space to grow the
+                                 * span. If negative, it represents the amount
+                                 * of space to add. */
 {
-    int delta;			/* Amount of space needed */
-    int numAdjust;		/* Number of rows/columns that still can be
-				 * adjusted. */
+    int delta;                  /* Amount of space needed */
+    int numAdjust;              /* Number of rows/columns that still can be
+                                 * adjusted. */
     Blt_Chain chain;
     Blt_ChainLink link;
     float totalWeight;
@@ -2985,59 +2985,59 @@ GrowPartitions(
 
     /*
      * Pass 1: First adjust the size of rows/columns that still haven't
-     *	      reached their nominal size.
+     *        reached their nominal size.
      */
     delta = adjustment;
 
     numAdjust = 0;
     totalWeight = 0.0;
     for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	if ((rcPtr->weight > 0.0) && (rcPtr->nom > rcPtr->size)) {
-	    numAdjust++;
-	    totalWeight += rcPtr->weight;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        if ((rcPtr->weight > 0.0) && (rcPtr->nom > rcPtr->size)) {
+            numAdjust++;
+            totalWeight += rcPtr->weight;
+        }
     }
 
     while ((numAdjust > 0) && (totalWeight > 0.0) && (delta > 0)) {
-	Blt_ChainLink link;
-	int ration;		/* Amount of space to add to each
-				 * row/column. */
-	ration = (int)(delta / totalWeight);
-	if (ration == 0) {
-	    ration = 1;
-	}
-	for (link = Blt_Chain_FirstLink(chain); (link != NULL) && (delta > 0);
-	    link = Blt_Chain_NextLink(link)) {
-	    RowColumn *rcPtr;
+        Blt_ChainLink link;
+        int ration;             /* Amount of space to add to each
+                                 * row/column. */
+        ration = (int)(delta / totalWeight);
+        if (ration == 0) {
+            ration = 1;
+        }
+        for (link = Blt_Chain_FirstLink(chain); (link != NULL) && (delta > 0);
+            link = Blt_Chain_NextLink(link)) {
+            RowColumn *rcPtr;
 
-	    rcPtr = Blt_Chain_GetValue(link);
-	    if (rcPtr->weight > 0.0) {
-		int avail;	/* Amount of space still available. */
+            rcPtr = Blt_Chain_GetValue(link);
+            if (rcPtr->weight > 0.0) {
+                int avail;      /* Amount of space still available. */
 
-		avail = rcPtr->nom - rcPtr->size;
-		if (avail > 0) {
-		    int size;	/* Amount of space requested for a particular
-				 * row/column. */
-		    size = (int)(ration * rcPtr->weight);
-		    if (size > delta) {
-			size = delta;
-		    }
-		    if (size < avail) {
-			delta -= size;
-			rcPtr->size += size;
-		    } else {
-			delta -= avail;
-			rcPtr->size += avail;
-			numAdjust--;
-			totalWeight -= rcPtr->weight;
-		    }
-		}
-	    }
-	}
+                avail = rcPtr->nom - rcPtr->size;
+                if (avail > 0) {
+                    int size;   /* Amount of space requested for a particular
+                                 * row/column. */
+                    size = (int)(ration * rcPtr->weight);
+                    if (size > delta) {
+                        size = delta;
+                    }
+                    if (size < avail) {
+                        delta -= size;
+                        rcPtr->size += size;
+                    } else {
+                        delta -= avail;
+                        rcPtr->size += avail;
+                        numAdjust--;
+                        totalWeight -= rcPtr->weight;
+                    }
+                }
+            }
+        }
     }
 
     /*
@@ -3046,52 +3046,52 @@ GrowPartitions(
     numAdjust = 0;
     totalWeight = 0.0;
     for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	if ((rcPtr->weight > 0.0) && (rcPtr->max > rcPtr->size)) {
-	    numAdjust++;
-	    totalWeight += rcPtr->weight;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        if ((rcPtr->weight > 0.0) && (rcPtr->max > rcPtr->size)) {
+            numAdjust++;
+            totalWeight += rcPtr->weight;
+        }
     }
     while ((numAdjust > 0) && (totalWeight > 0.0) && (delta > 0)) {
-	Blt_ChainLink link;
-	int ration;		/* Amount of space to add to each
-				 * row/column. */
+        Blt_ChainLink link;
+        int ration;             /* Amount of space to add to each
+                                 * row/column. */
 
-	ration = (int)(delta / totalWeight);
-	if (ration == 0) {
-	    ration = 1;
-	}
-	for (link = Blt_Chain_FirstLink(chain); (link != NULL) && (delta > 0);
-	    link = Blt_Chain_NextLink(link)) {
-	    RowColumn *rcPtr;
+        ration = (int)(delta / totalWeight);
+        if (ration == 0) {
+            ration = 1;
+        }
+        for (link = Blt_Chain_FirstLink(chain); (link != NULL) && (delta > 0);
+            link = Blt_Chain_NextLink(link)) {
+            RowColumn *rcPtr;
 
-	    rcPtr = Blt_Chain_GetValue(link);
-	    if (rcPtr->weight > 0.0) {
-		int avail;	/* Amount of space still available */
+            rcPtr = Blt_Chain_GetValue(link);
+            if (rcPtr->weight > 0.0) {
+                int avail;      /* Amount of space still available */
 
-		avail = (rcPtr->max - rcPtr->size);
-		if (avail > 0) {
-		    int size;	/* Amount of space requested for a particular
-				 * row/column. */
-		    size = (int)(ration * rcPtr->weight);
-		    if (size > delta) {
-			size = delta;
-		    }
-		    if (size < avail) {
-			delta -= size;
-			rcPtr->size += size;
-		    } else {
-			delta -= avail;
-			rcPtr->size += avail;
-			numAdjust--;
-			totalWeight -= rcPtr->weight;
-		    }
-		}
-	    }
-	}
+                avail = (rcPtr->max - rcPtr->size);
+                if (avail > 0) {
+                    int size;   /* Amount of space requested for a particular
+                                 * row/column. */
+                    size = (int)(ration * rcPtr->weight);
+                    if (size > delta) {
+                        size = delta;
+                    }
+                    if (size < avail) {
+                        delta -= size;
+                        rcPtr->size += size;
+                    } else {
+                        delta -= avail;
+                        rcPtr->size += avail;
+                        numAdjust--;
+                        totalWeight -= rcPtr->weight;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -3101,40 +3101,40 @@ GrowPartitions(
  *
  * ShrinkPartitions --
  *
- *	Shrink the span by the amount specified.  Size constraints on the
- *	partitions may prevent any or all of the spacing adjustments.
+ *      Shrink the span by the amount specified.  Size constraints on the
+ *      partitions may prevent any or all of the spacing adjustments.
  *
- *	This is very much like the GrowSpan procedure, but in this case we are
- *	shrinking or expanding all the (row or column) partitions. It uses a
- *	two pass approach, first subtracting space to partitions which are
- *	larger than their nominal sizes. This is because constraints on the
- *	partitions may cause resizing to be non-linear.
+ *      This is very much like the GrowSpan procedure, but in this case we are
+ *      shrinking or expanding all the (row or column) partitions. It uses a
+ *      two pass approach, first subtracting space to partitions which are
+ *      larger than their nominal sizes. This is because constraints on the
+ *      partitions may cause resizing to be non-linear.
  *
- *	After pass 1, if there is still extra to be removed, this means that
- *	all partitions are at least to their nominal sizes.  The second pass
- *	will try to remove the extra space evenly among all the partitions
- *	which still have space available (i.e haven't reached their respective
- *	min sizes).
+ *      After pass 1, if there is still extra to be removed, this means that
+ *      all partitions are at least to their nominal sizes.  The second pass
+ *      will try to remove the extra space evenly among all the partitions
+ *      which still have space available (i.e haven't reached their respective
+ *      min sizes).
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The size of the partitions may be decreased.
+ *      The size of the partitions may be decreased.
  *
  *---------------------------------------------------------------------------
  */
 static void
 ShrinkPartitions(
-    PartitionInfo *piPtr,	/* Array of (column/row) partitions  */
-    int adjustment)		/* The amount of extra space to shrink the
-				 * span. It represents the amount of space to
-				 * remove. */
+    PartitionInfo *piPtr,       /* Array of (column/row) partitions  */
+    int adjustment)             /* The amount of extra space to shrink the
+                                 * span. It represents the amount of space to
+                                 * remove. */
 {
     Blt_ChainLink link;
-    int extra;			/* Amount of space needed */
-    int numAdjust;		/* Number of rows/columns that still can be
-				 * adjusted. */
+    int extra;                  /* Amount of space needed */
+    int numAdjust;              /* Number of rows/columns that still can be
+                                 * adjusted. */
     Blt_Chain chain;
     float totalWeight;
 
@@ -3142,112 +3142,112 @@ ShrinkPartitions(
 
     /*
      * Pass 1: First adjust the size of rows/columns that still aren't
-     *	       at their nominal size.
+     *         at their nominal size.
      */
     extra = -adjustment;
 
     numAdjust = 0;
     totalWeight = 0.0;
     for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	if ((rcPtr->weight > 0.0) && (rcPtr->nom < rcPtr->size)) {
-	    numAdjust++;
-	    totalWeight += rcPtr->weight;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        if ((rcPtr->weight > 0.0) && (rcPtr->nom < rcPtr->size)) {
+            numAdjust++;
+            totalWeight += rcPtr->weight;
+        }
     }
 
     while ((numAdjust > 0) && (totalWeight > 0.0) && (extra > 0)) {
-	Blt_ChainLink link;
-	int ration;		/* Amount of space to subtract from each
-				 * row/column. */
-	ration = (int)(extra / totalWeight);
-	if (ration == 0) {
-	    ration = 1;
-	}
-	for (link = Blt_Chain_FirstLink(chain); (link != NULL) && (extra > 0);
-	    link = Blt_Chain_NextLink(link)) {
-	    RowColumn *rcPtr;
+        Blt_ChainLink link;
+        int ration;             /* Amount of space to subtract from each
+                                 * row/column. */
+        ration = (int)(extra / totalWeight);
+        if (ration == 0) {
+            ration = 1;
+        }
+        for (link = Blt_Chain_FirstLink(chain); (link != NULL) && (extra > 0);
+            link = Blt_Chain_NextLink(link)) {
+            RowColumn *rcPtr;
 
-	    rcPtr = Blt_Chain_GetValue(link);
-	    if (rcPtr->weight > 0.0) {
-		int avail;	/* Amount of space still available */
+            rcPtr = Blt_Chain_GetValue(link);
+            if (rcPtr->weight > 0.0) {
+                int avail;      /* Amount of space still available */
 
-		avail = rcPtr->size - rcPtr->nom;
-		if (avail > 0) {
-		    int slice;	/* Amount of space requested for a particular
-				 * row/column. */
-		    slice = (int)(ration * rcPtr->weight);
-		    if (slice > extra) {
-			slice = extra;
-		    }
-		    if (avail > slice) {
-			extra -= slice;
-			rcPtr->size -= slice;  
-		    } else {
-			extra -= avail;
-			rcPtr->size -= avail;
-			numAdjust--; /* Goes to zero (nominal). */
-			totalWeight -= rcPtr->weight;
-		    }
-		}
-	    }
-	}
+                avail = rcPtr->size - rcPtr->nom;
+                if (avail > 0) {
+                    int slice;  /* Amount of space requested for a particular
+                                 * row/column. */
+                    slice = (int)(ration * rcPtr->weight);
+                    if (slice > extra) {
+                        slice = extra;
+                    }
+                    if (avail > slice) {
+                        extra -= slice;
+                        rcPtr->size -= slice;  
+                    } else {
+                        extra -= avail;
+                        rcPtr->size -= avail;
+                        numAdjust--; /* Goes to zero (nominal). */
+                        totalWeight -= rcPtr->weight;
+                    }
+                }
+            }
+        }
     }
     /*
      * Pass 2: Now adjust the partitions with space still available (i.e.
-     *	       are bigger than their minimum size).
+     *         are bigger than their minimum size).
      */
     numAdjust = 0;
     totalWeight = 0.0;
     for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	if ((rcPtr->weight > 0.0) && (rcPtr->size > rcPtr->min)) {
-	    numAdjust++;
-	    totalWeight += rcPtr->weight;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        if ((rcPtr->weight > 0.0) && (rcPtr->size > rcPtr->min)) {
+            numAdjust++;
+            totalWeight += rcPtr->weight;
+        }
     }
     while ((numAdjust > 0) && (totalWeight > 0.0) && (extra > 0)) {
-	Blt_ChainLink link;
-	int ration;		/* Amount of space to subtract from each
-				 * row/column. */
-	ration = (int)(extra / totalWeight);
-	if (ration == 0) {
-	    ration = 1;
-	}
-	for (link = Blt_Chain_FirstLink(chain); (link != NULL) && (extra > 0);
-	    link = Blt_Chain_NextLink(link)) {
-	    RowColumn *rcPtr;
+        Blt_ChainLink link;
+        int ration;             /* Amount of space to subtract from each
+                                 * row/column. */
+        ration = (int)(extra / totalWeight);
+        if (ration == 0) {
+            ration = 1;
+        }
+        for (link = Blt_Chain_FirstLink(chain); (link != NULL) && (extra > 0);
+            link = Blt_Chain_NextLink(link)) {
+            RowColumn *rcPtr;
 
-	    rcPtr = Blt_Chain_GetValue(link);
-	    if (rcPtr->weight > 0.0) {
-		int avail;	/* Amount of space still available */
+            rcPtr = Blt_Chain_GetValue(link);
+            if (rcPtr->weight > 0.0) {
+                int avail;      /* Amount of space still available */
 
-		avail = rcPtr->size - rcPtr->min;
-		if (avail > 0) {
-		    int slice;	/* Amount of space requested for a particular
-				 * row/column. */
-		    slice = (int)(ration * rcPtr->weight);
-		    if (slice > extra) {
-			slice = extra;
-		    }
-		    if (avail > slice) {
-			extra -= slice;
-			rcPtr->size -= slice;
-		    } else {
-			extra -= avail;
-			rcPtr->size -= avail;
-			numAdjust--;
-			totalWeight -= rcPtr->weight;
-		    }
-		}
-	    }
-	}
+                avail = rcPtr->size - rcPtr->min;
+                if (avail > 0) {
+                    int slice;  /* Amount of space requested for a particular
+                                 * row/column. */
+                    slice = (int)(ration * rcPtr->weight);
+                    if (slice > extra) {
+                        slice = extra;
+                    }
+                    if (avail > slice) {
+                        extra -= slice;
+                        rcPtr->size -= slice;
+                    } else {
+                        extra -= avail;
+                        rcPtr->size -= avail;
+                        numAdjust--;
+                        totalWeight -= rcPtr->weight;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -3256,15 +3256,15 @@ ShrinkPartitions(
  *
  * ResetPartitions --
  *
- *	Sets/resets the size of each row and column partition to the minimum
- *	limit of the partition (this is usually zero). This routine gets
- *	called when new widgets are added, deleted, or resized.
+ *      Sets/resets the size of each row and column partition to the minimum
+ *      limit of the partition (this is usually zero). This routine gets
+ *      called when new widgets are added, deleted, or resized.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- * 	The size of each partition is re-initialized to its minimum size.
+ *      The size of each partition is re-initialized to its minimum size.
  *
  *---------------------------------------------------------------------------
  */
@@ -3274,41 +3274,41 @@ ResetPartitions(Table *tablePtr, PartitionInfo *piPtr, LimitsProc *limitsProc)
     Blt_ChainLink link;
 
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
-	int pad, size;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
+        int pad, size;
 
-	rcPtr = Blt_Chain_GetValue(link);
+        rcPtr = Blt_Chain_GetValue(link);
 
-	/*
-	 * The constraint procedure below also has the desired side-effect of
-	 * setting the minimum, maximum, and nominal values to the requested
-	 * size of its associated widget (if one exists).
-	 */
-	size = (*limitsProc)(0, &rcPtr->reqSize);
+        /*
+         * The constraint procedure below also has the desired side-effect of
+         * setting the minimum, maximum, and nominal values to the requested
+         * size of its associated widget (if one exists).
+         */
+        size = (*limitsProc)(0, &rcPtr->reqSize);
 
-	pad = PADDING(rcPtr->pad) + piPtr->ePad;
-	if (rcPtr->reqSize.flags & LIMITS_SET_NOM) {
+        pad = PADDING(rcPtr->pad) + piPtr->ePad;
+        if (rcPtr->reqSize.flags & LIMITS_SET_NOM) {
 
-	    /*
-	     * This could be done more cleanly.  We want to ensure that the
-	     * requested nominal size is not overridden when determining the
-	     * normal sizes.  So temporarily fix min and max to the nominal
-	     * size and reset them back later.
-	     */
-	    rcPtr->min = rcPtr->max = rcPtr->size = rcPtr->nom = 
-		size + pad;
+            /*
+             * This could be done more cleanly.  We want to ensure that the
+             * requested nominal size is not overridden when determining the
+             * normal sizes.  So temporarily fix min and max to the nominal
+             * size and reset them back later.
+             */
+            rcPtr->min = rcPtr->max = rcPtr->size = rcPtr->nom = 
+                size + pad;
 
-	} else {
-	    /* The range defaults to 0..MAXINT */
-	    rcPtr->min = rcPtr->reqSize.min + pad;
-	    rcPtr->max = rcPtr->reqSize.max + pad;
-	    rcPtr->nom = LIMITS_NOM;
-	    rcPtr->size = pad;
-	}
-	rcPtr->minSpan = 0;
-	rcPtr->control = NULL;
-	rcPtr->count = 0;
+        } else {
+            /* The range defaults to 0..MAXINT */
+            rcPtr->min = rcPtr->reqSize.min + pad;
+            rcPtr->max = rcPtr->reqSize.max + pad;
+            rcPtr->nom = LIMITS_NOM;
+            rcPtr->size = pad;
+        }
+        rcPtr->minSpan = 0;
+        rcPtr->control = NULL;
+        rcPtr->count = 0;
     }
 }
 
@@ -3317,20 +3317,20 @@ ResetPartitions(Table *tablePtr, PartitionInfo *piPtr, LimitsProc *limitsProc)
  *
  * SetNominalSizes
  *
- *	Sets the normal sizes for each partition.  The partition size is the
- *	requested widget size plus an amount of padding.  In addition, adjust
- *	the min/max bounds of the partition depending upon the resize flags
- *	(whether the partition can be expanded or shrunk from its normal
- *	size).
+ *      Sets the normal sizes for each partition.  The partition size is the
+ *      requested widget size plus an amount of padding.  In addition, adjust
+ *      the min/max bounds of the partition depending upon the resize flags
+ *      (whether the partition can be expanded or shrunk from its normal
+ *      size).
  *
  * Results:
- *	Returns the total space needed for the all the partitions.
+ *      Returns the total space needed for the all the partitions.
  *
  * Side Effects:
- *	The nominal size of each partition is set.  This is later used to
- *	determine how to shrink or grow the table if the container can't be
- *	resized to accommodate the exact size requirements of all the
- *	partitions.
+ *      The nominal size of each partition is set.  This is later used to
+ *      determine how to shrink or grow the table if the container can't be
+ *      resized to accommodate the exact size requirements of all the
+ *      partitions.
  *
  *---------------------------------------------------------------------------
  */
@@ -3342,59 +3342,59 @@ SetNominalSizes(Table *tablePtr, PartitionInfo *piPtr)
 
     total = 0;
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
-	int pad, size;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
+        int pad, size;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	pad = PADDING(rcPtr->pad) + piPtr->ePad;
+        rcPtr = Blt_Chain_GetValue(link);
+        pad = PADDING(rcPtr->pad) + piPtr->ePad;
 
-	/*
-	 * Restore the real bounds after temporarily setting nominal size.
-	 * These values may have been set in ResetPartitions to restrict the
-	 * size of the partition to the requested range.
-	 */
+        /*
+         * Restore the real bounds after temporarily setting nominal size.
+         * These values may have been set in ResetPartitions to restrict the
+         * size of the partition to the requested range.
+         */
 
-	rcPtr->min = rcPtr->reqSize.min + pad;
-	rcPtr->max = rcPtr->reqSize.max + pad;
+        rcPtr->min = rcPtr->reqSize.min + pad;
+        rcPtr->max = rcPtr->reqSize.max + pad;
 
-	size = rcPtr->size;
-	if (size > rcPtr->max) {
-	    size = rcPtr->max;
-	} else if (size < rcPtr->min) {
-	    size = rcPtr->min;
-	}
-	if ((piPtr->ePad > 0) && (size < tablePtr->editPtr->min)) {
-	    size = tablePtr->editPtr->min;
-	}
-	rcPtr->nom = rcPtr->size = size;
+        size = rcPtr->size;
+        if (size > rcPtr->max) {
+            size = rcPtr->max;
+        } else if (size < rcPtr->min) {
+            size = rcPtr->min;
+        }
+        if ((piPtr->ePad > 0) && (size < tablePtr->editPtr->min)) {
+            size = tablePtr->editPtr->min;
+        }
+        rcPtr->nom = rcPtr->size = size;
 
-	/*
-	 * If a partition can't be resized (to either expand or shrink), hold
-	 * its respective limit at its normal size.
-	 */
-	if (!(rcPtr->resize & RESIZE_EXPAND)) {
-	    rcPtr->max = rcPtr->nom;
-	}
-	if (!(rcPtr->resize & RESIZE_SHRINK)) {
-	    rcPtr->min = rcPtr->nom;
-	}
-	if (rcPtr->control == NULL) {
-	    /* If a row/column contains no entries, then its size should be
-	     * locked. */
-	    if (rcPtr->resize & RESIZE_VIRGIN) {
-		rcPtr->max = rcPtr->min = size;
-	    } else {
-		if (!(rcPtr->resize & RESIZE_EXPAND)) {
-		    rcPtr->max = size;
-		}
-		if (!(rcPtr->resize & RESIZE_SHRINK)) {
-		    rcPtr->min = size;
-		}
-	    }
-	    rcPtr->nom = size;
-	}
-	total += rcPtr->nom;
+        /*
+         * If a partition can't be resized (to either expand or shrink), hold
+         * its respective limit at its normal size.
+         */
+        if (!(rcPtr->resize & RESIZE_EXPAND)) {
+            rcPtr->max = rcPtr->nom;
+        }
+        if (!(rcPtr->resize & RESIZE_SHRINK)) {
+            rcPtr->min = rcPtr->nom;
+        }
+        if (rcPtr->control == NULL) {
+            /* If a row/column contains no entries, then its size should be
+             * locked. */
+            if (rcPtr->resize & RESIZE_VIRGIN) {
+                rcPtr->max = rcPtr->min = size;
+            } else {
+                if (!(rcPtr->resize & RESIZE_EXPAND)) {
+                    rcPtr->max = size;
+                }
+                if (!(rcPtr->resize & RESIZE_SHRINK)) {
+                    rcPtr->min = size;
+                }
+            }
+            rcPtr->nom = size;
+        }
+        total += rcPtr->nom;
     }
     return total;
 }
@@ -3404,11 +3404,11 @@ SetNominalSizes(Table *tablePtr, PartitionInfo *piPtr)
  *
  * LockPartitions
  *
- *	Sets the maximum size of a row or column, if the partition has a
- *	widget that controls it.
+ *      Sets the maximum size of a row or column, if the partition has a
+ *      widget that controls it.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -3418,14 +3418,14 @@ LockPartitions(PartitionInfo *piPtr)
     Blt_ChainLink link;
 
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	if (rcPtr->control != NULL) {
-	    /* Partition is controlled by this widget */
-	    rcPtr->max = rcPtr->size;
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        if (rcPtr->control != NULL) {
+            /* Partition is controlled by this widget */
+            rcPtr->max = rcPtr->size;
+        }
     }
 }
 
@@ -3434,17 +3434,17 @@ LockPartitions(PartitionInfo *piPtr)
  *
  * LayoutPartitions --
  *
- *	Calculates the normal space requirements for both the row and column
- *	partitions.  Each widget is added in order of the number of rows or
- *	columns spanned, which defines the space needed among in the
- *	partitions spanned.
+ *      Calculates the normal space requirements for both the row and column
+ *      partitions.  Each widget is added in order of the number of rows or
+ *      columns spanned, which defines the space needed among in the
+ *      partitions spanned.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- * 	The sum of normal sizes set here will be used as the normal size for
- * 	the container widget.
+ *      The sum of normal sizes set here will be used as the normal size for
+ *      the container widget.
  *
  *---------------------------------------------------------------------------
  */
@@ -3460,132 +3460,132 @@ LayoutPartitions(Table *tablePtr)
     ResetPartitions(tablePtr, piPtr, GetBoundedWidth);
 
     for (node = Blt_List_FirstNode(piPtr->list); node != NULL;
-	node = Blt_List_NextNode(node)) {
-	Blt_Chain chain;
-	Blt_ChainLink link;
+        node = Blt_List_NextNode(node)) {
+        Blt_Chain chain;
+        Blt_ChainLink link;
 
-	chain = Blt_List_GetValue(node);
+        chain = Blt_List_GetValue(node);
 
-	for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	    link = Blt_Chain_NextLink(link)) {
-	    TableEntry *entryPtr;
-	    int needed, used;
+        for (link = Blt_Chain_FirstLink(chain); link != NULL;
+            link = Blt_Chain_NextLink(link)) {
+            TableEntry *entryPtr;
+            int needed, used;
 
-	    entryPtr = Blt_Chain_GetValue(link);
-	    if (entryPtr->column.control != CONTROL_FULL) {
-		continue;
-	    }
-	    needed = GetReqWidth(entryPtr) + PADDING(entryPtr->xPad) +
-		2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
-	    if (needed <= 0) {
-		continue;
-	    }
-	    used = GetSpan(piPtr, entryPtr);
-	    if (needed > used) {
-		GrowSpan(tablePtr, piPtr, entryPtr, needed - used);
-	    }
-	}
+            entryPtr = Blt_Chain_GetValue(link);
+            if (entryPtr->column.control != CONTROL_FULL) {
+                continue;
+            }
+            needed = GetReqWidth(entryPtr) + PADDING(entryPtr->xPad) +
+                2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
+            if (needed <= 0) {
+                continue;
+            }
+            used = GetSpan(piPtr, entryPtr);
+            if (needed > used) {
+                GrowSpan(tablePtr, piPtr, entryPtr, needed - used);
+            }
+        }
     }
 
     LockPartitions(piPtr);
 
     for (node = Blt_List_FirstNode(piPtr->list); node != NULL;
-	node = Blt_List_NextNode(node)) {
-	Blt_Chain chain;
-	Blt_ChainLink link;
+        node = Blt_List_NextNode(node)) {
+        Blt_Chain chain;
+        Blt_ChainLink link;
 
-	chain = Blt_List_GetValue(node);
+        chain = Blt_List_GetValue(node);
 
-	for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	    link = Blt_Chain_NextLink(link)) {
-	    TableEntry *entryPtr;
-	    int needed, used;
+        for (link = Blt_Chain_FirstLink(chain); link != NULL;
+            link = Blt_Chain_NextLink(link)) {
+            TableEntry *entryPtr;
+            int needed, used;
 
-	    entryPtr = Blt_Chain_GetValue(link);
+            entryPtr = Blt_Chain_GetValue(link);
 
-	    needed = GetReqWidth(entryPtr) + PADDING(entryPtr->xPad) +
-		2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
+            needed = GetReqWidth(entryPtr) + PADDING(entryPtr->xPad) +
+                2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
 
-	    if (entryPtr->column.control >= 0.0) {
-		needed = (int)(needed * entryPtr->column.control);
-	    }
-	    if (needed <= 0) {
-		continue;
-	    }
-	    used = GetSpan(piPtr, entryPtr);
-	    if (needed > used) {
-		GrowSpan(tablePtr, piPtr, entryPtr, needed - used);
-	    }
-	}
+            if (entryPtr->column.control >= 0.0) {
+                needed = (int)(needed * entryPtr->column.control);
+            }
+            if (needed <= 0) {
+                continue;
+            }
+            used = GetSpan(piPtr, entryPtr);
+            if (needed > used) {
+                GrowSpan(tablePtr, piPtr, entryPtr, needed - used);
+            }
+        }
     }
     total = SetNominalSizes(tablePtr, piPtr);
     tablePtr->normal.width = GetBoundedWidth(total, &tablePtr->reqWidth) +
-	PADDING(tablePtr->xPad) +
-	2 * (tablePtr->eTablePad + Tk_InternalBorderWidth(tablePtr->tkwin));
+        PADDING(tablePtr->xPad) +
+        2 * (tablePtr->eTablePad + Tk_InternalBorderWidth(tablePtr->tkwin));
 
     piPtr = &tablePtr->rows;
 
     ResetPartitions(tablePtr, piPtr, GetBoundedHeight);
 
     for (node = Blt_List_FirstNode(piPtr->list); node != NULL;
-	node = Blt_List_NextNode(node)) {
-	Blt_Chain chain;
-	Blt_ChainLink link;
+        node = Blt_List_NextNode(node)) {
+        Blt_Chain chain;
+        Blt_ChainLink link;
 
-	chain = Blt_List_GetValue(node);
+        chain = Blt_List_GetValue(node);
 
-	for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	    link = Blt_Chain_NextLink(link)) {
-	    TableEntry *entryPtr;
-	    int needed, used;
+        for (link = Blt_Chain_FirstLink(chain); link != NULL;
+            link = Blt_Chain_NextLink(link)) {
+            TableEntry *entryPtr;
+            int needed, used;
 
-	    entryPtr = Blt_Chain_GetValue(link);
-	    if (entryPtr->row.control != CONTROL_FULL) {
-		continue;
-	    }
-	    needed = GetReqHeight(entryPtr) + PADDING(entryPtr->yPad) +
-		2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
-	    if (needed <= 0) {
-		continue;
-	    }
-	    used = GetSpan(piPtr, entryPtr);
-	    if (needed > used) {
-		GrowSpan(tablePtr, piPtr, entryPtr, needed - used);
-	    }
-	}
+            entryPtr = Blt_Chain_GetValue(link);
+            if (entryPtr->row.control != CONTROL_FULL) {
+                continue;
+            }
+            needed = GetReqHeight(entryPtr) + PADDING(entryPtr->yPad) +
+                2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
+            if (needed <= 0) {
+                continue;
+            }
+            used = GetSpan(piPtr, entryPtr);
+            if (needed > used) {
+                GrowSpan(tablePtr, piPtr, entryPtr, needed - used);
+            }
+        }
     }
     LockPartitions(&tablePtr->rows);
 
     for (node = Blt_List_FirstNode(piPtr->list); node != NULL;
-	node = Blt_List_NextNode(node)) {
-	Blt_Chain chain;
-	Blt_ChainLink link;
+        node = Blt_List_NextNode(node)) {
+        Blt_Chain chain;
+        Blt_ChainLink link;
 
-	chain = Blt_Chain_GetValue(node);
-	for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	    link = Blt_Chain_NextLink(link)) {
-	    TableEntry *entryPtr;
-	    int needed, used;
+        chain = Blt_Chain_GetValue(node);
+        for (link = Blt_Chain_FirstLink(chain); link != NULL;
+            link = Blt_Chain_NextLink(link)) {
+            TableEntry *entryPtr;
+            int needed, used;
 
-	    entryPtr = Blt_Chain_GetValue(link);
-	    needed = GetReqHeight(entryPtr) + PADDING(entryPtr->yPad) +
-		2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
-	    if (entryPtr->row.control >= 0.0) {
-		needed = (int)(needed * entryPtr->row.control);
-	    }
-	    if (needed <= 0) {
-		continue;
-	    }
-	    used = GetSpan(piPtr, entryPtr);
-	    if (needed > used) {
-		GrowSpan(tablePtr, piPtr, entryPtr, needed - used);
-	    }
-	}
+            entryPtr = Blt_Chain_GetValue(link);
+            needed = GetReqHeight(entryPtr) + PADDING(entryPtr->yPad) +
+                2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
+            if (entryPtr->row.control >= 0.0) {
+                needed = (int)(needed * entryPtr->row.control);
+            }
+            if (needed <= 0) {
+                continue;
+            }
+            used = GetSpan(piPtr, entryPtr);
+            if (needed > used) {
+                GrowSpan(tablePtr, piPtr, entryPtr, needed - used);
+            }
+        }
     }
     total = SetNominalSizes(tablePtr, piPtr);
     tablePtr->normal.height = GetBoundedHeight(total, &tablePtr->reqHeight) +
-	PADDING(tablePtr->yPad) +
-	2 * (tablePtr->eTablePad + Tk_InternalBorderWidth(tablePtr->tkwin));
+        PADDING(tablePtr->yPad) +
+        2 * (tablePtr->eTablePad + Tk_InternalBorderWidth(tablePtr->tkwin));
 }
 
 /*
@@ -3593,172 +3593,172 @@ LayoutPartitions(Table *tablePtr)
  *
  * ArrangeEntries
  *
- *	Places each widget at its proper location.  First determines the size
- *	and position of the each widget.  It then considers the following:
+ *      Places each widget at its proper location.  First determines the size
+ *      and position of the each widget.  It then considers the following:
  *
- *	  1. translation of widget position its parent widget.
- *	  2. fill style
- *	  3. anchor
- *	  4. external and internal padding
- *	  5. widget size must be greater than zero
+ *        1. translation of widget position its parent widget.
+ *        2. fill style
+ *        3. anchor
+ *        4. external and internal padding
+ *        5. widget size must be greater than zero
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- * 	The size of each partition is re-initialized its minimum size.
+ *      The size of each partition is re-initialized its minimum size.
  *
  *---------------------------------------------------------------------------
  */
 static void
-ArrangeEntries(Table *tablePtr)		/* Table widget structure */
+ArrangeEntries(Table *tablePtr)         /* Table widget structure */
 {
     Blt_ChainLink link;
     int xMax, yMax;
 
     xMax = tablePtr->container.width -
-	(Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padRight +
-	tablePtr->eTablePad);
+        (Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padRight +
+        tablePtr->eTablePad);
     yMax = tablePtr->container.height -
-	(Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padBottom +
-	tablePtr->eTablePad);
+        (Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padBottom +
+        tablePtr->eTablePad);
 
     for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	TableEntry *entryPtr;
-	int dx, dy;
-	int extra;
-	int spanWidth, spanHeight;
-	int winWidth, winHeight;
-	int x, y;
+        link = Blt_Chain_NextLink(link)) {
+        TableEntry *entryPtr;
+        int dx, dy;
+        int extra;
+        int spanWidth, spanHeight;
+        int winWidth, winHeight;
+        int x, y;
 
-	entryPtr = Blt_Chain_GetValue(link);
+        entryPtr = Blt_Chain_GetValue(link);
 
-	x = entryPtr->column.rcPtr->offset +
-	    entryPtr->column.rcPtr->pad.side1 +
-	    entryPtr->padLeft +
-	    Tk_Changes(entryPtr->tkwin)->border_width +
-	    tablePtr->eEntryPad;
-	y = entryPtr->row.rcPtr->offset +
-	    entryPtr->row.rcPtr->pad.side1 +
-	    entryPtr->padTop +
-	    Tk_Changes(entryPtr->tkwin)->border_width +
-	    tablePtr->eEntryPad;
+        x = entryPtr->column.rcPtr->offset +
+            entryPtr->column.rcPtr->pad.side1 +
+            entryPtr->padLeft +
+            Tk_Changes(entryPtr->tkwin)->border_width +
+            tablePtr->eEntryPad;
+        y = entryPtr->row.rcPtr->offset +
+            entryPtr->row.rcPtr->pad.side1 +
+            entryPtr->padTop +
+            Tk_Changes(entryPtr->tkwin)->border_width +
+            tablePtr->eEntryPad;
 
-	/*
-	 * Unmap any widgets that start beyond of the right edge of the
-	 * container.
-	 */
-	if ((x >= xMax) || (y >= yMax)) {
+        /*
+         * Unmap any widgets that start beyond of the right edge of the
+         * container.
+         */
+        if ((x >= xMax) || (y >= yMax)) {
 #ifdef notdef
  fprintf(stderr, "arrange entries: unmapping window %s %d>=%d %d>=%d\n", 
-	 Tk_PathName(entryPtr->tkwin), x, xMax, y, yMax);
+         Tk_PathName(entryPtr->tkwin), x, xMax, y, yMax);
 #endif
-	    if (Tk_IsMapped(entryPtr->tkwin)) {
-		if (Tk_Parent(entryPtr->tkwin) != tablePtr->tkwin) {
-		    Tk_UnmaintainGeometry(entryPtr->tkwin, tablePtr->tkwin);
-		}
-		Tk_UnmapWindow(entryPtr->tkwin);
-	    }
-	    continue;
-	}
-	extra = 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
-	spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
-	    (extra + PADDING(entryPtr->xPad));
-	spanHeight = GetSpan(&tablePtr->rows, entryPtr) - 
-	    (extra + PADDING(entryPtr->yPad));
+            if (Tk_IsMapped(entryPtr->tkwin)) {
+                if (Tk_Parent(entryPtr->tkwin) != tablePtr->tkwin) {
+                    Tk_UnmaintainGeometry(entryPtr->tkwin, tablePtr->tkwin);
+                }
+                Tk_UnmapWindow(entryPtr->tkwin);
+            }
+            continue;
+        }
+        extra = 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
+        spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
+            (extra + PADDING(entryPtr->xPad));
+        spanHeight = GetSpan(&tablePtr->rows, entryPtr) - 
+            (extra + PADDING(entryPtr->yPad));
 
-	winWidth = GetReqWidth(entryPtr);
-	winHeight = GetReqHeight(entryPtr);
+        winWidth = GetReqWidth(entryPtr);
+        winHeight = GetReqHeight(entryPtr);
 
-	/*
-	 *
-	 * Compare the widget's requested size to the size of the span.
-	 *
-	 * 1) If the widget is larger than the span or if the fill flag is
-	 *    set, make the widget the size of the span. Check that the new size
-	 *    is within the bounds set for the widget.
-	 *
-	 * 2) Otherwise, position the widget in the space according to its
-	 *    anchor.
-	 *
-	 */
-	if ((spanWidth <= winWidth) || (entryPtr->fill & FILL_X)) {
-	    winWidth = spanWidth;
-	    if (winWidth > entryPtr->reqWidth.max) {
-		winWidth = entryPtr->reqWidth.max;
-	    }
-	}
-	if ((spanHeight <= winHeight) || (entryPtr->fill & FILL_Y)) {
-	    winHeight = spanHeight;
-	    if (winHeight > entryPtr->reqHeight.max) {
-		winHeight = entryPtr->reqHeight.max;
-	    }
-	}
+        /*
+         *
+         * Compare the widget's requested size to the size of the span.
+         *
+         * 1) If the widget is larger than the span or if the fill flag is
+         *    set, make the widget the size of the span. Check that the new size
+         *    is within the bounds set for the widget.
+         *
+         * 2) Otherwise, position the widget in the space according to its
+         *    anchor.
+         *
+         */
+        if ((spanWidth <= winWidth) || (entryPtr->fill & FILL_X)) {
+            winWidth = spanWidth;
+            if (winWidth > entryPtr->reqWidth.max) {
+                winWidth = entryPtr->reqWidth.max;
+            }
+        }
+        if ((spanHeight <= winHeight) || (entryPtr->fill & FILL_Y)) {
+            winHeight = spanHeight;
+            if (winHeight > entryPtr->reqHeight.max) {
+                winHeight = entryPtr->reqHeight.max;
+            }
+        }
 
-	dx = dy = 0;
-	if (spanWidth > winWidth) {
-	    dx = (spanWidth - winWidth);
-	}
-	if (spanHeight > winHeight) {
-	    dy = (spanHeight - winHeight);
-	}
-	if ((dx > 0) || (dy > 0)) {
-	    TranslateAnchor(dx, dy, entryPtr->anchor, &x, &y);
-	}
-	/*
-	 * Clip the widget at the bottom and/or right edge of the container.
-	 */
-	if (winWidth > (xMax - x)) {
-	    winWidth = (xMax - x);
-	}
-	if (winHeight > (yMax - y)) {
-	    winHeight = (yMax - y);
-	}
+        dx = dy = 0;
+        if (spanWidth > winWidth) {
+            dx = (spanWidth - winWidth);
+        }
+        if (spanHeight > winHeight) {
+            dy = (spanHeight - winHeight);
+        }
+        if ((dx > 0) || (dy > 0)) {
+            TranslateAnchor(dx, dy, entryPtr->anchor, &x, &y);
+        }
+        /*
+         * Clip the widget at the bottom and/or right edge of the container.
+         */
+        if (winWidth > (xMax - x)) {
+            winWidth = (xMax - x);
+        }
+        if (winHeight > (yMax - y)) {
+            winHeight = (yMax - y);
+        }
 
-	/*
-	 * If the widget is too small (i.e. it has only an external border)
-	 * then unmap it.
-	 */
-	if ((winWidth < 1) || (winHeight < 1)) {
-	    if (Tk_IsMapped(entryPtr->tkwin)) {
-		if (tablePtr->tkwin != Tk_Parent(entryPtr->tkwin)) {
-		    Tk_UnmaintainGeometry(entryPtr->tkwin, tablePtr->tkwin);
-		}
-		Tk_UnmapWindow(entryPtr->tkwin);
-	    }
-	    continue;
-	}
+        /*
+         * If the widget is too small (i.e. it has only an external border)
+         * then unmap it.
+         */
+        if ((winWidth < 1) || (winHeight < 1)) {
+            if (Tk_IsMapped(entryPtr->tkwin)) {
+                if (tablePtr->tkwin != Tk_Parent(entryPtr->tkwin)) {
+                    Tk_UnmaintainGeometry(entryPtr->tkwin, tablePtr->tkwin);
+                }
+                Tk_UnmapWindow(entryPtr->tkwin);
+            }
+            continue;
+        }
 
-	/*
-	 * Resize and/or move the widget as necessary.
-	 */
-	entryPtr->x = x;
-	entryPtr->y = y;
+        /*
+         * Resize and/or move the widget as necessary.
+         */
+        entryPtr->x = x;
+        entryPtr->y = y;
 
 #ifdef notdef
-	fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
-		Tk_PathName(entryPtr->tkwin), Tk_ReqWidth(entryPtr->tkwin),
-		Tk_ReqHeight(entryPtr->tkwin), winWidth, winHeight);
+        fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
+                Tk_PathName(entryPtr->tkwin), Tk_ReqWidth(entryPtr->tkwin),
+                Tk_ReqHeight(entryPtr->tkwin), winWidth, winHeight);
 #endif
-	if (tablePtr->tkwin != Tk_Parent(entryPtr->tkwin)) {
-	    Tk_MaintainGeometry(entryPtr->tkwin, tablePtr->tkwin, x, y,
-		winWidth, winHeight);
-	} else {
-	    if ((x != Tk_X(entryPtr->tkwin)) || (y != Tk_Y(entryPtr->tkwin)) ||
-		(winWidth != Tk_Width(entryPtr->tkwin)) ||
-		(winHeight != Tk_Height(entryPtr->tkwin))) {
+        if (tablePtr->tkwin != Tk_Parent(entryPtr->tkwin)) {
+            Tk_MaintainGeometry(entryPtr->tkwin, tablePtr->tkwin, x, y,
+                winWidth, winHeight);
+        } else {
+            if ((x != Tk_X(entryPtr->tkwin)) || (y != Tk_Y(entryPtr->tkwin)) ||
+                (winWidth != Tk_Width(entryPtr->tkwin)) ||
+                (winHeight != Tk_Height(entryPtr->tkwin))) {
 #ifdef notdef
-		fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
-			Tk_PathName(entryPtr->tkwin), Tk_ReqWidth(entryPtr->tkwin),
-			Tk_ReqHeight(entryPtr->tkwin), winWidth, winHeight);
+                fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
+                        Tk_PathName(entryPtr->tkwin), Tk_ReqWidth(entryPtr->tkwin),
+                        Tk_ReqHeight(entryPtr->tkwin), winWidth, winHeight);
 #endif
-		Tk_MoveResizeWindow(entryPtr->tkwin, x, y, winWidth, winHeight);
-	    }
-	    if (!Tk_IsMapped(entryPtr->tkwin)) {
-		Tk_MapWindow(entryPtr->tkwin);
-	    }
-	}
+                Tk_MoveResizeWindow(entryPtr->tkwin, x, y, winWidth, winHeight);
+            }
+            if (!Tk_IsMapped(entryPtr->tkwin)) {
+                Tk_MapWindow(entryPtr->tkwin);
+            }
+        }
     }
 }
 
@@ -3769,10 +3769,10 @@ ArrangeEntries(Table *tablePtr)		/* Table widget structure */
  *
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- * 	The widgets in the table are possibly resized and redrawn.
+ *      The widgets in the table are possibly resized and redrawn.
  *
  *---------------------------------------------------------------------------
  */
@@ -3793,25 +3793,25 @@ ArrangeTable(ClientData clientData)
     tablePtr->flags &= ~ARRANGE_PENDING;
 
     tablePtr->rows.ePad = tablePtr->columns.ePad = tablePtr->eTablePad =
-	tablePtr->eEntryPad = 0;
+        tablePtr->eEntryPad = 0;
     if (tablePtr->editPtr != NULL) {
-	tablePtr->rows.ePad = tablePtr->columns.ePad =
-	    tablePtr->editPtr->gridLineWidth;
-	tablePtr->eTablePad = tablePtr->editPtr->gridLineWidth;
-	tablePtr->eEntryPad = tablePtr->editPtr->entryPad;
+        tablePtr->rows.ePad = tablePtr->columns.ePad =
+            tablePtr->editPtr->gridLineWidth;
+        tablePtr->eTablePad = tablePtr->editPtr->gridLineWidth;
+        tablePtr->eEntryPad = tablePtr->editPtr->entryPad;
     }
     /*
      * If the table has no children anymore, then don't do anything at all:
      * just leave the container widget's size as-is.
      */
     if ((Blt_Chain_GetLength(tablePtr->chain) == 0) || 
-	(tablePtr->tkwin == NULL)) {
-	Tcl_Release(tablePtr);
-	return;
+        (tablePtr->tkwin == NULL)) {
+        Tcl_Release(tablePtr);
+        return;
     }
     if (tablePtr->flags & REQUEST_LAYOUT) {
-	tablePtr->flags &= ~REQUEST_LAYOUT;
-	LayoutPartitions(tablePtr);
+        tablePtr->flags &= ~REQUEST_LAYOUT;
+        LayoutPartitions(tablePtr);
     }
     /*
      * Initially, try to fit the partitions exactly into the container by
@@ -3819,13 +3819,13 @@ ArrangeTable(ClientData clientData)
      * send a request to the container widget's geometry manager to resize.
      */
     if ((tablePtr->propagate) &&
-	((tablePtr->normal.width != Tk_ReqWidth(tablePtr->tkwin)) ||
-	    (tablePtr->normal.height != Tk_ReqHeight(tablePtr->tkwin)))) {
-	Tk_GeometryRequest(tablePtr->tkwin, tablePtr->normal.width,
-	    tablePtr->normal.height);
-	EventuallyArrangeTable(tablePtr);
-	Tcl_Release(tablePtr);
-	return;
+        ((tablePtr->normal.width != Tk_ReqWidth(tablePtr->tkwin)) ||
+            (tablePtr->normal.height != Tk_ReqHeight(tablePtr->tkwin)))) {
+        Tk_GeometryRequest(tablePtr->tkwin, tablePtr->normal.width,
+            tablePtr->normal.height);
+        EventuallyArrangeTable(tablePtr);
+        Tcl_Release(tablePtr);
+        return;
     }
     /*
      * Save the width and height of the container so we know when its size has
@@ -3834,7 +3834,7 @@ ArrangeTable(ClientData clientData)
     tablePtr->container.width  = Tk_Width(tablePtr->tkwin);
     tablePtr->container.height = Tk_Height(tablePtr->tkwin);
     outerPad = 2 * (Tk_InternalBorderWidth(tablePtr->tkwin) +
-	tablePtr->eTablePad);
+        tablePtr->eTablePad);
     xPad = outerPad + tablePtr->columns.ePad + PADDING(tablePtr->xPad);
     yPad = outerPad + tablePtr->rows.ePad + PADDING(tablePtr->yPad);
 
@@ -3848,21 +3848,21 @@ ArrangeTable(ClientData clientData)
      */
     delta = tablePtr->container.width - width;
     if (delta != 0) {
-	if (delta > 0) {
-	    GrowPartitions(&tablePtr->columns, delta);
-	} else {
-	    ShrinkPartitions(&tablePtr->columns, delta);
-	}
-	width = GetTotalSpan(&tablePtr->columns) + xPad;
+        if (delta > 0) {
+            GrowPartitions(&tablePtr->columns, delta);
+        } else {
+            ShrinkPartitions(&tablePtr->columns, delta);
+        }
+        width = GetTotalSpan(&tablePtr->columns) + xPad;
     }
     delta = tablePtr->container.height - height;
     if (delta != 0) {
-	if (delta > 0) {
-	    GrowPartitions(&tablePtr->rows, delta);
-	} else {
-	    ShrinkPartitions(&tablePtr->rows, delta);
-	}
-	height = GetTotalSpan(&tablePtr->rows) + yPad;
+        if (delta > 0) {
+            GrowPartitions(&tablePtr->rows, delta);
+        } else {
+            ShrinkPartitions(&tablePtr->rows, delta);
+        }
+        height = GetTotalSpan(&tablePtr->rows) + yPad;
     }
 
     /*
@@ -3878,37 +3878,37 @@ ArrangeTable(ClientData clientData)
      */
 
     offset = Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padLeft +
-	tablePtr->eTablePad;
+        tablePtr->eTablePad;
     if (width < tablePtr->container.width) {
-	offset += (tablePtr->container.width - width) / 2;
+        offset += (tablePtr->container.width - width) / 2;
     }
     for (link = Blt_Chain_FirstLink(tablePtr->columns.chain); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	RowColumn *colPtr;
+         link = Blt_Chain_NextLink(link)) {
+        RowColumn *colPtr;
 
-	colPtr = Blt_Chain_GetValue(link);
-	colPtr->offset = offset + tablePtr->columns.ePad;
-	offset += colPtr->size;
+        colPtr = Blt_Chain_GetValue(link);
+        colPtr->offset = offset + tablePtr->columns.ePad;
+        offset += colPtr->size;
     }
 
     offset = Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padTop +
-	tablePtr->eTablePad;
+        tablePtr->eTablePad;
     if (height < tablePtr->container.height) {
-	offset += (tablePtr->container.height - height) / 2;
+        offset += (tablePtr->container.height - height) / 2;
     }
     for (link = Blt_Chain_FirstLink(tablePtr->rows.chain);
-	link != NULL; link = Blt_Chain_NextLink(link)) {
-	RowColumn *rowPtr;
+        link != NULL; link = Blt_Chain_NextLink(link)) {
+        RowColumn *rowPtr;
 
-	rowPtr = Blt_Chain_GetValue(link);
-	rowPtr->offset = offset + tablePtr->rows.ePad;
-	offset += rowPtr->size;
+        rowPtr = Blt_Chain_GetValue(link);
+        rowPtr->offset = offset + tablePtr->rows.ePad;
+        offset += rowPtr->size;
     }
 
     ArrangeEntries(tablePtr);
     if (tablePtr->editPtr != NULL) {
-	/* Redraw the editor */
-	(*tablePtr->editPtr->drawProc) (tablePtr->editPtr);
+        /* Redraw the editor */
+        (*tablePtr->editPtr->drawProc) (tablePtr->editPtr);
     }
     Tcl_Release(tablePtr);
 }
@@ -3918,29 +3918,29 @@ ArrangeTable(ClientData clientData)
  *
  * ArrangeOp --
  *
- *	Forces layout of the table geometry manager.  This is useful mostly
- *	for debugging the geometry manager.  You can get the geometry manager
- *	to calculate the normal (requested) width and height of each row and
- *	column.  Otherwise, you need to first withdraw the container widget,
- *	invoke "update", and then query the geometry manager.
+ *      Forces layout of the table geometry manager.  This is useful mostly
+ *      for debugging the geometry manager.  You can get the geometry manager
+ *      to calculate the normal (requested) width and height of each row and
+ *      column.  Otherwise, you need to first withdraw the container widget,
+ *      invoke "update", and then query the geometry manager.
  *
  * Results:
- *	Returns a standard TCL result.  If the table is successfully
- *	rearranged, TCL_OK is returned. Otherwise, TCL_ERROR is returned and
- *	an error message is left in interp->result.
+ *      Returns a standard TCL result.  If the table is successfully
+ *      rearranged, TCL_OK is returned. Otherwise, TCL_ERROR is returned and
+ *      an error message is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ArrangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)	
+          Tcl_Obj *const *objv) 
 {
     TableInterpData *dataPtr = clientData;
     Table *tablePtr;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[2], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     tablePtr->flags |= REQUEST_LAYOUT;
     ArrangeTable(tablePtr);
@@ -3952,11 +3952,11 @@ ArrangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CgetOp --
  *
- *	Returns the name, position and options of a widget in the table.
+ *      Returns the name, position and options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the widget attributes is
- *	left in interp->result.
+ *      Returns a standard TCL result.  A list of the widget attributes is
+ *      left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -3974,33 +3974,33 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int n;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[2], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (objc == 4) {
-	return Blt_ConfigureValueFromObj(interp, tablePtr->tkwin, 
-		tableConfigSpecs, (char *)tablePtr, objv[3], 0);
+        return Blt_ConfigureValueFromObj(interp, tablePtr->tkwin, 
+                tableConfigSpecs, (char *)tablePtr, objv[3], 0);
     }
     string = Tcl_GetStringFromObj(objv[3], &length);
     c = string[0];
-    if (c == '.') {		/* Configure widget */
-	TableEntry *entryPtr;
+    if (c == '.') {             /* Configure widget */
+        TableEntry *entryPtr;
 
-	if (GetEntry(interp, tablePtr, Tcl_GetString(objv[3]), &entryPtr) 
-	    != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	return Blt_ConfigureValueFromObj(interp, entryPtr->tkwin, 
-		entryConfigSpecs, (char *)entryPtr, objv[4], 0);
+        if (GetEntry(interp, tablePtr, Tcl_GetString(objv[3]), &entryPtr) 
+            != TCL_OK) {
+            return TCL_ERROR;
+        }
+        return Blt_ConfigureValueFromObj(interp, entryPtr->tkwin, 
+                entryConfigSpecs, (char *)entryPtr, objv[4], 0);
     } else if ((c == 'c') && (strncmp(string, "container", length) == 0)) {
-	return Blt_ConfigureValueFromObj(interp, tablePtr->tkwin, 
-		tableConfigSpecs, (char *)tablePtr, objv[4], 0);
+        return Blt_ConfigureValueFromObj(interp, tablePtr->tkwin, 
+                tableConfigSpecs, (char *)tablePtr, objv[4], 0);
     }
     piPtr = ParseRowColumn(tablePtr, objv[3], &n);
     if (piPtr == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return Blt_ConfigureValueFromObj(interp, tablePtr->tkwin, 
-	piPtr->configSpecs, (char *)GetRowColumn(piPtr, n), objv[4], 0);
+        piPtr->configSpecs, (char *)GetRowColumn(piPtr, n), objv[4], 0);
 }
 
 
@@ -4010,11 +4010,11 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnCgetOp --
  *
- *	Returns the name, position and options of a widget in the table.
+ *      Returns the name, position and options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the widget attributes is
- *	left in interp->result.
+ *      Returns a standard TCL result.  A list of the widget attributes is
+ *      left in interp->result.
  *
  *      table column cget contName columnIndex option
  *---------------------------------------------------------------------------
@@ -4030,14 +4030,14 @@ ColumnCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     long colIndex;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_GetCountFromObj(interp, objv[4], COUNT_NNEG, &colIndex) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     piPtr = &tablePtr->columns;
     return Blt_ConfigureValueFromObj(interp, tablePtr->tkwin, 
-	piPtr->configSpecs, (char *)GetRowColumn(piPtr, colIndex), objv[5], 0);
+        piPtr->configSpecs, (char *)GetRowColumn(piPtr, colIndex), objv[5], 0);
 }
 
 static int
@@ -4052,43 +4052,43 @@ ConfigureColumn(Tcl_Interp *interp, Table *tablePtr, Tcl_Obj *patternObjPtr,
     pattern = Tcl_GetString(patternObjPtr);
     numMatches = 0;
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
-	char string[200];
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
+        char string[200];
 
-	rcPtr = Blt_Chain_GetValue(link);
-	Blt_FormatString(string, 200, "%d", rcPtr->index);
-	if (Tcl_StringMatch(string, pattern)) {
+        rcPtr = Blt_Chain_GetValue(link);
+        Blt_FormatString(string, 200, "%d", rcPtr->index);
+        if (Tcl_StringMatch(string, pattern)) {
             if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin,
                 piPtr->configSpecs, objc, objv, (char *)rcPtr,
                         BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
                 return TCL_ERROR;
             }
-	    numMatches++;
-	}
+            numMatches++;
+        }
     }
     if (numMatches == 0) {
-	int colIndex;
-	RowColumn *rcPtr;
+        int colIndex;
+        RowColumn *rcPtr;
 
-	/* 
-	 * We found no existing partitions matching this pattern, so see if
-	 * this designates an new partition (one beyond the current range).
-	 */
-	if ((Tcl_GetIntFromObj(NULL, patternObjPtr, &colIndex) != TCL_OK) ||
+        /* 
+         * We found no existing partitions matching this pattern, so see if
+         * this designates an new partition (one beyond the current range).
+         */
+        if ((Tcl_GetIntFromObj(NULL, patternObjPtr, &colIndex) != TCL_OK) ||
             (colIndex < 0)) {
-	    Tcl_AppendResult(interp, "pattern \"", pattern, 
+            Tcl_AppendResult(interp, "pattern \"", pattern, 
                 "\" matches no column in table \"", Tk_PathName(tablePtr->tkwin),
                 "\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	rcPtr = GetRowColumn(piPtr, colIndex);
-	assert(rcPtr);
-	if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin,
+            return TCL_ERROR;
+        }
+        rcPtr = GetRowColumn(piPtr, colIndex);
+        assert(rcPtr);
+        if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin,
                 piPtr->configSpecs, objc, objv, (char *)rcPtr,
                 BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -4098,11 +4098,11 @@ ConfigureColumn(Tcl_Interp *interp, Table *tablePtr, Tcl_Obj *patternObjPtr,
  *
  * ColumnConfigureOp --
  *
- *	Returns the name, position and options of a widget in the table.
+ *      Returns the name, position and options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the table configuration
- *	option information is left in interp->result.
+ *      Returns a standard TCL result.  A list of the table configuration
+ *      option information is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -4119,19 +4119,19 @@ ColumnConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int result;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     /*
      * Find the end of the items. Search until we see an option (-).
      */
     objc -= 3, objv += 3;
     for (numCols = 0; numCols < objc; numCols++) {
-	const char *string;
-	
-	string = Tcl_GetString(objv[numCols]);
-	if (string[0] == '-') {
-	    break;
-	}
+        const char *string;
+        
+        string = Tcl_GetString(objv[numCols]);
+        if (string[0] == '-') {
+            break;
+        }
     }
     columns = objv;                     /* Save the start of the item
                                          * list */
@@ -4142,7 +4142,7 @@ ColumnConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     piPtr = &tablePtr->columns;
     if (numCols == 0) {
-	return TCL_OK;
+        return TCL_OK;
     }
     if ((objc == 0) || (objc == 1)) {
         RowColumn *colPtr;
@@ -4177,10 +4177,10 @@ ColumnConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnDeleteOp --
  *
- *	Deletes the specified columns from the table.  
+ *      Deletes the specified columns from the table.  
  *
  * Results:
- *	Returns a standard TCL result.
+ *      Returns a standard TCL result.
  *
  *      blt::table column delete tableName firstIndex lastIndex
  *
@@ -4199,7 +4199,7 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     RowColumn *firstPtr, *lastPtr;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetColumnFromObj(interp, tablePtr, objv[4], &firstPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -4227,10 +4227,10 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             break;
         }
     }
-    if (numMatches > 0) {		/* Fix indices */
+    if (numMatches > 0) {               /* Fix indices */
         RenumberIndices(piPtr->chain);
-	tablePtr->flags |= REQUEST_LAYOUT;
-	EventuallyArrangeTable(tablePtr);
+        tablePtr->flags |= REQUEST_LAYOUT;
+        EventuallyArrangeTable(tablePtr);
     }
     return TCL_OK;
 }
@@ -4240,14 +4240,14 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnExtentsOp --
  *
- *	Returns a list of all the pathnames of the widgets managed by a table.
- *	The table is determined from the name of the container widget
- *	associated with the table.
+ *      Returns a list of all the pathnames of the widgets managed by a table.
+ *      The table is determined from the name of the container widget
+ *      associated with the table.
  *
  * Results:
- *	Returns a standard TCL result.  If no error occurred, TCL_OK is
- *	returned and a list of widgets managed by the table is left in
- *	interp->result.
+ *      Returns a standard TCL result.  If no error occurred, TCL_OK is
+ *      returned and a list of widgets managed by the table is left in
+ *      interp->result.
  *
  *      blt::table extents tableName columnIndex
  *---------------------------------------------------------------------------
@@ -4265,7 +4265,7 @@ ColumnExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int x, y, w, h;
     
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetColumnFromObj(interp, tablePtr, objv[4], &colPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -4294,9 +4294,9 @@ ColumnExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ColumnFindOp --
  *
  *
- *	Returns the column index given a screen coordinate.
+ *      Returns the column index given a screen coordinate.
  *
- *	blt::table column find tableName x
+ *      blt::table column find tableName x
  *
  *---------------------------------------------------------------------------
  */
@@ -4311,16 +4311,16 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int index, x;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_GetPixelsFromObj(interp, tablePtr->tkwin, objv[4], PIXELS_ANY, &x)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     index = -1;
     colPtr = ColumnSearch(tablePtr, x);
     if (colPtr != NULL) {
-	index = colPtr->index;
+        index = colPtr->index;
     }
     Tcl_SetIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
@@ -4331,7 +4331,7 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnInfoOp --
  *
- *	Returns the options of the column in the table.
+ *      Returns the options of the column in the table.
  *
  *      blt::table column info tableName columnIndex
  *---------------------------------------------------------------------------
@@ -4349,28 +4349,28 @@ ColumnInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PartitionInfo *piPtr;
     
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     pattern = Tcl_GetString(objv[4]);
     piPtr = &tablePtr->columns;
     last = Blt_Chain_LastLink(piPtr->chain);
     dbuffer = Blt_DBuffer_Create();
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
-	char string[200];
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
+        char string[200];
 
-	rcPtr = Blt_Chain_GetValue(link);
-	Blt_FormatString(string, 200, "%d", rcPtr->index);
-	if (Tcl_StringMatch(string, pattern)) {
-	    Blt_DBuffer_Format(dbuffer, "%d", rcPtr->index);
-	    PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
-	    if (link != last) {
-		Blt_DBuffer_AppendString(dbuffer, " \\\n", 2);
-	    } else {
-		Blt_DBuffer_AppendString(dbuffer, "\n", 1);
-	    }
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        Blt_FormatString(string, 200, "%d", rcPtr->index);
+        if (Tcl_StringMatch(string, pattern)) {
+            Blt_DBuffer_Format(dbuffer, "%d", rcPtr->index);
+            PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
+            if (link != last) {
+                Blt_DBuffer_AppendString(dbuffer, " \\\n", 2);
+            } else {
+                Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+            }
+        }
     }
     Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(dbuffer));
     Blt_DBuffer_Destroy(dbuffer);
@@ -4382,7 +4382,7 @@ ColumnInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnInsertOp --
  *
- *	Inserts a span of columns into the table.
+ *      Inserts a span of columns into the table.
  *
  *      blt::table column insert tableName ?switches ...?
  *---------------------------------------------------------------------------
@@ -4399,13 +4399,13 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
     
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     memset(&switches, 0, sizeof(switches));
     switches.count = 1;
     if (Blt_ParseSwitches(interp, columnInsertSwitches, objc - 4, objv + 4,
                 &switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     piPtr = &tablePtr->columns;
 
@@ -4414,17 +4414,17 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
         RowColumn *rcPtr;
         Blt_ChainLink link;
         
-	rcPtr = CreateRowColumn();
-	link = Blt_Chain_NewLink();
-	Blt_Chain_SetValue(link, rcPtr);
-	if (switches.afterPtr != NULL) {
-	    Blt_Chain_LinkAfter(piPtr->chain, link, switches.afterPtr->link);
+        rcPtr = CreateRowColumn();
+        link = Blt_Chain_NewLink();
+        Blt_Chain_SetValue(link, rcPtr);
+        if (switches.afterPtr != NULL) {
+            Blt_Chain_LinkAfter(piPtr->chain, link, switches.afterPtr->link);
         } else if (switches.beforePtr != NULL) {
-	    Blt_Chain_LinkBefore(piPtr->chain, link, switches.beforePtr->link);
-	} else {
-	    Blt_Chain_LinkAfter(piPtr->chain, link, NULL);
-	}
-	rcPtr->link = link;
+            Blt_Chain_LinkBefore(piPtr->chain, link, switches.beforePtr->link);
+        } else {
+            Blt_Chain_LinkAfter(piPtr->chain, link, NULL);
+        }
+        rcPtr->link = link;
     }
     RenumberIndices(piPtr->chain);
     tablePtr->flags |= REQUEST_LAYOUT;
@@ -4437,7 +4437,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnJoinOp --
  *
- *	Joins the specified span of columns together into a partition.
+ *      Joins the specified span of columns together into a partition.
  *
  *      blt::table column join tableName firstIndex lastIndex
  *---------------------------------------------------------------------------
@@ -4455,7 +4455,7 @@ ColumnJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetColumnFromObj(interp, tablePtr, objv[4], &fromPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -4464,18 +4464,18 @@ ColumnJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (fromPtr->index >= toPtr->index) {
-	return TCL_OK;		/* No-op. */
+        return TCL_OK;          /* No-op. */
     }
     piPtr = &tablePtr->columns;
     /*
-     *	Reduce the span of all entries that currently cross any of the
-     *	trailing columns.  Also, if the entry starts in one of these
-     *	columns, moved it to the designated "joined" column.
+     *  Reduce the span of all entries that currently cross any of the
+     *  trailing columns.  Also, if the entry starts in one of these
+     *  columns, moved it to the designated "joined" column.
      */
     for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
          link = Blt_Chain_NextLink(link)) {
         TableEntry *entryPtr;
-        int start, end;		/* Entry indices. */
+        int start, end;         /* Entry indices. */
 
         entryPtr = Blt_Chain_GetValue(link);
         start = entryPtr->column.rcPtr->index + 1;
@@ -4494,11 +4494,11 @@ ColumnJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_ChainLink next;
         RowColumn *rcPtr;
         
-	next = Blt_Chain_NextLink(link);
-	rcPtr = Blt_Chain_GetValue(link);
-	DeleteRowColumn(tablePtr, piPtr, rcPtr);
-	Blt_Chain_DeleteLink(piPtr->chain, link);
-	link = next;
+        next = Blt_Chain_NextLink(link);
+        rcPtr = Blt_Chain_GetValue(link);
+        DeleteRowColumn(tablePtr, piPtr, rcPtr);
+        Blt_Chain_DeleteLink(piPtr->chain, link);
+        link = next;
     }
     RenumberIndices(piPtr->chain);
     tablePtr->flags |= REQUEST_LAYOUT;
@@ -4511,9 +4511,9 @@ ColumnJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnSplitOp --
  *
- *	Splits a the designated column into multiple columns. Any widgets
- *	that span this column/column will be automatically corrected to
- *	include the new columns.
+ *      Splits a the designated column into multiple columns. Any widgets
+ *      that span this column/column will be automatically corrected to
+ *      include the new columns.
  *
  *      blt::table column split tableName colIndex numDivisions
  *---------------------------------------------------------------------------
@@ -4531,7 +4531,7 @@ ColumnSplitOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i, numCols;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetColumnFromObj(interp, tablePtr, objv[4], &colPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -4542,9 +4542,9 @@ ColumnSplitOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (numCols < 2) {
-	Tcl_AppendResult(interp, "bad split value \"", Tcl_GetString(objv[5]),
-	    "\": should be 2 or greater", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad split value \"", Tcl_GetString(objv[5]),
+            "\": should be 2 or greater", (char *)NULL);
+        return TCL_ERROR;
     }
     /*
      * Append (split - 1) additional columns starting from the current
@@ -4555,11 +4555,11 @@ ColumnSplitOp(ClientData clientData, Tcl_Interp *interp, int objc,
         RowColumn *rcPtr;
         Blt_ChainLink link;
         
-	rcPtr = CreateRowColumn();
-	link = Blt_Chain_NewLink();
-	Blt_Chain_SetValue(link, rcPtr);
-	Blt_Chain_LinkAfter(piPtr->chain, link, colPtr->link);
-	rcPtr->link = link;
+        rcPtr = CreateRowColumn();
+        link = Blt_Chain_NewLink();
+        Blt_Chain_SetValue(link, rcPtr);
+        Blt_Chain_LinkAfter(piPtr->chain, link, colPtr->link);
+        rcPtr->link = link;
     }
 
     /*
@@ -4606,9 +4606,9 @@ ColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_ObjCmdProc *proc;
     
     proc = Blt_GetOpFromObj(interp, numColumnOps, columnOps, BLT_OP_ARG2, 
-		objc, objv, 0);
+                objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return (*proc)(clientData, interp, objc, objv);
 }
@@ -4618,11 +4618,11 @@ ColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ConfigureOp --
  *
- *	Returns the name, position and options of a widget in the table.
+ *      Returns the name, position and options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the table configuration
- *	option information is left in interp->result.
+ *      Returns a standard TCL result.  A list of the table configuration
+ *      option information is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -4639,64 +4639,64 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[2], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     /*
      * Find the end of the items. Search until we see an option (-).
      */
     objc -= 3, objv += 3;
     for (count = 0; count < objc; count++) {
-	const char *string;
-	
-	string = Tcl_GetString(objv[count]);
-	if (string[0] == '-') {
-	    break;
-	}
+        const char *string;
+        
+        string = Tcl_GetString(objv[count]);
+        if (string[0] == '-') {
+            break;
+        }
     }
-    items = objv;		/* Save the start of the item list */
-    objc -= count;		/* Move beyond the items to the options */
+    items = objv;               /* Save the start of the item list */
+    objc -= count;              /* Move beyond the items to the options */
     objv += count;
-    result = TCL_ERROR;		/* Suppress compiler warning */
+    result = TCL_ERROR;         /* Suppress compiler warning */
 
     if (count == 0) {
-	result = ConfigureTable(tablePtr, interp, objc, objv);
+        result = ConfigureTable(tablePtr, interp, objc, objv);
     }
     for (i = 0; i < count; i++) {
-	const char *string;
-	char c1, c2;
-	int length;
+        const char *string;
+        char c1, c2;
+        int length;
 
-	string = Tcl_GetStringFromObj(items[i], &length);
-	c1 = string[0];
-	c2 = string[1];
-	if (c1 == '.') {		/* Configure widget */
-	    TableEntry *entryPtr;
+        string = Tcl_GetStringFromObj(items[i], &length);
+        c1 = string[0];
+        c2 = string[1];
+        if (c1 == '.') {                /* Configure widget */
+            TableEntry *entryPtr;
 
-	    if (GetEntry(interp, tablePtr, string, &entryPtr) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	    result = ConfigureEntry(tablePtr, interp, entryPtr, objc, objv);
-	} else if ((c1 == 'r') || (c1 == 'R')) {
-	    result = ConfigureRowColumn(tablePtr, &tablePtr->rows,
-		string, objc, objv);
-	} else if ((c1 == 'c') && (c2 == 'o') &&
-	    (strncmp(string, "container", length) == 0)) {
-	    result = ConfigureTable(tablePtr, interp, objc, objv);
-	} else if ((c1 == 'c') || (c1 == 'C')) {
-	    result = ConfigureRowColumn(tablePtr, &tablePtr->columns,
-		string, objc, objv);
-	} else {
-	    Tcl_AppendResult(interp, "unknown item \"", string,
-		"\": should be widget, row or column index, or \"container\"",
-		(char *)NULL);
-	    return TCL_ERROR;
-	}
-	if (result == TCL_ERROR) {
-	    break;
-	}
-	if ((i + 1) < count) {
-	    Tcl_AppendResult(interp, "\n", (char *)NULL);
-	}
+            if (GetEntry(interp, tablePtr, string, &entryPtr) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            result = ConfigureEntry(tablePtr, interp, entryPtr, objc, objv);
+        } else if ((c1 == 'r') || (c1 == 'R')) {
+            result = ConfigureRowColumn(tablePtr, &tablePtr->rows,
+                string, objc, objv);
+        } else if ((c1 == 'c') && (c2 == 'o') &&
+            (strncmp(string, "container", length) == 0)) {
+            result = ConfigureTable(tablePtr, interp, objc, objv);
+        } else if ((c1 == 'c') || (c1 == 'C')) {
+            result = ConfigureRowColumn(tablePtr, &tablePtr->columns,
+                string, objc, objv);
+        } else {
+            Tcl_AppendResult(interp, "unknown item \"", string,
+                "\": should be widget, row or column index, or \"container\"",
+                (char *)NULL);
+            return TCL_ERROR;
+        }
+        if (result == TCL_ERROR) {
+            break;
+        }
+        if ((i + 1) < count) {
+            Tcl_AppendResult(interp, "\n", (char *)NULL);
+        }
     }
     tablePtr->flags |= REQUEST_LAYOUT;
     EventuallyArrangeTable(tablePtr);
@@ -4709,12 +4709,12 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * FindOp --
  *
  *
- *	Returns the row,column index given a screen coordinate.
+ *      Returns the row,column index given a screen coordinate.
  *
  * Results:
- *	Returns a standard TCL result.
+ *      Returns a standard TCL result.
  *
- *	table locate .t %X %Y
+ *      table locate .t %X %Y
  *
  *---------------------------------------------------------------------------
  */
@@ -4730,28 +4730,28 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int x, y;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[2], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_GetPixelsFromObj(interp, tablePtr->tkwin, objv[3], PIXELS_ANY, &x)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     if (Blt_GetPixelsFromObj(interp, tablePtr->tkwin, objv[4], PIXELS_ANY, &y)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     rowPtr = RowSearch(tablePtr, y);
     if (rowPtr == NULL) {
-	return TCL_OK;
+        return TCL_OK;
     }
     colPtr = ColumnSearch(tablePtr, x);
     if (colPtr == NULL) {
-	return TCL_OK;
+        return TCL_OK;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(rowPtr->index));
     Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewIntObj(colPtr->index));
+                Tcl_NewIntObj(colPtr->index));
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
@@ -4761,18 +4761,18 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ForgetOp --
  *
- *	Processes an objv/objc list of widget names and purges their entries
- *	from their respective tables.  The widgets are unmapped and the tables
- *	are rearranged at the next idle point.  Note that all the named
- *	widgets do not need to exist in the same table.
+ *      Processes an objv/objc list of widget names and purges their entries
+ *      from their respective tables.  The widgets are unmapped and the tables
+ *      are rearranged at the next idle point.  Note that all the named
+ *      widgets do not need to exist in the same table.
  *
  * Results:
- *	Returns a standard TCL result.  If an error occurred, TCL_ERROR is
- *	returned and an error message is left in interp->result.
+ *      Returns a standard TCL result.  If an error occurred, TCL_ERROR is
+ *      returned and an error message is left in interp->result.
  *
  * Side Effects:
- *	Memory is deallocated (the entry is destroyed), etc.  The affected
- *	tables are is re-computed and arranged at the next idle point.
+ *      Memory is deallocated (the entry is destroyed), etc.  The affected
+ *      tables are is re-computed and arranged at the next idle point.
  *
  *---------------------------------------------------------------------------
  */
@@ -4791,36 +4791,36 @@ ForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tk_Window tkwin;
         const char *string;
 
-	entryPtr = NULL;
-	string = Tcl_GetString(objv[i]);
-	tkwin = Tk_NameToWindow(interp, string, dataPtr->tkMain);
-	if (tkwin == NULL) {
-	    return TCL_ERROR;
-	}
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->tableTable, &iter);
-	    hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	    tablePtr = Blt_GetHashValue(hPtr);
-	    if (tablePtr->interp != interp) {
-		continue;
-	    }
-	    entryPtr = FindEntry(tablePtr, tkwin);
-	    if (entryPtr != NULL) {
-		break;
-	    }
-	}
-	if (entryPtr == NULL) {
-	    Tcl_AppendResult(interp, "\"", string,
-		"\" is not managed by any table", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	if (Tk_IsMapped(entryPtr->tkwin)) {
-	    Tk_UnmapWindow(entryPtr->tkwin);
-	}
-	/* Arrange for the call back here in the loop, because the widgets
-	 * may not belong to the same table.  */
-	tablePtr->flags |= REQUEST_LAYOUT;
-	EventuallyArrangeTable(tablePtr);
-	DestroyEntry(entryPtr);
+        entryPtr = NULL;
+        string = Tcl_GetString(objv[i]);
+        tkwin = Tk_NameToWindow(interp, string, dataPtr->tkMain);
+        if (tkwin == NULL) {
+            return TCL_ERROR;
+        }
+        for (hPtr = Blt_FirstHashEntry(&dataPtr->tableTable, &iter);
+            hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+            tablePtr = Blt_GetHashValue(hPtr);
+            if (tablePtr->interp != interp) {
+                continue;
+            }
+            entryPtr = FindEntry(tablePtr, tkwin);
+            if (entryPtr != NULL) {
+                break;
+            }
+        }
+        if (entryPtr == NULL) {
+            Tcl_AppendResult(interp, "\"", string,
+                "\" is not managed by any table", (char *)NULL);
+            return TCL_ERROR;
+        }
+        if (Tk_IsMapped(entryPtr->tkwin)) {
+            Tk_UnmapWindow(entryPtr->tkwin);
+        }
+        /* Arrange for the call back here in the loop, because the widgets
+         * may not belong to the same table.  */
+        tablePtr->flags |= REQUEST_LAYOUT;
+        EventuallyArrangeTable(tablePtr);
+        DestroyEntry(entryPtr);
     }
     return TCL_OK;
 }
@@ -4830,11 +4830,11 @@ ForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InfoOp --
  *
- *	Returns the options of a widget in the table.
+ *      Returns the options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the widget attributes is
- *	left in interp->result.
+ *      Returns a standard TCL result.  A list of the widget attributes is
+ *      left in interp->result.
  *
  *      blt::table info tableName pathName
  *---------------------------------------------------------------------------
@@ -4850,23 +4850,23 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[2], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     for (i = 3; i < objc; i++) {
         TableEntry *entryPtr;
         const char *string;
 
-	string = Tcl_GetString(objv[i]);
+        string = Tcl_GetString(objv[i]);
         if (GetEntry(interp, tablePtr, string, &entryPtr) != TCL_OK) {
             return TCL_ERROR;
         }
         result = InfoEntry(interp, tablePtr, entryPtr);
-	if (result != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if ((i + 1) < objc) {
-	    Tcl_AppendResult(interp, "\n", (char *)NULL);
-	}
+        if (result != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if ((i + 1) < objc) {
+            Tcl_AppendResult(interp, "\n", (char *)NULL);
+        }
     }
     return TCL_OK;
 }
@@ -4876,14 +4876,14 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *	Returns a list of tables currently in use. A table is associated by
- *	the name of its container widget.  All tables matching a given pattern
- *	are included in this list.  If no pattern is present (objc == 0), all
- *	tables are included.
+ *      Returns a list of tables currently in use. A table is associated by
+ *      the name of its container widget.  All tables matching a given pattern
+ *      are included in this list.  If no pattern is present (objc == 0), all
+ *      tables are included.
  *
  * Results:
- *	Returns a standard TCL result.  If no error occurred, TCL_OK is
- *	returned and a list of tables is left in interp->result.
+ *      Returns a standard TCL result.  If no error occurred, TCL_OK is
+ *      returned and a list of tables is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -4897,47 +4897,47 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     memset(&switches, 0, sizeof(switches));
     if (Blt_ParseSwitches(interp, namesSwitches, objc - 3, objv + 3, &switches,
-	BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     if (switches.slave != NULL) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
-	Tk_Window tkwin;
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
+        Tk_Window tkwin;
 
-	tkwin = Tk_NameToWindow(interp, switches.slave, dataPtr->tkMain);
-	if (tkwin == NULL) {
-	    return TCL_ERROR;
-	}
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->tableTable, &iter);
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	    Table *tablePtr;
+        tkwin = Tk_NameToWindow(interp, switches.slave, dataPtr->tkMain);
+        if (tkwin == NULL) {
+            return TCL_ERROR;
+        }
+        for (hPtr = Blt_FirstHashEntry(&dataPtr->tableTable, &iter);
+             hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+            Table *tablePtr;
 
-	    tablePtr = Blt_GetHashValue(hPtr);
-	    if (FindEntry(tablePtr, tkwin) != NULL) {
-		Tcl_AppendElement(interp, Tk_PathName(tablePtr->tkwin));
-	    }
-	}
+            tablePtr = Blt_GetHashValue(hPtr);
+            if (FindEntry(tablePtr, tkwin) != NULL) {
+                Tcl_AppendElement(interp, Tk_PathName(tablePtr->tkwin));
+            }
+        }
     } else {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
-	const char *pattern;
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
+        const char *pattern;
 
-	pattern = (switches.pattern == NULL) ? Tcl_GetString(objv[3]) : 
-	    switches.pattern;
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->tableTable, &iter);
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	    Table *tablePtr;
+        pattern = (switches.pattern == NULL) ? Tcl_GetString(objv[3]) : 
+            switches.pattern;
+        for (hPtr = Blt_FirstHashEntry(&dataPtr->tableTable, &iter);
+             hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+            Table *tablePtr;
 
-	    tablePtr = Blt_GetHashValue(hPtr);
-	    if (tablePtr->interp == interp) {
-		if ((pattern == NULL) ||
-		    (Tcl_StringMatch(Tk_PathName(tablePtr->tkwin), pattern))) {
-		    Tcl_AppendElement(interp, Tk_PathName(tablePtr->tkwin));
-		}
-	    }
-	}
-    }	
+            tablePtr = Blt_GetHashValue(hPtr);
+            if (tablePtr->interp == interp) {
+                if ((pattern == NULL) ||
+                    (Tcl_StringMatch(Tk_PathName(tablePtr->tkwin), pattern))) {
+                    Tcl_AppendElement(interp, Tk_PathName(tablePtr->tkwin));
+                }
+            }
+        }
+    }   
     Blt_FreeSwitches(namesSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
@@ -4949,11 +4949,11 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowCgetOp --
  *
- *	Returns the name, position and options of a widget in the table.
+ *      Returns the name, position and options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the widget attributes is
- *	left in interp->result.
+ *      Returns a standard TCL result.  A list of the widget attributes is
+ *      left in interp->result.
  *
  *      table row cget contName rowIndex option
  *---------------------------------------------------------------------------
@@ -4969,14 +4969,14 @@ RowCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     long rowIndex;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_GetCountFromObj(interp, objv[4], COUNT_NNEG, &rowIndex) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     piPtr = &tablePtr->rows;
     return Blt_ConfigureValueFromObj(interp, tablePtr->tkwin, 
-	piPtr->configSpecs, (char *)GetRowColumn(piPtr, rowIndex), objv[5], 0);
+        piPtr->configSpecs, (char *)GetRowColumn(piPtr, rowIndex), objv[5], 0);
 }
 
 static int
@@ -4991,43 +4991,43 @@ ConfigureRow(Tcl_Interp *interp, Table *tablePtr, Tcl_Obj *patternObjPtr,
     pattern = Tcl_GetString(patternObjPtr);
     numMatches = 0;
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
-	char string[200];
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
+        char string[200];
 
-	rcPtr = Blt_Chain_GetValue(link);
-	Blt_FormatString(string, 200, "%d", rcPtr->index);
-	if (Tcl_StringMatch(string, pattern)) {
+        rcPtr = Blt_Chain_GetValue(link);
+        Blt_FormatString(string, 200, "%d", rcPtr->index);
+        if (Tcl_StringMatch(string, pattern)) {
             if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin,
                 piPtr->configSpecs, objc, objv, (char *)rcPtr,
                         BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
                 return TCL_ERROR;
             }
-	    numMatches++;
-	}
+            numMatches++;
+        }
     }
     if (numMatches == 0) {
-	int rowIndex;
-	RowColumn *rcPtr;
+        int rowIndex;
+        RowColumn *rcPtr;
 
-	/* 
-	 * We found no existing partitions matching this pattern, so see if
-	 * this designates an new partition (one beyond the current range).
-	 */
-	if ((Tcl_GetIntFromObj(NULL, patternObjPtr, &rowIndex) != TCL_OK) ||
+        /* 
+         * We found no existing partitions matching this pattern, so see if
+         * this designates an new partition (one beyond the current range).
+         */
+        if ((Tcl_GetIntFromObj(NULL, patternObjPtr, &rowIndex) != TCL_OK) ||
             (rowIndex < 0)) {
-	    Tcl_AppendResult(interp, "pattern \"", pattern, 
+            Tcl_AppendResult(interp, "pattern \"", pattern, 
                 "\" matches no row in table \"", Tk_PathName(tablePtr->tkwin),
                 "\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	rcPtr = GetRowColumn(piPtr, rowIndex);
-	assert(rcPtr);
-	if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin,
+            return TCL_ERROR;
+        }
+        rcPtr = GetRowColumn(piPtr, rowIndex);
+        assert(rcPtr);
+        if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin,
                 piPtr->configSpecs, objc, objv, (char *)rcPtr,
                 BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -5037,11 +5037,11 @@ ConfigureRow(Tcl_Interp *interp, Table *tablePtr, Tcl_Obj *patternObjPtr,
  *
  * RowConfigureOp --
  *
- *	Returns the name, position and options of a widget in the table.
+ *      Returns the name, position and options of a widget in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the table configuration
- *	option information is left in interp->result.
+ *      Returns a standard TCL result.  A list of the table configuration
+ *      option information is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -5058,28 +5058,28 @@ RowConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_Obj *const *rows;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     /*
      * Find the end of the items. Search until we see an option (-).
      */
     objc -= 3, objv += 3;
     for (numRows = 0; numRows < objc; numRows++) {
-	const char *string;
-	
-	string = Tcl_GetString(objv[numRows]);
-	if (string[0] == '-') {
-	    break;
-	}
+        const char *string;
+        
+        string = Tcl_GetString(objv[numRows]);
+        if (string[0] == '-') {
+            break;
+        }
     }
-    rows = objv;		/* Save the start of the item list */
+    rows = objv;                /* Save the start of the item list */
     objc -= numRows;                  /* Move beyond the items to the options */
     objv += numRows;
-    result = TCL_ERROR;		/* Suppress compiler warning */
+    result = TCL_ERROR;         /* Suppress compiler warning */
 
     piPtr = &tablePtr->rows;
     if (numRows == 0) {
-	return TCL_OK;
+        return TCL_OK;
     }
     if ((objc == 0) || (objc == 1)) {
         RowColumn *rowPtr;
@@ -5113,12 +5113,12 @@ RowConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowDeleteOp --
  *
- *	Deletes the specified rows and/or columns from the table.  Note that
- *	the row/column indices can be fixed only after all the deletions have
- *	occurred.
+ *      Deletes the specified rows and/or columns from the table.  Note that
+ *      the row/column indices can be fixed only after all the deletions have
+ *      occurred.
  *
  * Results:
- *	Returns a standard TCL result.
+ *      Returns a standard TCL result.
  *
  *
  *      blt::table row delete tableName firstIndex lastIndex
@@ -5138,7 +5138,7 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     RowColumn *firstPtr, *lastPtr;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetRowFromObj(interp, tablePtr, objv[4], &firstPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -5166,10 +5166,10 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             break;
         }
     }
-    if (numMatches > 0) {		/* Fix indices */
+    if (numMatches > 0) {               /* Fix indices */
         RenumberIndices(piPtr->chain);
-	tablePtr->flags |= REQUEST_LAYOUT;
-	EventuallyArrangeTable(tablePtr);
+        tablePtr->flags |= REQUEST_LAYOUT;
+        EventuallyArrangeTable(tablePtr);
     }
     return TCL_OK;
 }
@@ -5179,14 +5179,14 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowExtentsOp --
  *
- *	Returns a list of all the pathnames of the widgets managed by a
- *	table.  The table is determined from the name of the container
- *	widget associated with the table.
+ *      Returns a list of all the pathnames of the widgets managed by a
+ *      table.  The table is determined from the name of the container
+ *      widget associated with the table.
  *
  * Results:
- *	Returns a standard TCL result.  If no error occurred, TCL_OK is
- *	returned and a list of widgets managed by the table is left in
- *	interp->result.
+ *      Returns a standard TCL result.  If no error occurred, TCL_OK is
+ *      returned and a list of widgets managed by the table is left in
+ *      interp->result.
  *
  *      blt::table extents tableName rowIndex
  *---------------------------------------------------------------------------
@@ -5204,7 +5204,7 @@ RowExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int x, y, w, h;
     
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetRowFromObj(interp, tablePtr, objv[4], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -5233,12 +5233,12 @@ RowExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * RowFindOp --
  *
  *
- *	Returns the row index given a screen coordinate.
+ *      Returns the row index given a screen coordinate.
  *
  * Results:
- *	Returns a standard TCL result.
+ *      Returns a standard TCL result.
  *
- *	blt::table row find tableName y
+ *      blt::table row find tableName y
  *
  *---------------------------------------------------------------------------
  */
@@ -5253,16 +5253,16 @@ RowFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int index, y;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_GetPixelsFromObj(interp, tablePtr->tkwin, objv[4], PIXELS_ANY, &y)
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     index = -1;
     rowPtr = RowSearch(tablePtr, y);
     if (rowPtr != NULL) {
-	index = rowPtr->index;
+        index = rowPtr->index;
     }
     Tcl_SetIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
@@ -5273,11 +5273,11 @@ RowFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowInfoOp --
  *
- *	Returns the options of a widget or partition in the table.
+ *      Returns the options of a widget or partition in the table.
  *
  * Results:
- *	Returns a standard TCL result.  A list of the widget attributes is
- *	left in interp->result.
+ *      Returns a standard TCL result.  A list of the widget attributes is
+ *      left in interp->result.
  *
  *      blt::table row info tableName rowIndex
  *---------------------------------------------------------------------------
@@ -5295,28 +5295,28 @@ RowInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PartitionInfo *piPtr;
     
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     pattern = Tcl_GetString(objv[4]);
     piPtr = &tablePtr->rows;
     last = Blt_Chain_LastLink(piPtr->chain);
     dbuffer = Blt_DBuffer_Create();
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
-	char string[200];
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
+        char string[200];
 
-	rcPtr = Blt_Chain_GetValue(link);
-	Blt_FormatString(string, 200, "%d", rcPtr->index);
-	if (Tcl_StringMatch(string, pattern)) {
-	    Blt_DBuffer_Format(dbuffer, "%d", rcPtr->index);
-	    PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
-	    if (link != last) {
-		Blt_DBuffer_AppendString(dbuffer, " \\\n", 2);
-	    } else {
-		Blt_DBuffer_AppendString(dbuffer, "\n", 1);
-	    }
-	}
+        rcPtr = Blt_Chain_GetValue(link);
+        Blt_FormatString(string, 200, "%d", rcPtr->index);
+        if (Tcl_StringMatch(string, pattern)) {
+            Blt_DBuffer_Format(dbuffer, "%d", rcPtr->index);
+            PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
+            if (link != last) {
+                Blt_DBuffer_AppendString(dbuffer, " \\\n", 2);
+            } else {
+                Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+            }
+        }
     }
     Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(dbuffer));
     Blt_DBuffer_Destroy(dbuffer);
@@ -5328,7 +5328,7 @@ RowInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowInsertOp --
  *
- *	Inserts a span of rows into the table.
+ *      Inserts a span of rows into the table.
  *
  *      blt::table row insert tableName ?switches ...? 
  *---------------------------------------------------------------------------
@@ -5345,13 +5345,13 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     memset(&switches, 0, sizeof(switches));
     switches.count = 1;
     if (Blt_ParseSwitches(interp, rowInsertSwitches, objc - 4, objv + 4,
                           &switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     piPtr = &tablePtr->rows;
     /*
@@ -5361,17 +5361,17 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
         RowColumn *rcPtr;
         Blt_ChainLink link;
         
-	rcPtr = CreateRowColumn();
-	link = Blt_Chain_NewLink();
-	Blt_Chain_SetValue(link, rcPtr);
-	if (switches.afterPtr != NULL) {
-	    Blt_Chain_LinkAfter(piPtr->chain, link, switches.afterPtr->link);
+        rcPtr = CreateRowColumn();
+        link = Blt_Chain_NewLink();
+        Blt_Chain_SetValue(link, rcPtr);
+        if (switches.afterPtr != NULL) {
+            Blt_Chain_LinkAfter(piPtr->chain, link, switches.afterPtr->link);
         } else if (switches.beforePtr != NULL) {
-	    Blt_Chain_LinkBefore(piPtr->chain, link, switches.beforePtr->link);
-	} else {
-	    Blt_Chain_LinkAfter(piPtr->chain, link, NULL);
-	}
-	rcPtr->link = link;
+            Blt_Chain_LinkBefore(piPtr->chain, link, switches.beforePtr->link);
+        } else {
+            Blt_Chain_LinkAfter(piPtr->chain, link, NULL);
+        }
+        rcPtr->link = link;
     }
     RenumberIndices(piPtr->chain);
     tablePtr->flags |= REQUEST_LAYOUT;
@@ -5384,7 +5384,7 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowJoinOp --
  *
- *	Joins the specified span of rows/columns together into a partition.
+ *      Joins the specified span of rows/columns together into a partition.
  *
  *      blt::table row join tableName firstIndex lastIndex
  *---------------------------------------------------------------------------
@@ -5402,7 +5402,7 @@ RowJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetRowFromObj(interp, tablePtr, objv[4], &fromPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -5411,18 +5411,18 @@ RowJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (fromPtr->index >= toPtr->index) {
-	return TCL_OK;		/* No-op. */
+        return TCL_OK;          /* No-op. */
     }
     piPtr = &tablePtr->rows;
     /*
-     *	Reduce the span of all entries that currently cross any of the
-     *	trailing rows.  Also, if the entry starts in one of these rows,
-     *	moved it to the designated "joined" row.
+     *  Reduce the span of all entries that currently cross any of the
+     *  trailing rows.  Also, if the entry starts in one of these rows,
+     *  moved it to the designated "joined" row.
      */
     for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
          link = Blt_Chain_NextLink(link)) {
         TableEntry *entryPtr;
-        int start, end;		/* Entry indices. */
+        int start, end;         /* Entry indices. */
 
         entryPtr = Blt_Chain_GetValue(link);
         start = entryPtr->row.rcPtr->index + 1;
@@ -5441,11 +5441,11 @@ RowJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_ChainLink next;
         RowColumn *rcPtr;
         
-	next = Blt_Chain_NextLink(link);
-	rcPtr = Blt_Chain_GetValue(link);
-	DeleteRowColumn(tablePtr, piPtr, rcPtr);
-	Blt_Chain_DeleteLink(piPtr->chain, link);
-	link = next;
+        next = Blt_Chain_NextLink(link);
+        rcPtr = Blt_Chain_GetValue(link);
+        DeleteRowColumn(tablePtr, piPtr, rcPtr);
+        Blt_Chain_DeleteLink(piPtr->chain, link);
+        link = next;
     }
     RenumberIndices(piPtr->chain);
     tablePtr->flags |= REQUEST_LAYOUT;
@@ -5458,9 +5458,9 @@ RowJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowSplitOp --
  *
- *	Splits a the designated row into multiple rows. Any widgets that
- *	span this row/column will be automatically corrected to include the
- *	new rows.
+ *      Splits a the designated row into multiple rows. Any widgets that
+ *      span this row/column will be automatically corrected to include the
+ *      new rows.
  *
  *      blt::table row splot tableName rowIndex numDivisions
  *---------------------------------------------------------------------------
@@ -5478,21 +5478,21 @@ RowSplitOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i, numRows;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetRowFromObj(interp, tablePtr, objv[4], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     numRows = 2;
     if (objc > 5) {
-	if (Tcl_GetIntFromObj(interp, objv[5], &numRows) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (Tcl_GetIntFromObj(interp, objv[5], &numRows) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     if (numRows < 2) {
-	Tcl_AppendResult(interp, "bad split value \"", Tcl_GetString(objv[5]),
-	    "\": should be 2 or greater", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad split value \"", Tcl_GetString(objv[5]),
+            "\": should be 2 or greater", (char *)NULL);
+        return TCL_ERROR;
     }
     /*
      * Append (split - 1) additional rows/columns starting from the current
@@ -5503,11 +5503,11 @@ RowSplitOp(ClientData clientData, Tcl_Interp *interp, int objc,
         RowColumn *rcPtr;
         Blt_ChainLink link;
         
-	rcPtr = CreateRowColumn();
-	link = Blt_Chain_NewLink();
-	Blt_Chain_SetValue(link, rcPtr);
-	Blt_Chain_LinkAfter(piPtr->chain, link, rowPtr->link);
-	rcPtr->link = link;
+        rcPtr = CreateRowColumn();
+        link = Blt_Chain_NewLink();
+        Blt_Chain_SetValue(link, rcPtr);
+        Blt_Chain_LinkAfter(piPtr->chain, link, rowPtr->link);
+        rcPtr->link = link;
     }
 
     /*
@@ -5553,9 +5553,9 @@ RowOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_ObjCmdProc *proc;
     
     proc = Blt_GetOpFromObj(interp, numRowOps, rowOps, BLT_OP_ARG2, 
-		objc, objv, 0);
+                objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return (*proc)(clientData, interp, objc, objv);
 }
@@ -5565,13 +5565,13 @@ RowOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SaveOp --
  *
- *	Returns a list of all the commands necessary to rebuild the the
- *	table.  This includes the layout of the widgets and any row,
- *	column, or table options set.
+ *      Returns a list of all the commands necessary to rebuild the the
+ *      table.  This includes the layout of the widgets and any row,
+ *      column, or table options set.
  *
  * Results:
- *	Returns a standard TCL result.  If no error occurred, TCL_OK is
- *	returned and a list of widget path names is left in interp->result.
+ *      Returns a standard TCL result.  If no error occurred, TCL_OK is
+ *      returned and a list of widget path names is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -5588,7 +5588,7 @@ SaveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int start, last;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[2], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     dbuffer = Blt_DBuffer_Create();
     Blt_DBuffer_Format(dbuffer, "# Table layout\n\n");
@@ -5597,54 +5597,54 @@ SaveOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     lastl = Blt_Chain_LastLink(tablePtr->chain);
     for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	TableEntry *entryPtr;
+        link = Blt_Chain_NextLink(link)) {
+        TableEntry *entryPtr;
 
-	entryPtr = Blt_Chain_GetValue(link);
-	PrintEntry(entryPtr, dbuffer);
-	if (link != lastl) {
-	    Blt_DBuffer_AppendString(dbuffer, " \\\n", 2);
-	}
+        entryPtr = Blt_Chain_GetValue(link);
+        PrintEntry(entryPtr, dbuffer);
+        if (link != lastl) {
+            Blt_DBuffer_AppendString(dbuffer, " \\\n", 2);
+        }
     }
     Blt_DBuffer_Format(dbuffer, "\n\n# Row configuration options\n\n");
     piPtr = &tablePtr->rows;
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
         int start, last;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	start = Blt_DBuffer_Length(dbuffer);
+        rcPtr = Blt_Chain_GetValue(link);
+        start = Blt_DBuffer_Length(dbuffer);
         Blt_DBuffer_Format(dbuffer, "%s configure %s r%d ",
                 Tcl_GetString(objv[0]), Tk_PathName(tablePtr->tkwin),
                 rcPtr->index);
-	last = Blt_DBuffer_Length(dbuffer);
-	PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
-	if (Blt_DBuffer_Length(dbuffer) == last) {
-	    Blt_DBuffer_SetLength(dbuffer, start);
-	} else {
-	    Blt_DBuffer_AppendString(dbuffer, "\n", 1);
-	}
+        last = Blt_DBuffer_Length(dbuffer);
+        PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
+        if (Blt_DBuffer_Length(dbuffer) == last) {
+            Blt_DBuffer_SetLength(dbuffer, start);
+        } else {
+            Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+        }
     }
     Blt_DBuffer_Format(dbuffer, "\n\n# Column configuration options\n\n");
     piPtr = &tablePtr->columns;
     for (link = Blt_Chain_FirstLink(piPtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	RowColumn *rcPtr;
+        link = Blt_Chain_NextLink(link)) {
+        RowColumn *rcPtr;
         int start, last;
 
-	rcPtr = Blt_Chain_GetValue(link);
-	start = Blt_DBuffer_Length(dbuffer);
+        rcPtr = Blt_Chain_GetValue(link);
+        start = Blt_DBuffer_Length(dbuffer);
         Blt_DBuffer_Format(dbuffer, "%s configure %s c%d ",
                 Tcl_GetString(objv[0]), Tk_PathName(tablePtr->tkwin),
                 rcPtr->index);
-	last = Blt_DBuffer_Length(dbuffer);
-	PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
-	if (Blt_DBuffer_Length(dbuffer) == last) {
-	    Blt_DBuffer_SetLength(dbuffer, start);
-	} else {
-	    Blt_DBuffer_AppendString(dbuffer, "\n", 1);
-	}
+        last = Blt_DBuffer_Length(dbuffer);
+        PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
+        if (Blt_DBuffer_Length(dbuffer) == last) {
+            Blt_DBuffer_SetLength(dbuffer, start);
+        } else {
+            Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+        }
     }
     start = Blt_DBuffer_Length(dbuffer);
     Blt_DBuffer_Format(dbuffer, "\n\n# Table configuration options\n\n");
@@ -5654,9 +5654,9 @@ SaveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     last = Blt_DBuffer_Length(dbuffer);
     PrintTable(tablePtr, dbuffer);
     if (Blt_DBuffer_Length(dbuffer) == last) {
-	Blt_DBuffer_SetLength(dbuffer, start);
+        Blt_DBuffer_SetLength(dbuffer, start);
     } else {
-	Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+        Blt_DBuffer_AppendString(dbuffer, "\n", 1);
     }
     Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(dbuffer));
     Blt_DBuffer_Destroy(dbuffer);
@@ -5668,13 +5668,13 @@ SaveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SearchOp --
  *
- *	Returns a list of all the pathnames of the widgets managed by a
- *	table geometry manager.  The table is given by the path name of a
- *	container widget associated with the table.
+ *      Returns a list of all the pathnames of the widgets managed by a
+ *      table geometry manager.  The table is given by the path name of a
+ *      container widget associated with the table.
  *
  * Results:
- *	Returns a standard TCL result.  If no error occurred, TCL_OK is
- *	returned and a list of widget path names is left in interp->result.
+ *      Returns a standard TCL result.  If no error occurred, TCL_OK is
+ *      returned and a list of widget path names is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -5689,54 +5689,54 @@ SearchOp(ClientData clientData, Tcl_Interp *interp, int objc,
     SearchSwitches switches;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[2], &tablePtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 
     memset(&switches, 0, sizeof(switches));
     switches.tablePtr = tablePtr;
     if (Blt_ParseSwitches(interp, searchSwitches, objc - 3, objv + 3, &switches,
-	BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
 
     /* Find entries that match the search criteria. */
 
     for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
-	link = Blt_Chain_NextLink(link)) {
-	TableEntry *entryPtr;
+        link = Blt_Chain_NextLink(link)) {
+        TableEntry *entryPtr;
 
-	entryPtr = Blt_Chain_GetValue(link);
-	if (switches.pattern != NULL) {
-	    if (!Tcl_StringMatch(Tk_PathName(entryPtr->tkwin),
+        entryPtr = Blt_Chain_GetValue(link);
+        if (switches.pattern != NULL) {
+            if (!Tcl_StringMatch(Tk_PathName(entryPtr->tkwin),
                                  switches.pattern)) {
-		continue;
-	    }
-	}
-	if (switches.flags & MATCH_SPAN) {
-	    if ((switches.rspan >= 0) && 
-		(entryPtr->row.rcPtr->index > switches.rspan) &&
-		((entryPtr->row.rcPtr->index + entryPtr->row.span) <
+                continue;
+            }
+        }
+        if (switches.flags & MATCH_SPAN) {
+            if ((switches.rspan >= 0) && 
+                (entryPtr->row.rcPtr->index > switches.rspan) &&
+                ((entryPtr->row.rcPtr->index + entryPtr->row.span) <
                  switches.rspan)){
-		continue;
-	    } 
-	    if ((switches.cspan >= 0) && 
-		((entryPtr->column.rcPtr->index > switches.cspan) ||
-		((entryPtr->column.rcPtr->index + entryPtr->column.span) <
-		 switches.cspan))) {
-		continue;
-	    }
-	}
-	if (switches.flags & MATCH_START) {
-	    if ((switches.rstart >= 0) && 
-		(entryPtr->row.rcPtr->index != switches.rstart)) {
-		continue;
-	    }
-	    if ((switches.cstart >= 0) && 
-		(entryPtr->column.rcPtr->index != switches.cstart)) {
-		continue;
-	    }
-	}
-	Tcl_AppendElement(interp, Tk_PathName(entryPtr->tkwin));
+                continue;
+            } 
+            if ((switches.cspan >= 0) && 
+                ((entryPtr->column.rcPtr->index > switches.cspan) ||
+                ((entryPtr->column.rcPtr->index + entryPtr->column.span) <
+                 switches.cspan))) {
+                continue;
+            }
+        }
+        if (switches.flags & MATCH_START) {
+            if ((switches.rstart >= 0) && 
+                (entryPtr->row.rcPtr->index != switches.rstart)) {
+                continue;
+            }
+            if ((switches.cstart >= 0) && 
+                (entryPtr->column.rcPtr->index != switches.cstart)) {
+                continue;
+            }
+        }
+        Tcl_AppendElement(interp, Tk_PathName(entryPtr->tkwin));
     }
     Blt_FreeSwitches(searchSwitches, (char *)&switches, 0);
     return TCL_OK;
@@ -5772,15 +5772,15 @@ static int numTableOps = sizeof(tableOps) / sizeof(Blt_OpSpec);
  *
  * TableCmd --
  *
- *	This procedure is invoked to process the TCL command that
- *	corresponds to the table geometry manager.  See the user
- *	documentation for details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to the table geometry manager.  See the user
+ *      documentation for details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -5792,27 +5792,27 @@ TableCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     TableCmdProc *proc;
 
     if (objc > 1) {
-	char *string;
+        char *string;
 
-	string = Tcl_GetString(objv[1]);
-	if (string[0] == '.') {
-	    Table *tablePtr;
+        string = Tcl_GetString(objv[1]);
+        if (string[0] == '.') {
+            Table *tablePtr;
 
-	    if (Blt_GetTableFromObj(clientData, interp, objv[1], &tablePtr) 
-		!= TCL_OK) {
-		Tcl_ResetResult(interp);
-		tablePtr = CreateTable(dataPtr, interp, string);
-		if (tablePtr == NULL) {
-		    return TCL_ERROR;
-		}
-	    }
-	    return BuildTable(tablePtr, interp, objc, objv);
-	}
+            if (Blt_GetTableFromObj(clientData, interp, objv[1], &tablePtr) 
+                != TCL_OK) {
+                Tcl_ResetResult(interp);
+                tablePtr = CreateTable(dataPtr, interp, string);
+                if (tablePtr == NULL) {
+                    return TCL_ERROR;
+                }
+            }
+            return BuildTable(tablePtr, interp, objc, objv);
+        }
     }
     proc = Blt_GetOpFromObj(interp, numTableOps, tableOps, BLT_OP_ARG1, 
-		objc, objv, 0);
+                objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return (*proc)(dataPtr, interp, objc, objv);
 }
@@ -5823,22 +5823,22 @@ TableCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TableInterpDeleteProc --
  *
- *	This is called when the interpreter hosting the table command is
- *	destroyed.
+ *      This is called when the interpreter hosting the table command is
+ *      destroyed.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Destroys all the hash table maintaining the names of the table
- *	geometry managers.
+ *      Destroys all the hash table maintaining the names of the table
+ *      geometry managers.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static void
 TableInterpDeleteProc(
-    ClientData clientData,	/* Thread-specific data. */
+    ClientData clientData,      /* Thread-specific data. */
     Tcl_Interp *interp)
 {
     TableInterpData *dataPtr = clientData;
@@ -5846,12 +5846,12 @@ TableInterpDeleteProc(
     Blt_HashSearch iter;
 
     for (hPtr = Blt_FirstHashEntry(&dataPtr->tableTable, &iter);
-	 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	Table *tablePtr;
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+        Table *tablePtr;
 
-	tablePtr = Blt_GetHashValue(hPtr);
-	tablePtr->hashPtr = NULL;
-	DestroyTable((DestroyData)tablePtr);
+        tablePtr = Blt_GetHashValue(hPtr);
+        tablePtr->hashPtr = NULL;
+        DestroyTable((DestroyData)tablePtr);
     }
     Blt_DeleteHashTable(&dataPtr->tableTable);
     Tcl_DeleteAssocData(interp, TABLE_THREAD_KEY);
@@ -5865,13 +5865,13 @@ GetTableInterpData(Tcl_Interp *interp)
     Tcl_InterpDeleteProc *proc;
 
     dataPtr = (TableInterpData *)
-	Tcl_GetAssocData(interp, TABLE_THREAD_KEY, &proc);
+        Tcl_GetAssocData(interp, TABLE_THREAD_KEY, &proc);
     if (dataPtr == NULL) {
-	dataPtr = Blt_AssertMalloc(sizeof(TableInterpData));
-	dataPtr->tkMain = Tk_MainWindow(interp);
-	Tcl_SetAssocData(interp, TABLE_THREAD_KEY, TableInterpDeleteProc, 
-		dataPtr);
-	Blt_InitHashTable(&dataPtr->tableTable, BLT_ONE_WORD_KEYS);
+        dataPtr = Blt_AssertMalloc(sizeof(TableInterpData));
+        dataPtr->tkMain = Tk_MainWindow(interp);
+        Tcl_SetAssocData(interp, TABLE_THREAD_KEY, TableInterpDeleteProc, 
+                dataPtr);
+        Blt_InitHashTable(&dataPtr->tableTable, BLT_ONE_WORD_KEYS);
     }
     return dataPtr;
 }
@@ -5882,14 +5882,14 @@ GetTableInterpData(Tcl_Interp *interp)
  *
  * Blt_TableMgrCmdInitProc --
  *
- *	This procedure is invoked to initialize the TCL command that
- *	corresponds to the table geometry manager.
+ *      This procedure is invoked to initialize the TCL command that
+ *      corresponds to the table geometry manager.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Creates the new TCL command.
+ *      Creates the new TCL command.
  *
  *---------------------------------------------------------------------------
  */

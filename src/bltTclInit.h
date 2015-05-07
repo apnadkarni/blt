@@ -39,13 +39,13 @@
 #define _BLT_TCL_INIT_H
 
 #ifdef WIN32
-#  define	NO_PTYEXEC	1
-#  define	NO_CUTBUFFER	1
-#  define	NO_DND		1  
-#  define	NO_KIOSK	1  
+#  define       NO_PTYEXEC      1
+#  define       NO_CUTBUFFER    1
+#  define       NO_DND          1  
+#  define       NO_KIOSK        1  
 #else
-#  define	NO_DDE		1
-#  define	NO_PRINTER	1
+#  define       NO_DDE          1
+#  define       NO_PRINTER      1
 #endif /* WIN32 */
 
 #ifndef HAVE_LIBLIBSSH2
@@ -86,7 +86,7 @@ extern Tcl_AppInitProc Blt_FileCmdInitProc;
 #  ifndef NO_PRINTER
 extern Tcl_AppInitProc Blt_PrinterCmdInitProc;
 #  endif
-#endif	/*WIN32*/
+#endif  /*WIN32*/
 
 #ifndef NO_VECTOR
 extern Tcl_AppInitProc Blt_VectorCmdInitProc;

@@ -90,16 +90,16 @@ four1(double *data, unsigned long nn, int isign)
     for (i = 1; i < n; i += 2) {
         int m;
         
-	if (j > i) {
-	    SWAP(data[j],data[i]);
-	    SWAP(data[j+1],data[i+1]);
-	}
-	m = n >> 1;
-	while ((m >= 2) && (j > m)) {
-	    j -= m;
-	    m >>= 1;
-	}
-	j += m;
+        if (j > i) {
+            SWAP(data[j],data[i]);
+            SWAP(data[j+1],data[i+1]);
+        }
+        m = n >> 1;
+        while ((m >= 2) && (j > m)) {
+            j -= m;
+            m >>= 1;
+        }
+        j += m;
     }
     mmax = 2;
     while (n > mmax) {
@@ -107,29 +107,29 @@ four1(double *data, unsigned long nn, int isign)
         int istep;
         double theta, wtemp;
         
-	istep=mmax << 1;
-	theta = isign * (6.28318530717959 / mmax);
-	wtemp = sin(0.5*theta);
-	wpr = -2.0 * wtemp*wtemp;
-	wpi = sin(theta);
-	wr = 1.0;
-	wi = 0.0;
-	for (m = 1; m < mmax; m += 2) {
-	    for (i=m;i<=n;i+=istep) {
+        istep=mmax << 1;
+        theta = isign * (6.28318530717959 / mmax);
+        wtemp = sin(0.5*theta);
+        wpr = -2.0 * wtemp*wtemp;
+        wpi = sin(theta);
+        wr = 1.0;
+        wi = 0.0;
+        for (m = 1; m < mmax; m += 2) {
+            for (i=m;i<=n;i+=istep) {
                 int j;
                 
-		j=i+mmax;
-		tempr=wr*data[j]-wi*data[j+1];
-		tempi=wr*data[j+1]+wi*data[j];
-		data[j]=data[i]-tempr;
-		data[j+1]=data[i+1]-tempi;
-		data[i] += tempr;
-		data[i+1] += tempi;
-	    }
-	    wr=(wtemp=wr)*wpr-wi*wpi+wr;
-	    wi=wi*wpr+wtemp*wpi+wi;
-	}
-	mmax=istep;
+                j=i+mmax;
+                tempr=wr*data[j]-wi*data[j+1];
+                tempi=wr*data[j+1]+wi*data[j];
+                data[j]=data[i]-tempr;
+                data[j+1]=data[i+1]-tempi;
+                data[i] += tempr;
+                data[i+1] += tempi;
+            }
+            wr=(wtemp=wr)*wpr-wi*wpi+wr;
+            wi=wi*wpr+wtemp*wpi+wi;
+        }
+        mmax=istep;
     }
 }
 #undef SWAP
@@ -140,7 +140,7 @@ smallest_power_of_2_not_less_than(int x)
     int pow2 = 1;
 
     while (pow2 < x){
-	pow2 <<= 1;
+        pow2 <<= 1;
     }
     return pow2;
 }
@@ -185,39 +185,39 @@ Blt_Vec_FFT(
 
     /* We do not do in-place FFTs */
     if (realVecPtr == srcPtr) {
-	Tcl_AppendResult(interp, "real vector \"", realVecPtr->name, 
-		 "\" can't be the same as the source", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "real vector \"", realVecPtr->name, 
+                 "\" can't be the same as the source", (char *)NULL);
+        return TCL_ERROR;
     }
     if (phasesVecPtr != NULL) {
-	if (phasesVecPtr == srcPtr) {
-	    Tcl_AppendResult(interp, "imaginary vector \"", phasesVecPtr->name, 
-			"\" can't be the same as the source", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	if (Blt_Vec_ChangeLength(interp, phasesVecPtr, 
-		pow2len/2-noconstant+middle) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (phasesVecPtr == srcPtr) {
+            Tcl_AppendResult(interp, "imaginary vector \"", phasesVecPtr->name, 
+                        "\" can't be the same as the source", (char *)NULL);
+            return TCL_ERROR;
+        }
+        if (Blt_Vec_ChangeLength(interp, phasesVecPtr, 
+                pow2len/2-noconstant+middle) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     if (freqVecPtr != NULL) {
-	if (freqVecPtr == srcPtr) {
-	    Tcl_AppendResult(interp, "frequency vector \"", freqVecPtr->name, 
-		     "\" can't be the same as the source", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	if (Blt_Vec_ChangeLength(interp, freqVecPtr, 
-			   pow2len/2-noconstant+middle) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (freqVecPtr == srcPtr) {
+            Tcl_AppendResult(interp, "frequency vector \"", freqVecPtr->name, 
+                     "\" can't be the same as the source", (char *)NULL);
+            return TCL_ERROR;
+        }
+        if (Blt_Vec_ChangeLength(interp, freqVecPtr, 
+                           pow2len/2-noconstant+middle) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
 
     /* Allocate memory zero-filled array. */
     pad = Blt_Calloc(pow2len * 2, sizeof(double));
     if (pad == NULL) {
-	Tcl_AppendResult(interp, "can't allocate memory for padded data",
-		 (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't allocate memory for padded data",
+                 (char *)NULL);
+        return TCL_ERROR;
     }
     
     /*
@@ -226,25 +226,25 @@ Blt_Vec_FFT(
      */
     if (flags & FFT_BARTLETT) {
         /* Bartlett window 1 - ( (x - N/2) / (N/2) ) */
-	double Nhalf = pow2len*0.5;
-	double Nhalf_1 = 1.0 / Nhalf;
-	double w;
+        double Nhalf = pow2len*0.5;
+        double Nhalf_1 = 1.0 / Nhalf;
+        double w;
 
-	for (i = 0; i < length; i++) {
-	    w = 1.0 - fabs( (i-Nhalf) * Nhalf_1 );
-	    Wss += w;
-	    pad[2*i] = w * srcPtr->valueArr[i];
-	}
-	for(/*empty*/; i < pow2len; i++) {
-	    w = 1.0 - fabs((i-Nhalf) * Nhalf_1);
-	    Wss += w;
-	}
+        for (i = 0; i < length; i++) {
+            w = 1.0 - fabs( (i-Nhalf) * Nhalf_1 );
+            Wss += w;
+            pad[2*i] = w * srcPtr->valueArr[i];
+        }
+        for(/*empty*/; i < pow2len; i++) {
+            w = 1.0 - fabs((i-Nhalf) * Nhalf_1);
+            Wss += w;
+        }
     } else {
         /* Squared window, i.e. no data windowing. */
-	for (i = 0; i < length; i++) { 
-	    pad[2*i] = srcPtr->valueArr[i]; 
-	}
-	Wss = pow2len;
+        for (i = 0; i < length; i++) { 
+            pad[2*i] = srcPtr->valueArr[i]; 
+        }
+        Wss = pow2len;
     }
     
     /* Fourier */
@@ -259,42 +259,42 @@ Blt_Vec_FFT(
     /* the spectrum is the modulus of the transforms, scaled by 1/N^2 */
     /* or 1/(N * Wss) for windowed data */
     if (flags & FFT_SPECTRUM) {
-	double factor = 1.0 / (pow2len*Wss);
-	double *v = realVecPtr->valueArr;
-	
-	for (i = 0 + noconstant; i < pow2len / 2; i++) {
+        double factor = 1.0 / (pow2len*Wss);
+        double *v = realVecPtr->valueArr;
+        
+        for (i = 0 + noconstant; i < pow2len / 2; i++) {
             double re, im, reS, imS;
 
-	    re = pad[2*i];
-	    im = pad[2*i+1];
-	    reS = pad[2*pow2len-2*i-2];
-	    imS = pad[2*pow2len-2*i-1];
+            re = pad[2*i];
+            im = pad[2*i+1];
+            reS = pad[2*pow2len-2*i-2];
+            imS = pad[2*pow2len-2*i-1];
 # if 0
-	    v[i - noconstant] = factor *
+            v[i - noconstant] = factor *
                 (hypot(pad[2*i], pad[2*i+1]) +
                  hypot(pad[pow2len*2-2*i-2], pad[pow2len*2-2*i-1]));
 # else
-	    v[i - noconstant] = factor * (sqrt(re*re + im*im) + sqrt(reS*reS + imS*imS));
+            v[i - noconstant] = factor * (sqrt(re*re + im*im) + sqrt(reS*reS + imS*imS));
 # endif
-	}
+        }
     } else {
-	for(i = 0 + noconstant; i < pow2len / 2 + middle; i++) {
-	    realVecPtr->valueArr[i - noconstant] = pad[2*i];
-	}
+        for(i = 0 + noconstant; i < pow2len / 2 + middle; i++) {
+            realVecPtr->valueArr[i - noconstant] = pad[2*i];
+        }
     }
     if (phasesVecPtr != NULL) {
-	for (i = 0 + noconstant; i < pow2len / 2 + middle; i++) {
-	    phasesVecPtr->valueArr[i-noconstant] = pad[2*i+1];
-	}
+        for (i = 0 + noconstant; i < pow2len / 2 + middle; i++) {
+            phasesVecPtr->valueArr[i-noconstant] = pad[2*i+1];
+        }
     }
     
     /* Compute frequencies */
     if (freqVecPtr != NULL) {
-	double N = pow2len;
-	double denom = 1.0 / N / delta;
-	for( i=0+noconstant; i<pow2len/2+middle; i++ ){
-	    freqVecPtr->valueArr[i-noconstant] = ((double) i) * denom;
-	}
+        double N = pow2len;
+        double denom = 1.0 / N / delta;
+        for( i=0+noconstant; i<pow2len/2+middle; i++ ){
+            freqVecPtr->valueArr[i-noconstant] = ((double) i) * denom;
+        }
     }
     /* Memory is necessarily dynamic, because nobody touched it ! */
     Blt_Free(pad);
@@ -318,7 +318,7 @@ Blt_Vec_InverseFFT(Tcl_Interp *interp, Vector *srcImagPtr, Vector *destRealPtr,
         Tcl_AppendResult(interp,
                 "real or imaginary vectors can't be same as source",
                 (char *)NULL);
-	return TCL_ERROR;               /* We do not do in-place FFTs */
+        return TCL_ERROR;               /* We do not do in-place FFTs */
     }
     length = srcPtr->last - srcPtr->first + 1;
 
@@ -327,32 +327,32 @@ Blt_Vec_InverseFFT(Tcl_Interp *interp, Vector *srcImagPtr, Vector *destRealPtr,
     oneOverN = 1.0 / pow2len;
 
     if (Blt_Vec_ChangeLength(interp, destRealPtr, pow2len) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_Vec_ChangeLength(interp, destImagPtr, pow2len) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 
     if( length != (srcImagPtr->last - srcImagPtr->first + 1) ){
-	Tcl_AppendResult(srcPtr->interp,
-		"the length of the imagPart vector must ",
-		"be the same as the real one", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(srcPtr->interp,
+                "the length of the imagPart vector must ",
+                "be the same as the real one", (char *)NULL);
+        return TCL_ERROR;
     }
 
     pad = Blt_AssertMalloc( pow2len*2*sizeof(double) );
     if( pad == NULL ){
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "memory allocation failed", (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "memory allocation failed", (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     for(i=0;i<pow2len*2;i++) { pad[i] = 0.0; }
     for(i=0;i<length-1;i++){
-	pad[2*i] = srcPtr->valueArr[i];
-	pad[2*i+1] = srcImagPtr->valueArr[i];
-	pad[pow2len*2 - 2*i - 2 ] = srcPtr->valueArr[i+1];
-	pad[pow2len*2 - 2*i - 1 ] = - srcImagPtr->valueArr[i+1];
+        pad[2*i] = srcPtr->valueArr[i];
+        pad[2*i+1] = srcImagPtr->valueArr[i];
+        pad[pow2len*2 - 2*i - 2 ] = srcPtr->valueArr[i+1];
+        pad[pow2len*2 - 2*i - 1 ] = - srcImagPtr->valueArr[i+1];
     }
 
     /* Mythical middle element */
@@ -370,8 +370,8 @@ Blt_Vec_InverseFFT(Tcl_Interp *interp, Vector *srcImagPtr, Vector *destRealPtr,
 
     /* Put values in their places, normalising by 1/N */
     for(i=0;i<pow2len;i++){
-	destRealPtr->valueArr[i] = pad[2*i] * oneOverN;
-	destImagPtr->valueArr[i] = pad[2*i+1] * oneOverN;
+        destRealPtr->valueArr[i] = pad[2*i] * oneOverN;
+        destImagPtr->valueArr[i] = pad[2*i+1] * oneOverN;
     }
 
     /* Memory is necessarily dynamic, because nobody touched it ! */

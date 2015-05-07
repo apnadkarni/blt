@@ -38,17 +38,17 @@
 #ifndef _BLT_GR_LEGEND_H
 #define _BLT_GR_LEGEND_H
 
-#define LEGEND_RIGHT	(1<<0)          /* Right margin */
-#define LEGEND_LEFT	(1<<1)          /* Left margin */
-#define LEGEND_BOTTOM	(1<<2)          /* Bottom margin */
-#define LEGEND_TOP	(1<<3)          /* Top margin, below the graph
-					 * title. */
-#define LEGEND_PLOT	(1<<4)          /* Plot area */
-#define LEGEND_XY	(1<<5)          /* Screen coordinates in the
-					 * plotting area. */
-#define LEGEND_WINDOW	(1<<6)          /* External window. */
+#define LEGEND_RIGHT    (1<<0)          /* Right margin */
+#define LEGEND_LEFT     (1<<1)          /* Left margin */
+#define LEGEND_BOTTOM   (1<<2)          /* Bottom margin */
+#define LEGEND_TOP      (1<<3)          /* Top margin, below the graph
+                                         * title. */
+#define LEGEND_PLOT     (1<<4)          /* Plot area */
+#define LEGEND_XY       (1<<5)          /* Screen coordinates in the
+                                         * plotting area. */
+#define LEGEND_WINDOW   (1<<6)          /* External window. */
 #define LEGEND_MARGIN_MASK \
-	(LEGEND_RIGHT | LEGEND_LEFT | LEGEND_BOTTOM | LEGEND_TOP)
+        (LEGEND_RIGHT | LEGEND_LEFT | LEGEND_BOTTOM | LEGEND_TOP)
 #define LEGEND_PLOTAREA_MASK  (LEGEND_PLOT | LEGEND_XY)
 
 BLT_EXTERN int Blt_CreateLegend(Graph *graphPtr);
@@ -56,7 +56,7 @@ BLT_EXTERN void Blt_DestroyLegend(Graph *graphPtr);
 BLT_EXTERN void Blt_DrawLegend(Graph *graphPtr, Drawable drawable);
 BLT_EXTERN void Blt_MapLegend(Graph *graphPtr, int width, int height);
 BLT_EXTERN int Blt_LegendOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
+        Tcl_Obj *const *objv);
 BLT_EXTERN int Blt_Legend_Site(Graph *graphPtr);
 BLT_EXTERN int Blt_Legend_Width(Graph *graphPtr);
 BLT_EXTERN int Blt_Legend_Height(Graph *graphPtr);

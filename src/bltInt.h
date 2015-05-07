@@ -70,7 +70,7 @@
 #  ifdef WIN32
 #    include "tclIntPlatDecls.h"
 #  endif
-#endif	/* USE_TCL_STUBS */
+#endif  /* USE_TCL_STUBS */
 
 #include <stdio.h>
 
@@ -79,20 +79,20 @@
 #endif
 
 #undef MIN
-#define MIN(a,b)	(((a)<(b))?(a):(b))
+#define MIN(a,b)        (((a)<(b))?(a):(b))
 #undef MAX
-#define MAX(a,b)	(((a)>(b))?(a):(b))
+#define MAX(a,b)        (((a)>(b))?(a):(b))
 
-#define MIN3(a,b,c)	\
+#define MIN3(a,b,c)     \
     (((a)<(b))?((a)<(c))?(a):((b)<(c))?(b):(c):((b)<(c))?(b):(c))
-#define MAX3(a,b,c)	\
+#define MAX3(a,b,c)     \
     (((a)>(b))?((a)>(c))?(a):((b)>(c))?(b):(c):((b)>(c))?(b):(c))
 
-#define TRUE 	1
-#define FALSE 	0
+#define TRUE    1
+#define FALSE   0
 
-#define PKG_ANY		0
-#define PKG_EXACT	1
+#define PKG_ANY         0
+#define PKG_EXACT       1
 
 /*
  * The macro below is used to modify a "char" value (e.g. by casting
@@ -102,9 +102,9 @@ it to an unsigned character) so that it can be used safely with
 #define UCHAR(c) ((unsigned char) (c))
 
 #ifdef TCL_UTF_MAX
-#  define HAVE_UTF	1
+#  define HAVE_UTF      1
 #else
-#  define HAVE_UTF	0
+#  define HAVE_UTF      0
 #endif /* TCL_UTF_MAX */
 
 #include <bltAssert.h>
@@ -136,7 +136,7 @@ it to an unsigned character) so that it can be used safely with
 #ifdef USE_TK_STUBS
 #  include "tkIntDecls.h"
 #  include "tkIntPlatDecls.h"
-#endif	/* USE_TCL_STUBS */
+#endif  /* USE_TCL_STUBS */
 
 #include "bltTclInit.h"
 #include "bltTkInit.h"

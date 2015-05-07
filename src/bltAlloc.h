@@ -39,17 +39,17 @@
 #define _BLT_ALLOC_H
 
 /*
- *	Memory allocation/deallocation within BLT can be set to use
- *	specific memory allocators using Blt_AllocInit. The routine
- *	Blt_AllocInit allows you to specify your own memory
- *	allocation/deallocation routines for BLT on a library-wide basis.
+ *      Memory allocation/deallocation within BLT can be set to use
+ *      specific memory allocators using Blt_AllocInit. The routine
+ *      Blt_AllocInit allows you to specify your own memory
+ *      allocation/deallocation routines for BLT on a library-wide basis.
  */
 typedef void *(Blt_MallocProc) (size_t size);
 typedef void *(Blt_ReallocProc) (void *ptr, size_t size);
 typedef void (Blt_FreeProc) (const void *ptr);
 
 BLT_EXTERN void Blt_AllocInit(Blt_MallocProc *mallocProc, 
-	Blt_ReallocProc *reallocProc, Blt_FreeProc *freeProc);
+        Blt_ReallocProc *reallocProc, Blt_FreeProc *freeProc);
 
 #endif /* _BLT_ALLOC_H */
 

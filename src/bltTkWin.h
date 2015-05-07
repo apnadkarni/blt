@@ -56,27 +56,27 @@
 #undef STD_FONT_LARGE
 #undef STD_FONT_SMALL
 
-#define STD_NORMAL_BACKGROUND	"SystemButtonFace"
-#define STD_NORMAL_FOREGROUND	"SystemButtonText"
-#define STD_SELECT_BACKGROUND	"SystemHighlight"
-#define STD_SELECT_FOREGROUND	"SystemHighlightText"
-#define STD_TEXT_FOREGROUND	"SystemWindowText"
-#define STD_FONT		"Arial 8"
-#define STD_FONT_LARGE		"Arial 12"
-#define STD_FONT_SMALL		"Arial 6"
+#define STD_NORMAL_BACKGROUND   "SystemButtonFace"
+#define STD_NORMAL_FOREGROUND   "SystemButtonText"
+#define STD_SELECT_BACKGROUND   "SystemHighlight"
+#define STD_SELECT_FOREGROUND   "SystemHighlightText"
+#define STD_TEXT_FOREGROUND     "SystemWindowText"
+#define STD_FONT                "Arial 8"
+#define STD_FONT_LARGE          "Arial 12"
+#define STD_FONT_SMALL          "Arial 6"
 
 /* DOS Encapsulated PostScript File Header */
 #pragma pack(2)
 typedef struct {
-    BYTE magic[4];		/* Magic number for a DOS EPS file
-				 * C5,D0,D3,C6 */
-    DWORD psStart;		/* Offset of PostScript section. */
-    DWORD psLength;		/* Length of the PostScript section. */
-    DWORD wmfStart;		/* Offset of Windows Meta File section. */
-    DWORD wmfLength;		/* Length of Meta file section. */
-    DWORD tiffStart;		/* Offset of TIFF section. */
-    DWORD tiffLength;		/* Length of TIFF section. */
-    WORD checksum;		/* Checksum of header. If FFFF, ignore. */
+    BYTE magic[4];              /* Magic number for a DOS EPS file
+                                 * C5,D0,D3,C6 */
+    DWORD psStart;              /* Offset of PostScript section. */
+    DWORD psLength;             /* Length of the PostScript section. */
+    DWORD wmfStart;             /* Offset of Windows Meta File section. */
+    DWORD wmfLength;            /* Length of Meta file section. */
+    DWORD tiffStart;            /* Offset of TIFF section. */
+    DWORD tiffLength;           /* Length of TIFF section. */
+    WORD checksum;              /* Checksum of header. If FFFF, ignore. */
 } DOSEPSHEADER;
 
 #pragma pack()
@@ -84,12 +84,12 @@ typedef struct {
 /* Aldus Portable Metafile Header */
 #pragma pack(2)
 typedef struct {
-    DWORD key;			/* Type of metafile */
-    WORD hmf;			/* Unused. Must be NULL. */
-    SMALL_RECT bbox;		/* Bounding rectangle */
-    WORD inch;			/* Units per inch. */
-    DWORD reserved;		/* Unused. */
-    WORD checksum;		/* XOR of previous fields (10 32-bit words). */
+    DWORD key;                  /* Type of metafile */
+    WORD hmf;                   /* Unused. Must be NULL. */
+    SMALL_RECT bbox;            /* Bounding rectangle */
+    WORD inch;                  /* Units per inch. */
+    DWORD reserved;             /* Unused. */
+    WORD checksum;              /* XOR of previous fields (10 32-bit words). */
 } APMHEADER;
 #pragma pack()
 
@@ -105,52 +105,52 @@ typedef struct {
 #include <missing.h> 
 #endif /* __GNUC__ */
 
-#undef XCopyArea		
-#define XCopyArea		Blt_EmulateXCopyArea
-#undef XCopyPlane		
-#define XCopyPlane		Blt_EmulateXCopyPlane
-#undef XDrawArcs		
-#define XDrawArcs		Blt_EmulateXDrawArcs
-#undef XDrawLine		
-#define XDrawLine		Blt_EmulateXDrawLine
-#undef XDrawLines		
-#define XDrawLines		Blt_EmulateXDrawLines
-#undef XDrawPoints		
-#define XDrawPoints		Blt_EmulateXDrawPoints
-#undef XDrawRectangle		
-#define XDrawRectangle		Blt_EmulateXDrawRectangle
-#undef XDrawRectangles		
-#define XDrawRectangles		Blt_EmulateXDrawRectangles
-#undef XDrawSegments		
-#define XDrawSegments		Blt_EmulateXDrawSegments
-#undef XDrawString		
-#define XDrawString		Blt_EmulateXDrawString
-#undef XFillArcs		
-#define XFillArcs		Blt_EmulateXFillArcs
-#undef XFillPolygon		
-#define XFillPolygon		Blt_EmulateXFillPolygon
-#undef XFillRectangle		
-#define XFillRectangle		Blt_EmulateXFillRectangle
-#undef XFillRectangles		
-#define XFillRectangles		Blt_EmulateXFillRectangles
-#undef XFree			
-#define XFree			Blt_EmulateXFree
-#undef XGetWindowAttributes	
-#define XGetWindowAttributes	Blt_EmulateXGetWindowAttributes
-#undef XLowerWindow		
-#define XLowerWindow		Blt_EmulateXLowerWindow
-#undef XMaxRequestSize		
-#define XMaxRequestSize		Blt_EmulateXMaxRequestSize
-#undef XRaiseWindow		
-#define XRaiseWindow		Blt_EmulateXRaiseWindow
-#undef XReparentWindow		
-#define XReparentWindow		Blt_EmulateXReparentWindow
-#undef XSetDashes		
-#define XSetDashes		Blt_EmulateXSetDashes
-#undef XUnmapWindow		
-#define XUnmapWindow		Blt_EmulateXUnmapWindow
-#undef XWarpPointer		
-#define XWarpPointer		Blt_EmulateXWarpPointer
+#undef XCopyArea                
+#define XCopyArea               Blt_EmulateXCopyArea
+#undef XCopyPlane               
+#define XCopyPlane              Blt_EmulateXCopyPlane
+#undef XDrawArcs                
+#define XDrawArcs               Blt_EmulateXDrawArcs
+#undef XDrawLine                
+#define XDrawLine               Blt_EmulateXDrawLine
+#undef XDrawLines               
+#define XDrawLines              Blt_EmulateXDrawLines
+#undef XDrawPoints              
+#define XDrawPoints             Blt_EmulateXDrawPoints
+#undef XDrawRectangle           
+#define XDrawRectangle          Blt_EmulateXDrawRectangle
+#undef XDrawRectangles          
+#define XDrawRectangles         Blt_EmulateXDrawRectangles
+#undef XDrawSegments            
+#define XDrawSegments           Blt_EmulateXDrawSegments
+#undef XDrawString              
+#define XDrawString             Blt_EmulateXDrawString
+#undef XFillArcs                
+#define XFillArcs               Blt_EmulateXFillArcs
+#undef XFillPolygon             
+#define XFillPolygon            Blt_EmulateXFillPolygon
+#undef XFillRectangle           
+#define XFillRectangle          Blt_EmulateXFillRectangle
+#undef XFillRectangles          
+#define XFillRectangles         Blt_EmulateXFillRectangles
+#undef XFree                    
+#define XFree                   Blt_EmulateXFree
+#undef XGetWindowAttributes     
+#define XGetWindowAttributes    Blt_EmulateXGetWindowAttributes
+#undef XLowerWindow             
+#define XLowerWindow            Blt_EmulateXLowerWindow
+#undef XMaxRequestSize          
+#define XMaxRequestSize         Blt_EmulateXMaxRequestSize
+#undef XRaiseWindow             
+#define XRaiseWindow            Blt_EmulateXRaiseWindow
+#undef XReparentWindow          
+#define XReparentWindow         Blt_EmulateXReparentWindow
+#undef XSetDashes               
+#define XSetDashes              Blt_EmulateXSetDashes
+#undef XUnmapWindow             
+#define XUnmapWindow            Blt_EmulateXUnmapWindow
+#undef XWarpPointer             
+#define XWarpPointer            Blt_EmulateXWarpPointer
 
 extern GC Blt_EmulateXCreateGC(Display *display, Drawable drawable,
     unsigned long mask, XGCValues *valuesPtr);
@@ -165,9 +165,9 @@ extern void Blt_EmulateXDrawArcs(Display *display, Drawable drawable, GC gc,
 extern void Blt_EmulateXDrawLine(Display *display, Drawable drawable, GC gc,
     int x1, int y1, int x2, int y2);
 extern void Blt_EmulateXDrawLines(Display *display, Drawable drawable, 
-	GC gc, XPoint *points, int numPoints, int mode);
+        GC gc, XPoint *points, int numPoints, int mode);
 extern void Blt_EmulateXDrawPoints(Display *display, Drawable drawable, 
-	GC gc, XPoint *points, int numPoints, int mode);
+        GC gc, XPoint *points, int numPoints, int mode);
 extern void Blt_EmulateXDrawRectangle(Display *display, Drawable drawable,
     GC gc, int x, int y, unsigned int width, unsigned int height);
 extern void Blt_EmulateXDrawRectangles(Display *display, Drawable drawable,
@@ -177,7 +177,7 @@ extern void Blt_EmulateXDrawSegments(Display *display, Drawable drawable,
 extern void Blt_EmulateXDrawSegments(Display *display, Drawable drawable,
     GC gc, XSegment *segments, int numSegments);
 extern void Blt_EmulateXDrawString(Display *display, Drawable drawable, 
-	GC gc, int x, int y, _Xconst char *string, int length);
+        GC gc, int x, int y, _Xconst char *string, int length);
 extern void Blt_EmulateXFillArcs(Display *display, Drawable drawable, GC gc,
     XArc *arcs, int numArcs);
 extern void Blt_EmulateXFillPolygon(Display *display, Drawable drawable,
@@ -206,13 +206,13 @@ BLT_EXTERN void Blt_DrawLine2D(Display *display, Drawable drawable, GC gc,
     POINT *points, int numPoints);
 
 BLT_EXTERN unsigned char *Blt_GetBitmapData(Display *display, Pixmap bitmap, 
-	int width, int height, int *pitchPtr);
+        int width, int height, int *pitchPtr);
 
 extern HPALETTE Blt_GetSystemPalette(void);
 
 BLT_EXTERN HPEN Blt_GCToPen(HDC dc, GC gc);
 BLT_EXTERN void Blt_TextOut(HDC dc, GC gc, HFONT hfont, const char *text, 
-	int length, int x, int y);
+        int length, int x, int y);
 
 BLT_EXTERN const char *Blt_PrintError(int error);
 BLT_EXTERN int Blt_GetOpenPrinter(Tcl_Interp *interp, const char *id,

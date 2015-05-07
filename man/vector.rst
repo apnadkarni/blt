@@ -750,10 +750,10 @@ vector.  It appears below.
   ::
 
     typedef struct {
-	double *valueArr; 
-	int numValues;    
-	int arraySize;    
-	double min, max;  
+        double *valueArr; 
+        int numValues;    
+        int arraySize;    
+        double min, max;  
     } Blt_Vector;
 
 The field *valueArr* points to memory holding the vector points.  The
@@ -1084,10 +1084,10 @@ itself for each change.  You can change this behavior using the
 
     # Make vector x notify after every change
     x notify always
-	    ...
+            ...
     # Never notify
     x notify never
-	    ...
+            ...
     # Force notification now
     x notify now
 
@@ -1117,7 +1117,7 @@ vector clients (such as a graph widget).
   ::
 
      #include <tcl.h>
-     #include <blt.h>				
+     #include <blt.h>                           
      ...
      Blt_Vector *vecPtr;
      double *newArr;
@@ -1136,13 +1136,13 @@ vector clients (such as a graph widget).
      fclose(f);
 
      if (Blt_VectorExists(interp, "data"))  {
-	 if (Blt_GetVector(interp, "data", &vecPtr) != TCL_OK) {
-	     return TCL_ERROR;
-	 }
+         if (Blt_GetVector(interp, "data", &vecPtr) != TCL_OK) {
+             return TCL_ERROR;
+         }
      } else {
-	if (Blt_CreateVector(interp, "data", 0, &vecPtr) != TCL_OK) {
-	     return TCL_ERROR;
-	}
+        if (Blt_CreateVector(interp, "data", 0, &vecPtr) != TCL_OK) {
+             return TCL_ERROR;
+        }
      }
      /* 
       * Reset the vector. Clients will be notified when Tk is idle. 
@@ -1150,8 +1150,8 @@ vector clients (such as a graph widget).
       * if it needs to reallocate or destroy the vector.
       */
      if (Blt_ResetVector(vecPtr, newArr, numValues, numValues, 
-	     TCL_DYNAMIC) != TCL_OK) {
-	 return TCL_ERROR;
+             TCL_DYNAMIC) != TCL_OK) {
+         return TCL_ERROR;
      }
 
 
@@ -1232,4 +1232,4 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-	       
+               

@@ -40,8 +40,8 @@
 
 BLT_EXTERN Blt_Picture Blt_PhotoToPicture (Tk_PhotoHandle photo);
 BLT_EXTERN Blt_Picture Blt_PhotoAreaToPicture (Tk_PhotoHandle photo, 
-	int x, int y, int w, int h);
+        int x, int y, int w, int h);
 BLT_EXTERN void Blt_PictureToPhoto(Blt_Picture picture, Tk_PhotoHandle photo);
 BLT_EXTERN int Blt_SnapPhoto(Tcl_Interp *interp, Tk_Window tkwin, 
-	Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, 
-	const char *photoName, float gamma);
+        Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, 
+        const char *photoName, float gamma);

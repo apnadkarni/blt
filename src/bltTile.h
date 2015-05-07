@@ -38,7 +38,7 @@
 #ifndef BLT_TILE_H
 #define BLT_TILE_H
 
-#define TILE_THREAD_KEY	"BLT Tile Data"
+#define TILE_THREAD_KEY "BLT Tile Data"
 #define TILE_MAGIC ((unsigned int) 0x46170277)
 
 typedef struct _Blt_TileClient *Blt_Tile; /* Opaque type for tiles */
@@ -46,21 +46,21 @@ typedef struct _Blt_TileClient *Blt_Tile; /* Opaque type for tiles */
 typedef void (Blt_TileChangedProc)(ClientData clientData, Blt_Tile tile);
 
 BLT_EXTERN int Blt_GetTile(Tcl_Interp *interp, Tk_Window tkwin, char *imageName,
-	Blt_Tile *tilePtr);
+        Blt_Tile *tilePtr);
 
 BLT_EXTERN void Blt_FreeTile(Blt_Tile tile);
 
 BLT_EXTERN const char *Blt_NameOfTile(Blt_Tile tile);
 
 BLT_EXTERN void Blt_SetTileChangedProc(Blt_Tile tile, 
-	Blt_TileChangedProc *changeProc, ClientData clientData);
+        Blt_TileChangedProc *changeProc, ClientData clientData);
 
 BLT_EXTERN void Blt_TileRectangle(Tk_Window tkwin, Drawable drawable, 
-	Blt_Tile tile, int x, int y, unsigned int width, unsigned int height);
+        Blt_Tile tile, int x, int y, unsigned int width, unsigned int height);
 BLT_EXTERN void Blt_TileRectangles(Tk_Window tkwin, Drawable drawable,
-	Blt_Tile tile, XRectangle *rectArr, int numRects);
+        Blt_Tile tile, XRectangle *rectArr, int numRects);
 BLT_EXTERN void Blt_TilePolygon(Tk_Window tkwin, Drawable drawable, 
-	Blt_Tile tile, XPoint *pointArr, int numPoints);
+        Blt_Tile tile, XPoint *pointArr, int numPoints);
 BLT_EXTERN Pixmap Blt_PixmapOfTile(Blt_Tile tile);
 
 BLT_EXTERN void Blt_SizeOfTile(Blt_Tile tile, int *widthPtr, int *heightPtr);

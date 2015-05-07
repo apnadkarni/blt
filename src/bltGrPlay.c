@@ -60,9 +60,9 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 
-#define DEF_REGION_FROM		"-1"
-#define DEF_REGION_TO		"-1"
-#define DEF_REGION_ENABLED	"0"
+#define DEF_REGION_FROM         "-1"
+#define DEF_REGION_TO           "-1"
+#define DEF_REGION_ENABLED      "0"
 
 static Blt_OptionFreeProc FreeElements;
 static Blt_OptionParseProc ObjToElements;
@@ -75,12 +75,12 @@ Blt_CustomOption elementsOption =
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BOOLEAN, "-enable", "enable", "enable", 
-	DEF_REGION_ENABLED, Blt_Offset(Playback, enabled), 
-	BLT_CONFIG_DONT_SET_DEFAULT},
+        DEF_REGION_ENABLED, Blt_Offset(Playback, enabled), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT, "-from", "from", "From", DEF_REGION_FROM, 
-	Blt_Offset(Playback, from), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Playback, from), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT, "-to", "to", "To", DEF_REGION_TO, 
-	Blt_Offset(Playback, to), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Playback, to), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -132,12 +132,12 @@ FreeElements(ClientData clientData, Display *display, char *widgRec,
  *
  * ObjToElements --
  *
- *	Converts a TCL list of element names into a chain of Element 
+ *      Converts a TCL list of element names into a chain of Element 
  *      pointers.  This is used to define a subset of elements that
  *      have a region displayed.
  *
  * Results:
- *	The return value is a standard TCL result.  
+ *      The return value is a standard TCL result.  
  *
  *---------------------------------------------------------------------------
  */
@@ -180,11 +180,11 @@ ObjToElements(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ElementsToObj --
  *
- *	Converts the chain of Element pointers to a TCL list of element
- *	names.
+ *      Converts the chain of Element pointers to a TCL list of element
+ *      names.
  *
  * Results:
- *	The return value is a string (TCL list).
+ *      The return value is a string (TCL list).
  *
  *---------------------------------------------------------------------------
  */
@@ -205,20 +205,20 @@ ElementsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 
         elemPtr = Blt_Chain_GetValue(link);
         objPtr = Tcl_NewStringObj(elemPtr->obj.name, -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
 }
 
 static int
 ConfigurePlayback(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-		  Tcl_Obj *const *objv, int flags)
+                  Tcl_Obj *const *objv, int flags)
 {
     Playback *playPtr = &graphPtr->play;
     
     if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, configSpecs, 
         objc, objv, (char *)playPtr, flags) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (playPtr->enabled) {
         if (playPtr->elements != NULL) {
@@ -231,14 +231,14 @@ ConfigurePlayback(Graph *graphPtr, Tcl_Interp *interp, int objc,
         DisableElements(graphPtr->elements.displayList);
     }
     if (playPtr->from > playPtr->to) {
-	playPtr->t1 = playPtr->to;
-	playPtr->t2 = playPtr->from;
+        playPtr->t1 = playPtr->to;
+        playPtr->t2 = playPtr->from;
     } else {
-	playPtr->t1 = playPtr->from;
-	playPtr->t2 = playPtr->to;
+        playPtr->t1 = playPtr->from;
+        playPtr->t2 = playPtr->to;
     }
     if (playPtr->t2 < 0) {
-	playPtr->t2 = UINT_MAX;
+        playPtr->t2 = UINT_MAX;
     }
     return TCL_OK;
 }
@@ -249,7 +249,7 @@ ConfigurePlayback(Graph *graphPtr, Tcl_Interp *interp, int objc,
  * Blt_DestroyPlayback --
  *
  * Results:
- *	None
+ *      None
  *
  *---------------------------------------------------------------------------
  */
@@ -266,11 +266,11 @@ Blt_DestroyPlayback(Graph *graphPtr)
  *
  * Blt_CreatePlayback --
  *
- *	Initializes the playback structure used to replay graphs.
+ *      Initializes the playback structure used to replay graphs.
  *
  * Results:
- *	Returns TCL_ERROR if the play structure can't be created,
- *	otherwise TCL_OK.
+ *      Returns TCL_ERROR if the play structure can't be created,
+ *      otherwise TCL_OK.
  *
  *---------------------------------------------------------------------------
  */
@@ -284,7 +284,7 @@ Blt_CreatePlayback(Graph *graphPtr)
     playPtr->to = -1;
     playPtr->elements = NULL;
     if (ConfigurePlayback(graphPtr, graphPtr->interp, 0, NULL, 0) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -294,10 +294,10 @@ Blt_CreatePlayback(Graph *graphPtr)
  *
  * CgetOp --
  *
- *	Queries configuration attributes of the playback.
+ *      Queries configuration attributes of the playback.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -318,33 +318,33 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ConfigureOp --
  *
- *	Queries or resets configuration attributes of the playback.
+ *      Queries or resets configuration attributes of the playback.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	Playback options are reset.
+ *      Playback options are reset.
  *
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	    Tcl_Obj *const *objv)
+            Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Playback *playPtr = &graphPtr->play;
 
     if (objc == 3) {
-	return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
-		(char *)playPtr, (Tcl_Obj *)NULL, 0);
+        return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
+                (char *)playPtr, (Tcl_Obj *)NULL, 0);
     } else if (objc == 4) {
-	return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
-		(char *)playPtr, objv[3], 0);
+        return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
+                (char *)playPtr, objv[3], 0);
     }
     if (ConfigurePlayback(graphPtr, interp, objc - 3, objv + 3, 
-	BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	return TCL_ERROR;
+        BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+        return TCL_ERROR;
     }
     graphPtr->flags |= REDRAW_WORLD | CACHE_DIRTY;
     Blt_EventuallyRedrawGraph(graphPtr);
@@ -361,14 +361,14 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      function to determine the limit of the data point indices.  
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static int
 MaxPointsOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	  Tcl_Obj *const *objv)
+          Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Blt_ChainLink link;
@@ -384,17 +384,17 @@ MaxPointsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (link = Blt_Chain_LastLink(chain); link != NULL;
          link = Blt_Chain_PrevLink(link)) {
-	Element *elemPtr;
+        Element *elemPtr;
 
-	elemPtr = Blt_Chain_GetValue(link);
-	if ((elemPtr->flags & HIDDEN) == 0) {
-	    int length;
+        elemPtr = Blt_Chain_GetValue(link);
+        if ((elemPtr->flags & HIDDEN) == 0) {
+            int length;
 
-	    length = NUMBEROFPOINTS(elemPtr);
-	    if (length > maxNumPts) {
-		maxNumPts = length;
-	    }
-	}
+            length = NUMBEROFPOINTS(elemPtr);
+            if (length > maxNumPts) {
+                maxNumPts = length;
+            }
+        }
     }
     Tcl_SetIntObj(Tcl_GetObjResult(interp), maxNumPts);
     return TCL_OK;
@@ -413,24 +413,24 @@ static int numPlayOps = sizeof(playOps) / sizeof(Blt_OpSpec);
  *
  * Blt_GraphRegionOp --
  *
- *	Used to configure the playback.  Playback
+ *      Used to configure the playback.  Playback
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
- *	.g playback configure -from 0 -to 10
+ *      .g playback configure -from 0 -to 10
  *---------------------------------------------------------------------------
  */
 int
 Blt_GraphRegionOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	       Tcl_Obj *const *objv)
+               Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numPlayOps, playOps, BLT_OP_ARG2, 
-	objc, objv, 0);
+        objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return (*proc) (clientData, interp, objc, objv);
 }

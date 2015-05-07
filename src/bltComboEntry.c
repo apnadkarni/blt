@@ -58,125 +58,125 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
-#define CharIndexToByteOffset(s, n)	(Tcl_UtfAtIndex(s, n) - s)
-#define TEXT_ENTRY_MASK		BLT_CONFIG_USER_BIT
-#define COMBO_ENTRY_MASK	BLT_CONFIG_USER_BIT << 1
-#define ALL_MASK		(TEXT_ENTRY_MASK | COMBO_ENTRY_MASK)
+#define CharIndexToByteOffset(s, n)     (Tcl_UtfAtIndex(s, n) - s)
+#define TEXT_ENTRY_MASK         BLT_CONFIG_USER_BIT
+#define COMBO_ENTRY_MASK        BLT_CONFIG_USER_BIT << 1
+#define ALL_MASK                (TEXT_ENTRY_MASK | COMBO_ENTRY_MASK)
 
-#define FCLAMP(x)	((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
-#define IPAD		4		/* Internal pad between components. */
-#define XPAD		1
-#define YPAD		1		/* Internal pad between components. */
-#define ICWIDTH		2		/* External pad between border and
-					 * arrow. */
-#define ARROW_WIDTH	13
-#define ARROW_HEIGHT	13
-#define BUTTON_WIDTH	16
-#define BUTTON_HEIGHT	16
+#define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
+#define IPAD            4               /* Internal pad between components. */
+#define XPAD            1
+#define YPAD            1               /* Internal pad between components. */
+#define ICWIDTH         2               /* External pad between border and
+                                         * arrow. */
+#define ARROW_WIDTH     13
+#define ARROW_HEIGHT    13
+#define BUTTON_WIDTH    16
+#define BUTTON_HEIGHT   16
 
-#define EVENT_MASK	 (ExposureMask|StructureNotifyMask|FocusChangeMask)
+#define EVENT_MASK       (ExposureMask|StructureNotifyMask|FocusChangeMask)
 #define CHILD_EVENT_MASK (ExposureMask|StructureNotifyMask)
 
-#define REDRAW_PENDING   (1<<0)		/* The widget is scheduled to be
-					 * redrawn. */
-#define LAYOUT_PENDING   (1<<1)		/* The widget's layout needs to be
-					 * recomputed. */
-#define ICURSOR		 (1<<2)		/* Insertion cursor is active.
-					 * Depending upon the timer interval,
-					 * it may be drawn or not drawn. */
-#define SCROLL_PENDING   (1<<3)		/* The widget needs to be scrolled. */
-#define FOCUS		 (1<<4)		/* The widget has focus. */
-#define SELECT_PENDING	 (1<<5)		/* The widget is scheduled to invoke a
-					 * -selectcommand in response to a
-					 * change in its selection. */
-#define INVOKE_PENDING   (1<<6)		/* The widget is scheduled to invoke a
-					 * -command. */
-#define READONLY	 (1<<8)		/* The widget's editing functions
-					 * are disabled. */
-#define EXPORT_SELECTION (1<<9)		/* The selection is exported to the
-					 * clipboard. */
+#define REDRAW_PENDING   (1<<0)         /* The widget is scheduled to be
+                                         * redrawn. */
+#define LAYOUT_PENDING   (1<<1)         /* The widget's layout needs to be
+                                         * recomputed. */
+#define ICURSOR          (1<<2)         /* Insertion cursor is active.
+                                         * Depending upon the timer interval,
+                                         * it may be drawn or not drawn. */
+#define SCROLL_PENDING   (1<<3)         /* The widget needs to be scrolled. */
+#define FOCUS            (1<<4)         /* The widget has focus. */
+#define SELECT_PENDING   (1<<5)         /* The widget is scheduled to invoke a
+                                         * -selectcommand in response to a
+                                         * change in its selection. */
+#define INVOKE_PENDING   (1<<6)         /* The widget is scheduled to invoke a
+                                         * -command. */
+#define READONLY         (1<<8)         /* The widget's editing functions
+                                         * are disabled. */
+#define EXPORT_SELECTION (1<<9)         /* The selection is exported to the
+                                         * clipboard. */
 
-#define DISABLED	 (1<<11)	/* The widget is is disabled. */
-#define POSTED		 (1<<12)	/* The widget has posted a menu. */
-#define STATE_MASK	 ((DISABLED)|(POSTED))
+#define DISABLED         (1<<11)        /* The widget is is disabled. */
+#define POSTED           (1<<12)        /* The widget has posted a menu. */
+#define STATE_MASK       ((DISABLED)|(POSTED))
 
-#define ICURSOR_ON	 (1<<13)	/* The insertion cursor is currently
-					 * visible on screen. */
-#define ARROW		 (1<<14)	/* Display the arrow button on the far
-					 * right.*/
-#define CLRBUTTON	 (1<<15)	/* Display the clear button on the
-					 * right when text has been
-					 * entered. */
-#define ACTIVE_ARROW	 (1<<16)	/* The arrow button is currently
-					   active. */
-#define ACTIVE_CLEAR	 (1<<17)	/* The clear button is currently
-					 * active. */
-#define ACTIVE_MASK	 ((ACTIVE_ARROW)|(ACTIVE_CLEAR))
+#define ICURSOR_ON       (1<<13)        /* The insertion cursor is currently
+                                         * visible on screen. */
+#define ARROW            (1<<14)        /* Display the arrow button on the far
+                                         * right.*/
+#define CLRBUTTON        (1<<15)        /* Display the clear button on the
+                                         * right when text has been
+                                         * entered. */
+#define ACTIVE_ARROW     (1<<16)        /* The arrow button is currently
+                                           active. */
+#define ACTIVE_CLEAR     (1<<17)        /* The clear button is currently
+                                         * active. */
+#define ACTIVE_MASK      ((ACTIVE_ARROW)|(ACTIVE_CLEAR))
 
-#define MODIFIED	 (1<<18)	/* The contents of the text of the
-					 * entry have been modified. */
+#define MODIFIED         (1<<18)        /* The contents of the text of the
+                                         * entry have been modified. */
 #define TRACE_VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
 
 
-#define DEF_ARROW_ACTIVE_BG	STD_ACTIVE_BACKGROUND
-#define DEF_ARROW_ACTIVE_FG	STD_ACTIVE_FOREGROUND
-#define DEF_BORDERWIDTH		"0"
-#define DEF_ARROW		"1"
-#define DEF_ARROW_BORDERWIDTH	"2"
-#define DEF_ARROW_PAD		"0"
-#define DEF_ARROW_RELIEF	"raised"
-#define DEF_ARROW_WIDTH		"0"
-#define DEF_SHOW		(char *)NULL
-#define DEF_CLRBUTTON		"0"
-#define DEF_CMD			((char *)NULL)
-#define DEF_CURSOR		((char *)NULL)
-#define DEF_DISABLED_BG		STD_DISABLED_BACKGROUND
-#define DEF_DISABLED_FG		STD_DISABLED_FOREGROUND
-#define DEF_EXPORTSELECTION	"1"
-#define DEF_FONT		STD_FONT_NORMAL
-#define DEF_HEIGHT		"0"
+#define DEF_ARROW_ACTIVE_BG     STD_ACTIVE_BACKGROUND
+#define DEF_ARROW_ACTIVE_FG     STD_ACTIVE_FOREGROUND
+#define DEF_BORDERWIDTH         "0"
+#define DEF_ARROW               "1"
+#define DEF_ARROW_BORDERWIDTH   "2"
+#define DEF_ARROW_PAD           "0"
+#define DEF_ARROW_RELIEF        "raised"
+#define DEF_ARROW_WIDTH         "0"
+#define DEF_SHOW                (char *)NULL
+#define DEF_CLRBUTTON           "0"
+#define DEF_CMD                 ((char *)NULL)
+#define DEF_CURSOR              ((char *)NULL)
+#define DEF_DISABLED_BG         STD_DISABLED_BACKGROUND
+#define DEF_DISABLED_FG         STD_DISABLED_FOREGROUND
+#define DEF_EXPORTSELECTION     "1"
+#define DEF_FONT                STD_FONT_NORMAL
+#define DEF_HEIGHT              "0"
 #define DEF_HIGHLIGHT_BG_COLOR  ((char *)NULL)
 #define DEF_HIGHLIGHT_COLOR     "black"
-#define DEF_HIGHLIGHT_WIDTH	"2"
-#define DEF_ICON		((char *)NULL)
-#define DEF_ICON_VARIABLE	((char *)NULL)
-#define DEF_IMAGE		((char *)NULL)
-#define DEF_INSERT_COLOR	STD_NORMAL_FOREGROUND
-#define DEF_INSERT_OFFTIME	"300"
-#define DEF_INSERT_ONTIME	"600"
-#define DEF_JUSTIFY		"left"
-#define DEF_MENU		((char *)NULL)
-#define DEF_MENU_ANCHOR		"sw"
-#define DEF_NORMAL_BG		STD_NORMAL_BACKGROUND
-#define DEF_NORMAL_FG		STD_NORMAL_FOREGROUND
-#define DEF_EDITABLE		"1"
-#define DEF_RELIEF		"sunken"
-#define DEF_SCROLL_CMD		((char *)NULL)
-#define DEF_SCROLL_INCR		"2"
-#define DEF_SELECT_BORDERWIDTH	"0"
-#define DEF_SELECT_CMD		((char *)NULL)
-#define DEF_SELECT_FG		RGB_WHITE
-#define DEF_SELECT_BG		RGB_SKYBLUE4
-#define DEF_SELECT_RELIEF	"flat"
-#define DEF_STATE		"normal"
-#define DEF_TAKE_FOCUS		"1"
-#define DEF_TEXT		(char *)NULL
-#define DEF_TEXT_FOCUS_BG	RGB_WHITE
-#define DEF_TEXT_FOCUS_FG	RGB_BLACK
-#define DEF_TEXT_NORMAL_BG	RGB_WHITE
-#define DEF_TEXT_NORMAL_FG	RGB_BLACK
-#define DEF_TEXT_VARIABLE	((char *)NULL)
-#define DEF_UNDERLINE		"-1"
-#define DEF_WIDTH		"0"
+#define DEF_HIGHLIGHT_WIDTH     "2"
+#define DEF_ICON                ((char *)NULL)
+#define DEF_ICON_VARIABLE       ((char *)NULL)
+#define DEF_IMAGE               ((char *)NULL)
+#define DEF_INSERT_COLOR        STD_NORMAL_FOREGROUND
+#define DEF_INSERT_OFFTIME      "300"
+#define DEF_INSERT_ONTIME       "600"
+#define DEF_JUSTIFY             "left"
+#define DEF_MENU                ((char *)NULL)
+#define DEF_MENU_ANCHOR         "sw"
+#define DEF_NORMAL_BG           STD_NORMAL_BACKGROUND
+#define DEF_NORMAL_FG           STD_NORMAL_FOREGROUND
+#define DEF_EDITABLE            "1"
+#define DEF_RELIEF              "sunken"
+#define DEF_SCROLL_CMD          ((char *)NULL)
+#define DEF_SCROLL_INCR         "2"
+#define DEF_SELECT_BORDERWIDTH  "0"
+#define DEF_SELECT_CMD          ((char *)NULL)
+#define DEF_SELECT_FG           RGB_WHITE
+#define DEF_SELECT_BG           RGB_SKYBLUE4
+#define DEF_SELECT_RELIEF       "flat"
+#define DEF_STATE               "normal"
+#define DEF_TAKE_FOCUS          "1"
+#define DEF_TEXT                (char *)NULL
+#define DEF_TEXT_FOCUS_BG       RGB_WHITE
+#define DEF_TEXT_FOCUS_FG       RGB_BLACK
+#define DEF_TEXT_NORMAL_BG      RGB_WHITE
+#define DEF_TEXT_NORMAL_FG      RGB_BLACK
+#define DEF_TEXT_VARIABLE       ((char *)NULL)
+#define DEF_UNDERLINE           "-1"
+#define DEF_WIDTH               "0"
 
-#define DEF_BUTTON_ACTIVEBACKGROUND	RGB_RED
-#define DEF_BUTTON_ACTIVEFOREGROUND	RGB_WHITE
-#define DEF_BUTTON_ACTIVERELIEF		"raised"
-#define DEF_BUTTON_BACKGROUND		RGB_LIGHTBLUE0
-#define DEF_BUTTON_BORDERWIDTH		"1"
-#define DEF_BUTTON_COMMAND		(char *)NULL
-#define DEF_BUTTON_FOREGROUND		RGB_LIGHTBLUE2
-#define DEF_BUTTON_RELIEF		"flat"
+#define DEF_BUTTON_ACTIVEBACKGROUND     RGB_RED
+#define DEF_BUTTON_ACTIVEFOREGROUND     RGB_WHITE
+#define DEF_BUTTON_ACTIVERELIEF         "raised"
+#define DEF_BUTTON_BACKGROUND           RGB_LIGHTBLUE0
+#define DEF_BUTTON_BORDERWIDTH          "1"
+#define DEF_BUTTON_COMMAND              (char *)NULL
+#define DEF_BUTTON_FOREGROUND           RGB_LIGHTBLUE2
+#define DEF_BUTTON_RELIEF               "flat"
 
 static Tcl_VarTraceProc TextVarTraceProc;
 static Tcl_VarTraceProc IconVarTraceProc;
@@ -217,128 +217,128 @@ static Blt_CustomOption stateOption = {
 /*
  * Icon --
  *
- *	Since instances of the same Tk image can be displayed in different
- *	windows with possibly different color palettes, Tk internally
- *	stores each instance in a linked list.  But if the instances are
- *	used in the same widget and therefore use the same color palette,
- *	this adds a lot of overhead, especially when deleting instances
- *	from the linked list.
+ *      Since instances of the same Tk image can be displayed in different
+ *      windows with possibly different color palettes, Tk internally
+ *      stores each instance in a linked list.  But if the instances are
+ *      used in the same widget and therefore use the same color palette,
+ *      this adds a lot of overhead, especially when deleting instances
+ *      from the linked list.
  *
- *	For the comboentry widget, we never need more than a single
- *	instance of an image, regardless of how many times it's used.
- *	Cache the image, maintaining a reference count for each image used
- *	in the widget.  It's likely that the comboview widget will use many
- *	instances of the same image.
+ *      For the comboentry widget, we never need more than a single
+ *      instance of an image, regardless of how many times it's used.
+ *      Cache the image, maintaining a reference count for each image used
+ *      in the widget.  It's likely that the comboview widget will use many
+ *      instances of the same image.
  */
 
 typedef struct _Icon {
-    Tk_Image tkImage;			/* Tk image being cached. */
-    short int width, height;		/* Dimensions of the cached image. */
+    Tk_Image tkImage;                   /* Tk image being cached. */
+    short int width, height;            /* Dimensions of the cached image. */
 } *Icon;
 
-#define IconHeight(i)	((i)->height)
-#define IconWidth(i)	((i)->width)
-#define IconImage(i)	((i)->tkImage)
-#define IconName(i)	(Blt_Image_Name((i)->tkImage))
+#define IconHeight(i)   ((i)->height)
+#define IconWidth(i)    ((i)->width)
+#define IconImage(i)    ((i)->tkImage)
+#define IconName(i)     (Blt_Image_Name((i)->tkImage))
 
-#define INSERT_OP	1
-#define DELETE_OP	2
+#define INSERT_OP       1
+#define DELETE_OP       2
 
 /*
  * Button --
  */
 typedef struct {
-    int borderWidth;			/* Width of 3D border around the tab's
-					 * button. */
-    int pad;				/* Extra padding around button. */
-    int activeRelief;			/* 3D relief when the button is
-					 * active. */
-    int relief;				/* 3D relief of button. */
-    XColor *normalFg;			/* If non-NULL, image to be displayed
-					 * when button is displayed. */
-    XColor *normalBg;			/* If non-NULL, image to be displayed
-					 * when the button is active. */
-    XColor *activeFg;			/* If non-NULL, image to be displayed
-					 * when button is displayed. */
-    XColor *activeBg;			/* If non-NULL, image to be displayed
-					 * when the button is active. */
-    Tcl_Obj *cmdObjPtr;			/* Command to be executed when the
-					 * the button is invoked. */
+    int borderWidth;                    /* Width of 3D border around the tab's
+                                         * button. */
+    int pad;                            /* Extra padding around button. */
+    int activeRelief;                   /* 3D relief when the button is
+                                         * active. */
+    int relief;                         /* 3D relief of button. */
+    XColor *normalFg;                   /* If non-NULL, image to be displayed
+                                         * when button is displayed. */
+    XColor *normalBg;                   /* If non-NULL, image to be displayed
+                                         * when the button is active. */
+    XColor *activeFg;                   /* If non-NULL, image to be displayed
+                                         * when button is displayed. */
+    XColor *activeBg;                   /* If non-NULL, image to be displayed
+                                         * when the button is active. */
+    Tcl_Obj *cmdObjPtr;                 /* Command to be executed when the
+                                         * the button is invoked. */
     Blt_Painter painter;
-    Blt_Picture normalPicture;		/* If non-NULL, image to be displayed
-					 * when button is displayed. */
-    Blt_Picture activePicture;		/* If non-NULL, image to be displayed
-					 * when the button is active. */
-    short int x, y;			/* Location of the button in the 
-					 * entry. Used for picking. */
-    short int width, height;		/* Dimension of the button. */
+    Blt_Picture normalPicture;          /* If non-NULL, image to be displayed
+                                         * when button is displayed. */
+    Blt_Picture activePicture;          /* If non-NULL, image to be displayed
+                                         * when the button is active. */
+    short int x, y;                     /* Location of the button in the 
+                                         * entry. Used for picking. */
+    short int width, height;            /* Dimension of the button. */
 } Button;
 
 
 static Blt_ConfigSpec buttonSpecs[] =
 {
     {BLT_CONFIG_COLOR, "-activebackground", "activeBackrgound", 
-	"ActiveBackground", DEF_BUTTON_ACTIVEBACKGROUND, 
-	Blt_Offset(Button, activeBg), 0},
+        "ActiveBackground", DEF_BUTTON_ACTIVEBACKGROUND, 
+        Blt_Offset(Button, activeBg), 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForergound", 
-	"ActiveForeground", DEF_BUTTON_ACTIVEFOREGROUND, 
-	Blt_Offset(Button, activeFg), 0},
+        "ActiveForeground", DEF_BUTTON_ACTIVEFOREGROUND, 
+        Blt_Offset(Button, activeFg), 0},
     {BLT_CONFIG_COLOR, "-background", "backrgound", "Background", 
-	DEF_BUTTON_BACKGROUND, Blt_Offset(Button, normalBg), 0},
+        DEF_BUTTON_BACKGROUND, Blt_Offset(Button, normalBg), 0},
     {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
-	DEF_BUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
+        DEF_BUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
-	DEF_BUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
+        DEF_BUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-	DEF_BUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+        DEF_BUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_BUTTON_COMMAND, 
-	Blt_Offset(Button, cmdObjPtr), BLT_CONFIG_NULL_OK},
+        Blt_Offset(Button, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_BUTTON_RELIEF, 
-	Blt_Offset(Button, relief), 0},
+        Blt_Offset(Button, relief), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
-	(char *)NULL, 0, 0}
+        (char *)NULL, 0, 0}
 };
 
-typedef int CharIndex;			/* Character index regardless of
-					 * how many bytes (UTF) are used. */
-typedef int ByteOffset;			/* Offset in bytes from the start of
-					 * the text string.  This may be
-					 * different between the normal text
-					 * and the screen text if -show is
-					 * used. */
+typedef int CharIndex;                  /* Character index regardless of
+                                         * how many bytes (UTF) are used. */
+typedef int ByteOffset;                 /* Offset in bytes from the start of
+                                         * the text string.  This may be
+                                         * different between the normal text
+                                         * and the screen text if -show is
+                                         * used. */
 
 static char emptyString[] = "";
 
 typedef struct _EditRecord {
     struct _EditRecord *nextPtr;
     int type;
-    CharIndex insertIndex;		/* Current index of the cursor. */
-    CharIndex index;			/* Character index where text was
-					   inserted. */
-    int numBytes;			/* # of bytes in text string. */
-    int numChars;			/* # of characters in text string. */
+    CharIndex insertIndex;              /* Current index of the cursor. */
+    CharIndex index;                    /* Character index where text was
+                                           inserted. */
+    int numBytes;                       /* # of bytes in text string. */
+    int numChars;                       /* # of characters in text string. */
     char text[1];
 } EditRecord;
 
 typedef struct  {
-    Tcl_Interp *interp;			/* Interpreter associated with
-					 * entry. */
-    Tk_Window tkwin;			/* Window that embodies the
-					 * comboentry. If NULL, indicates the
-					 * window has been destroyed but the
-					 * data structures haven't yet been
-					 * cleaned up.*/
-    Display *display;			/* Display containing widget.  Used,
-					 * among other things, so that
-					 * resources can be freed even after
-					 * tkwin has gone away. */
-    Tcl_Command cmdToken;		/* Token for comboentry's widget
-					 * command. */
-    Tk_Cursor cursor;			/* Current cursor for window or
-					 * None. */
-    int mask;				/* Type of widget. */
+    Tcl_Interp *interp;                 /* Interpreter associated with
+                                         * entry. */
+    Tk_Window tkwin;                    /* Window that embodies the
+                                         * comboentry. If NULL, indicates the
+                                         * window has been destroyed but the
+                                         * data structures haven't yet been
+                                         * cleaned up.*/
+    Display *display;                   /* Display containing widget.  Used,
+                                         * among other things, so that
+                                         * resources can be freed even after
+                                         * tkwin has gone away. */
+    Tcl_Command cmdToken;               /* Token for comboentry's widget
+                                         * command. */
+    Tk_Cursor cursor;                   /* Current cursor for window or
+                                         * None. */
+    int mask;                           /* Type of widget. */
     int reqWidth, reqHeight;     
     int relief;
     int borderWidth;
@@ -353,9 +353,9 @@ typedef struct  {
     XColor *activeColor;
     XColor *disabledColor;
 
-    Tcl_Obj *takeFocusObjPtr;		/* Value of -takefocus option; not
-					 * used in the C code, but used by
-					 * keyboard traversal scripts. */
+    Tcl_Obj *takeFocusObjPtr;           /* Value of -takefocus option; not
+                                         * used in the C code, but used by
+                                         * keyboard traversal scripts. */
 
     /*
      * Selection Information:
@@ -363,19 +363,19 @@ typedef struct  {
      * The selection is the rectangle that contains selected text.  It is
      * displayed as a solid colored entry with optionally a 3D border.
      */
-    CharIndex selAnchor;		/* Character index representing the
-					 * fixed end of selection. Used to
-					 * extend the selection while
-					 * maintaining the other end of the
-					 * selection. */
-    CharIndex selFirst;			/* Character index of the first
-					 * character in the selection. */
-    CharIndex selLast;			/* Character Index of the last
-					 * character in the selection. */
-    int selRelief;			/* Relief of selected items. Currently
-					 * is always raised. */
-    int selBW;				/* Border width of a selected text.*/
-    XColor *selFgColor;			/* Text color of a selected text. */
+    CharIndex selAnchor;                /* Character index representing the
+                                         * fixed end of selection. Used to
+                                         * extend the selection while
+                                         * maintaining the other end of the
+                                         * selection. */
+    CharIndex selFirst;                 /* Character index of the first
+                                         * character in the selection. */
+    CharIndex selLast;                  /* Character Index of the last
+                                         * character in the selection. */
+    int selRelief;                      /* Relief of selected items. Currently
+                                         * is always raised. */
+    int selBW;                          /* Border width of a selected text.*/
+    XColor *selFgColor;                 /* Text color of a selected text. */
     GC selectGC;
     Tcl_Obj *selCmdObjPtr;
 
@@ -386,21 +386,21 @@ typedef struct  {
     /*
      * Scanning Information:
      */
-    int scanAnchor;			/* Scan anchor in screen
-					 * coordinates. */
-    int scanX;				/* x-offset of the start of the scan
-					 * in world coordinates.*/
+    int scanAnchor;                     /* Scan anchor in screen
+                                         * coordinates. */
+    int scanX;                          /* x-offset of the start of the scan
+                                         * in world coordinates.*/
 
     /*
      * Scrolling Information:
      */
-    Tcl_Obj *scrollCmdObjPtr;		/* Command prefix for communicating
-					 * with scrollbars.  If NULL,
-					 * indicates no command to issue. */
-    int scrollUnits;			/* # of pixels per scroll unit. */
-    int scrollX;			/* x-offset of the start of visible
-					 * text in the viewport. */
-    int viewWidth;			/* Width of the viewport. */
+    Tcl_Obj *scrollCmdObjPtr;           /* Command prefix for communicating
+                                         * with scrollbars.  If NULL,
+                                         * indicates no command to issue. */
+    int scrollUnits;                    /* # of pixels per scroll unit. */
+    int scrollX;                        /* x-offset of the start of visible
+                                         * text in the viewport. */
+    int viewWidth;                      /* Width of the viewport. */
     
     /*
      * In/Out Focus Highlight Ring:
@@ -417,40 +417,40 @@ typedef struct  {
      * The entry contains optionally an icon and a text string. The rectangle
      * surrounding an entry may have a 3D border.
      */
-    Icon icon;				/* If non-NULL, image to be displayed
-					 * in entry. Its value may be
-					 * overridden by the -iconvariable
-					 * option. */
-    Tcl_Obj *iconVarObjPtr;		/* Name of TCL variable.  If non-NULL,
-					 * this variable contains the name of
-					 * an image representing the icon.
-					 * This overrides the value of the
-					 * above field. */
-    Icon image;				/* If non-NULL, image to be displayed
-					 * instead of text in the entry. */
-    char *text;				/* Text string to be displayed in the
-					 * entry if an image has no been
-					 * designated. Its value is overridden
-					 * by the -textvariable option. */
-    char *screenText;			/* Text string to be displayed on the
-					 * screen.  If the -show option is used
-					 * this string may consist of different
-					 * characters from the above string.*/
-    Tcl_Obj *textVarObjPtr;		/* Name of TCL variable.  If non-NULL,
-					 * this variable contains the text
-					 * string to * be displayed in the
-					 * entry. This overrides the above
-					 * field. */
-    Blt_Font font;			/* Font of text to be display in
-					 * entry. */
+    Icon icon;                          /* If non-NULL, image to be displayed
+                                         * in entry. Its value may be
+                                         * overridden by the -iconvariable
+                                         * option. */
+    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If non-NULL,
+                                         * this variable contains the name of
+                                         * an image representing the icon.
+                                         * This overrides the value of the
+                                         * above field. */
+    Icon image;                         /* If non-NULL, image to be displayed
+                                         * instead of text in the entry. */
+    char *text;                         /* Text string to be displayed in the
+                                         * entry if an image has no been
+                                         * designated. Its value is overridden
+                                         * by the -textvariable option. */
+    char *screenText;                   /* Text string to be displayed on the
+                                         * screen.  If the -show option is used
+                                         * this string may consist of different
+                                         * characters from the above string.*/
+    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If non-NULL,
+                                         * this variable contains the text
+                                         * string to * be displayed in the
+                                         * entry. This overrides the above
+                                         * field. */
+    Blt_Font font;                      /* Font of text to be display in
+                                         * entry. */
     XColor *textInFocusColor;
     XColor *textOutFocusColor;
     GC textInFocusGC;
     GC textOutFocusGC;
 
-    short int numChars;			/* # character in text string. */
-    short int numBytes;			/* bytes of in actual text string. */
-    short int numScreenBytes;		/* # bytes in displayed text. */
+    short int numChars;                 /* # character in text string. */
+    short int numBytes;                 /* bytes of in actual text string. */
+    short int numScreenBytes;           /* # bytes in displayed text. */
 
     /*  
      * Arrow Information:
@@ -465,25 +465,25 @@ typedef struct  {
      * Insertion cursor information:
      */
     GC insertGC;
-    XColor *insertColor;		/* Color used to draw vertical bar for
-					 * insertion cursor. */
-    int insertOffTime;			/* Time in milliseconds cursor should
-					 * spend in "off" state for each
-					 * blink. */
-    int insertOnTime;			/* Time in milliseconds cursor should
-					 * spend in "off" state for each
-					 * blink. */
-    Tcl_TimerToken insertTimerToken;	/* Handle for a timer event called
-					 * periodically to blink the insertion
-					 * cursor. */
+    XColor *insertColor;                /* Color used to draw vertical bar for
+                                         * insertion cursor. */
+    int insertOffTime;                  /* Time in milliseconds cursor should
+                                         * spend in "off" state for each
+                                         * blink. */
+    int insertOnTime;                   /* Time in milliseconds cursor should
+                                         * spend in "off" state for each
+                                         * blink. */
+    Tcl_TimerToken insertTimerToken;    /* Handle for a timer event called
+                                         * periodically to blink the insertion
+                                         * cursor. */
 
-    int insertWidth;			/* Total width of insert cursor. */
-    CharIndex insertIndex;		/* Character index of the insertion
-					 * cursor.  */
-    int prefTextWidth;			/* Desired width of text, measured in
-					 * average characters. */
-    int prefIconWidth;			/* Desired width of icon, measured in
-					 * pixels. */
+    int insertWidth;                    /* Total width of insert cursor. */
+    CharIndex insertIndex;              /* Character index of the insertion
+                                         * cursor.  */
+    int prefTextWidth;                  /* Desired width of text, measured in
+                                         * average characters. */
+    int prefIconWidth;                  /* Desired width of icon, measured in
+                                         * pixels. */
     int inset;
     short int arrowWidth, arrowHeight;
     short int iconWidth, iconHeight;
@@ -492,191 +492,191 @@ typedef struct  {
     short int width, height;
 
 
-    ByteOffset firstOffset, lastOffset;	/* Byte offset of first and last
-					 * characters visible in viewport. */
-    int firstX, lastX;			/* x-coordinates of first and last
-					 * characters visible in viewport. */ 
-    Tcl_Obj *cmdObjPtr;			/* If non-NULL, command to be executed
-					 * when this menu is posted. */
-    Tcl_Obj *menuObjPtr;	
+    ByteOffset firstOffset, lastOffset; /* Byte offset of first and last
+                                         * characters visible in viewport. */
+    int firstX, lastX;                  /* x-coordinates of first and last
+                                         * characters visible in viewport. */ 
+    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be executed
+                                         * when this menu is posted. */
+    Tcl_Obj *menuObjPtr;        
     Tk_Window menuWin;
-    Tcl_Obj *postCmdObjPtr;		/* If non-NULL, command to be executed
-					 * when this menu is posted. */
+    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be executed
+                                         * when this menu is posted. */
     int menuAnchor;
     unsigned int flags;
     EditRecord *undoPtr, *redoPtr;
-    const char *cipher;			/* If non-NULL, this is the character
-					 * to display for every character of
-					 * text. */
+    const char *cipher;                 /* If non-NULL, this is the character
+                                         * to display for every character of
+                                         * text. */
 } ComboEntry;
 
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_ARROW_ACTIVE_BG, 
-	Blt_Offset(ComboEntry, activeBg), ALL_MASK},
+        "ActiveBackground", DEF_ARROW_ACTIVE_BG, 
+        Blt_Offset(ComboEntry, activeBg), ALL_MASK},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
-	"ActiveForeground", DEF_ARROW_ACTIVE_FG, 
-	Blt_Offset(ComboEntry, activeColor), ALL_MASK},
+        "ActiveForeground", DEF_ARROW_ACTIVE_FG, 
+        Blt_Offset(ComboEntry, activeColor), ALL_MASK},
     {BLT_CONFIG_RELIEF, "-activearrowrelief", "activeArrowRelief","ArrowRelief",
-	DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, activeArrowRelief), 
-	BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+        DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, activeArrowRelief), 
+        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
-	"ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
-	Blt_Offset(ComboEntry, arrowBorderWidth), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK },
+        "ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
+        Blt_Offset(ComboEntry, arrowBorderWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK },
     {BLT_CONFIG_PIXELS_NNEG, "-arrowpad", "arrowPad", "ArrowPad", 
-	DEF_ARROW_PAD, Blt_Offset(ComboEntry, arrowPad), 
-	BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+        DEF_ARROW_PAD, Blt_Offset(ComboEntry, arrowPad), 
+        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_RELIEF, "-arrowrelief", "arrowRelief","ArrowRelief",
-	DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, arrowRelief), 
-	BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+        DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, arrowRelief), 
+        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowwidth", "arrowWidth","ArrowWidth",
-	DEF_ARROW_WIDTH, Blt_Offset(ComboEntry, reqArrowWidth), 
-	BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+        DEF_ARROW_WIDTH, Blt_Offset(ComboEntry, reqArrowWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
-	DEF_NORMAL_BG, Blt_Offset(ComboEntry, normalBg), ALL_MASK },
+        DEF_NORMAL_BG, Blt_Offset(ComboEntry, normalBg), ALL_MASK },
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,
-	ALL_MASK },
+        ALL_MASK },
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 
-	ALL_MASK },
+        ALL_MASK },
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-	DEF_BORDERWIDTH, Blt_Offset(ComboEntry, borderWidth), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        DEF_BORDERWIDTH, Blt_Offset(ComboEntry, borderWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_BITMASK, "-clearbutton", "clearButton", "ClearButton", 
-	DEF_CLRBUTTON, Blt_Offset(ComboEntry, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-	(Blt_CustomOption *)CLRBUTTON},
+        DEF_CLRBUTTON, Blt_Offset(ComboEntry, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
+        (Blt_CustomOption *)CLRBUTTON},
     {BLT_CONFIG_OBJ, "-clearcommand", "clearCommand", "ClearCommand", 
-	DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, clearButton.cmdObjPtr), 
-	BLT_CONFIG_NULL_OK | ALL_MASK },
+        DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, clearButton.cmdObjPtr), 
+        BLT_CONFIG_NULL_OK | ALL_MASK },
     {BLT_CONFIG_OBJ, "-command", "command", "Command", 
-	DEF_CMD, Blt_Offset(ComboEntry, cmdObjPtr), 
-	BLT_CONFIG_NULL_OK | ALL_MASK, },
+        DEF_CMD, Blt_Offset(ComboEntry, cmdObjPtr), 
+        BLT_CONFIG_NULL_OK | ALL_MASK, },
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
-	DEF_CURSOR, Blt_Offset(ComboEntry, cursor), 
-	BLT_CONFIG_NULL_OK | ALL_MASK, },
+        DEF_CURSOR, Blt_Offset(ComboEntry, cursor), 
+        BLT_CONFIG_NULL_OK | ALL_MASK, },
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground", 
-	"DisabledBackground", DEF_DISABLED_BG, 
-	Blt_Offset(ComboEntry, disabledBg), ALL_MASK, },
+        "DisabledBackground", DEF_DISABLED_BG, 
+        Blt_Offset(ComboEntry, disabledBg), ALL_MASK, },
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
-	"DisabledForeground", DEF_DISABLED_FG, 
-	Blt_Offset(ComboEntry, disabledColor), ALL_MASK, },
+        "DisabledForeground", DEF_DISABLED_FG, 
+        Blt_Offset(ComboEntry, disabledColor), ALL_MASK, },
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
-	"ExportSelection", DEF_EXPORTSELECTION, Blt_Offset(ComboEntry, flags),
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-	(Blt_CustomOption *)EXPORT_SELECTION},
+        "ExportSelection", DEF_EXPORTSELECTION, Blt_Offset(ComboEntry, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
+        (Blt_CustomOption *)EXPORT_SELECTION},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 
-	ALL_MASK},
+        ALL_MASK},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
-	Blt_Offset(ComboEntry, font), ALL_MASK, },
+        Blt_Offset(ComboEntry, font), ALL_MASK, },
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-	DEF_NORMAL_FG, Blt_Offset(ComboEntry, normalColor), ALL_MASK, },
+        DEF_NORMAL_FG, Blt_Offset(ComboEntry, normalColor), ALL_MASK, },
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
-	Blt_Offset(ComboEntry, reqHeight), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, },
+        Blt_Offset(ComboEntry, reqHeight), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, },
     {BLT_CONFIG_BITMASK_INVERT, "-hidearrow", "hideArrow", "HideArrow", 
-	DEF_ARROW, Blt_Offset(ComboEntry, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, (Blt_CustomOption *)ARROW},
+        DEF_ARROW, Blt_Offset(ComboEntry, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, (Blt_CustomOption *)ARROW},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground", 
-	"HighlightBackground", DEF_HIGHLIGHT_BG_COLOR, 
-	Blt_Offset(ComboEntry, highlightBgColor), BLT_CONFIG_NULL_OK | ALL_MASK},
+        "HighlightBackground", DEF_HIGHLIGHT_BG_COLOR, 
+        Blt_Offset(ComboEntry, highlightBgColor), BLT_CONFIG_NULL_OK | ALL_MASK},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-	DEF_HIGHLIGHT_COLOR, Blt_Offset(ComboEntry, highlightColor),
-	ALL_MASK},
+        DEF_HIGHLIGHT_COLOR, Blt_Offset(ComboEntry, highlightColor),
+        ALL_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
-	"HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
-	Blt_Offset(ComboEntry, highlightWidth), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        "HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
+        Blt_Offset(ComboEntry, highlightWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", DEF_ICON, 
-	Blt_Offset(ComboEntry, icon), BLT_CONFIG_NULL_OK | ALL_MASK, 
-	&iconOption},
+        Blt_Offset(ComboEntry, icon), BLT_CONFIG_NULL_OK | ALL_MASK, 
+        &iconOption},
     {BLT_CONFIG_CUSTOM, "-iconvariable", "iconVariable", "IconVariable", 
-	DEF_TEXT_VARIABLE, Blt_Offset(ComboEntry, iconVarObjPtr), 
-	BLT_CONFIG_NULL_OK | ALL_MASK, &iconVarOption},
+        DEF_TEXT_VARIABLE, Blt_Offset(ComboEntry, iconVarObjPtr), 
+        BLT_CONFIG_NULL_OK | ALL_MASK, &iconVarOption},
     {BLT_CONFIG_PIXELS_NNEG, "-iconwidth", "iconWidth", "IconWidth",
-	DEF_WIDTH, Blt_Offset(ComboEntry, prefIconWidth), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        DEF_WIDTH, Blt_Offset(ComboEntry, prefIconWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_IMAGE, 
-	Blt_Offset(ComboEntry, image), BLT_CONFIG_NULL_OK | ALL_MASK, 
-	&iconOption},
+        Blt_Offset(ComboEntry, image), BLT_CONFIG_NULL_OK | ALL_MASK, 
+        &iconOption},
     {BLT_CONFIG_COLOR, "-insertbackground", "insertBackground", 
-	"InsertBackground", DEF_INSERT_COLOR, 
-	Blt_Offset(ComboEntry, insertColor), ALL_MASK},
+        "InsertBackground", DEF_INSERT_COLOR, 
+        Blt_Offset(ComboEntry, insertColor), ALL_MASK},
     {BLT_CONFIG_INT, "-insertofftime", "insertOffTime", "OffTime",
-	DEF_INSERT_OFFTIME, Blt_Offset(ComboEntry, insertOffTime), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        DEF_INSERT_OFFTIME, Blt_Offset(ComboEntry, insertOffTime), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_INT, "-insertontime", "insertOnTime", "OnTime",
-	DEF_INSERT_ONTIME, Blt_Offset(ComboEntry, insertOnTime), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        DEF_INSERT_ONTIME, Blt_Offset(ComboEntry, insertOnTime), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_OBJ, "-menu", "menu", "Menu", DEF_MENU, 
-	Blt_Offset(ComboEntry, menuObjPtr), 
-	BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
+        Blt_Offset(ComboEntry, menuObjPtr), 
+        BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
     {BLT_CONFIG_ANCHOR, "-menuanchor", "menuAnchor", "MenuAnchor", 
-	DEF_MENU_ANCHOR, Blt_Offset(ComboEntry, menuAnchor),
-	BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
+        DEF_MENU_ANCHOR, Blt_Offset(ComboEntry, menuAnchor),
+        BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
-	DEF_CMD, Blt_Offset(ComboEntry, postCmdObjPtr), 
-	BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
+        DEF_CMD, Blt_Offset(ComboEntry, postCmdObjPtr), 
+        BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
     {BLT_CONFIG_BITMASK_INVERT, "-editable", "editable", "Editable", 
-	DEF_EDITABLE, Blt_Offset(ComboEntry, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-	(Blt_CustomOption *)READONLY},
+        DEF_EDITABLE, Blt_Offset(ComboEntry, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
+        (Blt_CustomOption *)READONLY},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
-	Blt_Offset(ComboEntry, relief), ALL_MASK},
+        Blt_Offset(ComboEntry, relief), ALL_MASK},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-	"Foreground", DEF_SELECT_BG, Blt_Offset(ComboEntry, selectBg),  
-	ALL_MASK},
+        "Foreground", DEF_SELECT_BG, Blt_Offset(ComboEntry, selectBg),  
+        ALL_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-selectborderwidth", "selectBorderWidth", 
-	"BorderWidth", DEF_SELECT_BORDERWIDTH, Blt_Offset(ComboEntry, selBW), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        "BorderWidth", DEF_SELECT_BORDERWIDTH, Blt_Offset(ComboEntry, selBW), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
-	DEF_SELECT_CMD, Blt_Offset(ComboEntry, selCmdObjPtr), 
-	BLT_CONFIG_NULL_OK | ALL_MASK},
+        DEF_SELECT_CMD, Blt_Offset(ComboEntry, selCmdObjPtr), 
+        BLT_CONFIG_NULL_OK | ALL_MASK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-	DEF_SELECT_FG, Blt_Offset(ComboEntry, selFgColor), ALL_MASK},
+        DEF_SELECT_FG, Blt_Offset(ComboEntry, selFgColor), ALL_MASK},
     {BLT_CONFIG_RELIEF, "-selectrelief", "selectRelief", "Relief",
-	DEF_SELECT_RELIEF, Blt_Offset(ComboEntry, selRelief),
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        DEF_SELECT_RELIEF, Blt_Offset(ComboEntry, selRelief),
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_STRING, "-show", "show", "Show", DEF_SHOW, 
-	Blt_Offset(ComboEntry, cipher), 
-	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        Blt_Offset(ComboEntry, cipher), 
+        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_STATE, 
-	Blt_Offset(ComboEntry, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, &stateOption},
+        Blt_Offset(ComboEntry, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, &stateOption},
     {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus", DEF_TAKE_FOCUS, 
-	Blt_Offset(ComboEntry, takeFocusObjPtr), 
-	BLT_CONFIG_NULL_OK|ALL_MASK},
+        Blt_Offset(ComboEntry, takeFocusObjPtr), 
+        BLT_CONFIG_NULL_OK|ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-text", "text", "Text", DEF_TEXT, 
-	Blt_Offset(ComboEntry, text), ALL_MASK, &textOption},
+        Blt_Offset(ComboEntry, text), ALL_MASK, &textOption},
     {BLT_CONFIG_BACKGROUND, "-textbackground", "textBackground", "Background", 
-	DEF_TEXT_NORMAL_BG, Blt_Offset(ComboEntry, outFocusBg), ALL_MASK},
+        DEF_TEXT_NORMAL_BG, Blt_Offset(ComboEntry, outFocusBg), ALL_MASK},
     {BLT_CONFIG_BACKGROUND, "-textfocusbackground", "textFocusBackground",
-	"FocusBackground", DEF_TEXT_FOCUS_BG, 
-	Blt_Offset(ComboEntry, inFocusBg), ALL_MASK},
+        "FocusBackground", DEF_TEXT_FOCUS_BG, 
+        Blt_Offset(ComboEntry, inFocusBg), ALL_MASK},
     {BLT_CONFIG_COLOR, "-textfocusforeground", "textFocusForeground",
-	"focusForeground", DEF_TEXT_FOCUS_FG, 
-	Blt_Offset(ComboEntry, textInFocusColor), ALL_MASK},
+        "focusForeground", DEF_TEXT_FOCUS_FG, 
+        Blt_Offset(ComboEntry, textInFocusColor), ALL_MASK},
     {BLT_CONFIG_COLOR, "-textforeground", "textForeground", "TextForeground",
-	DEF_TEXT_NORMAL_FG, Blt_Offset(ComboEntry, textOutFocusColor), 
-	ALL_MASK},
+        DEF_TEXT_NORMAL_FG, Blt_Offset(ComboEntry, textOutFocusColor), 
+        ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-textvariable", "textVariable", "TextVariable", 
-	DEF_TEXT_VARIABLE, Blt_Offset(ComboEntry, textVarObjPtr), 
-	BLT_CONFIG_NULL_OK | ALL_MASK, &textVarOption},
+        DEF_TEXT_VARIABLE, Blt_Offset(ComboEntry, textVarObjPtr), 
+        BLT_CONFIG_NULL_OK | ALL_MASK, &textVarOption},
     {BLT_CONFIG_PIXELS_NNEG, "-textwidth", "textWidth", "TextWidth",
-	DEF_WIDTH, Blt_Offset(ComboEntry, prefTextWidth), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        DEF_WIDTH, Blt_Offset(ComboEntry, prefTextWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width",
-	DEF_WIDTH, Blt_Offset(ComboEntry, reqWidth), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        DEF_WIDTH, Blt_Offset(ComboEntry, reqWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
-	DEF_SCROLL_CMD, Blt_Offset(ComboEntry, scrollCmdObjPtr), 
-	BLT_CONFIG_NULL_OK | ALL_MASK},
+        DEF_SCROLL_CMD, Blt_Offset(ComboEntry, scrollCmdObjPtr), 
+        BLT_CONFIG_NULL_OK | ALL_MASK},
     {BLT_CONFIG_PIXELS_POS, "-xscrollincrement", "xScrollIncrement",
-	"ScrollIncrement", DEF_SCROLL_INCR, Blt_Offset(ComboEntry, scrollUnits),
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        "ScrollIncrement", DEF_SCROLL_INCR, Blt_Offset(ComboEntry, scrollUnits),
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
-	0, ALL_MASK}
+        0, ALL_MASK}
 };
 
 static Tcl_CmdDeleteProc ComboEntryInstCmdDeletedProc;
@@ -691,21 +691,21 @@ static Tk_LostSelProc ComboEntryLostSelProc;
 static Tk_SelectionProc ComboEntrySelectionProc;
 
 typedef int (ComboEntryCmdProc)(ComboEntry *comboPtr, Tcl_Interp *interp, 
-	int objc, Tcl_Obj *const *objv);
+        int objc, Tcl_Obj *const *objv);
 
 /*
  *---------------------------------------------------------------------------
  *
  * EventuallyRedraw --
  *
- *	Tells the Tk dispatcher to call the comboentry display routine at the
- *	next idle point.  This request is made only if the window is displayed
- *	and no other redraw request is pending.
+ *      Tells the Tk dispatcher to call the comboentry display routine at the
+ *      next idle point.  This request is made only if the window is displayed
+ *      and no other redraw request is pending.
  *
  * Results: None.
  *
  * Side effects:
- *	The window is eventually redisplayed.
+ *      The window is eventually redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -713,8 +713,8 @@ static void
 EventuallyRedraw(ComboEntry *comboPtr) 
 {
     if ((comboPtr->tkwin != NULL) && ((comboPtr->flags & REDRAW_PENDING)==0)) {
-	comboPtr->flags |= REDRAW_PENDING;
-	Tcl_DoWhenIdle(DisplayComboEntry, comboPtr);
+        comboPtr->flags |= REDRAW_PENDING;
+        Tcl_DoWhenIdle(DisplayComboEntry, comboPtr);
     }
 }
 
@@ -739,8 +739,8 @@ static void
 EventuallyInvokeSelectCmd(ComboEntry *comboPtr) 
 {
     if ((comboPtr->flags & SELECT_PENDING) == 0) {
-	comboPtr->flags |= SELECT_PENDING;
-	Tcl_DoWhenIdle(ComboEntrySelectCmdProc, comboPtr);
+        comboPtr->flags |= SELECT_PENDING;
+        Tcl_DoWhenIdle(ComboEntrySelectCmdProc, comboPtr);
     }
 }
 
@@ -765,8 +765,8 @@ static void
 EventuallyInvokeCmd(ComboEntry *comboPtr) 
 {
     if ((comboPtr->flags & INVOKE_PENDING) == 0) {
-	comboPtr->flags |= INVOKE_PENDING;
-	Tcl_DoWhenIdle(ComboEntryInvokeCmdProc, comboPtr);
+        comboPtr->flags |= INVOKE_PENDING;
+        Tcl_DoWhenIdle(ComboEntryInvokeCmdProc, comboPtr);
     }
 }
 
@@ -775,14 +775,14 @@ EventuallyInvokeCmd(ComboEntry *comboPtr)
  *
  * GenerateModifiedEvent --
  *
- *	Send an event that the text was modified. This is equivalent to
- *	   event generate $textWidget <<Modified>>
+ *      Send an event that the text was modified. This is equivalent to
+ *         event generate $textWidget <<Modified>>
  *
  * Results:
- *	None
+ *      None
  *
  * Side effects:
- *	May force the text window into existence.
+ *      May force the text window into existence.
  *
  *----------------------------------------------------------------------
  */
@@ -827,11 +827,11 @@ UpdateTextVariable(Tcl_Interp *interp, ComboEntry *comboPtr)
     Tcl_UntraceVar(interp, varName, TRACE_VAR_FLAGS, TextVarTraceProc,comboPtr);
     Tcl_IncrRefCount(objPtr);
     resultObjPtr = Tcl_ObjSetVar2(interp, comboPtr->textVarObjPtr, NULL, 
-	objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+        objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
     Tcl_DecrRefCount(objPtr);
     Tcl_TraceVar(interp, varName, TRACE_VAR_FLAGS, TextVarTraceProc, comboPtr);
     if (resultObjPtr == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -842,8 +842,8 @@ FreeUndoRecords(ComboEntry *comboPtr)
     EditRecord *recPtr, *nextPtr;
 
     for (recPtr = comboPtr->undoPtr; recPtr != NULL; recPtr = nextPtr) {
-	nextPtr = recPtr->nextPtr;
-	Blt_Free(recPtr);
+        nextPtr = recPtr->nextPtr;
+        Blt_Free(recPtr);
     }
     comboPtr->undoPtr = NULL;
 }
@@ -854,15 +854,15 @@ FreeRedoRecords(ComboEntry *comboPtr)
     EditRecord *recPtr, *nextPtr;
 
     for (recPtr = comboPtr->redoPtr; recPtr != NULL; recPtr = nextPtr) {
-	nextPtr = recPtr->nextPtr;
-	Blt_Free(recPtr);
+        nextPtr = recPtr->nextPtr;
+        Blt_Free(recPtr);
     }
     comboPtr->redoPtr = NULL;
 }
 
 static void
 RecordEdit(ComboEntry *comboPtr, int type, int index, const char *text, 
-	   int numBytes)
+           int numBytes)
 {
     EditRecord *recPtr;
 
@@ -883,31 +883,31 @@ CleanText(ComboEntry *comboPtr)
     char *p, *q, *pend;
 
     if (comboPtr->screenText != NULL) {
-	Blt_Free(comboPtr->screenText);
+        Blt_Free(comboPtr->screenText);
     }
     if (comboPtr->cipher != NULL) {
-	int i, charSize;
-	Tcl_UniChar dummy;
+        int i, charSize;
+        Tcl_UniChar dummy;
 
-	charSize = Tcl_UtfToUniChar(comboPtr->cipher, &dummy);
-	comboPtr->numScreenBytes = comboPtr->numChars * charSize;
-	comboPtr->screenText = Blt_AssertMalloc(comboPtr->numScreenBytes + 1);
-	for (p = comboPtr->screenText, i = 0; i < comboPtr->numChars; 
-	     i++, p += charSize){
-	    strncpy(p, comboPtr->cipher, charSize);
-	}
-	comboPtr->screenText[comboPtr->numScreenBytes] = '\0';
+        charSize = Tcl_UtfToUniChar(comboPtr->cipher, &dummy);
+        comboPtr->numScreenBytes = comboPtr->numChars * charSize;
+        comboPtr->screenText = Blt_AssertMalloc(comboPtr->numScreenBytes + 1);
+        for (p = comboPtr->screenText, i = 0; i < comboPtr->numChars; 
+             i++, p += charSize){
+            strncpy(p, comboPtr->cipher, charSize);
+        }
+        comboPtr->screenText[comboPtr->numScreenBytes] = '\0';
     } else {
-	comboPtr->numScreenBytes = comboPtr->numBytes;
-	comboPtr->screenText = Blt_AssertMalloc(comboPtr->numScreenBytes + 1);
-	for (p = comboPtr->text, q = comboPtr->screenText, 
-		 pend = p + comboPtr->numBytes; p < pend; p++, q++) {
-	    if ((*p == '\n') || (*p == '\t')) {
-		*q = ' ';
-	    } else {
-		*q = *p;
-	    }
-	}
+        comboPtr->numScreenBytes = comboPtr->numBytes;
+        comboPtr->screenText = Blt_AssertMalloc(comboPtr->numScreenBytes + 1);
+        for (p = comboPtr->text, q = comboPtr->screenText, 
+                 pend = p + comboPtr->numBytes; p < pend; p++, q++) {
+            if ((*p == '\n') || (*p == '\t')) {
+                *q = ' ';
+            } else {
+                *q = *p;
+            }
+        }
     }
 } 
 
@@ -921,31 +921,31 @@ DeleteText(ComboEntry *comboPtr, CharIndex firstIndex, CharIndex lastIndex)
     comboPtr->selFirst = comboPtr->selLast = -1;
     /* Fix the insertion cursor index if necessary. */
     if (comboPtr->insertIndex >= firstIndex) {
-	if (comboPtr->insertIndex >= lastIndex) {
-	    comboPtr->insertIndex -= (lastIndex - firstIndex);
-	} else {
-	    comboPtr->insertIndex = firstIndex;
-	}
+        if (comboPtr->insertIndex >= lastIndex) {
+            comboPtr->insertIndex -= (lastIndex - firstIndex);
+        } else {
+            comboPtr->insertIndex = firstIndex;
+        }
     }
     comboPtr->numChars -= lastIndex - firstIndex;
     /* Remove the requested character range from the actual text */
     first = CharIndexToByteOffset(comboPtr->text, firstIndex);
     last  = CharIndexToByteOffset(comboPtr->text, lastIndex);
     for (i = first, j = last; j < comboPtr->numBytes; i++, j++) {
-	comboPtr->text[i] = comboPtr->text[j];
+        comboPtr->text[i] = comboPtr->text[j];
     }
     comboPtr->numBytes -= last - first;
     comboPtr->text[comboPtr->numBytes] = '\0';
     CleanText(comboPtr);
     if (comboPtr->textVarObjPtr != NULL) {
-	UpdateTextVariable(comboPtr->interp, comboPtr);
+        UpdateTextVariable(comboPtr->interp, comboPtr);
     }
     comboPtr->flags |= (MODIFIED | LAYOUT_PENDING | SCROLL_PENDING);
 }
 
 static int
 InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes, 
-	   const char *insertText)
+           const char *insertText)
 {
     char *text;
     ByteOffset offset;
@@ -954,7 +954,7 @@ InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes,
     /* Create a larger buffer to hold the text. */
     text = Blt_Malloc(comboPtr->numBytes + numBytes);
     if (text == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     numChars = Tcl_NumUtfChars(insertText, numBytes);
     /* Copy the old + extra to the new text. */
@@ -962,10 +962,10 @@ InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes,
     memcpy(text, comboPtr->text, offset);
     memcpy(text + offset, insertText, numBytes);
     memcpy(text + offset + numBytes, comboPtr->text + offset, 
-	   comboPtr->numBytes - offset);
+           comboPtr->numBytes - offset);
     comboPtr->numBytes += numBytes;
     if (comboPtr->text != emptyString) {
-	Blt_Free(comboPtr->text);
+        Blt_Free(comboPtr->text);
     }
     comboPtr->text = text;
     comboPtr->numChars += numChars;
@@ -973,12 +973,12 @@ InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes,
     /* If the cursor index is after the insert index, then move the
      * cursor down by the number of characters inserted. */
     if (comboPtr->insertIndex >= index) {
-	comboPtr->insertIndex += numChars;
+        comboPtr->insertIndex += numChars;
     }
     comboPtr->selFirst = comboPtr->selLast = -1;
     CleanText(comboPtr);
     if (comboPtr->textVarObjPtr != NULL) {
-	UpdateTextVariable(comboPtr->interp, comboPtr);
+        UpdateTextVariable(comboPtr->interp, comboPtr);
     }
     comboPtr->flags |= (MODIFIED | LAYOUT_PENDING | SCROLL_PENDING);
     return TCL_OK;
@@ -1022,85 +1022,85 @@ ComputeGeometry(ComboEntry *comboPtr)
     comboPtr->width = comboPtr->height = 0;
 
     if (comboPtr->icon != NULL) {
-	comboPtr->iconWidth  = IconWidth(comboPtr->icon) + IPAD;
-	comboPtr->iconHeight = IconHeight(comboPtr->icon) + 2 * YPAD;
+        comboPtr->iconWidth  = IconWidth(comboPtr->icon) + IPAD;
+        comboPtr->iconHeight = IconHeight(comboPtr->icon) + 2 * YPAD;
     }
     if (comboPtr->prefIconWidth > 0) {
-	comboPtr->iconWidth = comboPtr->prefIconWidth + IPAD;
+        comboPtr->iconWidth = comboPtr->prefIconWidth + IPAD;
     }
     comboPtr->entryWidth += comboPtr->iconWidth;
     if (comboPtr->entryHeight < comboPtr->iconHeight) {
-	comboPtr->entryHeight = comboPtr->iconHeight;
+        comboPtr->entryHeight = comboPtr->iconHeight;
     }
     if (comboPtr->image != NULL) {
-	comboPtr->textWidth  = IconWidth(comboPtr->image) + IPAD;
-	comboPtr->textHeight = IconHeight(comboPtr->image) + YPAD * 2;
+        comboPtr->textWidth  = IconWidth(comboPtr->image) + IPAD;
+        comboPtr->textHeight = IconHeight(comboPtr->image) + YPAD * 2;
     } else {
-	unsigned int w, h;
+        unsigned int w, h;
 
-	CleanText(comboPtr);
-	if (comboPtr->numScreenBytes == 0) {
-	    Blt_FontMetrics fm;
-	    Blt_GetTextExtents(comboPtr->font, 0, "0", 1, &w, &h);
-	    Blt_Font_GetMetrics(comboPtr->font, &fm);
-	    h = fm.linespace;
-	} else {
-	    Blt_GetTextExtents(comboPtr->font, 0, comboPtr->screenText, 
-		comboPtr->numScreenBytes, &w, &h);
-	}
-	comboPtr->textWidth  = w;
-	comboPtr->textHeight = h + 2 * YPAD;
-	if (comboPtr->prefTextWidth > 0) {
-	    w = Blt_TextWidth(comboPtr->font, "0", 1);
-	    comboPtr->entryWidth += comboPtr->prefTextWidth * w;
-	} else {
-	    comboPtr->entryWidth += comboPtr->textWidth;
-	}
-	comboPtr->entryWidth += IPAD;
+        CleanText(comboPtr);
+        if (comboPtr->numScreenBytes == 0) {
+            Blt_FontMetrics fm;
+            Blt_GetTextExtents(comboPtr->font, 0, "0", 1, &w, &h);
+            Blt_Font_GetMetrics(comboPtr->font, &fm);
+            h = fm.linespace;
+        } else {
+            Blt_GetTextExtents(comboPtr->font, 0, comboPtr->screenText, 
+                comboPtr->numScreenBytes, &w, &h);
+        }
+        comboPtr->textWidth  = w;
+        comboPtr->textHeight = h + 2 * YPAD;
+        if (comboPtr->prefTextWidth > 0) {
+            w = Blt_TextWidth(comboPtr->font, "0", 1);
+            comboPtr->entryWidth += comboPtr->prefTextWidth * w;
+        } else {
+            comboPtr->entryWidth += comboPtr->textWidth;
+        }
+        comboPtr->entryWidth += IPAD;
     } 
     if (comboPtr->textHeight > comboPtr->entryHeight) {
-	comboPtr->entryHeight = comboPtr->textHeight;
+        comboPtr->entryHeight = comboPtr->textHeight;
     }
     comboPtr->width += comboPtr->entryWidth;
     comboPtr->height += comboPtr->entryHeight;
     if (comboPtr->flags & ARROW) {
-	comboPtr->arrowHeight = ARROW_HEIGHT;
-	if (comboPtr->reqArrowWidth > 0) {
-	    comboPtr->arrowWidth = comboPtr->reqArrowWidth;
-	} else {
-	    comboPtr->arrowWidth = Blt_TextWidth(comboPtr->font, "0", 1);
-	    comboPtr->arrowWidth = comboPtr->arrowWidth + 4;
-	}
-	comboPtr->arrowWidth  += 2 * (comboPtr->arrowBorderWidth + comboPtr->arrowPad + 1);
-	comboPtr->arrowHeight += 2 * (comboPtr->arrowBorderWidth + 1);
-	if (comboPtr->arrowHeight > comboPtr->entryHeight) {
-	    comboPtr->height = comboPtr->entryHeight = comboPtr->arrowHeight;
-	}
-	comboPtr->arrowWidth |= 0x1;
-	comboPtr->width += comboPtr->arrowWidth;
+        comboPtr->arrowHeight = ARROW_HEIGHT;
+        if (comboPtr->reqArrowWidth > 0) {
+            comboPtr->arrowWidth = comboPtr->reqArrowWidth;
+        } else {
+            comboPtr->arrowWidth = Blt_TextWidth(comboPtr->font, "0", 1);
+            comboPtr->arrowWidth = comboPtr->arrowWidth + 4;
+        }
+        comboPtr->arrowWidth  += 2 * (comboPtr->arrowBorderWidth + comboPtr->arrowPad + 1);
+        comboPtr->arrowHeight += 2 * (comboPtr->arrowBorderWidth + 1);
+        if (comboPtr->arrowHeight > comboPtr->entryHeight) {
+            comboPtr->height = comboPtr->entryHeight = comboPtr->arrowHeight;
+        }
+        comboPtr->arrowWidth |= 0x1;
+        comboPtr->width += comboPtr->arrowWidth;
     }
     if (comboPtr->flags & CLRBUTTON) {
-	Button *butPtr = &comboPtr->clearButton;
+        Button *butPtr = &comboPtr->clearButton;
 
-	butPtr->height = BUTTON_HEIGHT;
-	butPtr->width = BUTTON_WIDTH;
-	butPtr->width  += 2 * (butPtr->borderWidth + butPtr->pad);
-	butPtr->height += 2 * (butPtr->borderWidth + butPtr->pad);
-	if (butPtr->height > comboPtr->entryHeight) {
-	    comboPtr->height = comboPtr->entryHeight = butPtr->height;
-	}
-	comboPtr->width += butPtr->width;
+        butPtr->height = BUTTON_HEIGHT;
+        butPtr->width = BUTTON_WIDTH;
+        butPtr->width  += 2 * (butPtr->borderWidth + butPtr->pad);
+        butPtr->height += 2 * (butPtr->borderWidth + butPtr->pad);
+        if (butPtr->height > comboPtr->entryHeight) {
+            comboPtr->height = comboPtr->entryHeight = butPtr->height;
+        }
+        comboPtr->width += butPtr->width;
     }
     comboPtr->width  += 2 * comboPtr->inset + IPAD;
     comboPtr->height += 2 * comboPtr->inset;
     {
-	int w, h;
-	w = (comboPtr->reqWidth > 0) ? comboPtr->reqWidth : comboPtr->width;
-	h = (comboPtr->reqHeight > 0) ? comboPtr->reqHeight : comboPtr->height;
-	if ((w != Tk_ReqWidth(comboPtr->tkwin)) || 
-	    (h != Tk_ReqHeight(comboPtr->tkwin))) {
-	    Tk_GeometryRequest(comboPtr->tkwin, w, h);
-	}
+        int w, h;
+        w = (comboPtr->reqWidth > 0) ? comboPtr->reqWidth : comboPtr->width;
+        h = (comboPtr->reqHeight > 0) ? comboPtr->reqHeight : comboPtr->height;
+        if ((w != Tk_ReqWidth(comboPtr->tkwin)) || 
+            (h != Tk_ReqHeight(comboPtr->tkwin))) {
+            Tk_GeometryRequest(comboPtr->tkwin, w, h);
+        }
     }
     comboPtr->flags &= ~LAYOUT_PENDING;
 }
@@ -1111,16 +1111,16 @@ UpdateIconVariable(Tcl_Interp *interp, ComboEntry *comboPtr)
     Tcl_Obj *resultObjPtr, *objPtr;
     
     if (comboPtr->icon != NULL) {
-	objPtr = Tcl_NewStringObj(IconName(comboPtr->icon), -1);
+        objPtr = Tcl_NewStringObj(IconName(comboPtr->icon), -1);
     } else {
-	objPtr = Tcl_NewStringObj("", -1);
+        objPtr = Tcl_NewStringObj("", -1);
     }
     Tcl_IncrRefCount(objPtr);
     resultObjPtr = Tcl_ObjSetVar2(interp, comboPtr->iconVarObjPtr, NULL, 
-	objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+        objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
     Tcl_DecrRefCount(objPtr);
     if (resultObjPtr == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -1135,7 +1135,7 @@ FreeIcon(ComboEntry *comboPtr, Icon icon)
 static char *
 GetInterpResult(Tcl_Interp *interp)
 {
-#define MAX_ERR_MSG	1023
+#define MAX_ERR_MSG     1023
     static char mesg[MAX_ERR_MSG+1];
 
     strncpy(mesg, Tcl_GetStringResult(interp), MAX_ERR_MSG);
@@ -1150,7 +1150,7 @@ SetTextFromObj(ComboEntry *comboPtr, Tcl_Obj *objPtr)
     char *string;
 
     if (comboPtr->text != emptyString) {
-	Blt_Free(comboPtr->text);
+        Blt_Free(comboPtr->text);
     }
     string = Tcl_GetStringFromObj(objPtr, &numBytes);
     comboPtr->text = Blt_AssertMalloc(numBytes + 1);
@@ -1162,7 +1162,7 @@ SetTextFromObj(ComboEntry *comboPtr, Tcl_Obj *objPtr)
     comboPtr->scrollX = 0;
     comboPtr->selFirst = comboPtr->selLast = -1;
     comboPtr->insertIndex = comboPtr->numChars = 
-	Tcl_NumUtfChars(comboPtr->text, comboPtr->numBytes);
+        Tcl_NumUtfChars(comboPtr->text, comboPtr->numBytes);
 }
 
 /*
@@ -1171,7 +1171,7 @@ SetTextFromObj(ComboEntry *comboPtr, Tcl_Obj *objPtr)
  * IconChangedProc
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -1179,8 +1179,8 @@ SetTextFromObj(ComboEntry *comboPtr, Tcl_Obj *objPtr)
 static void
 IconChangedProc(
     ClientData clientData,
-    int x, int y, int w, int h,		/* Not used. */
-    int imageWidth, int imageHeight)	/* Not used. */
+    int x, int y, int w, int h,         /* Not used. */
+    int imageWidth, int imageHeight)    /* Not used. */
 {
     ComboEntry *comboPtr = clientData;
 
@@ -1190,29 +1190,29 @@ IconChangedProc(
 
 static int
 GetIconFromObj(Tcl_Interp *interp, ComboEntry *comboPtr, Tcl_Obj *objPtr, 
-	       Icon *iconPtr)
+               Icon *iconPtr)
 {
     Tk_Image tkImage;
     const char *iconName;
 
     iconName = Tcl_GetString(objPtr);
     if (iconName[0] == '\0') {
-	*iconPtr = NULL;
-	return TCL_OK;
+        *iconPtr = NULL;
+        return TCL_OK;
     }
     tkImage = Tk_GetImage(interp, comboPtr->tkwin, iconName, IconChangedProc, 
-	comboPtr);
+        comboPtr);
     if (tkImage != NULL) {
-	struct _Icon *ip;
-	int width, height;
+        struct _Icon *ip;
+        int width, height;
 
-	ip = Blt_AssertMalloc(sizeof(struct _Icon));
-	Tk_SizeOfImage(tkImage, &width, &height);
-	ip->tkImage = tkImage;
-	ip->width = width;
-	ip->height = height;
-	*iconPtr = ip;
-	return TCL_OK;
+        ip = Blt_AssertMalloc(sizeof(struct _Icon));
+        Tk_SizeOfImage(tkImage, &width, &height);
+        ip->tkImage = tkImage;
+        ip->width = width;
+        ip->height = height;
+        *iconPtr = ip;
+        return TCL_OK;
     }
     return TCL_ERROR;
 }
@@ -1223,14 +1223,14 @@ BlinkCursor(ComboEntry *comboPtr)
     int time;
 
     if (comboPtr->flags & ICURSOR_ON) {
-	comboPtr->flags &= ~ICURSOR_ON;
-	time = comboPtr->insertOffTime;
+        comboPtr->flags &= ~ICURSOR_ON;
+        time = comboPtr->insertOffTime;
     } else {
-	comboPtr->flags |= ICURSOR_ON;
-	time = comboPtr->insertOnTime;
+        comboPtr->flags |= ICURSOR_ON;
+        time = comboPtr->insertOnTime;
     }
     comboPtr->insertTimerToken = Tcl_CreateTimerHandler(time, 
-	BlinkCursorTimerProc, comboPtr);
+        BlinkCursorTimerProc, comboPtr);
 }
 
 /*
@@ -1238,15 +1238,15 @@ BlinkCursor(ComboEntry *comboPtr)
  *
  * BlinkCursorTimerProc --
  *
- *	This procedure is called as a timer handler to blink the insertion
- *	cursor off and on.
+ *      This procedure is called as a timer handler to blink the insertion
+ *      cursor off and on.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The cursor gets turned on or off, redisplay gets invoked, and this
- *	procedure reschedules itself.
+ *      The cursor gets turned on or off, redisplay gets invoked, and this
+ *      procedure reschedules itself.
  *
  *---------------------------------------------------------------------------
  */
@@ -1256,11 +1256,11 @@ BlinkCursorTimerProc(ClientData clientData)
     ComboEntry *comboPtr = clientData;
 
     if (((comboPtr->flags & FOCUS) == 0)||(comboPtr->insertOffTime == 0)) {
-	return;
+        return;
     }
     if (comboPtr->flags & ICURSOR) {
-	BlinkCursor(comboPtr);
-	EventuallyRedraw(comboPtr);
+        BlinkCursor(comboPtr);
+        EventuallyRedraw(comboPtr);
     }
 }
 
@@ -1269,15 +1269,15 @@ BlinkCursorTimerProc(ClientData clientData)
  *
  * ComboEntryEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various events on
- * 	comboentry widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events on
+ *      comboentry widgets.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get cleaned up.
- *	When it gets exposed, it is redisplayed.
+ *      When the window gets deleted, internal structures get cleaned up.
+ *      When it gets exposed, it is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -1287,53 +1287,53 @@ ComboEntryEventProc(ClientData clientData, XEvent *eventPtr)
     ComboEntry *comboPtr = clientData;
 
     if (eventPtr->type == Expose) {
-	if (eventPtr->xexpose.count == 0) {
-	    EventuallyRedraw(comboPtr);
-	}
+        if (eventPtr->xexpose.count == 0) {
+            EventuallyRedraw(comboPtr);
+        }
     } else if (eventPtr->type == ConfigureNotify) {
-	comboPtr->flags |= SCROLL_PENDING;
-	EventuallyRedraw(comboPtr);
+        comboPtr->flags |= SCROLL_PENDING;
+        EventuallyRedraw(comboPtr);
     } else if ((eventPtr->type == FocusIn) || (eventPtr->type == FocusOut)) {
-	if (eventPtr->xfocus.detail == NotifyInferior) {
-	    return;
-	}
-	if (eventPtr->type == FocusIn) {
-	    comboPtr->flags |= FOCUS;
-	} else {
-	    comboPtr->flags &= ~FOCUS;
-	}
-	if (comboPtr->insertTimerToken != NULL) {
-	    Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
-	    comboPtr->insertTimerToken = NULL;
-	}
-	if ((comboPtr->flags & (FOCUS|ICURSOR|READONLY))==(FOCUS|ICURSOR)) {
-	    if (comboPtr->flags & ICURSOR_ON) {
-		comboPtr->flags &= ~ICURSOR_ON;
-	    } else {
-		comboPtr->flags |= ICURSOR_ON;
-	    }
-	    if (comboPtr->insertOffTime != 0) {
-		BlinkCursor(comboPtr);
-	    }
-	}
-	EventuallyRedraw(comboPtr);
+        if (eventPtr->xfocus.detail == NotifyInferior) {
+            return;
+        }
+        if (eventPtr->type == FocusIn) {
+            comboPtr->flags |= FOCUS;
+        } else {
+            comboPtr->flags &= ~FOCUS;
+        }
+        if (comboPtr->insertTimerToken != NULL) {
+            Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
+            comboPtr->insertTimerToken = NULL;
+        }
+        if ((comboPtr->flags & (FOCUS|ICURSOR|READONLY))==(FOCUS|ICURSOR)) {
+            if (comboPtr->flags & ICURSOR_ON) {
+                comboPtr->flags &= ~ICURSOR_ON;
+            } else {
+                comboPtr->flags |= ICURSOR_ON;
+            }
+            if (comboPtr->insertOffTime != 0) {
+                BlinkCursor(comboPtr);
+            }
+        }
+        EventuallyRedraw(comboPtr);
     } else if (eventPtr->type == DestroyNotify) {
-	if (comboPtr->tkwin != NULL) {
-	    comboPtr->tkwin = NULL; 
-	}
-	if (comboPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplayComboEntry, comboPtr);
-	}
-	if (comboPtr->flags & SELECT_PENDING) {
-	    Tcl_CancelIdleCall(ComboEntrySelectCmdProc, comboPtr);
-	}
-	if (comboPtr->flags & INVOKE_PENDING) {
-	    Tcl_CancelIdleCall(ComboEntryInvokeCmdProc, comboPtr);
-	}
-	if (comboPtr->insertTimerToken != NULL) {
-	    Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
-	}
-	Tcl_EventuallyFree(comboPtr, FreeComboEntryProc);
+        if (comboPtr->tkwin != NULL) {
+            comboPtr->tkwin = NULL; 
+        }
+        if (comboPtr->flags & REDRAW_PENDING) {
+            Tcl_CancelIdleCall(DisplayComboEntry, comboPtr);
+        }
+        if (comboPtr->flags & SELECT_PENDING) {
+            Tcl_CancelIdleCall(ComboEntrySelectCmdProc, comboPtr);
+        }
+        if (comboPtr->flags & INVOKE_PENDING) {
+            Tcl_CancelIdleCall(ComboEntryInvokeCmdProc, comboPtr);
+        }
+        if (comboPtr->insertTimerToken != NULL) {
+            Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
+        }
+        Tcl_EventuallyFree(comboPtr, FreeComboEntryProc);
     }
 }
 
@@ -1342,15 +1342,15 @@ ComboEntryEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * ComboEntryLostSelProc --
  *
- *	This procedure is called back by Tk when the selection is grabbed away
- *	from the comboentry widget.
+ *      This procedure is called back by Tk when the selection is grabbed away
+ *      from the comboentry widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The existing selection is unhighlighted, and the window is marked as
- *	not containing a selection.
+ *      The existing selection is unhighlighted, and the window is marked as
+ *      not containing a selection.
  *
  *---------------------------------------------------------------------------
  */
@@ -1360,8 +1360,8 @@ ComboEntryLostSelProc(ClientData clientData)
     ComboEntry *comboPtr = clientData;
 
     if ((comboPtr->selFirst >= 0) && (comboPtr->flags&EXPORT_SELECTION)) {
-	comboPtr->selFirst = comboPtr->selLast = -1;
-	EventuallyRedraw(comboPtr);
+        comboPtr->selFirst = comboPtr->selLast = -1;
+        EventuallyRedraw(comboPtr);
     }
 }
 
@@ -1370,15 +1370,15 @@ ComboEntryLostSelProc(ClientData clientData)
  *
  * ChildEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various events on
- * 	sub-menus of comboentry widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events on
+ *      sub-menus of comboentry widgets.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get cleaned up.
- *	When it gets exposed, it is redisplayed.
+ *      When the window gets deleted, internal structures get cleaned up.
+ *      When it gets exposed, it is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -1388,15 +1388,15 @@ ChildEventProc(ClientData clientData, XEvent *eventPtr)
     ComboEntry *comboPtr = clientData;
 
     if (eventPtr->type == DestroyNotify) {
-	comboPtr->flags &= ~STATE_MASK;
-	comboPtr->menuWin = NULL;
+        comboPtr->flags &= ~STATE_MASK;
+        comboPtr->menuWin = NULL;
     } else if (eventPtr->type == UnmapNotify) {
-	comboPtr->flags &= ~STATE_MASK;
+        comboPtr->flags &= ~STATE_MASK;
     } else if (eventPtr->type == MapNotify) {
-	comboPtr->flags &= ~STATE_MASK;
-	comboPtr->flags |= POSTED;
+        comboPtr->flags &= ~STATE_MASK;
+        comboPtr->flags |= POSTED;
     } else {
-	return;
+        return;
     }
     EventuallyRedraw(comboPtr);
 }
@@ -1426,9 +1426,9 @@ ComboEntryInvokeCmdProc(ClientData clientData)
 
     comboPtr->flags &= ~INVOKE_PENDING;
     if (comboPtr->cmdObjPtr != NULL) {
-	if (InvokeCommand(comboPtr->interp, comboPtr) != TCL_OK) {
-	    Tcl_BackgroundError(comboPtr->interp);
-	}
+        if (InvokeCommand(comboPtr->interp, comboPtr) != TCL_OK) {
+            Tcl_BackgroundError(comboPtr->interp);
+        }
     }
 }
 
@@ -1438,25 +1438,25 @@ ComboEntryInvokeCmdProc(ClientData clientData)
  *
  * SelectText --
  *
- *	Modify the selection by moving its un-anchored end.  This could make
- *	the selection either larger or smaller.
+ *      Modify the selection by moving its un-anchored end.  This could make
+ *      the selection either larger or smaller.
  *
- *	  1) If index is before the anchor point, sets the selection to the
- *	     characters from index up to but not including the anchor point.
- *	  2) If index is the same as the anchor point, does nothing.
- *	  3) If index is after the anchor point, set the selection to the
- *	     characters from the anchor point up to but not including index.  
- *	     The anchor point is determined by the most recent select from 
- *	     or select adjust command in this widget.
- *	  4) If the selection isn't in this widget then a new selection is
- *	     created using the most recent anchor point specified for the 
- *	     widget.
+ *        1) If index is before the anchor point, sets the selection to the
+ *           characters from index up to but not including the anchor point.
+ *        2) If index is the same as the anchor point, does nothing.
+ *        3) If index is after the anchor point, set the selection to the
+ *           characters from the anchor point up to but not including index.  
+ *           The anchor point is determined by the most recent select from 
+ *           or select adjust command in this widget.
+ *        4) If the selection isn't in this widget then a new selection is
+ *           created using the most recent anchor point specified for the 
+ *           widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The widget is possibly redrawn with the new selection.
+ *      The widget is possibly redrawn with the new selection.
  *
  *---------------------------------------------------------------------------
  */
@@ -1469,28 +1469,28 @@ SelectText(ComboEntry *comboPtr, CharIndex index)
      * Grab the selection if we don't own it already.
      */
     if ((comboPtr->flags&EXPORT_SELECTION) && (comboPtr->selFirst == -1)) {
-	Tk_OwnSelection(comboPtr->tkwin, XA_PRIMARY, ComboEntryLostSelProc, 
-		comboPtr);
+        Tk_OwnSelection(comboPtr->tkwin, XA_PRIMARY, ComboEntryLostSelProc, 
+                comboPtr);
     }
     /*  If the anchor hasn't been set yet, assume the beginning of the text*/
     if (comboPtr->selAnchor < 0) {
-	comboPtr->selAnchor = 0;
+        comboPtr->selAnchor = 0;
     }
     if (comboPtr->selAnchor <= index) {
-	first = comboPtr->selAnchor;
-	last = index;
+        first = comboPtr->selAnchor;
+        last = index;
     } else {
-	first = index;
-	last = comboPtr->selAnchor;
+        first = index;
+        last = comboPtr->selAnchor;
     }
     if (((comboPtr->selFirst != first) || (comboPtr->selLast != last)) && 
-	(first != last)) {
-	comboPtr->selFirst = first;
-	comboPtr->selLast = last;
-	EventuallyRedraw(comboPtr);
-	if (comboPtr->selCmdObjPtr != NULL) {
-	    EventuallyInvokeSelectCmd(comboPtr);
-	}
+        (first != last)) {
+        comboPtr->selFirst = first;
+        comboPtr->selLast = last;
+        EventuallyRedraw(comboPtr);
+        if (comboPtr->selCmdObjPtr != NULL) {
+            EventuallyInvokeSelectCmd(comboPtr);
+        }
     }
     return TCL_OK;
 }
@@ -1520,18 +1520,18 @@ ComboEntrySelectCmdProc(ClientData clientData)
     ComboEntry *comboPtr = clientData;
 
     if (comboPtr->selCmdObjPtr != NULL) {
-	int result;
+        int result;
 
-	comboPtr->flags &= ~SELECT_PENDING;
-	Tcl_Preserve(comboPtr);
-	Tcl_IncrRefCount(comboPtr->selCmdObjPtr);
-	result = Tcl_EvalObjEx(comboPtr->interp, comboPtr->selCmdObjPtr, 
-		TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(comboPtr->selCmdObjPtr);
-	Tcl_Release(comboPtr);
-	if (result != TCL_OK) {
-	    Tcl_BackgroundError(comboPtr->interp);
-	}
+        comboPtr->flags &= ~SELECT_PENDING;
+        Tcl_Preserve(comboPtr);
+        Tcl_IncrRefCount(comboPtr->selCmdObjPtr);
+        result = Tcl_EvalObjEx(comboPtr->interp, comboPtr->selCmdObjPtr, 
+                TCL_EVAL_GLOBAL);
+        Tcl_DecrRefCount(comboPtr->selCmdObjPtr);
+        Tcl_Release(comboPtr);
+        if (result != TCL_OK) {
+            Tcl_BackgroundError(comboPtr->interp);
+        }
     }
 }
 
@@ -1540,48 +1540,48 @@ ComboEntrySelectCmdProc(ClientData clientData)
  *
  * ComboEntrySelectionProc --
  *
- *	This procedure is called back by Tk when the selection is requested by
- *	someone.  It returns part or all of the selection in a buffer provided
- *	by the caller.
+ *      This procedure is called back by Tk when the selection is requested by
+ *      someone.  It returns part or all of the selection in a buffer provided
+ *      by the caller.
  *
  * Results:
- *	The return value is the number of non-NULL bytes stored at buffer.
- *	Buffer is filled (or partially filled) with a NUL-terminated string
- *	containing part or all of the selection, as given by offset and
- *	maxBytes.
+ *      The return value is the number of non-NULL bytes stored at buffer.
+ *      Buffer is filled (or partially filled) with a NUL-terminated string
+ *      containing part or all of the selection, as given by offset and
+ *      maxBytes.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 static int
 ComboEntrySelectionProc(
-    ClientData clientData,		/* Information about the widget. */
-    int offset,				/* Offset within the selection of the
-					 * first character to be returned. */
-    char *buffer,			/* Location in which to place
-					 * selection. */
-    int maxBytes)			/* Maximum number of bytes to place at
-					 * buffer, not including terminating
-					 * NULL character. */
+    ClientData clientData,              /* Information about the widget. */
+    int offset,                         /* Offset within the selection of the
+                                         * first character to be returned. */
+    char *buffer,                       /* Location in which to place
+                                         * selection. */
+    int maxBytes)                       /* Maximum number of bytes to place at
+                                         * buffer, not including terminating
+                                         * NULL character. */
 {
     ComboEntry *comboPtr = clientData;
     int size;
 
     size = 0;
     if (comboPtr->selFirst >= 0) {
-	ByteOffset first, last;
+        ByteOffset first, last;
 
-	first = CharIndexToByteOffset(comboPtr->screenText,comboPtr->selFirst);
-	last = CharIndexToByteOffset(comboPtr->screenText, comboPtr->selLast);
-	size = last - first - offset;
-	assert(size >= 0);
-	if (size > maxBytes) {
-	    size = maxBytes;
-	}
-	memcpy(buffer, comboPtr->screenText + first + offset, size);
-	buffer[size] = '\0';
+        first = CharIndexToByteOffset(comboPtr->screenText,comboPtr->selFirst);
+        last = CharIndexToByteOffset(comboPtr->screenText, comboPtr->selLast);
+        size = last - first - offset;
+        assert(size >= 0);
+        if (size > maxBytes) {
+            size = maxBytes;
+        }
+        memcpy(buffer, comboPtr->screenText + first + offset, size);
+        buffer[size] = '\0';
     }
     return size;
 }
@@ -1592,66 +1592,66 @@ ComboEntrySelectionProc(
  * 
  * TextVarTraceProc --
  *
- *	This procedure is invoked when someone changes the state variable
- *	associated with a comboentry entry.  The entry's selected state is set
- *	to match the value of the variable.
+ *      This procedure is invoked when someone changes the state variable
+ *      associated with a comboentry entry.  The entry's selected state is set
+ *      to match the value of the variable.
  *
  * Results:
- *	NULL is always returned.
+ *      NULL is always returned.
  *
  * Side effects:
- *	The comboentry entry may become selected or deselected.
+ *      The comboentry entry may become selected or deselected.
  *
  *---------------------------------------------------------------------------
  */
 static char *
 TextVarTraceProc(
-    ClientData clientData,		/* Information about the item. */
-    Tcl_Interp *interp,			/* Interpreter containing variable. */
-    const char *name1,			/* First part of variable's name. */
-    const char *name2,			/* Second part of variable's name. */
-    int flags)				/* Describes what just happened. */
+    ClientData clientData,              /* Information about the item. */
+    Tcl_Interp *interp,                 /* Interpreter containing variable. */
+    const char *name1,                  /* First part of variable's name. */
+    const char *name2,                  /* Second part of variable's name. */
+    int flags)                          /* Describes what just happened. */
 {
     ComboEntry *comboPtr = clientData;
 
     assert(comboPtr->textVarObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
-	return NULL;			/* Interpreter is going away. */
+        return NULL;                    /* Interpreter is going away. */
     }
     /*
      * If the variable is being unset, then re-establish the trace.
      */
     if (flags & TCL_TRACE_UNSETS) {
-	if (flags & TCL_TRACE_DESTROYED) {
-	    Tcl_SetVar(interp, name1, comboPtr->text, TCL_GLOBAL_ONLY);
-	    Tcl_TraceVar(interp, name1, TRACE_VAR_FLAGS, TextVarTraceProc, 
-		clientData);
-	}
-	return NULL;
+        if (flags & TCL_TRACE_DESTROYED) {
+            Tcl_SetVar(interp, name1, comboPtr->text, TCL_GLOBAL_ONLY);
+            Tcl_TraceVar(interp, name1, TRACE_VAR_FLAGS, TextVarTraceProc, 
+                clientData);
+        }
+        return NULL;
     }
     if (comboPtr->flags & DISABLED) {
-	return NULL;
+        return NULL;
     }
     if (flags & TCL_TRACE_WRITES) {
-	Tcl_Obj *valueObjPtr;
+        Tcl_Obj *valueObjPtr;
 
-	/*
-	 * Update the comboentry's text with the value of the variable, unless
-	 * the widget already has that value (this happens when the variable
-	 * changes value because we changed it because someone typed in the
-	 * entry).
-	 */
-	valueObjPtr = Tcl_ObjGetVar2(interp, comboPtr->textVarObjPtr, NULL, 
-		TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
-	if (valueObjPtr == NULL) {
-	    return GetInterpResult(interp);
-	} else {
-	    SetTextFromObj(comboPtr, valueObjPtr);
-	    if (comboPtr->cmdObjPtr != NULL) {
-		EventuallyInvokeCmd(comboPtr);
-	    }
-	}
-	EventuallyRedraw(comboPtr);
+        /*
+         * Update the comboentry's text with the value of the variable, unless
+         * the widget already has that value (this happens when the variable
+         * changes value because we changed it because someone typed in the
+         * entry).
+         */
+        valueObjPtr = Tcl_ObjGetVar2(interp, comboPtr->textVarObjPtr, NULL, 
+                TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+        if (valueObjPtr == NULL) {
+            return GetInterpResult(interp);
+        } else {
+            SetTextFromObj(comboPtr, valueObjPtr);
+            if (comboPtr->cmdObjPtr != NULL) {
+                EventuallyInvokeCmd(comboPtr);
+            }
+        }
+        EventuallyRedraw(comboPtr);
     }
     return NULL;
 }
@@ -1661,69 +1661,69 @@ TextVarTraceProc(
  * 
  * IconVarTraceProc --
  *
- *	This procedure is invoked when someone changes the state variable
- *	associated with a comboentry entry.  The entry's selected state is set
- *	to match the value of the variable.
+ *      This procedure is invoked when someone changes the state variable
+ *      associated with a comboentry entry.  The entry's selected state is set
+ *      to match the value of the variable.
  *
  * Results:
- *	NULL is always returned.
+ *      NULL is always returned.
  *
  * Side effects:
- *	The comboentry entry may become selected or deselected.
+ *      The comboentry entry may become selected or deselected.
  *
  *---------------------------------------------------------------------------
  */
 static char *
 IconVarTraceProc(
-    ClientData clientData,		/* Information about the item. */
-    Tcl_Interp *interp,			/* Interpreter containing variable. */
-    const char *name1,			/* First part of variable's name. */
-    const char *name2,			/* Second part of variable's name. */
-    int flags)				/* Describes what just happened. */
+    ClientData clientData,              /* Information about the item. */
+    Tcl_Interp *interp,                 /* Interpreter containing variable. */
+    const char *name1,                  /* First part of variable's name. */
+    const char *name2,                  /* Second part of variable's name. */
+    int flags)                          /* Describes what just happened. */
 {
     ComboEntry *comboPtr = clientData;
 
     assert(comboPtr->iconVarObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
-	return NULL;			/* Interpreter is going away. */
+        return NULL;                    /* Interpreter is going away. */
 
     }
     /*
      * If the variable is being unset, then re-establish the trace.
      */
     if (flags & TCL_TRACE_UNSETS) {
-	if (flags & TCL_TRACE_DESTROYED) {
-	    Tcl_SetVar(interp, name1, IconName(comboPtr->icon),TCL_GLOBAL_ONLY);
-	    Tcl_TraceVar(interp, name1, TRACE_VAR_FLAGS, IconVarTraceProc, 
-		clientData);
-	}
-	return NULL;
+        if (flags & TCL_TRACE_DESTROYED) {
+            Tcl_SetVar(interp, name1, IconName(comboPtr->icon),TCL_GLOBAL_ONLY);
+            Tcl_TraceVar(interp, name1, TRACE_VAR_FLAGS, IconVarTraceProc, 
+                clientData);
+        }
+        return NULL;
     }
     if (comboPtr->flags & DISABLED) {
-	return NULL;
+        return NULL;
     }
     if (flags & TCL_TRACE_WRITES) {
-	Icon icon;
-	Tcl_Obj *valueObjPtr;
+        Icon icon;
+        Tcl_Obj *valueObjPtr;
 
-	/*
-	 * Update the comboentry's icon with the image whose name is
-	 * stored in the variable.
-	 */
-	valueObjPtr = Tcl_ObjGetVar2(interp, comboPtr->iconVarObjPtr, NULL, 
-		TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
-	if (valueObjPtr == NULL) {
-	    return GetInterpResult(interp);
-	}
-	if (GetIconFromObj(interp, comboPtr, valueObjPtr, &icon) != TCL_OK) {
-	    return GetInterpResult(interp);
-	}
-	if (comboPtr->icon != NULL) {
-	    FreeIcon(comboPtr, comboPtr->icon);
-	}
-	comboPtr->icon = icon;
-	comboPtr->flags |= LAYOUT_PENDING;
-	EventuallyRedraw(comboPtr);
+        /*
+         * Update the comboentry's icon with the image whose name is
+         * stored in the variable.
+         */
+        valueObjPtr = Tcl_ObjGetVar2(interp, comboPtr->iconVarObjPtr, NULL, 
+                TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+        if (valueObjPtr == NULL) {
+            return GetInterpResult(interp);
+        }
+        if (GetIconFromObj(interp, comboPtr, valueObjPtr, &icon) != TCL_OK) {
+            return GetInterpResult(interp);
+        }
+        if (comboPtr->icon != NULL) {
+            FreeIcon(comboPtr, comboPtr->icon);
+        }
+        comboPtr->icon = icon;
+        comboPtr->flags |= LAYOUT_PENDING;
+        EventuallyRedraw(comboPtr);
     }
     return NULL;
 }
@@ -1731,17 +1731,17 @@ IconVarTraceProc(
 /*ARGSUSED*/
 static void
 FreeIconVarProc(ClientData clientData, Display *display, char *widgRec,
-		int offset)
+                int offset)
 {
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
     if (*objPtrPtr != NULL) {
-	ComboEntry *comboPtr = (ComboEntry *)widgRec;
+        ComboEntry *comboPtr = (ComboEntry *)widgRec;
 
-	Tcl_UntraceVar(comboPtr->interp, Tcl_GetString(*objPtrPtr), 
-		TRACE_VAR_FLAGS, IconVarTraceProc, comboPtr);
-	Tcl_DecrRefCount(*objPtrPtr);
-	*objPtrPtr = NULL;
+        Tcl_UntraceVar(comboPtr->interp, Tcl_GetString(*objPtrPtr), 
+                TRACE_VAR_FLAGS, IconVarTraceProc, comboPtr);
+        Tcl_DecrRefCount(*objPtrPtr);
+        *objPtrPtr = NULL;
     }
 }
 
@@ -1750,25 +1750,25 @@ FreeIconVarProc(ClientData clientData, Display *display, char *widgRec,
  *
  * ObjToIconVarProc --
  *
- *	Convert the variable to a traced variable.
+ *      Convert the variable to a traced variable.
  *
  * Results:
- *	The return value is a standard TCL result.  The color pointer is
- *	written into the widget record.
+ *      The return value is a standard TCL result.  The color pointer is
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToIconVarProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing style. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing style. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     ComboEntry *comboPtr = (ComboEntry *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -1777,27 +1777,27 @@ ObjToIconVarProc(
 
     /* Remove the current trace on the variable. */
     if (*objPtrPtr != NULL) {
-	Tcl_UntraceVar(interp, Tcl_GetString(*objPtrPtr), TRACE_VAR_FLAGS, 
-		       IconVarTraceProc, comboPtr);
-	Tcl_DecrRefCount(*objPtrPtr);
-	*objPtrPtr = NULL;
+        Tcl_UntraceVar(interp, Tcl_GetString(*objPtrPtr), TRACE_VAR_FLAGS, 
+                       IconVarTraceProc, comboPtr);
+        Tcl_DecrRefCount(*objPtrPtr);
+        *objPtrPtr = NULL;
     }
     varName = Tcl_GetString(objPtr);
     if ((varName[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
-	return TCL_OK;
+        return TCL_OK;
     }
 
     valueObjPtr = Tcl_ObjGetVar2(interp, objPtr, NULL, TCL_GLOBAL_ONLY);
     if (valueObjPtr != NULL) {
-	Icon icon;
+        Icon icon;
 
-	if (GetIconFromObj(interp, comboPtr, valueObjPtr, &icon) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (comboPtr->icon != NULL) {
-	    FreeIcon(comboPtr, comboPtr->icon);
-	}
-	comboPtr->icon = icon;
+        if (GetIconFromObj(interp, comboPtr, valueObjPtr, &icon) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (comboPtr->icon != NULL) {
+            FreeIcon(comboPtr, comboPtr->icon);
+        }
+        comboPtr->icon = icon;
     }
     *objPtrPtr = objPtr;
     Tcl_IncrRefCount(objPtr);
@@ -1810,27 +1810,27 @@ ObjToIconVarProc(
  *
  * IconVarToObjProc --
  *
- *	Return the name of the style.
+ *      Return the name of the style.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 IconVarToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
     if (objPtr == NULL) {
-	objPtr = Tcl_NewStringObj("", -1);
+        objPtr = Tcl_NewStringObj("", -1);
     } 
     return objPtr;
 }
@@ -1839,21 +1839,21 @@ IconVarToObjProc(
 static void
 FreeTextVarProc(
     ClientData clientData,
-    Display *display,			/* Not used. */
+    Display *display,                   /* Not used. */
     char *widgRec,
     int offset)
 {
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
     if (*objPtrPtr != NULL) {
-	ComboEntry *comboPtr = (ComboEntry *)(widgRec);
-	const char *varName;
+        ComboEntry *comboPtr = (ComboEntry *)(widgRec);
+        const char *varName;
 
-	varName = Tcl_GetString(*objPtrPtr);
-	Tcl_UntraceVar(comboPtr->interp, varName, TRACE_VAR_FLAGS, 
-		TextVarTraceProc, comboPtr);
-	Tcl_DecrRefCount(*objPtrPtr);
-	*objPtrPtr = NULL;
+        varName = Tcl_GetString(*objPtrPtr);
+        Tcl_UntraceVar(comboPtr->interp, varName, TRACE_VAR_FLAGS, 
+                TextVarTraceProc, comboPtr);
+        Tcl_DecrRefCount(*objPtrPtr);
+        *objPtrPtr = NULL;
     }
 }
 
@@ -1862,25 +1862,25 @@ FreeTextVarProc(
  *
  * ObjToTextVarProc --
  *
- *	Convert the variable to a traced variable.
+ *      Convert the variable to a traced variable.
  *
  * Results:
- *	The return value is a standard TCL result.  The color pointer is
- *	written into the widget record.
+ *      The return value is a standard TCL result.  The color pointer is
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToTextVarProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing style. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing style. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     ComboEntry *comboPtr = (ComboEntry *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -1889,25 +1889,25 @@ ObjToTextVarProc(
 
     /* Remove the current trace on the variable. */
     if (*objPtrPtr != NULL) {
-	varName = Tcl_GetString(*objPtrPtr);
-	Tcl_UntraceVar(interp, varName, TRACE_VAR_FLAGS, TextVarTraceProc, 
-		comboPtr);
-	Tcl_DecrRefCount(*objPtrPtr);
-	*objPtrPtr = NULL;
+        varName = Tcl_GetString(*objPtrPtr);
+        Tcl_UntraceVar(interp, varName, TRACE_VAR_FLAGS, TextVarTraceProc, 
+                comboPtr);
+        Tcl_DecrRefCount(*objPtrPtr);
+        *objPtrPtr = NULL;
     }
     varName = Tcl_GetString(objPtr);
     if ((varName[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
-	return TCL_OK;
+        return TCL_OK;
     }
 
     valueObjPtr = Tcl_ObjGetVar2(interp, objPtr, NULL, TCL_GLOBAL_ONLY);
     if (valueObjPtr != NULL) {
-	SetTextFromObj(comboPtr, valueObjPtr);
-	if (comboPtr->textVarObjPtr != NULL) {
-	    if (UpdateTextVariable(interp, comboPtr) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	}
+        SetTextFromObj(comboPtr, valueObjPtr);
+        if (comboPtr->textVarObjPtr != NULL) {
+            if (UpdateTextVariable(interp, comboPtr) != TCL_OK) {
+                return TCL_ERROR;
+            }
+        }
     }
     *objPtrPtr = objPtr;
     Tcl_IncrRefCount(objPtr);
@@ -1921,27 +1921,27 @@ ObjToTextVarProc(
  *
  * TextVarToObjProc --
  *
- *	Return the name of the style.
+ *      Return the name of the style.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 TextVarToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
     if (objPtr == NULL) {
-	objPtr = Tcl_NewStringObj("", -1);
+        objPtr = Tcl_NewStringObj("", -1);
     } 
     return objPtr;
 }
@@ -1951,25 +1951,25 @@ TextVarToObjProc(
  *
  * ObjToStateProc --
  *
- *	Converts the string represents an entry state into a bitflag.
+ *      Converts the string represents an entry state into a bitflag.
  *
  * Results:
- *	The return value is a standard TCL result.  The state flags are
- *	updated.
+ *      The return value is a standard TCL result.  The state flags are
+ *      updated.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToStateProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing state. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing state. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     ComboEntry *comboPtr = (ComboEntry *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -1978,19 +1978,19 @@ ObjToStateProc(
 
     string = Tcl_GetString(objPtr);
     if (strcmp(string, "normal") == 0) {
-	flag = 0;
+        flag = 0;
     } else if (strcmp(string, "posted") == 0) {
-	flag = POSTED;
+        flag = POSTED;
     } else if (strcmp(string, "disabled") == 0) {
-	flag = DISABLED;
+        flag = DISABLED;
     } else {
-	Tcl_AppendResult(interp, "unknown state \"", string, 
-		"\": should be active, disabled, normal, or posted.", 
-		(char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "unknown state \"", string, 
+                "\": should be active, disabled, normal, or posted.", 
+                (char *)NULL);
+        return TCL_ERROR;
     }
     if (comboPtr->flags & flag) {
-	return TCL_OK;			/* State is already set to value. */
+        return TCL_OK;                  /* State is already set to value. */
     }
     *flagsPtr &= ~STATE_MASK;
     *flagsPtr |= flag;
@@ -2002,32 +2002,32 @@ ObjToStateProc(
  *
  * StateToObjProc --
  *
- *	Return the name of the style.
+ *      Return the name of the style.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 StateToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;
 
     if (state & DISABLED) {
-	string = "disabled";
+        string = "disabled";
     } else if (state & POSTED) {
-	string = "posted";
+        string = "posted";
     } else {
-	string = "normal";
+        string = "normal";
     } 
     return Tcl_NewStringObj(string, -1);
 }
@@ -2036,16 +2036,16 @@ StateToObjProc(
 static void
 FreeIconProc(
     ClientData clientData,
-    Display *display,		/* Not used. */
+    Display *display,           /* Not used. */
     char *widgRec,
     int offset)
 {
     Icon icon = *(Icon *)(widgRec + offset);
 
     if (icon != NULL) {
-	ComboEntry *comboPtr = (ComboEntry *)widgRec;
+        ComboEntry *comboPtr = (ComboEntry *)widgRec;
 
-	FreeIcon(comboPtr, icon);
+        FreeIcon(comboPtr, icon);
     }
 }
 
@@ -2054,43 +2054,43 @@ FreeIconProc(
  *
  * ObjToIconProc --
  *
- *	Convert a image into a hashed icon.
+ *      Convert a image into a hashed icon.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToIconProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* Tcl_Obj representing the new
-					 * value. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
+                                         * value. */
     char *widgRec,
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     ComboEntry *comboPtr = (ComboEntry *)widgRec;
     Icon *iconPtr = (Icon *)(widgRec + offset);
     Icon icon;
 
     if (GetIconFromObj(interp, comboPtr, objPtr, &icon) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (*iconPtr != NULL) {
-	FreeIcon(comboPtr, *iconPtr);
+        FreeIcon(comboPtr, *iconPtr);
     }
     *iconPtr = icon;
     if (comboPtr->iconVarObjPtr != NULL) {
-	if (UpdateIconVariable(interp, comboPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (UpdateIconVariable(interp, comboPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -2100,30 +2100,30 @@ ObjToIconProc(
  *
  * IconToObjProc --
  *
- *	Converts the icon into its string representation (its name).
+ *      Converts the icon into its string representation (its name).
  *
  * Results:
- *	The name of the icon is returned.
+ *      The name of the icon is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 IconToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
+    Tk_Window tkwin,                    /* Not used. */
     char *widgRec,
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Icon icon = *(Icon *)(widgRec + offset);
     Tcl_Obj *objPtr;
 
     if (icon == NULL) {
-	objPtr = Tcl_NewStringObj("", 0);
+        objPtr = Tcl_NewStringObj("", 0);
     } else {
-	objPtr =Tcl_NewStringObj(Blt_Image_Name(IconImage(icon)), -1);
+        objPtr =Tcl_NewStringObj(Blt_Image_Name(IconImage(icon)), -1);
     }
     return objPtr;
 }
@@ -2135,11 +2135,11 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
     ComboEntry *comboPtr = (ComboEntry *)(widgRec);
 
     if (comboPtr->text != emptyString) {
-	Blt_Free(comboPtr->text);
-	Blt_Free(comboPtr->screenText);
-	comboPtr->text = emptyString;
-	comboPtr->screenText = NULL;
-	comboPtr->numScreenBytes = comboPtr->numBytes = 0;
+        Blt_Free(comboPtr->text);
+        Blt_Free(comboPtr->screenText);
+        comboPtr->text = emptyString;
+        comboPtr->screenText = NULL;
+        comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     }
 }
 
@@ -2148,38 +2148,38 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
  *
  * ObjToTextProc --
  *
- *	Save the text and add the item to the text hashtable.
+ *      Save the text and add the item to the text hashtable.
  *
  * Results:
- *	A standard TCL result. 
+ *      A standard TCL result. 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToTextProc(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    Tk_Window tkwin,		/* Not used. */
-    Tcl_Obj *objPtr,		/* String representing style. */
-    char *widgRec,		/* Widget record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Interpreter to send results back to */
+    Tk_Window tkwin,            /* Not used. */
+    Tcl_Obj *objPtr,            /* String representing style. */
+    char *widgRec,              /* Widget record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     ComboEntry *comboPtr = (ComboEntry *)(widgRec);
 
     if (comboPtr->text != emptyString) {
-	Blt_Free(comboPtr->text);
-	Blt_Free(comboPtr->screenText);
-	comboPtr->text = emptyString;
-	comboPtr->screenText = NULL;
-	comboPtr->numScreenBytes = comboPtr->numBytes = 0;
+        Blt_Free(comboPtr->text);
+        Blt_Free(comboPtr->screenText);
+        comboPtr->text = emptyString;
+        comboPtr->screenText = NULL;
+        comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     }
     SetTextFromObj(comboPtr, objPtr);
     if (comboPtr->textVarObjPtr != NULL) {
-	if (UpdateTextVariable(interp, comboPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (UpdateTextVariable(interp, comboPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     comboPtr->flags |= MODIFIED;
     return TCL_OK;
@@ -2190,22 +2190,22 @@ ObjToTextProc(
  *
  * TextToObjProc --
  *
- *	Returns the current text of the entry.
+ *      Returns the current text of the entry.
  *
  * Results:
- *	The text is returned.
+ *      The text is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 TextToObjProc(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,      /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,		/* Not used. */
-    char *widgRec,		/* Widget information record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,            /* Not used. */
+    char *widgRec,              /* Widget information record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     ComboEntry *comboPtr = (ComboEntry *)(widgRec);
 
@@ -2218,16 +2218,16 @@ PrevUtfOffset(const char *string)
     int i;
 
     for (i = 1; i <= TCL_UTF_MAX; i++) {
-	unsigned char byte;
+        unsigned char byte;
 
-	string--;
-	byte = *(unsigned char *)string;
-	if (byte < 0x80) {
-	    break;
-	}
-	if (byte >= 0xC0) {
-	    return i;
-	}
+        string--;
+        byte = *(unsigned char *)string;
+        if (byte < 0x80) {
+            break;
+        }
+        if (byte >= 0xC0) {
+            return i;
+        }
     }
     return i;
 }
@@ -2237,105 +2237,105 @@ PrevUtfOffset(const char *string)
  *
  * GetTextIndex --
  *
- *	Converts a string representing a item index into an item pointer.
- *	The index may be in one of the following forms:
+ *      Converts a string representing a item index into an item pointer.
+ *      The index may be in one of the following forms:
  *
- *	 number		Specifies the character as a numerical index, 
- *			where 0 corresponds to the first character in 
- *			the string.
- *	 "anchor"	Indicates the anchor point for the selection, 
- *			which is set with the select from and select 
- *			adjust widget commands.
- *	 "end"		Indicates the character just after the last one  
- *			in the entry's string.  This is equivalent to 
- *			specifying a numerical index equal to the length 
- *			of the entry's string.
- *	 "insert"       Indicates the character adjacent to and immediately 
- *			following the insertion cursor.
- *	 "sel.first"    Indicates the first character in the selection.  
- *			It is an error to use this form if the selection 
- *			isn't in the entry window.
- *       "sel.last"	Indicates the character just  after the last one 
- *			in the selection.  It is an error to use this form 
- *			if  the  selection isn't in the entry window.
+ *       number         Specifies the character as a numerical index, 
+ *                      where 0 corresponds to the first character in 
+ *                      the string.
+ *       "anchor"       Indicates the anchor point for the selection, 
+ *                      which is set with the select from and select 
+ *                      adjust widget commands.
+ *       "end"          Indicates the character just after the last one  
+ *                      in the entry's string.  This is equivalent to 
+ *                      specifying a numerical index equal to the length 
+ *                      of the entry's string.
+ *       "insert"       Indicates the character adjacent to and immediately 
+ *                      following the insertion cursor.
+ *       "sel.first"    Indicates the first character in the selection.  
+ *                      It is an error to use this form if the selection 
+ *                      isn't in the entry window.
+ *       "sel.last"     Indicates the character just  after the last one 
+ *                      in the selection.  It is an error to use this form 
+ *                      if  the  selection isn't in the entry window.
  *       @x             X-coordinate in the entry's window;  the character 
- *			spanning that x-coordinate is used.  For example, 
- *			"@0" indicates the left-most character in the window.
+ *                      spanning that x-coordinate is used.  For example, 
+ *                      "@0" indicates the left-most character in the window.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.  The
- *	pointer to the node is returned via itemPtrPtr.  Otherwise, TCL_ERROR
- *	is returned and an error message is left in interpreter's result
- *	field.
+ *      If the string is successfully converted, TCL_OK is returned.  The
+ *      pointer to the node is returned via itemPtrPtr.  Otherwise, TCL_ERROR
+ *      is returned and an error message is left in interpreter's result
+ *      field.
  *
  *---------------------------------------------------------------------------
  */
 static int
 GetTextIndex(Tcl_Interp *interp, ComboEntry *comboPtr, Tcl_Obj *objPtr,
-	     CharIndex *indexPtr)
+             CharIndex *indexPtr)
 {
     char *string;
     char c;
     CharIndex index;
 
     if (Tcl_GetIntFromObj((Tcl_Interp *)NULL, objPtr, &index) == TCL_OK) {
-	/* Convert the character index into a byte offset. */
-	if (comboPtr->screenText == NULL) {
-	    *indexPtr = 0;
-	    return TCL_OK;
-	}
-	if (index < 0) {
-	    *indexPtr = 0;
-	} else {
-	    *indexPtr = index;
-	}
-	return TCL_OK;
+        /* Convert the character index into a byte offset. */
+        if (comboPtr->screenText == NULL) {
+            *indexPtr = 0;
+            return TCL_OK;
+        }
+        if (index < 0) {
+            *indexPtr = 0;
+        } else {
+            *indexPtr = index;
+        }
+        return TCL_OK;
     }
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'a') && (strcmp(string, "anchor") == 0)) {
-	if (comboPtr->selAnchor < 0) {
-	    Tcl_AppendResult(interp, "bad index \"", string, 
-			     "\": no selection present.", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	*indexPtr = comboPtr->selAnchor;
+        if (comboPtr->selAnchor < 0) {
+            Tcl_AppendResult(interp, "bad index \"", string, 
+                             "\": no selection present.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        *indexPtr = comboPtr->selAnchor;
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
-	*indexPtr = comboPtr->numChars;
+        *indexPtr = comboPtr->numChars;
     } else if ((c == 'i') && (strcmp(string, "insert") == 0)) {
-	*indexPtr = comboPtr->insertIndex;
+        *indexPtr = comboPtr->insertIndex;
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
-	index = comboPtr->insertIndex;
-	if (index < comboPtr->numChars) {
-	    index++;
-	}
-	*indexPtr = index;
+        index = comboPtr->insertIndex;
+        if (index < comboPtr->numChars) {
+            index++;
+        }
+        *indexPtr = index;
     } else if ((c == 'p') && (strcmp(string, "previous") == 0)) {
-	index = comboPtr->insertIndex;
-	if (index > 0) {
-	    index--;
-	}
-	*indexPtr = index;
+        index = comboPtr->insertIndex;
+        if (index > 0) {
+            index--;
+        }
+        *indexPtr = index;
     } else if ((c == 's') && (strcmp(string, "sel.first") == 0)) {
-	*indexPtr = (int)comboPtr->selFirst;
+        *indexPtr = (int)comboPtr->selFirst;
     } else if ((c == 's') && (strcmp(string, "sel.last") == 0)) {
-	*indexPtr = (int)comboPtr->selLast;
+        *indexPtr = (int)comboPtr->selLast;
     } else if (c == '@') {
-	int x, dummy, numBytes;
+        int x, dummy, numBytes;
 
-	if (Tcl_GetInt(interp, string+1, &x) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	/* Convert screen position to character index */
-	x -= comboPtr->inset + comboPtr->iconWidth;
-	x += comboPtr->scrollX;
-	numBytes = Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
-		comboPtr->numScreenBytes, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, 
-		&dummy);
-	*indexPtr = Tcl_NumUtfChars(comboPtr->screenText, numBytes);
+        if (Tcl_GetInt(interp, string+1, &x) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        /* Convert screen position to character index */
+        x -= comboPtr->inset + comboPtr->iconWidth;
+        x += comboPtr->scrollX;
+        numBytes = Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
+                comboPtr->numScreenBytes, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, 
+                &dummy);
+        *indexPtr = Tcl_NumUtfChars(comboPtr->screenText, numBytes);
     } else {
-	Tcl_AppendResult(interp, "unknown index \"", string, "\"",(char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "unknown index \"", string, "\"",(char *)NULL);
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -2353,13 +2353,13 @@ DestroyButton(ComboEntry *comboPtr, Button *butPtr)
     iconOption.clientData = comboPtr;
     Blt_FreeOptions(buttonSpecs, (char *)butPtr, comboPtr->display, 0);
     if (butPtr->activePicture != NULL) {
-	Blt_FreePicture(butPtr->activePicture);
+        Blt_FreePicture(butPtr->activePicture);
     }
     if (butPtr->normalPicture != NULL) {
-	Blt_FreePicture(butPtr->normalPicture);
+        Blt_FreePicture(butPtr->normalPicture);
     }
     if (butPtr->painter != NULL) {
-	Blt_FreePainter(butPtr->painter);
+        Blt_FreePainter(butPtr->painter);
     }
 }
 
@@ -2368,27 +2368,27 @@ DestroyButton(ComboEntry *comboPtr, Button *butPtr)
  *
  * ConfigureButton --
  *
- * 	This procedure is called to process an objv/objc list, plus the Tk
- * 	option database, in order to configure (or reconfigure) the widget.
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
 
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *      The return value is a standard TCL result.  If TCL_ERROR is returned,
+ *      then interp->result contains an error message.
  *
  * Side Effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for setPtr; old resources get freed, if there were any.  The widget
- *	is redisplayed.
+ *      Configuration information, such as text string, colors, font, etc. get
+ *      set for setPtr; old resources get freed, if there were any.  The widget
+ *      is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureButton(
-    Tcl_Interp *interp,			/* Interpreter to report errors. */
-    ComboEntry *comboPtr,		/* Information about widget; may or
-					 * may not already have values for
-					 * some fields. */
+    Tcl_Interp *interp,                 /* Interpreter to report errors. */
+    ComboEntry *comboPtr,               /* Information about widget; may or
+                                         * may not already have values for
+                                         * some fields. */
     int objc,
     Tcl_Obj *const *objv,
     int flags)
@@ -2397,13 +2397,13 @@ ConfigureButton(
 
     iconOption.clientData = comboPtr;
     if (Blt_ConfigureWidgetFromObj(interp, comboPtr->tkwin, buttonSpecs, 
-	objc, objv, (char *)butPtr, flags) != TCL_OK) {
-	return TCL_ERROR;
+        objc, objv, (char *)butPtr, flags) != TCL_OK) {
+        return TCL_ERROR;
     }
     butPtr->width = butPtr->height = 0;
     if (comboPtr->flags & CLRBUTTON) {
-	butPtr->width = BUTTON_WIDTH + 2 * butPtr->borderWidth;
-	butPtr->height = BUTTON_HEIGHT + 2 * butPtr->borderWidth;
+        butPtr->width = BUTTON_WIDTH + 2 * butPtr->borderWidth;
+        butPtr->height = BUTTON_HEIGHT + 2 * butPtr->borderWidth;
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -2412,45 +2412,45 @@ ConfigureButton(
 
 static int
 ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
-		    Tcl_Obj *const *objv, int flags)
+                    Tcl_Obj *const *objv, int flags)
 {
     unsigned int gcMask;
     XGCValues gcValues;
     GC newGC;
 
     if (Blt_ConfigureWidgetFromObj(interp, comboPtr->tkwin, configSpecs, objc, 
-		objv, (char *)comboPtr, comboPtr->mask | flags) != TCL_OK) {
-	return TCL_ERROR;
+                objv, (char *)comboPtr, comboPtr->mask | flags) != TCL_OK) {
+        return TCL_ERROR;
     }
     if (comboPtr->flags & READONLY) {
-	comboPtr->flags &= ~ICURSOR;
+        comboPtr->flags &= ~ICURSOR;
     } else {
-	comboPtr->flags |= ICURSOR;
+        comboPtr->flags |= ICURSOR;
     }
     /* Text in/out focus GCs. */
     gcMask = GCForeground | GCFont;
     if (comboPtr->flags & DISABLED) {
-	gcValues.foreground = comboPtr->disabledColor->pixel;
+        gcValues.foreground = comboPtr->disabledColor->pixel;
     } else {
-	gcValues.foreground = comboPtr->textInFocusColor->pixel;
-    }	
+        gcValues.foreground = comboPtr->textInFocusColor->pixel;
+    }   
     gcValues.font = Blt_Font_Id(comboPtr->font);
     newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
     if (comboPtr->textInFocusGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->textInFocusGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->textInFocusGC);
     }
     comboPtr->textInFocusGC = newGC;
 
     gcMask = GCForeground | GCFont;
     if (comboPtr->flags & DISABLED) {
-	gcValues.foreground = comboPtr->disabledColor->pixel;
+        gcValues.foreground = comboPtr->disabledColor->pixel;
     } else {
-	gcValues.foreground = comboPtr->textOutFocusColor->pixel;
-    }	
+        gcValues.foreground = comboPtr->textOutFocusColor->pixel;
+    }   
     gcValues.font = Blt_Font_Id(comboPtr->font);
     newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
     if (comboPtr->textOutFocusGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->textOutFocusGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->textOutFocusGC);
     }
     comboPtr->textOutFocusGC = newGC;
 
@@ -2460,23 +2460,23 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
     gcValues.font = Blt_Font_Id(comboPtr->font);
     newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
     if (comboPtr->selectGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->selectGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->selectGC);
     }
     comboPtr->selectGC = newGC;
 
     /* Arrow. */
     if (comboPtr->flags & ARROW) {
-	gcMask = GCForeground;
-	if (comboPtr->flags & ACTIVE_ARROW) {
-	    gcValues.foreground = comboPtr->activeColor->pixel;
-	} else if (comboPtr->flags & DISABLED) {
-	    gcValues.foreground = comboPtr->disabledColor->pixel;
-	} else {
-	    gcValues.foreground = comboPtr->normalColor->pixel;
-	}
-	newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
+        gcMask = GCForeground;
+        if (comboPtr->flags & ACTIVE_ARROW) {
+            gcValues.foreground = comboPtr->activeColor->pixel;
+        } else if (comboPtr->flags & DISABLED) {
+            gcValues.foreground = comboPtr->disabledColor->pixel;
+        } else {
+            gcValues.foreground = comboPtr->normalColor->pixel;
+        }
+        newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
     } else {
-	newGC = NULL;
+        newGC = NULL;
     }
 
     /* Focus highlight GCs */
@@ -2484,19 +2484,19 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
     gcValues.foreground = comboPtr->highlightColor->pixel;
     newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
     if (comboPtr->highlightGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->highlightGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->highlightGC);
     }
     comboPtr->highlightGC = newGC;
 
     if (comboPtr->highlightBgColor != NULL) {
-	gcMask = GCForeground;
-	gcValues.foreground = comboPtr->highlightBgColor->pixel;
-	newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
+        gcMask = GCForeground;
+        gcValues.foreground = comboPtr->highlightBgColor->pixel;
+        newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
     } else {
-	newGC = NULL;
+        newGC = NULL;
     }
     if (comboPtr->highlightBgGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->highlightBgGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->highlightBgGC);
     }
     comboPtr->highlightBgGC = newGC;
 
@@ -2505,7 +2505,7 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
     gcValues.foreground = comboPtr->insertColor->pixel;
     newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
     if (comboPtr->insertGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->insertGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->insertGC);
     }
     comboPtr->insertGC = newGC;
     ComputeGeometry(comboPtr);
@@ -2517,38 +2517,38 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
  *
  * ActivateOp --
  *
- *	Activates
+ *      Activates
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cb activate bool
+ *      .cb activate bool
  *
  *---------------------------------------------------------------------------
  */
 static int
 ActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	   Tcl_Obj *const *objv)
+           Tcl_Obj *const *objv)
 {
     const char *string;
     unsigned int old;
 
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;			/* Writing is currently disabled. */
+        return TCL_OK;                  /* Writing is currently disabled. */
     }
     string = Tcl_GetString(objv[2]);
     old = (comboPtr->flags & ACTIVE_MASK);
     comboPtr->flags &= ~ACTIVE_MASK;
     if (strcmp(string, "button") == 0) {
-	comboPtr->flags |= ACTIVE_CLEAR;
+        comboPtr->flags |= ACTIVE_CLEAR;
     } else if (strcmp(string, "arrow") == 0) {
-	comboPtr->flags |= ACTIVE_ARROW;
-    }	
+        comboPtr->flags |= ACTIVE_ARROW;
+    }   
     if (old != (comboPtr->flags & ACTIVE_MASK)) {
-	EventuallyRedraw(comboPtr);
+        EventuallyRedraw(comboPtr);
     }
     return TCL_OK;
 }
@@ -2563,11 +2563,11 @@ ActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 ButtonCgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	     Tcl_Obj *const *objv)
+             Tcl_Obj *const *objv)
 {
     iconOption.clientData = comboPtr;
     return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, buttonSpecs,
-	(char *)&comboPtr->clearButton, objv[2], 0);
+        (char *)&comboPtr->clearButton, objv[2], 0);
 }
 
 /*
@@ -2575,37 +2575,37 @@ ButtonCgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * ButtonConfigureOp --
  *
- * 	This procedure is called to process an objv/objc list, plus the Tk
- * 	option database, in order to configure (or reconfigure) the widget.
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
  *
  * Side Effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for comboPtr; old resources get freed, if there were any.  The
- *	widget is redisplayed.
+ *      Configuration information, such as text string, colors, font, etc. get
+ *      set for comboPtr; old resources get freed, if there were any.  The
+ *      widget is redisplayed.
  *
- *	.ce button configure ?optio value?
+ *      .ce button configure ?optio value?
  *
  *---------------------------------------------------------------------------
  */
 static int
 ButtonConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-		  Tcl_Obj *const *objv)
+                  Tcl_Obj *const *objv)
 {
     iconOption.clientData = comboPtr;
     if (objc == 2) {
-	return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, buttonSpecs,
-	    (char *)&comboPtr->clearButton, (Tcl_Obj *)NULL, 0);
+        return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, buttonSpecs,
+            (char *)&comboPtr->clearButton, (Tcl_Obj *)NULL, 0);
     } else if (objc == 3) {
-	return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, buttonSpecs,
-	    (char *)&comboPtr->clearButton, objv[2], 0);
+        return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, buttonSpecs,
+            (char *)&comboPtr->clearButton, objv[2], 0);
     }
     if (ConfigureButton(interp, comboPtr, objc - 3, objv + 3, 
-		BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	return TCL_ERROR;
+                BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+        return TCL_ERROR;
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -2616,40 +2616,40 @@ ButtonConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * ButtonInvokeOp --
  *
- * 	This procedure is called to invoke a button command.
+ *      This procedure is called to invoke a button command.
  *
- *	  .t button invoke
+ *        .t button invoke
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ButtonInvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	       Tcl_Obj *const *objv)
+               Tcl_Obj *const *objv)
 {
     if (comboPtr->flags & (READONLY|DISABLED)) {
-	return TCL_OK;			/* Writing is currently disabled. */
+        return TCL_OK;                  /* Writing is currently disabled. */
     }
     if (comboPtr->clearButton.cmdObjPtr != NULL) {
-	Tcl_Obj *cmdObjPtr;
-	int result;
+        Tcl_Obj *cmdObjPtr;
+        int result;
 
-	cmdObjPtr = Tcl_DuplicateObj(comboPtr->clearButton.cmdObjPtr);
-	Tcl_IncrRefCount(cmdObjPtr);
-	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(cmdObjPtr);
-	if (result != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        cmdObjPtr = Tcl_DuplicateObj(comboPtr->clearButton.cmdObjPtr);
+        Tcl_IncrRefCount(cmdObjPtr);
+        result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+        Tcl_DecrRefCount(cmdObjPtr);
+        if (result != TCL_OK) {
+            return TCL_ERROR;
+        }
     } else {
-	/* Record the delete for futher redo/undos.  */
-	RecordEdit(comboPtr, DELETE_OP, 0, comboPtr->text, comboPtr->numBytes);
-	DeleteText(comboPtr, 0, comboPtr->numChars);
-	FreeRedoRecords(comboPtr);
+        /* Record the delete for futher redo/undos.  */
+        RecordEdit(comboPtr, DELETE_OP, 0, comboPtr->text, comboPtr->numBytes);
+        DeleteText(comboPtr, 0, comboPtr->numChars);
+        FreeRedoRecords(comboPtr);
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -2660,10 +2660,10 @@ ButtonInvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * ButtonOp --
  *
- *	This procedure handles tab operations.
+ *      This procedure handles tab operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -2678,15 +2678,15 @@ static int numButtonOps = sizeof(buttonOps) / sizeof(Blt_OpSpec);
 
 static int
 ButtonOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     ComboEntryCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numButtonOps, buttonOps, 
-	BLT_OP_ARG2, objc, objv, 0);
+        BLT_OP_ARG2, objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     result = (*proc) (comboPtr, interp, objc, objv);
     return result;
@@ -2698,13 +2698,13 @@ ButtonOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  * CgetOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cb cget option
+ *      .cb cget option
  *
  *---------------------------------------------------------------------------
  */
@@ -2713,7 +2713,7 @@ CgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     iconOption.clientData = comboPtr;
     return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, configSpecs,
-	(char *)comboPtr, objv[2], comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
+        (char *)comboPtr, objv[2], comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
 }
 
 /*
@@ -2721,53 +2721,53 @@ CgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ClosestOp --
  *
- *	Returns the index of the edge closest to the given x-coordinate.
+ *      Returns the index of the edge closest to the given x-coordinate.
  *
  * Results:
- *	A standard TCL result.  If the argument does not represent a valid
- *	index, then TCL_ERROR is returned and the interpreter result will
- *	contain an error message.
+ *      A standard TCL result.  If the argument does not represent a valid
+ *      index, then TCL_ERROR is returned and the interpreter result will
+ *      contain an error message.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	  Tcl_Obj *const *objv)
+          Tcl_Obj *const *objv)
 {
     ByteOffset offset;
     CharIndex index;
     int x;
     
     if (Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     /* Convert screen position to character index */
     x -= comboPtr->inset;
     if (comboPtr->icon != NULL) {
-	x -= comboPtr->iconWidth;
+        x -= comboPtr->iconWidth;
     }
     x += comboPtr->scrollX;
     if (x <= 0) {
-	offset = 0;
+        offset = 0;
     } else if (x >= comboPtr->textWidth) {
-	offset = comboPtr->numScreenBytes;
+        offset = comboPtr->numScreenBytes;
     } else {
-	int prev;
-	int dummy, leftEdge, rightEdge, mid;
+        int prev;
+        int dummy, leftEdge, rightEdge, mid;
 
-	offset = Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
-		comboPtr->numScreenBytes, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, 
-		&dummy);
-	/* Get the previous character */
-	prev = offset - PrevUtfOffset(comboPtr->screenText + offset);
-	/* Measure the two strings. */
-	rightEdge = Blt_TextWidth(comboPtr->font, comboPtr->screenText, offset);
-	leftEdge = Blt_TextWidth(comboPtr->font, comboPtr->screenText, prev);
-	mid = (rightEdge + leftEdge + 1) / 2;
-	if (x <= mid) {
-	    offset = prev;
-	}
+        offset = Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
+                comboPtr->numScreenBytes, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, 
+                &dummy);
+        /* Get the previous character */
+        prev = offset - PrevUtfOffset(comboPtr->screenText + offset);
+        /* Measure the two strings. */
+        rightEdge = Blt_TextWidth(comboPtr->font, comboPtr->screenText, offset);
+        leftEdge = Blt_TextWidth(comboPtr->font, comboPtr->screenText, prev);
+        mid = (rightEdge + leftEdge + 1) / 2;
+        if (x <= mid) {
+            offset = prev;
+        }
     }
     index = Tcl_NumUtfChars(comboPtr->screenText, offset);
     Tcl_SetIntObj(Tcl_GetObjResult(interp), index);
@@ -2780,38 +2780,38 @@ ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  * ConfigureOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm configure ?option value?...
+ *      .cm configure ?option value?...
  *
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	    Tcl_Obj *const *objv)
+            Tcl_Obj *const *objv)
 {
     int result;
 
     iconOption.clientData = comboPtr;
     if (objc == 2) {
-	return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, configSpecs, 
-		(char *)comboPtr, (Tcl_Obj *)NULL,  
-		comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
+        return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, configSpecs, 
+                (char *)comboPtr, (Tcl_Obj *)NULL,  
+                comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
     } else if (objc == 3) {
-	return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, configSpecs, 
-		(char *)comboPtr, objv[2], 
-		comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
+        return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, configSpecs, 
+                (char *)comboPtr, objv[2], 
+                comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
     }
     Tcl_Preserve(comboPtr);
     result = ConfigureComboEntry(interp, comboPtr, objc - 2, objv + 2, 
-		comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
+                comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
     Tcl_Release(comboPtr);
     if (result == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     comboPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
     EventuallyRedraw(comboPtr);
@@ -2824,17 +2824,17 @@ ConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * DeleteOp --
  *
- *	Deletes one of more characters in the label's text label.  The range
- *	of characters is specified by the range first/last.  If no last
- *	argument is provided, then only the single character is deleted.
+ *      Deletes one of more characters in the label's text label.  The range
+ *      of characters is specified by the range first/last.  If no last
+ *      argument is provided, then only the single character is deleted.
  *
- *	Tv\a
+ *      Tv\a
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
  *   .cb delete first ?last?
  *
@@ -2842,28 +2842,28 @@ ConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 static int
 DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     CharIndex first, last;
     ByteOffset firstOffset, lastOffset;
     const char *text;
 
     if (comboPtr->flags & (READONLY|DISABLED)) {
-	return TCL_OK;			/* Writing is currently disabled. */
+        return TCL_OK;                  /* Writing is currently disabled. */
     }
 
     if (GetTextIndex(interp, comboPtr, objv[2], &first) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (objc == 4) {
-	if (GetTextIndex(interp, comboPtr, objv[3], &last) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (GetTextIndex(interp, comboPtr, objv[3], &last) != TCL_OK) {
+            return TCL_ERROR;
+        }
     } else {
-	last = first + 1;
+        last = first + 1;
     }
     if ((first == -1) || (last == -1)) {
-	return TCL_OK;
+        return TCL_OK;
     }
     /* Record the delete for futher redo/undos.  */
     firstOffset = CharIndexToByteOffset(comboPtr->text, first);
@@ -2873,9 +2873,9 @@ DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     DeleteText(comboPtr, first, last);
     FreeRedoRecords(comboPtr);
     if (comboPtr->textVarObjPtr != NULL) {
-	if (UpdateTextVariable(interp, comboPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (UpdateTextVariable(interp, comboPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     comboPtr->flags |= MODIFIED;
     EventuallyRedraw(comboPtr);
@@ -2886,16 +2886,16 @@ DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  *
  * GetOp --
- *	Returns the current text string in the widget.
+ *      Returns the current text string in the widget.
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cb bentry option
+ *      .cb bentry option
  *
  *---------------------------------------------------------------------------
  */
@@ -2914,32 +2914,32 @@ GetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * IndexOp --
  *
- *	Returns the actual character index of the index supplied.  This
- *	converts text indices such as "end" to the number of UTF characters in
- *	the text string.
+ *      Returns the actual character index of the index supplied.  This
+ *      converts text indices such as "end" to the number of UTF characters in
+ *      the text string.
  *
- *	It's an error if the index refers to a non-present selection.  Empty
- *	text strings always return an index of 0.
+ *      It's an error if the index refers to a non-present selection.  Empty
+ *      text strings always return an index of 0.
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cb index index
+ *      .cb index index
  *
  *---------------------------------------------------------------------------
  */
 static int
 IndexOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv)
+        Tcl_Obj *const *objv)
 {
     CharIndex index;
 
     if (GetTextIndex(interp, comboPtr, objv[2], &index) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_SetIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
@@ -2950,30 +2950,30 @@ IndexOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * IcursorOp --
  *
- *	Sets the cursor to a new location.
+ *      Sets the cursor to a new location.
  *
  * Results:
- *	A standard TCL result.  If the argument does not represent a valid
- *	index, then TCL_ERROR is returned and the interpreter result will
- *	contain an error message.
+ *      A standard TCL result.  If the argument does not represent a valid
+ *      index, then TCL_ERROR is returned and the interpreter result will
+ *      contain an error message.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 IcursorOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	  Tcl_Obj *const *objv)
+          Tcl_Obj *const *objv)
 {
     CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[2], &index) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (index == -1) {
-	return TCL_OK;
+        return TCL_OK;
     }
     comboPtr->insertIndex = index;
     comboPtr->flags |= ICURSOR;
@@ -2987,22 +2987,22 @@ IcursorOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * IdentifyOp --
  *
- *	Returns the name of the element under the point given by x and y
- *	(such  as  arrow1), or an empty string if the point does not lie
- *	in any element of the comboentry.  X and Y must be pixel 
- *	coordinates relative to the widget.
+ *      Returns the name of the element under the point given by x and y
+ *      (such  as  arrow1), or an empty string if the point does not lie
+ *      in any element of the comboentry.  X and Y must be pixel 
+ *      coordinates relative to the widget.
  *
  * Results:
- *	A standard TCL result.  If the argument does not represent a valid
- *	index, then TCL_ERROR is returned and the interpreter result will
- *	contain an error message.
+ *      A standard TCL result.  If the argument does not represent a valid
+ *      index, then TCL_ERROR is returned and the interpreter result will
+ *      contain an error message.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	   Tcl_Obj *const *objv)
+           Tcl_Obj *const *objv)
 {
     int x, y, width, height;
     int isRoot;
@@ -3011,85 +3011,85 @@ IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     isRoot = FALSE;
     string = Tcl_GetString(objv[2]);
     if (strcmp("-root", string) == 0) {
-	isRoot = TRUE;
-	objv++, objc--;
+        isRoot = TRUE;
+        objv++, objc--;
     } 
     if (objc < 4) {
-	Tcl_AppendResult(interp, "wrong # args: should be \"", 
-		Tcl_GetString(objv[0]), " ", Tcl_GetString(objv[1]), 
-		" ?-root? x y\"", (char *)NULL);
-	return TCL_ERROR;
-			 
+        Tcl_AppendResult(interp, "wrong # args: should be \"", 
+                Tcl_GetString(objv[0]), " ", Tcl_GetString(objv[1]), 
+                " ?-root? x y\"", (char *)NULL);
+        return TCL_ERROR;
+                         
     }
     if ((Tk_GetPixelsFromObj(interp, comboPtr->tkwin, objv[2], &x) != TCL_OK) ||
-	(Tk_GetPixelsFromObj(interp, comboPtr->tkwin, objv[3], &y) != TCL_OK)) {
-	return TCL_ERROR;
+        (Tk_GetPixelsFromObj(interp, comboPtr->tkwin, objv[3], &y) != TCL_OK)) {
+        return TCL_ERROR;
     }
     if (isRoot) {
-	int rootX, rootY;
+        int rootX, rootY;
 
-	Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
-	x -= rootX;
-	y -= rootY;
+        Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
+        x -= rootX;
+        y -= rootY;
     }
     width = Tk_Width(comboPtr->tkwin);
     height = Tk_Height(comboPtr->tkwin);
     if ((x < 0) || (x >= width) || (y < 0) || (y >= height)) {
-	return TCL_OK;
+        return TCL_OK;
     }
     if (height > comboPtr->entryHeight) {
-	y += (height - comboPtr->entryHeight) / 2;
+        y += (height - comboPtr->entryHeight) / 2;
     }
     if (comboPtr->icon) {
-	int iconX;
-	
-	iconX = comboPtr->inset;
-	if ((x >= iconX) && (x < (iconX + IconWidth(comboPtr->icon)))) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj("icon", 4));
-	    return TCL_OK;
-	}
+        int iconX;
+        
+        iconX = comboPtr->inset;
+        if ((x >= iconX) && (x < (iconX + IconWidth(comboPtr->icon)))) {
+            Tcl_SetObjResult(interp, Tcl_NewStringObj("icon", 4));
+            return TCL_OK;
+        }
     }
     if (comboPtr->flags & ARROW) {
-	int arrowX;
+        int arrowX;
 
-	arrowX = Tk_Width(comboPtr->tkwin) - 
-	    (comboPtr->inset + comboPtr->arrowWidth);
-	if (arrowX < 0) {
-	    arrowX = comboPtr->inset;
-	}
-	if ((x >= arrowX) && (x < (arrowX + comboPtr->arrowWidth))) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj("arrow", 5));
-	    return TCL_OK;
-	}
+        arrowX = Tk_Width(comboPtr->tkwin) - 
+            (comboPtr->inset + comboPtr->arrowWidth);
+        if (arrowX < 0) {
+            arrowX = comboPtr->inset;
+        }
+        if ((x >= arrowX) && (x < (arrowX + comboPtr->arrowWidth))) {
+            Tcl_SetObjResult(interp, Tcl_NewStringObj("arrow", 5));
+            return TCL_OK;
+        }
     }
     if (comboPtr->flags & CLRBUTTON) {
-	Button *butPtr = &comboPtr->clearButton;
+        Button *butPtr = &comboPtr->clearButton;
 
-	if ((x >= butPtr->x) && (x < (butPtr->x + butPtr->width)) &&
-	    (y >= butPtr->y) && (y < (butPtr->y + butPtr->height))) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj("button", 6));
-	    return TCL_OK;
-	}
+        if ((x >= butPtr->x) && (x < (butPtr->x + butPtr->width)) &&
+            (y >= butPtr->y) && (y < (butPtr->y + butPtr->height))) {
+            Tcl_SetObjResult(interp, Tcl_NewStringObj("button", 6));
+            return TCL_OK;
+        }
     }
     if (comboPtr->flags & READONLY) {
-	if (comboPtr->flags & ARROW) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj("arrow", 5));
-	}
-	return TCL_OK;
+        if (comboPtr->flags & ARROW) {
+            Tcl_SetObjResult(interp, Tcl_NewStringObj("arrow", 5));
+        }
+        return TCL_OK;
     }
     {
-	int textX, textY;
+        int textX, textY;
 
-	textX = comboPtr->inset;
-	textY = y;
-	if (comboPtr->iconWidth > 0) {
-	    textX += comboPtr->iconWidth;
-	}
-	textY += (comboPtr->entryHeight - comboPtr->textHeight) / 2;
-	if ((x >= textX) && (x < (textX + comboPtr->textWidth))) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj("text", 4));
-	    return TCL_OK;
-	}
+        textX = comboPtr->inset;
+        textY = y;
+        if (comboPtr->iconWidth > 0) {
+            textX += comboPtr->iconWidth;
+        }
+        textY += (comboPtr->entryHeight - comboPtr->textHeight) / 2;
+        if ((x >= textX) && (x < (textX + comboPtr->textWidth))) {
+            Tcl_SetObjResult(interp, Tcl_NewStringObj("text", 4));
+            return TCL_OK;
+        }
     }
     return TCL_OK;
 }
@@ -3100,11 +3100,11 @@ IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  * InvokeOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
  *  .cb invoke item 
  *
@@ -3112,16 +3112,16 @@ IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 static int
 InvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     int result;
 
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Item is currently disabled. */
+        return TCL_OK;          /* Item is currently disabled. */
     }
     result = TCL_OK;
     if (comboPtr->cmdObjPtr != NULL) {
-	result = InvokeCommand(interp, comboPtr);
+        result = InvokeCommand(interp, comboPtr);
     }
     return result;
 }
@@ -3131,13 +3131,13 @@ InvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * InsertOp --
  *
- *	Inserts a new item into the comboentry at the given index.
+ *      Inserts a new item into the comboentry at the given index.
  *
  * Results:
- *	NULL is always returned.
+ *      NULL is always returned.
  *
  * Side effects:
- *	The comboentry gets a new item.
+ *      The comboentry gets a new item.
  *
  *   .cb insert index string
  *
@@ -3145,20 +3145,20 @@ InvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 static int
 InsertOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     CharIndex index;
     char *insertText;
     int numBytes;
 
     if (comboPtr->flags & (READONLY|DISABLED)) {
-	return TCL_OK;		/* Writing is currently disabled. */
+        return TCL_OK;          /* Writing is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[2], &index) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (index == -1) {
-	return TCL_OK;
+        return TCL_OK;
     }
     insertText = Tcl_GetStringFromObj(objv[3], &numBytes);
 
@@ -3166,13 +3166,13 @@ InsertOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     RecordEdit(comboPtr, INSERT_OP, index, insertText, numBytes);
 
     if (InsertText(comboPtr, index, numBytes, insertText) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     FreeRedoRecords(comboPtr);
     if (comboPtr->textVarObjPtr != NULL) {
-	if (UpdateTextVariable(interp, comboPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (UpdateTextVariable(interp, comboPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     comboPtr->flags |= MODIFIED;
     EventuallyRedraw(comboPtr);
@@ -3184,14 +3184,14 @@ InsertOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * PostOp --
  *
- *	Posts the menu associated with this widget.
+ *      Posts the menu associated with this widget.
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
  *  .ce post
  *
@@ -3204,88 +3204,88 @@ PostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tk_Window menuWin;
     
     if (comboPtr->flags & (POSTED|DISABLED)) {
-	return TCL_OK;		/* Entry's menu is currently posted or entry
-				 * is disabled. */
+        return TCL_OK;          /* Entry's menu is currently posted or entry
+                                 * is disabled. */
     }
     if (comboPtr->menuObjPtr == NULL) {
-	return TCL_OK;
+        return TCL_OK;
     }
     menuName = Tcl_GetString(comboPtr->menuObjPtr);
     menuWin = Tk_NameToWindow(interp, menuName, comboPtr->tkwin);
     comboPtr->menuWin = menuWin;
     if (menuWin == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tk_Parent(menuWin) != comboPtr->tkwin) {
-	Tcl_AppendResult(interp, "can't post \"", Tk_PathName(menuWin), 
-		"\": it isn't a descendant of ", Tk_PathName(comboPtr->tkwin),
-		(char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't post \"", Tk_PathName(menuWin), 
+                "\": it isn't a descendant of ", Tk_PathName(comboPtr->tkwin),
+                (char *)NULL);
+        return TCL_ERROR;
     }
     if (comboPtr->menuWin != NULL) {
-	Tk_DeleteEventHandler(comboPtr->menuWin, CHILD_EVENT_MASK, 
-		ChildEventProc, comboPtr);
+        Tk_DeleteEventHandler(comboPtr->menuWin, CHILD_EVENT_MASK, 
+                ChildEventProc, comboPtr);
     } 
     comboPtr->menuWin = menuWin;
     Tk_CreateEventHandler(menuWin, CHILD_EVENT_MASK, ChildEventProc, comboPtr);
     if (comboPtr->postCmdObjPtr) {
-	int result;
+        int result;
 
-	Tcl_Preserve(comboPtr);
-	Tcl_IncrRefCount(comboPtr->postCmdObjPtr);
-	result = Tcl_EvalObjEx(interp, comboPtr->postCmdObjPtr, 
-			       TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(comboPtr->postCmdObjPtr);
-	Tcl_Release(comboPtr);
-	if (result != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        Tcl_Preserve(comboPtr);
+        Tcl_IncrRefCount(comboPtr->postCmdObjPtr);
+        result = Tcl_EvalObjEx(interp, comboPtr->postCmdObjPtr, 
+                               TCL_EVAL_GLOBAL);
+        Tcl_DecrRefCount(comboPtr->postCmdObjPtr);
+        Tcl_Release(comboPtr);
+        if (result != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     {
-	Tcl_Obj *cmdObjPtr, *objPtr;
-	int result;
+        Tcl_Obj *cmdObjPtr, *objPtr;
+        int result;
 
-	/* menu post -align right */
-	cmdObjPtr = Tcl_DuplicateObj(comboPtr->menuObjPtr);
-	objPtr = Tcl_NewStringObj("post", 4);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	objPtr = Tcl_NewStringObj("-align", 6);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	objPtr = Tcl_NewStringObj("right", 5);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	if (comboPtr->flags & ARROW) {
-	    int x1, y1, x2, y2, rootX, rootY;
-	    Tcl_Obj *listObjPtr;
-	    
-	    Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
-	    x1 = Tk_Width(comboPtr->tkwin) - 
-		(comboPtr->inset + comboPtr->arrowWidth);
-	    if (x1 < 0) {
-		x1 = comboPtr->inset;
-	    }
-	    x1 += rootX;
-	    x2 = Tk_Width(comboPtr->tkwin) + rootX;
-	    y1 = comboPtr->inset + 1 + rootY;
-	    y2 = Tk_Height(comboPtr->tkwin) + rootY;
-	    objPtr = Tcl_NewStringObj("-box", 4);
-	    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
-	    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
-	    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
-	    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
-	    Tcl_ListObjAppendElement(interp, cmdObjPtr, listObjPtr);
-	}
-	Tcl_IncrRefCount(cmdObjPtr);
-	Tcl_Preserve(comboPtr);
-	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_Release(comboPtr);
-	Tcl_DecrRefCount(cmdObjPtr);
-	if (result == TCL_OK) {
-	    comboPtr->flags &= ~STATE_MASK;
-	    comboPtr->flags |= POSTED;
-	}
-	return result;
+        /* menu post -align right */
+        cmdObjPtr = Tcl_DuplicateObj(comboPtr->menuObjPtr);
+        objPtr = Tcl_NewStringObj("post", 4);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj("-align", 6);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj("right", 5);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        if (comboPtr->flags & ARROW) {
+            int x1, y1, x2, y2, rootX, rootY;
+            Tcl_Obj *listObjPtr;
+            
+            Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
+            x1 = Tk_Width(comboPtr->tkwin) - 
+                (comboPtr->inset + comboPtr->arrowWidth);
+            if (x1 < 0) {
+                x1 = comboPtr->inset;
+            }
+            x1 += rootX;
+            x2 = Tk_Width(comboPtr->tkwin) + rootX;
+            y1 = comboPtr->inset + 1 + rootY;
+            y2 = Tk_Height(comboPtr->tkwin) + rootY;
+            objPtr = Tcl_NewStringObj("-box", 4);
+            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
+            Tcl_ListObjAppendElement(interp, cmdObjPtr, listObjPtr);
+        }
+        Tcl_IncrRefCount(cmdObjPtr);
+        Tcl_Preserve(comboPtr);
+        result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+        Tcl_Release(comboPtr);
+        Tcl_DecrRefCount(cmdObjPtr);
+        if (result == TCL_OK) {
+            comboPtr->flags &= ~STATE_MASK;
+            comboPtr->flags |= POSTED;
+        }
+        return result;
     }
     return TCL_OK;
 }
@@ -3296,7 +3296,7 @@ PostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ScanOp --
  *
- *	Implements the quick scan.
+ *      Implements the quick scan.
  *
  *---------------------------------------------------------------------------
  */
@@ -3307,57 +3307,57 @@ ScanOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int oper;
     int x;
 
-#define SCAN_MARK	1
-#define SCAN_DRAGTO	2
+#define SCAN_MARK       1
+#define SCAN_DRAGTO     2
     {
-	char *string;
-	char c;
-	int length;
-	
-	string = Tcl_GetStringFromObj(objv[2], &length);
-	c = string[0];
-	if ((c == 'm') && (strncmp(string, "mark", length) == 0)) {
-	    oper = SCAN_MARK;
-	} else if ((c == 'd') && (strncmp(string, "dragto", length) == 0)) {
-	    oper = SCAN_DRAGTO;
-	} else {
-	    Tcl_AppendResult(interp, "bad scan operation \"", string,
-		"\": should be either \"mark\" or \"dragto\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
+        char *string;
+        char c;
+        int length;
+        
+        string = Tcl_GetStringFromObj(objv[2], &length);
+        c = string[0];
+        if ((c == 'm') && (strncmp(string, "mark", length) == 0)) {
+            oper = SCAN_MARK;
+        } else if ((c == 'd') && (strncmp(string, "dragto", length) == 0)) {
+            oper = SCAN_DRAGTO;
+        } else {
+            Tcl_AppendResult(interp, "bad scan operation \"", string,
+                "\": should be either \"mark\" or \"dragto\"", (char *)NULL);
+            return TCL_ERROR;
+        }
     }
     if (objc == 3) {
-	if (oper == SCAN_MARK) {
-	    Tcl_SetIntObj(Tcl_GetObjResult(interp), comboPtr->scanAnchor);
-	}
-	return TCL_OK;
+        if (oper == SCAN_MARK) {
+            Tcl_SetIntObj(Tcl_GetObjResult(interp), comboPtr->scanAnchor);
+        }
+        return TCL_OK;
     }
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     if (Blt_GetPixelsFromObj(interp, comboPtr->tkwin, objv[3], PIXELS_ANY, &x) 
-	 != TCL_OK) {
-	return TCL_ERROR;
+         != TCL_OK) {
+        return TCL_ERROR;
     }
     if (oper == SCAN_MARK) {
-	comboPtr->scanAnchor = x;
-	comboPtr->scanX = comboPtr->scrollX;
+        comboPtr->scanAnchor = x;
+        comboPtr->scanX = comboPtr->scrollX;
     } else {
-	int worldX, xMax;
-	int dx;
+        int worldX, xMax;
+        int dx;
 
-	dx = comboPtr->scanAnchor - x;
-	worldX = comboPtr->scanX + (10 * dx);
-	xMax = comboPtr->viewWidth - ICWIDTH;
+        dx = comboPtr->scanAnchor - x;
+        worldX = comboPtr->scanX + (10 * dx);
+        xMax = comboPtr->viewWidth - ICWIDTH;
 
-	if (worldX < 0) {
-	    worldX = 0;
-	} else if ((worldX + xMax) >= comboPtr->textWidth) {
-	    worldX = comboPtr->textWidth; /* - (8 * xMax / 10); */
-	}
-	comboPtr->scrollX = worldX;
-	comboPtr->flags |= SCROLL_PENDING;
-	EventuallyRedraw(comboPtr);
+        if (worldX < 0) {
+            worldX = 0;
+        } else if ((worldX + xMax) >= comboPtr->textWidth) {
+            worldX = comboPtr->textWidth; /* - (8 * xMax / 10); */
+        }
+        comboPtr->scrollX = worldX;
+        comboPtr->flags |= SCROLL_PENDING;
+        EventuallyRedraw(comboPtr);
     }
     return TCL_OK;
 }
@@ -3369,32 +3369,32 @@ SeeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     ByteOffset offset;
 
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[2], &index) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (index == -1) {
-	return TCL_OK;
+        return TCL_OK;
     }
     offset = CharIndexToByteOffset(comboPtr->screenText, index);
     if ((offset <= comboPtr->firstOffset) || 
-	(offset >= (comboPtr->lastOffset - 1))) {
-	int xMax, x;
+        (offset >= (comboPtr->lastOffset - 1))) {
+        int xMax, x;
 
-	x = Blt_TextWidth(comboPtr->font, comboPtr->screenText, offset);
-	xMax = comboPtr->viewWidth - ICWIDTH;
-	if (x >= xMax) {
-	    x -= xMax;
-	    if (offset <= comboPtr->firstOffset) {
-		x += 9 * xMax / 10;
-	    } else {
-		x += 1 * xMax / 10;
-	    }
-	} else {
-	    x = 0;
-	}
-	comboPtr->scrollX = x;
+        x = Blt_TextWidth(comboPtr->font, comboPtr->screenText, offset);
+        xMax = comboPtr->viewWidth - ICWIDTH;
+        if (x >= xMax) {
+            x -= xMax;
+            if (offset <= comboPtr->firstOffset) {
+                x += 9 * xMax / 10;
+            } else {
+                x += 1 * xMax / 10;
+            }
+        } else {
+            x = 0;
+        }
+        comboPtr->scrollX = x;
     }
     comboPtr->flags |= SCROLL_PENDING;
     EventuallyRedraw(comboPtr);
@@ -3406,49 +3406,49 @@ SeeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SelectionAdjustOp --
  *
- *	Locates the end of the selection nearest to the character given by
- *	index, and adjusts that end of the selection to be at index
- *	(i.e. including but not going beyond index).  The other end of the
- *	selection is made the anchor point for future select to commands.  If
- *	the selection isn't currently in the comboentry, then a new selection
- *	is created to include the characters between index and the most recent
- *	selection anchor point, inclusive.
+ *      Locates the end of the selection nearest to the character given by
+ *      index, and adjusts that end of the selection to be at index
+ *      (i.e. including but not going beyond index).  The other end of the
+ *      selection is made the anchor point for future select to commands.  If
+ *      the selection isn't currently in the comboentry, then a new selection
+ *      is created to include the characters between index and the most recent
+ *      selection anchor point, inclusive.
  *
- *	This procedure is called back by Tk when the selection is requested by
- *	someone.  It returns part or all of the selection in a buffer provided
- *	by the caller.
+ *      This procedure is called back by Tk when the selection is requested by
+ *      someone.  It returns part or all of the selection in a buffer provided
+ *      by the caller.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	The widget is possibly redrawn with the new selection.
+ *      The widget is possibly redrawn with the new selection.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 SelectionAdjustOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
-		  Tcl_Obj *const *objv)
+                  Tcl_Obj *const *objv)
 {
     CharIndex index;
     int half1, half2;
 
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (index == -1) {
-	return TCL_OK;
+        return TCL_OK;
     }
     half1 = (comboPtr->selFirst + comboPtr->selLast) / 2;
     half2 = (comboPtr->selFirst + comboPtr->selLast + 1) / 2;
     if (index < half1) {
-	comboPtr->selAnchor = comboPtr->selLast;
+        comboPtr->selAnchor = comboPtr->selLast;
     } else if (index > half2) {
-	comboPtr->selAnchor = comboPtr->selFirst;
+        comboPtr->selAnchor = comboPtr->selFirst;
     }
     return SelectText(comboPtr, index);
 }
@@ -3458,30 +3458,30 @@ SelectionAdjustOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * SelectionClearOp --
  *
- *	Clears the selection.  
+ *      Clears the selection.  
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	The widget is possibly redrawn.
+ *      The widget is possibly redrawn.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 SelectionClearOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
-		 Tcl_Obj *const *objv)
+                 Tcl_Obj *const *objv)
 {
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     if (comboPtr->selFirst != -1) {
-	comboPtr->selFirst = comboPtr->selLast = -1;
-	EventuallyRedraw(comboPtr);
-	if (comboPtr->selCmdObjPtr != NULL) {
-	    EventuallyInvokeSelectCmd(comboPtr);
-	}
+        comboPtr->selFirst = comboPtr->selLast = -1;
+        EventuallyRedraw(comboPtr);
+        if (comboPtr->selCmdObjPtr != NULL) {
+            EventuallyInvokeSelectCmd(comboPtr);
+        }
     }
     return TCL_OK;
 }
@@ -3491,30 +3491,30 @@ SelectionClearOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * SelectionFromOp --
  *
- *	Sets the selection anchor point to just before the character
- *	designated by the given index.  Doesn't change the selection, just
- *	resets the anchor of the existing selection. Returns an empty string.
+ *      Sets the selection anchor point to just before the character
+ *      designated by the given index.  Doesn't change the selection, just
+ *      resets the anchor of the existing selection. Returns an empty string.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 SelectionFromOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+                Tcl_Obj *const *objv)
 {
     CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (index == -1) {
-	return TCL_OK;
+        return TCL_OK;
     }
     comboPtr->selAnchor = index;
     return TCL_OK;
@@ -3525,18 +3525,18 @@ SelectionFromOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * SelectionPresentOp --
  *
- *	Indicates if there are characters selected in the comboentry.
+ *      Indicates if there are characters selected in the comboentry.
  *
  * Results:
- *	Returns in the interpreter result, 1 if there is are characters 
- *	selected, 0 if nothing is selected.
+ *      Returns in the interpreter result, 1 if there is are characters 
+ *      selected, 0 if nothing is selected.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 SelectionPresentOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
-		   Tcl_Obj *const *objv)
+                   Tcl_Obj *const *objv)
 {
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), (comboPtr->selFirst!=-1));
     return TCL_OK;
@@ -3547,34 +3547,34 @@ SelectionPresentOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * SelectionRangeOp --
  *
- *	Sets the selection to include the characters starting with the one
- *	indexed by start and ending with the one just before end.  If end
- *	refers to the same character as start or an earlier one, then the
- *	entry's selection is cleared.
+ *      Sets the selection to include the characters starting with the one
+ *      indexed by start and ending with the one just before end.  If end
+ *      refers to the same character as start or an earlier one, then the
+ *      entry's selection is cleared.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 SelectionRangeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
-		 Tcl_Obj *const *objv)
+                 Tcl_Obj *const *objv)
 {
     CharIndex first, last;
 
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[3], &first) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetTextIndex(interp, comboPtr, objv[4], &last) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if ((first == -1) || (last == -1)) {
-	return TCL_OK;
+        return TCL_OK;
     }
     comboPtr->selAnchor = first;
     return SelectText(comboPtr, last);
@@ -3585,29 +3585,29 @@ SelectionRangeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * SelectionToOp --
  *
- *	Resets the selection depending upon the given new index.  Returns an
- *	empty string.
+ *      Resets the selection depending upon the given new index.  Returns an
+ *      empty string.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 SelectionToOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
-	      Tcl_Obj *const *objv)
+              Tcl_Obj *const *objv)
 {
     CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (index == -1) {
-	return TCL_OK;
+        return TCL_OK;
     }
     return SelectText(comboPtr, index);
 }
@@ -3630,22 +3630,22 @@ static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
  *
  * SelectionOp --
  *
- *	This procedure handles the individual options for text
- *	selections.  
+ *      This procedure handles the individual options for text
+ *      selections.  
  *
  *---------------------------------------------------------------------------
  */
 static int
 SelectionOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
-	    Tcl_Obj *const *objv)
+            Tcl_Obj *const *objv)
 {
     ComboEntryCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numSelectionOps, selectionOps, BLT_OP_ARG2, 
-	objc, objv, 0);
+        objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     result = (*proc) (comboPtr, interp, objc, objv);
     return result;
@@ -3656,13 +3656,13 @@ SelectionOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * RedoOp --
  *
- *	Inserts a new item into the comboentry at the given index.
+ *      Inserts a new item into the comboentry at the given index.
  *
  * Results:
- *	NULL is always returned.
+ *      NULL is always returned.
  *
  * Side effects:
- *	The comboentry gets a new item.
+ *      The comboentry gets a new item.
  *
  *   .cb insert index string
  *
@@ -3672,27 +3672,27 @@ static int
 RedoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     if (comboPtr->flags & (READONLY|DISABLED)) {
-	return TCL_OK;		/* Writing is currently disabled. */
+        return TCL_OK;          /* Writing is currently disabled. */
     }
     if (comboPtr->redoPtr != NULL) {
-	EditRecord *recPtr;
+        EditRecord *recPtr;
 
-	recPtr = comboPtr->redoPtr;
-	if (recPtr->type == INSERT_OP) {
-	    InsertText(comboPtr, recPtr->index, recPtr->numBytes, 
-		recPtr->text);
-	} else if (recPtr->type == DELETE_OP) {
-	    DeleteText(comboPtr, recPtr->index, recPtr->index+recPtr->numChars);
-	} else {
-	    Tcl_AppendResult(interp, "unknown record type \"", 
-			     Blt_Itoa(recPtr->type), "\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	comboPtr->insertIndex = recPtr->insertIndex;
-	comboPtr->redoPtr = recPtr->nextPtr;
-	recPtr->nextPtr = comboPtr->undoPtr;
-	comboPtr->undoPtr = recPtr;
-	EventuallyRedraw(comboPtr);
+        recPtr = comboPtr->redoPtr;
+        if (recPtr->type == INSERT_OP) {
+            InsertText(comboPtr, recPtr->index, recPtr->numBytes, 
+                recPtr->text);
+        } else if (recPtr->type == DELETE_OP) {
+            DeleteText(comboPtr, recPtr->index, recPtr->index+recPtr->numChars);
+        } else {
+            Tcl_AppendResult(interp, "unknown record type \"", 
+                             Blt_Itoa(recPtr->type), "\"", (char *)NULL);
+            return TCL_ERROR;
+        }
+        comboPtr->insertIndex = recPtr->insertIndex;
+        comboPtr->redoPtr = recPtr->nextPtr;
+        recPtr->nextPtr = comboPtr->undoPtr;
+        comboPtr->undoPtr = recPtr;
+        EventuallyRedraw(comboPtr);
     }
     return TCL_OK;
 }
@@ -3703,13 +3703,13 @@ RedoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * UndoOp --
  *
- *	Inserts a new item into the comboentry at the given index.
+ *      Inserts a new item into the comboentry at the given index.
  *
  * Results:
- *	NULL is always returned.
+ *      NULL is always returned.
  *
  * Side effects:
- *	The comboentry gets a new item.
+ *      The comboentry gets a new item.
  *
  *   .cb insert index string
  *
@@ -3719,26 +3719,26 @@ static int
 UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     if (comboPtr->flags & (READONLY|DISABLED)) {
-	return TCL_OK;		/* Writing is currently disabled. */
+        return TCL_OK;          /* Writing is currently disabled. */
     }
     if (comboPtr->undoPtr != NULL) {
-	EditRecord *recPtr;
+        EditRecord *recPtr;
 
-	recPtr = comboPtr->undoPtr;
-	if (recPtr->type == INSERT_OP) {
-	    DeleteText(comboPtr, recPtr->index, recPtr->index+recPtr->numChars);
-	} else if (recPtr->type == DELETE_OP) {
-	    InsertText(comboPtr, recPtr->index, recPtr->numBytes, recPtr->text);
-	} else {
-	    Tcl_AppendResult(interp, "unknown record type \"", 
-			     Blt_Itoa(recPtr->type), "\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	comboPtr->insertIndex = recPtr->insertIndex;
-	comboPtr->undoPtr = recPtr->nextPtr;
-	recPtr->nextPtr = comboPtr->redoPtr;
-	comboPtr->redoPtr = recPtr;
-	EventuallyRedraw(comboPtr);
+        recPtr = comboPtr->undoPtr;
+        if (recPtr->type == INSERT_OP) {
+            DeleteText(comboPtr, recPtr->index, recPtr->index+recPtr->numChars);
+        } else if (recPtr->type == DELETE_OP) {
+            InsertText(comboPtr, recPtr->index, recPtr->numBytes, recPtr->text);
+        } else {
+            Tcl_AppendResult(interp, "unknown record type \"", 
+                             Blt_Itoa(recPtr->type), "\"", (char *)NULL);
+            return TCL_ERROR;
+        }
+        comboPtr->insertIndex = recPtr->insertIndex;
+        comboPtr->undoPtr = recPtr->nextPtr;
+        recPtr->nextPtr = comboPtr->redoPtr;
+        comboPtr->redoPtr = recPtr;
+        EventuallyRedraw(comboPtr);
     }
     return TCL_OK;
 }
@@ -3749,11 +3749,11 @@ UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * UnpostOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
  *  .ce unpost
  *
@@ -3761,50 +3761,50 @@ UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 static int
 UnpostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     if (comboPtr->menuWin != NULL) {
-	comboPtr->flags &= ~STATE_MASK;
-	Blt_UnmapToplevelWindow(comboPtr->menuWin);
-	if (Tk_IsMapped(comboPtr->menuWin)) {
-	    Tk_UnmapWindow(comboPtr->menuWin);
-	}
+        comboPtr->flags &= ~STATE_MASK;
+        Blt_UnmapToplevelWindow(comboPtr->menuWin);
+        if (Tk_IsMapped(comboPtr->menuWin)) {
+            Tk_UnmapWindow(comboPtr->menuWin);
+        }
     }
     return TCL_OK;
 }
     
 static int
 XviewOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv)
+        Tcl_Obj *const *objv)
 {
     int width;
 
     if (comboPtr->flags & (DISABLED|READONLY)) {
-	return TCL_OK;		/* Widget is currently disabled. */
+        return TCL_OK;          /* Widget is currently disabled. */
     }
     width = comboPtr->viewWidth;
     if (objc == 2) {
-	double fract;
-	Tcl_Obj *listObjPtr;
+        double fract;
+        Tcl_Obj *listObjPtr;
 
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	/*
-	 * Note: we are bounding the fractions between 0.0 and 1.0 to support
-	 * the "canvas"-style of scrolling.
-	 */
-	fract = (double)comboPtr->scrollX / comboPtr->textWidth;
-	fract = FCLAMP(fract);
-	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(fract));
-	fract = (double)(comboPtr->scrollX + width) / comboPtr->textWidth;
-	fract = FCLAMP(fract);
-	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(fract));
-	Tcl_SetObjResult(interp, listObjPtr);
-	return TCL_OK;
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+        /*
+         * Note: we are bounding the fractions between 0.0 and 1.0 to support
+         * the "canvas"-style of scrolling.
+         */
+        fract = (double)comboPtr->scrollX / comboPtr->textWidth;
+        fract = FCLAMP(fract);
+        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(fract));
+        fract = (double)(comboPtr->scrollX + width) / comboPtr->textWidth;
+        fract = FCLAMP(fract);
+        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(fract));
+        Tcl_SetObjResult(interp, listObjPtr);
+        return TCL_OK;
     }
     if (Blt_GetScrollInfoFromObj(interp, objc - 2, objv + 2, 
-	&comboPtr->scrollX, comboPtr->textWidth, width, 
-	comboPtr->scrollUnits, BLT_SCROLL_MODE_HIERBOX) != TCL_OK) {
-	return TCL_ERROR;
+        &comboPtr->scrollX, comboPtr->textWidth, width, 
+        comboPtr->scrollUnits, BLT_SCROLL_MODE_HIERBOX) != TCL_OK) {
+        return TCL_ERROR;
     }
     comboPtr->flags |= SCROLL_PENDING;
     EventuallyRedraw(comboPtr);
@@ -3816,64 +3816,64 @@ XviewOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  * FreeComboEntryProc --
  *
- * 	This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
- * 	clean up the internal structure of the widget at a safe time (when
- * 	no-one is using it anymore).
+ *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
+ *      clean up the internal structure of the widget at a safe time (when
+ *      no-one is using it anymore).
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Everything associated with the widget is freed up.
+ *      Everything associated with the widget is freed up.
  *
  *---------------------------------------------------------------------------
  */
 static void
-FreeComboEntryProc(DestroyData dataPtr)	/* Pointer to the widget record. */
+FreeComboEntryProc(DestroyData dataPtr) /* Pointer to the widget record. */
 {
     ComboEntry *comboPtr = (ComboEntry *)dataPtr;
 
     iconOption.clientData = comboPtr;
     Blt_FreeOptions(configSpecs, (char *)comboPtr, comboPtr->display, 
-	comboPtr->mask);
+        comboPtr->mask);
     if (comboPtr->textInFocusGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->textInFocusGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->textInFocusGC);
     }
     if (comboPtr->textOutFocusGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->textOutFocusGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->textOutFocusGC);
     }
     FreeUndoRecords(comboPtr);
     FreeRedoRecords(comboPtr);
     DestroyButton(comboPtr, &comboPtr->clearButton);
     if (comboPtr->screenText != NULL) {
-	Blt_Free(comboPtr->screenText);
+        Blt_Free(comboPtr->screenText);
     }
     if (comboPtr->selectGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->selectGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->selectGC);
     }
     if (comboPtr->highlightGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->highlightGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->highlightGC);
     }
     if (comboPtr->highlightBgGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->highlightBgGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->highlightBgGC);
     }
     if (comboPtr->insertGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->insertGC);
+        Tk_FreeGC(comboPtr->display, comboPtr->insertGC);
     }
     if (comboPtr->insertTimerToken != NULL) {
-	Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
+        Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
     }
     if (comboPtr->menuWin != NULL) {
-	Tk_DeleteEventHandler(comboPtr->menuWin, CHILD_EVENT_MASK, 
-		ChildEventProc, comboPtr);
+        Tk_DeleteEventHandler(comboPtr->menuWin, CHILD_EVENT_MASK, 
+                ChildEventProc, comboPtr);
     }
     if (comboPtr->tkwin != NULL) {
-	Tk_DeleteSelHandler(comboPtr->tkwin, XA_PRIMARY, XA_STRING);
-	Tk_DeleteEventHandler(comboPtr->tkwin, EVENT_MASK, 
-		ComboEntryEventProc, comboPtr);
+        Tk_DeleteSelHandler(comboPtr->tkwin, XA_PRIMARY, XA_STRING);
+        Tk_DeleteEventHandler(comboPtr->tkwin, EVENT_MASK, 
+                ComboEntryEventProc, comboPtr);
     }
     if (comboPtr->insertTimerToken != NULL) {
-	Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
+        Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
     }
     Tcl_DeleteCommandFromToken(comboPtr->interp, comboPtr->cmdToken);
     Blt_Free(comboPtr);
@@ -3913,7 +3913,7 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     comboPtr->tkwin = tkwin;
     if (mask == COMBO_ENTRY_MASK) {
-	comboPtr->flags |= ARROW;
+        comboPtr->flags |= ARROW;
     }
     return comboPtr;
 }
@@ -3923,14 +3923,14 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
  *
  * ComboEntryCmd --
  *
- * 	This procedure is invoked to process the "comboentry" command.  See
- * 	the user documentation for details on what it does.
+ *      This procedure is invoked to process the "comboentry" command.  See
+ *      the user documentation for details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -3991,28 +3991,28 @@ static Blt_OpSpec textEntryOps[] =
 static int numTextEntryOps = sizeof(textEntryOps) / sizeof(Blt_OpSpec);
 
 typedef int (ComboInstOp)(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
-	Tcl_Obj *const *objv);
+        Tcl_Obj *const *objv);
 
 static int
 ComboEntryInstCmdProc(
-    ClientData clientData,	/* Information about the widget. */
-    Tcl_Interp *interp,		/* Interpreter to report errors back to. */
-    int objc,			/* Number of arguments. */
-    Tcl_Obj *const *objv)	/* Argument vector. */
+    ClientData clientData,      /* Information about the widget. */
+    Tcl_Interp *interp,         /* Interpreter to report errors back to. */
+    int objc,                   /* Number of arguments. */
+    Tcl_Obj *const *objv)       /* Argument vector. */
 {
     ComboInstOp *proc;
     ComboEntry *comboPtr = clientData;
     int result;
 
     if (comboPtr->mask == COMBO_ENTRY_MASK) {
-	proc = Blt_GetOpFromObj(interp, numComboEntryOps, comboEntryOps, 
-		BLT_OP_ARG1, objc, objv, 0);
+        proc = Blt_GetOpFromObj(interp, numComboEntryOps, comboEntryOps, 
+                BLT_OP_ARG1, objc, objv, 0);
     } else {
-	proc = Blt_GetOpFromObj(interp, numTextEntryOps, textEntryOps, 
-		BLT_OP_ARG1, objc, objv, 0);
+        proc = Blt_GetOpFromObj(interp, numTextEntryOps, textEntryOps, 
+                BLT_OP_ARG1, objc, objv, 0);
     }
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_Preserve(comboPtr);
     result = (*proc) (comboPtr, interp, objc, objv);
@@ -4025,18 +4025,18 @@ ComboEntryInstCmdProc(
  *
  * ComboEntryInstCmdDeletedProc --
  *
- *	This procedure can be called if the window was destroyed (tkwin will
- *	be NULL) and the command was deleted automatically.  In this case, we
- *	need to do nothing.
+ *      This procedure can be called if the window was destroyed (tkwin will
+ *      be NULL) and the command was deleted automatically.  In this case, we
+ *      need to do nothing.
  *
- *	Otherwise this routine was called because the command was deleted.
- *	Then we need to clean-up and destroy the widget.
+ *      Otherwise this routine was called because the command was deleted.
+ *      Then we need to clean-up and destroy the widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The widget is destroyed.
+ *      The widget is destroyed.
  *
  *---------------------------------------------------------------------------
  */
@@ -4046,11 +4046,11 @@ ComboEntryInstCmdDeletedProc(ClientData clientData)
     ComboEntry *comboPtr = clientData; /* Pointer to widget record. */
 
     if (comboPtr->tkwin != NULL) {
-	Tk_Window tkwin;
+        Tk_Window tkwin;
 
-	tkwin = comboPtr->tkwin;
-	comboPtr->tkwin = NULL;
-	Tk_DestroyWindow(tkwin);
+        tkwin = comboPtr->tkwin;
+        comboPtr->tkwin = NULL;
+        Tk_DestroyWindow(tkwin);
     }
 }
 
@@ -4059,34 +4059,34 @@ ComboEntryInstCmdDeletedProc(ClientData clientData)
  *
  * CreateEntry --
  *
- * 	This procedure is invoked to process the TCL command that corresponds
- * 	to a widget managed by this module. See the user documentation for
- * 	details on what it does.
+ *      This procedure is invoked to process the TCL command that corresponds
+ *      to a widget managed by this module. See the user documentation for
+ *      details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static int
-CreateEntry(Tcl_Interp *interp,		/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv,		/* Argument strings. */
-    int mask)				/* Combo or Line entry. */
+CreateEntry(Tcl_Interp *interp,         /* Current interpreter. */
+    int objc,                           /* Number of arguments. */
+    Tcl_Obj *const *objv,               /* Argument strings. */
+    int mask)                           /* Combo or Line entry. */
 {
     ComboEntry *comboPtr;
     Tk_Window tkwin;
     char *path;
 
     if (objc < 2) {
-	Tcl_AppendResult(interp, "wrong # args: should be \"", 
-		Tcl_GetString(objv[0]), " pathName ?option value?...\"", 
-		(char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "wrong # args: should be \"", 
+                Tcl_GetString(objv[0]), " pathName ?option value?...\"", 
+                (char *)NULL);
+        return TCL_ERROR;
     }
     /*
      * First time in this interpreter, set up procs and initialize various
@@ -4096,42 +4096,42 @@ CreateEntry(Tcl_Interp *interp,		/* Current interpreter. */
      * $blt_library from within her script.
      */
     if (!Blt_CommandExists(interp, "::blt::ComboEntry::PostMenu")) {
-	static char cmd[] = "source [file join $blt_library bltComboEntry.tcl]";
+        static char cmd[] = "source [file join $blt_library bltComboEntry.tcl]";
 
-	if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
-	    char info[200];
+        if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
+            char info[200];
 
-	    Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
-		    Tcl_GetString(objv[0]));
-	    Tcl_AddErrorInfo(interp, info);
-	    return TCL_ERROR;
-	}
+            Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
+                    Tcl_GetString(objv[0]));
+            Tcl_AddErrorInfo(interp, info);
+            return TCL_ERROR;
+        }
     }
     path = Tcl_GetString(objv[1]);
     tkwin = Tk_CreateWindowFromPath(interp, Tk_MainWindow(interp), path, 
-	(char *)NULL);
+        (char *)NULL);
     if (tkwin == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     comboPtr = NewComboEntry(interp, tkwin, mask);
     Tk_CreateEventHandler(tkwin, EVENT_MASK, ComboEntryEventProc, comboPtr);
     Tk_CreateSelHandler(tkwin, XA_PRIMARY, XA_STRING, ComboEntrySelectionProc,
-	comboPtr, XA_STRING);
+        comboPtr, XA_STRING);
     if (mask == COMBO_ENTRY_MASK) {
-	Tk_SetClass(tkwin, "BltComboEntry");
+        Tk_SetClass(tkwin, "BltComboEntry");
     } else {
-	Tk_SetClass(tkwin, "BltTextEntry");
-    }	
+        Tk_SetClass(tkwin, "BltTextEntry");
+    }   
     comboPtr->cmdToken = Tcl_CreateObjCommand(interp, path, 
-	ComboEntryInstCmdProc, comboPtr, ComboEntryInstCmdDeletedProc);
+        ComboEntryInstCmdProc, comboPtr, ComboEntryInstCmdDeletedProc);
     Blt_SetWindowInstanceData(tkwin, comboPtr);
     if (ConfigureComboEntry(interp, comboPtr, objc-2, objv+2, mask) != TCL_OK) {
-	Tk_DestroyWindow(comboPtr->tkwin);
-	return TCL_ERROR;
+        Tk_DestroyWindow(comboPtr->tkwin);
+        return TCL_ERROR;
     }
     if (ConfigureButton(interp, comboPtr, 0, NULL, 0) != TCL_OK) {
-	Tk_DestroyWindow(comboPtr->tkwin);
-	return TCL_ERROR;
+        Tk_DestroyWindow(comboPtr->tkwin);
+        return TCL_ERROR;
     }
     Tcl_SetObjResult(interp, objv[1]);
     return TCL_OK;
@@ -4142,25 +4142,25 @@ CreateEntry(Tcl_Interp *interp,		/* Current interpreter. */
  *
  * ComboEntryCmd --
  *
- * 	This procedure is invoked to process the TCL command that corresponds
- * 	to a widget managed by this module. See the user documentation for
- * 	details on what it does.
+ *      This procedure is invoked to process the TCL command that corresponds
+ *      to a widget managed by this module. See the user documentation for
+ *      details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static int
 ComboEntryCmd(
-    ClientData clientData,	/* Main window associated with interpreter. */
-    Tcl_Interp *interp,		/* Current interpreter. */
-    int objc,			/* Number of arguments. */
-    Tcl_Obj *const *objv)	/* Argument strings. */
+    ClientData clientData,      /* Main window associated with interpreter. */
+    Tcl_Interp *interp,         /* Current interpreter. */
+    int objc,                   /* Number of arguments. */
+    Tcl_Obj *const *objv)       /* Argument strings. */
 {
     return CreateEntry(interp, objc, objv, COMBO_ENTRY_MASK);
 }
@@ -4170,25 +4170,25 @@ ComboEntryCmd(
  *
  * TextEntryCmd --
  *
- * 	This procedure is invoked to process the TCL command that corresponds
- * 	to a widget managed by this module. See the user documentation for
- * 	details on what it does.
+ *      This procedure is invoked to process the TCL command that corresponds
+ *      to a widget managed by this module. See the user documentation for
+ *      details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static int
 TextEntryCmd(
-    ClientData clientData,	/* Main window associated with interpreter. */
-    Tcl_Interp *interp,		/* Current interpreter. */
-    int objc,			/* Number of arguments. */
-    Tcl_Obj *const *objv)	/* Argument strings. */
+    ClientData clientData,      /* Main window associated with interpreter. */
+    Tcl_Interp *interp,         /* Current interpreter. */
+    int objc,                   /* Number of arguments. */
+    Tcl_Obj *const *objv)       /* Argument strings. */
 {
     return CreateEntry(interp, objc, objv, TEXT_ENTRY_MASK);
 }
@@ -4197,8 +4197,8 @@ int
 Blt_ComboEntryInitProc(Tcl_Interp *interp)
 {
     static Blt_CmdSpec cmdSpecs[2] = { 
-	{ "comboentry",	ComboEntryCmd, },
-	{ "textentry",	TextEntryCmd, },
+        { "comboentry", ComboEntryCmd, },
+        { "textentry",  TextEntryCmd, },
     };
     return Blt_InitCmds(interp, "::blt", cmdSpecs, 2);
 }
@@ -4208,18 +4208,18 @@ Blt_ComboEntryInitProc(Tcl_Interp *interp)
  *
  * DrawEntry --
  *
- * 	Draw the editable text associated with the entry.  The widget may be
- * 	scrolled so the text may be clipped.  We use a temporary pixmap to
- * 	draw the visible portion of the text.
+ *      Draw the editable text associated with the entry.  The widget may be
+ *      scrolled so the text may be clipped.  We use a temporary pixmap to
+ *      draw the visible portion of the text.
  *
- *	We assume that text strings will be small for the most part.  The bad
- *	part of this is that we measure the text string 5 times.
+ *      We assume that text strings will be small for the most part.  The bad
+ *      part of this is that we measure the text string 5 times.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -4236,38 +4236,38 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
 
 #define TEXT_FLAGS (TK_PARTIAL_OK | TK_AT_LEAST_ONE)
     if ((h < 2) || (w < 2)) {
-	return;
+        return;
     }
     if (comboPtr->textHeight <= 0) {
-	return;
+        return;
     }
     if (h > comboPtr->entryHeight) {
-	h = comboPtr->entryHeight;
+        h = comboPtr->entryHeight;
     }
     if (comboPtr->image != NULL) {
-	int imgX, imgY, imgWidth, imgHeight;
+        int imgX, imgY, imgWidth, imgHeight;
 
-	imgWidth = comboPtr->textWidth;
-	if (comboPtr->scrollX < imgWidth) {
-	    imgX = comboPtr->scrollX;
-	    imgY = y;
-	    if (comboPtr->entryHeight > comboPtr->iconHeight) {
-		imgY += (comboPtr->entryHeight - comboPtr->iconHeight) / 2;
-	    }
-	    imgWidth -= comboPtr->scrollX;
-	    if (imgWidth > w) {
-		imgWidth = w;
-	    }
-	    imgHeight = MIN(h, comboPtr->iconHeight);
-	    Tk_RedrawImage(IconImage(comboPtr->image), imgX, 0, imgWidth, 
-		       imgHeight, drawable, x, y);
-	}
-	return;
+        imgWidth = comboPtr->textWidth;
+        if (comboPtr->scrollX < imgWidth) {
+            imgX = comboPtr->scrollX;
+            imgY = y;
+            if (comboPtr->entryHeight > comboPtr->iconHeight) {
+                imgY += (comboPtr->entryHeight - comboPtr->iconHeight) / 2;
+            }
+            imgWidth -= comboPtr->scrollX;
+            if (imgWidth > w) {
+                imgWidth = w;
+            }
+            imgHeight = MIN(h, comboPtr->iconHeight);
+            Tk_RedrawImage(IconImage(comboPtr->image), imgX, 0, imgWidth, 
+                       imgHeight, drawable, x, y);
+        }
+        return;
     }
     Blt_Font_GetMetrics(comboPtr->font, &fm);
     textY = fm.ascent;
     if (comboPtr->entryHeight > comboPtr->textHeight) {
-	textY += (comboPtr->entryHeight - comboPtr->textHeight) / 2;
+        textY += (comboPtr->entryHeight - comboPtr->textHeight) / 2;
     }
 
 #ifdef WIN32
@@ -4278,39 +4278,39 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
      * clipping the scrolled text string.
      */
     pixmap = Blt_GetPixmap(comboPtr->display, Tk_WindowId(comboPtr->tkwin),
-	w, h, Tk_Depth(comboPtr->tkwin));
+        w, h, Tk_Depth(comboPtr->tkwin));
 
     if ((comboPtr->flags & (FOCUS|READONLY)) == FOCUS) {
-	bg = comboPtr->inFocusBg;
-	gc = comboPtr->textInFocusGC;
+        bg = comboPtr->inFocusBg;
+        gc = comboPtr->textInFocusGC;
     } else {
-	bg = comboPtr->outFocusBg;
-	gc = comboPtr->textOutFocusGC;
+        bg = comboPtr->outFocusBg;
+        gc = comboPtr->textOutFocusGC;
     }
     /* Text background. */
     { 
-	int xOrigin, yOrigin;
+        int xOrigin, yOrigin;
 
-	Blt_Bg_GetOrigin(bg, &xOrigin, &yOrigin);
-	Blt_Bg_SetOrigin(comboPtr->tkwin, bg, xOrigin + x, yOrigin + y);
-	Blt_Bg_FillRectangle(comboPtr->tkwin, pixmap, bg, 0, 0, w, h, 
-		0, TK_RELIEF_FLAT);
-	Blt_Bg_SetOrigin(comboPtr->tkwin, bg, xOrigin, yOrigin);
-    }	
+        Blt_Bg_GetOrigin(bg, &xOrigin, &yOrigin);
+        Blt_Bg_SetOrigin(comboPtr->tkwin, bg, xOrigin + x, yOrigin + y);
+        Blt_Bg_FillRectangle(comboPtr->tkwin, pixmap, bg, 0, 0, w, h, 
+                0, TK_RELIEF_FLAT);
+        Blt_Bg_SetOrigin(comboPtr->tkwin, bg, xOrigin, yOrigin);
+    }   
     if (comboPtr->flags & SCROLL_PENDING) {
-	int firstX, textWidth;
+        int firstX, textWidth;
 
-	/* Find the range of visible characters in both bytes and pixels. */
-	comboPtr->firstOffset = comboPtr->lastOffset = 
-	    Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
-		comboPtr->numScreenBytes, comboPtr->scrollX, 0, &firstX);
-	comboPtr->lastOffset +=  
-	    Blt_Font_Measure(comboPtr->font, 
-		comboPtr->screenText + comboPtr->firstOffset, 
-		comboPtr->numScreenBytes - comboPtr->firstOffset,
-		w, TEXT_FLAGS, &textWidth);
-	comboPtr->firstX = firstX;
-	comboPtr->lastX = textWidth + firstX;
+        /* Find the range of visible characters in both bytes and pixels. */
+        comboPtr->firstOffset = comboPtr->lastOffset = 
+            Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
+                comboPtr->numScreenBytes, comboPtr->scrollX, 0, &firstX);
+        comboPtr->lastOffset +=  
+            Blt_Font_Measure(comboPtr->font, 
+                comboPtr->screenText + comboPtr->firstOffset, 
+                comboPtr->numScreenBytes - comboPtr->firstOffset,
+                w, TEXT_FLAGS, &textWidth);
+        comboPtr->firstX = firstX;
+        comboPtr->lastX = textWidth + firstX;
     }
     /* 
      * The viewport starts somewhere over the first visible character, but not
@@ -4319,117 +4319,117 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
      * negative x-coordinate, indicating where start drawing the text so that
      * it's properly clipped by the temporary pixmap. */
     textX = comboPtr->firstX - comboPtr->scrollX;
-	
+        
     insertX = -1;
     insertOffset = CharIndexToByteOffset(comboPtr->screenText, 
-	comboPtr->insertIndex);
+        comboPtr->insertIndex);
     if (((comboPtr->flags & (FOCUS|ICURSOR_ON|DISABLED|READONLY)) 
-	 == (FOCUS|ICURSOR_ON)) && (comboPtr->selFirst == -1) && 
-	(insertOffset >= comboPtr->firstOffset) && 
-	(insertOffset <= comboPtr->lastOffset)) {
-	insertX = textX;
-	if (insertOffset > comboPtr->firstOffset) { 
-	    insertX += Blt_TextWidth(comboPtr->font, 
-		comboPtr->screenText + comboPtr->firstOffset, 
-		insertOffset - comboPtr->firstOffset);
-	}
-	if (insertX > (comboPtr->lastX - comboPtr->firstX)) {
-	    insertX = -1;
-	}
+         == (FOCUS|ICURSOR_ON)) && (comboPtr->selFirst == -1) && 
+        (insertOffset >= comboPtr->firstOffset) && 
+        (insertOffset <= comboPtr->lastOffset)) {
+        insertX = textX;
+        if (insertOffset > comboPtr->firstOffset) { 
+            insertX += Blt_TextWidth(comboPtr->font, 
+                comboPtr->screenText + comboPtr->firstOffset, 
+                insertOffset - comboPtr->firstOffset);
+        }
+        if (insertX > (comboPtr->lastX - comboPtr->firstX)) {
+            insertX = -1;
+        }
     }
 
     /*
-     *	Text is drawn in (up to) three segments.
+     *  Text is drawn in (up to) three segments.
      *
-     *	  1) Any text before the start the selection.  2) The selected text
-     *	  (drawn with a flat border) 3) Any text following the selection.
-     *	  This step will draw the text string if there is no selection.
+     *    1) Any text before the start the selection.  2) The selected text
+     *    (drawn with a flat border) 3) Any text following the selection.
+     *    This step will draw the text string if there is no selection.
      */
 
     /* Step 1. Draw any text preceding the selection that's still visible in
      *         the viewport. */
     firstOffset = CharIndexToByteOffset(comboPtr->screenText, 
-	comboPtr->selFirst);
+        comboPtr->selFirst);
     lastOffset  = CharIndexToByteOffset(comboPtr->screenText, 
-	comboPtr->selLast);
+        comboPtr->selLast);
 
     if (firstOffset >= comboPtr->firstOffset) {
-	int numPixels, len, numBytes;
-	ByteOffset offset;
+        int numPixels, len, numBytes;
+        ByteOffset offset;
 
-	offset = firstOffset;
-	if (offset > comboPtr->lastOffset) {
-	    offset = comboPtr->lastOffset;
-	}
-	len = offset - comboPtr->firstOffset;
-	numBytes = Blt_Font_Measure(comboPtr->font, 
-		comboPtr->screenText + comboPtr->firstOffset, len, w, 
-		TEXT_FLAGS, &numPixels);
-	Blt_Font_Draw(comboPtr->display, pixmap, gc, comboPtr->font, 
-		Tk_Depth(comboPtr->tkwin), 0.0f, 
-		comboPtr->screenText + comboPtr->firstOffset, numBytes, 
-		textX, textY);
-	textX += numPixels;
+        offset = firstOffset;
+        if (offset > comboPtr->lastOffset) {
+            offset = comboPtr->lastOffset;
+        }
+        len = offset - comboPtr->firstOffset;
+        numBytes = Blt_Font_Measure(comboPtr->font, 
+                comboPtr->screenText + comboPtr->firstOffset, len, w, 
+                TEXT_FLAGS, &numPixels);
+        Blt_Font_Draw(comboPtr->display, pixmap, gc, comboPtr->font, 
+                Tk_Depth(comboPtr->tkwin), 0.0f, 
+                comboPtr->screenText + comboPtr->firstOffset, numBytes, 
+                textX, textY);
+        textX += numPixels;
     }
     /* Step 2. Draw the selection itself, if it's visible in the
      *         viewport. Otherwise step 1 drew as much as we need. */
-    if ((firstOffset >= 0) && (firstOffset <= comboPtr->lastOffset)) {	
-	Blt_Bg bg;
-	int numBytes, numPixels;
-	ByteOffset first, last;
+    if ((firstOffset >= 0) && (firstOffset <= comboPtr->lastOffset)) {  
+        Blt_Bg bg;
+        int numBytes, numPixels;
+        ByteOffset first, last;
 
-	/* The background of the selection rectangle is different depending
-	 * whether the widget has focus or not. */
-	bg = comboPtr->selectBg;
-	first = firstOffset;
-	if (first < comboPtr->firstOffset) {
-	    first = comboPtr->firstOffset;
-	}
-	last = lastOffset;
-	if (last > comboPtr->lastOffset) {
-	    last = comboPtr->lastOffset;
-	}
-	numBytes = Blt_Font_Measure(comboPtr->font, 
-		comboPtr->screenText + first, last - first, w, 
-		TEXT_FLAGS, &numPixels);
-	Blt_Bg_FillRectangle(comboPtr->tkwin, pixmap, bg, textX, 0, 
-		numPixels, h, 0, TK_RELIEF_FLAT);
-	Blt_Font_Draw(comboPtr->display, pixmap, comboPtr->selectGC, 
-		comboPtr->font, Tk_Depth(comboPtr->tkwin), 0.0f, 
-		comboPtr->screenText + first, numBytes, textX, textY);
-	textX += numPixels;
+        /* The background of the selection rectangle is different depending
+         * whether the widget has focus or not. */
+        bg = comboPtr->selectBg;
+        first = firstOffset;
+        if (first < comboPtr->firstOffset) {
+            first = comboPtr->firstOffset;
+        }
+        last = lastOffset;
+        if (last > comboPtr->lastOffset) {
+            last = comboPtr->lastOffset;
+        }
+        numBytes = Blt_Font_Measure(comboPtr->font, 
+                comboPtr->screenText + first, last - first, w, 
+                TEXT_FLAGS, &numPixels);
+        Blt_Bg_FillRectangle(comboPtr->tkwin, pixmap, bg, textX, 0, 
+                numPixels, h, 0, TK_RELIEF_FLAT);
+        Blt_Font_Draw(comboPtr->display, pixmap, comboPtr->selectGC, 
+                comboPtr->font, Tk_Depth(comboPtr->tkwin), 0.0f, 
+                comboPtr->screenText + first, numBytes, textX, textY);
+        textX += numPixels;
     }
     /* Step 3.  Draw any text following the selection that's visible
-     *		in the viewport. In the case of no selection, we draw
-     *		the entire text string. */
-    if (lastOffset < comboPtr->lastOffset) {		
-	ByteOffset offset;
+     *          in the viewport. In the case of no selection, we draw
+     *          the entire text string. */
+    if (lastOffset < comboPtr->lastOffset) {            
+        ByteOffset offset;
 
-	offset = lastOffset;
-	if (offset < comboPtr->firstOffset) {
-	    offset = comboPtr->firstOffset;
-	}
-	Blt_Font_Draw(comboPtr->display, pixmap, gc, 
-		comboPtr->font, Tk_Depth(comboPtr->tkwin), 0.0f, 
-		comboPtr->screenText + offset,
-		comboPtr->lastOffset - offset, 
-		textX, textY);
+        offset = lastOffset;
+        if (offset < comboPtr->firstOffset) {
+            offset = comboPtr->firstOffset;
+        }
+        Blt_Font_Draw(comboPtr->display, pixmap, gc, 
+                comboPtr->font, Tk_Depth(comboPtr->tkwin), 0.0f, 
+                comboPtr->screenText + offset,
+                comboPtr->lastOffset - offset, 
+                textX, textY);
     }
     /* Draw the insertion cursor, if one is needed. */
     if (insertX >= 0) {
-	int y1, y2;
+        int y1, y2;
 
-	y1 = 1;
-	y2 = h - 2;
-	XDrawLine(comboPtr->display, pixmap, comboPtr->insertGC, insertX, y1, 
-		insertX, y2);
+        y1 = 1;
+        y2 = h - 2;
+        XDrawLine(comboPtr->display, pixmap, comboPtr->insertGC, insertX, y1, 
+                insertX, y2);
 #ifdef notdef
-	XDrawLine(comboPtr->display, pixmap, comboPtr->insertGC, insertX + 1, 
-		y1, insertX + 1, y2);
+        XDrawLine(comboPtr->display, pixmap, comboPtr->insertGC, insertX + 1, 
+                y1, insertX + 1, y2);
 #endif
     }
     XCopyArea(comboPtr->display, pixmap, drawable, gc, 0, 0, w, h, 
-	x, y);
+        x, y);
     Tk_FreePixmap(comboPtr->display, pixmap);
 }
 
@@ -4447,174 +4447,174 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     h = height - (2 * comboPtr->inset);
 
     /* Label: includes icon and text. */
-	
+        
     if (comboPtr->flags & ARROW) {
-	w -= comboPtr->arrowWidth;
+        w -= comboPtr->arrowWidth;
     }
     buttonNeeded = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
     if (buttonNeeded) {
-	w -= butPtr->width;
+        w -= butPtr->width;
     }
     if (h > comboPtr->entryHeight) {
-	y += (h - comboPtr->entryHeight) / 2;
+        y += (h - comboPtr->entryHeight) / 2;
     }
     /* Draw Icon. */
     if (comboPtr->icon != NULL) {
-	int ix, iy, iw, ih;
-	
-	ix = x + IPAD;
-	iy = y + YPAD;
-	iw = MIN(w, comboPtr->iconWidth);
-	ih = MIN(h, comboPtr->iconHeight);
-	if (comboPtr->iconHeight < comboPtr->entryHeight) {
-	    iy += (comboPtr->entryHeight - comboPtr->iconHeight) / 2;
-	}
-	if ((Blt_IsPicture(IconImage(comboPtr->icon))) && 
-	    (comboPtr->flags & DISABLED)) {
-	    Blt_Picture src, dst;
-	    Blt_Painter painter;
-	    int w, h;
+        int ix, iy, iw, ih;
+        
+        ix = x + IPAD;
+        iy = y + YPAD;
+        iw = MIN(w, comboPtr->iconWidth);
+        ih = MIN(h, comboPtr->iconHeight);
+        if (comboPtr->iconHeight < comboPtr->entryHeight) {
+            iy += (comboPtr->entryHeight - comboPtr->iconHeight) / 2;
+        }
+        if ((Blt_IsPicture(IconImage(comboPtr->icon))) && 
+            (comboPtr->flags & DISABLED)) {
+            Blt_Picture src, dst;
+            Blt_Painter painter;
+            int w, h;
 
-	    painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
-	    src = Blt_GetPictureFromPictureImage(comboPtr->interp, 
-		IconImage(comboPtr->icon));
-	    w = Blt_Picture_Width(src);
-	    h = Blt_Picture_Height(src);
-	    dst = Blt_ClonePicture(src);
-	    Blt_FadePicture(dst, 0, 0, w, h, 100 / 255.0);
-	    Blt_PaintPicture(painter, drawable, dst, 0, 0, iw, ih,ix,iy,0);
-	    Blt_FreePicture(dst);
-	} else {
-	    Tk_RedrawImage(IconImage(comboPtr->icon), 0, 0, iw, ih, drawable, 
-		ix, iy);
-	}
-	x += comboPtr->iconWidth;
-	w -= comboPtr->iconWidth;
+            painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
+            src = Blt_GetPictureFromPictureImage(comboPtr->interp, 
+                IconImage(comboPtr->icon));
+            w = Blt_Picture_Width(src);
+            h = Blt_Picture_Height(src);
+            dst = Blt_ClonePicture(src);
+            Blt_FadePicture(dst, 0, 0, w, h, 100 / 255.0);
+            Blt_PaintPicture(painter, drawable, dst, 0, 0, iw, ih,ix,iy,0);
+            Blt_FreePicture(dst);
+        } else {
+            Tk_RedrawImage(IconImage(comboPtr->icon), 0, 0, iw, ih, drawable, 
+                ix, iy);
+        }
+        x += comboPtr->iconWidth;
+        w -= comboPtr->iconWidth;
     }
     tx = x + IPAD;
     ty = y + 1;
     if ((w > 0) && (h > 0)) {
 #ifdef notdef
-	DrawEntry(comboPtr, drawable, x + IPAD, y + 1, w, h - 2);
-	x += comboPtr->entryWidth;
+        DrawEntry(comboPtr, drawable, x + IPAD, y + 1, w, h - 2);
+        x += comboPtr->entryWidth;
 #endif
     }
     if (comboPtr->flags & DISABLED) {
-	bg = comboPtr->disabledBg;
+        bg = comboPtr->disabledBg;
     } else if (comboPtr->flags & ACTIVE_ARROW) {
-	bg = comboPtr->activeBg;
+        bg = comboPtr->activeBg;
     } else {
-	bg = comboPtr->normalBg;
+        bg = comboPtr->normalBg;
     }
     /* Clear button. */
     if (buttonNeeded) {
-	Button *butPtr = &comboPtr->clearButton;
-	Blt_Picture picture;
-	int bx;
+        Button *butPtr = &comboPtr->clearButton;
+        Blt_Picture picture;
+        int bx;
 
-	comboPtr->viewWidth -= butPtr->width + comboPtr->inset + 
-	    2 * (butPtr->borderWidth + butPtr->pad);
-	bx = width - (comboPtr->inset + comboPtr->arrowWidth + 
-		      butPtr->width);
-	y = comboPtr->inset + comboPtr->arrowPad;
-	if (bx < 0) {
-	    bx = comboPtr->inset;
-	}
+        comboPtr->viewWidth -= butPtr->width + comboPtr->inset + 
+            2 * (butPtr->borderWidth + butPtr->pad);
+        bx = width - (comboPtr->inset + comboPtr->arrowWidth + 
+                      butPtr->width);
+        y = comboPtr->inset + comboPtr->arrowPad;
+        if (bx < 0) {
+            bx = comboPtr->inset;
+        }
 
-	butPtr->x = bx + butPtr->borderWidth + butPtr->pad;
-	butPtr->y = y;
-	x += butPtr->width;
-	w -= 6;
-	if (comboPtr->entryHeight > butPtr->height) {
-	    butPtr->y +=  (comboPtr->entryHeight - butPtr->height) / 2;
-	}
-	if (comboPtr->flags & ACTIVE_CLEAR) {
-	    if (butPtr->activePicture == NULL) {
-		butPtr->activePicture = Blt_PaintDelete(BUTTON_WIDTH, 
-							BUTTON_HEIGHT, 
-							Blt_Bg_BorderColor(bg),
-							butPtr->activeBg, 
-							butPtr->activeFg, 
-							TRUE);
-	    } 
-	    picture = butPtr->activePicture;
-	} else {
-	    if (butPtr->normalPicture == NULL) {
-		butPtr->normalPicture = 
-			Blt_PaintDelete(BUTTON_WIDTH, BUTTON_HEIGHT, 
-				Blt_Bg_BorderColor(bg),
-				butPtr->normalBg, butPtr->normalFg, FALSE);
-	    } 
-	    picture = butPtr->normalPicture;
-	}
-	if (butPtr->painter == NULL) {
-	    butPtr->painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
-	}
-	Blt_PaintPicture(butPtr->painter, drawable, picture, 0, 0, 
-		butPtr->width, butPtr->height, butPtr->x, butPtr->y, 0);
+        butPtr->x = bx + butPtr->borderWidth + butPtr->pad;
+        butPtr->y = y;
+        x += butPtr->width;
+        w -= 6;
+        if (comboPtr->entryHeight > butPtr->height) {
+            butPtr->y +=  (comboPtr->entryHeight - butPtr->height) / 2;
+        }
+        if (comboPtr->flags & ACTIVE_CLEAR) {
+            if (butPtr->activePicture == NULL) {
+                butPtr->activePicture = Blt_PaintDelete(BUTTON_WIDTH, 
+                                                        BUTTON_HEIGHT, 
+                                                        Blt_Bg_BorderColor(bg),
+                                                        butPtr->activeBg, 
+                                                        butPtr->activeFg, 
+                                                        TRUE);
+            } 
+            picture = butPtr->activePicture;
+        } else {
+            if (butPtr->normalPicture == NULL) {
+                butPtr->normalPicture = 
+                        Blt_PaintDelete(BUTTON_WIDTH, BUTTON_HEIGHT, 
+                                Blt_Bg_BorderColor(bg),
+                                butPtr->normalBg, butPtr->normalFg, FALSE);
+            } 
+            picture = butPtr->normalPicture;
+        }
+        if (butPtr->painter == NULL) {
+            butPtr->painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
+        }
+        Blt_PaintPicture(butPtr->painter, drawable, picture, 0, 0, 
+                butPtr->width, butPtr->height, butPtr->x, butPtr->y, 0);
     }
     /* Arrow. */
     if (comboPtr->flags & ARROW) {
-	XColor *color;
-	int bw, bh;
-	GC gc;
-	int relief;
+        XColor *color;
+        int bw, bh;
+        GC gc;
+        int relief;
 
-	relief = comboPtr->arrowRelief;
-	if (comboPtr->flags & POSTED) {
-	    relief = comboPtr->activeArrowRelief;
-	}
-	if (comboPtr->flags & ACTIVE_ARROW) {
-	    color = comboPtr->activeColor;
-	} else if (comboPtr->flags & DISABLED) {
-	    color = comboPtr->disabledColor;
-	} else {
-	    color = comboPtr->normalColor;
-	}
-	x = width - comboPtr->inset - comboPtr->arrowWidth;
-	y = comboPtr->inset;
-	if (x < 0) {
-	    x = comboPtr->inset;
-	}
-	bw = comboPtr->arrowWidth - 2 * comboPtr->arrowPad;
-	bh = h;
-	x += comboPtr->arrowPad;
+        relief = comboPtr->arrowRelief;
+        if (comboPtr->flags & POSTED) {
+            relief = comboPtr->activeArrowRelief;
+        }
+        if (comboPtr->flags & ACTIVE_ARROW) {
+            color = comboPtr->activeColor;
+        } else if (comboPtr->flags & DISABLED) {
+            color = comboPtr->disabledColor;
+        } else {
+            color = comboPtr->normalColor;
+        }
+        x = width - comboPtr->inset - comboPtr->arrowWidth;
+        y = comboPtr->inset;
+        if (x < 0) {
+            x = comboPtr->inset;
+        }
+        bw = comboPtr->arrowWidth - 2 * comboPtr->arrowPad;
+        bh = h;
+        x += comboPtr->arrowPad;
 
-	Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x + 1, y + 1, 
-		bw - 2, bh - 2, comboPtr->arrowBorderWidth, relief);
-	gc = Blt_Bg_BorderGC(comboPtr->tkwin, bg, TK_3D_FLAT_GC);
-	XDrawRectangle(comboPtr->display, drawable, gc, x, y, bw-1, bh-1);
-	x += comboPtr->arrowBorderWidth;
-	y += comboPtr->arrowBorderWidth;
-	bw -= 2 * comboPtr->arrowBorderWidth + XPAD;
-	bh -= 2 * comboPtr->arrowBorderWidth;
-	Blt_DrawArrow(comboPtr->display, drawable, color, 
-		x + XPAD, y, bw, bh, comboPtr->arrowBorderWidth, ARROW_DOWN);
+        Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x + 1, y + 1, 
+                bw - 2, bh - 2, comboPtr->arrowBorderWidth, relief);
+        gc = Blt_Bg_BorderGC(comboPtr->tkwin, bg, TK_3D_FLAT_GC);
+        XDrawRectangle(comboPtr->display, drawable, gc, x, y, bw-1, bh-1);
+        x += comboPtr->arrowBorderWidth;
+        y += comboPtr->arrowBorderWidth;
+        bw -= 2 * comboPtr->arrowBorderWidth + XPAD;
+        bh -= 2 * comboPtr->arrowBorderWidth;
+        Blt_DrawArrow(comboPtr->display, drawable, color, 
+                x + XPAD, y, bw, bh, comboPtr->arrowBorderWidth, ARROW_DOWN);
     }
     comboPtr->viewWidth = w;
     if ((w > 0) && (h > 0)) {
-	DrawEntry(comboPtr, drawable, tx, ty, w - 4, h - 2);
+        DrawEntry(comboPtr, drawable, tx, ty, w - 4, h - 2);
     }
 
     /* Draw focus highlight ring. */
     if (comboPtr->highlightWidth > 0) {
-	GC gc;
+        GC gc;
 
-	if ((comboPtr->flags & (FOCUS|READONLY)) == FOCUS) {
-	    gc = comboPtr->highlightGC;
-	    Tk_DrawFocusHighlight(comboPtr->tkwin, gc, comboPtr->highlightWidth,
-		 drawable);
-	} else {
-	    Blt_Bg_DrawFocus(comboPtr->tkwin, comboPtr->normalBg, 
-		comboPtr->highlightWidth, drawable);
-	}	    
+        if ((comboPtr->flags & (FOCUS|READONLY)) == FOCUS) {
+            gc = comboPtr->highlightGC;
+            Tk_DrawFocusHighlight(comboPtr->tkwin, gc, comboPtr->highlightWidth,
+                 drawable);
+        } else {
+            Blt_Bg_DrawFocus(comboPtr->tkwin, comboPtr->normalBg, 
+                comboPtr->highlightWidth, drawable);
+        }           
     }
     if ((comboPtr->relief != TK_RELIEF_FLAT) && (comboPtr->borderWidth > 0)) {
-	Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, 
-		comboPtr->normalBg, comboPtr->highlightWidth, 
-		comboPtr->highlightWidth, width - 2 * comboPtr->highlightWidth, 
-		height - 2 * comboPtr->highlightWidth, comboPtr->borderWidth, 
-		comboPtr->relief);
+        Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, 
+                comboPtr->normalBg, comboPtr->highlightWidth, 
+                comboPtr->highlightWidth, width - 2 * comboPtr->highlightWidth, 
+                height - 2 * comboPtr->highlightWidth, comboPtr->borderWidth, 
+                comboPtr->relief);
     }
 }
 
@@ -4623,13 +4623,13 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
  *
  * DisplayComboEntry --
  *
- *	This procedure is invoked to display a comboentry widget.
+ *      This procedure is invoked to display a comboentry widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Commands are output to X to display the comboentry.
+ *      Commands are output to X to display the comboentry.
  *
  *---------------------------------------------------------------------------
  */
@@ -4638,55 +4638,55 @@ DisplayComboEntry(ClientData clientData)
 {
     ComboEntry *comboPtr = clientData;
     Pixmap drawable;
-    int w, h;			/* Window width and height. */
+    int w, h;                   /* Window width and height. */
     Blt_Bg bg;
 
     comboPtr->flags &= ~REDRAW_PENDING;
     if (comboPtr->tkwin == NULL) {
-	return;			/* Window destroyed (should not get here) */
+        return;                 /* Window destroyed (should not get here) */
     }
     w = Tk_Width(comboPtr->tkwin);
     h = Tk_Height(comboPtr->tkwin);
     if ((w <= 1) || (h <=1)) {
-	/* Don't bother computing the layout until the window size is
-	 * something reasonable. */
-	return;
+        /* Don't bother computing the layout until the window size is
+         * something reasonable. */
+        return;
     }
     if (comboPtr->flags & LAYOUT_PENDING) {
-	ComputeGeometry(comboPtr);
-	comboPtr->flags |= SCROLL_PENDING;
+        ComputeGeometry(comboPtr);
+        comboPtr->flags |= SCROLL_PENDING;
     }
     if (!Tk_IsMapped(comboPtr->tkwin)) {
-	/* The widget's window isn't displayed, so don't bother drawing
-	 * anything.  By getting this far, we've at least computed the
-	 * coordinates of the comboentry's new layout.  */
-	return;
+        /* The widget's window isn't displayed, so don't bother drawing
+         * anything.  By getting this far, we've at least computed the
+         * coordinates of the comboentry's new layout.  */
+        return;
     }
     /*
      * Create a pixmap the size of the window for double buffering.
      */
     drawable = Blt_GetPixmap(comboPtr->display, Tk_WindowId(comboPtr->tkwin),
-		w, h, Tk_Depth(comboPtr->tkwin));
+                w, h, Tk_Depth(comboPtr->tkwin));
 #ifdef WIN32
     assert(drawable != None);
 #endif
     bg = (comboPtr->flags & FOCUS) ? comboPtr->inFocusBg : comboPtr->outFocusBg;
     Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, 0, 0, w, h, 0, 
-	TK_RELIEF_FLAT);
+        TK_RELIEF_FLAT);
     DrawComboEntry(comboPtr, drawable, w, h);
     XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
-	comboPtr->highlightGC, 0, 0, w, h, 0, 0);
+        comboPtr->highlightGC, 0, 0, w, h, 0, 0);
     Tk_FreePixmap(comboPtr->display, drawable);
 
     if (comboPtr->flags & SCROLL_PENDING) {
-	if (comboPtr->scrollCmdObjPtr != NULL) {
-	    Blt_UpdateScrollbar(comboPtr->interp, comboPtr->scrollCmdObjPtr,
-		comboPtr->scrollX, comboPtr->scrollX + comboPtr->viewWidth,
-		comboPtr->textWidth);
-	}
-	comboPtr->flags &= ~SCROLL_PENDING;
+        if (comboPtr->scrollCmdObjPtr != NULL) {
+            Blt_UpdateScrollbar(comboPtr->interp, comboPtr->scrollCmdObjPtr,
+                comboPtr->scrollX, comboPtr->scrollX + comboPtr->viewWidth,
+                comboPtr->textWidth);
+        }
+        comboPtr->flags &= ~SCROLL_PENDING;
     }
     if (comboPtr->flags & MODIFIED) {
-	GenerateModifiedEvent(comboPtr);
+        GenerateModifiedEvent(comboPtr);
     }
 }

@@ -15,8 +15,8 @@ Blt_InitTkProcs(Tcl_Interp *interp, const char *version)
 
     clientData = NULL;
     if (Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_EXACT, &clientData) 
-	== NULL) {
-	return NULL;
+        == NULL) {
+        return NULL;
     }
     bltTkProcsPtr = clientData;
     return version;

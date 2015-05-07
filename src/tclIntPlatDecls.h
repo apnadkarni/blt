@@ -125,11 +125,11 @@ extern TclIntPlatStubs *tclIntPlatStubsPtr;
 #ifdef __WIN32__
 #ifndef TclWinConvertError
 #define TclWinConvertError \
-	(tclIntPlatStubsPtr->tclWinConvertError) /* 0 */
+        (tclIntPlatStubsPtr->tclWinConvertError) /* 0 */
 #endif
 #ifndef TclWinGetTclInstance
 #define TclWinGetTclInstance \
-	(tclIntPlatStubsPtr->tclWinGetTclInstance) /* 4 */
+        (tclIntPlatStubsPtr->tclWinGetTclInstance) /* 4 */
 #endif
 #endif /* __WIN32__ */
 

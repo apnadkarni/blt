@@ -56,11 +56,11 @@
 #endif /* HAVE_MEMORY_H */
 
 /*
- *	Memory allocation/deallocation within BLT is performed via the global
- *	variables bltMallocPtr, bltFreePtr, and bltReallocPtr.  By default,
- *	they point to the same routines that TCL uses.  The routine
- *	Blt_AllocInit allows you to specify your own memory allocation and
- *	deallocation routines for BLT on a library-wide basis.
+ *      Memory allocation/deallocation within BLT is performed via the global
+ *      variables bltMallocPtr, bltFreePtr, and bltReallocPtr.  By default,
+ *      they point to the same routines that TCL uses.  The routine
+ *      Blt_AllocInit allows you to specify your own memory allocation and
+ *      deallocation routines for BLT on a library-wide basis.
  */
 #ifndef WIN32
 
@@ -105,7 +105,7 @@ Blt_Calloc(size_t numElem, size_t elemSize)
     size = numElem * elemSize;
     ptr = (*bltMallocPtr)(size);
     if (ptr != NULL) {
-	memset(ptr, 0, size);
+        memset(ptr, 0, size);
     }
     return ptr;
 }
@@ -117,16 +117,16 @@ Blt_MallocAbortOnError(size_t size, const char *fileName, int lineNum)
 
     ptr = (*bltMallocPtr)(size);
     if (ptr == NULL) {
-	Blt_Warn("line %d of %s: can't allocate %lu bytes of memory\n", 
-		lineNum, fileName, (unsigned long)size);
-	abort();
+        Blt_Warn("line %d of %s: can't allocate %lu bytes of memory\n", 
+                lineNum, fileName, (unsigned long)size);
+        abort();
     }
     return ptr;
 }
 
 void *
 Blt_CallocAbortOnError(size_t numElem, size_t elemSize, const char *fileName, 
-		       int lineNum)
+                       int lineNum)
 {
     void *ptr;
     size_t size;
@@ -134,10 +134,10 @@ Blt_CallocAbortOnError(size_t numElem, size_t elemSize, const char *fileName,
     size = numElem * elemSize;
     ptr = (*bltMallocPtr)(size);
     if (ptr == NULL) {
-	Blt_Warn("line %d of %s: can't allocate %lu item(s) of size %lu each\n", 
-		lineNum, fileName, (unsigned long)numElem, 
-		(unsigned long)elemSize);
-	abort();
+        Blt_Warn("line %d of %s: can't allocate %lu item(s) of size %lu each\n", 
+                lineNum, fileName, (unsigned long)numElem, 
+                (unsigned long)elemSize);
+        abort();
     }
     memset(ptr, 0, size);
     return ptr;
@@ -145,15 +145,15 @@ Blt_CallocAbortOnError(size_t numElem, size_t elemSize, const char *fileName,
 
 void *
 Blt_ReallocAbortOnError(void *ptr, size_t size, const char *fileName, 
-		       int lineNum)
+                       int lineNum)
 {
     void *ptr2;
 
     ptr2 = (*bltReallocPtr)(ptr, size);
     if (ptr2 == NULL) {
-	Blt_Warn("line %d of %s: can't reallocate array or size %lu bytes\n", 
-		lineNum, fileName, (unsigned long)size);
-	abort();
+        Blt_Warn("line %d of %s: can't reallocate array or size %lu bytes\n", 
+                lineNum, fileName, (unsigned long)size);
+        abort();
     }
     return ptr2;
 }
@@ -177,7 +177,7 @@ Blt_Strndup(const char *string, size_t size)
 
     ptr = (*bltMallocPtr)((size + 1) * sizeof(char));
     if (ptr != NULL) {
-	strncpy(ptr, string, size);
+        strncpy(ptr, string, size);
         ptr[size] = '\0';
     }
     return ptr;
@@ -204,7 +204,7 @@ Blt_Strdup(const char *string)
     size = strlen(string) + 1;
     ptr = (*bltMallocPtr)(size * sizeof(char));
     if (ptr != NULL) {
-	strcpy(ptr, string);
+        strcpy(ptr, string);
     }
     return ptr;
 }
@@ -230,9 +230,9 @@ Blt_StrdupAbortOnError(const char *string, const char *fileName, int lineNum)
     size = strlen(string) + 1;
     ptr = (*bltMallocPtr)(size * sizeof(char));
     if (ptr == NULL) {
-	Blt_Warn("line %d of %s: can't allocate string of %lu bytes\n",
-		lineNum, fileName, (unsigned long)size);
-	abort();
+        Blt_Warn("line %d of %s: can't allocate string of %lu bytes\n",
+                lineNum, fileName, (unsigned long)size);
+        abort();
     }
     strcpy(ptr, string);
     return ptr;
@@ -258,9 +258,9 @@ Blt_StrndupAbortOnError(const char *string, size_t size, const char *fileName,
 
     ptr = (*bltMallocPtr)((size + 1) * sizeof(char));
     if (ptr == NULL) {
-	Blt_Warn("line %d of %s: can't allocate string of %lu bytes\n",
-		lineNum, fileName, (unsigned long)size);
-	abort();
+        Blt_Warn("line %d of %s: can't allocate string of %lu bytes\n",
+                lineNum, fileName, (unsigned long)size);
+        abort();
     }
     strncpy(ptr, string, size);
     ptr[size] = '\0';
@@ -269,14 +269,14 @@ Blt_StrndupAbortOnError(const char *string, size_t size, const char *fileName,
 
 void
 Blt_AllocInit(Blt_MallocProc *mallocProc, Blt_ReallocProc *reallocProc,
-	      Blt_FreeProc *freeProc)
+              Blt_FreeProc *freeProc)
 {
     Blt_MallocProc *defMallocProc;
     Blt_FreeProc *defFreeProc;
     Blt_ReallocProc *defReallocProc;
     
     if (initialized) {
-	Blt_Panic("Allocation routines for BLT have been already set");
+        Blt_Panic("Allocation routines for BLT have been already set");
     }
     initialized = TRUE;
     /* 
@@ -300,13 +300,13 @@ Blt_AllocInit(Blt_MallocProc *mallocProc, Blt_ReallocProc *reallocProc,
     defReallocProc = realloc;
 #endif /* >= 8.1.0 */
     if (bltMallocPtr == NULL) {
-	bltMallocPtr = (mallocProc != NULL) ? mallocProc : defMallocProc;
+        bltMallocPtr = (mallocProc != NULL) ? mallocProc : defMallocProc;
     }
     if (bltFreePtr == NULL) {
-	bltFreePtr = (freeProc != NULL) ? freeProc : defFreeProc;
+        bltFreePtr = (freeProc != NULL) ? freeProc : defFreeProc;
     }
     if (bltReallocPtr == NULL) {
-	bltReallocPtr = (reallocProc != NULL) ? reallocProc : defReallocProc;
+        bltReallocPtr = (reallocProc != NULL) ? reallocProc : defReallocProc;
     }
 }
 

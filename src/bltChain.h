@@ -57,9 +57,9 @@ typedef int (Blt_ChainCompareProc)(Blt_ChainLink *l1Ptr, Blt_ChainLink *l2Ptr);
  */
 struct _Blt_Chain {
     Blt_ChainLink head;                 /* Pointer to first element in
-					 * chain. */
+                                         * chain. */
     Blt_ChainLink tail;                 /* Pointer to last element in
-					 * chain. */
+                                         * chain. */
     long numLinks;                      /* Number of elements in chain. */
 };
 
@@ -69,15 +69,15 @@ BLT_EXTERN void Blt_Chain_Destroy(Blt_Chain chain);
 BLT_EXTERN Blt_ChainLink Blt_Chain_NewLink(void);
 BLT_EXTERN Blt_ChainLink Blt_Chain_AllocLink(size_t size);
 BLT_EXTERN Blt_ChainLink Blt_Chain_Append(Blt_Chain chain, 
-	ClientData clientData);
+        ClientData clientData);
 BLT_EXTERN Blt_ChainLink Blt_Chain_Prepend(Blt_Chain chain, 
-	ClientData clientData);
+        ClientData clientData);
 BLT_EXTERN void Blt_Chain_Reset(Blt_Chain chain);
 BLT_EXTERN void Blt_Chain_InitLink(Blt_ChainLink link);
 BLT_EXTERN void Blt_Chain_LinkAfter(Blt_Chain chain, Blt_ChainLink link, 
-	Blt_ChainLink after);
+        Blt_ChainLink after);
 BLT_EXTERN void Blt_Chain_LinkBefore(Blt_Chain chain, Blt_ChainLink link, 
-	Blt_ChainLink before);
+        Blt_ChainLink before);
 BLT_EXTERN void Blt_Chain_UnlinkLink(Blt_Chain chain, Blt_ChainLink link);
 BLT_EXTERN void Blt_Chain_DeleteLink(Blt_Chain chain, Blt_ChainLink link);
 BLT_EXTERN Blt_ChainLink Blt_Chain_GetNthLink(Blt_Chain chain, long position);
@@ -85,18 +85,18 @@ BLT_EXTERN void Blt_Chain_Sort(Blt_Chain chain, Blt_ChainCompareProc *proc);
 BLT_EXTERN void Blt_Chain_Reverse(Blt_Chain chain);
 BLT_EXTERN int Blt_Chain_IsBefore(Blt_ChainLink first, Blt_ChainLink last);
 
-#define Blt_Chain_GetLength(c)	(((c) == NULL) ? 0 : (c)->numLinks)
-#define Blt_Chain_FirstLink(c)	(((c) == NULL) ? NULL : (c)->head)
-#define Blt_Chain_LastLink(c)	(((c) == NULL) ? NULL : (c)->tail)
-#define Blt_Chain_PrevLink(l)	((l)->prev)
-#define Blt_Chain_NextLink(l) 	((l)->next)
-#define Blt_Chain_GetValue(l)  	((l)->clientData)
-#define Blt_Chain_FirstValue(c)	\
-	(((c)->head == NULL) ? NULL : (c)->head->clientData)
+#define Blt_Chain_GetLength(c)  (((c) == NULL) ? 0 : (c)->numLinks)
+#define Blt_Chain_FirstLink(c)  (((c) == NULL) ? NULL : (c)->head)
+#define Blt_Chain_LastLink(c)   (((c) == NULL) ? NULL : (c)->tail)
+#define Blt_Chain_PrevLink(l)   ((l)->prev)
+#define Blt_Chain_NextLink(l)   ((l)->next)
+#define Blt_Chain_GetValue(l)   ((l)->clientData)
+#define Blt_Chain_FirstValue(c) \
+        (((c)->head == NULL) ? NULL : (c)->head->clientData)
 #define Blt_Chain_SetValue(l, value) ((l)->clientData = (ClientData)(value))
 #define Blt_Chain_AppendLink(c, l) \
-	(Blt_Chain_LinkAfter((c), (l), (Blt_ChainLink)NULL))
+        (Blt_Chain_LinkAfter((c), (l), (Blt_ChainLink)NULL))
 #define Blt_Chain_PrependLink(c, l) \
-	(Blt_Chain_LinkBefore((c), (l), (Blt_ChainLink)NULL))
+        (Blt_Chain_LinkBefore((c), (l), (Blt_ChainLink)NULL))
 
 #endif /* _BLT_CHAIN_H */

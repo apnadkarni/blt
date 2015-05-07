@@ -53,11 +53,11 @@ COLOR SPECIFICATIONS
 
 Pixel color values can be described in any of the following forms:
 
-  *colorName*		
+  *colorName*           
     Any of the valid textual names for a color defined in the 
     server's color database file, such as red or "PeachPuff".
 
-  #\ *RGB*  #\ *RRGGBB* #\ *RRRGGGBBB*  #\ *RRRRGGGGBBBB*		
+  #\ *RGB*  #\ *RRGGBB* #\ *RRRGGGBBB*  #\ *RRRRGGGGBBBB*               
     A numeric specification of the red, green, and blue intensities to use
     to display the color. Each R, G, or B represents a single hexadecimal
     digit.  The four forms permit colors to be specified with 4-bit, 8-bit,
@@ -65,7 +65,7 @@ Pixel color values can be described in any of the following forms:
     color, they represent the most significant bits of the color.  For
     example, #3a7 is the same as #3000a0007000.
 
-  0x\ *AARRGGBB*		
+  0x\ *AARRGGBB*                
     A numeric specification of the alpha, red, green, and blue intensities
     to use to display the color. Each A, R, G, or B represents a single
     hexadecimal digit. The alpha value represents the transparency of the
@@ -755,9 +755,9 @@ the command.  The operations available for pictures are listed below.
     "linear", or "logarithmic"".
 
     **linear**
-	Colors are interpolated on a linear scale between 0.0 and 1.0.
+        Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
-	Colors are interpolated using the log of the value.
+        Colors are interpolated using the log of the value.
     
   **-low** *percentOpacity*
     Specifies the starting percent opacity of the reflection.
@@ -904,16 +904,16 @@ the command.  The operations available for pictures are listed below.
    following.
 
       **.**\ *pathName*
-	 The path of any Tk widget. Note that Tk **canvas** widgets are
-	 treated specially.  The **canvas** window does not have to be viewable
-	 on the screen to be snapped. It underlying pixmap is read directly.
+         The path of any Tk widget. Note that Tk **canvas** widgets are
+         treated specially.  The **canvas** window does not have to be viewable
+         on the screen to be snapped. It underlying pixmap is read directly.
 
       **root**
-	 The root window.
+         The root window.
 
       *number*
-	 The ID of the window.  In X11 the number will be a hexadecimal number
-	 such as "0x2e00004".
+         The ID of the window.  In X11 the number will be a hexadecimal number
+         such as "0x2e00004".
 
    *Switches* can be any of the following.
 
@@ -1203,14 +1203,14 @@ format in the **import** or **export** operations.
       of the following.
 
       **slow**
-	Uses a slow but accurate integer algorithm. This is the default.
+        Uses a slow but accurate integer algorithm. This is the default.
 
       **fast**
-	Uses a faster but less accurate integer algorithm.
+        Uses a faster but less accurate integer algorithm.
 
       **float**
-	Uses floating-point. More accurate and faster depending on your
-	hardware.
+        Uses floating-point. More accurate and faster depending on your
+        hardware.
 
     **-file** *fileName*
      Read the JPEG file from *fileName*.

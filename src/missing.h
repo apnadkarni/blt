@@ -8,16 +8,16 @@
 #define DeleteBitmap(hbm)       DeleteObject((HGDIOBJ)(HBITMAP)(hbm))
 #endif
 #ifndef DeleteBrush
-#define DeleteBrush(hbr)	DeleteObject((HGDIOBJ)(HBRUSH)(hbr))
+#define DeleteBrush(hbr)        DeleteObject((HGDIOBJ)(HBRUSH)(hbr))
 #endif
 #ifndef DeleteFont
-#define DeleteFont(hfont)	DeleteObject((HGDIOBJ)(HFONT)(hfont))
+#define DeleteFont(hfont)       DeleteObject((HGDIOBJ)(HFONT)(hfont))
 #endif
 #ifndef DeletePalette
 #define DeletePalette(hpal)     DeleteObject((HGDIOBJ)(HPALETTE)(hpal))
 #endif
 #ifndef DeletePen
-#define DeletePen(hpen)		DeleteObject((HGDIOBJ)(HPEN)(hpen))
+#define DeletePen(hpen)         DeleteObject((HGDIOBJ)(HPEN)(hpen))
 #endif
 #ifndef SelectBitmap
 #define SelectBitmap(hdc, hbm)  ((HBITMAP)SelectObject((hdc), (HGDIOBJ)(HBITMAP)(hbm)))

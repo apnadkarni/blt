@@ -111,46 +111,46 @@ static Blt_CustomOption padOption =
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BITMASK, "-center", "center", "Center", DEF_PS_CENTER, 
-	Blt_Offset(PageSetup, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-	(Blt_CustomOption *)PS_CENTER},
+        Blt_Offset(PageSetup, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)PS_CENTER},
     {BLT_CONFIG_STRING, "-colormap", "colorMap", "ColorMap",
-	DEF_PS_COLOR_MAP, Blt_Offset(PageSetup, colorVarName),
-	BLT_CONFIG_NULL_OK},
+        DEF_PS_COLOR_MAP, Blt_Offset(PageSetup, colorVarName),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_LIST,    "-comments", "comments", "Comments",
-	DEF_PS_COMMENTS, Blt_Offset(PageSetup, comments), BLT_CONFIG_NULL_OK},
+        DEF_PS_COMMENTS, Blt_Offset(PageSetup, comments), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-decorations", "decorations", "Decorations",
-	DEF_PS_DECORATIONS, Blt_Offset(PageSetup, flags),
-	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)PS_DECORATIONS},
+        DEF_PS_DECORATIONS, Blt_Offset(PageSetup, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)PS_DECORATIONS},
     {BLT_CONFIG_STRING, "-fontmap", "fontMap", "FontMap",
-	DEF_PS_FONT_MAP, Blt_Offset(PageSetup, fontVarName),
-	BLT_CONFIG_NULL_OK},
+        DEF_PS_FONT_MAP, Blt_Offset(PageSetup, fontVarName),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-footer", "footer", "Footer", DEF_PS_FOOTER, 
-	Blt_Offset(PageSetup, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-	(Blt_CustomOption *)PS_FOOTER},
+        Blt_Offset(PageSetup, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)PS_FOOTER},
     {BLT_CONFIG_BITMASK, "-greyscale", "greyscale", "Greyscale",
-	DEF_PS_GREYSCALE, Blt_Offset(PageSetup, flags),
-	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)PS_GREYSCALE},
+        DEF_PS_GREYSCALE, Blt_Offset(PageSetup, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)PS_GREYSCALE},
     {BLT_CONFIG_CUSTOM, "-height", "height", "Height", DEF_PS_HEIGHT, 
-	Blt_Offset(PageSetup, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT,
-	&picaOption},
+        Blt_Offset(PageSetup, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT,
+        &picaOption},
     {BLT_CONFIG_BITMASK, "-landscape", "landscape", "Landscape",
-	DEF_PS_LANDSCAPE, Blt_Offset(PageSetup, flags),
-	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)PS_LANDSCAPE},
+        DEF_PS_LANDSCAPE, Blt_Offset(PageSetup, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)PS_LANDSCAPE},
     {BLT_CONFIG_INT_POS, "-level", "level", "Level", DEF_PS_LEVEL, 
-	Blt_Offset(PageSetup, level), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(PageSetup, level), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-padx", "padX", "PadX", DEF_PS_PADX, 
-	Blt_Offset(PageSetup, xPad), 0, &padOption},
+        Blt_Offset(PageSetup, xPad), 0, &padOption},
     {BLT_CONFIG_CUSTOM, "-pady", "padY", "PadY", DEF_PS_PADY, 
-	Blt_Offset(PageSetup, yPad), 0, &padOption},
+        Blt_Offset(PageSetup, yPad), 0, &padOption},
     {BLT_CONFIG_CUSTOM, "-paperheight", "paperHeight", "PaperHeight",
-	DEF_PS_PAPERHEIGHT, Blt_Offset(PageSetup, reqPaperHeight), 0,
-	&picaOption},
+        DEF_PS_PAPERHEIGHT, Blt_Offset(PageSetup, reqPaperHeight), 0,
+        &picaOption},
     {BLT_CONFIG_CUSTOM, "-paperwidth", "paperWidth", "PaperWidth",
-	DEF_PS_PAPERWIDTH, Blt_Offset(PageSetup, reqPaperWidth), 0,
-	&picaOption},
+        DEF_PS_PAPERWIDTH, Blt_Offset(PageSetup, reqPaperWidth), 0,
+        &picaOption},
     {BLT_CONFIG_CUSTOM, "-width", "width", "Width", DEF_PS_WIDTH, 
-	Blt_Offset(PageSetup, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&picaOption},
+        Blt_Offset(PageSetup, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &picaOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -166,7 +166,7 @@ static int
 ObjToPicaProc(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,                 /* Interpreter to send results back
-					 * to */
+                                         * to */
     Tk_Window tkwin,                    /* Not used. */
     Tcl_Obj *objPtr,                    /* New value. */
     char *widgRec,                      /* Widget record */
@@ -212,7 +212,7 @@ static int
 ObjToPad(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,                 /* Interpreter to send results back
-					 * to */
+                                         * to */
     Tk_Window tkwin,                    /* Not used. */
     Tcl_Obj *objPtr,                    /* New value. */
     char *widgRec,                      /* Widget record */
@@ -243,7 +243,7 @@ PadToObj(
 {
     Blt_Pad *padPtr = (Blt_Pad *)(widgRec + offset);
     Tcl_Obj *objPtr, *listObjPtr;
-	    
+            
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     objPtr = Tcl_NewIntObj(padPtr->side1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -258,10 +258,10 @@ AddComments(Blt_Ps ps, const char **comments)
     const char **p;
 
     for (p = comments; *p != NULL; p += 2) {
-	if (*(p+1) == NULL) {
-	    break;
-	}
-	Blt_Ps_Format(ps, "%% %s: %s\n", *p, *(p+1));
+        if (*(p+1) == NULL) {
+            break;
+        }
+        Blt_Ps_Format(ps, "%% %s: %s\n", *p, *(p+1));
     }
 }
 
@@ -298,7 +298,7 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
     char *newline;
 
     if (fileName == NULL) {
-	fileName = Tk_PathName(graphPtr->tkwin);
+        fileName = Tk_PathName(graphPtr->tkwin);
     }
     Blt_Ps_Append(ps, "%!PS-Adobe-3.0 EPSF-3.0\n");
 
@@ -308,77 +308,77 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
      * the box.
      */
     Blt_Ps_Format(ps, "%%%%BoundingBox: %d %d %d %d\n",
-	setupPtr->left, setupPtr->paperHeight - setupPtr->top,
-	setupPtr->right, setupPtr->paperHeight - setupPtr->bottom);
-	
+        setupPtr->left, setupPtr->paperHeight - setupPtr->top,
+        setupPtr->right, setupPtr->paperHeight - setupPtr->bottom);
+        
     Blt_Ps_Append(ps, "%%Pages: 1\n");
 
     version = Tcl_GetVar(graphPtr->interp, "blt_version", TCL_GLOBAL_ONLY);
     if (version == NULL) {
-	version = "???";
+        version = "???";
     }
     Blt_Ps_Format(ps, "%%%%Creator: (BLT %s %s)\n", version,
-	Tk_Class(graphPtr->tkwin));
+        Tk_Class(graphPtr->tkwin));
 
     ticks = time((time_t *) NULL);
     strcpy(date, ctime(&ticks));
     newline = date + strlen(date) - 1;
     if (*newline == '\n') {
-	*newline = '\0';
+        *newline = '\0';
     }
     Blt_Ps_Format(ps, "%%%%CreationDate: (%s)\n", date);
     Blt_Ps_Format(ps, "%%%%Title: (%s)\n", fileName);
     Blt_Ps_Append(ps, "%%DocumentData: Clean7Bit\n");
     if (setupPtr->flags & PS_LANDSCAPE) {
-	Blt_Ps_Append(ps, "%%Orientation: Landscape\n");
+        Blt_Ps_Append(ps, "%%Orientation: Landscape\n");
     } else {
-	Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
+        Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
     }
     Blt_Ps_Append(ps, "%%DocumentNeededResources: font Helvetica Courier\n");
     AddComments(ps, setupPtr->comments);
     Blt_Ps_Append(ps, "%%EndComments\n\n");
     if (Blt_Ps_IncludeFile(graphPtr->interp, ps, "bltGraph.pro") != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (setupPtr->flags & PS_FOOTER) {
-	const char *who;
+        const char *who;
 
-	who = getenv("LOGNAME");
-	if (who == NULL) {
-	    who = "???";
-	}
-	Blt_Ps_VarAppend(ps,
-	    "8 /Helvetica SetFont\n",
-	    "10 30 moveto\n",
-	    "(Date: ", date, ") show\n",
-	    "10 20 moveto\n",
-	    "(File: ", fileName, ") show\n",
-	    "10 10 moveto\n",
-	    "(Created by: ", who, "@", Tcl_GetHostName(), ") show\n",
-	    "0 0 moveto\n",
-	    (char *)NULL);
+        who = getenv("LOGNAME");
+        if (who == NULL) {
+            who = "???";
+        }
+        Blt_Ps_VarAppend(ps,
+            "8 /Helvetica SetFont\n",
+            "10 30 moveto\n",
+            "(Date: ", date, ") show\n",
+            "10 20 moveto\n",
+            "(File: ", fileName, ") show\n",
+            "10 10 moveto\n",
+            "(Created by: ", who, "@", Tcl_GetHostName(), ") show\n",
+            "0 0 moveto\n",
+            (char *)NULL);
     }
     /*
      * Set the conversion from PostScript to X11 coordinates.  Scale pica to
      * pixels and flip the y-axis (the origin is the upperleft corner).
      */
     Blt_Ps_VarAppend(ps,
-	"% Transform coordinate system to use X11 coordinates\n\n",
-	"% 1. Flip y-axis over by reversing the scale,\n",
-	"% 2. Translate the origin to the other side of the page,\n",
-	"%    making the origin the upper left corner\n", (char *)NULL);
+        "% Transform coordinate system to use X11 coordinates\n\n",
+        "% 1. Flip y-axis over by reversing the scale,\n",
+        "% 2. Translate the origin to the other side of the page,\n",
+        "%    making the origin the upper left corner\n", (char *)NULL);
     Blt_Ps_Format(ps, "1 -1 scale\n");
     /* Papersize is in pixels.  Translate the new origin *after* changing
      * the scale. */
     Blt_Ps_Format(ps, "0 %d translate\n\n", -setupPtr->paperHeight);
     Blt_Ps_VarAppend(ps, "% User defined page layout\n\n",
-		     "% Set color level\n", (char *)NULL);
+                     "% Set color level\n", (char *)NULL);
     Blt_Ps_Format(ps, "%% Set origin\n%d %d translate\n\n",
-	setupPtr->left, setupPtr->bottom);
+        setupPtr->left, setupPtr->bottom);
     if (setupPtr->flags & PS_LANDSCAPE) {
-	Blt_Ps_Format(ps,
-	    "%% Landscape orientation\n0 %g translate\n-90 rotate\n",
-	    ((double)graphPtr->width * setupPtr->scale));
+        Blt_Ps_Format(ps,
+            "%% Landscape orientation\n0 %g translate\n-90 rotate\n",
+            ((double)graphPtr->width * setupPtr->scale));
     }
     Blt_Ps_Append(ps, "\n%%EndSetup\n\n");
     return TCL_OK;
@@ -404,37 +404,37 @@ MarginsToPostScript(Graph *graphPtr, Blt_Ps ps)
 
     /* Clear the surrounding margins and clip the plotting surface */
     if (setupPtr->flags & PS_DECORATIONS) {
-	Blt_Ps_XSetBackground(ps,Blt_Bg_BorderColor(graphPtr->normalBg));
+        Blt_Ps_XSetBackground(ps,Blt_Bg_BorderColor(graphPtr->normalBg));
     } else {
-	Blt_Ps_SetClearBackground(ps);
+        Blt_Ps_SetClearBackground(ps);
     }
     Blt_Ps_XFillRectangles(ps, 4, margin);
     
     Blt_Ps_Append(ps, "% Interior 3D border\n");
     /* Interior 3D border */
     if (graphPtr->plotBW > 0) {
-	Tk_3DBorder border;
-	int x, y, w, h;
+        Tk_3DBorder border;
+        int x, y, w, h;
 
-	x = graphPtr->left - graphPtr->plotBW;
-	y = graphPtr->top - graphPtr->plotBW;
-	w = (graphPtr->right - graphPtr->left) + (2*graphPtr->plotBW);
-	h = (graphPtr->bottom - graphPtr->top) + (2*graphPtr->plotBW);
-	border = Blt_Bg_Border(graphPtr->normalBg);
-	Blt_Ps_Draw3DRectangle(ps, border, (double)x, (double)y, w, h,
-		graphPtr->plotBW, graphPtr->plotRelief);
+        x = graphPtr->left - graphPtr->plotBW;
+        y = graphPtr->top - graphPtr->plotBW;
+        w = (graphPtr->right - graphPtr->left) + (2*graphPtr->plotBW);
+        h = (graphPtr->bottom - graphPtr->top) + (2*graphPtr->plotBW);
+        border = Blt_Bg_Border(graphPtr->normalBg);
+        Blt_Ps_Draw3DRectangle(ps, border, (double)x, (double)y, w, h,
+                graphPtr->plotBW, graphPtr->plotRelief);
     }
     if (Blt_Legend_Site(graphPtr) & LEGEND_MARGIN_MASK) {
-	/*
-	 * Print the legend if we're using a site which lies in one of the
-	 * margins (left, right, top, or bottom) of the graph.
-	 */
-	Blt_LegendToPostScript(graphPtr, ps);
+        /*
+         * Print the legend if we're using a site which lies in one of the
+         * margins (left, right, top, or bottom) of the graph.
+         */
+        Blt_LegendToPostScript(graphPtr, ps);
     }
     if (graphPtr->title != NULL) {
-	Blt_Ps_Append(ps, "% Graph title\n");
-	Blt_Ps_DrawText(ps, graphPtr->title, &graphPtr->titleTextStyle, 
-		(double)graphPtr->titleX, (double)graphPtr->titleY);
+        Blt_Ps_Append(ps, "% Graph title\n");
+        Blt_Ps_DrawText(ps, graphPtr->title, &graphPtr->titleTextStyle, 
+                (double)graphPtr->titleX, (double)graphPtr->titleY);
     }
     Blt_AxesToPostScript(graphPtr, ps);
 }
@@ -454,14 +454,14 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
      * the -width and -height postscript options.
      */
     if (setupPtr->reqWidth > 0) {
-	graphPtr->width = setupPtr->reqWidth;
+        graphPtr->width = setupPtr->reqWidth;
     } else if (graphPtr->width < 2) {
-	graphPtr->width = Tk_ReqWidth(graphPtr->tkwin);
+        graphPtr->width = Tk_ReqWidth(graphPtr->tkwin);
     }
     if (setupPtr->reqHeight > 0) {
-	graphPtr->height = setupPtr->reqHeight;
+        graphPtr->height = setupPtr->reqHeight;
     } else if (graphPtr->height < 2) {
-	graphPtr->height = Tk_ReqHeight(graphPtr->tkwin);
+        graphPtr->height = Tk_ReqHeight(graphPtr->tkwin);
     }
     Blt_Ps_ComputeBoundingBox(setupPtr, graphPtr->width, graphPtr->height);
     graphPtr->flags |= LAYOUT_NEEDED | RESET_WORLD;
@@ -473,7 +473,7 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
 
     result = PostScriptPreamble(graphPtr, ident, ps);
     if (result != TCL_OK) {
-	goto error;
+        goto error;
     }
     /* Determine rectangle of the plotting area for the graph window */
     x = graphPtr->left - graphPtr->plotBW;
@@ -485,9 +485,9 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
     Blt_Ps_Append(ps, "%%Page: 1 1\n\n");
     Blt_Ps_XSetFont(ps, Blt_Ts_GetFont(graphPtr->titleTextStyle));
     if (graphPtr->pageSetup->flags & PS_DECORATIONS) {
-	Blt_Ps_XSetBackground(ps, Blt_Bg_BorderColor(graphPtr->plotBg));
+        Blt_Ps_XSetBackground(ps, Blt_Bg_BorderColor(graphPtr->plotBg));
     } else {
-	Blt_Ps_SetClearBackground(ps);
+        Blt_Ps_SetClearBackground(ps);
     }
     Blt_Ps_XFillRectangle(ps, x, y, w, h);
     Blt_Ps_Rectangle(ps, x, y, w, h);
@@ -496,30 +496,30 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
     Blt_GridsToPostScript(graphPtr, ps);
     Blt_MarkersToPostScript(graphPtr, ps, TRUE);
     if ((Blt_Legend_Site(graphPtr) & LEGEND_PLOTAREA_MASK) && 
-	(!Blt_Legend_IsRaised(graphPtr))) {
-	/* Print legend underneath elements and markers */
-	Blt_LegendToPostScript(graphPtr, ps);
+        (!Blt_Legend_IsRaised(graphPtr))) {
+        /* Print legend underneath elements and markers */
+        Blt_LegendToPostScript(graphPtr, ps);
     }
     Blt_AxisLimitsToPostScript(graphPtr, ps);
     Blt_ElementsToPostScript(graphPtr, ps);
     if ((Blt_Legend_Site(graphPtr) & LEGEND_PLOTAREA_MASK) && 
-	(Blt_Legend_IsRaised(graphPtr))) {
-	/* Print legend above elements (but not markers) */
-	Blt_LegendToPostScript(graphPtr, ps);
+        (Blt_Legend_IsRaised(graphPtr))) {
+        /* Print legend above elements (but not markers) */
+        Blt_LegendToPostScript(graphPtr, ps);
     }
     Blt_MarkersToPostScript(graphPtr, ps, FALSE);
     Blt_ActiveElementsToPostScript(graphPtr, ps);
     Blt_Ps_VarAppend(ps, "\n",
-	"% Unset clipping\n",
-	"grestore\n\n", (char *)NULL);
+        "% Unset clipping\n",
+        "grestore\n\n", (char *)NULL);
     MarginsToPostScript(graphPtr, ps);
     Blt_Ps_VarAppend(ps,
-	"showpage\n",
-	"%Trailer\n",
-	"grestore\n",
-	"end\n",
-	"%%Trailer\n",
-	"%%EOF\n", (char *)NULL);
+        "showpage\n",
+        "%Trailer\n",
+        "grestore\n",
+        "end\n",
+        "%%Trailer\n",
+        "%%EOF\n", (char *)NULL);
   error:
     /* Reset height and width of graph window */
     graphPtr->width = Tk_Width(graphPtr->tkwin);
@@ -553,8 +553,8 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PageSetup *setupPtr = graphPtr->pageSetup;
 
     if (Blt_ConfigureValueFromObj(interp, graphPtr->tkwin, configSpecs, 
-	(char *)setupPtr, objv[3], 0) != TCL_OK) {
-	return TCL_ERROR;
+        (char *)setupPtr, objv[3], 0) != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -576,22 +576,22 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	    Tcl_Obj *const *objv)
+            Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     int flags = BLT_CONFIG_OBJV_ONLY;
     PageSetup *setupPtr = graphPtr->pageSetup;
 
     if (objc == 3) {
-	return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
-		(char *)setupPtr, (Tcl_Obj *)NULL, flags);
+        return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
+                (char *)setupPtr, (Tcl_Obj *)NULL, flags);
     } else if (objc == 4) {
-	return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
-		(char *)setupPtr, objv[3], flags);
+        return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
+                (char *)setupPtr, objv[3], flags);
     }
     if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, configSpecs, 
-	    objc - 3, objv + 3, (char *)setupPtr, flags) != TCL_OK) {
-	return TCL_ERROR;
+            objc - 3, objv + 3, (char *)setupPtr, flags) != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -614,65 +614,65 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 OutputOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     const char *buffer;
     PostScript *psPtr;
     Tcl_Channel channel;
     const char *fileName;               /* Name of file to write PostScript
-					 * output If NULL, output is returned
-					 * via interp->result. */
+                                         * output If NULL, output is returned
+                                         * via interp->result. */
     int length;
 
     fileName = NULL;                    /* Used to identify the output sink. */
     channel = NULL;
     if (objc > 3) {
-	fileName = Tcl_GetString(objv[3]);
-	if (fileName[0] != '-') {
-	    objv++, objc--;             /* First argument is the file name. */
-	    channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
-	    if (channel == NULL) {
-		return TCL_ERROR;
-	    }
-	    if (Tcl_SetChannelOption(interp, channel, "-translation", "binary") 
-		!= TCL_OK) {
-		return TCL_ERROR;
-	    }
-	}
+        fileName = Tcl_GetString(objv[3]);
+        if (fileName[0] != '-') {
+            objv++, objc--;             /* First argument is the file name. */
+            channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
+            if (channel == NULL) {
+                return TCL_ERROR;
+            }
+            if (Tcl_SetChannelOption(interp, channel, "-translation", "binary") 
+                != TCL_OK) {
+                return TCL_ERROR;
+            }
+        }
     }
 
     psPtr = Blt_Ps_Create(graphPtr->interp, graphPtr->pageSetup);
     if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, configSpecs, 
-	objc - 3, objv + 3, (char *)graphPtr->pageSetup, BLT_CONFIG_OBJV_ONLY) 
-	!= TCL_OK) {
-	return TCL_ERROR;
+        objc - 3, objv + 3, (char *)graphPtr->pageSetup, BLT_CONFIG_OBJV_ONLY) 
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     if (GraphToPostScript(graphPtr, fileName, psPtr) != TCL_OK) {
-	goto error;
+        goto error;
     }
     buffer = Blt_Ps_GetValue(psPtr, &length);
     if (channel != NULL) {
-	int numBytes;
-	/*
-	 * If a file name was given, write the results to that file
-	 */
-	numBytes = Tcl_Write(channel, buffer, length);
-	if (numBytes < 0) {
-	    Tcl_AppendResult(interp, "error writing file \"", fileName, "\": ",
-		Tcl_PosixError(interp), (char *)NULL);
-	    goto error;
-	}
-	Tcl_Close(interp, channel);
+        int numBytes;
+        /*
+         * If a file name was given, write the results to that file
+         */
+        numBytes = Tcl_Write(channel, buffer, length);
+        if (numBytes < 0) {
+            Tcl_AppendResult(interp, "error writing file \"", fileName, "\": ",
+                Tcl_PosixError(interp), (char *)NULL);
+            goto error;
+        }
+        Tcl_Close(interp, channel);
     } else {
-	Tcl_SetStringObj(Tcl_GetObjResult(interp), buffer, length);
+        Tcl_SetStringObj(Tcl_GetObjResult(interp), buffer, length);
     }
     Blt_Ps_Free(psPtr);
     return TCL_OK;
 
   error:
     if (channel != NULL) {
-	Tcl_Close(interp, channel);
+        Tcl_Close(interp, channel);
     }
     Blt_Ps_Free(psPtr);
     return TCL_ERROR;
@@ -704,9 +704,9 @@ Blt_CreatePageSetup(Graph *graphPtr)
     graphPtr->pageSetup = setupPtr;
 
     if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
-	    "postscript", "Postscript", configSpecs, 0, (Tcl_Obj **)NULL,
-	    (char *)setupPtr, 0) != TCL_OK) {
-	return TCL_ERROR;
+            "postscript", "Postscript", configSpecs, 0, (Tcl_Obj **)NULL,
+            (char *)setupPtr, 0) != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -739,15 +739,15 @@ static int numPsOps = sizeof(psOps) / sizeof(Blt_OpSpec);
 
 int
 Blt_PostScriptOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		 Tcl_Obj *const *objv)
+                 Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numPsOps, psOps, BLT_OP_ARG2, objc,
-	objv, 0);
+        objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     result = (*proc) (clientData, interp, objc, objv);
     return result;
@@ -757,8 +757,8 @@ void
 Blt_DestroyPageSetup(Graph *graphPtr)
 {
     if (graphPtr->pageSetup != NULL) {
-	Blt_FreeOptions(configSpecs, (char *)graphPtr->pageSetup, 
-		graphPtr->display, 0);
-	Blt_Free(graphPtr->pageSetup);
+        Blt_FreeOptions(configSpecs, (char *)graphPtr->pageSetup, 
+                graphPtr->display, 0);
+        Blt_Free(graphPtr->pageSetup);
     }
 }

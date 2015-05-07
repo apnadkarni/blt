@@ -75,30 +75,30 @@ SetArrayFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
     int argc, i;
 
     if (objPtr->typePtr == &arrayObjType) {
-	return TCL_OK;
+        return TCL_OK;
     }
     /* Get the string representation. Make it up-to-date if necessary. */
     string = Tcl_GetString(objPtr);
     if (Tcl_SplitList(interp, string, &argc, &argv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
     Blt_InitHashTable(tablePtr, BLT_STRING_KEYS);
     for (i = 0; i < argc; i += 2) {
-	Blt_HashEntry *hPtr;
-	Tcl_Obj *elemObjPtr;
-	int isNew;
+        Blt_HashEntry *hPtr;
+        Tcl_Obj *elemObjPtr;
+        int isNew;
 
-	hPtr = Blt_CreateHashEntry(tablePtr, argv[i], &isNew);
-	elemObjPtr = Tcl_NewStringObj(argv[i + 1], -1);
-	Blt_SetHashValue(hPtr, elemObjPtr);
+        hPtr = Blt_CreateHashEntry(tablePtr, argv[i], &isNew);
+        elemObjPtr = Tcl_NewStringObj(argv[i + 1], -1);
+        Blt_SetHashValue(hPtr, elemObjPtr);
 
-	/* Make sure we increment the reference count */
-	Tcl_IncrRefCount(elemObjPtr);
+        /* Make sure we increment the reference count */
+        Tcl_IncrRefCount(elemObjPtr);
     }
     
     if ((oldTypePtr != NULL) && (oldTypePtr->freeIntRepProc != NULL)) {
-	oldTypePtr->freeIntRepProc(objPtr);
+        oldTypePtr->freeIntRepProc(objPtr);
     }
     objPtr->internalRep.otherValuePtr = tablePtr;
     objPtr->typePtr = &arrayObjType;
@@ -121,19 +121,19 @@ DupArrayInternalRep(
     destTablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
     Blt_InitHashTable(destTablePtr, BLT_STRING_KEYS);
     for (hp = Blt_FirstHashEntry(srcTablePtr, &iter); hp != NULL;
-	 hp = Blt_NextHashEntry(&iter)) {
-	Tcl_Obj *valueObjPtr;
-	const char *key;
-	int isNew;
+         hp = Blt_NextHashEntry(&iter)) {
+        Tcl_Obj *valueObjPtr;
+        const char *key;
+        int isNew;
 
-	key = Blt_GetHashKey(srcTablePtr, hp);
-	Blt_CreateHashEntry(destTablePtr, key, &isNew);
-	valueObjPtr = Blt_GetHashValue(hp);
-	Blt_SetHashValue(hp, valueObjPtr);
+        key = Blt_GetHashKey(srcTablePtr, hp);
+        Blt_CreateHashEntry(destTablePtr, key, &isNew);
+        valueObjPtr = Blt_GetHashValue(hp);
+        Blt_SetHashValue(hp, valueObjPtr);
 
-	/* Make sure we increment the reference count now that both array
-	 * objects are using the same elements. */
-	Tcl_IncrRefCount(valueObjPtr);
+        /* Make sure we increment the reference count now that both array
+         * objects are using the same elements. */
+        Tcl_IncrRefCount(valueObjPtr);
     }
     Tcl_InvalidateStringRep(destPtr);
     destPtr->internalRep.otherValuePtr = (VOID *)destTablePtr;
@@ -152,12 +152,12 @@ UpdateStringOfArray(Tcl_Obj *objPtr)    /* Array object w/ string rep to
     tablePtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
     Tcl_DStringInit(&ds);
     for (hp = Blt_FirstHashEntry(tablePtr, &iter); hp != NULL;
-	 hp = Blt_NextHashEntry(&iter)) {
-	Tcl_Obj *elemObjPtr;
+         hp = Blt_NextHashEntry(&iter)) {
+        Tcl_Obj *elemObjPtr;
 
-	elemObjPtr = Blt_GetHashValue(hp);
-	Tcl_DStringAppendElement(&ds, Blt_GetHashKey(tablePtr, hp));
-	Tcl_DStringAppendElement(&ds, Tcl_GetString(elemObjPtr));
+        elemObjPtr = Blt_GetHashValue(hp);
+        Tcl_DStringAppendElement(&ds, Blt_GetHashKey(tablePtr, hp));
+        Tcl_DStringAppendElement(&ds, Tcl_GetString(elemObjPtr));
     }
     objPtr->bytes = (char *)Blt_AssertStrdup(Tcl_DStringValue(&ds));
     objPtr->length = strlen(Tcl_DStringValue(&ds));
@@ -174,11 +174,11 @@ FreeArrayInternalRep(Tcl_Obj *objPtr)   /* Array object to release. */
     Tcl_InvalidateStringRep(objPtr);
     tablePtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
     for (hp = Blt_FirstHashEntry(tablePtr, &iter); hp != NULL;
-	 hp = Blt_NextHashEntry(&iter)) {
-	Tcl_Obj *elemObjPtr;
+         hp = Blt_NextHashEntry(&iter)) {
+        Tcl_Obj *elemObjPtr;
 
-	elemObjPtr = Blt_GetHashValue(hp);
-	Tcl_DecrRefCount(elemObjPtr);
+        elemObjPtr = Blt_GetHashValue(hp);
+        Tcl_DecrRefCount(elemObjPtr);
     }
     Blt_DeleteHashTable(tablePtr);
     Blt_Free(tablePtr);
@@ -191,12 +191,12 @@ Blt_GetArrayFromObj(
     Blt_HashTable **tablePtrPtr)
 {
     if (objPtr->typePtr == &arrayObjType) {
-	*tablePtrPtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
-	return TCL_OK;
+        *tablePtrPtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
+        return TCL_OK;
     }
     if (SetArrayFromAny(interp, objPtr) == TCL_OK) {
-	*tablePtrPtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
-	return TCL_OK;
+        *tablePtrPtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
+        return TCL_OK;
     }
     return TCL_ERROR;
 }
@@ -212,20 +212,20 @@ Blt_NewArrayObj(int objc, Tcl_Obj **objv)
     Blt_InitHashTable(tablePtr, BLT_STRING_KEYS);
 
     for (i = 0; i < objc; i += 2) {
-	Blt_HashEntry *hp;
-	Tcl_Obj *objPtr;
-	int isNew;
+        Blt_HashEntry *hp;
+        Tcl_Obj *objPtr;
+        int isNew;
 
-	hp = Blt_CreateHashEntry(tablePtr, Tcl_GetString(objv[i]), &isNew);
-	objPtr = ((i + 1) == objc) ? Tcl_NewStringObj("", -1) : objv[i+1];
-	Tcl_IncrRefCount(objPtr);
-	if (!isNew) {
-	    Tcl_Obj *oldObjPtr;
+        hp = Blt_CreateHashEntry(tablePtr, Tcl_GetString(objv[i]), &isNew);
+        objPtr = ((i + 1) == objc) ? Tcl_NewStringObj("", -1) : objv[i+1];
+        Tcl_IncrRefCount(objPtr);
+        if (!isNew) {
+            Tcl_Obj *oldObjPtr;
 
-	    oldObjPtr = Blt_GetHashValue(hp);
-	    Tcl_DecrRefCount(oldObjPtr);
-	}
-	Blt_SetHashValue(hp, objPtr);
+            oldObjPtr = Blt_GetHashValue(hp);
+            Tcl_DecrRefCount(oldObjPtr);
+        }
+        Blt_SetHashValue(hp, objPtr);
     }
     arrayObjPtr = Tcl_NewObj(); 
     /* 
@@ -233,7 +233,7 @@ Blt_NewArrayObj(int objc, Tcl_Obj **objv)
      * incremented as they are inserted into the tree via the
      * Blt_Tree_SetValue call.
      */
-    arrayObjPtr->refCount = 0;	
+    arrayObjPtr->refCount = 0;  
     arrayObjPtr->internalRep.otherValuePtr = (VOID *)tablePtr;
     arrayObjPtr->bytes = NULL;
     arrayObjPtr->length = 0; 

@@ -41,13 +41,13 @@
 #include "tclInterp.h"
 
 BLT_EXTERN int Blt_ParseBraces(Tcl_Interp *interp, const char *string, 
-	const char **termPtr, ParseValue *pvPtr);
+        const char **termPtr, ParseValue *pvPtr);
 
 BLT_EXTERN int Blt_ParseNestedCmd(Tcl_Interp *interp, const char *string, 
-	int flags, const char **termPtr, ParseValue *pvPtr);
+        int flags, const char **termPtr, ParseValue *pvPtr);
 
 BLT_EXTERN int Blt_ParseQuotes(Tcl_Interp *interp, const char *string, 
-	int termChar, int flags, const char **termPtr, ParseValue * pvPtr);
+        int termChar, int flags, const char **termPtr, ParseValue * pvPtr);
 
 BLT_EXTERN void Blt_ExpandParseValue(ParseValue *pvPtr, int needed);
 

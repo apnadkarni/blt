@@ -74,7 +74,7 @@ Blt_InitCmd(Tcl_Interp *interp, const char *nsName, Blt_CmdSpec *specPtr)
 
     Tcl_DStringInit(&ds);
     if (nsName != NULL) {
-	Tcl_DStringAppend(&ds, nsName, -1);
+        Tcl_DStringAppend(&ds, nsName, -1);
     } 
     Tcl_DStringAppend(&ds, "::", -1);
     Tcl_DStringAppend(&ds, specPtr->name, -1);
@@ -82,19 +82,19 @@ Blt_InitCmd(Tcl_Interp *interp, const char *nsName, Blt_CmdSpec *specPtr)
     cmdPath = Tcl_DStringValue(&ds);
     cmdToken = Tcl_FindCommand(interp, cmdPath, (Tcl_Namespace *)NULL, 0);
     if (cmdToken != NULL) {
-	Tcl_DStringFree(&ds);
-	return TCL_OK;		/* Assume command was already initialized */
+        Tcl_DStringFree(&ds);
+        return TCL_OK;          /* Assume command was already initialized */
     }
     Tcl_CreateObjCommand(interp, cmdPath, specPtr->cmdProc, specPtr->clientData,
-			 specPtr->cmdDeleteProc);
+                         specPtr->cmdDeleteProc);
     Tcl_DStringFree(&ds);
     nsPtr = Tcl_FindNamespace(interp, nsName, (Tcl_Namespace *)NULL,
-	TCL_LEAVE_ERR_MSG);
+        TCL_LEAVE_ERR_MSG);
     if (nsPtr == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_Export(interp, nsPtr, specPtr->name, FALSE) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -121,14 +121,14 @@ Blt_InitCmd(Tcl_Interp *interp, const char *nsName, Blt_CmdSpec *specPtr)
  */
 int
 Blt_InitCmds(Tcl_Interp *interp, const char *nsName, Blt_CmdSpec *specs, 
-	     int numCmds)
+             int numCmds)
 {
     int i;
 
     for (i = 0; i < numCmds; i++) {
-	if (Blt_InitCmd(interp, nsName, specs + i) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (Blt_InitCmd(interp, nsName, specs + i) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }

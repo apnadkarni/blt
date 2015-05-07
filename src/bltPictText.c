@@ -56,14 +56,14 @@
 #include "bltOp.h"
 #include "tkIntBorder.h"
 
-#define imul8x8(a,b,t)	((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
-#define CLAMP(c)	((((c) < 0.0) ? 0.0 : ((c) > 255.0) ? 255.0 : (c)))
+#define imul8x8(a,b,t)  ((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
+#define CLAMP(c)        ((((c) < 0.0) ? 0.0 : ((c) > 255.0) ? 255.0 : (c)))
 
 #ifndef WIN32 
 #  if defined (HAVE_LIBXFT) && defined(HAVE_X11_XFT_XFT_H)
 #    define HAVE_XFT
 #    include <X11/Xft/Xft.h>
-#  endif	/* HAVE_XFT */
+#  endif        /* HAVE_XFT */
 #endif /*WIN32*/
 
 #if defined (HAVE_FT2BUILD_H)
@@ -93,21 +93,21 @@ static FT_Library ftLibrary;
 /* 
  * TextFont --
  *
- *	This structure contains the various pieces to draw text using the
- *	freetype library into a picture image.
+ *      This structure contains the various pieces to draw text using the
+ *      freetype library into a picture image.
  */
 typedef struct {
-    FT_Face face;			/* Type face of font */
-    FT_Matrix matrix;			/* Rotation matrix for font. Used
-					* for rotated fonts. */
+    FT_Face face;                       /* Type face of font */
+    FT_Matrix matrix;                   /* Rotation matrix for font. Used
+                                        * for rotated fonts. */
 #ifdef HAVE_XFT
-    XftFont *xftFont;			/* Xft font handle used to get face
-					 * from Xft font. */
+    XftFont *xftFont;                   /* Xft font handle used to get face
+                                         * from Xft font. */
 #endif
-    int fontSize;			/* Point size of font.  */
-    float angle;			/* Rotation of font. */
-    int height;				/* Line height of font.  */
-    int ascent, descent;		/* Ascent and descent of font. */
+    int fontSize;                       /* Point size of font.  */
+    float angle;                        /* Rotation of font. */
+    int height;                         /* Line height of font.  */
+    int ascent, descent;                /* Ascent and descent of font. */
 } TextFont;    
 
 typedef struct {
@@ -138,18 +138,18 @@ static Blt_SwitchCustom paintbrushSwitch =
 };
 
 typedef struct {
-    int kerning;			/* Indicates whether to kern
-					   text. */
-    Blt_PaintBrush brush;		/* Color of text. */
-    Blt_Shadow shadow;			/*  */
-    int fontSize;			/* Size of requested font. */
-    Tcl_Obj *fontObjPtr;		/* Requested font.  If the name of
-					 * the font starts with a '@' sign,
-					 * this is the path to a font file.
-					 * Otherwise this is the name of
-					 * font. We will use the font
-					 * handling routines to get a
-					 * corresponding face. */
+    int kerning;                        /* Indicates whether to kern
+                                           text. */
+    Blt_PaintBrush brush;               /* Color of text. */
+    Blt_Shadow shadow;                  /*  */
+    int fontSize;                       /* Size of requested font. */
+    Tcl_Obj *fontObjPtr;                /* Requested font.  If the name of
+                                         * the font starts with a '@' sign,
+                                         * this is the path to a font file.
+                                         * Otherwise this is the name of
+                                         * font. We will use the font
+                                         * handling routines to get a
+                                         * corresponding face. */
     int justify;
     Tk_Anchor anchor;
     float angle;
@@ -158,21 +158,21 @@ typedef struct {
 static Blt_SwitchSpec textSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM,  "-anchor",   "anchor", (char *)NULL,
-	Blt_Offset(TextSwitches, anchor), 0, 0, &anchorSwitch},
+        Blt_Offset(TextSwitches, anchor), 0, 0, &anchorSwitch},
     {BLT_SWITCH_CUSTOM,  "-color",    "colorName", (char *)NULL,
-	Blt_Offset(TextSwitches, brush),  0, 0, &paintbrushSwitch},
+        Blt_Offset(TextSwitches, brush),  0, 0, &paintbrushSwitch},
     {BLT_SWITCH_OBJ,     "-font",     "fontName", (char *)NULL,
-	Blt_Offset(TextSwitches, fontObjPtr), 0},
+        Blt_Offset(TextSwitches, fontObjPtr), 0},
     {BLT_SWITCH_CUSTOM,  "-justify", "left|right|center", (char *)NULL,
-	Blt_Offset(TextSwitches, justify), 0, 0, &justifySwitch},
+        Blt_Offset(TextSwitches, justify), 0, 0, &justifySwitch},
     {BLT_SWITCH_BOOLEAN, "-kerning",  "bool", (char *)NULL,
-	Blt_Offset(TextSwitches, kerning),  0},
+        Blt_Offset(TextSwitches, kerning),  0},
     {BLT_SWITCH_FLOAT,   "-rotate",   "angle", (char *)NULL,
-	Blt_Offset(TextSwitches, angle), 0},
+        Blt_Offset(TextSwitches, angle), 0},
     {BLT_SWITCH_INT,     "-size",     "number", (char *)NULL,
-	Blt_Offset(TextSwitches, fontSize),  0}, 
+        Blt_Offset(TextSwitches, fontSize),  0}, 
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-	Blt_Offset(TextSwitches, shadow), 0, 0, &shadowSwitch},
+        Blt_Offset(TextSwitches, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -186,8 +186,8 @@ PaintBrushFreeProc(ClientData clientData, char *record, int offset, int flags)
     Blt_PaintBrush *brushPtr = (Blt_PaintBrush *)(record + offset);
 
     if (*brushPtr != NULL) {
-	Blt_FreeBrush(*brushPtr);
-	*brushPtr = NULL;
+        Blt_FreeBrush(*brushPtr);
+        *brushPtr = NULL;
     }
 }
 
@@ -196,70 +196,70 @@ PaintBrushFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * ObjToPaintBrushProc --
  *
- *	Convert a Tcl_Obj representing a paint brush.
+ *      Convert a Tcl_Obj representing a paint brush.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToPaintBrushProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Blt_PaintBrush *brushPtr = (Blt_PaintBrush *)(record + offset);
     Blt_PaintBrush brush;
 
     if (Blt_GetPaintBrushFromObj(interp, objPtr, &brush) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (*brushPtr != NULL) {
-	Blt_FreeBrush(*brushPtr);
+        Blt_FreeBrush(*brushPtr);
     }
     *brushPtr = brush;
     return TCL_OK;
 }
 
 static void GetTextExtents(TextFont *fontPtr, const char *string, size_t length,
-			size_t *widthPtr, size_t *heightPtr);
+                        size_t *widthPtr, size_t *heightPtr);
 
 static size_t GetTextWidth(TextFont *fontPtr, const char *string, size_t length,
-			   int kerning);
+                           int kerning);
 
 /*
  *---------------------------------------------------------------------------
  *
  * AnchorSwitch --
  *
- *	Convert a Tcl_Obj representing an anchor.
+ *      Convert a Tcl_Obj representing an anchor.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 AnchorSwitch(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Tk_Anchor *anchorPtr = (Tk_Anchor *)(record + offset);
 
     if (Tk_GetAnchorFromObj(interp, objPtr, anchorPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -269,28 +269,28 @@ AnchorSwitch(
  *
  * AnchorSwitch --
  *
- *	Convert a Tcl_Obj representing an anchor.
+ *      Convert a Tcl_Obj representing an anchor.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 JustifySwitch(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Tk_Justify *justifyPtr = (Tk_Justify *)(record + offset);
 
     if (Tk_GetJustifyFromObj(interp, objPtr, justifyPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -300,23 +300,23 @@ JustifySwitch(
  *
  * ShadowSwitch --
  *
- *	Convert a Tcl_Obj representing a number for the alpha value.
+ *      Convert a Tcl_Obj representing a number for the alpha value.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ShadowSwitch(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     Blt_Shadow *shadowPtr = (Blt_Shadow *)(record + offset);
     int objc;
@@ -327,51 +327,51 @@ ShadowSwitch(
     shadowPtr->width = 2;
     shadowPtr->color.u32 = 0xA0000000;
     if (Tcl_GetIntFromObj(NULL, objPtr, &width) == TCL_OK) {
-	shadowPtr->width = shadowPtr->offset = width;
-	return TCL_OK;
+        shadowPtr->width = shadowPtr->offset = width;
+        return TCL_OK;
     }
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     for (i = 0; i < objc; i += 2) {
-	const char *string;
-	int length;
-	char c;
+        const char *string;
+        int length;
+        char c;
 
-	string = Tcl_GetStringFromObj(objv[i], &length);
-	if (string[0] != '-') {
-	    Tcl_AppendResult(interp, "bad shadow option \"", string, 
-		"\": should be -offset, -width, or -color", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	c = string[1];
-	if ((c == 'w') && (strncmp(string, "-width", length) == 0)) {
-	    if (Tcl_GetIntFromObj(interp, objv[i+1], &shadowPtr->width) 
-		!= TCL_OK) {
-		return TCL_ERROR;
-	    }
-	} else if ((c == 'o') && (strncmp(string, "-offset", length) == 0)) {
-	    if (Tcl_GetIntFromObj(interp, objv[i+1], &shadowPtr->offset) 
-		!= TCL_OK) {
-		return TCL_ERROR;
-	    }
-	} else if ((c == 'c') && (strncmp(string, "-color", length) == 0)) {
-	    if (Blt_GetPixelFromObj(interp, objv[i+1], &shadowPtr->color) 
-		!= TCL_OK) {
-		return TCL_ERROR;
-	    }
-	} else if ((c == 'a') && (strncmp(string, "-alpha", length) == 0)) {
-	    int alpha;
+        string = Tcl_GetStringFromObj(objv[i], &length);
+        if (string[0] != '-') {
+            Tcl_AppendResult(interp, "bad shadow option \"", string, 
+                "\": should be -offset, -width, or -color", (char *)NULL);
+            return TCL_ERROR;
+        }
+        c = string[1];
+        if ((c == 'w') && (strncmp(string, "-width", length) == 0)) {
+            if (Tcl_GetIntFromObj(interp, objv[i+1], &shadowPtr->width) 
+                != TCL_OK) {
+                return TCL_ERROR;
+            }
+        } else if ((c == 'o') && (strncmp(string, "-offset", length) == 0)) {
+            if (Tcl_GetIntFromObj(interp, objv[i+1], &shadowPtr->offset) 
+                != TCL_OK) {
+                return TCL_ERROR;
+            }
+        } else if ((c == 'c') && (strncmp(string, "-color", length) == 0)) {
+            if (Blt_GetPixelFromObj(interp, objv[i+1], &shadowPtr->color) 
+                != TCL_OK) {
+                return TCL_ERROR;
+            }
+        } else if ((c == 'a') && (strncmp(string, "-alpha", length) == 0)) {
+            int alpha;
 
-	    if (Tcl_GetIntFromObj(interp, objv[i+1], &alpha) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	    shadowPtr->color.Alpha = alpha;
-	} else {
-	    Tcl_AppendResult(interp, "unknown shadow option \"", string, 
-		"\": should be -offset, -width, or -color", (char *)NULL);
-	    return TCL_ERROR;
-	}
+            if (Tcl_GetIntFromObj(interp, objv[i+1], &alpha) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            shadowPtr->color.Alpha = alpha;
+        } else {
+            Tcl_AppendResult(interp, "unknown shadow option \"", string, 
+                "\": should be -offset, -width, or -color", (char *)NULL);
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -412,10 +412,10 @@ DebugGlyph(FT_GlyphSlot slot)
     fprintf(stderr, "  slot.advance.y=%d\n", (int)slot->advance.y);
     
     fprintf(stderr, "  slot.format=%c%c%c%c\n", 
-	    (slot->format >> 24) & 0xFF, 
-	    (slot->format >> 16) & 0xFF, 
-	    (slot->format >> 8) & 0xFF, 
-	    (slot->format & 0xFF));
+            (slot->format >> 24) & 0xFF, 
+            (slot->format >> 16) & 0xFF, 
+            (slot->format >> 8) & 0xFF, 
+            (slot->format & 0xFF));
 }
 
 
@@ -424,22 +424,22 @@ DebugGlyph(FT_GlyphSlot slot)
  *
  * CreateSimpleTextLayout --
  *
- *	Get the extents of a possibly multiple-lined text string.
+ *      Get the extents of a possibly multiple-lined text string.
  *
  * Results:
- *	Returns via *widthPtr* and *heightPtr* the dimensions of the text
- *	string.
+ *      Returns via *widthPtr* and *heightPtr* the dimensions of the text
+ *      string.
  *
  *---------------------------------------------------------------------------
  */
 static TextLayout *
 CreateSimpleTextLayout(TextFont *fontPtr, const char *text, int textLen, 
-		       TextStyle *tsPtr)
+                       TextStyle *tsPtr)
 {
     TextFragment *fp;
     TextLayout *layoutPtr;
-    size_t count;			/* Count # of characters on each
-					 * line. */
+    size_t count;                       /* Count # of characters on each
+                                         * line. */
     int lineHeight;
     int maxHeight, maxWidth;
     int numFrags;
@@ -450,12 +450,12 @@ CreateSimpleTextLayout(TextFont *fontPtr, const char *text, int textLen,
     numFrags = 0;
     endp = text + ((textLen < 0) ? strlen(text) : textLen);
     for (p = text; p < endp; p++) {
-	if (*p == '\n') {
-	    numFrags++;
-	}
+        if (*p == '\n') {
+            numFrags++;
+        }
     }
     if ((p != text) && (*(p - 1) != '\n')) {
-	numFrags++;
+        numFrags++;
     }
     size = sizeof(TextLayout) + (sizeof(TextFragment) * (numFrags - 1));
 
@@ -469,80 +469,80 @@ CreateSimpleTextLayout(TextFont *fontPtr, const char *text, int textLen,
 
     fp = layoutPtr->fragments;
     for (p = start = text; p < endp; p++) {
-	if (*p == '\n') {
-	    size_t w;
+        if (*p == '\n') {
+            size_t w;
 
-	    if (count > 0) {
-		w = GetTextWidth(fontPtr, start, count, 1);
-		if (w > maxWidth) {
-		    maxWidth = w;
-		}
-	    } else {
-		w = 0;
-	    }
-	    fp->width = w;
-	    fp->count = count;
-	    fp->sy = fp->y = maxHeight + fontPtr->ascent;
-	    fp->text = start;
-	    maxHeight += lineHeight;
-	    fp++;
-	    numFrags++;
-	    start = p + 1;		/* Start the text on the next
-					 * line */
-	    count = 0;			/* Reset to indicate the start of a
-					 * new line */
-	    continue;
-	}
-	count++;
+            if (count > 0) {
+                w = GetTextWidth(fontPtr, start, count, 1);
+                if (w > maxWidth) {
+                    maxWidth = w;
+                }
+            } else {
+                w = 0;
+            }
+            fp->width = w;
+            fp->count = count;
+            fp->sy = fp->y = maxHeight + fontPtr->ascent;
+            fp->text = start;
+            maxHeight += lineHeight;
+            fp++;
+            numFrags++;
+            start = p + 1;              /* Start the text on the next
+                                         * line */
+            count = 0;                  /* Reset to indicate the start of a
+                                         * new line */
+            continue;
+        }
+        count++;
     }
     if (numFrags < layoutPtr->numFragments) {
-	size_t w;
+        size_t w;
 
-	w = GetTextWidth(fontPtr, start, count, 1);
-	if (w > maxWidth) {
-	    maxWidth = w;
-	}
-	fp->width = w;
-	fp->count = count;
-	fp->sy = fp->y = maxHeight + fontPtr->ascent;
-	fp->text = start;
-	maxHeight += lineHeight;
-	numFrags++;
+        w = GetTextWidth(fontPtr, start, count, 1);
+        if (w > maxWidth) {
+            maxWidth = w;
+        }
+        fp->width = w;
+        fp->count = count;
+        fp->sy = fp->y = maxHeight + fontPtr->ascent;
+        fp->text = start;
+        maxHeight += lineHeight;
+        numFrags++;
     }
     maxHeight += tsPtr->padBottom;
     maxWidth += PADDING(tsPtr->xPad);
     for (i = 0; i < numFrags; i++) {
-	TextFragment *fp;
-	
-	fp = layoutPtr->fragments + i;
-	switch (tsPtr->justify) {
-	default:
-	case TK_JUSTIFY_LEFT:
-	    /* No offset for left justified text strings */
-	    fp->x = fp->sx = tsPtr->padLeft;
-	    break;
-	case TK_JUSTIFY_RIGHT:
-	    fp->x = fp->sx = (maxWidth - fp->width) - tsPtr->padRight;
-	    break;
-	case TK_JUSTIFY_CENTER:
-	    fp->x = fp->sx = (maxWidth - fp->width) / 2;
-	    break;
-	}
+        TextFragment *fp;
+        
+        fp = layoutPtr->fragments + i;
+        switch (tsPtr->justify) {
+        default:
+        case TK_JUSTIFY_LEFT:
+            /* No offset for left justified text strings */
+            fp->x = fp->sx = tsPtr->padLeft;
+            break;
+        case TK_JUSTIFY_RIGHT:
+            fp->x = fp->sx = (maxWidth - fp->width) - tsPtr->padRight;
+            break;
+        case TK_JUSTIFY_CENTER:
+            fp->x = fp->sx = (maxWidth - fp->width) / 2;
+            break;
+        }
     }
     if (tsPtr->underline >= 0) {
-	for (i = 0; i < numFrags; i++) {
-	    int first, last;
-	    TextFragment *fp;
-	
-	    fp = layoutPtr->fragments + i;
-	    first = fp->text - text;
-	    last = first + fp->count;
-	    if ((tsPtr->underline >= first) && (tsPtr->underline < last)) {
-		layoutPtr->underlinePtr = fp;
-		layoutPtr->underline = tsPtr->underline - first;
-		break;
-	    }
-	}
+        for (i = 0; i < numFrags; i++) {
+            int first, last;
+            TextFragment *fp;
+        
+            fp = layoutPtr->fragments + i;
+            first = fp->text - text;
+            last = first + fp->count;
+            if ((tsPtr->underline >= first) && (tsPtr->underline < last)) {
+                layoutPtr->underlinePtr = fp;
+                layoutPtr->underline = tsPtr->underline - first;
+                break;
+            }
+        }
     }
     layoutPtr->width = maxWidth;
     layoutPtr->height = maxHeight - tsPtr->leader;
@@ -558,28 +558,28 @@ static const char *
 FtError(FT_Error ftError)
 {
     struct ft_errors {                                          
-	int          code;             
-	const char*  msg;
+        int          code;             
+        const char*  msg;
     };
     static struct ft_errors ft_err_mesgs[] = 
 #include FT_ERRORS_H            
 
     struct ft_errors *fp;
     for (fp = ft_err_mesgs; fp->msg != NULL; fp++) {
-	if (fp->code == ftError) {
-	    return fp->msg;
-	}
+        if (fp->code == ftError) {
+            return fp->msg;
+        }
     }
     return "unknown Freetype error";
 }
 
 static void
 GetTextExtents(TextFont *fontPtr, const char *string, size_t length,
-	       size_t *widthPtr, size_t *heightPtr)
+               size_t *widthPtr, size_t *heightPtr)
 {
-    FT_Vector pen;			/* Untransformed origin  */
+    FT_Vector pen;                      /* Untransformed origin  */
     FT_GlyphSlot  slot;
-    FT_Matrix matrix;			/* Transformation matrix. */
+    FT_Matrix matrix;                   /* Transformation matrix. */
     int maxX, maxY;
     const char *p, *pend;
     double radians;
@@ -599,31 +599,31 @@ GetTextExtents(TextFont *fontPtr, const char *string, size_t length,
     x = 0;
 #ifdef notdef
     fprintf(stderr, "face->height=%d, face->size->height=%d\n",
-	    face->height, (int)face->size->metrics.height);
+            face->height, (int)face->size->metrics.height);
     fprintf(stderr, "face->ascender=%d, face->descender=%d\n",
-	    face->ascender, face->descender);
+            face->ascender, face->descender);
 #endif
     for (p = string, pend = p + length; p < pend; p++) {
-	maxY += face->size->metrics.height;
-	pen.x = x << 6;
-	for (/*empty*/; (*p != '\n') && (p < pend); p++) {
-	    FT_Error ftError;
+        maxY += face->size->metrics.height;
+        pen.x = x << 6;
+        for (/*empty*/; (*p != '\n') && (p < pend); p++) {
+            FT_Error ftError;
 
-	    FT_Set_Transform(face, &matrix, &pen);
-	    /* Load glyph image into the slot (erase previous) */
-	    ftError = FT_Load_Char(face, *p, FT_LOAD_RENDER);
-	    if (ftError != 0) {
-		Blt_Warn("can't load character \"%c\": %s\n", *p, 
-			FtError(ftError));
-		continue;                 /* Ignore errors. */
-	    }
-	    pen.x += slot->advance.x;
-	    pen.y += slot->advance.y;
-	}
-	if (pen.x > maxX) {
-	    maxX = pen.x;
-	}
-    }	
+            FT_Set_Transform(face, &matrix, &pen);
+            /* Load glyph image into the slot (erase previous) */
+            ftError = FT_Load_Char(face, *p, FT_LOAD_RENDER);
+            if (ftError != 0) {
+                Blt_Warn("can't load character \"%c\": %s\n", *p, 
+                        FtError(ftError));
+                continue;                 /* Ignore errors. */
+            }
+            pen.x += slot->advance.x;
+            pen.y += slot->advance.y;
+        }
+        if (pen.x > maxX) {
+            maxX = pen.x;
+        }
+    }   
 #ifdef notdef
     fprintf(stderr, "w=%d,h=%d\n", maxX >> 6, maxY >> 6);
 #endif
@@ -631,16 +631,16 @@ GetTextExtents(TextFont *fontPtr, const char *string, size_t length,
     *heightPtr = (size_t)(maxY >> 6);
 #ifdef notdef
     fprintf(stderr, "w=%lu,h=%lu\n", (unsigned long)*widthPtr, 
-	    (unsigned long)*heightPtr);
+            (unsigned long)*heightPtr);
 #endif
 }
 
 static size_t
 GetTextWidth(TextFont *fontPtr, const char *string, size_t length, int kerning)
 {
-    FT_Vector pen;			/* Untransformed origin  */
+    FT_Vector pen;                      /* Untransformed origin  */
     FT_GlyphSlot  slot;
-    FT_Matrix matrix;			/* Transformation matrix. */
+    FT_Matrix matrix;                   /* Transformation matrix. */
     int maxX;
     const char *p, *pend;
     double radians;
@@ -660,34 +660,34 @@ GetTextWidth(TextFont *fontPtr, const char *string, size_t length, int kerning)
     pen.y = pen.x = 0;
 #ifdef notdef
     fprintf(stderr, "face->height=%d, face->size->height=%d\n",
-	    face->height, (int)face->size->metrics.height);
+            face->height, (int)face->size->metrics.height);
 #endif
     previous = -1;
     for (p = string, pend = p + length; p < pend; p++) {
-	int current;
+        int current;
 
-	current = FT_Get_Char_Index(face, *p);
-	if ((kerning) && (previous >= 0)) { 
-	    FT_Vector delta; 
-		
-	    FT_Get_Kerning(face, previous, current, FT_KERNING_DEFAULT, &delta);
-	    pen.x += delta.x; 
-	} 
-	FT_Set_Transform(face, &matrix, &pen);
-	previous = current;
-	/* load glyph image into the slot (erase previous one) */  
-	ftError = FT_Load_Glyph(face, current, FT_LOAD_DEFAULT); 
-	if (ftError) {
-	    Blt_Warn("can't load character \"%c\" (%d): %s\n", *p, current, 
-		FtError(ftError));
-	    continue;			/* Ignore errors. */
-	}
-	pen.x += slot->advance.x;
-	pen.y += slot->advance.y;
-	if (pen.x > maxX) {
-	    maxX = pen.x;
-	}
-    }	
+        current = FT_Get_Char_Index(face, *p);
+        if ((kerning) && (previous >= 0)) { 
+            FT_Vector delta; 
+                
+            FT_Get_Kerning(face, previous, current, FT_KERNING_DEFAULT, &delta);
+            pen.x += delta.x; 
+        } 
+        FT_Set_Transform(face, &matrix, &pen);
+        previous = current;
+        /* load glyph image into the slot (erase previous one) */  
+        ftError = FT_Load_Glyph(face, current, FT_LOAD_DEFAULT); 
+        if (ftError) {
+            Blt_Warn("can't load character \"%c\" (%d): %s\n", *p, current, 
+                FtError(ftError));
+            continue;                   /* Ignore errors. */
+        }
+        pen.x += slot->advance.x;
+        pen.y += slot->advance.y;
+        if (pen.x > maxX) {
+            maxX = pen.x;
+        }
+    }   
     return maxX >> 6;
 }
 
@@ -707,7 +707,7 @@ BlendPixels(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr)
 
 static void
 BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
-	  Blt_PaintBrush brush)
+          Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 #ifdef notdef
@@ -715,9 +715,9 @@ BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
     DebugGlyph(slot);
 #endif
     if ((dx >= destPtr->width) || ((dx + slot->bitmap.width) <= 0) ||
-	(dy >= destPtr->height) || ((dy + slot->bitmap.rows) <= 0)) {
-	return;				/* No portion of the glyph is visible
-					 * in the picture. */
+        (dy >= destPtr->height) || ((dy + slot->bitmap.rows) <= 0)) {
+        return;                         /* No portion of the glyph is visible
+                                         * in the picture. */
     }
     /* By default, set the region to cover the entire glyph */
     x1 = y1 = 0;
@@ -726,79 +726,79 @@ BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
 
     /* Determine the portion of the glyph inside the picture. */
 
-    if (dx < 0) {			/* Left side of glyph overhangs. */
-	x1 -= dx;		
-	x2 += dx;
-	dx = 0;		
+    if (dx < 0) {                       /* Left side of glyph overhangs. */
+        x1 -= dx;               
+        x2 += dx;
+        dx = 0;         
     }
-    if (dy < 0) {			/* Top of glyph overhangs. */
-	y1 -= dy;
-	y2 += dy;
-	dy = 0;
+    if (dy < 0) {                       /* Top of glyph overhangs. */
+        y1 -= dy;
+        y2 += dy;
+        dy = 0;
     }
-    if ((dx + x2) > destPtr->width) {	/* Right side of glyph overhangs. */
-	x2 = destPtr->width - dx;
+    if ((dx + x2) > destPtr->width) {   /* Right side of glyph overhangs. */
+        x2 = destPtr->width - dx;
     }
-    if ((dy + y2) > destPtr->height) {	/* Bottom of glyph overhangs. */
-	y2 = destPtr->height - dy;
+    if ((dy + y2) > destPtr->height) {  /* Bottom of glyph overhangs. */
+        y2 = destPtr->height - dy;
     }
     if (slot->bitmap.pixel_mode == FT_PIXEL_MODE_MONO) {
-	Blt_Pixel *destRowPtr;
-	unsigned char *srcRowPtr;
-	int y;
+        Blt_Pixel *destRowPtr;
+        unsigned char *srcRowPtr;
+        int y;
 
-	srcRowPtr = slot->bitmap.buffer + (y1 * slot->bitmap.pitch);
-	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
-	for (y = y1; y < y2; y++) {
-	    Blt_Pixel *dp;
-	    int x;
-	    
-	    dp = destRowPtr;
-	    for (x = x1; x < x2; x++, dp++) {
-		int pixel;
+        srcRowPtr = slot->bitmap.buffer + (y1 * slot->bitmap.pitch);
+        destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
+        for (y = y1; y < y2; y++) {
+            Blt_Pixel *dp;
+            int x;
+            
+            dp = destRowPtr;
+            for (x = x1; x < x2; x++, dp++) {
+                int pixel;
 
-		pixel = srcRowPtr[x >> 3] & (1 << (7 - (x & 0x7)));
-		if (pixel != 0x0) {
-		    Blt_Pixel color;
+                pixel = srcRowPtr[x >> 3] & (1 << (7 - (x & 0x7)));
+                if (pixel != 0x0) {
+                    Blt_Pixel color;
 
-		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-		    BlendPixels(dp, &color);
-		}
-	    }
-	    srcRowPtr += slot->bitmap.pitch;
-	    destRowPtr += destPtr->pixelsPerRow;
-	}
+                    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+                    BlendPixels(dp, &color);
+                }
+            }
+            srcRowPtr += slot->bitmap.pitch;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
     } else {
-	Blt_Pixel *destRowPtr;
-	unsigned char *srcRowPtr;
-	int y;
+        Blt_Pixel *destRowPtr;
+        unsigned char *srcRowPtr;
+        int y;
 
-	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_Picture_Pixel(destPtr, dx, dy);
-	for (y = y1; y < y2; y++) {
-	    Blt_Pixel *dp;
-	    unsigned char *sp;
-	    int x;
+        srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
+        destRowPtr = Blt_Picture_Pixel(destPtr, dx, dy);
+        for (y = y1; y < y2; y++) {
+            Blt_Pixel *dp;
+            unsigned char *sp;
+            int x;
 
-	    for (dp = destRowPtr, sp = srcRowPtr, x = x1; x < x2; 
-		 x++, sp++, dp++) {
-		if (*sp != 0x0) {
-		    Blt_Pixel color;
+            for (dp = destRowPtr, sp = srcRowPtr, x = x1; x < x2; 
+                 x++, sp++, dp++) {
+                if (*sp != 0x0) {
+                    Blt_Pixel color;
 
-		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-		    Blt_FadeColor(&color, *sp);
-		    BlendPixels(dp, &color);
-		}
-	    }
-	    srcRowPtr += slot->bitmap.pitch;
-	    destRowPtr += destPtr->pixelsPerRow;
-	}
+                    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+                    Blt_FadeColor(&color, *sp);
+                    BlendPixels(dp, &color);
+                }
+            }
+            srcRowPtr += slot->bitmap.pitch;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
     }
 }
 
 static void
 CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy, 
-	      Blt_PaintBrush brush)
+              Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -807,9 +807,9 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
     DebugGlyph(slot);
 #endif
     if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-	(yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
-	return;			/* No portion of the glyph is visible in the
-				 * picture. */
+        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+        return;                 /* No portion of the glyph is visible in the
+                                 * picture. */
     }
 
     /* By default, set the region to cover the entire glyph */
@@ -819,55 +819,55 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
     /* Determine the portion of the glyph inside the picture. */
 
-    if (xx < 0) {			/* Left side of glyph overhangs. */
-	x1 -= xx;		
-	x2 += xx;
-	xx = 0;		
+    if (xx < 0) {                       /* Left side of glyph overhangs. */
+        x1 -= xx;               
+        x2 += xx;
+        xx = 0;         
     }
-    if (yy < 0) {			/* Top of glyph overhangs. */
-	y1 -= yy;
-	y2 += yy;
-	yy = 0;
+    if (yy < 0) {                       /* Top of glyph overhangs. */
+        y1 -= yy;
+        y2 += yy;
+        yy = 0;
     }
-    if ((xx + x2) > destPtr->width) {	/* Right side of glyph overhangs. */
-	x2 = destPtr->width - xx;
+    if ((xx + x2) > destPtr->width) {   /* Right side of glyph overhangs. */
+        x2 = destPtr->width - xx;
     }
-    if ((yy + y2) > destPtr->height) {	/* Bottom of glyph overhangs. */
-	y2 = destPtr->height - yy;
+    if ((yy + y2) > destPtr->height) {  /* Bottom of glyph overhangs. */
+        y2 = destPtr->height - yy;
     }
 
     {
-	Blt_Pixel *destRowPtr;
-	unsigned char *srcRowPtr;
-	int y;
+        Blt_Pixel *destRowPtr;
+        unsigned char *srcRowPtr;
+        int y;
 
-	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
-	for (y = y1; y < y2; y++) {
-	    Blt_Pixel *dp;
-	    unsigned char *sp;
-	    int x;
+        srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
+        destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
+        for (y = y1; y < y2; y++) {
+            Blt_Pixel *dp;
+            unsigned char *sp;
+            int x;
 
-	    dp = destRowPtr;
-	    sp = srcRowPtr;
-	    for (x = x1; x < x2; x++, sp++, dp++) {
-		if (*sp != 0x0) {
-		    Blt_Pixel color;
+            dp = destRowPtr;
+            sp = srcRowPtr;
+            for (x = x1; x < x2; x++, sp++, dp++) {
+                if (*sp != 0x0) {
+                    Blt_Pixel color;
 
-		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-		    Blt_FadeColor(&color, *sp);
-		    dp->u32 = color.u32;
-		}
-	    }
-	    srcRowPtr += slot->bitmap.pitch;
-	    destRowPtr += destPtr->pixelsPerRow;
-	}
+                    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+                    Blt_FadeColor(&color, *sp);
+                    dp->u32 = color.u32;
+                }
+            }
+            srcRowPtr += slot->bitmap.pitch;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
     }
 }
 
 static void
 PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy, 
-	       Blt_PaintBrush brush)
+               Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -876,9 +876,9 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
     DebugGlyph(slot);
 #endif
     if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-	(yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
-	return;				/* No portion of the glyph is visible
-					 * in the picture. */
+        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+        return;                         /* No portion of the glyph is visible
+                                         * in the picture. */
     }
 
     /* By default, set the region to cover the entire glyph */
@@ -888,55 +888,55 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
     /* Determine the portion of the glyph inside the picture. */
 
-    if (xx < 0) {			/* Left side of glyph overhangs. */
-	x1 -= xx;		
-	x2 += xx;
-	xx = 0;		
+    if (xx < 0) {                       /* Left side of glyph overhangs. */
+        x1 -= xx;               
+        x2 += xx;
+        xx = 0;         
     }
-    if (yy < 0) {			/* Top of glyph overhangs. */
-	y1 -= yy;
-	y2 += yy;
-	yy = 0;
+    if (yy < 0) {                       /* Top of glyph overhangs. */
+        y1 -= yy;
+        y2 += yy;
+        yy = 0;
     }
-    if ((xx + x2) > destPtr->width) {	/* Right side of glyph overhangs. */
-	x2 = destPtr->width - xx;
+    if ((xx + x2) > destPtr->width) {   /* Right side of glyph overhangs. */
+        x2 = destPtr->width - xx;
     }
-    if ((yy + y2) > destPtr->height) {	/* Bottom of glyph overhangs. */
-	y2 = destPtr->height - yy;
+    if ((yy + y2) > destPtr->height) {  /* Bottom of glyph overhangs. */
+        y2 = destPtr->height - yy;
     }
 
     {
-	Blt_Pixel *destRowPtr;
-	unsigned char *srcRowPtr;
-	int y;
+        Blt_Pixel *destRowPtr;
+        unsigned char *srcRowPtr;
+        int y;
 
-	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
-	for (y = y1; y < y2; y++) {
-	    Blt_Pixel *dp;
-	    unsigned char *sp;
-	    int x;
+        srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
+        destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
+        for (y = y1; y < y2; y++) {
+            Blt_Pixel *dp;
+            unsigned char *sp;
+            int x;
 
-	    dp = destRowPtr;
-	    sp = srcRowPtr;
-	    for (x = x1; x < x2; x++, sp++, dp++) {
-		if (*sp != 0x0) {
-		    Blt_Pixel color;
+            dp = destRowPtr;
+            sp = srcRowPtr;
+            for (x = x1; x < x2; x++, sp++, dp++) {
+                if (*sp != 0x0) {
+                    Blt_Pixel color;
 
-		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-		    Blt_FadeColor(&color, *sp);
-		    BlendPixels(dp, &color);
-		}
-	    }
-	    srcRowPtr += slot->bitmap.pitch;
-	    destRowPtr += destPtr->pixelsPerRow;
-	}
+                    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+                    Blt_FadeColor(&color, *sp);
+                    BlendPixels(dp, &color);
+                }
+            }
+            srcRowPtr += slot->bitmap.pitch;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
     }
 }
 
 static void
 CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
-	  Blt_PaintBrush brush)
+          Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -946,9 +946,9 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 #endif
     
     if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-	(yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
-	return;				/* No portion of the glyph is visible
-					 * in the picture. */
+        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+        return;                         /* No portion of the glyph is visible
+                                         * in the picture. */
     }
     /* By default, set the region to cover the entire glyph */
     x1 = y1 = 0;
@@ -957,45 +957,45 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
     /* Determine the portion of the glyph inside the picture. */
 
-    if (xx < 0) {			/* Left side of glyph overhangs. */
-	x1 -= xx;		
-	x2 += xx;
-	xx = 0;		
+    if (xx < 0) {                       /* Left side of glyph overhangs. */
+        x1 -= xx;               
+        x2 += xx;
+        xx = 0;         
     }
-    if (yy < 0) {			/* Top of glyph overhangs. */
-	y1 -= yy;
-	y2 += yy;
-	yy = 0;
+    if (yy < 0) {                       /* Top of glyph overhangs. */
+        y1 -= yy;
+        y2 += yy;
+        yy = 0;
     }
-    if ((xx + x2) > destPtr->width) {	/* Right side of glyph overhangs. */
-	x2 = destPtr->width - xx;
+    if ((xx + x2) > destPtr->width) {   /* Right side of glyph overhangs. */
+        x2 = destPtr->width - xx;
     }
-    if ((yy + y2) > destPtr->height) {	/* Bottom of glyph overhangs. */
-	y2 = destPtr->height - yy;
+    if ((yy + y2) > destPtr->height) {  /* Bottom of glyph overhangs. */
+        y2 = destPtr->height - yy;
     }
     {
-	Blt_Pixel *destRowPtr;
-	unsigned char *srcRowPtr;
-	int y;
+        Blt_Pixel *destRowPtr;
+        unsigned char *srcRowPtr;
+        int y;
 
-	srcRowPtr = slot->bitmap.buffer + (y1 * slot->bitmap.pitch);
-	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
-	for (y = y1; y < y2; y++) {
-	    Blt_Pixel *dp;
-	    int x;
-	    
-	    dp = destRowPtr;
-	    for (x = x1; x < x2; x++, dp++) {
-		int pixel;
+        srcRowPtr = slot->bitmap.buffer + (y1 * slot->bitmap.pitch);
+        destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
+        for (y = y1; y < y2; y++) {
+            Blt_Pixel *dp;
+            int x;
+            
+            dp = destRowPtr;
+            for (x = x1; x < x2; x++, dp++) {
+                int pixel;
 
-		pixel = srcRowPtr[x >> 3] & (1 << (7 - (x & 0x7)));
-		if (pixel != 0x0) {
-		    dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-		}
-	    }
-	    srcRowPtr += slot->bitmap.pitch;
-	    destRowPtr += destPtr->pixelsPerRow;
-	}
+                pixel = srcRowPtr[x >> 3] & (1 << (7 - (x & 0x7)));
+                if (pixel != 0x0) {
+                    dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+                }
+            }
+            srcRowPtr += slot->bitmap.pitch;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
     } 
 }
 
@@ -1008,9 +1008,9 @@ ScaleFont(Tcl_Interp *interp, TextFont *fontPtr, FT_F26Dot6 size)
     Blt_ScreenDPI(Tk_MainWindow(interp), &xdpi, &ydpi);
     ftError = FT_Set_Char_Size(fontPtr->face, size, size, xdpi, ydpi);
     if (ftError) {
-	Tcl_AppendResult(interp, "can't set font size to \"", Blt_Itoa(size), 
-		"\": ", FtError(ftError), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't set font size to \"", Blt_Itoa(size), 
+                "\": ", FtError(ftError), (char *)NULL);
+        return TCL_ERROR;
     }
     fontPtr->height  = fontPtr->face->size->metrics.height >> 6;
     fontPtr->ascent  = fontPtr->face->size->metrics.ascender >> 6;
@@ -1043,50 +1043,50 @@ OpenFont(Tcl_Interp *interp, Tcl_Obj *objPtr, size_t fontSize)
     fileObjPtr = NULL;
     face = NULL;
     if (fontName[0] == '@') {
-	fileName = fontName + 1;
-	fontSize <<= 6;
+        fileName = fontName + 1;
+        fontSize <<= 6;
     } else {
-	double size;
+        double size;
 
-	fileObjPtr = Blt_Font_GetFile(interp, objPtr, &size);
-	if (fileObjPtr == NULL) {
-	    return NULL;
-	}
-	if (fontSize == 0) {
-	    fontSize = (int)(size * 64.0 + 0.5);
-	}
-	Tcl_IncrRefCount(fileObjPtr);
-	fileName = Tcl_GetString(fileObjPtr);
+        fileObjPtr = Blt_Font_GetFile(interp, objPtr, &size);
+        if (fileObjPtr == NULL) {
+            return NULL;
+        }
+        if (fontSize == 0) {
+            fontSize = (int)(size * 64.0 + 0.5);
+        }
+        Tcl_IncrRefCount(fileObjPtr);
+        fileName = Tcl_GetString(fileObjPtr);
     }
     ftError = FT_New_Face(ftLibrary, fileName, 0, &face);
     if (ftError) {
-	Tcl_AppendResult(interp, "can't create face from font file \"", 
-		fileName, "\": ", FtError(ftError), (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "can't create face from font file \"", 
+                fileName, "\": ", FtError(ftError), (char *)NULL);
+        goto error;
     }
     if (!FT_IS_SCALABLE(face)) {
-	Tcl_AppendResult(interp, "can't use font \"", fontName, 
-			 "\": font isn't scalable.", (char *)NULL);
-	goto error;
+        Tcl_AppendResult(interp, "can't use font \"", fontName, 
+                         "\": font isn't scalable.", (char *)NULL);
+        goto error;
     }
     if (fileObjPtr != NULL) {
-	Tcl_DecrRefCount(fileObjPtr);
+        Tcl_DecrRefCount(fileObjPtr);
     }
     fontPtr = Blt_AssertCalloc(1, sizeof(TextFont));
     fontPtr->face = face;
     if (ScaleFont(interp, fontPtr, fontSize) != TCL_OK) {
-	Blt_Free(fontPtr);
-	goto error;
+        Blt_Free(fontPtr);
+        goto error;
     }
-    RotateFont(fontPtr, 0.0f);		/* Initializes the rotation matrix. */
+    RotateFont(fontPtr, 0.0f);          /* Initializes the rotation matrix. */
     return fontPtr;
  error:
     if (fileObjPtr != NULL) {
-	Tcl_DecrRefCount(fileObjPtr);
+        Tcl_DecrRefCount(fileObjPtr);
     }
     if (face != NULL) {
-	FT_Done_Face(face);
-    }	
+        FT_Done_Face(face);
+    }   
     return NULL;
 }
 
@@ -1095,9 +1095,9 @@ CloseFont(TextFont *fontPtr)
 {
 #ifdef HAVE_LIBXFT
     if (fontPtr->xftFont != NULL) {
-	XftUnlockFace(fontPtr->xftFont);
+        XftUnlockFace(fontPtr->xftFont);
     } else {
-	FT_Done_Face(fontPtr->face);
+        FT_Done_Face(fontPtr->face);
     }
 #else
     FT_Done_Face(fontPtr->face);
@@ -1108,15 +1108,15 @@ CloseFont(TextFont *fontPtr)
 
 static int
 PaintText(Pict *destPtr, TextFont *fontPtr, const char *string,
-	  size_t length, int x, int y, int kerning, Blt_PaintBrush brush)
+          size_t length, int x, int y, int kerning, Blt_PaintBrush brush)
 {
     FT_Error ftError;
     int h;
 
-    FT_Vector pen;			/* Untransformed origin  */
+    FT_Vector pen;                      /* Untransformed origin  */
     const char *p, *pend;
     FT_GlyphSlot slot;
-    FT_Face face;			/* Face object. */  
+    FT_Face face;                       /* Face object. */  
 
     h = destPtr->height;
     face = fontPtr->face;
@@ -1125,7 +1125,7 @@ PaintText(Pict *destPtr, TextFont *fontPtr, const char *string,
     int previous;
 
     if (destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(destPtr);
+        Blt_UnassociateColors(destPtr);
     }
 #ifdef notdef
     DebugFace(face);
@@ -1136,50 +1136,50 @@ PaintText(Pict *destPtr, TextFont *fontPtr, const char *string,
     pen.y = (h - y) << 6;
     pen.x = x << 6;
     for (p = string, pend = p + length; p < pend; p++) {
-	int current;
+        int current;
 
-	current = FT_Get_Char_Index(face, *p);
-	if ((kerning) && (previous >= 0)) { 
-	    FT_Vector delta; 
-		
-	    FT_Get_Kerning(face, previous, current, FT_KERNING_DEFAULT, &delta);
-	    pen.x += delta.x; 
-	} 
-	FT_Set_Transform(face, &fontPtr->matrix, &pen);
-	previous = current;
-	/* load glyph image into the slot (erase previous one) */  
-	ftError = FT_Load_Glyph(face, current, FT_LOAD_DEFAULT); 
-	if (ftError) {
-	    Blt_Warn("can't load character \"%c\": %s\n", *p, 
-		     FtError(ftError));
-	    continue;                 /* Ignore errors */
-	}
-	ftError = FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL);
-	if (ftError) {
-	    Blt_Warn("can't render glyph \"%c\": %s\n", *p, FtError(ftError));
-	    continue;                 /* Ignore errors */
-	}
-	switch(slot->bitmap.pixel_mode) {
-	case FT_PIXEL_MODE_MONO:
-	    CopyMonoGlyph(destPtr, slot, pen.x >> 6, yy - slot->bitmap_top, 
-		brush);
-	    break;
-	case FT_PIXEL_MODE_LCD:
-	case FT_PIXEL_MODE_LCD_V:
-	case FT_PIXEL_MODE_GRAY:
+        current = FT_Get_Char_Index(face, *p);
+        if ((kerning) && (previous >= 0)) { 
+            FT_Vector delta; 
+                
+            FT_Get_Kerning(face, previous, current, FT_KERNING_DEFAULT, &delta);
+            pen.x += delta.x; 
+        } 
+        FT_Set_Transform(face, &fontPtr->matrix, &pen);
+        previous = current;
+        /* load glyph image into the slot (erase previous one) */  
+        ftError = FT_Load_Glyph(face, current, FT_LOAD_DEFAULT); 
+        if (ftError) {
+            Blt_Warn("can't load character \"%c\": %s\n", *p, 
+                     FtError(ftError));
+            continue;                 /* Ignore errors */
+        }
+        ftError = FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL);
+        if (ftError) {
+            Blt_Warn("can't render glyph \"%c\": %s\n", *p, FtError(ftError));
+            continue;                 /* Ignore errors */
+        }
+        switch(slot->bitmap.pixel_mode) {
+        case FT_PIXEL_MODE_MONO:
+            CopyMonoGlyph(destPtr, slot, pen.x >> 6, yy - slot->bitmap_top, 
+                brush);
+            break;
+        case FT_PIXEL_MODE_LCD:
+        case FT_PIXEL_MODE_LCD_V:
+        case FT_PIXEL_MODE_GRAY:
 #ifdef notdef
-	    fprintf(stderr, "h=%d, slot->bitmap_top=%d\n", h, slot->bitmap_top);
+            fprintf(stderr, "h=%d, slot->bitmap_top=%d\n", h, slot->bitmap_top);
 #endif
-	    PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
-			   h - slot->bitmap_top, brush);
-	case FT_PIXEL_MODE_GRAY2:
-	case FT_PIXEL_MODE_GRAY4:
-	    break;
-	}
-	pen.x += slot->advance.x; 
-	pen.y += slot->advance.y;
-	previous = -1;
-    }	
+            PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
+                           h - slot->bitmap_top, brush);
+        case FT_PIXEL_MODE_GRAY2:
+        case FT_PIXEL_MODE_GRAY4:
+            break;
+        }
+        pen.x += slot->advance.x; 
+        pen.y += slot->advance.y;
+        previous = -1;
+    }   
     return TCL_OK;
 }
 
@@ -1189,12 +1189,12 @@ PaintText(Pict *destPtr, TextFont *fontPtr, const char *string,
  * TextOp --
  *
  * Results:
- *	Returns a standard TCL return value.
+ *      Returns a standard TCL return value.
  *
  * Side effects:
- *	None.
+ *      None.
  *
- *	image draw text string x y switches 
+ *      image draw text string x y switches 
  *---------------------------------------------------------------------------
  */
 static int
@@ -1211,16 +1211,16 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     string = Tcl_GetStringFromObj(objv[3], &length);
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
-	(Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
-	return TCL_ERROR;
+        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
+        return TCL_ERROR;
     }
     /* Process switches  */
     switches.anchor = TK_ANCHOR_NW;
     switches.angle = 0.0;
     Blt_Shadow_Set(&switches.shadow, 0, 0, 0x0, 0xA0);
     if (Blt_GetPaintBrush(interp, "black", &switches.brush) 
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     switches.fontObjPtr = Tcl_NewStringObj("Arial 12", -1);
     switches.fontSize = 0;
@@ -1228,128 +1228,128 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     switches.justify = TK_JUSTIFY_LEFT;
     shadowPtr = &switches.shadow;
     if (Blt_ParseSwitches(interp, textSwitches, objc - 6, objv + 6, &switches, 
-	BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     fontPtr = OpenFont(interp, switches.fontObjPtr, switches.fontSize);
     if (fontPtr == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(destPtr);
+        Blt_UnassociateColors(destPtr);
     }
     if (switches.angle != 0.0) {
-	TextStyle ts;
-	TextLayout *layoutPtr;
+        TextStyle ts;
+        TextLayout *layoutPtr;
 
-	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetJustify(ts, switches.justify);
-	layoutPtr = CreateSimpleTextLayout(fontPtr, string, length, &ts);
-	if (fontPtr->face->face_flags & FT_FACE_FLAG_SCALABLE) {
-	    double rw, rh;
-	    int i;
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetJustify(ts, switches.justify);
+        layoutPtr = CreateSimpleTextLayout(fontPtr, string, length, &ts);
+        if (fontPtr->face->face_flags & FT_FACE_FLAG_SCALABLE) {
+            double rw, rh;
+            int i;
 
-	    Blt_RotateStartingTextPositions(layoutPtr, switches.angle);
-	    Blt_GetBoundingBox(layoutPtr->width, layoutPtr->height, 
-		switches.angle, &rw, &rh, (Point2d *)NULL);
-	    Blt_TranslateAnchor(x, y, (int)(rw), (int)(rh), switches.anchor, 
-		&x, &y);
-	    RotateFont(fontPtr, switches.angle);
-	    for (i = 0; i < layoutPtr->numFragments; i++) {
-		TextFragment *fp;
+            Blt_RotateStartingTextPositions(layoutPtr, switches.angle);
+            Blt_GetBoundingBox(layoutPtr->width, layoutPtr->height, 
+                switches.angle, &rw, &rh, (Point2d *)NULL);
+            Blt_TranslateAnchor(x, y, (int)(rw), (int)(rh), switches.anchor, 
+                &x, &y);
+            RotateFont(fontPtr, switches.angle);
+            for (i = 0; i < layoutPtr->numFragments; i++) {
+                TextFragment *fp;
 
-		fp = layoutPtr->fragments + i;
-		PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->sx, 
-			y + fp->sy, switches.kerning, switches.brush);
-	    }
-	} else {
-	    Blt_Picture tmp;
-	    Pict *rotPtr;
-	    int i;
-	    
-	    tmp = Blt_CreatePicture(layoutPtr->width, layoutPtr->height);
-	    Blt_BlankPicture(tmp, 0x00FF0000);
-	    for (i = 0; i < layoutPtr->numFragments; i++) {
-		TextFragment *fp;
+                fp = layoutPtr->fragments + i;
+                PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->sx, 
+                        y + fp->sy, switches.kerning, switches.brush);
+            }
+        } else {
+            Blt_Picture tmp;
+            Pict *rotPtr;
+            int i;
+            
+            tmp = Blt_CreatePicture(layoutPtr->width, layoutPtr->height);
+            Blt_BlankPicture(tmp, 0x00FF0000);
+            for (i = 0; i < layoutPtr->numFragments; i++) {
+                TextFragment *fp;
 
-		fp = layoutPtr->fragments + i;
-		PaintText(tmp, fontPtr, fp->text, fp->count, fp->sx, 
-			fp->sy, switches.kerning, switches.brush);
-	    }
-	    rotPtr = Blt_RotatePicture(tmp, switches.angle);
-	    Blt_FreePicture(tmp);
-	    Blt_TranslateAnchor(x, y, rotPtr->width, rotPtr->height, 
-		switches.anchor, &x, &y);
-	    Blt_BlendRegion(destPtr, rotPtr, 0, 0, rotPtr->width, 
-			    rotPtr->height, x, y);
-	    Blt_FreePicture(rotPtr);
-	}
-	Blt_Free(layoutPtr);
+                fp = layoutPtr->fragments + i;
+                PaintText(tmp, fontPtr, fp->text, fp->count, fp->sx, 
+                        fp->sy, switches.kerning, switches.brush);
+            }
+            rotPtr = Blt_RotatePicture(tmp, switches.angle);
+            Blt_FreePicture(tmp);
+            Blt_TranslateAnchor(x, y, rotPtr->width, rotPtr->height, 
+                switches.anchor, &x, &y);
+            Blt_BlendRegion(destPtr, rotPtr, 0, 0, rotPtr->width, 
+                            rotPtr->height, x, y);
+            Blt_FreePicture(rotPtr);
+        }
+        Blt_Free(layoutPtr);
     } else { 
-	int w, h;
-	TextStyle ts;
-	TextLayout *layoutPtr;
+        int w, h;
+        TextStyle ts;
+        TextLayout *layoutPtr;
 
-	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetJustify(ts, switches.justify);
-	layoutPtr = CreateSimpleTextLayout(fontPtr, string, length, &ts);
-	Blt_TranslateAnchor(x, y, layoutPtr->width, layoutPtr->height, 
-		switches.anchor, &x, &y);
-	w = layoutPtr->width;
-	h = layoutPtr->height;
-	if ((w > 1) && (h > 1) && (switches.shadow.width > 0)) {
-	    Blt_Pixel color;
-	    Pict *tmpPtr;
-	    int extra;
-	    Blt_PaintBrush brush;
-	    int i;
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetJustify(ts, switches.justify);
+        layoutPtr = CreateSimpleTextLayout(fontPtr, string, length, &ts);
+        Blt_TranslateAnchor(x, y, layoutPtr->width, layoutPtr->height, 
+                switches.anchor, &x, &y);
+        w = layoutPtr->width;
+        h = layoutPtr->height;
+        if ((w > 1) && (h > 1) && (switches.shadow.width > 0)) {
+            Blt_Pixel color;
+            Pict *tmpPtr;
+            int extra;
+            Blt_PaintBrush brush;
+            int i;
 
-	    extra = 2 * shadowPtr->width;
-	    tmpPtr = Blt_CreatePicture(w + extra, h + extra);
-	    color.u32 = 0x0;
-	    Blt_BlankPicture(tmpPtr, color.u32);
-	    brush = Blt_NewColorBrush(shadowPtr->color.u32);
-	    for (i = 0; i < layoutPtr->numFragments; i++) {
-		TextFragment *fp;
+            extra = 2 * shadowPtr->width;
+            tmpPtr = Blt_CreatePicture(w + extra, h + extra);
+            color.u32 = 0x0;
+            Blt_BlankPicture(tmpPtr, color.u32);
+            brush = Blt_NewColorBrush(shadowPtr->color.u32);
+            for (i = 0; i < layoutPtr->numFragments; i++) {
+                TextFragment *fp;
 
-		fp = layoutPtr->fragments + i;
-		PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
-			  fp->x + shadowPtr->width, 
-			  fp->y + shadowPtr->width, 
-			  switches.kerning, brush);
-	    }
-	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
+                fp = layoutPtr->fragments + i;
+                PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
+                          fp->x + shadowPtr->width, 
+                          fp->y + shadowPtr->width, 
+                          switches.kerning, brush);
+            }
+            Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
 #ifdef notdef
-	    for (i = 0; i < layoutPtr->numFragments; i++) {
-		TextFragment *fp;
+            for (i = 0; i < layoutPtr->numFragments; i++) {
+                TextFragment *fp;
 
-		fp = layoutPtr->fragments + i;
-		PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
-		    fp->x + shadowPtr->width - shadowPtr->offset,
-		    fp->y + shadowPtr->width - shadowPtr->offset, 
-		    switches.kerning, switches.brush);
-	    }
+                fp = layoutPtr->fragments + i;
+                PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
+                    fp->x + shadowPtr->width - shadowPtr->offset,
+                    fp->y + shadowPtr->width - shadowPtr->offset, 
+                    switches.kerning, switches.brush);
+            }
 #endif
-	    Blt_BlendRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
-			    tmpPtr->height, x, y);
-	    fprintf(stderr, "tmp width=%d height=%d, w=%d h=%d\n",
-		    tmpPtr->width, tmpPtr->height, w, h);
-	    Blt_FreePicture(tmpPtr);
+            Blt_BlendRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
+                            tmpPtr->height, x, y);
+            fprintf(stderr, "tmp width=%d height=%d, w=%d h=%d\n",
+                    tmpPtr->width, tmpPtr->height, w, h);
+            Blt_FreePicture(tmpPtr);
             Blt_FreeBrush(brush);
-	} else {
-	    int i;
+        } else {
+            int i;
 
-	    y += fontPtr->ascent;
-	    for (i = 0; i < layoutPtr->numFragments; i++) {
-		TextFragment *fp;
+            y += fontPtr->ascent;
+            for (i = 0; i < layoutPtr->numFragments; i++) {
+                TextFragment *fp;
 
-		fp = layoutPtr->fragments + i;
-		PaintText(destPtr, fontPtr, fp->text, fp->count, 
-			x + fp->x, y + fp->y, switches.kerning, 
-			switches.brush);
-	    }
-	}
-	Blt_Free(layoutPtr);
+                fp = layoutPtr->fragments + i;
+                PaintText(destPtr, fontPtr, fp->text, fp->count, 
+                        x + fp->x, y + fp->y, switches.kerning, 
+                        switches.brush);
+            }
+        }
+        Blt_Free(layoutPtr);
     }
     CloseFont(fontPtr);
     Blt_FreeSwitches(textSwitches, (char *)&switches, 0);
@@ -1363,12 +1363,12 @@ Blt_PictureTextOpInit(Tcl_Interp *interp)
 
     ftError = FT_Init_FreeType(&ftLibrary);
     if (ftError) {
-	Tcl_AppendResult(interp, "can't initialize freetype library: ", 
-			 FtError(ftError), (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "can't initialize freetype library: ", 
+                         FtError(ftError), (char *)NULL);
+        return TCL_ERROR;
     }
     if (Blt_PictureRegisterProc(interp, "text", TextOp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -1378,15 +1378,15 @@ Blt_PictureTextOpInit(Tcl_Interp *interp)
  *
  * Blt_picture_text_Init --
  *
- *	This procedure is invoked to initialize the "text" operation
- *	of picture instance commands.
+ *      This procedure is invoked to initialize the "text" operation
+ *      of picture instance commands.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Creates the new command and adds a new entry into a global Tcl
- *	associative array.
+ *      Creates the new command and adds a new entry into a global Tcl
+ *      associative array.
  *
  *---------------------------------------------------------------------------
  */
@@ -1395,34 +1395,34 @@ Blt_picture_text_Init(Tcl_Interp *interp)
 {
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #endif
 #ifdef USE_TK_STUBS
     if (Tk_InitStubs(interp, TK_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #endif
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
     if (Blt_InitTkStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
 #else
     if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_PkgRequire(interp, "blt_tk", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #endif    
     if (Blt_PictureTextOpInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_PkgProvide(interp, "blt_picture_text", BLT_VERSION) != TCL_OK) { 
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }

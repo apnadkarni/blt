@@ -142,10 +142,10 @@ But you can simply cut and paste the contents of "gray1" into the
  ::
 
      blt::bitmap define gray1 {
-	 #define gray1_width 2
-	 #define gray1_height 2
-	 static char gray1_bits[] = {
-	    0x01, 0x02};
+         #define gray1_width 2
+         #define gray1_height 2
+         static char gray1_bits[] = {
+            0x01, 0x02};
      }
      label .l -bitmap gray1
 
@@ -162,10 +162,10 @@ commands are all equivalent.
  ::
 
      blt::bitmap define gray1 {
-	 #define gray1_width 2
-	 #define gray1_height 2
-	 static char gray1_bits[] = {
-	    0x01, 0x02 };
+         #define gray1_width 2
+         #define gray1_height 2
+         static char gray1_bits[] = {
+            0x01, 0x02 };
      }
      blt::bitmap define gray1 { { 2 2 } { 0x01, 0x02 } }
      blt::bitmap define gray1 { { 2 2 } { 0x01 0x02 } }
@@ -184,10 +184,10 @@ You can scale or rotate the bitmap as you create it, by using the
  ::
 
      blt::bitmap define gray1 {
-	 #define gray1_width 2
-	 #define gray1_height 2
-	 static char gray1_bits[] = {
-	    0x01, 0x02};
+         #define gray1_width 2
+         #define gray1_height 2
+         static char gray1_bits[] = {
+            0x01, 0x02};
      } -scale 2.0 -rotate 90.0
 
 In addition, you can compose bitmaps from text strings.  This makes it
@@ -197,7 +197,7 @@ multi-line.
  ::
 
     blt::bitmap compose rot_text "This is rotated\\ntext" \\
-	-rotate 90.0 -font fixed
+        -rotate 90.0 -font fixed
 
 There are also a number of ways to query bitmaps.  This isn't limited
 to bitmaps that you create, but any bitmap.

@@ -269,7 +269,7 @@ command.
 
      global myStatus myOutput
      blt::bgexec myStatus -output myOutput du -s $dir &
-	...
+        ...
      tkwait variable myStatus
 
 PREEMPTION
@@ -311,12 +311,12 @@ the file handle and save the output in a variable.
   ::
 
      fileevent fileId readable { 
-	if { [gets $fileId line] < 0 } {
+        if { [gets $fileId line] < 0 } {
             close $fileId
             set output $temp
-	    unset fileId temp
+            unset fileId temp
         } else {
-	    append temp $line
+            append temp $line
         }
      }
 

@@ -48,23 +48,23 @@
  * images.
  */
 typedef struct _TkImage {
-    Tk_Window tkwin;			/* Window passed to Tk_GetImage (needed
-					 * to "re-get" the image later if the *
-					 * manager changes). */
-    Display *display;			/* Display for tkwin.  Needed because
-					 * when the image is eventually freed
-					 * tkwin may not exist anymore. */
-    struct _TkImageMaster *masterPtr;	/* Master for this image (identifiers
-					 * image manager, for example). */
-    ClientData instanceData;		/* One word argument to pass to image
-					 * manager when dealing with this image
-					 * instance. */
-    Tk_ImageChangedProc *changeProc;	/* Code in widget to call when image
-					 * changes in a way that affects
-					 * redisplay. */
-    ClientData widgetClientData;	/* Argument to pass to changeProc. */
-    struct _TkImage *nextPtr;		/* Next in list of all image instances
-					 * associated with the same name. */
+    Tk_Window tkwin;                    /* Window passed to Tk_GetImage (needed
+                                         * to "re-get" the image later if the *
+                                         * manager changes). */
+    Display *display;                   /* Display for tkwin.  Needed because
+                                         * when the image is eventually freed
+                                         * tkwin may not exist anymore. */
+    struct _TkImageMaster *masterPtr;   /* Master for this image (identifiers
+                                         * image manager, for example). */
+    ClientData instanceData;            /* One word argument to pass to image
+                                         * manager when dealing with this image
+                                         * instance. */
+    Tk_ImageChangedProc *changeProc;    /* Code in widget to call when image
+                                         * changes in a way that affects
+                                         * redisplay. */
+    ClientData widgetClientData;        /* Argument to pass to changeProc. */
+    struct _TkImage *nextPtr;           /* Next in list of all image instances
+                                         * associated with the same name. */
 } TkImage;
 
 /*
@@ -73,26 +73,26 @@ typedef struct _TkImage {
  * it.  Entries in mainPtr->imageTable point to these structures.
  */
 typedef struct _TkImageMaster {
-    Tk_ImageType *typePtr;		/* Information about image type.  NULL
-					 * means that no image manager owns this
-					 * image: the image was deleted. */
-    ClientData masterData;		/* One-word argument to pass to image
-					 * mgr when dealing with the master, as
-					 * opposed to instances. */
-    int width, height;			/* Last known dimensions for image. */
-    void *tablePtr;			/* Pointer to hash table containing
-					 * image (the imageTable field in some
-					 * TkMainInfo structure). */
-    void *hPtr;				/* Hash entry in mainPtr->imageTable for
-					 * this structure (used to delete the
-					 * hash entry). */
-    void *instancePtr;			/* Pointer to first in list of instances
-					 * derived from this name. */
-    int deleted;			/* Flag set when image is being 
-					 * deleted. */
-    Tk_Window tkwin;			/* Main window of interpreter (used to
-					 * detect when the world is falling
-					 * apart.) */
+    Tk_ImageType *typePtr;              /* Information about image type.  NULL
+                                         * means that no image manager owns this
+                                         * image: the image was deleted. */
+    ClientData masterData;              /* One-word argument to pass to image
+                                         * mgr when dealing with the master, as
+                                         * opposed to instances. */
+    int width, height;                  /* Last known dimensions for image. */
+    void *tablePtr;                     /* Pointer to hash table containing
+                                         * image (the imageTable field in some
+                                         * TkMainInfo structure). */
+    void *hPtr;                         /* Hash entry in mainPtr->imageTable for
+                                         * this structure (used to delete the
+                                         * hash entry). */
+    void *instancePtr;                  /* Pointer to first in list of instances
+                                         * derived from this name. */
+    int deleted;                        /* Flag set when image is being 
+                                         * deleted. */
+    Tk_Window tkwin;                    /* Main window of interpreter (used to
+                                         * detect when the world is falling
+                                         * apart.) */
 } TkImageMaster;
 
 /*
@@ -100,28 +100,28 @@ typedef struct _TkImageMaster {
  *
  * Blt_Image_IsDeleted --
  *
- *	Is there any other way to determine if an image has been deleted?
+ *      Is there any other way to determine if an image has been deleted?
  *
  * Results:
- *	Returns 1 if the image has been deleted, 0 otherwise.
+ *      Returns 1 if the image has been deleted, 0 otherwise.
  *
  *---------------------------------------------------------------------------
  */
 /*LINTLIBRARY*/
 int
-Blt_Image_IsDeleted(Tk_Image tkImage)	/* Token for image. */
+Blt_Image_IsDeleted(Tk_Image tkImage)   /* Token for image. */
 {
     TkImage *imagePtr = (TkImage *) tkImage;
 
     if (imagePtr->masterPtr == NULL) {
-	return TRUE;
+        return TRUE;
     }
     return (imagePtr->masterPtr->typePtr == NULL);
 }
 
 /*LINTLIBRARY*/
 Tk_ImageMaster
-Blt_Image_GetMaster(Tk_Image tkImage)	/* Token for image. */
+Blt_Image_GetMaster(Tk_Image tkImage)   /* Token for image. */
 {
     TkImage *imagePtr = (TkImage *)tkImage;
 
@@ -139,7 +139,7 @@ Blt_Image_GetInstanceData(Tk_Image tkImage) /* Token for image. */
 
 /*LINTLIBRARY*/
 Tk_ImageType *
-Blt_Image_GetType(Tk_Image tkImage)	/* Token for image. */
+Blt_Image_GetType(Tk_Image tkImage)     /* Token for image. */
 {
     TkImageMaster *masterPtr;
 

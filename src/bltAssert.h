@@ -42,10 +42,10 @@
  * loading can fail to find the __assert function.  As a workaround,
  * we'll include our own.
  */
-#undef	assert
+#undef  assert
 
-#ifdef	NDEBUG
-#  define	assert(EX) ((void)0)
+#ifdef  NDEBUG
+#  define       assert(EX) ((void)0)
 #else
 
 BLT_EXTERN void Blt_Assert(const char *expr, const char *file, int line);

@@ -51,26 +51,26 @@
  *---------------------------------------------------------------------------
  */
 typedef union {
-    unsigned int u32;		
+    unsigned int u32;           
     struct {
 #ifdef WORDS_BIGENDIAN
-	unsigned char a, r, g, b;
+        unsigned char a, r, g, b;
 #else 
-	unsigned char b, g, r, a;
+        unsigned char b, g, r, a;
 #endif    
     } u8;
 } Blt_Pixel;
 
-#define Red	u8.r
-#define Blue	u8.b
-#define Green	u8.g
-#define Alpha	u8.a
+#define Red     u8.r
+#define Blue    u8.b
+#define Green   u8.g
+#define Alpha   u8.a
 
-#define ALPHA_OPAQUE		(0xFF)
-#define ALPHA_TRANSPARENT	(0)
-#define MAXINTENSITY		(0xFF)
+#define ALPHA_OPAQUE            (0xFF)
+#define ALPHA_TRANSPARENT       (0)
+#define MAXINTENSITY            (0xFF)
 
-#define GAMMA	(1.0f)
+#define GAMMA   (1.0f)
 
 struct _Blt_Ps;
 
@@ -87,50 +87,50 @@ struct _Blt_Ps;
  *---------------------------------------------------------------------------
  */
 struct _Blt_Picture {
-    short int width, height;		/* Size of the image in pixels. */
-    short int flags;			/* Flags describing the picture. */
-    short int pixelsPerRow;		/* Stride of the image. */
+    short int width, height;            /* Size of the image in pixels. */
+    short int flags;                    /* Flags describing the picture. */
+    short int pixelsPerRow;             /* Stride of the image. */
     short int delay;
     short int reserved;
-    void *buffer;			/* Unaligned (malloc'ed) memory for
-					 * pixels. */
-    Blt_Pixel *bits;			/* Array of pixels containing the
-					 * RGBA values. Points into buffer
-					 * array.*/
+    void *buffer;                       /* Unaligned (malloc'ed) memory for
+                                         * pixels. */
+    Blt_Pixel *bits;                    /* Array of pixels containing the
+                                         * RGBA values. Points into buffer
+                                         * array.*/
 };
 
-#define BLT_PIC_COLOR  (1<<0)		/* Indicates if color or
-					 * greyscale. */
-#define BLT_PIC_BLEND  (1<<1)		/* Picture has partial opaque
-					 * pixels. */
-#define BLT_PIC_MASK   (1<<2)		/* Pixels are either 100% opaque or
-					 * transparent. The separate BLEND
-					 * and MASK flags are so that don't
-					 * premultiply alphas for masks. */
+#define BLT_PIC_COLOR  (1<<0)           /* Indicates if color or
+                                         * greyscale. */
+#define BLT_PIC_BLEND  (1<<1)           /* Picture has partial opaque
+                                         * pixels. */
+#define BLT_PIC_MASK   (1<<2)           /* Pixels are either 100% opaque or
+                                         * transparent. The separate BLEND
+                                         * and MASK flags are so that don't
+                                         * premultiply alphas for masks. */
 
 #define BLT_PIC_ASSOCIATED_COLORS (1<<3)/* Indicates if RGB components have
-					 * been premultiplied by their
-					 * alphas. */
+                                         * been premultiplied by their
+                                         * alphas. */
 
-#define BLT_PIC_DIRTY (1<<4)		/* Indicates that the picture
-					 * contents have changed. Cached
-					 * items may need to be
-					 * refreshed. For example, may need
-					 * to premultiply alphas again. */ 
+#define BLT_PIC_DIRTY (1<<4)            /* Indicates that the picture
+                                         * contents have changed. Cached
+                                         * items may need to be
+                                         * refreshed. For example, may need
+                                         * to premultiply alphas again. */ 
 
 #define BLT_PIC_UNINITIALIZED (1<<5)    /* Indicates that the contents of
-					 * the picture haven't been
-					 * initialized yet. */
+                                         * the picture haven't been
+                                         * initialized yet. */
 
-#define BLT_PAINTER_DITHER		(1<<10)
+#define BLT_PAINTER_DITHER              (1<<10)
 
-#define BLT_PAINTER_BLEND_MASK		(0x0F)
-#define BLT_PAINTER_BLEND_NONE		(0)
-#define BLT_PAINTER_BLEND_MIN_ALPHAS	(1<<1)
-#define BLT_PAINTER_BLEND_MAX_ALPHAS	(1<<2)
-#define BLT_PAINTER_BLEND_DIFF		(1<<3)
-#define BLT_PAINTER_BLEND_MULTIPLY	(1<<4)
-#define BLT_PAINTER_BLEND_UNDER		(1<<6)
+#define BLT_PAINTER_BLEND_MASK          (0x0F)
+#define BLT_PAINTER_BLEND_NONE          (0)
+#define BLT_PAINTER_BLEND_MIN_ALPHAS    (1<<1)
+#define BLT_PAINTER_BLEND_MAX_ALPHAS    (1<<2)
+#define BLT_PAINTER_BLEND_DIFF          (1<<3)
+#define BLT_PAINTER_BLEND_MULTIPLY      (1<<4)
+#define BLT_PAINTER_BLEND_UNDER         (1<<6)
 
 typedef struct _Blt_PictureImage *Blt_PictureImage;
 typedef struct _Blt_ResampleFilter *Blt_ResampleFilter;
@@ -144,17 +144,17 @@ struct _Blt_Chain;
  * access its members.
  */
 
-#define Blt_Picture_Bits(p)	 ((p)->bits)
-#define Blt_Picture_Flags(p)	 ((p)->flags)
-#define Blt_Picture_Height(p)	 ((p)->height)
+#define Blt_Picture_Bits(p)      ((p)->bits)
+#define Blt_Picture_Flags(p)     ((p)->flags)
+#define Blt_Picture_Height(p)    ((p)->height)
 #define Blt_Picture_Pixel(p,x,y) ((p)->bits + ((p)->pixelsPerRow * (y)) + (x))
-#define Blt_Picture_Width(p)	 ((p)->width)
-#define Blt_Picture_Stride(p)	 ((p)->pixelsPerRow)
-#define Blt_Picture_Delay(p)	 ((p)->delay)
+#define Blt_Picture_Width(p)     ((p)->width)
+#define Blt_Picture_Stride(p)    ((p)->pixelsPerRow)
+#define Blt_Picture_Delay(p)     ((p)->delay)
 
-#define Blt_Picture_IsDirty(p)	((p)->flags & BLT_PIC_DIRTY)
-#define Blt_Picture_IsOpaque(p)	\
-	(((p)->flags & (BLT_PIC_BLEND | BLT_PIC_MASK)) == 0)
+#define Blt_Picture_IsDirty(p)  ((p)->flags & BLT_PIC_DIRTY)
+#define Blt_Picture_IsOpaque(p) \
+        (((p)->flags & (BLT_PIC_BLEND | BLT_PIC_MASK)) == 0)
 #define Blt_Picture_IsMasked(p)  ((p)->flags &  BLT_PIC_MASK) 
 #define Blt_Picture_IsBlended(p) ((p)->flags &  BLT_PIC_BLEND)
 #define Blt_Picture_IsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
@@ -179,23 +179,23 @@ typedef struct {
 } PictureCoordinate;
 
 typedef enum BlendingModes {
-    BLT_BLEND_COLORBURN,		/* C = (1 - B) / F */
-    BLT_BLEND_COLORDODGE,		/* C = B / (1 - F) */ 
-    BLT_BLEND_DARKEN,			/* C = min(F,B) */
-    BLT_BLEND_DIFFERENCE,		/* C = |F - B| */
+    BLT_BLEND_COLORBURN,                /* C = (1 - B) / F */
+    BLT_BLEND_COLORDODGE,               /* C = B / (1 - F) */ 
+    BLT_BLEND_DARKEN,                   /* C = min(F,B) */
+    BLT_BLEND_DIFFERENCE,               /* C = |F - B| */
     BLT_BLEND_DIVIDE,
     BLT_BLEND_EXCLUSION,
     BLT_BLEND_HARDLIGHT,
     BLT_BLEND_HARDMIX,
-    BLT_BLEND_LIGHTEN,			/* C = max(F,B) */
+    BLT_BLEND_LIGHTEN,                  /* C = max(F,B) */
     BLT_BLEND_LINEARBURN,
     BLT_BLEND_LINEARDODGE,
     BLT_BLEND_LINEARLIGHT,
-    BLT_BLEND_MULTIPLY,			/* C = F * B */
-    BLT_BLEND_NORMAL,			/* C = F */
-    BLT_BLEND_OVERLAY,			/* C = B*(F + (2*F)*(1-B)) */
+    BLT_BLEND_MULTIPLY,                 /* C = F * B */
+    BLT_BLEND_NORMAL,                   /* C = F */
+    BLT_BLEND_OVERLAY,                  /* C = B*(F + (2*F)*(1-B)) */
     BLT_BLEND_PINLIGHT,
-    BLT_BLEND_SCREEN,			/* C = 1 - (1 - F * B */
+    BLT_BLEND_SCREEN,                   /* C = 1 - (1 - F * B */
     BLT_BLEND_SOFTLIGHT,
     BLT_BLEND_SOFTLIGHT2,
     BLT_BLEND_SUBTRACT,
@@ -215,19 +215,19 @@ typedef struct {
 
 #define Blt_AddPictures(dest, src) \
     Blt_ApplyPictureToPicture(dest, src, 0, 0, (src)->width, (src)->height, \
-	0, 0, PIC_ARITH_ADD)
+        0, 0, PIC_ARITH_ADD)
 #define Blt_SubtractPictures(dest, src) \
     Blt_ApplyPictureToPicture(dest, src, 0, 0, (src)->width, (src)->height, \
-	0, 0, PIC_ARITH_SUB)
+        0, 0, PIC_ARITH_SUB)
 #define Blt_AndPictures(dest, src) \
     Blt_ApplyPictureToPicture(dest, src, 0, 0, (src)->width, (src)->height, \
-	0, 0, PIC_ARITH_AND)
+        0, 0, PIC_ARITH_AND)
 #define Blt_OrPictures(dest, src) \
     Blt_ApplyPictureToPicture(dest, src, 0, 0, (src)->width, (src)->height, \
-	0, 0, PIC_ARITH_OR)
+        0, 0, PIC_ARITH_OR)
 #define Blt_XorPictures(dest, src) \
     Blt_ApplyPictureToPicture(dest, src, 0, 0, (src)->width, (src)->height, \
-	0, 0, PIC_ARITH_XOR)
+        0, 0, PIC_ARITH_XOR)
 
 typedef unsigned int (*Blt_ColorLookupTable)[33][33];
 
@@ -239,28 +239,28 @@ typedef struct {
 /* Prototypes of picture routines */
 
 BLT_EXTERN void Blt_ApplyPictureToPicture(Blt_Picture dest, Blt_Picture src,
-	int x, int y, int w, int h, int dx, int dy, Blt_PictureArithOps op);
+        int x, int y, int w, int h, int dx, int dy, Blt_PictureArithOps op);
 
 BLT_EXTERN void Blt_ApplyScalarToPicture(Blt_Picture dest, Blt_Pixel *colorPtr, 
-	Blt_PictureArithOps op);
+        Blt_PictureArithOps op);
 
 BLT_EXTERN void Blt_ApplyPictureToPictureWithMask(Blt_Picture dest, 
-	Blt_Picture src, Blt_Picture mask, int x, int y, int w, int h, 
-	int dx, int dy, int invert, Blt_PictureArithOps op);
+        Blt_Picture src, Blt_Picture mask, int x, int y, int w, int h, 
+        int dx, int dy, int invert, Blt_PictureArithOps op);
 
 BLT_EXTERN void Blt_ApplyScalarToPictureWithMask(Blt_Picture dest, 
-	Blt_Pixel *colorPtr, Blt_Picture mask, int invert, 
-	Blt_PictureArithOps op);
+        Blt_Pixel *colorPtr, Blt_Picture mask, int invert, 
+        Blt_PictureArithOps op);
 
 BLT_EXTERN void Blt_MaskPicture(Blt_Picture dest, Blt_Picture mask, 
-	int x, int y, int w, int h, int dx, int dy, Blt_Pixel *colorPtr);
+        int x, int y, int w, int h, int dx, int dy, Blt_Pixel *colorPtr);
 
 BLT_EXTERN void Blt_BlankPicture(Blt_Picture picture, unsigned int colorValue);
 BLT_EXTERN void Blt_BlankRegion(Blt_Picture picture, int x, int y, int w, int h,
-	unsigned int colorValue);
+        unsigned int colorValue);
 
 BLT_EXTERN void Blt_BlurPicture(Blt_Picture dest, Blt_Picture src, int radius, 
-	int numPasses);
+        int numPasses);
 
 BLT_EXTERN void Blt_ResizePicture(Blt_Picture picture, int w, int h);
 BLT_EXTERN void Blt_AdjustPictureSize(Blt_Picture picture, int w, int h);
@@ -268,12 +268,12 @@ BLT_EXTERN void Blt_AdjustPictureSize(Blt_Picture picture, int w, int h);
 BLT_EXTERN Blt_Picture Blt_ClonePicture(Blt_Picture picture);
 
 BLT_EXTERN void Blt_ConvolvePicture(Blt_Picture dest, Blt_Picture src, 
-	Blt_ConvolveFilter vFilter, Blt_ConvolveFilter hFilter);
+        Blt_ConvolveFilter vFilter, Blt_ConvolveFilter hFilter);
 
 BLT_EXTERN Blt_Picture Blt_CreatePicture(int w, int h);
 
 BLT_EXTERN Blt_Picture Blt_DitherPicture(Blt_Picture picture, 
-	Blt_Pixel *palette);
+        Blt_Pixel *palette);
 
 BLT_EXTERN void Blt_FlipPicture(Blt_Picture picture, int vertically);
 
@@ -284,40 +284,40 @@ BLT_EXTERN Blt_Picture Blt_GreyscalePicture(Blt_Picture picture);
 BLT_EXTERN Blt_Picture Blt_QuantizePicture (Blt_Picture picture, int numColors);
 
 BLT_EXTERN void Blt_ResamplePicture (Blt_Picture dest, Blt_Picture src, 
-	Blt_ResampleFilter hFilter, Blt_ResampleFilter vFilter);
+        Blt_ResampleFilter hFilter, Blt_ResampleFilter vFilter);
 
 BLT_EXTERN Blt_Picture Blt_ScalePicture(Blt_Picture picture, int x, int y, 
-	int w, int h, int dw, int dh);
+        int w, int h, int dw, int dh);
 
 BLT_EXTERN Blt_Picture Blt_ScalePictureArea(Blt_Picture picture, int x, int y,
-	int w, int h, int dw, int dh);
+        int w, int h, int dw, int dh);
 
 BLT_EXTERN Blt_Picture Blt_ReflectPicture(Blt_Picture picture, int side);
 
 BLT_EXTERN Blt_Picture Blt_RotatePictureByShear(Blt_Picture picture, 
-	float angle);
+        float angle);
 BLT_EXTERN Blt_Picture Blt_RotatePicture(Blt_Picture picture, float angle);
 
 BLT_EXTERN Blt_Picture Blt_ProjectPicture(Blt_Picture picture, float *srcPts,
-	float *destPts, Blt_Pixel *bg);
+        float *destPts, Blt_Pixel *bg);
 
 BLT_EXTERN void Blt_TilePicture(Blt_Picture dest, Blt_Picture src, int xOrigin, 
-	int yOrigin, int x, int y, int w, int h);
+        int yOrigin, int x, int y, int w, int h);
 
 BLT_EXTERN int Blt_PictureToPsData(Blt_Picture picture, int numComponents, 
-	Tcl_DString *resultPtr, const char *prefix);
+        Tcl_DString *resultPtr, const char *prefix);
 
 BLT_EXTERN void Blt_SelectPixels(Blt_Picture dest, Blt_Picture src, 
-	Blt_Pixel *lowerPtr, Blt_Pixel *upperPtr);
+        Blt_Pixel *lowerPtr, Blt_Pixel *upperPtr);
 
 BLT_EXTERN int Blt_GetPicture(Tcl_Interp *interp, const char *string, 
-	Blt_Picture *picturePtr);
+        Blt_Picture *picturePtr);
 
 BLT_EXTERN int Blt_GetPictureFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Blt_Picture *picturePtr);
+        Blt_Picture *picturePtr);
 
 BLT_EXTERN int Blt_GetResampleFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
-	Blt_ResampleFilter *filterPtr);
+        Blt_ResampleFilter *filterPtr);
 
 BLT_EXTERN const char *Blt_NameOfResampleFilter(Blt_ResampleFilter filter);
 
@@ -332,16 +332,16 @@ BLT_EXTERN void Blt_UnassociateColors(Blt_Picture picture);
 BLT_EXTERN void Blt_MultiplyPixels(Blt_Picture picture, float value);
 
 BLT_EXTERN int Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv, PictRegion *regionPtr);
+        Tcl_Obj *const *objv, PictRegion *regionPtr);
 
 BLT_EXTERN int Blt_AdjustRegionToPicture(Blt_Picture picture, 
-	PictRegion *regionPtr);
+        PictRegion *regionPtr);
 
 BLT_EXTERN int Blt_GetPixelFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Blt_Pixel *pixelPtr);
+        Blt_Pixel *pixelPtr);
 
 BLT_EXTERN int Blt_GetPixel(Tcl_Interp *interp, const char *string, 
-	Blt_Pixel *pixelPtr);
+        Blt_Pixel *pixelPtr);
 
 BLT_EXTERN const char *Blt_NameOfPixel(Blt_Pixel *pixelPtr);
 
@@ -354,23 +354,23 @@ BLT_EXTERN void Blt_ClassifyPicture(Blt_Picture picture);
 BLT_EXTERN void Blt_TentHorizontally(Blt_Picture dest, Blt_Picture src);
 BLT_EXTERN void Blt_TentVertically(Blt_Picture dest, Blt_Picture src);
 BLT_EXTERN void Blt_ZoomHorizontally(Blt_Picture dest, Blt_Picture src, 
-	Blt_ResampleFilter filter);
+        Blt_ResampleFilter filter);
 BLT_EXTERN void Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, 
-	Blt_ResampleFilter filter);
+        Blt_ResampleFilter filter);
 BLT_EXTERN void Blt_BlendRegion(Blt_Picture dest, Blt_Picture src, 
-	int sx, int sy, int w, int h, int dx, int dy);
+        int sx, int sy, int w, int h, int dx, int dy);
 
 BLT_EXTERN void Blt_ColorBlendPictures(Blt_Picture dest, Blt_Picture src, 
-	Blt_BlendingMode mode);
+        Blt_BlendingMode mode);
 
 BLT_EXTERN void Blt_FadePicture(Blt_Picture picture, int x, int y, int w, int h,
-	double factor);
+        double factor);
 
 BLT_EXTERN void Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, 
-	int sx, int sy, int w, int h, int dx, int dy);
+        int sx, int sy, int w, int h, int dx, int dy);
 
 BLT_EXTERN void Blt_GammaCorrectPicture(Blt_Picture dest, Blt_Picture src, 
-	float gamma);
+        float gamma);
 
 BLT_EXTERN void Blt_SharpenPicture(Blt_Picture dest, Blt_Picture src);
 
@@ -381,16 +381,16 @@ BLT_EXTERN void Blt_SizeOfPicture(Blt_Picture pict, int *wPtr, int *hPtr);
 
 #ifdef _BLT_DBUFFER_H
 BLT_EXTERN Blt_DBuffer Blt_PictureToDBuffer(Blt_Picture picture, int numComp);
-#endif	/* _BLT_DBUFFER_H */
+#endif  /* _BLT_DBUFFER_H */
 
 BLT_EXTERN int Blt_ResetPicture(Tcl_Interp *interp, const char *imageName, 
-	Blt_Picture picture);
+        Blt_Picture picture);
 
 BLT_EXTERN void Blt_MapColors(Blt_Picture dest, Blt_Picture src, 
-	Blt_ColorLookupTable clut);
+        Blt_ColorLookupTable clut);
 
 BLT_EXTERN Blt_ColorLookupTable Blt_GetColorLookupTable(
-	struct _Blt_Chain *chainPtr, int numReqColors);
+        struct _Blt_Chain *chainPtr, int numReqColors);
 
 BLT_EXTERN void Blt_FadePictureWithGradient(Blt_Picture picture, int side,
         double low, double high, int scale, Blt_Jitter *jitterPtr);
@@ -402,46 +402,46 @@ BLT_EXTERN void Blt_SubtractColor(Blt_Picture picture, Blt_Pixel *colorPtr);
 #ifdef _TK
 BLT_EXTERN Blt_Picture Blt_PhotoToPicture (Tk_PhotoHandle photo);
 BLT_EXTERN Blt_Picture Blt_PhotoAreaToPicture (Tk_PhotoHandle photo, 
-	int x, int y, int w, int h);
+        int x, int y, int w, int h);
 BLT_EXTERN Blt_Picture Blt_DrawableToPicture(Tk_Window tkwin, 
-	Drawable drawable, int x, int y, int w, int h, float gamma);
+        Drawable drawable, int x, int y, int w, int h, float gamma);
 BLT_EXTERN Blt_Picture Blt_WindowToPicture(Display *display, 
-	Drawable drawable, int x, int y, int w, int h, float gamma);
+        Drawable drawable, int x, int y, int w, int h, float gamma);
 BLT_EXTERN void Blt_PictureToPhoto(Blt_Picture picture, Tk_PhotoHandle photo);
 BLT_EXTERN int Blt_SnapPhoto(Tcl_Interp *interp, Tk_Window tkwin, 
-	Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, 
-	const char *photoName, float gamma);
+        Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, 
+        const char *photoName, float gamma);
 BLT_EXTERN int Blt_SnapPicture(Tcl_Interp *interp, Tk_Window tkwin, 
-	Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, 
-	const char *imageName, float gamma);
+        Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, 
+        const char *imageName, float gamma);
 BLT_EXTERN unsigned int Blt_XColorToPixel(XColor *colorPtr);
 BLT_EXTERN int Blt_IsPicture(Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromImage(Tcl_Interp *interp, 
-	Tk_Image tkImage, int *isPhotoPtr);
+        Tk_Image tkImage, int *isPhotoPtr);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromPictureImage(Tcl_Interp *interp,
-	Tk_Image tkImage);
+        Tk_Image tkImage);
 BLT_EXTERN struct _Blt_Chain *Blt_GetPicturesFromPictureImage(
-	Tcl_Interp *interp, Tk_Image tkImage);
+        Tcl_Interp *interp, Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromPhotoImage(Tcl_Interp *interp,
-	Tk_Image tkImage);
+        Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_CanvasToPicture(Tcl_Interp *interp, const char *s,
-	float gamma);
-#endif	/* _TK */
+        float gamma);
+#endif  /* _TK */
 
 BLT_EXTERN int Blt_PictureRegisterProc(Tcl_Interp *interp, const char *name,
-	Tcl_ObjCmdProc *proc);
+        Tcl_ObjCmdProc *proc);
 
 typedef struct {
     Blt_Pixel color;
-    int offset;				/* Offset of shadow. */
-    int width;				/* Blur width. */
+    int offset;                         /* Offset of shadow. */
+    int width;                          /* Blur width. */
 } Blt_Shadow;
 
 BLT_EXTERN void Blt_Shadow_Set(Blt_Shadow *sPtr, int width, int offset, 
-	int color, int alpha);
+        int color, int alpha);
 
 BLT_EXTERN Blt_Picture Blt_EmbossPicture(Blt_Picture picture, double azimuth, 
-	double elevation, unsigned short width45);
+        double elevation, unsigned short width45);
 BLT_EXTERN void Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha);
 
 BLT_EXTERN int Blt_Dissolve2(Blt_Picture dest, Blt_Picture src, long start,

@@ -47,24 +47,24 @@
 #endif /* Blt_Offset */
 
 typedef int (Blt_SwitchParseProc)(ClientData clientData, Tcl_Interp *interp, 
-	const char *switchName, Tcl_Obj *valueObjPtr, char *record, int offset,
-	int flags);
+        const char *switchName, Tcl_Obj *valueObjPtr, char *record, int offset,
+        int flags);
 
 typedef Tcl_Obj *(Blt_SwitchPrintProc)(ClientData clientData, 
-	Tcl_Interp *interp, char *record, int offset, int flags);
+        Tcl_Interp *interp, char *record, int offset, int flags);
 
 typedef void (Blt_SwitchFreeProc)(ClientData clientData, char *record, 
-	int offset, int flags);
+        int offset, int flags);
 
 typedef struct {
-    Blt_SwitchParseProc *parseProc;	/* Procedure to parse a switch value
-					 * and store it in its converted form
-					 * in the data record. */
-    Blt_SwitchPrintProc *printProc;	/* Procedure to free a switch. */
-    Blt_SwitchFreeProc *freeProc;	/* Procedure to free a switch. */
-    ClientData clientData;		/* Arbitrary one-word value used by
-					 * switch parser, passed to
-					 * parseProc. */
+    Blt_SwitchParseProc *parseProc;     /* Procedure to parse a switch value
+                                         * and store it in its converted form
+                                         * in the data record. */
+    Blt_SwitchPrintProc *printProc;     /* Procedure to free a switch. */
+    Blt_SwitchFreeProc *freeProc;       /* Procedure to free a switch. */
+    ClientData clientData;              /* Arbitrary one-word value used by
+                                         * switch parser, passed to
+                                         * parseProc. */
 } Blt_SwitchCustom;
 
 
@@ -95,54 +95,54 @@ typedef enum {
 
 
 typedef struct {
-    Blt_SwitchTypes type;		/* Type of option, such as
-					 * BLT_SWITCH_COLOR; see definitions
-					 * below.  Last option in table must
-					 * have type BLT_SWITCH_END. */
-    const char *switchName;		/* Switch used to specify option in
-					 * argv.  NULL means this spec is part
-					 * of a group. */
-    const char *help;			/* Help string. */
-    const char *defValue;		/* Default value for option if not
-					 * specified in command line or
-					 * database. */
-    int offset;				/* Where in widget record to store
-					 * value; use Blt_Offset macro to
-					 * generate values for this. */
-    int flags;				/* Any combination of the values
-					 * defined below. */
+    Blt_SwitchTypes type;               /* Type of option, such as
+                                         * BLT_SWITCH_COLOR; see definitions
+                                         * below.  Last option in table must
+                                         * have type BLT_SWITCH_END. */
+    const char *switchName;             /* Switch used to specify option in
+                                         * argv.  NULL means this spec is part
+                                         * of a group. */
+    const char *help;                   /* Help string. */
+    const char *defValue;               /* Default value for option if not
+                                         * specified in command line or
+                                         * database. */
+    int offset;                         /* Where in widget record to store
+                                         * value; use Blt_Offset macro to
+                                         * generate values for this. */
+    int flags;                          /* Any combination of the values
+                                         * defined below. */
     unsigned int mask;
-    Blt_SwitchCustom *customPtr;	/* If type is BLT_SWITCH_CUSTOM then
-					 * this is a pointer to info about how
-					 * to parse and print the option.
-					 * Otherwise it is irrelevant. */
+    Blt_SwitchCustom *customPtr;        /* If type is BLT_SWITCH_CUSTOM then
+                                         * this is a pointer to info about how
+                                         * to parse and print the option.
+                                         * Otherwise it is irrelevant. */
 } Blt_SwitchSpec;
 
-#define BLT_SWITCH_DEFAULTS		(0)
-#define BLT_SWITCH_ARGV_PARTIAL		(1<<1)
-#define BLT_SWITCH_OBJV_PARTIAL		(1<<1)
-#define BLT_SWITCH_INITIALIZE		(1<<2)
+#define BLT_SWITCH_DEFAULTS             (0)
+#define BLT_SWITCH_ARGV_PARTIAL         (1<<1)
+#define BLT_SWITCH_OBJV_PARTIAL         (1<<1)
+#define BLT_SWITCH_INITIALIZE           (1<<2)
 
 /*
  * Possible flag values for Blt_SwitchSpec structures.  Any bits at or above
  * BLT_SWITCH_USER_BIT may be used by clients for selecting certain entries.
  */
-#define BLT_SWITCH_NULL_OK		(1<<0)
-#define BLT_SWITCH_DONT_SET_DEFAULT	(1<<3)
-#define BLT_SWITCH_SPECIFIED		(1<<4)
-#define BLT_SWITCH_USER_BIT		(1<<8)
+#define BLT_SWITCH_NULL_OK              (1<<0)
+#define BLT_SWITCH_DONT_SET_DEFAULT     (1<<3)
+#define BLT_SWITCH_SPECIFIED            (1<<4)
+#define BLT_SWITCH_USER_BIT             (1<<8)
 
 BLT_EXTERN int Blt_ParseSwitches(Tcl_Interp *interp, Blt_SwitchSpec *specPtr, 
-	int objc, Tcl_Obj *const *objv, void *rec, int flags);
+        int objc, Tcl_Obj *const *objv, void *rec, int flags);
 
 BLT_EXTERN void Blt_FreeSwitches(Blt_SwitchSpec *specs, void *rec, int flags);
 
 BLT_EXTERN int Blt_SwitchChanged(Blt_SwitchSpec *specs, ...);
  
 BLT_EXTERN int Blt_SwitchInfo(Tcl_Interp *interp, Blt_SwitchSpec *specs,
-	void *record, Tcl_Obj *objPtr, int flags);
+        void *record, Tcl_Obj *objPtr, int flags);
 
 BLT_EXTERN int Blt_SwitchValue(Tcl_Interp *interp, Blt_SwitchSpec *specs, 
-	void *record, Tcl_Obj *objPtr, int flags);
+        void *record, Tcl_Obj *objPtr, int flags);
 
 #endif /* BLT_SWITCH_H */

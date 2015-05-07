@@ -41,7 +41,7 @@
  * blt::kiosk create . -maximize true -command EmbedClients
  * 
  * proc EmbedClients { container title } {
- *	# Container is automatically managing the foreign window.
+ *      # Container is automatically managing the foreign window.
  *     .tabset add $title -window $container
  *     .tabset select $title
  * }
@@ -49,7 +49,7 @@
  * button .b -command {
  *     blt::container create .tabset.container1 
  *     blt::kiosk start .tabset.container1 \
- *	  "Command string" -title "title"
+ *        "Command string" -title "title"
  * }    
  * # Kill an application by destroying its container.
  * destroy .tabset.container1
@@ -71,23 +71,23 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
-#define KIOSK_MAXIMIZE	(1<<1)
-#define KIOSK_MAPPED	(1<<2)
-#define KIOSK_FOCUS	(1<<4)
-#define KIOSK_INIT	(1<<5)
+#define KIOSK_MAXIMIZE  (1<<1)
+#define KIOSK_MAPPED    (1<<2)
+#define KIOSK_FOCUS     (1<<4)
+#define KIOSK_INIT      (1<<5)
 
-#define CLIENT_TRANSIENT	(1<<0)
-#define CLIENT_TAKE_FOCUS	(1<<1)
-#define CLIENT_SAVE_YOURSELF	(1<<2)
-#define CLIENT_DELETE_WINDOW	(1<<3)
+#define CLIENT_TRANSIENT        (1<<0)
+#define CLIENT_TAKE_FOCUS       (1<<1)
+#define CLIENT_SAVE_YOURSELF    (1<<2)
+#define CLIENT_DELETE_WINDOW    (1<<3)
 
-#define CLIENT_STATE_NORMAL	(1<<4)
-#define CLIENT_STATE_WITHDRAWN	(1<<5)
-#define CLIENT_STATE_ICONIC	(1<<6)
+#define CLIENT_STATE_NORMAL     (1<<4)
+#define CLIENT_STATE_WITHDRAWN  (1<<5)
+#define CLIENT_STATE_ICONIC     (1<<6)
 
-#define CLIENT_INPUT_HINT	(1<<8)
+#define CLIENT_INPUT_HINT       (1<<8)
 
-#define CLIENT_STATE_MASK	\
+#define CLIENT_STATE_MASK       \
     (CLIENT_STATE_NORMAL|CLIENT_STATE_WITHDRAWN|CLIENT_STATE_ICONIC)
 
 #define DEBUG 1
@@ -95,15 +95,15 @@
 typedef struct {
     unsigned int flags;
     Tcl_Interp *interp;
-    Display *display;			/* Display of kiosk. */
-    Tk_Window tkwin;			/* Toplevel window designation as the
-					 * Root window of kiosk. */
+    Display *display;                   /* Display of kiosk. */
+    Tk_Window tkwin;                    /* Toplevel window designation as the
+                                         * Root window of kiosk. */
     Blt_HashEntry *hashPtr;
     Blt_HashTable clientTable;
     Blt_HashTable frameTable;
-    Window root;			/* Root window of display. */
-    Tcl_Obj *cmdObjPtr;			/* Command to executed with a 
-					 * new toplevel is mapped. */
+    Window root;                        /* Root window of display. */
+    Tcl_Obj *cmdObjPtr;                 /* Command to executed with a 
+                                         * new toplevel is mapped. */
 } Kiosk;
 
 typedef struct {
@@ -130,8 +130,8 @@ static Blt_HashTable kioskTable;
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_OBJ, "-command", "command", "Command", (char *)NULL,
-	Blt_Offset(Kiosk, cmdObjPtr), 
-	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
+        Blt_Offset(Kiosk, cmdObjPtr), 
+        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END}
 };
 
@@ -156,25 +156,25 @@ static const char *eventNames[] = {
 /* 
  * ResizeKiosk --
  *
- *	Checks if the main window of the kiosk needs to be resized.  This
- *	is called whenever we get ConfigureNotify events on the root 
- *	window.
+ *      Checks if the main window of the kiosk needs to be resized.  This
+ *      is called whenever we get ConfigureNotify events on the root 
+ *      window.
  */
 static void
 ResizeKiosk(Kiosk *kioskPtr)
 {
     int w, h;
-	
+        
     if (kioskPtr->tkwin == NULL) {
-	return;				/* Window has been destroyed. */
+        return;                         /* Window has been destroyed. */
     }
     Blt_SizeOfScreen(kioskPtr->tkwin, &w, &h);
     Tk_GeometryRequest(kioskPtr->tkwin, w, h);
     if ((Tk_X(kioskPtr->tkwin) != 0) || (Tk_Y(kioskPtr->tkwin) != 0) ||
-	(Tk_Width(kioskPtr->tkwin) != w) || 
-	(Tk_Height(kioskPtr->tkwin) != h)) {
-	/* This will cause the kiosk to be redrawn. */
-	Blt_MoveResizeToplevelWindow(kioskPtr->tkwin, 0, 0, w, h);
+        (Tk_Width(kioskPtr->tkwin) != w) || 
+        (Tk_Height(kioskPtr->tkwin) != h)) {
+        /* This will cause the kiosk to be redrawn. */
+        Blt_MoveResizeToplevelWindow(kioskPtr->tkwin, 0, 0, w, h);
     }
     Blt_LowerToplevelWindow(kioskPtr->tkwin); 
 }
@@ -191,31 +191,31 @@ GetWmProtocols(Client *clientPtr)
     Kiosk *kioskPtr = clientPtr->kioskPtr;
 
     if (takeFocusAtom == None) {
-	takeFocusAtom = XInternAtom(kioskPtr->display, "WM_TAKE_FOCUS", False);
+        takeFocusAtom = XInternAtom(kioskPtr->display, "WM_TAKE_FOCUS", False);
     }
     if (saveYourselfAtom == None) {
-	saveYourselfAtom = XInternAtom(kioskPtr->display, "WM_SAVE_YOURSELF", 
-		False);
+        saveYourselfAtom = XInternAtom(kioskPtr->display, "WM_SAVE_YOURSELF", 
+                False);
     }
     if (deleteWindowAtom == None) {
-	deleteWindowAtom = XInternAtom(kioskPtr->display, "WM_DELETE_WINDOW", 
-		False);
+        deleteWindowAtom = XInternAtom(kioskPtr->display, "WM_DELETE_WINDOW", 
+                False);
     }
     protocolsPtr = NULL;
     if (XGetWMProtocols (kioskPtr->display, clientPtr->id, &protocolsPtr, 
-	&numProtocols)) {
-	Atom *p, *pend;
+        &numProtocols)) {
+        Atom *p, *pend;
 
-	for (p = protocolsPtr, pend = p + numProtocols; p < pend; p++) {
-	    if (*p == takeFocusAtom) {
-		clientPtr->flags |= CLIENT_TAKE_FOCUS;
-	    } else if (*p == saveYourselfAtom) {
-		clientPtr->flags |= CLIENT_SAVE_YOURSELF;
-	    } else if (*p == deleteWindowAtom) {
-		clientPtr->flags |= CLIENT_DELETE_WINDOW;
-	    }
-	}
-	XFree ((char *)protocolsPtr);
+        for (p = protocolsPtr, pend = p + numProtocols; p < pend; p++) {
+            if (*p == takeFocusAtom) {
+                clientPtr->flags |= CLIENT_TAKE_FOCUS;
+            } else if (*p == saveYourselfAtom) {
+                clientPtr->flags |= CLIENT_SAVE_YOURSELF;
+            } else if (*p == deleteWindowAtom) {
+                clientPtr->flags |= CLIENT_DELETE_WINDOW;
+            }
+        }
+        XFree ((char *)protocolsPtr);
     }
 }
 
@@ -231,13 +231,13 @@ GetWmHints(Client *clientPtr)
 
     hintsPtr = XGetWMHints(kioskPtr->display, clientPtr->id);
     if (hintsPtr != NULL) {
-	if (hintsPtr->flags & InputHint) {
-	    clientPtr->flags |= CLIENT_INPUT_HINT;
-	}
-	if (hintsPtr->flags & WindowGroupHint) {
-	    clientPtr->group = hintsPtr->window_group;
-	}
-	XFree ((char *)hintsPtr);
+        if (hintsPtr->flags & InputHint) {
+            clientPtr->flags |= CLIENT_INPUT_HINT;
+        }
+        if (hintsPtr->flags & WindowGroupHint) {
+            clientPtr->group = hintsPtr->window_group;
+        }
+        XFree ((char *)hintsPtr);
     }
 }
 
@@ -249,43 +249,43 @@ GetWindowSizeHints(Client *clientPtr)
     long suppl = 0;
 
     if (!XGetWMNormalHints(kioskPtr->display, clientPtr->id, &hints, &suppl)) {
-	hints.flags = 0L;
+        hints.flags = 0L;
     }
 #if DEBUG
     fprintf(stderr, "XGetWMNormalHints id=0x%x\n", (unsigned int)clientPtr->id);
     if (hints.flags & PResizeInc) {
-	fprintf(stderr, "\twidth_inc=%d\n", hints.width_inc);
-	fprintf(stderr, "\theight_inc=%d\n", hints.height_inc);
+        fprintf(stderr, "\twidth_inc=%d\n", hints.width_inc);
+        fprintf(stderr, "\theight_inc=%d\n", hints.height_inc);
     }
     if (hints.flags & USPosition) {
-	fprintf(stderr, "user-specified position\n");
+        fprintf(stderr, "user-specified position\n");
     }
     if (hints.flags & PMaxSize) {
-	fprintf(stderr, "\tmax_width=%d\n", hints.max_width);
-	fprintf(stderr, "\tmax_height=%d\n", hints.max_height);
+        fprintf(stderr, "\tmax_width=%d\n", hints.max_width);
+        fprintf(stderr, "\tmax_height=%d\n", hints.max_height);
     }
     if (hints.flags & PMinSize) {
-	fprintf(stderr, "\tmin_width=%d\n", hints.min_width);
-	fprintf(stderr, "\tmin_height=%d\n", hints.min_height);
+        fprintf(stderr, "\tmin_width=%d\n", hints.min_width);
+        fprintf(stderr, "\tmin_height=%d\n", hints.min_height);
     }
     if (hints.flags & PSize) {
-	fprintf(stderr, "\twidth=%d\n", hints.width);
-	fprintf(stderr, "\theight=%d\n", hints.height);
+        fprintf(stderr, "\twidth=%d\n", hints.width);
+        fprintf(stderr, "\theight=%d\n", hints.height);
     }
     if (hints.flags & PAspect) {
-	fprintf(stderr, "\tmin_aspect=%d/%d\n", 
-		hints.min_aspect.x, hints.min_aspect.y);
-	fprintf(stderr, "\tmax_aspect=%d/%d\n", 
-		hints.max_aspect.x, hints.max_aspect.y);
+        fprintf(stderr, "\tmin_aspect=%d/%d\n", 
+                hints.min_aspect.x, hints.min_aspect.y);
+        fprintf(stderr, "\tmax_aspect=%d/%d\n", 
+                hints.max_aspect.x, hints.max_aspect.y);
     }
     if (hints.flags & PBaseSize) {
-	fprintf(stderr, "\tbase_width=%d\n", hints.base_width);
-	fprintf(stderr, "\tbase_height=%d\n", hints.base_height);
+        fprintf(stderr, "\tbase_width=%d\n", hints.base_width);
+        fprintf(stderr, "\tbase_height=%d\n", hints.base_height);
     }
 #endif /*DEBUG*/
     if (hints.flags & PResizeInc) {
-	clientPtr->widthInc = (hints.width_inc > 0) ? clientPtr->widthInc: 1;
-	clientPtr->heightInc = (hints.height_inc > 0) ? clientPtr->heightInc: 1;
+        clientPtr->widthInc = (hints.width_inc > 0) ? clientPtr->widthInc: 1;
+        clientPtr->heightInc = (hints.height_inc > 0) ? clientPtr->heightInc: 1;
     }
     if (hints.flags & USPosition) {
     }
@@ -312,10 +312,10 @@ GetClassNames(Client *clientPtr)
     Kiosk *kioskPtr = clientPtr->kioskPtr;
     
     if (XGetClassHint(kioskPtr->display, clientPtr->id, &class)) {
-	clientPtr->resName = Blt_Strdup(class.res_name);
-	clientPtr->className = Blt_Strdup(class.res_class);
-	XFree(class.res_name);
-	XFree(class.res_class);
+        clientPtr->resName = Blt_Strdup(class.res_name);
+        clientPtr->className = Blt_Strdup(class.res_class);
+        XFree(class.res_name);
+        XFree(class.res_class);
     }
 }
 
@@ -335,32 +335,32 @@ GetWmState(Client *clientPtr)
     int result;
 
     if (stateAtom == None) {
-	stateAtom = XInternAtom(kioskPtr->display, "WM_STATE", False);
+        stateAtom = XInternAtom(kioskPtr->display, "WM_STATE", False);
     }
     result = XGetWindowProperty(kioskPtr->display, clientPtr->id, stateAtom,
-	0L, 2L, False, stateAtom, &actualType, &actualFormat, &numItems, 
-	&numBytesAfter, &property);
+        0L, 2L, False, stateAtom, &actualType, &actualFormat, &numItems, 
+        &numBytesAfter, &property);
     if ((result != Success) || (property == NULL)) {
-	return;
+        return;
     }
-    if (numItems <= 2) {		/* "suggested" by ICCCM version 1 */
-	unsigned int *array = (unsigned int *)property;
-	int state;
+    if (numItems <= 2) {                /* "suggested" by ICCCM version 1 */
+        unsigned int *array = (unsigned int *)property;
+        int state;
 
-	state = (int)array[0];
-	clientPtr->flags &= ~CLIENT_STATE_MASK;	 /* Clear the state flags. */
-	if (state == NormalState) {
-	    clientPtr->flags |= CLIENT_STATE_NORMAL;
-	} else if (state == IconicState) {
-	    clientPtr->flags |= CLIENT_STATE_ICONIC;
-	} else if (state == WithdrawnState) {
-	    clientPtr->flags |= CLIENT_STATE_NORMAL;
-	} else {
+        state = (int)array[0];
+        clientPtr->flags &= ~CLIENT_STATE_MASK;  /* Clear the state flags. */
+        if (state == NormalState) {
+            clientPtr->flags |= CLIENT_STATE_NORMAL;
+        } else if (state == IconicState) {
+            clientPtr->flags |= CLIENT_STATE_ICONIC;
+        } else if (state == WithdrawnState) {
+            clientPtr->flags |= CLIENT_STATE_NORMAL;
+        } else {
 #ifndef notdef
-	fprintf(stderr, "window 0x%x: state=%d iw=%x\n",
-	    (unsigned int)clientPtr->id, array[0], array[1]);
+        fprintf(stderr, "window 0x%x: state=%d iw=%x\n",
+            (unsigned int)clientPtr->id, array[0], array[1]);
 #endif
-	}
+        }
     }
 }
 
@@ -377,10 +377,10 @@ SetWmState(Client *clientPtr, int state)
     array[0] = (unsigned long)state;
     array[1] = (unsigned long)None;
     if (stateAtom == None) {
-	stateAtom = XInternAtom(kioskPtr->display, "WM_STATE", False);
+        stateAtom = XInternAtom(kioskPtr->display, "WM_STATE", False);
     }
     XChangeProperty (kioskPtr->display, clientPtr->id, stateAtom, stateAtom, 32,
-	PropModeReplace, (unsigned char *)array, 2);
+        PropModeReplace, (unsigned char *)array, 2);
 }
 
 static void
@@ -390,9 +390,9 @@ GetTransientFor(Client *clientPtr)
     Window w;
 
     if (XGetTransientForHint(kioskPtr->display, clientPtr->id, &w)) {
-	clientPtr->transientFor = None;
+        clientPtr->transientFor = None;
     } else {
-	clientPtr->transientFor = w;
+        clientPtr->transientFor = w;
     }
 #if DEBUG
     fprintf(stderr, "XGetTransientFor id=0x%x\n", (unsigned int)clientPtr->id);
@@ -403,13 +403,13 @@ GetTransientFor(Client *clientPtr)
 /* 
  * NewClient --
  *
- *	Allocates and initializes a new client structure.  This keeps track of
- *	client windows (not kiosk windows) which are plain X windows.
- *	Information is kept here, as well as the container widget, because the
- *	initial width and height of the window are known before the window is
- *	requested to be mapped (when it is sent to the container).
- *	
- *	This structure is freed when this window or the kiosk is destroyed.
+ *      Allocates and initializes a new client structure.  This keeps track of
+ *      client windows (not kiosk windows) which are plain X windows.
+ *      Information is kept here, as well as the container widget, because the
+ *      initial width and height of the window are known before the window is
+ *      requested to be mapped (when it is sent to the container).
+ *      
+ *      This structure is freed when this window or the kiosk is destroyed.
  */
 static Client *
 NewClient(Kiosk *kioskPtr, Window id)
@@ -429,18 +429,18 @@ NewClient(Kiosk *kioskPtr, Window id)
     SetWmState(clientPtr, NormalState);
 #ifdef notdef
     if (clientPtr->transientFor != None) {
-	Blt_HashEntry *hPtr;
+        Blt_HashEntry *hPtr;
 
-	hPtr = Blt_FindHashEntry(&kioskPtr->clientTable, (char *)w);
-	if (hPtr != NULL) {
-	    Client *masterPtr;
-	    int isNew;
+        hPtr = Blt_FindHashEntry(&kioskPtr->clientTable, (char *)w);
+        if (hPtr != NULL) {
+            Client *masterPtr;
+            int isNew;
 
-	    masterPtr = Blt_GetHashValue(hPtr);
-	    hPtr = Blt_CreateHashEntry(&masterPtr->transientTable, 
-				       clientPtr->id, &isNew);
-	    Blt_SetHashValue(hPtr, clientPtr);
-	}
+            masterPtr = Blt_GetHashValue(hPtr);
+            hPtr = Blt_CreateHashEntry(&masterPtr->transientTable, 
+                                       clientPtr->id, &isNew);
+            Blt_SetHashValue(hPtr, clientPtr);
+        }
     }
 #endif
     Blt_InitHashTable(&clientPtr->transientTable, BLT_ONE_WORD_KEYS);
@@ -450,10 +450,10 @@ NewClient(Kiosk *kioskPtr, Window id)
 /* 
  * MapClientIdleProc --
  *
- *	Handle the MapRequest event when TCL is idle.  A callback
- *	is issued (if one if required) to handle the new client window.  
- *	The callback may choose to put the window in a toplevel or
- *	embedded into kiosk widget itself. 
+ *      Handle the MapRequest event when TCL is idle.  A callback
+ *      is issued (if one if required) to handle the new client window.  
+ *      The callback may choose to put the window in a toplevel or
+ *      embedded into kiosk widget itself. 
  */
 static void
 MapClientIdleProc(ClientData clientData)
@@ -466,53 +466,53 @@ MapClientIdleProc(ClientData clientData)
     kioskPtr = clientPtr->kioskPtr;
     id = clientPtr->id;
     if (clientPtr->transientFor != None) {
-	return;
+        return;
     }
     if ((clientPtr->width == 0) || (clientPtr->height == 0)) {
-	XWindowAttributes attrs;
+        XWindowAttributes attrs;
 
-	XGetWindowAttributes(kioskPtr->display, id, &attrs);
-	clientPtr->width = attrs.width;
-	clientPtr->height = attrs.height;
+        XGetWindowAttributes(kioskPtr->display, id, &attrs);
+        clientPtr->width = attrs.width;
+        clientPtr->height = attrs.height;
 #if DEBUG 
     fprintf(stderr, "window 0x%x: x=%d y=%d w=%d h=%d depth=%d colormap=%x map_install=%d map_state=%d override_redirect=%d\n",
-	    (unsigned int)id, attrs.x, attrs.y, attrs.width, attrs.height, 
-	    attrs.depth,
-	    (unsigned int)attrs.colormap, attrs.map_installed, attrs.map_state, attrs.override_redirect);
+            (unsigned int)id, attrs.x, attrs.y, attrs.width, attrs.height, 
+            attrs.depth,
+            (unsigned int)attrs.colormap, attrs.map_installed, attrs.map_state, attrs.override_redirect);
 #endif
     }
     if (kioskPtr->cmdObjPtr != NULL) {
-	Tcl_Obj *cmdObjPtr;
-	char string[200];
-	char *wmName;
+        Tcl_Obj *cmdObjPtr;
+        char string[200];
+        char *wmName;
 
-	cmdObjPtr = Tcl_DuplicateObj(kioskPtr->cmdObjPtr);
-	sprintf(string, "0x%x", (unsigned int)id);
-	Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
-		Tcl_NewStringObj(string, -1));
-	Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
-		Tcl_NewStringObj("width", 5));
-	Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
-		Tcl_NewIntObj(clientPtr->width));
-	Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
-		Tcl_NewStringObj("height", 6));
-	Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
-		Tcl_NewIntObj(clientPtr->height));
-	if (XFetchName(kioskPtr->display, id, &wmName)) {
-	    Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
-		Tcl_NewStringObj("title", 5));
-	    Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
-		Tcl_NewStringObj(wmName, -1));
-	    XFree(wmName);
-	}
-	Tcl_IncrRefCount(cmdObjPtr);
-	Tcl_Preserve(kioskPtr);
-	result = Tcl_EvalObjEx(kioskPtr->interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_Release(kioskPtr);
-	Tcl_DecrRefCount(cmdObjPtr);
-	if (result != TCL_OK) {
-	    Tcl_BackgroundError(kioskPtr->interp);
-	}
+        cmdObjPtr = Tcl_DuplicateObj(kioskPtr->cmdObjPtr);
+        sprintf(string, "0x%x", (unsigned int)id);
+        Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
+                Tcl_NewStringObj(string, -1));
+        Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
+                Tcl_NewStringObj("width", 5));
+        Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
+                Tcl_NewIntObj(clientPtr->width));
+        Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
+                Tcl_NewStringObj("height", 6));
+        Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
+                Tcl_NewIntObj(clientPtr->height));
+        if (XFetchName(kioskPtr->display, id, &wmName)) {
+            Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
+                Tcl_NewStringObj("title", 5));
+            Tcl_ListObjAppendElement(kioskPtr->interp, cmdObjPtr, 
+                Tcl_NewStringObj(wmName, -1));
+            XFree(wmName);
+        }
+        Tcl_IncrRefCount(cmdObjPtr);
+        Tcl_Preserve(kioskPtr);
+        result = Tcl_EvalObjEx(kioskPtr->interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+        Tcl_Release(kioskPtr);
+        Tcl_DecrRefCount(cmdObjPtr);
+        if (result != TCL_OK) {
+            Tcl_BackgroundError(kioskPtr->interp);
+        }
     }
 }
     
@@ -529,15 +529,15 @@ MapWindowWhenIdle(Kiosk *kioskPtr, Window id)
 #endif
     hPtr = Blt_CreateHashEntry(&kioskPtr->clientTable, (char *)id, &isNew);
     if (isNew) {
-	clientPtr = NewClient(kioskPtr, id);
-	clientPtr->hashPtr = hPtr;
+        clientPtr = NewClient(kioskPtr, id);
+        clientPtr->hashPtr = hPtr;
     } else {
-	clientPtr = Blt_GetHashValue(hPtr);
+        clientPtr = Blt_GetHashValue(hPtr);
     }
     SetWmState(clientPtr, NormalState);
 #ifndef notdef
     mask = SubstructureRedirectMask | SubstructureNotifyMask |
-	ResizeRedirectMask | StructureNotifyMask;
+        ResizeRedirectMask | StructureNotifyMask;
     XSelectInput(kioskPtr->display, id, mask);
 #endif
     Tcl_DoWhenIdle(MapClientIdleProc, (ClientData)clientPtr);
@@ -559,7 +559,7 @@ MapRequestEvent(Kiosk *kioskPtr, XEvent *eventPtr)
     evPtr = &eventPtr->xmaprequest;
 
     if (evPtr->parent != kioskPtr->root) {
-	return 0;
+        return 0;
     }
     /* 
      * This window is either 
@@ -574,29 +574,29 @@ MapRequestEvent(Kiosk *kioskPtr, XEvent *eventPtr)
 #endif
     tkwin = Tk_IdToWindow(kioskPtr->display, id);
     if (tkwin == NULL) {
-	/* This is an unknown toplevel window which needs decorations or
-	 * an application window to be embedded.  We can determine this
-	 * by your clientapp flag. */
-	MapWindowWhenIdle(kioskPtr, id);
-	return 1;
+        /* This is an unknown toplevel window which needs decorations or
+         * an application window to be embedded.  We can determine this
+         * by your clientapp flag. */
+        MapWindowWhenIdle(kioskPtr, id);
+        return 1;
     } else {
-	Blt_HashEntry *hPtr;
+        Blt_HashEntry *hPtr;
 
-	/* This is Tk toplevel widget window which is part of the
-	 * window manager, such as framing decorations. */
+        /* This is Tk toplevel widget window which is part of the
+         * window manager, such as framing decorations. */
 #if DEBUG
-	fprintf(stderr, "MapRequest: id=0x%x tkwin=%s\n",
-		 (unsigned int)id, Tk_PathName(tkwin));
+        fprintf(stderr, "MapRequest: id=0x%x tkwin=%s\n",
+                 (unsigned int)id, Tk_PathName(tkwin));
 #endif
-	if (tkwin == kioskPtr->tkwin) {
-	    return 0;			/* It's the kiosk itself. */
-	}
-	/* Check if this a kiosk frame or a new top level. */
-	hPtr = Blt_FindHashEntry(&kioskPtr->clientTable, (char *)id);
-	if (hPtr == NULL) {
-	    /* It's a new toplevel window that needs to be put in a frame. */
-	    MapWindowWhenIdle(kioskPtr, id);
-	}
+        if (tkwin == kioskPtr->tkwin) {
+            return 0;                   /* It's the kiosk itself. */
+        }
+        /* Check if this a kiosk frame or a new top level. */
+        hPtr = Blt_FindHashEntry(&kioskPtr->clientTable, (char *)id);
+        if (hPtr == NULL) {
+            /* It's a new toplevel window that needs to be put in a frame. */
+            MapWindowWhenIdle(kioskPtr, id);
+        }
     }
     return 0;
 }
@@ -610,7 +610,7 @@ CreateWindowEvent(Kiosk *kioskPtr, XEvent *eventPtr)
 
     evPtr = &eventPtr->xcreatewindow;
     if (evPtr->parent != kioskPtr->root) {
-	return 0;
+        return 0;
     }
     /* 
      * This window is either 
@@ -625,29 +625,29 @@ CreateWindowEvent(Kiosk *kioskPtr, XEvent *eventPtr)
 #endif
     tkwin = Tk_IdToWindow(kioskPtr->display, id);
     if (tkwin == NULL) {
-	/* This is an unknown toplevel window which needs decorations or
-	 * an application window to be embedded.  We can determine this
-	 * by your clientapp flag. */
-	MapWindowWhenIdle(kioskPtr, id);
-	return 1;
+        /* This is an unknown toplevel window which needs decorations or
+         * an application window to be embedded.  We can determine this
+         * by your clientapp flag. */
+        MapWindowWhenIdle(kioskPtr, id);
+        return 1;
     } else {
-	Blt_HashEntry *hPtr;
+        Blt_HashEntry *hPtr;
 
-	/* This is Tk toplevel widget window which is part of the
-	 * window manager, such as framing decorations. */
+        /* This is Tk toplevel widget window which is part of the
+         * window manager, such as framing decorations. */
 #if DEBUG
-	fprintf(stderr, "CreateWindow is tkwin id=0x%x tkwin=%s\n",
-		 (unsigned int)id, Tk_PathName(tkwin));
+        fprintf(stderr, "CreateWindow is tkwin id=0x%x tkwin=%s\n",
+                 (unsigned int)id, Tk_PathName(tkwin));
 #endif
-	if (tkwin == kioskPtr->tkwin) {
-	    return 0;			/* It's the kiosk itself. */
-	}
-	/* Check if this a kiosk frame or a new top level. */
-	hPtr = Blt_FindHashEntry(&kioskPtr->clientTable, (char *)id);
-	if (hPtr == NULL) {
-	    /* It's a new toplevel window that needs to be put in a frame. */
-	    MapWindowWhenIdle(kioskPtr, id);
-	}
+        if (tkwin == kioskPtr->tkwin) {
+            return 0;                   /* It's the kiosk itself. */
+        }
+        /* Check if this a kiosk frame or a new top level. */
+        hPtr = Blt_FindHashEntry(&kioskPtr->clientTable, (char *)id);
+        if (hPtr == NULL) {
+            /* It's a new toplevel window that needs to be put in a frame. */
+            MapWindowWhenIdle(kioskPtr, id);
+        }
     }
     return 0;
 }
@@ -666,70 +666,70 @@ ConfigureRequestEvent(Kiosk *kioskPtr, XEvent *eventPtr)
 #ifndef notdef
     fprintf(stderr, "ConfigureRequest %x\n", (unsigned int)evPtr->window);
     if (evPtr->value_mask & CWX) {
-	fprintf(stderr, "  x = %d\n", evPtr->x);
+        fprintf(stderr, "  x = %d\n", evPtr->x);
     }
     if (evPtr->value_mask & CWY) {
-	fprintf(stderr, "  y = %d\n", evPtr->y);
+        fprintf(stderr, "  y = %d\n", evPtr->y);
     }
     if (evPtr->value_mask & CWWidth) {
-	fprintf(stderr, "  width = %d\n", evPtr->width);
+        fprintf(stderr, "  width = %d\n", evPtr->width);
     }
     if (evPtr->value_mask & CWHeight) {
-	fprintf(stderr, "  height = %d\n", evPtr->height);
+        fprintf(stderr, "  height = %d\n", evPtr->height);
     }
     if (evPtr->value_mask & CWSibling) {
-	fprintf(stderr, "  above = 0x%x\n", (unsigned int)evPtr->above);
+        fprintf(stderr, "  above = 0x%x\n", (unsigned int)evPtr->above);
     }
     if (evPtr->value_mask & CWStackMode) {
-	fprintf(stderr, "  stack = %d\n", evPtr->detail);
+        fprintf(stderr, "  stack = %d\n", evPtr->detail);
     }
 #endif
     tkwin = Tk_IdToWindow(kioskPtr->display, id);
     if (tkwin != NULL) {
-	return 0;
+        return 0;
     }
     hPtr = Blt_CreateHashEntry(&kioskPtr->clientTable, (char *)id, &isNew);
     if (isNew) {
-	Client *clientPtr;
-	XWindowChanges changes;
-	unsigned int mask;
+        Client *clientPtr;
+        XWindowChanges changes;
+        unsigned int mask;
 
-	clientPtr = NewClient(kioskPtr, id);
-	clientPtr->hashPtr = hPtr;
-	clientPtr->width = evPtr->width;
-	clientPtr->height = evPtr->height;
-	Blt_SetHashValue(hPtr, clientPtr);
-	
-	changes.width = evPtr->width;
-	changes.height = evPtr->height;
-	mask = (CWWidth | CWHeight);
-	XConfigureWindow (kioskPtr->display, clientPtr->id, mask, &changes);
+        clientPtr = NewClient(kioskPtr, id);
+        clientPtr->hashPtr = hPtr;
+        clientPtr->width = evPtr->width;
+        clientPtr->height = evPtr->height;
+        Blt_SetHashValue(hPtr, clientPtr);
+        
+        changes.width = evPtr->width;
+        changes.height = evPtr->height;
+        mask = (CWWidth | CWHeight);
+        XConfigureWindow (kioskPtr->display, clientPtr->id, mask, &changes);
     }
 #ifdef notdef
     contPtr = NULL;
     if (FindContainer(kioskPtr, evPtr->window, &contPtr) != TCL_OK) {
     }
     if (XFindContext(kioskPtr->display, evPtr->window, kioskPtr->context, 
-	&contPtr) == 0) {
+        &contPtr) == 0) {
     }
 
     if ((evPtr->value_mask & CWStackMode) && contPtr->flags & STACKMODE) {
-	XWindowChanges changes;
-	unsigned int mask;
+        XWindowChanges changes;
+        unsigned int mask;
 
-	changes.sibling = evPtr->above;
-	changes.stack_mode = evPtr->detail;
-	mask = (CWSibling | CWStackMode);
-	if (evPtr->value_mask & CWSibling) {
-	    Container *contPtr;
+        changes.sibling = evPtr->above;
+        changes.stack_mode = evPtr->detail;
+        mask = (CWSibling | CWStackMode);
+        if (evPtr->value_mask & CWSibling) {
+            Container *contPtr;
 
-	    if (XFindContext(kioskPtr->display, evPtr->above, 
-			     kioskPtr->context, &contPtr) == 0) {
-		changes.sibling = Tk_WindowId(contPtr->tkwin);
-	    }
-	}
-	XConfigureWindow (kioskPtr->display, kioskPtr->frame,
-		evPtr->value_mask & mask, &changes);
+            if (XFindContext(kioskPtr->display, evPtr->above, 
+                             kioskPtr->context, &contPtr) == 0) {
+                changes.sibling = Tk_WindowId(contPtr->tkwin);
+            }
+        }
+        XConfigureWindow (kioskPtr->display, kioskPtr->frame,
+                evPtr->value_mask & mask, &changes);
     }
 #endif
     return 0;
@@ -740,15 +740,15 @@ ConfigureRequestEvent(Kiosk *kioskPtr, XEvent *eventPtr)
  *
  * GenericEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various
- * 	events on the root window.
+ *      This procedure is invoked by the Tk dispatcher for various
+ *      events on the root window.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get
- *	cleaned up.  When it gets resized or exposed, it's redisplayed.
+ *      When the window gets deleted, internal structures get
+ *      cleaned up.  When it gets resized or exposed, it's redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -761,88 +761,88 @@ GenericEventProc(ClientData clientData, XEvent *eventPtr)
 
     id = eventPtr->xany.window;
     if (id  == Tk_WindowId(kioskPtr->tkwin)) {
-	/* return 0; */
+        /* return 0; */
     }
     switch (eventPtr->type) {
     case Expose:
     case MotionNotify:
-	return 0;
+        return 0;
     }
 #if DEBUG
     fprintf(stderr, "GenericEventProc: event = %d %s %x\n", 
-	    eventPtr->type,
-	    eventNames[eventPtr->type], 
-	    (unsigned int)eventPtr->xany.window);
+            eventPtr->type,
+            eventNames[eventPtr->type], 
+            (unsigned int)eventPtr->xany.window);
 #endif
     if (eventPtr->type == DestroyNotify) {
-	Blt_HashEntry *hPtr;
+        Blt_HashEntry *hPtr;
 
-	hPtr = Blt_FindHashEntry(&kioskPtr->clientTable, (char *)id);
-	if (hPtr != NULL) {
-	    Client *clientPtr;
+        hPtr = Blt_FindHashEntry(&kioskPtr->clientTable, (char *)id);
+        if (hPtr != NULL) {
+            Client *clientPtr;
 
-	    clientPtr = Blt_GetHashValue(hPtr);
-	    Blt_Free(clientPtr);
-	    Blt_DeleteHashEntry(&kioskPtr->clientTable, hPtr);
-	    return 0;
-	}
+            clientPtr = Blt_GetHashValue(hPtr);
+            Blt_Free(clientPtr);
+            Blt_DeleteHashEntry(&kioskPtr->clientTable, hPtr);
+            return 0;
+        }
     }
     if (eventPtr->type == ReparentNotify) {
-	XReparentEvent *evPtr;
-	
-	evPtr = &eventPtr->xreparent;
-	fprintf(stderr, "\tReparentEvent id=0x%x old=0x%x new=0x%x\n", 
-		(unsigned int)evPtr->window,
-		(unsigned int)evPtr->event,
-		(unsigned int)evPtr->parent);
+        XReparentEvent *evPtr;
+        
+        evPtr = &eventPtr->xreparent;
+        fprintf(stderr, "\tReparentEvent id=0x%x old=0x%x new=0x%x\n", 
+                (unsigned int)evPtr->window,
+                (unsigned int)evPtr->event,
+                (unsigned int)evPtr->parent);
     }
     tkwin = Tk_IdToWindow(kioskPtr->display, id);
     if (tkwin != NULL && tkwin != kioskPtr->tkwin) {
 #if DEBUG
-	fprintf(stderr, "\t %x is Tk_Window %s\n", 
-		(unsigned int)id, Tk_PathName(tkwin));
+        fprintf(stderr, "\t %x is Tk_Window %s\n", 
+                (unsigned int)id, Tk_PathName(tkwin));
 #endif
     }
 #ifdef DEBUGx
     fprintf(stderr, "\tNot on Root: event = %d %s %x\n", 
-	    eventPtr->type,
-	    eventNames[eventPtr->type], 
-	    (unsigned int)eventPtr->xany.window);
+            eventPtr->type,
+            eventNames[eventPtr->type], 
+            (unsigned int)eventPtr->xany.window);
 #endif
     if (eventPtr->type == ConfigureRequest) {
-	fprintf(stderr, "\tConfigureRequest = %d %s %x w=%d h=%d\n", 
-		eventPtr->type, eventNames[eventPtr->type], 
-		(unsigned int)eventPtr->xconfigurerequest.window,
-		eventPtr->xconfigurerequest.width, 
-		eventPtr->xconfigurerequest.height);
+        fprintf(stderr, "\tConfigureRequest = %d %s %x w=%d h=%d\n", 
+                eventPtr->type, eventNames[eventPtr->type], 
+                (unsigned int)eventPtr->xconfigurerequest.window,
+                eventPtr->xconfigurerequest.width, 
+                eventPtr->xconfigurerequest.height);
     } else if (eventPtr->type == ResizeRequest) {
-	XResizeRequestEvent *evPtr;
-	
-	evPtr = &eventPtr->xresizerequest;
-	fprintf(stderr, "\tResizeRequest id=0x%x\n", (unsigned int)evPtr->window);
+        XResizeRequestEvent *evPtr;
+        
+        evPtr = &eventPtr->xresizerequest;
+        fprintf(stderr, "\tResizeRequest id=0x%x\n", (unsigned int)evPtr->window);
     } else if (eventPtr->type == ConfigureRequest) {
-	return ConfigureRequestEvent(kioskPtr, eventPtr);
+        return ConfigureRequestEvent(kioskPtr, eventPtr);
     } else if (eventPtr->type == CreateNotify) {
-	XCreateWindowEvent *evPtr;
-	
-	evPtr = &eventPtr->xcreatewindow;
-	fprintf(stderr, "\tCreateNotify id=0x%x, parent=0x%x overrideredirect=%d\n", 
-		(unsigned int)evPtr->window, (unsigned int)evPtr->parent,
-		evPtr->override_redirect);
-	/* return CreateWindowEvent(kioskPtr, eventPtr); */
+        XCreateWindowEvent *evPtr;
+        
+        evPtr = &eventPtr->xcreatewindow;
+        fprintf(stderr, "\tCreateNotify id=0x%x, parent=0x%x overrideredirect=%d\n", 
+                (unsigned int)evPtr->window, (unsigned int)evPtr->parent,
+                evPtr->override_redirect);
+        /* return CreateWindowEvent(kioskPtr, eventPtr); */
     } else if (eventPtr->type == MapRequest) {
-	return MapRequestEvent(kioskPtr, eventPtr);
+        return MapRequestEvent(kioskPtr, eventPtr);
     } else if (eventPtr->type == ConfigureNotify) {
-	XConfigureEvent *evPtr;
-	
-	evPtr = &eventPtr->xconfigure;
-	fprintf(stderr, "\tConfigureNotify id=0x%x event=0x%x\n", 
-		(unsigned int)evPtr->window, 
-		(unsigned int)evPtr->event);
-	if ((evPtr->window == kioskPtr->root) &&
-	    (kioskPtr->flags & KIOSK_MAXIMIZE)) {
-	    ResizeKiosk(kioskPtr);
-	}
+        XConfigureEvent *evPtr;
+        
+        evPtr = &eventPtr->xconfigure;
+        fprintf(stderr, "\tConfigureNotify id=0x%x event=0x%x\n", 
+                (unsigned int)evPtr->window, 
+                (unsigned int)evPtr->event);
+        if ((evPtr->window == kioskPtr->root) &&
+            (kioskPtr->flags & KIOSK_MAXIMIZE)) {
+            ResizeKiosk(kioskPtr);
+        }
     }
     return 0;
 }
@@ -850,25 +850,25 @@ GenericEventProc(ClientData clientData, XEvent *eventPtr)
 /* 
  * DestroyKiosk -- 
  *
- *	Deallocates and free resources used by the kiosk.  The windows
- *	are unmanaged (the frames are destroyed and the windows are
- *	reparented back to the root window).
+ *      Deallocates and free resources used by the kiosk.  The windows
+ *      are unmanaged (the frames are destroyed and the windows are
+ *      reparented back to the root window).
  *
  */
 static void
 DestroyKiosk(Kiosk *kioskPtr)
 {
     if (kioskPtr->hashPtr != NULL) {
-	Blt_DeleteHashEntry(&kioskTable, kioskPtr->hashPtr);
+        Blt_DeleteHashEntry(&kioskTable, kioskPtr->hashPtr);
     }
     Blt_DeleteHashTable(&kioskPtr->frameTable);
     Blt_DeleteHashTable(&kioskPtr->clientTable);
     Tk_DeleteGenericHandler(GenericEventProc, kioskPtr);
     if (kioskPtr->tkwin != NULL) {
-	unsigned int mask;
+        unsigned int mask;
 
-	mask = (StructureNotifyMask | ExposureMask | FocusChangeMask);
-	Tk_DeleteEventHandler(kioskPtr->tkwin, mask, KioskEventProc, kioskPtr);
+        mask = (StructureNotifyMask | ExposureMask | FocusChangeMask);
+        Tk_DeleteEventHandler(kioskPtr->tkwin, mask, KioskEventProc, kioskPtr);
     }
     Blt_FreeOptions(configSpecs, (char *)kioskPtr, kioskPtr->display, 0);
     Blt_Free(kioskPtr);
@@ -879,15 +879,15 @@ DestroyKiosk(Kiosk *kioskPtr)
  *
  * KioskEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various
- * 	events on the encapsulated window.
+ *      This procedure is invoked by the Tk dispatcher for various
+ *      events on the encapsulated window.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get
- *	cleaned up.  When it gets resized or exposed, it's redisplayed.
+ *      When the window gets deleted, internal structures get
+ *      cleaned up.  When it gets resized or exposed, it's redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -897,43 +897,43 @@ KioskEventProc(ClientData clientData, XEvent *eventPtr)
     Kiosk *kioskPtr = clientData;
 
     fprintf(stderr, "KioskEventProc: event = %d %s\n", eventPtr->type,
-	    eventNames[eventPtr->type]);
+            eventNames[eventPtr->type]);
     switch (eventPtr->type) {
     case Expose:
-	if (eventPtr->xexpose.count == 0) {
-	    ResizeKiosk(kioskPtr);
-	}
-	break;
+        if (eventPtr->xexpose.count == 0) {
+            ResizeKiosk(kioskPtr);
+        }
+        break;
 
     case FocusIn:
     case FocusOut:
-	if (eventPtr->xfocus.detail != NotifyInferior) {
-	    if (eventPtr->type == FocusIn) {
-		kioskPtr->flags |= KIOSK_FOCUS;
-	    } else {
-		kioskPtr->flags &= ~KIOSK_FOCUS;
-	    }
-	}
-	break;
+        if (eventPtr->xfocus.detail != NotifyInferior) {
+            if (eventPtr->type == FocusIn) {
+                kioskPtr->flags |= KIOSK_FOCUS;
+            } else {
+                kioskPtr->flags &= ~KIOSK_FOCUS;
+            }
+        }
+        break;
 
     case ConfigureNotify:
-	ResizeKiosk(kioskPtr);
-	break;
+        ResizeKiosk(kioskPtr);
+        break;
 
     case DestroyNotify:
-	if (kioskPtr->tkwin != NULL) {
-	    kioskPtr->tkwin = NULL;
-	    DestroyKiosk(kioskPtr);
-	}
-	break;
+        if (kioskPtr->tkwin != NULL) {
+            kioskPtr->tkwin = NULL;
+            DestroyKiosk(kioskPtr);
+        }
+        break;
     }
 }
 
 /* 
  * NewKiosk -- 
  *
- *	Allocates and initializes a new kiosk structure for the named
- *	toplevel window.
+ *      Allocates and initializes a new kiosk structure for the named
+ *      toplevel window.
  *
  */
 static Kiosk *
@@ -964,7 +964,7 @@ IsMappedWithoutOverride(Display *display, Window id)
 
     XGetWindowAttributes(display, id, &attrs);
     return ((attrs.map_state != IsUnmapped) && 
-	    (attrs.override_redirect != True));
+            (attrs.override_redirect != True));
 }
 
 /*
@@ -972,13 +972,13 @@ IsMappedWithoutOverride(Display *display, Window id)
  *
  * XSelectInputErrorProc --
  *
- *	Flags errors generated from XSelectInput calls to the X server.
+ *      Flags errors generated from XSelectInput calls to the X server.
  *
  * Results:
- *	Always returns 0.
+ *      Always returns 0.
  *
  * Side Effects:
- *	Sets a flag, indicating an error occurred.
+ *      Sets a flag, indicating an error occurred.
  *
  *---------------------------------------------------------------------------
  */
@@ -1000,10 +1000,10 @@ FakeMapRequest(Window id)
 /* 
  * ManageExistingWindows -- 
  *
- *	Manage all the existing children of the root window.  Reparent the
- *	window by placing it a container and call the designed procedure to
- *	decorated the frame.  Ignore the kiosk window which acts as the
- *	root window.
+ *      Manage all the existing children of the root window.  Reparent the
+ *      window by placing it a container and call the designed procedure to
+ *      decorated the frame.  Ignore the kiosk window which acts as the
+ *      root window.
  */
 static void
 ManageExistingWindows(Kiosk *kioskPtr)
@@ -1014,23 +1014,23 @@ ManageExistingWindows(Kiosk *kioskPtr)
     /* Handle all existing windows. This probably includes the kiosk window
      * itself. */
     XQueryTree(kioskPtr->display, kioskPtr->root, &root, &parent, &children, 
-	       &numChildren);
+               &numChildren);
     for (i = 0; i < numChildren; i++) {
-	Window id;
+        Window id;
 
-	id = children[i];
-	if (id == None) {
-	    continue;
-	}
-	if (id == Tk_WindowId(kioskPtr->tkwin)) {
-	    continue;			/* Ignore the kiosk itself. */
-	}
+        id = children[i];
+        if (id == None) {
+            continue;
+        }
+        if (id == Tk_WindowId(kioskPtr->tkwin)) {
+            continue;                   /* Ignore the kiosk itself. */
+        }
 #ifdef notdef
-	if (IsMappedWithoutOverride(kioskPtr->display, id)) {
-	    XUnmapWindow(kioskPtr->display, id);
-	    /* Remap the window to trigger our handler. */
-	    FakeMapRequest(id);
-	}
+        if (IsMappedWithoutOverride(kioskPtr->display, id)) {
+            XUnmapWindow(kioskPtr->display, id);
+            /* Remap the window to trigger our handler. */
+            FakeMapRequest(id);
+        }
 #endif
     }
 }
@@ -1045,12 +1045,12 @@ GetToplevelWindow(Tcl_Interp *interp, Tcl_Obj *objPtr, Tk_Window *tkwinPtr)
     string = Tcl_GetString(objPtr);
     tkwin = Tk_NameToWindow(interp, string, Tk_MainWindow(interp));
     if (tkwin == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (!Tk_IsTopLevel(tkwin)) {
-	Tcl_AppendResult(interp, "kiosk window \"", Tcl_GetString(objPtr), 
-		"\" must be a top level window", (char *)NULL);	
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "kiosk window \"", Tcl_GetString(objPtr), 
+                "\" must be a top level window", (char *)NULL); 
+        return TCL_ERROR;
     }
     *tkwinPtr = tkwin;
     return TCL_OK;
@@ -1064,16 +1064,16 @@ GetKioskFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Kiosk **kioskPtrPtr)
     Blt_HashEntry *hPtr;
 
     if (GetToplevelWindow(interp, objPtr, &tkwin) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     hPtr = Blt_CreateHashEntry(&kioskTable, (char *)tkwin, &isNew);
     if (isNew) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, 
-		"can't find a kiosk associated with window \"", 
-		Tcl_GetString(objPtr), "\"", (char *)NULL);	
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, 
+                "can't find a kiosk associated with window \"", 
+                Tcl_GetString(objPtr), "\"", (char *)NULL);     
+        }
+        return TCL_ERROR;
     }
     *kioskPtrPtr = Blt_GetHashValue(hPtr);
     return TCL_OK;
@@ -1084,27 +1084,27 @@ GetKioskFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Kiosk **kioskPtrPtr)
  *
  * ConfigureContainer --
  *
- * 	This procedure is called to process an objv/objc list, plus the Tk
- * 	option database, in order to configure (or reconfigure) the widget.
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is
- * 	returned, then interp->result contains an error message.
+ *      The return value is a standard TCL result.  If TCL_ERROR is
+ *      returned, then interp->result contains an error message.
  *
  * Side Effects:
- *	Configuration information, such as text string, colors, font,
- *	etc. get set for contPtr; old resources get freed, if there
- *	were any.  The widget is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for contPtr; old resources get freed, if there
+ *      were any.  The widget is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureKiosk(Tcl_Interp *interp, Kiosk *kioskPtr, int objc, 
-	       Tcl_Obj *const *objv, int flags)
+               Tcl_Obj *const *objv, int flags)
 {
     if (Blt_ConfigureWidgetFromObj(interp, kioskPtr->tkwin, configSpecs, 
-	objc, objv, (char *)kioskPtr, flags) != TCL_OK) {
-	return TCL_ERROR;
+        objc, objv, (char *)kioskPtr, flags) != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -1114,7 +1114,7 @@ ConfigureKiosk(Tcl_Interp *interp, Kiosk *kioskPtr, int objc,
  *
  * CgetOp --
  *
- *	kiosk cget window option
+ *      kiosk cget window option
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -1125,10 +1125,10 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Kiosk *kioskPtr;
 
     if (GetKioskFromObj(interp, objv[2], &kioskPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return Blt_ConfigureValueFromObj(interp, kioskPtr->tkwin, configSpecs,
-	(char *)kioskPtr, objv[3], 0);
+        (char *)kioskPtr, objv[3], 0);
 }
 
 /*
@@ -1136,41 +1136,41 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ConfigureOp --
  *
- * 	This procedure is called to process an objv/objc list, plus the Tk
- * 	option database, in order to configure (or reconfigure) the widget.
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  * Side Effects:
- *	Configuration information, such as text string, colors, font,
- *	etc. get set for contPtr; old resources get freed, if there were
- *	any.  The widget is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for contPtr; old resources get freed, if there were
+ *      any.  The widget is redisplayed.
  *
  *
- *	kiosk configure toplevel option value 
+ *      kiosk configure toplevel option value 
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	    Tcl_Obj *const *objv)
+            Tcl_Obj *const *objv)
 {
     Kiosk *kioskPtr;
 
     if (GetKioskFromObj(interp, objv[2], &kioskPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (objc == 3) {
-	return Blt_ConfigureInfoFromObj(interp, kioskPtr->tkwin, configSpecs,
-	    (char *)kioskPtr, (Tcl_Obj *)NULL, 0);
+        return Blt_ConfigureInfoFromObj(interp, kioskPtr->tkwin, configSpecs,
+            (char *)kioskPtr, (Tcl_Obj *)NULL, 0);
     } else if (objc == 4) {
-	return Blt_ConfigureInfoFromObj(interp, kioskPtr->tkwin, configSpecs,
-	    (char *)kioskPtr, objv[3], 0);
+        return Blt_ConfigureInfoFromObj(interp, kioskPtr->tkwin, configSpecs,
+            (char *)kioskPtr, objv[3], 0);
     }
     if (ConfigureKiosk(interp, kioskPtr, objc - 3, objv + 3, 
-		BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	return TCL_ERROR;
+                BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -1178,13 +1178,13 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* 
  * CreateOp -- 
  *
- *	blt::kiosk create .toplevel options
+ *      blt::kiosk create .toplevel options
  *
  */
 /*ARGSUSED*/
 static int
 CreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	  Tcl_Obj *const *objv)
+          Tcl_Obj *const *objv)
 {
     Tk_Window tkwin;
     int isNew;
@@ -1197,36 +1197,36 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     unsigned long mask;
 
     if (GetToplevelWindow(interp, objv[2], &tkwin) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     hPtr = Blt_CreateHashEntry(&kioskTable, (char *)tkwin, &isNew);
     if (!isNew) {
-	Tcl_AppendResult(interp, 
-		"a kiosk is already associated with window \"", 
-		Tcl_GetString(objv[2]), "\"", (char *)NULL);	
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, 
+                "a kiosk is already associated with window \"", 
+                Tcl_GetString(objv[2]), "\"", (char *)NULL);    
+        return TCL_ERROR;
     }
     kioskPtr = NewKiosk(interp, tkwin, hPtr);
     if (ConfigureKiosk(interp, kioskPtr, objc - 3, objv + 3, 0) != TCL_OK) {
-	DestroyKiosk(kioskPtr);
-	return TCL_ERROR;
+        DestroyKiosk(kioskPtr);
+        return TCL_ERROR;
     }
     Tk_CreateGenericHandler(GenericEventProc, kioskPtr);
     result = TRUE;
     handler = Tk_CreateErrorHandler(Tk_Display(tkwin), any, any, any, 
-	XSelectInputErrorProc, &result);
+        XSelectInputErrorProc, &result);
     Tk_MakeWindowExist(tkwin);
     root = Tk_RootWindow(tkwin);
     mask = SubstructureRedirectMask | SubstructureNotifyMask |
-	ResizeRedirectMask;
+        ResizeRedirectMask;
     XSelectInput(Tk_Display(tkwin), root, mask);
     XSync(Tk_Display(tkwin), False);
     Tk_DeleteErrorHandler(handler);
     if (!result) {
-	Tcl_AppendResult(interp, 
-		"a window manager is already installed for window \"", 
-		Tcl_GetString(objv[2]), "\"", (char *)NULL);	
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, 
+                "a window manager is already installed for window \"", 
+                Tcl_GetString(objv[2]), "\"", (char *)NULL);    
+        return TCL_ERROR;
     }
     ManageExistingWindows(kioskPtr);
     ResizeKiosk(kioskPtr);
@@ -1237,18 +1237,18 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * DeleteOp -- 
  *
  *
- *	blt::kiosk delete .toplevel
+ *      blt::kiosk delete .toplevel
  *
  */
 /*ARGSUSED*/
 static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	  Tcl_Obj *const *objv)
+          Tcl_Obj *const *objv)
 {
     Kiosk *kioskPtr;
 
     if (GetKioskFromObj(interp, objv[2], &kioskPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -1258,14 +1258,14 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * KioskCmd --
  *
- * 	This procedure is invoked to process the "kiosk" command.  See the
- * 	user documentation for details on what it does.
+ *      This procedure is invoked to process the "kiosk" command.  See the
+ *      user documentation for details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -1281,17 +1281,17 @@ static int numKioskSpecs = sizeof(kioskSpecs) / sizeof(Blt_OpSpec);
 
 static int
 KioskCmd(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to report errors. */
-    int objc,				/* # of arguments. */
-    Tcl_Obj *const *objv)		/* Vector of argument strings. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to report errors. */
+    int objc,                           /* # of arguments. */
+    Tcl_Obj *const *objv)               /* Vector of argument strings. */
 {
     Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numKioskSpecs, kioskSpecs, BLT_OP_ARG1, 
-	objc, objv, 0);
+        objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return (*proc)(clientData, interp, objc, objv);
 }

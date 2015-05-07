@@ -2,9 +2,9 @@
 #ifndef BLT_POOL_H
 #define BLT_POOL_H
 
-#define BLT_STRING_ITEMS		0
-#define BLT_FIXED_SIZE_ITEMS		1
-#define BLT_VARIABLE_SIZE_ITEMS		2
+#define BLT_STRING_ITEMS                0
+#define BLT_FIXED_SIZE_ITEMS            1
+#define BLT_VARIABLE_SIZE_ITEMS         2
 
 typedef struct _Blt_Pool *Blt_Pool;
 typedef void *(Blt_PoolAllocProc)(Blt_Pool pool, size_t size);

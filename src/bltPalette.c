@@ -66,24 +66,24 @@
 #include "bltPalette.h"
 
 #define PALETTE_THREAD_KEY "BLT Palette Command Interface"
-#define RCLAMP(c)	((((c) < 0.0) ? 0.0 : ((c) > 1.0) ? 1.0 : (c)))
+#define RCLAMP(c)       ((((c) < 0.0) ? 0.0 : ((c) > 1.0) ? 1.0 : (c)))
 
-#define imul8x8(a,b,t)	((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
-#define CLAMP(c)	((((c) < 0) ? 0 : ((c) > 255) ? 255 : (c)))
+#define imul8x8(a,b,t)  ((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
+#define CLAMP(c)        ((((c) < 0) ? 0 : ((c) > 255) ? 255 : (c)))
 
 #define LOADED  (1<<0)
 
 /*
  * PaletteCmdInterpData --
  *
- *	Structure containing global data, used on a interpreter by
- *	interpreter basis.
+ *      Structure containing global data, used on a interpreter by
+ *      interpreter basis.
  *
- *	This structure holds the hash table of instances of datatable
- *	commands associated with a particular interpreter.
+ *      This structure holds the hash table of instances of datatable
+ *      commands associated with a particular interpreter.
  */
 typedef struct {
-    Blt_HashTable paletteTable;		/* Tracks palettes in use. */
+    Blt_HashTable paletteTable;         /* Tracks palettes in use. */
     Tcl_Interp *interp;
     int nextId;
 } PaletteCmdInterpData;
@@ -94,20 +94,20 @@ typedef struct {
  * PaletteInterval --
  *
  *      Represents an interval in the palette.  The interval is represented
- *	by its minimum and maximum values and the low and high colors to
- *	interpolate between.
+ *      by its minimum and maximum values and the low and high colors to
+ *      interpolate between.
  *
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    Blt_Pixel low, high;		/* Range of colors. */
+    Blt_Pixel low, high;                /* Range of colors. */
     double min, max;                    /* Range of z values. */
 } PaletteInterval;
 
 
 typedef struct _Blt_Palette {
     unsigned int flags;
-    PaletteInterval *colors;		/* Array of color ranges. */
+    PaletteInterval *colors;            /* Array of color ranges. */
     PaletteInterval *opacities;         /* Array of opacity ranges. */
     double maxColorValue;               /* Specifies the maximum RGB value.
                                          * 1, 255, ... */
@@ -122,22 +122,22 @@ typedef struct _Blt_Palette {
     int alpha;
 
     /* Additional fields for TCL API.  */
-    PaletteCmdInterpData *dataPtr;	/*  */
-    const char *name;			/* Namespace-specific name for this
-					 * palette. */
-    Blt_HashEntry *hashPtr;		/* Pointer to this entry in palette
-					 * hash table.  */
-    Blt_HashTable notifierTable;	/* Table of notifications
-					 * registered by clients of the
-					 * palette. */
-    int opacity;			/* Overall opacity adjustment. */
+    PaletteCmdInterpData *dataPtr;      /*  */
+    const char *name;                   /* Namespace-specific name for this
+                                         * palette. */
+    Blt_HashEntry *hashPtr;             /* Pointer to this entry in palette
+                                         * hash table.  */
+    Blt_HashTable notifierTable;        /* Table of notifications
+                                         * registered by clients of the
+                                         * palette. */
+    int opacity;                        /* Overall opacity adjustment. */
     Tcl_Obj *colorFileObjPtr;           /* Name of file to use for color
-					 * data. */
+                                         * data. */
     Tcl_Obj *colorDataObjPtr;           /* String to use for color data. */
     Tcl_Obj *opacityFileObjPtr;         /* Name of file to use for opacity
-					 * data. */
+                                         * data. */
     Tcl_Obj *opacityDataObjPtr;         /* String to use for opacity
-					 * data. */
+                                         * data. */
     unsigned int colorFlags;
     unsigned int opacityFlags;
 } PaletteCmd;
@@ -164,7 +164,7 @@ static Blt_SwitchCustom fadeSwitch =
 #define SPACING_IRREGULAR       (1<<1)
 #define SPACING_INTERVAL        (1<<2)
 #define SPACING_MASK         \
-	(SPACING_REGULAR|SPACING_IRREGULAR|SPACING_INTERVAL)
+        (SPACING_REGULAR|SPACING_IRREGULAR|SPACING_INTERVAL)
 #define COLOR_NAME             (1<<3)
 #define COLOR_RGB              (1<<4)
 #define COLOR_HSV              (1<<5)
@@ -173,31 +173,31 @@ static Blt_SwitchCustom fadeSwitch =
 static Blt_SwitchSpec paletteSpecs[] =
 {
     {BLT_SWITCH_OBJ, "-cdata", "string", (char *)NULL, 
-	Blt_Offset(PaletteCmd, colorDataObjPtr), 0, 0},
+        Blt_Offset(PaletteCmd, colorDataObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-cfile", "file", (char *)NULL, 
-	Blt_Offset(PaletteCmd, colorFileObjPtr), 0, 0},
+        Blt_Offset(PaletteCmd, colorFileObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-colordata", "string", (char *)NULL, 
-	Blt_Offset(PaletteCmd, colorDataObjPtr), 0, 0},
+        Blt_Offset(PaletteCmd, colorDataObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-colorfile", "file", (char *)NULL, 
-	Blt_Offset(PaletteCmd, colorFileObjPtr), 0, 0},
+        Blt_Offset(PaletteCmd, colorFileObjPtr), 0, 0},
     {BLT_SWITCH_CUSTOM, "-colorformat", "rgb|name|hsv", (char *)NULL, 
-	Blt_Offset(PaletteCmd, colorFlags), 0, 0, &colorFormatSwitch},
+        Blt_Offset(PaletteCmd, colorFlags), 0, 0, &colorFormatSwitch},
     {BLT_SWITCH_CUSTOM, "-colorspacing", "regular|irregular|interval",
-	(char *)NULL, Blt_Offset(PaletteCmd, colorFlags), 0, 0,
-	&spacingSwitch},
+        (char *)NULL, Blt_Offset(PaletteCmd, colorFlags), 0, 0,
+        &spacingSwitch},
     {BLT_SWITCH_CUSTOM, "-fade", "0-100", (char *)NULL,
-	Blt_Offset(PaletteCmd, alpha), 0, 0, &fadeSwitch},
+        Blt_Offset(PaletteCmd, alpha), 0, 0, &fadeSwitch},
     {BLT_SWITCH_OBJ, "-odata", "string", (char *)NULL, 
-	Blt_Offset(PaletteCmd, opacityDataObjPtr), 0, 0},
+        Blt_Offset(PaletteCmd, opacityDataObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-ofile", "file", (char *)NULL, 
-	Blt_Offset(PaletteCmd, opacityFileObjPtr), 0, 0},
+        Blt_Offset(PaletteCmd, opacityFileObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-opacityfile", "file", (char *)NULL, 
-	Blt_Offset(PaletteCmd, opacityFileObjPtr), 0, 0},
+        Blt_Offset(PaletteCmd, opacityFileObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-opacitydata", "string", (char *)NULL, 
-	Blt_Offset(PaletteCmd, opacityDataObjPtr), 0, 0},
+        Blt_Offset(PaletteCmd, opacityDataObjPtr), 0, 0},
     {BLT_SWITCH_CUSTOM, "-opacityspacing", "regular|irregular|interval",
-	(char *)NULL, Blt_Offset(PaletteCmd, opacityFlags), 0, 0,
-	&spacingSwitch},
+        (char *)NULL, Blt_Offset(PaletteCmd, opacityFlags), 0, 0,
+        &spacingSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -206,7 +206,7 @@ static PaletteCmdInterpData *GetPaletteCmdInterpData(Tcl_Interp *interp);
 static int LoadData(Tcl_Interp *interp, PaletteCmd *cmdPtr);
 
 typedef int (GetColorProc)(Tcl_Interp *interp, PaletteCmd *cmdPtr,
-			   Tcl_Obj **objv, Blt_Pixel *colorPtr);
+                           Tcl_Obj **objv, Blt_Pixel *colorPtr);
 
 INLINE static int64_t
 Round(double x)
@@ -218,8 +218,8 @@ Round(double x)
 #define MAXABSERROR 0.0000005
 
 #define SetColor(c,r,g,b) ((c)->Red = (int)((r) * 255.0), \
-			   (c)->Green = (int)((g) * 255.0), \
-			   (c)->Blue = (int)((b) * 255.0))
+                           (c)->Green = (int)((g) * 255.0), \
+                           (c)->Blue = (int)((b) * 255.0))
 
 static void
 HSVToPixel(double hue, double sat, double val, Blt_Pixel *colorPtr)
@@ -229,13 +229,13 @@ HSVToPixel(double hue, double sat, double val, Blt_Pixel *colorPtr)
     int quadrant;
 
     if (val < 0.0) {
-	val = 0.0;
+        val = 0.0;
     } else if (val > 1.0) {
-	val = 1.0;
+        val = 1.0;
     }
     if (sat == 0.0) {
-	SetColor(colorPtr, val, val, val);
-	return;
+        SetColor(colorPtr, val, val, val);
+        return;
     }
     xhue = FMOD(hue, 360.0) / 60.0;
     quadrant = (int)floor(xhue);
@@ -246,23 +246,23 @@ HSVToPixel(double hue, double sat, double val, Blt_Pixel *colorPtr)
 
     switch (quadrant) {
     case 0:
-	SetColor(colorPtr, val, t, p);
-	break;
+        SetColor(colorPtr, val, t, p);
+        break;
     case 1:
-	SetColor(colorPtr, q, val, p);
-	break;
+        SetColor(colorPtr, q, val, p);
+        break;
     case 2:
-	SetColor(colorPtr, p, val, t);
-	break;
+        SetColor(colorPtr, p, val, t);
+        break;
     case 3:
-	SetColor(colorPtr, p, q, val);
-	break;
+        SetColor(colorPtr, p, q, val);
+        break;
     case 4:
-	SetColor(colorPtr, t, p, val);
-	break;
+        SetColor(colorPtr, t, p, val);
+        break;
     case 5:
-	SetColor(colorPtr, val, p, q);
-	break;
+        SetColor(colorPtr, val, p, q);
+        break;
     }
 }
 
@@ -273,10 +273,10 @@ PrintEntries(size_t numEntries, PaletteInterval *entries)
     int i;
     
     for (i = 0; i < numEntries; i++) {
-	PaletteInterval *entryPtr;
+        PaletteInterval *entryPtr;
 
-	entryPtr = entries + i;
-	fprintf(stderr, "entry %d: min=%g max=%g\n", i, entryPtr->min,
+        entryPtr = entries + i;
+        fprintf(stderr, "entry %d: min=%g max=%g\n", i, entryPtr->min,
                 entryPtr->max);
     }
 }
@@ -290,9 +290,9 @@ CompareEntries(const void *a, const void *b)
     e1Ptr = a;
     e2Ptr = b;
     if (e1Ptr->min < e2Ptr->min) {
-	return -1;
+        return -1;
     } else if (e1Ptr->min > e2Ptr->min) {
-	return 1;
+        return 1;
     }
     return 0;
 }
@@ -301,7 +301,7 @@ static void
 SortEntries(size_t numEntries, PaletteInterval *entries)
 {
     qsort((char *)entries, numEntries, sizeof(PaletteInterval),
-	  CompareEntries);
+          CompareEntries);
 }
 
 static int 
@@ -310,15 +310,15 @@ RelativeError(double x, double y)
     double e;
 
     if (fabs(x - y) < MAXABSERROR) {
-	return TRUE;
+        return TRUE;
     }
    if (fabs(x) > fabs(y)) {
-	e = fabs((x - y) / y);
+        e = fabs((x - y) / y);
     } else {
-	e = fabs((x - y) / x);
+        e = fabs((x - y) / x);
     }
     if (e <= MAXRELERROR) {
-	return TRUE;
+        return TRUE;
     }
     return FALSE;
 }
@@ -330,17 +330,17 @@ InRange(double x, double min, double max)
 
     range = max - min;
     if (fabs(range) < DBL_EPSILON) {
-	return Blt_AlmostEquals(x, max);
+        return Blt_AlmostEquals(x, max);
     } else {
-	double t;
+        double t;
 
-	t = (x - min) / range;
-	if ((t >= 0.0) &&  (t <= 1.0)) {
-	    return TRUE;
-	}
-	if (RelativeError(0.0, t) || RelativeError(1.0, t)) {
-	    return TRUE;
-	}
+        t = (x - min) / range;
+        if ((t >= 0.0) &&  (t <= 1.0)) {
+            return TRUE;
+        }
+        if (RelativeError(0.0, t) || RelativeError(1.0, t)) {
+            return TRUE;
+        }
     }
     return FALSE;
 }
@@ -352,29 +352,29 @@ NotifyClients(PaletteCmd *cmdPtr, unsigned int flags)
     Blt_HashSearch iter;
 
     for (hPtr = Blt_FirstHashEntry(&cmdPtr->notifierTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_Palette_NotifyProc *proc;
-	ClientData clientData;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Blt_Palette_NotifyProc *proc;
+        ClientData clientData;
 
-	proc = Blt_GetHashValue(hPtr);
-	clientData = Blt_GetHashKey(&cmdPtr->notifierTable, hPtr);
-	(*proc)((Blt_Palette)cmdPtr, clientData, flags);
+        proc = Blt_GetHashValue(hPtr);
+        clientData = Blt_GetHashKey(&cmdPtr->notifierTable, hPtr);
+        (*proc)((Blt_Palette)cmdPtr, clientData, flags);
     }
 }
 
 static int
 GetPaletteCmd(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr, 
-	      const char *string, PaletteCmd **cmdPtrPtr)
+              const char *string, PaletteCmd **cmdPtrPtr)
 {
     Blt_HashEntry *hPtr;
 
     hPtr = Blt_FindHashEntry(&dataPtr->paletteTable, string);
     if (hPtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "can't find a palette \"", string, "\"",
-			 (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "can't find a palette \"", string, "\"",
+                         (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     *cmdPtrPtr = Blt_GetHashValue(hPtr);
     return TCL_OK;
@@ -382,7 +382,7 @@ GetPaletteCmd(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr,
 
 static int
 GetPaletteCmdFromObj(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr, 
-		     Tcl_Obj *objPtr, PaletteCmd **cmdPtrPtr)
+                     Tcl_Obj *objPtr, PaletteCmd **cmdPtrPtr)
 {
     return GetPaletteCmd(interp, dataPtr, Tcl_GetString(objPtr), cmdPtrPtr);
 }
@@ -405,26 +405,26 @@ GetStepFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *stepPtr)
     }
     if ((errno != 0) && ((value == HUGE_VAL) || (value == -HUGE_VAL) ||
         (value == 0))) {
-	if (interp != NULL) {
-	    char msg[64 + TCL_INTEGER_SPACE];
-	
-	    sprintf(msg, "unknown floating-point error, errno = %d", errno);
-	    Tcl_AppendToObj(Tcl_GetObjResult(interp), msg, -1);
-	    Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", msg, (char *) NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            char msg[64 + TCL_INTEGER_SPACE];
+        
+            sprintf(msg, "unknown floating-point error, errno = %d", errno);
+            Tcl_AppendToObj(Tcl_GetObjResult(interp), msg, -1);
+            Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", msg, (char *) NULL);
+        }
+        return TCL_ERROR;
     }
     if (*end == '%') {
-	if ((value < 0.0) || (value > 100.0)) {
+        if ((value < 0.0) || (value > 100.0)) {
             Tcl_AppendResult(interp, "relative value is out of range "
                 "\"", string, "\"", (char *) NULL);
             return TCL_ERROR;
-	}
-	value *= 0.01;
+        }
+        value *= 0.01;
         end++;
     }        
     while ((*end != 0) && isspace(UCHAR(*end))) { /* INTL: ISO space. */
-	end++;
+        end++;
     }
     if (*end != 0) {
         Tcl_AppendResult(interp,
@@ -442,15 +442,15 @@ GetOpacity(Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr)
     double value;
 
     if (Tcl_GetDoubleFromObj(interp, objPtr, &value) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if ((value < 0.0) || (value > 1.0)) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "bad opacity value \"",
-		Tcl_GetString(objPtr), "\": should be 0.0 - 1.0",
-		(char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "bad opacity value \"",
+                Tcl_GetString(objPtr), "\": should be 0.0 - 1.0",
+                (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     pixelPtr->u32 = 0;
     pixelPtr->Alpha = (int)(value * 255.0);
@@ -459,7 +459,7 @@ GetOpacity(Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr)
 
 static int
 AutoTestRGBs(Tcl_Interp *interp, PaletteCmd *cmdPtr, int numComponents,
-	     int objc, Tcl_Obj **objv)
+             int objc, Tcl_Obj **objv)
 {
     int i;
     double max;
@@ -467,93 +467,93 @@ AutoTestRGBs(Tcl_Interp *interp, PaletteCmd *cmdPtr, int numComponents,
     max = 0.0;
     switch (numComponents) {
     case 3:                             /* Regular RGB triplets */
-	for (i = 0; i < objc; i++) {
-	    double x;
-	    
-	    if (Tcl_GetDoubleFromObj(interp, objv[i], &x) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	    if (x > max) {
-		max = x;
-	    }
-	}
-	break;
+        for (i = 0; i < objc; i++) {
+            double x;
+            
+            if (Tcl_GetDoubleFromObj(interp, objv[i], &x) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            if (x > max) {
+                max = x;
+            }
+        }
+        break;
     case 4:                             /* Irregular RGB triplets */
-	for (i = 0; i < objc; i += 4) {
-	    int j;
-	    
-	    for (j = 1; j < 4; j++) {
-		double x;
-		if (Tcl_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
-		    return TCL_ERROR;
-		}
-		if (x > max) {
-		    max = x;
-		}
-	    }
-	}
-	break;
+        for (i = 0; i < objc; i += 4) {
+            int j;
+            
+            for (j = 1; j < 4; j++) {
+                double x;
+                if (Tcl_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (x > max) {
+                    max = x;
+                }
+            }
+        }
+        break;
     case 8:                             /* Interval RGB triplets  */
-	for (i = 0; i < objc; i += 8) {
-	    static int indices[] = { 1, 2, 3, 5, 6, 7 };
-	    int j;
-	    
-	    for (j = 0; j < 6; j++) {
-		double x;
-		int index;
+        for (i = 0; i < objc; i += 8) {
+            static int indices[] = { 1, 2, 3, 5, 6, 7 };
+            int j;
+            
+            for (j = 0; j < 6; j++) {
+                double x;
+                int index;
 
-		index = i + indices[j];
-		if (Tcl_GetDoubleFromObj(interp, objv[index], &x) != TCL_OK) {
-		    return TCL_ERROR;
-		}
-		if (x > max) {
-		    max = x;
-		}
-	    }
-	}
-	break;
+                index = i + indices[j];
+                if (Tcl_GetDoubleFromObj(interp, objv[index], &x) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (x > max) {
+                    max = x;
+                }
+            }
+        }
+        break;
     }
      
     if (max > 255.0) {
-	cmdPtr->maxColorValue = 65535;
+        cmdPtr->maxColorValue = 65535;
     } else if (max > 1.0) {
-	cmdPtr->maxColorValue = 255;
+        cmdPtr->maxColorValue = 255;
     } else {
-	cmdPtr->maxColorValue = 1.0;
+        cmdPtr->maxColorValue = 1.0;
     }
     return TCL_OK;
 }
 
 static int
 GetRGBFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
-	       Blt_Pixel *colorPtr) 
+               Blt_Pixel *colorPtr) 
 {
     double r, g, b;
     Blt_Pixel color;
 
     if (Tcl_GetDoubleFromObj(interp, objv[0], &r) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (r < 0.0) { 
-	r = 0.0;
+        r = 0.0;
     } else if (r > cmdPtr->maxColorValue) {
-	r = cmdPtr->maxColorValue;
+        r = cmdPtr->maxColorValue;
     }
     if (Tcl_GetDoubleFromObj(interp, objv[1], &g) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (g < 0.0) { 
-	g = 0.0;
+        g = 0.0;
     } else if (g > cmdPtr->maxColorValue) {
-	g = cmdPtr->maxColorValue;
+        g = cmdPtr->maxColorValue;
     }
     if (Tcl_GetDoubleFromObj(interp, objv[2], &b) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (b < 0.0) { 
-	b = 0.0;
+        b = 0.0;
     } else if (b > cmdPtr->maxColorValue) {
-	b = cmdPtr->maxColorValue;
+        b = cmdPtr->maxColorValue;
     }
     color.Red   = (int)((r / cmdPtr->maxColorValue) * 255.0);
     color.Green = (int)((g / cmdPtr->maxColorValue) * 255.0);
@@ -565,18 +565,18 @@ GetRGBFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
 
 static int
 GetHSVFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
-	       Blt_Pixel *colorPtr) 
+               Blt_Pixel *colorPtr) 
 {
     double h, s, v;
 
     if (Tcl_GetDoubleFromObj(interp, objv[0], &h) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_GetDoubleFromObj(interp, objv[1], &s) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_GetDoubleFromObj(interp, objv[2], &v) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     HSVToPixel(h, s, v, colorPtr);
     colorPtr->Alpha = 0xFF;
@@ -588,9 +588,9 @@ GetHSVFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
  *
  * ObjToSpacing --
  *
- *	Converts the Tcl_Obj into its spacing flag.
+ *      Converts the Tcl_Obj into its spacing flag.
  *
- *	Valid spacing values are:
+ *      Valid spacing values are:
  *
  *      regular                Uniform spacing of entries.  Each
  *                              entry consists of 1 or 3 color values.
@@ -604,14 +604,14 @@ GetHSVFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
  *                             and its associate color.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToSpacing(ClientData clientData, Tcl_Interp *interp, const char *switchName,
-	     Tcl_Obj *objPtr, char *record, int offset, int flags)	
+             Tcl_Obj *objPtr, char *record, int offset, int flags)      
 {
     unsigned int *flagsPtr = (unsigned int *)(record + offset);
     char c;
@@ -621,16 +621,16 @@ ObjToSpacing(ClientData clientData, Tcl_Interp *interp, const char *switchName,
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'r') && (strcmp(string, "regular") == 0)) {
-	flag = SPACING_REGULAR;
+        flag = SPACING_REGULAR;
     } else if ((c == 'i') && (strcmp(string, "irregular") == 0)) {
-	flag = SPACING_IRREGULAR;
+        flag = SPACING_IRREGULAR;
     } else if ((c == 'i') && (strcmp(string, "interval") == 0)) {
-	flag = SPACING_INTERVAL;
+        flag = SPACING_INTERVAL;
     } else {
-	Tcl_AppendResult(interp, "bad spacing value \"", string,
-			 "\": should be regular, irregular, or interval.",
-			 (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad spacing value \"", string,
+                         "\": should be regular, irregular, or interval.",
+                         (char *)NULL);
+        return TCL_ERROR;
     }
     *flagsPtr &= ~SPACING_MASK;
     *flagsPtr |= flag;
@@ -642,9 +642,9 @@ ObjToSpacing(ClientData clientData, Tcl_Interp *interp, const char *switchName,
  *
  * ObjToColorFormat --
  *
- *	Converts the Tcl_Obj into its color format flag.
+ *      Converts the Tcl_Obj into its color format flag.
  *
- *	Valid color format values are:
+ *      Valid color format values are:
  *
  *      -colorformat name               Each color is specified by a single
  *                                      color name or #hex string.
@@ -654,15 +654,15 @@ ObjToSpacing(ClientData clientData, Tcl_Interp *interp, const char *switchName,
  *                                      and val (0..1).
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToColorFormat(ClientData clientData, Tcl_Interp *interp,
-		const char *switchName, Tcl_Obj *objPtr, char *record,
-		int offset, int flags)	
+                const char *switchName, Tcl_Obj *objPtr, char *record,
+                int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(record + offset);
     char c;
@@ -672,16 +672,16 @@ ObjToColorFormat(ClientData clientData, Tcl_Interp *interp,
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'r') && (strcmp(string, "rgb") == 0)) {
-	flag = COLOR_RGB;
+        flag = COLOR_RGB;
     } else if ((c == 'n') && (strcmp(string, "name") == 0)) {
-	flag = COLOR_NAME;
+        flag = COLOR_NAME;
     } else if ((c == 'h') && (strcmp(string, "hsv") == 0)) {
-	flag = COLOR_HSV;
+        flag = COLOR_HSV;
     } else {
-	Tcl_AppendResult(interp, "bad color format value \"", string,
-			 "\": should be rgb or name.",
-			 (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "bad color format value \"", string,
+                         "\": should be rgb or name.",
+                         (char *)NULL);
+        return TCL_ERROR;
     }
     *flagsPtr &= ~COLOR_MASK;
     *flagsPtr |= flag;
@@ -693,36 +693,36 @@ ObjToColorFormat(ClientData clientData, Tcl_Interp *interp,
  *
  * ObjToFade --
  *
- *	Convert the string representation of opacity (a percentage) to
- *	an alpha value 0..255.
+ *      Convert the string representation of opacity (a percentage) to
+ *      an alpha value 0..255.
  *
  * Results:
- *	The return value is a standard TCL result.  
+ *      The return value is a standard TCL result.  
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToFade(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
     const char *switchName,
-    Tcl_Obj *objPtr,			/* Opacity string */
-    char *record,			/* PaletteCmd structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tcl_Obj *objPtr,                    /* Opacity string */
+    char *record,                       /* PaletteCmd structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     int *alphaPtr = (int *)(record + offset);
     double fade, opacity;
 
     if (Tcl_GetDoubleFromObj(interp, objPtr, &fade) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if ((fade < 0.0) || (fade > 100.0)) {
-	Tcl_AppendResult(interp, "invalid percent opacity \"", 
-		Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "invalid percent opacity \"", 
+                Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
+        return TCL_ERROR;
     }
     opacity = (1.0 - (fade / 100.0)) * 255.0;
     *alphaPtr = ROUND(opacity);
@@ -734,14 +734,14 @@ ObjToFade(
  *
  * NewPaletteCmd --
  *
- *	Creates a new palette command structure and inserts it into the
- *	interpreter's hash table.
+ *      Creates a new palette command structure and inserts it into the
+ *      interpreter's hash table.
  *
  *---------------------------------------------------------------------------
  */
 static PaletteCmd *
 NewPaletteCmd(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr, 
-	      const char *name)
+              const char *name)
 {
     PaletteCmd *cmdPtr;
     Blt_HashEntry *hPtr;
@@ -750,9 +750,9 @@ NewPaletteCmd(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr,
     cmdPtr = Blt_AssertCalloc(1, sizeof(PaletteCmd));
     hPtr = Blt_CreateHashEntry(&dataPtr->paletteTable, name, &isNew);
     if (!isNew) {
-	Tcl_AppendResult(interp, "palette \"", name, "\" already exists",
-			 (char *)NULL);
-	return NULL;
+        Tcl_AppendResult(interp, "palette \"", name, "\" already exists",
+                         (char *)NULL);
+        return NULL;
     }
     cmdPtr->colorFlags = COLOR_RGB | SPACING_REGULAR;
     cmdPtr->opacityFlags = SPACING_REGULAR;
@@ -777,16 +777,16 @@ static void
 DestroyPaletteCmd(PaletteCmd *cmdPtr)
 {
     if (cmdPtr->hashPtr != NULL) {
-	NotifyClients(cmdPtr, PALETTE_DELETE_NOTIFY);
-	Blt_DeleteHashEntry(&cmdPtr->dataPtr->paletteTable, cmdPtr->hashPtr);
+        NotifyClients(cmdPtr, PALETTE_DELETE_NOTIFY);
+        Blt_DeleteHashEntry(&cmdPtr->dataPtr->paletteTable, cmdPtr->hashPtr);
     }
     Blt_FreeSwitches(paletteSpecs, (char *)cmdPtr, 0);
     Blt_DeleteHashTable(&cmdPtr->notifierTable);
     if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+        Blt_Free(cmdPtr->colors);
     }
     if (cmdPtr->opacities != NULL) {
-	Blt_Free(cmdPtr->opacities);
+        Blt_Free(cmdPtr->opacities);
     }
     Blt_Free(cmdPtr);
 }
@@ -798,21 +798,21 @@ DestroyPaletteCmds(PaletteCmdInterpData *dataPtr)
     Blt_HashSearch iter;
 
     for (hPtr = Blt_FirstHashEntry(&dataPtr->paletteTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	PaletteCmd *cmdPtr;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        PaletteCmd *cmdPtr;
 
-	cmdPtr = Blt_GetHashValue(hPtr);
-	cmdPtr->hashPtr = NULL;
-	DestroyPaletteCmd(cmdPtr);
+        cmdPtr = Blt_GetHashValue(hPtr);
+        cmdPtr->hashPtr = NULL;
+        DestroyPaletteCmd(cmdPtr);
     }
 }
 
 /*
- *	"c1 c2 c3 c4.."
+ *      "c1 c2 c3 c4.."
  */
 static int
 ParseRegularColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-		      Tcl_Obj **objv)
+                      Tcl_Obj **objv)
 {
     PaletteInterval *entries;
     double step;
@@ -822,21 +822,21 @@ ParseRegularColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     step = 1.0 / numEntries;
     for (i = 0; i < numEntries; i++) {
-	PaletteInterval *entryPtr;
-	Blt_Pixel low, high;
-	
-	entryPtr = entries + i;
-	if ((Blt_GetPixelFromObj(interp, objv[i], &low) != TCL_OK) ||
-	    (Blt_GetPixelFromObj(interp, objv[i+1], &high) != TCL_OK)) {
-	    goto error;
-	}
-	entryPtr->high.u32 = high.u32;
-	entryPtr->low.u32 = low.u32;
-	entryPtr->min = i * step;
-	entryPtr->max = (i+1) * step;
+        PaletteInterval *entryPtr;
+        Blt_Pixel low, high;
+        
+        entryPtr = entries + i;
+        if ((Blt_GetPixelFromObj(interp, objv[i], &low) != TCL_OK) ||
+            (Blt_GetPixelFromObj(interp, objv[i+1], &high) != TCL_OK)) {
+            goto error;
+        }
+        entryPtr->high.u32 = high.u32;
+        entryPtr->low.u32 = low.u32;
+        entryPtr->min = i * step;
+        entryPtr->max = (i+1) * step;
     }
     if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+        Blt_Free(cmdPtr->colors);
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
@@ -847,11 +847,11 @@ ParseRegularColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 }
 
 /*
- *	"r g b  r b g  r g b"...
+ *      "r g b  r b g  r g b"...
  */
 static int
 ParseRegularColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-			  Tcl_Obj **objv)
+                          Tcl_Obj **objv)
 {
     PaletteInterval *entries;
     double step;
@@ -863,18 +863,18 @@ ParseRegularColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     step = 1.0 / numEntries;
     for (i = j = 0; j < numEntries; i += 3, j++) {
-	PaletteInterval *entryPtr;
+        PaletteInterval *entryPtr;
 
-	entryPtr = entries + j;
-	if (((*proc)(interp, cmdPtr, objv+i, &entryPtr->low) != TCL_OK) ||
-	    ((*proc)(interp, cmdPtr, objv+(i+3), &entryPtr->high) != TCL_OK)) {
-	    goto error;
-	}
-	entryPtr->min = j * step;
-	entryPtr->max = (j+1) * step;
+        entryPtr = entries + j;
+        if (((*proc)(interp, cmdPtr, objv+i, &entryPtr->low) != TCL_OK) ||
+            ((*proc)(interp, cmdPtr, objv+(i+3), &entryPtr->high) != TCL_OK)) {
+            goto error;
+        }
+        entryPtr->min = j * step;
+        entryPtr->max = (j+1) * step;
     }
     if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+        Blt_Free(cmdPtr->colors);
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
@@ -885,11 +885,11 @@ ParseRegularColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 }
 
 /*
- *	"0.0 red 0.4 green 8.2 blue..."
+ *      "0.0 red 0.4 green 8.2 blue..."
  */
 static int
 ParseIrregularColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-			 Tcl_Obj **objv)
+                         Tcl_Obj **objv)
 {
     Blt_Pixel low;
     PaletteInterval *entries, *entryPtr;
@@ -899,32 +899,32 @@ ParseIrregularColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     numEntries = (objc / 2) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     if (GetStepFromObj(interp, objv[0], &min) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_GetPixelFromObj(interp, objv[1], &low) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     
     for (entryPtr = entries, i = 2; i < objc; i += 2, entryPtr++) {
-	Blt_Pixel high;
-	double max;
-	
-	if (GetStepFromObj(interp, objv[i], &max) != TCL_OK) {
-	    goto error;
-	}
-	if (Blt_GetPixelFromObj(interp, objv[i+1], &high) != TCL_OK) {
-	    goto error;
-	}
-	entryPtr->high.u32 = high.u32;
-	entryPtr->low.u32 = low.u32;
-	entryPtr->min = min;
-	entryPtr->max = max;
+        Blt_Pixel high;
+        double max;
+        
+        if (GetStepFromObj(interp, objv[i], &max) != TCL_OK) {
+            goto error;
+        }
+        if (Blt_GetPixelFromObj(interp, objv[i+1], &high) != TCL_OK) {
+            goto error;
+        }
+        entryPtr->high.u32 = high.u32;
+        entryPtr->low.u32 = low.u32;
+        entryPtr->min = min;
+        entryPtr->max = max;
 
-	low.u32 = high.u32;
-	min = max;
+        low.u32 = high.u32;
+        min = max;
     }
     if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+        Blt_Free(cmdPtr->colors);
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
@@ -935,11 +935,11 @@ ParseIrregularColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 }
 
 /*
- *	"0.0 0.1 0.4 0.2 0.1 0.1 0.2 0.3"...
+ *      "0.0 0.1 0.4 0.2 0.1 0.1 0.2 0.3"...
  */
 static int
 ParseIrregularColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-			    Tcl_Obj **objv)
+                            Tcl_Obj **objv)
 {
     PaletteInterval *entries, *entryPtr;
     int i, numEntries;
@@ -951,31 +951,31 @@ ParseIrregularColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     numEntries = (objc / 4) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     if (GetStepFromObj(interp, objv[0], &min) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if ((*proc)(interp, cmdPtr, objv + 1, &low) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     for (entryPtr = entries, i = 4; i < objc; i += 4, entryPtr++) {
-	Blt_Pixel high;
-	double max;
-	
-	if (GetStepFromObj(interp, objv[i], &max) != TCL_OK) {
-	    goto error;
-	}
-	if ((*proc)(interp, cmdPtr, objv + i + 1, &high) != TCL_OK) {
-	    goto error;
-	}
-	entryPtr->high.u32 = high.u32;
-	entryPtr->low.u32 = low.u32;
-	entryPtr->min = min;
-	entryPtr->max = max;
+        Blt_Pixel high;
+        double max;
+        
+        if (GetStepFromObj(interp, objv[i], &max) != TCL_OK) {
+            goto error;
+        }
+        if ((*proc)(interp, cmdPtr, objv + i + 1, &high) != TCL_OK) {
+            goto error;
+        }
+        entryPtr->high.u32 = high.u32;
+        entryPtr->low.u32 = low.u32;
+        entryPtr->min = min;
+        entryPtr->max = max;
 
-	low.u32 = high.u32;
-	min = max;
+        low.u32 = high.u32;
+        min = max;
     }
     if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+        Blt_Free(cmdPtr->colors);
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
@@ -986,11 +986,11 @@ ParseIrregularColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 }
 
 /*
- *	"0.0 red 0.4 green 0.4 blue 0.5 violet..."
+ *      "0.0 red 0.4 green 0.4 blue 0.5 violet..."
  */
 static int
 ParseIntervalColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-			Tcl_Obj **objv)
+                        Tcl_Obj **objv)
 {
     PaletteInterval *entries, *entryPtr;
     int i, numEntries;
@@ -998,28 +998,28 @@ ParseIntervalColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     numEntries = (objc / 4) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     for (entryPtr = entries, i = 0; i < objc; i += 4, entryPtr++) {
-	Blt_Pixel low, high;
-	double min, max;
-	
+        Blt_Pixel low, high;
+        double min, max;
+        
         if (GetStepFromObj(interp, objv[i], &min) != TCL_OK) {
-	    goto error;
-	}
-	if (Blt_GetPixelFromObj(interp, objv[i+1], &low) != TCL_OK) {
-	    goto error;
-	}
-	if (GetStepFromObj(interp, objv[i+2], &max) != TCL_OK) {
-	    goto error;
-	}
-	if (Blt_GetPixelFromObj(interp, objv[i+3], &high) != TCL_OK) {
-	    goto error;
-	}
-	entryPtr->high.u32 = high.u32;
-	entryPtr->low.u32 = low.u32;
-	entryPtr->min = min;
-	entryPtr->max = max;
+            goto error;
+        }
+        if (Blt_GetPixelFromObj(interp, objv[i+1], &low) != TCL_OK) {
+            goto error;
+        }
+        if (GetStepFromObj(interp, objv[i+2], &max) != TCL_OK) {
+            goto error;
+        }
+        if (Blt_GetPixelFromObj(interp, objv[i+3], &high) != TCL_OK) {
+            goto error;
+        }
+        entryPtr->high.u32 = high.u32;
+        entryPtr->low.u32 = low.u32;
+        entryPtr->min = min;
+        entryPtr->max = max;
     }
     if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+        Blt_Free(cmdPtr->colors);
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
@@ -1030,11 +1030,11 @@ ParseIntervalColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 }
 
 /*
- *	"0.0 0.1 0.1 0.1 0.4 green 0.4 blue 0.5 violet..."
+ *      "0.0 0.1 0.1 0.1 0.4 green 0.4 blue 0.5 violet..."
  */
 static int
 ParseIntervalColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-			   Tcl_Obj **objv)
+                           Tcl_Obj **objv)
 {
     PaletteInterval *entries, *entryPtr;
     int i, numEntries;
@@ -1044,28 +1044,28 @@ ParseIntervalColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     numEntries = (objc / 8) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     for (entryPtr = entries, i = 0; i < objc; i += 8, entryPtr++) {
-	Blt_Pixel low, high;
-	double min, max;
-	
-	if (GetStepFromObj(interp, objv[i], &min) != TCL_OK) {
-	    goto error;
-	}
-	if ((*proc)(interp, cmdPtr, objv + i + 1,  &low) != TCL_OK) {
-	    goto error;
-	}
-	if (GetStepFromObj(interp, objv[i + 4], &max) != TCL_OK) {
-	    goto error;
-	}
-	if ((*proc)(interp, cmdPtr, objv + i + 5, &high) != TCL_OK) {
-	    goto error;
-	}
-	entryPtr->high.u32 = high.u32;
-	entryPtr->low.u32 = low.u32;
-	entryPtr->min = min;
-	entryPtr->max = max;
+        Blt_Pixel low, high;
+        double min, max;
+        
+        if (GetStepFromObj(interp, objv[i], &min) != TCL_OK) {
+            goto error;
+        }
+        if ((*proc)(interp, cmdPtr, objv + i + 1,  &low) != TCL_OK) {
+            goto error;
+        }
+        if (GetStepFromObj(interp, objv[i + 4], &max) != TCL_OK) {
+            goto error;
+        }
+        if ((*proc)(interp, cmdPtr, objv + i + 5, &high) != TCL_OK) {
+            goto error;
+        }
+        entryPtr->high.u32 = high.u32;
+        entryPtr->low.u32 = low.u32;
+        entryPtr->min = min;
+        entryPtr->max = max;
     }
     if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+        Blt_Free(cmdPtr->colors);
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
@@ -1076,7 +1076,7 @@ ParseIntervalColorTriplets(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 }
 
 /*
- *	-colors "c1 c2 c3 c4.."
+ *      -colors "c1 c2 c3 c4.."
  */
 static int
 ParseColorData(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj *objPtr)
@@ -1085,80 +1085,80 @@ ParseColorData(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj *objPtr)
     int objc, result, numComponents;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (objc == 0) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "no color component data", (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "no color component data", (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     numComponents = 0;
     if ((cmdPtr->colorFlags & SPACING_REGULAR) == 0)  {
-	numComponents++;                /* Add 1 component for value.  */
+        numComponents++;                /* Add 1 component for value.  */
     }
     if (cmdPtr->colorFlags & (COLOR_RGB|COLOR_HSV)) {
-	numComponents += 3;             /* Add 3 components for R,G, and B. */
+        numComponents += 3;             /* Add 3 components for R,G, and B. */
     } else {
-	numComponents++;                 /* Add 1 component for color name.  */
+        numComponents++;                 /* Add 1 component for color name.  */
     }
     if (cmdPtr->colorFlags & SPACING_INTERVAL) {
-	numComponents += numComponents; /* Double the number components.  */
+        numComponents += numComponents; /* Double the number components.  */
     }
     if ((objc % numComponents) != 0) {
-	if (interp != NULL) {
-	    char mesg[200];
-	    sprintf(mesg, "wrong # of color components (%d) (%s): should be %d "
-		    "components per entry.", objc, Tcl_GetString(objPtr),
-		    numComponents);
-	    Tcl_AppendResult(interp, mesg, (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            char mesg[200];
+            sprintf(mesg, "wrong # of color components (%d) (%s): should be %d "
+                    "components per entry.", objc, Tcl_GetString(objPtr),
+                    numComponents);
+            Tcl_AppendResult(interp, mesg, (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     if (cmdPtr->colorFlags & COLOR_RGB) {
-	if (AutoTestRGBs(interp, cmdPtr, numComponents, objc, objv) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (AutoTestRGBs(interp, cmdPtr, numComponents, objc, objv) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     switch (numComponents) {
     case 1:                             /* Uniform color names. */
-	result = ParseRegularColorNames(interp, cmdPtr, objc, objv);
-	break;
+        result = ParseRegularColorNames(interp, cmdPtr, objc, objv);
+        break;
     case 2:                             /* Nonuniform color names. */
-	result = ParseIrregularColorNames(interp, cmdPtr, objc, objv);
-	break;
+        result = ParseIrregularColorNames(interp, cmdPtr, objc, objv);
+        break;
     case 3:                             /* Uniform RGB|HSV values. */
-	result = ParseRegularColorTriplets(interp, cmdPtr, objc, objv);
-	break;
+        result = ParseRegularColorTriplets(interp, cmdPtr, objc, objv);
+        break;
     case 4:                             /* Nonuniform RGB|HSV values. */
-	if (cmdPtr->colorFlags & (COLOR_RGB|COLOR_HSV)) {
-	    result = ParseIrregularColorTriplets(interp, cmdPtr, objc, objv);
-	} else {
-	    result = ParseIntervalColorNames(interp, cmdPtr, objc, objv);
-	}
-	break;
+        if (cmdPtr->colorFlags & (COLOR_RGB|COLOR_HSV)) {
+            result = ParseIrregularColorTriplets(interp, cmdPtr, objc, objv);
+        } else {
+            result = ParseIntervalColorNames(interp, cmdPtr, objc, objv);
+        }
+        break;
     case 8:                             /* Interval RGB|HSV colors. */
-	result = ParseIntervalColorTriplets(interp, cmdPtr, objc, objv);
-	break;
+        result = ParseIntervalColorTriplets(interp, cmdPtr, objc, objv);
+        break;
     default:
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown number of color components \"",
-			     Blt_Itoa(numComponents), "\"", (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "unknown number of color components \"",
+                             Blt_Itoa(numComponents), "\"", (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     if (result == TCL_OK) {
-	SortEntries(cmdPtr->numColors, cmdPtr->colors);
+        SortEntries(cmdPtr->numColors, cmdPtr->colors);
     }
     return result;
 }
 
 /*
- *	"o1 o2 o3 o4.."
+ *      "o1 o2 o3 o4.."
  */
 static int
 ParseRegularOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-		    Tcl_Obj **objv)
+                    Tcl_Obj **objv)
 {
     PaletteInterval *entries, *entryPtr;
     double step;
@@ -1170,22 +1170,22 @@ ParseRegularOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     step = 1.0 / numEntries;
 
     if (GetOpacity(interp, objv[0], &low) != TCL_OK) {
-	goto error;
+        goto error;
     }
     for (entryPtr = entries, i = 1; i < objc; i++, entryPtr++) {
-	Blt_Pixel high;
-	
-	if (GetOpacity(interp, objv[i], &high) != TCL_OK) {
-	    goto error;
-	}
-	entryPtr->low.u32 = low.u32;
-	entryPtr->high.u32 = high.u32;
-	entryPtr->min = i * step;
-	entryPtr->max = (i+1) * step;
-	low.u32 = high.u32;
+        Blt_Pixel high;
+        
+        if (GetOpacity(interp, objv[i], &high) != TCL_OK) {
+            goto error;
+        }
+        entryPtr->low.u32 = low.u32;
+        entryPtr->high.u32 = high.u32;
+        entryPtr->min = i * step;
+        entryPtr->max = (i+1) * step;
+        low.u32 = high.u32;
     }
     if (cmdPtr->opacities != NULL) {
-	Blt_Free(cmdPtr->opacities);
+        Blt_Free(cmdPtr->opacities);
     }
     cmdPtr->opacities = entries;
     cmdPtr->numOpacities = numEntries;
@@ -1196,11 +1196,11 @@ ParseRegularOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 }
 
 /*
- *	"x1 o1 x2 o2 x3 o3 x4 o4.."
+ *      "x1 o1 x2 o2 x3 o3 x4 o4.."
  */
 static int
 ParseIrregularOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-		      Tcl_Obj **objv)
+                      Tcl_Obj **objv)
 {
     Blt_Pixel low;
     PaletteInterval *entries, *entryPtr;
@@ -1212,30 +1212,30 @@ ParseIrregularOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     step = 1.0 / numEntries;
 
     if (GetStepFromObj(interp, objv[0], &min) != TCL_OK) {
-	goto error;
+        goto error;
     }
     if (GetOpacity(interp, objv[1], &low) != TCL_OK) {
-	goto error;
+        goto error;
     }
     for (entryPtr = entries, i = 2; i < objc; i += 2, entryPtr++) {
-	Blt_Pixel high;
-	double max;
-	
-	if (GetStepFromObj(interp, objv[i], &max) != TCL_OK) {
-	    goto error;
-	}
-	if (GetOpacity(interp, objv[i+1], &high) != TCL_OK) {
-	    goto error;
-	}
-	entryPtr->low.u32 = low.u32;
-	entryPtr->high.u32 = high.u32;
-	entryPtr->min = i * step;
-	entryPtr->max = (i+1) * step;
-	low.u32 = high.u32;
-	min = max;
+        Blt_Pixel high;
+        double max;
+        
+        if (GetStepFromObj(interp, objv[i], &max) != TCL_OK) {
+            goto error;
+        }
+        if (GetOpacity(interp, objv[i+1], &high) != TCL_OK) {
+            goto error;
+        }
+        entryPtr->low.u32 = low.u32;
+        entryPtr->high.u32 = high.u32;
+        entryPtr->min = i * step;
+        entryPtr->max = (i+1) * step;
+        low.u32 = high.u32;
+        min = max;
     }
     if (cmdPtr->opacities != NULL) {
-	Blt_Free(cmdPtr->opacities);
+        Blt_Free(cmdPtr->opacities);
     }
     cmdPtr->opacities = entries;
     cmdPtr->numOpacities = numEntries;
@@ -1247,11 +1247,11 @@ ParseIrregularOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 
 
 /*
- *	"0.0 0.1 0.4 0.4 0.4 0.4 0.5 0.6..."
+ *      "0.0 0.1 0.4 0.4 0.4 0.4 0.5 0.6..."
  */
 static int
 ParseIntervalOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
-		     Tcl_Obj **objv)
+                     Tcl_Obj **objv)
 {
     PaletteInterval *entries, *entryPtr;
     int i, numEntries;
@@ -1259,28 +1259,28 @@ ParseIntervalOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     numEntries = (objc / 4) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     for (entryPtr = entries, i = 0; i < objc; i += 4, entryPtr++) {
-	Blt_Pixel low, high;
-	double min, max;
-	
-	if (GetStepFromObj(interp, objv[i], &min) != TCL_OK) {
-	    goto error;
-	}
-	if (GetOpacity(interp, objv[i+1], &low) != TCL_OK) {
-	    goto error;
-	}
-	if (GetStepFromObj(interp, objv[i+2], &max) != TCL_OK) {
-	    goto error;
-	}
-	if (GetOpacity(interp, objv[i+3], &high) != TCL_OK) {
-	    goto error;
-	}
-	entryPtr->high.u32 = high.u32;
-	entryPtr->low.u32 = low.u32;
-	entryPtr->min = min;
-	entryPtr->max = max;
+        Blt_Pixel low, high;
+        double min, max;
+        
+        if (GetStepFromObj(interp, objv[i], &min) != TCL_OK) {
+            goto error;
+        }
+        if (GetOpacity(interp, objv[i+1], &low) != TCL_OK) {
+            goto error;
+        }
+        if (GetStepFromObj(interp, objv[i+2], &max) != TCL_OK) {
+            goto error;
+        }
+        if (GetOpacity(interp, objv[i+3], &high) != TCL_OK) {
+            goto error;
+        }
+        entryPtr->high.u32 = high.u32;
+        entryPtr->low.u32 = low.u32;
+        entryPtr->min = min;
+        entryPtr->max = max;
     }
     if (cmdPtr->opacities != NULL) {
-	Blt_Free(cmdPtr->opacities);
+        Blt_Free(cmdPtr->opacities);
     }
     cmdPtr->opacities = entries;
     cmdPtr->numOpacities = numEntries;
@@ -1291,7 +1291,7 @@ ParseIntervalOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 }
 
 /*
- *	-colors "c1 c2 c3 c4.."
+ *      -colors "c1 c2 c3 c4.."
  */
 static int
 ParseOpacityData(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj *objPtr)
@@ -1300,50 +1300,50 @@ ParseOpacityData(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj *objPtr)
     int objc, result, numComponents;
     
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (objc == 0) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "no opacity component data", (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "no opacity component data", (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     numComponents = 0;
     if ((cmdPtr->opacityFlags & SPACING_REGULAR) == 0)  {
-	numComponents++;                /* Add 1 component for value.  */
+        numComponents++;                /* Add 1 component for value.  */
     }
     numComponents++;                    /* Add 1 component for opacity. */
     if (cmdPtr->colorFlags & SPACING_INTERVAL) {
-	numComponents += numComponents; /* Double the number components.  */
+        numComponents += numComponents; /* Double the number components.  */
     }
     if ((objc % numComponents) != 0) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp,
-			     "wrong # of opacity components: should be ",
-			     Blt_Itoa(numComponents), " components per entry.",
-			     (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp,
+                             "wrong # of opacity components: should be ",
+                             Blt_Itoa(numComponents), " components per entry.",
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     switch (numComponents) {
     case 1:                             /* Uniform color names. */
-	result = ParseRegularOpacity(interp, cmdPtr, objc, objv);
-	break;
+        result = ParseRegularOpacity(interp, cmdPtr, objc, objv);
+        break;
     case 2:                             /* Nonuniform color names. */
-	result = ParseIrregularOpacity(interp, cmdPtr, objc, objv);
-	break;
+        result = ParseIrregularOpacity(interp, cmdPtr, objc, objv);
+        break;
     case 4:                             /* Nonuniform RGB values. */
-	result = ParseIntervalOpacity(interp, cmdPtr, objc, objv);
-	break;
+        result = ParseIntervalOpacity(interp, cmdPtr, objc, objv);
+        break;
     default:
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown number of opacity components \"",
-			 Blt_Itoa(numComponents), "\"", (char *)NULL);
-	}
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "unknown number of opacity components \"",
+                         Blt_Itoa(numComponents), "\"", (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     if (result == TCL_OK) {
-	SortEntries(cmdPtr->numColors, cmdPtr->colors);
+        SortEntries(cmdPtr->numColors, cmdPtr->colors);
     }
     return result;
 }
@@ -1356,45 +1356,45 @@ LoadData(Tcl_Interp *interp, PaletteCmd *cmdPtr)
     cmdPtr->flags |= LOADED;
     result = TCL_ERROR;
     if (cmdPtr->colorFileObjPtr != NULL) {
-	const char *fileName;
-	Blt_DBuffer dbuffer;
-	Tcl_Obj *objPtr;
-	
-	dbuffer = Blt_DBuffer_Create();
-	fileName = Tcl_GetString(cmdPtr->colorFileObjPtr);
-	if (Blt_DBuffer_LoadFile(interp, fileName, dbuffer) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	objPtr = Blt_DBuffer_StringObj(dbuffer);
-	Tcl_IncrRefCount(objPtr);
-	result = ParseColorData(interp, cmdPtr, objPtr);
-	Tcl_DecrRefCount(objPtr);
-	Blt_DBuffer_Destroy(dbuffer);
+        const char *fileName;
+        Blt_DBuffer dbuffer;
+        Tcl_Obj *objPtr;
+        
+        dbuffer = Blt_DBuffer_Create();
+        fileName = Tcl_GetString(cmdPtr->colorFileObjPtr);
+        if (Blt_DBuffer_LoadFile(interp, fileName, dbuffer) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        objPtr = Blt_DBuffer_StringObj(dbuffer);
+        Tcl_IncrRefCount(objPtr);
+        result = ParseColorData(interp, cmdPtr, objPtr);
+        Tcl_DecrRefCount(objPtr);
+        Blt_DBuffer_Destroy(dbuffer);
     } else if (cmdPtr->colorDataObjPtr != NULL) {
-	result = ParseColorData(interp, cmdPtr, cmdPtr->colorDataObjPtr);
+        result = ParseColorData(interp, cmdPtr, cmdPtr->colorDataObjPtr);
     }
     if (result != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (cmdPtr->opacityFileObjPtr != NULL) {
-	const char *fileName;
-	Blt_DBuffer dbuffer;
-	Tcl_Obj *objPtr;
-	
-	dbuffer = Blt_DBuffer_Create();
-	fileName = Tcl_GetString(cmdPtr->opacityFileObjPtr);
-	if (Blt_DBuffer_LoadFile(interp, fileName, dbuffer) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	objPtr = Blt_DBuffer_StringObj(dbuffer);
-	Tcl_IncrRefCount(objPtr);
-	result = ParseOpacityData(interp, cmdPtr, objPtr);
-	Tcl_DecrRefCount(objPtr);
-	Blt_DBuffer_Destroy(dbuffer);
+        const char *fileName;
+        Blt_DBuffer dbuffer;
+        Tcl_Obj *objPtr;
+        
+        dbuffer = Blt_DBuffer_Create();
+        fileName = Tcl_GetString(cmdPtr->opacityFileObjPtr);
+        if (Blt_DBuffer_LoadFile(interp, fileName, dbuffer) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        objPtr = Blt_DBuffer_StringObj(dbuffer);
+        Tcl_IncrRefCount(objPtr);
+        result = ParseOpacityData(interp, cmdPtr, objPtr);
+        Tcl_DecrRefCount(objPtr);
+        Blt_DBuffer_Destroy(dbuffer);
     } else if (cmdPtr->opacityDataObjPtr != NULL) {
-	result = ParseOpacityData(interp, cmdPtr, cmdPtr->opacityDataObjPtr);
+        result = ParseOpacityData(interp, cmdPtr, cmdPtr->opacityDataObjPtr);
     } else {
-	return TCL_OK;
+        return TCL_OK;
     }
     NotifyClients(cmdPtr, PALETTE_CHANGE_NOTIFY);
     return result;
@@ -1410,19 +1410,19 @@ ColorLerp(PaletteInterval *entryPtr, double t)
     a = (int)(t * 255.0);
     alpha = CLAMP(a);
     if (alpha == 0xFF) {
-	return entryPtr->high.u32;
+        return entryPtr->high.u32;
     } else if (alpha == 0x00) {
-	return entryPtr->low.u32;
+        return entryPtr->low.u32;
     }
-    beta = alpha ^ 0xFF;		/* beta = 1 - alpha */
+    beta = alpha ^ 0xFF;                /* beta = 1 - alpha */
     r = imul8x8(beta, entryPtr->low.Red, t1) + 
-	imul8x8(alpha, entryPtr->high.Red, t2);
+        imul8x8(alpha, entryPtr->high.Red, t2);
     g = imul8x8(beta, entryPtr->low.Green, t1) + 
-	imul8x8(alpha, entryPtr->high.Green, t2);
+        imul8x8(alpha, entryPtr->high.Green, t2);
     b = imul8x8(beta, entryPtr->low.Blue, t1) + 
-	imul8x8(alpha, entryPtr->high.Blue, t2);
+        imul8x8(alpha, entryPtr->high.Blue, t2);
     a = imul8x8(beta, entryPtr->low.Alpha, t1) + 
-	imul8x8(alpha, entryPtr->high.Alpha, t2);
+        imul8x8(alpha, entryPtr->high.Alpha, t2);
 
     color.Red   = CLAMP(r);
     color.Green = CLAMP(g);
@@ -1441,13 +1441,13 @@ OpacityLerp(PaletteInterval *entryPtr, double t)
     a = (int)(t * 255.0);
     alpha = CLAMP(a);
     if (alpha == 0xFF) {
-	return entryPtr->high.Alpha;
+        return entryPtr->high.Alpha;
     } else if (alpha == 0x00) {
-	return entryPtr->low.Alpha;
+        return entryPtr->low.Alpha;
     }
-    beta = alpha ^ 0xFF;		/* beta = 1 - alpha */
+    beta = alpha ^ 0xFF;                /* beta = 1 - alpha */
     a = imul8x8(beta, entryPtr->low.Alpha, t1) + 
-	imul8x8(alpha, entryPtr->high.Alpha, t2);
+        imul8x8(alpha, entryPtr->high.Alpha, t2);
     return CLAMP(a);
 }
 
@@ -1459,21 +1459,21 @@ SearchForEntry(size_t length, PaletteInterval *entries, double value)
     low = 0;
     high = length - 1;
     while (low <= high) {
-	PaletteInterval *entryPtr;
-	int median;
-	
-	median = (low + high) >> 1;
-	entryPtr = entries + median;
-	if (InRange(value, entryPtr->min, entryPtr->max)) {
-	    return entryPtr;
-	}
-	if (value < entryPtr->min) {
-	    high = median - 1;
-	} else if (value > entryPtr->max) {
-	    low = median + 1;
-	} else {
-	    return NULL;
-	}
+        PaletteInterval *entryPtr;
+        int median;
+        
+        median = (low + high) >> 1;
+        entryPtr = entries + median;
+        if (InRange(value, entryPtr->min, entryPtr->max)) {
+            return entryPtr;
+        }
+        if (value < entryPtr->min) {
+            high = median - 1;
+        } else if (value > entryPtr->max) {
+            low = median + 1;
+        } else {
+            return NULL;
+        }
     }
     return NULL;                        /* Can't find value. */
 }
@@ -1486,25 +1486,25 @@ InterpolateColor(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
     PaletteInterval *entryPtr;
     double t;
 
-    color.u32 = 0x00;			/* Default to empty. */
+    color.u32 = 0x00;                   /* Default to empty. */
     if (cmdPtr->numColors == 0) {
-	return FALSE;
+        return FALSE;
     }
     if (cmdPtr->colorFlags & SPACING_REGULAR) {
-	int i;
+        int i;
 
-	i = (int)(value * (cmdPtr->numColors));
-	if (i >= cmdPtr->numColors) {
-	    i = cmdPtr->numColors - 1;
-	} else if (i < 0) {
+        i = (int)(value * (cmdPtr->numColors));
+        if (i >= cmdPtr->numColors) {
+            i = cmdPtr->numColors - 1;
+        } else if (i < 0) {
             i = 0;
         }
-	entryPtr = cmdPtr->colors + i;
+        entryPtr = cmdPtr->colors + i;
     } else {
-	entryPtr = SearchForEntry(cmdPtr->numColors, cmdPtr->colors, value);
+        entryPtr = SearchForEntry(cmdPtr->numColors, cmdPtr->colors, value);
     }
     if (entryPtr == NULL) {
-	return FALSE;
+        return FALSE;
     }
     t = (value - entryPtr->min) / (entryPtr->max - entryPtr->min);
     color.u32 = ColorLerp(entryPtr, t);
@@ -1546,7 +1546,7 @@ Interpolate(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
 {
     Blt_Pixel color;
 
-    color.u32 = 0x00;			/* Default to empty. */
+    color.u32 = 0x00;                   /* Default to empty. */
     if (!InterpolateColor(cmdPtr, value, &color))  {
         return FALSE;
     }
@@ -1555,7 +1555,7 @@ Interpolate(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
 
         if (InterpolateOpacity(cmdPtr, value, &alpha)) {
             Blt_FadeColor(&color, alpha);
-	}
+        }
     }
     *colorPtr = color;
     return TRUE;
@@ -1579,14 +1579,14 @@ DefaultPalettes(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr)
         "if { [catch {source [file join $blt_library bltPalette.tcl]}] != 0} { global errorInfo; puts stderr errorInfo=$errorInfo }";
 #endif
     if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
-	char info[2000];
+        char info[2000];
 
-	Blt_FormatString(info, 2000, "\n    (while loading palettes)");
-	fprintf(stderr, "error load palettes: %s: %s\n", info,
-		Tcl_GetString(Tcl_GetObjResult(interp)));
-	Tcl_AddErrorInfo(interp, info);
-	Tcl_BackgroundError(interp);
-	return TCL_ERROR;
+        Blt_FormatString(info, 2000, "\n    (while loading palettes)");
+        fprintf(stderr, "error load palettes: %s: %s\n", info,
+                Tcl_GetString(Tcl_GetObjResult(interp)));
+        Tcl_AddErrorInfo(interp, info);
+        Tcl_BackgroundError(interp);
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -1596,7 +1596,7 @@ DefaultPalettes(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr)
  *
  * CreateOp --
  *
- *	Creates a palette.  
+ *      Creates a palette.  
  *
  *      We don't actually load the palette data here. We just check that we
  *      can read the files (if they are specified) but don't actually read
@@ -1604,16 +1604,16 @@ DefaultPalettes(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr)
  *      palettes that can be listed with the "palette names" command. 
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter result
- *	will contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter result
+ *      will contain a TCL list of the element names.
  *
- *	.g palette create ?$name? ?option value?...
+ *      .g palette create ?$name? ?option value?...
  *
  *---------------------------------------------------------------------------
  */
 static int
 CreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     PaletteCmdInterpData *dataPtr = clientData;
     PaletteCmd *cmdPtr;
@@ -1623,67 +1623,67 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     name = NULL;
     if (objc > 2) {
-	string = Tcl_GetString(objv[2]);
-	if (Blt_FindHashEntry(&dataPtr->paletteTable, string) != NULL) {
-	    Tcl_AppendResult(interp, "palette \"", string, "\" already exists",
+        string = Tcl_GetString(objv[2]);
+        if (Blt_FindHashEntry(&dataPtr->paletteTable, string) != NULL) {
+            Tcl_AppendResult(interp, "palette \"", string, "\" already exists",
                              (char *)NULL);
-	    return TCL_ERROR;
-	}
-	name = string;
-	objc--, objv++;
+            return TCL_ERROR;
+        }
+        name = string;
+        objc--, objv++;
     }
     /* If no name was given for the palette, generate one. */
     if (name == NULL) {
-	do {
-	    Blt_FormatString(ident, 200, "palette%d", dataPtr->nextId++);
-	} while (Blt_FindHashEntry(&dataPtr->paletteTable, ident));
-	name = ident;
+        do {
+            Blt_FormatString(ident, 200, "palette%d", dataPtr->nextId++);
+        } while (Blt_FindHashEntry(&dataPtr->paletteTable, ident));
+        name = ident;
     }
     cmdPtr = NewPaletteCmd(interp, dataPtr, name);
     if (cmdPtr == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Blt_ParseSwitches(interp, paletteSpecs, objc - 2, objv + 2,
                 (char *)cmdPtr, BLT_SWITCH_DEFAULTS) < 0) {
-	goto error;
+        goto error;
     }
     if ((cmdPtr->colorFileObjPtr != NULL) && (cmdPtr->colorDataObjPtr != NULL)){
-	Tcl_AppendResult(interp,
+        Tcl_AppendResult(interp,
                 "can't set both -colorfile and -colordata flags", (char *)NULL);
-	goto error;
+        goto error;
     }
     if ((cmdPtr->colorFileObjPtr == NULL) && (cmdPtr->colorDataObjPtr == NULL)){
-	Tcl_AppendResult(interp,
+        Tcl_AppendResult(interp,
                 "one of -colorfile and -colordata flags are required",
                 (char *)NULL);
-	goto error;
+        goto error;
     }
     if (cmdPtr->colorFileObjPtr != NULL) {
-	const char *fileName;
+        const char *fileName;
 
-	fileName = Tcl_GetString(cmdPtr->colorFileObjPtr);
-	if (access(fileName, R_OK) != 0) {
-	    Tcl_AppendResult(interp, "can't access \"", fileName, "\":",
+        fileName = Tcl_GetString(cmdPtr->colorFileObjPtr);
+        if (access(fileName, R_OK) != 0) {
+            Tcl_AppendResult(interp, "can't access \"", fileName, "\":",
                 Tcl_PosixError(interp), (char *)NULL);
-	    goto error;
-	}
+            goto error;
+        }
     }
     if ((cmdPtr->opacityFileObjPtr != NULL) &&
-	(cmdPtr->opacityDataObjPtr != NULL)) {
-	Tcl_AppendResult(interp,
+        (cmdPtr->opacityDataObjPtr != NULL)) {
+        Tcl_AppendResult(interp,
                 "can't set both -opacityfile and -opacitydata flags",
                 (char *)NULL);
-	goto error;
+        goto error;
     }
     if (cmdPtr->opacityFileObjPtr != NULL) {
-	const char *fileName;
+        const char *fileName;
 
-	fileName = Tcl_GetString(cmdPtr->opacityFileObjPtr);
-	if (access(fileName, R_OK) != 0) {
-	    Tcl_AppendResult(interp, "can't access \"", fileName, "\":",
+        fileName = Tcl_GetString(cmdPtr->opacityFileObjPtr);
+        if (access(fileName, R_OK) != 0) {
+            Tcl_AppendResult(interp, "can't access \"", fileName, "\":",
                 Tcl_PosixError(interp), (char *)NULL);
-	    goto error;
-	}
+            goto error;
+        }
     }
     NotifyClients(cmdPtr, PALETTE_CHANGE_NOTIFY);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), cmdPtr->name, -1);
@@ -1698,30 +1698,30 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DeleteOp --
  *
- *	Deletes one or more palettees from the graph.
+ *      Deletes one or more palettees from the graph.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter result will
- *	contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter result will
+ *      contain a TCL list of the element names.
  *
- *	blt::palette delete $name...
+ *      blt::palette delete $name...
  *
  *---------------------------------------------------------------------------
  */
 static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     PaletteCmdInterpData *dataPtr = clientData;
     int i;
 
     for (i = 2; i < objc; i++) {
-	PaletteCmd *cmdPtr;
+        PaletteCmd *cmdPtr;
 
-	if (GetPaletteCmdFromObj(interp, dataPtr, objv[i], &cmdPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	DestroyPaletteCmd(cmdPtr);
+        if (GetPaletteCmdFromObj(interp, dataPtr, objv[i], &cmdPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        DestroyPaletteCmd(cmdPtr);
     }
     return TCL_OK;
 }    
@@ -1732,13 +1732,13 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DrawOp --
  *
- *	Draws the palette onto a picture.
+ *      Draws the palette onto a picture.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter
+ *      result will contain a TCL list of the element names.
  *
- *	blt::palette draw $name $picture
+ *      blt::palette draw $name $picture
  *
  *---------------------------------------------------------------------------
  */
@@ -1752,54 +1752,54 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int w, h;
 
     if (GetPaletteCmdFromObj(interp, dataPtr, objv[2], &cmdPtr) != TCL_OK) {
-	return TCL_ERROR;		/* Can't find named palette. */
+        return TCL_ERROR;               /* Can't find named palette. */
     }
     if (Blt_GetPictureFromObj(interp, objv[3], &picture) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if ((cmdPtr->flags & LOADED) == 0) {
-	if (LoadData(interp, cmdPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (LoadData(interp, cmdPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     w = Blt_Picture_Width(picture);
     h = Blt_Picture_Height(picture);
     if (w > h) {
-	int x;
+        int x;
 
-	for (x = 0; x < w; x++) {
-	    double value;
-	    int y;
-	    Blt_Pixel color;
+        for (x = 0; x < w; x++) {
+            double value;
+            int y;
+            Blt_Pixel color;
 
-	    value = ((double)x / (double)(w-1));
-	    Interpolate(cmdPtr, value, &color);
-	    /* Draw band. */
-	    for (y = 0; y < h; y++) {
-		Blt_Pixel *dp;
+            value = ((double)x / (double)(w-1));
+            Interpolate(cmdPtr, value, &color);
+            /* Draw band. */
+            for (y = 0; y < h; y++) {
+                Blt_Pixel *dp;
 
-		dp = Blt_Picture_Pixel(picture, x, y);
-		dp->u32 = color.u32;
-	    }
-	}
+                dp = Blt_Picture_Pixel(picture, x, y);
+                dp->u32 = color.u32;
+            }
+        }
     } else {
-	int y;
+        int y;
 
-	for (y = 0; y < h; y++) {
-	    int x;
-	    double value;
-	    Blt_Pixel color;
+        for (y = 0; y < h; y++) {
+            int x;
+            double value;
+            Blt_Pixel color;
 
-	    value = ((double)y / (double)(h-1));
-	    Interpolate(cmdPtr, value, &color);
-	    /* Draw band. */
-	    for (x = 0; x < w; x++) {
-		Blt_Pixel *dp;
+            value = ((double)y / (double)(h-1));
+            Interpolate(cmdPtr, value, &color);
+            /* Draw band. */
+            for (x = 0; x < w; x++) {
+                Blt_Pixel *dp;
 
-		dp = Blt_Picture_Pixel(picture, x, y);
-		dp->u32 = color.u32;
-	    }
-	}
+                dp = Blt_Picture_Pixel(picture, x, y);
+                dp->u32 = color.u32;
+            }
+        }
     }
     return TCL_OK;
 }
@@ -1809,19 +1809,19 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ExistsOp --
  *
- *	Indicates if a palette by the given name exists in the element.
+ *      Indicates if a palette by the given name exists in the element.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter result will
- *	contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter result will
+ *      contain a TCL list of the element names.
  *
- *	blt::palette exists $name
+ *      blt::palette exists $name
  *
  *---------------------------------------------------------------------------
  */
 static int
 ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+         Tcl_Obj *const *objv)
 {
     PaletteCmdInterpData *dataPtr = clientData;
     PaletteCmd *cmdPtr;
@@ -1837,19 +1837,19 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InterpolateOp --
  *
- *	Computes the interpolated color value from the value given.
+ *      Computes the interpolated color value from the value given.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter result will
- *	contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter result will
+ *      contain a TCL list of the element names.
  *
- *	blt::palette interpolate $name value
+ *      blt::palette interpolate $name value
  *
  *---------------------------------------------------------------------------
  */
 static int
 InterpolateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	      Tcl_Obj *const *objv)
+              Tcl_Obj *const *objv)
 {
     Blt_Pixel color;
     PaletteCmd *cmdPtr;
@@ -1858,20 +1858,20 @@ InterpolateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     double value;
 
     if (GetPaletteCmdFromObj(interp, dataPtr, objv[2], &cmdPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (GetStepFromObj(interp, objv[3], &value) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if ((cmdPtr->flags & LOADED) == 0) {
-	if (LoadData(interp, cmdPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (LoadData(interp, cmdPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     if (!Interpolate(cmdPtr, value, &color)) {
-	Tcl_AppendResult(interp, "value \"", Tcl_GetString(objv[3]), 
-		"\" not in any range", (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "value \"", Tcl_GetString(objv[3]), 
+                "\" not in any range", (char *)NULL);
+        return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(color.Alpha));
@@ -1887,62 +1887,62 @@ InterpolateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *	Returns the names of the palette in the graph matching one of more
- *	patterns provided.  If no pattern arguments are given, then all
- *	palette names will be returned.
+ *      Returns the names of the palette in the graph matching one of more
+ *      patterns provided.  If no pattern arguments are given, then all
+ *      palette names will be returned.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter result will
- *	contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter result will
+ *      contain a TCL list of the element names.
  *
- *	blt::palette names $pattern
+ *      blt::palette names $pattern
  *
  *---------------------------------------------------------------------------
  */
 static int
 NamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv)
+        Tcl_Obj *const *objv)
 {
     PaletteCmdInterpData *dataPtr = clientData;
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (objc == 2) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
 
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->paletteTable, &iter);
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	    PaletteCmd *cmdPtr;
-	    Tcl_Obj *objPtr;
+        for (hPtr = Blt_FirstHashEntry(&dataPtr->paletteTable, &iter);
+             hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+            PaletteCmd *cmdPtr;
+            Tcl_Obj *objPtr;
 
-	    cmdPtr = Blt_GetHashValue(hPtr);
-	    objPtr = Tcl_NewStringObj(cmdPtr->name, -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
+            cmdPtr = Blt_GetHashValue(hPtr);
+            objPtr = Tcl_NewStringObj(cmdPtr->name, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     } else {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
 
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->paletteTable, &iter);
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	    PaletteCmd *cmdPtr;
-	    int i;
+        for (hPtr = Blt_FirstHashEntry(&dataPtr->paletteTable, &iter);
+             hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+            PaletteCmd *cmdPtr;
+            int i;
 
-	    cmdPtr = Blt_GetHashValue(hPtr);
-	    for (i = 2; i < objc; i++) {
-		const char *pattern;
+            cmdPtr = Blt_GetHashValue(hPtr);
+            for (i = 2; i < objc; i++) {
+                const char *pattern;
 
-		pattern = Tcl_GetString(objv[i]);
-		if (Tcl_StringMatch(cmdPtr->name, pattern)) {
-		    Tcl_Obj *objPtr;
+                pattern = Tcl_GetString(objv[i]);
+                if (Tcl_StringMatch(cmdPtr->name, pattern)) {
+                    Tcl_Obj *objPtr;
 
-		    objPtr = Tcl_NewStringObj(cmdPtr->name, -1);
-		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		    break;
-		}
-	    }
-	}
+                    objPtr = Tcl_NewStringObj(cmdPtr->name, -1);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                    break;
+                }
+            }
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -1953,13 +1953,13 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PaletteCmd --
  *
- *	blt::palette create ?name? -colors {} -opacity {}
- *	blt::palette delete $name
- *	blt::palette exists $name
- *	blt::palette names ?pattern?
- *	blt::palette interpolate $name $value
- *	blt::palette draw $name $picture
- *	blt::palette ranges $name
+ *      blt::palette create ?name? -colors {} -opacity {}
+ *      blt::palette delete $name
+ *      blt::palette exists $name
+ *      blt::palette names ?pattern?
+ *      blt::palette interpolate $name $value
+ *      blt::palette draw $name $picture
+ *      blt::palette ranges $name
  *
  *---------------------------------------------------------------------------
  */
@@ -1975,14 +1975,14 @@ static int numPaletteOps = sizeof(paletteOps) / sizeof(Blt_OpSpec);
 
 static int
 PaletteObjCmd(ClientData clientData, Tcl_Interp *interp, int objc, 
-	      Tcl_Obj *const *objv)
+              Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numPaletteOps, paletteOps, BLT_OP_ARG1, 
-	objc, objv, 0);
+        objc, objv, 0);
     if (proc == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return (*proc) (clientData, interp, objc, objv);
 }
@@ -1992,14 +1992,14 @@ PaletteObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PaletteInterpDeleteProc --
  *
- *	This is called when the interpreter registering the "contourpalette"
- *	command is deleted.
+ *      This is called when the interpreter registering the "contourpalette"
+ *      command is deleted.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Removes the hash table managing all table names.
+ *      Removes the hash table managing all table names.
  *
  *---------------------------------------------------------------------------
  */
@@ -2029,14 +2029,14 @@ GetPaletteCmdInterpData(Tcl_Interp *interp)
     Tcl_InterpDeleteProc *proc;
 
     dataPtr = (PaletteCmdInterpData *)
-	Tcl_GetAssocData(interp, PALETTE_THREAD_KEY, &proc);
+        Tcl_GetAssocData(interp, PALETTE_THREAD_KEY, &proc);
     if (dataPtr == NULL) {
-	dataPtr = Blt_AssertMalloc(sizeof(PaletteCmdInterpData));
-	dataPtr->interp = interp;
-	Tcl_SetAssocData(interp, PALETTE_THREAD_KEY, PaletteInterpDeleteProc, 
-		dataPtr);
-	Blt_InitHashTable(&dataPtr->paletteTable, BLT_STRING_KEYS);
-	dataPtr->nextId = 0;
+        dataPtr = Blt_AssertMalloc(sizeof(PaletteCmdInterpData));
+        dataPtr->interp = interp;
+        Tcl_SetAssocData(interp, PALETTE_THREAD_KEY, PaletteInterpDeleteProc, 
+                dataPtr);
+        Blt_InitHashTable(&dataPtr->paletteTable, BLT_STRING_KEYS);
+        dataPtr->nextId = 0;
     }
     return dataPtr;
 }
@@ -2046,14 +2046,14 @@ GetPaletteCmdInterpData(Tcl_Interp *interp)
  *
  * Blt_PaletteCmdInitProc --
  *
- *	This procedure is invoked to initialize the "contourpalette" command.
+ *      This procedure is invoked to initialize the "contourpalette" command.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Creates the new command and adds a new entry into a global Tcl
- *	associative array.
+ *      Creates the new command and adds a new entry into a global Tcl
+ *      associative array.
  *
  *---------------------------------------------------------------------------
  */
@@ -2064,7 +2064,7 @@ Blt_PaletteCmdInitProc(Tcl_Interp *interp)
 
     cmdSpec.clientData = GetPaletteCmdInterpData(interp);
     if (Blt_InitCmd(interp, "::blt", &cmdSpec) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return DefaultPalettes(interp, cmdSpec.clientData);
 }
@@ -2072,34 +2072,34 @@ Blt_PaletteCmdInitProc(Tcl_Interp *interp)
 
 int
 Blt_Palette_GetFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-		       Blt_Palette *palPtr)
+                       Blt_Palette *palPtr)
 {
     PaletteCmdInterpData *dataPtr;
     PaletteCmd *cmdPtr;
 
     dataPtr = GetPaletteCmdInterpData(interp);
     if (GetPaletteCmdFromObj(interp, dataPtr, objPtr, &cmdPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     *palPtr = (Blt_Palette)cmdPtr;
     if ((cmdPtr->flags & LOADED) == 0) {
-	if (LoadData(interp, cmdPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (LoadData(interp, cmdPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
 
 int
 Blt_Palette_GetFromString(Tcl_Interp *interp, const char *string, 
-			  Blt_Palette *palPtr)
+                          Blt_Palette *palPtr)
 {
     PaletteCmdInterpData *dataPtr;
     PaletteCmd *cmdPtr;
 
     dataPtr = GetPaletteCmdInterpData(interp);
     if (GetPaletteCmd(interp, dataPtr, string, &cmdPtr) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     *palPtr = (Blt_Palette)cmdPtr;
     return TCL_OK;
@@ -2112,12 +2112,12 @@ Blt_Palette_GetRGBColor(Blt_Palette palette, double value)
     PaletteCmd *cmdPtr = (PaletteCmd *)palette;
 
     if ((cmdPtr->flags & LOADED) == 0) {
-	if (LoadData(NULL, cmdPtr) != TCL_OK) {
-	    return 0x0;
-	}
+        if (LoadData(NULL, cmdPtr) != TCL_OK) {
+            return 0x0;
+        }
     }
     if (!InterpolateColor(cmdPtr, value, &color)) {
-	color.u32 = 0x00;
+        color.u32 = 0x00;
     } 
     return color.u32;
 }
@@ -2129,12 +2129,12 @@ Blt_Palette_GetAssociatedColor(Blt_Palette palette, double value)
     PaletteCmd *cmdPtr = (PaletteCmd *)palette;
 
     if ((cmdPtr->flags & LOADED) == 0) {
-	if (LoadData(NULL, cmdPtr) != TCL_OK) {
-	    return 0x0;
-	}
+        if (LoadData(NULL, cmdPtr) != TCL_OK) {
+            return 0x0;
+        }
     }
     if (!Interpolate(cmdPtr, value, &color)) {
-	color.u32 = 0x00;
+        color.u32 = 0x00;
     } 
     Blt_FadeColor(&color, cmdPtr->alpha);
     return color.u32;
@@ -2142,7 +2142,7 @@ Blt_Palette_GetAssociatedColor(Blt_Palette palette, double value)
 
 void
 Blt_Palette_CreateNotifier(Blt_Palette palette, Blt_Palette_NotifyProc *proc, 
-			   ClientData clientData)
+                           ClientData clientData)
 {
     Blt_HashEntry *hPtr;
     int isNew;
@@ -2191,10 +2191,10 @@ Blt_Palette_Free(Blt_Palette palette)
     struct _Blt_Palette *palPtr = (struct _Blt_Palette *)palette;
 
     if (palPtr->colors != NULL) {
-	Blt_Free(palPtr->colors);
+        Blt_Free(palPtr->colors);
     }
     if (palPtr->opacities != NULL) {
-	Blt_Free(palPtr->opacities);
+        Blt_Free(palPtr->opacities);
     }
     Blt_Free(palPtr);
 }

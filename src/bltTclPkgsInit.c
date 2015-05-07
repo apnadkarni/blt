@@ -57,7 +57,7 @@ BLT_EXTERN Tcl_AppInitProc blt_table_csv_safe_init;
 #ifdef HAVE_LIBMYSQL
 BLT_EXTERN Tcl_AppInitProc blt_table_mysql_init;
 BLT_EXTERN Tcl_AppInitProc blt_table_mysql_safe_init;
-#endif	/* HAVE_LIBMYSQL */
+#endif  /* HAVE_LIBMYSQL */
 BLT_EXTERN Tcl_AppInitProc blt_table_tree_init;
 BLT_EXTERN Tcl_AppInitProc blt_table_vector_init;
 BLT_EXTERN Tcl_AppInitProc blt_table_tree_safe_init;
@@ -74,62 +74,62 @@ BLT_EXTERN Tcl_AppInitProc Blt_TreeXmlSafeInit;
 #endif
 
 int
-Blt_TclPkgsInit(Tcl_Interp *interp)	/* Interpreter for application. */
+Blt_TclPkgsInit(Tcl_Interp *interp)     /* Interpreter for application. */
 {
     if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     /* Tcl-only static packages */
     /* Data table packages. */
     /* TXT */
     if (blt_table_txt_init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_datatable_txt", blt_table_txt_init, 
-	blt_table_txt_safe_init);
+        blt_table_txt_safe_init);
     /* CSV */
     if (blt_table_csv_init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_datatable_csv", blt_table_csv_init, 
-	blt_table_csv_safe_init);
+        blt_table_csv_safe_init);
     /* MYSQL */
 #ifdef HAVE_LIBMYSQL
     if (blt_table_mysql_init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_datatable_mysql", blt_table_mysql_init, 
-	blt_table_mysql_safe_init);
-#endif	/* HAVE_LIBMYSQL */
+        blt_table_mysql_safe_init);
+#endif  /* HAVE_LIBMYSQL */
     /* TREE */
     if (blt_table_tree_init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_datatable_tree", blt_table_tree_init, 
-	blt_table_tree_safe_init);
+        blt_table_tree_safe_init);
     /* VECTOR */
     if (blt_table_vector_init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_datatable_vector", blt_table_vector_init,
-	blt_table_vector_safe_init);
+        blt_table_vector_safe_init);
     /* XML */
 #ifdef HAVE_LIBEXPAT
     if (blt_table_xml_init(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_datatable_xml", blt_table_xml_init, 
-	blt_table_xml_safe_init);
-#endif	/* HAVE_LIBEXPAT */
+        blt_table_xml_safe_init);
+#endif  /* HAVE_LIBEXPAT */
 
     /* Tree packages. */
 #ifdef HAVE_LIBEXPAT
     if (Blt_TreeXmlInit(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "blt_tree_xml", Blt_TreeXmlInit, 
-	Blt_TreeXmlSafeInit);
-#endif	/* HAVE_LIBEXPAT */
+        Blt_TreeXmlSafeInit);
+#endif  /* HAVE_LIBEXPAT */
     return TCL_OK;
 }
 

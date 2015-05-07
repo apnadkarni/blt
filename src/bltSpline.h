@@ -44,9 +44,9 @@ BLT_EXTERN Point2d Blt_EvaluateSpline(Blt_Spline spline, int index, double x);
 BLT_EXTERN void Blt_FreeSpline(Blt_Spline spline);
 
 BLT_EXTERN Blt_Spline Blt_CreateParametricCubicSpline(Point2d *points, int n, 
-	int w, int h);
+        int w, int h);
 BLT_EXTERN Point2d Blt_EvaluateParametricCubicSpline(Blt_Spline spline, 
-	int index, double x);
+        int index, double x);
 BLT_EXTERN void Blt_FreeParametricCubicSpline(Blt_Spline spline);
 
 BLT_EXTERN Blt_Spline Blt_CreateCatromSpline(Point2d *points, int n);
@@ -54,16 +54,16 @@ BLT_EXTERN Point2d Blt_EvaluateCatromSpline(Blt_Spline spline, int i, double t);
 BLT_EXTERN void Blt_FreeCatromSpline(Blt_Spline spline);
 
 BLT_EXTERN int Blt_ComputeNaturalSpline (Point2d *origPts, int numOrigPts, 
-	Point2d *intpPts, int numIntpPts);
+        Point2d *intpPts, int numIntpPts);
 
 BLT_EXTERN int Blt_ComputeQuadraticSpline(Point2d *origPts, int numOrigPts, 
-	Point2d *intpPts, int numIntpPts);
+        Point2d *intpPts, int numIntpPts);
 
 BLT_EXTERN int Blt_ComputeNaturalParametricSpline (Point2d *origPts, 
-	int numOrigPts, Region2d *extsPtr, int isClosed, Point2d *intpPts, 
-	int numIntpPts);
+        int numOrigPts, Region2d *extsPtr, int isClosed, Point2d *intpPts, 
+        int numIntpPts);
 
 BLT_EXTERN int Blt_ComputeCatromParametricSpline (Point2d *origPts, 
-	int numOrigPts, Point2d *intpPts, int numIntpPts);
+        int numOrigPts, Point2d *intpPts, int numIntpPts);
 
 #endif /*_BLT_SPLINE_H*/

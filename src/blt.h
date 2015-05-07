@@ -38,14 +38,14 @@
 #ifndef _BLT_H
 #define _BLT_H
 
-#define BLT_MAJOR_VERSION 	3
-#define BLT_MINOR_VERSION 	0
-#define BLT_VERSION		"3.0"
-#define BLT_PATCH_LEVEL		"3.0a"
-#define BLT_RELEASE_SERIAL	0
+#define BLT_MAJOR_VERSION       3
+#define BLT_MINOR_VERSION       0
+#define BLT_VERSION             "3.0"
+#define BLT_PATCH_LEVEL         "3.0a"
+#define BLT_RELEASE_SERIAL      0
 
 #ifndef BLT_STORAGE_CLASS
-#define BLT_STORAGE_CLASS	
+#define BLT_STORAGE_CLASS       
 #endif
 #undef INLINE
 
@@ -59,9 +59,9 @@
 #  define BLT_EXTERN BLT_STORAGE_CLASS extern "C" 
 #else
 #  define BLT_EXTERN BLT_STORAGE_CLASS extern 
-#endif	/* __cplusplus */
+#endif  /* __cplusplus */
 
-#define _VERSION(a,b,c)	    (((a) << 16) + ((b) << 8) + (c))
+#define _VERSION(a,b,c)     (((a) << 16) + ((b) << 8) + (c))
 
 #define _TCL_VERSION _VERSION(TCL_MAJOR_VERSION, TCL_MINOR_VERSION, TCL_RELEASE_SERIAL)
 #define _TK_VERSION _VERSION(TK_MAJOR_VERSION, TK_MINOR_VERSION, TK_RELEASE_SERIAL)
@@ -73,37 +73,37 @@
  * upon which version of Tcl.
  */
 #if (_TCL_VERSION >= _VERSION(8,5,0)) 
-#  define TCL_VERSION_COMPILED		TCL_PATCH_LEVEL
+#  define TCL_VERSION_COMPILED          TCL_PATCH_LEVEL
 #else 
-#  define TCL_VERSION_COMPILED		TCL_VERSION
+#  define TCL_VERSION_COMPILED          TCL_VERSION
 #endif
 
 #ifdef _TK
 #if (_TK_VERSION >= _VERSION(8,5,0)) 
-#  define TK_VERSION_COMPILED		TK_PATCH_LEVEL
+#  define TK_VERSION_COMPILED           TK_PATCH_LEVEL
 #else 
-#  define TK_VERSION_COMPILED		TK_VERSION
+#  define TK_VERSION_COMPILED           TK_VERSION
 #endif 
 #endif /*_TK*/
 
-#define PKG_ANY		0
-#define PKG_EXACT	1
+#define PKG_ANY         0
+#define PKG_EXACT       1
 
 #ifndef __WIN32__
 #   if defined(_WIN32) || defined(WIN32) || defined(__MINGW32__) || defined(__BORLANDC__)
-#	define __WIN32__
-#	ifndef WIN32
-#	    define WIN32
-#	endif
+#       define __WIN32__
+#       ifndef WIN32
+#           define WIN32
+#       endif
 #   endif
 #endif
 
 #ifdef USE_BLT_STUBS
 BLT_EXTERN const char *Blt_InitTclStubs(Tcl_Interp *interp, const char *version,
-	int exact);
+        int exact);
 #ifdef _TK
 BLT_EXTERN const char *Blt_InitTkStubs(Tcl_Interp *interp, const char *version,
-	int exact);
+        int exact);
 #endif
 #endif
 

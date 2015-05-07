@@ -72,20 +72,20 @@ static char libPath[1024] =
  * Checks the usual locations for a file (bltGraph.pro) from the BLT library.
  * The places searched in order are
  *
- *	$BLT_LIBRARY
- *	$BLT_LIBRARY/blt2.4
+ *      $BLT_LIBRARY
+ *      $BLT_LIBRARY/blt2.4
  *      $BLT_LIBRARY/..
  *      $BLT_LIBRARY/../blt2.4
- *	$blt_libPath
- *	$blt_libPath/blt2.4
+ *      $blt_libPath
+ *      $blt_libPath/blt2.4
  *      $blt_libPath/..
  *      $blt_libPath/../blt2.4
- *	$tcl_library
- *	$tcl_library/blt2.4
+ *      $tcl_library
+ *      $tcl_library/blt2.4
  *      $tcl_library/..
  *      $tcl_library/../blt2.4
- *	$env(TCL_LIBRARY)
- *	$env(TCL_LIBRARY)/blt2.4
+ *      $env(TCL_LIBRARY)
+ *      $env(TCL_LIBRARY)/blt2.4
  *      $env(TCL_LIBRARY)/..
  *      $env(TCL_LIBRARY)/../blt2.4
  *
@@ -103,27 +103,27 @@ set blt_library {}\n\
 set path {}\n\
 foreach var { env(BLT_LIBRARY) blt_libPath tcl_library env(TCL_LIBRARY) } { \n\
     if { ![info exists $var] } { \n\
-	continue \n\
+        continue \n\
     } \n\
     set path [set $var] \n\
     if { [file readable [file join $path bltGraph.pro]] } { \n\
-	set blt_library $path\n\
-	break \n\
+        set blt_library $path\n\
+        break \n\
     } \n\
     set path [file join $path blt$blt_version ] \n\
     if { [file readable [file join $path bltGraph.pro]] } { \n\
-	set blt_library $path\n\
-	break \n\
+        set blt_library $path\n\
+        break \n\
     } \n\
     set path [file dirname [set $var]] \n\
     if { [file readable [file join $path bltGraph.pro]] } { \n\
-	set blt_library $path\n\
-	break \n\
+        set blt_library $path\n\
+        break \n\
     } \n\
     set path [file join $path blt$blt_version ] \n\
     if { [file readable [file join $path bltGraph.pro]] } { \n\
-	set blt_library $path\n\
-	break \n\
+        set blt_library $path\n\
+        break \n\
     } \n\
 } \n\
 if { $blt_library != \"\" } { \n\
@@ -195,8 +195,8 @@ static double
 MakeNaN(void)
 {
     union DoubleValue {
-	unsigned int words[2];
-	double value;
+        unsigned int words[2];
+        double value;
     } result;
 
 #ifdef WORDS_BIGENDIAN
@@ -212,8 +212,8 @@ MakeNaN(void)
 /* ARGSUSED */
 static int
 MinMathProc(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Not used. */
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Not used. */
     Tcl_Value *argsPtr,
     Tcl_Value *resultPtr)
 {
@@ -221,17 +221,17 @@ MinMathProc(
 
     op1Ptr = argsPtr, op2Ptr = argsPtr + 1;
     if ((op1Ptr->type == TCL_INT) && (op2Ptr->type == TCL_INT)) {
-	resultPtr->intValue = MIN(op1Ptr->intValue, op2Ptr->intValue);
-	resultPtr->type = TCL_INT;
+        resultPtr->intValue = MIN(op1Ptr->intValue, op2Ptr->intValue);
+        resultPtr->type = TCL_INT;
     } else {
-	double a, b;
+        double a, b;
 
-	a = (op1Ptr->type == TCL_INT) 
-	    ? (double)op1Ptr->intValue : op1Ptr->doubleValue;
-	b = (op2Ptr->type == TCL_INT)
-	    ? (double)op2Ptr->intValue : op2Ptr->doubleValue;
-	resultPtr->doubleValue = MIN(a, b);
-	resultPtr->type = TCL_DOUBLE;
+        a = (op1Ptr->type == TCL_INT) 
+            ? (double)op1Ptr->intValue : op1Ptr->doubleValue;
+        b = (op2Ptr->type == TCL_INT)
+            ? (double)op2Ptr->intValue : op2Ptr->doubleValue;
+        resultPtr->doubleValue = MIN(a, b);
+        resultPtr->type = TCL_DOUBLE;
     }
     return TCL_OK;
 }
@@ -239,8 +239,8 @@ MinMathProc(
 /*ARGSUSED*/
 static int
 MaxMathProc(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Not used. */
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Not used. */
     Tcl_Value *argsPtr,
     Tcl_Value *resultPtr)
 {
@@ -248,17 +248,17 @@ MaxMathProc(
 
     op1Ptr = argsPtr, op2Ptr = argsPtr + 1;
     if ((op1Ptr->type == TCL_INT) && (op2Ptr->type == TCL_INT)) {
-	resultPtr->intValue = MAX(op1Ptr->intValue, op2Ptr->intValue);
-	resultPtr->type = TCL_INT;
+        resultPtr->intValue = MAX(op1Ptr->intValue, op2Ptr->intValue);
+        resultPtr->type = TCL_INT;
     } else {
-	double a, b;
+        double a, b;
 
-	a = (op1Ptr->type == TCL_INT)
-	    ? (double)op1Ptr->intValue : op1Ptr->doubleValue;
-	b = (op2Ptr->type == TCL_INT)
-	    ? (double)op2Ptr->intValue : op2Ptr->doubleValue;
-	resultPtr->doubleValue = MAX(a, b);
-	resultPtr->type = TCL_DOUBLE;
+        a = (op1Ptr->type == TCL_INT)
+            ? (double)op1Ptr->intValue : op1Ptr->doubleValue;
+        b = (op2Ptr->type == TCL_INT)
+            ? (double)op2Ptr->intValue : op2Ptr->doubleValue;
+        resultPtr->doubleValue = MAX(a, b);
+        resultPtr->type = TCL_DOUBLE;
     }
     return TCL_OK;
 }
@@ -273,39 +273,39 @@ SetLibraryPath(Tcl_Interp *interp)
     Tcl_DStringAppend(&ds, libPath, -1);
 #ifdef WIN32
     {
-	HKEY key;
-	DWORD result;
+        HKEY key;
+        DWORD result;
 #  ifndef BLT_REGISTRY_KEY
 #    define BLT_REGISTRY_KEY "Software\\BLT\\" BLT_VERSION "\\" TCL_VERSION
 #  endif
-	result = RegOpenKeyEx(
-	      HKEY_LOCAL_MACHINE, /* Parent key. */
-	      BLT_REGISTRY_KEY,	/* Path to sub-key. */
-	      0,		/* Reserved. */
-	      KEY_READ,		/* Security access mask. */
-	      &key);		/* Resulting key.*/
+        result = RegOpenKeyEx(
+              HKEY_LOCAL_MACHINE, /* Parent key. */
+              BLT_REGISTRY_KEY, /* Path to sub-key. */
+              0,                /* Reserved. */
+              KEY_READ,         /* Security access mask. */
+              &key);            /* Resulting key.*/
 
-	if (result == ERROR_SUCCESS) {
-	    DWORD size;
+        if (result == ERROR_SUCCESS) {
+            DWORD size;
 
-	    /* Query once to get the size of the string needed */
-	    result = RegQueryValueEx(key, "BLT_LIBRARY", NULL, NULL, NULL, 
-		     &size);
-	    if (result == ERROR_SUCCESS) {
-		Tcl_DStringSetLength(&ds, size);
-		/* And again to collect the string. */
-		RegQueryValueEx(key, "BLT_LIBRARY", NULL, NULL,
-				(LPBYTE)Tcl_DStringValue(&ds), &size);
-		RegCloseKey(key);
-	    }
-	}
+            /* Query once to get the size of the string needed */
+            result = RegQueryValueEx(key, "BLT_LIBRARY", NULL, NULL, NULL, 
+                     &size);
+            if (result == ERROR_SUCCESS) {
+                Tcl_DStringSetLength(&ds, size);
+                /* And again to collect the string. */
+                RegQueryValueEx(key, "BLT_LIBRARY", NULL, NULL,
+                                (LPBYTE)Tcl_DStringValue(&ds), &size);
+                RegCloseKey(key);
+            }
+        }
     }
 #endif /* WIN32 */
     value = Tcl_SetVar(interp, "blt_libPath", Tcl_DStringValue(&ds),
-	TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+        TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
     Tcl_DStringFree(&ds);
     if (value == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -320,14 +320,14 @@ Blt_TclInit(Tcl_Interp *interp) /* Interpreter to add extra commands */
     const char *mesg;
 #ifdef USE_BLT_STUBS
     extern BltTclProcs bltTclProcs;
-#endif	/* USE_Blt_STUBS */
+#endif  /* USE_Blt_STUBS */
     int result;
 
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     };
-#endif	/* USE_TCL_STUBS */
+#endif  /* USE_TCL_STUBS */
     Blt_AllocInit(NULL, NULL, NULL);
 
     /*
@@ -335,7 +335,7 @@ Blt_TclInit(Tcl_Interp *interp) /* Interpreter to add extra commands */
      * that BLT was compiled against.
      */
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 
     /* Set the "blt_version", "blt_patchLevel", and "blt_libPath" Tcl
@@ -343,33 +343,33 @@ Blt_TclInit(Tcl_Interp *interp) /* Interpreter to add extra commands */
 
     mesg = Tcl_SetVar(interp, "blt_version", BLT_VERSION, TCL_GLOBAL_ONLY);
     if (mesg == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     mesg = Tcl_SetVar(interp, "blt_patchLevel", BLT_PATCH_LEVEL, 
-			TCL_GLOBAL_ONLY);
+                        TCL_GLOBAL_ONLY);
     if (mesg == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (SetLibraryPath(interp) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_Eval(interp, initScript) != TCL_OK) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 
     nsPtr = Tcl_FindNamespace(interp, "::blt", (Tcl_Namespace *)NULL, 0);
     if (nsPtr == NULL) {
-	nsPtr = Tcl_CreateNamespace(interp, "::blt", NULL, NULL);
-	if (nsPtr == NULL) {
-	    return TCL_ERROR;
-	}
+        nsPtr = Tcl_CreateNamespace(interp, "::blt", NULL, NULL);
+        if (nsPtr == NULL) {
+            return TCL_ERROR;
+        }
     }
     /* Initialize the BLT commands that only require Tcl. */
     for (p = cmdProcs; *p != NULL; p++) {
-	if ((**p) (interp) != TCL_OK) {
-	    Tcl_DeleteNamespace(nsPtr);
-	    return TCL_ERROR;
-	}
+        if ((**p) (interp) != TCL_OK) {
+            Tcl_DeleteNamespace(nsPtr);
+            return TCL_ERROR;
+        }
     }
     args[0] = args[1] = TCL_EITHER;
     Tcl_CreateMathFunc(interp, "min", 2, args, MinMathProc, (ClientData)0);
@@ -381,7 +381,7 @@ Blt_TclInit(Tcl_Interp *interp) /* Interpreter to add extra commands */
     Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT);
 #else 
     result = Tcl_PkgProvide(interp, "blt_tcl", BLT_VERSION);
-#endif	/* USE_BLT_STUBS */
+#endif  /* USE_BLT_STUBS */
     return result;
 }
 

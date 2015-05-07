@@ -46,16 +46,16 @@
  *---------------------------------------------------------------------------
  */
 typedef struct _Blt_CmdSpec {
-    const char *name;			/* Name of command */
+    const char *name;                   /* Name of command */
     Tcl_ObjCmdProc *cmdProc;
     Tcl_CmdDeleteProc *cmdDeleteProc;
     ClientData clientData;
 } Blt_CmdSpec;
 
 BLT_EXTERN int Blt_InitCmd (Tcl_Interp *interp, const char *namespace, 
-	Blt_CmdSpec *specPtr);
+        Blt_CmdSpec *specPtr);
 
 BLT_EXTERN int Blt_InitCmds (Tcl_Interp *interp, const char *namespace, 
-	Blt_CmdSpec *specPtr, int numCmds);
+        Blt_CmdSpec *specPtr, int numCmds);
 
 #endif /*_BLT_INIT_CMD_H*/

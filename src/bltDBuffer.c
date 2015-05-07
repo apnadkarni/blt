@@ -62,7 +62,7 @@ void
 Blt_DBuffer_Free(DBuffer *srcPtr)
 {
     if ((srcPtr->bytes != NULL) && (srcPtr->size > 0)) {
-	Blt_Free(srcPtr->bytes);
+        Blt_Free(srcPtr->bytes);
     }
     Blt_DBuffer_Init(srcPtr);
 }
@@ -88,33 +88,33 @@ int
 Blt_DBuffer_Resize(DBuffer *srcPtr, size_t newSize)
 {
     if (srcPtr->size <= newSize) {
-	size_t size, wanted;
-	unsigned char *bytes;
+        size_t size, wanted;
+        unsigned char *bytes;
 
-	wanted = newSize + 1;
-	size = srcPtr->chunk; 
+        wanted = newSize + 1;
+        size = srcPtr->chunk; 
 
-	/* 
-	 * Double the buffer size until we have enough room or hit 1M.
-	 * After 1M, increase by multiples of 1M.
-	 */
-	while ((size <= wanted) && (size < (1<<20))) {
-	    size += size;
-	}    
-	srcPtr->chunk = size;
-	while (size <= wanted) {
-	    size += srcPtr->chunk;
-	}
-	if (srcPtr->bytes == NULL) {
-	    bytes = Blt_Malloc(size);
-	} else {
-	    bytes = Blt_Realloc(srcPtr->bytes, size);
-	}
-	if (bytes == NULL) {
-	    return FALSE;
-	}
-	srcPtr->bytes = bytes;
-	srcPtr->size = size;
+        /* 
+         * Double the buffer size until we have enough room or hit 1M.
+         * After 1M, increase by multiples of 1M.
+         */
+        while ((size <= wanted) && (size < (1<<20))) {
+            size += size;
+        }    
+        srcPtr->chunk = size;
+        while (size <= wanted) {
+            size += srcPtr->chunk;
+        }
+        if (srcPtr->bytes == NULL) {
+            bytes = Blt_Malloc(size);
+        } else {
+            bytes = Blt_Realloc(srcPtr->bytes, size);
+        }
+        if (bytes == NULL) {
+            return FALSE;
+        }
+        srcPtr->bytes = bytes;
+        srcPtr->size = size;
     }
     return TRUE;
 }
@@ -125,7 +125,7 @@ Blt_DBuffer_Extend(DBuffer *srcPtr, size_t numBytes)
     unsigned char *bp;
 
     if (!Blt_DBuffer_Resize(srcPtr, srcPtr->length + numBytes)) {
-	return NULL;
+        return NULL;
     }
     bp = srcPtr->bytes + srcPtr->length;
     srcPtr->length += numBytes;
@@ -139,7 +139,7 @@ Blt_DBuffer_SetLength(DBuffer *srcPtr, size_t numBytes)
 
     result = TRUE;
     if (srcPtr->size < numBytes) {
-	result = Blt_DBuffer_Resize(srcPtr, numBytes);
+        result = Blt_DBuffer_Resize(srcPtr, numBytes);
     }
     srcPtr->length = numBytes;
     return result;
@@ -149,8 +149,8 @@ void
 Blt_DBuffer_AppendByte(DBuffer *destPtr, unsigned char value)
 {
     if (Blt_DBuffer_Resize(destPtr, destPtr->length + sizeof(value))) {
-	destPtr->bytes[destPtr->length] = value;
-	destPtr->length++;
+        destPtr->bytes[destPtr->length] = value;
+        destPtr->length++;
     }
 }
 
@@ -158,17 +158,17 @@ void
 Blt_DBuffer_AppendShort(DBuffer *destPtr, unsigned short value)
 {
     if (Blt_DBuffer_Resize(destPtr, destPtr->length + sizeof(value))) {
-	unsigned char *bp;
+        unsigned char *bp;
 
-	bp = destPtr->bytes + destPtr->length;
+        bp = destPtr->bytes + destPtr->length;
 #ifdef WORDS_BIGENDIAN
-	bp[0] = (value >> 8)  & 0xFF;
-	bp[1] = (value)       & 0xFF;
+        bp[0] = (value >> 8)  & 0xFF;
+        bp[1] = (value)       & 0xFF;
 #else
-	bp[0] = (value)       & 0xFF;
-	bp[1] = (value >> 8)  & 0xFF;
+        bp[0] = (value)       & 0xFF;
+        bp[1] = (value >> 8)  & 0xFF;
 #endif
-	destPtr->length += 2;
+        destPtr->length += 2;
     }
 }
 
@@ -176,21 +176,21 @@ void
 Blt_DBuffer_AppendInt(DBuffer *destPtr, unsigned int value)
 {
     if (Blt_DBuffer_Resize(destPtr, destPtr->length + sizeof(value))) {
-	unsigned char *bp;
+        unsigned char *bp;
 
-	bp = destPtr->bytes + destPtr->length;
+        bp = destPtr->bytes + destPtr->length;
 #ifdef WORDS_BIGENDIAN
-	bp[0] = (value >> 24) & 0xFF;
-	bp[1] = (value >> 16) & 0xFF;
-	bp[2] = (value >> 8)  & 0xFF;
-	bp[3] = (value)       & 0xFF;
+        bp[0] = (value >> 24) & 0xFF;
+        bp[1] = (value >> 16) & 0xFF;
+        bp[2] = (value >> 8)  & 0xFF;
+        bp[3] = (value)       & 0xFF;
 #else
-	bp[0] = (value)       & 0xFF;
-	bp[1] = (value >> 8)  & 0xFF;
-	bp[2] = (value >> 16) & 0xFF;
-	bp[3] = (value >> 24) & 0xFF;
+        bp[0] = (value)       & 0xFF;
+        bp[1] = (value >> 8)  & 0xFF;
+        bp[2] = (value >> 16) & 0xFF;
+        bp[3] = (value >> 24) & 0xFF;
 #endif
-	destPtr->length += sizeof(value);
+        destPtr->length += sizeof(value);
     }
 }
 
@@ -221,7 +221,7 @@ Blt_DBuffer_SetFromObj(DBuffer *srcPtr, Tcl_Obj *objPtr)
     
     string = Tcl_GetStringFromObj(objPtr, &length);
     if (!Blt_DBuffer_Resize(srcPtr, length)) {
-	return NULL;
+        return NULL;
     }
     bp = Blt_DBuffer_Bytes(srcPtr);
     memcpy(bp, string, length);
@@ -231,18 +231,18 @@ Blt_DBuffer_SetFromObj(DBuffer *srcPtr, Tcl_Obj *objPtr)
 
 /* 
  * Blt_DBuffer_String --
- *	
- *	Returns a string representing the current buffer.  A NUL value is
- *	set in the byte beyond the end of the buffer.
+ *      
+ *      Returns a string representing the current buffer.  A NUL value is
+ *      set in the byte beyond the end of the buffer.
  */
 const char *
 Blt_DBuffer_String(DBuffer *srcPtr)
 {
     if (srcPtr->length == srcPtr->size) {
-	/* Make sure there's room for a trailing NUL byte. */
-	if (!Blt_DBuffer_Resize(srcPtr, srcPtr->length + 1)) {
-	    return NULL;
-	}
+        /* Make sure there's room for a trailing NUL byte. */
+        if (!Blt_DBuffer_Resize(srcPtr, srcPtr->length + 1)) {
+            return NULL;
+        }
     }
     /* Set NUL byte to location just beyond the end of the buffer. */
     srcPtr->bytes[srcPtr->length] = '\0';
@@ -251,13 +251,13 @@ Blt_DBuffer_String(DBuffer *srcPtr)
 
 int
 Blt_DBuffer_AppendData(DBuffer *srcPtr, const unsigned char *data, 
-		       size_t numBytes)
+                       size_t numBytes)
 {
     unsigned char *bp;
 
     bp = Blt_DBuffer_Extend(srcPtr, numBytes);
     if (bp == NULL) {
-	return FALSE;
+        return FALSE;
     }
     memcpy(bp, data, numBytes);
     return TRUE;
@@ -273,7 +273,7 @@ Blt_DBuffer_AppendString(DBuffer *srcPtr, const char *string, int numBytes)
     }
     bp = Blt_DBuffer_Extend(srcPtr, numBytes);
     if (bp == NULL) {
-	return FALSE;
+        return FALSE;
     }
     memcpy(bp, string, numBytes);
     return TRUE;
@@ -281,7 +281,7 @@ Blt_DBuffer_AppendString(DBuffer *srcPtr, const char *string, int numBytes)
 
 int
 Blt_DBuffer_InsertData(DBuffer *srcPtr, const unsigned char *data, 
-		       size_t numBytes, size_t index)
+                       size_t numBytes, size_t index)
 {
     unsigned char *bp;
     size_t oldLength, newLength, trailing;
@@ -290,7 +290,7 @@ Blt_DBuffer_InsertData(DBuffer *srcPtr, const unsigned char *data,
     oldLength = Blt_DBuffer_Length(srcPtr);
     bp = Blt_DBuffer_Extend(srcPtr, numBytes);
     if (bp == NULL) {
-	return FALSE;
+        return FALSE;
     }
     newLength = Blt_DBuffer_Length(srcPtr);
     /* Create a hole by moving the data to the end. */
@@ -333,13 +333,13 @@ Blt_DBuffer_VarAppend(DBuffer *srcPtr, ...)
 
     va_start(args, srcPtr);
     for (;;) {
-	const unsigned char *string;
+        const unsigned char *string;
 
-	string = va_arg(args, const unsigned char *);
-	if (string == NULL) {
-	    break;
-	}
-	Blt_DBuffer_AppendData(srcPtr, string, strlen((const char *)string));
+        string = va_arg(args, const unsigned char *);
+        if (string == NULL) {
+            break;
+        }
+        Blt_DBuffer_AppendData(srcPtr, string, strlen((const char *)string));
     }
     va_end(args);
 }
@@ -354,7 +354,7 @@ Blt_DBuffer_Format(DBuffer *srcPtr, const char *fmt, ...)
     va_start(args, fmt);
     length = vsnprintf(string, BUFSIZ, fmt, args);
     if (length > BUFSIZ) {
-	strcat(string, "...");
+        strcat(string, "...");
     }
     va_end(args);
     length = strlen(string);
@@ -368,7 +368,7 @@ Blt_DBuffer_Format(DBuffer *srcPtr, const char *fmt, ...)
 #ifdef notdef
 int
 Blt_DBuffer_LoadFile(Tcl_Interp *interp, const char *fileName, 
-		     Blt_DBuffer dBuffer)
+                     Blt_DBuffer dBuffer)
 {
     FILE *f;
     size_t numBytes, numRead;
@@ -382,29 +382,29 @@ Blt_DBuffer_LoadFile(Tcl_Interp *interp, const char *fileName,
 #endif
     f = Blt_OpenFile(interp, fileName, READ_MODE);
     if (f == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (fstat(fileno(f), &sb)) {
-	Tcl_AppendResult(interp, "can't stat \"", fileName, "\": ",
-		Tcl_PosixError(interp), (char *)NULL);
-	return TCL_ERROR;
-    }	
+        Tcl_AppendResult(interp, "can't stat \"", fileName, "\": ",
+                Tcl_PosixError(interp), (char *)NULL);
+        return TCL_ERROR;
+    }   
     Blt_DBuffer_Init(dBuffer);
-    numBytes = sb.st_size;		/* Size of buffer */
+    numBytes = sb.st_size;              /* Size of buffer */
     if (!Blt_DBuffer_Resize(dBuffer, numBytes)) {
-	fclose(f);
-	return TCL_ERROR;
-    }	
+        fclose(f);
+        return TCL_ERROR;
+    }   
     bytes = Blt_DBuffer_Bytes(dBuffer);
     numRead = fread(bytes, sizeof(unsigned char), numBytes, f);
     Blt_DBuffer_SetLength(dBuffer, numRead);
     fclose(f);
     if (numRead != numBytes) {
-	Tcl_AppendResult(interp, "short file \"", fileName, "\" : read ", 
-		Blt_Itoa(numBytes), " bytes.", (char *)NULL); 
-	Blt_DBuffer_Free(dBuffer);
-	return TCL_ERROR;
-    }	
+        Tcl_AppendResult(interp, "short file \"", fileName, "\" : read ", 
+                Blt_Itoa(numBytes), " bytes.", (char *)NULL); 
+        Blt_DBuffer_Free(dBuffer);
+        return TCL_ERROR;
+    }   
     return TCL_OK;
 }
 
@@ -418,49 +418,49 @@ Blt_DBuffer_LoadFile(Tcl_Interp *interp, const char *fileName,
     Tcl_Channel channel;
 
     if (fileName[0] == '@') { 
-	int mode;
+        int mode;
 
-	/* If the file name starts with a '@', then it represents the name
-	 * of a previously opened channel.  Verify that the channel was
-	 * opened for reading. */
-	fileName++;
-	channel = Tcl_GetChannel(interp, fileName, &mode);
-	if ((mode & TCL_READABLE) == 0) {
-	    Tcl_AppendResult(interp, "can't read from \"", fileName, "\"",
-			     (char *)NULL);
-	    return TCL_ERROR;
-	}
+        /* If the file name starts with a '@', then it represents the name
+         * of a previously opened channel.  Verify that the channel was
+         * opened for reading. */
+        fileName++;
+        channel = Tcl_GetChannel(interp, fileName, &mode);
+        if ((mode & TCL_READABLE) == 0) {
+            Tcl_AppendResult(interp, "can't read from \"", fileName, "\"",
+                             (char *)NULL);
+            return TCL_ERROR;
+        }
     } else {
-	channel = Tcl_OpenFileChannel(interp, fileName, "r", 0);
+        channel = Tcl_OpenFileChannel(interp, fileName, "r", 0);
     }
     if (channel == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tcl_SetChannelOption(interp, channel, "-encoding", "binary")
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     if (Tcl_SetChannelOption(interp, channel, "-translation", "binary") 
-	!= TCL_OK) {
-	return TCL_ERROR;
+        != TCL_OK) {
+        return TCL_ERROR;
     }
     Blt_DBuffer_Init(dBuffer);
     numBytes = 0;
     while (!Tcl_Eof(channel)) {
-	int numRead;
+        int numRead;
 #define BUFFER_SIZE (1<<16)
-	char *bp;
+        char *bp;
 
-	bp = (char *)Blt_DBuffer_Extend(dBuffer, BUFFER_SIZE);
-	numRead = Tcl_ReadRaw(channel, bp, BUFFER_SIZE);
-	if (numRead == -1) {
-	    Tcl_AppendResult(interp, "error reading ", fileName, ": ",
-			Tcl_PosixError(interp), (char *)NULL);
-	    Blt_DBuffer_Free(dBuffer);
-	    return TCL_ERROR;
-	}
-	numBytes += numRead;
-	Blt_DBuffer_SetLength(dBuffer, numBytes);
+        bp = (char *)Blt_DBuffer_Extend(dBuffer, BUFFER_SIZE);
+        numRead = Tcl_ReadRaw(channel, bp, BUFFER_SIZE);
+        if (numRead == -1) {
+            Tcl_AppendResult(interp, "error reading ", fileName, ": ",
+                        Tcl_PosixError(interp), (char *)NULL);
+            Blt_DBuffer_Free(dBuffer);
+            return TCL_ERROR;
+        }
+        numBytes += numRead;
+        Blt_DBuffer_SetLength(dBuffer, numBytes);
     }
     Tcl_Close(interp, channel);
     return TCL_OK;
@@ -470,7 +470,7 @@ Blt_DBuffer_LoadFile(Tcl_Interp *interp, const char *fileName,
 
 int 
 Blt_DBuffer_SaveFile(Tcl_Interp *interp, const char *fileName, 
-		     Blt_DBuffer dBuffer)
+                     Blt_DBuffer dBuffer)
 {
     Tcl_Channel channel;
     size_t numWritten, numBytes;
@@ -478,7 +478,7 @@ Blt_DBuffer_SaveFile(Tcl_Interp *interp, const char *fileName,
 
     channel = Tcl_OpenFileChannel(interp, fileName, "w", 0660);
     if (channel == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_SetChannelOption(interp, channel, "-translation", "binary");
     Tcl_SetChannelOption(interp, channel, "-encoding", "binary");
@@ -488,12 +488,12 @@ Blt_DBuffer_SaveFile(Tcl_Interp *interp, const char *fileName,
     numWritten = Tcl_Write(channel, (char *)bytes, numBytes);
     Tcl_Close(interp, channel);
     if (numWritten != numBytes) {
-	Tcl_AppendResult(interp, "short file \"", fileName, (char *)NULL);
-	Tcl_AppendResult(interp, "\" : wrote ", Blt_Itoa(numWritten), " of ", 
-			 (char *)NULL);
-	Tcl_AppendResult(interp, Blt_Itoa(numBytes), " bytes.", (char *)NULL); 
-	return TCL_ERROR;
-    }	
+        Tcl_AppendResult(interp, "short file \"", fileName, (char *)NULL);
+        Tcl_AppendResult(interp, "\" : wrote ", Blt_Itoa(numWritten), " of ", 
+                         (char *)NULL);
+        Tcl_AppendResult(interp, Blt_Itoa(numBytes), " bytes.", (char *)NULL); 
+        return TCL_ERROR;
+    }   
     return TCL_OK;
 }
 
@@ -502,16 +502,16 @@ static int
 ReadNextBlock(DBuffer *srcPtr)
 {
     if (srcPtr->channel == NULL) {
-	return -1;
+        return -1;
     }
     if (Tcl_Eof(srcPtr->channel)) {
-	return 0;
+        return 0;
     }
     numRead = Tcl_ReadRaw(srcPtr->channel, srcPtr->bytes, BUFFER_SIZE);
     if (numRead == -1) {
-	Tcl_AppendResult(interp, "error reading channel: ",
-			 Tcl_PosixError(interp), (char *)NULL);
-	return -1;
+        Tcl_AppendResult(interp, "error reading channel: ",
+                         Tcl_PosixError(interp), (char *)NULL);
+        return -1;
     }
     srcPtr->cursor = srcPtr->bytes;
     srcPtr->length = numRead;
@@ -524,15 +524,15 @@ Blt_DBuffer_GetNext(DBuffer *srcPtr)
     int byte;
 
     if ((srcPtr->cursor - srcPtr->bytes) >= srcPtr->length) {
-	int result;
+        int result;
 
-	result = 0;
-	if (srcPtr->channel != NULL) {
-	    result = ReadNextBlock(srcPtr);
-	}
-	if (result <= 0) {
-	    return result;
-	}
+        result = 0;
+        if (srcPtr->channel != NULL) {
+            result = ReadNextBlock(srcPtr);
+        }
+        if (result <= 0) {
+            return result;
+        }
     }
     byte = *srcPtr->cursor;
     srcPtr->cursor++;
@@ -542,16 +542,16 @@ Blt_DBuffer_GetNext(DBuffer *srcPtr)
 
 int
 Blt_DBuffer_Base64Decode(Tcl_Interp *interp, const char *string, size_t length,
-			 DBuffer *destPtr)
+                         DBuffer *destPtr)
 {
     unsigned char *bp;
 
-    bp = Blt_Base64_Decode(interp, string, &length);	
+    bp = Blt_Base64_Decode(interp, string, &length);    
     if (bp == NULL) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (destPtr->bytes != NULL) {
-	Blt_Free(destPtr->bytes);
+        Blt_Free(destPtr->bytes);
     }
     destPtr->bytes = bp;
     destPtr->size = destPtr->length = length;
@@ -563,14 +563,14 @@ Blt_DBuffer_Base64Decode(Tcl_Interp *interp, const char *string, size_t length,
 
 Tcl_Obj *
 Blt_DBuffer_Base64EncodeToObj(
-    DBuffer *srcPtr)			/* Input binary buffer. */
+    DBuffer *srcPtr)                    /* Input binary buffer. */
 {
     return Blt_Base64_EncodeToObj(srcPtr->bytes, srcPtr->length);
 }
 
 int
 Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer, 
-	size_t bufsize) 
+        size_t bufsize) 
 {
     size_t oldLength, numBytes, length;
     unsigned char *destBytes;
@@ -579,7 +579,7 @@ Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer,
     oldLength = Blt_DBuffer_Length(destPtr);
     destBytes = Blt_DBuffer_Extend(destPtr, length);
     if (destBytes == NULL) {
-	return FALSE;
+        return FALSE;
     }
     numBytes = Blt_Base64_Encode(buffer, bufsize, destBytes);
     assert(numBytes < length);
@@ -589,7 +589,7 @@ Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer,
 
 int 
 Blt_DBuffer_AppendBase85(DBuffer *destPtr, const unsigned char *buffer, 
-	size_t bufsize) 
+        size_t bufsize) 
 {
     size_t oldLength, numBytes, length;
     unsigned char *destBytes;
@@ -598,7 +598,7 @@ Blt_DBuffer_AppendBase85(DBuffer *destPtr, const unsigned char *buffer,
     oldLength = Blt_DBuffer_Length(destPtr);
     destBytes = Blt_DBuffer_Extend(destPtr, length);
     if (destBytes == NULL) {
-	return FALSE;
+        return FALSE;
     }
     numBytes = Blt_Base85_Encode(buffer, bufsize, destBytes);
     assert(numBytes < length);

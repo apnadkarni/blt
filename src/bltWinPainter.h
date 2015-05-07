@@ -50,9 +50,9 @@
 #define _BLT_WIN_PAINTER_H
 
 #ifdef notdef
-#define PAINTER_COLOR_WINDOW		(1<<0)
-#define PAINTER_BW			(1<<1)
-#define PAINTER_MAP_COLORS		(1<<2)
+#define PAINTER_COLOR_WINDOW            (1<<0)
+#define PAINTER_BW                      (1<<1)
+#define PAINTER_MAP_COLORS              (1<<2)
 #endif
 
 /*
@@ -69,41 +69,41 @@
  */
 
 struct _Blt_Painter {
-    Display *display;		/* Display of painter. Used to free colors
-				 * allocated. */
+    Display *display;           /* Display of painter. Used to free colors
+                                 * allocated. */
 
-    int depth;			/* Pixel depth of the display. */
+    int depth;                  /* Pixel depth of the display. */
 
-    float gamma;		/* Gamma correction value of monitor. */
+    float gamma;                /* Gamma correction value of monitor. */
 
     Colormap colormap;
 
-    unsigned int flags;		/* Flags listed below. */
+    unsigned int flags;         /* Flags listed below. */
 
-    int refCount;		/* # of clients using this painter. If zero,
-				 * # the painter is freed. */
+    int refCount;               /* # of clients using this painter. If zero,
+                                 * # the painter is freed. */
 
-    Blt_HashEntry *hashPtr;	/* Used to delete the painter entry from the
-				 * hash table of painters. */
+    Blt_HashEntry *hashPtr;     /* Used to delete the painter entry from the
+                                 * hash table of painters. */
 
-    GC gc;			/* GC used to draw the image. */
+    GC gc;                      /* GC used to draw the image. */
 
     unsigned char gammaTable[256]; /* Input gamma lookup table. Used to map
-				 * non-linear monitor values back to RGB
-				 * values. This is used whenever we take a
-				 * snapshot of the screen (e.g. alpha
-				 * blending).  Computes the power mapping.  D
-				 * = I^gamma. */
+                                 * non-linear monitor values back to RGB
+                                 * values. This is used whenever we take a
+                                 * snapshot of the screen (e.g. alpha
+                                 * blending).  Computes the power mapping.  D
+                                 * = I^gamma. */
 
     unsigned char igammaTable[256]; /* Output gamma lookup table. Used to map
-				 * RGB values to non-linear monitor
-				 * values. Computes the inverse power mapping.
-				 * I~ = D^1/gamma. */
+                                 * RGB values to non-linear monitor
+                                 * values. Computes the inverse power mapping.
+                                 * I~ = D^1/gamma. */
 
-    Blt_Pixel palette[256];	/* Maps the picture's 8-bit RGB values to the
-				 * RGB values of the colors actually
-				 * allocated. This is used for dithering the
-				 * picture. */
+    Blt_Pixel palette[256];     /* Maps the picture's 8-bit RGB values to the
+                                 * RGB values of the colors actually
+                                 * allocated. This is used for dithering the
+                                 * picture. */
 
 };
 

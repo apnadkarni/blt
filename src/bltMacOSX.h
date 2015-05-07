@@ -38,9 +38,9 @@
 #ifndef _BLT_MACOSX_H
 #define _BLT_MACOSX_H
 
-#define	NO_KIOSK	1
-#define	NO_CONTAINER	1
-#define	NO_DDE		1
-#define	NO_PRINTER	1
+#define NO_KIOSK        1
+#define NO_CONTAINER    1
+#define NO_DDE          1
+#define NO_PRINTER      1
 
 #endif /*_BLT_MACOSX_H*/

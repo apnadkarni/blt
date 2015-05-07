@@ -47,28 +47,28 @@
 #endif /* Blt_Offset */
 
 typedef int (Blt_OptionParseProc)(ClientData clientData, Tcl_Interp *interp, 
-	Tk_Window tkwin, Tcl_Obj *objPtr, char *widgRec, int offset, int flags);
+        Tk_Window tkwin, Tcl_Obj *objPtr, char *widgRec, int offset, int flags);
 typedef Tcl_Obj *(Blt_OptionPrintProc)(ClientData clientData, 
-	Tcl_Interp *interp, Tk_Window tkwin, char *widgRec, int offset, 
-	int flags);
+        Tcl_Interp *interp, Tk_Window tkwin, char *widgRec, int offset, 
+        int flags);
 typedef void (Blt_OptionFreeProc)(ClientData clientData, Display *display, 
-	char *widgRec, int offset);
+        char *widgRec, int offset);
 
 typedef struct _Blt_CustomOption {
-    Blt_OptionParseProc *parseProc;	/* Procedure to call to parse an
-					 * option and store it in converted
-					 * form. */
+    Blt_OptionParseProc *parseProc;     /* Procedure to call to parse an
+                                         * option and store it in converted
+                                         * form. */
 
-    Blt_OptionPrintProc *printProc;	/* Procedure to return a Tcl_Obj
-					 * representing an existing option
-					 * value. */
+    Blt_OptionPrintProc *printProc;     /* Procedure to return a Tcl_Obj
+                                         * representing an existing option
+                                         * value. */
 
-    Blt_OptionFreeProc *freeProc;	/* Procedure used to free the
-					 * value. */
+    Blt_OptionFreeProc *freeProc;       /* Procedure used to free the
+                                         * value. */
 
-    ClientData clientData;		/* Arbitrary one-word value used by
-					 * option parser: passed to
-					 * parseProc and printProc. */
+    ClientData clientData;              /* Arbitrary one-word value used by
+                                         * option parser: passed to
+                                         * parseProc and printProc. */
 } Blt_CustomOption;
 
 /*
@@ -80,36 +80,36 @@ typedef struct _Blt_CustomOption {
 
 typedef struct {
     int type;                           /* Type of option, such as
-					 * BLT_CONFIG_COLOR; see
-					 * definitions below.  Last option
-					 * in table must have type
-					 * BLT_CONFIG_END. */
+                                         * BLT_CONFIG_COLOR; see
+                                         * definitions below.  Last option
+                                         * in table must have type
+                                         * BLT_CONFIG_END. */
 
     const char *switchName;             /* Switch used to specify option in
-					 * argv.  NULL means this spec is
-					 * part of a group. */
+                                         * argv.  NULL means this spec is
+                                         * part of a group. */
 
     Tk_Uid dbName;                      /* Name for option in option
-					 * database. */
+                                         * database. */
 
     Tk_Uid dbClass;                     /* Class for option in database. */
 
     Tk_Uid defValue;                    /* Default value for option if not
-					 * specified in command line or
-					 * database. */
+                                         * specified in command line or
+                                         * database. */
 
     int offset;                         /* Where in widget record to store
-					 * value; use Blt_Offset macro to
-					 * generate values for this. */
+                                         * value; use Blt_Offset macro to
+                                         * generate values for this. */
 
     int specFlags;                      /* Any combination of the values
-					 * defined below; other bits are used
-					 * internally by tkConfig.c. */
+                                         * defined below; other bits are used
+                                         * internally by tkConfig.c. */
 
     Blt_CustomOption *customPtr;       /* If type is BLT_CONFIG_CUSTOM then
-					* this is a pointer to info about how
-					* to parse and print the option.
-					* Otherwise it is irrelevant. */
+                                        * this is a pointer to info about how
+                                        * to parse and print the option.
+                                        * Otherwise it is irrelevant. */
 } Blt_ConfigSpec;
 
 /*
@@ -143,19 +143,19 @@ typedef enum {
     BLT_CONFIG_DASHES,
     BLT_CONFIG_FILL,
     BLT_CONFIG_FLOAT, 
-    BLT_CONFIG_INT_NNEG,	/* 0..N */
-    BLT_CONFIG_INT_POS,		/* 1..N */
+    BLT_CONFIG_INT_NNEG,        /* 0..N */
+    BLT_CONFIG_INT_POS,         /* 1..N */
     BLT_CONFIG_LIST,
     BLT_CONFIG_LONG, 
-    BLT_CONFIG_LONG_NNEG,	/* 0..N */
-    BLT_CONFIG_LONG_POS,	/* 1..N */
+    BLT_CONFIG_LONG_NNEG,       /* 0..N */
+    BLT_CONFIG_LONG_POS,        /* 1..N */
     BLT_CONFIG_OBJ,
     BLT_CONFIG_PAD,
-    BLT_CONFIG_PIXELS_NNEG,	/* 1.1c 2m 3.2i excluding negative
-				   values. */
-    BLT_CONFIG_PIXELS_POS,	/* 1.1c 2m 3.2i excluding negative
-				 * values and zero. */
-    BLT_CONFIG_PIXELS,		/* 1.1c 2m 3.2i. */
+    BLT_CONFIG_PIXELS_NNEG,     /* 1.1c 2m 3.2i excluding negative
+                                   values. */
+    BLT_CONFIG_PIXELS_POS,      /* 1.1c 2m 3.2i excluding negative
+                                 * values and zero. */
+    BLT_CONFIG_PIXELS,          /* 1.1c 2m 3.2i. */
     BLT_CONFIG_POSITION,
     BLT_CONFIG_RESIZE,
     BLT_CONFIG_SIDE,
@@ -171,7 +171,7 @@ typedef enum {
 /*
  * Possible values for flags argument to Tk_ConfigureWidget:
  */
-#define BLT_CONFIG_OBJV_ONLY	1
+#define BLT_CONFIG_OBJV_ONLY    1
 
 /*
  * Possible flag values for Blt_ConfigSpec structures.  Any bits at or
@@ -184,38 +184,38 @@ typedef enum {
  * coordinate these values with those defined in tk.h
  * (BLT_CONFIG_COLOR_ONLY, etc.).  There must not be overlap!
  *
- * INIT -		Non-zero means (char *) things have been
- *			converted to Tk_Uid's.
+ * INIT -               Non-zero means (char *) things have been
+ *                      converted to Tk_Uid's.
  */
-#define INIT				(1<<0)
-#define BLT_CONFIG_NULL_OK		(1<<1)
-#define BLT_CONFIG_COLOR_ONLY		(1<<2)
-#define BLT_CONFIG_MONO_ONLY		(1<<3)
-#define BLT_CONFIG_DONT_SET_DEFAULT	(1<<4)
-#define BLT_CONFIG_OPTION_SPECIFIED	(1<<5)
-#define BLT_CONFIG_USER_BIT		(1<<8)
+#define INIT                            (1<<0)
+#define BLT_CONFIG_NULL_OK              (1<<1)
+#define BLT_CONFIG_COLOR_ONLY           (1<<2)
+#define BLT_CONFIG_MONO_ONLY            (1<<3)
+#define BLT_CONFIG_DONT_SET_DEFAULT     (1<<4)
+#define BLT_CONFIG_OPTION_SPECIFIED     (1<<5)
+#define BLT_CONFIG_USER_BIT             (1<<8)
 
 
-#define STATE_NORMAL		(0)
-#define STATE_ACTIVE		(1<<0)
-#define STATE_DISABLED		(1<<1)
-#define STATE_EMPHASIS		(1<<2)
+#define STATE_NORMAL            (0)
+#define STATE_ACTIVE            (1<<0)
+#define STATE_DISABLED          (1<<1)
+#define STATE_EMPHASIS          (1<<2)
 
 /*
  *---------------------------------------------------------------------------
  *
  * Blt_Pad --
  *
- * 	Specifies vertical and horizontal padding.
+ *      Specifies vertical and horizontal padding.
  *
- *	Padding can be specified on a per side basis.  The fields side1 and
- *	side2 refer to the opposite sides, either horizontally or
- *	vertically.
+ *      Padding can be specified on a per side basis.  The fields side1 and
+ *      side2 refer to the opposite sides, either horizontally or
+ *      vertically.
  *
- *		side1	side2
+ *              side1   side2
  *              -----   -----
  *          x | left    right
- *	    y | top     bottom
+ *          y | top     bottom
  *
  *---------------------------------------------------------------------------
  */
@@ -223,64 +223,64 @@ typedef struct {
     unsigned short int side1, side2;
 } Blt_Pad;
 
-#define padLeft  	xPad.side1
-#define padRight  	xPad.side2
-#define padTop		yPad.side1
-#define padBottom	yPad.side2
-#define PADDING(x)	((x).side1 + (x).side2)
+#define padLeft         xPad.side1
+#define padRight        xPad.side2
+#define padTop          yPad.side1
+#define padBottom       yPad.side2
+#define PADDING(x)      ((x).side1 + (x).side2)
 
 /*
  *---------------------------------------------------------------------------
  *
  * The following enumerated values are used as bit flags.
- *	FILL_NONE		Neither coordinate plane is specified 
- *	FILL_X			Horizontal plane.
- *	FILL_Y			Vertical plane.
- *	FILL_BOTH		Both vertical and horizontal planes.
+ *      FILL_NONE               Neither coordinate plane is specified 
+ *      FILL_X                  Horizontal plane.
+ *      FILL_Y                  Vertical plane.
+ *      FILL_BOTH               Both vertical and horizontal planes.
  *
  *---------------------------------------------------------------------------
  */
-#define FILL_NONE	0
-#define FILL_X		1
-#define FILL_Y		2
-#define FILL_BOTH	3
+#define FILL_NONE       0
+#define FILL_X          1
+#define FILL_Y          2
+#define FILL_BOTH       3
 
 /*
  * Resize --
  *
- *	These flags indicate in what ways each partition in a table can be
- *	resized from its default dimensions.  The normal size of a
- *	row/column is the minimum amount of space needed to hold the
- *	widgets that span it.  The table may then be stretched or shrunk
- *	depending if the container is larger or smaller than the
- *	table. This can occur if 1) the user resizes the toplevel widget,
- *	or 2) the container is in turn packed into a larger widget and the
- *	"fill" option is set.
+ *      These flags indicate in what ways each partition in a table can be
+ *      resized from its default dimensions.  The normal size of a
+ *      row/column is the minimum amount of space needed to hold the
+ *      widgets that span it.  The table may then be stretched or shrunk
+ *      depending if the container is larger or smaller than the
+ *      table. This can occur if 1) the user resizes the toplevel widget,
+ *      or 2) the container is in turn packed into a larger widget and the
+ *      "fill" option is set.
  *
- * 	  RESIZE_NONE 	  - No resizing from normal size.
- *	  RESIZE_EXPAND   - Do not allow the size to decrease.
- *			    The size may increase however.
+ *        RESIZE_NONE     - No resizing from normal size.
+ *        RESIZE_EXPAND   - Do not allow the size to decrease.
+ *                          The size may increase however.
  *        RESIZE_SHRINK   - Do not allow the size to increase.
- *			    The size may decrease however.
- *	  RESIZE_BOTH     - Allow the size to increase or
- *			    decrease from the normal size.
- *	  RESIZE_VIRGIN   - Special case of the resize flag.  Used to
- *			    indicate the initial state of the flag.
- *			    Empty rows/columns are treated differently
- *			    if this row/column is set.
+ *                          The size may decrease however.
+ *        RESIZE_BOTH     - Allow the size to increase or
+ *                          decrease from the normal size.
+ *        RESIZE_VIRGIN   - Special case of the resize flag.  Used to
+ *                          indicate the initial state of the flag.
+ *                          Empty rows/columns are treated differently
+ *                          if this row/column is set.
  */
 
-#define RESIZE_NONE	0
-#define RESIZE_EXPAND	(1<<0)
-#define RESIZE_SHRINK	(1<<1)
-#define RESIZE_BOTH	(RESIZE_EXPAND | RESIZE_SHRINK)
+#define RESIZE_NONE     0
+#define RESIZE_EXPAND   (1<<0)
+#define RESIZE_SHRINK   (1<<1)
+#define RESIZE_BOTH     (RESIZE_EXPAND | RESIZE_SHRINK)
 
 /*
  *---------------------------------------------------------------------------
  *
  * Blt_Dashes --
  *
- * 	List of dash values (maximum 11 based upon PostScript limit).
+ *      List of dash values (maximum 11 based upon PostScript limit).
  *
  *---------------------------------------------------------------------------
  */
@@ -294,106 +294,106 @@ typedef struct {
 /*
  * Blt_Limits --
  *
- * 	Defines the bounding of a size (width or height) in the paneset.
- * 	It may be related to the widget, pane or paneset size.
+ *      Defines the bounding of a size (width or height) in the paneset.
+ *      It may be related to the widget, pane or paneset size.
  */
 typedef struct {
-    int flags;				/* Flags indicate whether using
-					 * default values for limits or
-					 * not. See flags below. */
-    int max, min;			/* Values for respective limits. */
-    int nom;				/* Nominal starting value. */
+    int flags;                          /* Flags indicate whether using
+                                         * default values for limits or
+                                         * not. See flags below. */
+    int max, min;                       /* Values for respective limits. */
+    int nom;                            /* Nominal starting value. */
 } Blt_Limits;
 
-#define LIMITS_MIN_SET	(1<<0)
-#define LIMITS_MAX_SET	(1<<1)
-#define LIMITS_NOM_SET	(1<<2)
+#define LIMITS_MIN_SET  (1<<0)
+#define LIMITS_MAX_SET  (1<<1)
+#define LIMITS_NOM_SET  (1<<2)
 
-#define LIMITS_MIN	0		/* Default minimum limit  */
-#define LIMITS_MAX	SHRT_MAX	/* Default maximum limit */
-#define LIMITS_NOM	-1000		/* Default nomimal value.
-					 * Indicates if a pane has received
-					 * any space yet */
+#define LIMITS_MIN      0               /* Default minimum limit  */
+#define LIMITS_MAX      SHRT_MAX        /* Default maximum limit */
+#define LIMITS_NOM      -1000           /* Default nomimal value.
+                                         * Indicates if a pane has received
+                                         * any space yet */
 
 BLT_EXTERN void Blt_SetDashes (Display *display, GC gc, Blt_Dashes *dashesPtr);
 
 BLT_EXTERN void Blt_ResetLimits(Blt_Limits *limitsPtr);
 BLT_EXTERN int Blt_GetLimitsFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr, Blt_Limits *limitsPtr);
+        Tcl_Obj *objPtr, Blt_Limits *limitsPtr);
 
 BLT_EXTERN int Blt_ConfigureInfoFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Blt_ConfigSpec *specs, char *widgRec, Tcl_Obj *objPtr, int flags);
+        Blt_ConfigSpec *specs, char *widgRec, Tcl_Obj *objPtr, int flags);
 
 BLT_EXTERN int Blt_ConfigureValueFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Blt_ConfigSpec *specs, char *widgRec, Tcl_Obj *objPtr, int flags);
+        Blt_ConfigSpec *specs, char *widgRec, Tcl_Obj *objPtr, int flags);
 
 BLT_EXTERN int Blt_ConfigureWidgetFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Blt_ConfigSpec *specs, int objc, Tcl_Obj *const *objv, char *widgRec, 
-	int flags);
+        Blt_ConfigSpec *specs, int objc, Tcl_Obj *const *objv, char *widgRec, 
+        int flags);
 
 BLT_EXTERN int Blt_ConfigureComponentFromObj(Tcl_Interp *interp, 
-	Tk_Window tkwin, const char *name, const char *className, 
-	Blt_ConfigSpec *specs, int objc, Tcl_Obj *const *objv, char *widgRec, 
-	int flags);
+        Tk_Window tkwin, const char *name, const char *className, 
+        Blt_ConfigSpec *specs, int objc, Tcl_Obj *const *objv, char *widgRec, 
+        int flags);
 
 BLT_EXTERN int Blt_ConfigModified(Blt_ConfigSpec *specs, ...);
 
 BLT_EXTERN const char *Blt_NameOfState(int state);
 
 BLT_EXTERN void Blt_FreeOptions(Blt_ConfigSpec *specs, char *widgRec, 
-	Display *display, int needFlags);
+        Display *display, int needFlags);
 
 BLT_EXTERN int Blt_ObjIsOption(Blt_ConfigSpec *specs, Tcl_Obj *objPtr, 
-	int flags);
+        int flags);
 
 BLT_EXTERN int Blt_GetPixelsFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr, int flags, int *valuePtr);
+        Tcl_Obj *objPtr, int flags, int *valuePtr);
 
 BLT_EXTERN int Blt_GetPadFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr, Blt_Pad *padPtr);
+        Tcl_Obj *objPtr, Blt_Pad *padPtr);
 
 BLT_EXTERN int Blt_GetStateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	int *statePtr);
+        int *statePtr);
 
 BLT_EXTERN int Blt_GetFillFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	int *fillPtr);
+        int *fillPtr);
 
 BLT_EXTERN int Blt_GetResizeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	int *fillPtr);
+        int *fillPtr);
 
 BLT_EXTERN int Blt_GetDashesFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Blt_Dashes *dashesPtr);
+        Blt_Dashes *dashesPtr);
 
 #if (_TK_VERSION < _VERSION(8,1,0))
 BLT_EXTERN int Tk_GetAnchorFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Tk_Anchor *anchorPtr);
+        Tk_Anchor *anchorPtr);
 
 BLT_EXTERN int Tk_GetJustifyFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Tk_Justify *justifyPtr);
+        Tk_Justify *justifyPtr);
 
 BLT_EXTERN int Tk_GetReliefFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	int *reliefPtr);
+        int *reliefPtr);
 
 BLT_EXTERN int Tk_GetMMFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr, double *doublePtr);
+        Tcl_Obj *objPtr, double *doublePtr);
 
 BLT_EXTERN int Tk_GetPixelsFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr, int *intPtr);
+        Tcl_Obj *objPtr, int *intPtr);
 
 BLT_EXTERN Tk_3DBorder Tk_Alloc3DBorderFromObj(Tcl_Interp *interp, 
-	Tk_Window tkwin, Tcl_Obj *objPtr);
+        Tk_Window tkwin, Tcl_Obj *objPtr);
 
 BLT_EXTERN Pixmap Tk_AllocBitmapFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr);
+        Tcl_Obj *objPtr);
 
 BLT_EXTERN Tk_Font Tk_AllocFontFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr);
+        Tcl_Obj *objPtr);
 
 BLT_EXTERN Tk_Cursor Tk_AllocCursorFromObj(Tcl_Interp *interp, Tk_Window tkwin,
-	Tcl_Obj *objPtr);
+        Tcl_Obj *objPtr);
 
 BLT_EXTERN XColor *Tk_AllocColorFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-	Tcl_Obj *objPtr);
+        Tcl_Obj *objPtr);
 #endif /* < 8.1 */
 
 #endif /* BLT_CONFIG_H */
