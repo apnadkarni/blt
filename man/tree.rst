@@ -1,3 +1,4 @@
+
 =========
 blt::tree
 =========
@@ -6,7 +7,7 @@ blt::tree
 Create and manage tree data objects.
 ------------------------------------
 
-:Author: George A Howlett <gahowlett@gmail.com>
+:Author: George A Howlett
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0
@@ -1011,6 +1012,72 @@ Then the following **import** and **export** commands become available.
 EXAMPLE
 -------
 
+C API
+-----
+
+#include <bltTree.h>
+
+struct Blt_Tree {
+
+int **Blt_Tree_Create**\ (Tcl_Interp *\ *interp*, const char *\ *name*, Blt_Tree \* *treePtr*)
+  Creates a new tree data object with the given name. *Name* is the name of
+  the new tree object.  The form of name is the same as the **blt::tree
+  create** operation.  Returns a token to the new tree data object. The
+  tree will initially contain only a root node.
+
+Blt_TreeNode **Blt_Tree_CreateNode**\ (Blt_Tree *tree*, Blt_TreeNode *parent*, const char *\ *name*, int *position*)
+  Creates a new child node in *parent*.  The new node is
+  initially empty, but data values can be added with **Blt_Tree_SetValue**.
+  Each node has a serial number that identifies it within the tree.  No two
+  nodes in the same tree will ever have the same ID.  You can find a node's
+  ID with **Blt_Tree_NodeId**.
+
+  The label of the node is *name*.  If *name* is NULL, a label in the form
+  ""node0"", ""node1"", etc. will automatically be generated.  *Name* can
+  be any string.  Labels are non-unique.  A parent can contain two nodes
+  with the same label. Nodes can be relabeled using
+  **Blt_Tree_RelabelNode**.
+
+  The position of the new node in the list of children is determined
+  by *position*. For example, if *position* is 0, then the new node
+  is prepended to the beginning of the list.  If *position* is -1,
+  then the node is appended onto the end of the parent's list.  
+
+Blt_TreeNode **Blt_Tree_DeleteNode**\ (Blt_Tree *tree*, Blt_TreeNode *node*)
+  Deletes a given node and all it descendants.  *Node* is the node to be
+  deleted.  The node and its descendant nodes are deleted.  Each node's
+  data values are deleted also.  The reference count of the Tcl_Obj is
+  decremented.
+
+  Since all tree objects must contain at least a root node, the root node
+  itself can't be deleted unless the tree is released and
+  destroyed. Therefore you can clear a tree by deleting its root, but the
+  root node will remain until the tree is destroyed.
+
+int **Blt_Tree_Exists**\ (Tcl_Interp *\ *interp*, const char *\ *name*)
+  Indicates if a tree data object exists by the given name.
+  If the tree exists 1 is returned, 0 otherwise.
+
+Blt_TreeNode **Blt_Tree_GetNode**\ (Blt_Tree *tree*, long *number*)
+  Finds the node upon its serial number. The node is searched using the
+  serial number. If no node with that ID exists in *tree* then NULL is
+  returned.
+
+int **Blt_Tree_GetToken**\ (Tcl_Interp *\ *interp*, const char *\ *name*, Blt_Tree *\ *treePtr*)
+  Obtains a token to a tree data object.  *Name* is the name of an existing
+  tree data object.  The pointer to the tree is returned via *tokenPtr*.
+
+const char * \ **Blt_Tree_Name**\ (Blt_Tree *tree*)
+  Returns the name of the tree data object.
+
+unsigned int **Blt_Tree_NodeId**\ (Blt_TreeNode *node*)
+  Returns the node serial number of *node*.  
+
+int **Blt_Tree_ReleaseToken**\ (Blt_Tree *tree*)
+  Releases the token associated with a tree data object.
+  Only when all no when else is using the tree data object will
+  the data object itself will be freed.
+
 KEYWORDS
 --------
 
@@ -1048,216 +1115,5 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-C API
------
 
-#include <bltTree.h>
-
-struct Blt_Tree {
-
-int **Blt_Tree_Create**\ (Tcl_Interp *\ *interp*, const char *\ *name*, Blt_Tree \* *treePtr*)
-  Creates a tree data object.
-
-  *Interp* is the interpreter to report results back to.
-
-  *Name* is the name of the new tree object.  You can think of *name* as
-  the memory address of the object.  It's a unique name that identifies the
-  tree object.  No tree object *name* can already exist.  *Name* can be
-  qualified by a namespace such as "fred::myTree".  If no namespace
-  qualifier is used, the tree will be created in the current namespace, not
-  the global namespace.  If a qualifier is present, the namespace must
-  already exist.
-
-  *TreePtr holds the returned token.  *TreePtr* points to
-  a location where it is stored. Tree tokens are used to work with
-  the tree object. If NULL, no token is allocated.  You can later use 
-  **Tcl_TreeGetToken** to obtain a token.
-
-  Returns the new tree data object created. The tree will initially contain
-  only a root node.  You can add new nodes with **Blt_Tree_CreateNode**.
-
-  Optionally a token for the tree data object is returned.  Tree data
-  objects can be shared.  For example, the **tree** and
-  **treeview** commands may be accessing the same tree data object.
-  Each client grabs a token that is associated with the tree.  When all
-  tokens are released (see **Blt_Tree_ReleaseToken**) the tree data
-  object is automatically destroyed.
-
-  Returns a standard Tcl result.  If TCL_ERROR is returned, then
-  *interp->result* will contain an error message.  The following
-  errors may occur:
-
-  1. There already exists a tree by the same name as *name*. You can
-     use **Tcl_TreeExists** to determine if a tree exists beforehand.
-  2. The tree name is prefixed by a namespace that doesn't exist.  If you
-     qualified the tree name with a namespace, the namespace must exist.
-     Unlike Tcl procs and variables, the namespace is not automatically
-     created for you.
-  3. Memory can't be allocated for the tree or token.
-
-Blt_TreeNode **Blt_Tree_CreateNode**\ (Blt_Tree *tree*, Blt_TreeNode *parent*, const char *\ *name*, int *position*)
-  This procedure creates a new node is a tree data object.  The node is
-  initially empty, but data values can be added with **Blt_Tree_SetValue**.
-  Each node has a serial number that identifies it within the tree.  No two
-  nodes in the same tree will ever have the same ID.  You can find a node's
-  ID with **Blt_Tree_NodeId**.
-
-  The arguments are as follows:
-
-  *tree*
-    The tree containing the parent node.
-
-  *parent*
-    Node in which the new child will be inserted. 
-
-  *name*
-    Label of the new node.  If *name* is NULL, a label in the form
-    ""node0"", ""node1"", etc. will automatically be generated.  *Name* can
-    be any string.  Labels are non-unique.  A parent can contain two nodes
-    with the same label. Nodes can be relabeled using
-    **Blt_Tree_RelabelNode**.
-
-  *position*
-    Position the parent's list of children to insert the new node.  For
-    example, if *position* is 0, then the new node is prepended to the
-    beginning of the list.  If *position* is -1, then the node is
-    appended onto the end of the parent's list.  
-
-  The new node returned is of type **Blt_TreeNode**.  It's a token
-  that can be used with other routines to add/delete data values or
-  children nodes.
-
-  **Blt_Tree_CreateNode** can trigger tree notify events.  You can be
-  notified whenever a node is created by using the
-  **Blt_Tree_CreateNotifyHandler**.  A callback routine is registered that
-  will be automatically invoked whenever a new node is added via
-  **Blt_Tree_CreateNode** to the tree.
-
-Blt_TreeNode **Blt_Tree_DeleteNode**\ (Blt_Tree *tree*, Blt_TreeNode *node*)
-  This procedure deletes a given node and all it descendants from a tree
-  data object.  
-
-  The arguments are as follows:
-
-  *tree*
-    The tree containing the parent node.
-  *node*
-    Node to be deleted.  The node and its descendant nodes are deleted.
-    Each node's data values are deleted also.   The reference count of
-    the Tcl_Obj is decremented.
-
-    Since all tree objects must contain at least a root node, the root
-    node itself can't be deleted unless the tree is released and
-    destroyed. Therefore you can clear a tree by deleting its root, but
-    the root node will remain until the tree is destroyed.
-
-  Always returns TCL_OK.  Errors generated in a notification callbacks
-  are backgrounded (see **Tcl_Tree_CreateNotifyHandler**).
-
-  **Blt_Tree_DeleteNode** can trigger tree notify events.
-  You can be notified whenever a node is deleted by using the 
-  **Blt_Tree_CreateNotifyHandler**.  A callback routine is registered
-  that will be automatically invoked whenever a node is deleted
-  via **Blt_Tree_DeleteNode** to the tree.
-
-int **Blt_Tree_Exists**\ (Tcl_Interp *\ *interp*, const char *\ *name*)
-  This procedure determines if a C-based tree data object exists by
-  a given name. The arguments are as follows:
-
-  *interp*
-    Used the determine the current namespace context.
-  *name*
-    Name of an existing tree data object.  *Name* can be qualified by
-    a namespace such as "fred::myTree".  If no namespace qualifier
-    is used, the current namespace is searched, then the global namespace.
-
-  A boolean result is returned.  If the tree exists 1 is returned,
-  0 otherwise.
-
-Blt_TreeNode **Blt_Tree_GetNode**\ (Blt_Tree *tree*, long *number*)
-  This procedure returns a node in a tree object 
-  based upon a give serial number.  
-  The node is searched using the serial number.  
-
-  The arguments are as follows:
-
-  *tree*
-    The tree containing the requested node.
-  *number*
-    The serial number of the requested node.
-
-  The node represented by the given serial number is returned.  If no
-  node with that ID exists in *tree* then NULL is returned.
-
-int **Blt_Tree_GetToken**\ (Tcl_Interp *\ *interp*, const char *\ *name*, Blt_Tree *\ *treePtr*)
-  This procedure obtains a token to a C-based tree data object.  The
-  arguments are as follows:
-
-  *interp*
-    Interpreter to report results back to.  If an error occurs, then
-    interp->result will contain an error message.
-  *name*
-    Name of an existing tree data object.  It's an error if a tree
-    *name* doesn't already exist.  *Name* can be qualified by 
-    a namespace such as "fred::myTree".  If no namespace qualifier 
-    is used, the tree the current namespace is searched, then the global
-    namespace. 
-  *tokenPtr*
-    Points to the location where the returned token is stored. A tree
-    token is used to work with the tree object.  
-
-    A token for the tree data object is returned.  Tree data objects can be
-    shared.  For example, the **blt::tree** and **blt::hiertable** commands
-    may be accessing the same tree data object.  Each client grabs a token
-    that is associated with the tree.  When all tokens are released (see
-    **Blt_Tree_ReleaseToken**) the tree data object is automatically
-    destroyed.
-
-  A standard Tcl result is returned.  If TCL_ERROR is returned, then
-  *interp->result* will contain an error message.  The following errors
-  may occur:
-
-   1. No tree exists as *name*. You can use **Tcl_TreeExists** to
-      determine if a tree exists beforehand.
-   2. Memory can't be allocated for the token.
-
-const char *\ **Blt_Tree_Name**\ (Blt_Tree *tree*)
-  This procedure returns the name of the C-based tree data object.
-  The arguments are as follows:
-
-  *tree*
-    Token for the tree object.  The token must have been previously 
-    obtained via **Blt_Tree_GetToken** or **Blt_Tree_Create**.
-
-  The name of the tree object is returned.  The name will be fully
-  qualified with a namespace context.
-
-unsigned int **Blt_Tree_NodeId**\ (Blt_TreeNode *node*)
-  This procedure returns the node serial number.  The node serial number
-  is useful for programs that export the tree data object to the Tcl
-  programming level.  Since node labels (and therefore pathnames) are
-  not unique, the ID can be used to uniquely identify a node.  
-
-  The arguments are as follows:
-
-  *node*
-    The node whose serial number is returned.  The serial number of 
-    the root node for example is always 0.
-
-  The serial number of the node.  Nodes are given a unique serial number
-  when they are created.  You can use the ID to later retrieve the node
-  using **Blt_Tree_GetNode**.  
-
-int **Blt_Tree_ReleaseToken**\ (Blt_Tree *tree*)
-  This procedure releases the token associated with a C-based tree data
-  object.  When all outstanding tokens for a tree data object have been
-  released, then the data object itself will be freed.  The arguments
-  are as follows:
-
-  *tree*
-    Token of the tree data object to be released.  This token was 
-    initialized either by **Blt_Tree_GetToken** or **Blt_Tree_Create**
-    earlier.
-
-  Returns Nothing.  
-
+  

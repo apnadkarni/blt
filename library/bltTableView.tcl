@@ -129,7 +129,7 @@ image create picture blt::TableView::filter -data {
     WEZJTEUuAA==
 }
 
-image create picture blt::TableView::xbutton -data {
+image create picture blt::TableView::xbutton2 -data {
     AAEBAAAHACAAAAAAEAAQAAgIAAAAywAAAAAAAAD9AAAAlwAAAP8AAAD7AAAAlQEB
     AQEBAQEBAQEBAQEBAQEBAQADAQEBAQEBAQEDAAEBAQACAgMBAQEBAQEDAgIAAQED
     AgQFBgEBAQEDAgQCAwEBAQYFBAUGAQEGBQQCAwEBAQEBBgUEBQYGBQQFAwEBAQEB
@@ -149,6 +149,28 @@ image create picture blt::TableView::xbutton -data {
     AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuAQAAAAAAAFRSVUVWSVNJT04t
     WEZJTEUuAA==
 }
+
+image create picture blt::TableView::xbutton -data {
+AAEBAAA2ACAAAAAACgAKAAgIAAAAAGNjYv+0tLP/hYWB/5eXlv/BwcD/t7ey/1pa
+Wf8gIB//ampn/6mpp/9CQkL/LS0s/xUVFf8iIiL/jo6N/7u7uP9kZGH/GhoZ/x8f
+H/9UVFH/HBwc/729u/+6urr/Xl5b/4iIhf8uLi3/bW1t/zMzM/8WFhb/WFhX/ysr
+Kv+srKv/MDAw/xsbGv9VVVL/KCgn/8bGxf9/f3z/kZGR/4eHg/8AAAD/QkJB/7Gx
+rf8qKir/FRUU/1xcWf9xcW//i4uL/1lZWP+jo57/i4uH/5WVlf9BQT//MhEuAAAA
+AC4UMyYTEgkAAAMSLSMoJCkpBgYMKSIYACsaDTU1CBoZAAAAEB4pKSoQAAAAABYx
+KSkLFgAAAAopKQcHHSkvAA8sKSkFBSEpFQE0HB8gAAAXHw4bJQQnAAAAACcwAu8B
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFAAcA3wcLACkAFgAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAE4BAAAAAAAAVFJVRVZJU0lPTi1YRklMRS4A
+}
+
 
 option add *BltTableView.IncreasingIcon blt::TableView::sortup
 option add *BltTableView.DecreasingIcon blt::TableView::sortdown
@@ -1717,7 +1739,7 @@ proc blt::TableView::GreaterThanNumberSearch { w } {
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.cancel -width 1i \
         2,1 $f.ok -width 1i 
-    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f c0 c1 -width 1.4i
     blt::table configure $f r2 -pad 4
 
     update
@@ -1992,7 +2014,7 @@ proc blt::TableView::EqualsTextSearch { w } {
         3,1 $f.trim -anchor w \
         4,0 $f.cancel -width 1i \
         4,1 $f.ok -width 1i
-    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f c0 c1 -width 1.4i
     blt::table configure $f r4 -pad 4
 
     update
@@ -2474,7 +2496,7 @@ proc blt::TableView::CreateSearchDialog { w } {
     option add *SearchDialog.frame.BltTkButton.highlightBackground _srchBg 
     option add *SearchDialog.frame.BltTkButton.background _srchBg 
     blt::table $top \
-        0,0 $top.button -anchor e -padx 2 -pady 2 \
+        0,0 $top.button -anchor e -padx 2 \
         1,0 $top.frame -padx 4 -pady {0 4}
     return $top
 }
