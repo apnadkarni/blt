@@ -1,1 +1,6 @@
-.. contents:: Contents
+-----------------------
+
+.. contents:: Table of Contents
+
+-----------------------
+
