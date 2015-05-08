@@ -100,7 +100,7 @@ typedef struct {
          ((y) <= (g)->bottom) && ((y) >= (g)->top))
 
 /*
- * Mask values used to selectively enable GRAPH or BARCHART entries in the
+ * Mask values used to selectively enable graph or barchart entries in the
  * various configuration specs.
  */
 #define GRAPH                   (BLT_CONFIG_USER_BIT << 1)
