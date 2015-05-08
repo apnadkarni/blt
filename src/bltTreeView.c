@@ -7693,15 +7693,17 @@ DrawButton(
     int relief;
     int bw, bh;
 
+    if ((butPtr->width == 0) || (butPtr->height == 0)) {
+        return;
+    }
     bg = (entryPtr == viewPtr->activeBtnPtr) 
         ? butPtr->activeBg : butPtr->normalBg;
     relief = (IsClosed(entryPtr)) ? butPtr->closeRelief : butPtr->openRelief;
     if (relief == TK_RELIEF_SOLID) {
         relief = TK_RELIEF_FLAT;
     }
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, butPtr->width, 
-        butPtr->height, butPtr->borderWidth, relief);
-
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, butPtr->width,
+                butPtr->height, butPtr->borderWidth, relief);
     x += butPtr->borderWidth;
     y += butPtr->borderWidth;
     bw = butPtr->width  - (2 * butPtr->borderWidth);
@@ -8097,7 +8099,7 @@ DisplayCell(TreeView *viewPtr, Cell *cellPtr)
     }
     /*FIXME*/
     /* bg = CHOOSE(viewPtr->selectedBg, stylePtr->selectedBg);  */
-    {
+    if ((w > 0) && (h > 0)) {
         Drawable drawable;
         int pw, ph, px, py;
 
@@ -8438,6 +8440,9 @@ DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable,
         /* If there's any room left over, let the last column take it. */
         dw = Tk_Width(viewPtr->tkwin) - x;
     }
+    if ((dw == 0) || (colHeight == 0)) {
+        return;
+    }
     if (colPtr == viewPtr->colActiveTitlePtr) {
         bg = colPtr->activeTitleBg;
         fg = colPtr->activeTitleFgColor;
@@ -8617,12 +8622,16 @@ DrawEntryBackgrounds(TreeView *viewPtr, Drawable drawable, int x, int w,
 {
     Blt_Bg normalBg;
     long i;
-
+    int h;
+    
     normalBg = GetStyleBackground(colPtr);
-
+    h = Tk_Height(viewPtr->tkwin);
+    if ((w == 0) || (h == 0)) {
+        return;
+    }
     /* This also fills the background where there are no entries. */
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, normalBg, x, 0, w, 
-        Tk_Height(viewPtr->tkwin), 0, TK_RELIEF_FLAT);
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, normalBg, x, 0, w, h,
+        0, TK_RELIEF_FLAT);
 
     for (i = 0; i < viewPtr->numVisibleEntries; i++) {
         Blt_Bg bg;
@@ -8639,6 +8648,9 @@ DrawEntryBackgrounds(TreeView *viewPtr, Drawable drawable, int x, int w,
             bg = normalBg;
         }
         rowHeight = rowPtr->height;
+        if ((rowHeight == 0) || (w == 0)) {
+            continue;
+        }
         y = SCREENY(viewPtr, rowPtr->worldY);
         Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, w, rowHeight, 
                 0, TK_RELIEF_FLAT);
@@ -8984,9 +8996,11 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
 
     /* Clear the entry label background. */
     Blt_Bg_SetClipRegion(viewPtr->tkwin, bg, rgn);
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, 
+    if (((w - colPtr->ruleWidth) > 0) && ((h - entryPtr->ruleHeight) > 0)) {
+        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, 
                 w - colPtr->ruleWidth, h - entryPtr->ruleHeight, 0, 
                 TK_RELIEF_FLAT);
+    }
     Blt_Bg_UnsetClipRegion(viewPtr->tkwin, bg);
     DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, rgn);
     TkDestroyRegion(rgn);

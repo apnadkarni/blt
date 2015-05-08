@@ -2430,6 +2430,11 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     colPtr = cellPtr->colPtr;
     rowPtr = cellPtr->entryPtr;
     relief = stylePtr->relief;
+    rowHeight = rowPtr->height - rowPtr->ruleHeight;
+    colWidth  = colPtr->width - colPtr->ruleWidth;
+    if ((colWidth <= 0) || (rowHeight <= 0)) {
+        return;
+    }
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
         /* Disabled */
         bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
@@ -2457,9 +2462,6 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         }            
         gc = stylePtr->normalGC;
     }
-
-    rowHeight = rowPtr->height - rowPtr->ruleHeight;
-    colWidth  = colPtr->width - colPtr->ruleWidth;
 
     /* Draw background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
@@ -2899,6 +2901,11 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     colPtr = cellPtr->colPtr;
     rowPtr = cellPtr->entryPtr;
     relief = stylePtr->relief;
+    rowHeight = rowPtr->height - rowPtr->ruleHeight;
+    colWidth  = colPtr->width - colPtr->ruleWidth;
+    if ((colWidth <= 0) || (rowHeight <= 0)) {
+        return;
+    }
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
         /* Disabled */
         bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
@@ -2929,9 +2936,6 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         }            
         gc = stylePtr->normalGC;
     }
-
-    rowHeight = rowPtr->height - rowPtr->ruleHeight;
-    colWidth  = colPtr->width - colPtr->ruleWidth;
 
     /* Draw background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, 
@@ -3448,6 +3452,12 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     rowPtr = cellPtr->entryPtr;
     colPtr = cellPtr->colPtr;
     relief = stylePtr->relief;
+    rowHeight = rowPtr->height - rowPtr->ruleHeight;
+    colWidth  = colPtr->width - colPtr->ruleWidth;
+    if ((colWidth <= 0) || (rowHeight <= 0)) {
+        return;
+    }
+
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
         /* Disabled */
         bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
@@ -3475,9 +3485,6 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         }            
         gc = stylePtr->normalGC;
     }
-
-    rowHeight = rowPtr->height - rowPtr->ruleHeight;
-    colWidth  = colPtr->width - colPtr->ruleWidth;
 
     /* Draw background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
@@ -3958,8 +3965,12 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     viewPtr = stylePtr->viewPtr;
     rowPtr = cellPtr->entryPtr;
     colPtr = cellPtr->colPtr;
-
     relief = stylePtr->relief;
+    rowHeight = rowPtr->height - rowPtr->ruleHeight;
+    colWidth  = colPtr->width - colPtr->ruleWidth;
+    if ((colWidth <= 0) || (rowHeight <= 0)) {
+        return;
+    }
     if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
         /* Disabled */
         bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
@@ -3987,9 +3998,6 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         }            
         gc = stylePtr->normalGC;
     }
-
-    rowHeight = rowPtr->height;
-    colWidth  = colPtr->width;
 
     /* Draw background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
@@ -4389,6 +4397,11 @@ RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStyleP
     colPtr = cellPtr->colPtr;
     rowPtr = cellPtr->entryPtr;
     relief = stylePtr->relief;
+    rowHeight = rowPtr->height - rowPtr->ruleHeight;
+    colWidth  = colPtr->width - colPtr->ruleWidth;
+    if ((colWidth <= 0) || (rowHeight <= 0)) {
+        return;
+    }
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
         /* Disabled */
         bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
@@ -4419,9 +4432,6 @@ RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStyleP
         }            
         gc = stylePtr->normalGC;
     }
-
-    rowHeight = rowPtr->height - rowPtr->ruleHeight;
-    colWidth  = colPtr->width - colPtr->ruleWidth;
 
     /* Draw background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, 

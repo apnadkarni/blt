@@ -5242,6 +5242,11 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
     if (viewPtr->colTitleHeight < 1) {
         return;
     }
+    rowHeight = viewPtr->colFilterHeight;
+    colWidth  = colPtr->width;
+    if ((rowHeight == 0) || (colWidth == 0)) {
+        return;
+    }
     relief = filterPtr->relief;
     if (colPtr->flags & DISABLED) {     /* Disabled  */
         filterBg = bg = filterPtr->disabledBg;
@@ -5269,8 +5274,6 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
         fg = filterPtr->normalFg;
         relief = TK_RELIEF_FLAT;
     }
-    rowHeight = viewPtr->colFilterHeight;
-    colWidth  = colPtr->width;
 
     /* Draw background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
@@ -5345,12 +5348,14 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
         ah = filterHeight;
         ax = x + filterWidth - aw - 1;
         ay = y;
-        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax - 1, ay, aw, ah, 
-                filterPtr->borderWidth, relief);
-        aw -= 2 * filterPtr->borderWidth;
-        ax += filterPtr->borderWidth;
-        Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
-                      filterPtr->borderWidth, ARROW_DOWN);
+        if ((aw > 0) && (ah > 0)) {
+            Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax - 1, ay,
+                                 aw, ah, filterPtr->borderWidth, relief);
+            aw -= 2 * filterPtr->borderWidth;
+            ax += filterPtr->borderWidth;
+            Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
+                          filterPtr->borderWidth, ARROW_DOWN);
+        }
     }
 }
 
@@ -5444,6 +5449,11 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
     if (viewPtr->colTitleHeight < 1) {
         return;
     }
+    colWidth = colPtr->width;
+    colHeight = viewPtr->colTitleHeight;
+    if ((colWidth == 0) || (colHeight == 0)) {
+        return;
+    }
     relief = colPtr->titleRelief;
     if (colPtr->flags & DISABLED) {     /* Disabled  */
         bg = viewPtr->colDisabledTitleBg;
@@ -5460,8 +5470,6 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
         fg = viewPtr->colNormalTitleFg;
     }
 
-    colWidth = colPtr->width;
-    colHeight = viewPtr->colTitleHeight;
     /* Clear the title area by drawing the background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth, 
         viewPtr->colTitleHeight, viewPtr->colTitleBorderWidth, relief);
@@ -5583,6 +5591,9 @@ DrawRowTitle(TableView *viewPtr, Row *rowPtr, Drawable drawable, int x, int y)
     if (rowPtr->index == (viewPtr->numRows - 1)) {
         /* If there's any room left over, let the last row take it. */
         h = Tk_Height(viewPtr->tkwin) - y;
+    }
+    if ((viewPtr->rowTitleWidth == 0) || (h == 0)) {
+        return;
     }
     /* Clear the title area by drawing the background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, dy, 
@@ -12520,15 +12531,19 @@ DisplayProc(ClientData clientData)
         DisplayColumnTitles(viewPtr, drawable);
     }
     if ((viewPtr->flags & TITLES_MASK) == TITLES_MASK) {
-        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, 
+        if ((viewPtr->rowTitleWidth > 0) && (viewPtr->colTitleHeight > 0)) {
+            Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, 
                 viewPtr->colNormalTitleBg, viewPtr->inset, viewPtr->inset, 
                 viewPtr->rowTitleWidth, viewPtr->colTitleHeight, 
                 viewPtr->colTitleBorderWidth, TK_RELIEF_RAISED);
-        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, 
+        }
+        if ((viewPtr->rowTitleWidth > 0) && (viewPtr->colFilterHeight > 0)) {
+            Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, 
                 viewPtr->colNormalTitleBg, viewPtr->inset, 
                 viewPtr->inset + viewPtr->colTitleHeight, 
                 viewPtr->rowTitleWidth, viewPtr->colFilterHeight, 
                 viewPtr->colTitleBorderWidth, TK_RELIEF_RAISED);
+        }
     }
     DrawOuterBorders(viewPtr, drawable);
     /* Now copy the new view to the window. */
