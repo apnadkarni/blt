@@ -219,12 +219,11 @@ struct _Axis {
                                          * (including ticks).  If zero,
                                          * then no axis lines or ticks are
                                          * drawn. */
-    const char **limitsFormats;         /* One or two strings of
+    Tcl_Obj *limitsFmtsObjPtr;          /* One or two strings of
                                          * sprintf-like formats describing
                                          * how to display virtual axis
                                          * limits. If NULL, display no
                                          * limits. */
-    int numFormats;
     TextStyle limitsTextStyle;          /* Text attributes (color, font,
                                          * rotation, etc.)  of the
                                          * limits. */

@@ -130,6 +130,7 @@ FormatSwitchValue(
         return Tcl_NewDoubleObj(*(double *)ptr);
 
     case BLT_SWITCH_OBJ:
+    case BLT_SWITCH_LISTOBJ:
         if (*(Tcl_Obj **)ptr != NULL) {
             return *(Tcl_Obj **)ptr;
         }
@@ -338,6 +339,21 @@ DoSwitch(
                                          * modified.  Values must be
                                          * properly initialized. */
 {
+    int objIsEmpty;
+
+    objIsEmpty = FALSE;
+    if (objPtr == NULL) {
+        objIsEmpty = TRUE;
+    } else if (sp->flags & BLT_CONFIG_NULL_OK) {
+        int length;
+
+        if (objPtr->bytes != NULL) {
+            length = objPtr->length;
+        } else {
+            Tcl_GetStringFromObj(objPtr, &length);
+        }
+        objIsEmpty = (length == 0);
+    }
     do {
         char *ptr;
 
@@ -406,8 +422,21 @@ DoSwitch(
             break;
 
         case BLT_SWITCH_OBJ:
-            Tcl_IncrRefCount(objPtr);
-            *(Tcl_Obj **)ptr = objPtr;
+            {
+                Tcl_Obj *newObjPtr;
+
+                if (objIsEmpty) {
+                    newObjPtr = NULL;
+                } else {
+                    /* First increment the new obj. In case old is new. */
+                    Tcl_IncrRefCount(objPtr);
+                    newObjPtr = objPtr;
+                }
+                if (*(Tcl_Obj **)ptr != NULL) {
+                    Tcl_DecrRefCount(*(Tcl_Obj **)ptr);
+                }
+                *(Tcl_Obj **)ptr  = newObjPtr;
+            }
             break;
 
         case BLT_SWITCH_FLOAT:
@@ -453,12 +482,42 @@ DoSwitch(
 
         case BLT_SWITCH_LIST:
             {
+                const char **argv;
                 int argc;
-
-                if (Tcl_SplitList(interp, Tcl_GetString(objPtr), &argc, 
-                                  (const char ***)ptr) != TCL_OK) {
+                
+                if (Tcl_SplitList(interp, Tcl_GetString(objPtr), &argc, &argv) 
+                    != TCL_OK) {
                     return TCL_ERROR;
                 }
+                if (*(char ***)ptr != NULL) {
+                    Tcl_Free((char *)(*(char ***)ptr));
+                }
+                *(const char ***)ptr = argv;
+            }
+            break;
+
+        case BLT_SWITCH_LISTOBJ: 
+            {
+                Tcl_Obj *newObjPtr;
+
+                if (objIsEmpty) {
+                    newObjPtr = NULL;
+                } else {
+                    Tcl_Obj **objv;
+                    int objc;
+                
+                    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) 
+                        != TCL_OK) {
+                        return TCL_ERROR;
+                    }
+                    /* Increment the new obj. In case old is new. */
+                    Tcl_IncrRefCount(objPtr);
+                    newObjPtr = objPtr;
+                }
+                if (*(Tcl_Obj **)ptr != NULL) {
+                    Tcl_DecrRefCount(*(Tcl_Obj **)ptr);
+                }
+                *(Tcl_Obj **)ptr  = newObjPtr;
             }
             break;
 
@@ -873,6 +932,7 @@ Blt_FreeSwitches(
                 }
                 break;
 
+            case BLT_SWITCH_LISTOBJ:
             case BLT_SWITCH_OBJ:
                 if (*((Tcl_Obj **) ptr) != NULL) {
                     Tcl_DecrRefCount(*((Tcl_Obj **)ptr));

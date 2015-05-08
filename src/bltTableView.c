@@ -336,11 +336,11 @@ static Blt_CustomOption titlesOption = {
     ObjToTitlesProc, TitlesToObjProc, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToUidProc;
-static Blt_OptionPrintProc UidToObjProc;
-static Blt_OptionFreeProc FreeUidProc;
-static Blt_CustomOption uidOption = {
-    ObjToUidProc, UidToObjProc, FreeUidProc, NULL,
+static Blt_OptionParseProc ObjToCachedObjProc;
+static Blt_OptionPrintProc CachedObjToObjProc;
+static Blt_OptionFreeProc FreeCachedObjProc;
+static Blt_CustomOption cachedObjOption = {
+    ObjToCachedObjProc, CachedObjToObjProc, FreeCachedObjProc, NULL,
 };
 
 static Blt_ConfigSpec tableSpecs[] =
@@ -492,7 +492,8 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
         0, 0},
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags", DEF_BIND_TAGS, 
-        Blt_Offset(Column, bindTags), BLT_CONFIG_NULL_OK, &uidOption},
+        Blt_Offset(Column, bindTagsObjPtr), BLT_CONFIG_NULL_OK,
+        &cachedObjOption},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_COLUMN_COMMAND, 
         Blt_Offset(Column, cmdObjPtr),
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
@@ -575,7 +576,7 @@ static Blt_ConfigSpec rowSpecs[] =
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
         0, 0},
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags", DEF_BIND_TAGS, 
-        Blt_Offset(Row, bindTags), BLT_CONFIG_NULL_OK, &uidOption},
+        Blt_Offset(Row, bindTagsObjPtr), BLT_CONFIG_NULL_OK, &cachedObjOption},
     {BLT_CONFIG_STRING, "-command", "command", "Command", DEF_ROW_COMMAND, 
         Blt_Offset(Row, cmdObjPtr), 
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
@@ -1202,7 +1203,7 @@ GetStyle(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * GetUid --
+ * GetCachedObj --
  *
  *      Gets or creates a unique string identifier.  Strings are reference
  *      counted.  The string is placed into a hashed table local to the
@@ -1213,32 +1214,32 @@ GetStyle(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
  *
  *---------------------------------------------------------------------------
  */
-static UID
-GetUid(TableView *viewPtr, const char *string)
+static Tcl_Obj *
+GetCachedObj(TableView *viewPtr, Tcl_Obj *objPtr)
 {
     Blt_HashEntry *hPtr;
     int isNew;
-    size_t refCount;
+    const char *string;
 
-    hPtr = Blt_CreateHashEntry(&viewPtr->uidTable, string, &isNew);
+    string = Tcl_GetString(objPtr);
+    hPtr = Blt_CreateHashEntry(&viewPtr->cachedObjTable, string, &isNew);
     if (isNew) {
-        refCount = 1;
+        Blt_SetHashValue(hPtr, objPtr);
     } else {
-        refCount = (size_t)Blt_GetHashValue(hPtr);
-        refCount++;
+        objPtr = Blt_GetHashValue(hPtr);
     }
-    Blt_SetHashValue(hPtr, refCount);
-    return Blt_GetHashKey(&viewPtr->uidTable, hPtr);
+    Tcl_IncrRefCount(objPtr);
+    return objPtr;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * FreeUid --
+ * FreeCachedObj --
  *
- *      Releases the uid.  Uids are reference counted, so only when the
- *      reference count is zero (i.e. no one else is using the string) is
- *      the entry removed from the hash table.
+ *      Releases the cached Tcl_Obj.  Cached Tcl_Objs are reference
+ *      counted, so only when the reference count is zero (i.e. no one else
+ *      is using the string) is the entry removed from the hash table.
  *
  * Results:
  *      None.
@@ -1246,20 +1247,18 @@ GetUid(TableView *viewPtr, const char *string)
  *---------------------------------------------------------------------------
  */
 static void
-FreeUid(TableView *viewPtr, UID uid)
+FreeCachedObj(TableView *viewPtr, Tcl_Obj *objPtr)
 {
     Blt_HashEntry *hPtr;
-    size_t refCount;
+    const char *string;
 
-    hPtr = Blt_FindHashEntry(&viewPtr->uidTable, uid);
+    string = Tcl_GetString(objPtr);
+    hPtr = Blt_FindHashEntry(&viewPtr->cachedObjTable, string);
     assert(hPtr != NULL);
-    refCount = (size_t)Blt_GetHashValue(hPtr);
-    refCount--;
-    if (refCount > 0) {
-        Blt_SetHashValue(hPtr, refCount);
-    } else {
-        Blt_DeleteHashEntry(&viewPtr->uidTable, hPtr);
+    if (objPtr->refCount <= 1) {
+        Blt_DeleteHashEntry(&viewPtr->cachedObjTable, hPtr);
     }
+    Tcl_DecrRefCount(objPtr);
 }
 
 /*
@@ -2422,31 +2421,31 @@ TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToUidProc --
+ * ObjToCachedObjProc --
  *
- *      Converts the string to a Uid. Uid's are hashed, reference counted
+ *      Converts the string to a CachedObj. CachedObj's are hashed, reference counted
  *      strings.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+ObjToCachedObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
 {
     TableView *viewPtr = clientData;
-    UID *uidPtr = (UID *)(widgRec + offset);
+    Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
-    *uidPtr = GetUid(viewPtr, Tcl_GetString(objPtr));
+    *objPtrPtr = GetCachedObj(viewPtr, objPtr);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * UidToObjProc --
+ * CachedObjToObjProc --
  *
- *      Returns the uid as a string.
+ *      Returns the cached Tcl_Obj.
  *
  * Results:
  *      The fill style string is returned.
@@ -2455,40 +2454,41 @@ ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-UidToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+CachedObjToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              char *widgRec, int offset, int flags)      
 {
-    UID uid = *(UID *)(widgRec + offset);
+    Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
-    if (uid == NULL) {
+    if (objPtr == NULL) {
         return Tcl_NewStringObj("", -1);
     }
-    return Tcl_NewStringObj(uid, -1);
+    return objPtr;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * FreeUidProc --
+ * FreeCachedObjProc --
  *
- *      Free the UID from the widget record, setting it to NULL.
+ *      Free the cached obj from the widget record, setting it to NULL.
  *
  * Results:
- *      The UID in the widget record is set to NULL.
+ *      The CACHEDOBJ in the widget record is set to NULL.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static void
-FreeUidProc(ClientData clientData, Display *display, char *widgRec, int offset)
+FreeCachedObjProc(ClientData clientData, Display *display, char *widgRec,
+                  int offset)
 {
-    UID *uidPtr = (UID *)(widgRec + offset);
+    Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
-    if (*uidPtr != NULL) {
+    if (*objPtrPtr != NULL) {
         TableView *viewPtr = clientData;
 
-        FreeUid(viewPtr, *uidPtr);
-        *uidPtr = NULL;
+        FreeCachedObj(viewPtr, *objPtrPtr);
+        *objPtrPtr = NULL;
     }
 }
 
@@ -2977,7 +2977,7 @@ DestroyRow(Row *rowPtr)
     TableView *viewPtr;
 
     viewPtr = rowPtr->viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     Blt_FreeOptions(rowSpecs, (char *)rowPtr, viewPtr->display, 0);
@@ -3021,7 +3021,7 @@ CreateRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
 
     rowPtr = NewRow(viewPtr, row, hPtr);
     iconOption.clientData = viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 
         rowPtr->title, "Row", rowSpecs, 0, (Tcl_Obj **)NULL, (char *)rowPtr, 
@@ -3048,7 +3048,7 @@ DestroyColumn(Column *colPtr)
     TableView *viewPtr;
 
     viewPtr = colPtr->viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     Blt_FreeOptions(columnSpecs, (char *)colPtr, viewPtr->display, 0);
@@ -3214,7 +3214,7 @@ CreateColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
 
     colPtr = NewColumn(viewPtr, col, hPtr);
     iconOption.clientData = viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 
         colPtr->title, "Column", columnSpecs, 0, (Tcl_Obj **)NULL, 
@@ -4447,19 +4447,20 @@ CellBindTagProc(TableView *viewPtr, const char *key)
 }
 
 static void
-AddBindTags(TableView *viewPtr, Blt_Chain tags, const char *string, 
-        TagProc *tagProc)
+AddBindTags(TableView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr,
+            TagProc *tagProc)
 {
-    int argc;
-    const char **argv;
+    int objc;
+    Tcl_Obj **objv;
     
-    if (Tcl_SplitList((Tcl_Interp *)NULL, string, &argc, &argv) == TCL_OK) {
+    if (Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv) == TCL_OK) {
         int i;
+        for (i = 0; i < objc; i++) {
+            const char *string;
 
-        for (i = 0; i < argc; i++) {
-            Blt_Chain_Append(tags, (*tagProc)(viewPtr, argv[i]));
+            string = Tcl_GetString(objv[i]);
+            Blt_Chain_Append(tags, (*tagProc)(viewPtr, string));
         }
-        Tcl_Free((char *)argv);
     }
 }
 
@@ -4484,8 +4485,9 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
         Column *colPtr = object;
 
         Blt_Chain_Append(tags, colPtr);
-        if (colPtr->bindTags != NULL) {
-            AddBindTags(viewPtr, tags, colPtr->bindTags, ColumnBindTagProc);
+        if (colPtr->bindTagsObjPtr != NULL) {
+            AddBindTags(viewPtr, tags, colPtr->bindTagsObjPtr,
+                        ColumnBindTagProc);
         }
     } else if(flags & ITEM_ROW_RESIZE) {
         Blt_Chain_Append(tags, RowBindTagProc(viewPtr, "Resize"));
@@ -4493,8 +4495,8 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
         Row *rowPtr = object;
 
         Blt_Chain_Append(tags, rowPtr);
-        if (rowPtr->bindTags != NULL) {
-            AddBindTags(viewPtr, tags, rowPtr->bindTags, RowBindTagProc);
+        if (rowPtr->bindTagsObjPtr != NULL) {
+            AddBindTags(viewPtr, tags, rowPtr->bindTagsObjPtr, RowBindTagProc);
         }
     } else if(flags & ITEM_CELL) {
         Cell *cellPtr = object;
@@ -4750,7 +4752,7 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
     Blt_DeleteHashTable(&viewPtr->rowBindTagTable);
     Blt_DeleteHashTable(&viewPtr->colBindTagTable);
     Blt_DeleteHashTable(&viewPtr->cellBindTagTable);
-    Blt_DeleteHashTable(&viewPtr->uidTable);
+    Blt_DeleteHashTable(&viewPtr->cachedObjTable);
     Blt_Pool_Destroy(viewPtr->rowPool);
     Blt_Pool_Destroy(viewPtr->columnPool);
     Blt_Pool_Destroy(viewPtr->cellPool);
@@ -7137,7 +7139,7 @@ ColumnConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
     Blt_Chain columns;
     Blt_ChainLink link;
 
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
 
@@ -7511,7 +7513,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     colPtr = NewColumn(viewPtr, col, hPtr);
     colPtr->flags |= STICKY;            /* Don't allow column to be reset. */
     iconOption.clientData = viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 
         colPtr->title, "Column", columnSpecs, objc - 5, objv + 5, 
@@ -9269,7 +9271,7 @@ RowConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     Row *rowPtr;
 
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (GetRow(interp, viewPtr, objv[3], &rowPtr) != TCL_OK) {
@@ -9607,7 +9609,7 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     rowPtr = NewRow(viewPtr, row, hPtr);
     iconOption.clientData = viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 
         rowPtr->title, "Row", rowSpecs, objc - 4, objv + 4, (char *)rowPtr, 0) 
@@ -12578,7 +12580,7 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_InitHashTable(&viewPtr->rowBindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->colBindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->cellBindTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->uidTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&viewPtr->cachedObjTable, BLT_STRING_KEYS);
 
     viewPtr->rowPool    = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->columnPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);

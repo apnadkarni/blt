@@ -3228,13 +3228,12 @@ GetWinfo(Display *display, Winfo *windowPtr) /* window rep to be initialized */
  *
  *  InitRoot --
  *
- *      Invoked at the start of a "drag" operation to capture the
- *      positions of all windows on the current root.  Queries the
- *      entire window hierarchy and determines the placement of each
- *      window.  Queries the "BltDndTarget" property info where
- *      appropriate.  This information is used during the drag
- *      operation to determine when the drag&drop token is over a
- *      valid drag&drop target.
+ *      Invoked at the start of a "drag" operation to capture the positions
+ *      of all windows on the current root.  Queries the entire window
+ *      hierarchy and determines the placement of each window.  Queries the
+ *      "BltDndTarget" property info where appropriate.  This information
+ *      is used during the drag operation to determine when the drag&drop
+ *      token is over a valid drag&drop target.
  *
  *  Results:
  *      Returns the record for the root window, which contains records
@@ -3279,11 +3278,10 @@ ParseProperty(Tcl_Interp *interp, Dnd *dndPtr, Winfo *windowPtr, char *data)
 
     /* target flags, type1, type2, ... */
     /*
-     * The target property contains a list of possible formats.
-     * Compare this with what formats the source is willing to
-     * convert and compress the list down to just the matching
-     * formats.  It's up to the target to request the specific 
-     * type (or types) that it wants.
+     * The target property contains a list of possible formats.  Compare
+     * this with what formats the source is willing to convert and compress
+     * the list down to just the matching formats.  It's up to the target
+     * to request the specific type (or types) that it wants.
      */
     count = 0;
     Tcl_DStringInit(&ds);

@@ -1248,6 +1248,7 @@ DoConfig(
             break;
 
 
+
         case BLT_CONFIG_LIST: 
             {
                 const char **argv;
@@ -1261,6 +1262,31 @@ DoConfig(
                     Tcl_Free((char *)(*(char ***)ptr));
                 }
                 *(const char ***)ptr = argv;
+            }
+            break;
+
+        case BLT_CONFIG_LISTOBJ: 
+            {
+                Tcl_Obj *newObjPtr;
+
+                if (objIsEmpty) {
+                    newObjPtr = NULL;
+                } else {
+                    Tcl_Obj **objv;
+                    int objc;
+                
+                    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) 
+                        != TCL_OK) {
+                        return TCL_ERROR;
+                    }
+                    /* Increment the new obj. In case old is new. */
+                    Tcl_IncrRefCount(objPtr);
+                    newObjPtr = objPtr;
+                }
+                if (*(Tcl_Obj **)ptr != NULL) {
+                    Tcl_DecrRefCount(*(Tcl_Obj **)ptr);
+                }
+                *(Tcl_Obj **)ptr  = newObjPtr;
             }
             break;
 
@@ -1644,6 +1670,7 @@ FormatConfigValue(
         return Tcl_NewLongObj(*(long *)ptr);
 
     case BLT_CONFIG_OBJ:
+    case BLT_CONFIG_LISTOBJ:
         if (*(Tcl_Obj **)ptr != NULL) {
             return *(Tcl_Obj **)ptr;
         }
@@ -2271,6 +2298,7 @@ Blt_FreeOptions(
             break;
 
         case BLT_CONFIG_OBJ:
+        case BLT_CONFIG_LISTOBJ:
             if (*(Tcl_Obj **)ptr != NULL) {
                 Tcl_DecrRefCount(*(Tcl_Obj **)ptr);
                 *(Tcl_Obj **)ptr = NULL;

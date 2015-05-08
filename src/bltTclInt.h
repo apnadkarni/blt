@@ -244,4 +244,6 @@ BLT_EXTERN const char *Blt_LastError(void);
 BLT_EXTERN double Blt_NaN(void);
 BLT_EXTERN int Blt_AlmostEquals(double x, double y);
 
+BLT_EXTERN const char **Blt_ConvertListToList(int argc, const char **argv);
+
 #endif /*_BLT_TCL_INT_H*/

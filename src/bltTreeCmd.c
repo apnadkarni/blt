@@ -1466,21 +1466,31 @@ SkipSeparators(const char *path, const char *separator, int length)
  */
 static int
 SplitPath(Tcl_Interp *interp, const char *path, Tcl_Obj *pathSepObjPtr, 
-          int *argcPtr, const char ***argvPtr)
+          int *depthPtr, const char ***listPtr)
 {
     int skipLen, pathLen;
     int depth;
     size_t listSize;
-    const char **components;
+    const char **list;
     char *p;
     char *sp;
     const char *pathSeparator;
 
     if ((pathSepObjPtr == NULL) || 
         ((Tcl_GetString(pathSepObjPtr))[0] == '\0')) {
-        if (Tcl_SplitList(interp, path, argcPtr, argvPtr) != TCL_OK) {
+        int argc;
+        const char **argv;
+        
+        if (Tcl_SplitList(NULL, path, &argc, &argv) != TCL_OK) {
             return TCL_ERROR;
         }
+        /* Convert the list from TCL memory into normal memory. This is
+         * because the list could be either a split list or a (malloc-ed)
+         * generated list (like below). */
+        list = Blt_ConvertListToList(argc, argv);
+        Tcl_Free((char *)argv);
+        *listPtr = list;
+        *depthPtr = (long)argc;
         return TCL_OK;
     }
     pathSeparator = Tcl_GetStringFromObj(pathSepObjPtr, &skipLen);
@@ -1489,23 +1499,23 @@ SplitPath(Tcl_Interp *interp, const char *path, Tcl_Obj *pathSepObjPtr,
     depth = pathLen / skipLen;
 
     listSize = (depth + 1) * sizeof(char *);
-    components = Blt_AssertMalloc(listSize + (pathLen + 1));
-    p = (char *)components + listSize;
+    list = Blt_AssertMalloc(listSize + (pathLen + 1));
+    p = (char *)list + listSize;
     strcpy(p, path);
 
     depth = 0;
     for (sp = strstr(p, pathSeparator); ((*p != '\0') && (sp != NULL)); 
          sp = strstr(p, pathSeparator)) {
         *sp = '\0';
-        components[depth++] = p;
+        list[depth++] = p;
         p = (char *)SkipSeparators(sp + skipLen, pathSeparator, skipLen);
     }
     if (*p != '\0') {
-        components[depth++] = p;
+        list[depth++] = p;
     }
-    components[depth] = NULL;
-    *argcPtr = depth;
-    *argvPtr = components;
+    list[depth] = NULL;
+    *depthPtr = depth;
+    *listPtr = list;
     return TCL_OK;
 }
 

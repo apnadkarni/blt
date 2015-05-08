@@ -176,8 +176,9 @@ static Blt_SwitchSpec exportSwitches[] =
         Blt_Offset(PdfExportSwitches, dataObjPtr),  0},
     {BLT_SWITCH_OBJ,     "-file",       "fileName", (char *)NULL,
         Blt_Offset(PdfExportSwitches, fileObjPtr),  0},
-    {BLT_SWITCH_LIST,    "-comments", "{key value...}", (char *)NULL,
-        Blt_Offset(PdfExportSwitches, setup.comments), BLT_SWITCH_NULL_OK},
+    {BLT_SWITCH_LISTOBJ, "-comments", "{key value...}", (char *)NULL,
+        Blt_Offset(PdfExportSwitches, setup.commentsObjPtr),
+        BLT_SWITCH_NULL_OK},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
         Blt_Offset(PdfExportSwitches, index), 0},
     {BLT_SWITCH_END}
@@ -245,14 +246,9 @@ extern char *strptime(const char *buf, const char *fmt, struct tm *tm);
  */
 /*ARGSUSED*/
 static int
-ColorSwitchProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results. */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ColorSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                const char *switchName, Tcl_Obj *objPtr, char *record,
+                int offset, int flags)  
 {
     Blt_Pixel *pixelPtr = (Blt_Pixel *)(record + offset);
     const char *string;
@@ -313,15 +309,9 @@ ColorSwitchProc(
  */
 /*ARGSUSED*/
 static int
-PicaSwitchProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+PicaSwitchProc(ClientData clientData, Tcl_Interp *interp,
+               const char *switchName, Tcl_Obj *objPtr, char *record,
+               int offset, int flags)  
 {
     int *picaPtr = (int *)(record + offset);
     
@@ -343,15 +333,8 @@ PicaSwitchProc(
  */
 /*ARGSUSED*/
 static int
-PadSwitchProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+PadSwitchProc(ClientData clientData, Tcl_Interp *interp, const char *switchName,
+              Tcl_Obj *objPtr, char *record, int offset, int flags)  
 {
     Blt_Pad *padPtr = (Blt_Pad *)(record + offset);
     
@@ -976,15 +959,19 @@ FreePdf(Pdf *pdfPtr)
 }
 
 static void
-AddComments(Pdf *pdfPtr, const char **comments)
+AddComments(Pdf *pdfPtr, Tcl_Obj *objPtr)
 {
-    const char **p;
-
-    for (p = comments; *p != NULL; p += 2) {
-        if (*(p+1) == NULL) {
+    Tcl_Obj **objv;
+    int objc;
+    int i;
+    
+    Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv);
+    for (i = 0; i < objc; i += 2) {
+        if ((i+1) == objc) {
             break;
         }
-        Blt_DBuffer_Format(pdfPtr->dbuffer, "%% %s: %s\n", *p, *(p+1));
+        Blt_DBuffer_Format(pdfPtr->dbuffer, "%% %s: %s\n",
+                Tcl_GetString(objv[i]), Tcl_GetString(objv[i+1]));
     }
 }
 
@@ -1021,8 +1008,8 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
                           "%PDF-1.4\n",
                           (char *)NULL);
 
-    if (setupPtr->comments != NULL) {
-        AddComments(pdfPtr, setupPtr->comments);
+    if (setupPtr->commentsObjPtr != NULL) {
+        AddComments(pdfPtr, setupPtr->commentsObjPtr);
     }
 
     version = Tcl_GetVar(interp, "blt_version", TCL_GLOBAL_ONLY);

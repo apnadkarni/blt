@@ -287,8 +287,8 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_BACKGROUND, Blt_Offset(Axis, normalBg),
         ALL_GRAPHS | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_LIST, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
-        Blt_Offset(Axis, obj.tags), ALL_GRAPHS | BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
+        Blt_Offset(Axis, obj.tagsObjPtr), ALL_GRAPHS | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
         0, ALL_GRAPHS},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
@@ -359,7 +359,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_FONT, "-limitsfont", "limitsFont", "Font", DEF_LIMITS_FONT,
         Blt_Offset(Axis, limitsTextStyle.font), ALL_GRAPHS},
     {BLT_CONFIG_CUSTOM, "-limitsformat", "limitsFormat", "LimitsFormat",
-        (char *)NULL, Blt_Offset(Axis, limitsFormats),
+        (char *)NULL, Blt_Offset(Axis, limitsFmtsObjPtr),
         BLT_CONFIG_NULL_OK | ALL_GRAPHS, &formatOption},
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
         DEF_LINEWIDTH, Blt_Offset(Axis, lineWidth),
@@ -937,11 +937,10 @@ FreeFormat(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Axis *axisPtr = (Axis *)(widgRec);
 
-    if (axisPtr->limitsFormats != NULL) {
-        Tcl_Free((char *)axisPtr->limitsFormats);
-        axisPtr->limitsFormats = NULL;
+    if (axisPtr->limitsFmtsObjPtr != NULL) {
+        Tcl_DecrRefCount(axisPtr->limitsFmtsObjPtr);
+        axisPtr->limitsFmtsObjPtr = NULL;
     }
-    axisPtr->numFormats = 0;
 }
 
 
@@ -964,23 +963,22 @@ ObjToFormat(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
-    const char **argv;
-    int argc;
+    Tcl_Obj **objv;
+    int objc;
 
-    if (Tcl_SplitList(interp, Tcl_GetString(objPtr), &argc, &argv) != TCL_OK) {
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (argc > 2) {
+    if (objc > 2) {
         Tcl_AppendResult(interp, "too many elements in limits format list \"",
                 Tcl_GetString(objPtr), "\"", (char *)NULL);
-        Tcl_Free((char *)argv);
         return TCL_ERROR;
     }
-    if (axisPtr->limitsFormats != NULL) {
-        Tcl_Free((char *)axisPtr->limitsFormats);
+    Tcl_IncrRefCount(objPtr);
+    if (axisPtr->limitsFmtsObjPtr != NULL) {
+        Tcl_DecrRefCount(axisPtr->limitsFmtsObjPtr);
     }
-    axisPtr->limitsFormats = argv;
-    axisPtr->numFormats = argc;
+    axisPtr->limitsFmtsObjPtr = objPtr;
     return TCL_OK;
 }
 
@@ -1004,14 +1002,11 @@ FormatToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Axis *axisPtr = (Axis *)(widgRec);
     Tcl_Obj *objPtr;
 
-    if (axisPtr->numFormats == 0) {
+    if (axisPtr->limitsFmtsObjPtr == NULL) {
         objPtr = Tcl_NewStringObj("", -1);
     } else {
-        const char *string;
-
-        string = Tcl_Merge(axisPtr->numFormats, axisPtr->limitsFormats); 
-        objPtr = Tcl_NewStringObj(string, -1);
-        Blt_Free(string);
+        Tcl_IncrRefCount(axisPtr->limitsFmtsObjPtr);
+        objPtr = axisPtr->limitsFmtsObjPtr;
     }
     return objPtr;
 }
@@ -5838,7 +5833,7 @@ Blt_AxesToPostScript(Graph *graphPtr, Blt_Ps ps)
  *
  *      Draws the min/max values of the axis in the plotting area.  The
  *      text strings are formatted according to the "sprintf" format
- *      descriptors in the limitsFormats array.
+ *      descriptors in the limitsFmts array.
  *
  * Results:
  *      None.
@@ -5865,23 +5860,26 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
         Axis *axisPtr;
         Dim2d textDim;
-        const char *minFmt, *maxFmt;
+        Tcl_Obj **objv;
         char *minPtr, *maxPtr;
-
+        const char *minFmt, *maxFmt;
+        int objc;
+        
         axisPtr = Blt_GetHashValue(hPtr);
         if (axisPtr->flags & DELETED) {
             continue;
         } 
-        if (axisPtr->numFormats == 0) {
+        Tcl_ListObjGetElements(NULL,axisPtr->limitsFmtsObjPtr, &objc, &objv);
+        if (objc == 0) {
             continue;
         }
         if (axisPtr->marginPtr == NULL) {
             continue;
         }
         minPtr = maxPtr = NULL;
-        minFmt = maxFmt = axisPtr->limitsFormats[0];
-        if (axisPtr->numFormats > 1) {
-            maxFmt = axisPtr->limitsFormats[1];
+        minFmt = maxFmt = Tcl_GetString(objv[0]);
+        if (objc > 1) {
+            maxFmt = Tcl_GetString(objv[1]);
         }
         if (minFmt[0] != '\0') {
             minPtr = minString;
@@ -5942,19 +5940,22 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
     for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
          hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
         Axis *axisPtr;
+        Tcl_Obj **objv;
         const char *minFmt, *maxFmt;
+        int objc;
         unsigned int textWidth, textHeight;
 
         axisPtr = Blt_GetHashValue(hPtr);
         if (axisPtr->flags & DELETED) {
             continue;
         } 
-        if (axisPtr->numFormats == 0) {
+        Tcl_ListObjGetElements(NULL, axisPtr->limitsFmtsObjPtr, &objc, &objv);
+        if (objc == 0) {
             continue;
         }
-        minFmt = maxFmt = axisPtr->limitsFormats[0];
-        if (axisPtr->numFormats > 1) {
-            maxFmt = axisPtr->limitsFormats[1];
+        minFmt = maxFmt = Tcl_GetString(objv[0]);
+        if (objc > 1) {
+            maxFmt = Tcl_GetString(objv[1]);
         }
         if (*maxFmt != '\0') {
             Blt_FormatString(string, 200, maxFmt, axisPtr->axisRange.max);

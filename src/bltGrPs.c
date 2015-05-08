@@ -116,8 +116,9 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_STRING, "-colormap", "colorMap", "ColorMap",
         DEF_PS_COLOR_MAP, Blt_Offset(PageSetup, colorVarName),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_LIST,    "-comments", "comments", "Comments",
-        DEF_PS_COMMENTS, Blt_Offset(PageSetup, comments), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_LISTOBJ,    "-comments", "comments", "Comments",
+        DEF_PS_COMMENTS, Blt_Offset(PageSetup, commentsObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-decorations", "decorations", "Decorations",
         DEF_PS_DECORATIONS, Blt_Offset(PageSetup, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)PS_DECORATIONS},
@@ -253,15 +254,19 @@ PadToObj(
 }
 
 static void
-AddComments(Blt_Ps ps, const char **comments)
+AddComments(Blt_Ps ps, Tcl_Obj *objPtr)
 {
-    const char **p;
-
-    for (p = comments; *p != NULL; p += 2) {
-        if (*(p+1) == NULL) {
+    Tcl_Obj **objv;
+    int objc;
+    int i;
+    
+    Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv);
+    for (i = 0; i < objc; i += 2) {
+        if ((i+1) == objc) {
             break;
         }
-        Blt_Ps_Format(ps, "%% %s: %s\n", *p, *(p+1));
+        Blt_Ps_Format(ps, "%% %s: %s\n", Tcl_GetString(objv[i]),
+                      Tcl_GetString(objv[i+1]));
     }
 }
 
@@ -335,7 +340,7 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
         Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
     }
     Blt_Ps_Append(ps, "%%DocumentNeededResources: font Helvetica Courier\n");
-    AddComments(ps, setupPtr->comments);
+    AddComments(ps, setupPtr->commentsObjPtr);
     Blt_Ps_Append(ps, "%%EndComments\n\n");
     if (Blt_Ps_IncludeFile(graphPtr->interp, ps, "bltGraph.pro") != TCL_OK) {
         return TCL_ERROR;

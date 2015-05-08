@@ -230,8 +230,6 @@ typedef struct _Column Column;
 typedef struct _Row Row;
 typedef struct _TableView TableView;
 
-typedef const char *UID;
-
 /*
  * Icon --
  *
@@ -435,10 +433,8 @@ struct _Row {
     long visibleIndex;
     double weight;                      /* Growth factor for row.  If zero
                                          * the row can not be resized. */
-    UID bindTags;                       /* List of binding tags for this
-                                         * row.  UID, not a string, because
-                                         * in the typical case most rows
-                                         * will have the same bindtags. */
+    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+                                         * row. */
     BLT_TABLE_ROW row;                  /* Row in the datatable this
                                          * structure is associated with. */
     long worldY;                        /* Offset of row in world
@@ -495,11 +491,8 @@ struct _Column {
     double weight;                      /* Growth factor for the column.
                                          * If zero the column can not be
                                          * resized. */
-    UID bindTags;                       /* List of binding tags for this
-                                         * column.  UID, not a string,
-                                         * because in the typical case most
-                                         * columns will have the same
-                                         * bindtags. */
+    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+                                         * column. */
     BLT_TABLE_COLUMN column;            /* Column in the datatable this
                                          * structure is associated with. */
     long worldX;                        /* Offset of column in world
@@ -756,7 +749,7 @@ struct _TableView {
     Blt_HashTable cellTable;            /* Hash table of cells keys by the
                                          * combination of the Row and
                                          * Column pointer addresses. */
-    Blt_HashTable uidTable;             /* Table of strings. */
+    Blt_HashTable cachedObjTable;       /* Table of strings. */
     Blt_HashTable iconTable;            /* Table of icons. */
     Blt_HashTable styleTable;           /* Table of cell styles. */
     Blt_HashTable rowBindTagTable;      /* Table of row bindtags. */

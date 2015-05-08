@@ -1293,30 +1293,28 @@ Blt_Ps_XSetFont(PostScript *psPtr, Blt_Font font)
 
     /* Use the font variable information if it exists. */
     if ((psPtr->setupPtr != NULL) && (psPtr->setupPtr->fontVarName != NULL)) {
-        char *value;
+        Tcl_Obj *valueObjPtr;
 
-        value = (char *)Tcl_GetVar2(interp, psPtr->setupPtr->fontVarName, 
-                Blt_Font_Name(font), 0);
-        if (value != NULL) {
-            const char **argv = NULL;
-            int argc;
+        valueObjPtr = Tcl_GetVar2Ex(interp, psPtr->setupPtr->fontVarName, 
+                                    Blt_Font_Name(font), 0);
+        if (valueObjPtr != NULL) {
+            Tcl_Obj **objv = NULL;
+            int objc;
             int newSize;
             double pointSize;
             const char *fontName;
 
-            if (Tcl_SplitList(NULL, value, &argc, &argv) != TCL_OK) {
+            if (Tcl_ListObjGetElements(NULL, valueObjPtr, &objc, &objv)
+                != TCL_OK) {
                 return;
             }
-            fontName = argv[0];
-            if ((argc != 2) || 
-                (Tcl_GetInt(interp, argv[1], &newSize) != TCL_OK)) {
-                Tcl_Free((char *)argv);
+            fontName = Tcl_GetString(objv[0]);
+            if ((objc != 2) || 
+                (Tcl_GetIntFromObj(interp, objv[1], &newSize) != TCL_OK)) {
                 return;
             }
             pointSize = (double)newSize;
-            Blt_Ps_Format(psPtr, "%g /%s SetFont\n", pointSize, 
-                fontName);
-            Tcl_Free((char *)argv);
+            Blt_Ps_Format(psPtr, "%g /%s SetFont\n", pointSize, fontName);
             return;
         }
         /*FallThru*/

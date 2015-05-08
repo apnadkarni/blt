@@ -87,8 +87,6 @@
 #define TV_ARROW_WIDTH 17
 #define TV_ARROW_HEIGHT 17
 
-typedef const char *UID;
-
 /*
  * The macro below is used to modify a "char" value (e.g. by casting it to
  * an unsigned character) so that it can be used safely with macros such as
@@ -303,11 +301,8 @@ struct _Column {
     int index;                          /* Position of column in list.
                                          * Used to indicate the first and
                                          * last columns. */
-    UID tagsUid;                        /* List of binding tags for this
-                                         * entry.  UID, not a string,
-                                         * because in the typical case most
-                                         * columns will have the same
-                                         * bindtags. */
+    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+                                         * entry. */
 
     /* Title-related information */
     const char *text;                   /* Text displayed in column heading
@@ -555,11 +550,8 @@ struct _Entry {
     int vertLineLength;                 /* Length of the vertical line
                                          * segment. */
     short int lineHeight;               /* Height of first line of text. */
-    UID tagsUid;                        /* List of binding tags for this
-                                         * entry. UID, not a string,
-                                         * because in the typical case most
-                                         * entries will have the same
-                                         * bindtags. */
+    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+                                         * entry. */
     Tcl_Obj *openCmdObjPtr;
     Tcl_Obj *closeCmdObjPtr;            /* TCL commands to invoke when
                                          * entries are opened or
@@ -599,7 +591,7 @@ struct _Entry {
     short int textWidth, textHeight;
     short int labelWidth;
     short int labelHeight;
-    UID labelUid;                       /* Text displayed right of the
+    Tcl_Obj *labelObjPtr;               /* Text displayed right of the
                                          * icon. */
     const char *pathName;               /* If non-NULL, path name generated. */
     int flatIndex;                      /* Used to navigate to next/last
@@ -871,7 +863,7 @@ struct _TreeView {
                                          * scan started. */
 
     Blt_HashTable iconTable;            /* Table of Tk images */
-    Blt_HashTable uidTable;             /* Table of strings. */
+    Blt_HashTable cachedObjTable;       /* Table of strings. */
     Blt_HashTable styleTable;           /* Table of cell styles. */
     Blt_Chain userStyles;               /* List of user-created styles. */
     Entry *rootPtr;                     /* Root entry of tree. */
@@ -970,6 +962,7 @@ BLT_EXTERN CellStyle *Blt_TreeView_CreateStyle(Tcl_Interp *interp,
         (((override) == NULL) ? (default) : (override))
 
 #define GETLABEL(e)             \
-        (((e)->labelUid != NULL)? (e)->labelUid : Blt_Tree_NodeLabel((e)->node))
+    (((e)->labelObjPtr != NULL) ? \
+     (Tcl_GetString((e)->labelObjPtr)) : (Blt_Tree_NodeLabel((e)->node)))
 
 #endif /* BLT_TREEVIEW_H */

@@ -2060,3 +2060,34 @@ Blt_SimplifyLine(Point2d *inputPts, int low, int high, double tolerance,
     return count;
 }
 
+
+/* 
+ * Converts the list from TCL memory into normal memory. This is
+ * because the list could be either a split list or a (malloc-ed)
+ * generated list (like below). 
+*/
+const char **
+Blt_ConvertListToList(int argc, const char **argv)
+{
+    size_t listSize, needed, numBytes;
+    const char **list;
+    char *p;
+    int i;
+        
+    listSize = sizeof(const char **) * (argc + 1);
+    needed = 0;
+    for (i = 0; i < argc; i++) {
+        needed += (strlen(argv[i]) + 1);
+    }
+    numBytes = needed + listSize;
+    list = Blt_AssertMalloc(numBytes);
+    p = (char *)list + listSize;
+    for (i = 0; i < argc; i++) {
+        list[i] = p;
+        strcpy(p, argv[i]);
+        p += strlen(argv[i]) + 1;       /* Leave room for NUL byte. */
+    }
+    list[i] = NULL;
+    return list;
+}
+

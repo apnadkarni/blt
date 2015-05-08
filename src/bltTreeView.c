@@ -284,11 +284,11 @@ static Blt_CustomOption buttonOption = {
     ObjToButton, ButtonToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToUidProc;
-static Blt_OptionPrintProc UidToObjProc;
-static Blt_OptionFreeProc FreeUidProc;
-static Blt_CustomOption uidOption = {
-    ObjToUidProc, UidToObjProc, FreeUidProc, NULL,
+static Blt_OptionParseProc ObjToCachedObjProc;
+static Blt_OptionPrintProc CachedObjToObjProc;
+static Blt_OptionFreeProc FreeCachedObjProc;
+static Blt_CustomOption cachedObjOption = {
+    ObjToCachedObjProc, CachedObjToObjProc, FreeCachedObjProc, NULL,
 };
 
 static Blt_OptionParseProc ObjToScrollmode;
@@ -415,7 +415,7 @@ static Blt_ConfigSpec cellSpecs[] =
 static Blt_ConfigSpec entrySpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-bindtags", (char *)NULL, (char *)NULL, (char *)NULL, 
-        Blt_Offset(Entry, tagsUid), BLT_CONFIG_NULL_OK, &uidOption},
+        Blt_Offset(Entry, bindTagsObjPtr), BLT_CONFIG_NULL_OK, &cachedObjOption},
     {BLT_CONFIG_CUSTOM, "-button", (char *)NULL, (char *)NULL, DEF_BUTTON, 
         Blt_Offset(Entry, flags), BLT_CONFIG_DONT_SET_DEFAULT, &buttonOption},
     {BLT_CONFIG_OBJ, "-closecommand", (char *)NULL, (char *)NULL,
@@ -435,7 +435,7 @@ static Blt_ConfigSpec entrySpecs[] =
     {BLT_CONFIG_CUSTOM, "-icons", (char *)NULL, (char *)NULL, (char *)NULL, 
         Blt_Offset(Entry, icons), BLT_CONFIG_NULL_OK, &iconsOption},
     {BLT_CONFIG_CUSTOM, "-label", (char *)NULL, (char *)NULL, (char *)NULL, 
-        Blt_Offset(Entry, labelUid), 0, &labelOption},
+        Blt_Offset(Entry, labelObjPtr), 0, &labelOption},
     {BLT_CONFIG_OBJ, "-opencommand", (char *)NULL, (char *)NULL, 
         (char *)NULL, Blt_Offset(Entry, openCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-rulecolor", "ruleColor", "RuleColor", DEF_RULE_COLOR,
@@ -609,8 +609,8 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
         0, 0},
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags",
-        DEF_COLUMN_BIND_TAGS, Blt_Offset(Column, tagsUid),
-        BLT_CONFIG_NULL_OK, &uidOption},
+        DEF_COLUMN_BIND_TAGS, Blt_Offset(Column, bindTagsObjPtr),
+        BLT_CONFIG_NULL_OK, &cachedObjOption},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_COLUMN_BORDERWIDTH, Blt_Offset(Column, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -1074,7 +1074,7 @@ GetPathFromEntry(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel,
     int i;
 
     level = Blt_Tree_NodeDepth(entryPtr->node);
-    if (viewPtr->rootPtr->labelUid == NULL) {
+    if (viewPtr->rootPtr->labelObjPtr == NULL) {
         level--;
     }
     if (level > 64) {
@@ -1722,47 +1722,78 @@ TraceColumns(TreeView *viewPtr)
     }
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
- * GetUid --
+ * GetCachedObj --
  *
  *      Gets or creates a unique string identifier.  Strings are reference
  *      counted.  The string is placed into a hashed table local to the
- *      treeview.
+ *      tableview.
  *
  * Results:
  *      Returns the pointer to the hashed string.
  *
  *---------------------------------------------------------------------------
  */
-static UID
-GetUid(TreeView *viewPtr, const char *string)
+static Tcl_Obj *
+GetCachedObj(TreeView *viewPtr, Tcl_Obj *objPtr)
 {
     Blt_HashEntry *hPtr;
     int isNew;
-    size_t refCount;
+    const char *string;
 
-    hPtr = Blt_CreateHashEntry(&viewPtr->uidTable, string, &isNew);
+    string = Tcl_GetString(objPtr);
+    hPtr = Blt_CreateHashEntry(&viewPtr->cachedObjTable, string, &isNew);
     if (isNew) {
-        refCount = 1;
+        Blt_SetHashValue(hPtr, objPtr);
     } else {
-        refCount = (size_t)Blt_GetHashValue(hPtr);
-        refCount++;
+        objPtr = Blt_GetHashValue(hPtr);
     }
-    Blt_SetHashValue(hPtr, refCount);
-    return Blt_GetHashKey(&viewPtr->uidTable, hPtr);
+    Tcl_IncrRefCount(objPtr);
+    return objPtr;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * FreeUid --
+ * GetCachedString --
  *
- *      Releases the uid.  Uids are reference counted, so only when the
- *      reference count is zero (i.e. no one else is using the string) is
- *      the entry removed from the hash table.
+ *      Gets or creates a unique string identifier.  Strings are reference
+ *      counted.  The string is placed into a hashed table local to the
+ *      tableview.
+ *
+ * Results:
+ *      Returns the pointer to the hashed string.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Tcl_Obj *
+GetCachedString(TreeView *viewPtr, const char *string)
+{
+    Blt_HashEntry *hPtr;
+    int isNew;
+    Tcl_Obj *objPtr;
+    
+    hPtr = Blt_CreateHashEntry(&viewPtr->cachedObjTable, string, &isNew);
+    if (isNew) {
+        objPtr = Tcl_NewStringObj(string, -1);
+        Blt_SetHashValue(hPtr, objPtr);
+    } else {
+        objPtr = Blt_GetHashValue(hPtr);
+    }
+    Tcl_IncrRefCount(objPtr);
+    return objPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FreeCachedObj --
+ *
+ *      Releases the cached Tcl_Obj.  Cached Tcl_Objs are reference
+ *      counted, so only when the reference count is zero (i.e. no one else
+ *      is using the string) is the entry removed from the hash table.
  *
  * Results:
  *      None.
@@ -1770,20 +1801,18 @@ GetUid(TreeView *viewPtr, const char *string)
  *---------------------------------------------------------------------------
  */
 static void
-FreeUid(TreeView *viewPtr, UID uid)
+FreeCachedObj(TreeView *viewPtr, Tcl_Obj *objPtr)
 {
     Blt_HashEntry *hPtr;
-    size_t refCount;
+    const char *string;
 
-    hPtr = Blt_FindHashEntry(&viewPtr->uidTable, uid);
+    string = Tcl_GetString(objPtr);
+    hPtr = Blt_FindHashEntry(&viewPtr->cachedObjTable, string);
     assert(hPtr != NULL);
-    refCount = (size_t)Blt_GetHashValue(hPtr);
-    refCount--;
-    if (refCount > 0) {
-        Blt_SetHashValue(hPtr, refCount);
-    } else {
-        Blt_DeleteHashEntry(&viewPtr->uidTable, hPtr);
+    if (objPtr->refCount <= 1) {
+        Blt_DeleteHashEntry(&viewPtr->cachedObjTable, hPtr);
     }
+    Tcl_DecrRefCount(objPtr);
 }
 
 /*ARGSUSED*/
@@ -2199,10 +2228,10 @@ SeparatorToObj(
  *
  * FreeSeparator --
  *
- *      Free the UID from the widget record, setting it to NULL.
+ *      Free the CACHEDOBJ from the widget record, setting it to NULL.
  *
  * Results:
- *      The UID in the widget record is set to NULL.
+ *      The CACHEDOBJ in the widget record is set to NULL.
  *
  *---------------------------------------------------------------------------
  */
@@ -2246,14 +2275,17 @@ ObjToLabel(
     int offset,                         /* Offset to field in structure */
     int flags)  
 {
-    UID *labelPtr = (UID *)(widgRec + offset);
+    Tcl_Obj **labelObjPtrPtr = (Tcl_Obj **)(widgRec + offset);
     const char *string;
 
     string = Tcl_GetString(objPtr);
     if (string[0] != '\0') {
         TreeView *viewPtr = clientData;
 
-        *labelPtr = GetUid(viewPtr, string);
+        if (*labelObjPtrPtr != NULL) {
+            FreeCachedObj(viewPtr, *labelObjPtrPtr);
+        }
+        *labelObjPtrPtr = GetCachedObj(viewPtr, objPtr);
     }
     return TCL_OK;
 }
@@ -2278,30 +2310,29 @@ LabelToObj(
     int offset,                         /* Offset to field in structure */
     int flags)  
 {
-    UID labelUid = *(UID *)(widgRec + offset);
-    const char *string;
+    Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
-    if (labelUid == NULL) {
+    if (objPtr == NULL) {
         Entry *entryPtr  = (Entry *)widgRec;
+        const char *string;
 
         string = Blt_Tree_NodeLabel(entryPtr->node);
-    } else {
-        string = labelUid;
-    }
-    return Tcl_NewStringObj(string, -1);
+        objPtr = Tcl_NewStringObj(string, -1);
+    } 
+    return objPtr;
 }
 
 /*ARGSUSED*/
 static void
 FreeLabel(ClientData clientData, Display *display, char *widgRec, int offset)
 {
-    UID *labelPtr = (UID *)(widgRec + offset);
+    Tcl_Obj **labelObjPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
-    if (*labelPtr != NULL) {
+    if (*labelObjPtrPtr != NULL) {
         TreeView *viewPtr = clientData;
 
-        FreeUid(viewPtr, *labelPtr);
-        *labelPtr = NULL;
+        FreeCachedObj(viewPtr, *labelObjPtrPtr);
+        *labelObjPtrPtr = NULL;
     }
 }
 
@@ -2535,42 +2566,43 @@ StylesToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * FreeUidProc --
+ * FreeCachedObjProc --
  *
- *      Free the UID from the widget record, setting it to NULL.
+ *      Free the CACHEDOBJ from the widget record, setting it to NULL.
  *
  * Results:
- *      The UID in the widget record is set to NULL.
+ *      The CACHEDOBJ in the widget record is set to NULL.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static void
-FreeUidProc(ClientData clientData, Display *display, char *widgRec, int offset)
+FreeCachedObjProc(ClientData clientData, Display *display, char *widgRec,
+                  int offset)
 {
-    UID *uidPtr = (UID *)(widgRec + offset);
+    Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
-    if (*uidPtr != NULL) {
+    if (*objPtrPtr != NULL) {
         TreeView *viewPtr = clientData;
 
-        FreeUid(viewPtr, *uidPtr);
-        *uidPtr = NULL;
+        FreeCachedObj(viewPtr, *objPtrPtr);
+        *objPtrPtr = NULL;
     }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToUidProc --
+ * ObjToCachedObjProc --
  *
- *      Converts the string to a Uid. Uid's are hashed, reference counted
- *      strings.
+ *      Converts to a cached Tcl_Obj. Cached Tcl_Obj's are hashed,
+ *      and reference counted.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToUidProc(
+ObjToCachedObjProc(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,                 /* Interpreter to send results back
                                          * to */
@@ -2582,18 +2614,18 @@ ObjToUidProc(
     int flags)  
 {
     TreeView *viewPtr = clientData;
-    UID *uidPtr = (UID *)(widgRec + offset);
+    Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
-    *uidPtr = GetUid(viewPtr, Tcl_GetString(objPtr));
+    *objPtrPtr = GetCachedObj(viewPtr, objPtr);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * UidToObjProc --
+ * CachedObjToObjProc --
  *
- *      Returns the uid as a string.
+ *      Returns the cachedObj as a string.
  *
  * Results:
  *      The fill style string is returned.
@@ -2602,7 +2634,7 @@ ObjToUidProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-UidToObjProc(
+CachedObjToObjProc(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,                    /* Not used. */
@@ -2610,13 +2642,12 @@ UidToObjProc(
     int offset,                         /* Offset to field in structure */
     int flags)  
 {
-    UID uid = *(UID *)(widgRec + offset);
+    Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
-    if (uid == NULL) {
-        return Tcl_NewStringObj("", -1);
-    } else {
-        return Tcl_NewStringObj(uid, -1);
-    }
+    if (objPtr == NULL) {
+        objPtr = Tcl_NewStringObj("", -1);
+    } 
+    return objPtr;
 }
 
 
@@ -3564,48 +3595,55 @@ DeleteNode(TreeView *viewPtr, Blt_TreeNode node)
  */
 static int
 SplitPath(TreeView *viewPtr, const char *path, long *depthPtr, 
-          const char ***argvPtr)
+          const char ***listPtr)
 {
     int skipLen, pathLen;
     long depth;
     size_t listSize;
-    char **argv;
+    const char **list;
     char *p;
     char *sep;
 
+    pathLen = strlen(path);
     if (viewPtr->pathSep == SEPARATOR_LIST) {
-        int numElem;
-        if (Tcl_SplitList(viewPtr->interp, path, &numElem, argvPtr) 
-            != TCL_OK) {
+        int argc;
+        const char **argv;
+        
+        if (Tcl_SplitList(NULL, path, &argc, &argv) != TCL_OK) {
             return TCL_ERROR;
         }
-        *depthPtr = (long)numElem;
+        /* Convert the list from TCL memory into normal memory. This is
+         * because the list could be either a split list or a (malloc-ed)
+         * generated list (like below). */
+        list = Blt_ConvertListToList(argc, argv);
+        Tcl_Free((char *)argv);
+        *listPtr = list;
+        *depthPtr = (long)argc;
         return TCL_OK;
     }
-    pathLen = strlen(path);
     skipLen = strlen(viewPtr->pathSep);
     path = SkipSeparators(path, viewPtr->pathSep, skipLen);
     depth = pathLen / skipLen;
 
     listSize = (depth + 1) * sizeof(char *);
-    argv = Blt_AssertMalloc(listSize + (pathLen + 1));
-    p = (char *)argv + listSize;
+    list = Blt_AssertMalloc(listSize + (pathLen + 1));
+    p = (char *)list + listSize;
     strcpy(p, path);
 
     sep = strstr(p, viewPtr->pathSep);
     depth = 0;
     while ((*p != '\0') && (sep != NULL)) {
         *sep = '\0';
-        argv[depth++] = p;
+        list[depth++] = p;
         p = (char *)SkipSeparators(sep + skipLen, viewPtr->pathSep, skipLen);
         sep = strstr(p, viewPtr->pathSep);
     }
     if (*p != '\0') {
-        argv[depth++] = p;
+        list[depth++] = p;
     }
-    argv[depth] = NULL;
+    list[depth] = NULL;
     *depthPtr = depth;
-    *argvPtr = (const char **)argv;
+    *listPtr = list;
     return TCL_OK;
 }
 
@@ -4042,8 +4080,10 @@ AddEntryTags(Tcl_Interp *interp, TreeView *viewPtr, Entry *entryPtr,
         tPtr = Blt_GetHashValue(hPtr);
         hPtr = Blt_FindHashEntry(&tPtr->nodeTable, (char *)entryPtr->node);
         if (hPtr != NULL) {
-            Blt_Chain_Append(tags, 
-                (ClientData)GetUid(viewPtr, tPtr->tagName));
+            Tcl_Obj *objPtr;
+
+            objPtr = GetCachedString(viewPtr, tPtr->tagName);
+            Blt_Chain_Append(tags, (ClientData)Tcl_GetString(objPtr));
         }
     }
 }
@@ -4449,7 +4489,7 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
     unsigned long gcMask;
 
     iconsOption.clientData = viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     labelOption.clientData = viewPtr;
     if (Blt_ConfigureWidgetFromObj(viewPtr->interp, viewPtr->tkwin, 
         entrySpecs, objc, objv, (char *)entryPtr, flags) != TCL_OK) {
@@ -4503,14 +4543,13 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
     return TCL_OK;
 }
 
+#ifdef notdef
 int
 Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr, 
                            Entry *entryPtr, Column *colPtr, const char *value)
 {
-    int valid;
     CellStyle *stylePtr;
 
-    valid = TRUE;
     stylePtr = NULL;
     if (colPtr != &viewPtr->treeColumn) {
         Cell *cellPtr;
@@ -4523,34 +4562,33 @@ Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr,
     if (stylePtr == NULL) {
         stylePtr = colPtr->stylePtr;
     }
-    if (valid) {
-        if (colPtr == &viewPtr->treeColumn) {
-            if (entryPtr->labelUid != NULL) {
-                FreeUid(viewPtr, entryPtr->labelUid);
-            }
-            if (value == NULL) {
-                entryPtr->labelUid = GetUid(viewPtr, "");
-            } else {
-                entryPtr->labelUid = GetUid(viewPtr, value);
-            }
+    if (colPtr == &viewPtr->treeColumn) {
+        if (entryPtr->labelObjPtr != NULL) {
+            FreeCachedObj(viewPtr, entryPtr->labelObjPtr);
+        }
+        if (value == NULL) {
+            entryPtr->labelObjPtr = GetCachedString(viewPtr, "");
         } else {
-            Tcl_Obj *objPtr;
-            
-            objPtr = Tcl_NewStringObj(value, -1);
-            if (Blt_Tree_SetValueByKey(interp, viewPtr->tree, entryPtr->node, 
-                colPtr->key, objPtr) != TCL_OK) {
-                Tcl_DecrRefCount(objPtr);
-                return TCL_ERROR;
-            }
-            entryPtr->flags |= GEOMETRY;
-        }       
-    }
+            entryPtr->labelObjPtr = GetCachedString(viewPtr, value);
+        }
+    } else {
+        Tcl_Obj *objPtr;
+        
+        objPtr = Tcl_NewStringObj(value, -1);
+        if (Blt_Tree_SetValueByKey(interp, viewPtr->tree, entryPtr->node, 
+                                   colPtr->key, objPtr) != TCL_OK) {
+            Tcl_DecrRefCount(objPtr);
+            return TCL_ERROR;
+        }
+        entryPtr->flags |= GEOMETRY;
+    }       
     if (viewPtr != NULL) {
         ConfigureEntry(viewPtr, entryPtr, 0, NULL, BLT_CONFIG_OBJV_ONLY);
     }
     viewPtr->flags |= LAYOUT_PENDING;
     return TCL_OK;
 }
+#endif
 
 static void
 SizeOfIcons(Icon *icons, unsigned int *widthPtr, unsigned int *heightPtr)
@@ -4677,7 +4715,7 @@ DestroyEntry(Entry *entryPtr)
     entryPtr->node = NULL;
 
     iconsOption.clientData = viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     labelOption.clientData = viewPtr;
     Blt_FreeOptions(entrySpecs, (char *)entryPtr, viewPtr->display, 0);
     if (viewPtr->rootPtr == entryPtr) {
@@ -4745,7 +4783,6 @@ CreateEntry(
             (viewPtr->buttonFlags | GEOMETRY | ENTRY_CLOSED);
         entryPtr->viewPtr = viewPtr;
         entryPtr->hashPtr = hPtr;
-        entryPtr->labelUid = NULL;
         entryPtr->node = node;
         Blt_SetHashValue(hPtr, entryPtr);
     } else {
@@ -5000,18 +5037,20 @@ StyleTag(TreeView *viewPtr, const char *string)
 #endif
 
 static void
-AddTags(TreeView *viewPtr, Blt_Chain tags, const char *string, TagProc *tagProc)
+AddTags(TreeView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr, TagProc *tagProc)
 {
-    int argc;
-    const char **argv;
+    int objc;
+    Tcl_Obj **objv;
     
-    if (Tcl_SplitList((Tcl_Interp *)NULL, string, &argc, &argv) == TCL_OK) {
-        const char **p;
+    if (Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv) == TCL_OK) {
+        int i;
 
-        for (p = argv; *p != NULL; p++) {
-            Blt_Chain_Append(tags, (*tagProc)(viewPtr, *p));
+        for (i = 0; i < objc; i++) {
+            const char *string;
+
+            string = Tcl_GetString(objv[i]);
+            Blt_Chain_Append(tags, (*tagProc)(viewPtr, string));
         }
-        Tcl_Free((char *)argv);
     }
 }
 
@@ -5037,8 +5076,8 @@ AppendTagsProc(
         Entry *entryPtr = object;
 
         Blt_Chain_Append(tags, ButtonTag(viewPtr, "Button"));
-        if (entryPtr->tagsUid != NULL) {
-            AddTags(viewPtr, tags, entryPtr->tagsUid, ButtonTag);
+        if (entryPtr->bindTagsObjPtr != NULL) {
+            AddTags(viewPtr, tags, entryPtr->bindTagsObjPtr, ButtonTag);
         } else {
             Blt_Chain_Append(tags, ButtonTag(viewPtr, "Entry"));
             Blt_Chain_Append(tags, ButtonTag(viewPtr, "all"));
@@ -5047,8 +5086,8 @@ AppendTagsProc(
         Column *colPtr = object;
 
         Blt_Chain_Append(tags, ColumnTag(viewPtr, colPtr->key));
-        if (colPtr->tagsUid != NULL) {
-            AddTags(viewPtr, tags, colPtr->tagsUid, ColumnTag);
+        if (colPtr->bindTagsObjPtr != NULL) {
+            AddTags(viewPtr, tags, colPtr->bindTagsObjPtr, ColumnTag);
         } else {
             Blt_Chain_Append(tags, ColumnTag(viewPtr, "Column"));
             Blt_Chain_Append(tags, ColumnTag(viewPtr, "all"));
@@ -5059,8 +5098,8 @@ AppendTagsProc(
         Entry *entryPtr = object;
 
         Blt_Chain_Append(tags, entryPtr);
-        if (entryPtr->tagsUid != NULL) {
-            AddTags(viewPtr, tags, entryPtr->tagsUid, EntryTag);
+        if (entryPtr->bindTagsObjPtr != NULL) {
+            AddTags(viewPtr, tags, entryPtr->bindTagsObjPtr, EntryTag);
         } else {
             Blt_Chain_Append(tags, EntryTag(viewPtr, "Entry"));
             Blt_Chain_Append(tags, EntryTag(viewPtr, "all"));
@@ -5520,7 +5559,7 @@ DestroyColumn(Column *colPtr)
     colPtr->flags |= DELETED;           /* Mark the column as destroyed. */
 
     viewPtr = colPtr->viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
 
@@ -5604,7 +5643,7 @@ InitColumn(TreeView *viewPtr, Column *colPtr, const char *name,
     Blt_SetHashValue(hPtr, colPtr);
     colPtr->hashPtr = hPtr;
 
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, name, 
@@ -5627,7 +5666,7 @@ CreateColumn(TreeView *viewPtr, Tcl_Obj *nameObjPtr, int objc,
         Tcl_GetString(nameObjPtr)) != TCL_OK) {
         return NULL;
     }
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 
@@ -6046,7 +6085,7 @@ CreateTreeView(Tcl_Interp *interp, Tcl_Obj *objPtr)
     Blt_InitHashTableWithPool(&viewPtr->entryTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->iconTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->uidTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&viewPtr->cachedObjTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->styleTable, BLT_STRING_KEYS);
     viewPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, viewPtr, 
         PickItem, AppendTagsProc);
@@ -6203,7 +6242,7 @@ DestroyTreeView(DestroyData dataPtr)    /* Pointer to the widget record. */
     }
     Blt_DeleteHashTable(&viewPtr->styleTable);
     Blt_DeleteHashTable(&viewPtr->sel.table);
-    Blt_DeleteHashTable(&viewPtr->uidTable);
+    Blt_DeleteHashTable(&viewPtr->cachedObjTable);
     Blt_Pool_Destroy(viewPtr->entryPool);
     Blt_Pool_Destroy(viewPtr->cellPool);
     DumpIconTable(viewPtr);
@@ -10201,7 +10240,7 @@ ColumnConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeView *viewPtr = clientData;
     Column *colPtr;
 
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
 
@@ -11066,7 +11105,7 @@ EntryConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     EntryIterator iter;
 
     iconsOption.clientData = viewPtr;
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     if (objc < 6) {
         if (GetEntry(interp, viewPtr, objv[3], &entryPtr) != TCL_OK) {
             return TCL_ERROR;
@@ -15149,7 +15188,7 @@ TreeViewCmdProc(
     if (ConfigureTreeView(interp, viewPtr) != TCL_OK) {
         goto error;
     }
-    uidOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 

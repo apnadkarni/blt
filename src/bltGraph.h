@@ -64,15 +64,15 @@ typedef enum {
     CID_ISOLINE,
 } ClassId;
 
+/* Generic fields common to all graph objects. */
 typedef struct {
-    /* Generic fields common to all graph objects. */
     ClassId classId;                    /* Class type of object. */
     const char *name;                   /* Identifier to refer the object. */
     const char *className;              /* Class name of object. */
 
     Graph *graphPtr;                    /* Graph containing of the object. */
 
-    const char **tags;                  /* Binding tags for the object. */
+    Tcl_Obj *tagsObjPtr;                /* Binding tags for the object. */
     int deleted;                        /* If non-zero, object has been
                                          * deleted. */
 } GraphObj;

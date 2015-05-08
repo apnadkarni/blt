@@ -197,8 +197,8 @@ static Blt_SwitchSpec exportSwitches[] =
         Blt_Offset(PsExportSwitches, setup.reqPaperHeight), 0, 0, &picaSwitch},
     {BLT_SWITCH_CUSTOM,  "-paperwidth", "pica", (char *)NULL,
         Blt_Offset(PsExportSwitches, setup.reqPaperWidth), 0, 0, &picaSwitch},
-    {BLT_SWITCH_LIST,    "-comments", "{key value...}", (char *)NULL,
-        Blt_Offset(PsExportSwitches, setup.comments), BLT_SWITCH_NULL_OK},
+    {BLT_SWITCH_LISTOBJ,  "-comments", "{key value...}", (char *)NULL,
+        Blt_Offset(PsExportSwitches, setup.commentsObjPtr), BLT_SWITCH_NULL_OK},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
         Blt_Offset(PsExportSwitches, index), 0},
     {BLT_SWITCH_END}
@@ -275,17 +275,20 @@ ColorSwitchProc(
 }
 
 static void
-AddComments(Blt_Ps ps, const char **comments)
+AddComments(Blt_Ps ps, Tcl_Obj *objPtr)
 {
-    const char **p;
-
-    for (p = comments; *p != NULL; p += 2) {
-        if (*(p+1) == NULL) {
+    Tcl_Obj **objv;
+    int objc;
+    int i;
+    
+    Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv);
+    for (i = 0; i < objc; i += 2) {
+        if ((i+1) == objc) {
             break;
         }
-        Blt_Ps_Format(ps, "%% %s: %s\n", *p, *(p+1));
+        Blt_Ps_Format(ps, "%% %s: %s\n", Tcl_GetString(objv[i]),
+                      Tcl_GetString(objv[i+1]));
     }
-    Blt_Ps_Append(ps, "%%EndComments\n\n");
 }
 
 /*
@@ -424,8 +427,8 @@ PostScriptPreamble(Tcl_Interp *interp, Picture *srcPtr,
     } else {
         Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
     }
-    if (setupPtr->comments != NULL) {
-        AddComments(ps, setupPtr->comments);
+    if (setupPtr->commentsObjPtr != NULL) {
+        AddComments(ps, setupPtr->commentsObjPtr);
     }
     Blt_Ps_Append(ps, "%%BeginProlog\n");
     Blt_Ps_Append(ps, "%%EndProlog\n");

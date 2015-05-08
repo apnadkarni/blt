@@ -146,6 +146,7 @@ typedef enum {
     BLT_CONFIG_INT_NNEG,        /* 0..N */
     BLT_CONFIG_INT_POS,         /* 1..N */
     BLT_CONFIG_LIST,
+    BLT_CONFIG_LISTOBJ,
     BLT_CONFIG_LONG, 
     BLT_CONFIG_LONG_NNEG,       /* 0..N */
     BLT_CONFIG_LONG_POS,        /* 1..N */

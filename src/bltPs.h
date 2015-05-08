@@ -47,35 +47,38 @@
  */
 typedef struct  {
     /* User configurable fields */
-
-    int reqWidth, reqHeight;    /* If greater than zero, represents the
-                                 * requested dimensions of the printed graph */
+    int reqWidth, reqHeight;            /* If greater than zero, represents
+                                         * the requested dimensions of the
+                                         * printed graph */
     int reqPaperWidth;
-    int reqPaperHeight;         /* Requested dimensions for the PostScript
-                                 * page. Can constrain the size of the graph
-                                 * if the graph (plus padding) is larger than
-                                 * the size of the page. */
-    Blt_Pad xPad, yPad;         /* Requested padding on the exterior of the
-                                 * graph. This forms the bounding box for
-                                 * the page. */
-    const char *colorVarName;   /* If non-NULL, is the name of a TCL array
-                                 * variable containing X to output device color
-                                 * translations */
-    const char *fontVarName;    /* If non-NULL, is the name of a TCL array
-                                 * variable containing X to output device font
-                                 * translations */
-    int level;                  /* PostScript Language level 1-3 */
+    int reqPaperHeight;                 /* Requested dimensions for the
+                                         * PostScript page. Can constrain
+                                         * the size of the graph if the
+                                         * graph (plus padding) is larger
+                                         * than the size of the page. */
+    Blt_Pad xPad, yPad;                 /* Requested padding on the
+                                         * exterior of the graph. This
+                                         * forms the bounding box for the
+                                         * page. */
+    const char *colorVarName;           /* If non-NULL, is the name of a
+                                         * TCL array variable containing X
+                                         * to output device color
+                                         * translations */
+    const char *fontVarName;            /* If non-NULL, is the name of a
+                                         * TCL array variable containing X
+                                         * to output device font
+                                         * translations */
+    int level;                          /* PostScript Language level 1-3 */
     unsigned int flags;
-
-    const char **comments;      /* User supplied comments to be added. */
+    Tcl_Obj *commentsObjPtr;            /* User supplied comments to be
+                                         * added. */
 
     /* Computed fields */
-
-    short int left, bottom;     /* Bounding box of the plot in the page. */
+    short int left, bottom;             /* Bounding box of the plot in the
+                                         * page. */
     short int right, top;
-
-    float scale;                /* Scale of page. Set if "-maxpect" option
-                                 * is set, otherwise 1.0. */
+    float scale;                        /* Scale of page. Set if "-maxpect"
+                                         * option is set, otherwise 1.0. */
 
     int paperHeight;
     int paperWidth;

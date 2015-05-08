@@ -637,11 +637,8 @@ InitPens(Graph *graphPtr)
  */
 /*ARGSUSED*/
 void
-Blt_GraphTags(
-    Blt_BindTable table,
-    ClientData object,
-    ClientData context,         /* Not used. */
-    Blt_Chain tags)
+Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
+              Blt_Chain tags)
 {
     GraphObj *objPtr;
     MakeTagProc *tagProc;
@@ -692,11 +689,16 @@ Blt_GraphTags(
     /* Always add the name of the object to the tag array. */
     Blt_Chain_Append(tags, (*tagProc)(graphPtr, objPtr->name));
     Blt_Chain_Append(tags, (*tagProc)(graphPtr, objPtr->className));
-    if (objPtr->tags != NULL) {
-        const char **p;
+    if (objPtr->tagsObjPtr != NULL) {
+        Tcl_Obj **objv;
+        int i, objc;
+        
+        Tcl_ListObjGetElements(NULL, objPtr->tagsObjPtr, &objc, &objv);
+        for (i = 0; i < objc; i++) {
+            const char *string;
 
-        for (p = objPtr->tags; *p != NULL; p++) {
-            Blt_Chain_Append(tags, (*tagProc) (graphPtr, *p));
+            string = Tcl_GetString(objv[i]);
+            Blt_Chain_Append(tags, (*tagProc) (graphPtr, string));
         }
     }
 }
@@ -735,12 +737,17 @@ GraphExtents(Graph *graphPtr, Region2d *regionPtr)
         graphPtr->yPad.side2);
 }
 
-
 /*
- *      Find the closest point from the set of displayed elements,
+ *---------------------------------------------------------------------------
+ *
+ * PickEntry --
+ *
+ *      Finds the closest point from the set of displayed elements,
  *      searching the display list from back to front.  That way, if the
  *      points from two different elements overlay each other exactly, the
  *      one that's on top (visible) is picked.
+ *
+ *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static ClientData
@@ -1225,44 +1232,55 @@ ExtentsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         Tcl_SetIntObj(Tcl_GetObjResult(interp), width);
     } else if ((c == 'p') && (length > 4) &&
         (strncmp("plotarea", string, length) == 0)) {
-        Tcl_Obj *listObjPtr;
-
+        Tcl_Obj *listObjPtr, *objPtr;
+        
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewIntObj(graphPtr->left));
-        Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewIntObj(graphPtr->top));
-        Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewIntObj(graphPtr->right - graphPtr->left + 1));
-        Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewIntObj(graphPtr->bottom - graphPtr->top + 1));
+        /* x */
+        objPtr = Tcl_NewIntObj(graphPtr->left);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        /* y */
+        objPtr = Tcl_NewIntObj(graphPtr->top);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        /* width */
+        objPtr = Tcl_NewIntObj(graphPtr->right - graphPtr->left + 1);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        /* height */
+        objPtr = Tcl_NewIntObj(graphPtr->bottom - graphPtr->top + 1);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         Tcl_SetObjResult(interp, listObjPtr);
     } else if ((c == 'l') && (length > 2) &&
         (strncmp("legend", string, length) == 0)) {
-        Tcl_Obj *listObjPtr;
+        Tcl_Obj *listObjPtr, *objPtr;
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewIntObj(Blt_Legend_X(graphPtr)));
-        Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewIntObj(Blt_Legend_Y(graphPtr)));
-        Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewIntObj(Blt_Legend_Width(graphPtr)));
-        Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewIntObj(Blt_Legend_Height(graphPtr)));
+        /* x */
+        objPtr = Tcl_NewIntObj(Blt_Legend_X(graphPtr));
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        /* y */
+        objPtr = Tcl_NewIntObj(Blt_Legend_Y(graphPtr));
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        /* width */
+        objPtr = Tcl_NewIntObj(Blt_Legend_Width(graphPtr));
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        /* height */
+        objPtr = Tcl_NewIntObj(Blt_Legend_Height(graphPtr));
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         Tcl_SetObjResult(interp, listObjPtr);
     } else if ((c == 'l') && (length > 2) &&
         (strncmp("leftmargin", string, length) == 0)) {
         Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->leftMarginPtr->width);
     } else if ((c == 'r') && (length > 1) &&
         (strncmp("rightmargin", string, length) == 0)) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->rightMarginPtr->width);
+        Tcl_SetIntObj(Tcl_GetObjResult(interp),
+                      graphPtr->rightMarginPtr->width);
     } else if ((c == 't') && (length > 1) &&
         (strncmp("topmargin", string, length) == 0)) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->topMarginPtr->height);
+        Tcl_SetIntObj(Tcl_GetObjResult(interp),
+                      graphPtr->topMarginPtr->height);
     } else if ((c == 'b') && (length > 1) &&
         (strncmp("bottommargin", string, length) == 0)) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->bottomMarginPtr->height);
+        Tcl_SetIntObj(Tcl_GetObjResult(interp),
+                      graphPtr->bottomMarginPtr->height);
     } else {
         Tcl_AppendResult(interp, "bad extent item \"", objv[2],
             "\": should be plotheight, plotwidth, leftmargin, rightmargin, \
