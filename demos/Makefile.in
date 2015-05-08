@@ -19,21 +19,117 @@ INSTALL =	@INSTALL@
 INSTALL_DATA =	@INSTALL_DATA@
 MKDIR_P	= 	@MKDIR_P@
 
-FILES 	=	barchart1.tcl barchart2.tcl barchart3.tcl barchart4.tcl \
+FILES 	= \
+		background1.tcl \
+		barchart1.tcl \
+		barchart2.tcl \
+		barchart3.tcl \
+		barchart4.tcl \
 		barchart5.tcl \
-		bgexec1.tcl bgexec2.tcl bgexec3.tcl bgexec4.tcl \
+		bgexec1.tcl \
+		bgexec2.tcl \
+		bgexec3.tcl \
+		bgexec4.tcl \
+		bgexec5.tcl \
 		bitmap.tcl \
-		busy1.tcl busy2.tcl \
-		dnd1.tcl dnd2.tcl dragdrop1.tcl dragdrop2.tcl \
+		bitmap2.tcl \
+		busy1.tcl \
+		busy2.tcl \
+		busy3.tcl \
+		cbutton1.tcl \
+		cbutton2.tcl \
+		cbutton3.tcl \
+		cedit1.tcl \
+		centry1.tcl \
+		clist1.tcl \
+		cmenu1.tcl \
+		cmenu2.tcl \
+		cmenu3.tcl \
+		cmenu4.tcl \
+		container.tcl \
+		container3.tcl \
+		contour1.tcl \
+		contour10.tcl \
+		contour2.tcl \
+		contour3.tcl \
+		contour4.tcl \
+		contour5.tcl \
+		contour6.tcl \
+		contour7.tcl \
+		contour8.tcl \
+		contour9.tcl \
+		ctree1.tcl \
+		ctree2.tcl \
+		dnd1.tcl \
+		dnd2.tcl \
+		dragdrop1.tcl \
+		dragdrop2.tcl \
+		drawerset1.tcl \
+		drawerset2.tcl \
 		eps.tcl \
-		graph1.tcl graph2.tcl graph3.tcl graph4.tcl graph5.tcl \
-		graph6.tcl graph7.tcl \
-		htext1.tcl htext.txt \
-		spline.tcl stripchart1.tcl \
-		tabset1.tcl tabset2.tcl tabset3.tcl tabset4.tcl \
-		tabnotebook1.tcl tabnotebook2.tcl tabnotebook3.tcl \
+		filmstrip1.tcl \
+		graph1.tcl \
+		graph2.tcl \
+		graph3.tcl \
+		graph4.tcl \
+		graph4a.tcl \
+		graph4b.tcl \
+		graph5.tcl \
+		graph6.tcl \
+		graph7.tcl \
+		graph8.tcl \
+		htext1.tcl \
+		listview1.tcl \
+		listview2.tcl \
+		mbar1.tcl \
+		paintbrush1.tcl \
+		paneset1.tcl \
+		paneset2.tcl \
+		paneset3.tcl \
+		paneset4.tcl \
+		paneset5.tcl \
+		paneset6.tcl \
+		paneset7.tcl \
+		picture3.tcl \
+		picture4.tcl \
+		picture5.tcl \
+		picture6.tcl \
+		picture7.tcl \
+		picture8.tcl \
+		pkgs.tcl \
+		ptyexec1.tcl \
+		ptyexec3.tcl \
+		pushbutton1.tcl \
+		scrollset1.tcl \
+		scrollset2.tcl \
+		scrollset3.tcl \
+		scrollset4.tcl \
+		sftp.tcl \
+		sftp2.tcl \
+		spline.tcl \
+		stripchart1.tcl \
+		stripchart2.tcl \
+		tableview1.tcl \
+		tableview2.tcl \
+		tableview3.tcl \
+		tabnotebook1.tcl \
+		tabnotebook2.tcl \
+		tabnotebook3.tcl \
+		tabset1.tcl \
+		tabset2.tcl \
+		tabset3.tcl \
+		tabset4.tcl \
+		tabset5.tcl \
+		tour.tcl \
 		treeview1.tcl \
-		winop1.tcl winop2.tcl
+		treeview2.tcl \
+		usmap.tcl \
+		winop1.tcl \
+		winop2.tcl \
+		winop3.tcl \
+		winop4.tcl \
+		winop5.tcl \
+		winop6.tcl 
 
 subdirs =	scripts images bitmaps
 

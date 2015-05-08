@@ -585,7 +585,7 @@ ObjToLimits(
                 limArr[i] = size;
             }
         }
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
     }
     /*
     * Check the limits specified.  We can't check the requested
@@ -637,7 +637,7 @@ ObjToLimits(
     limitsPtr->flags = limitsFlags;
     return TCL_OK;
   error:
-    Blt_Free(argv);
+    Tcl_Free((char *)argv);
     return TCL_ERROR;
 }
 

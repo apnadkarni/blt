@@ -938,7 +938,7 @@ FreeFormat(ClientData clientData, Display *display, char *widgRec, int offset)
     Axis *axisPtr = (Axis *)(widgRec);
 
     if (axisPtr->limitsFormats != NULL) {
-        Blt_Free(axisPtr->limitsFormats);
+        Tcl_Free((char *)axisPtr->limitsFormats);
         axisPtr->limitsFormats = NULL;
     }
     axisPtr->numFormats = 0;
@@ -973,11 +973,11 @@ ObjToFormat(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if (argc > 2) {
         Tcl_AppendResult(interp, "too many elements in limits format list \"",
                 Tcl_GetString(objPtr), "\"", (char *)NULL);
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
         return TCL_ERROR;
     }
     if (axisPtr->limitsFormats != NULL) {
-        Blt_Free(axisPtr->limitsFormats);
+        Tcl_Free((char *)axisPtr->limitsFormats);
     }
     axisPtr->limitsFormats = argv;
     axisPtr->numFormats = argc;

@@ -817,6 +817,12 @@ PushbuttonCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     return ButtonCreate(clientData, interp, objc, objv, TYPE_PUSH_BUTTON);
 }
 
+static void
+FreeButton(DestroyData dataPtr)
+{
+    Blt_Free(dataPtr);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1158,10 +1164,10 @@ DestroyButton(Button *butPtr)
             TCL_GLOBAL_ONLY | TCL_TRACE_WRITES | TCL_TRACE_UNSETS,
             ButtonVarProc, (ClientData)butPtr);
     }
-    Tk_FreeTextLayout(butPtr->textLayout);
+    Blt_FreeTextLayout(butPtr->textLayout);
     Blt_FreeOptions(configSpecs, (char *)butPtr, butPtr->display,
         configFlags[butPtr->type]);
-    Tcl_EventuallyFree((ClientData)butPtr, TCL_DYNAMIC);
+    Tcl_EventuallyFree((ClientData)butPtr, FreeButton);
 }
 
 /*
@@ -1809,7 +1815,7 @@ ComputeButtonGeometry(Button *butPtr)
         Blt_FontMetrics fm;
 
         if (butPtr->textLayout != NULL) {
-            Tk_FreeTextLayout(butPtr->textLayout);
+            Blt_FreeTextLayout(butPtr->textLayout);
         }
         butPtr->textLayout = Blt_ComputeTextLayout(butPtr->font,
             butPtr->text, -1, butPtr->wrapLength, butPtr->justify, 0,

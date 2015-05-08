@@ -478,22 +478,22 @@ AsciiToData(
         V10, V11
     } format;
     int i;              /*  */
-    const char **valueArr;
-    int numValues;
+    const char **argv;
+    int argc;
 
     /* First time through initialize the ascii->hex translation table */
     if (!initialized) {
         Blt_InitHexTable(hexTable);
         initialized = 1;
     }
-    if (Tcl_SplitList(interp, elemList, &numValues, &valueArr) != TCL_OK) {
+    if (Tcl_SplitList(interp, elemList, &argc, &argv) != TCL_OK) {
         return TCL_ERROR;
     }
     bytesPerLine = (width + 7) / 8;
     numBytes = bytesPerLine * height;
-    if (numValues == numBytes) {
+    if (argc == numBytes) {
         format = V11;
-    } else if (numValues == (numBytes / 2)) {
+    } else if (argc == (numBytes / 2)) {
         format = V10;
     } else {
         Tcl_AppendResult(interp, "bitmap has wrong # of data values",
@@ -515,8 +515,8 @@ AsciiToData(
         goto error;
     }
     count = 0;
-    for (i = 0; i < numValues; i++) {
-        if (GetHexValue(interp, valueArr[i], &value) != TCL_OK) {
+    for (i = 0; i < argc; i++) {
+        if (GetHexValue(interp, argv[i], &value) != TCL_OK) {
             Blt_Free(bits);
             goto error;
         }
@@ -527,11 +527,11 @@ AsciiToData(
             }
         }
     }
-    Blt_Free(valueArr);
+    Tcl_Free((char *)argv);
     *bitsPtr = bits;
     return TCL_OK;
   error:
-    Blt_Free(valueArr);
+    Tcl_Free((char *)argv);
     return TCL_ERROR;
 }
 

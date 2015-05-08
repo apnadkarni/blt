@@ -868,7 +868,7 @@ Blt_FreeSwitches(
             case BLT_SWITCH_STRING:
             case BLT_SWITCH_LIST:
                 if (*((char **) ptr) != NULL) {
-                    Blt_Free(*((char **) ptr));
+                    Tcl_Free(*((char **) ptr));
                     *((char **) ptr) = NULL;
                 }
                 break;

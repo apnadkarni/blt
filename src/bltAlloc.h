@@ -46,7 +46,7 @@
  */
 typedef void *(Blt_MallocProc) (size_t size);
 typedef void *(Blt_ReallocProc) (void *ptr, size_t size);
-typedef void (Blt_FreeProc) (const void *ptr);
+typedef void (Blt_FreeProc) (void *ptr);
 
 BLT_EXTERN void Blt_AllocInit(Blt_MallocProc *mallocProc, 
         Blt_ReallocProc *reallocProc, Blt_FreeProc *freeProc);

@@ -3332,7 +3332,7 @@ ParseProperty(Tcl_Interp *interp, Dnd *dndPtr, Winfo *windowPtr, char *data)
     windowPtr->eventFlags = eventFlags;
     return TCL_OK;
  error:
-    Blt_Free(argv);
+    Tcl_Free((char *)argv);
     return TCL_ERROR;
 }
 
@@ -4106,7 +4106,7 @@ GetdataOp(
                 Tcl_GetString(objv[i]), &isNew);
         if (!isNew) {
             argv = Blt_GetHashValue(hPtr);
-            Blt_Free(argv);
+            Tcl_Free((char *)argv);
         }
         if (Tcl_SplitList(interp, Tcl_GetString(objv[i + 1]), &argc, &argv) 
             != TCL_OK) {

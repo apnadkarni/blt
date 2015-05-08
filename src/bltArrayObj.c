@@ -71,38 +71,37 @@ SetArrayFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 {
     Blt_HashTable *tablePtr;
     const Tcl_ObjType *oldTypePtr = objPtr->typePtr;
-    const char **argv, *string;
-    int argc, i;
+    Tcl_Obj **objv;
+    int objc, i;
 
     if (objPtr->typePtr == &arrayObjType) {
         return TCL_OK;
     }
     /* Get the string representation. Make it up-to-date if necessary. */
-    string = Tcl_GetString(objPtr);
-    if (Tcl_SplitList(interp, string, &argc, &argv) != TCL_OK) {
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
     }
     tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
     Blt_InitHashTable(tablePtr, BLT_STRING_KEYS);
-    for (i = 0; i < argc; i += 2) {
+    for (i = 0; i < objc; i += 2) {
         Blt_HashEntry *hPtr;
         Tcl_Obj *elemObjPtr;
         int isNew;
+        const char *key;
 
-        hPtr = Blt_CreateHashEntry(tablePtr, argv[i], &isNew);
-        elemObjPtr = Tcl_NewStringObj(argv[i + 1], -1);
+        key = Tcl_GetString(objv[i]);
+        hPtr = Blt_CreateHashEntry(tablePtr, key, &isNew);
+        elemObjPtr = objv[i+1];
         Blt_SetHashValue(hPtr, elemObjPtr);
 
         /* Make sure we increment the reference count */
         Tcl_IncrRefCount(elemObjPtr);
     }
-    
     if ((oldTypePtr != NULL) && (oldTypePtr->freeIntRepProc != NULL)) {
         oldTypePtr->freeIntRepProc(objPtr);
     }
     objPtr->internalRep.otherValuePtr = tablePtr;
     objPtr->typePtr = &arrayObjType;
-    Blt_Free(argv);
     return TCL_OK;
 }
 
@@ -185,10 +184,8 @@ FreeArrayInternalRep(Tcl_Obj *objPtr)   /* Array object to release. */
 }
 
 int
-Blt_GetArrayFromObj(
-    Tcl_Interp *interp,
-    Tcl_Obj *objPtr,
-    Blt_HashTable **tablePtrPtr)
+Blt_GetArrayFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
+                    Blt_HashTable **tablePtrPtr)
 {
     if (objPtr->typePtr == &arrayObjType) {
         *tablePtrPtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;

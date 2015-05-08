@@ -1310,13 +1310,13 @@ Blt_Ps_XSetFont(PostScript *psPtr, Blt_Font font)
             fontName = argv[0];
             if ((argc != 2) || 
                 (Tcl_GetInt(interp, argv[1], &newSize) != TCL_OK)) {
-                Blt_Free(argv);
+                Tcl_Free((char *)argv);
                 return;
             }
             pointSize = (double)newSize;
             Blt_Ps_Format(psPtr, "%g /%s SetFont\n", pointSize, 
                 fontName);
-            Blt_Free(argv);
+            Tcl_Free((char *)argv);
             return;
         }
         /*FallThru*/

@@ -37,6 +37,7 @@
  *
  */
 
+#define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 
 #ifdef HAVE_STRING_H
@@ -1065,9 +1066,10 @@ QuadEval(
  *   work   Contains the value of the first derivative at each data point
  *   ym     Contains the interpolated spline value at each data point
  */
+
 int
 Blt_ComputeQuadraticSpline(Point2d *origPts, int numOrigPts, Point2d *intpPts, 
-                    int numIntpPts)
+                           int numIntpPts)
 {
     double epsilon;
     double *work;

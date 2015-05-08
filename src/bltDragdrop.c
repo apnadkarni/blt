@@ -265,15 +265,16 @@ typedef struct {
 
     /* User-configurable fields */
 
-    Tk_Anchor anchor;           /* Position of token win relative to mouse */
+    Tk_Anchor anchor;           /* Position of token win relative to
+                                 * mouse */
     Tk_3DBorder outline;        /* Outline border around token window */
     Tk_3DBorder normalBorder;   /* Border/background for token window */
     Tk_3DBorder activeBorder;   /* Border/background for token window */
     int activeRelief;
-    int activeBW;       /* Border width in pixels */
-    XColor *rejectFg;           /* Color used to draw rejection fg: (\) */
-    XColor *rejectBg;           /* Color used to draw rejection bg: (\) */
-    Pixmap rejectStipple;       /* Stipple used to draw rejection: (\) */
+    int activeBW;                /* Border width in pixels */
+    XColor *rejectFg;            /* Color used to draw rejection fg: (\) */
+    XColor *rejectBg;            /* Color used to draw rejection bg: (\) */
+    Pixmap rejectStipple;        /* Stipple used to draw rejection: (\) */
 } Token;
 
 typedef struct {
@@ -1895,7 +1896,7 @@ OverTarget(
             }
         }
         if (count == 2) {
-            Blt_Free(argv);
+            Tcl_Free((char *)argv);
             Blt_Warn("source/target mismatch: No matching types\n");
             return FALSE;       /* No matching data type. */
         }
@@ -1926,7 +1927,7 @@ RemoveWindow(AnyWindow *windowPtr) /* window rep to be freed */
     }
     Blt_Chain_Destroy(windowPtr->chain);
     if (windowPtr->targetInfo != NULL) {
-        Blt_Free(windowPtr->targetInfo);
+        Tcl_Free((char *)windowPtr->targetInfo);
     }
     Blt_Free(windowPtr);
 }

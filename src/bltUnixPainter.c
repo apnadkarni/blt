@@ -1292,7 +1292,6 @@ PaintPicture(
     imgPtr = XCreateImage(p->display, p->visualPtr, p->depth, ZPixmap, 0, 
         (char *)NULL, w, h, 32, 0);
     assert(imgPtr);
-
     /* 
      * Set the byte order to the platform's native byte order. We'll let
      * Xlib handle byte swapping.
@@ -1301,7 +1300,7 @@ PaintPicture(
     imgPtr->data = Blt_AssertMalloc(sizeof(Blt_Pixel) * w * h);
     srcRowPtr = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
     destRowPtr = (unsigned char *)imgPtr->data;
-
+    
     dw = MIN(w, srcPtr->width);
     dh = MIN(h, srcPtr->height);
     switch (p->visualPtr->class) {
@@ -1320,9 +1319,9 @@ PaintPicture(
                 for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
                     unsigned int r, g, b;
 
-                    r = (p->igammaTable[sp->Red] >> p->rAdjust) << p->rShift;
+                    r = (p->igammaTable[sp->Red]   >> p->rAdjust) << p->rShift;
                     g = (p->igammaTable[sp->Green] >> p->gAdjust) << p->gShift;
-                    b = (p->igammaTable[sp->Blue] >> p->bAdjust) << p->bShift;
+                    b = (p->igammaTable[sp->Blue]  >> p->bAdjust) << p->bShift;
                     *dp = r | g | b;
                     dp++;
                 }
@@ -1340,9 +1339,9 @@ PaintPicture(
                     unsigned long pixel;
                     unsigned int r, g, b;
                     
-                    r = (p->igammaTable[sp->Red] >> p->rAdjust) << p->rShift;
+                    r = (p->igammaTable[sp->Red]   >> p->rAdjust) << p->rShift;
                     g = (p->igammaTable[sp->Green] >> p->gAdjust) << p->gShift;
-                    b = (p->igammaTable[sp->Blue] >> p->bAdjust) << p->bShift;
+                    b = (p->igammaTable[sp->Blue]  >> p->bAdjust) << p->bShift;
                     pixel = r | g | b;
                     
                     *dp++ = pixel & 0xFF;
@@ -1364,9 +1363,9 @@ PaintPicture(
                     unsigned long pixel;
                     unsigned int r, g, b;
                     
-                    r = (p->igammaTable[sp->Red] >> p->rAdjust) << p->rShift;
+                    r = (p->igammaTable[sp->Red]   >> p->rAdjust) << p->rShift;
                     g = (p->igammaTable[sp->Green] >> p->gAdjust) << p->gShift;
-                    b = (p->igammaTable[sp->Blue] >> p->bAdjust) << p->bShift;
+                    b = (p->igammaTable[sp->Blue]  >> p->bAdjust) << p->bShift;
                     pixel = r | g | b;
                     *dp = pixel;
                     dp++;
@@ -1386,9 +1385,9 @@ PaintPicture(
                     unsigned long pixel;
                     unsigned int r, g, b;
                     
-                    r = (p->igammaTable[sp->Red] >> p->rAdjust) << p->rShift;
+                    r = (p->igammaTable[sp->Red]   >> p->rAdjust) << p->rShift;
                     g = (p->igammaTable[sp->Green] >> p->gAdjust) << p->gShift;
-                    b = (p->igammaTable[sp->Blue] >> p->bAdjust) << p->bShift;
+                    b = (p->igammaTable[sp->Blue]  >> p->bAdjust) << p->bShift;
 
                     pixel = r | g | b;
                     *dp++ = pixel & 0xFF;
@@ -1544,7 +1543,6 @@ PaintPicture(
         return FALSE;
     }
     PaintXImage(p, drawable, imgPtr, 0, 0, w, h, dx, dy);
-
     if (ditherPtr != NULL) {
         Blt_FreePicture(ditherPtr);
     }

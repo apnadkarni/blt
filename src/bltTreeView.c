@@ -3771,12 +3771,12 @@ FindPath(TreeView *viewPtr, Entry *rootPtr, const char *path)
         name = *p;
         child = Blt_Tree_FindChild(entryPtr->node, name);
         if (child == NULL) {
-            Blt_Free(argv);
+            Tcl_Free((char *)argv);
             goto error;
         }
         entryPtr = NodeToEntry(viewPtr, child);
     }
-    Blt_Free(argv);
+    Tcl_Free((char *)argv);
     return entryPtr;
  error:
     {
@@ -5011,7 +5011,7 @@ AddTags(TreeView *viewPtr, Blt_Chain tags, const char *string, TagProc *tagProc)
         for (p = argv; *p != NULL; p++) {
             Blt_Chain_Append(tags, (*tagProc)(viewPtr, *p));
         }
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
     }
 }
 

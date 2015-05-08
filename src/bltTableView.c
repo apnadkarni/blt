@@ -4459,7 +4459,7 @@ AddBindTags(TableView *viewPtr, Blt_Chain tags, const char *string,
         for (i = 0; i < argc; i++) {
             Blt_Chain_Append(tags, (*tagProc)(viewPtr, argv[i]));
         }
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
     }
 }
 

@@ -233,7 +233,7 @@ StringToPad(
     result = TCL_OK;
 
   error:
-    Blt_Free(argv);
+    Tcl_Free((char *)argv);
     return result;
 }
 

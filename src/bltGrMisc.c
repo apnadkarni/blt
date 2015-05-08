@@ -1950,13 +1950,13 @@ Blt_Get3DBorder(Tcl_Interp *interp, Tk_Window tkwin, const char *borderName)
     }
     Blt_SetHashValue(hPtr, borderPtr);
     if (argv != NULL) {
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
     }
     return TCL_OK;
 
  error:
     if (argv != NULL) {
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
     }
     if (bgColorPtr != NULL) {
         Tk_FreeColor(bgColorPtr);

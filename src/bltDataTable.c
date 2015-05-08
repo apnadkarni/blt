@@ -2735,11 +2735,11 @@ RestoreColumn(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         for (i = 0; i < elc; i++) {
             if (blt_table_set_column_tag(interp, table, colPtr, elv[i]) 
                 != TCL_OK) {
-                Blt_Free(elv);
+                Tcl_Free((char *)elv);
                 return TCL_ERROR;
             }
         }
-        Blt_Free(elv);
+        Tcl_Free((char *)elv);
     }
     return TCL_OK;
 }
@@ -2795,11 +2795,11 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         }
         for (i = 0; i < elc; i++) {
             if (blt_table_set_row_tag(interp, table, row, elv[i]) != TCL_OK) {
-                Blt_Free(elv);
+                Tcl_Free((char *)elv);
                 return TCL_ERROR;
             }
         }
-        Blt_Free(elv);
+        Tcl_Free((char *)elv);
     }
     return TCL_OK;
 }
@@ -5693,7 +5693,7 @@ blt_table_restore(Tcl_Interp *interp, BLT_TABLE table, char *data,
                 restore.argv[0], "\"", (char *)NULL);
             result = TCL_ERROR;
         }
-        Blt_Free(restore.argv);
+        Tcl_Free((char *)restore.argv);
         if (result != TCL_OK) {
             break;
         }

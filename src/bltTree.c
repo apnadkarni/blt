@@ -1787,7 +1787,7 @@ RestoreNode5(Tcl_Interp *interp, int argc, const char **argv,
     Node *nodePtr, *parentPtr;
     int isNew;
     long pid, id;
-    const char **attrs, **tags, **values, **names;
+    const char **tags, **values, **names;
     int numTags, numValues, numNames;
 
     treePtr = restorePtr->treePtr;
@@ -1801,7 +1801,7 @@ RestoreNode5(Tcl_Interp *interp, int argc, const char **argv,
         (Blt_GetLong(interp, argv[1], &id) != TCL_OK)) {
         return TCL_ERROR;
     }
-    names = values = tags = attrs = NULL;
+    names = values = tags = NULL;
     nodePtr = NULL;
 
     /* 
@@ -1915,36 +1915,33 @@ RestoreNode5(Tcl_Interp *interp, int argc, const char **argv,
         goto error;                     /* Couldn't create node with requested
                                          * id. */
     }
-    Blt_Free(names);
+    Tcl_Free((char *)names);
     names = NULL;
 
     /* Values */
     if (RestoreValues(restorePtr, interp, nodePtr, numValues, values)!=TCL_OK) {
         goto error;
     }
-    Blt_Free(values);
+    Tcl_Free((char *)values);
     values = NULL;
 
     /* Tags */
     if (!(restorePtr->flags & TREE_RESTORE_NO_TAGS)) {
         RestoreTags(treePtr, nodePtr, numTags, tags);
     }
-    Blt_Free(tags);
+    Tcl_Free((char *)tags);
     tags = NULL;
     return TCL_OK;
 
  error:
-    if (attrs != NULL) {
-        Blt_Free(attrs);
-    }
     if (tags != NULL) {
-        Blt_Free(tags);
+        Tcl_Free((char *)tags);
     }
     if (values != NULL) {
-        Blt_Free(values);
+        Tcl_Free((char *)values);
     }
     if (names != NULL) {
-        Blt_Free(names);
+        Tcl_Free((char *)names);
     }
     if (nodePtr != NULL) {
         Blt_Tree_DeleteNode(treePtr, nodePtr);
@@ -2006,7 +2003,7 @@ RestoreNode3(Tcl_Interp *interp, int argc, const char **argv,
             nodePtr = Blt_Tree_CreateNode(treePtr, parentPtr, names[i], -1);
         }
     }
-    Blt_Free(names);
+    Tcl_Free((char *)names);
 
     /* The second field is a key-value list of the node's values. */
 
@@ -2016,7 +2013,7 @@ RestoreNode3(Tcl_Interp *interp, int argc, const char **argv,
     if (RestoreValues(restorePtr, interp, nodePtr, numValues, values)!=TCL_OK) {
         goto error;
     }
-    Blt_Free(values);
+    Tcl_Free((char *)values);
 
     /* The third field is a list of tags. */
 
@@ -2026,12 +2023,12 @@ RestoreNode3(Tcl_Interp *interp, int argc, const char **argv,
             goto error;
         }
         RestoreTags(treePtr, nodePtr, numTags, tags);
-        Blt_Free(tags);
+        Tcl_Free((char *)tags);
     }
     return TCL_OK;
 
  error:
-    Blt_Free(argv);
+    Tcl_Free((char *)argv);
     Blt_Tree_DeleteNode(treePtr, nodePtr);
     return TCL_ERROR;
 }
@@ -4597,13 +4594,8 @@ Blt_Tree_DumpToFile(
  *---------------------------------------------------------------------------
  */
 int
-Blt_Tree_RestoreFromFile(
-    Tcl_Interp *interp,
-    Tree *treePtr,
-    Node *rootPtr,                      /* Root node of branch to be
-                                         * restored. */
-    const char *fileName,
-    unsigned int flags)
+Blt_Tree_RestoreFromFile(Tcl_Interp *interp, Tree *treePtr, Node *rootPtr,
+                         const char *fileName, unsigned int flags)
 {
     Tcl_Channel channel;
     RestoreInfo restore;
@@ -4656,7 +4648,7 @@ Blt_Tree_RestoreFromFile(
                 ": wrong # elements in restore entry", (char *)NULL);
             result = TCL_ERROR;
         }
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
         if (result != TCL_OK) {
             break;
         }
@@ -4734,7 +4726,7 @@ Blt_Tree_Restore(
                 ": wrong # elements in restore entry", (char *)NULL);
             result = TCL_ERROR;
         }
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
         if (result != TCL_OK) {
             break;
         }
