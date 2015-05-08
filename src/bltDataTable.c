@@ -2724,22 +2724,22 @@ RestoreColumn(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
     colPtr->type = type;
     if ((restorePtr->argc == 5) && 
         ((restorePtr->flags & TABLE_RESTORE_NO_TAGS) == 0)) {
-        int i, elc;
-        const char **elv;
+        int i, argc;
+        const char **argv;
 
-        if (Tcl_SplitList(interp, restorePtr->argv[4], &elc, &elv) != TCL_OK) {
+        if (Tcl_SplitList(interp, restorePtr->argv[4], &argc, &argv)!= TCL_OK) {
             RestoreError(interp, restorePtr);
             return TCL_ERROR;
         }
         
-        for (i = 0; i < elc; i++) {
-            if (blt_table_set_column_tag(interp, table, colPtr, elv[i]) 
+        for (i = 0; i < argc; i++) {
+            if (blt_table_set_column_tag(interp, table, colPtr, argv[i]) 
                 != TCL_OK) {
-                Tcl_Free((char *)elv);
+                Tcl_Free((char *)argv);
                 return TCL_ERROR;
             }
         }
-        Tcl_Free((char *)elv);
+        Tcl_Free((char *)argv);
     }
     return TCL_OK;
 }
@@ -2749,9 +2749,7 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 {
     BLT_TABLE_ROW row;
     Blt_HashEntry *hPtr;
-    const char **elv;
     const char *label;
-    int elc;
     int isNew;
     long index;
 
@@ -2787,19 +2785,21 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
     Blt_SetHashValue(hPtr, row);
     if ((restorePtr->argc == 5) && 
         ((restorePtr->flags & TABLE_RESTORE_NO_TAGS) == 0)) {
+        const char **argv;
+        int argc;
         int i;
 
-        if (Tcl_SplitList(interp, restorePtr->argv[3], &elc, &elv) != TCL_OK) {
+        if (Tcl_SplitList(interp, restorePtr->argv[3], &argc, &argv)!= TCL_OK) {
             RestoreError(interp, restorePtr);
             return TCL_ERROR;
         }
-        for (i = 0; i < elc; i++) {
-            if (blt_table_set_row_tag(interp, table, row, elv[i]) != TCL_OK) {
-                Tcl_Free((char *)elv);
+        for (i = 0; i < argc; i++) {
+            if (blt_table_set_row_tag(interp, table, row, argv[i]) != TCL_OK) {
+                Tcl_Free((char *)argv);
                 return TCL_ERROR;
             }
         }
-        Tcl_Free((char *)elv);
+        Tcl_Free((char *)argv);
     }
     return TCL_OK;
 }

@@ -519,23 +519,19 @@ RowSearch(Table *tablePtr, int y)
 /*ARGSUSED*/
 static int
 ObjToLimits(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Widget of table */
-    Tcl_Obj *objPtr,            /* New width list */
-    char *widgRec,              /* Widget record */
-    int offset,                 /* Offset to field in structure */
+    ClientData clientData,        /* Not used. */
+    Tcl_Interp *interp,           /* Interpreter to send results back to */
+    Tk_Window tkwin,              /* Widget of table */
+    Tcl_Obj *objPtr,              /* New width list */
+    char *widgRec,                /* Widget record */
+    int offset,                   /* Offset to field in structure */
     int flags)  
 {
     Limits *limitsPtr = (Limits *)(widgRec + offset);
-    const char **argv;
-    int argc;
+    int objc;
     int limArr[3];
     Tk_Window winArr[3];
     int limitsFlags;
-
-    argv = NULL;
-    argc = 0;
 
     /* Initialize limits to default values */
     limArr[2] = LIMITS_NOM;
@@ -544,58 +540,66 @@ ObjToLimits(
     winArr[0] = winArr[1] = winArr[2] = NULL;
     limitsFlags = 0;
 
+    objc = 0;
     if (objPtr != NULL) {
+        Tcl_Obj **objv;
+        int objc;
         int size;
         int i;
-        const char *string;
 
-        string = Tcl_GetString(objPtr);
-        if (Tcl_SplitList(interp, string, &argc, &argv) != TCL_OK) {
+        if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
             return TCL_ERROR;
         }
-        if (argc > 3) {
-            Tcl_AppendResult(interp, "wrong # limits \"", string, "\"",
-                (char *)NULL);
-            goto error;
+        if (objc > 3) {
+            Tcl_AppendResult(interp, "wrong # limits \"",
+                Tcl_GetString(objPtr), "\"", (char *)NULL);
+            return TCL_ERROR;
         }
-        for (i = 0; i < argc; i++) {
-            if (argv[i][0] == '\0') {
-                continue;       /* Empty string: use default value */
+        for (i = 0; i < objc; i++) {
+            const char *string;
+            char c0, c1;
+            
+            string = Tcl_GetString(objv[i]);
+            c0 = string[0];
+            if (c0 == '\0') {
+                continue;               /* Empty string: use default
+                                         * value */
             }
+            c1 = string[1];
             limitsFlags |= (LIMITS_SET_BIT << i);
-            if ((argv[i][0] == '.') &&
-                ((argv[i][1] == '\0') || isalpha(UCHAR(argv[i][1])))) {
+            if ((c0 == '.') && ((c1 == '\0') || isalpha(UCHAR(c1)))) {
                 Tk_Window tkwin2;
 
                 /* Widget specified: save pointer to widget */
-                tkwin2 = Tk_NameToWindow(interp, argv[i], tkwin);
+                tkwin2 = Tk_NameToWindow(interp, string, tkwin);
                 if (tkwin2 == NULL) {
-                    goto error;
+                    return TCL_ERROR;
                 }
                 winArr[i] = tkwin2;
             } else {
-                if (Tk_GetPixels(interp, tkwin, argv[i], &size) != TCL_OK) {
-                    goto error;
+                if (Tk_GetPixelsFromObj(interp, tkwin, objPtr, &size)
+                    != TCL_OK) {
+                    return TCL_ERROR;
                 }
                 if ((size < LIMITS_MIN) || (size > LIMITS_MAX)) {
                     Tcl_AppendResult(interp, "bad limits \"", string, "\"",
                         (char *)NULL);
-                    goto error;
+                    return TCL_ERROR;
                 }
                 limArr[i] = size;
             }
         }
-        Tcl_Free((char *)argv);
     }
     /*
-    * Check the limits specified.  We can't check the requested
-    * size of widgets.
-    */
-    switch (argc) {
+     * Check the limits specified.  We can't check the requested size of
+     * widgets.
+     */
+    switch (objc) {
     case 1:
         limitsFlags |= (LIMITS_SET_MIN | LIMITS_SET_MAX);
         if (winArr[0] == NULL) {
-            limArr[1] = limArr[0];      /* Set minimum and maximum to value */
+            limArr[1] = limArr[0];      /* Set minimum and maximum to
+                                         * value */
         } else {
             winArr[1] = winArr[0];
         }
@@ -606,7 +610,8 @@ ObjToLimits(
             (limArr[1] < limArr[0])) {
             Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
                 "\": min > max", (char *)NULL);
-            return TCL_ERROR;   /* Minimum is greater than maximum */
+            return TCL_ERROR;           /* Minimum is greater than
+                                         * maximum */
         }
         break;
 
@@ -620,8 +625,7 @@ ObjToLimits(
             if ((winArr[2] == NULL) &&
                 ((limArr[2] < limArr[0]) || (limArr[2] > limArr[1]))) {
                 Tcl_AppendResult(interp, "nominal value \"", 
-                    Tcl_GetString(objPtr),
-                    "\" out of range", (char *)NULL);
+                    Tcl_GetString(objPtr), "\" out of range", (char *)NULL);
                 return TCL_ERROR;       /* Nominal is outside of range defined
                                          * by minimum and maximum */
             }
@@ -636,9 +640,6 @@ ObjToLimits(
     limitsPtr->wNom = winArr[2];
     limitsPtr->flags = limitsFlags;
     return TCL_OK;
-  error:
-    Tcl_Free((char *)argv);
-    return TCL_ERROR;
 }
 
 /*
