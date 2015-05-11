@@ -84,10 +84,10 @@ set trim "$top"
 
 set tree [blt::tree create]    
 
-set treeview .ss.t 
+set view .ss.t 
 
 blt::scrollset .ss \
-    -window $treeview \
+    -window $view \
     -xscrollbar .ss.x \
     -yscrollbar .ss.y 
 blt::tk::scrollbar .ss.x
@@ -96,30 +96,30 @@ blt::tk::scrollbar .ss.y
 option add *BltTreeView.Entry.RuleHeight 1
 option add *BltTreeView.Column.ruleWidth 1
 
-blt::treeview $treeview \
+blt::treeview $view \
     -width 0 \
     -height 4i \
     -selectmode multiple \
     -separator / \
     -tree $tree  -font "Arial 10"
 
-$treeview column configure treeView -text "name" -edit yes \
+$view column configure treeView -text "name" -edit yes \
     -sorttype dictionary 
-$treeview column insert 0 mtime -sorttype integer -formatcommand FormatDate 
-$treeview column insert 0 atime -sorttype integer -formatcommand FormatDate
-$treeview column insert 0 gid -sorttype integer
-$treeview column insert end mode -sorttype integer -formatcommand FormatMode 
-$treeview column insert end type -sorttype dictionary
-$treeview column insert end ctime -sorttype integer -formatcommand FormatDate
-$treeview column insert end uid -sorttype integer 
-$treeview column insert end size -sorttype integer -formatcommand FormatSize \
+$view column insert 0 mtime -sorttype integer -formatcommand FormatDate 
+$view column insert 0 atime -sorttype integer -formatcommand FormatDate
+$view column insert 0 gid -sorttype integer
+$view column insert end mode -sorttype integer -formatcommand FormatMode 
+$view column insert end type -sorttype dictionary
+$view column insert end ctime -sorttype integer -formatcommand FormatDate
+$view column insert end uid -sorttype integer 
+$view column insert end size -sorttype integer -formatcommand FormatSize \
     -justify right
 
-$treeview sort configure -columns treeView 
-focus $treeview
+$view sort configure -columns treeView 
+focus $view
 
-foreach c [$treeview column names] {
-    $treeview column configure $c \
+foreach c [$view column names] {
+    $view column configure $c \
 	-titleborderwidth 1 -borderwidth 1 -relief sunken -titlefont "Arial 10"
 }
 blt::table . \
@@ -129,28 +129,40 @@ set count 0
 Find $tree root $top
 puts "$count entries"
 
-$treeview style checkbox check \
+$view style checkbox check \
     -onvalue "file" -offvalue "directory" \
     -showvalue yes
 
-$treeview style create combobox combo \
-    -menu $treeview.menu \
+$view style create combobox combo \
+    -menu $view.menu \
     -textvariable textVar \
     -iconvariable iconVar
-blt::combomenu $treeview.menu  \
+blt::combomenu $view.menu  \
     -restrictwidth min \
     -textvariable textVar \
     -iconvariable iconVar \
-    -yscrollbar $treeview.menu.ybar \
-    -xscrollbar $treeview.menu.xbar 
-blt::tk::scrollbar $treeview.menu.xbar 
-blt::tk::scrollbar $treeview.menu.ybar
+    -yscrollbar $view.menu.ybar \
+    -xscrollbar $view.menu.xbar 
+blt::tk::scrollbar $view.menu.xbar 
+blt::tk::scrollbar $view.menu.ybar
 
-$treeview.menu add -text directory -value directory
-$treeview.menu add -text file -value file
+$view.menu add -text directory -value directory
+$view.menu add -text file -value file
 
-$treeview column configure uid -style combo 
-$treeview column configure type -style check
+$view column configure uid -style combo 
+$view column configure type -style check
+
+$view style create textbox textbox \
+    -editor $view.editor -edit yes -fg red
+blt::comboeditor $view.editor  \
+    -height { 0 2i }  \
+    -yscrollbar $view.editor.ybar \
+    -xscrollbar $view.editor.xbar
+blt::tk::scrollbar $view.editor.xbar 
+blt::tk::scrollbar $view.editor.ybar
+$view column configure ctime -style textbox 
+$view column configure treeView -style textbox 
 
 wm protocol . WM_DELETE_WINDOW { destroy . }
 
+bind $view <Enter> { focus %W }

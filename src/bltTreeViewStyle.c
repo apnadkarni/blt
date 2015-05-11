@@ -111,38 +111,24 @@
 #define DEF_ACTIVE_BG                   (char *)NULL
 
 #ifdef WIN32
+#define DEF_CHECKBOX_CURSOR             "arrow"
+#define DEF_RADIOBUTTON_CURSOR          "arrow"
 #define DEF_TEXTBOX_CURSOR              "arrow"
 #else
+#define DEF_CHECKBOX_CURSOR             "hand2"
+#define DEF_RADIOBUTTON_CURSOR          "hand2"
 #define DEF_TEXTBOX_CURSOR              "hand2"
 #endif /*WIN32*/
-#define DEF_TEXTBOX_ACTIVE_RELIEF       "flat"
-#define DEF_TEXTBOX_SIDE                "left"
-#define DEF_TEXTBOX_COMMAND             (char *)NULL
-#define DEF_TEXTBOX_RELIEF              "flat"
-#define DEF_TEXTBOX_BORDERWIDTH "1"
-#define DEF_TEXTBOX_EDITABLE            "0"
-#define DEF_TEXTBOX_FONT                (char *)NULL
 
 #define DEF_CHECKBOX_ACTIVE_COLORS      "0"
-#define DEF_IMAGEBOX_ACTIVE_COLORS      "0"
-#define DEF_TEXTBOX_ACTIVE_COLORS       "0"
-#define DEF_COMBOBOX_ACTIVE_COLORS      "0"
-#define DEF_RADIOBUTTON_ACTIVE_COLORS   "0"
-
-#define DEF_CHECKBOX_UNDERLINE_ACTIVE   "1"
-#define DEF_IMAGEBOX_UNDERLINE_ACTIVE   "1"
-#define DEF_TEXTBOX_UNDERLINE_ACTIVE    "1"
-#define DEF_COMBOBOX_UNDERLINE_ACTIVE   "1"
-#define DEF_RADIOBUTTON_UNDERLINE_ACTIVE        "1"
-
 #define DEF_CHECKBOX_ACTIVE_RELIEF      "raised"
-#define DEF_CHECKBOX_BOX_COLOR          (char *)NULL
-#define DEF_CHECKBOX_CHECK_COLOR        "red"
 #define DEF_CHECKBOX_BORDERWIDTH        "1"
-#define DEF_CHECKBOX_EDITABLE           "1"
-#define DEF_CHECKBOX_FONT               (char *)NULL
+#define DEF_CHECKBOX_BOX_COLOR          RGB_GREY50
+#define DEF_CHECKBOX_CHECK_COLOR        "red"
 #define DEF_CHECKBOX_COMMAND            (char *)NULL
-#define DEF_CHECKBOX_FILL_COLOR         (char *)NULL
+#define DEF_CHECKBOX_EDITABLE           "1"
+#define DEF_CHECKBOX_FILL_COLOR         RGB_WHITE
+#define DEF_CHECKBOX_FONT               (char *)NULL
 #define DEF_CHECKBOX_GAP                "2"
 #define DEF_CHECKBOX_LINEWIDTH          "2"
 #define DEF_CHECKBOX_OFFVALUE           "0"
@@ -150,17 +136,13 @@
 #define DEF_CHECKBOX_RELIEF             "flat"
 #define DEF_CHECKBOX_SHOWVALUE          "yes"
 #define DEF_CHECKBOX_SIZE               "15"
-#ifdef WIN32
-#define DEF_CHECKBOX_CURSOR             "arrow"
-#else
-#define DEF_CHECKBOX_CURSOR             "hand2"
-#endif /*WIN32*/
-
-#define DEF_COMBOBOX_ACTIVE_RELIEF      "flat"
-#define DEF_COMBOBOX_ARROW_BORDERWIDTH  "2"
+#define DEF_CHECKBOX_UNDERLINE_ACTIVE   "1"
 #define DEF_COMBOBOX_ACTIVE_ARROW_BG    RGB_GREY95
+#define DEF_COMBOBOX_ACTIVE_COLORS      "0"
+#define DEF_COMBOBOX_ACTIVE_RELIEF      "flat"
 #define DEF_COMBOBOX_ARROW_BG           STD_NORMAL_BACKGROUND
-#define DEF_COMBOBOX_ARROW_RELIEF       "solid"
+#define DEF_COMBOBOX_ARROW_BORDERWIDTH  "2"
+#define DEF_COMBOBOX_ARROW_RELIEF       "raised"
 #define DEF_COMBOBOX_BORDERWIDTH        "1"
 #define DEF_COMBOBOX_CURSOR             (char *)NULL
 #define DEF_COMBOBOX_EDITABLE           "1"
@@ -173,6 +155,8 @@
 #define DEF_COMBOBOX_STATE              "normal"
 #define DEF_COMBOBOX_TEXT               (char *)NULL
 #define DEF_COMBOBOX_TEXT_VARIABLE      (char *)NULL
+#define DEF_COMBOBOX_UNDERLINE_ACTIVE   "1"
+#define DEF_IMAGEBOX_ACTIVE_COLORS      "0"
 #define DEF_IMAGEBOX_ACTIVE_RELIEF      "flat"
 #define DEF_IMAGEBOX_BORDERWIDTH        "1"
 #define DEF_IMAGEBOX_COMMAND            (char *)NULL
@@ -182,27 +166,34 @@
 #define DEF_IMAGEBOX_RELIEF             "flat"
 #define DEF_IMAGEBOX_SHOW_TEXT          "1"
 #define DEF_IMAGEBOX_SIDE               "left"
-
+#define DEF_IMAGEBOX_UNDERLINE_ACTIVE   "1"
+#define DEF_RADIOBUTTON_ACTIVE_COLORS   "0"
 #define DEF_RADIOBUTTON_ACTIVE_RELIEF   "raised"
-#define DEF_RADIOBUTTON_BOX_COLOR       (char *)NULL
-#define DEF_RADIOBUTTON_INDICATOR_COLOR "red"
 #define DEF_RADIOBUTTON_BORDERWIDTH     "1"
-#define DEF_RADIOBUTTON_EDITABLE        "1"
-#define DEF_RADIOBUTTON_FONT            (char *)NULL
+#define DEF_RADIOBUTTON_BOX_COLOR       (char *)NULL
 #define DEF_RADIOBUTTON_COMMAND         (char *)NULL
+#define DEF_RADIOBUTTON_EDITABLE        "1"
 #define DEF_RADIOBUTTON_FILL_COLOR      "white"
+#define DEF_RADIOBUTTON_FONT            (char *)NULL
 #define DEF_RADIOBUTTON_GAP             "2"
+#define DEF_RADIOBUTTON_INDICATOR_COLOR "red"
 #define DEF_RADIOBUTTON_LINEWIDTH       "2"
-#define DEF_RADIOBUTTON_ONVALUE         "1"
 #define DEF_RADIOBUTTON_OFFVALUE        "0"
+#define DEF_RADIOBUTTON_ONVALUE         "1"
 #define DEF_RADIOBUTTON_RELIEF          "flat"
 #define DEF_RADIOBUTTON_SHOWVALUE       "yes"
 #define DEF_RADIOBUTTON_SIZE            "15"
-#ifdef WIN32
-#define DEF_RADIOBUTTON_CURSOR          "arrow"
-#else
-#define DEF_RADIOBUTTON_CURSOR          "hand2"
-#endif /*WIN32*/
+#define DEF_RADIOBUTTON_UNDERLINE_ACTIVE        "1"
+#define DEF_TEXTBOX_ACTIVE_COLORS       "0"
+#define DEF_TEXTBOX_ACTIVE_RELIEF       "flat"
+#define DEF_TEXTBOX_BORDERWIDTH "1"
+#define DEF_TEXTBOX_COMMAND             (char *)NULL
+#define DEF_TEXTBOX_EDITABLE            "0"
+#define DEF_TEXTBOX_EDITOR              (char *)NULL
+#define DEF_TEXTBOX_FONT                (char *)NULL
+#define DEF_TEXTBOX_RELIEF              "flat"
+#define DEF_TEXTBOX_SIDE                "left"
+#define DEF_TEXTBOX_UNDERLINE_ACTIVE    "1"
 
 static Blt_OptionParseProc ObjToIconProc;
 static Blt_OptionPrintProc IconToObjProc;
@@ -323,7 +314,7 @@ typedef struct {
                                            cell. */
     Tcl_Obj *cmdObjPtr;
     /* TextBox-specific fields */
-    Tcl_Obj *editCmdObjPtr;             /* If non-NULL, TCL procedure
+    Tcl_Obj *editorObjPtr;             /* If non-NULL, TCL procedure
                                          * called to allow the user to edit
                                          * the text string. */
     int side;                           /* Position of the text in relation to
@@ -1188,6 +1179,8 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_TEXTBOX_EDITABLE, 
         Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDITABLE},
+    {BLT_CONFIG_OBJ, "-editor", "editor", "Editor", DEF_TEXTBOX_EDITOR, 
+        Blt_Offset(TextBoxStyle, editorObjPtr), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
         0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TEXTBOX_FONT, 
@@ -3076,16 +3069,12 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 /*
  *---------------------------------------------------------------------------
  *
- * ComboBoxStyleIdentifyProc --
+ * CheckBoxStyleIdentifyProc --
  *
- *      Draws the "combobox" given the screen coordinates and the cell to
- *      be displayed.
+ *      Determines if the pointer is over the box of "checkbox".
  *
  * Results:
- *      None.
- *
- * Side Effects:
- *      The checkbox cell is drawn.
+ *      Returns a string "button" is over the button and "text" otherwise.
  *
  *---------------------------------------------------------------------------
  */
@@ -3188,7 +3177,7 @@ NewComboBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr = Blt_AssertCalloc(1, sizeof(ComboBoxStyle));
     stylePtr->classPtr = &comboBoxClass;
     stylePtr->gap = STYLE_GAP;
-    stylePtr->arrowRelief = TK_RELIEF_SOLID;
+    stylePtr->arrowRelief = TK_RELIEF_RAISED;
     stylePtr->postedRelief = TK_RELIEF_SUNKEN;
     stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_FLAT;
     stylePtr->arrowBorderWidth = 1;

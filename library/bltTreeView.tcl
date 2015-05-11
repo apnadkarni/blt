@@ -36,15 +36,25 @@
 #   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-namespace eval ::blt::TreeView {
-    variable _private
-    array set _private {
-	afterId -1
-	scroll	0
-	column	""
-	space   off
-	x	0
-	y	0
+namespace eval blt {
+    namespace eval TreeView {
+        variable _private
+        array set _private {
+            activeSelection     0
+            afterId             -1
+            column              ""
+            scroll              0
+            space               off
+	    trace               1
+            x                   0
+            y                   0
+	}
+	proc trace { mesg } {
+	    variable _private 
+	    if { $_private(trace) } {
+		puts stderr $mesg
+	    }
+        }
     }
 }
 
@@ -170,7 +180,176 @@ if { $tcl_platform(platform) == "windows" } {
 	[list @$blt_library/treeview.xbm $blt_library/treeview_m.xbm black white]
 }
 
-# ----------------------------------------------------------------------------
+# Left
+#   Close the current node.
+bind BltTreeView <KeyPress-Left> {
+    %W close focus
+}
+
+# Right (arrow key)
+#   Open the current node.
+bind BltTreeView <KeyPress-Right> {
+    %W open focus
+    %W see focus -anchor w
+}
+
+# Up (arrow key)
+#   Move up to the previous entry. Add to selection if space mode is on.
+bind BltTreeView <KeyPress-Up> {
+    blt::TreeView::MoveFocus %W up
+    if { $blt::TreeView::_private(space) } {
+	%W selection toggle focus
+    }
+}
+
+# Down (arrow key)
+bind BltTreeView <KeyPress-Down> {
+    blt::TreeView::MoveFocus %W down
+    if { $blt::TreeView::_private(space) } {
+	%W selection toggle focus
+    }
+}
+
+# Home
+#   Move the first entry.  Ignores nodes whose ancestors are closed.
+bind BltTreeView <KeyPress-Home> {
+    blt::TreeView::MoveFocus %W top
+}
+
+# End 
+#   Move the last entry. Ignores nodes whose ancestors are closed.
+bind BltTreeView <KeyPress-End> {
+    blt::TreeView::MoveFocus %W bottom
+}
+
+# PgUp 
+#   Move the first entry in the view.
+bind BltTreeView <KeyPress-Prior> {
+    blt::TreeView::MovePage %W view.first
+}
+
+# PgDn
+#   Move the last entry in the view.
+bind BltTreeView <KeyPress-Next> {
+    blt::TreeView::MovePage %W view.last
+}
+
+# Shift+Up (arrow key)
+#   Move the previous sibling node.
+bind BltTreeView <Shift-KeyPress-Up> {
+    blt::TreeView::MoveFocus %W prevsibling
+}
+
+# Shift+Down (arrow key)
+#   Move the next sibling node.
+bind BltTreeView <Shift-KeyPress-Down> {
+    blt::TreeView::MoveFocus %W nextsibling
+}
+
+# Space (arrow key)
+#   Depending on the selection mode sets the anchor of selection.
+bind BltTreeView <KeyPress-space> {
+    switch -- [%W cget -selectmode] {
+	"single" {
+	    if { [%W selection includes focus] } {
+		%W selection clearall
+	    } else {
+		%W selection clearall
+		%W selection set focus
+	    }
+	}
+	"multiple" {
+	    %W selection toggle focus
+	}
+    }
+    set blt::TreeView::_private(space) on
+}
+
+# Space (release)
+#   Turn of space selection mode.
+bind BltTreeView <KeyRelease-space> { 
+    set blt::TreeView::_private(space) off
+}
+
+# Return
+#   Turn on space selection mode.
+bind BltTreeView <KeyPress-Return> {
+    blt::TreeView::MoveFocus %W focus
+    set blt::TreeView::_private(space) on
+}
+
+# Return (release)
+#   Turn off space selection mode.
+bind BltTreeView <KeyRelease-Return> { 
+    set blt::TreeView::_private(space) off
+}
+
+# Any other key press.
+#   Goto the next matching entry.
+bind BltTreeView <KeyPress> {
+    blt::TreeView::NextMatch %W %A
+}
+
+if {[string equal "x11" [tk windowingsystem]]} {
+    bind BltTreeView <4> {
+	%W yview scroll -5 units
+    }
+    bind BltTreeView <5> {
+	%W yview scroll 5 units
+    }
+} else {
+    bind BltTreeView <MouseWheel> {
+	%W yview scroll [expr {- (%D / 120) * 4}] units
+    }
+}
+
+# F1
+#   Open all entries.
+bind BltTreeView <KeyPress-F1> {
+    %W open -r root
+}
+
+# F2
+#   Close all entries.
+bind BltTreeView <KeyPress-F2> {
+    eval %W close -r [%W entry children root] 
+}
+
+# B1 Enter
+#   Stop auto-scrolling
+bind BltTreeView <B1-Enter> {
+    after cancel $blt::TreeView::_private(afterId)
+    set blt::TreeView::_private(afterId) -1
+}
+
+# B1 Leave
+#   Start auto-scrolling
+bind BltTreeView <B1-Leave> {
+    if { $blt::TreeView::_private(scroll) } {
+	blt::TreeView::AutoScroll %W 
+    }
+}
+
+# ButtonPress 2
+#  Start scanning
+bind BltTreeView <ButtonPress-2> {
+    set blt::TreeView::_private(cursor) [%W cget -cursor]
+    %W configure -cursor hand1
+    %W scan mark %x %y
+}
+
+# B2 Motion
+#  Continue scanning
+bind BltTreeView <B2-Motion> {
+    %W scan dragto %x %y
+}
+
+# ButtonRelease 2
+#  Stop scanning
+bind BltTreeView <ButtonRelease-2> {
+    %W configure -cursor $blt::TreeView::_private(cursor)
+}
+
 #
 # Initialize --
 #
@@ -179,66 +358,106 @@ if { $tcl_platform(platform) == "windows" } {
 #	to the widget, so they can't be set through the widget's class bind
 #	tags.
 #
-# ----------------------------------------------------------------------------
 proc blt::TreeView::Initialize { w } {
     variable _private
     #
     # Active entry bindings
     #
     $w bind Entry <Enter> { 
-	%W entry highlight current 
+	%W entry activate current 
     }
     $w bind Entry <Leave> { 
-	%W entry highlight "" 
+	%W entry activate "" 
     }
 
-    #
+
     # Button bindings
     #
-    $w button bind all <ButtonRelease-1> {
-	set index [%W nearest %x %y blt::TreeView::_private(who)]
-	if { [%W index current] == $index && 
-	     $blt::TreeView::_private(who) == "button" } {
-	    %W see -anchor nw current
-	    %W toggle current
-	}
-    }
-    $w button bind all <Enter> {
-	%W button highlight current
-    }
-    $w button bind all <Leave> {
-	%W button highlight ""
+
+    # ButtonPress-1
+    #   Save the index of the current entry (whose button was pressed).
+    $w button bind all <ButtonPress-1> {
+        set blt::TreeView::_private(lastButton) [%W index current]
     }
 
+    # ButtonRelease-1
+    #   If over the same button where the button was pressed, open or close
+    #   the entry.
+    $w button bind all <ButtonRelease-1> {
+        blt::TreeView::trace "ButtonRelease-1 for Button"
+	if { [%W button contains %x %y] == $blt::TreeView::_private(lastButton) } {
+	    %W see -anchor nw current
+	    %W toggle current
+	} else {
+            blt::TreeView::trace "not over button"
+        }            
+    }
+    $w button bind all <Enter> {
+        blt::TreeView::trace "Enter Button"
+	%W button activate current
+        set blt::TreeView::_private(lastButton) [%W index current]
+    }
+    $w button bind all <Leave> {
+        blt::TreeView::trace "Leave Button"
+        set blt::TreeView::_private(lastButton) -1
+	%W button activate ""
+        
+    }
+
+    # Entry bindings
     #
     # ButtonPress-1
-    #
-    #	Performs the following operations:
-    #
-    #	1. Clears the previous selection.
-    #	2. Selects the current entry.
-    #	3. Sets the focus to this entry.
-    #	4. Scrolls the entry into view.
-    #	5. Sets the selection anchor to this entry, just in case
-    #	   this is "multiple" mode.
-    #
+    #   Set selection anchor, set focus, clear previous selection.
+    # Double-ButtonPress-1
+    #   Open or close the entry.
+    # B1-Motion
+    #	Saves the current location of the pointer for auto-scrolling.
+    #	Resets the selection mark.
+    # ButtonRelease-1
+    #  Sets the select anchor and in invokes the entry's -command option.
+    # Shift-ButtonPress-1
+    #	In multiple mode, resets the selection mark, selecting entries between
+    #   the selection anchor and the current entry.
+    #   In single mode, resets the selection anchor.
+    # Shift-Double-ButtonPress-1
+    #   Prevent less specific bindings for triggering.
+    # Shift-B1-Motion
+    #   Prevent less specific bindings for triggering.
+    # Shift-ButtonRelease-1
+    #   Turn off autoscrolling.
+    # Control-ButtonPress-1
+    #   In multiple mode, toggles the selection of the current entry.
+    #   In single mode, resets the selection anchor to the current entry.
+    # Control-Double-ButtonPress-1
+    #   Prevent less specific bindings for triggering.
+    # Control-B1-Motion
+    #   Prevent less specific bindings for triggering.
+    # Control-ButtonRelease-1
+    #   Turn off autoscrolling.
+    # Control-Shift-ButtonRelease-1
+    #   In multiple mode, 
+    # Control-Shift-Double-ButtonPress-1
+    #   Prevent less specific bindings for triggering.
+    # Control-Shift-B1-Motion
+    #   Prevent less specific bindings for triggering.
     
+    # ButtonPress-1
+    #   Set selection anchor, set focus, clear previous selection.
     $w bind Entry <ButtonPress-1> { 	
+        blt::TreeView::trace "ButtonPress-1 for Entry"
 	blt::TreeView::SetSelectionAnchor %W current
     }
 
+    # Double-ButtonPress-1
+    #   Open or close the entry.
     $w bind Entry <Double-ButtonPress-1> {
 	if { ![%W cget -flat] } {
 	    %W toggle current
 	}
     }
-
-    #
     # B1-Motion
-    #
-    #	For "multiple" mode only.  Saves the current location of the
-    #	pointer for auto-scrolling.  Resets the selection mark.
-    #
+    #	Saves the current location of the pointer for auto-scrolling.
+    #	Resets the selection mark.
     $w bind Entry <B1-Motion> { 
 	set blt::TreeView::_private(x) %x
 	set blt::TreeView::_private(y) %y
@@ -254,10 +473,10 @@ proc blt::TreeView::Initialize { w } {
 	}
     }
 
-    #
     # ButtonRelease-1
-    #
+    #  Sets the select anchor and in invokes the entry's -command option.
     $w bind Entry <ButtonRelease-1> { 
+        blt::TreeView::trace "ButtonRelease-1 for Entry"
 	after cancel $blt::TreeView::_private(afterId)
 	set blt::TreeView::_private(afterId) -1
 	set blt::TreeView::_private(scroll) 0
@@ -271,12 +490,11 @@ proc blt::TreeView::Initialize { w } {
 	}
     }
 
-    #
-    # Shift-ButtonPress-1
-    #
-    #	For "multiple" mode only.
-    #
 
+    # Shift-ButtonPress-1
+    #	In multiple mode, resets the selection mark, selecting entries between
+    #   the selection anchor and the current entry.
+    #   In single mode, resets the selection anchor.
     $w bind Entry <Shift-ButtonPress-1> { 
 	if { [%W cget -selectmode] == "multiple" && [%W selection present] } {
 	    if { [%W index anchor] == -1 } {
@@ -289,47 +507,57 @@ proc blt::TreeView::Initialize { w } {
 	    blt::TreeView::SetSelectionAnchor %W current
 	}
     }
+    # Shift-Double-ButtonPress-1
+    #   Prevent less specific bindings for triggering.
     $w bind Entry <Shift-Double-ButtonPress-1> {
-	# do nothing
+	# Do nothing.
     }
+    # Shift-B1-Motion
+    #   Prevent less specific bindings for triggering.
     $w bind Entry <Shift-B1-Motion> { 
-	# do nothing
+	# Do nothing.
     }
+    # Shift-ButtonRelease-1
+    #   Turn off autoscrolling.
     $w bind Entry <Shift-ButtonRelease-1> { 
 	after cancel $blt::TreeView::_private(afterId)
 	set blt::TreeView::_private(afterId) -1
 	set blt::TreeView::_private(scroll) 0
     }
 
-    #
     # Control-ButtonPress-1
-    #
-    #	For "multiple" mode only.  
-    #
+    #   In multiple mode, toggles the selection of the current entry.
+    #   In single mode, resets the selection anchor to the current entry.
     $w bind Entry <Control-ButtonPress-1> { 
 	switch -- [%W cget -selectmode] {
 	    "multiple" {
-		set index [%W index current]
-		%W selection toggle $index
-		%W selection anchor $index
+		%W selection toggle current
+		%W selection anchor current
 	    }
 	    "single" {
 		blt::TreeView::SetSelectionAnchor %W current
 	    }
 	}
     }
+    # Control-Double-ButtonPress-1
+    #   Prevent less specific bindings for triggering.
     $w bind Entry <Control-Double-ButtonPress-1> {
-	# do nothing
+	# Do nothing.
     }
+    # Control-B1-Motion
+    #   Prevent less specific bindings for triggering.
     $w bind Entry <Control-B1-Motion> { 
-	# do nothing
+	# Do nothing.
     }
+    # Control-ButtonRelease-1
+    #   Turn off autoscrolling.
     $w bind Entry <Control-ButtonRelease-1> { 
 	after cancel $blt::TreeView::_private(afterId)
 	set blt::TreeView::_private(afterId) -1
 	set blt::TreeView::_private(scroll) 0
     }
-
+    # Control-Shift-ButtonRelease-1
+    #   In multiple mode, 
     $w bind Entry <Control-Shift-ButtonPress-1> { 
 	if { [%W cget -selectmode] == "multiple" && [%W selection present] } {
 	    if { [%W index anchor] == -1 } {
@@ -345,11 +573,15 @@ proc blt::TreeView::Initialize { w } {
 	    blt::TreeView::SetSelectionAnchor %W current
 	}
     }
+    # Control-Shift-Double-ButtonPress-1
+    #   Prevent less specific bindings for triggering.
     $w bind Entry <Control-Shift-Double-ButtonPress-1> {
-	# do nothing
+	# Do nothing.
     }
+    # Control-Shift-B1-Motion
+    #   Prevent less specific bindings for triggering.
     $w bind Entry <Control-Shift-B1-Motion> { 
-	# do nothing
+	# Do nothing.
     }
 
     $w column bind all <Enter> {
@@ -393,23 +625,35 @@ proc blt::TreeView::Initialize { w } {
 	%W cell deactivate 
     }
     $w bind TextBoxStyle <ButtonPress-1> { 
-	if { ![%W cell writable active] } {
-	    blt::TreeView::SetSelectionAnchorFromCell %W active
-	}
+        blt::TreeView::SetSelectionAnchorFromCell %W active
     }
     $w bind TextBoxStyle <B1-Motion> { 
-	set blt::TreeView::_private(x) %x
-	set blt::TreeView::_private(y) %y
-	set index [%W nearest %x %y]
-	set blt::TreeView::_private(scroll) 1
-	switch -- [%W cget -selectmode] {
-	    "multiple" {
-		%W selection mark $index
-	    } 
-	    "single" {
-		blt::TreeView::SetSelectionAnchor %W $index
-	    }
-	}
+        blt::TreeView::trace "B1-Motion TextBox"
+        if { $blt::TreeView::_private(activeSelection) } {
+            set blt::TreeView::_private(x) %x
+            set blt::TreeView::_private(y) %y
+            set index [%W nearest %x %y]
+            set blt::TreeView::_private(scroll) 1
+            switch -- [%W cget -selectmode] {
+                "multiple" {
+                    %W selection mark $index
+                } 
+                "single" {
+                    blt::TreeView::SetSelectionAnchor %W $index
+                }
+            }
+        }
+    }
+    $w bind TextBoxStyle <ButtonRelease-1> { 
+        blt::TreeView::trace "ButtonRelease-1 TextBox"
+        set blt::TreeView::_private(activeSelection) 0
+    }
+
+    $w bind TextBoxStyle <ButtonPress-3> { 
+        blt::TreeView::PostEditor %W current
+    }
+    $w bind TextBoxStyle <ButtonRelease-3> { 
+        blt::TreeView::UnpostEditor %W active
     }
 
     # CheckBoxStyle
@@ -420,29 +664,38 @@ proc blt::TreeView::Initialize { w } {
 	%W cell deactivate 
     }
     $w bind CheckBoxStyle <ButtonPress-1> { 
-	if { [%W cell writable active]  && 
-	     [%W cell identify active %X %Y] == "button" } {
-	    blt::TreeView::ToggleValue %W active
-	} else {
+        blt::TreeView::trace "ButtonPress-1 for CheckBox"
+	if { [%W cell identify active %X %Y] == "text" } {
 	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
-    $w bind CheckBoxStyle <B1-Motion> { 
-	break
+    $w bind CheckBoxStyle <ButtonRelease-1> { 
+        blt::TreeView::trace "ButtonRelease-1 for CheckBox"
+        if { [%W cell writable active]  && 
+             [%W cell identify active %X %Y] == "button" } {
+            blt::TreeView::ToggleValue %W active
+        } else {
+            blt::TreeView::trace "ButtonRelease-1 not over button"
+        }
+        set blt::TreeView::_private(activeSelection) 0
     }
     $w bind CheckBoxStyle <B1-Motion> { 
-	set blt::TreeView::_private(x) %x
-	set blt::TreeView::_private(y) %y
-	set index [%W nearest %x %y]
-	set blt::TreeView::_private(scroll) 1
-	switch -- [%W cget -selectmode] {
-	    "multiple" {
-		%W selection mark $index
-	    } 
-	    "single" {
-		blt::TreeView::SetSelectionAnchor %W $index
-	    }
-	}
+        blt::TreeView::trace "B1-Motion CheckBox activeSelection=$blt::TreeView::_private(activeSelection)"
+        if { $blt::TreeView::_private(activeSelection) } {
+            blt::TreeView::trace "B1 Motion for CheckBox activeSelection"
+            set index [%W nearest %x %y]
+            set blt::TreeView::_private(scroll) 1
+            switch -- [%W cget -selectmode] {
+                "multiple" {
+                    %W selection mark $index
+                } 
+                "single" {
+                    blt::TreeView::SetSelectionAnchor %W $index
+                }
+            }
+        }
+        set blt::TreeView::_private(x) %x
+        set blt::TreeView::_private(y) %y
     }
 
     # ComboBoxStyle
@@ -459,6 +712,7 @@ proc blt::TreeView::Initialize { w } {
 	}
     }
     $w bind ComboBoxStyle <ButtonPress-1> { 
+        blt::TreeView::trace "ButtonPress-1 ComboBox"
 	set blt::TreeView::_private(activeSelection) 0
 	if { [%W cell identify current %X %Y] == "button" } {
 	    blt::TreeView::PostComboBoxMenu %W current
@@ -474,6 +728,7 @@ proc blt::TreeView::Initialize { w } {
 	}
     }
     $w bind ComboBoxStyle <B1-Motion> { 
+        blt::TreeView::trace "B1 Motion ComboBox"
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {
 	    set blt::TreeView::_private(x) %x
@@ -501,6 +756,7 @@ proc blt::TreeView::Initialize { w } {
     # Otherwise unpost the menu.  The user clicked either on the menu
     # (selected an item) or outside the menu (canceling the operation).
     $w bind ComboBoxStyle <ButtonRelease-1> { 
+        blt::TreeView::trace "ButtonRelease-1 ComboBox"
 	after cancel $blt::TreeView::_private(afterId)
 	set blt::TreeView::_private(afterId) -1
 	set blt::TreeView::_private(scroll) 0
@@ -576,7 +832,7 @@ proc blt::TreeView::PostComboBoxMenu { w cell } {
     incr y1 [winfo rooty $w]
     incr x2 [winfo rootx $w]
     incr y2 [winfo rooty $w]
-    $menu post right $x2 $y2 $x1 $y1
+    $menu post -align right -box [list $x2 $y2 $x1 $y1]
     blt::grab push $menu 
     bind $menu <Unmap> [list blt::TreeView::UnpostComboBoxMenu $w]
 }
@@ -632,6 +888,94 @@ proc ::blt::TreeView::UnpostComboBoxMenu { w } {
 	# one.
 	$menu unpost
 	#blt::grab pop $menu
+    }
+}
+
+#
+# PostEditor --
+#
+#   Posts the editor at the location of the cell requesting it.  The editor
+#   is initialized to the current cell value and we bind to the editor's
+#   <<Value>> event to know if the text was edited.
+#
+#   The most important part is that we set a grab on the editor.  This will
+#   force <ButtonRelease> events to be interpreted by the editor instead of
+#   the tableview widget.
+#
+proc blt::TreeView::PostEditor { w cell } {
+    set style [$w cell style $cell]
+    set editor [$w style cget $style -editor]
+    if { $editor == "" } {
+        return;                         # No editor specified.
+    }
+    # Get the current value of the cell and copy it to the corresponding
+    # editor.
+    set tree [$w cget -tree]
+    foreach { row col } [$w cell index $cell] break
+    set value [$tree get $row $col ""]
+    # Post the editor over the cell.
+    foreach { x1 y1 x2 y2 } [$w cell bbox $cell] break
+    incr x1 [winfo rootx $w] 
+    incr y1 [winfo rooty $w]
+    incr x2 [winfo rootx $w]
+    incr y2 [winfo rooty $w]
+    $editor post -align right -box [list $x1 $y1 $x2 $y2] \
+        -command [list blt::TreeView::ImportFromEditor $tree $row $col] \
+        -text $value
+    blt::grab push $editor 
+    focus -force $editor
+    bind $editor <Unmap> [list blt::TreeView::UnpostEditor $w $cell]
+}
+
+#
+# ImportFromEditor --
+#
+#   This is called whenever a editor text changes (via the -command
+#   callback from the invoke operation of the editor).  Gets the edited
+#   text from the editor and sets the corresponding table cell to it.
+#
+proc blt::TreeView::ImportFromEditor { tree row col value } {
+    $tree set $row $col $value
+}
+
+#
+# UnpostEditor --
+#
+#   Unposts the editor.  Note that the current value set in the cell style
+#   is not propagated to the table here.  This is done via -command
+#   callback.  We don't know if we're unposting the editor because the text
+#   was changed or if the user clicked outside of the editor to cancel the
+#   operation.
+#
+proc ::blt::TreeView::UnpostEditor { w cell } {
+    variable _private
+
+    if { [$w type $cell] != "textbox" } {
+        return;                         # Not a combobox style cell
+    }
+
+    # Restore focus right away (otherwise X will take focus away when the
+    # editor is unmapped and under some window managers (e.g. olvwm) we'll
+    # lose the focus completely).
+    catch { focus $_private(focus) }
+    set _private(focus) ""
+
+    # This causes the cell in the table to be set to the current
+    # value in the text style.
+    set style  [$w cell style $cell]
+    set editor [$w style cget $style -editor]
+    $w cell configure $cell -state normal
+    set _private(posting) none
+    if { [info exists _private(cursor)] } {
+        $w style configure $style -cursor $_private(cursor)
+    }
+    if { $editor != "" } {
+        # Release grab, if any, and restore the previous grab, if there was
+        # one.
+        set grab [blt::grab current]
+        if { $grab != "" } {
+            blt::grab pop $grab
+        }
     }
 }
 
@@ -736,6 +1080,10 @@ proc blt::TreeView::SetSelectionAnchorFromCell { w cell } {
 }
 
 proc blt::TreeView::SetSelectionAnchor { w tagOrId } {
+    variable _private
+    
+    blt::TreeView::trace "SetSelectionAnchor"
+    set _private(activeSelection) 1
     set index [$w index $tagOrId]
     $w selection clearall
     $w see $index
@@ -755,8 +1103,8 @@ proc blt::TreeView::SetSelectionAnchor { w tagOrId } {
 #	"prevsibling", "nextsibling", etc.
 #
 # ----------------------------------------------------------------------
-proc blt::TreeView::MoveFocus { w tagOrId } {
-    catch {$w focus $tagOrId}
+proc blt::TreeView::MoveFocus { w index } {
+    $w focus $index
     if { [$w cget -selectmode] == "single" } {
         $w selection clearall
         $w selection set focus
@@ -931,165 +1279,3 @@ proc blt::TreeView::SortColumn { w col } {
     update
     blt::busy release $w
 }
-
-# 
-# ButtonPress assignments
-#
-#	B1-Enter	start auto-scrolling
-#	B1-Leave	stop auto-scrolling
-#	ButtonPress-2	start scan
-#	B2-Motion	adjust scan
-#	ButtonRelease-2 stop scan
-#
-
-bind BltTreeView <ButtonPress-2> {
-    set blt::TreeView::_private(cursor) [%W cget -cursor]
-    %W configure -cursor hand1
-    %W scan mark %x %y
-}
-
-bind BltTreeView <B2-Motion> {
-    %W scan dragto %x %y
-}
-
-bind BltTreeView <ButtonRelease-2> {
-    %W configure -cursor $blt::TreeView::_private(cursor)
-}
-
-bind BltTreeView <B1-Leave> {
-    if { $blt::TreeView::_private(scroll) } {
-	blt::TreeView::AutoScroll %W 
-    }
-}
-
-bind BltTreeView <B1-Enter> {
-    after cancel $blt::TreeView::_private(afterId)
-    set blt::TreeView::_private(afterId) -1
-}
-
-# 
-# KeyPress assignments
-#
-#	Up			
-#	Down
-#	Shift-Up
-#	Shift-Down
-#	Prior (PageUp)
-#	Next  (PageDn)
-#	Left
-#	Right
-#	space		Start selection toggle of entry currently with focus.
-#	Return		Start selection toggle of entry currently with focus.
-#	Home
-#	End
-#	F1
-#	F2
-#	ASCII char	Go to next open entry starting with character.
-#
-# KeyRelease
-#
-#	space		Stop selection toggle of entry currently with focus.
-#	Return		Stop selection toggle of entry currently with focus.
-
-
-bind BltTreeView <KeyPress-Up> {
-    blt::TreeView::MoveFocus %W up
-    if { $blt::TreeView::_private(space) } {
-	%W selection toggle focus
-    }
-}
-
-bind BltTreeView <KeyPress-Down> {
-    blt::TreeView::MoveFocus %W down
-    if { $blt::TreeView::_private(space) } {
-	%W selection toggle focus
-    }
-}
-
-bind BltTreeView <Shift-KeyPress-Up> {
-    blt::TreeView::MoveFocus %W prevsibling
-}
-
-bind BltTreeView <Shift-KeyPress-Down> {
-    blt::TreeView::MoveFocus %W nextsibling
-}
-
-bind BltTreeView <KeyPress-Prior> {
-    blt::TreeView::MovePage %W view.first
-}
-
-bind BltTreeView <KeyPress-Next> {
-    blt::TreeView::MovePage %W view.last
-}
-
-bind BltTreeView <KeyPress-Left> {
-    %W close focus
-}
-bind BltTreeView <KeyPress-Right> {
-    %W open focus
-    %W see focus -anchor w
-}
-
-bind BltTreeView <KeyPress-space> {
-    switch -- [%W cget -selectmode] {
-	"single" {
-	    if { [%W selection includes focus] } {
-		%W selection clearall
-	    } else {
-		%W selection clearall
-		%W selection set focus
-	    }
-	}
-	"multiple" {
-	    %W selection toggle focus
-	}
-    }
-    set blt::TreeView::_private(space) on
-}
-
-bind BltTreeView <KeyRelease-space> { 
-    set blt::TreeView::_private(space) off
-}
-
-bind BltTreeView <KeyPress-Return> {
-    blt::TreeView::MoveFocus %W focus
-    set blt::TreeView::_private(space) on
-}
-
-bind BltTreeView <KeyRelease-Return> { 
-    set blt::TreeView::_private(space) off
-}
-
-bind BltTreeView <KeyPress> {
-    blt::TreeView::NextMatch %W %A
-}
-
-bind BltTreeView <KeyPress-Home> {
-    blt::TreeView::MoveFocus %W top
-}
-
-bind BltTreeView <KeyPress-End> {
-    blt::TreeView::MoveFocus %W bottom
-}
-
-bind BltTreeView <KeyPress-F1> {
-    %W open -r root
-}
-
-bind BltTreeView <KeyPress-F2> {
-    eval %W close -r [%W entry children root] 
-}
-
-if {[string equal "x11" [tk windowingsystem]]} {
-    bind BltTreeView <4> {
-	%W yview scroll -5 units
-    }
-    bind BltTreeView <5> {
-	%W yview scroll 5 units
-    }
-} else {
-    bind BltTreeView <MouseWheel> {
-	%W yview scroll [expr {- (%D / 120) * 4}] units
-    }
-}
-

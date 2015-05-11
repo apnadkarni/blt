@@ -1131,6 +1131,7 @@ EditorEventProc(ClientData clientData, XEvent *eventPtr)
         }
         if (editPtr->insertTimerToken != NULL) {
             Tcl_DeleteTimerHandler(editPtr->insertTimerToken);
+            editPtr->insertTimerToken = NULL;
         }
         Tcl_EventuallyFree(editPtr, FreeEditorProc);
     }
@@ -2579,9 +2580,6 @@ FreeEditorProc(DestroyData dataPtr)     /* Pointer to the widget record. */
         Tk_DeleteEventHandler(editPtr->tkwin, EVENT_MASK, 
                 EditorEventProc, editPtr);
     }
-    if (editPtr->insertTimerToken != NULL) {
-        Tcl_DeleteTimerHandler(editPtr->insertTimerToken);
-    }
     if (editPtr->cmdToken != NULL) {
         Tcl_DeleteCommandFromToken(editPtr->interp, editPtr->cmdToken);
     }
@@ -3136,7 +3134,9 @@ DisplayProc(ClientData clientData)
          * The view port has changed. The visible items need to be recomputed
          * and the scrollbars updated.
          */
-        ComputeVisibleLines(editPtr);
+        if (editPtr->numLines > 0) {
+            ComputeVisibleLines(editPtr);
+        }
         vw = VPORTWIDTH(editPtr);
         vh = VPORTHEIGHT(editPtr);
         if ((editPtr->xScrollCmdObjPtr) && (editPtr->flags & SCROLLX)) {
@@ -3173,8 +3173,9 @@ DisplayProc(ClientData clientData)
                 editPtr->yScrollbarWidth, editPtr->xScrollbarHeight,
                 0, TK_RELIEF_FLAT);
     }        
-    DrawTextArea(editPtr, drawable, x, y, w, h);
-    
+    if (editPtr->numLines > 0) {
+        DrawTextArea(editPtr, drawable, x, y, w, h);
+    }
     XCopyArea(editPtr->display, drawable, Tk_WindowId(editPtr->tkwin),
         editPtr->textGC, 0, 0, Tk_Width(editPtr->tkwin), 
         Tk_Height(editPtr->tkwin), 0, 0);
@@ -4080,6 +4081,10 @@ UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (!WithdrawEditor(editPtr)) {
         return TCL_OK;          /* This menu is already unposted. */
+    }
+    if (editPtr->insertTimerToken != NULL) {
+        Tcl_DeleteTimerHandler(editPtr->insertTimerToken);
+        editPtr->insertTimerToken = NULL;
     }
     /*
      * If there is a unpost command for the menu, execute it.  

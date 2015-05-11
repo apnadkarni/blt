@@ -41,19 +41,21 @@ namespace eval blt {
         variable _private
         array set _private {
             activeSelection     0
-            lastFilter          0
             afterId             -1
             bindtags            ""
             column              ""
             icon                blt::TableView::filter
             iconvariable        ""
+            lastFilterHighlight ""
+            lastFilterIcon      ""
+            lastFilterText      ""
             posting             none
             row                 ""
             scroll              0
             space               off
             textvariable        ""
             x                   0
-
+            y                   0
         }
     }
 }
@@ -129,27 +131,6 @@ image create picture blt::TableView::filter -data {
     WEZJTEUuAA==
 }
 
-image create picture blt::TableView::xbutton2 -data {
-    AAEBAAAHACAAAAAAEAAQAAgIAAAAywAAAAAAAAD9AAAAlwAAAP8AAAD7AAAAlQEB
-    AQEBAQEBAQEBAQEBAQEBAQADAQEBAQEBAQEDAAEBAQACAgMBAQEBAQEDAgIAAQED
-    AgQFBgEBAQEDAgQCAwEBAQYFBAUGAQEGBQQCAwEBAQEBBgUEBQYGBQQFAwEBAQEB
-    AQEGBQQEBAQFBgEBAQEBAQEBAQYEBAQEBgEBAQEBAQEBAQEGBAQEBAYBAQEBAQEB
-    AQEGBQQEBAQCAwEBAQEBAQEDBQQFBgMCBAIDAQEBAQEDAgQFBgEBAwIEAgMBAQED
-    AgQFBgEBAQEDAgQCAwEBAAIFBgEBAQEBAQMCAgABAQEABgEBAQEBAQEBAwABAQEB
-    AQEBAQEBAQEBAQEBAQHvAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAE
-    AN8HFQAHACEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuAQAAAAAAAFRSVUVWSVNJT04t
-    WEZJTEUuAA==
-}
-
 image create picture blt::TableView::xbutton -data {
     AAEBAAAEACAAAAAACgAKAAgIAAAAAOXn5/+GiYn/ZGdn/wECAQAAAAABAgECAwIB
     AAABAgMCAQIDAgEBAgMCAQABAgMCAgMCAQAAAAECAwMCAQAAAAABAgMDAgEAAAAB
@@ -166,7 +147,6 @@ image create picture blt::TableView::xbutton -data {
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAA
     AAAAAACGAAAAAAAAAFRSVUVWSVNJT04tWEZJTEUuAA==
 }
-
 
 option add *BltTableView.IncreasingIcon blt::TableView::sortup
 option add *BltTableView.DecreasingIcon blt::TableView::sortdown
@@ -188,21 +168,64 @@ if { $tcl_platform(platform) == "windows" } {
              black white] 
 }
 
-bind BltTableView <KeyPress-Up> {
-    %W focus up
-    %W see focus
-}
-bind BltTableView <KeyPress-Down> {
-    %W focus down
-    %W see focus
-}
+# Left (arrow key)
+#   Move left to the previous column. 
 bind BltTableView <KeyPress-Left> {
     %W focus left
     %W see focus
 }
+
+# Right (arrow key)
+#   Move right to the next column. 
 bind BltTableView <KeyPress-Right> {
     %W focus right
     %W see focus
+}
+
+# Up (arrow key)
+#   Move up to the previous row. 
+bind BltTableView <KeyPress-Up> {
+    %W focus up
+    %W see focus
+}
+
+# Down (arrow key)
+#   Move down to the next row. 
+bind BltTableView <KeyPress-Down> {
+    %W focus down
+    %W see focus
+}
+
+# Home
+#   Move to the first row.
+bind BltTableView <KeyPress-Home> {
+    blt::TableView::MoveFocus %W top
+}
+
+# End
+#   Move to the last row.
+bind BltTableView <KeyPress-End> {
+    blt::TableView::MoveFocus %W bottom
+}
+
+if 0 {
+
+# PgUp
+bind BltTableView <KeyPress-Prior> {
+    blt::TableView::MovePage %W view.top
+}
+
+# PgDn
+bind BltTableView <KeyPress-Next> {
+    blt::TableView::MovePage %W view.bottom
+}
+
+}
+
+# Control + D
+#   Release the current grab.
+bind BltTableView <Control-KeyPress-d> { 
+    blt::grab pop %W
 }
 
 bind BltTableView <KeyPress-space> {
@@ -241,25 +264,22 @@ bind BltTableView <Control-KeyPress-a> {
     %W selection mark { last last }
 }
 
-# 
-# ButtonPress assignments
-#
-#       B1-Enter        start auto-scrolling
-#       B1-Leave        stop auto-scrolling
-#       ButtonPress-2   start scan
-#       B2-Motion       adjust scan
-#       ButtonRelease-2 stop scan
-#
 
+# B1 Enter
+#   Stop auto-scrolling
 bind BltTableView <B1-Enter> {
     after cancel $blt::TableView::_private(afterId)
     set blt::TableView::_private(afterId) -1
 }
+
+# B1 Leave
+#   Start auto-scrolling
 bind BltTableView <B1-Leave> {
     if { $blt::TableView::_private(scroll) } {
         blt::TableView::AutoScroll %W 
     }
 }
+
 bind BltTableView <ButtonPress-2> {
     set blt::TableView::_private(cursor) [%W cget -cursor]
     %W configure -cursor hand1
@@ -803,7 +823,7 @@ proc blt::TableView::PostEditor { w cell } {
     foreach { row col } [$w index $cell] break
     set value [$table get $row $col ""]
 
-    # Post the combo menu at the bottom of the cell.
+    # Post the editor over the cell.
     foreach { x1 y1 x2 y2 } [$w bbox $cell] break
     incr x1 [winfo rootx $w] 
     incr y1 [winfo rooty $w]
@@ -1058,30 +1078,7 @@ proc blt::TableView::MovePage { w where } {
 #       Return          Stop selection toggle of entry currently with focus.
 
 
-if 0 {
-bind BltTableView <KeyPress-Prior> {
-    blt::TableView::MovePage %W top
-}
 
-bind BltTableView <KeyPress-Next> {
-    blt::TableView::MovePage %W bottom
-}
-}
-bind BltTableView <KeyPress-Home> {
-    blt::TableView::MoveFocus %W top
-}
-
-bind BltTableView <KeyPress-End> {
-    blt::TableView::MoveFocus %W bottom
-}
-
-bind BltTableView <Control-KeyPress-c> { 
-    exit 0 
-}
-
-bind BltTableView <Control-KeyPress-d> { 
-    blt::grab pop %W
-}
 
 #
 # SetGrab --

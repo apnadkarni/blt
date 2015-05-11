@@ -232,4 +232,3 @@ bind .f1 <B1-Enter> { puts stderr "B1 Entering %W" }
 bind .f1 <Motion> { puts stderr "Motion %W" }
 
 .testButton configure -font "{San Serif} 6"
-puts stderr [.testButton configure]

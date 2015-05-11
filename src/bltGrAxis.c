@@ -359,7 +359,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_FONT, "-limitsfont", "limitsFont", "Font", DEF_LIMITS_FONT,
         Blt_Offset(Axis, limitsTextStyle.font), ALL_GRAPHS},
     {BLT_CONFIG_CUSTOM, "-limitsformat", "limitsFormat", "LimitsFormat",
-        (char *)NULL, Blt_Offset(Axis, limitsFmtsObjPtr),
+        DEF_LIMITS_FORMAT, Blt_Offset(Axis, limitsFmtsObjPtr),
         BLT_CONFIG_NULL_OK | ALL_GRAPHS, &formatOption},
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
         DEF_LINEWIDTH, Blt_Offset(Axis, lineWidth),
@@ -949,7 +949,8 @@ FreeFormat(ClientData clientData, Display *display, char *widgRec, int offset)
  *
  * ObjToFormat --
  *
- *      Convert the name of virtual axis to an pointer.
+ *      Converts the obj to a format list obj.  Checks if there
+ *      are 1 or 2 elements in the list.
  *
  * Results:
  *      The return value is a standard TCL result.  The axis flags are
@@ -962,7 +963,7 @@ static int
 ObjToFormat(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
-    Axis *axisPtr = (Axis *)(widgRec);
+    Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
     Tcl_Obj **objv;
     int objc;
 
@@ -974,11 +975,16 @@ ObjToFormat(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 Tcl_GetString(objPtr), "\"", (char *)NULL);
         return TCL_ERROR;
     }
-    Tcl_IncrRefCount(objPtr);
-    if (axisPtr->limitsFmtsObjPtr != NULL) {
-        Tcl_DecrRefCount(axisPtr->limitsFmtsObjPtr);
+    if (objc == 0) {
+        objPtr = NULL;                  /* An empty string is the same as
+                                         * no formats. */
+    } else {
+        Tcl_IncrRefCount(objPtr);
     }
-    axisPtr->limitsFmtsObjPtr = objPtr;
+    if (*objPtrPtr != NULL) {
+        Tcl_DecrRefCount(*objPtrPtr);
+    }
+    *objPtrPtr = objPtr;
     return TCL_OK;
 }
 
@@ -5867,15 +5873,17 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
         
         axisPtr = Blt_GetHashValue(hPtr);
         if (axisPtr->flags & DELETED) {
-            continue;
+            continue;                   /* Axis has been deleted. */
         } 
-        Tcl_ListObjGetElements(NULL,axisPtr->limitsFmtsObjPtr, &objc, &objv);
-        if (objc == 0) {
-            continue;
+        if (axisPtr->limitsFmtsObjPtr == NULL) {
+            continue;                   /* No limits format specified for
+                                         * this axis. */
         }
         if (axisPtr->marginPtr == NULL) {
-            continue;
+            continue;                   /* Axis is not associated with any
+                                         * margin. */
         }
+        Tcl_ListObjGetElements(NULL,axisPtr->limitsFmtsObjPtr, &objc, &objv);
         minPtr = maxPtr = NULL;
         minFmt = maxFmt = Tcl_GetString(objv[0]);
         if (objc > 1) {
@@ -5947,12 +5955,17 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
 
         axisPtr = Blt_GetHashValue(hPtr);
         if (axisPtr->flags & DELETED) {
-            continue;
+            continue;                   /* Axis has been deleted. */
         } 
-        Tcl_ListObjGetElements(NULL, axisPtr->limitsFmtsObjPtr, &objc, &objv);
-        if (objc == 0) {
-            continue;
+        if (axisPtr->limitsFmtsObjPtr == NULL) {
+            continue;                   /* No limits format specified for
+                                         * the axis. */
         }
+        if (axisPtr->marginPtr == NULL) {
+            continue;                   /* Axis is not associated with any
+                                         * margin. */
+        }
+        Tcl_ListObjGetElements(NULL, axisPtr->limitsFmtsObjPtr, &objc, &objv);
         minFmt = maxFmt = Tcl_GetString(objv[0]);
         if (objc > 1) {
             maxFmt = Tcl_GetString(objv[1]);

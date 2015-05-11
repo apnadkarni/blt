@@ -34,9 +34,8 @@ proc FormatLabel { w value } {
 source scripts/stipples.tcl
 
 set normalBg [blt::background create linear \
-		  -startcolor white -endcolor grey -relativeto self]
-set normalBg [blt::background create color -color lightblue]
-#set normalBg lightblue
+		  -high white -low grey -relativeto self]
+set normalBg lightblue
 
 option add *Htext.tileOffset		no
 
