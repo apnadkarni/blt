@@ -1,0 +1,29 @@
+
+1.  Unify or separate bgexec Unix/Max/Win implementations.
+
+2.  Fix combotree drawing
+
+3.  Fix TreeView bindings to handle editing entry.
+
+4.  Clean up definitions, terminology of TreeView in doc.
+
+5.  Why is treeview combobox so slow?
+
+6.  -values* descriptions for graph.
+
+7. Remove bltTile*
+
+8. Add callback to paintbrush.
+
+9. Add paintbrush callbacks to graph and barchart.
+
+10. Fix barchart to use paintbrush instead of background.
+
+11. Does it make sense to separate out picture text drawing into a module?
+    Separate file yes. Module?  FreeType is already used in bltUnixFont.c
+    but not in bltWinFont.c.
+
+12. Check for memory allocations passing between BLT and TCL.
+
+
+
