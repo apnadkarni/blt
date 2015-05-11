@@ -58,6 +58,9 @@ namespace eval blt {
     }
 }
 
+# Create images used by the treeview widget.  
+
+# Closed folder
 image create picture ::blt::TreeView::closeIcon -data {
     AAEBAABZACAAAAAAFgAWAAgIAAAAAACPrf8Aj5j/AOn+/wDC//8AJy3kADpE+gAo
     LOMA5///AN7//wAFCLEANkT6AMD8/wDj//8AAAAKAJCt/wDa//8AkJj/ACgt5AAS
@@ -90,6 +93,7 @@ image create picture ::blt::TreeView::closeIcon -data {
     AAAAAAAAAAAAWgMAAAAAAABUUlVFVklTSU9OLVhGSUxFLgA=
 }
 
+# Open folder
 image create picture ::blt::TreeView::openIcon -data {
     AAEJAAB/ACAAAAAAFgAWAAgIAAAAAADL//8AWJz/ANn//wDR9v8Al/P/AAAAEgAA
     AFcAAAB0AHSJ/wDP9/8AAACRAAAABwCGmP8A5///AKr1/wDJ/v8Az/X/AFhb/wCi
@@ -122,8 +126,7 @@ image create picture ::blt::TreeView::openIcon -data {
     RVZJU0lPTi1YRklMRS4A
 }
 
-# Sorting direction icons
-# Down arrow
+# Sort order increasing (down arrow)
 image create picture blt::TreeView::sortdown -data {
     AAEBAAAjACAAAAAACQANAAgIAAA/QQAAyOUAAAAAAABAhAAAgDIAAAAOAAAAAwAA
     zVwAALzpAACo4AAAzf8AAAAnAAAAHAAAnDYAAIiaAAAABgAAzZkAAAARAAB4EQAA
@@ -143,7 +146,8 @@ image create picture blt::TreeView::sortdown -data {
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
     AAATAQAAAAAAAFRSVUVWSVNJT04tWEZJTEUuAA==
 }
-# Up arrow 
+
+# Sort order decreasing (up arrow)
 image create picture blt::TreeView::sortup -data {
     AAEBAAAnACAAAAAACQANAAgIewAAOgAAAABdAACaOwAASgAAAA4AAAADhQAA4YkA
     AJp7AADZTAAAOQAAABFXAAClgwAAQAAAAA00AABsfQAAwAAAAAKKAAD2cAAAS4MA
@@ -854,6 +858,7 @@ proc blt::TreeView::ImportFromComboMenu { w cell menu } {
     }
     # Execute the callback associated with the style
     $w cell invoke $cell
+    puts stderr [time update]
 }
 
 #

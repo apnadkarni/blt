@@ -108,6 +108,13 @@ struct _Blt_FontClass {
     Blt_Font_UnderlineProc *underlineProc;
 };
 
+/* 
+ * Blt_Font --
+ *
+ *     The Blt_Font is basically a jacked up version of the Tk_Font with
+ *     font rotation.  It also supports antialiased fonts for versions of
+ *     Tk that don't (such as 8.4).
+ */
 struct _Blt_Font {
     Blt_FontClass *classPtr;
     Tcl_Interp *interp;

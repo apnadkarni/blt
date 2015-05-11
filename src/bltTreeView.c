@@ -1311,7 +1311,6 @@ AddCell(Entry *entryPtr, Column *colPtr)
     }
     cellPtr->dataObjPtr = objPtr;
     cellPtr->flags |= GEOMETRY;
-    entryPtr->flags |= GEOMETRY;
     viewPtr->flags |= LAYOUT_PENDING;   /* Says that the current view is
                                          * out-of-date. */
 }
@@ -2658,6 +2657,8 @@ IconChangedProc(
 {
     TreeView *viewPtr = clientData;
 
+    /* We don't know what or how many entries are affected by the change of
+     * this image.  So recompute the geometry of the entire tree. */
     viewPtr->flags |= (GEOMETRY | LAYOUT_PENDING);
     EventuallyRedraw(viewPtr);
 }
@@ -6847,6 +6848,7 @@ ComputeFlatLayout(TreeView *viewPtr)
     int y;
     long index;
 
+    viewPtr->flags &= ~GEOMETRY;
     /* 
      * Pass 1:  Reinitialize column sizes and loop through all nodes. 
      *
@@ -6878,7 +6880,7 @@ ComputeFlatLayout(TreeView *viewPtr)
     }
 
     /* If the view needs to be resorted, free the old view. */
-    if ((viewPtr->flags & (LAYOUT_PENDING|GEOMETRY|RESORT|SORT_PENDING|TV_SORT_AUTO)) && 
+    if ((viewPtr->flags & (LAYOUT_PENDING|RESORT|SORT_PENDING|TV_SORT_AUTO)) && 
         (viewPtr->flatArr != NULL)) {
         Blt_Free(viewPtr->flatArr);
         viewPtr->flatArr = NULL;
@@ -6977,7 +6979,6 @@ ComputeFlatLayout(TreeView *viewPtr)
     maxX = viewPtr->levelInfo[0].iconWidth + viewPtr->levelInfo[0].labelWidth;
     viewPtr->treeColumn.maxWidth = maxX;
     viewPtr->treeWidth = maxX;
-    viewPtr->flags &= ~GEOMETRY;
 }
 
 /*
@@ -7015,6 +7016,7 @@ ComputeTreeLayout(TreeView *viewPtr)
     Entry *entryPtr;
     long index;
 
+    viewPtr->flags &= ~GEOMETRY;
     /* 
      * Pass 1:  Reinitialize column sizes and loop through all nodes. 
      *

@@ -36,19 +36,8 @@
  *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Copyright (c) 1998 Paul Duffin.
- * Copyright (c) 1998-1999 by Scriptics Corporation.
- *
- *   See the file "license.terms" for information on usage and
- *   redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
-/*
- * We need to ensure that we use the stub macros so that this file contains no
- * references to any of the stub functions. This will make it possible to
- * build an extension that references Blt_InitTkStubs but doesn't end up
- * including the rest of the stub functions.
- */
 #include "bltInt.h"
 
 extern const char *Blt_InitTkStubs(Tcl_Interp *interp, const char *version,
@@ -66,16 +55,20 @@ IsDigit(const int c)
     return (c >= '0' && c <= '9');
 }
 
+#ifdef Blt_InitTkStubs
+#undef Blt_InitTkStubs
+#endif
+
 /*
  *----------------------------------------------------------------------
  *
  * Blt_InitTkStubs --
  *
- *      Checks that the correct version of Tk is loaded and that it supports
- *      stubs. It then initialises the stub table pointers.
+ *      Checks that the correct version of BLT is loaded and that it
+ *      supports stubs. It then initialises the stub table pointers.
  *
  * Results:
- *      The actual version of Tk that satisfies the request, or NULL to
+ *      The actual version of BLT that satisfies the request, or NULL to
  *      indicate that an error occurred.
  *
  * Side effects:
@@ -83,11 +76,6 @@ IsDigit(const int c)
  *
  *----------------------------------------------------------------------
  */
-
-#ifdef Blt_InitTkStubs
-#undef Blt_InitTkStubs
-#endif
-
 const char *
 Blt_InitTkStubs(Tcl_Interp *interp, const char *version, int exact)
 {
@@ -131,9 +119,8 @@ Blt_InitTkStubs(Tcl_Interp *interp, const char *version, int exact)
     }
 
     if (clientData == NULL) {
-        Tcl_AppendResult(interp,
-                "This implementation of Blt Tk does not support stubs",
-                         (char *)NULL);
+        Tcl_AppendResult(interp, "This implementation of the BLT Tk ",
+                "module does not support stubs", (char *)NULL);
         return NULL;
     }
     bltTkProcsPtr = clientData;
