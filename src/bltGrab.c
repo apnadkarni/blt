@@ -41,15 +41,15 @@
  * grab 
  * 
  * Start with Tk grab command operations.
- *    grab ?-global? window
- *    grab current ?window?
- *    grab release window
- *    grab set ?-global? window
- *    grab status window
+ *    grab ?-global? windowName
+ *    grab current ?windowName?
+ *    grab release windowName
+ *    grab set ?-global? windowName
+ *    grab status windowName
  *
  * Add stack operations.
- *    grab push window ?-global?
- *    grab pop ?window? 
+ *    grab push windowName ?-global?
+ *    grab pop ?windowName? 
  *    grab list 
  *    grab empty 
  */
@@ -823,7 +823,7 @@ SetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     if (objc != 2) {
         Tcl_AppendResult(interp, 
-                "wrong # arguments: should be grab set ?-global? window",
+                "wrong # arguments: should be grab set ?-global? windowName",
                 (char *)NULL);
         return TCL_ERROR;
     }
@@ -890,15 +890,15 @@ TopOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 static Blt_OpSpec grabOps[] =
 {
-    {"current",     1, CurrentOp,     2, 3, "?window?",},
+    {"current",     1, CurrentOp,     2, 3, "?windowName?",},
     {"debug",       1, DebugOp,       3, 3, "bool",},
     {"empty",       1, EmptyOp,       2, 2, "",},
     {"list",        1, ListOp,        2, 2, "",},
-    {"pop",         2, PopOp,         2, 3, "?window?",},
-    {"push",        2, PushOp,        3, 0, "window ?switches ...?",},
-    {"release",     1, ReleaseOp,     3, 3, "window",},
-    {"set",         2, SetOp,         3, 4, "?-global? window",},
-    {"status",      2, StatusOp,      3, 3, "window",},
+    {"pop",         2, PopOp,         2, 3, "?windowName?",},
+    {"push",        2, PushOp,        3, 0, "windowName ?switches ...?",},
+    {"release",     1, ReleaseOp,     3, 3, "windowName",},
+    {"set",         2, SetOp,         3, 4, "?-global? windowName",},
+    {"status",      2, StatusOp,      3, 3, "windowName",},
     {"top",         1, TopOp,         2, 2, "",},
 };
 

@@ -1,3 +1,4 @@
+These are all deal-breakers for the next release.
 
 1.  Unify or separate bgexec Unix/Max/Win implementations.
 
@@ -25,5 +26,5 @@
 
 13. Get rid of / clean up -area* options for graph.
 
-14. Make area between specified traces easier.  
-
+14. Clean up pictdraw routines.  Separate out working from experimental.
+    Put experimental into a separate file.
