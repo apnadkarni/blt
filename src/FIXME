@@ -7,8 +7,6 @@
 
 4.  Clean up definitions, terminology of TreeView in doc.
 
-5.  Why is treeview combobox so slow?
-
 6.  -values* descriptions for graph.
 
 7. Remove bltTile*
@@ -25,5 +23,7 @@
 
 12. Check for memory allocations passing between BLT and TCL.
 
+13. Get rid of / clean up -area* options for graph.
 
+14. Make area between specified traces easier.  
 

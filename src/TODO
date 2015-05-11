@@ -1,14 +1,14 @@
-1. Date scanner.
-2. Colorbar for contour graph.
-3. Table viewer.
+1. (done) Date scanner. 
+2. (done) Colorbar for contour graph.
+3. (done) Table viewer.
 4. Drawing routines (wide lines).
 5. Noise filter for pictures.
 6. Unify ptyexec with bgexec (-pty switch).  
+11. Unify ptyexec with bgexec (-pty switch)
 7. Kiosk
 8. PDF writer.
 9. PDF for graphs.
 10. arrowheads for line markers 
-11. Unify ptyexec with bgexec (-pty switch)
 
 To do:
 
@@ -142,7 +142,6 @@ dataarray:
 7. Test harness.
 8. Use Tcl_Objs instead of double array.  Allow strings, images, arrays, etc.
 
-
 ---------------------------------------------
 
 Paneset --
@@ -165,7 +164,6 @@ Scrollset --
 
 Treeview --
 
-  Fix combobox style to support combomenus.
   Add automatic scrollbars.
   Change scrolling to use XCopyArea.
   
@@ -184,3 +182,4 @@ Combobutton --
 Menubar --
 
 
+14. Make area between specified traces easier.  
