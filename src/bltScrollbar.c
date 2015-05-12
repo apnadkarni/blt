@@ -399,7 +399,7 @@ static int ScrollbarPosition(Scrollbar *scrollPtr, int x, int y);
 static int ScrollbarWidgetCmd(ClientData clientData, Tcl_Interp *, int objc, 
         Tcl_Obj *const *objv);
 
-static Blt_Bg_ChangedProc BackgroundChangedProc;
+static Blt_BackgroundChangedProc BackgroundChangedProc;
 static Tcl_ObjCmdProc ScrollbarCmd;
 
 

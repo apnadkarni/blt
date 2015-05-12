@@ -119,6 +119,13 @@ typedef struct {
                                          * this type of brush.  */
 } PaintBrushCmd;
 
+typedef struct _Blt_PaintBrushNotifier {
+    const char *name;                   /* Token id for notifier. */
+    Blt_BrushChangedProc *proc;         /* Procedure to be called when the
+                                         * paintbrush changes. */
+    ClientData clientData;              /* Data to be passed on notifier
+                                         * callbacks.  */
+} PaintBrushNotifier;
 
 #define DEF_CHECKER_OFFCOLOR    "grey97"
 #define DEF_CHECKER_ONCOLOR     "grey90"
@@ -502,6 +509,9 @@ static Blt_PaintBrushClass conicalGradientBrushClass = {
 };
 
 
+static void NotifyClients(Blt_PaintBrush brush);
+
+
 #define COLOR_SCALING_MASK \
         (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG)
 
@@ -552,6 +562,38 @@ Jitter(Blt_Jitter *jitterPtr) {
 
     value = RandomNumber(&jitterPtr->random);
     return (value * jitterPtr->range) + jitterPtr->offset;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NotifyClients --
+ *
+ *      Notify each client that the background has changed.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+NotifyClients(Blt_PaintBrush brush)
+{
+     Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
+     Blt_ChainLink link;
+
+     for (link = Blt_Chain_FirstLink(brushPtr->notifiers); link != NULL;
+        link = Blt_Chain_NextLink(link)) {
+         PaintBrushNotifier *notifyPtr;
+
+         /* Notify each client that the paint brush has changed. The client
+          * should schedule itself for redrawing.  */
+         notifyPtr = Blt_Chain_GetValue(link);
+        if (notifyPtr->proc != NULL) {
+            (*notifyPtr->proc)(notifyPtr->clientData, brush);
+        }
+    }
 }
 
 /*
@@ -677,10 +719,6 @@ ImageToObj(
  *---------------------------------------------------------------------------
  *
  * ObjToPosition --
- *
- *      Translate the given string to the gradient type it represents.
- *      Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
- *      and "radial"".
  *
  * Results:
  *      The return value is a standard TCL result.  
@@ -819,10 +857,6 @@ PositionToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *---------------------------------------------------------------------------
  *
  * ObjToRepeat --
- *
- *      Translate the given string to the gradient type it represents.
- *      Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
- *      and "radial"".
  *
  * Results:
  *      The return value is a standard TCL result.  
@@ -1131,7 +1165,7 @@ ColorScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToOpacity --
  *
- *      Converts the string representating the percent of opacity to an
+ *      Converts the string representing the percent of opacity to an
  *      alpha value 0..255.
  *
  * Results:
@@ -1263,7 +1297,7 @@ SetBrushName(Blt_PaintBrush brush, const char *name)
  *
  * ColorBrushRegionProc --
  *
- *      Pre-computes fields necessary for computing the color based upon
+ *      Precomputes fields necessary for computing the color based upon
  *      the region specified.
  *
  * Results:
@@ -1327,6 +1361,7 @@ ColorBrushColorProc(Blt_PaintBrush brush, int x, int y)
         t = JCLAMP(t);
         color.Blue = (unsigned char)(t * 255.0);
     }
+    color.Alpha = brushPtr->alpha;
     return color.u32;
 }
 
@@ -2249,7 +2284,7 @@ Blt_NewCheckerBrush()
  *
  * Blt_NewRadialGradientBrush --
  *
- *      Creates a new radial graident paintbrush.
+ *      Creates a new radial gradient paintbrush.
  *
  * Results:
  *      Returns pointer to the new paintbrush.
@@ -2278,7 +2313,7 @@ Blt_NewRadialGradientBrush()
  *
  * NewConicalGradientBrush --
  *
- *      Creates a new conical graident paintbrush.
+ *      Creates a new conical gradient paintbrush.
  *
  * Results:
  *      Returns pointer to the new paintbrush.
@@ -2518,6 +2553,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (ConfigurePaintBrushCmd(interp, cmdPtr, objc-3, objv+3, flags)!=TCL_OK) {
         return TCL_ERROR;
     }
+    NotifyClients(cmdPtr->brush);
     return TCL_OK;
 }
 
@@ -2661,13 +2697,13 @@ PaintBrushCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
  * PaintBrushCmdInterpDeleteProc --
  *
  *      Called when the interpreter is destroyed, this routine frees all
- *      the paintbrushes previously created and still available, and then
- *      deletes the hash table that keeps track of them. 
+ *      the paint brushes previously created and still available, and then
+ *      deletes the hash table that keeps track of them.
  *
  *      We have to wait for the deletion of the interpreter and not the
  *      "blt::paintbrush" command because 1) we need all the clients of a
  *      paintbrush to release them before we can remove the hash table and
- *      2) we can't guarentee that "blt::paintbrush" command wil be deleted
+ *      2) we can't guarantee that "blt::paintbrush" command will be deleted
  *      after all the clients.
  *
  *---------------------------------------------------------------------------
@@ -2747,14 +2783,6 @@ Blt_SetLinearGradientBrushPalette(Blt_PaintBrush brush, Blt_Palette palette)
     brushPtr->palette = palette;
 }
 
-void
-Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr)
-{
-    PaintBrush *brushPtr = (PaintBrush *)brush;
-
-    *xPtr = brushPtr->xOrigin;
-    *yPtr = brushPtr->yOrigin;
-}
 
 void
 Blt_SetBrushOrigin(Blt_PaintBrush brush, int x, int y)
@@ -2799,6 +2827,16 @@ Blt_SetLinearGradientBrushColors(Blt_PaintBrush brush, Blt_Pixel *lowPtr,
 }
 
 void
+Blt_SetBrushOpacity(Blt_PaintBrush brush, double percent)
+{
+     PaintBrush *brushPtr = (PaintBrush *)brush;
+     double opacity;
+     
+     opacity = (percent / 100.0) * 255.0;
+     brushPtr->alpha = ROUND(opacity);
+}
+
+void
 Blt_SetBrushRegion(Blt_PaintBrush brush, int x, int y, int w, int h)
 {
     PaintBrush *brushPtr = (PaintBrush *)brush;
@@ -2827,7 +2865,7 @@ Blt_SetLinearGradientBrushCalcProc(Blt_PaintBrush brush,
  *      Gets the color from the paint brush at the given x,y coordinate.
  *      For texture, gradient, and tile brushes, the coordinate is used to
  *      compute the color.  The return color is always associated
- *      (premultiplied).
+ *      (pre-multiplied).
  *
  * Results:
  *      Returns the color at the current x,y coordinate.  The color
@@ -2844,6 +2882,88 @@ Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, int x, int y)
         return (*brushPtr->classPtr->colorProc)(brush, x, y);
     }
     return 0;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_CreateBrushNotifier
+ *
+ *      Adds a callback to invoked when the brush changes.  
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*LINTLIBRARY*/
+void
+Blt_CreateBrushNotifier(
+    Blt_PaintBrush brush,               /* Paint brush with which to
+                                         * register callback. */
+    Blt_BrushChangedProc *notifyProc,   /* Function to call when brush has
+                                         * changed. */
+    ClientData clientData)
+{
+    PaintBrush *brushPtr = (PaintBrush *)brush;
+    PaintBrushNotifier *notifyPtr;
+    Blt_ChainLink link;
+    
+    if (brushPtr->notifiers == NULL) {
+        brushPtr->notifiers = Blt_Chain_Create();
+    }
+     for (link = Blt_Chain_FirstLink(brushPtr->notifiers); link != NULL;
+        link = Blt_Chain_NextLink(link)) {
+         PaintBrushNotifier *notifyPtr;
+
+         notifyPtr = Blt_Chain_GetValue(link);
+         if ((notifyPtr->proc == notifyProc) &&
+             (notifyPtr->clientData == clientData)) {
+             notifyPtr->clientData = clientData;
+             return;                    /* Notifier already exists. */
+         }
+     }
+    link = Blt_Chain_AllocLink(sizeof(PaintBrushNotifier));
+    notifyPtr = Blt_Chain_GetValue(link);
+    notifyPtr->proc = notifyProc;
+    notifyPtr->clientData = clientData;
+    Blt_Chain_LinkAfter(brushPtr->notifiers, link, NULL);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_DeleteBrushNotifier
+ *
+ *      Removes the notification callback.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+void
+Blt_DeleteBrushNotifier(
+    Blt_PaintBrush brush,               /* Paint brush with which to
+                                         * register callback. */
+    Blt_BrushChangedProc *notifyProc,   /* Function to call when brush has
+                                         * changed. */
+    ClientData clientData)
+{
+    PaintBrush *brushPtr = (PaintBrush *)brush;
+    Blt_ChainLink link;
+    
+     for (link = Blt_Chain_FirstLink(brushPtr->notifiers); link != NULL;
+        link = Blt_Chain_NextLink(link)) {
+         PaintBrushNotifier *notifyPtr;
+
+         notifyPtr = Blt_Chain_GetValue(link);
+         if ((notifyPtr->proc == notifyProc) &&
+             (notifyPtr->clientData == clientData)) {
+             Blt_Chain_DeleteLink(brushPtr->notifiers, link);
+             return;
+         }
+     }
 }
 
 /*
@@ -2872,7 +2992,10 @@ Blt_FreeBrush(Blt_PaintBrush brush)
         if (brushPtr->classPtr->freeProc != NULL) {
             (*brushPtr->classPtr->freeProc)(brush);
         }
-        Blt_Free(brush);
+        if (brushPtr->notifiers != NULL) {
+            Blt_Chain_Destroy(brushPtr->notifiers);
+        }
+        Blt_Free(brushPtr);
     }
 }
 
@@ -2970,4 +3093,11 @@ Blt_GetBrushColor(Blt_PaintBrush brush)
      return Blt_NameOfPixel(&brushPtr->reqColor);
 }
 
+void
+Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr)
+{
+    PaintBrush *brushPtr = (PaintBrush *)brush;
 
+    *xPtr = brushPtr->xOrigin;
+    *yPtr = brushPtr->yOrigin;
+}

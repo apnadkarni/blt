@@ -55,6 +55,10 @@ typedef struct _Blt_PaintBrushClass Blt_PaintBrushClass;
  *---------------------------------------------------------------------------
  */
 typedef struct _Blt_PaintBrush *Blt_PaintBrush;
+typedef struct _Blt_PaintBrushNotifier *Blt_PaintBrushNotifier;
+
+typedef void (Blt_BrushChangedProc)(ClientData clientData, Blt_PaintBrush brush);
+
 typedef int (Blt_PaintBrushCalcProc)(ClientData clientData, int x, int y,
         double *valuePtr);
 
@@ -75,10 +79,11 @@ struct _Blt_PaintBrush {
     Blt_Jitter jitter;                  /* Generates a random value to be
                                          * added when interpolating the
                                          * color */
+    ClientData clientData;
+    Blt_Chain notifiers;                /* List of client notifiers. */
     Blt_Palette palette;                /* If non-NULL, palette to use for
                                          * coloring the gradient. */
 
-    ClientData clientData;
 };
 
 /*
@@ -108,6 +113,8 @@ typedef struct {
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
+    Blt_Chain notifiers;                /* List of client notifiers. */
+
     Blt_Pixel reqColor;                 /* Requested color of the brush. */
     Blt_Pixel color;                    /* Color of the brush w/
                                          * opacity.  */
@@ -141,6 +148,9 @@ typedef struct {
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
+    Blt_Chain notifiers;                /* List of client notifiers. */
+
+    /* Gradient-specific fields. */
     Blt_Palette palette;                /* If non-NULL, palette to use for
                                          * coloring the gradient. */
     Blt_PaintBrushCalcProc *calcProc;
@@ -192,6 +202,9 @@ typedef struct {
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
+    Blt_Chain notifiers;                /* List of client notifiers. */
+
+    /* Tile-specific fields. */
     Tk_Image tkImage;                   /* Tk image used for tiling. */
     Blt_Picture tile;                   /* If non-NULL, picture to use for
                                          * tiling. This is converted from
@@ -229,6 +242,9 @@ typedef struct {
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
+    Blt_Chain notifiers;                /* List of client notifiers. */
+
+    /* Stripe-specific fields. */
     Blt_Pixel low, high;                /* Texture or gradient colors. */
     int aRange, rRange, gRange, bRange;
     int stride;
@@ -262,7 +278,10 @@ typedef struct {
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
-    Blt_Pixel low, high;                /* Texture or gradient colors. */
+    Blt_Chain notifiers;                /* List of client notifiers. */
+
+    /* Checker-specific fields. */
+    Blt_Pixel low, high;                /* On/Off colors. */
     int aRange, rRange, gRange, bRange;
     int stride;
     int x, y;
@@ -296,6 +315,9 @@ typedef struct {
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
+    Blt_Chain notifiers;                /* List of client notifiers. */
+
+    /* Radial gradient-specific fields. */
     Blt_Palette palette;                /* If non-NULL, palette to use for
                                          * coloring the gradient. */
     Blt_PaintBrushCalcProc *calcProc;
@@ -348,6 +370,9 @@ typedef struct {
                                          * added when interpolating the
                                          * color */
     ClientData clientData;
+    Blt_Chain notifiers;                /* List of client notifiers. */
+
+    /* Conical gradient-specific fields. */
     Blt_Palette palette;                /* If non-NULL, palette to use for
                                          * coloring the gradient. */
 
@@ -355,7 +380,7 @@ typedef struct {
     Blt_Pixel low, high;                /* Texture or gradient colors. */
     int aRange, rRange, gRange, bRange;
     double angle;                       /* Angle of rotation for the
-                                         * gradient. */
+                                         * gradient in degrees. */
     Point2d center;                     /* Center of the conical
                                          * gradient. This point is a
                                          * relative to the size of the
@@ -363,8 +388,8 @@ typedef struct {
     /* Computed values. */
     double theta;                       /* Angle of rotation for the
                                          * gradient in radians. */
-    int cx, cy;                          /* Center of the gradient after
-                                          * specifying the region. */
+    int cx, cy;                         /* Center of the gradient after
+                                         * specifying the region. */
 } Blt_ConicalGradientBrush;
 
 typedef enum Blt_PaintBrushTypes {
@@ -410,26 +435,28 @@ BLT_EXTERN int Blt_ConfigurePaintBrush(Tcl_Interp *interp,
 BLT_EXTERN int Blt_GetBrushTypeFromObj(Tcl_Interp *interp,
         Tcl_Obj *objPtr, Blt_PaintBrushType *typePtr);
 
-BLT_EXTERN int Blt_GetBrushAlpha(Blt_PaintBrush brush);
-
 BLT_EXTERN void Blt_FreeBrush(Blt_PaintBrush brush);
 BLT_EXTERN int Blt_GetPaintBrushFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         Blt_PaintBrush *brushPtr);
 
 BLT_EXTERN int Blt_GetPaintBrush(Tcl_Interp *interp, const char *string,
         Blt_PaintBrush *brushPtr);
+
 BLT_EXTERN void Blt_SetLinearGradientBrushPalette(Blt_PaintBrush brush, 
         Blt_Palette palette);
 BLT_EXTERN void Blt_SetLinearGradientBrushCalcProc(Blt_PaintBrush brush, 
         Blt_PaintBrushCalcProc *proc, ClientData clientData);
 BLT_EXTERN void Blt_SetLinearGradientBrushColors(Blt_PaintBrush brush, 
         Blt_Pixel *lowPtr, Blt_Pixel *highPtr);
-BLT_EXTERN void Blt_SetBrushRegion(Blt_PaintBrush brush, int x, int y, 
-        int w,  int h);
 BLT_EXTERN void Blt_SetTileBrushPicture(Blt_PaintBrush brush, Blt_Picture tile);
 BLT_EXTERN void Blt_SetColorBrushColor(Blt_PaintBrush brush,
         unsigned int value);
 BLT_EXTERN void Blt_SetBrushOrigin(Blt_PaintBrush brush, int x, int y);
+BLT_EXTERN void Blt_SetBrushOpacity(Blt_PaintBrush brush, double percent);
+BLT_EXTERN void Blt_SetBrushRegion(Blt_PaintBrush brush, int x, int y, 
+        int w,  int h);
+
+BLT_EXTERN int Blt_GetBrushAlpha(Blt_PaintBrush brush);
 BLT_EXTERN void Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr);
 BLT_EXTERN int Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, int x,
         int y);
@@ -441,5 +468,10 @@ BLT_EXTERN void Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w,
 BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,
         Blt_PaintBrush brush);
 #endif  /* _BLT_INT_H */
+
+BLT_EXTERN void Blt_CreateBrushNotifier(Blt_PaintBrush brush,
+        Blt_BrushChangedProc *notifyProc, ClientData clientData);
+BLT_EXTERN void Blt_DeleteBrushNotifier(Blt_PaintBrush brush,
+        Blt_BrushChangedProc *notifyProc, ClientData clientData);
 
 #endif /*_BLT_PAINT_BRUSH_H*/

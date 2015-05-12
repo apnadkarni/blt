@@ -1460,7 +1460,7 @@ DoConfig(
                     }
                 }
                 if (*(Blt_Bg *)ptr != NULL) {
-                    Blt_FreeBg(*(Blt_Bg *)ptr);
+                    Blt_Bg_Free(*(Blt_Bg *)ptr);
                 }
                 *(Blt_Bg *)ptr = style;
             }
@@ -2358,7 +2358,7 @@ Blt_FreeOptions(
 
         case BLT_CONFIG_BACKGROUND:
             if (*((Blt_Bg *)ptr) != NULL) {
-                Blt_FreeBg(*((Blt_Bg *)ptr));
+                Blt_Bg_Free(*((Blt_Bg *)ptr));
                 *((Blt_Bg *)ptr) = NULL;
             }
             break;

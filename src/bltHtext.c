@@ -517,7 +517,7 @@ static Tcl_IdleProc DisplayText;
 static Tcl_CmdDeleteProc TextDeleteCmdProc;
 
 static Tcl_VarTraceProc TextVarProc;
-static Blt_Bg_ChangedProc BackgroundChangedProc;
+static Blt_BackgroundChangedProc BackgroundChangedProc;
 static Tk_LostSelProc TextLostSelection;
 static Tk_SelectionProc TextSelectionProc;
 static Tk_EventProc TextEventProc;

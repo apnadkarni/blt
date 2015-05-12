@@ -152,27 +152,26 @@ typedef struct {
  *      abscissas) but belong to a separate group.
  */
 typedef struct {
-    int numSegments;                    /* Number of occurrences of
-                                         * x-coordinate */
     Axis2d axes;                        /* The axes associated with this
                                          * group. (mapped to the
                                          * x-value) */
-    float sum;                          /* Sum of the ordinates
+    double max;
+    double sum;                         /* Sum of the ordinates
                                          * (y-coorinate) of each duplicate
                                          * abscissa. Used to determine
-                                         * height of stacked bars. */
+                                         * extents for stacked bars. */
+    double lastY;                       /* Y-coordinate position of the
+                                         * last bar seen. Used for stacked
+                                         * bars. */
+    int numMembers;                     /* # of elements that have the same
+                                         * abscissa. */
     int count;                          /* Current number of bars seen.
                                          * Used to position of the next bar
                                          * in the group. */
-    float lastY;                        /* y-cooridinate position of the
-                                         * last bar seen. */
-    size_t index;                       /* Order of group in set (an unique
-                                         * abscissa may have more than one
-                                         * group). */
 } BarGroup;
 
 /*
- * SetKey --
+ * BarGroupKey --
  *
  *      Key for hash table of set of bars.  The bar set is defined by
  *      coordinates with the same abscissa (x-coordinate).
@@ -181,7 +180,7 @@ typedef struct {
 typedef struct {
     float value;                        /* Duplicated abscissa */
     Axis2d axes;                        /* Axis mapping of element */
-} SetKey;
+} BarGroupKey;
 
 /*
  * BarModes --
@@ -468,21 +467,16 @@ struct _Graph {
                                          * x-coordinates. Mode can be
                                          * "stacked", "aligned", "overlap",
                                          * or "infront" */
-    BarGroup *barGroups;                /* Contains information about
-                                         * duplicate x-values in bar
-                                         * elements (malloc-ed).  This
-                                         * information can also be accessed
-                                         * by the group hash table */
     int numBarGroups;                   /* # of entries in barGroups array.
                                          * If zero, indicates nothing
                                          * special needs to be * done for
                                          * "stack" or "align" modes */
-    Blt_HashTable setTable;             /* Table managing sets of bars with
+    Blt_HashTable groupTable;           /* Table managing sets of bars with
                                          * the same abscissas. The bars in
                                          * a set may be displayed is
                                          * various ways: aligned, overlap,
                                          * infront, or stacked. */
-    int maxSetSize;
+    int maxBarGroupSize;
 
     /* Contour graph-specific fields. */
     Blt_HashTable palTable;             /* Table of color palettes to be
@@ -676,7 +670,9 @@ BLT_EXTERN void Blt_DrawSegments2d(Display *display, Drawable drawable, GC gc,
 BLT_EXTERN int Blt_GetCoordinate(Tcl_Interp *interp, const char *string, 
         double *valuePtr);
 
-BLT_EXTERN void Blt_InitSetTable(Graph *graphPtr);
+BLT_EXTERN void Blt_InitBarGroups(Graph *graphPtr);
+BLT_EXTERN void Blt_DestroyBarGroups(Graph *graphPtr);
+BLT_EXTERN void Blt_ResetBarGroups(Graph *graphPtr);
 
 BLT_EXTERN void Blt_LayoutGraph(Graph *graphPtr);
 
@@ -684,7 +680,6 @@ BLT_EXTERN void Blt_EventuallyRedrawGraph(Graph *graphPtr);
 
 BLT_EXTERN void Blt_ResetAxes(Graph *graphPtr);
 
-BLT_EXTERN void Blt_ResetGroups(Graph *graphPtr);
 
 BLT_EXTERN void Blt_DisableCrosshairs(Graph *graphPtr);
 
@@ -792,8 +787,6 @@ BLT_EXTERN Element *Blt_ContourElement(Graph *graphPtr, ClassId id,
 BLT_EXTERN void Blt_DrawGrids(Graph *graphPtr, Drawable drawable);
 
 BLT_EXTERN void Blt_GridsToPostScript(Graph *graphPtr, Blt_Ps ps);
-BLT_EXTERN void Blt_InitSetTable(Graph *graphPtr);
-BLT_EXTERN void Blt_DestroySets(Graph *graphPtr);
 
 BLT_EXTERN void Blt_HoldPlayback(Graph *graphPtr);
 BLT_EXTERN void Blt_ContinuePlayback(Graph *graphPtr);

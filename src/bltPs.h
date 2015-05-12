@@ -70,7 +70,7 @@ typedef struct  {
                                          * translations */
     int level;                          /* PostScript Language level 1-3 */
     unsigned int flags;
-    Tcl_Obj *commentsObjPtr;            /* User supplied comments to be
+    Tcl_Obj *cmtsObjPtr;                /* User supplied comments to be
                                          * added. */
 
     /* Computed fields */

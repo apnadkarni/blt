@@ -1764,7 +1764,7 @@ Blt_MapElements(Graph *graphPtr)
     Blt_ChainLink link;
 
     if (graphPtr->mode != BARS_INFRONT) {
-        Blt_ResetGroups(graphPtr);
+        Blt_ResetBarGroups(graphPtr);
     }
     for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList); 
          link != NULL; link = Blt_Chain_NextLink(link)) {

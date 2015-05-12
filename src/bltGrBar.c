@@ -84,16 +84,18 @@ typedef struct {
     PenDestroyProc *destroyProc;
     Graph *graphPtr;                    /* Graph that the pen is associated
                                          * with. */
-    /* Barchart specific pen fields start here. */
-    XColor *outlineColor;               /* Outline (foreground) color of
+
+     /* Barchart-specific pen fields start here. */
+
+    Tk_3DBorder outline;                /* Outline (foreground) color of
                                          * bar */
-    Blt_Bg fill;                        /* 3D border and fill (background)
+    Blt_Bg fillBg;                      /* 3D border and fill (background)
                                          * color */
+    double opacity;                     /* Opacity of fill background. */
     int borderWidth;                    /* 3D border width of bar */
     int relief;                         /* Relief of the bar */
     Pixmap stipple;                     /* Stipple */
     GC fillGC;                          /* Graphics context */
-    GC outlineGC;                       /* GC for outline of bar. */
     /* Error bar attributes. */
     int errorBarShow;                   /* Describes which error bars to
                                          * display: none, x, y, or both. */
@@ -171,7 +173,6 @@ typedef struct {
 
     /* Barchart-specific fields. */
     float barWidth;
-    const char *groupName;
 
     int *barToData;
     XRectangle *bars;                   /* Array of rectangles comprising
@@ -237,23 +238,24 @@ static Blt_CustomOption penColorsOption = {
 #define DEF_TAGS                "all"
 #define DEF_WIDTH               "0.0"
 
+#define DEF_PEN_ACTIVE_COLOR            "red"
+#define DEF_PEN_ACTIVE_ERRORBAR_COLOR   "red"
 #define DEF_PEN_ACTIVE_FILL_COLOR       "red"
 #define DEF_PEN_ACTIVE_OUTLINE_COLOR    "pink"
+#define DEF_PEN_BORDERWIDTH             "2"
+#define DEF_PEN_OPACITY                 "100.0"
+#define DEF_PEN_NORMAL_COLOR            "blue"
+#define DEF_PEN_NORMAL_ERRORBAR_COLOR   "blue"
 #define DEF_PEN_NORMAL_FILL_COLOR       "blue"
 #define DEF_PEN_NORMAL_OUTLINE_COLOR    "navyblue"
-#define DEF_PEN_ACTIVE_COLOR            "red"
-#define DEF_PEN_NORMAL_COLOR            "blue"
-#define DEF_PEN_ACTIVE_ERRORBAR_COLOR   "red"
-#define DEF_PEN_NORMAL_ERRORBAR_COLOR   "blue"
-#define DEF_PEN_BORDERWIDTH             "2"
 #define DEF_PEN_RELIEF                  "raised"
+#define DEF_PEN_SHOW_VALUES             "no"
 #define DEF_PEN_STIPPLE                 ""
 #define DEF_PEN_TYPE                    "bar"
 #define DEF_PEN_VALUE_ANCHOR            "s"
 #define DEF_PEN_VALUE_COLOR             RGB_BLACK
 #define DEF_PEN_VALUE_FONT              STD_FONT_SMALL
 #define DEF_PEN_VALUE_FORMAT            "%g"
-#define DEF_PEN_SHOW_VALUES             "no"
 
 static Blt_ConfigSpec penSpecs[] =
 {
@@ -262,10 +264,10 @@ static Blt_ConfigSpec penSpecs[] =
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_NORMAL_COLOR, 
         0, BLT_CONFIG_DONT_SET_DEFAULT | NORMAL_PEN,  &penColorsOption},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_PEN_ACTIVE_FILL_COLOR, Blt_Offset(BarPen, fill),
+        DEF_PEN_ACTIVE_FILL_COLOR, Blt_Offset(BarPen, fillBg),
         BLT_CONFIG_NULL_OK | ACTIVE_PEN},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_PEN_NORMAL_FILL_COLOR, Blt_Offset(BarPen, fill),
+        DEF_PEN_NORMAL_FILL_COLOR, Blt_Offset(BarPen, fillBg),
         BLT_CONFIG_NULL_OK | NORMAL_PEN},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL,
         (char *)NULL, 0, ALL_PENS},
@@ -273,6 +275,8 @@ static Blt_ConfigSpec penSpecs[] =
         (char *)NULL, 0, ALL_PENS},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_PEN_BORDERWIDTH, Blt_Offset(BarPen, borderWidth), ALL_PENS},
+    {BLT_CONFIG_DOUBLE, "-opacity", "opacity", "Opacity", DEF_PEN_OPACITY,
+        Blt_Offset(BarPen, opacity), BLT_CONFIG_DONT_SET_DEFAULT | ALL_PENS},
     {BLT_CONFIG_COLOR, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
         DEF_PEN_ACTIVE_ERRORBAR_COLOR, Blt_Offset(BarPen, errorBarColor), 
         ACTIVE_PEN},
@@ -289,11 +293,11 @@ static Blt_ConfigSpec penSpecs[] =
         (char *)NULL, 0, ALL_PENS},
     {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL,
         (char *)NULL, 0, ALL_PENS},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-        DEF_PEN_ACTIVE_OUTLINE_COLOR, Blt_Offset(BarPen, outlineColor),
+    {BLT_CONFIG_BORDER, "-foreground", "foreground", "Foreground",
+        DEF_PEN_ACTIVE_OUTLINE_COLOR, Blt_Offset(BarPen, outline),
         ACTIVE_PEN | BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-        DEF_PEN_NORMAL_OUTLINE_COLOR, Blt_Offset(BarPen, outlineColor),
+    {BLT_CONFIG_BORDER, "-foreground", "foreground", "Foreground",
+        DEF_PEN_NORMAL_OUTLINE_COLOR, Blt_Offset(BarPen, outline),
         NORMAL_PEN |  BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL,
         (char *)NULL, 0, ALL_PENS},
@@ -326,7 +330,6 @@ static Blt_ConfigSpec penSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-
 static Blt_ConfigSpec barElemConfigSpecs[] = {
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_ACTIVE_COLOR, 
         Blt_Offset(BarElement, builtinPen), BLT_CONFIG_DONT_SET_DEFAULT, 
@@ -335,19 +338,20 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
         DEF_ACTIVE_PEN, Blt_Offset(BarElement, activePenPtr), 
         BLT_CONFIG_NULL_OK, &bltBarPenOption},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_PEN_NORMAL_FILL_COLOR, Blt_Offset(BarElement, builtinPen.fill),
+        DEF_PEN_NORMAL_FILL_COLOR, Blt_Offset(BarElement, builtinPen.fillBg),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FLOAT, "-barwidth", "barWidth", "BarWidth",
         DEF_WIDTH, Blt_Offset(BarElement, barWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL,
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth" },
+    {BLT_CONFIG_SYNONYM, "-bg", "background" },
     {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
         Blt_Offset(BarElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(BarElement, builtinPen.borderWidth), 0},
+    {BLT_CONFIG_DOUBLE, "-opacity", "opacity", "Opacity", DEF_PEN_OPACITY,
+        Blt_Offset(BarElement, builtinPen.opacity),
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_PENS},
     {BLT_CONFIG_COLOR, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
         DEF_PEN_NORMAL_ERRORBAR_COLOR, 
         Blt_Offset(BarElement, builtinPen.errorBarColor), 0},
@@ -364,9 +368,9 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
         &bltValuePairsOption},
     {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL,
         (char *)NULL, 0, 0},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
+    {BLT_CONFIG_BORDER, "-foreground", "foreground", "Foreground",
         DEF_PEN_NORMAL_OUTLINE_COLOR, 
-        Blt_Offset(BarElement, builtinPen.outlineColor), BLT_CONFIG_NULL_OK},
+        Blt_Offset(BarElement, builtinPen.outline), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-label", "label", "Label", (char *)NULL, 
         Blt_Offset(BarElement, label), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-legendrelief", "legendRelief", "LegendRelief",
@@ -394,8 +398,6 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
     {BLT_CONFIG_FILL, "-showvalues", "showValues", "ShowValues",
         DEF_PEN_SHOW_VALUES, Blt_Offset(BarElement, builtinPen.valueShow),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_STRING, "-stack", "stack", "Stack", DEF_STACK, 
-        Blt_Offset(BarElement, groupName), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_STATE, 
         Blt_Offset(BarElement, state), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple",
@@ -618,14 +620,14 @@ ObjToPenColors(
     if (colorPtr == NULL) {
         return TCL_ERROR;
     }
-    if (penPtr->fill != NULL) {
-        Blt_FreeBg(penPtr->fill);
+    if (penPtr->fillBg != NULL) {
+        Blt_Bg_Free(penPtr->fillBg);
     }
-    penPtr->fill = Blt_GetBgFromObj(interp, tkwin, objPtr);
-    if (penPtr->outlineColor != NULL) {
-        Tk_FreeColor(penPtr->outlineColor);
+    penPtr->fillBg = Blt_GetBgFromObj(interp, tkwin, objPtr);
+    if (penPtr->outline != NULL) {
+        Tk_Free3DBorder(penPtr->outline);
     }
-    penPtr->outlineColor = Tk_AllocColorFromObj(interp, tkwin, objPtr);
+    penPtr->outline = Tk_Get3DBorderFromObj(tkwin, objPtr);
     if (penPtr->errorBarColor != NULL) {
         Tk_FreeColor(penPtr->errorBarColor);
     }
@@ -691,15 +693,11 @@ ConfigurePen(Graph *graphPtr, BarPen *penPtr)
 
     gcMask = GCLineWidth;
     gcValues.line_width = LineWidth(penPtr->errorBarLineWidth);
-    if (penPtr->outlineColor != NULL) {
+    if (penPtr->outline != NULL) {
         gcMask |= GCForeground;
-        gcValues.foreground = penPtr->outlineColor->pixel;
+        gcValues.foreground = Tk_3DBorderColor(penPtr->outline)->pixel;
     }
     newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
-    if (penPtr->outlineGC != NULL) {
-        Tk_FreeGC(graphPtr->display, penPtr->outlineGC);
-    }
-    penPtr->outlineGC = newGC;
 
     newGC = NULL;
     gcMask = GCForeground | GCBackground;
@@ -707,9 +705,7 @@ ConfigurePen(Graph *graphPtr, BarPen *penPtr)
     gcValues.background = WhitePixel(graphPtr->display, screenNum);
     if (penPtr->stipple != None) {
         /* Handle old-style -stipple specially. */
-        if (penPtr->fill != NULL) {
-            gcValues.foreground = Blt_Bg_BorderColor(penPtr->fill)->pixel;
-        }
+        gcValues.background = Blt_Bg_BorderColor(penPtr->fillBg)->pixel;
         gcValues.stipple = penPtr->stipple;
         gcValues.fill_style = FillStippled;
     }
@@ -737,9 +733,6 @@ static void
 DestroyPen(Graph *graphPtr, BarPen *penPtr)
 {
     Blt_Ts_FreeStyle(graphPtr->display, &penPtr->valueStyle);
-    if (penPtr->outlineGC != NULL) {
-        Tk_FreeGC(graphPtr->display, penPtr->outlineGC);
-    }
     if (penPtr->fillGC != NULL) {
         Tk_FreeGC(graphPtr->display, penPtr->fillGC);
     }
@@ -785,6 +778,7 @@ Blt_CreateBarPen(Graph *graphPtr, Blt_HashEntry *hPtr)
 
     penPtr = Blt_AssertCalloc(1, sizeof(BarPen));
     InitPen(penPtr);
+    penPtr->opacity = 100.0;
     penPtr->name = Blt_GetHashKey(&graphPtr->penTable, hPtr);
     penPtr->graphPtr = graphPtr;
     penPtr->classId = CID_ELEM_BAR;
@@ -817,22 +811,24 @@ Blt_CreateBarPen(Graph *graphPtr, Blt_HashEntry *hPtr)
 static void
 CheckStacks(Graph *graphPtr, Axis2d *pairPtr, double *minPtr, double *maxPtr)
 {
-    int i;
-
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    
     if ((graphPtr->mode != BARS_STACKED) || (graphPtr->numBarGroups == 0)) {
         return;
     }
-    for (i = 0; i < graphPtr->numBarGroups; i++) {
+    for (hPtr = Blt_FirstHashEntry(&graphPtr->groupTable, &iter); 
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
         BarGroup *groupPtr;
 
-        groupPtr = graphPtr->barGroups + i;
+        groupPtr = Blt_GetHashValue(hPtr);
         if ((groupPtr->axes.x == pairPtr->x) && 
             (groupPtr->axes.y == pairPtr->y)) {
             /*
              * Check if any of the y-values (because of stacking) are
              * greater than the current limits of the graph.
              */
-            if (groupPtr->sum < 0.0f) {
+            if (groupPtr->max < 0.0) {
                 if (*minPtr > groupPtr->sum) {
                     *minPtr = groupPtr->sum;
                 }
@@ -1593,68 +1589,54 @@ MapProc(Graph *graphPtr, Element *basePtr)
         if ((graphPtr->numBarGroups > 0) && (graphPtr->mode != BARS_INFRONT) && 
             ((graphPtr->flags & STACK_AXES) == 0)) {
             Blt_HashEntry *hPtr;
-            SetKey key;
+            BarGroupKey key;
 
             memset(&key, 0, sizeof(key));
             key.value = (float)x[i];
             key.axes = elemPtr->axes;
             key.axes.y = NULL;
-            hPtr = Blt_FindHashEntry(&graphPtr->setTable, (char *)&key);
+            hPtr = Blt_FindHashEntry(&graphPtr->groupTable, (char *)&key);
             if (hPtr != NULL) {
-                Blt_HashTable *tablePtr;
-                const char *name;
-
-                tablePtr = Blt_GetHashValue(hPtr);
-                name = (elemPtr->groupName != NULL) ? elemPtr->groupName : 
-                    elemPtr->obj.name;
-                hPtr = Blt_FindHashEntry(tablePtr, name);
-                if (hPtr != NULL) {
-                    BarGroup *groupPtr;
-                    double slice, width, offset;
-                    
-                    groupPtr = Blt_GetHashValue(hPtr);
-                    slice = barWidth / (double)graphPtr->maxSetSize;
-                    offset = (slice * groupPtr->index);
-                    if (graphPtr->maxSetSize > 1) {
-                        offset += slice * 0.05;
-                        slice *= 0.90;
-                    }
-                    switch (graphPtr->mode) {
-                    case BARS_STACKED:
-                        groupPtr->count++;
-                        c2.y = groupPtr->lastY;
-                        c1.y += c2.y;
-                        groupPtr->lastY = c1.y;
-                        c1.x += offset;
-                        c2.x = c1.x + slice;
-                        break;
+                BarGroup *groupPtr;
+                double slice, width, offset;
+                int index;
+                
+                groupPtr = Blt_GetHashValue(hPtr);
+                slice = barWidth / (double)graphPtr->maxBarGroupSize;
+                offset = (slice * groupPtr->count);
+                if (graphPtr->maxBarGroupSize > 1) {
+                    offset += slice * 0.05;
+                    slice *= 0.90;
+                }
+                switch (graphPtr->mode) {
+                case BARS_STACKED:
+                    /* Draw segments bottom-to-top */
+                    groupPtr->count++;
+                    c2.y = groupPtr->lastY; /* Raise the bottom */
+                    c1.y += c2.y;           /* Raise the top. */
+                    groupPtr->lastY = c1.y; /* Last y is new top. */
+                    break;
                         
-                    case BARS_ALIGNED:
-#ifndef notdef
-                        slice = barWidth / groupPtr->numSegments;
-#else
-                        slice /= Blt_Chain_GetLength(graphPtr->elements.displayList);
-#endif
-#ifdef notef
-                        fprintf(stderr, "aligned bars barWidth=%g, slice=%g numSegments=%d\n", barWidth, slice, groupPtr->numSegments);
-#endif
-                        c1.x = x[i] - barOffset + (groupPtr->index * slice);
-                        c2.x = c1.x + slice;
-                        groupPtr->count++;
-                        break;
+                case BARS_ALIGNED:
+                    /* Draw segments right-to-left */
+                    index = (graphPtr->maxBarGroupSize - 1) - groupPtr->count;
+                    c1.x = x[i] - barOffset + (index * slice);
+                    c2.x = c1.x + slice;
+                    groupPtr->count++;
+                    break;
                         
-                    case BARS_OVERLAP:
-                        slice /= (groupPtr->numSegments + 1);
-                        width = slice + slice;
-                        groupPtr->count++;
-                        c1.x += offset + 
-                            (slice * (groupPtr->numSegments - groupPtr->count));
-                        c2.x = c1.x + width;
-                        break;
+                case BARS_OVERLAP:
+                    /* Draw segments right-to-left */
+                    index = (graphPtr->maxBarGroupSize - 1) - groupPtr->count;
+                    offset = (slice * index);
+                    width = slice + slice;
+                    groupPtr->count++;
+                    c1.x += offset;
+                    c2.x = c1.x + width;
+                    break;
                         
-                    case BARS_INFRONT:
-                        break;
-                    }
+                case BARS_INFRONT:
+                    break;
                 }
             }
         }
@@ -1803,7 +1785,7 @@ DrawSymbolProc(Graph *graphPtr, Drawable drawable, Element *basePtr,
     int radius;
 
     penPtr = NORMALPEN(elemPtr);
-    if ((penPtr->fill == NULL) && (penPtr->outlineColor == NULL)) {
+    if ((penPtr->fillBg == NULL) && (penPtr->outline == NULL)) {
         return;
     }
     radius = (size / 2);
@@ -1811,20 +1793,20 @@ DrawSymbolProc(Graph *graphPtr, Drawable drawable, Element *basePtr,
 
     x -= radius;
     y -= radius;
-    if (penPtr->fill != NULL) {
+    if (penPtr->fillBg != NULL) {
         XSetTSOrigin(graphPtr->display, penPtr->fillGC, x, y);
         if (penPtr->stipple != None) {
             XFillRectangle(graphPtr->display, drawable, penPtr->fillGC, x, y, 
                            size, size);
         } else {
-            Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, penPtr->fill, 
+            Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, penPtr->fillBg, 
                 x, y, size, size, penPtr->borderWidth, penPtr->relief);
         }
         XSetTSOrigin(graphPtr->display, penPtr->fillGC, 0, 0);
     }
-    if (penPtr->outlineColor != NULL) {
-        XDrawRectangle(graphPtr->display, drawable, penPtr->outlineGC, x, y, 
-                       size, size);
+    if (penPtr->outline != NULL) {
+        Tk_Draw3DRectangle(graphPtr->tkwin, drawable, penPtr->outline, x, y, 
+                size, size, penPtr->borderWidth, penPtr->relief);
     }
 }
 
@@ -1906,60 +1888,59 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
              BarElement *elemPtr, XRectangle *bars, int numBars)
 {
     TkRegion rgn;
+    XRectangle clip;
+    int relief;
+    int i;
+    
+    clip.x = graphPtr->left;
+    clip.y = graphPtr->top;
+    clip.width  = graphPtr->right - graphPtr->left + 1;
+    clip.height = graphPtr->bottom - graphPtr->top + 1;
+    rgn = TkCreateRegion();
+    TkUnionRectWithRegion(&clip, rgn, rgn);
 
-    {
-        XRectangle clip;
-        clip.x = graphPtr->left;
-        clip.y = graphPtr->top;
-        clip.width  = graphPtr->right - graphPtr->left + 1;
-        clip.height = graphPtr->bottom - graphPtr->top + 1;
-        rgn = TkCreateRegion();
-        TkUnionRectWithRegion(&clip, rgn, rgn);
-    }
-    if (penPtr->fill != NULL) {
-        XRectangle *rp, *rend;
-        int hasOutline;
-        int relief;
-
-        relief = (penPtr->relief == TK_RELIEF_SOLID) 
-            ? TK_RELIEF_FLAT: penPtr->relief;
-        hasOutline = ((relief == TK_RELIEF_FLAT) && 
-                      (penPtr->outlineColor != NULL));
+    relief = (penPtr->relief == TK_RELIEF_SOLID) ?
+        TK_RELIEF_FLAT: penPtr->relief;
+    if (penPtr->fillBg != NULL) {
         if (penPtr->stipple != None) {
             TkSetRegion(graphPtr->display, penPtr->fillGC, rgn);
         }
-        Blt_Bg_SetClipRegion(graphPtr->tkwin, penPtr->fill, rgn);
-        if (hasOutline) {
-            TkSetRegion(graphPtr->display, penPtr->outlineGC, rgn);
+        Blt_Bg_SetClipRegion(graphPtr->tkwin, penPtr->fillBg, rgn);
+    }
+    if (penPtr->outline != NULL) {
+        Blt_3DBorder_SetClipRegion(graphPtr->tkwin, penPtr->outline, rgn);
+    }
+    for (i = 0; i < numBars; i++) {
+        XRectangle *r;
+
+        r = bars + i;
+        if (elemPtr->zAxisPtr != NULL) {
+            DrawGradientRectangle(graphPtr, drawable, elemPtr, r);
+        } else if (penPtr->stipple != None) {
+            XFillRectangle(graphPtr->display, drawable, penPtr->fillGC, 
+                r->x, r->y, r->width, r->height);
+        } else if (penPtr->fillBg != NULL) {
+            Blt_PaintBrush brush;
+
+            brush = Blt_Bg_PaintBrush(penPtr->fillBg);
+            Blt_SetBrushOpacity(brush, penPtr->opacity);
+            Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, penPtr->fillBg,
+                r->x, r->y, r->width, r->height, 0, TK_RELIEF_FLAT);
+            Blt_SetBrushOpacity(brush, 100.0);
         }
-        for (rp = bars, rend = rp + numBars; rp < rend; rp++) {
-            if (elemPtr->zAxisPtr != NULL) {
-                DrawGradientRectangle(graphPtr, drawable, elemPtr, rp);
-            } else if (penPtr->stipple != None) {
-                XFillRectangle(graphPtr->display, drawable, penPtr->fillGC, 
-                               rp->x, rp->y, rp->width, rp->height);
-            } else {
-                Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, 
-                        penPtr->fill, rp->x, rp->y, rp->width, rp->height, 
-                        penPtr->borderWidth, relief);
-            }
-            if (hasOutline) {
-                XDrawRectangle(graphPtr->display, drawable, penPtr->outlineGC, 
-                               rp->x, rp->y, rp->width, rp->height);
-            }
+        if ((penPtr->outline != NULL) && (penPtr->borderWidth > 0)) {
+            Tk_Draw3DRectangle(graphPtr->tkwin, drawable, penPtr->outline, 
+                r->x, r->y, r->width, r->height, penPtr->borderWidth, relief);
         }
-        Blt_Bg_UnsetClipRegion(graphPtr->tkwin, penPtr->fill);
-        if (hasOutline) {
-            XSetClipMask(graphPtr->display, penPtr->outlineGC, None);
-        }
-        if (penPtr->stipple != None) {
-            XSetClipMask(graphPtr->display, penPtr->fillGC, None);
-        }
-    } else if (penPtr->outlineColor != NULL) {
-        TkSetRegion(graphPtr->display, penPtr->outlineGC, rgn);
-        XDrawRectangles(graphPtr->display, drawable, penPtr->outlineGC, bars, 
-                        numBars);
-        XSetClipMask(graphPtr->display, penPtr->outlineGC, None);
+    }
+    if (penPtr->fillBg != NULL) {
+        Blt_Bg_UnsetClipRegion(graphPtr->tkwin, penPtr->fillBg);
+    }
+    if (penPtr->outline != NULL) {
+        Blt_3DBorder_UnsetClipRegion(graphPtr->tkwin, penPtr->outline);
+    }
+    if (penPtr->stipple != None) {
+        XSetClipMask(graphPtr->display, penPtr->fillGC, None);
     }
     TkDestroyRegion(rgn);
 }
@@ -2149,18 +2130,14 @@ DrawActiveProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
  */
 /*ARGSUSED*/
 static void
-SymbolToPostScriptProc(
-    Graph *graphPtr,
-    Blt_Ps ps,
-    Element *basePtr,
-    double x, double y,
-    int size)
+SymbolToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr,
+                       double x, double y, int size)
 {
     BarElement *elemPtr = (BarElement *)basePtr;
     BarPen *penPtr;
 
     penPtr = NORMALPEN(elemPtr);
-    if ((penPtr->fill == NULL) && (penPtr->outlineColor == NULL)) {
+    if ((penPtr->fillBg == NULL) && (penPtr->outline == NULL)) {
         return;
     }
     /*
@@ -2171,18 +2148,18 @@ SymbolToPostScriptProc(
                   "/DrawSymbolProc {\n"
                   "gsave\n    ");
     if (penPtr->stipple != None) {
-        if (penPtr->fill != NULL) {
-            Blt_Ps_XSetBackground(ps, Blt_Bg_BorderColor(penPtr->fill));
+        if (penPtr->fillBg != NULL) {
+            Blt_Ps_XSetBackground(ps, Blt_Bg_BorderColor(penPtr->fillBg));
             Blt_Ps_Append(ps, "    gsave fill grestore\n    ");
         }
-        if (penPtr->outlineColor != NULL) {
-            Blt_Ps_XSetForeground(ps, penPtr->outlineColor);
+        if (penPtr->outline != NULL) {
+            Blt_Ps_XSetForeground(ps, Tk_3DBorderColor(penPtr->outline));
         } else {
-            Blt_Ps_XSetForeground(ps, Blt_Bg_BorderColor(penPtr->fill));
+            Blt_Ps_XSetForeground(ps, Blt_Bg_BorderColor(penPtr->fillBg));
         }
         Blt_Ps_XSetStipple(ps, graphPtr->display, penPtr->stipple);
-    } else if (penPtr->outlineColor != NULL) {
-        Blt_Ps_XSetForeground(ps, penPtr->outlineColor);
+    } else if (penPtr->outline != NULL) {
+        Blt_Ps_XSetForeground(ps, Tk_3DBorderColor(penPtr->outline));
         Blt_Ps_Append(ps, "    fill\n");
     }
     Blt_Ps_Append(ps, "  grestore\n");
@@ -2194,36 +2171,39 @@ static void
 SegmentsToPostScript(Graph *graphPtr, Blt_Ps ps, BarPen *penPtr, 
                      XRectangle *bars, int numBars)
 {
-    XRectangle *rp, *rend;
+    int i;
 
-    if ((penPtr->fill == NULL) && (penPtr->outlineColor == NULL)) {
+    if ((penPtr->fillBg == NULL) && (penPtr->outline == NULL)) {
         return;
     }
-    for (rp = bars, rend = rp + numBars; rp < rend; rp++) {
-        if ((rp->width < 1) || (rp->height < 1)) {
+    for (i = 0; i < numBars; i++) {
+        XRectangle *r;
+        
+        r = bars + i;
+        if ((r->width < 1) || (r->height < 1)) {
             continue;
         }
         if (penPtr->stipple != None) {
-            Blt_Ps_Rectangle(ps, rp->x, rp->y, rp->width - 1, rp->height - 1);
-            if (penPtr->fill != NULL) {
-                Blt_Ps_XSetBackground(ps,Blt_Bg_BorderColor(penPtr->fill));
+            Blt_Ps_Rectangle(ps, r->x, r->y, r->width-1, r->height-1);
+            if (penPtr->fillBg != NULL) {
+                Blt_Ps_XSetBackground(ps, Blt_Bg_BorderColor(penPtr->fillBg));
                 Blt_Ps_Append(ps, "gsave fill grestore\n");
             }
-            if (penPtr->outlineColor != NULL) {
-                Blt_Ps_XSetForeground(ps, penPtr->outlineColor);
+            if (penPtr->outline != NULL) {
+                Blt_Ps_XSetForeground(ps, Tk_3DBorderColor(penPtr->outline));
             } else {
-                Blt_Ps_XSetForeground(ps,Blt_Bg_BorderColor(penPtr->fill));
+                Blt_Ps_XSetForeground(ps,Blt_Bg_BorderColor(penPtr->fillBg));
             }
             Blt_Ps_XSetStipple(ps, graphPtr->display, penPtr->stipple);
-        } else if (penPtr->outlineColor != NULL) {
-            Blt_Ps_XSetForeground(ps, penPtr->outlineColor);
-            Blt_Ps_XFillRectangle(ps, (double)rp->x, (double)rp->y, 
-                (int)rp->width - 1, (int)rp->height - 1);
+        } else if (penPtr->outline != NULL) {
+        Blt_Ps_XSetForeground(ps, Tk_3DBorderColor(penPtr->outline));
+            Blt_Ps_XFillRectangle(ps, (double)r->x, (double)r->y, 
+                (int)r->width - 1, (int)r->height - 1);
         }
-        if ((penPtr->fill != NULL) && (penPtr->borderWidth > 0) && 
+        if ((penPtr->fillBg != NULL) && (penPtr->borderWidth > 0) && 
             (penPtr->relief != TK_RELIEF_FLAT)) {
-            Blt_Ps_Draw3DRectangle(ps, Blt_Bg_Border(penPtr->fill), 
-                (double)rp->x, (double)rp->y, (int)rp->width, (int)rp->height,
+            Blt_Ps_Draw3DRectangle(ps, Blt_Bg_Border(penPtr->fillBg), 
+                (double)r->x, (double)r->y, (int)r->width, (int)r->height,
                 penPtr->borderWidth, penPtr->relief);
         }
     }
@@ -2430,7 +2410,6 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
  *
  *---------------------------------------------------------------------------
  */
-
 static ElementProcs barProcs = {
     NearestProc,
     ConfigureProc,
@@ -2474,7 +2453,7 @@ Blt_BarElement(Graph *graphPtr, Blt_HashEntry *hPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_InitSetTable --
+ * Blt_InitBarGroups --
  *
  *      Generate a table of abscissa frequencies.  Duplicate x-coordinates
  *      (depending upon the bar drawing mode) indicate that something
@@ -2491,33 +2470,27 @@ Blt_BarElement(Graph *graphPtr, Blt_HashEntry *hPtr)
  *---------------------------------------------------------------------------
  */
 void
-Blt_InitSetTable(Graph *graphPtr)
+Blt_InitBarGroups(Graph *graphPtr)
 {
     Blt_ChainLink link;
-    int numStacks, numSegs;
-    Blt_HashTable setTable;
-    int sum, max;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
+    int numGroups, numMembers;
 
     /*
-     * Free resources associated with a previous frequency table. This
-     * includes the array of frequency information and the table itself
+     * Free resources associated with a previous group table. This includes
+     * the array of group information and the table itself.
      */
-    Blt_DestroySets(graphPtr);
+    Blt_DestroyBarGroups(graphPtr);
     if (graphPtr->mode == BARS_INFRONT) {
         return;                         /* No set table is needed for
                                          * "infront" mode */
     }
-    Blt_InitHashTable(&graphPtr->setTable, sizeof(SetKey) / sizeof(int));
-
     /*
      * Initialize a hash table and fill it with unique abscissas.  Keep
      * track of the frequency of each x-coordinate and how many abscissas
      * have duplicate mappings.
      */
-    Blt_InitHashTable(&setTable, sizeof(SetKey) / sizeof(int));
-    numSegs = numStacks = 0;
+    Blt_InitHashTable(&graphPtr->groupTable, sizeof(BarGroupKey) / sizeof(int));
+    numGroups = numMembers = 0;
     for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList);
         link != NULL; link = Blt_Chain_NextLink(link)) {
         BarElement *elemPtr;
@@ -2526,210 +2499,85 @@ Blt_InitSetTable(Graph *graphPtr)
         elemPtr = Blt_Chain_GetValue(link);
         if ((elemPtr->flags & HIDDEN) ||
             (elemPtr->obj.classId != CID_ELEM_BAR)) {
-            continue;
+            continue;                   /* Hidden or not a bar element. */
         }
-        numSegs++;
         numPoints = NUMBEROFPOINTS(elemPtr);
         for (i = 0; i < numPoints; i++) {
             Blt_HashEntry *hPtr;
-            Blt_HashTable *tablePtr;
-            SetKey key;
+            BarGroupKey key;
             int isNew;
-            const char *name;
             
             memset(&key, 0, sizeof(key));
             key.value = elemPtr->x.values[i];
             key.axes = elemPtr->axes;
             key.axes.y = NULL;
 
-            /* Create a hash table for each unique value/axis pairing. */
-            hPtr = Blt_CreateHashEntry(&setTable, (char *)&key, &isNew);
+            hPtr = Blt_CreateHashEntry(&graphPtr->groupTable, (char *)&key,
+                &isNew);
             if (isNew) {
-                tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
-                Blt_InitHashTable(tablePtr, BLT_STRING_KEYS);
-                Blt_SetHashValue(hPtr, tablePtr);
+                BarGroup *groupPtr;
+
+                /* Create a group entry for each unique value/axis pairing. */
+                groupPtr = Blt_AssertMalloc(sizeof(BarGroup));
+                groupPtr->axes = elemPtr->axes;
+                Blt_SetHashValue(hPtr, groupPtr);
+                groupPtr->sum = fabs(elemPtr->y.values[i]);
+                groupPtr->max = elemPtr->y.values[i];
+                groupPtr->numMembers = 1;
+                numGroups++;
+                if (numMembers < groupPtr->numMembers) {
+                    numMembers = groupPtr->numMembers;
+                }
             } else {
-                tablePtr = Blt_GetHashValue(hPtr);
-            }
-            name = (elemPtr->groupName != NULL) ? elemPtr->groupName : 
-                elemPtr->obj.name;
-            /* Create an entry in the hash table for each element. */
-            hPtr = Blt_CreateHashEntry(tablePtr, name, &isNew);
-        }
-    }
-    if (setTable.numEntries == 0) {
-        Blt_DeleteHashTable(&setTable);
-        return;                         /* No bar elements to be displayed */
-    }
-    /* Determine the biggest group of elements for each unique value.
-     * We'll use that to figure out how to slice or stack the bars. */
-    sum = max = 0;
-    for (hPtr = Blt_FirstHashEntry(&setTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Blt_HashTable *tablePtr;
-        Blt_HashEntry *hPtr2;
-        SetKey *keyPtr;
-        int isNew;
+                BarGroup *groupPtr;
 
-        keyPtr = (SetKey *)Blt_GetHashKey(&setTable, hPtr);
-        hPtr2 = Blt_CreateHashEntry(&graphPtr->setTable, (char *)keyPtr,&isNew);
-        tablePtr = Blt_GetHashValue(hPtr);
-        Blt_SetHashValue(hPtr2, tablePtr);
-        if (max < tablePtr->numEntries) {
-            max = tablePtr->numEntries; /* # of stacks in group. */
+                groupPtr = Blt_GetHashValue(hPtr);
+                if (groupPtr->max < elemPtr->y.values[i]) {
+                    groupPtr->max = elemPtr->y.values[i];
+                }
+                groupPtr->sum += fabs(elemPtr->y.values[i]); 
+                groupPtr->numMembers++;
+                if (numMembers < groupPtr->numMembers) {
+                    numMembers = groupPtr->numMembers;
+                }
+            }
         }
-        sum += tablePtr->numEntries;
     }
-    if (sum > 0) {
+    graphPtr->maxBarGroupSize = numMembers;
+    graphPtr->numBarGroups = numGroups;
+}
+
+void
+Blt_ResetBarGroups(Graph *graphPtr)
+{
+    Blt_HashSearch iter;
+    Blt_HashEntry *hPtr;
+    
+    for (hPtr = Blt_FirstHashEntry(&graphPtr->groupTable, &iter); 
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
         BarGroup *groupPtr;
-        Blt_HashEntry *hPtr;
-        Blt_HashSearch iter;
 
-        graphPtr->barGroups = Blt_AssertCalloc(sum, sizeof(BarGroup));
-        groupPtr = graphPtr->barGroups;
-        for (hPtr = Blt_FirstHashEntry(&graphPtr->setTable, &iter); 
-             hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-            SetKey *keyPtr;
-            Blt_HashTable *tablePtr;
-            Blt_HashEntry *hPtr2;
-            Blt_HashSearch iter2;
-            size_t xcount;
-
-            tablePtr = Blt_GetHashValue(hPtr);
-            keyPtr = (SetKey *)Blt_GetHashKey(&setTable, hPtr);
-            xcount = 0;
-            for (hPtr2 = Blt_FirstHashEntry(tablePtr, &iter2); hPtr2!=NULL;
-                 hPtr2 = Blt_NextHashEntry(&iter2)) {
-
-                groupPtr->numSegments = tablePtr->numEntries;
-#ifdef notdef
-                fprintf(stderr, "group max=%d numSegments=%d\n", max, groupPtr->numSegments);
-#endif
-                groupPtr->axes = keyPtr->axes;
-                Blt_SetHashValue(hPtr2, groupPtr);
-                groupPtr->index = xcount++;
-                groupPtr++;
-            }
-        }
-    }
-    Blt_DeleteHashTable(&setTable);
-    graphPtr->maxSetSize = max;
-    graphPtr->numBarGroups = sum;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_ComputeStacks --
- *
- *      Determine the height of each stack of bar segments.  A stack is
- *      created by designating two or more points with the same abscissa.
- *      Each ordinate defines the height of a segment in the stack.  This
- *      procedure simply looks at all the data points summing the heights
- *      of each stacked segment. The sum is saved in the frequency
- *      information table.  This value will be used to calculate the y-axis
- *      limits (data limits aren't sufficient).
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      The heights of each stack is computed. CheckBarGroups will use this
- *      information to adjust the y-axis limits if necessary.
- *
- *---------------------------------------------------------------------------
- */
-void
-Blt_ComputeStacks(Graph *graphPtr)
-{
-    Blt_ChainLink link;
-
-    if ((graphPtr->mode != BARS_STACKED) || (graphPtr->numBarGroups == 0)) {
-        return;
-    }
-
-    /* Initialize the stack sums to zero. */
-    {
-        BarGroup *gp, *gend;
-
-        for (gp = graphPtr->barGroups, gend = gp + graphPtr->numBarGroups; 
-             gp < gend; gp++) {
-            gp->sum = 0.0;
-        }
-    }
-
-    /* Consider each bar x-y coordinate. Add the ordinates of duplicate
-     * abscissas. */
-
-    for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList); 
-         link != NULL; link = Blt_Chain_NextLink(link)) {
-        BarElement *elemPtr;
-        double *x, *y, *xend;
-
-        elemPtr = Blt_Chain_GetValue(link);
-        if ((elemPtr->flags & HIDDEN) ||
-            (elemPtr->obj.classId != CID_ELEM_BAR)) {
-            continue;
-        }
-        for (x = elemPtr->x.values, y = elemPtr->y.values, 
-                 xend = x + NUMBEROFPOINTS(elemPtr); x < xend; x++, y++) {
-            SetKey key;
-            BarGroup *groupPtr;
-            Blt_HashEntry *hPtr;
-            Blt_HashTable *tablePtr;
-            const char *name;
-
-            key.value = *x;
-            key.axes = elemPtr->axes;
-            key.axes.y = NULL;
-            hPtr = Blt_FindHashEntry(&graphPtr->setTable, (char *)&key);
-            if (hPtr == NULL) {
-                continue;
-            }
-            tablePtr = Blt_GetHashValue(hPtr);
-            name = (elemPtr->groupName != NULL) ? elemPtr->groupName : 
-                elemPtr->axes.y->obj.name;
-            hPtr = Blt_FindHashEntry(tablePtr, name);
-            if (hPtr == NULL) {
-                continue;
-            }
-            groupPtr = Blt_GetHashValue(hPtr);
-            groupPtr->sum += *y;
-        }
+        groupPtr = Blt_GetHashValue(hPtr);
+        groupPtr->lastY = 0.0;
+        groupPtr->count = 0;
     }
 }
 
 void
-Blt_ResetGroups(Graph *graphPtr)
-{
-    BarGroup *gp, *gend;
-
-    for (gp = graphPtr->barGroups, gend = gp + graphPtr->numBarGroups; 
-         gp < gend; gp++) {
-        gp->lastY = 0.0;
-        gp->count = 0;
-    }
-}
-
-void
-Blt_DestroySets(Graph *graphPtr)
+Blt_DestroyBarGroups(Graph *graphPtr)
 {
     Blt_HashSearch iter;
     Blt_HashEntry *hPtr;
 
-    if (graphPtr->barGroups != NULL) {
-        Blt_Free(graphPtr->barGroups);
-        graphPtr->barGroups = NULL;
-    }
     graphPtr->numBarGroups = 0;
-    for (hPtr = Blt_FirstHashEntry(&graphPtr->setTable, &iter); 
+    graphPtr->maxBarGroupSize = 0;
+    for (hPtr = Blt_FirstHashEntry(&graphPtr->groupTable, &iter); 
          hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-        Blt_HashTable *tablePtr;
+        BarGroup *groupPtr;
         
-        tablePtr = Blt_GetHashValue(hPtr);
-        Blt_DeleteHashTable(tablePtr);
-        Blt_Free(tablePtr);
+        groupPtr = Blt_GetHashValue(hPtr);
+        Blt_Free(groupPtr);
     }
-    Blt_DeleteHashTable(&graphPtr->setTable);
-    Blt_InitHashTable(&graphPtr->setTable, sizeof(SetKey) / sizeof(int));
+    Blt_DeleteHashTable(&graphPtr->groupTable);
+    Blt_InitHashTable(&graphPtr->groupTable, sizeof(BarGroupKey) / sizeof(int));
 }

@@ -177,7 +177,7 @@ static Blt_SwitchSpec exportSwitches[] =
     {BLT_SWITCH_OBJ,     "-file",       "fileName", (char *)NULL,
         Blt_Offset(PdfExportSwitches, fileObjPtr),  0},
     {BLT_SWITCH_LISTOBJ, "-comments", "{key value...}", (char *)NULL,
-        Blt_Offset(PdfExportSwitches, setup.commentsObjPtr),
+        Blt_Offset(PdfExportSwitches, setup.cmtsObjPtr),
         BLT_SWITCH_NULL_OK},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
         Blt_Offset(PdfExportSwitches, index), 0},
@@ -1008,8 +1008,8 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
                           "%PDF-1.4\n",
                           (char *)NULL);
 
-    if (setupPtr->commentsObjPtr != NULL) {
-        AddComments(pdfPtr, setupPtr->commentsObjPtr);
+    if (setupPtr->cmtsObjPtr != NULL) {
+        AddComments(pdfPtr, setupPtr->cmtsObjPtr);
     }
 
     version = Tcl_GetVar(interp, "blt_version", TCL_GLOBAL_ONLY);

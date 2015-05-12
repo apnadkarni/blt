@@ -1196,7 +1196,7 @@ format in the **import** or **export** operations.
     supported:
 
     **-data** *string*
-     Read the JPEG information from *string*.
+     Reads the JPEG information from *string*.
 
     **-dct** *method*
       Specifies the discrete cosine transform method. *Method* must be one
@@ -1213,7 +1213,7 @@ format in the **import** or **export** operations.
         hardware.
 
     **-file** *fileName*
-     Read the JPEG file from *fileName*.
+      Reads the JPEG file from *fileName*.
 
 *imageName* **export jpg** ?\ *switches* ... ?
     Exports *imageName* into JPEG data.  If no **-file** or **-data** switch
@@ -1277,8 +1277,8 @@ format in the **import** or **export** operations.
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  IThe default is 0,
-      which is the first picture.
+      exported. *NumPicture* is a non-negative number.  The default, 0,
+      is the first picture.
 
 **pbm**
 ~~~~~~~

@@ -117,7 +117,7 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_PS_COLOR_MAP, Blt_Offset(PageSetup, colorVarName),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_LISTOBJ,    "-comments", "comments", "Comments",
-        DEF_PS_COMMENTS, Blt_Offset(PageSetup, commentsObjPtr),
+        DEF_PS_COMMENTS, Blt_Offset(PageSetup, cmtsObjPtr),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-decorations", "decorations", "Decorations",
         DEF_PS_DECORATIONS, Blt_Offset(PageSetup, flags),
@@ -340,7 +340,9 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
         Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
     }
     Blt_Ps_Append(ps, "%%DocumentNeededResources: font Helvetica Courier\n");
-    AddComments(ps, setupPtr->commentsObjPtr);
+    if (setupPtr->cmtsObjPtr != NULL) {
+        AddComments(ps, setupPtr->cmtsObjPtr);
+    }
     Blt_Ps_Append(ps, "%%EndComments\n\n");
     if (Blt_Ps_IncludeFile(graphPtr->interp, ps, "bltGraph.pro") != TCL_OK) {
         return TCL_ERROR;

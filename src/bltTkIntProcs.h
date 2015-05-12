@@ -593,10 +593,10 @@ BLT_EXTERN Blt_PaintBrush Blt_Bg_PaintBrush(Blt_Bg bg);
 /* 99 */
 BLT_EXTERN const char *	 Blt_Bg_Name(Blt_Bg bg);
 #endif
-#ifndef Blt_FreeBg_DECLARED
-#define Blt_FreeBg_DECLARED
+#ifndef Blt_Bg_Free_DECLARED
+#define Blt_Bg_Free_DECLARED
 /* 100 */
-BLT_EXTERN void		Blt_FreeBg(Blt_Bg bg);
+BLT_EXTERN void		Blt_Bg_Free(Blt_Bg bg);
 #endif
 #ifndef Blt_Bg_DrawRectangle_DECLARED
 #define Blt_Bg_DrawRectangle_DECLARED
@@ -639,7 +639,7 @@ BLT_EXTERN void		Blt_Bg_GetOrigin(Blt_Bg bg, int *xPtr, int *yPtr);
 #define Blt_Bg_SetChangedProc_DECLARED
 /* 106 */
 BLT_EXTERN void		Blt_Bg_SetChangedProc(Blt_Bg bg,
-				Blt_Bg_ChangedProc *notifyProc,
+				Blt_BackgroundChangedProc *notifyProc,
 				ClientData clientData);
 #endif
 #ifndef Blt_Bg_SetOrigin_DECLARED
@@ -1490,7 +1490,7 @@ typedef struct BltTkIntProcs {
     void (*blt_Bg_DrawPolygon) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, int leftRelief); /* 103 */
     void (*blt_Bg_FillPolygon) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, int leftRelief); /* 104 */
     void (*blt_Bg_GetOrigin) (Blt_Bg bg, int *xPtr, int *yPtr); /* 105 */
-    void (*blt_Bg_SetChangedProc) (Blt_Bg bg, Blt_Bg_ChangedProc *notifyProc, ClientData clientData); /* 106 */
+    void (*blt_Bg_SetChangedProc) (Blt_Bg bg, Blt_BackgroundChangedProc *notifyProc, ClientData clientData); /* 106 */
     void (*blt_Bg_SetOrigin) (Tk_Window tkwin, Blt_Bg bg, int x, int y); /* 107 */
     void (*blt_Bg_DrawFocus) (Tk_Window tkwin, Blt_Bg bg, int highlightWidth, Drawable drawable); /* 108 */
     GC (*blt_Bg_BorderGC) (Tk_Window tkwin, Blt_Bg bg, int which); /* 109 */
@@ -2026,8 +2026,8 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_Bg_Name \
 	(bltTkIntProcsPtr->blt_Bg_Name) /* 99 */
 #endif
-#ifndef Blt_FreeBg
-#define Blt_FreeBg \
+#ifndef Blt_Bg_Free
+#define Blt_Bg_Free \
 	(bltTkIntProcsPtr->blt_FreeBg) /* 100 */
 #endif
 #ifndef Blt_Bg_DrawRectangle

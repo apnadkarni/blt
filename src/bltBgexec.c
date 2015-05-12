@@ -79,7 +79,8 @@ static Tcl_ObjCmdProc BgexecCmdProc;
 #define WINDEBUG        0
 
 #if (_TCL_VERSION <  _VERSION(8,1,0)) 
-typedef void *Tcl_Encoding;     /* Make up dummy type for encoding.  */
+typedef void *Tcl_Encoding;             /* Make up dummy type for
+                                         * encoding.  */
 #endif
 
 #define ENCODING_ASCII          ((Tcl_Encoding)NULL)
@@ -94,12 +95,12 @@ typedef void *Tcl_Encoding;     /* Make up dummy type for encoding.  */
 #endif /* WIN32 */
 
 /*
- *  This module creates a replacement of the old Tcl_CreatePipeline call in
- *  the TCL C library.  The prescribed workaround is Tcl_OpenCommandChannel.
- *  But it hides the pids of the pipeline away (unless of course you pry open
- *  the undocumented structure PipeStatus as clientData).  The bigger problem
- *  is that I couldn't figure any way to make one side of the pipe to be
- *  non-blocking.
+ *  This module creates a stand in for the old Tcl_CreatePipeline call in
+ *  the TCL C library.  The prescribed routine is Tcl_OpenCommandChannel.
+ *  But it hides the pids of the pipeline away (unless of course you pry
+ *  open the undocumented structure PipeStatus as clientData).  The bigger
+ *  problem is that I couldn't figure any way to make one side of the pipe
+ *  to be non-blocking.
  */
 
 #ifdef WIN32
@@ -125,8 +126,8 @@ typedef void *Tcl_Encoding;     /* Make up dummy type for encoding.  */
                                          * buffer */
 #define DEF_BUFFER_SIZE (BLOCK_SIZE * 8)
 #define MAX_READS       100             /* Maximum # of successful reads
-                                         * before stopping to let TCL catch up
-                                         * on events */
+                                         * before stopping to let TCL catch
+                                         * up on events */
 #ifndef NSIG
 #define NSIG            32              /* # of signals available */
 #endif /*NSIG*/
@@ -265,8 +266,8 @@ static SignalToken signalTokens[] =
 #ifdef TCL_THREADS
 static Tcl_Mutex *mutexPtr = NULL;
 #endif
-static Blt_Chain activePipelines;       /* List of active pipelines and their
-                                         * bgexec structures. */
+static Blt_Chain activePipelines;       /* List of active pipelines and
+                                         * their bgexec structures. */
 
 /*
  * Sink buffer:
@@ -289,9 +290,10 @@ static Blt_Chain activePipelines;       /* List of active pipelines and their
  */
 typedef struct {
     const char *name;                   /* Name of the sink */
-    const char *doneVar;                /* Name of a TCL variable (malloc'ed)
-                                         * set to the collected data of the
-                                         * last UNIX * subprocess. */
+    const char *doneVar;                /* Name of a TCL variable
+                                         * (malloc'ed) set to the collected
+                                         * data of the last UNIX
+                                         * subprocess. */
     const char *updateVar;              /* Name of a TCL variable (malloc'ed)
                                          * updated as data is read from the
                                          * pipe. */
@@ -332,15 +334,15 @@ typedef struct {
 #define SINK_NOTIFY             (1<<2)
 
 typedef struct {
-    const char *statVar;                /* Name of a TCL variable set to the
-                                         * exit status of the last
+    const char *statVar;                /* Name of a TCL variable set to
+                                         * the exit status of the last
                                          * process. Setting this variable
                                          * triggers the termination of all
                                          * subprocesses (regardless whether
                                          * they have already completed) */
-    int signalNum;                      /* If non-zero, indicates the signal
-                                         * to send subprocesses when cleaning
-                                         * up.*/
+    int signalNum;                      /* If non-zero, indicates the
+                                         * signal to send subprocesses when
+                                         * cleaning up.*/
     unsigned int flags;                 /* Various bit flags: see below. */
     int interval;                       /* Interval to poll for the exiting
                                          * processes in milliseconds. */
@@ -348,13 +350,14 @@ typedef struct {
     Tcl_Interp *interp;                 /* Interpreter containing variables */
     int numProcs;                       /* # of processes in pipeline */
     Blt_Pid *procIds;                   /* Array of process tokens from
-                                         * pipeline.  Under Unix, tokens are
-                                         * pid_t, while for Win32 they're
-                                         * handles. */
-    Tcl_TimerToken timerToken;          /* Token for timer handler which polls
-                                         * for the exit status of each
-                                         * sub-process. If zero, there's no
-                                         * timer handler queued. */
+                                         * pipeline.  Under Unix, tokens
+                                         * are pid_t, while for Win32
+                                         * they're handles. */
+    Tcl_TimerToken timerToken;          /* Token for timer handler which
+                                         * polls for the exit status of
+                                         * each sub-process. If zero,
+                                         * there's no timer handler
+                                         * queued. */
     int *exitCodePtr;                   /* Pointer to a memory location to
                                          * contain the last process' exit
                                          * code. */
@@ -821,10 +824,10 @@ ReadBytes(Sink *sinkPtr)
      *  Worry about indefinite postponement.
      *
      *  Typically we want to stay in the read loop as long as it takes to
-     *  collect all the data that's currently available.  But if it's coming
-     *  in at a constant high rate, we need to arbitrarily break out at some
-     *  point. This allows for both setting the update variable and the Tk
-     *  program to handle idle events.
+     *  collect all the data that's currently available.  But if it's
+     *  coming in at a constant high rate, we need to arbitrarily break out
+     *  at some point. This allows for both setting the update variable and
+     *  the Tk program to handle idle events.
      */
     numBytes = 0;
     for (i = 0; i < MAX_READS; i++) {
@@ -1064,12 +1067,13 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
  *      Emulates the waitpid system call under the Win32 API.
  *
  * Results:
- *      Returns 0 if the process is still alive, -1 on an error, or the pid on
- *      a clean close.
+ *      Returns 0 if the process is still alive, -1 on an error, or the pid
+ *      on a clean close.
  *
  * Side effects:
- *      Unless WNOHANG is set and the wait times out, the process information
- *      record will be deleted and the process handle will be closed.
+ *      Unless WNOHANG is set and the wait times out, the process
+ *      information record will be deleted and the process handle will be
+ *      closed.
  *
  *---------------------------------------------------------------------------
  */
@@ -1399,7 +1403,7 @@ CreateSinkHandler(Bgexec *bgPtr, Sink *sinkPtr, Tcl_FileProc *proc)
 }
 
 static void
-DisableTriggers(Bgexec *bgPtr) /* Background info record. */
+DisableTriggers(Bgexec *bgPtr)          /* Background info record. */
 {
     if (bgPtr->flags & TRACED) {
         Tcl_UntraceVar(bgPtr->interp, bgPtr->statVar, TRACE_FLAGS, 
@@ -1537,8 +1541,8 @@ DestroyBgexec(Bgexec *bgPtr)            /* Background info record. */
  *      Always returns NULL.  Only called from a variable trace.
  *
  * Side effects:
- *      The subprocesses are signaled for termination using the specified kill
- *      signal.  Additionally, any resources allocated to track the
+ *      The subprocesses are signaled for termination using the specified
+ *      kill signal.  Additionally, any resources allocated to track the
  *      subprocesses is released.
  *
  *---------------------------------------------------------------------------
@@ -1567,11 +1571,11 @@ VariableProc(
  * TimerProc --
  *
  *      This is a timer handler procedure which gets called periodically to
- *      reap any of the sub-processes if they have terminated.  After the last
- *      process has terminated, the contents of standard output are stored in
- *      the output variable, which triggers the cleanup proc (using a variable
- *      trace). The status the last process to exit is written to the status
- *      variable.
+ *      reap any of the sub-processes if they have terminated.  After the
+ *      last process has terminated, the contents of standard output are
+ *      stored in the output variable, which triggers the cleanup proc
+ *      (using a variable trace). The status the last process to exit is
+ *      written to the status variable.
  *
  * Results:
  *      None.  Called from the TCL event loop.
@@ -1581,9 +1585,9 @@ VariableProc(
  *      sub-processes which have not yet terminated.  If there are still
  *      subprocesses left, this procedure is placed in the timer queue
  *      again. Otherwise the output and possibly the status variables are
- *      updated.  The former triggers the cleanup routine which will destroy
- *      the information and resources associated with these background
- *      processes.
+ *      updated.  The former triggers the cleanup routine which will
+ *      destroy the information and resources associated with these
+ *      background processes.
  *
  *---------------------------------------------------------------------------
  */
@@ -1631,7 +1635,8 @@ TimerProc(ClientData clientData)
         } else if (pid != -1) {
             /*
              * Save the status information associated with the subprocess.
-             * We'll use it only if this is the last subprocess to be reaped.
+             * We'll use it only if this is the last subprocess to be
+             * reaped.
              */
             lastStatus = waitStatus;
             lastPid = (unsigned int)pid;
@@ -1651,9 +1656,9 @@ TimerProc(ClientData clientData)
     }
 
     /*
-     * All child processes have completed.  Set the status variable with the
-     * status of the last process reaped.  The status is a list of an error
-     * token, the exit status, and a message.
+     * All child processes have completed.  Set the status variable with
+     * the status of the last process reaped.  The status is a list of an
+     * error token, the exit status, and a message.
      */
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -1725,8 +1730,9 @@ TimerProc(ClientData clientData)
  *      None.
  *
  * Side effects:
- *      Data is stored in the buffer.  This character array may be increased
- *      as more space is required to contain the output of the pipeline.
+ *      Data is stored in the buffer.  This character array may be
+ *      increased as more space is required to contain the output of the
+ *      pipeline.
  *
  *---------------------------------------------------------------------------
  */
@@ -1741,16 +1747,16 @@ StdoutProc(ClientData clientData, int mask)
     }
     /*
      * Either EOF or an error has occurred.  In either case, close the
-     * sink. Note that closing the sink will also remove the file handler, so
-     * this routine will not be called again.
+     * sink. Note that closing the sink will also remove the file handler,
+     * so this routine will not be called again.
      */
     CloseSink(bgPtr->interp, &bgPtr->out);
 
     /*
-     * If both sinks (stdout and stderr) are closed, this doesn't necessarily
-     * mean that the process has terminated.  Set up a timer handler to
-     * periodically poll for the exit status of each process.  Initially check
-     * at the next idle interval.
+     * If both sinks (stdout and stderr) are closed, this doesn't
+     * necessarily mean that the process has terminated.  Set up a timer
+     * handler to periodically poll for the exit status of each process.
+     * Initially check at the next idle interval.
      */
     if (!SINKOPEN(&bgPtr->err)) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, clientData);
@@ -1770,8 +1776,9 @@ StdoutProc(ClientData clientData, int mask)
  *      None.
  *
  * Side effects:
- *      Data is stored in the buffer.  This character array may be increased
- *      as more space is required to contain the stderr of the pipeline.
+ *      Data is stored in the buffer.  This character array may be
+ *      increased as more space is required to contain the stderr of the
+ *      pipeline.
  *
  *---------------------------------------------------------------------------
  */
@@ -1786,16 +1793,16 @@ StderrProc(ClientData clientData, int mask)
     }
     /*
      * Either EOF or an error has occurred.  In either case, close the
-     * sink. Note that closing the sink will also remove the file handler, so
-     * this routine will not be called again.
+     * sink. Note that closing the sink will also remove the file handler,
+     * so this routine will not be called again.
      */
     CloseSink(bgPtr->interp, &bgPtr->err);
 
     /*
-     * If both sinks (stdout and stderr) are closed, this doesn't necessarily
-     * mean that the process has terminated.  Set up a timer handler to
-     * periodically poll for the exit status of each process.  Initially check
-     * at the next idle interval.
+     * If both sinks (stdout and stderr) are closed, this doesn't
+     * necessarily mean that the process has terminated.  Set up a timer
+     * handler to periodically poll for the exit status of each process.
+     * Initially check at the next idle interval.
      */
     if (!SINKOPEN(&bgPtr->out)) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, clientData);

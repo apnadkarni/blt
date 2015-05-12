@@ -40,7 +40,7 @@
 
 typedef struct _Blt_Bg *Blt_Bg;
 
-typedef void Blt_Bg_ChangedProc(ClientData clientData);
+typedef void Blt_BackgroundChangedProc(ClientData clientData);
 
 BLT_EXTERN Blt_Bg Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin,
         const char *styleName);
@@ -56,7 +56,7 @@ BLT_EXTERN Blt_PaintBrush Blt_Bg_PaintBrush(Blt_Bg bg);
 
 BLT_EXTERN const char *Blt_Bg_Name(Blt_Bg bg);
 
-BLT_EXTERN void Blt_FreeBg(Blt_Bg bg);
+BLT_EXTERN void Blt_Bg_Free(Blt_Bg bg);
 
 BLT_EXTERN void Blt_Bg_DrawRectangle(Tk_Window tkwin, Drawable drawable,
         Blt_Bg bg, int x, int y, int width, int height, int borderWidth,
@@ -76,7 +76,7 @@ BLT_EXTERN void Blt_Bg_FillPolygon(Tk_Window tkwin, Drawable drawable,
 
 BLT_EXTERN void Blt_Bg_GetOrigin(Blt_Bg bg, int *xPtr, int *yPtr);
 
-BLT_EXTERN void Blt_Bg_SetChangedProc(Blt_Bg bg, Blt_Bg_ChangedProc *notifyProc,
+BLT_EXTERN void Blt_Bg_SetChangedProc(Blt_Bg bg, Blt_BackgroundChangedProc *notifyProc,
         ClientData clientData);
 
 BLT_EXTERN void Blt_Bg_SetOrigin(Tk_Window tkwin, Blt_Bg bg, int x, int y);
@@ -93,5 +93,10 @@ BLT_EXTERN void Blt_Bg_UnsetClipRegion(Tk_Window tkwin, Blt_Bg bg);
 BLT_EXTERN void Blt_Bg_SetClipRegion(Tk_Window tkwin, Blt_Bg bg, TkRegion rgn);
 
 BLT_EXTERN unsigned int Blt_Bg_GetColor(Blt_Bg bg);
+
+BLT_EXTERN void Blt_3DBorder_SetClipRegion(Tk_Window tkwin, Tk_3DBorder border,
+        TkRegion rgn);
+BLT_EXTERN void Blt_3DBorder_UnsetClipRegion(Tk_Window tkwin,
+        Tk_3DBorder border);
 
 #endif /* BLT_BG_H */

@@ -128,7 +128,7 @@ typedef struct {
 
 struct _Blt_Bg {
     BackgroundObject *corePtr;          /* Pointer to master background. */
-    Blt_Bg_ChangedProc *notifyProc;
+    Blt_BackgroundChangedProc *notifyProc;
     ClientData clientData;              /* Data to be passed on notifier
                                          * callbacks.  */
     Blt_ChainLink link;                 /* Entry in notifier list. */
@@ -2750,7 +2750,7 @@ void
 Blt_Bg_SetChangedProc(
     Bg *bgPtr,                          /* Background with which to
                                          * register callback. */
-    Blt_Bg_ChangedProc *notifyProc,     /* Function to call when background
+    Blt_BackgroundChangedProc *notifyProc, /* Function to call when background
                                          * has changed. NULL indicates to
                                          * unset the callback.*/
     ClientData clientData)
@@ -2762,7 +2762,7 @@ Blt_Bg_SetChangedProc(
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_FreeBg
+ * Blt_Bg_Free
  *
  *      Removes the background token.
  *
@@ -2775,7 +2775,7 @@ Blt_Bg_SetChangedProc(
  *---------------------------------------------------------------------------
  */
 void
-Blt_FreeBg(Bg *bgPtr)
+Blt_Bg_Free(Bg *bgPtr)
 {
     BackgroundObject *corePtr = bgPtr->corePtr;
 
@@ -3082,19 +3082,44 @@ Blt_Bg_BorderGC(Tk_Window tkwin, Bg *bgPtr, int which)
 }
 
 void
+Blt_3DBorder_SetClipRegion(Tk_Window tkwin, Tk_3DBorder border, TkRegion rgn)
+{
+    GC gc;
+    Display *display;
+
+    display = Tk_Display(tkwin);
+    gc = Tk_3DBorderGC(tkwin, border, TK_3D_LIGHT_GC);
+    TkSetRegion(display, gc, rgn);
+    gc = Tk_3DBorderGC(tkwin, border, TK_3D_DARK_GC);
+    TkSetRegion(display, gc, rgn);
+    gc = Tk_3DBorderGC(tkwin, border, TK_3D_FLAT_GC);
+    TkSetRegion(display, gc, rgn);
+}
+
+void
+Blt_3DBorder_UnsetClipRegion(Tk_Window tkwin, Tk_3DBorder border)
+{
+    Display *display;
+    GC gc;
+
+    display = Tk_Display(tkwin);
+    gc = Tk_3DBorderGC(tkwin, border, TK_3D_LIGHT_GC);
+    XSetClipMask(display, gc, None);
+    gc = Tk_3DBorderGC(tkwin, border, TK_3D_DARK_GC);
+    XSetClipMask(display, gc, None);
+    gc = Tk_3DBorderGC(tkwin, border, TK_3D_FLAT_GC);
+    XSetClipMask(display, gc, None);
+}
+
+void
 Blt_Bg_SetClipRegion(Tk_Window tkwin, Bg *bgPtr, TkRegion rgn)
 {
     Blt_Painter painter;
     Display *display;
     GC gc;
 
+    Blt_3DBorder_SetClipRegion(tkwin, bgPtr->corePtr->border, rgn);
     display = Tk_Display(tkwin);
-    gc = Tk_3DBorderGC(tkwin, bgPtr->corePtr->border, TK_3D_LIGHT_GC);
-    TkSetRegion(display, gc, rgn);
-    gc = Tk_3DBorderGC(tkwin, bgPtr->corePtr->border, TK_3D_DARK_GC);
-    TkSetRegion(display, gc, rgn);
-    gc = Tk_3DBorderGC(tkwin, bgPtr->corePtr->border, TK_3D_FLAT_GC);
-    TkSetRegion(display, gc, rgn);
     painter = Blt_GetPainter(tkwin, 1.0);
     gc = Blt_PainterGC(painter);
     TkSetRegion(display, gc, rgn);
@@ -3107,13 +3132,8 @@ Blt_Bg_UnsetClipRegion(Tk_Window tkwin, Bg *bgPtr)
     Display *display;
     GC gc;
 
+    Blt_3DBorder_UnsetClipRegion(tkwin, bgPtr->corePtr->border);
     display = Tk_Display(tkwin);
-    gc = Tk_3DBorderGC(tkwin, bgPtr->corePtr->border, TK_3D_LIGHT_GC);
-    XSetClipMask(display, gc, None);
-    gc = Tk_3DBorderGC(tkwin, bgPtr->corePtr->border, TK_3D_DARK_GC);
-    XSetClipMask(display, gc, None);
-    gc = Tk_3DBorderGC(tkwin, bgPtr->corePtr->border, TK_3D_FLAT_GC);
-    XSetClipMask(display, gc, None);
     painter = Blt_GetPainter(tkwin, 1.0);
     gc = Blt_PainterGC(painter);
     XSetClipMask(display, gc, None);

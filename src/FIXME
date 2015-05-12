@@ -1,4 +1,4 @@
-These are all deal-breakers for the next release.
+The following bugs are all show-stoppers for the next release.
 
 1.  Unify or separate bgexec Unix/Max/Win implementations.
 

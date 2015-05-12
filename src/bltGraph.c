@@ -953,7 +953,7 @@ DestroyGraph(DestroyData dataPtr)
     Blt_DestroyPens(graphPtr);
     Blt_DestroyCrosshairs(graphPtr);
     Blt_DestroyPageSetup(graphPtr);
-    Blt_DestroySets(graphPtr);
+    Blt_DestroyBarGroups(graphPtr);
     Blt_DestroyElementTags(graphPtr);
     /* Destroy table clients after elements are destroyed. */
     Blt_DestroyTableClients(graphPtr);

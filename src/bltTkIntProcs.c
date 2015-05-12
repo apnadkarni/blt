@@ -107,7 +107,7 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_Bg_Border, /* 97 */
     Blt_Bg_PaintBrush, /* 98 */
     Blt_Bg_Name, /* 99 */
-    Blt_FreeBg, /* 100 */
+    Blt_Bg_Free, /* 100 */
     Blt_Bg_DrawRectangle, /* 101 */
     Blt_Bg_FillRectangle, /* 102 */
     Blt_Bg_DrawPolygon, /* 103 */

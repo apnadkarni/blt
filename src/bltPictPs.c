@@ -198,7 +198,7 @@ static Blt_SwitchSpec exportSwitches[] =
     {BLT_SWITCH_CUSTOM,  "-paperwidth", "pica", (char *)NULL,
         Blt_Offset(PsExportSwitches, setup.reqPaperWidth), 0, 0, &picaSwitch},
     {BLT_SWITCH_LISTOBJ,  "-comments", "{key value...}", (char *)NULL,
-        Blt_Offset(PsExportSwitches, setup.commentsObjPtr), BLT_SWITCH_NULL_OK},
+        Blt_Offset(PsExportSwitches, setup.cmtsObjPtr), BLT_SWITCH_NULL_OK},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
         Blt_Offset(PsExportSwitches, index), 0},
     {BLT_SWITCH_END}
@@ -427,8 +427,8 @@ PostScriptPreamble(Tcl_Interp *interp, Picture *srcPtr,
     } else {
         Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
     }
-    if (setupPtr->commentsObjPtr != NULL) {
-        AddComments(ps, setupPtr->commentsObjPtr);
+    if (setupPtr->cmtsObjPtr != NULL) {
+        AddComments(ps, setupPtr->cmtsObjPtr);
     }
     Blt_Ps_Append(ps, "%%BeginProlog\n");
     Blt_Ps_Append(ps, "%%EndProlog\n");

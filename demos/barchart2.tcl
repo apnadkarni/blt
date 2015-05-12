@@ -169,9 +169,8 @@ foreach {label yData fg bg stipple bd} $attributes {
 #     set color [format "0xA0%0.2x%0.2x%0.2x" $r $g $b]
 #     puts stderr color=$color
 #     $img blank $color
-    set brush [blt::paintbrush create color -color $bg -opacity 90.0]
     .graph element create -label $label -bd $bd -relief raised \
-	-y $yData -x X -outline $fg -fill $brush
+	-y $yData -x X -outline $fg -fill $bg  -opacity 50.0
 }
 .header.stacked invoke
 
@@ -204,7 +203,7 @@ Blt_ClosestPoint .graph
 }
 
 .graph element bind all <Enter> {
-    set data [.graph element closest %x %y]
+    set data [.graph element nearest %x %y]
     if { $data != "" } {
 	array set info $data
 	puts stderr "$info(x) $info(y)"

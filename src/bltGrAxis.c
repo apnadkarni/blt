@@ -2210,10 +2210,7 @@ Blt_ResetAxes(Graph *graphPtr)
      *        the element display list has changed.  Needs to be done
      *        before the axis limits are set.
      */
-    Blt_InitSetTable(graphPtr);
-    if ((graphPtr->mode == BARS_STACKED) && (graphPtr->numBarGroups > 0)) {
-        Blt_ComputeStacks(graphPtr);
-    }
+    Blt_InitBarGroups(graphPtr);
     /*
      * Step 1:  Reset all axes. Initialize the data limits of the axis to
      *          impossible values.
