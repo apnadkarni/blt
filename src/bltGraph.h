@@ -372,7 +372,9 @@ struct _Graph {
                                          * window or PostScript page. */
     Blt_HashTable penTable;             /* Table of pens */
     struct Component {
-        Blt_Chain displayList;          /* Display list. */
+        Blt_Chain displayList;          /* Determines the order the
+                                         * components are drawn:
+                                         * last-to-first. */
         Blt_HashTable nameTable;        /* Hash table of ids. */
         Blt_HashTable bindTagTable;     /* Table of bind tags. */
         struct _Blt_Tags tags;          /* Table of tags. */

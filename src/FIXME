@@ -16,6 +16,9 @@ The following bugs are all show-stoppers for the next release.
 
 9. Add paintbrush callbacks to graph and barchart.
 
+Backgrounds don't have opacity.  Paintbrushes do.
+Add origin interface to paintbrushes.
+
 10. Fix barchart to use paintbrush instead of background.
 
 11. Does it make sense to separate out picture text drawing into a module?

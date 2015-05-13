@@ -3101,3 +3101,4 @@ Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr)
     *xPtr = brushPtr->xOrigin;
     *yPtr = brushPtr->yOrigin;
 }
+

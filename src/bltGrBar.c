@@ -91,6 +91,8 @@ typedef struct {
                                          * bar */
     Blt_Bg fillBg;                      /* 3D border and fill (background)
                                          * color */
+    Blt_PaintBrush brush;               /* 3D border and fill (background)
+                                         * color */
     double opacity;                     /* Opacity of fill background. */
     int borderWidth;                    /* 3D border width of bar */
     int relief;                         /* Relief of the bar */
@@ -243,7 +245,7 @@ static Blt_CustomOption penColorsOption = {
 #define DEF_PEN_ACTIVE_FILL_COLOR       "red"
 #define DEF_PEN_ACTIVE_OUTLINE_COLOR    "pink"
 #define DEF_PEN_BORDERWIDTH             "2"
-#define DEF_PEN_OPACITY                 "100.0"
+#define DEF_PEN_BRUSH                   (char *)NULL
 #define DEF_PEN_NORMAL_COLOR            "blue"
 #define DEF_PEN_NORMAL_ERRORBAR_COLOR   "blue"
 #define DEF_PEN_NORMAL_FILL_COLOR       "blue"
@@ -275,8 +277,8 @@ static Blt_ConfigSpec penSpecs[] =
         (char *)NULL, 0, ALL_PENS},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_PEN_BORDERWIDTH, Blt_Offset(BarPen, borderWidth), ALL_PENS},
-    {BLT_CONFIG_DOUBLE, "-opacity", "opacity", "Opacity", DEF_PEN_OPACITY,
-        Blt_Offset(BarPen, opacity), BLT_CONFIG_DONT_SET_DEFAULT | ALL_PENS},
+    {BLT_CONFIG_PAINTBRUSH, "-brush", "brush", "Brush", DEF_PEN_BRUSH,
+        Blt_Offset(BarPen, brush), BLT_CONFIG_NULL_OK | ALL_PENS},
     {BLT_CONFIG_COLOR, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
         DEF_PEN_ACTIVE_ERRORBAR_COLOR, Blt_Offset(BarPen, errorBarColor), 
         ACTIVE_PEN},
@@ -349,9 +351,9 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
         Blt_Offset(BarElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(BarElement, builtinPen.borderWidth), 0},
-    {BLT_CONFIG_DOUBLE, "-opacity", "opacity", "Opacity", DEF_PEN_OPACITY,
-        Blt_Offset(BarElement, builtinPen.opacity),
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_PENS},
+    {BLT_CONFIG_PAINTBRUSH, "-brush", "brush", "Brush", DEF_PEN_BRUSH,
+        Blt_Offset(BarElement, builtinPen.brush),
+        BLT_CONFIG_NULL_OK | ALL_PENS},
     {BLT_CONFIG_COLOR, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
         DEF_PEN_NORMAL_ERRORBAR_COLOR, 
         Blt_Offset(BarElement, builtinPen.errorBarColor), 0},
@@ -703,11 +705,22 @@ ConfigurePen(Graph *graphPtr, BarPen *penPtr)
     gcMask = GCForeground | GCBackground;
     gcValues.foreground = BlackPixel(graphPtr->display, screenNum);
     gcValues.background = WhitePixel(graphPtr->display, screenNum);
-    if (penPtr->stipple != None) {
+    if (((penPtr->fillBg != NULL) || (penPtr->outline != NULL)) &&
+        (penPtr->stipple != None)) {
+
+	gcValues.fill_style = FillStippled;
+        if (penPtr->fillBg != NULL) {
+            gcValues.foreground = Blt_Bg_BorderColor(penPtr->fillBg)->pixel;
+            if (penPtr->outline != NULL) {
+                gcValues.fill_style = FillOpaqueStippled;
+            }
+        } 
+        if (penPtr->outline != NULL) {
+            gcValues.background = Tk_3DBorderColor(penPtr->outline)->pixel;
+        }
         /* Handle old-style -stipple specially. */
-        gcValues.background = Blt_Bg_BorderColor(penPtr->fillBg)->pixel;
         gcValues.stipple = penPtr->stipple;
-        gcValues.fill_style = FillStippled;
+        gcMask |= (GCStipple | GCFillStyle);
     }
     newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
     if (penPtr->fillGC != NULL) {
@@ -1599,7 +1612,6 @@ MapProc(Graph *graphPtr, Element *basePtr)
             if (hPtr != NULL) {
                 BarGroup *groupPtr;
                 double slice, width, offset;
-                int index;
                 
                 groupPtr = Blt_GetHashValue(hPtr);
                 slice = barWidth / (double)graphPtr->maxBarGroupSize;
@@ -1618,17 +1630,15 @@ MapProc(Graph *graphPtr, Element *basePtr)
                     break;
                         
                 case BARS_ALIGNED:
-                    /* Draw segments right-to-left */
-                    index = (graphPtr->maxBarGroupSize - 1) - groupPtr->count;
-                    c1.x = x[i] - barOffset + (index * slice);
+                    /* Order segments left-to-right, bottom-to-top */
+                    c1.x = x[i] - barOffset + (groupPtr->count * slice);
                     c2.x = c1.x + slice;
                     groupPtr->count++;
                     break;
                         
                 case BARS_OVERLAP:
-                    /* Draw segments right-to-left */
-                    index = (graphPtr->maxBarGroupSize - 1) - groupPtr->count;
-                    offset = (slice * index);
+                    /* Order segments left-to-right, bottom-to-top */
+                    offset = (slice * groupPtr->count);
                     width = slice + slice;
                     groupPtr->count++;
                     c1.x += offset;
@@ -1800,7 +1810,7 @@ DrawSymbolProc(Graph *graphPtr, Drawable drawable, Element *basePtr,
                            size, size);
         } else {
             Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, penPtr->fillBg, 
-                x, y, size, size, penPtr->borderWidth, penPtr->relief);
+                x, y, size, size, 0, TK_RELIEF_FLAT);
         }
         XSetTSOrigin(graphPtr->display, penPtr->fillGC, 0, 0);
     }
@@ -1874,6 +1884,34 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
 /*
  *---------------------------------------------------------------------------
  *
+ * DrawColorRectangle --
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DrawColorRectangle(Graph *graphPtr, Drawable drawable, Blt_Painter painter,
+                   Blt_PaintBrush brush, XRectangle *rectPtr)
+{
+    Blt_Picture bg;
+    
+    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, rectPtr->x, 
+        rectPtr->y, rectPtr->width, rectPtr->height, 1.0);
+    if (bg == NULL) {
+        return;                         /* Background is obscured. */
+    }
+    Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
+    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush);
+    Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
+                     rectPtr->height, rectPtr->x, rectPtr->y, 0);
+    Blt_FreePicture(bg);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * DrawSegments --
  *
  *      Draws each of the rectangular segments for the element.
@@ -1891,6 +1929,7 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
     XRectangle clip;
     int relief;
     int i;
+    Blt_Painter painter;
     
     clip.x = graphPtr->left;
     clip.y = graphPtr->top;
@@ -1905,6 +1944,8 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
         if (penPtr->stipple != None) {
             TkSetRegion(graphPtr->display, penPtr->fillGC, rgn);
         }
+        painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
+        Blt_SetPainterClipRegion(painter, rgn);
         Blt_Bg_SetClipRegion(graphPtr->tkwin, penPtr->fillBg, rgn);
     }
     if (penPtr->outline != NULL) {
@@ -1919,21 +1960,21 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
         } else if (penPtr->stipple != None) {
             XFillRectangle(graphPtr->display, drawable, penPtr->fillGC, 
                 r->x, r->y, r->width, r->height);
+        } else if (penPtr->brush != NULL) {
+            DrawColorRectangle(graphPtr, drawable, painter, penPtr->brush, r);
         } else if (penPtr->fillBg != NULL) {
-            Blt_PaintBrush brush;
-
-            brush = Blt_Bg_PaintBrush(penPtr->fillBg);
-            Blt_SetBrushOpacity(brush, penPtr->opacity);
             Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, penPtr->fillBg,
                 r->x, r->y, r->width, r->height, 0, TK_RELIEF_FLAT);
-            Blt_SetBrushOpacity(brush, 100.0);
         }
         if ((penPtr->outline != NULL) && (penPtr->borderWidth > 0)) {
             Tk_Draw3DRectangle(graphPtr->tkwin, drawable, penPtr->outline, 
                 r->x, r->y, r->width, r->height, penPtr->borderWidth, relief);
         }
     }
-    if (penPtr->fillBg != NULL) {
+    if (painter != NULL) {
+        Blt_UnsetPainterClipRegion(painter);
+    }
+    if (penPtr->fillBg) {
         Blt_Bg_UnsetClipRegion(graphPtr->tkwin, penPtr->fillBg);
     }
     if (penPtr->outline != NULL) {

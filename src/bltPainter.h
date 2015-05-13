@@ -62,11 +62,14 @@ BLT_EXTERN GC Blt_PainterGC(Blt_Painter painter);
 
 BLT_EXTERN int Blt_PainterDepth(Blt_Painter painter);
 
+BLT_EXTERN void Blt_SetPainterClipRegion(Blt_Painter painter, TkRegion rgn);
+BLT_EXTERN void Blt_UnsetPainterClipRegion(Blt_Painter painter);
+
 BLT_EXTERN int Blt_PaintPicture(Blt_Painter painter, Drawable drawable, 
         Blt_Picture src, int srcX, int srcY, int width, int height, 
         int destX, int destY, unsigned int flags);
 
-BLT_EXTERN int Blt_PaintPictureWithBlend(Blt_Painter painter, Drawable drawable, 
+BLT_EXTERN int Blt_PaintPictureWithBlend(Blt_Painter painter, Drawable drawable,
         Blt_Picture src, int srcX, int srcY, int width, int height, 
         int destX, int destY, unsigned int flags);
 
@@ -80,5 +83,6 @@ BLT_EXTERN Blt_Picture Blt_PaintRadioButtonOld(int width, int height,
 
 BLT_EXTERN Blt_Picture Blt_PaintDelete(int width, int height, XColor *bgColor,
         XColor *fillColor, XColor *symColor, int isActive);
+
 
 #endif /* _BLT_PAINTER_H */

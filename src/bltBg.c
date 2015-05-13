@@ -3115,28 +3115,20 @@ void
 Blt_Bg_SetClipRegion(Tk_Window tkwin, Bg *bgPtr, TkRegion rgn)
 {
     Blt_Painter painter;
-    Display *display;
-    GC gc;
 
     Blt_3DBorder_SetClipRegion(tkwin, bgPtr->corePtr->border, rgn);
-    display = Tk_Display(tkwin);
     painter = Blt_GetPainter(tkwin, 1.0);
-    gc = Blt_PainterGC(painter);
-    TkSetRegion(display, gc, rgn);
+    Blt_SetPainterClipRegion(painter, rgn);
 }
 
 void
 Blt_Bg_UnsetClipRegion(Tk_Window tkwin, Bg *bgPtr)
 {
     Blt_Painter painter;
-    Display *display;
-    GC gc;
 
     Blt_3DBorder_UnsetClipRegion(tkwin, bgPtr->corePtr->border);
-    display = Tk_Display(tkwin);
     painter = Blt_GetPainter(tkwin, 1.0);
-    gc = Blt_PainterGC(painter);
-    XSetClipMask(display, gc, None);
+    Blt_UnsetPainterClipRegion(painter);
 }
 
 unsigned int

@@ -1766,8 +1766,9 @@ Blt_MapElements(Graph *graphPtr)
     if (graphPtr->mode != BARS_INFRONT) {
         Blt_ResetBarGroups(graphPtr);
     }
-    for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList); 
-         link != NULL; link = Blt_Chain_NextLink(link)) {
+    /* Map elements in the order that they are drawn. */
+    for (link = Blt_Chain_LastLink(graphPtr->elements.displayList); 
+         link != NULL; link = Blt_Chain_PrevLink(link)) {
         Element *elemPtr;
 
         elemPtr = Blt_Chain_GetValue(link);
@@ -3078,13 +3079,10 @@ DisplayListObj(Graph *graphPtr)
  *
  * LowerOp --
  *
- *      Lowers the named elements to the bottom of the display list.
+ *      Lowers one or more elements by reordering them the bottom of the
+ *      display list.
  *
- * Results:
- *      A standard TCL result. The interpreter result will contain the new
- *      display list of element names.
- *
- *      .g element lower elem ?elem...?
+ *      pathName element lower ?elemName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3094,12 +3092,15 @@ LowerOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_Chain chain;
     Blt_ChainLink link, next;
     Blt_HashTable selected;
+
     int i;
 
     Blt_InitHashTable(&selected, BLT_ONE_WORD_KEYS);
     chain = Blt_Chain_Create();
-    /* Move the links of lowered elements out of the display list into a
-     * temporary list. */
+
+    /* Step 1:  Take the named elements out of the display list and put
+     *          them into temporary list. Use a hash table to collect only
+     *          the unique elements. */
     for (i = 3; i < objc; i++) {
         Element *elemPtr;
         ElementIterator iter;
@@ -3121,7 +3122,8 @@ LowerOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         }
     }
     Blt_DeleteHashTable(&selected);
-    /* Append the links to end of the display list. */
+    /* Step 2:  Append the list of the named elements to the end of the
+     *          display list, lowering them. */
     for (link = Blt_Chain_FirstLink(chain); link != NULL; link = next) {
         next = Blt_Chain_NextLink(link);
         Blt_Chain_UnlinkLink(chain, link); 
@@ -3198,13 +3200,10 @@ NamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RaiseOp --
  *
- *      Reset the element within the display list.
+ *      Raises one or more elements by reordering them within the display
+ *      list.
  *
- * Results:
- *      The return value is a standard TCL result. The interpreter result will
- *      contain the new display list of element names.
- *
- *      .g element raise ?elem...?
+ *      pathName element raise ?elemName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3218,8 +3217,10 @@ RaiseOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     Blt_InitHashTable(&selected, BLT_ONE_WORD_KEYS);
     chain = Blt_Chain_Create();
-    /* Move the links of lowered elements out of the display list into a
-     * temporary list. */
+
+    /* Step 1:  Take the named elements out of the display list and put
+     *          them into temporary list. Use a hash table to collect only
+     *          the unique elements. */
     for (i = 3; i < objc; i++) {
         Element *elemPtr;
         ElementIterator iter;
@@ -3241,7 +3242,8 @@ RaiseOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         }
     }
     Blt_DeleteHashTable(&selected);
-    /* Prepend the links to beginning of the display list in reverse order. */
+    /* Step 2:  Prepend each element of the list of the named elements to
+     *          the beginning of the display list, raising them. */
     for (link = Blt_Chain_LastLink(chain); link != NULL; link = prev) {
         prev = Blt_Chain_PrevLink(link);
         Blt_Chain_UnlinkLink(chain, link); 

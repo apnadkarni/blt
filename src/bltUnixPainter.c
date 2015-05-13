@@ -2048,4 +2048,15 @@ Blt_PainterDepth(Painter *p)
     return p->depth;
 }
 
+void
+Blt_SetPainterClipRegion(Painter *p, TkRegion rgn)
+{
+    TkSetRegion(p->display, p->gc, rgn);
+}
+
+void
+Blt_UnsetPainterClipRegion(Painter *p)
+{
+    XSetClipMask(p->display, p->gc, None);
+}
 

@@ -266,7 +266,7 @@ static Blt_CustomOption paletteOption =
 #define DEF_TIMESCALE           "0"
 #define DEF_TITLE_ALTERNATE     "0"
 #define DEF_TITLE_FG            RGB_BLACK
-#define DEF_TITLE_FONT          "{Sans Serif} 10"
+#define DEF_TITLE_FONT          STD_FONT_NORMAL
 #define DEF_WEIGHT              "1.0"
 
 static Blt_ConfigSpec configSpecs[] =
