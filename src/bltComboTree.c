@@ -111,8 +111,8 @@ typedef const char *UID;
         (((e)->labelUid != NULL) ? (e)->labelUid : Blt_Tree_NodeLabel((e)->node))
 
 /*
- * The macro below is used to modify a "char" value (e.g. by casting it to an
- * unsigned character) so that it can be used safely with macros such as
+ * The macro below is used to modify a "char" value (e.g. by casting it to
+ * an unsigned character) so that it can be used safely with macros such as
  * isspace.
  */
 #define UCHAR(c)        ((unsigned char) (c))
@@ -163,38 +163,40 @@ typedef const char *UID;
  *
  */
 
-#define REDRAW_PENDING          (1<<0)  /* Indicates that the widget will be
-                                         * redisplayed at the next idle
+#define REDRAW_PENDING          (1<<0)  /* Indicates that the widget will
+                                         * be redisplayed at the next idle
                                          * point. */
-#define LAYOUT_PENDING          (1<<1)  /* Indicates that the widget's layout
-                                         * is scheduled to be recomputed at
-                                         * the next redraw. */
-#define UPDATE_PENDING          (1<<2)  /* Indicates that a component (window
-                                         * or scrollbar) has changed and that
-                                         * and update is pending.  */
+#define LAYOUT_PENDING          (1<<1)  /* Indicates that the widget's
+                                         * layout is scheduled to be
+                                         * recomputed at the next
+                                         * redraw. */
+#define UPDATE_PENDING          (1<<2)  /* Indicates that a component
+                                         * (window or scrollbar) has
+                                         * changed and that and update is
+                                         * pending.  */
 #define FOCUS                   (1<<3)  /* Indicates that the combomenu
                                          * currently has focus. */
-#define DROPDOWN                (1<<4)  /* Indicates the combomenu is a drop
-                                         * down menu as opposed to a
+#define DROPDOWN                (1<<4)  /* Indicates the combomenu is a
+                                         * drop down menu as opposed to a
                                          * popup.  */
 #define SCROLLX                 (1<<5)
 #define SCROLLY                 (1<<6)
 #define SCROLL_PENDING          (SCROLLX|SCROLLY)
 
-#define INSTALL_XSCROLLBAR      (1<<8)  /* Indicates that the x scrollbar is
-                                         * scheduled to be installed at the
-                                         * next idle point. */
-#define INSTALL_YSCROLLBAR      (1<<9)  /* Indicates that the y scrollbar is
-                                         * scheduled to be installed at the
-                                         * next idle point. */
-#define RESTRICT_MIN            (1<<10) /* Indicates to constrain the width of
-                                         * the menu to the minimum size of the
-                                         * parent widget that posted the
-                                         * menu. */
-#define RESTRICT_MAX            (1<<11) /* Indicates to constrain the width of
-                                         * the menu of the maximum size of the
-                                         * parent widget that posted the
-                                         * menu. */
+#define INSTALL_XSCROLLBAR      (1<<8)  /* Indicates that the x scrollbar
+                                         * is scheduled to be installed at
+                                         * the next idle point. */
+#define INSTALL_YSCROLLBAR      (1<<9)  /* Indicates that the y scrollbar
+                                         * is scheduled to be installed at
+                                         * the next idle point. */
+#define RESTRICT_MIN            (1<<10) /* Indicates to constrain the width
+                                         * of the menu to the minimum size
+                                         * of the parent widget that posted
+                                         * the menu. */
+#define RESTRICT_MAX            (1<<11) /* Indicates to constrain the width
+                                         * of the menu of the maximum size
+                                         * of the parent widget that posted
+                                         * the menu. */
 #define DIRTY                   (1<<12)
 #define VIEWPORT                (1<<13)
 #define REPOPULATE              (1<<14)
@@ -277,30 +279,28 @@ typedef Entry *(IterProc)(Entry *entryPtr, unsigned int mask);
 /*
  * Icon --
  *
- *      Since instances of the same Tk image can be displayed in
- *      different windows with possibly different color palettes, Tk
- *      internally stores each instance in a linked list.  But if
- *      the instances are used in the same widget and therefore use
- *      the same color palette, this adds a lot of overhead,
- *      especially when deleting instances from the linked list.
+ *      Since instances of the same Tk image can be displayed in different
+ *      windows with possibly different color palettes, Tk internally
+ *      stores each instance in a linked list.  But if the instances are
+ *      used in the same widget and therefore use the same color palette,
+ *      this adds a lot of overhead, especially when deleting instances
+ *      from the linked list.
  *
- *      For the combotree widget, we never need more than a single
- *      instance of an image, regardless of how many times it's used.
- *      Cache the image, maintaining a reference count for each
- *      image used in the widget.  It's likely that the combotree
- *      widget will use many instances of the same image (for example
- *      the open/close icons).
+ *      For the combotree widget, we never need more than a single instance
+ *      of an image, regardless of how many times it's used.  Cache the
+ *      image, maintaining a reference count for each image used in the
+ *      widget.  It's likely that the combotree widget will use many
+ *      instances of the same image (for example the open/close icons).
  */
 
 typedef struct _Icon {
-    Tk_Image tkImage;           /* The Tk image being cached. */
-
-    int refCount;               /* Reference count for this image. */
-
-    short int width, height;    /* Dimensions of the cached image. */
-
-    Blt_HashEntry *hashPtr;     /* Hash table pointer to the image. */
-
+    Tk_Image tkImage;                   /* The Tk image being cached. */
+    int refCount;                       /* Reference count for this
+                                         * image. */
+    short int width, height;            /* Dimensions of the cached
+                                         * image. */
+    Blt_HashEntry *hashPtr;             /* Hash table entry, pointer to the
+                                         * image. */
 } *Icon;
 
 #define IconHeight(icon)        ((icon)->height)
@@ -312,53 +312,54 @@ struct _Style {
     const char *name;                   /* Instance name. */
     Blt_HashEntry *hPtr;
     ComboTree *comboPtr;
-    int refCount;                       /* Indicates if the style is currently
-                                         * in use in the combotree. */
+    int refCount;                       /* Indicates if the style is
+                                         * currently in use in the
+                                         * combotree. */
 
-    unsigned int flags;                 /* Bit field containing both the style
-                                         * type and various flags. */
+    unsigned int flags;                 /* Bit field containing both the
+                                         * style type and various flags. */
 
     /* General style fields. */
 
     int borderWidth;                    /* Width of 3D border. */
     int activeRelief;
     int relief;
-
     int gap;                            /* # pixels gap between icon and
                                          * text. */
     Blt_Font labelFont;
     XColor *labelNormalColor;           /* Normal foreground color of cell. */
     XColor *labelActiveColor;           /* Foreground color of cell when
                                          * active. */
-
-    Blt_Bg normalBg;            /* Normal background color. */
-    Blt_Bg altBg;               /* Alternate normal background
+    Blt_Bg normalBg;                    /* Normal background color. */
+    Blt_Bg altBg;                       /* Alternate normal background
                                          * color. */
-    Blt_Bg activeBg;            /* Active entry background color. */
-    Blt_Bg disabledBg;          /* Disabled entry background color. */
-
+    Blt_Bg activeBg;                    /* Active entry background
+                                         * color. */
+    Blt_Bg disabledBg;                  /* Disabled entry background
+                                         * color. */
     GC labelNormalGC;
     GC labelActiveGC;
     GC labelDisabledGC;
-
-    Icon *icons;                        /* Tk images displayed for the entry.
-                                         * The first image is the icon
-                                         * displayed to the left of the
-                                         * entry's label. The second is icon
-                                         * displayed when entry is "open". */
+    Icon *icons;                        /* Tk images displayed for the
+                                         * entry.  The first image is the
+                                         * icon displayed to the left of
+                                         * the entry's label. The second is
+                                         * icon displayed when entry is
+                                         * "open". */
 };
 
 /*
  * Entry --
  *
- *      Contains data-specific information how to represent the data
- *      of a node of the hierarchy.
+ *      Contains data-specific information how to represent the data of a
+ *      node of the hierarchy.
  *
  */
 struct _Entry {
     Blt_TreeNode node;                  /* Node containing entry */
-    int worldX, worldY;                 /* X-Y position in world coordinates
-                                         * where the entry is positioned. */
+    int worldX, worldY;                 /* X-Y position in world
+                                         * coordinates where the entry is
+                                         * positioned. */
     Blt_HashEntry *hPtr;
     short int width, height;            /* Dimensions of the entry. This
                                          * includes the size of its
@@ -371,31 +372,30 @@ struct _Entry {
     unsigned short int flags;           /* Flags for this entry. For the
                                          * definitions of the various bit
                                          * fields see below. */
-
     Tcl_Obj *tagsObjPtr;                /* List of binding tags for this
                                          * entry. */
     ComboTree *comboPtr;
     Tcl_Obj *cmdObjPtr;                 /* List of binding tags for this
                                          * entry. */
-    Tcl_Obj *openCmdObjPtr;             /* TCL command to invoke when entries
-                                         * are opened. This overrides
-                                         * the global option. */
-    Tcl_Obj *closeCmdObjPtr;            /* TCL command to invoke when entries
-                                         * are closed. This overrides
-                                         * the global option. */
+    Tcl_Obj *openCmdObjPtr;             /* TCL command to invoke when
+                                         * entries are opened. This
+                                         * overrides the global option. */
+    Tcl_Obj *closeCmdObjPtr;            /* TCL command to invoke when
+                                         * entries are closed. This
+                                         * overrides the global option. */
     /*
      * Button information:
      */
     short int buttonX, buttonY;         /* X-Y coordinate offsets from to
-                                         * upper left corner of the entry to
-                                         * the upper-left corner of the
+                                         * upper left corner of the entry
+                                         * to the upper-left corner of the
                                          * button.  Used to pick the button
                                          * quickly */
 
     short int iconWidth, iconHeight;    /* Maximum dimensions for icons and
                                          * buttons for this entry. This is
-                                         * used to align the button, icon, and
-                                         * text. */
+                                         * used to align the button, icon,
+                                         * and text. */
     /*
      * Label information:
      */
@@ -403,8 +403,8 @@ struct _Entry {
     short int labelWidth, labelHeight;
     UID labelUid;                       /* Text displayed right of the
                                          * icon. */
-    int seqNum;                         /* Used to navigate to next/last entry
-                                         * when the view is flat. */
+    int seqNum;                         /* Used to navigate to next/last
+                                         * entry when the view is flat. */
     Style *stylePtr;                    /* Default style for entry. */
 
 };
@@ -412,16 +412,16 @@ struct _Entry {
 /*
  * Button --
  *
- *      A button is the open/close indicator at the far left of the entry.  It
- *      is displayed as a plus or minus in a solid colored box with optionally
- *      an border. It has both "active" and "normal" colors.
+ *      A button is the open/close indicator at the far left of the entry.
+ *      It is displayed as a plus or minus in a solid colored box with
+ *      optionally an border. It has both "active" and "normal" colors.
  */
 typedef struct {
-    XColor *fgColor;            /* Foreground color. */
-    XColor *activeFgColor;      /* Active foreground color. */
+    XColor *fgColor;                    /* Foreground color. */
+    XColor *activeFgColor;              /* Active foreground color. */
 
-    Blt_Bg normalBg;    /* Normal button background. */
-    Blt_Bg activeBg;    /* Active background color. */
+    Blt_Bg normalBg;                    /* Normal button background. */
+    Blt_Bg activeBg;                    /* Active background color. */
 
     GC normalGC;
     GC activeGC;
@@ -463,16 +463,17 @@ typedef struct {
 /*
  * ComboTree --
  *
- *      A ComboTree is a widget that displays an hierarchical table of one or
- *      more entries.
+ *      A ComboTree is a widget that displays an hierarchical table of one
+ *      or more entries.
  *
  *      Entries are positioned in "world" coordinates, referring to the
- *      virtual combotree.  Coordinate 0,0 is the upper-left corner of the root
- *      entry and the bottom is the end of the last entry.  The widget's Tk
- *      window acts as view port into this virtual space. The combotree's
- *      xOffset and yOffset fields specify the location of the view port in
- *      the virtual world.  Scrolling the viewport is therefore simply
- *      changing the xOffset and/or yOffset fields and redrawing.
+ *      virtual combotree.  Coordinate 0,0 is the upper-left corner of the
+ *      root entry and the bottom is the end of the last entry.  The
+ *      widget's Tk window acts as view port into this virtual space. The
+ *      combotree's xOffset and yOffset fields specify the location of the
+ *      view port in the virtual world.  Scrolling the viewport is
+ *      therefore simply changing the xOffset and/or yOffset fields and
+ *      redrawing.
  *
  *      Note that world coordinates are integers, not signed short integers
  *      like X11 screen coordinates.  It's very easy to create a hierarchy
@@ -481,41 +482,45 @@ typedef struct {
 struct _ComboTree {
 
     /*
-     * This works around a bug in the Tk API.  Under under Win32, Tk tries to
-     * read the widget record of toplevel windows (TopLevel or Frame widget),
-     * to get its menu name field.  What this means is that we must carefully
-     * arrange the fields of this widget so that the menuName field is at the
-     * same offset in the structure.
+     * This works around a bug in the Tk API.  Under under Win32, Tk tries
+     * to read the widget record of toplevel windows (TopLevel or Frame
+     * widget), to get its menu name field.  What this means is that we
+     * must carefully arrange the fields of this widget so that the
+     * menuName field is at the same offset in the structure.
      */
     Tk_Window tkwin;                    /* Window that embodies the frame.
-                                         * NULL means that the window has been
-                                         * destroyed but the data structures
-                                         * haven't yet been cleaned up. */
-    Display *display;                   /* Display containing widget.  Used,
-                                         * among other things, so that
-                                         * resources can be freed even after
-                                         * tkwin has gone away. */
-    Tcl_Interp *interp;                 /* Interpreter associated with widget.
-                                         * Used to delete widget command. */
+                                         * NULL means that the window has
+                                         * been destroyed but the data
+                                         * structures haven't yet been
+                                         * cleaned up. */
+    Display *display;                   /* Display containing widget.
+                                         * Used, among other things, so
+                                         * that resources can be freed even
+                                         * after tkwin has gone away. */
+    Tcl_Interp *interp;                 /* Interpreter associated with
+                                         * widget.  Used to delete widget
+                                         * command. */
     Tcl_Command cmdToken;               /* Token for widget's command. */
-    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be executed
-                                         * when this menu is posted. */
+    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
+                                         * executed when this menu is
+                                         * posted. */
     unsigned int flags;                 /* For bitfield definitions, see
                                          * below */
-    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If non-NULL,
-                                         * this variable will be set to the
-                                         * name of the Tk image representing
-                                         * the icon of the selected item.  */
-    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If non-NULL,
-                                         * this variable will be set to the
-                                         * text string of the label of the
-                                         * selected item. */
+    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable will be
+                                         * set to the name of the Tk image
+                                         * representing the icon of the
+                                         * selected item.  */
+    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable will be
+                                         * set to the text string of the
+                                         * label of the selected item. */
     Tcl_Obj *takeFocusObjPtr;           /* Value of -takefocus option; not
                                          * used in the C code, but used by
                                          * keyboard traversal scripts. */
-    const char *menuName;               /* Textual description of menu to use
-                                         * for menubar. Malloc-ed, may be
-                                         * NULL. */
+    const char *menuName;               /* Textual description of menu to
+                                         * use for menubar. Malloc-ed, may
+                                         * be NULL. */
     Tk_Cursor cursor;                   /* Current cursor for window or
                                          * None. */
     /*------*/
@@ -523,14 +528,14 @@ struct _ComboTree {
     const char *treeName;
     Blt_HashEntry *hPtr;
     /* ComboTree_ specific fields. */ 
-    Blt_HashTable entryTable;           /* Table of entry information, keyed
-                                         * by the node pointer. */
+    Blt_HashTable entryTable;           /* Table of entry information,
+                                         * keyed by the node pointer. */
     int inset;                          /* Total width of all borders,
-                                         * including traversal highlight and
-                                         * 3-D border.  Indicates how much
-                                         * interior stuff must be offset from
-                                         * outside edges to leave room for
-                                         * borders. */
+                                         * including traversal highlight
+                                         * and 3-D border.  Indicates how
+                                         * much interior stuff must be
+                                         * offset from outside edges to
+                                         * leave room for borders. */
     Style defStyle;
     int normalWidth, normalHeight;
     
@@ -550,16 +555,16 @@ struct _ComboTree {
      * Button Information:
      *
      * The button is the open/close indicator at the far left of the entry.
-     * It is usually displayed as a plus or minus in a solid colored box with
-     * optionally an border. It has both "active" and "normal" colors.
+     * It is usually displayed as a plus or minus in a solid colored box
+     * with optionally an border. It has both "active" and "normal" colors.
      */
     Button button;
     int leader;                         /* Number of pixels padding between
                                          * entries. */
     int reqWidth, reqHeight;            /* Requested dimensions of the
                                          * combotree widget's window. */
-    GC lineGC;                          /* GC for drawing dotted line between
-                                         * entries. */
+    GC lineGC;                          /* GC for drawing dotted line
+                                         * between entries. */
     Entry *activePtr;                   /* Last active entry. */ 
     Entry *activeBtnPtr;                /* Pointer to last active button */
     Entry *fromPtr;
@@ -578,49 +583,46 @@ struct _ComboTree {
      */
     int worldWidth, worldHeight;
 
-    int xOffset, yOffset;       /* Translation between view port and world
-                                 * origin. */
-
+    int xOffset, yOffset;               /* Translation between view port
+                                         * and world origin. */
     LevelInfo *levelInfo;
 
     /* Scanning information: */
     int scanAnchorX, scanAnchorY;       /* Scan anchor in screen
                                          * coordinates. */
-    int scanX, scanY;                   /* X-Y world coordinate where the scan
-                                         * started. */
+    int scanX, scanY;                   /* X-Y world coordinate where the
+                                         * scan started. */
     Blt_HashTable iconTable;            /* Table of Tk images */
     Blt_HashTable uidTable;             /* Table of strings. */
     Blt_HashTable styleTable;           /* Table of cell styles. */
     Entry *rootPtr;                     /* Root entry of tree. */
     Entry **visibleEntries;             /* Array of visible entries */
-    int numVisible;                     /* Number of entries in the above
+    int numVisible;                     /* # of entries in the above
                                          * array */
-    int numEntries;                     /* Number of entries in tree. */
+    int numEntries;                     /* # of entries in tree. */
     int buttonFlags;                    /* Global button indicator for all
-                                         * entries. This may be overridden by
-                                         * the entry's -button option. */
+                                         * entries. This may be overridden
+                                         * by the entry's -button
+                                         * option. */
     Tcl_Obj *openCmdObjPtr;
-    Tcl_Obj *closeCmdObjPtr;            /* TCL commands to invoke when entries
-                                         * are opened or closed. */
+    Tcl_Obj *closeCmdObjPtr;            /* TCL commands to invoke when
+                                         * entries are opened or closed. */
     const char *pathSep;                /* Pathname separators */
     ClientData clientData;
     Blt_BindTable bindTable;            /* Binding information for entries. */
     Blt_HashTable entryBindTagTable;
     Blt_HashTable buttonBindTagTable;
-
     size_t depth;
-    int flatView;                       /* Indicates if the view of the tree
-                                         * has been flattened. */
+    int flatView;                       /* Indicates if the view of the
+                                         * tree has been flattened. */
     Blt_Pool entryPool;
-    Tk_Window xScrollbar;               /* Horizontal scrollbar to be used if
-                                         * necessary. If NULL, no x-scrollbar
-                                         * is used. */
+    Tk_Window xScrollbar;               /* Horizontal scrollbar to be used
+                                         * if necessary. If NULL, no
+                                         * x-scrollbar is used. */
     Tk_Window yScrollbar;               /* Vertical scrollbar to be used if
-                                         * necessary. If NULL, no y-scrollbar
-                                         * is * used. */
-
+                                         * necessary. If NULL, no
+                                         * y-scrollbar is * used. */
     short int yScrollbarWidth, xScrollbarHeight;
-
     short int maxWidth;                 /* Width of the widest entry. */
     short int minHeight;                /* Minimum entry height. Used to to
                                          * compute what the y-scroll unit
@@ -633,8 +635,8 @@ struct _ComboTree {
 /*
  * EntryIterator --
  *
- *      Entries may be tagged with strings.  An entry may have many tags.  The
- *      same tag may be used for many entries.
+ *      Entries may be tagged with strings.  An entry may have many tags.
+ *      The same tag may be used for many entries.
  *      
  */
 
@@ -643,27 +645,25 @@ typedef enum {
 } IteratorType;
 
 typedef struct _Iterator {
-    ComboTree *comboPtr;        /* ComboTree that we're iterating over. */
-
-    IteratorType type;          /* Type of iteration:
-                                 * ITER_TAG             By entry tag.
-                                 * ITER_ALL             By every entry.
-                                 * ITER_INDEX           Single entry: either 
-                                 *                      tag or index.
-                                 */
-
-    Entry *first;               /* Starting point of search, saved if iterator
-                                 * is reused.  Used for ITER_ALL and
-                                 * ITER_INDEX searches. */
-    Entry *next;                /* Next entry. */
-
-                                /* For tag-based searches. */
-    const char *tagName;        /* If non-NULL, is the tag that we are
-                                 * currently iterating over. */
-
-    Blt_HashTable *tablePtr;    /* Pointer to tag hash table. */
-    Blt_HashSearch cursor;      /* Search iterator for tag hash table. */
-
+    ComboTree *comboPtr;                /* ComboTree that we're iterating
+                                         * over. */
+    IteratorType type;                  /* Type of iteration:
+                                         * ITER_TAG    By entry tag.
+                                         * ITER_ALL    By every entry.
+                                         * ITER_INDEX  Single entry: either 
+                                         *             tag or index.
+                                         */
+    Entry *first;                       /* Starting point of search, saved
+                                         * if iterator is reused.  Used for
+                                         * ITER_ALL and ITER_INDEX
+                                         * searches. */
+    Entry *next;                        /* Next entry. */
+                                        /* For tag-based searches. */
+    const char *tagName;                /* If non-NULL, is the tag that we
+                                         * are currently iterating over. */
+    Blt_HashTable *tablePtr;            /* Pointer to tag hash table. */
+    Blt_HashSearch cursor;              /* Search iterator for tag hash
+                                         * table. */
 } EntryIterator;
 
 
@@ -1053,15 +1053,15 @@ static Tk_ImageChangedProc IconChangedProc;
 static Tk_GeomRequestProc ScrollbarGeometryProc;
 static Tk_GeomLostSlaveProc ScrollbarCustodyProc;
 static Tk_GeomMgr comboMgrInfo = {
-    (char *)"combomenu",        /* Name of geometry manager used by winfo */
-    ScrollbarGeometryProc,      /* Procedure to for new geometry requests */
-    ScrollbarCustodyProc,       /* Procedure when scrollbar is taken away */
+    (char *)"combomenu",                /* Name of geometry manager used by
+                                         * winfo */
+    ScrollbarGeometryProc,              /* Procedure for new geometry
+                                         * requests */
+    ScrollbarCustodyProc,               /* Procedure called when scrollbar
+                                         * is taken away */
 };
 
 static int ComputeVisibleEntries(ComboTree *comboPtr);
-
-typedef int (ComboTreeCmdProc)(ComboTree *comboPtr, Tcl_Interp *interp, 
-        int objc, Tcl_Obj *const *objv);
 
 static inline int
 GetWidth(ComboTree *comboPtr)
@@ -1156,9 +1156,9 @@ EventuallyRedraw(ComboTree *comboPtr)
  *
  * EventuallyRedrawEntry --
  *
- *      Tells the Tk dispatcher to call the combomenu display routine at the
- *      next idle point.  This request is made only if the window is displayed
- *      and no other redraw request is pending.
+ *      Tells the Tk dispatcher to call the combomenu display routine at
+ *      the next idle point.  This request is made only if the window is
+ *      displayed and no other redraw request is pending.
  *
  * Results: None.
  *
@@ -1236,9 +1236,11 @@ ManageScrollbar(ComboTree *comboPtr, Tk_Window tkwin)
 /*ARGSUSED*/
 static void
 InstallScrollbar(
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
     ComboTree *comboPtr,
-    Tcl_Obj *objPtr,            /* String representing scrollbar window. */
+    Tcl_Obj *objPtr,                    /* String representing scrollbar
+                                         * window. */
     Tk_Window *tkwinPtr)
 {
     Tk_Window tkwin;
@@ -1411,12 +1413,11 @@ PrevSibling(Entry *entryPtr, unsigned int mask)
  *
  * PrevEntry --
  *
- *      Returns the "previous" node in the tree.  This node (in 
- *      depth-first order) is its parent if the node has no siblings
- *      that are previous to it.  Otherwise it is the last descendant 
- *      of the last sibling.  In this case, descend the sibling's
- *      hierarchy, using the last child at any ancestor, until we
- *      we find a leaf.
+ *      Returns the "previous" node in the tree.  This node (in depth-first
+ *      order) is its parent if the node has no siblings that are previous
+ *      to it.  Otherwise it is the last descendant of the last sibling.
+ *      In this case, descend the sibling's hierarchy, using the last child
+ *      at any ancestor, until we we find a leaf.
  *
  *---------------------------------------------------------------------------
  */
@@ -1427,22 +1428,23 @@ PrevEntry(Entry *entryPtr, unsigned int mask)
     Entry *prevPtr;
 
     if (entryPtr->node == Blt_Tree_RootNode(comboPtr->tree)) {
-        return NULL;            /* The root is the first node. */
+        return NULL;                    /* The root is the first node. */
     }
     prevPtr = PrevSibling(entryPtr, mask);
     if (prevPtr == NULL) {
-        /* There are no siblings previous to this one, so pick the parent. */
+        /* There are no siblings previous to this one, so pick the
+         * parent. */
         prevPtr = ParentEntry(entryPtr);
     } else {
         /*
-         * Traverse down the right-most thread in order to select the
-         * last entry.  Stop if we find a "closed" entry or reach a leaf.
+         * Traverse down the right-most thread in order to select the last
+         * entry.  Stop if we find a "closed" entry or reach a leaf.
          */
         entryPtr = prevPtr;
         while ((entryPtr->flags & mask) == 0) {
             entryPtr = LastChild(entryPtr, mask);
             if (entryPtr == NULL) {
-                break;          /* Found a leaf. */
+                break;                  /* Found a leaf. */
             }
             prevPtr = entryPtr;
         }
@@ -1459,14 +1461,13 @@ PrevEntry(Entry *entryPtr, unsigned int mask)
  *
  * NextEntry --
  *
- *      Returns the "next" node in relation to the given node.  
- *      The next node (in depth-first order) is either the first 
- *      child of the given node the next sibling if the node has
- *      no children (the node is a leaf).  If the given node is the 
- *      last sibling, then try it's parent next sibling.  Continue
- *      until we either find a next sibling for some ancestor or 
- *      we reach the root node.  In this case the current node is 
- *      the last node in the tree.
+ *      Returns the "next" node in relation to the given node.  The next
+ *      node (in depth-first order) is either the first child of the given
+ *      node the next sibling if the node has no children (the node is a
+ *      leaf).  If the given node is the last sibling, then try it's parent
+ *      next sibling.  Continue until we either find a next sibling for
+ *      some ancestor or we reach the root node.  In this case the current
+ *      node is the last node in the tree.
  *
  *---------------------------------------------------------------------------
  */
@@ -1483,13 +1484,13 @@ NextEntry(Entry *entryPtr, unsigned int mask)
     if ((!ignoreLeaf) && ((entryPtr->flags & mask) == 0)) {
         nextPtr = FirstChild(entryPtr, mask); 
         if (nextPtr != NULL) {
-            return nextPtr;     /* Pick the first sub-node. */
+            return nextPtr;             /* Pick the first sub-node. */
         }
     }
 
     /* 
-     * Back up until to a level where we can pick a "next sibling".  
-     * For the last entry we'll thread our way back to the root.
+     * Back up until to a level where we can pick a "next sibling".  For
+     * the last entry we'll thread our way back to the root.
      */
 
     while (entryPtr != comboPtr->rootPtr) {
@@ -1499,7 +1500,7 @@ NextEntry(Entry *entryPtr, unsigned int mask)
         }
         entryPtr = ParentEntry(entryPtr);
     }
-    return NULL;                /* At root, no next node. */
+    return NULL;                        /* At root, no next node. */
 }
 
 static Entry *
@@ -1525,12 +1526,12 @@ LastEntry(ComboTree *comboPtr, Entry *entryPtr, unsigned int mask)
  *
  * NearestEntry --
  *
- *      Finds the entry closest to the given screen X-Y coordinates
- *      in the viewport.
+ *      Finds the entry closest to the given screen X-Y coordinates in the
+ *      viewport.
  *
  * Results:
- *      Returns the pointer to the closest node.  If no node is
- *      visible (nodes may be hidden), NULL is returned.
+ *      Returns the pointer to the closest node.  If no node is visible
+ *      (nodes may be hidden), NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1542,8 +1543,8 @@ NearestEntry(ComboTree *comboPtr, int x, int y, int selectOne)
     Entry **p;
 
     /*
-     * We implicitly can pick only visible entries.  So make sure that
-     * the tree exists.
+     * We implicitly can pick only visible entries.  So make sure that the
+     * tree exists.
      */
     if (comboPtr->numVisible == 0) {
         return NULL;
@@ -1553,8 +1554,8 @@ NearestEntry(ComboTree *comboPtr, int x, int y, int selectOne)
     }
     /*
      * Since the entry positions were previously computed in world
-     * coordinates, convert Y-coordinate from screen to world
-     * coordinates too.
+     * coordinates, convert Y-coordinate from screen to world coordinates
+     * too.
      */
     y = WORLDY(comboPtr, y);
     lastPtr = comboPtr->visibleEntries[0];
@@ -1563,14 +1564,14 @@ NearestEntry(ComboTree *comboPtr, int x, int y, int selectOne)
 
         entryPtr = *p;
         /*
-         * If the start of the next entry starts beyond the point,
-         * use the last entry.
+         * If the start of the next entry starts beyond the point, use the
+         * last entry.
          */
         if (entryPtr->worldY > y) {
             return (selectOne) ? entryPtr : NULL;
         }
         if (y < (entryPtr->worldY + entryPtr->height)) {
-            return entryPtr;    /* Found it. */
+            return entryPtr;            /* Found it. */
         }
         lastPtr = entryPtr;
     }
@@ -1632,8 +1633,8 @@ DestroyEntry(Entry *entryPtr)
     labelOption.clientData = comboPtr;
     Blt_FreeOptions(entrySpecs, (char *)entryPtr, comboPtr->display, 0);
     if (!Blt_Tree_TagTableIsShared(comboPtr->tree)) {
-        /* Don't clear tags unless this client is the only one using
-         * the tag table.*/
+        /* Don't clear tags unless this client is the only one using the
+         * tag table.*/
         Blt_Tree_ClearTags(comboPtr->tree, entryPtr->node);
     }
     if (entryPtr->textPtr != NULL) {
@@ -1661,12 +1662,10 @@ DestroyEntries(ComboTree *comboPtr)
 }
 
 static const char *
-GetFullName(
-    ComboTree *comboPtr,
-    Entry *entryPtr,
-    Tcl_DString *resultPtr)
+GetFullName(ComboTree *comboPtr, Entry *entryPtr, Tcl_DString *resultPtr)
 {
-    const char **names;         /* Used the stack the component names. */
+    const char **names;                 /* Used the stack the component
+                                         * names. */
     const char *staticSpace[64+2];
     int level;
     int i;
@@ -1725,10 +1724,8 @@ PercentSubst(ComboTree *comboPtr, Entry *entryPtr, const char *command,
     const char *fullName;
     Tcl_DString ds;
 
-    /*
-     * Get the full path name of the node, in case we need to substitute for
-     * it.
-     */
+    /* Get the full path name of the node, in case we need to substitute
+     * for it. */
     Tcl_DStringInit(&ds);
     fullName = GetFullName(comboPtr, entryPtr, &ds);
     Tcl_DStringInit(resultPtr);
@@ -1742,19 +1739,19 @@ PercentSubst(ComboTree *comboPtr, Entry *entryPtr, const char *command,
                 Tcl_DStringAppend(resultPtr, last, p - last);
             }
             switch (*(p + 1)) {
-            case '%':           /* Percent sign */
+            case '%':                   /* Percent sign */
                 string = "%";
                 break;
-            case 'W':           /* Widget name */
+            case 'W':                   /* Widget name */
                 string = Tk_PathName(comboPtr->tkwin);
                 break;
-            case 'P':           /* Full pathname */
+            case 'P':                   /* Full pathname */
                 string = fullName;
                 break;
-            case 'p':           /* Name of the node */
+            case 'p':                   /* Name of the node */
                 string = GETLABEL(entryPtr);
                 break;
-            case '#':           /* Node identifier */
+            case '#':                   /* Node identifier */
                 string = Blt_Tree_NodeIdAscii(entryPtr->node);
                 break;
             default:
@@ -1782,13 +1779,13 @@ CloseEntry(ComboTree *comboPtr, Entry *entryPtr)
     Tcl_Obj *cmdObjPtr;
 
     if (entryPtr->flags & ENTRY_CLOSED) {
-        return TCL_OK;          /* Entry is already closed. */
+        return TCL_OK;                  /* Entry is already closed. */
     }
     entryPtr->flags |= ENTRY_CLOSED;
 
     /*
-     * Invoke the entry's "close" command, if there is one. Otherwise
-     * try the treeview's global "close" command.
+     * Invoke the entry's "close" command, if there is one. Otherwise try
+     * the global "close" command.
      */
     cmdObjPtr = CHOOSE(comboPtr->closeCmdObjPtr, entryPtr->closeCmdObjPtr);
     if (cmdObjPtr != NULL) {
@@ -1815,12 +1812,12 @@ OpenEntry(ComboTree *comboPtr, Entry *entryPtr)
     Tcl_Obj *cmdObjPtr;
 
     if ((entryPtr->flags & ENTRY_CLOSED) == 0) {
-        return TCL_OK;          /* Entry is already open. */
+        return TCL_OK;                  /* Entry is already open. */
     }
     entryPtr->flags &= ~ENTRY_CLOSED;
     /*
      * If there's a "open" command proc specified for the entry, use that
-     * instead of the more general "open" proc for the entire treeview.
+     * instead of the more general "open" proc for the entire widget.
      */
     cmdObjPtr = CHOOSE(comboPtr->openCmdObjPtr, entryPtr->openCmdObjPtr);
     if (cmdObjPtr != NULL) {
@@ -1845,9 +1842,9 @@ OpenEntry(ComboTree *comboPtr, Entry *entryPtr)
  *
  * ActivateEntry --
  *
- *      Marks the designated entry as active.  The entry is redrawn with its
- *      active colors.  The previously active entry is deactivated.  If the
- *      new entry is NULL, then this means that no new entry is to be
+ *      Marks the designated entry as active.  The entry is redrawn with
+ *      its active colors.  The previously active entry is deactivated.  If
+ *      the new entry is NULL, then this means that no new entry is to be
  *      activated.
  *
  * Results:
@@ -1862,7 +1859,7 @@ static void
 ActivateEntry(ComboTree *comboPtr, Entry *entryPtr) 
 {
     if ((comboPtr->activePtr == entryPtr) && (entryPtr != NULL)) {
-        return;         /* Entry is already active. */
+        return;                         /* Entry is already active. */
     }
     if (comboPtr->activePtr != NULL) {
         EventuallyRedrawEntry(comboPtr->activePtr);
@@ -1926,9 +1923,8 @@ NewEntry(ComboTree *comboPtr, Blt_TreeNode node)
  *
  * CreateEntry --
  *
- *      This procedure is called by the Tree object when a node is created and
- *      inserted into the tree.  It adds a new treeview entry field to the
- *      node.
+ *      This procedure is called by the Tree object when a node is created
+ *      and inserted into the tree.  It adds a new entry field to the node.
  *
  * Results:
  *      Returns the entry.
@@ -1938,7 +1934,8 @@ NewEntry(ComboTree *comboPtr, Blt_TreeNode node)
 static int
 CreateEntry(
     ComboTree *comboPtr,
-    Blt_TreeNode node,          /* Node that has just been created. */
+    Blt_TreeNode node,                  /* Node that has just been
+                                         * created. */
     int objc,
     Tcl_Obj *const *objv,
     int flags)
@@ -1972,8 +1969,8 @@ CreateEntry(
  *      Returns the hash table containing row indices for a tag.
  *
  * Results:
- *      Returns a pointer to the hash table containing indices for the given
- *      tag.  If the row has no tags, then NULL is returned.
+ *      Returns a pointer to the hash table containing indices for the
+ *      given tag.  If the row has no tags, then NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1984,7 +1981,7 @@ GetTagTable(ComboTree *comboPtr, const char *tagName)
 
     hPtr = Blt_FindHashEntry(&comboPtr->entryBindTagTable, tagName);
     if (hPtr == NULL) {
-        return NULL;            /* No tag by that name. */
+        return NULL;                    /* No tag by that name. */
     }
     return Blt_GetHashValue(hPtr);
 }
@@ -1994,8 +1991,8 @@ GetTagTable(ComboTree *comboPtr, const char *tagName)
  *
  * GetEntryIterator --
  *
- *      Converts a string into node pointer.  The string may be in one of the
- *      following forms:
+ *      Converts a string into node pointer.  The string may be in one of
+ *      the following forms:
  *
  *          NNN                 - inode.
  *          "active"            - Currently active node.
@@ -2021,17 +2018,15 @@ GetTagTable(ComboTree *comboPtr, const char *tagName)
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.  The
- *      pointer to the node is returned via nodePtr.  Otherwise, TCL_ERROR is
- *      returned and an error message is left in interpreter's result field.
+ *      pointer to the node is returned via nodePtr.  Otherwise, TCL_ERROR
+ *      is returned and an error message is left in interpreter's result
+ *      field.
  *
  *---------------------------------------------------------------------------
  */
 static int
-GetEntryIterator(
-    Tcl_Interp *interp, 
-    ComboTree *comboPtr, 
-    Tcl_Obj *objPtr, 
-    EntryIterator *iterPtr)
+GetEntryIterator(Tcl_Interp *interp, ComboTree *comboPtr, Tcl_Obj *objPtr, 
+                 EntryIterator *iterPtr)
 {
     Entry *entryPtr, *fromPtr;
     char c;
@@ -2219,8 +2214,8 @@ NextTaggedEntry(EntryIterator *iterPtr)
  *      Returns the first entry derived from the given tag.
  *
  * Results:
- *      Returns the row location of the first entry.  If no more rows can be
- *      found, then -1 is returned.
+ *      Returns the row location of the first entry.  If no more rows can
+ *      be found, then -1 is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -2251,18 +2246,16 @@ FirstTaggedEntry(EntryIterator *iterPtr)
  * GetEntryFromObj --
  *
  *      Gets the entry associated the given index, tag, or label.  This
- *      routine is used when you want only one entry.  It's an error if more
- *      than one entry is specified (e.g. "all" tag or range "1:4").  It's
- *      also an error if the tag is empty (no entries are currently tagged).
+ *      routine is used when you want only one entry.  It's an error if
+ *      more than one entry is specified (e.g. "all" tag or range "1:4").
+ *      It's also an error if the tag is empty (no entries are currently
+ *      tagged).
  *
  *---------------------------------------------------------------------------
  */
 static int 
-GetEntryFromObj(
-    Tcl_Interp *interp, 
-    ComboTree *comboPtr,
-    Tcl_Obj *objPtr,
-    Entry **entryPtrPtr)
+GetEntryFromObj(Tcl_Interp *interp, ComboTree *comboPtr, Tcl_Obj *objPtr,
+                Entry **entryPtrPtr)
 {
     EntryIterator iter;
     Entry *firstPtr;
@@ -2293,13 +2286,14 @@ GetEntryFromObj(
  * GetEntry --
  *
  *      Returns an entry based upon its index.  This differs from
- *      GetEntryFromObj in that an non-existant entry (NULL) is treated
- *      an error.
+ *      GetEntryFromObj in that an non-existant entry (NULL) is treated an
+ *      error.
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.  The
- *      pointer to the node is returned via nodePtr.  Otherwise, TCL_ERROR is
- *      returned and an error message is left in interpreter's result field.
+ *      pointer to the node is returned via nodePtr.  Otherwise, TCL_ERROR
+ *      is returned and an error message is left in interpreter's result
+ *      field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2330,7 +2324,7 @@ GetEntry(ComboTree *comboPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
  *
  *      Gets or creates a unique string identifier.  Strings are reference
  *      counted.  The string is placed into a hashed table local to the
- *      treeview.
+ *      widget.
  *
  * Results:
  *      Returns the pointer to the hashed string.
@@ -2361,8 +2355,8 @@ GetUid(ComboTree *comboPtr, const char *string)
  * FreeUid --
  *
  *      Releases the uid.  Uids are reference counted, so only when the
- *      reference count is zero (i.e. no one else is using the string) is the
- *      entry removed from the hash table.
+ *      reference count is zero (i.e. no one else is using the string) is
+ *      the entry removed from the hash table.
  *
  * Results:
  *      None.
@@ -2523,7 +2517,7 @@ DestroyStyles(ComboTree *comboPtr)
  *
  * GetStyleFromObj --
  *
- *      Gets the style associated with the given name.  
+ *      Gets the style associated with the given name.
  *
  *---------------------------------------------------------------------------
  */
@@ -2555,13 +2549,13 @@ GetStyleFromObj(
  *
  * GetCoordsFromObj --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into x and y coordinates.  Indicates that the menu
+ *      is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2596,13 +2590,13 @@ GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
  *
  * GetBoxFromObj --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into x and y coordinates.  Indicates that the menu
+ *      is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2635,13 +2629,13 @@ GetAlignFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *alignPtr)
  *
  * GetBoxFromObj --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into x and y coordinates.  Indicates that the menu
+ *      is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2684,8 +2678,8 @@ GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2724,8 +2718,8 @@ PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2750,13 +2744,13 @@ PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PostPopupSwitchProc --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into x and y coordinates.  Indicates that the menu
+ *      is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2783,13 +2777,13 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PostAtSwitchProc --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into x and y coordinates.  Indicates that the menu
+ *      is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2820,8 +2814,8 @@ PostAtSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2858,9 +2852,9 @@ MapEntry(Entry *entryPtr)
 
     comboPtr = entryPtr->comboPtr;
     /*
-     * FIXME: Use of DIRTY flag inconsistent.  When does it
-     *        mean "dirty entry"? When does it mean "dirty column"?
-     *        Does it matter? probably
+     * FIXME: Use of DIRTY flag inconsistent.  When does it mean "dirty
+     *        entry"? When does it mean "dirty column"?  Does it matter?
+     *        probably
      */
     if (entryPtr->flags & ENTRY_DIRTY) {
         Blt_FontMetrics fontMetrics;
@@ -2977,11 +2971,12 @@ ResetCoordinates(ComboTree *comboPtr, Entry *entryPtr, int *yPtr, int *numPtr)
     if ((entryPtr != comboPtr->rootPtr) && (EntryIsHidden(entryPtr))) {
         entryPtr->worldY = -1;
         entryPtr->vertLineLength = -1;
-        return;                 /* If the entry is hidden, then do nothing. */
+        return;                         /* If the entry is hidden, then do
+                                         * nothing. */
     }
-    /* Set the world y-coordinate of the entry. Initialize the length of the
-     * dotted vertical line that runs from the entry downward with the current
-     * y-offset. */
+    /* Set the world y-coordinate of the entry. Initialize the length of
+     * the dotted vertical line that runs from the entry downward with the
+     * current y-offset. */
     entryPtr->worldY = *yPtr;
     entryPtr->vertLineLength = -(*yPtr);
     *yPtr += entryPtr->height;
@@ -3019,8 +3014,9 @@ ResetCoordinates(ComboTree *comboPtr, Entry *entryPtr, int *yPtr, int *numPtr)
  *
  * MapTree --
  *
- *      Compute the layout when entries are opened/closed, inserted/deleted,
- *      or when text attributes change (such as font, linespacing).
+ *      Compute the layout when entries are opened/closed,
+ *      inserted/deleted, or when text attributes change (such as font,
+ *      linespacing).
  *
  * Results:
  *      None.
@@ -3151,8 +3147,9 @@ MapTree(ComboTree *comboPtr)
  *
  * ComputeComboGeometry --
  *
- *      Recompute the layout when entries are opened/closed, inserted/deleted,
- *      or when text attributes change (such as font, linespacing).
+ *      Recompute the layout when entries are opened/closed,
+ *      inserted/deleted, or when text attributes change (such as font,
+ *      linespacing).
  *
  * Results:
  *      None.
@@ -3234,14 +3231,8 @@ ComputeComboGeometry(ComboTree *comboPtr)
  */
 /*ARGSUSED*/
 static int
-ObjToButtonProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* Tcl_Obj representing the new value. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ObjToButtonProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     const char *string;
     int *flagsPtr = (int *)(widgRec + offset);
@@ -3311,14 +3302,8 @@ ButtonToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToLabelProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* Tcl_Obj representing the new value. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ObjToLabelProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     UID *labelPtr = (UID *)(widgRec + offset);
     const char *string;
@@ -3344,13 +3329,8 @@ ObjToLabelProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LabelToObjProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+LabelToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)  
 {
     UID labelUid = *(UID *)(widgRec + offset);
     const char *string;
@@ -3367,11 +3347,8 @@ LabelToObjProc(
 
 /*ARGSUSED*/
 static void
-FreeLabelProc(
-    ClientData clientData,
-    Display *display,           /* Not used. */
-    char *widgRec,
-    int offset)
+FreeLabelProc(ClientData clientData, Display *display, char *widgRec,
+              int offset)
 {
     UID *labelPtr = (UID *)(widgRec + offset);
 
@@ -3385,11 +3362,8 @@ FreeLabelProc(
 
 /*ARGSUSED*/
 static void
-FreeStyleProc(
-    ClientData clientData,
-    Display *display,           /* Not used. */
-    char *widgRec,
-    int offset)
+FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
+              int offset)
 {
     Style *stylePtr = *(Style **)(widgRec + offset);
 
@@ -3413,14 +3387,8 @@ FreeStyleProc(
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* String representing style. */
-    char *widgRec,              /* Widget record */
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboTree *comboPtr;
     Entry *entryPtr = (Entry *)widgRec;
@@ -3458,13 +3426,8 @@ ObjToStyleProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,              /* Widget information record */
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)  
 {
     Style *stylePtr = *(Style **)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -3481,21 +3444,15 @@ StyleToObjProc(
  *
  * ObjToUidProc --
  *
- *      Converts the string to a Uid. Uid's are hashed, reference
- *      counted strings.
+ *      Converts the string to a Uid. Uid's are hashed, reference counted
+ *      strings.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToUidProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* Tcl_Obj representing the new value. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboTree *comboPtr = clientData;
     UID *uidPtr = (UID *)(widgRec + offset);
@@ -3518,13 +3475,8 @@ ObjToUidProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-UidToObjProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+UidToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             char *widgRec, int offset, int flags)  
 {
     UID uid = *(UID *)(widgRec + offset);
 
@@ -3549,11 +3501,7 @@ UidToObjProc(
  */
 /*ARGSUSED*/
 static void
-FreeUidProc(
-    ClientData clientData,
-    Display *display,           /* Not used. */
-    char *widgRec,
-    int offset)
+FreeUidProc(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     UID *uidPtr = (UID *)(widgRec + offset);
 
@@ -3577,14 +3525,8 @@ FreeUidProc(
  */
 /* ARGSUSED */
 static void
-IconChangedProc(
-    ClientData clientData,
-    int x,                      /* Not used. */
-    int y,                      /* Not used. */
-    int width,                  /* Not used. */
-    int height,                 /* Not used. */
-    int imageWidth,             /* Not used. */
-    int imageHeight)            /* Not used. */
+IconChangedProc(ClientData clientData, int x, int y, int width, int height,
+                int imageWidth, int imageHeight) 
 {
     ComboTree *comboPtr = clientData;
 
@@ -3609,14 +3551,8 @@ IconChangedProc(
  */
 /*ARGSUSED*/
 static int
-ObjToIconsProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* Tcl_Obj representing the new value. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ObjToIconsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Tcl_Obj **objv;
     ComboTree *comboPtr = clientData;
@@ -3661,13 +3597,8 @@ ObjToIconsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconsToObjProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+IconsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)  
 {
     Icon *icons = *(Icon **)(widgRec + offset);
     Tcl_Obj *listObjPtr;
@@ -3689,11 +3620,8 @@ IconsToObjProc(
 
 /*ARGSUSED*/
 static void
-FreeIconsProc(
-    ClientData clientData,
-    Display *display,           /* Not used. */
-    char *widgRec,
-    int offset)
+FreeIconsProc(ClientData clientData, Display *display, char *widgRec,
+              int offset)
 {
     Icon **iconsPtr = (Icon **)(widgRec + offset);
 
@@ -3710,11 +3638,7 @@ FreeIconsProc(
 }
 
 static int
-Apply(
-    ComboTree *comboPtr,
-    Entry *entryPtr,            /* Root entry of subtree. */
-    ApplyProc *proc,           /* Procedure to call for each entry. */
-    unsigned int flags)
+Apply(ComboTree *comboPtr, Entry *entryPtr, ApplyProc *proc, unsigned int flags)
 {
     if ((flags & ENTRY_HIDE) && (EntryIsHidden(entryPtr))) {
         return TCL_OK;          /* Hidden node. */
@@ -3746,32 +3670,6 @@ Apply(
     }
     return TCL_OK;
 }
-
-
-#ifdef notdef
-int
-EntryIsMapped(Entry *entryPtr)
-{
-    ComboTree *comboPtr = entryPtr->comboPtr; 
-
-    /* Don't check if the entry itself is open, only that its
-     * ancestors are. */
-    if (EntryIsHidden(entryPtr)) {
-        return FALSE;
-    }
-    if (entryPtr == comboPtr->rootPtr) {
-        return TRUE;
-    }
-    entryPtr = ParentEntry(entryPtr);
-    while (entryPtr != comboPtr->rootPtr) {
-        if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDE)) {
-            return FALSE;
-        }
-        entryPtr = ParentEntry(entryPtr);
-    }
-    return TRUE;
-}
-#endif
 
 
 static void
@@ -3871,10 +3769,7 @@ ConfigureStyle(
 
 /*ARGSUSED*/
 static int
-CreateApplyProc(
-    Blt_TreeNode node,          /* Node that has just been created. */
-    ClientData clientData,
-    int order)                  /* Not used. */
+CreateApplyProc(Blt_TreeNode node, ClientData clientData, int order)
 {
     ComboTree *comboPtr = clientData; 
     return CreateEntry(comboPtr, node, 0, NULL, 0);
@@ -3892,8 +3787,8 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
         return CreateEntry(comboPtr, node, 0, NULL, 0);
     case TREE_NOTIFY_DELETE:
         /*  
-         * Deleting the tree node triggers a call back to free the
-         * treeview entry that is associated with it.
+         * Deleting the tree node triggers a call back to free the 
+         * entry that is associated with it.
          */
         if (node != NULL) {
             Entry *entryPtr;
@@ -3931,7 +3826,7 @@ static ClientData
 EntryTag(ComboTree *comboPtr, const char *string)
 {
     Blt_HashEntry *hPtr;
-    int isNew;                  /* Not used. */
+    int isNew;                          /* Not used. */
 
     hPtr = Blt_CreateHashEntry(&comboPtr->entryBindTagTable, string, &isNew);
     return Blt_GetHashKey(&comboPtr->entryBindTagTable, hPtr);
@@ -3941,7 +3836,7 @@ static ClientData
 ButtonTag(ComboTree *comboPtr, const char *string)
 {
     Blt_HashEntry *hPtr;
-    int isNew;                  /* Not used. */
+    int isNew;                          /* Not used. */
 
     hPtr = Blt_CreateHashEntry(&comboPtr->buttonBindTagTable, string, &isNew);
     return Blt_GetHashKey(&comboPtr->buttonBindTagTable, hPtr);
@@ -3967,12 +3862,8 @@ AddTags(ComboTree *comboPtr, Blt_Chain tags, Tcl_Obj *objPtr, TagProc *tagProc)
 }
 
 static void
-AppendTagsProc(
-    Blt_BindTable table,
-    ClientData object,          /* Object picked. */
-    ClientData hint,            /* Context of object. */
-    Blt_Chain tags)             /* (out) List of binding ids to be
-                                 * applied for this object. */
+AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
+               Blt_Chain tags)
 {
     ComboTree *comboPtr;
     Entry *entryPtr = object;
@@ -4004,9 +3895,11 @@ AppendTagsProc(
 static ClientData
 PickEntry(
     ClientData clientData,
-    int x, int y,               /* Screen coordinates of the test point. */
-    ClientData *hintPtr)        /* (out) Context of entry selected: should
-                                 * be PICK_ENTRY or PICK_BUTTON. */
+    int x, int y,                       /* Screen coordinates of the test
+                                         * point. */
+    ClientData *hintPtr)                /* (out) Context of entry selected:
+                                         * should be PICK_ENTRY or
+                                         * PICK_BUTTON. */
 {
     ComboTree *comboPtr = clientData;
     Entry *entryPtr;
@@ -4051,7 +3944,7 @@ PickEntry(
 
 
 /*
- * TreeView Procedures
+ * ComboTree Procedures
  */
 
 /*
@@ -4130,9 +4023,9 @@ NewComboTree(Tcl_Interp *interp, Tcl_Obj *objPtr)
  *
  * DestroyComboTree --
  *
- *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release
- *      to clean up the internal structure of a TreeView at a safe time
- *      (when no-one is using it anymore).
+ *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
+ *      clean up the internal structure at a safe time (when no-one is
+ *      using it anymore).
  *
  * Results:
  *      None.
@@ -4143,7 +4036,7 @@ NewComboTree(Tcl_Interp *interp, Tcl_Obj *objPtr)
  *---------------------------------------------------------------------------
  */
 static void
-DestroyComboTree(DestroyData dataPtr)   /* Pointer to the widget record. */
+DestroyComboTree(DestroyData dataPtr) 
 {
     ComboTree *comboPtr = (ComboTree *)dataPtr;
     Button *btnPtr;
@@ -4195,8 +4088,8 @@ DestroyComboTree(DestroyData dataPtr)   /* Pointer to the widget record. */
  *
  * ScrollbarEventProc --
  *
- *      This procedure is invoked by the Tk event handler when StructureNotify
- *      events occur in a scrollbar managed by the widget.
+ *      This procedure is invoked by the Tk event handler when
+ *      StructureNotify events occur in a scrollbar managed by the widget.
  *
  * Results:
  *      None.
@@ -4205,9 +4098,10 @@ DestroyComboTree(DestroyData dataPtr)   /* Pointer to the widget record. */
  */
 static void
 ScrollbarEventProc(
-    ClientData clientData,      /* Pointer to Entry structure for widget
-                                 * referred to by eventPtr. */
-    XEvent *eventPtr)           /* Describes what just happened. */
+    ClientData clientData,              /* Pointer to Entry structure for
+                                         * widget referred to by
+                                         * eventPtr. */
+    XEvent *eventPtr)                   /* Describes what just happened. */
 {
     ComboTree *comboPtr = clientData;
 
@@ -4229,24 +4123,25 @@ ScrollbarEventProc(
  *
  * ScrollbarCustodyProc --
  *
- *      This procedure is invoked when a scrollbar has been stolen by another
- *      geometry manager.
+ *      This procedure is invoked when a scrollbar has been stolen by
+ *      another geometry manager.
  *
  * Results:
  *      None.
  *
  * Side effects:
-  *     Arranges for the combomenu to have its layout re-arranged at the next
- *      idle point.
+ *     Arranges for the combomenu to have its layout re-arranged at the
+ *     next idle point.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static void
 ScrollbarCustodyProc(
-    ClientData clientData,      /* Information about the combomenu. */
-    Tk_Window tkwin)            /* Scrollbar stolen by another geometry
-                                 * manager. */
+    ClientData clientData,              /* Information about the
+                                         * combomenu. */
+    Tk_Window tkwin)                    /* Scrollbar stolen by another
+                                         * geometry manager. */
 {
     ComboTree *comboPtr = (ComboTree *)clientData;
 
@@ -4269,8 +4164,8 @@ ScrollbarCustodyProc(
  *
  * ScrollbarGeometryProc --
  *
- *      This procedure is invoked by Tk_GeometryRequest for scrollbars managed
- *      by the combomenu.
+ *      This procedure is invoked by Tk_GeometryRequest for scrollbars
+ *      managed by the combomenu.
  *
  * Results:
  *      None.
@@ -4283,8 +4178,9 @@ ScrollbarCustodyProc(
 /* ARGSUSED */
 static void
 ScrollbarGeometryProc(
-    ClientData clientData,      /* ComboTree widget record.  */
-    Tk_Window tkwin)            /* Scrollbar whose geometry has changed. */
+    ClientData clientData,              /* ComboTree widget record.  */
+    Tk_Window tkwin)                    /* Scrollbar whose geometry has
+                                         * changed. */
 {
     ComboTree *comboPtr = (ComboTree *)clientData;
 
@@ -4297,15 +4193,15 @@ ScrollbarGeometryProc(
  *
  * ComboTreeEventProc --
  *
- *      This procedure is invoked by the Tk dispatcher for various
- *      events on treeview widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events
+ *      on widgets.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      When the window gets deleted, internal structures get
- *      cleaned up.  When it gets exposed, it is redisplayed.
+ *      When the window gets deleted, internal structures get cleaned up.
+ *      When it gets exposed, it is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -4347,9 +4243,9 @@ ComboTreeEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * ComboTreeInstCmdDeleteProc --
  *
- *      This procedure is invoked when a widget command is deleted.  If
- *      the widget isn't already in the process of being destroyed,
- *      this command destroys it.
+ *      This procedure is invoked when a widget command is deleted.  If the
+ *      widget isn't already in the process of being destroyed, this
+ *      command destroys it.
  *
  * Results:
  *      None.
@@ -4366,9 +4262,9 @@ ComboTreeInstCmdDeleteProc(ClientData clientData)
 
     /*
      * This procedure could be invoked either because the window was
-     * destroyed and the command was then deleted (in which case tkwin
-     * is NULL) or because the command was deleted, and then this
-     * procedure destroys the widget.
+     * destroyed and the command was then deleted (in which case tkwin is
+     * NULL) or because the command was deleted, and then this procedure
+     * destroys the widget.
      */
     if (comboPtr->tkwin != NULL) {
         Tk_Window tkwin;
@@ -4384,8 +4280,7 @@ ComboTreeInstCmdDeleteProc(ClientData clientData)
  *
  * ConfigureComboTree --
  *
- *      Updates the GCs and other information associated with the
- *      treeview widget.
+ *      Updates the GCs and other information associated with the widget.
  *
  * Results:
  *      The return value is a standard TCL result.  If TCL_ERROR is
@@ -4393,8 +4288,8 @@ ComboTreeInstCmdDeleteProc(ClientData clientData)
  *
  * Side effects:
  *      Configuration information, such as text string, colors, font,
- *      etc. get set for comboPtr; old resources get freed, if there
- *      were any.  The widget is redisplayed.
+ *      etc. get set for comboPtr; old resources get freed, if there were
+ *      any.  The widget is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -4443,7 +4338,8 @@ ConfigureComboTree(Tcl_Interp *interp, ComboTree *comboPtr, int objc,
     comboPtr->inset = comboPtr->borderWidth + INSET_PAD;
 
     /*
-     * These options change the layout of the box.  Mark the widget for update.
+     * These options change the layout of the box.  Mark the widget for
+     * update.
      */
     if (Blt_ConfigModified(comboSpecs, "-font", "-linespacing", "-*width", 
         "-height", "-hide*", "-tree", (char *)NULL)) {
@@ -4451,8 +4347,8 @@ ConfigureComboTree(Tcl_Interp *interp, ComboTree *comboPtr, int objc,
     }
     /*
      * If the tree view was changed, mark all the nodes dirty (we'll be
-     * switching back to either the full path name or the label) and free the
-     * array representing the flattened view of the tree.
+     * switching back to either the full path name or the label) and free
+     * the array representing the flattened view of the tree.
      */
     if (Blt_ConfigModified(comboSpecs, "-hideleaves", (char *)NULL)) {
         Entry *ep;
@@ -4499,10 +4395,10 @@ ConfigureComboTree(Tcl_Interp *interp, ComboTree *comboPtr, int objc,
 
     updateNeeded = FALSE;
     /* Install the embedded scrollbars as needed.  We defer installing the
-     * scrollbars so the scrollbar widgets don't have to exist when they are
-     * specified by the -xscrollbar and -yscrollbar options respectively. The
-     * down-side is that errors found in the scrollbar name will be
-     * backgrounded. */
+     * scrollbars so the scrollbar widgets don't have to exist when they
+     * are specified by the -xscrollbar and -yscrollbar options
+     * respectively. The down-side is that errors found in the scrollbar
+     * name will be backgrounded. */
     if (Blt_ConfigModified(comboSpecs, "-xscrollbar", (char *)NULL)) {
         if (comboPtr->xScrollbar != NULL) {
             UnmanageScrollbar(comboPtr, comboPtr->xScrollbar);
@@ -4600,8 +4496,8 @@ FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
              * button/entry */
             x = x + comboPtr->post.menuWidth - w; 
         } else {
-            x -= w;                     /* Shift the menu to the left by the
-                                         * width of the menu. */
+            x -= w;                     /* Shift the menu to the left by
+                                         * the width of the menu. */
         }
         if (x < 0) {
             x = 0;
@@ -4671,8 +4567,8 @@ ComputeVisibleEntries(ComboTree *comboPtr)
         }
         /*
          * If we can't find the starting node, then the view must be
-         * scrolled down, but some nodes were deleted.  Reset the view
-         * back to the top and try again.
+         * scrolled down, but some nodes were deleted.  Reset the view back
+         * to the top and try again.
          */
         if (entryPtr == NULL) {
             if (comboPtr->yOffset == 0) {
@@ -4690,8 +4586,8 @@ ComputeVisibleEntries(ComboTree *comboPtr)
         int level;
         
         /*
-         * Compute and save the entry's X-coordinate now that we know
-         * the maximum level offset for the entire widget.
+         * Compute and save the entry's X-coordinate now that we know the
+         * maximum level offset for the entire widget.
          */
         level = Blt_Tree_NodeDepth(entryPtr->node);
         entryPtr->worldX = LEVELX(level);
@@ -4710,14 +4606,14 @@ ComputeVisibleEntries(ComboTree *comboPtr)
     comboPtr->visibleEntries[comboPtr->numVisible] = NULL;
 
     /*
-     *-------------------------------------------------------------------------------
+     *-----------------------------------------------------------------------
      *
-     * Note:    It's assumed that the view port always starts at or over an 
-     *          entry.  Check that a change in the hierarchy (e.g. closing a
-     *          node) hasn't left the viewport beyond the last entry.  If so,
-     *          adjust the viewport to start on the last entry.
+     * Note: It's assumed that the view port always starts at or over an
+     *       entry.  Check that a change in the hierarchy (e.g. closing a
+     *       node) hasn't left the viewport beyond the last entry.  If so,
+     *       adjust the viewport to start on the last entry.
      *
-     *-------------------------------------------------------------------------------
+     *-----------------------------------------------------------------------
      */
     if (comboPtr->xOffset > (comboPtr->worldWidth - comboPtr->xScrollUnits)) {
         comboPtr->xOffset = comboPtr->worldWidth - comboPtr->xScrollUnits;
@@ -4742,8 +4638,8 @@ ComputeVisibleEntries(ComboTree *comboPtr)
  *
  * GetEntryIcon --
  *
- *      Selects the correct image for the entry's icon depending upon
- *      the current state of the entry: active/inactive normal/selected.  
+ *      Selects the correct image for the entry's icon depending upon the
+ *      current state of the entry: active/inactive normal/selected.
  *
  *              active - normal
  *              active - selected
@@ -4764,9 +4660,9 @@ GetEntryIcon(ComboTree *comboPtr, Entry *entryPtr)
     icons = entryPtr->stylePtr->icons;
     icon = NULL;
     if (icons != NULL) {        
-        icon = icons[0];        /* Open icon. */
+        icon = icons[0];                /* Open icon. */
         if ((entryPtr->flags & ENTRY_CLOSED) && (icons[1] != NULL)) {
-            icon = icons[1];    /* Closed icon. */
+            icon = icons[1];            /* Closed icon. */
         }
     }
     return icon;
@@ -4776,18 +4672,16 @@ GetEntryIcon(ComboTree *comboPtr, Entry *entryPtr)
  *
  * DrawButton --
  *
- *      Draws a button for the given entry. The button is drawn
- *      centered in the region immediately to the left of the origin
- *      of the entry (computed in the layout routines). The height
- *      and width of the button were previously calculated from the
- *      average row height.
+ *      Draws a button for the given entry. The button is drawn centered in
+ *      the region immediately to the left of the origin of the entry
+ *      (computed in the layout routines). The height and width of the
+ *      button were previously calculated from the average row height.
  *
  *              button height = entry height - (2 * some arbitrary padding).
  *              button width = button height.
  *
- *      The button may have a border.  The symbol (either a plus or
- *      minus) is slight smaller than the width or height minus the
- *      border.
+ *      The button may have a border.  The symbol (either a plus or minus)
+ *      is slight smaller than the width or height minus the border.
  *
  *          x,y origin of entry
  *
@@ -4813,11 +4707,12 @@ GetEntryIcon(ComboTree *comboPtr, Entry *entryPtr)
  */
 static void
 DrawButton(
-    ComboTree *comboPtr,        /* Widget record containing the
-                                 * attribute information for
-                                 * buttons. */
-    Entry *entryPtr,            /* Entry. */
-    Drawable drawable,          /* Pixmap or window to draw into. */
+    ComboTree *comboPtr,                /* Widget record containing the
+                                         * attribute information for
+                                         * buttons. */
+    Entry *entryPtr,                    /* Entry. */
+    Drawable drawable,                  /* Pixmap or window to draw
+                                         * into. */
     int x, 
     int y)
 {
@@ -4843,14 +4738,14 @@ DrawButton(
     height = btnPtr->height - (2 * btnPtr->borderWidth);
 
     icon = NULL;
-    if (btnPtr->icons != NULL) {  /* Open or close button icon? */
+    if (btnPtr->icons != NULL) {        /* Open or close button icon? */
         icon = btnPtr->icons[0];
         if (((entryPtr->flags & ENTRY_CLOSED) == 0) && 
             (btnPtr->icons[1] != NULL)) {
             icon = btnPtr->icons[1];
         }
     }
-    if (icon != NULL) {         /* Icon or rectangle? */
+    if (icon != NULL) {                 /* Icon or rectangle? */
         Tk_RedrawImage(IconImage(icon), 0, 0, width, height, drawable, x, y);
     } else {
         int top, bottom, left, right;
@@ -5002,11 +4897,8 @@ DrawLabel(ComboTree *comboPtr, Entry *entryPtr, Drawable drawable, int x, int y,
 }
 
 static void
-DrawEntryBackground(
-    ComboTree *comboPtr, 
-    Entry *entryPtr, 
-    Drawable drawable,
-    int x, int y, int w, int h)
+DrawEntryBackground(ComboTree *comboPtr, Entry *entryPtr, Drawable drawable,
+                    int x, int y, int w, int h)
 {
     Blt_Bg bg;
     Style *stylePtr;
@@ -5033,14 +4925,14 @@ DrawEntryBackground(
  *
  * DrawEntry --
  *
- *      Draws a button for the given entry.  Note that buttons should only be
- *      drawn if the entry has sub-entries to be opened or closed.  It's the
- *      responsibility of the calling routine to ensure this.
+ *      Draws a button for the given entry.  Note that buttons should only
+ *      be drawn if the entry has sub-entries to be opened or closed.  It's
+ *      the responsibility of the calling routine to ensure this.
  *
- *      The button is drawn centered in the region immediately to the left of
- *      the origin of the entry (computed in the layout routines). The height
- *      and width of the button were previously calculated from the average
- *      row height.
+ *      The button is drawn centered in the region immediately to the left
+ *      of the origin of the entry (computed in the layout routines). The
+ *      height and width of the button were previously calculated from the
+ *      average row height.
  *
  *              button height = entry height - (2 * some arbitrary padding).
  *              button width = button height.
@@ -5122,9 +5014,9 @@ DrawEntry(ComboTree *comboPtr, Entry *entryPtr, Drawable drawable,
     }
     if ((entryPtr->flags & ENTRY_BUTTON) && (entryPtr != comboPtr->rootPtr)) {
         /*
-         * Except for the root, draw a button for every entry that needs one.
-         * The displayed button can be either an icon (Tk image) or a line
-         * drawing (rectangle with plus or minus sign).
+         * Except for the root, draw a button for every entry that needs
+         * one.  The displayed button can be either an icon (Tk image) or a
+         * line drawing (rectangle with plus or minus sign).
          */
         DrawButton(comboPtr, entryPtr, drawable, x + entryPtr->buttonX,
                 y + entryPtr->buttonY);
@@ -5187,10 +5079,10 @@ DrawEntryBackgrounds(ComboTree *comboPtr, Drawable drawable)
  *
  * DrawVerticals --
  *
- *      Draws vertical lines for the ancestor nodes.  While the entry
- *      of the ancestor may not be visible, its vertical line segment
- *      does extent into the viewport.  So walk back up the hierarchy
- *      drawing lines until we get to the root.
+ *      Draws vertical lines for the ancestor nodes.  While the entry of
+ *      the ancestor may not be visible, its vertical line segment does
+ *      extent into the viewport.  So walk back up the hierarchy drawing
+ *      lines until we get to the root.
  *
  * Results:
  *      None.
@@ -5245,8 +5137,8 @@ DrawVerticals(ComboTree *comboPtr, Entry *entryPtr, Drawable drawable,
              * Clip the line's Y-coordinates at the viewport's borders.
              */
             if (ay < 0) {
-                ay = (ay & 0x1);        /* Make sure the dotted line starts on 
-                                         * the same even/odd pixel. */
+                ay = (ay & 0x1);        /* Make sure the dotted line starts
+                                         * on the same even/odd pixel. */
             }
             if (by > Tk_Height(comboPtr->tkwin)) {
                 by = Tk_Height(comboPtr->tkwin);
@@ -5350,7 +5242,8 @@ DrawOuterBorders(ComboTree *comboPtr, Drawable drawable)
  *
  * DisplayEntry --
  *
- *      This procedure is invoked to display an entry in the combotree widget.
+ *      This procedure is invoked to display an entry in the combotree
+ *      widget.
  *
  * Results:
  *      None.
@@ -5413,9 +5306,9 @@ DisplayEntry(ClientData clientData)
  *
  * ActivateOp --
  *
- *      Activate the specified entry (draw with active foreground/background).
- *      Only one entry may be active at one time, so the previously active
- *      entry is deactivated.
+ *      Activate the specified entry (draw with active
+ *      foreground/background).  Only one entry may be active at one time,
+ *      so the previously active entry is deactivated.
  *
  * Results:
  *      Standard TCL result.
@@ -5428,9 +5321,10 @@ DisplayEntry(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static int
-ActivateOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *entryPtr;
 
     if (GetEntryFromObj(NULL, comboPtr, objv[2], &entryPtr) != TCL_OK) {
@@ -5457,8 +5351,10 @@ ActivateOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-BindOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     ClientData object;
     Entry *entryPtr;
     const char *string;
@@ -5502,12 +5398,10 @@ BindOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-ButtonActivateOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+ButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                 Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *oldPtr, *entryPtr;
     const char *string;
 
@@ -5548,12 +5442,10 @@ ButtonActivateOp(
  */
 /*ARGSUSED*/
 static int
-ButtonBindOp(
-    ComboTree *comboPtr,
-    Tcl_Interp *interp,
-    int objc,                   /* Not used. */
-    Tcl_Obj *const *objv)
+ButtonBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     ClientData object;
 
     /* Assume that this is a binding tag. */
@@ -5571,12 +5463,11 @@ ButtonBindOp(
  */
 /*ARGSUSED*/
 static int
-ButtonCgetOp(
-    ComboTree *comboPtr,
-    Tcl_Interp *interp,
-    int objc,                   /* Not used. */
-    Tcl_Obj *const *objv)
+ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
+
     return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, buttonSpecs, 
         (char *)comboPtr, objv[3], 0);
 }
@@ -5591,24 +5482,24 @@ ButtonCgetOp(
  *      widget.
  *
  * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *      contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  * Side effects:
- *      Configuration information, such as text string, colors, font, etc. get
- *      set for comboPtr; old resources get freed, if there were any.  
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for comboPtr; old resources get freed, if there were
+ *      any.
  *
  *        .ct button configure option value
  *
  *---------------------------------------------------------------------------
  */
 static int
-ButtonConfigureOp(
-    ComboTree *comboPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+ButtonConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                  Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
+
     if (objc == 3) {
         return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, buttonSpecs, 
                 (char *)comboPtr, (Tcl_Obj *)NULL, 0);
@@ -5651,13 +5542,10 @@ static Blt_OpSpec buttonOps[] =
 static int numButtonOps = sizeof(buttonOps) / sizeof(Blt_OpSpec);
 
 static int
-ButtonOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+ButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
-    ComboTreeCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numButtonOps, buttonOps, BLT_OP_ARG2, objc, 
@@ -5665,7 +5553,7 @@ ButtonOp(
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (comboPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
@@ -5679,16 +5567,21 @@ ButtonOp(
  */
 /*ARGSUSED*/
 static int
-CgetOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
+
     return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, comboSpecs,
         (char *)comboPtr, objv[2], 0);
 }
 
 /*ARGSUSED*/
 static int
-CloseOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
+
     int recurse, result;
     Entry *entryPtr;
     EntryIterator iter;
@@ -5712,10 +5605,10 @@ CloseOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
          entryPtr = NextTaggedEntry(&iter)) {
             
         /*
-         * Check if either the active entry is in this hierarchy.  Must move
-         * it or disable it before we close the node.  Otherwise it may be
-         * deleted by a TCL "close" script, and we'll be left pointing to a
-         * bogus memory location.
+         * Check if either the active entry is in this hierarchy.  Must
+         * move it or disable it before we close the node.  Otherwise it
+         * may be deleted by a TCL "close" script, and we'll be left
+         * pointing to a bogus memory location.
          */
         if ((comboPtr->activePtr != NULL) && 
             (Blt_Tree_IsAncestor(entryPtr->node, comboPtr->activePtr->node))) {
@@ -5730,8 +5623,8 @@ CloseOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             return TCL_ERROR;
         }       
     }
-    /* Closing a node may affect the visible entries and the the world layout
-     * of the entries. */
+    /* Closing a node may affect the visible entries and the the world
+     * layout of the entries. */
     comboPtr->flags |= (LAYOUT_PENDING | DIRTY);
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -5774,20 +5667,22 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *      contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  * Side effects:
- *      Configuration information, such as text string, colors, font, etc. get
- *      set for comboPtr; old resources get freed, if there were any.  The
- *      widget is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for comboPtr; old resources get freed, if there were
+ *      any.  The widget is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
+
     if (objc == 2) {
         return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, comboSpecs,
                 (char *)comboPtr, (Tcl_Obj *)NULL, 0);
@@ -5815,9 +5710,10 @@ ConfigureOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-EntryActivateOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+EntryActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *newPtr, *oldPtr;
     const char *string;
 
@@ -5863,12 +5759,10 @@ EntryActivateOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-EntryCgetOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+EntryCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *entryPtr;
 
     if (GetEntry(comboPtr, objv[3], &entryPtr) != TCL_OK) {
@@ -5888,22 +5782,23 @@ EntryCgetOp(
  *      widget.
  *
  * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *      contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  * Side effects:
- *      Configuration information, such as text string, colors, font, etc. get
- *      set for comboPtr; old resources get freed, if there were any.  The
- *      hypertext is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for comboPtr; old resources get freed, if there were
+ *      any.  The hypertext is redisplayed.
  *
  *        .ct entry configure entry option value
  *
  *---------------------------------------------------------------------------
  */
 static int
-EntryConfigureOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+EntryConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                  Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     EntryIterator iter;
     Entry *entryPtr;
     
@@ -5941,9 +5836,10 @@ EntryConfigureOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-EntryIsHiddenOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+EntryIsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *entryPtr;
     int bool;
 
@@ -5964,9 +5860,10 @@ EntryIsHiddenOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-EntryIsOpenOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+EntryIsOpenOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *entryPtr;
     int bool;
 
@@ -6004,9 +5901,10 @@ static Blt_OpSpec entryOps[] =
 static int numEntryOps = sizeof(entryOps) / sizeof(Blt_OpSpec);
 
 static int
-EntryOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+EntryOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
-    ComboTreeCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numEntryOps, entryOps, BLT_OP_ARG2, objc, 
@@ -6014,7 +5912,7 @@ EntryOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (comboPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
@@ -6043,18 +5941,20 @@ RegexpCompare(Tcl_Interp *interp, const char *name, const char *pattern)
  *
  * GetOp --
  *
- *      Converts one or more node identifiers to its path component.  The path
- *      may be either the single entry name or the full path of the entry.
+ *      Converts one or more node identifiers to its path component.  The
+ *      path may be either the single entry name or the full path of the
+ *      entry.
  *
  * Results:
- *      A standard TCL result.  The interpreter result will contain a list of
- *      the convert names.
+ *      A standard TCL result.  The interpreter result will contain a list
+ *      of the convert names.
  *
  *---------------------------------------------------------------------------
  */
 static int
-GetOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     int useFullName;
     int i;
     Tcl_DString d1, d2;
@@ -6104,7 +6004,6 @@ GetOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     return TCL_OK;
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -6159,10 +6058,10 @@ MapAncestors(ComboTree *comboPtr, Entry *entryPtr)
  *
  * MapAncestorsApplyProc --
  *
- *      If a node in mapped, then all its ancestors must be mapped also.  This
- *      routine traverses upwards and maps each unmapped ancestor.  It's
- *      assumed that for any mapped ancestor, all it's ancestors will already
- *      be mapped too.
+ *      If a node in mapped, then all its ancestors must be mapped also.
+ *      This routine traverses upwards and maps each unmapped ancestor.
+ *      It's assumed that for any mapped ancestor, all it's ancestors will
+ *      already be mapped too.
  *
  * Results:
  *      Always returns TCL_OK.
@@ -6190,9 +6089,9 @@ MapAncestorsApplyProc(ComboTree *comboPtr, Entry *entryPtr)
  *
  * SearchAndApplyToTree --
  *
- *      Searches through the current tree and applies a procedure to matching
- *      nodes.  The search specification is taken from the following
- *      command-line arguments:
+ *      Searches through the current tree and applies a procedure to
+ *      matching nodes.  The search specification is taken from the
+ *      following command-line arguments:
  *
  *      ?-exact? ?-glob? ?-regexp? ?-nonmatching?
  *      ?-data string?
@@ -6202,10 +6101,10 @@ MapAncestorsApplyProc(ComboTree *comboPtr, Entry *entryPtr)
  *      ?inode...?
  *
  * Results:
- *      A standard TCL result.  If the result is valid, and if the nonmatchPtr
- *      is specified, it returns a boolean value indicating whether or not the
- *      search was inverted.  This is needed to fix things properly for the
- *      "hide nonmatching" case.
+ *      A standard TCL result.  If the result is valid, and if the
+ *      nonmatchPtr is specified, it returns a boolean value indicating
+ *      whether or not the search was inverted.  This is needed to fix
+ *      things properly for the "hide nonmatching" case.
  *
  *---------------------------------------------------------------------------
  */
@@ -6214,7 +6113,8 @@ SearchAndApplyToTree(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
                      Tcl_Obj *const *objv, ApplyProc *proc, int *nonMatchPtr)
 {
     CompareProc *compareProc;
-    int invertMatch;            /* normal search mode (matching entries) */
+    int invertMatch;                    /* Normal search mode (matching
+                                         * entries) */
     const char *namePattern, *fullPattern;
     int i;
     int length;
@@ -6304,8 +6204,9 @@ SearchAndApplyToTree(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
     if ((namePattern != NULL) || (fullPattern != NULL) ||
         (Blt_List_GetLength(options) > 0)) {
         /*
-         * Search through the tree and look for nodes that match the current
-         * spec.  Apply the input procedure to each of the matching nodes.
+         * Search through the tree and look for nodes that match the
+         * current spec.  Apply the input procedure to each of the matching
+         * nodes.
          */
         for (entryPtr = comboPtr->rootPtr; entryPtr != NULL; 
              entryPtr = NextEntry(entryPtr, 0)) {
@@ -6313,7 +6214,7 @@ SearchAndApplyToTree(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
                 result = (*compareProc) (interp, 
                         Blt_Tree_NodeLabel(entryPtr->node), namePattern);
                 if (result == invertMatch) {
-                    continue;   /* Failed to match */
+                    continue;           /* Failed to match */
                 }
             }
             if (fullPattern != NULL) {
@@ -6324,13 +6225,13 @@ SearchAndApplyToTree(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
                         fullPattern);
                 Tcl_DStringFree(&ds);
                 if (result == invertMatch) {
-                    continue;   /* Failed to match */
+                    continue;           /* Failed to match */
                 }
             }
             if (withTag != NULL) {
                 result = Blt_Tree_HasTag(comboPtr->tree, entryPtr->node, withTag);
                 if (result == invertMatch) {
-                    continue;   /* Failed to match */
+                    continue;           /* Failed to match */
                 }
             }
             for (node = Blt_List_FirstNode(options); node != NULL;
@@ -6345,7 +6246,7 @@ SearchAndApplyToTree(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
                 objPtr = Tcl_GetObjResult(interp);
                 result = (*compareProc)(interp, Tcl_GetString(objPtr), pattern);
                 if (result == invertMatch) {
-                    continue;   /* Failed to match */
+                    continue;           /* Failed to match */
                 }
             }
             /* Finally, apply the procedure to the node */
@@ -6371,7 +6272,8 @@ SearchAndApplyToTree(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
         }
     }
     if (nonMatchPtr != NULL) {
-        *nonMatchPtr = invertMatch;     /* return "inverted search" status */
+        *nonMatchPtr = invertMatch;     /* Return "inverted search"
+                                         * status. */
     }
     return TCL_OK;
 
@@ -6388,9 +6290,9 @@ SearchAndApplyToTree(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  *
  * HideOp --
  *
- *      Hides one or more nodes.  Nodes can be specified by their inode, or by
- *      matching a name or data value pattern.  By default, the patterns are
- *      matched exactly.  They can also be matched using glob-style and
+ *      Hides one or more nodes.  Nodes can be specified by their inode, or
+ *      by matching a name or data value pattern.  By default, the patterns
+ *      are matched exactly.  They can also be matched using glob-style and
  *      regular expression rules.
  *
  * Results:
@@ -6399,8 +6301,10 @@ SearchAndApplyToTree(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-HideOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     int status, nonmatching;
 
     status = SearchAndApplyToTree(comboPtr, interp, objc, objv, 
@@ -6412,7 +6316,8 @@ HideOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     /*
      * If this was an inverted search, scan back through the tree and make
      * sure that the parents for all visible nodes are also visible.  After
-     * all, if a node is supposed to be visible, its parent can't be hidden.
+     * all, if a node is supposed to be visible, its parent can't be
+     * hidden.
      */
     if (nonmatching) {
         Apply(comboPtr, comboPtr->rootPtr, MapAncestorsApplyProc, 0);
@@ -6430,20 +6335,22 @@ HideOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * IndexOp --
  *
- *      Converts one of more words representing indices of the entries in the
- *      treeview widget to their respective serial identifiers.
+ *      Converts one of more words representing indices of the entries in
+ *      the widget to their respective serial identifiers.
  *
  * Results:
- *      A standard TCL result.  Interp->result will contain the identifier of
- *      each inode found. If an inode could not be found, then the serial
- *      identifier will be the empty string.
+ *      A standard TCL result.  Interp->result will contain the identifier
+ *      of each inode found. If an inode could not be found, then the
+ *      serial identifier will be the empty string.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-IndexOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *entryPtr;
     long nodeId;
 
@@ -6472,12 +6379,10 @@ IndexOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-InvokeOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     int result;
     Entry *entryPtr;
 
@@ -6524,11 +6429,13 @@ InvokeOp(
 
 /*ARGSUSED*/
 static int
-NearestOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+NearestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
           Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Button *buttonPtr = &comboPtr->button;
-    int x, y;                   /* Screen coordinates of the test point. */
+    int x, y;                           /* Screen coordinates of the test
+                                         * point. */
     Entry *entryPtr;
     int isRoot;
     const char *string;
@@ -6635,12 +6542,10 @@ NearestOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-OpenOp(
-    ComboTree *comboPtr,
-    Tcl_Interp *interp,         /* Not used. */
-    int objc,
-    Tcl_Obj *const *objv)
+OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     int recurse, result;
     Entry *entryPtr;
     EntryIterator iter;
@@ -6676,8 +6581,8 @@ OpenOp(
     /*FIXME: This is only for flattened entries.  */
     comboPtr->flags |= (LAYOUT_PENDING | DIRTY | SCROLL_PENDING);
 
-    /* Can't trust the selected entry if nodes have been added or deleted. So
-     * recompute the layout. */
+    /* Can't trust the selected entry if nodes have been added or
+     * deleted. So recompute the layout. */
     if (comboPtr->flags & LAYOUT_PENDING) {
         ComputeComboGeometry(comboPtr);
     } 
@@ -6691,11 +6596,11 @@ OpenOp(
  *
  * OverButtonOp --
  *
- *      Returns whether the x, y coordinate is contained within the
- *      region that represents the button that posted the menu.
+ *      Returns whether the x, y coordinate is contained within the region
+ *      that represents the button that posted the menu.
  *
  * Results:
- *      Standard TCL result.  A list representing the bounding box is 
+ *      Standard TCL result.  A list representing the bounding box is
  *      returned.
  *
  *      .cm overbutton x y 
@@ -6704,7 +6609,7 @@ OpenOp(
  */
 static int
 OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-           Tcl_Obj *const *objv)
+             Tcl_Obj *const *objv)
 {
     ComboTree *comboPtr = clientData;
     int x, y;
@@ -6749,7 +6654,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+       Tcl_Obj *const *objv)
 {
     ComboTree *comboPtr = clientData;
     int x, y;
@@ -6819,9 +6724,9 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     FixMenuCoords(comboPtr, &x, &y);
     /*
-     * If there is a post command for the menu, execute it.  This may change
-     * the size of the menu, so be sure to recompute the menu's geometry if
-     * needed.
+     * If there is a post command for the menu, execute it.  This may
+     * change the size of the menu, so be sure to recompute the menu's
+     * geometry if needed.
      */
     if (comboPtr->postCmdObjPtr != NULL) {
         int result;
@@ -6834,8 +6739,8 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return result;
         }
         /*
-         * The post commands could have deleted the menu, which means we are
-         * dead and should go away.
+         * The post commands could have deleted the menu, which means we
+         * are dead and should go away.
          */
         if (comboPtr->tkwin == NULL) {
             return TCL_OK;
@@ -6846,8 +6751,8 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 
     /*
-     * Adjust the position of the menu if necessary to keep it visible on the
-     * screen.  There are two special tricks to make this work right:
+     * Adjust the position of the menu if necessary to keep it visible on
+     * the screen.  There are two special tricks to make this work right:
      *
      * 1. If a virtual root window manager is being used then
      *    the coordinates are in the virtual root window of
@@ -6910,8 +6815,10 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ScanOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     int x, y;
     char c;
     int length;
@@ -6978,8 +6885,9 @@ ScanOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-SeeOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *entryPtr;
     int width, height;
     int x, y;
@@ -7016,8 +6924,8 @@ SeeOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         comboPtr->flags |= SCROLL_PENDING;
         /*
          * If the entry wasn't previously exposed, its world coordinates
-         * aren't likely to be valid.  So re-compute the layout before we try
-         * to see the viewport to the entry's location.
+         * aren't likely to be valid.  So re-compute the layout before we
+         * try to see the viewport to the entry's location.
          */
         ComputeComboGeometry(comboPtr);
     }
@@ -7025,9 +6933,9 @@ SeeOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     height = VPORTHEIGHT(comboPtr);
 
     /*
-     * XVIEW:   If the entry is left or right of the current view, adjust
-     *          the offset.  If the entry is nearby, adjust the view just
-     *          a bit.  Otherwise, center the entry.
+     * XVIEW: If the entry is left or right of the current view, adjust the
+     *        offset.  If the entry is nearby, adjust the view just a bit.
+     *        Otherwise, center the entry.
      */
     left = comboPtr->xOffset;
     right = comboPtr->xOffset + width;
@@ -7055,9 +6963,9 @@ SeeOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         break;
     }
     /*
-     * YVIEW:   If the entry is above or below the current view, adjust
-     *          the offset.  If the entry is nearby, adjust the view just
-     *          a bit.  Otherwise, center the entry.
+     * YVIEW: If the entry is above or below the current view, adjust the
+     *        offset.  If the entry is nearby, adjust the view just a bit.
+     *        Otherwise, center the entry.
      */
     top = comboPtr->yOffset;
     bottom = comboPtr->yOffset + height;
@@ -7099,10 +7007,10 @@ SeeOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ShowOp --
  *
- *      Mark one or more nodes to be exposed.  Nodes can be specified by their
- *      inode, or by matching a name or data value pattern.  By default, the
- *      patterns are matched exactly.  They can also be matched using
- *      glob-style and regular expression rules.
+ *      Mark one or more nodes to be exposed.  Nodes can be specified by
+ *      their inode, or by matching a name or data value pattern.  By
+ *      default, the patterns are matched exactly.  They can also be
+ *      matched using glob-style and regular expression rules.
  *
  * Results:
  *      A standard TCL result.
@@ -7110,8 +7018,11 @@ SeeOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ShowOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
+
     if (SearchAndApplyToTree(comboPtr, interp, objc, objv, ShowEntryApplyProc,
             (int *)NULL) != TCL_OK) {
         return TCL_ERROR;
@@ -7124,12 +7035,10 @@ ShowOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /* .m style create name option value option value */
     
 static int
-StyleCreateOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Style *stylePtr;
     Blt_HashEntry *hPtr;
     int isNew;
@@ -7156,12 +7065,10 @@ StyleCreateOp(
 }
 
 static int
-StyleCgetOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Style *stylePtr;
 
     if (GetStyleFromObj(interp, comboPtr, objv[3], &stylePtr) != TCL_OK) {
@@ -7173,12 +7080,10 @@ StyleCgetOp(
 }
 
 static int
-StyleConfigureOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                 Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     int result, flags;
     Style *stylePtr;
 
@@ -7206,12 +7111,10 @@ StyleConfigureOp(
 }
 
 static int
-StyleDeleteOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Style *stylePtr;
 
     if (GetStyleFromObj(interp, comboPtr, objv[3], &stylePtr) != TCL_OK) {
@@ -7227,12 +7130,10 @@ StyleDeleteOp(
 }
 
 static int
-StyleNamesOp(
-    ComboTree *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
     Tcl_Obj *listObjPtr;
@@ -7276,9 +7177,10 @@ static Blt_OpSpec styleOps[] =
 static int numStyleOps = sizeof(styleOps) / sizeof(Blt_OpSpec);
 
 static int
-StyleOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
-    ComboTreeCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numStyleOps, styleOps, BLT_OP_ARG2, 
@@ -7286,15 +7188,16 @@ StyleOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (comboPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
 /*ARGSUSED*/
 static int
-ToggleOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     Entry *entryPtr;
     EntryIterator iter;
 
@@ -7326,9 +7229,11 @@ ToggleOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-UnpostOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, 
+UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
+
     if (!Tk_IsMapped(comboPtr->tkwin)) {
         return TCL_OK;                  /* This menu is already unposted. */
     }
@@ -7339,8 +7244,10 @@ UnpostOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-XViewOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+XViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     int w, worldWidth;
 
     w = VPORTWIDTH(comboPtr);
@@ -7370,8 +7277,10 @@ XViewOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static int
-YViewOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboTree *comboPtr = clientData;
     int h, worldHeight;
 
     h = VPORTHEIGHT(comboPtr);
@@ -7407,7 +7316,7 @@ YViewOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * ComboTreeInstCmdProc --
  *
  *      This procedure is invoked to process commands on behalf of the
- *      treeview widget.
+ *      widget.
  *
  * Results:
  *      A standard TCL result.
@@ -7419,27 +7328,27 @@ YViewOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 static Blt_OpSpec comboOps[] =
 {
-    {"activate",  1, ActivateOp,  3, 3, "entry",},
-    {"bbox",      2, BboxOp,      3, 3, "entry",},
+    {"activate",  1, ActivateOp,  3, 3, "entryName",},
+    {"bbox",      2, BboxOp,      3, 3, "entryName",},
     {"bind",      2, BindOp,      3, 5, "tagName ?sequence command?",}, 
-    {"button",    2, ButtonOp,    2, 0, "args",},
+    {"button",    2, ButtonOp,    2, 0, "args...",},
     {"cget",      2, CgetOp,      3, 3, "option",}, 
-    {"close",     2, CloseOp,     2, 4, "?-recurse? entry",}, 
-    {"configure", 2, ConfigureOp, 2, 0, "?option value?...",},
+    {"close",     2, CloseOp,     2, 4, "?-recurse? entryName",}, 
+    {"configure", 2, ConfigureOp, 2, 0, "?option value ...?",},
     {"entry",     1, EntryOp,     2, 0, "oper args",},
-    {"get",       1, GetOp,       2, 0, "?-full? entry ?entry...?",},
+    {"get",       1, GetOp,       2, 0, "?-full? ?entryName ...?",},
     {"hide",      1, HideOp,      2, 0, "?-exact|-glob|-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entry...?",},
-    {"index",     3, IndexOp,     3, 3, "entry",},
-    {"invoke",    3, InvokeOp,    3, 3, "entry",},
+    {"index",     3, IndexOp,     3, 3, "entryName",},
+    {"invoke",    3, InvokeOp,    3, 3, "entryName",},
     {"nearest",   1, NearestOp,   4, 5, "x y ?varName?",}, 
-    {"open",      2, OpenOp,      2, 4, "?-recurse? entry",}, 
+    {"open",      2, OpenOp,      2, 4, "?-recurse? entryName",}, 
     {"overbutton",2, OverButtonOp,4, 4, "x y",},
     {"post",      1, PostOp,     2, 0, "switches",},
     {"scan",      2, ScanOp,      5, 5, "dragto|mark x y",},
     {"see",       2, SeeOp,       3, 0, "?-anchor anchor? entry",},
-    {"show",      2, ShowOp,      2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entry...?",},
-    {"style",     2, StyleOp,     2, 0, "args",},
-    {"toggle",    1, ToggleOp,    3, 3, "entry",},
+    {"show",      2, ShowOp,      2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entryName ...?",},
+    {"style",     2, StyleOp,     2, 0, "args ...",},
+    {"toggle",    1, ToggleOp,    3, 3, "entryName",},
     {"unpost",    1, UnpostOp,    2, 2, "",},
     {"xview",     1, XViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
     {"yview",     1, YViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
@@ -7448,14 +7357,11 @@ static Blt_OpSpec comboOps[] =
 static int numComboOps = sizeof(comboOps) / sizeof(Blt_OpSpec);
 
 static int
-ComboTreeInstCmdProc(
-    ClientData clientData,      /* Information about the widget. */
-    Tcl_Interp *interp,         /* Interpreter to report errors back to. */
-    int objc,                   /* Number of arguments. */
-    Tcl_Obj *const *objv)       /* Vector of argument strings. */
+ComboTreeInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
+                     Tcl_Obj *const *objv)       
 {
-    ComboTreeCmdProc *proc;
     ComboTree *comboPtr = clientData;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numComboOps, comboOps, BLT_OP_ARG1, objc, 
@@ -7464,7 +7370,7 @@ ComboTreeInstCmdProc(
         return TCL_ERROR;
     }
     Tcl_Preserve(comboPtr);
-    result = (*proc) (comboPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     Tcl_Release(comboPtr);
     return result;
 }
@@ -7476,19 +7382,19 @@ ComboTreeInstCmdProc(
  *
  *      This procedure is invoked to display the widget.
  *
- *      Recompute the layout of the text if necessary. This is
- *      necessary if the world coordinate system has changed.
- *      Specifically, the following may have occurred:
+ *      Recompute the layout of the text if necessary. This is necessary if
+ *      the world coordinate system has changed.  Specifically, the
+ *      following may have occurred:
  *
  *        1.  a text attribute has changed (font, linespacing, etc.).
  *        2.  an entry's option changed, possibly resizing the entry.
  *
- *      This is deferred to the display routine since potentially
- *      many of these may occur.
+ *      This is deferred to the display routine since potentially many of
+ *      these may occur.
  *
- *      Set the vertical and horizontal scrollbars.  This is done
- *      here since the window width and height are needed for the
- *      scrollbar calculations.
+ *      Set the vertical and horizontal scrollbars.  This is done here
+ *      since the window width and height are needed for the scrollbar
+ *      calculations.
  *
  * Results:
  *      None.
@@ -7506,7 +7412,7 @@ DisplayComboTree(ClientData clientData) /* Information about widget. */
 
     comboPtr->flags &= ~REDRAW_PENDING;
     if (comboPtr->tkwin == NULL) {
-        return;                 /* Window has been destroyed. */
+        return;                         /* Window has been destroyed. */
     }
     if (comboPtr->rootPtr == NULL) {
         Blt_Warn("no root to tree \n");
@@ -7515,8 +7421,8 @@ DisplayComboTree(ClientData clientData) /* Information about widget. */
     if (comboPtr->flags & LAYOUT_PENDING) {
         /*
          * Recompute the layout when entries are opened/closed,
-         * inserted/deleted, or when text attributes change (such as
-         * font, linespacing).
+         * inserted/deleted, or when text attributes change (such as font,
+         * linespacing).
          */
         ComputeComboGeometry(comboPtr);
     }
@@ -7545,10 +7451,10 @@ DisplayComboTree(ClientData clientData) /* Information about widget. */
 #ifdef notdef
     if (comboPtr->reqWidth == 0) {
         /* 
-         * The first time through this routine, set the requested
-         * width to the computed width.  All we want is to
-         * automatically set the width of the widget, not dynamically
-         * grow/shrink it as attributes change.
+         * The first time through this routine, set the requested width to
+         * the computed width.  All we want is to automatically set the
+         * width of the widget, not dynamically grow/shrink it as
+         * attributes change.
          */
         comboPtr->reqWidth = comboPtr->worldWidth + 2 * comboPtr->inset;
         Tk_GeometryRequest(comboPtr->tkwin, comboPtr->reqWidth, 
@@ -7594,11 +7500,8 @@ DisplayComboTree(ClientData clientData) /* Information about widget. */
  */
 /* ARGSUSED */
 static int
-ComboTreeObjCmdProc(
-    ClientData clientData,      /* Main window associated with interpreter. */
-    Tcl_Interp *interp,         /* Current interpreter. */
-    int objc,                   /* Number of arguments. */
-    Tcl_Obj *const *objv)       /* Argument strings. */
+ComboTreeObjCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
+                    Tcl_Obj *const *objv)
 {
     ComboTree *comboPtr;
     XSetWindowAttributes attrs;
@@ -7617,7 +7520,7 @@ ComboTreeObjCmdProc(
     }
 
     /*
-     * Source in the initialization script for treeview entries from
+     * Source in the initialization script for entries from
      * "$blt_library/bltComboTree.tcl".  We deferred sourcing the file
      * until now so that the variable $blt_library could be set within a
      * script.
@@ -7629,16 +7532,17 @@ ComboTreeObjCmdProc(
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             char info[200];
 
-            Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
+            Blt_FormatString(info, 200,
+                             "\n    (while loading bindings for %.50s)", 
                     Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             goto error;
         }
     }
     /* 
-     * Initialize the widget's configuration options here. The options need to
-     * be set first, so that entry, column, and style components can use them
-     * for their own GCs.
+     * Initialize the widget's configuration options here. The options need
+     * to be set first, so that entry, column, and style components can use
+     * them for their own GCs.
      */
     iconsOption.clientData = comboPtr;
     if (Blt_ConfigureComponentFromObj(interp, comboPtr->tkwin, "button", 
@@ -7647,14 +7551,15 @@ ComboTreeObjCmdProc(
         goto error;
     }
     /* 
-     * Rebuild the widget's GC and other resources that are predicated by the
-     * widget's configuration options.  Do the same for the default column.
+     * Rebuild the widget's GC and other resources that are predicated by
+     * the widget's configuration options.  Do the same for the default
+     * column.
      */
     if (ConfigureComboTree(interp, comboPtr, objc - 2, objv + 2, 0) != TCL_OK) {
         goto error;
     }
     /*
-     * Invoke a procedure to initialize various bindings on treeview entries.
+     * Invoke a procedure to initialize various bindings on entries.
      */
     {
         Tcl_Obj *cmd[2];
