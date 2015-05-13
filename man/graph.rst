@@ -586,22 +586,22 @@ The resource class is "Axis".  The resource names are the names of the axes
 
 *pathName* **axis activate** *axisName* 
 
-*pathName* **axis bind** *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ?
+*pathName* **axis bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *command*\ ?
   Associates *command* with *bindTag* such that whenever the event sequence
-  given by *sequence* occurs for an axis with this tag, *command* will be
-  invoked.  The syntax is similar to the **bind** command except that it
+  given by *eventSequence* occurs for an axis with this tag, *command* will
+  be invoked.  The syntax is similar to the **bind** command except that it
   operates on graph axes, rather than widgets. See the **bind** manual
-  entry for complete details on *sequence* and the substitutions performed
-  on *command* before invoking it.
+  page for complete details on *eventSequence* and the substitutions
+  performed on *command* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *sequence* and *bindTag*.  If the first
-  character of *command* is "+" then *command* augments an existing binding
-  rather than replacing it.  If no *command* argument is provided then the
-  command currently associated with *bindTag* and *sequence* (it's an error
-  occurs if there's no such binding) is returned.  If both *command* and
-  *sequence* are missing then a list of all the event sequences for which
-  bindings have been defined for *bindTag*.
+  any existing binding for the same *eventSequence* and *bindTag*.  If the
+  first character of *command* is "+" then *command* augments an existing
+  binding rather than replacing it.  If no *command* argument is provided
+  then the command currently associated with *bindTag* and *eventSequence*
+  (it's an error occurs if there's no such binding) is returned.  If both
+  *command* and *eventSequence* are missing then a list of all the event
+  sequences for which bindings have been defined for *bindTag*.
 
 *pathName* **axis cget** *axisName* *option*
   Returns the current value of the option given by *option* for *axisName*.
@@ -1044,26 +1044,26 @@ The following operations are available for elements.
   arguments are present, they are the indices of the data points to be
   activated. By default all data points of *elemName* will become active.
 
-*pathName* **element bind** *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ? 
+*pathName* **element bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *command*\ ? 
   Associates *command* with *bindTag* such that whenever the event sequence
-  given by *sequence* occurs for an element with this binding tag,
+  given by *eventSequence* occurs for an element with this binding tag,
   *command* will be invoked.  The syntax is similar to the **bind** command
   except that it operates on graph elements, rather than widgets. See the
-  **bind** manual entry for complete details on *sequence* and the
+  **bind** manual entry for complete details on *eventSequence* and the
   substitutions performed on *command* before invoking it. *BindTag* is an
   arbitrary string that matches one of the binding tags (see the
   **-bindtags** option) in *elemName*.
 
-  If both *sequence* and *command* arguments are present, then a new
-  binding is created. If a binding for *sequence* and *bindTag* already
-  exists it is replaced. But if the first character of *command* is "+"
-  then *command* augments an existing binding rather than replacing it.
+  If both *eventSequence* and *command* arguments are present, then a new
+  binding is created. If a binding for *eventSequence* and *bindTag*
+  already exists it is replaced. But if the first character of *command* is
+  "+" then *command* augments an existing binding rather than replacing it.
 
   If no *command* argument is present then this returns the command
-  currently associated with *bindTag* and *sequence* (it's an error if
-  there's no such binding).  If both *command* and *sequence* are missing
-  then a list of all the event sequences for which bindings have been
-  defined for *bindTag*.
+  currently associated with *bindTag* and *eventSequence* (it's an error if
+  there's no such binding).  If both *command* and *eventSequence* are
+  missing then a list of all the event sequences for which bindings have
+  been defined for *bindTag*.
 
 *pathName* **element cget** *elemName* *option*
   Returns the current value of the element configuration option given by
@@ -1633,24 +1633,31 @@ The following operations are valid for the legend.
   relief.  All entries whose element names match *pattern* are selected.
   To be selected, the element name must match only one *pattern*.
 
-*pathName* **legend bind** *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ? 
+*pathName* **legend bbox** ?\ *elemName*\ ?
 
+  Returns the bounding box of *elemName* in the legend. The bounding box is
+  the region of the entry's label in the legend. *ElemName* can be the name
+  of the entry, or it's index in the legend.  The returned bounding box is
+  a list of 4 numbers: x and y coordinates of the upper left corner and
+  width and height of the entry.
+
+*pathName* **legend bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *command*\ ? 
   Associates *command* with *bindTag* such that whenever the event sequence
-  given by *sequence* occurs for a legend entry with this tag, *command*
-  will be invoked.  Implicitly the element names in the entry are tags.
-  The syntax is similar to the **bind** command except that it operates on
-  legend entries, rather than widgets. See the **bind** manual entry for
-  complete details on *sequence* and the substitutions performed on
-  *command* before invoking it.
+  given by *eventSequence* occurs for a legend entry with this tag,
+  *command* will be invoked.  Implicitly the element names in the entry are
+  tags.  The syntax is similar to the **bind** command except that it
+  operates on legend entries, rather than widgets. See the **bind** manual
+  entry for complete details on *eventSequence* and the substitutions
+  performed on *command* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *sequence* and *bindTag*.  If the first
-  character of *command* is "+" then *command* augments an existing binding
-  rather than replacing it.  If no *command* argument is provided then the
-  command currently associated with *bindTag* and *sequence* (it's an error
-  occurs if there's no such binding) is returned.  If both *command* and
-  *sequence* are missing then a list of all the event sequences for which
-  bindings have been defined for *bindTag*.
+  any existing binding for the same *eventSequence* and *bindTag*.  If the
+  first character of *command* is "+" then *command* augments an existing
+  binding rather than replacing it.  If no *command* argument is provided
+  then the command currently associated with *bindTag* and *eventSequence*
+  (it's an error occurs if there's no such binding) is returned.  If both
+  *command* and *eventSequence* are missing then a list of all the event
+  sequences for which bindings have been defined for *bindTag*.
 
 *pathName* **legend cget** *option*
 
@@ -2281,23 +2288,22 @@ coordinates "-Inf","-Inf".
 
 The following operations are available for markers.
 
-*pathName* **marker** bind *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ? 
-
+*pathName* **marker** bind *bindTag* ?\ *eventSequence*\ ?  ?\ *command*\ ? 
   Associates *command* with *bindTag* such that whenever the event sequence
-  given by *sequence* occurs for a marker with this tag, *command* will be
-  invoked.  The syntax is similar to the **bind** command except that it
-  operates on graph markers, rather than widgets. See the **bind** manual
-  entry for complete details on *sequence* and the substitutions performed
-  on *command* before invoking it.
+  given by *eventSequence* occurs for a marker with this tag, *command*
+  will be invoked.  The syntax is similar to the **bind** command except
+  that it operates on graph markers, rather than widgets. See the **bind**
+  manual entry for complete details on *eventSequence* and the
+  substitutions performed on *command* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *sequence* and *bindTag*.  If the first
-  character of *command* is "+" then *command* augments an existing binding
-  rather than replacing it.  If no *command* argument is provided then the
-  command currently associated with *bindTag* and *sequence* (it's an error
-  occurs if there's no such binding) is returned.  If both *command* and
-  *sequence* are missing then a list of all the event sequences for which
-  bindings have been defined for *bindTag*.
+  any existing binding for the same *eventSequence* and *bindTag*.  If the
+  first character of *command* is "+" then *command* augments an existing
+  binding rather than replacing it.  If no *command* argument is provided
+  then the command currently associated with *bindTag* and *eventSequence*
+  (it's an error occurs if there's no such binding) is returned.  If both
+  *command* and *eventSequence* are missing then a list of all the event
+  sequences for which bindings have been defined for *bindTag*.
 
 *pathName* **marker cget** *markerName* *option*
 
@@ -3193,9 +3199,9 @@ command.  To convert between screen and graph coordinates, use the
         %W axis configure x -min [%W axis invtransform x %y]
     }
 
-By default, the limits of the axis are determined from data values.
-To reset back to the default limits, set the **-min** and
-**-max** options to the empty value.
+By default, the limits of the axis are determined from data values.  To
+reset back to the default limits, set the **-min** and **-max** options to
+the empty value.
 
  ::
 
@@ -3363,14 +3369,14 @@ to speed up displays.
  4. Don't stipple or dash the element.  Solid lines are much faster.
 
  5. If you update data elements frequently, try turning off the widget's
-    **-bufferelements** option.  When the graph is first displayed, it draws
-    data elements into an internal pixmap.  The pixmap acts as a cache, so
-    that when the graph needs to be redrawn again, and the data elements or
-    coordinate axes haven't changed, the pixmap is simply copied to the
-    screen.  This is especially useful when you are using markers to highlight
-    points and regions on the graph.  But if the graph is updated frequently,
-    changing either the element data or coordinate axes, the buffering becomes
-    redundant.
+    **-bufferelements** option.  When the graph is first displayed, it
+    draws data elements into an internal pixmap.  The pixmap acts as a
+    cache, so that when the graph needs to be redrawn again, and the data
+    elements or coordinate axes haven't changed, the pixmap is simply
+    copied to the screen.  This is especially useful when you are using
+    markers to highlight points and regions on the graph.  But if the graph
+    is updated frequently, changing either the element data or coordinate
+    axes, the buffering becomes redundant.
 
 LIMITATIONS
 -----------
@@ -3378,10 +3384,10 @@ LIMITATIONS
 Auto-scale routines do not use requested min/max limits as boundaries when
 the axis is logarithmically scaled.
 
-The PostScript output generated for polygons with more than 1500
-points may exceed the limits of some printers (See PostScript Language
-Reference Manual, page 568).  The work-around is to break the polygon
-into separate pieces.
+The PostScript output generated for polygons with more than 1500 points may
+exceed the limits of some printers (See PostScript Language Reference
+Manual, page 568).  The work-around is to break the polygon into separate
+pieces.
 
 DIFFERENCES WITH PREVIOUS VERSIONS
 ----------------------------------

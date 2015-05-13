@@ -2203,8 +2203,9 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
            Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
+    Legend *legendPtr;
 
+    legendPtr = graphPtr->legend;
     if (objc == 4) {
         Element *elemPtr;
 
@@ -2246,13 +2247,14 @@ static int
 BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
-    Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
+    Blt_FontMetrics fontMetrics;
     Element *elemPtr;
+    Graph *graphPtr = clientData;
+    Legend *legendPtr;
     Tcl_Obj *listObjPtr, *objPtr;
     int x, y, w, offset, symbolSize;
-    Blt_FontMetrics fontMetrics;
     
+    legendPtr = graphPtr->legend;
     if (Blt_GetElement(interp, graphPtr, objv[3], &elemPtr) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -2294,7 +2296,7 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BindOp --
  *
- *        pathName bind index sequence command
+ *        pathName legend bind eventSequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -2338,9 +2340,6 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      A standard TCL result.
  *
- * Side Effects:
- *      Graph will be redrawn to reflect the new legend attributes.
- *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
@@ -2374,19 +2373,17 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    int flags = BLT_CONFIG_OBJV_ONLY;
-    Legend *legendPtr;
 
-    legendPtr = graphPtr->legend;
     if (objc == 3) {
         return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
-                (char *)legendPtr, (Tcl_Obj *)NULL, flags);
+                (char *)graphPtr->legend, NULL, BLT_CONFIG_OBJV_ONLY);
     } else if (objc == 4) {
         return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
-                (char *)legendPtr, objv[3], flags);
+                (char *)graphPtr->legend, objv[3], BLT_CONFIG_OBJV_ONLY);
     }
     if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, configSpecs, 
-                objc - 3, objv + 3, (char *)legendPtr, flags) != TCL_OK) {
+        objc - 3, objv + 3, (char *)graphPtr->legend, BLT_CONFIG_OBJV_ONLY)
+        != TCL_OK) {
         return TCL_ERROR;
     }
     Blt_ConfigureLegend(graphPtr);
@@ -2400,13 +2397,15 @@ CurselectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
                Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
+    Legend *legendPtr;
     Tcl_Obj *listObjPtr;
 
+    legendPtr = graphPtr->legend;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (legendPtr->flags & SELECT_SORTED) {
         Blt_ChainLink link;
 
+        /* Return the sorted list of selected entries. */
         for (link = Blt_Chain_FirstLink(legendPtr->selected); link != NULL;
              link = Blt_Chain_NextLink(link)) {
             Element *elemPtr;
@@ -2419,7 +2418,8 @@ CurselectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } else {
         Blt_ChainLink link;
 
-        /* List of selected entries is in stacking order. */
+        /* Return a list of selected entries according to stacking
+         * order. */
         for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList);
              link != NULL; link = Blt_Chain_NextLink(link)) {
             Element *elemPtr;
@@ -2460,8 +2460,9 @@ DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
+    Legend *legendPtr;
 
+    legendPtr = graphPtr->legend;
     if (legendPtr->activePtr != NULL) {
         legendPtr->activePtr = NULL;
         if ((legendPtr->flags & HIDDEN) == 0) {
@@ -2483,8 +2484,9 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
+    Legend *legendPtr;
 
+    legendPtr = graphPtr->legend;
     if (objc == 4) {
         Element *elemPtr;
 
@@ -2512,17 +2514,10 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * GetOp --
  *
- *      Find the legend entry from the given argument.  The argument can be
- *      either a screen position "@x,y" or the name of an element.
- *
- *      I don't know how useful it is to test with the name of an element.
- *
  * Results:
  *      A standard TCL result.
  *
- * Side Effects:
- *      Graph will be redrawn to reflect the new legend attributes.
- *
+ *      pathName legend get elemName
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2530,8 +2525,9 @@ static int
 GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
+    Legend *legendPtr;
 
+    legendPtr = graphPtr->legend;
     if (((legendPtr->flags & HIDDEN) == 0) && (legendPtr->numEntries > 0)) {
         Element *elemPtr;
 
@@ -2563,17 +2559,18 @@ static int
 IconOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
-    Graph *graphPtr = clientData;
+    Blt_FontMetrics fontMetrics;
     Blt_Picture picture;
     Element *elemPtr;
-    Legend *legendPtr = graphPtr->legend;
+    Graph *graphPtr = clientData;
+    Legend *legendPtr;
     Pixmap pixmap;
-    Blt_FontMetrics fontMetrics;
     Tk_PhotoHandle photo;
     const char *imageName;
     int isPicture;
     int w, h, x, y, s;
 
+    legendPtr = graphPtr->legend;
     if (GetElementFromObj(graphPtr, objv[3], &elemPtr) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -2658,6 +2655,8 @@ IconOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The selection changes.
  *
+ *      pathName legend selection anchor elemName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2665,10 +2664,11 @@ static int
 SelectionAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                   Tcl_Obj *const *objv)
 {
-    Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
     Element *elemPtr;
+    Graph *graphPtr = clientData;
+    Legend *legendPtr;
 
+    legendPtr = graphPtr->legend;
     if (GetElementFromObj(graphPtr, objv[4], &elemPtr) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -2697,6 +2697,8 @@ SelectionAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The selection changes.
  *
+ *      pathName legend selection clearall
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2705,9 +2707,8 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
                     Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
 
-    ClearSelection(legendPtr);
+    ClearSelection(graphPtr->legend);
     return TCL_OK;
 }
 
@@ -2725,6 +2726,8 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The selection changes.
  *
+ *      pathName legend selection includes elemName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2732,16 +2735,15 @@ static int
 SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
                     Tcl_Obj *const *objv)
 {
-    Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
     Element *elemPtr;
-    int bool;
+    Graph *graphPtr = clientData;
+    int state;
 
     if (GetElementFromObj(graphPtr, objv[4], &elemPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    bool = EntryIsSelected(legendPtr, elemPtr);
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
+    state = EntryIsSelected(graphPtr->legend, elemPtr);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
 
@@ -2761,6 +2763,8 @@ SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The selection changes.
  *
+ *      pathName legend selection mark elemName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2768,10 +2772,11 @@ static int
 SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_Obj *const *objv)
 {
-    Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
     Element *elemPtr;
+    Graph *graphPtr = clientData;
+    Legend *legendPtr;
 
+    legendPtr = graphPtr->legend;
     if (GetElementFromObj(graphPtr, objv[4], &elemPtr) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -2820,6 +2825,8 @@ SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  interp->result will contain a boolean
  *      string indicating if there is a selection.
  *
+ *      pathName legend selection present
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2828,11 +2835,10 @@ SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
                    Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
-    int bool;
+    int state;
 
-    bool = (Blt_Chain_GetLength(legendPtr->selected) > 0);
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
+    state = (Blt_Chain_GetLength(graphPtr->legend->selected) > 0);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
 
@@ -2860,11 +2866,12 @@ static int
 SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
 {
-    Graph *graphPtr = clientData;
-    Legend *legendPtr = graphPtr->legend;
     Element *firstPtr, *lastPtr;
+    Graph *graphPtr = clientData;
+    Legend *legendPtr;
     const char *string;
 
+    legendPtr = graphPtr->legend;
     legendPtr->flags &= ~SELECT_MASK;
     string = Tcl_GetString(objv[3]);
     switch (string[0]) {
@@ -2936,6 +2943,7 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      The selection changes.
  *
  *      pathName legend selection arg arg...
+ *
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec selectionOps[] =
@@ -2955,17 +2963,14 @@ static int
 SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
-    Graph *graphPtr = clientData;
-    GraphLegendProc *proc;
-    int result;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numSelectionOps, selectionOps, BLT_OP_ARG3, 
         objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (graphPtr, interp, objc, objv);
-    return result;
+    return (*proc) (clientData, interp, objc, objv);
 }
 
 /*
