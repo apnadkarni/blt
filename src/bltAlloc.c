@@ -56,11 +56,11 @@
 #endif /* HAVE_MEMORY_H */
 
 /*
- *      Memory allocation/deallocation within BLT is performed via the global
- *      variables bltMallocPtr, bltFreePtr, and bltReallocPtr.  By default,
- *      they point to the same routines that TCL uses.  The routine
- *      Blt_AllocInit allows you to specify your own memory allocation and
- *      deallocation routines for BLT on a library-wide basis.
+ *   Memory allocation/deallocation within BLT is performed via the global
+ *   variables bltMallocPtr, bltFreePtr, and bltReallocPtr.  (Before TCL
+ *   8.6) They default to the same routines that TCL uses.  The routine
+ *   Blt_AllocInit allows you to specify your own memory allocation and
+ *   deallocation routines for BLT on a library-wide basis.
  */
 #ifndef WIN32
 
@@ -134,8 +134,8 @@ Blt_CallocAbortOnError(size_t numElem, size_t elemSize, const char *fileName,
     size = numElem * elemSize;
     ptr = (*bltMallocPtr)(size);
     if (ptr == NULL) {
-        Blt_Warn("line %d of %s: can't allocate %lu item(s) of size %lu each\n", 
-                lineNum, fileName, (unsigned long)numElem, 
+        Blt_Warn("line %d of %s: can't allocate %lu item(s) of "
+                 "size %lu each\n", lineNum, fileName, (unsigned long)numElem, 
                 (unsigned long)elemSize);
         abort();
     }
@@ -281,14 +281,14 @@ Blt_AllocInit(Blt_MallocProc *mallocProc, Blt_ReallocProc *reallocProc,
     initialized = TRUE;
     /* 
      * Try to use the same memory allocator/deallocator that TCL is
-     * using. Before 8.1 it used malloc/free.
+     * using. Before 8.1 it used malloc/free. 
      */
 #if (_TCL_VERSION >= _VERSION(8,1,0)) && (_TCL_VERSION < _VERSION(8,6,0)) 
     /* 
      * We're pointing to the private TclpAlloc/TclpFree instead of public
-     * Tcl_Alloc/Tcl_Free routines because they don't automatically trigger a
-     * panic when not enough memory is available. There are cases (such as
-     * allocating a very large vector) where an out-of-memory error is
+     * Tcl_Alloc/Tcl_Free routines because they don't automatically trigger
+     * a panic when not enough memory is available. There are cases (such
+     * as allocating a very large vector) where an out-of-memory error is
      * recoverable.
      */
     defMallocProc = (Blt_MallocProc *)TclpAlloc;

@@ -1211,7 +1211,7 @@ ParseStartKernPairs(Parser *parserPtr, char *record, int offset)
 
 
 static ParserSpec kernDataSpecs[] = {
-    { "EndKernData",     1, ParseEndSection,      0               },
+    { "EndKernData",     1, ParseEndSection,      0                 },
     { "StartKernPairs",  2, ParseStartKernPairs,  FM(numKernPairs)  },
     { "StartKernPairs0", 2, ParseStartKernPairs,  FM(numKernPairs)  },
     { "StartKernPairs1", 2, ParseStartKernPairs,  FM(numKernPairs)  },
@@ -1308,7 +1308,7 @@ ParseStartCharMetrics(Parser *parserPtr, char *record, int offset)
             if (parserPtr->argc == 0) {
                 continue;
             }
-            result = ParseLine(parserPtr, charMetricsSpecs, numCharMetricsSpecs, 
+            result = ParseLine(parserPtr, charMetricsSpecs, numCharMetricsSpecs,
                                &cm);
             if (result != TCL_OK) {
                 break;
@@ -1356,9 +1356,9 @@ static ParserSpec fontMetricsSpecs[] = {
     { "MappingScheme",      2, ParseInt,              FM(mappingScheme)      },
     { "MetricSets",         2, ParseInt,              FM(metricSets)         },
     { "Notice",             0, NULL,                  FM(notice)             },
-    { "StartCharMetrics",   2, ParseStartCharMetrics, FM(numCharMetrics)       },
-    { "StartComposites",    2, ParseStartComposites,  FM(numComposites)        },
-    { "StartDirection",     2, ParseStartDirection,   FM(numDirection)         },
+    { "StartCharMetrics",   2, ParseStartCharMetrics, FM(numCharMetrics)     },
+    { "StartComposites",    2, ParseStartComposites,  FM(numComposites)      },
+    { "StartDirection",     2, ParseStartDirection,   FM(numDirection)       },
     { "StartKernData",      1, ParseStartKernData,    0                      },
     { "StdHW",              2, ParseNumber,           FM(stdHW)              },
     { "StdVW",              2, ParseNumber,           FM(stdVW)              },

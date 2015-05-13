@@ -81,8 +81,8 @@ Blt_GetDrawableAttribs(Display *display, Drawable drawable)
             return Blt_GetHashValue(hPtr);
         }
     }
-    return NULL;                /* Don't have any information about this
-                                 * drawable. */
+    return NULL;                        /* Don't have any information about
+                                         * this drawable. */
 }
 
 void
@@ -196,17 +196,10 @@ Blt_FindChild(Tk_Window parent, char *name)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_FirstChildWindow --
+ * Blt_FirstChild --
  *
- *      Performs a linear search for the named child window in a given
- *      parent window.
- *
- *      This can be done via Tcl, but not through Tk's C API.  It's simple
- *      enough, if you peek into the Tk_Window structure.
- *
- * Results:
- *      The child Tk_Window. If the named child can't be found, NULL is
- *      returned.
+ *      Returns the first child window of the named window. If the window
+ *      has no children None is retured;
  *
  *---------------------------------------------------------------------------
  */
@@ -221,17 +214,9 @@ Blt_FirstChild(Tk_Window parent)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_FindChild --
+ * Blt_NextChild --
  *
- *      Performs a linear search for the named child window in a given
- *      parent window.
- *
- *      This can be done via Tcl, but not through Tk's C API.  It's simple
- *      enough, if you peek into the Tk_Window structure.
- *
- * Results:
- *      The child Tk_Window. If the named child can't be found, NULL is
- *      returned.
+ *      Find the next sibling window to the given window.
  *
  *---------------------------------------------------------------------------
  */
@@ -339,84 +324,6 @@ Blt_RelinkWindow(
     }
     parentWinPtr->lastChildPtr = winPtr;
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_RelinkWindow --
- *
- *      Relinks a window into a new parent.  The window is unlinked from
- *      its original parent's child list and added onto the end of the new
- *      parent's list.
- *
- *      FIXME:  If the window has focus, the focus should be moved to an
- *              ancestor.  Otherwise, Tk becomes confused about which
- *              Toplevel turns on focus for the window.  Right now this is
- *              done at the TCL layer.  For example, see blt::CreateTearoff
- *              in bltTabset.tcl.
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      The window is unlinked from its childList.
- *
- *---------------------------------------------------------------------------
- */
-void
-Blt_RelinkWindow2(
-    Tk_Window tkwin,            /* Child window to be linked. */
-    Window window,
-    Tk_Window newParent,
-    int x, int y)
-{
-#ifdef notdef
-    TkWindow *winPtr, *parentWinPtr;
-#endif
-    if (Blt_ReparentWindow(Tk_Display(tkwin), window,
-            Tk_WindowId(newParent), x, y) != TCL_OK) {
-        return;
-    }
-#ifdef notdef
-    winPtr = (TkWindow *)tkwin;
-    parentWinPtr = (TkWindow *)newParent;
-
-    winPtr->flags &= ~TK_REPARENTED;
-    UnlinkWindow(winPtr);       /* Remove the window from its parent's
-                                 * list */
-
-    /* Append the window onto the end of the parent's list of children */
-    winPtr->parentPtr = parentWinPtr;
-    winPtr->nextPtr = NULL;
-    if (parentWinPtr->childList == NULL) {
-        parentWinPtr->childList = winPtr;
-    } else {
-        parentWinPtr->lastChildPtr->nextPtr = winPtr;
-    }
-    parentWinPtr->lastChildPtr = winPtr;
-#endif
-}
-
-void
-Blt_UnlinkWindow(Tk_Window tkwin)       /* Child window to be linked. */
-{
-    TkWindow *winPtr;
-    Window root;
-
-    root = Tk_RootWindow(tkwin);
-    if (Blt_ReparentWindow(Tk_Display(tkwin), Tk_WindowId(tkwin), root, 0, 0) 
-        != TCL_OK) {
-        return;
-    }
-    winPtr = (TkWindow *)tkwin;
-    winPtr->flags &= ~TK_REPARENTED;
-#ifdef notdef
-    UnlinkWindow(winPtr);               /* Remove the window from its
-                                         * parent's list */
-#endif
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
