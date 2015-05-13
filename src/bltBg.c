@@ -2656,8 +2656,8 @@ Blt_BackgroundCmdInitProc(Tcl_Interp *interp)
  *
  *---------------------------------------------------------------------------
  */
-Blt_Bg
-Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
+int
+Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name, Bg **bgPtrPtr)
 {
     BackgroundObject *corePtr;
     BackgroundInterpData *dataPtr;
@@ -2670,7 +2670,7 @@ Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
     if (bgPtr == NULL) {
         Tcl_AppendResult(interp, "can't allocate background \"", name, "\".", 
                 (char *)NULL);
-        return NULL;
+        return TCL_ERROR;
     }
     dataPtr = GetBackgroundInterpData(interp);
     hPtr = Blt_CreateHashEntry(&dataPtr->instTable, name, &isNew);
@@ -2701,11 +2701,12 @@ Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
     /* Add the new background to the background's list of clients. */
     bgPtr->link = Blt_Chain_Append(corePtr->chain, bgPtr);
     bgPtr->corePtr = corePtr;
-    return bgPtr;
+    *bgPtrPtr = bgPtr;
+    return TCL_OK;
  error:
     Blt_Free(bgPtr);
     Blt_DeleteHashEntry(&dataPtr->instTable, hPtr);
-    return NULL;
+    return TCL_ERROR;
 }
 
 /*
@@ -2723,10 +2724,11 @@ Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
  *
  *---------------------------------------------------------------------------
  */
-Blt_Bg
-Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
+int
+Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr,
+                 Bg **bgPtrPtr)
 {
-    return Blt_GetBg(interp, tkwin, Tcl_GetString(objPtr));
+    return Blt_GetBg(interp, tkwin, Tcl_GetString(objPtr), bgPtrPtr);
 }
 
 /*

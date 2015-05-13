@@ -564,14 +564,14 @@ BLT_EXTERN void		Blt_PaintPolygon(Blt_Picture picture, int n,
 #ifndef Blt_GetBg_DECLARED
 #define Blt_GetBg_DECLARED
 /* 94 */
-BLT_EXTERN Blt_Bg	Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin,
-				const char *styleName);
+BLT_EXTERN int	Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin,
+                                const char *bgeName, Blt_Bg *bgPtr);
 #endif
 #ifndef Blt_GetBgFromObj_DECLARED
 #define Blt_GetBgFromObj_DECLARED
 /* 95 */
-BLT_EXTERN Blt_Bg	Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin,
-				Tcl_Obj *objPtr);
+BLT_EXTERN int	Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin,
+                                 Tcl_Obj *objPtr, Blt_Bg *bgPtr);
 #endif
 #ifndef Blt_Bg_BorderColor_DECLARED
 #define Blt_Bg_BorderColor_DECLARED
@@ -1478,8 +1478,8 @@ typedef struct BltTkIntProcs {
     int (*blt_GetAssociatedColorFromBrush) (Blt_PaintBrush brush, int x, int y); /* 91 */
     void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_PaintBrush brush); /* 92 */
     void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_PaintBrush brush); /* 93 */
-    Blt_Bg (*blt_GetBg) (Tcl_Interp *interp, Tk_Window tkwin, const char *styleName); /* 94 */
-    Blt_Bg (*blt_GetBgFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr); /* 95 */
+    int (*blt_GetBg) (Tcl_Interp *interp, Tk_Window tkwin, const char *bgName, Blt_Bg *bgPtr); /* 94 */
+    int (*blt_GetBgFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, Blt_Bg *bgPtr); /* 95 */
     XColor * (*blt_Bg_BorderColor) (Blt_Bg bg); /* 96 */
     Tk_3DBorder (*blt_Bg_Border) (Blt_Bg bg); /* 97 */
     Blt_PaintBrush (*blt_Bg_PaintBrush) (Blt_Bg bg); /* 98 */

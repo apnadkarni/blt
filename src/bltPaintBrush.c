@@ -3013,7 +3013,7 @@ Blt_FreeBrush(Blt_PaintBrush brush)
  */
 int
 Blt_GetPaintBrush(Tcl_Interp *interp, const char *string, 
-                             Blt_PaintBrush *brushPtr)
+                  Blt_PaintBrush *brushPtr)
 {
     Blt_HashEntry *hPtr;
     PaintBrushCmd *cmdPtr;

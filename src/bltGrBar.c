@@ -222,6 +222,13 @@ static Blt_CustomOption penColorsOption = {
     ObjToPenColors, PenColorsToObj, NULL, (ClientData)0
 };
 
+static Blt_OptionParseProc ObjToBackground;
+static Blt_OptionPrintProc BackgroundToObj;
+static Blt_CustomOption backgroundOption = {
+    ObjToBackground, BackgroundToObj, NULL, (ClientData)0
+};
+
+
 #define DEF_ACTIVE_PEN          "activeBar"
 #define DEF_AXIS_X              "x"
 #define DEF_AXIS_Y              "y"
@@ -245,7 +252,6 @@ static Blt_CustomOption penColorsOption = {
 #define DEF_PEN_ACTIVE_FILL_COLOR       "red"
 #define DEF_PEN_ACTIVE_OUTLINE_COLOR    "pink"
 #define DEF_PEN_BORDERWIDTH             "2"
-#define DEF_PEN_BRUSH                   (char *)NULL
 #define DEF_PEN_NORMAL_COLOR            "blue"
 #define DEF_PEN_NORMAL_ERRORBAR_COLOR   "blue"
 #define DEF_PEN_NORMAL_FILL_COLOR       "blue"
@@ -265,20 +271,18 @@ static Blt_ConfigSpec penSpecs[] =
         0,  BLT_CONFIG_DONT_SET_DEFAULT | ACTIVE_PEN, &penColorsOption},
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_NORMAL_COLOR, 
         0, BLT_CONFIG_DONT_SET_DEFAULT | NORMAL_PEN,  &penColorsOption},
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_PEN_ACTIVE_FILL_COLOR, Blt_Offset(BarPen, fillBg),
-        BLT_CONFIG_NULL_OK | ACTIVE_PEN},
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_PEN_NORMAL_FILL_COLOR, Blt_Offset(BarPen, fillBg),
-        BLT_CONFIG_NULL_OK | NORMAL_PEN},
+    {BLT_CONFIG_CUSTOM, "-background", "background", "Background",
+        DEF_PEN_ACTIVE_FILL_COLOR, 0, BLT_CONFIG_NULL_OK | ACTIVE_PEN,
+        &backgroundOption},
+    {BLT_CONFIG_CUSTOM, "-background", "background", "Background",
+        DEF_PEN_NORMAL_FILL_COLOR, 0, BLT_CONFIG_NULL_OK | NORMAL_PEN,
+        &backgroundOption},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL,
         (char *)NULL, 0, ALL_PENS},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL,
         (char *)NULL, 0, ALL_PENS},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_PEN_BORDERWIDTH, Blt_Offset(BarPen, borderWidth), ALL_PENS},
-    {BLT_CONFIG_PAINTBRUSH, "-brush", "brush", "Brush", DEF_PEN_BRUSH,
-        Blt_Offset(BarPen, brush), BLT_CONFIG_NULL_OK | ALL_PENS},
     {BLT_CONFIG_COLOR, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
         DEF_PEN_ACTIVE_ERRORBAR_COLOR, Blt_Offset(BarPen, errorBarColor), 
         ACTIVE_PEN},
@@ -339,9 +343,9 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
     {BLT_CONFIG_CUSTOM, "-activepen", "activePen", "ActivePen",
         DEF_ACTIVE_PEN, Blt_Offset(BarElement, activePenPtr), 
         BLT_CONFIG_NULL_OK, &bltBarPenOption},
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_PEN_NORMAL_FILL_COLOR, Blt_Offset(BarElement, builtinPen.fillBg),
-        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-background", "background", "Background",
+        DEF_PEN_NORMAL_FILL_COLOR, Blt_Offset(BarElement, builtinPen),
+        BLT_CONFIG_NULL_OK, &backgroundOption},
     {BLT_CONFIG_FLOAT, "-barwidth", "barWidth", "BarWidth",
         DEF_WIDTH, Blt_Offset(BarElement, barWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -351,9 +355,6 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
         Blt_Offset(BarElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(BarElement, builtinPen.borderWidth), 0},
-    {BLT_CONFIG_PAINTBRUSH, "-brush", "brush", "Brush", DEF_PEN_BRUSH,
-        Blt_Offset(BarElement, builtinPen.brush),
-        BLT_CONFIG_NULL_OK | ALL_PENS},
     {BLT_CONFIG_COLOR, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
         DEF_PEN_NORMAL_ERRORBAR_COLOR, 
         Blt_Offset(BarElement, builtinPen.errorBarColor), 0},
@@ -503,7 +504,7 @@ NameOfBarMode(BarMode mode)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToMode --
+ * ObjToBarMode --
  *
  *      Converts the mode string into its numeric representation.
  *
@@ -527,15 +528,8 @@ NameOfBarMode(BarMode mode)
  */
 /*ARGSUSED*/
 static int
-ObjToBarMode(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Mode style string */
-    char *widgRec,                      /* Cubicle structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToBarMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     BarMode *modePtr = (BarMode *)(widgRec + offset);
     int length;
@@ -577,13 +571,8 @@ ObjToBarMode(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-BarModeToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Row/column structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+BarModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             char *widgRec, int offset, int flags)
 {
     BarMode mode = *(BarMode *)(widgRec + offset);
 
@@ -606,14 +595,8 @@ BarModeToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToPenColors(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* String representing color */
-    char *widgRec,              /* Widget record */
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ObjToPenColors(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     BarPen *penPtr = (BarPen *)(widgRec + offset);
     XColor *colorPtr;
@@ -625,7 +608,7 @@ ObjToPenColors(
     if (penPtr->fillBg != NULL) {
         Blt_Bg_Free(penPtr->fillBg);
     }
-    penPtr->fillBg = Blt_GetBgFromObj(interp, tkwin, objPtr);
+    Blt_GetBgFromObj(NULL, tkwin, objPtr, &penPtr->fillBg);
     if (penPtr->outline != NULL) {
         Tk_Free3DBorder(penPtr->outline);
     }
@@ -652,18 +635,106 @@ ObjToPenColors(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PenColorsToObj(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Not used. */
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,              /* Widget information record */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+PenColorsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)
 {
     BarPen *penPtr = (BarPen *)(widgRec + offset);
 
     return Tcl_NewStringObj(Tk_NameOfColor(penPtr->errorBarColor), -1);
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToBackground --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToBackground(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    BarPen *penPtr = (BarPen *)(widgRec + offset);
+    Blt_Bg bg;
+    Blt_PaintBrush brush;
+    const char *string;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    /* Handle NULL string.  */
+    if (length == 0) {
+        if (penPtr->brush != NULL) {
+            Blt_FreeBrush(penPtr->brush);
+            penPtr->brush = NULL;
+        }
+        if (penPtr->fillBg != NULL) {
+            Blt_Bg_Free(penPtr->fillBg);
+            penPtr->fillBg = NULL;
+        }
+        return TCL_OK;
+    }
+    /* First try as a background */
+    if (Blt_GetBgFromObj(interp, tkwin, objPtr, &bg) == TCL_OK) {
+        if (penPtr->brush != NULL) {
+            Blt_FreeBrush(penPtr->brush);
+            penPtr->brush = NULL;
+        }
+        if (penPtr->fillBg != NULL) {
+            Blt_Bg_Free(penPtr->fillBg);
+            penPtr->fillBg = NULL;
+        }
+        penPtr->fillBg = bg;
+    } else if (Blt_GetPaintBrushFromObj(interp, objPtr, &brush) == TCL_OK) {
+        if (penPtr->brush != NULL) {
+            Blt_FreeBrush(penPtr->brush);
+            penPtr->brush = NULL;
+        }
+        if (penPtr->fillBg != NULL) {
+            Blt_Bg_Free(penPtr->fillBg);
+            penPtr->fillBg = NULL;
+        }
+        penPtr->brush = brush;
+    } else {
+        Tcl_ResetResult(interp);
+        Tcl_AppendResult(interp, "bad color argument \"", string,
+                "\": should be a color name, background, or paintbrush",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * BackgroundToObj --
+ *
+ *      Returns the mode style string based upon the mode flags.
+ *
+ * Results:
+ *      The mode style string is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+BackgroundToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)
+{
+    BarPen *penPtr = (BarPen *)(widgRec + offset);
+    const char *string;
+    
+    if (penPtr->fillBg != NULL) {
+        string = Blt_Bg_Name(penPtr->fillBg);
+    } else if (penPtr->brush != NULL) {
+        string = Blt_GetBrushName(penPtr->brush);
+    } else {
+        string = "";
+    }
+    return Tcl_NewStringObj(string, -1);
+}
+
 
 /* 
  * Zero out the style's number of bars and errorbars. 

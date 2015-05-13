@@ -42,11 +42,11 @@ typedef struct _Blt_Bg *Blt_Bg;
 
 typedef void Blt_BackgroundChangedProc(ClientData clientData);
 
-BLT_EXTERN Blt_Bg Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin,
-        const char *styleName);
+BLT_EXTERN int Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin,
+        const char *bgName, Blt_Bg *bgPtr);
 
-BLT_EXTERN Blt_Bg Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
-        Tcl_Obj *objPtr);
+BLT_EXTERN int Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
+        Tcl_Obj *objPtr, Blt_Bg *bgPtr);
 
 BLT_EXTERN XColor *Blt_Bg_BorderColor(Blt_Bg bg);
 

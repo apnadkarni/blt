@@ -57,7 +57,8 @@ typedef struct _Blt_PaintBrushClass Blt_PaintBrushClass;
 typedef struct _Blt_PaintBrush *Blt_PaintBrush;
 typedef struct _Blt_PaintBrushNotifier *Blt_PaintBrushNotifier;
 
-typedef void (Blt_BrushChangedProc)(ClientData clientData, Blt_PaintBrush brush);
+typedef void (Blt_BrushChangedProc)(ClientData clientData,
+        Blt_PaintBrush brush);
 
 typedef int (Blt_PaintBrushCalcProc)(ClientData clientData, int x, int y,
         double *valuePtr);

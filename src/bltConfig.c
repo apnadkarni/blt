@@ -1449,20 +1449,20 @@ DoConfig(
 
         case BLT_CONFIG_BACKGROUND: 
             {
-                Blt_Bg style;
+                Blt_Bg bg;
                 
                 if (objIsEmpty) {
-                    style = NULL;
+                    bg = NULL;
                 } else {
-                    style = Blt_GetBgFromObj(interp, tkwin, objPtr);
-                    if (style == NULL) {
+                    if (Blt_GetBgFromObj(interp, tkwin, objPtr, &bg)
+                        != TCL_OK) {
                         return TCL_ERROR;
                     }
                 }
                 if (*(Blt_Bg *)ptr != NULL) {
                     Blt_Bg_Free(*(Blt_Bg *)ptr);
                 }
-                *(Blt_Bg *)ptr = style;
+                *(Blt_Bg *)ptr = bg;
             }
             break;
 
