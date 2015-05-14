@@ -83,6 +83,9 @@
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
+#ifdef HAVE_CTYPE_H
+#  include <ctype.h>
+#endif /* HAVE_CTYPE_H */
 #include <stdlib.h>
 #include "bltString.h"
 #include "bltPicture.h"
@@ -668,8 +671,8 @@ static ColorEntry colorTable[] = {
      { "olivedrab2",            179, 238,  58 },
      { "olivedrab3",            154, 205,  50 },
      { "olivedrab4",            105, 139,  34 },
-     { "orange red",            255,  69,   0 },
      { "orange",                255, 165,   0 },
+     { "orange red",            255,  69,   0 },
      { "orange1",               255, 165,   0 },
      { "orange2",               238, 154,   0 },
      { "orange3",               205, 133,   0 },
@@ -902,15 +905,11 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
     } else {
         char c;
         int low, high;
-        char lcolor[200];
 
         low = 0;
         high = numColorEntries - 1;
 
-        /* Copy the color name and convert it to lower case. */
-        strncpy(lcolor, string, 30);
-        Blt_LowerCase(lcolor);
-        c = lcolor[0];
+        c = tolower(string[0]);
         while (low <= high) {
             int median;
             int compare;
@@ -920,7 +919,7 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
             entryPtr = colorTable + median;
             compare = c - entryPtr->name[0];
             if (compare == 0) {
-                compare = strcmp(lcolor, entryPtr->name);
+                compare = strcasecmp(string, entryPtr->name);
             }
             if (compare < 0) {
                 high = median - 1;
@@ -937,7 +936,7 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
     }
     if (interp != NULL) {
         Tcl_AppendResult(interp, "bad color specification \"", string,
-                         "\"", (char *)NULL);
+                "\"", (char *)NULL);
     }
     return TCL_ERROR;
 }

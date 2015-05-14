@@ -1,3 +1,4 @@
+
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltBusy.c --
@@ -112,7 +113,7 @@ typedef struct {
                                          * because the reference window was
                                          * obscurred. */
     unsigned int flags;
-    int darken;
+    int alpha;
     Blt_Picture layer;                  /* Image to be blended/layered at
                                          * the the center of the busy
                                          * window. */
@@ -122,7 +123,8 @@ typedef struct {
     Blt_Chain chain;                    /* Chain of images in sequence. */
     int interval;
     Tcl_TimerToken timerToken;
-
+    Blt_Pixel fadeColor;
+    GC gc;
 } Busy;
 
 #define REDRAW_PENDING  (1<<0)          /* Indicates a DoWhenIdle handler
@@ -147,18 +149,25 @@ typedef struct {
                                          * picture sequence. */
 
 #ifdef WIN32
-#define DEF_BUSY_CURSOR "wait"
+#define DEF_CURSOR      "wait"
 #else
-#define DEF_BUSY_CURSOR "watch"
+#define DEF_CURSOR      "watch"
 #endif
-#define DEF_BUSY_BACKGROUND     STD_NORMAL_BACKGROUND
-#define DEF_BUSY_OPAQUE         "0"
-#define DEF_BUSY_DARKEN         "30"
-#define DEF_BUSY_INTERVAL       "0"
+#define DEF_BACKGROUND   STD_NORMAL_BACKGROUND
+#define DEF_FADE        "black"
+#define DEF_DELAY       "0"
+#define DEF_OPACITY     "0.0"
 
+static Blt_OptionParseProc ObjToOpacity;
+static Blt_OptionPrintProc OpacityToObj;
+static Blt_CustomOption opacityOption =
+{
+    ObjToOpacity, OpacityToObj, NULL, (ClientData)0
+};
+
+static Blt_OptionFreeProc FreeImageProc;
 static Blt_OptionParseProc ObjToImageProc;
 static Blt_OptionPrintProc ImageToObjProc;
-static Blt_OptionFreeProc FreeImageProc;
 static Blt_CustomOption pictImageOption =
 {
     ObjToImageProc, ImageToObjProc, FreeImageProc, (ClientData)0
@@ -167,19 +176,18 @@ static Blt_CustomOption pictImageOption =
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_BUSY_BACKGROUND, Blt_Offset(Busy, bg), 0},
+        DEF_BACKGROUND, Blt_Offset(Busy, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_CURSOR, "-cursor", "busyCursor", "BusyCursor",
-        DEF_BUSY_CURSOR, Blt_Offset(Busy, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_INT, "-darken", "darken", "Darken", DEF_BUSY_DARKEN, 
-        Blt_Offset(Busy, darken), 0},
-    {BLT_CONFIG_INT_NNEG, "-delay", "delay", "Delay", 
-        DEF_BUSY_INTERVAL, Blt_Offset(Busy, interval), 0},
+        DEF_CURSOR, Blt_Offset(Busy, cursor), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_PIX32, "-fadecolor", "fadeColor", "FadeColor",
+        DEF_FADE, Blt_Offset(Busy, fadeColor), 0},
+    {BLT_CONFIG_INT_NNEG, "-delay", "delay", "Delay", DEF_DELAY,
+        Blt_Offset(Busy, interval), 0},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL, 
         Blt_Offset(Busy, layer), BLT_CONFIG_NULL_OK, &pictImageOption},
-    {BLT_CONFIG_BITMASK, "-opaque", "opaque", "Opaque", DEF_BUSY_OPAQUE, 
-        Blt_Offset(Busy, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)SNAPSHOT},
+    {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "opacity", DEF_OPACITY, 
+        Blt_Offset(Busy, alpha), 0, &opacityOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -376,6 +384,66 @@ ImageToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 }
 
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToOpacity --
+ *
+ *      Converts the string representing the percent of opacity to an
+ *      alpha value 0..255.
+ *
+ * Results:
+ *      A standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToOpacity(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
+{
+    int *alphaPtr = (int *)(widgRec + offset);
+    double opacity;
+
+    if (Tcl_GetDoubleFromObj(interp, objPtr, &opacity) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if ((opacity < 0.0) || (opacity > 100.0)) {
+        Tcl_AppendResult(interp, "invalid percent opacity \"", 
+                Tcl_GetString(objPtr), "\": number should be between 0 and 100",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    opacity = (opacity / 100.0) * 255.0;
+    *alphaPtr = ROUND(opacity);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * OpacityToObj --
+ *
+ *      Convert the alpha value into a string Tcl_Obj representing a
+ *      percentage.
+ *
+ * Results:
+ *      The string representation of the opacity percentage is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+OpacityToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             char *widgRec, int offset, int flags)  
+{
+    int *alphaPtr = (int *)(widgRec + offset);
+    double opacity;
+
+    opacity = (*alphaPtr / 255.0) * 100.0;
+    return Tcl_NewDoubleObj(opacity);
+}
+
 static void
 GetBusyWindowCoordinates(Busy *busyPtr, int *xPtr, int *yPtr)
 {
@@ -437,31 +505,16 @@ SnapBackground(Busy *busyPtr)
             return;
         }
         busyPtr->original = picture;
-        if (busyPtr->darken > 0) {
-            int delta;
+        if (busyPtr->alpha != 0x0) {
             Blt_Picture fg;
             
             /* Fade to black. */
-            delta = (int)((busyPtr->darken / 100.0) * 255);
             fg = Blt_CreatePicture(busyPtr->width, busyPtr->height);
-            color.u32 = 0x0;
-            color.Alpha = (delta < 0) ? 0 : (delta > 255) ? 255 : delta;
+            color.u32 = busyPtr->fadeColor.u32;
+            color.Alpha = busyPtr->alpha;
             Blt_BlankPicture(fg, color.u32);
             Blt_BlendRegion(picture, fg, 0, 0, busyPtr->width, busyPtr->height,
-                            0, 0);
-            Blt_FreePicture(fg);
-        } else if (busyPtr->darken < 0) {
-            int delta;
-            Blt_Picture fg;
-            
-            /* Fade to white. */
-            delta = (int)((-busyPtr->darken / 100.0) * 255);
-            fg = Blt_CreatePicture(busyPtr->width, busyPtr->height);
-            color.Red = color.Green = color.Blue = 0xFF;
-            color.Alpha = (delta < 0) ? 0 : (delta > 255) ? 255 : delta;
-            Blt_BlankPicture(fg, color.u32);
-            Blt_BlendRegion(picture, fg, 0, 0, busyPtr->width, busyPtr->height,
-                 0, 0);
+                0, 0);
             Blt_FreePicture(fg);
         }           
     }
@@ -827,14 +880,13 @@ BusyTimerProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureBusy(
-    Tcl_Interp *interp,
-    Busy *busyPtr,
-    int objc,
-    Tcl_Obj *const *objv,
-    unsigned int flags)
+ConfigureBusy(Tcl_Interp *interp, Busy *busyPtr, int objc, Tcl_Obj *const *objv,
+              unsigned int flags)
 {
     Tk_Cursor oldCursor;
+    GC newGC;
+    XGCValues gcValues;
+    unsigned long gcMask;
 
     oldCursor = busyPtr->cursor;
     if (Blt_ConfigureWidgetFromObj(interp, busyPtr->tkRef, configSpecs, 
@@ -849,6 +901,17 @@ ConfigureBusy(
             Tk_DefineCursor(busyPtr->tkBusy, busyPtr->cursor);
         }
     }
+    if (busyPtr->alpha == 0) {
+        busyPtr->flags &= SNAPSHOT;
+    } else {
+        busyPtr->flags |= SNAPSHOT;
+    }
+    gcMask = 0;
+    newGC = Tk_GetGC(busyPtr->tkRef, gcMask, &gcValues);
+    if (busyPtr->gc != NULL) {
+        Tk_FreeGC(busyPtr->display, busyPtr->gc);
+    }
+    busyPtr->gc = newGC;
     return TCL_OK;
 }
 
@@ -924,9 +987,6 @@ NewBusy(Tcl_Interp *interp, Tk_Window tkRef)
     busyPtr->height = Tk_Height(tkRef);
     busyPtr->x = Tk_X(tkRef);
     busyPtr->y = Tk_Y(tkRef);
-    busyPtr->cursor = None;
-    busyPtr->darken = 30;
-    busyPtr->flags = 0;
     Tk_SetClass(tkBusy, "BltBusy");
     Blt_SetWindowInstanceData(tkBusy, busyPtr);
     return busyPtr;
@@ -1093,6 +1153,9 @@ DestroyBusy(DestroyData data)           /* Busy window structure record */
     }
     if (busyPtr->original != NULL) {
         Blt_FreePicture(busyPtr->original);
+    }
+    if (busyPtr->gc != NULL) {
+        Tk_FreeGC(busyPtr->display, busyPtr->gc);
     }
     Blt_Free(busyPtr);
 }
@@ -1816,11 +1879,6 @@ DisplayBusy(ClientData clientData)
         busyPtr->x = Tk_X(busyPtr->tkRef);
         busyPtr->y = Tk_Y(busyPtr->tkRef);
 
-#ifdef notdef
-    fprintf(stderr, "ConfigureNotify: busy window %s is at %d,%d %dx%d\n", 
-            Tk_PathName(busyPtr->tkBusy), x, y, 
-            busyPtr->width, busyPtr->height);
-#endif
         Tk_MoveResizeWindow(busyPtr->tkBusy, x, y, busyPtr->width, 
                             busyPtr->height);
         if (busyPtr->flags & ACTIVE) {
@@ -1872,8 +1930,7 @@ DisplayBusy(ClientData clientData)
             Blt_FreePicture(copy);
         }
     }
-    XCopyArea(busyPtr->display, drawable, Tk_WindowId(tkwin), 
-              DefaultGC(busyPtr->display, Tk_ScreenNumber(tkwin)), 
+    XCopyArea(busyPtr->display, drawable, Tk_WindowId(tkwin), busyPtr->gc, 
               0, 0, busyPtr->width, busyPtr->height, 0, 0);
     Tk_FreePixmap(busyPtr->display, drawable);
 }
