@@ -134,7 +134,7 @@ enum FontsetTypes {
 #endif
 
 typedef struct {
-    char *family;
+    const char *family;
     const char *weight;
     const char *slant;
     const char *width;
@@ -519,7 +519,7 @@ static void
 TkFreeFontPattern(TkFontPattern *patternPtr)
 {
     if (patternPtr->family != NULL) {
-        Blt_Free((char *)patternPtr->family);
+        Blt_Free(patternPtr->family);
     }
     Blt_Free(patternPtr);
 }

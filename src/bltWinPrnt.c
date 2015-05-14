@@ -165,17 +165,17 @@ typedef struct {
 typedef struct {
     Tcl_Interp *interp;
     Tcl_Command cmdToken;       /* Token for vector's TCL command. */
-    char *name;
-    char *fileName;
+    const char *name;
+    const char *fileName;
     PrintDrawable drawable;
     HANDLE hPrinter;
     Blt_HashEntry *hashPtr;
     Blt_HashTable *tablePtr;
-    char *driverName;
-    char *deviceName;
-    char *printerName;
-    char *docName;
-    char *portName;
+    const char *driverName;
+    const char *deviceName;
+    const char *printerName;
+    const char *docName;
+    const char *portName;
     DEVMODE *dmPtr;
     int dmSize;
 } PrinterQueue;

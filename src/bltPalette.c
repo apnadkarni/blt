@@ -1482,11 +1482,10 @@ SearchForEntry(size_t length, PaletteInterval *entries, double value)
 static int 
 InterpolateColor(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
 {
-    Blt_Pixel color;
     PaletteInterval *entryPtr;
     double t;
 
-    color.u32 = 0x00;                   /* Default to empty. */
+    colorPtr->u32 = 0x00;               /* Default to empty. */
     if (cmdPtr->numColors == 0) {
         return FALSE;
     }
@@ -1507,8 +1506,7 @@ InterpolateColor(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
         return FALSE;
     }
     t = (value - entryPtr->min) / (entryPtr->max - entryPtr->min);
-    color.u32 = ColorLerp(entryPtr, t);
-    *colorPtr = color;
+    colorPtr->u32 = ColorLerp(entryPtr, t);
     return TRUE;
 }
 

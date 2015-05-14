@@ -2013,6 +2013,7 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
     rgn = TkCreateRegion();
     TkUnionRectWithRegion(&clip, rgn, rgn);
 
+    painter = NULL;                     /* Suppress compiler warning. */
     relief = (penPtr->relief == TK_RELIEF_SOLID) ?
         TK_RELIEF_FLAT: penPtr->relief;
     if (penPtr->fillBg != NULL) {
