@@ -6806,6 +6806,8 @@ FirstMajorTick(Axis *axisPtr)
         /* The number of major ticks and the step has been computed in
          * LinearAxis. */
         tick.value = ticksPtr->initial;
+        fprintf(stderr, "axis=%s, initial=%.15g\n",
+                axisPtr->obj.name, ticksPtr->initial);
         break;
     }
     if (ticksPtr->index >= ticksPtr->numSteps) {
@@ -6830,16 +6832,16 @@ NextMajorTick(Axis *axisPtr)
     if (ticksPtr->index >= ticksPtr->numSteps) {
         return tick;
     }
-    d = 0.0;                            /* Suppress compiler warning. */
+    d = ticksPtr->initial; 
     switch (ticksPtr->scaleType) {
     case SCALE_LINEAR:
     default:
-        d = ticksPtr->index * ticksPtr->step;
-        d = UROUND(d, ticksPtr->step);
+        d += ticksPtr->index * ticksPtr->step;
+        d = UROUND(d, ticksPtr->step) + 0.0;
         break;
 
     case SCALE_LOG:
-        d = ticksPtr->range * logTable[ticksPtr->index];
+        d += ticksPtr->range * logTable[ticksPtr->index];
         break;
 
     case SCALE_CUSTOM:                  /* User defined minor ticks */
@@ -6862,7 +6864,7 @@ NextMajorTick(Axis *axisPtr)
                         numDays = numDaysYear[IsLeapYear(year)]; 
                         ticksPtr->numDaysFromInitial += numDays;
                     }
-                    d = ticksPtr->numDaysFromInitial * SECONDS_DAY;
+                    d += ticksPtr->numDaysFromInitial * SECONDS_DAY;
                 }
                 break;
             case TIME_FORMAT_YEARS5:
@@ -6870,7 +6872,6 @@ NextMajorTick(Axis *axisPtr)
                 {
                     int i;
                     
-                    d = 0.0;
                     for (i = 0; i < ticksPtr->index; i++) {
                         int year, numDays;
                         
@@ -6900,27 +6901,27 @@ NextMajorTick(Axis *axisPtr)
                     }
                     numDays += numDaysMonth[IsLeapYear(year)][mon];
                 }
-                d = numDays * SECONDS_DAY;
+                d += numDays * SECONDS_DAY;
             }
             break;
         case TIME_WEEKS:
         case TIME_HOURS:
         case TIME_MINUTES:
-            d = ticksPtr->index * ticksPtr->step;
+            d += ticksPtr->index * ticksPtr->step;
             break;
         case TIME_DAYS:
-            d = ticksPtr->index * ticksPtr->step;
+            d += ticksPtr->index * ticksPtr->step;
             break;
         case TIME_SECONDS:
         case TIME_SUBSECONDS:
-            d = ticksPtr->index * ticksPtr->step;
+            d += ticksPtr->index * ticksPtr->step;
             d = UROUND(d, ticksPtr->step);
             break;
         }
         break;
 
     }
-    tick.value = ticksPtr->initial + d;
+    tick.value = d;
     tick.isValid = TRUE;
     return tick;
 }
