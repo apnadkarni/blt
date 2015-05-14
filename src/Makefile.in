@@ -313,6 +313,7 @@ PICTURE_PKG_OBJS =	bltPictBmp.o \
 			bltPictPhoto.o \
 			bltPictPng.o \
 			bltPictPs.o \
+			bltPictText.o \
 			bltPictTga.o \
 			bltPictTif.o \
 			bltPictXbm.o \

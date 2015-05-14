@@ -39,6 +39,10 @@ MYSQL_INC_SPEC =	@MYSQL_INC_SPEC@
 MYSQL_LIB_SPEC =	@MYSQL_LIB_SPEC@
 PNG_INC_SPEC =		@PNG_INC_SPEC@
 PNG_LIB_SPEC =		@PNG_LIB_SPEC@ $(Z_LIB_SPEC)
+PQ_INC_SPEC =		@PQ_INC_SPEC@
+PQ_LIB_SPEC =		@PQ_LIB_SPEC@
+SQLITE_INC_SPEC =	@SQLITE_INC_SPEC@
+SQLITE_LIB_SPEC =	@SQLITE_LIB_SPEC@
 TCL_INC_SPEC =		@TCL_INC_SPEC@
 TCL_LIB_SPEC =		@TCL_LIB_SPEC@
 TCL_STUBS_SPEC =	@TCL_STUBS_SPEC@
@@ -122,6 +126,8 @@ BLT_SO_LIBS =		$(BLT_TK_SO_LIBS) $(BLT_TCL_SO_LIBS)
 
 BLT_TCL_LIBS =		$(BLT_TCL_SO_LIBS) \
 			$(MYSQL_LIB_SPEC) \
+			$(SQLITE_LIB_SPEC) \
+			$(PQ_LIB_SPEC) \
 			$(EXPAT_LIB_SPEC) 
 
 blt_a =			lib$(blt_name).a
@@ -140,13 +146,17 @@ blt_tk_so =		$(SO_PREFIX)Blt$(blt_tk_name)$(SO_EXT)
 
 blt_table_csv_name =	TableCsv$(version)$(LIB_SUFFIX)
 blt_table_mysql_name =	TableMysql$(version)$(LIB_SUFFIX)
-blt_table_tree_name =	TableTree$(version)$(LIB_SUFFIX)
-blt_table_txt_name =	TableTxt$(version)$(LIB_SUFFIX)
-blt_table_vec_name =	TableVector$(version)$(LIB_SUFFIX)
-blt_table_xml_name =	TableXml$(version)$(LIB_SUFFIX)
+blt_table_psql_name =   TablePsql$(version)$(LIB_SUFFIX)
+blt_table_sqlite_name = TableSqlite$(version)$(LIB_SUFFIX)
+blt_table_tree_name =   TableTree$(version)$(LIB_SUFFIX)
+blt_table_txt_name =    TableTxt$(version)$(LIB_SUFFIX)
+blt_table_vec_name =    TableVector$(version)$(LIB_SUFFIX)
+blt_table_xml_name =    TableXml$(version)$(LIB_SUFFIX)
 
 blt_table_csv_implib =	$(IMPLIB_PREFIX)$(blt_table_csv_name)$(IMPLIB_EXT)
 blt_table_mysql_implib = $(IMPLIB_PREFIX)$(blt_table_mysql_name)$(IMPLIB_EXT)
+blt_table_psql_implib =	$(IMPLIB_PREFIX)$(blt_table_psql_name)$(IMPLIB_EXT)
+blt_table_sqlite_implib = $(IMPLIB_PREFIX)$(blt_table_sqlite_name)$(IMPLIB_EXT)
 blt_table_tree_implib =	$(IMPLIB_PREFIX)$(blt_table_tree_name)$(IMPLIB_EXT)
 blt_table_txt_implib =	$(IMPLIB_PREFIX)$(blt_table_txt_name)$(IMPLIB_EXT)
 blt_table_vec_implib =	$(IMPLIB_PREFIX)$(blt_table_vec_name)$(IMPLIB_EXT)
@@ -154,6 +164,8 @@ blt_table_xml_implib =	$(IMPLIB_PREFIX)$(blt_table_xml_name)$(IMPLIB_EXT)
 
 blt_table_csv_so =	$(blt_table_csv_name)$(SO_EXT)
 blt_table_mysql_so =	$(blt_table_mysql_name)$(SO_EXT)
+blt_table_psql_so =     $(blt_table_psql_name)$(SO_EXT)
+blt_table_sqlite_so =   $(blt_table_sqlite_name)$(SO_EXT)
 blt_table_tree_so =	$(blt_table_tree_name)$(SO_EXT)
 blt_table_txt_so =	$(blt_table_txt_name)$(SO_EXT)
 blt_table_vec_so =	$(blt_table_vec_name)$(SO_EXT)
@@ -228,6 +240,12 @@ ifneq ("$(EXPAT_LIB_SPEC)", "")
 endif
 ifneq ("$(MYSQL_LIB_SPEC)", "")
    blt_tcl_pkgs += $(blt_table_mysql_so) 
+endif
+ifneq ("$(SQLITE_LIB_SPEC)", "")
+   blt_tcl_pkgs += $(blt_table_sqlite_so) 
+endif
+ifneq ("$(PQ_LIB_SPEC)", "")
+   blt_tcl_pkgs += $(blt_table_psql_so) 
 endif
 ifneq ("$(LIBSSH2_LIB_SPEC)", "")
    blt_tcl_pkgs += $(blt_sftp_so) 
@@ -312,7 +330,6 @@ TABLEVIEW_OBJS =	bltTableView.o \
 PICTURE_OBJS =		bltPicture.o \
 			bltPictCanv.o \
 			bltPictColor.o \
-			bltPictGradient.o \
 			bltPictMmx.o 
 
 PICTURE_PKG_OBJS =	bltPictBmp.o \
@@ -324,11 +341,11 @@ PICTURE_PKG_OBJS =	bltPictBmp.o \
 			bltPictPhoto.o \
 			bltPictPng.o \
 			bltPictPs.o \
+			bltPictText.o \
 			bltPictTga.o \
 			bltPictTif.o \
 			bltPictXbm.o \
-			bltPictXpm.o \
-			bltPictText.o \
+			bltPictXpm.o 
 
 TREE_OBJS =		bltTree.o \
 			bltTreeCmd.o \
@@ -343,6 +360,8 @@ DATATABLE_OBJS =	bltDataTable.o \
 
 DATATABLE_PKG_OBJS =	bltDataTableCsv.o \
 			bltDataTableMysql.o \
+			bltDataTablePsql.o \
+			bltDataTableSqlite.o \
 			bltDataTableTree.o \
 			bltDataTableTxt.o \
 			bltDataTableVec.o \
@@ -357,7 +376,6 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltCrc32.o \
 			bltCsv.o \
 			$(DATATABLE_OBJS) \
-			bltDate.o \
 			bltDebug.o \
 			bltFileCmd.o \
 			bltHash.o \
@@ -370,10 +388,12 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltSpline.o \
 			bltSwitch.o \
 			bltTags.o \
+			bltTimeStamp.o \
 			$(TREE_OBJS) \
 			bltUtil.o \
 			bltVar.o \
 			bltVecCmd.o \
+			bltVecFft.o \
 			bltVecMath.o \
 			bltVector.o \
 			bltWatch.o \
@@ -382,8 +402,7 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltWinUtil.o \
 			bltTclInit.o \
 			bltTclProcs.o \
-			bltTclIntProcs.o \
-			strptime.o
+			bltTclIntProcs.o 
 
 BLT_TCL_OBJS =		$(BLT_TCL_SO_OBJS) \
 			bltTclPkgsInit.o \
@@ -403,6 +422,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltBusy.o \
 			bltCanvEps.o \
 			bltComboButton.o \
+			bltComboEditor.o \
 			bltComboEntry.o \
 			bltComboMenu.o \
 			bltComboTree.o \
@@ -576,6 +596,18 @@ $(blt_table_mysql_so): bltDataTableMysql.o
 	$(CC) -shared -o $(blt_table_mysql_so) \
 	    -Wl,--out-implib=$(blt_table_mysql_implib) bltDataTableMysql.o \
 	    $(blt_tcl_lib) $(tcl_lib_spec) $(MYSQL_LIB_SPEC)
+
+$(blt_table_psql_so): bltDataTablePsql.o 
+	$(RM) $@
+	$(CC) -shared -o $(blt_table_psql_so) \
+	    -Wl,--out-implib=$(blt_table_psql_implib) bltDataTablePsql.o \
+	    $(blt_tcl_lib) $(tcl_lib_spec) $(PSQL_LIB_SPEC)
+
+$(blt_table_sqlite_so): bltDataTableSqlite.o $(blt_tcl_lib) 
+	$(RM) $@
+	$(CC) -shared -o $(blt_table_sqlite_so) \
+	    -Wl,--out-implib=$(blt_table_sqlite_implib) bltDataTableSqlite.o \
+	    $(blt_tcl_lib) $(tcl_lib_spec) $(SQLITE_LIB_SPEC)
 
 $(blt_table_tree_so): bltDataTableTree.o $(blt_tcl_lib)
 	$(RM) $@
