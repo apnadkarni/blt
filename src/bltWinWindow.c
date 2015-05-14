@@ -595,8 +595,10 @@ Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int format,
     HENHMETAFILE hMetaFile;
     Tcl_DString ds;
     const char *title;
-    
-    hRefDC = TkWinGetDrawableDC(Tk_Display(tkwin), Tk_WindowId(tkwin), &state);
+    Drawable drawable;
+
+    drawable = Tk_WindowId(tkwin);
+    hRefDC = TkWinGetDrawableDC(Tk_Display(tkwin), drawable, &state);
     
     Tcl_DStringInit(&ds);
     Tcl_DStringAppend(&ds, Tk_Class(tkwin), -1);
