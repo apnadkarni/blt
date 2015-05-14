@@ -2898,7 +2898,7 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
     oldPen = SelectPen(dc, pen);
     brush = CreateSolidBrush(penPtr->traceGC->foreground);
     oldBrush = SelectBrush(dc, brush);
-    SetROP2(dc, tkpWinRopModes[penPtr->traceGC->function]);
+    /* SetROP2(dc, tkpWinRopModes[penPtr->traceGC->function]); */
 
     count = 0;
     for (p = tracePtr->head; p != NULL; p = p->next) {
