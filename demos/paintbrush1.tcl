@@ -18,6 +18,15 @@ proc LinearGradientBrush  { args } {
     blt::paintbrush delete $brush
 }
 
+proc RadialGradientBrush  { args } {
+    global img
+
+    set brush [eval blt::paintbrush create radial $args]
+    $img blank white
+    $img draw rectangle 25 25 175 175 -color $brush
+    blt::paintbrush delete $brush
+}
+
 proc ConicalGradientBrush  { args } {
     global img
 
@@ -98,6 +107,14 @@ $m add -text "Checker Brush" -command {
     CheckerBrush
 }
 
+$m add -text "Radial Brush" -command {
+    RadialGradientBrush \
+	-jitter 3 \
+	-colorscale linear \
+	-palette blue-to-green.rgb \
+	-repeat reversing
+}
+
 $m add -text "Conical Brush" -command {
     ConicalGradientBrush 
 }
@@ -106,11 +123,10 @@ $m add -text "Linear Brush" -command {
     LinearGradientBrush \
 	-jitter 3 \
 	-colorscale linear \
-	-startpos n \
-	-endpos s \
+	-from n \
+	-to s \
 	-palette spectral.rgb \
 	-repeat reversing
 }
 
-
-
+$m invoke "Color Brush"
