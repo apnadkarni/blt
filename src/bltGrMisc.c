@@ -1630,15 +1630,9 @@ Blt_Fill3DRectangle(
         if (relief == TK_RELIEF_RAISED) {
             lightGC = Tk_3DBorderGC(tkwin, border, TK_3D_FLAT_GC);
             darkGC = Tk_3DBorderGC(tkwin, border, TK_3D_DARK_GC);
-#ifdef notdef
-            darkGC = DefaultGC(Tk_Display(tkwin), Tk_ScreenNumber(tkwin));
-#endif
         } else {
 
             lightGC = Tk_3DBorderGC(tkwin, border, TK_3D_LIGHT_GC);
-#ifdef notdef
-            lightGC = DefaultGC(Tk_Display(tkwin), Tk_ScreenNumber(tkwin));
-#endif
             darkGC = Tk_3DBorderGC(tkwin, border, TK_3D_FLAT_GC);
         }
         XDrawLine(Tk_Display(tkwin), drawable, lightGC, x, y, x2, y);
@@ -1677,14 +1671,8 @@ Blt_Draw3DRectangle(
         if (relief == TK_RELIEF_RAISED) {
             lightGC = Tk_3DBorderGC(tkwin, border, TK_3D_FLAT_GC);
             darkGC = Tk_3DBorderGC(tkwin, border, TK_3D_DARK_GC);
-#ifdef notdef
-            darkGC = DefaultGC(Tk_Display(tkwin), Tk_ScreenNumber(tkwin));
-#endif
         } else {
             lightGC = Tk_3DBorderGC(tkwin, border, TK_3D_LIGHT_GC);
-#ifdef notdef
-            lightGC = DefaultGC(Tk_Display(tkwin), Tk_ScreenNumber(tkwin));
-#endif
             darkGC = Tk_3DBorderGC(tkwin, border, TK_3D_FLAT_GC);
         }
         XDrawLine(Tk_Display(tkwin), drawable, darkGC, x2, y2, x2, y);

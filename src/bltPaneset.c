@@ -5847,7 +5847,6 @@ DisplayProc(ClientData clientData)
     Paneset *setPtr = clientData;
     Pixmap drawable;
     unsigned int w, h;
-    GC gc;
 
     setPtr->flags &= ~REDRAW_PENDING;
 #if TRACE
@@ -5889,9 +5888,8 @@ DisplayProc(ClientData clientData)
         Tk_Depth(setPtr->tkwin));
     Blt_Bg_FillRectangle(setPtr->tkwin, drawable, setPtr->bg, 0, 0, w, h, 
         0, TK_RELIEF_FLAT);
-    gc = DefaultGC(setPtr->display, Tk_ScreenNumber(setPtr->tkwin));
     XCopyArea(setPtr->display, drawable, Tk_WindowId(setPtr->tkwin),
-        gc, 0, 0, w, h, 0, 0);
+        setPtr->gc, 0, 0, w, h, 0, 0);
     if (setPtr->numVisible > 0) {
         if (ISVERT(setPtr)) {
             VerticalPanes(setPtr);
