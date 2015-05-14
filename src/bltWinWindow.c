@@ -416,11 +416,8 @@ Blt_ResizeToplevelWindow(Tk_Window tkwin, int w, int h)
 }
 
 int
-Blt_ReparentWindow(
-    Display *display, 
-    Window window, 
-    Window newParent, 
-    int x, int y)
+Blt_ReparentWindow(Display *display, Window window, Window newParent,
+                   int x, int y)
 {
     XReparentWindow(display, window, newParent, x, y);
     return TCL_OK;
@@ -496,4 +493,161 @@ Blt_GetWindowStack(Display *display, ClientData clientData)
         Blt_Chain_Append(chain, (ClientData)hWnd);
     }
     return chain;
+}
+
+
+static int
+InitMetaFileHeader(Tk_Window tkwin, int width, int height, APMHEADER *mfhPtr)
+{
+    unsigned int *p;
+    unsigned int sum;
+#define MM_INCH         25.4
+    int xdpi, ydpi;
+
+    mfhPtr->key = 0x9ac6cdd7L;
+    mfhPtr->hmf = 0;
+    mfhPtr->inch = 1440;
+
+    Blt_ScreenDPI(tkwin, &xdpi, &ydpi);
+    mfhPtr->bbox.Left = mfhPtr->bbox.Top = 0;
+    mfhPtr->bbox.Bottom = (SHORT)((width * 1440)/ (float)xdpi);
+    mfhPtr->bbox.Right = (SHORT)((height * 1440) / (float)ydpi);
+    mfhPtr->reserved = 0;
+    sum = 0;
+    for (p = (unsigned int *)mfhPtr; 
+         p < (unsigned int *)&(mfhPtr->checksum); p++) {
+        sum ^= *p;
+    }
+    mfhPtr->checksum = sum;
+    return TCL_OK;
+}
+
+static int
+CreateAPMetaFile(Tcl_Interp *interp, HANDLE hMetaFile, HDC hDC,
+                 APMHEADER *mfhPtr, const char *fileName)
+{
+    HANDLE hFile;
+    HANDLE hMem;
+    LPVOID buffer;
+    int result;
+    DWORD count, numBytes;
+
+    result = TCL_ERROR;
+    hMem = NULL;
+
+    hFile = CreateFile(
+       fileName,                        /* File path */
+       GENERIC_WRITE,                   /* Access mode */
+       0,                               /* No sharing. */
+       NULL,                            /* Security attributes */
+       CREATE_ALWAYS,                   /* Overwrite any existing file */
+       FILE_ATTRIBUTE_NORMAL,
+       NULL);                           /* No template file */
+
+    if (hFile == INVALID_HANDLE_VALUE) {
+        Tcl_AppendResult(interp, "can't create metafile \"", fileName, 
+                "\":", Blt_LastError(), (char *)NULL);
+        return TCL_ERROR;
+    }
+    if ((!WriteFile(hFile, (LPVOID)mfhPtr, sizeof(APMHEADER), &count, 
+                NULL)) || (count != sizeof(APMHEADER))) {
+        Tcl_AppendResult(interp, "can't create metafile header to \"", 
+                         fileName, "\":", Blt_LastError(), (char *)NULL);
+        goto error;
+    }
+    numBytes = GetWinMetaFileBits(hMetaFile, 0, NULL, MM_ANISOTROPIC, hDC);
+    hMem = GlobalAlloc(GHND, numBytes);
+    if (hMem == NULL) {
+        Tcl_AppendResult(interp, "can't create allocate global memory:", 
+                Blt_LastError(), (char *)NULL);
+        goto error;
+    }
+    buffer = (LPVOID)GlobalLock(hMem);
+    if (!GetWinMetaFileBits(hMetaFile, numBytes, buffer, MM_ANISOTROPIC, hDC)) {
+        Tcl_AppendResult(interp, "can't get metafile bits:", 
+                Blt_LastError(), (char *)NULL);
+        goto error;
+    }
+    if ((!WriteFile(hFile, buffer, numBytes, &count, NULL)) ||
+        (count != numBytes)) {
+        Tcl_AppendResult(interp, "can't write metafile bits:", 
+                Blt_LastError(), (char *)NULL);
+        goto error;
+    }
+    result = TCL_OK;
+ error:
+    CloseHandle(hFile);
+    if (hMem != NULL) {
+        GlobalUnlock(hMem);
+        GlobalFree(hMem);
+    }
+    return result;
+}
+
+int
+Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int format,
+                   Blt_DrawCmdProc *proc, ClientData clientData, int w, int h)
+{
+    TkWinDC drawableDC;
+    TkWinDCState state;
+    HDC hRefDC, hDC;
+    HENHMETAFILE hMetaFile;
+    Tcl_DString ds;
+    const char *title;
+    
+    hRefDC = TkWinGetDrawableDC(Tk_Display(tkwin), Tk_WindowId(tkwin), &state);
+    
+    Tcl_DStringInit(&ds);
+    Tcl_DStringAppend(&ds, Tk_ClassName(tkwin), -1);
+    Tcl_DStringAppend(&ds, BLT_VERSION, -1);
+    Tcl_DStringAppend(&ds, "\0", -1);
+    Tcl_DStringAppend(&ds, Tk_PathName(tkwin), -1);
+    Tcl_DStringAppend(&ds, "\0", -1);
+    title = Tcl_DStringValue(&ds);
+    hDC = CreateEnhMetaFile(hRefDC, NULL, NULL, title);
+    Tcl_DStringFree(&ds);
+    
+    if (hDC == NULL) {
+        Tcl_AppendResult(interp, "can't create metafile: ", Blt_LastError(),
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+            
+    drawableDC.hdc = hDC;
+    drawableDC.type = TWD_WINDC;
+
+    (*proc)(clientData, w, h, (Drawable)&drawableDC);
+
+    hMetaFile = CloseEnhMetaFile(hDC);
+    if (strcmp(fileName, "CLIPBOARD") == 0) {
+        HWND hWnd;
+        
+        hWnd = Tk_GetHWND(drawable);
+        OpenClipboard(hWnd);
+        EmptyClipboard();
+        SetClipboardData(CF_ENHMETAFILE, hMetaFile);
+        CloseClipboard();
+        TkWinReleaseDrawableDC(drawable, hRefDC, &state);
+        return TCL_OK;
+    } 
+
+    result = TCL_ERROR;
+    if (format == FORMAT_WMF) {
+        APMHEADER mfh;
+        
+        assert(sizeof(mfh) == 22);
+        InitMetaFileHeader(tkwin, w, h, &mfh);
+        result = CreateAPMetaFile(interp, hMetaFile, hRefDC, &mfh, fileName);
+    } else if (format == FORMAT_EMF) {
+        HENHMETAFILE hMetaFile2;
+        
+        hMetaFile2 = CopyEnhMetaFile(hMetaFile, fileName);
+        if (hMetaFile2 != NULL) {
+            DeleteEnhMetaFile(hMetaFile2); 
+        }
+        result = TCL_OK;
+    }
+    DeleteEnhMetaFile(hMetaFile); 
+    TkWinReleaseDrawableDC(drawable, hRefDC, &state);
+    return result;
 }

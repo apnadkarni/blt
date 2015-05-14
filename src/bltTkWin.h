@@ -68,15 +68,18 @@
 /* DOS Encapsulated PostScript File Header */
 #pragma pack(2)
 typedef struct {
-    BYTE magic[4];              /* Magic number for a DOS EPS file
-                                 * C5,D0,D3,C6 */
-    DWORD psStart;              /* Offset of PostScript section. */
-    DWORD psLength;             /* Length of the PostScript section. */
-    DWORD wmfStart;             /* Offset of Windows Meta File section. */
-    DWORD wmfLength;            /* Length of Meta file section. */
-    DWORD tiffStart;            /* Offset of TIFF section. */
-    DWORD tiffLength;           /* Length of TIFF section. */
-    WORD checksum;              /* Checksum of header. If FFFF, ignore. */
+    BYTE magic[4];                      /* Magic number for a DOS EPS file
+                                         * C5,D0,D3,C6 */
+    DWORD psStart;                      /* Offset of PostScript section. */
+    DWORD psLength;                     /* Length of the PostScript
+                                         * section. */
+    DWORD wmfStart;                     /* Offset of Windows Meta File
+                                         * section. */
+    DWORD wmfLength;                    /* Length of Meta file section. */
+    DWORD tiffStart;                    /* Offset of TIFF section. */
+    DWORD tiffLength;                   /* Length of TIFF section. */
+    WORD checksum;                      /* Checksum of header. If FFFF,
+                                         * ignore. */
 } DOSEPSHEADER;
 
 #pragma pack()
@@ -84,12 +87,13 @@ typedef struct {
 /* Aldus Portable Metafile Header */
 #pragma pack(2)
 typedef struct {
-    DWORD key;                  /* Type of metafile */
-    WORD hmf;                   /* Unused. Must be NULL. */
-    SMALL_RECT bbox;            /* Bounding rectangle */
-    WORD inch;                  /* Units per inch. */
-    DWORD reserved;             /* Unused. */
-    WORD checksum;              /* XOR of previous fields (10 32-bit words). */
+    DWORD key;                          /* Type of metafile */
+    WORD hmf;                           /* Unused. Must be NULL. */
+    SMALL_RECT bbox;                    /* Bounding rectangle */
+    WORD inch;                          /* Units per inch. */
+    DWORD reserved;                     /* Unused. */
+    WORD checksum;                      /* XOR of previous fields (10
+                                         * 32-bit words). */
 } APMHEADER;
 #pragma pack()
 
@@ -223,5 +227,10 @@ BLT_EXTERN int Blt_ClosePrinterDoc(Tcl_Interp *interp, const char *id);
 BLT_EXTERN void Blt_GetPrinterScale(HDC dc, double *xRatio, double *yRatio);
 BLT_EXTERN int Blt_StartPrintJob(Tcl_Interp *interp, Drawable drawable);
 BLT_EXTERN int Blt_EndPrintJob(Tcl_Interp *interp, Drawable drawable);
+
+typedef int (Blt_DrawCmdProc)(ClientData clientData, int width, int height,
+        Drawable drawable);
+BLT_EXTERN int Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int fmt,
+        Blt_DrawCmdProc *proc, ClientData clientData, int w, int h);
 
 #endif /*_BLT_TK_WIN_H*/

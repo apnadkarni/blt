@@ -127,8 +127,9 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_LastError, /* 117 */
     Blt_NaN, /* 118 */
     Blt_AlmostEquals, /* 119 */
-    Blt_GetCachedVar, /* 120 */
-    Blt_FreeCachedVars, /* 121 */
+    Blt_ConvertListToList, /* 120 */
+    Blt_GetCachedVar, /* 121 */
+    Blt_FreeCachedVars, /* 122 */
 };
 
 /* !END!: Do not edit above this line. */

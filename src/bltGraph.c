@@ -80,9 +80,6 @@
 #include "bltGrLegd.h"
 #include "bltInitCmd.h"
 
-typedef int (GraphCmdProc)(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-        Tcl_Obj *const *objv);
-
 /* 
  * Objects in the graph have their own class names.  These class names are
  * used for the resource database and bindings.  Example.
@@ -1850,8 +1847,9 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Pixmap drawable;
     int i;
     SnapArgs args;
-
-    /* .g snap ?switches? name */
+    const char *imageName;
+    
+    /* .g snap imageName ?switches? */
     args.height = Tk_Height(graphPtr->tkwin);
     if ((args.height < 2) && (graphPtr->reqHeight > 0)) {
         args.height = graphPtr->reqHeight;
@@ -1870,10 +1868,10 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     i += 2;
     if (i >= objc) {
         Tcl_AppendResult(interp, "missing name argument: should be \"",
-                Tcl_GetString(objv[0]), "snap ?switches? name\"", (char *)NULL);
+                Tcl_GetString(objv[0]), "snap imageName ?switches?\"", (char *)NULL);
         return TCL_ERROR;
     }
-    args.name = Tcl_GetString(objv[i]);
+    imageName = Tcl_GetString(objv[i]);
     if (args.width < 2) {
         args.width = Tk_ReqWidth(graphPtr->tkwin);
     }
@@ -1899,11 +1897,11 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         Blt_DrawGraph(graphPtr, drawable);
         if (args.format == FORMAT_PICTURE) {
             result = Blt_SnapPicture(interp, graphPtr->tkwin, drawable, 0, 0, 
-                args.width, args.height, args.width, args.height, args.name,
+                args.width, args.height, args.width, args.height, imageName,
                 1.0);
         } else {
             result = Blt_SnapPhoto(interp, graphPtr->tkwin, drawable, 0, 0, 
-                args.width, args.height, args.width, args.height, args.name,
+                args.width, args.height, args.width, args.height, imageName,
                 1.0);
         }
         Tk_FreePixmap(graphPtr->display, drawable);
@@ -1947,7 +1945,7 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             graphPtr->flags |= RESET_WORLD;
             Blt_DrawGraph(graphPtr, (Drawable)&drawableDC);
             hMetaFile = CloseEnhMetaFile(hDC);
-            if (strcmp(args.name, "CLIPBOARD") == 0) {
+            if (strcmp(imageName, "CLIPBOARD") == 0) {
                 HWND hWnd;
                 
                 hWnd = Tk_GetHWND(drawable);
@@ -1965,11 +1963,11 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
                     InitMetaFileHeader(graphPtr->tkwin, args.width, 
                                        args.height, &mfh);
                     result = CreateAPMetaFile(interp, hMetaFile, hRefDC, &mfh, 
-                                              args.name);
+                                              imageName);
                 } else {
                     HENHMETAFILE hMetaFile2;
                     
-                    hMetaFile2 = CopyEnhMetaFile(hMetaFile, args.name);
+                    hMetaFile2 = CopyEnhMetaFile(hMetaFile, imageName);
                     if (hMetaFile2 != NULL) {
                         result = TCL_OK;
                         DeleteEnhMetaFile(hMetaFile2); 
@@ -2009,20 +2007,20 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 static Blt_OpSpec graphOps[] =
 {
-    {"axis",         1, Blt_VirtualAxisOp, 2, 0, "oper ?args?",},
-    {"bar",          1, BarOp,             2, 0, "oper ?args?",},
+    {"axis",         1, Blt_VirtualAxisOp, 2, 0, "args ...",},
+    {"bar",          1, BarOp,             2, 0, "args ...",},
     {"cget",         2, CgetOp,            3, 3, "option",},
     {"configure",    3, ConfigureOp,       2, 0, "?option value?...",},
-    {"crosshairs",   2, Blt_CrosshairsOp,  2, 0, "oper ?args?",},
-    {"element",      2, ElementOp,         2, 0, "oper ?args?",},
+    {"crosshairs",   2, Blt_CrosshairsOp,  2, 0, "args ...",},
+    {"element",      2, ElementOp,         2, 0, "args ...",},
     {"extents",      2, ExtentsOp,         3, 3, "item",},
     {"inside",       3, InsideOp,          4, 4, "winX winY",},
     {"invtransform", 3, InvtransformOp,    4, 0, "winX winY ?switches?",},
-    {"legend",       2, Blt_LegendOp,      2, 0, "oper ?args?",},
-    {"line",         2, LineOp,            2, 0, "oper ?args?",},
-    {"marker",       1, Blt_MarkerOp,      2, 0, "oper ?args?",},
-    {"pen",          2, Blt_PenOp,         2, 0, "oper ?args?",},
-    {"postscript",   2, Blt_PostScriptOp,  2, 0, "oper ?args?",},
+    {"legend",       2, Blt_LegendOp,      2, 0, "args ...",},
+    {"line",         2, LineOp,            2, 0, "args ...",},
+    {"marker",       1, Blt_MarkerOp,      2, 0, "args ...",},
+    {"pen",          2, Blt_PenOp,         2, 0, "args ...",},
+    {"postscript",   2, Blt_PostScriptOp,  2, 0, "args ...",},
 #ifndef NO_PRINTER
     {"print1",       6, Print1Op,          2, 3, "?printerName?",},
     {"print2",       6, Print2Op,          2, 3, "?printerName?",},
@@ -2030,10 +2028,10 @@ static Blt_OpSpec graphOps[] =
     {"region",       1, Blt_GraphRegionOp, 2, 0, "oper ?args?",},
     {"snap",         1, SnapOp,            3, 0, "?switches? name",},
     {"transform",    1, TransformOp,       4, 0, "x y ?switches?",},
-    {"x2axis",       2, X2AxisOp,          2, 0, "oper ?args?",},
-    {"xaxis",        2, XAxisOp,           2, 0, "oper ?args?",},
-    {"y2axis",       2, Y2AxisOp,          2, 0, "oper ?args?",},
-    {"yaxis",        2, YAxisOp,           2, 0, "oper ?args?",},
+    {"x2axis",       2, X2AxisOp,          2, 0, "args ...",},
+    {"xaxis",        2, XAxisOp,           2, 0, "args ...",},
+    {"y2axis",       2, Y2AxisOp,          2, 0, "args ...",},
+    {"yaxis",        2, YAxisOp,           2, 0, "args ...",},
 };
 static int numGraphOps = sizeof(graphOps) / sizeof(Blt_OpSpec);
 
@@ -2041,7 +2039,7 @@ int
 Blt_GraphInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
                      Tcl_Obj *const *objv)
 {
-    GraphCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
     Graph *graphPtr = clientData;
 
@@ -2051,7 +2049,7 @@ Blt_GraphInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     Tcl_Preserve(graphPtr);
-    result = (*proc) (graphPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     Tcl_Release(graphPtr);
     return result;
 }

@@ -701,15 +701,20 @@ BLT_EXTERN double	Blt_NaN(void );
 /* 119 */
 BLT_EXTERN int		Blt_AlmostEquals(double x, double y);
 #endif
+#ifndef Blt_ConvertListToList_DECLARED
+#define Blt_ConvertListToList_DECLARED
+/* 120 */
+BLT_EXTERN const char ** Blt_ConvertListToList(int argc, const char **argv);
+#endif
 #ifndef Blt_GetCachedVar_DECLARED
 #define Blt_GetCachedVar_DECLARED
-/* 120 */
+/* 121 */
 BLT_EXTERN Tcl_Var	Blt_GetCachedVar(Blt_HashTable *tablePtr,
 				const char *label, Tcl_Obj *objPtr);
 #endif
 #ifndef Blt_FreeCachedVars_DECLARED
 #define Blt_FreeCachedVars_DECLARED
-/* 121 */
+/* 122 */
 BLT_EXTERN void		Blt_FreeCachedVars(Blt_HashTable *tablePtr);
 #endif
 
@@ -837,8 +842,9 @@ typedef struct BltTclIntProcs {
     const char * (*blt_LastError) (void); /* 117 */
     double (*blt_NaN) (void); /* 118 */
     int (*blt_AlmostEquals) (double x, double y); /* 119 */
-    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 120 */
-    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 121 */
+    const char ** (*blt_ConvertListToList) (int argc, const char **argv); /* 120 */
+    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 121 */
+    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 122 */
 } BltTclIntProcs;
 
 #ifdef __cplusplus
@@ -1332,13 +1338,17 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_AlmostEquals \
 	(bltTclIntProcsPtr->blt_AlmostEquals) /* 119 */
 #endif
+#ifndef Blt_ConvertListToList
+#define Blt_ConvertListToList \
+	(bltTclIntProcsPtr->blt_ConvertListToList) /* 120 */
+#endif
 #ifndef Blt_GetCachedVar
 #define Blt_GetCachedVar \
-	(bltTclIntProcsPtr->blt_GetCachedVar) /* 120 */
+	(bltTclIntProcsPtr->blt_GetCachedVar) /* 121 */
 #endif
 #ifndef Blt_FreeCachedVars
 #define Blt_FreeCachedVars \
-	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 121 */
+	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 122 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TCL_PROCS) */
