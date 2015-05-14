@@ -83,4 +83,6 @@ BLT_EXTERN void Blt_CreateFileHandler(int fd, int flags, Tcl_FileProc *proc,
         ClientData clientData);
 BLT_EXTERN void Blt_DeleteFileHandler(int fd);
 
+BLT_EXTERN char *strcasestr(const char *s, const char *find);
+
 #endif /*_BLT_TCL_WIN_H*/
