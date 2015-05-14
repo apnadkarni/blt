@@ -3031,42 +3031,23 @@ ArrangeDrawers(Drawerset *setPtr)
 static void
 RestackDrawers(Drawerset *setPtr)
 {
-    Blt_ChainLink link, prev;
-    Window *windows;
-    int numWindows;
+    Blt_ChainLink link;
 
-    numWindows = (Blt_Chain_GetLength(setPtr->chain) * 2) + 1;
-    windows = Blt_AssertMalloc(numWindows * sizeof(Window));
-    numWindows = 0;
-    for (link = Blt_Chain_LastLink(setPtr->chain); link != NULL; link = prev) {
+    if (setPtr->base != NULL) {
+        Tk_RestackWindow(setPtr->base, Above, NULL);
+    }
+    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
+         link = Blt_Chain_NextLink(link)) {
         Drawer *drawPtr;
 
-        prev = Blt_Chain_PrevLink(link);
         drawPtr = Blt_Chain_GetValue(link);
         if (drawPtr->tkwin != NULL) {
-            if (Tk_WindowId(drawPtr->tkwin) == None) {
-                Tk_MakeWindowExist(drawPtr->tkwin);
-            }
-            windows[numWindows] = Tk_WindowId(drawPtr->tkwin);
-            numWindows++;
+            Tk_RestackWindow(drawPtr->tkwin, Above, NULL);
         }
         if ((drawPtr->flags & SHOW_HANDLE) && (drawPtr->handle != NULL)) {
-            if (Tk_WindowId(drawPtr->handle) == None) {
-                Tk_MakeWindowExist(drawPtr->handle);
-            }
-            windows[numWindows] = Tk_WindowId(drawPtr->handle);
-            numWindows++;
+            Tk_RestackWindow(drawPtr->handle, Above, NULL);
         }
     }
-    if (setPtr->base != NULL) {
-        if (Tk_WindowId(setPtr->base) == None) {
-            Tk_MakeWindowExist(setPtr->base);
-        }
-        windows[numWindows] = Tk_WindowId(setPtr->base);
-        numWindows++;
-    }
-    XRestackWindows(setPtr->display, windows, numWindows);
-    Blt_Free(windows);
 }
 
 static void
