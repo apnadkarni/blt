@@ -231,6 +231,7 @@ BLT_EXTERN int Blt_EndPrintJob(Tcl_Interp *interp, Drawable drawable);
 typedef int (Blt_DrawCmdProc)(ClientData clientData, int width, int height,
         Drawable drawable);
 BLT_EXTERN int Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int fmt,
-        Blt_DrawCmdProc *proc, ClientData clientData, int w, int h);
+        const char *fileName, Blt_DrawCmdProc *proc, ClientData clientData,
+        int w, int h);
 
 #endif /*_BLT_TK_WIN_H*/
