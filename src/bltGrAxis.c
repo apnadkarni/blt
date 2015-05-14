@@ -7040,19 +7040,19 @@ NextMinorTick(Axis *axisPtr)
     if (ticksPtr->index >= ticksPtr->numSteps) {
         return tick;
     }
-    d = 0.0;                            /* Suppress compiler warning. */
+    d = ticksPtr->initial;              
     switch (ticksPtr->scaleType) {
     case SCALE_LINEAR:
     default:
-        d = ticksPtr->range * (ticksPtr->index + 1) * ticksPtr->step;
+        d += ticksPtr->range * (ticksPtr->index + 1) * ticksPtr->step;
         break;
 
     case SCALE_CUSTOM:                  /* User defined minor ticks */
-        d = ticksPtr->range * ticksPtr->values[ticksPtr->index];
+        d += ticksPtr->range * ticksPtr->values[ticksPtr->index];
         break;
 
     case SCALE_LOG:
-        d = ticksPtr->range * logTable[ticksPtr->index];
+        d += ticksPtr->range * logTable[ticksPtr->index];
         break;
 
     case SCALE_TIME:
@@ -7068,7 +7068,7 @@ NextMinorTick(Axis *axisPtr)
                     numDays = numDaysYear[IsLeapYear(year)];
                     ticksPtr->numDaysFromInitial += numDays;
                 }
-                d = ticksPtr->numDaysFromInitial * SECONDS_DAY;
+                d += ticksPtr->numDaysFromInitial * SECONDS_DAY;
             }
             break;
         case TIME_MONTHS:
@@ -7076,7 +7076,6 @@ NextMinorTick(Axis *axisPtr)
                 int mon, year;
                 int i;
 
-                d = 0.0;
                 mon = ticksPtr->month + 1, year = ticksPtr->year;
                 for (i = 0; i <= ticksPtr->index; i++, mon++) {
                     int numDays;
@@ -7093,21 +7092,21 @@ NextMinorTick(Axis *axisPtr)
             break;
         case TIME_WEEKS:
             ticksPtr->numDaysFromInitial += 7;
-            d = ticksPtr->numDaysFromInitial * SECONDS_DAY;
+            d += ticksPtr->numDaysFromInitial * SECONDS_DAY;
             break;
         case TIME_DAYS:
         case TIME_HOURS:
         case TIME_MINUTES:
-            d = (ticksPtr->index + 1) * ticksPtr->step;
+            d += (ticksPtr->index + 1) * ticksPtr->step;
             break;
         case TIME_SECONDS:
         case TIME_SUBSECONDS:
-            d = (ticksPtr->range * ticksPtr->step * ticksPtr->index);
+            d += (ticksPtr->range * ticksPtr->step * ticksPtr->index);
             break;
         }
         break;
     }
     tick.isValid = TRUE;
-    tick.value = ticksPtr->initial + d;
+    tick.value = d;
     return tick;
 }
