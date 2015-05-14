@@ -586,7 +586,8 @@ CreateAPMetaFile(Tcl_Interp *interp, HANDLE hMetaFile, HDC hDC,
 
 int
 Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int format,
-                   Blt_DrawCmdProc *proc, ClientData clientData, int w, int h)
+                   const char *fileName, Blt_DrawCmdProc *proc,
+                   ClientData clientData, int w, int h)
 {
     TkWinDC drawableDC;
     TkWinDCState state;
