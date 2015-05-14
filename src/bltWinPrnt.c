@@ -1375,9 +1375,9 @@ WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         data = Tcl_GetStringFromObj(objv[3], &size);
     }
     ZeroMemory(&di1, sizeof(DOC_INFO_1));
-    di1.pDocName = title;
+    di1.pDocName = (char *)title;
     if (queuePtr->fileName != NULL) {
-        di1.pOutputFile = queuePtr->fileName;
+        di1.pOutputFile = (char *)queuePtr->fileName;
     } else {
         di1.pOutputFile = NULL;
     }
@@ -1399,7 +1399,8 @@ WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     bytesLeft = size;
     do {
-        if (!WritePrinter(queuePtr->hPrinter, data, bytesLeft, &numBytes)) {
+        if (!WritePrinter(queuePtr->hPrinter, (char *)data, bytesLeft,
+                &numBytes)) {
             Tcl_AppendResult(interp, "can't write data to \"", 
                 queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
             EndDocPrinter(queuePtr->hPrinter);
@@ -1508,10 +1509,7 @@ Blt_PrinterCmdInitProc(Tcl_Interp *interp)
 
 /* Public routines */
 int
-Blt_GetOpenPrinter(
-    Tcl_Interp *interp,
-    const char *name,
-    Drawable *drawablePtr)
+Blt_GetOpenPrinter(Tcl_Interp *interp, const char *name, Drawable *drawablePtr)
 {
     PrinterQueue *queuePtr;
     
@@ -1519,7 +1517,7 @@ Blt_GetOpenPrinter(
         return TCL_ERROR;
     }
     if (queuePtr->drawable.hDC == NULL) {
-        char *driverName;
+        const char *driverName;
         HGLOBAL hMem;
         DEVMODE *dmPtr;
         HDC hDC;
