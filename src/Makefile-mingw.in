@@ -34,7 +34,7 @@ FT2_LIB_SPEC =		@FT2_LIB_SPEC@
 FTCFG_LIB_SPEC =	@FTCFG_LIB_SPEC@
 JPG_INC_SPEC =		@JPG_INC_SPEC@
 JPG_LIB_SPEC =		@JPG_LIB_SPEC@
-LIBSSH2_LIB_SPEC =	@LIBSSH2_LIB_SPEC@
+LIBSSH2_LIB_SPEC =	@LIBSSH2_LIB_SPEC@ $(Z_LIB_SPEC)
 MYSQL_INC_SPEC =	@MYSQL_INC_SPEC@
 MYSQL_LIB_SPEC =	@MYSQL_LIB_SPEC@
 PNG_INC_SPEC =		@PNG_INC_SPEC@
@@ -734,7 +734,7 @@ $(blt_sftp_so): bltSftp.o $(blt_tcl_lib)
 	$(RM) $@
 	$(CC) -shared -o $(blt_sftp_so) \
 	    -Wl,--out-implib=$(blt_sftp_implib) bltSftp.o  \
-	    $(blt_tcl_lib)  $(tcl_lib_spec)  $(LIBSSH2_LIB_SPEC) 
+	    $(blt_tcl_lib)  $(tcl_lib_spec)  $(LIBSSH2_LIB_SPEC) $(ZLIB_SPEC)
 
 install: install-demos install-libs install-headers install-packages
 

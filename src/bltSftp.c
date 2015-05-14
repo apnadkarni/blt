@@ -3741,8 +3741,8 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (reader.numRead != reader.size) {
-        fprintf(stderr, "invalid file read: read=%ld wanted=%ld\n",
-                reader.numRead, reader.size);
+        fprintf(stderr, "invalid file read: read=%lu wanted=%lu\n",
+                (unsigned long)reader.numRead, (unsigned long)reader.size);
     }
     result = TCL_OK;
     fclose(reader.f);
@@ -4212,8 +4212,9 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (writer.totalBytesWritten != writer.size) {
-        fprintf(stderr, "invalid file write: written=%ld wanted=%ld\n",
-                writer.totalBytesWritten, writer.size);
+        fprintf(stderr, "invalid file write: written=%lu wanted=%lu\n",
+                (unsigned long)writer.totalBytesWritten,
+                (unsigned long)writer.size);
     }
     result = TCL_OK;
     fclose(writer.f);
@@ -4301,8 +4302,9 @@ ReadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     result = GetRemoteFile(interp, path, length, &reader);
     if (result == TCL_OK) {
         if (reader.numRead != reader.size) {
-            fprintf(stderr, "invalid file read: read=%ld wanted=%ld\n",
-                reader.numRead, reader.size);
+            fprintf(stderr, "invalid file read: read=%lu wanted=%lu\n",
+                    (unsigned long)reader.numRead,
+                    (unsigned long)reader.size);
         }
         Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(reader.dbuffer));
     }
@@ -4803,8 +4805,9 @@ WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = PutRemoteFile(interp, path, length, &writer);
     if (writer.totalBytesWritten != writer.size) {
-        fprintf(stderr, "invalid file write: written=%ld wanted=%ld\n",
-                writer.totalBytesWritten, writer.size);
+        fprintf(stderr, "invalid file write: written=%lu wanted=%lu\n",
+                (unsigned long)writer.totalBytesWritten,
+                (unsigned long)writer.size);
     }
     Blt_FreeSwitches(writeSwitches, (char *)&writer, 0);
     return result;

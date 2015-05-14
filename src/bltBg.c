@@ -1349,6 +1349,7 @@ GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y,
         tkRef = corePtr->tkRef;             break;
     }
     if (tkRef == NULL) {
+        *xOffsetPtr = *yOffsetPtr = 0;
         return;                         
     }
     if (corePtr->flags & (REFERENCE_WINDOW|REFERENCE_TOPLEVEL)) {

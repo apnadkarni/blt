@@ -355,14 +355,14 @@ ParseXLFD(const char *fontName, int *argcPtr, char ***argvPtr)
  *
  * SearchForFontSpec --
  *
- *      Performs a binary search on the array of font specification to find a
- *      partial, anchored match for the given option string.
+ *      Performs a binary search on the array of font specification to find
+ *      a partial, anchored match for the given option string.
  *
  * Results:
- *      If the string matches unambiguously the index of the specification in
- *      the array is returned.  If the string does not match, even as an
- *      abbreviation, any operation, -1 is returned.  If the string matches,
- *      but ambiguously -2 is returned.
+ *      If the string matches unambiguously the index of the specification
+ *      in the array is returned.  If the string does not match, even as an
+ *      abbreviation, any operation, -1 is returned.  If the string
+ *      matches, but ambiguously -2 is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -409,8 +409,8 @@ SearchForFontSpec(FontSpec *table, int numSpecs, const char *string, int length)
 }
 
 static FontSpec *
-FindSpec(Tcl_Interp *interp, FontSpec *tablePtr, int numSpecs, const char *string,
-         int length)
+FindSpec(Tcl_Interp *interp, FontSpec *tablePtr, int numSpecs,
+         const char *string, int length)
 {
     int n;
     
@@ -467,9 +467,10 @@ static const char *
 GetAlias(const char *family)
 {
     Blt_HashEntry *hPtr;
-    char *lower;
-    
+    const char *lower;
+
     lower = Blt_AssertStrdup(family);
+    Blt_LowerCase((char *)lower);
     hPtr = Blt_FindHashEntry(&aliasTable, lower);
     Blt_Free(lower);
     if (hPtr != NULL) {

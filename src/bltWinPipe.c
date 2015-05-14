@@ -1456,6 +1456,7 @@ StartProcess(
     char progPath[MAX_PATH];
     char cmdPrefix[MAX_PATH];
 
+    *pidPtr = 0;
     *hProcessPtr = INVALID_HANDLE_VALUE;
     GetFullPath(interp, argv[0], progPath, cmdPrefix, &applType);
 #if KILL_DEBUG

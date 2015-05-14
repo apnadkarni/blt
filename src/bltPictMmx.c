@@ -2155,6 +2155,7 @@ PrintFeatures(Tcl_Interp *interp, unsigned long flags)
         objPtr = Tcl_NewStringObj("sse2", 4);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
+#if (SIZEOF_LONG == 8) 
     if (flags & FEATURE_SSSE3) {
         objPtr = Tcl_NewStringObj("ssse3", 5);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -2167,6 +2168,7 @@ PrintFeatures(Tcl_Interp *interp, unsigned long flags)
         objPtr = Tcl_NewStringObj("sse4.2", 6);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
+#endif
     Tcl_SetVar2Ex(interp, "::blt::cpu_info", NULL, listObjPtr, 
                   TCL_GLOBAL_ONLY);
 }

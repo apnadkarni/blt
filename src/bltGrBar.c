@@ -2048,7 +2048,7 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
                 r->x, r->y, r->width, r->height, penPtr->borderWidth, relief);
         }
     }
-    if (painter != NULL) {
+    if (penPtr->brush != NULL) {
         Blt_UnsetPainterClipRegion(painter);
     }
     if (penPtr->fillBg) {

@@ -4272,6 +4272,9 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
     } else if (elemPtr->areaBg != NULL) {
         brush = Blt_Bg_PaintBrush(elemPtr->areaBg);
         Blt_SetBrushRegion(brush, 0, 0, w, h);
+    } else {
+        Blt_Free(vertices);
+        return;
     }
     Blt_PaintPolygon(picture, numPoints, vertices, brush);
     if ((elemPtr->zAxisPtr != NULL) && (elemPtr->zAxisPtr->palette != NULL)) {
