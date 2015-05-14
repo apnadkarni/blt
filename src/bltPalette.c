@@ -1544,19 +1544,20 @@ Interpolate(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
 {
     Blt_Pixel color;
 
-    color.u32 = 0x00;                   /* Default to empty. */
-    if (!InterpolateColor(cmdPtr, value, &color))  {
-        return FALSE;
-    }
-    if (cmdPtr->numOpacities > 0) {
-        unsigned int alpha;
+    if (InterpolateColor(cmdPtr, value, &color))  {
+        if (cmdPtr->numOpacities > 0) {
+            unsigned int alpha;
 
-        if (InterpolateOpacity(cmdPtr, value, &alpha)) {
-            Blt_FadeColor(&color, alpha);
+            if (InterpolateOpacity(cmdPtr, value, &alpha)) {
+                Blt_FadeColor(&color, alpha);
+            }
         }
-    }
-    *colorPtr = color;
-    return TRUE;
+        colorPtr->u32 = color.u32;
+        return TRUE;
+    } else {
+        colorPtr->u32 = 0x0;
+        return FALSE;
+    }        
 }
 
 /*

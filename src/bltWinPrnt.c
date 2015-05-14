@@ -1556,13 +1556,11 @@ Blt_GetOpenPrinter(Tcl_Interp *interp, const char *name, Drawable *drawablePtr)
 #include <commdlg.h>
 
 int
-Blt_PrintDialog(
-    Tcl_Interp *interp,
-    Drawable *drawablePtr)
+Blt_PrintDialog(Tcl_Interp *interp, Drawable *drawablePtr)
 {
     PRINTDLG dlg;
-    static PrintDrawable drawable;
     int mode, result;
+    static PrintDrawable drawable;
     
     ZeroMemory(&dlg, sizeof(PRINTDLG));
     dlg.lStructSize = sizeof(PRINTDLG);
@@ -1585,9 +1583,7 @@ Blt_PrintDialog(
 }
 
 int
-Blt_StartPrintJob(
-    Tcl_Interp *interp,
-    Drawable drawable)
+Blt_StartPrintJob(Tcl_Interp *interp, Drawable drawable)
 {
     DOCINFO di;
     PrintDrawable *drawPtr = (PrintDrawable *)drawable;
@@ -1606,9 +1602,7 @@ Blt_StartPrintJob(
 }
 
 int
-Blt_EndPrintJob(
-    Tcl_Interp *interp,
-    Drawable drawable)
+Blt_EndPrintJob(Tcl_Interp *interp, Drawable drawable)
 {
     PrintDrawable *drawPtr = (PrintDrawable *)drawable;
 
