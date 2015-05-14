@@ -209,7 +209,7 @@ BLT_EXTERN void Blt_FreePrivateGC(Display *display, GC gc);
 BLT_EXTERN int Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         Window *windowPtr);
 
-BLT_EXTERN Blt_Chain Blt_GetChildWindows(Display *display, Window window);
+BLT_EXTERN Blt_Chain Blt_GetChildrenFromWindow(Display *display, Window window);
 
 BLT_EXTERN Window Blt_GetParentWindow(Display *display, Window window);
 

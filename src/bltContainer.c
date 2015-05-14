@@ -440,7 +440,7 @@ GetAdoptedWindowGeometry(Tcl_Interp *interp, Container *conPtr)
 /*
  *---------------------------------------------------------------------------
  *
- *  GetChildren --
+ *  GetChildrenFromWindow --
  *
  *      Returns a chain of the child windows according to their stacking
  *      order.  The window ids are ordered from top to bottom.
@@ -448,7 +448,7 @@ GetAdoptedWindowGeometry(Tcl_Interp *interp, Container *conPtr)
  *---------------------------------------------------------------------------
  */
 static Blt_Chain
-GetChildren(Display *display, Window window)
+GetChildrenFromWindow(Display *display, Window window)
 {
     Window *children;
     unsigned int numChildren;
@@ -565,7 +565,7 @@ SearchForProperty(Display *display, Window window, SearchInfo *searchPtr)
         XFree(data);
     }
     /* Process the window's descendants. */
-    chain = GetChildren(display, window);
+    chain = GetChildrenFromWindow(display, window);
     if (chain != NULL) {
         Blt_ChainLink link;
         Window child;
@@ -618,7 +618,7 @@ SearchForName(Display *display, Window window, SearchInfo *searchPtr)
         XFree(wmName);
     }
     /* Process the window's descendants. */
-    chain = GetChildren(display, window);
+    chain = GetChildrenFromWindow(display, window);
     if (chain != NULL) {
         Blt_ChainLink link;
 
@@ -677,7 +677,7 @@ SearchForCommand(Display *display, Window window, SearchInfo *searchPtr)
         Blt_Free(string);
     }
     /* Process the window's descendants. */
-    chain = GetChildren(display, window);
+    chain = GetChildrenFromWindow(display, window);
     if (chain != NULL) {
         Blt_ChainLink link;
 
@@ -777,7 +777,7 @@ TestAndWaitForWindow(
 /*
  *---------------------------------------------------------------------------
  *
- *  GetChildren --
+ *  GetChildrenFromWindow --
  *
  *      Returns a chain of the child windows according to their stacking
  *      order.  The window ids are ordered from top to bottom.
@@ -785,7 +785,7 @@ TestAndWaitForWindow(
  *---------------------------------------------------------------------------
  */
 static Blt_Chain
-GetChildren(Display *display, Window window)
+GetChildrenFromWindow(Display *display, Window window)
 {
     Blt_Chain chain;
     HWND hWnd;
@@ -884,7 +884,7 @@ MapTree(Display *display, Window window)
     Blt_Chain chain;
 
     XMapWindow(display, window);
-    chain = GetChildren(display, window);
+    chain = GetChildrenFromWindow(display, window);
     if (chain != NULL) {
         Blt_ChainLink link;
         Window child;
@@ -1901,7 +1901,7 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
     if (atoms != NULL) {
         XFree(atoms);
     }
-    chain = GetChildren(conPtr->display, window);
+    chain = GetChildrenFromWindow(conPtr->display, window);
     if (chain != NULL) {
         Blt_ChainLink link;
 

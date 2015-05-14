@@ -19,7 +19,7 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_GetPrivateGCFromDrawable, /* 9 */
     Blt_FreePrivateGC, /* 10 */
     Blt_GetWindowFromObj, /* 11 */
-    Blt_GetChildWindows, /* 12 */
+    Blt_GetChildrenFromWindow, /* 12 */
     Blt_GetParentWindow, /* 13 */
     Blt_FindChild, /* 14 */
     Blt_FirstChild, /* 15 */

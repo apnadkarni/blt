@@ -92,10 +92,10 @@ BLT_EXTERN void		Blt_FreePrivateGC(Display *display, GC gc);
 BLT_EXTERN int		Blt_GetWindowFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, Window *windowPtr);
 #endif
-#ifndef Blt_GetChildWindows_DECLARED
-#define Blt_GetChildWindows_DECLARED
+#ifndef Blt_GetChildrenFromWindow_DECLARED
+#define Blt_GetChildrenFromWindow_DECLARED
 /* 12 */
-BLT_EXTERN Blt_Chain	Blt_GetChildWindows(Display *display, Window window);
+BLT_EXTERN Blt_Chain	Blt_GetChildrenFromWindow(Display *display, Window window);
 #endif
 #ifndef Blt_GetParentWindow_DECLARED
 #define Blt_GetParentWindow_DECLARED
@@ -1439,7 +1439,7 @@ typedef struct BltTkIntProcs {
     GC (*blt_GetPrivateGCFromDrawable) (Display *display, Drawable drawable, unsigned long gcMask, XGCValues *valuePtr); /* 9 */
     void (*blt_FreePrivateGC) (Display *display, GC gc); /* 10 */
     int (*blt_GetWindowFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr); /* 11 */
-    Blt_Chain (*blt_GetChildWindows) (Display *display, Window window); /* 12 */
+    Blt_Chain (*blt_GetChildrenFromWindow) (Display *display, Window window); /* 12 */
     Window (*blt_GetParentWindow) (Display *display, Window window); /* 13 */
     Tk_Window (*blt_FindChild) (Tk_Window parent, char *name); /* 14 */
     Tk_Window (*blt_FirstChild) (Tk_Window parent); /* 15 */
@@ -1724,9 +1724,9 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_GetWindowFromObj \
 	(bltTkIntProcsPtr->blt_GetWindowFromObj) /* 11 */
 #endif
-#ifndef Blt_GetChildWindows
-#define Blt_GetChildWindows \
-	(bltTkIntProcsPtr->blt_GetChildWindows) /* 12 */
+#ifndef Blt_GetChildrenFromWindow
+#define Blt_GetChildrenFromWindow \
+	(bltTkIntProcsPtr->blt_GetChildrenFromWindow) /* 12 */
 #endif
 #ifndef Blt_GetParentWindow
 #define Blt_GetParentWindow \

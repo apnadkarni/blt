@@ -235,7 +235,7 @@ InitWindowNode(WindowNode *nodePtr)
      * Collect a list of child windows, sorted in z-order.  The
      * topmost window will be first in the list.
      */
-    chain = Blt_GetChildWindows(nodePtr->display, nodePtr->window);
+    chain = Blt_GetChildrenFromWindow(nodePtr->display, nodePtr->window);
     
     /* Add and initialize extra slots if needed. */
     for (link = Blt_Chain_FirstLink(chain); link != NULL;
@@ -488,7 +488,7 @@ FillTree(Tcl_Interp *interp, Display *display, Window window, Blt_Tree tree,
 #ifndef WIN32
     GetWindowProperties(interp, display, window, tree, parent);
 #endif
-    chain = Blt_GetChildWindows(display, window);
+    chain = Blt_GetChildrenFromWindow(display, window);
     if (chain != NULL) {
         Blt_ChainLink link;
 

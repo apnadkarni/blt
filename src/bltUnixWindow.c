@@ -518,7 +518,7 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
 /*
  *---------------------------------------------------------------------------
  *
- *  Blt_GetChildWindows --
+ *  Blt_GetChildrenFromWindow --
  *
  *      Returns a list of the child windows according to their stacking
  *      order.  The window handles are ordered from top to bottom.
@@ -526,7 +526,7 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
  *---------------------------------------------------------------------------
  */
 Blt_Chain
-Blt_GetChildWindows(Display *display, Window window)
+Blt_GetChildrenFromWindow(Display *display, Window window)
 {
     Window *children;
     unsigned int numChildren;

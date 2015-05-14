@@ -805,7 +805,10 @@ distclean:	clean
 
 bltDataTableMysql.o: $(srcdir)/bltDataTableMysql.c
 	$(CC) -c $(CC_OPTS) $(MYSQL_INC_SPEC) $?
-
+bltDataTablePsql.o: $(srcdir)/bltDataTablePsql.c
+	$(CC) -c $(CC_OPTS) $(PQ_INC_SPEC) $?
+bltDataTableSqlite.o: $(srcdir)/bltDataTableSqlite.c
+	$(CC) -c $(CC_OPTS) $(SQLITE_INC_SPEC) $?
 bltDataTableXml.o: $(srcdir)/bltDataTableXml.c
 	$(CC) -c $(CC_OPTS) $(EXPAT_INC_SPEC) $?
 

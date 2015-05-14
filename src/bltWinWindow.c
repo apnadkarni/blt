@@ -473,7 +473,7 @@ Blt_GetParentWindow(Display *display, Window window)
 /*
  *---------------------------------------------------------------------------
  *
- *  Blt_GetWindowStack --
+ *  Blt_GetChildrenFromWindow --
  *
  *      Returns a list of the child windows according to their stacking
  *      order.  The window handles are ordered from top to bottom.
@@ -481,7 +481,7 @@ Blt_GetParentWindow(Display *display, Window window)
  *---------------------------------------------------------------------------
  */
 Blt_Chain
-Blt_GetWindowStack(Display *display, ClientData clientData)
+Blt_GetChildrenFromWindow(Display *display, ClientData clientData)
 {
     HWND parent = clientData;
     Blt_Chain chain;
