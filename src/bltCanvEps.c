@@ -1511,7 +1511,7 @@ DisplayProc(
 
             fade = Blt_ClonePicture(picture);
             Blt_FadePicture(fade, 0, 0, Blt_Picture_Width(fade), 
-                Blt_Picture_Height(fade), 150 / 255.0);
+                Blt_Picture_Height(fade), 1.0 - (150 / 255.0));
             Blt_PaintPicture(itemPtr->painter, drawable, fade, 
                 (int)p.left, (int)p.top, (int)(p.right - p.left), 
                 (int)(p.bottom - p.top), destX, destY, FALSE);

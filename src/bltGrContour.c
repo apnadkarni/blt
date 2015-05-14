@@ -2992,7 +2992,7 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     Region2d exts;
     int i;
     int x, y, w, h;
-
+    
     Blt_GraphExtents(elemPtr, &exts);
     w = (exts.right - exts.left) + 1;
     h = (exts.bottom - exts.top) + 1;
@@ -3005,8 +3005,9 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     for (i = 0; i < elemPtr->numTriangles; i++) {
         DrawTriangle(elemPtr, elemPtr->picture, elemPtr->triangles + i, x, y);
     }
-    if (InRange(elemPtr->opacity, 0.0, 100.0)) {
-        Blt_FadePicture(elemPtr->picture, 0, 0, w, h, elemPtr->opacity * 0.01);
+    if ((elemPtr->opacity < 100.0) && (InRange(elemPtr->opacity, 0.0, 100.0))) {
+            Blt_FadePicture(elemPtr->picture, 0, 0, w, h,
+                            1.0 - (elemPtr->opacity * 0.01));
     }
     Blt_PaintPictureWithBlend(elemPtr->painter, drawable, elemPtr->picture, 
         0, 0, w, h, exts.left, exts.top, 0);

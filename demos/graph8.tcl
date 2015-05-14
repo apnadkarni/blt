@@ -45,7 +45,7 @@ blt::graph .g
 .g legend configure -hide yes
     
 proc test1 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1969
     set month 0
     set day 1
@@ -55,19 +55,19 @@ proc test1 { t } {
 	    set month 1
 	    incr year
 	}
-	set d1 [blt::date scan "$year/$month/$day"]
+	set d1 [blt::timestamp scan "$year/$month/$day"]
 	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
 	if { $d1 != $d2 } {
 	    error "date scan and clock scan don't agree"
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test2 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1969
     set month 0
     set day 1
@@ -77,55 +77,55 @@ proc test2 { t } {
 	    set month 1
 	    incr year
 	}
-	set d1 [blt::date scan "$year/$month/$day"]
+	set d1 [blt::timestamp scan "$year/$month/$day"]
 	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
 	if { $d1 != $d2 } {
 	    error "date scan and clock scan don't agree"
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/12.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test3 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1968
     set month 1
     set day 1
     for { set i 0 } { $i < 25 } { incr i } {
 	incr year
-	set d1 [blt::date scan $year]
+	set d1 [blt::timestamp scan $year]
 	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
 	if { $d1 != $d2 } {
 	    error "$year: date scan and clock scan don't agree"
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test4 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1899
     set month 1
     set day 1
     for { set i 0 } { $i < 114 } { incr i } {
 	incr year
-	set d1 [blt::date scan "$year"]
+	set d1 [blt::timestamp scan "$year"]
 	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
 	if { $d1 != $d2 } {
 	    error "$year: date scan ($d1) and clock scan ($d2) don't agree"
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/6.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test5 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1969
     set month 0
     set day 1
@@ -135,19 +135,19 @@ proc test5 { t } {
 	    set month 1
 	    incr year
 	}
-	set d1 [blt::date scan "$year/$month/$day"]
+	set d1 [blt::timestamp scan "$year/$month/$day"]
 	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
 	if { $d1 != $d2 } {
 	    error "date scan and clock scan don't agree"
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test6 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1969
     set month 12
     set day 1
@@ -156,20 +156,20 @@ proc test6 { t } {
 	    set month 1
 	    incr year
 	}
-	set d1 [blt::date scan "$year/$month/$day"]
+	set d1 [blt::timestamp scan "$year/$month/$day"]
 	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
 	if { $d1 != $d2 } {
 	    error "date scan and clock scan don't agree"
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
 	incr month
     }
 }
 
 proc test7 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1999
     set month 0
     set day 1
@@ -179,34 +179,34 @@ proc test7 { t } {
 	    set month 1
 	    incr year
 	}
-	set d1 [blt::date scan "$year/$month/$day"]
+	set d1 [blt::timestamp scan "$year/$month/$day"]
 	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
 	if { $d1 != $d2 } {
 	    error "date scan and clock scan don't agree"
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test8 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1999
     set month 0
     set day 1
     for { set i 100 } { $i < 220 } { incr i } {
 	set date [format "%4d-%03d" $year $i]
-	set d1 [blt::date scan $date]
+	set d1 [blt::timestamp scan $date]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/12.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 
 proc test9 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1999
     set month 0
     set day 350
@@ -216,15 +216,15 @@ proc test9 { t } {
 	    incr year
 	    set day 1
 	}
-	set d1 [blt::date scan [format "%4d-%03d" $year $day]]
+	set d1 [blt::timestamp scan [format "%4d-%03d" $year $day]]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test10 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1999
     set month 0
     set day 350
@@ -234,16 +234,16 @@ proc test10 { t } {
 	    incr year
 	    set day 1
 	}
-	set d1 [blt::date scan [format "%4d-%03d" $year $day]]
+	set d1 [blt::timestamp scan [format "%4d-%03d" $year $day]]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 
 proc test11 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1999
     set month 0
     set day 348
@@ -253,15 +253,15 @@ proc test11 { t } {
 	    incr year
 	    set day 1
 	}
-	set d1 [blt::date scan [format "%4d-%03d" $year $day]]
+	set d1 [blt::timestamp scan [format "%4d-%03d" $year $day]]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test12 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set month 0
     set day 350
@@ -271,31 +271,31 @@ proc test12 { t } {
 	    incr year
 	    set day 1
 	}
-	set d1 [blt::date scan [format "%4d-%03d" $year $day]]
+	set d1 [blt::timestamp scan [format "%4d-%03d" $year $day]]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test13 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set month 1
     set day 16
     for { set i 0 } { $i < 10 } { incr i } {
 	incr day
 	set date [format "%4d/%02d/%02d" $year $month $day]
-	set d1 [blt::date scan $date]
-	puts stderr $date=[blt::date format $d1]
+	set d1 [blt::timestamp scan $date]
+	puts stderr $date=[blt::timestamp format $d1]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test14 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set day 350
     set hour 0
@@ -305,8 +305,8 @@ proc test14 { t } {
 	    set hour 0
 	}
 	set date [format "%4d-%03d %02d:00" $year $day $hour]
-	set d1 [blt::date scan $date]
-	puts stderr \n$date=[blt::date format $d1]\n
+	set d1 [blt::timestamp scan $date]
+	puts stderr \n$date=[blt::timestamp format $d1]\n
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/12.0)]
 	incr hour
@@ -314,7 +314,7 @@ proc test14 { t } {
 }
 
 proc test15 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set day 350
     set hour 0
@@ -324,8 +324,8 @@ proc test15 { t } {
 	    set hour 0
 	}
 	set date [format "%4d-%03d %02d:00" $year $day $hour]
-	set d1 [blt::date scan $date]
-	puts stderr \n$date=[blt::date format $d1]\n
+	set d1 [blt::timestamp scan $date]
+	puts stderr \n$date=[blt::timestamp format $d1]\n
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/12.0)]
 	incr hour
@@ -333,7 +333,7 @@ proc test15 { t } {
 }
 
 proc test16 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set month 0
     set day 350
@@ -343,15 +343,15 @@ proc test16 { t } {
 	    incr day
 	    set hour 0
 	}
-	set d1 [blt::date scan [format "%4d-%03d %02d:00" $year $day $hour]]
+	set d1 [blt::timestamp scan [format "%4d-%03d %02d:00" $year $day $hour]]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test17 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set month 0
     set day 350
@@ -361,15 +361,15 @@ proc test17 { t } {
 	    incr day
 	    set hour 0
 	}
-	set d1 [blt::date scan [format "%4d-%03d %02d:00" $year $day $hour]]
+	set d1 [blt::timestamp scan [format "%4d-%03d %02d:00" $year $day $hour]]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test18 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set hour 20
     set day 350
@@ -379,15 +379,15 @@ proc test18 { t } {
 	    incr day
 	    set hour 0
 	}
-	set d1 [blt::date scan [format "%4d-%03d %02d:00" $year $day $hour]]
+	set d1 [blt::timestamp scan [format "%4d-%03d %02d:00" $year $day $hour]]
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::date format [expr $d1]]
+	puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
 proc test19 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set hour 1
     set min 0
@@ -398,8 +398,8 @@ proc test19 { t } {
 	    set min 0
 	}
 	set date [format "%4d-%03d %02d:%02d" $year $day $hour $min]
-	set d1 [blt::date scan $date]
-	puts stderr \n$date=[blt::date format $d1]\n
+	set d1 [blt::timestamp scan $date]
+	puts stderr \n$date=[blt::timestamp format $d1]\n
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
 	incr min 10
@@ -407,7 +407,7 @@ proc test19 { t } {
 }
 
 proc test20 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set hour 0
     set min 22
@@ -418,8 +418,8 @@ proc test20 { t } {
 	    set min 0
 	}
 	set date [format "%4d-%03d %02d:%02d" $year $day $hour $min]
-	set d1 [blt::date scan $date]
-	puts stderr \n$date=[blt::date format $d1]\n
+	set d1 [blt::timestamp scan $date]
+	puts stderr \n$date=[blt::timestamp format $d1]\n
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
 	incr min 10
@@ -427,7 +427,7 @@ proc test20 { t } {
 }
 
 proc test21 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set hour 0
     set min 22
@@ -438,8 +438,8 @@ proc test21 { t } {
 	    set min 0
 	}
 	set date [format "%4d-%03d %02d:%02d" $year $day $hour $min]
-	set d1 [blt::date scan $date]
-	puts stderr \n$date=[blt::date format $d1]\n
+	set d1 [blt::timestamp scan $date]
+	puts stderr \n$date=[blt::timestamp format $d1]\n
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
 	incr min 
@@ -447,7 +447,7 @@ proc test21 { t } {
 }
 
 proc test22 { t } {
-    $t row delete all
+    $t row delete @all
     set year 1980
     set hour 0
     set min 22
@@ -459,8 +459,8 @@ proc test22 { t } {
 	    set sec 0
 	}
 	set date [format "%4d-%03d %02d:%02d:%02d" $year $day $hour $min $sec]
-	set d1 [blt::date scan $date]
-	puts stderr \n$date=[blt::date format $d1]\n
+	set d1 [blt::timestamp scan $date]
+	puts stderr \n$date=[blt::timestamp format $d1]\n
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
 	incr sec 

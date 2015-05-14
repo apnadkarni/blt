@@ -1540,7 +1540,8 @@ InterpolateOpacity(PaletteCmd *cmdPtr, double value, unsigned int *alphaPtr)
 }
 
 static int 
-Interpolate(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
+InterpolateColorAndOpacity(PaletteCmd *cmdPtr, double value,
+                           Blt_Pixel *colorPtr)
 {
     Blt_Pixel color;
 
@@ -1554,10 +1555,9 @@ Interpolate(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
         }
         colorPtr->u32 = color.u32;
         return TRUE;
-    } else {
-        colorPtr->u32 = 0x0;
-        return FALSE;
-    }        
+    } 
+    colorPtr->u32 = 0x0;
+    return FALSE;
 }
 
 /*
@@ -1772,7 +1772,7 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Blt_Pixel color;
 
             value = ((double)x / (double)(w-1));
-            Interpolate(cmdPtr, value, &color);
+            InterpolateColorAndOpacity(cmdPtr, value, &color);
             /* Draw band. */
             for (y = 0; y < h; y++) {
                 Blt_Pixel *dp;
@@ -1790,7 +1790,7 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Blt_Pixel color;
 
             value = ((double)y / (double)(h-1));
-            Interpolate(cmdPtr, value, &color);
+            InterpolateColorAndOpacity(cmdPtr, value, &color);
             /* Draw band. */
             for (x = 0; x < w; x++) {
                 Blt_Pixel *dp;
@@ -1867,7 +1867,7 @@ InterpolateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
     }
-    if (!Interpolate(cmdPtr, value, &color)) {
+    if (!InterpolateColorAndOpacity(cmdPtr, value, &color)) {
         Tcl_AppendResult(interp, "value \"", Tcl_GetString(objv[3]), 
                 "\" not in any range", (char *)NULL);
         return TCL_ERROR;
@@ -2132,7 +2132,7 @@ Blt_Palette_GetAssociatedColor(Blt_Palette palette, double value)
             return 0x0;
         }
     }
-    if (!Interpolate(cmdPtr, value, &color)) {
+    if (!InterpolateColorAndOpacity(cmdPtr, value, &color)) {
         color.u32 = 0x00;
     } 
     Blt_FadeColor(&color, cmdPtr->alpha);

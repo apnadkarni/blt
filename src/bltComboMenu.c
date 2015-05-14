@@ -7427,7 +7427,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                         IconImage(itemPtr->icon));
                 dst = Blt_ClonePicture(src);
                 Blt_FadePicture(dst, 0, 0, Blt_Picture_Width(src), 
-                        Blt_Picture_Height(src), 140 / 255.0);
+                        Blt_Picture_Height(src), 1.0 - (140 / 255.0));
                 Blt_PaintPicture(painter, drawable, dst, 0, 0, 
                         IconWidth(itemPtr->icon), IconHeight(itemPtr->icon), 
                         ix, iy, 0);

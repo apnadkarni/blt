@@ -656,6 +656,7 @@ Blt_FadePicture(Pict *srcPtr, int x, int y, int w, int h, double factor)
         Blt_AssociateColors(srcPtr);
     }
     alpha = (int)((1.0 - factor) * 255.0 + 0.5);
+    assert(alpha >= 0 && alpha <= 0xff);
     srcRowPtr = srcPtr->bits + ((y * srcPtr->pixelsPerRow) + x);
     for (y = 0; y < h; y++) {
         Blt_Pixel *sp, *send;
