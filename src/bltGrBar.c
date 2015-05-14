@@ -601,24 +601,32 @@ ObjToPenColors(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 {
     BarPen *penPtr = (BarPen *)(widgRec + offset);
     XColor *colorPtr;
-
+    Tk_3DBorder border;
+    Blt_Bg bg;
+    
     colorPtr = Tk_AllocColorFromObj(interp, tkwin, objPtr);
     if (colorPtr == NULL) {
         return TCL_ERROR;
     }
+    Blt_GetBgFromObj(interp, tkwin, objPtr, &bg);
+    Tcl_ResetResult(interp);
     if (penPtr->fillBg != NULL) {
         Blt_Bg_Free(penPtr->fillBg);
     }
-    Blt_GetBgFromObj(NULL, tkwin, objPtr, &penPtr->fillBg);
+    penPtr->fillBg = bg;
+    
+    border = Tk_Alloc3DBorderFromObj(interp, tkwin, objPtr);
+    Tcl_ResetResult(interp);
     if (penPtr->outline != NULL) {
         Tk_Free3DBorder(penPtr->outline);
     }
-    penPtr->outline = Tk_Get3DBorderFromObj(tkwin, objPtr);
+    penPtr->outline = border;
+
     if (penPtr->errorBarColor != NULL) {
         Tk_FreeColor(penPtr->errorBarColor);
     }
-    penPtr->errorBarColor = Tk_AllocColorFromObj(interp, tkwin, objPtr);
-    Tk_FreeColor(colorPtr);
+    penPtr->errorBarColor = colorPtr;
+
     return TCL_OK;
 }
 

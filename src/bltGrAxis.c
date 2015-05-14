@@ -6806,8 +6806,6 @@ FirstMajorTick(Axis *axisPtr)
         /* The number of major ticks and the step has been computed in
          * LinearAxis. */
         tick.value = ticksPtr->initial;
-        fprintf(stderr, "axis=%s, initial=%.15g\n",
-                axisPtr->obj.name, ticksPtr->initial);
         break;
     }
     if (ticksPtr->index >= ticksPtr->numSteps) {

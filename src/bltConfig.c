@@ -376,7 +376,7 @@ Tk_AllocColorFromObj(
     string = Tcl_GetString(objPtr);
     return Tk_GetColor(interp, tkwin, Tk_GetUid(string));
 }
-#endif
+#endif  /* _TK_VERSION < 8.1.0 */
 
 /*
  *---------------------------------------------------------------------------
@@ -395,8 +395,8 @@ Blt_GetPixelsFromObj(
     Tcl_Interp *interp,
     Tk_Window tkwin,
     Tcl_Obj *objPtr,
-    int check,                  /* Can be PIXELS_POS, PIXELS_NNEG,
-                                 * or PIXELS_ANY, */
+    int check,                          /* Can be PIXELS_POS, PIXELS_NNEG,
+                                         * or PIXELS_ANY, */
     int *valuePtr)
 {
     int length;
@@ -434,11 +434,8 @@ Blt_GetPixelsFromObj(
 }
 
 int
-Blt_GetPadFromObj(
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Window */
-    Tcl_Obj *objPtr,            /* Pixel value string */
-    Blt_Pad *padPtr)
+Blt_GetPadFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr,
+                  Blt_Pad *padPtr)
 {
     int side1, side2;
     int objc;
@@ -469,10 +466,7 @@ Blt_GetPadFromObj(
 }
 
 int
-Blt_GetStateFromObj(
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tcl_Obj *objPtr,            /* Pixel value string */
-    int *statePtr)
+Blt_GetStateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *statePtr)
 {
     char c;
     const char *string;
@@ -970,10 +964,10 @@ DoConfig(
                         return TCL_ERROR;
                     }
                 }
-                if (*(Tk_3DBorder *)ptr != NULL) {
-                    Tk_Free3DBorder(*(Tk_3DBorder *)ptr);
+                if (*((Tk_3DBorder *)ptr) != NULL) {
+                    Tk_Free3DBorder(*((Tk_3DBorder *)ptr));
                 }
-                *(Tk_3DBorder *)ptr = border;
+                *((Tk_3DBorder *)ptr) = border;
             }
             break;
 
@@ -1560,8 +1554,8 @@ FormatConfigValue(
             return Tcl_NewBooleanObj(bool);
         }
     case BLT_CONFIG_BORDER: 
-        if (*(Tk_3DBorder *)ptr != NULL) {
-            string = Tk_NameOf3DBorder(*(Tk_3DBorder *)ptr);
+        if (*((Tk_3DBorder *)ptr) != NULL) {
+            string = Tk_NameOf3DBorder(*((Tk_3DBorder *)ptr));
         }
         break;
 
@@ -2320,9 +2314,9 @@ Blt_FreeOptions(
             break;
 
         case BLT_CONFIG_BORDER:
-            if (*((Tk_3DBorder *) ptr) != NULL) {
-                Tk_Free3DBorder(*((Tk_3DBorder *) ptr));
-                *((Tk_3DBorder *) ptr) = NULL;
+            if (*((Tk_3DBorder *)ptr) != NULL) {
+                Tk_Free3DBorder(*((Tk_3DBorder *)ptr));
+                *((Tk_3DBorder *)ptr) = NULL;
             }
             break;
 

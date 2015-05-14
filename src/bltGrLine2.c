@@ -3289,7 +3289,6 @@ ExtentsProc(Element *basePtr)
             } else {
                 top = elemPtr->yLow.min;
             }
-            fprintf(stderr, "top=%g exttop=%g\n", top, exts.top);
             if (top < exts.top) {
                 exts.top = top;
             }

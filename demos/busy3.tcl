@@ -10,8 +10,6 @@ set spcount 0
 
 proc GetBusyWindow { w } {
    set parent [winfo parent $w]
-   puts stderr children=[winfo children $parent]
-   puts stderr children=[winfo children $w]
 }
 
 #
@@ -132,16 +130,19 @@ button .f2.holdButton -command {
         global activeBg
 	.f1 configure -bg $activeBg
     }
-    blt::busy .f1 -opaque 1 -darken 70 -image $spinner -interval 50
+    blt::busy .f1 -opaque 1 -darken 40 -image $spinner -delay 50
     blt::busy .#menu
-    set w .f1_Busy
-    GetBusyWindow .f1
-    blt::tk::button $w.s -text "Testing" -command "puts stderr edit" \
-	-cursor left_ptr -width 20 -height 3
-    blt::table $w \
-      0,0 $w.s -padx 0.24i -pady 0.24i
-    LoseFocus
-    Shake 3000
+    if 0 {
+	set w .f1_Busy
+	GetBusyWindow .f1
+
+	blt::tk::button $w.s -text "Testing" -command "puts stderr edit" \
+	    -cursor left_ptr -width 20 -height 3
+	blt::table $w \
+	    0,0 $w.s -padx 0.24i -pady 0.24i
+	LoseFocus
+	#Shake 3000
+    }
 }
 button .f2.releaseButton -command {
     if { [blt::busy isbusy .f1] } {
