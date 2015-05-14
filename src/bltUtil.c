@@ -105,6 +105,9 @@ extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #endif
 
 #ifdef WIN32
+
+#include <shlwapi.h>
+
 char *
 strcasestr(const char *s, const char *find)
 {
