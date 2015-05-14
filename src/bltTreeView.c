@@ -1045,8 +1045,8 @@ NextEntry(Entry *entryPtr, unsigned int mask)
 }
 
 static const char *
-GetPathFromEntry(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel, 
-                 Tcl_DString *resultPtr)
+GetPathFromRoot(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel, 
+             Tcl_DString *resultPtr)
 {
     const char **names;                 /* Used the stack the component
                                          * names. */
@@ -1113,13 +1113,13 @@ FreePath(Entry *entryPtr)
 }
 
 static const char *
-GetPath(TreeView *viewPtr, Entry *entryPtr)
+PathFromRoot(TreeView *viewPtr, Entry *entryPtr)
 {
     if (entryPtr->pathName == NULL) {
         Tcl_DString ds;
 
         Tcl_DStringInit(&ds);
-        GetPathFromEntry(viewPtr, entryPtr, TRUE, &ds);
+        GetPathFromRoot(viewPtr, entryPtr, TRUE, &ds);
         entryPtr->pathName = Blt_AssertStrdup(Tcl_DStringValue(&ds));
         Tcl_DStringFree(&ds);
     }
@@ -1154,8 +1154,8 @@ PercentSubst(TreeView *viewPtr, Entry *entryPtr, Tcl_Obj *cmdObjPtr)
             case 'W':                   /* Widget name */
                 string = Tk_PathName(viewPtr->tkwin);
                 break;
-            case 'P':                   /* Full pathname */
-                string = GetPath(viewPtr, entryPtr);
+            case 'P':                   /* Path from root to entry */
+                string = PathFromRoot(viewPtr, entryPtr);
                 break;
             case 'p':                   /* Name of the node */
                 string = GETLABEL(entryPtr);
@@ -3804,7 +3804,7 @@ FindPath(TreeView *viewPtr, Entry *rootPtr, const char *path)
     {
         Tcl_DString ds;
 
-        GetPathFromEntry(viewPtr, entryPtr, FALSE, &ds);
+        GetPathFromRoot(viewPtr, entryPtr, FALSE, &ds);
         Tcl_AppendResult(viewPtr->interp, "can't find node \"", name,
                  "\" in parent node \"", Tcl_DStringValue(&ds), "\"", 
                 (char *)NULL);
@@ -5278,7 +5278,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
         if (viewPtr->flatView) {
-            Blt_Ts_GetExtents(&ts, GetPath(viewPtr, entryPtr), &tw, &th);
+            Blt_Ts_GetExtents(&ts, PathFromRoot(viewPtr, entryPtr), &tw, &th);
         } else {
             Blt_Ts_GetExtents(&ts, label, &tw, &th);
         }
@@ -5378,7 +5378,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
             Blt_Ts_InitStyle(ts);
             Blt_Ts_SetFont(ts, font);
             if (viewPtr->flatView) {
-                label = GetPath(viewPtr, entryPtr);
+                label = PathFromRoot(viewPtr, entryPtr);
             }
             Blt_Ts_GetExtents(&ts, label, &tw, &th);
         }
@@ -5704,9 +5704,9 @@ InvokeCompare(Column *colPtr, Entry *e1, Entry *e2, Tcl_Obj *cmdPtr)
     Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
              
     if (viewPtr->flatView) {
-        objPtr = Tcl_NewStringObj(GetPath(viewPtr, e1), -1);
+        objPtr = Tcl_NewStringObj(PathFromRoot(viewPtr, e1), -1);
         Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj(GetPath(viewPtr, e2), -1);
+        objPtr = Tcl_NewStringObj(PathFromRoot(viewPtr, e2), -1);
         Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
     } else {
         objPtr = Tcl_NewStringObj(GETLABEL(e1), -1);
@@ -5870,8 +5870,8 @@ CompareEntries(const void *a, const void *b)
                 const char *s1, *s2;
 
                 if (viewPtr->flatView) {
-                    s1 = GetPath(viewPtr, e1);
-                    s2 = GetPath(viewPtr, e2);
+                    s1 = PathFromRoot(viewPtr, e1);
+                    s2 = PathFromRoot(viewPtr, e2);
                 } else {
                     s1 = GETLABEL(e1);
                     s2 = GETLABEL(e2);
@@ -5915,7 +5915,7 @@ CompareEntries(const void *a, const void *b)
         }
     }
     if (result == 0) {
-        result = strcmp(GetPath(viewPtr, e1), GetPath(viewPtr, e2));
+        result = strcmp(PathFromRoot(viewPtr, e1), PathFromRoot(viewPtr, e2));
     }
     if (viewPtr->sort.decreasing) {
         return -result;
@@ -7933,7 +7933,7 @@ DrawEntryLabel(
         Blt_Ts_SetMaxLength(ts, maxLength);
 
         if (viewPtr->flatView) {
-            textPtr = Blt_Ts_CreateLayout(GetPath(viewPtr, entryPtr), -1, &ts);
+            textPtr = Blt_Ts_CreateLayout(PathFromRoot(viewPtr, entryPtr), -1, &ts);
         } else {
             textPtr = Blt_Ts_CreateLayout(label, -1, &ts);
         }
@@ -11895,7 +11895,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (fullPattern != NULL) {
             Tcl_DString ds;
 
-            GetPathFromEntry(viewPtr, entryPtr, FALSE, &ds);
+            GetPathFromRoot(viewPtr, entryPtr, FALSE, &ds);
             result = (*compareProc) (interp, Tcl_DStringValue(&ds),fullPattern);
             Tcl_DStringFree(&ds);
             if (result == invertMatch) {
@@ -12080,7 +12080,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             count++;
             if (entryPtr->node != NULL) {
                 if (useFullName) {
-                    GetPathFromEntry(viewPtr, entryPtr, FALSE, &d2);
+                    GetPathFromRoot(viewPtr, entryPtr, FALSE, &d2);
                 } else {
                     Tcl_DStringAppend(&d2, Blt_Tree_NodeLabel(entryPtr->node),
                         -1);
@@ -12238,7 +12238,7 @@ SearchAndApplyToTree(TreeView *viewPtr, Tcl_Interp *interp, int objc,
             if (fullPattern != NULL) {
                 Tcl_DString ds;
 
-                GetPathFromEntry(viewPtr, entryPtr, FALSE, &ds);
+                GetPathFromRoot(viewPtr, entryPtr, FALSE, &ds);
                 result = (*compareProc) (interp, Tcl_DStringValue(&ds), 
                         fullPattern);
                 Tcl_DStringFree(&ds);
@@ -12793,7 +12793,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_DString ds;
             const char *path;
 
-            path = GetPathFromEntry(viewPtr, srcPtr, 1, &ds);
+            path = GetPathFromRoot(viewPtr, srcPtr, 1, &ds);
             Tcl_AppendResult(interp, "can't move node: \"", path, 
                         "\" is an ancestor of \"", Tcl_GetString(objv[4]), 
                         "\"", (char *)NULL);
