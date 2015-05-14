@@ -577,7 +577,7 @@ ObjToLimits(
                 }
                 winArr[i] = tkwin2;
             } else {
-                if (Tk_GetPixelsFromObj(interp, tkwin, objPtr, &size)
+                if (Tk_GetPixelsFromObj(interp, tkwin, objv[i], &size)
                     != TCL_OK) {
                     return TCL_ERROR;
                 }

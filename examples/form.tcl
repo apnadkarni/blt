@@ -28,15 +28,7 @@ option add *takeFocus 0
 set file1 ../demos/images/chalk.gif
 #set file1 /home/gah/titanium.jpg
 set file2 ../demos/images/tan_paper.gif
-image create picture texture1 -file $file1
-image create photo texture2 -file $file2
-option add *Frame.Tile texture1
-option add *Toplevel.Tile texture1
-option add *Label.Tile texture1
-#option add *Scrollbar.tile texture1
-#option add *Scrollbar.activeTile texture2
-#option add *Button.tile texture1
-#option add *Button.activeTile texture2
+
 option add *HighlightThickness 0
 option add *Entry.highlightThickness 2
 
@@ -431,22 +423,25 @@ if { ($visual == "staticgray") || ($visual == "grayscale") } {
     }
     option add *Entry.background $pq_dict(normalBgColor) widgetDefault
     option add *Text.background $pq_dict(normalBgColor) widgetDefault
-    option add *Label.foreground $pq_dict(normalFgColor) widgetDefault
-    option add *Button.foreground $pq_dict(normalFgColor) widgetDefault
-    option add *Scrollbar.background $pq_dict(normalBgColor) 
+    option add *BltTkLabel.foreground $pq_dict(normalFgColor) widgetDefault
+    option add *BltTkButton.foreground $pq_dict(normalFgColor) widgetDefault
+    option add *BltTkScrollbar.background $pq_dict(normalBgColor) 
     set pq_dict(visual) color
 }    
 
-SetOption statusFont 	 -*-Helvetica-Medium-R-*-*-14-*-*-*-*-*-*-*
-SetOption titleFont	 -*-Helvetica-Bold-R-*-*-14-*-*-*-*-*-*-*
-SetOption headingFont 	 -*-Helvetica-Medium-R-*-*-14-*-*-*-*-*-*-*
-SetOption subheadingFont -*-Helvetica-Medium-R-*-*-12-*-*-*-*-*-*-* 
-SetOption entryFont 	 -*-Courier-Medium-R-*-*-18-*-*-*-*-*-*-*
-SetOption textFont 	 -*-Courier-Bold-R-*-*-18-*-*-*-*-*-*-*
+SetOption buttonFont 	 {{Sans Serif} 9}
+SetOption ordersFont 	 {{Sans Serif} 9}
+SetOption overallFont 	 {{Sans Serif} 11}
+SetOption statusFont 	 {{Sans Serif} 9}
+SetOption titleFont	 {{Sans Serif} 9}
+SetOption headingFont 	 {{Sans Serif} 26}
+SetOption subheadingFont {{Sans Serif} 7}
+SetOption entryFont 	 {Monospace 10}
+SetOption textFont 	 {Monospace 10}
 #SetOption entryFont 	 fixed
 #SetOption textFont 	 fixed
 
-option add *Label.borderWidth 	0		    widgetDefault
+option add *BltTkLabel.borderWidth 	0		    widgetDefault
 option add *Entry.relief 	sunken              widgetDefault
 option add *Entry.width 	11		    widgetDefault
 option add *Entry.borderWidth 	2		    widgetDefault
@@ -454,9 +449,9 @@ option add *Entry.font 		$pq_dict(entryFont) widgetDefault
 option add *Text.font		$pq_dict(textFont)  widgetDefault
 option add *Text.width 		35		    widgetDefault
 option add *Text.height 	10 		    widgetDefault
-option add *Scrollbar.relief 	flat		    widgetDefault
-option add *Scrollbar.minSlider	10		    widgetDefault
-option add *Button.padY 4
+option add *BltTkScrollbar.relief 	flat		    widgetDefault
+option add *BltTkScrollbar.minSlider	10		    widgetDefault
+option add *BltTkButton.padY 4
 option add *Text.relief 	sunken		    widgetDefault
 option add *Text.borderWidth 	2 		    widgetDefault
 
@@ -464,7 +459,7 @@ foreach name $pq_dict(entryNames) {
     option add *${name}_label.font $pq_dict(subheadingFont) widgetDefault
 }
 
-option add *Label.Font          $pq_dict(subheadingFont)
+option add *BltTkLabel.Font     $pq_dict(subheadingFont)
 option add *status_label.font   $pq_dict(statusFont)  widgetDefault
 option add *name_label.font   	$pq_dict(headingFont) widgetDefault
 option add *tel_label.font 	$pq_dict(headingFont) widgetDefault
@@ -887,18 +882,18 @@ proc Animate option {
 # main body of program
 #
 
-blt::tile::frame .frame 
+blt::tk::frame .frame 
 set topLevel .frame
 
-blt::tile::label .overall_label -font  -*-Helvetica-Bold-R-*-*-18-*-*-*-*-*-*-*
-blt::tile::label .name_label -font $pq_dict(titleFont)
-blt::tile::label .tel_label  -font $pq_dict(titleFont)
-blt::tile::label .addr_label -font $pq_dict(titleFont)
-blt::tile::label .org_title -font $pq_dict(titleFont)
-blt::tile::label .loc_title -font $pq_dict(titleFont)
+blt::tk::label .overall_label -font  $pq_dict(overallFont)
+blt::tk::label .name_label -font $pq_dict(titleFont)
+blt::tk::label .tel_label  -font $pq_dict(titleFont)
+blt::tk::label .addr_label -font $pq_dict(titleFont)
+blt::tk::label .org_title -font $pq_dict(titleFont)
+blt::tk::label .loc_title -font $pq_dict(titleFont)
 
 foreach name $pq_dict(entryNames) {
-    blt::tile::label .${name}_label 
+    blt::tk::label .${name}_label 
     entry .${name}_entry
 }
 if [info exists env(POST_DEFAULTS)] {
@@ -913,20 +908,19 @@ foreach i $pq_dict(defaults) {
 	}
     }
 }
-blt::tile::label .orders_title -text "Current Orders" \
-	-font  -*-Helvetica-Bold-R-*-*-16-*-*-*-*-*-*-*
+blt::tk::label .orders_title -text "Current Orders" -font  $pq_dict(ordersFont)
 
-set font -*-Helvetica-Bold-R-*-*-12-*-*-*-*-*-*-*
+set font $pq_dict(buttonFont)
 button .clear_button -command ClearFields -font $font
 button .quit_button -command { exit }  -font $font
 button .search_button -text "Search" -font $font 
 
-blt::tile::label .status_label
+blt::tk::label .status_label
 button .cancel_button -command StopQuery 
 #-relief raised
-blt::tile::label .trademark -bitmap attlogo 
+blt::tk::label .trademark -bitmap attlogo 
 text .text -yscrollcommand { .vscroll set } -state disabled 
-scrollbar .vscroll -command { .text yview } 
+blt::tk::scrollbar .vscroll -command { .text yview } 
 
 blt::table $topLevel \
     .overall_label	0,1 -cspan 10 -pady 5 \

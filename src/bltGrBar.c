@@ -222,10 +222,11 @@ static Blt_CustomOption penColorsOption = {
     ObjToPenColors, PenColorsToObj, NULL, (ClientData)0
 };
 
+static Blt_OptionFreeProc FreeBackground;
 static Blt_OptionParseProc ObjToBackground;
 static Blt_OptionPrintProc BackgroundToObj;
 static Blt_CustomOption backgroundOption = {
-    ObjToBackground, BackgroundToObj, NULL, (ClientData)0
+    ObjToBackground, BackgroundToObj, FreeBackground, (ClientData)0
 };
 
 
@@ -646,6 +647,30 @@ PenColorsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
+ * FreeBackground --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static void
+FreeBackground(ClientData clientData, Display *display, char *widgRec,
+               int offset)
+{
+    BarPen *penPtr = (BarPen *)(widgRec + offset);
+
+    if (penPtr->brush != NULL) {
+        Blt_FreeBrush(penPtr->brush);
+        penPtr->brush = NULL;
+    }
+    if (penPtr->fillBg != NULL) {
+        Blt_Bg_Free(penPtr->fillBg);
+        penPtr->fillBg = NULL;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ObjToBackground --
  *
  *---------------------------------------------------------------------------
@@ -664,36 +689,15 @@ ObjToBackground(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     string = Tcl_GetStringFromObj(objPtr, &length);
     /* Handle NULL string.  */
     if (length == 0) {
-        if (penPtr->brush != NULL) {
-            Blt_FreeBrush(penPtr->brush);
-            penPtr->brush = NULL;
-        }
-        if (penPtr->fillBg != NULL) {
-            Blt_Bg_Free(penPtr->fillBg);
-            penPtr->fillBg = NULL;
-        }
+        FreeBackground(clientData, Tk_Display(tkwin), widgRec, offset);
         return TCL_OK;
     }
     /* First try as a background */
     if (Blt_GetBgFromObj(interp, tkwin, objPtr, &bg) == TCL_OK) {
-        if (penPtr->brush != NULL) {
-            Blt_FreeBrush(penPtr->brush);
-            penPtr->brush = NULL;
-        }
-        if (penPtr->fillBg != NULL) {
-            Blt_Bg_Free(penPtr->fillBg);
-            penPtr->fillBg = NULL;
-        }
+        FreeBackground(clientData, Tk_Display(tkwin), widgRec, offset);
         penPtr->fillBg = bg;
     } else if (Blt_GetPaintBrushFromObj(interp, objPtr, &brush) == TCL_OK) {
-        if (penPtr->brush != NULL) {
-            Blt_FreeBrush(penPtr->brush);
-            penPtr->brush = NULL;
-        }
-        if (penPtr->fillBg != NULL) {
-            Blt_Bg_Free(penPtr->fillBg);
-            penPtr->fillBg = NULL;
-        }
+        FreeBackground(clientData, Tk_Display(tkwin), widgRec, offset);
         penPtr->brush = brush;
     } else {
         Tcl_ResetResult(interp);
@@ -2015,9 +2019,11 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
         if (penPtr->stipple != None) {
             TkSetRegion(graphPtr->display, penPtr->fillGC, rgn);
         }
+        Blt_Bg_SetClipRegion(graphPtr->tkwin, penPtr->fillBg, rgn);
+    }
+    if (penPtr->brush != NULL) {
         painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
         Blt_SetPainterClipRegion(painter, rgn);
-        Blt_Bg_SetClipRegion(graphPtr->tkwin, penPtr->fillBg, rgn);
     }
     if (penPtr->outline != NULL) {
         Blt_3DBorder_SetClipRegion(graphPtr->tkwin, penPtr->outline, rgn);

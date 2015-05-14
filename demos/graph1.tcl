@@ -10,24 +10,65 @@ source scripts/demo.tcl
 set normalBg [blt::background create linear \
 		  -lowcolor grey60 -highcolor grey90 -jitter 10]
 
-#set normalBg [blt::background create checker -oncolor grey85 -offcolor grey98]
-
-#set normalBg white
-#set activeBg grey95
-# option add *Axis.activeBackground $activeBg
-# option add *Legend.activeBackground $activeBg
-
 set graph .g
 blt::graph .g \
     -bg $normalBg \
-    -width 700 \
+    -borderwidth 1 \
     -height 300 \
-    -plotrelief solid \
     -plotborderwidth 1 \
+    -plotrelief solid \
+    -plotpadx 0 \
+    -plotpady 0 \
     -relief raised \
-    -plotpadx 0 -plotpady 0 \
-    -invertxy no \
-    -borderwidth 2
+    -title "A Simple X-Y Graph" \
+    -width 700 
+
+.g legend configure \
+    -activeborderwidth 1  \
+    -activerelief sunken \
+    -anchor ne \
+    -background "" \
+    -borderwidth 0 \
+    -padx 10 \
+    -pady 10 \
+    -position plotarea \
+    -relief flat 
+
+.g axis configure x \
+    -activebackground white \
+    -activeforeground red3 \
+    -exterior no \
+    -scale log \
+    -scrollcommand { .xbar set }  \
+    -scrollmax 1e+6 \
+    -scrollmin -1e+6 \
+    -title "X" 
+
+.g axis configure y \
+    -activebackground white \
+    -activeforeground red3 \
+    -exterior no \
+    -rotate 0 \
+    -scrollcommand { .ybar set } \
+    -scrollmax 1000 \
+    -scrollmin -100  \
+    -title "Y" 
+
+.g axis configure y2 \
+    -exterior no \
+    -hide no \
+    -rotate 0 \
+    -scrollmax 1.0 \
+    -scrollmin 0.0 \
+    -title "Y2"
+
+.g axis configure x2 \
+    -exterior no \
+    -hide no \
+    -rotate 0 \
+    -scrollmax 1.0 \
+    -scrollmin 0.0 \
+    -title "X2"
 
 blt::htext .header \
     -text {\
@@ -83,11 +124,6 @@ set Y3 {
 set configOptions {
     Element.Pixels		6
     Element.Smooth		none
-    Legend.ActiveBackground	khaki2
-    Legend.ActiveRelief		sunken
-    Legend.Background		""
-    Legend.Position		plotarea
-    Title			"A Simple X-Y Graph"
     activeLine.Color		yellow4
     activeLine.Fill		yellow
     background			khaki3
@@ -138,9 +174,11 @@ blt::tk::scrollbar .xbar \
     -command { .g axis view x } \
     -orient horizontal \
     -highlightthickness 0
+
 blt::tk::scrollbar .ybar \
     -command MultiplexView \
     -orient vertical -highlightthickness 0
+
 blt::table . \
     0,0 .header -cspan 3 -fill x \
     1,0 .g  -fill both -cspan 3 -rspan 3 \
@@ -150,48 +188,6 @@ blt::table . \
 
 blt::table configure . c3 r0 r4 r5 -resize none
 
-.g axis configure x \
-    -scrollcommand { .xbar set }  \
-    -scrollmin -1e+6 \
-    -scrollmax   1e+6 \
-    -logscale yes \
-    -activeforeground red3 \
-    -activebackground white \
-    -title "X" \
-    -exterior no
-
-.g axis configure y \
-    -scrollcommand { .ybar set } \
-    -scrollmax 1000 \
-    -activeforeground red3 \
-    -activebackground white \
-    -scrollmin -100  \
-    -rotate 0 \
-    -title "Y" \
-    -exterior no
-
-.g axis configure y2 \
-    -scrollmin 0.0 -scrollmax 1.0 \
-    -hide no \
-    -rotate 0 \
-    -exterior no \
-    -title "Y2"
-
-.g axis configure x2 \
-    -scrollmin 0.0 -scrollmax 1.0 \
-    -hide no \
-    -rotate 0 \
-    -exterior no \
-    -title "X2"
-
-.g legend configure \
-    -relief flat -bd 0 \
-    -activerelief flat \
-    -activeborderwidth 1  \
-    -position plotarea -anchor ne -padx 10 -pady 10 -bg ""
-
-#.g configure -plotpadx 0 -plotpady 0 -plotborderwidth 1 -plotrelief solid \
-#    -Width 4.4i -plotwidth 2.0i  -leftmargin 0i -rightmargin 1.0i
 
 .g pen configure "activeLine" \
     -showvalues y
@@ -201,8 +197,6 @@ blt::table configure . c3 r0 r4 r5 -resize none
 .g element bind all <Leave> {
     %W legend deactivate
 }
-.g configure -plotpady { 0 0 } 
-
 .g axis bind all <Enter> {
     set axis [%W axis get current]
     %W axis activate $axis
@@ -226,15 +220,14 @@ set image1 [image create picture -file bitmaps/sharky.xbm]
 set image2 [image create picture -file images/buckskin.gif]
 set bg1 [blt::paintbrush create color -color blue -opacity 30]
 set bg2 [blt::paintbrush create color -color green -opacity 40]
-set bg3 [blt::paintbrush create color -color pink -opacity 40]
+set bg3 [blt::paintbrush create color -color red -opacity 40]
+
 .g element configure line1 -areabackground $bg1 -areaforeground blue 
-#.g element configure line2 -areabackground $bg2
-#.g element configure line3 -areabackground $bg3
-.g configure -title "Graph Title"
+.g element configure line2 -areabackground $bg2 -areaforeground blue 
+.g element configure line3 -areabackground $bg3 -areaforeground blue 
 
 .g marker create line -name "y100" -coords { -Inf 100 Inf 100 } -dashes 1 \
 	-outline green3 -linewidth 1
-.g configure -plotpady 10 -plotpadx 10
 
 if { $tcl_platform(platform) == "windows" } {
     if 0 {

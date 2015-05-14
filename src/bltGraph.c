@@ -1103,37 +1103,25 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
 static int
 XAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    int margin;
-
-    margin = (graphPtr->flags & INVERTED) ? MARGIN_LEFT : MARGIN_BOTTOM;
-    return Blt_AxisOp(graphPtr, interp, margin, objc, objv);
+    return Blt_AxisOp(graphPtr, interp, MARGIN_X, objc, objv);
 }
 
 static int
 X2AxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    int margin;
-
-    margin = (graphPtr->flags & INVERTED) ? MARGIN_RIGHT : MARGIN_TOP;
-    return Blt_AxisOp(graphPtr, interp, margin, objc, objv);
+    return Blt_AxisOp(graphPtr, interp, MARGIN_X2, objc, objv);
 }
 
 static int
 YAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    int margin;
-
-    margin = (graphPtr->flags & INVERTED) ? MARGIN_BOTTOM : MARGIN_LEFT;
-    return Blt_AxisOp(graphPtr, interp, margin, objc, objv);
+    return Blt_AxisOp(graphPtr, interp, MARGIN_Y, objc, objv);
 }
 
 static int
 Y2AxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    int margin;
-
-    margin = (graphPtr->flags & INVERTED) ? MARGIN_TOP : MARGIN_RIGHT;
-    return Blt_AxisOp(graphPtr, interp, margin, objc, objv);
+    return Blt_AxisOp(graphPtr, interp, MARGIN_Y2, objc, objv);
 }
 
 static int

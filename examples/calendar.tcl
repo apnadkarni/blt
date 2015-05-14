@@ -22,34 +22,29 @@ package require BLT
 #
 # --------------------------------------------------------------------------
 
-if { $tcl_version >= 8.0 } {
-    namespace import blt::*
-    namespace import -force blt::tile::*
-}
-
 #source scripts/demo.tcl
 
 set file ../demos/images/chalk.gif
 set active ../demos/images/rain.gif
 
+
 image create photo calendar.texture.1 -file $file
 image create photo calendar.texture.2 -file $active
 
-option add *Tile calendar.texture.1
+set bg [blt::background create tile -image calendar.texture.1]
+set bg2 [blt::background create tile -image calendar.texture.2]
 
 option add *HighlightThickness		0
-option add *calendar.weekframe*Tile	calendar.texture.2
-option add *Calendar.Label.borderWidth	0
-option add *Calendar.Label.relief	sunken
-option add *Calendar.Frame.borderWidth	2
-option add *Calendar.Frame.relief	raised
-option add *Calendar.Label.font		{ Helvetica 11 }
-option add *Calendar.Label.foreground	navyblue
-option add *button.foreground		navyblue
-option add *background 			grey85
-#option add *button.activeForeground	red
-#option add *button.activeBackground	blue4
-option add *Label.ipadX			200
+option add *BltTkButton.foreground	navyblue
+option add *BltTkLabel.ipadX			200
+option add *Calendar.BltTkLabel.borderWidth	0
+option add *Calendar.BltTkFrame.borderWidth	2
+option add *Calendar.BltTkLabel.relief	sunken
+option add *Calendar.BltTkFrame.relief	raised
+option add *Calendar.BltTkLabel.font		{ {San Serif} 11 }
+option add *Calendar.BltTkLabel.foreground	navyblue
+option add *Calendar*background $bg
+option add *Calendar.weekframe.Relief sunken
 
 array set monthInfo {
     Jan { January 31 }
@@ -66,7 +61,6 @@ array set monthInfo {
     Dec { December 31 }
 }
 
-option add *tile calendar.texture.2 
 set abbrDays { Sun Mon Tue Wed Thu Fri Sat }
 
 proc Calendar { weekday day month year } {
@@ -84,34 +78,34 @@ proc Calendar { weekday day month year } {
     if { [info commands .calendar] == ".calendar" } {
 	destroy .calendar 
     }
-    frame .calendar -class Calendar -width 3i -height 3i
-
+    blt::tk::frame .calendar -class Calendar -width 3i -height 3i
+    
     if ![info exists monthInfo($month)] {
 	error "Invalid month \"$month\""
     }
 
     set info $monthInfo($month)
-    label .calendar.month \
+    blt::tk::label .calendar.month \
 	-text "[lindex $info 0] $year"  \
-	-font { Courier 14 bold }
-    table .calendar .calendar.month 1,0 -cspan 7  -pady 10
+	-font { {Sans Serif} 14 }
+    blt::table .calendar .calendar.month 1,0 -cspan 7  -pady 10
     
     set cnt 0
-    frame .calendar.weekframe -relief sunken -bd 1
-    table .calendar .calendar.weekframe 2,0 -columnspan 7 -fill both  
+    blt::tk::frame .calendar.weekframe -bd 1 
+    blt::table .calendar .calendar.weekframe 2,0 -columnspan 7 -fill both  
     foreach dayName $abbrDays {
 	set name [string tolower $dayName]
-	label .calendar.$name \
+	blt::tk::label .calendar.$name \
 	    -text $dayName \
-	    -font { Helvetica 12 }
-	table .calendar .calendar.$name 2,$cnt -pady 2 -padx 2
+	    -font { {Sans Serif} 9 }
+	blt::table .calendar .calendar.$name 2,$cnt -pady 2 -padx 2
 	incr cnt
     }
-    table configure .calendar c* r2 -pad 4 
+    blt::table configure .calendar c* r2 -pad 4 
     set week 0
     set numDays [lindex $info 1]
     for { set cnt 1 } { $cnt <= $numDays } { incr cnt } {
-	label .calendar.day${cnt} -text $cnt 
+	blt::tk::label .calendar.day${cnt} -text $cnt 
 	if { $cnt == $day } {
 	    .calendar.day${cnt} configure -relief sunken -bd 1
 	}
@@ -120,22 +114,24 @@ proc Calendar { weekday day month year } {
 	    incr week
 	    set wkday 0
 	}
-	table .calendar .calendar.day${cnt} $week+3,$wkday \
+	blt::table .calendar .calendar.day${cnt} $week+3,$wkday \
 	    -fill both -ipadx 10 -ipady 4 
     }
-    frame .calendar.quit -bd 1 -relief sunken
-    button .calendar.quit.button -command { exit } -text {Quit} -bd 2 
-    table .calendar.quit \
+    blt::tk::frame .calendar.quit -bd 1 -relief sunken
+    blt::tk::button .calendar.quit.button -command { exit } -text {Quit} -bd 2 
+    blt::table .calendar.quit \
 	.calendar.quit.button -padx 4 -pady 4
-    table .calendar \
+    blt::table .calendar \
 	.calendar.quit $week+4,5 -cspan 2 -pady 4 
-    table . \
+    blt::table . \
 	.calendar -fill both
-    table configure .calendar r0 -resize none
-    table configure .calendar c0 c6
+    blt::table configure .calendar r0 -resize none
+    blt::table configure .calendar c0 c6
 }
 
 set date [clock format [clock seconds] -format {%a %b %d %Y}]
 scan $date { %s %s %d %d } weekday month day year
 
 Calendar $weekday $day $month $year
+
+puts stderr [.calendar.weekframe configure]

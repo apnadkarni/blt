@@ -793,8 +793,9 @@ proc blt::Graph::Box { g } {
     } else {
 	set X [lindex [$g xaxis use] 0]
 	set Y [lindex [$g yaxis use] 0]
-	$g marker create line -coords $coords -name "zoomOutline" \
-	    -mapx $X -mapy $Y
+            $g marker create line -coords $coords -name "zoomOutline"   \
+		-mapx $X -mapy $Y
+	
 	set interval $_private($g,interval)
 	set id [after $interval [list blt::Graph::MarchingAnts $g 0]]
 	set _private($g,afterId) $id

@@ -446,7 +446,7 @@ static Blt_ConfigSpec configSpecs[] =
 static void DestroyAxis(Axis *axisPtr);
 static Tcl_FreeProc FreeAxisProc;
 static int GetAxisByClass(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
-        ClassId classId, Axis **axisPtrPtr);
+        ClassId cid, Axis **axisPtrPtr);
 static void TimeAxis(Axis *axisPtr, double min, double max);
 static Tick FirstMajorTick(Axis *axisPtr);
 static Tick NextMajorTick(Axis *axisPtr);
@@ -601,7 +601,7 @@ static int
 ObjToAxis(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
-    ClassId classId = (ClassId)clientData;
+    ClassId cid = (ClassId)clientData;
     Axis **axisPtrPtr = (Axis **)(widgRec + offset);
     Axis *axisPtr;
     Graph *graphPtr;
@@ -618,8 +618,7 @@ ObjToAxis(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     }
     graphPtr = Blt_GetGraphFromWindowData(tkwin);
     assert(graphPtr);
-    if (GetAxisByClass(interp, graphPtr, objPtr, classId, &axisPtr) 
-        != TCL_OK) {
+    if (GetAxisByClass(interp, graphPtr, objPtr, cid, &axisPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     if (*axisPtrPtr != NULL) {
@@ -627,6 +626,31 @@ ObjToAxis(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     }
     *axisPtrPtr = axisPtr;
     return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AxisToObj --
+ *
+ *      Convert the window coordinates into a string.
+ *
+ * Results:
+ *      The string representing the coordinate position is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+AxisToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)
+{
+    Axis *axisPtr = *(Axis **)(widgRec + offset);
+    const char *name;
+
+    name = (axisPtr == NULL) ? "" : axisPtr->obj.name;
+    return Tcl_NewStringObj(name, -1);
 }
 
 
@@ -732,31 +756,6 @@ YAxisSwitch(ClientData clientData, Tcl_Interp *interp, const char *switchName,
     }
     *axisPtrPtr = axisPtr;
     return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * AxisToObj --
- *
- *      Convert the window coordinates into a string.
- *
- * Results:
- *      The string representing the coordinate position is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-AxisToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-          char *widgRec, int offset, int flags)
-{
-    Axis *axisPtr = *(Axis **)(widgRec + offset);
-    const char *name;
-
-    name = (axisPtr == NULL) ? "" : axisPtr->obj.name;
-    return Tcl_NewStringObj(name, -1);
 }
 
 /*
@@ -4368,18 +4367,18 @@ GetAxisFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
 
 static int
 GetAxisByClass(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
-               ClassId classId, Axis **axisPtrPtr)
+               ClassId cid, Axis **axisPtrPtr)
 {
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objPtr, &axisPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (classId != CID_NONE) {
+    if (cid != CID_NONE) {
         if ((axisPtr->refCount == 0) || (axisPtr->obj.classId == CID_NONE)) {
             /* Set the axis type on the first use of it. */
-            Blt_GraphSetObjectClass(&axisPtr->obj, classId);
-        } else if (axisPtr->obj.classId != classId) {
+            Blt_GraphSetObjectClass(&axisPtr->obj, cid);
+        } else if (axisPtr->obj.classId != cid) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "axis \"", Tcl_GetString(objPtr),
                     "\" is already in use on an opposite ", 
@@ -4846,13 +4845,13 @@ UseOp(ClientData clientData, Tcl_Interp *interp, int objc,
       Tcl_Obj *const *objv)
 {
     Axis *axisPtr = clientData;
-    Graph *graphPtr = (Graph *)axisPtr;
     Axis *nextPtr;
+    ClassId cid;
+    Graph *graphPtr = (Graph *)axisPtr;
+    Margin *marginPtr;
     Tcl_Obj **axisObjv;
-    ClassId classId;
     int axisObjc;
     int i;
-    Margin *marginPtr;
     
     marginPtr = graphPtr->margins + lastMargin;
     if (objc == 0) {
@@ -4868,14 +4867,15 @@ UseOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     if ((lastMargin == MARGIN_BOTTOM) || (lastMargin == MARGIN_TOP)) {
-        classId = (graphPtr->flags & INVERTED) ? CID_AXIS_Y : CID_AXIS_X;
+        cid = (graphPtr->flags & INVERTED) ? CID_AXIS_Y : CID_AXIS_X;
     } else {
-        classId = (graphPtr->flags & INVERTED) ? CID_AXIS_X : CID_AXIS_Y;
+        cid = (graphPtr->flags & INVERTED) ? CID_AXIS_X : CID_AXIS_Y;
     }
     if (Tcl_ListObjGetElements(interp, objv[0], &axisObjc, &axisObjv) 
         != TCL_OK) {
         return TCL_ERROR;
     }
+    /* Step 1: Clear the list of axes for this margin. */
     for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; axisPtr = nextPtr) {
         nextPtr = NextAxis(axisPtr);
         Blt_Chain_UnlinkLink(axisPtr->marginPtr->axes, axisPtr->link);
@@ -4887,6 +4887,7 @@ UseOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     Blt_Chain_Reset(marginPtr->axes);
+    /* Step 2: Add the named axes to this margin. */
     for (i = 0; i < axisObjc; i++) {
         Axis *axisPtr;
 
@@ -4895,7 +4896,7 @@ UseOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         axisPtr->link = Blt_Chain_Append(marginPtr->axes, axisPtr);
         axisPtr->marginPtr = marginPtr;
-        Blt_GraphSetObjectClass(&axisPtr->obj, classId);
+        Blt_GraphSetObjectClass(&axisPtr->obj, cid);
     }
     graphPtr->flags |= (GET_AXIS_GEOMETRY | LAYOUT_NEEDED | RESET_AXES);
     /* When any axis changes, we need to layout the entire graph.  */

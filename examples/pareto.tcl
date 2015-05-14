@@ -45,7 +45,7 @@ set sum 0
 set ydata 0
 set xdata 0
 set b [blt::paintbrush create color -color orange1 -opacity 70]
-set areab [blt::paintbrush create color -color blue -opacity 20]
+set areab [blt::paintbrush create color -color blue -opacity 10]
 foreach { label value color } $data {
     incr count
     .b element create $label \
@@ -107,10 +107,9 @@ foreach x $xdata y $ydata {
     -command FormatLabels \
     -rotate 0 \
     -tickanchor nw \
-    -tickfont {{Sans Serif} 9} \
     -ticklength 5 \
     -exterior no \
-    -descending yes \
+    -decreasing yes \
     -subdivisions 0
 
 proc FormatLabels { widget value } {

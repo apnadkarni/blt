@@ -396,7 +396,8 @@ struct _LineElement {
     Blt_Bg areaBg;                      /* Background representing the
                                          * color of the area under the
                                          * curve. */
-
+    Blt_PaintBrush brush;
+    
     int reqMaxSymbols;                  /* Indicates the interval the draw
                                          * symbols.  Zero (and one) means
                                          * draw all symbols. */
@@ -443,6 +444,13 @@ static Blt_OptionPrintProc SymbolToObjProc;
 static Blt_CustomOption symbolOption =
 {
     ObjToSymbolProc, SymbolToObjProc, FreeSymbolProc, (ClientData)0
+};
+
+static Blt_OptionFreeProc FreeBackground;
+static Blt_OptionParseProc ObjToBackground;
+static Blt_OptionPrintProc BackgroundToObj;
+static Blt_CustomOption backgroundOption = {
+    ObjToBackground, BackgroundToObj, FreeBackground, (ClientData)0
 };
 
 BLT_EXTERN Blt_CustomOption bltLineStylesOption;
@@ -511,9 +519,9 @@ static Blt_ConfigSpec lineSpecs[] =
     {BLT_CONFIG_COLOR, "-areaforeground", "areaForeground", "AreaForeground",
         DEF_PATTERN_FG, Blt_Offset(LineElement, fillFgColor), 
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-areabackground", "areaBackground", 
-        "AreaBackground", DEF_PATTERN_BG, Blt_Offset(LineElement, areaBg),
-         BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
+        "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
+        &backgroundOption},
     {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
         Blt_Offset(LineElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_PEN_COLOR, 
@@ -646,9 +654,9 @@ static Blt_ConfigSpec stripSpecs[] =
     {BLT_CONFIG_COLOR, "-areaforeground", "areaForeground", "areaForeground",
         DEF_PATTERN_FG, Blt_Offset(LineElement, fillFgColor), 
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-areabackground", "areaBackground", 
-        "areaBackground", DEF_PATTERN_BG, Blt_Offset(LineElement, areaBg), 
-        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
+        "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
+        &backgroundOption},
     {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
         Blt_Offset(LineElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-color", "color", "Color",
@@ -840,6 +848,7 @@ static DistanceProc DistanceToYProc;
 static DistanceProc DistanceToXProc;
 static DistanceProc DistanceToLineProc;
 static Blt_BackgroundChangedProc BackgroundChangedProc;
+static Blt_BrushChangedProc BrushChangedProc;
 
 #ifdef WIN32
 
@@ -1001,6 +1010,102 @@ ObjToSymbolProc(
         "\"arrow\" or @imageName ", (char *)NULL);
     return TCL_ERROR;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FreeBackground --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static void
+FreeBackground(ClientData clientData, Display *display, char *widgRec,
+               int offset)
+{
+    LineElement *elemPtr = (LineElement *)(widgRec + offset);
+
+    if (elemPtr->brush != NULL) {
+        Blt_FreeBrush(elemPtr->brush);
+        elemPtr->brush = NULL;
+    }
+    if (elemPtr->areaBg != NULL) {
+        Blt_Bg_Free(elemPtr->areaBg);
+        elemPtr->areaBg = NULL;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToBackground --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToBackground(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    LineElement *elemPtr = (LineElement *)(widgRec + offset);
+    Blt_Bg bg;
+    Blt_PaintBrush brush;
+    const char *string;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    /* Handle NULL string.  */
+    if (length == 0) {
+        FreeBackground(clientData, Tk_Display(tkwin), widgRec, offset);
+        return TCL_OK;
+    }
+    /* First try as a background */
+    if (Blt_GetBgFromObj(interp, tkwin, objPtr, &bg) == TCL_OK) {
+        FreeBackground(clientData, Tk_Display(tkwin), widgRec, offset);
+        elemPtr->areaBg = bg;
+    } else if (Blt_GetPaintBrushFromObj(interp, objPtr, &brush) == TCL_OK) {
+        FreeBackground(clientData, Tk_Display(tkwin), widgRec, offset);
+        elemPtr->brush = brush;
+    } else {
+        Tcl_ResetResult(interp);
+        Tcl_AppendResult(interp, "bad color argument \"", string,
+                "\": should be a color name, background, or paintbrush",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * BackgroundToObj --
+ *
+ *      Returns the mode style string based upon the mode flags.
+ *
+ * Results:
+ *      The mode style string is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+BackgroundToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)
+{
+    LineElement *elemPtr = (LineElement *)(widgRec + offset);
+    const char *string;
+    
+    if (elemPtr->areaBg != NULL) {
+        string = Blt_Bg_Name(elemPtr->areaBg);
+    } else if (elemPtr->brush != NULL) {
+        string = Blt_GetBrushName(elemPtr->brush);
+    } else {
+        string = "";
+    }
+    return Tcl_NewStringObj(string, -1);
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -3232,6 +3337,30 @@ BackgroundChangedProc(ClientData clientData)
 /*
  *---------------------------------------------------------------------------
  *
+ * BrushChangedProc
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static void
+BrushChangedProc(ClientData clientData, Blt_PaintBrush brush)
+{
+    Element *elemPtr = clientData;
+    Graph *graphPtr;
+
+    graphPtr = elemPtr->obj.graphPtr;
+    if (graphPtr->tkwin != NULL) {
+        graphPtr->flags |= REDRAW_WORLD;
+        Blt_EventuallyRedrawGraph(graphPtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ConfigureProc --
  *
  *      Sets up the appropriate configuration parameters in the GC.  It is
@@ -3275,6 +3404,9 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
     stylePtr->penPtr = NORMALPEN(elemPtr);
     if (elemPtr->areaBg != NULL) {
         Blt_Bg_SetChangedProc(elemPtr->areaBg, BackgroundChangedProc, elemPtr);
+    }
+    if (elemPtr->brush != NULL) {
+        Blt_CreateBrushNotifier(elemPtr->brush, BrushChangedProc, elemPtr);
     }
     /*
      * Set the outline GC for this pen: GCForeground is outline color.
@@ -4007,7 +4139,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
         }
 #endif
     }
-    if ((elemPtr->areaBg != NULL) || (elemPtr->zAxisPtr != NULL)) {
+    if ((elemPtr->areaBg != NULL) || (elemPtr->brush != NULL) ||
+        (elemPtr->zAxisPtr != NULL)) {
         MapAreaUnderCurve(elemPtr);
     }
     /* Split traces based upon style.  The pen associated with the trace
@@ -4128,21 +4261,20 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
         vertices[i].x = (float)(points[i].x - x1);
         vertices[i].y = (float)(points[i].y - y1);
     }
-    if ((elemPtr->areaBg == NULL) && (elemPtr->zAxisPtr != NULL)) {
+    if ((elemPtr->zAxisPtr != NULL) && (elemPtr->zAxisPtr->palette != NULL)) {
         brush = Blt_NewLinearGradientBrush();
         Blt_SetBrushOrigin(brush, -x1, -y1);
-        if (elemPtr->zAxisPtr->palette != NULL) {
-            Blt_SetLinearGradientBrushPalette(brush,
-                elemPtr->zAxisPtr->palette);
-        }
+        Blt_SetLinearGradientBrushPalette(brush, elemPtr->zAxisPtr->palette);
         Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, elemPtr);
-    } else {
+    } else if (elemPtr->brush != NULL) {
+        brush = elemPtr->brush;
+        Blt_SetBrushRegion(brush, 0, 0, w, h);
+    } else if (elemPtr->areaBg != NULL) {
         brush = Blt_Bg_PaintBrush(elemPtr->areaBg);
         Blt_SetBrushRegion(brush, 0, 0, w, h);
     }
     Blt_PaintPolygon(picture, numPoints, vertices, brush);
-    if ((elemPtr->areaBg == NULL) ||
-        (brush != Blt_Bg_PaintBrush(elemPtr->areaBg))) {
+    if ((elemPtr->zAxisPtr != NULL) && (elemPtr->zAxisPtr->palette != NULL)) {
         Blt_FreeBrush(brush);
     }
     Blt_Free(vertices);
@@ -5318,18 +5450,21 @@ AreaUnderCurveToPostScript(Blt_Ps ps, LineElement *elemPtr)
         Trace *tracePtr;
 
         tracePtr = Blt_Chain_GetValue(link);
-        if ((tracePtr->numFillPts > 0) && (elemPtr->areaBg != NULL)) {
+        if (tracePtr->numFillPts == 0) {
+            continue;
+        }
+        if (elemPtr->areaBg != NULL) {
             /* Create a path to use for both the polygon and its outline. */
             Blt_Ps_Append(ps, "% start fill area\n");
             Blt_Ps_Polyline(ps, tracePtr->numFillPts, tracePtr->fillPts);
+
             /* If the background fill color was specified, draw the polygon in a
              * solid fashion with that color.  */
-            if (tracePtr->elemPtr->fillBgColor != NULL) {
-                Blt_Ps_XSetBackground(ps, tracePtr->elemPtr->fillBgColor);
-                Blt_Ps_Append(ps, "gsave fill grestore\n");
-            }
-            Blt_Ps_XSetForeground(ps, tracePtr->elemPtr->fillFgColor);
-            if (tracePtr->elemPtr->areaBg != NULL) {
+            Blt_Ps_XSetBackground(ps, Blt_Bg_BorderColor(elemPtr->areaBg));
+            Blt_Ps_Append(ps, "gsave fill grestore\n");
+
+            Blt_Ps_XSetForeground(ps, elemPtr->fillFgColor);
+            if (elemPtr->areaBg != NULL) {
                 Blt_Ps_Append(ps, "gsave fill grestore\n");
                 /* TBA: Transparent tiling is the hard part. */
             } else {
