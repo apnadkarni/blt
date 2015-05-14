@@ -526,8 +526,9 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
  *---------------------------------------------------------------------------
  */
 Blt_Chain
-Blt_GetChildrenFromWindow(Display *display, Window window)
+Blt_GetChildrenFromWindow(Display *display, ClientData clientData)
 {
+    Window window = clientData;
     Window *children;
     unsigned int numChildren;
     Window parent, root;
