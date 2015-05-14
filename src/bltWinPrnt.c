@@ -641,7 +641,7 @@ TokenToString(TokenString *table, DWORD token)
 }
 
 static DWORD
-StringToToken(TokenString * table, char *string)
+StringToToken(TokenString * table, const char *string)
 {
     TokenString *p;
     char c;
@@ -1067,9 +1067,6 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Blt_AssertStrdup((char *)pi2Ptr->pDevMode->dmDeviceName);
     }
     queuePtr->driverName = Blt_AssertStrdup(pi2Ptr->pDriverName);
-    /*
-    queuePtr->printerName = Blt_AssertStrdup((char *)pi2Ptr->pPrinterName);
-    */
     queuePtr->portName = Blt_AssertStrdup((char *)pi2Ptr->pPortName);
     GlobalUnlock(hMem);
     GlobalFree(hMem);
