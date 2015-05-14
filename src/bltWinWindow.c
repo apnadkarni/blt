@@ -589,27 +589,29 @@ Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int emf,
                    const char *fileName, Blt_DrawCmdProc *proc,
                    ClientData clientData, int w, int h)
 {
-    TkWinDC drawableDC;
-    TkWinDCState state;
+    Drawable drawable;
     HDC hRefDC, hDC;
     HENHMETAFILE hMetaFile;
-    Tcl_DString ds;
-    const char *title;
-    Drawable drawable;
-
+    TkWinDC drawableDC;
+    TkWinDCState state;
+    int result;
+    
     drawable = Tk_WindowId(tkwin);
     hRefDC = TkWinGetDrawableDC(Tk_Display(tkwin), drawable, &state);
-    
-    Tcl_DStringInit(&ds);
-    Tcl_DStringAppend(&ds, Tk_Class(tkwin), -1);
-    Tcl_DStringAppend(&ds, BLT_VERSION, -1);
-    Tcl_DStringAppend(&ds, "\0", -1);
-    Tcl_DStringAppend(&ds, Tk_PathName(tkwin), -1);
-    Tcl_DStringAppend(&ds, "\0", -1);
-    title = Tcl_DStringValue(&ds);
-    hDC = CreateEnhMetaFile(hRefDC, NULL, NULL, title);
-    Tcl_DStringFree(&ds);
-    
+    {
+        const char *title;
+        Tcl_DString ds;
+
+        Tcl_DStringInit(&ds);
+        Tcl_DStringAppend(&ds, Tk_Class(tkwin), -1);
+        Tcl_DStringAppend(&ds, BLT_VERSION, -1);
+        Tcl_DStringAppend(&ds, "\0", -1);
+        Tcl_DStringAppend(&ds, Tk_PathName(tkwin), -1);
+        Tcl_DStringAppend(&ds, "\0", -1);
+        title = Tcl_DStringValue(&ds);
+        hDC = CreateEnhMetaFile(hRefDC, NULL, NULL, title);
+        Tcl_DStringFree(&ds);
+    }
     if (hDC == NULL) {
         Tcl_AppendResult(interp, "can't create metafile: ", Blt_LastError(),
                 (char *)NULL);
