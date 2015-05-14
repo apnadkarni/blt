@@ -455,17 +455,18 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
     
     numPixels = destPtr->height * destPtr->pixelsPerRow;
     color.u32 = value;
+    Blt_AssociateColor(&color);
     for (bp = destPtr->bits, bend = bp + numPixels; bp < bend; bp++) {
         bp->u32 = color.u32;
     }
     destPtr->flags |= BLT_PIC_DIRTY;
     destPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK);
     if (color.Alpha == 0x00) {
-        destPtr->flags |= BLT_PIC_MASK;
+        destPtr->flags |= BLT_PIC_MASK | BLT_PIC_BLEND;
     } else if (color.Alpha != 0xFF) {
         destPtr->flags |= BLT_PIC_BLEND;
     }
-    destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
 }
 
 void
