@@ -585,7 +585,7 @@ CreateAPMetaFile(Tcl_Interp *interp, HANDLE hMetaFile, HDC hDC,
 }
 
 int
-Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int format,
+Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int emf,
                    const char *fileName, Blt_DrawCmdProc *proc,
                    ClientData clientData, int w, int h)
 {
@@ -635,13 +635,7 @@ Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int format,
     } 
 
     result = TCL_ERROR;
-    if (format == FORMAT_WMF) {
-        APMHEADER mfh;
-        
-        assert(sizeof(mfh) == 22);
-        InitMetaFileHeader(tkwin, w, h, &mfh);
-        result = CreateAPMetaFile(interp, hMetaFile, hRefDC, &mfh, fileName);
-    } else if (format == FORMAT_EMF) {
+    if (emf) {
         HENHMETAFILE hMetaFile2;
         
         hMetaFile2 = CopyEnhMetaFile(hMetaFile, fileName);
@@ -649,6 +643,12 @@ Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int format,
             DeleteEnhMetaFile(hMetaFile2); 
         }
         result = TCL_OK;
+    } else {
+        APMHEADER mfh;
+        
+        assert(sizeof(mfh) == 22);
+        InitMetaFileHeader(tkwin, w, h, &mfh);
+        result = CreateAPMetaFile(interp, hMetaFile, hRefDC, &mfh, fileName);
     }
     DeleteEnhMetaFile(hMetaFile); 
     TkWinReleaseDrawableDC(drawable, hRefDC, &state);
