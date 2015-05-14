@@ -467,10 +467,7 @@ GetPrinterInterpData(Tcl_Interp *interp)
 }
 
 static int
-GetQueue(
-    Tcl_Interp *interp,
-    const char *name,
-    PrinterQueue **queuePtrPtr)
+GetQueue(Tcl_Interp *interp, const char *name, PrinterQueue **queuePtrPtr)
 {
     Blt_HashEntry *hPtr;
     PrinterInterpData *dataPtr;
@@ -487,33 +484,27 @@ GetQueue(
 }
 
 static int
-GetQueueFromObj(
-    Tcl_Interp *interp,
-    Tcl_Obj *objPtr,
-    PrinterQueue **queuePtrPtr)
+GetQueueFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, PrinterQueue **queuePtrPtr)
 {
     return GetQueue(interp, Tcl_GetString(objPtr), queuePtrPtr);
 }
 
 static void
-CloseQueue(
-    PrinterQueue *queuePtr)
+CloseQueue(PrinterQueue *queuePtr)
 {
     ClosePrinter(queuePtr->hPrinter);
     queuePtr->hPrinter = NULL;
 }
 
 static int
-OpenQueue(
-    Tcl_Interp *interp,
-    PrinterQueue *queuePtr)
+OpenQueue(Tcl_Interp *interp, PrinterQueue *queuePtr)
 {
-    PRINTER_DEFAULTS pd;
     HANDLE hPrinter;
+    PRINTER_DEFAULTS pd;
 
     ZeroMemory(&pd, sizeof(pd));
     pd.DesiredAccess = PRINTER_ALL_ACCESS;
-    if (!OpenPrinter(queuePtr->printerName, &hPrinter, &pd)) {
+    if (!OpenPrinter((char *)queuePtr->printerName, &hPrinter, &pd)) {
         Tcl_AppendResult(interp, "can't open printer \"", 
                 queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
         queuePtr->hPrinter = NULL;
@@ -524,18 +515,16 @@ OpenQueue(
 }
 
 static HGLOBAL
-GetQueueProperties(
-    PrinterQueue *queuePtr,
-    DEVMODE **dmPtrPtr)
+GetQueueProperties(PrinterQueue *queuePtr, DEVMODE **dmPtrPtr)
 {
+    DEVMODE *dmPtr;
+    HGLOBAL hMem;
     HWND hWnd;
     unsigned int dmSize;
-    HGLOBAL hMem;
-    DEVMODE *dmPtr;
 
     hWnd = GetDesktopWindow();
     dmSize = DocumentProperties(hWnd, queuePtr->hPrinter, 
-        queuePtr->printerName, NULL, NULL, 0);
+        (char *)queuePtr->printerName, NULL, NULL, 0);
     if (dmSize == 0) {
         Tcl_AppendResult(queuePtr->interp,
                 "can't get document properties for \"", 
@@ -545,8 +534,8 @@ GetQueueProperties(
     }
     hMem = GlobalAlloc(GHND, dmSize);
     dmPtr = (DEVMODE *)GlobalLock(hMem);
-    if (!DocumentProperties(hWnd, queuePtr->hPrinter, queuePtr->printerName, 
-        dmPtr, NULL, DM_OUT_BUFFER)) {
+    if (!DocumentProperties(hWnd, queuePtr->hPrinter,
+        (char *)queuePtr->printerName, dmPtr, NULL, DM_OUT_BUFFER)) {
         Tcl_AppendResult(queuePtr->interp,
                 "can't allocate document properties for \"",
                 queuePtr->printerName, "\": ", Blt_LastError(), 
@@ -561,17 +550,15 @@ GetQueueProperties(
 }
 
 static int
-SetQueueProperties(
-    Tcl_Interp *interp, 
-    PrinterQueue *queuePtr,
-    DEVMODE *dmPtr)
+SetQueueProperties(Tcl_Interp *interp, PrinterQueue *queuePtr, DEVMODE *dmPtr)
 {
     HWND hWnd;
     int result;
 
     hWnd = GetDesktopWindow();
     result = DocumentProperties(hWnd, queuePtr->hPrinter, 
-        queuePtr->printerName, dmPtr, dmPtr, DM_IN_BUFFER | DM_OUT_BUFFER);
+        (char *)queuePtr->printerName, dmPtr, dmPtr,
+        DM_IN_BUFFER | DM_OUT_BUFFER);
     if (result == 0) {
         Tcl_AppendResult(interp, "can't set document properties for \"", 
             queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
@@ -691,15 +678,14 @@ static int
 GetPrinterAttributes(Tcl_Interp *interp, PrinterQueue *queuePtr, 
                      Tcl_Obj *objPtr)
 {       
-    const char *string;
-    Tcl_DString ds;
     DEVMODE *dmPtr;
     DWORD bytesNeeded;
     HGLOBAL hMem1, hMem2;
-    PRINTER_INFO_2* pi2Ptr;
     LPVOID buffer;
+    PRINTER_INFO_2* pi2Ptr;
+    Tcl_DString ds;
+    const char *string, *varName;
     int result = TCL_ERROR;
-    const char *varName;
 
     if (OpenQueue(interp, queuePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -840,17 +826,12 @@ GetPrinterAttributes(Tcl_Interp *interp, PrinterQueue *queuePtr,
 }
 
 static int
-SetQueueAttributes(
-    Tcl_Interp *interp,
-    PrinterQueue *queuePtr,
-    Tcl_Obj *objPtr)
+SetQueueAttributes(Tcl_Interp *interp, PrinterQueue *queuePtr, Tcl_Obj *objPtr)
 {
-    char *string;
     DEVMODE *dmPtr;
-    int value;
     HGLOBAL hMem;
-    int result;
-    char *varName;
+    const char *string, *varName;
+    int result, value;
 
     if (OpenQueue(interp, queuePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -986,16 +967,13 @@ SetQueueAttributes(
 
 /*ARGSUSED*/
 static int
-EnumOp(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+EnumOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     TokenString *p;
     char c;
-    int length;
     const char *attr;
+    int length;
 
     attr = Tcl_GetStringFromObj(objv[2], &length);
     c = attr[0];
@@ -1027,21 +1005,18 @@ EnumOp(
 
 /*ARGSUSED*/
 static int
-OpenOp(
-    ClientData clientData,      /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
-    PrinterInterpData *dataPtr = clientData;
-    PrinterQueue *queuePtr;
+    Blt_HashEntry *hPtr;
+    DWORD bytesNeeded;
+    HANDLE hMem;
     LPVOID buffer;
     PRINTER_INFO_2* pi2Ptr;
-    DWORD bytesNeeded;
+    PrinterInterpData *dataPtr = clientData;
+    PrinterQueue *queuePtr;
+    const char *name;
     int isNew;
-    Blt_HashEntry *hPtr;
-    HANDLE hMem;
-    char *name;
 
     name = Tcl_GetString(objv[2]);
     hPtr = Blt_CreateHashEntry(&dataPtr->printerTable, name, &isNew);
@@ -1103,17 +1078,14 @@ OpenOp(
 
 /*ARGSUSED*/
 static int
-NamesOp(
-    ClientData clientData,      /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,                   /* Not used. */
-    Tcl_Obj *const *objv)       /* Not used. */
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     DWORD numPrinters, bytesNeeded;
-    int elemSize, level;
-    unsigned char *buffer;
-    int result, flags;
     HANDLE hMem;
+    int elemSize, level;
+    int result, flags;
+    unsigned char *buffer;
 
     if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
         level = 4;
@@ -1185,11 +1157,8 @@ NamesOp(
 
 /*ARGSUSED*/
 static int
-CloseOp(
-    ClientData clientData,      /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,                   /* Not used. */
-    Tcl_Obj *const *objv)
+CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     PrinterQueue *queuePtr;
 
@@ -1202,11 +1171,8 @@ CloseOp(
 
 /*ARGSUSED*/
 static int
-GetAttrOp(
-    ClientData clientData,      /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,                   /* Not used. */
-    Tcl_Obj *const *objv)
+GetAttrOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     PrinterQueue *queuePtr;
 
@@ -1218,11 +1184,8 @@ GetAttrOp(
 
 /*ARGSUSED*/
 static int
-SetAttrOp(
-    ClientData clientData,      /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,                   /* Not used. */
-    Tcl_Obj *const *objv)
+SetAttrOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     PrinterQueue *queuePtr;
 
@@ -1247,30 +1210,26 @@ SetAttrOp(
  *---------------------------------------------------------------------------
  */
 static int
-SnapOp(
-    ClientData clientData,      /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     BITMAPINFO bi;
+    DEVMODE *dmPtr;
     DIBSECTION dibs;
-    HBITMAP hBitmap;
-    HPALETTE hPalette;
-    HDC hDC, printDC, memDC;
-    void *data;
-    Tk_Window tkwin;
-    TkWinDCState state;
-    int result;
-    PrinterQueue *queuePtr;
     DOCINFO di;
+    HBITMAP hBitmap;
+    HDC hDC, printDC, memDC;
+    HGLOBAL hMem;
+    HPALETTE hPalette;
+    PrinterQueue *queuePtr;
+    Tcl_DString ds;
+    TkWinDCState state;
+    Tk_Window tkwin;
+    const char *driverName, *path;
     double pageWidth, pageHeight;
     int jobId;
-    char *driverName;
-    DEVMODE *dmPtr;
-    HGLOBAL hMem;
-    Tcl_DString ds;
-    char *path;
+    int result;
+    void *data;
 
     Tcl_DStringInit(&ds);
     if (GetQueueFromObj(interp, objv[2], &queuePtr) != TCL_OK) {
@@ -1391,22 +1350,18 @@ SnapOp(
 
 /*ARGSUSED*/
 static int
-WriteOp(
-    ClientData clientData,      /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,                   /* Not used. */
-    Tcl_Obj *const *objv)
+WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
-    DWORD bytesLeft, numBytes;
     DOC_INFO_1 di1;
+    DWORD bytesLeft, numBytes;
     DWORD jobId;
-    char *title;
-    char *data;
-    static int nextJob = 0;
-    char string[200];
     PrinterQueue *queuePtr;
+    char string[200];
+    const char *title, *data;
     int result;
     int size;
+    static int nextJob = 0;
 
     if (GetQueueFromObj(interp, objv[2], &queuePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -1489,11 +1444,8 @@ static int numPrinterOps = sizeof(printerOps) / sizeof(Blt_OpSpec);
 
 /* ARGSUSED */
 static int
-PrinterCmd(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+PrinterCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
     int result;
