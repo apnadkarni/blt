@@ -598,7 +598,7 @@ Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int format,
     hRefDC = TkWinGetDrawableDC(Tk_Display(tkwin), Tk_WindowId(tkwin), &state);
     
     Tcl_DStringInit(&ds);
-    Tcl_DStringAppend(&ds, Tk_ClassName(tkwin), -1);
+    Tcl_DStringAppend(&ds, Tk_Class(tkwin), -1);
     Tcl_DStringAppend(&ds, BLT_VERSION, -1);
     Tcl_DStringAppend(&ds, "\0", -1);
     Tcl_DStringAppend(&ds, Tk_PathName(tkwin), -1);
