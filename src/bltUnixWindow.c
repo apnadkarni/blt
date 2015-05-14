@@ -515,6 +515,22 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
     return TCL_OK;
 }
 
+const char *
+Blt_GetWindowName(Display *display, Window window)
+{
+    char *fetchedName;
+    
+    if (XFetchName(display, window, &fetchedName)) {
+        static char name[200+1];
+
+        strncpy(name, fetchedName, 200);
+        name[200] = '\0';
+        XFree(fetchedName);
+        return name;
+    }
+    return NULL;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -526,9 +542,8 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
  *---------------------------------------------------------------------------
  */
 Blt_Chain
-Blt_GetChildrenFromWindow(Display *display, ClientData clientData)
+Blt_GetChildrenFromWindow(Display *display, Window window)
 {
-    Window window = clientData;
     Window *children;
     unsigned int numChildren;
     Window parent, root;

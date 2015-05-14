@@ -346,7 +346,8 @@ JpgSkipInputData(j_decompress_ptr commPtr, long numBytes)
             JpgErrorHandler *errorPtr = (JpgErrorHandler *)commPtr->err;
             
             sprintf(mesg, "short buffer: wanted %lu bytes, bytes left is %lu",
-                    numBytes, Blt_DBuffer_Length(readerPtr->dBuffer));
+                    (unsigned long)numBytes,
+                    Blt_DBuffer_Length(readerPtr->dBuffer));
             Tcl_DStringAppend(&errorPtr->ds, " ", -1);
             Tcl_DStringAppend(&errorPtr->ds, mesg, -1);
             ERREXIT(commPtr, 10);

@@ -104,6 +104,14 @@
 extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #endif
 
+#ifdef WIN32
+char *
+strcasestr(const char *s, const char *find)
+{
+    return StrStrIA(s, find);
+}
+#endif  /* WIN32 */
+
 #ifndef WIN32
 #include <errno.h>
 

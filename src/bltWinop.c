@@ -495,27 +495,20 @@ FillTree(Tcl_Interp *interp, Display *display, Window window, Blt_Tree tree,
         for (link = Blt_Chain_FirstLink(chain); link != NULL;
              link = Blt_Chain_NextLink(link)) {
             Blt_TreeNode child;
-            char *wmName;
-            char string[200];
+            const char *name;
+            char ident[200];
             Window w;
 
             w = (Window)Blt_Chain_GetValue(link);
-            sprintf(string, "0x%x", (int)w);
-            if (XFetchName(display, w, &wmName)) {
-                child = Blt_Tree_CreateNode(tree, parent, wmName, -1);
-                if (w == 0x220001c) {
-                    fprintf(stderr, "found xterm (%s)\n", wmName);
-                }
-                XFree(wmName);
+            sprintf(ident, "0x%x", (int)w);
+            name = Blt_GetWindowName(display, w);
+            if (name != NULL) {
+                child = Blt_Tree_CreateNode(tree, parent, name, -1);
             } else {
-                child = Blt_Tree_CreateNode(tree, parent, string, -1);
-            }
-            if (w == 0x220001c) {
-                fprintf(stderr, "found xterm (%s) node=%ld\n", string,
-                        (long)Blt_Tree_NodeId(child));
+                child = Blt_Tree_CreateNode(tree, parent, ident, -1);
             }
             Blt_Tree_SetValue(interp, tree, child, "id", 
-                              Tcl_NewStringObj(string, -1));
+                              Tcl_NewStringObj(ident, -1));
             FillTree(interp, display, w, tree, child);
         }
         Blt_Chain_Destroy(chain);

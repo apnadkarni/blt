@@ -248,6 +248,17 @@ Blt_GetWindowRegion(
     return TCL_OK;
 }
 
+const char *
+Blt_GetWindowName(Display *display, Window window)
+{
+    static char name[200+1];
+    HWND hWnd = (HWND)window;
+    
+    GetWindowText(hWnd, name, 200);
+    name[200] = '\0';
+    return name;
+}
+
 #ifdef notdef
 int
 Blt_GetRootCoords(Display *display, Window window, int *xPtr, int *yPtr, 
@@ -481,9 +492,9 @@ Blt_GetParentWindow(Display *display, Window window)
  *---------------------------------------------------------------------------
  */
 Blt_Chain
-Blt_GetChildrenFromWindow(Display *display, ClientData clientData)
+Blt_GetChildrenFromWindow(Display *display, Window window)
 {
-    HWND parent = clientData;
+    HWND parent = (HWND)window;
     Blt_Chain chain;
     HWND hWnd;
 
