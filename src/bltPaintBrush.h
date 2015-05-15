@@ -40,6 +40,7 @@
 
 #ifndef _BLT_PALETTE_H
 typedef struct _Blt_Palette *Blt_Palette;
+#define BLT_PALETTE_DECL 1
 #endif  /* _BLT_PALTTE_H */
 
 typedef struct _Blt_PaintBrushClass Blt_PaintBrushClass;

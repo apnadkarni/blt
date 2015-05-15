@@ -48,7 +48,9 @@
  *
  *---------------------------------------------------------------------------
  */
+#ifndef BLT_PALETTE_DECL
 typedef struct _Blt_Palette *Blt_Palette;
+#endif
 
 typedef void (Blt_Palette_NotifyProc) (Blt_Palette palette, 
         ClientData clientData, unsigned int flags);
