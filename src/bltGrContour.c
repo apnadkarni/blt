@@ -68,7 +68,7 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 #include "bltGrElem.h"
-#include "bltGrMesh.h"
+#include "bltMesh.h"
 
 /* Use to compute symbol for isolines. */
 #define SQRT_PI         1.77245385090552

@@ -15,8 +15,9 @@
 #include "bltMath.h"
 #include "bltChain.h"
 #include "bltHash.h"
+#include "bltMesh.h"
+
 typedef struct _Graph Graph;
-#include "bltGrMesh.h"
 
 #define DELETED         ((Edge *)-2)
 #define LE 0

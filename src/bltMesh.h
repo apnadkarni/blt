@@ -1,8 +1,8 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
- * bltGrMesh.h --
+ * bltMesh.h --
  *
- * This module implements contour elements for the BLT graph widget.
+ * This module implements 2D meshes.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *

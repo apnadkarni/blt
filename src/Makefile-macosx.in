@@ -284,10 +284,11 @@ endif
 # ------------------------------------------------------------------------
 
 N_OBJS =		bltTed.o
-V3_OBJS =		bltTri.o bltGrMesh.o bltPalette.o
 NOT_YET = 		bltMenubar.o 
 
-TK_OBJS =		tkButton.o tkFrame.o bltScrollbar.o 
+TK_OBJS =		tkButton.o \
+			tkFrame.o \
+			bltScrollbar.o 
 
 GRAPH_OBJS =		bltGrAxis.o \
 			bltGrBar.o \
@@ -350,7 +351,9 @@ DATATABLE_PKG_OBJS =	bltDataTableCsv.o \
 			bltDataTableVec.o \
 			bltDataTableXml.o 
 
-BLT_TCL_SO_OBJS =	bltAlloc.o \
+BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
+			$(TREE_OBJS) \
+			bltAlloc.o \
 			bltArrayObj.o \
 			bltBase64.o \
 			bltBgexec.o \
@@ -358,33 +361,33 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltCompare.o \
 			bltCrc32.o \
 			bltCsv.o \
-			$(DATATABLE_OBJS) \
+			bltDBuffer.o \
 			bltDebug.o \
 			bltFileCmd.o \
 			bltHash.o \
 			bltInitCmd.o \
 			bltList.o \
+			bltMesh.o \
 			bltNsUtil.o \
 			bltParse.o \
 			bltPool.o \
-			bltDBuffer.o \
 			bltSpline.o \
 			bltSwitch.o \
 			bltTags.o \
+			bltTclInit.o \
+			bltTclIntProcs.o \
+			bltTclProcs.o \
 			bltTimeStamp.o \
-			$(TREE_OBJS) \
+			bltTri.o \
+			bltUnixBgexec.o \
+			bltUnixPipe.o \
 			bltUtil.o \
 			bltVar.o \
 			bltVecCmd.o \
 			bltVecFft.o \
 			bltVecMath.o \
 			bltVector.o \
-			bltWatch.o \
-			bltUnixBgexec.o \
-			bltUnixPipe.o \
-			bltTclInit.o \
-			bltTclProcs.o \
-			bltTclIntProcs.o 
+			bltWatch.o 
 
 BLT_TCL_OBJS =		$(BLT_TCL_SO_OBJS) \
 			bltTclPkgsInit.o \
@@ -393,8 +396,9 @@ BLT_TCL_OBJS =		$(BLT_TCL_SO_OBJS) \
 			$(MISC_PKG_OBJS)
 
 BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
-			$(TREEVIEW_OBJS) \
+			$(PICTURE_OBJS) \
 			$(TABLEVIEW_OBJS) \
+			$(TREEVIEW_OBJS) \
 			bltAfm.o \
 			bltArcBall.o \
 			bltBeep.o \
@@ -419,9 +423,9 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltListView.o \
 			bltOldConfig.o \
 			bltPaintBrush.o \
+			bltPalette.o \
 			bltPaneset.o \
 			bltPhoto.o \
-			$(PICTURE_OBJS) \
 			bltPictCmd.o \
 			bltPictDraw.o \
 			bltPs.o \
@@ -429,6 +433,9 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltTable.o \
 			bltTabset.o \
 			bltText.o \
+			bltTkInit.o \
+			bltTkIntProcs.o \
+			bltTkProcs.o \
 			bltUnixBitmap.o \
 			bltUnixDnd.o \
 			bltUnixFont.o \
@@ -436,10 +443,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltUnixWindow.o \
 			bltWindow.o \
 			bltWinop.o  \
-			bltTkInit.o \
-			bltTkProcs.o \
-			bltTkIntProcs.o \
-			$(TK_OBJS) $(N_OBJS) $(V3_OBJS)
+			$(TK_OBJS) $(N_OBJS) 
 
 BLT_TK_OBJS =		$(BLT_TK_SO_OBJS) \
 			bltStaticInit.o \

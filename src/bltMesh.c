@@ -1,8 +1,8 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
- * bltGrMesh.c --
+ * bltMesh.c --
  *
- * This module implements contour elements for the BLT graph widget.
+ * This module implements 2D meshes.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *
@@ -46,7 +46,7 @@
  *   verify correctness for their application.
  */
 
-#define BUILD_BLT_TK_PROCS 1
+#define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 
 #ifdef HAVE_STDLIB_H
@@ -64,7 +64,7 @@
 #include "bltVector.h"
 #include "bltNsUtil.h"
 #include "bltDataTable.h"
-#include "bltGrMesh.h"
+#include "bltMesh.h"
 #include "bltSwitch.h"
 #include "bltOp.h"
 #include "bltInitCmd.h"
