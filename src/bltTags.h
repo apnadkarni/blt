@@ -37,12 +37,13 @@
 #ifndef _BLT_TAGS_H
 #define _BLT_TAGS_H
 
+typedef struct _Blt_Tags *Blt_Tags;
 /*
  * A Blt_Tags structure holds the tags for a data object or widget.
  */
-typedef struct _Blt_Tags {
+struct _Blt_Tags {
     Blt_HashTable table;                /* Hash table of tag tables */
-} *Blt_Tags;
+};
 
 BLT_EXTERN Blt_Tags Blt_Tags_Create(void);
 BLT_EXTERN void Blt_Tags_Destroy(Blt_Tags tags);

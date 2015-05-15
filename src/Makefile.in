@@ -681,12 +681,12 @@ BLT_TCL_INT_HEADERS =	\
 BLT_TCL_HEADERS = \
 		$(srcdir)/bltAlloc.h \
 		$(srcdir)/bltChain.h \
-		$(srcdir)/bltDataTable.h \
 		$(srcdir)/bltHash.h.in \
+		$(srcdir)/bltTags.h \
 		$(srcdir)/bltList.h \
 		$(srcdir)/bltPool.h \
-		$(srcdir)/bltTags.h \
 		$(srcdir)/bltTree.h \
+		$(srcdir)/bltDataTable.h \
 		$(srcdir)/bltVector.h
 
 BLT_TK_INT_HEADERS = \

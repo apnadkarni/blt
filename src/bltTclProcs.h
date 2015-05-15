@@ -1,12 +1,12 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #include "bltAlloc.h"
 #include "bltChain.h"
-#include "bltDataTable.h"
 #include "bltHash.h.in"
+#include "bltTags.h"
 #include "bltList.h"
 #include "bltPool.h"
-#include "bltTags.h"
 #include "bltTree.h"
+#include "bltDataTable.h"
 #include "bltVector.h"
 
 /* !BEGIN!: Do not edit below this line. */
