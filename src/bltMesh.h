@@ -93,4 +93,4 @@ BLT_EXTERN void Blt_Mesh_CreateNotifier(Mesh *meshPtr, MeshNotifyProc *proc,
         ClientData clientData);
 BLT_EXTERN void Blt_Mesh_DeleteNotifier(Mesh *meshPtr, ClientData clientData);
 BLT_EXTERN const char *Blt_Mesh_Name(Mesh *meshPtr);
-BLT_EXTERN const int Blt_Mesh_Type(Mesh *meshPtr);
+BLT_EXTERN int Blt_Mesh_Type(Mesh *meshPtr);

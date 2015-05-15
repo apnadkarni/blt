@@ -2458,7 +2458,7 @@ Blt_Mesh_Name(Mesh *meshPtr)
     return meshPtr->name;
 }
 
-const int
+int
 Blt_Mesh_Type(Mesh *meshPtr)
 {
     return meshPtr->classPtr->type;
