@@ -183,8 +183,7 @@ static Blt_SwitchSpec paletteSpecs[] =
     {BLT_SWITCH_CUSTOM, "-colorformat", "rgb|name|hsv", (char *)NULL, 
         Blt_Offset(PaletteCmd, colorFlags), 0, 0, &colorFormatSwitch},
     {BLT_SWITCH_CUSTOM, "-colorspacing", "regular|irregular|interval",
-        (char *)NULL, Blt_Offset(PaletteCmd, colorFlags), 0, 0,
-        &spacingSwitch},
+        (char *)NULL, Blt_Offset(PaletteCmd, colorFlags), 0, 0, &spacingSwitch},
     {BLT_SWITCH_CUSTOM, "-fade", "0-100", (char *)NULL,
         Blt_Offset(PaletteCmd, alpha), 0, 0, &fadeSwitch},
     {BLT_SWITCH_OBJ, "-odata", "string", (char *)NULL, 
@@ -196,8 +195,7 @@ static Blt_SwitchSpec paletteSpecs[] =
     {BLT_SWITCH_OBJ, "-opacitydata", "string", (char *)NULL, 
         Blt_Offset(PaletteCmd, opacityDataObjPtr), 0, 0},
     {BLT_SWITCH_CUSTOM, "-opacityspacing", "regular|irregular|interval",
-        (char *)NULL, Blt_Offset(PaletteCmd, opacityFlags), 0, 0,
-        &spacingSwitch},
+        (char *)NULL, Blt_Offset(PaletteCmd, opacityFlags), 0, 0, &spacingSwitch},
     {BLT_SWITCH_END}
 };
 

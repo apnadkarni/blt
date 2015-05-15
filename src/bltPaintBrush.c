@@ -67,6 +67,7 @@
 
 #define JCLAMP(c)       ((((c) < 0.0) ? 0.0 : ((c) > 1.0) ? 1.0 : (c)))
 #define CLAMP(c)        ((((c) < 0.0) ? 0.0 : ((c) > 1.0) ? 1.0 : (c)))
+#define imul8x8(a,b,t)  ((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
 
 #define PAINTBRUSH_THREAD_KEY   "BLT PaintBrush Data"
 #define REPEAT_MASK \
@@ -1327,9 +1328,10 @@ ColorBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 {
 
     Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
-
+    int t;
+    
     brushPtr->color.u32 = brushPtr->reqColor.u32;
-    brushPtr->color.Alpha = brushPtr->alpha;
+    brushPtr->color.Alpha = imul8x8(brushPtr->alpha, brushPtr->color.Alpha, t);
     Blt_AssociateColor(&brushPtr->color);
     return TCL_OK;
 }
@@ -1361,7 +1363,6 @@ ColorBrushColorProc(Blt_PaintBrush brush, int x, int y)
         t = JCLAMP(t);
         color.Blue = (unsigned char)(t * 255.0);
     }
-    color.Alpha = brushPtr->alpha;
     return color.u32;
 }
 
@@ -1381,36 +1382,36 @@ ColorBrushColorProc(Blt_PaintBrush brush, int x, int y)
 static void
 LinearGradientBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 {
-    Blt_LinearGradientBrush *gradPtr = (Blt_LinearGradientBrush *)brush;
+    Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
 
     /* Factor in the gradient origin when computing the pixel. */
-    x -= gradPtr->xOrigin;
-    y -= gradPtr->yOrigin;
+    x -= brushPtr->xOrigin;
+    y -= brushPtr->yOrigin;
 
     /* Convert the line segment into screen coordinates (pixels). */
-    gradPtr->x1 = x + (int)(gradPtr->from.x * w);
-    gradPtr->y1 = y + (int)(gradPtr->from.y * h);
-    gradPtr->x2 = x + (int)(gradPtr->to.x * w);
-    gradPtr->y2 = y + (int)(gradPtr->to.y * h);
+    brushPtr->x1 = x + (int)(brushPtr->from.x * w);
+    brushPtr->y1 = y + (int)(brushPtr->from.y * h);
+    brushPtr->x2 = x + (int)(brushPtr->to.x * w);
+    brushPtr->y2 = y + (int)(brushPtr->to.y * h);
     
     /* Compute the length of the segment in pixels. */
-    gradPtr->length = hypot(gradPtr->x2-gradPtr->x1, gradPtr->y2-gradPtr->y1);
-    gradPtr->scaleFactor = 1.0 / gradPtr->length;
+    brushPtr->length = hypot(brushPtr->x2-brushPtr->x1, brushPtr->y2-brushPtr->y1);
+    brushPtr->scaleFactor = 1.0 / brushPtr->length;
     
     /* Rotate the segment if necessary. */
-    if (gradPtr->angle != 0.0) {
+    if (brushPtr->angle != 0.0) {
 #ifdef notdef
         double cosTheta, sinTheta;
-        cosTheta = cos(gradPtr->angle);
-        sinTheta = sin(gradPtr->angle);
+        cosTheta = cos(brushPtr->angle);
+        sinTheta = sin(brushPtr->angle);
 #endif
     }
-    if (gradPtr->x1 == gradPtr->x2) {
-        gradPtr->flags |= BLT_PAINTBRUSH_VERTICAL;
-    } else if (gradPtr->y1 == gradPtr->y2) {
-        gradPtr->flags |= BLT_PAINTBRUSH_HORIZONTAL;
+    if (brushPtr->x1 == brushPtr->x2) {
+        brushPtr->flags |= BLT_PAINTBRUSH_VERTICAL;
+    } else if (brushPtr->y1 == brushPtr->y2) {
+        brushPtr->flags |= BLT_PAINTBRUSH_HORIZONTAL;
     } else {
-        gradPtr->flags |= BLT_PAINTBRUSH_DIAGONAL;
+        brushPtr->flags |= BLT_PAINTBRUSH_DIAGONAL;
     }
 }
 
@@ -1429,12 +1430,12 @@ LinearGradientBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 static int
 LinearGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 {
-    Blt_LinearGradientBrush *gradPtr = (Blt_LinearGradientBrush *)brush;
+    Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
     
-    gradPtr->rRange = gradPtr->high.Red   - gradPtr->low.Red;
-    gradPtr->gRange = gradPtr->high.Green - gradPtr->low.Green;
-    gradPtr->bRange = gradPtr->high.Blue  - gradPtr->low.Blue;
-    gradPtr->aRange = gradPtr->high.Alpha - gradPtr->low.Alpha;
+    brushPtr->rRange = brushPtr->high.Red   - brushPtr->low.Red;
+    brushPtr->gRange = brushPtr->high.Green - brushPtr->low.Green;
+    brushPtr->bRange = brushPtr->high.Blue  - brushPtr->low.Blue;
+    brushPtr->aRange = brushPtr->high.Alpha - brushPtr->low.Alpha;
     return TCL_OK;
 }
 
@@ -1454,20 +1455,21 @@ LinearGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 static int
 LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
-    Blt_LinearGradientBrush *gradPtr = (Blt_LinearGradientBrush *)brush;
+    Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
     Blt_Pixel color;
     double t;
+    int t1;
     
-    if (gradPtr->calcProc != NULL) {
-        x -= gradPtr->xOrigin;
-        y -= gradPtr->yOrigin;
-        if ((*gradPtr->calcProc)(gradPtr->clientData, x, y, &t) != TCL_OK) {
+    if (brushPtr->calcProc != NULL) {
+        x -= brushPtr->xOrigin;
+        y -= brushPtr->yOrigin;
+        if ((*brushPtr->calcProc)(brushPtr->clientData, x, y, &t) != TCL_OK) {
             return 0x0;
         }
-    } else if (gradPtr->flags & BLT_PAINTBRUSH_HORIZONTAL) {
-        t = (x - gradPtr->x1) / (double)(gradPtr->x2 - gradPtr->x1);
-    } else if (gradPtr->flags & BLT_PAINTBRUSH_VERTICAL) {
-        t = (y - gradPtr->y1) / (double)(gradPtr->y2 - gradPtr->y1);
+    } else if (brushPtr->flags & BLT_PAINTBRUSH_HORIZONTAL) {
+        t = (x - brushPtr->x1) / (double)(brushPtr->x2 - brushPtr->x1);
+    } else if (brushPtr->flags & BLT_PAINTBRUSH_VERTICAL) {
+        t = (y - brushPtr->y1) / (double)(brushPtr->y2 - brushPtr->y1);
      } else {
         double d;
         Point2d p;
@@ -1476,10 +1478,10 @@ LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
          * described by the line segment. The distance of the projected
          * point from the start of the line segment over the distance of
          * the line segment is t. */
-        p = Blt_GetProjection2(x, y, gradPtr->x1, gradPtr->y1, gradPtr->x2,
-                               gradPtr->y2);
-        d = hypot(p.x - gradPtr->x1, p.y - gradPtr->y1);
-        t = d / gradPtr->length;
+        p = Blt_GetProjection2(x, y, brushPtr->x1, brushPtr->y1, brushPtr->x2,
+                               brushPtr->y2);
+        d = hypot(p.x - brushPtr->x1, p.y - brushPtr->y1);
+        t = d / brushPtr->length;
     }
     if ((t < 0.0) || (t > 1.0)) {
         double rem;
@@ -1487,31 +1489,31 @@ LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
         
         rem = fmod(t, 1.0);
         pos = (int)(t - rem);
-        if (gradPtr->flags & BLT_PAINTBRUSH_REPEAT_OPPOSITE) {
+        if (brushPtr->flags & BLT_PAINTBRUSH_REPEAT_OPPOSITE) {
             if (pos & 0x1) {
                 rem = 1.0 - rem;
             }
         }
         t = rem;
     }
-    if (gradPtr->jitter.range > 0.0) {
-        t += Jitter(&gradPtr->jitter);
+    if (brushPtr->jitter.range > 0.0) {
+        t += Jitter(&brushPtr->jitter);
         t = JCLAMP(t);
     }
-    if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
+    if (brushPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
         t = log10(9.0 * t + 1.0);
     } 
-    if (gradPtr->flags & BLT_PAINTBRUSH_DECREASING) {
+    if (brushPtr->flags & BLT_PAINTBRUSH_DECREASING) {
         t = 1.0 - t;
     }        
-    if (gradPtr->palette != NULL) {
-        return Blt_Palette_GetAssociatedColor(gradPtr->palette, t);
+    if (brushPtr->palette != NULL) {
+        return Blt_Palette_GetAssociatedColor(brushPtr->palette, t);
     }
-    color.Red   = (unsigned char)(gradPtr->low.Red   + t * gradPtr->rRange);
-    color.Green = (unsigned char)(gradPtr->low.Green + t * gradPtr->gRange);
-    color.Blue  = (unsigned char)(gradPtr->low.Blue  + t * gradPtr->bRange);
-    color.Alpha = (unsigned char)(gradPtr->low.Alpha + t * gradPtr->aRange);
-    color.Alpha = 0xFF;
+    color.Red   = (unsigned char)(brushPtr->low.Red   + t * brushPtr->rRange);
+    color.Green = (unsigned char)(brushPtr->low.Green + t * brushPtr->gRange);
+    color.Blue  = (unsigned char)(brushPtr->low.Blue  + t * brushPtr->bRange);
+    color.Alpha = (unsigned char)(brushPtr->low.Alpha + t * brushPtr->aRange);
+    color.Alpha = imul8x8(brushPtr->alpha, color.Alpha, t1);
     return color.u32;
 }
 
@@ -1603,7 +1605,8 @@ TileBrushColorProc(Blt_PaintBrush brush, int x, int y)
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
     Blt_Pixel *pixelPtr;
     Blt_Pixel color;
-    
+    int t1;    
+
     if (brushPtr->tile == NULL) {
         return 0x0;
     }
@@ -1641,7 +1644,7 @@ TileBrushColorProc(Blt_PaintBrush brush, int x, int y)
         t = JCLAMP(t);
         color.Blue = (unsigned char)(t * 255.0);
     }
-    color.Alpha = brushPtr->alpha;
+    color.Alpha = imul8x8(brushPtr->alpha, color.Alpha, t1);
     Blt_AssociateColor(&color);
     return color.u32;
 }
@@ -1707,6 +1710,7 @@ StripeBrushColorProc(Blt_PaintBrush brush, int x, int y)
     Blt_Pixel color;
     Blt_StripeBrush *brushPtr = (Blt_StripeBrush *)brush;
     double t;
+    int t1;
     
     /* Factor in the gradient origin when computing the pixel. */
     x = (x - brushPtr->xOrigin);
@@ -1727,7 +1731,7 @@ StripeBrushColorProc(Blt_PaintBrush brush, int x, int y)
     color.Green = (unsigned char)(brushPtr->low.Green + t*brushPtr->gRange);
     color.Blue  = (unsigned char)(brushPtr->low.Blue  + t*brushPtr->bRange);
     color.Alpha = (unsigned char)(brushPtr->low.Alpha + t*brushPtr->aRange);
-    color.Alpha = 0xFF;
+    color.Alpha = imul8x8(brushPtr->alpha, color.Alpha, t1);
     return color.u32;
 }
 
@@ -1824,7 +1828,7 @@ CheckerBrushColorProc(Blt_PaintBrush brush, int x, int y)
     color.Green = (unsigned char)(brushPtr->low.Green + t*brushPtr->gRange);
     color.Blue  = (unsigned char)(brushPtr->low.Blue  + t*brushPtr->bRange);
     color.Alpha = (unsigned char)(brushPtr->low.Alpha + t*brushPtr->aRange);
-    color.Alpha = 0xFF;
+    color.Alpha = imul8x8(brushPtr->alpha, color.Alpha, t1);
     return color.u32;
 }
 
@@ -1845,29 +1849,29 @@ CheckerBrushColorProc(Blt_PaintBrush brush, int x, int y)
 static void
 RadialGradientBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 {
-    Blt_RadialGradientBrush *gradPtr = (Blt_RadialGradientBrush *)brush;
+    Blt_RadialGradientBrush *brushPtr = (Blt_RadialGradientBrush *)brush;
 
     /* Factor in the gradient origin when computing the pixel. */
-    x -= gradPtr->xOrigin;
-    y -= gradPtr->yOrigin;
+    x -= brushPtr->xOrigin;
+    y -= brushPtr->yOrigin;
 
     /* Convert the center point into screen coordinates (pixels). */
-    gradPtr->cx = x + (int)(gradPtr->center.x * w);
-    gradPtr->cy = y + (int)(gradPtr->center.y * h);
+    brushPtr->cx = x + (int)(brushPtr->center.x * w);
+    brushPtr->cy = y + (int)(brushPtr->center.y * h);
 
-    if (gradPtr->diameter > 0.0) {
-        gradPtr->b = gradPtr->a = (int)(gradPtr->diameter * MIN(w,h) * 0.5);
+    if (brushPtr->diameter > 0.0) {
+        brushPtr->b = brushPtr->a = (int)(brushPtr->diameter * MIN(w,h) * 0.5);
     } else {
-        gradPtr->a = (int)(gradPtr->width * w * 0.5);
-        gradPtr->b = (int)(gradPtr->height * h * 0.5);
+        brushPtr->a = (int)(brushPtr->width * w * 0.5);
+        brushPtr->b = (int)(brushPtr->height * h * 0.5);
     }
 
     /* Rotate the segment if necessary. */
-    if (gradPtr->angle != 0.0) {
+    if (brushPtr->angle != 0.0) {
 #ifdef notdef
         double cosTheta, sinTheta;
-        cosTheta = cos(gradPtr->angle);
-        sinTheta = sin(gradPtr->angle);
+        cosTheta = cos(brushPtr->angle);
+        sinTheta = sin(brushPtr->angle);
 #endif
     }
 }
@@ -1887,12 +1891,12 @@ RadialGradientBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 static int
 RadialGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 {
-    Blt_RadialGradientBrush *gradPtr = (Blt_RadialGradientBrush *)brush;;
+    Blt_RadialGradientBrush *brushPtr = (Blt_RadialGradientBrush *)brush;;
 
-    gradPtr->rRange = gradPtr->high.Red   - gradPtr->low.Red;
-    gradPtr->gRange = gradPtr->high.Green - gradPtr->low.Green;
-    gradPtr->bRange = gradPtr->high.Blue  - gradPtr->low.Blue;
-    gradPtr->aRange = gradPtr->high.Alpha - gradPtr->low.Alpha;
+    brushPtr->rRange = brushPtr->high.Red   - brushPtr->low.Red;
+    brushPtr->gRange = brushPtr->high.Green - brushPtr->low.Green;
+    brushPtr->bRange = brushPtr->high.Blue  - brushPtr->low.Blue;
+    brushPtr->aRange = brushPtr->high.Alpha - brushPtr->low.Alpha;
     return TCL_OK;
 }
 
@@ -1913,43 +1917,44 @@ static int
 RadialGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_Pixel color;
-    Blt_RadialGradientBrush *gradPtr = (Blt_RadialGradientBrush *)brush;
+    Blt_RadialGradientBrush *brushPtr = (Blt_RadialGradientBrush *)brush;
     double dx, dy, d1, d2;
     double fx, fy, m;
     double t;
+    int t1;
     
-    dx = x - gradPtr->cx;
-    dy = y - gradPtr->cy;
+    dx = x - brushPtr->cx;
+    dy = y - brushPtr->cy;
     d1 = hypot(dx, dy);
     if (dx == 0) {
-        fy = gradPtr->b, fx = 0;
+        fy = brushPtr->b, fx = 0;
     } else if (dy == 0) {
-        fx = gradPtr->a, fy = 0;
+        fx = brushPtr->a, fy = 0;
     } else {
         m = atan(dy / dx);
-        fx = gradPtr->a * cos(m);
-        fy = gradPtr->b * sin(m);
+        fx = brushPtr->a * cos(m);
+        fy = brushPtr->b * sin(m);
     }
     d2 = hypot(fx, fy);
     t = (d1 / d2);
-    if (gradPtr->jitter.range > 0.0) {
-        t += Jitter(&gradPtr->jitter);
+    if (brushPtr->jitter.range > 0.0) {
+        t += Jitter(&brushPtr->jitter);
         t = JCLAMP(t);
     }
-    if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
+    if (brushPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
         t = log10(9.0 * t + 1.0);
     } 
-    if (gradPtr->flags & BLT_PAINTBRUSH_DECREASING) {
+    if (brushPtr->flags & BLT_PAINTBRUSH_DECREASING) {
         t = 1.0 - t;
     }        
-    if (gradPtr->palette != NULL) {
-        return Blt_Palette_GetAssociatedColor(gradPtr->palette, t);
+    if (brushPtr->palette != NULL) {
+        return Blt_Palette_GetAssociatedColor(brushPtr->palette, t);
     }
-    color.Red   = (unsigned char)(gradPtr->low.Red   + t * gradPtr->rRange);
-    color.Green = (unsigned char)(gradPtr->low.Green + t * gradPtr->gRange);
-    color.Blue  = (unsigned char)(gradPtr->low.Blue  + t * gradPtr->bRange);
-    color.Alpha = (unsigned char)(gradPtr->low.Alpha + t * gradPtr->aRange);
-    color.Alpha = 0xFF;
+    color.Red   = (unsigned char)(brushPtr->low.Red   + t * brushPtr->rRange);
+    color.Green = (unsigned char)(brushPtr->low.Green + t * brushPtr->gRange);
+    color.Blue  = (unsigned char)(brushPtr->low.Blue  + t * brushPtr->bRange);
+    color.Alpha = (unsigned char)(brushPtr->low.Alpha + t * brushPtr->aRange);
+    color.Alpha = imul8x8(brushPtr->alpha, color.Alpha, t1);
     return color.u32;
 }
 
@@ -1970,15 +1975,15 @@ RadialGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 static void
 ConicalGradientBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 {
-    Blt_ConicalGradientBrush *gradPtr = (Blt_ConicalGradientBrush *)brush;
+    Blt_ConicalGradientBrush *brushPtr = (Blt_ConicalGradientBrush *)brush;
 
     /* Factor in the gradient origin when computing the pixel. */
-    x -= gradPtr->xOrigin;
-    y -= gradPtr->yOrigin;
+    x -= brushPtr->xOrigin;
+    y -= brushPtr->yOrigin;
 
     /* Convert the center point into screen coordinates (pixels). */
-    gradPtr->cx = x + (int)(gradPtr->center.x * w);
-    gradPtr->cy = y + (int)(gradPtr->center.y * h);
+    brushPtr->cx = x + (int)(brushPtr->center.x * w);
+    brushPtr->cy = y + (int)(brushPtr->center.y * h);
 }
 
 /*
@@ -1996,13 +2001,13 @@ ConicalGradientBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 static int
 ConicalGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 {
-    Blt_ConicalGradientBrush *gradPtr = (Blt_ConicalGradientBrush *)brush;
+    Blt_ConicalGradientBrush *brushPtr = (Blt_ConicalGradientBrush *)brush;
 
-    gradPtr->rRange = gradPtr->high.Red   - gradPtr->low.Red;
-    gradPtr->gRange = gradPtr->high.Green - gradPtr->low.Green;
-    gradPtr->bRange = gradPtr->high.Blue  - gradPtr->low.Blue;
-    gradPtr->aRange = gradPtr->high.Alpha - gradPtr->low.Alpha;
-    gradPtr->theta = gradPtr->angle * DEG2RAD;
+    brushPtr->rRange = brushPtr->high.Red   - brushPtr->low.Red;
+    brushPtr->gRange = brushPtr->high.Green - brushPtr->low.Green;
+    brushPtr->bRange = brushPtr->high.Blue  - brushPtr->low.Blue;
+    brushPtr->aRange = brushPtr->high.Alpha - brushPtr->low.Alpha;
+    brushPtr->theta = brushPtr->angle * DEG2RAD;
     return TCL_OK;
 }
 
@@ -2022,44 +2027,45 @@ ConicalGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 static int
 ConicalGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
-    Blt_ConicalGradientBrush *gradPtr = (Blt_ConicalGradientBrush *)brush;
+    Blt_ConicalGradientBrush *brushPtr = (Blt_ConicalGradientBrush *)brush;
     Blt_Pixel color;
     double dx, dy;
     double t;
+    int t1;
     
     /* Translate to the center of the reference window. */
-    dx = x - gradPtr->cx;
-    dy = y - gradPtr->cy;
+    dx = x - brushPtr->cx;
+    dy = y - brushPtr->cy;
     if (dx == 0.0) {
         double theta;                   /* Angle of line (sample point to
                                          * center) in radians. */
         theta = atan(FLT_MAX);
-        t = cos(theta + gradPtr->theta);
+        t = cos(theta + brushPtr->theta);
     } else {
         double theta;                   /* Angle of line (sample point to
                                          * center) in radians. */
         theta = atan(dy / dx);
-        t = cos(theta + gradPtr->theta);
+        t = cos(theta + brushPtr->theta);
     }
     t = fabs(t);
-    if (gradPtr->jitter.range > 0.0) {
-        t += Jitter(&gradPtr->jitter);
+    if (brushPtr->jitter.range > 0.0) {
+        t += Jitter(&brushPtr->jitter);
         t = JCLAMP(t);
     }
-    if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
+    if (brushPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
         t = log10(9.0 * t + 1.0);
     } 
-    if (gradPtr->flags & BLT_PAINTBRUSH_DECREASING) {
+    if (brushPtr->flags & BLT_PAINTBRUSH_DECREASING) {
         t = 1.0 - t;
     }        
-    if (gradPtr->palette != NULL) {
-        return Blt_Palette_GetAssociatedColor(gradPtr->palette, t);
+    if (brushPtr->palette != NULL) {
+        return Blt_Palette_GetAssociatedColor(brushPtr->palette, t);
     }
-    color.Red   = (unsigned char)(gradPtr->low.Red   + t * gradPtr->rRange);
-    color.Green = (unsigned char)(gradPtr->low.Green + t * gradPtr->gRange);
-    color.Blue  = (unsigned char)(gradPtr->low.Blue  + t * gradPtr->bRange);
-    color.Alpha = (unsigned char)(gradPtr->low.Alpha + t * gradPtr->aRange);
-    color.Alpha = 0xFF;
+    color.Red   = (unsigned char)(brushPtr->low.Red   + t * brushPtr->rRange);
+    color.Green = (unsigned char)(brushPtr->low.Green + t * brushPtr->gRange);
+    color.Blue  = (unsigned char)(brushPtr->low.Blue  + t * brushPtr->bRange);
+    color.Alpha = (unsigned char)(brushPtr->low.Alpha + t * brushPtr->aRange);
+    color.Alpha = imul8x8(brushPtr->alpha, color.Alpha, t1);
     return color.u32;
 }
 
