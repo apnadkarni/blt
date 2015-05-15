@@ -37,60 +37,42 @@
  *
  */
 
-typedef struct {
+#ifndef BLT_MESH_H
+#define BLT_MESH_H
+
+typedef struct _Blt_MeshTriangle {
     int a, b, c;                        /* Indices of the vectices that 
                                          * form the triangle. */
-} MeshTriangle;
+} Blt_MeshTriangle;
 
-typedef struct _DataSource DataSource;
-typedef struct _MeshClass MeshClass;
-typedef struct _MeshCmdInterpData MeshCmdInterpData;
+typedef struct _Blt_Mesh *Blt_Mesh;
 
-typedef struct {
-    const char *name;                   /* Mesh identifier. */
-    MeshClass *classPtr;
-    MeshCmdInterpData *dataPtr;
-    Tcl_Interp *interp;
-    unsigned int flags;                 /* Indicates if the mesh element is
-                                         * active or normal */
-    Blt_HashEntry *hashPtr;
-
-    DataSource *x, *y;
-
-    /* Resulting mesh is a triangular grid.  */
-    Point2d *vertices;
-    int numVertices;
-    int *hull;                          /* Array of indices pointing into
-                                         * the mesh representing the convex
-                                         * hull of the mesh. */
-    int numHullPts;
-    float xMin, yMin, xMax, yMax;
-    MeshTriangle *triangles;            /* Array of triangles. */
-    MeshTriangle *reqTriangles;         /* User-requested triangles. */
-    int numReqTriangles;
-    int numTriangles;                   /* # of triangles in array. */
-    Blt_HashTable notifierTable;
-    Blt_HashTable hideTable;
-    Blt_HashTable tableTable;
-} Mesh;
-
-typedef void (MeshNotifyProc) (Mesh *meshPtr, ClientData clientData, 
-                               unsigned int flags);
+typedef void (Blt_MeshNotifyProc) (Blt_Mesh mesh, ClientData clientData, 
+        unsigned int flags);
 
 #define MESH_CHANGE_NOTIFY      (1<<0)
 #define MESH_DELETE_NOTIFY      (1<<1)
 
 BLT_EXTERN Tcl_ObjCmdProc Blt_MeshOp;
 
-BLT_EXTERN void Blt_FreeMesh(Mesh *meshPtr);
+BLT_EXTERN void Blt_FreeMesh(Blt_Mesh mesh);
 BLT_EXTERN int Blt_GetMeshFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        Mesh **meshPtrPtr);
+        Blt_Mesh *meshPtr);
 BLT_EXTERN int Blt_GetMesh(Tcl_Interp *interp, const char *string, 
-        Mesh **meshPtrPtr);
+        Blt_Mesh *meshPtr);
 BLT_EXTERN int Blt_Triangulate(Tcl_Interp *interp, size_t numPoints, 
-        Point2d *points, int sorted, MeshTriangle *triangles);
-BLT_EXTERN void Blt_Mesh_CreateNotifier(Mesh *meshPtr, MeshNotifyProc *proc, 
-        ClientData clientData);
-BLT_EXTERN void Blt_Mesh_DeleteNotifier(Mesh *meshPtr, ClientData clientData);
-BLT_EXTERN const char *Blt_Mesh_Name(Mesh *meshPtr);
-BLT_EXTERN int Blt_Mesh_Type(Mesh *meshPtr);
+        Point2d *points, int sorted, Blt_MeshTriangle *triangles);
+BLT_EXTERN void Blt_Mesh_CreateNotifier(Blt_Mesh mesh,
+        Blt_MeshNotifyProc *proc, ClientData clientData);
+BLT_EXTERN void Blt_Mesh_DeleteNotifier(Blt_Mesh mesh, ClientData clientData);
+BLT_EXTERN const char *Blt_Mesh_Name(Blt_Mesh mesh);
+BLT_EXTERN int Blt_Mesh_Type(Blt_Mesh mesh);
+
+BLT_EXTERN Point2d *Blt_Mesh_GetVertices(Blt_Mesh mesh, int *numVerticesPtr);
+BLT_EXTERN int *Blt_Mesh_GetHull(Blt_Mesh mesh, int *numHullPtsPtr);
+BLT_EXTERN void Blt_Mesh_GetExtents(Blt_Mesh mesh, float *x1Ptr, float *x2Ptr,
+        float *y1Ptr, float *y2Ptr);
+BLT_EXTERN Blt_MeshTriangle *Blt_Mesh_GetTriangles(Blt_Mesh mesh,
+        int *numTrianglesPtr);
+
+#endif /*BLT_MESH_H*/

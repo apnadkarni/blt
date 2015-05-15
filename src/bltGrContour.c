@@ -443,7 +443,7 @@ struct _ContourElement {
                                          * symbols.  Zero (and one) means draw
                                          * all symbols. */
 
-    Mesh *meshPtr;                      /* Mesh associated with contour data
+    Blt_Mesh mesh;                      /* Mesh associated with contour data
                                          * set. */
     Blt_Pool pointPool;                 /* Pool of the points used in the
                                          * traces formed by the isolines. */
@@ -684,7 +684,7 @@ static Blt_ConfigSpec contourSpecs[] =
         DEF_MAX_SYMBOLS, Blt_Offset(ContourElement, reqMaxSymbols),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-mesh", "mesh", "Mesh", DEF_MESH, 
-        Blt_Offset(ContourElement, meshPtr), BLT_CONFIG_NULL_OK, &meshOption},
+        Blt_Offset(ContourElement, mesh), BLT_CONFIG_NULL_OK, &meshOption},
     {BLT_CONFIG_COLOR, "-meshcolor", "meshcolor", "MeshColor", DEF_MESH_COLOR, 
         Blt_Offset(ContourElement, meshColor), 0},
     {BLT_CONFIG_COLOR, "-meshoffdashcolor", "meshOffDashColor", 
@@ -1152,12 +1152,12 @@ SymbolToObj(
  */
 /* ARGSUSED */
 static void
-MeshChangedProc(Mesh *meshPtr, ClientData clientData, unsigned int flags)
+MeshChangedProc(Blt_Mesh mesh, ClientData clientData, unsigned int flags)
 {
     ContourElement *elemPtr = clientData;
 
     if (flags & MESH_DELETE_NOTIFY) {
-        elemPtr->meshPtr = NULL;
+        elemPtr->mesh = NULL;
     }
     elemPtr->flags |= MAP_ITEM | TRIANGLES;
     elemPtr->obj.graphPtr->flags |= CACHE_DIRTY;
@@ -1166,17 +1166,13 @@ MeshChangedProc(Mesh *meshPtr, ClientData clientData, unsigned int flags)
 
 /*ARGSUSED*/
 static void
-FreeMesh(
-    ClientData clientData,              /* Not used. */
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreeMesh(ClientData clientData, Display *display, char *widgRec, int offset)
 {
-    Mesh **meshPtrPtr = (Mesh **)(widgRec + offset);
+    Blt_Mesh *meshPtr = (Blt_Mesh *)(widgRec + offset);
     ContourElement *elemPtr = (ContourElement *)widgRec;
 
-    Blt_Mesh_DeleteNotifier(*meshPtrPtr, elemPtr);
-    *meshPtrPtr = NULL;
+    Blt_Mesh_DeleteNotifier(*meshPtr, elemPtr);
+    *meshPtr = NULL;
 }
 
 /*
@@ -1204,7 +1200,7 @@ ObjToMesh(
     int offset,                         /* Offset to field in structure */
     int flags)                          /* Not used. */
 {
-    Mesh **meshPtrPtr = (Mesh **)(widgRec + offset);
+    Blt_Mesh *meshPtr = (Blt_Mesh *)(widgRec + offset);
     ContourElement *elemPtr = (ContourElement *)widgRec;
     const char *string;
     
@@ -1213,10 +1209,10 @@ ObjToMesh(
         FreeMesh(clientData, Tk_Display(tkwin), widgRec, offset);
         return TCL_OK;
     }
-    if (Blt_GetMeshFromObj(interp, objPtr, meshPtrPtr) != TCL_OK) {
+    if (Blt_GetMeshFromObj(interp, objPtr, meshPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_Mesh_CreateNotifier(*meshPtrPtr, MeshChangedProc, elemPtr);
+    Blt_Mesh_CreateNotifier(*meshPtr, MeshChangedProc, elemPtr);
     return TCL_OK;
 }
 
@@ -1234,19 +1230,15 @@ ObjToMesh(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-MeshToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+MeshToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)
 {
-    Mesh *meshPtr = *(Mesh **)(widgRec + offset);
-    if (meshPtr == NULL) {
+    Blt_Mesh mesh = *(Blt_Mesh *)(widgRec + offset);
+
+    if (mesh == NULL) {
         return Tcl_NewStringObj("", -1);
     } 
-    return Tcl_NewStringObj(Blt_Mesh_Name(meshPtr), -1);
+    return Tcl_NewStringObj(Blt_Mesh_Name(mesh), -1);
 }
 
 /* Isoline procedures. */
@@ -1259,8 +1251,8 @@ MeshToObj(
  *      Returns the next isoline derived from the given tag.
  *
  * Results:
- *      Returns the pointer to the next tab in the iterator.  If no more tabs
- *      are available, then NULL is returned.
+ *      Returns the pointer to the next tab in the iterator.  If no more
+ *      tabs are available, then NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1867,7 +1859,10 @@ GetScreenPoints(ContourElement *elemPtr)
     Trace *tracePtr;
     AxisRange *rangePtr;
     Axis *zAxisPtr;
-
+    Point2d *meshVertices;
+    int *hull;
+    int numMeshVertices, numHullPts;
+    
     zAxisPtr = elemPtr->zAxisPtr;
     /* 
      * Step 1: Create array of vertices and apply the current palette.
@@ -1875,15 +1870,17 @@ GetScreenPoints(ContourElement *elemPtr)
     vertices = Blt_AssertMalloc(sizeof(Vertex) * elemPtr->z.numValues);
     Blt_GraphExtents(elemPtr, &exts);
     rangePtr = &zAxisPtr->axisRange;
-    for (i = 0; i < elemPtr->meshPtr->numVertices; i++) {
+    
+    meshVertices = Blt_Mesh_GetVertices(elemPtr->mesh, &numMeshVertices);
+    for (i = 0; i < numMeshVertices; i++) {
         Point2d p;
         double z;
         Vertex *v;
 
         v = vertices + i;
         v->index = i;
-        p = Blt_Map2D(graphPtr, elemPtr->meshPtr->vertices[i].x, 
-                      elemPtr->meshPtr->vertices[i].y, &elemPtr->axes);
+        p = Blt_Map2D(graphPtr, meshVertices[i].x, meshVertices[i].y,
+                      &elemPtr->axes);
         v->x = p.x;
         v->y = p.y;
         if (PointInRegion(&exts, p.x, p.y)) {
@@ -1905,12 +1902,13 @@ GetScreenPoints(ContourElement *elemPtr)
     elemPtr->numVertices = i;
     tracePtr = NewTrace(&elemPtr->traces);
     tracePtr->elemPtr = elemPtr;
-    for (i = 0; i < elemPtr->meshPtr->numHullPts; i++) {
+    hull = Blt_Mesh_GetHull(elemPtr->mesh, &numHullPts);
+    for (i = 0; i < numHullPts; i++) {
         TracePoint *p;
         int j;
 
-        j = elemPtr->meshPtr->hull[i];
-        p = NewPoint(elemPtr, vertices[j].x, vertices[j].y, j);
+        j = hull[i];
+        p = NewPoint(elemPtr, meshVertices[j].x, meshVertices[j].y, j);
         AppendPoint(tracePtr, p);
     }
 }    
@@ -2145,16 +2143,18 @@ MapTraces(ContourElement *elemPtr, Blt_Chain *tracesPtr)
  */
 static void
 MapMesh(ContourElement *elemPtr)
-{
+{ 
     Triangle *triangles;
     int i;
+    Blt_MeshTriangle *meshTriangles;
+    int numMeshTriangles;
+    
+    meshTriangles = Blt_Mesh_GetTriangles(elemPtr->mesh, &numMeshTriangles);
+    triangles = Blt_AssertMalloc(sizeof(Triangle) * numMeshTriangles);
+    for (i = 0; i < numMeshTriangles; i++) {
+        Blt_MeshTriangle *t;
 
-    triangles = Blt_AssertMalloc(sizeof(Triangle) * 
-        elemPtr->meshPtr->numTriangles);
-    for (i = 0; i < elemPtr->meshPtr->numTriangles; i++) {
-        MeshTriangle *t;
-
-        t = elemPtr->meshPtr->triangles + i;
+        t = meshTriangles + i;
         triangles[i].a = t->a;
         triangles[i].b = t->b;
         triangles[i].c = t->c;
@@ -2163,13 +2163,12 @@ MapMesh(ContourElement *elemPtr)
         triangles[i].index = i;
     }
     /* Next sort the triangles by the current set of field values */
-    qsort(triangles, elemPtr->meshPtr->numTriangles, sizeof(Triangle), 
-          CompareTriangles);
+    qsort(triangles, numMeshTriangles, sizeof(Triangle), CompareTriangles);
     if (elemPtr->triangles != NULL) {
         Blt_Free(elemPtr->triangles);
     }
     elemPtr->triangles = triangles;
-    elemPtr->numTriangles = elemPtr->meshPtr->numTriangles;
+    elemPtr->numTriangles = numMeshTriangles;
     elemPtr->flags &= ~TRIANGLES;
 }    
     
@@ -4279,26 +4278,28 @@ static void
 ExtentsProc(Element *basePtr)
 {
     ContourElement *elemPtr = (ContourElement *)basePtr;
-    Mesh *meshPtr;
-        
-    meshPtr = elemPtr->meshPtr;
-    if ((meshPtr == NULL) || (elemPtr->z.numValues == 0)) {
+    float xMin, yMin, xMax, yMax;
+    int numVertices;
+    
+    if ((elemPtr->mesh == NULL) || (elemPtr->z.numValues == 0)) {
         return;                         /* No mesh or values configured. */
     }
-    if (meshPtr->numVertices < 3) {
+    Blt_Mesh_GetVertices(elemPtr->mesh, &numVertices);
+    if (numVertices < 3) {
         return;
     }
-    if (meshPtr->xMin < elemPtr->axes.x->valueRange.min) {
-        elemPtr->axes.x->valueRange.min = meshPtr->xMin;
+    Blt_Mesh_GetExtents(elemPtr->mesh, &xMin, &yMin, &xMax, &yMax);
+    if (xMin < elemPtr->axes.x->valueRange.min) {
+        elemPtr->axes.x->valueRange.min = xMin;
     }
-    if (meshPtr->xMax > elemPtr->axes.x->valueRange.max) {
-        elemPtr->axes.x->valueRange.max = meshPtr->xMax;
+    if (xMax > elemPtr->axes.x->valueRange.max) {
+        elemPtr->axes.x->valueRange.max = xMax;
     }
-    if (meshPtr->yMin < elemPtr->axes.y->valueRange.min) {
-        elemPtr->axes.y->valueRange.min = meshPtr->yMin;
+    if (yMin < elemPtr->axes.y->valueRange.min) {
+        elemPtr->axes.y->valueRange.min = yMin;
     }
-    if (meshPtr->yMax > elemPtr->axes.y->valueRange.max) {
-        elemPtr->axes.y->valueRange.max = meshPtr->yMax;
+    if (yMax > elemPtr->axes.y->valueRange.max) {
+        elemPtr->axes.y->valueRange.max = yMax;
     }
     if (elemPtr->z.min < elemPtr->zAxisPtr->valueRange.min) {
         elemPtr->zAxisPtr->valueRange.min = elemPtr->z.min;
@@ -4371,8 +4372,8 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
     if (elemPtr->meshGC != NULL) {
         Blt_FreePrivateGC(graphPtr->display, elemPtr->meshGC);
     }
-    if (elemPtr->meshPtr != NULL) {
-        Blt_Mesh_DeleteNotifier(elemPtr->meshPtr, elemPtr);
+    if (elemPtr->mesh != NULL) {
+        Blt_Mesh_DeleteNotifier(elemPtr->mesh, elemPtr);
     }
 }
 
@@ -4396,19 +4397,21 @@ MapProc(Graph *graphPtr, Element *basePtr)
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Tcl_Interp *interp;
+    int numVertices;
     
     interp = elemPtr->obj.graphPtr->interp;
     ResetElement(elemPtr);
     elemPtr->pointPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     elemPtr->segmentPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
-    if (elemPtr->meshPtr == NULL) {
+    if (elemPtr->mesh == NULL) {
         return;
     }
-    if (elemPtr->z.numValues != elemPtr->meshPtr->numVertices) {
+    Blt_Mesh_GetVertices(elemPtr->mesh, &numVertices);
+    if (elemPtr->z.numValues != numVertices) {
         char mesg[500];
 
         sprintf(mesg, "# of mesh (%d) and field points (%d) disagree.",
-                elemPtr->meshPtr->numVertices, elemPtr->z.numValues);
+                numVertices, elemPtr->z.numValues);
         Tcl_AppendResult(interp, mesg, (char *)NULL);
         Tcl_BackgroundError(interp);
         return;                         /* Wrong # of field points */

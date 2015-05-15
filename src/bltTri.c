@@ -597,7 +597,7 @@ NextSite(Voronoi *vPtr)
 }
 
 static int
-ComputeVoronoi(Voronoi *vPtr, MeshTriangle *triplets)
+ComputeVoronoi(Voronoi *vPtr, Blt_MeshTriangle *triplets)
 {
     Site *newsite, *bot, *top, *temp, *p;
     Site *vertex;
@@ -712,7 +712,7 @@ CompareSites(const void *a, const void *b)
 
 int
 Blt_Triangulate(Tcl_Interp *interp, size_t numPoints, Point2d *points, 
-                int sorted, MeshTriangle *triangles)
+                int sorted, Blt_MeshTriangle *triangles)
 {
     int i, n;
     Voronoi voronoi;

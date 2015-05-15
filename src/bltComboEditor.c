@@ -2873,7 +2873,7 @@ DrawTextLine(ComboEditor *editPtr, Drawable drawable, TextLine *linePtr,
         Blt_Bg_SetOrigin(editPtr->tkwin, bg, xOrigin, yOrigin);
     }   
 
-    insertX = -1;
+    insertY = insertX = -1;
     textX = linePtr->worldX - editPtr->xOffset; /* Move back the starting
                                                  * position. */
     pixelsLeft = w + editPtr->xOffset;  

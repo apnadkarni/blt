@@ -94,6 +94,10 @@ typedef struct {
     int index;
 } HullVertex;
 
+typedef struct _DataSource DataSource;
+typedef struct _MeshClass MeshClass;
+typedef struct _MeshCmdInterpData MeshCmdInterpData;
+
 typedef struct _DataSourceResult DataSourceResult;
 
 typedef int (DataSourceGetProc)(Tcl_Interp *interp, DataSource *srcPtr, 
@@ -169,7 +173,7 @@ typedef struct {
                                          * data table. */
 } TableDataSource;
 
-typedef int (MeshConfigureProc)(Tcl_Interp *interp, Mesh *meshPtr);
+typedef int (MeshConfigureProc)(Tcl_Interp *interp, Blt_Mesh mesh);
 
 typedef enum MeshTypes {
     MESH_CLOUD, MESH_REGULAR, MESH_IRREGULAR, MESH_TRIANGLE
@@ -186,6 +190,35 @@ struct _MeshClass {
                                          * specifications. */
     MeshConfigureProc *configProc;      /* Configure procedure. */
 };
+
+typedef struct _Blt_Mesh {
+    const char *name;                   /* Mesh identifier. */
+    MeshClass *classPtr;
+    MeshCmdInterpData *dataPtr;
+    Tcl_Interp *interp;
+    unsigned int flags;                 /* Indicates if the mesh element is
+                                         * active or normal */
+    Blt_HashEntry *hashPtr;
+
+    DataSource *x, *y;
+
+    /* Resulting mesh is a triangular grid. */
+    Point2d *vertices;                  /* x */
+    int numVertices;                    /* x */
+    int *hull;                          /* x Array of indices pointing into
+                                         * the mesh representing the convex
+                                         * hull of the mesh. */
+    int numHullPts;                     /* x */
+    float xMin, yMin, xMax, yMax;       /* x */
+    Blt_MeshTriangle *triangles;        /* Array of triangles. */
+    Blt_MeshTriangle *reqTriangles;     /* User-requested triangles. */
+    int numReqTriangles;
+    int numTriangles;                   /* x # of triangles in array. */
+    Blt_HashTable notifierTable;
+    Blt_HashTable hideTable;
+    Blt_HashTable tableTable;
+} Mesh;
+
 
 static MeshConfigureProc CloudMeshConfigureProc;
 static MeshConfigureProc IrregularMeshConfigureProc;
@@ -344,7 +377,7 @@ ObjToTrianglesProc(
     Mesh *meshPtr = (Mesh *)record;
     Tcl_Obj **objv;
     int objc;
-    MeshTriangle *t, *reqTriangles;
+    Blt_MeshTriangle *t, *reqTriangles;
     int i, numReqTriangles;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
@@ -365,7 +398,7 @@ ObjToTrianglesProc(
         return TCL_ERROR;
     }
     numReqTriangles = objc / 3;
-    reqTriangles = Blt_Malloc(sizeof(MeshTriangle) * numReqTriangles);
+    reqTriangles = Blt_Malloc(sizeof(Blt_MeshTriangle) * numReqTriangles);
     if (reqTriangles == NULL) {
         Tcl_AppendResult(interp, "can't allocate array of ",
                 Blt_Itoa(numReqTriangles), " triangles.", (char *)NULL);
@@ -412,7 +445,7 @@ ObjToTrianglesProc(
 }
 
 static Tcl_Obj *
-TriangleToObj(Tcl_Interp *interp, MeshTriangle *t)
+TriangleToObj(Tcl_Interp *interp, Blt_MeshTriangle *t)
 {
     Tcl_Obj *listObjPtr;
     
@@ -489,7 +522,7 @@ NotifyClients(Mesh *meshPtr, unsigned int flags)
 
     for (hPtr = Blt_FirstHashEntry(&meshPtr->notifierTable, &iter); 
          hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-        MeshNotifyProc *proc;
+        Blt_MeshNotifyProc *proc;
         ClientData clientData;
 
         proc = Blt_GetHashValue(hPtr);
@@ -1311,7 +1344,7 @@ ConvexHull(Tcl_Interp *interp, int numPoints, Point2d *points, Mesh *meshPtr)
 static int 
 ComputeMesh(Mesh *meshPtr)
 {
-    MeshTriangle *triangles;
+    Blt_MeshTriangle *triangles;
     long numTriangles;
     long i, count;
     triangles = NULL;
@@ -1328,7 +1361,7 @@ ComputeMesh(Mesh *meshPtr)
         }
         /* Determine the number of triangles. */
         numTriangles = 2 * meshPtr->numVertices;
-        triangles = Blt_Malloc(numTriangles * sizeof(MeshTriangle));
+        triangles = Blt_Malloc(numTriangles * sizeof(Blt_MeshTriangle));
         if (triangles == NULL) {
             Tcl_AppendResult(meshPtr->interp, "can't allocate ", 
                 Blt_Itoa(numTriangles), " triangles", (char *)NULL);
@@ -1356,7 +1389,7 @@ ComputeMesh(Mesh *meshPtr)
         count++;
     }   
     if (count > 0) {
-        triangles = Blt_Realloc(triangles, count * sizeof(MeshTriangle));
+        triangles = Blt_Realloc(triangles, count * sizeof(Blt_MeshTriangle));
     }
     if (meshPtr->triangles != NULL) {
         Blt_Free(meshPtr->triangles);
@@ -1375,13 +1408,13 @@ static int
 ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
 {
     long i, x, y, numTriangles, numVertices, count;
-    MeshTriangle *t, *triangles;
+    Blt_MeshTriangle *t, *triangles;
     int *hull;
 
     assert(xNum > 1);
     assert(yNum > 1);
     numTriangles = ((xNum - 1) * 2) * (yNum - 1);
-    triangles = Blt_Malloc(numTriangles * sizeof(MeshTriangle));
+    triangles = Blt_Malloc(numTriangles * sizeof(Blt_MeshTriangle));
     if (triangles == NULL) {
         Tcl_AppendResult(meshPtr->interp, "can't allocate ", 
                          Blt_Itoa(numTriangles), " triangles", (char *)NULL);
@@ -1425,7 +1458,7 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
         count++;
     }   
     if (count > 0) {
-        triangles = Blt_Realloc(triangles, count * sizeof(MeshTriangle));
+        triangles = Blt_Realloc(triangles, count * sizeof(Blt_MeshTriangle));
     }
     if (meshPtr->triangles != NULL) {
         Blt_Free(meshPtr->triangles);
@@ -1685,7 +1718,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     DataSourceResult x, y;
     Point2d *vertices;
     int i, numVertices, numTriangles, count;
-    MeshTriangle *triangles;
+    Blt_MeshTriangle *triangles;
 
     if ((meshPtr->x == NULL) || (meshPtr->y == NULL)) {
         return TCL_OK;
@@ -1740,9 +1773,9 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     }
     numTriangles = meshPtr->numReqTriangles;
     /* Fill the triangles array with the sorted indices of the vertices. */
-    triangles = Blt_AssertCalloc(numTriangles, sizeof(MeshTriangle));
+    triangles = Blt_AssertCalloc(numTriangles, sizeof(Blt_MeshTriangle));
     for (i = 0; i < numTriangles; i++) {
-        MeshTriangle *t;
+        Blt_MeshTriangle *t;
 
         t = meshPtr->reqTriangles + i;
         if ((t->a < 0) || (t->a >= numVertices)) {
@@ -1783,7 +1816,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
         count++;
     }   
     if ((count > 0) && (count != numTriangles)) {
-        triangles = Blt_Realloc(triangles, count * sizeof(MeshTriangle));
+        triangles = Blt_Realloc(triangles, count * sizeof(Blt_MeshTriangle));
         if (triangles == NULL) {
             Tcl_AppendResult(meshPtr->interp, 
                 "can't reallocate triangle array for mesh \"", meshPtr->name,
@@ -2433,7 +2466,7 @@ Blt_GetMesh(Tcl_Interp *interp, const char *string, Mesh **meshPtrPtr)
 }
 
 void
-Blt_Mesh_CreateNotifier(Mesh *meshPtr, MeshNotifyProc *proc, 
+Blt_Mesh_CreateNotifier(Mesh *meshPtr, Blt_MeshNotifyProc *proc, 
                        ClientData clientData)
 {
     Blt_HashEntry *hPtr;
@@ -2464,12 +2497,42 @@ Blt_Mesh_Type(Mesh *meshPtr)
     return meshPtr->classPtr->type;
 }
 
+Point2d *
+Blt_Mesh_GetVertices(Mesh *meshPtr, int *numVerticesPtr)
+{
+    *numVerticesPtr = meshPtr->numVertices;
+    return meshPtr->vertices;
+}
+
+int *
+Blt_Mesh_GetHull(Mesh *meshPtr, int *numHullPtsPtr)
+{
+    *numHullPtsPtr = meshPtr->numHullPts;
+    return meshPtr->hull;
+}
+
+void
+Blt_Mesh_GetExtents(Mesh *meshPtr, float *x1Ptr, float *y1Ptr, float *x2Ptr,
+                    float *y2Ptr)
+{
+    *x1Ptr = meshPtr->xMin;
+    *x2Ptr = meshPtr->xMax;
+    *y1Ptr = meshPtr->yMin;
+    *y2Ptr = meshPtr->yMax;
+}
+    
+Blt_MeshTriangle *
+Blt_Mesh_GetTriangles(Mesh *meshPtr, int *numTrianglesPtr)
+{
+    *numTrianglesPtr = meshPtr->numTriangles;
+    return meshPtr->triangles;
+}
 
 #ifdef notdef
 /* 
  * RegularMeshFindProc 
  */
-static MeshTriangle *
+static Blt_MeshTriangle *
 RegularMeshFindProc(Mesh *meshPtr, double x, double y)
 {
     double xStep, yStep;
