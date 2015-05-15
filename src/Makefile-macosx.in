@@ -40,6 +40,10 @@ MYSQL_INC_SPEC =	@MYSQL_INC_SPEC@
 MYSQL_LIB_SPEC =	@MYSQL_LIB_SPEC@
 PNG_INC_SPEC =		@PNG_INC_SPEC@
 PNG_LIB_SPEC =		@PNG_LIB_SPEC@ $(Z_LIB_SPEC)
+PQ_INC_SPEC =		@PQ_INC_SPEC@
+PQ_LIB_SPEC =		@PQ_LIB_SPEC@
+SQLITE_INC_SPEC =	@SQLITE_INC_SPEC@
+SQLITE_LIB_SPEC =	@SQLITE_LIB_SPEC@
 TCL_INC_SPEC =		@TCL_INC_SPEC@
 TCL_LIB_SPEC =		@TCL_LIB_SPEC@
 TCL_STUBS_SPEC =	@TCL_STUBS_SPEC@
@@ -133,6 +137,8 @@ BLT_SO_LIBS =		$(BLT_TK_SO_LIBS) $(BLT_TCL_SO_LIBS)
 
 BLT_TCL_LIBS =		$(BLT_TCL_SO_LIBS) \
 			$(MYSQL_LIB_SPEC) \
+			$(SQLITE_LIB_SPEC) \
+			$(PQ_LIB_SPEC) \
 			$(EXPAT_LIB_SPEC) 
 
 blt_tcl_name =		Tcl$(version)$(LIB_SUFFIX)
@@ -148,6 +154,8 @@ blt_tk_pkg_so =		$(blt_tk_name)$(SO_EXT)
 
 blt_table_csv_name =    TableCsv$(version)$(LIB_SUFFIX)
 blt_table_mysql_name =  TableMysql$(version)$(LIB_SUFFIX)
+blt_table_psql_name =   TablePsql$(version)$(LIB_SUFFIX)
+blt_table_sqlite_name = TableSqlite$(version)$(LIB_SUFFIX)
 blt_table_tree_name =   TableTree$(version)$(LIB_SUFFIX)
 blt_table_txt_name =    TableTxt$(version)$(LIB_SUFFIX)
 blt_table_vec_name =    TableVector$(version)$(LIB_SUFFIX)
@@ -155,6 +163,8 @@ blt_table_xml_name =    TableXml$(version)$(LIB_SUFFIX)
 
 blt_table_csv_so =	$(blt_table_csv_name)$(SO_EXT)
 blt_table_mysql_so =    $(blt_table_mysql_name)$(SO_EXT)
+blt_table_psql_so =     $(blt_table_psql_name)$(SO_EXT)
+blt_table_sqlite_so =   $(blt_table_sqlite_name)$(SO_EXT)
 blt_table_tree_so =	$(blt_table_tree_name)$(SO_EXT)
 blt_table_txt_so =	$(blt_table_txt_name)$(SO_EXT)
 blt_table_vec_so =	$(blt_table_vec_name)$(SO_EXT)
@@ -190,11 +200,11 @@ blt_pict_xbm_so =	$(blt_pict_xbm_name)$(SO_EXT)
 blt_pict_xpm_so =	$(blt_pict_xpm_name)$(SO_EXT)
 blt_pict_text_so =	$(blt_pict_text_name)$(SO_EXT)
 
-blt_tree_xml_name =	TreeXml$(version)$(LIB_SUFFIX)
 blt_tree_json_name =	TreeJson$(version)$(LIB_SUFFIX)
+blt_tree_xml_name =	TreeXml$(version)$(LIB_SUFFIX)
 
-blt_tree_xml_so =	$(blt_tree_xml_name)$(SO_EXT)
 blt_tree_json_so =	$(blt_tree_json_name)$(SO_EXT)
+blt_tree_xml_so =	$(blt_tree_xml_name)$(SO_EXT)
 
 blt_sftp_name =         Sftp$(version)$(LIB_SUFFIX)
 blt_sftp_so =		$(blt_sftp_name)$(SO_EXT)
@@ -211,12 +221,17 @@ endif
 ifneq ("$(MYSQL_LIB_SPEC)", "")
    blt_tcl_pkgs += $(blt_table_mysql_so) 
 endif
+ifneq ("$(SQLITE_LIB_SPEC)", "")
+   blt_tcl_pkgs += $(blt_table_sqlite_so) 
+endif
+ifneq ("$(PQ_LIB_SPEC)", "")
+   blt_tcl_pkgs += $(blt_table_psql_so) 
+endif
 ifneq ("$(LIBSSH2_LIB_SPEC)", "")
    blt_tcl_pkgs += $(blt_sftp_so) 
 endif
 
-blt_tk_pkgs =	\
-			$(blt_pict_bmp_so) \
+blt_tk_pkgs =		$(blt_pict_bmp_so) \
 			$(blt_pict_gif_so) \
 			$(blt_pict_ico_so) \
 			$(blt_pict_pbm_so) \
@@ -297,8 +312,8 @@ TABLEVIEW_OBJS =	bltTableView.o \
 PICTURE_OBJS =		bltPicture.o \
 			bltPictCanv.o \
 			bltPictColor.o \
-			bltPictGradient.o \
-			bltPictMmx.o 
+			bltPictMmx.o \
+			bltPictText.o 
 
 PICTURE_PKG_OBJS =	bltPictBmp.o \
 			bltPictGif.o \
@@ -309,6 +324,7 @@ PICTURE_PKG_OBJS =	bltPictBmp.o \
 			bltPictPhoto.o \
 			bltPictPng.o \
 			bltPictPs.o \
+			bltPictText.o \
 			bltPictTga.o \
 			bltPictTif.o \
 			bltPictXbm.o \
@@ -317,8 +333,8 @@ PICTURE_PKG_OBJS =	bltPictBmp.o \
 TREE_OBJS =		bltTree.o \
 			bltTreeCmd.o \
 
-TREE_PKG_OBJS =		bltTreeXml.o \
-			bltTreeJson.o
+TREE_PKG_OBJS =		bltTreeJson.o  \
+			bltTreeXml.o 
 
 MISC_PKG_OBJS =		bltSftp.o
 
@@ -327,6 +343,8 @@ DATATABLE_OBJS =	bltDataTable.o \
 
 DATATABLE_PKG_OBJS =	bltDataTableCsv.o \
 			bltDataTableMysql.o \
+			bltDataTablePsql.o \
+			bltDataTableSqlite.o \
 			bltDataTableTree.o \
 			bltDataTableTxt.o \
 			bltDataTableVec.o \
@@ -341,7 +359,6 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltCrc32.o \
 			bltCsv.o \
 			$(DATATABLE_OBJS) \
-			bltDate.o \
 			bltDebug.o \
 			bltFileCmd.o \
 			bltHash.o \
@@ -354,10 +371,12 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltSpline.o \
 			bltSwitch.o \
 			bltTags.o \
+			bltTimeStamp.o \
 			$(TREE_OBJS) \
 			bltUtil.o \
 			bltVar.o \
 			bltVecCmd.o \
+			bltVecFft.o \
 			bltVecMath.o \
 			bltVector.o \
 			bltWatch.o \
@@ -385,6 +404,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltBusy.o \
 			bltCanvEps.o \
 			bltComboButton.o \
+			bltComboEditor.o \
 			bltComboEntry.o \
 			bltComboMenu.o \
 			bltComboTree.o \
@@ -542,6 +562,16 @@ $(blt_table_mysql_so): bltDataTableMysql.o $(blt_stub_lib)
 	$(SO_LD) $(SO_BUNDLE_FLAGS) -o $@ bltDataTableMysql.o \
 		$(MYSQL_LIB_SPEC) $(blt_stub_lib)
 
+$(blt_table_psql_so): bltDataTablePsql.o $(blt_tcl_lib) 
+	$(RM) $@
+	$(SO_LD) $(SO_BUNDLE_FLAGS) -o $@ bltDataTablePsql.o \
+		$(PQSQL_LIB_SPEC) $(blt_stub_lib)
+
+$(blt_table_sqlite_so): bltDataTableSqlite.o $(blt_tcl_lib) 
+	$(RM) $@
+	$(SO_LD) $(SO_BUNDLE_FLAGS) -o $@ bltDataTableSqlite.o \
+		$(SQLITE_LIB_SPEC) $(blt_stub_lib)
+
 $(blt_table_tree_so): bltDataTableTree.o $(blt_stub_lib) 
 	$(RM) $@
 	$(SO_LD) $(SO_BUNDLE_FLAGS) -o $@ bltDataTableTree.o $(blt_stub_lib)
@@ -648,23 +678,54 @@ BLT_TCL_INT_HEADERS = \
 			bltInt.h bltMath.h bltOp.h bltNsUtil.h bltSpline.h \
 			bltSwitch.h bltTclInt.h bltVar.h
 BLT_TCL_HEADERS = \
-			bltAlloc.h bltChain.h bltList.h bltDataTable.h \
-			bltPool.h bltTree.h bltHash.h.in bltVector.h
+		$(srcdir)/bltAlloc.h \
+		$(srcdir)/bltChain.h \
+		$(srcdir)/bltDataTable.h \
+		$(srcdir)/bltHash.h.in \
+		$(srcdir)/bltList.h \
+		$(srcdir)/bltPool.h \
+		$(srcdir)/bltTags.h \
+		$(srcdir)/bltTree.h \
+		$(srcdir)/bltVector.h
 
 BLT_TK_INT_HEADERS = \
-			bltAfm.h bltBg.h bltBind.h bltConfig.h \
-			bltFont.h bltImage.h bltPainter.h bltPicture.h \
-			bltPs.h bltText.h 
-BLT_TK_HEADERS = 
+		$(srcdir)/bltTkInt.h \
+		$(srcdir)/bltFont.h \
+		$(srcdir)/bltPaintBrush.h \
+		$(srcdir)/bltBg.h \
+		$(srcdir)/bltBind.h \
+		$(srcdir)/bltAfm.h \
+		$(srcdir)/bltConfig.h \
+		$(srcdir)/bltImage.h \
+		$(srcdir)/bltPainter.h \
+		$(srcdir)/bltPs.h \
+		$(srcdir)/bltText.h
+
+BLT_TK_HEADERS = \
+		$(srcdir)/bltPicture.h \
+		$(srcdir)/bltPictFmts.h
 
 build-tcl-stubs:
-	tclsh bltdecls.tcl -interface bltTclInt -- $(BLT_TCL_INT_HEADERS)
-	tclsh bltdecls.tcl -interface bltTcl -hooks bltTclInt -- \
+	$(RM) bltTclInt.decls bltTcl.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTclInt -- \
+		$(BLT_TCL_INT_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl -module Tcl -- \
+		bltTclInt.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTcl -hooks bltTclInt -- \
 		$(BLT_TCL_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl -module Tcl  -hook bltTclIntProcs -- \
+		bltTcl.decls
+
 build-tk-stubs:
-	tclsh bltdecls.tcl -interface bltTkInt -- $(BLT_TK_INT_HEADERS)
-	tclsh bltdecls.tcl -interface bltTk -hooks bltTkInt -- \
+	$(RM) bltTkInt.decls bltTk.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTkInt -- \
+		$(BLT_TK_INT_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl -module Tk -- \
+		bltTkInt.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTk -hooks bltTkInt -- \
 		$(BLT_TK_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl -module Tk -hook bltTkIntProcs -- \
+		bltTk.decls
 
 install: install-demos install-libs install-headers install-packages
 
@@ -706,7 +767,6 @@ install-packages: $(blt_tcl_pkg_so) $(blt_tk_pkg_so) $(blt_tcl_pkgs) $(blt_tk_pk
 install-headers:
 	$(INSTALL) -d $(DESTDIR)$(incdir)
 	for i in $(headers) ; do \
-	    $(RM) $(DESTDIR)$(incdir)/$$i ; \
 	    $(INSTALL_DATA) -m 0444 $$i $(DESTDIR)$(incdir) ; \
 	done
 
@@ -724,7 +784,7 @@ clean-libs:
 clean-objs:
 	$(RM) $(BLT_OBJS) bltTclLib.o bltTkLib.o
 clean-demos:
-	$(RM) -f $(bltsh)* $(bltwish)* *pure* .pure*
+	$(RM) $(bltsh)* $(bltwish)* *pure* .pure*
 clean-packages:
 	$(RM) $(blt_tcl_pkgs) $(blt_tk_pkgs) 
 	$(RM) $(blt_tcl_pkg_so) $(blt_tk_pkg_so) 
@@ -735,6 +795,10 @@ distclean:	clean
 
 bltDataTableMysql.o: $(srcdir)/bltDataTableMysql.c
 	$(CC) -c $(CC_OPTS) $(MYSQL_INC_SPEC) $?
+bltDataTablePsql.o: $(srcdir)/bltDataTablePsql.c
+	$(CC) -c $(CC_OPTS) $(PQ_INC_SPEC) $?
+bltDataTableSqlite.o: $(srcdir)/bltDataTableSqlite.c
+	$(CC) -c $(CC_OPTS) $(SQLITE_INC_SPEC) $?
 bltDataTableXml.o: $(srcdir)/bltDataTableXml.c
 	$(CC) -c $(CC_OPTS) $(EXPAT_INC_SPEC) $?
 
