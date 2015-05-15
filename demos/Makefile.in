@@ -124,7 +124,6 @@ FILES 	= \
 		tour.tcl \
 		treeview1.tcl \
 		treeview2.tcl \
-		usmap.tcl \
 		winop1.tcl \
 		winop2.tcl \
 		winop3.tcl \
@@ -132,7 +131,7 @@ FILES 	= \
 		winop5.tcl \
 		winop6.tcl 
 
-subdirs =	scripts images bitmaps
+subdirs =	scripts images bitmaps data
 
 all:
 

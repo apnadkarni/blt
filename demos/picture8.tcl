@@ -30,16 +30,16 @@ set modes {
 }
 . configure -bg white
 set xbg [blt::background create linear \
-	     -highcolor grey97 -lowcolor grey80 \
+	     -highcolor grey97 -lowcolor grey87 \
 	    -from n -to s -relativeto self]
 set ybg [blt::background create linear \
-	     -highcolor grey97 -lowcolor grey80 \
+	     -highcolor grey97 -lowcolor grey87 \
 	    -from n -to s -relativeto self -decreasing yes]
 
 set img [image create picture]
 blt::tk::frame .top -bg $xbg
 blt::tk::frame .middle -bg $ybg
-blt::tk::label .top.label -text "Blend Mode" -bg $xbg
+blt::tk::label .top.label -text "Color Blending Mode" -bg $xbg
 blt::tk::label .middle.result_l -text Result -bg $ybg
 blt::tk::label .middle.base_l -text Background  -bg $ybg
 blt::tk::label .middle.blend_l -text Foreground -bg $ybg
@@ -51,7 +51,7 @@ blt::comboentry .top.entry \
     -menu .top.entry.menu \
     -textvariable textVar \
     -width 200 \
-    -font {{Sans Serif} 9}
+
 blt::combomenu .top.entry.menu \
     -textvariable textVar \
     -xscrollbar .top.entry.menu.xs \
@@ -70,10 +70,10 @@ foreach mode $modes {
 $m select "normal"
 blt::table . \
     0,0 .top -fill x -cspan 3 \
-    1,0 .middle -fill x -cspan 3 \
-    2,0 .base \
-    2,1 .blend \
-    2,2 .result
+    1,0 .base \
+    1,1 .blend \
+    1,2 .result \
+    2,0 .middle -fill x -cspan 3 
 
 blt::table .top \
     0,1 .top.label -anchor e \

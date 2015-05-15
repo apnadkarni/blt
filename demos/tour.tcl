@@ -1,6 +1,6 @@
 #!../src/bltwish
 
-#package require BLT
+package require BLT
 source scripts/demo.tcl
 option add *Scrollbar.relief	flat
 set oldLabel "dummy"

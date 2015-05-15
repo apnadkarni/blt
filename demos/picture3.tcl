@@ -2,7 +2,7 @@ package require BLT
 
 set dest [image create picture -width 800 -height 600]
 
-source usmap.tcl
+source ./data/usmap.tcl
 
 set count 0
 array set colors {

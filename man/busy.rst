@@ -87,17 +87,19 @@ The following operations are available for the **blt::busy** command:
     *CursorName* can be in any form accepted by **Tk_GetCursor**.  The
     default cursor is "watch".
 
-  **-darken** *percent*
-    Specifies the amount darken or lighten the opaque busy window. The
-    **-opaque** option must be set.  The default is "30".
+  **-color** *colorName*
+    Specifies the color of the busy window.  The option only has effect if
+    the **-opacity** is greater than "0.0".  The default is "black".
 
   **-image** *imageName*
-    Draws the given image centered over the opaque busy window.
+    Draws *imageName* centered over the busy window.  The option only has
+    effect if the **-opacity** is greater than "0.0".
 
-  **-opaque** *boolean*
-    Indicates if an opaque busy window should be used.  This window is a
-    snapshot of the current window lightened or darkened by the specified
-    amount (see the **-darken** option). The default is "0".
+  **-opacity** *percent*
+    Specifices the percentage of opacity of the busy window.  For example
+    if *percent* is "100.0" the busy window is a solid color, specified by
+    the **-color** option.  If *percent* is "0.0", the busy window is
+    completely transparent. The default is "0.0".
 
 **blt::busy configure** *windowName* ?\ *option* *value* ... ?
   Queries or modifies the **blt::busy** command configuration options for

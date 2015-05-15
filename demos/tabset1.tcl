@@ -6,10 +6,10 @@ option add *Tabset.Tab.padY 0
 #option add *Tabset.Tab.background green
 
 image create picture bgTile -file ./images/chalk.gif
-image create picture label1 -file ./images/mini-book1.gif
-image create picture label2 -file ./images/mini-book2.gif
-image create picture label3 -width 10 -height 10
-label3 blank white
+image create picture img1 -file ./images/mini-book1.gif
+image create picture img2 -file ./images/mini-book2.gif
+image create picture img3 -width 10 -height 10
+img3 blank white
 
 blt::tabset .t \
     -outerrelief raised \
@@ -18,10 +18,10 @@ blt::tabset .t \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
     -closebutton yes \
-    -width 3i
+    -width 7i
 
 .t add First \
-    -image label1 \
+    -image img1 \
     -anchor center \
     -selectbackground darkolivegreen2  
 
@@ -30,7 +30,7 @@ foreach page { Again Next another test of a widget } {
     .t add $page \
 	-anchor center \
 	-selectbackground darkolivegreen2 \
-	-image label3
+	-image img3
 }
 
 .t add -text Again -selectbackground lightblue 
