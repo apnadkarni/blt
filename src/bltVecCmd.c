@@ -1585,12 +1585,12 @@ FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
             parserPtr->flags |= FMT_ISNEGATIVE;
         }
     } else if (parserPtr->flags & FMT_LONG) {
-        l = (long)d;
+        l = (long int)d;
         if (l < 0) {
             parserPtr->flags |= FMT_ISNEGATIVE;
         }
     } else if (parserPtr->flags & FMT_SHORT) {
-        s = (unsigned short int)d;
+        s = (short int)d;
         if (s < 0) {
             parserPtr->flags |= FMT_ISNEGATIVE;
         }

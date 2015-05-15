@@ -313,42 +313,34 @@ RowIterSwitchProc(
     return TCL_OK;
 }
 
-static int charCounts[4];
-static const char *sepTokens = { ",\t|;"};
-
-static int
-CompareCounts(const void *t1, const void *t2)
-{
-    int a = *(int *)t1;
-    int b = *(int *)t2;
-    return (charCounts[b] - charCounts[a]);
-}
 
 static void
 GuessSeparator(ImportArgs *argsPtr)
 {
-    long pos;
-    int map[4];
-    const char *string, *p;
-    int i;
-    int length;
     Tcl_Obj *objPtr;
+    const char *string;
+    int charCounts[4];
+    int i, max, length;
+    off_t pos;
+    const char sepTokens[] = { ",\t|;"};
     
     pos = Tcl_Tell(argsPtr->channel);
-    string = NULL;                      /* Suppress compiler warning. */
+    objPtr = NULL;                      /* Suppress compiler warning. */
     if (argsPtr->channel != NULL) {
         objPtr = Tcl_NewStringObj("", -1);
         Tcl_ReadChars(argsPtr->channel, objPtr, 2000, FALSE);
         string = Tcl_GetStringFromObj(objPtr, &length);
     } else if (argsPtr->numBytes > 0) {
         string = argsPtr->buffer;
+        length = MIN(argsPtr->numBytes, 2000);
+    }  else {
+        return;
     }
     for (i = 0; i < 4; i++) {
         charCounts[i] = 0;
-        map[i] = i;
     }
-    for (p = string; (*p != '\0') && (p - string) < 2000; p++) {
-        switch (*p) {
+    for (i = 0; i < length; i++) {
+        switch (string[i]) {
         case ',':                       /* Comma */
             charCounts[0]++;         break;
         case '\t':                      /* Tab */
@@ -363,8 +355,20 @@ GuessSeparator(ImportArgs *argsPtr)
         Tcl_Seek(argsPtr->channel, pos, SEEK_SET);
         Tcl_DecrRefCount(objPtr);
     }
-    qsort(map, 4, sizeof(int), CompareCounts);
-    argsPtr->separatorChar = sepTokens[map[0]];
+    if (charCounts[0] > charCounts[1]) {
+        if (charCounts[2] > charCounts[3]) {
+            max = (charCounts[0] > charCounts[2]) ? 0 : 2;
+        } else {
+            max = (charCounts[0] > charCounts[3]) ? 0 : 3;
+        }
+    } else {
+        if (charCounts[2] > charCounts[3]) {
+            max = (charCounts[1] > charCounts[2]) ? 1 : 2;
+        } else {
+            max = (charCounts[1] > charCounts[3]) ? 1 : 3;
+        }
+    }
+    argsPtr->separatorChar = sepTokens[max];
 }
         
 static void
