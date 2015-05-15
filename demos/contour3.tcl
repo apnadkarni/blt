@@ -9,7 +9,7 @@ set yGridSize 37
 
 # Create a table and load the data file (csv) into it.
 set table [blt::datatable create]
-$table import csv -file nplsms.csv
+$table import csv -file data/nplsms.csv
 
 # The first row of the csv contains the column labels.
 set labels [$table row values 0]

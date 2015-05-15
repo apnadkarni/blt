@@ -40,7 +40,7 @@ foreach { name x y } $meshes {
 }
 
 set table [blt::datatable create]
-$table import csv -file omw.csv
+$table import csv -file ./data/omw.csv
 set labels [$table row values 0]
 $table column labels $labels
 $table row delete 0

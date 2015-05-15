@@ -11,7 +11,7 @@ set tcl_precision 15
 
 # Make and fill small vectors
 blt::vector x y
-x linspace 10 0 -0.5 
+x seq 10 0 -0.5 
 y expr sin(x^3)
 x expr x*x
 x sort y
@@ -42,13 +42,13 @@ blt::graph .graph
 .graph element create Natural -x x2 -y y1 \
     -color green4 \
     -fill green \
-    -pixels 3 \
+    -pixels 5 \
     -symbol triangle
 
 .graph element create Quadratic -x x2 -y y2 \
     -color blue4 \
-    -fill orange2 \
-    -pixels 3 \
+    -fill blue2 \
+    -pixels 5 \
     -symbol arrow
 
 blt::table . .graph -fill both

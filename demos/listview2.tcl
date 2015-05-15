@@ -88,6 +88,6 @@ blt::table configure . r0 -resize none
 .colmode select
 
 after 2000 {
-    $t sort type name 
+    $t sort -columns "type name"
     bell
 }

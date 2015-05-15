@@ -2274,4 +2274,3 @@ foreach vector [lsort -dictionary [blt::vector names ::v*]] {
     $table import vector $col $vector 
 }
 
-$table dump -file graph4.tab

@@ -53,7 +53,7 @@ option add *TextMarker.Background	{}
 option add *TextMarker.Foreground	white
 
 set table [blt::datatable create]
-$table restore -file graph4a.tab
+$table restore -file ./data/graph4a.tab
 
 set attributes {
     V1	v1	red	red  

@@ -469,7 +469,6 @@ proc test22 { t } {
 
 test1 $t
 
-$t export csv -file dates.csv
 Blt_ClosestPoint .g
 Blt_ZoomStack .g
 Blt_Crosshairs .g

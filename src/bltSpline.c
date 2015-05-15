@@ -698,7 +698,6 @@ QuadEval(
          * Calculate the images of points of evaluation whose abscissas are
          * less than the abscissa of the first data point.
          */
-fprintf(stderr, "0. QuadSelect: i=%d, n=%d\n", 0, 1);
         ncase = QuadSelect(origPts, origPts + 1, m[0], m[1], epsilon, param);
         for (j = 0; j < (start - 1); j++) {
             QuadSpline(intpPts + j, origPts, origPts + 1, param, ncase);
@@ -760,7 +759,6 @@ fprintf(stderr, "0. QuadSelect: i=%d, n=%d\n", 0, 1);
      * range of the data.
      */
     if ((i > 0) || (error != 1)) {
-fprintf(stderr, "1. QuadSelect: i=%d, n=%d\n", i, n);
         ncase = QuadSelect(origPts + i, origPts + n, m[i], m[n], 
                            epsilon, param);
     }
@@ -784,7 +782,6 @@ fprintf(stderr, "1. QuadSelect: i=%d, n=%d\n", i, n);
             } while (delta > 0.0);
             
             if (delta < 0.0) {
-fprintf(stderr, "2. QuadSelect: i=%d, n=%d\n", i, n);
                 ncase = QuadSelect(origPts + i, origPts + n, m[i], 
                            m[n], epsilon, param);
             } else if (delta == 0.0) {
@@ -804,7 +801,6 @@ fprintf(stderr, "2. QuadSelect: i=%d, n=%d\n", i, n);
 
     error = 1;                          /* Set error value to indicate that
                                          * extrapolation has occurred. */
-fprintf(stderr, "3. QuadSelect: i=%d, n=%d\n", p, l);
     ncase = QuadSelect(origPts + p, origPts + l, m[p], m[l], epsilon, param);
 
   noExtrapolation:
@@ -1600,10 +1596,6 @@ CubicEval(Point2d *origPts, int numOrigPts, Point2d *intpPts, int numIntpPts,
         dx01 = (spline[j].x - spline[i].x) / (6.0 * d);
         dy01 = (spline[j].y - spline[i].y) / (6.0 * d);
         while (t <= spline[i].t) { /* t in current interval ? */
-    fprintf(stderr, "XEvaluate: spline[%d]=%g %g,%g, point[%d]=%g,%g, t=%g, p=%g,%g\n",
-            i, spline[i].t, spline[i].x, 
-            spline[i].y, i, origPts[i].x,
-            origPts[i].y, t, p.x, p.y);
             p.x += t * (hx + (t - d) * (dx0 + t * dx01));
             p.y += t * (hy + (t - d) * (dy0 + t * dy01));
             intpPts[count++] = p;
@@ -1711,9 +1703,6 @@ Blt_ComputeCatromParametricSpline(Point2d *points, int numPoints,
     origPts[0] = origPts[1];
     origPts[numPoints + 2] = origPts[numPoints + 1] = origPts[numPoints];
 
-    for (i = 0; i < numPoints+4; i++) {
-        fprintf(stderr, "original[%d]=%g,%g\n", i, origPts[i].x, origPts[i].y);
-    }
     for (i = 0; i < numIntpPts; i++) {
         interval = (int)intpPts[i].x;
         t = intpPts[i].y;
@@ -1723,9 +1712,6 @@ Blt_ComputeCatromParametricSpline(Point2d *points, int numPoints,
         intpPts[i].x = (d.x + t * (c.x + t * (b.x + t * a.x))) / 2.0;
         intpPts[i].y = (d.y + t * (c.y + t * (b.y + t * a.y))) / 2.0;
 
-    fprintf(stderr, "Evaluate: i=%d t=%g original=%g,%g, interp=%g,%g\n",
-            interval, t, origPts[interval].x, origPts[interval].y, 
-            intpPts[i].x, intpPts[i].y);
     }
     Blt_Free(origPts);
     return 1;
@@ -1893,7 +1879,6 @@ CubicEval(Point2d *points, int numPoints, Point2d *intpPts, int numIntpPts,
             intpPts[count++] = p;
             t += skip;
         }
-        fprintf(stderr, "adding point q=%g,%g\n,", q.x, q.y);
         intpPts[count++] = q;           /* Inject the end point. */
         /* Parameter t relative to start of next interval */
         t -= spline[i].t;
@@ -2194,12 +2179,6 @@ Blt_EvaluateParametricCubicSpline(Blt_Spline spline, int index, double x)
     dy01 = (splinePtr->spline[j].y - splinePtr->spline[i].y) / (6.0 * d);
     tx = t = 0.0;
     while ((tx < x) && (t <= splinePtr->spline[i].t)) { /* t in current interval ? */
-    fprintf(stderr, "Evaluate: spline[%d]=%g %g,%g, p[%d]=%g,%g, p[%d]=%g,%g, t=%g, p=%g,%g\n",
-            i, splinePtr->spline[i].t, splinePtr->spline[i].x, 
-            splinePtr->spline[i].y, 
-            i, splinePtr->points[i].x, splinePtr->points[i].y, 
-            j, splinePtr->points[j].x, splinePtr->points[j].y, 
-            t, p.x, p.y);
         p.x += t * (hx + (t - d) * (dx0 + t * dx01));
         p.y += t * (hy + (t - d) * (dy0 + t * dy01));
         t += tSkip;

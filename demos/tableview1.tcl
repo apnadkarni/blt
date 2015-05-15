@@ -2,7 +2,7 @@
 package require BLT
 
 set table [blt::datatable create]
-$table restore -file graph4a.tab
+$table restore -file ./data/graph4a.tab
 
 #option add *Row.titleJustify center
 set view .ss.t

@@ -1,4 +1,4 @@
-
+package require BLT
 foreach {key file} {
 save_as /usr/share/gtk-doc/html/pygtk/icons/stock_save_as
 new_tab /usr/share/gtk-doc/html/pygtk/icons/stock_new
