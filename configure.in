@@ -1909,6 +1909,7 @@ AC_CONFIG_FILES(
   demos/bitmaps/Makefile
   demos/bitmaps/fish/Makefile
   demos/bitmaps/hand/Makefile
+  demos/data/Makefile
   demos/images/Makefile
   demos/scripts/Makefile
   library/Makefile 

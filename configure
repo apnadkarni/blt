@@ -10415,7 +10415,7 @@ esac
 # List of files to have be generated from <name>.in files with
 # autoconf substitutions.
 # --------------------------------------------------------------
-ac_config_files="$ac_config_files Makefile bltConfig.sh ${src_Makefile} demos/Makefile demos/bitmaps/Makefile demos/bitmaps/fish/Makefile demos/bitmaps/hand/Makefile demos/images/Makefile demos/scripts/Makefile library/Makefile library/afm/Makefile library/dd_protocols/Makefile library/palettes/Makefile man/Makefile src/bltHash.h"
+ac_config_files="$ac_config_files Makefile bltConfig.sh ${src_Makefile} demos/Makefile demos/bitmaps/Makefile demos/bitmaps/fish/Makefile demos/bitmaps/hand/Makefile demos/data/Makefile demos/images/Makefile demos/scripts/Makefile library/Makefile library/afm/Makefile library/dd_protocols/Makefile library/palettes/Makefile man/Makefile src/bltHash.h"
 
 
 
@@ -11035,6 +11035,7 @@ do
     "demos/bitmaps/Makefile") CONFIG_FILES="$CONFIG_FILES demos/bitmaps/Makefile" ;;
     "demos/bitmaps/fish/Makefile") CONFIG_FILES="$CONFIG_FILES demos/bitmaps/fish/Makefile" ;;
     "demos/bitmaps/hand/Makefile") CONFIG_FILES="$CONFIG_FILES demos/bitmaps/hand/Makefile" ;;
+    "demos/data/Makefile") CONFIG_FILES="$CONFIG_FILES demos/data/Makefile" ;;
     "demos/images/Makefile") CONFIG_FILES="$CONFIG_FILES demos/images/Makefile" ;;
     "demos/scripts/Makefile") CONFIG_FILES="$CONFIG_FILES demos/scripts/Makefile" ;;
     "library/Makefile") CONFIG_FILES="$CONFIG_FILES library/Makefile" ;;

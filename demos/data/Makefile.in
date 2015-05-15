@@ -1,0 +1,42 @@
+# ------------------------------------------------------------------------
+# 	Makefile for demos/data
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir =	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+scriptdir =	$(prefix)/lib/blt$(version)
+destdir =	$(scriptdir)/demos/data
+
+SHELL =		/bin/sh
+RM =		rm -rf
+INSTALL =	@INSTALL@
+INSTALL_DATA =	@INSTALL_DATA@
+MKDIR_P	= 	@MKDIR_P@
+
+FILES =	\
+	graph4.csv \
+	graph4a.csv \
+	graph4a.tab \
+	nplsms.csv \
+	omw.csv \
+	usmap.tcl
+
+all:
+
+install: 
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(destdir) ; \
+	done 
+
+clean:
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* 
+
+distclean: clean
+	$(RM) Makefile
