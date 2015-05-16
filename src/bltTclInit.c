@@ -179,6 +179,9 @@ static Tcl_AppInitProc *cmdProcs[] =
 #ifndef NO_TIMESTAMP
     Blt_TimeStampCmdInitProc,
 #endif
+#ifndef NO_MESH
+    Blt_MeshCmdInitProc,
+#endif
 #ifndef NO_COMPARE
     Blt_CompareCmdInitProc,
 #endif

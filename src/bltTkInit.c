@@ -92,7 +92,6 @@ static Tcl_AppInitProc *cmdProcs[] =
     Blt_HtextCmdInitProc,
 #endif
     Blt_ListViewInitProc,
-    Blt_MeshCmdInitProc,
     Blt_PaletteCmdInitProc,
 #ifndef NO_PANESET
     Blt_PanesetCmdInitProc,
