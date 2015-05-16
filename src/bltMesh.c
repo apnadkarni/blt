@@ -35,7 +35,7 @@
  *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * The convex hull routine.
+ * Convex hull routines.
  *
  * Copyright 2001, softSurfer (www.softsurfer.com) 
  *
@@ -196,10 +196,10 @@ typedef struct _Blt_Mesh {
     MeshClass *classPtr;
     MeshCmdInterpData *dataPtr;
     Tcl_Interp *interp;
+    int refCount;                       /* Reference count of mesh. */
     unsigned int flags;                 /* Indicates if the mesh element is
                                          * active or normal */
     Blt_HashEntry *hashPtr;
-
     DataSource *x, *y;
 
     /* Resulting mesh is a triangular grid. */
@@ -214,11 +214,18 @@ typedef struct _Blt_Mesh {
     Blt_MeshTriangle *reqTriangles;     /* User-requested triangles. */
     int numReqTriangles;
     int numTriangles;                   /* x # of triangles in array. */
-    Blt_HashTable notifierTable;
     Blt_HashTable hideTable;
     Blt_HashTable tableTable;
+    Blt_Chain notifiers;                /* List of client notifiers. */
 } Mesh;
 
+typedef struct _Blt_MeshNotifier {
+    const char *name;                   /* Token id for notifier. */
+    Blt_MeshChangedProc *proc;          /* Procedure to be called when the
+                                         * mesh changes. */
+    ClientData clientData;              /* Data to be passed on notifier
+                                         * callbacks.  */
+} MeshNotifier;
 
 static MeshConfigureProc CloudMeshConfigureProc;
 static MeshConfigureProc IrregularMeshConfigureProc;
@@ -517,17 +524,17 @@ FreeTrianglesProc(ClientData clientData, char *record, int offset, int flags)
 static void
 NotifyClients(Mesh *meshPtr, unsigned int flags)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
+     Blt_ChainLink link;
 
-    for (hPtr = Blt_FirstHashEntry(&meshPtr->notifierTable, &iter); 
-         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-        Blt_MeshNotifyProc *proc;
-        ClientData clientData;
+     for (link = Blt_Chain_FirstLink(meshPtr->notifiers); link != NULL;
+        link = Blt_Chain_NextLink(link)) {
+         MeshNotifier *notifyPtr;
 
-        proc = Blt_GetHashValue(hPtr);
-        clientData = Blt_GetHashKey(&meshPtr->notifierTable, hPtr);
-        (*proc)(meshPtr, clientData, flags);
+         /* Notify each client that the mesh has changed. */
+         notifyPtr = Blt_Chain_GetValue(link);
+        if (notifyPtr->proc != NULL) {
+            (*notifyPtr->proc)(notifyPtr->clientData, meshPtr, flags);
+        }
     }
 }
 
@@ -1081,7 +1088,9 @@ DestroyMesh(Mesh *meshPtr)
     if (meshPtr->hull != NULL) {
         Blt_Free(meshPtr->hull);
     }
-    Blt_DeleteHashTable(&meshPtr->notifierTable);
+    if (meshPtr->notifiers != NULL) {
+        Blt_Chain_Destroy(meshPtr->notifiers);
+    }
     Blt_DeleteHashTable(&meshPtr->hideTable);
     Blt_Free(meshPtr);
 }
@@ -1094,7 +1103,8 @@ GetMesh(Tcl_Interp *interp, MeshCmdInterpData *dataPtr, const char *string,
     Blt_ObjectName objName;
     Tcl_DString ds;
     const char *name;
-
+    Mesh *meshPtr;
+    
     /* 
      * Parse the command and put back so that it's in a consistent
      * format.
@@ -1117,7 +1127,9 @@ GetMesh(Tcl_Interp *interp, MeshCmdInterpData *dataPtr, const char *string,
         }
         return TCL_ERROR;
     }
-    *meshPtrPtr = Blt_GetHashValue(hPtr);
+    meshPtr = Blt_GetHashValue(hPtr);
+    meshPtr->refCount++;
+    *meshPtrPtr = meshPtr;
     return TCL_OK;
 }
 
@@ -1876,8 +1888,8 @@ NewMesh(Tcl_Interp *interp, MeshCmdInterpData *dataPtr, int type,
     meshPtr->hashPtr = hPtr;
     meshPtr->interp = interp;
     meshPtr->dataPtr = dataPtr;
+    meshPtr->refCount = 1;
     Blt_SetHashValue(hPtr, meshPtr);
-    Blt_InitHashTable(&meshPtr->notifierTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&meshPtr->tableTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&meshPtr->hideTable, BLT_ONE_WORD_KEYS);
     return meshPtr;
@@ -2067,7 +2079,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (GetMeshFromObj(interp, dataPtr, objv[i], &meshPtr) != TCL_OK) {
             return TCL_ERROR;
         }
-        DestroyMesh(meshPtr);
+        Blt_FreeMesh(meshPtr);
     }
     return TCL_OK;
 }
@@ -2234,6 +2246,15 @@ TrianglesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TypeOp --
+ *
+ *      Returns the type of the mesh.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 TypeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
@@ -2302,26 +2323,26 @@ DestroyMeshes(MeshCmdInterpData *dataPtr)
  *
  * MeshCmd --
  *
- *      .g mesh create regular ?meshName? -x {x0 xN n} -y {y0 yN n}
- *      .g mesh create irregular ?meshName? -x $xvalues -y $yvalues 
- *      .g mesh create triangle ?meshName? -x x -y y -triangles $triangles
- *      .g mesh create cloud ?meshName? -x x -y y 
- *      .g mesh type meshName
- *      .g mesh names pattern
- *      .g mesh delete meshName
- *      .g mesh configure meshName -hide no -linewidth 1 -color black
+ *      blt::mesh create regular ?meshName? -x {x0 xN n} -y {y0 yN n}
+ *      blt::mesh create irregular ?meshName? -x $xvalues -y $yvalues 
+ *      blt::mesh create triangle ?meshName? -x x -y y -triangles $triangles
+ *      blt::mesh create cloud ?meshName? -x x -y y 
+ *      blt::mesh type meshName
+ *      blt::mesh names pattern
+ *      blt::mesh delete meshName
+ *      blt::mesh configure meshName -hide no -linewidth 1 -color black
  *
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec meshOps[] =
 {
-    {"cget",        2, CgetOp,       3, 4,"meshName option",},
-    {"configure",   2, ConfigureOp,  2, 0,"meshName ?option value?...",},
-    {"create",      2, CreateOp,     3, 0,"type ?meshName? ?option value?...",},
-    {"delete",      1, DeleteOp,     2, 0,"?meshName?...",},
-    {"hide",        2, HideOp,       3, 4,"meshName ?indices...?",},
+    {"cget",        2, CgetOp,       3, 4,"meshName option"},
+    {"configure",   2, ConfigureOp,  2, 0,"meshName ?option value ...?"},
+    {"create",      2, CreateOp,     3, 0,"type ?meshName? ?option value ...?"},
+    {"delete",      1, DeleteOp,     2, 0,"?meshName ...?",},
+    {"hide",        2, HideOp,       3, 4,"meshName ?indices ...?",},
     {"hull",        2, HullOp,       3, 4,"meshName ?-vertices?",},
-    {"names",       1, NamesOp,      2, 0,"?pattern?...",},
+    {"names",       1, NamesOp,      2, 0,"?pattern ...?",},
     {"triangles",   2, TrianglesOp,  3, 3,"meshName",},
     {"type",        2, TypeOp,       3, 3,"meshName",},
     {"vertices",    1, VerticesOp,   3, 3,"meshName",},
@@ -2426,14 +2447,44 @@ Blt_MeshCmdInitProc(Tcl_Interp *interp)
 
 /* Public routines. */
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_FreeMesh --
+ *
+ *      Destroys the mesh.
+ *
+ *---------------------------------------------------------------------------
+ */
 void
 Blt_FreeMesh(Mesh *meshPtr)
 {
-    if (meshPtr != NULL) {
+    if (meshPtr == NULL) {
+        return;
+    }
+    if (meshPtr->hashPtr != NULL) {
+        MeshCmdInterpData *dataPtr;
+
+        /* Remove the mesh from the hash table. */
+        dataPtr = meshPtr->dataPtr;
+        Blt_DeleteHashEntry(&dataPtr->meshTable, meshPtr->hashPtr);
+        meshPtr->hashPtr = NULL;
+    }
+    meshPtr->refCount--;
+    if (meshPtr->refCount <= 0) {
         DestroyMesh(meshPtr);
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetMeshFromObj --
+ *
+ *      Returns the names mesh.  The mesh must already exist.
+ *
+ *---------------------------------------------------------------------------
+ */
 int
 Blt_GetMeshFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Mesh **meshPtrPtr)
 {
@@ -2448,6 +2499,17 @@ Blt_GetMeshFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Mesh **meshPtrPtr)
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetMesh --
+ *
+ *      Returns the named mesh. The mesh must already exist.  The mesh
+ *      is reference counted so Blt_FreeMesh should be called for every
+ *      Blt_GetMesh. 
+ *
+ *---------------------------------------------------------------------------
+ */
 int
 Blt_GetMesh(Tcl_Interp *interp, const char *string, Mesh **meshPtrPtr)
 {
@@ -2465,52 +2527,146 @@ Blt_GetMesh(Tcl_Interp *interp, const char *string, Mesh **meshPtrPtr)
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Mesh_CreateNotifier --
+ *
+ *      Creates a notifier callback for the mesh.  Notifiers are uniquely
+ *      recognized by their callback procedure and clientdata.
+ *
+ *---------------------------------------------------------------------------
+ */
 void
-Blt_Mesh_CreateNotifier(Mesh *meshPtr, Blt_MeshNotifyProc *proc, 
+Blt_Mesh_CreateNotifier(Mesh *meshPtr, Blt_MeshChangedProc *notifyProc, 
                        ClientData clientData)
 {
-    Blt_HashEntry *hPtr;
-    int isNew;
+    MeshNotifier *notifyPtr;
+    Blt_ChainLink link;
+    
+    if (meshPtr->notifiers == NULL) {
+        meshPtr->notifiers = Blt_Chain_Create();
+    }
+     for (link = Blt_Chain_FirstLink(meshPtr->notifiers); link != NULL;
+        link = Blt_Chain_NextLink(link)) {
+         MeshNotifier *notifyPtr;
 
-    hPtr = Blt_CreateHashEntry(&meshPtr->notifierTable, clientData, &isNew);
-    Blt_SetHashValue(hPtr, proc);
+         notifyPtr = Blt_Chain_GetValue(link);
+         if ((notifyPtr->proc == notifyProc) &&
+             (notifyPtr->clientData == clientData)) {
+             notifyPtr->clientData = clientData;
+             return;                    /* Notifier already exists. */
+         }
+     }
+    link = Blt_Chain_AllocLink(sizeof(MeshNotifier));
+    notifyPtr = Blt_Chain_GetValue(link);
+    notifyPtr->proc = notifyProc;
+    notifyPtr->clientData = clientData;
+    Blt_Chain_LinkAfter(meshPtr->notifiers, link, NULL);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Mesh_DeleteNotifier --
+ *
+ *      Destroys the notifier callback for the mesh.
+ *
+ *---------------------------------------------------------------------------
+ */
 void
-Blt_Mesh_DeleteNotifier(Mesh *meshPtr, ClientData clientData)
+Blt_Mesh_DeleteNotifier(Mesh *meshPtr, Blt_MeshChangedProc *notifyProc,
+                        ClientData clientData)
 {
-    Blt_HashEntry *hPtr;
+    Blt_ChainLink link;
+    
+     for (link = Blt_Chain_FirstLink(meshPtr->notifiers); link != NULL;
+          link = Blt_Chain_NextLink(link)) {
+         MeshNotifier *notifyPtr;
 
-    hPtr = Blt_FindHashEntry(&meshPtr->notifierTable, clientData);
-    Blt_DeleteHashEntry(&meshPtr->notifierTable, hPtr);
+         notifyPtr = Blt_Chain_GetValue(link);
+         if ((notifyPtr->proc == notifyProc) &&
+             (notifyPtr->clientData == clientData)) {
+             Blt_Chain_DeleteLink(meshPtr->notifiers, link);
+             return;
+         }
+     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Mesh_Name --
+ *
+ *      Returns the name of the mesh.
+ *
+ *---------------------------------------------------------------------------
+ */
 const char *
 Blt_Mesh_Name(Mesh *meshPtr)
 {
     return meshPtr->name;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Mesh_Type --
+ *
+ *      Returns the type of the mesh.
+ *
+ *---------------------------------------------------------------------------
+ */
 int
 Blt_Mesh_Type(Mesh *meshPtr)
 {
     return meshPtr->classPtr->type;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Mesh_GetVertices --
+ *
+ *      Returns the vertices of the mesh.  
+ *
+ *---------------------------------------------------------------------------
+ */
 Point2d *
 Blt_Mesh_GetVertices(Mesh *meshPtr, int *numVerticesPtr)
 {
     *numVerticesPtr = meshPtr->numVertices;
+
     return meshPtr->vertices;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Mesh_GetHull --
+ *
+ *      Returns the indices of the vertices the make up the convex
+ *      hull of the mesh.
+ *
+ *---------------------------------------------------------------------------
+ */
 int *
 Blt_Mesh_GetHull(Mesh *meshPtr, int *numHullPtsPtr)
 {
     *numHullPtsPtr = meshPtr->numHullPts;
+
     return meshPtr->hull;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Mesh_GetExtents --
+ *
+ *      Returns the minimum and maximum dimensions of the mesh.
+ *
+ *---------------------------------------------------------------------------
+ */
 void
 Blt_Mesh_GetExtents(Mesh *meshPtr, float *x1Ptr, float *y1Ptr, float *x2Ptr,
                     float *y2Ptr)
@@ -2521,10 +2677,20 @@ Blt_Mesh_GetExtents(Mesh *meshPtr, float *x1Ptr, float *y1Ptr, float *x2Ptr,
     *y2Ptr = meshPtr->yMax;
 }
     
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Mesh_GetTriangles --
+ *
+ *      Returns the triangles of the mesh.
+ *
+ *---------------------------------------------------------------------------
+ */
 Blt_MeshTriangle *
 Blt_Mesh_GetTriangles(Mesh *meshPtr, int *numTrianglesPtr)
 {
     *numTrianglesPtr = meshPtr->numTriangles;
+
     return meshPtr->triangles;
 }
 

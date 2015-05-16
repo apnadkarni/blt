@@ -1171,7 +1171,7 @@ FreeMesh(ClientData clientData, Display *display, char *widgRec, int offset)
     Blt_Mesh *meshPtr = (Blt_Mesh *)(widgRec + offset);
     ContourElement *elemPtr = (ContourElement *)widgRec;
 
-    Blt_Mesh_DeleteNotifier(*meshPtr, elemPtr);
+    Blt_Mesh_DeleteNotifier(*meshPtr, MeshChangedProc, elemPtr);
     *meshPtr = NULL;
 }
 
@@ -4373,7 +4373,7 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
         Blt_FreePrivateGC(graphPtr->display, elemPtr->meshGC);
     }
     if (elemPtr->mesh != NULL) {
-        Blt_Mesh_DeleteNotifier(elemPtr->mesh, elemPtr);
+        Blt_Mesh_DeleteNotifier(elemPtr->mesh, MeshChangedProc, elemPtr);
     }
 }
 

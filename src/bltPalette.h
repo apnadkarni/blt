@@ -48,7 +48,7 @@
  *
  *---------------------------------------------------------------------------
  */
-#ifndef BLT_PALETTE_DECL
+#ifndef BLT_PAINTBRUSH_H
 typedef struct _Blt_Palette *Blt_Palette;
 #endif
 

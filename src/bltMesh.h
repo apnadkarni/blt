@@ -47,7 +47,7 @@ typedef struct _Blt_MeshTriangle {
 
 typedef struct _Blt_Mesh *Blt_Mesh;
 
-typedef void (Blt_MeshNotifyProc) (Blt_Mesh mesh, ClientData clientData, 
+typedef void (Blt_MeshChangedProc) (Blt_Mesh mesh, ClientData clientData, 
         unsigned int flags);
 
 #define MESH_CHANGE_NOTIFY      (1<<0)
@@ -63,8 +63,9 @@ BLT_EXTERN int Blt_GetMesh(Tcl_Interp *interp, const char *string,
 BLT_EXTERN int Blt_Triangulate(Tcl_Interp *interp, size_t numPoints, 
         Point2d *points, int sorted, Blt_MeshTriangle *triangles);
 BLT_EXTERN void Blt_Mesh_CreateNotifier(Blt_Mesh mesh,
-        Blt_MeshNotifyProc *proc, ClientData clientData);
-BLT_EXTERN void Blt_Mesh_DeleteNotifier(Blt_Mesh mesh, ClientData clientData);
+        Blt_MeshChangedProc *proc, ClientData clientData);
+BLT_EXTERN void Blt_Mesh_DeleteNotifier(Blt_Mesh mesh,
+        Blt_MeshChangedProc *proc, ClientData clientData);
 BLT_EXTERN const char *Blt_Mesh_Name(Blt_Mesh mesh);
 BLT_EXTERN int Blt_Mesh_Type(Blt_Mesh mesh);
 
