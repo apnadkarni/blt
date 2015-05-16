@@ -7,7 +7,7 @@ blt::bitmap
 Define a new bitmap from a TCL script.
 --------------------------------------
 
-:Author: George A. Howlett <gahowlett@gmail.com>
+:Author: George A. Howlett
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0

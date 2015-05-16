@@ -7,7 +7,7 @@ blt::mesh
 Create and manage 2D meshes
 ---------------------------
 
-:Author: George A Howlett <gahowlett@gmail.com>
+:Author: George A Howlett
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0
@@ -15,17 +15,17 @@ Create and manage 2D meshes
 :Manual group: BLT Built-In Commands
 
 SYNOPSIS
---------
+========
 
 **blt::mesh cget** *meshName* ?\ *option*\ ?
 
-**blt::mesh configure** *meshName* ?\ *option* *value* ...\ ?
+**blt::mesh configure** *meshName* ?\ *option* *value* ... ?
 
-**blt::mesh create** *type* ?\ *meshName*\ ? ?\ *option* *value* ...\ ?
+**blt::mesh create** *type* ?\ *meshName*\ ? ?\ *option* *value* ... ?
 
-**blt::mesh delete**  ?\ *meshName* ...\ ?
+**blt::mesh delete**  ?\ *meshName* ... ?
 
-**blt::mesh hide** *meshName* ?\ *index ... ?
+**blt::mesh hide** *meshName* ?\ *index* ... ?
 
 **blt::mesh hull** *meshName* ?\ *-vertices*\ ?
 
@@ -38,54 +38,104 @@ SYNOPSIS
 **blt::mesh vertices** *meshName* 
 
 DESCRIPTION
------------
+===========
 
-The **blt::mesh** creates a 2D mesh that can be used
-with the **-mesh** options of the BLT widgets.  
+The **blt::mesh** creates a 2-D mesh that can be used with the **-mesh**
+options of the BLT widgets.  Meshes can be shared between widgets.
 
 INTRODUCTION
-------------
+============
 
-Normally the mesh of a Tk widget is specified by color name
-that specifies a solid color for the mesh.  The **blt::mesh**
-command lets you defined different types of mesh (for example a
-gradient), that you can use with the BLT widgets.  
+Many types of data define a topology (a mesh) for one or more data
+measurements.  For example, a contour plot uses 2-D mesh and interpolates
+the data measurements (field values) based on that mesh.  It is not unusual
+to have several different measurements are the same points of the mesh.
+The **blt::mesh** command lets you define a mesh that you can also share
+between different widgets.
 
-A mesh can have one of the following types: 
+A mesh can have one of the following input types: 
 
   **cloud**
-
-    A cloud *mesh* is point cloud.  There is not inferred topology.
-    The mesh is generated using a 2D voronoi.
+    The mesh is defined by a point cloud. A point cloud is unordered set of
+    points.  A triangular mesh is computed using Delaunay triangulation
+    from the points. A network of triangles is built over the existing
+    vertices of the point cloud.  Field values associated with a *cloud*
+    mesh should have the same ordering as the cloud points.
 
   **irregular**
+    The mesh is defined by a non-uniform rectilinear grid.  The coordinates
+    of the grid lines the run along the X and Y axes are exactly
+    specified. The coordinates do not have to be uniformly spaced.  Field
+    values associated with an *irregular* mesh should follow the convention
+    of x-coordinates changing fastest (row-major). For example in a 20x10
+    non-uniform grid the order of the field values would be:
 
-    A color *mesh* object draws a single color.
+       ::
+
+         (0,0), (0,1), (0,2) ... (0,19)
+	 (1,0), (1,1), (1,2) ... (1,19)
+	 ...
+         (9,0), (9,1), (9,2) ... (9,19)
+
     
   **regular**
+    The mesh is defined by a uniform rectangular grid where the grid lines
+    run along the X and Y axes. Each axis has 3 numbers that specify the
+    minimum and maximum values, and the number of grid lines.  Field values
+    associated with a *regular* mesh should follow the convention of
+    x-coordinates changing fastest (row-major). For example in a 20x10 grid
+    the order of the field values would be:
 
-    A regular *mesh* has uniform steps for both x and y axes.
+     ::
+
+         (0,0), (0,1), (0,2) ... (0,19)
+	 (1,0), (1,1), (1,2) ... (1,19)
+	 ...
+         (9,0), (9,1), (9,2) ... (9,19)
+
     
   **triangle**
+    The mesh is defined by a set of triangles that are connected by their
+    common edges or corners.  The vertices of the triangles and the
+    individual triangles (by the indices of the vertices) must be
+    specified.  Field values associated with a *triangle* mesh should have
+    the same ordering as the vertices.
 
-    A triangle *mesh* specifies the vertices of the triangle and the
-    indices that form each triangle of the mesh.
+DATA SOURCES
+============
+
+Data can be supplied in a variety of ways: a list of numbers,
+a BLT *vector*, or a column in a BLT *datatable*.
+
+  *list*
+    The coordinates are in a list of floating point numbers.
+
+  *vector*
+    The coordinates are in a BLT vector.  *Vector* is the name of a vector
+    returned by the **blt::vector** command.
+
+  *dataTable* *column* 
+     The coordinates are in a column in BLT datatable.  *DataTable* is the
+     name of a datatable returned by the **blt::datatable**
+     command. *Column* is the label, index, or tag representing the column,
+     but may not refer to more than one column.
+     
+The order of the coordinates specified for the mesh determines the order of
+the field values.
 
 OPERATIONS
-----------
+==========
 
-The following operations are available for the **blt::mesh** command:
+The following operations are available for the **blt::mesh** command.
 
 **blt::mesh cget** *meshName* *option*
-
   Returns the current value of the *mesh* configuration option given
   by *option*. *MeshName* is the name of *mesh* object returned by the
   **create** operation. *Option* and may have any of the values accepted by
   the **configure** operation. They are specific to the type of mesh
   for *meshName*. They are described in the **create** operations below.
 
-**blt::mesh configure** *meshName* ?\ *option* *value* ...\ ?
-
+**blt::mesh configure** *meshName* ?\ *option* *value* ... ?
   Queries or modifies the *mesh* configuration options for
   *meshName*. *MeshName* is the name of *mesh* object returned by the
   **create** operation.  *Option* and *value* are specific to the type
@@ -100,134 +150,145 @@ The following operations are available for the **blt::mesh** command:
   the empty string.  *Option* and *value* can any of the values accepted by
   the **create** operation.
 
-**blt::mesh create regular** ?\ *option* *value* ...\ ?
-
-  Creates a checker *mesh* object. Radial gradients are
-  defined by an axis (the gradient line segment) with each point on it
-  interpolated to a specific color. The lines perpendicular to the gradient
-  line have the same color as the point is crosses the gradient line.
+**blt::mesh create cloud** ?\ *option* *value* ... ?
+  Creates a cloud *mesh* object. A cloud mesh isn't really a mesh but a
+  random set of points.  The numbers represents points in the cloud.
+  A triangular mesh is computed using Delaunay triangulation from the
+  points. A network of triangles is built over the existing vertices
+  of the point cloud.  Field values associated with a *cloud* mesh should
+  have the same ordering as the cloud points.
   
-  This command returns the name of *mesh* object.  The name of the
-  *mesh* is automatically generated in the form "mesh0",
-  "mesh1", etc.  The name of the new *mesh* is
-  returned. *Option* and *value* are specific to "linear" meshs and
-  are listed below.
+  This command returns the name of *mesh* object.  The name of the *mesh*
+  is automatically generated in the form "mesh0", "mesh1", etc.  The name
+  of the new *mesh* is returned. *Option* and *value* are specific to
+  "cloud" meshes and are listed below.
 
   **-x** *dataSource*
-
-  **-y** *dataSource*
-
-    Specifies the border color of the mesh object.  If a widget
-    has a 3D relief, this specifies the colors of the bevels. 
+    Specifies the x-coordinates of the points in the cloud.  *DataSource*
+    can be in any form described in the section `DATA SOURCES`_ above.
     
-**blt::mesh create irregular** ?\ *option* *value* ...\ ?
+  **-y** *dataSource*
+    Specifies the y-coordinates of the points in the cloud.  *DataSource*
+    can be in any form described in the section `DATA SOURCES`_ above.
 
-  Creates a new conical gradient *mesh* object. Conical gradients are
-  defined by an axis (the gradient line segment) with each point on it
-  interpolated to a specific color. The lines perpendicular to the gradient
-  line have the same color as the point is crosses the gradient line.
+**blt::mesh create irregular** ?\ *option* *value* ... ?
+  Creates an irregular *mesh* object. An irregular mesh is a a non-uniform
+  rectilinear grid.  The coordinates of the grid lines of the X and Y axes
+  are exactly specified. The coordinates do not have to be uniformly
+  spaced.  Field values associated with an *irregular* mesh should follow
+  the convention of x-coordinates changing fastest. 
   
-  This command returns the name of *mesh* object.  The name of the
-  *mesh* is automatically generated in the form "mesh0",
-  "mesh1", etc.  The name of the new *mesh* is
-  returned. *Option* and *value* are specific to "linear" meshs and
-  are listed below.
+  This command returns the name of *mesh* object.  The name of the *mesh*
+  is automatically generated in the form "mesh0", "mesh1", etc.  The name
+  of the new *mesh* is returned. *Option* and *value* are specific to
+  *irregular* meshes and are listed below.
 
   **-x** *dataSource*
+    Specifies the coordinates of the grid lines the X-axis.  The
+    coordinates do not have to be uniformly spaced and can be in any order.
+    *DataSource* can be in any form described in the section `DATA
+    SOURCES`_ above.
 
   **-y** *dataSource*
+    Specifies the coordinates of the grid lines on the Y-axis. The
+    coordinates do not have to be uniformly spaced and can be in any order.
+    *DataSource* can be in any form described in the section `DATA
+    SOURCES`_ above.
 
-    Specifies the border color of the mesh object.  If a widget
-    has a 3D relief, this specifies the colors of the bevels. 
-    
-**blt::mesh create cloud** ?\ *option* *value* ...\ ?
+**blt::mesh create regular** ?\ *option* *value* ... ?
+  Creates a regular *mesh* object.  A regular mesh is a uniform rectangular
+  grid where the grid lines run along the X and Y axes. You specify the
+  minimum and maximum values, and the number of grid lines for each axis.
+  Field values associated with a *regular* mesh should follow the
+  convention of x-coordinates changing fastest. 
 
-  Creates a new linear gradient *mesh* object. Linear gradients are
-  defined by an axis (the gradient line segment) with each point on it
-  interpolated to a specific color. The lines perpendicular to the gradient
-  line have the same color as the point is crosses the gradient line.
-  
-  This command returns the name of *mesh* object.  The name of the
-  *mesh* is automatically generated in the form "mesh0",
-  "mesh1", etc.  The name of the new *mesh* is
-  returned. *Option* and *value* are specific to "linear" meshs and
-  are listed below.
+  This command returns the name of *mesh* object.  The name of the *mesh*
+  is automatically generated in the form "mesh0", "mesh1", etc.  The name
+  of the new *mesh* is returned. *Option* and *value* are specific to
+  *regular* meshes and are listed below.
 
   **-x** *dataSource*
+    Specifies 3 numbers: the minimum value for the X-axis, the maximum
+    value for the X-axis, and the number points on the X-axis, including
+    the minimum and maximum values. *DataSource* can be in any form
+    described in the section `DATA SOURCES`_ above.
 
   **-y** *dataSource*
-
-    Specifies the border color of the mesh object.  If a widget
-    has a 3D relief, this specifies the colors of the bevels. 
+    Specifies 3 numbers: the minimum value for the Y-axis, the maximum
+    value for the Y-axis, and the number points on the Y-axis, including
+    the minimum and maximum values. *DataSource* can be in any form
+    described in the section `DATA SOURCES`_ above.
     
-**blt::mesh create triangle** ?\ *option* *value* ...\ ?
-
-  Creates a new radial gradient *mesh* object. Radial gradients are
-  defined by an axis (the gradient line segment) with each point on it
-  interpolated to a specific color. The lines perpendicular to the gradient
-  line have the same color as the point is crosses the gradient line.
+**blt::mesh create triangle** ?\ *option* *value* ... ?
+  Creates a triangle *mesh* object. A triangle mesh comprises a set of
+  triangles that are connected by their common edges or corners.  Triangles
+  are defined by their vertices.  Field values associated with a *triangle*
+  mesh should have the same ordering as the vertices.
   
-  This command returns the name of *mesh* object.  The name of the
-  *mesh* is automatically generated in the form "mesh0",
-  "mesh1", etc.  The name of the new *mesh* is
-  returned. *Option* and *value* are specific to "linear" meshs and
-  are listed below.
+  This command returns the name of *mesh* object.  The name of the *mesh*
+  is automatically generated in the form "mesh0", "mesh1", etc.  The name
+  of the new *mesh* is returned. *Option* and *value* are specific to
+  *triangle* meshes and are listed below. 
 
   **-x** *dataSource*
+    Specifies the x-coordinates of the vertices.  *DataSource*
+    can be in any form described in the section `DATA SOURCES`_ above.
 
   **-y** *dataSource*
-
-    Specifies the border color of the mesh object.  If a widget
-    has a 3D relief, this specifies the colors of the bevels. 
+    Specifies the y-coordinates of the vertices.  *DataSource*
+    can be in any form described in the section `DATA SOURCES`_ above.
     
-  **-triangle** *indices*
+  **-triangles** *indices*
+    Specifies the triangles formed by the vertices defined by the **-x**
+    and **-y** options.  *Indices* is a list of non-negative integers.
+    Each index refers to the x and y coordinates of the vertex at that
+    index.  Indices start from 0.  Every 3 indices represent the vertices
+    of a triangle.
 
 **blt::mesh delete** ?\ *meshName* ...\ ?
-
-  Releases resources allocated by the mesh command for *window*, including
-  the mesh window.  User events will again be received again by *window*.
-  Resources are also released when *window* is destroyed. *Window* must be
-  the name of a widget specified in the **create** operation, otherwise an
-  error is reported.
+  Releases resources allocated by one or more meshes.  Meshes are reference
+  counted so that the internal mesh structures are not actually deleted
+  until no one is using the mesh any more. *MeshName* must be the name of a
+  mesh returned by the **create** operation, otherwise an error is
+  reported.
 
 **blt::mesh hide** *meshName* ?\ *index* ... ?
+  Specifies triangles to be hidden. Each triangle specified by the index
+  of the triangle will be excluded from the output of the mesh. If no
+  indices are specified, all triangles are included in the mesh output.
 
-  Hides one or more triangles designated by *index*.  *MeshName* is the
-  name of a mesh created by the **create** operation.
-
-**blt::mesh hull** *meshName* ?\ *-vertices*\ ?
-
-  Returns the indices of the vertices of the convex hull forming the
-  boundary *meshName*. *MeshName* is the name of a mesh created by the
-  **create** operation.
+**blt::mesh hull** *meshName* ?\ **-vertices**\ ?
+  Returns the indices of the vertices of the convex hull. The convex hull
+  forms the boundary for *meshName*. *MeshName* is the name of a mesh
+  created by the **create** operation.  If a **-vertices** argument is
+  present, the vertices (x and y coordinates) of the hull will be returned
+  instead of their indices.
 
 **blt::mesh names** ?\ *pattern* ...\ ?
-
-  Returns the names of all the meshs currently created.  If one or
+  Returns the names of all the meshes currently created.  If one or
   more *pattern* arguments are provided, then the name of any mesh
-  matching *pattern* will be returned. *Pattern* is a glob-style pattern.
+  matching *pattern* will be returned. *Pattern* is a **glob**-style pattern.
 
 **blt::mesh triangles** *meshName*
-
-  Returns the indices of the triangles of the mesh for *meshName*.
+  Returns the indices of the triangles of the mesh for *meshName*.  
   *MeshName* is the name of a mesh created by the **create** operation.
 
 **blt::mesh type** *meshName*
-
   Returns the type of the mesh for *meshName*.  *MeshName* is the
   name of a mesh created by the **create** operation.
 
 **blt::mesh vertices** *meshName*
-
   Returns the vertices of *meshName*.  *MeshName* is the name of a mesh
-  created by the **create** operation.
+  created by the **create** operation.  The x and y coordinates representing
+  each vertex is returned.
 
 EXAMPLE
--------
+=======
 
 Create a *mesh* object with the **blt::mesh** command.
 
  ::
+
     package require BLT
 
     # Create a new regular mesh.
@@ -235,6 +296,7 @@ Create a *mesh* object with the **blt::mesh** command.
         -x { 0 10 10 } \
 	-y { 0 10 10 } 
         
+
 Now we can create widgets that use the mesh.
 
  ::
@@ -260,13 +322,13 @@ Please note the following:
    not freed until no widget is using it.
    
 KEYWORDS
---------
+========
 
 mesh
 
 
 COPYRIGHT
----------
+=========
 
 2015 George A. Howlett. All rights reserved.
 

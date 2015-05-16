@@ -7,7 +7,7 @@ blt::graph
 2D graph for plotting X-Y coordinate data.
 -------------------------------------------
 
-:Author: George A. Howlett <gahowlett@gmail.com>, Sani Nassif
+:Author: George A. Howlett, Sani R. Nassif
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0
@@ -771,7 +771,8 @@ The resource class is "Axis".  The resource names are the names of the axes
     rotate the tick labels.  The default is "0.0".
 
   **-scale** *scaleValue*
-    Specifies the scale of *axisName*. *ScaleValue* can be one of the following.
+    Specifies the scale of *axisName*. *ScaleValue* can be one of the
+    following.
 
     **linear**
       Indicates that the scale of the axis is linear.  
@@ -780,8 +781,10 @@ The resource class is "Axis".  The resource names are the names of the axes
       Indicates that the scale of the axis is logarithmic.  
 
     **time**
-      Indicates that the axis scale is time.  The data values
-      on the axis are in assumed to be in seconds.
+      Indicates that the axis scale is time.  The data values on the axis
+      are in assumed to be in seconds.  The tick values will be in
+      displayed in a date or time format (years, months, days, hours,
+      minutes, or seconds).
 
   **-scrollcommand** *command*
     Specify the prefix for a command used to communicate with scrollbars

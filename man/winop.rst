@@ -7,7 +7,7 @@ Perform assorted window operations
 ----------------------------------
 
 
-:Author: George A Howlett <gahowlett@gmail.com>
+:Author: George A Howlett
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0
@@ -155,6 +155,11 @@ EXAMPLE
 
     wm deiconify .top
     blt::winop move .top 100 100
+
+DIFFERENCES WITH PREVIOUS VERSIONS
+----------------------------------
+
+1. The **snap** operation has been moved to the BLT picture image.
 
 
 KEYWORDS

@@ -6,7 +6,7 @@ blt::datatable
 Create and manage datatable objects.
 ------------------------------------
 
-:Author: George A Howlett <gahowlett@gmail.com>
+:Author: George A Howlett
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0
