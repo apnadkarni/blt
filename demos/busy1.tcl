@@ -119,9 +119,7 @@ blt::tk::button .holdButton -command {
 }
 
 blt::tk::button .releaseButton -command {
-    puts stderr "release test [blt::busy isbusy .f1]"
     if { [blt::busy isbusy .f1] } {
-	puts stderr "release .f1"
         blt::busy release .f1
     }
     global normalBg
@@ -224,11 +222,13 @@ wm min . 0 0
 raise .
 KeepRaised .
 
+if 0 {
 bind .f1 <Enter> { puts stderr "Entering %W" }
 bind .f1 <Leave> { puts stderr "Leaving %W" }
 bind .f1 <B1-Leave> { puts stderr "B1 Leaving %W" }
 bind .f1 <B1-Enter> { puts stderr "B1 Entering %W" }
 
 bind .f1 <Motion> { puts stderr "Motion %W" }
+}
 
 .testButton configure -font "{San Serif} 6"

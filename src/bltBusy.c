@@ -211,7 +211,7 @@ static Tk_GeomMgr busyMgrInfo =
 };
 
 /* Forward declarations */
-static Tcl_IdleProc DisplayBusy;
+static Tcl_IdleProc DisplayProc;
 static Tcl_FreeProc DestroyBusy;
 static Tcl_TimerProc BusyTimerProc;
 static Tk_EventProc BusyEventProc;
@@ -244,7 +244,7 @@ EventuallyRedraw(Busy *busyPtr)
     if ((busyPtr->tkBusy != NULL) && 
         ((busyPtr->flags & (REDRAW_PENDING|SNAPSHOT)) == SNAPSHOT)) {
         busyPtr->flags |= REDRAW_PENDING;
-        Tcl_DoWhenIdle(DisplayBusy, busyPtr);
+        Tcl_DoWhenIdle(DisplayProc, busyPtr);
     }
 }
 
@@ -537,7 +537,7 @@ SnapBackground(Busy *busyPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ShowBusyWindow --
+ * ExposeBusyWindow --
  *
  *      Displays the busy window. If the busy window is transparent, then
  *      the window is simply mapped and the cursor is updated.  If the busy
@@ -549,8 +549,9 @@ SnapBackground(Busy *busyPtr)
  *---------------------------------------------------------------------------
  */
 static void
-ShowBusyWindow(Busy *busyPtr)
+ExposeBusyWindow(Busy *busyPtr)
 {
+    busyPtr->flags |= ACTIVE;
     /* 
      * If the busy window is opaque, take a snapshot of the reference
      * window and use that as the contents of the window.
@@ -558,7 +559,6 @@ ShowBusyWindow(Busy *busyPtr)
     if (busyPtr->flags & SNAPSHOT) {
         SnapBackground(busyPtr);
     }
-    busyPtr->flags |= ACTIVE;
     if (busyPtr->tkBusy != NULL) {
         Tk_MapWindow(busyPtr->tkBusy);
         /* 
@@ -674,7 +674,7 @@ BusyEventProc(
     } else if (eventPtr->type == DestroyNotify) {
         if (busyPtr->flags & REDRAW_PENDING) {
             busyPtr->flags &= ~REDRAW_PENDING;
-            Tcl_CancelIdleCall(DisplayBusy, busyPtr);
+            Tcl_CancelIdleCall(DisplayProc, busyPtr);
         }
         if (busyPtr->tkBusy != NULL) {
             busyPtr->tkBusy = NULL;
@@ -813,11 +813,11 @@ RefWinEventProc(
         break;
 
     case MapNotify:
-        if ((busyPtr->tkParent != busyPtr->tkRef) && 
+        if ((busyPtr->tkParent != busyPtr->tkRef) &&
             (busyPtr->flags & ACTIVE)) {
             /* Need to resize busy window and possibly re-snap the
              * reference window. */
-            ShowBusyWindow(busyPtr);
+            ExposeBusyWindow(busyPtr);
         }
         break;
 
@@ -901,7 +901,7 @@ ConfigureBusy(Tcl_Interp *interp, Busy *busyPtr, int objc, Tcl_Obj *const *objv,
         }
     }
     if (busyPtr->alpha == 0) {
-        busyPtr->flags &= SNAPSHOT;
+        busyPtr->flags &= ~SNAPSHOT;
     } else {
         busyPtr->flags |= SNAPSHOT;
     }
@@ -1126,7 +1126,7 @@ DestroyBusy(DestroyData data)           /* Busy window structure record */
     }
     if (busyPtr->flags & REDRAW_PENDING) {
         busyPtr->flags &= ~REDRAW_PENDING;
-        Tcl_CancelIdleCall(DisplayBusy, busyPtr);
+        Tcl_CancelIdleCall(DisplayProc, busyPtr);
     }
     if (busyPtr->timerToken != (Tcl_TimerToken)0) {
         Tcl_DeleteTimerHandler(busyPtr->timerToken);
@@ -1266,7 +1266,7 @@ HoldBusy(
          * currently displayed.
          */
         if (Tk_IsMapped(busyPtr->tkRef)) {
-            ShowBusyWindow(busyPtr);
+            ExposeBusyWindow(busyPtr);
         } else {
             HideBusyWindow(busyPtr);
         }
@@ -1599,7 +1599,7 @@ IsBusyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     state = FALSE;
     if (GetBusy(dataPtr, NULL, objv[2], &busyPtr) == TCL_OK) {
-        state = busyPtr->flags & ACTIVE;
+        state = (busyPtr->flags & ACTIVE);
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -1642,7 +1642,7 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         busyPtr = Blt_GetHashValue(hPtr);
         name = Tk_PathName(busyPtr->tkRef);
-        match = (objc == 3);
+        match = (objc == 2);
         for (i = 3; i < objc; i++) {
             char *pattern;
 
@@ -1836,7 +1836,7 @@ Blt_BusyCmdInitProc(Tcl_Interp *interp)
 
 
 static void
-DisplayBusy(ClientData clientData)
+DisplayProc(ClientData clientData)
 {
     Busy *busyPtr = clientData;
     Pixmap drawable;
@@ -1850,7 +1850,7 @@ DisplayBusy(ClientData clientData)
     }
     tkwin = busyPtr->tkBusy;
 #ifdef notdef
-    fprintf(stderr, "Calling DisplayBusy(%s)\n", Tk_PathName(tkwin));
+    fprintf(stderr, "Calling DisplayProc(%s)\n", Tk_PathName(tkwin));
 #endif
     if ((Tk_Width(tkwin) <= 1) || (Tk_Height(tkwin) <= 1)) {
         /* Don't bother computing the layout until the size of the window
@@ -1883,7 +1883,7 @@ DisplayBusy(ClientData clientData)
         if (busyPtr->flags & ACTIVE) {
             /* Need to resize busy window and possibly re-snap the
              * reference window. */
-            ShowBusyWindow(busyPtr);
+            ExposeBusyWindow(busyPtr);
         }
     }
     /* Create a pixmap the size of the window for double buffering. */
