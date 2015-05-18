@@ -50,8 +50,9 @@
 #include "bltAlloc.h"
 #include "bltBind.h"
 #include "bltPs.h"
-#include "bltPicture.h"
+#include "bltPaintBrush.h"
 #include "bltPalette.h"
+#include "bltPicture.h"
 #include "bltBg.h"
 #include "bltSwitch.h"
 #include "bltTags.h"
@@ -1416,7 +1417,7 @@ FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     Axis *axisPtr = (Axis *)widgRec;
 
-    Blt_Palette_DeleteNotifier(*palPtr, axisPtr);
+    Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
     *palPtr = NULL;
 }
 

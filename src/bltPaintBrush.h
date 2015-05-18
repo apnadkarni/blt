@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef _BLT_PAINT_BRUSH_H
-#define _BLT_PAINT_BRUSH_H
+#ifndef _BLT_PAINTBRUSH_H
+#define _BLT_PAINTBRUSH_H
 
 #ifndef _BLT_PALETTE_H
 typedef struct _Blt_Palette *Blt_Palette;
@@ -475,4 +475,4 @@ BLT_EXTERN void Blt_CreateBrushNotifier(Blt_PaintBrush brush,
 BLT_EXTERN void Blt_DeleteBrushNotifier(Blt_PaintBrush brush,
         Blt_BrushChangedProc *notifyProc, ClientData clientData);
 
-#endif /*_BLT_PAINT_BRUSH_H*/
+#endif /*_BLT_PAINTBRUSH_H*/
