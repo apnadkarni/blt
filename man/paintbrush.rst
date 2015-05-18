@@ -19,13 +19,13 @@ SYNOPSIS
 
 **blt::paintbrush cget** *brushName* ?\ *option*\ ?
 
-**blt::paintbrush configure** *window* ?\ *option* *value* ...\ ?
+**blt::paintbrush configure** *window* ?\ *option* *value* ... ?
 
-**blt::paintbrush create** *type* ?\ *brushName*\ ? ?\ *option* *value* ...\ ?
+**blt::paintbrush create** *type* ?\ *brushName*\ ? ?\ *option* *value* ... ?
 
-**blt::paintbrush delete**  ?\ *brushName* ...\ ?
+**blt::paintbrush delete**  ?\ *brushName* ... ?
 
-**blt::paintbrush names** ?\ *pattern* ...\ ?
+**blt::paintbrush names** ?\ *pattern* ... ?
 
 **blt::paintbrush type** *brushName* 
 
@@ -110,15 +110,13 @@ OPERATIONS
 The following operations are available for the **blt::paintbrush** command:
 
 **blt::paintbrush cget** *brushName* *option*
-
   Returns the current value of the *paintbrush* configuration option given
   by *option*. *BrushName* is the name of *paintbrush* object returned by the
   **create** operation. *Option* and may have any of the values accepted by
   the **configure** operation. They are specific to the type of paintbrush
   for *brushName*. They are described in the **create** operations below.
 
-**blt::paintbrush configure** *brushName* ?\ *option* *value* ...\ ?
-
+**blt::paintbrush configure** *brushName* ?\ *option* *value* ... ?
   Queries or modifies the *paintbrush* configuration options for
   *brushName*. *BrushName* is the name of *paintbrush* object returned by the
   **create** operation.  *Option* and *value* are specific to the type
@@ -133,8 +131,7 @@ The following operations are available for the **blt::paintbrush** command:
   the empty string.  *Option* and *value* can any of the values accepted by
   the **create** operation.
 
-**blt::paintbrush create checker** ?\ *option* *value* ...\ ?
-
+**blt::paintbrush create checker** ?\ *option* *value* ... ?
   Creates a checker *paintbrush* object. Radial gradients are
   defined by an axis (the gradient line segment) with each point on it
   interpolated to a specific color. The lines perpendicular to the gradient
@@ -167,7 +164,7 @@ The following operations are available for the **blt::paintbrush** command:
 
     Specifies the color of even checkers. The default is "grey90".
 
-**blt::paintbrush create conical** ?\ *option* *value* ...\ ?
+**blt::paintbrush create conical** ?\ *option* *value* ... ?
 
   Creates a new conical gradient *paintbrush* object. Conical gradients are
   defined by an axis (the gradient line segment) with each point on it
@@ -263,7 +260,7 @@ The following operations are available for the **blt::paintbrush** command:
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::paintbrush create linear** ?\ *option* *value* ...\ ?
+**blt::paintbrush create linear** ?\ *option* *value* ... ?
 
   Creates a new linear gradient *paintbrush* object. Linear gradients are
   defined by an axis (the gradient line segment) with each point on it
@@ -391,7 +388,7 @@ The following operations are available for the **blt::paintbrush** command:
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::paintbrush create radial** ?\ *option* *value* ...\ ?
+**blt::paintbrush create radial** ?\ *option* *value* ... ?
 
   Creates a new radial gradient *paintbrush* object. Radial gradients are
   defined by an axis (the gradient line segment) with each point on it
@@ -506,7 +503,7 @@ The following operations are available for the **blt::paintbrush** command:
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::paintbrush create stripe** ?\ *option* *value* ...\ ?
+**blt::paintbrush create stripe** ?\ *option* *value* ... ?
 
   Creates a stripe *paintbrush* object. Radial gradients are
   defined by an axis (the gradient line segment) with each point on it
@@ -559,7 +556,7 @@ The following operations are available for the **blt::paintbrush** command:
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::paintbrush create tile** ?\ *option* *value* ...\ ?
+**blt::paintbrush create tile** ?\ *option* *value* ... ?
 
   Creates a tile *paintbrush* object. The name of the *paintbrush* is
   automatically generated in the form "paintbrush0", "paintbrush1", etc.
@@ -599,7 +596,7 @@ The following operations are available for the **blt::paintbrush** command:
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::paintbrush delete** ?\ *brushName* ...\ ?
+**blt::paintbrush delete** ?\ *brushName* ... ?
 
   Releases resources allocated by the paintbrush command for *window*, including
   the paintbrush window.  User events will again be received again by *window*.
@@ -607,7 +604,7 @@ The following operations are available for the **blt::paintbrush** command:
   the name of a widget specified in the **create** operation, otherwise an
   error is reported.
 
-**blt::paintbrush names** ?\ *pattern* ...\ ?
+**blt::paintbrush names** ?\ *pattern* ... ?
 
   Returns the names of all the paintbrushs currently created.  If one or
   more *pattern* arguments are provided, then the name of any paintbrush

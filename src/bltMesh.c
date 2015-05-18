@@ -1948,7 +1948,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      The return value is a standard TCL result. The interpreter
  *      result will contain a TCL list of the element names.
  *
- *      blt::mesh create $type ?$name? ?option value?...
+ *      blt::mesh create meshType meshName? ?option value ... ?
  *
  *---------------------------------------------------------------------------
  */
@@ -2088,10 +2088,10 @@ static int
 HullOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
-    MeshCmdInterpData *dataPtr = clientData;
     Mesh *meshPtr;
-    int i;
+    MeshCmdInterpData *dataPtr = clientData;
     Tcl_Obj *listObjPtr;
+    int i;
     int wantPoints;
 
     if (GetMeshFromObj(interp, dataPtr, objv[2], &meshPtr) != TCL_OK) {

@@ -29,7 +29,7 @@ SYNOPSIS
 
 **blt::mesh hull** *meshName* ?\ *-vertices*\ ?
 
-**blt::mesh names** ?\ *pattern* ...\ ?
+**blt::mesh names** ?\ *pattern* ... ?
 
 **blt::mesh triangles** *meshName* 
 
@@ -49,7 +49,7 @@ INTRODUCTION
 Many types of data define a topology (a mesh) for one or more data
 measurements.  For example, a contour plot uses 2-D mesh and interpolates
 the data measurements (field values) based on that mesh.  It is not unusual
-to have several different measurements are the same points of the mesh.
+to have several different measurements at the same points of the mesh.
 The **blt::mesh** command lets you define a mesh that you can also share
 between different widgets.
 
@@ -61,6 +61,9 @@ A mesh can have one of the following input types:
     from the points. A network of triangles is built over the existing
     vertices of the point cloud.  Field values associated with a *cloud*
     mesh should have the same ordering as the cloud points.
+
+    Reference: Steve J. Fortune (1987) A Sweepline Algorithm for Voronoi
+    Diagrams, Algorithmica 2, 153-174.
 
   **irregular**
     The mesh is defined by a non-uniform rectilinear grid.  The coordinates
@@ -150,18 +153,19 @@ The following operations are available for the **blt::mesh** command.
   the empty string.  *Option* and *value* can any of the values accepted by
   the **create** operation.
 
-**blt::mesh create cloud** ?\ *option* *value* ... ?
+**blt::mesh create cloud** ?\ *meshName*\ ? ?\ *option* *value* ... ?
   Creates a cloud *mesh* object. A cloud mesh isn't really a mesh but a
   random set of points.  The numbers represents points in the cloud.
   A triangular mesh is computed using Delaunay triangulation from the
   points. A network of triangles is built over the existing vertices
   of the point cloud.  Field values associated with a *cloud* mesh should
   have the same ordering as the cloud points.
-  
-  This command returns the name of *mesh* object.  The name of the *mesh*
-  is automatically generated in the form "mesh0", "mesh1", etc.  The name
-  of the new *mesh* is returned. *Option* and *value* are specific to
-  "cloud" meshes and are listed below.
+
+  If no *meshName* argument is present, then the name of the mesh is
+  automatically generated in the form "mesh0", "mesh1", etc. Another mesh
+  object can not already exist as *meshName*.  This command returns the
+  name of mesh object.  The name of the mesh is returned. *Option* and
+  *value* are specific to **cloud** meshes and are listed below.
 
   **-x** *dataSource*
     Specifies the x-coordinates of the points in the cloud.  *DataSource*
@@ -171,17 +175,18 @@ The following operations are available for the **blt::mesh** command.
     Specifies the y-coordinates of the points in the cloud.  *DataSource*
     can be in any form described in the section `DATA SOURCES`_ above.
 
-**blt::mesh create irregular** ?\ *option* *value* ... ?
+**blt::mesh create irregular** ?\ *meshName*\ ? ?\ *option* *value* ... ?
   Creates an irregular *mesh* object. An irregular mesh is a a non-uniform
   rectilinear grid.  The coordinates of the grid lines of the X and Y axes
   are exactly specified. The coordinates do not have to be uniformly
   spaced.  Field values associated with an *irregular* mesh should follow
   the convention of x-coordinates changing fastest. 
   
-  This command returns the name of *mesh* object.  The name of the *mesh*
-  is automatically generated in the form "mesh0", "mesh1", etc.  The name
-  of the new *mesh* is returned. *Option* and *value* are specific to
-  *irregular* meshes and are listed below.
+  If no *meshName* argument is present, then the name of the mesh is
+  automatically generated in the form "mesh0", "mesh1", etc. Another mesh
+  object can not already exist as *meshName*.  This command returns the
+  name of mesh object.  The name of the mesh is returned. *Option* and
+  *value* are specific to **irregular** meshes and are listed below.
 
   **-x** *dataSource*
     Specifies the coordinates of the grid lines the X-axis.  The
@@ -195,17 +200,18 @@ The following operations are available for the **blt::mesh** command.
     *DataSource* can be in any form described in the section `DATA
     SOURCES`_ above.
 
-**blt::mesh create regular** ?\ *option* *value* ... ?
+**blt::mesh create regular** ?\ *meshName*\ ? ?\ *option* *value* ... ?
   Creates a regular *mesh* object.  A regular mesh is a uniform rectangular
   grid where the grid lines run along the X and Y axes. You specify the
   minimum and maximum values, and the number of grid lines for each axis.
   Field values associated with a *regular* mesh should follow the
   convention of x-coordinates changing fastest. 
 
-  This command returns the name of *mesh* object.  The name of the *mesh*
-  is automatically generated in the form "mesh0", "mesh1", etc.  The name
-  of the new *mesh* is returned. *Option* and *value* are specific to
-  *regular* meshes and are listed below.
+  If no *meshName* argument is present, then the name of the mesh is
+  automatically generated in the form "mesh0", "mesh1", etc. Another mesh
+  object can not already exist as *meshName*.  This command returns the
+  name of mesh object.  The name of the mesh is returned. *Option* and
+  *value* are specific to **regular** meshes and are listed below.
 
   **-x** *dataSource*
     Specifies 3 numbers: the minimum value for the X-axis, the maximum
@@ -219,16 +225,17 @@ The following operations are available for the **blt::mesh** command.
     the minimum and maximum values. *DataSource* can be in any form
     described in the section `DATA SOURCES`_ above.
     
-**blt::mesh create triangle** ?\ *option* *value* ... ?
+**blt::mesh create triangle** ?\ *meshName*\ ? ?\ *option* *value* ... ?
   Creates a triangle *mesh* object. A triangle mesh comprises a set of
   triangles that are connected by their common edges or corners.  Triangles
   are defined by their vertices.  Field values associated with a *triangle*
   mesh should have the same ordering as the vertices.
   
-  This command returns the name of *mesh* object.  The name of the *mesh*
-  is automatically generated in the form "mesh0", "mesh1", etc.  The name
-  of the new *mesh* is returned. *Option* and *value* are specific to
-  *triangle* meshes and are listed below. 
+  If no *meshName* argument is present, then the name of the mesh is
+  automatically generated in the form "mesh0", "mesh1", etc. Another mesh
+  object can not already exist as *meshName*.  This command returns the
+  name of mesh object.  The name of the mesh is returned. *Option* and
+  *value* are specific to **triangle** meshes and are listed below.
 
   **-x** *dataSource*
     Specifies the x-coordinates of the vertices.  *DataSource*
@@ -245,7 +252,7 @@ The following operations are available for the **blt::mesh** command.
     index.  Indices start from 0.  Every 3 indices represent the vertices
     of a triangle.
 
-**blt::mesh delete** ?\ *meshName* ...\ ?
+**blt::mesh delete** ?\ *meshName* ... ?
   Releases resources allocated by one or more meshes.  Meshes are reference
   counted so that the internal mesh structures are not actually deleted
   until no one is using the mesh any more. *MeshName* must be the name of a
@@ -260,26 +267,26 @@ The following operations are available for the **blt::mesh** command.
 **blt::mesh hull** *meshName* ?\ **-vertices**\ ?
   Returns the indices of the vertices of the convex hull. The convex hull
   forms the boundary for *meshName*. *MeshName* is the name of a mesh
-  created by the **create** operation.  If a **-vertices** argument is
+  returned by the **create** operation.  If a **-vertices** argument is
   present, the vertices (x and y coordinates) of the hull will be returned
   instead of their indices.
 
-**blt::mesh names** ?\ *pattern* ...\ ?
+**blt::mesh names** ?\ *pattern* ... ?
   Returns the names of all the meshes currently created.  If one or
   more *pattern* arguments are provided, then the name of any mesh
   matching *pattern* will be returned. *Pattern* is a **glob**-style pattern.
 
 **blt::mesh triangles** *meshName*
   Returns the indices of the triangles of the mesh for *meshName*.  
-  *MeshName* is the name of a mesh created by the **create** operation.
+  *MeshName* is the name of a mesh returned by the **create** operation.
 
 **blt::mesh type** *meshName*
   Returns the type of the mesh for *meshName*.  *MeshName* is the
-  name of a mesh created by the **create** operation.
+  name of a mesh returned by the **create** operation.
 
 **blt::mesh vertices** *meshName*
   Returns the vertices of *meshName*.  *MeshName* is the name of a mesh
-  created by the **create** operation.  The x and y coordinates representing
+  returned by the **create** operation.  The x and y coordinates representing
   each vertex is returned.
 
 EXAMPLE
@@ -316,7 +323,7 @@ Please note the following:
    BLT widgets.
 
 2. If you change a mesh option (such as **-x**) the widgets using the mesh
-   object may automatically be notified.
+   object may automatically be updated.
 
 3. Meshes are reference counted.  If you delete a mesh, its resources are
    not freed until no widget is using it.
@@ -329,6 +336,21 @@ mesh
 
 COPYRIGHT
 =========
+
+The author of the sweep-line triangulator is Steven Fortune.  
+
+Copyright (c) 1994 by AT&T Bell Laboratories.
+
+Permission to use, copy, modify, and distribute this software for any
+purpose without fee is hereby granted, provided that this entire notice is
+included in all copies of any software which is or includes a copy or
+modification of this software and in all copies of the supporting
+documentation for such software.  THIS SOFTWARE IS BEING PROVIDED "AS IS",
+WITHOUT ANY EXPRESS OR IMPLIED WARRANTY.  IN PARTICULAR, NEITHER THE
+AUTHORS NOR AT&T MAKE ANY REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING
+THE MERCHANTABILITY OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR
+PURPOSE.
+
 
 2015 George A. Howlett. All rights reserved.
 

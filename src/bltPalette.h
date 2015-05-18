@@ -66,7 +66,7 @@ BLT_EXTERN int Blt_Palette_GetAssociatedColor(Blt_Palette palette, double val);
 BLT_EXTERN void Blt_Palette_CreateNotifier(Blt_Palette palette, 
         Blt_Palette_NotifyProc *proc, ClientData clientData);
 BLT_EXTERN void Blt_Palette_DeleteNotifier(Blt_Palette palette, 
-        ClientData clientData);
+        Blt_Palette_NotifyProc *proc, ClientData clientData);
 BLT_EXTERN const char *Blt_Palette_Name(Blt_Palette palette);
 BLT_EXTERN Blt_Palette Blt_Palette_TwoColorPalette(int low, int high);
 BLT_EXTERN void Blt_Palette_Free(Blt_Palette palette);
