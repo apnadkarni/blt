@@ -383,7 +383,7 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltHash.o \
 			bltInitCmd.o \
 			bltList.o \
-			bltMesh.o
+			bltMesh.o \
 			bltNsUtil.o \
 			bltParse.o \
 			bltPool.o \
