@@ -282,7 +282,6 @@ typedef struct  {
     Tk_Window menuWin;
     Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be executed
                                          * when this menu is posted. */
-    int menuAnchor;
     unsigned int flags;
 } ComboButton;
 
@@ -351,9 +350,6 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(ComboButton, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-menu", "menu", "Menu", DEF_MENU, 
         Blt_Offset(ComboButton, menuObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_ANCHOR, "-menuanchor", "menuAnchor", "MenuAnchor", 
-        DEF_MENU_ANCHOR, Blt_Offset(ComboButton, menuAnchor), 
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
         DEF_CMD, Blt_Offset(ComboButton, postCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-postedbackground", "postedBackground",
@@ -1333,12 +1329,8 @@ ComputeGeometry(ComboButton *comboPtr)
 }
 
 static int
-ConfigureComboButton(
-    Tcl_Interp *interp,
-    ComboButton *comboPtr,
-    int objc,
-    Tcl_Obj *const *objv,
-    int flags)
+ConfigureComboButton(Tcl_Interp *interp, ComboButton *comboPtr, int objc,
+                     Tcl_Obj *const *objv, int flags)
 {
     unsigned int gcMask;
     XGCValues gcValues;
@@ -1366,7 +1358,8 @@ ConfigureComboButton(
  *
  * ActivateOp --
  *
- *      Activates
+ *      Activates the combo button.
+ *
  * Results:
  *      Standard TCL result.
  *
@@ -1374,7 +1367,7 @@ ConfigureComboButton(
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cb activate bool
+ *      pathName activate
  *
  *---------------------------------------------------------------------------
  */
@@ -1387,13 +1380,7 @@ ActivateOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc,
     if (comboPtr->flags & (STATE_POSTED|STATE_DISABLED)) {
         return TCL_OK;                  /* Writing is currently disabled. */
     }
-    if (Tcl_GetBooleanFromObj(interp, objv[2], &bool) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    comboPtr->flags &= ~STATE_ACTIVE;
-    if (bool) {
-        comboPtr->flags |= STATE_ACTIVE;
-    }
+    comboPtr->flags |= STATE_ACTIVE;
     EventuallyRedraw(comboPtr);
     return TCL_OK;
 }
@@ -1410,7 +1397,7 @@ ActivateOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cb cget option
+ *      pathName cget option
  *
  *---------------------------------------------------------------------------
  */
@@ -1435,7 +1422,7 @@ CgetOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm configure ?option value?...
+ *      pathName configure ?option value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -1468,6 +1455,35 @@ ConfigureOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * DeactivateOp --
+ *
+ *      Activates
+ * Results:
+ *      Standard TCL result.
+ *
+ * Side effects:
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
+ *
+ *      pathName activate bool
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DeactivateOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    if (comboPtr->flags & (STATE_POSTED|STATE_DISABLED)) {
+        return TCL_OK;                  /* Writing is currently disabled. */
+    }
+    comboPtr->flags &= ~STATE_ACTIVE;
+    EventuallyRedraw(comboPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * InvokeOp --
  *
  * Results:
@@ -1477,7 +1493,7 @@ ConfigureOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *  .cb invoke item 
+ *  pathName invoke item 
  *
  *---------------------------------------------------------------------------
  */
@@ -1689,7 +1705,6 @@ NewComboButton(Tcl_Interp *interp, Tk_Window tkwin)
     comboPtr->arrowBW = 2;
     comboPtr->arrowRelief = TK_RELIEF_FLAT;
     comboPtr->interp = interp;
-    comboPtr->menuAnchor = TK_ANCHOR_SW;
     comboPtr->relief = TK_RELIEF_RAISED;
     comboPtr->postedRelief = TK_RELIEF_FLAT;
     comboPtr->activeRelief = TK_RELIEF_RAISED;
@@ -1718,9 +1733,10 @@ NewComboButton(Tcl_Interp *interp, Tk_Window tkwin)
  */
 static Blt_OpSpec comboButtonOps[] =
 {
-    {"activate",  1, ActivateOp,  3, 3, "bool",},
+    {"activate",  1, ActivateOp,  2, 2, "",},
     {"cget",      2, CgetOp,      3, 3, "option",},
-    {"configure", 2, ConfigureOp, 2, 0, "?option value?...",},
+    {"configure", 2, ConfigureOp, 2, 0, "?option value ...?",},
+    {"deactivate",1, DectivateOp, 2, 2, "",},
     {"invoke",    1, InvokeOp,    2, 2, "",},
     {"post",      1, PostOp,      2, 2, "",},
     {"unpost",    1, UnpostOp,    2, 2, "",},

@@ -73,11 +73,11 @@ namespace eval blt {
 #
 
 bind BltComboButton <Enter> {
-    %W activate yes
+    %W activate 
 }
 
 bind BltComboButton <Leave> {
-    %W activate no
+    %W deactivate
 }
 
 # Standard Motif bindings:
