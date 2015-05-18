@@ -1024,7 +1024,7 @@ FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     PaintBrush *brushPtr = (PaintBrush *)widgRec;
 
-    Blt_Palette_DeleteNotifier(*palPtr, brushPtr);
+    Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brushPtr);
     *palPtr = NULL;
 }
 

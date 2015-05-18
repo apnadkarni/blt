@@ -48,9 +48,9 @@
  *
  *---------------------------------------------------------------------------
  */
-#ifndef BLT_PAINTBRUSH_H
+#ifndef _BLT_PAINTBRUSH_H
 typedef struct _Blt_Palette *Blt_Palette;
-#endif
+#endif /*_BLT_PAINTBRUSH_H*/
 
 typedef void (Blt_Palette_NotifyProc) (Blt_Palette palette, 
         ClientData clientData, unsigned int flags);

@@ -1375,8 +1375,6 @@ static int
 ActivateOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
-    int bool;
-
     if (comboPtr->flags & (STATE_POSTED|STATE_DISABLED)) {
         return TCL_OK;                  /* Writing is currently disabled. */
     }
@@ -1736,7 +1734,7 @@ static Blt_OpSpec comboButtonOps[] =
     {"activate",  1, ActivateOp,  2, 2, "",},
     {"cget",      2, CgetOp,      3, 3, "option",},
     {"configure", 2, ConfigureOp, 2, 0, "?option value ...?",},
-    {"deactivate",1, DectivateOp, 2, 2, "",},
+    {"deactivate",1, DeactivateOp,2, 2, "",},
     {"invoke",    1, InvokeOp,    2, 2, "",},
     {"post",      1, PostOp,      2, 2, "",},
     {"unpost",    1, UnpostOp,    2, 2, "",},
