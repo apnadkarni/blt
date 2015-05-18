@@ -35,9 +35,12 @@ SRC = 		BLT.rst \
 		datatable.rst \
 		debug.rst \
 		eps.rst \
+		grab.rst \
 		graph.rst \
 		htext.rst \
+		mesh.rst \
 		paintbrush.rst \
+		palette.rst \
 		picture.rst \
 		scrollset.rst \
 		sftp.rst \
@@ -51,15 +54,13 @@ SRC = 		BLT.rst \
 		watch.rst \
 		winop.rst
 
-MISSING =	combobutton.rst \
+MISSING =	barchart.rst \
+		combobutton.rst \
 		comboentry.rst \
 		combotree.rst \
 		contour.rst \
 		drawerset.rst \
-		grab.rst \
 		listview.rst \
-		mesh.rst \
-		palette.rst \
 		paneset.rst \
 		tableview.rst \
 

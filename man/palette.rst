@@ -296,8 +296,8 @@ Please note the following:
 1. The palettees created by the **blt::palette** command are only recognized by
    BLT widgets.
 
-2. Palettees are reference counted.  If you delete a palette, its resources are
-   not freed until no widget is using it.
+2. Palettees are reference counted.  If you delete a palette, its resources
+   are not freed until there is no widget is using it.
    
 KEYWORDS
 ========
