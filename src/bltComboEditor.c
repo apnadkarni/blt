@@ -252,14 +252,13 @@ typedef struct {
 typedef struct {
 
     /*
-     * This is a SNAFU in the Tk API.  It assumes that only an official Tk
+     * This is a bug in the Tk.  It is assumed that only an official Tk
      * "toplevel" widget will ever become a toplevel window (i.e. a window
-     * whose parent is the root window).  Because under Win32, Tk tries to
-     * use the widget record associated with the TopLevel as a Tk frame
-     * widget, to read its menu name.  What this means is that any widget
-     * that's going to be a toplevel, must also look like a
-     * frame. Therefore we've copied the frame widget structure fields into
-     * the token.
+     * whose parent is the root window).  Under Win32, Tk tries to use the
+     * widget record associated with the TopLevel as a Tk frame widget, to
+     * read its menuName field.  What this means is that any widget that's
+     * going to be a toplevel, must have a *menuName* field at the same
+     * offset in the widget record.
      */
 
     Tk_Window tkwin;                    /* Window that embodies the frame.
@@ -276,34 +275,21 @@ typedef struct {
                                          * command. */
     Tcl_Command cmdToken;               /* Token for frame's widget
                                          * command. */
-    char *className;                    /* Class name for widget (from
-                                         * configuration option).
-                                         * Malloc-ed. */
-    int mask;                           /* Either FRAME or TOPLEVEL; used
-                                         * to select which configuration
-                                         * options are valid for widget. */
-    char *screenName;                   /* Screen on which widget is
-                                         * created.  Non-null only for
-                                         * top-levels.  Malloc-ed, may be
-                                         * NULL. */
-    char *visualName;                   /* Textual description of visual
-                                         * for window, from -visual option.
-                                         * Malloc-ed, may be NULL. */
-    char *colormapName;                 /* Textual description of colormap
-                                         * for window, from -colormap
-                                         * option.  Malloc-ed, may be
-                                         * NULL. */
-    char *menuName;                     /* Textual description of menu to
+    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be
+                                         * executed when this menu is
+                                         * posted. */
+    int viewWidth;                      /* Width of the viewport. */
+    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
+                                         * executed when this menu is
+                                         * posted. */
+    Tcl_Obj *unpostCmdObjPtr;           /* If non-NULL, command to be executed
+                                         * when menu is posted. */
+    const char *menuName;               /* Textual description of menu to
                                          * use for menubar. Malloc-ed, may
                                          * be NULL. */
-    Colormap colormap;                  /* If not None, identifies a
-                                         * colormap allocated for this
-                                         * window, which must be freed when
-                                         * the window is deleted. */
-    Tk_3DBorder border;                 /* Structure used to draw 3-D
-                                         * border and background.  NULL
-                                         * means no background or
-                                         * border. */
+    Tcl_Obj *menuObjPtr;        
+    Tk_Window menuWin;
+
     int borderWidth;                    /* Width of 3-D border (if any). */
     int relief;                         /* 3-d effect: TK_RELIEF_RAISED etc. */
     int highlightWidth;                 /* Width in pixels of highlight to
@@ -318,22 +304,20 @@ typedef struct {
                                          * size. */
     Tk_Cursor cursor;                   /* Current cursor for window, or
                                          * None. */
-    char *takeFocus;                    /* Value of -takefocus option; not
+    const char *takeFocus;              /* Value of -takefocus option; not
                                          * used in the C code, but used by
                                          * keyboard traversal scripts.
                                          * Malloc'ed, but may be NULL. */
-    int isContainer;                    /* 1 means this window is a
-                                         * container, 0 means that it
-                                         * isn't. */
-    char *useThis;                      /* If the window is embedded, this
-                                         * points to the name of the window
-                                         * in which it is embedded
-                                         * (malloc'ed).  For non-embedded
-                                         * windows this is NULL. */
+
+    int menuAnchor;
+    Blt_Font font;                      /* Font of text to be display in
+                                         * entry. */
     int flags;                          /* Various flags; see below for
                                          * definitions. */
 
     /* ComboEditor-specific fields */
+    int worldWidth, worldHeight;        /* Size of the world. */
+
     Blt_DBuffer dbuffer;                /* Buffer used to hold the text. */
     Blt_Bg normalBg;
     Blt_Bg activeBg;
@@ -389,11 +373,7 @@ typedef struct {
     int scrollUnits;                    /* # of pixels per scroll unit. */
     int scrollX;                        /* x-offset of the start of visible
                                          * text in the viewport. */
-    int viewWidth;                      /* Width of the viewport. */
     
-    Blt_Font font;                      /* Font of text to be display in
-                                         * entry. */
-
     short int numChars;                 /* # character in text string. */
     short int numBytes;                 /* bytes of in actual text string. */
     short int numScreenBytes;           /* # bytes in displayed text. */
@@ -422,24 +402,11 @@ typedef struct {
     int prefTextWidth;                  /* Desired width of text, measured
                                          * in average characters. */
 
-    int worldWidth, worldHeight;        /* Size of the world. */
     short int textWidth, textHeight;
     short int cursorHeight, cursorWidth;
     int normalWidth, normalHeight;
     int xOffset, yOffset;               /* Scroll offsets. */
 
-    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be
-                                         * executed when this menu is
-                                         * posted. */
-    Tcl_Obj *menuObjPtr;        
-    Tk_Window menuWin;
-
-    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
-                                         * executed when this menu is
-                                         * posted. */
-    Tcl_Obj *unpostCmdObjPtr;           /* If non-NULL, command to be executed
-                                         * when this menu is posted. */
-    int menuAnchor;
     EditRecord *undoPtr, *redoPtr;
     const char *cipher;                 /* If non-NULL, this is the
                                          * character to display for every
@@ -994,9 +961,7 @@ CleanText(ComboEditor *editPtr)
     int length;
     Tcl_Obj *objPtr;
     
-    /* Convert tabs and newlines to spaces, just to maintain the same
-     * character index and byte offsets between the screen text and actual
-     * text. */
+    /* Convert tabs to spaces and trim extra whitespace. */
     objPtr = Blt_DBuffer_StringObj(editPtr->dbuffer);
     p = Tcl_GetStringFromObj(objPtr, &length);
     q = start = (char *)Blt_DBuffer_Bytes(editPtr->dbuffer);
@@ -1266,11 +1231,8 @@ ManageScrollbar(ComboEditor *editPtr, Tk_Window scrollbar)
  *
  * InstallScrollbar --
  *
- *      Installs the scrollbar.
- *
- * Results:
- *      The return value is a standard TCL result.  The color pointer is
- *      written into the widget record.
+ *      Installs the scrollbar.  This is called at the next idle point
+ *      after the -xscrollbar or -yscrollbar setting was configured.
  *
  *---------------------------------------------------------------------------
  */
@@ -1774,6 +1736,7 @@ CoordinatesToIndex(ComboEditor *editPtr, int x, int y)
     return linePtr->char1 + Tcl_NumUtfChars(linePtr->text, numBytes);
 }
 
+#ifdef notdef
 static int
 IndexToCoordinates(ComboEditor *editPtr, CharIndex index, int *xPtr, int *yPtr)
 {
@@ -1798,6 +1761,7 @@ IndexToCoordinates(ComboEditor *editPtr, CharIndex index, int *xPtr, int *yPtr)
     *yPtr = linePtr->worldY;
     return TCL_OK;
 }
+#endif
 
 static void
 InsertText(ComboEditor *editPtr, const char *text, int numBytes,
@@ -2452,7 +2416,7 @@ ConfigureEditor(Tcl_Interp *interp, ComboEditor *editPtr, int objc,
     Blt_FontMetrics fontMetrics;
     
     if (Blt_ConfigureWidgetFromObj(interp, editPtr->tkwin, configSpecs, objc, 
-                objv, (char *)editPtr, editPtr->mask | flags) != TCL_OK) {
+                objv, (char *)editPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
     if (editPtr->flags & READONLY) {
@@ -2556,8 +2520,7 @@ FreeEditorProc(DestroyData dataPtr)     /* Pointer to the widget record. */
 {
     ComboEditor *editPtr = (ComboEditor *)dataPtr;
 
-    Blt_FreeOptions(configSpecs, (char *)editPtr, editPtr->display, 
-        editPtr->mask);
+    Blt_FreeOptions(configSpecs, (char *)editPtr, editPtr->display, 0);
     if (editPtr->textGC != NULL) {
         Tk_FreeGC(editPtr->display, editPtr->textGC);
     }

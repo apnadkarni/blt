@@ -537,11 +537,12 @@ SnapBackground(Busy *busyPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ExposeBusyWindow --
+ * MapBusy --
  *
- *      Displays the busy window. If the busy window is transparent, then
+ *      Maps the busy window. If the busy window is transparent, then
  *      the window is simply mapped and the cursor is updated.  If the busy
- *      window is transparent, then background is snapped.
+ *      window is semi-opaque, then the current background is snapped
+ *      into an image.
  *
  * Results:
  *      None.
@@ -549,7 +550,7 @@ SnapBackground(Busy *busyPtr)
  *---------------------------------------------------------------------------
  */
 static void
-ExposeBusyWindow(Busy *busyPtr)
+MapBusy(Busy *busyPtr)
 {
     busyPtr->flags |= ACTIVE;
     /* 
@@ -592,7 +593,7 @@ ExposeBusyWindow(Busy *busyPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * HideBusyWindow --
+ * UnmapBusy --
  *
  *      Unmaps the busy window and the cursor is updated..
  *
@@ -602,7 +603,7 @@ ExposeBusyWindow(Busy *busyPtr)
  *---------------------------------------------------------------------------
  */
 static void
-HideBusyWindow(Busy *busyPtr)
+UnmapBusy(Busy *busyPtr)
 {
     busyPtr->flags &= ~ACTIVE;
     if (busyPtr->tkBusy != NULL) {
@@ -712,7 +713,7 @@ BusyCustodyProc(ClientData clientData, Tk_Window tkwin)
 
     Tk_DeleteEventHandler(busyPtr->tkBusy, StructureNotifyMask, BusyEventProc, 
         busyPtr);
-    HideBusyWindow(busyPtr);
+    UnmapBusy(busyPtr);
     busyPtr->tkBusy = NULL;
 
     /* Remove the entry to this busy window right now so that busy commands
@@ -817,13 +818,13 @@ RefWinEventProc(
             (busyPtr->flags & ACTIVE)) {
             /* Need to resize busy window and possibly re-snap the
              * reference window. */
-            ExposeBusyWindow(busyPtr);
+            MapBusy(busyPtr);
         }
         break;
 
     case UnmapNotify:
         if (busyPtr->tkParent != busyPtr->tkRef) {
-            HideBusyWindow(busyPtr);
+            UnmapBusy(busyPtr);
         }
         break;
     }
@@ -1266,9 +1267,9 @@ HoldBusy(
          * currently displayed.
          */
         if (Tk_IsMapped(busyPtr->tkRef)) {
-            ExposeBusyWindow(busyPtr);
+            MapBusy(busyPtr);
         } else {
-            HideBusyWindow(busyPtr);
+            UnmapBusy(busyPtr);
         }
     }
     return result;
@@ -1502,7 +1503,7 @@ ForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         if (GetBusy(dataPtr, (Tcl_Interp *)NULL, objv[i], &busyPtr) == TCL_OK) {
             /* Unmap the window even though it will be soon destroyed */
-            HideBusyWindow(busyPtr);
+            UnmapBusy(busyPtr);
 
             /* Remove the entry to this busy window right now so that busy
              * commands can't reference this window. */
@@ -1694,7 +1695,7 @@ ReleaseOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 2; i < objc; i++) {
         if (GetBusy(dataPtr, (Tcl_Interp *)NULL, objv[i], &busyPtr) == TCL_OK) {
-            HideBusyWindow(busyPtr);
+            UnmapBusy(busyPtr);
         }
     }
     return TCL_OK;
@@ -1883,7 +1884,7 @@ DisplayProc(ClientData clientData)
         if (busyPtr->flags & ACTIVE) {
             /* Need to resize busy window and possibly re-snap the
              * reference window. */
-            ExposeBusyWindow(busyPtr);
+            MapBusy(busyPtr);
         }
     }
     /* Create a pixmap the size of the window for double buffering. */

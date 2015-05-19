@@ -110,6 +110,9 @@ package ifneeded blt_picture_xpm $version \
 package ifneeded blt_picture_photo $version \
 	[list blt::picture load photo "$dir"]
 
+package ifneeded blt_picture_text $version \
+	[list blt::picture load text "$dir"]
+
 # Tree data format packages
 
 package ifneeded blt_tree_xml $version \

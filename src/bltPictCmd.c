@@ -163,9 +163,7 @@ typedef struct {
     Tcl_ObjCmdProc *proc;
 } PictProc;
 
-
 static Blt_HashTable procTable;
-
 
 /*
  * Default configuration options for picture images. 
@@ -1570,33 +1568,38 @@ FilterToObj(
     return Tcl_NewStringObj(Blt_NameOfResampleFilter(filter), -1);
 }
 
-#ifdef notdef
-static Tcl_ObjCmdProc *
-GetPictProc(
-    Tcl_Interp *interp,                 /* Interpreter to load new format
-                                         * into. */
-    const char *name)   
+static int
+GetPictProc2(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
     PictProc *procPtr;
+    const char *opName;
 
-    hPtr = Blt_FindHashEntry(&procTable, name);
+    opName = Tcl_GetString(objv[2]);
+    hPtr = Blt_FindHashEntry(&procTable, opName);
     if (hPtr == NULL) {
-        return NULL;
+        LoadPackage(interp, opName);
+    }
+    hPtr = Blt_FindHashEntry(&procTable, opName);
+    if (hPtr == NULL) {
+        Tcl_AppendResult(interp, "can't find picture procedure \"", opName,
+                         "\"", (char *)NULL);
+        return TCL_ERROR;
     }
     procPtr = Blt_GetHashValue(hPtr);
-    if (procPtr->proc == NULL) {
-        LoadPackage(interp, name);
+    if (procPtr == NULL) {
+        Tcl_AppendResult(interp, "no data registered for picture procedure \"",
+                         opName, "\"", (char *)NULL);
+        return TCL_ERROR;
     }
     if (procPtr->proc == NULL) {
-        Blt_Warn("can't load picture procedure %s\n", procPtr->name);
-        return NULL;                    /* Could not load the format or the
-                                         * format doesn't have a discovery
-                                         * procedure. */
+        Tcl_AppendResult(interp, "can't load picture procedure ", procPtr->name,
+                         (char *)NULL);
+        return TCL_ERROR;                    /* Could not load the format. */
     }
-    return procPtr->proc;
+    return (*procPtr->proc)(clientData, interp, objc, objv);
 }
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -3348,7 +3351,7 @@ static Blt_OpSpec drawOps[] = {
     {"line",      1, Blt_Picture_LineOp,      3, 0, "?switches?",},
     {"polygon",   1, Blt_Picture_PolygonOp,   3, 0, "?switches?",},
     {"rectangle", 1, Blt_Picture_RectangleOp, 7, 0, "x1 y1 x2 y2 ?switches?",},
-    {"text",      1, Blt_Picture_TextOp,      6, 0, "string x y ?switches?",},
+    {"text",      1, GetPictProc2,            6, 0, "string x y ?switches?",},
 };
 static int numDrawOps = sizeof(drawOps) / sizeof(Blt_OpSpec);
 /*ARGSUSED*/
@@ -5470,6 +5473,7 @@ Blt_RegisterPictureImageType(Tcl_Interp *interp)
     Blt_CpuFeatures(interp, NULL);
 
     Blt_InitHashTable(&fmtTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&procTable, BLT_STRING_KEYS);
     for (fp = pictFormats, fend = fp + NUMFMTS; fp < fend; fp++) {
         Blt_HashEntry *hPtr;
         int isNew;
@@ -5528,5 +5532,6 @@ Blt_PictureRegisterProc(Tcl_Interp *interp, const char *name,
     procPtr->hashPtr = hPtr;
     procPtr->name = Blt_GetHashKey(&procTable, hPtr);
     procPtr->proc = proc;
+    Blt_SetHashValue(hPtr, procPtr);
     return TCL_OK;
 }
