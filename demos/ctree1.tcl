@@ -25,6 +25,7 @@ if { [file exists ../library] } {
 puts [$tree label 0]
 #    -postcommand {.e.m configure -width [winfo width .e] ; update} \
 set myIcon ""
+
 blt::comboentry .e \
     -font { arial 9 } \
     -textvariable myText1 \
@@ -33,7 +34,7 @@ blt::comboentry .e \
     -menu .e.m \
     -menuanchor se \
     -exportselection yes \
-    -command "puts {button pressed}"
+    -command {puts "button pressed: [blt::grab current]"}
 
 blt::combotree .e.m \
     -tree $tree \

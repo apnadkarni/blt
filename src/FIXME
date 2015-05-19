@@ -12,18 +12,19 @@ The following bugs are all show-stoppers for the next release.
 
 7. Remove bltTile*
 
-8. Add callback to paintbrush.
+8. (done) Add callback to paintbrush.
 
 9. Add paintbrush callbacks to graph and barchart.
 
 Backgrounds don't have opacity.  Paintbrushes do.
 Add origin interface to paintbrushes.
 
-10. Fix barchart to use paintbrush instead of background.
+10. (done) Fix barchart to use paintbrush and/or background.
 
-11. Does it make sense to separate out picture text drawing into a module?
-    Separate file yes. Module?  FreeType is already used in bltUnixFont.c
-    but not in bltWinFont.c.
+11. (done) Does it make sense to separate out picture text drawing into a
+    module?  Separate file yes. Module?  FreeType is already used in
+    bltUnixFont.c but not in bltWinFont.c. Don't require Window users to
+    link with freetype.
 
 12. Check for memory allocations passing between BLT and TCL.
 
@@ -31,3 +32,9 @@ Add origin interface to paintbrushes.
 
 14. Clean up pictdraw routines.  Separate out working from experimental.
     Put experimental into a separate file.
+
+    Create clean version bltPictDraw.c moving experiental stuff into
+    bltPictDrawUnsupported.c
+
+15. Remove Makefile.vc and Makefile.bc files.
+

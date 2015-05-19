@@ -374,7 +374,7 @@ proc blt::TreeView::Initialize { w } {
 	%W entry activate "" 
     }
 
-
+    #
     # Button bindings
     #
 

@@ -38,14 +38,14 @@ namespace eval blt {
     namespace eval ComboEntry {
 	variable _private
 	array set _private {
-	    activeItem		{}
+	    activeItem		""
 	    afterId		-1
 	    b1			""
-	    lastFocus		{}
-	    mouseMoved		0
-	    postingButton	{}
-	    trace		0
+	    lastFocus		""
 	    lastX		-1
+	    mouseMoved		0
+	    postingButton	""
+	    trace		0
 	}
 	proc trace { mesg } {
 	    variable _private
@@ -77,6 +77,7 @@ bind BltComboEntry <ButtonPress-1> {
 bind BltComboEntry <ButtonRelease-1> {
     blt::ComboEntry::trace "ComboEntry %W at %X,%Y <ButtonRelease-1> state=[%W cget -state], grab=[blt::grab top]"
     after cancel $blt::ComboEntry::_private(afterId)
+    blt::ComboEntry::trace "ComboEntry <ButtonRelease-1> identity=[%W identify %x %y]"
     switch -- [%W identify %x %y]  {
 	"arrow" {
 	    blt::ComboEntry::trace "invoke"
@@ -552,6 +553,7 @@ proc ::blt::ComboEntry::PostMenu { w } {
 	return
     }
     if { [$w cget -state] == "posted" } {
+        blt::ComboEntry::trace "from PostMenu"
 	UnpostMenu $w
 	return
     } 
@@ -562,6 +564,7 @@ proc ::blt::ComboEntry::PostMenu { w } {
     set cur $_private(postingButton)
     if { $cur != "" } {
 	#
+        blt::ComboEntry::trace "2 from PostMenu"
 	UnpostMenu $cur
     }
     set _private(cursor) [$w cget -cursor]
@@ -584,6 +587,7 @@ proc ::blt::ComboEntry::PostMenu { w } {
 	global errorInfo
 	set savedInfo $errorInfo
 	#
+        blt::ComboEntry::trace "3 from PostMenu"
 	UnpostMenu $w 
 	error $msg $savedInfo
     }
@@ -597,7 +601,8 @@ proc ::blt::ComboEntry::PostMenu { w } {
     }
     if { [winfo viewable $menu] } {
 	trace "setting global grab on $menu"
-	bind $menu <Unmap> [list blt::ComboEntry::UnpostMenu $w]
+        # Automatically turn off grab on unposted menu
+        bind $menu <Unmap> [list blt::ComboEntry::UnpostMenu $w]
 	blt::grab push $menu -global 
     }
 }
@@ -622,7 +627,8 @@ proc ::blt::ComboEntry::PostMenu { w } {
 proc ::blt::ComboEntry::UnpostMenu { w } {
     variable _private
 
-    trace "proc UnpostMenu $w"
+    set menu [$w cget -menu]
+    trace "proc UnpostMenu $w level=[info level] mapped=[winfo ismapped $menu]"
     catch { 
 	# Restore focus right away (otherwise X will take focus away when the
 	# menu is unmapped and under some window managers (e.g. olvwm) we'll
@@ -646,7 +652,7 @@ proc ::blt::ComboEntry::UnpostMenu { w } {
     if { $menu == "" } {
 	return
     }
-    trace MENU=$menu
+    trace "MENU=$menu grab=[blt::grab current]"
     # Release grab, if any, and restore the previous grab, if there
     # was one.
     blt::grab pop $menu
@@ -670,6 +676,7 @@ proc ::blt::ComboEntry::HandleButtonPress { w x y } {
     trace "blt::ComboEntry::HandleButtonPress $w state=[$w cget -state]"
     set _private(b1) [$w identify $x $y]
     if { [$w cget -state] == "posted" } {
+        blt::ComboEntry::trace "from HandleButtonPress"
 	UnpostMenu $w
     } elseif { $_private(b1) == "arrow" } {
 	PostMenu $w
@@ -1128,3 +1135,4 @@ catch {
 	keep -background -cursor 
     }
 }
+

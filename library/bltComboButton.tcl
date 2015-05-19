@@ -112,25 +112,30 @@ bind BltComboButton <KeyPress-Down> {
 
 # Ignore all Alt, Meta, and Control keypresses unless explicitly bound.
 # Otherwise, if a widget binding for one of these is defined, the
-# <KeyPress> class binding will also fire and insert the character,
-# which is wrong.  Ditto for Escape, Return, and Tab.
+# <KeyPress> class binding will also fire and insert the character, which
+# is wrong.  Ditto for Escape, Return, and Tab.
 
+# Alt-KeyPress 
 bind BltComboButton <Alt-KeyPress> {
     # nothing
 }
+# Meta-Keypress
 bind BltComboButton <Meta-KeyPress> { 
     puts %K 
 }
+# Control-KeyPress
 bind BltComboButton <Control-KeyPress> {
     # nothing
 }
+# Escape
 bind BltComboButton <Escape> {
     # nothing
 }
-
+# Keypress-Tab
 bind BltComboButton <Tab> {
     # nothing
 }
+
 if {[string equal [tk windowingsystem] "classic"] || 
     [string equal [tk windowingsystem] "aqua"]} {
     bind BltComboButton <Command-KeyPress> {
@@ -142,8 +147,8 @@ if {[string equal [tk windowingsystem] "classic"] ||
 # Post --
 #
 #	Posts the menu associated with a given menubutton. This performs
-#	various housekeeping tasks such as changing the grab and focus,
-#	and unposting any other menu that is currently posted.
+#	various housekeeping tasks such as changing the grab and focus, and
+#	unposting any other menu that is currently posted.
 #
 proc ::blt::ComboButton::Post { w } {
     variable _private
@@ -192,9 +197,9 @@ proc ::blt::ComboButton::Post { w } {
 #
 # Unpost --
 #
-#	Performs housekeeping tasks to unpost the menu (and all is descendants).
-#	It releases the grab on the button, resets the focus, and reconfigures
-#	the combobutton state back to normal.
+#	Performs housekeeping tasks to unpost the menu (and all is
+#	descendants).  It releases the grab on the button, resets the
+#	focus, and reconfigures the combobutton state back to normal.
 #
 proc ::blt::ComboButton::Unpost { w } {
     trace "proc ComboButton::Unpost $w"
