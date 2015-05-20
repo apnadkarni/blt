@@ -53,5 +53,6 @@ blt::tk::scrollbar .e.m.ybar
 
 focus .e.m
 
+bind .e.m <Unmap> { puts stderr "UNMAPPED W=%W #=%# a=%a b=%b c=%c d=%d f=%f h=%h i=%i k=%k m=%m o=%o p=%p s=%s t=%t %x=%x y=%y A=%A B=%B D=%D E=%E K=%K M=%M P=%P R=%R S=%S T=%T W=%W X=%X Y=%Y" }
 blt::table . \
     .e -fill x 

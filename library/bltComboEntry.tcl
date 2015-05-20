@@ -89,7 +89,7 @@ bind BltComboEntry <ButtonRelease-1> {
 	}
 	default { 
 	    blt::ComboEntry::trace "unpost"
-	    blt::ComboEntry::UnpostMenu %W
+	    blt::ComboEntry::UnpostMenu %W 
 	}	
     }
 }
@@ -600,11 +600,19 @@ proc ::blt::ComboEntry::PostMenu { w } {
 	$menu activate $index
     }
     if { [winfo viewable $menu] } {
-	trace "setting global grab on $menu"
         # Automatically turn off grab on unposted menu
-        bind $menu <Unmap> [list blt::ComboEntry::UnpostMenu $w]
+        bind $menu <Unmap> [list blt::ComboEntry::HandleUnmap %W $menu $w]
+	trace "setting global grab on $menu"
 	blt::grab push $menu -global 
     }
+}
+
+proc ::blt::ComboEntry::HandleUnmap { unmapped menu w } {
+    puts stderr "menu=$menu unmapped=$unmapped"
+    if { $menu != $unmapped } {
+	return
+    }
+    UnpostMenu $w
 }
 
 # ::blt::ComboEntry::UnpostMenu --

@@ -295,12 +295,11 @@ typedef Entry *(IterProc)(Entry *entryPtr, unsigned int mask);
 
 typedef struct _Icon {
     Tk_Image tkImage;                   /* The Tk image being cached. */
-    int refCount;                       /* Reference count for this
-                                         * image. */
-    short int width, height;            /* Dimensions of the cached
-                                         * image. */
     Blt_HashEntry *hashPtr;             /* Hash table entry, pointer to the
                                          * image. */
+    int refCount;                       /* Reference count.  If zero, the
+                                         * icon should be deleted. */
+    short int width, height;            /* Dimensions of the image. */
 } *Icon;
 
 #define IconHeight(icon)        ((icon)->height)
@@ -1571,7 +1570,9 @@ NearestEntry(ComboTree *comboPtr, int x, int y, int selectOne)
             return (selectOne) ? entryPtr : NULL;
         }
         if (y < (entryPtr->worldY + entryPtr->height)) {
-            return entryPtr;            /* Found it. */
+            if ((x >= 0) && (x < comboPtr->normalWidth)) {
+                return entryPtr;            /* Found it. */
+            }
         }
         lastPtr = entryPtr;
     }
@@ -2059,7 +2060,7 @@ GetEntryIterator(Tcl_Interp *interp, ComboTree *comboPtr, Tcl_Obj *objPtr,
         int x, y;
 
         if (Blt_GetXY(interp, comboPtr->tkwin, string, &x, &y) == TCL_OK) {
-            iterPtr->first = NearestEntry(comboPtr, x, y, TRUE);
+            iterPtr->first = NearestEntry(comboPtr, x, y, FALSE);
         }
     } else if ((c == 'a') && (strcmp(string, "all") == 0)) {
         iterPtr->first = comboPtr->rootPtr;
@@ -4888,10 +4889,12 @@ DrawLabel(ComboTree *comboPtr, Entry *entryPtr, Drawable drawable, int x, int y,
         Blt_Ts_SetMaxLength(ts, maxLength);
         Blt_Ts_DrawLayout(comboPtr->tkwin, drawable, entryPtr->textPtr, &ts, 
                 x, y);
+#ifdef notdef
         if (entryPtr == comboPtr->activePtr) {
             Blt_Ts_UnderlineLayout(comboPtr->tkwin, drawable, entryPtr->textPtr,
                 &ts, x, y);
         }
+#endif
     }
     return entryHeight;
 }
@@ -5068,7 +5071,7 @@ DrawEntryBackgrounds(ComboTree *comboPtr, Drawable drawable)
             bg = stylePtr->normalBg;
             relief = stylePtr->relief;
         }
-        y = SCREENY(comboPtr, entryPtr->worldY) - 1;
+        y = SCREENY(comboPtr, entryPtr->worldY);
         Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x, y, width, 
                 entryPtr->height, stylePtr->borderWidth, relief);
     }
@@ -5316,7 +5319,7 @@ DisplayEntry(ClientData clientData)
  * Side effects:
  *      The widget is eventually redraw.
  *
- *      .cm activate entry
+ *      pathName activate entry
  *
  *---------------------------------------------------------------------------
  */
@@ -5436,7 +5439,7 @@ ButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ButtonBindOp --
  *
- *        .ct bind tag sequence command
+ *      pathName button bind tag sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -5490,7 +5493,7 @@ ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      etc. get set for comboPtr; old resources get freed, if there were
  *      any.
  *
- *        .ct button configure option value
+ *        pathName button configure option value
  *
  *---------------------------------------------------------------------------
  */
@@ -5640,7 +5643,7 @@ CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Standard TCL result.  A list representing the bounding box is 
  *      returned.
  *
- *      .cm bbox item
+ *      pathName bbox item
  *
  *---------------------------------------------------------------------------
  */
@@ -5702,6 +5705,35 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * DeactivateOp --
+ *
+ *      Deactivate the currently active entry (draw with normal
+ *      foreground/background).  
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ * Side effects:
+ *      The widget is eventually redraw.
+ *
+ *      pathName deactivate
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    ComboTree *comboPtr = clientData;
+
+    ActivateEntry(comboPtr, NULL);      /* Deactive all entries. */
+    comboPtr->activePtr = NULL;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * EntryActivateOp --
  *
  *      Selects the entry to appear active.
@@ -5753,7 +5785,7 @@ EntryActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * EntryCgetOp --
  *
- *        .ct entry cget entry option
+ *        pathName entry cget entryName option
  *
  *---------------------------------------------------------------------------
  */
@@ -5790,7 +5822,7 @@ EntryCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      etc. get set for comboPtr; old resources get freed, if there were
  *      any.  The hypertext is redisplayed.
  *
- *        .ct entry configure entry option value
+ *        pathName entry configure entryName option value
  *
  *---------------------------------------------------------------------------
  */
@@ -6329,6 +6361,104 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * IdentifyOp --
+ *
+ *      Identifies the component "text", "button", or "" that the 
+ *      pointer is over.
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ * Side effects:
+ *      The widget is eventually redraw.
+ *
+ *      pathName identify entryName x y
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    ComboTree *comboPtr = clientData;
+    Entry *entryPtr;
+    Button *btnPtr = &comboPtr->button;
+    int x, y, x1, x2, y1, y2;
+    int worldX, worldY;
+    int level;
+    const char *string;
+    int isRoot;
+    
+    if (GetEntryFromObj(interp, comboPtr, objv[2], &entryPtr) != TCL_OK) {
+        return TCL_ERROR;
+    } 
+    string = Tcl_GetString(objv[3]);
+    if (strcmp("-root", string) == 0) {
+        isRoot = TRUE;
+        objv++, objc--;
+    } 
+    if ((Tcl_GetIntFromObj(interp, objv[3], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    if (isRoot) {
+        int rootX, rootY;
+
+        Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
+        x -= rootX;
+        y -= rootY;
+    }
+    if (comboPtr->flags & DIRTY) {
+        /* Can't trust the selected entry if nodes have been added or
+         * deleted. So recompute the layout. */
+        if (comboPtr->flags & LAYOUT_PENDING) {
+            ComputeComboGeometry(comboPtr);
+        } 
+        ComputeVisibleEntries(comboPtr);
+    }
+    worldX = WORLDX(comboPtr, x);
+    worldY = WORLDY(comboPtr, y);
+
+    x1 = entryPtr->worldX + entryPtr->buttonX - BUTTON_PAD;
+    x2 = x1 + btnPtr->width + 2 * BUTTON_PAD;
+    y1 = entryPtr->worldY + entryPtr->buttonY - BUTTON_PAD;
+    y2 = y1 + btnPtr->height + 2 * BUTTON_PAD;
+    fprintf(stderr, "entry=%s x=%d y=%d worldX=%d worldY=%d yOffset=%d Button: x1=%d x2=%d y1=%d y2=%d\n",
+            GETLABEL(entryPtr), x, y, worldX, worldY, comboPtr->yOffset, x1, x2, y1, y2);
+    if ((worldX >= x1) && (worldX < x2)) {
+        string = "button";
+        goto done;
+    }
+    level = Blt_Tree_NodeDepth(entryPtr->node);
+    x1 = entryPtr->worldX + ICONWIDTH(level);
+    x2 = x1 + entryPtr->iconWidth;
+    y1 = entryPtr->worldY;
+    y2 = y1 + entryPtr->height;
+    fprintf(stderr, "x=%d y=%d Icon: x1=%d x2=%d y1=%d y2=%d\n",
+            x, y, x1, x2, y1, y2);
+    if ((worldX >= x1) && (worldX < x2)) {
+        string = "icon";
+        goto done;
+    }
+
+    fprintf(stderr, "x=%d y=%d Label: x1=%d x2=%d y1=%d y2=%d\n",
+            x, y, x1, x2, y1, y2);
+    x1 = entryPtr->worldX + ICONWIDTH(level) + ICONWIDTH(level + 1) + 4;
+    x2 = x1 + entryPtr->width;
+    y1 = entryPtr->worldY;
+    y2 = y1 + entryPtr->height;
+    if ((worldX >= x1) && (worldX < x2)) {
+        string = "label";
+        goto done;
+    }
+    string = "";
+ done:
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -6374,7 +6504,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      Commands may get excecuted; variables may get set.
  *
- *  .ct invoke entry 
+ *      pathName invoke entryName 
  *
  *---------------------------------------------------------------------------
  */
@@ -6537,7 +6667,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Returns the node identifiers in a given range.
  *
- * .ct open ?-recurse? $entry 
+ *      pathName open ?-recurse? entryName
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -6603,7 +6733,7 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Standard TCL result.  A list representing the bounding box is
  *      returned.
  *
- *      .cm overbutton x y 
+ *      pathName overbutton x y 
  *
  *---------------------------------------------------------------------------
  */
@@ -6641,7 +6771,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Posts this menu at the given root window coordinates.
  *
- *  .cm post align x y ?x2 y2?
+ *  pathName post align x y ?x2 y2?
  *   0   1     2   3 4   5  6 
  *
  *
@@ -7224,7 +7354,7 @@ ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Unposts this menu.
  *
- *  .cm unpost 
+ *      pathName unpost 
  *
  *---------------------------------------------------------------------------
  */
@@ -7335,9 +7465,11 @@ static Blt_OpSpec comboOps[] =
     {"cget",      2, CgetOp,      3, 3, "option",}, 
     {"close",     2, CloseOp,     2, 4, "?-recurse? entryName",}, 
     {"configure", 2, ConfigureOp, 2, 0, "?option value ...?",},
+    {"deactivate",1, DeactivateOp,2, 2, "",},
     {"entry",     1, EntryOp,     2, 0, "oper args",},
     {"get",       1, GetOp,       2, 0, "?-full? ?entryName ...?",},
     {"hide",      1, HideOp,      2, 0, "?-exact|-glob|-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entry...?",},
+    {"identify",  2, IdentifyOp,  5, 6, "entryName ?-root? x y",},
     {"index",     3, IndexOp,     3, 3, "entryName",},
     {"invoke",    3, InvokeOp,    3, 3, "entryName",},
     {"nearest",   1, NearestOp,   4, 5, "x y ?varName?",}, 

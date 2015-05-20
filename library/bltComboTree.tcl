@@ -44,6 +44,7 @@ namespace eval blt {
 	    afterId	-1
 	    column	""
 	    lastButton	-1
+	    lastEntry	-1
 	    scroll	0
 	    space	off
 	    trace	1
@@ -151,6 +152,18 @@ bind BltComboTree <KeyPress-Return> {
     %W invoke active
 }
 
+# F1
+#   Open all entries.
+bind BltComboTree <KeyPress-F1> {
+    %W open -recurse root
+}
+
+# F2
+#   Close all entries.
+bind BltComboTree <KeyPress-F2> {
+    eval %W close -r [%W entry children root] 
+}
+
 # Any other key press.
 #   Goto the next matching entry.
 bind BltComboTree <KeyPress> {
@@ -170,34 +183,27 @@ if {[string equal "x11" [tk windowingsystem]]} {
     }
 }
 
-# F1
-#   Open all entries.
-bind BltComboTree <KeyPress-F1> {
-    %W open -recurse root
+bind BltComboTree <Motion> {
+    blt::ComboTree::HighlightActiveEntry %W %x %y
 }
 
-# F2
-#   Close all entries.
-bind BltComboTree <KeyPress-F2> {
-    eval %W close -r [%W entry children root] 
-}
-
-if 0 {
 # ButtonPress-1
 bind BltComboTree <ButtonPress-1> {
     blt::ComboTree::trace "blt::ComboTree ButtonPress-1 on widget"
-    blt::ComboTree::ButtonPressEvent %W %X %Y
+    blt::ComboTree::HandleButtonPress %W %X %Y
 }
 # B1-Motion
 bind BltComboTree <B1-Motion> {
     blt::ComboTree::trace "blt::ComboTree B1-Motion on widget"
-    blt::ComboTree::ButtonMotionEvent %W %X %Y
+    blt::ComboTree::HighlightActiveEntry %W %x %y
+    #blt::ComboTree::ButtonMotionEvent %W %X %Y
+    set blt::ComboTree::_private(scroll) 1
 }
+
 # ButtonRelease-1
-bind BltComboTree <ButtonPress-1> {
+bind BltComboTree <ButtonRelease-1> {
     blt::ComboTree::trace "blt::ComboTree ButtonRelease-1 on widget"
     blt::ComboTree::ButtonReleaseEvent %W %X %Y
-}
 }
 
 # B1 Enter
@@ -246,17 +252,6 @@ bind BltComboTree <ButtonRelease-2> {
 #
 # ----------------------------------------------------------------------
 proc blt::ComboTree::Initialize { w } {
-    #
-    # Active entry bindings
-    #
-    $w bind Entry <Enter> { 
-	%W activate current
-	%W entry highlight current 
-    }
-    $w bind Entry <Leave> { 
-	%W activate none
-	%W entry highlight "" 
-    }
 
     #
     # Button bindings
@@ -280,127 +275,129 @@ proc blt::ComboTree::Initialize { w } {
 	    %W toggle current
 	}
     }
-    $w button bind all <Enter> {
-        blt::ComboTree::trace "blt::ComboTree Enter Button"
-	%W button highlight current
-        set blt::ComboTree::_private(lastButton) [%W index current]
-    }
-    $w button bind all <Leave> {
-        blt::ComboTree::trace "blt::ComboTree Leave Button"
-	%W button highlight ""
-        set blt::ComboTree::_private(lastButton) -1
-    }
     if 0 {
-    $w button bind all <B1-Enter> {
-	%W button highlight current
-    }
-    }
-    
-    #
-    # ButtonRelease-1
-    #
-    #	For "multiple" mode only.  
-    #
-    $w bind Entry <ButtonRelease-3> { 
-	%W invoke active
-	%W unpost
-	after cancel $blt::ComboTree::_private(afterId)
-	set blt::ComboTree::_private(afterId) -1
-	set blt::ComboTree::_private(scroll) 0
-    }
-    # ButtonPress-1
-    #   Sets the entry, set focus, clear previous selection.
-    $w bind Entry <ButtonPress-1> { 	
-        blt::ComboTree::trace "blt::ComboTree ButtonPress-1 for Entry"
-	blt::ComboTree::ButtonPressEvent %W %x %y
-	blt::ComboTree::SetEntry %W current
-    }
-
-    # B1-Motion
-    #	Saves the current location of the pointer for auto-scrolling.
-    $w bind Entry <B1-Motion> { 
-	set blt::ComboTree::_private(x) %x
-	set blt::ComboTree::_private(y) %y
-	set index [%W nearest %x %y]
-	set blt::ComboTree::_private(scroll) 1
-	blt::ComboTree::SetEntry %W $index
-    }
-
-    # ButtonRelease-1
-    #  Sets the select anchor and in invokes the entry's -command option.
-    $w bind Entry <ButtonRelease-1> { 
-        blt::ComboTree::trace "blt::ComboTree ButtonRelease-1 for Entry: [%W index active]"
-	blt::ComboTree::ButtonReleaseEvent %W %X %Y
-    }
-
-    # Double-ButtonPress-1
-    #   Open or close the entry.
-    $w bind Entry <Double-ButtonPress-1> {
-	%W see -anchor nw active
-	%W toggle active
-    }
-
-    # Shift-ButtonPress-1
-    #
-    $w bind Entry <Shift-ButtonPress-1> { 
-	blt::ComboTree::SetEntry %W current
-    }
-    # Shift-Double-ButtonPress-1
-    #   Prevent less specific bindings for triggering.
-    $w bind Entry <Shift-Double-ButtonPress-1> {
-	# Do nothing.
-    }
-    # Shift-B1-Motion
-    #   Prevent less specific bindings for triggering.
-    $w bind Entry <Shift-B1-Motion> { 
-	# Do nothing.
-    }
-    # Shift-ButtonRelease-1
-    #   Turn off autoscrolling.
-    $w bind Entry <Shift-ButtonRelease-1> { 
-	after cancel $blt::ComboTree::_private(afterId)
-	set blt::ComboTree::_private(afterId) -1
-	set blt::ComboTree::_private(scroll) 0
-    }
-
-    #
-    # Control-ButtonPress-1
-    #
-    #	For "multiple" mode only.  
-    #
-    $w bind Entry <Control-ButtonPress-1> { 
-	blt::ComboTree::SetEntry %W current
-    }
-    # Control-Double-ButtonPress-1
-    #   Prevent less specific bindings for triggering.
-    $w bind Entry <Control-Double-ButtonPress-1> {
-	# Do nothing.
-    }
-    # Control-B1-Motion
-    #   Prevent less specific bindings for triggering.
-    $w bind Entry <Control-B1-Motion> { 
-	# Do nothing.
-    }
-    $w bind Entry <Control-ButtonRelease-1> { 
-	after cancel $blt::ComboTree::_private(afterId)
-	set blt::ComboTree::_private(afterId) -1
-	set blt::ComboTree::_private(scroll) 0
-    }
-
-    # Control-Shift-ButtonRelease-1
-    $w bind Entry <Control-Shift-ButtonPress-1> { 
-	blt::ComboTree::SetEntry %W current
-    }
-    # Control-Shift-Double-ButtonPress-1
-    #   Prevent less specific bindings for triggering.
-    $w bind Entry <Control-Shift-Double-ButtonPress-1> {
-	# Do nothing.
+	$w button bind all <Enter> {
+	    blt::ComboTree::trace "blt::ComboTree Enter Button"
+	    %W button highlight current
+	    set blt::ComboTree::_private(lastButton) [%W index current]
+	}
+	$w button bind all <Leave> {
+	    blt::ComboTree::trace "blt::ComboTree Leave Button"
+	    %W button highlight ""
+	    set blt::ComboTree::_private(lastButton) -1
+	}
+	if 0 {
+	    $w button bind all <B1-Enter> {
+		%W button highlight current
+	    }
+	}
+	
+	
+	#
+	# ButtonRelease-1
+	#
+	#	For "multiple" mode only.  
+	#
+	$w bind Entry <ButtonRelease-3> { 
+	    %W invoke active
+	    #%W unpost
+	    after cancel $blt::ComboTree::_private(afterId)
+	    set blt::ComboTree::_private(afterId) -1
+	    set blt::ComboTree::_private(scroll) 0
+	}
+	# ButtonPress-1
+	#   Sets the entry, set focus, clear previous selection.
+	$w bind Entry <ButtonPress-1> { 	
+	    blt::ComboTree::trace "blt::ComboTree ButtonPress-1 for Entry"
+	    blt::ComboTree::HandleButtonPress %W %x %y
+	    blt::ComboTree::SetEntry %W current
+	}
+	
+	# B1-Motion
+	#	Saves the current location of the pointer for auto-scrolling.
+	$w bind Entry <B1-Motion> { 
+	    set blt::ComboTree::_private(x) %x
+	    set blt::ComboTree::_private(y) %y
+	    set index [%W nearest %x %y]
+	    set blt::ComboTree::_private(scroll) 1
+	    blt::ComboTree::SetEntry %W $index
+	}
+	
+	# ButtonRelease-1
+	#  Sets the select anchor and in invokes the entry's -command option.
+	$w bind Entry <ButtonRelease-1> { 
+	    blt::ComboTree::trace "blt::ComboTree ButtonRelease-1 for Entry: [%W index active]"
+	    blt::ComboTree::ButtonReleaseEvent %W %X %Y
+	}
+	
+	# Double-ButtonPress-1
+	#   Open or close the entry.
+	$w bind Entry <Double-ButtonPress-1> {
+	    %W see -anchor nw active
+	    %W toggle active
+	}
+	
+	# Shift-ButtonPress-1
+	#
+	$w bind Entry <Shift-ButtonPress-1> { 
+	    blt::ComboTree::SetEntry %W current
+	}
+	# Shift-Double-ButtonPress-1
+	#   Prevent less specific bindings for triggering.
+	$w bind Entry <Shift-Double-ButtonPress-1> {
+	    # Do nothing.
+	}
+	# Shift-B1-Motion
+	#   Prevent less specific bindings for triggering.
+	$w bind Entry <Shift-B1-Motion> { 
+	    # Do nothing.
+	}
+	# Shift-ButtonRelease-1
+	#   Turn off autoscrolling.
+	$w bind Entry <Shift-ButtonRelease-1> { 
+	    after cancel $blt::ComboTree::_private(afterId)
+	    set blt::ComboTree::_private(afterId) -1
+	    set blt::ComboTree::_private(scroll) 0
+	}
+	#
+	# Control-ButtonPress-1
+	#
+	#	For "multiple" mode only.  
+	#
+	$w bind Entry <Control-ButtonPress-1> { 
+	    blt::ComboTree::SetEntry %W current
+	}
+	# Control-Double-ButtonPress-1
+	#   Prevent less specific bindings for triggering.
+	$w bind Entry <Control-Double-ButtonPress-1> {
+	    # Do nothing.
+	}
+	# Control-B1-Motion
+	#   Prevent less specific bindings for triggering.
+	$w bind Entry <Control-B1-Motion> { 
+	    # Do nothing.
+	}
+	$w bind Entry <Control-ButtonRelease-1> { 
+	    after cancel $blt::ComboTree::_private(afterId)
+	    set blt::ComboTree::_private(afterId) -1
+	    set blt::ComboTree::_private(scroll) 0
+	}
+	# Control-Shift-ButtonRelease-1
+	$w bind Entry <Control-Shift-ButtonPress-1> { 
+	    blt::ComboTree::SetEntry %W current
+	}
+	# Control-Shift-Double-ButtonPress-1
+	#   Prevent less specific bindings for triggering.
+	$w bind Entry <Control-Shift-Double-ButtonPress-1> {
+	    # Do nothing.
+	}
     }
     # Control-Shift-B1-Motion
     #   Prevent less specific bindings for triggering.
     $w bind Entry <Control-Shift-B1-Motion> { 
 	# Do nothing.
     }
+
 }
 
 # ----------------------------------------------------------------------
@@ -553,6 +550,15 @@ proc ::blt::ComboTree::ButtonReleaseEvent { menu x y } {
     set _private(afterId) -1
     set _private(scroll) 0
     set entry [$menu index active]
+    if { $entry != -1  && [$menu identify $entry -root $x $y] == "button" } {
+	puts stderr "returning from button release"
+	return
+    } else {
+	puts stderr "entry=$entry x=$x y=$y"
+	if { $entry != -1 } {
+	    puts stderr "???identify=[$menu identify $entry -root $x $y]"
+	}
+    }
     set popOnRelease 1
     if { !$_private(popOnRelease) } {
 	set popOnRelease 0
@@ -562,6 +568,7 @@ proc ::blt::ComboTree::ButtonReleaseEvent { menu x y } {
     if { $w != $menu && $w != $parent } {
 	set popOnRelease 1
     }
+    blt::ComboTree::trace "blt::ComboTree::ButtonReleaseEvent entry is $entry"
     if { $entry != -1 || $popOnRelease } {
 	# This isn't the first time the menu was posted.  That happens when
 	# the menubutton is pressed, the menu is posted, and the grab is
@@ -578,14 +585,10 @@ proc ::blt::ComboTree::ButtonReleaseEvent { menu x y } {
 }
 
 
-proc ::blt::ComboTree::ButtonPressEvent { menu x y } {
+proc ::blt::ComboTree::HandleButtonPress { menu x y } {
     variable _private
 
-    blt::ComboTree::trace "blt::ComboTree::ButtonPressEvent menu=$menu x=$x y=$y"
-    set entry [$menu index @$x,$y]
-    if { $entry != -1 } {
-	return;				# Found it.
-    }
+    blt::ComboTree::trace "blt::ComboTree::HandleButtonPress menu=$menu x=$x y=$y"
     # This is called only when the grab is on.  This means that menu will
     # already be posted at this point.  On release, unpost the menu.
     set _private(popOnRelease) 1
@@ -614,7 +617,7 @@ proc ::blt::ComboTree::ButtonMotionEvent { menu x y } {
 	 [winfo class $parent] == "BltComboButton" &&
 	 [winfo class $w] == "BltComboButton" } {
 	# Release the current combobutton, including removing the grab.
-	$menu unpost
+	#$menu unpost
 	# Reset the grab to the new button.
 	blt::grab set -global $w 
 	# Simulate pressing the new combobutton widget.
@@ -622,3 +625,13 @@ proc ::blt::ComboTree::ButtonMotionEvent { menu x y } {
     }
 }
 
+proc ::blt::ComboTree::HighlightActiveEntry { menu x y } {
+    variable _private
+
+    set entry [$menu index @$x,$y]
+    if { $entry != -1  } {
+	$menu activate $entry
+    } else {
+	$menu deactivate
+    }
+}
