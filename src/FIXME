@@ -1,8 +1,20 @@
+2.  (done) Fix combotree drawing
+
+8. (done) Add callback to paintbrush.
+
+10. (done) Fix barchart to use paintbrush and/or background.
+
+11. (done) Does it make sense to separate out picture text drawing into a
+    module?  Separate file yes. Module?  FreeType is already used in
+    bltUnixFont.c but not in bltWinFont.c. Don't require Window users to
+    link with freetype.
+
+-------------------------------------------------------------------------
+
 The following bugs are all show-stoppers for the next release.
 
-1.  Unify or separate bgexec Unix/Max/Win implementations.
 
-2.  Fix combotree drawing
+1.  Unify or separate bgexec Unix/Max/Win implementations.
 
 3.  Fix TreeView bindings to handle editing entry.
 
@@ -12,19 +24,8 @@ The following bugs are all show-stoppers for the next release.
 
 7. Remove bltTile*
 
-8. (done) Add callback to paintbrush.
-
-9. Add paintbrush callbacks to graph and barchart.
-
-Backgrounds don't have opacity.  Paintbrushes do.
-Add origin interface to paintbrushes.
-
-10. (done) Fix barchart to use paintbrush and/or background.
-
-11. (done) Does it make sense to separate out picture text drawing into a
-    module?  Separate file yes. Module?  FreeType is already used in
-    bltUnixFont.c but not in bltWinFont.c. Don't require Window users to
-    link with freetype.
+9. Add paintbrush callbacks to graph and barchart.  Backgrounds don't have
+   opacity.  Paintbrushes do.  Add origin interface to paintbrushes.
 
 12. Check for memory allocations passing between BLT and TCL.
 
@@ -37,4 +38,6 @@ Add origin interface to paintbrushes.
     bltPictDrawUnsupported.c
 
 15. Remove Makefile.vc and Makefile.bc files.
+
+16. Fix combotree bindings, especially autoscrolling.
 
