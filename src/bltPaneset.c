@@ -346,109 +346,92 @@ struct _Paneset {
 struct _Pane  {
     Tk_Window tkwin;                    /* Widget to be managed. */
     Tk_Window handle;                   /* Handle subwindow. */
-
     Tk_Cursor cursor;                   /* X Cursor */
-
     const char *name;                   /* Name of pane */
-
-    unsigned int side;                  /* The side of the widget where this
-                                         * drawer is attached. */
+    unsigned int side;                  /* The side of the widget where
+                                         * this drawer is attached. */
     unsigned int flags;
-
-    Paneset *setPtr;                    /* Paneset widget managing this pane. */
-
+    Paneset *setPtr;                    /* Paneset widget managing this
+                                         * pane. */
     int borderWidth;                    /* The external border width of the
-                                         * widget. This is needed to check if
+                                         * widget. This is needed to check
+                                         * if
                                          * Tk_Changes(tkwin)->border_width
                                          * changes. */
-
     XColor *highlightBgColor;           /* Color for drawing traversal
                                          * highlight area when highlight is
                                          * off. */
     XColor *highlightColor;             /* Color for drawing traversal
                                          * highlight. */
-
-    const char *takeFocus;              /* Says whether to select this widget
-                                         * during tab traveral operations.
-                                         * This value isn't used in C code,
-                                         * but for the widget's TCL
-                                         * bindings. */
-
+    const char *takeFocus;              /* Says whether to select this
+                                         * widget during tab traveral
+                                         * operations.  This value isn't
+                                         * used in C code, but for the
+                                         * widget's TCL bindings. */
     Blt_Limits reqWidth, reqHeight;     /* Bounds for width and height
                                          * requests made by the widget. */
     Tk_Anchor anchor;                   /* Anchor type: indicates how the
-                                         * widget is positioned if extra space
-                                         * is available in the pane. */
-
-    Blt_Pad xPad;                       /* Extra padding placed left and right
-                                         * of the widget. */
-    Blt_Pad yPad;                       /* Extra padding placed above and below
-                                         * the widget */
-
-    int iPadX, iPadY;                   /* Extra padding added to the interior
-                                         * of the widget (i.e. adds to the
-                                         * requested size of the widget) */
-
-    int fill;                           /* Indicates how the widget should fill
-                                         * the pane it occupies. */
+                                         * widget is positioned if extra
+                                         * space is available in the
+                                         * pane. */
+    Blt_Pad xPad;                       /* Extra padding placed left and
+                                         * right of the widget. */
+    Blt_Pad yPad;                       /* Extra padding placed above and
+                                         * below the widget */
+    int iPadX, iPadY;                   /* Extra padding added to the
+                                         * interior of the widget
+                                         * (i.e. adds to the requested size
+                                         * of the widget) */
+    int fill;                           /* Indicates how the widget should
+                                         * fill the pane it occupies. */
     int resize;                         /* Indicates if the pane should
                                          * expand/shrink. */
-
     int x, y;                           /* Origin of pane wrt container. */
-
-    short int width, height;            /* Size of pane, including handle. */
-
-    Blt_ChainLink link;                 /* Pointer of this pane into the list
-                                         * of panes. */
-
-    Blt_HashEntry *hashPtr;             /* Pointer of this pane into hashtable
-                                         * of panes. */
+    short int width, height;            /* Size of pane, including
+                                         * handle. */
+    Blt_ChainLink link;                 /* Pointer of this pane into the
+                                         * list of panes. */
+    Blt_HashEntry *hashPtr;             /* Pointer of this pane into
+                                         * hashtable of panes. */
     Blt_HashEntry *handleHashPtr;       /* Pointer of this pane into
                                          * hashtable of handles. */
-
     int index;                          /* Index of the pane. */
-
-    int size;                           /* Current size of the pane. This size
-                                         * is bounded by min and max. */
-
+    int size;                           /* Current size of the pane. This
+                                         * size is bounded by min and
+                                         * max. */
     /*
      * nom and size perform similar duties.  I need to keep track of the
      * amount of space allocated to the pane (using size).  But at the same
-     * time, I need to indicate that space can be parcelled out to this pane.
-     * If a nominal size was set for this pane, I don't want to add space.
+     * time, I need to indicate that space can be parcelled out to this
+     * pane.  If a nominal size was set for this pane, I don't want to add
+     * space.
      */
-
-    int nom;                            /* The nominal size (neither expanded
-                                         * nor shrunk) of the pane based upon
-                                         * the requested size of the widget
-                                         * embedded in this pane. */
-
+    int nom;                            /* The nominal size (neither
+                                         * expanded nor shrunk) of the pane
+                                         * based upon the requested size of
+                                         * the widget embedded in this
+                                         * pane. */
     int min, max;                       /* Size constraints on the pane */
-
     float weight;                       /* Weight of pane. */
-
     Blt_Limits reqSize;                 /* Requested bounds for the size of
-                                         * the pane. The pane will not expand
-                                         * or shrink beyond these limits,
-                                         * regardless of how it was specified
-                                         * (max widget size).  This includes
-                                         * any extra padding which may be
-                                         * specified. */
+                                         * the pane. The pane will not
+                                         * expand or shrink beyond these
+                                         * limits, regardless of how it was
+                                         * specified (max widget size).
+                                         * This includes any extra padding
+                                         * which may be specified. */
     Blt_Bg handleBg;
     Blt_Bg activeHandleBg;
-    Blt_Bg bg;                  /* 3D background border surrounding
+    Blt_Bg bg;                          /* 3D background border surrounding
                                          * the widget */
     Tcl_Obj *cmdObjPtr;
-
     Tcl_TimerToken timerToken;
     int scrollTarget;                   /* Target offset to scroll to. */
     int scrollIncr;                     /* Current increment. */
-
-    Tcl_Obj *variableObjPtr;            /* Name of TCL variable.  If non-NULL,
-                                         * this variable will be set to the
-                                         * value string of the selected
-                                         * item. */
-
+    Tcl_Obj *variableObjPtr;            /* Name of TCL variable.  If
+                                         * non-NULL, this variable will be
+                                         * set to the value string of the
+                                         * selected item. */
 };
 
 /* Pane/handle flags.  */
@@ -628,8 +611,8 @@ static Blt_ConfigSpec frameSpecs[] =
 /* 
  * Hide the handle. 
  *
- *      .p configure -handlethickness 0
- *      .p pane configure -hide yes 
+ *      pathName configure -handlethickness 0
+ *      pathName pane configure -hide yes 
  *      Put all the drawers in the paneset widget, hidden by default.
  *      Reveal/hide drawers to pop them out.
  *      plotarea | sidebar | scroller
@@ -729,8 +712,8 @@ typedef enum {
 } IteratorType;
 
 typedef struct _Iterator {
-    Paneset *setPtr;                   /* Paneset that we're iterating over. */
-
+    Paneset *setPtr;                   /* Paneset that we're iterating
+                                        * over. */
     IteratorType type;                  /* Type of iteration:
                                          * ITER_TAG      By item tag.
                                          * ITER_ALL      By every item.
@@ -739,18 +722,16 @@ typedef struct _Iterator {
                                          * ITER_PATTERN  Over a consecutive 
                                          *               range of indices.
                                          */
-
-    Pane *startPtr;                     /* Starting pane.  Starting point of
-                                         * search, saved if iterator is reused.
-                                         * Used for ITER_ALL and ITER_SINGLE
-                                         * searches. */
+    Pane *startPtr;                     /* Starting pane.  Starting point
+                                         * of search, saved if iterator is
+                                         * reused.  Used for ITER_ALL and
+                                         * ITER_SINGLE searches. */
     Pane *endPtr;                       /* Ending pend (inclusive). */
-
     Pane *nextPtr;                      /* Next pane. */
 
     /* For tag-based searches. */
-    char *tagName;                      /* If non-NULL, is the tag that we are
-                                         * currently iterating over. */
+    const char *tagName;                /* If non-NULL, is the tag that we
+                                         * are currently iterating over. */
     Blt_ChainLink link;
 } PaneIterator;
 
@@ -1871,10 +1852,10 @@ FirstTaggedPane(PaneIterator *iterPtr)
  *
  * GetPaneFromObj --
  *
- *      Gets the pane associated the given index, tag, or label.  This routine
- *      is used when you want only one pane.  It's an error if more than one
- *      pane is specified (e.g. "all" tag or range "1:4").  It's also an error
- *      if the tag is empty (no panes are currently tagged).
+ *      Gets the pane associated the given index, tag, or label.  This
+ *      routine is used when you want only one pane.  It's an error if more
+ *      than one pane is specified (e.g. "all" tag).  It's also an error if
+ *      the tag is empty (no panes are currently tagged).
  *
  *---------------------------------------------------------------------------
  */
@@ -1964,8 +1945,8 @@ GetPaneByName(Paneset *setPtr, const char *string)
  *
  * GetPaneIterator --
  *
- *      Converts a string representing a pane index into an pane pointer.  The
- *      index may be in one of the following forms:
+ *      Converts a string representing a pane index into an pane pointer.
+ *      The index may be in one of the following forms:
  *
  *       number         Pane at index in the list of panes.
  *       @x,y           Pane closest to the specified X-Y screen coordinates.
@@ -2192,7 +2173,7 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
  * PaneFreeProc --
  *
  *      Removes the Pane structure from the hash table and frees the memory
- *      allocated by it.  
+ *      allocated by it.
  *
  * Results:
  *      None.
@@ -2216,13 +2197,13 @@ PaneFreeProc(DestroyData dataPtr)
  * NewPaneset --
  *
  *      This procedure creates and initializes a new Paneset structure with
- *      tkwin as its container widget. The internal structures associated with
- *      the paneset are initialized.
+ *      tkwin as its container widget. The internal structures associated
+ *      with the paneset are initialized.
  *
  * Results:
  *      Returns the pointer to the new Paneset structure describing the new
- *      paneset geometry manager.  If an error occurred, the return value will
- *      be NULL and an error message is left in interp->result.
+ *      paneset geometry manager.  If an error occurred, the return value
+ *      will be NULL and an error message is left in interp->result.
  *
  * Side effects:
  *      Memory is allocated and initialized, an event handler is set up to
@@ -2300,14 +2281,15 @@ RenumberPanes(Paneset *setPtr)
  * DestroyPaneset --
  *
  *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
- *      clean up the Paneset structure at a safe time (when no-one is using it
- *      anymore).
+ *      clean up the Paneset structure at a safe time (when no-one is using
+ *      it anymore).
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      Everything associated with the paneset geometry manager is freed up.
+ *      Everything associated with the paneset geometry manager is freed
+ *      up.
  *
  *---------------------------------------------------------------------------
  */
@@ -2342,14 +2324,15 @@ DestroyPaneset(Paneset *setPtr)         /* Paneset structure */
  * PanesetFreeProc --
  *
  *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
- *      clean up the Paneset structure at a safe time (when no-one is using it
- *      anymore).
+ *      clean up the Paneset structure at a safe time (when no-one is using
+ *      it anymore).
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      Everything associated with the paneset geometry manager is freed up.
+ *      Everything associated with the paneset geometry manager is freed
+ *      up.
  *
  *---------------------------------------------------------------------------
  */
@@ -2369,8 +2352,8 @@ PanesetFreeProc(DestroyData dataPtr)    /* Paneset structure */
  * TranslateAnchor --
  *
  *      Translate the coordinates of a given bounding box based upon the
- *      anchor specified.  The anchor indicates where the given xy position is
- *      in relation to the bounding box.
+ *      anchor specified.  The anchor indicates where the given xy position
+ *      is in relation to the bounding box.
  *
  *              nw --- n --- ne
  *              |            |     x,y ---+
@@ -2385,8 +2368,8 @@ PanesetFreeProc(DestroyData dataPtr)    /* Paneset structure */
  */
 static void
 TranslateAnchor(
-    int dx, int dy,                     /* Difference between outer and inner
-                                         * regions. */
+    int dx, int dy,                     /* Difference between outer and
+                                         * inner regions. */
     Tk_Anchor anchor,                   /* Direction of the anchor */
     int *xPtr, int *yPtr)
 {
@@ -2492,7 +2475,8 @@ LeftSpanLimits(Paneset *setPtr, int *minPtr, int *maxPtr)
     Pane *panePtr;
 
     total = min = max = 0;
-    /* The left span is every pane before and including) the anchor pane. */
+    /* The left span is every pane before and including) the anchor
+     * pane. */
     for (panePtr = setPtr->anchorPtr; panePtr != NULL; 
          panePtr = PrevPane(panePtr)) {
         total += panePtr->size;
@@ -2555,8 +2539,8 @@ GetReqPaneHeight(Pane *panePtr)
  * GrowPane --
  *
  *      Expand the span by the amount of the extra space needed.  This
- *      procedure is used in Layout*Panes to grow the panes to their minimum
- *      nominal size, starting from a zero width and height space.
+ *      procedure is used in Layout*Panes to grow the panes to their
+ *      minimum nominal size, starting from a zero width and height space.
  *
  *      On the first pass we try to add space to panes which have not been
  *      touched yet (i.e. have no nominal size).
@@ -2566,10 +2550,11 @@ GetReqPaneHeight(Pane *panePtr)
  *      this by parcelling out the left over space evenly among the rest of
  *      the panes.
  *
- *      On each pass, we have to keep iterating over the list, evenly doling
- *      out slices of extra space, because we may hit pane limits as space is
- *      donated.  In addition, if there are left over pixels because of
- *      round-off, this will distribute them as evenly as possible.
+ *      On each pass, we have to keep iterating over the list, evenly
+ *      doling out slices of extra space, because we may hit pane limits as
+ *      space is donated.  In addition, if there are left over pixels
+ *      because of round-off, this will distribute them as evenly as
+ *      possible.
  *
  * Results:
  *      None.
@@ -2614,18 +2599,19 @@ GrowPane(Pane *panePtr, int extra)
  *
  * GrowSpan --
  *
- *      Grow the span by the designated amount.  Size constraints on the panes
- *      may prevent any or all of the spacing adjustments.
+ *      Grow the span by the designated amount.  Size constraints on the
+ *      panes may prevent any or all of the spacing adjustments.
  *
- *      This is very much like the GrowPane procedure, but in this case we are
- *      expanding all the panes. It uses a two pass approach, first giving
- *      space to panes which are smaller than their nominal sizes. This is
- *      because constraints on the panes may cause resizing to be non-linear.
+ *      This is very much like the GrowPane procedure, but in this case we
+ *      are expanding all the panes. It uses a two pass approach, first
+ *      giving space to panes which are smaller than their nominal
+ *      sizes. This is because constraints on the panes may cause resizing
+ *      to be non-linear.
  *
- *      If there is still extra space, this means that all panes are at least
- *      to their nominal sizes.  The second pass will try to add the left over
- *      space evenly among all the panes which still have space available
- *      (i.e. haven't reached their specified max sizes).
+ *      If there is still extra space, this means that all panes are at
+ *      least to their nominal sizes.  The second pass will try to add the
+ *      left over space evenly among all the panes which still have space
+ *      available (i.e. haven't reached their specified max sizes).
  *
  * Results:
  *      None.
@@ -2639,14 +2625,14 @@ static void
 GrowSpan(Blt_Chain chain, int adjustment)       
 {
     int delta;                          /* Amount of space needed */
-    int numAdjust;                      /* Number of rows/columns that still can
-                                         * be adjusted. */
+    int numAdjust;                      /* Number of rows/columns that
+                                         * still can be adjusted. */
     Blt_ChainLink link;
     float totalWeight;
 
     /*
-     * Pass 1:  First adjust the size of panes that still haven't reached their
-     *          nominal size.
+     * Pass 1: First adjust the size of panes that still haven't reached
+     *         their nominal size.
      */
     delta = adjustment;
 
@@ -2677,7 +2663,8 @@ GrowSpan(Blt_Chain chain, int adjustment)
 
             panePtr = Blt_Chain_GetValue(link);
             if (panePtr->weight > 0.0f) {
-                int avail;              /* Amount of space still available. */
+                int avail;              /* Amount of space still
+                                         * available. */
 
                 avail = panePtr->nom - panePtr->size;
                 if (avail > 0) {
@@ -2765,15 +2752,17 @@ GrowSpan(Blt_Chain chain, int adjustment)
  *      Shrink the span by the amount specified.  Size constraints on the
  *      panes may prevent any or all of the spacing adjustments.
  *
- *      This is very much like the GrowPane procedure, but in this case we are
- *      shrinking the panes. It uses a two pass approach, first subtracting
- *      space to panes which are larger than their nominal sizes. This is
- *      because constraints on the panes may cause resizing to be non-linear.
+ *      This is very much like the GrowPane procedure, but in this case we
+ *      are shrinking the panes. It uses a two pass approach, first
+ *      subtracting space to panes which are larger than their nominal
+ *      sizes. This is because constraints on the panes may cause resizing
+ *      to be non-linear.
  *
- *      After pass 1, if there is still extra to be removed, this means that
- *      all panes are at least to their nominal sizes.  The second pass will
- *      try to remove the extra space evenly among all the panes which still
- *      have space available (i.e haven't reached their respective min sizes).
+ *      After pass 1, if there is still extra to be removed, this means
+ *      that all panes are at least to their nominal sizes.  The second
+ *      pass will try to remove the extra space evenly among all the panes
+ *      which still have space available (i.e haven't reached their
+ *      respective min sizes).
  *
  * Results:
  *      None.
@@ -2788,8 +2777,8 @@ ShrinkSpan(Blt_Chain chain, int adjustment)
 {
     Blt_ChainLink link;
     int extra;                          /* Amount of space needed */
-    int numAdjust;                      /* Number of panes that still can be
-                                         * adjusted. */
+    int numAdjust;                      /* Number of panes that still can
+                                         * be adjusted. */
     float totalWeight;
 
     extra = -adjustment;
@@ -2813,8 +2802,8 @@ ShrinkSpan(Blt_Chain chain, int adjustment)
 
     while ((numAdjust > 0) && (totalWeight > 0.0f) && (extra > 0)) {
         Blt_ChainLink link;
-        int ration;                     /* Amount of space to subtract from each
-                                         * row/column. */
+        int ration;                     /* Amount of space to subtract from
+                                         * each row/column. */
         ration = (int)(extra / totalWeight);
         if (ration == 0) {
             ration = 1;
@@ -2825,7 +2814,8 @@ ShrinkSpan(Blt_Chain chain, int adjustment)
 
             panePtr = Blt_Chain_GetValue(link);
             if (panePtr->weight > 0.0f) {
-                int avail;              /* Amount of space still available */
+                int avail;              /* Amount of space still
+                                         * available */
 
                 avail = panePtr->size - panePtr->nom;
                 if (avail > 0) {
@@ -2849,8 +2839,8 @@ ShrinkSpan(Blt_Chain chain, int adjustment)
         }
     }
     /*
-     * Pass 2: Now adjust the panes with space still available (i.e.
-     *         are bigger than their minimum size).
+     * Pass 2: Now adjust the panes with space still available (i.e.  are
+     *         bigger than their minimum size).
      */
     numAdjust = 0;
     totalWeight = 0.0f;
@@ -2868,8 +2858,8 @@ ShrinkSpan(Blt_Chain chain, int adjustment)
     }
     while ((numAdjust > 0) && (totalWeight > 0.0f) && (extra > 0)) {
         Blt_ChainLink link;
-        int ration;                     /* Amount of space to subtract from each
-                                         * pane. */
+        int ration;                     /* Amount of space to subtract from
+                                         * each pane. */
         ration = (int)(extra / totalWeight);
         if (ration == 0) {
             ration = 1;
@@ -2880,7 +2870,8 @@ ShrinkSpan(Blt_Chain chain, int adjustment)
 
             panePtr = Blt_Chain_GetValue(link);
             if (panePtr->weight > 0.0f) {
-                int avail;              /* Amount of space still available */
+                int avail;              /* Amount of space still
+                                         * available */
 
                 avail = panePtr->size - panePtr->min;
                 if (avail > 0) {
@@ -3120,8 +3111,8 @@ SortedSpan(Paneset *setPtr, Pane *firstPtr, Pane *lastPtr)
  * ResetPanes --
  *
  *      Sets/resets the size of each pane to the minimum limit of the pane
- *      (this is usually zero). This routine gets called when new widgets are
- *      added, deleted, or resized.
+ *      (this is usually zero). This routine gets called when new widgets
+ *      are added, deleted, or resized.
  *
  * Results:
  *      None.
@@ -3143,9 +3134,9 @@ ResetPanes(Paneset *setPtr)
 
         panePtr = Blt_Chain_GetValue(link);
         /*
-         * The constraint procedure below also has the desired side-effect of
-         * setting the minimum, maximum, and nominal values to the requested
-         * size of its associated widget (if one exists).
+         * The constraint procedure below also has the desired side-effect
+         * of setting the minimum, maximum, and nominal values to the
+         * requested size of its associated widget (if one exists).
          */
         if (ISVERT(setPtr)) {
             size = BoundHeight(0, &panePtr->reqSize);
@@ -3160,9 +3151,9 @@ ResetPanes(Paneset *setPtr)
         if (panePtr->reqSize.flags & LIMITS_NOM_SET) {
             /*
              * This could be done more cleanly.  We want to ensure that the
-             * requested nominal size is not overridden when determining the
-             * normal sizes.  So temporarily fix min and max to the nominal
-             * size and reset them back later.
+             * requested nominal size is not overridden when determining
+             * the normal sizes.  So temporarily fix min and max to the
+             * nominal size and reset them back later.
              */
             panePtr->min = panePtr->max = panePtr->size = panePtr->nom = 
                 size + extra;
@@ -3181,18 +3172,20 @@ ResetPanes(Paneset *setPtr)
  *
  * SetNominalSizes
  *
- *      Sets the normal sizes for each pane.  The pane size is the requested
- *      widget size plus an amount of padding.  In addition, adjust the
- *      min/max bounds of the pane depending upon the resize flags (whether
- *      the pane can be expanded or shrunk from its normal size).
+ *      Sets the normal sizes for each pane.  The pane size is the
+ *      requested widget size plus an amount of padding.  In addition,
+ *      adjust the min/max bounds of the pane depending upon the resize
+ *      flags (whether the pane can be expanded or shrunk from its normal
+ *      size).
  *
  * Results:
  *      Returns the total space needed for the all the panes.
  *
  * Side Effects:
- *      The nominal size of each pane is set.  This is later used to determine
- *      how to shrink or grow the table if the container can't be resized to
- *      accommodate the exact size requirements of all the panes.
+ *      The nominal size of each pane is set.  This is later used to
+ *      determine how to shrink or grow the table if the container can't be
+ *      resized to accommodate the exact size requirements of all the
+ *      panes.
  *
  *---------------------------------------------------------------------------
  */
@@ -3219,8 +3212,8 @@ SetNominalSizes(Paneset *setPtr)
         }
         /*
          * Restore the real bounds after temporarily setting nominal size.
-         * These values may have been set in ResetPanes to restrict the size
-         * of the pane to the requested range.
+         * These values may have been set in ResetPanes to restrict the
+         * size of the pane to the requested range.
          */
         panePtr->min = panePtr->reqSize.min + extra;
         panePtr->max = panePtr->reqSize.max + extra;
@@ -3232,8 +3225,8 @@ SetNominalSizes(Paneset *setPtr)
         }
         panePtr->nom = panePtr->size;
         /*
-         * If a pane can't be resized (to either expand or shrink), hold its
-         * respective limit at its normal size.
+         * If a pane can't be resized (to either expand or shrink), hold
+         * its respective limit at its normal size.
          */
         if ((panePtr->resize & RESIZE_EXPAND) == 0) {
             panePtr->max = panePtr->nom;
@@ -3257,8 +3250,8 @@ SetNominalSizes(Paneset *setPtr)
  *      None.
  *
  * Side Effects:
- *      The sum of normal sizes set here will be used as the normal size for
- *      the container widget.
+ *      The sum of normal sizes set here will be used as the normal size
+ *      for the container widget.
  *
  *---------------------------------------------------------------------------
  */
@@ -3344,8 +3337,8 @@ LayoutHorizontalPanes(Paneset *setPtr)
  *      None.
  *
  * Side Effects:
- *      The sum of normal sizes set here will be used as the normal size for
- *      the container widget.
+ *      The sum of normal sizes set here will be used as the normal size
+ *      for the container widget.
  *
  *---------------------------------------------------------------------------
  */
@@ -3478,16 +3471,14 @@ ArrangeWindow(Pane *panePtr, int x, int y)
         h = GetReqHeight(panePtr);
         
         /*
-         *
          * Compare the widget's requested size to the size of the cavity.
          *
-         * 1) If the widget is larger than the cavity or if the fill flag is
-         * set, make the widget the size of the cavity. Check that the new size
-         * is within the bounds set for the widget.
+         * 1) If the widget is larger than the cavity or if the fill flag
+         *    is set, make the widget the size of the cavity. Check that
+         *    the new size is within the bounds set for the widget.
          *
          * 2) Otherwise, position the widget in the space according to its
          *    anchor.
-         *
          */
         if ((cavityWidth <= w) || (panePtr->fill & FILL_X)) {
             w = cavityWidth;
@@ -3597,8 +3588,9 @@ ArrangeHandle(Pane *panePtr, int x, int y)
  *
  * ArrangePane
  *
- *      Places each window at its proper location.  First determines the size
- *      and position of the each window.  It then considers the following:
+ *      Places each window at its proper location.  First determines the
+ *      size and position of the each window.  It then considers the
+ *      following:
  *
  *        1. translation of widget position its parent widget.
  *        2. fill style
@@ -3680,8 +3672,8 @@ VerticalPanes(Paneset *setPtr)
         LayoutVerticalPanes(setPtr);
     }
     /*
-     * Save the width and height of the container so we know when its size has
-     * changed during ConfigureNotify events.
+     * Save the width and height of the container so we know when its size
+     * has changed during ConfigureNotify events.
      */
     top = LeftSpan(setPtr);
     bottom = RightSpan(setPtr);
@@ -3793,8 +3785,8 @@ HorizontalPanes(Paneset *setPtr)
         LayoutHorizontalPanes(setPtr);
     }
     /*
-     * Save the width and height of the container so we know when its size has
-     * changed during ConfigureNotify events.
+     * Save the width and height of the container so we know when its size
+     * has changed during ConfigureNotify events.
      */
     xPad = yPad = 2 * Tk_InternalBorderWidth(setPtr->tkwin);
 
@@ -3804,8 +3796,8 @@ HorizontalPanes(Paneset *setPtr)
     
     /*
      * If the previous geometry request was not fulfilled (i.e. the size of
-     * the paneset is different from the total panes space requirements), try
-     * to adjust size of the panes to fit the widget.
+     * the paneset is different from the total panes space requirements),
+     * try to adjust size of the panes to fit the widget.
      */
     if (setPtr->classPtr->type == PANESET) {
         Pane *firstPtr, *lastPtr;
@@ -3898,8 +3890,6 @@ ConfigurePaneset(Paneset *setPtr)
     }
     setPtr->gc = newGC;
 }
-
-
 
 static int
 AdjustPanesetDelta(Paneset *setPtr, int delta)
@@ -4002,7 +3992,7 @@ AdjustHandle(Paneset *setPtr, int delta)
  *      Returns a standard TCL result.  The index of the pane is left in
  *      interp->result.
  *
- *      .p add ?name? ?option value...?
+ *      pathName add ?name? ?option value...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4057,7 +4047,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Returns a standard TCL result.  A list of the widget attributes is
  *      left in interp->result.
  *
- *      .p cget option
+ *      pathName cget option
  *
  *---------------------------------------------------------------------------
  */
@@ -4083,7 +4073,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns a standard TCL result.  A list of the paneset configuration
  *      option information is left in interp->result.
  *
- *      .p configure option value
+ *      pathName configure option value
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4120,7 +4110,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Deletes the specified panes from the widget.  Note that the pane
  *      indices can be fixed only after all the deletions have occurred.
  *
- *      .p delete widget
+ *      pathName delete widget
  *
  * Results:
  *      Returns a standard TCL result.
@@ -4605,7 +4595,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to invoke a selection command.
  *
- *        .ps invoke pane
+ *        pathName invoke pane
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
@@ -4717,7 +4707,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *        .ps names pattern
+ *        pathName names pattern...
  *
  *---------------------------------------------------------------------------
  */
@@ -4774,7 +4764,7 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns a standard TCL result.  A list of the widget attributes is
  *      left in interp->result.
  *
- *      .p pane cget pane option
+ *      pathName pane cget pane option
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4803,7 +4793,7 @@ PaneCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns a standard TCL result.  A list of the paneset configuration
  *      option information is left in interp->result.
  *
- *      .p pane configure pane option value
+ *      pathName pane configure pane option value
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
