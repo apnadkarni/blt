@@ -3884,7 +3884,19 @@ ComputeGeometry(Paneset *setPtr)
 static void
 ConfigurePaneset(Paneset *setPtr) 
 {
-    setPtr->handleSize = MAX(PADDING(setPtr->handlePad),setPtr->highlightThickness) + setPtr->handleThickness;
+    GC newGC;
+    XGCValues gcValues;
+    unsigned long gcMask;
+
+    setPtr->handleSize =
+        MAX(PADDING(setPtr->handlePad), setPtr->highlightThickness) +
+        setPtr->handleThickness;
+    gcMask = 0;
+    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
+    if (setPtr->gc != NULL) {
+        Tk_FreeGC(setPtr->display, setPtr->gc);
+    }
+    setPtr->gc = newGC;
 }
 
 

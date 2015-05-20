@@ -45,7 +45,7 @@ namespace eval blt {
             column              ""
             scroll              0
             space               off
-	    trace               1
+	    trace               0
             x                   0
             y                   0
 	}
