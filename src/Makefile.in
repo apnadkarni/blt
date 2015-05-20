@@ -272,8 +272,7 @@ endif
 # 	You don't need to edit anything beyond this point
 # ------------------------------------------------------------------------
 
-N_OBJS =		bltTed.o
-NOT_YET = 		bltMenubar.o 
+N_OBJS =		bltTed.o bltKiosk.o
 
 TK_OBJS =		tkButton.o \
 			tkFrame.o \
@@ -433,7 +432,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltUnixWindow.o \
 			bltWindow.o \
 			bltWinop.o  \
-			$(TK_OBJS) $(N_OBJS) 
+			$(TK_OBJS) #$(N_OBJS) 
 
 BLT_TK_OBJS =		$(BLT_TK_SO_OBJS) \
 			bltStaticInit.o \

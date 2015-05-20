@@ -131,33 +131,14 @@ typedef struct {
     int blend;
 } CircleSwitches2;
 
-#ifdef notdef
-static Blt_SwitchSpec circleSwitches2[] = 
-{
-    {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
-        Blt_Offset(CircleSwitches2, brush),    0, 0, &paintbrushSwitch},
-    {BLT_SWITCH_CUSTOM, "-fill", "fill", (char *)NULL,
-        Blt_Offset(CircleSwitches2, fill),    0, 0, &colorSwitch},
-    {BLT_SWITCH_CUSTOM, "-outline", "outline", (char *)NULL,
-        Blt_Offset(CircleSwitches2, outline),    0, 0, &colorSwitch},
-    {BLT_SWITCH_BOOLEAN, "-antialiased", "bool", (char *)NULL,
-        Blt_Offset(CircleSwitches2, antialiased), 0},
-    {BLT_SWITCH_BOOLEAN, "-blend", "bool", (char *)NULL,
-        Blt_Offset(CircleSwitches2, blend), 0},
-    {BLT_SWITCH_FLOAT, "-linewidth", "value", (char *)NULL,
-        Blt_Offset(CircleSwitches2, lineWidth), 0},
-    {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-        Blt_Offset(CircleSwitches2, shadow), 0, 0, &shadowSwitch},
-    {BLT_SWITCH_END}
-};
-#endif
-
 typedef struct {
-    Blt_Pixel fill, outline;     /* Outline and fill colors for the circle. */
+    Blt_Pixel fill, outline;            /* Outline and fill colors for the
+                                         * circle. */
     Blt_Shadow shadow;
     int antialiased;
     int lineWidth;                      /* Width of outline.  If zero,
-                                         * indicates to draw a solid circle. */
+                                         * indicates to draw a solid
+                                         * circle. */
     int blend;
 } EllipseSwitches;
 
@@ -353,87 +334,6 @@ ObjToPaintBrushProc(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
-#ifdef notdef
-/*
- *
- *  x,y------+
- *   |       |
- *   |  *----+------------+
- *   |  |    |            |
- *   |  |    |            |
- */  
-
-static void
-MergePictures(Pict *destPtr, Pict *srcPtr)
-{
-    Blt_Pixel *srcRowPtr, *destRowPtr;
-    int y;
-    int w, h;
-    
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-        Blt_UnassociateColors(srcPtr);
-    }
-    if (destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-        Blt_UnassociateColors(destPtr);
-    }
-    
-    destRowPtr = destPtr->bits;
-    srcRowPtr  = srcPtr->bits;
-    w = srcPtr->width;
-    h = srcPtr->height;
-    for (y = 0; y < h; y++) {
-        Blt_Pixel *sp, *dp, *dend;
-
-        sp = srcRowPtr;
-        for (dp = destRowPtr, dend = dp + w; dp < dend; dp++, sp++) {
-            /* Blend the foreground and background together. */
-            if (sp->Alpha == 0xFF) {
-                *dp = *sp;
-            } else if (sp->Alpha != 0x00) {
-                int t1, t2;
-                int r, g, b, a;
-
-                r = imul8x8(sp->Alpha, sp->Red, t1) +
-                    imul8x8(dp->Alpha, dp->Red, t2);
-                g = imul8x8(sp->Alpha, sp->Green, t1) +
-                    imul8x8(dp->Alpha, dp->Green, t2);
-                b = imul8x8(sp->Alpha, sp->Blue, t1) +
-                    imul8x8(dp->Alpha, dp->Blue, t2);
-                a = imul8x8(sp->Alpha, sp->Alpha, t1) + 
-                    imul8x8(dp->Alpha, dp->Alpha, t2);
-                dp->Red =   (r > 255) ? 255 : ((r < 0) ? 0 : r);
-                dp->Green = (g > 255) ? 255 : ((g < 0) ? 0 : g);
-                dp->Blue =  (b > 255) ? 255 : ((b < 0) ? 0 : b);
-                dp->Alpha = (a > 255) ? 255 : ((a < 0) ? 0 : a);
-            }
-        }
-        srcRowPtr += srcPtr->pixelsPerRow;
-        destRowPtr += destPtr->pixelsPerRow;
-
-}
-#endif
-    
-#ifdef notdef
-static void
-MarkPicture(Pict *srcPtr)
-{
-    Blt_Pixel *srcRowPtr;
-    int y;
-
-    srcRowPtr = srcPtr->bits;
-    for (y = 0; y < srcPtr->height; y++) {
-        Blt_Pixel *sp, *send;
-
-        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-            if (sp->Alpha != 0x0) {
-                sp->Alpha = 0xFF;
-            }
-        }
-        srcRowPtr += srcPtr->pixelsPerRow;
-    }
-}
-#endif
- 
 /*
  *---------------------------------------------------------------------------
  *
@@ -783,143 +683,726 @@ PaintLineSegment(
     }
 }
 
-#include "bltPaintDraw.c"
-
 #ifdef notdef
+#include "bltPaintDraw.c"
+#endif
+
+typedef struct {
+    int left, right;
+} ScanLine;
+
+static ScanLine *
+MakeScanLines(int numLines)
+{
+    ScanLine *coords;
+    int i;
+
+    coords = Blt_AssertMalloc(sizeof(ScanLine) * numLines);
+    for(i = 0; i < numLines; i++) {
+        coords[i].left = INT_MAX;
+        coords[i].right = -INT_MAX;
+    }
+    return coords;
+}
+
 static void 
-PaintLineSegment2(
-    Pict *destPtr,
-    int x1, int y1, 
-    int x2, int y2, 
-    int cw,
+AddEllipseCoord(ScanLine *coords, int x, int y)
+{
+    if (x < coords[y].left) {
+        coords[y].left = x;
+    } 
+    if (x > coords[y].right) {
+        coords[y].right = x;
+    }
+}
+
+static ScanLine *
+ComputeEllipseQuadrant(int a, int b)
+{
+    ScanLine *coords;
+    double t;
+    int dx, dy;
+    double a2, b2;
+    double p, px, py;
+    a2 = a * a;
+    b2 = b * b;
+    
+    dx = 0;
+    dy = b;
+    px = 0;                             /* b2 * (dx + 1) */
+    py = (double)(a2 + a2) * dy;        /* a2 * (dy - 0.5) */
+
+    coords = MakeScanLines(b + 1);
+    if (coords == NULL) {
+        return NULL;
+    }
+    AddEllipseCoord(coords, dx, dy);
+
+    t = (b2 - (a2 * b) + (0.25 * a2));
+    p = (int)ROUND(t);
+    while (py > px) {
+        dx++;
+        px += b2 + b2;
+        if (dy <= 0) {
+            continue;
+        }
+        if (p < 0) {
+            p += b2 + px;
+        } else {
+            dy--;
+            py -= a2 + a2;
+            p += b2 + px - py;
+        }
+        AddEllipseCoord(coords, dx, dy);
+    }
+    {
+        double dx2, dy2;
+ 
+        dx2 = (dx + 0.5) * (dx + 0.5);
+        dy2 = (dy - 1) * (dy - 1);
+        t = (b2 * dx2 + a2 * dy2 - (a2 * b2));
+        p = (int)ROUND(t);
+    }
+    while (dy > 0) {
+        dy--;
+        py -= a2 + a2;
+        if (p > 0) {
+            p += a2 - py;
+        } else {
+            dx++;
+            px += b2 + b2;
+            p += a2 - py + px;
+        }
+        AddEllipseCoord(coords, dx, dy);
+    }
+    AddEllipseCoord(coords, dx, dy);
+    return coords;
+}
+
+static void INLINE
+PaintPixel(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr) 
+{
+    if ((x >= 0) && (x < destPtr->width) && (y >= 0) && (y < destPtr->height)) {
+        BlendPixels(Blt_Picture_Pixel(destPtr, x, y), colorPtr);
+    }
+}
+
+static void INLINE
+PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y, 
+                    Blt_PaintBrush brush, int blend)  
+{
+    if ((y >= 0) && (y < destPtr->height)) {
+        Blt_Pixel *dp, *dend;
+
+        if (x1 > x2) {
+            int tmp;
+            
+            tmp = x1, x1 = x2, x2 = tmp;
+        }
+        x1 = MAX(x1, 0);
+        x2 = MIN(x2, destPtr->width);
+        dp   = destPtr->bits + (y * destPtr->pixelsPerRow) + x1;
+        dend = destPtr->bits + (y * destPtr->pixelsPerRow) + x2;
+        if (blend) {
+            int x;
+
+            for (x = x1; dp < dend; dp++, x++) {
+                Blt_Pixel color;
+
+                color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+                BlendPixels(dp, &color);
+            }
+        } else {
+            int x;
+
+            for (x = x1; dp < dend; dp++, x++) {
+                dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+            }
+        }
+    }
+}
+
+static void INLINE
+FillHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_Pixel *colorPtr, 
+                   int blend)  
+{
+    if ((y >= 0) && (y < destPtr->height)) {
+        Blt_Pixel *dp, *dend;
+
+        if (x1 > x2) {
+            int tmp;
+            
+            tmp = x1, x1 = x2, x2 = tmp;
+        }
+        x1 = MAX(x1, 0);
+        x2 = MIN(x2, destPtr->width - 1);
+        dp   = destPtr->bits + (y * destPtr->pixelsPerRow) + x1;
+        dend = destPtr->bits + (y * destPtr->pixelsPerRow) + x2;
+        if (blend) {
+            for (/*empty*/; dp <= dend; dp++) {
+                BlendPixels(dp, colorPtr);
+            }
+        } else {
+            for (/*empty*/; dp < dend; dp++) {
+                dp->u32 = colorPtr->u32;
+            }
+        }
+    }
+}
+
+static void INLINE 
+FillVerticalLine(Pict *destPtr, int x, int y1, int y2, Blt_Pixel *colorPtr, 
+                 int blend)  
+{
+    if ((x >= 0) && (x < destPtr->width)) {
+        Blt_Pixel *dp, *dend;
+
+        if (y1 > y2) {
+            int tmp;
+            
+            tmp = y1, y1 = y2, y2 = tmp;
+        }
+        y1 = MAX(y1, 0);
+        y2 = MIN(y2, destPtr->height - 1);
+        dp   = destPtr->bits + (y1 * destPtr->pixelsPerRow) + x;
+        dend = destPtr->bits + (y2 * destPtr->pixelsPerRow) + x;
+        if (blend) {
+            for (/*empty*/; dp <= dend; dp += destPtr->pixelsPerRow) {
+                BlendPixels(dp, colorPtr);
+            }
+        } else {
+            for (/*empty*/; dp <= dend; dp += destPtr->pixelsPerRow) {
+                dp->u32 = colorPtr->u32;
+            }
+        }           
+    }
+}
+
+static INLINE float 
+sqr(float x) 
+{
+    return x * x;
+}
+    
+static void
+PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth, 
+             Blt_PaintBrush brush, int blend)
+{
+    int x, y, i;
+    int x1, x2, y1, y2;
+    float outer, inner, outer2, inner2;
+    float *squares;
+    Blt_Pixel *destRowPtr;
+
+    /* Determine some helpful values (singles) */
+    outer = r;
+    if (lineWidth > 0) {
+        inner = r - lineWidth;
+    } else {
+        inner = 0;
+    }
+    outer2 = outer * outer;
+    inner2 = inner * inner;
+
+    /* Determine bounds: */
+    x1 = (int)floor(cx - outer);
+    if (x1 < 0) {
+        x1 = 0;
+    }
+    x2 = (int)ceil(cx + outer) + 1;
+    if (x2 >= destPtr->width) {
+        x2 = destPtr->width;
+    }
+    y1 = (int)floor(cy - outer);
+    if (y1 < 0) {
+        y1 = 0;
+    }
+    y2 = (int)ceil(cy + outer) + 1;
+    if (y2 >= destPtr->height) {
+        y2 = destPtr->height;
+    }
+    /* Optimization run: find squares of X first */
+    squares = Blt_AssertMalloc(sizeof(float) * (x2 - x1));
+    for (i = 0, x = x1; x < x2; x++, i++) {
+        squares[i] = (x - cx) * (x - cx);
+    }
+    /* Loop through Y values */
+    destRowPtr = destPtr->bits + (y1 * destPtr->pixelsPerRow) + x1;
+    for (y = y1; y < y2; y++) {
+        Blt_Pixel *dp;
+        float dy2;
+        
+        dy2 = (y - cy) * (y - cy);
+        for (dp = destRowPtr, x = x1; x < x2; x++, dp++) {
+            float dx2, d2, d;
+            unsigned int a;
+            float outerf, innerf;
+
+            dx2 = squares[x - x1];
+            /* Compute distance from circle center to this pixel. */
+            d2 = dy2 + dx2;
+            if (d2 > outer2) {
+                continue;
+            }
+            if (d2 < inner2) {
+                continue;
+            }
+            /* Mix the color.*/
+            d = sqrt(d2);
+            outerf = outer - d;
+            innerf = d - inner;
+#ifdef notdef
+            dp->u32 = colorPtr->u32;
+#endif
+            if (outerf < 1.0) {
+                a = (int)(outerf * 255.0 + 0.5);
+            } else if ((inner > 0) && (innerf < 1.0)) {
+                a = (int)(innerf * 255.0 + 0.5);
+            } else {
+                a = 255;
+            }
+            if (blend) {
+                Blt_Pixel color;
+
+                a = UCLAMP(a);
+#ifdef notdef
+                if (dp->Alpha != 0) {
+                    a = imul8x8(a, dp->Alpha, t);
+                }
+#endif
+                color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+                Blt_FadeColor(&color, a);
+                BlendPixels(dp, &color);
+            } else {
+                int t;
+                /* FIXME: This is overriding the alpha of a premultipled
+                 * color. */
+                a = UCLAMP(a);
+                dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+                dp->Alpha = imul8x8(a, dp->Alpha, t);
+            }
+        }
+        destRowPtr += destPtr->pixelsPerRow;
+    }
+    destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
+    Blt_Free(squares);
+}
+
+static void
+PaintThickEllipse(
+    Blt_Picture picture, 
+    int x, int y,               /* Center of the ellipse. */
+    int a,                      /* Half the width of the ellipse. */
+    int b,                      /* Half the height of the ellipse. */
+    int lineWidth,              /* Line width of the ellipse. Must be 1 or
+                                 * greater. */
+    Blt_Pixel *colorPtr,
+    int blend)
+{
+    ScanLine *outer, *inner;
+    Blt_Pixel fill;
+    int dy;
+    int dx1, dx2;
+
+    lineWidth--;
+    outer = ComputeEllipseQuadrant(a, b);
+    if (outer == NULL) {
+        return;
+    }
+    inner = ComputeEllipseQuadrant(a - lineWidth, b - lineWidth);
+    if (blend) {
+        fill = PremultiplyAlpha(colorPtr, 255);
+    } else {
+        fill.u32 = colorPtr->u32;
+    }
+    dx1 = outer[0].right;
+    dx2 = inner[0].left;
+    FillHorizontalLine(picture, x + dx2, x + dx1, y, &fill, blend);
+    FillHorizontalLine(picture, x - dx1, x - dx2, y, &fill, blend);
+    for (dy = 1; dy < (b - lineWidth); dy++) {
+        dx1 = outer[dy].right;
+        dx2 = inner[dy].left;
+        FillHorizontalLine(picture, x + dx2, x + dx1, y - dy, &fill, blend);
+        FillHorizontalLine(picture, x + dx2, x + dx1, y + dy, &fill, blend);
+        FillHorizontalLine(picture, x - dx1, x - dx2, y - dy, &fill, blend);
+        FillHorizontalLine(picture, x - dx1, x - dx2, y + dy, &fill, blend);
+    }
+    for (/* empty */; dy <= b; dy++) {
+        int dx;
+
+        dx = outer[dy].right;
+        FillHorizontalLine(picture, x - dx, x + dx, y + dy, &fill, blend);
+        FillHorizontalLine(picture, x - dx, x + dx, y - dy, &fill, blend);
+    }
+    Blt_Free(outer);
+    Blt_Free(inner);
+}
+
+
+static void
+PaintFilledEllipse(
+    Blt_Picture picture, 
+    int x, int y,               /* Center of the ellipse. */
+    int a,                      /* Half the width of the ellipse. */
+    int b,                      /* Half the height of the ellipse. */
+    Blt_Pixel *colorPtr,
+    int blend)
+{
+    ScanLine *coords;
+    Blt_Pixel fill;
+    int dx, dy;
+
+    coords = ComputeEllipseQuadrant(a, b);
+    if (blend) {
+        fill = PremultiplyAlpha(colorPtr, 255);
+    } else {
+        fill.u32 = colorPtr->u32;
+    }
+    if (coords == NULL) {
+        return;
+    }
+    FillHorizontalLine(picture, x - a, x + a, y, &fill, blend);
+    for (dy = 1; dy <= b; dy++) {
+        dx = coords[dy].right;
+        FillHorizontalLine(picture, x - dx, x + dx, y + dy, &fill, blend);
+        FillHorizontalLine(picture, x - dx, x + dx, y - dy, &fill, blend);
+    }
+    Blt_Free(coords);
+}
+
+static void
+PaintEllipse(
+    Blt_Picture picture, 
+    int x, int y,               /* Center of the ellipse. */
+    int a,                      /* Half the width of the ellipse. */
+    int b,                      /* Half the height of the ellipse. */
+    int lineWidth,              /* Line width of the ellipse.  If zero,
+                                 * then draw a solid filled ellipse. */
+    Blt_Pixel *colorPtr,
+    int blend)
+{
+    if ((lineWidth >= a) || (lineWidth >= b)) {
+        lineWidth = 0;
+    }
+    if (lineWidth < 1) {
+        PaintFilledEllipse(picture, x, y, a, b, colorPtr, blend);
+    } else {
+        PaintThickEllipse(picture, x, y, a, b, lineWidth, colorPtr, blend);
+    }
+}
+
+static void
+PaintEllipseAA(
+    Blt_Picture picture, 
+    int x, int y,               /* Center of the ellipse. */
+    int a,                      /* Half the width of the ellipse. */
+    int b,                      /* Half the height of the ellipse. */
+    int lineWidth,              /* Line thickness of the ellipse.  If zero,
+                                 * then draw a solid filled ellipse. */
     Blt_Pixel *colorPtr)
 {
-    Blt_Pixel interior;
-    int dx, dy, xDir;
-    unsigned long error;
+    PictRegion region;
+    Blt_Picture big;
+    int numSamples = 3; 
+    int ellipseWidth, ellipseHeight;
+    int blend = 1;
 
-    if (y1 > y2) {
-        int tmp;
-
-        tmp = y1, y1 = y2, y2 = tmp;
-        tmp = x1, x1 = x2, x2 = tmp;
-        cw = !cw;
-    } 
-    if (x1 > x2) {
-        cw = !cw;
+    if ((lineWidth >= a) || (lineWidth >= b)) {
+        lineWidth = 0;
     }
-    interior = PremultiplyAlpha(colorPtr, 255);
-    /* First and last Pixels always get Set: */
-    PutPixel(destPtr, x1, y1, &interior);
-    PutPixel(destPtr, x2, y2, &interior);
-
-    dx = x2 - x1;
-    dy = y2 - y1;
-
-    if (dx >= 0) {
-        xDir = 1;
-    } else {
-        xDir = -1;
-        dx = -dx;
+    ellipseWidth = a + a + 3;
+    ellipseHeight = b + b + 3;
+    region.x = x - (a + 1);
+    region.y = y - (b + 1);
+    region.w = ellipseWidth;
+    region.h = ellipseHeight;
+    
+    if (!Blt_AdjustRegionToPicture(picture, &region)) {
+        return;                 /* Ellipse is totally clipped. */
     }
-    if (dx == 0) {                      /*  Vertical line */
-        VertLine(destPtr, x1, y1, y2, &interior);
-        return;
-    }
-    if (dy == 0) {                      /* Horizontal line */
-        HorizLine(destPtr, x1, x2, y1, &interior);
-        return;
-    }
-    if (dx == dy) {                     /* Diagonal line. */
-        Blt_Pixel *dp;
+    /* Scale the region forming the bounding box of the ellipse into a new
+     * picture. The bounding box is scaled by *nSamples* times. */
+    big = Blt_CreatePicture(ellipseWidth * numSamples, ellipseHeight * numSamples);
+    if (big != NULL) {
+        Blt_Picture tmp;
+        int cx, cy;
+        Blt_Pixel color;
 
-        dp = Blt_Picture_Pixel(destPtr, x1, y1);
-        while(dy-- > 0) {
-            dp += destPtr->pixelsPerRow + xDir;
-            dp->u32 = interior.u32;
-        }
-        return;
-    }
-
-    /* use Wu Antialiasing: */
-
-    error = 0;
-    if (dy > dx) {                      /* y-major line */
-        unsigned long adjust;
-
-        /* x1 -= lineWidth / 2; */
-        adjust = (dx << 16) / dy;
-        while(--dy) {
-            Blt_Pixel *dp;
-            int x;
-            unsigned char weight;
+        cx = a + 1;
+        cy = b + 1;
+        /* Now draw an ellipse scaled by the same amount. The center of the
+         * ellipse is the center of the picture. */
+        Blt_BlankPicture(big, 0x0);
+        color.u32 = 0xFF000000;
+        Blt_AssociateColor(&color);
+        PaintEllipse(big, 
+            cx * numSamples,    /* Center of ellipse. */
+            cy * numSamples, 
+            a * numSamples,     
+            b * numSamples, 
+            lineWidth * numSamples, /* Scaled line width. */
+                &color,
+                blend); 
             
-            error += adjust;
-            ++y1;
-            if (error & ~0xFFFF) {
-                x1 += xDir;
-                error &= 0xFFFF;
-            }
-            dp = Blt_Picture_Pixel(destPtr, x1, y1);
-            weight = (unsigned char)(error >> 8);
-            x = x1;
-            if (x >= 0) {
-                if (cw) {
-                    *dp = PremultiplyAlpha(colorPtr, weight ^ 0xFF);
-                } else {
-                    *dp = interior;
-                }
-            }
-            x += xDir;
-            dp += xDir;
-            if (x >= 0) {
-                if (!cw) {
-                    *dp = PremultiplyAlpha(colorPtr, weight);
-                } else {
-                    *dp = interior;
-                }
-            }
+        /* Reduce the picture back to the original size using a simple box
+         * filter for smoothing. */
+        tmp = Blt_CreatePicture(ellipseWidth, ellipseHeight);
+        Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
+        Blt_FreePicture(big);
+        Blt_ApplyColorToPicture(tmp, colorPtr);
+        /* Replace the bounding box in the original with the new. */
+        Blt_BlendRegion(picture, tmp, 0, 0, region.w, region.h, 
+                region.x, region.y);
+        Blt_FreePicture(tmp);
+    }
+}
+
+static void
+PaintRectangleShadow(Blt_Picture picture, int x, int y, int w, int h, int r, 
+                     int lineWidth, Blt_Shadow *shadowPtr)
+{
+    int dw, dh;
+    Blt_Picture blur;
+    Blt_PaintBrush brush;
+
+    dw = (w + shadowPtr->offset*3);
+    dh = (h + shadowPtr->offset*3);
+    blur = Blt_CreatePicture(dw, dh);
+    Blt_BlankPicture(blur, 0x0);
+    brush = Blt_NewColorBrush(shadowPtr->color.u32);
+    Blt_PaintRectangle(blur, shadowPtr->offset, shadowPtr->offset, w, h, r, 
+                   lineWidth, brush);
+    Blt_FreeBrush(brush);
+    Blt_BlurPicture(blur, blur, shadowPtr->offset, 2);
+    Blt_BlendRegion(picture, blur, 0, 0, dw, dh, x, y);
+    Blt_FreePicture(blur);
+}
+
+#define UPPER_LEFT      0
+#define UPPER_RIGHT     1
+#define LOWER_LEFT      2
+#define LOWER_RIGHT     3
+
+static void
+PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner, 
+            Blt_PaintBrush brush)
+{
+    int blend = 1;
+    int outer, inner, outer2, inner2;
+    int x1, x2, y1, y2, dx, dy;
+
+    outer = r;
+    if ((lineWidth > 0) && (lineWidth < r)) {
+        inner = r - lineWidth;
+    } else {
+        inner = 0;
+    }
+    outer2 = r * r;
+    inner2 = floor(inner * inner);
+    
+    x1 = x2 = y1 = y2 = 0;              /* Suppress compiler warning. */
+    switch (corner) {
+    case UPPER_LEFT:
+        x1 = 0;
+        x2 = r;
+        y1 = 0;
+        y2 = r;
+        break;
+    case UPPER_RIGHT:
+        x1 = r + 1;
+        x2 = r + r;
+        y1 = 0;
+        y2 = r;
+        break;
+    case LOWER_LEFT:
+        x1 = 0;
+        x2 = r;
+        y1 = r + 1;
+        y2 = r + r;
+        break;
+    case LOWER_RIGHT:
+        x1 = r + 1;
+        x2 = r + r;
+        y1 = r + 1;
+        y2 = r + r;
+        break;
+    }   
+    for (dy = y1; dy < y2; dy++) {
+        float dy2;
+
+        if (((y + dy) < 0) || ((y + dy) >= destPtr->height)) {
+            continue;
         }
-    } else {                            /* x-major line */
-        unsigned long adjust;
-
-        /* y1 -= lineWidth / 2; */
-        adjust = (dy << 16) / dx;
-        while (--dx) {
+        dy2 = (dy - r) * (dy - r);
+        for (dx = x1; dx < x2; dx++) {
+            float dx2, d2, d;
+            unsigned int a;
+            float outerf, innerf;
             Blt_Pixel *dp;
-            int y;
-            unsigned char weight;
 
-            error += adjust;
-            x1 += xDir;
-            if (error & ~0xFFFF) {
-                y1++;
-                error &= 0xFFFF;
+            if (((x + dx) < 0) || ((x + dx) >= destPtr->width)) {
+                continue;
             }
-            dp = Blt_Picture_Pixel(destPtr, x1, y1);
-            weight = (unsigned char)(error >> 8);
-            y = y1;
-            if (y >= 0) {
-                if (!cw) {
-                    *dp = PremultiplyAlpha(colorPtr, weight ^ 0xFF);
-                } else {
-                    *dp = interior;
-                }
+            dx2 = (dx - r) * (dx - r);
+            /* Compute distance from circle center to this pixel. */
+            d2 = dy2 + dx2;
+            if (d2 > outer2) {
+                continue;
             }
-            dp += destPtr->pixelsPerRow;
-            y++;
-            if (y >= 0) {
-                if (cw) {
-                    *dp = PremultiplyAlpha(colorPtr, weight);
-                } else {
-                    *dp = interior;
-                }
-            } 
+            if (d2 < inner2) {
+                continue;
+            }
+            /* Mix the color.*/
+            d = sqrt(d2);
+            outerf = outer - d;
+            innerf = d - inner;
+            if (outerf < 1.0) {
+                a = (int)(outerf * 255.0 + 0.5);
+            } else if ((inner > 0) && (innerf < 1.0)) {
+                a = (int)(innerf * 255.0 + 0.5);
+            } else {
+                a = 255;
+            }
+            dp = Blt_Picture_Pixel(destPtr, x+dx, y+dy);
+            if (blend) {
+                Blt_Pixel color;
+                
+                a = UCLAMP(a);
+                color.u32 = Blt_GetAssociatedColorFromBrush(brush,x+dx,y+dy);
+                Blt_FadeColor(&color, a);
+                BlendPixels(dp, &color);
+            } else {
+                a = UCLAMP(a);
+                dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x+dx, y+dy);
+                Blt_FadeColor(dp, a);
+            }
         }
     }
-    destPtr->flags |= (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS);
 }
-#endif
+
+/* 
+ *      
+ *      ul  xxxxxxxxxxxxxxxxxx ur       Upper section
+ *          xxxxxxxxxxxxxxxxxx  
+ *      xxxxxxxxxxxxxxxxxxxxxxxxxx      Middle section
+ *      xxxxxxxxxxxxxxxxxxxxxxxxxx 
+ *      xxxxxxxxxxxxxxxxxxxxxxxxxx
+ *          xxxxxxxxxxxxxxxxxx          Lower section
+ *      ll  xxxxxxxxxxxxxxxxxx lr
+ *      
+ */
+void
+Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r, 
+               int lineWidth, Blt_PaintBrush brush)
+{
+    int blend = 1;
+
+    /* If the linewidth exceeds half the height or width of the rectangle,
+     * then paint as a solid rectangle.*/
+    if (((lineWidth*2) >= w) || ((lineWidth*2) >= h)) {
+        lineWidth = 0;
+    }
+    /* Radius of each rounded corner can't be bigger than half the width or
+     * height of the rectangle. */
+    if (r > (w / 2)) {
+        r = w / 2;
+    }
+    if (r > (h / 2)) {
+        r = h / 2;
+    }
+
+    if (r > 0) {
+        if (lineWidth > 0) {
+            int x1, x2, x3, x4, y1, y2, dy;
+
+            /* Thick, rounded rectangle. */
+            x1 = x + r;
+            x2 = x + w - r;
+            y1 = y;
+            y2 = y + h - 1;
+            for (dy = 0; dy < lineWidth; dy++) {
+                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, blend);
+            }
+            x1 = x;
+            x2 = x + lineWidth;
+            x3 = x + w - lineWidth;
+            x4 = x + w;
+            for (dy = r; dy < (h - r); dy++) {
+                PaintHorizontalLine(picture, x1, x2, y+dy, brush, blend);
+                PaintHorizontalLine(picture, x3, x4, y+dy, brush, blend);
+            }
+        } else {
+            int x1, x2, y1, y2, dy;
+
+            /* Filled, rounded, rectangle. */
+            x1 = x + r;
+            x2 = x + w - r;
+            y1 = y;
+            y2 = y + h - 1;
+            for (dy = 0; dy < r; dy++) {
+                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, blend);
+            }
+            x1 = x;
+            x2 = x + w;
+            for (dy = r; dy < (h - r); dy++) {
+                PaintHorizontalLine(picture, x1, x2, y+dy, brush, blend);
+            }
+        }
+        { 
+            int x1, y1;
+            int d;
+
+            d = r + r;
+            /* Draw the rounded corners. */
+            x1 = x - 1;
+            y1 = y - 1;
+            PaintCorner(picture, x1, y1, r + 1, lineWidth, 0, brush);
+            x1 = x + w - d - 2;
+            y1 = y - 1;
+            PaintCorner(picture, x1, y1, r + 1, lineWidth, 1, brush);
+            x1 = x - 1;
+            y1 = y + h - d - 2;
+            PaintCorner(picture, x1, y1, r + 1, lineWidth, 2, brush);
+            x1 = x + w - d - 2;
+            y1 = y + h - d - 2;
+            PaintCorner(picture, x1, y1, r + 1, lineWidth, 3, brush);
+        }
+    } else {
+        if (lineWidth > 0) {
+            int x1, x2, x3, x4, y1, y2, dy;
+            
+            /* Thick, non-rounded, rectangle.  */
+            x1 = x;
+            x2 = x + w;
+            y1 = y;
+            y2 = y + h - lineWidth;
+            for (dy = 0; dy < lineWidth; dy++) {
+                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, blend);
+            }
+            x1 = x;
+            x2 = x + lineWidth;
+            x3 = x + w - lineWidth;
+            x4 = x + w;
+            for (dy = r; dy < (h - lineWidth); dy++) {
+                PaintHorizontalLine(picture, x1, x2, y+dy, brush, blend);
+                PaintHorizontalLine(picture, x3, x4, y+dy, brush, blend);
+            }
+        } else {
+            int x1, x2, dy;
+
+            /* Filled, non-rounded, rectangle. */
+            x1 = x;
+            x2 = x + w;
+            for (dy = 0; dy < h; dy++) {
+                PaintHorizontalLine(picture, x1, x2, y+dy, brush, blend);
+            }
+        }
+    } 
+}
+
 
 static void 
 PaintPolyline(
@@ -953,117 +1436,6 @@ PaintPolyline(
         p = next;
     }
 }
-
-#ifdef notdef
-static void 
-xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth, 
-          Blt_Pixel *colorPtr)
-{
-    Blt_Pixel *dp;
-    double t;
-    int r2;
-    int radius;
-    int dx, dy;
-    int x, y;
-    int xoff, yoff;
-    int fill = 1;
-
-    t = 0.0;
-    dx = x2 - x1;
-    dy = y2 - y1;
-    radius = MIN(dx, dy) / 2;
-    xoff = x1;
-    yoff = y1;
-    x = radius;
-    y = 0;
-    dp = Blt_Picture_Pixel(destPtr, x + xoff - 1, y + yoff);
-    dp->u32 = colorPtr->u32;
-    r2 = radius * radius;
-    if (fill) {
-        PaintLineSegment(destPtr, x1, y + yoff, x + xoff - 2, y + yoff, 1, 
-                         colorPtr);
-    }
-    while (x > y) {
-        double z;
-        double d, q;
-        unsigned char a;
-        Blt_Pixel color;
-        y++;
-        z = sqrt(r2 - (y * y));
-        d = floor(z) - z;
-        if (d < t) {
-            x--;
-        }
-        dp = Blt_Picture_Pixel(destPtr, x + xoff, y + yoff);
-        q = FABS(d * 255.0);
-        a = (unsigned int)CLAMP(q);
-        color.u32 = colorPtr->u32;
-        Blt_FadeColor(&color, a);
-        BlendPixels(dp, &color);
-        dp--;                   /* x - 1 */
-        a = (unsigned int)CLAMP(255.0 - q);
-        color.u32 = colorPtr->u32;
-        Blt_FadeColor(&color, a);
-        BlendPixels(dp, &color);
-        t = d;
-        x1++;
-        if (fill) {
-            PaintLineSegment(destPtr, x1, y + yoff, x + xoff - 1, y + yoff, 1, colorPtr);
-        }
-    }
-}
-#endif
-
-#ifdef notdef
-static Point2d
-PolygonArea(int numPoints, Point2d *points, double *areaPtr)
-{
-    Point2d *p, *pend;
-    Point2d c;
-    double area;
-    int i;
-    
-    area = c.x = c.y = 0.0;
-    for (p = points, pend = p + numPoints, i = 0; p < pend; p++, i++) {
-        Point2d *q;
-        double factor;
-        int j;
-        
-        j = (i + 1) % numPoints;
-        q = points + j;
-        factor = (p->x * q->y) - (p->y * q->x);
-        area += factor;
-        c.x += (p->x + q->x) * factor;
-        c.y += (p->y + q->y) * factor;
-    }
-    area *= 0.5;
-    c.x /= 6.0 * area;
-    c.y /= 6.0 * area;
-    *areaPtr = area;
-    return c;
-}
-#endif
-
-#ifdef notdef
-static void
-BlendLine(Pict *destPtr, int x1, int x2, int y, Blt_Pixel *colorPtr)  
-{
-    Blt_Pixel *destRowPtr;
-    Blt_Pixel *dp, *dend;
-    size_t length;
-
-    if (x1 > x2) {
-        int tmp;
-
-        tmp = x1, x1 = x2, x2 = tmp;
-    }
-    destRowPtr = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
-    length = x2 - x1 + 1;
-    for (dp = destRowPtr, dend = dp + length; dp < dend; dp++) {
-        BlendPixels(dp, colorPtr);
-    }
-}
-#endif
 
 static void
 BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
@@ -1327,55 +1699,6 @@ TranslatePolygon(size_t numVertices, Point2f *vertices, float x, float y,
     }
 }
 
-#ifdef notdef
-static void
-PaintPolygonAA(Pict *destPtr, size_t numVertices, Point2f *vertices, 
-               Region2f *regionPtr, Blt_PaintBrush brush)
-{
-    Blt_Picture big, tmp;
-    Point2f *v;
-    Region2f r2;
-    int w, h;
-
-    int x1, x2, y1, y2;
-
-    x1 = y1 = 0;
-    x2 = destPtr->width, y2 = destPtr->height;
-    if (regionPtr->left > 0) {
-        x1 = (int)floor(regionPtr->left);
-    }
-    if (regionPtr->top > 0) {
-        y1 = (int)floor(regionPtr->top);
-    }
-    if (regionPtr->right < x2) {
-        x2 = (int)ceil(regionPtr->right);
-    }
-    if (regionPtr->bottom < y2) {
-        y2 = (int)ceil(regionPtr->bottom);
-    }
-    v = Blt_AssertMalloc(numVertices * sizeof(Point2f));
-    memcpy(v, vertices, sizeof(Point2f) * numVertices);
-    TranslatePolygon(numVertices, v, -x1+1, -y1+1, 4.0f);
-    GetPolygonBoundingBox(numVertices, v, &r2);
-    
-    w = (x2 - x1 + 2) * 4;
-    h = (y2 - y1 + 2) * 4;
-    big = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(big, 0x0);
-    Blt_PaintPolygon(big, numVertices, v, brush);
-    Blt_Free(v);
-    w = (x2 - x1 + 2);
-    h = (y2 - y1 + 2);
-    tmp = Blt_CreatePicture(w, h);
-    Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
-    Blt_FreePicture(big);
-    /* Replace the bounding box in the original with the new. */
-    Blt_BlendRegion(destPtr, tmp, 0, 0, w, h, (int)floor(regionPtr->left)-1, 
-                    (int)floor(regionPtr->top)-1);
-    Blt_FreePicture(tmp);
-}
-#endif
-
 static void
 PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices, 
                    Region2f *regionPtr, Blt_Shadow *shadowPtr)
@@ -1461,171 +1784,6 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
     Blt_BlendRegion(destPtr, tmp, 0, 0, destPtr->width, destPtr->height, 0,0);
     Blt_FreePicture(tmp);
 }
-
-#ifdef notdef
-static void
-DrawCircle2(Blt_Picture picture, int x, int y, int radius, 
-            CircleSwitches *switchesPtr)
-{
-    int filled;
-
-    filled = (switchesPtr->brush != NULL);
-    if (switchesPtr->antialiased) {
-        int numSamples = 4; 
-        Pict *bigPtr, *tmpPtr;
-        int w, h;
-        Blt_Pixel color;
-        int offset, r, lw;
-        int cx, cy;
-
-        r = radius * numSamples;
-        w = h = r + r;
-        offset = switchesPtr->shadow.offset * numSamples;
-
-        /* Scale the region forming the bounding box of the ellipse into a
-         * new picture. The bounding box is scaled by *nSamples* times. */
-        bigPtr = Blt_CreatePicture(w+(1+offset)*nSamples,h+(1+offset)*nSamples);
-
-        cx = bigPtr->width / 2;
-        cy = bigPtr->height / 2;
-        
-        Blt_BlankPicture(bigPtr, 0x0);
-        if (switchesPtr->shadow.width > 0) {
-            color.u32 = switchesPtr->shadow.color.u32;
-            /* Either ring or full circle for blur stencil. */
-            lw = switchesPtr->lineWidth * numSamples;
-            if (filled) {
-                lw = 0;
-            }
-            PaintEllipse(bigPtr, cx, cy, r, r, lw, &color, 0);
-            Blt_BlurPicture(bigPtr, bigPtr, offset/2, 3);
-            /* Offset the circle from the shadow. */
-            cx -= offset;
-            cy -= offset;
-            offset = switchesPtr->shadow.offset;
-            w = h = radius + radius + (1 + offset) * 2;
-            tmpPtr = Blt_CreatePicture(w, h);
-            Blt_ResamplePicture(tmpPtr, bigPtr, bltBoxFilter, bltBoxFilter);
-            Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, x-w/2+offset, 
-                y-h/2+offset);
-            Blt_BlankPicture(bigPtr, 0x0);
-            Blt_FreePicture(tmpPtr);
-        }
-        lw = switchesPtr->lineWidth * numSamples;
-        if ((lw > 0) && (r > lw) && (switchesPtr->outline.u32 != 0x00)) {
-            /* Paint ring outline. */
-            PaintEllipse(bigPtr, cx, cy, r, r, lw, &switchesPtr->outline, 0);
-            r -= lw;
-        }
-        if (filled) {
-            /* Paint filled interior */
-            PaintEllipse(bigPtr, cx, cy, r, r, 0, &switchesPtr->color, 0);
-        }
-        offset = switchesPtr->shadow.offset;
-        w = h = radius + radius + (1 + offset) * 2;
-        tmpPtr = Blt_CreatePicture(w, h);
-        Blt_ResamplePicture(tmpPtr, bigPtr, bltBoxFilter, bltBoxFilter);
-#ifdef notdef
-        fprintf(stderr, "big=%dx%d, blur=%d\n", bigPtr->width,bigPtr->height,
-                (switchesPtr->shadow.offset * numSamples)/2);
-#endif
-        Blt_FreePicture(bigPtr);
-        /*Blt_ApplyColorToPicture(tmpPtr, &switchesPtr->color); */
-#ifdef notdef
-        Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, x-w/2+offset,y-h/2+offset);
-#endif
-        {
-            int yy;
-            Blt_Pixel *destRowPtr;
-
-            destRowPtr = Blt_Picture_Bits(tmpPtr);
-            for (yy = 0; yy < Blt_Picture_Height(tmpPtr); yy++) {
-                Blt_Pixel *dp, *dend;
-
-                for (dp = destRowPtr, dend = dp + Blt_Picture_Width(tmpPtr); 
-                     dp < dend; dp++) {
-                    if (dp->Alpha != 0x00) {
-                        dp->Red = switchesPtr->color.Red;
-                        dp->Green = switchesPtr->color.Green;
-                        dp->Blue = switchesPtr->color.color;
-                    }
-                }
-                destRowPtr += Blt_Picture_Stride(tmpPtr);
-            }
-        }           
-#ifndef notdef
-        Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, x-w/2, y-h/2);
-#else
-        Blt_CopyPictureBits(picture, tmpPtr, 0, 0, w, h, x-w/2, y-h/2);
-#endif
-        Blt_FreePicture(tmpPtr);
-    } else if (switchesPtr->shadow.width > 0) {
-        Pict *blurPtr;
-        int w, h;
-        Blt_Pixel color;
-        int offset, r, lw;
-        int cx, cy;
-
-        w = h = (radius + radius);
-        r = radius;
-        offset = switchesPtr->shadow.offset;
-
-        /* Scale the region forming the bounding box of the ellipse into a
-         * new picture. The bounding box is scaled by *nSamples* times. */
-        blurPtr = Blt_CreatePicture(w+(offset*4), h+(offset*4));
-        cx = blurPtr->width / 2;
-        cy = blurPtr->height / 2;
-        Blt_BlankPicture(blurPtr, 0x0);
-
-        color.u32 = switchesPtr->shadow.color.u32;
-        /* Either ring or full circle for blur stencil. */
-        lw = switchesPtr->lineWidth;
-        if (filled) {
-            lw = 0;
-        }
-        PaintEllipse(blurPtr, cx, cy, r, r, lw, &color, 0);
-        Blt_BlurPicture(blurPtr, blurPtr, offset, 3);
-        /* Offset the circle from the shadow. */
-        cx -= offset;
-        cy -= offset;
-        lw = switchesPtr->lineWidth;
-        if ((lw > 0) && (r > lw) && (switchesPtr->outline.u32 != 0x00)) {
-            /* Paint ring outline. */
-            PaintEllipse(blurPtr, cx, cy, r, r, lw, &switchesPtr->outline, 0); 
-            r -= lw;
-        }
-        if (filled) {
-            /* Paint filled interior */
-            PaintEllipse(blurPtr, cx, cy, r, r, 0, &switchesPtr->color, 0);
-        }
-        x -= blurPtr->width/2 + offset;
-        if (x < 0) {
-            x = 0;
-        }
-        y -= blurPtr->height/2 + offset;
-        if (y < 0) {
-            y = 0;
-        }
-        Blt_BlendRegion(picture, blurPtr, 0, 0, blurPtr->width, blurPtr->height,
-                        x, y);
-        Blt_FreePicture(blurPtr);
-    } else {
-        int r;
-
-        r = radius;
-        if ((switchesPtr->lineWidth > 0) && (r > switchesPtr->lineWidth)) {
-            /* Paint ring outline. */
-            PaintEllipse(picture, x, y, r, r, switchesPtr->lineWidth, 
-                &switchesPtr->outline, 1); 
-            r -= switchesPtr->lineWidth;
-        }
-        if (filled) {
-            /* Paint filled interior */
-            PaintEllipse(picture, x, y, r, r, 0, &switchesPtr->color, 1);
-        }
-    }
-}
-#endif
 
 static void
 DrawCircleShadow(Blt_Picture picture, int x, int y, float r, 
@@ -1734,138 +1892,6 @@ Blt_Picture_CircleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_FreeSwitches(circleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
-
-#ifdef notdef
-
-static Blt_Picture
-CircleShadowLayer(int r, CircleSwitches2 *switchesPtr)
-{
-    Blt_Shadow *shadowPtr;
-    Pict *destPtr;
-    int x, y, w, h;
-
-    shadowPtr = &switchesPtr->shadow;
-    w = h = ((r + shadowPtr->width) * 2) + 1;
-    x = w / 2;
-    y = h / 2;
-    destPtr = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(destPtr, 0x0);
-#ifndef notdef
-    fprintf(stderr, "r=%d linewidth=%g offset=%d width=%d w=%d h=%d x=%d y=%d\n",
-            r, switchesPtr->lineWidth, shadowPtr->offset, shadowPtr->width,
-            w, h, x, y);
-#endif
-    PaintCircle4(destPtr, x, y, r, switchesPtr->lineWidth, 
-                 switchesPtr->brush, 0);
-    Blt_BlurPicture(destPtr, destPtr, shadowPtr->width, 3);
-    destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
-    return destPtr;
-}
-
-static Blt_Picture
-CircleLayer(int radius, CircleSwitches2 *switchesPtr)
-{
-    Pict *destPtr;
-    int x, y, w, h;
-
-    w = h = (radius * 2) + 1;
-    x = w / 2;
-    y = h / 2;
-    destPtr = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(destPtr, 0x0);
-    PaintCircle4(destPtr, x, y, radius, switchesPtr->lineWidth, 
-                 switchesPtr->brush, 0);
-    destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
-    return destPtr;
-}
-#endif
-
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * Circle2Op --
- *
- * Results:
- *      Returns a standard TCL return value.
- *
- * Side effects:
- *      None.
- *
- *      $img draw circle x y r ?switches?
- *        -linewidth 1
- *        -color color 
- *        -shadow shadow
- *        -antialiased bool
- *      
- *---------------------------------------------------------------------------
- */
-static int
-CircleOp2(
-    Blt_Picture picture,
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* # of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
-{
-    CircleSwitches2 switches;
-    int x, y, r;
-    Blt_Picture outline, fill, shadow;
-    Pict *mergePtr;
-    Blt_PaintBrush brush;
-
-    if (objc < 5) {
-        Tcl_AppendResult(interp, "wrong # of coordinates for circle",
-                         (char *)NULL);
-        return TCL_ERROR;
-    }
-    if ((Tcl_GetIntFromObj(interp, objv[3], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[5], &r) != TCL_OK)) {
-        return TCL_ERROR;
-    }
-    /* Process switches  */
-    switches.lineWidth = 0.0;
-    if (Blt_GetPaintBrush(interp, "white", &brush) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    switches.brush = brush;
-    switches.blend = 0;
-    switches.antialiased = 0;
-    Blt_Shadow_Set(&switches.shadow, 0, 0, 0x0, 0xFF);
-    if (Blt_ParseSwitches(interp, circleSwitches2, objc - 6, objv + 6, 
-        &switches, BLT_SWITCH_DEFAULTS) < 0) {
-        return TCL_ERROR;
-    }
-    mergePtr = shadow = fill = outline = NULL;
-    if (switches.shadow.width > 0) {
-        mergePtr = CircleShadowLayer(r, &switches);
-    }
-    if (switches.fill.u32 != 0) {
-        fill = CircleLayer(r, &switches);
-        if (mergePtr != NULL) {
-            MergePictures(mergePtr, fill);
-            Blt_FreePicture(fill);
-        } else {
-            mergePtr = fill;
-        }
-    } 
-    if (switches.outline.u32 != 0) {
-        outline = CircleLayer(r, &switches);
-        if (mergePtr != NULL) {
-            MergePictures(mergePtr, outline);
-            Blt_FreePicture(outline);
-        } else {
-            mergePtr = outline;
-        }
-    }
-    Blt_BlendRegion(picture, mergePtr, 0, 0, mergePtr->width, mergePtr->height,
-                    x-r, y-r);
-    Blt_FreePicture(mergePtr);
-    Blt_FreeSwitches(circleSwitches, (char *)&switches, 0);
-    return TCL_OK;
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2192,151 +2218,6 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_FreeSwitches(rectangleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
-
-
-#ifdef notdef
-static void
-PaintTextLayout(Pict *destPtr, FtFont *fontPtr, TextLayout *layoutPtr, 
-                int x, int y, TextSwitches *switchesPtr)
-{
-    TextFragment *fp, *fend;
-
-    for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments;
-         fp < fend; fp++) {
-        PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->sx, 
-                y + fp->sy, switchesPtr->kerning, switchesPtr->brush);
-    }
-}
-#endif
-
-
-#ifdef notdef
-static void 
-Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
-{
-    Blt_Pixel *dp;
-    int dx, dy, xDir;
-    unsigned long error;
-
-    if (y1 > y2) {
-        int tmp;
-
-        tmp = y1, y1 = y2, y2 = tmp;
-        tmp = x1, x1 = x2, x2 = tmp;
-    }
-
-    /* First and last Pixels always get Set: */
-    dp = Blt_Picture_Pixel(destPtr, x1, y1);
-    dp->u32 = colorPtr->u32;
-    dp = Blt_Picture_Pixel(destPtr, x2, y2);
-    dp->u32 = colorPtr->u32;
-
-    dx = x2 - x1;
-    dy = y2 - y1;
-
-    if (dx >= 0) {
-        xDir = 1;
-    } else {
-        xDir = -1;
-        dx = -dx;
-    }
-    if (dx == 0) {              /*  Vertical line */
-        Blt_Pixel *dp;
-
-        dp = Blt_Picture_Pixel(destPtr, x1, y1);
-        while (dy-- > 0) {
-            dp += destPtr->pixelsPerRow;
-            dp->u32 = colorPtr->u32;
-        }
-        return;
-    }
-    if (dy == 0) {              /* Horizontal line */
-        Blt_Pixel *dp;
-
-        dp = Blt_Picture_Pixel(destPtr, x1, y1);
-        while(dx-- > 0) {
-            dp += xDir;
-            dp->u32 = colorPtr->u32;
-        }
-        return;
-    }
-    if (dx == dy) {             /* Diagonal line. */
-        Blt_Pixel *dp;
-
-        dp = Blt_Picture_Pixel(destPtr, x1, y1);
-        while(dy-- > 0) {
-            dp += destPtr->pixelsPerRow + xDir;
-            dp->u32 = colorPtr->u32;
-        }
-        return;
-    }
-
-    /* use Wu Antialiasing: */
-
-    error = 0;
-    if (dy > dx) {              /* y-major line */
-        unsigned long adjust;
-
-        /* x1 -= lineWidth / 2; */
-        adjust = (dx << 16) / dy;
-        while(--dy) {
-            Blt_Pixel *dp;
-            int x;
-            unsigned char weight;
-            
-            error += adjust;
-            ++y1;
-            if (error & ~0xFFFF) {
-                x1 += xDir;
-                error &= 0xFFFF;
-            }
-            dp = Blt_Picture_Pixel(destPtr, x1, y1);
-            weight = (unsigned char)(error >> 8);
-            x = x1;
-            if (x >= 0) {
-                dp->u32 = colorPtr->u32;
-                dp->Alpha = ~weight;
-            }
-            x += xDir;
-            dp += xDir;
-            if (x >= 0) {
-                dp->u32 = colorPtr->u32;
-                dp->Alpha = weight;
-            }
-        }
-    } else {                    /* x-major line */
-        unsigned long adjust;
-
-        /* y1 -= lineWidth / 2; */
-        adjust = (dy << 16) / dx;
-        while (--dx) {
-            Blt_Pixel *dp;
-            int y;
-            unsigned char weight;
-
-            error += adjust;
-            x1 += xDir;
-            if (error & ~0xFFFF) {
-                y1++;
-                error &= 0xFFFF;
-            }
-            dp = Blt_Picture_Pixel(destPtr, x1, y1);
-            weight = (unsigned char)(error >> 8);
-            y = y1;
-            if (y >= 0) {
-                dp->u32 = colorPtr->u32;
-                dp->Alpha = ~weight;
-            }
-            dp += destPtr->pixelsPerRow;
-            y++;
-            if (y >= 0) {
-                dp->u32 = colorPtr->u32;
-                dp->Alpha = weight;
-            } 
-        }
-    }
-}
-#endif
 
 Blt_Picture
 Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr, 

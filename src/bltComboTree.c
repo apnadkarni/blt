@@ -418,23 +418,15 @@ struct _Entry {
 typedef struct {
     XColor *fgColor;                    /* Foreground color. */
     XColor *activeFgColor;              /* Active foreground color. */
-
     Blt_Bg normalBg;                    /* Normal button background. */
     Blt_Bg activeBg;                    /* Active background color. */
-
     GC normalGC;
     GC activeGC;
-
     int reqSize;
-
     int borderWidth;
-
     int openRelief, closeRelief;
-
     int width, height;
-
     Icon *icons;
-
 } Button;
 
 /*
@@ -553,9 +545,10 @@ struct _ComboTree {
     /*
      * Button Information:
      *
-     * The button is the open/close indicator at the far left of the entry.
-     * It is usually displayed as a plus or minus in a solid colored box
-     * with optionally an border. It has both "active" and "normal" colors.
+     *   The button is the open/close indicator at the far left of the
+     *   entry.  It is usually displayed as a plus or minus in a solid
+     *   colored box with optionally an border. It has both "active" and
+     *   "normal" colors.
      */
     Button button;
     int leader;                         /* Number of pixels padding between
@@ -608,7 +601,8 @@ struct _ComboTree {
                                          * entries are opened or closed. */
     const char *pathSep;                /* Pathname separators */
     ClientData clientData;
-    Blt_BindTable bindTable;            /* Binding information for entries. */
+    Blt_BindTable bindTable;            /* Binding information for
+                                         * entries. */
     Blt_HashTable entryBindTagTable;
     Blt_HashTable buttonBindTagTable;
     size_t depth;
@@ -687,39 +681,39 @@ typedef ClientData (TagProc)(ComboTree *comboPtr, const char *string);
 typedef int (ApplyProc) (ComboTree *comboPtr, Entry *entryPtr);
 
 
-#define DEF_BTN_ACTIVE_BG               RGB_WHITE
-#define DEF_BTN_ACTIVE_FG               STD_ACTIVE_FOREGROUND
-#define DEF_BTN_BORDERWIDTH             "1"
-#define DEF_BTN_CLOSE_RELIEF            "solid"
-#define DEF_BTN_NORMAL_BG               RGB_WHITE
-#define DEF_BTN_NORMAL_FG               STD_NORMAL_FOREGROUND
-#define DEF_BTN_OPEN_RELIEF             "solid"
-#define DEF_BTN_SIZE                    "7"
+#define DEF_BUTTON_ACTIVE_BG               RGB_WHITE
+#define DEF_BUTTON_ACTIVE_FG               STD_ACTIVE_FOREGROUND
+#define DEF_BUTTON_BORDERWIDTH             "1"
+#define DEF_BUTTON_CLOSE_RELIEF            "solid"
+#define DEF_BUTTON_NORMAL_BG               RGB_WHITE
+#define DEF_BUTTON_NORMAL_FG               STD_NORMAL_FOREGROUND
+#define DEF_BUTTON_OPEN_RELIEF             "solid"
+#define DEF_BUTTON_SIZE                    "7"
 
-#define DEF_COMBO_ACTIVE_STIPPLE        "gray25"
-#define DEF_COMBO_BORDERWIDTH           "1"
-#define DEF_COMBO_BUTTON                "auto"
-#define DEF_COMBO_DASHES                "dot"
-#define DEF_COMBO_HEIGHT                "400"
-#define DEF_COMBO_HIDE_LEAVES           "no"
-#define DEF_COMBO_HIDE_ROOT             "yes"
-#define DEF_COMBO_ICON_VARIABLE         ((char *)NULL)
-#define DEF_COMBO_LINESPACING           "0"
-#define DEF_COMBO_LINEWIDTH             "1"
-#define DEF_COMBO_MAKE_PATH             "no"
-#define DEF_COMBO_NEWTAGS               "no"
-#define DEF_COMBO_RELIEF                "solid"
-#define DEF_COMBO_SCROLLBAR             ((char *)NULL)
-#define DEF_COMBO_SCROLLINCREMENT       "20"
-#define DEF_COMBO_SHOW_ROOT             "yes"
-#define DEF_COMBO_TAKE_FOCUS            "1"
-#define DEF_COMBO_TEXT_VARIABLE         ((char *)NULL)
-#define DEF_COMBO_LINECOLOR             RGB_GREY50
-#define DEF_COMBO_WIDTH                 "0"
+#define DEF_ACTIVE_STIPPLE        "gray25"
+#define DEF_BORDERWIDTH           "1"
+#define DEF_BUTTON                "auto"
+#define DEF_DASHES                "dot"
+#define DEF_HEIGHT                "400"
+#define DEF_HIDE_LEAVES           "no"
+#define DEF_HIDE_ROOT             "yes"
+#define DEF_ICON_VARIABLE         ((char *)NULL)
+#define DEF_LINECOLOR             RGB_GREY50
+#define DEF_LINESPACING           "0"
+#define DEF_LINEWIDTH             "1"
+#define DEF_MAKE_PATH             "no"
+#define DEF_NEWTAGS               "no"
+#define DEF_RELIEF                "solid"
+#define DEF_SCROLLBAR             ((char *)NULL)
+#define DEF_SCROLLINCREMENT       "20"
+#define DEF_SHOW_ROOT             "yes"
+#define DEF_TAKE_FOCUS            "1"
+#define DEF_TEXT_VARIABLE         ((char *)NULL)
+#define DEF_WIDTH                 "0"
 #ifdef WIN32
-#define DEF_COMBO_SEPARATOR             "\\"
+#define DEF_SEPARATOR             "\\"
 #else
-#define DEF_COMBO_SEPARATOR             "/"
+#define DEF_SEPARATOR             "/"
 #endif
 
 #define DEF_ENTRY_STYLE                 "default"
@@ -775,36 +769,36 @@ static Blt_CustomOption styleOption = {
 static Blt_ConfigSpec buttonSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-        "Background", DEF_BTN_ACTIVE_BG, 
+        "Background", DEF_BUTTON_ACTIVE_BG, 
         Blt_Offset(ComboTree, button.activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
         (char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
         (char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "Foreground",
-        DEF_BTN_ACTIVE_FG, 
+        DEF_BUTTON_ACTIVE_FG, 
         Blt_Offset(ComboTree, button.activeFgColor), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_BTN_NORMAL_BG, Blt_Offset(ComboTree, button.normalBg), 0},
+        DEF_BUTTON_NORMAL_BG, Blt_Offset(ComboTree, button.normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 
         0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-        DEF_BTN_BORDERWIDTH, Blt_Offset(ComboTree, button.borderWidth),
+        DEF_BUTTON_BORDERWIDTH, Blt_Offset(ComboTree, button.borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-closerelief", "closeRelief", "Relief",
-        DEF_BTN_CLOSE_RELIEF, Blt_Offset(ComboTree, button.closeRelief),
+        DEF_BUTTON_CLOSE_RELIEF, Blt_Offset(ComboTree, button.closeRelief),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-        DEF_BTN_NORMAL_FG, Blt_Offset(ComboTree, button.fgColor), 0},
+        DEF_BUTTON_NORMAL_FG, Blt_Offset(ComboTree, button.fgColor), 0},
     {BLT_CONFIG_CUSTOM, "-images", "images", "Icons", (char *)NULL, 
         Blt_Offset(ComboTree, button.icons), BLT_CONFIG_NULL_OK, 
         &iconsOption},
     {BLT_CONFIG_RELIEF, "-openrelief", "openRelief", "Relief",
-        DEF_BTN_OPEN_RELIEF, Blt_Offset(ComboTree, button.openRelief),
+        DEF_BUTTON_OPEN_RELIEF, Blt_Offset(ComboTree, button.openRelief),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-size", "size", "Size", DEF_BTN_SIZE, 
+    {BLT_CONFIG_PIXELS_NNEG, "-size", "size", "Size", DEF_BUTTON_SIZE, 
         Blt_Offset(ComboTree, button.reqSize), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
@@ -814,7 +808,7 @@ static Blt_ConfigSpec entrySpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-bindtags", (char *)NULL, (char *)NULL, (char *)NULL, 
         Blt_Offset(Entry, tagsObjPtr), BLT_CONFIG_NULL_OK, &uidOption},
-    {BLT_CONFIG_CUSTOM, "-button", (char *)NULL, (char *)NULL, DEF_COMBO_BUTTON,
+    {BLT_CONFIG_CUSTOM, "-button", (char *)NULL, (char *)NULL, DEF_BUTTON,
         Blt_Offset(Entry, flags), BLT_CONFIG_DONT_SET_DEFAULT, &buttonOption},
     {BLT_CONFIG_OBJ, "-closecommand", (char *)NULL, (char *)NULL,
         (char *)NULL, Blt_Offset(Entry, closeCmdObjPtr), BLT_CONFIG_NULL_OK},
@@ -882,17 +876,17 @@ static Blt_ConfigSpec comboSpecs[] =
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
         0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-        DEF_COMBO_BORDERWIDTH, Blt_Offset(ComboTree, borderWidth),
+        DEF_BORDERWIDTH, Blt_Offset(ComboTree, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-button", "button", "Button",
-        DEF_COMBO_BUTTON, Blt_Offset(ComboTree, buttonFlags),
+        DEF_BUTTON, Blt_Offset(ComboTree, buttonFlags),
         BLT_CONFIG_DONT_SET_DEFAULT, &buttonOption},
     {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
         (char *)NULL, Blt_Offset(ComboTree, closeCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         (char *)NULL, Blt_Offset(ComboTree, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes",  DEF_COMBO_DASHES, 
+    {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes",  DEF_DASHES, 
         Blt_Offset(ComboTree, dashes), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
         0, 0},
@@ -901,66 +895,66 @@ static Blt_ConfigSpec comboSpecs[] =
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_STYLE_FG, Blt_Offset(ComboTree, defStyle.labelNormalColor), 
         BLT_CONFIG_COLOR_ONLY},
-    {BLT_CONFIG_PIXELS, "-height", "height", "Height", DEF_COMBO_HEIGHT, 
+    {BLT_CONFIG_PIXELS, "-height", "height", "Height", DEF_HEIGHT, 
         Blt_Offset(ComboTree, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hideleaves", "hideLeaves", "HideLeaves",
-        DEF_COMBO_HIDE_LEAVES, Blt_Offset(ComboTree, flags),
+        DEF_HIDE_LEAVES, Blt_Offset(ComboTree, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)HIDE_LEAVES},
     {BLT_CONFIG_BITMASK, "-hideroot", "hideRoot", "HideRoot",
-        DEF_COMBO_HIDE_ROOT, Blt_Offset(ComboTree, flags),
+        DEF_HIDE_ROOT, Blt_Offset(ComboTree, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)HIDE_ROOT},
     {BLT_CONFIG_OBJ, "-iconvariable", "iconVariable", "IconVariable", 
-        DEF_COMBO_ICON_VARIABLE, Blt_Offset(ComboTree, iconVarObjPtr), 
+        DEF_ICON_VARIABLE, Blt_Offset(ComboTree, iconVarObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-icons", "icons", "Icons", DEF_STYLE_ICONS, 
         Blt_Offset(ComboTree, defStyle.icons), BLT_CONFIG_NULL_OK, 
         &iconsOption},
     {BLT_CONFIG_COLOR, "-linecolor", "lineColor", "LineColor",
-        DEF_COMBO_LINECOLOR, Blt_Offset(ComboTree, lineColor),
+        DEF_LINECOLOR, Blt_Offset(ComboTree, lineColor),
         BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_PIXELS_NNEG, "-linespacing", "lineSpacing", "LineSpacing",
-        DEF_COMBO_LINESPACING, Blt_Offset(ComboTree, leader),
+        DEF_LINESPACING, Blt_Offset(ComboTree, leader),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth", 
-        DEF_COMBO_LINEWIDTH, Blt_Offset(ComboTree, lineWidth),
+        DEF_LINEWIDTH, Blt_Offset(ComboTree, lineWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-newtags", "newTags", "NewTags", DEF_COMBO_NEWTAGS, 
+    {BLT_CONFIG_BITMASK, "-newtags", "newTags", "NewTags", DEF_NEWTAGS, 
         Blt_Offset(ComboTree, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)NEW_TAGS},
     {BLT_CONFIG_OBJ, "-opencommand", "openCommand", "OpenCommand",
         (char *)NULL, Blt_Offset(ComboTree, openCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
-        DEF_COMBO_RELIEF, Blt_Offset(ComboTree, relief), 0},
+        DEF_RELIEF, Blt_Offset(ComboTree, relief), 0},
     {BLT_CONFIG_STRING, "-separator", "separator", "Separator", 
-        DEF_COMBO_SEPARATOR, Blt_Offset(ComboTree, pathSep), 
+        DEF_SEPARATOR, Blt_Offset(ComboTree, pathSep), 
         BLT_CONFIG_NULL_OK, 0},
     {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus", 
-        DEF_COMBO_TAKE_FOCUS, Blt_Offset(ComboTree, takeFocusObjPtr), 
+        DEF_TAKE_FOCUS, Blt_Offset(ComboTree, takeFocusObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-textvariable", "textVariable", "TextVariable", 
-        DEF_COMBO_TEXT_VARIABLE, Blt_Offset(ComboTree, textVarObjPtr), 
+        DEF_TEXT_VARIABLE, Blt_Offset(ComboTree, textVarObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-tree", "tree", "Tree", (char *)NULL, 
         Blt_Offset(ComboTree, treeName), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_PIXELS, "-width", "width", "Width", DEF_COMBO_WIDTH, 
+    {BLT_CONFIG_PIXELS, "-width", "width", "Width", DEF_WIDTH, 
         Blt_Offset(ComboTree, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-xscrollbar", "xScrollbar", "Scrollbar", 
-        DEF_COMBO_SCROLLBAR, Blt_Offset(ComboTree, xScrollbarObjPtr), 
+        DEF_SCROLLBAR, Blt_Offset(ComboTree, xScrollbarObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
         (char *)NULL, Blt_Offset(ComboTree, xScrollCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-xscrollincrement", "xScrollIncrement", 
-        "ScrollIncrement", DEF_COMBO_SCROLLINCREMENT, 
+        "ScrollIncrement", DEF_SCROLLINCREMENT, 
         Blt_Offset(ComboTree, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-yscrollbar", "yScrollbar", "Scrollbar", 
-        DEF_COMBO_SCROLLBAR, Blt_Offset(ComboTree, yScrollbarObjPtr), 
+        DEF_SCROLLBAR, Blt_Offset(ComboTree, yScrollbarObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-yscrollcommand", "yScrollCommand", "ScrollCommand",
         (char *)NULL, Blt_Offset(ComboTree, yScrollCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-yscrollincrement", "yScrollIncrement", 
-        "ScrollIncrement", DEF_COMBO_SCROLLINCREMENT, 
+        "ScrollIncrement", DEF_SCROLLINCREMENT, 
         Blt_Offset(ComboTree, yScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
