@@ -2526,21 +2526,21 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     case SIDE_RIGHT:
         tx = x;
         if (rowHeight > th) {
-            ty = y + (rowHeight - th) / 2;
+            ty += (rowHeight - th) / 2;
         }
         ix = tx + tw + gap;
         if (rowHeight > ih) {
-            iy = y + (rowHeight - ih) / 2;
+            iy += (rowHeight - ih) / 2;
         }
         break;
     case SIDE_LEFT:
         ix = x;
         if (rowHeight > ih) {
-            iy = y + (rowHeight - ih) / 2;
+            iy += (rowHeight - ih) / 2;
         }
         tx = ix + iw + gap;
         if (rowHeight > th) {
-            ty = y + (rowHeight - th) / 2;
+            ty += (rowHeight - th) / 2;
         }
         break;
     case SIDE_TOP:

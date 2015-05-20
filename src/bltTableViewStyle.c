@@ -2612,10 +2612,8 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->textWidth = tw;
     cellPtr->textHeight = th;
 #ifdef notdef
-    if (tw > 5000) {
     fprintf(stderr, "cell row=%d col=%s tw=%d th=%d iw=%d ih=%d w=%d h=%d text=%s\n",
             rowPtr->index, colPtr->title, tw, th, iw, ih, cellPtr->width, cellPtr->height, cellPtr->text);
-    }
 #endif
 }
 

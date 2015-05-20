@@ -10831,6 +10831,8 @@ StyleApplyOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
             cellPtr->flags |= GEOMETRY; /* Assume that the new style
                                          * changes the geometry of the
                                          * cell. */
+            viewPtr->flags |= (LAYOUT_PENDING | GEOMETRY);
+            EventuallyRedraw(viewPtr);
         }
     }
     Blt_Chain_Destroy(cells);
