@@ -1120,6 +1120,7 @@ ObjToMargin(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     c = string[0];
     for (i = 0; i < 4; i++) {
         marginPtr = graphPtr->margins + i;
+        fprintf(stderr, "margin[%d] name is %s\n", i, marginPtr->name);
         if ((c == marginPtr->name[0]) &&
             (strcmp(marginPtr->name, string) == 0)) {
             break;                      /* Found the axis name. */

@@ -4582,16 +4582,18 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         bh = h;
         x += comboPtr->arrowPad;
 
-        Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x + 1, y + 1, 
+        if ((bw > 2) && (bh > 2)) {
+            Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x + 1, y + 1, 
                 bw - 2, bh - 2, comboPtr->arrowBorderWidth, relief);
-        gc = Blt_Bg_BorderGC(comboPtr->tkwin, bg, TK_3D_FLAT_GC);
-        XDrawRectangle(comboPtr->display, drawable, gc, x, y, bw-1, bh-1);
-        x += comboPtr->arrowBorderWidth;
-        y += comboPtr->arrowBorderWidth;
-        bw -= 2 * comboPtr->arrowBorderWidth + XPAD;
-        bh -= 2 * comboPtr->arrowBorderWidth;
-        Blt_DrawArrow(comboPtr->display, drawable, color, 
+            gc = Blt_Bg_BorderGC(comboPtr->tkwin, bg, TK_3D_FLAT_GC);
+            XDrawRectangle(comboPtr->display, drawable, gc, x, y, bw-1, bh-1);
+            x += comboPtr->arrowBorderWidth;
+            y += comboPtr->arrowBorderWidth;
+            bw -= 2 * comboPtr->arrowBorderWidth + XPAD;
+            bh -= 2 * comboPtr->arrowBorderWidth;
+            Blt_DrawArrow(comboPtr->display, drawable, color, 
                 x + XPAD, y, bw, bh, comboPtr->arrowBorderWidth, ARROW_DOWN);
+        }
     }
     comboPtr->viewWidth = w;
     if ((w > 0) && (h > 0)) {
@@ -4611,11 +4613,13 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
                 comboPtr->highlightWidth, drawable);
         }           
     }
-    if ((comboPtr->relief != TK_RELIEF_FLAT) && (comboPtr->borderWidth > 0)) {
+    w = width - 2 * comboPtr->highlightWidth;
+    h = height - 2 * comboPtr->highlightWidth;
+    if ((comboPtr->relief != TK_RELIEF_FLAT) && (w > 0) && (h > 0) &&
+        (comboPtr->borderWidth > 0)) {
         Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, 
-                comboPtr->normalBg, comboPtr->highlightWidth, 
-                comboPtr->highlightWidth, width - 2 * comboPtr->highlightWidth, 
-                height - 2 * comboPtr->highlightWidth, comboPtr->borderWidth, 
+                comboPtr->normalBg, comboPtr->highlightWidth,
+                comboPtr->highlightWidth, w, h, comboPtr->borderWidth,
                 comboPtr->relief);
     }
 }
@@ -4667,18 +4671,21 @@ DisplayComboEntry(ClientData clientData)
     /*
      * Create a pixmap the size of the window for double buffering.
      */
-    drawable = Blt_GetPixmap(comboPtr->display, Tk_WindowId(comboPtr->tkwin),
-                w, h, Tk_Depth(comboPtr->tkwin));
+    if ((w > 0) && (h > 0)) {
+        drawable = Blt_GetPixmap(comboPtr->display,
+                                 Tk_WindowId(comboPtr->tkwin),
+                                 w, h, Tk_Depth(comboPtr->tkwin));
 #ifdef WIN32
-    assert(drawable != None);
+        assert(drawable != None);
 #endif
-    bg = (comboPtr->flags & FOCUS) ? comboPtr->inFocusBg : comboPtr->outFocusBg;
-    Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, 0, 0, w, h, 0, 
-        TK_RELIEF_FLAT);
-    DrawComboEntry(comboPtr, drawable, w, h);
-    XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
-        comboPtr->highlightGC, 0, 0, w, h, 0, 0);
-    Tk_FreePixmap(comboPtr->display, drawable);
+        bg = (comboPtr->flags & FOCUS) ? comboPtr->inFocusBg : comboPtr->outFocusBg;
+        Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, 0, 0, w, h, 0, 
+                             TK_RELIEF_FLAT);
+        DrawComboEntry(comboPtr, drawable, w, h);
+        XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
+                  comboPtr->highlightGC, 0, 0, w, h, 0, 0);
+        Tk_FreePixmap(comboPtr->display, drawable);
+    }
 
     if (comboPtr->flags & SCROLL_PENDING) {
         if (comboPtr->scrollCmdObjPtr != NULL) {

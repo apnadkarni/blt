@@ -533,6 +533,7 @@ ExportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     columnIterSwitch.clientData = table;
     blt_table_iterate_all_rows(table, &args.ri);
     blt_table_iterate_all_columns(table, &args.ci);
+
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, &args,
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;

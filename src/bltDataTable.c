@@ -3191,6 +3191,7 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
+        iterPtr->link = Blt_Chain_FirstLink(iterPtr->chain);    
         if (iterPtr->link != NULL) {
             row = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
@@ -3524,6 +3525,7 @@ blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
+        iterPtr->link = Blt_Chain_FirstLink(iterPtr->chain);    
         if (iterPtr->link != NULL) {
             col = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);

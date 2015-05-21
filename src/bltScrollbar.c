@@ -1012,8 +1012,8 @@ DisplayScrollbar(ClientData clientData) /* Information about window. */
             gc = Tk_GCForColor(scrollPtr->highlightBgColorPtr, pixmap);
         }
         Tk_DrawFocusHighlight(tkwin, gc, scrollPtr->highlightWidth, pixmap);
-    }
-    Blt_Bg_FillRectangle(tkwin, pixmap, scrollPtr->troughBg,
+    } 
+   Blt_Bg_FillRectangle(tkwin, pixmap, scrollPtr->troughBg,
         scrollPtr->highlightWidth, scrollPtr->highlightWidth,
         Tk_Width(tkwin) - 2 * scrollPtr->highlightWidth,
         Tk_Height(tkwin) - 2 * scrollPtr->highlightWidth,
@@ -1116,16 +1116,18 @@ DisplayScrollbar(ClientData clientData) /* Information about window. */
         bg = scrollPtr->bg;
         relief = TK_RELIEF_RAISED;
     }
-    if (scrollPtr->vertical) {
-        Blt_Bg_FillRectangle(tkwin, pixmap, bg, scrollPtr->inset, 
+    if (scrollPtr->sliderLast > scrollPtr->sliderFirst) {
+        if (scrollPtr->vertical) {
+            Blt_Bg_FillRectangle(tkwin, pixmap, bg, scrollPtr->inset, 
                 scrollPtr->sliderFirst, width, 
                 scrollPtr->sliderLast - scrollPtr->sliderFirst,
                 elementBW, relief);
-    } else {
-        Blt_Bg_FillRectangle(tkwin, pixmap, bg, scrollPtr->sliderFirst, 
+        } else {
+            Blt_Bg_FillRectangle(tkwin, pixmap, bg, scrollPtr->sliderFirst, 
                 scrollPtr->inset, 
                 scrollPtr->sliderLast - scrollPtr->sliderFirst, width,
                 elementBW, relief);
+        }
     }
 
     /*

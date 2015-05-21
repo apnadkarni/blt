@@ -7493,12 +7493,15 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
         ? tabPtr->worldHeight : setPtr->inset2;
     worldWidth -= (setPtr->flags & SLANT_RIGHT) 
         ? tabPtr->worldHeight : setPtr->inset2;
-    
+
     xSelPad = ySelPad = 0;
     if (tabPtr == setPtr->selectPtr) {
         worldWidth += setPtr->xSelectPad;
         xSelPad = setPtr->xSelectPad / 2;
         ySelPad = setPtr->ySelectPad / 2;
+    }
+    if (setPtr->side & (SIDE_TOP | SIDE_BOTTOM)) {
+        worldWidth -= LABEL_PAD - setPtr->inset2;
     }
     if ((setPtr->quad == ROTATE_90) || (setPtr->quad == ROTATE_270)) {
         SWAP(worldWidth, worldHeight);
@@ -7510,8 +7513,8 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     tabPtr->rotHeight = worldHeight;
 
     x1 = y1 = 0;
-    x2 = x1 + tabPtr->rotWidth;
-    y2 = y1 + tabPtr->rotHeight;
+    x2 = tabPtr->rotWidth;
+    y2 = tabPtr->rotHeight;
 
 #if DEBUG1
     fprintf(stderr, "ComputeLabelOffset: -1. tab=%s x1=%d,y1=%d,x2=%d,y2=%d,w=%d,h=%d, w0=%d h0=%d\n",
@@ -7522,8 +7525,8 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     /* Compute the positions of the tab in world coordinates (rotated 0
      * degrees). */
     
-    /* Start with the upper/left and lower/right corners of the label inside of
-     * the tab.  This excludes the tab's borderwidth. */
+    /* Start with the upper/left and lower/right corners of the label
+     * inside of the tab.  This excludes the tab's borderwidth. */
     
     /* This is the available area for the label. */
     w = x2 - x1;
@@ -7532,21 +7535,12 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     if ((w < 0) || (h < 0)) {
         return;
     }
-    tx = ty = ix = iy = 0;                      /* Suppress compiler warning. */
+    tx = ty = ix = iy = 0;              /* Suppress compiler warning. */
 #if DEBUG1
     fprintf(stderr, "ComputeLabelOffset: 0. tab=%s x1=%d,y1=%d,x2=%d,y2=%d,w=%d,h=%d, w0=%d h0=%d\n",
                 tabPtr->text, x1, y1, x2, y2, w, h, tabPtr->rotWidth, 
                 tabPtr->rotHeight);
 #endif
-
-    /* Focus dashed rectangle. */
-    {
-        fx = x1;
-        fy = y1;
-        fw = ODD(w);
-        fh = ODD(h);
-        tabPtr->focusRegion = RotateRegion(tabPtr, fx, fy, fw, fh);
-    }
 
     /* Close button geometry. */
     if ((setPtr->plusPtr != tabPtr) && 
@@ -7564,7 +7558,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
         } else {
             bh = h;
         }
-        if (w < bw) {
+        if (bw > w) {
             bw = w;
         }
         if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
@@ -7577,7 +7571,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
                 tabPtr->buttonRegion.y, tabPtr->buttonRegion.width, 
                 tabPtr->buttonRegion.height);
 #endif
-        x2 -= bw + LABEL_PAD + 2 * setPtr->closeButton.borderWidth;
+        x2 -= bw + 2 * setPtr->closeButton.borderWidth;
     }
 
     /* Label/image and icon. Their positioning is related because of
@@ -7622,7 +7616,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     w = x2 - x1;
     h = y2 - y1;
 #if DEBUG1
-        fprintf(stderr, "ComputeLabelOffset: 1 tab=%s x=%d,y=%d,w=%d,h=%d, ww=%d wh=%d tabLabelWidth=%d lw=%d\n",
+    fprintf(stderr, "ComputeLabelOffset: 1 tab=%s x=%d,y=%d,w=%d,h=%d, ww=%d wh=%d tabLabelWidth=%d lw=%d\n",
                 tabPtr->text, x1, y1, w, h, tabPtr->worldWidth, 
                 tabPtr->worldHeight, tabPtr->labelWidth0, labelWidth);
 #endif
@@ -7630,8 +7624,9 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
         tw = w; 
     }
     /* Now compute the text/image and icon positions according to the text
-     * side. Don't use the text/image width/height to compute the position of
-     * the icon because the text will shrink with the available room.  */
+     * side. Don't use the text/image width/height to compute the position
+     * of the icon because the text will shrink with the available
+     * room.  */
     switch (setPtr->iconPos) {
     case SIDE_LEFT:
         if (iw > w) {                   /* Not enough space for icon. */
@@ -7699,7 +7694,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     {
         fx = tx - 2;
         fy = ty - 2;
-        fw = ODD(tw) + 2;
+        fw = ODD(tw);
         fh = ODD(th) + 2;
         tabPtr->focusRegion = RotateRegion(tabPtr, fx, fy, fw, fh);
     }
