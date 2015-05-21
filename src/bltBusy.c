@@ -179,7 +179,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_CURSOR, "-cursor", "busyCursor", "BusyCursor",
         DEF_CURSOR, Blt_Offset(Busy, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_PIX32, "-fadecolor", "fadeColor", "FadeColor",
+    {BLT_CONFIG_PIX32, "-color", "color", "Color",
         DEF_FADE, Blt_Offset(Busy, fadeColor), 0},
     {BLT_CONFIG_INT_NNEG, "-delay", "delay", "Delay", DEF_DELAY,
         Blt_Offset(Busy, interval), 0},
