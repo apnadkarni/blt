@@ -83,11 +83,11 @@ ExportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
         int k;
         BLT_TABLE_COLUMN col;
 
-        col = blt_table_get_column(interp, table, objv[i]);
+        col = blt_table_get_column(interp, table, objv[i+1]);
         if (col == NULL) {
             return TCL_ERROR;
         }
-        if (Blt_GetVectorFromObj(interp, objv[i+1], &vector) != TCL_OK) {
+        if (Blt_GetVectorFromObj(interp, objv[i], &vector) != TCL_OK) {
             return TCL_ERROR;
         }
         if (Blt_VecLength(vector) != numRows) {
@@ -149,7 +149,7 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
         long j;
         size_t numElems, numRows;
 
-        if (Blt_GetVectorFromObj(interp, objv[i+1], &vector) != TCL_OK) {
+        if (Blt_GetVectorFromObj(interp, objv[i], &vector) != TCL_OK) {
             return TCL_ERROR;
         }
         numElems = Blt_VecLength(vector);
