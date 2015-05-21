@@ -408,7 +408,6 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltGrab.o \
 			bltHtext.o \
 			bltImage.o \
-			bltKiosk.o \
 			bltListView.o \
 			bltOldConfig.o \
 			bltPaintBrush.o \
@@ -432,7 +431,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltUnixWindow.o \
 			bltWindow.o \
 			bltWinop.o  \
-			$(TK_OBJS) #$(N_OBJS) 
+			$(TK_OBJS) $(N_OBJS) 
 
 BLT_TK_OBJS =		$(BLT_TK_SO_OBJS) \
 			bltStaticInit.o \

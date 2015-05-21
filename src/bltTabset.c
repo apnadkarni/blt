@@ -7697,10 +7697,10 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
 #endif
     /* Focus dashed rectangle. */
     {
-        fx = tx;
-        fy = ty;
-        fw = ODD(tw);
-        fh = ODD(th);
+        fx = tx - 2;
+        fy = ty - 2;
+        fw = ODD(tw) + 2;
+        fh = ODD(th) + 2;
         tabPtr->focusRegion = RotateRegion(tabPtr, fx, fy, fw, fh);
     }
 

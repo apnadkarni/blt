@@ -8387,7 +8387,7 @@ DrawEntryInHierarchy2(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     y += entryPtr->rowPad.side1 + ENTRY_PADY;
     x += colPtr->pad.side1 + ENTRY_PADX;
 
-    h1 = MAX(entryPtr->iconHeight, butPtr->height);
+    h1 = rowHeight;
     w1 = ICONWIDTH(depth);
     w2 = ICONWIDTH(depth + 1);
 

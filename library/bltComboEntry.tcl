@@ -635,8 +635,8 @@ proc ::blt::ComboEntry::HandleUnmap { unmapped menu w } {
 proc ::blt::ComboEntry::UnpostMenu { w } {
     variable _private
 
+    trace "proc UnpostMenu $w"
     set menu [$w cget -menu]
-    trace "proc UnpostMenu $w level=[info level] mapped=[winfo ismapped $menu]"
     catch { 
 	# Restore focus right away (otherwise X will take focus away when the
 	# menu is unmapped and under some window managers (e.g. olvwm) we'll
