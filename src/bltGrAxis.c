@@ -104,6 +104,54 @@ enum TickRange {
 
 #define HORIZONTAL(m)   (!((m)->side & 0x1)) /* Even sides are horizontal */
 
+
+#define DEF_ACTIVEBACKGROUND    STD_ACTIVE_BACKGROUND
+#define DEF_ACTIVEFOREGROUND    STD_ACTIVE_FOREGROUND
+#define DEF_ACTIVERELIEF        "flat"
+#define DEF_ANGLE               "0.0"
+#define DEF_BACKGROUND          (char *)NULL
+#define DEF_BORDERWIDTH         "0"
+#define DEF_CHECKLIMITS         "0"
+#define DEF_COLORBAR_THICKNESS  "20"
+#define DEF_COMMAND             (char *)NULL
+#define DEF_DECREASING          "0"
+#define DEF_DIVISIONS           "10"
+#define DEF_EXTERIOR            "1"
+#define DEF_FOREGROUND          RGB_BLACK
+#define DEF_GRIDCOLOR           RGB_GREY40
+#define DEF_GRIDDASHES          "dot"
+#define DEF_GRIDLINEWIDTH       "0"
+#define DEF_GRIDMINOR           "1"
+#define DEF_GRIDMINOR_COLOR     RGB_GREY77
+#define DEF_GRID_BARCHART       "1"
+#define DEF_GRID_GRAPH          "0"
+#define DEF_HIDE                "0"
+#define DEF_JUSTIFY             "c"
+#define DEF_LIMITS_FONT         STD_FONT_NUMBERS
+#define DEF_LIMITS_FORMAT       (char *)NULL
+#define DEF_LINEWIDTH           "1"
+#define DEF_LOGSCALE            "0"
+#define DEF_LOOSE               "0"
+#define DEF_PALETTE             (char *)NULL
+#define DEF_RANGE               "0.0"
+#define DEF_RELIEF              "flat"
+#define DEF_SCALE               "linear"
+#define DEF_SCROLL_INCREMENT    "10"
+#define DEF_SHIFTBY             "0.0"
+#define DEF_SHOWTICKS           "1"
+#define DEF_STEP                "0.0"
+#define DEF_SUBDIVISIONS        "2"
+#define DEF_TAGS                "all"
+#define DEF_TICKFONT_BARCHART   STD_FONT_SMALL
+#define DEF_TICKFONT_GRAPH      STD_FONT_NUMBERS
+#define DEF_TICKLENGTH          "4"
+#define DEF_TICK_ANCHOR         "c"
+#define DEF_TIMESCALE           "0"
+#define DEF_TITLE_ALTERNATE     "0"
+#define DEF_TITLE_FG            RGB_BLACK
+#define DEF_TITLE_FONT          STD_FONT_NORMAL
+#define DEF_WEIGHT              "1.0"
+
 /* Indicates how to rotate axis title for each margin. */
 static float titleAngle[4] = {
     0.0, 90.0, 0.0, 270.0
@@ -222,53 +270,6 @@ static Blt_CustomOption paletteOption =
 {
     ObjToPalette, PaletteToObj, FreePalette, (ClientData)0
 };
-
-#define DEF_ACTIVEBACKGROUND    STD_ACTIVE_BACKGROUND
-#define DEF_ACTIVEFOREGROUND    STD_ACTIVE_FOREGROUND
-#define DEF_ACTIVERELIEF        "flat"
-#define DEF_ANGLE               "0.0"
-#define DEF_BACKGROUND          (char *)NULL
-#define DEF_BORDERWIDTH         "0"
-#define DEF_CHECKLIMITS         "0"
-#define DEF_COLORBAR_THICKNESS  "20"
-#define DEF_COMMAND             (char *)NULL
-#define DEF_DECREASING          "0"
-#define DEF_DIVISIONS           "10"
-#define DEF_EXTERIOR            "1"
-#define DEF_FOREGROUND          RGB_BLACK
-#define DEF_GRIDCOLOR           RGB_GREY40
-#define DEF_GRIDDASHES          "dot"
-#define DEF_GRIDLINEWIDTH       "0"
-#define DEF_GRIDMINOR           "1"
-#define DEF_GRIDMINOR_COLOR     RGB_GREY77
-#define DEF_GRID_BARCHART       "1"
-#define DEF_GRID_GRAPH          "0"
-#define DEF_HIDE                "0"
-#define DEF_JUSTIFY             "c"
-#define DEF_LIMITS_FONT         STD_FONT_NUMBERS
-#define DEF_LIMITS_FORMAT       (char *)NULL
-#define DEF_LINEWIDTH           "1"
-#define DEF_LOGSCALE            "0"
-#define DEF_LOOSE               "0"
-#define DEF_PALETTE             (char *)NULL
-#define DEF_RANGE               "0.0"
-#define DEF_RELIEF              "flat"
-#define DEF_SCALE               "linear"
-#define DEF_SCROLL_INCREMENT    "10"
-#define DEF_SHIFTBY             "0.0"
-#define DEF_SHOWTICKS           "1"
-#define DEF_STEP                "0.0"
-#define DEF_SUBDIVISIONS        "2"
-#define DEF_TAGS                "all"
-#define DEF_TICKFONT_BARCHART   STD_FONT_SMALL
-#define DEF_TICKFONT_GRAPH      STD_FONT_NUMBERS
-#define DEF_TICKLENGTH          "4"
-#define DEF_TICK_ANCHOR         "c"
-#define DEF_TIMESCALE           "0"
-#define DEF_TITLE_ALTERNATE     "0"
-#define DEF_TITLE_FG            RGB_BLACK
-#define DEF_TITLE_FONT          STD_FONT_NORMAL
-#define DEF_WEIGHT              "1.0"
 
 static Blt_ConfigSpec configSpecs[] =
 {

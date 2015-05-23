@@ -214,6 +214,7 @@ static Pattern datePatterns[] = {
     { 5, {_MDAY, _DOT,   _MONTH, _DOT}}, /* 12. dd.mon.yyyy (31.Jan.1999) */
     { 5, {_DOT, _MONTH, _DOT,   _MDAY}}, /* 13. .mon.dd (.Jan.31) */
     { 6, {_YEAR, _DOT, _MONTH, _DOT, _MDAY}}, /* 14. yy.mon.dd (1999.Jan.31) */
+    { 6, {_YEAR, _COLON,  _MONTH, _COLON, _MDAY}}, /* 15. yyyy:mm:dd hh:mm:ss */
     { 1, {}}
 };
 
@@ -1448,7 +1449,8 @@ FindTimeSequence(ParserToken *tokenPtr, ParserToken **tokens)
         (tokenPtr->lvalue > 23)) {
         return NULL;                    /* Not a valid hour spec. */
     }
-    if ((tokenPtr->prevPtr != NULL) && (tokenPtr->prevPtr->id == _DOT)) {
+    if ((tokenPtr->prevPtr != NULL) &&
+        ((tokenPtr->prevPtr->id == _DOT) || tokenPtr->prevPtr->id == _COLON)) {
         return NULL;                    /* Previous token can't be a
                                          * dot. */
     }
@@ -1510,14 +1512,15 @@ FindTimeSequence(ParserToken *tokenPtr, ParserToken **tokens)
 static int
 ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
 {
-    ParserToken *next, *first, *last;
+    ParserToken *next, *first, *last, *prevPtr;
     ParserToken *tokenPtr, *tokens[3];
-
+    int count;
 #if DEBUG
     fprintf(stderr, "ExtractTime (%s)\n", 
             Tcl_GetString(PrintTokens(interp, parserPtr)));
 #endif
     first = last = NULL;
+
     for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL;
          tokenPtr = tokenPtr->nextPtr) {
         first = tokenPtr;

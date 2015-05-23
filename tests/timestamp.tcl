@@ -402,9 +402,9 @@ test timestamp.55 {timestamp scan "Jan 1st"} {
 } {0 0.0}
 
 # Day of year (1-366) plus time.  The default year is the epoch.
-test timestamp.56 {timestamp scan "+001:00:00:01"} {
+test timestamp.56 {timestamp scan "+001 00:00:01"} {
     list [catch {
- 	set d1 [blt::timestamp scan "+001:00:00:01"]
+ 	set d1 [blt::timestamp scan "+001 00:00:01"]
 	expr { $d1 - $d2 }
     } msg] $msg
 } {0 1.0}
@@ -694,10 +694,10 @@ test timestamp.90 {timestamp scan "31/Jan/2012"} {
 } {0 0.0}
 
 # A 3 digit number is interpretered as the day of the year. 
-# +ddd:hh:mm:ss YYYY
-test timestamp.91 {timestamp scan "+031:00:00:00 2012"} {
+# +ddd hh:mm:ss YYYY
+test timestamp.91 {timestamp scan "+031 00:00:00 2012"} {
     list [catch {
- 	set d1 [blt::timestamp scan "+031:00:00:00 2012"]
+ 	set d1 [blt::timestamp scan "+031 00:00:00 2012"]
 	expr { $d1 - $d2 }
     } msg] $msg
 } {0 0.0}
@@ -2164,6 +2164,23 @@ test timestamp.300 {timestamp scan "2007-11-02 12:00 America/Los_Angeles PDT"} {
     } msg] $msg
 } {0 0.0}
 
+# Digital camera Exif tag timestamp. Why put colons in the date?
+set d2 [clock scan "June 2, 2011 13:49:18" -gmt yes]
+test timestamp.300 {timestamp scan "2011:06:02 13:49:18"} {
+    list [catch {
+	set d1 [blt::timestamp scan "2011:06:02 13:49:18"]
+	expr { $d1 - double($d2) }
+    } msg] $msg
+} {0 0.0}
+
+# Digital camera Exif tag timestamp. Why put colons in the date?
+set d2 [clock scan "2014-04-04 14:28:38 0200" -gmt yes]
+test timestamp.300 {timestamp scan "2014-04-04T14:28:38+02:00"} {
+    list [catch {
+	set d1 [blt::timestamp scan "2014-04-04T14:28:38+02:00"]
+	expr { $d1 - double($d2) }
+    } msg] $msg
+} {0 0.0}
 
 set count 301
 foreach name [array names blt::timezones] {

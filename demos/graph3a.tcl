@@ -17,7 +17,8 @@ $graph axis configure y -hide yes
 set time [lindex $labels 0]
 foreach label "displacement force strain time" {
     set axis [$graph axis create $label -title $label \
-		  -margin left -loose yes -rotate 0 -grid yes]
+		  -margin left -loose yes -rotate 0 \
+		  -tickdefault 2 -grid yes]
     $graph element create $label \
 	-x [list $table sample#]  \
 	-y [list $table $label] \
