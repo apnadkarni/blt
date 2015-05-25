@@ -1215,6 +1215,11 @@ format in the **import** or **export** operations.
     **-file** *fileName*
       Reads the JPEG file from *fileName*.
 
+    **-tags** *varName*
+      Specifies the name of a TCL array variable to contain the EXIF tags
+      found in the JPEG input.  If *varName* is "", tags are not parsed.
+      The default is "".
+
 *imageName* **export jpg** ?\ *switches* ... ?
     Exports *imageName* into JPEG data.  If no **-file** or **-data** switch
     is provided, this command returns the JPEG output as a base64 string.
@@ -1661,6 +1666,11 @@ package can be manually loaded as follows.
 
     **-file** *fileName*
      Reads the TIFF file from *fileName*.
+
+    **-tags** *varName*
+      Specifies the name of a TCL array variable to contain the tags
+      found in the TIFF input.  If *varName* is "", tags are not parsed.
+      The default is "".
 
 *imageName* **export tif** ?\ *switches* ... ?
     Exports *imageName* into TIFF data.  If no **-file** or **-data** switch
