@@ -381,6 +381,10 @@ BLT_EXTERN void Blt_GetLineExtents(size_t numPoints, Point2d *points,
 BLT_EXTERN void Blt_GetBoundingBox (int width, int height, float angle, 
         double *widthPtr, double *heightPtr, Point2d *points);
 
+BLT_EXTERN int Blt_ParseTifTags(Tcl_Interp *interp, const char *varName,
+        const unsigned char *bytes, off_t offset, size_t numBytes);
+
+
 #include "bltConfig.h"
 
 #endif /*BLT_TK_INT*/

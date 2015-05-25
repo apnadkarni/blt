@@ -421,6 +421,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltTable.o \
 			bltTabset.o \
 			bltText.o \
+			bltTifTags.o \
 			bltTkInit.o \
 			bltTkIntProcs.o \
 			bltTkProcs.o \

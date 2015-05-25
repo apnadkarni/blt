@@ -68,6 +68,7 @@ typedef struct {
 typedef struct {
     Tcl_Obj *dataObjPtr;
     Tcl_Obj *fileObjPtr;
+    Tcl_Obj *varObjPtr;
 } TifImportSwitches;
 
 static Blt_SwitchParseProc CompressSwitch;
@@ -94,6 +95,8 @@ static Blt_SwitchSpec importSwitches[] =
         Blt_Offset(TifImportSwitches, dataObjPtr), 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
         Blt_Offset(TifImportSwitches, fileObjPtr), 0},
+    {BLT_SWITCH_OBJ, "-tags", "varName", (char *)NULL,
+        Blt_Offset(TifImportSwitches, varObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
@@ -192,8 +195,8 @@ TifSeek(thandle_t handle, toff_t offset, int whence)
         offset += Blt_DBuffer_Length(dbuffer);
     }
     if (offset > Blt_DBuffer_Size(dbuffer)) {
-        /* Attempting to seek past the end of the current buffer. Resize the
-         * buffer */
+        /* Attempting to seek past the end of the current buffer. Resize
+         * the buffer */
         Blt_DBuffer_Resize(dbuffer, offset);
     }
     Blt_DBuffer_SetCursor(dbuffer, offset);
@@ -224,7 +227,6 @@ TifClose(thandle_t handle)
 {
     return 0;
 }
-
 
 static tsize_t
 TifWrite(thandle_t handle, tdata_t out, tsize_t numBytes)
@@ -323,6 +325,7 @@ TifReadImage(Tcl_Interp *interp, TIFF *tifPtr, Blt_Chain chain)
         }
         destRowPtr -= destPtr->pixelsPerRow;
     }
+    _TIFFfree(srcBits);
     Blt_Chain_Append(chain, destPtr);
     destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return TCL_OK;
@@ -369,11 +372,8 @@ IsTif(Blt_DBuffer dbuffer)
  *---------------------------------------------------------------------------
  */
 static Blt_Chain
-TifToPicture(
-    Tcl_Interp *interp, 
-    const char *fileName,
-    Blt_DBuffer dbuffer,
-    TifImportSwitches *switchesPtr)
+TifToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
+             TifImportSwitches *switchesPtr)
 {
     Blt_Chain chain;
     TIFF *tifPtr;
@@ -392,7 +392,7 @@ TifToPicture(
     oldWarningHandler = TIFFSetWarningHandler(TifWarning);
 
     chain = NULL;
-    tifPtr = TIFFClientOpen(fileName, "r", (thandle_t)dbuffer,
+    tifPtr = TIFFClientOpen(fileName, "rC", (thandle_t)dbuffer,
         TifRead,                /* TIFFReadProc */
         TifWrite,               /* TIFFWriteProc */
         TifSeek,                /* TIFFSeekProc */
@@ -403,13 +403,24 @@ TifToPicture(
     if (tifPtr == NULL) {
         goto bad;
     }
+    if (switchesPtr->varObjPtr != NULL) {
+        const char *varName;
+        
+        TIFFPrintDirectory(tifPtr, stdout, 0);
+        varName = Tcl_GetString(switchesPtr->varObjPtr);
+        if (Blt_ParseTifTags(interp, varName, Blt_DBuffer_Bytes(dbuffer), 0,
+                             Blt_DBuffer_Length(dbuffer)) == TCL_ERROR) {
+            goto bad;
+        }
+    }
     chain = Blt_Chain_Create();
     do {
         if (TifReadImage(interp, tifPtr, chain) != TCL_OK) {
             goto bad;
         }
     } while (TIFFReadDirectory(tifPtr));
- bad:
+
+bad:
     if (tifPtr != NULL) {
         TIFFClose(tifPtr);
     }

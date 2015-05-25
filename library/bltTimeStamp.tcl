@@ -384,7 +384,7 @@ array set blt::timezones {
     Asia/Sakhalin                       "+11:00 +11:00"  
     Asia/Samarkand                      "+05:00 +05:00"  
     Asia/Seoul                          "+09:00 +09:00"  
-    Asia/Shanghai .                     "+08:00 +08:00"  
+    Asia/Shanghai                       "+08:00 +08:00"  
     Asia/Singapore                      "+08:00 +08:00"  
     Asia/Taipei                         "+08:00 +08:00"  
     Asia/Tashkent                       "+05:00 +05:00"  
@@ -879,3 +879,4 @@ array set blt::timezones {
     ZP6                                 "+06:00 +06:00"
     Zulu                                "+00:00 +00:00"  
 }
+
