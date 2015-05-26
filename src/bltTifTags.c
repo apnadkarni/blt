@@ -107,7 +107,7 @@ static const char *tifTypeStrings[] = {
                                          * denominator */
     "float",                            /* 4-byte IEEE floating point
 					 * number. */
-    "double"                            /* 8-byte IEEE floating point
+    "double",                            /* 8-byte IEEE floating point
 					 * number. */
     "ifd", 				/* 4-byte unsigned offset. */
     "long8",				/* 8-byte unsigned long integer. */
@@ -141,6 +141,12 @@ struct _TifParser {
 					 * EXIF directory. */
     off_t gps;				/* If non-zero, offset to GPS
 					 * directory */
+    off_t geoKey;                       /* If non-zero, offset to
+                                         * GeoKeyDirectory directory */
+    double *geoDoubleParams;            /* If non-NULL, array of
+                                         * double parameters. */
+    char *geoAsciiParams;               /* If non-NULL, array of ascii
+                                         * parameters. */
     off_t next;				/* Offset to current directory. */
     Tag *currTable;			/* Table of tags relevant for
 					 * current directory. */
@@ -150,10 +156,17 @@ struct _TifParser {
 
 #define EXIF_ID                34665
 #define GPS_ID                 34853
+#define GEOKEYDIRECTORY_ID     34735
+#define GEODOUBLEPARAMS_ID     34736
+#define GEOASCIIPARAMS_ID      34737
 #define EXIFVERSION_ID         36864
 #define FLASHPIXVERSION_ID     40960
 #define XPTITLE_ID             40091
+#define XPCOMMENT_ID           40092
+#define XPAUTHOR_ID            40093
+#define XPKEYWORDS_ID          40094
 #define XPSUBJECT_ID           40095
+#define XMP_ID                   700
 
 static PrintProc PrintApertureValue;
 static PrintProc PrintColorMap;
@@ -165,7 +178,6 @@ static PrintProc PrintFileSource;
 static PrintProc PrintFocalPlaneResolutionUnit;
 static PrintProc PrintGPSTimeStamp;
 static PrintProc PrintGPSVersionId;
-static PrintProc PrintGeoKeyDirectoryTag;
 static PrintProc PrintImageMatching;
 static PrintProc PrintMakerNote;
 static PrintProc PrintMeteringMode;
@@ -178,53 +190,56 @@ static PrintProc PrintShutterSpeed;
 static PrintProc PrintUserComment;
 static PrintProc PrintWhiteBalance;
 static PrintProc PrintYCbCrPositioning;
+static PrintProc PrintGeoAsciiParamsTag;
+static PrintProc PrintGeoDoubleParamsTag;
+static PrintProc PrintGeoKeyDirectoryTag;
 
 static Tag geoTags[] = {
     {  1024, "GTModelType",		TIF_SHORT,     1},
     {  1025, "GTRasterType",		TIF_ASCII,     2},
     {  1026, "GTCitation",		TIF_ASCII,     0},
-    {  2048, "GeographicType",		TIF_SHORT,     0},
+    {  2048, "GeographicType",		TIF_SHORT,     1},
     {  2049, "GeogCitation",		TIF_ASCII,     0},
-    {  2050, "GeogGeodeticDatum",	TIF_SHORT,     0},
-    {  2051, "GeogPrimeMedian",		TIF_SHORT,     0},
-    {  2052, "GeogLinearUnits",		TIF_SHORT,     0},
-    {  2053, "GeogLinearUnitSize",	TIF_DOUBLE,    0},
-    {  2054, "GeogAngularUnits",	TIF_SHORT,     0},
-    {  2055, "GeogAngularUnitSize",	TIF_DOUBLE,    0},
-    {  2056, "GeogEllispoid",		TIF_SHORT,     0},
-    {  2057, "GeogSemiMajorAxis",	TIF_DOUBLE,    0},
-    {  2058, "GeogSemiMinorAxis",	TIF_DOUBLE,    0},
-    {  2059, "GeogSemiInvFlattening",	TIF_DOUBLE,    0},
-    {  2060, "GeogAzimuthUnits",	TIF_DOUBLE,    0},
-    {  2061, "GeogPrimeMedianLong",	TIF_DOUBLE,    0},
-    {  3072, "ProjectedCSTType",	TIF_SHORT,     0},
+    {  2050, "GeogGeodeticDatum",	TIF_SHORT,     1},
+    {  2051, "GeogPrimeMedian",		TIF_SHORT,     1},
+    {  2052, "GeogLinearUnits",		TIF_SHORT,     1},
+    {  2053, "GeogLinearUnitSize",	TIF_DOUBLE,    1},
+    {  2054, "GeogAngularUnits",	TIF_SHORT,     1},
+    {  2055, "GeogAngularUnitSize",	TIF_DOUBLE,    1},
+    {  2056, "GeogEllispoid",		TIF_SHORT,     1},
+    {  2057, "GeogSemiMajorAxis",	TIF_DOUBLE,    1},
+    {  2058, "GeogSemiMinorAxis",	TIF_DOUBLE,    1},
+    {  2059, "GeogSemiInvFlattening",	TIF_DOUBLE,    1},
+    {  2060, "GeogAzimuthUnits",	TIF_DOUBLE,    1},
+    {  2061, "GeogPrimeMedianLong",	TIF_DOUBLE,    1},
+    {  3072, "ProjectedCSTType",	TIF_SHORT,     1},
     {  3073, "PCSCitation",		TIF_ASCII,     0},
-    {  3074, "Projection",		TIF_SHORT,     0},
-    {  3075, "ProjCoordTrans",		TIF_SHORT,     0},
-    {  3076, "ProjLinearUnits",		TIF_SHORT,     0},
-    {  3077, "ProjLinearUnitSize",	TIF_DOUBLE,    0},
-    {  3078, "ProjStdParallel1",	TIF_DOUBLE,    0},
-    {  3079, "ProjStdParallel2",	TIF_DOUBLE,    0},
-    {  3080, "ProjNatOriginLong",	TIF_DOUBLE,    0},
-    {  3081, "ProjNatOriginLat",	TIF_DOUBLE,    0},
-    {  3082, "ProjFalseEasting",	TIF_DOUBLE,    0},
-    {  3083, "ProjFalseNorthing",	TIF_DOUBLE,    0},
-    {  3084, "ProjFalseOriginLong",	TIF_DOUBLE,    0},
-    {  3085, "ProjFalseOriginLat",	TIF_DOUBLE,    0},
-    {  3086, "ProjFalseOriginEasting",	TIF_DOUBLE,    0},
-    {  3087, "ProjFalseOriginNorthing", TIF_DOUBLE,    0},
-    {  3088, "ProjCenterLong",		TIF_DOUBLE,    0},
-    {  3089, "ProjCenterLat",		TIF_DOUBLE,    0},
-    {  3090, "ProjCenterEasting",	TIF_DOUBLE,    0},
-    {  3091, "ProjCenterNorthing",	TIF_DOUBLE,    0},
-    {  3092, "ProjScaleAtNatOrigin",	TIF_DOUBLE,    0},
-    {  3093, "ProjScaleAtNatCenter",	TIF_DOUBLE,    0},
-    {  3094, "ProjAzimuthAngle",	TIF_DOUBLE,    0},
-    {  3095, "ProjStraightVertPoleLong",TIF_DOUBLE,    0},
-    {  4096, "VerticalCSType",		TIF_SHORT,     0},
+    {  3074, "Projection",		TIF_SHORT,     1},
+    {  3075, "ProjCoordTrans",		TIF_SHORT,     1},
+    {  3076, "ProjLinearUnits",		TIF_SHORT,     1},
+    {  3077, "ProjLinearUnitSize",	TIF_DOUBLE,    1},
+    {  3078, "ProjStdParallel1",	TIF_DOUBLE,    1},
+    {  3079, "ProjStdParallel2",	TIF_DOUBLE,    1},
+    {  3080, "ProjNatOriginLong",	TIF_DOUBLE,    1},
+    {  3081, "ProjNatOriginLat",	TIF_DOUBLE,    1},
+    {  3082, "ProjFalseEasting",	TIF_DOUBLE,    1},
+    {  3083, "ProjFalseNorthing",	TIF_DOUBLE,    1},
+    {  3084, "ProjFalseOriginLong",	TIF_DOUBLE,    1},
+    {  3085, "ProjFalseOriginLat",	TIF_DOUBLE,    1},
+    {  3086, "ProjFalseOriginEasting",	TIF_DOUBLE,    1},
+    {  3087, "ProjFalseOriginNorthing", TIF_DOUBLE,    1},
+    {  3088, "ProjCenterLong",		TIF_DOUBLE,    1},
+    {  3089, "ProjCenterLat",		TIF_DOUBLE,    1},
+    {  3090, "ProjCenterEasting",	TIF_DOUBLE,    1},
+    {  3091, "ProjCenterNorthing",	TIF_DOUBLE,    1},
+    {  3092, "ProjScaleAtNatOrigin",	TIF_DOUBLE,    1},
+    {  3093, "ProjScaleAtNatCenter",	TIF_DOUBLE,    1},
+    {  3094, "ProjAzimuthAngle",	TIF_DOUBLE,    1},
+    {  3095, "ProjStraightVertPoleLong",TIF_DOUBLE,    1},
+    {  4096, "VerticalCSType",		TIF_SHORT,     1},
     {  4097, "VerticalCitation",	TIF_ASCII,     0},
-    {  4098, "VerticalDatum",		TIF_SHORT,     0},
-    {  4099, "VerticalUnits",		TIF_SHORT,     0}
+    {  4098, "VerticalDatum",		TIF_SHORT,     1},
+    {  4099, "VerticalUnits",		TIF_SHORT,     1},
 };
 static int numGeoTags = sizeof(geoTags) / sizeof(Tag);
     
@@ -268,8 +283,8 @@ static Tag exifTags[] = {
     {    11, "ProcessingSoftware",  TIF_ASCII,     0},
     {   254, "NewSubFileType",      TIF_LONG,      1},
     {   255, "SubFileType",         TIF_SHORT,     1},
-    {   256, "ImageWidth",          TIF_SHORT,      1},
-    {   257, "ImageLength",         TIF_SHORT,      1},
+    {   256, "ImageWidth",          TIF_SHORT,     1},
+    {   257, "ImageLength",         TIF_SHORT,     1},
     {   258, "BitsPerSample",       TIF_SHORT,     0},
     {   259, "Compression",         TIF_SHORT,     1, PrintCompression},
     {   262, "PhotometricInterpretation", TIF_SHORT,     1},
@@ -299,7 +314,7 @@ static Tag exifTags[] = {
     {   297, "PageNumber",	    TIF_SHORT,	   2},
     {   301, "TransferFunction",    TIF_SHORT,     3*256},
     {   305, "Software",            TIF_ASCII,     0},
-    {   306, "DateTime",            TIF_ASCII,    20},
+    {   306, "DateTime",            TIF_ASCII,     20},
     {   315, "Artist",              TIF_ASCII,     0},
     {   316, "HostComputer",        TIF_ASCII,     0},
     {   317, "Predictor",           TIF_SHORT,     0},
@@ -334,7 +349,7 @@ static Tag exifTags[] = {
     {   530, "YCbCrSubSampling",    TIF_SHORT,     2},
     {   531, "YCbCrPositioning",    TIF_SHORT,     1, PrintYCbCrPositioning},
     {   532, "ReferenceBlackWhite", TIF_RATIONAL,  6},
-    {   700, "XMLPacket",           TIF_BYTE,      1},
+    {   700, "XMP",                 TIF_BYTE,      1},
     {  4096, "RelatedImageFileFormat",   TIF_ASCII,  1},
     { 33421, "CFARepeatPatternDim", TIF_SHORT,     0},
     { 33422, "CFAPattern",          TIF_BYTE,      0},
@@ -350,6 +365,8 @@ static Tag exifTags[] = {
     { 34665, "ExifTag",             TIF_LONG,      1},
     { 34675, "InterColorProfile",   TIF_UNDEFINED, 0},
     { 34735, "GeoKeyDirectoryTag",  TIF_SHORT,	   0, PrintGeoKeyDirectoryTag},
+    { 34736, "GeoDoubleParamsTag",  TIF_DOUBLE,    0, PrintGeoDoubleParamsTag},
+    { 34737, "GeoAsciiParamsTag",   TIF_ASCII,     0, PrintGeoAsciiParamsTag},
     { 34850, "ExposureProgram",     TIF_SHORT,     1},
     { 34852, "SpectralSensitivity", TIF_ASCII,     0},
     { 34853, "GPSTag",              TIF_LONG,      1},
@@ -405,7 +422,7 @@ static Tag exifTags[] = {
     { 40960, "FlashPixVersion",     TIF_ASCII,     0},
     { 40961, "ColorSpace",          TIF_SHORT,     1, PrintColorSpace},
     { 40962, "PixelXDimension",     TIF_LONG,      1},
-    { 40963, "PixelYDimension",     TIF_LONG,     1},
+    { 40963, "PixelYDimension",     TIF_LONG,      1},
     { 40964, "RelatedSoundFile",    TIF_ASCII,     13},
     { 40965, "InteroperabilityTag", TIF_LONG,      1},
     { 41484, "SpatialFrequencyResponse", TIF_UNDEFINED, 0},
@@ -438,6 +455,8 @@ static Tag exifTags[] = {
     { 42035, "LensMake",            TIF_ASCII,     1},
     { 42036, "LensModel",           TIF_ASCII,     1},
     { 42037, "LensSerialNumber",    TIF_ASCII,     1},
+    { 42112, "GDAL_METADATA",       TIF_ASCII,     0},
+    { 42113, "GDAL_NODATA",         TIF_ASCII,     0},
     { 50341, "PrintImageMatching",  TIF_UNDEFINED, 0, PrintImageMatching},
     { 50708, "UniqueCameraModel",   TIF_ASCII,     1},
     { 50709, "LocalizedCameraModel",TIF_BYTE,      1},
@@ -632,60 +651,6 @@ PrintFileSource(TifParser *tifPtr, const unsigned char *bp, int count)
     }
 }
 
-static Tcl_Obj *
-PrintGeoKeyDirectoryTag(TifParser *tifPtr, const unsigned char *bp, int count)
-{
-    Tcl_Obj *listObjPtr, *objPtr;
-    int i;
-    int version, keyMajorRev, keyMinorRev, numKeys;
-    
-    version     = TifGetShort(tifPtr, bp);
-    keyMajorRev = TifGetShort(tifPtr, bp + 2);
-    keyMinorRev = TifGetShort(tifPtr, bp + 4);
-    numKeys     = TifGetShort(tifPtr, bp + 6);
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    objPtr = Tcl_NewIntObj(version);
-    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(keyMajorRev);
-    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(keyMinorRev);
-    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(numKeys);
-    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-
-    bp += 8;
-    for (i = 0; i < numKeys; i++) {
-	int id, type, count, offset;
-	Tag *tagPtr;
-        
-	id     = TifGetShort(tifPtr, bp);   /* Id of tag. */
-	type   = TifGetShort(tifPtr, bp+2); /* Tag location. */
-	count  = TifGetShort(tifPtr,  bp+4); /* # of specified types. */
-	offset = TifGetShort(tifPtr,  bp+6); /* Offset used only if value
-					     * doesn't fit in 4-bytes. */
-
-        tagPtr = SearchForTagId(id, geoTags, numGeoTags);
-        if (tagPtr == NULL) {
-            objPtr = Tcl_NewStringObj("???", -1);
-        } else {
-            objPtr = Tcl_NewStringObj(tagPtr->tagName, -1);
-        }
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-        if (type == 0) {
-            type = TIF_SHORT;
-        }
-	objPtr = Tcl_NewStringObj(tifTypeStrings[type], -1);
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-	objPtr = Tcl_NewIntObj(count);
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-	objPtr = Tcl_NewIntObj(offset);
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-	bp += 8;
-    }
-    return listObjPtr;
-}
-
 
 static Tcl_Obj *
 PrintGPSVersionId(TifParser *tifPtr, const unsigned char *bp, int count)
@@ -758,7 +723,7 @@ PrintColorSpace(TifParser *tifPtr, const unsigned char *bp, int count)
     } else if (s == 0xFFFF) {
         return Tcl_NewStringObj("Uncalibrated", -1);
     } else {
-        return Tcl_NewStringObj("???", -1);
+        return Tcl_NewIntObj(s);
     }
 }
 
@@ -778,7 +743,7 @@ PrintOrientation(TifParser *tifPtr, const unsigned char *bp, int count)
     };
     s = TifGetShort(tifPtr, bp);
     if ((s > 8) || (s == 0)) {
-        return Tcl_NewStringObj("???", 3);
+        return Tcl_NewIntObj(s);
     } 
     return Tcl_NewStringObj(strings[s-1], -1);
 }
@@ -800,7 +765,7 @@ PrintMeteringMode(TifParser *tifPtr, const unsigned char *bp, int count)
         if (s == 255) {
             return Tcl_NewStringObj("Other", 5);
         } 
-        return Tcl_NewStringObj("???", 3);
+        return Tcl_NewIntObj(s);
     } 
     return Tcl_NewStringObj(strings[s-1], -1);
 }
@@ -816,7 +781,7 @@ PrintSensingMethod(TifParser *tifPtr, const unsigned char *bp, int count)
     };
     s = TifGetShort(tifPtr, bp);
     if ((s > 3) || (s == 0)) {
-        return Tcl_NewStringObj("???", 3);
+        return Tcl_NewIntObj(s);
     } 
     return Tcl_NewStringObj(strings[s-1], -1);
 }
@@ -831,7 +796,7 @@ PrintYCbCrPositioning(TifParser *tifPtr, const unsigned char *bp, int count)
     };
     s = TifGetShort(tifPtr, bp);
     if ((s > 2) || (s == 0)) {
-        return Tcl_NewStringObj("???", 3);
+        return Tcl_NewIntObj(s);
     } 
     return Tcl_NewStringObj(strings[s-1], -1);
 }
@@ -846,7 +811,7 @@ PrintWhiteBalance(TifParser *tifPtr, const unsigned char *bp, int count)
     };
     s = TifGetShort(tifPtr, bp);
     if (s > 1) {
-        return Tcl_NewStringObj("???", 3);
+        return Tcl_NewIntObj(s);
     } 
     return Tcl_NewStringObj(strings[s], -1);
 }
@@ -856,14 +821,15 @@ PrintResolutionUnit(TifParser *tifPtr, const unsigned char *bp, int count)
 {
     uint16_t s;
     static const char *strings[] = {
+        "none",                         /* 1 */
         "inches",                       /* 2 */
         "centimeters",                  /* 3 */
     };
     s = TifGetShort(tifPtr, bp);
-    if ((s > 3) || (s < 2)) {
-        return Tcl_NewStringObj("???", 3);
+    if ((s > 3) || (s < 1)) {
+        return Tcl_NewIntObj(s);
     } 
-    return Tcl_NewStringObj(strings[s-2], -1);
+    return Tcl_NewStringObj(strings[s-1], -1);
 }
 
 static Tcl_Obj *
@@ -882,18 +848,18 @@ PrintImageMatching(TifParser *tifPtr, const unsigned char *bp, int count)
 static Tcl_Obj *
 PrintSceneCaptureType(TifParser *tifPtr, const unsigned char *bp, int count)
 {
-    uint16_t value;
+    uint16_t sval;
     static const char *strings[] = {
         "Standard",                       /* 0 */
         "Landscape",                      /* 1 */
         "Portrait",                       /* 2 */
         "NightScene"                      /* 3 */
     };
-    value = TifGetShort(tifPtr, bp);
-    if (value > 3) {
-        return Tcl_NewStringObj("???", 3);
+    sval = TifGetShort(tifPtr, bp);
+    if (sval > 3) {
+        return Tcl_NewIntObj(sval);
     } 
-    return Tcl_NewStringObj(strings[value], -1);
+    return Tcl_NewStringObj(strings[sval], -1);
 }
 
 static Tcl_Obj *
@@ -923,11 +889,112 @@ PrintSceneType(TifParser *tifPtr, const unsigned char *bp, int count)
 }
 
 static Tcl_Obj *
+PrintGeoAsciiParamsTag(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    tifPtr->geoAsciiParams = Blt_AssertMalloc(sizeof(char) * count);
+    memcpy(tifPtr->geoAsciiParams, bp, count);
+    return Tcl_NewStringObj((const char *)bp, count);
+}
+
+static Tcl_Obj *
+PrintGeoDoubleParamsTag(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    int i;
+    Tcl_Obj *resultObjPtr;
+    
+    tifPtr->geoDoubleParams = Blt_AssertMalloc(sizeof(double) * count);
+    for (i = 0; i < count; i++) {
+        tifPtr->geoDoubleParams[i] = TifGetDouble(tifPtr, bp + (i * 8));
+    }
+    if (count == 1) {
+        double dval;
+        
+        dval = TifGetDouble(tifPtr, bp);
+        resultObjPtr = Tcl_NewDoubleObj(dval);
+    } else {
+        int i;
+        Tcl_Obj *listObjPtr;
+        
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+        for (i = 0; i < count; i++) {
+            double dval;
+            Tcl_Obj *objPtr;
+            
+            dval = TifGetDouble(tifPtr, bp + (i * 8));
+            objPtr = Tcl_NewDoubleObj(dval);
+            Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+        }
+        resultObjPtr = listObjPtr;
+    }
+    return resultObjPtr;
+}
+
+static Tcl_Obj *
+PrintGeoKeyDirectoryTag(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    Tcl_Obj *listObjPtr, *objPtr;
+    int i;
+    int version, keyMajorRev, keyMinorRev, numKeys;
+    
+    version     = TifGetShort(tifPtr, bp);
+    keyMajorRev = TifGetShort(tifPtr, bp + 2);
+    keyMinorRev = TifGetShort(tifPtr, bp + 4);
+    numKeys     = TifGetShort(tifPtr, bp + 6);
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewIntObj(version);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(keyMajorRev);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(keyMinorRev);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(numKeys);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+
+    bp += 8;
+    for (i = 0; i < numKeys; i++) {
+	int id, type, count, offset;
+	Tag *tagPtr;
+        
+	id     = TifGetShort(tifPtr, bp);   /* Id of tag. */
+	type   = TifGetShort(tifPtr, bp+2); /* Tag location. */
+	count  = TifGetShort(tifPtr,  bp+4); /* # of specified types. */
+	offset = TifGetShort(tifPtr,  bp+6); /* Offset used only if value
+					     * doesn't fit in 4-bytes. */
+
+        tagPtr = SearchForTagId(id, geoTags, numGeoTags);
+        if (tagPtr == NULL) {
+            objPtr = Tcl_NewStringObj("???", -1);
+        } else {
+            objPtr = Tcl_NewStringObj(tagPtr->tagName, -1);
+        }
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+        if (type == 0) {
+            type = TIF_SHORT;
+        } else if (type == GEODOUBLEPARAMS_ID) {
+            type = TIF_DOUBLE;
+        } else if (type == GEOASCIIPARAMS_ID) {
+            type = TIF_ASCII;
+        }
+        objPtr = Tcl_NewStringObj(tifTypeStrings[type], -1);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	objPtr = Tcl_NewIntObj(count);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	objPtr = Tcl_NewIntObj(offset);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	bp += 8;
+    }
+    return listObjPtr;
+}
+
+
+static Tcl_Obj *
 ValueToObj(TifParser *tifPtr, const unsigned char *bp, int count,
            enum TifTypes type)
 {
     Tcl_Obj *resultObjPtr;
     
+    resultObjPtr = NULL;
     switch (type) {
     case TIF_IGNORE:
         resultObjPtr = NULL;
@@ -1242,26 +1309,44 @@ SetVariable(Tcl_Interp *interp, const char *varName, TifParser *tifPtr,
 	return TCL_CONTINUE;
     }
     if (type != tagPtr->type) {
+#if DEBUG
         fprintf(stderr, "Warning `%s`: types don't match: found=%s wanted=%s\n",
                 tagPtr->tagName,
                 (type > TIF_IFD8) ? "???" : tifTypeStrings[type],
                 tifTypeStrings[tagPtr->type]);
+#endif
         if (type > TIF_IFD8) {
             type = tagPtr->type;
         }
     }
     if ((tagPtr->count > 0) && (count != tagPtr->count)) {
+#if DEBUG
         fprintf(stderr, "Warning `%s`: counts don't match: found=%d wanted=%d\n",
                 tagPtr->tagName, count, tagPtr->count);
+#endif
     }
-    if (tagPtr->id == EXIFVERSION_ID || tagPtr->id == FLASHPIXVERSION_ID ||
-	(tagPtr->id >= XPTITLE_ID && tagPtr->id <= XPSUBJECT_ID)) {
-	type = TIF_ASCII;
-    }
-    if (tagPtr->id == EXIF_ID) {
-        tifPtr->exif = offset;		/* Save the offset for later. */
-    } else if (tagPtr->id == GPS_ID) {
-        tifPtr->gps = offset;		/* Save the offset for later. */
+    switch (tagPtr->id) {
+    case EXIFVERSION_ID:
+    case FLASHPIXVERSION_ID:
+    case XPTITLE_ID:
+    case XPCOMMENT_ID:
+    case XPAUTHOR_ID:
+    case XPKEYWORDS_ID:
+    case XPSUBJECT_ID:
+    case XMP_ID:
+	type = TIF_ASCII;               /* Override specified type. */
+        break;
+    case EXIF_ID:
+        tifPtr->exif = offset;          /* Save for later processing. */
+        break;
+    case GPS_ID:
+        tifPtr->gps = offset;           /* Save for later processing. */
+        break;
+    case GEOKEYDIRECTORY_ID:
+        tifPtr->geoKey = offset;        /* Save for later processing. */
+        break;
+    default:
+        break;
     }
 
     numBytes = 0;                       /* Suppress compiler warning. */
@@ -1365,6 +1450,79 @@ ParseExif(Tcl_Interp *interp, TifParser *tifPtr)
     return ParseDirectory(interp, tifPtr, tifPtr->exif);
 }
 
+static int
+ParseGeoKeyDirectory(Tcl_Interp *interp, TifParser *tifPtr,
+                     const unsigned char *bp)
+{
+    Tcl_Obj *listObjPtr, *objPtr;
+    int i;
+    int version, keyMajorRev, keyMinorRev, numKeys;
+    
+    version     = TifGetShort(tifPtr, bp);
+    keyMajorRev = TifGetShort(tifPtr, bp + 2);
+    keyMinorRev = TifGetShort(tifPtr, bp + 4);
+    numKeys     = TifGetShort(tifPtr, bp + 6);
+
+    fprintf(stderr, "PrintGeoKeyDirectoryTag version=%d major=%d minor=%d numKeys=%d\n", version, keyMajorRev, keyMinorRev, numKeys);
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewIntObj(version);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(keyMajorRev);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(keyMinorRev);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(numKeys);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+
+    bp += 8;
+    for (i = 0; i < numKeys; i++) {
+	int id, type, count, offset;
+	Tag *tagPtr;
+        Tcl_Obj *objPtr;
+        
+	id     = TifGetShort(tifPtr, bp);   /* Id of tag. */
+	type   = TifGetShort(tifPtr, bp+2); /* Tag location. */
+	count  = TifGetShort(tifPtr, bp+4); /* # of specified types. */
+	offset = TifGetShort(tifPtr, bp+6); /* Offset used only if value
+					     * doesn't fit in 4-bytes. */
+        tagPtr = SearchForTagId(id, geoTags, numGeoTags);
+        if (tagPtr == NULL) {
+            fprintf(stderr, "Warning: can't find id %x\n", id);
+            return TCL_CONTINUE;            /* Unknown tag id. */
+        }
+        if (tagPtr->type == TIF_IGNORE) {
+            return TCL_CONTINUE;
+        }
+        if (type == 0) {
+            type = TIF_SHORT;
+        }
+        if (type == TIF_SHORT) {
+            objPtr = Tcl_NewIntObj(offset);
+        } else if (type == GEODOUBLEPARAMS_ID) {
+            double dval;
+            
+            dval = tifPtr->geoDoubleParams[offset];
+            objPtr = Tcl_NewDoubleObj(dval);
+        } else if (type == GEOASCIIPARAMS_ID) {
+            const char *string;
+            
+            string = tifPtr->geoAsciiParams + offset;
+            objPtr = Tcl_NewStringObj(string, count - 1);
+        } else {
+            objPtr = NULL;
+        }
+        if (objPtr != NULL) {
+            if (Tcl_SetVar2Ex(interp, tifPtr->varName, tagPtr->tagName, objPtr,
+                              TCL_LEAVE_ERR_MSG) == NULL) {
+                return TCL_ERROR;
+            }
+        }
+	bp += 8;
+    }
+    return TCL_OK;
+}
+
+
 int
 Blt_ParseTifTags(Tcl_Interp *interp, const char *varName,
 	const unsigned char *bytes, off_t offset, size_t numBytes)
@@ -1426,6 +1584,15 @@ Blt_ParseTifTags(Tcl_Interp *interp, const char *varName,
     if (tif.gps > 0) {
 	if (ParseGPS(interp, &tif) == TCL_ERROR) {
             return TCL_ERROR;
+        }
+    }
+    if (tif.geoKey > 0) {
+	ParseGeoKeyDirectory(interp, &tif, tif.start + tif.geoKey);
+        if (tif.geoDoubleParams != NULL) {
+            Blt_Free(tif.geoDoubleParams);
+        }
+        if (tif.geoAsciiParams != NULL) {
+            Blt_Free(tif.geoAsciiParams);
         }
     }
     return TCL_OK;
