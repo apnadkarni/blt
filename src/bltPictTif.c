@@ -406,7 +406,9 @@ TifToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     if (switchesPtr->varObjPtr != NULL) {
         const char *varName;
         
+#ifdef notdef
         TIFFPrintDirectory(tifPtr, stdout, 0);
+#endif
         varName = Tcl_GetString(switchesPtr->varObjPtr);
         if (Blt_ParseTifTags(interp, varName, Blt_DBuffer_Bytes(dbuffer), 0,
                              Blt_DBuffer_Length(dbuffer)) == TCL_ERROR) {

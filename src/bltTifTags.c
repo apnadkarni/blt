@@ -316,6 +316,51 @@ PrintFileSource(TifFile *tifPtr, const unsigned char *bp, int length)
 }
 
 static Tcl_Obj *
+PrintGeoKeyDirectoryTag(TifFile *tifPtr, const unsigned char *bp, int length)
+{
+    Tcl_Obj *listObjPtr, *objPtr;
+    int i;
+    int version, keyMajorRev, keyMinorRev, numKeys;
+    
+    version     = TifGetShort(tifPtr, bp);
+    keyMajorRev = TifGetShort(tifPtr, bp + 2);
+    keyMinorRev = TifGetShort(tifPtr, bp + 4);
+    numKeys     = TifGetShort(tifPtr, bp + 6);
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewIntObj(version);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(keyMajorRev);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(keyMinorRev);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(numKeys);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+
+    bp += 8;
+    for (i = 0; i < numKeys; i++) {
+	int id, type, count, offset;
+	
+	id     = TifGetShort(tifPtr, bp);   /* Id of tag. */
+	type   = TifGetShort(tifPtr, bp+2); /* Tag location. */
+	count  = TifGetShort(tifPtr,  bp+4); /* # of specified types. */
+	offset = TifGetShort(tifPtr,  bp+6); /* Offset used only if value
+					     * doesn't fit in 4-bytes. */
+	objPtr = Tcl_NewIntObj(id);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	objPtr = Tcl_NewIntObj(type);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	objPtr = Tcl_NewIntObj(count);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	objPtr = Tcl_NewIntObj(offset);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	bp += 8;
+    }
+    return listObjPtr;
+}
+
+
+static Tcl_Obj *
 PrintGPSVersionId(TifFile *tifPtr, const unsigned char *bp, int length)
 {
     return Tcl_ObjPrintf("%d.%d.%d.%d", bp[0], bp[1], bp[2], bp[3]);
@@ -550,6 +595,54 @@ PrintSceneType(TifFile *tifPtr, const unsigned char *bp, int length)
     return Tcl_NewIntObj(bp[0]);
 }
 
+static Tag geoTags[] = {
+    {  1024, "GTModelType",		TIF_SHORT,     1},
+    {  1025, "GTRasterType",		TIF_ASCII,     2},
+    {  1026, "GTCitation",		TIF_ASCII,     0},
+    {  2048, "GeographicType",		TIF_SHORT,     0},
+    {  2049, "GeogCitation",		TIF_ASCII,     0},
+    {  2050, "GeogGeodeticDatum",	TIF_SHORT,     0},
+    {  2051, "GeogPrimeMedian",		TIF_SHORT,     0},
+    {  2052, "GeogLinearUnits",		TIF_SHORT,     0},
+    {  2053, "GeogLinearUnitSize",	TIF_DOUBLE,    0},
+    {  2054, "GeogAngularUnits",	TIF_SHORT,     0},
+    {  2055, "GeogAngularUnitSize",	TIF_DOUBLE,    0},
+    {  2056, "GeogEllispoid",		TIF_SHORT,     0},
+    {  2057, "GeogSemiMajorAxis",	TIF_DOUBLE,    0},
+    {  2058, "GeogSemiMinorAxis",	TIF_DOUBLE,    0},
+    {  2059, "GeogSemiInvFlattening",	TIF_DOUBLE,    0},
+    {  2060, "GeogAzimuthUnits",	TIF_DOUBLE,    0},
+    {  2061, "GeogPrimeMedianLong",	TIF_DOUBLE,    0},
+    {  3072, "ProjectedCSTType",	TIF_SHORT,     0},
+    {  3073, "PCSCitation",		TIF_ASCII,     0},
+    {  3074, "Projection",		TIF_SHORT,     0},
+    {  3075, "ProjCoordTrans",		TIF_SHORT,     0},
+    {  3076, "ProjLinearUnits",		TIF_SHORT,     0},
+    {  3077, "ProjLinearUnitSize",	TIF_DOUBLE,    0},
+    {  3078, "ProjStdParallel1",	TIF_DOUBLE,    0},
+    {  3079, "ProjStdParallel2",	TIF_DOUBLE,    0},
+    {  3080, "ProjNatOriginLong",	TIF_DOUBLE,    0},
+    {  3081, "ProjNatOriginLat",	TIF_DOUBLE,    0},
+    {  3082, "ProjFalseEasting",	TIF_DOUBLE,    0},
+    {  3083, "ProjFalseNorthing",	TIF_DOUBLE,    0},
+    {  3084, "ProjFalseOriginLong",	TIF_DOUBLE,    0},
+    {  3085, "ProjFalseOriginLat",	TIF_DOUBLE,    0},
+    {  3086, "ProjFalseOriginEasting",	TIF_DOUBLE,    0},
+    {  3087, "ProjFalseOriginNorthing", TIF_DOUBLE,    0},
+    {  3088, "ProjCenterLong",		TIF_DOUBLE,    0},
+    {  3089, "ProjCenterLat",		TIF_DOUBLE,    0},
+    {  3090, "ProjCenterEasting",	TIF_DOUBLE,    0},
+    {  3091, "ProjCenterNorthing",	TIF_DOUBLE,    0},
+    {  3092, "ProjScaleAtNatOrigin",	TIF_DOUBLE,    0},
+    {  3093, "ProjScaleAtNatCenter",	TIF_DOUBLE,    0},
+    {  3094, "ProjAzimuthAngle",	TIF_DOUBLE,    0},
+    {  3095, "ProjStraightVertPoleLong",TIF_DOUBLE,    0},
+    {  4096, "VerticalCSType",		TIF_SHORT,     0},
+    {  4097, "VerticalCitation",	TIF_ASCII,     0},
+    {  4098, "VerticalDatum",		TIF_SHORT,     0},
+    {  4099, "VerticalUnits",		TIF_SHORT,     0},
+};
+    
 static Tag gpsTags[] = {
     {     0, "GPSVersionID",        TIF_BYTE,      4, PrintGPSVersionId},
     {     1, "GPSLatitudeRef",      TIF_ASCII,     2},
@@ -582,8 +675,6 @@ static Tag gpsTags[] = {
     {    28, "GPSAreaInformation",  TIF_UNDEFINED, 0},
     {    29, "GPSDateStamp",        TIF_ASCII,     11},
     {    30, "GPSDifferential",     TIF_SHORT,     1},
-    { 33550, "ModelPixelScaleTag",  TIF_DOUBLE,    3},
-    { 33922, "ModelTiepointTag",    TIF_DOUBLE,    0},
 };
 static int numGpsTags = sizeof(gpsTags) / sizeof(Tag);
     
@@ -610,8 +701,8 @@ static Tag exifTags[] = {
     {   277, "SamplesPerPixel",     TIF_SHORT,     1},
     {   278, "RowsPerStrip",        TIF_SHORT,     1},
     {   279, "StripByteCounts",     TIF_LONG,      0},
-    {   280, "MinSampleValue",      TIF_SHORT,	   1},
-    {   281, "MaxSampleValue",      TIF_SHORT,	   1},
+    {   280, "MinSampleValue",      TIF_SHORT,	   0},
+    {   281, "MaxSampleValue",      TIF_SHORT,	   0},
     {   282, "XResolution",         TIF_RATIONAL,  1},
     {   283, "YResolution",         TIF_RATIONAL,  1},
     {   284, "PlanarConfiguration", TIF_SHORT,     1},
@@ -626,7 +717,7 @@ static Tag exifTags[] = {
     {   306, "DateTime",            TIF_ASCII,    20},
     {   315, "Artist",              TIF_ASCII,     0},
     {   316, "HostComputer",        TIF_ASCII,     0},
-    {   317, "Predictor",           TIF_ASCII,     0},
+    {   317, "Predictor",           TIF_SHORT,     0},
     {   318, "WhitePoint",          TIF_RATIONAL,  2},
     {   319, "PrimaryChromaticities", TIF_RATIONAL,  6},
     {   320, "ColorMap",            TIF_SHORT,     0, PrintColorMap},
@@ -673,7 +764,7 @@ static Tag exifTags[] = {
     { 34377, "Photoshop",	    TIF_BYTE,	   0},
     { 34665, "ExifTag",             TIF_LONG,      1},
     { 34675, "InterColorProfile",   TIF_UNDEFINED, 0},
-    { 34735, "GeoKeyDirectoryTag",  TIF_SHORT,	   0},
+    { 34735, "GeoKeyDirectoryTag",  TIF_SHORT,	   0, PrintGeoKeyDirectoryTag},
     { 34850, "ExposureProgram",     TIF_SHORT,     1},
     { 34852, "SpectralSensitivity", TIF_ASCII,     0},
     { 34853, "GPSTag",              TIF_LONG,      1},

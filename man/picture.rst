@@ -15,12 +15,12 @@ Full color image type.
 :Manual group: BLT Built-In Commands
 
 SYNOPSIS
---------
+========
 
 **image create picture** ?\ *imageName*\ ? ?\ *options* ... ? 
 
 DESCRIPTION
------------
+===========
 
 The **picture** is an image type for Tk. It is for full color images
 (32-bit pixels) with or without transparency.  Each color component in a
@@ -32,7 +32,7 @@ number of operations that can be performed on the image such as resizing
 (through resampling).
 
 SYNTAX
-------
+======
 
 **image create picture** ?\ *imageName*\ ? ?\ *options* ... ? 
 
@@ -49,7 +49,7 @@ configure aspects of the widget such as its colors and font.  See the
 *value* pairs are valid.
 
 COLOR SPECIFICATIONS
---------------------
+====================
 
 Pixel color values can be described in any of the following forms:
 
@@ -72,7 +72,7 @@ Pixel color values can be described in any of the following forms:
     pixel: "FF" is fully opaque, "00" is fully transparent.
 
 PICTURE OPERATIONS
-------------------
+==================
 
 Once you create a picture image, you can use its associated TCL command to
 query or modify it.  The general form is
@@ -994,7 +994,7 @@ the command.  The operations available for pictures are listed below.
     is set, then the zero pixels of mask will be changed.
 
 PICTURE FORMATS
----------------
+===============
 
 Pictures can import and export their data into various formats.
 They are loaded using the TCL **package** mechanism. Normally this
@@ -1859,12 +1859,12 @@ format in the **import** or **export** operations.
       colors by quantizing *imageName*.
 
 KEYWORDS
---------
+========
 
 picture, image
 
 COPYRIGHT
----------
+=========
 
 2015 George A. Howlett. All rights reserved.
 
