@@ -37,7 +37,7 @@
  *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
 
 #include "config.h"
