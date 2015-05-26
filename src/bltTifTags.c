@@ -1463,7 +1463,6 @@ ParseGeoKeyDirectory(Tcl_Interp *interp, TifParser *tifPtr,
     keyMinorRev = TifGetShort(tifPtr, bp + 4);
     numKeys     = TifGetShort(tifPtr, bp + 6);
 
-    fprintf(stderr, "PrintGeoKeyDirectoryTag version=%d major=%d minor=%d numKeys=%d\n", version, keyMajorRev, keyMinorRev, numKeys);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     objPtr = Tcl_NewIntObj(version);
     Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
