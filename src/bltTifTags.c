@@ -84,10 +84,11 @@ enum TifTypes {
     TIF_IFD,				/* 13 32-bit unsigned offset. */
     TIF_LONG8,				/* 14 */
     TIF_SLONG8,				/* 15 */
-    TIF_IFD8,				/* 16 */
+    TIF_IFD8				/* 16 */
 };
 
 static const char *tifTypeStrings[] = {
+    "ignore",            
     "byte",                             /* 1-byte unsigned integer. */
     "ascii",                            /* 1-byte containing 7-bit ASCII
                                          * character. */
@@ -114,9 +115,9 @@ static const char *tifTypeStrings[] = {
     "ifd8",				/* 8-byte unsigned offset. */
 };
 
-typedef struct _TifFile TifFile;
+typedef struct _TifParser TifParser;
 
-typedef Tcl_Obj *(PrintProc)(TifFile *tifPtr, const unsigned char *bp,
+typedef Tcl_Obj *(PrintProc)(TifParser *tifPtr, const unsigned char *bp,
 			     int length);
 
 typedef struct {
@@ -129,15 +130,15 @@ typedef struct {
                                          * Tcl_Obj. */
 } Tag;
 
-struct _TifFile {
+struct _TifParser {
     int bigendian;			/* Byte order of TIFF file. */
     const unsigned char *bytes;		/* Contents of TIFF file. */
     size_t numBytes;			/* Number of bytes in TIFF file. */
     const unsigned char *start;		/* Start of TIFF file. */
     const char *varName;		/* Name of TCL array variable to
 					 * store EXIF tags. */
-    off_t exif;				/* If non-zero, offset to EXIF
-					 * directory. */
+    off_t exif;				/* If non-zero, offset to private
+					 * EXIF directory. */
     off_t gps;				/* If non-zero, offset to GPS
 					 * directory */
     off_t next;				/* Offset to current directory. */
@@ -147,453 +148,36 @@ struct _TifFile {
     Tag *tagPtr;
 };
 
-#define EXIF_TAG 34665
-#define GPS_TAG  34853
-#define EXIF_VERSION 36864
+#define EXIF_ID                34665
+#define GPS_ID                 34853
+#define EXIFVERSION_ID         36864
+#define FLASHPIXVERSION_ID     40960
+#define XPTITLE_ID             40091
+#define XPSUBJECT_ID           40095
 
-static uint16_t
-TifGetShort(TifFile *tifPtr, const unsigned char *bp)
-{
-    if (tifPtr->bigendian) {
-        return (bp[0] << 8) | bp[1];
-    } else {
-        return bp[0] | (bp[1] << 8);
-    }
-}
-
-static uint32_t
-TifGetLong(TifFile *tifPtr, const unsigned char *bp)
-{
-    if (tifPtr->bigendian) {
-        return (bp[0] << 24) | (bp[1] << 16) | (bp[2] << 8) | bp[3];
-    } else {
-        return bp[0] | (bp[1] << 8) | (bp[2] << 16) | (bp[3] << 24);
-    }        
-}
-
-static double
-TifGetRational(TifFile *tifPtr, const unsigned char *bp)
-{
-    uint32_t nom, denom;
-    
-    nom   = TifGetLong(tifPtr, bp);
-    denom = TifGetLong(tifPtr, bp + 4);
-    return (double)nom / (double)denom;
-}
-
-static uint64_t
-TifGetLong8(TifFile *tifPtr, const unsigned char *bp)
-{
-    uint64_t l;
-    
-    if (tifPtr->bigendian) {
-        l = (((uint64_t)bp[0] << 56) |
-	     ((uint64_t)bp[1] << 48) |
-	     ((uint64_t)bp[2] << 40) |
-	     ((uint64_t)bp[3] << 32) |
-	     ((uint64_t)bp[4] << 24) |
-	     ((uint64_t)bp[5] << 16) |
-	     ((uint64_t)bp[6] <<  8) |
-	     ((uint64_t)bp[7]));
-    } else {
-        l = (((uint64_t)bp[0]) |
-	     ((uint64_t)bp[1] << 8)  |
-	     ((uint64_t)bp[2] << 16) |
-	     ((uint64_t)bp[3] << 24) |
-	     ((uint64_t)bp[4] << 32) |
-	     ((uint64_t)bp[5] << 40) |
-	     ((uint64_t)bp[6] << 48) |
-	     ((uint64_t)bp[7] << 56));
-    }        
-    return l;
-}
-
-static float
-TifGetFloat(TifFile *tifPtr, const unsigned char *bp)
-{
-    uint32_t *ip;
-    float f;
-    
-    ip = (uint32_t *)&f;
-    *ip = TifGetLong(tifPtr, bp);
-    return f;
-}
-
-
-static double
-TifGetDouble(TifFile *tifPtr, const unsigned char *bp)
-{
-    uint64_t *lp;
-    double d;
-    
-    lp = (uint64_t *)&d;
-    *lp = TifGetLong8(tifPtr, bp);
-    return d;
-}
-
-static Tcl_Obj *
-PrintColorMap(TifFile *tifPtr, const unsigned char *bp, int count)
-{
-    return Tcl_NewStringObj("yes", 3);
-}
-    
-static Tcl_Obj *
-PrintComponents(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    Tcl_Obj *objPtr;
-    int i;
-    static const char *names[] = {
-        "", "Y", "Cb", "Cr", "R", "G", "B", "reserved"
-    };
-    
-    objPtr = Tcl_NewStringObj("", 0);
-    for (i = 0; i < 4; i++) {
-        int index;
-
-        index = bp[i];
-        if (index > 6) {
-            index = 7;
-        }
-        Tcl_AppendToObj(objPtr, names[index], -1);
-    }
-    return objPtr;
-}
-
-static Tcl_Obj *
-PrintCompression(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    const char *string;
-    int i;
-    uint16_t s;
-    struct compressTypes {
-	int id;
-	const char *name;
-    };
-    struct compressTypes types[] = {
-	{     1, "none"		},
-	{     2, "ccittrle"	},
-	{     3, "ccittfax3"	},
-	{     4, "ccittfax4"	},
-	{     5, "lzw"		},
-	{     6, "ojpeg"	},
-	{     7, "jpeg"		},
-	{     8, "adobedeflate" },
-	{     9, "jbig"		},
-	{ 32773, "packbits"     },
-	{ 32809, "thunderscan"  },
-	{ 32766, "next"         },
-	{ 32721, "ccittrlew"	},
-	{ 32946, "deflate"      },
-	{ 32908, "pixarfilm"    },
-	{ 32909, "pixarlog"     },
-	{ 34676, "sgilog"       },
-	{ 34677, "sgilog24"     },
-	{ 34925, "lzma"         },
-	{ 34712, "jp2000"       },
-    };	
-    static int numTypes = sizeof(types) / sizeof(struct compressTypes);
-
-    s = TifGetShort(tifPtr, bp);
-    string = "???";
-    for (i = 0; i < numTypes; i++) {
-	if (s == types[i].id) {
-	    string = types[i].name;
-	    break;
-	}
-    } 
-    return Tcl_NewStringObj(string, -1);
-}
-
-
-static Tcl_Obj *
-PrintFileSource(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    if (bp[0] == 3) {
-        return Tcl_NewStringObj("DSC", 3);
-    } else {
-        return Tcl_NewStringObj("", 0);
-    }
-}
-
-static Tcl_Obj *
-PrintGeoKeyDirectoryTag(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    Tcl_Obj *listObjPtr, *objPtr;
-    int i;
-    int version, keyMajorRev, keyMinorRev, numKeys;
-    
-    version     = TifGetShort(tifPtr, bp);
-    keyMajorRev = TifGetShort(tifPtr, bp + 2);
-    keyMinorRev = TifGetShort(tifPtr, bp + 4);
-    numKeys     = TifGetShort(tifPtr, bp + 6);
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    objPtr = Tcl_NewIntObj(version);
-    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(keyMajorRev);
-    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(keyMinorRev);
-    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(numKeys);
-    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-
-    bp += 8;
-    for (i = 0; i < numKeys; i++) {
-	int id, type, count, offset;
-	
-	id     = TifGetShort(tifPtr, bp);   /* Id of tag. */
-	type   = TifGetShort(tifPtr, bp+2); /* Tag location. */
-	count  = TifGetShort(tifPtr,  bp+4); /* # of specified types. */
-	offset = TifGetShort(tifPtr,  bp+6); /* Offset used only if value
-					     * doesn't fit in 4-bytes. */
-	objPtr = Tcl_NewIntObj(id);
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-	objPtr = Tcl_NewIntObj(type);
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-	objPtr = Tcl_NewIntObj(count);
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-	objPtr = Tcl_NewIntObj(offset);
-	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-	bp += 8;
-    }
-    return listObjPtr;
-}
-
-
-static Tcl_Obj *
-PrintGPSVersionId(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    return Tcl_ObjPrintf("%d.%d.%d.%d", bp[0], bp[1], bp[2], bp[3]);
-}
-
-static Tcl_Obj *
-PrintGPSTimeStamp(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    double h, m, s;
-
-    h = TifGetRational(tifPtr, bp);
-    m = TifGetRational(tifPtr, bp + 8);
-    s = TifGetRational(tifPtr, bp + 12);
-    return Tcl_ObjPrintf("%g:%g:%g", h, m, s);
-}
-
-static Tcl_Obj *
-PrintApertureValue(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    double dval;
-            
-    dval = TifGetRational(tifPtr, bp);
-    return Tcl_NewDoubleObj(pow(M_SQRT2, dval));
-}
-
-static Tcl_Obj *
-PrintShutterSpeed(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    double dval;
-            
-    dval = TifGetRational(tifPtr, bp);
-    return Tcl_NewDoubleObj(pow(2.0, dval));
-}
-	
-static Tcl_Obj *
-PrintDegrees(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    double degrees;
-
-    degrees = ((TifGetRational(tifPtr, bp)) +
-	       (TifGetRational(tifPtr, bp + 8) / 60.0) +  
-	       (TifGetRational(tifPtr, bp + 16) / 3600.0));
-    return Tcl_NewDoubleObj(degrees);
-}
-
-static Tcl_Obj *
-PrintFocalPlaneResolutionUnit(TifFile *tifPtr, const unsigned char *bp,
-			      int length)
-{
-    unsigned short s;
-
-    s = TifGetShort(tifPtr, bp);
-    if (s == 2) {
-        return Tcl_NewStringObj("inch", 4);
-    } else {
-        return Tcl_NewIntObj(s);
-    }
-}
-
-static Tcl_Obj *
-PrintColorSpace(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    unsigned short s;
-
-    s = TifGetShort(tifPtr, bp);
-    if (s == 1) {
-        return Tcl_NewStringObj("sRGB", 4);
-    } else if (s == 0xFFFF) {
-        return Tcl_NewStringObj("Uncalibrated", -1);
-    } else {
-        return Tcl_NewStringObj("???", -1);
-    }
-}
-
-static Tcl_Obj *
-PrintOrientation(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    unsigned short s;
-    static const char *strings[] = {
-        "top left",                     /* 1 */
-        "top right",                    /* 2 */
-        "bottom right",                 /* 3 */
-        "bottom left",                  /* 4 */
-        "left top"                      /* 5 */
-        "right top",                    /* 6 */
-        "right bottom",                 /* 7 */
-        "left bottom"                   /* 8 */
-    };
-    s = TifGetShort(tifPtr, bp);
-    if ((s > 8) || (s == 0)) {
-        return Tcl_NewStringObj("???", 3);
-    } 
-    return Tcl_NewStringObj(strings[s-1], -1);
-}
-
-static Tcl_Obj *
-PrintMeteringMode(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    unsigned short s;
-    static const char *strings[] = {
-        "Average",                      /* 1 */
-        "CenterWeightedAverage",        /* 2 */
-        "Spot",                         /* 3 */
-        "MultiSpot",                    /* 4 */
-        "Pattern",                      /* 5 */
-        "Partial",                      /* 6 */
-    };
-    s = TifGetShort(tifPtr, bp);
-    if ((s > 6) || (s == 0)) {
-        if (s == 255) {
-            return Tcl_NewStringObj("Other", 5);
-        } 
-        return Tcl_NewStringObj("???", 3);
-    } 
-    return Tcl_NewStringObj(strings[s-1], -1);
-}
-
-static Tcl_Obj *
-PrintSensingMethod(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    unsigned short s;
-    static const char *strings[] = {
-        "not defined",                  /* 1 */
-        "1-chip color sensor",          /* 2 */
-        "2-chip color sensor",          /* 3 */
-    };
-    s = TifGetShort(tifPtr, bp);
-    if ((s > 3) || (s == 0)) {
-        return Tcl_NewStringObj("???", 3);
-    } 
-    return Tcl_NewStringObj(strings[s-1], -1);
-}
-
-static Tcl_Obj *
-PrintYCbCrPositioning(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    unsigned short s;
-    static const char *strings[] = {
-        "centered",                     /* 1 */
-        "co-sited",                     /* 2 */
-    };
-    s = TifGetShort(tifPtr, bp);
-    if ((s > 2) || (s == 0)) {
-        return Tcl_NewStringObj("???", 3);
-    } 
-    return Tcl_NewStringObj(strings[s-1], -1);
-}
-
-static Tcl_Obj *
-PrintWhiteBalance(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    unsigned short s;
-    static const char *strings[] = {
-        "auto",                         /* 0 */
-        "manual",                       /* 1 */
-    };
-    s = TifGetShort(tifPtr, bp);
-    if (s > 1) {
-        return Tcl_NewStringObj("???", 3);
-    } 
-    return Tcl_NewStringObj(strings[s], -1);
-}
-
-static Tcl_Obj *
-PrintResolutionUnit(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    unsigned short s;
-    static const char *strings[] = {
-        "inches",                       /* 2 */
-        "centimeters",                  /* 3 */
-    };
-    s = TifGetShort(tifPtr, bp);
-    if ((s > 3) || (s < 2)) {
-        return Tcl_NewStringObj("???", 3);
-    } 
-    return Tcl_NewStringObj(strings[s-2], -1);
-}
-
-static Tcl_Obj *
-PrintMakerNote(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    return Tcl_NewStringObj("???", 3);
-    return Blt_Base64_EncodeToObj(bp, length);
-}
-
-static Tcl_Obj *
-PrintImageMatching(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    return Blt_Base64_EncodeToObj(bp, length);
-}
-
-static Tcl_Obj *
-PrintSceneCaptureType(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    unsigned short value;
-    static const char *strings[] = {
-        "Standard",                       /* 0 */
-        "Landscape",                      /* 1 */
-        "Portrait",                       /* 2 */
-        "NightScene"                      /* 3 */
-    };
-    value = TifGetShort(tifPtr, bp);
-    if (value > 3) {
-        return Tcl_NewStringObj("???", 3);
-    } 
-    return Tcl_NewStringObj(strings[value], -1);
-}
-
-static Tcl_Obj *
-PrintUserComment(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    if (memcmp("ASCII\0\0\0", bp, 8) == 0) {
-        int slen;
-        const char *s1, *last;
-        
-        s1 = (const char *)bp + 8;
-        length -= 8;
-        slen = strlen(s1);
-        if (slen < length) {
-            last = s1 + slen;
-        } else {
-            last = s1 - length;
-        }
-        return Tcl_NewStringObj(s1, last - s1);
-    }
-    return Tcl_NewStringObj("???", 3);
-}
-
-static Tcl_Obj *
-PrintSceneType(TifFile *tifPtr, const unsigned char *bp, int length)
-{
-    return Tcl_NewIntObj(bp[0]);
-}
+static PrintProc PrintApertureValue;
+static PrintProc PrintColorMap;
+static PrintProc PrintColorSpace;
+static PrintProc PrintComponents;
+static PrintProc PrintCompression;
+static PrintProc PrintDegrees;
+static PrintProc PrintFileSource;
+static PrintProc PrintFocalPlaneResolutionUnit;
+static PrintProc PrintGPSTimeStamp;
+static PrintProc PrintGPSVersionId;
+static PrintProc PrintGeoKeyDirectoryTag;
+static PrintProc PrintImageMatching;
+static PrintProc PrintMakerNote;
+static PrintProc PrintMeteringMode;
+static PrintProc PrintOrientation;
+static PrintProc PrintResolutionUnit;
+static PrintProc PrintSceneCaptureType;
+static PrintProc PrintSceneType;
+static PrintProc PrintSensingMethod;
+static PrintProc PrintShutterSpeed;
+static PrintProc PrintUserComment;
+static PrintProc PrintWhiteBalance;
+static PrintProc PrintYCbCrPositioning;
 
 static Tag geoTags[] = {
     {  1024, "GTModelType",		TIF_SHORT,     1},
@@ -640,8 +224,9 @@ static Tag geoTags[] = {
     {  4096, "VerticalCSType",		TIF_SHORT,     0},
     {  4097, "VerticalCitation",	TIF_ASCII,     0},
     {  4098, "VerticalDatum",		TIF_SHORT,     0},
-    {  4099, "VerticalUnits",		TIF_SHORT,     0},
+    {  4099, "VerticalUnits",		TIF_SHORT,     0}
 };
+static int numGeoTags = sizeof(geoTags) / sizeof(Tag);
     
 static Tag gpsTags[] = {
     {     0, "GPSVersionID",        TIF_BYTE,      4, PrintGPSVersionId},
@@ -674,7 +259,7 @@ static Tag gpsTags[] = {
     {    27, "GPSProcessingMethod", TIF_UNDEFINED, 0},
     {    28, "GPSAreaInformation",  TIF_UNDEFINED, 0},
     {    29, "GPSDateStamp",        TIF_ASCII,     11},
-    {    30, "GPSDifferential",     TIF_SHORT,     1},
+    {    30, "GPSDifferential",     TIF_SHORT,     1}
 };
 static int numGpsTags = sizeof(gpsTags) / sizeof(Tag);
     
@@ -857,237 +442,9 @@ static Tag exifTags[] = {
     { 50708, "UniqueCameraModel",   TIF_ASCII,     1},
     { 50709, "LocalizedCameraModel",TIF_BYTE,      1},
     { 59932, "Padding",             TIF_IGNORE,    0},
-    { 59933, "OffsetSchema",        TIF_SLONG,     1},
+    { 59933, "OffsetSchema",        TIF_SLONG,     1}
 };
 static int numExifTags = sizeof(exifTags) / sizeof(Tag);
-
-static Tcl_Obj *
-ConvertValueToObj(TifFile *tifPtr, const unsigned char *bp, size_t count,
-                  enum TifTypes type)
-{
-    Tcl_Obj *objPtr;
-    
-    switch (type) {
-    case TIF_BYTE:
-        {
-	    if (count == 1) {
-		unsigned int ival;
-		
-		ival = (unsigned int)bp[0];
-		objPtr = Tcl_NewIntObj(ival);
-	    } else {
-		int i;
-		Tcl_Obj *listObjPtr;
-		
-		listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-		for (i = 0; i < count; i++) {
-		    unsigned int ival;
-		    Tcl_Obj *objPtr;
-		    
-		    ival = (unsigned int)bp[i];
-		    objPtr = Tcl_NewIntObj(ival);
-		    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-		}
-		objPtr = listObjPtr;
-	    }
-        }            
-        break;
-
-    case TIF_ASCII:
-        {
-            const char *string;
-            const char *p;
-            
-            string = (const char *)bp;
-            for (p = string + (count - 1); p > string; p--) {
-		if ((!isspace(*p)) && (*p != '\0')) {
-		    break;
-		}
-            }
-            objPtr = Tcl_NewStringObj(string, p - string + 1);
-        }
-        break;
-
-    case TIF_SHORT:
-        {
-	    if (count == 1) {
-		unsigned short sval;
-
-		sval = TifGetShort(tifPtr, bp);
-		objPtr = Tcl_NewIntObj(sval);
-	    } else {
-		int i;
-		Tcl_Obj *listObjPtr;
-		
-		listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-		for (i = 0; i < count; i++) {
-		    unsigned short sval;
-		    Tcl_Obj *objPtr;
-		    
-		    sval = TifGetShort(tifPtr, bp + (i * 4));
-		    objPtr = Tcl_NewIntObj(sval);
-		    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-		}
-		objPtr = listObjPtr;
-	    }
-        }
-        break;
-
-    case TIF_IFD:
-    case TIF_LONG:
-        {
-	    if (count == 1) {
-		unsigned long lval;
-
-		lval = TifGetLong(tifPtr, bp);
-		objPtr = Tcl_NewIntObj(lval);
-	    } else {
-		int i;
-		Tcl_Obj *listObjPtr;
-		
-		listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-		for (i = 0; i < count; i++) {
-		    Tcl_Obj *objPtr;
-		    unsigned long lval;
-
-		    lval = TifGetLong(tifPtr, bp + (i * 4));
-		    objPtr = Tcl_NewIntObj(lval);
-		    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-		}
-		objPtr = listObjPtr;
-	    }
-        }
-        break;
-
-    case TIF_RATIONAL:
-        {
-	    if (count == 1) {
-		double dval;
-
-		dval = TifGetRational(tifPtr, bp);
-		objPtr = Tcl_NewDoubleObj(dval);
-	    } else {
-		int i;
-		Tcl_Obj *listObjPtr;
-		
-		listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-		for (i = 0; i < count; i++) {
-		    Tcl_Obj *objPtr;
-		    double dval;
-
-		    dval = TifGetRational(tifPtr, bp + (i * 8));
-		    objPtr = Tcl_NewDoubleObj(dval);
-		    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-		}
-		objPtr = listObjPtr;
-	    }
-        }
-        break;
-        
-    case TIF_UNDEFINED:
-        objPtr = Blt_Base64_EncodeToObj(bp, count);
-        break;
-
-    case TIF_SBYTE:
-        {
-            int ival;
-            
-            ival = (int)bp[0];
-            objPtr = Tcl_NewIntObj(ival);
-        }            
-        break;
-
-    case TIF_SSHORT:
-        {
-            unsigned short sval;
-
-            sval = TifGetShort(tifPtr, bp);
-            objPtr = Tcl_NewIntObj(sval);
-        }
-        break;
-
-    case TIF_SLONG:
-        {
-            long lval;
-
-            lval = TifGetLong(tifPtr, bp);
-            objPtr = Tcl_NewIntObj(lval);
-        }
-        break;
-        
-    case TIF_SRATIONAL:
-        {
-            double dval;
-
-            dval = TifGetRational(tifPtr, bp);
-            objPtr = Tcl_NewDoubleObj(dval);
-        }
-        break;
-
-    case TIF_FLOAT:
-        {
-            float fval;
-
-            fval = TifGetFloat(tifPtr, bp);
-            objPtr = Tcl_NewDoubleObj(fval);
-        }
-	break;
-    case TIF_LONG8:
-    case TIF_SLONG8:
-    case TIF_IFD8:
-        {
-	    if (count == 1) {
-		uint64_t lval;
-
-		lval = TifGetLong(tifPtr, bp);
-		objPtr = Tcl_NewLongObj(lval);
-	    } else {
-		int i;
-		Tcl_Obj *listObjPtr;
-		
-		listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-		for (i = 0; i < count; i++) {
-		    uint64_t lval;
-		    Tcl_Obj *objPtr;
-		    
-		    lval = TifGetLong(tifPtr, bp + (i * 8));
-		    objPtr = Tcl_NewLongObj(lval);
-		    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-		}
-		objPtr = listObjPtr;
-	    }
-        }
-	break;
-
-    case TIF_DOUBLE:
-        {
-	    if (count == 1) {
-		double dval;
-
-		dval = TifGetDouble(tifPtr, bp);
-		objPtr = Tcl_NewDoubleObj(dval);
-	    } else {
-		int i;
-		Tcl_Obj *listObjPtr;
-		
-		listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-		for (i = 0; i < count; i++) {
-		    double dval;
-		    Tcl_Obj *objPtr;
-		    
-		    dval = TifGetDouble(tifPtr, bp + (i * 8));
-		    objPtr = Tcl_NewDoubleObj(dval);
-		    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
-		}
-		objPtr = listObjPtr;
-	    }
-        }
-	break;
-    case TIF_IGNORE:
-        return NULL;
-    }
-    return objPtr;
-}
 
 static Tag *
 SearchForTagId(int id, Tag *table, int numTags)
@@ -1111,15 +468,759 @@ SearchForTagId(int id, Tag *table, int numTags)
     return NULL;                        /* Can't find id. */
 }
 
+static uint16_t
+TifGetShort(TifParser *tifPtr, const unsigned char *bp)
+{
+    if (tifPtr->bigendian) {
+        return (bp[0] << 8) | bp[1];
+    } else {
+        return bp[0] | (bp[1] << 8);
+    }
+}
+
+static uint32_t
+TifGetLong(TifParser *tifPtr, const unsigned char *bp)
+{
+    if (tifPtr->bigendian) {
+        return (bp[0] << 24) | (bp[1] << 16) | (bp[2] << 8) | bp[3];
+    } else {
+        return bp[0] | (bp[1] << 8) | (bp[2] << 16) | (bp[3] << 24);
+    }        
+}
+
+static double
+TifGetRational(TifParser *tifPtr, const unsigned char *bp)
+{
+    uint32_t nom, denom;
+    
+    nom   = TifGetLong(tifPtr, bp);
+    denom = TifGetLong(tifPtr, bp + 4);
+    return (double)nom / (double)denom;
+}
+
+static uint64_t
+TifGetLong8(TifParser *tifPtr, const unsigned char *bp)
+{
+    uint64_t l;
+    
+    if (tifPtr->bigendian) {
+        l = (((uint64_t)bp[0] << 56) |
+	     ((uint64_t)bp[1] << 48) |
+	     ((uint64_t)bp[2] << 40) |
+	     ((uint64_t)bp[3] << 32) |
+	     ((uint64_t)bp[4] << 24) |
+	     ((uint64_t)bp[5] << 16) |
+	     ((uint64_t)bp[6] <<  8) |
+	     ((uint64_t)bp[7]));
+    } else {
+        l = (((uint64_t)bp[0]) |
+	     ((uint64_t)bp[1] << 8)  |
+	     ((uint64_t)bp[2] << 16) |
+	     ((uint64_t)bp[3] << 24) |
+	     ((uint64_t)bp[4] << 32) |
+	     ((uint64_t)bp[5] << 40) |
+	     ((uint64_t)bp[6] << 48) |
+	     ((uint64_t)bp[7] << 56));
+    }        
+    return l;
+}
+
+static float
+TifGetFloat(TifParser *tifPtr, const unsigned char *bp)
+{
+    uint32_t *ip;
+    float f;
+    
+    ip = (uint32_t *)&f;
+    *ip = TifGetLong(tifPtr, bp);
+    return f;
+}
+
+
+static double
+TifGetDouble(TifParser *tifPtr, const unsigned char *bp)
+{
+    uint64_t *lp;
+    double d;
+    
+    lp = (uint64_t *)&d;
+    *lp = TifGetLong8(tifPtr, bp);
+    return d;
+}
+
+static Tcl_Obj *
+PrintColorMap(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    return Tcl_NewStringObj("yes", 3);
+}
+    
+static Tcl_Obj *
+PrintComponents(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    Tcl_Obj *objPtr;
+    int i;
+    static const char *names[] = {
+        "", "Y", "Cb", "Cr", "R", "G", "B", "reserved"
+    };
+    
+    objPtr = Tcl_NewStringObj("", 0);
+    for (i = 0; i < 4; i++) {
+        int index;
+
+        index = bp[i];
+        if (index > 6) {
+            index = 7;
+        }
+        Tcl_AppendToObj(objPtr, names[index], -1);
+    }
+    return objPtr;
+}
+
+static Tcl_Obj *
+PrintCompression(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    const char *string;
+    int i;
+    uint16_t s;
+    struct compressTypes {
+	int id;
+	const char *name;
+    };
+    struct compressTypes types[] = {
+	{     1, "none"		},
+	{     2, "ccittrle"	},
+	{     3, "ccittfax3"	},
+	{     4, "ccittfax4"	},
+	{     5, "lzw"		},
+	{     6, "ojpeg"	},
+	{     7, "jpeg"		},
+	{     8, "adobedeflate" },
+	{     9, "jbig"		},
+	{ 32773, "packbits"     },
+	{ 32809, "thunderscan"  },
+	{ 32766, "next"         },
+	{ 32721, "ccittrlew"	},
+	{ 32946, "deflate"      },
+	{ 32908, "pixarfilm"    },
+	{ 32909, "pixarlog"     },
+	{ 34676, "sgilog"       },
+	{ 34677, "sgilog24"     },
+	{ 34925, "lzma"         },
+	{ 34712, "jp2000"       },
+    };	
+    static int numTypes = sizeof(types) / sizeof(struct compressTypes);
+
+    s = TifGetShort(tifPtr, bp);
+    string = "???";
+    for (i = 0; i < numTypes; i++) {
+	if (s == types[i].id) {
+	    string = types[i].name;
+	    break;
+	}
+    } 
+    return Tcl_NewStringObj(string, -1);
+}
+
+
+static Tcl_Obj *
+PrintFileSource(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    if (bp[0] == 3) {
+        return Tcl_NewStringObj("DSC", 3);
+    } else {
+        return Tcl_NewStringObj("", 0);
+    }
+}
+
+static Tcl_Obj *
+PrintGeoKeyDirectoryTag(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    Tcl_Obj *listObjPtr, *objPtr;
+    int i;
+    int version, keyMajorRev, keyMinorRev, numKeys;
+    
+    version     = TifGetShort(tifPtr, bp);
+    keyMajorRev = TifGetShort(tifPtr, bp + 2);
+    keyMinorRev = TifGetShort(tifPtr, bp + 4);
+    numKeys     = TifGetShort(tifPtr, bp + 6);
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewIntObj(version);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(keyMajorRev);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(keyMinorRev);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(numKeys);
+    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+
+    bp += 8;
+    for (i = 0; i < numKeys; i++) {
+	int id, type, count, offset;
+	Tag *tagPtr;
+        
+	id     = TifGetShort(tifPtr, bp);   /* Id of tag. */
+	type   = TifGetShort(tifPtr, bp+2); /* Tag location. */
+	count  = TifGetShort(tifPtr,  bp+4); /* # of specified types. */
+	offset = TifGetShort(tifPtr,  bp+6); /* Offset used only if value
+					     * doesn't fit in 4-bytes. */
+
+        tagPtr = SearchForTagId(id, geoTags, numGeoTags);
+        if (tagPtr == NULL) {
+            objPtr = Tcl_NewStringObj("???", -1);
+        } else {
+            objPtr = Tcl_NewStringObj(tagPtr->tagName, -1);
+        }
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+        if (type == 0) {
+            type = TIF_SHORT;
+        }
+	objPtr = Tcl_NewStringObj(tifTypeStrings[type], -1);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	objPtr = Tcl_NewIntObj(count);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	objPtr = Tcl_NewIntObj(offset);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	bp += 8;
+    }
+    return listObjPtr;
+}
+
+
+static Tcl_Obj *
+PrintGPSVersionId(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    return Tcl_ObjPrintf("%d.%d.%d.%d", bp[0], bp[1], bp[2], bp[3]);
+}
+
+static Tcl_Obj *
+PrintGPSTimeStamp(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    double h, m, s;
+
+    h = TifGetRational(tifPtr, bp);
+    m = TifGetRational(tifPtr, bp + 8);
+    s = TifGetRational(tifPtr, bp + 12);
+    return Tcl_ObjPrintf("%g:%g:%g", h, m, s);
+}
+
+static Tcl_Obj *
+PrintApertureValue(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    double dval;
+            
+    dval = TifGetRational(tifPtr, bp);
+    return Tcl_NewDoubleObj(pow(M_SQRT2, dval));
+}
+
+static Tcl_Obj *
+PrintShutterSpeed(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    double dval;
+            
+    dval = TifGetRational(tifPtr, bp);
+    return Tcl_NewDoubleObj(pow(2.0, dval));
+}
+	
+static Tcl_Obj *
+PrintDegrees(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    double degrees;
+
+    degrees = ((TifGetRational(tifPtr, bp)) +
+	       (TifGetRational(tifPtr, bp + 8) / 60.0) +  
+	       (TifGetRational(tifPtr, bp + 16) / 3600.0));
+    return Tcl_NewDoubleObj(degrees);
+}
+
+static Tcl_Obj *
+PrintFocalPlaneResolutionUnit(TifParser *tifPtr, const unsigned char *bp,
+			      int count)
+{
+    uint16_t s;
+
+    s = TifGetShort(tifPtr, bp);
+    if (s == 2) {
+        return Tcl_NewStringObj("inch", 4);
+    } else {
+        return Tcl_NewIntObj(s);
+    }
+}
+
+static Tcl_Obj *
+PrintColorSpace(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    uint16_t s;
+
+    s = TifGetShort(tifPtr, bp);
+    if (s == 1) {
+        return Tcl_NewStringObj("sRGB", 4);
+    } else if (s == 0xFFFF) {
+        return Tcl_NewStringObj("Uncalibrated", -1);
+    } else {
+        return Tcl_NewStringObj("???", -1);
+    }
+}
+
+static Tcl_Obj *
+PrintOrientation(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    uint16_t s;
+    static const char *strings[] = {
+        "top left",                     /* 1 */
+        "top right",                    /* 2 */
+        "bottom right",                 /* 3 */
+        "bottom left",                  /* 4 */
+        "left top"                      /* 5 */
+        "right top",                    /* 6 */
+        "right bottom",                 /* 7 */
+        "left bottom"                   /* 8 */
+    };
+    s = TifGetShort(tifPtr, bp);
+    if ((s > 8) || (s == 0)) {
+        return Tcl_NewStringObj("???", 3);
+    } 
+    return Tcl_NewStringObj(strings[s-1], -1);
+}
+
+static Tcl_Obj *
+PrintMeteringMode(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    uint16_t s;
+    static const char *strings[] = {
+        "Average",                      /* 1 */
+        "CenterWeightedAverage",        /* 2 */
+        "Spot",                         /* 3 */
+        "MultiSpot",                    /* 4 */
+        "Pattern",                      /* 5 */
+        "Partial",                      /* 6 */
+    };
+    s = TifGetShort(tifPtr, bp);
+    if ((s > 6) || (s == 0)) {
+        if (s == 255) {
+            return Tcl_NewStringObj("Other", 5);
+        } 
+        return Tcl_NewStringObj("???", 3);
+    } 
+    return Tcl_NewStringObj(strings[s-1], -1);
+}
+
+static Tcl_Obj *
+PrintSensingMethod(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    uint16_t s;
+    static const char *strings[] = {
+        "not defined",                  /* 1 */
+        "1-chip color sensor",          /* 2 */
+        "2-chip color sensor",          /* 3 */
+    };
+    s = TifGetShort(tifPtr, bp);
+    if ((s > 3) || (s == 0)) {
+        return Tcl_NewStringObj("???", 3);
+    } 
+    return Tcl_NewStringObj(strings[s-1], -1);
+}
+
+static Tcl_Obj *
+PrintYCbCrPositioning(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    uint16_t s;
+    static const char *strings[] = {
+        "centered",                     /* 1 */
+        "co-sited",                     /* 2 */
+    };
+    s = TifGetShort(tifPtr, bp);
+    if ((s > 2) || (s == 0)) {
+        return Tcl_NewStringObj("???", 3);
+    } 
+    return Tcl_NewStringObj(strings[s-1], -1);
+}
+
+static Tcl_Obj *
+PrintWhiteBalance(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    uint16_t s;
+    static const char *strings[] = {
+        "auto",                         /* 0 */
+        "manual",                       /* 1 */
+    };
+    s = TifGetShort(tifPtr, bp);
+    if (s > 1) {
+        return Tcl_NewStringObj("???", 3);
+    } 
+    return Tcl_NewStringObj(strings[s], -1);
+}
+
+static Tcl_Obj *
+PrintResolutionUnit(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    uint16_t s;
+    static const char *strings[] = {
+        "inches",                       /* 2 */
+        "centimeters",                  /* 3 */
+    };
+    s = TifGetShort(tifPtr, bp);
+    if ((s > 3) || (s < 2)) {
+        return Tcl_NewStringObj("???", 3);
+    } 
+    return Tcl_NewStringObj(strings[s-2], -1);
+}
+
+static Tcl_Obj *
+PrintMakerNote(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    return Tcl_NewStringObj("???", 3);
+    return Blt_Base64_EncodeToObj(bp, count);
+}
+
+static Tcl_Obj *
+PrintImageMatching(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    return Blt_Base64_EncodeToObj(bp, count);
+}
+
+static Tcl_Obj *
+PrintSceneCaptureType(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    uint16_t value;
+    static const char *strings[] = {
+        "Standard",                       /* 0 */
+        "Landscape",                      /* 1 */
+        "Portrait",                       /* 2 */
+        "NightScene"                      /* 3 */
+    };
+    value = TifGetShort(tifPtr, bp);
+    if (value > 3) {
+        return Tcl_NewStringObj("???", 3);
+    } 
+    return Tcl_NewStringObj(strings[value], -1);
+}
+
+static Tcl_Obj *
+PrintUserComment(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    if (memcmp("ASCII\0\0\0", bp, 8) == 0) {
+        int slen;
+        const char *s1, *last;
+        
+        s1 = (const char *)bp + 8;
+        count -= 8;
+        slen = strlen(s1);
+        if (slen < count) {
+            last = s1 + slen;
+        } else {
+            last = s1 - count;
+        }
+        return Tcl_NewStringObj(s1, last - s1);
+    }
+    return Tcl_NewStringObj("???", 3);
+}
+
+static Tcl_Obj *
+PrintSceneType(TifParser *tifPtr, const unsigned char *bp, int count)
+{
+    return Tcl_NewIntObj(bp[0]);
+}
+
+static Tcl_Obj *
+ValueToObj(TifParser *tifPtr, const unsigned char *bp, int count,
+           enum TifTypes type)
+{
+    Tcl_Obj *resultObjPtr;
+    
+    switch (type) {
+    case TIF_IGNORE:
+        resultObjPtr = NULL;
+        break;
+
+    case TIF_BYTE:
+        if (count == 1) {
+            uint8_t ival;
+            
+            ival = (uint8_t)bp[0];
+            resultObjPtr = Tcl_NewIntObj(ival);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                uint8_t ival;
+                Tcl_Obj *objPtr;
+		
+                ival = (uint8_t)bp[i];
+                objPtr = Tcl_NewIntObj(ival);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+
+    case TIF_ASCII:
+        {
+            const char *string;
+            const char *p;
+            
+            /* Trim trailing whitespace. */
+            string = (const char *)bp;
+            for (p = string + (count - 1); p > string; p--) {
+		if ((!isspace(*p)) && (*p != '\0')) {
+		    break;
+		}
+            }
+            resultObjPtr = Tcl_NewStringObj(string, p - string + 1);
+        }
+        break;
+
+    case TIF_SHORT:
+        if (count == 1) {
+            uint16_t sval;
+            
+            sval = TifGetShort(tifPtr, bp);
+            resultObjPtr = Tcl_NewIntObj(sval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                uint16_t sval;
+                Tcl_Obj *objPtr;
+		
+                sval = TifGetShort(tifPtr, bp + (i * 4));
+                objPtr = Tcl_NewIntObj(sval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+
+    case TIF_IFD:
+    case TIF_LONG:
+        if (count == 1) {
+            uint32_t lval;
+            
+            lval = TifGetLong(tifPtr, bp);
+            resultObjPtr = Tcl_NewIntObj(lval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                Tcl_Obj *objPtr;
+                uint32_t lval;
+                
+                lval = TifGetLong(tifPtr, bp + (i * 4));
+                objPtr = Tcl_NewIntObj(lval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+
+    case TIF_RATIONAL:
+        if (count == 1) {
+            double dval;
+            
+            dval = TifGetRational(tifPtr, bp);
+            resultObjPtr = Tcl_NewDoubleObj(dval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                Tcl_Obj *objPtr;
+                double dval;
+                
+                dval = TifGetRational(tifPtr, bp + (i * 8));
+                objPtr = Tcl_NewDoubleObj(dval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+        
+    case TIF_UNDEFINED:
+        resultObjPtr = Blt_Base64_EncodeToObj(bp, count);
+        break;
+
+    case TIF_SBYTE:
+        if (count == 1) {
+            int8_t ival;
+            
+            ival = (int8_t)bp[0];
+            resultObjPtr = Tcl_NewIntObj(ival);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                int8_t ival;
+                Tcl_Obj *objPtr;
+		
+                ival = (int8_t)bp[i];
+                objPtr = Tcl_NewIntObj(ival);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+
+    case TIF_SSHORT:
+        if (count == 1) {
+            int16_t sval;
+            
+            sval = TifGetShort(tifPtr, bp);
+            resultObjPtr = Tcl_NewIntObj(sval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                int16_t sval;
+                Tcl_Obj *objPtr;
+		
+                sval = TifGetShort(tifPtr, bp + (i * 4));
+                objPtr = Tcl_NewIntObj(sval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+
+    case TIF_SLONG:
+        if (count == 1) {
+            int32_t lval;
+            
+            lval = TifGetLong(tifPtr, bp);
+            resultObjPtr = Tcl_NewIntObj(lval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                Tcl_Obj *objPtr;
+                int32_t lval;
+                
+                lval = TifGetLong(tifPtr, bp + (i * 4));
+                objPtr = Tcl_NewIntObj(lval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+        
+    case TIF_SRATIONAL:
+        if (count == 1) {
+            double dval;
+            
+            dval = TifGetRational(tifPtr, bp);
+            resultObjPtr = Tcl_NewDoubleObj(dval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                double dval;
+                Tcl_Obj *objPtr;
+		
+                dval = TifGetRational(tifPtr, bp + (i * 8));
+                objPtr = Tcl_NewDoubleObj(dval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+
+    case TIF_FLOAT:
+        if (count == 1) {
+            float fval;
+            
+            fval = TifGetFloat(tifPtr, bp);
+            resultObjPtr = Tcl_NewDoubleObj(fval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                float fval;
+                Tcl_Obj *objPtr;
+		
+                fval = TifGetFloat(tifPtr, bp + (i * 8));
+                objPtr = Tcl_NewDoubleObj(fval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+        break;
+
+    case TIF_LONG8:
+    case TIF_SLONG8:
+    case TIF_IFD8:
+        if (count == 1) {
+            uint64_t lval;
+            
+            lval = TifGetLong(tifPtr, bp);
+            resultObjPtr = Tcl_NewLongObj(lval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                uint64_t lval;
+                Tcl_Obj *objPtr;
+		
+                lval = TifGetLong(tifPtr, bp + (i * 8));
+                objPtr = Tcl_NewLongObj(lval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+	break;
+
+    case TIF_DOUBLE:
+        if (count == 1) {
+            double dval;
+            
+            dval = TifGetDouble(tifPtr, bp);
+            resultObjPtr = Tcl_NewDoubleObj(dval);
+        } else {
+            int i;
+            Tcl_Obj *listObjPtr;
+            
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (i = 0; i < count; i++) {
+                double dval;
+                Tcl_Obj *objPtr;
+		
+                dval = TifGetDouble(tifPtr, bp + (i * 8));
+                objPtr = Tcl_NewDoubleObj(dval);
+                Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+            }
+            resultObjPtr = listObjPtr;
+        }
+	break;
+    }
+    return resultObjPtr;
+}
+
 
 static int
-SetTagVariable(Tcl_Interp *interp, const char *varName, TifFile *tifPtr,
+SetVariable(Tcl_Interp *interp, const char *varName, TifParser *tifPtr,
                const unsigned char *bp)
 {
-    int id, type, offset, count;
     Tag *tagPtr;
-    Tcl_Obj *objPtr, *resultObjPtr;
-    int numBytes;
+    Tcl_Obj *objPtr;
+    enum TifTypes type;
+    int id, offset, count, numBytes;
     
     id     = TifGetShort(tifPtr, bp);   /* Id of tag. */
     type   = TifGetShort(tifPtr, bp+2); /* Type of value */
@@ -1130,7 +1231,7 @@ SetTagVariable(Tcl_Interp *interp, const char *varName, TifFile *tifPtr,
 #if DEBUG
     fprintf(stderr, "\t%s: id=%d type=\"%s\" (%d) count=%d offset=%d\n",
             (tagPtr) ? tagPtr->tagName : "???", id,
-            (type > TIF_DOUBLE) ? "???" : tifTypeStrings[type - 1], type,
+            (type > TIF_DOUBLE) ? "???" : tifTypeStrings[type], type,
             count, offset);
 #endif
     if (tagPtr == NULL) {
@@ -1143,32 +1244,27 @@ SetTagVariable(Tcl_Interp *interp, const char *varName, TifFile *tifPtr,
     if (type != tagPtr->type) {
         fprintf(stderr, "Warning `%s`: types don't match: found=%s wanted=%s\n",
                 tagPtr->tagName,
-                (type > TIF_IFD8) ? "???" : tifTypeStrings[type - 1],
-                tifTypeStrings[tagPtr->type - 1]);
+                (type > TIF_IFD8) ? "???" : tifTypeStrings[type],
+                tifTypeStrings[tagPtr->type]);
         if (type > TIF_IFD8) {
             type = tagPtr->type;
         }
-#ifdef notdef
-        return TCL_CONTINUE;            /* Tag types don't match. */
-#endif
     }
     if ((tagPtr->count > 0) && (count != tagPtr->count)) {
         fprintf(stderr, "Warning `%s`: counts don't match: found=%d wanted=%d\n",
                 tagPtr->tagName, count, tagPtr->count);
-#ifdef notdef
-        return TCL_CONTINUE;            /* Counts don't match. */
-#endif
     }
-    if (tagPtr->id == 36864 || tagPtr->id == 40960 ||
-	(tagPtr->id >= 40091 && tagPtr->id <= 40095)) {
+    if (tagPtr->id == EXIFVERSION_ID || tagPtr->id == FLASHPIXVERSION_ID ||
+	(tagPtr->id >= XPTITLE_ID && tagPtr->id <= XPSUBJECT_ID)) {
 	type = TIF_ASCII;
     }
-
-    if (tagPtr->id == EXIF_TAG) {
+    if (tagPtr->id == EXIF_ID) {
         tifPtr->exif = offset;		/* Save the offset for later. */
-    } else if (tagPtr->id == GPS_TAG) {
+    } else if (tagPtr->id == GPS_ID) {
         tifPtr->gps = offset;		/* Save the offset for later. */
     }
+
+    numBytes = 0;                       /* Suppress compiler warning. */
     switch (type) {
     case TIF_DOUBLE:
     case TIF_IFD8:
@@ -1186,8 +1282,10 @@ SetTagVariable(Tcl_Interp *interp, const char *varName, TifFile *tifPtr,
     case TIF_SLONG:
 	numBytes = count * 4;               break;
     case TIF_ASCII:
+    case TIF_BYTE:
+    case TIF_IGNORE:
+    case TIF_SBYTE:
     case TIF_UNDEFINED:
-    default:
 	numBytes = count;                   break;
     }
     if (numBytes > 4) {
@@ -1198,18 +1296,19 @@ SetTagVariable(Tcl_Interp *interp, const char *varName, TifFile *tifPtr,
     if (tagPtr->proc != NULL) {
 	objPtr = (*tagPtr->proc)(tifPtr, bp, count);
     } else {
-	objPtr = ConvertValueToObj(tifPtr, bp, count, type);
+	objPtr = ValueToObj(tifPtr, bp, count, type);
     }
-    resultObjPtr = Tcl_SetVar2Ex(interp, varName, tagPtr->tagName, objPtr,
-				 TCL_LEAVE_ERR_MSG);
-    if (resultObjPtr == NULL) {
-	return TCL_ERROR;
+    if (objPtr != NULL) {
+        if (Tcl_SetVar2Ex(interp, varName, tagPtr->tagName, objPtr,
+        	 TCL_LEAVE_ERR_MSG) == NULL) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
 
 static int
-ParseDirectory(Tcl_Interp *interp, TifFile *tifPtr, int offset)
+ParseDirectory(Tcl_Interp *interp, TifParser *tifPtr, int offset)
 {
     const unsigned char *bp;
     int i, numEntries;
@@ -1221,7 +1320,7 @@ ParseDirectory(Tcl_Interp *interp, TifFile *tifPtr, int offset)
 			 (char *)NULL);
         return TCL_ERROR;	       
     }
-#ifdef notdef
+#if DEBUG
     fprintf(stderr, "offset=%d, number of entries=%d\n", offset,
             numEntries);
     fprintf(stderr, "search for %d entries\n", numEntries);
@@ -1230,7 +1329,7 @@ ParseDirectory(Tcl_Interp *interp, TifFile *tifPtr, int offset)
     for (i = 0; i < numEntries; i++) {
         int result;
         
-        result = SetTagVariable(interp, tifPtr->varName, tifPtr, bp);
+        result = SetVariable(interp, tifPtr->varName, tifPtr, bp);
         if (result == TCL_ERROR) {
             return TCL_ERROR;
         }
@@ -1241,7 +1340,7 @@ ParseDirectory(Tcl_Interp *interp, TifFile *tifPtr, int offset)
 }
 
 static int
-ParseGPS(Tcl_Interp *interp, TifFile *tifPtr)
+ParseGPS(Tcl_Interp *interp, TifParser *tifPtr)
 {
     if (tifPtr->gps >= tifPtr->numBytes) {
 	Tcl_AppendResult(interp, "GPS directory offset is beyond the "
@@ -1254,7 +1353,7 @@ ParseGPS(Tcl_Interp *interp, TifFile *tifPtr)
 }
 
 static int
-ParseExif(Tcl_Interp *interp, TifFile *tifPtr)
+ParseExif(Tcl_Interp *interp, TifParser *tifPtr)
 {
     if (tifPtr->exif >= tifPtr->numBytes) {
 	Tcl_AppendResult(interp, "Exif directory offset is beyond the "
@@ -1270,7 +1369,7 @@ int
 Blt_ParseTifTags(Tcl_Interp *interp, const char *varName,
 	const unsigned char *bytes, off_t offset, size_t numBytes)
 {
-    TifFile tif;
+    TifParser tif;
     int id;
     const unsigned char *bp;
     
@@ -1278,7 +1377,7 @@ Blt_ParseTifTags(Tcl_Interp *interp, const char *varName,
     if (numBytes < 14) {
         return TCL_CONTINUE;    	/* Not enough space for header. */
     }
-    memset(&tif, 0, sizeof(TifFile));
+    memset(&tif, 0, sizeof(TifParser));
     tif.numBytes = numBytes;
     tif.bytes = bytes;
     bp = bytes + offset;

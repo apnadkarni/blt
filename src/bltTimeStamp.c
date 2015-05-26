@@ -1512,9 +1512,9 @@ FindTimeSequence(ParserToken *tokenPtr, ParserToken **tokens)
 static int
 ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
 {
-    ParserToken *next, *first, *last, *prevPtr;
+    ParserToken *next, *first, *last;
     ParserToken *tokenPtr, *tokens[3];
-    int count;
+
 #if DEBUG
     fprintf(stderr, "ExtractTime (%s)\n", 
             Tcl_GetString(PrintTokens(interp, parserPtr)));
