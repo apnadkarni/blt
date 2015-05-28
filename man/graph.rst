@@ -435,10 +435,12 @@ GRAPH OPERATIONS
 *pathName* **postscript** *operation* ?\ *arg* ... ?
   See the `POSTSCRIPT`_ section.
 
-*pathName* **snap**  ?\ *switches* ... ? *imageName*
-  Takes a snapshot of the graph, saving the output in *imageName*.  The
-  graph can be off-screen or obscured by other windows.  The following
-  switches are available.
+*pathName* **snap**  *imageName* ?\ *switches* ... ? 
+  Draws the graph into *imageName*. *ImageName* is the name of a picture
+  or Tk photo image.  This differs from a normal screen snapshot in that 1)
+  the graph can be off-screen or obscured by other windows and 2) the
+  graph is drawn, not scaled.  For example, the font sizes stay the
+  the same. The following switches are available.
 
   **-format** *imageFormat*
     Specifies how the snapshot is output. *imageFormat* may be one of 
@@ -463,8 +465,8 @@ GRAPH OPERATIONS
 
   **-height** *numPixels*
     Specifies the height of the image.  *NumPixels* is a screen distance.
-    If *numPixels* is 0, the height of the image is the same as the
-    graph. The default is "0".
+    If *numPixels* is 0, the height of the image will be the current height
+    of *pathName*. The default is "0".
 
   **-width** *numPixels*
     Specifies the width of the image.  *NumPixels* is a screen distance.
@@ -1607,9 +1609,9 @@ The following operations are available for elements.
   arbitrary string.  You can't use the built-in tag "all".
 
 *pathName* **element type** *elemName*
-  Returns the type of *elemName*.  The possible element types are
-  "bar", "line" and "contour". *ElemName* is an element name or a tag but
-  may not reference multiple elements.
+  Returns the type of *elemName*.  The possible element types are "bar",
+  "line", "strip", and "contour". *ElemName* is an element name or a tag
+  but may not reference multiple elements.
 
 LEGEND
 ~~~~~~
@@ -1709,13 +1711,6 @@ The following operations are valid for the legend.
     **top**  **bottom**
       The anchor describes how to position the legend horizontally.  
 
-    **@**\ *x*\ **,**\ *y*
-      The anchor specifies how to position the legend relative to the
-      positioning point. For example, if *anchor* is "center" then the legend
-      is centered on the point; if *anchor* is "n" then the legend will be
-      drawn such that the top center point of the rectangular region occupied
-      by the legend will be at the positioning point.
-
     **plotarea**
       The anchor specifies how to position the legend relative to the
       plotting area. For example, if *anchor* is "center" then the legend is
@@ -1723,6 +1718,12 @@ The following operations are valid for the legend.
       be drawn such that occupies the upper right corner of the plotting
       area.
 
+    **@**\ *x*\ **,**\ *y*
+      The anchor specifies how to position the legend relative to the
+      positioning point. For example, if *anchor* is "center" then the legend
+      is centered on the point; if *anchor* is "n" then the legend will be
+      drawn such that the top center point of the rectangular region occupied
+      by the legend will be at the positioning point.
 
   **-background**  *colorName*
     Sets the background color of the legend. If *colorName* is "", the legend

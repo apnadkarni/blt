@@ -470,8 +470,8 @@ BLT_EXTERN Blt_Picture	Blt_GetPictureFromPhotoImage(Tcl_Interp *interp,
 #ifndef Blt_CanvasToPicture_DECLARED
 #define Blt_CanvasToPicture_DECLARED
 /* 78 */
-BLT_EXTERN Blt_Picture	Blt_CanvasToPicture(Tcl_Interp *interp,
-				const char *s, float gamma);
+BLT_EXTERN Blt_Picture	Blt_CanvasToPicture(Tcl_Interp *interp, Tk_Window tkwin,
+				float gamma);
 #endif
 #ifndef Blt_PictureRegisterProc_DECLARED
 #define Blt_PictureRegisterProc_DECLARED
@@ -638,7 +638,7 @@ typedef struct BltTkProcs {
     Blt_Picture (*blt_GetPictureFromPictureImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 75 */
     struct _Blt_Chain * (*blt_GetPicturesFromPictureImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 76 */
     Blt_Picture (*blt_GetPictureFromPhotoImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 77 */
-    Blt_Picture (*blt_CanvasToPicture) (Tcl_Interp *interp, const char *s, float gamma); /* 78 */
+    Blt_Picture (*blt_CanvasToPicture) (Tcl_Interp *interp, Tk_Window tkwin, float gamma); /* 78 */
     int (*blt_PictureRegisterProc) (Tcl_Interp *interp, const char *name, Tcl_ObjCmdProc *proc); /* 79 */
     void (*blt_Shadow_Set) (Blt_Shadow *sPtr, int width, int offset, int color, int alpha); /* 80 */
     Blt_Picture (*blt_EmbossPicture) (Blt_Picture picture, double azimuth, double elevation, unsigned short width45); /* 81 */

@@ -1748,7 +1748,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
         c1 = Blt_Map2D(graphPtr, c1.x, c1.y, &elemPtr->axes);
         c2 = Blt_Map2D(graphPtr, c2.x, c2.y, &elemPtr->axes);
         if ((ybot == 0.0) && (IsLogScale(elemPtr->axes.y))) {
-            c2.y = graphPtr->bottom;
+            c2.y = graphPtr->y2;
         }
             
         if (c2.y < c1.y) {
@@ -1759,8 +1759,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
             double t;
             t = c1.x, c1.x = c2.x, c2.x = t;
         }
-        if ((c1.x > graphPtr->right) || (c2.x < graphPtr->left) || 
-            (c1.y > graphPtr->bottom) || (c2.y < graphPtr->top)) {
+        if ((c1.x > graphPtr->x2) || (c2.x < graphPtr->x1) || 
+            (c1.y > graphPtr->y2) || (c2.y < graphPtr->y1)) {
             continue;
         }
         /* Bound the bars horizontally by the width of the graph window */
@@ -1768,8 +1768,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
         if (graphPtr->flags & STACK_AXES) {
             top = elemPtr->axes.y->screenMin;
             bottom = elemPtr->axes.y->screenMin + elemPtr->axes.y->screenRange;
-            left = graphPtr->left;
-            right = graphPtr->right;
+            left = graphPtr->x1;
+            right = graphPtr->x2;
         } else {
             left = top = 0;
             bottom = right = 10000;
@@ -2014,10 +2014,10 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
     int i;
     Blt_Painter painter;
     
-    clip.x = graphPtr->left;
-    clip.y = graphPtr->top;
-    clip.width  = graphPtr->right - graphPtr->left + 1;
-    clip.height = graphPtr->bottom - graphPtr->top + 1;
+    clip.x = graphPtr->x1;
+    clip.y = graphPtr->y1;
+    clip.width  = graphPtr->x2 - graphPtr->x1 + 1;
+    clip.height = graphPtr->y2 - graphPtr->y1 + 1;
     rgn = TkCreateRegion();
     TkUnionRectWithRegion(&clip, rgn, rgn);
 

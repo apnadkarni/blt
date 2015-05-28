@@ -775,6 +775,17 @@ Blt_Ps_Rectangle(Blt_Ps ps, int x, int y, int width, int height)
 }
 
 void
+Blt_Ps_Rectangle2(Blt_Ps ps, double x1, double y1, double x2, double y2)
+{
+    Blt_Ps_Append(ps, "newpath\n");
+    Blt_Ps_Format(ps, "  %g %g moveto\n", x1, y1);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x1, y2);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x2, y2);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x2, y1);
+    Blt_Ps_Append(ps, "closepath\n");
+}
+
+void
 Blt_Ps_XFillRectangle(Blt_Ps ps, double x, double y, int width, int height)
 {
     Blt_Ps_Rectangle(ps, (int)x, (int)y, width, height);

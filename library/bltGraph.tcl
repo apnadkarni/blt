@@ -787,14 +787,14 @@ proc blt::Graph::Box { g } {
 	set x2 [$g xaxis invtransform $_private($g,B,x)]
 	set y2 [$g yaxis invtransform $_private($g,B,y)]
     }
-    set coords { $x1 $y1 $x2 $y1 $x2 $y2 $x1 $y2 $x1 $y1 }
+    set coords { $x1 $y1 $x2 $y2 }
     if { [$g marker exists "zoomOutline"] } {
 	$g marker configure "zoomOutline" -coords $coords 
     } else {
 	set X [lindex [$g xaxis use] 0]
 	set Y [lindex [$g yaxis use] 0]
-            $g marker create line -coords $coords -name "zoomOutline"   \
-		-mapx $X -mapy $Y
+            $g marker create rectangle -coords $coords -name "zoomOutline"   \
+		-mapx $X -mapy $Y -fill "" 
 	
 	set interval $_private($g,interval)
 	set id [after $interval [list blt::Graph::MarchingAnts $g 0]]

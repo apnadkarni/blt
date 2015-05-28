@@ -283,11 +283,11 @@ Blt_ConfigureCrosshairs(Graph *graphPtr)
      * Are the new coordinates on the graph?
      */
     chPtr->segArr[0].x2 = chPtr->segArr[0].x1 = chPtr->x;
-    chPtr->segArr[0].y1 = graphPtr->bottom;
-    chPtr->segArr[0].y2 = graphPtr->top;
+    chPtr->segArr[0].y1 = graphPtr->y2;
+    chPtr->segArr[0].y2 = graphPtr->y1;
     chPtr->segArr[1].y2 = chPtr->segArr[1].y1 = chPtr->y;
-    chPtr->segArr[1].x1 = graphPtr->left;
-    chPtr->segArr[1].x2 = graphPtr->right;
+    chPtr->segArr[1].x1 = graphPtr->x1;
+    chPtr->segArr[1].x2 = graphPtr->x2;
 
     if ((chPtr->flags & HIDDEN) == 0) {
         TurnOnHairs(graphPtr, chPtr);
@@ -327,10 +327,10 @@ Blt_UpdateCrosshairs(Graph *graphPtr)
 {
     Crosshairs *chPtr = graphPtr->crosshairs;
 
-    chPtr->segArr[0].y1 = graphPtr->bottom;
-    chPtr->segArr[0].y2 = graphPtr->top;
-    chPtr->segArr[1].x1 = graphPtr->left;
-    chPtr->segArr[1].x2 = graphPtr->right;
+    chPtr->segArr[0].y1 = graphPtr->y2;
+    chPtr->segArr[0].y2 = graphPtr->y1;
+    chPtr->segArr[1].x1 = graphPtr->x1;
+    chPtr->segArr[1].x2 = graphPtr->x2;
 }
 
 /*

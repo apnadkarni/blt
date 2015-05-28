@@ -50,6 +50,7 @@ typedef enum {
     CID_AXIS_X,
     CID_AXIS_Y,
     CID_AXIS_Z,
+    CID_LEGEND,
     CID_ELEM_BAR,
     CID_ELEM_CONTOUR,
     CID_ELEM_LINE,
@@ -58,6 +59,7 @@ typedef enum {
     CID_MARKER_IMAGE,
     CID_MARKER_LINE,
     CID_MARKER_POLYGON,
+    CID_MARKER_RECTANGLE,
     CID_MARKER_TEXT,
     CID_MARKER_WINDOW,
     CID_LEGEND_ENTRY,
@@ -96,8 +98,8 @@ typedef struct {
  *      Graph component structure definitions
  */
 #define PointInGraph(g,x,y) \
-        (((x) <= (g)->right) && ((x) >= (g)->left) && \
-         ((y) <= (g)->bottom) && ((y) >= (g)->top))
+        (((x) <= (g)->x2) && ((x) >= (g)->x1) && \
+         ((y) <= (g)->y2) && ((y) >= (g)->y1))
 
 /*
  * Mask values used to selectively enable graph or barchart entries in the
@@ -386,11 +388,10 @@ struct _Graph {
     Blt_BindTable bindTable;
     int nextMarkerId;                   /* Tracks next marker identifier
                                          * available */
+    int axisSpacing;
     Margin margins[4];
-    Margin *bottomMarginPtr;
-    Margin *leftMarginPtr;
-    Margin *rightMarginPtr;
-    Margin *topMarginPtr;
+    Margin *topPtr, *bottomPtr;
+    Margin *leftPtr, *rightPtr;
 
     Tcl_Obj *leftMarginVarObjPtr;
     Tcl_Obj *rightMarginVarObjPtr;
@@ -401,7 +402,6 @@ struct _Graph {
     int reqRightMarginSize;
     int reqTopMarginSize;
     int reqBottomMarginSize;
-    
     PageSetup *pageSetup;               /* Page layout options: see
                                          * bltGrPS.c */
     Legend *legend;                     /* Legend information: see
@@ -414,17 +414,16 @@ struct _Graph {
     GC drawGC;                          /* GC for drawing on the
                                          * margins. This includes the axis
                                          * lines */  
-    int plotBW;                         /* Width of interior 3-D border. */
+    int plotBorderWidth;                /* Width of interior 3-D border. */
     int plotRelief;                     /* 3-d effect: TK_RELIEF_RAISED
                                          * etc. */
     Blt_Bg plotBg;                      /* Color of plotting surface */
 
     /* If non-zero, force plot to conform to aspect ratio W/H */
     float aspect;
-
-    short int left, right;              /* Coordinates of plot bbox */
-    short int top, bottom;      
-
+    short int x1, x2, y1, y2;           /* Opposite corners of plot area
+                                         * bounding box. x2 and y2 are
+                                         * outside of the area. */
     Blt_Pad xPad;                       /* Vertical padding for plotarea */
     int vRange, vOffset;                /* Vertical axis range and offset
                                          * from the left side of the graph
@@ -661,8 +660,6 @@ BLT_EXTERN void Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable);
 BLT_EXTERN void Blt_DrawElements(Graph *graphPtr, Drawable drawable);
 
 BLT_EXTERN void Blt_DrawActiveElements(Graph *graphPtr, Drawable drawable);
-
-BLT_EXTERN void Blt_DrawGraph(Graph *graphPtr, Drawable drawable);
 
 BLT_EXTERN void Blt_DrawMarkers(Graph *graphPtr, Drawable drawable, int under);
 

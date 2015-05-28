@@ -334,6 +334,7 @@ BLT_EXTERN Pixmap Blt_GetPixmapAbortOnError(Display *dpy, Drawable draw,
 #undef Blt_GetPixmap
 #define Blt_GetPixmap(dpy, draw, w, h, depth) \
     Blt_GetPixmapAbortOnError(dpy, draw, w, h, depth, __LINE__, __FILE__)
+#define Blt_FreePixmap(dpy, pix)        Tk_FreePixmap(dpy, pix)
 
 #if defined(HAVE_LIBXRANDR) && defined(HAVE_X11_EXTENSIONS_RANDR_H) && defined(HAVE_X11_EXTENSIONS_XRANDR_H) 
 #define HAVE_RANDR 1

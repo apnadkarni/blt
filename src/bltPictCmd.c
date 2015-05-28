@@ -203,6 +203,7 @@ static Blt_HashTable procTable;
 #define SHARPEN                 (1<<12) /* Sharpen the image. */
 
 #define INUSE                   (1<<13) /* Image is in use. */
+#define RAISE                   (1<<14) 
 
 /*
  * PictImage -- 
@@ -610,22 +611,36 @@ static Blt_SwitchSpec resampleSwitches[] = {
         Blt_Offset(ResampleSwitches, flags), 0, MAXPECT},
     {BLT_SWITCH_CUSTOM, "-vfilter", "filter", (char *)NULL,
         Blt_Offset(ResampleSwitches, vFilter), 0, 0, &filterSwitch},
-    {BLT_SWITCH_CUSTOM, "-width",   "int", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-width",   "numPixels", (char *)NULL,
         Blt_Offset(ResampleSwitches, width),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_END}
 };
 
 typedef struct {
+    Blt_ResampleFilter filter, vFilter, hFilter;
     PictRegion from;
-    int raise;
-} SnapSwitches;
+    int width, height;
+    int flags;
+} SnapArgs;
 
 static Blt_SwitchSpec snapSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-bbox", "bbox", (char *)NULL,
-        Blt_Offset(SnapSwitches, from), 0, 0, &bboxSwitch},
+    {BLT_SWITCH_CUSTOM, "-filter", "filter", (char *)NULL,
+        Blt_Offset(SnapArgs, filter), 0, 0, &filterSwitch},
+    {BLT_SWITCH_CUSTOM,  "-from", "bbox", (char *)NULL,
+        Blt_Offset(SnapArgs, from), 0, 0, &bboxSwitch},
+    {BLT_SWITCH_CUSTOM, "-height",  "numPixels", (char *)NULL,
+        Blt_Offset(SnapArgs, height),  0, 0, &pixelsSwitch},
+    {BLT_SWITCH_CUSTOM, "-hfilter", "filter", (char *)NULL,
+        Blt_Offset(SnapArgs, hFilter), 0, 0, &filterSwitch},
+    {BLT_SWITCH_BITMASK, "-maxpect", "", (char *)NULL, 
+        Blt_Offset(ResampleSwitches, flags), 0, MAXPECT},
     {BLT_SWITCH_BITMASK, "-raise",  "", (char *)NULL,
-        Blt_Offset(SnapSwitches, raise),  0, TRUE},
+        Blt_Offset(SnapArgs, flags),  0, RAISE},
+    {BLT_SWITCH_CUSTOM, "-vfilter", "filter", (char *)NULL,
+        Blt_Offset(SnapArgs, vFilter), 0, 0, &filterSwitch},
+    {BLT_SWITCH_CUSTOM, "-width",   "numPixels", (char *)NULL,
+        Blt_Offset(SnapArgs, width),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -4950,7 +4965,7 @@ SharpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      None.
  *
- *   $pict snap window -bbox {x y w h} -raise 
+ *   imageName snap windowName ?switches ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4960,45 +4975,76 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Blt_Picture picture;
     PictImage *imgPtr = clientData;
-    SnapSwitches switches;
+    SnapArgs args;
     Tk_Uid classUid;
     Tk_Window tkwin;
     const char *string;
 
-    memset(&switches, 0, sizeof(switches));
+    memset(&args, 0, sizeof(args));
     classUid = NULL;
     string = Tcl_GetString(objv[2]);
     tkwin = Tk_NameToWindow(NULL, string, Tk_MainWindow(interp));
     if (tkwin != NULL) {
         classUid = Tk_Class(tkwin);
     }
-    if ((classUid != NULL) && (strcmp(classUid, "Canvas") == 0)) {
+    if ((tkwin != NULL) && (strcmp(classUid, "Canvas") == 0)) {
         int w, h;
 
         w = Tk_Width(tkwin);
         h = Tk_Height(tkwin);
-        switches.from.x = switches.from.y = 0;
-        switches.from.w = w;
-        switches.from.h = h;
+        args.from.x = args.from.y = 0;
+        args.width  = args.from.w = w;
+        args.height = args.from.h = h;
         if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
-                              &switches, BLT_SWITCH_DEFAULTS) < 0) {
+                              &args, BLT_SWITCH_DEFAULTS) < 0) {
             return TCL_ERROR;
         }
-        if ((switches.from.w + switches.from.x) > w) {
-            switches.from.w = (w - switches.from.x);
+        if ((args.from.w + args.from.x) > w) {
+            args.from.w = (w - args.from.x);
         }
-        if ((switches.from.h + switches.from.y) > h) {
-            switches.from.h = (h - switches.from.y);
+        if ((args.from.h + args.from.y) > h) {
+            args.from.h = (h - args.from.y);
         }
-        picture = Blt_CanvasToPicture(interp, string, imgPtr->gamma);
-        if (Blt_SwitchChanged(snapSwitches, "-bbox", (char *)NULL)) {
-            Blt_Picture dst;
+        picture = Blt_CanvasToPicture(interp, tkwin, imgPtr->gamma);
+        if (Blt_SwitchChanged(snapSwitches, "-from", (char *)NULL)) {
+            Blt_Picture newPict;
 
-            dst = Blt_CreatePicture(switches.from.w, switches.from.h);
-            Blt_CopyPictureBits(dst, picture, switches.from.x, switches.from.y, 
-                switches.from.w, switches.from.h, 0, 0);
+            newPict = Blt_CreatePicture(args.from.w, args.from.h);
+            Blt_CopyPictureBits(newPict, picture, args.from.x, args.from.y, 
+                args.from.w, args.from.h, 0, 0);
             Blt_FreePicture(picture);
-            picture = dst;
+            picture = newPict;
+        }
+    } else if ((tkwin != NULL) && ((strcmp(classUid, "BltGraph") == 0) ||
+                                   (strcmp(classUid, "BltBarchart") == 0) ||
+                                   (strcmp(classUid, "BltStripchart") == 0) ||
+                                   (strcmp(classUid, "BltContour") == 0))) {
+        int w, h;
+
+        w = Tk_Width(tkwin);
+        h = Tk_Height(tkwin);
+        args.from.x = args.from.y = 0;
+        args.width  = args.from.w = w;
+        args.height = args.from.h = h;
+        if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
+                              &args, BLT_SWITCH_DEFAULTS) < 0) {
+            return TCL_ERROR;
+        }
+        if ((args.from.w + args.from.x) > w) {
+            args.from.w = (w - args.from.x);
+        }
+        if ((args.from.h + args.from.y) > h) {
+            args.from.h = (h - args.from.y);
+        }
+        picture = Blt_GraphToPicture(interp, tkwin, imgPtr->gamma);
+        if (Blt_SwitchChanged(snapSwitches, "-from", (char *)NULL)) {
+            Blt_Picture newPict;
+
+            newPict = Blt_CreatePicture(args.from.w, args.from.h);
+            Blt_CopyPictureBits(newPict, picture, args.from.x, args.from.y, 
+                args.from.w, args.from.h, 0, 0);
+            Blt_FreePicture(picture);
+            picture = newPict;
         }
     } else {
         Window window;
@@ -5013,33 +5059,64 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
             return TCL_ERROR;
         }
-        switches.from.x = switches.from.y = 0;
-        switches.from.w = w;
-        switches.from.h = h;
+        args.from.x = args.from.y = 0;
+        args.width = args.from.w = w;
+        args.height = args.from.h = h;
         if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
-                              &switches, BLT_SWITCH_DEFAULTS) < 0) {
+                              &args, BLT_SWITCH_DEFAULTS) < 0) {
             return TCL_ERROR;
         }
-        if ((switches.from.w + switches.from.x) > w) {
-            switches.from.w = (w - switches.from.x);
+        if ((args.from.w + args.from.x) > w) {
+            args.from.w = (w - args.from.x);
         }
-        if ((switches.from.h + switches.from.y) > h) {
-            switches.from.h = (h - switches.from.y);
+        if ((args.from.h + args.from.y) > h) {
+            args.from.h = (h - args.from.y);
         }
-        if (switches.raise) {
+        if (args.flags & RAISE) {
             XRaiseWindow(imgPtr->display, window);
         }
-        /* Depth, visual, colormap */
-        picture = Blt_WindowToPicture(imgPtr->display, window, 
-                switches.from.x, switches.from.y, switches.from.w, 
-                switches.from.h, imgPtr->gamma);
+        picture = Blt_WindowToPicture(imgPtr->display, window, args.from.x,
+                args.from.y, args.from.w, args.from.h, imgPtr->gamma);
         if (picture == NULL) {
             Tcl_AppendResult(interp, "can't obtain snapshot of window \"", 
-                             Tcl_GetString(objv[2]), "\"", (char *)NULL);
+                Tcl_GetString(objv[2]), "\"", (char *)NULL);
         }
     }
+    /* Now that we have the snapshot, resample the picture if needed.  */
+    if ((args.flags | imgPtr->flags) & MAXPECT) {
+        double xScale, yScale, s;
+            
+        xScale = (double)args.width  / (double)args.from.w;
+        yScale = (double)args.height / (double)args.from.h;
+        s = MIN(xScale, yScale);
+        args.width  = (int)(args.from.w * s + 0.5);
+        args.height = (int)(args.from.h * s + 0.5);
+    }       
+    if (args.vFilter == NULL) {
+        args.vFilter = args.filter;
+    }
+    if (args.hFilter == NULL) {
+        args.hFilter = args.filter;
+    }
+    if (args.hFilter == NULL) {
+        args.hFilter = (args.from.w < args.width) ?
+            bltMitchellFilter : bltBoxFilter; 
+    }
+    if (args.vFilter == NULL) {
+        args.vFilter = (args.from.h < args.height) ?
+            bltMitchellFilter : bltBoxFilter;
+    }
+    if ((Blt_Picture_Width(picture) != args.width) ||
+        (Blt_Picture_Height(picture) != args.height)) {
+        Blt_Picture newPict;
+        
+        newPict = Blt_CreatePicture(args.width, args.height);
+        Blt_ResamplePicture(newPict, picture, args.vFilter, args.hFilter);
+        Blt_FreePicture(picture);
+        picture = newPict;
+    }
     if (picture == NULL) {
-        Blt_FreeSwitches(snapSwitches, &switches, 0);
+        Blt_FreeSwitches(snapSwitches, &args, 0);
         return TCL_ERROR;
     }
     ReplacePicture(imgPtr, picture);
@@ -5049,7 +5126,7 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     Blt_NotifyImageChanged(imgPtr);
     imgPtr->flags &= ~IMPORTED_MASK;
-    Blt_FreeSwitches(snapSwitches, &switches, 0);
+    Blt_FreeSwitches(snapSwitches, &args, 0);
     return TCL_OK;
 }
 

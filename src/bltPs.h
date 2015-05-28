@@ -141,6 +141,9 @@ BLT_EXTERN void Blt_Ps_DrawPicture(Blt_Ps ps, Blt_Picture picture,
 
 BLT_EXTERN void Blt_Ps_Rectangle(Blt_Ps ps, int x, int y, int w, int h);
 
+BLT_EXTERN void Blt_Ps_Rectangle2(Blt_Ps ps, double x1, double y1, double x2,
+        double y2);
+
 
 BLT_EXTERN int Blt_Ps_SaveFile(Tcl_Interp *interp, Blt_Ps ps, 
         const char *fileName);

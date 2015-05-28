@@ -282,10 +282,9 @@ typedef struct TkCanvas {
  *-----------------------------------------------------------------------------
  */
 Blt_Picture
-Blt_CanvasToPicture(Tcl_Interp *interp, const char *pathName, float gamma)
+Blt_CanvasToPicture(Tcl_Interp *interp, Tk_Window tkwin, float gamma)
 {
     TkCanvas *canvasPtr;
-    Tk_Window tkwin;
     Tk_Item *itemPtr;
     Pixmap pixmap;
     int screenX1, screenX2, screenY1, screenY2, width, height;
@@ -293,13 +292,8 @@ Blt_CanvasToPicture(Tcl_Interp *interp, const char *pathName, float gamma)
     Blt_Picture picture;
     Tk_Uid classUid;
 
-    tkwin = Tk_NameToWindow(interp, pathName, Tk_MainWindow(interp));
-    if (tkwin == NULL) {
-        return NULL;
-    }
     classUid = Tk_Class(tkwin);
-    if (strcmp(classUid, "Canvas") == 0) {
-    } else {
+    if (strcmp(classUid, "Canvas") != 0) {
         Tcl_AppendResult(interp, "can't grab window of class \"", classUid, 
                 "\"", (char *)NULL);
         return NULL;
@@ -404,9 +398,10 @@ Blt_CanvasToPicture(Tcl_Interp *interp, const char *pathName, float gamma)
     picture = Blt_DrawableToPicture(tkwin, pixmap, 0, 0, width, height, gamma);
     Tk_FreePixmap(Tk_Display(tkwin), pixmap);
     if (picture == NULL) {
-        Tcl_AppendResult(interp, "can't grab pixmap \"", pathName, "\"", 
-                         (char *)NULL);
+        Tcl_AppendResult(interp, "can't grab pixmap \"",
+                         Tk_PathName(tkwin), "\"", (char *)NULL);
         return NULL;
     }
     return picture;
 }
+

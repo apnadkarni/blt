@@ -897,37 +897,66 @@ the command.  The operations available for pictures are listed below.
    Sharpens *imageName*.  Sharpening is done by blurring *imageName* and
    subtracting the blur from it.  The result is saved in *imageName*.
 
-*imageName* **snap** *window* ?\ *switches* ... ?
+*imageName* **snap** *windowName* ?\ *switches* ... ?
    Takes a snapshot of the *window* and saves the result in *imageName*.
-   *Window* is the name of a window that is fully visible on the screen.
-   It cannot be obscured by other window. *Window* can be one of the
-   following.
+   *WindowName* can be one of the following.
 
       **.**\ *pathName*
-         The path of any Tk widget. Note that Tk **canvas** widgets are
-         treated specially.  The **canvas** window does not have to be viewable
-         on the screen to be snapped. It underlying pixmap is read directly.
+        The path of any Tk widget. If *windowName* is a BLT **graph**,
+	**barchart**, **stripchart**, **contour** widget or a Tk **canvas**
+	widget, the window does not have to be viewable on the screen to be
+	snapped. Its underlying pixmap is read directly.
 
       **root**
-         The root window.
+        The root window.
 
       *number*
-         The ID of the window.  In X11 the number will be a hexadecimal number
-         such as "0x2e00004".
+        The ID of the window.  In X11 the number will be a hexadecimal number
+        such as "0x2e00004".
 
    *Switches* can be any of the following.
 
-   **-bbox** *bbox*
-     Specifies the sub-region in *window* to snap.  *Bbox* is a list
-     in the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
+   **-filter** *filterName*
+     Specifies the image filter to use for both the horizontal and vertical
+     resampling.  *FilterName* can be any one of the values described in
+     the **resample** operation.
+
+   **-from** *bbox*
+     Specifies the sub-region in *windowName* to snap.  *Bbox* is a list in
+     the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
      describes the subregion to be snaped.  The second indicates to copy
-     the subimage starting at *x1*,\ *y1* of *window* extending to the
+     the subimage starting at *x1*,\ *y1* of *windowName* extending to the
      lower right corner.
+
+   **-height** *numPixels*
+     Specifies the height of the resampled image.  *NumPixels* may have any
+     of the forms acceptable to **Tk_GetPixels**, such as "200" or "2.4i".
+     If *numPixels* is "0", then the height of *imageName* is the height
+     of *windowName*.  The default is "0".
+    
+   **-hfilter** *filterName*
+     Specifies the image filter to use for horizontal resampling. 
+     *FilterName* can be any of the filter described in **-filter**
+     switch.
+     
+   **-maxpect** 
+     Forces the *imageName* to retain the same aspect ratio as *srcName*.
+     The maximum of **-width** and **-height** is used.
 
    **-raise** 
      Indicates to raise the window before snapping. The is sometimes
-     required for non-Tk windows.  The default is not to raise *window*.
+     required for non-Tk windows.  The default is not to raise *windowName*.
      
+   **-vfilter** *filterName*
+     Specifies the image filter to use for vertical resampling.
+     *FilterName* can be any of the filter described in **-filter** switch.
+
+   **-width** *numPixels*
+     Specifies the width of the image.  *NumPixels* may have any of the
+     forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+     *numPixels* is "0", then the width of *imageName* is the width of
+     *windowName*. The default is "0".
+
 *imageName* **subtract** *pictOrColor*
   Performs an arithmetic-subtraction of the picture or color from Each color
   component is subtracted.  *imageName*.  *PictOrColor* is either the name

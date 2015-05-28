@@ -400,14 +400,14 @@ MarginsToPostScript(Graph *graphPtr, Blt_Ps ps)
     Blt_Ps_Append(ps, "% Margins\n");
     margin[0].x = margin[0].y = margin[3].x = margin[1].x = 0;
     margin[0].width = margin[3].width = graphPtr->width;
-    margin[0].height = graphPtr->top;
-    margin[3].y = graphPtr->bottom;
-    margin[3].height = graphPtr->height - graphPtr->bottom;
-    margin[2].y = margin[1].y = graphPtr->top;
-    margin[1].width = graphPtr->left;
-    margin[2].height = margin[1].height = graphPtr->bottom - graphPtr->top;
-    margin[2].x = graphPtr->right;
-    margin[2].width = graphPtr->width - graphPtr->right;
+    margin[0].height = graphPtr->y1;
+    margin[3].y = graphPtr->y2;
+    margin[3].height = graphPtr->height - graphPtr->y2;
+    margin[2].y = margin[1].y = graphPtr->y1;
+    margin[1].width = graphPtr->x1;
+    margin[2].height = margin[1].height = graphPtr->y2 - graphPtr->y1;
+    margin[2].x = graphPtr->x2;
+    margin[2].width = graphPtr->width - graphPtr->x2;
 
     /* Clear the surrounding margins and clip the plotting surface */
     if (setupPtr->flags & PS_DECORATIONS) {
@@ -419,17 +419,17 @@ MarginsToPostScript(Graph *graphPtr, Blt_Ps ps)
     
     Blt_Ps_Append(ps, "% Interior 3D border\n");
     /* Interior 3D border */
-    if (graphPtr->plotBW > 0) {
+    if (graphPtr->plotBorderWidth > 0) {
         Tk_3DBorder border;
         int x, y, w, h;
 
-        x = graphPtr->left - graphPtr->plotBW;
-        y = graphPtr->top - graphPtr->plotBW;
-        w = (graphPtr->right - graphPtr->left) + (2*graphPtr->plotBW);
-        h = (graphPtr->bottom - graphPtr->top) + (2*graphPtr->plotBW);
+        x = graphPtr->x1 - graphPtr->plotBorderWidth;
+        y = graphPtr->y1 - graphPtr->plotBorderWidth;
+        w = (graphPtr->x2 - graphPtr->x1) + (2*graphPtr->plotBorderWidth);
+        h = (graphPtr->y2 - graphPtr->y1) + (2*graphPtr->plotBorderWidth);
         border = Blt_Bg_Border(graphPtr->normalBg);
         Blt_Ps_Draw3DRectangle(ps, border, (double)x, (double)y, w, h,
-                graphPtr->plotBW, graphPtr->plotRelief);
+                graphPtr->plotBorderWidth, graphPtr->plotRelief);
     }
     if (Blt_Legend_Site(graphPtr) & LEGEND_MARGIN_MASK) {
         /*
@@ -483,11 +483,11 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
         goto error;
     }
     /* Determine rectangle of the plotting area for the graph window */
-    x = graphPtr->left - graphPtr->plotBW;
-    y = graphPtr->top - graphPtr->plotBW;
+    x = graphPtr->x1 - graphPtr->plotBorderWidth;
+    y = graphPtr->y1 - graphPtr->plotBorderWidth;
 
-    w = (graphPtr->right  - graphPtr->left + 1) + (2*graphPtr->plotBW);
-    h = (graphPtr->bottom - graphPtr->top  + 1) + (2*graphPtr->plotBW);
+    w = (graphPtr->x2  - graphPtr->x1 + 1) + (2*graphPtr->plotBorderWidth);
+    h = (graphPtr->y2 - graphPtr->y1  + 1) + (2*graphPtr->plotBorderWidth);
 
     Blt_Ps_Append(ps, "%%Page: 1 1\n\n");
     Blt_Ps_XSetFont(ps, Blt_Ts_GetFont(graphPtr->titleTextStyle));

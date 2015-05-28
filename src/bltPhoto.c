@@ -491,22 +491,22 @@ Blt_SnapPicture(
     Drawable drawable,                  /* Window or pixmap to be snapped */
     int x, int y,                       /* Offset of image in drawable
                                          * origin. */
-    int width, int height,              /* Dimension of the drawable. */
-    int dw, int dh,                     /* Desired size of the destination
+    int w, int h,                       /* Dimension of the drawable. */
+    int destWidth, int destHeight,      /* Desired size of the destination
                                          * picture. */
-    const char *imageName,              /* Name of a current picture image. */
+    const char *imageName,              /* Name of a picture image. */
     float gamma)
 {
-    Blt_Picture pict;
+    Blt_Picture dest;
 
-    pict = Blt_DrawableToPicture(tkwin, drawable, x, y, width, height, gamma);
-    if (pict == NULL) {
+    dest = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, gamma);
+    if (dest == NULL) {
         Tcl_AppendResult(interp,
             "can't grab window or pixmap (possibly obscured?)", (char *)NULL);
         return TCL_ERROR;               /* Can't grab window image */
     }
-    if ((dw != width) || (dh != height)) {
-        Blt_Picture dest;
+    if ((destWidth != w) || (destHeight != h)) {
+        Blt_Picture newPict;
 
         /*
          * The requested size for the destination image is different than that
@@ -514,15 +514,15 @@ Blt_SnapPicture(
          * use a cheap box filter. I'm assuming that the destination image
          * will typically be smaller than the original.
          */
-        dest = Blt_CreatePicture(dw, dh);
-        Blt_ResamplePicture(dest, pict, bltBoxFilter, bltBoxFilter);
-        Blt_FreePicture(pict);
-        pict = dest;
+        newPict = Blt_CreatePicture(destWidth, destHeight);
+        Blt_ResamplePicture(newPict, dest, bltBoxFilter, bltBoxFilter);
+        Blt_FreePicture(dest);
+        dest = newPict;
     }
-    if (Blt_ResetPicture(interp, imageName, pict) == TCL_OK) {
+    if (Blt_ResetPicture(interp, imageName, dest) == TCL_OK) {
         return TCL_OK;
     }
-    Blt_FreePicture(pict);
+    Blt_FreePicture(dest);
     return TCL_ERROR;
 }
 

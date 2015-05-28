@@ -858,7 +858,6 @@ GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr)
     } else if (isdigit(*p)) {
         const char *first;
         char save, *q;
-        char c, d;
         
         first = p;
         while (isdigit(*p)) {
@@ -872,14 +871,18 @@ GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr)
             return TCL_ERROR;
         }
         *q = save;                      /* Restore last chararacter. */
-        c = tolower(p[0]);
-        d = tolower(p[1]);
-        if (((c == 't') && (d == 'h')) || /* 9th */
-            ((c == 's') && (d == 't')) || /* 1st */
-            ((c == 'n') && (d == 'd')) || /* 2nd */
-            ((c == 'r') && (d == 'd'))) { /* 3rd */
-            p += 2;
-            tokenPtr->id = _MDAY;       /* Month day. */
+        if (*p != '\0') {
+            char c, d;
+
+            c = tolower(p[0]);
+            d = tolower(p[1]);
+            if (((c == 't') && (d == 'h')) || /* 9th */
+                ((c == 's') && (d == 't')) || /* 1st */
+                ((c == 'n') && (d == 'd')) || /* 2nd */
+                ((c == 'r') && (d == 'd'))) { /* 3rd */
+                p += 2;
+                tokenPtr->id = _MDAY;       /* Month day. */
+            }
         }
     } else if (isalpha(*p)) {
         const char *name;

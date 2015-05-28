@@ -111,29 +111,30 @@
 #define DEF_BITMAP_TAGS         "Bitmap all"
 #define DEF_WINDOW_TAGS         "Window all"
 #define DEF_POLYGON_TAGS        "Polygon all"
+#define DEF_RECTANGLE_TAGS      "Rectangle all"
 #define DEF_LINE_TAGS           "Line all"
 
 static Blt_OptionParseProc ObjToCoordsProc;
 static Blt_OptionPrintProc CoordsToObjProc;
-static Blt_OptionFreeProc FreeCoordsProc;
+static Blt_OptionFreeProc CoordsFreeProc;
 static Blt_CustomOption coordsOption =
 {
-    ObjToCoordsProc, CoordsToObjProc, FreeCoordsProc, (ClientData)0
+    ObjToCoordsProc, CoordsToObjProc, CoordsFreeProc, (ClientData)0
 };
-static Blt_OptionFreeProc FreeColorPairProc;
+static Blt_OptionFreeProc ColorPairFreeProc;
 static Blt_OptionParseProc ObjToColorPairProc;
 static Blt_OptionPrintProc ColorPairToObjProc;
 static Blt_CustomOption colorPairOption =
 {
-    ObjToColorPairProc, ColorPairToObjProc, FreeColorPairProc, (ClientData)0
+    ObjToColorPairProc, ColorPairToObjProc, ColorPairFreeProc, (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToPictImageProc;
 static Blt_OptionPrintProc PictImageToObjProc;
-static Blt_OptionFreeProc FreePictImageProc;
+static Blt_OptionFreeProc PictImageFreeProc;
 static Blt_CustomOption pictImageOption =
 {
-    ObjToPictImageProc, PictImageToObjProc, FreePictImageProc, (ClientData)0
+    ObjToPictImageProc, PictImageToObjProc, PictImageFreeProc, (ClientData)0
 };
 
 BLT_EXTERN Blt_CustomOption bltXAxisOption;
@@ -147,19 +148,19 @@ typedef int     (MarkerConfigProc)(Marker *markerPtr);
 typedef void    (MarkerMapProc)(Marker *markerPtr);
 typedef void    (MarkerPostscriptProc)(Marker *markerPtr, Blt_Ps ps);
 typedef int     (MarkerPointProc)(Marker *markerPtr, Point2d *samplePtr);
-typedef int     (MarkerRegionProc)(Marker *markerPtr, Region2d *extsPtr, 
+typedef int     (MarkerAreaProc)(Marker *markerPtr, Region2d *extsPtr, 
                                    int enclosed);
 
 typedef struct {
     Blt_ConfigSpec *configSpecs;        /* Marker configuration
                                          * specifications */
-    MarkerConfigProc *configProc;
-    MarkerDrawProc *drawProc;
+    MarkerConfigProc *configProc;       /* Configuration routine. */
+    MarkerDrawProc *drawProc;           /* Drawing routine. */
     MarkerFreeProc *freeProc;
     MarkerMapProc *mapProc;
     MarkerPointProc *pointProc;
-    MarkerRegionProc *regionProc;
-    MarkerPostscriptProc *postscriptProc;
+    MarkerAreaProc *regionProc;
+    MarkerPostscriptProc *psProc;
 
 }  MarkerClass;
 
@@ -198,7 +199,7 @@ struct _Marker {
                                          * because the graph must be redraw
                                          * entirely each time the marker is
                                          * redrawn. */
-    int clipped;                        /* Indicates if the marker is
+    int offScreen;                      /* Indicates if the marker is
                                          * totally clipped by the plotting
                                          * area. */
     unsigned int flags;         
@@ -234,7 +235,7 @@ typedef struct {
                                          * because the graph must be redraw
                                          * entirely each time the marker is
                                          * redrawn. */
-    int clipped;                        /* Indicates if the marker is
+    int offScreen;                      /* Indicates if the marker is
                                          * totally clipped by the plotting
                                          * area. */
     unsigned int flags;         
@@ -319,24 +320,24 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static MarkerConfigProc ConfigureBitmapProc;
-static MarkerCreateProc CreateBitmapProc;
-static MarkerDrawProc DrawBitmapProc;
-static MarkerFreeProc FreeBitmapProc;
-static MarkerMapProc MapBitmapProc;
-static MarkerPointProc PointInBitmapProc;
-static MarkerPostscriptProc BitmapToPostscriptProc;
-static MarkerRegionProc RegionInBitmapProc;
+static MarkerConfigProc BitmapConfigureProc;
+static MarkerCreateProc BitmapCreateProc;
+static MarkerDrawProc BitmapDrawProc;
+static MarkerFreeProc BitmapFreeProc;
+static MarkerMapProc BitmapMapProc;
+static MarkerPointProc BitmapPointProc;
+static MarkerPostscriptProc BitmapPostscriptProc;
+static MarkerAreaProc BitmapAreaProc;
 
 static MarkerClass bitmapMarkerClass = {
     bitmapConfigSpecs,
-    ConfigureBitmapProc,
-    DrawBitmapProc,
-    FreeBitmapProc,
-    MapBitmapProc,
-    PointInBitmapProc,
-    RegionInBitmapProc,
-    BitmapToPostscriptProc,
+    BitmapConfigureProc,
+    BitmapDrawProc,
+    BitmapFreeProc,
+    BitmapMapProc,
+    BitmapPointProc,
+    BitmapAreaProc,
+    BitmapPostscriptProc,
 };
 
 /*
@@ -367,7 +368,7 @@ typedef struct {
                                          * because the graph must be redraw
                                          * entirely each time the marker is
                                          * redrawn. */
-    int clipped;                        /* Indicates if the marker is
+    int offScreen;                      /* Indicates if the marker is
                                          * totally clipped by the plotting
                                          * area. */
     unsigned int flags;         
@@ -424,24 +425,24 @@ static Blt_ConfigSpec imageConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static MarkerConfigProc ConfigureImageProc;
-static MarkerCreateProc CreateImageProc;
-static MarkerDrawProc DrawImageProc;
-static MarkerFreeProc FreeImageProc;
-static MarkerMapProc MapImageProc;
-static MarkerPointProc PointInImageProc;
-static MarkerPostscriptProc ImageToPostscriptProc;
-static MarkerRegionProc RegionInImageProc;
+static MarkerConfigProc ImageConfigureProc;
+static MarkerCreateProc ImageCreateProc;
+static MarkerDrawProc ImageDrawProc;
+static MarkerFreeProc ImageFreeProc;
+static MarkerMapProc ImageMapProc;
+static MarkerPointProc ImagePointProc;
+static MarkerPostscriptProc ImagePostscriptProc;
+static MarkerAreaProc ImageAreaProc;
 
 static MarkerClass imageMarkerClass = {
     imageConfigSpecs,
-    ConfigureImageProc,
-    DrawImageProc,
-    FreeImageProc,
-    MapImageProc,
-    PointInImageProc,
-    RegionInImageProc,
-    ImageToPostscriptProc,
+    ImageConfigureProc,
+    ImageDrawProc,
+    ImageFreeProc,
+    ImageMapProc,
+    ImagePointProc,
+    ImageAreaProc,
+    ImagePostscriptProc,
 };
 
 /*
@@ -472,7 +473,7 @@ typedef struct {
                                          * because the graph must be redraw
                                          * entirely each time the marker is
                                          * redrawn. */
-    int clipped;                        /* Indicates if the marker is
+    int offScreen;                      /* Indicates if the marker is
                                          * totally clipped by the plotting
                                          * area. */
     unsigned int flags;         
@@ -547,24 +548,24 @@ static Blt_ConfigSpec lineConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static MarkerConfigProc ConfigureLineProc;
-static MarkerCreateProc CreateLineProc;
-static MarkerDrawProc DrawLineProc;
-static MarkerFreeProc FreeLineProc;
-static MarkerMapProc MapLineProc;
-static MarkerPointProc PointInLineProc;
-static MarkerPostscriptProc LineToPostscriptProc;
-static MarkerRegionProc RegionInLineProc;
+static MarkerConfigProc LineConfigureProc;
+static MarkerCreateProc LineCreateProc;
+static MarkerDrawProc LineDrawProc;
+static MarkerFreeProc LineFreeProc;
+static MarkerMapProc LineMapProc;
+static MarkerPointProc LinePointProc;
+static MarkerPostscriptProc LinePostscriptProc;
+static MarkerAreaProc LineAreaProc;
 
 static MarkerClass lineMarkerClass = {
     lineConfigSpecs,
-    ConfigureLineProc,
-    DrawLineProc,
-    FreeLineProc,
-    MapLineProc,
-    PointInLineProc,
-    RegionInLineProc,
-    LineToPostscriptProc,
+    LineConfigureProc,
+    LineDrawProc,
+    LineFreeProc,
+    LineMapProc,
+    LinePointProc,
+    LineAreaProc,
+    LinePostscriptProc,
 };
 
 /*
@@ -595,8 +596,9 @@ typedef struct {
                                          * because the graph must be redraw
                                          * entirely each time the marker is
                                          * redrawn. */
-    int clipped;                        /* Indicates if the marker is totally
-                                         * clipped by the plotting area. */
+    int offScreen;                      /* Indicates if the marker is
+                                         * totally clipped by the plotting
+                                         * area. */
     unsigned int flags;         
     int xOffset, yOffset;               /* Pixel offset from graph
                                          * position */
@@ -656,6 +658,9 @@ static Blt_ConfigSpec polygonConfigSpecs[] =
         Blt_Offset(PolygonMarker, worldPts), BLT_CONFIG_NULL_OK, &coordsOption},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_MARKER_DASHES, 
         Blt_Offset(PolygonMarker, dashes), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_PIXELS_NNEG, "-dashoffset", "dashOffset", "DashOffset",
+        DEF_MARKER_DASH_OFFSET, Blt_Offset(PolygonMarker, dashes.offset),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
         Blt_Offset(PolygonMarker, elemName), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_MARKER_FILL_COLOR, 
@@ -693,24 +698,171 @@ static Blt_ConfigSpec polygonConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static MarkerConfigProc ConfigurePolygonProc;
-static MarkerCreateProc CreatePolygonProc;
-static MarkerDrawProc DrawPolygonProc;
-static MarkerFreeProc FreePolygonProc;
-static MarkerMapProc MapPolygonProc;
-static MarkerPointProc PointInPolygonProc;
-static MarkerPostscriptProc PolygonToPostscriptProc;
-static MarkerRegionProc RegionInPolygonProc;
+static MarkerConfigProc PolygonConfigureProc;
+static MarkerCreateProc PolygonCreateProc;
+static MarkerDrawProc PolygonDrawProc;
+static MarkerFreeProc PolygonFreeProc;
+static MarkerMapProc PolygonMapProc;
+static MarkerPointProc PolygonPointProc;
+static MarkerPostscriptProc PolygonPostscriptProc;
+static MarkerAreaProc PolygonAreaProc;
 
 static MarkerClass polygonMarkerClass = {
     polygonConfigSpecs,
-    ConfigurePolygonProc,
-    DrawPolygonProc,
-    FreePolygonProc,
-    MapPolygonProc,
-    PointInPolygonProc,
-    RegionInPolygonProc,
-    PolygonToPostscriptProc,
+    PolygonConfigureProc,
+    PolygonDrawProc,
+    PolygonFreeProc,
+    PolygonMapProc,
+    PolygonPointProc,
+    PolygonAreaProc,
+    PolygonPostscriptProc,
+};
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RectangleMarker --
+ *
+ *---------------------------------------------------------------------------
+ */
+typedef struct {
+    GraphObj obj;                       /* Must be first field in
+                                         * marker. */
+    MarkerClass *classPtr;
+    Blt_HashEntry *hashPtr;
+    Blt_ChainLink link;
+    const char *elemName;               /* Element associated with
+                                         * marker. Let's you link a marker
+                                         * to an element. The marker is
+                                         * drawn only if the element is
+                                         * also visible. */
+    Axis2d axes;
+    Point2d *worldPts;                  /* Coordinate array to position
+                                         * marker. */
+    int numWorldPts;                    /* # of points in above array */
+    int drawUnder;                      /* If non-zero, draw the marker
+                                         * underneath any elements. This
+                                         * can be a performance penalty
+                                         * because the graph must be redraw
+                                         * entirely each time the marker is
+                                         * redrawn. */
+    int offScreen;                      /* Indicates if the marker is
+                                         * totally clipped by the plotting
+                                         * area. */
+    unsigned int flags;         
+    int xOffset, yOffset;               /* Pixel offset from graph
+                                         * position */
+    int state;
+    ColorPair outline;
+    ColorPair fill;
+    Pixmap stipple;                     /* Stipple pattern to fill the
+                                         * rectangle. */
+    int lineWidth;                      /* Width of rectangle outline. */
+    int capStyle;
+    int joinStyle;
+    Blt_Dashes dashes;                  /* List of dash values.  Indicates
+                                         * how to draw the dashed line.  If
+                                         * no dash values are provided, or
+                                         * the first value is zero, then
+                                         * the line is drawn solid. */
+    GC outlineGC;                       /* Graphics context to draw the
+                                         * outline of the rectangle. */
+    GC fillGC;                          /* Graphics context to draw the
+                                         * filled rectangle. */
+    Point2d corner1;
+    Point2d corner2;
+    
+    Point2d fillPts[2];                 /* Array of points used
+                                         * to draw the filled
+                                         * rectangle. These points may form a
+                                         * degenerate rectangle after
+                                         * clipping. */
+    Segment2d outlineSegments[4];       /* Array of points.  Represents
+                                         * individual line segments (2
+                                         * points per segment) comprising
+                                         * the outline of the rectangle.
+                                         * The segments may not necessarily
+                                         * be closed or connected after
+                                         * clipping. */
+    int numOutlineSegments;
+    int xor;
+    int xorState;                       /* State of XOR drawing. Indicates
+                                         * if the marker is visible. We
+                                         * have to drawn it again to erase
+                                         * it. */
+} RectangleMarker;
+
+static Blt_ConfigSpec rectangleConfigSpecs[] =
+{
+    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags",
+        DEF_RECTANGLE_TAGS, Blt_Offset(RectangleMarker, obj.tagsObjPtr),
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
+        Blt_Offset(RectangleMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
+        Blt_Offset(RectangleMarker, worldPts), BLT_CONFIG_NULL_OK,
+        &coordsOption},
+    {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_MARKER_DASHES, 
+        Blt_Offset(RectangleMarker, dashes), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_PIXELS_NNEG, "-dashoffset", "dashOffset", "DashOffset",
+        DEF_MARKER_DASH_OFFSET, Blt_Offset(RectangleMarker, dashes.offset),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
+        Blt_Offset(RectangleMarker, elemName), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_MARKER_FILL_COLOR, 
+        Blt_Offset(RectangleMarker, fill), BLT_CONFIG_NULL_OK,
+        &colorPairOption},
+    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
+        Blt_Offset(RectangleMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)HIDDEN},
+    {BLT_CONFIG_JOIN_STYLE, "-join", "join", "Join", DEF_MARKER_JOIN_STYLE, 
+        Blt_Offset(RectangleMarker, joinStyle), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
+        DEF_MARKER_LINE_WIDTH, Blt_Offset(RectangleMarker, lineWidth),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
+        Blt_Offset(RectangleMarker, axes.x), 0, &bltXAxisOption},
+    {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
+        Blt_Offset(RectangleMarker, axes.y), 0, &bltYAxisOption},
+    {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
+        Blt_Offset(RectangleMarker, obj.name), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-outline", "outline", "Outline", 
+        DEF_MARKER_OUTLINE_COLOR, Blt_Offset(RectangleMarker, outline),
+        BLT_CONFIG_NULL_OK, &colorPairOption},
+    {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
+        Blt_Offset(RectangleMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_MARKER_STIPPLE, 
+        Blt_Offset(RectangleMarker, stipple), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
+        Blt_Offset(RectangleMarker, drawUnder), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-xoffset", "xOffset", "XOffset", DEF_MARKER_X_OFFSET, 
+        Blt_Offset(RectangleMarker, xOffset), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BOOLEAN, "-xor", "xor", "Xor", DEF_MARKER_XOR, 
+        Blt_Offset(RectangleMarker, xor), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yoffset", "yOffset", "YOffset", DEF_MARKER_Y_OFFSET, 
+        Blt_Offset(RectangleMarker, yOffset), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
+
+static MarkerConfigProc RectangleConfigureProc;
+static MarkerCreateProc RectangleCreateProc;
+static MarkerDrawProc RectangleDrawProc;
+static MarkerFreeProc RectangleFreeProc;
+static MarkerMapProc RectangleMapProc;
+static MarkerPointProc RectanglePointProc;
+static MarkerPostscriptProc RectanglePostscriptProc;
+static MarkerAreaProc RectangleAreaProc;
+
+static MarkerClass rectangleMarkerClass = {
+    rectangleConfigSpecs,
+    RectangleConfigureProc,
+    RectangleDrawProc,
+    RectangleFreeProc,
+    RectangleMapProc,
+    RectanglePointProc,
+    RectangleAreaProc,
+    RectanglePostscriptProc,
 };
 
 
@@ -742,7 +894,7 @@ typedef struct {
                                          * because the graph must be redraw
                                          * entirely each time the marker is
                                          * redrawn. */
-    int clipped;                        /* Indicates if the marker is
+    int offScreen;                      /* Indicates if the marker is
                                          * totally clipped by the plotting
                                          * area. */
     unsigned int flags;         
@@ -826,24 +978,24 @@ static Blt_ConfigSpec textConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static MarkerConfigProc ConfigureTextProc;
-static MarkerCreateProc CreateTextProc;
-static MarkerDrawProc DrawTextProc;
-static MarkerFreeProc FreeTextProc;
-static MarkerMapProc MapTextProc;
-static MarkerPointProc PointInTextProc;
-static MarkerPostscriptProc TextToPostscriptProc;
-static MarkerRegionProc RegionInTextProc;
+static MarkerConfigProc TextConfigureProc;
+static MarkerCreateProc TextCreateProc;
+static MarkerDrawProc TextDrawProc;
+static MarkerFreeProc TextFreeProc;
+static MarkerMapProc TextMapProc;
+static MarkerPointProc TextPointProc;
+static MarkerPostscriptProc TextPostscriptProc;
+static MarkerAreaProc TextAreaProc;
 
 static MarkerClass textMarkerClass = {
     textConfigSpecs,
-    ConfigureTextProc,
-    DrawTextProc,
-    FreeTextProc,
-    MapTextProc,
-    PointInTextProc,
-    RegionInTextProc,
-    TextToPostscriptProc,
+    TextConfigureProc,
+    TextDrawProc,
+    TextFreeProc,
+    TextMapProc,
+    TextPointProc,
+    TextAreaProc,
+    TextPostscriptProc,
 };
 
 /*
@@ -874,7 +1026,7 @@ typedef struct {
                                          * because the graph must be redraw
                                          * entirely each time the marker is
                                          * redrawn. */
-    int clipped;                        /* Indicates if the marker is
+    int offScreen;                      /* Indicates if the marker is
                                          * totally clipped by the plotting
                                          * area. */
     unsigned int flags;         
@@ -934,24 +1086,24 @@ static Blt_ConfigSpec windowConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static MarkerConfigProc ConfigureWindowProc;
-static MarkerCreateProc CreateWindowProc;
-static MarkerDrawProc DrawWindowProc;
-static MarkerFreeProc FreeWindowProc;
-static MarkerMapProc MapWindowProc;
-static MarkerPointProc PointInWindowProc;
-static MarkerPostscriptProc WindowToPostscriptProc;
-static MarkerRegionProc RegionInWindowProc;
+static MarkerConfigProc WindowConfigureProc;
+static MarkerCreateProc WindowCreateProc;
+static MarkerDrawProc WindowDrawProc;
+static MarkerFreeProc WindowFreeProc;
+static MarkerMapProc WindowMapProc;
+static MarkerPointProc WindowPointProc;
+static MarkerPostscriptProc WindowPostscriptProc;
+static MarkerAreaProc WindowAreaProc;
 
 static MarkerClass windowMarkerClass = {
     windowConfigSpecs,
-    ConfigureWindowProc,
-    DrawWindowProc,
-    FreeWindowProc,
-    MapWindowProc,
-    PointInWindowProc,
-    RegionInWindowProc,
-    WindowToPostscriptProc,
+    WindowConfigureProc,
+    WindowDrawProc,
+    WindowFreeProc,
+    WindowMapProc,
+    WindowPointProc,
+    WindowAreaProc,
+    WindowPostscriptProc,
 };
 
 static Tk_ImageChangedProc ImageChangedProc;
@@ -959,30 +1111,70 @@ static Tk_ImageChangedProc ImageChangedProc;
 
 
 #ifdef notdef
-static MarkerClass rectangleMarkerClass = {
-    rectangleConfigSpecs,
-    ConfigureRectangleProc,
-    DrawRectangleProc,
-    FreeRectangleProc,
-    MapRectangleProc,
-    PointInRectangleProc,
-    RegionInRectangleProc,
-    RectangleToPostscriptProc,
-};
 
 static MarkerClass ovalMarkerClass = {
     ovalConfigSpecs,
-    ConfigureOvalProc,
-    DrawOvalProc,
-    FreeOvalProc,
-    MapOvalProc,
-    PointInOvalProc,
-    RegionInOvalProc,
-    OvalToPostscriptProc,
+    OvalConfigureProc,
+    OvalDrawProc,
+    OvalFreeProc,
+    OvalMapProc,
+    OvalPointProc,
+    OvalAreaProc,
+    OvalPostscriptProc,
 };
 #endif
 
 static Tcl_FreeProc FreeMarker;
+
+#define SWAP(a,b)       { double tmp; tmp = a, a = b, b = tmp; }
+
+static int
+GetMarkerFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
+                 Marker **markerPtrPtr)
+{
+    Blt_HashEntry *hPtr;
+    const char *string;
+
+    string = Tcl_GetString(objPtr);
+    hPtr = Blt_FindHashEntry(&graphPtr->markers.nameTable, string);
+    if (hPtr != NULL) {
+        *markerPtrPtr = Blt_GetHashValue(hPtr);
+        return TCL_OK;
+    }
+    if (interp != NULL) {
+        Tcl_AppendResult(interp, "can't find marker \"", string, 
+             "\" in \"", Tk_PathName(graphPtr->tkwin), (char *)NULL);
+    }
+    return TCL_ERROR;
+}
+
+
+static int
+RenameMarker(Graph *graphPtr, Marker *markerPtr, const char *oldName, 
+             const char *newName)
+{
+    int isNew;
+    Blt_HashEntry *hPtr;
+
+    /* Rename the marker only if no marker already exists by that name */
+    hPtr = Blt_CreateHashEntry(&graphPtr->markers.nameTable, newName, &isNew);
+    if (!isNew) {
+        Tcl_AppendResult(graphPtr->interp, "can't rename marker: \"", newName,
+            "\" already exists", (char *)NULL);
+        return TCL_ERROR;
+    }
+    markerPtr->obj.name = Blt_AssertStrdup(newName);
+    markerPtr->hashPtr = hPtr;
+    Blt_SetHashValue(hPtr, (char *)markerPtr);
+
+    /* Delete the old hash entry */
+    hPtr = Blt_FindHashEntry(&graphPtr->markers.nameTable, oldName);
+    Blt_DeleteHashEntry(&graphPtr->markers.nameTable, hPtr);
+    if (oldName != NULL) {
+        Blt_Free(oldName);
+    }
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -1022,7 +1214,7 @@ FreeMarker(DestroyData data)
  *
  * Results:
  *      Returns 0 is the marker is visible in the plotting area, and 1
- *      otherwise (marker is clipped).
+ *      otherwise (marker is off screen).
  *
  *---------------------------------------------------------------------------
  */
@@ -1031,13 +1223,13 @@ BoxesDontOverlap(Graph *graphPtr, Region2d *extsPtr)
 {
     assert(extsPtr->right >= extsPtr->left);
     assert(extsPtr->bottom >= extsPtr->top);
-    assert(graphPtr->right >= graphPtr->left);
-    assert(graphPtr->bottom >= graphPtr->top);
+    assert(graphPtr->x2 >= graphPtr->x1);
+    assert(graphPtr->y2 >= graphPtr->y1);
 
-    return (((double)graphPtr->right < extsPtr->left) ||
-            ((double)graphPtr->bottom < extsPtr->top) ||
-            (extsPtr->right < (double)graphPtr->left) ||
-            (extsPtr->bottom < (double)graphPtr->top));
+    return (((double)graphPtr->x2 < extsPtr->left) ||
+            ((double)graphPtr->y2 < extsPtr->top) ||
+            (extsPtr->right < (double)graphPtr->x1) ||
+            (extsPtr->bottom < (double)graphPtr->y1));
 }
 
 
@@ -1155,6 +1347,9 @@ ParseCoordinates(Tcl_Interp *interp, Marker *markerPtr, int objc,
     case CID_MARKER_POLYGON:
         minArgs = 6, maxArgs = 0;
         break;
+    case CID_MARKER_RECTANGLE:
+        minArgs = 4, maxArgs = 4;
+        break;
     case CID_MARKER_WINDOW:
     case CID_MARKER_TEXT:
         minArgs = 2, maxArgs = 2;
@@ -1214,7 +1409,7 @@ ParseCoordinates(Tcl_Interp *interp, Marker *markerPtr, int objc,
 
 /*ARGSUSED*/
 static void
-FreeCoordsProc(ClientData clientData, Display *display, char *widgRec,
+CoordsFreeProc(ClientData clientData, Display *display, char *widgRec,
                int offset)
 {
     Marker *markerPtr = (Marker *)widgRec;
@@ -1357,7 +1552,7 @@ Blt_FreeColorPair(ColorPair *pairPtr)
 }
 
 static void
-FreeColorPairProc(ClientData clientData, Display *display, char *widgRec,
+ColorPairFreeProc(ClientData clientData, Display *display, char *widgRec,
                   int offset)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
@@ -1511,7 +1706,7 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
 
 /*ARGSUSED*/
 static void
-FreePictImageProc(ClientData clientData, Display *display, char *widgRec,
+PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
                   int offset)
 {
     ImageMarker *imPtr = (ImageMarker *)widgRec;
@@ -1780,17 +1975,19 @@ CreateMarker(Graph *graphPtr, const char *name, ClassId classId)
     /* Create the new marker based upon the given type */
     switch (classId) {
     case CID_MARKER_BITMAP:
-        markerPtr = CreateBitmapProc();         break;
+        markerPtr = BitmapCreateProc();         break;
     case CID_MARKER_LINE:
-        markerPtr = CreateLineProc();           break;
+        markerPtr = LineCreateProc();           break;
     case CID_MARKER_IMAGE:
-        markerPtr = CreateImageProc();          break;
+        markerPtr = ImageCreateProc();          break;
     case CID_MARKER_TEXT:
-        markerPtr = CreateTextProc();           break;
+        markerPtr = TextCreateProc();           break;
     case CID_MARKER_POLYGON:
-        markerPtr = CreatePolygonProc();        break;
+        markerPtr = PolygonCreateProc();        break;
+    case CID_MARKER_RECTANGLE:
+        markerPtr = RectangleCreateProc();      break;
     case CID_MARKER_WINDOW:
-        markerPtr = CreateWindowProc();         break;
+        markerPtr = WindowCreateProc();         break;
     default:
         return NULL;
     }
@@ -1860,7 +2057,7 @@ DestroyMarker(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigureBitmapProc --
+ * BitmapConfigureProc --
  *
  *      This procedure is called to process an objv/objc list, plus the Tk
  *      option database, in order to configure (or reconfigure) a bitmap
@@ -1879,7 +2076,7 @@ DestroyMarker(Marker *markerPtr)
  */
 /* ARGSUSED */
 static int
-ConfigureBitmapProc(Marker *markerPtr)
+BitmapConfigureProc(Marker *markerPtr)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
@@ -1960,7 +2157,7 @@ PrintPolyPoint(char *mesg, Point2d *points, int numPoints)
 /*
  *---------------------------------------------------------------------------
  *
- * MapBitmapProc --
+ * BitmapMapProc --
  *
  *      This procedure gets called each time the layout of the graph
  *      changes.  The x, y window coordinates of the bitmap marker are
@@ -1981,7 +2178,7 @@ PrintPolyPoint(char *mesg, Point2d *points, int numPoints)
  *---------------------------------------------------------------------------
  */
 static void
-MapBitmapProc(Marker *markerPtr)
+BitmapMapProc(Marker *markerPtr)
 {
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
     Region2d extents;
@@ -2047,8 +2244,8 @@ MapBitmapProc(Marker *markerPtr)
     extents.top    = anchorPt.y;
     extents.right  = anchorPt.x + destWidth - 1;
     extents.bottom = anchorPt.y + destHeight - 1;
-    markerPtr->clipped = BoxesDontOverlap(graphPtr, &extents);
-    if (markerPtr->clipped) {
+    markerPtr->offScreen = BoxesDontOverlap(graphPtr, &extents);
+    if (markerPtr->offScreen) {
         return;                         /* Bitmap is offscreen. Don't
                                          * generate rotated or scaled
                                          * bitmaps. */
@@ -2064,18 +2261,18 @@ MapBitmapProc(Marker *markerPtr)
         double left, right, top, bottom;
 
         /* Ignore parts of the bitmap outside of the plot area. */
-        left   = MAX(graphPtr->left, extents.left);
-        right  = MIN(graphPtr->right, extents.right);
-        top    = MAX(graphPtr->top, extents.top);
-        bottom = MIN(graphPtr->bottom, extents.bottom);
+        left   = MAX(graphPtr->x1, extents.left);
+        right  = MIN(graphPtr->x2, extents.right);
+        top    = MAX(graphPtr->y1, extents.top);
+        bottom = MIN(graphPtr->y2, extents.bottom);
 
         /* Determine the portion of the scaled bitmap to display. */
         regionX = regionY = 0;
-        if (graphPtr->left > extents.left) {
-            regionX = (int)(graphPtr->left - extents.left);
+        if (graphPtr->x1 > extents.left) {
+            regionX = (int)(graphPtr->x1 - extents.left);
         }
-        if (graphPtr->top > extents.top) {
-            regionY = (int)(graphPtr->top - extents.top);
+        if (graphPtr->y1 > extents.top) {
+            regionY = (int)(graphPtr->y1 - extents.top);
         }           
         regionWidth = (int)(right - left) + 1;
         regionHeight = (int)(bottom - top) + 1;
@@ -2135,7 +2332,7 @@ MapBitmapProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * PointInBitmapProc --
+ * BitmapPointProc --
  *
  *      Indicates if the given point is over the bitmap marker.  The area
  *      of the bitmap is the rectangle.
@@ -2146,7 +2343,7 @@ MapBitmapProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static int
-PointInBitmapProc(Marker *markerPtr, Point2d *samplePtr)
+BitmapPointProc(Marker *markerPtr, Point2d *samplePtr)
 {
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
 
@@ -2177,12 +2374,12 @@ PointInBitmapProc(Marker *markerPtr, Point2d *samplePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * RegionInBitmapProc --
+ * BitmapAreaProc --
  *
  *---------------------------------------------------------------------------
  */
 static int
-RegionInBitmapProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+BitmapAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 {
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
 
@@ -2219,7 +2416,7 @@ RegionInBitmapProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawBitmapProc --
+ * BitmapDrawProc --
  *
  *      Draws the bitmap marker that have a transparent of filled background.
  *
@@ -2233,7 +2430,7 @@ RegionInBitmapProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
  *---------------------------------------------------------------------------
  */
 static void
-DrawBitmapProc(Marker *markerPtr, Drawable drawable)
+BitmapDrawProc(Marker *markerPtr, Drawable drawable)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
@@ -2277,7 +2474,7 @@ DrawBitmapProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * BitmapToPostscriptProc --
+ * BitmapPostscriptProc --
  *
  *      Generates PostScript to print a bitmap marker.
  *
@@ -2287,7 +2484,7 @@ DrawBitmapProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-BitmapToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+BitmapPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
@@ -2320,7 +2517,7 @@ BitmapToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 /*
  *---------------------------------------------------------------------------
  *
- * FreeBitmapProc --
+ * BitmapFreeProc --
  *
  *      Releases the memory and attributes of the bitmap marker.
  *
@@ -2334,7 +2531,7 @@ BitmapToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *---------------------------------------------------------------------------
  */
 static void
-FreeBitmapProc(Marker *markerPtr)
+BitmapFreeProc(Marker *markerPtr)
 {
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
     Graph *graphPtr = markerPtr->obj.graphPtr;
@@ -2353,7 +2550,7 @@ FreeBitmapProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * CreateBitmapProc --
+ * BitmapCreateProc --
  *
  *      Allocate memory and initialize methods for the new bitmap marker.
  *
@@ -2366,7 +2563,7 @@ FreeBitmapProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static Marker *
-CreateBitmapProc(void)
+BitmapCreateProc(void)
 {
     BitmapMarker *bmPtr;
 
@@ -2379,7 +2576,7 @@ CreateBitmapProc(void)
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigureImageProc --
+ * ImageConfigureProc --
  *
  *      This procedure is called to process an objv/objc list, plus the Tk
  *      option database, in order to configure (or reconfigure) a image
@@ -2397,7 +2594,7 @@ CreateBitmapProc(void)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureImageProc(Marker *markerPtr)
+ImageConfigureProc(Marker *markerPtr)
 {
     ImageMarker *imPtr = (ImageMarker *)markerPtr;
     Graph *graphPtr = markerPtr->obj.graphPtr;
@@ -2426,7 +2623,7 @@ ConfigureImageProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * MapImageProc --
+ * ImageMapProc --
  *
  *      This procedure gets called each time the layout of the graph
  *      changes.  The x, y window coordinates of the image marker are saved
@@ -2447,7 +2644,7 @@ ConfigureImageProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static void
-MapImageProc(Marker *markerPtr)
+ImageMapProc(Marker *markerPtr)
 {
     Region2d extents;
     Graph *graphPtr;
@@ -2474,7 +2671,7 @@ MapImageProc(Marker *markerPtr)
     imPtr->height = srcHeight = Blt_Picture_Height(imPtr->picture);
 
     if ((srcWidth == 0) || (srcHeight == 0)) {
-        markerPtr->clipped = TRUE;
+        markerPtr->offScreen = TRUE;
         return;                         /* Empty image. */
     }
     if (markerPtr->numWorldPts > 1) {
@@ -2510,8 +2707,8 @@ MapImageProc(Marker *markerPtr)
     extents.right  = anchorPt.x + newWidth - 1;
     extents.bottom = anchorPt.y + newHeight - 1;
 
-    markerPtr->clipped = BoxesDontOverlap(graphPtr, &extents);
-    if (markerPtr->clipped) {
+    markerPtr->offScreen = BoxesDontOverlap(graphPtr, &extents);
+    if (markerPtr->offScreen) {
         return;                         /* Image is offscreen. Don't
                                          * generate rotated or scaled
                                          * images. */
@@ -2519,21 +2716,21 @@ MapImageProc(Marker *markerPtr)
 
     /* Determine the extents of the subimage inside of the destination
      * image. */
-    left =   MAX((int)extents.left, graphPtr->left);
-    top =    MAX((int)extents.top, graphPtr->top);
-    right =  MIN((int)extents.right, graphPtr->right);
-    bottom = MIN((int)extents.bottom, graphPtr->bottom);
+    left =   MAX((int)extents.left, graphPtr->x1);
+    top =    MAX((int)extents.top, graphPtr->y1);
+    right =  MIN((int)extents.right, graphPtr->x2);
+    bottom = MIN((int)extents.bottom, graphPtr->y2);
     
     /* Reset image location and coordinates to that of the region */
     anchorPt.x = left;
     anchorPt.y = top;
     
     x = y = 0;
-    if (graphPtr->left > (int)extents.left) {
-        x = graphPtr->left - (int)extents.left;
+    if (graphPtr->x1 > (int)extents.left) {
+        x = graphPtr->x1 - (int)extents.left;
     } 
-    if (graphPtr->top > (int)extents.top) {
-        y = graphPtr->top - (int)extents.top;
+    if (graphPtr->y1 > (int)extents.top) {
+        y = graphPtr->y1 - (int)extents.top;
     } 
     w  = (int)(right - left + 1);
     h = (int)(bottom - top + 1);
@@ -2558,7 +2755,7 @@ MapImageProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * PointInWindowProc --
+ * WindowPointProc --
  *
  *      Indicates if the given point is over the window marker.  The area
  *      of the window is the rectangle.
@@ -2569,7 +2766,7 @@ MapImageProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static int
-PointInImageProc(Marker *markerPtr, Point2d *samplePtr)
+ImagePointProc(Marker *markerPtr, Point2d *samplePtr)
 {
     ImageMarker *imPtr = (ImageMarker *)markerPtr;
     double left, right, top, bottom;
@@ -2586,12 +2783,12 @@ PointInImageProc(Marker *markerPtr, Point2d *samplePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * RegionInImageProc --
+ * ImageAreaProc --
  *
  *---------------------------------------------------------------------------
  */
 static int
-RegionInImageProc(Marker *markerPtr, Region2d *regPtr, int enclosed)
+ImageAreaProc(Marker *markerPtr, Region2d *regPtr, int enclosed)
 {
     ImageMarker *imPtr = (ImageMarker *)markerPtr;
 
@@ -2615,7 +2812,7 @@ RegionInImageProc(Marker *markerPtr, Region2d *regPtr, int enclosed)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawImageProc --
+ * ImageDrawProc --
  *
  *      This procedure is invoked to draw a image marker.
  *
@@ -2629,7 +2826,7 @@ RegionInImageProc(Marker *markerPtr, Region2d *regPtr, int enclosed)
  *---------------------------------------------------------------------------
  */
 static void
-DrawImageProc(Marker *markerPtr, Drawable drawable)
+ImageDrawProc(Marker *markerPtr, Drawable drawable)
 {
     ImageMarker *imPtr = (ImageMarker *)markerPtr;
     Blt_Picture picture;
@@ -2645,7 +2842,7 @@ DrawImageProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * ImageToPostscriptProc --
+ * ImagePostscriptProc --
  *
  *      This procedure is invoked to print a image marker.
  *
@@ -2655,7 +2852,7 @@ DrawImageProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-ImageToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+ImagePostscriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     ImageMarker *imPtr = (ImageMarker *)markerPtr;
     Blt_Picture picture;
@@ -2669,7 +2866,7 @@ ImageToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 /*
  *---------------------------------------------------------------------------
  *
- * FreeImageProc --
+ * ImageFreeProc --
  *
  *      Destroys the structure containing the attributes of the image
  *      marker.
@@ -2684,7 +2881,7 @@ ImageToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *---------------------------------------------------------------------------
  */
 static void
-FreeImageProc(Marker *markerPtr)
+ImageFreeProc(Marker *markerPtr)
 {
     ImageMarker *imPtr = (ImageMarker *)markerPtr;
     Graph *graphPtr = markerPtr->obj.graphPtr;
@@ -2703,7 +2900,7 @@ FreeImageProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * CreateImageProc --
+ * ImageCreateProc --
  *
  *      Allocate memory and initialize methods for the new image marker.
  *
@@ -2716,7 +2913,7 @@ FreeImageProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static Marker *
-CreateImageProc(void)
+ImageCreateProc(void)
 {
     ImageMarker *imPtr;
 
@@ -2728,7 +2925,7 @@ CreateImageProc(void)
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigureTextProc --
+ * TextConfigureProc --
  *
  *      This procedure is called to process an objv/objc list, plus the Tk
  *      option database, in order to configure (or reconfigure) a text
@@ -2746,7 +2943,7 @@ CreateImageProc(void)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureTextProc(Marker *markerPtr)
+TextConfigureProc(Marker *markerPtr)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     TextMarker *tmPtr = (TextMarker *)markerPtr;
@@ -2780,7 +2977,7 @@ ConfigureTextProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * MapTextProc --
+ * TextMapProc --
  *
  *      Calculate the layout position for a text marker.  Positional
  *      information is saved in the marker.  If the text is rotated, a
@@ -2797,7 +2994,7 @@ ConfigureTextProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static void
-MapTextProc(Marker *markerPtr)
+TextMapProc(Marker *markerPtr)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     TextMarker *tmPtr = (TextMarker *)markerPtr;
@@ -2834,13 +3031,13 @@ MapTextProc(Marker *markerPtr)
     extents.top = anchorPt.y;
     extents.right = anchorPt.x + tmPtr->width - 1;
     extents.bottom = anchorPt.y + tmPtr->height - 1;
-    markerPtr->clipped = BoxesDontOverlap(graphPtr, &extents);
+    markerPtr->offScreen = BoxesDontOverlap(graphPtr, &extents);
     tmPtr->anchorPt = anchorPt;
 
 }
 
 static int
-PointInTextProc(Marker *markerPtr, Point2d *samplePtr)
+TextPointProc(Marker *markerPtr, Point2d *samplePtr)
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
 
@@ -2870,12 +3067,12 @@ PointInTextProc(Marker *markerPtr, Point2d *samplePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * RegionInTextProc --
+ * TextAreaProc --
  *
  *---------------------------------------------------------------------------
  */
 static int
-RegionInTextProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+TextAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
 
@@ -2911,7 +3108,7 @@ RegionInTextProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawTextProc --
+ * TextDrawProc --
  *
  *      Draws the text marker on the graph.
  *
@@ -2924,7 +3121,7 @@ RegionInTextProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
  *---------------------------------------------------------------------------
  */
 static void
-DrawTextProc(Marker *markerPtr, Drawable drawable) 
+TextDrawProc(Marker *markerPtr, Drawable drawable) 
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
     Graph *graphPtr = markerPtr->obj.graphPtr;
@@ -2956,7 +3153,7 @@ DrawTextProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * TextToPostscriptProc --
+ * TextPostscriptProc --
  *
  *      Outputs PostScript commands to draw a text marker at a given x,y
  *      coordinate, rotation, anchor, and font.
@@ -2970,7 +3167,7 @@ DrawTextProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-TextToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+TextPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
 
@@ -2999,7 +3196,7 @@ TextToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 /*
  *---------------------------------------------------------------------------
  *
- * FreeTextProc --
+ * TextFreeProc --
  *
  *      Destroys the structure containing the attributes of the text
  *      marker.
@@ -3015,7 +3212,7 @@ TextToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *---------------------------------------------------------------------------
  */
 static void
-FreeTextProc(Marker *markerPtr)
+TextFreeProc(Marker *markerPtr)
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
     Graph *graphPtr = markerPtr->obj.graphPtr;
@@ -3026,7 +3223,7 @@ FreeTextProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
 
- * CreateTextProc --
+ * TextCreateProc --
  *
  *      Allocate memory and initialize methods for the new text marker.
  *
@@ -3039,7 +3236,7 @@ FreeTextProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static Marker *
-CreateTextProc(void)
+TextCreateProc(void)
 {
     TextMarker *tmPtr;
 
@@ -3068,7 +3265,7 @@ static Tk_GeomMgr winMarkerMgrInfo =
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigureWindowProc --
+ * WindowConfigureProc --
  *
  *      This procedure is called to process an objv/objc list, plus the Tk
  *      option database, in order to configure (or reconfigure) a window
@@ -3086,7 +3283,7 @@ static Tk_GeomMgr winMarkerMgrInfo =
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureWindowProc(Marker *markerPtr)
+WindowConfigureProc(Marker *markerPtr)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
@@ -3129,7 +3326,7 @@ ConfigureWindowProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * MapWindowProc --
+ * WindowMapProc --
  *
  *      Calculate the layout position for a window marker.  Positional
  *      information is saved in the marker.
@@ -3140,7 +3337,7 @@ ConfigureWindowProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static void
-MapWindowProc(Marker *markerPtr)
+WindowMapProc(Marker *markerPtr)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
     Graph *graphPtr = markerPtr->obj.graphPtr;
@@ -3176,18 +3373,18 @@ MapWindowProc(Marker *markerPtr)
     extents.top = wmPtr->anchorPt.y;
     extents.right = wmPtr->anchorPt.x + wmPtr->width - 1;
     extents.bottom = wmPtr->anchorPt.y + wmPtr->height - 1;
-    markerPtr->clipped = BoxesDontOverlap(graphPtr, &extents);
+    markerPtr->offScreen = BoxesDontOverlap(graphPtr, &extents);
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * PointInWindowProc --
+ * WindowPointProc --
  *
  *---------------------------------------------------------------------------
  */
 static int
-PointInWindowProc(Marker *markerPtr, Point2d *samplePtr)
+WindowPointProc(Marker *markerPtr, Point2d *samplePtr)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -3200,12 +3397,12 @@ PointInWindowProc(Marker *markerPtr, Point2d *samplePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * RegionInWindowProc --
+ * WindowAreaProc --
  *
  *---------------------------------------------------------------------------
  */
 static int
-RegionInWindowProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+WindowAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -3227,13 +3424,13 @@ RegionInWindowProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawWindowProc --
+ * WindowDrawProc --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static void
-DrawWindowProc(Marker *markerPtr, Drawable drawable)
+WindowDrawProc(Marker *markerPtr, Drawable drawable)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -3255,12 +3452,12 @@ DrawWindowProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * WindowToPostscriptProc --
+ * WindowPostscriptProc --
  *
  *---------------------------------------------------------------------------
  */
 static void
-WindowToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+WindowPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -3276,7 +3473,7 @@ WindowToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 /*
  *---------------------------------------------------------------------------
  *
- * FreeWindowProc --
+ * WindowFreeProc --
  *
  *      Destroys the structure containing the attributes of the window
  *      marker.
@@ -3290,7 +3487,7 @@ WindowToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *---------------------------------------------------------------------------
  */
 static void
-FreeWindowProc(Marker *markerPtr)
+WindowFreeProc(Marker *markerPtr)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -3305,7 +3502,7 @@ FreeWindowProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * CreateWindowProc --
+ * WindowCreateProc --
  *
  *      Allocate memory and initialize methods for the new window marker.
  *
@@ -3318,7 +3515,7 @@ FreeWindowProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static Marker *
-CreateWindowProc(void)
+WindowCreateProc(void)
 {
     WindowMarker *wmPtr;
 
@@ -3423,7 +3620,66 @@ ChildCustodyProc(ClientData clientData, Tk_Window tkwin)
 /*
  *---------------------------------------------------------------------------
  *
- * MapLineProc --
+ * LineFreeProc --
+ *
+ *      Destroys the structure and attributes of a line marker.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      Line attributes (GCs, colors, stipple, etc) get released.  Memory is
+ *      deallocated, X resources are freed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+LineFreeProc(Marker *markerPtr)
+{
+    LineMarker *lmPtr = (LineMarker *)markerPtr;
+    Graph *graphPtr = markerPtr->obj.graphPtr;
+
+    if (lmPtr->gc != NULL) {
+        Blt_FreePrivateGC(graphPtr->display, lmPtr->gc);
+    }
+    if (lmPtr->segments != NULL) {
+        Blt_Free(lmPtr->segments);
+    }
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LineCreateProc --
+ *
+ *      Allocate memory and initialize methods for a new line marker.
+ *
+ * Results:
+ *      The pointer to the newly allocated marker structure is returned.
+ *
+ * Side effects:
+ *      Memory is allocated for the line marker structure.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Marker *
+LineCreateProc(void)
+{
+    LineMarker *lmPtr;
+
+    lmPtr = Blt_AssertCalloc(1, sizeof(LineMarker));
+    lmPtr->classPtr = &lineMarkerClass;
+    lmPtr->xor = FALSE;
+    lmPtr->capStyle = CapButt;
+    lmPtr->joinStyle = JoinMiter;
+    return (Marker *)lmPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LineMapProc --
  *
  *      Calculate the layout position for a line marker.  Positional
  *      information is saved in the marker.  The line positions are stored
@@ -3435,7 +3691,7 @@ ChildCustodyProc(ClientData clientData, Tk_Window tkwin)
  *---------------------------------------------------------------------------
  */
 static void
-MapLineProc(Marker *markerPtr)
+LineMapProc(Marker *markerPtr)
 {
     LineMarker *lmPtr = (LineMarker *)markerPtr;
     Point2d *srcPtr, *pend;
@@ -3482,11 +3738,11 @@ MapLineProc(Marker *markerPtr)
     }
     lmPtr->numSegments = segPtr - segments;
     lmPtr->segments = segments;
-    markerPtr->clipped = (lmPtr->numSegments == 0);
+    markerPtr->offScreen = (lmPtr->numSegments == 0);
 }
 
 static int
-PointInLineProc(Marker *markerPtr, Point2d *samplePtr)
+LinePointProc(Marker *markerPtr, Point2d *samplePtr)
 {
     LineMarker *lmPtr = (LineMarker *)markerPtr;
 
@@ -3497,12 +3753,12 @@ PointInLineProc(Marker *markerPtr, Point2d *samplePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * RegionInLineProc --
+ * LineAreaProc --
  *
  *---------------------------------------------------------------------------
  */
 static int
-RegionInLineProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+LineAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 {
     if (markerPtr->numWorldPts < 2) {
         return FALSE;
@@ -3545,12 +3801,12 @@ RegionInLineProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawLineProc --
+ * LineDrawProc --
  *
  *---------------------------------------------------------------------------
  */
 static void
-DrawLineProc(Marker *markerPtr, Drawable drawable)
+LineDrawProc(Marker *markerPtr, Drawable drawable)
 {
     LineMarker *lmPtr = (LineMarker *)markerPtr;
 
@@ -3568,7 +3824,7 @@ DrawLineProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigureLineProc --
+ * LineConfigureProc --
  *
  *      This procedure is called to process an objv/objc list, plus the Tk
  *      option database, in order to configure (or reconfigure) a line
@@ -3587,7 +3843,7 @@ DrawLineProc(Marker *markerPtr, Drawable drawable)
  */
 /*ARGSUSED*/
 static int
-ConfigureLineProc(Marker *markerPtr)
+LineConfigureProc(Marker *markerPtr)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     LineMarker *lmPtr = (LineMarker *)markerPtr;
@@ -3629,7 +3885,7 @@ ConfigureLineProc(Marker *markerPtr)
         }
         gcValues.foreground ^= pixel;
         if (drawable != None) {
-            DrawLineProc(markerPtr, drawable);
+            LineDrawProc(markerPtr, drawable);
         }
     }
     newGC = Blt_GetPrivateGC(graphPtr->tkwin, gcMask, &gcValues);
@@ -3642,8 +3898,8 @@ ConfigureLineProc(Marker *markerPtr)
     lmPtr->gc = newGC;
     if (lmPtr->xor) {
         if (drawable != None) {
-            MapLineProc(markerPtr);
-            DrawLineProc(markerPtr, drawable);
+            LineMapProc(markerPtr);
+            LineDrawProc(markerPtr, drawable);
         }
         return TCL_OK;
     }
@@ -3658,7 +3914,7 @@ ConfigureLineProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * LineToPostscriptProc --
+ * LinePostscriptProc --
  *
  *      Prints postscript commands to display the connect line.  Dashed
  *      lines need to be handled specially, especially if a background
@@ -3674,7 +3930,7 @@ ConfigureLineProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static void
-LineToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+LinePostscriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     LineMarker *lmPtr = (LineMarker *)markerPtr;
 
@@ -3698,69 +3954,192 @@ LineToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
     }
 }
 
+
 /*
  *---------------------------------------------------------------------------
  *
- * FreeLineProc --
+ * PolygonFreeProc --
  *
- *      Destroys the structure and attributes of a line marker.
+ *      Release memory and resources allocated for the polygon element.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      Line attributes (GCs, colors, stipple, etc) get released.  Memory is
- *      deallocated, X resources are freed.
+ *      Everything associated with the polygon element is freed up.
  *
  *---------------------------------------------------------------------------
  */
 static void
-FreeLineProc(Marker *markerPtr)
+PolygonFreeProc(Marker *markerPtr)
 {
-    LineMarker *lmPtr = (LineMarker *)markerPtr;
+    PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
     Graph *graphPtr = markerPtr->obj.graphPtr;
 
-    if (lmPtr->gc != NULL) {
-        Blt_FreePrivateGC(graphPtr->display, lmPtr->gc);
+    if (pmPtr->fillGC != NULL) {
+        Tk_FreeGC(graphPtr->display, pmPtr->fillGC);
     }
-    if (lmPtr->segments != NULL) {
-        Blt_Free(lmPtr->segments);
+    if (pmPtr->outlineGC != NULL) {
+        Blt_FreePrivateGC(graphPtr->display, pmPtr->outlineGC);
+    }
+    if (pmPtr->fillPts != NULL) {
+        Blt_Free(pmPtr->fillPts);
+    }
+    if (pmPtr->outlinePts != NULL) {
+        Blt_Free(pmPtr->outlinePts);
+    }
+    if (pmPtr->screenPts != NULL) {
+        Blt_Free(pmPtr->screenPts);
     }
 }
-
 
 /*
  *---------------------------------------------------------------------------
  *
- * CreateLineProc --
+ * PolygonCreateProc --
  *
- *      Allocate memory and initialize methods for a new line marker.
+ *      Allocate memory and initialize methods for the new polygon marker.
  *
  * Results:
  *      The pointer to the newly allocated marker structure is returned.
  *
  * Side effects:
- *      Memory is allocated for the line marker structure.
+ *      Memory is allocated for the polygon marker structure.
  *
- *---------------------------------------------------------------------------
+ * -------------------------------------------------------------------------- 
  */
 static Marker *
-CreateLineProc(void)
+PolygonCreateProc(void)
 {
-    LineMarker *lmPtr;
+    PolygonMarker *pmPtr;
 
-    lmPtr = Blt_AssertCalloc(1, sizeof(LineMarker));
-    lmPtr->classPtr = &lineMarkerClass;
-    lmPtr->xor = FALSE;
-    lmPtr->capStyle = CapButt;
-    lmPtr->joinStyle = JoinMiter;
-    return (Marker *)lmPtr;
+    pmPtr = Blt_AssertCalloc(1, sizeof(PolygonMarker));
+    pmPtr->classPtr = &polygonMarkerClass;
+    pmPtr->capStyle = CapButt;
+    pmPtr->joinStyle = JoinMiter;
+    return (Marker *)pmPtr;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * MapPolygonProc --
+ * PolygonConfigureProc --
+ *
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) a polygon
+ *      marker.
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ * Side effects:
+ *      Configuration information, such as polygon color, dashes,
+ *      fillstyle, etc. get set for markerPtr; old resources get freed, if
+ *      there were any.  The marker is eventually redisplayed.
+ *
+ * -------------------------------------------------------------------------- 
+ */
+/*ARGSUSED*/
+static int
+PolygonConfigureProc(Marker *markerPtr)
+{
+    Graph *graphPtr = markerPtr->obj.graphPtr;
+    PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
+    GC newGC;
+    XGCValues gcValues;
+    unsigned long gcMask;
+    Drawable drawable;
+
+    drawable = Tk_WindowId(graphPtr->tkwin);
+    gcMask = (GCLineWidth | GCLineStyle);
+    if (pmPtr->outline.fgColor != NULL) {
+        gcMask |= GCForeground;
+        gcValues.foreground = pmPtr->outline.fgColor->pixel;
+    }
+    if (pmPtr->outline.bgColor != NULL) {
+        gcMask |= GCBackground;
+        gcValues.background = pmPtr->outline.bgColor->pixel;
+    }
+    gcMask |= (GCCapStyle | GCJoinStyle);
+    gcValues.cap_style = pmPtr->capStyle;
+    gcValues.join_style = pmPtr->joinStyle;
+    gcValues.line_style = LineSolid;
+    gcValues.dash_offset = 0;
+    gcValues.line_width = LineWidth(pmPtr->lineWidth);
+    if (LineIsDashed(pmPtr->dashes)) {
+        gcValues.line_style = (pmPtr->outline.bgColor == NULL)
+            ? LineOnOffDash : LineDoubleDash;
+    }
+    if (pmPtr->xor) {
+        unsigned long pixel;
+        gcValues.function = GXxor;
+
+        gcMask |= GCFunction;
+        if (graphPtr->plotBg == NULL) {
+            /* The graph's color option may not have been set yet */
+            pixel = WhitePixelOfScreen(Tk_Screen(graphPtr->tkwin));
+        } else {
+            pixel = Blt_Bg_BorderColor(graphPtr->plotBg)->pixel;
+        }
+        if (gcMask & GCBackground) {
+            gcValues.background ^= pixel;
+        }
+        gcValues.foreground ^= pixel;
+        if (drawable != None) {
+            PolygonDrawProc(markerPtr, drawable);
+        }
+    }
+    newGC = Blt_GetPrivateGC(graphPtr->tkwin, gcMask, &gcValues);
+    if (LineIsDashed(pmPtr->dashes)) {
+        Blt_SetDashes(graphPtr->display, newGC, &pmPtr->dashes);
+    }
+    if (pmPtr->outlineGC != NULL) {
+        Blt_FreePrivateGC(graphPtr->display, pmPtr->outlineGC);
+    }
+    pmPtr->outlineGC = newGC;
+
+    gcMask = 0;
+    if (pmPtr->fill.fgColor != NULL) {
+        gcMask |= GCForeground;
+        gcValues.foreground = pmPtr->fill.fgColor->pixel;
+    }
+    if (pmPtr->fill.bgColor != NULL) {
+        gcMask |= GCBackground;
+        gcValues.background = pmPtr->fill.bgColor->pixel;
+    }
+    if (pmPtr->stipple != None) {
+        gcValues.stipple = pmPtr->stipple;
+        gcValues.fill_style = (pmPtr->fill.bgColor != NULL)
+            ? FillOpaqueStippled : FillStippled;
+        gcMask |= (GCStipple | GCFillStyle);
+    }
+    newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
+    if (pmPtr->fillGC != NULL) {
+        Tk_FreeGC(graphPtr->display, pmPtr->fillGC);
+    }
+    pmPtr->fillGC = newGC;
+
+    if ((gcMask == 0) && !(graphPtr->flags & RESET_AXES) && (pmPtr->xor)) {
+        if (drawable != None) {
+            PolygonMapProc(markerPtr);
+            PolygonDrawProc(markerPtr, drawable);
+        }
+        return TCL_OK;
+    }
+    markerPtr->flags |= MAP_ITEM;
+    if (markerPtr->drawUnder) {
+        graphPtr->flags |= CACHE_DIRTY;
+    }
+    graphPtr->flags |= RESET_WORLD;
+    Blt_EventuallyRedrawGraph(graphPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PolygonMapProc --
  *
  *      Calculate the layout position for a polygon marker.  Positional
  *      information is saved in the polygon in an array of points
@@ -3772,7 +4151,7 @@ CreateLineProc(void)
  *---------------------------------------------------------------------------
  */
 static void
-MapPolygonProc(Marker *markerPtr)
+PolygonMapProc(Marker *markerPtr)
 {
     PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
     Point2d *screenPts;
@@ -3817,7 +4196,7 @@ MapPolygonProc(Marker *markerPtr)
         *dp = screenPts[0];
     }
     GraphExtents(markerPtr, &extents);
-    markerPtr->clipped = TRUE;
+    markerPtr->offScreen = TRUE;
     if (pmPtr->fill.fgColor != NULL) {  /* Polygon fill required. */
         Point2d *fillPts;
         int n;
@@ -3830,7 +4209,7 @@ MapPolygonProc(Marker *markerPtr)
         } else {
             pmPtr->numFillPts = n;
             pmPtr->fillPts = fillPts;
-            markerPtr->clipped = FALSE;
+            markerPtr->offScreen = FALSE;
         }
     }
     if ((pmPtr->outline.fgColor != NULL) && (pmPtr->lineWidth > 0)) { 
@@ -3862,41 +4241,10 @@ MapPolygonProc(Marker *markerPtr)
         pmPtr->numOutlinePts = segPtr - outlinePts;
         pmPtr->outlinePts = outlinePts;
         if (pmPtr->numOutlinePts > 0) {
-            markerPtr->clipped = FALSE;
+            markerPtr->offScreen = FALSE;
         }
     }
     pmPtr->screenPts = screenPts;
-}
-
-static int
-PointInPolygonProc(Marker *markerPtr, Point2d *samplePtr)
-{
-    PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
-
-    if ((markerPtr->numWorldPts >= 3) && (pmPtr->screenPts != NULL)) {
-        return Blt_PointInPolygon(samplePtr, pmPtr->screenPts, 
-                markerPtr->numWorldPts + 1);
-    }
-    return FALSE;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * RegionInPolygonProc --
- *
- *---------------------------------------------------------------------------
- */
-static int
-RegionInPolygonProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
-{
-    PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
-    
-    if ((markerPtr->numWorldPts >= 3) && (pmPtr->screenPts != NULL)) {
-        return Blt_RegionInPolygon(extsPtr, pmPtr->screenPts, 
-                markerPtr->numWorldPts, enclosed);
-    }
-    return FALSE;
 }
 
 #ifdef notdef
@@ -3986,7 +4334,7 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable,
 #endif
 
 static void
-DrawPolygonProc(Marker *markerPtr, Drawable drawable)
+PolygonDrawProc(Marker *markerPtr, Drawable drawable)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
@@ -4021,7 +4369,7 @@ DrawPolygonProc(Marker *markerPtr, Drawable drawable)
 
 
 static void
-PolygonToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+PolygonPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
@@ -4085,10 +4433,105 @@ PolygonToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigurePolygonProc --
+ * PolygonPointProc --
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PolygonPointProc(Marker *markerPtr, Point2d *samplePtr)
+{
+    PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
+
+    if ((markerPtr->numWorldPts >= 3) && (pmPtr->screenPts != NULL)) {
+        return Blt_PointInPolygon(samplePtr, pmPtr->screenPts, 
+                markerPtr->numWorldPts + 1);
+    }
+    return FALSE;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PolygonAreaProc --
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PolygonAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+{
+    PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
+    
+    if ((markerPtr->numWorldPts >= 3) && (pmPtr->screenPts != NULL)) {
+        return Blt_RegionInPolygon(extsPtr, pmPtr->screenPts, 
+                markerPtr->numWorldPts, enclosed);
+    }
+    return FALSE;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RectangleFreeProc --
+ *
+ *      Release memory and resources allocated for the rectangle element.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      Everything associated with the rectangle element is freed up.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RectangleFreeProc(Marker *basePtr)
+{
+    RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
+    Graph *graphPtr = basePtr->obj.graphPtr;
+
+    if (markerPtr->fillGC != NULL) {
+        Tk_FreeGC(graphPtr->display, markerPtr->fillGC);
+    }
+    if (markerPtr->outlineGC != NULL) {
+        Blt_FreePrivateGC(graphPtr->display, markerPtr->outlineGC);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RectangleCreateProc --
+ *
+ *      Allocate memory and initialize methods for the new rectangle marker.
+ *
+ * Results:
+ *      The pointer to the newly allocated marker structure is returned.
+ *
+ * Side effects:
+ *      Memory is allocated for the rectangle marker structure.
+ *
+ * -------------------------------------------------------------------------- 
+ */
+static Marker *
+RectangleCreateProc(void)
+{
+    RectangleMarker *markerPtr;
+
+    markerPtr = Blt_AssertCalloc(1, sizeof(RectangleMarker));
+    markerPtr->classPtr = &rectangleMarkerClass;
+    markerPtr->capStyle = CapButt;
+    markerPtr->joinStyle = JoinMiter;
+    return (Marker *)markerPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RectangleConfigureProc --
  *
  *      This procedure is called to process an objv/objc list, plus the Tk
- *      option database, in order to configure (or reconfigure) a polygon
+ *      option database, in order to configure (or reconfigure) a rectangle
  *      marker.
  *
  * Results:
@@ -4096,7 +4539,7 @@ PolygonToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *      interp->result contains an error message.
  *
  * Side effects:
- *      Configuration information, such as polygon color, dashes,
+ *      Configuration information, such as rectangle color, dashes,
  *      fillstyle, etc. get set for markerPtr; old resources get freed, if
  *      there were any.  The marker is eventually redisplayed.
  *
@@ -4104,36 +4547,37 @@ PolygonToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  */
 /*ARGSUSED*/
 static int
-ConfigurePolygonProc(Marker *markerPtr)
+RectangleConfigureProc(Marker *basePtr)
 {
-    Graph *graphPtr = markerPtr->obj.graphPtr;
-    PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
+    Graph *graphPtr;
+    RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
     GC newGC;
     XGCValues gcValues;
     unsigned long gcMask;
     Drawable drawable;
 
+    graphPtr = markerPtr->obj.graphPtr;
     drawable = Tk_WindowId(graphPtr->tkwin);
     gcMask = (GCLineWidth | GCLineStyle);
-    if (pmPtr->outline.fgColor != NULL) {
+    if (markerPtr->outline.fgColor != NULL) {
         gcMask |= GCForeground;
-        gcValues.foreground = pmPtr->outline.fgColor->pixel;
+        gcValues.foreground = markerPtr->outline.fgColor->pixel;
     }
-    if (pmPtr->outline.bgColor != NULL) {
+    if (markerPtr->outline.bgColor != NULL) {
         gcMask |= GCBackground;
-        gcValues.background = pmPtr->outline.bgColor->pixel;
+        gcValues.background = markerPtr->outline.bgColor->pixel;
     }
     gcMask |= (GCCapStyle | GCJoinStyle);
-    gcValues.cap_style = pmPtr->capStyle;
-    gcValues.join_style = pmPtr->joinStyle;
+    gcValues.cap_style = markerPtr->capStyle;
+    gcValues.join_style = markerPtr->joinStyle;
     gcValues.line_style = LineSolid;
     gcValues.dash_offset = 0;
-    gcValues.line_width = LineWidth(pmPtr->lineWidth);
-    if (LineIsDashed(pmPtr->dashes)) {
-        gcValues.line_style = (pmPtr->outline.bgColor == NULL)
+    gcValues.line_width = LineWidth(markerPtr->lineWidth);
+    if (LineIsDashed(markerPtr->dashes)) {
+        gcValues.line_style = (markerPtr->outline.bgColor == NULL)
             ? LineOnOffDash : LineDoubleDash;
     }
-    if (pmPtr->xor) {
+    if (markerPtr->xor) {
         unsigned long pixel;
         gcValues.function = GXxor;
 
@@ -4149,48 +4593,48 @@ ConfigurePolygonProc(Marker *markerPtr)
         }
         gcValues.foreground ^= pixel;
         if (drawable != None) {
-            DrawPolygonProc(markerPtr, drawable);
+            RectangleDrawProc(basePtr, drawable);
         }
     }
     newGC = Blt_GetPrivateGC(graphPtr->tkwin, gcMask, &gcValues);
-    if (LineIsDashed(pmPtr->dashes)) {
-        Blt_SetDashes(graphPtr->display, newGC, &pmPtr->dashes);
+    if (LineIsDashed(markerPtr->dashes)) {
+        Blt_SetDashes(graphPtr->display, newGC, &markerPtr->dashes);
     }
-    if (pmPtr->outlineGC != NULL) {
-        Blt_FreePrivateGC(graphPtr->display, pmPtr->outlineGC);
+    if (markerPtr->outlineGC != NULL) {
+        Blt_FreePrivateGC(graphPtr->display, markerPtr->outlineGC);
     }
-    pmPtr->outlineGC = newGC;
+    markerPtr->outlineGC = newGC;
 
     gcMask = 0;
-    if (pmPtr->fill.fgColor != NULL) {
+    if (markerPtr->fill.fgColor != NULL) {
         gcMask |= GCForeground;
-        gcValues.foreground = pmPtr->fill.fgColor->pixel;
+        gcValues.foreground = markerPtr->fill.fgColor->pixel;
     }
-    if (pmPtr->fill.bgColor != NULL) {
+    if (markerPtr->fill.bgColor != NULL) {
         gcMask |= GCBackground;
-        gcValues.background = pmPtr->fill.bgColor->pixel;
+        gcValues.background = markerPtr->fill.bgColor->pixel;
     }
-    if (pmPtr->stipple != None) {
-        gcValues.stipple = pmPtr->stipple;
-        gcValues.fill_style = (pmPtr->fill.bgColor != NULL)
+    if (markerPtr->stipple != None) {
+        gcValues.stipple = markerPtr->stipple;
+        gcValues.fill_style = (markerPtr->fill.bgColor != NULL)
             ? FillOpaqueStippled : FillStippled;
         gcMask |= (GCStipple | GCFillStyle);
     }
     newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
-    if (pmPtr->fillGC != NULL) {
-        Tk_FreeGC(graphPtr->display, pmPtr->fillGC);
+    if (markerPtr->fillGC != NULL) {
+        Tk_FreeGC(graphPtr->display, markerPtr->fillGC);
     }
-    pmPtr->fillGC = newGC;
+    markerPtr->fillGC = newGC;
 
-    if ((gcMask == 0) && !(graphPtr->flags & RESET_AXES) && (pmPtr->xor)) {
+    if ((gcMask == 0) && !(graphPtr->flags & RESET_AXES) && (markerPtr->xor)) {
         if (drawable != None) {
-            MapPolygonProc(markerPtr);
-            DrawPolygonProc(markerPtr, drawable);
+            RectangleMapProc(basePtr);
+            RectangleDrawProc(basePtr, drawable);
         }
         return TCL_OK;
     }
-    markerPtr->flags |= MAP_ITEM;
-    if (markerPtr->drawUnder) {
+    basePtr->flags |= MAP_ITEM;
+    if (basePtr->drawUnder) {
         graphPtr->flags |= CACHE_DIRTY;
     }
     graphPtr->flags |= RESET_WORLD;
@@ -4201,115 +4645,321 @@ ConfigurePolygonProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * FreePolygonProc --
+ * RectangleMapProc --
  *
- *      Release memory and resources allocated for the polygon element.
+ *      Calculate the layout position for a rectangle marker.  Positional
+ *      information is saved in the rectangle in an array of points
+ *      (malloc'ed).
  *
  * Results:
  *      None.
  *
- * Side effects:
- *      Everything associated with the polygon element is freed up.
+ *---------------------------------------------------------------------------
+ */
+static void
+RectangleMapProc(Marker *basePtr)
+{
+    RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
+    Region2d extents;
+
+    if (basePtr->numWorldPts != 2) {
+        return;                         /* Too few points */
+    }
+    markerPtr->corner1 = MapPoint(markerPtr->worldPts,     &markerPtr->axes);
+    markerPtr->corner2 = MapPoint(markerPtr->worldPts + 1, &markerPtr->axes);
+
+    if (markerPtr->corner1.x > markerPtr->corner2.x) {
+        SWAP(markerPtr->corner1.x, markerPtr->corner2.x);
+    }
+    if (markerPtr->corner1.y > markerPtr->corner2.y) {
+        SWAP(markerPtr->corner1.y, markerPtr->corner2.y);
+    }
+    GraphExtents(basePtr, &extents);
+
+    markerPtr->offScreen = FALSE;
+    if ((markerPtr->outline.fgColor != NULL) && (markerPtr->lineWidth > 0)) { 
+        Segment2d *s;
+
+        s = markerPtr->outlineSegments;
+        /* AB x1, y1 --> x1, y2 */
+        s->p.x = markerPtr->corner1.x;
+        s->p.y = markerPtr->corner1.y;
+        s->q.x = markerPtr->corner1.x;
+        s->q.y = markerPtr->corner2.y;
+        if (Blt_LineRectClip(&extents, &s->p, &s->q)) {
+            s++;
+        }
+        /* BC x1, y2 --> x2, y2 */
+        s->p.x = markerPtr->corner1.x;
+        s->p.y = markerPtr->corner2.y;
+        s->q.x = markerPtr->corner2.x;
+        s->q.y = markerPtr->corner2.y;
+        if (Blt_LineRectClip(&extents, &s->p, &s->q)) {
+            s++;
+        }
+        /* CD x2, y2 --> x2, y1 */
+        s->p.x = markerPtr->corner2.x;
+        s->p.y = markerPtr->corner2.y;
+        s->q.x = markerPtr->corner2.x;
+        s->q.y = markerPtr->corner1.y;
+        if (Blt_LineRectClip(&extents, &s->p, &s->q)) {
+            s++;
+        }
+        /* DA x2, y1 --> x1, y1 */
+        s->p.x = markerPtr->corner2.x;
+        s->p.y = markerPtr->corner1.y;
+        s->q.x = markerPtr->corner1.x;
+        s->q.y = markerPtr->corner1.y;
+        if (Blt_LineRectClip(&extents, &s->p, &s->q)) {
+            s++;
+        }
+        markerPtr->numOutlineSegments = s - markerPtr->outlineSegments;
+        if (markerPtr->numOutlineSegments > 0) {
+            markerPtr->offScreen = FALSE;
+        }
+    }
+    if (markerPtr->fill.fgColor != NULL) {  /* Rectangle fill required. */
+        if (markerPtr->corner1.x < extents.left) {
+            markerPtr->corner1.x = extents.left;
+        }
+        if (markerPtr->corner2.x > extents.right) {
+            markerPtr->corner2.x = extents.right;
+        }
+        if (markerPtr->corner1.y < extents.top) {
+            markerPtr->corner1.y = extents.top;
+        }
+        if (markerPtr->corner2.y > extents.bottom) {
+            markerPtr->corner2.y = extents.bottom;
+        }
+        markerPtr->fillPts[0] = markerPtr->corner1;
+        markerPtr->fillPts[1] = markerPtr->corner2;
+    }
+}
+
+#ifdef notdef
+
+static int
+GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
+{
+    Graph *graphPtr;
+    RectangleMarker *markerPtr = clientData;
+    double value;
+    Point2d point;
+    AxisRange *rangePtr;
+    
+    /* 
+     * Compute length of the difference in the y direction.
+     * Find the vertical segment of the rectangle that intersects 
+     * y y 
+     */
+    graphPtr = elemPtr->obj.graphPtr;
+    point = Blt_InvMap2D(graphPtr, x, y, &elemPtr->axes);
+    rangePtr = &elemPtr->zAxisPtr->valueRange;
+    if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_Y) {
+        value = point.y;
+    } else if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_X) {
+        value = point.x;
+    } else {
+        return TCL_ERROR;
+    }
+    *valuePtr = (value - rangePtr->min) / rangePtr->range;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawGradientRectangle --
+ *
+ * Results:
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 static void
-FreePolygonProc(Marker *markerPtr)
+DrawGradientRectangle(Graph *graphPtr, Drawable drawable,
+                    RectangleMarker *markerPtr, int n, XPoint *points)
 {
-    PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
-    Graph *graphPtr = markerPtr->obj.graphPtr;
+    Blt_PaintBrush brush;
+    Blt_Painter painter;
+    Blt_Picture bg;
+    Point2f *vertices;
+    int i;
+    int w, h;
+    int x1, x2, y1, y2;
 
-    if (pmPtr->fillGC != NULL) {
-        Tk_FreeGC(graphPtr->display, pmPtr->fillGC);
+    if (n < 3) {
+        return;                         /* Not enough points for rectangle */
     }
-    if (pmPtr->outlineGC != NULL) {
-        Blt_FreePrivateGC(graphPtr->display, pmPtr->outlineGC);
+    if (markerPtr->palette == NULL) {
+        return;                         /* No palette defined. */
     }
-    if (pmPtr->fillPts != NULL) {
-        Blt_Free(pmPtr->fillPts);
+    /* Grab the rectangular background that covers the rectangle. */
+    GetRectangleBBox(points, n, &x1, &x2, &y1, &y2);
+    w = x2 - x1 + 1;
+    h = y2 - y1 + 1;
+    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h, 1.0);
+    if (bg == NULL) {
+        return;                         /* Background is obscured. */
     }
-    if (pmPtr->outlinePts != NULL) {
-        Blt_Free(pmPtr->outlinePts);
+    vertices = Blt_AssertMalloc(n * sizeof(Point2f));
+    /* Translate the rectangle */
+    for (i = 0; i < n; i++) {
+        vertices[i].x = (float)(points[i].x - x1);
+        vertices[i].y = (float)(points[i].y - y1);
     }
-    if (pmPtr->screenPts != NULL) {
-        Blt_Free(pmPtr->screenPts);
+    
+    brush = Blt_NewLinearGradientBrush();
+    Blt_SetBrushOrigin(brush, -x1, -y1);
+    Blt_SetLinearGradientBrushPalette(brush, markerPtr->palette);
+    Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, markerPtr);
+    Blt_PaintRectangle(bg, n, vertices, brush);
+    Blt_FreeBrush(brush);
+    Blt_Free(vertices);
+    painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
+    Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
+    Blt_FreePicture(bg);
+}
+#endif
+
+static void
+RectangleDrawProc(Marker *basePtr, Drawable drawable)
+{
+    Graph *graphPtr = basePtr->obj.graphPtr;
+    RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
+
+    if (markerPtr->numWorldPts != 2) {
+        return;
+    }
+    if (markerPtr->fill.fgColor != NULL) {
+        int x, y, w, h;
+        
+        x = (int)markerPtr->fillPts[0].x;
+        y = (int)markerPtr->fillPts[0].y;
+        w = (int)(markerPtr->fillPts[1].x - markerPtr->fillPts[0].x);
+        h = (int)(markerPtr->fillPts[1].y - markerPtr->fillPts[0].y);
+        if ((w > 0) && (h > 0)) {
+            XFillRectangle(graphPtr->display, drawable, markerPtr->fillGC,
+                           x, y, w, h);
+        }
+    }
+    if ((markerPtr->numOutlineSegments > 0) && (markerPtr->lineWidth > 0) && 
+        (markerPtr->outline.fgColor != NULL)) {
+        Blt_DrawSegments2d(graphPtr->display, drawable, markerPtr->outlineGC,
+            markerPtr->outlineSegments, markerPtr->numOutlineSegments);
+    }
+}
+
+
+static void
+RectanglePostscriptProc(Marker *basePtr, Blt_Ps ps)
+{
+    Graph *graphPtr = basePtr->obj.graphPtr;
+    RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
+
+    if ((markerPtr->numWorldPts != 2) || (markerPtr->offScreen)) {
+        return;
+    }
+    if (markerPtr->fill.fgColor != NULL) {
+
+        /*
+         * Options:  fg bg
+         *                      Draw outline only.
+         *           x          Draw solid or stipple.
+         *           x  x       Draw solid or stipple.
+         */
+
+        /* Create a path to use for both the rectangle and its outline. */
+        Blt_Ps_Rectangle2(ps, markerPtr->fillPts[0].x, markerPtr->fillPts[0].y,
+                markerPtr->fillPts[1].x, markerPtr->fillPts[1].y);
+
+        /* If the background fill color was specified, draw the rectangle in
+         * a solid fashion with that color.  */
+        if (markerPtr->fill.bgColor != NULL) {
+            /* Draw the solid background as the background layer of the
+             * opaque stipple */
+            Blt_Ps_XSetBackground(ps, markerPtr->fill.bgColor);
+            /* Retain the path. We'll need it for the foreground layer. */
+            Blt_Ps_Append(ps, "gsave fill grestore\n");
+        }
+        Blt_Ps_XSetForeground(ps, markerPtr->fill.fgColor);
+        if (markerPtr->stipple != None) {
+            /* Draw the stipple in the foreground color. */
+            Blt_Ps_XSetStipple(ps, graphPtr->display, markerPtr->stipple);
+        } else {
+            Blt_Ps_Append(ps, "fill\n");
+        }
+    }
+
+    /* Draw the outline in the foreground color.  */
+    if ((markerPtr->lineWidth > 0) && (markerPtr->outline.fgColor != NULL)) {
+
+        /*  Set up the line attributes.  */
+        Blt_Ps_XSetLineAttributes(ps, markerPtr->outline.fgColor,
+            markerPtr->lineWidth, &markerPtr->dashes, markerPtr->capStyle,
+            markerPtr->joinStyle);
+
+        /*  
+         * Define on-the-fly a PostScript macro "DashesProc" that will be
+         * executed for each call to the Rectangle drawing routine.  If the
+         * line isn't dashed, simply make this an empty definition.
+         */
+        if ((markerPtr->outline.bgColor != NULL) &&
+            (LineIsDashed(markerPtr->dashes))) {
+            Blt_Ps_Append(ps, "/DashesProc {\ngsave\n    ");
+            Blt_Ps_XSetBackground(ps, markerPtr->outline.bgColor);
+            Blt_Ps_Append(ps, "    ");
+            Blt_Ps_XSetDashes(ps, (Blt_Dashes *)NULL);
+            Blt_Ps_Append(ps, "stroke\n  grestore\n} def\n");
+        } else {
+            Blt_Ps_Append(ps, "/DashesProc {} def\n");
+        }
+        Blt_Ps_DrawSegments2d(ps, markerPtr->numOutlineSegments,
+                markerPtr->outlineSegments);
     }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * CreatePolygonProc --
+ * RectanglePointProc --
  *
- *      Allocate memory and initialize methods for the new polygon marker.
- *
- * Results:
- *      The pointer to the newly allocated marker structure is returned.
- *
- * Side effects:
- *      Memory is allocated for the polygon marker structure.
- *
- * -------------------------------------------------------------------------- 
+ *---------------------------------------------------------------------------
  */
-static Marker *
-CreatePolygonProc(void)
-{
-    PolygonMarker *pmPtr;
-
-    pmPtr = Blt_AssertCalloc(1, sizeof(PolygonMarker));
-    pmPtr->classPtr = &polygonMarkerClass;
-    pmPtr->capStyle = CapButt;
-    pmPtr->joinStyle = JoinMiter;
-    return (Marker *)pmPtr;
-}
-
 static int
-GetMarkerFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
-                 Marker **markerPtrPtr)
+RectanglePointProc(Marker *basePtr, Point2d *p)
 {
-    Blt_HashEntry *hPtr;
-    const char *string;
+    RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
 
-    string = Tcl_GetString(objPtr);
-    hPtr = Blt_FindHashEntry(&graphPtr->markers.nameTable, string);
-    if (hPtr != NULL) {
-        *markerPtrPtr = Blt_GetHashValue(hPtr);
-        return TCL_OK;
-    }
-    if (interp != NULL) {
-        Tcl_AppendResult(interp, "can't find marker \"", string, 
-             "\" in \"", Tk_PathName(graphPtr->tkwin), (char *)NULL);
-    }
-    return TCL_ERROR;
+    return ((p->x >= markerPtr->corner1.x) && (p->x < markerPtr->corner2.x) &&
+            (p->y >= markerPtr->corner1.y) && (p->y < markerPtr->corner2.y));
 }
 
-
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RectangleAreaProc --
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
-RenameMarker(Graph *graphPtr, Marker *markerPtr, const char *oldName, 
-             const char *newName)
+RectangleAreaProc(Marker *basePtr, Region2d *extsPtr, int enclosed)
 {
-    int isNew;
-    Blt_HashEntry *hPtr;
-
-    /* Rename the marker only if no marker already exists by that name */
-    hPtr = Blt_CreateHashEntry(&graphPtr->markers.nameTable, newName, &isNew);
-    if (!isNew) {
-        Tcl_AppendResult(graphPtr->interp, "can't rename marker: \"", newName,
-            "\" already exists", (char *)NULL);
-        return TCL_ERROR;
+    RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
+    
+    if (enclosed) {
+        return ((markerPtr->corner1.x >= extsPtr->left) &&
+                (markerPtr->corner2.x < extsPtr->right) &&
+                (markerPtr->corner1.y >= extsPtr->top) &&
+                (markerPtr->corner2.y < extsPtr->bottom));
+    } else {
+        return ((markerPtr->corner1.x >= extsPtr->right) ||
+                (markerPtr->corner2.x < extsPtr->left) ||
+                (markerPtr->corner1.y >= extsPtr->bottom) ||
+                (markerPtr->corner2.y < extsPtr->top));
     }
-    markerPtr->obj.name = Blt_AssertStrdup(newName);
-    markerPtr->hashPtr = hPtr;
-    Blt_SetHashValue(hPtr, (char *)markerPtr);
-
-    /* Delete the old hash entry */
-    hPtr = Blt_FindHashEntry(&graphPtr->markers.nameTable, oldName);
-    Blt_DeleteHashEntry(&graphPtr->markers.nameTable, hPtr);
-    if (oldName != NULL) {
-        Blt_Free(oldName);
-    }
-    return TCL_OK;
 }
+
 
 /*
  *---------------------------------------------------------------------------
@@ -4550,20 +5200,22 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* Create the new marker based upon the given type */
     if ((c == 't') && (strcmp(string, "text") == 0)) {
         classId = CID_MARKER_TEXT;
+    } else if ((c == 'b') && (strcmp(string, "bitmap") == 0)) {
+        classId = CID_MARKER_BITMAP;
+    } else if ((c == 'i') && (strcmp(string, "image") == 0)) {
+        classId = CID_MARKER_IMAGE;
     } else if ((c == 'l') && (strcmp(string, "line") == 0)) {
         classId = CID_MARKER_LINE;
     } else if ((c == 'p') && (strcmp(string, "polygon") == 0)) {
         classId = CID_MARKER_POLYGON;
-    } else if ((c == 'i') && (strcmp(string, "image") == 0)) {
-        classId = CID_MARKER_IMAGE;
-    } else if ((c == 'b') && (strcmp(string, "bitmap") == 0)) {
-        classId = CID_MARKER_BITMAP;
+    } else if ((c == 'r') && (strcmp(string, "rectangle") == 0)) {
+        classId = CID_MARKER_RECTANGLE;
     } else if ((c == 'w') && (strcmp(string, "window") == 0)) {
         classId = CID_MARKER_WINDOW;
     } else {
         Tcl_AppendResult(interp, "unknown marker type \"", string,
-    "\": should be \"text\", \"line\", \"polygon\", \"bitmap\", \"image\", or \
-\"window\"", (char *)NULL);
+                "\": should be bitmap, image, line, polygon, rectangle, text, "
+                "or window", (char *)NULL);
         return TCL_ERROR;
     }
     /* Scan for "-name" option. We need it for the component name */
@@ -4903,6 +5555,8 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         type = "line";          break;
     case CID_MARKER_POLYGON:
         type = "polygon";       break;
+    case CID_MARKER_RECTANGLE:
+        type = "rectangle";     break;
     case CID_MARKER_TEXT:
         type = "text";          break;
     case CID_MARKER_WINDOW:
@@ -4987,7 +5641,7 @@ Blt_MarkersToPostScript(Graph *graphPtr, Blt_Ps ps, int under)
         Marker *markerPtr;
 
         markerPtr = Blt_Chain_GetValue(link);
-        if ((markerPtr->classPtr->postscriptProc == NULL) || 
+        if ((markerPtr->classPtr->psProc == NULL) || 
             (markerPtr->numWorldPts == 0)) {
             continue;
         }
@@ -5002,7 +5656,7 @@ Blt_MarkersToPostScript(Graph *graphPtr, Blt_Ps ps, int under)
         }
         Blt_Ps_VarAppend(ps, "\n% Marker \"", markerPtr->obj.name, 
                 "\" is a ", markerPtr->obj.className, ".\n", (char *)NULL);
-        (*markerPtr->classPtr->postscriptProc) (markerPtr, ps);
+        (*markerPtr->classPtr->psProc) (markerPtr, ps);
     }
 }
 
@@ -5050,7 +5704,7 @@ Blt_DrawMarkers(Graph *graphPtr, Drawable drawable, int under)
 
         if ((markerPtr->numWorldPts == 0) || 
             (markerPtr->drawUnder != under) ||
-            (markerPtr->clipped) ||
+            (markerPtr->offScreen) ||
             (markerPtr->flags & HIDDEN)) {
             continue;
         }

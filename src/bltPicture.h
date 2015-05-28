@@ -424,7 +424,9 @@ BLT_EXTERN struct _Blt_Chain *Blt_GetPicturesFromPictureImage(
         Tcl_Interp *interp, Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromPhotoImage(Tcl_Interp *interp,
         Tk_Image tkImage);
-BLT_EXTERN Blt_Picture Blt_CanvasToPicture(Tcl_Interp *interp, const char *s,
+BLT_EXTERN Blt_Picture Blt_CanvasToPicture(Tcl_Interp *interp, Tk_Window tkwin,
+        float gamma);
+BLT_EXTERN Blt_Picture Blt_GraphToPicture(Tcl_Interp *interp, Tk_Window tkwin,
         float gamma);
 #endif  /* _TK */
 

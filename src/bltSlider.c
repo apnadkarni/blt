@@ -1954,7 +1954,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
     case MARGIN_TOP:
         axisLine = slider->top;
         if (sliderPtr->flags & EXTERIOR) {
-            axisLine -= slider->plotBW + axisPad + sliderPtr->lineWidth / 2;
+            axisLine -= slider->plotBorderWidth + axisPad + sliderPtr->lineWidth / 2;
             tickLabel = axisLine - 2;
             if (sliderPtr->lineWidth > 0) {
                 tickLabel -= sliderPtr->tickLength;
@@ -1964,7 +1964,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
                 axisLine--;
             } 
             axisLine -= axisPad + sliderPtr->lineWidth / 2;
-            tickLabel = sliderPtr->top -  sliderPtr->plotBW - 2;
+            tickLabel = sliderPtr->top -  sliderPtr->plotBorderWidth - 2;
         }
         mark = sliderPtr->top - offset - pad;
         sliderPtr->tickAnchor = TK_ANCHOR_S;
@@ -2012,14 +2012,14 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
             axisLine++;
         } 
         if (sliderPtr->flags & EXTERIOR) {
-            axisLine += sliderPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
+            axisLine += sliderPtr->plotBorderWidth + axisPad + sliderPtr->lineWidth / 2;
             tickLabel = axisLine + 2;
             if (sliderPtr->lineWidth > 0) {
                 tickLabel += sliderPtr->tickLength;
             }
         } else {
             axisLine -= axisPad + sliderPtr->lineWidth / 2;
-            tickLabel = sliderPtr->bottom +  sliderPtr->plotBW + 2;
+            tickLabel = sliderPtr->bottom +  sliderPtr->plotBorderWidth + 2;
         }
         mark = sliderPtr->bottom + offset;
         fangle = FMOD(sliderPtr->tickAngle, 90.0f);
@@ -2100,7 +2100,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
          */
         axisLine = sliderPtr->left;
         if (sliderPtr->flags & EXTERIOR) {
-            axisLine -= sliderdPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
+            axisLine -= sliderdPtr->plotBorderWidth + axisPad + sliderPtr->lineWidth / 2;
             tickLabel = axisLine - 2;
             if (sliderPtr->lineWidth > 0) {
                 tickLabel -= sliderPtr->tickLength;
@@ -2110,7 +2110,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
                 axisLine--;
             } 
             axisLine += axisPad + sliderPtr->lineWidth / 2;
-            tickLabel = sliderPtr->left - sliderPtr->plotBW - 2;
+            tickLabel = sliderPtr->left - sliderPtr->plotBorderWidth - 2;
         }
         mark = sliderPtr->left - offset;
         sliderPtr->tickAnchor = TK_ANCHOR_E;
@@ -2146,14 +2146,14 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
                                          * border. */
         } 
         if (sliderPtr->flags & EXTERIOR) {
-            axisLine += sliderPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
+            axisLine += sliderPtr->plotBorderWidth + axisPad + sliderPtr->lineWidth / 2;
             tickLabel = axisLine + 2;
             if (sliderPtr->lineWidth > 0) {
                 tickLabel += sliderPtr->tickLength;
             }
         } else {
             axisLine -= axisPad + sliderPtr->lineWidth / 2;
-            tickLabel = sliderPtr->right + sliderPtr->plotBW + 2;
+            tickLabel = sliderPtr->right + sliderPtr->plotBorderWidth + 2;
         }
         mark = sliderPtr->right + offset + pad;
         sliderPtr->tickAnchor = TK_ANCHOR_W;
@@ -3794,9 +3794,9 @@ LayoutSlider(Slider *sliderPtr)
     top    = GetMarginGeometry(sliderPtr, &sliderPtr->topMargin);
     bottom = GetMarginGeometry(sliderPtr, &sliderPtr->bottomMargin);
 
-    pad = sliderPtr->bottomMarginPtr->maxAxisLabelWidth;
-    if (pad < sliderPtr->topMarginPtr->maxAxisLabelWidth) {
-        pad = sliderPtr->topMarginPtr->maxAxisLabelWidth;
+    pad = sliderPtr->bottomPtr->maxAxisLabelWidth;
+    if (pad < sliderPtr->topPtr->maxAxisLabelWidth) {
+        pad = sliderPtr->topPtr->maxAxisLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -3805,9 +3805,9 @@ LayoutSlider(Slider *sliderPtr)
     if (left < pad) {
         left = pad;
     }
-    pad = sliderPtr->leftMarginPtr->maxAxisLabelHeight;
-    if (pad < sliderPtr->rightMarginPtr->maxAxisLabelHeight) {
-        pad = sliderPtr->rightMarginPtr->maxAxisLabelHeight;
+    pad = sliderPtr->leftPtr->maxAxisLabelHeight;
+    if (pad < sliderPtr->rightPtr->maxAxisLabelHeight) {
+        pad = sliderPtr->rightPtr->maxAxisLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {
@@ -3817,17 +3817,17 @@ LayoutSlider(Slider *sliderPtr)
         bottom = pad;
     }
 
-    if (sliderPtr->leftMarginPtr->reqSize > 0) {
-        left = sliderPtr->leftMarginPtr->reqSize;
+    if (sliderPtr->leftPtr->reqSize > 0) {
+        left = sliderPtr->leftPtr->reqSize;
     }
-    if (sliderPtr->rightMarginPtr->reqSize > 0) {
-        right = sliderPtr->rightMarginPtr->reqSize;
+    if (sliderPtr->rightPtr->reqSize > 0) {
+        right = sliderPtr->rightPtr->reqSize;
     }
-   if (sliderPtr->topMarginPtr->reqSize > 0) {
-        top = sliderPtr->topMarginPtr->reqSize;
+   if (sliderPtr->topPtr->reqSize > 0) {
+        top = sliderPtr->topPtr->reqSize;
     }
-    if (sliderPtr->bottomMarginPtr->reqSize > 0) {
-        bottom = sliderPtr->bottomMarginPtr->reqSize;
+    if (sliderPtr->bottomPtr->reqSize > 0) {
+        bottom = sliderPtr->bottomPtr->reqSize;
     }
 
     /* 
@@ -3836,7 +3836,7 @@ LayoutSlider(Slider *sliderPtr)
     if (sliderPtr->title != NULL) {
         top += sliderPtr->titleHeight + 6;
     }
-    inset = (sliderPtr->inset + sliderPtr->plotBW);
+    inset = (sliderPtr->inset + sliderPtr->plotBorderWidth);
     inset2 = 2 * inset;
 
     /* 
@@ -3948,33 +3948,33 @@ LayoutSlider(Slider *sliderPtr)
      *         displayed in the adjoining margins.  Make sure there's room 
      *         for the longest axis titles.
      */
-    if (top < sliderPtr->leftMarginPtr->axesTitleLength) {
-        top = sliderPtr->leftMarginPtr->axesTitleLength;
+    if (top < sliderPtr->leftPtr->axesTitleLength) {
+        top = sliderPtr->leftPtr->axesTitleLength;
     }
-    if (right < sliderPtr->bottomMarginPtr->axesTitleLength) {
-        right = sliderPtr->bottomMarginPtr->axesTitleLength;
+    if (right < sliderPtr->bottomPtr->axesTitleLength) {
+        right = sliderPtr->bottomPtr->axesTitleLength;
     }
-    if (top < sliderPtr->rightMarginPtr->axesTitleLength) {
-        top = sliderPtr->rightMarginPtr->axesTitleLength;
+    if (top < sliderPtr->rightPtr->axesTitleLength) {
+        top = sliderPtr->rightPtr->axesTitleLength;
     }
-    if (right < sliderPtr->topMarginPtr->axesTitleLength) {
-        right = sliderPtr->topMarginPtr->axesTitleLength;
+    if (right < sliderPtr->topPtr->axesTitleLength) {
+        right = sliderPtr->topPtr->axesTitleLength;
     }
 
     /* 
      * Step 7: Override calculated values with requested margin sizes.
      */
-    if (sliderPtr->leftMarginPtr->reqSize > 0) {
-        left = sliderPtr->leftMarginPtr->reqSize;
+    if (sliderPtr->leftPtr->reqSize > 0) {
+        left = sliderPtr->leftPtr->reqSize;
     }
-    if (sliderPtr->rightMarginPtr->reqSize > 0) {
-        right = sliderPtr->rightMarginPtr->reqSize;
+    if (sliderPtr->rightPtr->reqSize > 0) {
+        right = sliderPtr->rightPtr->reqSize;
     }
-    if (sliderPtr->topMarginPtr->reqSize > 0) {
-        top = sliderPtr->topMarginPtr->reqSize;
+    if (sliderPtr->topPtr->reqSize > 0) {
+        top = sliderPtr->topPtr->reqSize;
     }
-    if (sliderPtr->bottomMarginPtr->reqSize > 0) {
-        bottom = sliderPtr->bottomMarginPtr->reqSize;
+    if (sliderPtr->bottomPtr->reqSize > 0) {
+        bottom = sliderPtr->bottomPtr->reqSize;
     }
     if (sliderPtr->reqPlotWidth > 0) {  
         int w;
@@ -3989,14 +3989,14 @@ LayoutSlider(Slider *sliderPtr)
             int extra;
 
             extra = (width - w) / 2;
-            if (sliderPtr->leftMarginPtr->reqSize == 0) { 
+            if (sliderPtr->leftPtr->reqSize == 0) { 
                 left += extra;
-                if (sliderPtr->rightMarginPtr->reqSize == 0) { 
+                if (sliderPtr->rightPtr->reqSize == 0) { 
                     right += extra;
                 } else {
                     left += extra;
                 }
-            } else if (sliderPtr->rightMarginPtr->reqSize == 0) {
+            } else if (sliderPtr->rightPtr->reqSize == 0) {
                 right += extra + extra;
             }
         } else if (width < w) {
@@ -4016,14 +4016,14 @@ LayoutSlider(Slider *sliderPtr)
             int extra;
 
             extra = (height - h) / 2;
-            if (sliderPtr->topMarginPtr->reqSize == 0) { 
+            if (sliderPtr->topPtr->reqSize == 0) { 
                 top += extra;
-                if (sliderPtr->bottomMarginPtr->reqSize == 0) { 
+                if (sliderPtr->bottomPtr->reqSize == 0) { 
                     bottom += extra;
                 } else {
                     top += extra;
                 }
-            } else if (sliderPtr->bottomMarginPtr->reqSize == 0) {
+            } else if (sliderPtr->bottomPtr->reqSize == 0) {
                 bottom += extra + extra;
             }
         } else if (height < h) {
@@ -4037,10 +4037,10 @@ LayoutSlider(Slider *sliderPtr)
     sliderPtr->right  = width - right - inset;
     sliderPtr->bottom = height - bottom - inset;
 
-    sliderPtr->leftMarginPtr->width    = left   + sliderPtr->inset;
-    sliderPtr->rightMarginPtr->width   = right  + sliderPtr->inset;
-    sliderPtr->topMarginPtr->height    = top    + sliderPtr->inset;
-    sliderPtr->bottomMarginPtr->height = bottom + sliderPtr->inset;
+    sliderPtr->leftPtr->width    = left   + sliderPtr->inset;
+    sliderPtr->rightPtr->width   = right  + sliderPtr->inset;
+    sliderPtr->topPtr->height    = top    + sliderPtr->inset;
+    sliderPtr->bottomPtr->height = bottom + sliderPtr->inset;
             
     sliderPtr->vOffset = sliderPtr->top + sliderPtr->padTop;
     sliderPtr->vRange  = plotHeight - PADDING(sliderPtr->yPad);

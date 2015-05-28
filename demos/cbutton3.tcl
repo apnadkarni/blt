@@ -764,7 +764,6 @@ set bg [blt::background create linear -lowcolor  grey100 -highcolor grey90 \
 set bg white
 set myIcon ""
 blt::combobutton .b \
-    -font { arial 10 bold } \
     -textvariable myText1 \
     -iconvariable myIcon1 \
     -borderwidth 2 \
@@ -781,7 +780,6 @@ blt::combomenu .b.m  \
     -height 400 \
     -background $bg \
     -iconvariable myIcon1 \
-    -font { Arial 10 } \
     -acceleratorfont { Arial 8 } \
     -yscrollbar .b.m.ybar \
     -xscrollbar .b.m.xbar

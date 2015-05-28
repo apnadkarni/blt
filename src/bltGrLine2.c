@@ -2261,8 +2261,8 @@ GenerateSpline(Trace *tracePtr)
     }
     p = tracePtr->head;
     q = tracePtr->tail;
-    if (((p->x > (double)graphPtr->right)) || 
-        ((q->x < (double)graphPtr->left))) {
+    if (((p->x > (double)graphPtr->x2)) || 
+        ((q->x < (double)graphPtr->x1))) {
         return;                         /* All points are clipped. This
                                          * only works if x is monotonically
                                          * increasing. */
@@ -2273,7 +2273,7 @@ GenerateSpline(Trace *tracePtr)
      * so that we can select the abscissas of the interpolated points from
      * each pixel horizontally across the plotting area.
      */
-    if (graphPtr->right <= graphPtr->left) {
+    if (graphPtr->x2 <= graphPtr->x1) {
         return;
     }
     points = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
@@ -2311,8 +2311,8 @@ GenerateSpline(Trace *tracePtr)
              * Pick the max of the starting X-coordinate and the left edge
              * and the min of the last X-coordinate and the right edge.
              */
-            x = MAX(x, (double)graphPtr->left);
-            last = MIN(q->x, (double)graphPtr->right);
+            x = MAX(x, (double)graphPtr->x1);
+            last = MIN(q->x, (double)graphPtr->x2);
 
             /* Add the extra x-coordinates to the interval. */
             lastp = p;
@@ -2655,7 +2655,7 @@ GenerateCatromSpline(Trace *tracePtr)
      * so that we can select the abscissas of the interpolated points from
      * each pixel horizontally across the plotting area.
      */
-    if (graphPtr->right <= graphPtr->left) {
+    if (graphPtr->x2 <= graphPtr->x1) {
         return;                         /* No space in plotting area. */
     }
     points = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));

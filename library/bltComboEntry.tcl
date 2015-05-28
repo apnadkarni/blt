@@ -608,7 +608,6 @@ proc ::blt::ComboEntry::PostMenu { w } {
 }
 
 proc ::blt::ComboEntry::HandleUnmap { unmapped menu w } {
-    puts stderr "menu=$menu unmapped=$unmapped"
     if { $menu != $unmapped } {
 	return
     }

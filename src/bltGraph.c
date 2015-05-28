@@ -123,6 +123,7 @@ BLT_EXTERN Blt_SwitchCustom bltXAxisSwitch;
 BLT_EXTERN Blt_SwitchCustom bltYAxisSwitch;
 
 #define DEF_ASPECT_RATIO                "0.0"
+#define DEF_AXIS_SPACING                "0"
 #define DEF_BAR_BASELINE                "0.0"
 #define DEF_BAR_MODE                    "normal"
 #define DEF_BAR_WIDTH                   "0.9"
@@ -164,6 +165,9 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_FLOAT, "-aspect", "aspect", "Aspect", DEF_ASPECT_RATIO, 
         Blt_Offset(Graph, aspect), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-axisspacing", "axisspacing", "Axisspacing",
+        DEF_AXIS_SPACING, Blt_Offset(Graph, axisSpacing),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Graph, normalBg), 0},
     {BLT_CONFIG_CUSTOM, "-barmode", "barMode", "BarMode", DEF_BAR_MODE, 
@@ -232,7 +236,7 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_PLOT_BACKGROUND, Blt_Offset(Graph, plotBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-plotborderwidth", "plotBorderWidth", 
         "PlotBorderWidth", DEF_PLOT_BORDERWIDTH, 
-        Blt_Offset(Graph, plotBW), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Graph, plotBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-plotpadx", "plotPadX", "PlotPad", DEF_PLOT_PADX, 
         Blt_Offset(Graph, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-plotpady", "plotPadY", "PlotPad", DEF_PLOT_PADY, 
@@ -313,15 +317,15 @@ typedef struct {
     int format;
 } SnapArgs;
 
-enum SnapFormats { FORMAT_PICTURE, FORMAT_PHOTO, FORMAT_EMF, FORMAT_WMF };
+enum SnapFormats { FMT_PICTURE, FMT_PHOTO, FMT_EMF, FMT_WMF };
 
 static Blt_SwitchSpec snapSpecs[] = {
-    {BLT_SWITCH_INT_POS, "-width",  "width", (char *)NULL,
-        Blt_Offset(SnapArgs, width),  0},
-    {BLT_SWITCH_INT_POS, "-height", "height", (char *)NULL,
-        Blt_Offset(SnapArgs, height), 0},
     {BLT_SWITCH_CUSTOM,  "-format", "format", (char *)NULL,
         Blt_Offset(SnapArgs, format), 0, 0, &formatSwitch},
+    {BLT_SWITCH_INT_POS, "-height", "numPixels", (char *)NULL,
+        Blt_Offset(SnapArgs, height), 0},
+    {BLT_SWITCH_INT_POS, "-width",  "numPixels", (char *)NULL,
+        Blt_Offset(SnapArgs, width),  0},
     {BLT_SWITCH_END}
 };
 
@@ -336,6 +340,8 @@ static Tcl_ObjCmdProc BarchartCmd;
 static Tcl_ObjCmdProc ContourCmd;
 static Tcl_ObjCmdProc GraphCmd;
 static Tcl_CmdDeleteProc GraphInstCmdDeleteProc;
+
+static void GraphToDrawable(Graph *graphPtr, Drawable drawable);
 
 /*
  *---------------------------------------------------------------------------
@@ -564,24 +570,24 @@ static void
 AdjustMarginPointers(Graph *graphPtr) 
 {
     if (graphPtr->flags & INVERTED) {
-        graphPtr->bottomMarginPtr = graphPtr->margins + MARGIN_Y;
-        graphPtr->leftMarginPtr   = graphPtr->margins + MARGIN_X;
-        graphPtr->rightMarginPtr  = graphPtr->margins + MARGIN_X2;
-        graphPtr->topMarginPtr    = graphPtr->margins + MARGIN_Y2;
+        graphPtr->bottomPtr = graphPtr->margins + MARGIN_Y;
+        graphPtr->leftPtr   = graphPtr->margins + MARGIN_X;
+        graphPtr->rightPtr  = graphPtr->margins + MARGIN_X2;
+        graphPtr->topPtr    = graphPtr->margins + MARGIN_Y2;
     } else {
-        graphPtr->bottomMarginPtr = graphPtr->margins + MARGIN_X;
-        graphPtr->leftMarginPtr   = graphPtr->margins + MARGIN_Y;
-        graphPtr->rightMarginPtr  = graphPtr->margins + MARGIN_Y2;
-        graphPtr->topMarginPtr    = graphPtr->margins + MARGIN_X2;
+        graphPtr->bottomPtr = graphPtr->margins + MARGIN_X;
+        graphPtr->leftPtr   = graphPtr->margins + MARGIN_Y;
+        graphPtr->rightPtr  = graphPtr->margins + MARGIN_Y2;
+        graphPtr->topPtr    = graphPtr->margins + MARGIN_X2;
     }
-    graphPtr->bottomMarginPtr->side = MARGIN_BOTTOM;
-    graphPtr->bottomMarginPtr->name = "bottom";
-    graphPtr->leftMarginPtr->side = MARGIN_LEFT;
-    graphPtr->leftMarginPtr->name = "left";
-    graphPtr->rightMarginPtr->side = MARGIN_RIGHT;
-    graphPtr->rightMarginPtr->name = "right";
-    graphPtr->topMarginPtr->side = MARGIN_TOP;
-    graphPtr->topMarginPtr->name = "top";
+    graphPtr->bottomPtr->side = MARGIN_BOTTOM;
+    graphPtr->bottomPtr->name = "bottom";
+    graphPtr->leftPtr->side = MARGIN_LEFT;
+    graphPtr->leftPtr->name = "left";
+    graphPtr->rightPtr->side = MARGIN_RIGHT;
+    graphPtr->rightPtr->name = "right";
+    graphPtr->topPtr->side = MARGIN_TOP;
+    graphPtr->topPtr->name = "top";
 }
 
 static int
@@ -659,6 +665,9 @@ Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
     case CID_ELEM_STRIP: 
         tagProc = Blt_MakeElementTag;
         break;
+    case CID_LEGEND: 
+        tagProc = Blt_MakeElementTag;
+        break;
     case CID_AXIS_X:
     case CID_AXIS_Y:
     case CID_AXIS_Z:
@@ -668,6 +677,7 @@ Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
     case CID_MARKER_IMAGE:
     case CID_MARKER_LINE:
     case CID_MARKER_POLYGON:
+    case CID_MARKER_RECTANGLE:
     case CID_MARKER_TEXT:
     case CID_MARKER_WINDOW:
         tagProc = Blt_MakeMarkerTag;
@@ -1006,7 +1016,7 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     graphPtr->interp = interp;
     graphPtr->classId = classId;
     graphPtr->borderWidth = 2;
-    graphPtr->plotBW = 1;
+    graphPtr->plotBorderWidth = 1;
     graphPtr->highlightWidth = 2;
     graphPtr->plotRelief = TK_RELIEF_SOLID;
     graphPtr->relief = TK_RELIEF_FLAT;
@@ -1014,6 +1024,7 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     graphPtr->nextMarkerId = 1;
     graphPtr->padLeft = graphPtr->padRight = 0;
     graphPtr->padTop = graphPtr->padBottom = 0;
+    graphPtr->axisSpacing = 0;
     
     Blt_Ts_InitStyle(graphPtr->titleTextStyle);
     Blt_Ts_SetAnchor(graphPtr->titleTextStyle, TK_ANCHOR_N);
@@ -1134,6 +1145,13 @@ LineOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return Blt_ElementOp(graphPtr, interp, objc, objv, CID_ELEM_LINE);
 }
 
+/*ARGSUSED*/
+static int
+StripOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    return Blt_ElementOp(graphPtr, interp, objc, objv, CID_ELEM_STRIP);
+}
+
 static int
 ElementOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
@@ -1205,32 +1223,26 @@ ExtentsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     c = string[0];
     if ((c == 'p') && (length > 4) && 
         (strncmp("plotheight", string, length) == 0)) {
-        int height;
-
-        height = graphPtr->bottom - graphPtr->top + 1;
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), height);
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->y2 - graphPtr->y1);
     } else if ((c == 'p') && (length > 4) &&
         (strncmp("plotwidth", string, length) == 0)) {
-        int width;
-
-        width = graphPtr->right - graphPtr->left + 1;
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), width);
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->x2 - graphPtr->x1);
     } else if ((c == 'p') && (length > 4) &&
         (strncmp("plotarea", string, length) == 0)) {
         Tcl_Obj *listObjPtr, *objPtr;
         
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
         /* x */
-        objPtr = Tcl_NewIntObj(graphPtr->left);
+        objPtr = Tcl_NewIntObj(graphPtr->x1);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         /* y */
-        objPtr = Tcl_NewIntObj(graphPtr->top);
+        objPtr = Tcl_NewIntObj(graphPtr->y1);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         /* width */
-        objPtr = Tcl_NewIntObj(graphPtr->right - graphPtr->left + 1);
+        objPtr = Tcl_NewIntObj(graphPtr->x2 - graphPtr->x1);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         /* height */
-        objPtr = Tcl_NewIntObj(graphPtr->bottom - graphPtr->top + 1);
+        objPtr = Tcl_NewIntObj(graphPtr->y2 - graphPtr->y1);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         Tcl_SetObjResult(interp, listObjPtr);
     } else if ((c == 'l') && (length > 2) &&
@@ -1253,19 +1265,19 @@ ExtentsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         Tcl_SetObjResult(interp, listObjPtr);
     } else if ((c == 'l') && (length > 2) &&
         (strncmp("leftmargin", string, length) == 0)) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->leftMarginPtr->width);
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->leftPtr->width);
     } else if ((c == 'r') && (length > 1) &&
         (strncmp("rightmargin", string, length) == 0)) {
         Tcl_SetIntObj(Tcl_GetObjResult(interp),
-                      graphPtr->rightMarginPtr->width);
+                      graphPtr->rightPtr->width);
     } else if ((c == 't') && (length > 1) &&
         (strncmp("topmargin", string, length) == 0)) {
         Tcl_SetIntObj(Tcl_GetObjResult(interp),
-                      graphPtr->topMarginPtr->height);
+                      graphPtr->topPtr->height);
     } else if ((c == 'b') && (length > 1) &&
         (strncmp("bottommargin", string, length) == 0)) {
         Tcl_SetIntObj(Tcl_GetObjResult(interp),
-                      graphPtr->bottomMarginPtr->height);
+                      graphPtr->bottomPtr->height);
     } else {
         Tcl_AppendResult(interp, "bad extent item \"", objv[2],
             "\": should be plotheight, plotwidth, leftmargin, rightmargin, \
@@ -1411,7 +1423,7 @@ TransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     args.graphPtr = graphPtr;
     bltXAxisSwitch.clientData = graphPtr;
     bltYAxisSwitch.clientData = graphPtr;
-    if (Blt_ParseSwitches(interp, snapSpecs, objc - 4, objv + 4, &args, 
+    if (Blt_ParseSwitches(interp, transformSpecs, objc - 4, objv + 4, &args, 
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
@@ -1524,7 +1536,7 @@ Print1Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     bd.depth = Tk_Depth(graphPtr->tkwin);
     
     graphPtr->flags |= RESET_WORLD;
-    Blt_DrawGraph(graphPtr, (Drawable)&bd);
+    GraphToDrawable(graphPtr, (Drawable)&bd);
 
     /*
      * Now that the DIB contains the image of the graph, get the the data
@@ -1631,7 +1643,7 @@ Print2Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
         Blt_StartPrintJob(interp, drawable);
         graphPtr->flags |= RESET_WORLD;
-        Blt_DrawGraph(graphPtr, drawable);
+        GraphToDrawable(graphPtr, drawable);
         Blt_EndPrintJob(interp, drawable);
     }
     return result;
@@ -1670,16 +1682,16 @@ ObjToFormat(
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'p') && (strcmp(string, "picture") == 0)) {
-        *formatPtr = FORMAT_PICTURE;
+        *formatPtr = FMT_PICTURE;
     } else if ((c == 'p') && (strcmp(string, "photo") == 0)) {
-        *formatPtr = FORMAT_PHOTO;
+        *formatPtr = FMT_PHOTO;
     } else if ((c == 'i') && (strcmp(string, "image") == 0)) {
-        *formatPtr = FORMAT_PICTURE;
+        *formatPtr = FMT_PICTURE;
 #ifdef WIN32
     } else if ((c == 'e') && (strcmp(string, "emf") == 0)) {
-        *formatPtr = FORMAT_EMF;
+        *formatPtr = FMT_EMF;
     } else if ((c == 'w') && (strcmp(string, "wmf") == 0)) {
-        *formatPtr = FORMAT_WMF;
+        *formatPtr = FMT_WMF;
 #endif /* WIN32 */
     } else {
 #ifdef WIN32
@@ -1838,18 +1850,22 @@ CreateAPMetaFile(Tcl_Interp *interp, HANDLE hMetaFile, HDC hDC,
  *      window positions, TCL_ERROR is returned, then interp->result will
  *      contain an error message.
  *
+ *      pathName snap imageName ?switches ...?
  *---------------------------------------------------------------------------
  */
 static int
 SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    int result;
     Pixmap drawable;
-    int i;
     SnapArgs args;
-    const char *imageName;
+    const char *imgName;
+    int result;
     
-    /* .g snap imageName ?switches? */
+
+    imgName = Tcl_GetString(objv[2]);
+
+    /* Initialize switches and set defaults. */
+    memset(&args, 0, sizeof(args));
     args.height = Tk_Height(graphPtr->tkwin);
     if ((args.height < 2) && (graphPtr->reqHeight > 0)) {
         args.height = graphPtr->reqHeight;
@@ -1858,58 +1874,52 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if ((args.width < 2) && (graphPtr->reqWidth > 0)) {
         args.width = graphPtr->reqWidth;
     }
-    args.format = FORMAT_PICTURE;
-    /* Process switches  */
-    i = Blt_ParseSwitches(interp, snapSpecs, objc - 2, objv + 2, &args, 
-        BLT_SWITCH_OBJV_PARTIAL);
-    if (i < 0) {
+    args.format = FMT_PICTURE;
+
+    if (Blt_ParseSwitches(interp, snapSpecs, objc - 3, objv + 3, &args, 
+                BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    i += 2;
-    if (i >= objc) {
-        Tcl_AppendResult(interp, "missing name argument: should be \"",
-                Tcl_GetString(objv[0]), "snap imageName ?switches?\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    imageName = Tcl_GetString(objv[i]);
     if (args.width < 2) {
         args.width = Tk_ReqWidth(graphPtr->tkwin);
     }
     if (args.height < 2) {
         args.width = Tk_ReqHeight(graphPtr->tkwin);
     }
+
     /* Always re-compute the layout of the graph before snapping the
      * picture. */
-    graphPtr->width = args.width;
+    graphPtr->width  = args.width;
     graphPtr->height = args.height;
+    graphPtr->flags |= RESET_WORLD;
     Blt_MapGraph(graphPtr);
-
     drawable = Tk_WindowId(graphPtr->tkwin);
     switch (args.format) {
-    case FORMAT_PICTURE:
-    case FORMAT_PHOTO:
-        drawable = Blt_GetPixmap(graphPtr->display, drawable, graphPtr->width, 
-                graphPtr->height, Tk_Depth(graphPtr->tkwin));
-#ifdef WIN32
-        assert(drawable != None);
-#endif
-        graphPtr->flags |= RESET_WORLD;
-        Blt_DrawGraph(graphPtr, drawable);
-        if (args.format == FORMAT_PICTURE) {
-            result = Blt_SnapPicture(interp, graphPtr->tkwin, drawable, 0, 0, 
-                args.width, args.height, args.width, args.height, imageName,
-                1.0);
-        } else {
-            result = Blt_SnapPhoto(interp, graphPtr->tkwin, drawable, 0, 0, 
-                args.width, args.height, args.width, args.height, imageName,
-                1.0);
+    case FMT_PICTURE:
+    case FMT_PHOTO:
+        {
+            Pixmap pixmap;
+            
+            pixmap = Blt_GetPixmap(graphPtr->display, drawable, args.width, 
+                args.height, Tk_Depth(graphPtr->tkwin));
+            graphPtr->flags |= RESET_WORLD;
+            GraphToDrawable(graphPtr, pixmap);
+            if (args.format == FMT_PICTURE) {
+                result = Blt_SnapPicture(interp, graphPtr->tkwin, pixmap, 0, 0, 
+                        args.width, args.height, args.width, args.height,
+                        imgName, 1.0);
+            } else {
+                result = Blt_SnapPhoto(interp, graphPtr->tkwin, pixmap, 0, 0,
+                        args.width, args.height, args.width, args.height,
+                        imgName, 1.0);
+            }
+            Blt_FreePixmap(graphPtr->display, pixmap);
         }
-        Tk_FreePixmap(graphPtr->display, drawable);
         break;
 
 #ifdef WIN32
-    case FORMAT_WMF:
-    case FORMAT_EMF:
+    case FMT_WMF:
+    case FMT_EMF:
         {
             TkWinDC drawableDC;
             TkWinDCState state;
@@ -1943,9 +1953,9 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             graphPtr->height = args.height;
             Blt_MapGraph(graphPtr);
             graphPtr->flags |= RESET_WORLD;
-            Blt_DrawGraph(graphPtr, (Drawable)&drawableDC);
+            GraphToDrawable(graphPtr, (Drawable)&drawableDC);
             hMetaFile = CloseEnhMetaFile(hDC);
-            if (strcmp(imageName, "CLIPBOARD") == 0) {
+            if (strcmp(imgName, "CLIPBOARD") == 0) {
                 HWND hWnd;
                 
                 hWnd = Tk_GetHWND(drawable);
@@ -1956,18 +1966,18 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
                 result = TCL_OK;
             } else {
                 result = TCL_ERROR;
-                if (args.format == FORMAT_WMF) {
+                if (args.format == FMT_WMF) {
                     APMHEADER mfh;
                     
                     assert(sizeof(mfh) == 22);
                     InitMetaFileHeader(graphPtr->tkwin, args.width, 
                                        args.height, &mfh);
                     result = CreateAPMetaFile(interp, hMetaFile, hRefDC, &mfh, 
-                                              imageName);
+                                              imgName);
                 } else {
                     HENHMETAFILE hMetaFile2;
                     
-                    hMetaFile2 = CopyEnhMetaFile(hMetaFile, imageName);
+                    hMetaFile2 = CopyEnhMetaFile(hMetaFile, imgName);
                     if (hMetaFile2 != NULL) {
                         result = TCL_OK;
                         DeleteEnhMetaFile(hMetaFile2); 
@@ -2014,8 +2024,8 @@ static Blt_OpSpec graphOps[] =
     {"crosshairs",   2, Blt_CrosshairsOp,  2, 0, "args ...",},
     {"element",      2, ElementOp,         2, 0, "args ...",},
     {"extents",      2, ExtentsOp,         3, 3, "item",},
-    {"inside",       3, InsideOp,          4, 4, "winX winY",},
-    {"invtransform", 3, InvtransformOp,    4, 0, "winX winY ?switches?",},
+    {"inside",       3, InsideOp,          4, 4, "x y",},
+    {"invtransform", 3, InvtransformOp,    4, 0, "x y ?switches ...?",},
     {"legend",       2, Blt_LegendOp,      2, 0, "args ...",},
     {"line",         2, LineOp,            2, 0, "args ...",},
     {"marker",       1, Blt_MarkerOp,      2, 0, "args ...",},
@@ -2025,9 +2035,10 @@ static Blt_OpSpec graphOps[] =
     {"print1",       6, Print1Op,          2, 3, "?printerName?",},
     {"print2",       6, Print2Op,          2, 3, "?printerName?",},
 #endif /*NO_PRINTER*/
-    {"region",       1, Blt_GraphRegionOp, 2, 0, "oper ?args?",},
-    {"snap",         1, SnapOp,            3, 0, "?switches? name",},
-    {"transform",    1, TransformOp,       4, 0, "x y ?switches?",},
+    {"region",       1, Blt_GraphRegionOp, 2, 0, "oper ?args ...?",},
+    {"snap",         2, SnapOp,            3, 0, "imageName ?switches ...?",},
+    {"strip",        2, StripOp,           2, 0, "args ...",},
+    {"transform",    1, TransformOp,       4, 0, "x y ?switches ...?",},
     {"x2axis",       2, X2AxisOp,          2, 0, "args ...",},
     {"xaxis",        2, XAxisOp,           2, 0, "args ...",},
     {"y2axis",       2, Y2AxisOp,          2, 0, "args ...",},
@@ -2240,35 +2251,35 @@ DrawMargins(Graph *graphPtr, Drawable drawable)
      * Draw the four outer rectangles which encompass the plotting
      * surface. This clears the surrounding area and clips the plot.
      */
-    if ((graphPtr->width > 0) && (graphPtr->top > 0)) {
+    if ((graphPtr->width > 0) && (graphPtr->y1 > 0)) {
         Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
-                0, 0, graphPtr->width, graphPtr->top, 0, TK_RELIEF_FLAT);
+                0, 0, graphPtr->width, graphPtr->y1, 0, TK_RELIEF_FLAT);
     }
-    h = graphPtr->bottom - graphPtr->top;
-    if ((graphPtr->left > 0) && (h > 0)) {
+    h = graphPtr->y2 - graphPtr->y1;
+    if ((graphPtr->x1 > 0) && (h > 0)) {
         Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
-                0, graphPtr->top, graphPtr->left, h, 0, TK_RELIEF_FLAT);
+                0, graphPtr->y1, graphPtr->x1, h, 0, TK_RELIEF_FLAT);
     }        
-    w = graphPtr->width - graphPtr->right;
+    w = graphPtr->width - graphPtr->x2;
     if ((w > 0) && (h > 0)) {
         Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
-                graphPtr->right, graphPtr->top, w, h, 0, TK_RELIEF_FLAT);
+                graphPtr->x2, graphPtr->y1, w, h, 0, TK_RELIEF_FLAT);
     }        
-    h = graphPtr->height - graphPtr->bottom;
+    h = graphPtr->height - graphPtr->y2;
     if ((graphPtr->width > 0) && (h > 0)) {
         Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
-                0, graphPtr->bottom, graphPtr->width, h, 0, TK_RELIEF_FLAT);
+                0, graphPtr->y2, graphPtr->width, h, 0, TK_RELIEF_FLAT);
     }        
-    w = (graphPtr->right  - graphPtr->left) + (2 * graphPtr->plotBW);
-    h = (graphPtr->bottom - graphPtr->top)  + (2 * graphPtr->plotBW);
+    w = (graphPtr->x2 - graphPtr->x1) + (2 * graphPtr->plotBorderWidth);
+    h = (graphPtr->y2 - graphPtr->y1) + (2 * graphPtr->plotBorderWidth);
 
     /* Draw 3D border around the plotting area */
-    if ((w > 0) && (h > 0) && (graphPtr->plotBW > 0)) {
+    if ((w > 0) && (h > 0) && (graphPtr->plotBorderWidth > 0)) {
         Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
                 graphPtr->normalBg,
-                graphPtr->left - graphPtr->plotBW,
-                graphPtr->top - graphPtr->plotBW,
-                w, h, graphPtr->plotBW, graphPtr->plotRelief);
+                graphPtr->x1 - graphPtr->plotBorderWidth,
+                graphPtr->y1 - graphPtr->plotBorderWidth,
+                w, h, graphPtr->plotBorderWidth, graphPtr->plotRelief);
     }
     site = Blt_Legend_Site(graphPtr);
     if (site & LEGEND_MARGIN_MASK) {
@@ -2284,50 +2295,6 @@ DrawMargins(Graph *graphPtr, Drawable drawable)
     Blt_DrawAxes(graphPtr, drawable);
     graphPtr->flags &= ~DRAW_MARGINS;
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * DrawPlotRegion --
- *
- *      Draws the contents of the plotting area.  This consists of the
- *      elements, markers (draw under elements), axis limits, and possibly
- *      the legend.  Typically, the output will be cached into a backing
- *      store pixmap, so that redraws can occur quickly.
- *
- * Results:
- *      None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawPlotRegion(Graph *graphPtr, Drawable drawable)
-{
-    int site;
-
-    /* Clear the background of the plotting area. */
-    Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->plotBg,
-        graphPtr->left, graphPtr->top, graphPtr->right - graphPtr->left + 1,
-        graphPtr->bottom - graphPtr->top + 1, TK_RELIEF_FLAT, 0);
-
-    /* Draw the elements, markers, legend, and axis limits. */
-
-    Blt_DrawGrids(graphPtr, drawable);
-    Blt_DrawMarkers(graphPtr, drawable, MARKER_UNDER);
-    site = Blt_Legend_Site(graphPtr);
-    if ((site & LEGEND_PLOTAREA_MASK) && 
-        (!Blt_Legend_IsRaised(graphPtr))) {
-        Blt_DrawLegend(graphPtr, drawable);
-    } else if (site == LEGEND_WINDOW) {
-        Blt_Legend_EventuallyRedraw(graphPtr);
-    }
-    Blt_DrawAxisLimits(graphPtr, drawable);
-    DrawMargins(graphPtr, drawable);
-    Blt_DrawElements(graphPtr, drawable);
-    Blt_DrawAxes(graphPtr, drawable);
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2352,21 +2319,21 @@ DrawPlot(Graph *graphPtr, Drawable drawable)
     
     DrawMargins(graphPtr, drawable);
 
-    x = graphPtr->left -   graphPtr->plotBW;
-    y = graphPtr->top    - graphPtr->plotBW;
-    w = graphPtr->right  - graphPtr->left + 1 + 2 * graphPtr->plotBW;
-    h = graphPtr->bottom - graphPtr->top  + 1 + 2 * graphPtr->plotBW;
+    x = graphPtr->x1 - graphPtr->plotBorderWidth;
+    y = graphPtr->y1 - graphPtr->plotBorderWidth;
+    w = graphPtr->x2 - graphPtr->x1 + (2 * graphPtr->plotBorderWidth);
+    h = graphPtr->y2 - graphPtr->y1 + (2 * graphPtr->plotBorderWidth);
 
     if ((w > 0) && (h > 0)) {
         /* Draw the background of the plotting area with 3D border. */
         Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->plotBg,
                              x, y, w, h,
-                             graphPtr->plotBW, graphPtr->plotRelief);
+                             graphPtr->plotBorderWidth, graphPtr->plotRelief);
     }
     /* Draw the elements, markers, legend, and axis limits. */
+    Blt_DrawMarkers(graphPtr, drawable, MARKER_UNDER);
     Blt_DrawAxes(graphPtr, drawable);
     Blt_DrawGrids(graphPtr, drawable);
-    Blt_DrawMarkers(graphPtr, drawable, MARKER_UNDER);
 
     site = Blt_Legend_Site(graphPtr);
     if ((site & LEGEND_PLOTAREA_MASK) && (!Blt_Legend_IsRaised(graphPtr))) {
@@ -2400,10 +2367,28 @@ Blt_MapGraph(Graph *graphPtr)
     }
 }
 
-void
-Blt_DrawGraph(Graph *graphPtr, Drawable drawable)
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GraphToDrawable --
+ *
+ *      Draws the entire graph widget into a designated drawable.  This
+ *      differs from the DisplayProc procedure in that no caching is done.
+ *      The plot area is (elements, markers, etc) is always redrawn.
+ *      This is used to create a snapshot of the graph without requiring
+ *      the graph to be visible on-screen.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      Commands are output to X to display the graph in its current mode.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+GraphToDrawable(Graph *graphPtr, Drawable drawable)
 {
-#ifdef notdef
     DrawPlot(graphPtr, drawable);
     /* Draw markers above elements */
     Blt_DrawMarkers(graphPtr, drawable, MARKER_ABOVE);
@@ -2414,7 +2399,6 @@ Blt_DrawGraph(Graph *graphPtr, Drawable drawable)
         (Blt_Legend_IsRaised(graphPtr))) {
         Blt_DrawLegend(graphPtr, drawable);
     }
-#endif
     /* Draw 3D border just inside of the focus highlight ring. */
     if ((graphPtr->borderWidth > 0) && (graphPtr->relief != TK_RELIEF_FLAT)) {
         Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
@@ -2439,22 +2423,22 @@ UpdateMarginTraces(Graph *graphPtr)
 {
     if (graphPtr->leftMarginVarObjPtr != NULL) { 
         Tcl_ObjSetVar2(graphPtr->interp, graphPtr->leftMarginVarObjPtr, NULL,
-                Tcl_NewIntObj(graphPtr->leftMarginPtr->width),
+                Tcl_NewIntObj(graphPtr->leftPtr->width),
                 TCL_GLOBAL_ONLY);
     }
     if (graphPtr->rightMarginVarObjPtr != NULL) { 
         Tcl_ObjSetVar2(graphPtr->interp, graphPtr->rightMarginVarObjPtr, NULL,
-                Tcl_NewIntObj(graphPtr->rightMarginPtr->width),
+                Tcl_NewIntObj(graphPtr->rightPtr->width),
                 TCL_GLOBAL_ONLY);
     }
     if (graphPtr->topMarginVarObjPtr != NULL) { 
         Tcl_ObjSetVar2(graphPtr->interp, graphPtr->topMarginVarObjPtr, NULL,
-                Tcl_NewIntObj(graphPtr->topMarginPtr->height),
+                Tcl_NewIntObj(graphPtr->topPtr->height),
                 TCL_GLOBAL_ONLY);
     }
     if (graphPtr->bottomMarginVarObjPtr != NULL) { 
         Tcl_ObjSetVar2(graphPtr->interp, graphPtr->bottomMarginVarObjPtr, NULL,
-                Tcl_NewIntObj(graphPtr->bottomMarginPtr->height),
+                Tcl_NewIntObj(graphPtr->bottomPtr->height),
                 TCL_GLOBAL_ONLY);
     }
 }
@@ -2645,4 +2629,47 @@ Blt_ReconfigureGraph(Graph *graphPtr)
     Blt_ConfigureElements(graphPtr);
     Blt_ConfigureAxes(graphPtr);
     Blt_ConfigureMarkers(graphPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GraphToPicture --
+ *
+ *      Returns a picture of the graph.
+ *
+ *---------------------------------------------------------------------------
+ */
+Blt_Picture
+Blt_GraphToPicture(Tcl_Interp *interp, Tk_Window tkwin, float gamma)
+{
+    Blt_Picture picture;
+    Pixmap pixmap;
+    const char *className;
+    int w, h;
+    Graph *graphPtr;
+    
+    className = Tk_Class(tkwin);
+    if ((strcmp(className, "BltGraph") != 0) &&
+        (strcmp(className, "BltBarchart") != 0) &&
+        (strcmp(className, "BltStripchart") != 0) &&
+        (strcmp(className, "BltContour") != 0)) {
+        Tcl_AppendResult(interp, "can't grab window of class \"", className, 
+                "\"", (char *)NULL);
+        return NULL;
+    }
+    w = Tk_Width(tkwin);
+    h = Tk_Height(tkwin);
+    pixmap = Blt_GetPixmap(Tk_Display(tkwin), Tk_WindowId(tkwin), w, h,
+        Tk_Depth(tkwin));
+    graphPtr = Blt_GetWindowInstanceData(tkwin);
+    GraphToDrawable(graphPtr, pixmap);
+    picture = Blt_DrawableToPicture(tkwin, pixmap, 0, 0, w, h, gamma);
+    Tk_FreePixmap(Tk_Display(tkwin), pixmap);
+    if (picture == NULL) {
+        Tcl_AppendResult(interp, "can't grab pixmap from \"",
+                Tk_PathName(tkwin), "\"", (char *)NULL);
+        return NULL;
+    }
+    return picture;
 }
