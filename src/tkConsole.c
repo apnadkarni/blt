@@ -89,8 +89,9 @@
 #include "blt.h"
 #include <locale.h>
 #include <stdio.h>
+
 #ifdef HAVE_STRING_H
-#include <string.h>
+  #include <string.h>
 #endif
 
 #define _VERSION(a,b,c)     (((a) << 16) + ((b) << 8) + (c))

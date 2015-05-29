@@ -87,23 +87,23 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_UNISTD_H
-#  include <unistd.h>
+  #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_FCNTL_H
-#  include <fcntl.h>
+  #include <fcntl.h>
 #endif  /* HAVE_FCNTL_H */
 
 #ifdef HAVE_SIGNAL_H
-#include <signal.h>
+  #include <signal.h>
 #endif  /* HAVE_SIGNAL_H */
 
 #include "bltAlloc.h"

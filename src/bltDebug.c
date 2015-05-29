@@ -44,20 +44,22 @@
 #define MAX_STACK 2048
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
+
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
+
 #ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
+  #include <sys/time.h>
+  #include <time.h>
 #else
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif /* HAVE_SYS_TIME_H */
+  #ifdef HAVE_SYS_TIME_H
+    #include <sys/time.h>
+  #else
+    #include <time.h>
+  #endif /* HAVE_SYS_TIME_H */
 #endif /* TIME_WITH_SYS_TIME */
 
 #include "bltAlloc.h"

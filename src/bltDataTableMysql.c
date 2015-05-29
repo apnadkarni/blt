@@ -41,14 +41,16 @@
 
 #include "config.h"
 #ifdef HAVE_LIBMYSQL
+
+#ifdef HAVE_MEMORY_H
+  #include <memory.h>
+#endif /* HAVE_MEMORY_H */
+
 #include <tcl.h>
 #include <bltDataTable.h>
 #include <bltAlloc.h>
 #include <bltSwitch.h>
 #include <mysql/mysql.h>
-#ifdef HAVE_MEMORY_H
-#  include <memory.h>
-#endif /* HAVE_MEMORY_H */
 
 DLLEXPORT extern Tcl_AppInitProc blt_table_mysql_init;
 DLLEXPORT extern Tcl_AppInitProc blt_table_mysql_safe_init;

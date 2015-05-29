@@ -63,12 +63,12 @@
 
 #include "config.h"
 #ifdef USE_TCL_STUBS
-#  define HAVE_TCL_STUBS 1
-#  undef USE_TCL_STUBS
-#endif
+  #define HAVE_TCL_STUBS 1
+  #undef USE_TCL_STUBS
+#endif  /* USE_TCL_STUBS */
 #include <tcl.h>
 #ifndef TCL_ONLY
-#include <tk.h>
+  #include <tk.h>
 #endif
 #include <blt.h>
 
@@ -77,8 +77,8 @@
  * Sun shared libraries to be used for Tcl.
  */
 #ifdef NEED_MATHERR
-BLT_EXTERN int matherr();
-int *tclDummyMathPtr = (int *)matherr;
+  BLT_EXTERN int matherr();
+  int *tclDummyMathPtr = (int *)matherr;
 #endif
 
 #ifdef TCL_ONLY

@@ -52,11 +52,11 @@
 #include "bltInt.h"
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include <bltAlloc.h>
@@ -69,31 +69,31 @@
 
 #undef HAVE_TIFF_H
 #ifdef HAVE_TIFF_H
-#include "tiff.h"
-#endif
+  #include "tiff.h"
+#endif  /* HAVE_TIFF_H */
 #include <fcntl.h>
 
 #if defined(_MSC_VER) || defined(__BORLANDC__) 
-#include <io.h>
-#define open _open
-#define close _close
-#define write _write
-#define unlink _unlink
-#define lseek _lseek
-#define fdopen _fdopen
-#define fcntl _fcntl
-#ifdef _MSC_VER
-#define O_RDWR  _O_RDWR 
-#define O_CREAT _O_CREAT
-#define O_TRUNC _O_TRUNC
-#define O_EXCL  _O_EXCL
-#endif /* _MSC_VER */
+  #include <io.h>
+  #define open _open
+  #define close _close
+  #define write _write
+  #define unlink _unlink
+  #define lseek _lseek
+  #define fdopen _fdopen
+  #define fcntl _fcntl
+  #ifdef _MSC_VER
+     #define O_RDWR  _O_RDWR 
+     #define O_CREAT _O_CREAT
+     #define O_TRUNC _O_TRUNC
+     #define O_EXCL  _O_EXCL
+  #endif /* _MSC_VER */
 #endif /* _MSC_VER || __BORLANDC__ */
 
 #define DEBUG_READER 0
 #ifndef WIN32
-#define PurifyPrintf printf
-#endif
+  #define PurifyPrintf printf
+#endif  /* WIN32 */
 #define PS_PREVIEW_EPSI 0
 #define PS_PREVIEW_WMF  1
 #define PS_PREVIEW_TIFF 2

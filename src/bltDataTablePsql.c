@@ -40,20 +40,25 @@
 #ifndef NO_DATATABLE
 
 #include "config.h"
+
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
+
 #ifdef HAVE_LIBPQ
+
+#ifdef HAVE_MEMORY_H
+  #include <memory.h>
+#endif /* HAVE_MEMORY_H */
+
 #include <tcl.h>
 #include <bltDataTable.h>
 #include <bltAlloc.h>
 #include <bltSwitch.h>
+
 #ifdef HAVE_POSTGRESQL_LIBPQ_FE_H
-#include <postgresql/libpq-fe.h>
+  #include <postgresql/libpq-fe.h>
 #endif /* HAVE_POSTGRESQL_LIBPQ_FE_H */
-#ifdef HAVE_MEMORY_H
-#  include <memory.h>
-#endif /* HAVE_MEMORY_H */
 
 DLLEXPORT extern Tcl_AppInitProc blt_table_psql_init;
 DLLEXPORT extern Tcl_AppInitProc blt_table_psql_safe_init;

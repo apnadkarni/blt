@@ -42,9 +42,11 @@
 
 #include "config.h"
 #ifdef HAVE_LIBXPM
+
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
+
 #include <tcl.h>
 #include <bltAlloc.h>
 #include <bltSwitch.h>
@@ -56,11 +58,11 @@
 #include <X11/Xutil.h>
 
 #ifdef HAVE_MEMORY_H
-#  include <memory.h>
+  #include <memory.h>
 #endif /* HAVE_MEMORY_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #define TRUE    1

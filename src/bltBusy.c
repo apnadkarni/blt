@@ -42,7 +42,7 @@
 #ifndef NO_BUSY
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include "bltAlloc.h"
@@ -148,9 +148,9 @@ typedef struct {
                                          * picture sequence. */
 
 #ifdef WIN32
-#define DEF_CURSOR      "wait"
+  #define DEF_CURSOR      "wait"
 #else
-#define DEF_CURSOR      "watch"
+  #define DEF_CURSOR      "watch"
 #endif
 #define DEF_BACKGROUND   STD_NORMAL_BACKGROUND
 #define DEF_FADE        "black"

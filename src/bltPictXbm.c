@@ -51,7 +51,7 @@
 #include <X11/Xutil.h>
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #define UCHAR(c) ((unsigned char) (c))
@@ -66,7 +66,7 @@ DLLEXPORT extern Tcl_AppInitProc Blt_PictureXbmSafeInit;
 typedef struct _Blt_Picture Picture;
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 typedef struct {

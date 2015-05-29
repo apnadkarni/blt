@@ -40,15 +40,15 @@
 #ifndef NO_DATATABLE
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_MEMORY_H
-#  include <memory.h>
+  #include <memory.h>
 #endif /* HAVE_MEMORY_H */
 
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #define IsSeparator(argsPtr, c) ((argsPtr)->separatorChar == (c))

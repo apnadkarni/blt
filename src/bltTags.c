@@ -39,8 +39,9 @@
 
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
+
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #include <bltAlloc.h>

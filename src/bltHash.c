@@ -668,9 +668,9 @@ HashArray(const void *key, size_t length)
     uint32_t *ip = (uint32_t *)key;
 
 #ifdef WORDS_BIGENDIAN
-#define PACK(a,b)       ((uint64_t)(b) | ((uint64_t)(a) << 32))
+  #define PACK(a,b)       ((uint64_t)(b) | ((uint64_t)(a) << 32))
 #else
-#define PACK(a,b)       ((uint64_t)(a) | ((uint64_t)(b) << 32))
+  #define PACK(a,b)       ((uint64_t)(a) | ((uint64_t)(b) << 32))
 #endif
     /* Set up the internal state */
     len = length;                       /* Length is the number of 64-bit

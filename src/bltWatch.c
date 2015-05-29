@@ -40,12 +40,15 @@
 
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
+
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
+
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
+
 #include "bltAlloc.h"
 #include <bltHash.h>
 #include "bltSwitch.h"

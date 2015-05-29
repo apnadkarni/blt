@@ -47,18 +47,19 @@
 #include "bltPictFmts.h"
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
+
 #ifdef HAVE_MEMORY_H
-#  include <memory.h>
+  #include <memory.h>
 #endif /* HAVE_MEMORY_H */
 
 typedef struct _Blt_Picture Picture;
 
 #undef HAVE_STDLIB_H
 #ifdef WIN32
-#define XMD_H   1
-#endif
+  #define XMD_H   1
+#endif  /* WIN32 */
 #undef EXTERN
 #undef FAR
 #include "jpeglib.h"

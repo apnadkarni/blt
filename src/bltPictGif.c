@@ -96,10 +96,11 @@
 #include "config.h"
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
+
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include <tcl.h>
@@ -111,16 +112,16 @@
 #include "bltPictFmts.h"
 
 #ifdef _MSC_VER
-#define vsnprintf               _vsnprintf
+  #define vsnprintf               _vsnprintf
 #endif
 
 #include <setjmp.h>
 
 #undef assert
 #ifdef __STDC__
-#  define assert(EX) (void)((EX) || (GifAssert(#EX, __FILE__, __LINE__), 0))
+  #define assert(EX) (void)((EX) || (GifAssert(#EX, __FILE__, __LINE__), 0))
 #else
-#  define assert(EX) (void)((EX) || (GifAssert("EX", __FILE__, __LINE__), 0))
+  #define assert(EX) (void)((EX) || (GifAssert("EX", __FILE__, __LINE__), 0))
 #endif /* __STDC__ */
 
 typedef struct _Blt_Picture Pict;

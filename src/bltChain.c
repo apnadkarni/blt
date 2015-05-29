@@ -40,14 +40,14 @@
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #include <bltAlloc.h>
 #include "bltChain.h"
 
 #ifndef ALIGN
-#define ALIGN(a) \
+  #define ALIGN(a) \
         (((size_t)a + (sizeof(double) - 1)) & (~(sizeof(double) - 1)))
 #endif /* ALIGN */
 

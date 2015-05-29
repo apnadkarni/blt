@@ -53,11 +53,11 @@
 #include "bltPictFmts.h"
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef _MSC_VER
-#define vsnprintf               _vsnprintf
+  #define vsnprintf               _vsnprintf
 #endif
 
 #include <setjmp.h>

@@ -40,8 +40,9 @@
 #include "config.h"
 
 #ifndef NO_DATATABLE
+
 #ifdef HAVE_MEMORY_H
-#  include <memory.h>
+  #include <memory.h>
 #endif /* HAVE_MEMORY_H */
 
 #include <tcl.h>

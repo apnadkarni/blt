@@ -43,14 +43,15 @@
 #ifndef NO_WINOP
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifndef WIN32
-#include <X11/Xatom.h>
-#include <X11/Xproto.h>
-#include <X11/Xutil.h>
-#endif
+  #include <X11/Xatom.h>
+  #include <X11/Xproto.h>
+  #include <X11/Xutil.h>
+#endif  /* WIN32 */
+
 #include <X11/Xutil.h>
 
 #include "bltAlloc.h"
@@ -321,11 +322,13 @@ FindTopWindow(WindowNode *rootPtr, int x, int y)
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
 #include <X11/Xproto.h>
+
 #ifdef HAVE_X11_EXTENSIONS_RANDR_H
-#include <X11/extensions/randr.h>
+  #include <X11/extensions/randr.h>
 #endif
+
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-#include <X11/extensions/Xrandr.h>
+  #include <X11/extensions/Xrandr.h>
 #endif
 
 static int 

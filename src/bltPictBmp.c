@@ -41,7 +41,7 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /*HAVE_STRING_H*/
 
 #ifdef _MSC_VER
@@ -52,9 +52,9 @@
 
 #undef assert
 #ifdef __STDC__
-#  define assert(EX) (void)((EX) || (BmpAssert(#EX, __FILE__, __LINE__), 0))
+  #define assert(EX) (void)((EX) || (BmpAssert(#EX, __FILE__, __LINE__), 0))
 #else
-#  define assert(EX) (void)((EX) || (BmpAssert("EX", __FILE__, __LINE__), 0))
+  #define assert(EX) (void)((EX) || (BmpAssert("EX", __FILE__, __LINE__), 0))
 #endif /* __STDC__ */
 
 typedef struct _Blt_Picture Picture;

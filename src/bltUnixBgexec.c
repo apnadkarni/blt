@@ -46,48 +46,48 @@
 #ifndef NO_BGEXEC
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif  /* HAVE_STDLIB_H */
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_SIGNAL_H
-#  include <signal.h>
+  #include <signal.h>
 #endif  /* HAVE_SIGNAL_H */
 
 #ifdef HAVE_IOCTL_H
-#  include <ioctl.h>
+  #include <ioctl.h>
 #endif  /* HAVE_IOCTL_H */
 
 #ifdef HAVE_SYS_IOCTL_H
-#  include <sys/ioctl.h>
+  #include <sys/ioctl.h>
 #endif  /* HAVE_SYS_IOCTL_H */
 
 #ifdef HAVE_FCNTL_H
-#  include <fcntl.h>
+  #include <fcntl.h>
 #endif  /* HAVE_FCNTL_H */
 
 #ifdef HAVE_SYS_TYPES_H
-#  include <sys/types.h>
+  #include <sys/types.h>
 #endif  /* HAVE_SYS_TYPES_H */
 
 #ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
+  #include <sys/param.h>
 #endif
 
 #ifdef HAVE_STROPTS_H
-#include <stropts.h>
+  #include <stropts.h>
 #endif  /* HAVE_STROPTS_H */
 
 #ifdef HAVE_TERMIOS_H
-#include <termios.h>
-#include <unistd.h>
+  #include <termios.h>
+  #include <unistd.h>
 #endif  /* HAVE_TERMIOS_H */
 
 #include "bltAlloc.h"
@@ -2466,7 +2466,7 @@ Blt_PtyExecCmdInitProc(Tcl_Interp *interp)
     if (activePipelines == NULL) {
 #ifdef TCL_THREADS
         mutexPtr = Tcl_GetAllocMutex();
-#endif
+#endif  /* TCL_THREADS */
         activePipelines = Blt_Chain_Create();
         Tcl_CreateExitHandler(BgexecExitProc, activePipelines);
     }

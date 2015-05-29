@@ -79,19 +79,19 @@
 #include <stdio.h>
 
 #ifdef HAVE_STDARG_H
-#  include <stdarg.h>
+  #include <stdarg.h>
 #endif /* HAVE_STDARG_H */
 
 #ifdef HAVE_TIME_H
-#  include <time.h>
+  #include <time.h>
 #endif  /* HAVE_TIME_H */
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_ERRNO_H
-#  include <errno.h>
+  #include <errno.h>
 #endif /* HAVE_ERRNO_H */
 
 #include "bltMath.h"

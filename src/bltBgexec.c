@@ -45,27 +45,27 @@
 #include <signal.h>
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
+  #include <sys/param.h>
 #endif  /* HAVE_SYS_PARAM_H */
 
 #ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
+  #include <sys/types.h>
 #endif  /* HAVE_SYS_TYPES_H */
 
 #ifdef HAVE_UNISTD_H
-#  include <unistd.h>
+  #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
 #include "bltAlloc.h"
@@ -87,11 +87,11 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
 #define ENCODING_BINARY         ((Tcl_Encoding)1)
 
 #ifdef WIN32 
-#  ifndef __GNUC__
-#    ifdef O_NONBLOCK
-#      define O_NONBLOCK        1
-#    endif
-#  endif /* __GNUC__ */
+  #ifndef __GNUC__
+     #ifdef O_NONBLOCK
+        #define O_NONBLOCK        1
+     #endif
+  #endif /* __GNUC__ */
 #endif /* WIN32 */
 
 /*
@@ -104,13 +104,13 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
  */
 
 #ifdef WIN32
-#define read(fd, buf, size)     Blt_AsyncRead((fd),(buf),(size))
-#define close(fd)               CloseHandle((HANDLE)fd)
-#define Tcl_CreateFileHandler   Blt_CreateFileHandler
-#define Tcl_DeleteFileHandler   Blt_DeleteFileHandler
-#define kill                    KillProcess
-#define waitpid                 WaitProcess
-#endif
+  #define read(fd, buf, size)     Blt_AsyncRead((fd),(buf),(size))
+  #define close(fd)               CloseHandle((HANDLE)fd)
+  #define Tcl_CreateFileHandler   Blt_CreateFileHandler
+  #define Tcl_DeleteFileHandler   Blt_DeleteFileHandler
+  #define kill                    KillProcess
+  #define waitpid                 WaitProcess
+#endif  /* WIN32 */
 
 #define BGEXEC_THREAD_KEY       "BLT Bgexec Data"
 
@@ -265,7 +265,8 @@ static SignalToken signalTokens[] =
 
 #ifdef TCL_THREADS
 static Tcl_Mutex *mutexPtr = NULL;
-#endif
+#endif /* TCL_THREADS */
+
 static Blt_Chain activePipelines;       /* List of active pipelines and
                                          * their bgexec structures. */
 
@@ -858,9 +859,9 @@ ReadBytes(Sink *sinkPtr)
         }
         if (numBytes < 0) {
 #ifdef O_NONBLOCK
-#define BLOCKED         EAGAIN
+  #define BLOCKED         EAGAIN
 #else
-#define BLOCKED         EWOULDBLOCK
+  #define BLOCKED         EWOULDBLOCK
 #endif /*O_NONBLOCK*/
             /* Either an error has occurred or no more data is currently
              * available to read.  */

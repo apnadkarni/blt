@@ -39,7 +39,7 @@
 
 #include "config.h"
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #include <setjmp.h>

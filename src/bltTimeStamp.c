@@ -50,18 +50,23 @@
 #define _DEFAULT_SOURCE 1
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
+
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
+
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
+
 #ifdef HAVE_TIME_H
-#  include <time.h>
+  #include <time.h>
 #endif /* HAVE_TIME_H */
+
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+  #include <sys/time.h>
 #endif
+
 #include <stdint.h>
 #include "bltAlloc.h"
 #include "bltString.h"

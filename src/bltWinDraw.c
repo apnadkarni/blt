@@ -148,10 +148,6 @@ static int bltModes[] =
 
 #if (_TCL_VERSION <  _VERSION(8,1,0)) 
 typedef void *Tcl_Encoding;            /* Make up dummy type for encoding.  */
-#else 
-#ifdef notdef
-static Tcl_Encoding systemEncoding = NULL;
-#endif
 #endif
 
 HPALETTE

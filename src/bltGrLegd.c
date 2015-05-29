@@ -41,7 +41,7 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include <X11/Xutil.h>

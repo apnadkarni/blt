@@ -43,7 +43,7 @@
 #ifndef NO_CONTAINER
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #if !defined(WIN32) && !defined(MACOSX)

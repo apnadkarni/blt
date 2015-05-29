@@ -41,14 +41,16 @@
 
 #include "config.h"
 #ifdef HAVE_LIBSQLITE
+
+#ifdef HAVE_MEMORY_H
+  #include <memory.h>
+#endif /* HAVE_MEMORY_H */
+
 #include <tcl.h>
 #include <bltDataTable.h>
 #include <bltAlloc.h>
 #include <bltSwitch.h>
 #include <sqlite3.h>
-#ifdef HAVE_MEMORY_H
-#  include <memory.h>
-#endif /* HAVE_MEMORY_H */
 
 DLLEXPORT extern Tcl_AppInitProc blt_table_sqlite_init;
 DLLEXPORT extern Tcl_AppInitProc blt_table_sqlite_safe_init;

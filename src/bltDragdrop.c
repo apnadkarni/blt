@@ -46,7 +46,7 @@
 #ifndef NO_DRAGDROP
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include <X11/Xatom.h>
@@ -61,13 +61,13 @@
 #define DRAGDROP_THREAD_KEY "BLT Dragdrop Command Data"
 
 #ifdef WIN32
-#define MAX_PROP_SIZE 255       /* Maximum size of property. */
-typedef HWND WINDOW;
+  #define MAX_PROP_SIZE 255       /* Maximum size of property. */
+  typedef HWND WINDOW;
 #else
-#define MAX_PROP_SIZE 1000      /* Maximum size of property. */
-typedef Window WINDOW;
-static Atom dndAtom;
-#endif
+  #define MAX_PROP_SIZE 1000      /* Maximum size of property. */
+  typedef Window WINDOW;
+  static Atom dndAtom;
+#endif  /* WIN32 */
 
 /*
  *      Each "drag&drop" target widget is tagged with a "BltDrag&DropTarget" 
@@ -515,7 +515,7 @@ GetDragdropCmdInterpData(Tcl_Interp *interp)
 #ifdef  WIN32
 
 #if defined( _MSC_VER) || defined(__BORLANDC__)
-#include <tchar.h>
+  #include <tchar.h>
 #endif /* _MSC_VER || __BORLANDC__ */
 
 typedef struct {

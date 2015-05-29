@@ -40,7 +40,7 @@
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 #include <bltAlloc.h>
 #include "bltDBuffer.h"

@@ -41,7 +41,7 @@
 #include "bltInt.h"
 
 #ifdef HAVE_LIMITS_H
-#  include <limits.h>
+  #include <limits.h>
 #endif  /* HAVE_LIMITS_H */
 
 #include "bltAlloc.h"

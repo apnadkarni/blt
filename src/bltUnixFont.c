@@ -44,15 +44,19 @@
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
+
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
+
 #include <X11/Xutil.h>
+
 #ifdef HAVE_LIBXFT
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include <X11/Xft/Xft.h>
-#endif
+  #include <ft2build.h>
+  #include FT_FREETYPE_H
+  #include <X11/Xft/Xft.h>
+#endif  /* HAVE_LIBXFT */
+
 #include "bltAlloc.h"
 #include "bltMath.h"
 #include "bltString.h"
@@ -1266,6 +1270,7 @@ TkUnderlineProc(
 
 
 #ifdef HAVE_LIBXFT
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <X11/Xft/Xft.h>

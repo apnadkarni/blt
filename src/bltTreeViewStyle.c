@@ -43,7 +43,7 @@
 #ifndef NO_TREEVIEW
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include <X11/Xutil.h>
@@ -111,13 +111,13 @@
 #define DEF_ACTIVE_BG                   (char *)NULL
 
 #ifdef WIN32
-#define DEF_CHECKBOX_CURSOR             "arrow"
-#define DEF_RADIOBUTTON_CURSOR          "arrow"
-#define DEF_TEXTBOX_CURSOR              "arrow"
+  #define DEF_CHECKBOX_CURSOR             "arrow"
+  #define DEF_RADIOBUTTON_CURSOR          "arrow"
+  #define DEF_TEXTBOX_CURSOR              "arrow"
 #else
-#define DEF_CHECKBOX_CURSOR             "hand2"
-#define DEF_RADIOBUTTON_CURSOR          "hand2"
-#define DEF_TEXTBOX_CURSOR              "hand2"
+  #define DEF_CHECKBOX_CURSOR             "hand2"
+  #define DEF_RADIOBUTTON_CURSOR          "hand2"
+  #define DEF_TEXTBOX_CURSOR              "hand2"
 #endif /*WIN32*/
 
 #define DEF_CHECKBOX_ACTIVE_COLORS      "0"

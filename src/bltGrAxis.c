@@ -37,14 +37,18 @@
  *
  */
 #define BUILD_BLT_TK_PROCS 1
+
 #include "bltInt.h"
-#include "bltMath.h"
+
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
+
 #ifdef HAVE_FLOAT_H
-#  include <float.h>
+  #include <float.h>
 #endif /* HAVE_FLOAT_H */
+
+#include "bltMath.h"
 
 #include <X11/Xutil.h>
 #include "bltAlloc.h"
@@ -2719,7 +2723,7 @@ AxisOffsets(Axis *axisPtr, AxisInfo *infoPtr)
             axisLine -= graphPtr->plotBorderWidth + axisPad +
                 axisPtr->lineWidth / 2;
             if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
-#ifdef notef
+#ifdef notdef
                 axisLine++;
 #endif
             } else {
@@ -2783,6 +2787,7 @@ AxisOffsets(Axis *axisPtr, AxisInfo *infoPtr)
             }
         } else {
             if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
+
 #ifdef notdef
                 axisLine--;                 /* Draw axis line within solid plot
                                              * border. */

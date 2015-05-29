@@ -43,15 +43,15 @@
 #ifndef NO_TABLEVIEW
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif  /* HAVE_CTYPE_H */
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include "bltAlloc.h"
@@ -97,11 +97,11 @@
                                  TCL_TRACE_UNSETS)
 
 #ifdef WIN32
-#define DEF_ACTIVE_BG                   RGB_GREY85
-#define DEF_CURSOR                      "arrow"
+  #define DEF_ACTIVE_BG                   RGB_GREY85
+  #define DEF_CURSOR                      "arrow"
 #else
-#define DEF_ACTIVE_BG                   RGB_GREY95
-#define DEF_CURSOR                      "hand2"
+  #define DEF_ACTIVE_BG                   RGB_GREY95
+  #define DEF_CURSOR                      "hand2"
 #endif
 
 #define DEF_ACTIVE_FG                   STD_ACTIVE_FOREGROUND

@@ -248,6 +248,6 @@ Blt_tk_SafeUnload(Tcl_Interp *interp, int flags)
 
 
 #ifdef USE_DLL
-#  include "bltWinDll.c"
+  #include "bltWinDll.c"
 #endif
 

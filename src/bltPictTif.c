@@ -47,11 +47,11 @@
 #include "bltPictFmts.h"
 
 #ifdef HAVE_MEMORY_H
-#  include <memory.h>
+  #include <memory.h>
 #endif /* HAVE_MEMORY_H */
 
 #if defined(WIN32) || defined(MACOSX)
-#include <setjmp.h>
+  #include <setjmp.h>
 #endif
 
 typedef struct _Blt_Picture Picture;

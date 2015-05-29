@@ -278,9 +278,9 @@ SetLibraryPath(Tcl_Interp *interp)
     {
         HKEY key;
         DWORD result;
-#  ifndef BLT_REGISTRY_KEY
-#    define BLT_REGISTRY_KEY "Software\\BLT\\" BLT_VERSION "\\" TCL_VERSION
-#  endif
+#ifndef BLT_REGISTRY_KEY
+  #define BLT_REGISTRY_KEY "Software\\BLT\\" BLT_VERSION "\\" TCL_VERSION
+#endif
         result = RegOpenKeyEx(
               HKEY_LOCAL_MACHINE, /* Parent key. */
               BLT_REGISTRY_KEY, /* Path to sub-key. */
@@ -420,5 +420,5 @@ Blt_tcl_SafeUnload(Tcl_Interp *interp, int flags)
 }
 
 #ifdef USE_DLL
-#  include "bltWinDll.c"
+  #include "bltWinDll.c"
 #endif

@@ -53,19 +53,19 @@
 #ifndef NO_TREEVIEW
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_LIMITS_H
-#  include <limits.h>
+  #include <limits.h>
 #endif  /* HAVE_LIMITS_H */
 
 #include <X11/Xutil.h>
@@ -136,16 +136,17 @@
 #define DEF_CELL_STYLE                  (char *)NULL
 
 #ifdef WIN32
-#define DEF_ACTIVE_BG                   RGB_GREY85
+  #define DEF_ACTIVE_BG                   RGB_GREY85
 #else
-#define DEF_ACTIVE_BG                   RGB_GREY95
+  #define DEF_ACTIVE_BG                   RGB_GREY95
 #endif
+
 #define DEF_DISABLE_BG                  RGB_GREY97
 
 #ifdef WIN32
-#define DEF_COLUMN_ACTIVE_TITLE_BG      RGB_GREY85
+  #define DEF_COLUMN_ACTIVE_TITLE_BG      RGB_GREY85
 #else
-#define DEF_COLUMN_ACTIVE_TITLE_BG      RGB_GREY90
+  #define DEF_COLUMN_ACTIVE_TITLE_BG      RGB_GREY90
 #endif
 #define DEF_COLUMN_ACTIVE_TITLE_FG      STD_ACTIVE_FOREGROUND
 #define DEF_COLUMN_ARROWWIDTH           "0"

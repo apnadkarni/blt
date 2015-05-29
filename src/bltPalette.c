@@ -42,23 +42,23 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_UNISTD_H
-#  include <unistd.h>
+  #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_ERRNO_H
-#  include <errno.h>
+  #include <errno.h>
 #endif /* HAVE_ERRNO_H */
 
 #include "bltMath.h"

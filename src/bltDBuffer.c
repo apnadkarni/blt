@@ -41,7 +41,7 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include <bltAlloc.h>
@@ -376,10 +376,11 @@ Blt_DBuffer_LoadFile(Tcl_Interp *interp, const char *fileName,
     unsigned char *bytes;
 
 #ifdef WIN32
-#define READ_MODE "rb"
+  #define READ_MODE "rb"
 #else 
-#define READ_MODE "r"
-#endif
+  #define READ_MODE "r"
+#endif  /* WIN32 */
+
     f = Blt_OpenFile(interp, fileName, READ_MODE);
     if (f == NULL) {
         return TCL_ERROR;

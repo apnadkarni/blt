@@ -82,10 +82,12 @@
 
 
 #include "config.h"
+
 #ifdef USE_TCL_STUBS
-#  define HAVE_TCL_STUBS 1
-#  undef USE_TCL_STUBS
+  #define HAVE_TCL_STUBS 1
+  #undef USE_TCL_STUBS
 #endif
+
 #include <tcl.h>
 #ifndef TCL_ONLY
 #include <tk.h>
@@ -93,20 +95,22 @@
 #include "blt.h"
 #include <locale.h>
 #include <stdio.h>
+
 #ifdef HAVE_STRING_H
-#include <string.h>
+  #include <string.h>
 #endif
+
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h>
+  #include <stdlib.h>
 #endif
 
 #ifdef WIN32
-#  define STRICT
-#  define WIN32_LEAN_AND_MEAN
-#  include <windows.h>
-#  undef STRICT
-#  undef WIN32_LEAN_AND_MEAN
-#  include <windowsx.h>
+  #define STRICT
+  #define WIN32_LEAN_AND_MEAN
+  #include <windows.h>
+  #undef STRICT
+  #undef WIN32_LEAN_AND_MEAN
+  #include <windowsx.h>
 #endif /* WIN32 */
 
 #define vsnprintf               _vsnprintf

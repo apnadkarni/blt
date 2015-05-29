@@ -46,35 +46,36 @@
 
 #include <limits.h>
 #include <stdlib.h>
+
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifndef __WIN32__
-#   if defined(_WIN32) || defined(WIN32) || defined(__MINGW32__) || defined(__BORLANDC__)
-#       define __WIN32__
-#       ifndef WIN32
-#           define WIN32
-#       endif
-#   endif
+  #if defined(_WIN32) || defined(WIN32) || defined(__MINGW32__) || defined(__BORLANDC__)
+    #define __WIN32__
+    #ifndef WIN32
+      #define WIN32
+    #endif
+  #endif
 #endif  /*__WIN32__*/
 
 #ifdef _MSC_VER
-#  define _CRT_SECURE_NO_DEPRECATE
-#  define _CRT_NONSTDC_NO_DEPRECATE
+  #define _CRT_SECURE_NO_DEPRECATE
+  #define _CRT_NONSTDC_NO_DEPRECATE
 #endif  /*MSC_VER*/
 
 #ifdef WIN32
-#  define STRICT
-#  define WIN32_LEAN_AND_MEAN
-#  include <windows.h>
-#  undef STRICT
-#  undef WIN32_LEAN_AND_MEAN
-#  include <windowsx.h>
+  #define STRICT
+  #define WIN32_LEAN_AND_MEAN
+  #include <windows.h>
+  #undef STRICT
+  #undef WIN32_LEAN_AND_MEAN
+  #include <windowsx.h>
 #endif  /*WIN32*/
 
 #ifdef HAVE_UNISTD_H
-#  include <unistd.h>
+  #include <unistd.h>
 #endif /*HAVE_UNISTD_H*/
 
 #include <tk.h>
@@ -90,7 +91,7 @@
 #include "bltWait.h"
 
 #ifdef WIN32
-#include "bltWin.h"
+  #include "bltWin.h"
 #endif /*WIN32*/
 
 #define UCHAR(c)        ((unsigned char) (c))
@@ -223,10 +224,10 @@ DLLEXPORT extern Tcl_AppInitProc Blt_PicturePsInit;
 DLLEXPORT extern Tcl_AppInitProc Blt_PicturePsSafeInit;
 
 #ifdef WIN32
-#define close(fd)               CloseHandle((HANDLE)fd)
-#define kill                    KillProcess
-#define waitpid                 WaitProcess
-#endif
+  #define close(fd)               CloseHandle((HANDLE)fd)
+  #define kill                    KillProcess
+  #define waitpid                 WaitProcess
+#endif  /* WIN32 */
 
 #define TRUE    1
 #define FALSE   0
@@ -234,7 +235,7 @@ DLLEXPORT extern Tcl_AppInitProc Blt_PicturePsSafeInit;
 typedef struct _Blt_Picture Picture;
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 /*
@@ -309,14 +310,14 @@ AddComments(Blt_Ps ps, Tcl_Obj *objPtr)
  */
 
 #ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
+  #include <sys/time.h>
+  #include <time.h>
 #else
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif /* HAVE_SYS_TIME_H */
+  #ifdef HAVE_SYS_TIME_H
+    #include <sys/time.h>
+  #else
+    #include <time.h>
+  #endif /* HAVE_SYS_TIME_H */
 #endif /* TIME_WITH_SYS_TIME */
 
 /*

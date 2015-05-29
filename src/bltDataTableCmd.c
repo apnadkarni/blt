@@ -207,15 +207,15 @@
 #include "tclIntDecls.h"
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_SYS_STAT_H
-#  include <sys/stat.h>
+  #include <sys/stat.h>
 #endif  /* HAVE_SYS_STAT_H */
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #include "tclIntDecls.h"

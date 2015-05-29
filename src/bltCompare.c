@@ -58,9 +58,11 @@
 #include <bltInt.h>
 
 #ifndef NO_COMPARE
+
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
+
 #include "bltAlloc.h"
 #include "bltMath.h"
 #include "bltString.h"

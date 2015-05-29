@@ -40,19 +40,19 @@
 #include "tclIntDecls.h"
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_MALLOC_H
-#include <malloc.h>
+  #include <malloc.h>
 #endif /* HAVE_MALLOC_H */
 
 #ifdef HAVE_MEMORY_H
-#  include <memory.h>
+  #include <memory.h>
 #endif /* HAVE_MEMORY_H */
 
 /*
@@ -63,12 +63,11 @@
  *   deallocation routines for BLT on a library-wide basis.
  */
 #ifndef WIN32
-
-#if (_TCL_VERSION < _VERSION(8,1,0)) 
-#if !HAVE_DECL_FREE
-BLT_EXTERN void free (void *);
-#endif
-#endif /* < 8.1.0 */
+  #if (_TCL_VERSION < _VERSION(8,1,0)) 
+    #if !HAVE_DECL_FREE
+       BLT_EXTERN void free (void *);
+    #endif
+  #endif /* < 8.1.0 */
 #endif /* WIN32 */
 
 static Blt_MallocProc *bltMallocPtr;

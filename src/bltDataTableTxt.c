@@ -46,11 +46,11 @@
 #include <bltAlloc.h>
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_MEMORY_H
-#  include <memory.h>
+  #include <memory.h>
 #endif /* HAVE_MEMORY_H */
 
 DLLEXPORT extern Tcl_AppInitProc blt_table_txt_init;

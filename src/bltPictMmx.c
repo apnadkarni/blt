@@ -41,24 +41,13 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include "bltAlloc.h"
 #include "bltChain.h"
 #include "bltPicture.h"
 #include "bltPictInt.h"
-
-#if defined(__GNUC__) && defined(HAVE_X86) && defined(__OPTIMIZE__)
-#ifdef notdef
-#  define GCC_VERSION \
-    ((__GNUC__)*10000+(__GNUC_MINOR__)*100+(__GNUC_PATCHLEVEL__))
-#  if ((GCC_VERSION >= 40801) && (GCC_VERSION < 40900))
-#    warning("Disabling MMX because of GCC version")
-#    undef HAVE_X86_ASM
-#  endif
-#endif
-#endif
 
 #ifdef HAVE_X86_ASM
 
@@ -1989,25 +1978,6 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
     destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
     asm volatile ("emms");
 }
-#endif
-#ifdef notdef
-int result;
-__asm __volatile(
-" pushfl\n"
-" pop %%eax\n"
-" mov %%eax, %%ecx\n"
-" xor $0x200000, %%eax\n"
-" push %%eax\n"
-" popfl\n"
-" pushfl\n"
-" pop %%eax\n"
-" xor %%ecx, %%eax\n"
-" mov %%eax, %0\n"
-" push %%ecx\n"
-" popfl\n"
-: "=m"(result)
-: :"eax", "ecx", "memory");
-return (result != 0);
 #endif
 
 static int

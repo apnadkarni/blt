@@ -41,13 +41,13 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include <X11/Xlib.h>
 
 #ifdef notdef /* WIN32 */
-#include <X11/Xproto.h>
+  #include <X11/Xproto.h>
 #endif
 
 #include "bltAlloc.h"

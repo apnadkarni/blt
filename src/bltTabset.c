@@ -43,15 +43,15 @@
 #ifndef NO_TABSET
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #include "bltAlloc.h"
@@ -171,14 +171,8 @@
 #define TAB_PERFORATION    (ClientData)1
 #define TAB_BUTTON         (ClientData)2
 
-#ifdef notdef
-#define DEF_ACTIVEBACKGROUND            RBG_GREY85
-#define DEF_ACTIVEFOREGROUND            STD_ACTIVE_FOREGROUND
-#else
 #define DEF_ACTIVEBACKGROUND            RGB_SKYBLUE4
 #define DEF_ACTIVEFOREGROUND            RGB_WHITE
-#endif
-
 #define DEF_BACKGROUND                  RGB_GREY77
 #define DEF_BORDERWIDTH                 "0"
 #define DEF_COMMAND                     (char *)NULL

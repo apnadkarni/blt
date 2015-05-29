@@ -41,12 +41,12 @@
 #ifndef NO_CUTBUFFER
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifndef WIN32
-#include <X11/Xproto.h>
-#endif
+  #include <X11/Xproto.h>
+#endif  /* WIN32 */
 
 #include "bltAlloc.h"
 #include "bltOp.h"

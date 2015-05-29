@@ -41,10 +41,13 @@
 #include "bltInt.h"
 
 #include "config.h"
-#ifdef HAVE_STRING_H
-#  include <string.h>
-#endif /* HAVE_STRING_H */
+
 #ifdef HAVE_LIBPNG
+
+#ifdef HAVE_STRING_H
+  #include <string.h>
+#endif /* HAVE_STRING_H */
+
 #include <tcl.h>
 #include <bltSwitch.h>
 #include "bltPicture.h"
@@ -56,19 +59,20 @@
 typedef struct _Blt_Picture Picture;
 
 #ifdef WIN32
-#if SIZEOF_VOID_P == 8
-#define _LARGEFILE64_SOURCE 1
-#define _FILE_OFFSET_BITS 64
-#else 
-#define _LARGEFILE64_SOURCE 0
-#define _FILE_OFFSET_BITS 32
-#endif /* SIZEOF_VOID_P == 8 */
+  #if SIZEOF_VOID_P == 8
+    #define _LARGEFILE64_SOURCE 1
+    #define _FILE_OFFSET_BITS 64
+  #else 
+    #define _LARGEFILE64_SOURCE 0
+    #define _FILE_OFFSET_BITS 32
+  #endif /* SIZEOF_VOID_P == 8 */
 #endif /*WIN32*/
+
 #include <zlib.h>
 #include <png.h>
 
 #ifndef png_jmpbuf
-#define png_jmpbuf(p)   (p)->jmpbuf
+  #define png_jmpbuf(p)   (p)->jmpbuf
 #endif
 
 typedef struct {

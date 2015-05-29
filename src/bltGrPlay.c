@@ -41,11 +41,11 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #ifdef HAVE_LIMITS_H
-#  include <limits.h>
+  #include <limits.h>
 #endif
 
 #include "bltHash.h"

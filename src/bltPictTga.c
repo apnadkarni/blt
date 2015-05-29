@@ -45,15 +45,15 @@
 #include <time.h>
 #include <setjmp.h>
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include "bltPicture.h"
 #include "bltPictFmts.h"
 
 #ifdef _MSC_VER
-#define vsnprintf               _vsnprintf
-#endif
+  #define vsnprintf               _vsnprintf
+#endif  /* _MSC_VER */
 
 #undef MIN
 #define MIN(a,b)        (((a)<(b))?(a):(b))

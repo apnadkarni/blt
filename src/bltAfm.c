@@ -41,7 +41,7 @@
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 #include <errno.h>
 #include <stdio.h>

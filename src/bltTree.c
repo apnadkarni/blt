@@ -38,19 +38,20 @@
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 
-/* TODO:
- *      Traces and notifiers should be in one list in tree object.
- *      Notifier is always fired.
- *      Incorporate first/next tag routines ?
- */
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #include "bltAlloc.h"
 #include "bltNsUtil.h"
 #include "bltArrayObj.h"
 #include "bltTree.h"
+
+/* TODO:
+ *      Traces and notifiers should be in one list in tree object.
+ *      Notifier is always fired.
+ *      Incorporate first/next tag routines ?
+ */
 
 static Tcl_InterpDeleteProc TreeInterpDeleteProc;
 static Blt_TreeApplyProc SizeApplyProc;

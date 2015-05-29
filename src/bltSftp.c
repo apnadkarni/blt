@@ -59,43 +59,51 @@
 #ifndef NO_SFTP
 
 #ifdef HAVE_SYS_STAT_H
-#  include <sys/stat.h>
+  #include <sys/stat.h>
 #endif  /* HAVE_SYS_STAT_H */
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #include <libssh2.h>
 #include <libssh2_sftp.h>
 
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
+
 #ifdef HAVE_WINSOCK2_H
-# include <winsock2.h>
+  #include <winsock2.h>
 #endif
+
 #ifdef HAVE_SYS_SOCKET_H
-# include <sys/socket.h>
+  #include <sys/socket.h>
 #endif
+
 #ifdef HAVE_NETINET_IN_H
-# include <netinet/in.h>
+  #include <netinet/in.h>
 #endif
+
 # ifdef HAVE_UNISTD_H
-#include <unistd.h>
+  #include <unistd.h>
 #endif
+
 #ifdef HAVE_ARPA_INET_H
-# include <arpa/inet.h>
+  #include <arpa/inet.h>
 #endif
+
 #ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
+  #include <sys/time.h>
 #endif
+
 #include <sys/types.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
+
 #ifndef WIN32
-#include <netdb.h>
+  #include <netdb.h>
 #endif
 
 

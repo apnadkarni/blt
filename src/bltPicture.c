@@ -48,11 +48,11 @@
 #include "bltInt.h"
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+  #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
-#  include <string.h>
+  #include <string.h>
 #endif /* HAVE_STRING_H */
 
 #include <limits.h>
@@ -68,11 +68,11 @@
 #include "bltRound.h"
 
 #ifdef HAVE_MALLOC_H
-#include <malloc.h>
+  #include <malloc.h>
 #endif /* HAVE_MALLOC_H */
 
 #ifndef ALIGN
-#define ALIGN(a) \
+  #define ALIGN(a) \
         (((size_t)a + (sizeof(void *) - 1)) & (~(sizeof(void *) - 1)))
 #endif /* ALIGN */
 
@@ -1785,11 +1785,7 @@ BesselFilter(double x)
      * zeros are at approx x=1.2197, 2.2331, 3.2383, 4.2411, 5.2428,
      * 6.2439, 7.2448, 8.2454
      */
-#ifdef __BORLANDC__
-    return 0.0;
-#else
     return (x == 0.0) ? M_PI / 4.0 : j1(M_PI * x) / (x + x);
-#endif
 }
 
 #define SQRT_2PI        0.79788456080286541     /* sqrt(2.0 / M_PI) */

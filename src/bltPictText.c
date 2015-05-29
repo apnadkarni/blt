@@ -40,11 +40,13 @@
 
 #include "bltInt.h"
 #include <string.h>
+
 #ifdef HAVE_LIBXFT
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include <X11/Xft/Xft.h>
-#endif
+  #include <ft2build.h>
+  #include FT_FREETYPE_H
+  #include <X11/Xft/Xft.h>
+#endif  /* HAVE_LIBXFT */
+
 #include <X11/Xutil.h>
 #include "bltMath.h"
 #include "bltPicture.h"

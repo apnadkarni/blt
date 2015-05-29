@@ -56,7 +56,7 @@ IsDigit(const int c)
 }
 
 #ifdef Blt_InitTclStubs
-#undef Blt_InitTclStubs
+  #undef Blt_InitTclStubs
 #endif
 
 /*

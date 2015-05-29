@@ -39,11 +39,11 @@
 #include "config.h"
 
 #ifdef HAVE_CTYPE_H
-#  include <ctype.h>
+  #include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
 #ifdef HAVE_STDDEF_H
-#  include <stddef.h>
+  #include <stddef.h>
 #endif /* HAVE_STDDEF_H */
 
 #include <tcl.h>
