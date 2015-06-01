@@ -111,11 +111,8 @@ static Blt_PictureProcs mmxPictureProcs = {
  *
  */
 static void
-SelectPixels(
-    Pict *destPtr,
-    Pict *srcPtr, 
-    Blt_Pixel *lowerPtr,
-    Blt_Pixel *upperPtr)
+SelectPixels(Pict *destPtr, Pict *srcPtr, Blt_Pixel *lowerPtr,
+             Blt_Pixel *upperPtr)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
@@ -1622,14 +1619,16 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
  *
  * CopyPictures --
  *
- *      Creates a copy of the given picture using SSE xmm registers.  
+ *      Creates a copy of the given picture using SSE xmm registers.
+ *      Pictures are guaranteed to be quadword aligned (16 bytes).  The
+ *      stride (pixelsPerRow) is always a multiple of 4 pixels.  This lets
+ *      us copy 4 pixels at a time using the movdqa instruction.
  * 
  * Results: 
  *      None.
  *
  * Side effects: 
- *      The area specified in the source picture is copied to the
- *      destination picture.
+ *      The source picture is copied to the destination picture.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -1861,7 +1860,7 @@ BoxCarHorizontally(Pict *destPtr, Pict *srcPtr, size_t r)
  *      It is assumed that the background and foreground pictures already
  *      have premultiplied alphas.  Blending is therefore implemented as
  *
- *              pixel = fg + (bg * (1 - fgAlpha))
+ *              pixel = F + (B * (1 - Fa))
  *              
  *      Pictures are also guaranteed to be quadword aligned (16 bytes).
  *      The stride (pixelsPerRow) is always a multiple of 4 pixels.  This
@@ -1910,60 +1909,60 @@ Blt_BlendPictures(Pict *destPtr, Pict *srcPtr)
         dp = destRowPtr;
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp += 4) {
             asm volatile (
-		"movdqa    (%1), %%xmm0         # xmm0 = [F0][F1][F2][F3]\n\t" 
-		"movdqa    (%0), %%xmm1         # xmm1 = [B0][B1][B2][B3]\n\t"
+		"movdqa    (%1), %%xmm0         # xmm0 = FG0FG1FG2FG3\n\t" 
+		"movdqa    (%0), %%xmm1         # xmm1 = BG0BG1BG2BG3\n\t"
 		"movdqa    %%xmm0, %%xmm2       # xmm2 = m0 (fg)\n\t"
                 /* Move the upper quadword to lower so that we can use the
                  * same shuffle mask for both pairs of pixels. */
 		"movhlps   %%xmm0, %%xmm3       # xmm3 = (F1)\n\t"
                 /* Unpack background */
-		"movdqa    %%xmm1, %%xmm4       # xmm4 = m1 (bg)\n\t"
-		"movhlps   %%xmm1, %%xmm5       # xmm5 = m1 (bg)\n\t"
-		"punpcklbw %%xmm6, %%xmm4	# xmm4 = (B1) BGRA BGRA\n\t"
-		"punpcklbw %%xmm6, %%xmm5	# xmm5 = (B2) BGRA BGRA\n\t"
+		"movdqa    %%xmm1, %%xmm4       # xmm4 = xmm1 (bg)\n\t"
+		"movhlps   %%xmm1, %%xmm5       # xmm5 = xmm1 << 64\n\t"
+		"punpcklbw %%xmm6, %%xmm4	# xmm4 = _Bb_Bg_Br_Ba x 2\n\t"
+		"punpcklbw %%xmm6, %%xmm5	# xmm5 = _Bb_Bg_Br_Ba x 2\n\t"
                 /* Shift color components to upper byte */
-                "psllw     $8, %%xmm4           # xmm4 = B G R A\n\t"
-                "psllw     $8, %%xmm5           # xmm5 = B G R A\n\t"
-                /* Create XOR mask to for beta values. */
-                "pcmpeqw   %%xmm1, %%xmm1       # xmm1 = 0xFFFF\n\t"
-                "psllw     $8, %%xmm1           # xmm1 = 0xFF00\n\t"
-                /* Shuffle bytes in foregound pixels to get alphas. */
-		"pshufb	   %%xmm7, %%xmm2       # xmm2 = AAAA AAAA\n\t"
-		"pshufb	   %%xmm7, %%xmm3       # xmm3 = AAAA AAAA\n\t"
+                "psllw     $8, %%xmm4           # xmm4 = Bb_Bg_Br_Ba_\n\t"
+                "psllw     $8, %%xmm5           # xmm5 = Bb_Bg_Br_Ba_\n\t"
+                /* Create XOR mask for beta values. */
+                "pcmpeqw   %%xmm1, %%xmm1       # xmm1 = ffff x 8\n\t"
+                "psllw     $8, %%xmm1           # xmm1 = ff00 x 8\n\t"
+                /* Shuffle bytes in foreground pixels to get alphas. */
+		"pshufb	   %%xmm7, %%xmm2       # xmm2 = Fa_Fa_Fa_Fa_ x 2\n\t"
+		"pshufb	   %%xmm7, %%xmm3       # xmm3 = Fa_Fa_Fa_Fa_ x 2\n\t"
                 /* beta = alpha ^ 0xFF. */
-                "pxor      %%xmm1, %%xmm2       # xmm2 = bbbb bbbb\n\t"
-                "pxor      %%xmm1, %%xmm3       # xmm3 = bbbb bbbb\n\t"
+                "pxor      %%xmm1, %%xmm2       # xmm2 = B_B_B_B_ x 2\n\t"
+                "pxor      %%xmm1, %%xmm3       # xmm3 = B_B_B_B_ x 2\n\t"
                 /* Multiple each background component by beta. */
-		"pmulhuw   %%xmm2, %%xmm4	# xmm4 = beta * B0 B1n\t"
+		"pmulhuw   %%xmm2, %%xmm4	# xmm4 = B*BG0,B*BG1\n\t"
                 /* Create rounding bias 128. */
-                "pcmpeqw   %%xmm1, %%xmm1       # xmm1 = 0xFFFF\n\t"
-		"punpckhbw %%xmm6, %%xmm1	# xmm1 = 00,FF,00,FF\n\t"
-                "psrlw     $7, %%xmm1           # xmm1 = 00,01,00,01\n\t"
-                "psllw     $7, %%xmm1           # xmm1 = 00,10,00,10 = 128\n\t"
+                "pcmpeqw   %%xmm1, %%xmm1       # xmm1 = ffff x 8\n\t"
+		"punpckhbw %%xmm6, %%xmm1	# xmm1 = 00ff x 8\n\t"
+                "psrlw     $7, %%xmm1           # xmm1 = 0001 x 8\n\t"
+                "psllw     $7, %%xmm1           # xmm1 = 0010 x 8\n\t"
                 /* Multiple each background component by beta. */
                 /* Something weird here.  If multiple instructions are
                  * consecutive, the result is corrupted. */
-		"pmulhuw   %%xmm3, %%xmm5	# xmm5 = beta * B2 B3\n\t"
+		"pmulhuw   %%xmm3, %%xmm5	# xmm5 = B*BG2,B*BG3\n\t"
                  /* Add the bias. */
                 "paddsw    %%xmm1, %%xmm4       # xmm4 += bias\n\t"
                 "paddsw    %%xmm1, %%xmm5       # xmm5 += bias\n\t"
                 /* Save copy of original (bg * beta) + bias. */
-                "movdqa    %%xmm4, %%xmm2       # xmm2 = m4\n"
-                "movdqa    %%xmm5, %%xmm3       # xmm3 = m5\n"
+                "movdqa    %%xmm4, %%xmm2       # xmm2 = xmm4\n"
+                "movdqa    %%xmm5, %%xmm3       # xmm3 = xmm5\n"
                 /* Approximate dividing by 257. (((x >> 8) + x) >> 8) */
-                "psrlw     $8, %%xmm2           # xmm2 = m4 / 256\n\t"
-                "psrlw     $8, %%xmm3           # xmm3 = m5 / 256\n\t"
+                "psrlw     $8, %%xmm2           # xmm2 /= 256\n\t"
+                "psrlw     $8, %%xmm3           # xmm3 /= 256\n\t"
                 /* Add original */
-                "paddw     %%xmm2, %%xmm4       # (P / 256) + P\n\t"
-                "paddw     %%xmm3, %%xmm5       # (P / 256) + P\n\t"
+                "paddw     %%xmm2, %%xmm4       # xmm4 += xmm4\n\t"
+                "paddw     %%xmm3, %%xmm5       # xmm5 += xmm5\n\t"
                 /* Divide again by 256 */
-                "psrlw     $8, %%xmm4           # P / 257\n\t"
-                "psrlw     $8, %%xmm5           # P / 257\n\t"
+                "psrlw     $8, %%xmm4           # BG / 257\n\t"
+                "psrlw     $8, %%xmm5           # BG / 257\n\t"
 		/* Convert words to bytes  */
-		"packuswb  %%xmm5, %%xmm4       # xmm5 = B1 B2 B3 B4\n\t"
+		"packuswb  %%xmm5, %%xmm4       # xmm5 = BG0 BG1 BG2 BG3\n\t"
 		/* Add to background to foreground */
-		"paddusb   %%xmm4, %%xmm0	# xmm0 = Bg + Fg\n\t"
-		"movdqa    %%xmm0, (%0)     	# Save pixel\n\t"
+		"paddusb   %%xmm4, %%xmm0	# xmm0 = BG + FG\n\t"
+		"movdqa    %%xmm0, (%0)     	# Save 4 pixels.\n\t"
 		: /* outputs */
                   "+r" (dp)
 		: /* imputs */
