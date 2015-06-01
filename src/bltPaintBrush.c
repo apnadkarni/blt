@@ -2362,8 +2362,9 @@ Blt_NewColorBrush(unsigned int color)
     brushPtr = Blt_AssertCalloc(1, sizeof(Blt_ColorBrush));
     brushPtr->refCount = 1;
     brushPtr->classPtr = &colorBrushClass;
-    brushPtr->alpha = 0xFF;
     brushPtr->color.u32 = color;
+    brushPtr->alpha = brushPtr->color.Alpha;
+    Blt_AssociateColor(&brushPtr->color);
     JitterInit(&brushPtr->jitter);
     return (Blt_PaintBrush)brushPtr;
 }

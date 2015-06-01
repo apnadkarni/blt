@@ -71,12 +71,8 @@
   #include <malloc.h>
 #endif /* HAVE_MALLOC_H */
 
-#ifndef ALIGN
-  #define ALIGN(a) \
-        (((size_t)a + (sizeof(void *) - 1)) & (~(sizeof(void *) - 1)))
-#endif /* ALIGN */
-
-#define ALIGNMENT       16
+#define ALIGNMENT       16              /* # of bytes alignment for picture
+                                         * rows. */
 
 #define JCLAMP(c)       ((((c) < 0.0) ? 0.0 : ((c) > 1.0) ? 1.0 : (c)))
 
@@ -300,7 +296,7 @@ Blt_CreatePicture(int w, int h)
 
     /* 
      * Be careful. There's a bunch of picture routines that assume an even
-     * number of pixels per row.
+     * number of pixels per row. 
      */
     pixelsPerRow = (w + 3) & ~3;        /* Align each row on a 16-byte
                                          * boundary. */

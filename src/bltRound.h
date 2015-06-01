@@ -38,7 +38,6 @@
 #ifndef _BLT_ROUND_H
 #define _BLT_ROUND_H
 
-
 #if (SIZEOF_FLOAT == 8)
 #define REAL64  float
 #else

@@ -464,12 +464,6 @@ static ElementToPostScriptProc NormalToPostScriptProc;
 static ElementSymbolToPostScriptProc SymbolToPostScriptProc;
 static ElementMapProc MapProc;
 
-INLINE static int
-Round(double x)
-{
-    return (int) (x + ((x < 0.0) ? -0.5 : 0.5));
-}
-
 /*
  *---------------------------------------------------------------------------
  * Custom option parse and print procedures

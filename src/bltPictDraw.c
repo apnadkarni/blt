@@ -222,20 +222,25 @@ typedef struct {
                                          * rectangle. */
     int radius;                         /* Radius of rounded corner. */
     int antialiased;
+    int width, height;
 } RectangleSwitches;
 
 static Blt_SwitchSpec rectangleSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
-        Blt_Offset(RectangleSwitches, brush),    0, 0, &paintbrushSwitch},
     {BLT_SWITCH_BOOLEAN, "-antialiased", "bool", (char *)NULL,
         Blt_Offset(RectangleSwitches, antialiased), 0},
+    {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
+        Blt_Offset(RectangleSwitches, brush),    0, 0, &paintbrushSwitch},
+    {BLT_SWITCH_INT_NNEG, "-height", "number", (char *)NULL,
+        Blt_Offset(RectangleSwitches, height), 0},
+    {BLT_SWITCH_INT_NNEG, "-linewidth", "number", (char *)NULL,
+        Blt_Offset(RectangleSwitches, lineWidth), 0}, 
     {BLT_SWITCH_INT_NNEG, "-radius", "number", (char *)NULL,
         Blt_Offset(RectangleSwitches, radius), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
         Blt_Offset(RectangleSwitches, shadow), 0, 0, &shadowSwitch},
-    {BLT_SWITCH_INT_NNEG, "-linewidth", "number", (char *)NULL,
-        Blt_Offset(RectangleSwitches, lineWidth), 0}, 
+    {BLT_SWITCH_INT_NNEG, "-width", "number", (char *)NULL,
+        Blt_Offset(RectangleSwitches, width), 0},
     {BLT_SWITCH_END}
 };
 
@@ -813,6 +818,7 @@ PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y,
         } else {
             int x;
 
+            dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
             for (x = x1; dp < dend; dp++, x++) {
                 dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
             }
@@ -1291,9 +1297,9 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
  */
 void
 Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r, 
-               int lineWidth, Blt_PaintBrush brush)
+                   int lineWidth, Blt_PaintBrush brush)
 {
-    int blend = 1;
+    int blend = 0;
 
     /* If the linewidth exceeds half the height or width of the rectangle,
      * then paint as a solid rectangle.*/
@@ -2181,6 +2187,7 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      None.
  *
+ *      imageName draw rectangle x y ?switches ...?
  *---------------------------------------------------------------------------
  */
 int
@@ -2189,11 +2196,12 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Blt_Picture picture = clientData;
     RectangleSwitches switches;
-    PictRegion r;
     Blt_PaintBrush brush;
-    
-    if (Blt_GetBBoxFromObjv(interp, 4, objv + 3, &r) != TCL_OK) {
-        return TCL_ERROR;
+    int x, y;
+
+    if ((Tcl_GetIntFromObj(interp, objv[3], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK)) {
+        return TCL_OK;
     }
     if (Blt_GetPaintBrush(interp, "black", &brush) != TCL_OK) {
         return TCL_ERROR;
@@ -2202,17 +2210,19 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* Process switches  */
     switches.brush = brush;
     switches.lineWidth = 0;
-    if (Blt_ParseSwitches(interp, rectangleSwitches, objc - 7, objv + 7, 
+    switches.width = 10;
+    switches.height = 10;
+    if (Blt_ParseSwitches(interp, rectangleSwitches, objc - 5, objv + 5, 
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    Blt_SetBrushRegion(switches.brush, r.x, r.y, r.w, r.h);
+    Blt_SetBrushRegion(switches.brush, x, y, switches.width, switches.height);
     if (switches.shadow.width > 0) {
-        PaintRectangleShadow(picture, r.x, r.y, r.w, r.h, switches.radius, 
-                switches.lineWidth, &switches.shadow);
+        PaintRectangleShadow(picture, x, y, switches.width, switches.height,
+                switches.radius, switches.lineWidth, &switches.shadow);
     }
-    Blt_PaintRectangle(picture, r.x, r.y, r.w, r.h, switches.radius, 
-        switches.lineWidth, switches.brush);
+    Blt_PaintRectangle(picture, x, y, switches.width, switches.height,
+        switches.radius, switches.lineWidth, switches.brush);
     Blt_FreeSwitches(rectangleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }

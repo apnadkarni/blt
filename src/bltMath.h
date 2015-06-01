@@ -154,16 +154,11 @@
 #undef SIGN
 #define SIGN(x)         (((x) < 0.0) ? -1 : 1)
 
-/*
- * Be careful when using the next two macros.  They both assume the floating
- * point number is less than the size of an int.  That means, for example, you
- * can't use these macros with numbers bigger than than 2^31-1.
- */
 #undef FMOD
-#define FMOD(x,y)       ((x)-(((int)((x)/(y)))*y))
+#define FMOD(x,y)       ((x)-(((int64_t)((x)/(y)))*(y)))
 
 #undef ROUND
-#define ROUND(x)        ((int)(((double)(x)) + (((x)<0.0) ? -0.5 : 0.5)))
+#define ROUND(x)        (((int64_t)((x) + 1.0)) - 1)
 
 #ifdef HAVE_FINITE
 #define FINITE(x)       (finite(x))

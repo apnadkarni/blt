@@ -2904,6 +2904,7 @@ ArithOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      A Tk_ImageChanged notification is triggered.
  *
+ *      imageName blank ?brushName?
  *---------------------------------------------------------------------------
  */
 static int
@@ -2927,7 +2928,7 @@ BlankOp(ClientData clientData, Tcl_Interp *interp, int objc,
     w = Blt_Picture_Width(destPtr);
     h = Blt_Picture_Height(destPtr);
     Blt_SetBrushRegion(brush, 0, 0, w, h);
-    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, brush);
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, /*radius*/0, /*linewidth*/0, brush);
     destPtr->flags |= BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS;
     if (newBrush != NULL) {
         Blt_FreeBrush(newBrush);
@@ -2941,6 +2942,7 @@ BlankOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BlendOp --
  *
+ *      imageName blend bgName fgName ?switches ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2976,9 +2978,16 @@ BlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
         CopyPicture(dst, bg);           /* Make a copy of the
                                          * background. */
     }
-    Blt_BlendRegion(dst, fg, switches.from.x, switches.from.y, 
-                    switches.from.w, switches.from.h, 
-                    switches.to.x, switches.to.y);
+    if ((switches.from.x == 0) && (switches.from.y == 0) &&
+        (switches.to.x == 0) && (switches.to.y == 0) &&
+        (switches.from.w == Blt_Picture_Width(bg)) &&
+        (switches.from.h == Blt_Picture_Height(bg))) {
+        Blt_BlendPictures(dst, fg);
+    } else {
+        Blt_BlendRegion(dst, fg, switches.from.x, switches.from.y, 
+                switches.from.w, switches.from.h, 
+                switches.to.x, switches.to.y);
+    }
     if (tmp != NULL) {
         Blt_FreePicture(tmp);
     }
@@ -3802,6 +3811,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     sp = Blt_Picture_Pixel(imgPtr->picture, x, y);
     pixel = *sp;
+#ifdef notdef
     if ((Blt_Picture_Flags(imgPtr->picture) & BLT_PIC_ASSOCIATED_COLORS) &&
         ((sp->Alpha != 0xFF) && (sp->Alpha != 0x00))) {
         int bias = sp->Alpha >> 1;
@@ -3810,6 +3820,8 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         pixel.Green = (mul255(sp->Green) + bias) / sp->Alpha;
         pixel.Blue  = (mul255(sp->Blue)  + bias) / sp->Alpha;
     }
+#endif
+    fprintf(stderr, "[0x%04x, 0x%04x]\n", sp->u32 >> 16, sp->u32 & 0xFFFF);
     Tcl_SetObjResult(interp, Tcl_NewStringObj(Blt_NameOfPixel(&pixel), -1));
     return TCL_OK;
 }

@@ -874,16 +874,6 @@ static int tkpWinRopModes[] =
 
 #endif
 
-#ifndef notdef
-INLINE static int
-Round(double x)
-{
-    return (int) (x + ((x < 0.0) ? -0.5 : 0.5));
-}
-#else 
-#define Round Round
-#endif
-
 /*
  *---------------------------------------------------------------------------
  *      Custom configuration option (parse and print) routines
@@ -1692,7 +1682,7 @@ ScaleSymbol(LineElement *elemPtr, int normalSize)
             scale = MIN(xScale, yScale);
         }
     }
-    newSize = Round(normalSize * scale);
+    newSize = ROUND(normalSize * scale);
 
     /*
      * Don't let the size of symbols go unbounded. Both X and Win32 drawing
@@ -4371,8 +4361,8 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        points[count].x = Round(p->x);
-        points[count].y = Round(p->y);
+        points[count].x = ROUND(p->x);
+        points[count].y = ROUND(p->y);
         count++;
         if (count >= numMax) {
             Polyline(dc, points, count);
@@ -4418,8 +4408,8 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        points[count].x = Round(p->x);
-        points[count].y = Round(p->y);
+        points[count].x = ROUND(p->x);
+        points[count].y = ROUND(p->y);
         count++;
         if (count >= numMax) {
             XDrawLines(graphPtr->display, drawable, penPtr->traceGC, points,
@@ -4473,10 +4463,10 @@ DrawErrorBars(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
             (!DRAWN(tracePtr, s->flags))) {
             continue;
         }
-        segments[count].x1 = (short int)Round(s->x1);
-        segments[count].y1 = (short int)Round(s->y1);
-        segments[count].x2 = (short int)Round(s->x2);
-        segments[count].y2 = (short int)Round(s->y2);
+        segments[count].x1 = (short int)ROUND(s->x1);
+        segments[count].y1 = (short int)ROUND(s->y1);
+        segments[count].x2 = (short int)ROUND(s->x2);
+        segments[count].y2 = (short int)ROUND(s->y2);
         count++;
         if (count >= numMax) {
             XDrawSegments(graphPtr->display, drawable, penPtr->errorGC, 
@@ -4532,7 +4522,7 @@ DrawValues(Graph *graphPtr, Drawable drawable, Trace *tracePtr, LinePen *penPtr)
             Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         Blt_DrawText(graphPtr->tkwin, drawable, string, 
-             &penPtr->valueStyle, Round(p->x), Round(p->y));
+             &penPtr->valueStyle, ROUND(p->x), ROUND(p->y));
     }
 }
 
@@ -4569,8 +4559,8 @@ DrawPointSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        points[count].x = Round(p->x);
-        points[count].y = Round(p->y);
+        points[count].x = ROUND(p->x);
+        points[count].y = ROUND(p->y);
         count++;
         if (count >= numMax) {
             XDrawPoints(graphPtr->display, drawable, penPtr->symbol.fillGC, 
@@ -4641,8 +4631,8 @@ DrawCircleSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        rx = Round(p->x);
-        ry = Round(p->y);
+        rx = ROUND(p->x);
+        ry = ROUND(p->y);
         Ellipse(dc, rx - r, ry - r, rx + r + 1, ry + r + 1);
     }
     DeleteBrush(SelectBrush(dc, oldBrush));
@@ -4691,8 +4681,8 @@ DrawCircleSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        arcs[count].x = Round(p->x - r);
-        arcs[count].y = Round(p->y - r);
+        arcs[count].x = ROUND(p->x - r);
+        arcs[count].y = ROUND(p->y - r);
         arcs[count].width = (unsigned short)s;
         arcs[count].height = (unsigned short)s;
         arcs[count].angle1 = 0;
@@ -4766,8 +4756,8 @@ DrawSquareSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        rectangles[count].x = Round(p->x - r);
-        rectangles[count].y = Round(p->y - r);
+        rectangles[count].x = ROUND(p->x - r);
+        rectangles[count].y = ROUND(p->y - r);
         rectangles[count].width = s;
         rectangles[count].height = s;
         count++;
@@ -4829,7 +4819,7 @@ DrawSkinnyCrossPlusSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
     }
     r = (int)ceil(size * 0.5);
     if (penPtr->symbol.type == SYMBOL_SCROSS) {
-        r = Round((double)r * M_SQRT1_2);
+        r = ROUND((double)r * M_SQRT1_2);
         pattern[3].y = pattern[2].x = pattern[0].x = pattern[0].y = -r;
         pattern[3].x = pattern[2].y = pattern[1].y = pattern[1].x = r;
     } else {
@@ -4847,8 +4837,8 @@ DrawSkinnyCrossPlusSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        rx = Round(p->x);
-        ry = Round(p->y);
+        rx = ROUND(p->x);
+        ry = ROUND(p->y);
         segments[count].x1 = pattern[0].x + rx;
         segments[count].y1 = pattern[0].y + ry;
         segments[count].x2 = pattern[1].x + rx;
@@ -4914,8 +4904,8 @@ DrawCrossPlusSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
             
             dx = (double)pattern[i].x * M_SQRT1_2;
             dy = (double)pattern[i].y * M_SQRT1_2;
-            pattern[i].x = Round(dx - dy);
-            pattern[i].y = Round(dx + dy);
+            pattern[i].x = ROUND(dx - dy);
+            pattern[i].y = ROUND(dx + dy);
         }
         pattern[12] = pattern[0];
     }
@@ -4929,8 +4919,8 @@ DrawCrossPlusSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        rx = Round(p->x);
-        ry = Round(p->y);
+        rx = ROUND(p->x);
+        ry = ROUND(p->y);
         for (i = 0; i < 13; i++) {
             polygon[i].x = pattern[i].x + rx;
             polygon[i].y = pattern[i].y + ry;
@@ -4959,10 +4949,10 @@ DrawTriangleArrowSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 #define B_RATIO         1.3467736870885982
 #define TAN30           0.57735026918962573
 #define COS30           0.86602540378443871
-    b = Round(size * B_RATIO * 0.7);
-    b2 = Round(b * 0.5);
-    h2 = Round(TAN30 * b2);
-    h1 = Round(b2 / COS30);
+    b  = ROUND(size * B_RATIO * 0.7);
+    b2 = ROUND(b * 0.5);
+    h2 = ROUND(TAN30 * b2);
+    h1 = ROUND(b2 / COS30);
     /*
      *
      *                      The triangle symbol is a closed polygon
@@ -4998,8 +4988,8 @@ DrawTriangleArrowSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        rx = Round(p->x);
-        ry = Round(p->y);
+        rx = ROUND(p->x);
+        ry = ROUND(p->y);
         for (i = 0; i < 4; i++) {
             polygon[i].x = pattern[i].x + rx;
             polygon[i].y = pattern[i].y + ry;
@@ -5050,8 +5040,8 @@ DrawDiamondSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        rx = Round(p->x);
-        ry = Round(p->y);
+        rx = ROUND(p->x);
+        ry = ROUND(p->y);
         for (i = 0; i < 5; i++) {
             polygon[i].x = pattern[i].x + rx;
             polygon[i].y = pattern[i].y + ry;
@@ -5087,8 +5077,8 @@ DrawImageSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         if (!PLAYING(tracePtr, p->index)) {
             continue;
         }
-        x = Round(p->x) - dx;
-        y = Round(p->y) - dy;
+        x = ROUND(p->x) - dx;
+        y = ROUND(p->y) - dy;
         Tk_RedrawImage(penPtr->symbol.image, 0, 0, w, h, drawable, x, y);
     }
 }
@@ -5581,14 +5571,14 @@ SymbolsToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
     case SYMBOL_PLUS:
     case SYMBOL_SCROSS:
     case SYMBOL_SPLUS:
-        size = (double)Round(size * S_RATIO);
+        size = (double)ROUND(size * S_RATIO);
         break;
     case SYMBOL_TRIANGLE:
     case SYMBOL_ARROW:
-        size = (double)Round(size * 0.7);
+        size = (double)ROUND(size * 0.7);
         break;
     case SYMBOL_DIAMOND:
-        size = (double)Round(size * M_SQRT1_2);
+        size = (double)ROUND(size * M_SQRT1_2);
         break;
 
     default:
@@ -5652,14 +5642,14 @@ SymbolToPostScriptProc(
     case SYMBOL_PLUS:
     case SYMBOL_SCROSS:
     case SYMBOL_SPLUS:
-        symbolSize = (double)Round(size * S_RATIO);
+        symbolSize = (double)ROUND(size * S_RATIO);
         break;
     case SYMBOL_TRIANGLE:
     case SYMBOL_ARROW:
-        symbolSize = (double)Round(size * 0.7);
+        symbolSize = (double)ROUND(size * 0.7);
         break;
     case SYMBOL_DIAMOND:
-        symbolSize = (double)Round(size * M_SQRT1_2);
+        symbolSize = (double)ROUND(size * M_SQRT1_2);
         break;
 
     default:
@@ -5974,7 +5964,7 @@ DrawSkinnyCrossPlusSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
 
     r = (int)ceil(size * 0.5);
     if (penPtr->symbol.type == SYMBOL_SCROSS) {
-        r = Round((double)r * M_SQRT1_2);
+        r = ROUND((double)r * M_SQRT1_2);
         pattern[3].y = pattern[2].x = pattern[0].x = pattern[0].y = -r;
         pattern[3].x = pattern[2].y = pattern[1].y = pattern[1].x = r;
     } else {
@@ -6044,8 +6034,8 @@ DrawCrossPlusSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
             
             dx = (double)polygon[i].x * M_SQRT1_2;
             dy = (double)polygon[i].y * M_SQRT1_2;
-            polygon[i].x = Round(dx - dy);
-            polygon[i].y = Round(dx + dy);
+            polygon[i].x = ROUND(dx - dy);
+            polygon[i].y = ROUND(dx + dy);
         }
         polygon[12] = polygon[0];
     }
@@ -6085,10 +6075,10 @@ DrawTriangleArrowSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
 #define B_RATIO         1.3467736870885982
 #define TAN30           0.57735026918962573
 #define COS30           0.86602540378443871
-    b = Round(size * B_RATIO * 0.7);
-    b2 = Round(b * 0.5);
-    h2 = Round(TAN30 * b2);
-    h1 = Round(b2 / COS30);
+    b  = ROUND(size * B_RATIO * 0.7);
+    b2 = ROUND(b * 0.5);
+    h2 = ROUND(TAN30 * b2);
+    h1 = ROUND(b2 / COS30);
     /*
      *
      *                      The triangle symbol is a closed polygon

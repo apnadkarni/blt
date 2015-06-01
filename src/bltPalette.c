@@ -213,12 +213,6 @@ static int LoadData(Tcl_Interp *interp, Palette *palPtr);
 typedef int (GetColorProc)(Tcl_Interp *interp, Palette *palPtr,
                            Tcl_Obj **objv, Blt_Pixel *colorPtr);
 
-INLINE static int64_t
-Round(double x)
-{
-    return (int64_t) (x + ((x < 0.0) ? -0.5 : 0.5));
-}
-
 #define MAXRELERROR 0.0005
 #define MAXABSERROR 0.0000005
 

@@ -90,7 +90,7 @@
 /*
  * Round x in terms of units
  */
-#define UROUND(x,u)     (Round((x)/(u))*(u))
+#define UROUND(x,u)     (ROUND((x)/(u))*(u))
 #define UCEIL(x,u)      (ceil((x)/(u))*(u))
 #define UFLOOR(x,u)     (floor((x)/(u))*(u))
 
@@ -500,12 +500,6 @@ INLINE static double
 Clamp(double x) 
 {
     return (x < 0.0) ? 0.0 : (x > 1.0) ? 1.0 : x;
-}
-
-INLINE static int
-Round(double x)
-{
-    return (int) (x + ((x < 0.0) ? -0.5 : 0.5));
 }
 
 static void
@@ -2086,7 +2080,7 @@ LogAxis(Axis *axisPtr, double min, double max)
             if (minorStep == majorStep) {
                 numMinor = 4, minorStep = 0.2;
             } else {
-                numMinor = Round(majorStep / minorStep) - 1;
+                numMinor = ROUND(majorStep / minorStep) - 1;
             }
         } else {
             if (tickMin == tickMax) {
@@ -2218,7 +2212,7 @@ LinearAxis(Axis *axisPtr, double min, double max)
         axisMin = tickMin = floor(min / step) * step + 0.0;
         axisMax = tickMax = ceil(max / step) * step + 0.0;
         
-        numTicks = Round((tickMax - tickMin) / step) + 1;
+        numTicks = ROUND((tickMax - tickMin) / step) + 1;
     } 
     /*
      * The limits of the axis are either the range of the data ("tight") or at
@@ -6775,7 +6769,7 @@ SecondTicks(Axis *axisPtr, double min, double max)
     /* Find the outer tick values. Add 0.0 to prevent getting -0.0. */
     axisMin = tickMin = UFLOOR(min, step);
     axisMax = tickMax = UCEIL(max, step);
-    numTicks = Round((tickMax - tickMin) / step) + 1;
+    numTicks = ROUND((tickMax - tickMin) / step) + 1;
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
          (DEFINED(axisPtr->reqMin)))) {
         axisMin = min;
