@@ -1130,8 +1130,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
         
         background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
         Blt_BlankPicture(background, exportPtr->bg.u32);
-        Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-                        0, 0);
+        Blt_CompositePictures(background, srcPtr);
         srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {

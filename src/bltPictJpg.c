@@ -699,7 +699,7 @@ JpgToPicture(
             }
             destRowPtr += destPtr->pixelsPerRow;
         }
-        destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_BLEND;
+        destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_ALPHAS;
         break;
     default:
         Tcl_AppendResult(interp, "\"", fileName, "\": ",
@@ -797,8 +797,7 @@ PictureToJpg(
         /* Blend picture with solid color background. */
         background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
         Blt_BlankPicture(background, switchesPtr->bg.u32); 
-        Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-                        0, 0);
+        Blt_CompositePictures(background, srcPtr);
         if (srcPtr != original) {
             Blt_FreePicture(srcPtr);
         }

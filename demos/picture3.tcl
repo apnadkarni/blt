@@ -47,14 +47,14 @@ foreach region [array names us_regions $subset] {
 	-antialiased 1 -shadow 1 
         #$dest draw line -coords $coords -color black 
 #    foreach {rx ry} $coords {
-#        $dest draw rectangle [expr int($rx-2)] [expr int($ry-2)] [expr int($rx+2)] [expr int($ry+2)] -color red 
+#        $dest draw rectangle [expr int($rx-2)] [expr int($ry-2)] -width [expr int($rx+2)] -height [expr int($ry+2)] -color red 
 #    }
     incr count
 }
 
-#$dest draw rectangle 200 200 300 300 -color green -shadow 0 \
+#$dest draw rectangle 200 200 -width 300 -height 300 -color green -shadow 0 \
     -radius 10 -alpha 100
-#$dest draw rectangle 200 200 400 300 -color blue -linewidth 29 \
+#$dest draw rectangle 200 200 -width 400 -height 300 -color blue -linewidth 29 \
     -radius 19 -shadow 0 -antialiased 0 -alpha 180 
 
 $dest draw circle 200 200 100 -color yellow -shadow 0 \

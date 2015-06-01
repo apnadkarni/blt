@@ -935,7 +935,7 @@ TgaGetImageData(Tga *tgaPtr)
                 if (dp->Alpha == 0x00) {
                     destPtr->flags |= BLT_PIC_MASK;
                 } else if (dp->Alpha != 0xFF) {
-                    destPtr->flags |= BLT_PIC_BLEND;
+                    destPtr->flags |= BLT_PIC_ALPHAS;
                 }
             }
             destRowPtr -= destPtr->pixelsPerRow;
@@ -953,7 +953,7 @@ TgaGetImageData(Tga *tgaPtr)
                 if (dp->Alpha == 0x00) {
                     destPtr->flags |= BLT_PIC_MASK;
                 } else if (dp->Alpha != 0xFF) {
-                    destPtr->flags |= BLT_PIC_BLEND;
+                    destPtr->flags |= BLT_PIC_ALPHAS;
                 }
             }
             destRowPtr -= destPtr->pixelsPerRow;
@@ -969,7 +969,7 @@ TgaGetImageData(Tga *tgaPtr)
                 if (dp->Alpha == 0x00) {
                     destPtr->flags |= BLT_PIC_MASK;
                 } else if (dp->Alpha != 0xFF) {
-                    destPtr->flags |= BLT_PIC_BLEND;
+                    destPtr->flags |= BLT_PIC_ALPHAS;
                 }
             }
             destRowPtr += destPtr->pixelsPerRow;
@@ -986,7 +986,7 @@ TgaGetImageData(Tga *tgaPtr)
                 if (dp->Alpha == 0x00) {
                     destPtr->flags |= BLT_PIC_MASK;
                 } else if (dp->Alpha != 0xFF) {
-                    destPtr->flags |= BLT_PIC_BLEND;
+                    destPtr->flags |= BLT_PIC_ALPHAS;
                 }
             }
             destRowPtr += destPtr->pixelsPerRow;
@@ -1522,7 +1522,7 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     tga.isRle = (writerPtr->flags & EXPORT_RLE) ? TGA_RLE : 0;
     numColors = Blt_QueryColors(srcPtr, &tga.colorTable); 
     if ((writerPtr->flags & EXPORT_ALPHA) && 
-        (srcPtr->flags & (BLT_PIC_BLEND|BLT_PIC_MASK))) {
+        (srcPtr->flags & (BLT_PIC_ALPHAS|BLT_PIC_MASK))) {
             fprintf(stderr, "using transparency with %d colors\n", numColors);
         /* Want transparency and have transparency. */
         if (numColors > 256) {
@@ -1561,8 +1561,7 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
             /* Blend picture with solid color background. */
             background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
             Blt_BlankPicture(background, writerPtr->bg.u32); 
-            Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, 
-                srcPtr->height, 0, 0);
+            Blt_CompositePictures(background, srcPtr);
             if (srcPtr != original) {
                 Blt_FreePicture(srcPtr);
             }

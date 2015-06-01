@@ -36,7 +36,7 @@ set brush1 [blt::paintbrush create linear \
 		-lowcolor green2  \
 		-jitter 10 \
 		-colorscale log]
-$bg2 draw rectangle 0 0 $width $height -color $brush1 
+$bg2 draw rectangle 0 0 -width $width -height $height -color $brush1 
 $layer1 and $bg2 
 set brush2 [blt::paintbrush create linear \
 		-from n -to s \
@@ -44,7 +44,7 @@ set brush2 [blt::paintbrush create linear \
 		-lowcolor blue1  \
 		-jitter 10 \
 		-colorscale log]
-$bg draw rectangle 0 0 $width $height -color $brush2
+$bg draw rectangle 0 0 -width $width -height $height -color $brush2
 #$layer1 or 0xFF000000
 #$layer1 blend $bg $layer1 
 #-matte $layer3

@@ -46,7 +46,11 @@
  * Blt_Pixel --
  *
  *      A union representing either a pixel as a RGBA quartet or a single
- *      word value.
+ *      word value.  The order of the color components is determined by
+ *      endianess of the system.  This ensures that the unsigned integer
+ *      pixels values will be the same, regardless of the system. But this
+ *      also means that code can not blindly assume the order of the color
+ *      components.
  *
  *---------------------------------------------------------------------------
  */
@@ -89,22 +93,26 @@ struct _Blt_Ps;
 struct _Blt_Picture {
     short int width, height;            /* Size of the image in pixels. */
     short int flags;                    /* Flags describing the picture. */
-    short int pixelsPerRow;             /* Stride of the image. */
-    short int delay;
+    short int pixelsPerRow;             /* Stride of the image. Row width
+                                         * plus possible padding to ensure
+                                         * each row starts on a 16-byte
+                                         * boundary. */
+    short int delay;                    /* Delay before displaying this
+                                         * picture. */
     short int reserved;
     void *buffer;                       /* Unaligned (malloc'ed) memory for
                                          * pixels. */
-    Blt_Pixel *bits;                    /* Array of pixels containing the
-                                         * RGBA values. Points into buffer
-                                         * array.*/
+    Blt_Pixel *bits;                    /* Aligned start of picture's
+                                         * pixels.  Points into unaligned
+                                         * buffer array. */
 };
 
-#define BLT_PIC_COLOR  (1<<0)           /* Indicates if color or
+#define BLT_PIC_COLOR  (1<<0)           /* Indicates if picture is color or
                                          * greyscale. */
-#define BLT_PIC_BLEND  (1<<1)           /* Picture has partial opaque
+#define BLT_PIC_ALPHAS (1<<1)           /* Picture has partially opaque
                                          * pixels. */
 #define BLT_PIC_MASK   (1<<2)           /* Pixels are either 100% opaque or
-                                         * transparent. The separate BLEND
+                                         * transparent. The separate ALPHAS
                                          * and MASK flags are so that don't
                                          * premultiply alphas for masks. */
 
@@ -154,9 +162,9 @@ struct _Blt_Chain;
 
 #define Blt_Picture_IsDirty(p)  ((p)->flags & BLT_PIC_DIRTY)
 #define Blt_Picture_IsOpaque(p) \
-        (((p)->flags & (BLT_PIC_BLEND | BLT_PIC_MASK)) == 0)
+        (((p)->flags & (BLT_PIC_ALPHAS | BLT_PIC_MASK)) == 0)
 #define Blt_Picture_IsMasked(p)  ((p)->flags &  BLT_PIC_MASK) 
-#define Blt_Picture_IsBlended(p) ((p)->flags &  BLT_PIC_BLEND)
+#define Blt_Picture_IsBlended(p) ((p)->flags &  BLT_PIC_ALPHAS)
 #define Blt_Picture_IsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
 #define Blt_Picture_IsGreyscale(p)   (!Blt_Picture_IsColor(p))
 #define Blt_Picture_IsAssociated(p) ((p)->flags &  BLT_PIC_ASSOCIATED_COLORS)
@@ -357,8 +365,9 @@ BLT_EXTERN void Blt_ZoomHorizontally(Blt_Picture dest, Blt_Picture src,
         Blt_ResampleFilter filter);
 BLT_EXTERN void Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, 
         Blt_ResampleFilter filter);
-BLT_EXTERN void Blt_BlendRegion(Blt_Picture dest, Blt_Picture src, 
+BLT_EXTERN void Blt_CompositeRegion(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
+BLT_EXTERN void Blt_CompositePictures(Blt_Picture dest, Blt_Picture src);
 
 BLT_EXTERN void Blt_ColorBlendPictures(Blt_Picture dest, Blt_Picture src, 
         Blt_BlendingMode mode);
@@ -368,6 +377,8 @@ BLT_EXTERN void Blt_FadePicture(Blt_Picture picture, int x, int y, int w, int h,
 
 BLT_EXTERN void Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
+
+BLT_EXTERN void Blt_CopyPictures(Blt_Picture dest, Blt_Picture src);
 
 BLT_EXTERN void Blt_GammaCorrectPicture(Blt_Picture dest, Blt_Picture src, 
         float gamma);

@@ -573,7 +573,7 @@ BLT_EXTERN int		Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush,
 /* 95 */
 BLT_EXTERN void		Blt_PaintRectangle(Blt_Picture picture, int x, int y,
 				int w, int h, int dx, int dy,
-				Blt_PaintBrush brush);
+                                Blt_PaintBrush brush, int composite);
 #endif
 #ifndef Blt_PaintPolygon_DECLARED
 #define Blt_PaintPolygon_DECLARED
@@ -1536,7 +1536,7 @@ typedef struct BltTkIntProcs {
     int (*blt_GetBrushAlpha) (Blt_PaintBrush brush); /* 92 */
     void (*blt_GetBrushOrigin) (Blt_PaintBrush brush, int *xPtr, int *yPtr); /* 93 */
     int (*blt_GetAssociatedColorFromBrush) (Blt_PaintBrush brush, int x, int y); /* 94 */
-    void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_PaintBrush brush); /* 95 */
+    void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_PaintBrush brush, int composite); /* 95 */
     void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_PaintBrush brush); /* 96 */
     void (*blt_CreateBrushNotifier) (Blt_PaintBrush brush, Blt_BrushChangedProc *notifyProc, ClientData clientData); /* 97 */
     void (*blt_DeleteBrushNotifier) (Blt_PaintBrush brush, Blt_BrushChangedProc *notifyProc, ClientData clientData); /* 98 */

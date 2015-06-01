@@ -102,11 +102,13 @@ static Blt_TentHorizontallyProc TentHorizontally;
 static Blt_TentVerticallyProc TentVertically;
 static Blt_ZoomHorizontallyProc ZoomHorizontally;
 static Blt_ZoomVerticallyProc ZoomVertically;
-static Blt_BlendRegionProc BlendRegion;
+static Blt_CompositeRegionProc CompositeRegion;
+static Blt_CompositePicturesProc CompositePictures;
 static Blt_SelectPixelsProc SelectPixels;
 static Blt_AssociateColorsProc AssociateColors;
 static Blt_UnassociateColorsProc UnassociateColors;
 static Blt_CopyPictureBitsProc CopyPictureBits;
+static Blt_CopyPicturesProc CopyPictures;
 
 static Blt_PictureProcs stdPictureProcs = {
     ApplyPictureToPicture,
@@ -117,11 +119,13 @@ static Blt_PictureProcs stdPictureProcs = {
     TentVertically,
     ZoomHorizontally,
     ZoomVertically,
-    BlendRegion,
+    CompositeRegion,
+    CompositePictures,
     SelectPixels,
     AssociateColors,
     UnassociateColors,
-    CopyPictureBits
+    CopyPictureBits,
+    CopyPictures
 };
 
 Blt_PictureProcs *bltPictProcsPtr = &stdPictureProcs;
@@ -187,10 +191,16 @@ Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
 }
 
 void 
-Blt_BlendRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w, int h,
-                  int dx, int dy)
+Blt_CompositeRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
+                    int h, int dx, int dy)
 {
-    (*bltPictProcsPtr->blendRegionProc)(dest, src, x, y, w, h, dx, dy);
+    (*bltPictProcsPtr->compositeRegionProc)(dest, src, x, y, w, h, dx, dy);
+}
+
+void 
+Blt_CompositePictures(Blt_Picture dest, Blt_Picture src)
+{
+    (*bltPictProcsPtr->compositePicturesProc)(dest, src);
 }
 
 void 
@@ -217,6 +227,12 @@ Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
                     int h, int dx, int dy)
 {
     (*bltPictProcsPtr->copyPictureBitsProc)(dest, src, x, y, w, h, dx, dy);
+}
+
+void 
+Blt_CopyPictures(Blt_Picture dest, Blt_Picture src)
+{
+    (*bltPictProcsPtr->copyPicturesProc)(dest, src);
 }
 
 /* 
@@ -354,8 +370,7 @@ Blt_ClonePicture(Pict *srcPtr)
     Pict *destPtr;
 
     destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
-    Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 
-        0, 0);
+    Blt_CopyPictures(destPtr, srcPtr);
     destPtr->delay = srcPtr->delay;
     return destPtr;
 }
@@ -456,11 +471,11 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
         bp->u32 = color.u32;
     }
     destPtr->flags |= BLT_PIC_DIRTY;
-    destPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK);
+    destPtr->flags &= ~(BLT_PIC_ALPHAS | BLT_PIC_MASK);
     if (color.Alpha == 0x00) {
-        destPtr->flags |= BLT_PIC_MASK | BLT_PIC_BLEND;
+        destPtr->flags |= BLT_PIC_MASK | BLT_PIC_ALPHAS;
     } else if (color.Alpha != 0xFF) {
-        destPtr->flags |= BLT_PIC_BLEND;
+        destPtr->flags |= BLT_PIC_ALPHAS;
     }
     destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
 }
@@ -508,12 +523,12 @@ Blt_BlankRegion(Pict *destPtr, int x, int y, int w, int h,
         destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags |= BLT_PIC_DIRTY;
-    destPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK);
+    destPtr->flags &= ~(BLT_PIC_ALPHAS | BLT_PIC_MASK);
     color.u32 = colorValue;
     if (color.Alpha == 0x00) {
         destPtr->flags |= BLT_PIC_MASK;
     } else if (color.Alpha != 0xFF) {
-        destPtr->flags |= BLT_PIC_BLEND;
+        destPtr->flags |= BLT_PIC_ALPHAS;
     }
 }
 
@@ -668,7 +683,7 @@ Blt_FadePicture(Pict *srcPtr, int x, int y, int w, int h, double factor)
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }
-    srcPtr->flags |= BLT_PIC_BLEND;
+    srcPtr->flags |= BLT_PIC_ALPHAS;
 }
 
 void
@@ -750,19 +765,12 @@ UnassociateColors(Pict *srcPtr)
 }
 
 /*
- * BlendRegion --
+ * CompositeRegion --
  *
- *      Converts pictures to use associated colors is not already.
- *
- *  x,y------+
- *   |       |
- *   |  *----+------------+
- *   |  |    |            |
- *   |  |    |            |
  */  
 static void
-BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
-            int dx, int dy)
+CompositeRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
+                int dx, int dy)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
@@ -831,6 +839,13 @@ BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
         destRowPtr += destPtr->pixelsPerRow;
     }
 }
+
+static void
+CompositePictures(Pict *destPtr, Pict *srcPtr)
+{
+    CompositeRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
+}
+
 
 static INLINE int
 ColorBurn(int src, int dst)
@@ -2261,12 +2276,12 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
     Pict *tmpPtr;
 
     tmpPtr = Blt_CreatePicture(destPtr->width, srcPtr->height);
-    if ((srcPtr->flags & (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS)) == 
-        BLT_PIC_BLEND) {
+    if ((srcPtr->flags & (BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS)) == 
+        BLT_PIC_ALPHAS) {
         Blt_AssociateColors(srcPtr);
     }
-    if ((destPtr->flags & (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS)) == 
-        BLT_PIC_BLEND) {
+    if ((destPtr->flags & (BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS)) == 
+        BLT_PIC_ALPHAS) {
         Blt_AssociateColors(destPtr);
     }
 
@@ -2743,7 +2758,7 @@ Rotate45(Pict *srcPtr, float angle, Blt_Pixel *bg)
         skewf += tanTheta;
     }
     Blt_FreePicture(shear2Ptr);
-    destPtr->flags |= BLT_PIC_BLEND;
+    destPtr->flags |= BLT_PIC_ALPHAS;
     return destPtr;      
 }
 
@@ -3155,7 +3170,7 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
         }
     }
     destPtr = RotateByAreaMapping(srcPtr, -angle, &bg);
-    destPtr->flags |= BLT_PIC_BLEND;
+    destPtr->flags |= BLT_PIC_ALPHAS;
     return destPtr;
 }
 
@@ -3264,8 +3279,8 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_TOP:
-        Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-                0, h2);
+        Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width,
+                            srcPtr->height, 0, h2);
         srcRowPtr = srcPtr->bits;
         destRowPtr = destPtr->bits + (h2 - 1) * destPtr->pixelsPerRow;
         for (y = 0; y < h2; y++) {
@@ -3334,7 +3349,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     }
-    destPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_BLEND;
+    destPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_ALPHAS;
     return destPtr;
 }
 
@@ -3470,7 +3485,7 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
         }
         break;
     }
-    srcPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_BLEND;
+    srcPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_ALPHAS;
 }
 
 /*
@@ -4258,6 +4273,24 @@ CopyPictureBits(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
         destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
+}
+
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * CopyPictures --
+ *
+ *      Creates a copy of the given picture.  
+ *
+ * Results:  
+ *      Returns the new copy.
+ *
+ * -------------------------------------------------------------------------- 
+ */
+static void
+CopyPictures(Pict *destPtr, Pict *srcPtr)
+{
+    CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
 }
 
 /*
@@ -5618,7 +5651,7 @@ SelectPixels(Pict *destPtr, Pict *srcPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr)
         srcRowPtr += srcPtr->pixelsPerRow;
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags &= ~BLT_PIC_BLEND;
+    destPtr->flags &= ~BLT_PIC_ALPHAS;
     destPtr->flags |= BLT_PIC_MASK;
 }
 
@@ -6106,8 +6139,7 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
     Blt_SubtractPictures(tmp, blur);
     Blt_AddPictures(tmp, srcPtr);
     Blt_FreePicture(blur);
-    Blt_CopyPictureBits(destPtr, tmp, 0, 0, Blt_Picture_Width(tmp),
-        Blt_Picture_Height(tmp), 0, 0);
+    Blt_CopyPictures(destPtr, tmp);
     Blt_FreePicture(tmp);
 }
 
@@ -6218,7 +6250,7 @@ Blt_TilePicture(
                 fprintf(stderr, "drawing pattern (%d,%d,%d,%d) at %d,%d\n",
                         sx, sy, tw, th, dx, dy);
 #endif
-                Blt_BlendRegion(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
+                Blt_CompositeRegion(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
             }
         }
     }
@@ -6263,7 +6295,7 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
                 if (sp->Alpha == ALPHA_TRANSPARENT) {
                     flags |= BLT_PIC_MASK;
                 } else {
-                    flags |= BLT_PIC_BLEND;
+                    flags |= BLT_PIC_ALPHAS;
                 }
             }
             color.u32 = sp->u32;
@@ -6319,14 +6351,14 @@ Blt_ClassifyPicture(Pict *srcPtr)
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
             if ((sp->Alpha == 0x00) || (sp->Alpha != 0xFF)) {
                 /* Stop after first semi/fully-transparent pixel. */
-                flags |= BLT_PIC_BLEND;
+                flags |= BLT_PIC_ALPHAS;
                 goto setFlags;
             }
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }
  setFlags:
-    srcPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK | BLT_PIC_COLOR);
+    srcPtr->flags &= ~(BLT_PIC_ALPHAS | BLT_PIC_MASK | BLT_PIC_COLOR);
     srcPtr->flags |= flags;
 }
 
@@ -6754,7 +6786,7 @@ Blt_ProjectPicture(Pict *srcPtr, float *srcPts, float *destPts, Blt_Pixel *bg)
         }
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags |= BLT_PIC_BLEND;
+    destPtr->flags |= BLT_PIC_ALPHAS;
     return destPtr;
 }
 
@@ -6882,7 +6914,7 @@ Blt_EmbossPicture(
         srcRowPtr  += srcPtr->pixelsPerRow;
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags |= BLT_PIC_BLEND;
+    destPtr->flags |= BLT_PIC_ALPHAS;
     return destPtr;
 }
 #endif

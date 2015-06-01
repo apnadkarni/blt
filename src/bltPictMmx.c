@@ -74,34 +74,16 @@ static Blt_ApplyScalarToPictureProc  ApplyScalarToPicture;
 #ifdef notdef
 static Blt_ApplyPictureToPictureWithMaskProc ApplyPictureToPictureWithMask;
 static Blt_ApplyScalarToPictureWithMaskProc  ApplyScalarToPictureWithMask;
-static Blt_BlendPicturesProc BlendPictures;
 static Blt_AssociateColorsProc AssociateColors;
 static Blt_UnassociateColorsProc UnassociateColors;
-static Blt_CopyPicturesProc CopyPictures;
 #endif
 static Blt_TentHorizontallyProc TentHorizontally;
 static Blt_TentVerticallyProc TentVertically;
 static Blt_ZoomHorizontallyProc ZoomHorizontally;
 static Blt_ZoomVerticallyProc ZoomVertically;
 static Blt_SelectPixelsProc SelectPixels;
-
-#ifdef notdef
-static Blt_PictureProcs mmxPictureProcs = {
-    ApplyPictureToPicture,
-    ApplyScalarToPicture,
-    NULL,                              /* ApplyPictureToPictureWithMask, */
-    NULL,                              /* ApplyScalarToPictureWithMask, */
-    TentHorizontally,
-    TentVertically,
-    ZoomHorizontally,
-    ZoomVertically,
-    BlendPictures,
-    SelectPixels,
-    AssociateColors,
-    UnassociateColors,
-    CopyPictures
-};
-#endif
+static Blt_CompositePicturesProc CompositePictures;
+static Blt_CopyPicturesProc CopyPictures;
 
 /* 
  * sR sG sB sA 
@@ -169,7 +151,7 @@ SelectPixels(Pict *destPtr, Pict *srcPtr, Blt_Pixel *lowerPtr,
         destRowPtr += destPtr->pixelsPerRow;
     }
     asm volatile ("emms");
-    destPtr->flags &= ~BLT_PIC_BLEND;
+    destPtr->flags &= ~BLT_PIC_ALPHAS;
     destPtr->flags |= BLT_PIC_MASK;
 }
 
@@ -1097,7 +1079,7 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
 
 #ifdef notdef
 static void
-BlendRegion(
+CompositeRegion(
     Pict *destPtr,                      /* (in/out) Background picture.
                                          * Composite overwrites region in
                                          * background. */
@@ -1401,8 +1383,8 @@ AssociateColors(Pict *srcPtr)           /* (in/out) picture */
     int y;
     Blt_Pixel mask;
 
-    /* Create mask for alpha component.  We'll use this mask to make sure we
-     * don't change the alpha component of a pixel.  */
+    /* Create mask for alpha component.  We'll use this mask to make sure
+     * we don't change the alpha component of a pixel.  */
     mask.u32 = 0;
     mask.Alpha = 0xFF;
     asm volatile (
@@ -1613,7 +1595,6 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
 }
 #endif
 
-#ifdef notdef
 /* 
  *---------------------------------------------------------------------------
  *
@@ -1649,7 +1630,7 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
                 "movdqa (%1), %%xmm1\n\t"
                 "movdqa %%xmm1, (%0)\n\t" 
                 : /* outputs */
-                  "=r" (dp) 
+                  "+r" (dp) 
                 : /* inputs */
                   "r" (sp));
             dp += 4;
@@ -1660,7 +1641,6 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
     destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
     asm volatile ("emms");
 }
-#endif
 
 #ifdef notdef
 static void
@@ -1854,7 +1834,7 @@ BoxCarHorizontally(Pict *destPtr, Pict *srcPtr, size_t r)
 /* 
  *---------------------------------------------------------------------------
  *
- * BlendPictures --
+ * CompositePictures --
  *
  *      Composites two pictures (over operation) using SSSE3 operations.
  *      It is assumed that the background and foreground pictures already
@@ -1883,12 +1863,14 @@ static uint8_t populate_alpha[16] __attribute__((aligned(16))) = {
     0xff, 0x07, 0xff, 0x07, 0xff, 0x07, 0xff, 0x07,
 };
 
-void
-Blt_BlendPictures(Pict *destPtr, Pict *srcPtr)
+static void
+CompositePictures(Pict *destPtr, Pict *srcPtr)
 {
     int y;
     Blt_Pixel *destRowPtr, *srcRowPtr;
 
+    assert((srcPtr->width == destPtr->width) &&
+           (srcPtr->height == destPtr->height));
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
         Blt_AssociateColors(srcPtr);
     }
@@ -2215,12 +2197,12 @@ Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
         bltPictProcsPtr->associateColorsProc = AssociateColors;
 #endif
         bltPictProcsPtr->selectPixelsProc = SelectPixels;
-#ifdef notdef
         if (flags & FEATURE_SSSE3) {
-            bltPictProcsPtr->blendPicturesProc = BlendPictures;
+            bltPictProcsPtr->compositePicturesProc = CompositePictures;
             bltPictProcsPtr->copyPicturesProc = CopyPictures;
-        }
+#ifdef notdef
 #endif
+        }
 #endif
     }
     if (flagsPtr != NULL) {

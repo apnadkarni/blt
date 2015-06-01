@@ -394,10 +394,10 @@ XbmBitmapData(
         if (fg->Alpha == 0xFF) {
             destPtr->flags |= BLT_PIC_MASK;
         } else {
-            destPtr->flags |= BLT_PIC_BLEND;
+            destPtr->flags |= BLT_PIC_ALPHAS;
         }
     } else if (bg->Alpha != 0xFF) {     /* Background is Semi-transparent. */
-        destPtr->flags |= BLT_PIC_BLEND;
+        destPtr->flags |= BLT_PIC_ALPHAS;
     } else if (fg->Alpha == 0x00) { 
         /* Background is 100% opaque and foreground is 100% transparent. */
         destPtr->flags |= BLT_PIC_MASK;
@@ -534,8 +534,7 @@ PictureToXbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
             /* Blend picture with solid color background. */
             background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
             Blt_BlankPicture(background, switchesPtr->bg.u32); 
-            Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, 
-                srcPtr->height, 0, 0);
+            Blt_CompositePictures(background, srcPtr);
             if (srcPtr != original) {
                 Blt_FreePicture(srcPtr);
             }
@@ -723,7 +722,7 @@ ImportXbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
                                       PIC_ARITH_AND);
             Blt_FreePicture(mask);
         }
-        picture->flags |= BLT_PIC_BLEND;
+        picture->flags |= BLT_PIC_ALPHAS;
         Blt_DBuffer_Destroy(buffer);
     }
     if (picture != NULL) {

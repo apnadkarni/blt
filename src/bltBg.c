@@ -2039,7 +2039,7 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
         /* This defines the region of the background in local coordinate window
          * coordinates, plus the offset of x and y. */
         Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, rw, rh);
-        Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush);
+        Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush, TRUE);
         painter = Blt_GetPainter(tkwin, 1.0);
         Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
         Blt_FreePicture(picture);

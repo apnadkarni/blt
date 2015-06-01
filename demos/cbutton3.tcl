@@ -789,7 +789,7 @@ blt::tk::scrollbar .b.m.ybar
 
 set bg [image create picture -width 30 -height 20]
 $bg blank 0x0000000
-$bg draw rectangle 5 5 14 26 -color 0xFF00000
+$bg draw rectangle 5 5 -width 13 -height 25 -color 0xFF00000
 $bg blur $bg 4
 
 foreach {rgb name} $colors {

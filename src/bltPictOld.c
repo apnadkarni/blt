@@ -2191,7 +2191,7 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 switches.lineWidth, &switches.shadow);
     }
     Blt_PaintRectangle(picture, r.x, r.y, r.w, r.h, switches.radius, 
-        switches.lineWidth, switches.brush);
+                switches.lineWidth, switches.brush, TRUE);
     Blt_FreeSwitches(rectangleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
@@ -2356,11 +2356,11 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
     x = y = 0;
     if (fillColorPtr != NULL) {
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
-        Blt_PaintRectangle(destPtr, x+1, y+1, w-2, h-2, 0, 0, brush);
+        Blt_PaintRectangle(destPtr, x+1, y+1, w-2, h-2, 0, 0, brush, TRUE);
     }
     if (outlineColorPtr != NULL) {
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(outlineColorPtr));
-        Blt_PaintRectangle(destPtr, x, y, w, h, 0, 1, brush);
+        Blt_PaintRectangle(destPtr, x, y, w, h, 0, 1, brush, TRUE);
     }
     x += 2, y += 2;
     w -= 5, h -= 5;
@@ -2523,7 +2523,7 @@ Blt_PaintRadioButton(
     /* Process switches  */
     newBrush = Blt_Bg_PaintBrush(bg);
     Blt_SetBrushRegion(newBrush, 0, 0, w, h); 
-    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush);
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
 
     GetShadowColors(bg, &normal, &light, &dark);
     w &= ~1;

@@ -22,7 +22,8 @@ set bg [image create picture \
 	    -width [expr $width + $shadow] \
 	    -height [expr $height + $shadow]]
 $bg blank white
-$bg draw rectangle 4 4 [expr $width - 4] [expr $height - 4] -linewidth 0 -color grey60
+$bg draw rectangle 4 4 -width [expr $width - 4] -height [expr $height - 4] \
+    -linewidth 0 -color grey60
 #set src $bg
 $bg blur $bg 8
 $bg copy $src 

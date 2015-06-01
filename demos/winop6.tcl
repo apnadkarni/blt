@@ -24,7 +24,7 @@ set bg [image create picture \
 $l1 blank 0x00000000
 set w [image width $bg]
 set h [image height $bg]
-$l1 draw rectangle 8 8 $w $h -color 0xFFFFFFFF -linewidth 0  
+$l1 draw rectangle 8 8 -width $w -height $h -color 0xFFFFFFFF -linewidth 0  
 $l1 blur $l1 8
 $l2 select $l1 0x01000000 0xFFFFFFFF
 $l1 and 0xFF000000 -mask $l2
@@ -37,7 +37,7 @@ set brush [blt::paintbrush create linear \
 	       -lowcolor black  \
 	       -jitter 2 \
 	       -colorscale log]
-$bg draw rectangle 0 0 $width $height -color $brush
+$bg draw rectangle 0 0 -width $width -height $height -color $brush
 $bg blend $bg $l1 
 
 blt::tk::label .l0 -image $l1

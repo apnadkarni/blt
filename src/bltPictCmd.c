@@ -498,14 +498,14 @@ static Blt_SwitchSpec dupSwitches[] =
 
 typedef struct {
     PictRegion from, to;
-} BlendSwitches;
+} CompositeSwitches;
 
-static Blt_SwitchSpec blendSwitches[] = 
+static Blt_SwitchSpec compositeSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-from", "bbox", (char *)NULL,
-        Blt_Offset(BlendSwitches,from), 0, 0, &bboxSwitch},
+        Blt_Offset(CompositeSwitches,from), 0, 0, &bboxSwitch},
     {BLT_SWITCH_CUSTOM, "-to",   "bbox",  (char *)NULL,
-        Blt_Offset(BlendSwitches, to),  0, 0, &bboxSwitch},
+        Blt_Offset(CompositeSwitches, to),  0, 0, &bboxSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -544,13 +544,13 @@ static Blt_SwitchSpec convolveSwitches[] =
 
 typedef struct {
     PictRegion from, to;
-    int blend;
+    int composite;
 } CopySwitches;
 
 static Blt_SwitchSpec copySwitches[] = 
 {
-    {BLT_SWITCH_BOOLEAN,"-blend", "", (char *)NULL,
-        Blt_Offset(CopySwitches, blend), 0, 0},
+    {BLT_SWITCH_BOOLEAN,"-composite", "", (char *)NULL,
+        Blt_Offset(CopySwitches, composite), 0, 0},
     {BLT_SWITCH_CUSTOM, "-from", "bbox", (char *)NULL,
         Blt_Offset(CopySwitches,from), 0, 0, &bboxSwitch},
     {BLT_SWITCH_CUSTOM, "-to",   "bbox", (char *)NULL,
@@ -843,8 +843,7 @@ static INLINE void
 CopyPicture(Pict *destPtr, Pict *srcPtr)
 {
     Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
-    Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-                        0, 0);
+    Blt_CopyPictures(destPtr, srcPtr);
 }
 
 static Blt_Picture
@@ -2440,7 +2439,7 @@ PostScriptProc(
         if (bg == NULL) {
             return TCL_ERROR;
         }
-        Blt_BlendRegion(bg, imgPtr->picture, 0, 0, w, h, 0, 0);
+        Blt_CompositeRegion(bg, imgPtr->picture, 0, 0, w, h, 0, 0);
 
         memset(&setup, 0, sizeof(setup));
         ps = Blt_Ps_Create(interp, &setup);
@@ -2928,8 +2927,9 @@ BlankOp(ClientData clientData, Tcl_Interp *interp, int objc,
     w = Blt_Picture_Width(destPtr);
     h = Blt_Picture_Height(destPtr);
     Blt_SetBrushRegion(brush, 0, 0, w, h);
-    Blt_PaintRectangle(destPtr, 0, 0, w, h, /*radius*/0, /*linewidth*/0, brush);
-    destPtr->flags |= BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS;
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, /*radius*/0, /*linewidth*/0, brush,
+                FALSE);
+    destPtr->flags |= BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS;
     if (newBrush != NULL) {
         Blt_FreeBrush(newBrush);
     }
@@ -2940,17 +2940,17 @@ BlankOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * BlendOp --
+ * CompositeOp --
  *
- *      imageName blend bgName fgName ?switches ...?
+ *      imageName composite bgName fgName ?switches ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-BlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
+CompositeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
-    BlendSwitches switches;
+    CompositeSwitches switches;
     Blt_Picture fg, bg, tmp;
     PictImage *imgPtr = clientData;
     Blt_Picture dst;
@@ -2965,7 +2965,7 @@ BlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
     switches.to.x = switches.to.y = 0;
     switches.to.w = Blt_Picture_Width(bg);
     switches.to.h = Blt_Picture_Height(bg);
-    if (Blt_ParseSwitches(interp, blendSwitches, objc - 4, objv + 4, 
+    if (Blt_ParseSwitches(interp, compositeSwitches, objc - 4, objv + 4, 
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
@@ -2982,9 +2982,9 @@ BlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (switches.to.x == 0) && (switches.to.y == 0) &&
         (switches.from.w == Blt_Picture_Width(bg)) &&
         (switches.from.h == Blt_Picture_Height(bg))) {
-        Blt_BlendPictures(dst, fg);
+        Blt_CompositePictures(dst, fg);
     } else {
-        Blt_BlendRegion(dst, fg, switches.from.x, switches.from.y, 
+        Blt_CompositeRegion(dst, fg, switches.from.x, switches.from.y, 
                 switches.from.w, switches.from.h, 
                 switches.to.x, switches.to.y);
     }
@@ -3192,7 +3192,7 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     switches.to.x = switches.to.y = 0;
     switches.to.w = Blt_Picture_Width(src);
     switches.to.h = Blt_Picture_Height(src);
-    switches.blend = FALSE;
+    switches.composite = FALSE;
 
     if (Blt_ParseSwitches(interp, copySwitches, objc - 3, objv + 3, &switches, 
         BLT_SWITCH_DEFAULTS) < 0) {
@@ -3207,8 +3207,8 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;                  /* Region is not inside of
                                          * destination. */
     }
-    if (switches.blend) {
-        Blt_BlendRegion(dst, src, switches.from.x, 
+    if (switches.composite) {
+        Blt_CompositeRegion(dst, src, switches.from.x, 
                 switches.from.y, switches.from.w, switches.from.h,
                 switches.to.x, switches.to.y);
     } else {
@@ -3480,7 +3480,7 @@ DissolveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     imgPtr->flags |= INUSE;
     disPtr->picture = Blt_CreatePicture(w, h);
     if (disPtr->from != NULL) {
-        Blt_CopyPictureBits(disPtr->picture, disPtr->from, 0, 0, w, h, 0, 0);
+        Blt_CopyPictures(disPtr->picture, disPtr->from);
     } else {
         Blt_BlankPicture(disPtr->picture, disPtr->fromColor.u32);
     } 
@@ -4749,8 +4749,7 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
         tmpPtr = destPtr;
         destPtr = Blt_CreatePicture(destPtr->width, destPtr->height);
         Blt_BlankPicture(destPtr, switches.bgColor.u32);
-        Blt_BlendRegion(destPtr, tmpPtr, 0, 0, destPtr->width, destPtr->height,
-                        0, 0);
+        Blt_CompositePictures(destPtr, tmpPtr);
         Blt_FreePicture(tmpPtr);
     }
     tmpPtr = destPtr;
@@ -5277,10 +5276,10 @@ static Blt_OpSpec pictInstOps[] =
     {"add",       2, ArithOp,     3, 0, "pictOrColor",},
     {"and",       3, ArithOp,     3, 0, "pictOrColor",},
     {"blank",     3, BlankOp,     2, 3, "?colorSpec?",},
-    {"blend",     4, BlendOp,     4, 0, "bg fg ?switches ...?",},
     {"blur",      3, BlurOp,      4, 4, "src width",},
     {"cget",      2, CgetOp,      3, 3, "option",},
     {"colorblend",3, ColorBlendOp,4, 0, "bg fg ?switches ...?",},
+    {"composite", 4, CompositeOp, 4, 0, "bg fg ?switches ...?",},
     {"configure", 4, ConfigureOp, 2, 0, "?option value ...?",},
     {"convolve",  4, ConvolveOp,  3, 0, "srcName ?switches ...?",},
     {"copy",      3, CopyOp,      3, 0, "srcName ?switches ...?",},

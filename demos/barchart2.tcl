@@ -107,12 +107,12 @@ blt::barchart .graph \
 .graph axis configure x \
     -command FormatXTicks \
     -title "Simulator" \
-    -exterior no \
+    -tickdirection in \
     -grid no
 
 .graph axis configure y \
     -title "Time (hours)" \
-    -exterior no \
+    -tickdirection in \
     -grid yes 
 
 

@@ -3344,11 +3344,11 @@ DrawHorizontalTrough(Slider *sliderPtr, Drawable drawable)
          2 * sliderPtr->inset);
     r = 8;
     Blt_PaintRectangle(sliderPtr->painter, sliderPtr->trough, 
-                       w, slidePtr->throughHeight + 3);
+                       w, slidePtr->throughHeight + 3, TRUE);
     brushPtr = Blt_Bg_PaintBrush(sliderPtr->bgnormalBg);
     Blt_SetBrushOrigin(brushPtr, -x, -y);
     Blt_PaintRectangle(picture, 0, 0, sliderPtr->troughWidth,
-                sliderPtr->troughHeight, 0, 0, brushPtr);
+                       sliderPtr->troughHeight, 0, 0, brushPtr, TRUE);
 
     Blt_PaintPicture(sliderPtr->painter, drawable, sliderPtr->trough, 0, 0, 
                      sliderPtBlt_Picture_Width(sliderPtr->trough),
@@ -5610,7 +5610,7 @@ DrawHorizontalTrough(Slider *sliderPtr, Drawable drawable, int x, int y,
         brushPtr = Blt_Bg_PaintBrush(sliderPtr->normalBg);
         Blt_SetBrushOrigin(brushPtr, -x, -y);
         Blt_PaintRectangle(picture, 0, 0, sliderPtr->troughWidth,
-                sliderPtr->troughHeight, 0, 0, brushPtr);
+                           sliderPtr->troughHeight, 0, 0, brushPtr, TRUE);
         /* Get the shadow colors based on the slider background, not
          * the trough color. */
         Blt_GetShadowColors(sliderPtr->normalBg, &normal, &light, &dark);
@@ -5626,11 +5626,11 @@ DrawHorizontalTrough(Slider *sliderPtr, Drawable drawable, int x, int y,
         brush = Blt_NewColorBrush(light);
         /* Light. */
         Blt_PaintRectangle(picture, x-1, y-1, sliderPtr->troughWidth,
-                           sliderPtr->troughHeight, r, 0, brush);
+                           sliderPtr->troughHeight, r, 0, brush, TRUE);
         /* Dark. */
         Blt_SetColorBrushColor(&brush, dark);
         Blt_PaintRectangle(picture, x-2, y-2, sliderPtr->troughWidth,
-                           sliderPtr->troughHeight, r, 0, brush);
+                           sliderPtr->troughHeight, r, 0, brush, TRUE);
         Blt_FreeBrush(brush);
 #ifdef notdef
         /* Blur */
@@ -5639,7 +5639,7 @@ DrawHorizontalTrough(Slider *sliderPtr, Drawable drawable, int x, int y,
         /* Background. */
         brush = Blt_Bg_PaintBrush(sliderPtr->troughBg);
         Blt_PaintRectangle(picture, x, y, sliderPtr->troughWidth,
-                           sliderPtr->troughHeight, r, 0, brush);
+                           sliderPtr->troughHeight, r, 0, brush, TRUE);
         sliderPtr->troughPicture = picture;
     }
     x = y = sliderPtr->inset;
@@ -5667,11 +5667,11 @@ DrawSliderControl(Slider *sliderPtr, Drawable drawable, int x, int y, int r,
     brush = Blt_NewColorBrush(light);
     /* Light. */
     Blt_PaintRectangle(picture, x-1, y-1, sliderPtr->troughWidth,
-                       sliderPtr->troughHeight, r, 0, brush);
+                       sliderPtr->troughHeight, r, 0, brush, TRUE);
     /* Dark. */
     Blt_SetColorBrushColor(brush, dark);
     Blt_PaintRectangle(picture, x-2, y-2, sliderPtr->troughWidth,
-                       sliderPtr->troughHeight, r, 0, brush);
+                       sliderPtr->troughHeight, r, 0, brush, TRUE);
     
     Blt_FreeBrush(brush);
     /* Background. */
@@ -5679,7 +5679,7 @@ DrawSliderControl(Slider *sliderPtr, Drawable drawable, int x, int y, int r,
     Blt_SetColorBrushColors(brush, light, dark);
     Blt_SetBrushRegion(brush, x, y, w, h);
     Blt_PaintRectangle(picture, x, y, sliderPtr->troughWidth,
-                       sliderPtr->troughHeight, r, 0, brush);
+                       sliderPtr->troughHeight, r, 0, brush, TRUE);
     Blt_FreeBrush(brush);
 }
 

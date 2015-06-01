@@ -195,14 +195,17 @@ typedef void (Blt_ZoomHorizontallyProc)(Blt_Picture dest, Blt_Picture src,
         Blt_ResampleFilter filter);
 typedef void (Blt_ZoomVerticallyProc)(Blt_Picture dest, Blt_Picture src, 
         Blt_ResampleFilter filter);
-typedef void (Blt_BlendRegionProc)(Blt_Picture dest, Blt_Picture src, 
+typedef void (Blt_CompositeRegionProc)(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
+typedef void (Blt_CompositePicturesProc)(Blt_Picture dest, Blt_Picture src);
+typedef void (Blt_CopyPicturesProc)(Blt_Picture dest, Blt_Picture src);
 typedef void (Blt_SelectPixelsProc)(Blt_Picture dest, Blt_Picture src, 
         Blt_Pixel *lowPtr , Blt_Pixel *highPtr);
 typedef void (Blt_AssociateColorsProc)(Blt_Picture picture);
 typedef void (Blt_UnassociateColorsProc)(Blt_Picture picture);
 typedef void (Blt_CopyPictureBitsProc)(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
+typedef void (Blt_CopyPicturesProc)(Blt_Picture dest, Blt_Picture src);
 
 typedef struct {
     Blt_ApplyPictureToPictureProc *applyPictureToPictureProc;
@@ -213,11 +216,13 @@ typedef struct {
     Blt_TentVerticallyProc *tentVerticallyProc;
     Blt_ZoomHorizontallyProc *zoomHorizontallyProc;
     Blt_ZoomVerticallyProc *zoomVerticallyProc;
-    Blt_BlendRegionProc *blendRegionProc;
+    Blt_CompositeRegionProc *compositeRegionProc;
+    Blt_CompositePicturesProc *compositePicturesProc;
     Blt_SelectPixelsProc *selectPixelsProc;
     Blt_AssociateColorsProc *associateColorsProc;
     Blt_UnassociateColorsProc *unassociateColorsProc;
     Blt_CopyPictureBitsProc *copyPictureBitsProc;
+    Blt_CopyPicturesProc *copyPicturesProc;
 } Blt_PictureProcs;
 
 BLT_EXTERN Blt_PictureProcs *bltPictProcsPtr;

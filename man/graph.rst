@@ -668,8 +668,6 @@ The resource class is "Axis".  The resource names are the names of the axes
   **-descending** *boolean*
     Same as the **-descending** option above.
 
-  **-exterior** *boolean*
-
   **-foreground** *colorName*
 
   **-grid** *boolean*
@@ -828,6 +826,17 @@ The resource class is "Axis".  The resource names are the names of the axes
 
   **-tickdefault** *numMajorTicks*
 
+  **-tickdirection** *direction*
+    Indicates whether the ticks are interior to the plotting area or exterior.
+    *Direction* can be any of the following.
+    
+    **in**
+      The ticks extend from the axis line into the plotting area.
+    **out**
+      The ticks extend away from the plotting area.
+
+    The default is "out".
+    
   **-tickfont** *fontName*
     Specifies the font for axis tick labels. The default is "{Sans Serif}
     9".

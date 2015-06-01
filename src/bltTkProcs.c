@@ -63,7 +63,7 @@ BltTkProcs bltTkProcs = {
     Blt_TentVertically, /* 47 */
     Blt_ZoomHorizontally, /* 48 */
     Blt_ZoomVertically, /* 49 */
-    Blt_BlendRegion, /* 50 */
+    Blt_CompositeRegion, /* 50 */
     Blt_ColorBlendPictures, /* 51 */
     Blt_FadePicture, /* 52 */
     Blt_CopyPictureBits, /* 53 */

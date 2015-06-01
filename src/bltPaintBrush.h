@@ -463,7 +463,7 @@ BLT_EXTERN int Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, int x,
         int y);
 
 BLT_EXTERN void Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, 
-        int h, int dx, int dy, Blt_PaintBrush brush);
+        int h, int dx, int dy, Blt_PaintBrush brush, int composite);
 
 #ifdef _BLT_INT_H
 BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,

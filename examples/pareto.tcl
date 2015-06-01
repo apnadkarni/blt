@@ -94,12 +94,12 @@ foreach x $xdata y $ydata {
     -hide no \
     -min 0.0 \
     -max 100.0 \
-    -exterior no \
+    -tickdirection in \
     -title "Percentage" -grid no
 
 # Title the y-axis
 .b axis configure y -title "Defects" -grid no \
-    -exterior no 
+    -tickdirection in 
 
 # Configure the x-axis to display the process names, instead of numbers.
 .b axis configure x \
@@ -108,7 +108,7 @@ foreach x $xdata y $ydata {
     -rotate 0 \
     -tickanchor nw \
     -ticklength 5 \
-    -exterior no \
+    -tickdirection in \
     -decreasing yes \
     -subdivisions 0
 

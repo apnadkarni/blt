@@ -1068,8 +1068,7 @@ PictureToPs(Tcl_Interp *interp, Blt_Picture original, Blt_Ps ps,
 
         background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
         Blt_BlankPicture(background, switchesPtr->bg.u32);
-        Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-                        0, 0);
+        Blt_CompositePictures(background, srcPtr);
         srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {

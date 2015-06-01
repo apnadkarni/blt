@@ -1330,8 +1330,7 @@ GifToPictures(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
                     
                     delay = srcPtr->delay;
                     /* Blend in the next frame into the current composite. */
-                    Blt_BlendRegion(composite, srcPtr, 0, 0, srcPtr->width, 
-                                    srcPtr->height, 0, 0);
+                    Blt_CompositePictures(composite, srcPtr);
                     Blt_FreePicture(srcPtr);
                     srcPtr = composite;
                     /* Save a copy of the new composite for the next frame. */
@@ -1343,8 +1342,7 @@ GifToPictures(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
                     int delay;
                     
                     delay = srcPtr->delay;
-                    Blt_BlendRegion(composite, srcPtr, 0, 0, srcPtr->width, 
-                                    srcPtr->height, 0, 0);
+                    Blt_CompositePictures(composite, srcPtr);
                     Blt_FreePicture(srcPtr);
                     srcPtr = composite;
                     /* Make a copy of the new composite. */
@@ -1365,8 +1363,7 @@ GifToPictures(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
                      * frame. */
                     next = Blt_ClonePicture(composite);
                     /* Blend in the next frame. */
-                    Blt_BlendRegion(composite, srcPtr, 0, 0, srcPtr->width, 
-                                    srcPtr->height, 0, 0);
+                    Blt_CompositePictures(composite, srcPtr);
                     Blt_FreePicture(srcPtr);
                     srcPtr = composite;
                     srcPtr->delay = delay;
@@ -1963,8 +1960,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
             readerPtr->bg.Alpha = 0xFF; /* Background color must be
                                          * solid. */
             Blt_BlankPicture(background, readerPtr->bg.u32); 
-            Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, 
-                            srcPtr->height, 0, 0);
+            Blt_CompositePictures(background, srcPtr);
             if (srcPtr != original) {
                 Blt_FreePicture(srcPtr);
             }
@@ -2108,14 +2104,13 @@ PicturesToAnimatedGif(Tcl_Interp *interp, Blt_Chain chain, Blt_DBuffer dbuffer,
         Pict *srcPtr;
 
         srcPtr = fp->current;
-        if ((srcPtr->flags & BLT_PIC_BLEND) || (srcPtr->width != screenWidth) ||            (srcPtr->height != screenHeight)) {
+        if ((srcPtr->flags & BLT_PIC_ALPHAS) || (srcPtr->width != screenWidth) ||            (srcPtr->height != screenHeight)) {
             Pict *bg;
 
             /* Blend picture with solid color background. */
             bg = Blt_CreatePicture(screenWidth, screenHeight);
             Blt_BlankPicture(bg, switchesPtr->bg.u32); 
-            Blt_BlendRegion(bg, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 
-                            0, 0);
+            Blt_CompositePictures(bg, srcPtr);
             srcPtr = fp->current = bg;
         }
         Blt_QueryColors(srcPtr, &colorTable);

@@ -601,7 +601,7 @@ PaintPictureWithBlend(
     if (bg == NULL) {
         return FALSE;
     }
-    Blt_BlendRegion(bg, fg, x, y, w, h, 0, 0);
+    Blt_CompositeRegion(bg, fg, x, y, w, h, 0, 0);
     PaintPicture(p, drawable, bg, 0, 0, w, h, dx, dy, flags);
     Blt_FreePicture(bg);
     return TRUE;

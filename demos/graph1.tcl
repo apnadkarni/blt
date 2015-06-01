@@ -37,7 +37,7 @@ blt::graph .g \
 .g axis configure x \
     -activebackground white \
     -activeforeground red3 \
-    -exterior no \
+    -tickdirection in \
     -scale log \
     -scrollcommand { .xbar set }  \
     -scrollmax 1e+6 \
@@ -47,7 +47,7 @@ blt::graph .g \
 .g axis configure y \
     -activebackground white \
     -activeforeground red3 \
-    -exterior no \
+    -tickdirection in \
     -rotate 0 \
     -scrollcommand { .ybar set } \
     -scrollmax 1000 \
@@ -55,7 +55,7 @@ blt::graph .g \
     -title "Y" 
 
 .g axis configure y2 \
-    -exterior no \
+    -tickdirection in \
     -hide no \
     -rotate 0 \
     -scrollmax 1.0 \
@@ -63,7 +63,7 @@ blt::graph .g \
     -title "Y2"
 
 .g axis configure x2 \
-    -exterior no \
+    -tickdirection in \
     -hide no \
     -rotate 0 \
     -scrollmax 1.0 \
@@ -335,14 +335,14 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "all" -value "*" 
     $m item configure all -variable axisd(axis)
 
-    blt::tk::label $t.exterior_l -text  "-exterior" 
-    blt::combobutton $t.exterior -textvariable axisd(-exterior) \
-	-menu $t.exterior.m
-    set m [blt::combomenu $t.exterior.m]
-    $m add -type radiobutton -text "yes" 
-    $m add -type radiobutton -text "no"
-    $m item configure all -variable axisd(-exterior) \
-	-command { FixAxes .g -exterior $axisd(-exterior) }
+    blt::tk::label $t.tickdirection_l -text  "-tickdirection" 
+    blt::combobutton $t.tickdirection -textvariable axisd(-tickdirection) \
+	-menu $t.tickdirection.m
+    set m [blt::combomenu $t.tickdirection.m]
+    $m add -type radiobutton -text "in" 
+    $m add -type radiobutton -text "out"
+    $m item configure all -variable axisd(-tickdirection) \
+	-command { FixAxes .g -tickdirection $axisd(-tickdirection) }
 
     blt::tk::label $t.color_l -text  "-color" 
     blt::combobutton $t.color -textvariable axisd(-color) \
@@ -410,7 +410,7 @@ proc AxisOptions { w } {
 	-command { FixAxes .g -title $axisd(-title) }
 
     $t.axis.m select 0
-    foreach option { color exterior showticks linewidth loose title hide } {
+    foreach option { color tickdirection showticks linewidth loose title hide } {
 	set value [.g axis cget $axisd(axis) -$option]
 	set axisd(-$option) $value
     }
@@ -419,8 +419,8 @@ proc AxisOptions { w } {
 	0,1 $t.axis -fill x \
 	2,0 $t.color_l -anchor e \
 	2,1 $t.color -fill x \
-	3,0 $t.exterior_l -anchor e \
-	3,1 $t.exterior -fill x \
+	3,0 $t.tickdirection_l -anchor e \
+	3,1 $t.tickdirection -fill x \
 	4,0 $t.hide_l -anchor e \
 	4,1 $t.hide -fill x \
 	5,0 $t.linewidth_l -anchor e \

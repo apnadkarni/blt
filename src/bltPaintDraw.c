@@ -1028,7 +1028,7 @@ PaintEllipseAA(
         Blt_FreePicture(big);
         Blt_ApplyColorToPicture(tmp, colorPtr);
         /* Replace the bounding box in the original with the new. */
-        Blt_BlendRegion(picture, tmp, 0, 0, region.w, region.h, 
+        Blt_CompositeRegion(picture, tmp, 0, 0, region.w, region.h, 
                 region.x, region.y);
         Blt_FreePicture(tmp);
     }
@@ -1079,7 +1079,7 @@ PaintRectangleAA(
         lineWidth = 0;                  /* Paint solid rectangle instead.*/
     }
     if (r < 0) {
-        Blt_PaintRectangle(picture, x, y, w, h, r, lineWidth, brush);
+        Blt_PaintRectangle(picture, x, y, w, h, r, lineWidth, brush, TRUE);
         return;
     }
     /* 
@@ -1100,7 +1100,7 @@ PaintRectangleAA(
                        h * numSamples,  /* Scaled height */
                        r * numSamples,  /* Scaled radius. */
                        lineWidth * numSamples, /* Scaled line width. */
-                       brush); 
+                       brush, TRUE); 
             
    /* Reduce the picture back to its original size using a simple box
     * filter for smoothing. */
@@ -1108,7 +1108,7 @@ PaintRectangleAA(
    Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
         
    /* Replace the bounding box in the original with the new. */
-   Blt_BlendRegion(picture, tmp, 0, 0, w+offset, h+offset, x, y);
+   Blt_CompositeRegion(picture, tmp, 0, 0, w+offset, h+offset, x, y);
    Blt_FreePicture(big);
    Blt_FreePicture(tmp);
 }
@@ -1128,10 +1128,10 @@ PaintRectangleShadow(Blt_Picture picture, int x, int y, int w, int h, int r,
     Blt_BlankPicture(blur, 0x0);
     brush = Blt_NewColorBrush(shadowPtr->color.u32);
     Blt_PaintRectangle(blur, shadowPtr->offset, shadowPtr->offset, w, h, r, 
-                   lineWidth, brush);
+        lineWidth, brush, TRUE);
     Blt_FreeBrush(brush);
     Blt_BlurPicture(blur, blur, shadowPtr->offset, 2);
-    Blt_BlendRegion(picture, blur, 0, 0, dw, dh, x, y);
+    Blt_CompositeRegion(picture, blur, 0, 0, dw, dh, x, y);
     Blt_FreePicture(blur);
 }
 

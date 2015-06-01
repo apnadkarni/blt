@@ -312,7 +312,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     }
     destPtr = Blt_CreatePicture(width, height);
     if (colorType & PNG_COLOR_MASK_ALPHA) {
-        destPtr->flags |= BLT_PIC_BLEND;
+        destPtr->flags |= BLT_PIC_ALPHAS;
     }
     if ((numChannels == 4) || (numChannels == 3)) {
         destPtr->flags |= BLT_PIC_COLOR;

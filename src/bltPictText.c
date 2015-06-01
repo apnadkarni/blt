@@ -1207,7 +1207,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Blt_FreePicture(tmp);
             Blt_TranslateAnchor(x, y, rotPtr->width, rotPtr->height, 
                 switches.anchor, &x, &y);
-            Blt_BlendRegion(destPtr, rotPtr, 0, 0, rotPtr->width, 
+            Blt_CompositeRegion(destPtr, rotPtr, 0, 0, rotPtr->width, 
                             rotPtr->height, x, y);
             Blt_FreePicture(rotPtr);
         }
@@ -1248,7 +1248,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             Blt_FreeBrush(brush);
             Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
-            Blt_BlendRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
+            Blt_CompositeRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
                             tmpPtr->height, x, y);
             for (i = 0; i < layoutPtr->numFragments; i++) {
                 TextFragment *fp;

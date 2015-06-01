@@ -586,8 +586,7 @@ PictureToTif(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
             /* Blend picture with solid color background. */
             background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
             Blt_BlankPicture(background, 0xFFFFFFFF); /* White background. */
-            Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, 
-                srcPtr->height, 0, 0);
+            Blt_CompositePictures(background, srcPtr);
             srcPtr = background;
         }
         samplesPerPixel = 1;

@@ -1950,7 +1950,8 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
     Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
     Blt_SetLinearGradientBrushPalette(brush, elemPtr->zAxisPtr->palette);
     Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, elemPtr);
-    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush);
+    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush,
+                       TRUE);
     Blt_FreeBrush(brush);
     painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
@@ -1980,7 +1981,8 @@ DrawColorRectangle(Graph *graphPtr, Drawable drawable, Blt_Painter painter,
         return;                         /* Background is obscured. */
     }
     Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
-    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush);
+    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush,
+                       TRUE);
     Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
                      rectPtr->height, rectPtr->x, rectPtr->y, 0);
     Blt_FreePicture(bg);

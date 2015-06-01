@@ -3261,7 +3261,7 @@ ColorbarToPicture(Axis *axisPtr, int w, int h)
         brush = Blt_NewLinearGradientBrush();
         Blt_SetLinearGradientBrushPalette(brush, axisPtr->palette);
         Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, axisPtr);
-        Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, brush);
+        Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, brush, TRUE);
         Blt_FreeBrush(brush);
         return picture;
     }

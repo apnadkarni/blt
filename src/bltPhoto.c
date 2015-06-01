@@ -234,7 +234,7 @@ Blt_PhotoAreaToPicture(Tk_PhotoHandle photo, int x, int y, int w, int h)
                     dp->Green = imul8x8(dp->Alpha, bits[ig], t);
                     dp->Blue = imul8x8(dp->Alpha, bits[ib], t);
                     destPtr->flags |= 
-                        (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS);
+                        (BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS);
                 }
                 bits += src.pixelSize;
                 dp++;
@@ -347,7 +347,7 @@ Blt_PhotoToPicture(Tk_PhotoHandle photo) /* Source photo to convert. */
                     dp->Red = bits[ir];
                     dp->Green = bits[ig];
                     dp->Blue = bits[ib];
-                    destPtr->flags |= BLT_PIC_BLEND;
+                    destPtr->flags |= BLT_PIC_ALPHAS;
                 }
                 dp++;
             }

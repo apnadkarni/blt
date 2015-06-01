@@ -512,8 +512,7 @@ SnapBackground(Busy *busyPtr)
             color.u32 = busyPtr->fadeColor.u32;
             color.Alpha = busyPtr->alpha;
             Blt_BlankPicture(fg, color.u32);
-            Blt_BlendRegion(picture, fg, 0, 0, busyPtr->width, busyPtr->height,
-                0, 0);
+            Blt_CompositePictures(picture, fg);
             Blt_FreePicture(fg);
         }           
     }
@@ -1922,7 +1921,7 @@ DisplayProc(ClientData clientData)
             y = (busyPtr->height - h) / 2;
             assert(x >= 0 && y >= 0);
             copy = Blt_ClonePicture(busyPtr->snapshot);
-            Blt_BlendRegion(copy, busyPtr->layer, 0, 0, w, h, x, y);
+            Blt_CompositeRegion(copy, busyPtr->layer, 0, 0, w, h, x, y);
         }
         Blt_PaintPicture(painter, drawable, copy, 0, 0, busyPtr->width, 
                 busyPtr->height, 0, 0, 0);

@@ -1653,7 +1653,7 @@ PaintPictureWithBlend(
     /* Dimension of source region may be adjusted by the actual size of the
      * drawable.  This is reflected in the size of the background
      * picture. */
-    Blt_BlendRegion(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
+    Blt_CompositeRegion(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
     PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height, dx, dy,
                  flags);
     Blt_FreePicture(bgPtr);

@@ -1155,7 +1155,7 @@ PaintEllipseAA(
         Blt_FreePicture(big);
         Blt_ApplyColorToPicture(tmp, colorPtr);
         /* Replace the bounding box in the original with the new. */
-        Blt_BlendRegion(picture, tmp, 0, 0, region.w, region.h, 
+        Blt_CompositeRegion(picture, tmp, 0, 0, region.w, region.h, 
                 region.x, region.y);
         Blt_FreePicture(tmp);
     }
@@ -1175,10 +1175,10 @@ PaintRectangleShadow(Blt_Picture picture, int x, int y, int w, int h, int r,
     Blt_BlankPicture(blur, 0x0);
     brush = Blt_NewColorBrush(shadowPtr->color.u32);
     Blt_PaintRectangle(blur, shadowPtr->offset, shadowPtr->offset, w, h, r, 
-                   lineWidth, brush);
+                       lineWidth, brush, TRUE);
     Blt_FreeBrush(brush);
     Blt_BlurPicture(blur, blur, shadowPtr->offset, 2);
-    Blt_BlendRegion(picture, blur, 0, 0, dw, dh, x, y);
+    Blt_CompositeRegion(picture, blur, 0, 0, dw, dh, x, y);
     Blt_FreePicture(blur);
 }
 
@@ -1297,10 +1297,8 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
  */
 void
 Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r, 
-                   int lineWidth, Blt_PaintBrush brush)
+                   int lineWidth, Blt_PaintBrush brush, int composite)
 {
-    int blend = 0;
-
     /* If the linewidth exceeds half the height or width of the rectangle,
      * then paint as a solid rectangle.*/
     if (((lineWidth*2) >= w) || ((lineWidth*2) >= h)) {
@@ -1325,16 +1323,16 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < lineWidth; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, blend);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + lineWidth;
             x3 = x + w - lineWidth;
             x4 = x + w;
             for (dy = r; dy < (h - r); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, blend);
-                PaintHorizontalLine(picture, x3, x4, y+dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
+                PaintHorizontalLine(picture, x3, x4, y+dy, brush, composite);
             }
         } else {
             int x1, x2, y1, y2, dy;
@@ -1345,13 +1343,13 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < r; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, blend);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + w;
             for (dy = r; dy < (h - r); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
             }
         }
         { 
@@ -1383,16 +1381,16 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - lineWidth;
             for (dy = 0; dy < lineWidth; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, blend);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + lineWidth;
             x3 = x + w - lineWidth;
             x4 = x + w;
             for (dy = r; dy < (h - lineWidth); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, blend);
-                PaintHorizontalLine(picture, x3, x4, y+dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
+                PaintHorizontalLine(picture, x3, x4, y+dy, brush, composite);
             }
         } else {
             int x1, x2, dy;
@@ -1401,7 +1399,7 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             x1 = x;
             x2 = x + w;
             for (dy = 0; dy < h; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, blend);
+                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
             }
         }
     } 
@@ -1753,7 +1751,7 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
     Blt_BlurPicture(blur, blur, shadowPtr->width, 3);
     Blt_MaskPicture(blur, tmp, 0, 0, w, h, 0, 0, &shadowPtr->color);
     Blt_FreePicture(tmp);
-    Blt_BlendRegion(destPtr, blur, 0, 0, w, h, x1, y1);
+    Blt_CompositeRegion(destPtr, blur, 0, 0, w, h, x1, y1);
     Blt_FreePicture(blur);
 }
 
@@ -1785,7 +1783,7 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
     tmp = Blt_CreatePicture(destPtr->width, destPtr->height);
     Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
     Blt_FreePicture(big);
-    Blt_BlendRegion(destPtr, tmp, 0, 0, destPtr->width, destPtr->height, 0,0);
+    Blt_CompositePictures(destPtr, tmp);
     Blt_FreePicture(tmp);
 }
 
@@ -1815,7 +1813,7 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float r,
     Blt_FreeBrush(brush);
     if (blend) {
         Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
-        Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, 
+        Blt_CompositeRegion(picture, tmpPtr, 0, 0, w, h, 
                         x - r,
                         y - r);
     } else {
@@ -2222,7 +2220,7 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 switches.radius, switches.lineWidth, &switches.shadow);
     }
     Blt_PaintRectangle(picture, x, y, switches.width, switches.height,
-        switches.radius, switches.lineWidth, switches.brush);
+        switches.radius, switches.lineWidth, switches.brush, TRUE);
     Blt_FreeSwitches(rectangleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
@@ -2242,11 +2240,11 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
     x = y = 0;
     if (fillColorPtr != NULL) {
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
-        Blt_PaintRectangle(destPtr, x+1, y+1, w-2, h-2, 0, 0, brush);
+        Blt_PaintRectangle(destPtr, x+1, y+1, w-2, h-2, 0, 0, brush, TRUE);
     }
     if (outlineColorPtr != NULL) {
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(outlineColorPtr));
-        Blt_PaintRectangle(destPtr, x, y, w, h, 0, 1, brush);
+        Blt_PaintRectangle(destPtr, x, y, w, h, 0, 1, brush, TRUE);
     }
     x += 2, y += 2;
     w -= 5, h -= 5;
@@ -2273,7 +2271,7 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
         PaintPolygonAA2(destPtr, 7, points, &r, brush, &shadow);
     }
     Blt_FreeBrush(brush);
-    destPtr->flags |= BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags |= BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS;
     return destPtr;
 }
 
@@ -2409,7 +2407,7 @@ Blt_PaintRadioButton(
     /* Process switches  */
     newBrush = Blt_Bg_PaintBrush(bg);
     Blt_SetBrushRegion(newBrush, 0, 0, w, h); 
-    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush);
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
 
     GetShadowColors(bg, &normal, &light, &dark);
     w &= ~1;
