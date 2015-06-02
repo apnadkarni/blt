@@ -547,7 +547,7 @@ PictureToXbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
              * temporary copy removing pre-multiplied alphas.
              */ 
             unassoc = Blt_ClonePicture(srcPtr);
-            Blt_UnassociateColors(unassoc);
+            Blt_UnmultiplyColors(unassoc);
             if (srcPtr != original) {
                 Blt_FreePicture(srcPtr);
             }

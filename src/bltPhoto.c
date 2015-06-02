@@ -88,7 +88,7 @@ Blt_PictureToPhoto(Pict *srcPtr, Tk_PhotoHandle photo)
         
         /* Divide out the alphas from picture's pre-multipled RGB values. */
         tmpPtr = Blt_ClonePicture(srcPtr);
-        Blt_UnassociateColors(tmpPtr);
+        Blt_UnmultiplyColors(tmpPtr);
         dest.pixelPtr = (unsigned char *)tmpPtr->bits;
         if (result != TCL_OK) {
             result = Tk_PhotoSetSize(NULL, photo, tmpPtr->width, 
@@ -140,7 +140,7 @@ Blt_PictureToPhoto(Pict *srcPtr, Tk_PhotoHandle photo)
 
         /* Divide out the alphas from picture's pre-multipled RGB values. */
         tmpPtr = Blt_ClonePicture(srcPtr);
-        Blt_UnassociateColors(tmpPtr);
+        Blt_UnmultiplyColors(tmpPtr);
         dest.pixelPtr = (unsigned char *)tmpPtr->bits;
         Tk_PhotoSetSize(photo, tmpPtr->width, tmpPtr->height);
         Tk_PhotoPutBlock(photo, &dest, 0, 0, tmpPtr->width, tmpPtr->height);

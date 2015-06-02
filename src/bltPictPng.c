@@ -397,7 +397,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
         }
     }
     if (colorType & PNG_COLOR_MASK_ALPHA) {
-        Blt_AssociateColors(destPtr);
+        Blt_PremultiplyColors(destPtr);
     } else {
         destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
     }

@@ -628,7 +628,7 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
     brushPtr->tile = Blt_GetPictureFromImage(cmdPtr->dataPtr->interp,
         brushPtr->tkImage, &isNew);
     if (Blt_Picture_IsAssociated(brushPtr->tile)) {
-        Blt_UnassociateColors(brushPtr->tile);
+        Blt_UnmultiplyColors(brushPtr->tile);
     }
     if (isNew) {
         brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
@@ -1332,7 +1332,7 @@ ColorBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
     
     brushPtr->color.u32 = brushPtr->reqColor.u32;
     brushPtr->color.Alpha = imul8x8(brushPtr->alpha, brushPtr->color.Alpha, t);
-    Blt_AssociateColor(&brushPtr->color);
+    Blt_PremultiplyColor(&brushPtr->color);
     return TCL_OK;
 }
 
@@ -1587,7 +1587,7 @@ TileBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
         brushPtr->tile = Blt_GetPictureFromImage(interp, brushPtr->tkImage,
                 &isNew);
         if (Blt_Picture_IsAssociated(brushPtr->tile)) {
-            Blt_UnassociateColors(brushPtr->tile);
+            Blt_UnmultiplyColors(brushPtr->tile);
         }
         if (isNew) {
             brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
@@ -1645,7 +1645,7 @@ TileBrushColorProc(Blt_PaintBrush brush, int x, int y)
         color.Blue = (unsigned char)(t * 255.0);
     }
     color.Alpha = imul8x8(brushPtr->alpha, color.Alpha, t1);
-    Blt_AssociateColor(&color);
+    Blt_PremultiplyColor(&color);
     return color.u32;
 }
 
@@ -2364,7 +2364,7 @@ Blt_NewColorBrush(unsigned int color)
     brushPtr->classPtr = &colorBrushClass;
     brushPtr->color.u32 = color;
     brushPtr->alpha = brushPtr->color.Alpha;
-    Blt_AssociateColor(&brushPtr->color);
+    Blt_PremultiplyColor(&brushPtr->color);
     JitterInit(&brushPtr->jitter);
     return (Blt_PaintBrush)brushPtr;
 }
@@ -2808,7 +2808,7 @@ Blt_SetTileBrushPicture(Blt_PaintBrush brush, Blt_Picture picture)
 
     brushPtr->tile = picture;
     if (Blt_Picture_IsAssociated(brushPtr->tile)) {
-        Blt_UnassociateColors(brushPtr->tile);
+        Blt_UnmultiplyColors(brushPtr->tile);
     }
 }
 
@@ -2820,7 +2820,7 @@ Blt_SetColorBrushColor(Blt_PaintBrush brush, unsigned int value)
     brushPtr->reqColor.u32 = value;
     brushPtr->color.u32 = brushPtr->reqColor.u32;
     brushPtr->color.Alpha = brushPtr->alpha;
-    Blt_AssociateColor(&brushPtr->color);
+    Blt_PremultiplyColor(&brushPtr->color);
 }
 
 void

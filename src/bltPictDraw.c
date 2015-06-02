@@ -1138,7 +1138,7 @@ PaintEllipseAA(
          * ellipse is the center of the picture. */
         Blt_BlankPicture(big, 0x0);
         color.u32 = 0xFF000000;
-        Blt_AssociateColor(&color);
+        Blt_PremultiplyColor(&color);
         PaintEllipse(big, 
             cx * numSamples,    /* Center of ellipse. */
             cy * numSamples, 
@@ -1746,8 +1746,8 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
     }
     blur = Blt_CreatePicture(w, h);
     Blt_BlankPicture(blur, 0x0);
-    Blt_CopyPictureBits(blur, tmp, 0, 0, w, h, shadowPtr->offset*2, 
-                        shadowPtr->offset*2); 
+    Blt_CopyRegion(blur, tmp, 0, 0, w, h, shadowPtr->offset*2,
+                   shadowPtr->offset*2); 
     Blt_BlurPicture(blur, blur, shadowPtr->width, 3);
     Blt_MaskPicture(blur, tmp, 0, 0, w, h, 0, 0, &shadowPtr->color);
     Blt_FreePicture(tmp);
@@ -1813,13 +1813,9 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float r,
     Blt_FreeBrush(brush);
     if (blend) {
         Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
-        Blt_CompositeRegion(picture, tmpPtr, 0, 0, w, h, 
-                        x - r,
-                        y - r);
+        Blt_CompositeRegion(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
     } else {
-        Blt_CopyPictureBits(picture, tmpPtr, 0, 0, w, h, 
-                          x - r,
-                          y - r);
+        Blt_CopyRegion(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
     }
     Blt_FreePicture(tmpPtr);
 }

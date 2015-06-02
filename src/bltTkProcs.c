@@ -46,10 +46,10 @@ BltTkProcs bltTkProcs = {
     Blt_GetPictureFromObj, /* 30 */
     Blt_GetResampleFilterFromObj, /* 31 */
     Blt_NameOfResampleFilter, /* 32 */
-    Blt_AssociateColor, /* 33 */
-    Blt_UnassociateColor, /* 34 */
-    Blt_AssociateColors, /* 35 */
-    Blt_UnassociateColors, /* 36 */
+    Blt_PremultiplyColor, /* 33 */
+    Blt_UnmultiplyColor, /* 34 */
+    Blt_PremultiplyColors, /* 35 */
+    Blt_UnmultiplyColors, /* 36 */
     Blt_MultiplyPixels, /* 37 */
     Blt_GetBBoxFromObjv, /* 38 */
     Blt_AdjustRegionToPicture, /* 39 */
@@ -66,7 +66,7 @@ BltTkProcs bltTkProcs = {
     Blt_CompositeRegion, /* 50 */
     Blt_ColorBlendPictures, /* 51 */
     Blt_FadePicture, /* 52 */
-    Blt_CopyPictureBits, /* 53 */
+    Blt_CopyRegion, /* 53 */
     Blt_GammaCorrectPicture, /* 54 */
     Blt_SharpenPicture, /* 55 */
     Blt_ApplyColorToPicture, /* 56 */
@@ -97,7 +97,7 @@ BltTkProcs bltTkProcs = {
     Blt_EmbossPicture, /* 81 */
     Blt_FadeColor, /* 82 */
     Blt_Dissolve2, /* 83 */
-    Blt_CrossFade, /* 84 */
+    Blt_CrossFadePictures, /* 84 */
     Blt_FadeFromColor, /* 85 */
     Blt_FadeToColor, /* 86 */
     Blt_WipePictures, /* 87 */

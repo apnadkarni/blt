@@ -810,7 +810,7 @@ PictureToJpg(
          * temporary copy removing pre-multiplied alphas.
          */ 
         unassoc = Blt_ClonePicture(srcPtr);
-        Blt_UnassociateColors(unassoc);
+        Blt_UnmultiplyColors(unassoc);
         if (srcPtr != original) {
             Blt_FreePicture(srcPtr);
         }

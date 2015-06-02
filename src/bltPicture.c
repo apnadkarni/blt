@@ -104,10 +104,11 @@ static Blt_ZoomHorizontallyProc ZoomHorizontally;
 static Blt_ZoomVerticallyProc ZoomVertically;
 static Blt_CompositeRegionProc CompositeRegion;
 static Blt_CompositePicturesProc CompositePictures;
+static Blt_CrossFadePicturesProc CrossFadePictures;
 static Blt_SelectPixelsProc SelectPixels;
-static Blt_AssociateColorsProc AssociateColors;
-static Blt_UnassociateColorsProc UnassociateColors;
-static Blt_CopyPictureBitsProc CopyPictureBits;
+static Blt_PremultiplyColorsProc AssociateColors;
+static Blt_UnmultiplyColorsProc UnassociateColors;
+static Blt_CopyRegionProc CopyRegion;
 static Blt_CopyPicturesProc CopyPictures;
 
 static Blt_PictureProcs stdPictureProcs = {
@@ -124,8 +125,9 @@ static Blt_PictureProcs stdPictureProcs = {
     SelectPixels,
     AssociateColors,
     UnassociateColors,
-    CopyPictureBits,
-    CopyPictures
+    CopyRegion,
+    CopyPictures,
+    CrossFadePictures
 };
 
 Blt_PictureProcs *bltPictProcsPtr = &stdPictureProcs;
@@ -203,6 +205,13 @@ Blt_CompositePictures(Blt_Picture dest, Blt_Picture src)
     (*bltPictProcsPtr->compositePicturesProc)(dest, src);
 }
 
+void
+Blt_CrossFadePictures(Blt_Picture dest, Blt_Picture from, Blt_Picture to,
+                      double opacity) 
+{
+    (*bltPictProcsPtr->crossFadePicturesProc)(dest, from, to, opacity);
+}
+
 void 
 Blt_SelectPixels(Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowPtr, 
                  Blt_Pixel *highPtr)
@@ -211,22 +220,22 @@ Blt_SelectPixels(Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowPtr,
 }
 
 void 
-Blt_AssociateColors(Blt_Picture picture)
+Blt_PremultiplyColors(Blt_Picture picture)
 {
     (*bltPictProcsPtr->associateColorsProc)(picture);
 }
 
 void 
-Blt_UnassociateColors(Blt_Picture picture)
+Blt_UnmultiplyColors(Blt_Picture picture)
 {
     (*bltPictProcsPtr->unassociateColorsProc)(picture);
 }
 
 void 
-Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, int x, int y, int w, 
+Blt_CopyRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w, 
                     int h, int dx, int dy)
 {
-    (*bltPictProcsPtr->copyPictureBitsProc)(dest, src, x, y, w, h, dx, dy);
+    (*bltPictProcsPtr->copyRegionProc)(dest, src, x, y, w, h, dx, dy);
 }
 
 void 
@@ -466,7 +475,7 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
     
     numPixels = destPtr->height * destPtr->pixelsPerRow;
     color.u32 = value;
-    Blt_AssociateColor(&color);
+    Blt_PremultiplyColor(&color);
     for (bp = destPtr->bits, bend = bp + numPixels; bp < bend; bp++) {
         bp->u32 = color.u32;
     }
@@ -665,7 +674,7 @@ Blt_FadePicture(Pict *srcPtr, int x, int y, int w, int h, double factor)
     int alpha;
 
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-        Blt_AssociateColors(srcPtr);
+        Blt_PremultiplyColors(srcPtr);
     }
     alpha = (int)((1.0 - factor) * 255.0 + 0.5);
     assert(alpha >= 0 && alpha <= 0xff);
@@ -696,8 +705,9 @@ Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha)
     colorPtr->Blue  = imul8x8(colorPtr->Blue, alpha, t);
     colorPtr->Alpha = imul8x8(colorPtr->Alpha, alpha, t);
 }
+
 void
-Blt_AssociateColor(Blt_Pixel *colorPtr)
+Blt_PremultiplyColor(Blt_Pixel *colorPtr)
 {
     if (colorPtr->Alpha != 0xFF) {
         int t;
@@ -709,7 +719,7 @@ Blt_AssociateColor(Blt_Pixel *colorPtr)
 }
 
 void
-Blt_UnassociateColor(Blt_Pixel *colorPtr)
+Blt_UnmultiplyColor(Blt_Pixel *colorPtr)
 {
     /* No conversion necessary if 100% transparent or opaque. */
     if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
@@ -735,7 +745,7 @@ AssociateColors(Pict *srcPtr)
             
             sp = srcRowPtr;
             for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-                Blt_AssociateColor(sp);
+                Blt_PremultiplyColor(sp);
             }
             srcRowPtr += srcPtr->pixelsPerRow;
         }
@@ -756,7 +766,7 @@ UnassociateColors(Pict *srcPtr)
             
             sp = srcRowPtr;
             for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-                Blt_UnassociateColor(sp);
+                Blt_UnmultiplyColor(sp);
             }
             srcRowPtr += srcPtr->pixelsPerRow;
         }
@@ -802,10 +812,10 @@ CompositeRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
     }
     /* Convert the pictures to use associated colors if not already. */
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-        Blt_AssociateColors(srcPtr);
+        Blt_PremultiplyColors(srcPtr);
     }
     if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-        Blt_AssociateColors(destPtr);
+        Blt_PremultiplyColors(destPtr);
     }
     
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
@@ -1098,10 +1108,10 @@ ColorBlendRegion(
     int y;
 
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-        Blt_AssociateColors(srcPtr);
+        Blt_PremultiplyColors(srcPtr);
     }
     if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-        Blt_AssociateColors(destPtr);
+        Blt_PremultiplyColors(destPtr);
     }
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
     srcRowPtr  = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
@@ -2278,11 +2288,11 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
     tmpPtr = Blt_CreatePicture(destPtr->width, srcPtr->height);
     if ((srcPtr->flags & (BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS)) == 
         BLT_PIC_ALPHAS) {
-        Blt_AssociateColors(srcPtr);
+        Blt_PremultiplyColors(srcPtr);
     }
     if ((destPtr->flags & (BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS)) == 
         BLT_PIC_ALPHAS) {
-        Blt_AssociateColors(destPtr);
+        Blt_PremultiplyColors(destPtr);
     }
 
     /* 
@@ -3279,8 +3289,8 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_TOP:
-        Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width,
-                            srcPtr->height, 0, h2);
+        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+                       0, h2);
         srcRowPtr = srcPtr->bits;
         destRowPtr = destPtr->bits + (h2 - 1) * destPtr->pixelsPerRow;
         for (y = 0; y < h2; y++) {
@@ -3301,8 +3311,8 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_LEFT:
-        Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, 
-                srcPtr->height, w2, 0);
+        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+                       w2, 0);
         srcRowPtr = srcPtr->bits;
         destRowPtr = destPtr->bits + (w2 - 1);
         for (y = 0; y < srcPtr->height; y++) {
@@ -3325,8 +3335,8 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_RIGHT:
-        Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, 
-                srcPtr->height, 0, 0);
+        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+                       0, 0);
         srcRowPtr = srcPtr->bits + (srcPtr->width - 1);
         destRowPtr = destPtr->bits + srcPtr->width;
         for (y = 0; y < srcPtr->height; y++) {
@@ -3371,7 +3381,7 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
     int y;
     
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-        Blt_UnassociateColors(srcPtr);
+        Blt_UnmultiplyColors(srcPtr);
     }
     srcRowPtr = srcPtr->bits;
 
@@ -4200,7 +4210,7 @@ Blt_GetColorLookupTable(Blt_Chain chain, int numReqColors)
 /* 
  *---------------------------------------------------------------------------
  *
- * CopyPictureBits --
+ * CopyRegion --
  *
  *      Creates a copy of the given picture.  
  *
@@ -4210,8 +4220,8 @@ Blt_GetColorLookupTable(Blt_Chain chain, int numReqColors)
  * -------------------------------------------------------------------------- 
  */
 static void
-CopyPictureBits(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, 
-                int dx, int dy)
+CopyRegion(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
+           int dy)
 {
     int *srcRowPtr, *destRowPtr;
     int bottom;
@@ -4290,7 +4300,7 @@ CopyPictureBits(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 static void
 CopyPictures(Pict *destPtr, Pict *srcPtr)
 {
-    CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
+    CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
 }
 
 /*
@@ -6089,7 +6099,7 @@ Blt_BlurPicture(Pict *destPtr, Pict *srcPtr, int radius, int numPasses)
         Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
     }
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-        Blt_AssociateColors(srcPtr);
+        Blt_PremultiplyColors(srcPtr);
     }
     if (radius < 1) {
         return;
@@ -6273,7 +6283,7 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
     }
     isAssociated = (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS);
     if (isAssociated) {
-        Blt_UnassociateColors(srcPtr);
+        Blt_UnmultiplyColors(srcPtr);
     }
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
@@ -6310,7 +6320,7 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
         Blt_DeleteHashTable(&colorTable);
     }
     if (isAssociated) {
-        Blt_AssociateColors(srcPtr);
+        Blt_PremultiplyColors(srcPtr);
     }
     srcPtr->flags |= flags;
     return numColors;
@@ -7055,8 +7065,8 @@ Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, int numSteps)
 }                                
 
 /* Crossfade from into to leaving result in destination */
-void
-Blt_CrossFade(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity) 
+static void
+CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity) 
 {
     int alpha, beta;
     Blt_Pixel *fromRowPtr, *toRowPtr, *destRowPtr;
@@ -7182,9 +7192,9 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (x < 0) {
                 x = 0;
             }
-            Blt_CopyPictureBits(destPtr, toPtr, 0, 0, x, fromPtr->height, 0, 0);
-            Blt_CopyPictureBits(destPtr, fromPtr, x, 0, fromPtr->width - x,
-                                fromPtr->height, x, 0);
+            Blt_CopyRegion(destPtr, toPtr, 0, 0, x, fromPtr->height, 0, 0);
+            Blt_CopyRegion(destPtr, fromPtr, x, 0, fromPtr->width - x,
+                           fromPtr->height, x, 0);
         }
         break;
 
@@ -7198,9 +7208,9 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (x < 0) {
                 x = 0;
             }
-            Blt_CopyPictureBits(destPtr, fromPtr, 0, 0, x, fromPtr->height, 0,0);
-            Blt_CopyPictureBits(destPtr, toPtr, x, 0, fromPtr->width - x,
-                                fromPtr->height, x, 0);
+            Blt_CopyRegion(destPtr, fromPtr, 0, 0, x, fromPtr->height, 0,0);
+            Blt_CopyRegion(destPtr, toPtr, x, 0, fromPtr->width - x,
+                           fromPtr->height, x, 0);
         }
         break;
 
@@ -7214,9 +7224,9 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (y < 0) {
                 y = 0;
             }
-            Blt_CopyPictureBits(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
-            Blt_CopyPictureBits(destPtr, toPtr, 0, y, fromPtr->width,
-                                fromPtr->height - y, 0, y);
+            Blt_CopyRegion(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
+            Blt_CopyRegion(destPtr, toPtr, 0, y, fromPtr->width,
+                           fromPtr->height - y, 0, y);
         }
         break;
 
@@ -7230,9 +7240,9 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (y < 0) {
                 y = 0;
             }
-            Blt_CopyPictureBits(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
-            Blt_CopyPictureBits(destPtr, toPtr, 0, y, fromPtr->width,
-                                fromPtr->height - y, 0, y);
+            Blt_CopyRegion(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
+            Blt_CopyRegion(destPtr, toPtr, 0, y, fromPtr->width,
+                           fromPtr->height - y, 0, y);
         }
         break;
     }

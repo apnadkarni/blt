@@ -572,7 +572,7 @@ ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
     brushPtr->tile = Blt_GetPictureFromImage(corePtr->dataPtr->interp,
         brushPtr->tkImage, &isNew);
     if (Blt_Picture_IsAssociated(brushPtr->tile)) {
-        Blt_UnassociateColors(brushPtr->tile);
+        Blt_UnmultiplyColors(brushPtr->tile);
     }
     if (isNew) {
         brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;

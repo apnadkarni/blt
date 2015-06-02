@@ -1134,7 +1134,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
         srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-        Blt_UnassociateColors(srcPtr);
+        Blt_UnmultiplyColors(srcPtr);
     }
     if (Blt_Picture_IsGreyscale(srcPtr)) {
         colorSpace = "DeviceGray";

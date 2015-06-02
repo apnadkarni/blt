@@ -329,13 +329,13 @@ BLT_EXTERN int Blt_GetResampleFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 
 BLT_EXTERN const char *Blt_NameOfResampleFilter(Blt_ResampleFilter filter);
 
-BLT_EXTERN void Blt_AssociateColor(Blt_Pixel *colorPtr);
+BLT_EXTERN void Blt_PremultiplyColor(Blt_Pixel *colorPtr);
 
-BLT_EXTERN void Blt_UnassociateColor(Blt_Pixel *colorPtr);
+BLT_EXTERN void Blt_UnmultiplyColor(Blt_Pixel *colorPtr);
 
-BLT_EXTERN void Blt_AssociateColors(Blt_Picture picture);
+BLT_EXTERN void Blt_PremultiplyColors(Blt_Picture picture);
 
-BLT_EXTERN void Blt_UnassociateColors(Blt_Picture picture);
+BLT_EXTERN void Blt_UnmultiplyColors(Blt_Picture picture);
 
 BLT_EXTERN void Blt_MultiplyPixels(Blt_Picture picture, float value);
 
@@ -375,7 +375,7 @@ BLT_EXTERN void Blt_ColorBlendPictures(Blt_Picture dest, Blt_Picture src,
 BLT_EXTERN void Blt_FadePicture(Blt_Picture picture, int x, int y, int w, int h,
         double factor);
 
-BLT_EXTERN void Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, 
+BLT_EXTERN void Blt_CopyRegion(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
 
 BLT_EXTERN void Blt_CopyPictures(Blt_Picture dest, Blt_Picture src);
@@ -459,7 +459,7 @@ BLT_EXTERN void Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha);
 
 BLT_EXTERN int Blt_Dissolve2(Blt_Picture dest, Blt_Picture src, long start,
         int numSteps);
-BLT_EXTERN void Blt_CrossFade(Blt_Picture dest, Blt_Picture from,
+BLT_EXTERN void Blt_CrossFadePictures(Blt_Picture dest, Blt_Picture from,
         Blt_Picture to, double opacity);
 BLT_EXTERN void Blt_FadeFromColor(Blt_Picture dest, Blt_Picture to,
         Blt_Pixel *colorPtr, double opacity);

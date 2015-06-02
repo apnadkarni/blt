@@ -130,7 +130,7 @@ button .f2.holdButton -command {
         global activeBg
 	.f1 configure -bg $activeBg
     }
-    blt::busy .f1 -opacity 40 -fadecolor grey30 -image $spinner -delay 50
+    blt::busy .f1 -opacity 40 -color grey30 -image $spinner -delay 50
     blt::busy .#menu
     if 0 {
 	set w .f1_Busy

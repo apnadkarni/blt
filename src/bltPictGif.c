@@ -1947,7 +1947,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
         return TCL_OK;
     }
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-        Blt_UnassociateColors(srcPtr);
+        Blt_UnmultiplyColors(srcPtr);
     }
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     maxColors = 256;

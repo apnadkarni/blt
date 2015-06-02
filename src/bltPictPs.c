@@ -1072,7 +1072,7 @@ PictureToPs(Tcl_Interp *interp, Blt_Picture original, Blt_Ps ps,
         srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-        Blt_UnassociateColors(srcPtr);
+        Blt_UnmultiplyColors(srcPtr);
     }
     Blt_Ps_Rectangle(ps, 0, 0, srcPtr->width, srcPtr->height);
     Blt_Ps_Append(ps, "gsave clip\n\n");

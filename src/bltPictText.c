@@ -1164,7 +1164,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 #ifdef notdef
     if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-        Blt_AssociateColors(destPtr);
+        Blt_PremultiplyColors(destPtr);
     }
 #endif
     if (switches.angle != 0.0) {

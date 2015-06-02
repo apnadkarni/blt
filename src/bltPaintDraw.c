@@ -1011,7 +1011,7 @@ PaintEllipseAA(
          * ellipse is the center of the picture. */
         Blt_BlankPicture(big, 0x0);
         color.u32 = 0xFF000000;
-        Blt_AssociateColor(&color);
+        Blt_PremultiplyColor(&color);
         PaintEllipse(big, 
             cx * numSamples,    /* Center of ellipse. */
             cy * numSamples, 

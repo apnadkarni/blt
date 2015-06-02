@@ -202,25 +202,25 @@ BLT_EXTERN int		Blt_GetResampleFilterFromObj(Tcl_Interp *interp,
 /* 32 */
 BLT_EXTERN const char *	 Blt_NameOfResampleFilter(Blt_ResampleFilter filter);
 #endif
-#ifndef Blt_AssociateColor_DECLARED
-#define Blt_AssociateColor_DECLARED
+#ifndef Blt_PremultiplyColor_DECLARED
+#define Blt_PremultiplyColor_DECLARED
 /* 33 */
-BLT_EXTERN void		Blt_AssociateColor(Blt_Pixel *colorPtr);
+BLT_EXTERN void		Blt_PremultiplyColor(Blt_Pixel *colorPtr);
 #endif
-#ifndef Blt_UnassociateColor_DECLARED
-#define Blt_UnassociateColor_DECLARED
+#ifndef Blt_UnmultiplyColor_DECLARED
+#define Blt_UnmultiplyColor_DECLARED
 /* 34 */
-BLT_EXTERN void		Blt_UnassociateColor(Blt_Pixel *colorPtr);
+BLT_EXTERN void		Blt_UnmultiplyColor(Blt_Pixel *colorPtr);
 #endif
-#ifndef Blt_AssociateColors_DECLARED
-#define Blt_AssociateColors_DECLARED
+#ifndef Blt_PremultiplyColors_DECLARED
+#define Blt_PremultiplyColors_DECLARED
 /* 35 */
-BLT_EXTERN void		Blt_AssociateColors(Blt_Picture picture);
+BLT_EXTERN void		Blt_PremultiplyColors(Blt_Picture picture);
 #endif
-#ifndef Blt_UnassociateColors_DECLARED
-#define Blt_UnassociateColors_DECLARED
+#ifndef Blt_UnmultiplyColors_DECLARED
+#define Blt_UnmultiplyColors_DECLARED
 /* 36 */
-BLT_EXTERN void		Blt_UnassociateColors(Blt_Picture picture);
+BLT_EXTERN void		Blt_UnmultiplyColors(Blt_Picture picture);
 #endif
 #ifndef Blt_MultiplyPixels_DECLARED
 #define Blt_MultiplyPixels_DECLARED
@@ -313,10 +313,10 @@ BLT_EXTERN void		Blt_ColorBlendPictures(Blt_Picture dest,
 BLT_EXTERN void		Blt_FadePicture(Blt_Picture picture, int x, int y,
 				int w, int h, double factor);
 #endif
-#ifndef Blt_CopyPictureBits_DECLARED
-#define Blt_CopyPictureBits_DECLARED
+#ifndef Blt_CopyRegion_DECLARED
+#define Blt_CopyRegion_DECLARED
 /* 53 */
-BLT_EXTERN void		Blt_CopyPictureBits(Blt_Picture dest,
+BLT_EXTERN void		Blt_CopyRegion(Blt_Picture dest,
 				Blt_Picture src, int sx, int sy, int w,
 				int h, int dx, int dy);
 #endif
@@ -613,7 +613,7 @@ typedef struct BltTkProcs {
     void (*blt_CompositeRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 50 */
     void (*blt_ColorBlendPictures) (Blt_Picture dest, Blt_Picture src, Blt_BlendingMode mode); /* 51 */
     void (*blt_FadePicture) (Blt_Picture picture, int x, int y, int w, int h, double factor); /* 52 */
-    void (*blt_CopyPictureBits) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 53 */
+    void (*blt_CopyRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 53 */
     void (*blt_GammaCorrectPicture) (Blt_Picture dest, Blt_Picture src, float gamma); /* 54 */
     void (*blt_SharpenPicture) (Blt_Picture dest, Blt_Picture src); /* 55 */
     void (*blt_ApplyColorToPicture) (Blt_Picture pict, Blt_Pixel *colorPtr); /* 56 */
@@ -796,20 +796,20 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_NameOfResampleFilter \
 	(bltTkProcsPtr->blt_NameOfResampleFilter) /* 32 */
 #endif
-#ifndef Blt_AssociateColor
-#define Blt_AssociateColor \
+#ifndef Blt_PremultiplyColor
+#define Blt_PremultiplyColor \
 	(bltTkProcsPtr->blt_AssociateColor) /* 33 */
 #endif
-#ifndef Blt_UnassociateColor
-#define Blt_UnassociateColor \
+#ifndef Blt_UnmultiplyColor
+#define Blt_UnmultiplyColor \
 	(bltTkProcsPtr->blt_UnassociateColor) /* 34 */
 #endif
-#ifndef Blt_AssociateColors
-#define Blt_AssociateColors \
+#ifndef Blt_PremultiplyColors
+#define Blt_PremultiplyColors \
 	(bltTkProcsPtr->blt_AssociateColors) /* 35 */
 #endif
-#ifndef Blt_UnassociateColors
-#define Blt_UnassociateColors \
+#ifndef Blt_UnmultiplyColors
+#define Blt_UnmultiplyColors \
 	(bltTkProcsPtr->blt_UnassociateColors) /* 36 */
 #endif
 #ifndef Blt_MultiplyPixels
@@ -876,9 +876,9 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_FadePicture \
 	(bltTkProcsPtr->blt_FadePicture) /* 52 */
 #endif
-#ifndef Blt_CopyPictureBits
-#define Blt_CopyPictureBits \
-	(bltTkProcsPtr->blt_CopyPictureBits) /* 53 */
+#ifndef Blt_CopyRegion
+#define Blt_CopyRegion \
+	(bltTkProcsPtr->blt_CopyRegion) /* 53 */
 #endif
 #ifndef Blt_GammaCorrectPicture
 #define Blt_GammaCorrectPicture \
