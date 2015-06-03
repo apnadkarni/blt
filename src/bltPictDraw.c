@@ -988,7 +988,7 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
         }
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
     Blt_Free(squares);
 }
 
@@ -2267,7 +2267,7 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
         PaintPolygonAA2(destPtr, 7, points, &r, brush, &shadow);
     }
     Blt_FreeBrush(brush);
-    destPtr->flags |= BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags |= BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLED_COLORS;
     return destPtr;
 }
 

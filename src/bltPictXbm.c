@@ -394,10 +394,10 @@ XbmBitmapData(
         if (fg->Alpha == 0xFF) {
             destPtr->flags |= BLT_PIC_MASK;
         } else {
-            destPtr->flags |= BLT_PIC_ALPHAS;
+            destPtr->flags |= BLT_PIC_COMPOSITE;
         }
     } else if (bg->Alpha != 0xFF) {     /* Background is Semi-transparent. */
-        destPtr->flags |= BLT_PIC_ALPHAS;
+        destPtr->flags |= BLT_PIC_COMPOSITE;
     } else if (fg->Alpha == 0x00) { 
         /* Background is 100% opaque and foreground is 100% transparent. */
         destPtr->flags |= BLT_PIC_MASK;
@@ -540,7 +540,7 @@ PictureToXbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
             }
             srcPtr = background;
         }
-        if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+        if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
             Blt_Picture unassoc;
             /* 
              * The picture has an alpha burned into the components.  Create a
@@ -722,7 +722,7 @@ ImportXbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
                                       PIC_ARITH_AND);
             Blt_FreePicture(mask);
         }
-        picture->flags |= BLT_PIC_ALPHAS;
+        picture->flags |= BLT_PIC_COMPOSITE;
         Blt_DBuffer_Destroy(buffer);
     }
     if (picture != NULL) {

@@ -1071,7 +1071,7 @@ PictureToPs(Tcl_Interp *interp, Blt_Picture original, Blt_Ps ps,
         Blt_CompositePictures(background, srcPtr);
         srcPtr = background;
     }
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
         Blt_UnmultiplyColors(srcPtr);
     }
     Blt_Ps_Rectangle(ps, 0, 0, srcPtr->width, srcPtr->height);

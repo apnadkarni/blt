@@ -1163,7 +1163,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
 #ifdef notdef
-    if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((destPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(destPtr);
     }
 #endif

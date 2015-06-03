@@ -1946,7 +1946,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     if ((srcPtr->width < 1) || (srcPtr->height < 1)) {
         return TCL_OK;
     }
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
         Blt_UnmultiplyColors(srcPtr);
     }
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
@@ -2104,7 +2104,7 @@ PicturesToAnimatedGif(Tcl_Interp *interp, Blt_Chain chain, Blt_DBuffer dbuffer,
         Pict *srcPtr;
 
         srcPtr = fp->current;
-        if ((srcPtr->flags & BLT_PIC_ALPHAS) || (srcPtr->width != screenWidth) ||            (srcPtr->height != screenHeight)) {
+        if ((srcPtr->flags & BLT_PIC_COMPOSITE) || (srcPtr->width != screenWidth) ||            (srcPtr->height != screenHeight)) {
             Pict *bg;
 
             /* Blend picture with solid color background. */

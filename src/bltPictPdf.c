@@ -1133,7 +1133,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
         Blt_CompositePictures(background, srcPtr);
         srcPtr = background;
     }
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
         Blt_UnmultiplyColors(srcPtr);
     }
     if (Blt_Picture_IsGreyscale(srcPtr)) {

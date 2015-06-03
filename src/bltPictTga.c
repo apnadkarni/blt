@@ -935,7 +935,7 @@ TgaGetImageData(Tga *tgaPtr)
                 if (dp->Alpha == 0x00) {
                     destPtr->flags |= BLT_PIC_MASK;
                 } else if (dp->Alpha != 0xFF) {
-                    destPtr->flags |= BLT_PIC_ALPHAS;
+                    destPtr->flags |= BLT_PIC_COMPOSITE;
                 }
             }
             destRowPtr -= destPtr->pixelsPerRow;
@@ -953,7 +953,7 @@ TgaGetImageData(Tga *tgaPtr)
                 if (dp->Alpha == 0x00) {
                     destPtr->flags |= BLT_PIC_MASK;
                 } else if (dp->Alpha != 0xFF) {
-                    destPtr->flags |= BLT_PIC_ALPHAS;
+                    destPtr->flags |= BLT_PIC_COMPOSITE;
                 }
             }
             destRowPtr -= destPtr->pixelsPerRow;
@@ -969,7 +969,7 @@ TgaGetImageData(Tga *tgaPtr)
                 if (dp->Alpha == 0x00) {
                     destPtr->flags |= BLT_PIC_MASK;
                 } else if (dp->Alpha != 0xFF) {
-                    destPtr->flags |= BLT_PIC_ALPHAS;
+                    destPtr->flags |= BLT_PIC_COMPOSITE;
                 }
             }
             destRowPtr += destPtr->pixelsPerRow;
@@ -986,7 +986,7 @@ TgaGetImageData(Tga *tgaPtr)
                 if (dp->Alpha == 0x00) {
                     destPtr->flags |= BLT_PIC_MASK;
                 } else if (dp->Alpha != 0xFF) {
-                    destPtr->flags |= BLT_PIC_ALPHAS;
+                    destPtr->flags |= BLT_PIC_COMPOSITE;
                 }
             }
             destRowPtr += destPtr->pixelsPerRow;
@@ -1167,7 +1167,7 @@ TgaToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
             Blt_PremultiplyColors(picture);
         }
         /* Set associated colors flag.  */
-        picture->flags |= BLT_PIC_ASSOCIATED_COLORS;
+        picture->flags |= BLT_PIC_PREMULTIPLED_COLORS;
     }
 
     if (tga.numWarnings > 0) {
@@ -1522,7 +1522,7 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     tga.isRle = (writerPtr->flags & EXPORT_RLE) ? TGA_RLE : 0;
     numColors = Blt_QueryColors(srcPtr, &tga.colorTable); 
     if ((writerPtr->flags & EXPORT_ALPHA) && 
-        (srcPtr->flags & (BLT_PIC_ALPHAS|BLT_PIC_MASK))) {
+        (srcPtr->flags & (BLT_PIC_COMPOSITE|BLT_PIC_MASK))) {
             fprintf(stderr, "using transparency with %d colors\n", numColors);
         /* Want transparency and have transparency. */
         if (numColors > 256) {

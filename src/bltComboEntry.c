@@ -372,10 +372,13 @@ typedef struct  {
                                          * character in the selection. */
     CharIndex selLast;                  /* Character Index of the last
                                          * character in the selection. */
-    int selRelief;                      /* Relief of selected items. Currently
-                                         * is always raised. */
-    int selBW;                          /* Border width of a selected text.*/
-    XColor *selFgColor;                 /* Text color of a selected text. */
+    int selRelief;                      /* Relief of selected
+                                         * items. Currently is always
+                                         * raised. */
+    int selBW;                          /* Border width of a selected
+                                         * text.*/
+    XColor *selFgColor;                 /* Text color of a selected
+                                         * text. */
     GC selectGC;
     Tcl_Obj *selCmdObjPtr;
 
@@ -388,20 +391,18 @@ typedef struct  {
      */
     int scanAnchor;                     /* Scan anchor in screen
                                          * coordinates. */
-    int scanX;                          /* x-offset of the start of the scan
-                                         * in world coordinates.*/
-
+    int scanX;                          /* x-offset of the start of the
+                                         * scan in world coordinates.*/
     /*
      * Scrolling Information:
      */
-    Tcl_Obj *scrollCmdObjPtr;           /* Command prefix for communicating
-                                         * with scrollbars.  If NULL,
-                                         * indicates no command to issue. */
+    Tcl_Obj *scrollCmdObjPtr;           /* If non-NULL, command prefix for
+                                         * communicating with horizontal
+                                         * scrollbar. */
     int scrollUnits;                    /* # of pixels per scroll unit. */
     int scrollX;                        /* x-offset of the start of visible
                                          * text in the viewport. */
     int viewWidth;                      /* Width of the viewport. */
-    
     /*
      * In/Out Focus Highlight Ring:
      */
@@ -414,33 +415,37 @@ typedef struct  {
     /* 
      * Entry entry:
      *
-     * The entry contains optionally an icon and a text string. The rectangle
-     * surrounding an entry may have a 3D border.
+     * The entry contains optionally an icon and a text string. The
+     * rectangle surrounding an entry may have a 3D border.
      */
-    Icon icon;                          /* If non-NULL, image to be displayed
-                                         * in entry. Its value may be
-                                         * overridden by the -iconvariable
-                                         * option. */
-    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If non-NULL,
-                                         * this variable contains the name of
-                                         * an image representing the icon.
-                                         * This overrides the value of the
-                                         * above field. */
-    Icon image;                         /* If non-NULL, image to be displayed
-                                         * instead of text in the entry. */
-    char *text;                         /* Text string to be displayed in the
-                                         * entry if an image has no been
-                                         * designated. Its value is overridden
-                                         * by the -textvariable option. */
-    char *screenText;                   /* Text string to be displayed on the
-                                         * screen.  If the -show option is used
-                                         * this string may consist of different
-                                         * characters from the above string.*/
-    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If non-NULL,
-                                         * this variable contains the text
-                                         * string to * be displayed in the
-                                         * entry. This overrides the above
+    Icon icon;                          /* If non-NULL, image to be
+                                         * displayed in entry. Its value
+                                         * may be overridden by the
+                                         * -iconvariable option. */
+    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable contains
+                                         * the name of an image
+                                         * representing the icon.  This
+                                         * overrides the value of the above
                                          * field. */
+    Icon image;                         /* If non-NULL, image to be
+                                         * displayed instead of text in the
+                                         * entry. */
+    char *text;                         /* Text string to be displayed in
+                                         * the entry if an image has no
+                                         * been designated. Its value is
+                                         * overridden by the -textvariable
+                                         * option. */
+    char *screenText;                   /* Text string to be displayed on
+                                         * the screen.  If the -show option
+                                         * is used this string may consist
+                                         * of different characters from the
+                                         * above string.*/
+    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable contains
+                                         * the text string to * be
+                                         * displayed in the entry. This
+                                         * overrides the above field. */
     Blt_Font font;                      /* Font of text to be display in
                                          * entry. */
     XColor *textInFocusColor;
@@ -449,7 +454,8 @@ typedef struct  {
     GC textOutFocusGC;
 
     short int numChars;                 /* # character in text string. */
-    short int numBytes;                 /* bytes of in actual text string. */
+    short int numBytes;                 /* # bytes of in actual text
+                                         * string. */
     short int numScreenBytes;           /* # bytes in displayed text. */
 
     /*  
@@ -465,25 +471,24 @@ typedef struct  {
      * Insertion cursor information:
      */
     GC insertGC;
-    XColor *insertColor;                /* Color used to draw vertical bar for
-                                         * insertion cursor. */
-    int insertOffTime;                  /* Time in milliseconds cursor should
-                                         * spend in "off" state for each
-                                         * blink. */
-    int insertOnTime;                   /* Time in milliseconds cursor should
-                                         * spend in "off" state for each
-                                         * blink. */
+    XColor *insertColor;                /* Color used to draw vertical bar
+                                         * for insertion cursor. */
+    int insertOffTime;                  /* Time in milliseconds cursor
+                                         * should spend in "off" state for
+                                         * each blink. */
+    int insertOnTime;                   /* Time in milliseconds cursor
+                                         * should spend in "off" state for
+                                         * each blink. */
     Tcl_TimerToken insertTimerToken;    /* Handle for a timer event called
-                                         * periodically to blink the insertion
-                                         * cursor. */
-
+                                         * periodically to blink the
+                                         * insertion cursor. */
     int insertWidth;                    /* Total width of insert cursor. */
     CharIndex insertIndex;              /* Character index of the insertion
                                          * cursor.  */
-    int prefTextWidth;                  /* Desired width of text, measured in
-                                         * average characters. */
-    int prefIconWidth;                  /* Desired width of icon, measured in
-                                         * pixels. */
+    int prefTextWidth;                  /* Desired width of text, measured
+                                         * in average characters. */
+    int prefIconWidth;                  /* Desired width of icon, measured
+                                         * in pixels. */
     int inset;
     short int arrowWidth, arrowHeight;
     short int iconWidth, iconHeight;
@@ -493,21 +498,25 @@ typedef struct  {
 
 
     ByteOffset firstOffset, lastOffset; /* Byte offset of first and last
-                                         * characters visible in viewport. */
+                                         * characters visible in
+                                         * viewport. */
     int firstX, lastX;                  /* x-coordinates of first and last
-                                         * characters visible in viewport. */ 
-    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be executed
-                                         * when this menu is posted. */
+                                         * characters visible in
+                                         * viewport. */ 
+    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be
+                                         * executed when this menu is
+                                         * posted. */
     Tcl_Obj *menuObjPtr;        
     Tk_Window menuWin;
-    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be executed
-                                         * when this menu is posted. */
+    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
+                                         * executed when this menu is
+                                         * posted. */
     int menuAnchor;
     unsigned int flags;
     EditRecord *undoPtr, *redoPtr;
-    const char *cipher;                 /* If non-NULL, this is the character
-                                         * to display for every character of
-                                         * text. */
+    const char *cipher;                 /* If non-NULL, this is the
+                                         * character to display for every
+                                         * character of text. */
 } ComboEntry;
 
 static Blt_ConfigSpec configSpecs[] =
@@ -698,9 +707,9 @@ typedef int (ComboEntryCmdProc)(ComboEntry *comboPtr, Tcl_Interp *interp,
  *
  * EventuallyRedraw --
  *
- *      Tells the Tk dispatcher to call the comboentry display routine at the
- *      next idle point.  This request is made only if the window is displayed
- *      and no other redraw request is pending.
+ *      Tells the Tk dispatcher to call the comboentry display routine at
+ *      the next idle point.  This request is made only if the window is
+ *      displayed and no other redraw request is pending.
  *
  * Results: None.
  *
@@ -970,8 +979,8 @@ InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes,
     comboPtr->text = text;
     comboPtr->numChars += numChars;
 
-    /* If the cursor index is after the insert index, then move the
-     * cursor down by the number of characters inserted. */
+    /* If the cursor index is after the insert index, then move the cursor
+     * down by the number of characters inserted. */
     if (comboPtr->insertIndex >= index) {
         comboPtr->insertIndex += numChars;
     }
@@ -1010,8 +1019,9 @@ static void
 ComputeGeometry(ComboEntry *comboPtr)
 {
     Button *butPtr = &comboPtr->clearButton;
-    /* Determine the height of the entry.  It's the maximum height of all it's
-     * components: icon, label, clear button, and arrow. */
+
+    /* Determine the height of the entry.  It's the maximum height of all
+     * it's components: icon, label, clear button, and arrow. */
     comboPtr->iconWidth  = comboPtr->iconHeight  = 0;
     comboPtr->entryWidth = comboPtr->entryHeight = 0;
     comboPtr->textWidth  = comboPtr->textHeight  = 0;
@@ -1177,10 +1187,8 @@ SetTextFromObj(ComboEntry *comboPtr, Tcl_Obj *objPtr)
  */
 /* ARGSUSED */
 static void
-IconChangedProc(
-    ClientData clientData,
-    int x, int y, int w, int h,         /* Not used. */
-    int imageWidth, int imageHeight)    /* Not used. */
+IconChangedProc(ClientData clientData, int x, int y, int w, int h,
+                int imageWidth, int imageHeight)
 {
     ComboEntry *comboPtr = clientData;
 
@@ -1269,8 +1277,8 @@ BlinkCursorTimerProc(ClientData clientData)
  *
  * ComboEntryEventProc --
  *
- *      This procedure is invoked by the Tk dispatcher for various events on
- *      comboentry widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events
+ *      on comboentry widgets.
  *
  * Results:
  *      None.
@@ -1342,15 +1350,15 @@ ComboEntryEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * ComboEntryLostSelProc --
  *
- *      This procedure is called back by Tk when the selection is grabbed away
- *      from the comboentry widget.
+ *      This procedure is called back by Tk when the selection is grabbed
+ *      away from the comboentry widget.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      The existing selection is unhighlighted, and the window is marked as
- *      not containing a selection.
+ *      The existing selection is unhighlighted, and the window is marked
+ *      as not containing a selection.
  *
  *---------------------------------------------------------------------------
  */
@@ -1370,8 +1378,8 @@ ComboEntryLostSelProc(ClientData clientData)
  *
  * ChildEventProc --
  *
- *      This procedure is invoked by the Tk dispatcher for various events on
- *      sub-menus of comboentry widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events
+ *      on sub-menus of comboentry widgets.
  *
  * Results:
  *      None.
@@ -1406,10 +1414,10 @@ ChildEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * ComboEntryInvokeCmdProc --
  *
- *      Invoked at the next idle point whenever the current
- *      selection changes.  Executes some application-specific code
- *      in the -selectcommand option.  This provides a way for
- *      applications to handle selection changes.
+ *      Invoked at the next idle point whenever the current selection
+ *      changes.  Executes some application-specific code in the
+ *      -selectcommand option.  This provides a way for applications to
+ *      handle selection changes.
  *
  * Results:
  *      None.
@@ -1438,18 +1446,19 @@ ComboEntryInvokeCmdProc(ClientData clientData)
  *
  * SelectText --
  *
- *      Modify the selection by moving its un-anchored end.  This could make
- *      the selection either larger or smaller.
+ *      Modify the selection by moving its un-anchored end.  This could
+ *      make the selection either larger or smaller.
  *
  *        1) If index is before the anchor point, sets the selection to the
- *           characters from index up to but not including the anchor point.
+ *           characters from index up to but not including the anchor
+ *           point.
  *        2) If index is the same as the anchor point, does nothing.
  *        3) If index is after the anchor point, set the selection to the
- *           characters from the anchor point up to but not including index.  
- *           The anchor point is determined by the most recent select from 
- *           or select adjust command in this widget.
+ *           characters from the anchor point up to but not including
+ *           index.  The anchor point is determined by the most recent
+ *           select from or select adjust command in this widget.
  *        4) If the selection isn't in this widget then a new selection is
- *           created using the most recent anchor point specified for the 
+ *           created using the most recent anchor point specified for the
  *           widget.
  *
  * Results:
@@ -1472,7 +1481,8 @@ SelectText(ComboEntry *comboPtr, CharIndex index)
         Tk_OwnSelection(comboPtr->tkwin, XA_PRIMARY, ComboEntryLostSelProc, 
                 comboPtr);
     }
-    /*  If the anchor hasn't been set yet, assume the beginning of the text*/
+    /* If the anchor hasn't been set yet, assume the beginning of the
+     * text*/
     if (comboPtr->selAnchor < 0) {
         comboPtr->selAnchor = 0;
     }
@@ -1501,10 +1511,10 @@ SelectText(ComboEntry *comboPtr, CharIndex index)
  *
  * ComboEntrySelectCmdProc --
  *
- *      Invoked at the next idle point whenever the current
- *      selection changes.  Executes some application-specific code
- *      in the -selectcommand option.  This provides a way for
- *      applications to handle selection changes.
+ *      Invoked at the next idle point whenever the current selection
+ *      changes.  Executes some application-specific code in the
+ *      -selectcommand option.  This provides a way for applications to
+ *      handle selection changes.
  *
  * Results:
  *      None.
@@ -1540,9 +1550,9 @@ ComboEntrySelectCmdProc(ClientData clientData)
  *
  * ComboEntrySelectionProc --
  *
- *      This procedure is called back by Tk when the selection is requested by
- *      someone.  It returns part or all of the selection in a buffer provided
- *      by the caller.
+ *      This procedure is called back by Tk when the selection is requested
+ *      by someone.  It returns part or all of the selection in a buffer
+ *      provided by the caller.
  *
  * Results:
  *      The return value is the number of non-NULL bytes stored at buffer.
@@ -1558,13 +1568,14 @@ ComboEntrySelectCmdProc(ClientData clientData)
 static int
 ComboEntrySelectionProc(
     ClientData clientData,              /* Information about the widget. */
-    int offset,                         /* Offset within the selection of the
-                                         * first character to be returned. */
+    int offset,                         /* Offset within the selection of
+                                         * the first character to be
+                                         * returned. */
     char *buffer,                       /* Location in which to place
                                          * selection. */
-    int maxBytes)                       /* Maximum number of bytes to place at
-                                         * buffer, not including terminating
-                                         * NULL character. */
+    int maxBytes)                       /* Maximum number of bytes to place
+                                         * at buffer, not including
+                                         * terminating NULL character. */
 {
     ComboEntry *comboPtr = clientData;
     int size;
@@ -1593,8 +1604,8 @@ ComboEntrySelectionProc(
  * TextVarTraceProc --
  *
  *      This procedure is invoked when someone changes the state variable
- *      associated with a comboentry entry.  The entry's selected state is set
- *      to match the value of the variable.
+ *      associated with a comboentry entry.  The entry's selected state is
+ *      set to match the value of the variable.
  *
  * Results:
  *      NULL is always returned.
@@ -1636,10 +1647,10 @@ TextVarTraceProc(
         Tcl_Obj *valueObjPtr;
 
         /*
-         * Update the comboentry's text with the value of the variable, unless
-         * the widget already has that value (this happens when the variable
-         * changes value because we changed it because someone typed in the
-         * entry).
+         * Update the comboentry's text with the value of the variable,
+         * unless the widget already has that value (this happens when the
+         * variable changes value because we changed it because someone
+         * typed in the entry).
          */
         valueObjPtr = Tcl_ObjGetVar2(interp, comboPtr->textVarObjPtr, NULL, 
                 TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
@@ -1662,8 +1673,8 @@ TextVarTraceProc(
  * IconVarTraceProc --
  *
  *      This procedure is invoked when someone changes the state variable
- *      associated with a comboentry entry.  The entry's selected state is set
- *      to match the value of the variable.
+ *      associated with a comboentry entry.  The entry's selected state is
+ *      set to match the value of the variable.
  *
  * Results:
  *      NULL is always returned.
@@ -1707,8 +1718,8 @@ IconVarTraceProc(
         Tcl_Obj *valueObjPtr;
 
         /*
-         * Update the comboentry's icon with the image whose name is
-         * stored in the variable.
+         * Update the comboentry's icon with the image whose name is stored
+         * in the variable.
          */
         valueObjPtr = Tcl_ObjGetVar2(interp, comboPtr->iconVarObjPtr, NULL, 
                 TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
@@ -1837,11 +1848,8 @@ IconVarToObjProc(
 
 /*ARGSUSED*/
 static void
-FreeTextVarProc(
-    ClientData clientData,
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreeTextVarProc(ClientData clientData, Display *display, char *widgRec,
+                int offset)
 {
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
@@ -2264,9 +2272,9 @@ PrevUtfOffset(const char *string)
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.  The
- *      pointer to the node is returned via itemPtrPtr.  Otherwise, TCL_ERROR
- *      is returned and an error message is left in interpreter's result
- *      field.
+ *      pointer to the node is returned via itemPtrPtr.  Otherwise,
+ *      TCL_ERROR is returned and an error message is left in interpreter's
+ *      result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2372,14 +2380,13 @@ DestroyButton(ComboEntry *comboPtr, Button *butPtr)
  *      option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
-
- *      The return value is a standard TCL result.  If TCL_ERROR is returned,
- *      then interp->result contains an error message.
+ *      The return value is a standard TCL result.  If TCL_ERROR is
+ *      returned, then interp->result contains an error message.
  *
  * Side Effects:
- *      Configuration information, such as text string, colors, font, etc. get
- *      set for setPtr; old resources get freed, if there were any.  The widget
- *      is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for setPtr; old resources get freed, if there were
+ *      any.  The widget is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -2518,6 +2525,7 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
  * ActivateOp --
  *
  *      Activates
+ *
  * Results:
  *      Standard TCL result.
  *
@@ -2525,7 +2533,7 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cb activate bool
+ *      pathName activate bool
  *
  *---------------------------------------------------------------------------
  */
@@ -2587,7 +2595,7 @@ ButtonCgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *      set for comboPtr; old resources get freed, if there were any.  The
  *      widget is redisplayed.
  *
- *      .ce button configure ?optio value?
+ *      pathName button configure ?option value?
  *
  *---------------------------------------------------------------------------
  */
@@ -2618,12 +2626,12 @@ ButtonConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to invoke a button command.
  *
- *        .t button invoke
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
  *
+ *        pathName button invoke
+ * 
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2704,7 +2712,7 @@ ButtonOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cb cget option
+ *      pathName cget option
  *
  *---------------------------------------------------------------------------
  */
@@ -2786,7 +2794,7 @@ ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm configure ?option value?...
+ *      pathName configure ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -2836,7 +2844,7 @@ ConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *   .cb delete first ?last?
+ *      pathName delete first ?last?
  *
  *---------------------------------------------------------------------------
  */
@@ -2891,11 +2899,7 @@ DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  * Results:
  *      Standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cb bentry option
+ *      pathName get 
  *
  *---------------------------------------------------------------------------
  */
@@ -2928,7 +2932,7 @@ GetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cb index index
+ *      pathName index indexName
  *
  *---------------------------------------------------------------------------
  */
@@ -3102,11 +3106,7 @@ IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  * Results:
  *      Standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *  .cb invoke item 
+ *      pathName invoke item 
  *
  *---------------------------------------------------------------------------
  */
@@ -3139,7 +3139,7 @@ InvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The comboentry gets a new item.
  *
- *   .cb insert index string
+ *      pathName insert indexName textString
  *
  *---------------------------------------------------------------------------
  */
@@ -3193,7 +3193,7 @@ InsertOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *  .ce post
+ *  pathName post
  *
  *---------------------------------------------------------------------------
  */
@@ -3204,8 +3204,8 @@ PostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tk_Window menuWin;
     
     if (comboPtr->flags & (POSTED|DISABLED)) {
-        return TCL_OK;          /* Entry's menu is currently posted or entry
-                                 * is disabled. */
+        return TCL_OK;                  /* Entry's menu is currently posted
+                                         * or entry is disabled. */
     }
     if (comboPtr->menuObjPtr == NULL) {
         return TCL_OK;
@@ -3409,14 +3409,14 @@ SeeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Locates the end of the selection nearest to the character given by
  *      index, and adjusts that end of the selection to be at index
  *      (i.e. including but not going beyond index).  The other end of the
- *      selection is made the anchor point for future select to commands.  If
- *      the selection isn't currently in the comboentry, then a new selection
- *      is created to include the characters between index and the most recent
- *      selection anchor point, inclusive.
+ *      selection is made the anchor point for future select to commands.
+ *      If the selection isn't currently in the comboentry, then a new
+ *      selection is created to include the characters between index and
+ *      the most recent selection anchor point, inclusive.
  *
- *      This procedure is called back by Tk when the selection is requested by
- *      someone.  It returns part or all of the selection in a buffer provided
- *      by the caller.
+ *      This procedure is called back by Tk when the selection is requested
+ *      by someone.  It returns part or all of the selection in a buffer
+ *      provided by the caller.
  *
  * Results:
  *      A standard TCL result.
@@ -3435,7 +3435,7 @@ SelectionAdjustOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     int half1, half2;
 
     if (comboPtr->flags & DISABLED) {
-        return TCL_OK;          /* Widget is currently disabled. */
+        return TCL_OK;                  /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
         return TCL_ERROR;
@@ -3474,7 +3474,7 @@ SelectionClearOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
                  Tcl_Obj *const *objv)
 {
     if (comboPtr->flags & DISABLED) {
-        return TCL_OK;          /* Widget is currently disabled. */
+        return TCL_OK;                  /* Widget is currently disabled. */
     }
     if (comboPtr->selFirst != -1) {
         comboPtr->selFirst = comboPtr->selLast = -1;
@@ -3493,7 +3493,8 @@ SelectionClearOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *
  *      Sets the selection anchor point to just before the character
  *      designated by the given index.  Doesn't change the selection, just
- *      resets the anchor of the existing selection. Returns an empty string.
+ *      resets the anchor of the existing selection. Returns an empty
+ *      string.
  *
  * Results:
  *      A standard TCL result.
@@ -3508,7 +3509,7 @@ SelectionFromOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
-        return TCL_OK;          /* Widget is currently disabled. */
+        return TCL_OK;                  /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
         return TCL_ERROR;
@@ -3528,7 +3529,7 @@ SelectionFromOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *      Indicates if there are characters selected in the comboentry.
  *
  * Results:
- *      Returns in the interpreter result, 1 if there is are characters 
+ *      Returns in the interpreter result, 1 if there is are characters
  *      selected, 0 if nothing is selected.
  *
  *---------------------------------------------------------------------------
@@ -3565,7 +3566,7 @@ SelectionRangeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     CharIndex first, last;
 
     if (comboPtr->flags & DISABLED) {
-        return TCL_OK;          /* Widget is currently disabled. */
+        return TCL_OK;                  /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[3], &first) != TCL_OK) {
         return TCL_ERROR;
@@ -3601,7 +3602,7 @@ SelectionToOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
-        return TCL_OK;          /* Widget is currently disabled. */
+        return TCL_OK;                  /* Widget is currently disabled. */
     }
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
         return TCL_ERROR;
@@ -3664,7 +3665,7 @@ SelectionOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The comboentry gets a new item.
  *
- *   .cb insert index string
+ *   pathName insert index string
  *
  *---------------------------------------------------------------------------
  */
@@ -3672,7 +3673,7 @@ static int
 RedoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     if (comboPtr->flags & (READONLY|DISABLED)) {
-        return TCL_OK;          /* Writing is currently disabled. */
+        return TCL_OK;                 /* Writing is currently disabled. */
     }
     if (comboPtr->redoPtr != NULL) {
         EditRecord *recPtr;
@@ -3711,7 +3712,7 @@ RedoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Side effects:
  *      The comboentry gets a new item.
  *
- *   .cb insert index string
+ *      pathName insert index string
  *
  *---------------------------------------------------------------------------
  */
@@ -3719,7 +3720,7 @@ static int
 UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     if (comboPtr->flags & (READONLY|DISABLED)) {
-        return TCL_OK;          /* Writing is currently disabled. */
+        return TCL_OK;                 /* Writing is currently disabled. */
     }
     if (comboPtr->undoPtr != NULL) {
         EditRecord *recPtr;
@@ -3755,7 +3756,7 @@ UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *  .ce unpost
+ *      pathName unpost
  *
  *---------------------------------------------------------------------------
  */
@@ -3780,7 +3781,7 @@ XviewOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     int width;
 
     if (comboPtr->flags & (DISABLED|READONLY)) {
-        return TCL_OK;          /* Widget is currently disabled. */
+        return TCL_OK;                  /* Widget is currently disabled. */
     }
     width = comboPtr->viewWidth;
     if (objc == 2) {
@@ -3789,8 +3790,8 @@ XviewOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
         /*
-         * Note: we are bounding the fractions between 0.0 and 1.0 to support
-         * the "canvas"-style of scrolling.
+         * Note: We are bounding the fractions between 0.0 and 1.0 to
+         * support the "canvas"-style of scrolling.
          */
         fract = (double)comboPtr->scrollX / comboPtr->textWidth;
         fract = FCLAMP(fract);
@@ -4043,7 +4044,7 @@ ComboEntryInstCmdProc(
 static void
 ComboEntryInstCmdDeletedProc(ClientData clientData)
 {
-    ComboEntry *comboPtr = clientData; /* Pointer to widget record. */
+    ComboEntry *comboPtr = clientData;  /* Pointer to widget record. */
 
     if (comboPtr->tkwin != NULL) {
         Tk_Window tkwin;
@@ -4059,9 +4060,9 @@ ComboEntryInstCmdDeletedProc(ClientData clientData)
  *
  * CreateEntry --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module. See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module. See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -4142,9 +4143,9 @@ CreateEntry(Tcl_Interp *interp,         /* Current interpreter. */
  *
  * ComboEntryCmd --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module. See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module. See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -4170,9 +4171,9 @@ ComboEntryCmd(
  *
  * TextEntryCmd --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module. See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module. See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -4208,12 +4209,12 @@ Blt_ComboEntryInitProc(Tcl_Interp *interp)
  *
  * DrawEntry --
  *
- *      Draw the editable text associated with the entry.  The widget may be
- *      scrolled so the text may be clipped.  We use a temporary pixmap to
- *      draw the visible portion of the text.
+ *      Draw the editable text associated with the entry.  The widget may
+ *      be scrolled so the text may be clipped.  We use a temporary pixmap
+ *      to draw the visible portion of the text.
  *
- *      We assume that text strings will be small for the most part.  The bad
- *      part of this is that we measure the text string 5 times.
+ *      We assume that text strings will be small for the most part.  The
+ *      bad part of this is that we measure the text string 5 times.
  *
  * Results:
  *      A standard TCL result.
@@ -4313,11 +4314,12 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
         comboPtr->lastX = textWidth + firstX;
     }
     /* 
-     * The viewport starts somewhere over the first visible character, but not
-     * necessarily at the start of the character.  Subtract the viewport
-     * offset from the start of the first character.  This is zero or a
-     * negative x-coordinate, indicating where start drawing the text so that
-     * it's properly clipped by the temporary pixmap. */
+     * The viewport starts somewhere over the first visible character, but
+     * not necessarily at the start of the character.  Subtract the
+     * viewport offset from the start of the first character.  This is zero
+     * or a negative x-coordinate, indicating where start drawing the text
+     * so that it's properly clipped by the temporary pixmap.
+     */
     textX = comboPtr->firstX - comboPtr->scrollX;
         
     insertX = -1;
@@ -4341,13 +4343,14 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     /*
      *  Text is drawn in (up to) three segments.
      *
-     *    1) Any text before the start the selection.  2) The selected text
-     *    (drawn with a flat border) 3) Any text following the selection.
-     *    This step will draw the text string if there is no selection.
+     *    1) Any text before the start the selection.  
+     *    2) The selected text (drawn with a flat border) 
+     *    3) Any text following the selection.  This step will draw the
+     *       text string if there is no selection.
      */
 
-    /* Step 1. Draw any text preceding the selection that's still visible in
-     *         the viewport. */
+    /* Step 1. Draw any text preceding the selection that's still visible
+     *         in the viewport. */
     firstOffset = CharIndexToByteOffset(comboPtr->screenText, 
         comboPtr->selFirst);
     lastOffset  = CharIndexToByteOffset(comboPtr->screenText, 
@@ -4401,9 +4404,9 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
         }
         textX += numPixels;
     }
-    /* Step 3.  Draw any text following the selection that's visible
-     *          in the viewport. In the case of no selection, we draw
-     *          the entire text string. */
+    /* Step 3.  Draw any text following the selection that's visible in the
+     *          viewport. In the case of no selection, we draw the entire
+     *          text string. */
     if (lastOffset < comboPtr->lastOffset) {            
         ByteOffset offset;
 
@@ -4678,7 +4681,8 @@ DisplayComboEntry(ClientData clientData)
 #ifdef WIN32
         assert(drawable != None);
 #endif
-        bg = (comboPtr->flags & FOCUS) ? comboPtr->inFocusBg : comboPtr->outFocusBg;
+        bg = (comboPtr->flags & FOCUS) ? comboPtr->inFocusBg :
+            comboPtr->outFocusBg;
         Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, 0, 0, w, h, 0, 
                              TK_RELIEF_FLAT);
         DrawComboEntry(comboPtr, drawable, w, h);

@@ -109,14 +109,14 @@ struct _Blt_Picture {
 
 #define BLT_PIC_COLOR  (1<<0)           /* Indicates if picture is color or
                                          * greyscale. */
-#define BLT_PIC_ALPHAS (1<<1)           /* Picture has partially opaque
+#define BLT_PIC_COMPOSITE (1<<1)           /* Picture has partially opaque
                                          * pixels. */
 #define BLT_PIC_MASK   (1<<2)           /* Pixels are either 100% opaque or
                                          * transparent. The separate ALPHAS
                                          * and MASK flags are so that don't
                                          * premultiply alphas for masks. */
 
-#define BLT_PIC_ASSOCIATED_COLORS (1<<3)/* Indicates if RGB components have
+#define BLT_PIC_PREMULTIPLED_COLORS (1<<3)/* Indicates if RGB components have
                                          * been premultiplied by their
                                          * alphas. */
 
@@ -162,12 +162,13 @@ struct _Blt_Chain;
 
 #define Blt_Picture_IsDirty(p)  ((p)->flags & BLT_PIC_DIRTY)
 #define Blt_Picture_IsOpaque(p) \
-        (((p)->flags & (BLT_PIC_ALPHAS | BLT_PIC_MASK)) == 0)
+        (((p)->flags & (BLT_PIC_COMPOSITE | BLT_PIC_MASK)) == 0)
 #define Blt_Picture_IsMasked(p)  ((p)->flags &  BLT_PIC_MASK) 
-#define Blt_Picture_IsBlended(p) ((p)->flags &  BLT_PIC_ALPHAS)
+#define Blt_Picture_IsBlended(p) ((p)->flags &  BLT_PIC_COMPOSITE)
 #define Blt_Picture_IsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
 #define Blt_Picture_IsGreyscale(p)   (!Blt_Picture_IsColor(p))
-#define Blt_Picture_IsAssociated(p) ((p)->flags &  BLT_PIC_ASSOCIATED_COLORS)
+#define Blt_Picture_IsPremultipled(p) \
+        ((p)->flags &  BLT_PIC_PREMULTIPLED_COLORS)
 
 typedef enum PictureArithOps {
     PIC_ARITH_ADD,

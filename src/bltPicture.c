@@ -480,13 +480,13 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
         bp->u32 = color.u32;
     }
     destPtr->flags |= BLT_PIC_DIRTY;
-    destPtr->flags &= ~(BLT_PIC_ALPHAS | BLT_PIC_MASK);
+    destPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_MASK);
     if (color.Alpha == 0x00) {
-        destPtr->flags |= BLT_PIC_MASK | BLT_PIC_ALPHAS;
+        destPtr->flags |= BLT_PIC_MASK | BLT_PIC_COMPOSITE;
     } else if (color.Alpha != 0xFF) {
-        destPtr->flags |= BLT_PIC_ALPHAS;
+        destPtr->flags |= BLT_PIC_COMPOSITE;
     }
-    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
 }
 
 void
@@ -532,12 +532,12 @@ Blt_BlankRegion(Pict *destPtr, int x, int y, int w, int h,
         destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags |= BLT_PIC_DIRTY;
-    destPtr->flags &= ~(BLT_PIC_ALPHAS | BLT_PIC_MASK);
+    destPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_MASK);
     color.u32 = colorValue;
     if (color.Alpha == 0x00) {
         destPtr->flags |= BLT_PIC_MASK;
     } else if (color.Alpha != 0xFF) {
-        destPtr->flags |= BLT_PIC_ALPHAS;
+        destPtr->flags |= BLT_PIC_COMPOSITE;
     }
 }
 
@@ -673,7 +673,7 @@ Blt_FadePicture(Pict *srcPtr, int x, int y, int w, int h, double factor)
     Blt_Pixel *srcRowPtr;
     int alpha;
 
-    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
     alpha = (int)((1.0 - factor) * 255.0 + 0.5);
@@ -692,7 +692,7 @@ Blt_FadePicture(Pict *srcPtr, int x, int y, int w, int h, double factor)
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }
-    srcPtr->flags |= BLT_PIC_ALPHAS;
+    srcPtr->flags |= BLT_PIC_COMPOSITE;
 }
 
 void
@@ -735,7 +735,7 @@ Blt_UnmultiplyColor(Blt_Pixel *colorPtr)
 static void
 AssociateColors(Pict *srcPtr)
 {
-    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_Pixel *srcRowPtr;
         int y;
         
@@ -749,14 +749,14 @@ AssociateColors(Pict *srcPtr)
             }
             srcRowPtr += srcPtr->pixelsPerRow;
         }
-        srcPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+        srcPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
     }
 }
 
 static void
 UnassociateColors(Pict *srcPtr)
 {
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
         Blt_Pixel *srcRowPtr;
         int y;
 
@@ -770,7 +770,7 @@ UnassociateColors(Pict *srcPtr)
             }
             srcRowPtr += srcPtr->pixelsPerRow;
         }
-        srcPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
+        srcPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
     }
 }
 
@@ -811,10 +811,10 @@ CompositeRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
         h = srcPtr->height;
     }
     /* Convert the pictures to use associated colors if not already. */
-    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((destPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(destPtr);
     }
     
@@ -1107,10 +1107,10 @@ ColorBlendRegion(
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
 
-    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((destPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(destPtr);
     }
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
@@ -2081,7 +2081,6 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
                 wp->f32 = (float)(*filterPtr->proc)(val);
                 sum += wp->f32;
             }
-
             factor = (sum == 0.0) ? 1.0 : (1.0 / sum);
             for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
                 wp->f32 = (float)(wp->f32 * factor);
@@ -2286,12 +2285,12 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
     Pict *tmpPtr;
 
     tmpPtr = Blt_CreatePicture(destPtr->width, srcPtr->height);
-    if ((srcPtr->flags & (BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS)) == 
-        BLT_PIC_ALPHAS) {
+    if ((srcPtr->flags & (BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLED_COLORS)) == 
+        BLT_PIC_COMPOSITE) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & (BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS)) == 
-        BLT_PIC_ALPHAS) {
+    if ((destPtr->flags & (BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLED_COLORS)) == 
+        BLT_PIC_COMPOSITE) {
         Blt_PremultiplyColors(destPtr);
     }
 
@@ -2768,7 +2767,7 @@ Rotate45(Pict *srcPtr, float angle, Blt_Pixel *bg)
         skewf += tanTheta;
     }
     Blt_FreePicture(shear2Ptr);
-    destPtr->flags |= BLT_PIC_ALPHAS;
+    destPtr->flags |= BLT_PIC_COMPOSITE;
     return destPtr;      
 }
 
@@ -3180,7 +3179,7 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
         }
     }
     destPtr = RotateByAreaMapping(srcPtr, -angle, &bg);
-    destPtr->flags |= BLT_PIC_ALPHAS;
+    destPtr->flags |= BLT_PIC_COMPOSITE;
     return destPtr;
 }
 
@@ -3359,7 +3358,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     }
-    destPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_ALPHAS;
+    destPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_COMPOSITE;
     return destPtr;
 }
 
@@ -3380,7 +3379,7 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
     int alpha;
     int y;
     
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
         Blt_UnmultiplyColors(srcPtr);
     }
     srcRowPtr = srcPtr->bits;
@@ -3495,7 +3494,7 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
         }
         break;
     }
-    srcPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_ALPHAS;
+    srcPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_COMPOSITE;
 }
 
 /*
@@ -5661,7 +5660,7 @@ SelectPixels(Pict *destPtr, Pict *srcPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr)
         srcRowPtr += srcPtr->pixelsPerRow;
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags &= ~BLT_PIC_ALPHAS;
+    destPtr->flags &= ~BLT_PIC_COMPOSITE;
     destPtr->flags |= BLT_PIC_MASK;
 }
 
@@ -6098,7 +6097,7 @@ Blt_BlurPicture(Pict *destPtr, Pict *srcPtr, int radius, int numPasses)
     if (srcPtr != destPtr) {
         Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
     }
-    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
     if (radius < 1) {
@@ -6281,7 +6280,7 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
         Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
         tablePtr = &colorTable;
     }
-    isAssociated = (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS);
+    isAssociated = (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS);
     if (isAssociated) {
         Blt_UnmultiplyColors(srcPtr);
     }
@@ -6305,7 +6304,7 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
                 if (sp->Alpha == ALPHA_TRANSPARENT) {
                     flags |= BLT_PIC_MASK;
                 } else {
-                    flags |= BLT_PIC_ALPHAS;
+                    flags |= BLT_PIC_COMPOSITE;
                 }
             }
             color.u32 = sp->u32;
@@ -6361,14 +6360,14 @@ Blt_ClassifyPicture(Pict *srcPtr)
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
             if ((sp->Alpha == 0x00) || (sp->Alpha != 0xFF)) {
                 /* Stop after first semi/fully-transparent pixel. */
-                flags |= BLT_PIC_ALPHAS;
+                flags |= BLT_PIC_COMPOSITE;
                 goto setFlags;
             }
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }
  setFlags:
-    srcPtr->flags &= ~(BLT_PIC_ALPHAS | BLT_PIC_MASK | BLT_PIC_COLOR);
+    srcPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_MASK | BLT_PIC_COLOR);
     srcPtr->flags |= flags;
 }
 
@@ -6796,7 +6795,7 @@ Blt_ProjectPicture(Pict *srcPtr, float *srcPts, float *destPts, Blt_Pixel *bg)
         }
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags |= BLT_PIC_ALPHAS;
+    destPtr->flags |= BLT_PIC_COMPOSITE;
     return destPtr;
 }
 
@@ -6924,7 +6923,7 @@ Blt_EmbossPicture(
         srcRowPtr  += srcPtr->pixelsPerRow;
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags |= BLT_PIC_ALPHAS;
+    destPtr->flags |= BLT_PIC_COMPOSITE;
     return destPtr;
 }
 #endif

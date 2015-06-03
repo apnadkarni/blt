@@ -699,7 +699,7 @@ JpgToPicture(
             }
             destRowPtr += destPtr->pixelsPerRow;
         }
-        destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_ALPHAS;
+        destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_COMPOSITE;
         break;
     default:
         Tcl_AppendResult(interp, "\"", fileName, "\": ",
@@ -721,7 +721,7 @@ JpgToPicture(
     Tcl_DStringFree(&error.ds);
     chain = Blt_Chain_Create();
     /* Opaque image, set associate colors flag.  */
-    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
     Blt_Chain_Append(chain, destPtr);
     destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return chain;
@@ -803,7 +803,7 @@ PictureToJpg(
         }
         srcPtr = background;
     }
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
         Blt_Picture unassoc;
         /* 
          * The picture has an alpha burned into the components.  Create a

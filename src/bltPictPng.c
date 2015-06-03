@@ -312,7 +312,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     }
     destPtr = Blt_CreatePicture(width, height);
     if (colorType & PNG_COLOR_MASK_ALPHA) {
-        destPtr->flags |= BLT_PIC_ALPHAS;
+        destPtr->flags |= BLT_PIC_COMPOSITE;
     }
     if ((numChannels == 4) || (numChannels == 3)) {
         destPtr->flags |= BLT_PIC_COLOR;
@@ -399,7 +399,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     if (colorType & PNG_COLOR_MASK_ALPHA) {
         Blt_PremultiplyColors(destPtr);
     } else {
-        destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+        destPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
     }
     destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
  bad:

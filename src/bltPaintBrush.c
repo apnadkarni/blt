@@ -627,7 +627,7 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
     }
     brushPtr->tile = Blt_GetPictureFromImage(cmdPtr->dataPtr->interp,
         brushPtr->tkImage, &isNew);
-    if (Blt_Picture_IsAssociated(brushPtr->tile)) {
+    if (Blt_Picture_IsPremultipled(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
     }
     if (isNew) {
@@ -1586,7 +1586,7 @@ TileBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
         }
         brushPtr->tile = Blt_GetPictureFromImage(interp, brushPtr->tkImage,
                 &isNew);
-        if (Blt_Picture_IsAssociated(brushPtr->tile)) {
+        if (Blt_Picture_IsPremultipled(brushPtr->tile)) {
             Blt_UnmultiplyColors(brushPtr->tile);
         }
         if (isNew) {
@@ -2807,7 +2807,7 @@ Blt_SetTileBrushPicture(Blt_PaintBrush brush, Blt_Picture picture)
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
 
     brushPtr->tile = picture;
-    if (Blt_Picture_IsAssociated(brushPtr->tile)) {
+    if (Blt_Picture_IsPremultipled(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
     }
 }

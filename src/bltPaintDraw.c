@@ -423,7 +423,7 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
         }
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
     Blt_Free(squares);
 }
 

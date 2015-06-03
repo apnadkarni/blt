@@ -39,17 +39,15 @@
 #define _BLT_PIC_INT_H
 
 /*
- * Scaled integers are fixed point values.  The upper 18 bits is the integer
- * portion, the lower 14 bits the fractional remainder.  Must be careful not
- * to overflow the values (especially during multiplication).
+ * Scaled integers are fixed point values.  The upper 18 bits is the
+ * integer portion, the lower 14 bits the fractional remainder.  Must be
+ * careful not to overflow the values (especially during multiplication).
  *
  * The following operations are defined:
  * 
  *      S * n           Scaled integer times an integer.
  *      S1 + S2         Scaled integer plus another scaled integer.
- *
  */
-
 #define float2si(f)     (int)((f) * 16383.0 + ((f < 0) ? -0.5 : 0.5))
 #define uchar2si(b)     (((int)(b)) << 14)
 #define si2int(s)       (((s) + 8192) >> 14)

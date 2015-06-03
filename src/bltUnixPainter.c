@@ -1267,7 +1267,7 @@ DrawableToPicture(
     }
     XDestroyImage(imgPtr);
     /* Opaque image, set associate colors flag.  */
-    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
     return destPtr;
 }
 

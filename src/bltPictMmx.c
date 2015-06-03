@@ -155,7 +155,7 @@ SelectPixels(Pict *destPtr, Pict *srcPtr, Blt_Pixel *lowerPtr,
         destRowPtr += destPtr->pixelsPerRow;
     }
     asm volatile ("emms");
-    destPtr->flags &= ~BLT_PIC_ALPHAS;
+    destPtr->flags &= ~BLT_PIC_COMPOSITE;
     destPtr->flags |= BLT_PIC_MASK;
 }
 
@@ -777,7 +777,7 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
                     "punpcklbw %%mm6, %%mm0    #  mm0 = Sa,Sb,Sg,Sr\n\t" 
                     /*  */
                     "punpcklwd %%mm1, %%mm1    #  mm1 = W,W,W,W\n\t"
-                    /* Scale the 8-bit components to 14 bits. (S * 257) >> 2 */
+                    /* Scale the 8-bit components to 15 bits. (S * 257) >> 1 */
                     "movq %%mm0, %%mm3         #  mm3 = S8\n\t" 
                     "psllw $8, %%mm3           #  mm3 = S8 * 256\n\t" 
                     "paddw %%mm3, %%mm0        #  mm0 = S16\n\t" 
@@ -864,15 +864,15 @@ ZoomHorizontally(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
                    "punpcklbw %%mm6, %%mm0   #  mm0 = Sa,Sr,Sg,Sb\n\t" 
                    /*  */
                    "punpcklwd %%mm1, %%mm1   #  mm1 = W,W,W,W\n\t"
-                   /* Scale the 8-bit components to 14 bits: (S * 257) >> 2 */
+                   /* Scale the 8-bit components to 15 bits: (S * 257) >> 1 */
                    "movq %%mm0, %%mm3        #  mm3 = S8\n\t" 
                    "psllw $8, %%mm3          #  mm3 = S8 * 256\n\t" 
                    "paddw %%mm3, %%mm0       #  mm0 = S16\n\t" 
                    "psrlw $1, %%mm0          #  mm0 = S15\n\t" 
-                   /* Multiple each pixel component by the weight.  Note
-                    * that the lower 16-bits of the product are
-                    * truncated (bad) creating round-off error in the
-                    * sum. */
+                   /* Multiple each pixel component by the weight.  It's a
+                    * signed mulitply because weights can be negative. Note
+                    * that the lower 16-bits of the product are truncated
+                    * (bad) creating round-off error in the sum. */
                    "pmulhw %%mm1, %%mm0      #  mm0 = S15 * W14\n\t"  
                    /* Add the 16-bit components to mm5. */
                    "paddsw %%mm0, %%mm5      #  mm5 = A13 + mm5\n\t" 
@@ -1411,7 +1411,7 @@ AssociateColors(Pict *srcPtr)           /* (in/out) picture */
     }
 #endif
     asm volatile ("emms");
-    srcPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+    srcPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
 }
 
 /* 
@@ -1489,7 +1489,7 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
         srcRowPtr += srcPtr->pixelsPerRow;
     }
     asm volatile ("emms");
-    srcPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
+    srcPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
 }
 #endif
 
@@ -1771,10 +1771,10 @@ CompositePictures(Pict *destPtr, Pict *srcPtr)
 
     assert((srcPtr->width == destPtr->width) &&
            (srcPtr->height == destPtr->height));
-    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((destPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(destPtr);
     }
     asm volatile (
@@ -1869,7 +1869,7 @@ CompositePictures(Pict *destPtr, Pict *srcPtr)
  *      to pictures already have premultiplied alphas.  Blending is
  *      therefore implemented as
  *
- *              pixel = (F * a) + (T * (1 - a))
+ *              pixel = (T * a) + (F * (1 - a))
  *              
  *      where F = "from" pixel components, T = "to" pixel components, and 
  *      a = alpha value.
@@ -1906,10 +1906,10 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
 
     assert((fromPtr->width == toPtr->width) &&
            (fromPtr->height == toPtr->height));
-    if ((fromPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((fromPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(fromPtr);
     }
-    if ((toPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+    if ((toPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
         Blt_PremultiplyColors(toPtr);
     }
     alpha = (int)(opacity * 255);
@@ -1951,7 +1951,7 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
         tp = toRowPtr;
         for (fp = fromRowPtr, fend = fp + fromPtr->width; fp < fend; fp += 4) {
             asm volatile (
-		"movdqa    (%1), %%xmm2         # xmm2 = F0F1F2F3\n\t"
+		"movdqa    (%1), %%xmm2         # xmm2 = to T0T1T2T3\n\t"
                 /* Create 0xff mask for xor-ing. */
                 "pxor      %%xmm5, %%xmm5       # xmm5 = 0\n\t"
                 "pcmpeqw   %%xmm0, %%xmm0       # xmm0 = ffff x 8\n\t"
@@ -1960,16 +1960,16 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
                  * same shuffle mask for both pairs of pixels. */
 		"movhlps   %%xmm2, %%xmm3       # xmm3 = xmm2 << 64\n\t"
                 /* Unpack background */
-		"pshufb	   %%xmm7, %%xmm2       # xmm2 = Fb_Fg_Fr_Fa_ x 2\n\t"
-		"pshufb	   %%xmm7, %%xmm3       # xmm3 = Fb_Fg_Fr_Fa_ x 2\n\t"
-                /* Multiple each "from" color component by alpha. */
-		"pmulhuw   %%xmm6, %%xmm2	# xmm2 = alpha * F\n\t"
+		"pshufb	   %%xmm7, %%xmm2       # xmm2 = Tb_Tg_Tr_Ta_ x 2\n\t"
+		"pshufb	   %%xmm7, %%xmm3       # xmm3 = Tb_Tg_Tr_Ta_ x 2\n\t"
+                /* Multiple each "to" color component by alpha. */
+		"pmulhuw   %%xmm6, %%xmm2	# xmm2 = alpha * to\n\t"
                 "psllw     $8, %%xmm0           # xmm0 = ff00 x 8\n\t"
-		"pmulhuw   %%xmm6, %%xmm3	# xmm3 = alpha * F\n\t"
+		"pmulhuw   %%xmm6, %%xmm3	# xmm3 = alpha * to\n\t"
                  /* Add the bias. */
                 "paddsw    %%xmm1, %%xmm2       # xmm2 += bias\n\t"
                 "paddsw    %%xmm1, %%xmm3       # xmm3 += bias\n\t"
-                /* Save copy of original (from * alpha) + bias. */
+                /* Save copy of original (to * alpha) + bias. */
                 "movdqa    %%xmm2, %%xmm4       # xmm4 = xmm2\n"
                 "movdqa    %%xmm3, %%xmm5       # xmm5 = xmm3\n"
                 /* Approximate dividing by 257. (((x >> 8) + x) >> 8) */
@@ -1979,29 +1979,31 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
                 "paddw     %%xmm4, %%xmm2       # xmm2 += xmm4\n\t"
                 "paddw     %%xmm5, %%xmm3       # xmm3 += xmm5\n\t"
                 /* Divide again by 256 */
-                "psrlw     $8, %%xmm2           # F / 257\n\t"
-                "psrlw     $8, %%xmm3           # F / 257\n\t"
+                "psrlw     $8, %%xmm2           # to / 257\n\t"
+                "psrlw     $8, %%xmm3           # to / 257\n\t"
 		/* Convert words to bytes  */
-		"packuswb  %%xmm3, %%xmm2       # xmm2 = F0F1F2F3\n\t"
-		"movdqa    (%2), %%xmm3         # xmm3 = T0T1T2T3\n\t"
+		"packuswb  %%xmm3, %%xmm2       # xmm2 = T0T1T2T3\n\t"
+
+		"movdqa    (%2), %%xmm3         # xmm3 = from F0F1F2F3\n\t"
                 /* Change alpha to beta by xor-ing by 0xFF. */
                 "pxor      %%xmm0, %%xmm6       # xmm6 = b_b_b_b_ x 2\n\t"
+
                 /* Move the upper quadword to lower so that we can use the
                  * same shuffle mask for both pairs of pixels. */
 		"movhlps   %%xmm3, %%xmm4       # xmm4 = xmm3 << 64\n\t"
                 /* Unpack background */
-		"pshufb	   %%xmm7, %%xmm3       # xmm3 = Tb_Tg_Tr_Ta_ x 2\n\t"
-		"pshufb	   %%xmm7, %%xmm4       # xmm4 = Tb_Tg_Tr_Ta_ x 2\n\t"
-                /* Multiple each "to" color component by beta. */
-		"pmulhuw   %%xmm6, %%xmm3	# xmm3 = to * beta\n\t"
+		"pshufb	   %%xmm7, %%xmm3       # xmm3 = Fb_Fg_Fr_Fa_ x 2\n\t"
+		"pshufb	   %%xmm7, %%xmm4       # xmm4 = Fb_Fg_Fr_Fa_ x 2\n\t"
+                /* Multiple each "from" color component by beta. */
+		"pmulhuw   %%xmm6, %%xmm3	# xmm3 = from * beta\n\t"
                 "movdqa    %%xmm7, %%xmm5       # Dummy move\n\t"
-		"pmulhuw   %%xmm6, %%xmm4	# xmm4 = to * beta\n\t"
+		"pmulhuw   %%xmm6, %%xmm4	# xmm4 = from * beta\n\t"
                 /* Change beta back to alpha. */
                 "pxor      %%xmm0, %%xmm6       # xmm6 = a_a_a_a_ x 2\n\t"
                  /* Add the bias. */
                 "paddsw    %%xmm1, %%xmm3       # xmm3 += bias\n\t"
                 "paddsw    %%xmm1, %%xmm4       # xmm4 += bias\n\t"
-                /* Save copy of original (T * beta) + bias. */
+                /* Save copy of original (from * beta) + bias. */
                 "movdqa    %%xmm3, %%xmm0       # xmm0 = xmm3\n"
                 "movdqa    %%xmm4, %%xmm5       # xmm5 = xmm4\n"
                 /* Approximate dividing by 257. (((x >> 8) + x) >> 8) */
@@ -2011,18 +2013,19 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
                 "paddw     %%xmm0, %%xmm3       # xmm3 += xmm0\n\t"
                 "paddw     %%xmm5, %%xmm4       # xmm4 += xmm5\n\t"
                 /* Divide again by 256 */
-                "psrlw     $8, %%xmm3           # B / 257\n\t"
-                "psrlw     $8, %%xmm4           # B / 257\n\t"
+                "psrlw     $8, %%xmm3           # from / 257\n\t"
+                "psrlw     $8, %%xmm4           # from / 257\n\t"
 		/* Convert words to bytes  */
 		"packuswb  %%xmm4, %%xmm3       # xmm0 = F0 F1 F2 F3\n\t"
+
 		/* Add to background to foreground */
-		"paddusb   %%xmm1, %%xmm3	# xmm0 = BG + FG\n\t"
+		"paddusb   %%xmm2, %%xmm3	# xmm3 = from + to\n\t"
 		"movdqa    %%xmm3, (%0)     	# Save 4 pixels.\n\t"
 		: /* outputs */
                   "+r" (dp)
 		: /* imputs */
-                  "r" (fp),
-                  "r" (tp));
+                  "r" (tp),
+                  "r" (fp));
             dp += 4;
             tp += 4;
         }
@@ -2273,13 +2276,13 @@ Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
         bltPictProcsPtr->associateColorsProc = AssociateColors;
 #endif
         bltPictProcsPtr->selectPixelsProc = SelectPixels;
+#if (SIZEOF_LONG == 8) 
         if (flags & FEATURE_SSSE3) {
             bltPictProcsPtr->compositePicturesProc = CompositePictures;
             bltPictProcsPtr->copyPicturesProc = CopyPictures;
             bltPictProcsPtr->crossFadePicturesProc = CrossFadePictures;
-#ifdef notdef
-#endif
         }
+#endif  /* SIZEOF_LONG == 8 */
 #endif
     }
     if (flagsPtr != NULL) {

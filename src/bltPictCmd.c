@@ -2932,7 +2932,7 @@ BlankOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_SetBrushRegion(brush, 0, 0, w, h);
     Blt_PaintRectangle(destPtr, 0, 0, w, h, /*radius*/0, /*linewidth*/0, brush,
                 FALSE);
-    destPtr->flags |= BLT_PIC_ALPHAS | BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags |= BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLED_COLORS;
     if (newBrush != NULL) {
         Blt_FreeBrush(newBrush);
     }
@@ -3816,7 +3816,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     sp = Blt_Picture_Pixel(imgPtr->picture, x, y);
     pixel = *sp;
 #ifdef notdef
-    if ((Blt_Picture_Flags(imgPtr->picture) & BLT_PIC_ASSOCIATED_COLORS) &&
+    if ((Blt_Picture_Flags(imgPtr->picture) & BLT_PIC_PREMULTIPLED_COLORS) &&
         ((sp->Alpha != 0xFF) && (sp->Alpha != 0x00))) {
         int bias = sp->Alpha >> 1;
 
@@ -4022,7 +4022,7 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     objPtr = Tcl_NewStringObj("isassociated", 12);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    state = srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS;
+    state = srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS;
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
