@@ -4214,7 +4214,7 @@ blt_table_forget_column_tag(Tcl_Interp *interp, Table *tablePtr,
  *
  *      Associates a tag with a given row.  Individual row tags are stored
  *      in hash tables keyed by the tag name.  Each table is in turn stored
- *      in a hash table keyed by the row location. If the row is NULL, this 
+ *      in a hash table keyed by the row location. If the row is NULL, this
  *      indicates to simply create the tag entry.
  *
  * Results:

@@ -4157,11 +4157,8 @@ CreateEntry(Tcl_Interp *interp,         /* Current interpreter. */
  */
 /* ARGSUSED */
 static int
-ComboEntryCmd(
-    ClientData clientData,      /* Main window associated with interpreter. */
-    Tcl_Interp *interp,         /* Current interpreter. */
-    int objc,                   /* Number of arguments. */
-    Tcl_Obj *const *objv)       /* Argument strings. */
+ComboEntryCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
 {
     return CreateEntry(interp, objc, objv, COMBO_ENTRY_MASK);
 }
@@ -4185,11 +4182,8 @@ ComboEntryCmd(
  */
 /* ARGSUSED */
 static int
-TextEntryCmd(
-    ClientData clientData,      /* Main window associated with interpreter. */
-    Tcl_Interp *interp,         /* Current interpreter. */
-    int objc,                   /* Number of arguments. */
-    Tcl_Obj *const *objv)       /* Argument strings. */
+TextEntryCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
     return CreateEntry(interp, objc, objv, TEXT_ENTRY_MASK);
 }

@@ -3991,10 +3991,10 @@ Blt_LayoutGraph(Graph *graphPtr)
     height = graphPtr->height;
 
     /* 
-     * Step 1:  Compute the amount of space needed to display the axes
-     *          associated with each margin.  They can be overridden by 
-     *          -leftmargin, -rightmargin, -bottommargin, and -topmargin
-     *          graph options, respectively.
+     * Step 1: Compute the amount of space needed to display the axes
+     *         associated with each margin.  They can be overridden by
+     *         -leftmargin, -rightmargin, -bottommargin, and -topmargin
+     *         graph options, respectively.
      */
     left   = GetMarginGeometry(graphPtr, graphPtr->leftPtr);
     right  = GetMarginGeometry(graphPtr, graphPtr->rightPtr);

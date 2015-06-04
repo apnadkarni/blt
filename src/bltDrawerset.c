@@ -3965,7 +3965,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InvokeOp --
  *
- *      This procedure is called to invoke a command associated with a 
+ *      This procedure is called to invoke a command associated with a
  *      drawer.
  *
  * Results:

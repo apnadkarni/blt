@@ -226,11 +226,11 @@
 /*
  * TableCmdInterpData --
  *
- *      Structure containing global data, used on a interpreter by interpreter
- *      basis.
+ *      Structure containing global data, used on a interpreter by
+ *      interpreter basis.
  *
- *      This structure holds the hash table of instances of datatable commands
- *      associated with a particular interpreter.
+ *      This structure holds the hash table of instances of datatable
+ *      commands associated with a particular interpreter.
  */
 typedef struct {
     Blt_HashTable instTable;            /* Tracks tables in use. */
@@ -1300,9 +1300,9 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
  *      addresses.
  *
  * Results:
- *      A pointer to the table command.  If no associated table command can be
- *      found, NULL is returned.  It's up to the calling routines to generate
- *      an error message.
+ *      A pointer to the table command.  If no associated table command can
+ *      be found, NULL is returned.  It's up to the calling routines to
+ *      generate an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1622,9 +1622,9 @@ ColumnVarResolverProc(
     dataPtr = GetTableCmdInterpData(interp);
     hPtr = Blt_FindHashEntry(&dataPtr->findTable, nsPtr);
     if (hPtr == NULL) {
-        /* This should never happen.  We can't find data associated with the
-         * current namespace.  But this routine should never be called unless
-         * we're in a namespace that with linked with this variable
+        /* This should never happen.  We can't find data associated with
+         * the current namespace.  But this routine should never be called
+         * unless we're in a namespace that with linked with this variable
          * resolver. */
         return TCL_CONTINUE;    
     }
@@ -8795,11 +8795,11 @@ TableInstDeleteProc(ClientData clientData)
  *
  *      Creates a new instance of a table object.  
  *
- *      This routine insures that instance and object names are the same.  For
- *      example, you can't create an instance with the name of an object that
- *      already exists.  And because each instance has a TCL command
- *      associated with it (used to access the object), we additionally check
- *      more that it's not an existing TCL command.
+ *      This routine insures that instance and object names are the same.
+ *      For example, you can't create an instance with the name of an
+ *      object that already exists.  And because each instance has a TCL
+ *      command associated with it (used to access the object), we
+ *      additionally check more that it's not an existing TCL command.
  *
  *      Instance names are namespace-qualified.  If the given name doesn't
  *      have a namespace qualifier, that instance will be created in the
@@ -8889,8 +8889,9 @@ TableCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TableDestroyOp --
  *
- *      Deletes one or more instances of table objects.  The deletion process
- *      is done by deleting the TCL command associated with the object.
+ *      Deletes one or more instances of table objects.  The deletion
+ *      process is done by deleting the TCL command associated with the
+ *      object.
  *      
  * Results:
  *      A standard TCL result.  If one of the names given doesn't represent an

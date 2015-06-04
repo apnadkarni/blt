@@ -1479,8 +1479,8 @@ GetElementIterator(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
  *
  *      Gets the element associated the given index, tag, or label.  This
  *      routine is used when you want only one tab.  It's an error if more
- *      than one tab is specified (e.g. "all" tag).  It's also an error if the
- *      tag is empty (no tabs are currently tagged).
+ *      than one tab is specified (e.g. "all" tag).  It's also an error if
+ *      the tag is empty (no tabs are currently tagged).
  *
  *---------------------------------------------------------------------------
  */

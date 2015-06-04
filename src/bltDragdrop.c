@@ -187,14 +187,14 @@ struct _AnyWindow {
 typedef struct {
 
     /*
-     * This is a goof in the Tk API.  It assumes that only an official
-     * Tk "toplevel" widget will ever become a toplevel window (i.e. a
-     * window whose parent is the root window).  Because under Win32,
-     * Tk tries to use the widget record associated with the TopLevel
-     * as a Tk frame widget, to read its menu name.  What this means
-     * is that any widget that's going to be a toplevel, must also look
-     * like a frame. Therefore we've copied the frame widget structure
-     * fields into the token.
+     * This is a goof in the Tk API.  It assumes that only an official Tk
+     * "toplevel" widget will ever become a toplevel window (i.e. a window
+     * whose parent is the root window).  Because under Win32, Tk tries to
+     * use the widget record associated with the TopLevel as a Tk frame
+     * widget, to read its menu name.  What this means is that any widget
+     * that's going to be a toplevel, must also look like a
+     * frame. Therefore we've copied the frame widget structure fields into
+     * the token.
      */
 
     Tk_Window tkwin;            /* Window that embodies the frame.  NULL
@@ -204,8 +204,9 @@ typedef struct {
     Display *display;           /* Display containing widget.  Used, among
                                  * other things, so that resources can be
                                  * freed even after tkwin has gone away. */
-    Tcl_Interp *interp;         /* Interpreter associated with widget.  Used
-                                 * to delete widget command. */
+    Tcl_Interp *interp;                 /* Interpreter associated with
+                                         * widget.  Used to delete widget
+                                         * command. */
     Tcl_Command widgetCmd;      /* Token for frame's widget command. */
     const char *className;      /* Class name for widget (from configuration
                                  * option).  Malloc-ed. */
@@ -278,17 +279,15 @@ typedef struct {
 } Token;
 
 typedef struct {
-    Tcl_Interp *interp;         /* Interpreter associated with the Tk source 
-                                 * widget. */
-
-    Tk_Window tkwin;            /* Tk window registered as the drag&drop 
-                                 * source. */
-
-    Display *display;           /* Drag&drop source window display */
-
-    Blt_HashTable handlerTable; /* Table of data handlers (converters)
-                                 * registered for this source. */
-
+    Tcl_Interp *interp;                 /* Interpreter associated with the
+                                         * Tk source widget. */
+    Tk_Window tkwin;                    /* Tk window registered as the
+                                         * drag&drop source. */
+    Display *display;                   /* Drag&drop source window
+                                         * display */
+    Blt_HashTable handlerTable;         /* Table of data handlers
+                                         * (converters) registered for this
+                                         * source. */
     int button;                 /* Button used to invoke drag operation. */
 
     Token token;                /* Token used to provide special cursor. */
@@ -866,8 +865,8 @@ ChangeToken(Token *tokenPtr, int active)
  */
 static void
 TokenEventProc(
-    ClientData clientData,      /* data associated with widget */
-    XEvent *eventPtr)           /* information about event */
+    ClientData clientData,              /* data associated with widget */
+    XEvent *eventPtr)                   /* information about event */
 {
     Token *tokenPtr = clientData;
 
@@ -2412,8 +2411,8 @@ HandlerOpOp(Source *srcPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     /*
      *  HANDLE:  drag&drop source <pathName> handler <data>
      *
-     *    Create the new <data> type if it doesn't already
-     *    exist, and return the code associated with it.
+     *    Create the new <data> type if it doesn't already exist, and
+     *    return the code associated with it.
      */
     if (objc == 5) {
         cmd = Blt_GetHashValue(hPtr);

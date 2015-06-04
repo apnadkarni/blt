@@ -756,11 +756,11 @@ TestAndWaitForWindow(
         }
         expire = FALSE;
         /*   
-         * If the X11 application associated with the adopted window was just
-         * started (via "exec" or "bgexec"), the window may not exist yet.  We
-         * have to wait a little bit for the program to start up.  Create a
-         * timer event break us out of an wait loop.  We'll wait for a given
-         * interval for the adopted window to appear.
+         * If the X11 application associated with the adopted window was
+         * just started (via "exec" or "bgexec"), the window may not exist
+         * yet.  We have to wait a little bit for the program to start up.
+         * Create a timer event break us out of an wait loop.  We'll wait
+         * for a given interval for the adopted window to appear.
          */
         timerToken = Tcl_CreateTimerHandler(conPtr->timeout, TimeoutProc, 
                 &expire);

@@ -2897,7 +2897,7 @@ ArithOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Resets the picture at its current size to a known background.  
  *      This is different from the rest of the drawing commands in that
  *      we are drawing a background.  There is previous image to composite.
-x *
+ *
  * Results:
  *      Returns a standard TCL return value. If an error occured parsing
  *      the pixel.
@@ -2936,6 +2936,48 @@ BlankOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (newBrush != NULL) {
         Blt_FreeBrush(newBrush);
     }
+    Blt_NotifyImageChanged(imgPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blank2Op --
+ *      
+ *      Resets the picture at its current size to a known background.  
+ *      This is different from the rest of the drawing commands in that
+ *      we are drawing a background.  There is previous image to composite.
+ *
+ * Results:
+ *      Returns a standard TCL return value. If an error occured parsing
+ *      the pixel.
+ *
+ *
+ * Side effects:
+ *      A Tk_ImageChanged notification is triggered.
+ *
+ *      imageName blank2 ?colorName?
+ *---------------------------------------------------------------------------
+ */
+static int
+Blank2Op(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    Pict *destPtr;
+    PictImage *imgPtr = clientData;
+    Blt_Pixel color;
+
+    if (objc == 3) {
+        if (Blt_GetPixelFromObj(interp, objv[2], &color) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    } else {
+        color.u32 = 0x00000000;
+    }
+    destPtr = imgPtr->picture;
+    Blt_BlankPicture(destPtr, color.u32);
+    Blt_PremultiplyColors2(destPtr);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -5279,6 +5321,7 @@ static Blt_OpSpec pictInstOps[] =
 {
     {"add",       2, ArithOp,     3, 0, "pictOrColor",},
     {"and",       3, ArithOp,     3, 0, "pictOrColor",},
+    {"b2lank",    3, Blank2Op,    2, 3, "?colorSpec?",},
     {"blank",     3, BlankOp,     2, 3, "?colorSpec?",},
     {"blur",      3, BlurOp,      4, 4, "src width",},
     {"cget",      2, CgetOp,      3, 3, "option",},

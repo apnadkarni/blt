@@ -304,8 +304,8 @@ typedef struct _Trace {
     int numPoints;                      /* # of points in the trace. */
     Blt_ChainLink link;
     LinePen *penPtr;
-    unsigned short flags;               /* Flags associated with a trace are
-                                         * described blow. */
+    unsigned short flags;               /* Flags associated with a trace
+                                         * are described blow. */
     unsigned short drawFlags;           /* Flags for individual points and
                                          * segments when drawing the
                                          * trace. */

@@ -225,12 +225,8 @@ static int numCbOps = sizeof(cbOps) / sizeof(Blt_OpSpec);
  */
 /* ARGSUSED */
 static int
-CutbufferCmd(
-    ClientData clientData,      /* Main window associated with
-                                 * interpreter.*/
-    Tcl_Interp *interp,         /* Current interpreter. */
-    int objc,                   /* Number of arguments. */
-    Tcl_Obj *const *objv)       /* Argument strings. */
+CutbufferCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
     Tk_Window tkwin;
     Tcl_ObjCmdProc *proc;

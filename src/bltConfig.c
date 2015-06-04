@@ -2046,9 +2046,9 @@ Blt_ConfigureWidgetFromObj(
             if (sp->dbName != NULL) {
                 Tk_Uid value;
 
-                /* If a resource name was specified, check if there's
-                 * also a value was associated with it.  This
-                 * overrides the default value. */
+                /* If a resource name was specified, check if there's also
+                 * a value was associated with it.  This overrides the
+                 * default value. */
                 value = Tk_GetOption(tkwin, sp->dbName, sp->dbClass);
                 if (value != NULL) {
                     objPtr = Tcl_NewStringObj(value, -1);
@@ -2442,8 +2442,9 @@ Blt_ConfigModified(Blt_ConfigSpec *specs, ...)
 int
 Blt_ConfigureComponentFromObj(
     Tcl_Interp *interp,
-    Tk_Window parent,           /* Window to associate with component */
-    const char *name,           /* Name of component */
+    Tk_Window parent,                   /* Window to associate with
+                                         * component */
+    const char *name,                   /* Name of component */
     const char *className,
     Blt_ConfigSpec *sp,
     int objc,

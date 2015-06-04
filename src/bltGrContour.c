@@ -443,8 +443,8 @@ struct _ContourElement {
                                          * symbols.  Zero (and one) means draw
                                          * all symbols. */
 
-    Blt_Mesh mesh;                      /* Mesh associated with contour data
-                                         * set. */
+    Blt_Mesh mesh;                      /* Mesh associated with contour
+                                         * data set. */
     Blt_Pool pointPool;                 /* Pool of the points used in the
                                          * traces formed by the isolines. */
     Blt_Pool segmentPool;

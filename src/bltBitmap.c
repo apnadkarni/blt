@@ -536,12 +536,8 @@ AsciiToData(
 }
 
 static int
-ParseListData(
-    Tcl_Interp *interp,
-    Tcl_Obj *objPtr,
-    int *widthPtr,
-    int *heightPtr,
-    unsigned char **bitsPtr)
+ParseListData(Tcl_Interp *interp, Tcl_Obj *objPtr, int *widthPtr,
+              int *heightPtr, unsigned char **bitsPtr)
 {
     char *p;
     int width, height;
@@ -931,13 +927,8 @@ BitmapDataToString(
  *---------------------------------------------------------------------------
  */
 static int
-ComposeOp(
-    ClientData clientData,              /* Thread-specific data for
-                                         * bitmaps. */
-    Tcl_Interp *interp,                 /* Interpreter to report results
-                                         * to */
-    int objc,                           /* Number of arguments */
-    Tcl_Obj *const *objv)               /* Argument list */
+ComposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     BitmapInfo bi;                      /* Text rotation and font
                                          * information */
@@ -1049,13 +1040,8 @@ ComposeOp(
  */
 /* ARGSUSED */
 static int
-DefineOp(
-    ClientData clientData,              /* Thread-specific data for
-                                         * bitmaps. */
-    Tcl_Interp *interp,                 /* Interpreter to report results
-                                         * to */
-    int objc,                           /* Number of arguments */
-    Tcl_Obj *const *objv)               /* Argument list */
+DefineOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     BitmapInterpData *dataPtr = clientData;
     int width, height;                  /* Dimensions of bitmap */
@@ -1139,13 +1125,8 @@ DefineOp(
  */
 /*ARGSUSED*/
 static int
-ExistsOp(
-    ClientData clientData,              /* Thread-specific data for
-                                         * bitmaps. */
-    Tcl_Interp *interp,                 /* Interpreter to report results
-                                         * to */
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)               /* Argument list */
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     BitmapInterpData *dataPtr = clientData;
     Pixmap bitmap;
@@ -1169,13 +1150,8 @@ ExistsOp(
  */
 /*ARGSUSED*/
 static int
-HeightOp(
-    ClientData clientData,              /* Thread-specific data for
-                                         * bitmaps. */
-    Tcl_Interp *interp,                 /* Interpreter to report results
-                                         * to */
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)               /* Argument list */
+HeightOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     BitmapInterpData *dataPtr = clientData;
     int width, height;
@@ -1202,13 +1178,8 @@ HeightOp(
  */
 /*ARGSUSED*/
 static int
-WidthOp(
-    ClientData clientData,              /* Thread-specific data for
-                                         * bitmaps. */
-    Tcl_Interp *interp,                 /* Interpreter to report results
-                                         * to */
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)               /* Argument list */
+WidthOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     BitmapInterpData *dataPtr = clientData;
     int width, height;
@@ -1236,12 +1207,8 @@ WidthOp(
  */
 /*ARGSUSED*/
 static int
-SourceOp(
-    ClientData clientData,              /* Thread-specific data for bitmaps. */
-    Tcl_Interp *interp,                 /* Interpreter to report results
-                                         * to */
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)               /* Argument list */
+SourceOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     BitmapInterpData *dataPtr = clientData;
     Pixmap bitmap;
@@ -1270,13 +1237,8 @@ SourceOp(
  */
 /*ARGSUSED*/
 static int
-DataOp(
-    ClientData clientData,              /* Thread-specific data for
-                                         * bitmaps. */
-    Tcl_Interp *interp,                 /* Interpreter to report results
-                                         * to */
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)               /* Argument list */
+DataOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     BitmapInterpData *dataPtr = clientData;
     Pixmap bitmap;

@@ -629,7 +629,7 @@ MenuEventProc(ClientData clientData, XEvent *eventPtr)
  * TextVarTraceProc --
  *
  *      This procedure is invoked when someone changes the state variable
- *      associated with a combobutton.  
+ *      associated with a combobutton.
  *
  * Results:
  *      NULL is always returned.
@@ -689,8 +689,8 @@ TextVarTraceProc(
  * 
  * IconVarTraceProc --
  *
- *      This procedure is invoked when someone changes the state
- *      variable associated with combobutton. 
+ *      This procedure is invoked when someone changes the state variable
+ *      associated with combobutton.
  *
  * Results:
  *      NULL is always returned.

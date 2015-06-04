@@ -1417,17 +1417,16 @@ EmbeddedWidgetEventProc(
  *
  * EmbeddedWidgetCustodyProc --
  *
- *      This procedure is invoked when a embedded widget has been
- *      stolen by another geometry manager.  The information and
- *      memory associated with the embedded widget is released.
+ *      This procedure is invoked when a embedded widget has been stolen by
+ *      another geometry manager.  The information and memory associated
+ *      with the embedded widget is released.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      Arranges for the widget formerly associated with the widget
- *      to have its layout re-computed and arranged at the
- *      next idle point.
+ *      Arranges for the widget formerly associated with the widget to have
+ *      its layout re-computed and arranged at the next idle point.
  *
  *---------------------------------------------------------------------------
  */
@@ -3850,11 +3849,7 @@ YViewOp(
  *---------------------------------------------------------------------------
  */
 static int
-AppendOp(
-    HText *htPtr,               /* Hypertext widget */
-    Tcl_Interp *interp,         /* Interpreter associated with widget */
-    int objc,                   /* Number of arguments. */
-    Tcl_Obj *const *objv)       /* Argument strings. */
+AppendOp(HText *htPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Line *linePtr;
     EmbeddedWidget *winPtr;

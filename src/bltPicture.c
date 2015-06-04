@@ -475,7 +475,6 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
     
     numPixels = destPtr->height * destPtr->pixelsPerRow;
     color.u32 = value;
-    Blt_PremultiplyColor(&color);
     for (bp = destPtr->bits, bend = bp + numPixels; bp < bend; bp++) {
         bp->u32 = color.u32;
     }
@@ -486,7 +485,7 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
     } else if (color.Alpha != 0xFF) {
         destPtr->flags |= BLT_PIC_COMPOSITE;
     }
-    destPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
+    destPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
 }
 
 void

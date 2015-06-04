@@ -48,51 +48,60 @@
  * images.
  */
 typedef struct _TkImage {
-    Tk_Window tkwin;                    /* Window passed to Tk_GetImage (needed
-                                         * to "re-get" the image later if the *
-                                         * manager changes). */
-    Display *display;                   /* Display for tkwin.  Needed because
-                                         * when the image is eventually freed
-                                         * tkwin may not exist anymore. */
-    struct _TkImageMaster *masterPtr;   /* Master for this image (identifiers
-                                         * image manager, for example). */
-    ClientData instanceData;            /* One word argument to pass to image
-                                         * manager when dealing with this image
-                                         * instance. */
-    Tk_ImageChangedProc *changeProc;    /* Code in widget to call when image
-                                         * changes in a way that affects
-                                         * redisplay. */
+    Tk_Window tkwin;                    /* Window passed to Tk_GetImage
+                                         * (needed to "re-get" the image
+                                         * later if the * manager
+                                         * changes). */
+    Display *display;                   /* Display for tkwin.  Needed
+                                         * because when the image is
+                                         * eventually freed tkwin may not
+                                         * exist anymore. */
+    struct _TkImageMaster *masterPtr;   /* Master for this image
+                                         * (identifiers image manager, for
+                                         * example). */
+    ClientData instanceData;            /* One word argument to pass to
+                                         * image manager when dealing with
+                                         * this image instance. */
+    Tk_ImageChangedProc *changeProc;    /* Code in widget to call when
+                                         * image changes in a way that
+                                         * affects redisplay. */
     ClientData widgetClientData;        /* Argument to pass to changeProc. */
-    struct _TkImage *nextPtr;           /* Next in list of all image instances
-                                         * associated with the same name. */
+    struct _TkImage *nextPtr;           /* Next in list of all image
+                                         * instances associated with the
+                                         * same name. */
 } TkImage;
 
 /*
  * For each image master there is one of the following structures, which
- * represents a name in the image table and all of the images instantiated from
- * it.  Entries in mainPtr->imageTable point to these structures.
+ * represents a name in the image table and all of the images instantiated
+ * from it.  Entries in mainPtr->imageTable point to these structures.
  */
 typedef struct _TkImageMaster {
-    Tk_ImageType *typePtr;              /* Information about image type.  NULL
-                                         * means that no image manager owns this
-                                         * image: the image was deleted. */
-    ClientData masterData;              /* One-word argument to pass to image
-                                         * mgr when dealing with the master, as
-                                         * opposed to instances. */
-    int width, height;                  /* Last known dimensions for image. */
-    void *tablePtr;                     /* Pointer to hash table containing
-                                         * image (the imageTable field in some
-                                         * TkMainInfo structure). */
-    void *hPtr;                         /* Hash entry in mainPtr->imageTable for
-                                         * this structure (used to delete the
-                                         * hash entry). */
-    void *instancePtr;                  /* Pointer to first in list of instances
-                                         * derived from this name. */
-    int deleted;                        /* Flag set when image is being 
+    Tk_ImageType *typePtr;              /* Information about image type.
+                                         * NULL means that no image manager
+                                         * owns this image: the image was
                                          * deleted. */
-    Tk_Window tkwin;                    /* Main window of interpreter (used to
-                                         * detect when the world is falling
-                                         * apart.) */
+    ClientData masterData;              /* One-word argument to pass to
+                                         * image mgr when dealing with the
+                                         * master, as opposed to
+                                         * instances. */
+    int width, height;                  /* Last known dimensions for
+                                         * image. */
+    void *tablePtr;                     /* Pointer to hash table containing
+                                         * image (the imageTable field in
+                                         * some TkMainInfo structure). */
+    void *hPtr;                         /* Hash entry in
+                                         * mainPtr->imageTable for this
+                                         * structure (used to delete the
+                                         * hash entry). */
+    void *instancePtr;                  /* Pointer to first in list of
+                                         * instances derived from this
+                                         * name. */
+    int deleted;                        /* Flag set when image is being
+                                         * deleted. */
+    Tk_Window tkwin;                    /* Main window of interpreter (used
+                                         * to detect when the world is
+                                         * falling apart.) */
 } TkImageMaster;
 
 /*

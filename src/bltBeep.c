@@ -41,13 +41,15 @@
 #ifndef NO_BEEP
 #include "bltInitCmd.h"
 
+static Tcl_ObjCmdProc BeepCmd;
+
 /*
  *---------------------------------------------------------------------------
  *
  * Blt_BeepCmd --
  *
- *      This procedure is invoked to process the "beep" command.
- *      See the user documentation for details on what it does.
+ *      This procedure is invoked to process the "beep" command.  See the
+ *      user documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -57,16 +59,10 @@
  *
  *---------------------------------------------------------------------------
  */
-
-static Tcl_ObjCmdProc BeepCmd;
-
 /* ARGSUSED */
 static int
-BeepCmd(
-    ClientData clientData,      /* Main window associated with interpreter.*/
-    Tcl_Interp *interp,         /* Current interpreter. */
-    int objc,                   /* Number of arguments. */
-    Tcl_Obj *const *objv)       /* Argument strings. */
+BeepCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     int percent;
 
@@ -97,5 +93,4 @@ Blt_BeepCmdInitProc(Tcl_Interp *interp)
 
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }
-
 #endif /* NO_BEEP */

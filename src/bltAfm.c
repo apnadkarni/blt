@@ -432,7 +432,7 @@ static Blt_HashTable fontTable;
 static int initialized;
 
 static int ParseLine(Parser *parserPtr, ParserSpec *specs, int numSpecs, 
-                     ClientData clientData);
+        ClientData clientData);
 
 static Tcl_Interp *afmInterp = NULL;
 
@@ -550,7 +550,7 @@ SplitLine(Parser *parserPtr, const char *line)
         parserPtr->argv = NULL;
         parserPtr->argc = 0;
     }
-    /* Count the # of arguments to determine what size array to allocate. */
+    /* Count # of arguments to determine what size array to allocate. */
     count = 0;
     p = line;
     while (*p != '\0') {
@@ -573,12 +573,13 @@ SplitLine(Parser *parserPtr, const char *line)
         buffer = Blt_Malloc(addrSize + strSize);
         assert(buffer);
         p = buffer + addrSize;
-        strcpy(p, line);                /* Copy the string into the buffer. */
+        strcpy(p, line);                /* Copy the string into the
+                                         * buffer. */
         array = (const char **)buffer;
         count = 0;
         while (*p != '\0') {
             while (isspace(*p)) {
-                *p++ = '\0';    /* Convert whitespace to NULs. */
+                *p++ = '\0';            /* Convert whitespace to NULs. */
             }
             if (*p == '\0') {
                 break;
@@ -1015,7 +1016,6 @@ ParseStartComposites(Parser *parserPtr, char *record, int offset)
     /*notreached*/
     return TCL_ERROR;
 }
-
 
 static ParserSpec directionSpecs[] = {
     { "CharWidth",         3, ParsePoint,      FM(charWidth)          },
@@ -1518,13 +1518,7 @@ AfmGetMetrics(Tcl_Interp *interp, const char *psFontName)
         Blt_InitHashTable(&fontTable, BLT_STRING_KEYS);
         initialized = TRUE;
     }
-#ifdef notdef
-    fprintf(stderr, "Lookup for %s\n", psFontName);
-#endif
     psFontName = LookupFontName(psFontName);
-#ifdef notdef
-    fprintf(stderr, "returning %s\n", psFontName);
-#endif
     hPtr = Blt_CreateHashEntry(&fontTable, psFontName, &isNew);
     if (isNew) {
         const char *path;
@@ -1786,11 +1780,6 @@ Blt_Afm_GetMetrics(Blt_Font font, Blt_FontMetrics *fmPtr)
 #endif
     fmPtr->descent   = Points(afmPtr, -afmPtr->descender);
     fmPtr->linespace = Points(afmPtr, afmPtr->ascender - afmPtr->descender);
-#ifdef notdef
-    fprintf(stderr, "GetMetrics(%s), ascent=%d descent=%d linespace=%d\n",
-            Blt_Font_Name(font), fmPtr->ascent, fmPtr->descent, 
-            fmPtr->linespace);
-#endif
     return TCL_OK;
 }
 
@@ -1801,19 +1790,12 @@ Blt_Afm_TextWidth(Blt_Font font, const char *string, int numBytes)
     const char *p, *pend;
     float width;
 
-#ifdef notdef
-    fprintf(stderr, "Afm_TextWidth(%s,\"%s\")\n", Blt_Font_Name(font),  
-            string);
-#endif
     afmPtr = AfmGetMetricsFromFont(font);
     if (afmPtr == NULL) {
         Blt_Warn("can't find font\n");
         return -1;
     }
     width = 0;
-#ifdef notdef
-    fprintf(stderr, "string=\"%s\"\n", string);
-#endif
     for (p = string, pend = string + numBytes; p < pend; /*empty*/) {
         CharMetrics *cmPtr;
         unsigned char c;
@@ -1825,10 +1807,6 @@ Blt_Afm_TextWidth(Blt_Font font, const char *string, int numBytes)
         if (cmPtr->index < 0) {
             continue;                   /* Ignore unencoded characters. */
         }
-#ifdef notdef
-        fprintf(stderr, "width=%g, incr=%g, char=%c\n",
-                width, cmPtr->w.x, c);
-#endif
         width += cmPtr->w.x;
     }
     {
@@ -1851,10 +1829,6 @@ Blt_Afm_TextWidth(Blt_Font font, const char *string, int numBytes)
             c1 = c2;
         }
     }
-#ifdef notdef
-    fprintf(stderr, "StringWidth of \"%s\" is %d (ps=%f)\n",
-            string, Points(afmPtr, width), afmPtr->pointSize);
-#endif
     return Points(afmPtr, width);
 }
 

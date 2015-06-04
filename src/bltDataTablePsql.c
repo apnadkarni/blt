@@ -308,8 +308,8 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PsqlConvertToColumnType --
  *
- *      Convert the postgres type (represented by a string) in the 
- *      the associated table column type.
+ *      Convert the postgres type (represented by a string) in the the
+ *      associated table column type.
  *
  * Results:
  *      The return value is the converted column type.
