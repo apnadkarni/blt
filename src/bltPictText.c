@@ -86,7 +86,7 @@
 #    ifdef HAVE_XFT
 #      define DRAWTEXT 1
 #    else
-#      error("WIN32 &&  !XFT")
+#      error("!WIN32 &&  !XFT")
 #      define DRAWTEXT 0
 #    endif
 #  endif
