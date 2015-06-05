@@ -1451,7 +1451,8 @@ PremultiplyColors(Pict *srcPtr)
         "pcmpeqw   %%xmm0, %%xmm0       # xmm0 = ffff x 8\n\t"
         "pxor      %%xmm6, %%xmm6       # xmm6 = 0\n\t"
         "pxor      %%xmm0, %%xmm0       # xmm0 = 0\n\t"
-        "mov       $0xFF00,%%edx\n\t"
+        "mov       $0xFF00,%%edx        # edx =  ff00 \n\t"
+        /* Fix the 4th and 8th 16-bit alpha values to ff00 (1)  */
         "pinsrw    $3,%%edx,%%xmm0      # xmm0 = ____ ____ ____ ff__ \n\t"
         "pinsrw    $7,%%edx,%%xmm0      # xmm0 = ____ ____ ____ ff__ \n\t"
         "movdqa    (%0), %%xmm7         # xmm7 = shuffle map\n\t"
@@ -1461,7 +1462,9 @@ PremultiplyColors(Pict *srcPtr)
         "psllw     $7, %%xmm1           # xmm1 = 0010 x 8\n\t"
         : /* outputs */
         : /* inputs */
-          "r" (premultMap));
+          "r" (premultMap)
+        : /* clobbers */
+          "edx");
     /*
      * xmm0 = mask      ____ ____ ____ _1__ x 4   alphas | mask 
      * xmm1 = bias      __8_ __8_ __8_ ____ x 4   3 bias + 0000
@@ -1679,7 +1682,7 @@ static uint8_t crossFadeMap[16] __attribute__((aligned(16))) = {
     0xff, 0x00, 0xff, 0x01, 0xff, 0x02, 0xff, 0x03, 
     0xff, 0x04, 0xff, 0x05, 0xff, 0x06, 0xff, 0x07,
 };
-static uint8_t align16[16] __attribute__((aligned(16))) = {
+static uint8_t bytes16[16] __attribute__((aligned(16))) = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
@@ -1701,8 +1704,8 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
     alpha = (int)(opacity * 255);
 
     for (i = 0; i < 16; i += 2) {
-        align16[i] = 0;
-        align16[i+1] = alpha;
+        bytes16[i]   = 0;
+        bytes16[i+1] = alpha;
     }
     /*
      * 7=shuffle map
@@ -1726,7 +1729,7 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
         : /* outputs */
         : /* imputs */
           "r" (crossFadeMap),
-          "r" (align16));
+          "r" (bytes16));
 
     fromRowPtr = fromPtr->bits;
     toRowPtr = toPtr->bits;
@@ -1847,14 +1850,17 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
     
     pixel.u32 = colorValue;
     Blt_PremultiplyColor(&pixel);
-    for (i = 0; i < 16; i++) {
-        align16[i] = pixel.u32;
+    for (i = 0; i < 16; i += 4) {
+        bytes16[i]   = pixel.Blue;
+        bytes16[i+1] = pixel.Green;
+        bytes16[i+2] = pixel.Red;
+        bytes16[i+3] = pixel.Alpha;
     }
     asm volatile (
         "movdqa    (%0), %%xmm6         # xmm6 = color\n\t"
         : /*outputs */
         : /* inputs */
-          "r" (align16));
+          "r" (bytes16));
 
     destRowPtr = destPtr->bits;
     for (y = 0; y < destPtr->height; y++) {
@@ -2056,9 +2062,11 @@ Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
         bltPictProcsPtr->selectPixelsProc = SelectPixels;
 #if (SIZEOF_LONG == 8) 
         if (flags & FEATURE_SSSE3) {
-            bltPictProcsPtr->premultiplyColorsProc = PremultiplyColors;
             bltPictProcsPtr->compositePicturesProc = CompositePictures;
             bltPictProcsPtr->copyPicturesProc = CopyPictures;
+#ifdef notdef
+            bltPictProcsPtr->premultiplyColorsProc = PremultiplyColors;
+#endif
             bltPictProcsPtr->blankPictureProc = BlankPicture;
             bltPictProcsPtr->crossFadePicturesProc = CrossFadePictures;
         }
