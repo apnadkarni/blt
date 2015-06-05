@@ -748,7 +748,7 @@ static Blt_SwitchSpec wipeSwitches[] =
         Blt_Offset(Wipe, count), 0},
     {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
         Blt_Offset(Wipe, interval), 0},
-    {BLT_SWITCH_CUSTOM, "-scale", "step", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-scale", "scaleType", (char *)NULL,
         Blt_Offset(Wipe, scale), 0, 0, &scaleSwitch},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
         Blt_Offset(Wipe, numSteps), 0},
@@ -777,6 +777,7 @@ static Tk_ImageDisplayProc DisplayProc;
 static Tk_ImageFreeProc FreeInstanceProc;
 static Tk_ImageDeleteProc DeleteProc;
 static Tk_ImagePostscriptProc PostScriptProc;
+
 /* 
  * Quick and dirty random number generator. 
  *
@@ -1769,7 +1770,8 @@ ObjToImage(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,                 /* Interpreter to report results. */
     Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of value. */
+    Tcl_Obj *objPtr,                    /* String representation of
+                                         * value. */
     char *widgRec,                      /* Widget record. */
     int offset,                         /* Not used. */
     int flags)                          /* Not used. */
@@ -1875,7 +1877,7 @@ WindowToObj(
  * DirectionSwitchProc --
  *
  *      Translate the given string to the gradient type it represents.
- *      Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
+ *      Types are "horizontal", "vertical", "updiagonal", "downdiagonal",
  *      and "radial"".
  *
  * Results:
@@ -1951,9 +1953,9 @@ ScaleSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * CacheKey --
  *
- *      Returns a key representing a specific visual context for a PictImage.
- *      Keys are used to create/find cache entries stored in the hash table of
- *      each PictImage.
+ *      Returns a key representing a specific visual context for a
+ *      PictImage.  Keys are used to create/find cache entries stored in
+ *      the hash table of each PictImage.
  *
  * Results:
  *      A pointer to a static cache key.  
@@ -2019,12 +2021,12 @@ DestroyCache(DestroyData data)
  *
  * GetInstanceProc --
  *
- *      This procedure is called for each use of a picture image in a widget.
+ *      This procedure is called for each use of a picture image in a
+ *      widget.
  *
  * Results:
  *      The return value is an entry for the visual context, which will be
- *      passed back to us on calls to DisplayProc and
- *      FreeInstanceProc.
+ *      passed back to us on calls to DisplayProc and FreeInstanceProc.
  *
  * Side effects:
  *      A new entry is possibly allocated (or shared if one already exists).
@@ -2033,8 +2035,8 @@ DestroyCache(DestroyData data)
  */
 static ClientData
 GetInstanceProc(
-    Tk_Window tkwin,                    /* Window in which the picture will be
-                                         * displayed. */
+    Tk_Window tkwin,                    /* Window in which the picture will
+                                         * be displayed. */
     ClientData clientData)              /* Pointer to picture image for the
                                          * image. */
 {
@@ -2076,8 +2078,9 @@ GetInstanceProc(
  * FreeInstanceProc --
  *
  *      This procedure is called when a widget ceases to use a particular
- *      instance of a picture image.  We don't actually get rid of the entry
- *      until later because we may be about to re-get this instance again.
+ *      instance of a picture image.  We don't actually get rid of the
+ *      entry until later because we may be about to re-get this instance
+ *      again.
  *
  * Results:
  *      None.
@@ -2098,8 +2101,8 @@ FreeInstanceProc(
     cachePtr->refCount--;
     if (cachePtr->refCount <= 0) {
         /* 
-         * Right now no one is using the entry. But delay the removal of the
-         * cache entry in case it's reused shortly afterwards.
+         * Right now no one is using the entry. But delay the removal of
+         * the cache entry in case it's reused shortly afterwards.
          */
         Tcl_EventuallyFree(cachePtr, DestroyCache);
     }    
@@ -2906,62 +2909,11 @@ ArithOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      A Tk_ImageChanged notification is triggered.
  *
- *      imageName blank ?brushName?
+ *      imageName blank ?colorName?
  *---------------------------------------------------------------------------
  */
 static int
 BlankOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
-{
-    Pict *destPtr;
-    PictImage *imgPtr = clientData;
-    int w, h;
-    Blt_PaintBrush brush, newBrush;
-
-    newBrush = NULL;
-    if (objc == 3) {
-        if (Blt_GetPaintBrushFromObj(interp, objv[2], &brush) != TCL_OK) {
-            return TCL_ERROR;
-        }
-    } else {
-        brush = newBrush = Blt_NewColorBrush(0x00000000);
-    }
-    destPtr = imgPtr->picture;
-    w = Blt_Picture_Width(destPtr);
-    h = Blt_Picture_Height(destPtr);
-    Blt_SetBrushRegion(brush, 0, 0, w, h);
-    Blt_PaintRectangle(destPtr, 0, 0, w, h, /*radius*/0, /*linewidth*/0, brush,
-                FALSE);
-    destPtr->flags |= BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLED_COLORS;
-    if (newBrush != NULL) {
-        Blt_FreeBrush(newBrush);
-    }
-    Blt_NotifyImageChanged(imgPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blank2Op --
- *      
- *      Resets the picture at its current size to a known background.  
- *      This is different from the rest of the drawing commands in that
- *      we are drawing a background.  There is previous image to composite.
- *
- * Results:
- *      Returns a standard TCL return value. If an error occured parsing
- *      the pixel.
- *
- *
- * Side effects:
- *      A Tk_ImageChanged notification is triggered.
- *
- *      imageName blank2 ?colorName?
- *---------------------------------------------------------------------------
- */
-static int
-Blank2Op(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
     Pict *destPtr;
@@ -2973,11 +2925,10 @@ Blank2Op(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
     } else {
-        color.u32 = 0x00000000;
+        color.u32 = 0xFFFFFFFF;
     }
     destPtr = imgPtr->picture;
     Blt_BlankPicture(destPtr, color.u32);
-    Blt_PremultiplyColors2(destPtr);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -2988,6 +2939,7 @@ Blank2Op(ClientData clientData, Tcl_Interp *interp, int objc,
  * CompositeOp --
  *
  *      imageName composite bgName fgName ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -3128,7 +3080,6 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return Blt_ConfigureValueFromObj(interp, Tk_MainWindow(interp), configSpecs,
         (char *)imgPtr, objv[2], 0);
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -3614,11 +3565,6 @@ DupOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  *      Emboss the picture.
  *
- * Results:
- *      Returns a standard TCL return value.  If TCL_OK, the components of the
- *      pixel are returned as a list in the interpreter result.  Otherwise an
- *      error message is returned.
- *
  *---------------------------------------------------------------------------
  */
 static int
@@ -3755,11 +3701,6 @@ FadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Flips the picture either horizontally or vertically.
  *
- * Results:
- *      Returns a standard TCL return value.  If TCL_OK, the components of the
- *      pixel are returned as a list in the interpreter result.  Otherwise an
- *      error message is returned.
- *
  *---------------------------------------------------------------------------
  */
 static int
@@ -3800,7 +3741,7 @@ FlipOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * GammaOp --
  *
- *      $image gamma value
+ *      imageName gamma gammValue
  *
  *---------------------------------------------------------------------------
  */
@@ -3828,9 +3769,9 @@ GammaOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns the RGBA components of the pixel at the specified coordinate.
  *
  * Results:
- *      Returns a standard TCL return value.  If TCL_OK, the components of the
- *      pixel are returned as a list in the interpreter result.  Otherwise an
- *      error message is returned.
+ *      Returns a standard TCL return value.  If TCL_OK, the components of
+ *      the pixel are returned as a list in the interpreter result.
+ *      Otherwise an error message is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3858,7 +3799,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     sp = Blt_Picture_Pixel(imgPtr->picture, x, y);
     pixel = *sp;
 #ifdef notdef
-    if ((Blt_Picture_Flags(imgPtr->picture) & BLT_PIC_PREMULTIPLED_COLORS) &&
+    if ((Blt_Picture_Flags(imgPtr->picture) & BLT_PIC_PREMULTIPLIED_COLORS) &&
         ((sp->Alpha != 0xFF) && (sp->Alpha != 0x00))) {
         int bias = sp->Alpha >> 1;
 
@@ -3867,7 +3808,10 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         pixel.Blue  = (mul255(sp->Blue)  + bias) / sp->Alpha;
     }
 #endif
-    fprintf(stderr, "[0x%04x, 0x%04x]\n", sp->u32 >> 16, sp->u32 & 0xFFFF);
+    fprintf(stderr, "[0x%02x][0x%02x][0x%02x][0x%02x] [0x%04x][0x%04x] [0x%08x]\n",
+            sp->Blue, sp->Green, sp->Red, sp->Alpha,
+            sp->u32 & 0xFFFF, sp->u32 >> 16,
+            sp->u32); 
     Tcl_SetObjResult(interp, Tcl_NewStringObj(Blt_NameOfPixel(&pixel), -1));
     return TCL_OK;
 }
@@ -3936,12 +3880,13 @@ HeightOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ImportOp --
  *
  *      Imports an image source into a picture.  The image source can be a
- *      file, base64 string, or binary Tcl_Obj.  This performs basically the
- *      same function as "configure".  Any extra functionality this command
- *      has is based upon the ability to pass extra flags to the various
- *      converters, something that can't be done really be done with
+ *      file, base64 string, or binary Tcl_Obj.  This performs basically
+ *      the same function as "configure".  The extra functionality this
+ *      command has is based upon the ability to pass extra flags to the
+ *      various converters, something that can't really be done with the
+ *      "configure" operation.
  *
- *              $image configure -file file.jpg
+ *              imageName configure -file fileName
  *
  * Results:
  *      Returns a standard TCL return value.  If no error, the interpreter
@@ -4003,10 +3948,10 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
     imgPtr->picture = Blt_Chain_FirstValue(chain);
 
     /* 
-     * Save the format type and file name in the image record.  The file name
-     * is used when querying image options -file or -data via configure.  The
-     * type is used by the "-data" operation to establish a default format to
-     * output.
+     * Save the format type and file name in the image record.  The file
+     * name is used when querying image options -file or -data via
+     * configure.  The type is used by the "-data" operation to establish a
+     * default format to output.
      */
     imgPtr->fmtPtr = fmtPtr;
     imgPtr->flags &= ~IMPORTED_MASK;
@@ -4062,9 +4007,9 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Tcl_NewIntObj(numColors);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("isassociated", 12);
+    objPtr = Tcl_NewStringObj("ispremultipled", 12);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    state = srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS;
+    state = srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS;
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
@@ -5321,7 +5266,6 @@ static Blt_OpSpec pictInstOps[] =
 {
     {"add",       2, ArithOp,     3, 0, "pictOrColor",},
     {"and",       3, ArithOp,     3, 0, "pictOrColor",},
-    {"b2lank",    3, Blank2Op,    2, 3, "?colorSpec?",},
     {"blank",     3, BlankOp,     2, 3, "?colorSpec?",},
     {"blur",      3, BlurOp,      4, 4, "src width",},
     {"cget",      2, CgetOp,      3, 3, "option",},

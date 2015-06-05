@@ -571,7 +571,7 @@ ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
     }
     brushPtr->tile = Blt_GetPictureFromImage(corePtr->dataPtr->interp,
         brushPtr->tkImage, &isNew);
-    if (Blt_Picture_IsPremultipled(brushPtr->tile)) {
+    if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
     }
     if (isNew) {

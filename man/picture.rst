@@ -110,34 +110,9 @@ the command.  The operations available for pictures are listed below.
     *Mask* is either the name of a *picture* image. 
 
 *imageName* **blank** ?\ *colorSpec*\ ?
-  Blanks the image. By default, the entire image is set to be transparent
-  and the background of whatever window it is displayed in will show
-  through.  If a *colorSpec* argument is given then the image will be
-  filled with that color.  *ColorSpec* is a color name or the name
-  of a paintbrush created by the **blt::paintbrush** command.
-
-*imageName* **blend** *bgName* *fgName*  ?\ *switches* ... ?
-  Blends or composites *fgImage* over *bgImage* using one the alpha
-  channels of both images.  If *fgImage* is opaque, then this is same as
-  copying *fgName*.  If *fgName* and *bgName* are different sizes, only the
-  overlapping pixels are blended. The resulting image is saved in
-  *imageName*.  *BgImage* and *fgImage* must be *picture* images, and one
-  of them may be the same as *imageName*.  The following switches are
-  available.
-
-  **-from** *bbox*
-    Specifies the region in the *bgName* image to be blended. *Bbox* is a
-    list in the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
-    describes the subregion to be blended.  The second indicates to copy
-    the subimage starting at *x1*,\ *y1* of *bgName* extending
-    to the lower right corner.
-
-  **-to** *bbox*
-    Specifies the region in the *fgName* image to be blended. *Bbox* is a
-    list in the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
-    describes the subregion to be blended.  The second indicates to copy
-    the subimage starting at *x1*,\ *y1* of *fgName* and extending to the
-    lower right corner.
+  Blanks the image filling it with *colorSpec*.  This sets the initial
+  layer of the picture.  *ColorSpec* is a color name or pixel hex value.
+  If no *colorSpec* argument is the color defaults to "white".
 
 *imageName* **blur** *srcName* *numPixels* 
   Blurs *srcName* performing a boxcar blur using *numPixels* as the radius
@@ -291,6 +266,28 @@ the command.  The operations available for pictures are listed below.
     be blended.  The second says to copy the subimage starting at
     *x1*,\ *y1* of the background image and copying region extending
     to the lower right corner of *bgImage*.
+
+*imageName* **composite** *bgName* *fgName*  ?\ *switches* ... ?
+  Composites *fgImage* over *bgImage* using one the alpha channels of both
+  images.  If *fgImage* is opaque, then this is same as copying *fgName*.
+  If *fgName* and *bgName* are different sizes, only the overlapping pixels
+  are blended. The resulting image is saved in *imageName*.  *BgImage* and
+  *fgImage* must be *picture* images, and one of them may be the same as
+  *imageName*.  The following switches are available.
+
+  **-from** *bbox*
+    Specifies the region in the *bgName* image to be blended. *Bbox* is a
+    list in the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
+    describes the subregion to be blended.  The second indicates to copy
+    the subimage starting at *x1*,\ *y1* of *bgName* extending
+    to the lower right corner.
+
+  **-to** *bbox*
+    Specifies the region in the *fgName* image to be blended. *Bbox* is a
+    list in the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
+    describes the subregion to be blended.  The second indicates to copy
+    the subimage starting at *x1*,\ *y1* of *fgName* and extending to the
+    lower right corner.
 
 *imageName* **configure** ?\ *option* *value* ... ?
   Query or modify the configuration options for the image.  If no
@@ -459,7 +456,6 @@ the command.  The operations available for pictures are listed below.
 
   Reference: "A Digital "Dissolve" Effect" by Mike Morton in "Graphics
   Gems V", pp. 221-232, Academic Press, 1994.
-
 
   This transition will start after this command completes, when an idle
   point is reached. Care must be taken not to change *imageName* while the

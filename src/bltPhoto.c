@@ -83,10 +83,10 @@ Blt_PictureToPhoto(Pict *srcPtr, Tk_PhotoHandle photo)
     dest.offset[3] = Blt_Offset(Blt_Pixel, Alpha); 
     flags = TK_PHOTO_COMPOSITE_SET;
     result = Tk_PhotoSetSize(NULL, photo, srcPtr->width, srcPtr->height);
-    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) {
         Pict *tmpPtr;
         
-        /* Divide out the alphas from picture's pre-multipled RGB values. */
+        /* Divide out the alphas from picture's pre-multiplied RGB values. */
         tmpPtr = Blt_ClonePicture(srcPtr);
         Blt_UnmultiplyColors(tmpPtr);
         dest.pixelPtr = (unsigned char *)tmpPtr->bits;
@@ -135,10 +135,10 @@ Blt_PictureToPhoto(Pict *srcPtr, Tk_PhotoHandle photo)
     dest.offset[2] = Blt_Offset(Blt_Pixel, Blue);
     dest.offset[3] = Blt_Offset(Blt_Pixel, Alpha); 
     Tk_PhotoSetSize(photo, srcPtr->width, srcPtr->height);
-    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) {
         Pict *tmpPtr;
 
-        /* Divide out the alphas from picture's pre-multipled RGB values. */
+        /* Divide out the alphas from picture's pre-multiplied RGB values. */
         tmpPtr = Blt_ClonePicture(srcPtr);
         Blt_UnmultiplyColors(tmpPtr);
         dest.pixelPtr = (unsigned char *)tmpPtr->bits;
@@ -234,7 +234,7 @@ Blt_PhotoAreaToPicture(Tk_PhotoHandle photo, int x, int y, int w, int h)
                     dp->Green = imul8x8(dp->Alpha, bits[ig], t);
                     dp->Blue = imul8x8(dp->Alpha, bits[ib], t);
                     destPtr->flags |= 
-                        (BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLED_COLORS);
+                        (BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLIED_COLORS);
                 }
                 bits += src.pixelSize;
                 dp++;

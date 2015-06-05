@@ -110,6 +110,7 @@ static Blt_PremultiplyColorsProc AssociateColors;
 static Blt_UnmultiplyColorsProc UnassociateColors;
 static Blt_CopyRegionProc CopyRegion;
 static Blt_CopyPicturesProc CopyPictures;
+static Blt_BlankPictureProc BlankPicture;
 
 static Blt_PictureProcs stdPictureProcs = {
     ApplyPictureToPicture,
@@ -127,7 +128,8 @@ static Blt_PictureProcs stdPictureProcs = {
     UnassociateColors,
     CopyRegion,
     CopyPictures,
-    CrossFadePictures
+    CrossFadePictures,
+    BlankPicture
 };
 
 Blt_PictureProcs *bltPictProcsPtr = &stdPictureProcs;
@@ -212,6 +214,12 @@ Blt_CrossFadePictures(Blt_Picture dest, Blt_Picture from, Blt_Picture to,
     (*bltPictProcsPtr->crossFadePicturesProc)(dest, from, to, opacity);
 }
 
+void
+Blt_BlankPicture(Blt_Picture dest, unsigned int value) 
+{
+    (*bltPictProcsPtr->blankPictureProc)(dest, value);
+}
+
 void 
 Blt_SelectPixels(Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowPtr, 
                  Blt_Pixel *highPtr)
@@ -222,7 +230,7 @@ Blt_SelectPixels(Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowPtr,
 void 
 Blt_PremultiplyColors(Blt_Picture picture)
 {
-    (*bltPictProcsPtr->associateColorsProc)(picture);
+    (*bltPictProcsPtr->premultiplyColorsProc)(picture);
 }
 
 void 
@@ -467,8 +475,8 @@ Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)
 }
 
 
-void
-Blt_BlankPicture(Pict *destPtr, unsigned int value) 
+static void
+BlankPicture(Pict *destPtr, unsigned int value) 
 {
     Blt_Pixel *bp, *bend, color;
     size_t numPixels;
@@ -485,7 +493,7 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
     } else if (color.Alpha != 0xFF) {
         destPtr->flags |= BLT_PIC_COMPOSITE;
     }
-    destPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
+    destPtr->flags &= ~BLT_PIC_PREMULTIPLIED_COLORS;
 }
 
 void
@@ -672,7 +680,7 @@ Blt_FadePicture(Pict *srcPtr, int x, int y, int w, int h, double factor)
     Blt_Pixel *srcRowPtr;
     int alpha;
 
-    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
     alpha = (int)((1.0 - factor) * 255.0 + 0.5);
@@ -734,7 +742,7 @@ Blt_UnmultiplyColor(Blt_Pixel *colorPtr)
 static void
 AssociateColors(Pict *srcPtr)
 {
-    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_Pixel *srcRowPtr;
         int y;
         
@@ -748,14 +756,14 @@ AssociateColors(Pict *srcPtr)
             }
             srcRowPtr += srcPtr->pixelsPerRow;
         }
-        srcPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
+        srcPtr->flags |= BLT_PIC_PREMULTIPLIED_COLORS;
     }
 }
 
 static void
 UnassociateColors(Pict *srcPtr)
 {
-    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) {
         Blt_Pixel *srcRowPtr;
         int y;
 
@@ -769,7 +777,7 @@ UnassociateColors(Pict *srcPtr)
             }
             srcRowPtr += srcPtr->pixelsPerRow;
         }
-        srcPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
+        srcPtr->flags &= ~BLT_PIC_PREMULTIPLIED_COLORS;
     }
 }
 
@@ -810,10 +818,10 @@ CompositeRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
         h = srcPtr->height;
     }
     /* Convert the pictures to use associated colors if not already. */
-    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((destPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(destPtr);
     }
     
@@ -1106,10 +1114,10 @@ ColorBlendRegion(
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
 
-    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((destPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(destPtr);
     }
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
@@ -2284,11 +2292,11 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
     Pict *tmpPtr;
 
     tmpPtr = Blt_CreatePicture(destPtr->width, srcPtr->height);
-    if ((srcPtr->flags & (BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLED_COLORS)) == 
+    if ((srcPtr->flags & (BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLIED_COLORS)) == 
         BLT_PIC_COMPOSITE) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & (BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLED_COLORS)) == 
+    if ((destPtr->flags & (BLT_PIC_COMPOSITE | BLT_PIC_PREMULTIPLIED_COLORS)) == 
         BLT_PIC_COMPOSITE) {
         Blt_PremultiplyColors(destPtr);
     }
@@ -3378,7 +3386,7 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
     int alpha;
     int y;
     
-    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) {
         Blt_UnmultiplyColors(srcPtr);
     }
     srcRowPtr = srcPtr->bits;
@@ -6096,7 +6104,7 @@ Blt_BlurPicture(Pict *destPtr, Pict *srcPtr, int radius, int numPasses)
     if (srcPtr != destPtr) {
         Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
     }
-    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
     if (radius < 1) {
@@ -6279,7 +6287,7 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
         Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
         tablePtr = &colorTable;
     }
-    isAssociated = (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS);
+    isAssociated = (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS);
     if (isAssociated) {
         Blt_UnmultiplyColors(srcPtr);
     }

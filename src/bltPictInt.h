@@ -205,6 +205,7 @@ typedef void (Blt_CopyRegionProc)(Blt_Picture dest, Blt_Picture src,
         int sx, int sy, int w, int h, int dx, int dy);
 typedef void (Blt_CrossFadePicturesProc)(Blt_Picture dest, Blt_Picture from,
         Blt_Picture to, double opacity);
+typedef void (Blt_BlankPictureProc)(Blt_Picture dest, unsigned int value);
 
 typedef struct {
     Blt_ApplyPictureToPictureProc *applyPictureToPictureProc;
@@ -218,11 +219,12 @@ typedef struct {
     Blt_CompositeRegionProc *compositeRegionProc;
     Blt_CompositePicturesProc *compositePicturesProc;
     Blt_SelectPixelsProc *selectPixelsProc;
-    Blt_PremultiplyColorsProc *associateColorsProc;
+    Blt_PremultiplyColorsProc *premultiplyColorsProc;
     Blt_UnmultiplyColorsProc *unassociateColorsProc;
     Blt_CopyRegionProc *copyRegionProc;
     Blt_CopyPicturesProc *copyPicturesProc;
     Blt_CrossFadePicturesProc *crossFadePicturesProc;
+    Blt_BlankPictureProc *blankPictureProc;
 } Blt_PictureProcs;
 
 BLT_EXTERN Blt_PictureProcs *bltPictProcsPtr;

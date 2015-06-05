@@ -399,7 +399,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     if (colorType & PNG_COLOR_MASK_ALPHA) {
         Blt_PremultiplyColors(destPtr);
     } else {
-        destPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
+        destPtr->flags |= BLT_PIC_PREMULTIPLIED_COLORS;
     }
     destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
  bad:

@@ -1946,7 +1946,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     if ((srcPtr->width < 1) || (srcPtr->height < 1)) {
         return TCL_OK;
     }
-    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) {
         Blt_UnmultiplyColors(srcPtr);
     }
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);

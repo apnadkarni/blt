@@ -38,7 +38,7 @@ set brush [blt::paintbrush create linear \
 	       -jitter 2 \
 	       -colorscale log]
 $bg draw rectangle 0 0 -width $width -height $height -color $brush
-$bg blend $bg $l1 
+$bg composite $bg $l1 
 
 blt::tk::label .l0 -image $l1
 blt::tk::label .l1 -image $l2

@@ -74,20 +74,21 @@ static Blt_ApplyScalarToPictureProc  ApplyScalarToPicture;
 #ifdef notdef
 static Blt_ApplyPictureToPictureWithMaskProc ApplyPictureToPictureWithMask;
 static Blt_ApplyScalarToPictureWithMaskProc  ApplyScalarToPictureWithMask;
-static Blt_PremultiplyColorsProc AssociateColors;
 static Blt_UnmultiplyColorsProc UnassociateColors;
 #endif
+static Blt_CompositePicturesProc CompositePictures;
+static Blt_CopyPicturesProc CopyPictures;
+static Blt_CrossFadePicturesProc CrossFadePictures;
+static Blt_PremultiplyColorsProc PremultiplyColors;
+static Blt_SelectPixelsProc SelectPixels;
 static Blt_TentHorizontallyProc TentHorizontally;
 static Blt_TentVerticallyProc TentVertically;
 static Blt_ZoomHorizontallyProc ZoomHorizontally;
 static Blt_ZoomVerticallyProc ZoomVertically;
-static Blt_SelectPixelsProc SelectPixels;
-static Blt_CompositePicturesProc CompositePictures;
-static Blt_CopyPicturesProc CopyPictures;
-static Blt_CrossFadePicturesProc CrossFadePictures;
+static Blt_BlankPictureProc BlankPicture;
 
 /* 
- * premultiply, unmultiply,  zoomvertically, zoomhorizontally
+ * unmultiply,  zoomvertically, zoomhorizontally
  */
 /* 
  * sR sG sB sA 
@@ -1274,146 +1275,6 @@ ConvolvePictureHorizontally(Pict *destPtr, Pict *srcPtr,
 
 
 #ifdef notdef
-static void
-AssociateColors(Pict *srcPtr)           /* (in/out) picture */
-{
-    Blt_Pixel *srcRowPtr;
-    int y;
-    Blt_Pixel mask;
-
-    /* Create mask for alpha component.  We'll use this mask to make sure
-     * we don't change the alpha component of a pixel.  */
-    mask.u32 = 0;
-    mask.Alpha = 0xFF;
-    asm volatile (
-        /* Generate constants needed below. */
-        "pxor %%mm6, %%mm6      # mm6 = 0\n\t"
-        "pcmpeqw %%mm5, %%mm5   # mm5 = -1 \n\t"
-        "psubw %%mm6, %%mm5     # mm5 = 1,1,1,1\n\t"
-        "movd %0, %%mm4         # mm4 = mask\n\t" 
-        "psllw $7, %%mm5        # mm5 = ROUND = 128\n" 
-        "punpcklbw %%mm6, %%mm4 # mm4 = 0,0,0,FF\n\t" 
-        : /* outputs */
-        : /* inputs */
-          "r" (mask.u32));
-
-    srcRowPtr = srcPtr->bits;
-    for (y = 0; y < srcPtr->height; y++) {
-        Blt_Pixel *sp, *send;
-
-#ifdef notdef
-        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp += 2) {
-            Blt_Pixel *p, *q;
-                
-            /*
-             * Small wins:  
-             *
-             * We can compute 
-             *      dest = (fg * alpha) + (beta * bg);
-             * for all RGBA components at once. 
-             *
-             * Packing unsigned with saturation performs the necessary
-             * clamping without the branch misprediction penalty.
-             */
-            p = sp, q = sp+1;
-            asm volatile (
-                /* 
-                 * mm0 = P
-                 * mm1 = Q
-                 * mm2 = Pa
-                 * mm3 = Qa
-                 * mm4 = temp
-                 * mm5 = ROUND = 128,128,128,128
-                 * mm6 = 0
-                 * mm7 = 0,0,0,FF
-                 */
-                "movd (%0), %%mm0         #  mm0 = P\n\t" 
-                "movd (%1), %%mm1         #  mm1 = Q\n\t" 
-                "movd %2, %%mm2           #  mm2 = 0,0,0,Pa\n\t" 
-                "movd %3, %%mm3           #  mm2 = 0,0,0,Qa\n\t" 
-                "punpcklwd %%mm2, %%mm2   #  mm2 = 0,0,Pa,Pa\n\t"
-                "punpcklwd %%mm3, %%mm3   #  mm3 = 0,0,Qa,Qa\n\t"
-                "punpcklbw %%mm6, %%mm0   #  mm0 = Pa,Pr,Pg,Pb\n\t" 
-                "punpcklwd %%mm2, %%mm2   #  mm2 = Pa,Pa,Pa,Pa\n\t"
-                "punpcklbw %%mm6, %%mm1   #  mm1 = Qa,Qr,Qg,Qb\n\t" 
-                "por %%mm7, %%mm2         #  mm2 = 0xff,Pa,Pa,Pa\n\t"
-                "punpcklwd %%mm3, %%mm3   #  mm3 = Qa,Qa,Qa,Qa\n\t"
-                "por %%mm7, %%mm3         #  mm2 = 0xff,Qa,Qa,Qa\n\t"
-                "pmullw %%mm0, %%mm2      #  mm2 = P*Pa\n\t" 
-                "pmullw %%mm1, %%mm3      #  mm3 = Q*Qa\n\t" 
-                "paddw %%mm5, %%mm2       #  mm2 = (P*Pa)+ROUND\n\t"
-                "paddw %%mm5, %%mm3       #  mm3 = (Q*Qa)+ROUND\n\t"
-                "movq %%mm2, %%mm0        #  mm0 = P16\n\t" 
-                "movq %%mm3, %%mm1        #  mm1 = Q16\n\t" 
-                "psrlw $8, %%mm0          #  mm0 = P16 / 256\n\t"
-                "psrlw $8, %%mm1          #  mm1 = Q16 / 256\n\t"
-                "paddw %%mm2, %%mm0       #  mm0 = (P16 / 256) + P16\n\t" 
-                "paddw %%mm3, %%mm1       #  mm1 = (Q16 / 256) + Q16\n\t" 
-                "psrlw $8, %%mm0          #  mm0 = P8 ~= P16 / 257\n\t"
-                "psrlw $8, %%mm1          #  mm1 = Q8 ~= Q16 / 257\n\t"
-                "packuswb %%mm0, %%mm0    #  Pack 4 low bytes.\n\t" 
-                "packuswb %%mm1, %%mm1    #  Pack 4 low bytes.\n\t" 
-                "movd %%mm0, (%0)         #  *P = word\n" 
-                "movd %%mm1, (%1)         #  *Q = word\n" 
-                : /* outputs */
-                  "+r" (p), 
-                  "+r" (q)
-                : /* inputs */
-                  "r" ((unsigned int)(p->Alpha)), 
-                  "r" ((unsigned int)(q->Alpha)));
-        }
-        srcRowPtr += srcPtr->pixelsPerRow;
-    }
-#else 
-        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-            unsigned int alpha;
-                
-            /*
-             * Small wins:  
-             *
-             * We can compute 
-             *      dest = (src * alpha);
-             * for all RGBA components at once. 
-             *
-             * Packing unsigned with saturation performs the necessary
-             * clamping without the branch misprediction penalty.
-             */
-            alpha = sp->Alpha;
-            asm volatile (
-                /* 
-                 * mm0 = 
-                 * mm1 = sp
-                 * mm2 = alpha
-                 * mm3 = temp
-                 * mm4 = 0,0,0,FF
-                 * mm5 = ROUND = 128,128,128,128
-                 * mm6 = 0
-                 * mm7 = 
-                 */
-                "movd %1, %%mm2           #  mm2 = 0,0,0,A\n\t" 
-                "movd (%0), %%mm1         #  mm1 = sp\n\t" 
-                "punpcklwd %%mm2, %%mm2   #  mm2 = 0,0,A,A\n\t"
-                "punpcklbw %%mm6, %%mm1   #  mm1 = Sa,Sr,Sg,Sb\n\t" 
-                "punpcklwd %%mm2, %%mm2   #  mm2 = A,A,A,A\n\t"
-                "por %%mm4, %%mm2         #  mm2 = 0xff,A,A,A\n\t"
-                "pmullw %%mm1, %%mm2      #  mm2 = S*A\n\t" 
-                "paddw %%mm5, %%mm2       #  mm2 = (S*A)+ROUND\n\t"
-                "movq %%mm2, %%mm3        #  mm3 = P16\n\t" 
-                "psrlw $8, %%mm3          #  mm3 = P16 / 256\n\t"
-                "paddw %%mm2, %%mm3       #  mm3 = (P16 / 256) + P16\n\t" 
-                "psrlw $8, %%mm3          #  mm3 = P8 ~= P16 / 257\n\t"
-                "packuswb %%mm3, %%mm3    #  Pack 4 low bytes.\n\t" 
-                "movd %%mm3, (%0)         #  *sp = word\n" :
-                "+r" (sp) :
-                "r" (alpha));
-        }
-        srcRowPtr += srcPtr->pixelsPerRow;
-    }
-#endif
-    asm volatile ("emms");
-    srcPtr->flags |= BLT_PIC_PREMULTIPLED_COLORS;
-}
-
 /* 
  * 
  */
@@ -1489,7 +1350,7 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
         srcRowPtr += srcPtr->pixelsPerRow;
     }
     asm volatile ("emms");
-    srcPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
+    srcPtr->flags &= ~BLT_PIC_PREMULTIPLIED_COLORS;
 }
 #endif
 
@@ -1571,38 +1432,40 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
 static uint8_t premultMap[16] __attribute__((aligned(16))) = {
     /* B G R A B G R A */
     /* The first 3 words, get the first alpha. The fourth is zero. */
-    0xff, 0x03, 0xff, 0x03, 0xff, 0x03, 0xff, 0xff, 
+    0xff, 0x03, 0xff, 0x03, 0xff, 0x03, 0xff, 0xff,
     /* The second 3 words, get the second alpha. The fourth is zero. */
     0xff, 0x07, 0xff, 0x07, 0xff, 0x07, 0xff, 0xff,
 };
 
-void
-Blt_PremultiplyColors2(Pict *srcPtr)
+static void
+PremultiplyColors(Pict *srcPtr)
 {
     int y;
     Blt_Pixel *srcRowPtr;
 
-    if (srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) {
         return;
     }
+    srcPtr->flags |= BLT_PIC_PREMULTIPLIED_COLORS;
     asm volatile (
         "pcmpeqw   %%xmm0, %%xmm0       # xmm0 = ffff x 8\n\t"
         "pxor      %%xmm6, %%xmm6       # xmm6 = 0\n\t"
-        "psrld     $31, %%xmm0          # xmm1 = mask = 00000001 x 4\n\t"
-        "pslld     $16, %%xmm0          # xmm1 = mask = 00000100 x 4\n\t"
+        "pxor      %%xmm0, %%xmm0       # xmm0 = 0\n\t"
+        "mov       $0xFF00,%%edx\n\t"
+        "pinsrw    $3,%%edx,%%xmm0      # xmm0 = ____ ____ ____ ff__ \n\t"
+        "pinsrw    $7,%%edx,%%xmm0      # xmm0 = ____ ____ ____ ff__ \n\t"
         "movdqa    (%0), %%xmm7         # xmm7 = shuffle map\n\t"
         "pcmpeqw   %%xmm1, %%xmm1       # xmm1 = ffff x 8\n\t"
-        "psrlw     $15, %%xmm1          # xmm1 = 0001 x 8\n\t"
-        "psllw     $7, %%xmm1           # xmm1 = 0080 x 8\n\t"
-        "psrld     $16, %%xmm1          # xmm1 = 0000 0080 0080 0080 x 2\n\t"
-        "pslld     $16, %%xmm1          # xmm1 = 0080 0080 0080 0000 x 2\n\t"
+        "punpckhbw %%xmm6, %%xmm1	# xmm1 = 00ff x 8\n\t"
+        "psrlw     $7, %%xmm1           # xmm1 = 0001 x 8\n\t"
+        "psllw     $7, %%xmm1           # xmm1 = 0010 x 8\n\t"
         : /* outputs */
         : /* inputs */
           "r" (premultMap));
     /*
-     * xmm0 = mask      0000 0000 0000 0100 x 4   alphas | mask 
-     * xmm1 = bias      0080 0080 0080 0000 x 4   3 bias + 0000
-     * xmm6 = 0         0000 0000 0000 0000 x 4
+     * xmm0 = mask      ____ ____ ____ _1__ x 4   alphas | mask 
+     * xmm1 = bias      __8_ __8_ __8_ ____ x 4   3 bias + 0000
+     * xmm6 = 0         ____ ____ ____ ____ x 4
      * xmm7 = shuffle   
      */
     srcRowPtr = srcPtr->bits;
@@ -1612,6 +1475,7 @@ Blt_PremultiplyColors2(Pict *srcPtr)
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp += 4) {
             asm volatile (
 		"movdqa    (%0), %%xmm4         # xmm4 = P x 4\n\t" 
+
 		"movdqa    %%xmm4, %%xmm2       # xmm2 = xmm4\n\t"
                 /* Move the upper quadword to lower so that we can use the
                  * same shuffle mask for both pairs of pixels. */
@@ -1619,20 +1483,19 @@ Blt_PremultiplyColors2(Pict *srcPtr)
                 /* Unpack background. */
 		"punpcklbw %%xmm6, %%xmm2	# xmm2 = _b_g_r_a x 2\n\t"
 		"punpcklbw %%xmm6, %%xmm3	# xmm3 = _b_g_r_a x 2\n\t"
+		"movdqa    %%xmm4, %%xmm5       # xmm2 = xmm4\n\t"
                 /* Shift color components to upper byte */
                 "psllw     $8, %%xmm2           # xmm2 = b_g_r_a_\n\t"
                 "psllw     $8, %%xmm3           # xmm3 = b_g_r_a_\n\t"
                 /* Shuffle bytes in pixels to get alphas in high bytes. */
-		"pshufb	   %%xmm7, %%xmm4       # xmm4 = Sa_Sa_Sa___ x 2\n\t"
-		"pshufb	   %%xmm7, %%xmm5       # xmm5 = Sa_Sa_Sa___ x 2\n\t"
+		"pshufb	   %%xmm7, %%xmm4       # xmm4 = a_a_a___ x 2\n\t"
+		"pshufb	   %%xmm7, %%xmm5       # xmm5 = a_a_a___ x 2\n\t"
                 /* Or in 0x100 for the alpha multiplier. */
-		"por	   %%xmm0, %%xmm4       # xmm5 = Sa_Sa_Sa_1_ x 2\n\t"
-		"por	   %%xmm0, %%xmm5       # xmm5 = Sa_Sa_Sa_1_ x 2\n\t"
+		"por	   %%xmm0, %%xmm4       # xmm5 = a_a_a_1_ x 2\n\t"
+		"por	   %%xmm0, %%xmm5       # xmm5 = a_a_a_1_ x 2\n\t"
                 /* Multiple each color component by its matching alpha. */
-		"pmulhuw   %%xmm2, %%xmm4	# xmm4 = Sa*Sb,Sa*Sg,Sa*Sr\n\t"
-                /* Something weird here.  If multiple instructions are
-                 * consecutive, the result is corrupted. */
-		"pmulhuw   %%xmm3, %%xmm5	# xmm5 = Sa*Sb,Sa*Sg,Sa*Sr\n\t"
+		"pmulhuw   %%xmm2, %%xmm4	# xmm4 = a*b,a*g,a*r,a*ff\n\t"
+		"pmulhuw   %%xmm3, %%xmm5	# xmm5 = a*b,a*g,a*r,a*ff\n\t"
                  /* Add the bias. */
                 "paddsw    %%xmm1, %%xmm4       # xmm4 += bias\n\t"
                 "paddsw    %%xmm1, %%xmm5       # xmm5 += bias\n\t"
@@ -1697,10 +1560,10 @@ CompositePictures(Pict *destPtr, Pict *srcPtr)
 
     assert((srcPtr->width == destPtr->width) &&
            (srcPtr->height == destPtr->height));
-    if ((srcPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((destPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(destPtr);
     }
     asm volatile (
@@ -1816,7 +1679,7 @@ static uint8_t crossFadeMap[16] __attribute__((aligned(16))) = {
     0xff, 0x00, 0xff, 0x01, 0xff, 0x02, 0xff, 0x03, 
     0xff, 0x04, 0xff, 0x05, 0xff, 0x06, 0xff, 0x07,
 };
-static uint8_t alphaBeta[16] __attribute__((aligned(16))) = {
+static uint8_t align16[16] __attribute__((aligned(16))) = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
@@ -1829,16 +1692,17 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
 
     assert((fromPtr->width == toPtr->width) &&
            (fromPtr->height == toPtr->height));
-    if ((fromPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((fromPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(fromPtr);
     }
-    if ((toPtr->flags & BLT_PIC_PREMULTIPLED_COLORS) == 0) {
+    if ((toPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
         Blt_PremultiplyColors(toPtr);
     }
     alpha = (int)(opacity * 255);
 
     for (i = 0; i < 16; i += 2) {
-        alphaBeta[i+1] = alpha;
+        align16[i] = 0;
+        align16[i+1] = alpha;
     }
     /*
      * 7=shuffle map
@@ -1852,7 +1716,7 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
      */
     asm volatile (
         "movdqa    (%0), %%xmm7         # xmm7 = shuffle map\n\t"
-        "movdqa    (%1), %%xmm6         # xmm5 = A_ x  8\n\t"
+        "movdqa    (%1), %%xmm6         # xmm6 = A_ x  8\n\t"
         /* Create rounding bias 128. */
         "pxor      %%xmm0, %%xmm0       # xmm0 = 0\n\t"
         "pcmpeqw   %%xmm1, %%xmm1       # xmm1 = ffff x 8\n\t"
@@ -1862,7 +1726,7 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
         : /* outputs */
         : /* imputs */
           "r" (crossFadeMap),
-          "r" (alphaBeta));
+          "r" (align16));
 
     fromRowPtr = fromPtr->bits;
     toRowPtr = toPtr->bits;
@@ -1957,7 +1821,6 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
     }
 }
 
-#ifdef notdef
 /* 
  *---------------------------------------------------------------------------
  *
@@ -1979,40 +1842,35 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
 {
     Blt_Pixel *destRowPtr;
     int y;
-
+    Blt_Pixel pixel;
+    int i;
+    
+    pixel.u32 = colorValue;
+    Blt_PremultiplyColor(&pixel);
+    for (i = 0; i < 16; i++) {
+        align16[i] = pixel.u32;
+    }
     asm volatile (
-        /* How do you load a xmm register? */
-        /* Generate constants needed below. */
-        "pxor %%mm6, %%mm6      # mm6 = 0\n\t"
-        "pcmpeqw %%mm5, %%mm5   # mm5 = -1 \n\t"
-        "psubw %%mm6, %%mm5     # mm5 = 1,1,1,1\n\t"
-        "movd %0, %%mm4         # mm4 = C\n\t" 
-        "psllw $7, %%mm5        # mm5 = ROUND = 128\n" 
-        "punpcklbw %%mm6, %%mm4 # mm4 = 0,0,0,FF\n\t" 
+        "movdqa    (%0), %%xmm6         # xmm6 = color\n\t"
+        : /*outputs */
         : /* inputs */
-        : "r" (colorValue));
+          "r" (align16));
+
     destRowPtr = destPtr->bits;
     for (y = 0; y < destPtr->height; y++) {
         Blt_Pixel *dp, *dend;
 
-        for (dp = destRowPtr, dend = dp + (destPtr->width & ~3); dp < dend; 
-             dp += 4)
+        for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend; dp += 4) {
             asm volatile (
-                "movdqa %%xmm1, (%0)\n\t" 
-                : "=r" (dp));
-        }
-        switch (width & 3) {
-        case 3:         dp->u32 = colorValue; dp++;
-        case 2:         dp->u32 = colorValue; dp++;
-        case 1:         dp->u32 = colorValue; dp++;
-        case 0:         break;
+                "movdqa %%xmm6, (%0)    # Save the 4 pixels. \n\t" 
+                : /*outputs */
+                  "+r" (dp));
         }
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
-    asm volatile ("emms");
+    destPtr->flags |= BLT_PIC_PREMULTIPLIED_COLORS;
+    destPtr->flags = (destPtr->flags | BLT_PIC_DIRTY);
 }
-#endif
 
 static int
 HaveCpuId(void)
@@ -2194,13 +2052,14 @@ Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
         bltPictProcsPtr->zoomHorizontallyProc = ZoomHorizontally;
         bltPictProcsPtr->zoomVerticallyProc = ZoomVertically;
 #ifdef notdef
-        bltPictProcsPtr->associateColorsProc = AssociateColors;
 #endif
         bltPictProcsPtr->selectPixelsProc = SelectPixels;
 #if (SIZEOF_LONG == 8) 
         if (flags & FEATURE_SSSE3) {
+            bltPictProcsPtr->premultiplyColorsProc = PremultiplyColors;
             bltPictProcsPtr->compositePicturesProc = CompositePictures;
             bltPictProcsPtr->copyPicturesProc = CopyPictures;
+            bltPictProcsPtr->blankPictureProc = BlankPicture;
             bltPictProcsPtr->crossFadePicturesProc = CrossFadePictures;
         }
 #endif  /* SIZEOF_LONG == 8 */

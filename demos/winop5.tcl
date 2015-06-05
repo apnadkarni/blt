@@ -46,11 +46,11 @@ set brush2 [blt::paintbrush create linear \
 		-colorscale log]
 $bg draw rectangle 0 0 -width $width -height $height -color $brush2
 #$layer1 or 0xFF000000
-#$layer1 blend $bg $layer1 
+#$layer1 composite $bg $layer1 
 #-matte $layer3
 
 #$layer1 min $bg
-$bg blend $bg $layer2  
+$bg composite $bg $layer2  
 #-matte $layer1
 
 set src $layer1

@@ -414,7 +414,7 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
                 BlendPixels(dp, &color);
             } else {
                 int t;
-                /* FIXME: This is overriding the alpha of a premultipled
+                /* FIXME: This is overriding the alpha of a premultiplied
                  * color. */
                 a = UCLAMP(a);
                 dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
@@ -423,7 +423,7 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
         }
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags &= ~BLT_PIC_PREMULTIPLED_COLORS;
+    destPtr->flags &= ~BLT_PIC_PREMULTIPLIED_COLORS;
     Blt_Free(squares);
 }
 
