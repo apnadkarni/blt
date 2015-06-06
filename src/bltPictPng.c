@@ -335,9 +335,9 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
                 dp = destRowPtr;
                 sp = row_pointers[y];
                 for (x = 0; x < width; x++) {
-                    dp->Red = sp[0];
+                    dp->Red   = sp[0];
                     dp->Green = sp[1];
-                    dp->Blue = sp[2];
+                    dp->Blue  = sp[2];
                     dp->Alpha = sp[3];
                     dp++, sp += 4;
                 }
@@ -353,9 +353,9 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
                 dp = destRowPtr;
                 sp = row_pointers[y];
                 for (x = 0; x < width; x++) {
-                    dp->Red = sp[0];
+                    dp->Red   = sp[0];
                     dp->Green = sp[1];
-                    dp->Blue = sp[2];
+                    dp->Blue  = sp[2];
                     dp->Alpha = ALPHA_OPAQUE;
                     dp++, sp += 3;
                 }
@@ -399,7 +399,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     if (colorType & PNG_COLOR_MASK_ALPHA) {
         Blt_PremultiplyColors(destPtr);
     } else {
-        destPtr->flags |= BLT_PIC_PREMULTIPLIED_COLORS;
+        destPtr->flags |= BLT_PIC_PREMULT_COLORS;
     }
     destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
  bad:

@@ -96,7 +96,7 @@ FILES 	= \
 		picture5.tcl \
 		picture6.tcl \
 		picture7.tcl \
-		picture8.tcl \
+		colorblend.tcl \
 		pkgs.tcl \
 		ptyexec1.tcl \
 		ptyexec3.tcl \

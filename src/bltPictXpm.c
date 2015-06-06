@@ -414,7 +414,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
         }
         srcPtr = background;
     }
-    if (Blt_Picture_Flags(srcPtr) & BLT_PIC_PREMULTIPLIED_COLORS) {
+    if (Blt_Picture_Flags(srcPtr) & BLT_PIC_PREMULT_COLORS) {
         Blt_Picture unassoc;
 
         /* 

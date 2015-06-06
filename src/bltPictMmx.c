@@ -1350,7 +1350,7 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
         srcRowPtr += srcPtr->pixelsPerRow;
     }
     asm volatile ("emms");
-    srcPtr->flags &= ~BLT_PIC_PREMULTIPLIED_COLORS;
+    srcPtr->flags &= ~BLT_PIC_PREMULT_COLORS;
 }
 #endif
 
@@ -1429,7 +1429,7 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
  *
  * -------------------------------------------------------------------------- 
  */
-static uint8_t premultMap[16] __attribute__((aligned(16))) = {
+static uint8_t preMultMap[16] __attribute__((aligned(16))) = {
     /* B G R A B G R A */
     /* The first 3 words, get the first alpha. The fourth is zero. */
     0xff, 0x03, 0xff, 0x03, 0xff, 0x03, 0xff, 0xff,
@@ -1442,11 +1442,11 @@ PremultiplyColors(Pict *srcPtr)
 {
     int y;
     Blt_Pixel *srcRowPtr;
-
-    if (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) {
+    
+    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
         return;
     }
-    srcPtr->flags |= BLT_PIC_PREMULTIPLIED_COLORS;
+    srcPtr->flags |= BLT_PIC_PREMULT_COLORS;
     asm volatile (
         "pcmpeqw   %%xmm0, %%xmm0       # xmm0 = ffff x 8\n\t"
         "pxor      %%xmm6, %%xmm6       # xmm6 = 0\n\t"
@@ -1462,7 +1462,7 @@ PremultiplyColors(Pict *srcPtr)
         "psllw     $7, %%xmm1           # xmm1 = 0010 x 8\n\t"
         : /* outputs */
         : /* inputs */
-          "r" (premultMap)
+          "r" (preMultMap)
         : /* clobbers */
           "edx");
     /*
@@ -1485,8 +1485,8 @@ PremultiplyColors(Pict *srcPtr)
 		"movhlps   %%xmm4, %%xmm3       # xmm3 = P2 P3\n\t"
                 /* Unpack background. */
 		"punpcklbw %%xmm6, %%xmm2	# xmm2 = _b_g_r_a x 2\n\t"
+		"movdqa    %%xmm3, %%xmm5       # xmm5 = xmm3\n\t"
 		"punpcklbw %%xmm6, %%xmm3	# xmm3 = _b_g_r_a x 2\n\t"
-		"movdqa    %%xmm4, %%xmm5       # xmm2 = xmm4\n\t"
                 /* Shift color components to upper byte */
                 "psllw     $8, %%xmm2           # xmm2 = b_g_r_a_\n\t"
                 "psllw     $8, %%xmm3           # xmm3 = b_g_r_a_\n\t"
@@ -1512,8 +1512,8 @@ PremultiplyColors(Pict *srcPtr)
                 "paddw     %%xmm2, %%xmm4       # xmm4 += xmm2\n\t"
                 "paddw     %%xmm3, %%xmm5       # xmm5 += xmm3\n\t"
                 /* Divide again by 256 */
-                "psrlw     $8, %%xmm4           # BG / 257\n\t"
-                "psrlw     $8, %%xmm5           # BG / 257\n\t"
+                "psrlw     $8, %%xmm4           # P / 257\n\t"
+                "psrlw     $8, %%xmm5           # P / 257\n\t"
 		/* Convert words to bytes  */
 		"packuswb  %%xmm5, %%xmm4       # xmm4 = P0 P1 P2 P3\n\t"
 		"movdqa    %%xmm4, (%0)     	# Save 4 pixels.\n\t"
@@ -1563,10 +1563,10 @@ CompositePictures(Pict *destPtr, Pict *srcPtr)
 
     assert((srcPtr->width == destPtr->width) &&
            (srcPtr->height == destPtr->height));
-    if ((srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
+    if ((srcPtr->flags & BLT_PIC_PREMULT_COLORS) == 0) {
         Blt_PremultiplyColors(srcPtr);
     }
-    if ((destPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
+    if ((destPtr->flags & BLT_PIC_PREMULT_COLORS) == 0) {
         Blt_PremultiplyColors(destPtr);
     }
     asm volatile (
@@ -1682,6 +1682,7 @@ static uint8_t crossFadeMap[16] __attribute__((aligned(16))) = {
     0xff, 0x00, 0xff, 0x01, 0xff, 0x02, 0xff, 0x03, 
     0xff, 0x04, 0xff, 0x05, 0xff, 0x06, 0xff, 0x07,
 };
+
 static uint8_t bytes16[16] __attribute__((aligned(16))) = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
@@ -1695,10 +1696,10 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
 
     assert((fromPtr->width == toPtr->width) &&
            (fromPtr->height == toPtr->height));
-    if ((fromPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
+    if ((fromPtr->flags & BLT_PIC_PREMULT_COLORS) == 0) {
         Blt_PremultiplyColors(fromPtr);
     }
-    if ((toPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) == 0) {
+    if ((toPtr->flags & BLT_PIC_PREMULT_COLORS) == 0) {
         Blt_PremultiplyColors(toPtr);
     }
     alpha = (int)(opacity * 255);
@@ -1874,8 +1875,14 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
         }
         destRowPtr += destPtr->pixelsPerRow;
     }
-    destPtr->flags |= BLT_PIC_PREMULTIPLIED_COLORS;
-    destPtr->flags = (destPtr->flags | BLT_PIC_DIRTY);
+    destPtr->flags |= BLT_PIC_DIRTY;
+    destPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_MASK);
+    if (pixel.Alpha == 0x00) {
+        destPtr->flags |= BLT_PIC_MASK | BLT_PIC_COMPOSITE;
+    } else if (pixel.Alpha != 0xFF) {
+        destPtr->flags |= BLT_PIC_COMPOSITE;
+    }
+    destPtr->flags |= BLT_PIC_PREMULT_COLORS;
 }
 
 static int
@@ -2048,30 +2055,24 @@ Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
 
     flags = CpuFlags();
     if (flags & FEATURE_MMX) {
-#ifdef notdef
-        bltPictProcsPtr = &mmxPictureProcs;
-#else 
         bltPictProcsPtr->applyPictureToPictureProc = ApplyPictureToPicture;
         bltPictProcsPtr->applyScalarToPictureProc = ApplyScalarToPicture;
         bltPictProcsPtr->tentHorizontallyProc = TentHorizontally;
         bltPictProcsPtr->tentVerticallyProc = TentVertically;
         bltPictProcsPtr->zoomHorizontallyProc = ZoomHorizontally;
         bltPictProcsPtr->zoomVerticallyProc = ZoomVertically;
-#ifdef notdef
-#endif
         bltPictProcsPtr->selectPixelsProc = SelectPixels;
 #if (SIZEOF_LONG == 8) 
         if (flags & FEATURE_SSSE3) {
-            bltPictProcsPtr->compositePicturesProc = CompositePictures;
-            bltPictProcsPtr->copyPicturesProc = CopyPictures;
 #ifdef notdef
-            bltPictProcsPtr->premultiplyColorsProc = PremultiplyColors;
 #endif
+            bltPictProcsPtr->premultiplyColorsProc = PremultiplyColors;
+            bltPictProcsPtr->copyPicturesProc = CopyPictures;
+            bltPictProcsPtr->compositePicturesProc = CompositePictures;
             bltPictProcsPtr->blankPictureProc = BlankPicture;
             bltPictProcsPtr->crossFadePicturesProc = CrossFadePictures;
         }
 #endif  /* SIZEOF_LONG == 8 */
-#endif
     }
     if (flagsPtr != NULL) {
         *flagsPtr = flags;

@@ -1758,17 +1758,20 @@ DisplayButton(ClientData clientData)
      */
     if (relief != TK_RELIEF_FLAT) {
         int inset = butPtr->highlightWidth;
+        int w, h;
 
-        if (butPtr->defaultState == STATE_ACTIVE) {
-            inset += 2;
-            Blt_Bg_DrawRectangle(tkwin, pixmap, bg, inset, inset,
-                Tk_Width(tkwin) - 2 * inset, Tk_Height(tkwin) - 2 * inset,
-                1, TK_RELIEF_SUNKEN);
-            inset += 3;
+        w = Tk_Width(tkwin) - 2 * inset;
+        h = Tk_Height(tkwin) - 2 * inset;
+        if ((w > 0) && (h > 0))  {
+            if (butPtr->defaultState == STATE_ACTIVE) {
+                inset += 2;
+                Blt_Bg_DrawRectangle(tkwin, pixmap, bg, inset, inset, w, h,
+                        1, TK_RELIEF_SUNKEN);
+                inset += 3;
+            }
+            Blt_Bg_DrawRectangle(tkwin, pixmap, bg, inset, inset, w, h, 
+                butPtr->borderWidth, relief);
         }
-        Blt_Bg_DrawRectangle(tkwin, pixmap, bg, inset, inset,
-            Tk_Width(tkwin) - 2 * inset, Tk_Height(tkwin) - 2 * inset,
-            butPtr->borderWidth, relief);
     }
     if (butPtr->highlightWidth != 0) {
         if (butPtr->flags & GOT_FOCUS) {

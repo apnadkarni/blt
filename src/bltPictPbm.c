@@ -761,7 +761,7 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
         }
         srcPtr = background;
     }
-    if (srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS) {
+    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
         Blt_UnmultiplyColors(srcPtr);
     }
     if (srcPtr->flags & BLT_PIC_COLOR) {  /* Color */

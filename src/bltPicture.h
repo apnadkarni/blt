@@ -116,7 +116,7 @@ struct _Blt_Picture {
                                          * and MASK flags are so that don't
                                          * premultiply alphas for masks. */
 
-#define BLT_PIC_PREMULTIPLIED_COLORS (1<<3)/* Indicates if RGB components have
+#define BLT_PIC_PREMULT_COLORS (1<<3)/* Indicates if RGB components have
                                          * been premultiplied by their
                                          * alphas. */
 
@@ -167,8 +167,7 @@ struct _Blt_Chain;
 #define Blt_Picture_IsBlended(p) ((p)->flags &  BLT_PIC_COMPOSITE)
 #define Blt_Picture_IsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
 #define Blt_Picture_IsGreyscale(p)   (!Blt_Picture_IsColor(p))
-#define Blt_Picture_IsPremultiplied(p) \
-        ((p)->flags &  BLT_PIC_PREMULTIPLIED_COLORS)
+#define Blt_Picture_IsPremultiplied(p) ((p)->flags & BLT_PIC_PREMULT_COLORS)
 
 typedef enum PictureArithOps {
     PIC_ARITH_ADD,

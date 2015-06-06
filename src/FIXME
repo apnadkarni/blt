@@ -9,10 +9,10 @@
     bltUnixFont.c but not in bltWinFont.c. Don't require Window users to
     link with freetype.
 
+15. Remove Makefile.vc and Makefile.bc files.
 -------------------------------------------------------------------------
 
 The following bugs are all show-stoppers for the next release.
-
 
 1.  Unify or separate bgexec Unix/Max/Win implementations.
 
@@ -36,8 +36,6 @@ The following bugs are all show-stoppers for the next release.
 
     Create clean version bltPictDraw.c moving experiental stuff into
     bltPictDrawUnsupported.c
-
-15. Remove Makefile.vc and Makefile.bc files.
 
 16. Fix combotree bindings, especially autoscrolling.
 

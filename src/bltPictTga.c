@@ -1167,7 +1167,7 @@ TgaToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
             Blt_PremultiplyColors(picture);
         }
         /* Set associated colors flag.  */
-        picture->flags |= BLT_PIC_PREMULTIPLIED_COLORS;
+        picture->flags |= BLT_PIC_PREMULT_COLORS;
     }
 
     if (tga.numWarnings > 0) {

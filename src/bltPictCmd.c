@@ -3799,7 +3799,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     sp = Blt_Picture_Pixel(imgPtr->picture, x, y);
     pixel = *sp;
 #ifdef notdef
-    if ((Blt_Picture_Flags(imgPtr->picture) & BLT_PIC_PREMULTIPLIED_COLORS) &&
+    if ((Blt_Picture_Flags(imgPtr->picture) & BLT_PIC_PREMULT_COLORS) &&
         ((sp->Alpha != 0xFF) && (sp->Alpha != 0x00))) {
         int bias = sp->Alpha >> 1;
 
@@ -3808,10 +3808,12 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         pixel.Blue  = (mul255(sp->Blue)  + bias) / sp->Alpha;
     }
 #endif
+#ifdef notdef
     fprintf(stderr, "[0x%02x][0x%02x][0x%02x][0x%02x] [0x%04x][0x%04x] [0x%08x]\n",
             sp->Blue, sp->Green, sp->Red, sp->Alpha,
             sp->u32 & 0xFFFF, sp->u32 >> 16,
             sp->u32); 
+#endif
     Tcl_SetObjResult(interp, Tcl_NewStringObj(Blt_NameOfPixel(&pixel), -1));
     return TCL_OK;
 }
@@ -4009,7 +4011,7 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     objPtr = Tcl_NewStringObj("ispremultipled", 12);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    state = srcPtr->flags & BLT_PIC_PREMULTIPLIED_COLORS;
+    state = srcPtr->flags & BLT_PIC_PREMULT_COLORS;
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
