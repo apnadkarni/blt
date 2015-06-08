@@ -15,7 +15,7 @@ source scripts/demo.tcl
 # ======================================================================
 
 option add *Axis.tickInterior yes
-option add *Axis.tickDefault 5
+option add *Axis.Divisions 5
 option add *Axis.Grid yes
 option add *Axis.GridColor lightblue
 option add *Legend.Hide yes

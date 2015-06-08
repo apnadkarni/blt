@@ -79,10 +79,6 @@ FILES 	= \
 		listview1.tcl \
 		listview2.tcl \
 		mbar1.tcl \
-		paneset1.tcl \
-		paneset2.tcl \
-		paneset3.tcl \
-		paneset4.tcl \
 		paneset5.tcl \
 		paneset6.tcl \
 		paneset7.tcl \

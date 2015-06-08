@@ -25,7 +25,7 @@ foreach label "displacement force strain" color "red green3 blue" units "in kip 
 	-margin left \
 	-loose yes \
 	-tickdirection $dir \
-	-tickdefault 2 \
+	-divisions 2 \
 	-grid yes \
 	-tickfont "{Sans Serif} 8"
 

@@ -666,7 +666,9 @@ The resource class is "Axis".  The resource names are the names of the axes
     decreasing.  The default is "0".
 
   **-descending** *boolean*
-    Same as the **-descending** option above.
+    Same as the **-decreasing** option above.
+
+  **-divisions** *numMajorTicks*
 
   **-foreground** *colorName*
 
@@ -823,8 +825,6 @@ The resource class is "Axis".  The resource names are the names of the axes
     is one, no minor ticks are displayed.  The default is "2".
 
   **-tickanchor** *anchorName*
-
-  **-tickdefault** *numMajorTicks*
 
   **-tickdirection** *direction*
     Indicates whether the ticks are interior to the plotting area or exterior.

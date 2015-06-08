@@ -14,7 +14,7 @@ source scripts/demo.tcl
 # ======================================================================
 
 #option add *x.range 20.0
-option add *Axis.tickDefault 4
+option add *Axis.divisions 4
 option add *Axis.tickLength 5
 option add *Axis.tickInterior yes
 option add *Axis.GridLines yes
