@@ -92,11 +92,7 @@ FILES 	= \
 		paneset6.tcl \
 		paneset7.tcl \
 		picture3.tcl \
-		picture4.tcl \
-		picture5.tcl \
 		picture6.tcl \
-		picture7.tcl \
-		colorblend.tcl \
 		pkgs.tcl \
 		ptyexec1.tcl \
 		ptyexec3.tcl \
@@ -126,8 +122,6 @@ FILES 	= \
 		treeview2.tcl \
 		resample.tcl \
 		rotate.tcl \
-		winop3.tcl \
-		winop4.tcl \
 		winop5.tcl \
 		winop6.tcl 
 
