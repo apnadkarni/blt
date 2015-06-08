@@ -13,7 +13,7 @@ proc MakeBusy {} {
 	       
 proc MakeUnbusy {} {
     if { [blt::busy isbusy .f1] } {
-	blt::busy release .f1
+	blt::busy forget .f1
 	blt::busy release .#menu
     }
 }

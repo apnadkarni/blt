@@ -2060,6 +2060,15 @@ Blt_GetTableFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 }
 #endif
 
+#ifdef notdef
+unsigned int
+Blt_FreeSamples(Sample *samplePtr)
+{
+    Blt_Free(samplePtr->buffer);
+    Blt_Free(samplePtr);
+}
+#endif
+
 unsigned int
 Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
                    Sample **samplePtrPtr)
@@ -7156,9 +7165,9 @@ Blt_FadeToColor(Pict *destPtr, Pict *fromPtr, Blt_Pixel *colorPtr,
 
     fromRowPtr = fromPtr->bits;
     destRowPtr = destPtr->bits;
-    color.Red = imul8x8(alpha, colorPtr->Red, t);
+    color.Red   = imul8x8(alpha, colorPtr->Red,   t);
     color.Green = imul8x8(alpha, colorPtr->Green, t);
-    color.Blue = imul8x8(alpha, colorPtr->Blue, t);
+    color.Blue  = imul8x8(alpha, colorPtr->Blue,  t);
     for (y = 0; y < destPtr->height; y++) {
         Blt_Pixel *sp, *dp, *send;
 
@@ -7166,9 +7175,9 @@ Blt_FadeToColor(Pict *destPtr, Pict *fromPtr, Blt_Pixel *colorPtr,
         for (send = sp + destPtr->width; sp < send; sp++, dp++) {
             int r, g, b, t;
             
-            r = imul8x8(beta, sp->Red, t) + color.Red;
-            g = imul8x8(beta, sp->Green, t) + color.Blue;
-            b = imul8x8(beta, sp->Blue, t) + color.Green;
+            r = color.Red    + imul8x8(beta, sp->Red, t);
+            g = color.Green  + imul8x8(beta, sp->Green, t);
+            b = color.Blue   + imul8x8(beta, sp->Blue, t);
             dp->Red   = UCLAMP(r);
             dp->Green = UCLAMP(g);
             dp->Blue  = UCLAMP(b);

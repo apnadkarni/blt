@@ -242,16 +242,18 @@ an example.
 OPAQUE BUSY WINDOWS
 -------------------
 
-If the busy window is semi-opaque (see the **--opacity** option), the window
-should not be resized while the window is busy.  A snapshot of the contents
-of the window is taken when the window becomes busy.  If the window is
-resized, the snapshot won't fit the window.  You can use the **wm
-resizable** command to prevent the window from being resized while it is
-busy. 
+If the busy window is semi-opaque (see the **--opacity** option), the
+window should not be resized while the window is busy.  A snapshot of the
+contents of the reference window is taken when the window becomes busy.  If
+the window is resized, the snapshot won't fit the reference window.  You
+can use the **wm resizable** command to prevent the reference window from
+being resized while it is busy.
 
-A second issue with opaque windows is that the window must be fully
-on-screen for the snapshot to be taken.  If it is partially obscurred or
-off-screen, an error will occur.
+If the reference window is partially off-screen, only the portion of the
+window that's on-screen will be snapped.  If the reference window is
+obscured by by another window, the top-level window associated with the
+reference window is raised before taking the snapshot.  If the reference
+window remains obscured an error will occur.
 
 EXAMPLE
 -------

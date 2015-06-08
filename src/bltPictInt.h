@@ -167,7 +167,13 @@ typedef struct {
     PixelWeight *wend;                  /* Points to just beyond the last
                                          * weight.  Tracks the number of
                                          * weights in array below. */
+#ifdef notdef
+    int numWeights;
+    void *buffer;
+    PixelWeight *start;
+#endif
     PixelWeight weights[1];             /* Array of weights. */
+    
 } Sample;
 
 typedef struct _Blt_Picture Pict;

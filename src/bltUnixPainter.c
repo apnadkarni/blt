@@ -1045,7 +1045,7 @@ DrawableToPicture(
 
     imgPtr = DrawableToXImage(p->display, drawable, x, y, w, h);
     if (imgPtr == NULL) {
-        int dw, dh;
+        int dx, dy, dw, dh;
 
         /* 
          * Failed to acquire an XImage from the drawable. The drawable may
@@ -1055,13 +1055,22 @@ DrawableToPicture(
          */
         /* FIXME: This only handles the case if the right/bottom is
          * obscurred.  Try this from the PaintPictureWithBlend. */
-        if (Blt_GetWindowRegion(p->display, drawable, (int *)NULL, (int *)NULL,
-                &dw, &dh) == TCL_OK) {
-            if ((x + w) > dw) {
-                w = dw - x;
+        if (Blt_GetWindowRegion(p->display, drawable, &dx, &dy, &dw, &dh)
+            == TCL_OK) {
+            unsigned int sw, sh;
+
+            Blt_GetRootWindowSize(p->display, drawable, &sw, &sh);
+            if ((dx + dw) > sw) {
+                dw = sw - dx;
             }
-            if ((y + h) > dh) {
-                h = dh - y;
+            if ((dy + dh) > sh) {
+                dw = sh - dh;
+            }
+            if (w > dw) {
+                w = dw;
+            }
+            if (h > dh) {
+                h = dh;
             }
             imgPtr = DrawableToXImage(p->display, drawable, x, y, w, h);
         }

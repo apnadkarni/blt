@@ -465,6 +465,68 @@ GetBusyWindowCoordinates(Busy *busyPtr, int *xPtr, int *yPtr)
     *yPtr = y;
 }
 
+
+static Blt_Picture
+SnapReferenceWindow(Tk_Window tkwin, int width, int height)
+{
+    int rootX, rootY;
+    int x, y;
+    int screenWidth, screenHeight;
+    int clipped;
+    Blt_Picture picture;
+    Tk_Window top;
+    
+    /* Raise the toplevel window that's associated with the reference
+     * window. */
+    top = Blt_Toplevel(tkwin);
+    Blt_RaiseToplevelWindow(top);
+    
+    /* Check if any portion of the window is off-screen. */
+    x = y = 0;
+    Tk_GetRootCoords(tkwin, &rootX, &rootY);
+    clipped = FALSE;
+    if (rootX < 0) {
+        width += rootX;
+        x = -rootX;
+        rootX = 0;
+        clipped++;
+    }
+    if (rootY < 0) {
+        height += rootY;
+        y = -rootY;
+        rootY = 0;
+        clipped++;
+    }
+    Blt_SizeOfScreen(tkwin, &screenWidth, &screenHeight);
+    if ((rootX > width) > screenWidth) {
+        width = screenWidth - rootX;
+        clipped++;
+    }
+    if ((rootY > height) > screenHeight) {
+        width = screenHeight - rootY;
+        clipped++;
+    }
+    /* Get a snapshot of the portion of the window that's on-screen. */
+    picture = Blt_DrawableToPicture(tkwin, Tk_WindowId(tkwin), x, y,
+                width, height, 1.0);
+    if (picture == NULL) {
+        Blt_Warn("can't grab window (possibly obscured?)\n");
+        return NULL;
+    }
+    if (clipped) {
+        Blt_Picture copy;
+        
+        /* If we only have a partial snapshot, create a picture are big as
+         * the reference window and copy the snapshot region into it.  */
+        copy = Blt_CreatePicture(Tk_Width(tkwin), Tk_Height(tkwin));
+        Blt_BlankPicture(copy, 0xFFFFFFFF);
+        Blt_CopyRegion(copy, picture, 0, 0, width, height, x, y);
+        Blt_FreePicture(picture);
+        picture = copy;
+    } 
+    return picture;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -490,25 +552,22 @@ SnapBackground(Busy *busyPtr)
         Blt_ResamplePicture(picture, busyPtr->original, bltMitchellFilter,
                             bltMitchellFilter);
     } else {
-        Tk_Window tkwin;
         Blt_Pixel color;
 
-        /* Create a snapshot of the reference window. */
-        tkwin = Blt_Toplevel(busyPtr->tkRef);
-        Blt_RaiseToplevelWindow(tkwin);
-        picture = Blt_DrawableToPicture(busyPtr->tkRef, 
-                Tk_WindowId(busyPtr->tkRef), 0, 0,
-                busyPtr->width, busyPtr->height, 1.0);
+        picture = SnapReferenceWindow(busyPtr->tkRef, busyPtr->width,
+                busyPtr->height);
         if (picture == NULL) {
-            Blt_Warn("can't grab window (possibly obscured?)\n");
             return;
         }
         busyPtr->original = picture;
         if (busyPtr->alpha != 0x0) {
             Blt_Picture fg;
+            int w, h;
             
+            w = Blt_Picture_Width(picture);
+            h = Blt_Picture_Height(picture);
             /* Fade to black. */
-            fg = Blt_CreatePicture(busyPtr->width, busyPtr->height);
+            fg = Blt_CreatePicture(w, h);
             color.u32 = busyPtr->fadeColor.u32;
             color.Alpha = busyPtr->alpha;
             Blt_BlankPicture(fg, color.u32);
