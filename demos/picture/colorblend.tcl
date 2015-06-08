@@ -2,8 +2,8 @@
 package require BLT
 
 
-set bg [image create picture -file ./images/blend.png]
-set fg [image create picture -file ./images/base.png]
+set bg [image create picture -file ../images/blend.png]
+set fg [image create picture -file ../images/base.png]
 
 set modes {
     colorburn
