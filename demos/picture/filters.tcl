@@ -1,11 +1,10 @@
 #!../src/bltwish
 
 package require BLT
-source scripts/demo.tcl
 
 set filter sinc
 set shadow 8
-set imgfile ./images/blt98.gif
+set imgfile ../images/blt98.gif
 if { [llength $argv] > 0 } {
     set imgfile [lindex $argv 0]
 }
