@@ -2,10 +2,6 @@
 
 package require BLT
 
-#set imgfile ./images/sample.gif
-if { [llength $argv] > 0 } {
-    set imgfile [lindex $argv 0]
-}
 set imgfile ./images/blt98.gif
 set src [image create picture -file $imgfile]  
 

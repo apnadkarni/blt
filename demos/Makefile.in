@@ -41,7 +41,6 @@ FILES 	= \
 		cbutton3.tcl \
 		cedit1.tcl \
 		centry1.tcl \
-		circle.tcl \
 		clist1.tcl \
 		cmenu1.tcl \
 		cmenu2.tcl \

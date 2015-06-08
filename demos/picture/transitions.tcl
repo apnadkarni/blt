@@ -1,9 +1,9 @@
 package require BLT
 
-set i1 [image create picture -file ../images/base.png]
+set i1 [image create picture -file ./images/base.png]
 set w [image width  $i1]
 set h [image height $i1]
-set i2 [image create picture -file ../images/blend.png]
+set i2 [image create picture -file ./images/blend.png]
 set i3 [image create picture -width $w -height $h]
 
 proc fade { value } {

@@ -3,7 +3,6 @@
 package require BLT
 source scripts/demo.tcl
 
-#set imgfile ./images/sample.gif
 set imgfile ./images/blt98.gif
 if { [llength $argv] > 0 } {
     set imgfile [lindex $argv 0]
