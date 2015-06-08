@@ -4,9 +4,10 @@ package require BLT
 blt::paneset .vps -orient vertical 
 blt::paneset .vps.hps  
 
-blt::graph .vps.g -height 400 -width 500
-blt::barchart .vps.hps.b  -height 400 -width 400 
-blt::barchart .vps.hps.b2 -height 400 -width 400 
+option add *Divisions 4
+blt::graph .vps.g -height 200 -width 250
+blt::barchart .vps.hps.b  -height 200 -width 250 
+blt::barchart .vps.hps.b2 -height 200 -width 250 
 
 .vps add -window .vps.g -fill both  
 .vps add -window .vps.hps -fill both 

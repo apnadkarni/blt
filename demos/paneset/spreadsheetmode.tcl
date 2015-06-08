@@ -3,9 +3,10 @@ package require BLT
 
 blt::paneset .ps -width 800 -mode spreadsheet 
 
-blt::graph .ps.g
-blt::barchart .ps.b
-blt::barchart .ps.b2
+option add *Divisions 4
+blt::graph .ps.g -height 300 
+blt::barchart .ps.b -height 300
+blt::barchart .ps.b2 -height 300 
 
 .ps add -window .ps.g -fill both 
 .ps add -window .ps.b -fill both 

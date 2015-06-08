@@ -1,8 +1,9 @@
 package require BLT
 
-blt::paneset .ps -height 900 \
+blt::paneset .ps -height 500 \
     -orient vertical
 
+option add *Divisions 4
 blt::graph .ps.g 
 blt::barchart .ps.b 
 blt::barchart .ps.b2 

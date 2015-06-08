@@ -33,9 +33,6 @@ FILES 	= \
 		bgexec5.tcl \
 		bitmap.tcl \
 		bitmap2.tcl \
-		busy1.tcl \
-		busy2.tcl \
-		busy3.tcl \
 		cbutton1.tcl \
 		cbutton2.tcl \
 		cbutton3.tcl \

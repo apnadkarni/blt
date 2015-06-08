@@ -1,7 +1,6 @@
 
 package require BLT
 
-set pictures [glob -nocomplain "*.jpg"]
 set autocolors {
 #0000cd
 #cd0000
@@ -38,7 +37,6 @@ set autocolors {
 }
 
 proc Move { w pane } {
-#    puts stderr "w=$w pane=$pane"
     .ps see $pane
 }
 
