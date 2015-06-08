@@ -124,8 +124,8 @@ FILES 	= \
 		tour.tcl \
 		treeview1.tcl \
 		treeview2.tcl \
-		winop1.tcl \
-		winop2.tcl \
+		resample.tcl \
+		rotate.tcl \
 		winop3.tcl \
 		winop4.tcl \
 		winop5.tcl \

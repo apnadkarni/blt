@@ -1,24 +1,19 @@
 #!../src/bltwish
 
 package require BLT
-source scripts/demo.tcl
 
 #set imgfile ./images/sample.gif
 if { [llength $argv] > 0 } {
     set imgfile [lindex $argv 0]
 }
 set imgfile ./images/blt98.gif
-if { [ file exists $imgfile] } {
-    set src [image create picture -file $imgfile]  
-} else {
-    puts stderr "no image file"
-    exit 0
-}
+set src [image create picture -file $imgfile]  
+
 set name [file root [file tail $imgfile]]
 set width [image width $src]
 set height [image height $src]
 
-option add *Label.background white
+option add *BltTkLabel.background white
 . configure -bg white
 set type gif
 set i 0
@@ -36,7 +31,6 @@ foreach scale { 1.0 0.8 0.6666666 0.5 0.4 0.3333333 0.3 0.25 0.2 0.15 0.1 } {
 	0,$i .header$i \
 	1,$i .l$i \
 	2,$i .footer$i
-    update
 }
 
 
