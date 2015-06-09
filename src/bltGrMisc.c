@@ -1370,7 +1370,7 @@ Blt_GetPrivateGC(
         } else {
             pixmap = Blt_GetPixmap(display, root, 1, 1, depth);
             drawable = pixmap;
-            Blt_SetDrawableAttribs(display, drawable, 1, 1, depth, 
+            Blt_SetDrawableAttributes(display, drawable, 1, 1, depth, 
                 Tk_Colormap(tkwin), Tk_Visual(tkwin));
         }
     }
@@ -1381,6 +1381,17 @@ Blt_GetPrivateGC(
     return gc;
 }
 
+#ifdef notdef
+void
+Blt_GetDrawable(tkwin, width, height)
+{
+    display = Tk_Display(tkwin);
+    root = Tk_Rootwindow(tkwin);
+    pixmap = Tk_GetPixmap(display, root, width, height, depth);
+    Blt_SetDrawableAttributes(display, pixmap, width, height, depth, 
+        Tk_Colormap(tkwin), Tk_Visual(tkwin));
+}
+#endif
 void
 Blt_FreePrivateGC(Display *display, GC gc)
 {

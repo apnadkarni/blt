@@ -304,29 +304,29 @@ BLT_EXTERN void		Blt_DeleteWindowInstanceData(Tk_Window tkwin);
 BLT_EXTERN int		Blt_ReparentWindow(Display *display, Window window,
 				Window newParent, int x, int y);
 #endif
-#ifndef Blt_GetDrawableAttribs_DECLARED
-#define Blt_GetDrawableAttribs_DECLARED
+#ifndef Blt_GetDrawableAttributes_DECLARED
+#define Blt_GetDrawableAttributes_DECLARED
 /* 50 */
-BLT_EXTERN Blt_DrawableAttributes * Blt_GetDrawableAttribs(Display *display,
+BLT_EXTERN Blt_DrawableAttributes * Blt_GetDrawableAttributes(Display *display,
 				Drawable drawable);
 #endif
-#ifndef Blt_SetDrawableAttribs_DECLARED
-#define Blt_SetDrawableAttribs_DECLARED
+#ifndef Blt_SetDrawableAttributes_DECLARED
+#define Blt_SetDrawableAttributes_DECLARED
 /* 51 */
-BLT_EXTERN void		Blt_SetDrawableAttribs(Display *display,
+BLT_EXTERN void		Blt_SetDrawableAttributes(Display *display,
 				Drawable drawable, int width, int height,
 				int depth, Colormap colormap, Visual *visual);
 #endif
-#ifndef Blt_SetDrawableAttribsFromWindow_DECLARED
-#define Blt_SetDrawableAttribsFromWindow_DECLARED
+#ifndef Blt_SetDrawableAttributesFromWindow_DECLARED
+#define Blt_SetDrawableAttributesFromWindow_DECLARED
 /* 52 */
-BLT_EXTERN void		Blt_SetDrawableAttribsFromWindow(Tk_Window tkwin,
+BLT_EXTERN void		Blt_SetDrawableAttributesFromWindow(Tk_Window tkwin,
 				Drawable drawable);
 #endif
-#ifndef Blt_FreeDrawableAttribs_DECLARED
-#define Blt_FreeDrawableAttribs_DECLARED
+#ifndef Blt_FreeDrawableAttributes_DECLARED
+#define Blt_FreeDrawableAttributes_DECLARED
 /* 53 */
-BLT_EXTERN void		Blt_FreeDrawableAttribs(Display *display,
+BLT_EXTERN void		Blt_FreeDrawableAttributes(Display *display,
 				Drawable drawable);
 #endif
 #ifndef Blt_GetBitmapGC_DECLARED
@@ -1497,10 +1497,10 @@ typedef struct BltTkIntProcs {
     void (*blt_SetWindowInstanceData) (Tk_Window tkwin, ClientData instanceData); /* 47 */
     void (*blt_DeleteWindowInstanceData) (Tk_Window tkwin); /* 48 */
     int (*blt_ReparentWindow) (Display *display, Window window, Window newParent, int x, int y); /* 49 */
-    Blt_DrawableAttributes * (*blt_GetDrawableAttribs) (Display *display, Drawable drawable); /* 50 */
-    void (*blt_SetDrawableAttribs) (Display *display, Drawable drawable, int width, int height, int depth, Colormap colormap, Visual *visual); /* 51 */
-    void (*blt_SetDrawableAttribsFromWindow) (Tk_Window tkwin, Drawable drawable); /* 52 */
-    void (*blt_FreeDrawableAttribs) (Display *display, Drawable drawable); /* 53 */
+    Blt_DrawableAttributes * (*blt_GetDrawableAttributes) (Display *display, Drawable drawable); /* 50 */
+    void (*blt_SetDrawableAttributes) (Display *display, Drawable drawable, int width, int height, int depth, Colormap colormap, Visual *visual); /* 51 */
+    void (*blt_SetDrawableAttributesFromWindow) (Tk_Window tkwin, Drawable drawable); /* 52 */
+    void (*blt_FreeDrawableAttributes) (Display *display, Drawable drawable); /* 53 */
     GC (*blt_GetBitmapGC) (Tk_Window tkwin); /* 54 */
     Pixmap (*blt_GetPixmapAbortOnError) (Display *dpy, Drawable draw, int w, int h, int depth, int lineNum, const char *fileName); /* 55 */
     void (*blt_ScreenDPI) (Tk_Window tkwin, int *xPtr, int *yPtr); /* 56 */
@@ -1899,21 +1899,21 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_ReparentWindow \
 	(bltTkIntProcsPtr->blt_ReparentWindow) /* 49 */
 #endif
-#ifndef Blt_GetDrawableAttribs
-#define Blt_GetDrawableAttribs \
-	(bltTkIntProcsPtr->blt_GetDrawableAttribs) /* 50 */
+#ifndef Blt_GetDrawableAttributes
+#define Blt_GetDrawableAttributes \
+	(bltTkIntProcsPtr->blt_GetDrawableAttributes) /* 50 */
 #endif
-#ifndef Blt_SetDrawableAttribs
-#define Blt_SetDrawableAttribs \
-	(bltTkIntProcsPtr->blt_SetDrawableAttribs) /* 51 */
+#ifndef Blt_SetDrawableAttributes
+#define Blt_SetDrawableAttributes \
+	(bltTkIntProcsPtr->blt_SetDrawableAttributes) /* 51 */
 #endif
-#ifndef Blt_SetDrawableAttribsFromWindow
-#define Blt_SetDrawableAttribsFromWindow \
-	(bltTkIntProcsPtr->blt_SetDrawableAttribsFromWindow) /* 52 */
+#ifndef Blt_SetDrawableAttributesFromWindow
+#define Blt_SetDrawableAttributesFromWindow \
+	(bltTkIntProcsPtr->blt_SetDrawableAttributesFromWindow) /* 52 */
 #endif
-#ifndef Blt_FreeDrawableAttribs
-#define Blt_FreeDrawableAttribs \
-	(bltTkIntProcsPtr->blt_FreeDrawableAttribs) /* 53 */
+#ifndef Blt_FreeDrawableAttributes
+#define Blt_FreeDrawableAttributes \
+	(bltTkIntProcsPtr->blt_FreeDrawableAttributes) /* 53 */
 #endif
 #ifndef Blt_GetBitmapGC
 #define Blt_GetBitmapGC \

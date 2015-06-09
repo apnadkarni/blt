@@ -3016,7 +3016,21 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     }
     {
         Blt_Picture picture;
-        
+
+        if (bx < 0) {
+            bw += bx;
+            bx = 0;
+        }
+        if (by < 0) {
+            bh += by;
+            by = 0;
+        }
+        if ((bx + bw) > Tk_Width(viewPtr->tkwin)) {
+            bw = Tk_Width(viewPtr->tkwin) - bx;
+        }
+        if ((by + bh) > Tk_Height(viewPtr->tkwin)) {
+            bh = Tk_Height(viewPtr->tkwin) - by;
+        }
         picture = (bool) ? stylePtr->selectedBox : stylePtr->normalBox;
         if (stylePtr->painter == NULL) {
             stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);

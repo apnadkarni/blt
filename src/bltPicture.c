@@ -6380,7 +6380,7 @@ Blt_ClassifyPicture(Pict *srcPtr)
             if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
                 flags |= BLT_PIC_COLOR;
             }
-            if (sp->Alpha > 0xFF) {
+            if (sp->Alpha != 0xFF) {
                 flags |= BLT_PIC_COMPOSITE;
             }
             if (flags == (BLT_PIC_COMPOSITE|BLT_PIC_COLOR)) {

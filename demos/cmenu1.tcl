@@ -35,22 +35,15 @@ blt::comboentry .e \
 #    -bg $bg 
 
 blt::combomenu .e.m  \
-    -background grey80 \
-    -activebackground skyblue4 \
-    -activeforeground white \
     -restrictwidth min \
     -height 200 \
-    -checkbuttonoutlinecolor "" \
-    -checkbuttonfillcolor "" \
-    -disabledbackground \#f0f0f0 \
     -textvariable myText1 \
     -iconvariable myIcon1 \
     -yscrollbar .e.m.ybar \
     -xscrollbar .e.m.xbar
-
-.e.m sort configure -auto 1
 blt::tk::scrollbar .e.m.xbar 
 blt::tk::scrollbar .e.m.ybar
+.e.m sort configure -auto 1
 
 set onOff 1
 set wwho ""
@@ -96,13 +89,9 @@ blt::combomenu .e.m.m  \
     -bg $bg \
     -textvariable myText1 \
     -iconvariable myIcon1 \
-    -disabledforeground grey45  \
-    -disabledbackground grey85  \
-    -disabledacceleratorforeground grey45  \
     -height { 0 500 } \
     -yscrollbar .e.m.m.ybar \
-    -xscrollbar .e.m.m.xbar \
-    -font "Arial 10" 
+    -xscrollbar .e.m.m.xbar 
 
 blt::tk::scrollbar .e.m.m.xbar 
 blt::tk::scrollbar .e.m.m.ybar 
@@ -226,9 +215,6 @@ blt::combomenu .e.m.m.m \
     -bg $bg \
     -textvariable myText1 \
     -iconvariable myIcon1 \
-    -disabledforeground grey45  \
-    -disabledbackground grey85  \
-    -disabledacceleratorforeground grey45  \
     -width  { 0 400 } \
     -height { 0 500 } \
     -yscrollbar .e.m.m.m.ybar \

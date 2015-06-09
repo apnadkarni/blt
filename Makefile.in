@@ -37,7 +37,7 @@ SHELL =		/bin/sh
 MKDIR_P =	@MKDIR_P@
 RM =		rm -f
 
-subdirs =	src library man demos 
+subdirs =	src library man 
 
 .PHONY: subdirs $(subdirs)
 

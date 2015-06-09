@@ -7823,9 +7823,7 @@ DrawEntryIcon(
 {
     int level;
     int maxY;
-    int top, bottom;
-    int topInset, botInset;
-    int iw, ih;
+    int ix, iy, iw, ih;
     
     level = DEPTH(viewPtr, entryPtr->node);
     ih = IconHeight(icon);
@@ -7838,19 +7836,23 @@ DrawEntryIcon(
     if (entryPtr->height > ih) {
         y += (entryPtr->height - ih) / 2;
     }
-    botInset = viewPtr->inset - INSET_PAD;
-    topInset = viewPtr->titleHeight + viewPtr->inset;
-    maxY = Tk_Height(viewPtr->tkwin) - botInset;
-    top = 0;
-    bottom = y + ih;
-    if (y < topInset) {
-        ih += y - topInset;
-        top = -y + topInset;
-        y = topInset;
-    } else if (bottom >= maxY) {
+    maxY = Tk_Height(viewPtr->tkwin) - (viewPtr->inset - INSET_PAD);
+    ix = iy = 0;
+    if (x < 0) {
+        iw += x;
+        ix -= x;
+    }
+    if ((x + iw) > Tk_Width(viewPtr->tkwin)) {
+        iw = Tk_Width(viewPtr->tkwin) - x;
+    }
+    if (y < 0) {
+        ih += y;
+        iy -= y;
+    }
+    if ((y + ih) >= maxY) {
         ih = maxY - y;
     }
-    Tk_RedrawImage(IconBits(icon), 0, top, iw, ih, drawable, x, y);
+    Tk_RedrawImage(IconBits(icon), ix, iy, iw, ih, drawable, x, y);
 } 
 
 

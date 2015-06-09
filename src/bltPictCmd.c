@@ -208,12 +208,12 @@ static Blt_HashTable procTable;
 /*
  * PictImage -- 
  *
- *      A PictImage implements a Tk_ImageMaster for the "picture" image
+ *      A PictImage implements a Tk_ImageMaster for the Blt_Picture image
  *      type.  It represents a set of bits (i.e. the picture), some
  *      options, and operations (sub-commands) to manipulate the picture.
  *
- *      The PictImage manages the TCL interface to a picture (using Tk's
- *      "image" command).  Pictures and the mechanics of drawing the
+ *      The PictImage manages the TCL interface to a Blt_Picture (using
+ *      Tk's "image" command).  Pictures and the mechanics of drawing the
  *      picture to the display (painters) are orthogonal.  The PictImage
  *      knows nothing about the display type (the display is stored only to
  *      free options when it's destroyed).  Information specific to the
@@ -280,10 +280,6 @@ typedef struct _Blt_PictureImage {
                                          * use this to write back the same
                                          * format if the user doesn't
                                          * specify the format. */
-    int doCache;                        /* If non-zero, indicates to
-                                         * generate a pixmap of the
-                                         * picture. The pixmap is cached *
-                                         * in the table below. */
     Blt_HashTable cacheTable;           /* Table of cache entries specific
                                          * to each visual context where
                                          * this picture is displayed. */
@@ -321,18 +317,8 @@ typedef struct {
  *      PictInstances (image instances in the Tk parlance) represent a
  *      picture image in some specific combination of visual, display,
  *      colormap, depth, and output gamma.  Cache entries are stored by
- *      each picture image.
- *
- *      The purpose is to 
- *              1) allocate and hold the painter-specific to the isual and 
- *              2) provide caching of XImage's (drawn pictures) into pixmaps.  
- *
- *      The caching feature is enabled only for 100% opaque pictures.  If
- *      the picture must be blended with the current background, there is
- *      no guarantee (between redraws) that the background will not have
- *      changed.  This feature is widget specific. There's no simple way to
- *      detect when the pixmap must be redrawn. In general, we should rely
- *      on the widget itself to perform its own caching of complex scenes.
+ *      each picture image. The purpose is to allocate and hold the 
+ *      painter-specific to the visual.
  */
 typedef struct {
     Blt_PictureImage image;             /* The picture image represented by
@@ -341,17 +327,12 @@ typedef struct {
                                          * particular combination of
                                          * visual, display, colormap,
                                          * depth, and gamma. */
-    Display *display;                   /* Used to free the pixmap below
-                                         * when the entry is destroyed. */
+    Display *display;                   
     Blt_HashEntry *hashPtr;             /* These two fields allow the
                                          * cache */
     Blt_HashTable *tablePtr;            /* Entry to be deleted from the
                                          * picture image's table of
                                          * entries. */
-    Pixmap pixmap;                      /* If non-NULL, is a cached pixmap
-                                         * of the picture. It's recreated
-                                         * each time the * picture
-                                         * changes. */
     int refCount;                       /* This entry may be shared by all
                                          * clients displaying this picture
                                          * image with the same painter. */
@@ -2012,9 +1993,6 @@ DestroyCache(DestroyData data)
     PictInstance *cachePtr = (PictInstance *)data;
     
     if (cachePtr->refCount <= 0) {
-        if (cachePtr->pixmap != None) {
-            Tk_FreePixmap(cachePtr->display, cachePtr->pixmap);
-        }
         if (cachePtr->painter != NULL) {
             Blt_FreePainter(cachePtr->painter);
         }
@@ -2065,7 +2043,6 @@ GetInstanceProc(
         cachePtr->painter = Blt_GetPainter(tkwin, imgPtr->gamma);
         cachePtr->image = imgPtr;
         cachePtr->display = Tk_Display(tkwin);
-        cachePtr->pixmap = None;
         cachePtr->hashPtr = hPtr;
         cachePtr->tablePtr = &imgPtr->cacheTable;
         cachePtr->refCount = 0;
@@ -2339,6 +2316,7 @@ DisplayProc(
     PictInstance *instPtr = clientData;
     PictImage *imgPtr;
     Blt_Picture picture;
+    unsigned int flags;
 
     imgPtr = instPtr->image;
     
@@ -2346,49 +2324,17 @@ DisplayProc(
     if (picture == NULL) {
         return;
     }
-    if ((instPtr->pixmap != None) && (Blt_Picture_IsDirty(picture))) {
-        Tk_FreePixmap(display, instPtr->pixmap);
-        instPtr->pixmap = None;
-    }
-    if ((imgPtr->doCache) && (Blt_Picture_IsOpaque(picture))) {
-        if (instPtr->pixmap == None) {
-            Pixmap pixmap;
-
-            /* Save the entire picture in the pixmap. */
-            pixmap = Blt_GetPixmap(display, drawable, 
-                Blt_Picture_Width(picture), 
-                Blt_Picture_Height(picture),
-                Blt_PainterDepth(instPtr->painter));
-            Blt_PaintPicture(instPtr->painter, drawable, picture,
-                0, 0, Blt_Picture_Width(picture), 
-                Blt_Picture_Height(picture), 
-                0, 0, imgPtr->flags);
-            instPtr->pixmap = pixmap;
-        }
-        /* Draw only the area that need to be repaired. */
-        XCopyArea(display, instPtr->pixmap, drawable, 
-                Blt_PainterGC(instPtr->painter), x, y, (unsigned int)w, 
-                (unsigned int)h, dx, dy);
-    } else {
-        unsigned int flags;
-
-        if (instPtr->pixmap != None) {
-            /* Kill the cached pixmap. */
-            Tk_FreePixmap(display, instPtr->pixmap);
-            instPtr->pixmap = None;
-        }
-        flags = 0;
-        if ((imgPtr->flags & DITHER) || 
-            (Blt_PainterDepth(instPtr->painter) < 15)) {
-            flags |= BLT_PAINTER_DITHER;
-        }
 #ifdef notdef
     fprintf(stderr, "DisplayProc drawable=%x, picture=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, picture, x, y, w, h, dx, dy);
 #endif
-        Blt_PaintPicture(instPtr->painter, drawable, picture, 
-                x, y, w, h, dx, dy, flags);
+    flags = 0;
+    if ((imgPtr->flags & DITHER) || 
+        (Blt_PainterDepth(instPtr->painter) < 15)) {
+        flags |= BLT_PAINTER_DITHER;
     }
+    Blt_PaintPicture(instPtr->painter, drawable, picture, x, y, w, h, dx, dy,
+        flags);
 }
 
 /*
@@ -2396,8 +2342,8 @@ DisplayProc(
  *
  * PostScriptProc --
  *
- *      This procedure is called to output the contents of a picture image in
- *      PostScript by calling the Tk_PostscriptPhoto function.
+ *      This procedure is called to output the contents of a picture image
+ *      in PostScript by calling the Tk_PostscriptPhoto function.
  *
  * Results:
  *      Returns a standard TCL return value.
@@ -2440,20 +2386,8 @@ PostScriptProc(
         Blt_Ps ps;
         Drawable drawable;
         PageSetup setup;
-        PictInstance *instPtr;
-        PictCacheKey *keyPtr;
 
-        instPtr = NULL;
-        keyPtr = CacheKey(tkwin, imgPtr->index);
-        hPtr = Blt_FindHashEntry(&imgPtr->cacheTable,(char *)keyPtr);
-        if (hPtr != NULL) {
-            instPtr = Blt_GetHashValue(hPtr);
-        }
-        if ((instPtr != NULL) && (instPtr->pixmap != None)) {
-            drawable = instPtr->pixmap;
-        } else {
-            drawable = Tk_WindowId(tkwin);
-        }
+        drawable = Tk_WindowId(tkwin);
         bg = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, imgPtr->gamma); 
         if (bg == NULL) {
             return TCL_ERROR;
@@ -2475,8 +2409,8 @@ PostScriptProc(
  *
  * BBoxSwitch --
  *
- *      Convert a Tcl_Obj list of 2 or 4 numbers into representing a bounding
- *      box structure.
+ *      Convert a Tcl_Obj list of 2 or 4 numbers into representing a
+ *      bounding box structure.
  *
  * Results:
  *      The return value is a standard TCL result.

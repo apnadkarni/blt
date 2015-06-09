@@ -311,9 +311,6 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
 #endif
     }
     destPtr = Blt_CreatePicture(width, height);
-    if (colorType & PNG_COLOR_MASK_ALPHA) {
-        Blt_ClassifyPicture(destPtr);
-    }
     if ((numChannels == 4) || (numChannels == 3)) {
         destPtr->flags |= BLT_PIC_COLOR;
     }
@@ -398,6 +395,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     }
     if (colorType & PNG_COLOR_MASK_ALPHA) {
         Blt_PremultiplyColors(destPtr);
+        Blt_ClassifyPicture(destPtr);
     } else {
         destPtr->flags |= BLT_PIC_PREMULT_COLORS;
     }

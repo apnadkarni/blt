@@ -2638,8 +2638,8 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
  *---------------------------------------------------------------------------
  */
 static void
-TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
-                     int x, int y)
+TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
+                     CellStyle *cellStylePtr, int x, int y)
 {
     Blt_Bg bg;
     CellKey *keyPtr;
@@ -2792,7 +2792,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         break;
     }
     if (stylePtr->icon != NULL) {
-        Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih,drawable, ix, iy);
+        Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih, drawable, ix, iy);
     }
     if (cellPtr->text != NULL) {
         TextStyle ts;
@@ -3284,7 +3284,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     }
     {
         Blt_Picture picture;
-        
+
         picture = (bool) ? stylePtr->selectedBox : stylePtr->normalBox;
         if (stylePtr->painter == NULL) {
             stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);

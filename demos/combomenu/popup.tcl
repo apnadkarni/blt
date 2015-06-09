@@ -1,15 +1,13 @@
 package require BLT
 
-blt::tk::button .quit -command exit -text "Quit"
+blt::tk::button .quit   -command exit -text "Quit"
 blt::tk::button .cancel -command exit -text "Cancel"
-blt::tk::button .cont -command exit -text "Continue"
+blt::tk::button .cont   -command exit -text "Continue"
 
 blt::combomenu .m  \
     -textvariable myText1  \
     -iconvariable myIcon1 \
-    -background grey90 \
-    -relief raised \
-    -font "arial 9" 
+    -relief raised 
 
 set image1 [image create picture -file ~/hubs/neeshub/indeed/src/icons/sensor/hidden/moment.png]
 set image2 [image create picture -file ~/hubs/neeshub/indeed/src/icons/sensor/moment.png]

@@ -40,9 +40,6 @@ FILES 	= \
 		centry1.tcl \
 		clist1.tcl \
 		cmenu1.tcl \
-		cmenu2.tcl \
-		cmenu3.tcl \
-		cmenu4.tcl \
 		container.tcl \
 		container3.tcl \
 		contour1.tcl \

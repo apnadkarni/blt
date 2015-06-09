@@ -57,10 +57,10 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_SetWindowInstanceData, /* 47 */
     Blt_DeleteWindowInstanceData, /* 48 */
     Blt_ReparentWindow, /* 49 */
-    Blt_GetDrawableAttribs, /* 50 */
-    Blt_SetDrawableAttribs, /* 51 */
-    Blt_SetDrawableAttribsFromWindow, /* 52 */
-    Blt_FreeDrawableAttribs, /* 53 */
+    Blt_GetDrawableAttributes, /* 50 */
+    Blt_SetDrawableAttributes, /* 51 */
+    Blt_SetDrawableAttributesFromWindow, /* 52 */
+    Blt_FreeDrawableAttributes, /* 53 */
     Blt_GetBitmapGC, /* 54 */
     Blt_GetPixmapAbortOnError, /* 55 */
     Blt_ScreenDPI, /* 56 */

@@ -107,6 +107,7 @@ typedef struct _Blt_Picture Pict;
 
 #define CLAMP(c)        ((((c) < 0.0) ? 0.0 : ((c) > 255.0) ? 255.0 : (c)))
 
+#define DEBUG 0
 
 static Blt_HashTable painterTable;
 static int initialized = 0;
@@ -314,9 +315,9 @@ QueryPalette(Painter *p, Blt_Pixel *palette)
         a = 1.0 / 257.0;
         cp = colors, dp = palette;
         for (i = 0; i < visualPtr->map_entries; i++) {
-            dp->Red =   (unsigned char)(cp->red * a + 0.5);
+            dp->Red   = (unsigned char)(cp->red   * a + 0.5);
             dp->Green = (unsigned char)(cp->green * a + 0.5);
-            dp->Blue =  (unsigned char)(cp->blue * a + 0.5);
+            dp->Blue  = (unsigned char)(cp->blue  * a + 0.5);
             cp++, dp++;
         }
     } else {
@@ -328,9 +329,9 @@ QueryPalette(Painter *p, Blt_Pixel *palette)
         a = 1.0 / 257.0;
         cp = colors, dp = palette;
         for (i = 0; i < visualPtr->map_entries; i++) {
-            dp->Red =   p->gammaTable[(int)(cp->red * a + 0.5)];
+            dp->Red   = p->gammaTable[(int)(cp->red   * a + 0.5)];
             dp->Green = p->gammaTable[(int)(cp->green * a + 0.5)];
-            dp->Blue =  p->gammaTable[(int)(cp->blue * a + 0.5)];
+            dp->Blue  = p->gammaTable[(int)(cp->blue  * a + 0.5)];
             cp++, dp++;
         }
     }
@@ -537,7 +538,6 @@ AllocateColors(Painter *p, XColor *colors, int numColors)
         p->numBlue);
 #endif
     XFreeColors(p->display, p->colormap, p->pixels, p->numPixels, 0);
-
     return FALSE;
 }
 
@@ -996,7 +996,9 @@ DrawableToXImage(
     Tk_DeleteErrorHandler(handler);
     XSync(display, False);
     if ((imgPtr == NULL) || (code != TCL_OK)) {
+#if DEBUG
         Blt_Warn("can't snap picture of drawable\n");
+#endif
         return NULL;
     }
     return imgPtr;
@@ -1034,34 +1036,31 @@ DrawableToPicture(
     int shift[4];
     unsigned char *srcRowPtr;
 
+    if (x < 0) {
+        w += x;
+        x = 0;
+    }
+    if (y < 0) {
+        h += y;
+        y = 0;
+    }
     imgPtr = DrawableToXImage(p->display, drawable, x, y, w, h);
     if (imgPtr == NULL) {
-        int dx, dy, dw, dh;
+        int dw, dh;
 
         /* 
          * Failed to acquire an XImage from the drawable. The drawable may
-         * be partially obscured or too small for the requested area.  Try
-         * it again, after fixing the area with the dimensions of the
-         * drawable.
+         * be partially obscured (if it's a window) or too small for the
+         * requested area.  Try it again, after fixing the area with the
+         * dimensions of the drawable.
          */
-        /* FIXME: This only handles the case if the right/bottom is
-         * obscurred.  Try this from the PaintPictureWithBlend. */
-        if (Blt_GetWindowRegion(p->display, drawable, &dx, &dy, &dw, &dh)
+        if (Blt_GetWindowRegion(p->display, drawable, NULL, NULL, &dw, &dh)
             == TCL_OK) {
-            unsigned int sw, sh;
-
-            Blt_GetRootWindowSize(p->display, drawable, &sw, &sh);
-            if ((dx + dw) > sw) {
-                dw = sw - dx;
+            if ((x + w) > dw) {
+                w = dw - x;
             }
-            if ((dy + dh) > sh) {
-                dw = sh - dh;
-            }
-            if (w > dw) {
-                w = dw;
-            }
-            if (h > dh) {
-                h = dh;
+            if ((y + h) > dh) {
+                h = dh - y;
             }
             imgPtr = DrawableToXImage(p->display, drawable, x, y, w, h);
         }
@@ -1840,110 +1839,6 @@ Blt_PaintPicture(
 }
 
 int
-Blt_PaintPicture2(
-    Blt_Painter painter,
-    Drawable drawable,
-    Blt_Picture picture,
-    int x, int y,                       /* Starting coordinates of
-                                         * subregion in the picture to be
-                                         * painted. */
-    int w, int h,                       /* Dimension of the subregion.  */
-    int dx, int dy,                     /* Coordinates of region in the
-                                         * drawable.  */
-    unsigned int flags)
-{
-    int x1, y1, x2, y2;
-
-    /* 
-     * Nothing to draw. The selected region is outside of the picture.
-     *
-     *   0,0
-     *    +---------+
-     *    |         |
-     *    | Picture |
-     *    |         |
-     *    +---------+
-     *              x,y
-     *               +-------+
-     *               |       |
-     *               |       | h
-     *               +-------+
-     *                   w
-     */
-    x1 = x, y1 = y, x2 = x + w, y2 = y1 + h;
-    if ((picture == NULL) || 
-        (x1 >= Blt_Picture_Width(picture))  || (x2 <= 0) ||
-        (y1 >= Blt_Picture_Height(picture)) || (y2 <= 0)) {
-        return TRUE;    
-    }
-    if (dx < 0) {                       
-        x1 -= dx;                       /* Add offset */
-        dx = 0;
-    } 
-    if (dy < 0) {
-        y1 -= dy;                       /* Add offset */
-        dy = 0;
-    }
-    /* 
-     * Correct the dimensions if the origin starts before the picture
-     * (i.e. coordinate is negative).  Reset the coordinate the 0.
-     *
-     * x,y                     
-     *   +---------+               0,0                 
-     *   |  +------|--------+       +------+--------+
-     * h |  |0,0   |        |       |      |        |
-     *   |  |      |        |       |      |        |
-     *   +--|------+        |       +------+        |
-     *    w |               |       |               |
-     *      |               |       |               |
-     *      +---------------+       +---------------+ 
-     *
-     */
-    if (x1 < 0) {               
-        x2 += x1;
-        x1 = 0;
-    }
-    if (y1 < 0) {
-        y2 += y1;
-        y1 = 0;
-    }
-    /* 
-     * Check that the given area does not extend beyond the end of the
-     * picture.
-     * 
-     *   0,0                        0,0
-     *    +-----------------+        +-----------------+                
-     *    |                 |        |                 |
-     *    |        x,y      |        |        x,y      |                
-     *    |         +---------+      |         +-------+
-     *    |         |       | |      |         |       |
-     *    |         |       | | w    |         |       |
-     *    +---------|-------+ |      +---------+-------+
-     *              +---------+                    
-     *                   h
-     *                                                    
-     * Clip the end of the area if it's too big.
-     */
-    if ((x2 - x1) > Blt_Picture_Width(picture)) {
-        x2 = x1 + Blt_Picture_Width(picture);
-    }
-    if ((y2 - y1) > Blt_Picture_Height(picture)) {
-        y2 = y1 + Blt_Picture_Height(picture);
-    }
-    /* Check that there's still something to paint. */
-    if (((x2 - x1) <= 0) || ((y2 - y1) <= 0)) {
-        return TRUE;
-    }
-    if (Blt_Picture_IsOpaque(picture)) {
-        return PaintPicture(painter, drawable, picture, x1, y1, x2 - x1, 
-                            y2 - y1, dx, dy, flags);
-    } else {
-        return PaintPictureWithBlend(painter, drawable, picture, x1, y1, 
-                x2 - x1, y2 - y1, dx, dy, flags);
-    }
-}
-
-int
 Blt_PaintPictureWithBlend(
     Blt_Painter painter,
     Drawable drawable,
@@ -2068,7 +1963,7 @@ Blt_GetPainterFromDrawable(Display *display, Drawable drawable, float gamma)
     {
         Blt_DrawableAttributes *attrPtr;
 
-        attrPtr = Blt_GetDrawableAttribs(display, drawable);
+        attrPtr = Blt_GetDrawableAttributes(display, drawable);
         if ((attrPtr != NULL) && (attrPtr->visual != NULL)) {
             p = GetPainter(display, attrPtr->colormap, attrPtr->visual, 
                 attrPtr->depth, gamma);

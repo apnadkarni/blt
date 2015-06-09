@@ -2234,12 +2234,14 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
     Blt_Shadow_Set(&shadow, 1, 1, 0x0, 0xA0);
     brush = Blt_NewColorBrush(0x00000000);
     x = y = 0;
+    destPtr->flags |= BLT_PIC_COMPOSITE;
     if (fillColorPtr != NULL) {
         Blt_Pixel color;
 
         color.u32 = Blt_XColorToPixel(fillColorPtr);
         Blt_SetColorBrushColor(brush, color.u32);
         Blt_PaintRectangle(destPtr, x+1, y+1, w-2, h-2, 0, 0, brush, TRUE);
+        destPtr->flags &= ~BLT_PIC_COMPOSITE;
     }
     if (outlineColorPtr != NULL) {
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(outlineColorPtr));
@@ -2270,7 +2272,7 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
         PaintPolygonAA2(destPtr, 7, points, &r, brush, &shadow);
     }
     Blt_FreeBrush(brush);
-    destPtr->flags |= BLT_PIC_COMPOSITE | BLT_PIC_PREMULT_COLORS;
+    destPtr->flags |= BLT_PIC_PREMULT_COLORS;
     return destPtr;
 }
 

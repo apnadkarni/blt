@@ -304,6 +304,20 @@ BLT_EXTERN int Blt_ReparentWindow (Display *display, Window window,
 extern void Blt_RegisterPictureImageType(Tcl_Interp *interp);
 extern void Blt_RegisterEpsCanvasItem(void);
 
+typedef struct {
+    Drawable id;
+    Tk_Window tkwin;
+    unsigned int flags;
+    unsigned short int width, height;
+    int depth;
+    Colormap colormap;
+    Visual *visual;
+    Screen *screen;
+    int refCount;
+} Blt_Draw;
+
+#define BLT_DRAW_PIXMAP (1<<0)
+
 
 typedef struct {
     Drawable id;
@@ -311,18 +325,19 @@ typedef struct {
     int depth;
     Colormap colormap;
     Visual *visual;
+    int refCount;
 } Blt_DrawableAttributes;
 
-BLT_EXTERN Blt_DrawableAttributes *Blt_GetDrawableAttribs(Display *display,
+BLT_EXTERN Blt_DrawableAttributes *Blt_GetDrawableAttributes(Display *display,
         Drawable drawable);
 
-BLT_EXTERN void Blt_SetDrawableAttribs(Display *display, Drawable drawable,
+BLT_EXTERN void Blt_SetDrawableAttributes(Display *display, Drawable drawable,
         int width, int height, int depth, Colormap colormap, Visual *visual);
 
-BLT_EXTERN void Blt_SetDrawableAttribsFromWindow(Tk_Window tkwin, 
+BLT_EXTERN void Blt_SetDrawableAttributesFromWindow(Tk_Window tkwin, 
         Drawable drawable);
 
-BLT_EXTERN void Blt_FreeDrawableAttribs(Display *display, Drawable drawable);
+BLT_EXTERN void Blt_FreeDrawableAttributes(Display *display, Drawable drawable);
 
 BLT_EXTERN GC Blt_GetBitmapGC(Tk_Window tkwin);
 

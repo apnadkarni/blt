@@ -63,7 +63,7 @@ static Blt_HashTable attribTable;
 static int initialized = FALSE;
 
 Blt_DrawableAttributes *
-Blt_GetDrawableAttribs(Display *display, Drawable drawable)
+Blt_GetDrawableAttributes(Display *display, Drawable drawable)
 {
     if (drawable != None) {
         Blt_HashEntry *hPtr;
@@ -86,13 +86,8 @@ Blt_GetDrawableAttribs(Display *display, Drawable drawable)
 }
 
 void
-Blt_SetDrawableAttribs(
-    Display *display,
-    Drawable drawable, 
-    int depth,
-    int width, int height,
-    Colormap colormap,
-    Visual *visual)
+Blt_SetDrawableAttributes(Display *display, Drawable drawable, int depth,
+    int width, int height, Colormap colormap, Visual *visual)
 {
     if (drawable != None) {
         Blt_DrawableAttributes *attrPtr;
@@ -111,8 +106,10 @@ Blt_SetDrawableAttribs(
         if (isNew) {
             attrPtr = Blt_AssertMalloc(sizeof(Blt_DrawableAttributes));
             Blt_SetHashValue(hPtr, attrPtr);
+            attrPtr->refCount = 1;
         }  else {
             attrPtr = Blt_GetHashValue(hPtr);
+            attrPtr->refCount++;
         }
         /* Set or reset information for drawable. */
         attrPtr->id = drawable;
@@ -125,39 +122,55 @@ Blt_SetDrawableAttribs(
 }
 
 void
-Blt_SetDrawableAttribsFromWindow(Tk_Window tkwin, Drawable drawable)
+Blt_SetDrawableAttributesFromWindow(Tk_Window tkwin, Drawable drawable)
 {
     if (drawable != None) {
-        Blt_SetDrawableAttribs(Tk_Display(tkwin), drawable, Tk_Width(tkwin), 
+        Blt_SetDrawableAttributes(Tk_Display(tkwin), drawable, Tk_Width(tkwin), 
                 Tk_Height(tkwin), Tk_Depth(tkwin), Tk_Colormap(tkwin), 
                 Tk_Visual(tkwin));
     }
 }
 
 void
-Blt_FreeDrawableAttribs(Display *display, Drawable drawable)
+Blt_FreeDrawableAttributes(Display *display, Drawable drawable)
 {
     Blt_HashEntry *hPtr;
     DrawableKey key;
 
-    if (drawable != None) {
-        if (!initialized) {
-            Blt_InitHashTable(&attribTable, sizeof(DrawableKey)/sizeof(int));
-            initialized = TRUE;
-        }
-        memset(&key, 0, sizeof(key));
-        key.drawable = drawable;
-        key.display = display;
-        hPtr = Blt_FindHashEntry(&attribTable, &key);
-        if (hPtr != NULL) {
-            Blt_DrawableAttributes *attrPtr;
+    if (drawable == None) {
+        return;
+    }
+    if (!initialized) {
+        Blt_InitHashTable(&attribTable, sizeof(DrawableKey)/sizeof(int));
+        initialized = TRUE;
+    }
+    memset(&key, 0, sizeof(key));
+    key.drawable = drawable;
+    key.display = display;
+    hPtr = Blt_FindHashEntry(&attribTable, &key);
+    if (hPtr != NULL) {
+        Blt_DrawableAttributes *attrPtr;
             
-            attrPtr = Blt_GetHashValue(hPtr);
+        attrPtr = Blt_GetHashValue(hPtr);
+        attrPtr->refCount--;
+        if (attrPtr->refCount <= 0) {
             Blt_DeleteHashEntry(&attribTable, hPtr);
             Blt_Free(attrPtr);
         }
     }
 }
+
+#ifdef notdef
+Blt_Draw *
+Blt_GetPixmap(Display *display, Window id, int w, int h, int depth)
+{
+    pixmap = Tk_GetPixmap(display, id, w, h, depth);
+    drawPtr = Blt_SetDrawableAttributes(display, pixmap, int depth,
+        int w, int h, Colormap colormap, Visual *visual);
+    drawPtr->id = pixmap;
+    return drawPtr;
+}
+#endif
 
 /*
  *---------------------------------------------------------------------------

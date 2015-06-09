@@ -477,21 +477,22 @@ Blt_ScaleBitmap(
 Pixmap
 Blt_ScaleRotateBitmapArea(
     Tk_Window tkwin,
-    Pixmap srcBitmap,           /* Source bitmap. */
+    Pixmap srcBitmap,                   /* Source bitmap. */
     unsigned int srcWidth, 
-    unsigned int srcHeight,     /* Size of source bitmap */
+    unsigned int srcHeight,             /* Size of source bitmap */
     int regionX, 
-    int regionY,                /* Offset of region in virtual
-                                 * destination bitmap. */
+    int regionY,                        /* Offset of region in virtual
+                                         * destination bitmap. */
     unsigned int regionWidth, 
-    unsigned int regionHeight,  /* Desire size of bitmap region. */
+    unsigned int regionHeight,          /* Desire size of bitmap region. */
     unsigned int virtWidth,             
-    unsigned int virtHeight,    /* Virtual size of destination bitmap. */
-    float angle)                /* Angle to rotate bitmap.  */
+    unsigned int virtHeight,            /* Virtual size of destination
+                                         * bitmap. */
+    float angle)                        /* Angle to rotate bitmap.  */
 {
-    Display *display;           /* X display */
+    Display *display;                   /* X display */
     Pixmap destBitmap;
-    Window root;                /* Root window drawable */
+    Window root;                        /* Root window drawable */
     double rWidth, rHeight;
     double xScale, yScale;
     int srcBytesPerRow, destBytesPerRow;
@@ -531,7 +532,7 @@ Blt_ScaleRotateBitmapArea(
 
         quadrant = (int)(angle / 90.0);
         switch (quadrant) {
-        case ROTATE_270:        /* 270 degrees */
+        case ROTATE_270:                /* 270 degrees */
             for (y = 0; y < (int)regionHeight; y++) {
                 int sx, x;
 
@@ -549,7 +550,7 @@ Blt_ScaleRotateBitmapArea(
             }
             break;
 
-        case ROTATE_180:        /* 180 degrees */
+        case ROTATE_180:                /* 180 degrees */
             for (y = 0; y < (int)regionHeight; y++) {
                 int sy, x;
 
@@ -567,7 +568,7 @@ Blt_ScaleRotateBitmapArea(
             }
             break;
 
-        case ROTATE_90:         /* 90 degrees */
+        case ROTATE_90:                 /* 90 degrees */
             for (y = 0; y < (int)regionHeight; y++) {
                 int sx, x;
 
@@ -585,7 +586,7 @@ Blt_ScaleRotateBitmapArea(
             }
             break;
 
-        case ROTATE_0:          /* 0 degrees */
+        case ROTATE_0:                  /* 0 degrees */
             for (y = 0; y < (int)regionHeight; y++) {
                 int sy, x;
 
@@ -609,17 +610,18 @@ Blt_ScaleRotateBitmapArea(
         }
     } else {
         double theta, sinTheta, cosTheta;
-        double scx, scy;        /* Offset from the center of the
-                                 * source rectangle. */
-        double rcx, rcy;        /* Offset to the center of the
-                                 * rotated rectangle. */
+        double scx, scy;                /* Offset from the center of the
+                                         * source rectangle. */
+        double rcx, rcy;                /* Offset to the center of the
+                                         * rotated rectangle. */
         int y;
 
         theta = angle * DEG2RAD;
         sinTheta = sin(theta), cosTheta = cos(theta);
 
         /*
-         * Coordinates of the centers of the source and destination rectangles
+         * Coordinates of the centers of the source and destination
+         * rectangles.
          */
         scx = srcWidth * 0.5;
         scy = srcHeight * 0.5;
@@ -631,12 +633,15 @@ Blt_ScaleRotateBitmapArea(
 
         for (y = 0; y < (int)regionHeight; y++) {
             int x;
-            double ty;          /* Translated coordinates from center */
+            double ty;                  /* Translated coordinates from
+                                         * center */
 
             ty = (yScale * (double)(y + regionY)) - rcy;
             for (x = 0; x < (int)regionWidth; x++) {
-                double rx, ry;  /* Angle of rotation for x and y coordinates */
-                double tx;      /* Translated coordinates from center */
+                double rx, ry;          /* Angle of rotation for x and y
+                                         * coordinates */
+                double tx;              /* Translated coordinates from
+                                         * center */
                 int sx, sy;
                 unsigned long pixel;
 
@@ -655,10 +660,9 @@ Blt_ScaleRotateBitmapArea(
                 sy = ROUND(ry);
 
                 /*
-                 * Verify the coordinates, since the destination image can be
-                 * bigger than the source.
+                 * Verify the coordinates, since the destination image can
+                 * be bigger than the source.
                  */
-
                 if ((sx >= (int)srcWidth) || (sx < 0) || 
                     (sy >= (int)srcHeight) || (sy < 0)) {
                     continue;
