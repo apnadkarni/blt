@@ -518,8 +518,8 @@ BLT_EXTERN void		Blt_FadeColor(Blt_Pixel *colorPtr,
 #ifndef Blt_Dissolve2_DECLARED
 #define Blt_Dissolve2_DECLARED
 /* 86 */
-BLT_EXTERN int		Blt_Dissolve2(Blt_Picture dest, Blt_Picture src,
-				long start, int numSteps);
+BLT_EXTERN long		Blt_Dissolve2(Blt_Picture dest, Blt_Picture src,
+                                long start, long finish);
 #endif
 #ifndef Blt_CrossFadePictures_DECLARED
 #define Blt_CrossFadePictures_DECLARED
@@ -664,7 +664,7 @@ typedef struct BltTkProcs {
     void (*blt_Shadow_Set) (Blt_Shadow *sPtr, int width, int offset, int color, int alpha); /* 83 */
     Blt_Picture (*blt_EmbossPicture) (Blt_Picture picture, double azimuth, double elevation, unsigned short width45); /* 84 */
     void (*blt_FadeColor) (Blt_Pixel *colorPtr, unsigned int alpha); /* 85 */
-    int (*blt_Dissolve2) (Blt_Picture dest, Blt_Picture src, long start, int numSteps); /* 86 */
+    long (*blt_Dissolve2) (Blt_Picture dest, Blt_Picture src, long start, long finish); /* 86 */
     void (*blt_CrossFadePictures) (Blt_Picture dest, Blt_Picture from, Blt_Picture to, double opacity); /* 87 */
     void (*blt_FadeFromColor) (Blt_Picture dest, Blt_Picture to, Blt_Pixel *colorPtr, double opacity); /* 88 */
     void (*blt_FadeToColor) (Blt_Picture dest, Blt_Picture from, Blt_Pixel *colorPtr, double opacity); /* 89 */

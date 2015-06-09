@@ -1648,7 +1648,7 @@ DisplayButton(ClientData clientData)
      * point in time where the on-sreen image has been cleared.
      */
 
-    pixmap = Blt_GetPixmap(butPtr->display, Tk_WindowId(tkwin),
+    pixmap = Tk_GetPixmap(butPtr->display, Tk_WindowId(tkwin),
         Tk_Width(tkwin), Tk_Height(tkwin), Tk_Depth(tkwin));
     Blt_Bg_FillRectangle(tkwin, pixmap, bg, 0, 0, Tk_Width(tkwin),
         Tk_Height(tkwin), 0, TK_RELIEF_FLAT);
@@ -1658,13 +1658,13 @@ DisplayButton(ClientData clientData)
      */
 
     if (butPtr->image != None) {
-        Tk_SizeOfImage(butPtr->image, &width, &height);
+        int iw, ih;
 
+        Tk_SizeOfImage(butPtr->image, &iw, &ih);
       imageOrBitmap:
         TkComputeAnchor(butPtr->anchor, tkwin, butPtr->xPad, butPtr->yPad,
-            butPtr->indicatorSpace + width, height, &x, &y);
+            butPtr->indicatorSpace + iw, ih, &x, &y);
         x += butPtr->indicatorSpace;
-
         x += offset;
         y += offset;
         if (relief == TK_RELIEF_RAISED) {
@@ -1675,12 +1675,28 @@ DisplayButton(ClientData clientData)
             y += offset;
         }
         if (butPtr->image != NULL) {
+            int dx, dy;
+            
+            dx = x, dy = y;
+            if (dx < 0) {
+                iw += dx;
+                dx = 0;
+            }
+            if (dy < 0) {
+                ih += dy;
+                dy = 0;
+            }
+            if ((dx + iw) > Tk_Width(tkwin)) {
+                iw = Tk_Width(tkwin) - dx;
+            }
+            if ((dy + ih) > Tk_Height(tkwin)) {
+                ih = Tk_Height(tkwin) - dy;
+            }
             if ((butPtr->selectImage != NULL) && (butPtr->flags & SELECTED)) {
-                Tk_RedrawImage(butPtr->selectImage, 0, 0, width, height, pixmap,
-                    x, y);
+                Tk_RedrawImage(butPtr->selectImage, 0, 0, iw, ih, pixmap,
+                    dx, dy);
             } else {
-                Tk_RedrawImage(butPtr->image, 0, 0, width, height, pixmap,
-                    x, y);
+                Tk_RedrawImage(butPtr->image, 0, 0, iw, ih, pixmap, dx, dy);
             }
         } else {
             XSetClipOrigin(butPtr->display, gc, x, y);

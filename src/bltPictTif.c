@@ -576,7 +576,7 @@ PictureToTif(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
         Tcl_AppendResult(interp, "can't register TIF procs: ", (char *)NULL);
         return TCL_ERROR;
     }
-    Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
+    Blt_ClassifyPicture(srcPtr);
     if (Blt_Picture_IsColor(srcPtr)) {
         samplesPerPixel = (Blt_Picture_IsOpaque(srcPtr)) ? 3 : 4;
         photometric = PHOTOMETRIC_RGB;

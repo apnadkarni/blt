@@ -2819,7 +2819,7 @@ Blt_SetColorBrushColor(Blt_PaintBrush brush, unsigned int value)
 
     brushPtr->reqColor.u32 = value;
     brushPtr->color.u32 = brushPtr->reqColor.u32;
-    brushPtr->color.Alpha = brushPtr->alpha;
+    brushPtr->alpha = brushPtr->color.Alpha;
     Blt_PremultiplyColor(&brushPtr->color);
 }
 

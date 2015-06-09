@@ -844,8 +844,7 @@ The resource class is "Axis".  The resource names are the names of the axes
   **-ticklength** *numPixels*
     Specifies the length of major and minor ticks (minor ticks are half the
     length of major ticks). *NumPixels* may have any of the forms
-    acceptable to **Tk_GetPixels**.  If *numPixels* is less than zero, the
-    ticks drawn pointing towards the plot.  The default is "0.1i".
+    acceptable to **Tk_GetPixels**. The default is "8".
 
   **-timescale** *boolean*
     Indicates whether the scale of the axis scale is time.  If *boolean*

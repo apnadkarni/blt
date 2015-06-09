@@ -1180,7 +1180,7 @@ PaintPicture(
     Picture *ditherPtr;
 
     ditherPtr = NULL;
-    if (flags & BLT_PAINTER_DITHER) {
+    if (flags & BLT_hPAINTER_DITHER) {
         ditherPtr = Blt_DitherPicture(srcPtr, painterPtr->palette);
         if (ditherPtr != NULL) {
             srcPtr = ditherPtr;

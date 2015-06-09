@@ -791,6 +791,7 @@ PictureToJpg(
     cinfo.image_width = srcPtr->width;
     cinfo.image_height = srcPtr->height;
 
+    Blt_ClassifyPicture(srcPtr);
     if (!Blt_Picture_IsOpaque(srcPtr)) {
         Blt_Picture background;
 

@@ -109,36 +109,27 @@ struct _Blt_Picture {
 
 #define BLT_PIC_COLOR  (1<<0)           /* Indicates if picture is color or
                                          * greyscale. */
-#define BLT_PIC_COMPOSITE (1<<1)           /* Picture has partially opaque
-                                         * pixels. */
-#define BLT_PIC_MASK   (1<<2)           /* Pixels are either 100% opaque or
-                                         * transparent. The separate ALPHAS
-                                         * and MASK flags are so that don't
-                                         * premultiply alphas for masks. */
-
-#define BLT_PIC_PREMULT_COLORS (1<<3)/* Indicates if RGB components have
+#define BLT_PIC_PREMULT_COLORS (1<<2)   /* Indicates if RGB components have
                                          * been premultiplied by their
                                          * alphas. */
-
-#define BLT_PIC_DIRTY (1<<4)            /* Indicates that the picture
+#define BLT_PIC_DIRTY (1<<3)            /* Indicates that the picture
                                          * contents have changed. Cached
                                          * items may need to be
                                          * refreshed. For example, may need
                                          * to premultiply alphas again. */ 
 
-#define BLT_PIC_UNINITIALIZED (1<<5)    /* Indicates that the contents of
+#define BLT_PIC_COMPOSITE (1<<5)        /* Picture has partially opaque
+                                         * pixels. */
+#define BLT_PIC_MASK   (1<<6)           /* Pixels are either 100% opaque or
+                                         * transparent. The separate ALPHAS
+                                         * and MASK flags are so that don't
+                                         * premultiply alphas for masks. */
+
+#define BLT_PIC_UNINITIALIZED (1<<10)   /* Indicates that the contents of
                                          * the picture haven't been
                                          * initialized yet. */
 
-#define BLT_PAINTER_DITHER              (1<<10)
-
-#define BLT_PAINTER_BLEND_MASK          (0x0F)
-#define BLT_PAINTER_BLEND_NONE          (0)
-#define BLT_PAINTER_BLEND_MIN_ALPHAS    (1<<1)
-#define BLT_PAINTER_BLEND_MAX_ALPHAS    (1<<2)
-#define BLT_PAINTER_BLEND_DIFF          (1<<3)
-#define BLT_PAINTER_BLEND_MULTIPLY      (1<<4)
-#define BLT_PAINTER_BLEND_UNDER         (1<<6)
+#define BLT_PAINTER_DITHER (1<<10)
 
 typedef struct _Blt_PictureImage *Blt_PictureImage;
 typedef struct _Blt_ResampleFilter *Blt_ResampleFilter;
@@ -160,13 +151,12 @@ struct _Blt_Chain;
 #define Blt_Picture_Stride(p)    ((p)->pixelsPerRow)
 #define Blt_Picture_Delay(p)     ((p)->delay)
 
-#define Blt_Picture_IsDirty(p)  ((p)->flags & BLT_PIC_DIRTY)
-#define Blt_Picture_IsOpaque(p) \
-        (((p)->flags & (BLT_PIC_COMPOSITE | BLT_PIC_MASK)) == 0)
-#define Blt_Picture_IsMasked(p)  ((p)->flags &  BLT_PIC_MASK) 
-#define Blt_Picture_IsBlended(p) ((p)->flags &  BLT_PIC_COMPOSITE)
-#define Blt_Picture_IsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
-#define Blt_Picture_IsGreyscale(p)   (!Blt_Picture_IsColor(p))
+#define Blt_Picture_IsDirty(p)   ((p)->flags & BLT_PIC_DIRTY)
+#define Blt_Picture_IsOpaque(p)  (((p)->flags & BLT_PIC_COMPOSITE) == 0)
+#define Blt_Picture_IsMasked(p)  ((p)->flags & BLT_PIC_MASK) 
+#define Blt_Picture_IsBlended(p) ((p)->flags & BLT_PIC_COMPOSITE)
+#define Blt_Picture_IsColor(p)   ((p)->flags & BLT_PIC_COLOR)
+#define Blt_Picture_IsGreyscale(p)   (((p)->flags & BLT_PIC_COLOR) == 0)
 #define Blt_Picture_IsPremultiplied(p) ((p)->flags & BLT_PIC_PREMULT_COLORS)
 
 typedef enum PictureArithOps {
@@ -457,8 +447,8 @@ BLT_EXTERN Blt_Picture Blt_EmbossPicture(Blt_Picture picture, double azimuth,
         double elevation, unsigned short width45);
 BLT_EXTERN void Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha);
 
-BLT_EXTERN int Blt_Dissolve2(Blt_Picture dest, Blt_Picture src, long start,
-        int numSteps);
+BLT_EXTERN long Blt_Dissolve2(Blt_Picture dest, Blt_Picture src, long start,
+        long finish);
 BLT_EXTERN void Blt_CrossFadePictures(Blt_Picture dest, Blt_Picture from,
         Blt_Picture to, double opacity);
 BLT_EXTERN void Blt_FadeFromColor(Blt_Picture dest, Blt_Picture to,

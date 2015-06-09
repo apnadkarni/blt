@@ -393,6 +393,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
     bgColorPtr = &switchesPtr->bg;
 
     srcPtr = original;
+    Blt_ClassifyPicture(srcPtr);
     if (Blt_Picture_IsBlended(srcPtr)) {
         Blt_Picture background, mask;
         Blt_Pixel black, white;

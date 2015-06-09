@@ -1520,6 +1520,7 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     Blt_InitHashTable(&tga.colorTable, BLT_ONE_WORD_KEYS);
     tga.initialized = TRUE;
     tga.isRle = (writerPtr->flags & EXPORT_RLE) ? TGA_RLE : 0;
+    Blt_ClassifyPicture(srcPtr);
     numColors = Blt_QueryColors(srcPtr, &tga.colorTable); 
     if ((writerPtr->flags & EXPORT_ALPHA) && 
         (srcPtr->flags & (BLT_PIC_COMPOSITE|BLT_PIC_MASK))) {

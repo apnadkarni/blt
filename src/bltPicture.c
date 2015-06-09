@@ -6323,10 +6323,8 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
     Blt_Pixel *srcRowPtr;
     int y;
     int numColors;
-    unsigned int flags;
     int isAssociated;
-
-    flags = 0;
+    
     if (tablePtr == NULL) {
         Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
         tablePtr = &colorTable;
@@ -6344,22 +6342,7 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
             Blt_Pixel color;
             unsigned long key;
 
-            if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
-                flags |= BLT_PIC_COLOR;
-            }
-            if (sp->Alpha != ALPHA_OPAQUE) {
-#ifdef notdef
-                fprintf(stderr, "Alpha at [%d,%d] = %x\n",
-                        sp - srcRowPtr, y, sp->Alpha);
-#endif
-                if (sp->Alpha == ALPHA_TRANSPARENT) {
-                    flags |= BLT_PIC_MASK;
-                } else {
-                    flags |= BLT_PIC_COMPOSITE;
-                }
-            }
             color.u32 = sp->u32;
-            /* color.Alpha = ALPHA_OPAQUE; */
             key = (unsigned long)color.u32;
             Blt_CreateHashEntry(tablePtr, (char *)key, &isNew);
         }
@@ -6372,7 +6355,6 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
     if (isAssociated) {
         Blt_PremultiplyColors(srcPtr);
     }
-    srcPtr->flags |= flags;
     return numColors;
 }
 
@@ -6396,29 +6378,21 @@ Blt_ClassifyPicture(Pict *srcPtr)
         
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
             if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
-                /* Stop after first non-greyscale pixel. */
                 flags |= BLT_PIC_COLOR;
-                goto checkOpacity;
             }
-        }
-        srcRowPtr += srcPtr->pixelsPerRow;
-    }
- checkOpacity:
-    srcRowPtr = srcPtr->bits;
-    for (y = 0; y < srcPtr->height; y++) {
-        Blt_Pixel *sp, *send;
-        
-        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-            if ((sp->Alpha == 0x00) || (sp->Alpha != 0xFF)) {
-                /* Stop after first semi/fully-transparent pixel. */
+            if (sp->Alpha > 0xFF) {
                 flags |= BLT_PIC_COMPOSITE;
-                goto setFlags;
+            }
+            if (flags == (BLT_PIC_COMPOSITE|BLT_PIC_COLOR)) {
+                /* Stop after first semi/fully-transparent and
+                 * non-greyscale pixel. */
+                goto done;
             }
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }
- setFlags:
-    srcPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_MASK | BLT_PIC_COLOR);
+ done:
+    srcPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_COLOR);
     srcPtr->flags |= flags;
 }
 
@@ -7047,8 +7021,8 @@ BitWidth(size_t n)             /* find "bit-width" needed to represent N */
 } 
 
 /* Fast version of the dissolve algorithm */
-int
-Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, int numSteps) 
+long
+Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, long finish) 
 {
     int rowWidth2, colWidth2;           /* Bit width of rows and columns */
     int regWidth;                       /* "width" of sequence generator */
@@ -7062,7 +7036,7 @@ Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, int numSteps)
                                          * sequence */
     long count;
 
-    count = (srcPtr->height * srcPtr->width) / numSteps;
+    count = finish - start;
     
     /* Find the mask to produce all rows and columns. */
     rowWidth2 = BitWidth(srcPtr->height); 
@@ -7113,6 +7087,7 @@ Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, int numSteps)
     }
     return element;
 }                                
+
 
 /* Crossfade from into to leaving result in destination */
 static void

@@ -2235,7 +2235,10 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
     brush = Blt_NewColorBrush(0x00000000);
     x = y = 0;
     if (fillColorPtr != NULL) {
-        Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
+        Blt_Pixel color;
+
+        color.u32 = Blt_XColorToPixel(fillColorPtr);
+        Blt_SetColorBrushColor(brush, color.u32);
         Blt_PaintRectangle(destPtr, x+1, y+1, w-2, h-2, 0, 0, brush, TRUE);
     }
     if (outlineColorPtr != NULL) {

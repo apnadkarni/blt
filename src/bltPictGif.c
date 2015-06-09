@@ -1949,6 +1949,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
         Blt_UnmultiplyColors(srcPtr);
     }
+    Blt_ClassifyPicture(srcPtr);
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     maxColors = 256;
     if (!Blt_Picture_IsOpaque(srcPtr)) {
@@ -1980,6 +1981,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
         srcPtr = quant;
     }
     Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
+    Blt_ClassifyPicture(srcPtr);
     numColors = Blt_QueryColors(srcPtr, &colorTable);
     isMasked = Blt_Picture_IsMasked(srcPtr);
     bitsPerPixel = GetLog2(numColors - 1);
@@ -2104,7 +2106,10 @@ PicturesToAnimatedGif(Tcl_Interp *interp, Blt_Chain chain, Blt_DBuffer dbuffer,
         Pict *srcPtr;
 
         srcPtr = fp->current;
-        if ((srcPtr->flags & BLT_PIC_COMPOSITE) || (srcPtr->width != screenWidth) ||            (srcPtr->height != screenHeight)) {
+        Blt_ClassifyPicture(srcPtr);
+        if ((srcPtr->flags & BLT_PIC_COMPOSITE) ||
+            (srcPtr->width != screenWidth) ||
+            (srcPtr->height != screenHeight)) {
             Pict *bg;
 
             /* Blend picture with solid color background. */

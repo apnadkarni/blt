@@ -54,6 +54,8 @@
 
 #include "tkDisplay.h"
 
+#define DEBUG 0
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -207,15 +209,36 @@ Blt_MakeTransparentWindowExist(Tk_Window tkwin, Window parent, int isBusy)
     }
 }
 
+static int
+XQueryTreeErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
+{
+    int *codePtr = clientData;
+
+#if DEBUG
+    fprintf(stderr, "XQueryTree failed\n");
+#endif
+    *codePtr = TCL_ERROR;
+    return 0;
+}
+
 Window
 Blt_GetParentWindow(Display *display, Window window)
 {
+    Status status;
+    Tk_ErrorHandler handler;
+    Window *children;
     Window root, parent;
-    Window *dummy;
-    unsigned int count;
-
-    if (XQueryTree(display, window, &root, &parent, &dummy, &count) > 0) {
-        XFree(dummy);
+    int code;
+    unsigned int numChildren;
+    
+    code = TCL_OK;
+    handler = Tk_CreateErrorHandler(display, -1, X_QueryTree, -1, 
+                XQueryTreeErrorProc, &code);
+    status = XQueryTree(display, window, &root, &parent, &children,
+                &numChildren);
+    Tk_DeleteErrorHandler(handler);
+    if ((status > 0) && (code == TCL_OK)) {
+        XFree(children);
         return parent;
     }
     return None;
@@ -274,11 +297,44 @@ Blt_GetWindowId(Tk_Window tkwin)
 static int
 XGeometryErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
 {
-    int *errorPtr = clientData;
+    int *codePtr = clientData;
 
-    *errorPtr = FALSE;
+#if DEBUG
+    fprintf(stderr, "XGeometry failed\n");
+#endif
+    *codePtr = TCL_ERROR;
     return 0;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XTranslateCoordsErrorProc --
+ *
+ *      Flags errors generated from XGetGeometry calls to the X server.
+ *
+ * Results:
+ *      Always returns 0.
+ *
+ * Side Effects:
+ *      Sets a flag, indicating an error occurred.
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static int
+XTranslateCoordsErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
+{
+    int *codePtr = clientData;
+
+#if DEBUG
+    fprintf(stderr, "XTranslateCoordinates failed err=%d, req=%d\n",
+            errEventPtr->error_code, errEventPtr->request_code);
+#endif
+    *codePtr = TCL_ERROR;
+    return 0;
+}
+
 
 int
 Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr, 
@@ -286,16 +342,42 @@ Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr,
 {
     Tk_ErrorHandler handler;
     Window root;
-    int any = -1;
-    int result;
+    int code;
     int x, y;
     unsigned int w, h, bw, depth;
+    Status status;
+    
+    code = TCL_OK;
+    handler = Tk_CreateErrorHandler(display, -1, X_GetGeometry, -1, 
+        XGeometryErrorProc, &code);
+    status = XGetGeometry(display, window, &root, &x, &y, &w, &h, &bw, &depth);
+    Tk_DeleteErrorHandler(handler);
+    XSync(display, False);
+    if ((status == 0) || (code != TCL_OK)) {
+        Blt_Warn("failed to get window region\n");
+        return TCL_ERROR;
+    }
+    if ((xPtr != NULL) || (yPtr != NULL)) {
+        Window child;
+        Tk_ErrorHandler handler;
 
-    handler = Tk_CreateErrorHandler(display, any, X_GetGeometry, any, 
-        XGeometryErrorProc, &result);
-    result = XGetGeometry(display, window, &root, &x, &y, &w, &h, &bw, &depth);
-    if (!result) {
-        goto error;
+        handler = Tk_CreateErrorHandler(display, -1, X_TranslateCoords, -1,
+                XTranslateCoordsErrorProc, &code);
+        status = XTranslateCoordinates(display, window, root, x, y, &x, &y,
+                &child);
+        XSync(display, False);
+        Tk_DeleteErrorHandler(handler);
+        if ((status) && (code == TCL_OK)) {
+            if (xPtr != NULL) {
+                *xPtr = x;
+            }
+            if (yPtr != NULL) {
+                *yPtr = y;
+            }
+        } else {
+            Blt_Warn("failed to translate coordinates\n");
+            return TCL_ERROR;
+        }
     }
     if (widthPtr != NULL) {
         *widthPtr = (int)w;
@@ -303,45 +385,7 @@ Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr,
     if (heightPtr != NULL) {
         *heightPtr = (int)h;
     }
-    if ((xPtr != NULL) || (yPtr != NULL)) {
-        int rootX, rootY;
-        rootX = rootY = 0;
-
-        do {
-            Window *children, parent;
-            unsigned int n;
-            
-            parent = -1;
-            result = XGetGeometry(display, window, &root, &x, &y, &w, &h, 
-                                  &bw, &depth);
-            if (!result) {
-                goto error;
-            }
-            rootX += x + bw;
-            rootY += y + bw;
-            result = XQueryTree(display, window, &root, &parent, &children, &n);
-            XFree(children);
-            if (!result) {
-                goto error;
-            }
-            window = parent;
-        } while (window != root);
-
-        if (xPtr != NULL) {
-            *xPtr = rootX;
-        }
-        if (yPtr != NULL) {
-            *yPtr = rootY;
-        }
-    }
-    Tk_DeleteErrorHandler(handler);
-    XSync(display, False);
     return TCL_OK;
- error:
-    Tk_DeleteErrorHandler(handler);
-    XSync(display, False);
-    Blt_Warn("failed to get window region\n");
-    return TCL_ERROR;
 }
 
 int
@@ -477,9 +521,9 @@ Blt_UnmapToplevelWindow(Tk_Window tkwin)
 static int
 XReparentWindowErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
 {
-    int *errorPtr = clientData;
+    int *codePtr = clientData;
 
-    *errorPtr = TCL_ERROR;
+    *codePtr = TCL_ERROR;
     return 0;
 }
 
@@ -487,17 +531,20 @@ int
 Blt_ReparentWindow(Display *display, Window window, Window newParent, 
                    int x, int y)
 {
+    Status status;
     Tk_ErrorHandler handler;
-    int result;
-    int any = -1;
-
-    result = TCL_OK;
-    handler = Tk_CreateErrorHandler(display, any, X_ReparentWindow, any,
-        XReparentWindowErrorProc, &result);
-    XReparentWindow(display, window, newParent, x, y);
+    int code;
+    
+    code = TCL_OK;
+    handler = Tk_CreateErrorHandler(display, -1, X_ReparentWindow, -1,
+        XReparentWindowErrorProc, &code);
+    status = XReparentWindow(display, window, newParent, x, y);
     Tk_DeleteErrorHandler(handler);
     XSync(display, False);
-    return result;
+    if ((status) && (code == TCL_OK)) {
+        return TCL_OK;
+    }
+    return TCL_ERROR;
 }
 
 int

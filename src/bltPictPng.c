@@ -312,7 +312,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     }
     destPtr = Blt_CreatePicture(width, height);
     if (colorType & PNG_COLOR_MASK_ALPHA) {
-        destPtr->flags |= BLT_PIC_COMPOSITE;
+        Blt_ClassifyPicture(destPtr);
     }
     if ((numChannels == 4) || (numChannels == 3)) {
         destPtr->flags |= BLT_PIC_COLOR;
@@ -473,6 +473,7 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
     png_set_write_fn(png, (void *)dbuffer, PngWriteToBuffer, PngFlush);
 
     png_set_compression_level(png, Z_BEST_COMPRESSION);
+    Blt_ClassifyPicture(picture);
     Blt_QueryColors(picture, (Blt_HashTable *)NULL);
     if (Blt_Picture_IsColor(picture)) {
         numChannels = 3;

@@ -274,6 +274,7 @@ typedef struct _Blt_PictureImage {
                                          * there's no timer handler
                                          * queued. */
     int interval;
+    int lastIndex;
     Blt_PictFormat *fmtPtr;             /* External format of last image
                                          * read into the picture image. We
                                          * use this to write back the same
@@ -700,6 +701,9 @@ typedef struct {
     int interval;                       /* # of milliseconds delay between
                                          * steps. */
     int numSteps;                       /* # of steps. */
+    int count;                          /* Current step. */
+    int scale;
+    long numPixels;                     /* # pixels in each step.  */
     long last;                          /* Last position in dissolve. */
     
     Tcl_Interp *interp;                 /* Interpreter used to set
@@ -707,16 +711,21 @@ typedef struct {
     Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
                                          * variable to set when transition
                                          * is completed. */
-} Dissolve;
+
+} DissolveArgs;
 
 static Blt_SwitchSpec dissolveSwitches[] = 
 {
     {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
-        Blt_Offset(Dissolve, interval), 0},
+        Blt_Offset(DissolveArgs, interval), 0},
+    {BLT_SWITCH_INT_NNEG, "-goto", "step", (char *)NULL,
+        Blt_Offset(DissolveArgs, count), 0},
+    {BLT_SWITCH_CUSTOM, "-scale", "scaleType", (char *)NULL,
+        Blt_Offset(DissolveArgs, scale), 0, 0, &scaleSwitch},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
-        Blt_Offset(Dissolve, numSteps), 0},
+        Blt_Offset(DissolveArgs, numSteps), 0},
     {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
-        Blt_Offset(Dissolve, varNameObjPtr), 0},
+        Blt_Offset(DissolveArgs, varNameObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
@@ -738,22 +747,22 @@ typedef struct {
     Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
                                          * variable to set when transition
                                          * is completed. */
-} Wipe;
+} WipeArgs;
 
 static Blt_SwitchSpec wipeSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-direction", "n|s|e|w", (char *)NULL,
-        Blt_Offset(Wipe, direction), 0, 0, &directionSwitch},
+        Blt_Offset(WipeArgs, direction), 0, 0, &directionSwitch},
     {BLT_SWITCH_INT_NNEG, "-goto", "step", (char *)NULL,
-        Blt_Offset(Wipe, count), 0},
+        Blt_Offset(WipeArgs, count), 0},
     {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
-        Blt_Offset(Wipe, interval), 0},
+        Blt_Offset(WipeArgs, interval), 0},
     {BLT_SWITCH_CUSTOM, "-scale", "scaleType", (char *)NULL,
-        Blt_Offset(Wipe, scale), 0, 0, &scaleSwitch},
+        Blt_Offset(WipeArgs, scale), 0, 0, &scaleSwitch},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
-        Blt_Offset(Wipe, numSteps), 0},
+        Blt_Offset(WipeArgs, numSteps), 0},
     {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
-        Blt_Offset(Wipe, varNameObjPtr), 0},
+        Blt_Offset(WipeArgs, varNameObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
@@ -2373,6 +2382,10 @@ DisplayProc(
             (Blt_PainterDepth(instPtr->painter) < 15)) {
             flags |= BLT_PAINTER_DITHER;
         }
+#ifdef notdef
+    fprintf(stderr, "DisplayProc drawable=%x, picture=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+            drawable, picture, x, y, w, h, dx, dy);
+#endif
         Blt_PaintPicture(instPtr->painter, drawable, picture, 
                 x, y, w, h, dx, dy, flags);
     }
@@ -2727,6 +2740,27 @@ CrossFadeTimerProc(ClientData clientData)
     }
 }
 
+static void
+DoDissolve(DissolveArgs *argsPtr)
+{
+    long last, next;
+    double position;
+    
+    position = argsPtr->count / (double)argsPtr->numSteps;
+    if (argsPtr->scale == SCALE_LOG) {
+        position = log10(9.0 * position + 1.0);
+    }
+    next = (int)(position * argsPtr->numPixels);
+    last = argsPtr->last;
+    if (next < last) {
+        Blt_CopyPictures(argsPtr->picture, argsPtr->from);
+        next = Blt_Dissolve2(argsPtr->picture, argsPtr->to, 0, next);
+    } else {
+        next = Blt_Dissolve2(argsPtr->picture, argsPtr->to, last, next);
+    }        
+    argsPtr->last = next;
+}
+    
 /*
  *---------------------------------------------------------------------------
  *
@@ -2737,25 +2771,25 @@ CrossFadeTimerProc(ClientData clientData)
 static void
 DissolveTimerProc(ClientData clientData)
 {
-    Dissolve *disPtr = clientData;
+    DissolveArgs *argsPtr = clientData;
     
-    if (disPtr->last > 0) {
-        disPtr->last = Blt_Dissolve2(disPtr->picture, disPtr->to,
-                disPtr->last, disPtr->numSteps);
-        Blt_NotifyImageChanged(disPtr->imgPtr);
-        disPtr->timerToken = Tcl_CreateTimerHandler(disPtr->interval, 
-                DissolveTimerProc, disPtr);
+    argsPtr->count++;
+    if (argsPtr->count <= argsPtr->numSteps) {
+        DoDissolve(argsPtr);
+        Blt_NotifyImageChanged(argsPtr->imgPtr);
+        argsPtr->timerToken = Tcl_CreateTimerHandler(argsPtr->interval, 
+                DissolveTimerProc, argsPtr);
     } else {
-        disPtr->imgPtr->flags &= ~INUSE;
-        if (disPtr->varNameObjPtr != NULL) {
+        argsPtr->imgPtr->flags &= ~INUSE;
+        if (argsPtr->varNameObjPtr != NULL) {
             Tcl_Obj *objPtr;
 
             objPtr = Tcl_NewIntObj(TRUE);
-            Tcl_ObjSetVar2(disPtr->interp, disPtr->varNameObjPtr, NULL,
+            Tcl_ObjSetVar2(argsPtr->interp, argsPtr->varNameObjPtr, NULL,
                            objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
         }
-        Blt_FreeSwitches(dissolveSwitches, disPtr, 0);
-        Blt_Free(disPtr);
+        Blt_FreeSwitches(dissolveSwitches, argsPtr, 0);
+        Blt_Free(argsPtr);
     }
 }
 
@@ -2769,32 +2803,32 @@ DissolveTimerProc(ClientData clientData)
 static void
 WipeTimerProc(ClientData clientData)
 {
-    Wipe *wipePtr = clientData;
+    WipeArgs *argsPtr = clientData;
     
-    wipePtr->count++;
-    if (wipePtr->count <= wipePtr->numSteps) {
+    argsPtr->count++;
+    if (argsPtr->count <= argsPtr->numSteps) {
         double position;
 
-        position = wipePtr->count / (double)wipePtr->numSteps;
-        if (wipePtr->scale == SCALE_LOG) {
+        position = argsPtr->count / (double)argsPtr->numSteps;
+        if (argsPtr->scale == SCALE_LOG) {
             position = log10(9.0 * position + 1.0);
         }
-        Blt_WipePictures(wipePtr->picture, wipePtr->from, wipePtr->to,
-                        wipePtr->direction, position);
-        Blt_NotifyImageChanged(wipePtr->imgPtr);
-        wipePtr->timerToken = Tcl_CreateTimerHandler(wipePtr->interval, 
-                WipeTimerProc, wipePtr);
+        Blt_WipePictures(argsPtr->picture, argsPtr->from, argsPtr->to,
+                        argsPtr->direction, position);
+        Blt_NotifyImageChanged(argsPtr->imgPtr);
+        argsPtr->timerToken = Tcl_CreateTimerHandler(argsPtr->interval, 
+                WipeTimerProc, argsPtr);
     } else {
-        wipePtr->imgPtr->flags &= ~INUSE;
-        if (wipePtr->varNameObjPtr != NULL) {
+        argsPtr->imgPtr->flags &= ~INUSE;
+        if (argsPtr->varNameObjPtr != NULL) {
             Tcl_Obj *objPtr;
 
             objPtr = Tcl_NewIntObj(TRUE);
-            Tcl_ObjSetVar2(wipePtr->interp, wipePtr->varNameObjPtr, NULL,
+            Tcl_ObjSetVar2(argsPtr->interp, argsPtr->varNameObjPtr, NULL,
                            objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
         }
-        Blt_FreeSwitches(wipeSwitches, wipePtr, 0);
-        Blt_Free(wipePtr);
+        Blt_FreeSwitches(wipeSwitches, argsPtr, 0);
+        Blt_Free(argsPtr);
     }
 }
 
@@ -2803,7 +2837,7 @@ WipeTimerProc(ClientData clientData)
  *
  * ArithOp --
  *
- *      $image arith op $src -from { 0 0 100 100 } -to { 0 0 }
+ *      imageName arith op $src -from { 0 0 100 100 } -to { 0 0 }
  *
  *---------------------------------------------------------------------------
  */
@@ -3404,6 +3438,8 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DissolveOp --
  *
+ *      imageName dissolve fromImage toImage ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -3413,78 +3449,85 @@ DissolveOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     PictImage *imgPtr = clientData;
     int w, h;
-    Dissolve *disPtr;
+    DissolveArgs *argsPtr;
     
     if (imgPtr->flags & INUSE) {
         Tcl_AppendResult(interp, "image \"", imgPtr->name,
                          "\" is busy.", (char *)NULL);
+ fprintf(stderr, "image is busy\n");
             return TCL_ERROR;
     }
-    disPtr = Blt_AssertCalloc(1, sizeof(Dissolve));
-    disPtr->interval = 50;             /* 50 milliseconds. */
-    disPtr->numSteps = 10;
-    disPtr->fromColor.u32 = 0xFFFFFFFF;
-    disPtr->toColor.u32 = 0xFF000000;
-    disPtr->interp = interp;
-    disPtr->imgPtr = imgPtr;
-    disPtr->last = 1;
-
-    if (Blt_GetPixelFromObj(NULL, objv[2], &disPtr->fromColor) != TCL_OK) {
-        if (Blt_GetPictureFromObj(interp, objv[2], &disPtr->from) != TCL_OK) {
+    argsPtr = Blt_AssertCalloc(1, sizeof(DissolveArgs));
+    argsPtr->numSteps = 10;
+    argsPtr->scale = SCALE_LINEAR;
+    argsPtr->fromColor.u32 = 0xFFFFFFFF;
+    argsPtr->toColor.u32 = 0xFF000000;
+    argsPtr->interp = interp;
+    argsPtr->imgPtr = imgPtr;
+    argsPtr->last = 1;
+    
+    if (Blt_GetPixelFromObj(NULL, objv[2], &argsPtr->fromColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[2], &argsPtr->from) != TCL_OK) {
             return TCL_ERROR;
         }
     }
-    if (Blt_GetPixelFromObj(NULL, objv[3], &disPtr->toColor) != TCL_OK) {
-        if (Blt_GetPictureFromObj(interp, objv[3], &disPtr->to) != TCL_OK) {
+    if (Blt_GetPixelFromObj(NULL, objv[3], &argsPtr->toColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[3], &argsPtr->to) != TCL_OK) {
             return TCL_ERROR;
         }
     }
     if (Blt_ParseSwitches(interp, dissolveSwitches, objc - 4, objv + 4,
-                          disPtr, BLT_SWITCH_DEFAULTS) < 0) {
+                          argsPtr, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    if (disPtr->from == imgPtr->picture) {
+    if (argsPtr->from == imgPtr->picture) {
         Tcl_AppendResult(interp, "\"from\" picture can not be \"", imgPtr->name,
                          "\".", (char *)NULL);
             return TCL_ERROR;
     }
-    if (disPtr->to == imgPtr->picture) {
+    if (argsPtr->to == imgPtr->picture) {
         Tcl_AppendResult(interp, "\"to\" picture can not be \"", imgPtr->name,
                          "\".", (char *)NULL);
             return TCL_ERROR;
     }
-    if (disPtr->from == NULL) {
-        if (disPtr->to == NULL) {
+    if (argsPtr->from == NULL) {
+        if (argsPtr->to == NULL) {
             Tcl_AppendResult(interp, "either \"from\" or \"to\" must ",
                              "be a picture image.", (char *)NULL);
             return TCL_ERROR;
         }
-        w = Blt_Picture_Width(disPtr->to);
-        h = Blt_Picture_Height(disPtr->to);
-    } else if (disPtr->to == NULL) {
-        w = Blt_Picture_Width(disPtr->from);
-        h = Blt_Picture_Height(disPtr->from);
+        w = Blt_Picture_Width(argsPtr->to);
+        h = Blt_Picture_Height(argsPtr->to);
+    } else if (argsPtr->to == NULL) {
+        w = Blt_Picture_Width(argsPtr->from);
+        h = Blt_Picture_Height(argsPtr->from);
     } else {
-        w = Blt_Picture_Width(disPtr->from);
-        h = Blt_Picture_Height(disPtr->from);
-        if ((w != Blt_Picture_Width(disPtr->to)) ||
-            (h != Blt_Picture_Height(disPtr->to))) {
+        w = Blt_Picture_Width(argsPtr->from);
+        h = Blt_Picture_Height(argsPtr->from);
+        if ((w != Blt_Picture_Width(argsPtr->to)) ||
+            (h != Blt_Picture_Height(argsPtr->to))) {
             Tcl_AppendResult(interp, "from and to picture ",
                              "must be the same size.", (char *)NULL);
             return TCL_ERROR;
         }
     }
-    imgPtr->flags |= INUSE;
-    disPtr->picture = Blt_CreatePicture(w, h);
-    if (disPtr->from != NULL) {
-        Blt_CopyPictures(disPtr->picture, disPtr->from);
+    argsPtr->numPixels = (w * h);
+    argsPtr->picture = Blt_CreatePicture(w, h);
+    if (argsPtr->from != NULL) {
+        Blt_CopyPictures(argsPtr->picture, argsPtr->from);
     } else {
-        Blt_BlankPicture(disPtr->picture, disPtr->fromColor.u32);
+        Blt_BlankPicture(argsPtr->picture, argsPtr->fromColor.u32);
     } 
-    ReplacePicture(disPtr->imgPtr, disPtr->picture);
+    DoDissolve(argsPtr);
+    ReplacePicture(argsPtr->imgPtr, argsPtr->picture);
     Blt_NotifyImageChanged(imgPtr);
-    disPtr->timerToken = Tcl_CreateTimerHandler(disPtr->interval, 
-                DissolveTimerProc, disPtr);
+    if (argsPtr->interval > 0) {
+        imgPtr->flags |= INUSE;
+        argsPtr->timerToken = Tcl_CreateTimerHandler(argsPtr->interval, 
+                DissolveTimerProc, argsPtr);
+    } else {
+        Blt_Free(argsPtr);
+    }
     return TCL_OK;
 }
 
@@ -3999,7 +4042,7 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_Obj *listObjPtr, *objPtr;
     Pict *srcPtr;
 
-    srcPtr = PictureFromPictImage(imgPtr);
+    srcPtr = imgPtr->picture;
     Blt_ClassifyPicture(srcPtr);
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -4009,19 +4052,19 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Tcl_NewIntObj(numColors);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("ispremultipled", 12);
+    objPtr = Tcl_NewStringObj("premultipled", 12);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     state = srcPtr->flags & BLT_PIC_PREMULT_COLORS;
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("isgreyscale", 11);
+    objPtr = Tcl_NewStringObj("greyscale", 9);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     state = Blt_Picture_IsGreyscale(srcPtr);
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("isopaque", 8);
+    objPtr = Tcl_NewStringObj("opaque", 6);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     state = Blt_Picture_IsOpaque(srcPtr);
     objPtr = Tcl_NewBooleanObj(state);
@@ -4062,7 +4105,7 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * MultiplyOp --
  *
- *      $image multiply scalar
+ *      imageName multiply scalar
  *
  *---------------------------------------------------------------------------
  */
@@ -5182,69 +5225,70 @@ WipeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
-    int w, h;
-    Wipe *wipePtr;
+    WipeArgs *argsPtr;
     double position;
+    int w, h;
     
     if (imgPtr->flags & INUSE) {
         Tcl_AppendResult(interp, "image \"", imgPtr->name,
                          "\" is busy.", (char *)NULL);
             return TCL_ERROR;
     }
-    wipePtr = Blt_AssertCalloc(1, sizeof(Wipe));
-    wipePtr->numSteps = 10;
-    wipePtr->fromColor.u32 = 0xFFFFFFFF;
-    wipePtr->toColor.u32 = 0xFF000000;
-    wipePtr->interp = interp;
-    wipePtr->imgPtr = imgPtr;
-    wipePtr->count = 1;
-    wipePtr->direction = TK_ANCHOR_E;
-    if (Blt_GetPictureFromObj(interp, objv[2], &wipePtr->from) != TCL_OK) {
+    argsPtr = Blt_AssertCalloc(1, sizeof(WipeArgs));
+    argsPtr->numSteps = 10;
+    argsPtr->fromColor.u32 = 0xFFFFFFFF;
+    argsPtr->toColor.u32 = 0xFF000000;
+    argsPtr->interp = interp;
+    argsPtr->imgPtr = imgPtr;
+    argsPtr->count = 1;
+    argsPtr->direction = TK_ANCHOR_E;
+
+    if (Blt_GetPictureFromObj(interp, objv[2], &argsPtr->from) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (Blt_GetPictureFromObj(interp, objv[3], &wipePtr->to) != TCL_OK) {
+    if (Blt_GetPictureFromObj(interp, objv[3], &argsPtr->to) != TCL_OK) {
         return TCL_ERROR;
     }
     if (Blt_ParseSwitches(interp, wipeSwitches, objc - 4, objv + 4,
-                wipePtr, BLT_SWITCH_DEFAULTS) < 0) {
+                argsPtr, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    if (wipePtr->from == imgPtr->picture) {
+    if (argsPtr->from == imgPtr->picture) {
         Tcl_AppendResult(interp, "from picture can not be \"", imgPtr->name,
                 "\"", (char *)NULL);
             return TCL_ERROR;
     }
-    if (wipePtr->to == imgPtr->picture) {
+    if (argsPtr->to == imgPtr->picture) {
         Tcl_AppendResult(interp, "to picture can not be \"", imgPtr->name,
                          "\"", (char *)NULL);
             return TCL_ERROR;
     }
-    w = Blt_Picture_Width(wipePtr->from);
-    h = Blt_Picture_Height(wipePtr->from);
-    if ((w != Blt_Picture_Width(wipePtr->to)) ||
-        (h != Blt_Picture_Height(wipePtr->to))) {
+    w = Blt_Picture_Width(argsPtr->from);
+    h = Blt_Picture_Height(argsPtr->from);
+    if ((w != Blt_Picture_Width(argsPtr->to)) ||
+        (h != Blt_Picture_Height(argsPtr->to))) {
         Tcl_AppendResult(interp, "from and to picture ",
                          "must be the same size.", (char *)NULL);
         return TCL_ERROR;
     }
-    wipePtr->picture = Blt_CreatePicture(w, h);
-    if (wipePtr->count > wipePtr->numSteps) {
-        wipePtr->count = wipePtr->numSteps;
+    argsPtr->picture = Blt_CreatePicture(w, h);
+    if (argsPtr->count > argsPtr->numSteps) {
+        argsPtr->count = argsPtr->numSteps;
     } 
-    position = (double)wipePtr->count / (double)wipePtr->numSteps;
-    if (wipePtr->scale == SCALE_LOG) {
+    position = (double)argsPtr->count / (double)argsPtr->numSteps;
+    if (argsPtr->scale == SCALE_LOG) {
         position = log10(9.0 * position + 1.0);
     }
-    Blt_WipePictures(wipePtr->picture, wipePtr->from, wipePtr->to,
-                wipePtr->direction, position);
-    ReplacePicture(wipePtr->imgPtr, wipePtr->picture);
+    Blt_WipePictures(argsPtr->picture, argsPtr->from, argsPtr->to,
+                argsPtr->direction, position);
+    ReplacePicture(argsPtr->imgPtr, argsPtr->picture);
     Blt_NotifyImageChanged(imgPtr);
-    if (wipePtr->interval > 0) {
+    if (argsPtr->interval > 0) {
         imgPtr->flags |= INUSE;
-        wipePtr->timerToken = Tcl_CreateTimerHandler(wipePtr->interval, 
-                WipeTimerProc, wipePtr);
+        argsPtr->timerToken = Tcl_CreateTimerHandler(argsPtr->interval, 
+                WipeTimerProc, argsPtr);
     } else {
-        Blt_Free(wipePtr);
+        Blt_Free(argsPtr);
     }
     return TCL_OK;
 }
