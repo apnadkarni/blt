@@ -5,7 +5,7 @@ proc RadialGradientBrush  { args } {
 
     set brush [blt::paintbrush create radial $args]
     $img blank white
-    $img draw rectangle 25 25 -width 175 -height 175 -color $brush
+    $img draw rectangle 25 25 -width 150 -height 150 -color $brush
     blt::paintbrush delete $brush
 }
 
@@ -14,7 +14,7 @@ proc LinearGradientBrush  { args } {
 
     set brush [eval blt::paintbrush create linear $args]
     $img blank white
-    $img draw rectangle 25 25 -width 175 -height 175 -color $brush
+    $img draw rectangle 25 25 -width 150 -height 150 -color $brush
     blt::paintbrush delete $brush
 }
 
@@ -23,7 +23,7 @@ proc RadialGradientBrush  { args } {
 
     set brush [eval blt::paintbrush create radial $args]
     $img blank white
-    $img draw rectangle 25 25 -width 175 -height 175 -color $brush
+    $img draw rectangle 25 25 -width 150 -height 150 -color $brush
     blt::paintbrush delete $brush
 }
 
@@ -32,7 +32,7 @@ proc ConicalGradientBrush  { args } {
 
     set brush [eval blt::paintbrush create conical $args]
     $img blank white
-    $img draw rectangle 25 25 -width 175 -height 175 -color $brush
+    $img draw rectangle 25 25 -width 150 -height 150 -color $brush
     blt::paintbrush delete $brush
 }
 
@@ -41,7 +41,7 @@ proc ColorBrush  { args } {
 
     set brush [eval blt::paintbrush create color $args]
     $img blank white
-    $img draw rectangle 25 25 -width 175 -height 175 -color $brush
+    $img draw rectangle 25 25 -width 150 -height 150 -color $brush
     blt::paintbrush delete $brush
 }
 
@@ -50,7 +50,7 @@ proc TileBrush  { args } {
 
     set brush [eval blt::paintbrush create tile $args]
     $img blank white
-    $img draw rectangle 25 25 -width 175 -height 175 -color $brush
+    $img draw rectangle 25 25 -width 150 -height 150 -color $brush
     blt::paintbrush delete $brush
 }
 
@@ -59,7 +59,7 @@ proc StripeBrush  { args } {
 
     set brush [eval blt::paintbrush create stripe $args]
     $img blank white
-    $img draw rectangle 25 25 -width 175 -height 175 -color $brush
+    $img draw rectangle 25 25 -width 150 -height 150 -color $brush
     blt::paintbrush delete $brush
 }
 
@@ -68,7 +68,7 @@ proc CheckerBrush  { args } {
 
     set brush [eval blt::paintbrush create checker $args]
     $img blank white
-    $img draw rectangle 25 25 -width 175 -height 175 -color $brush
+    $img draw rectangle 25 25 -width 150 -height 150 -color $brush
     blt::paintbrush delete $brush
 }
 
