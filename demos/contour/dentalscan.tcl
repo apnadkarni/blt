@@ -1,7 +1,7 @@
 package require BLT
+source ./data/dentalscan.tcl 
 
 blt::vector create dentalscan
-source ./data/dentalscan.tcl 
 dentalscan set $data
 
 set mesh [blt::mesh create regular regular -x "0 512 512" -y "0 512 512"]
