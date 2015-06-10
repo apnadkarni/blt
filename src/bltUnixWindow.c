@@ -362,21 +362,12 @@ Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr,
         Tk_ErrorHandler handler;
         int xRoot, yRoot;
 
-#ifdef notdef
         handler = Tk_CreateErrorHandler(display, -1, X_TranslateCoords, -1,
                 XTranslateCoordsErrorProc, &code);
         status = XTranslateCoordinates(display, window, root, 0, 0,
                 &xRoot, &yRoot, &child);
         XSync(display, False);
         Tk_DeleteErrorHandler(handler);
-#else
-        /* Can't call XTranslate coordinates on a pixmap. */
-        fprintf(stderr, "Calling XTranslateCoordinates(window=%x root=%x)\n",
-                window, root);
-        status = XTranslateCoordinates(display, window, root, 0, 0,
-                &xRoot, &yRoot, &child);
-        XSync(display, False);
-#endif
         if ((status) && (code == TCL_OK)) {
             if (xPtr != NULL) {
                 *xPtr = xRoot + x;

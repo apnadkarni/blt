@@ -115,8 +115,6 @@ proc DestroySnapshot { win } {
     exit
 }
 
-after 2000 {$graph postscript output demo2.ps }
-
 if { $tcl_platform(platform) == "windows" } {
     if 0 {
         set name [lindex [blt::printer names] 0]

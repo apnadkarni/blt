@@ -160,7 +160,6 @@ set trim "$top"
 
 set table [blt::datatable create]    
 puts stderr [time { $table dir $top -pattern "*"}]
-$table dump -file dir.dump
 $table column copy name button
 
 blt::scrollset .ss \

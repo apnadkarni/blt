@@ -533,7 +533,7 @@ NotifyClients(Mesh *meshPtr, unsigned int flags)
          /* Notify each client that the mesh has changed. */
          notifyPtr = Blt_Chain_GetValue(link);
         if (notifyPtr->proc != NULL) {
-            (*notifyPtr->proc)(notifyPtr->clientData, meshPtr, flags);
+            (*notifyPtr->proc)(meshPtr, notifyPtr->clientData, flags);
         }
     }
 }

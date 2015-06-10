@@ -1010,7 +1010,6 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     graphPtr = Blt_AssertCalloc(1, sizeof(Graph));
 
     /* Initialize the graph data structure. */
-
     graphPtr->tkwin = tkwin;
     graphPtr->display = Tk_Display(tkwin);
     graphPtr->interp = interp;

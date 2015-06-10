@@ -53,14 +53,15 @@
 
 #ifdef HAVE_X86_ASM
 
-#define FEATURE_MMX                (1L << 23)
-#define FEATURE_MMXEXT             (1L << 24)
-#define FEATURE_3DNOW              (1L << 31)
-#define FEATURE_SSE                (1L << 25)
-#define FEATURE_SSE2               (1L << 26)
-#define FEATURE_SSSE3              (1L << 41)
-#define FEATURE_SSE41              (1L << 51)
-#define FEATURE_SSE42              (1L << 52)
+/* X86 cpu feature flags. */
+#define FEATURE_MMX     (1L << 23)
+#define FEATURE_MMXEXT  (1L << 24)
+#define FEATURE_3DNOW   (1L << 31)
+#define FEATURE_SSE     (1L << 25)
+#define FEATURE_SSE2    (1L << 26)
+#define FEATURE_SSSE3   (1L << 41)
+#define FEATURE_SSE41   (1L << 51)
+#define FEATURE_SSE42   (1L << 52)
 
 typedef struct  {
     unsigned int eax;
@@ -69,23 +70,9 @@ typedef struct  {
     unsigned int edx;
 } X86Registers;
 
-static Blt_ApplyPictureToPictureProc ApplyPictureToPicture;
-static Blt_ApplyScalarToPictureProc  ApplyScalarToPicture;
-#ifdef notdef
-static Blt_ApplyPictureToPictureWithMaskProc ApplyPictureToPictureWithMask;
-static Blt_ApplyScalarToPictureWithMaskProc  ApplyScalarToPictureWithMask;
-static Blt_UnmultiplyColorsProc UnassociateColors;
-#endif
-static Blt_CompositePicturesProc CompositePictures;
-static Blt_CopyPicturesProc CopyPictures;
-static Blt_CrossFadePicturesProc CrossFadePictures;
-static Blt_PremultiplyColorsProc PremultiplyColors;
-static Blt_SelectPixelsProc SelectPixels;
-static Blt_TentHorizontallyProc TentHorizontally;
-static Blt_TentVerticallyProc TentVertically;
-static Blt_ZoomHorizontallyProc ZoomHorizontally;
-static Blt_ZoomVerticallyProc ZoomVertically;
-static Blt_BlankPictureProc BlankPicture;
+static uint8_t bytes16[16] __attribute__((aligned(16))) = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
 
 /* 
  * unmultiply,  zoomvertically, zoomhorizontally
@@ -1357,6 +1344,65 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
 /* 
  *---------------------------------------------------------------------------
  *
+ * BlankPicture --
+ *
+ *      Sets the picture to the specified color value.  The color is 
+ *      unassociated.  
+ *      
+ * Results: 
+ *      None.
+ *
+ * Side effects: 
+ *      The source picture is set to the specified color.
+ *
+ * -------------------------------------------------------------------------- 
+ */
+static void
+BlankPicture(Pict *destPtr, unsigned int colorValue)
+{
+    Blt_Pixel *destRowPtr;
+    int y;
+    Blt_Pixel pixel;
+    int i;
+    
+    pixel.u32 = colorValue;
+    Blt_PremultiplyColor(&pixel);
+    for (i = 0; i < 16; i += 4) {
+        bytes16[i]   = pixel.Blue;
+        bytes16[i+1] = pixel.Green;
+        bytes16[i+2] = pixel.Red;
+        bytes16[i+3] = pixel.Alpha;
+    }
+    asm volatile (
+        "movdqa    (%0), %%xmm6         # xmm6 = color\n\t"
+        : /* outputs */
+        : /* inputs */
+          "r" (bytes16));
+
+    destRowPtr = destPtr->bits;
+    for (y = 0; y < destPtr->height; y++) {
+        Blt_Pixel *dp, *dend;
+
+        for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend; dp += 4) {
+            asm volatile (
+                "movdqa %%xmm6, (%0)    # Save the 4 pixels. \n\t" 
+                : /* outputs */
+                  "+r" (dp));
+        }
+        destRowPtr += destPtr->pixelsPerRow;
+    }
+    destPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_MASK);
+    destPtr->flags |= (BLT_PIC_DIRTY | BLT_PIC_PREMULT_COLORS);
+    if (pixel.Alpha == 0x00) {
+        destPtr->flags |= BLT_PIC_MASK | BLT_PIC_COMPOSITE;
+    } else if (pixel.Alpha != 0xFF) {
+        destPtr->flags |= BLT_PIC_COMPOSITE;
+    }
+}
+
+/* 
+ *---------------------------------------------------------------------------
+ *
  * CopyPictures --
  *
  *      Creates a copy of the given picture using SSE xmm registers.
@@ -1401,127 +1447,6 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
     }
     destPtr->flags = (srcPtr->flags | BLT_PIC_DIRTY);
     asm volatile ("emms");
-}
-
-/* 
- *---------------------------------------------------------------------------
- *
- * PremultiplyColors --
- *
- *      Multiplies the alpha value with each color component using SSSE3
- *      operations.  It is assumed that the already does not have already
- *      have premultiplied colors.  
- *
- *              Dr = Sr * Sa
- *              Dg = Sg * Sg
- *              Db = Sb * Sb
- *              Da = Sa
- *
- *      Pictures are also guaranteed to be quadword aligned (16 bytes).
- *      The stride (pixelsPerRow) is always a multiple of 4 pixels.  This
- *      lets us blend 4 associate 4 pixels at a time.  We also use Jim
- *      Blinn's method of multiplying two 8-bit numbers togther.
- *
- *      Reference: Jim Blinn's Corner: Dirty Pixels.
- *
- * Results: 
- *      None.
- *
- * -------------------------------------------------------------------------- 
- */
-static uint8_t preMultMap[16] __attribute__((aligned(16))) = {
-    /* B G R A B G R A */
-    /* The first 3 words, get the first alpha. The fourth is zero. */
-    0xff, 0x03, 0xff, 0x03, 0xff, 0x03, 0xff, 0xff,
-    /* The second 3 words, get the second alpha. The fourth is zero. */
-    0xff, 0x07, 0xff, 0x07, 0xff, 0x07, 0xff, 0xff,
-};
-
-static void
-PremultiplyColors(Pict *srcPtr)
-{
-    int y;
-    Blt_Pixel *srcRowPtr;
-    
-    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
-        return;
-    }
-    srcPtr->flags |= BLT_PIC_PREMULT_COLORS;
-    asm volatile (
-        "pcmpeqw   %%xmm0, %%xmm0       # xmm0 = ffff x 8\n\t"
-        "pxor      %%xmm6, %%xmm6       # xmm6 = 0\n\t"
-        "pxor      %%xmm0, %%xmm0       # xmm0 = 0\n\t"
-        "mov       $0xFF00,%%edx        # edx =  ff00 \n\t"
-        /* Fix the 4th and 8th 16-bit alpha values to ff00 (1)  */
-        "pinsrw    $3,%%edx,%%xmm0      # xmm0 = ____ ____ ____ ff__ \n\t"
-        "pinsrw    $7,%%edx,%%xmm0      # xmm0 = ____ ____ ____ ff__ \n\t"
-        "movdqa    (%0), %%xmm7         # xmm7 = shuffle map\n\t"
-        "pcmpeqw   %%xmm1, %%xmm1       # xmm1 = ffff x 8\n\t"
-        "punpckhbw %%xmm6, %%xmm1	# xmm1 = 00ff x 8\n\t"
-        "psrlw     $7, %%xmm1           # xmm1 = 0001 x 8\n\t"
-        "psllw     $7, %%xmm1           # xmm1 = 0010 x 8\n\t"
-        : /* outputs */
-        : /* inputs */
-          "r" (preMultMap)
-        : /* clobbers */
-          "edx");
-    /*
-     * xmm0 = mask      ____ ____ ____ _1__ x 4   alphas | mask 
-     * xmm1 = bias      __8_ __8_ __8_ ____ x 4   3 bias + 0000
-     * xmm6 = 0         ____ ____ ____ ____ x 4
-     * xmm7 = shuffle   
-     */
-    srcRowPtr = srcPtr->bits;
-    for (y = 0; y < srcPtr->height; y++) {
-        Blt_Pixel *sp, *send;
-
-        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp += 4) {
-            asm volatile (
-		"movdqa    (%0), %%xmm4         # xmm4 = P x 4\n\t" 
-
-		"movdqa    %%xmm4, %%xmm2       # xmm2 = xmm4\n\t"
-                /* Move the upper quadword to lower so that we can use the
-                 * same shuffle mask for both pairs of pixels. */
-		"movhlps   %%xmm4, %%xmm3       # xmm3 = P2 P3\n\t"
-                /* Unpack background. */
-		"punpcklbw %%xmm6, %%xmm2	# xmm2 = _b_g_r_a x 2\n\t"
-		"movdqa    %%xmm3, %%xmm5       # xmm5 = xmm3\n\t"
-		"punpcklbw %%xmm6, %%xmm3	# xmm3 = _b_g_r_a x 2\n\t"
-                /* Shift color components to upper byte */
-                "psllw     $8, %%xmm2           # xmm2 = b_g_r_a_\n\t"
-                "psllw     $8, %%xmm3           # xmm3 = b_g_r_a_\n\t"
-                /* Shuffle bytes in pixels to get alphas in high bytes. */
-		"pshufb	   %%xmm7, %%xmm4       # xmm4 = a_a_a___ x 2\n\t"
-		"pshufb	   %%xmm7, %%xmm5       # xmm5 = a_a_a___ x 2\n\t"
-                /* Or in 0x100 for the alpha multiplier. */
-		"por	   %%xmm0, %%xmm4       # xmm5 = a_a_a_1_ x 2\n\t"
-		"por	   %%xmm0, %%xmm5       # xmm5 = a_a_a_1_ x 2\n\t"
-                /* Multiple each color component by its matching alpha. */
-		"pmulhuw   %%xmm2, %%xmm4	# xmm4 = a*b,a*g,a*r,a*ff\n\t"
-		"pmulhuw   %%xmm3, %%xmm5	# xmm5 = a*b,a*g,a*r,a*ff\n\t"
-                 /* Add the bias. */
-                "paddsw    %%xmm1, %%xmm4       # xmm4 += bias\n\t"
-                "paddsw    %%xmm1, %%xmm5       # xmm5 += bias\n\t"
-                /* Save copy of original (bg * beta) + bias. */
-                "movdqa    %%xmm4, %%xmm2       # xmm2 = xmm4\n"
-                "movdqa    %%xmm5, %%xmm3       # xmm3 = xmm5\n"
-                /* Approximate dividing by 257. (((x >> 8) + x) >> 8) */
-                "psrlw     $8, %%xmm4           # xmm4 /= 256\n\t"
-                "psrlw     $8, %%xmm5           # xmm5 /= 256\n\t"
-                /* Add original */
-                "paddw     %%xmm2, %%xmm4       # xmm4 += xmm2\n\t"
-                "paddw     %%xmm3, %%xmm5       # xmm5 += xmm3\n\t"
-                /* Divide again by 256 */
-                "psrlw     $8, %%xmm4           # P / 257\n\t"
-                "psrlw     $8, %%xmm5           # P / 257\n\t"
-		/* Convert words to bytes  */
-		"packuswb  %%xmm5, %%xmm4       # xmm4 = P0 P1 P2 P3\n\t"
-		"movdqa    %%xmm4, (%0)     	# Save 4 pixels.\n\t"
-		: /* outputs */
-                  "+r" (sp));
-        }
-        srcRowPtr += srcPtr->pixelsPerRow;
-    }
 }
 
 /* 
@@ -1683,10 +1608,6 @@ static uint8_t crossFadeMap[16] __attribute__((aligned(16))) = {
     0xff, 0x04, 0xff, 0x05, 0xff, 0x06, 0xff, 0x07,
 };
 
-static uint8_t bytes16[16] __attribute__((aligned(16))) = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
-
 static void
 CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
 {
@@ -1828,61 +1749,124 @@ CrossFadePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity)
 /* 
  *---------------------------------------------------------------------------
  *
- * BlankPicture --
+ * PremultiplyColors --
  *
- *      Sets the picture to the specified color value.  The color is 
- *      unassociated.  
- *      
+ *      Multiplies the alpha value with each color component using SSSE3
+ *      operations.  It is assumed that the already does not have already
+ *      have premultiplied colors.  
+ *
+ *              Dr = Sr * Sa
+ *              Dg = Sg * Sg
+ *              Db = Sb * Sb
+ *              Da = Sa
+ *
+ *      Pictures are also guaranteed to be quadword aligned (16 bytes).
+ *      The stride (pixelsPerRow) is always a multiple of 4 pixels.  This
+ *      lets us blend 4 associate 4 pixels at a time.  We also use Jim
+ *      Blinn's method of multiplying two 8-bit numbers togther.
+ *
+ *      Reference: Jim Blinn's Corner: Dirty Pixels.
+ *
  * Results: 
  *      None.
  *
- * Side effects: 
- *      The source picture is set to the specified color.
- *
  * -------------------------------------------------------------------------- 
  */
+static uint8_t preMultMap[16] __attribute__((aligned(16))) = {
+    /* B G R A B G R A */
+    /* The first 3 words, get the first alpha. The fourth is zero. */
+    0xff, 0x03, 0xff, 0x03, 0xff, 0x03, 0xff, 0xff,
+    /* The second 3 words, get the second alpha. The fourth is zero. */
+    0xff, 0x07, 0xff, 0x07, 0xff, 0x07, 0xff, 0xff,
+};
+
 static void
-BlankPicture(Pict *destPtr, unsigned int colorValue)
+PremultiplyColors(Pict *srcPtr)
 {
-    Blt_Pixel *destRowPtr;
     int y;
-    Blt_Pixel pixel;
-    int i;
+    Blt_Pixel *srcRowPtr;
     
-    pixel.u32 = colorValue;
-    Blt_PremultiplyColor(&pixel);
-    for (i = 0; i < 16; i += 4) {
-        bytes16[i]   = pixel.Blue;
-        bytes16[i+1] = pixel.Green;
-        bytes16[i+2] = pixel.Red;
-        bytes16[i+3] = pixel.Alpha;
+    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+        return;
     }
+    srcPtr->flags |= BLT_PIC_PREMULT_COLORS;
     asm volatile (
-        "movdqa    (%0), %%xmm6         # xmm6 = color\n\t"
+        "pcmpeqw   %%xmm0, %%xmm0       # xmm0 = ffff x 8\n\t"
+        "pxor      %%xmm6, %%xmm6       # xmm6 = 0\n\t"
+        "pxor      %%xmm0, %%xmm0       # xmm0 = 0\n\t"
+        "mov       $0xFF00,%%edx        # edx =  ff00 \n\t"
+        /* Fix the 4th and 8th 16-bit alpha values to ff00 (1)  */
+        "pinsrw    $3,%%edx,%%xmm0      # xmm0 = ____ ____ ____ ff__ \n\t"
+        "pinsrw    $7,%%edx,%%xmm0      # xmm0 = ____ ____ ____ ff__ \n\t"
+        "movdqa    (%0), %%xmm7         # xmm7 = shuffle map\n\t"
+        "pcmpeqw   %%xmm1, %%xmm1       # xmm1 = ffff x 8\n\t"
+        "punpckhbw %%xmm6, %%xmm1	# xmm1 = 00ff x 8\n\t"
+        "psrlw     $7, %%xmm1           # xmm1 = 0001 x 8\n\t"
+        "psllw     $7, %%xmm1           # xmm1 = 0010 x 8\n\t"
         : /* outputs */
         : /* inputs */
-          "r" (bytes16));
+          "r" (preMultMap)
+        : /* clobbers */
+          "edx");
+    /*
+     * xmm0 = mask      ____ ____ ____ _1__ x 4   alphas | mask 
+     * xmm1 = bias      __8_ __8_ __8_ ____ x 4   3 bias + 0000
+     * xmm6 = 0         ____ ____ ____ ____ x 4
+     * xmm7 = shuffle   
+     */
+    srcRowPtr = srcPtr->bits;
+    for (y = 0; y < srcPtr->height; y++) {
+        Blt_Pixel *sp, *send;
 
-    destRowPtr = destPtr->bits;
-    for (y = 0; y < destPtr->height; y++) {
-        Blt_Pixel *dp, *dend;
-
-        for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend; dp += 4) {
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp += 4) {
             asm volatile (
-                "movdqa %%xmm6, (%0)    # Save the 4 pixels. \n\t" 
-                : /* outputs */
-                  "+r" (dp));
+		"movdqa    (%0), %%xmm4         # xmm4 = P x 4\n\t" 
+
+		"movdqa    %%xmm4, %%xmm2       # xmm2 = xmm4\n\t"
+                /* Move the upper quadword to lower so that we can use the
+                 * same shuffle mask for both pairs of pixels. */
+		"movhlps   %%xmm4, %%xmm3       # xmm3 = P2 P3\n\t"
+                /* Unpack background. */
+		"punpcklbw %%xmm6, %%xmm2	# xmm2 = _b_g_r_a x 2\n\t"
+		"movdqa    %%xmm3, %%xmm5       # xmm5 = xmm3\n\t"
+		"punpcklbw %%xmm6, %%xmm3	# xmm3 = _b_g_r_a x 2\n\t"
+                /* Shift color components to upper byte */
+                "psllw     $8, %%xmm2           # xmm2 = b_g_r_a_\n\t"
+                "psllw     $8, %%xmm3           # xmm3 = b_g_r_a_\n\t"
+                /* Shuffle bytes in pixels to get alphas in high bytes. */
+		"pshufb	   %%xmm7, %%xmm4       # xmm4 = a_a_a___ x 2\n\t"
+		"pshufb	   %%xmm7, %%xmm5       # xmm5 = a_a_a___ x 2\n\t"
+                /* Or in 0x100 for the alpha multiplier. */
+		"por	   %%xmm0, %%xmm4       # xmm5 = a_a_a_1_ x 2\n\t"
+		"por	   %%xmm0, %%xmm5       # xmm5 = a_a_a_1_ x 2\n\t"
+                /* Multiple each color component by its matching alpha. */
+		"pmulhuw   %%xmm2, %%xmm4	# xmm4 = a*b,a*g,a*r,a*ff\n\t"
+		"pmulhuw   %%xmm3, %%xmm5	# xmm5 = a*b,a*g,a*r,a*ff\n\t"
+                 /* Add the bias. */
+                "paddsw    %%xmm1, %%xmm4       # xmm4 += bias\n\t"
+                "paddsw    %%xmm1, %%xmm5       # xmm5 += bias\n\t"
+                /* Save copy of original (bg * beta) + bias. */
+                "movdqa    %%xmm4, %%xmm2       # xmm2 = xmm4\n"
+                "movdqa    %%xmm5, %%xmm3       # xmm3 = xmm5\n"
+                /* Approximate dividing by 257. (((x >> 8) + x) >> 8) */
+                "psrlw     $8, %%xmm4           # xmm4 /= 256\n\t"
+                "psrlw     $8, %%xmm5           # xmm5 /= 256\n\t"
+                /* Add original */
+                "paddw     %%xmm2, %%xmm4       # xmm4 += xmm2\n\t"
+                "paddw     %%xmm3, %%xmm5       # xmm5 += xmm3\n\t"
+                /* Divide again by 256 */
+                "psrlw     $8, %%xmm4           # P / 257\n\t"
+                "psrlw     $8, %%xmm5           # P / 257\n\t"
+		/* Convert words to bytes  */
+		"packuswb  %%xmm5, %%xmm4       # xmm4 = P0 P1 P2 P3\n\t"
+		"movdqa    %%xmm4, (%0)     	# Save 4 pixels.\n\t"
+		: /* outputs */
+                  "+r" (sp));
         }
-        destRowPtr += destPtr->pixelsPerRow;
-    }
-    destPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_MASK);
-    destPtr->flags |= (BLT_PIC_DIRTY | BLT_PIC_PREMULT_COLORS);
-    if (pixel.Alpha == 0x00) {
-        destPtr->flags |= BLT_PIC_MASK | BLT_PIC_COMPOSITE;
-    } else if (pixel.Alpha != 0xFF) {
-        destPtr->flags |= BLT_PIC_COMPOSITE;
+        srcRowPtr += srcPtr->pixelsPerRow;
     }
 }
+
 
 static void
 ZoomVertically2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
@@ -1988,6 +1972,30 @@ ZoomVertically2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
     Blt_Free(samples);
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * ZoomHorizontally2 --
+ *
+ *      This is the easier of the 2 zooms since the pixels are all on the
+ *      same row.  The big advantage here is computing 4 weights at a
+ *      time.  This should help minification since it's likely to have ~30
+ *      weights for creating thumbnails.
+ *
+ *      Pictures are guaranteed to be quadword aligned (16 bytes).  The
+ *      stride (pixelsPerRow) is always a multiple of 4 pixels.  This is
+ *      also true of weights.  The entire weights array is aligned to be on
+ *      a 16 byte boundary. Each set of weights is a multiple of 16 bytes
+ *      (four weights). This lets us compute the 4 weights associated with
+ *      4 pixels at a time.  Weights are padded with zeros, so if the 
+ *      number of weights is not a mulitple of 4, they extra pixels will
+ *      not add to the sum.
+ *
+ * Results: 
+ *      None.
+ *
+ * -------------------------------------------------------------------------- 
+ */
 static void
 ZoomHorizontally2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 {

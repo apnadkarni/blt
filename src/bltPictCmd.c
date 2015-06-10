@@ -2381,7 +2381,6 @@ PostScriptProc(
         Blt_Ps_SetInterp(ps, interp);
         Blt_Ps_Free(ps);
     } else {
-        Blt_HashEntry *hPtr;
         Blt_Picture bg;
         Blt_Ps ps;
         Drawable drawable;

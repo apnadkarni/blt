@@ -139,7 +139,6 @@ set trim "$top"
 set table [blt::datatable create]    
 puts stderr [time { $table dir $top -pattern "*"}]
 puts stderr [time { $table dir $top -pattern ".*"}]
-$table dump -file dir.dump
 
 blt::scrollset .ss \
     -window $view \
