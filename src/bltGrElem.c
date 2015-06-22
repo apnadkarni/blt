@@ -2837,9 +2837,9 @@ DeactivateOp(
                 Blt_InitHashTable(&elemPtr->activeTable, BLT_ONE_WORD_KEYS);
             }
             elemPtr->numActiveIndices = -1;
-            Blt_EventuallyRedrawGraph(graphPtr);
         }
     }
+    Blt_EventuallyRedrawGraph(graphPtr);
     return TCL_OK;
 }
 

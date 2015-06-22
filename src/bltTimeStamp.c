@@ -365,6 +365,29 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
     return objPtr;
 }
 
+static int
+GetTwoDigitCentury(Tcl_Interp *interp)
+{
+    int century;
+    Tcl_Obj *objPtr;
+    
+    /* Don't leave an error message if you don't find the variable. */
+    objPtr = Tcl_GetVar2Ex(interp, "blt::timestamp", "century", 0);
+    if (objPtr == NULL) {
+        return 1900;
+    }
+    if (Tcl_GetIntFromObj(interp, objPtr, &century) != TCL_OK) {
+        return 1900;
+    }
+    if (century < 1) {
+        return 1900;
+    }
+    if (century < 100) {
+        return (century - 1) * 100;
+    }
+    return century;
+}
+
 /* 
  *-----------------------------------------------------------------------------
  *
@@ -1341,6 +1364,7 @@ ExtractYear(TimeStampParser *parserPtr)
     if (tokenPtr != NULL) {
         parserPtr->date.year = tokenPtr->lvalue;
         if (tokenPtr->length == 2) {
+            
             parserPtr->date.year += 1900;
         }
         DeleteToken(parserPtr, tokenPtr);
@@ -1732,6 +1756,7 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
         case _YEAR:                    /* 0000-9999 or 00-99 */
             parserPtr->date.year = tokenPtr->lvalue;
             if (tokenPtr->length == 2) {
+
                 parserPtr->date.year += 1900;
             }
             break;
@@ -2661,7 +2686,7 @@ ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec timeStampCmdOps[] =
 {
-    {"format",  1, FormatOp,      3, 0, "seconds ?switches?",},
+    {"format",  1, FormatOp,      3, 0, "seconds ?switches ...?",},
     {"parse",   1, ParseOp,       3, 3, "timeStamp",},
     {"scan",    1, ScanOp,        3, 3, "timeStamp",},
 };

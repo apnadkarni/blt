@@ -469,7 +469,8 @@ Blt_Tags_ClearTagsFromItem(Tags *tagsPtr, ClientData item)
  *
  * Blt_Tags_AppendTagsToChain --
  *
- *      Appends to a list of all the tags an item is associated with.
+ *      Appends to the given list all the tags that are associated with an
+ *      item.
  *
  * Results:
  *      None.

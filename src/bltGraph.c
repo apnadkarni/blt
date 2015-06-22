@@ -311,6 +311,11 @@ static Blt_SwitchCustom formatSwitch = {
 };
 
 
+static Blt_SwitchParseProc ObjToPixels;
+static Blt_SwitchCustom pixelsSwitch = {
+    ObjToPixels, NULL, NULL, (ClientData)0,
+};
+
 typedef struct {
     const char *name;
     int width, height;
@@ -322,10 +327,10 @@ enum SnapFormats { FMT_PICTURE, FMT_PHOTO, FMT_EMF, FMT_WMF };
 static Blt_SwitchSpec snapSpecs[] = {
     {BLT_SWITCH_CUSTOM,  "-format", "format", (char *)NULL,
         Blt_Offset(SnapArgs, format), 0, 0, &formatSwitch},
-    {BLT_SWITCH_INT_POS, "-height", "numPixels", (char *)NULL,
-        Blt_Offset(SnapArgs, height), 0},
-    {BLT_SWITCH_INT_POS, "-width",  "numPixels", (char *)NULL,
-        Blt_Offset(SnapArgs, width),  0},
+    {BLT_SWITCH_CUSTOM, "-height", "numPixels", (char *)NULL,
+        Blt_Offset(SnapArgs, height), 0, 0, &pixelsSwitch},
+    {BLT_SWITCH_CUSTOM, "-width",  "numPixels", (char *)NULL,
+        Blt_Offset(SnapArgs, width),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1708,6 +1713,38 @@ ObjToFormat(
 /*
  *---------------------------------------------------------------------------
  *
+ * ObjToPixels --
+ *
+ *      Convert a string representing an output format.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToPixels(
+    ClientData clientData,              /* Not used.*/
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
+{
+    int *numPixelsPtr = (int *)(record + offset);
+    Tk_Window tkwin;
+
+    tkwin = Tk_MainWindow(interp);
+    return Blt_GetPixelsFromObj(interp, tkwin, objPtr, PIXELS_POS,numPixelsPtr);
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ObjToElement --
  *
  *      Convert a string representing an element name into its pointer.
@@ -2388,6 +2425,8 @@ Blt_MapGraph(Graph *graphPtr)
 static void
 GraphToDrawable(Graph *graphPtr, Drawable drawable)
 {
+    int w, h;
+    
     DrawPlot(graphPtr, drawable);
     /* Draw markers above elements */
     Blt_DrawMarkers(graphPtr, drawable, MARKER_ABOVE);
@@ -2399,12 +2438,13 @@ GraphToDrawable(Graph *graphPtr, Drawable drawable)
         Blt_DrawLegend(graphPtr, drawable);
     }
     /* Draw 3D border just inside of the focus highlight ring. */
-    if ((graphPtr->borderWidth > 0) && (graphPtr->relief != TK_RELIEF_FLAT)) {
+    w = graphPtr->width  - 2 * graphPtr->highlightWidth;
+    h = graphPtr->height - 2 * graphPtr->highlightWidth;
+    if ((w > 0) && (h > 0) && (graphPtr->borderWidth > 0) &&
+        (graphPtr->relief != TK_RELIEF_FLAT)) {
         Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
                 graphPtr->normalBg, graphPtr->highlightWidth, 
-                graphPtr->highlightWidth, 
-                graphPtr->width  - 2 * graphPtr->highlightWidth, 
-                graphPtr->height - 2 * graphPtr->highlightWidth, 
+                graphPtr->highlightWidth, w, h, 
                 graphPtr->borderWidth, graphPtr->relief);
     }
     /* Draw focus highlight ring. */
@@ -2464,7 +2504,8 @@ DisplayProc(ClientData clientData)
     Pixmap drawable;
     Tk_Window tkwin;
     int site;
-
+    int w, h;
+    
     graphPtr->flags &= ~REDRAW_PENDING;
     if (graphPtr->tkwin == NULL) {
         return;                         /* Window has been destroyed (we
@@ -2536,13 +2577,13 @@ DisplayProc(ClientData clientData)
     if (site == LEGEND_WINDOW) {
         Blt_Legend_EventuallyRedraw(graphPtr);
     }
+    w = graphPtr->width  - 2 * graphPtr->highlightWidth;
+    h = graphPtr->height - 2 * graphPtr->highlightWidth;
     /* Draw 3D border just inside of the focus highlight ring. */
-    if ((graphPtr->borderWidth > 0) && (graphPtr->relief != TK_RELIEF_FLAT)) {
-        Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
-                graphPtr->normalBg, graphPtr->highlightWidth, 
-                graphPtr->highlightWidth, 
-                graphPtr->width - 2 * graphPtr->highlightWidth, 
-                graphPtr->height - 2 * graphPtr->highlightWidth, 
+    if ((w > 0) && (h > 0) && (graphPtr->borderWidth > 0) &&
+        (graphPtr->relief != TK_RELIEF_FLAT)) {
+        Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg,
+                graphPtr->highlightWidth, graphPtr->highlightWidth, w, h,
                 graphPtr->borderWidth, graphPtr->relief);
     }
     /* Draw focus highlight ring. */
@@ -2658,10 +2699,21 @@ Blt_GraphToPicture(Tcl_Interp *interp, Tk_Window tkwin, float gamma)
         return NULL;
     }
     w = Tk_Width(tkwin);
+    if (w < 2) {
+        w = Tk_ReqWidth(tkwin);
+    }
     h = Tk_Height(tkwin);
+    if (h < 2) {
+        h = Tk_ReqHeight(tkwin);
+    }
     pixmap = Blt_GetPixmap(Tk_Display(tkwin), Tk_WindowId(tkwin), w, h,
         Tk_Depth(tkwin));
     graphPtr = Blt_GetWindowInstanceData(tkwin);
+    /* Force the graph to be drawn at its normal width and height. */
+    graphPtr->width = w;
+    graphPtr->height = h;
+    Blt_MapGraph(graphPtr);
+    graphPtr->flags |= RESET_WORLD;
     GraphToDrawable(graphPtr, pixmap);
     picture = Blt_DrawableToPicture(tkwin, pixmap, 0, 0, w, h, gamma);
     Tk_FreePixmap(Tk_Display(tkwin), pixmap);

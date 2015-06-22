@@ -5003,6 +5003,12 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         w = Tk_Width(tkwin);
         h = Tk_Height(tkwin);
+        if (w < 2) {
+            w = Tk_ReqWidth(tkwin);
+        }
+        if (h < 2) {
+            h = Tk_ReqHeight(tkwin);
+        }
         args.from.x = args.from.y = 0;
         args.width  = args.from.w = w;
         args.height = args.from.h = h;
