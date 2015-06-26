@@ -34,8 +34,8 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **blt::background** creates specialized backgrounds that can be used
-with the **-background** options of the BLT widgets.
+The **blt::background** creates gradient, tiled, or textured backgrounds
+that can be used with the **-background** options of the BLT widgets.
 
 INTRODUCTION
 ------------

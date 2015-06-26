@@ -40,8 +40,8 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **blt::winop** command performs various window operations on Tk
-windows using low-level Xlib function calls to work around window
+The **blt::winop** command performs various window operations on Tk windows
+using low-level windowing system function calls to work around window
 manager pecularities.
 
 INTRODUCTION

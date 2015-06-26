@@ -19,7 +19,7 @@ blt::tabset .ss.t \
     -font { Arial 8 } \
     -side right \
     -tabwidth same \
-    -scrollcommand { .ss set x } \
+    -scrollcommand { .ss xset } \
     -scrollincrement 1 
 
 blt::table . \
