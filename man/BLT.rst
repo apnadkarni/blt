@@ -17,21 +17,23 @@ Introduction to the BLT library.
 DESCRIPTION
 -----------
 
-BLT is a library of extensions to the Tk library.  It adds new commands and
-variables to the application's interpreter.
+BLT is a library of extensions to the Tcl and Tk libraries.  It adds new
+commands and variables to the application's interpreter.
 
 TCL COMMANDS
 ------------
 
-The following commands are added to the interpreter from the BLT library:
+The following TCL commands are added to the interpreter from the BLT
+library:
 
 **blt::bgexec** 
   Works like TCL's **exec** command, running a pipeline of commands and
-  allowing your program to collect the results. But **blt::bgexec** also
-  allows Tk to handle events.  This means you can execute a long-running
-  command and Tk widgets will behave normally.  When the program finishes,
-  its output and the exit status are written to TCL variables.  This makes
-  it easy to monitor and save the output of a program.
+  allowing your TCL program to collect the results. The difference is that
+  **blt::bgexec** executes in the background and doesn't block Tk events.
+  This means you can execute a long-running command and Tk widgets will
+  behave normally.  When the program finishes, its output and the exit
+  status are written to TCL variables.  This makes it easy to monitor and
+  save the output of a command.
 
 **blt::datatable** 
   Creates datatable data objects.  A *datatable* object is table of cells.

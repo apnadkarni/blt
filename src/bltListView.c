@@ -72,35 +72,41 @@
 
 static const char emptyString[] = "";
 
-#define REDRAW_PENDING   (1<<0)         /* The widget needs to be redrawn. */
+#define REDRAW_PENDING   (1<<0)         /* The widget needs to be
+                                         * redrawn. */
 #define LAYOUT_PENDING   (1<<1)         /* The layout of widget needs to be
                                          * recomputed. */
 #define SORT_PENDING     (1<<3)         /* The items in the need to be
                                          * sorted. */
-#define FOCUS            (1<<4)         /* The widget currently has focus. */
-#define SORTED           (1<<5)         /* The items are currently sorted. */
-#define SCROLLX          (1<<6)         /* The widget needs to be scrolled in
-                                         * the x direction. */
-#define SCROLLY          (1<<7)         /* The widget needs to be scrolled in
-                                         * the y direction. */
+#define FOCUS            (1<<4)         /* The widget currently has
+                                           focus. */
+#define SORTED           (1<<5)         /* The items are currently
+                                           sorted. */
+#define SCROLLX          (1<<6)         /* The widget needs to be scrolled
+                                         * in the x direction. */
+#define SCROLLY          (1<<7)         /* The widget needs to be scrolled
+                                         * in the y direction. */
 #define SCROLL_PENDING   (SCROLLX|SCROLLY)
+
+#define GEOMETRY         (1<<8)         /* Items need to have their
+                                         * geometry computed. */
 
 #define RESTRICT_MIN     (1<<10)
 #define RESTRICT_MAX     (1<<11)
 #define RESTRICT_NONE    (0)
 
-#define SELECT_SINGLE    (1<<12)        /* Single mode: Select only one item
-                                         * at a time.*/
-#define SELECT_MULTIPLE  (1<<13)        /* Multiple mode: Select one or more
-                                         * items. */
+#define SELECT_SINGLE    (1<<12)        /* Single mode: Select only one
+                                         * item at a time.*/
+#define SELECT_MULTIPLE  (1<<13)        /* Multiple mode: Select one or
+                                         * more items. */
 #define SELECT_MODE_MASK (SELECT_MULTIPLE|SELECT_SINGLE)
 
 #define SELECT_EXPORT    (1<<16)        /* Export the selection to X11. */
-#define SELECT_ORDERED   (1<<17)        /* Indicates that the selection should
-                                         * be set in the order that the items
-                                         * were selected. */
-#define SELECT_PENDING   (1<<18)        /* A "selection" command idle task is
-                                         * pending.  */
+#define SELECT_ORDERED   (1<<17)        /* Indicates that the selection
+                                         * should be set in the order that
+                                         * the items were selected. */
+#define SELECT_PENDING   (1<<18)        /* A "selection" command idle task
+                                         * is pending.  */
 #define SELECT_SET       (1<<19)        /* Select the item. */
 #define SELECT_CLEAR     (1<<20)        /* Deselect the item.  */
 #define SELECT_TOGGLE    (SELECT_SET | SELECT_CLEAR)
@@ -110,11 +116,12 @@ static const char emptyString[] = "";
 
 #define SORT_AUTO        (1<<26)        /* Automatically sort the items as
                                          * items are added or deleted. */
-#define SORT_DECREASING  (1<<27)        /* Sort items in decreasing order.  */
+#define SORT_DECREASING  (1<<27)        /* Sort items in decreasing
+                                         * order.  */
 #define SORT_DICTIONARY  (1<<28)        /* Sort the items in dictionary
                                          * order. */
 #define SORT_BY_TYPE     (1<<29)        /* Sort the items by their type. */
-#define SORT_BY_TEXT     (1<<30)        /* Sort the items by their name.  */
+#define SORT_BY_TEXT     (1<<30)        /* Sort the items by their name. */
 #define SORT_BY_MASK     (SORT_BY_TYPE|SORT_BY_TEXT)
 
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
@@ -136,17 +143,17 @@ static const char emptyString[] = "";
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define CLAMP(x,min,max) ((((x) < (min)) ? (min) : ((x) > (max)) ? (max) : (x)))
 
-#define ITEM_IPAD          5
-#define ITEM_XPAD          0
-#define ITEM_YPAD          0
+#define ITEM_IPAD       5
+#define ITEM_XPAD       0
+#define ITEM_YPAD       0
 
-#define ITEM_REDRAW       (1<<2)        /* Item needs to be redrawn. */
-#define ITEM_HIDDEN       (1<<5)        /* The item is hidden. */
+#define REDRAW          (1<<2)          /* Item needs to be redrawn. */
+#define HIDDEN          (1<<5)          /* The item is hidden. */
 
 /* Item state. */
-#define ITEM_NORMAL       (1<<8)        /* Draw item normally. */
-#define ITEM_DISABLED     (1<<9)        /* Item is disabled. */
-#define ITEM_STATE_MASK   ((ITEM_DISABLED)|(ITEM_NORMAL))
+#define NORMAL          (1<<10)          /* Draw item normally. */
+#define DISABLED        (1<<11)          /* Item is disabled. */
+#define STATE_MASK      ((DISABLED)|(NORMAL))
 
 #define DEF_MAXWIDTH                "1i"
 #define DEF_AUTO_SORT               "0"
@@ -204,57 +211,56 @@ static const char emptyString[] = "";
 #define DISABLED_BACKGROUND         RGB_GREY90
 #define DISABLED_FOREGROUND         RGB_GREY70
 
-
 static Blt_OptionFreeProc FreeStyleProc;
-static Blt_OptionParseProc ObjToStyleProc;
-static Blt_OptionPrintProc StyleToObjProc;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 static Blt_CustomOption styleOption = {
-    ObjToStyleProc, StyleToObjProc, FreeStyleProc, (ClientData)0
+    ObjToStyle, StyleToObj, FreeStyleProc, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 static Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeTextProc;
-static Blt_OptionParseProc ObjToTextProc;
-static Blt_OptionPrintProc TextToObjProc;
+static Blt_OptionParseProc ObjToText;
+static Blt_OptionPrintProc TextToObj;
 static Blt_CustomOption textOption = {
-    ObjToTextProc, TextToObjProc, FreeTextProc, (ClientData)0
+    ObjToText, TextToObj, FreeTextProc, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeIconProc;
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, (ClientData)0
+    ObjToIcon, IconToObj, FreeIconProc, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToRestrictProc;
-static Blt_OptionPrintProc RestrictToObjProc;
+static Blt_OptionParseProc ObjToRestrict;
+static Blt_OptionPrintProc RestrictToObj;
 static Blt_CustomOption restrictOption = {
-    ObjToRestrictProc, RestrictToObjProc, NULL, (ClientData)0
+    ObjToRestrict, RestrictToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToSelectmode;
-static Blt_OptionPrintProc SelectmodeToObj;
+static Blt_OptionParseProc ObjToSelectMode;
+static Blt_OptionPrintProc SelectModeToObj;
 static Blt_CustomOption selectModeOption = {
-    ObjToSelectmode, SelectmodeToObj, NULL, NULL,
+    ObjToSelectMode, SelectModeToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToLayoutmode;
-static Blt_OptionPrintProc LayoutmodeToObj;
+static Blt_OptionParseProc ObjToLayoutMode;
+static Blt_OptionPrintProc LayoutModeToObj;
 static Blt_CustomOption layoutModeOption = {
-    ObjToLayoutmode, LayoutmodeToObj, NULL, NULL,
+    ObjToLayoutMode, LayoutModeToObj, NULL, NULL,
 };
 
 static Blt_OptionParseProc ObjToSortType;
@@ -263,10 +269,10 @@ static Blt_CustomOption sortTypeOption = {
     ObjToSortType, SortTypeToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToColumnProc;
-static Blt_OptionPrintProc ColumnToObjProc;
+static Blt_OptionParseProc ObjToColumn;
+static Blt_OptionPrintProc ColumnToObj;
 static Blt_CustomOption columnOption = {
-    ObjToColumnProc, ColumnToObjProc, NULL, NULL,
+    ObjToColumn, ColumnToObj, NULL, NULL,
 };
 
 extern Blt_CustomOption bltLimitsOption;
@@ -276,9 +282,10 @@ typedef struct _ListView ListView;
 typedef enum LayoutModes {
     LAYOUT_LIST_COLUMN,                 /* Layout items in a single list,
                                          * one item per row. */
-    LAYOUT_LIST_ROW,                    /* Layout items in multiple columns. */
-    LAYOUT_ICONS,                       /* Layout items in multiple rows 
-                                         * using the big icon with the text 
+    LAYOUT_LIST_ROW,                    /* Layout items in multiple
+                                         * columns. */
+    LAYOUT_ICONS,                       /* Layout items in multiple rows
+                                         * using the big icon with the text
                                          * underneath. */
     LAYOUT_TILES                        /* Layout items using the big icon
                                          * with 3 lines of text on the
@@ -289,22 +296,26 @@ typedef enum LayoutModes {
  * Icon --
  *
  *      Since instances of the same Tk image can be displayed in different
- *      windows with possibly different color palettes, Tk internally stores
- *      each instance in a linked list.  But if the instances are used in the
- *      same widget and therefore use the same color palette, this adds a lot
- *      of overhead, especially when deleting instances from the linked list.
+ *      windows with possibly different color palettes, Tk internally
+ *      stores each instance in a linked list.  But if the instances are
+ *      used in the same widget and therefore use the same color palette,
+ *      this adds a lot of overhead, especially when deleting instances
+ *      from the linked list.
  *
- *      For the listview widget, we never need more than a single instance of
- *      an image, regardless of how many times it's used.  Cache the image,
- *      maintaining a reference count for each image used in the widget.  It's
- *      likely that the listview widget will use many instances of the same
- *      image.
+ *      For the listview widget, we never need more than a single instance
+ *      of an image, regardless of how many times it's used.  Cache the
+ *      image, maintaining a reference count for each image used in the
+ *      widget.  It's likely that the listview widget will use many
+ *      instances of the same image.
  */
 typedef struct _Icon {
     Tk_Image tkImage;                   /* The Tk image being cached. */
-    Blt_HashEntry *hPtr;                /* Hash table pointer to the image. */
-    int refCount;                       /* Reference count for this image. */
-    short int width, height;            /* Dimensions of the cached image. */
+    Blt_HashEntry *hPtr;                /* Hash table pointer to the
+                                         * image. */
+    int refCount;                       /* Reference count for this
+                                         * image. */
+    short int width, height;            /* Dimensions of the cached
+                                         * image. */
 } *Icon;
 
 #define IconHeight(i)   ((i)->height)
@@ -316,8 +327,9 @@ typedef struct {
     const char *name;
     Blt_HashEntry *hPtr;
     ListView *viewPtr;
-    int refCount;                       /* Indicates if the style is currently
-                                         * in use in the listview. */
+    int refCount;                       /* Indicates if the style is
+                                         * currently in use in the
+                                         * listview. */
     int borderWidth;
     int relief;
     int activeRelief;
@@ -383,24 +395,27 @@ static Blt_ConfigSpec styleSpecs[] =
  * text:                all entries.
  */
 typedef struct  {
-    ListView *viewPtr;                  /* ListView containing this item. */
-    long index;                         /* Index of the item (numbered from 0)*/
-    int worldX, worldY;                 /* Upper left world-coordinate of item
-                                         * in menu. */
+    ListView *viewPtr;                  /* ListView containing this
+                                         * item. */
+    long index;                         /* Index of the item (numbered from
+                                         * zero)*/
+    int worldX, worldY;                 /* Upper left world-coordinate of
+                                         * item in menu. */
     Style *stylePtr;                    /* Style used by this item. */
     unsigned int flags;                 /* Contains various bits of
-                                         * information about the item, such as
-                                         * type, state. */
+                                         * information about the item, such
+                                         * as type, state. */
     Blt_ChainLink link;
     int relief;
-    int indent;                         /* # of pixels to indent the icon. */
-    Icon image;                         /* If non-NULL, image to be displayed
-                                         * instead of text. */
+    int indent;                         /* # of pixels to indent the
+                                         * icon. */
+    Icon image;                         /* If non-NULL, image to be
+                                         * displayed instead of text. */
     Icon icon;                          /* Small icon. */
     Icon bigIcon;                       /* Big icon. */
     const char *text;                   /* Text to be displayed. */
-    Tcl_Obj *cmdObjPtr;                 /* Command to be invoked when item is
-                                         * clicked. */
+    Tcl_Obj *cmdObjPtr;                 /* Command to be invoked when item
+                                         * is clicked. */
     Tcl_Obj *dataObjPtr;                /* User-data associated with this
                                          * item. */
     Tcl_Obj *tagsObjPtr;
@@ -453,7 +468,8 @@ typedef struct {
 } ColumnInfo;
 
 typedef struct {
-    ColumnInfo text;                    /* Column containing item's text. */
+    ColumnInfo text;                    /* Column containing item's
+                                         * text. */
     ColumnInfo icon;                    /* Column containing item's icon
                                          * name. */
     ColumnInfo bigIcon;                 /* Column containing the item's big
@@ -478,58 +494,59 @@ static Blt_ConfigSpec tableSpecs[] =
 
 struct _ListView {
     Tk_Window tkwin;                    /* Window that embodies the frame.
-                                         * NULL means that the window has been
-                                         * destroyed but the data structures
-                                         * haven't yet been cleaned up. */
-    Display *display;                   /* Display containing widget.  Used,
-                                         * among other things, so that
-                                         * resources can be freed even after
-                                         * tkwin has gone away. */
-    Tcl_Interp *interp;                 /* Interpreter associated with widget.
-                                         * Used to delete widget command. */
+                                         * NULL means that the window has
+                                         * been destroyed but the data
+                                         * structures haven't yet been
+                                         * cleaned up. */
+    Display *display;                   /* Display containing widget.
+                                         * Used, among other things, so
+                                         * that resources can be freed even
+                                         * after tkwin has gone away. */
+    Tcl_Interp *interp;                 /* Interpreter associated with
+                                         * widget.  Used to delete widget
+                                         * command. */
     Tcl_Command cmdToken;               /* Token for widget's command. */
 
     LayoutMode layoutMode;
 
     unsigned int flags;
-    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If non-NULL,
-                                         * this variable will be set to the
-                                         * name of the Tk image representing
-                                         * the icon of the selected item.  */
-    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If non-NULL,
-                                         * this variable will be set to the
-                                         * text string of the text of the
-                                         * selected item. */
+    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable will be
+                                         * set to the name of the Tk image
+                                         * representing the icon of the
+                                         * selected item.  */
+    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable will be
+                                         * set to the text string of the
+                                         * text of the selected item. */
     Tcl_Obj *takeFocusObjPtr;           /* Value of -takefocus option; not
                                          * used in the C code, but used by
                                          * keyboard * traversal scripts. */
-    Tk_Cursor cursor;                   /* Current cursor for window or None. */
+    Tk_Cursor cursor;                   /* Current cursor for window or
+                                         * None. */
 
     Blt_Limits reqWidth, reqHeight;     
     int relief;
     int borderWidth;
 
     int highlightWidth;                 /* Width in pixels of highlight to
-                                         * draw around widget when it has the
-                                         * focus.  <= 0 means don't draw a
-                                         * highlight. */
+                                         * draw around widget when it has
+                                         * the focus.  <= 0 means don't
+                                         * draw a highlight. */
 
     XColor *highlightColor;             /* Color for drawing traversal
                                          * highlight. */
     int inset;                          /* Sum of highlight thickness and
                                          * borderwidth. */
-
     XColor *focusColor;                 /* Color of focus highlight
                                          * rectangle. */
     GC focusGC;
-
     Style defStyle;                     /* Default style. */
-
     TableSource tableSource;            /* Alternative source for item
                                          * data. */
-
-    int maxWidth;
-
+    int maxItemWidth;                   /* For icons layout, overrides the
+                                         * calculated maximum item
+                                         * width. */
     int xScrollUnits, yScrollUnits;
 
     /* Commands to control horizontal and vertical scrollbars. */
@@ -541,8 +558,8 @@ struct _ListView {
 
     Blt_Chain items;
 
-    Item *activePtr;                    /* If non-NULL, item that is currently
-                                         * active. */
+    Item *activePtr;                    /* If non-NULL, item that is
+                                         * currently active. */
     Item *focusPtr;                     /* If non-NULL, item that currently
                                          * has focus. */
 
@@ -572,24 +589,23 @@ struct _ListView {
     /*
      * Selection Information:
      */
-    Item *selAnchorPtr;                 /* Fixed end of selection (i.e. item
-                                         * at which selection was started.) */
+    Item *selAnchorPtr;                 /* Fixed end of selection
+                                         * (i.e. item at which selection
+                                         * was started.) */
     Item *selMarkPtr;
     
-    Tcl_Obj *selCmdObjPtr;              /* TCL script that's invoked whenever
-                                         * the selection changes. */
-
+    Tcl_Obj *selCmdObjPtr;              /* TCL script that's invoked
+                                         * whenever the selection
+                                         * changes. */
     Blt_HashTable selTable;             /* Hash table of currently selected
                                          * entries. */
-
-    Blt_Chain selected;                /* Chain of currently selected entries.
-                                        * Contains the same information as the
-                                        * above hash table, but maintains the
-                                        * order in which entries are
-                                        * selected. */
-
+    Blt_Chain selected;                 /* Chain of currently selected
+                                         * entries.  Contains the same
+                                         * information as the above hash
+                                         * table, but maintains the order
+                                         * in which entries are
+                                         * selected. */
     Tcl_Obj *sortCmdPtr;
-
     short int width, height;
     Blt_Painter painter;
     GC copyGC;
@@ -640,7 +656,7 @@ static Blt_ConfigSpec listViewSpecs[] =
         "HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
         Blt_Offset(ListView, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-maxwidth", "maxWidth", "MaxWidth",
-        DEF_MAXWIDTH, Blt_Offset(ListView, maxWidth), 0},
+        DEF_MAXWIDTH, Blt_Offset(ListView, maxItemWidth), 0},
     {BLT_CONFIG_OBJ, "-iconvariable", "iconVariable", "IconVariable", 
         DEF_ICON_VARIABLE, Blt_Offset(ListView, iconVarObjPtr), 
         BLT_CONFIG_NULL_OK},
@@ -738,18 +754,17 @@ typedef struct _Iterator {
                                          * ITER_SINGLE  Single item: either 
                                          *              tag or index.
                                          */
-
-    Item *startPtr, *last;              /* Starting and ending item.  Starting
-                                         * point of search, saved if iterator
-                                         * is reused.  Used for ITER_ALL and
-                                         * ITER_SINGLE searches. */
+    Item *startPtr, *last;              /* Starting and ending item.
+                                         * Starting point of search, saved
+                                         * if iterator is reused.  Used for
+                                         * ITER_ALL and ITER_SINGLE
+                                         * searches. */
     Item *endPtr;                       /* Ending item (inclusive). */
     Item *nextPtr;                      /* Next item. */
-    char *tagName;                      /* If non-NULL, is the tag that we are
-                                         * currently iterating over. */
+    char *tagName;                      /* If non-NULL, is the tag that we
+                                         * are currently iterating over. */
 
     Blt_HashTable *tablePtr;            /* Pointer to tag hash table. */
-
     Blt_HashSearch cursor;              /* Search iterator for tag hash
                                          * table. */
     Blt_ChainLink link;
@@ -804,15 +819,13 @@ static Blt_SwitchSpec findSwitches[] =
     {BLT_SWITCH_END}
 };
 
-typedef int (ListViewCmdProc)(ListView *viewPtr, Tcl_Interp *interp, 
-        int objc, Tcl_Obj *const *objv);
 static int GetItemIterator(Tcl_Interp *interp, ListView *viewPtr,
         Tcl_Obj *objPtr, ItemIterator *iterPtr);
 static int GetItemFromObj(Tcl_Interp *interp, ListView *viewPtr,
         Tcl_Obj *objPtr, Item **itemPtrPtr);
 
 static Tcl_IdleProc DisplayItem;
-static Tcl_IdleProc DisplayListView;
+static Tcl_IdleProc DisplayProc;
 static Tcl_FreeProc DestroyListView;
 static Tk_EventProc ListViewEventProc;
 static Tcl_ObjCmdProc ListViewInstCmdProc;
@@ -837,15 +850,8 @@ static BLT_TABLE_TRACE_PROC TableTraceProc;
  */
 /*ARGSUSED*/
 static int
-PatternSwitch(
-    ClientData clientData,      /* Flag indicating if the node is considered
-                                 * before or after the insertion position. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    const char *switchName,     /* Not used. */
-    Tcl_Obj *objPtr,            /* String representation */
-    char *record,               /* Structure record */
-    int offset,                 /* Not used. */
-    int flags)                  /* Not used. */
+PatternSwitch(ClientData clientData, Tcl_Interp *interp, const char *switchName,
+              Tcl_Obj *objPtr, char *record, int offset, int flags)
 {
     char c;
     const char *string;
@@ -874,7 +880,7 @@ PatternSwitch(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToLayoutmode --
+ * ObjToLayoutMode --
  *
  *      Convert the string reprsenting a layout mode, to its numeric
  *      form.
@@ -888,16 +894,8 @@ PatternSwitch(
  */
 /*ARGSUSED*/
 static int
-ObjToLayoutmode(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToLayoutMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ListView *viewPtr = (ListView *)widgRec;
     char *string;
@@ -919,14 +917,14 @@ ObjToLayoutmode(
             "\": should be column, row, icons, or tiles.", (char *)NULL);
         return TCL_ERROR;
     }
-    viewPtr->flags |= LAYOUT_PENDING;
+    viewPtr->flags |= LAYOUT_PENDING | GEOMETRY;
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * LayoutmodeToObj --
+ * LayoutModeToObj --
  *
  * Results:
  *      The string representation of the button boolean is returned.
@@ -935,13 +933,8 @@ ObjToLayoutmode(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LayoutmodeToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+LayoutModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)  
 {
     int mode = *(int *)(widgRec + offset);
 
@@ -962,7 +955,7 @@ LayoutmodeToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSelectmode --
+ * ObjToSelectMode --
  *
  *      Convert the string reprsenting a scroll mode, to its numeric
  *      form.
@@ -976,16 +969,8 @@ LayoutmodeToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToSelectmode(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToSelectMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     char *string;
     char c;
@@ -1011,7 +996,7 @@ ObjToSelectmode(
 /*
  *---------------------------------------------------------------------------
  *
- * SelectmodeToObj --
+ * SelectModeToObj --
  *
  * Results:
  *      The string representation of the button boolean is returned.
@@ -1020,13 +1005,8 @@ ObjToSelectmode(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SelectmodeToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+SelectModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)
 {
     int mask = *(int *)(widgRec + offset);
 
@@ -1057,16 +1037,8 @@ SelectmodeToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToSortType(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToSortType(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     char *string;
     char c;
@@ -1101,13 +1073,8 @@ ObjToSortType(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SortTypeToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+SortTypeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)
 {
     int mask = *(int *)(widgRec + offset);
 
@@ -1124,7 +1091,7 @@ SortTypeToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColumnProc --
+ * ObjToColumn --
  *
  *      Convert the string reprsenting a scroll mode, to its numeric
  *      form.
@@ -1138,16 +1105,8 @@ SortTypeToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToColumnProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToColumn(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ColumnInfo *ciPtr = (ColumnInfo *)(widgRec + offset);
     TableSource *srcPtr = (TableSource *)(widgRec);
@@ -1190,7 +1149,7 @@ ObjToColumnProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ColumnToObjProc --
+ * ColumnToObj --
  *
  * Results:
  *      The string representation of the button boolean is returned.
@@ -1199,13 +1158,8 @@ ObjToColumnProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColumnToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ColumnToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)  
 {
     BLT_TABLE_COLUMN col = *(BLT_TABLE_COLUMN *)(widgRec + offset);
 
@@ -1235,7 +1189,7 @@ static void
 EventuallyRedraw(ListView *viewPtr) 
 {
     if ((viewPtr->tkwin != NULL) && !(viewPtr->flags & REDRAW_PENDING)) {
-        Tcl_DoWhenIdle(DisplayListView, viewPtr);
+        Tcl_DoWhenIdle(DisplayProc, viewPtr);
         viewPtr->flags |= REDRAW_PENDING;
     }
 }
@@ -1265,8 +1219,8 @@ TableNotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
  *
  * TableTraceProc --
  *
- *      This procedure is called with a table value is set/unset or created.
- *      Simply reset the columns and redraw the widget.
+ *      This procedure is called with a table value is set/unset or
+ *      created.  Simply reset the columns and redraw the widget.
  *
  *---------------------------------------------------------------------------
  */
@@ -1286,9 +1240,10 @@ TableTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
  *
  * SelectCmdProc --
  *
- *      Invoked at the next idle point whenever the current selection changes.
- *      Executes some application-specific code in the -selectcommand option.
- *      This provides a way for applications to handle selection changes.
+ *      Invoked at the next idle point whenever the current selection
+ *      changes.  Executes some application-specific code in the
+ *      -selectcommand option.  This provides a way for applications to
+ *      handle selection changes.
  *
  * Results:
  *      None.
@@ -1341,65 +1296,17 @@ EventuallyInvokeSelectCmd(ListView *viewPtr)
 }
 
 
-static INLINE Item *
-FirstItem(ListView *viewPtr)
+static Item *
+FirstItem(ListView *viewPtr, unsigned int hateFlags)
 {
     Blt_ChainLink link;
 
-    link = Blt_Chain_FirstLink(viewPtr->items); 
-    if (link != NULL) {
-        return Blt_Chain_GetValue(link);
-    }
-    return NULL;
-}
+    for (link = Blt_Chain_FirstLink(viewPtr->items); 
+         link != NULL; link = Blt_Chain_NextLink(link)) {
+        Item *itemPtr;
 
-static INLINE Item *
-LastItem(ListView *viewPtr)
-{
-    Blt_ChainLink link;
-
-    link = Blt_Chain_LastLink(viewPtr->items); 
-    if (link != NULL) {
-        return Blt_Chain_GetValue(link);
-    }
-    return NULL;
-}
-
-
-static Item *
-NextItem(Item *itemPtr)
-{
-    if (itemPtr != NULL) {
-        Blt_ChainLink link;
-
-        link = Blt_Chain_NextLink(itemPtr->link); 
-        if (link != NULL) {
-            return Blt_Chain_GetValue(link);
-        }
-    }
-    return NULL;
-}
-
-static INLINE Item *
-PrevItem(Item *itemPtr)
-{
-    if (itemPtr != NULL) {
-        Blt_ChainLink link;
-
-        link = Blt_Chain_PrevLink(itemPtr->link); 
-        if (link != NULL) {
-            return Blt_Chain_GetValue(link);
-        }
-    }
-    return NULL;
-}
-
-static Item *
-NextItemAvailable(Item *itemPtr) 
-{
-    for (itemPtr = NextItem(itemPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
-        if ((itemPtr->flags & (ITEM_HIDDEN|ITEM_DISABLED)) == 0) {
+        itemPtr = Blt_Chain_GetValue(link);
+        if ((itemPtr->flags & hateFlags) == 0) {
             return itemPtr;
         }
     }
@@ -1407,11 +1314,54 @@ NextItemAvailable(Item *itemPtr)
 }
 
 static Item *
-PrevItemAvailable(Item *itemPtr) 
+LastItem(ListView *viewPtr, unsigned int hateFlags)
 {
-    for (itemPtr = PrevItem(itemPtr); itemPtr != NULL; 
-         itemPtr = PrevItem(itemPtr)) {
-        if ((itemPtr->flags & (ITEM_HIDDEN|ITEM_DISABLED)) == 0) {
+    Blt_ChainLink link;
+
+    for (link = Blt_Chain_LastLink(viewPtr->items); 
+         link != NULL; link = Blt_Chain_PrevLink(link)) {
+        Item *itemPtr;
+
+        itemPtr = Blt_Chain_GetValue(link);
+        if ((itemPtr->flags & hateFlags) == 0) {
+            return itemPtr;
+        }
+    }
+    return NULL;
+}
+
+static Item *
+NextItem(Item *itemPtr, unsigned int hateFlags) 
+{
+    Blt_ChainLink link;
+
+    if (itemPtr == NULL) {
+        return NULL;
+    }
+    for (link = Blt_Chain_NextLink(itemPtr->link); link != NULL;
+         link = Blt_Chain_NextLink(link)) {
+        
+        itemPtr = Blt_Chain_GetValue(link);
+        if ((itemPtr->flags & hateFlags) == 0) {
+            return itemPtr;
+        }
+    }
+    return NULL;
+}
+
+static Item *
+PrevItem(Item *itemPtr, unsigned int hateFlags) 
+{
+    Blt_ChainLink link;
+
+    if (itemPtr == NULL) {
+        return NULL;
+    }
+    for (link = Blt_Chain_PrevLink(itemPtr->link); link != NULL;
+         link = Blt_Chain_PrevLink(link)) {
+        
+        itemPtr = Blt_Chain_GetValue(link);
+        if ((itemPtr->flags & hateFlags) == 0) {
             return itemPtr;
         }
     }
@@ -1567,7 +1517,7 @@ SelectRange(ListView *viewPtr, Item *fromPtr, Item *toPtr)
         Item *itemPtr;
 
         itemPtr = Blt_Chain_GetValue(link);
-        if ((itemPtr->flags & ITEM_DISABLED) == 0) {
+        if ((itemPtr->flags & DISABLED) == 0) {
             SelectItemUsingFlags(viewPtr, itemPtr);
         }
         if (itemPtr->index >= toPtr->index) {
@@ -1582,9 +1532,9 @@ SelectRange(ListView *viewPtr, Item *fromPtr, Item *toPtr)
  *
  * SelectionProc --
  *
- *      This procedure is called back by Tk when the selection is requested by
- *      someone.  It returns part or all of the selection in a buffer provided
- *      by the caller.
+ *      This procedure is called back by Tk when the selection is requested
+ *      by someone.  It returns part or all of the selection in a buffer
+ *      provided by the caller.
  *
  * Results:
  *      The return value is the number of non-NULL bytes stored at buffer.
@@ -1604,9 +1554,9 @@ SelectionProc(
                                          * character to be returned. */
     char *buffer,                       /* Location in which to place
                                          * selection. */
-    int maxBytes)                       /* Maximum number of bytes to place at
-                                         * buffer, not including terminating
-                                         * NULL character. */
+    int maxBytes)                       /* Maximum number of bytes to place
+                                         * at buffer, not including
+                                         * terminating NULL character. */
 {
     ListView *viewPtr = clientData;
     Tcl_DString ds;
@@ -1633,8 +1583,8 @@ SelectionProc(
     } else {
         Item *itemPtr;
 
-        for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-             itemPtr = NextItem(itemPtr)) {
+        for (itemPtr = FirstItem(viewPtr, HIDDEN | DISABLED);
+             itemPtr != NULL; itemPtr = NextItem(itemPtr, HIDDEN| DISABLED)) {
             if (ItemIsSelected(viewPtr, itemPtr)) {
                 Tcl_DStringAppend(&ds, itemPtr->text, -1);
                 Tcl_DStringAppend(&ds, "\n", -1);
@@ -1656,8 +1606,8 @@ SelectionProc(
  * EventuallyRedrawItem --
  *
  *      Tells the Tk dispatcher to call the listview display routine at the
- *      next idle point.  This request is made only if the window is displayed
- *      and no other redraw request is pending.
+ *      next idle point.  This request is made only if the window is
+ *      displayed and no other redraw request is pending.
  *
  * Results: None.
  *
@@ -1671,7 +1621,7 @@ EventuallyRedrawItem(Item *itemPtr)
 {
     ListView *viewPtr;
 
-    if (itemPtr->flags & (ITEM_HIDDEN|ITEM_REDRAW)) {
+    if (itemPtr->flags & (HIDDEN|REDRAW)) {
         return;
     }
     viewPtr = itemPtr->viewPtr;
@@ -1680,7 +1630,7 @@ EventuallyRedrawItem(Item *itemPtr)
     }
     if (viewPtr->tkwin != NULL) {
         Tcl_DoWhenIdle(DisplayItem, itemPtr);
-        itemPtr->flags |= ITEM_REDRAW;
+        itemPtr->flags |= REDRAW;
     }
 }
 
@@ -1760,7 +1710,7 @@ NewItem(ListView *viewPtr)
     link = Blt_Chain_AllocLink(sizeof(Item));
     itemPtr = Blt_Chain_GetValue(link);
     itemPtr->viewPtr = viewPtr;
-    itemPtr->flags |= ITEM_NORMAL;
+    itemPtr->flags |= NORMAL | GEOMETRY;
     itemPtr->link = link;
     itemPtr->index = Blt_Chain_GetLength(viewPtr->items);
     Blt_Chain_LinkAfter(viewPtr->items, link, NULL);
@@ -1811,8 +1761,9 @@ EndItem(ListView *viewPtr)
  * ActivateItem --
  *
  *      Marks the designated item as active.  The item is redrawn with its
- *      active colors.  The previously active item is deactivated.  If the new
- *      item is NULL, then this means that no new item is to be activated.
+ *      active colors.  The previously active item is deactivated.  If the
+ *      new item is NULL, then this means that no new item is to be
+ *      activated.
  *
  * Results:
  *      None.
@@ -1844,8 +1795,8 @@ ActivateItem(ListView *viewPtr, Item *itemPtr)
  * GetBoundedWidth --
  *
  *      Bounds a given width value to the limits described in the limit
- *      structure.  The initial starting value may be overridden by the nominal
- *      value in the limits.
+ *      structure.  The initial starting value may be overridden by the
+ *      nominal value in the limits.
  *
  * Results:
  *      Returns the constrained value.
@@ -1894,9 +1845,9 @@ GetBoundedWidth(ListView *viewPtr, int w)
  *
  * GetBoundedHeight --
  *
- *      Bounds a given value to the limits described in the limit structure.
- *      The initial starting value may be overridden by the nominal value in
- *      the limits.
+ *      Bounds a given value to the limits described in the limit
+ *      structure.  The initial starting value may be overridden by the
+ *      nominal value in the limits.
  *
  * Results:
  *      Returns the constrained value.
@@ -1929,31 +1880,30 @@ ComputeIconsItemGeometry(ListView *viewPtr, Item *itemPtr)
 {
     Icon icon;
     
-    /* Determine the height of the item.  It's the maximum height of all it's
-     * components: left gadget (radiobutton or checkbutton), icon, text,
-     * right gadget (cascade), and accelerator. */
+    itemPtr->flags &= ~GEOMETRY;
+    
+    /* Determine the height of the item.  It's the maximum height of all
+     * it's components: left gadget (radiobutton or checkbutton), icon,
+     * text, right gadget (cascade), and accelerator. */
+
     itemPtr->textWidth = itemPtr->textHeight = 0;
     itemPtr->iconWidth = itemPtr->iconHeight = 0;
     itemPtr->height = itemPtr->width = 0;
 
-    if (itemPtr->flags & ITEM_HIDDEN) {
-        return;
-    }
     icon = itemPtr->bigIcon;
     if (icon != NULL) {
-        itemPtr->iconWidth = IconWidth(icon) + 2;
+        itemPtr->iconWidth  = IconWidth(icon) + 2;
         itemPtr->iconHeight = IconHeight(icon) + 2;
     }
     if (itemPtr->image != NULL) {
-        itemPtr->textWidth = IconWidth(itemPtr->image);
+        itemPtr->textWidth  = IconWidth(itemPtr->image);
         itemPtr->textHeight = IconHeight(itemPtr->image);
         itemPtr->textWidth  += 2 * itemPtr->stylePtr->borderWidth;
         itemPtr->textHeight += 2 * itemPtr->stylePtr->borderWidth;
-        itemPtr->textWidth |= 0x1;
+        itemPtr->textWidth  |= 0x1;
         itemPtr->textHeight |= 0x1;
     } else if (itemPtr->text != emptyString) {
         unsigned int w, h;
-        int maxWidth;
         TextStyle ts;
 
         if (itemPtr->layoutPtr != NULL) {
@@ -1963,12 +1913,12 @@ ComputeIconsItemGeometry(ListView *viewPtr, Item *itemPtr)
         Blt_Ts_SetFont(ts, itemPtr->stylePtr->textFont);
         Blt_Ts_SetAnchor(ts, TK_ANCHOR_NW);
         Blt_Ts_SetJustify(ts, TK_JUSTIFY_CENTER);
-        maxWidth = (viewPtr->maxWidth > 0) ? viewPtr->maxWidth : 10000;
-        Blt_Ts_SetMaxLength(ts, maxWidth);
+        w = (viewPtr->maxItemWidth > 0) ? viewPtr->maxItemWidth : 10000;
+        Blt_Ts_SetMaxLength(ts, w);
         itemPtr->layoutPtr = Blt_Ts_TitleLayout(itemPtr->text, -1, &ts);
-        w = itemPtr->layoutPtr->width + 2 * itemPtr->stylePtr->borderWidth;
+        w = itemPtr->layoutPtr->width  + 2 * itemPtr->stylePtr->borderWidth;
         h = itemPtr->layoutPtr->height + 2 * itemPtr->stylePtr->borderWidth;
-        itemPtr->textWidth = w | 0x1;
+        itemPtr->textWidth  = w | 0x1;
         itemPtr->textHeight = h | 0x1;
     }
     if ((itemPtr->iconWidth > 0) && (itemPtr->iconHeight > 0)) {
@@ -1995,16 +1945,16 @@ ComputeListItemGeometry(ListView *viewPtr, Item *itemPtr)
 {
     Icon icon;
 
-    /* Determine the height of the item.  It's the maximum height of all it's
-     * components: left gadget (radiobutton or checkbutton), icon, text,
-     * right gadget (cascade), and accelerator. */
+    itemPtr->flags &= ~GEOMETRY;
+
+    /* Determine the height of the item.  It's the maximum height of all
+     * it's components: left gadget (radiobutton or checkbutton), icon,
+     * text, right gadget (cascade), and accelerator. */
+
     itemPtr->textWidth = itemPtr->textHeight = 0;
     itemPtr->iconWidth = itemPtr->iconHeight = 0;
     itemPtr->height = itemPtr->width = 0;
     itemPtr->worldWidth = itemPtr->worldHeight = 0;
-    if (itemPtr->flags & ITEM_HIDDEN) {
-        return;
-    }
     icon = (viewPtr->layoutMode == LAYOUT_ICONS) ? itemPtr->bigIcon :
         itemPtr->icon;
     if (icon != NULL) {
@@ -2082,12 +2032,11 @@ ComputeRowLayout(ListView *viewPtr)
     numEntries = maxWidth = maxHeight = maxIconWidth = 0;
     minHeight = SHRT_MAX;
     viewPtr->itemHeight = 0;
-    for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
-        if (itemPtr->flags & ITEM_HIDDEN) {
-            continue;
+    for (itemPtr = FirstItem(viewPtr, HIDDEN); itemPtr != NULL; 
+         itemPtr = NextItem(itemPtr, HIDDEN)) {
+        if ((viewPtr->flags | itemPtr->flags) & GEOMETRY) {
+            ComputeListItemGeometry(viewPtr, itemPtr);
         }
-        ComputeListItemGeometry(viewPtr, itemPtr);
         if (maxIconWidth < itemPtr->iconWidth) {
             maxIconWidth = itemPtr->iconWidth;
         }
@@ -2102,16 +2051,14 @@ ComputeRowLayout(ListView *viewPtr)
         }
         numEntries++;
     }
+    viewPtr->flags &= ~GEOMETRY;
     if (numEntries == 0) {
         return;
     }
     /* Now compute the worldX positions */
     x = y = 0;
-    for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
-        if (itemPtr->flags & ITEM_HIDDEN) {
-            continue;
-        }
+    for (itemPtr = FirstItem(viewPtr, HIDDEN); itemPtr != NULL; 
+         itemPtr = NextItem(itemPtr, HIDDEN)) {
         itemPtr->worldX = x;
         itemPtr->worldY = y;
         itemPtr->worldWidth = itemPtr->width;
@@ -2150,8 +2097,8 @@ ComputeRowLayout(ListView *viewPtr)
  * ComputeColumnLayout --
  *
  *      Computes the layout of the widget with the items displayed multiple
- *      columns.  The current height of the widget is used as a basis for the
- *      number of rows in a column.
+ *      columns.  The current height of the widget is used as a basis for
+ *      the number of rows in a column.
  *
  *---------------------------------------------------------------------------
  */
@@ -2162,18 +2109,17 @@ ComputeColumnLayout(ListView *viewPtr)
     int reqWidth, reqHeight;
     int maxWidth, maxHeight;
     int winHeight;
-    int numRows, numEntries;
-    int count, lastMaxWidth, maxIconWidth;
+    int numRows, numItems;
+    int maxIconWidth;
     Item *itemPtr;
 
-    numEntries = maxWidth = maxHeight = maxIconWidth = 0;
+    numItems = maxWidth = maxHeight = maxIconWidth = 0;
     viewPtr->itemHeight = 0;
-    for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
-        if (itemPtr->flags & ITEM_HIDDEN) {
-            continue;
+    for (itemPtr = FirstItem(viewPtr, HIDDEN); itemPtr != NULL; 
+         itemPtr = NextItem(itemPtr, HIDDEN)) {
+        if ((viewPtr->flags | itemPtr->flags) & GEOMETRY) {
+            ComputeListItemGeometry(viewPtr, itemPtr);
         }
-        ComputeListItemGeometry(viewPtr, itemPtr);
         if (maxIconWidth < itemPtr->iconWidth) {
             maxIconWidth = itemPtr->iconWidth;
         }
@@ -2183,9 +2129,10 @@ ComputeColumnLayout(ListView *viewPtr)
         if (maxHeight < itemPtr->height) {
             maxHeight = itemPtr->height;
         }
-        numEntries++;
+        numItems++;
     }
-    if (numEntries == 0) {
+    viewPtr->flags &= ~GEOMETRY;
+    if (numItems == 0) {
         return;
     }
     winHeight = VPORTHEIGHT(viewPtr);
@@ -2197,44 +2144,44 @@ ComputeColumnLayout(ListView *viewPtr)
         numRows = 1;
     }
     /* Now compute the worldX positions */
-    x = y = 0;
-    count = 0;
-    lastMaxWidth = 0;
-    for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
-        if (itemPtr->flags & ITEM_HIDDEN) {
-            continue;
+    x = 0;
+    itemPtr = FirstItem(viewPtr, HIDDEN); 
+    while (itemPtr != NULL) {
+        int i;
+        int colWidth;
+        Item *p;
+        
+        colWidth = 0;
+        y = 0;
+        /* Step 1: Find the width of the widest item in the row.  */
+        for (p = itemPtr, i = 0; (p != NULL) && (i < numRows);
+             i++, p = NextItem(p, HIDDEN)) {
+            if (colWidth < p->width) {
+                colWidth = p->width;
+            }
         }
-        itemPtr->worldX = x;
-        itemPtr->worldY = y;
-        itemPtr->worldWidth = itemPtr->width;
-        itemPtr->worldHeight = maxHeight;
-        if (itemPtr->width > lastMaxWidth) {
-            lastMaxWidth = itemPtr->width;
+        /* Step 2: Set the positions of the items in the row.  */
+        for (i = 0; (itemPtr != NULL) && (i < numRows);
+             i++, itemPtr = NextItem(itemPtr, HIDDEN)) {
+            itemPtr->worldX = x;
+            itemPtr->worldY = y;
+            itemPtr->worldWidth = colWidth;
+            itemPtr->worldHeight = maxHeight;
+            itemPtr->iconX = 1 + (maxIconWidth - itemPtr->iconWidth) / 2;
+            itemPtr->iconY = 1 + (maxHeight - itemPtr->iconHeight) / 2;
+            itemPtr->textX = 2 + maxIconWidth; 
+            if ((itemPtr->textWidth > 0) && (itemPtr->iconWidth > 0)) {
+                itemPtr->textX += ITEM_IPAD;
+            }
+            itemPtr->textY = 1 + (maxHeight - itemPtr->textHeight) / 2;
+            y += maxHeight;
         }
-        itemPtr->iconX = 1 + (maxIconWidth - itemPtr->iconWidth) / 2;
-        itemPtr->iconY = 1 + (maxHeight - itemPtr->iconHeight) / 2;
-
-        itemPtr->textX = 2 + maxIconWidth; 
-        if ((itemPtr->textWidth > 0) && (itemPtr->iconWidth > 0)) {
-            itemPtr->textX += ITEM_IPAD;
-        }
-        itemPtr->textY = 1 + (maxHeight - itemPtr->textHeight) / 2;
-        y += maxHeight;
-        count++;
-        if ((count % numRows) == 0) {
-            x += lastMaxWidth;
-            y = 0;
-            lastMaxWidth = 0;
-        }
-    }
-    if (count > 0) {
-        x += lastMaxWidth;
+        x += colWidth;
     }
     viewPtr->worldWidth = x;
     viewPtr->worldHeight = numRows * maxHeight;
  
-    reqWidth =  viewPtr->worldWidth  + 2 * viewPtr->inset;
+    reqWidth  = viewPtr->worldWidth  + 2 * viewPtr->inset;
     reqHeight = viewPtr->worldHeight + 2 * viewPtr->inset;
 
     w = GetBoundedWidth(viewPtr, reqWidth);
@@ -2252,8 +2199,8 @@ ComputeColumnLayout(ListView *viewPtr)
  * ComputeIconsLayout --
  *
  *      Computes the layout of the widget with the items displayed multiple
- *      columns.  The current height of the widget is used as a basis for the
- *      number of rows in a column.
+ *      columns.  The current height of the widget is used as a basis for
+ *      the number of rows in a column.
  *
  *---------------------------------------------------------------------------
  */
@@ -2262,88 +2209,85 @@ ComputeIconsLayout(ListView *viewPtr)
 {
     int x, y, w, h;
     int reqWidth, reqHeight;
-    int maxHeight, maxWidth;
+    int maxItemWidth;
     int winWidth;
-    int numColumns, numEntries;
-    int count;
+    int numColumns, numItems;
     Item *itemPtr;
 
-    maxHeight = maxWidth = 0;
-    numEntries = 0;
-    for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
-        if (itemPtr->flags & ITEM_HIDDEN) {
-            continue;
+    maxItemWidth = 0;
+    numItems = 0;
+    /* Get the maximum item width. This includes the icon and text or
+     * image. Ignore hidden items.  */
+    for (itemPtr = FirstItem(viewPtr, HIDDEN); itemPtr != NULL; 
+         itemPtr = NextItem(itemPtr, HIDDEN)) {
+        if ((viewPtr->flags | itemPtr->flags) & GEOMETRY) {
+            ComputeIconsItemGeometry(viewPtr, itemPtr);
         }
-        ComputeIconsItemGeometry(viewPtr, itemPtr);
-        if (maxWidth < itemPtr->width) {
-            maxWidth = itemPtr->width;
-        }
-        if (maxHeight < itemPtr->height) {
-            maxHeight = itemPtr->height;
+        if (maxItemWidth < itemPtr->width) {
+            maxItemWidth = itemPtr->width;
         }
         if (itemPtr->height > viewPtr->itemHeight) {
             viewPtr->itemHeight = itemPtr->height;
         }
-        numEntries++;
+        numItems++;
     }
-    if (numEntries == 0) {
-        return;
+    viewPtr->flags &= ~GEOMETRY;
+    if (numItems == 0) {
+        return;                         /* All items are hidden. */
     }
     winWidth = VPORTWIDTH(viewPtr);
     if (winWidth <= 1) {
         winWidth = Tk_ReqWidth(viewPtr->tkwin) - 2 * viewPtr->inset;
     }
-    if ((viewPtr->maxWidth > 0) && (viewPtr->maxWidth < maxWidth)) {
-        maxWidth = viewPtr->maxWidth;
+    if ((viewPtr->maxItemWidth > 0) && (viewPtr->maxItemWidth < maxItemWidth)) {
+        /* Override the calculated maximum item width */
+        maxItemWidth = viewPtr->maxItemWidth;
     }
-    numColumns = winWidth / maxWidth;
+    numColumns = winWidth / maxItemWidth;
     if (numColumns <= 0) {
         numColumns = 1;
     }
-    maxWidth = winWidth / numColumns;
-    viewPtr->textWidth = maxWidth - 6;
+    maxItemWidth = winWidth / numColumns;
+    viewPtr->textWidth = maxItemWidth + 6;
 
     /* Now compute the worldX positions */
     x = y = 0;
-    count = 0;
-    maxHeight = 0;
-    for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
-        if (itemPtr->flags & ITEM_HIDDEN) {
-            continue;
+    itemPtr = FirstItem(viewPtr, HIDDEN); 
+    while (itemPtr != NULL) {
+        int i;
+        int rowHeight;
+        Item *p;
+        
+        rowHeight = 0;
+        x = 0;
+        for (p = itemPtr, i = 0; (p != NULL) && (i < numColumns);
+             i++, p = NextItem(p, HIDDEN)) {
+            if (rowHeight < p->height) {
+                rowHeight = p->height;
+            }
         }
-        if (itemPtr->height > maxHeight) {
-            maxHeight = itemPtr->height;
+        for (i = 0; (itemPtr != NULL) && (i < numColumns);
+             i++, itemPtr = NextItem(itemPtr, HIDDEN)) {
+            itemPtr->worldX = x;
+            itemPtr->worldY = y;
+            itemPtr->worldWidth  = maxItemWidth;
+            itemPtr->worldHeight = rowHeight;
+            itemPtr->iconX = (maxItemWidth - itemPtr->iconWidth) / 2;
+            itemPtr->iconY = 1;
+            itemPtr->textX = 1;
+            if (maxItemWidth > itemPtr->textWidth) {
+                itemPtr->textX = (maxItemWidth - itemPtr->textWidth) / 2;
+            }
+            itemPtr->textY = itemPtr->iconHeight;
+            if ((itemPtr->textHeight > 0) && (itemPtr->iconHeight > 0)) {
+                /* itemPtr->textY += ITEM_IPAD; */
+            }
+            x += maxItemWidth;
         }
-        itemPtr->worldX = x;
-        itemPtr->worldY = y;
-        itemPtr->worldWidth = maxWidth;
-        itemPtr->worldHeight = maxHeight;
-        itemPtr->iconX = (maxWidth - itemPtr->iconWidth) / 2;
-        itemPtr->iconY = 1;
-        itemPtr->textX = 1;
-        if (maxWidth > itemPtr->textWidth) {
-            itemPtr->textX = (maxWidth - itemPtr->textWidth) / 2;
-        }
-        itemPtr->textY = itemPtr->iconHeight;
-        if ((itemPtr->textHeight > 0) && (itemPtr->iconHeight > 0)) {
-            /* itemPtr->textY += ITEM_IPAD; */
-        }
-        x += maxWidth;
-        count++;
-        if ((count % numColumns) == 0) {
-            y += maxHeight;
-            viewPtr->worldHeight += maxHeight;
-            maxHeight = 0;
-            x = 0;
-        }
+        y += rowHeight;
+        viewPtr->worldHeight += rowHeight;
     }
-    if (count > 0) {
-        x += maxWidth;
-        viewPtr->worldHeight += maxHeight;
-    }
-    viewPtr->worldWidth = numColumns * maxWidth;
+    viewPtr->worldWidth = numColumns * maxItemWidth;
 
     reqWidth =  viewPtr->worldWidth  + 2 * viewPtr->inset;
     reqHeight = viewPtr->worldHeight + 2 * viewPtr->inset;
@@ -2363,8 +2307,8 @@ ComputeIconsLayout(ListView *viewPtr)
  * ComputeLayout --
  *
  *      Computes the layout of the widget with the items displayed multiple
- *      columns.  The current height of the widget is used as a basis for the
- *      number of rows in a column.
+ *      columns.  The current height of the widget is used as a basis for
+ *      the number of rows in a column.
  *
  *---------------------------------------------------------------------------
  */
@@ -2415,9 +2359,9 @@ ComputeLayout(ListView *viewPtr)
  *
  * SearchForItem --
  *
- *      Performs a binary search for the item at the given y-offset in world
- *      coordinates.  The range of items is specified by menu indices (high
- *      and low).  The item must be (visible) in the viewport.
+ *      Performs a binary search for the item at the given y-offset in
+ *      world coordinates.  The range of items is specified by menu indices
+ *      (high and low).  The item must be (visible) in the viewport.
  *
  * Results:
  *      Returns 0 if no item is found, other the index of the item (menu
@@ -2431,11 +2375,8 @@ SearchForItem(ListView *viewPtr, int x, int y)
     Item *itemPtr;
     
 
-    for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
-        if (itemPtr->flags & ITEM_HIDDEN) {
-            continue;
-        }
+    for (itemPtr = FirstItem(viewPtr, HIDDEN); itemPtr != NULL; 
+         itemPtr = NextItem(itemPtr, HIDDEN)) {
         if ((x >= itemPtr->worldX) && 
             (x < (itemPtr->worldX+itemPtr->worldWidth)) &&
             (y >= itemPtr->worldY) && 
@@ -2455,9 +2396,9 @@ SearchForItem(ListView *viewPtr, int x, int y)
  *      must be (visible) in the viewport.
  *
  * Results:
- *      Returns the closest item.  If selectOne is set, then always returns an
- *      item (unless the menu is empty).  Otherwise, NULL is returned is the
- *      pointer is not over an item.
+ *      Returns the closest item.  If selectOne is set, then always returns
+ *      an item (unless the menu is empty).  Otherwise, NULL is returned is
+ *      the pointer is not over an item.
  *
  *---------------------------------------------------------------------------
  */
@@ -2469,12 +2410,12 @@ NearestItem(ListView *viewPtr, int x, int y, int selectOne)
 
     if ((x < 0) || (x >= Tk_Width(viewPtr->tkwin)) || 
         (y < 0) || (y >= Tk_Height(viewPtr->tkwin))) {
-        return NULL;                    /* Screen coordinates are outside of
-                                         * menu. */
+        return NULL;                    /* Screen coordinates are outside
+                                         * of menu. */
     }
     /*
-     * Item positions are saved in world coordinates. Convert the text point
-     * screen y-coordinate to a world coordinate.
+     * Item positions are saved in world coordinates. Convert the text
+     * point screen y-coordinate to a world coordinate.
      */
     itemPtr = SearchForItem(viewPtr, WORLDX(viewPtr, x), WORLDY(viewPtr, y));
     if (itemPtr == NULL) {
@@ -2482,9 +2423,9 @@ NearestItem(ListView *viewPtr, int x, int y, int selectOne)
             return NULL;
         }
         if (y < viewPtr->inset) {
-            return FirstItem(viewPtr);
+            return FirstItem(viewPtr, HIDDEN);
         }
-        return LastItem(viewPtr);
+        return LastItem(viewPtr, HIDDEN);
     }
     return itemPtr;
 }
@@ -2587,9 +2528,9 @@ GetStyleFromObj(Tcl_Interp *interp, ListView *viewPtr, Tcl_Obj *objPtr,
  *
  * SetTag --
  *
- *      Associates a tag with a given row.  Individual row tags are
- *      stored in hash tables keyed by the tag name.  Each table is in
- *      turn stored in a hash table keyed by the row location.
+ *      Associates a tag with a given row.  Individual row tags are stored
+ *      in hash tables keyed by the tag name.  Each table is in turn stored
+ *      in a hash table keyed by the row location.
  *
  * Results:
  *      None.
@@ -2791,8 +2732,9 @@ MoveItem(ListView *viewPtr, Item *itemPtr, int dir, Item *wherePtr)
     {
         long count;
 
-        for (count = 0, itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-             itemPtr = NextItem(itemPtr), count++) {
+        /* Renumber the indices of the items. */
+        for (count = 0, itemPtr = FirstItem(viewPtr, 0); itemPtr != NULL; 
+             itemPtr = NextItem(itemPtr, 0), count++) {
             itemPtr->index = count;
         }
     }
@@ -2906,10 +2848,10 @@ FirstTaggedItem(ItemIterator *iterPtr)
  *
  * GetItemFromObj --
  *
- *      Get the item associated the given index, tag, or text.  This routine
- *      is used when you want only one item.  It's an error if more than one
- *      item is specified (e.g. "all" tag).  It's also an error if the tag is
- *      empty (no items are currently tagged).
+ *      Get the item associated the given index, tag, or text.  This
+ *      routine is used when you want only one item.  It's an error if more
+ *      than one item is specified (e.g. "all" tag).  It's also an error if
+ *      the tag is empty (no items are currently tagged).
  *
  *---------------------------------------------------------------------------
  */
@@ -2965,21 +2907,21 @@ GetItemByIndex(Tcl_Interp *interp, ListView *viewPtr, const char *string,
             return TCL_ERROR;
         }               
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
-        itemPtr = NextItemAvailable(viewPtr->focusPtr);
+        itemPtr = NextItem(viewPtr->focusPtr, HIDDEN | DISABLED);
         if (itemPtr == NULL) {
             itemPtr = viewPtr->focusPtr;
         }
     } else if ((c == 'p') && (strcmp(string, "previous") == 0)) {
-        itemPtr = PrevItemAvailable(viewPtr->focusPtr);
+        itemPtr = PrevItem(viewPtr->focusPtr, HIDDEN| DISABLED);
         if (itemPtr == NULL) {
             itemPtr = viewPtr->focusPtr;
         }
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
-        itemPtr = LastItem(viewPtr);
+        itemPtr = LastItem(viewPtr, 0);
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
-        itemPtr = FirstItem(viewPtr);
+        itemPtr = FirstItem(viewPtr, HIDDEN);
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
-        itemPtr = LastItem(viewPtr);
+        itemPtr = LastItem(viewPtr, HIDDEN);
     } else if ((c == 'n') && (strcmp(string, "none") == 0)) {
         itemPtr = NULL;
     } else if ((c == 'a') && (strcmp(string, "active") == 0)) {
@@ -3027,8 +2969,8 @@ GetItemByText(ListView *viewPtr, const char *string)
  *
  * GetItemIterator --
  *
- *      Converts a string representing a item index into an item pointer.  The
- *      index may be in one of the following forms:
+ *      Converts a string representing a item index into an item pointer.
+ *      The index may be in one of the following forms:
  *
  *       number         Item at index in the list of items.
  *       @x,y           Item closest to the specified X-Y screen coordinates.
@@ -3055,9 +2997,9 @@ GetItemByText(ListView *viewPtr, const char *string)
  *      
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.  The
- *      pointer to the node is returned via itemPtrPtr.  Otherwise, TCL_ERROR
- *      is returned and an error message is left in interpreter's result
- *      field.
+ *      pointer to the node is returned via itemPtrPtr.  Otherwise,
+ *      TCL_ERROR is returned and an error message is left in interpreter's
+ *      result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -3150,6 +3092,7 @@ ConfigureItem(Tcl_Interp *interp, Item *itemPtr, int objc, Tcl_Obj *const *objv,
         objc, objv, (char *)itemPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
+    itemPtr->flags |= GEOMETRY;
     viewPtr->flags |= LAYOUT_PENDING;
     return TCL_OK;
 }
@@ -3220,8 +3163,8 @@ RebuildTableItems(Tcl_Interp *interp, ListView *viewPtr, BLT_TABLE table)
         Item *itemPtr;
 
         /* Create a hash table of row to item mappings. */
-        for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-             itemPtr = NextItem(itemPtr)) {
+        for (itemPtr = FirstItem(viewPtr, 0); itemPtr != NULL; 
+             itemPtr = NextItem(itemPtr, 0)) {
             Blt_HashEntry *hPtr;
             int isNew;
             if (itemPtr->row == NULL) {
@@ -3304,8 +3247,8 @@ RebuildTableItems(Tcl_Interp *interp, ListView *viewPtr, BLT_TABLE table)
  *
  * ListViewEventProc --
  *
- *      This procedure is invoked by the Tk dispatcher for various events on
- *      listview widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events
+ *      on listview widgets.
  *
  * Results:
  *      None.
@@ -3345,7 +3288,7 @@ ListViewEventProc(ClientData clientData, XEvent *eventPtr)
             viewPtr->tkwin = NULL; 
         }
         if (viewPtr->flags & REDRAW_PENDING) {
-            Tcl_CancelIdleCall(DisplayListView, viewPtr);
+            Tcl_CancelIdleCall(DisplayProc, viewPtr);
         }
         Tcl_EventuallyFree(viewPtr, DestroyListView);
     }
@@ -3366,27 +3309,20 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStyleProc --
+ * ObjToStyle --
  *
- *      Convert the string representation of a color into a XColor pointer.
+ *      Convert the string representation of a style pointer.
  *
  * Results:
- *      The return value is a standard TCL result.  The color pointer is
+ *      The return value is a standard TCL result.  The style pointer is
  *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ListView *viewPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -3410,11 +3346,10 @@ ObjToStyleProc(
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
- * StyleToObjProc --
+ * StyleToObj --
  *
  *      Return the name of the style.
  *
@@ -3425,13 +3360,8 @@ ObjToStyleProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Style *stylePtr = *(Style **)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -3447,7 +3377,7 @@ StyleToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToRestrictProc --
+ * ObjToRestrict --
  *
  *      Convert the string representation of an item state into a flag.
  *
@@ -3459,15 +3389,8 @@ StyleToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToRestrictProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToRestrict(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     char *string;
@@ -3495,7 +3418,7 @@ ObjToRestrictProc(
 /*
  *---------------------------------------------------------------------------
  *
- * RestrictToObjProc --
+ * RestrictToObj --
  *
  *      Return the string representation of the restrict flags.
  *
@@ -3506,13 +3429,8 @@ ObjToRestrictProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-RestrictToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+RestrictToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     const char *string;
@@ -3531,7 +3449,7 @@ RestrictToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Convert the string representation of an item state into a flag.
  *
@@ -3543,15 +3461,8 @@ RestrictToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Item *itemPtr = (Item *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -3561,9 +3472,9 @@ ObjToStateProc(
 
     string = Tcl_GetString(objPtr);
     if (strcmp(string, "disabled") == 0) {
-        flag = ITEM_DISABLED;
+        flag = DISABLED;
     } else if (strcmp(string, "normal") == 0) {
-        flag = ITEM_NORMAL;
+        flag = NORMAL;
     } else {
         Tcl_AppendResult(interp, "unknown state \"", string, 
                 "\": should be active, disabled, or normal.", (char *)NULL);
@@ -3577,7 +3488,7 @@ ObjToStateProc(
         ActivateItem(viewPtr, NULL);
         viewPtr->activePtr = NULL;
     }
-    *flagsPtr &= ~ITEM_STATE_MASK;
+    *flagsPtr &= ~STATE_MASK;
     *flagsPtr |= flag;
     return TCL_OK;
 }
@@ -3585,7 +3496,7 @@ ObjToStateProc(
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the style.
  *
@@ -3596,20 +3507,15 @@ ObjToStateProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)   
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
 
-    if (state & ITEM_NORMAL) {
+    if (state & NORMAL) {
         objPtr = Tcl_NewStringObj("normal", -1);
-    } else if (state & ITEM_DISABLED) {
+    } else if (state & DISABLED) {
         objPtr = Tcl_NewStringObj("disabled", -1);
     } else {
         objPtr = Tcl_NewStringObj("???", -1);
@@ -3620,11 +3526,7 @@ StateToObjProc(
 
 /*ARGSUSED*/
 static void
-FreeTagsProc(
-    ClientData clientData,
-    Display *display,           /* Not used. */
-    char *widgRec,
-    int offset)
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     ListView *viewPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -3636,7 +3538,7 @@ FreeTagsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -3648,15 +3550,8 @@ FreeTagsProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ListView *viewPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -3683,7 +3578,7 @@ ObjToTagsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Return the name of the style.
  *
@@ -3694,13 +3589,8 @@ ObjToTagsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)   
 {
     ListView *viewPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -3738,7 +3628,7 @@ IconChangedProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Convert a image into a hashed icon.
  *
@@ -3751,16 +3641,8 @@ IconChangedProc(
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ListView *viewPtr = clientData;
     Icon *iconPtr = (Icon *)(widgRec + offset);
@@ -3779,7 +3661,7 @@ ObjToIconProc(
 /*
  *---------------------------------------------------------------------------
  *
- * IconToObjProc --
+ * IconToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -3790,13 +3672,8 @@ ObjToIconProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)   
 {
     Icon icon = *(Icon *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -3811,11 +3688,7 @@ IconToObjProc(
 
 /*ARGSUSED*/
 static void
-FreeIconProc(
-    ClientData clientData,
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Icon *iconPtr = (Icon *)(widgRec + offset);
 
@@ -3829,11 +3702,7 @@ FreeIconProc(
 
 /*ARGSUSED*/
 static void
-FreeTextProc(
-    ClientData clientData,
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Item *itemPtr = (Item *)widgRec;
 
@@ -3845,7 +3714,7 @@ FreeTextProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextProc --
+ * ObjToText --
  *
  *      Save the text and add the item to the text hashtable.
  *
@@ -3856,15 +3725,8 @@ FreeTextProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTextProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToText(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Item *itemPtr = (Item *)(widgRec);
     char *string;
@@ -3883,7 +3745,7 @@ ObjToTextProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TextToObjProc --
+ * TextToObj --
  *
  *      Return the text of the item.
  *
@@ -3894,13 +3756,8 @@ ObjToTextProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TextToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)   
 {
     Item *itemPtr = (Item *)(widgRec);
     Tcl_Obj *objPtr;
@@ -3927,14 +3784,8 @@ TextToObjProc(
  */
 /*ARGSUSED*/
 static int
-ItemSwitch(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ItemSwitch(ClientData clientData, Tcl_Interp *interp, const char *switchName,
+           Tcl_Obj *objPtr, char *record, int offset, int flags)
 {
     Item **itemPtrPtr = (Item **)(record + offset);
     ListView *viewPtr = clientData;
@@ -3954,22 +3805,24 @@ ItemSwitch(
  *---------------------------------------------------------------------------
  *
  * ActivateOp --
+ *      Activates the named item.
  *
  * Results:
- *      Standard TCL result.
+ *      A. standard TCL result.
  *
  * Side effects:
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm activate item
+ *      pathName activate itemName
  *
  *---------------------------------------------------------------------------
  */
 static int
-ActivateOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
 
     if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) != TCL_OK) {
@@ -3981,7 +3834,7 @@ ActivateOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
     ActivateItem(viewPtr, NULL);
     viewPtr->activePtr = NULL;
     if ((itemPtr != NULL) &&
-        ((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN)) == 0)) {
+        ((itemPtr->flags & (DISABLED | HIDDEN)) == 0)) {
         ActivateItem(viewPtr, itemPtr);
         viewPtr->activePtr = itemPtr;
     }
@@ -4002,13 +3855,14 @@ ActivateOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The listview entry may become selected or deselected.
  *
- *   .cm add -text "fred" -tags ""
+ *   pathName add ?switches ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-AddOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
 
     itemPtr = NewItem(viewPtr);
@@ -4025,61 +3879,6 @@ AddOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_SetLongObj(Tcl_GetObjResult(interp), itemPtr->index);
     return TCL_OK;
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * AddListOp --
- *
- *      Appends a list of items to the listview.
- *
- * Results:
- *      A standard TCL result.
- *
- * Side effects:
- *      New items are added to the listview.
- *
- *   .t load list $list -icon "image1" -tags ""
- *   .t load table $table -extcolumn -textcolumn -iconcolumn -bigiconcolumn 
- *
- *---------------------------------------------------------------------------
- */
-static int
-AddListOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
-          Tcl_Obj *const *objv)
-{
-    int i;
-    int count;
-    Tcl_Obj **names;
-    Tcl_Obj *listObjPtr;
-
-    if (Tcl_ListObjGetElements(interp, objv[2], &count, &names) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (i = 0; i < count; i++) {
-        Tcl_Obj *objPtr;
-        Item *itemPtr;
-
-        itemPtr = NewItem(viewPtr);
-        if (ConfigureItem(interp, itemPtr, objc - 3, objv + 3, 0) != TCL_OK) {
-            DestroyItem(itemPtr);
-            return TCL_ERROR;   
-        }
-        itemPtr->text = NewText(itemPtr, Tcl_GetString(names[i]));
-        objPtr = Tcl_NewLongObj(itemPtr->index);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    }
-    if (viewPtr->flags & SORT_AUTO) {
-        viewPtr->flags |= SORT_PENDING;
-    }
-    viewPtr->flags |= LAYOUT_PENDING;
-    viewPtr->flags &= ~SORTED;
-    EventuallyRedraw(viewPtr);
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -4092,14 +3891,15 @@ AddListOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm configure ?option value?...
+ *      pathName configure ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int result;
 
     iconOption.clientData = viewPtr;
@@ -4134,23 +3934,42 @@ ConfigureOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm cget option
+ *      pathName cget option
  *
  *---------------------------------------------------------------------------
  */
 static int
-CgetOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
+
     iconOption.clientData = viewPtr;
     return Blt_ConfigureValueFromObj(interp, viewPtr->tkwin, listViewSpecs, 
         (char *)viewPtr, objv[2], 0);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CurselectionOp --
+ *
+ *      Returns a list of the currently selected items.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *
+ *      pathName curselection
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static int
-CurselectionOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+CurselectionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -4169,8 +3988,8 @@ CurselectionOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
     } else {
         Item *itemPtr;
 
-        for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-             itemPtr = NextItem(itemPtr)) {
+        for (itemPtr = FirstItem(viewPtr, HIDDEN | DISABLED);
+             itemPtr != NULL; itemPtr = NextItem(itemPtr, HIDDEN | DISABLED)) {
             if (ItemIsSelected(viewPtr, itemPtr)) {
                 Tcl_Obj *objPtr;
 
@@ -4188,20 +4007,20 @@ CurselectionOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * DeleteOp --
  *
+ *      Deletes one or more items.      
+ *
  * Results:
- *      Standard TCL result.
+ *      A standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cm delete item...
+ *      pathName delete itemName ...
  *
  *---------------------------------------------------------------------------
  */
 static int
-DeleteOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int i;
 
     for (i = 2; i < objc; i++) {
@@ -4227,20 +4046,21 @@ DeleteOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ExistsOp --
  *
+ *      Indicates whether the given item exists.  Returns 1 is the item
+ *      exists and 0 otherwise.
+ *
  * Results:
- *      Standard TCL result.
+ *      A standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cm exists item 
+ *      pathName exists itemName
  *
  *---------------------------------------------------------------------------
  */
 static int
-ExistsOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     int bool;
 
@@ -4265,8 +4085,8 @@ ExistsOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      The index of the found item is returned.  If no item is found
  *      -1 is returned.
  *
- *    .cm find string -from active -previous -all -count 1
- *    .cm find pattern \
+ *    pathName find string -from active -previous -all -count 1
+ *    pathName find pattern \
  *      -type glob|regexp|exact \
  *      -from item -to item \
  *      -previous -wrap \
@@ -4275,8 +4095,10 @@ ExistsOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-FindOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     FindSwitches switches;
     Tcl_Obj *listObjPtr;
     const char *pattern;
@@ -4291,10 +4113,10 @@ FindOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         return TCL_ERROR;
     }
     if (switches.fromPtr == NULL) {
-        switches.fromPtr = FirstItem(viewPtr);
+        switches.fromPtr = FirstItem(viewPtr, 0);
     } 
     if (switches.toPtr == NULL) {
-        switches.toPtr = LastItem(viewPtr);
+        switches.toPtr = LastItem(viewPtr, 0);
     } 
     if ((switches.fromPtr->index > switches.toPtr->index) &&
         ((switches.flags & FIND_REVERSE) == 0)) {
@@ -4312,15 +4134,15 @@ FindOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         for (itemPtr = switches.fromPtr; itemPtr != NULL; itemPtr = prevPtr) {
             int found;
 
-            prevPtr = PrevItem(itemPtr);
+            prevPtr = PrevItem(itemPtr, 0);
             if ((prevPtr == NULL) && (switches.flags & FIND_WRAP)) {
-                itemPtr = LastItem(viewPtr);
+                itemPtr = LastItem(viewPtr, 0);
             }
-            if ((itemPtr->flags & ITEM_HIDDEN) && 
+            if ((itemPtr->flags & HIDDEN) && 
                 ((switches.flags & FIND_HIDDEN) == 0)) {
                 continue;
             }
-            if ((itemPtr->flags & ITEM_DISABLED) && 
+            if ((itemPtr->flags & DISABLED) && 
                 ((switches.flags & FIND_DISABLED) == 0)) {
                 continue;
             }
@@ -4353,15 +4175,15 @@ FindOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         for (itemPtr = switches.fromPtr; itemPtr != NULL; itemPtr = nextPtr) {
             int found;
             
-            nextPtr = NextItem(itemPtr);
+            nextPtr = NextItem(itemPtr, 0);
             if ((nextPtr == NULL) && (switches.flags & FIND_WRAP)) {
-                nextPtr = FirstItem(viewPtr);
+                nextPtr = FirstItem(viewPtr, 0);
             }
-            if ((itemPtr->flags & ITEM_HIDDEN) && 
+            if ((itemPtr->flags & HIDDEN) && 
                 ((switches.flags & FIND_HIDDEN) == 0)) {
                 continue;
             }
-            if ((itemPtr->flags & ITEM_DISABLED) && 
+            if ((itemPtr->flags & DISABLED) && 
                 ((switches.flags & FIND_DISABLED) == 0)) {
                 continue;
             }
@@ -4398,20 +4220,20 @@ FindOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * FocusOp --
  *
+ *      Sets focus to the specified item.
+ *
  * Results:
  *      Standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cm index item 
+ *      pathName focus itemName
  *
  *---------------------------------------------------------------------------
  */
 static int
-FocusOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     int index;
 
@@ -4431,20 +4253,21 @@ FocusOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * IndexOp --
  *
+ *      Returns the index of the given item.  If the item does not
+ *      exist -1 is returned.
+ *
  * Results:
- *      Standard TCL result.
+ *      A standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cm index item 
+ *      pathName index itemName
  *
  *---------------------------------------------------------------------------
  */
 static int
-IndexOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     int index;
 
@@ -4463,27 +4286,27 @@ IndexOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * InvokeOp --
  *
+ *      Executes the command associated with the given item.
+ *
  * Results:
- *      Standard TCL result.
+ *      A standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *  .cm invoke item 
+ *      pathName invoke itemName
  *
  *---------------------------------------------------------------------------
  */
 static int
-InvokeOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     int result;
 
     if (GetItemFromObj(interp, viewPtr, objv[2], &itemPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if ((itemPtr == NULL) || (itemPtr->flags & ITEM_DISABLED)) {
+    if ((itemPtr == NULL) || (itemPtr->flags & DISABLED)) {
         return TCL_OK;          /* Item is currently disabled. */
     }
     Tcl_Preserve(itemPtr);
@@ -4517,13 +4340,15 @@ InvokeOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Side effects:
  *      The listview gets a new item.
  *
- *   .cm insert before 0 after 1 -text text 
+ *   pathName insert before 0 after 1 -text text 
  *
  *---------------------------------------------------------------------------
  */
 static int
-InsertOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr, *wherePtr;
     int dir;
     static const char *dirs[] = { "after", "at", "before" , NULL};
@@ -4564,14 +4389,15 @@ InsertOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Results:
  *      A standard TCL result.
  *
- *      .cm item configure item ?option value?...
+ *      pathName item configure item ?option value?...
  *
  *---------------------------------------------------------------------------
  */
 static int
-ItemConfigureOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+ItemConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     ItemIterator iter;
 
@@ -4614,14 +4440,15 @@ ItemConfigureOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  * Results:
  *      A standard TCL result.
  *
- *      .cm item cget item option
+ *      pathName item cget item option
  *
  *---------------------------------------------------------------------------
  */
 static int
-ItemCgetOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+ItemCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
 
     if (GetItemFromObj(interp, viewPtr, objv[3], &itemPtr) != TCL_OK) {
@@ -4657,18 +4484,73 @@ static Blt_OpSpec itemOps[] = {
 static int numItemOps = sizeof(itemOps) / sizeof(Blt_OpSpec);
 
 static int
-ItemOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ItemOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
-    ListViewCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
-    proc = Blt_GetOpFromObj(interp, numItemOps, itemOps, BLT_OP_ARG2, objc, objv, 
-                0);
+    proc = Blt_GetOpFromObj(interp, numItemOps, itemOps, BLT_OP_ARG2, objc,
+                            objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (viewPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ListAddOp --
+ *
+ *      Appends a list of items to the listview.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ * Side effects:
+ *      New items are added to the listview.
+ *
+ *   pathName listadd itemsList ?switches ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ListAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+          Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    int i;
+    int count;
+    Tcl_Obj **names;
+    Tcl_Obj *listObjPtr;
+
+    if (Tcl_ListObjGetElements(interp, objv[2], &count, &names) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    for (i = 0; i < count; i++) {
+        Tcl_Obj *objPtr;
+        Item *itemPtr;
+
+        itemPtr = NewItem(viewPtr);
+        if (ConfigureItem(interp, itemPtr, objc - 3, objv + 3, 0) != TCL_OK) {
+            DestroyItem(itemPtr);
+            return TCL_ERROR;   
+        }
+        itemPtr->text = NewText(itemPtr, Tcl_GetString(names[i]));
+        objPtr = Tcl_NewLongObj(itemPtr->index);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (viewPtr->flags & SORT_AUTO) {
+        viewPtr->flags |= SORT_PENDING;
+    }
+    viewPtr->flags |= LAYOUT_PENDING;
+    viewPtr->flags &= ~SORTED;
+    EventuallyRedraw(viewPtr);
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
 }
 
 /*
@@ -4676,14 +4558,16 @@ ItemOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * NamesOp --
  *
- *      .cm names pattern...
+ *      pathName names pattern...
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-NamesOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Tcl_Obj *listObjPtr;
     int i;
 
@@ -4693,8 +4577,8 @@ NamesOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         Item *itemPtr;
 
         pattern = Tcl_GetString(objv[i]);
-        for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-             itemPtr = NextItem(itemPtr)) {
+        for (itemPtr = FirstItem(viewPtr, 0); itemPtr != NULL; 
+             itemPtr = NextItem(itemPtr, 0)) {
             if (Tcl_StringMatch(itemPtr->text, pattern)) {
                 Tcl_Obj *objPtr;
 
@@ -4713,8 +4597,10 @@ NamesOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-NearestOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int x, y;                   
     int wx, wy;                 
     Item *itemPtr;
@@ -4805,24 +4691,21 @@ NearestOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm next item 
+ *      pathName next item 
  *
  *---------------------------------------------------------------------------
  */
 static int
-NextOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NextOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     int index;
 
     index = -1;
     if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) == TCL_OK) {
-        for (itemPtr = NextItem(itemPtr); itemPtr != NULL; 
-             itemPtr = NextItem(itemPtr)) {
-            if ((itemPtr->flags & (ITEM_HIDDEN|ITEM_DISABLED)) == 0) {
-                break;
-            }
-        }
+        itemPtr = NextItem(itemPtr, HIDDEN | DISABLED);
         if (itemPtr != NULL) {
             index = itemPtr->index;
         }
@@ -4843,25 +4726,21 @@ NextOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm previous item 
+ *      pathName previous itemName
  *
  *---------------------------------------------------------------------------
  */
 static int
-PreviousOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+PreviousOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     int index;
 
     index = -1;
     if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) == TCL_OK) {
-        for (itemPtr = PrevItem(itemPtr); itemPtr != NULL; 
-             itemPtr = PrevItem(itemPtr)) {
-            if ((itemPtr->flags & (ITEM_HIDDEN|ITEM_DISABLED)) == 0) {
-                break;
-            }
-        }
+        itemPtr = PrevItem(itemPtr, HIDDEN | DISABLED);
         if (itemPtr != NULL) {
             index = itemPtr->index;
         }
@@ -4881,8 +4760,10 @@ PreviousOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ScanOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int oper;
     int x, y;
 
@@ -4951,11 +4832,13 @@ ScanOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-SeeOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+      Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
-    int x, y, width, height;
-    int left, right, top, bottom;
+    int x, y, w, h;
+    int x1, x2, y1, y2;
     int maxWidth;
 
     if (GetItemFromObj(interp, viewPtr, objv[2], &itemPtr) != TCL_OK) {
@@ -4964,11 +4847,12 @@ SeeOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (itemPtr == NULL) {
         return TCL_OK;
     }
-    if (itemPtr->flags & ITEM_HIDDEN) {
-        return TCL_OK;
+    if (itemPtr->flags & HIDDEN) {
+        return TCL_OK;                  /* Don't do anything with hidden
+                                         * items.*/
     }
-    width = VPORTWIDTH(viewPtr);
-    height = VPORTHEIGHT(viewPtr);
+    w = VPORTWIDTH(viewPtr);
+    h = VPORTHEIGHT(viewPtr);
     x = viewPtr->xOffset;
     y = viewPtr->yOffset;
 
@@ -4977,28 +4861,29 @@ SeeOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
      *          the offset.  If the entry is nearby, adjust the view just
      *          a bit.  Otherwise, center the entry.
      */
-    left = viewPtr->xOffset;
-    right = viewPtr->xOffset + width;
-    top = viewPtr->yOffset;
-    bottom = viewPtr->yOffset + height;
+    x1 = viewPtr->xOffset;
+    x2 = viewPtr->xOffset + w;
+    y1 = viewPtr->yOffset;
+    y2 = viewPtr->yOffset + h;
     
     maxWidth = itemPtr->width;
-    if (viewPtr->maxWidth < maxWidth) {
-        maxWidth = viewPtr->maxWidth;
+    if (viewPtr->maxItemWidth < maxWidth) {
+        /* Override the calculated maximum item width with the requested. */
+        maxWidth = viewPtr->maxItemWidth;
     }
-    if (itemPtr->worldX < left) {
+    if (itemPtr->worldX < x1) {
         /* Adjust the scroll so that item starts at the left border. */
         x = itemPtr->worldX;
-    } else if ((itemPtr->worldX + maxWidth) > right) {
+    } else if ((itemPtr->worldX + maxWidth) > x2) {
         /* Adjust the scroll so that item ends at the right border. */
-        x = itemPtr->worldX + maxWidth - width;
+        x = itemPtr->worldX + maxWidth - w;
     }
-    if (itemPtr->worldY < top) {
+    if (itemPtr->worldY < y1) {
         /* Adjust the scroll so that item starts at the top border. */
         y = itemPtr->worldY;
-    } else if ((itemPtr->worldY + itemPtr->height) > bottom) {
+    } else if ((itemPtr->worldY + itemPtr->height) > y2) {
         /* Adjust the scroll so that item ends at the right border. */
-        y = itemPtr->worldY + itemPtr->height - height;
+        y = itemPtr->worldY + itemPtr->height - h;
     }
     if ((y != viewPtr->yOffset) || (x != viewPtr->xOffset)) {
         viewPtr->xOffset = x; 
@@ -5028,9 +4913,10 @@ SeeOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-SelectionAnchorOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+SelectionAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                   Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     long index;
 
@@ -5075,9 +4961,11 @@ SelectionAnchorOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionClearallOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
+SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
                     Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
+
     ClearSelection(viewPtr);
     return TCL_OK;
 }
@@ -5100,9 +4988,10 @@ SelectionClearallOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionIncludesOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
+SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
                     Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     int bool;
 
@@ -5137,9 +5026,10 @@ SelectionIncludesOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionMarkOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
+SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
     long index;
 
@@ -5204,9 +5094,10 @@ SelectionMarkOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionPresentOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
+SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
                    Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int bool;
 
     bool = (Blt_Chain_GetLength(viewPtr->selected) > 0);
@@ -5233,9 +5124,10 @@ SelectionPresentOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionSetOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     char *string;
 
     viewPtr->flags &= ~SELECT_MASK;
@@ -5267,7 +5159,7 @@ SelectionSetOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
         if (firstPtr == NULL) {
             return TCL_OK;              /* Didn't pick an entry. */
         }
-        if ((firstPtr->flags & ITEM_HIDDEN) && 
+        if ((firstPtr->flags & HIDDEN) && 
             ((viewPtr->flags & SELECT_CLEAR) == 0)) {
             if (objc > 4) {
                 Tcl_AppendResult(interp, "can't select hidden node \"", 
@@ -5285,7 +5177,7 @@ SelectionSetOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
             if (lastPtr == NULL) {
                 return TCL_OK;
             }
-            if ((lastPtr->flags & ITEM_HIDDEN) && 
+            if ((lastPtr->flags & HIDDEN) && 
                 ((viewPtr->flags & SELECT_CLEAR) == 0)) {
                 Tcl_AppendResult(interp, "can't select hidden node \"", 
                         Tcl_GetString(objv[4]), "\"", (char *)NULL);
@@ -5311,7 +5203,7 @@ SelectionSetOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
         }
         for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
              itemPtr = NextTaggedItem(&iter)) {
-            if ((itemPtr->flags & ITEM_HIDDEN) && 
+            if ((itemPtr->flags & HIDDEN) && 
                 ((viewPtr->flags & SELECT_CLEAR) == 0)) {
                 continue;
             }
@@ -5364,25 +5256,28 @@ static Blt_OpSpec selectionOps[] =
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
 
 static int
-SelectionOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
-    ListViewCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
-
+    
     proc = Blt_GetOpFromObj(interp, numSelectionOps, selectionOps, BLT_OP_ARG2, 
         objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (viewPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
 /*ARGSUSED*/
 static int
-SizeOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
+
     Tcl_SetLongObj(Tcl_GetObjResult(interp), 
                    Blt_Chain_GetLength(viewPtr->items));
     return TCL_OK;
@@ -5484,9 +5379,11 @@ CompareLinks(Blt_ChainLink *aPtr, Blt_ChainLink *bPtr)
  */
 /*ARGSUSED*/
 static int
-SortCgetOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+SortCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
+
     return Blt_ConfigureValueFromObj(interp, viewPtr->tkwin, sortSpecs, 
         (char *)viewPtr, objv[3], 0);
 }
@@ -5514,9 +5411,10 @@ SortCgetOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-SortConfigureOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+SortConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int oldType;
     Tcl_Obj *oldCmdPtr;
 
@@ -5546,8 +5444,11 @@ SortConfigureOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 
 /*ARGSUSED*/
 static int
-SortNowOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SortNowOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
+
     if (Blt_ConfigureWidgetFromObj(interp, viewPtr->tkwin, sortSpecs, 
         objc - 3, objv + 3, (char *)viewPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
         return TCL_ERROR;
@@ -5583,9 +5484,10 @@ static int numSortOps = sizeof(sortOps) / sizeof(Blt_OpSpec);
 
 /*ARGSUSED*/
 static int
-SortOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
-    ListViewCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numSortOps, sortOps, BLT_OP_ARG2, objc, 
@@ -5593,16 +5495,17 @@ SortOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (viewPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
 /* .m style create name option value option value */
     
 static int
-StyleCreateOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Style *stylePtr;
     Blt_HashEntry *hPtr;
     int isNew;
@@ -5630,9 +5533,10 @@ StyleCreateOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleCgetOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Style *stylePtr;
 
     if (GetStyleFromObj(interp, viewPtr, objv[3], &stylePtr) != TCL_OK) {
@@ -5644,9 +5548,10 @@ StyleCgetOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleConfigureOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                  Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int result, flags;
     Style *stylePtr;
 
@@ -5674,9 +5579,10 @@ StyleConfigureOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleDeleteOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Style *stylePtr;
 
     if (GetStyleFromObj(interp, viewPtr, objv[3], &stylePtr) != TCL_OK) {
@@ -5692,9 +5598,10 @@ StyleDeleteOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleNamesOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Tcl_Obj *listObjPtr;
@@ -5738,9 +5645,10 @@ static Blt_OpSpec styleOps[] =
 static int numStyleOps = sizeof(styleOps) / sizeof(Blt_OpSpec);
 
 static int
-StyleOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
-    ListViewCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numStyleOps, styleOps, BLT_OP_ARG2, 
@@ -5748,7 +5656,7 @@ StyleOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (viewPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
@@ -5771,9 +5679,10 @@ StyleOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TableLinkOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+TableLinkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int count;
     Tcl_Obj **names;
     BLT_TABLE table;
@@ -5827,9 +5736,11 @@ TableLinkOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-TableUnlinkOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+TableUnlinkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
+
     if (viewPtr->tableSource.table != NULL) {
         /* Flush all the items. */
         DestroyItems(viewPtr);
@@ -5851,9 +5762,10 @@ static Blt_OpSpec tableOps[] =
 static int numTableOps = sizeof(tableOps) / sizeof(Blt_OpSpec);
 
 static int
-TableOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TableOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
-    ListViewCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numTableOps, tableOps, BLT_OP_ARG2, 
@@ -5861,15 +5773,16 @@ TableOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (viewPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
 
 static int
-XpositionOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+XpositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
 
     if (GetItemFromObj(interp, viewPtr, objv[3], &itemPtr) != TCL_OK) {
@@ -5885,8 +5798,10 @@ XpositionOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-XviewOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+XviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int w;
 
     w = VPORTWIDTH(viewPtr);
@@ -5920,9 +5835,10 @@ XviewOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static int
-YpositionOp(ListView *viewPtr, Tcl_Interp *interp, int objc, 
+YpositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     Item *itemPtr;
 
     if (GetItemFromObj(interp, viewPtr, objv[3], &itemPtr) != TCL_OK) {
@@ -5938,12 +5854,10 @@ YpositionOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-YviewOp(
-    ListView *viewPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+YviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ListView *viewPtr = clientData;
     int height;
 
     height = VPORTHEIGHT(viewPtr);
@@ -6077,54 +5991,44 @@ NewListView(Tcl_Interp *interp, Tk_Window tkwin)
  */
 static Blt_OpSpec listViewOps[] =
 {
-    {"activate",    2, ActivateOp,    3, 3, "item",},
+    {"activate",    2, ActivateOp,    3, 3, "itemName",},
     {"add",         2, AddOp,         2, 0, "?option value?",},
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"curselection",2, CurselectionOp,2, 2, "",},
-    {"delete",      1, DeleteOp,      2, 0, "items...",},
-    {"exists",      1, ExistsOp,      3, 3, "item",},
+    {"delete",      1, DeleteOp,      2, 0, "itemName ...",},
+    {"exists",      1, ExistsOp,      3, 3, "itemName",},
     {"find",        2, FindOp,        3, 0, "string ?switches?",},
-    {"focus",       2, FocusOp,       3, 3, "item",},
-    {"index",       3, IndexOp,       3, 3, "item",},
-    {"insert",      3, InsertOp,      3, 0, 
-        "after|at|before index ?option value?",},
-    {"invoke",      3, InvokeOp,      3, 3, "item",},
+    {"focus",       2, FocusOp,       3, 3, "itemName",},
+    {"index",       3, IndexOp,       3, 3, "itemName",},
+    {"insert",      3, InsertOp,      3, 0, "after|at|before index ?option value?",},
+    {"invoke",      3, InvokeOp,      3, 3, "itemName",},
     {"item",        2, ItemOp,        2, 0, "oper args",},
-    {"listadd",     1, AddListOp,     3, 0, "textList ?option value?",},
+    {"listadd",     1, ListAddOp,     3, 0, "itemsList ?option value?",},
     {"names",       2, NamesOp,       2, 0, "?pattern...?",},
     {"nearest",     3, NearestOp,     4, 4, "x y",},
-    {"next",        3, NextOp,        3, 3, "item",},
-    {"previous",    1, PreviousOp,    3, 3, "item",},
+    {"next",        3, NextOp,        3, 3, "itemName",},
+    {"previous",    1, PreviousOp,    3, 3, "itemName",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},
-    {"see",         3, SeeOp,         3, 3, "item",},
+    {"see",         3, SeeOp,         3, 3, "itemName",},
     {"selection",   3, SelectionOp,   2, 0, "op ?args?",},
     {"size",        2, SizeOp,        2, 2, "",},
     {"sort",        2, SortOp,        2, 0, "op ?args...?",},
     {"style",       2, StyleOp,       2, 0, "op ?args...?",},
     {"table",       1, TableOp,       2, 0, "op ?args...?",},
-    {"xposition",   2, XpositionOp,   3, 3, "item",},
-    {"xview",       2, XviewOp,       2, 5, 
-        "?moveto fract? ?scroll number what?",},
-    {"yposition",   2, YpositionOp,   3, 3, "item",},
-    {"yview",       2, YviewOp,       2, 5, 
-        "?moveto fract? ?scroll number what?",},
+    {"xposition",   2, XpositionOp,   3, 3, "itemName",},
+    {"xview",       2, XviewOp,       2, 5, "?moveto fract? ?scroll number what?",},
+    {"yposition",   2, YpositionOp,   3, 3, "itemName",},
+    {"yview",       2, YviewOp,       2, 5, "?moveto fract? ?scroll number what?",},
 };
 
 static int numListViewOps = sizeof(listViewOps) / sizeof(Blt_OpSpec);
 
-typedef int (ListViewInstOp)(ListView *viewPtr, Tcl_Interp *interp, int objc,
-                          Tcl_Obj *const *objv);
-
 static int
-ListViewInstCmdProc(
-    ClientData clientData,              /* Information about the widget. */
-    Tcl_Interp *interp,                 /* Interpreter to report errors back
-                                         * to. */
-    int objc,                           /* # of arguments. */
-    Tcl_Obj *const *objv)               /* Argument vector. */
+ListViewInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
+                    Tcl_Obj *const *objv)
 {
-    ListViewInstOp *proc;
+    Tcl_ObjCmdProc *proc;
     ListView *viewPtr = clientData;
     int result;
 
@@ -6134,7 +6038,7 @@ ListViewInstCmdProc(
         return TCL_ERROR;
     }
     Tcl_Preserve(viewPtr);
-    result = (*proc) (viewPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     Tcl_Release(viewPtr);
     return result;
 }
@@ -6178,9 +6082,9 @@ ListViewInstCmdDeletedProc(ClientData clientData)
  *
  * ListViewCmd --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module. See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module. See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -6192,12 +6096,8 @@ ListViewInstCmdDeletedProc(ClientData clientData)
  */
 /* ARGSUSED */
 static int
-ListViewCmd(
-    ClientData clientData,              /* Main window associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument strings. */
+ListViewCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     ListView *viewPtr;
     Tk_Window tkwin;
@@ -6214,14 +6114,15 @@ ListViewCmd(
      * First time in this interpreter, invoke a procedure to initialize
      * various bindings on the listview widget.  If the procedure doesn't
      * already exist, source it from "$blt_library/bltListView.tcl".  We
-     * deferred sourcing the file until now so that the variable $blt_library
-     * could be set within a script.
+     * deferred sourcing the file until now so that the variable
+     * $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::ListView::AutoScroll")) {
         if (Tcl_GlobalEval(interp, 
                 "source [file join $blt_library bltListView.tcl]") != TCL_OK) {
             char info[200];
-            Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
+            Blt_FormatString(info, 200,
+                             "\n    (while loading bindings for %.50s)", 
                     Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             return TCL_ERROR;
@@ -6266,16 +6167,20 @@ DrawItemBackground(Item *itemPtr, Drawable drawable, int x, int y)
 
     stylePtr = itemPtr->stylePtr;
     viewPtr = itemPtr->viewPtr;
-    if (itemPtr->flags & ITEM_DISABLED) {
+    if (itemPtr->flags & DISABLED) {
         bg = stylePtr->disabledBg;
+    } else if (ItemIsSelected(viewPtr, itemPtr)) {
+        bg = stylePtr->selectBg;
     } else if (viewPtr->activePtr == itemPtr) {
         bg = stylePtr->activeBg;
     } else {
         bg = stylePtr->normalBg;
     }       
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, 
-        itemPtr->worldWidth, itemPtr->worldHeight, stylePtr->borderWidth, 
-        itemPtr->relief);
+    if ((itemPtr->worldWidth > 0) && (itemPtr->worldHeight > 0)) {
+        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y,
+                itemPtr->worldWidth, itemPtr->worldHeight,
+                stylePtr->borderWidth, itemPtr->relief);
+    }
 }
 
 static void
@@ -6286,12 +6191,12 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
     int textWidth;
     Icon icon;
 
-    itemPtr->flags &= ~ITEM_REDRAW;
+    itemPtr->flags &= ~REDRAW;
     stylePtr = itemPtr->stylePtr;
     viewPtr = itemPtr->viewPtr;
 
     textWidth = itemPtr->textWidth;
-    if ((viewPtr->textWidth>0) && (viewPtr->textWidth<itemPtr->textWidth)) {
+    if ((viewPtr->textWidth > 0) && (viewPtr->textWidth < itemPtr->textWidth)) {
         textWidth = viewPtr->textWidth;
     }
     x += itemPtr->indent;
@@ -6299,8 +6204,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
     icon = (viewPtr->layoutMode == LAYOUT_ICONS) ? itemPtr->bigIcon : 
         itemPtr->icon;
     if (icon != NULL) {
-        if ((Blt_IsPicture(IconImage(icon))) && 
-            (itemPtr->flags & ITEM_DISABLED)) {
+        if ((Blt_IsPicture(IconImage(icon))) && (itemPtr->flags & DISABLED)) {
             Blt_Picture src, dst;
             Blt_Painter painter;
             int w, h;
@@ -6323,13 +6227,6 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
         }
     }
     /* Image or text. */
-    if (ItemIsSelected(viewPtr, itemPtr)) {
-        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, 
-                stylePtr->selectBg, 
-                x + itemPtr->textX - 3, y + itemPtr->textY - 1,
-                textWidth + 6, itemPtr->textHeight + 3, 
-                stylePtr->borderWidth, stylePtr->selectRelief);
-    }
     if (itemPtr->image != NULL) {
         Tk_RedrawImage(IconImage(itemPtr->image), 0, 0, 
                 IconWidth(itemPtr->image), IconHeight(itemPtr->image), 
@@ -6338,7 +6235,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
         TextStyle ts;
         XColor *fg;
 
-        if (itemPtr->flags & ITEM_DISABLED) {
+        if (itemPtr->flags & DISABLED) {
             fg = stylePtr->textDisabledColor;
         } else if (ItemIsSelected(viewPtr, itemPtr)) {
             fg = stylePtr->textSelectColor;
@@ -6348,18 +6245,19 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             fg = stylePtr->textNormalColor;
         }
         Blt_Ts_InitStyle(ts);
-        Blt_Ts_SetFont(ts, itemPtr->stylePtr->textFont);
+        Blt_Ts_SetFont(ts, stylePtr->textFont);
         Blt_Ts_SetForeground(ts, fg);
         Blt_Ts_SetAnchor(ts, TK_ANCHOR_NW);
         Blt_Ts_SetJustify(ts, TK_JUSTIFY_LEFT);
         Blt_Ts_SetMaxLength(ts, textWidth);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, itemPtr->layoutPtr, &ts,
-                x + itemPtr->stylePtr->borderWidth + itemPtr->textX, 
-                y + itemPtr->stylePtr->borderWidth +  itemPtr->textY);
+                x + stylePtr->borderWidth + itemPtr->textX, 
+                y + stylePtr->borderWidth +  itemPtr->textY);
         if (itemPtr == viewPtr->activePtr) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, itemPtr->layoutPtr,
-                 &ts, x + stylePtr->borderWidth + itemPtr->textX, 
-             y + stylePtr->borderWidth + itemPtr->textY);
+            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable,
+                itemPtr->layoutPtr, &ts,
+                x + stylePtr->borderWidth + itemPtr->textX, 
+                y + stylePtr->borderWidth + itemPtr->textY);
         }
     }
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == itemPtr)) {
@@ -6391,13 +6289,10 @@ DrawListView(ListView *viewPtr, Drawable drawable)
     top = viewPtr->inset;
     bottom = VPORTHEIGHT(viewPtr);
 
-    for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr)) {
+    for (itemPtr = FirstItem(viewPtr, HIDDEN); itemPtr != NULL; 
+         itemPtr = NextItem(itemPtr, HIDDEN)) {
         int x, y;
         
-        if (itemPtr->flags & ITEM_HIDDEN) {
-            continue;
-        }
         x = SCREENX(viewPtr, itemPtr->worldX);
         y = SCREENY(viewPtr, itemPtr->worldY);
         if ((x > right) || ((x + itemPtr->width) < left) ||
@@ -6499,8 +6394,9 @@ SortItems(ListView *viewPtr)
     viewPtr->flags &= ~SORT_PENDING;
     Blt_Chain_Sort(viewPtr->items, CompareLinks);
     viewPtr->flags |= SORTED;
-    for (count = 0, itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
-         itemPtr = NextItem(itemPtr), count++) {
+    /* Renumber the indices of the items. */
+    for (count = 0, itemPtr = FirstItem(viewPtr, 0); itemPtr != NULL; 
+         itemPtr = NextItem(itemPtr, 0), count++) {
         itemPtr->index = count;
     }
     viewPtr->flags |= LAYOUT_PENDING;
@@ -6509,7 +6405,7 @@ SortItems(ListView *viewPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayListView --
+ * DisplayProc --
  *
  *      This procedure is invoked to display a listview widget.
  *
@@ -6522,7 +6418,7 @@ SortItems(ListView *viewPtr)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayListView(ClientData clientData)
+DisplayProc(ClientData clientData)
 {
     ListView *viewPtr = clientData;
     Pixmap drawable;
@@ -6534,7 +6430,7 @@ DisplayListView(ClientData clientData)
                                          * here) */
     }
 #ifdef notdef
-    fprintf(stderr, "Calling DisplayListView(%s) w=%d h=%d\n", 
+    fprintf(stderr, "Calling DisplayProc(%s) w=%d h=%d\n", 
             Tk_PathName(viewPtr->tkwin), Tk_Width(viewPtr->tkwin),
             Tk_Height(viewPtr->tkwin));
 #endif
@@ -6564,8 +6460,8 @@ DisplayListView(ClientData clientData)
     if (viewPtr->flags & SCROLL_PENDING) {
         int vw, vh;                     /* Viewport width and height. */
         /* 
-         * The view port has changed. The visible items need to be recomputed
-         * and the scrollbars updated.
+         * The view port has changed. The visible items need to be
+         * recomputed and the scrollbars updated.
          */
         vw = VPORTWIDTH(viewPtr);
         vh = VPORTHEIGHT(viewPtr);

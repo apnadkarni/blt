@@ -1268,7 +1268,7 @@ TgaPut8BitPseudoColorPixelProc(Tga *tgaPtr, Blt_Pixel *sp)
     pixel = (unsigned long)sp->u32;
     hPtr = Blt_FindHashEntry(&tgaPtr->colorTable, (char *)pixel);
     if (hPtr == NULL) {
-        TgaError(tgaPtr, "can't find 8-bit pixel %lu in colortable", pixel);
+        TgaError(tgaPtr, "can't find 8-bit pixel %lx in colortable", pixel);
     }
     index = (unsigned long)Blt_GetHashValue(hPtr);
     if (index >= tgaPtr->cmNumEntries) {
@@ -1517,6 +1517,18 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     tga.width = srcPtr->width;
     tga.height = srcPtr->height;
 
+    Tcl_DStringInit(&tga.errors);
+    Tcl_DStringInit(&tga.warnings);
+    Tcl_DStringAppend(&tga.errors, "error writing TGA output: \"", -1);
+    Tcl_DStringAppend(&tga.warnings, "warnings writing TGA output: \"", -1);
+
+    if (setjmp(tga.jmpbuf)) {
+        Tcl_DStringResult(interp, &tga.errors);
+        Tcl_DStringFree(&tga.warnings);
+        TgaFree(&tga);
+        return TCL_ERROR;
+    }
+    Blt_UnmultiplyColors(srcPtr);
     Blt_InitHashTable(&tga.colorTable, BLT_ONE_WORD_KEYS);
     tga.initialized = TRUE;
     tga.isRle = (writerPtr->flags & EXPORT_RLE) ? TGA_RLE : 0;
@@ -1758,7 +1770,7 @@ ExportTga(Tcl_Interp *interp, int index, Blt_Chain chain, int objc,
     dbuffer = Blt_DBuffer_Create();
     result = PictureToTga(interp, picture, dbuffer, &writer);
     if (result != TCL_OK) {
-        Tcl_AppendResult(interp, "can't convert \"", 
+        Tcl_AppendResult(interp, "\ncan't convert \"", 
                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
         goto error;
     }

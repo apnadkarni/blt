@@ -784,6 +784,7 @@ Blt_DrawLayout(Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font,
         }
     }
     if (layoutPtr->underlinePtr != NULL) {
+        /* Single underlined character. */
         fp = layoutPtr->underlinePtr;
         Blt_Font_Underline(Tk_Display(tkwin), drawable, gc, font, fp->text, 
                 fp->count, x + fp->sx, y + fp->sy, layoutPtr->underline, 
@@ -1195,12 +1196,9 @@ Blt_Ts_DrawLayout(
 }
 
 void
-Blt_Ts_UnderlineLayout(
-    Tk_Window tkwin,
-    Drawable drawable,
-    TextLayout *layoutPtr,
-    TextStyle *stylePtr,                /* Text attribute information */
-    int x, int y)                       /* Window coordinates to draw text */
+Blt_Ts_UnderlineLayout( Tk_Window tkwin, Drawable drawable,
+                        TextLayout *layoutPtr, TextStyle *stylePtr,
+                        int x, int y)
 {
     float angle;
 
@@ -1223,7 +1221,7 @@ Blt_Ts_UnderlineLayout(
 
             sx = x + fp->sx, sy = y + fp->sy;
             Blt_Font_Underline(Tk_Display(tkwin), drawable, stylePtr->gc, 
-                stylePtr->font, fp->text, fp->count, sx, sy, 0, fp->count, 
+                stylePtr->font, fp->text, fp->count, sx, sy, 0, -1, 
                 stylePtr->maxLength);
         }
         if (stylePtr->rgn != NULL) {
@@ -2062,20 +2060,21 @@ Blt_UnderlineTextLayout(
  *---------------------------------------------------------------------------
  */
 TextLayout *
-Blt_Ts_TitleLayout(const char *string, int length, TextStyle *tsPtr)
+Blt_Ts_TitleLayout(const char *text, int numBytes, TextStyle *tsPtr)
 {
     TextFragment *fp;
     TextLayout *layoutPtr;
     Blt_FontMetrics fm;
     int lineHeight;
-    size_t maxHeight, maxWidth;
-    size_t numFrags;
+    int maxHeight, maxWidth;
+    int numFrags;
     TextFragment fragments[50];
     size_t size;
+    int bytesLeft;
     int i;
-
-    if (length < 0) {
-        length = strlen(string);
+    
+    if (numBytes < 0) {
+        numBytes = strlen(text);
     }
 
     Blt_Font_GetMetrics(tsPtr->font, &fm);
@@ -2084,38 +2083,83 @@ Blt_Ts_TitleLayout(const char *string, int length, TextStyle *tsPtr)
     maxHeight = tsPtr->padTop;
     maxWidth = 0;
     fp = fragments;
-    while (length > 0) {
-        int n, w;
+    bytesLeft = numBytes;
+    while (bytesLeft > 0) {
+        int numBytes, w;
 
-        n = Blt_Font_Measure(tsPtr->font, string, length, tsPtr->maxLength, 
-                TK_AT_LEAST_ONE, &w);
-        if (n < length) {
-            int i;
+        numBytes = Blt_Font_Measure(tsPtr->font, text, bytesLeft,
+                tsPtr->maxLength, TK_AT_LEAST_ONE, &w);
+        assert(numBytes > 0);
+        if (numBytes < bytesLeft) {
+            const char *prev;
+            
+            /* At this point we know that the whole string is too big and
+             * we have the number of bytes of a smaller string that does
+             * fit. This break may be in the middle of a word.  See if
+             * there is a better spot to break the title. First look for
+             * non-alphanumeric characters, then transitions from upper to
+             * lower case. */
 
-            /* See if there is a better spot to break the title.  */
-            for (i = n; i >= 0; i--) {
-                if (!isalnum(string[i])) {
+            prev = Tcl_UtfPrev(text + numBytes - 1, text);
+
+            /* Look for the last non-alphanumeric character. */
+            while (prev > text) {
+                Tcl_UniChar ch;
+
+                Tcl_UtfToUniChar(prev, &ch);
+                if (!Tcl_UniCharIsAlnum(ch)) {
                     break;
-                }  
+                }
+                prev = Tcl_UtfPrev(prev, text);
+            } 
+
+            if (prev <= text) {
+                prev = Tcl_UtfPrev(text + numBytes - 1, text);
+
+                /* Look for the last transition from upper to lower case. */
+                while (prev > text) {
+                    Tcl_UniChar ch;
+
+                    Tcl_UtfToUniChar(prev, &ch);
+                    if (Tcl_UniCharIsUpper(ch)) {
+                        const char *last;
+
+                        last = prev;
+                        prev = Tcl_UtfPrev(prev, text);
+                        if (prev > text) {
+                            Tcl_UtfToUniChar(prev, &ch);
+                            if (Tcl_UniCharIsLower(ch)) {
+                                /* prev is the last character in current
+                                 * string. */
+                                prev = last;
+                                break;
+                            }
+                        }
+                    } else {
+                        prev = Tcl_UtfPrev(prev, text);
+                    }
+                } 
             }
-            if (i >= 0) {
-                Blt_Font_Measure(tsPtr->font, string, i, tsPtr->maxLength, 
-                        TK_AT_LEAST_ONE, &w);
-                n = i + 1;
+            if (prev > text) {
+                numBytes = Blt_Font_Measure(tsPtr->font, text, prev - text,
+                        tsPtr->maxLength, TK_AT_LEAST_ONE, &w);
+                assert(numBytes > 0);
             }
         }
-        fp->text  = string;
-        fp->count = n;
+        fp->text  = text;
+        fp->count = numBytes;
         fp->width = w;
         fp->y = fp->sy = maxHeight + fm.ascent;
         if (w > maxWidth) {
             maxWidth = w;
         }
+
+        text += numBytes;
+        bytesLeft -= numBytes;
+        maxHeight += lineHeight;
+
         fp++;
         numFrags++;
-        string += n;
-        length -= n;
-        maxHeight += lineHeight;
         if (numFrags == 50) {
             break;
         }
@@ -2139,8 +2183,6 @@ Blt_Ts_TitleLayout(const char *string, int length, TextStyle *tsPtr)
             fp->x = fp->sx = (maxWidth - fp->width) / 2;
             break;
         }
-    }
-    if (tsPtr->underline >= 0) {
     }
     layoutPtr->width = maxWidth;
     layoutPtr->height = maxHeight - tsPtr->leader;
