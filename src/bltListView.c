@@ -824,9 +824,9 @@ static int GetItemIterator(Tcl_Interp *interp, ListView *viewPtr,
 static int GetItemFromObj(Tcl_Interp *interp, ListView *viewPtr,
         Tcl_Obj *objPtr, Item **itemPtrPtr);
 
-static Tcl_IdleProc DisplayItem;
+static Tcl_IdleProc DisplayItemProc;
 static Tcl_IdleProc DisplayProc;
-static Tcl_FreeProc DestroyListView;
+static Tcl_FreeProc DestroyProc;
 static Tk_EventProc ListViewEventProc;
 static Tcl_ObjCmdProc ListViewInstCmdProc;
 static Tcl_CmdDeleteProc ListViewInstCmdDeletedProc;
@@ -1629,7 +1629,7 @@ EventuallyRedrawItem(Item *itemPtr)
         return;
     }
     if (viewPtr->tkwin != NULL) {
-        Tcl_DoWhenIdle(DisplayItem, itemPtr);
+        Tcl_DoWhenIdle(DisplayItemProc, itemPtr);
         itemPtr->flags |= REDRAW;
     }
 }
@@ -3290,7 +3290,7 @@ ListViewEventProc(ClientData clientData, XEvent *eventPtr)
         if (viewPtr->flags & REDRAW_PENDING) {
             Tcl_CancelIdleCall(DisplayProc, viewPtr);
         }
-        Tcl_EventuallyFree(viewPtr, DestroyListView);
+        Tcl_EventuallyFree(viewPtr, DestroyProc);
     }
 }
 
@@ -3879,13 +3879,70 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_SetLongObj(Tcl_GetObjResult(interp), itemPtr->index);
     return TCL_OK;
 }
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * BBoxOp --
+ *
+ *      Returns the root coordinates of the bounding box for the text as a
+ *      TCL list.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *   pathName bbox itemName
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    Item *itemPtr;
+    Tcl_Obj *listObjPtr, *objPtr;
+    int x, y;
+    int rootX, rootY;
+    
+    if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (itemPtr != NULL) {
+        return TCL_OK;
+    }
+    x = SCREENX(viewPtr, itemPtr->worldX);
+    y = SCREENY(viewPtr, itemPtr->worldY);
+    Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+    if (rootX < 0) {
+        rootX = 0;
+    }
+    if (rootY < 0) {
+        rootY = 0;
+    }
+    x += rootX + itemPtr->textX - 3;
+    y += rootY + itemPtr->textY - 1;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    objPtr = Tcl_NewIntObj(x);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(y);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(x + itemPtr->textWidth + 6);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(y + itemPtr->textHeight + 3);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
  * ConfigureOp --
  *
  * Results:
- *      Standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
  *      Commands may get excecuted; variables may get set; sub-menus may
@@ -5893,7 +5950,7 @@ YviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * DestroyListView --
+ * DestroyProc --
  *
  *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
  *      clean up the internal structure of the widget at a safe time (when
@@ -5908,7 +5965,7 @@ YviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static void
-DestroyListView(DestroyData dataPtr)    /* Pointer to the widget record. */
+DestroyProc(DestroyData dataPtr)    /* Pointer to the widget record. */
 {
     ListView *viewPtr = (ListView *)dataPtr;
 
@@ -5993,6 +6050,7 @@ static Blt_OpSpec listViewOps[] =
 {
     {"activate",    2, ActivateOp,    3, 3, "itemName",},
     {"add",         2, AddOp,         2, 0, "?option value?",},
+    {"bbox",        1, BBoxOp,        3, 3, "itemName",},
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"curselection",2, CurselectionOp,2, 2, "",},
@@ -6315,7 +6373,7 @@ DrawListView(ListView *viewPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayItem --
+ * DisplayItemProc --
  *
  *      This procedure is invoked to display an item in the listview widget.
  *
@@ -6328,7 +6386,7 @@ DrawListView(ListView *viewPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayItem(ClientData clientData)
+DisplayItemProc(ClientData clientData)
 {
     Item *itemPtr = clientData;
     int x, y, w, h;

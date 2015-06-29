@@ -2100,7 +2100,7 @@ Blt_Ts_TitleLayout(const char *text, int numBytes, TextStyle *tsPtr)
              * non-alphanumeric characters, then transitions from upper to
              * lower case. */
 
-            prev = Tcl_UtfPrev(text + numBytes - 1, text);
+            prev = Tcl_UtfPrev(text + numBytes, text);
 
             /* Look for the last non-alphanumeric character. */
             while (prev > text) {

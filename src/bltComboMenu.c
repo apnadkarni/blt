@@ -4769,7 +4769,7 @@ ItemSwitch(
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm activate item
+ *      pathName activate item
  *
  *---------------------------------------------------------------------------
  */
@@ -4811,7 +4811,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The combomenu entry may become selected or deselected.
  *
- *   .cm add radiobutton -text "fred" -tags ""
+ *   pathName add radiobutton -text "fred" -tags ""
  *
  *---------------------------------------------------------------------------
  */
@@ -4849,7 +4849,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Side effects:
  *      New items are added to the combomenu.
  *
- *   .cm add textList -type radiobutton -text "fred" -tags ""
+ *   pathName add textList -type radiobutton -text "fred" -tags ""
  *
  *---------------------------------------------------------------------------
  */
@@ -4900,7 +4900,7 @@ AddListOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Standard TCL result.  A list representing the bounding box is 
  *      returned.
  *
- *      .cm bbox item
+ *      pathName bbox itemName
  *
  *---------------------------------------------------------------------------
  */
@@ -4924,13 +4924,13 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ConfigureOp --
  *
  * Results:
- *      Standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm configure ?option value?...
+ *      pathName configure ?option value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -4973,7 +4973,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm cget option
+ *      pathName cget option
  *
  *---------------------------------------------------------------------------
  */
@@ -4999,7 +4999,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm deactivate
+ *      pathName deactivate
  *
  *---------------------------------------------------------------------------
  */
@@ -5031,7 +5031,7 @@ DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm delete item...
+ *      pathName delete itemName ...
  *
  *---------------------------------------------------------------------------
  */
@@ -5069,13 +5069,9 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ExistsOp --
  *
  * Results:
- *      Standard TCL result.
+ *      A standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cm exists item 
+ *      pathName exists itemName
  *
  *---------------------------------------------------------------------------
  */
@@ -5108,7 +5104,7 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      The index of the found item is returned.  If no item is found
  *      -1 is returned.
  *
- *    .cm find string -from active -previous -underline -type separator 
+ *    pathName find string -from active -previous -underline -type separator 
  *
  *---------------------------------------------------------------------------
  */
@@ -5237,7 +5233,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm index item ?-value?
+ *      pathName index itemName ?-value?
  *
  *---------------------------------------------------------------------------
  */
@@ -5307,7 +5303,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *  .cm invoke item 
+ *  pathName invoke itemName
  *
  *---------------------------------------------------------------------------
  */
@@ -5354,7 +5350,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The combomenu gets a new item.
  *
- *   .cm insert before 0 after 1 -text text 
+ *   pathName insert before 0 after 1 -text text 
  *
  *---------------------------------------------------------------------------
  */
@@ -5398,7 +5394,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      A standard TCL result.
  *
- *      .cm item configure item ?option value?...
+ *      pathName item configure itemName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5449,7 +5445,7 @@ ItemConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      A standard TCL result.
  *
- *      .cm item cget item option
+ *      pathName item cget itemName option
  *
  *---------------------------------------------------------------------------
  */
@@ -5514,7 +5510,7 @@ ItemOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *      .cm names ?pattern?
+ *      pathName names ?pattern?
  *
  *---------------------------------------------------------------------------
  */
@@ -5672,11 +5668,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cm next item 
+ *      pathName next itemName
  *
  *---------------------------------------------------------------------------
  */
@@ -5710,7 +5702,7 @@ NextOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Standard TCL result.  A boolean is returned in the interpreter.
  *
- *      .cm overbutton x y 
+ *      pathName overbutton x y 
  *
  *---------------------------------------------------------------------------
  */
@@ -5748,7 +5740,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Posts this menu at the given root window coordinates.
  *
- *  .cm post align x y ?x2 y2?
+ *      pathName post align x y ?x2 y2?
  *   0   1     2   3 4   5  6 
  *
  *
@@ -5929,7 +5921,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:  
  *      The item's submenu may be posted.
  *
- *  .cm postcascade ?item?
+ *      pathName postcascade ?itemName?
  *
  *---------------------------------------------------------------------------
  */
@@ -5971,11 +5963,7 @@ PostCascadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cm previous item 
+ *      pathName previous itemName
  *
  *---------------------------------------------------------------------------
  */
@@ -6197,11 +6185,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *  .cm select item 
+ *  pathName select itemName 
  *
  *---------------------------------------------------------------------------
  */
@@ -6569,7 +6553,7 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv
  *
  *      Unposts this menu.
  *
- *  .cm post 
+ *      pathName post 
  *
  *---------------------------------------------------------------------------
  */
@@ -6612,7 +6596,7 @@ UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm value item 
+ *      pathName value itemName
  *
  *---------------------------------------------------------------------------
  */
@@ -6648,7 +6632,7 @@ ValueOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Hides the menu but doesn't call the unpost command. Technically
  *      the menu is still posted.
  *
- *  .cm withdraw 
+ *      pathName withdraw 
  *
  *---------------------------------------------------------------------------
  */
