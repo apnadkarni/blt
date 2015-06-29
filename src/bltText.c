@@ -2114,7 +2114,7 @@ Blt_Ts_TitleLayout(const char *text, int numBytes, TextStyle *tsPtr)
             } 
 
             if (prev <= text) {
-                prev = Tcl_UtfPrev(text + numBytes - 1, text);
+                prev = Tcl_UtfPrev(text + numBytes, text);
 
                 /* Look for the last transition from upper to lower case. */
                 while (prev > text) {

@@ -6169,8 +6169,10 @@ DrawItemBackground(Item *itemPtr, Drawable drawable, int x, int y)
     viewPtr = itemPtr->viewPtr;
     if (itemPtr->flags & DISABLED) {
         bg = stylePtr->disabledBg;
+#ifdef notdef
     } else if (ItemIsSelected(viewPtr, itemPtr)) {
         bg = stylePtr->selectBg;
+#endif
     } else if (viewPtr->activePtr == itemPtr) {
         bg = stylePtr->activeBg;
     } else {
@@ -6225,6 +6227,12 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                         IconHeight(icon), drawable, x + itemPtr->iconX, 
                         y + itemPtr->iconY);
         }
+    }
+    if (ItemIsSelected(viewPtr, itemPtr)) {
+        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, stylePtr->selectBg, 
+                x + itemPtr->textX - 3, y + itemPtr->textY - 1,
+                textWidth + 6, itemPtr->textHeight + 3, 
+                stylePtr->borderWidth, stylePtr->selectRelief);
     }
     /* Image or text. */
     if (itemPtr->image != NULL) {
