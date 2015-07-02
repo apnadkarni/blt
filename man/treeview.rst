@@ -855,7 +855,7 @@ command.  The following operation are available for *treeview* widgets:
 
 *pathName* **curselection**
   Returns a list containing the ids of all of the entries that are
-  currently selected.  If there are no entries selected, then the empty
+  currently selected.  If there are no entries are selected, then the empty
   string is returned.
 
 *pathName* **delete** ?\ *entryName* ... ?

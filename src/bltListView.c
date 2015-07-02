@@ -91,10 +91,6 @@ static const char emptyString[] = "";
 #define GEOMETRY         (1<<8)         /* Items need to have their
                                          * geometry computed. */
 
-#define RESTRICT_MIN     (1<<10)
-#define RESTRICT_MAX     (1<<11)
-#define RESTRICT_NONE    (0)
-
 #define SELECT_SINGLE    (1<<12)        /* Single mode: Select only one
                                          * item at a time.*/
 #define SELECT_MULTIPLE  (1<<13)        /* Multiple mode: Select one or
@@ -102,9 +98,10 @@ static const char emptyString[] = "";
 #define SELECT_MODE_MASK (SELECT_MULTIPLE|SELECT_SINGLE)
 
 #define SELECT_EXPORT    (1<<16)        /* Export the selection to X11. */
-#define SELECT_ORDERED   (1<<17)        /* Indicates that the selection
-                                         * should be set in the order that
-                                         * the items were selected. */
+#define SELECT_ORDERED   (1<<17)        /* Indicates that the items in the
+                                         * selection should be returned in
+                                         * the order as items as found in
+                                         * the list. */
 #define SELECT_PENDING   (1<<18)        /* A "selection" command idle task
                                          * is pending.  */
 #define SELECT_SET       (1<<19)        /* Select the item. */
@@ -157,7 +154,7 @@ static const char emptyString[] = "";
 
 #define DEF_MAXWIDTH                "1i"
 #define DEF_AUTO_SORT               "0"
-#define DEF_BORDERWIDTH             "1"
+#define DEF_BORDERWIDTH             "0"
 #define DEF_CURSOR                  ((char *)NULL)
 #define DEF_EXPORT_SELECTION        "1"
 #define DEF_HEIGHT                  "0"
@@ -180,7 +177,7 @@ static const char emptyString[] = "";
 #define DEF_XSCROLLINCREMENT        "20"
 #define DEF_YSCROLLCOMMAND          ((char *)NULL)
 #define DEF_YSCROLLINCREMENT        "20"
-
+#define DEF_SELECT_ORDERED          "0"
 
 #define DEF_ITEM_COMMAND            ((char *)NULL)
 #define DEF_ITEM_DATA               ((char *)NULL)
@@ -243,12 +240,6 @@ static Blt_OptionParseProc ObjToState;
 static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
     ObjToState, StateToObj, NULL, (ClientData)0
-};
-
-static Blt_OptionParseProc ObjToRestrict;
-static Blt_OptionPrintProc RestrictToObj;
-static Blt_CustomOption restrictOption = {
-    ObjToRestrict, RestrictToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToSelectMode;
@@ -369,10 +360,10 @@ static Blt_ConfigSpec styleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", (char *)NULL, (char *)NULL, 
         DEF_STYLE_DISABLED_FG, Blt_Offset(Style, textDisabledColor), 0},
     {BLT_CONFIG_SYNONYM, "-fg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
-        Blt_Offset(Style, textNormalColor), 0},
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, DEF_STYLE_FONT, 
         Blt_Offset(Style, textFont), 0},
+    {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
+        Blt_Offset(Style, textNormalColor), 0},
     {BLT_CONFIG_RELIEF, "-relief", (char *)NULL, (char *)NULL, 
         DEF_STYLE_RELIEF, Blt_Offset(Style, relief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -479,14 +470,14 @@ typedef struct {
 
 static Blt_ConfigSpec tableSpecs[] =
 {
-    {BLT_CONFIG_CUSTOM, "-textcolumn", (char *)NULL, (char *)NULL, 
-        (char *)NULL, Blt_Offset(TableSource, text), BLT_CONFIG_NULL_OK, 
+    {BLT_CONFIG_CUSTOM, "-bigiconcolumn", (char *)NULL, (char *)NULL, 
+        (char *)NULL, Blt_Offset(TableSource, bigIcon), BLT_CONFIG_NULL_OK,
         &columnOption},
     {BLT_CONFIG_CUSTOM, "-iconcolumn", (char *)NULL, (char *)NULL, 
         (char *)NULL, Blt_Offset(TableSource, icon), BLT_CONFIG_NULL_OK, 
         &columnOption},
-    {BLT_CONFIG_CUSTOM, "-bigiconcolumn", (char *)NULL, (char *)NULL, 
-        (char *)NULL, Blt_Offset(TableSource, bigIcon), BLT_CONFIG_NULL_OK,
+    {BLT_CONFIG_CUSTOM, "-textcolumn", (char *)NULL, (char *)NULL, 
+        (char *)NULL, Blt_Offset(TableSource, text), BLT_CONFIG_NULL_OK, 
         &columnOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
         0, 0}
@@ -643,10 +634,10 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
         DEF_HIGHLIGHT_COLOR, Blt_Offset(ListView, focusColor), 0},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-        DEF_STYLE_FG, Blt_Offset(ListView, defStyle.textNormalColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_STYLE_FONT, 
         Blt_Offset(ListView, defStyle.textFont), 0},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
+        DEF_STYLE_FG, Blt_Offset(ListView, defStyle.textNormalColor), 0},
     {BLT_CONFIG_CUSTOM, "-height", "height", "Height", DEF_HEIGHT, 
         Blt_Offset(ListView, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT,
         &bltLimitsOption},
@@ -655,8 +646,6 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
         "HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
         Blt_Offset(ListView, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-maxwidth", "maxWidth", "MaxWidth",
-        DEF_MAXWIDTH, Blt_Offset(ListView, maxItemWidth), 0},
     {BLT_CONFIG_OBJ, "-iconvariable", "iconVariable", "IconVariable", 
         DEF_ICON_VARIABLE, Blt_Offset(ListView, iconVarObjPtr), 
         BLT_CONFIG_NULL_OK},
@@ -667,11 +656,10 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_CUSTOM, "-layoutmode", "layoutMode", "LayoutMode",
         DEF_LAYOUTMODE, Blt_Offset(ListView, layoutMode), 
         BLT_CONFIG_DONT_SET_DEFAULT, &layoutModeOption},
+    {BLT_CONFIG_PIXELS_NNEG, "-maxwidth", "maxWidth", "MaxWidth",
+        DEF_MAXWIDTH, Blt_Offset(ListView, maxItemWidth), 0},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
         Blt_Offset(ListView, relief), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-restrictwidth", "restrictWidth", "RestrictWidth", 
-        (char *)NULL, Blt_Offset(ListView, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        &restrictOption},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", (char *)NULL, (char *)NULL, 
         DEF_STYLE_SELECT_BG, Blt_Offset(ListView, defStyle.selectBg), 0},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
@@ -685,9 +673,11 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_CUSTOM, "-selectmode", "selectMode", "SelectMode",
         DEF_SELECTMODE, Blt_Offset(ListView, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, &selectModeOption},
-    {BLT_CONFIG_BITMASK, "-orderselection", "orderSelection", "OrderSelection",
-        DEF_SORT_SELECTION, Blt_Offset(ListView, flags), 
+    {BLT_CONFIG_BITMASK, "-selectordered", "selectOrdered", "SelectOrdered",
+        DEF_SELECT_ORDERED, Blt_Offset(ListView, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_ORDERED},
+    {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus", DEF_TAKEFOCUS,
+        Blt_Offset(ListView, takeFocusObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-textvariable", "textVariable", "TextVariable", 
         DEF_TEXTVARIABLE, Blt_Offset(ListView, textVarObjPtr), 
         BLT_CONFIG_NULL_OK},
@@ -703,9 +693,8 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_PIXELS_POS, "-yscrollincrement", "yScrollIncrement",
         "ScrollIncrement", DEF_YSCROLLINCREMENT, 
          Blt_Offset(ListView, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus",
-        DEF_TAKEFOCUS, Blt_Offset(ListView, takeFocusObjPtr), 
-        BLT_CONFIG_NULL_OK},
+    /*  */
+    /*  */
     {BLT_CONFIG_CUSTOM, "-width", "width", "Width", DEF_WIDTH, 
         Blt_Offset(ListView, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT,
         &bltLimitsOption},
@@ -714,20 +703,20 @@ static Blt_ConfigSpec listViewSpecs[] =
 };
 
 static Blt_ConfigSpec sortSpecs[] = {
-    {BLT_CONFIG_BITMASK, "-autosort", "autoSort", "AutoSort", DEF_AUTO_SORT, 
+    {BLT_CONFIG_BITMASK, "-auto", "auto", "Auto", DEF_AUTO_SORT, 
         Blt_Offset(ListView, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)SORT_AUTO}, 
-    {BLT_CONFIG_BITMASK, "-dictionary", "dictionary", "Dictionary",
-        DEF_SORT_DICTIONARY, Blt_Offset(ListView, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SORT_DICTIONARY}, 
+    {BLT_CONFIG_CUSTOM, "-by", "by", "By", DEF_SORT_TYPE, 
+        Blt_Offset(ListView, flags), 0, &sortTypeOption},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_SORT_COMMAND, 
         Blt_Offset(ListView, sortCmdPtr),
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-decreasing", "decreasing", "Decreasing",
         DEF_SORT_DECREASING, Blt_Offset(ListView, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SORT_DECREASING}, 
-    {BLT_CONFIG_CUSTOM, "-by", "by", "By", DEF_SORT_TYPE, 
-        Blt_Offset(ListView, flags), 0, &sortTypeOption},
+    {BLT_CONFIG_BITMASK, "-dictionary", "dictionary", "Dictionary",
+        DEF_SORT_DICTIONARY, Blt_Offset(ListView, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SORT_DICTIONARY}, 
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
         0, 0}
 };
@@ -804,13 +793,13 @@ static Blt_SwitchSpec findSwitches[] =
         Blt_Offset(FindSwitches, count), 0, 0},
     {BLT_SWITCH_BITMASK, "-disabled", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_DISABLED},
-    {BLT_SWITCH_CUSTOM, "-from", "item", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-from", "itemName", (char *)NULL,
         Blt_Offset(FindSwitches, fromPtr), 0, 0, &itemSwitch},
     {BLT_SWITCH_BITMASK, "-hidden", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_HIDDEN},
     {BLT_SWITCH_BITMASK, "-reverse", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_REVERSE},
-    {BLT_SWITCH_CUSTOM, "-to", "item", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-to", "itemName", (char *)NULL,
         Blt_Offset(FindSwitches, toPtr), 0, 0, &itemSwitch},
     {BLT_SWITCH_CUSTOM, "-type", "glob|regexp|exact", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, 0, &patternSwitch},
@@ -1570,6 +1559,16 @@ SelectionProc(
      */
     Tcl_DStringInit(&ds);
     if (viewPtr->flags & SELECT_ORDERED) {
+        Item *itemPtr;
+
+        for (itemPtr = FirstItem(viewPtr, HIDDEN | DISABLED);
+             itemPtr != NULL; itemPtr = NextItem(itemPtr, HIDDEN| DISABLED)) {
+            if (ItemIsSelected(viewPtr, itemPtr)) {
+                Tcl_DStringAppend(&ds, itemPtr->text, -1);
+                Tcl_DStringAppend(&ds, "\n", -1);
+            }
+        }
+    } else {
         Blt_ChainLink link;
 
         for (link = Blt_Chain_FirstLink(viewPtr->selected); link != NULL; 
@@ -1580,17 +1579,6 @@ SelectionProc(
             Tcl_DStringAppend(&ds, itemPtr->text, -1);
             Tcl_DStringAppend(&ds, "\n", -1);
         }
-    } else {
-        Item *itemPtr;
-
-        for (itemPtr = FirstItem(viewPtr, HIDDEN | DISABLED);
-             itemPtr != NULL; itemPtr = NextItem(itemPtr, HIDDEN| DISABLED)) {
-            if (ItemIsSelected(viewPtr, itemPtr)) {
-                Tcl_DStringAppend(&ds, itemPtr->text, -1);
-                Tcl_DStringAppend(&ds, "\n", -1);
-            }
-        }
-
     }
     size = Tcl_DStringLength(&ds) - offset;
     strncpy(buffer, Tcl_DStringValue(&ds) + offset, maxBytes);
@@ -1817,17 +1805,6 @@ GetBoundedWidth(ListView *viewPtr, int w)
     }
     if (w > viewPtr->reqWidth.max) {
         w = viewPtr->reqWidth.max;      /* Bounded by maximum value */
-    }
-    if (viewPtr->flags & (RESTRICT_MIN|RESTRICT_MAX)) {
-        Tk_Window parent;
-
-        parent = Tk_Parent(viewPtr->tkwin);
-        if ((viewPtr->flags & RESTRICT_MIN) && (w < Tk_Width(parent))) {
-            w = Tk_Width(parent);
-        }
-        if ((viewPtr->flags & RESTRICT_MAX) && (w > Tk_Width(parent))) {
-            w = Tk_Width(parent);
-        }
     }
     {
         int screenWidth, screenHeight;
@@ -3377,78 +3354,6 @@ StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToRestrict --
- *
- *      Convert the string representation of an item state into a flag.
- *
- * Results:
- *      The return value is a standard TCL result.  The state flags are
- *      updated.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToRestrict(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
-{
-    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
-    char *string;
-    int flag;
-
-    string = Tcl_GetString(objPtr);
-    if (strcmp(string, "min") == 0) {
-        flag = RESTRICT_MIN;
-    } else if (strcmp(string, "max") == 0) {
-        flag = RESTRICT_MAX;
-    } else if (strcmp(string, "both") == 0) {
-        flag = RESTRICT_MIN|RESTRICT_MAX;
-    } else if (strcmp(string, "none") == 0) {
-        flag = 0;
-    } else {
-        Tcl_AppendResult(interp, "unknown state \"", string, 
-                "\": should be active, disabled, or normal.", (char *)NULL);
-        return TCL_ERROR;
-    }
-    *flagsPtr &= ~(RESTRICT_MIN|RESTRICT_MAX);
-    *flagsPtr |= flag;
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * RestrictToObj --
- *
- *      Return the string representation of the restrict flags.
- *
- * Results:
- *      The name representing the style is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-RestrictToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
-{
-    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
-    const char *string;
-
-    string = NULL;                      /* Suppress compiler warning. */
-    switch (*flagsPtr & (RESTRICT_MIN|RESTRICT_MAX)) {
-    case RESTRICT_MIN:  string = "min";         break;
-    case RESTRICT_MAX:  string = "max";         break;
-    case RESTRICT_NONE: string = "none";        break;
-    case (RESTRICT_MIN|RESTRICT_MAX):
-        string = "both"; break;
-    }
-    return Tcl_NewStringObj(string, -1);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * ObjToState --
  *
  *      Convert the string representation of an item state into a flag.
@@ -3855,7 +3760,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The listview entry may become selected or deselected.
  *
- *   pathName add ?switches ...?
+ *   pathName add ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4031,18 +3936,6 @@ CurselectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (viewPtr->flags & SELECT_ORDERED) {
-        Blt_ChainLink link;
-
-        for (link = Blt_Chain_FirstLink(viewPtr->selected); link != NULL;
-             link = Blt_Chain_NextLink(link)) {
-            Item *itemPtr;
-            Tcl_Obj *objPtr;
-
-            itemPtr = Blt_Chain_GetValue(link);
-            objPtr = Tcl_NewLongObj(itemPtr->index);
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
-    } else {
         Item *itemPtr;
 
         for (itemPtr = FirstItem(viewPtr, HIDDEN | DISABLED);
@@ -4054,8 +3947,44 @@ CurselectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
+    } else {
+        Blt_ChainLink link;
+
+        for (link = Blt_Chain_FirstLink(viewPtr->selected); link != NULL;
+             link = Blt_Chain_NextLink(link)) {
+            Item *itemPtr;
+            Tcl_Obj *objPtr;
+
+            itemPtr = Blt_Chain_GetValue(link);
+            objPtr = Tcl_NewLongObj(itemPtr->index);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DeactivateOp --
+ *      Deactivates all items.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *      pathName deactivate
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+
+    ActivateItem(viewPtr, NULL);
+    viewPtr->activePtr = NULL;
     return TCL_OK;
 }
 
@@ -5301,14 +5230,14 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec selectionOps[] =
 {
-    {"anchor",   1, SelectionAnchorOp,   3, 4, "?item?",},
-    {"clear",    5, SelectionSetOp,      4, 5, "first ?last?",},
+    {"anchor",   1, SelectionAnchorOp,   3, 4, "?itemName?",},
+    {"clear",    5, SelectionSetOp,      4, 5, "firstItem ?lastItem?",},
     {"clearall", 6, SelectionClearallOp, 3, 3, "",},
-    {"includes", 1, SelectionIncludesOp, 4, 4, "item",},
-    {"mark",     1, SelectionMarkOp,     3, 4, "?item?",},
+    {"includes", 1, SelectionIncludesOp, 4, 4, "itemName",},
+    {"mark",     1, SelectionMarkOp,     3, 4, "?itemName?",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},
-    {"set",      1, SelectionSetOp,      4, 5, "first ?last?",},
-    {"toggle",   1, SelectionSetOp,      4, 5, "first ?last?",},
+    {"set",      1, SelectionSetOp,      4, 5, "firstItem ?lastItem?",},
+    {"toggle",   1, SelectionSetOp,      4, 5, "firstItem ?lastItem?",},
 };
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
 
@@ -5501,7 +5430,7 @@ SortConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 /*ARGSUSED*/
 static int
-SortNowOp(ClientData clientData, Tcl_Interp *interp, int objc,
+SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
@@ -5535,7 +5464,7 @@ static Blt_OpSpec sortOps[] =
 {
     {"cget",      2, SortCgetOp,      4, 4, "option",},
     {"configure", 2, SortConfigureOp, 3, 0, "?option value?...",},
-    {"now",       1, SortNowOp,       3, 0, "?option value?",},
+    {"once",      1, SortOnceOp,      3, 0, "?option value?",},
 };
 static int numSortOps = sizeof(sortOps) / sizeof(Blt_OpSpec);
 
@@ -5721,7 +5650,7 @@ StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * TableLinkOp --
+ * TableAttachOp --
  *
  *      Attaches a table as a data source for this widget.
  *
@@ -5731,12 +5660,12 @@ StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      New items are added to the listview widget.
  *
- *      .t table link $t ?option value?...
+ *      pathName table attach tableName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TableLinkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+TableAttachOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
@@ -5778,9 +5707,9 @@ TableLinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * TableUnlinkOp --
+ * TableUnattachOp --
  *
- *      Appends a list of items to the listview.
+ *      Unattaches the table from the listview widget.
  *
  * Results:
  *      A standard TCL result.
@@ -5788,13 +5717,13 @@ TableLinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      Items are removed from the listview widget.
  *
- *      .t table unlink
+ *      .t table unattach
  *
  *---------------------------------------------------------------------------
  */
 static int
-TableUnlinkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
+TableUnattachOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
 
@@ -5802,7 +5731,8 @@ TableUnlinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         /* Flush all the items. */
         DestroyItems(viewPtr);
         viewPtr->items = Blt_Chain_Create();
-        /* Notifiers and traces are also removed when the table is closed. */
+        /* Notifiers and traces are also removed when the table is
+         * closed. */
         blt_table_close(viewPtr->tableSource.table);
         viewPtr->tableSource.table = NULL;
         EventuallyRedraw(viewPtr);
@@ -5812,8 +5742,8 @@ TableUnlinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec tableOps[] =
 {
-    {"link",    1, TableLinkOp,   4, 0, "table ?option value?",},
-    {"unlink",  1, TableUnlinkOp, 3, 3, "",},
+    {"attach",    1, TableAttachOp,   4, 0, "tableName ?option value?",},
+    {"unattach",  1, TableUnattachOp, 3, 3, "",},
 };
 
 static int numTableOps = sizeof(tableOps) / sizeof(Blt_OpSpec);
@@ -5834,6 +5764,538 @@ TableOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return result;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagAddOp --
+ *
+ *      pathName tag add tagName ?itemName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    const char *tag;
+    long index;
+
+    tag = Tcl_GetString(objv[3]);
+    if (Blt_GetLongFromObj(NULL, objv[3], &index) == TCL_OK) {
+        Tcl_AppendResult(interp, "bad tag \"", tag, 
+                 "\": can't be a number.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (strcmp(tag, "all") == 0) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (objc == 4) {
+        /* No nodes specified.  Just add the tag. */
+        Blt_Tags_AddTag(&viewPtr->tags, tag);
+    } else {
+        int i;
+
+        for (i = 4; i < objc; i++) {
+            Item *itemPtr;
+            ItemIterator iter;
+            
+            if (GetItemIterator(interp, viewPtr, objv[i], &iter) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
+                 itemPtr = NextTaggedItem(&iter)) {
+                Blt_Tags_AddItemToTag(&viewPtr->tags, tag, itemPtr);
+            }
+        }
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagDeleteOp --
+ *
+ *      pathName delete tagName ?itemName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    const char *tag;
+    long index;
+    int i;
+
+    tag = Tcl_GetString(objv[3]);
+    if (Blt_GetLongFromObj(NULL, objv[3], &index) == TCL_OK) {
+        Tcl_AppendResult(interp, "bad tag \"", tag, 
+                 "\": can't be a number.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (strcmp(tag, "all") == 0) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    for (i = 4; i < objc; i++) {
+        Item *itemPtr;
+        ItemIterator iter;
+        
+        if (GetItemIterator(interp, viewPtr, objv[i], &iter) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
+             itemPtr = NextTaggedItem(&iter)) {
+            Blt_Tags_RemoveItemFromTag(&viewPtr->tags, tag, itemPtr);
+        }
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagExistsOp --
+ *
+ *      Returns the existence of the one or more tags in the given node.
+ *      If the node has any the tags, true is return in the interpreter.
+ *
+ *      pathName tag exists itenName ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    ItemIterator iter;
+    ListView *viewPtr = clientData;
+    int i;
+
+    if (GetItemIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 4; i < objc; i++) {
+        Item *itemPtr;
+        const char *tag;
+
+        tag = Tcl_GetString(objv[i]);
+        for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
+             itemPtr = NextTaggedItem(&iter)) {
+            if (Blt_Tags_ItemHasTag(&viewPtr->tags, itemPtr, tag)) {
+                Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
+                return TCL_OK;
+            }
+        }
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), FALSE);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagForgetOp --
+ *
+ *      Removes the given tags from all drawers.
+ *
+ *      pathName tag forget ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    int i;
+
+    for (i = 3; i < objc; i++) {
+        const char *tag;
+        long index;
+
+        tag = Tcl_GetString(objv[i]);
+        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
+            Tcl_AppendResult(interp, "bad tag \"", tag, 
+                             "\": can't be a number.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        Blt_Tags_ForgetTag(&viewPtr->tags, tag);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagGetOp --
+ *
+ *      Returns tag names for a given item.  If one of more pattern
+ *      arguments are provided, then only those matching tags are returned.
+ *
+ *      pathName tag get itemName ?pattern ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    Item *itemPtr; 
+    ItemIterator iter;
+    Tcl_Obj *listObjPtr;
+
+    if (GetItemIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
+         itemPtr = NextTaggedItem(&iter)) {
+        if (objc == 4) {
+            Blt_Tags_AppendTagsToObj(&viewPtr->tags, itemPtr, listObjPtr);
+            Tcl_ListObjAppendElement(interp, listObjPtr, 
+                                     Tcl_NewStringObj("all", 3));
+        } else {
+            int i;
+            
+            /* Check if we need to add the special tags "all" */
+            for (i = 4; i < objc; i++) {
+                const char *pattern;
+
+                pattern = Tcl_GetString(objv[i]);
+                if (Tcl_StringMatch("all", pattern)) {
+                    Tcl_Obj *objPtr;
+
+                    objPtr = Tcl_NewStringObj("all", 3);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                    break;
+                }
+            }
+            /* Now process any standard tags. */
+            for (i = 4; i < objc; i++) {
+                Blt_ChainLink link;
+                const char *pattern;
+                Blt_Chain chain;
+
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&viewPtr->tags, itemPtr, chain);
+                pattern = Tcl_GetString(objv[i]);
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    const char *tag;
+                    Tcl_Obj *objPtr;
+
+                    tag = (const char *)Blt_Chain_GetValue(link);
+                    if (!Tcl_StringMatch(tag, pattern)) {
+                        continue;
+                    }
+                    objPtr = Tcl_NewStringObj(tag, -1);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                }
+                Blt_Chain_Destroy(chain);
+            }
+        }    
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagNamesOp --
+ *
+ *      Returns the names of all the tags in the widget.  If one of more
+ *      item arguments are provided, then only the tags found in those
+ *      items are returned.
+ *
+ *      pathName tag names ?itemName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    Tcl_Obj *listObjPtr, *objPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewStringObj("all", -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    if (objc == 3) {
+        Blt_Tags_AppendAllTagsToObj(&viewPtr->tags, listObjPtr);
+    } else {
+        Blt_HashTable uniqTable;
+        int i;
+
+        Blt_InitHashTable(&uniqTable, BLT_STRING_KEYS);
+        for (i = 3; i < objc; i++) {
+            ItemIterator iter;
+            Item *itemPtr;
+
+            if (GetItemIterator(interp, viewPtr, objPtr, &iter) != TCL_OK) {
+                goto error;
+            }
+            for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
+                 itemPtr = NextTaggedItem(&iter)) {
+                Blt_ChainLink link;
+                Blt_Chain chain;
+
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&viewPtr->tags, itemPtr, chain);
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    const char *tag;
+                    int isNew;
+
+                    tag = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
+                }
+                Blt_Chain_Destroy(chain);
+            }
+        }
+        {
+            Blt_HashEntry *hPtr;
+            Blt_HashSearch hiter;
+
+            for (hPtr = Blt_FirstHashEntry(&uniqTable, &hiter); hPtr != NULL;
+                 hPtr = Blt_NextHashEntry(&hiter)) {
+                objPtr = Tcl_NewStringObj(Blt_GetHashKey(&uniqTable, hPtr), -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
+        }
+        Blt_DeleteHashTable(&uniqTable);
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+ error:
+    Tcl_DecrRefCount(listObjPtr);
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagIndicesOp --
+ *
+ *      Returns the indices associated with the given tags.  The indices
+ *      returned will represent the union of drawers for all the given
+ *      tags.
+ *
+ *      pathName tag indices ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    Blt_HashTable itemTable;
+    int i;
+        
+    Blt_InitHashTable(&itemTable, BLT_ONE_WORD_KEYS);
+    for (i = 3; i < objc; i++) {
+        long index;
+        const char *tag;
+
+        tag = Tcl_GetString(objv[i]);
+        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
+            Tcl_AppendResult(interp, "bad tag \"", tag, 
+                             "\": can't be a number.", (char *)NULL);
+            goto error;
+        }
+        if (strcmp(tag, "all") == 0) {
+            break;
+        } else {
+            Blt_Chain chain;
+
+            chain = Blt_Tags_GetItemList(&viewPtr->tags, tag);
+            if (chain != NULL) {
+                Blt_ChainLink link;
+
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    Item *itemPtr;
+                    int isNew;
+                    
+                    itemPtr = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&itemTable, (char *)itemPtr, &isNew);
+                }
+            }
+            continue;
+        }
+        Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
+                         (char *)NULL);
+        goto error;
+    }
+    {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
+        Tcl_Obj *listObjPtr;
+
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+        for (hPtr = Blt_FirstHashEntry(&itemTable, &iter); hPtr != NULL; 
+             hPtr = Blt_NextHashEntry(&iter)) {
+            Item *itemPtr;
+            Tcl_Obj *objPtr;
+
+            itemPtr = (Item *)Blt_GetHashKey(&itemTable, hPtr);
+            objPtr = Tcl_NewLongObj(itemPtr->index);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
+        Tcl_SetObjResult(interp, listObjPtr);
+    }
+    Blt_DeleteHashTable(&itemTable);
+    return TCL_OK;
+
+ error:
+    Blt_DeleteHashTable(&itemTable);
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagSetOp --
+ *
+ *      Sets one or more tags for a given item.  Tag names can't start with
+ *      a digit (to distinquish them from indices) and can't be a reserved
+ *      tag ("all").
+ *
+ *      pathName tag set itemName ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    int i;
+    ItemIterator iter;
+
+    if (GetItemIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 4; i < objc; i++) {
+        const char *tag;
+        Item *itemPtr;
+        long index;
+
+        tag = Tcl_GetString(objv[i]);
+        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
+            Tcl_AppendResult(interp, "bad tag \"", tag, 
+                             "\": can't be a number.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        if (strcmp(tag, "all") == 0) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+                             (char *)NULL);     
+            return TCL_ERROR;
+        }
+        for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
+             itemPtr = NextTaggedItem(&iter)) {
+            Blt_Tags_AddItemToTag(&viewPtr->tags, tag, itemPtr);
+        }    
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagUnsetOp --
+ *
+ *      Removes one or more tags from a given item. If a tag doesn't
+ *      exist or is a reserved tag ("all"), nothing will be done and no
+ *      error message will be returned.
+ *
+ *      pathName tag unset itemName ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    Item *itemPtr;
+    ItemIterator iter;
+
+    if (GetItemIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
+         itemPtr = NextTaggedItem(&iter)) {
+        int i;
+        for (i = 4; i < objc; i++) {
+            const char *tag;
+
+            tag = Tcl_GetString(objv[i]);
+            Blt_Tags_RemoveItemFromTag(&viewPtr->tags, tag, itemPtr);
+        }    
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagOp --
+ *
+ *      This procedure is invoked to process tag operations.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ * Side Effects:
+ *      See the user documentation.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec tagOps[] =
+{
+    {"add",     1, TagAddOp,      2, 0, "?itemName? ?option value ...?",},
+    {"delete",  1, TagDeleteOp,   2, 0, "?itemName ...?",},
+    {"exists",  1, TagExistsOp,   4, 0, "itemName ?tag ...?",},
+    {"forget",  1, TagForgetOp,   3, 0, "?tag...?",},
+    {"get",     1, TagGetOp,      4, 0, "itemName ?pattern ...?",},
+    {"indices", 1, TagIndicesOp,  3, 0, "?tag...?",},
+    {"names",   1, TagNamesOp,    3, 0, "?itemName ...?",},
+    {"set",     1, TagSetOp,      4, 0, "itemName ?tag ...?",},
+    {"unset",   1, TagUnsetOp,    4, 0, "itemName ?tag ...?",},
+};
+
+static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
+
+static int
+TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+    int result;
+
+    proc = Blt_GetOpFromObj(interp, numTagOps, tagOps, BLT_OP_ARG2,
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    result = (*proc)(clientData, interp, objc, objv);
+    return result;
+}
 
 static int
 XpositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -6008,8 +6470,7 @@ NewListView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->tkwin = tkwin;
     viewPtr->display = Tk_Display(tkwin);
     viewPtr->interp = interp;
-    viewPtr->flags = LAYOUT_PENDING | SCROLL_PENDING | SELECT_EXPORT | 
-        SELECT_ORDERED;
+    viewPtr->flags = LAYOUT_PENDING | SCROLL_PENDING | SELECT_EXPORT;
     viewPtr->relief = TK_RELIEF_SUNKEN;
     viewPtr->xScrollUnits = viewPtr->yScrollUnits = 20;
     viewPtr->borderWidth = 1;
@@ -6049,12 +6510,13 @@ NewListView(Tcl_Interp *interp, Tk_Window tkwin)
 static Blt_OpSpec listViewOps[] =
 {
     {"activate",    2, ActivateOp,    3, 3, "itemName",},
-    {"add",         2, AddOp,         2, 0, "?option value?",},
+    {"add",         2, AddOp,         2, 0, "?option value ...?",},
     {"bbox",        1, BBoxOp,        3, 3, "itemName",},
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"curselection",2, CurselectionOp,2, 2, "",},
-    {"delete",      1, DeleteOp,      2, 0, "itemName ...",},
+    {"deactivate",  3, DeactivateOp,  2, 2, "",},
+    {"delete",      3, DeleteOp,      2, 0, "itemName ...",},
     {"exists",      1, ExistsOp,      3, 3, "itemName",},
     {"find",        2, FindOp,        3, 0, "string ?switches?",},
     {"focus",       2, FocusOp,       3, 3, "itemName",},
@@ -6073,7 +6535,8 @@ static Blt_OpSpec listViewOps[] =
     {"size",        2, SizeOp,        2, 2, "",},
     {"sort",        2, SortOp,        2, 0, "op ?args...?",},
     {"style",       2, StyleOp,       2, 0, "op ?args...?",},
-    {"table",       1, TableOp,       2, 0, "op ?args...?",},
+    {"table",       3, TableOp,       2, 0, "op ?args...?",},
+    {"tag",         3, TagOp,         2, 0, "op ?args...?",},
     {"xposition",   2, XpositionOp,   3, 3, "itemName",},
     {"xview",       2, XviewOp,       2, 5, "?moveto fract? ?scroll number what?",},
     {"yposition",   2, YpositionOp,   3, 3, "itemName",},
