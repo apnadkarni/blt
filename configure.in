@@ -1917,6 +1917,7 @@ AC_CONFIG_FILES(
   library/dd_protocols/Makefile 
   library/palettes/Makefile 
   man/Makefile 
+  doc/Makefile 
   src/bltHash.h 
 ]
 )
