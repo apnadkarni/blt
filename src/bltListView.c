@@ -157,12 +157,12 @@ static const char emptyString[] = "";
 #define DEF_BORDERWIDTH             "0"
 #define DEF_CURSOR                  ((char *)NULL)
 #define DEF_EXPORT_SELECTION        "1"
-#define DEF_HEIGHT                  "0"
+#define DEF_HEIGHT                  "2i"
 #define DEF_HIGHLIGHT_BACKGROUND    STD_NORMAL_BACKGROUND
 #define DEF_HIGHLIGHT_COLOR         RGB_BLACK
 #define DEF_HIGHLIGHT_WIDTH         "2"
 #define DEF_ICON_VARIABLE           ((char *)NULL)
-#define DEF_LAYOUTMODE              "column"
+#define DEF_LAYOUTMODE              "columns"
 #define DEF_RELIEF                  "sunken"
 #define DEF_SELECTMODE              "single"
 #define DEF_SORT_DICTIONARY         "0"
@@ -172,7 +172,7 @@ static const char emptyString[] = "";
 #define DEF_SORT_TYPE               "text"
 #define DEF_TAKEFOCUS               "1"
 #define DEF_TEXTVARIABLE            ((char *)NULL)
-#define DEF_WIDTH                   "0"
+#define DEF_WIDTH                   "5i"
 #define DEF_XSCROLLCOMMAND          ((char *)NULL)
 #define DEF_XSCROLLINCREMENT        "20"
 #define DEF_YSCROLLCOMMAND          ((char *)NULL)
@@ -271,16 +271,15 @@ extern Blt_CustomOption bltLimitsOption;
 typedef struct _ListView ListView;
 
 typedef enum LayoutModes {
-    LAYOUT_LIST_COLUMN,                 /* Layout items in a single list,
-                                         * one item per row. */
-    LAYOUT_LIST_ROW,                    /* Layout items in multiple
+    LAYOUT_COLUMNS,                     /* Layout items in multiple
                                          * columns. */
     LAYOUT_ICONS,                       /* Layout items in multiple rows
                                          * using the big icon with the text
                                          * underneath. */
-    LAYOUT_TILES                        /* Layout items using the big icon
-                                         * with 3 lines of text on the
-                                         * right. */
+    LAYOUT_ROW,                         /* Layout items in a single list,
+                                         * one item per row. */
+    LAYOUT_ROWS,                        /* Layout items in multiple
+                                         * rows. */
 } LayoutMode;
    
 /*
@@ -463,6 +462,8 @@ typedef struct {
                                          * text. */
     ColumnInfo icon;                    /* Column containing item's icon
                                          * name. */
+    ColumnInfo type;                    /* Column containing item's icon
+                                         * name. */
     ColumnInfo bigIcon;                 /* Column containing the item's big
                                          * (64x64) icon name. */
     BLT_TABLE table;
@@ -470,14 +471,17 @@ typedef struct {
 
 static Blt_ConfigSpec tableSpecs[] =
 {
-    {BLT_CONFIG_CUSTOM, "-bigiconcolumn", (char *)NULL, (char *)NULL, 
+    {BLT_CONFIG_CUSTOM, "-bigicon", (char *)NULL, (char *)NULL, 
         (char *)NULL, Blt_Offset(TableSource, bigIcon), BLT_CONFIG_NULL_OK,
         &columnOption},
-    {BLT_CONFIG_CUSTOM, "-iconcolumn", (char *)NULL, (char *)NULL, 
+    {BLT_CONFIG_CUSTOM, "-icon", (char *)NULL, (char *)NULL, 
         (char *)NULL, Blt_Offset(TableSource, icon), BLT_CONFIG_NULL_OK, 
         &columnOption},
-    {BLT_CONFIG_CUSTOM, "-textcolumn", (char *)NULL, (char *)NULL, 
+    {BLT_CONFIG_CUSTOM, "-text", (char *)NULL, (char *)NULL, 
         (char *)NULL, Blt_Offset(TableSource, text), BLT_CONFIG_NULL_OK, 
+        &columnOption},
+    {BLT_CONFIG_CUSTOM, "-type", (char *)NULL, (char *)NULL, 
+        (char *)NULL, Blt_Offset(TableSource, type), BLT_CONFIG_NULL_OK, 
         &columnOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
         0, 0}
@@ -639,8 +643,7 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_STYLE_FG, Blt_Offset(ListView, defStyle.textNormalColor), 0},
     {BLT_CONFIG_CUSTOM, "-height", "height", "Height", DEF_HEIGHT, 
-        Blt_Offset(ListView, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT,
-        &bltLimitsOption},
+        Blt_Offset(ListView, reqHeight), 0, &bltLimitsOption},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
         DEF_HIGHLIGHT_COLOR, Blt_Offset(ListView, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
@@ -693,11 +696,8 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_PIXELS_POS, "-yscrollincrement", "yScrollIncrement",
         "ScrollIncrement", DEF_YSCROLLINCREMENT, 
          Blt_Offset(ListView, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
-    /*  */
-    /*  */
     {BLT_CONFIG_CUSTOM, "-width", "width", "Width", DEF_WIDTH, 
-        Blt_Offset(ListView, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT,
-        &bltLimitsOption},
+        Blt_Offset(ListView, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
         0, 0}
 };
@@ -893,17 +893,17 @@ ObjToLayoutMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 
     string = Tcl_GetString(objPtr);
     c = string[0];
-    if ((c == 'c') && (strcmp(string, "column") == 0)) {
-        *modePtr = LAYOUT_LIST_COLUMN;
+    if ((c == 'c') && (strcmp(string, "columns") == 0)) {
+        *modePtr = LAYOUT_COLUMNS;
     } else if ((c == 'r') && (strcmp(string, "row") == 0)) {
-        *modePtr = LAYOUT_LIST_ROW;
+        *modePtr = LAYOUT_ROW;
+    } else if ((c == 'r') && (strcmp(string, "rows") == 0)) {
+        *modePtr = LAYOUT_ROWS;
     } else if ((c == 'i') && (strcmp(string, "icons") == 0)) {
         *modePtr = LAYOUT_ICONS;
-    } else if ((c == 't') && (strcmp(string, "tiles") == 0)) {
-        *modePtr = LAYOUT_TILES;
     } else {
         Tcl_AppendResult(interp, "bad select mode \"", string,
-            "\": should be column, row, icons, or tiles.", (char *)NULL);
+            "\": should be column, row, rows, or icons.", (char *)NULL);
         return TCL_ERROR;
     }
     viewPtr->flags |= LAYOUT_PENDING | GEOMETRY;
@@ -928,16 +928,16 @@ LayoutModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     int mode = *(int *)(widgRec + offset);
 
     switch (mode) {
-    case LAYOUT_LIST_COLUMN:
-        return Tcl_NewStringObj("column", -1);
-    case LAYOUT_LIST_ROW:
-        return Tcl_NewStringObj("row", -1);
+    case LAYOUT_COLUMNS:
+        return Tcl_NewStringObj("columns", 7);
+    case LAYOUT_ROW:
+        return Tcl_NewStringObj("row", 3);
+    case LAYOUT_ROWS:
+        return Tcl_NewStringObj("rows", 4);
     case LAYOUT_ICONS:
-        return Tcl_NewStringObj("icons", -1);
-    case LAYOUT_TILES:
-        return Tcl_NewStringObj("tiles", -1);
+        return Tcl_NewStringObj("icons", 5);
     default:
-        return Tcl_NewStringObj("???", -1);
+        return Tcl_NewStringObj("???", 3);
     }
 }
 
@@ -1097,12 +1097,12 @@ static int
 ObjToColumn(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE_NOTIFIER notifier;
+    BLT_TABLE_TRACE trace;
     ColumnInfo *ciPtr = (ColumnInfo *)(widgRec + offset);
     TableSource *srcPtr = (TableSource *)(widgRec);
     const char *string;
-    BLT_TABLE_COLUMN col;
-    BLT_TABLE_TRACE trace;
-    BLT_TABLE_NOTIFIER notifier;
 
     string = Tcl_GetString(objPtr);
     notifier = NULL;
@@ -1139,9 +1139,6 @@ ObjToColumn(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *---------------------------------------------------------------------------
  *
  * ColumnToObj --
- *
- * Results:
- *      The string representation of the button boolean is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -2071,16 +2068,16 @@ ComputeRowLayout(ListView *viewPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ComputeColumnLayout --
+ * ComputeColumnsLayout --
  *
  *      Computes the layout of the widget with the items displayed multiple
  *      columns.  The current height of the widget is used as a basis for
- *      the number of rows in a column.
+ *      the number of rows.
  *
  *---------------------------------------------------------------------------
  */
 static void
-ComputeColumnLayout(ListView *viewPtr)
+ComputeColumnsLayout(ListView *viewPtr)
 {
     int x, y, w, h;
     int reqWidth, reqHeight;
@@ -2281,6 +2278,108 @@ ComputeIconsLayout(ListView *viewPtr)
 /*
  *---------------------------------------------------------------------------
  *
+ * ComputeRowsLayout --
+ *
+ *      Computes the layout of the widget with the items displayed multiple
+ *      rows.  The current width of the widget is used as a basis for
+ *      the number of columns.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+ComputeRowsLayout(ListView *viewPtr)
+{
+    int x, y, w, h;
+    int reqWidth, reqHeight;
+    int maxWidth, maxHeight;
+    int winWidth;
+    int numColumns, numItems;
+    int maxIconWidth;
+    Item *itemPtr;
+
+    numItems = maxWidth = maxHeight = maxIconWidth = 0;
+    viewPtr->itemHeight = 0;
+    for (itemPtr = FirstItem(viewPtr, HIDDEN); itemPtr != NULL; 
+         itemPtr = NextItem(itemPtr, HIDDEN)) {
+        if ((viewPtr->flags | itemPtr->flags) & GEOMETRY) {
+            ComputeListItemGeometry(viewPtr, itemPtr);
+        }
+        if (maxIconWidth < itemPtr->iconWidth) {
+            maxIconWidth = itemPtr->iconWidth;
+        }
+        if (maxWidth < itemPtr->width) {
+            maxWidth = itemPtr->width;
+        }
+        if (maxHeight < itemPtr->height) {
+            maxHeight = itemPtr->height;
+        }
+        numItems++;
+    }
+    viewPtr->flags &= ~GEOMETRY;
+    if (numItems == 0) {
+        return;
+    }
+    winWidth = VPORTWIDTH(viewPtr);
+    if (winWidth <= 1) {
+        winWidth = Tk_ReqWidth(viewPtr->tkwin) - 2 * viewPtr->inset;
+    }
+    numColumns = winWidth / maxWidth;
+    if (numColumns <= 0) {
+        numColumns = 1;
+    }
+    /* Now compute the worldX, worldY positions */
+    y = 0;
+    itemPtr = FirstItem(viewPtr, HIDDEN); 
+    while (itemPtr != NULL) {
+        int i;
+        int rowHeight;
+        Item *p;
+        
+        rowHeight = 0;
+        x = 0;
+        /* Step 1: Find the width of the widest item in the row.  */
+        for (p = itemPtr, i = 0; (p != NULL) && (i < numColumns);
+             i++, p = NextItem(p, HIDDEN)) {
+            if (rowHeight < p->height) {
+                rowHeight = p->height;
+            }
+        }
+        /* Step 2: Set the positions of the items in the row.  */
+        for (i = 0; (itemPtr != NULL) && (i < numColumns);
+             i++, itemPtr = NextItem(itemPtr, HIDDEN)) {
+            itemPtr->worldX = x;
+            itemPtr->worldY = y;
+            itemPtr->worldWidth = maxWidth;
+            itemPtr->worldHeight = rowHeight;
+            itemPtr->iconX = 1 + (maxIconWidth - itemPtr->iconWidth) / 2;
+            itemPtr->iconY = 1 + (rowHeight - itemPtr->iconHeight) / 2;
+            itemPtr->textX = 2 + maxIconWidth; 
+            if ((itemPtr->textWidth > 0) && (itemPtr->iconWidth > 0)) {
+                itemPtr->textX += ITEM_IPAD;
+            }
+            itemPtr->textY = 1 + (rowHeight - itemPtr->textHeight) / 2;
+            x += maxWidth;
+        }
+        y += rowHeight;
+    }
+    viewPtr->worldWidth = numColumns * maxWidth;
+    viewPtr->worldHeight = y;
+ 
+    reqWidth  = viewPtr->worldWidth  + 2 * viewPtr->inset;
+    reqHeight = viewPtr->worldHeight + 2 * viewPtr->inset;
+
+    w = GetBoundedWidth(viewPtr, reqWidth);
+    h = GetBoundedHeight(viewPtr, reqHeight);
+
+    if ((w != Tk_ReqWidth(viewPtr->tkwin)) || 
+        (h != Tk_ReqHeight(viewPtr->tkwin))) {
+        Tk_GeometryRequest(viewPtr->tkwin, w, h);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ComputeLayout --
  *
  *      Computes the layout of the widget with the items displayed multiple
@@ -2299,17 +2398,17 @@ ComputeLayout(ListView *viewPtr)
     viewPtr->textWidth = -1;
     viewPtr->itemHeight = 0;
     switch (viewPtr->layoutMode) {
-    case LAYOUT_LIST_ROW:
+    case LAYOUT_ROW:
         ComputeRowLayout(viewPtr);
         break;
-    case LAYOUT_LIST_COLUMN:
-        ComputeColumnLayout(viewPtr);
+    case LAYOUT_ROWS:
+        ComputeRowsLayout(viewPtr);
+        break;
+    case LAYOUT_COLUMNS:
+        ComputeColumnsLayout(viewPtr);
         break;
     case LAYOUT_ICONS:
         ComputeIconsLayout(viewPtr);
-        break;
-    case LAYOUT_TILES:
-        Blt_Warn("layout not implemented\n");
         break;
     }
     viewWidth = VPORTWIDTH(viewPtr);
@@ -2896,9 +2995,9 @@ GetItemByIndex(Tcl_Interp *interp, ListView *viewPtr, const char *string,
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
         itemPtr = LastItem(viewPtr, 0);
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
-        itemPtr = FirstItem(viewPtr, HIDDEN);
+        itemPtr = FirstItem(viewPtr, HIDDEN | DISABLED);
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
-        itemPtr = LastItem(viewPtr, HIDDEN);
+        itemPtr = LastItem(viewPtr, HIDDEN | DISABLED);
     } else if ((c == 'n') && (strcmp(string, "none") == 0)) {
         itemPtr = NULL;
     } else if ((c == 'a') && (strcmp(string, "active") == 0)) {
@@ -3206,6 +3305,14 @@ RebuildTableItems(Tcl_Interp *interp, ListView *viewPtr, BLT_TABLE table)
                 return TCL_ERROR;
             }
             itemPtr->bigIcon = icon;
+        } 
+        if (viewPtr->tableSource.type.column != NULL) {
+            BLT_TABLE_COLUMN col;
+            const char *string;
+
+            col = viewPtr->tableSource.type.column;
+            string = blt_table_get_string(table, row, col);
+            itemPtr->type = Blt_AssertStrdup(string);
         } 
     }
     Blt_DeleteHashTable(&rowTable);
@@ -4586,37 +4693,19 @@ static int
 NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
-    ListView *viewPtr = clientData;
-    int x, y;                   
-    int wx, wy;                 
     Item *itemPtr;
-    int isRoot;
-    char *string;
+    ListView *viewPtr = clientData;
+    int rootX, rootY;
+    int wx, wy;                 
+    int x, y;                   
 
-    isRoot = FALSE;
-    string = Tcl_GetString(objv[2]);
-    if (strcmp("-root", string) == 0) {
-        isRoot = TRUE;
-        objv++, objc--;
-    } 
-    if (objc < 4) {
-        Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " ", Tcl_GetString(objv[1]), 
-                " ?-root? x y\"", (char *)NULL);
-        return TCL_ERROR;
-                         
-    }
     if ((Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[2], &x) != TCL_OK) ||
         (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[3], &y) != TCL_OK)) {
         return TCL_ERROR;
     }
-    if (isRoot) {
-        int rootX, rootY;
-
-        Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
-        x -= rootX;
-        y -= rootY;
-    }
+    Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+    x -= rootX;
+    y -= rootY;
     itemPtr = NearestItem(viewPtr, x, y, TRUE);
     if (itemPtr == NULL) {
         return TCL_OK;
@@ -6476,7 +6565,7 @@ NewListView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->borderWidth = 1;
     viewPtr->highlightWidth = 2;
     viewPtr->items = Blt_Chain_Create();
-    viewPtr->layoutMode = LAYOUT_LIST_COLUMN;
+    viewPtr->layoutMode = LAYOUT_COLUMNS;
     viewPtr->painter = Blt_GetPainter(tkwin, 1.0);
     Blt_ResetLimits(&viewPtr->reqWidth);
     Blt_ResetLimits(&viewPtr->reqHeight);

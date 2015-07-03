@@ -11,12 +11,14 @@ blt::comboentry .layout \
     -width 200
 blt::combomenu $m \
     -textvariable layoutMode 
-$m add -text "column" \
-    -command [list .ss.listview configure -layoutmode column]
+$m add -text "columns" \
+    -command [list .ss.listview configure -layoutmode columns]
 $m add -text "icons" \
     -command [list .ss.listview configure -layoutmode icons]
 $m add -text "row" \
     -command [list .ss.listview configure -layoutmode row]
+$m add -text "rows" \
+    -command [list .ss.listview configure -layoutmode rows]
 
 blt::scrollset .ss \
     -xscrollbar .ss.xs \
@@ -24,9 +26,9 @@ blt::scrollset .ss \
     -window .ss.listview
 
 blt::listview .ss.listview \
-    -width 4i \
+    -width 5i \
     -height 2i  \
-    -layoutmode column \
+    -layoutmode columns \
     -selectmode multiple  
 
 .ss.listview sort configure \
@@ -293,5 +295,5 @@ blt::table . \
 
 blt::table configure . r0 c0 -resize none
 
-$m select "column"
+$m select "columns"
 

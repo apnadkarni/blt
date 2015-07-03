@@ -56,29 +56,32 @@ items. You can specify the maximum and minimum width and height of the
 ITEM LAYOUT
 -----------
 
-A listview is a widget that displays a collection of items arranged in 
-row, columns or tiled.
-There exist several different types of items (specified by
-the item's **-layout** option), each with different properties.  Items of
-different types may be combined in a single list.  List items are not
-distinct widgets; the entire *listview* is one widget.
+A listview is a widget that displays a collection of items arranged in rows
+or columns.  There exist several different types of layout modes (specified
+by the item's **-layout** option), each with different properties.  
 
 A listview widget as the following layout modes: 
 
-  **column**
+  **columns**
     Items are positioned in a column-by-column layout. The number of rows
     is determined from the height of the *listview* window.  Vertical
     scrolling has no effect.
-
-  **row**
-    Items are positioned in a single row layout.  Horizontal scrolling
-    has no effect.
 
   **icons**
     Items are positioned in a row-by-row layout.  The **-bigicon** image is
     used instead of the **-icon** image as the item's icon. Horizontal
     scrolling has no effect. The width of the item is determined from the
     icon and the text unless overriden by the **-maxwidth** option.
+
+  **row**
+    Items are positioned in a single row layout.  Horizontal scrolling
+    has no effect.
+
+  **rows**
+    Items are positioned in a row-by-row layout. The number of rows
+    is determined from the width of the *listview* window.  Horizontal
+    scrolling has no effect.
+
 
 REFERENCING LIST ITEMS
 ----------------------
@@ -88,6 +91,38 @@ List items may be referred to by either their index, label, or tag.
   **index**
     The number of the item.  Indices start from 0.  The index of an
     item may change as other items are added, deleted, moved, or sorted.
+    There are also special non-numeric indices that can be used.
+
+    **active**
+      The index of the active item.
+
+    **anchor**
+       The index of the selection anchor.
+
+    **end**
+      The index of the last item.
+      
+    **first**
+      The index of the first item that is not hidden or disabled.
+
+    **focus**
+      The index of the item that has focus.
+
+    **last**
+      The index of the last item that is not hidden or disabled.
+
+    **mark**
+       The index of the selection mark.
+
+    **next**
+      The next item that is not hidden or disabled.
+
+    **previous**
+      The previous item that is not hidden or disabled.
+      
+    **@**\ *x*\ ,\ *y*
+      The index of the item that is located at the *x* and *y* screen
+      coordinates.  If no item is at that point, then the index is "-1".
 
   **label**
     The label of the item (specified by the **-text** item option).
@@ -100,12 +135,13 @@ List items may be referred to by either their index, label, or tag.
     "end".  Every item has the tag "all".  The last item in the list will
     have the tag "end".
      
-If an item is specified by an integer it is assumed to be an index.  If it
-is specified by a string, it is first tested if it's a valid label and then
-a tag.  Ideally you shouldn't have tags, labels, or, indices that are the
-same.  They will always be interpreted as indices or labels.  But you can
-also distinguish indices, labels and tables by prefixing them with
-"index:", "label:", or "tag:" (such as "label:12").
+If an item is specified by an integer (or one of the non-numeric indices)
+it is assumed to be an index.  If it is specified by a string, it is first
+tested if it's a valid label and then a tag.  Ideally you shouldn't have
+tags, labels, or, indices that are the same.  They will always be
+interpreted as indices or labels.  But you can also distinguish indices,
+labels and tables by prefixing them with "index:", "label:", or "tag:"
+(such as "label:12").
 
 OPERATIONS
 ----------
@@ -305,13 +341,6 @@ command.  The following operations are available for *listview* widgets:
     window should appear relative to the root window; for example, "raised"
     means the window should appear to protrude.  The default is "raised".
 
-  **-selectordered** *boolean* 
-    Indicates whether to return the list of selected items in the order
-    they are found in the list or as they were selected.  This option
-    matters only if **-selectmode** is "multiple".  If *boolean* is true,
-    then items are returned in the list's order. If false, the items will
-    be returned in that they were selected.
-
   **-selectbackground** *colorName* 
     Specifies the default background of list items that are selected.
     *ColorName* may be a color name or the name of a background object
@@ -330,9 +359,22 @@ command.  The following operations are available for *listview* widgets:
     **-selectforeground** option. The default is "grey70".
 
   **-selectmode** *mode*
-    Specifies the selection mode. If *mode* is "single", only one item can
-    be selected at a time.  If "multiple" more than one item can be
-    selected.  The default is "single".
+    Specifies the selection mode. *Mode* can be any of the following.
+
+    **single**
+      Only one item can be selected at a time.
+    **multiple**
+      More than one item can be selected.
+
+    The default is "single".
+
+  **-selectordered** *boolean* 
+    Indicates whether to return the list of selected items in the order
+    they are found in the list or as they were selected.  This option only
+    matters when more than one item is selected (**-selectmode** option is
+    "multiple").  If *boolean* is true, then items are returned in the
+    list's order. If false, items will be returned in the order that they
+    were selected. The default is "0".
 
   **-selectrelief** *relief* 
     Specifies the default relief of selected list items.  This determines
@@ -421,28 +463,31 @@ command.  The following operations are available for *listview* widgets:
   be one of the following:
 
   **-any** 
-    Search for any type of item: hidden, disabled, etc.
+    Search all items: hidden, disabled, etc.
 
   **-count** *number*
     Stop searching after locating *number* of items.
 
   **-disabled** 
-    Search for disabled items.
+    Search disabled items.
 
   **-from** *itemName* 
     Specifies the first item from where to start searching.  *ItemName* may
     be a label, index, or tag, but may not represent more than one list
-    item.
+    item. The default is the first item.
 
   **-hidden** 
-    Search for hidden items.
+    Search hidden items.
 
   **-reverse** 
-    Reverses the order of the search.
+    Reverses the order of the search.  Normally items are search from
+    low index to high index.  If this switch is set, items are searched
+    from high index to low index.
 
   **-to** *itemName* 
     Specifies the last item to search.  *ItemName* may be a label, index,
-    or tag, but may not represent more than one list item.
+    or tag, but may not represent more than one list item.  The default
+    is the last item.
 
   **-type** *searchType*
     Specifies the type of matching to perform.  *SearchType* may be
@@ -572,8 +617,8 @@ command.  The following operations are available for *listview* widgets:
 
   **-style** *styleName*
     Specifies the name of a style to use for *itemName*.  This style will
-    override the global widget options for the item.  *StyleName* is
-    the name of a style create with **style create** operation. If
+    override the global widget options for the item.  *StyleName* is the
+    name of a style returned by the **style create** operation. If
     *styleName* is "", then the global options are used. The default is "".
 
   **-tags** *tagList* 
@@ -834,14 +879,14 @@ command.  The following operations are available for *listview* widgets:
   *option*-*value* pairs are specified, they specify options valid for the
   **style configure** operation.  The name of the style is returned.
    
-*pathName* **style delete** ? *styleName* ... ?
+*pathName* **style delete** ?\ *styleName* ... ?
   Deletes one or more styles.  *StyleName* is the name of a style created
   by the **style create** operaton.  Styles are reference counted.  The
   resources used by *styleName* are not freed until no item is using it.
    
 *pathName* **style exists** *styleName*
-  Indicates if the style *styleName* exists in the widget. Returns "1" if
-  it exists, "0" otherwise.
+  Indicates if the style named *styleName* exists in the widget. Returns
+  "1" if it exists, "0" otherwise.
    
 *pathName* **style names** ?\ *pattern* ... ?
   Returns the names of all the styles in the widget.  If one or more
@@ -851,19 +896,24 @@ command.  The following operations are available for *listview* widgets:
 *pathName* **table attach** *tableName* ?\ *option value* ... ?
   Attaches a BLT data table as the data source for the widget. *TableName*
   is the name of a data table created by the **blt::datatable** command.
-  *Option* and *value* can be any of the following.
+  You must specify the columns in the table that contain specific
+  information.  *Option* and *value* can be any of the following.
   
-  **-bigiconcolumn** *columnName* 
+  **-bigicon** *columnName* 
     Specifies the name of the column in *tableName* to that holds the
     image names of the big icons used in **icons** layout mode.
 
-  **-iconcolumn** *columnName* 
+  **-icon** *columnName* 
     Specifies the name of the column in *tableName* to that holds the image
     names of the small icons used in **row** and **column** layout modes.
    
-  **-textcolumn** *columnName* 
+  **-text** *columnName* 
     Specifies the name of the column in *tableName* to that holds the string
     to be used for the item text.
+
+  **-type** *columnName* 
+    Specifies the name of the column in *tableName* to that holds the string
+    to be used for the item type.
 
 *pathName* **table unattach** 
   Unlinks the current table.
@@ -956,25 +1006,67 @@ DEFAULT BINDINGS
 
 There are many default class bindings for *listview* widgets.
 
+There are class bindings that supply listview widgets their default
+behaviors. The following event sequences are set by default for listview
+widgets. (via the class bind tag "BltListView"):
+
+  **<ButtonPress-2>** 
+    Starts scanning. 
+  **<B2-Motion>** 
+    Adjusts the scan.
+  **<ButtonRelease-2>**
+    Stops scanning.
+  **<B1-Leave>** 
+    Starts auto-scrolling.
+  **<B1-Enter>**
+    Starts auto-scrolling 
+  **<KeyPress-Up>** 
+    Moves the focus to the previous item.
+  **<KeyPress-Down>** 
+    Moves the focus to the next item.
+  **<KeyPress-Prior>** 
+    Moves the focus to first item.  Closed or hidden entries are ignored.
+  **<KeyPress-Next>** 
+    Move the focus to the last item. Closed or hidden entries are ignored.
+  **<KeyPress-space>** 
+    In "single" select mode this selects the item.  In "multiple" mode,
+    it toggles the item (if it was previous selected, it is not
+    deselected).
+  **<KeyRelease-space>** 
+    Turns off select mode.
+  **<KeyPress-Return>** 
+    Sets the focus to the current item.
+  **<KeyRelease-Return>** 
+    Turns off select mode.
+  **<KeyPress>** 
+    Moves to the next item whose label starts with the letter typed.
+  **<KeyPress-Home>** 
+    Moves the focus to first item.  Disabled or hidden entries
+    are ignored.
+  **<KeyPress-End>** 
+    Move the focus to the last item. Disabled or hidden entries
+    are ignored.
+
 EXAMPLE
 -------
 
 Create a *listview* widget with the **blt::listview** command. 
 
- ::
+::
 
     package require BLT
 
     # Create a scrollset to use with the listview widget.
     blt::listview .listview \
-        -layoutmode column \
+	-width 5i -height 2i \
+        -layoutmode "columns" \
 	-xscrollcommand { .xs set } 
 
 Create two image to use as a big and small icon.  Typically the
 small icon is 16x16 pixels, while the big icon is 64x64 pixels.
 
 ::
-   
+
     image create picture smallIcon -file mySmallIcon.png
     image create picture bigIcon -file myBigIcon.png
 
@@ -998,10 +1090,10 @@ Connect a scroll bar and pack the widgets.
 
 ::
 
-    blt::tk::scrollbar .xs -command { .listview xview }
+    blt::tk::scrollbar .xs -command { .listview xview } -orient horizontal
 
     blt::table . \
-	0,0 .list -fill both 
+	0,0 .list -fill both  \
 	1,0 .xs -fill x 
 
 
