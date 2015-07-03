@@ -131,9 +131,8 @@ List items may be referred to by either their index, label, or tag.
     A tag is a string associated with an item.  They are a useful for
     referring to groups of items. Items can have any number of tags
     associated with them (specified by the **-tags** item option).  A
-    tag may refer to multiple items.  There are two built-in tags: "all" and
-    "end".  Every item has the tag "all".  The last item in the list will
-    have the tag "end".
+    tag may refer to multiple items.  There is one built-in tag: "all".
+    Every item has the tag "all".  
      
 If an item is specified by an integer (or one of the non-numeric indices)
 it is assumed to be an index.  If it is specified by a string, it is first
@@ -626,7 +625,7 @@ command.  The following operations are available for *listview* widgets:
     list of tags.  Tags are a useful for referring to groups of
     items. Items can have any number of tags associated with them. Tags may
     refer to more than one list item.  Tags should not be the same as
-    labels or the two built-in tags: "all" and "end".  The default is "".
+    labels or the non-numeric indices.  The default is "".
 
   **-text** *string* 
     Specifies the text to be displayed as the item's label.  The default is
@@ -953,12 +952,12 @@ command.  The following operations are available for *listview* widgets:
   Sets one or more tags for a given item.  *ItemName* may be a label,
   index, or tag and may refer to multiple items (example: "all").  Tag
   names can't start with a digit (to distinquish them from indices) and
-  can't be a reserved tag ("end" or "all").
+  can't be a reserved tag ("all").
 
 *pathName* **tag unset** *itemName* ?\ *tag* ... ?
   Removes one or more tags from a given item. *ItemName* may be a label,
   index, or tag and may refer to multiple items (example: "all").  Tag
-  names that don't exist or are reserved ("end" or "all") are silently
+  names that don't exist or are reserved ("all") are silently
   ignored.
 
 *pathName* **xposition** *itemName*

@@ -13,52 +13,52 @@ version =	@BLT_VERSION@
 instdirs =	$(manndir) 
 
 # GNU Make-specific macro
-MAN_N =		$(patsubst $(srcdir)/%.rst,%.n,$(SRC)) 
+MAN =		$(patsubst $(srcdir)/%.rst,%.n,$(SRC)) 
+HTM =		$(patsubst $(srcdir)/%.rst,%.htm,$(SRC)) 
+PDF =		$(patsubst $(srcdir)/%.rst,%.pdf,$(SRC)) 
 
-SRC = 		BLT.rst \
-		arcball.rst \
-		background.rst \
-		beep.rst \
-		bgexec.rst \
-		bitmap.rst \
-		busy.rst \
-		comboeditor.rst \
-		combomenu.rst \
-		compare.rst \
-		cutbuffer.rst \
-		datatable.rst \
-		debug.rst \
-		eps.rst \
-		grab.rst \
-		graph.rst \
-		htext.rst \
-		mesh.rst \
-		paintbrush.rst \
-		palette.rst \
-		picture.rst \
-		scrollset.rst \
-		sftp.rst \
-		spline.rst \
-		table.rst \
-		tabset.rst \
-		timestamp.rst \
-		tree.rst \
-		treeview.rst \
-		vector.rst \
-		watch.rst \
-		winop.rst
+SRC = 		$(srcdir)/BLT.rst \
+		$(srcdir)/arcball.rst \
+		$(srcdir)/background.rst \
+		$(srcdir)/beep.rst \
+		$(srcdir)/bgexec.rst \
+		$(srcdir)/bitmap.rst \
+		$(srcdir)/busy.rst \
+		$(srcdir)/comboeditor.rst \
+		$(srcdir)/combomenu.rst \
+		$(srcdir)/compare.rst \
+		$(srcdir)/cutbuffer.rst \
+		$(srcdir)/datatable.rst \
+		$(srcdir)/debug.rst \
+		$(srcdir)/eps.rst \
+		$(srcdir)/grab.rst \
+		$(srcdir)/graph.rst \
+		$(srcdir)/htext.rst \
+		$(srcdir)/listview.rst \
+		$(srcdir)/mesh.rst \
+		$(srcdir)/paintbrush.rst \
+		$(srcdir)/palette.rst \
+		$(srcdir)/picture.rst \
+		$(srcdir)/scrollset.rst \
+		$(srcdir)/sftp.rst \
+		$(srcdir)/spline.rst \
+		$(srcdir)/table.rst \
+		$(srcdir)/tabset.rst \
+		$(srcdir)/timestamp.rst \
+		$(srcdir)/tree.rst \
+		$(srcdir)/treeview.rst \
+		$(srcdir)/vector.rst \
+		$(srcdir)/watch.rst \
+		$(srcdir)/winop.rst
 
-MISSING =	barchart.rst \
-		combobutton.rst \
-		comboentry.rst \
-		combotree.rst \
-		contour.rst \
-		drawerset.rst \
-		listview.rst \
-		paneset.rst \
-		tableview.rst \
-
-MANPAGES =	$(MAN_N) 
+MISSING =	$(srcdir)/barchart.rst \
+		$(srcdir)/combobutton.rst \
+		$(srcdir)/comboentry.rst \
+		$(srcdir)/combotree.rst \
+		$(srcdir)/contour.rst \
+		$(srcdir)/drawerset.rst \
+		$(srcdir)/paneset.rst \
+		$(srcdir)/tableview.rst \
 
 INSTALL =	@INSTALL@
 INSTALL_DATA =	@INSTALL_DATA@
@@ -67,7 +67,9 @@ RM =		rm -rf
 MKDIR_P =	@MKDIR_P@
 VPATH =		$(srcdir)
 
-all: $(MANPAGES)
+.SUFFIXES: .pdf .n .htm .rst 
+
+all: $(MAN) $(HTM) $(PDF)
 
 install: all
 	$(MKDIR_P) $(DESTDIR)$(manndir)
@@ -75,23 +77,20 @@ install: all
 		$(INSTALL_DATA) $$i $(DESTDIR)$(manndir); \
 	done
 
-.SUFFIXES: .n .rst
-
 .rst.n: 
-	$(MKDIR_P) man
-	$(RM) man/$@
-	rst2man.py $< > man/$@
+	$(RM) $@
+	rst2man.py $< > $@
 
 .rst.pdf: 
-	$(RM) pdf/$@
-	rst2pdf $< -o pdf/$@
+	$(RM) $@
+	rst2pdf $< -o $@
 
-.rst.html: 
-	$(RM) pdf/$@
-	rst2html.py $< > html/$@
+.rst.htm: 
+	$(RM) $@
+	rst2html.py $< > $@
 
 clean:
-	$(RM) *.n
+	$(RM) *.n *.htm *.pdf
 
 distclean: clean
 	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* Makefile
