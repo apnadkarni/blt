@@ -21,18 +21,10 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **blt::listview** command creates and manages *listview* widgets.
-The *listview* widget contains a list of items displayed either
-vertically, horizontally, menu and optional scrollbars (vertical
-and/or horizontal).  The scrollbars are automatically exposed or hidden as
-necessary when the *listview* widget is resized.  Whenever the
-*listview* window is smaller horizontally and/or vertically than the
-actual menu, the appropiate scrollbar is exposed.
-
-A *listview* is a widget that displays a list items.  There exist several
-different types of items, each with different properties.  Items of
-different types may be combined in a single menu.  List items are not
-distinct widgets; the entire *listview* is one widget.
+The **blt::listview** command creates and manages *listview* widgets.  The
+*listview* widget contains a list of items displayed either vertically or
+horizontally. A *listview* is a widget that displays a list items.  List
+items are not distinct widgets; the entire *listview* is one widget.
 
 SYNTAX
 ------
@@ -156,22 +148,22 @@ command.  The following operations are available for *listview* widgets:
 
 *pathName* **activate** *itemName* 
   Redisplays *itemName* using its active colors and relief.  This typically
-  is used by widget bindings to highlight list items when the pointer is
-  moved over items in the list. Any previously active item is deactivated.
+  is used by widget bindings to highlight items when the pointer is moved
+  over items in the list. Any previously active item is deactivated.
   *ItemName* may be a label, index, or tag, but may not represent more than
-  one list item.
+  one item.
 
 *pathName* **add** ?\ *option* *value* ...?
-  Creates a new list item, adding it to the end of the list.  If one or
-  more *option-value* pairs are specified, they modify the given list item
-  option(s) to have the given value(s).  *Option* and *value* are described
-  in the **item configure** operation.
+  Creates a new item, adding it to the end of the list.  If one or more
+  *option-value* pairs are specified, they modify the given item option(s)
+  to have the given value(s).  *Option* and *value* are described in the
+  **item configure** operation.
 
 *pathName* **bbox** *itemName* 
   Returns of list of four numbers describing the bounding box of *itemName*.
   The numbers represent the x and y root coordinates of two opposite
   corners of the box. *Item* may be a label, index, or tag, but may not
-  represent more than one list item.
+  represent more than one item.
 
 *pathName* **cget** *option*  
   Returns the current value of the widget configuration option given by
@@ -208,22 +200,22 @@ command.  The following operations are available for *listview* widgets:
     The default is "white". 
 
   **-activeforeground** *colorName* 
-    Specifies the default color of the label when the list item is active.
-    This option may be overridden the style's **-activeforeground** option.
-    The default is "white".
+    Specifies the default color of the label when the item is active.  This
+    option may be overridden the style's **-activeforeground** option.  The
+    default is "white".
 
   **-activerelief** *relief* 
-    Specifies the default relief of active list items.  This determines the
-    3-D effect for the list item.  *Relief* indicates how the item should
-    appear relative to the window; for example, "raised" means the
-    item should appear to protrude.  This option may be overridden by 
-    the style's **-activerelief** option. The default is "flat".
+    Specifies the default relief of active items.  This determines the 3-D
+    effect for the item.  *Relief* indicates how the item should appear
+    relative to the window; for example, "raised" means the item should
+    appear to protrude.  This option may be overridden by the style's
+    **-activerelief** option. The default is "flat".
     
   **-background** *colorName* 
-    Specifies the default background of the list items.  *ColorName* may be
-    a color name or the name of a background object created by the
-    **blt::background** command.  This option may be overridden the
-    style's **-background** option. The default is "white".
+    Specifies the default background of the items.  *ColorName* may be a
+    color name or the name of a background object created by the
+    **blt::background** command.  This option may be overridden the style's
+    **-background** option. The default is "white".
     
   **-borderwidth** *numPixels* 
     Specifies the borderwidth of *pathName*.  *NumPixels* is a non-negative
@@ -232,16 +224,16 @@ command.  The following operations are available for *listview* widgets:
     The default is "0".
 
   **-command** *cmdString* 
-    Specifies a TCL command to be invoked when a list item is selected:
-    either by clicking on the list item or using the **select** operation.
-    If *cmdString* is "", then no command is invoked. The default is "".
+    Specifies a TCL command to be invoked when a item is selected: either
+    by clicking on the item or using the **select** operation.  If
+    *cmdString* is "", then no command is invoked. The default is "".
 
   **-disabledbackground** *colorName* 
-    Specifies the default background of list items that are disabled.
+    Specifies the default background of items that are disabled.
     *ColorName* may be a color name or the name of a background object
     created by the **blt::background** command.  This option may be
-    overridden the style's **-disabledbackground** option.  The
-    default is "grey90".
+    overridden the style's **-disabledbackground** option.  The default is
+    "grey90".
 
   **-disabledforeground** *colorName* 
     Specifies the default color of the text of items that are
@@ -276,8 +268,7 @@ command.  The following operations are available for *listview* widgets:
     *numPixels* is a 3 element list, then this specifies minimum, maximum,
     and nominal height or the list.  The nominal size overrides the
     calculated height of the list.  If *numPixels* is "", then the height
-    of the list is calculated based on all the list items.  The default is
-    "".
+    of the list is calculated based on all the items.  The default is "".
 
   **-highlightbackground** *colorName*
     Specifies the color of the traversal highlight region when *pathName*
@@ -299,15 +290,15 @@ command.  The following operations are available for *listview* widgets:
 
   **-iconvariable** *varName* 
     Specifies the name of a global TCL variable that will be set to the
-    name of the image representing the icon of the last selected list item.
+    name of the image representing the icon of the last selected item.
     If *varName* is "", no variable is used. The default is "".
 
   **-itemborderwidth** *numPixels* 
-    Specifies the default borderwidth of list items in the list.
-    *NumPixels* is a non-negative value indicating the width of the 3-D
-    border drawn around the item. The value may have any of the forms
-    acceptable to **Tk_GetPixels**.  This option may be overridden by the
-    style's **-borderwidth** option.  The default is "0".
+    Specifies the default borderwidth of items in the list.  *NumPixels* is
+    a non-negative value indicating the width of the 3-D border drawn
+    around the item. The value may have any of the forms acceptable to
+    **Tk_GetPixels**.  This option may be overridden by the style's
+    **-borderwidth** option.  The default is "0".
 
   **-layoutmode** *modeName* 
     Specifies how items are positioned in the widget. *ModeName* can be
@@ -341,16 +332,16 @@ command.  The following operations are available for *listview* widgets:
     means the window should appear to protrude.  The default is "raised".
 
   **-selectbackground** *colorName* 
-    Specifies the default background of list items that are selected.
+    Specifies the default background of items that are selected.
     *ColorName* may be a color name or the name of a background object
     created by the **blt::background** command.  This option may be
-    overridden by the style's **-selectbackground** option.  The
-    default is "grey90".
+    overridden by the style's **-selectbackground** option.  The default is
+    "grey90".
 
   **-selectcommand** *cmdString* 
-    Specifies a TCL command to be invoked when an list item is selected:
-    either by clicking on the list item or using the **select** operation.
-    If *cmdString* is "", then no command is invoked. The default is "".
+    Specifies a TCL command to be invoked when an item is selected: either
+    by clicking on the item or using the **select** operation.  If
+    *cmdString* is "", then no command is invoked. The default is "".
 
   **-selectforeground** *colorName* 
     Specifies the default color of the text of items that are
@@ -376,12 +367,11 @@ command.  The following operations are available for *listview* widgets:
     were selected. The default is "0".
 
   **-selectrelief** *relief* 
-    Specifies the default relief of selected list items.  This determines
-    the 3-D effect for the list item.  *Relief* indicates how the item
-    should appear relative to the widget window; for example, "raised"
-    means the item should appear to protrude.  This option may be
-    overridden by the style's **-selectrelief** option. The
-    default is "flat".
+    Specifies the default relief of selected items.  This determines the
+    3-D effect for the item.  *Relief* indicates how the item should appear
+    relative to the widget window; for example, "raised" means the item
+    should appear to protrude.  This option may be overridden by the
+    style's **-selectrelief** option. The default is "flat".
 
   **-takefocus** *bool*
     Provides information used when moving the focus from window to window
@@ -397,17 +387,17 @@ command.  The following operations are available for *listview* widgets:
     used. The default is "".
 
   **-width** *numPixels*
-   Specifies the width in the *listview*.  *NumPixels* can be single
-   value or a list.  If *numPixels* is a single value it is a non-negative
-   value indicating the width the window. The value may have any of the
-   forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+   Specifies the width in the *listview*.  *NumPixels* can be single value
+   or a list.  If *numPixels* is a single value it is a non-negative value
+   indicating the width the window. The value may have any of the forms
+   accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
    *numPixels* is a 2 element list, then this sets the minimum and maximum
-   limits for the width of the window. The indow will be at least the minimum
-   width and less than or equal to the maximum. If *numPixels* is a 3
-   element list, then this specifies minimum, maximum, and nominal width
+   limits for the width of the window. The indow will be at least the
+   minimum width and less than or equal to the maximum. If *numPixels* is a
+   3 element list, then this specifies minimum, maximum, and nominal width
    or the window.  The nominal size overrides the calculated width of the
-   window.  If *numPixels* is "", then the width of the window is calculated
-   based on the widths of all the list items.  The default is "".
+   window.  If *numPixels* is "", then the width of the window is
+   calculated based on the widths of all the items.  The default is "".
 
   **-xscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with horizontal
@@ -417,11 +407,11 @@ command.  The following operations are available for *listview* widgets:
     command will be executed.  
 
   **-xscrollincrement** *numPixels*
-    Sets the horizontal scrolling unit. This is the distance the menu is
+    Sets the horizontal scrolling unit. This is the distance the list is
     scrolled horizontally by one unit. *NumPixels* is a non-negative value
-    indicating the width of the 3-D border drawn around the menu. The
-    value may have any of the forms accept able to **Tk_GetPixels**.  The
-    default is "20".
+    indicating the distance in pixels to scroll the list. The value may
+    have any of the forms accept able to **Tk_GetPixels**.  The default is
+    "20".
 
   **-yscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with vertical
@@ -431,35 +421,34 @@ command.  The following operations are available for *listview* widgets:
     will be executed.  
 
   **-yscrollincrement** *numPixels*
-    Sets the vertical scrolling unit.  This is the distance the menu is
+    Sets the vertical scrolling unit.  This is the distance the list is
     scrolled vertically by one unit. *NumPixels* is a non-negative value
-    indicating the width of the 3-D border drawn around the menu. The
-    value may have any of the forms accept able to **Tk_GetPixels**.  The
-    default is "20".
+    indicating the distance in pixels to scroll the list. The value may
+    have any of the forms accept able to **Tk_GetPixels**.  The default is
+    "20".
 
-*pathName* **curselection** 
-  Returns a list containing the indices of all of the items that are
-  currently selected.  If there are no items are selected, then the empty
-  string is returned.
+*pathName* **curselection** Returns a list containing the indices of all of
+  the items that are currently selected.  If there are no items are
+  selected, then the empty string is returned.
 
 *pathName* **deactivate** 
-  Redisplays all list items using their normal colors.  This typically is
-  used by widget bindings to un-highlight list items as the pointer is
-  moved over the menu. 
+  Redisplays all items using their normal colors.  This typically is used
+  by widget bindings to un-highlight items as the pointer is moved over the
+  widget.
 
 *pathName* **delete** *itemName*\ ...
-  Deletes one or more items from the menu. *ItemName* may be a label, index, or
-  tag and may refer to multiple items (example: "all"). 
+  Deletes one or more items from the list. *ItemName* may be a label, index, or
+  tag and may refer to multiple items (for example "all"). 
 
 *pathName* **exists** *itemName*
   Returns *itemName* exists in the widget. *ItemName* may be a label,
-  index, or tag, but may not represent more than one list item.  Returns
-  "1" is the item exists, "0" otherwise.
+  index, or tag, but may not represent more than one item.  Returns "1" is
+  the item exists, "0" otherwise.
   
 *pathName* **find** *pattern* ?\ *switches* ... ?
-  Searches for the next list item that matches *string*.  Returns the
-  index of the matching item or "-1" if no match is found.  *Switches* can
-  be one of the following:
+  Searches for the next item that matches *string*.  Returns the index of
+  the matching item or "-1" if no match is found.  *Switches* can be one of
+  the following:
 
   **-any** 
     Search all items: hidden, disabled, etc.
@@ -472,7 +461,7 @@ command.  The following operations are available for *listview* widgets:
 
   **-from** *itemName* 
     Specifies the first item from where to start searching.  *ItemName* may
-    be a label, index, or tag, but may not represent more than one list
+    be a label, index, or tag, but may not represent more than one
     item. The default is the first item.
 
   **-hidden** 
@@ -485,8 +474,8 @@ command.  The following operations are available for *listview* widgets:
 
   **-to** *itemName* 
     Specifies the last item to search.  *ItemName* may be a label, index,
-    or tag, but may not represent more than one list item.  The default
-    is the last item.
+    or tag, but may not represent more than one item.  The default is the
+    last item.
 
   **-type** *searchType*
     Specifies the type of matching to perform.  *SearchType* may be
@@ -508,49 +497,47 @@ command.  The following operations are available for *listview* widgets:
 
 *pathName* **index** *itemName* 
   Returns the index of *itemName*. *ItemName* may be a label, index, or
-  tag, but may not represent more than one list item.  If the item does not
+  tag, but may not represent more than one item.  If the item does not
   exist, "-1" is returned.
   
 *pathName* **insert after** *itemName* ?\ *option *value* ... ? 
-  Creates a new list item and inserts it after *itemName*.  Normally list items
-  are appended to the end of the menu, but this command allows you to
-  specify its location. Note that this may change the indices of previously
-  created list items. *Item* may be a label, index, or tag, but may not
-  represent more than one list item. If one or more *option-value* pairs
-  are specified, they modifies the given list item option(s) to have the
-  given value(s).  *Option* and *value* are described in the **item
-  configure** operation.
+  Creates a new item and inserts it after *itemName*.  Normally items are
+  appended to the end of the list, but this command lets you to specify its
+  location. Note that this may change the indices of previously created
+  items. *Item* may be a label, index, or tag, but may not represent more
+  than one item. If one or more *option-value* pairs are specified,
+  they modifies the given item option(s) to have the given value(s).
+  *Option* and *value* are described in the **item configure** operation.
   
 *pathName* **insert at** *itemName* ?\ *option *value* ... ? 
-  Creates a new list item and inserts it at the index specified by *itemName*.
-  Normally list items are appended to the end of the menu, but this command
+  Creates a new item and inserts it at the index specified by *itemName*.
+  Normally items are appended to the end of the list, but this command
   allows you to specify its location. Note that this may change the indices
-  of previously created list items. *Item* may be a label, index, or tag,
-  but may not represent more than one list item. If one or more
-  *option-value* pairs are specified, they modifies the given list item
-  option(s) to have the given value(s).  *Option* and *value* are described
-  in the **item configure** operation.
-  
-*pathName* **insert before** *itemName* ?\ *option *value* ... ? 
-  Creates a new list item and inserts it before *itemName*.  Normally menu
-  items are appended to the end of the menu, but this command allows you to
-  specify its location. Note that this may change the indices of previously
-  created list items. *Item* may be a label, index, or tag, but may not
-  represent more than one list item. If one or more *option-value* pairs
-  are specified, they modifies the given list item option(s) to have the
+  of previously created items. *Item* may be a label, index, or tag, but
+  may not represent more than one item. If one or more *option-value* pairs
+  are specified, they modifies the given item option(s) to have the
   given value(s).  *Option* and *value* are described in the **item
   configure** operation.
+  
+*pathName* **insert before** *itemName* ?\ *option *value* ... ? 
+  Creates a new item and inserts it before *itemName*.  Normally items are
+  appended to the end of the list, but this command allows you to specify
+  its location. Note that this may change the indices of previously created
+  items. *Item* may be a label, index, or tag, but may not represent more
+  than one item. If one or more *option-value* pairs are specified, they
+  modifies the given item option(s) to have the given value(s).  *Option*
+  and *value* are described in the **item configure** operation.
   
 *pathName* **invoke** *itemName* 
   Selects the *item and invokes the TCL command specified by *item*'s
   **-command** option. *Item* may be a label, index, or tag, but may not
-  represent more than one list item.
+  represent more than one item.
   
 *pathName* **item cget** *itemName* *option*
   Returns the current value of the configuration option for *item* given by
   *option*.  *Option* may be any option described below for the **item
-  configure** operation below. *ItemName* may be a label, index, or tag, but
-  may not represent more than one list item.
+  configure** operation below. *ItemName* may be a label, index, or tag,
+  but may not represent more than one item.
 
 *pathName* **item configure** *itemName* ?\ *option* *value* ... ?
   Queries or modifies the configuration options of *itemName*.  *ItemName*
@@ -560,11 +547,11 @@ command.  The following operations are available for *listview* widgets:
   *option* is specified with no *value*, then the command returns a list
   describing the one named option (this list will be identical to the
   corresponding sublist of the value returned if no *option* is specified).
-  In both cases, *itemName* may not represent more than one list item.
+  In both cases, *itemName* may not represent more than one item.
   
   If one or more *option-value* pairs are specified, then this command
   modifies the given option(s) to have the given value(s); in this case
-  *itemName* may refer to mulitple items (example: "all").  *Option* and
+  *itemName* may refer to mulitple items (for example "all").  *Option* and
   *value* are described below.
 
   **-bigicon** *imageName* 
@@ -578,9 +565,8 @@ command.  The following operations are available for *listview* widgets:
     *cmdPrefix* is "", then no command is executed.  The default is "".
 
   **-data** *string* 
-    Specifies data to be associated with the list item. *String* can be an
-    arbitrary.  It is not used by the *listview* widget. The default is
-    "".
+    Specifies data to be associated with the item. *String* can be an
+    arbitrary.  It is not used by the *listview* widget. The default is "".
 
   **-icon** *imageName* 
     Specifies the name of an image to be displayed as the icon for the item
@@ -594,10 +580,10 @@ command.  The following operations are available for *listview* widgets:
     specified by the **-text** option is displayed. The default is "".
     
   **-indent** *numPixels* 
-    Specifies the amount to indent the list item. *NumPixels* is a
-    non-negative value indicating the how far to the right to indent the
-    list item. The value may have any of the forms accept able to
-    **Tk_GetPixels**.  The default is "0".
+    Specifies the amount to indent the item. *NumPixels* is a non-negative
+    value indicating the how far to the right to indent the item. The
+    value may have any of the forms accept able to **Tk_GetPixels**.  The
+    default is "0".
     
   **-state** *state*
     Specifies one of two states for the item: 
@@ -624,8 +610,8 @@ command.  The following operations are available for *listview* widgets:
     Specifies a list of tags to associate with the item.  *TagList* is a
     list of tags.  Tags are a useful for referring to groups of
     items. Items can have any number of tags associated with them. Tags may
-    refer to more than one list item.  Tags should not be the same as
-    labels or the non-numeric indices.  The default is "".
+    refer to more than one item.  Tags should not be the same as labels or
+    the non-numeric indices.  The default is "".
 
   **-text** *string* 
     Specifies the text to be displayed as the item's label.  The default is
@@ -643,12 +629,12 @@ command.  The following operations are available for *listview* widgets:
     field is then used when sorting items.  The default is "".
 
 *pathName* **listadd** *itemsList*  ?\ *option* *value* ... ?
-  Adds one or more list items to the list from *itemsList*.  For each label
-  in *itemsList* a new list item is created with that label.  A list item
-  can not already exist with the label.  If one or more *option-value*
-  pairs are specified, they modify each created list item with the given
-  option(s) to have the given value(s).  *Option* and *value* are described
-  in the **item configure** operation.
+  Adds one or more items to from *itemsList*.  For each label in
+  *itemsList* a new item is created with that label.  An item can not
+  already exist with the label.  If one or more *option-value* pairs are
+  specified, they modify each created item with the given option(s) to have
+  the given value(s).  *Option* and *value* are described in the **item
+  configure** operation.
 
 *pathName* **names** ?\ *pattern* ... ?
   Returns the labels of all the items in the list.  If one or more
@@ -656,17 +642,16 @@ command.  The following operations are available for *listview* widgets:
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 *pathName* **nearest** *x* *y*
-  Returns the index of the list item closest to the coordinates specified.
-  *X* and *y* are root coordinates.
+  Returns the index of the item closest to the coordinates specified.  *X*
+  and *y* are root coordinates.
 
 *pathName* **next** *itemName* 
-  Moves the focus to the next list item from *itemName*.  *ItemName* may be
-  a label, index, or tag, but may not represent more than one list item.
+  Moves the focus to the next item from *itemName*.  *ItemName* may be a
+  label, index, or tag, but may not represent more than one item.
 
 *pathName* **previous** *itemName*
-  Moves the focus to the previous list item from *itemName*.  *ItemName*
-  may be a label, index, or tag, but may not represent more than one list
-  item.
+  Moves the focus to the previous item from *itemName*.  *ItemName* may be
+  a label, index, or tag, but may not represent more than one item.
 
 *pathName* **scan dragto** *x* *y* This command computes the difference
   between *x* and *y* and the coordinates to the last **scan mark** command
@@ -676,15 +661,16 @@ command.  The following operations are available for *listview* widgets:
   high speed through the window.  The return value is an empty string.
    
 *pathName* **scan mark** *x* *y*
-  Records *x* and *y* and the current view in the menu window; to be used
-  with later **scan dragto** commands. *X* and *y* are window coordinates
-  (i.e. relative to menu window).  Typically this command is associated
-  with a mouse button press in the widget.  It returns an empty string.
+  Records *x* and *y* and the current view in the window; to be used with
+  later **scan dragto** commands. *X* and *y* are window coordinates
+  (i.e. relative to *listview* window).  Typically this command is
+  associated with a mouse button press in the widget.  It returns an empty
+  string.
 
 *pathName* **see** *itemName* 
-  Scrolls the menu so that *itemName* is visible in the widget's window.
+  Scrolls the list so that *itemName* is visible in the widget's window.
   *ItemName* may be a label, index, or tag, but may not represent more than
-  one list item.
+  one item.
   
 *pathName* **selection anchor** *itemName*
   Sets the selection anchor to the item given by *itemName*.  If *itemName*
@@ -751,8 +737,8 @@ command.  The following operations are available for *listview* widgets:
   *Option* and *value* are described below.
 
   **-auto** 
-    Automatically resort the list items anytime the items are added
-    deleted, or changed.
+    Automatically resort the items anytime the items are added deleted, or
+    changed.
 
   **-by** *what*
     Indicates to sort items either by their type or text label.
@@ -780,9 +766,8 @@ command.  The following operations are available for *listview* widgets:
      "x11y".  
 
 *pathName* **sort once**  ?\ *option* *value* ... ?
-  Sorts the list items using the current set of sort configuration values.
-  *Option* and *value* are described above for the **sort configure**
-  operation.
+  Sorts items using the current set of sort configuration values.  *Option*
+  and *value* are described above for the **sort configure** operation.
   
 *pathName* **style cget** *styleName* *option*
   Returns the current value of the style configuration option given by
@@ -825,10 +810,10 @@ command.  The following operations are available for *listview* widgets:
     **blt::background** command.  The default is "white".
     
   **-borderwidth** *numPixels* 
-    Specifies the borderwidth of the item.  *NumPixels* is a
-    non-negative value indicating the width of the 3-D border drawn around
-    the list item. The value may have any of the forms accept able to
-    **Tk_GetPixels**.  The default is "1".
+    Specifies the borderwidth of the item.  *NumPixels* is a non-negative
+    value indicating the width of the 3-D border drawn around the item. The
+    value may have any of the forms accept able to **Tk_GetPixels**.  The
+    default is "1".
 
   **-disabledbackground** *colorName* 
     Specifies the background of the item when it is disabled.  *ColorName*
@@ -847,11 +832,11 @@ command.  The following operations are available for *listview* widgets:
     Specifies the color of the text for the item.  The default is "black".
 
   **-relief** *relief* 
-    Specifies the 3-D effect for the border around the list item.
-    *Relief* specifies how the interior of the legend should appear
-    relative to the menu; for example, "raised" means the item
-    should appear to protrude from the menu, relative to the surface of
-    the menu.  The default is "flat".
+    Specifies the 3-D effect for the border around the item.  *Relief*
+    specifies how the interior of the legend should appear relative to the
+    widget; for example, "raised" means the item should appear to protrude
+    from the window, relative to the surface of the window.  The default is
+    "flat".
 
   **-selectbackground** *colorName* 
     Specifies the background color of the item when it is selected.
@@ -869,11 +854,11 @@ command.  The following operations are available for *listview* widgets:
     item should appear to protrude.  The default is "flat".
     
 *pathName* **style create** *styleName* ?\ *option* *value* ... ?
-  Creates a new style named *styleName*.  By default all list items use the
-  same set of global widget configuration options to specify the item's the
+  Creates a new style named *styleName*.  By default all list use the same
+  set of global widget configuration options to specify the item's the
   color, font, borderwidth, etc.  Styles contain sets of configuration
-  options that you can apply to a list items (using the its **-style**
-  option) to override their appearance. More than one item can use the same
+  options that you can apply to a items (using the its **-style** option)
+  to override their appearance. More than one item can use the same
   style. *StyleName* can not already exist.  If one or more
   *option*-*value* pairs are specified, they specify options valid for the
   **style configure** operation.  The name of the style is returned.
@@ -920,16 +905,16 @@ command.  The following operations are available for *listview* widgets:
 *pathName* **tag add** *tag* ?\ *itemName* ... ?
   Adds the tag to one of more items. *Tag* is an arbitrary string that can
   not start with a number.  *ItemName* may be a label, index, or tag and
-  may refer to multiple items (example: "all").
+  may refer to multiple items (for example "all").
   
 *pathName* **tag delete** *tag* ?\ *itemName* ... ?
   Deletes the tag from one or more items. *ItemName* may be a label, index,
-  or tag and may refer to multiple items (example: "all").
+  or tag and may refer to multiple items (for example "all").
   
 *pathName* **tag exists** *itemName* ?\ *tag* ... ?
   Indicates if the item has any of the given tags.  Returns "1" if
   *itemName* has one or more of the named tags, "0" otherwise.  *ItemName*
-  may be a label, index, or tag and may refer to multiple items (example:
+  may be a label, index, or tag and may refer to multiple items (for example
   "all").
 
 *pathName* **tag forget** *tag*
@@ -950,26 +935,25 @@ command.  The following operations are available for *listview* widgets:
 
 *pathName* **tag set** *itemName* ?\ *tag* ... ?
   Sets one or more tags for a given item.  *ItemName* may be a label,
-  index, or tag and may refer to multiple items (example: "all").  Tag
-  names can't start with a digit (to distinquish them from indices) and
-  can't be a reserved tag ("all").
+  index, or tag and may refer to multiple items.  Tag names can't start
+  with a digit (to distinquish them from indices) and can't be a reserved
+  tag ("all").
 
 *pathName* **tag unset** *itemName* ?\ *tag* ... ?
   Removes one or more tags from a given item. *ItemName* may be a label,
-  index, or tag and may refer to multiple items (example: "all").  Tag
-  names that don't exist or are reserved ("all") are silently
-  ignored.
+  index, or tag and may refer to multiple items.  Tag names that don't
+  exist or are reserved ("all") are silently ignored.
 
 *pathName* **xposition** *itemName*
   Returns the horizontal position of the item from left of the *listview*
   window.  The returned value is in pixels. *ItemName* may be a label,
-  index, or tag, but may not represent more than one list item.
+  index, or tag, but may not represent more than one item.
    
 *pathName* **xview moveto** fraction
   Adjusts the horizontal view in the *listview* window so the portion of
-  the menu starting from *fraction* is displayed.  *Fraction* is a number
+  the list starting from *fraction* is displayed.  *Fraction* is a number
   between 0.0 and 1.0 representing the position horizontally where to
-  start displaying the menu.
+  start displaying the list.
    
 *pathName* **xview scroll** *number* *what*
   Adjusts the view in the window horizontally according to *number* and
@@ -983,13 +967,13 @@ command.  The following operations are available for *listview* widgets:
 *pathName* **yposition** *itemName*
   Returns the vertical position of the item from top of the *listview*
   window.  The returned value is in pixels. *ItemName* may be a label,
-  index, or tag, but may not represent more than one list item.
+  index, or tag, but may not represent more than one item.
    
 *pathName* **yview moveto** fraction
   Adjusts the vertical view in the *listview* window so the portion of
-  the menu starting from *fraction* is displayed.  *Fraction* is a number
+  the list starting from *fraction* is displayed.  *Fraction* is a number
   between 0.0 and 1.0 representing the position vertically where to start
-  displaying the menu.
+  displaying the list.
    
 *pathName* **yview scroll** *number* *what*
   Adjusts the view in the window vertically according to *number* and
