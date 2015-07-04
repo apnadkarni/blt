@@ -240,6 +240,11 @@ command.  The following operations are available for *listview* widgets:
     disabled.  This option may be overridden by the style's
     **-disabledforeground** option. The default is "grey70".
 
+  **-editor** *widgetName* 
+    Specifies a **blt::comboeditor** widget to be posted to edit an item's
+    label: by right clicking on the item.  If *widgetName* is "", then no
+    editor is posted. The default is "".
+
   **-exportselection** *boolean* 
     Indicates if the selections are to be exported and copied to the
     clipboard.  The default is "0".
@@ -991,7 +996,7 @@ There are many default class bindings for *listview* widgets.
 
 There are class bindings that supply listview widgets their default
 behaviors. The following event sequences are set by default for listview
-widgets. (via the class bind tag "BltListView"):
+widgets (via the class bind tag "BltListView"):
 
   **<ButtonPress-2>** 
     Starts scanning. 
@@ -1002,17 +1007,17 @@ widgets. (via the class bind tag "BltListView"):
   **<B1-Leave>** 
     Starts auto-scrolling.
   **<B1-Enter>**
-    Starts auto-scrolling 
+    Stops auto-scrolling 
   **<KeyPress-Up>** 
-    Moves the focus to the previous item.
+    Moves the focus to the previous item. Closed or hidden items are ignored.
   **<KeyPress-Down>** 
-    Moves the focus to the next item.
+    Moves the focus to the next item. Closed or hidden items are ignored.
   **<KeyPress-Prior>** 
-    Moves the focus to first item.  Closed or hidden entries are ignored.
+    Moves the focus to first item.  Closed or hidden items are ignored.
   **<KeyPress-Next>** 
-    Move the focus to the last item. Closed or hidden entries are ignored.
+    Move the focus to the last item. Closed or hidden items are ignored.
   **<KeyPress-space>** 
-    In "single" select mode this selects the item.  In "multiple" mode,
+    In single-select mode this selects the item.  In multiple mode,
     it toggles the item (if it was previous selected, it is not
     deselected).
   **<KeyRelease-space>** 
@@ -1024,10 +1029,10 @@ widgets. (via the class bind tag "BltListView"):
   **<KeyPress>** 
     Moves to the next item whose label starts with the letter typed.
   **<KeyPress-Home>** 
-    Moves the focus to first item.  Disabled or hidden entries
+    Moves the focus to first item.  Disabled or hidden items
     are ignored.
   **<KeyPress-End>** 
-    Move the focus to the last item. Disabled or hidden entries
+    Move the focus to the last item. Disabled or hidden items
     are ignored.
 
 EXAMPLE

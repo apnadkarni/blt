@@ -9102,7 +9102,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BindOp --
  *
- *        .t bind tagOrId sequence command
+ *        pathName bind tagOrId sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -9289,7 +9289,7 @@ ButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ButtonBindOp --
  *
- *        .t bind tag sequence command
+ *        pathName bind tag sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -10212,7 +10212,7 @@ ColumnActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnBindOp --
  *
- *        .t bind tag sequence command
+ *        pathName bind tag sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -10280,7 +10280,7 @@ ColumnCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      etc. get set for viewPtr; old resources get freed, if there
  *      were any.  The hypertext is redisplayed.
  *
- *      .tv column configure col ?option value?
+ *      pathName column configure col ?option value?
  *---------------------------------------------------------------------------
  */
 static int
@@ -10420,7 +10420,7 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnExistsOp --
  *
- *      .tv column exists $field
+ *      pathName column exists $field
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -10449,7 +10449,7 @@ ColumnExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Returns the index of the column.
  *
- *      .tv column index column
+ *      pathName column index column
  *
  *---------------------------------------------------------------------------
  */
@@ -13734,7 +13734,7 @@ SortConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Sort the tree node 
  *
- *      .tv sort children $node 
+ *      pathName sort children $node 
  *
  */
 static int
@@ -13770,7 +13770,7 @@ SortChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Sorts the flatten array of entries.
  *
- *      .tv sort list $node $col
+ *      pathName sort list $node $col
  *
  *---------------------------------------------------------------------------
  */
@@ -13823,7 +13823,7 @@ SortListOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Sorts the tree.
  *
- *      .tv sort once
+ *      pathName sort once
  *
  *---------------------------------------------------------------------------
  */
@@ -13893,7 +13893,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Turns on highlighting for a particular style.
  *
- *        .t style activate entry column
+ *        pathName style activate entry column
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
@@ -13950,7 +13950,7 @@ StyleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleCellsOp --
  *
- *        .t style cells "styleName" 
+ *        pathName style cells "styleName" 
  *
  *---------------------------------------------------------------------------
  */
@@ -13999,7 +13999,7 @@ StyleCellsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleCgetOp --
  *
- *        .t style cget "styleName" -background
+ *        pathName style cget "styleName" -background
  *
  *---------------------------------------------------------------------------
  */
@@ -14024,7 +14024,7 @@ StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleCheckBoxOp --
  *
- *        .t style checkbox "styleName" -background blue
+ *        pathName style checkbox "styleName" -background blue
  *
  *---------------------------------------------------------------------------
  */
@@ -14052,7 +14052,7 @@ StyleCheckBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleComboBoxOp --
  *
- *        .t style combobox "styleName" -background blue
+ *        pathName style combobox "styleName" -background blue
  *
  *---------------------------------------------------------------------------
  */
@@ -14083,7 +14083,7 @@ StyleComboBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      This procedure is called to process a list of configuration options
  *      database, in order to reconfigure a style.
  *
- *        .t style configure "styleName" option value
+ *        pathName style configure "styleName" option value
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
@@ -14133,7 +14133,7 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleCreateOp --
  *
- *        .t style create combobox "styleName" -background blue
+ *        pathName style create combobox "styleName" -background blue
  *
  *---------------------------------------------------------------------------
  */
@@ -14188,7 +14188,7 @@ StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc,
  *
  *      Turns on highlighting for all styles
  *
- *        .t style deactivate 
+ *        pathName style deactivate 
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
@@ -14223,7 +14223,7 @@ StyleDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      entry is removed.  The style itself remains until its reference
  *      count returns to zero (i.e. no one else is using it).
  *
- *        .t style forget "styleName"...
+ *        pathName style forget "styleName"...
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
@@ -14270,7 +14270,7 @@ StyleForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Turns on/off highlighting for a particular style.
  *
- *        .t style highlight styleName on|off
+ *        pathName style highlight styleName on|off
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
@@ -14364,7 +14364,7 @@ StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleGetOp --
  *
- *      .t style get cell
+ *      pathName style get cell
  *
  *      pathName style get cellSpec
  *---------------------------------------------------------------------------
@@ -14396,7 +14396,7 @@ StyleGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Sets a style for a given key for all the ids given.
  *
- *        .t style set styleName key node...
+ *        pathName style set styleName key node...
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
@@ -14455,7 +14455,7 @@ StyleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleTextBoxOp --
  *
- *        .t style text "styleName" -background blue
+ *        pathName style text "styleName" -background blue
  *
  *---------------------------------------------------------------------------
  */
@@ -14485,7 +14485,7 @@ StyleTextBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Returns the type of the style.
  *
- *        .t style type styleName
+ *        pathName style type styleName
  *
  * Results:
  *      A standard TCL result.  If the styleName exists, the type is 
@@ -14518,7 +14518,7 @@ StyleTypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Removes a style for a given key for all the ids given.  The cell's
  *      style is returned to its default state.
  *
- *        .t style unset styleName key node...
+ *        pathName style unset styleName key node...
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
@@ -14572,20 +14572,20 @@ StyleUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleOp --
  *
- *      .t style activate $node $column
- *      .t style activate 
- *      .t style cget "highlight" -foreground
- *      .t style configure "highlight" -fg blue -bg green
- *      .t style checkbox "highlight"
- *      .t style deactivate
- *      .t style highlight "highlight" on|off
- *      .t style combobox "highlight"
- *      .t style text "highlight"
- *      .t style forget "highlight"
- *      .t style get "mtime" $node
- *      .t style names
- *      .t style set "mtime" "highlight" all
- *      .t style unset "mtime" all
+ *      pathName style activate $node $column
+ *      pathName style activate 
+ *      pathName style cget "highlight" -foreground
+ *      pathName style configure "highlight" -fg blue -bg green
+ *      pathName style checkbox "highlight"
+ *      pathName style deactivate
+ *      pathName style highlight "highlight" on|off
+ *      pathName style combobox "highlight"
+ *      pathName style text "highlight"
+ *      pathName style forget "highlight"
+ *      pathName style get "mtime" $node
+ *      pathName style names
+ *      pathName style set "mtime" "highlight" all
+ *      pathName style unset "mtime" all
  *
  *---------------------------------------------------------------------------
  */
@@ -14963,7 +14963,7 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * UpdatesOp --
  *
- *      .tv updates false
+ *      pathName updates false
  *
  *---------------------------------------------------------------------------
  */

@@ -112,7 +112,7 @@ bind BltListView <ButtonRelease-2> {
 
 # ButtonRelease-3
 bind BltListView <ButtonRelease-3> { 
-    blt::ListView::EditItem %W %X %Y
+    blt::ListView::EditLabel %W @%x,%y
 }
 
 
@@ -338,6 +338,89 @@ proc blt::ListView::SetSelectionAnchor { w item } {
 	$w focus $index
 	$w selection set $index
 	$w selection anchor $index
+    }
+}
+
+#
+# EditLabel --
+#
+#	Invoked by KeyPress bindings.  Moves the active selection to the
+#	item, which is an index such as "up", "down", etc.
+#
+proc blt::ListView::EditLabel { w item } {
+    set index [$w index $item]
+    set style [$w item cget $index -style]
+    if { $style == "" } {
+        set editor [$w cget -editor]
+    } else {
+        set editor [$w style cget $style -editor]
+    }
+    if { $editor == "" } {
+        return;                         # No editor specified
+    }
+    $w see $index
+    update
+    set bbox [$w bbox $index] 
+    if { $bbox == "" } {
+        return
+    }
+    set value [$w item cget $index -text]
+    $editor post \
+        -align right \
+        -box $bbox  \
+        -command [list blt::ListView::ImportFromEditor $w $item] \
+        -text $value
+    blt::grab push $editor 
+    focus -force $editor
+    bind $editor <Unmap> [list blt::ListView::UnpostEditor $w $item]
+}
+
+#
+# ImportFromEditor --
+#
+#   This is called whenever a editor text changes (via the -command
+#   callback from the invoke operation of the editor).  Gets the edited
+#   text from the editor and sets the corresponding table cell to it.
+#
+proc blt::ListView::ImportFromEditor { w item value } {
+    $w item configure $item -text $value
+    UnpostEditor $w $item
+}
+
+#
+# UnpostEditor --
+#
+#   Unposts the editor.  We don't know if we're unposting the editor
+#   because the text was changed or if the user clicked outside of the
+#   editor to cancel the operation.
+#
+proc ::blt::ListView::UnpostEditor { w item } {
+    variable _private
+
+    # Restore focus right away (otherwise X will take focus away when the
+    # editor is unmapped and under some window managers (e.g. olvwm) we'll
+    # lose the focus completely).
+    catch { focus $_private(focus) }
+    set _private(focus) ""
+
+    # This causes the cell in the table to be set to the current
+    # value in the text style.
+    set index [$w index $item]
+    set style [$w item cget $index -style]
+    if { $style == "" } {
+        set editor [$w cget -editor]
+    } else {
+        set editor [$w style cget $style -editor]
+    }
+    if { $editor == "" } {
+        return
+    }
+    set _private(posting) none
+    # Release grab, if any, and restore the previous grab, if there was
+    # one.
+    set grab [blt::grab current]
+    if { $grab != "" } {
+        blt::grab pop $grab
     }
 }
 

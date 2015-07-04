@@ -70,7 +70,7 @@ bind BltComboEditor <Leave> {
 # new one.
 bind BltComboEditor <ButtonPress-1> {
     blt::ComboEditor::trace "ButtonPress-1"
-    if { [%W index @%x,%y]  != -1 } {
+    if { [winfo containing -displayof %W %X %Y] == "%W" } {
 	focus %W
 	set blt::ComboEditor::_private(x) %x
 	set blt::ComboEditor::_private(y) %y
@@ -84,7 +84,7 @@ bind BltComboEditor <ButtonPress-1> {
 bind BltComboEditor <ButtonRelease> {
     blt::ComboEditor::trace "ButtonRelease-1"
     after cancel $blt::ComboEditor::_private(afterId)
-    if { [%W index @%x,%y]  == -1 } {
+    if { [winfo containing -displayof %W %X %Y] != "%W" } {
 	%W unpost
     } 
 }

@@ -156,6 +156,7 @@ static const char emptyString[] = "";
 #define DEF_AUTO_SORT               "0"
 #define DEF_BORDERWIDTH             "0"
 #define DEF_CURSOR                  ((char *)NULL)
+#define DEF_EDITOR                  ((char *)NULL)
 #define DEF_EXPORT_SELECTION        "1"
 #define DEF_HEIGHT                  "2i"
 #define DEF_HIGHLIGHT_BACKGROUND    STD_NORMAL_BACKGROUND
@@ -336,6 +337,7 @@ typedef struct {
     XColor *textActiveColor;            /* Color of text background. */
     XColor *textSelectColor;            /* Color of text background. */
 
+    Tcl_Obj *editorObjPtr;
 } Style;
 
 static Blt_ConfigSpec styleSpecs[] =
@@ -358,6 +360,8 @@ static Blt_ConfigSpec styleSpecs[] =
         DEF_STYLE_DISABLED_BG, Blt_Offset(Style, disabledBg), 0},
     {BLT_CONFIG_COLOR, "-disabledforeground", (char *)NULL, (char *)NULL, 
         DEF_STYLE_DISABLED_FG, Blt_Offset(Style, textDisabledColor), 0},
+    {BLT_CONFIG_OBJ, "-editor", "editor", "Editor", DEF_EDITOR, 
+        Blt_Offset(Style, editorObjPtr), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, DEF_STYLE_FONT, 
         Blt_Offset(Style, textFont), 0},
@@ -632,6 +636,9 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
         "DisabledForeground", DEF_STYLE_DISABLED_FG, 
         Blt_Offset(ListView, defStyle.textDisabledColor), 0},
+    {BLT_CONFIG_OBJ, "-editor", "editor", "Editor", DEF_EDITOR, 
+        Blt_Offset(ListView, defStyle.editorObjPtr),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection",
         "ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(ListView, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_EXPORT},
@@ -3921,7 +3928,7 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (itemPtr != NULL) {
+    if (itemPtr == NULL) {
         return TCL_OK;
     }
     x = SCREENX(viewPtr, itemPtr->worldX);
@@ -5710,11 +5717,11 @@ StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec styleOps[] =
 {
-    {"cget",        2, StyleCgetOp,        5, 5, "name option",},
-    {"configure",   2, StyleConfigureOp,   4, 0, "name ?option value?...",},
-    {"create",      2, StyleCreateOp,      4, 0, "name ?option value?...",},
-    {"delete",      1, StyleDeleteOp,      3, 0, "?name...?",},
-    {"names",       1, StyleNamesOp,       3, 0, "?pattern...?",},
+    {"cget",      2, StyleCgetOp,      5, 5, "styleName option",},
+    {"configure", 2, StyleConfigureOp, 4, 0, "styleName ?option value ...?",},
+    {"create",    2, StyleCreateOp,    4, 0, "styleName ?option value ...?",},
+    {"delete",    1, StyleDeleteOp,    3, 0, "?styleName ...?",},
+    {"names",     1, StyleNamesOp,     3, 0, "?pattern ...?",},
 };
 
 static int numStyleOps = sizeof(styleOps) / sizeof(Blt_OpSpec);
