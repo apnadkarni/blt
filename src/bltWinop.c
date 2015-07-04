@@ -640,6 +640,48 @@ MapOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
+ *  InsideOp --
+ *
+ *      Indicates if the given point in root coordinates is inside
+ *      the named window.
+ *
+ *      blt::winop inside windowName x y
+ *
+ * ------------------------------------------------------------------------ 
+ */
+static int
+InsideOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Window id;
+    int rootX, rootY;
+    int state;
+    int x, y, w, h;
+
+    if (GetIdFromObj(interp, objv[2], &id) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[3], &rootX) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[4], &rootY) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    if (Blt_GetWindowRegion(Tk_Display(tkMain), id, &x, &y, &w, &h) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    state = FALSE;
+    fprintf(stderr, "x=%d y=%d x1=%d y1=%d x2=%d y2=%d\n",
+            rootX, rootY, x, y, x + w, y + h);
+    if ((rootX >= x) && (rootX < (x+w)) && (rootY >= y) && (rootY < (y+h))) {
+        state = TRUE;
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  *  MoveOp --
  *
  *      Moves the window to the designated coordinate.
@@ -978,20 +1020,21 @@ WarpToOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec winOps[] =
 {
-    {"changes",  1, ChangesOp,  3, 3, "window",},
-    {"geometry", 1, GeometryOp, 3, 3, "window",},
-    {"lower",    1, LowerOp,    2, 0, "window ?window?...",},
-    {"map",      2, MapOp,      2, 0, "window ?window?...",},
-    {"move",     2, MoveOp,     5, 5, "window x y",},
+    {"changes",  1, ChangesOp,  3, 3, "windowName",},
+    {"geometry", 1, GeometryOp, 3, 3, "windowName",},
+    {"inside",   1, InsideOp,   5, 5, "windowName x y",},
+    {"lower",    1, LowerOp,    2, 0, "?windowName ...?",},
+    {"map",      2, MapOp,      2, 0, "?windowName ...?",},
+    {"move",     2, MoveOp,     5, 5, "windowName x y",},
     {"query",    1, QueryOp,    2, 2, "",},
-    {"raise",    1, RaiseOp,    2, 0, "window ?window?...",},
+    {"raise",    1, RaiseOp,    2, 0, "?windowName ...?",},
 #if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
     {"screensize", 1, SetScreenSizeOp, 4, 4, "w h",},
 #endif  /* HAVE_RANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
     {"top",      2, TopOp,      4, 4, "x y",},
     {"tree",     2, TreeOp,     4, 4, "windowName treeName",},
-    {"unmap",    1, UnmapOp,    2, 0, "window ?window?...",},
-    {"warpto",   1, WarpToOp,   2, 5, "?window?",},
+    {"unmap",    1, UnmapOp,    2, 0, "?windowName ...?",},
+    {"warpto",   1, WarpToOp,   2, 5, "?windowName?",},
 };
 
 static int numWinOps = sizeof(winOps) / sizeof(Blt_OpSpec);
