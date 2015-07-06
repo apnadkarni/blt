@@ -431,15 +431,15 @@ BLT_EXTERN Blt_PaintBrush Blt_NewTileBrush(void );
 /* 70 */
 BLT_EXTERN Blt_PaintBrush Blt_NewLinearGradientBrush(void );
 #endif
-#ifndef Blt_NewStripeBrush_DECLARED
-#define Blt_NewStripeBrush_DECLARED
+#ifndef Blt_NewStripesBrush_DECLARED
+#define Blt_NewStripesBrush_DECLARED
 /* 71 */
-BLT_EXTERN Blt_PaintBrush Blt_NewStripeBrush(void );
+BLT_EXTERN Blt_PaintBrush Blt_NewStripesBrush(void );
 #endif
-#ifndef Blt_NewCheckerBrush_DECLARED
-#define Blt_NewCheckerBrush_DECLARED
+#ifndef Blt_NewCheckersBrush_DECLARED
+#define Blt_NewCheckersBrush_DECLARED
 /* 72 */
-BLT_EXTERN Blt_PaintBrush Blt_NewCheckerBrush(void );
+BLT_EXTERN Blt_PaintBrush Blt_NewCheckersBrush(void );
 #endif
 #ifndef Blt_NewRadialGradientBrush_DECLARED
 #define Blt_NewRadialGradientBrush_DECLARED
@@ -1518,8 +1518,8 @@ typedef struct BltTkIntProcs {
     Tcl_Obj * (*blt_Font_GetFile) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *sizePtr); /* 68 */
     Blt_PaintBrush (*blt_NewTileBrush) (void); /* 69 */
     Blt_PaintBrush (*blt_NewLinearGradientBrush) (void); /* 70 */
-    Blt_PaintBrush (*blt_NewStripeBrush) (void); /* 71 */
-    Blt_PaintBrush (*blt_NewCheckerBrush) (void); /* 72 */
+    Blt_PaintBrush (*blt_NewStripesBrush) (void); /* 71 */
+    Blt_PaintBrush (*blt_NewCheckersBrush) (void); /* 72 */
     Blt_PaintBrush (*blt_NewRadialGradientBrush) (void); /* 73 */
     Blt_PaintBrush (*blt_NewConicalGradientBrush) (void); /* 74 */
     Blt_PaintBrush (*blt_NewColorBrush) (unsigned int color); /* 75 */
@@ -1983,13 +1983,13 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_NewLinearGradientBrush \
 	(bltTkIntProcsPtr->blt_NewLinearGradientBrush) /* 70 */
 #endif
-#ifndef Blt_NewStripeBrush
-#define Blt_NewStripeBrush \
-	(bltTkIntProcsPtr->blt_NewStripeBrush) /* 71 */
+#ifndef Blt_NewStripesBrush
+#define Blt_NewStripesBrush \
+	(bltTkIntProcsPtr->blt_NewStripesBrush) /* 71 */
 #endif
-#ifndef Blt_NewCheckerBrush
-#define Blt_NewCheckerBrush \
-	(bltTkIntProcsPtr->blt_NewCheckerBrush) /* 72 */
+#ifndef Blt_NewCheckersBrush
+#define Blt_NewCheckersBrush \
+	(bltTkIntProcsPtr->blt_NewCheckersBrush) /* 72 */
 #endif
 #ifndef Blt_NewRadialGradientBrush
 #define Blt_NewRadialGradientBrush \

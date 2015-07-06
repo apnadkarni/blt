@@ -218,9 +218,9 @@ typedef struct {
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_StripeBrush --
+ * Blt_StripesBrush --
  *
- *      Represents a stripe brush.  It contains information to compute
+ *      Represents a stripes brush.  It contains information to compute
  *      the stripe color value at each point.
  *
  *---------------------------------------------------------------------------
@@ -245,18 +245,18 @@ typedef struct {
     ClientData clientData;
     Blt_Chain notifiers;                /* List of client notifiers. */
 
-    /* Stripe-specific fields. */
+    /* Stripes-specific fields. */
     Blt_Pixel low, high;                /* Texture or gradient colors. */
     int aRange, rRange, gRange, bRange;
     int stride;
-} Blt_StripeBrush;
+} Blt_StripesBrush;
 
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_CheckerBrush --
+ * Blt_CheckersBrush --
  *
- *      Represents a checker brush.  It contains information to compute
+ *      Represents a checkers brush.  It contains information to compute
  *      the checker color value at each point.
  *
  *---------------------------------------------------------------------------
@@ -281,12 +281,12 @@ typedef struct {
     ClientData clientData;
     Blt_Chain notifiers;                /* List of client notifiers. */
 
-    /* Checker-specific fields. */
+    /* Checkers-specific fields. */
     Blt_Pixel low, high;                /* On/Off colors. */
     int aRange, rRange, gRange, bRange;
     int stride;
     int x, y;
-} Blt_CheckerBrush;
+} Blt_CheckersBrush;
 
 /*
  *---------------------------------------------------------------------------
@@ -403,8 +403,8 @@ typedef enum Blt_PaintBrushTypes {
     BLT_PAINTBRUSH_RADIAL,
     BLT_PAINTBRUSH_COLOR,
     BLT_PAINTBRUSH_CONICAL,
-    BLT_PAINTBRUSH_CHECKER,
-    BLT_PAINTBRUSH_STRIPE
+    BLT_PAINTBRUSH_CHECKERS,
+    BLT_PAINTBRUSH_STRIPES
 } Blt_PaintBrushType;
 
 #define BLT_PAINTBRUSH_DECREASING      (1<<0)
@@ -421,8 +421,8 @@ typedef enum Blt_PaintBrushTypes {
 
 BLT_EXTERN Blt_PaintBrush Blt_NewTileBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewLinearGradientBrush(void);
-BLT_EXTERN Blt_PaintBrush Blt_NewStripeBrush(void);
-BLT_EXTERN Blt_PaintBrush Blt_NewCheckerBrush(void);
+BLT_EXTERN Blt_PaintBrush Blt_NewStripesBrush(void);
+BLT_EXTERN Blt_PaintBrush Blt_NewCheckersBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewRadialGradientBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewConicalGradientBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewColorBrush(unsigned int color);

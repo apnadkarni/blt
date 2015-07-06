@@ -128,19 +128,19 @@ typedef struct _Blt_PaintBrushNotifier {
                                          * callbacks.  */
 } PaintBrushNotifier;
 
-#define DEF_CHECKER_OFFCOLOR    "grey97"
-#define DEF_CHECKER_ONCOLOR     "grey90"
-#define DEF_CHECKER_STRIDE      "10"
+#define DEF_CHECKERS_OFFCOLOR   "grey97"
+#define DEF_CHECKERS_ONCOLOR    "grey90"
+#define DEF_CHECKERS_STRIDE     "10"
 #define DEF_COLOR               STD_NORMAL_BACKGROUND
 #define DEF_COLOR_SCALE         "linear"
-#define DEF_CONICAL_CENTER       "c"
+#define DEF_CONICAL_CENTER      "c"
 #define DEF_CONICAL_DIAMETER     "0.0"
-#define DEF_CONICAL_HEIGHT       "1.0"
-#define DEF_CONICAL_ROTATE       "45.0"
-#define DEF_CONICAL_WIDTH        "1.0"
+#define DEF_CONICAL_HEIGHT      "1.0"
+#define DEF_CONICAL_ROTATE      "45.0"
+#define DEF_CONICAL_WIDTH       "1.0"
 #define DEF_DECREASING          "0"
-#define DEF_HIGH_COLOR           "grey50"
-#define DEF_TO         (char *)NULL
+#define DEF_HIGH_COLOR          "grey50"
+#define DEF_TO                  (char *)NULL
 #define DEF_JITTER              "0"
 #define DEF_OPACITY             "100.0"
 #define DEF_PALETTE             (char *)NULL
@@ -149,12 +149,12 @@ typedef struct _Blt_PaintBrushNotifier {
 #define DEF_RADIAL_HEIGHT       "1.0"
 #define DEF_RADIAL_WIDTH        "1.0"
 #define DEF_REPEAT              "reversing"
-#define DEF_LOW_COLOR         "grey90"
-#define DEF_FROM       "top center"
-#define DEF_STRIPE_OFFCOLOR    "grey97"
-#define DEF_STRIPE_ONCOLOR     "grey90"
-#define DEF_STRIPE_ORIENT       "vertical"
-#define DEF_STRIPE_STRIDE       "2"
+#define DEF_LOW_COLOR           "grey90"
+#define DEF_FROM                "top center"
+#define DEF_STRIPES_OFFCOLOR    "grey97"
+#define DEF_STRIPES_ONCOLOR     "grey90"
+#define DEF_STRIPES_ORIENT      "vertical"
+#define DEF_STRIPES_STRIDE      "2"
 #define DEF_XORIGIN             "0"
 #define DEF_YORIGIN             "0"
 
@@ -287,50 +287,50 @@ static Blt_CustomOption orientOption =
     ObjToOrient, OrientToObj, NULL, (ClientData)0
 };
 
-static Blt_ConfigSpec stripeBrushSpecs[] =
+static Blt_ConfigSpec stripesBrushSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
-        DEF_JITTER, Blt_Offset(Blt_StripeBrush, jitter.range), 
+        DEF_JITTER, Blt_Offset(Blt_StripesBrush, jitter.range), 
         BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-offcolor", (char *)NULL, (char *)NULL,
-        DEF_STRIPE_OFFCOLOR, Blt_Offset(Blt_StripeBrush, high)},
+        DEF_STRIPES_OFFCOLOR, Blt_Offset(Blt_StripesBrush, high)},
     {BLT_CONFIG_PIX32, "-oncolor", (char *)NULL, (char *)NULL,
-        DEF_STRIPE_ONCOLOR, Blt_Offset(Blt_StripeBrush, low)},
+        DEF_STRIPES_ONCOLOR, Blt_Offset(Blt_StripesBrush, low)},
     {BLT_CONFIG_CUSTOM, "-opacity", (char *)NULL, (char *)NULL, DEF_OPACITY, 
-        Blt_Offset(Blt_StripeBrush, alpha), BLT_CONFIG_DONT_SET_DEFAULT,
+        Blt_Offset(Blt_StripesBrush, alpha), BLT_CONFIG_DONT_SET_DEFAULT,
         &opacityOption},
     {BLT_CONFIG_CUSTOM, "-orient", (char *)NULL, (char *)NULL,
-        DEF_STRIPE_ORIENT, Blt_Offset(Blt_StripeBrush, flags), 
+        DEF_STRIPES_ORIENT, Blt_Offset(Blt_StripesBrush, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
-    {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
-        Blt_Offset(Blt_StripeBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
-        Blt_Offset(Blt_StripeBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_POS, "-stride", (char *)NULL, (char *)NULL,
-        DEF_STRIPE_STRIDE, Blt_Offset(Blt_StripeBrush, stride), 
+        DEF_STRIPES_STRIDE, Blt_Offset(Blt_StripesBrush, stride), 
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
+        Blt_Offset(Blt_StripesBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
+        Blt_Offset(Blt_StripesBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec checkerBrushSpecs[] =
+static Blt_ConfigSpec checkersBrushSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
-        DEF_JITTER, Blt_Offset(Blt_CheckerBrush, jitter.range), 
+        DEF_JITTER, Blt_Offset(Blt_CheckersBrush, jitter.range), 
         BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-offcolor", (char *)NULL, (char *)NULL,
-        DEF_CHECKER_OFFCOLOR, Blt_Offset(Blt_CheckerBrush, high)},
+        DEF_CHECKERS_OFFCOLOR, Blt_Offset(Blt_CheckersBrush, high)},
     {BLT_CONFIG_PIX32, "-oncolor", (char *)NULL, (char *)NULL,
-        DEF_CHECKER_ONCOLOR, Blt_Offset(Blt_CheckerBrush, low)},
+        DEF_CHECKERS_ONCOLOR, Blt_Offset(Blt_CheckersBrush, low)},
     {BLT_CONFIG_CUSTOM, "-opacity", (char *)NULL, (char *)NULL, DEF_OPACITY, 
-        Blt_Offset(Blt_CheckerBrush, alpha), BLT_CONFIG_DONT_SET_DEFAULT,
+        Blt_Offset(Blt_CheckersBrush, alpha), BLT_CONFIG_DONT_SET_DEFAULT,
         &opacityOption},
     {BLT_CONFIG_PIXELS_POS, "-stride", (char *)NULL, (char *)NULL,
-        DEF_CHECKER_STRIDE, Blt_Offset(Blt_CheckerBrush, stride), 
+        DEF_CHECKERS_STRIDE, Blt_Offset(Blt_CheckersBrush, stride), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
-        Blt_Offset(Blt_CheckerBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Blt_CheckersBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
-        Blt_Offset(Blt_CheckerBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Blt_CheckersBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -457,30 +457,30 @@ static Blt_PaintBrushClass tileBrushClass = {
     TileBrushFreeProc                   /* Free procedure. */
 };
 
-static PaintBrushConfigProc StripeBrushConfigProc;
-static PaintBrushRegionProc StripeBrushRegionProc;
-static PaintBrushColorProc StripeBrushColorProc;
+static PaintBrushConfigProc StripesBrushConfigProc;
+static PaintBrushRegionProc StripesBrushRegionProc;
+static PaintBrushColorProc StripesBrushColorProc;
 
-static Blt_PaintBrushClass stripeBrushClass = {
-    BLT_PAINTBRUSH_STRIPE,              /* Type of brush. */
-    "stripe",                           /* Class name. */
-    StripeBrushConfigProc,              /* Configuration procedure. */
-    StripeBrushRegionProc,              /* Coloring region procedure. */
-    StripeBrushColorProc,               /* Coloring procedure. */
-    NULL                                /* Free procedure. */
+static Blt_PaintBrushClass stripesBrushClass = {
+    BLT_PAINTBRUSH_STRIPES,              /* Type of brush. */
+    "stripes",                           /* Class name. */
+    StripesBrushConfigProc,              /* Configuration procedure. */
+    StripesBrushRegionProc,              /* Coloring region procedure. */
+    StripesBrushColorProc,               /* Coloring procedure. */
+    NULL                                 /* Free procedure. */
 };
 
-static PaintBrushConfigProc CheckerBrushConfigProc;
-static PaintBrushRegionProc CheckerBrushRegionProc;
-static PaintBrushColorProc CheckerBrushColorProc;
+static PaintBrushConfigProc CheckersBrushConfigProc;
+static PaintBrushRegionProc CheckersBrushRegionProc;
+static PaintBrushColorProc CheckersBrushColorProc;
 
-static Blt_PaintBrushClass checkerBrushClass = {
-    BLT_PAINTBRUSH_CHECKER,             /* Type of brush. */
-    "checker",                          /* Class name. */
-    CheckerBrushConfigProc,             /* Configuration procedure. */
-    CheckerBrushRegionProc,             /* Coloring region procedure. */
-    CheckerBrushColorProc,              /* Coloring procedure. */
-    NULL                                /* Free procedure. */
+static Blt_PaintBrushClass checkersBrushClass = {
+    BLT_PAINTBRUSH_CHECKERS,             /* Type of brush. */
+    "checkers",                          /* Class name. */
+    CheckersBrushConfigProc,             /* Configuration procedure. */
+    CheckersBrushRegionProc,             /* Coloring region procedure. */
+    CheckersBrushColorProc,              /* Coloring procedure. */
+    NULL                                 /* Free procedure. */
 };
 
 static PaintBrushConfigProc RadialGradientBrushConfigProc;
@@ -1652,10 +1652,10 @@ TileBrushColorProc(Blt_PaintBrush brush, int x, int y)
 /*
  *---------------------------------------------------------------------------
  *
- * StripeBrushRegionProc --
+ * StripesBrushRegionProc --
  *
- *      Pre-computes fields necessary for computing the stripe gradient
- *      color based upon the region specified.  
+ *      Pre-computes fields necessary for computing the stripes texture
+ *      based upon the region specified.  
  *
  * Results:
  *      None.
@@ -1663,16 +1663,16 @@ TileBrushColorProc(Blt_PaintBrush brush, int x, int y)
  *---------------------------------------------------------------------------
  */
 static void
-StripeBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
+StripesBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 {
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * StripeBrushConfigProc --
+ * StripesBrushConfigProc --
  *
- *      Configures the stripe gradient brush. 
+ *      Configures the stripes brush. 
  *
  * Results:
  *      None.
@@ -1680,9 +1680,9 @@ StripeBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
  *---------------------------------------------------------------------------
  */
 static int
-StripeBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
+StripesBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 {
-    Blt_StripeBrush *brushPtr = (Blt_StripeBrush *)brush;;
+    Blt_StripesBrush *brushPtr = (Blt_StripesBrush *)brush;;
 
     brushPtr->rRange = brushPtr->high.Red   - brushPtr->low.Red;
     brushPtr->gRange = brushPtr->high.Green - brushPtr->low.Green;
@@ -1694,7 +1694,7 @@ StripeBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 /*
  *---------------------------------------------------------------------------
  *
- * StripeBrushColorProc --
+ * StripesBrushColorProc --
  *
  *      Computes the interpolated color from the x-y pixel coordinate
  *      given.
@@ -1705,10 +1705,10 @@ StripeBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *---------------------------------------------------------------------------
  */
 static int
-StripeBrushColorProc(Blt_PaintBrush brush, int x, int y)
+StripesBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_Pixel color;
-    Blt_StripeBrush *brushPtr = (Blt_StripeBrush *)brush;
+    Blt_StripesBrush *brushPtr = (Blt_StripesBrush *)brush;
     double t;
     int t1;
     
@@ -1738,10 +1738,10 @@ StripeBrushColorProc(Blt_PaintBrush brush, int x, int y)
 /*
  *---------------------------------------------------------------------------
  *
- * CheckerBrushRegionProc --
+ * CheckersBrushRegionProc --
  *
- *      Pre-computes fields necessary for computing the checker gradient
- *      color based upon the region specified.  
+ *      Pre-computes fields necessary for computing the checkers texture
+ *      based upon the region specified.  
  *
  * Results:
  *      None.
@@ -1749,9 +1749,9 @@ StripeBrushColorProc(Blt_PaintBrush brush, int x, int y)
  *---------------------------------------------------------------------------
  */
 static void
-CheckerBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
+CheckersBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 {
-    Blt_CheckerBrush *brushPtr = (Blt_CheckerBrush *)brush;
+    Blt_CheckersBrush *brushPtr = (Blt_CheckersBrush *)brush;
     
     brushPtr->x = (x - brushPtr->xOrigin);
     brushPtr->y = (y - brushPtr->yOrigin);
@@ -1761,9 +1761,9 @@ CheckerBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
 /*
  *---------------------------------------------------------------------------
  *
- * CheckerBrushConfigProc --
+ * CheckersBrushConfigProc --
  *
- *      Configures the checker gradient brush. 
+ *      Configures the checkers brush. 
  *
  * Results:
  *      None.
@@ -1771,9 +1771,9 @@ CheckerBrushRegionProc(Blt_PaintBrush brush, int x, int y, int w, int h)
  *---------------------------------------------------------------------------
  */
 static int
-CheckerBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
+CheckersBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 {
-    Blt_CheckerBrush *brushPtr = (Blt_CheckerBrush *)brush;
+    Blt_CheckersBrush *brushPtr = (Blt_CheckersBrush *)brush;
 
     brushPtr->rRange = brushPtr->high.Red   - brushPtr->low.Red;
     brushPtr->gRange = brushPtr->high.Green - brushPtr->low.Green;
@@ -1785,7 +1785,7 @@ CheckerBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
 /*
  *---------------------------------------------------------------------------
  *
- * CheckerBrushColorProc --
+ * CheckersBrushColorProc --
  *
  *      Computes the interpolated color from the x-y pixel coordinate
  *      given.
@@ -1796,9 +1796,9 @@ CheckerBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *---------------------------------------------------------------------------
  */
 static int
-CheckerBrushColorProc(Blt_PaintBrush brush, int x, int y)
+CheckersBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
-    Blt_CheckerBrush *brushPtr = (Blt_CheckerBrush *)brush;
+    Blt_CheckersBrush *brushPtr = (Blt_CheckersBrush *)brush;
     double t;
     Blt_Pixel color;
     int t1, t2;
@@ -2101,11 +2101,11 @@ Blt_GetBrushTypeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
                (strncmp(string, "color", length) == 0)) {
         *typePtr = BLT_PAINTBRUSH_COLOR;
     } else if ((c == 's') && (length > 2) &&
-               (strncmp(string, "stripe", length) == 0)) {
-        *typePtr = BLT_PAINTBRUSH_STRIPE;
+               (strncmp(string, "stripes", length) == 0)) {
+        *typePtr = BLT_PAINTBRUSH_STRIPES;
     } else if ((c == 'c') && (length > 2) &&
-               (strncmp(string, "checker", length) == 0)) {
-        *typePtr = BLT_PAINTBRUSH_CHECKER;
+               (strncmp(string, "checkers", length) == 0)) {
+        *typePtr = BLT_PAINTBRUSH_CHECKERS;
     } else {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "unknown paintbrush type \"", string, 
@@ -2235,9 +2235,9 @@ Blt_NewLinearGradientBrush()
 /*
  *---------------------------------------------------------------------------
  *
- * NewStripeBrush --
+ * NewStripesBrush --
  *
- *      Creates a new stripe paintbrush.
+ *      Creates a new stripes paintbrush.
  *
  * Results:
  *      Returns pointer to the new paintbrush.
@@ -2245,12 +2245,12 @@ Blt_NewLinearGradientBrush()
  *---------------------------------------------------------------------------
  */
 Blt_PaintBrush
-Blt_NewStripeBrush()
+Blt_NewStripesBrush()
 {
-    Blt_StripeBrush *brushPtr;
+    Blt_StripesBrush *brushPtr;
     
-    brushPtr = Blt_AssertCalloc(1, sizeof(Blt_StripeBrush));
-    brushPtr->classPtr = &stripeBrushClass;
+    brushPtr = Blt_AssertCalloc(1, sizeof(Blt_StripesBrush));
+    brushPtr->classPtr = &stripesBrushClass;
     brushPtr->refCount = 1;
     brushPtr->alpha = 0xFF;
     brushPtr->flags = BLT_PAINTBRUSH_ORIENT_VERTICAL;
@@ -2262,9 +2262,9 @@ Blt_NewStripeBrush()
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_NewCheckerBrush --
+ * Blt_NewCheckersBrush --
  *
- *      Creates a new checker paintbrush.
+ *      Creates a new checkers paintbrush.
  *
  * Results:
  *      Returns pointer to the new paintbrush.
@@ -2272,12 +2272,12 @@ Blt_NewStripeBrush()
  *---------------------------------------------------------------------------
  */
 Blt_PaintBrush
-Blt_NewCheckerBrush()
+Blt_NewCheckersBrush()
 {
-    Blt_StripeBrush *brushPtr;
+    Blt_StripesBrush *brushPtr;
     
-    brushPtr = Blt_AssertCalloc(1, sizeof(Blt_CheckerBrush));
-    brushPtr->classPtr = &checkerBrushClass;
+    brushPtr = Blt_AssertCalloc(1, sizeof(Blt_CheckersBrush));
+    brushPtr->classPtr = &checkersBrushClass;
     brushPtr->refCount = 1;
     brushPtr->alpha = 0xFF;
     brushPtr->stride = 10;
@@ -2397,13 +2397,13 @@ NewPaintBrushCmd(PaintBrushCmdInterpData *dataPtr, Tcl_Interp *interp,
         cmdPtr->brush = Blt_NewLinearGradientBrush();
         cmdPtr->specs = linearGradientBrushSpecs;
         break;
-    case BLT_PAINTBRUSH_STRIPE:
-        cmdPtr->brush = Blt_NewStripeBrush();
-        cmdPtr->specs = stripeBrushSpecs;
+    case BLT_PAINTBRUSH_STRIPES:
+        cmdPtr->brush = Blt_NewStripesBrush();
+        cmdPtr->specs = stripesBrushSpecs;
         break;
-    case BLT_PAINTBRUSH_CHECKER:
-        cmdPtr->brush = Blt_NewCheckerBrush();
-        cmdPtr->specs = checkerBrushSpecs;
+    case BLT_PAINTBRUSH_CHECKERS:
+        cmdPtr->brush = Blt_NewCheckersBrush();
+        cmdPtr->specs = checkersBrushSpecs;
         break;
     case BLT_PAINTBRUSH_RADIAL:
         cmdPtr->brush = Blt_NewRadialGradientBrush();

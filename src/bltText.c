@@ -115,17 +115,18 @@ void
 Blt_GetTextExtents(
     Blt_Font font, 
     int leader,
-    const char *text,           /* Text string to be measured. */
-    int textLen,                /* Length of the text. If -1, indicates that
-                                 * text is an ASCIZ string that the length
-                                 * should be computed with strlen. */
+    const char *text,                   /* Text string to be measured. */
+    int textLen,                        /* Length of the text. If -1,
+                                         * indicates that text is an ASCIZ
+                                         * string that the length should be
+                                         * computed with strlen. */
     unsigned int *widthPtr, 
     unsigned int *heightPtr)
 {
     unsigned int lineHeight;
 
     if (text == NULL) {
-        return;                 /* NULL string? */
+        return;                         /* NULL string? */
     }
     {
         Blt_FontMetrics fm;
@@ -155,9 +156,10 @@ Blt_GetTextExtents(
                     }
                 }
                 maxHeight += lineHeight;
-                line = p + 1;   /* Point to the start of the next line. */
-                lineLen = 0;    /* Reset counter to indicate the start of a
-                                 * new line. */
+                line = p + 1;           /* Points to the start of the next
+                                         * line. */
+                lineLen = 0;            /* Reset counter to indicate the
+                                         * start of a new line. */
                 continue;
             }
             lineLen++;
@@ -184,8 +186,8 @@ Blt_GetTextExtents(
  *      Get the extents of a possibly multiple-lined text string.
  *
  * Results:
- *      Returns via *widthPtr* and *heightPtr* the dimensions of
- *      the text string.
+ *      Returns via *widthPtr* and *heightPtr* the dimensions of the text
+ *      string.
  *
  *---------------------------------------------------------------------------
  */
@@ -211,11 +213,11 @@ Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text, unsigned int *widthPtr,
  * Blt_GetBoundingBox
  *
  *      Computes the dimensions of the bounding box surrounding a rectangle
- *      rotated about its center.  If pointArr isn't NULL, the coordinates of
- *      the rotated rectangle are also returned.
+ *      rotated about its center.  If pointArr isn't NULL, the coordinates
+ *      of the rotated rectangle are also returned.
  *
- *      The dimensions are determined by rotating the rectangle, and doubling
- *      the maximum x-coordinate and y-coordinate.
+ *      The dimensions are determined by rotating the rectangle, and
+ *      doubling the maximum x-coordinate and y-coordinate.
  *
  *              w = 2 * maxX,  h = 2 * maxY
  *
@@ -236,11 +238,12 @@ Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text, unsigned int *widthPtr,
  */
 void
 Blt_GetBoundingBox(
-    int width, int height,      /* Unrotated region */
-    float angle,                /* Rotation of box */
+    int width, int height,              /* Unrotated region */
+    float angle,                        /* Rotation of box */
     double *rotWidthPtr, 
-    double *rotHeightPtr,       /* (out) Bounding box region */
-    Point2d *bbox)              /* (out) Points of the rotated box */
+    double *rotHeightPtr,               /* (out) Bounding box region */
+    Point2d *bbox)                      /* (out) Points of the rotated
+                                         * box */
 {
     int i;
     double sinTheta, cosTheta;
@@ -334,8 +337,8 @@ Blt_GetBoundingBox(
  * Blt_TranslateAnchor --
  *
  *      Translate the coordinates of a given bounding box based upon the
- *      anchor specified.  The anchor indicates where the given x-y position
- *      is in relation to the bounding box.
+ *      anchor specified.  The anchor indicates where the given x-y
+ *      position is in relation to the bounding box.
  *
  *              nw --- n --- ne
  *              |            |
@@ -343,8 +346,8 @@ Blt_GetBoundingBox(
  *              |            |
  *              sw --- s --- se
  *
- *      The coordinates returned are translated to the origin of the bounding
- *      box (suitable for giving to XCopyArea, XCopyPlane, etc.)
+ *      The coordinates returned are translated to the origin of the
+ *      bounding box (suitable for giving to XCopyArea, XCopyPlane, etc.)
  *
  * Results:
  *      The translated coordinates of the bounding box are returned.
@@ -353,39 +356,39 @@ Blt_GetBoundingBox(
  */
 void
 Blt_TranslateAnchor(
-    int x, int y,               /* Window coordinates of anchor */
-    int w, int h,               /* Extents of the bounding box */
-    Tk_Anchor anchor,           /* Direction of the anchor */
+    int x, int y,                       /* Window coordinates of anchor */
+    int w, int h,                       /* Extents of the bounding box */
+    Tk_Anchor anchor,                   /* Direction of the anchor */
     int *xPtr, int *yPtr)
 {
     switch (anchor) {
-    case TK_ANCHOR_NW:          /* Upper left corner */
+    case TK_ANCHOR_NW:                  /* Upper left corner */
         break;
-    case TK_ANCHOR_W:           /* Left center */
+    case TK_ANCHOR_W:                   /* Left center */
         y -= (h / 2);
         break;
-    case TK_ANCHOR_SW:          /* Lower left corner */
+    case TK_ANCHOR_SW:                  /* Lower left corner */
         y -= h;
         break;
-    case TK_ANCHOR_N:           /* Top center */
+    case TK_ANCHOR_N:                   /* Top center */
         x -= (w / 2);
         break;
-    case TK_ANCHOR_CENTER:      /* Center */
+    case TK_ANCHOR_CENTER:              /* Center */
         x -= (w / 2);
         y -= (h / 2);
         break;
-    case TK_ANCHOR_S:           /* Bottom center */
+    case TK_ANCHOR_S:                   /* Bottom center */
         x -= (w / 2);
         y -= h;
         break;
-    case TK_ANCHOR_NE:          /* Upper right corner */
+    case TK_ANCHOR_NE:                  /* Upper right corner */
         x -= w;
         break;
-    case TK_ANCHOR_E:           /* Right center */
+    case TK_ANCHOR_E:                   /* Right center */
         x -= w;
         y -= (h / 2);
         break;
-    case TK_ANCHOR_SE:          /* Lower right corner */
+    case TK_ANCHOR_SE:                  /* Lower right corner */
         x -= w;
         y -= h;
         break;
@@ -399,10 +402,10 @@ Blt_TranslateAnchor(
  *
  * Blt_AnchorPoint --
  *
- *      Translates a position, using both the dimensions of the bounding box,
- *      and the anchor direction, returning the coordinates of the upper-left
- *      corner of the box. The anchor indicates where the given x-y position
- *      is in relation to the bounding box.
+ *      Translates a position, using both the dimensions of the bounding
+ *      box, and the anchor direction, returning the coordinates of the
+ *      upper-left corner of the box. The anchor indicates where the given
+ *      x-y position is in relation to the bounding box.
  *
  *              nw --- n --- ne
  *              |            |
@@ -410,8 +413,8 @@ Blt_TranslateAnchor(
  *              |            |
  *              sw --- s --- se
  *
- *      The coordinates returned are translated to the origin of the bounding
- *      box (suitable for giving to XCopyArea, XCopyPlane, etc.)
+ *      The coordinates returned are translated to the origin of the
+ *      bounding box (suitable for giving to XCopyArea, XCopyPlane, etc.)
  *
  * Results:
  *      The translated coordinates of the bounding box are returned.
@@ -420,40 +423,40 @@ Blt_TranslateAnchor(
  */
 Point2d
 Blt_AnchorPoint(
-    double x, double y,         /* Coordinates of anchor. */
-    double w, double h,         /* Extents of the bounding box */
-    Tk_Anchor anchor)           /* Direction of the anchor */
+    double x, double y,                 /* Coordinates of anchor. */
+    double w, double h,                 /* Extents of the bounding box */
+    Tk_Anchor anchor)                   /* Direction of the anchor */
 {
     Point2d t;
 
     switch (anchor) {
-    case TK_ANCHOR_NW:          /* Upper left corner */
+    case TK_ANCHOR_NW:                  /* Upper left corner */
         break;
-    case TK_ANCHOR_W:           /* Left center */
+    case TK_ANCHOR_W:                   /* Left center */
         y -= (h * 0.5);
         break;
-    case TK_ANCHOR_SW:          /* Lower left corner */
+    case TK_ANCHOR_SW:                  /* Lower left corner */
         y -= h;
         break;
-    case TK_ANCHOR_N:           /* Top center */
+    case TK_ANCHOR_N:                   /* Top center */
         x -= (w * 0.5);
         break;
-    case TK_ANCHOR_CENTER:      /* Center */
+    case TK_ANCHOR_CENTER:              /* Center */
         x -= (w * 0.5);
         y -= (h * 0.5);
         break;
-    case TK_ANCHOR_S:           /* Bottom center */
+    case TK_ANCHOR_S:                   /* Bottom center */
         x -= (w * 0.5);
         y -= h;
         break;
-    case TK_ANCHOR_NE:          /* Upper right corner */
+    case TK_ANCHOR_NE:                  /* Upper right corner */
         x -= w;
         break;
-    case TK_ANCHOR_E:           /* Right center */
+    case TK_ANCHOR_E:                   /* Right center */
         x -= w;
         y -= (h * 0.5);
         break;
-    case TK_ANCHOR_SE:          /* Lower right corner */
+    case TK_ANCHOR_SE:                  /* Lower right corner */
         x -= w;
         y -= h;
         break;
@@ -464,10 +467,12 @@ Blt_AnchorPoint(
 }
 
 static INLINE int
-SizeOfUtfChar(const char *s)    /* Buffer in which the UTF-8 representation of
-                                 * the Tcl_UniChar is stored.  Buffer must be
-                                 * large enough to hold the UTF-8 character
-                                 * (at most TCL_UTF_MAX bytes). */
+SizeOfUtfChar(const char *s)            /* Buffer in which the UTF-8
+                                         * representation of the
+                                         * Tcl_UniChar is stored.  Buffer
+                                         * must be large enough to hold the
+                                         * UTF-8 character (at most
+                                         * TCL_UTF_MAX bytes). */
 {
     int byte;
     
@@ -488,9 +493,8 @@ SizeOfUtfChar(const char *s)    /* Buffer in which the UTF-8 representation of
  *
  * Blt_MeasureText --
  *
- *      Draw a string of characters on the screen.  Blt_Font_Draw()
- *      expands control characters that occur in the string to 
- *      \xNN sequences.  
+ *      Draw a string of characters on the screen.  Blt_Font_Draw() expands
+ *      control characters that occur in the string to \xNN sequences.
  *
  * Results:
  *      None.
@@ -502,16 +506,20 @@ SizeOfUtfChar(const char *s)    /* Buffer in which the UTF-8 representation of
  */
 int
 Blt_MeasureText(
-    Blt_Font font,              /* Font in which characters will be drawn;
-                                 * must be the same as font used in GC. */
-    const char *text,           /* UTF-8 string to be displayed.  Need not be
-                                 * '\0' terminated.  All Tk meta-characters
-                                 * (tabs, control characters, and newlines)
-                                 * should be stripped out of the string that
-                                 * is passed to this function.  If they are
-                                 * not stripped out, they will be displayed as
-                                 * regular printing characters. */
-    int textLen,                /* # of bytes to draw in text string. */
+    Blt_Font font,                      /* Font in which characters will be
+                                        * drawn; must be the same as font
+                                        * used in GC. */
+    const char *text,                   /* UTF-8 string to be displayed.
+                                        * Need not be '\0' terminated.  All
+                                        * Tk meta-characters (tabs, control
+                                        * characters, and newlines) should
+                                        * be stripped out of the string
+                                        * that is passed to this function.
+                                        * If they are not stripped out,
+                                        * they will be displayed as regular
+                                        * printing characters. */
+    int textLen,                        /* # of bytes to draw in text
+                                         * string. */
     int maxLength, 
     int *countPtr)
 {
@@ -579,11 +587,12 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
     TextFragment *fp;
     TextLayout *layoutPtr;
     Blt_FontMetrics fm;
-    int count;                  /* Count # of characters on each line */
+    int count;                          /* Count # of characters on each
+                                         * line */
     int lineHeight;
     size_t maxHeight, maxWidth;
     size_t numFrags;
-    int width;                  /* Running dimensions of the text */
+    int width;                         /* Running dimensions of the text */
     const char *p, *endp, *start;
     int i;
     size_t size;
@@ -627,9 +636,9 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
             maxHeight += lineHeight;
             fp++;
             numFrags++;
-            start = p + 1;      /* Start the text on the next line */
-            count = 0;          /* Reset to indicate the start of a new
-                                 * line */
+            start = p + 1;              /* Start of text on the next line */
+            count = 0;                  /* Reset to indicate the start of a
+                                        * new line */
             continue;
         }
         count++;
@@ -691,9 +700,8 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
  *
  * Blt_DrawWithEllipsis --
  *
- *      Draw a string of characters on the screen.  Blt_DrawChars()
- *      expands control characters that occur in the string to 
- *      \xNN sequences.  
+ *      Draw a string of characters on the screen.  Blt_DrawChars() expands
+ *      control characters that occur in the string to \xNN sequences.
  *
  * Results:
  *      None.
@@ -705,23 +713,31 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
  */
 void
 Blt_DrawWithEllipsis(
-    Tk_Window tkwin,            /* Display on which to draw. */
-    Drawable drawable,          /* Window or pixmap in which to draw. */
-    GC gc,                      /* Graphics context for drawing characters. */
-    Blt_Font font,              /* Font in which characters will be drawn;
-                                 * must be the same as font used in GC. */
+    Tk_Window tkwin,                    /* Display on which to draw. */
+    Drawable drawable,                  /* Window or pixmap in which to
+                                         * draw. */
+    GC gc,                              /* Graphics context for drawing
+                                         * characters. */
+    Blt_Font font,                      /* Font in which characters will be
+                                         * drawn; must be the same as font
+                                         * used in GC. */
     int depth,
     float angle,
-    const char *text,           /* UTF-8 string to be displayed.  Need not be
-                                 * '\0' terminated.  All Tk meta-characters
-                                 * (tabs, control characters, and newlines)
-                                 * should be stripped out of the string that
-                                 * is passed to this function.  If they are
-                                 * not stripped out, they will be displayed as
-                                 * regular printing characters. */
-    int textLen,                /* # of bytes to draw in text string. */
-    int x, int y,               /* Coordinates at which to place origin of
-                                 * string when drawing. */
+    const char *text,                   /* UTF-8 string to be displayed.
+                                         * Need not be '\0' terminated.
+                                         * All Tk meta-characters (tabs,
+                                         * control characters, and
+                                         * newlines) should be stripped out
+                                         * of the string that is passed to
+                                         * this function.  If they are not
+                                         * stripped out, they will be
+                                         * displayed as regular printing
+                                         * characters. */
+    int textLen,                        /* # of bytes to draw in text
+                                         * string. */
+    int x, int y,                       /* Coordinates at which to place
+                                         * origin of string when
+                                         * drawing. */
     int maxLength)
 {
     int elWidth;
@@ -799,8 +815,8 @@ Blt_DrawLayout(Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font,
  *
  * Blt_Ts_Bitmap --
  *
- *      Draw a bitmap, using the the given window coordinates as an anchor for
- *      the text bounding box.
+ *      Draw a bitmap, using the the given window coordinates as an anchor
+ *      for the text bounding box.
  *
  * Results:
  *      Returns the bitmap representing the text string.
@@ -815,11 +831,12 @@ Pixmap
 Blt_Ts_Bitmap(
     Tk_Window tkwin,
     TextLayout *layoutPtr,              /* Text string to draw */
-    TextStyle *stylePtr,                /* Text attributes: rotation, color,
-                                         * font, linespacing, justification,
-                                         * etc. */
+    TextStyle *stylePtr,                /* Text attributes: rotation,
+                                         * color, font, linespacing,
+                                         * justification, etc. */
     int *bmWidthPtr,
-    int *bmHeightPtr)                   /* Extents of rotated text string */
+    int *bmHeightPtr)                   /* Extents of rotated text
+                                         * string */
 {
     Pixmap bitmap;
     Window root;
@@ -833,7 +850,7 @@ Blt_Ts_Bitmap(
         layoutPtr->height, 1);
     assert(bitmap != None);
     if (bitmap == None) {
-        return None;            /* Can't allocate pixmap. */
+        return None;                    /* Can't allocate pixmap. */
     }
     gc = Blt_GetBitmapGC(tkwin);
 
@@ -864,8 +881,8 @@ Blt_Ts_Bitmap(
  *
  * Blt_Ts_Bitmap --
  *
- *      Draw a bitmap, using the the given window coordinates as an anchor for
- *      the text bounding box.
+ *      Draw a bitmap, using the the given window coordinates as an anchor
+ *      for the text bounding box.
  *
  * Results:
  *      Returns the bitmap representing the text string.
@@ -880,11 +897,12 @@ Pixmap
 Blt_Ts_Bitmap(
     Tk_Window tkwin,
     TextLayout *layoutPtr,              /* Text string to draw */
-    TextStyle *stylePtr,                /* Text attributes: rotation, color,
-                                         * font, linespacing, justification,
-                                         * etc. */
+    TextStyle *stylePtr,                /* Text attributes: rotation,
+                                         * color, font, linespacing,
+                                         * justification, etc. */
     int *bmWidthPtr,
-    int *bmHeightPtr)                   /* Extents of rotated text string */
+    int *bmHeightPtr)                   /* Extents of rotated text
+                                         * string */
 {
     Pixmap bitmap;
     GC gc;
@@ -894,7 +912,7 @@ Blt_Ts_Bitmap(
         layoutPtr->width, layoutPtr->height, 1);
     assert(bitmap != None);
     if (bitmap == None) {
-        return None;            /* Can't allocate pixmap. */
+        return None;                    /* Can't allocate pixmap. */
     }
     gc = Blt_GetBitmapGC(tkwin);
 
@@ -942,9 +960,9 @@ DrawStandardLayout(Tk_Window tkwin, Drawable drawable, TextStyle *stylePtr,
 {
     int w, h;
     /*
-     * This is the easy case of no rotation. Simply draw the text
-     * using the standard drawing routines.  Handle offset printing
-     * for engraved (disabled) text.
+     * This is the easy case of no rotation. Simply draw the text using the
+     * standard drawing routines.  Handle offset printing for engraved
+     * (disabled) text.
      */
     w = layoutPtr->width;
     h = layoutPtr->height;
@@ -973,11 +991,11 @@ DrawStandardLayout(Tk_Window tkwin, Drawable drawable, TextStyle *stylePtr,
         Blt_DrawLayout(tkwin, drawable, stylePtr->gc, stylePtr->font, 
                 Tk_Depth(tkwin), 0.0f, x, y, layoutPtr, stylePtr->maxLength);
         
-        /* Reset the foreground color back to its original setting, so not to
-         * invalidate the GC cache. */
+        /* Reset the foreground color back to its original setting, so not
+         * to invalidate the GC cache. */
         XSetForeground(Tk_Display(tkwin), stylePtr->gc, stylePtr->color->pixel);
         
-        return;         /* Done */
+        return;                         /* Done */
     }
     Blt_DrawLayout(tkwin, drawable, stylePtr->gc, stylePtr->font, 
         Tk_Depth(tkwin), 0.0f, x, y, layoutPtr, stylePtr->maxLength);
@@ -1074,7 +1092,8 @@ Blt_DrawTextWithRotatedBitmap(
     float angle,
     TextStyle *stylePtr,                /* Text attribute information */
     TextLayout *layoutPtr,
-    int x, int y)                       /* Window coordinates to draw text */
+    int x, int y)                       /* Window coordinates to draw
+                                         * text */
 {
     int width, height;
     Display *display;
@@ -1083,8 +1102,8 @@ Blt_DrawTextWithRotatedBitmap(
     display = Tk_Display(tkwin);
     /*
      * Rotate the text by writing the text into a bitmap and rotating the
-     * bitmap.  Set the clip mask and origin in the GC first.  And make sure
-     * we restore the GC because it may be shared.
+     * bitmap.  Set the clip mask and origin in the GC first.  And make
+     * sure we restore the GC because it may be shared.
      */
     stylePtr->angle = angle;
 
@@ -1129,7 +1148,7 @@ Blt_DrawTextWithRotatedBitmap(
     } else {
         XSetForeground(display, stylePtr->gc, stylePtr->color->pixel);
         XSetClipOrigin(display, stylePtr->gc, x, y);
-        XCopyPlane(display, bitmap, drawable, stylePtr->gc, 0, 0, width, height, 
+        XCopyPlane(display, bitmap, drawable, stylePtr->gc, 0, 0, width, height,
                 x, y, 1);
     }
     XSetClipMask(display, stylePtr->gc, None);
@@ -1150,12 +1169,12 @@ Blt_DrawTextWithRotatedBitmap(
  *      Returns the x-coordinate to the right of the text.
  *
  * Side Effects:
- *      Text string is drawn using the given font and GC at the the given
+  *      Text string is drawn using the given font and GC at the the given
  *      window coordinates.
  *
- *      The Stipple, FillStyle, and TSOrigin fields of the GC are modified for
- *      rotated text.  This assumes the GC is private, *not* shared (via
- *      Tk_GetGC)
+ *      The Stipple, FillStyle, and TSOrigin fields of the GC are modified
+ *      for rotated text.  This assumes the GC is private, *not* shared
+ *      (via Tk_GetGC)
  *
  *---------------------------------------------------------------------------
  */
@@ -1165,7 +1184,8 @@ Blt_Ts_DrawLayout(
     Drawable drawable,
     TextLayout *layoutPtr,
     TextStyle *stylePtr,                /* Text attribute information */
-    int x, int y)                       /* Window coordinates to draw text */
+    int x, int y)                       /* Window coordinates to draw
+                                         * text */
 {
     float angle;
 
@@ -1180,8 +1200,8 @@ Blt_Ts_DrawLayout(
     if (angle == 0.0) {
         /*
          * This is the easy case of no rotation. Simply draw the text using
-         * the standard drawing routines.  Handle offset printing for engraved
-         * (disabled) text.
+         * the standard drawing routines.  Handle offset printing for
+         * engraved (disabled) text.
          */
         DrawStandardLayout(tkwin, drawable, stylePtr, layoutPtr, x, y);
     } else if (Blt_Font_CanRotate(stylePtr->font, angle)) {
@@ -1247,9 +1267,9 @@ Blt_Ts_UnderlineLayout( Tk_Window tkwin, Drawable drawable,
  *      Text string is drawn using the given font and GC at the the given
  *      window coordinates.
  *
- *      The Stipple, FillStyle, and TSOrigin fields of the GC are modified for
- *      rotated text.  This assumes the GC is private, *not* shared (via
- *      Tk_GetGC)
+ *      The Stipple, FillStyle, and TSOrigin fields of the GC are modified
+ *      for rotated text.  This assumes the GC is private, *not* shared
+ *      (via Tk_GetGC)
  *
  *---------------------------------------------------------------------------
  */
@@ -1260,7 +1280,8 @@ Blt_Ts_DrawText(
     const char *text,
     int textLen,
     TextStyle *stylePtr,                /* Text attribute information */
-    int x, int y)                       /* Window coordinates to draw text */
+    int x, int y)                       /* Window coordinates to draw
+                                         * text */
 {
     TextLayout *layoutPtr;
 
@@ -1277,7 +1298,8 @@ Blt_DrawText2(
     Drawable drawable,
     const char *string,
     TextStyle *stylePtr,                /* Text attribute information */
-    int x, int y,               /* Window coordinates to draw text */
+    int x, int y,                       /* Window coordinates to draw
+                                         * text */
     Dim2d *areaPtr)
 {
     TextLayout *layoutPtr;
@@ -1285,7 +1307,7 @@ Blt_DrawText2(
     float angle;
 
     if ((string == NULL) || (*string == '\0')) {
-        return;                 /* Empty string, do nothing */
+        return;                         /* Empty string, do nothing */
     }
     layoutPtr = Blt_Ts_CreateLayout(string, -1, stylePtr);
     Blt_Ts_DrawLayout(tkwin, drawable, layoutPtr, stylePtr, x, y);
@@ -1314,12 +1336,13 @@ Blt_DrawText(
     Drawable drawable,
     const char *string,
     TextStyle *stylePtr,                /* Text attribute information */
-    int x, int y)               /* Window coordinates to draw text */
+    int x, int y)                       /* window coordinates to draw
+                                         * text */
 {
     TextLayout *layoutPtr;
 
     if ((string == NULL) || (*string == '\0')) {
-        return;                 /* Empty string, do nothing */
+        return;                         /* Empty string, do nothing */
     }
     layoutPtr = Blt_Ts_CreateLayout(string, -1, stylePtr);
     Blt_Ts_DrawLayout(tkwin, drawable, layoutPtr, stylePtr, x, y);
@@ -1372,39 +1395,51 @@ Blt_Ts_FreeStyle(Display *display, TextStyle *stylePtr)
  */
 
 typedef struct _LayoutChunk {
-    const char *start;          /* Pointer to simple string to be displayed.
-                                 * This is a pointer into the TkTextLayout's
-                                 * string. */
-    int numBytes;               /* The number of bytes in this chunk. */
-    int numChars;               /* The number of characters in this chunk. */
-    int numDisplayChars;        /* The number of characters to display when
-                                 * this chunk is displayed.  Can be less than
-                                 * numChars if extra space characters were
-                                 * absorbed by the end of the chunk.  This
-                                 * will be < 0 if this is a chunk that is
-                                 * holding a tab or newline. */
-    int x, y;                   /* The origin of the first character in this
-                                 * chunk with respect to the upper-left hand
-                                 * corner of the TextLayout. */
-    int totalWidth;             /* Width in pixels of this chunk.  Used
-                                 * when hit testing the invisible spaces at
-                                 * the end of a chunk. */
-    int displayWidth;           /* Width in pixels of the displayable
-                                 * characters in this chunk.  Can be less than
-                                 * width if extra space characters were
-                                 * absorbed by the end of the chunk. */
+    const char *start;                  /* Pointer to simple string to be
+                                         * displayed.  This is a pointer
+                                         * into the TkTextLayout's
+                                         * string. */
+    int numBytes;                       /* The number of bytes in this
+                                         * chunk. */
+    int numChars;                       /* The number of characters in this
+                                         * chunk. */
+    int numDisplayChars;                /* The number of characters to
+                                         * display when this chunk is
+                                         * displayed.  Can be less than
+                                         * numChars if extra space
+                                         * characters were absorbed by the
+                                         * end of the chunk.  This will be
+                                         * < 0 if this is a chunk that is
+                                         * holding a tab or newline. */
+    int x, y;                           /* The origin of the first
+                                         * character in this chunk with
+                                         * respect to the upper-left hand
+                                         * corner of the TextLayout. */
+    int totalWidth;                     /* Width in pixels of this chunk.
+                                         * Used when hit testing the
+                                         * invisible spaces at the end of a
+                                         * chunk. */
+    int displayWidth;                   /* Width in pixels of the
+                                         * displayable characters in this
+                                         * chunk.  Can be less than width
+                                         * if extra space characters were
+                                         * absorbed by the end of the
+                                         * chunk. */
 } LayoutChunk;
 
 typedef struct _TkTextLayout {
-    Blt_Font font;              /* The font used when laying out the text. */
-    const char *string;         /* The string that was layed out. */
-    int width;                  /* The maximum width of all lines in the
-                                 * text layout. */
-    int numChunks;              /* Number of chunks actually used in
-                                 * following array. */
-    LayoutChunk chunks[1];      /* Array of chunks.  The actual size will
-                                 * be maxChunks.  THIS FIELD MUST BE THE LAST
-                                 * IN THE STRUCTURE. */
+    Blt_Font font;                      /* The font used when laying out
+                                         * the text. */
+    const char *string;                 /* The string that was layed
+                                         * out. */
+    int width;                          /* The maximum width of all lines
+                                         * in the text layout. */
+    int numChunks;                      /* Number of chunks actually used
+                                         * in following array. */
+    LayoutChunk chunks[1];              /* Array of chunks.  The actual
+                                         * size will be maxChunks.  THIS
+                                         * FIELD MUST BE THE LAST IN THE
+                                         * STRUCTURE. */
 } TkTextLayout;
 
 
@@ -1413,8 +1448,8 @@ typedef struct _TkTextLayout {
  *
  * Blt_FreeTextLayout --
  *
- *      This procedure is called to release the storage associated with
- *      a Tk_TextLayout when it is no longer needed.
+ *      This procedure is called to release the storage associated with a
+ *      Tk_TextLayout when it is no longer needed.
  *
  * Results:
  *      None.
@@ -1441,8 +1476,7 @@ Blt_FreeTextLayout(Tk_TextLayout textLayout)
  * NewChunk --
  *
  *      Helper function for Blt_ComputeTextLayout().  Encapsulates a
- *      measured set of characters in a chunk that can be quickly
- *      drawn.
+ *      measured set of characters in a chunk that can be quickly drawn.
  *
  * Results:
  *      A pointer to the new chunk in the text layout.
@@ -1451,9 +1485,9 @@ Blt_FreeTextLayout(Tk_TextLayout textLayout)
  *      The text layout is reallocated to hold more chunks as necessary.
  *
  *      Currently, Tk_ComputeTextLayout() stores contiguous ranges of
- *      "normal" characters in a chunk, along with individual tab
- *      and newline chars in their own chunks.  All characters in the
- *      text layout are accounted for.
+ *      "normal" characters in a chunk, along with individual tab and
+ *      newline chars in their own chunks.  All characters in the text
+ *      layout are accounted for.
  *
  *---------------------------------------------------------------------------
  */
@@ -1496,19 +1530,20 @@ NewChunk(TkTextLayout **layoutPtrPtr, int *maxPtr, const char *start,
  * Blt_ComputeTextLayout --
  *
  *      Computes the amount of screen space needed to display a multi-line,
- *      justified string of text.  Records all the measurements that were done
- *      to determine to size and positioning of the individual lines of text;
- *      this information can be used by the Tk_DrawTextLayout() procedure to
- *      display the text quickly (without remeasuring it).
+ *      justified string of text.  Records all the measurements that were
+ *      done to determine to size and positioning of the individual lines
+ *      of text; this information can be used by the Tk_DrawTextLayout()
+ *      procedure to display the text quickly (without remeasuring it).
  *
  *      This procedure is useful for simple widgets that want to display
  *      single-font, multi-line text and want Tk to handle the details.
  *
  * Results:
- *      The return value is a Tk_TextLayout token that holds the measurement
- *      information for the given string.  The token is only valid for the
- *      given string.  If the string is freed, the token is no longer valid
- *      and must also be freed.  To free the token, call Tk_FreeTextLayout().
+ *      The return value is a Tk_TextLayout token that holds the
+ *      measurement information for the given string.  The token is only
+ *      valid for the given string.  If the string is freed, the token is
+ *      no longer valid and must also be freed.  To free the token, call
+ *      Tk_FreeTextLayout().
  *
  *      The dimensions of the screen area needed to display the text are
  *      stored in *widthPtr and *heightPtr.
@@ -1521,22 +1556,27 @@ NewChunk(TkTextLayout **layoutPtrPtr, int *maxPtr, const char *start,
 
 Tk_TextLayout
 Blt_ComputeTextLayout(
-    Blt_Font font,              /* Font that will be used to display text. */
-    const char *string,         /* String whose dimensions are to be
-                                 * computed. */
-    int numChars,               /* Number of characters to consider from
-                                 * string, or < 0 for strlen(). */
-    int wrapLength,             /* Longest permissible line length, in
-                                 * pixels.  <= 0 means no automatic wrapping:
-                                 * just let lines get as long as needed. */
-    Tk_Justify justify,         /* How to justify lines. */
-    int flags,                  /* Flag bits OR-ed together.
-                                 * TK_IGNORE_TABS means that tab characters
-                                 * should not be expanded.  TK_IGNORE_NEWLINES
-                                 * means that newline characters should not
-                                 * cause a line break. */
-    int *widthPtr,              /* Filled with width of string. */
-    int *heightPtr)             /* Filled with height of string. */
+    Blt_Font font,                      /* Font that will be used to
+                                         * display text. */
+    const char *string,                 /* String whose dimensions are to
+                                         * be computed. */
+    int numChars,                       /* Number of characters to consider
+                                         * from string, or < 0 for
+                                         * strlen(). */
+    int wrapLength,                     /* Longest permissible line length,
+                                         * in pixels.  <= 0 means no
+                                         * automatic wrapping: just let
+                                         * lines get as long as needed. */
+    Tk_Justify justify,                 /* How to justify lines. */
+    int flags,                          /* Flag bits OR-ed together.
+                                         * TK_IGNORE_TABS means that tab
+                                         * characters should not be
+                                         * expanded.  TK_IGNORE_NEWLINES
+                                         * means that newline characters
+                                         * should not cause a line
+                                         * break. */
+    int *widthPtr,                      /* Filled with width of string. */
+    int *heightPtr)                     /* Filled with height of string. */
 {
     const char *start, *end, *special;
     int n, y, bytesThisChunk, maxChunks;
@@ -1597,10 +1637,10 @@ Blt_ComputeTextLayout(
             /*
              * Find the next special character in the string.
              *
-             * INTL: Note that it is safe to increment by byte, because we are
-             * looking for 7-bit characters that will appear unchanged in
-             * UTF-8.  At some point we may need to support the full Unicode
-             * whitespace set.
+             * INTL: Note that it is safe to increment by byte, because we
+             *       are looking for 7-bit characters that will appear
+             *       unchanged in UTF-8.  At some point we may need to
+             *       support the full Unicode whitespace set.
              */
 
             for (special = start; special < end; special++) {
@@ -1642,7 +1682,7 @@ Blt_ComputeTextLayout(
              * Handle the special character.
              *
              * INTL: Special will be pointing at a 7-bit character so we
-             * can safely treat it as a single byte.
+             *       can safely treat it as a single byte.
              */
 
             chunkPtr = NULL;
@@ -1657,7 +1697,6 @@ Blt_ComputeTextLayout(
                     /*
                      * More chars can still fit on this line.
                      */
-
                     curX = newX;
                     flags &= ~TK_AT_LEAST_ONE;
                     continue;
@@ -1673,7 +1712,7 @@ Blt_ComputeTextLayout(
         /*
          * No more characters are going to go on this line, either because
          * no more characters can fit or there are no more characters left.
-         * Consume all extra spaces at end of line.  
+         * Consume all extra spaces at end of line.
          */
 
         while ((start < end) && isspace(UCHAR(*start))) { /* INTL: ISO space */
@@ -1722,8 +1761,8 @@ Blt_ComputeTextLayout(
         }
 
         /*
-         * Remember width of this line, so that all chunks on this line
-         * can be centered or right justified, if necessary.
+         * Remember width of this line, so that all chunks on this line can
+         * be centered or right justified, if necessary.
          */
 
         Tcl_DStringAppend(&lineBuffer, (char *) &curX, sizeof(curX));
@@ -1770,8 +1809,8 @@ Blt_ComputeTextLayout(
         layoutPtr->chunks[0].displayWidth       = 0;
     } else {
         /*
-         * Using maximum line length, shift all the chunks so that the lines
-         * are all justified correctly.
+         * Using maximum line length, shift all the chunks so that the
+         * lines are all justified correctly.
          */
     
         curLine = 0;
@@ -1808,19 +1847,25 @@ Blt_ComputeTextLayout(
 
 void
 Blt_DrawTextLayout(
-    Display *display,           /* Display on which to draw. */
-    Drawable drawable,          /* Window or pixmap in which to draw. */
-    GC gc,                      /* Graphics context to use for drawing text. */
-    Tk_TextLayout layout,       /* Layout information, from a previous call
-                                 * to Blt_ComputeTextLayout(). */
-    int x, int y,               /* Upper-left hand corner of rectangle in
-                                 * which to draw (pixels). */
-    int firstChar,              /* The index of the first character to draw
-                                 * from the given text item.  0 specfies the
-                                 * beginning. */
-    int lastChar)               /* The index just after the last character
-                                 * to draw from the given text item.  A number
-                                 * < 0 means to draw all characters. */
+    Display *display,                   /* Display on which to draw. */
+    Drawable drawable,                  /* Window or pixmap in which to
+                                         * draw. */
+    GC gc,                              /* Graphics context to use for
+                                         * drawing text. */
+    Tk_TextLayout layout,               /* Layout information, from a
+                                         * previous call to
+                                         * Blt_ComputeTextLayout(). */
+    int x, int y,                       /* Upper-left hand corner of
+                                         * rectangle in which to draw
+                                         * (pixels). */
+    int firstChar,                      /* The index of the first character
+                                         * to draw from the given text
+                                         * item.  0 specfies the
+                                         * beginning. */
+    int lastChar)                       /* The index just after the last
+                                         * character to draw from the given
+                                         * text item.  A number < 0 means
+                                         * to draw all characters. */
 {
     TkTextLayout *layoutPtr;
     int i, numDisplayChars, drawX;
@@ -1872,28 +1917,27 @@ Blt_DrawTextLayout(
  * Tk_CharBbox --
  *
  *      Use the information in the Tk_TextLayout token to return the
- *      bounding box for the character specified by index.  
+ *      bounding box for the character specified by index.
  *
  *      The width of the bounding box is the advance width of the
- *      character, and does not include and left- or right-bearing.
- *      Any character that extends partially outside of the
- *      text layout is considered to be truncated at the edge.  Any
- *      character which is located completely outside of the text
- *      layout is considered to be zero-width and pegged against
- *      the edge.
+ *      character, and does not include and left- or right-bearing.  Any
+ *      character that extends partially outside of the text layout is
+ *      considered to be truncated at the edge.  Any character which is
+ *      located completely outside of the text layout is considered to be
+ *      zero-width and pegged against the edge.
  *
  *      The height of the bounding box is the line height for this font,
- *      extending from the top of the ascent to the bottom of the
- *      descent.  Information about the actual height of the individual
- *      letter is not available.
+ *      extending from the top of the ascent to the bottom of the descent.
+ *      Information about the actual height of the individual letter is not
+ *      available.
  *
- *      A text layout that contains no characters is considered to
- *      contain a single zero-width placeholder character.
+ *      A text layout that contains no characters is considered to contain
+ *      a single zero-width placeholder character.
  * 
  * Results:
- *      The return value is 0 if the index did not specify a character
- *      in the text layout, or non-zero otherwise.  In that case,
- *      *bbox is filled with the bounding box of the character.
+ *      The return value is 0 if the index did not specify a character in
+ *      the text layout, or non-zero otherwise.  In that case, *bbox is
+ *      filled with the bounding box of the character.
  *
  * Side effects:
  *      None.
@@ -1903,17 +1947,21 @@ Blt_DrawTextLayout(
 
 int
 Blt_CharBbox(
-    Tk_TextLayout layout,   /* Layout information, from a previous call to
-                             * Tk_ComputeTextLayout(). */
-    int index,              /* The index of the character whose bbox is
-                             * desired. */
-    int *xPtr, int *yPtr,    /* Filled with the upper-left hand corner, in
-                             * pixels, of the bounding box for the character
-                             * specified by index, if non-NULL. */
+    Tk_TextLayout layout,               /* Layout information, from a
+                                         * previous call to
+                                         * Tk_ComputeTextLayout(). */
+    int index,                          /* The index of the character whose
+                                         * bbox is desired. */
+    int *xPtr, int *yPtr,               /* Filled with the upper-left hand
+                                         * corner, in pixels, of the
+                                         * bounding box for the character
+                                         * specified by index, if
+                                         * non-NULL. */
     int *widthPtr, 
-    int *heightPtr)         /* Filled with the width and height of the
-                             * bounding box for the character specified by
-                             * index, if non-NULL. */
+    int *heightPtr)                     /* Filled with the width and height
+                                         * of the bounding box for the
+                                         * character specified by index, if
+                                         * non-NULL. */
 {
     TkTextLayout *layoutPtr;
     LayoutChunk *chunkPtr;
@@ -2002,14 +2050,13 @@ Blt_CharBbox(
  * Blt_UnderlineTextLayout --
  *
  *      Use the information in the Tk_TextLayout token to display an
- *      underline below an individual character.  This procedure does
- *      not draw the text, just the underline.
+ *      underline below an individual character.  This procedure does not
+ *      draw the text, just the underline.
  *
- *      This procedure is useful for simple widgets that need to
- *      display single-font, multi-line text with an individual
- *      character underlined and want Tk to handle the details.
- *      To display larger amounts of underlined text, construct
- *      and use an underlined font.
+ *      This procedure is useful for simple widgets that need to display
+ *      single-font, multi-line text with an individual character
+ *      underlined and want Tk to handle the details.  To display larger
+ *      amounts of underlined text, construct and use an underlined font.
  *
  * Results:
  *      None.
@@ -2022,15 +2069,20 @@ Blt_CharBbox(
 
 void
 Blt_UnderlineTextLayout(
-    Display *display,           /* Display on which to draw. */
-    Drawable drawable,          /* Window or pixmap in which to draw. */
-    GC gc,                      /* Graphics context to use for drawing text. */
-    Tk_TextLayout layout,       /* Layout information, from a previous call
-                                 * to Tk_ComputeTextLayout(). */
-    int x, int y,               /* Upper-left hand corner of rectangle in
-                                 * which to draw (pixels). */
-    int underline)              /* Index of the single character to
-                                 * underline, or -1 for no underline. */
+    Display *display,                   /* Display on which to draw. */
+    Drawable drawable,                  /* Window or pixmap in which to
+                                         * draw. */
+    GC gc,                              /* Graphics context to use for
+                                         * drawing text. */
+    Tk_TextLayout layout,               /* Layout information, from a *
+                                         * previous call to
+                                         * Tk_ComputeTextLayout(). */
+    int x, int y,                       /* Upper-left hand corner of
+                                         * rectangle in which to draw
+                                         * (pixels). */
+    int underline)                      /* Index of the single character to
+                                         * underline, or -1 for no
+                                         * underline. */
 {
     TkTextLayout *layoutPtr;
     int xx, yy, width, height;

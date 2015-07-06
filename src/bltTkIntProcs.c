@@ -78,8 +78,8 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_Font_GetFile, /* 68 */
     Blt_NewTileBrush, /* 69 */
     Blt_NewLinearGradientBrush, /* 70 */
-    Blt_NewStripeBrush, /* 71 */
-    Blt_NewCheckerBrush, /* 72 */
+    Blt_NewStripesBrush, /* 71 */
+    Blt_NewCheckersBrush, /* 72 */
     Blt_NewRadialGradientBrush, /* 73 */
     Blt_NewConicalGradientBrush, /* 74 */
     Blt_NewColorBrush, /* 75 */

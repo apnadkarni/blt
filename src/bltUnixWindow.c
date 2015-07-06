@@ -370,10 +370,10 @@ Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr,
         Tk_DeleteErrorHandler(handler);
         if ((status) && (code == TCL_OK)) {
             if (xPtr != NULL) {
-                *xPtr = xRoot + x;
+                *xPtr = xRoot;
             }
             if (yPtr != NULL) {
-                *yPtr = yRoot + y;
+                *yPtr = yRoot;
             }
         } else {
             Blt_Warn("failed to translate coordinates x=%x y=%d\n", x, y);

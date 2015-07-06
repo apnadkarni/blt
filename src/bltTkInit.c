@@ -96,6 +96,9 @@ static Tcl_AppInitProc *cmdProcs[] =
 #ifndef NO_PANESET
     Blt_PanesetCmdInitProc,
 #endif
+#ifndef NO_FILMSTRIP
+    Blt_FilmstripCmdInitProc,
+#endif
 #ifndef NO_PICTURE
     Blt_PictureCmdInitProc,
 #endif

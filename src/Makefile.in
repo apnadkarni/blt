@@ -405,6 +405,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltCutbuffer.o \
 			bltDragdrop.o \
 			bltDrawerset.o \
+			bltFilmstrip.o \
 			bltGrab.o \
 			bltHtext.o \
 			bltImage.o \

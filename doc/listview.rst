@@ -505,30 +505,20 @@ command.  The following operations are available for *listview* widgets:
   tag, but may not represent more than one item.  If the item does not
   exist, "-1" is returned.
   
-*pathName* **insert after** *itemName* ?\ *option *value* ... ? 
-  Creates a new item and inserts it after *itemName*.  Normally items are
+*pathName* **insert after** *whereName* ?\ *option *value* ... ? 
+  Creates a new item and inserts it after *whereName*.  Normally items are
   appended to the end of the list, but this command lets you to specify its
   location. Note that this may change the indices of previously created
-  items. *Item* may be a label, index, or tag, but may not represent more
+  items. *WhereName* may be a label, index, or tag, but may not represent more
   than one item. If one or more *option-value* pairs are specified,
   they modifies the given item option(s) to have the given value(s).
   *Option* and *value* are described in the **item configure** operation.
   
-*pathName* **insert at** *itemName* ?\ *option *value* ... ? 
-  Creates a new item and inserts it at the index specified by *itemName*.
-  Normally items are appended to the end of the list, but this command
-  allows you to specify its location. Note that this may change the indices
-  of previously created items. *Item* may be a label, index, or tag, but
-  may not represent more than one item. If one or more *option-value* pairs
-  are specified, they modifies the given item option(s) to have the
-  given value(s).  *Option* and *value* are described in the **item
-  configure** operation.
-  
-*pathName* **insert before** *itemName* ?\ *option *value* ... ? 
-  Creates a new item and inserts it before *itemName*.  Normally items are
+*pathName* **insert before** *whereName* ?\ *option *value* ... ? 
+  Creates a new item and inserts it before *whereName*.  Normally items are
   appended to the end of the list, but this command allows you to specify
   its location. Note that this may change the indices of previously created
-  items. *Item* may be a label, index, or tag, but may not represent more
+  items. *WhereName* may be a label, index, or tag, but may not represent more
   than one item. If one or more *option-value* pairs are specified, they
   modifies the given item option(s) to have the given value(s).  *Option*
   and *value* are described in the **item configure** operation.

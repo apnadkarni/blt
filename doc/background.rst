@@ -50,8 +50,8 @@ the Tk widgets: **blt::tk::button**, **blt::tk::checkbutton**,
 
 A background can have one of the following types: 
 
-  **checker**
-    A checker *background* object draws a checkered background.
+  **checkers**
+    A checkers *background* object draws a checkered pattern background.
     
   **conical**
     A conical gradient *background* object draws a linear conical gradient
@@ -86,9 +86,10 @@ A background can have one of the following types:
     ellipse is relative to the window that it refers to (see the
     **-relativeto** option).
     
-  **stripe**
-    A stripe *background* object draws a striped background.  The stripes may
-    run horizontally or vertically depending upon the **-orient** option.
+  **stripes**
+    A stripes *background* object draws a striped pattern background.  The
+    stripes may run horizontally or vertically depending upon the
+    **-orient** option.
 
   **tile**
     A tile *background* object draws a tiled background.  The tile is an
@@ -123,12 +124,12 @@ The following operations are available for the **blt::background** command:
   the empty string.  *Option* and *value* can any of the values accepted by
   the **create** operation.
 
-**blt::background create checker** ?\ *bgName*\ ? ?\ *option* *value* ... ?
-  Creates a checker *background* object. If no *bgName* argument is
+**blt::background create checkers** ?\ *bgName*\ ? ?\ *option* *value* ... ?
+  Creates a checkers *background* object. If no *bgName* argument is
   present, then the name of the *background* is automatically generated in
   the form "background0", "background1", etc. Another *background* object
   can not already exist as *bgName*. *Option* and *value* are specific to
-  checker backgrounds and are listed below.
+  checkers backgrounds and are listed below.
 
   **-background** *colorName*
 
@@ -170,9 +171,9 @@ The following operations are available for the **blt::background** command:
     or "logarithmic"".
 
     **linear**
-        Colors are interpolated on a linear scale between 0.0 and 1.0.
+      Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
-        Colors are interpolated using the log of the value.
+      Colors are interpolated using the log of the value.
     
   **-decreasing**
     Indicates that the colors are interpolated from high to low.  By
@@ -184,34 +185,33 @@ The following operations are available for the **blt::background** command:
     can be one of the following forms.
 
     *anchor*
-        The position is an anchor position: **nw**, **n**, **ne**,
-        **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
-        represents a location in the reference window.  For example "nw"
-        is the upper left corner of the reference window.
+      The position is an anchor position: **nw**, **n**, **ne**,
+      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+      represents a location in the reference window.  For example "nw"
+      is the upper left corner of the reference window.
 
     *side side*
-        The position is a 2 element list. The first element can be **top**,
-        **bottom**, or **center**. The second element can be **left**,
-        **right**, or **center**.  The combination of the two sides
-        represent the locations in the reference window. For example "top
-        left" is the upper left corner of the reference window.
+      The position is a 2 element list. The first element can be **top**,
+      **bottom**, or **center**. The second element can be **left**,
+      **right**, or **center**.  The combination of the two sides
+      represent the locations in the reference window. For example "top
+      left" is the upper left corner of the reference window.
 
     *number number*
-        The position is a list of 2 numbers. *Number* is a real number from
-        0 to 1. The number represent relative x and y positions in the
-        reference window.  For example "0 0" is the upper left corner of
-        the reference window.
-        
+      The position is a list of 2 numbers. *Number* is a real number from
+      0 to 1. The number represent relative x and y positions in the
+      reference window.  For example "0 0" is the upper left corner of
+      the reference window.
         
   **-highcolor** *colorName*
-    Specifies the high color of the gradient.  This is the color
-    when the gradient value is 1.  This option can be overridden
-    by the **-palette** option. The default is "grey90".
+    Specifies the high color of the gradient.  This is the color when the
+    gradient value is 1.  This option can be overridden by the **-palette**
+    option. The default is "grey90".
 
   **-lowcolor** *colorName*
-    Specifies the low color of the gradient.  This is the color 
-    when the gradient value is 0.  This option can be overridden
-    by the **-palette** option.  The default is "grey50".
+    Specifies the low color of the gradient.  This is the color when the
+    gradient value is 0.  This option can be overridden by the **-palette**
+    option.  The default is "grey50".
 
   **-jitter** *percent*
     Specifies the amount of randomness to add to the interpolated colors.
@@ -234,18 +234,18 @@ The following operations are available for the **blt::background** command:
     the background seamlessly.  *Window* can be one of the following.
 
     **self**
-       The reference window is the window whose background is being drawn.  
+      The reference window is the window whose background is being drawn.  
 
     **toplevel**
-       The reference window is the toplevel window whose background is
-       being drawn.  This is the default.
+      The reference window is the toplevel window whose background is
+      being drawn.  This is the default.
        
     *window*
-       The reference window is *window*.  *Window* is the name of a Tk
-       widget.  It must be an ancestor of the window whose background is
-       being drawn. *Window* doesn't have to exist yet. At an idle point
-       later, the background will check for the widget, If *window* is
-       destroyed, the reference window reverts to **self**.
+      The reference window is *window*.  *Window* is the name of a Tk
+      widget.  It must be an ancestor of the window whose background is
+      being drawn. *Window* doesn't have to exist yet. At an idle point
+      later, the background will check for the widget, If *window* is
+      destroyed, the reference window reverts to **self**.
        
   **-xoffset** *numPixels*
     Specifies the horizontal offset of the background. *NumPixels* is
@@ -296,34 +296,33 @@ The following operations are available for the **blt::background** command:
     can be one of the following forms.
 
     *anchor*
-        The position is an anchor position: **nw**, **n**, **ne**,
-        **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
-        represents a location in the reference window.  For example "nw"
-        is the upper left corner of the reference window.
+      The position is an anchor position: **nw**, **n**, **ne**,
+      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+      represents a location in the reference window.  For example "nw"
+      is the upper left corner of the reference window.
 
     *side side*
-        The position is a 2 element list. The first element can be **top**,
-        **bottom**, or **center**. The second element can be **left**,
-        **right**, or **center**.  The combination of the two sides
-        represent the locations in the reference window. For example "top
-        left" is the upper left corner of the reference window.
+      The position is a 2 element list. The first element can be **top**,
+      **bottom**, or **center**. The second element can be **left**,
+      **right**, or **center**.  The combination of the two sides
+      represent the locations in the reference window. For example "top
+      left" is the upper left corner of the reference window.
 
     *number number*
-        The position is a list of 2 numbers. *Number* is a real number from
-        0 to 1. The number represent relative x and y positions in the
-        reference window.  For example "0 0" is the upper left corner of
-        the reference window.
-        
+      The position is a list of 2 numbers. *Number* is a real number from
+      0 to 1. The number represent relative x and y positions in the
+      reference window.  For example "0 0" is the upper left corner of
+      the reference window.
         
   **-highcolor** *colorName*
-    Specifies the high color of the gradient.  This is the color
-    when the gradient value is 1.  This option can be overridden
-    by the **-palette** option. The default is "grey90".
+    Specifies the high color of the gradient.  This is the color when the
+    gradient value is 1.  This option can be overridden by the **-palette**
+    option. The default is "grey90".
 
   **-lowcolor** *colorName*
-    Specifies the low color of the gradient.  This is the color 
-    when the gradient value is 0.  This option can be overridden
-    by the **-palette** option.  The default is "grey50".
+    Specifies the low color of the gradient.  This is the color when the
+    gradient value is 0.  This option can be overridden by the **-palette**
+    option.  The default is "grey50".
 
   **-jitter** *percent*
     Specifies the amount of randomness to add to the interpolated colors.
@@ -353,11 +352,11 @@ The following operations are available for the **blt::background** command:
        being drawn.  This is the default.
        
     *window*
-       The reference window is *window*.  *Window* is the name of a Tk
-       widget.  It must be an ancestor of the window whose background is
-       being drawn. *Window* doesn't have to exist yet. At an idle point
-       later, the background will check for the widget, If *window* is
-       destroyed, the reference window reverts to **self**.
+      The reference window is *window*.  *Window* is the name of a Tk
+      widget.  It must be an ancestor of the window whose background is
+      being drawn. *Window* doesn't have to exist yet. At an idle point
+      later, the background will check for the widget, If *window* is
+      destroyed, the reference window reverts to **self**.
        
   **-to** *position*
     Specifies the ending position of linear gradient axis.  The ending
@@ -365,23 +364,23 @@ The following operations are available for the **blt::background** command:
     can be one of the following.
 
     *anchor*
-        The position is an anchor position: **nw**, **n**, **ne**,
-        **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
-        represents a location in the reference window.  For example "nw"
-        is the upper left corner of the reference window.
+      The position is an anchor position: **nw**, **n**, **ne**,
+      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+      represents a location in the reference window.  For example "nw"
+      is the upper left corner of the reference window.
 
     *side side*
-        The position is a 2 element list. The first element can be **top**,
-        **bottom**, or **center**. The second element can be **left**,
-        **right**, or **center**.  The combination of the two sides
-        represent a location in the reference window. For example "top
-        left" is the upper left corner of the reference window.
+      The position is a 2 element list. The first element can be **top**,
+      **bottom**, or **center**. The second element can be **left**,
+      **right**, or **center**.  The combination of the two sides
+      represent a location in the reference window. For example "top
+      left" is the upper left corner of the reference window.
 
     *number number*
-        The position is a list of 2 numbers. *Number* is a real number from
-        0 to 1. The number represent relative x and y positions in the
-        reference window.  For example "0 0" is the upper left corner of
-        the reference window.
+      The position is a list of 2 numbers. *Number* is a real number from
+      0 to 1. The number represent relative x and y positions in the
+      reference window.  For example "0 0" is the upper left corner of
+      the reference window.
 
   **-xoffset** *numPixels*
     Specifies the horizontal offset of the background. *NumPixels* is
@@ -411,61 +410,60 @@ The following operations are available for the **blt::background** command:
   **-background** *colorName*
 
   **-border** *colorName*
-    Specifies the border color of the background object.  If a widget
-    has a 3D relief, this specifies the colors of the bevels. 
+    Specifies the border color of the background object.  If a widget has a
+    3D relief, this specifies the colors of the bevels.
     
   **-colorscale** *scale*
     Specifies the scale when interpolating values. *Scale* can be "linear",
     or "logarithmic".
 
     **linear**
-        Colors are interpolated on a linear scale between 0.0 and 1.0.
+      Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
-        Colors are interpolated using the log of the value.
+      Colors are interpolated using the log of the value.
     
   **-decreasing**
     Indicates that the colors are interpolated from high to low.  By
     default colors are interpolated from low to high.
 
   **-center** *position*
-     Specifies the center of the conical gradient.  The center
-     position is a relative location in the reference window.  *Position*
-     can be one of the following forms.
+    Specifies the center of the conical gradient.  The center
+    position is a relative location in the reference window.  *Position*
+    can be one of the following forms.
 
-     *anchor*
-        The position is an anchor position: **nw**, **n**, **ne**,
-        **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
-        represents a location in the reference window.  For example "nw"
-        is the upper left corner of the reference window.
+    *anchor*
+      The position is an anchor position: **nw**, **n**, **ne**,
+      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+      represents a location in the reference window.  For example "nw"
+      is the upper left corner of the reference window.
 
-     *side side*
-        The position is a 2 element list. The first element can be **top**,
-        **bottom**, or **center**. The second element can be **left**,
-        **right**, or **center**.  The combination of the two sides
-        represent the locations in the reference window. For example "top
-        left" is the upper left corner of the reference window.
+    *side side*
+      The position is a 2 element list. The first element can be **top**,
+      **bottom**, or **center**. The second element can be **left**,
+      **right**, or **center**.  The combination of the two sides
+      represent the locations in the reference window. For example "top
+      left" is the upper left corner of the reference window.
 
-     *number number*
-        The position is a list of 2 numbers. *Number* is a real number from
-        0 to 1. The number represent relative x and y positions in the
-        reference window.  For example "0 0" is the upper left corner of
-        the reference window.
-        
+    *number number*
+      The position is a list of 2 numbers. *Number* is a real number from
+      0 to 1. The number represent relative x and y positions in the
+      reference window.  For example "0 0" is the upper left corner of
+      the reference window.
+
   **-height** *number*
-    Specifies the height of the gradient ellipse.  This is the color
-    when the gradient value is 1.  This option can be overridden
-    by the **-palette** option. The default is "grey90".
-
+    Specifies the height of the gradient ellipse.  This is the color when
+    the gradient value is 1.  This option can be overridden by the
+    **-palette** option. The default is "grey90".
 
   **-highcolor** *colorName*
-    Specifies the high color of the gradient.  This is the color
-    when the gradient value is 1.  This option can be overridden
-    by the **-palette** option. The default is "grey90".
+    Specifies the high color of the gradient.  This is the color when the
+    gradient value is 1.  This option can be overridden by the **-palette**
+    option. The default is "grey90".
 
   **-lowcolor** *colorName*
-    Specifies the low color of the gradient.  This is the color 
-    when the gradient value is 0.  This option can be overridden
-    by the **-palette** option.  The default is "grey50".
+    Specifies the low color of the gradient.  This is the color when the
+    gradient value is 0.  This option can be overridden by the **-palette**
+    option.  The default is "grey50".
 
   **-jitter** *percent*
     Specifies the amount of randomness to add to the interpolated colors.
@@ -488,23 +486,23 @@ The following operations are available for the **blt::background** command:
     the background seamlessly.  *Window* can be one of the following.
 
     **self**
-       The reference window is the window whose background is being drawn.  
+      The reference window is the window whose background is being drawn.  
 
     **toplevel**
-       The reference window is the toplevel window whose background is
-       being drawn.  This is the default.
+      The reference window is the toplevel window whose background is being
+      drawn.  This is the default.
        
     *window*
-       The reference window is *window*.  *Window* is the name of a Tk
-       widget.  It must be an ancestor of the window whose background is
-       being drawn. *Window* doesn't have to exist yet. At an idle point
-       later, the background will check for the widget, If *window* is
-       destroyed, the reference window reverts to **self**.
+      The reference window is *window*.  *Window* is the name of a Tk
+      widget.  It must be an ancestor of the window whose background is
+      being drawn. *Window* doesn't have to exist yet. At an idle point
+      later, the background will check for the widget, If *window* is
+      destroyed, the reference window reverts to **self**.
        
   **-width** *number*
-    Specifies the width of the gradient ellipse.  This is the color
-    when the gradient value is 1.  This option can be overridden
-    by the **-palette** option. The default is "grey90".
+    Specifies the width of the gradient ellipse.  This is the color when
+    the gradient value is 1.  This option can be overridden by the
+    **-palette** option. The default is "grey90".
 
   **-xoffset** *numPixels*
     Specifies the horizontal offset of the background. *NumPixels* is
@@ -518,12 +516,12 @@ The following operations are available for the **blt::background** command:
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create stripe** ?\ *bgName*\ ? ?\ *option* *value* ... ?
-  Creates a stripe *background* object.  If no *bgName* argument is
+**blt::background create stripes** ?\ *bgName*\ ? ?\ *option* *value* ... ?
+  Creates a stripes *background* object.  If no *bgName* argument is
   present, then the name of the *background* is automatically generated in
   the form "background0", "background1", etc. Another *background* object
   can not already exist as *bgName*. *Option* and *value* are specific to
-  stripe backgrounds and are listed below.
+  stripes backgrounds and are listed below.
 
   **-background** *colorName*
 
@@ -602,16 +600,16 @@ The following operations are available for the **blt::background** command:
     "0".
 
 **blt::background delete** ?\ *bgName* ... ?
-  Releases resources allocated by the background command for *window*, including
-  the background window.  User events will again be received again by *window*.
-  Resources are also released when *window* is destroyed. *Window* must be
-  the name of a widget specified in the **create** operation, otherwise an
-  error is reported.
+  Releases resources allocated by the background command for *window*,
+  including the background window.  User events will again be received
+  again by *window*.  Resources are also released when *window* is
+  destroyed. *Window* must be the name of a widget specified in the
+  **create** operation, otherwise an error is reported.
 
 **blt::background exists** *bgName*
   Indicates if the background *bgName* exists. *BgName* is the name of a
   background created by the **create** operation. Returns "1" if the named
-  background exists, "0" otherwise.  
+  background exists, "0" otherwise.
 
 **blt::background names** ?\ *pattern* ... ?
   Returns the names of all the backgrounds.  If one or more *pattern*
@@ -619,9 +617,8 @@ The following operations are available for the **blt::background** command:
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 **blt::background type** *bgName*
-  Returns the type of the background for *bgName*.  *BgName* is the name
-  of a background created by the **create** operation.
-
+  Returns the type of the background for *bgName*.  *BgName* is the name of
+  a background created by the **create** operation.
 
 EXAMPLE
 -------

@@ -73,7 +73,6 @@
 #define TRACE   0
 #define TRACE1  0
 
-#define SCREEN(x)       ((x) - setPtr->scrollOffset) 
 #define ISVERT(s)       ((s)->flags & VERTICAL)
 #define ISHORIZ(s)      (((s)->flags & VERTICAL) == 0)
 
@@ -85,10 +84,18 @@ typedef enum AdjustModes {
                                          * resizing */
     MODE_GIVETAKE,                      /* Adjust panes to immediate
                                          * left/right or top/bottom of
-                                         * active handle. */
+                                         * active sash. */
     MODE_SPREADSHEET,                   /* Adjust only the left pane and
                                          * the last pane. */
 } AdjustMode;
+
+/* 
+ * The following are the adjustment modes for the paneset widget.
+ */
+typedef enum {
+    INSERT_AFTER,                       /* Insert after named pane. */
+    INSERT_BEFORE                       /* Insert before named pane. */
+} InsertOrder;
 
 typedef struct _Paneset Paneset;
 typedef struct _Pane Pane;
@@ -98,46 +105,45 @@ typedef int (SizeProc)(Pane *panePtr);
 /*
  * Default values for widget attributes.
  */
-#define DEF_ACTIVEHANDLECOLOR   STD_ACTIVE_BACKGROUND
-#define DEF_ACTIVEHANDLERELIEF  "flat"
+#define DEF_ACTIVE_SASH_COLOR   STD_ACTIVE_BACKGROUND
+#define DEF_ACTIVE_SASH_RELIEF  "flat"
 #define DEF_ANIMATE             "0"
 #define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
 #define DEF_BORDERWIDTH         "0"
-#define DEF_HANDLEBORDERWIDTH   "1"
-#define DEF_HANDLECOLOR         STD_NORMAL_BACKGROUND
-#define DEF_HANDLEPAD           "0"
-#define DEF_HANDLERELIEF        "flat"
-#define DEF_HANDLETHICKNESS     "2"
 #define DEF_HCURSOR             "sb_h_double_arrow"
 #define DEF_HEIGHT              "0"
-#define DEF_HIGHLIGHT_THICKNESS "1"
 #define DEF_MODE                "givetake"
 #define DEF_ORIENT              "horizontal"
 #define DEF_PAD                 "0"
 #define DEF_PANE_ANCHOR         "nw"
 #define DEF_PANE_ANCHOR         "nw"
 #define DEF_PANE_BORDERWIDTH    "0"
-#define DEF_PANE_CURSOR         (char *)NULL
 #define DEF_PANE_FILL           "none"
 #define DEF_PANE_HIDE           "0"
 #define DEF_PANE_HIGHLIGHT_BACKGROUND   STD_NORMAL_BACKGROUND
 #define DEF_PANE_HIGHLIGHT_COLOR        RGB_BLACK
-#define DEF_PANE_PAD            "0"
 #define DEF_PANE_PADX           "0"
 #define DEF_PANE_PADY           "0"
 #define DEF_PANE_RESIZE         "shrink"
-#define DEF_PANE_SHOWHANDLE     "1"
-#define DEF_PANE_WEIGHT         "1.0"
+#define DEF_PANE_SHOW_HANDLE     "1"
+#define DEF_PANE_TAGS           (char *)NULL
 #define DEF_PANE_VARIABLE       (char *)NULL
-#define DEF_SCROLLCOMMAND       "0"
-#define DEF_SCROLLDELAY         "30"
-#define DEF_SCROLLINCREMENT     "10"
+#define DEF_PANE_WEIGHT         "1.0"
+#define DEF_SASH_BORDERWIDTH  "1"
+#define DEF_SASH_COLOR         STD_NORMAL_BACKGROUND
+#define DEF_SASH_CURSOR         (char *)NULL
+#define DEF_SASH_HIGHLIGHT_BACKGROUND   STD_NORMAL_BACKGROUND
+#define DEF_SASH_HIGHLIGHT_COLOR        RGB_BLACK
+#define DEF_SASH_HIGHLIGHT_THICKNESS "1"
+#define DEF_SASH_PAD            "0"
+#define DEF_SASH_RELIEF       "flat"
+#define DEF_SASH_THICKNESS    "2"
+#define DEF_SHOW_SASH           "1"
 #define DEF_SIDE                "right"
 #define DEF_TAKEFOCUS           "1"
 #define DEF_VCURSOR             "sb_v_double_arrow"
 #define DEF_WEIGHT              "0"
 #define DEF_WIDTH               "0"
-#define DEF_PANE_TAGS           (char *)NULL
 
 #define PANE_DEF_ANCHOR         TK_ANCHOR_NW
 #define PANE_DEF_FILL           FILL_BOTH
@@ -150,13 +156,6 @@ typedef int (SizeProc)(Pane *panePtr);
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
 
-typedef struct {
-    const char *handleClassName;
-    const char *objectName;
-    Blt_ConfigSpec *specs;
-    unsigned int type;
-} WidgetClass;
-
 /*
  * Paneset structure
  *
@@ -165,10 +164,10 @@ typedef struct {
  *      is dependent upon the paneset's bearing and the adjustment mode in
  *      place.
  *
- *      The bearing is the position of the handle last moved.  By default
- *      it's the last handle.  The position is the just outside of the
- *      handle. So if the window starting at 100 has a width of 200 and the
- *      handle size is 10, the bearing is 310.
+ *      The bearing is the position of the sash last moved.  By default
+ *      it's the last sash.  The position is the just outside of the
+ *      sash. So if the window starting at 100 has a width of 200 and the
+ *      sash size is 10, the bearing is 310.
  *
  *      The bearing divides the panes into two. Each side is resized
  *      according to the adjustment mode.
@@ -185,8 +184,6 @@ typedef struct {
 struct _Paneset {
     int flags;                          /* See the flags definitions
                                          * below. */
-    WidgetClass *classPtr;              /* Type of widget: PANESET or
-                                         * FILMSTRIP. */
     Display *display;                   /* Display of the widget. */
     Tk_Window tkwin;                    /* The container window into which
                                          * other widgets are arranged. For
@@ -195,22 +192,22 @@ struct _Paneset {
                                          * drawer we use an existing
                                          * window. */
     Tcl_Interp *interp;                 /* Interpreter associated with all
-                                         * widgets and handles. */
+                                         * widgets and sashes. */
     Tcl_Command cmdToken;               /* Command token associated with
                                          * this widget. For panesets and
                                          * filmstrips this is the path name
                                          * of the window created. For
                                          * drawers, this is a generated
                                          * name. */
-    char *name;                         /* The generated name of the drawer
+    const char *name;                   /* The generated name of the pane
                                          * or the pathname of the window
                                          * created (panesets and
                                          * filmstrips). */
     AdjustMode mode;                    /* Panesets only: Mode to use to
-                                           resize panes when the user
-                                           adjusts a handle. */
-    int highlightThickness;             /* Width in pixels of highlight to
-                                         * draw around the handle when it
+                                         * resize panes when the user
+                                         * adjusts a sash. */
+    int sashHighlightThickness;         /* Width in pixels of highlight to
+                                         * draw around the sash when it
                                          * has the focus.  <= 0 means don't
                                          * draw a highlight. */
     int normalWidth;                    /* Normal dimensions of the paneset */
@@ -225,71 +222,49 @@ struct _Paneset {
 
     short int width, height;            /* Requested size of the widget. */
 
-    Blt_Bg bg;                          /* 3D border surrounding the window
-                                         * (viewport). */
+    Blt_Bg bg;                          /* 3-D border surrounding the
+                                         * window (viewport). */
     /*
      * Scrolling information (filmstrip only):
      */
     int worldWidth;
-    int scrollOffset;                   /* Offset of viewport in world
-                                         * coordinates. */
-    Tcl_Obj *scrollCmdObjPtr;           /* Command strings to control
-                                         * scrollbar.*/
-
-    /* 
-     * Automated scrolling information (filmstrip or drawer). 
-     */
-    int scrollUnits;                    /* Smallest unit of scrolling for
-                                         * tabs. */
-    int scrollTarget;                   /* Target offset to scroll to. */
-    int scrollIncr;                     /* Current increment. */
-    int interval;                       /* Current increment. */
-    Tcl_TimerToken timerToken;          /* Token for timer to automatically
-                                         * scroll the pane or drawer. */
-
     /*
      * Focus highlight ring
      */
-    XColor *highlightColor;             /* Color for drawing traversal
+    XColor *sashHighlightColor;         /* Color for drawing traversal
                                          * highlight. */
-    int relief;
-    int activeRelief;
-    Blt_Pad handlePad;
-    int handleBW;
-    int handleThickness;                /*  */
-    int handleSize;
-    Blt_Bg handleBg;
-    Blt_Bg activeHandleBg;
-    int handleAnchor;                   /* Last known location of handle
+    int relief, activeRelief;
+    Blt_Pad sashPad;
+    int sashBorderWidth;
+    int sashThickness;                  /*  */
+    int sashSize;
+    Blt_Bg sashBg, activeSashBg;
+    int sashAnchor;                     /* Last known location of sash
                                          * during a move. */
-
-    Blt_Chain chain;                    /* List of panes/drawers. In
-                                         * paneset and filmstrip widgets,
-                                         * describes the order of the panes
-                                         * in the widget. In the drawer
-                                         * widget, represents the stacking
-                                         * order of the drawers. */
-
+    Blt_Chain panes;                    /* List of panes.  Describes the
+                                         * order of the panes in the
+                                         * widget.  */
     Blt_HashTable paneTable;            /* Table of panes.  Serves as a
                                          * directory to look up panes from
                                          * windows. */
-    Blt_HashTable handleTable;          /* Table of handles.  Serves as a
+    Blt_HashTable sashTable;            /* Table of sashes.  Serves as a
                                          * directory to look up panes from
-                                         * handle windows. */
+                                         * sash windows. */
     struct _Blt_Tags tags;              /* Table of tags. */
     Pane *activePtr;                    /* Indicates the pane with the
-                                         * active handle. */
+                                         * active sash. */
     Pane *anchorPtr;                    /* Pane that is currently
                                          * anchored */
-    int bearing;                        /* Location of the split (paneset).
-                                         * the drawer (drawer). */
-    Tcl_Obj *cmdObjPtr;                 /* Command to invoke when the "invoke"
-                                         * operation is performed. */
+    int bearing;                        /* Location of the split
+                                         * (paneset). */
+    Tcl_Obj *cmdObjPtr;                 /* Command to invoke when the
+                                         * "invoke" operation is
+                                         * performed. */
     size_t numVisible;                  /* # of visible panes. */
     GC gc;
     size_t nextId;                      /* Counter to generate unique
                                          * pane/drawer names. */
-    size_t nextHandleId;                /* Counter to generate unique
+    size_t nextSashId;                  /* Counter to generate unique
                                          * pane/drawer names. */
 };
 
@@ -328,24 +303,25 @@ struct _Paneset {
 /*
  * Pane --
  *
- *      A pane holds a window and a possibly a handle.  It describes how the
- *      window should appear in the pane.  The handle is a rectangle on the
- *      far edge of the pane (horizontal right, vertical bottom).  Normally
- *      the last pane does not have a handle.  Handles may be hidden.
+ *      A pane holds a window and a possibly a sash.  It describes how
+ *      the window should appear in the pane.  The sash is a rectangle on
+ *      the far edge of the pane (horizontal right, vertical bottom).
+ *      Normally the last pane does not have a sash.  Sashes may be
+ *      hidden.
  *
  *      Initially, the size of a pane consists of
  *       1. the requested size embedded window,
  *       2. any requested internal padding, and
- *       3. the size of the handle (if one is displayed). 
+ *       3. the size of the sash (if one is displayed). 
  *
- *      Note: There is no 3D border around the pane.  This can be added
- *            by embedding a frame.  This simplifies the widget so that
- *            there is only one window for the widget.  Windows outside of
- *            the boundary of the pane are occluded.
+ *      Note: There is no 3D border around the pane.  This can be added by
+ *            embedding a frame.  This simplifies the widget so that there
+ *            is only one window for the widget.  Windows outside of the
+ *            boundary of the pane are occluded.
  */
 struct _Pane  {
     Tk_Window tkwin;                    /* Widget to be managed. */
-    Tk_Window handle;                   /* Handle subwindow. */
+    Tk_Window sash;                     /* Sash subwindow. */
     Tk_Cursor cursor;                   /* X Cursor */
     const char *name;                   /* Name of pane */
     unsigned int side;                  /* The side of the widget where
@@ -358,10 +334,10 @@ struct _Pane  {
                                          * if
                                          * Tk_Changes(tkwin)->border_width
                                          * changes. */
-    XColor *highlightBgColor;           /* Color for drawing traversal
+    XColor *sashHighlightBgColor;       /* Color for drawing traversal
                                          * highlight area when highlight is
                                          * off. */
-    XColor *highlightColor;             /* Color for drawing traversal
+    XColor *sashHighlightColor;         /* Color for drawing traversal
                                          * highlight. */
     const char *takeFocus;              /* Says whether to select this
                                          * widget during tab traveral
@@ -388,13 +364,13 @@ struct _Pane  {
                                          * expand/shrink. */
     int x, y;                           /* Origin of pane wrt container. */
     short int width, height;            /* Size of pane, including
-                                         * handle. */
+                                         * sash. */
     Blt_ChainLink link;                 /* Pointer of this pane into the
                                          * list of panes. */
     Blt_HashEntry *hashPtr;             /* Pointer of this pane into
                                          * hashtable of panes. */
-    Blt_HashEntry *handleHashPtr;       /* Pointer of this pane into
-                                         * hashtable of handles. */
+    Blt_HashEntry *sashHashPtr;       /* Pointer of this pane into
+                                         * hashtable of sashes. */
     int index;                          /* Index of the pane. */
     int size;                           /* Current size of the pane. This
                                          * size is bounded by min and
@@ -420,10 +396,10 @@ struct _Pane  {
                                          * specified (max widget size).
                                          * This includes any extra padding
                                          * which may be specified. */
-    Blt_Bg handleBg;
-    Blt_Bg activeHandleBg;
-    Blt_Bg bg;                          /* 3D background border surrounding
-                                         * the widget */
+    Blt_Bg sashBg;
+    Blt_Bg activeSashBg;
+    Blt_Bg bg;                          /* 3-D background border
+                                         * surrounding the widget */
     Tcl_Obj *cmdObjPtr;
     Tcl_TimerToken timerToken;
     int scrollTarget;                   /* Target offset to scroll to. */
@@ -434,14 +410,14 @@ struct _Pane  {
                                          * selected item. */
 };
 
-/* Pane/handle flags.  */
+/* Pane/sash flags.  */
 
 #define HIDDEN          (1<<8)          /* Do not display the pane. */
-#define DISABLED        (1<<9)          /* Handle is disabled. */
+#define DISABLED        (1<<9)          /* Sash is disabled. */
 #define ONSCREEN        (1<<10)         /* Pane is on-screen. */
-#define HANDLE_ACTIVE   (1<<11)         /* Handle is currently active. */
-#define HANDLE          (1<<12)         /* The pane has a handle. */
-#define SHOW_HANDLE     (1<<13)         /* Display the pane. */
+#define SASH_ACTIVE     (1<<11)         /* Sash is currently active. */
+#define SASH            (1<<12)         /* The pane has a sash. */
+#define SHOW_SASH       (1<<13)         /* Display the pane. */
 #define SHRINK          (1<<14)         /* Shrink the window to fit the
                                          * drawer, instead of moving it. */
 #define VIRGIN          (1<<24)
@@ -450,14 +426,14 @@ struct _Pane  {
 #define SIDE_VERTICAL   (SIDE_TOP|SIDE_BOTTOM)
 #define SIDE_HORIZONTAL (SIDE_LEFT|SIDE_RIGHT)
 
-/* Handle positions. */
-#define HANDLE_LEFT     SIDE_RIGHT
-#define HANDLE_RIGHT    SIDE_LEFT
-#define HANDLE_TOP      SIDE_BOTTOM
-#define HANDLE_BOTTOM   SIDE_TOP
+/* Sash positions. */
+#define SASH_LEFT     SIDE_RIGHT
+#define SASH_RIGHT    SIDE_LEFT
+#define SASH_TOP      SIDE_BOTTOM
+#define SASH_BOTTOM   SIDE_TOP
 
-#define HANDLE_FARSIDE  (HANDLE_RIGHT|HANDLE_BOTTOM)    
-#define HANDLE_NEARSIDE (HANDLE_LEFT|HANDLE_TOP)        
+#define SASH_FARSIDE  (SASH_RIGHT|SASH_BOTTOM)    
+#define SASH_NEARSIDE (SASH_LEFT|SASH_TOP)        
 
 
 static Tk_GeomRequestProc PaneGeometryProc;
@@ -499,11 +475,57 @@ static Blt_CustomOption tagsOption = {
     ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
 };
 
+static Blt_ConfigSpec paneSetSpecs[] =
+{
+    {BLT_CONFIG_BACKGROUND, "-activesashcolor", "activeSashColor", 
+        "SashColor", DEF_ACTIVE_SASH_COLOR,
+        Blt_Offset(Paneset, activeSashBg), 0},
+    {BLT_CONFIG_RELIEF, "-activesashrelief", "activeSashRelief", 
+        "SashRelief", DEF_ACTIVE_SASH_RELIEF, 
+        Blt_Offset(Paneset, activeRelief), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
+        DEF_BACKGROUND, Blt_Offset(Paneset, bg), 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
+        0, 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
+        Blt_Offset(Paneset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT },
+    {BLT_CONFIG_CUSTOM, "-mode", "mode", "Mode", DEF_MODE,
+        Blt_Offset(Paneset, mode), BLT_CONFIG_DONT_SET_DEFAULT, &adjustOption},
+    {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
+        Blt_Offset(Paneset, flags), BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
+    {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
+        (char *)NULL, Blt_Offset(Paneset, reqHeight), 0, &bltLimitsOption},
+    {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
+        (char *)NULL, Blt_Offset(Paneset, reqWidth), 0, &bltLimitsOption},
+    {BLT_CONFIG_PIXELS_NNEG, "-sashborderwidth", "sashBorderWidth", 
+        "SashBorderWidth", DEF_SASH_BORDERWIDTH,
+        Blt_Offset(Paneset, sashBorderWidth),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-sashcolor", "sashColor", "SashColor",
+        DEF_SASH_COLOR, Blt_Offset(Paneset, sashBg), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-sashhighlightthickness",
+        "sashHighlightThickness", "SashHighlightThickness",
+        DEF_SASH_HIGHLIGHT_THICKNESS,
+        Blt_Offset(Paneset, sashHighlightThickness),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PAD, "-sashpad", "sashPad", "SashPad", DEF_SASH_PAD, 
+        Blt_Offset(Paneset, sashPad), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_RELIEF, "-sashrelief", "sashRelief", "SashRelief", 
+        DEF_SASH_RELIEF, Blt_Offset(Paneset, relief), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-sashthickness", "sashThickness", "SashThickness",
+        DEF_SASH_THICKNESS, Blt_Offset(Paneset, sashThickness),
+        BLT_CONFIG_DONT_SET_DEFAULT },
+    {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
+        Blt_Offset(Paneset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
+
 static Blt_ConfigSpec paneSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activesashcolor", "activeSashColor", 
-        "ActiveSashColor", DEF_ACTIVEHANDLECOLOR, 
-        Blt_Offset(Pane, activeHandleBg), 
+        "ActiveSashColor", DEF_ACTIVE_SASH_COLOR, 
+        Blt_Offset(Pane, activeSashBg), 
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ANCHOR, "-anchor", (char *)NULL, (char *)NULL, DEF_PANE_ANCHOR,
         Blt_Offset(Pane, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
@@ -511,8 +533,6 @@ static Blt_ConfigSpec paneSpecs[] =
         (char *)NULL, Blt_Offset(Pane, bg), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor",
-        DEF_PANE_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_PANE_FILL, 
         Blt_Offset(Pane, fill), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
@@ -520,11 +540,6 @@ static Blt_ConfigSpec paneSpecs[] =
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_PANE_HIDE, 
         Blt_Offset(Pane, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)HIDDEN },
-    {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
-        "HighlightBackground", DEF_PANE_HIGHLIGHT_BACKGROUND, 
-        Blt_Offset(Pane, highlightBgColor), 0},
-    {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-        DEF_PANE_HIGHLIGHT_COLOR, Blt_Offset(Pane, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
         (char *)NULL, Blt_Offset(Pane, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
@@ -536,11 +551,19 @@ static Blt_ConfigSpec paneSpecs[] =
     {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_PANE_RESIZE,
         Blt_Offset(Pane, resize), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-sashcolor", "sashColor", "SashColor",
-        DEF_HANDLECOLOR, Blt_Offset(Pane, handleBg), 
+        DEF_SASH_COLOR, Blt_Offset(Pane, sashBg),
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CURSOR, "-sashcursor", "sashCursor", "SashCursor",
+        DEF_SASH_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-sashhighlightbackground", "sashHighlightBackground",
+        "SashHighlightBackground", DEF_SASH_HIGHLIGHT_BACKGROUND, 
+        Blt_Offset(Pane, sashHighlightBgColor), 0},
+    {BLT_CONFIG_COLOR, "-sashhighlightcolor", "sashHighlightColor",
+        "SashHighlightColor", DEF_SASH_HIGHLIGHT_COLOR,
+        Blt_Offset(Pane, sashHighlightColor), 0},
     {BLT_CONFIG_BITMASK, "-showsash", "showSash", "showSash", 
-        DEF_PANE_SHOWHANDLE, Blt_Offset(Pane, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_HANDLE},
+        DEF_SHOW_SASH, Blt_Offset(Pane, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_SASH},
     {BLT_CONFIG_CUSTOM, "-size", (char *)NULL, (char *)NULL, (char *)NULL, 
         Blt_Offset(Pane, reqSize), 0, &bltLimitsOption},
      {BLT_CONFIG_CUSTOM, "-tags", (char *)NULL, (char *)NULL,
@@ -552,153 +575,27 @@ static Blt_ConfigSpec paneSpecs[] =
     {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
         Blt_Offset(Pane, reqWidth), 0},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
-        Blt_Offset(Pane, tkwin), BLT_CONFIG_NULL_OK, &childOption },
+        Blt_Offset(Pane, tkwin), BLT_CONFIG_NULL_OK, &childOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec frameSpecs[] =
+static Blt_ConfigSpec sashSpecs[] =
 {
-    {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
-        "HandleColor", DEF_ACTIVEHANDLECOLOR, Blt_Offset(Pane, activeHandleBg), 
+    {BLT_CONFIG_BACKGROUND, "-activecolor", "activeColor", "ActiveColor",
+        DEF_ACTIVE_SASH_COLOR, Blt_Offset(Pane, activeSashBg), 
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        (char *)NULL, Blt_Offset(Pane, bg), 
-        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor",
-        DEF_PANE_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_PANE_FILL, 
-        Blt_Offset(Pane, fill), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
-        DEF_HANDLECOLOR, Blt_Offset(Pane, handleBg), 
+    {BLT_CONFIG_BACKGROUND, "-color", "color", "color", DEF_SASH_COLOR,
+        Blt_Offset(Pane, sashBg),
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqHeight), 0},
-    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_PANE_HIDE, 
-        Blt_Offset(Pane, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)HIDDEN },
+    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "cursor",
+        DEF_SASH_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
-        "HighlightBackground", DEF_PANE_HIGHLIGHT_BACKGROUND, 
-        Blt_Offset(Pane, highlightBgColor), 0},
+        "HighlightBackground", DEF_SASH_HIGHLIGHT_BACKGROUND, 
+        Blt_Offset(Pane, sashHighlightBgColor), 0},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-        DEF_PANE_HIGHLIGHT_COLOR, Blt_Offset(Pane, highlightColor), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Pane, iPadX), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
-        (char *)NULL, Blt_Offset(Pane, iPadY), 0},
-    {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqHeight), 0, &bltLimitsOption},
-    {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqWidth), 0, &bltLimitsOption},
-    {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_PANE_RESIZE,
-        Blt_Offset(Pane, resize), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-showhandle", "showHandle", "showHandle", 
-        DEF_PANE_SHOWHANDLE, Blt_Offset(Pane, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_HANDLE },
-    {BLT_CONFIG_CUSTOM, "-size", (char *)NULL, (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqSize), 0, &bltLimitsOption},
-     {BLT_CONFIG_CUSTOM, "-tags", (char *)NULL, (char *)NULL,
-        DEF_PANE_TAGS, 0, BLT_CONFIG_NULL_OK, &tagsOption},
-    {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
-        DEF_TAKEFOCUS, Blt_Offset(Pane, takeFocus), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqWidth), 0},
-    {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
-        Blt_Offset(Pane, tkwin), BLT_CONFIG_NULL_OK, &childOption },
+        DEF_SASH_HIGHLIGHT_COLOR, Blt_Offset(Pane, sashHighlightColor), 0},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
-
-/* 
- * Hide the handle. 
- *
- *      pathName configure -handlethickness 0
- *      pathName pane configure -hide yes 
- *      Put all the drawers in the paneset widget, hidden by default.
- *      Reveal/hide drawers to pop them out.
- *      plotarea | sidebar | scroller
- */
-static Blt_ConfigSpec panesetSpecs[] =
-{
-    {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
-        "HandleColor", DEF_ACTIVEHANDLECOLOR, 
-        Blt_Offset(Paneset, activeHandleBg), FILMSTRIP},
-    {BLT_CONFIG_RELIEF, "-activehandlerelief", "activeHandleRelief", 
-        "HandleRelief", DEF_ACTIVEHANDLERELIEF, 
-        Blt_Offset(Paneset, activeRelief), 
-        BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP },
-    {BLT_CONFIG_BACKGROUND, "-activesashcolor", "activeSashColor", 
-        "SashColor", DEF_ACTIVEHANDLECOLOR, 
-        Blt_Offset(Paneset, activeHandleBg), PANESET},
-    {BLT_CONFIG_RELIEF, "-activesashrelief", "activeSashRelief", 
-        "SashRelief", DEF_ACTIVEHANDLERELIEF, 
-        Blt_Offset(Paneset, activeRelief), BLT_CONFIG_DONT_SET_DEFAULT|PANESET},
-    {BLT_CONFIG_BITMASK, "-animate", "animate", "Animate", DEF_ANIMATE, 
-        Blt_Offset(Paneset, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP, (Blt_CustomOption *)ANIMATE },
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_BACKGROUND, Blt_Offset(Paneset, bg), ALL },
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, ALL},
-    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
-        Blt_Offset(Paneset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT | ALL },
-    {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
-        "HighlightThickness", DEF_HIGHLIGHT_THICKNESS, 
-        Blt_Offset(Paneset, highlightThickness), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL},
-    {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
-        Blt_Offset(Paneset, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT | PANESET | FILMSTRIP, &orientOption},
-    {BLT_CONFIG_CUSTOM, "-mode", "mode", "Mode", DEF_MODE,
-        Blt_Offset(Paneset, mode), BLT_CONFIG_DONT_SET_DEFAULT | PANESET, 
-        &adjustOption},
-    {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Paneset, reqHeight), ALL, &bltLimitsOption},
-    {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Paneset, reqWidth), ALL, &bltLimitsOption},
-    {BLT_CONFIG_PIXELS_NNEG, "-handleborderwidth", "handleBorderWidth", 
-        "HandleBorderWidth", DEF_HANDLEBORDERWIDTH, 
-        Blt_Offset(Paneset, handleBW), 
-        BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP },
-    {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
-        DEF_HANDLECOLOR, Blt_Offset(Paneset, handleBg), FILMSTRIP},
-    {BLT_CONFIG_PAD, "-handlepad", "handlePad", "HandlePad", DEF_HANDLEPAD, 
-        Blt_Offset(Paneset, handlePad), 
-        BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP},
-    {BLT_CONFIG_RELIEF, "-handlerelief", "handleRelief", "HandleRelief", 
-        DEF_HANDLERELIEF, Blt_Offset(Paneset, relief), 
-        BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP },
-    {BLT_CONFIG_PIXELS_NNEG, "-handlethickness", "handleThickness", 
-        "HandleThickness", DEF_HANDLETHICKNESS, 
-        Blt_Offset(Paneset, handleThickness), 
-        BLT_CONFIG_DONT_SET_DEFAULT| FILMSTRIP },
-    {BLT_CONFIG_PIXELS_NNEG, "-sashborderwidth", "sashBorderWidth", 
-        "SashBorderWidth", DEF_HANDLEBORDERWIDTH, 
-        Blt_Offset(Paneset, handleBW), BLT_CONFIG_DONT_SET_DEFAULT | PANESET},
-    {BLT_CONFIG_BACKGROUND, "-sashcolor", "sashColor", "SashColor",
-        DEF_HANDLECOLOR, Blt_Offset(Paneset, handleBg), PANESET},
-    {BLT_CONFIG_PAD, "-sashpad", "sashPad", "SashPad", DEF_HANDLEPAD, 
-        Blt_Offset(Paneset, handlePad), BLT_CONFIG_DONT_SET_DEFAULT | PANESET},
-    {BLT_CONFIG_RELIEF, "-sashrelief", "sashRelief", "SashRelief", 
-        DEF_HANDLERELIEF, Blt_Offset(Paneset, relief), 
-        BLT_CONFIG_DONT_SET_DEFAULT | PANESET },
-    {BLT_CONFIG_PIXELS_NNEG, "-sashthickness", "sashThickness", 
-        "SashThickness", DEF_HANDLETHICKNESS, 
-        Blt_Offset(Paneset, handleThickness), 
-        BLT_CONFIG_DONT_SET_DEFAULT| PANESET },
-    {BLT_CONFIG_OBJ, "-scrollcommand", "scrollCommand", "ScrollCommand",
-        (char *)NULL, Blt_Offset(Paneset, scrollCmdObjPtr),
-        BLT_CONFIG_NULL_OK | FILMSTRIP },
-    {BLT_CONFIG_PIXELS_POS, "-scrollincrement", "scrollIncrement",
-        "ScrollIncrement", DEF_SCROLLINCREMENT, Blt_Offset(Paneset,scrollUnits),
-        BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP },
-    {BLT_CONFIG_INT_NNEG, "-scrolldelay", "scrollDelay", "ScrollDelay",
-        DEF_SCROLLDELAY, Blt_Offset(Paneset, interval),
-        BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP },
-    {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
-        Blt_Offset(Paneset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT | ALL},
-    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
-};
-
 
 /*
  * PaneIterator --
@@ -735,69 +632,35 @@ typedef struct _Iterator {
     Blt_ChainLink link;
 } PaneIterator;
 
-
-static WidgetClass panesetClass = {
-    "BltPanesetSash",
-    "pane",
-    paneSpecs,
-    PANESET,
-};
-
-static WidgetClass filmstripClass = {
-    "BltFilmStripHandle",
-    "frame",
-    frameSpecs,
-    FILMSTRIP,
-};
-
-
 /*
  * Forward declarations
  */
 static Tcl_FreeProc PanesetFreeProc;
 static Tcl_IdleProc DisplayProc;
-static Tcl_IdleProc DisplayHandle;
+static Tcl_IdleProc DisplaySash;
 static Tcl_ObjCmdProc PanesetCmd;
-static Tcl_ObjCmdProc FilmstripCmd;
 static Tk_EventProc PanesetEventProc;
 static Tk_EventProc PaneEventProc;
-static Tk_EventProc HandleEventProc;
+static Tk_EventProc SashEventProc;
 static Tcl_FreeProc PaneFreeProc;
 static Tcl_ObjCmdProc PanesetInstCmdProc;
 static Tcl_CmdDeleteProc PanesetInstCmdDeleteProc;
-static Tcl_TimerProc MotionTimerProc;
 
 static int GetPaneIterator(Tcl_Interp *interp, Paneset *setPtr, Tcl_Obj *objPtr,
         PaneIterator *iterPtr);
 static int GetPaneFromObj(Tcl_Interp *interp, Paneset *setPtr, Tcl_Obj *objPtr, 
         Pane **panePtrPtr);
 
-static int 
+static INLINE int 
 ScreenX(Pane *panePtr)
 {
-    Paneset *setPtr;
-    int x;
-
-    x = panePtr->x;
-    setPtr = panePtr->setPtr;
-    if ((setPtr->classPtr->type == FILMSTRIP) && (ISHORIZ(setPtr))) {
-        x -= setPtr->scrollOffset;
-    }
-    return x;
+    return panePtr->x;
 }
 
-static int 
+static INLINE int 
 ScreenY(Pane *panePtr)
 {
-    Paneset *setPtr;
-    int y;
-
-    setPtr = panePtr->setPtr;
-    y = panePtr->y;
-    if ((setPtr->classPtr->type == FILMSTRIP) && (ISVERT(setPtr))) {
-        y -= setPtr->scrollOffset;
-    }
-    return y;
+    return panePtr->y;
 }
 
 /*
@@ -1022,7 +885,7 @@ DestroyPane(Pane *panePtr)
         panePtr->hashPtr = NULL;
     }
     if (panePtr->link != NULL) {
-        Blt_Chain_DeleteLink(setPtr->chain, panePtr->link);
+        Blt_Chain_DeleteLink(setPtr->panes, panePtr->link);
         panePtr->link = NULL;
     }
     if (panePtr->tkwin != NULL) {
@@ -1034,19 +897,19 @@ DestroyPane(Pane *panePtr)
         Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, panePtr);
         Tk_DestroyWindow(tkwin);
     }
-    if (panePtr->handleHashPtr != NULL) {
-        Blt_DeleteHashEntry(&setPtr->handleTable, panePtr->handleHashPtr);
-        panePtr->handleHashPtr = NULL;
+    if (panePtr->sashHashPtr != NULL) {
+        Blt_DeleteHashEntry(&setPtr->sashTable, panePtr->sashHashPtr);
+        panePtr->sashHashPtr = NULL;
     }
-    if (panePtr->handle != NULL) {
+    if (panePtr->sash != NULL) {
         Tk_Window tkwin;
 
-        tkwin = panePtr->handle;
+        tkwin = panePtr->sash;
         Tk_DeleteEventHandler(tkwin, 
                 ExposureMask|FocusChangeMask|StructureNotifyMask, 
-                HandleEventProc, panePtr);
+                SashEventProc, panePtr);
         Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, panePtr);
-        panePtr->handle = NULL;
+        panePtr->sash = NULL;
         Tk_DestroyWindow(tkwin);
     }
     Blt_Free(panePtr);
@@ -1422,26 +1285,25 @@ TagsToObjProc(
 }
 
 static void
-EventuallyRedrawHandle(Pane *panePtr)
+EventuallyRedrawSash(Pane *panePtr)
 {
     if ((panePtr->flags & REDRAW_PENDING) == 0) {
         panePtr->flags |= REDRAW_PENDING;
-        Tcl_DoWhenIdle(DisplayHandle, panePtr);
+        Tcl_DoWhenIdle(DisplaySash, panePtr);
     }
 }
 
-
 static Pane *
-FirstPane(Paneset *setPtr)
+FirstPane(Paneset *setPtr, unsigned int hateFlags)
 {
     Blt_ChainLink link;
 
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL;
          link = Blt_Chain_NextLink(link)) {
         Pane *panePtr;
 
         panePtr = Blt_Chain_GetValue(link);
-        if ((panePtr->flags & (HIDDEN|DISABLED)) == 0) {
+        if ((panePtr->flags & hateFlags) == 0) {
             return panePtr;
         }
     }
@@ -1449,16 +1311,16 @@ FirstPane(Paneset *setPtr)
 }
 
 static Pane *
-LastPane(Paneset *setPtr)
+LastPane(Paneset *setPtr, unsigned int hateFlags)
 {
     Blt_ChainLink link;
 
-    for (link = Blt_Chain_LastLink(setPtr->chain); link != NULL;
+    for (link = Blt_Chain_LastLink(setPtr->panes); link != NULL;
          link = Blt_Chain_PrevLink(link)) {
         Pane *panePtr;
 
         panePtr = Blt_Chain_GetValue(link);
-        if ((panePtr->flags & (HIDDEN|DISABLED)) == 0) {
+        if ((panePtr->flags & hateFlags) == 0) {
             return panePtr;
         }
     }
@@ -1467,7 +1329,7 @@ LastPane(Paneset *setPtr)
 
 
 static Pane *
-NextPane(Pane *panePtr)
+NextPane(Pane *panePtr, unsigned int hateFlags)
 {
     if (panePtr != NULL) {
         Blt_ChainLink link;
@@ -1475,7 +1337,7 @@ NextPane(Pane *panePtr)
         for (link = Blt_Chain_NextLink(panePtr->link); link != NULL; 
              link = Blt_Chain_NextLink(link)) {
             panePtr = Blt_Chain_GetValue(link);
-            if ((panePtr->flags & (HIDDEN|DISABLED)) == 0) {
+            if ((panePtr->flags & hateFlags) == 0) {
                 return panePtr;
             }
         }
@@ -1484,7 +1346,7 @@ NextPane(Pane *panePtr)
 }
 
 static Pane *
-PrevPane(Pane *panePtr)
+PrevPane(Pane *panePtr, unsigned int hateFlags)
 {
     if (panePtr != NULL) {
         Blt_ChainLink link;
@@ -1492,7 +1354,7 @@ PrevPane(Pane *panePtr)
         for (link = Blt_Chain_PrevLink(panePtr->link); link != NULL; 
              link = Blt_Chain_PrevLink(link)) {
             panePtr = Blt_Chain_GetValue(link);
-            if ((panePtr->flags & HIDDEN) == 0) {
+            if ((panePtr->flags & hateFlags) == 0) {
                 return panePtr;
             }
         }
@@ -1547,7 +1409,7 @@ PanesetEventProc(ClientData clientData, XEvent *eventPtr)
         }
         Tcl_EventuallyFree(setPtr, PanesetFreeProc);
     } else if (eventPtr->type == ConfigureNotify) {
-        setPtr->anchorPtr = LastPane(setPtr); /* Reset anchor pane. */
+        setPtr->anchorPtr = LastPane(setPtr, HIDDEN); /* Reset anchor pane. */
         setPtr->flags |= SCROLL_PENDING;
         EventuallyRedraw(setPtr);
     }
@@ -1667,10 +1529,10 @@ PaneGeometryProc(ClientData clientData, Tk_Window tkwin)
 /*
  *---------------------------------------------------------------------------
  *
- * HandleEventProc --
+ * SashEventProc --
  *
  *      This procedure is invoked by the Tk event handler when various events
- *      occur in the pane/drawer handle subwindow maintained by this widget.
+ *      occur in the pane/drawer sash subwindow maintained by this widget.
  *
  * Results:
  *      None.
@@ -1678,16 +1540,16 @@ PaneGeometryProc(ClientData clientData, Tk_Window tkwin)
  *---------------------------------------------------------------------------
  */
 static void
-HandleEventProc(
+SashEventProc(
     ClientData clientData,              /* Pointer to Pane structure for
-                                         * handle referred to by eventPtr. */
+                                         * sash referred to by eventPtr. */
     XEvent *eventPtr)                   /* Describes what just happened. */
 {
     Pane *panePtr = (Pane *)clientData;
 
     if (eventPtr->type == Expose) {
         if (eventPtr->xexpose.count == 0) {
-            EventuallyRedrawHandle(panePtr);
+            EventuallyRedrawSash(panePtr);
         }
     } else if ((eventPtr->type == FocusIn) || (eventPtr->type == FocusOut)) {
         if (eventPtr->xfocus.detail != NotifyInferior) {
@@ -1696,57 +1558,17 @@ HandleEventProc(
             } else {
                 panePtr->flags &= ~FOCUS;
             }
-            EventuallyRedrawHandle(panePtr);
+            EventuallyRedrawSash(panePtr);
         }
     } else if (eventPtr->type == ConfigureNotify) {
-        if (panePtr->handle == NULL) {
+        if (panePtr->sash == NULL) {
             return;
         }
-        EventuallyRedrawHandle(panePtr);
+        EventuallyRedrawSash(panePtr);
     } else if (eventPtr->type == DestroyNotify) {
-        panePtr->handle = NULL;
+        panePtr->sash = NULL;
     } 
 }
-
-static INLINE Pane *
-BeginPane(Paneset *setPtr)
-{
-    Blt_ChainLink link;
-
-    link = Blt_Chain_FirstLink(setPtr->chain); 
-    if (link != NULL) {
-        return Blt_Chain_GetValue(link);
-    }
-    return NULL;
-}
-
-static INLINE Pane *
-EndPane(Paneset *setPtr)
-{
-    Blt_ChainLink link;
-
-    link = Blt_Chain_LastLink(setPtr->chain); 
-    if (link != NULL) {
-        return Blt_Chain_GetValue(link);
-    }
-    return NULL;
-}
-
-#ifdef notdef
-static Pane *
-StepPane(Pane *panePtr)
-{
-    if (panePtr != NULL) {
-        Blt_ChainLink link;
-
-        link = Blt_Chain_NextLink(panePtr->link); 
-        if (link != NULL) {
-            return Blt_Chain_GetValue(link);
-        }
-    }
-    return NULL;
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -1899,7 +1721,7 @@ GetPaneByIndex(Tcl_Interp *interp, Paneset *setPtr, const char *string,
     if (Blt_GetLong(NULL, string, &pos) == TCL_OK) {
         Blt_ChainLink link;
 
-        link = Blt_Chain_GetNthLink(setPtr->chain, pos);
+        link = Blt_Chain_GetNthLink(setPtr->panes, pos);
         if (link != NULL) {
             panePtr = Blt_Chain_GetValue(link);
         } 
@@ -1913,11 +1735,11 @@ GetPaneByIndex(Tcl_Interp *interp, Paneset *setPtr, const char *string,
     } else if ((c == 'a') && (strcmp(string, "active") == 0)) {
         panePtr = setPtr->activePtr;
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
-        panePtr = FirstPane(setPtr);
+        panePtr = FirstPane(setPtr, HIDDEN | DISABLED);
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
-        panePtr = LastPane(setPtr);
+        panePtr = LastPane(setPtr, HIDDEN | DISABLED);
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
-        panePtr = LastPane(setPtr);
+        panePtr = LastPane(setPtr, 0);
     } else if ((c == 'n') && (strcmp(string, "none") == 0)) {
         panePtr = NULL;
     } else {
@@ -2014,7 +1836,7 @@ GetPaneIterator(Tcl_Interp *interp, Paneset *setPtr, Tcl_Obj *objPtr,
     if (c == '.') {
         Blt_HashEntry *hPtr;
         
-        hPtr = Blt_FindHashEntry(&setPtr->handleTable, string);
+        hPtr = Blt_FindHashEntry(&setPtr->sashTable, string);
         if (hPtr != NULL) {
             panePtr = Blt_GetHashValue(hPtr);
             iterPtr->startPtr = iterPtr->endPtr = panePtr;
@@ -2024,7 +1846,7 @@ GetPaneIterator(Tcl_Interp *interp, Paneset *setPtr, Tcl_Obj *objPtr,
         return TCL_ERROR;
     } else if ((c == 'a') && (strcmp(iterPtr->tagName, "all") == 0)) {
         iterPtr->type  = ITER_ALL;
-        iterPtr->link = Blt_Chain_FirstLink(setPtr->chain);
+        iterPtr->link = Blt_Chain_FirstLink(setPtr->panes);
     } else if ((c == 'i') && (length > 6) && 
                (strncmp(string, "index:", 6) == 0)) {
         if (GetPaneByIndex(interp, setPtr, string + 6, length - 6, &panePtr) 
@@ -2057,7 +1879,7 @@ GetPaneIterator(Tcl_Interp *interp, Paneset *setPtr, Tcl_Obj *objPtr,
         iterPtr->type = ITER_TAG;
     } else if ((c == 'l') && (length > 6) && 
                (strncmp(string, "label:", 6) == 0)) {
-        iterPtr->link = Blt_Chain_FirstLink(setPtr->chain);
+        iterPtr->link = Blt_Chain_FirstLink(setPtr->panes);
         iterPtr->tagName = string + 6;
         iterPtr->type = ITER_PATTERN;
     } else if ((panePtr = GetPaneByName(setPtr, string)) != NULL) {
@@ -2103,7 +1925,7 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     Blt_HashEntry *hPtr;
     Pane *panePtr;
     int isNew;
-    char *handleName;
+    char *sashName;
     char string[200];
 
     {
@@ -2113,20 +1935,20 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
          * more than one drawer widget assigned to the same window.  */
         path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
         do {
-            sprintf(string, "%s%lu", setPtr->classPtr->objectName, 
-                (unsigned long)setPtr->nextId++);
+            sprintf(string, "sash%lu", (unsigned long)setPtr->nextId++);
             sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
         } while (Tk_NameToWindow(interp, path, setPtr->tkwin) != NULL);
         Blt_Free(path);
-        handleName = string;
+        sashName = string;
     } 
     if (name == NULL) {
-        name = handleName;
+        name = sashName;
     }
+
     hPtr = Blt_CreateHashEntry(&setPtr->paneTable, name, &isNew);
     if (!isNew) {
-        Tcl_AppendResult(interp, setPtr->classPtr->objectName, " \"", name, 
-                "\" already exists.", (char *)NULL);
+        Tcl_AppendResult(interp, "sash \"", name, "\" already exists.",
+                (char *)NULL);
         return NULL;
     }
     panePtr = Blt_AssertCalloc(1, sizeof(Pane));
@@ -2140,26 +1962,28 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     panePtr->fill = FILL_BOTH;
     panePtr->nom  = LIMITS_NOM;
     panePtr->size = panePtr->index = 0;
-    panePtr->flags = VIRGIN | SHOW_HANDLE;
+    panePtr->flags = VIRGIN | SHOW_SASH;
     panePtr->resize = RESIZE_BOTH;
-    panePtr->side = HANDLE_FARSIDE;
+    panePtr->side = SASH_FARSIDE;
     panePtr->weight = 1.0f;
+    panePtr->link = Blt_Chain_NewLink();
+    panePtr->index = Blt_Chain_GetLength(setPtr->panes);
+    Blt_Chain_SetValue(panePtr->link, panePtr);
     Blt_SetHashValue(hPtr, panePtr);
 
-    panePtr->handle = Tk_CreateWindow(interp, setPtr->tkwin, handleName, 
-                (char *)NULL);
-    if (panePtr->handle == NULL) {
-            return NULL;
+    panePtr->sash = Tk_CreateWindow(interp, setPtr->tkwin, name,(char *)NULL);
+    if (panePtr->sash == NULL) {
+        return NULL;
     }
-    Tk_CreateEventHandler(panePtr->handle, 
+    Tk_CreateEventHandler(panePtr->sash, 
                           ExposureMask|FocusChangeMask|StructureNotifyMask, 
-                          HandleEventProc, panePtr);
-    Tk_SetClass(panePtr->handle, setPtr->classPtr->handleClassName);
+                          SashEventProc, panePtr);
+    Tk_SetClass(panePtr->sash, "BltPanesetSash");
 
-    /* Also add drawer to handle table */
-    hPtr = Blt_CreateHashEntry(&setPtr->handleTable, 
-                Tk_PathName(panePtr->handle), &isNew);
-    panePtr->handleHashPtr = hPtr;
+    /* Also add pane to sash table */
+    hPtr = Blt_CreateHashEntry(&setPtr->sashTable, 
+                Tk_PathName(panePtr->sash), &isNew);
+    panePtr->sashHashPtr = hPtr;
     assert(isNew);
     Blt_SetHashValue(hPtr, panePtr);
 
@@ -2189,6 +2013,63 @@ PaneFreeProc(DestroyData dataPtr)
     Pane *panePtr = (Pane *)dataPtr;
 
     DestroyPane(panePtr);
+}
+
+static int
+GetInsertOrder(Tcl_Interp *interp, Tcl_Obj *objPtr, InsertOrder *ordPtr)
+{
+    const char *string;
+    char c;
+    int length;
+    
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'b') && (strncmp(string, "before", length) == 0)) {
+        *ordPtr = INSERT_BEFORE;
+    } else if ((c == 'a') && (strncmp(string, "after", length) == 0)) {
+        *ordPtr = INSERT_AFTER;
+    } else {
+        Tcl_AppendResult(interp, "bad key word \"", string,
+                "\": should be after or before", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+static void
+RenumberPanes(Paneset *setPtr)
+{
+    int count;
+    Blt_ChainLink link;
+
+    count = 0;
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL;
+         link = Blt_Chain_NextLink(link)) {
+        Pane *panePtr;
+        
+        panePtr = Blt_Chain_GetValue(link);
+        panePtr->index = count;
+        count++;
+    }
+}
+
+static void
+MovePane(Paneset *setPtr, Pane *panePtr, InsertOrder order, Pane *relPtr)
+{
+    if (Blt_Chain_GetLength(setPtr->panes) == 1) {
+        return;                         /* Can't rearrange one item. */
+    }
+    Blt_Chain_UnlinkLink(setPtr->panes, panePtr->link);
+    switch (order) {
+    case INSERT_AFTER:                  /* After */
+        Blt_Chain_LinkAfter(setPtr->panes, panePtr->link, relPtr->link);
+        break;
+    case INSERT_BEFORE:                 /* Before */
+        Blt_Chain_LinkBefore(setPtr->panes, panePtr->link, relPtr->link);
+        break;
+    }
+    RenumberPanes(setPtr);
+    setPtr->flags |= LAYOUT_PENDING;
 }
 
 /*
@@ -2223,34 +2104,25 @@ NewPaneset(Tcl_Interp *interp, Tcl_Obj *objPtr, int type)
         return NULL;
     }
     setPtr = Blt_AssertCalloc(1, sizeof(Paneset));
-    if (type == PANESET) {
-        Tk_SetClass(tkwin, (char *)"BltPaneset");
-        setPtr->classPtr = &panesetClass;
-    } else if (type == FILMSTRIP) {
-        Tk_SetClass(tkwin, (char *)"BltFilmstrip");
-        setPtr->classPtr = &filmstripClass;
-    }
+    Tk_SetClass(tkwin, "BltPaneset");
     setPtr->tkwin = tkwin;
     setPtr->interp = interp;
     setPtr->display = Tk_Display(tkwin);
-    setPtr->chain = Blt_Chain_Create();
-    setPtr->handleThickness = 2;
-    setPtr->handlePad.side1 = setPtr->handlePad.side2 = 2;
+    setPtr->sashThickness = 2;
+    setPtr->sashPad.side1 = setPtr->sashPad.side2 = 2;
     setPtr->relief = TK_RELIEF_FLAT;
     setPtr->activeRelief = TK_RELIEF_RAISED;
-    setPtr->handleBW = 1;
+    setPtr->sashBorderWidth = 1;
     setPtr->flags = LAYOUT_PENDING;
     setPtr->mode = MODE_GIVETAKE;
-    setPtr->interval = 30;
-    setPtr->scrollUnits = 10;
-    setPtr->highlightThickness = 2;
+    setPtr->sashHighlightThickness = 2;
     Blt_SetWindowInstanceData(tkwin, setPtr);
     Blt_InitHashTable(&setPtr->paneTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&setPtr->handleTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&setPtr->sashTable, BLT_STRING_KEYS);
     Blt_Tags_Init(&setPtr->tags);
     Tk_CreateEventHandler(tkwin, ExposureMask|StructureNotifyMask, 
                           PanesetEventProc, setPtr);
-    setPtr->chain = Blt_Chain_Create();
+    setPtr->panes = Blt_Chain_Create();
     setPtr->cmdToken = Tcl_CreateObjCommand(interp, Tk_PathName(tkwin), 
         PanesetInstCmdProc, setPtr, PanesetInstCmdDeleteProc);
     setPtr->defVertCursor = Tk_GetCursor(interp, tkwin, DEF_VCURSOR);
@@ -2258,22 +2130,6 @@ NewPaneset(Tcl_Interp *interp, Tcl_Obj *objPtr, int type)
     return setPtr;
 }
 
-static void
-RenumberPanes(Paneset *setPtr)
-{
-    int count;
-    Blt_ChainLink link;
-
-    count = 0;
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
-         link = Blt_Chain_NextLink(link)) {
-        Pane *panePtr;
-        
-        panePtr = Blt_Chain_GetValue(link);
-        panePtr->index = count;
-        count++;
-    }
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -2298,9 +2154,9 @@ DestroyPaneset(Paneset *setPtr)         /* Paneset structure */
 {
     Blt_ChainLink link;
 
-    Blt_FreeOptions(panesetSpecs, (char *)setPtr, setPtr->display, 0);
+    Blt_FreeOptions(paneSetSpecs, (char *)setPtr, setPtr->display, 0);
     /* Release the chain of entries. */
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL;
         link = Blt_Chain_NextLink(link)) {
         Pane *panePtr;
 
@@ -2313,7 +2169,7 @@ DestroyPaneset(Paneset *setPtr)         /* Paneset structure */
     Tk_FreeCursor(setPtr->display, setPtr->defHorzCursor);
     Tk_FreeCursor(setPtr->display, setPtr->defVertCursor);
     Blt_Tags_Reset(&setPtr->tags);
-    Blt_Chain_Destroy(setPtr->chain);
+    Blt_Chain_Destroy(setPtr->panes);
     Blt_DeleteHashTable(&setPtr->paneTable);
     Blt_Free(setPtr);
 }
@@ -2434,7 +2290,7 @@ LeftSpan(Paneset *setPtr)
     total = 0;
     /* The left span is every pane before and including) the anchor pane. */
     for (panePtr = setPtr->anchorPtr; panePtr != NULL; 
-         panePtr = PrevPane(panePtr)) {
+         panePtr = PrevPane(panePtr, HIDDEN)) {
         total += panePtr->size;
     }
     return total;
@@ -2460,8 +2316,8 @@ RightSpan(Paneset *setPtr)
     Pane *panePtr;
 
     total = 0;
-    for (panePtr = NextPane(setPtr->anchorPtr); panePtr != NULL; 
-         panePtr = NextPane(panePtr)) {
+    for (panePtr = NextPane(setPtr->anchorPtr, HIDDEN); panePtr != NULL; 
+         panePtr = NextPane(panePtr, HIDDEN)) {
         total += panePtr->size;
     }
     return total;
@@ -2478,7 +2334,7 @@ LeftSpanLimits(Paneset *setPtr, int *minPtr, int *maxPtr)
     /* The left span is every pane before and including) the anchor
      * pane. */
     for (panePtr = setPtr->anchorPtr; panePtr != NULL; 
-         panePtr = PrevPane(panePtr)) {
+         panePtr = PrevPane(panePtr, HIDDEN)) {
         total += panePtr->size;
         max += panePtr->max;
         min += panePtr->min;
@@ -2496,8 +2352,8 @@ RightSpanLimits(Paneset *setPtr, int *minPtr, int *maxPtr)
     Pane *panePtr;
 
     total = min = max = 0;
-    for (panePtr = NextPane(setPtr->anchorPtr); panePtr != NULL; 
-         panePtr = NextPane(panePtr)) {
+    for (panePtr = NextPane(setPtr->anchorPtr, HIDDEN); panePtr != NULL; 
+         panePtr = NextPane(panePtr, HIDDEN)) {
         total += panePtr->size;
         max += panePtr->max;
         min += panePtr->min;
@@ -2514,8 +2370,8 @@ GetReqPaneWidth(Pane *panePtr)
     int w;
 
     w = GetReqWidth(panePtr) + PADDING(panePtr->xPad); 
-    if ((ISHORIZ(panePtr->setPtr)) && (panePtr->flags & HANDLE)) {
-        w += panePtr->setPtr->handleSize;
+    if ((ISHORIZ(panePtr->setPtr)) && (panePtr->flags & SASH)) {
+        w += panePtr->setPtr->sashSize;
     }
     return w;
 }
@@ -2526,8 +2382,8 @@ GetReqPaneHeight(Pane *panePtr)
     int h;
 
     h = GetReqHeight(panePtr) + PADDING(panePtr->yPad);
-    if ((ISVERT(panePtr->setPtr)) && (panePtr->flags & HANDLE)) {
-        h += panePtr->setPtr->handleSize;
+    if ((ISVERT(panePtr->setPtr)) && (panePtr->flags & SASH)) {
+        h += panePtr->setPtr->sashSize;
     }
     return h;
 }
@@ -2906,7 +2762,7 @@ ShrinkLeftGrowRight(Paneset *setPtr, Pane *leftPtr, Pane *rightPtr, int delta)
 
     extra = delta;
     for (panePtr = leftPtr; (panePtr != NULL) && (extra > 0); 
-         panePtr = PrevPane(panePtr)) {
+         panePtr = PrevPane(panePtr, HIDDEN)) {
         int avail;                      /* Space available to shrink */
         
         avail = panePtr->size - panePtr->min;
@@ -2922,7 +2778,7 @@ ShrinkLeftGrowRight(Paneset *setPtr, Pane *leftPtr, Pane *rightPtr, int delta)
     }
     extra = delta - extra;
     for (panePtr = rightPtr; (panePtr != NULL) && (extra > 0); 
-         panePtr = NextPane(panePtr)) {
+         panePtr = NextPane(panePtr, HIDDEN)) {
         int avail;                      /* Space available to grow. */
         
         avail = panePtr->max - panePtr->size;
@@ -2947,7 +2803,7 @@ GrowLeftShrinkRight(Paneset *setPtr, Pane *leftPtr, Pane *rightPtr, int delta)
 
     extra = delta;
     for (panePtr = rightPtr; (panePtr != NULL) && (extra > 0); 
-         panePtr = NextPane(panePtr)) {
+         panePtr = NextPane(panePtr, HIDDEN)) {
         int avail;                      /* Space available to shrink */
         
         avail = panePtr->size - panePtr->min;
@@ -2963,7 +2819,7 @@ GrowLeftShrinkRight(Paneset *setPtr, Pane *leftPtr, Pane *rightPtr, int delta)
     }
     extra = delta - extra;
     for (panePtr = leftPtr; (panePtr != NULL) && (extra > 0); 
-         panePtr = PrevPane(panePtr)) {
+         panePtr = PrevPane(panePtr, HIDDEN)) {
         int avail;                      /* Space available to grow. */
         
         avail = panePtr->max - panePtr->size;
@@ -2989,7 +2845,7 @@ ShrinkLeftGrowLast(Paneset *setPtr, Pane *leftPtr, Pane *rightPtr, int delta)
 
     extra = delta;
     for (panePtr = leftPtr; (panePtr != NULL) && (extra > 0); 
-         panePtr = PrevPane(panePtr)) {
+         panePtr = PrevPane(panePtr, HIDDEN)) {
         int avail;                      /* Space available to shrink */
         
         avail = panePtr->size - panePtr->min;
@@ -3005,8 +2861,9 @@ ShrinkLeftGrowLast(Paneset *setPtr, Pane *leftPtr, Pane *rightPtr, int delta)
     }
 #ifdef notdef
     extra = delta - extra;
-    for (panePtr = LastPane(setPtr);(panePtr != leftPtr) && (extra > 0); 
-         panePtr = PrevPane(panePtr)) {
+    for (panePtr = LastPane(setPtr, HIDDEN);
+         (panePtr != leftPtr) && (extra > 0); 
+         panePtr = PrevPane(panePtr, HIDDEN)) {
         int avail;                      /* Space available to grow. */
         
         avail = panePtr->max - panePtr->size;
@@ -3032,8 +2889,8 @@ GrowLeftShrinkLast(Paneset *setPtr, Pane *leftPtr, Pane *rightPtr, int delta)
 
     extra = delta;
 #ifdef notdef
-    for (panePtr = LastPane(setPtr);(panePtr != leftPtr) && (extra > 0); 
-         panePtr = PrevPane(panePtr)) {
+    for (panePtr = LastPane(setPtr, HIDDEN);(panePtr != leftPtr) && (extra > 0);
+         panePtr = PrevPane(panePtr, HIDDEN)) {
         int avail;                      /* Space available to shrink */
         
         avail = panePtr->size - panePtr->min;
@@ -3050,7 +2907,7 @@ GrowLeftShrinkLast(Paneset *setPtr, Pane *leftPtr, Pane *rightPtr, int delta)
     extra = delta - extra;
 #endif
     for (panePtr = leftPtr; (panePtr != NULL) && (extra > 0); 
-         panePtr = PrevPane(panePtr)) {
+         panePtr = PrevPane(panePtr, HIDDEN)) {
         int avail;                      /* Space available to grow. */
         
         avail = panePtr->max - panePtr->size;
@@ -3076,7 +2933,7 @@ SortedSpan(Paneset *setPtr, Pane *firstPtr, Pane *lastPtr)
     proc = ISVERT(setPtr) ? GetReqPaneHeight : GetReqPaneWidth;
     chain = Blt_Chain_Create();
     for (panePtr = firstPtr; panePtr != lastPtr; 
-         panePtr = NextPane(panePtr)) {
+         panePtr = NextPane(panePtr, HIDDEN)) {
         int d1;
         Blt_ChainLink link, before, newLink;
 
@@ -3127,7 +2984,7 @@ ResetPanes(Paneset *setPtr)
 {
     Blt_ChainLink link;
 
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL;
         link = Blt_Chain_NextLink(link)) {
         Pane *panePtr;
         int extra, size;
@@ -3145,8 +3002,8 @@ ResetPanes(Paneset *setPtr)
             size = BoundWidth(0, &panePtr->reqSize);
             extra = PADDING(panePtr->xPad);
         }
-        if (panePtr->flags & HANDLE) {
-            extra += setPtr->handleSize;
+        if (panePtr->flags & SASH) {
+            extra += setPtr->sashSize;
         }
         if (panePtr->reqSize.flags & LIMITS_NOM_SET) {
             /*
@@ -3196,7 +3053,7 @@ SetNominalSizes(Paneset *setPtr)
     int total;
 
     total = 0;
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL;
         link = Blt_Chain_NextLink(link)) {
         Pane *panePtr;
         int extra;
@@ -3207,8 +3064,8 @@ SetNominalSizes(Paneset *setPtr)
         } else {
             extra = PADDING(panePtr->xPad);
         }
-        if (panePtr->flags & HANDLE) {
-            extra += setPtr->handleSize;
+        if (panePtr->flags & SASH) {
+            extra += setPtr->sashSize;
         }
         /*
          * Restore the real bounds after temporarily setting nominal size.
@@ -3265,27 +3122,27 @@ LayoutHorizontalPanes(Paneset *setPtr)
 
     maxHeight = 0;
     ResetPanes(setPtr);
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL; link = next) {
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL; link = next) {
         Pane *panePtr;
         int width, height;
 
         next = Blt_Chain_NextLink(link);
         panePtr = Blt_Chain_GetValue(link);
-        panePtr->flags &= ~HANDLE;
+        panePtr->flags &= ~SASH;
         if (panePtr->flags & HIDDEN) {
             if (Tk_IsMapped(panePtr->tkwin)) {
                 Tk_UnmapWindow(panePtr->tkwin);
             }
-            if (Tk_IsMapped(panePtr->handle)) {
-                Tk_UnmapWindow(panePtr->handle);
+            if (Tk_IsMapped(panePtr->sash)) {
+                Tk_UnmapWindow(panePtr->sash);
             }
             continue;
         }
         if ((next != NULL) || (setPtr->mode == MODE_SPREADSHEET)) {
-            /* Add the size of the handle to the pane. */
-            /* width += setPtr->handleSize; */
-            if (panePtr->flags & SHOW_HANDLE) {
-                panePtr->flags |= HANDLE;
+            /* Add the size of the sash to the pane. */
+            /* width += setPtr->sashSize; */
+            if (panePtr->flags & SHOW_SASH) {
+                panePtr->flags |= SASH;
             }
         }
         width = GetReqPaneWidth(panePtr);
@@ -3301,7 +3158,7 @@ LayoutHorizontalPanes(Paneset *setPtr)
         }
     }
     x = y = 0;
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL;
         link = Blt_Chain_NextLink(link)) {
         Pane *panePtr;
 
@@ -3355,7 +3212,7 @@ LayoutVerticalPanes(Paneset *setPtr)
     fprintf(stderr, "LayoutVerticalPanes\n");
 #endif
     ResetPanes(setPtr);
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL; link = next) {
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL; link = next) {
         Pane *panePtr;
         int width, height;
         
@@ -3365,16 +3222,16 @@ LayoutVerticalPanes(Paneset *setPtr)
             if (Tk_IsMapped(panePtr->tkwin)) {
                 Tk_UnmapWindow(panePtr->tkwin);
             }
-            if (Tk_IsMapped(panePtr->handle)) {
-                Tk_UnmapWindow(panePtr->handle);
+            if (Tk_IsMapped(panePtr->sash)) {
+                Tk_UnmapWindow(panePtr->sash);
             }
             continue;
         }
-        panePtr->flags &= ~HANDLE;
+        panePtr->flags &= ~SASH;
         if ((next != NULL) || (setPtr->mode == MODE_SPREADSHEET)) {
-            /* height += setPtr->handleSize; */
-            if (panePtr->flags & SHOW_HANDLE) {
-                panePtr->flags |= HANDLE;
+            /* height += setPtr->sashSize; */
+            if (panePtr->flags & SHOW_SASH) {
+                panePtr->flags |= SASH;
             }
         }
         height = GetReqPaneHeight(panePtr);
@@ -3390,7 +3247,7 @@ LayoutVerticalPanes(Paneset *setPtr)
         }
     }
     x = y = 0;
-    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL;
         link = Blt_Chain_NextLink(link)) {
         Pane *panePtr;
 
@@ -3439,20 +3296,20 @@ ArrangeWindow(Pane *panePtr, int x, int y)
         yMax = y + panePtr->height;
         x += Tk_Changes(panePtr->tkwin)->border_width;
         y += Tk_Changes(panePtr->tkwin)->border_width;
-        if (panePtr->flags & HANDLE) {
+        if (panePtr->flags & SASH) {
             if (ISVERT(setPtr)) {
-                cavityHeight -= setPtr->handleSize;
-                if (panePtr->side & HANDLE_FARSIDE) {
-                    yMax -= setPtr->handleSize;
+                cavityHeight -= setPtr->sashSize;
+                if (panePtr->side & SASH_FARSIDE) {
+                    yMax -= setPtr->sashSize;
                 } else {
-                    y += setPtr->handleSize;
+                    y += setPtr->sashSize;
                 }
             } else {
-                cavityWidth -= setPtr->handleSize;
-                if (panePtr->side & HANDLE_FARSIDE) {
-                    xMax -= setPtr->handleSize;
+                cavityWidth -= setPtr->sashSize;
+                if (panePtr->side & SASH_FARSIDE) {
+                    xMax -= setPtr->sashSize;
                 } else {
-                    x += setPtr->handleSize;
+                    x += setPtr->sashSize;
                 }
             }
         }
@@ -3545,41 +3402,41 @@ ArrangeWindow(Pane *panePtr, int x, int y)
 }
 
 static void
-ArrangeHandle(Pane *panePtr, int x, int y) 
+ArrangeSash(Pane *panePtr, int x, int y) 
 {
     Paneset *setPtr;
 
     setPtr = panePtr->setPtr;
-    if (panePtr->flags & HANDLE) {
+    if (panePtr->flags & SASH) {
         int w, h;
         
         if (ISVERT(setPtr)) {
             x = 0;
-            if (panePtr->side & HANDLE_FARSIDE) {
-                y += panePtr->size - setPtr->handleSize;
+            if (panePtr->side & SASH_FARSIDE) {
+                y += panePtr->size - setPtr->sashSize;
             }
             w = Tk_Width(setPtr->tkwin);
-            h = setPtr->handleSize; 
+            h = setPtr->sashSize; 
         } else {
             y = 0;
-            if (panePtr->side & HANDLE_FARSIDE) {
-                x += panePtr->size - setPtr->handleSize;
+            if (panePtr->side & SASH_FARSIDE) {
+                x += panePtr->size - setPtr->sashSize;
             } 
             h = Tk_Height(setPtr->tkwin);
-            w = setPtr->handleSize; 
+            w = setPtr->sashSize; 
         }
         if ((x != Tk_X(panePtr->tkwin)) || 
             (y != Tk_Y(panePtr->tkwin)) ||
             (w != Tk_Width(panePtr->tkwin)) ||
             (h != Tk_Height(panePtr->tkwin))) {
-            Tk_MoveResizeWindow(panePtr->handle, x, y, w, h);
+            Tk_MoveResizeWindow(panePtr->sash, x, y, w, h);
         }
-        if (!Tk_IsMapped(panePtr->handle)) {
-            Tk_MapWindow(panePtr->handle);
+        if (!Tk_IsMapped(panePtr->sash)) {
+            Tk_MapWindow(panePtr->sash);
         }
-        XRaiseWindow(setPtr->display, Tk_WindowId(panePtr->handle));
-    } else if (Tk_IsMapped(panePtr->handle)) {
-        Tk_UnmapWindow(panePtr->handle);
+        XRaiseWindow(setPtr->display, Tk_WindowId(panePtr->sash));
+    } else if (Tk_IsMapped(panePtr->sash)) {
+        Tk_UnmapWindow(panePtr->sash);
     }
 }
 
@@ -3620,7 +3477,7 @@ ArrangePane(Pane *panePtr, int x, int y)
         panePtr->height = Tk_Height(setPtr->tkwin);
     }
     ArrangeWindow(panePtr, x, y);
-    ArrangeHandle(panePtr, x, y);
+    ArrangeSash(panePtr, x, y);
 }
 
 
@@ -3654,7 +3511,7 @@ VerticalPanes(Paneset *setPtr)
 #if TRACE
     fprintf(stderr, "VerticalPanes\n");
 #endif
-    panePtr = LastPane(setPtr);
+    panePtr = LastPane(setPtr, HIDDEN);
     if (panePtr == NULL) {
         Blt_Warn("VPanes: last pane is null\n");
         return;
@@ -3685,14 +3542,14 @@ VerticalPanes(Paneset *setPtr)
      * the container is different from paneset space requirements), try to
      * adjust size of the panes to fit the widget.
      */
-    if (setPtr->classPtr->type == PANESET) {
+    {
         Pane *firstPtr, *lastPtr;
         Blt_Chain span;
         int dy;
 
         dy = setPtr->bearing - top;
-        firstPtr = FirstPane(setPtr);
-        lastPtr = NextPane(setPtr->anchorPtr);
+        firstPtr = FirstPane(setPtr, HIDDEN);
+        lastPtr = NextPane(setPtr->anchorPtr, HIDDEN);
         if (firstPtr != lastPtr) {
             span = SortedSpan(setPtr, firstPtr, lastPtr);
             if (dy > 0) {
@@ -3733,10 +3590,10 @@ VerticalPanes(Paneset *setPtr)
     }
 #endif
     y = 0;
-    for (panePtr = FirstPane(setPtr); panePtr != NULL; 
-         panePtr = NextPane(panePtr)) {
+    for (panePtr = FirstPane(setPtr, HIDDEN); panePtr != NULL; 
+         panePtr = NextPane(panePtr, HIDDEN)) {
         panePtr->y = y;
-        ArrangePane(panePtr, 0, SCREEN(y));
+        ArrangePane(panePtr, 0, y);
         y += panePtr->size;
     }
 }
@@ -3768,7 +3625,7 @@ HorizontalPanes(Paneset *setPtr)
      * If the paneset has no children anymore, then don't do anything at all:
      * just leave the container widget's size as-is.
      */
-    panePtr = LastPane(setPtr);
+    panePtr = LastPane(setPtr, HIDDEN);
     if (panePtr == NULL) {
         return;
     }
@@ -3799,14 +3656,14 @@ HorizontalPanes(Paneset *setPtr)
      * the paneset is different from the total panes space requirements),
      * try to adjust size of the panes to fit the widget.
      */
-    if (setPtr->classPtr->type == PANESET) {
+    {
         Pane *firstPtr, *lastPtr;
         Blt_Chain span;
         int dx;
 
         dx = setPtr->bearing - left;
-        firstPtr = FirstPane(setPtr);
-        lastPtr = NextPane(setPtr->anchorPtr);
+        firstPtr = FirstPane(setPtr, HIDDEN);
+        lastPtr = NextPane(setPtr->anchorPtr, HIDDEN);
         if (firstPtr != lastPtr) {
             span = SortedSpan(setPtr, firstPtr, lastPtr);
             if (dx > 0) {
@@ -3842,10 +3699,10 @@ HorizontalPanes(Paneset *setPtr)
      */
 
     x = 0;
-    for (panePtr = FirstPane(setPtr); panePtr != NULL; 
-         panePtr = NextPane(panePtr)) {
+    for (panePtr = FirstPane(setPtr, HIDDEN); panePtr != NULL; 
+         panePtr = NextPane(panePtr, HIDDEN)) {
         panePtr->x = x;
-        ArrangePane(panePtr, SCREEN(x), 0);
+        ArrangePane(panePtr, x, 0);
         x += panePtr->size;
     }
 }
@@ -3869,7 +3726,7 @@ ComputeGeometry(Paneset *setPtr)
     if ((setPtr->normalWidth != Tk_ReqWidth(setPtr->tkwin)) ||
         (setPtr->normalHeight != Tk_ReqHeight(setPtr->tkwin))) {
         Tk_GeometryRequest(setPtr->tkwin, setPtr->normalWidth,
-                           setPtr->normalHeight);
+                setPtr->normalHeight);
     }
 }
 
@@ -3880,9 +3737,9 @@ ConfigurePaneset(Paneset *setPtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    setPtr->handleSize =
-        MAX(PADDING(setPtr->handlePad), setPtr->highlightThickness) +
-        setPtr->handleThickness;
+    setPtr->sashSize =
+        MAX(PADDING(setPtr->sashPad), setPtr->sashHighlightThickness) +
+        setPtr->sashThickness;
     gcMask = 0;
     newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
     if (setPtr->gc != NULL) {
@@ -3919,67 +3776,59 @@ AdjustPanesetDelta(Paneset *setPtr, int delta)
     } else if (setPtr->bearing < rmax) {
         setPtr->bearing = rmax;
     }
-    for (panePtr = FirstPane(setPtr); panePtr != NULL; 
-         panePtr = NextPane(panePtr)) {
+    for (panePtr = FirstPane(setPtr, HIDDEN); panePtr != NULL; 
+         panePtr = NextPane(panePtr, HIDDEN)) {
         panePtr->nom = panePtr->size;
     }
     return setPtr->bearing - oldBearing;
 }
 
 static void
-AdjustHandle(Paneset *setPtr, int delta)
+AdjustSash(Paneset *setPtr, int delta)
 {
     Pane *panePtr;
 
-    if (setPtr->classPtr->type != FILMSTRIP) {
-        delta = AdjustPanesetDelta(setPtr, delta);
-        for (panePtr = FirstPane(setPtr); panePtr != NULL; 
-             panePtr = NextPane(panePtr)) {
-            panePtr->nom = panePtr->size;
-        }
+    delta = AdjustPanesetDelta(setPtr, delta);
+    for (panePtr = FirstPane(setPtr, HIDDEN); panePtr != NULL; 
+         panePtr = NextPane(panePtr, HIDDEN)) {
+        panePtr->nom = panePtr->size;
     }
-    if (setPtr->classPtr->type == FILMSTRIP) {
-        setPtr->scrollOffset -= delta;
-        setPtr->flags |= SCROLL_PENDING;
-    } else {
-        switch (setPtr->mode) {
-        case MODE_GIVETAKE:
-            {
-                Pane *leftPtr, *rightPtr;
-                
-                leftPtr = setPtr->anchorPtr;
-                rightPtr = NextPane(leftPtr);
-                if (delta > 0) {
-                    GrowLeftShrinkRight(setPtr, leftPtr, rightPtr, delta);
-                } else if (delta < 0) {
-                    ShrinkLeftGrowRight(setPtr, leftPtr, rightPtr, -delta);
-                }
-            } 
-            break;
-        case MODE_SPREADSHEET:
-            {
-                Pane *leftPtr, *rightPtr;
-                
-                leftPtr = setPtr->anchorPtr;
-                rightPtr = NextPane(leftPtr);
-                if (delta > 0) {
-                    GrowLeftShrinkLast(setPtr, leftPtr, rightPtr, delta);
-                } else if (delta < 0) {
-                    ShrinkLeftGrowLast(setPtr, leftPtr, rightPtr, -delta);
-                }
-            } 
-            break;
-        case MODE_SLINKY:
-            break;
-        }
-        for (panePtr = FirstPane(setPtr); panePtr != NULL; 
-             panePtr = NextPane(panePtr)) {
-            panePtr->nom = panePtr->size;
-        }
+    switch (setPtr->mode) {
+    case MODE_GIVETAKE:
+        {
+            Pane *leftPtr, *rightPtr;
+            
+            leftPtr = setPtr->anchorPtr;
+            rightPtr = NextPane(leftPtr, HIDDEN);
+            if (delta > 0) {
+                GrowLeftShrinkRight(setPtr, leftPtr, rightPtr, delta);
+            } else if (delta < 0) {
+                ShrinkLeftGrowRight(setPtr, leftPtr, rightPtr, -delta);
+            }
+        } 
+        break;
+    case MODE_SPREADSHEET:
+        {
+            Pane *leftPtr, *rightPtr;
+            
+            leftPtr = setPtr->anchorPtr;
+            rightPtr = NextPane(leftPtr, HIDDEN);
+            if (delta > 0) {
+                GrowLeftShrinkLast(setPtr, leftPtr, rightPtr, delta);
+            } else if (delta < 0) {
+                ShrinkLeftGrowLast(setPtr, leftPtr, rightPtr, -delta);
+            }
+        } 
+        break;
+    case MODE_SLINKY:
+        break;
+    }
+    for (panePtr = FirstPane(setPtr, HIDDEN); panePtr != NULL; 
+         panePtr = NextPane(panePtr, HIDDEN)) {
+        panePtr->nom = panePtr->size;
     }
     EventuallyRedraw(setPtr);
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -3992,7 +3841,7 @@ AdjustHandle(Paneset *setPtr, int delta)
  *      Returns a standard TCL result.  The index of the pane is left in
  *      interp->result.
  *
- *      pathName add ?name? ?option value...?
+ *      pathName add ?label? ?option value...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4023,15 +3872,19 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (panePtr == NULL) {
         return TCL_ERROR;
     }
-    if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, 
-        setPtr->classPtr->specs, objc - 2, objv + 2, (char *)panePtr, 0) 
-        != TCL_OK) {
+    Blt_Chain_AppendLink(setPtr->panes, panePtr->link);
+    if (Blt_ConfigureWidgetFromObj(interp, panePtr->sash, paneSpecs,
+        objc - 2, objv + 2, (char *)panePtr, 0) != TCL_OK) {
+        DestroyPane(panePtr);
         return TCL_ERROR;
     }
-    panePtr->link = Blt_Chain_Append(setPtr->chain, panePtr);
-    RenumberPanes(setPtr);
+    if (Blt_ConfigureWidgetFromObj(interp, panePtr->sash, sashSpecs,
+        0, NULL, (char *)panePtr, 0) != TCL_OK) {
+        DestroyPane(panePtr);
+        return TCL_ERROR;
+    }
     EventuallyRedraw(setPtr);
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), panePtr->index);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), panePtr->name, -1);
     return TCL_OK;
 }
 
@@ -4058,8 +3911,8 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Paneset *setPtr = clientData;
 
-    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, panesetSpecs, 
-        (char *)setPtr, objv[2], setPtr->classPtr->type);
+    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, paneSetSpecs,
+        (char *)setPtr, objv[2], 0);
 }
 
 /*
@@ -4084,15 +3937,14 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Paneset *setPtr = clientData;
 
     if (objc == 2) {
-        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, panesetSpecs, 
-                (char *)setPtr, (Tcl_Obj *)NULL, setPtr->classPtr->type);
+        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, paneSetSpecs,
+                (char *)setPtr, (Tcl_Obj *)NULL, BLT_CONFIG_OBJV_ONLY);
     } else if (objc == 3) {
-        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, panesetSpecs, 
-                (char *)setPtr, objv[2], setPtr->classPtr->type);
+        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, paneSetSpecs,
+                (char *)setPtr, objv[2], BLT_CONFIG_OBJV_ONLY);
     }
-    if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, panesetSpecs,
-        objc - 2, objv + 2, (char *)setPtr, 
-        BLT_CONFIG_OBJV_ONLY|setPtr->classPtr->type) != TCL_OK) {
+    if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, paneSetSpecs,
+        objc - 2, objv + 2, (char *)setPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
         return TCL_ERROR;
     }
     ConfigurePaneset(setPtr);
@@ -4174,302 +4026,6 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * HandleActivateOp --
- *
- *      Changes the cursor and schedules to redraw the handle in its
- *      activate state (different relief, colors, etc).
- *
- *      pathName handle activate drawer 
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                 Tcl_Obj *const *objv)
-{
-    Pane *panePtr;
-    Paneset *setPtr = clientData;
-
-    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (panePtr->flags & (DISABLED|HIDDEN)) {
-        return TCL_OK;
-    }
-    if (panePtr != setPtr->activePtr) {
-        Tk_Cursor cursor;
-        int vert;
-
-        if (setPtr->activePtr != NULL) {
-            EventuallyRedrawHandle(setPtr->activePtr);
-        }
-        if (panePtr != NULL) {
-            EventuallyRedrawHandle(panePtr);
-        }
-        setPtr->activePtr = panePtr;
-        vert = ISVERT(setPtr);
-        if (panePtr->cursor != None) {
-            cursor = panePtr->cursor;
-        } else if (vert) {
-            cursor = setPtr->defVertCursor;
-        } else {
-            cursor = setPtr->defHorzCursor;
-        }
-        Tk_DefineCursor(panePtr->handle, cursor);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleAnchorOp --
- *
- *      Set the anchor for the resize/moving the pane/drawer.  Only one of
- *      the x and y coordinates are used depending upon the orientation of
- *      the pane.
- *
- *      pathName handle anchor drawer x y
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-               Tcl_Obj *const *objv)
-{
-    Pane *panePtr;
-    Paneset *setPtr = clientData;
-    int x, y;
-    int vert;
-
-    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (panePtr->flags & (DISABLED|HIDDEN)) {
-        return TCL_OK;
-    }
-    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
-        return TCL_ERROR;
-    } 
-    setPtr = panePtr->setPtr;
-    setPtr->anchorPtr = setPtr->activePtr = panePtr;
-    setPtr->flags |= HANDLE_ACTIVE;
-    vert = ISVERT(setPtr);
-    if (vert) {
-        setPtr->bearing = ScreenY(panePtr);
-        setPtr->handleAnchor = y;
-    } else {
-        setPtr->bearing = ScreenX(panePtr);
-        setPtr->handleAnchor = x;
-    } 
-    setPtr->bearing += panePtr->size;
-    AdjustHandle(setPtr, 0);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleDeactivateOp --
- *
- *      Changes the cursor and schedules to redraw the handle in its
- *      inactivate state (different relief, colors, etc).
- *
- *      pathName handle deactivate 
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                   Tcl_Obj *const *objv)
-{
-    Paneset *setPtr = clientData;
-
-    if (setPtr->activePtr != NULL) {
-        EventuallyRedrawHandle(setPtr->activePtr);
-        setPtr->activePtr = NULL;
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleMarkOp --
- *
- *      Sets the current mark for moving the handle.  The change between
- *      the mark and the anchor is the amount to move the handle from its
- *      previous location.
- *
- *      pathName handle mark drawer x y
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
-{
-    Pane *panePtr;
-    Paneset *setPtr = clientData;
-    int x, y;                           /* Root coordinates of the pointer
-                                         * over the handle. */
-    int delta, mark, vert;
-
-    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (panePtr->flags & (DISABLED|HIDDEN)) {
-        return TCL_OK;
-    }
-    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
-        return TCL_ERROR;
-    } 
-    setPtr = panePtr->setPtr;
-    setPtr->anchorPtr = panePtr;
-    vert = ISVERT(setPtr);
-    mark = (vert) ? y : x;
-    delta = mark - setPtr->handleAnchor;
-    AdjustHandle(setPtr, delta);
-    setPtr->handleAnchor = mark;
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleMoveOp --
- *
- *      Moves the handle.  The handle is moved the given distance from its
- *      previous location.
- *
- *      pathName handle move drawer x y
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
-{
-    Pane *panePtr;
-    Paneset *setPtr = clientData;
-    int delta, x, y;
-    int vert;
-
-    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (panePtr->flags & (DISABLED|HIDDEN)) {
-        return TCL_OK;
-    }
-    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
-        return TCL_ERROR;
-    } 
-    setPtr = panePtr->setPtr;
-    setPtr->anchorPtr = panePtr;
-    vert = ISVERT(setPtr);
-    if (vert) {
-        delta = y;
-        setPtr->bearing = ScreenY(panePtr);
-    } else {
-        delta = x;
-        setPtr->bearing = ScreenX(panePtr);
-    }
-    setPtr->bearing += panePtr->size;
-    AdjustHandle(setPtr, delta);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleSetOp --
- *
- *      Sets the location of the handle to coordinate (x or y) specified.
- *      The windows are move and/or arranged according to the mode.
- *
- *      pathName handle set drawer $x $y
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
-{
-    Pane *panePtr;
-    Paneset *setPtr = clientData;
-    int x, y;
-    int delta, mark, vert;
-
-    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (panePtr->flags & (DISABLED|HIDDEN)) {
-        return TCL_OK;
-    }
-    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
-        return TCL_ERROR;
-    } 
-    setPtr = panePtr->setPtr;
-    setPtr->flags &= ~HANDLE_ACTIVE;
-    vert = ISVERT(setPtr);
-    mark = (vert) ? y : x;
-    delta = mark - setPtr->handleAnchor;
-    AdjustHandle(setPtr, delta);
-    setPtr->handleAnchor = mark;
-    return TCL_OK;
-}
-
-static Blt_OpSpec handleOps[] =
-{
-    {"activate",   2, HandleActivateOp,   4, 4, "drawer"},
-    {"anchor",     2, HandleAnchorOp,     6, 6, "drawer x y"},
-    {"deactivate", 1, HandleDeactivateOp, 3, 3, ""},
-    {"mark",       2, HandleMarkOp,       6, 6, "drawer x y"},
-    {"move",       2, HandleMoveOp,       6, 6, "drawer x y"},
-    {"set",        1, HandleSetOp,        6, 6, "drawer x y"},
-};
-
-static int numHandleOps = sizeof(handleOps) / sizeof(Blt_OpSpec);
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleOp --
- *
- * Results:
- *      A standard TCL result.
- *
- * Side effects:
- *      See the user documentation.
- *
- *---------------------------------------------------------------------------
- */
-static int
-HandleOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
-{
-    Tcl_ObjCmdProc *proc;
-
-    proc = Blt_GetOpFromObj(interp, numHandleOps, handleOps, BLT_OP_ARG2, 
-        objc, objv, 0);
-    if (proc == NULL) {
-        return TCL_ERROR;
-    }
-    return (*proc)(clientData, interp, objc, objv);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * IndexOp --
  *
  *      Returns the index of the given pane.
@@ -4507,7 +4063,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Add new entries into a pane set.
  *
- *      .t insert position ?label? option-value label option-value...
+ *      pathName insert how whereName ?label? ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4517,47 +4073,27 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     Paneset *setPtr = clientData;
-    Pane *panePtr;
-    Blt_ChainLink link, before;
-    char c;
-    const char *string;
+    Pane *panePtr, *relPtr;
+    InsertOrder order;
     const char *name;
-
-    string = Tcl_GetString(objv[2]);
-    c = string[0];
-    if ((c == 'e') && (strcmp(string, "end") == 0)) {
-        before = NULL;
-    } else if (isdigit(UCHAR(c))) {
-        int pos;
-
-        if (Tcl_GetIntFromObj(interp, objv[2], &pos) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (pos < 0) {
-            before = Blt_Chain_FirstLink(setPtr->chain);
-        } else if (pos > Blt_Chain_GetLength(setPtr->chain)) {
-            before = NULL;
-        } else {
-            before = Blt_Chain_GetNthLink(setPtr->chain, pos);
-        }
-    } else {
-        Pane *beforePtr;
-
-        if (GetPaneFromObj(interp, setPtr, objv[2], &beforePtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (beforePtr == NULL) {
-            Tcl_AppendResult(interp, "can't find a pane \"", 
-                Tcl_GetString(objv[2]), "\" in \"", Tk_PathName(setPtr->tkwin), 
-                "\"", (char *)NULL);
-            return TCL_ERROR;
-        }
-        before = beforePtr->link;
+        
+    if (GetInsertOrder(interp, objv[2], &order) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (GetPaneFromObj(interp, setPtr, objv[3], &relPtr) != TCL_OK) {
+        return TCL_ERROR;
     }
     name = NULL;
     if (objc > 3) {
-        string = Tcl_GetString(objv[3]);
+        const char *string;
+
+        string = Tcl_GetString(objv[2]);
         if (string[0] != '-') {
+            if (GetPaneFromObj(NULL, setPtr, objv[4], &panePtr) == TCL_OK) {
+                Tcl_AppendResult(interp, "pane \"", string, 
+                        "\" already exists", (char *)NULL);
+                return TCL_ERROR;
+            }
             name = string;
             objc--, objv++;
         }
@@ -4566,23 +4102,14 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (panePtr == NULL) {
         return TCL_ERROR;
     }
-    setPtr->flags |= LAYOUT_PENDING;
+    MovePane(setPtr, panePtr, order, relPtr);
     EventuallyRedraw(setPtr);
-    if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, 
-        setPtr->classPtr->specs, objc - 3, objv + 3, (char *)panePtr, 0) 
-        != TCL_OK) {
+
+    if (Blt_ConfigureWidgetFromObj(interp, panePtr->sash, paneSpecs,
+        objc - 4, objv + 4, (char *)panePtr, 0) != TCL_OK) {
         DestroyPane(panePtr);
         return TCL_ERROR;
     }
-    link = Blt_Chain_NewLink();
-    if (before != NULL) {
-        Blt_Chain_LinkBefore(setPtr->chain, link, before);
-    } else {
-        Blt_Chain_AppendLink(setPtr->chain, link);
-    }
-    panePtr->link = link;
-    Blt_Chain_SetValue(link, panePtr);
-    RenumberPanes(setPtr);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), panePtr->name, -1);
     return TCL_OK;
 
@@ -4593,18 +4120,13 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InvokeOp --
  *
- *      This procedure is called to invoke a selection command.
- *
- *        pathName invoke pane
+ *      This procedure is called to invoke a TCL command.
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
  *
- * Side Effects:
- *      Configuration information, such as text string, colors, font, etc. get
- *      set; old resources get freed, if there were any.  The widget is
- *      redisplayed if needed.
+ *        pathName invoke paneName
  *
  *---------------------------------------------------------------------------
  */
@@ -4620,7 +4142,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaneFromObj(interp, setPtr, objv[2], &panePtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if ((panePtr == NULL) || (panePtr->flags & (DISABLED|HIDDEN))) {
+    if ((panePtr == NULL) || (panePtr->flags & DISABLED)) {
         return TCL_OK;
     }
     cmdObjPtr = GETATTR(panePtr, cmdObjPtr);
@@ -4648,6 +4170,8 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Moves a pane to a new location.
  *
+ *      pathName move before whereName paneName 
+ *      pathName move after  whereName paneName
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4656,48 +4180,23 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     Paneset *setPtr = clientData;
-    Pane *panePtr, *fromPtr;
-    char c;
-    const char *string;
-    int isBefore;
-    int length;
+    Pane *panePtr, *relPtr;
+    InsertOrder order;
 
-    if (GetPaneFromObj(interp, setPtr, objv[2], &panePtr) != TCL_OK) {
+    if (GetInsertOrder(interp, objv[2], &order) != TCL_OK) {
         return TCL_ERROR;
     }
-    if ((panePtr == NULL) || (panePtr->flags & DISABLED)) {
+    if (GetPaneFromObj(interp, setPtr, objv[3], &relPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (GetPaneFromObj(interp, setPtr, objv[4], &panePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if ((panePtr == NULL) || (panePtr->flags & DISABLED) ||
+        (panePtr == relPtr)) {
         return TCL_OK;
     }
-    string = Tcl_GetStringFromObj(objv[3], &length);
-    c = string[0];
-    if ((c == 'b') && (strncmp(string, "before", length) == 0)) {
-        isBefore = TRUE;
-    } else if ((c == 'a') && (strncmp(string, "after", length) == 0)) {
-        isBefore = FALSE;
-    } else {
-        Tcl_AppendResult(interp, "bad key word \"", string,
-            "\": should be \"after\" or \"before\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    if (GetPaneFromObj(interp, setPtr, objv[4], &fromPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (fromPtr == NULL) {
-        Tcl_AppendResult(interp, "can't find a pane \"", 
-                Tcl_GetString(objv[4]), "\" in \"", Tk_PathName(setPtr->tkwin), 
-                "\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    if (panePtr == fromPtr) {
-        return TCL_OK;
-    }
-    Blt_Chain_UnlinkLink(setPtr->chain, panePtr->link);
-    if (isBefore) {
-        Blt_Chain_LinkBefore(setPtr->chain, panePtr->link, fromPtr->link);
-    } else {
-        Blt_Chain_LinkAfter(setPtr->chain, panePtr->link, fromPtr->link);
-    }
-    setPtr->flags |= LAYOUT_PENDING;
+    MovePane(setPtr, panePtr, order, relPtr);
     EventuallyRedraw(setPtr);
     return TCL_OK;
 }
@@ -4707,7 +4206,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *        pathName names pattern...
+ *        pathName names ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4718,35 +4217,29 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Paneset *setPtr = clientData;
     Tcl_Obj *listObjPtr;
+    Blt_ChainLink link;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (objc == 2) {
-        Blt_ChainLink link;
 
-        for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
-            link = Blt_Chain_NextLink(link)) {
-            Pane *panePtr;
-
-            panePtr = Blt_Chain_GetValue(link);
-            Tcl_ListObjAppendElement(interp, listObjPtr, 
-                        Tcl_NewStringObj(panePtr->name, -1));
-        }
-    } else {
-        Blt_ChainLink link;
-
-        for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
-             link = Blt_Chain_NextLink(link)) {
-            Pane *panePtr;
-            int i;
-
-            panePtr = Blt_Chain_GetValue(link);
-            for (i = 2; i < objc; i++) {
-                if (Tcl_StringMatch(panePtr->name, Tcl_GetString(objv[i]))) {
-                    Tcl_ListObjAppendElement(interp, listObjPtr, 
-                                Tcl_NewStringObj(panePtr->name, -1));
-                    break;
-                }
+    for (link = Blt_Chain_FirstLink(setPtr->panes); link != NULL;
+         link = Blt_Chain_NextLink(link)) {
+        Pane *panePtr;
+        int i;
+        int match;
+        
+        panePtr = Blt_Chain_GetValue(link);
+        match = (objc == 2);
+        for (i = 2; i < objc; i++) {
+            if (Tcl_StringMatch(panePtr->name, Tcl_GetString(objv[i]))) {
+                match = TRUE;
+                break;
             }
+        }
+        if (match) {
+            Tcl_Obj *objPtr;
+            
+            objPtr = Tcl_NewStringObj(panePtr->name, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -4778,8 +4271,8 @@ PaneCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, 
-        setPtr->classPtr->specs, (char *)panePtr, objv[4], 0);
+    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, paneSpecs,
+        (char *)panePtr, objv[4], 0);
 }
 
 /*
@@ -4809,23 +4302,23 @@ PaneConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
             return TCL_ERROR;
         }
-        return Blt_ConfigureInfoFromObj(interp, panePtr->handle, 
-                setPtr->classPtr->specs, (char *)panePtr, (Tcl_Obj *)NULL, 0);
+        return Blt_ConfigureInfoFromObj(interp, panePtr->sash, paneSpecs,
+                (char *)panePtr, (Tcl_Obj *)NULL,0);
     } else if (objc == 5) {
         if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
             return TCL_ERROR;
         }
-        return Blt_ConfigureInfoFromObj(interp, panePtr->handle, 
-                setPtr->classPtr->specs, (char *)panePtr, objv[4], 0);
+        return Blt_ConfigureInfoFromObj(interp, panePtr->sash, paneSpecs,
+                (char *)panePtr, objv[4], 0);
     }
     if (GetPaneIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
         return TCL_ERROR;
     }
     for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
          panePtr = NextTaggedPane(&iter)) {
-        if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, 
-                setPtr->classPtr->specs, objc - 4, objv + 4, (char *)panePtr, 
-                BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+        if (Blt_ConfigureWidgetFromObj(interp, panePtr->sash, paneSpecs,
+                objc - 4, objv + 4, (char *)panePtr, BLT_CONFIG_OBJV_ONLY)
+                != TCL_OK) {
             return TCL_ERROR;
         }
     }
@@ -4874,87 +4367,79 @@ PaneOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return (*proc)(clientData, interp, objc, objv);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SashCgetOp --
+ *
+ *      pathName sash cget paneName option
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SashCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    Paneset *setPtr = clientData;
+    Pane *panePtr;
+
+    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, sashSpecs,
+        (char *)panePtr, objv[4], 0);
+}
 
 /*
  *---------------------------------------------------------------------------
  *
- * MotionTimerProc --
+ * SashConfigureOp --
  *
+ *      Returns the name, position and options of a widget in the paneset.
+ *
+ * Results:
+ *      Returns a standard TCL result.  A list of the paneset configuration
+ *      option information is left in interp->result.
+ *
+ *      pathName sash configure paneName option value
  *---------------------------------------------------------------------------
  */
-static void
-MotionTimerProc(ClientData clientData)
-{
-    Paneset *setPtr = clientData;
-
-    if (setPtr->scrollTarget > setPtr->scrollOffset) {
-        setPtr->scrollOffset += setPtr->scrollIncr;
-        if (setPtr->scrollOffset > setPtr->scrollTarget) {
-            setPtr->scrollOffset = setPtr->scrollTarget;
-        } 
-    } else if (setPtr->scrollTarget < setPtr->scrollOffset) {
-        setPtr->scrollOffset -= setPtr->scrollIncr;
-        if (setPtr->scrollOffset < setPtr->scrollTarget) {
-            setPtr->scrollOffset = setPtr->scrollTarget;
-        } 
-    }
-    setPtr->scrollIncr += setPtr->scrollIncr;
-    if (setPtr->scrollTarget == setPtr->scrollOffset) {
-        if (setPtr->timerToken != (Tcl_TimerToken)0) {
-            Tcl_DeleteTimerHandler(setPtr->timerToken);
-            setPtr->timerToken = 0;
-            setPtr->scrollIncr = setPtr->scrollUnits;
-        }
-    } else {
-        setPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
-                MotionTimerProc, setPtr);
-    }
-    setPtr->flags |= SCROLL_PENDING;
-    EventuallyRedraw(setPtr);
-}
-
-
 /*ARGSUSED*/
 static int
-SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SashConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                Tcl_Obj *const *objv)
 {
     Paneset *setPtr = clientData;
     Pane *panePtr;
-    int left, right, width, margin;
+    PaneIterator iter;
 
-    if (GetPaneFromObj(interp, setPtr, objv[2], &panePtr) != TCL_OK) {
+    if (objc == 4) {
+        if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        return Blt_ConfigureInfoFromObj(interp, panePtr->sash, 
+                sashSpecs, (char *)panePtr, (Tcl_Obj *)NULL,0);
+    } else if (objc == 5) {
+        if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        return Blt_ConfigureInfoFromObj(interp, panePtr->sash, 
+                sashSpecs, (char *)panePtr, objv[4], 0);
+    }
+    if (GetPaneIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
         return TCL_ERROR;
     }
-    if ((panePtr == NULL) || (panePtr->flags & (HIDDEN|DISABLED))) {
-        return TCL_OK;
-    }
-
-    width = VPORTWIDTH(setPtr);
-    left = setPtr->scrollOffset;
-    right = setPtr->scrollOffset + width;
-    margin = 20;
-    
-    /* If the pane is partially obscured, scroll so that it's entirely in
-     * view. */
-    if (panePtr->x < left) {
-        setPtr->scrollTarget = panePtr->x - (width - panePtr->size)/2;
-        if ((panePtr->size + margin) < width) {
-            setPtr->scrollTarget -= margin;
-        }
-    } else if ((panePtr->x + panePtr->size) >= right) {
-        setPtr->scrollTarget = panePtr->x - (width - panePtr->size)/2;
-        if ((panePtr->size + margin) < width) {
-            setPtr->scrollTarget += margin;
+    for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
+         panePtr = NextTaggedPane(&iter)) {
+        if (Blt_ConfigureWidgetFromObj(interp, panePtr->sash, 
+                sashSpecs, objc - 4, objv + 4,
+                (char *)panePtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+            return TCL_ERROR;
         }
     }
-    if (setPtr->flags & ANIMATE) {
-        setPtr->scrollIncr = setPtr->scrollUnits;
-        setPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
-                MotionTimerProc, setPtr);
-    } else {
-        setPtr->scrollOffset = setPtr->scrollTarget;
-    }
-    setPtr->flags |= SCROLL_PENDING;
+    setPtr->anchorPtr = NULL;
+    setPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(setPtr);
     return TCL_OK;
 }
@@ -4963,9 +4448,312 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
+ * SashActivateOp --
+ *
+ *      Changes the cursor and schedules to redraw the sash in its
+ *      activate state (different relief, colors, etc).
+ *
+ *      pathName sash activate drawer 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SashActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                 Tcl_Obj *const *objv)
+{
+    Pane *panePtr;
+    Paneset *setPtr = clientData;
+
+    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
+        return TCL_OK;
+    }
+    if (panePtr != setPtr->activePtr) {
+        Tk_Cursor cursor;
+        int vert;
+
+        if (setPtr->activePtr != NULL) {
+            EventuallyRedrawSash(setPtr->activePtr);
+        }
+        if (panePtr != NULL) {
+            EventuallyRedrawSash(panePtr);
+        }
+        setPtr->activePtr = panePtr;
+        vert = ISVERT(setPtr);
+        if (panePtr->cursor != None) {
+            cursor = panePtr->cursor;
+        } else if (vert) {
+            cursor = setPtr->defVertCursor;
+        } else {
+            cursor = setPtr->defHorzCursor;
+        }
+        Tk_DefineCursor(panePtr->sash, cursor);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SashAnchorOp --
+ *
+ *      Set the anchor for the resize/moving the pane/drawer.  Only one of
+ *      the x and y coordinates are used depending upon the orientation of
+ *      the pane.
+ *
+ *      pathName sash anchor paneName x y
+ *      pathName sash anchor cellName x y
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SashAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+               Tcl_Obj *const *objv)
+{
+    Pane *panePtr;
+    Paneset *setPtr = clientData;
+    int x, y;
+    int vert;
+
+    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
+        return TCL_OK;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    } 
+    setPtr = panePtr->setPtr;
+    setPtr->anchorPtr = setPtr->activePtr = panePtr;
+    setPtr->flags |= SASH_ACTIVE;
+    vert = ISVERT(setPtr);
+    if (vert) {
+        setPtr->bearing = ScreenY(panePtr);
+        setPtr->sashAnchor = y;
+    } else {
+        setPtr->bearing = ScreenX(panePtr);
+        setPtr->sashAnchor = x;
+    } 
+    setPtr->bearing += panePtr->size;
+    AdjustSash(setPtr, 0);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SashDeactivateOp --
+ *
+ *      Changes the cursor and schedules to redraw the sash in its
+ *      inactivate state (different relief, colors, etc).
+ *
+ *      pathName sash deactivate 
+ *      pathName sash deactivate 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SashDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                   Tcl_Obj *const *objv)
+{
+    Paneset *setPtr = clientData;
+
+    if (setPtr->activePtr != NULL) {
+        EventuallyRedrawSash(setPtr->activePtr);
+        setPtr->activePtr = NULL;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SashMarkOp --
+ *
+ *      Sets the current mark for moving the sash.  The change between
+ *      the mark and the anchor is the amount to move the sash from its
+ *      previous location.
+ *
+ *      pathName sash mark paneName x y
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SashMarkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Pane *panePtr;
+    Paneset *setPtr = clientData;
+    int x, y;                           /* Root coordinates of the pointer
+                                         * over the sash. */
+    int delta, mark, vert;
+
+    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
+        return TCL_OK;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    } 
+    setPtr = panePtr->setPtr;
+    setPtr->anchorPtr = panePtr;
+    vert = ISVERT(setPtr);
+    mark = (vert) ? y : x;
+    delta = mark - setPtr->sashAnchor;
+    AdjustSash(setPtr, delta);
+    setPtr->sashAnchor = mark;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SashMoveOp --
+ *
+ *      Moves the sash.  The sash is moved the given distance from its
+ *      previous location.
+ *
+ *      pathName sash move paneName x y
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SashMoveOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Pane *panePtr;
+    Paneset *setPtr = clientData;
+    int delta, x, y;
+    int vert;
+
+    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
+        return TCL_OK;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    } 
+    setPtr = panePtr->setPtr;
+    setPtr->anchorPtr = panePtr;
+    vert = ISVERT(setPtr);
+    if (vert) {
+        delta = y;
+        setPtr->bearing = ScreenY(panePtr);
+    } else {
+        delta = x;
+        setPtr->bearing = ScreenX(panePtr);
+    }
+    setPtr->bearing += panePtr->size;
+    AdjustSash(setPtr, delta);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SashSetOp --
+ *
+ *      Sets the location of the sash to coordinate (x or y) specified.
+ *      The windows are move and/or arranged according to the mode.
+ *
+ *      pathName sash set paneName x y
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SashSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    Pane *panePtr;
+    Paneset *setPtr = clientData;
+    int x, y;
+    int delta, mark, vert;
+
+    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
+        return TCL_OK;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    } 
+    setPtr = panePtr->setPtr;
+    setPtr->flags &= ~SASH_ACTIVE;
+    vert = ISVERT(setPtr);
+    mark = (vert) ? y : x;
+    delta = mark - setPtr->sashAnchor;
+    AdjustSash(setPtr, delta);
+    setPtr->sashAnchor = mark;
+    return TCL_OK;
+}
+
+static Blt_OpSpec sashOps[] = {
+    {"activate",   2, SashActivateOp,   4, 4, "paneName"},
+    {"anchor",     2, SashAnchorOp,     6, 6, "paneName x y"},
+    {"cget",       2, SashCgetOp,       5, 5, "paneName option",},
+    {"configure",  2, SashConfigureOp,  4, 0, "paneName ?option value ...?",},
+    {"deactivate", 1, SashDeactivateOp, 3, 3, ""},
+    {"mark",       2, SashMarkOp,       6, 6, "paneName x y"},
+    {"move",       2, SashMoveOp,       6, 6, "paneName x y"},
+    {"set",        1, SashSetOp,        6, 6, "paneName x y"},
+};
+
+static int numSashOps = sizeof(sashOps) / sizeof(Blt_OpSpec);
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SashOp --
+ *
+ *      This procedure is invoked to process the TCL command that corresponds
+ *      to the paneset geometry manager.  See the user documentation for
+ *      details on what it does.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ * Side effects:
+ *      See the user documentation.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SashOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+
+    proc = Blt_GetOpFromObj(interp, numSashOps, sashOps, BLT_OP_ARG2, 
+                            objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    return (*proc)(clientData, interp, objc, objv);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * TagAddOp --
  *
- *      .t tag add tagName pane1 pane2 pane2 pane4
+ *      pathName tag add tagName ?paneName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5016,7 +4804,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagDeleteOp --
  *
- *      .t delete tagName pane1 pane2 pane3
+ *      pathName tag delete tagName ?paneName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5063,7 +4851,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns the existence of the one or more tags in the given node.  If
  *      the node has any the tags, true is return in the interpreter.
  *
- *      .t tag exists pane tag1 tag2 tag3...
+ *      pathName tag exists paneName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5103,7 +4891,7 @@ TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Removes the given tags from all panes.
  *
- *      .ts tag forget tag1 tag2 tag3...
+ *      pathName tag forget ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5138,7 +4926,7 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns tag names for a given node.  If one of more pattern
  *      arguments are provided, then only those matching tags are returned.
  *
- *      .t tag get pane pat1 pat2...
+ *      pathName tag get paneName ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5215,7 +5003,7 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      node arguments are provided, then only the tags found in those
  *      nodes are returned.
  *
- *      .t tag names pane pane pane...
+ *      pathName tag names ?paneName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5288,7 +5076,7 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns the indices associated with the given tags.  The indices
  *      returned will represent the union of panes for all the given tags.
  *
- *      .t tag indices tag1 tag2 tag3...
+ *      pathName tag indices ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5369,7 +5157,7 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      digit (to distinquish them from node ids) and can't be a reserved tag
  *      ("all").
  *
- *      .t tag set pane tag1 tag2...
+ *      pathName tag set paneName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5413,11 +5201,11 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagUnsetOp --
  *
- *      Removes one or more tags from a given pane. If a tag doesn't exist or
- *      is a reserved tag ("all"), nothing will be done and no error
+ *      Removes one or more tags from a given pane. If a tag doesn't exist
+ *      or is a reserved tag ("all"), nothing will be done and no error
  *      message will be returned.
  *
- *      .t tag unset pane tag1 tag2...
+ *      pathName tag unset paneName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5462,15 +5250,15 @@ TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec tagOps[] =
 {
-    {"add",     1, TagAddOp,      2, 0, "?name? ?option value...?",},
-    {"delete",  1, TagDeleteOp,   2, 0, "?pane...?",},
-    {"exists",  1, TagExistsOp,   4, 0, "pane ?tag...?",},
-    {"forget",  1, TagForgetOp,   3, 0, "?tag...?",},
-    {"get",     1, TagGetOp,      4, 0, "pane ?pattern...?",},
+    {"add",     1, TagAddOp,      2, 0, "?paneName? ?option value ...?",},
+    {"delete",  1, TagDeleteOp,   2, 0, "?paneName ...?",},
+    {"exists",  1, TagExistsOp,   4, 0, "paneName ?tag ...?",},
+    {"forget",  1, TagForgetOp,   3, 0, "?tag ...?",},
+    {"get",     1, TagGetOp,      4, 0, "paneName ?pattern ...?",},
     {"indices", 1, TagIndicesOp,  3, 0, "?tag...?",},
-    {"names",   1, TagNamesOp,    3, 0, "?pane...?",},
-    {"set",     1, TagSetOp,      4, 0, "pane ?tag...",},
-    {"unset",   1, TagUnsetOp,    4, 0, "pane ?tag...",},
+    {"names",   1, TagNamesOp,    3, 0, "?paneName ...?",},
+    {"set",     1, TagSetOp,      4, 0, "paneName ?tag ...?",},
+    {"unset",   1, TagUnsetOp,    4, 0, "paneName ?tag ...?",},
 };
 
 static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
@@ -5490,99 +5278,6 @@ TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return result;
 }
 
-static int
-ViewOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-       Tcl_Obj *const *objv)
-{
-    Paneset *setPtr = clientData;
-    int width;
-
-    width = VPORTWIDTH(setPtr);
-    if (objc == 2) {
-        double fract;
-        Tcl_Obj *listObjPtr, *objPtr;
-
-        /* Report first and last fractions */
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        /*
-         * Note: we are bounding the fractions between 0.0 and 1.0 to support
-         * the "canvas"-style of scrolling.
-         */
-        fract = (double)setPtr->scrollOffset / setPtr->worldWidth;
-        objPtr = Tcl_NewDoubleObj(FCLAMP(fract));
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        fract = (double)(setPtr->scrollOffset + width) / setPtr->worldWidth;
-        objPtr = Tcl_NewDoubleObj(FCLAMP(fract));
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        Tcl_SetObjResult(interp, listObjPtr);
-        return TCL_OK;
-    }
-    if (Blt_GetScrollInfoFromObj(interp, objc - 2, objv + 2, 
-                &setPtr->scrollOffset, setPtr->worldWidth, width, 
-                setPtr->scrollUnits, BLT_SCROLL_MODE_HIERBOX) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    setPtr->flags |= SCROLL_PENDING;
-    EventuallyRedraw(setPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Paneset operations.
- *
- * The fields for Blt_OpSpec are as follows:
- *
- *   - operation name
- *   - minimum number of characters required to disambiguate the operation name.
- *   - function associated with operation.
- *   - minimum number of arguments required.
- *   - maximum number of arguments allowed (0 indicates no limit).
- *   - usage string
- *
- *---------------------------------------------------------------------------
- */
-static Blt_OpSpec panesetOps[] =
-{
-    {"add",        1, AddOp,       2, 0, "?name? ?option value?...",},
-    {"cget",       2, CgetOp,      3, 3, "option",},
-    {"configure",  2, ConfigureOp, 2, 0, "?option value?",},
-    {"delete",     1, DeleteOp,    3, 3, "pane",},
-    {"exists",     1, ExistsOp,    3, 3, "pane",},
-    {"handle",     1, HandleOp,    2, 0, "oper ?args?",},
-    {"index",      3, IndexOp,     3, 3, "pane",},
-    {"insert",     3, InsertOp,    3, 0, "position ?name? ?option value?...",},
-    {"invoke",     3, InvokeOp,    3, 3, "pane",},
-    {"move",       1, MoveOp,      3, 0, "pane after|before pane",},
-    {"names",      1, NamesOp,     2, 0, "?pattern...?",},
-    {"pane",       1, PaneOp,      2, 0, "oper ?args?",},
-    {"tag",        1, TagOp,       2, 0, "oper args",},
-};
-
-static int numPanesetOps = sizeof(panesetOps) / sizeof(Blt_OpSpec);
-
-static Blt_OpSpec filmstripOps[] =
-{
-    {"add",        1, AddOp,       2, 0, "?name? ?option value?...",},
-    {"cget",       2, CgetOp,      3, 3, "option",},
-    {"configure",  2, ConfigureOp, 2, 0, "?option value?",},
-    {"delete",     1, DeleteOp,    3, 3, "pane",},
-    {"exists",     1, ExistsOp,    3, 3, "pane",},
-    {"frame",      1, PaneOp,      2, 0, "oper ?args?",},
-    {"handle",     1, HandleOp,    2, 0, "oper ?args?",},
-    {"index",      3, IndexOp,     3, 3, "pane",},
-    {"insert",     3, InsertOp,    3, 0, "position ?name? ?option value?...",},
-    {"invoke",     3, InvokeOp,    3, 3, "pane",},
-    {"move",       1, MoveOp,      3, 0, "pane after|before pane",},
-    {"names",      1, NamesOp,     2, 0, "?pattern...?",},
-    {"see",        1, SeeOp,       3, 3, "pane",},
-    {"tag",        1, TagOp,       2, 0, "oper args",},
-    {"view",       1, ViewOp,      2, 5, 
-        "?moveto fract? ?scroll number what?",},
-};
-
-static int numFilmstripOps = sizeof(filmstripOps) / sizeof(Blt_OpSpec);
 
 /*
  *---------------------------------------------------------------------------
@@ -5590,8 +5285,8 @@ static int numFilmstripOps = sizeof(filmstripOps) / sizeof(Blt_OpSpec);
  * PanesetInstCmdDeleteProc --
  *
  *      This procedure is invoked when a widget command is deleted.  If the
- *      widget isn't already in the process of being destroyed, this command
- *      destroys it.
+ *      widget isn't already in the process of being destroyed, this
+ *      command destroys it.
  *
  * Results:
  *      None.
@@ -5607,10 +5302,10 @@ PanesetInstCmdDeleteProc(ClientData clientData)
     Paneset *setPtr = clientData;
 
     /*
-     * This procedure could be invoked either because the window was destroyed
-     * and the command was then deleted (in which case tkwin is NULL) or
-     * because the command was deleted, and then this procedure destroys the
-     * widget.
+     * This procedure could be invoked either because the window was
+     * destroyed and the command was then deleted (in which case tkwin is
+     * NULL) or because the command was deleted, and then this procedure
+     * destroys the widget.
      */
     if (setPtr->tkwin != NULL) {
         Tk_Window tkwin;
@@ -5626,9 +5321,9 @@ PanesetInstCmdDeleteProc(ClientData clientData)
  *
  * PanesetInstCmdProc --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to the paneset geometry manager.  See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to the paneset geometry manager.  See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -5638,23 +5333,34 @@ PanesetInstCmdDeleteProc(ClientData clientData)
  *
  *---------------------------------------------------------------------------
  */
+
+static Blt_OpSpec panesetOps[] =
+{
+    {"add",        1, AddOp,       2, 0, "?name? ?option value?...",},
+    {"cget",       2, CgetOp,      3, 3, "option",},
+    {"configure",  2, ConfigureOp, 2, 0, "?option value?",},
+    {"delete",     1, DeleteOp,    3, 3, "?paneName ...?",},
+    {"exists",     1, ExistsOp,    3, 3, "paneName",},
+    {"index",      3, IndexOp,     3, 3, "paneName",},
+    {"insert",     3, InsertOp,    4, 0, "after|before whereName ?label? ?option value ...?",},
+    {"invoke",     3, InvokeOp,    3, 3, "paneName",},
+    {"move",       1, MoveOp,      4, 0, "after|before whereName paneName",},
+    {"names",      1, NamesOp,     2, 0, "?pattern...?",},
+    {"pane",       1, PaneOp,      2, 0, "oper ?args?",},
+    {"sash",       1, SashOp,      2, 0, "oper ?args?",},
+    {"tag",        1, TagOp,       2, 0, "oper args",},
+};
+
+static int numPanesetOps = sizeof(panesetOps) / sizeof(Blt_OpSpec);
+
 static int
-PanesetInstCmdProc(
-    ClientData clientData,      /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+PanesetInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
+                   Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
-    Paneset *setPtr = clientData;
 
-    if (setPtr->classPtr->type == FILMSTRIP) {
-        proc = Blt_GetOpFromObj(interp, numFilmstripOps, filmstripOps, 
-                BLT_OP_ARG1, objc, objv, 0);
-    } else {
-        proc = Blt_GetOpFromObj(interp, numPanesetOps, panesetOps, BLT_OP_ARG1, 
-                objc, objv, 0);
-    }
+    proc = Blt_GetOpFromObj(interp, numPanesetOps, panesetOps, BLT_OP_ARG1, 
+        objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
@@ -5666,9 +5372,9 @@ PanesetInstCmdProc(
  *
  * PanesetCmd --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module. See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module. See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -5706,7 +5412,8 @@ PanesetCmd(
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             char info[200];
             
-            Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
+            Blt_FormatString(info, 200,
+                             "\n    (while loading bindings for %.50s)", 
                       Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             return TCL_ERROR;
@@ -5716,80 +5423,8 @@ PanesetCmd(
     if (setPtr == NULL) {
         goto error;
     }
-    if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, panesetSpecs, 
-        objc - 2, objv + 2, (char *)setPtr, setPtr->classPtr->type) != TCL_OK) {
-        goto error;
-    }
-    ConfigurePaneset(setPtr);
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), Tk_PathName(setPtr->tkwin),-1);
-    return TCL_OK;
-  error:
-    if (setPtr != NULL) {
-        Tk_DestroyWindow(setPtr->tkwin);
-    }
-    return TCL_ERROR;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * FilmstripCmd --
- *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module. See the user documentation for
- *      details on what it does.
- *
- * Results:
- *      A standard TCL result.
- *
- * Side effects:
- *      See the user documentation.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
-static int
-FilmstripCmd(
-    ClientData clientData,              /* Main window associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* # of arguments. */
-    Tcl_Obj *const *objv)               /* Argument strings. */
-{
-    Paneset *setPtr;
-
-    if (objc < 2) {
-        Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " pathName ?option value?...\"", 
-                (char *)NULL);
-        return TCL_ERROR;
-    }
-    /*
-     * Invoke a procedure to initialize various bindings on treeview
-     * entries.  If the procedure doesn't already exist, source it from
-     * "$blt_library/bltFilmstrip.tcl".  We deferred sourcing the file
-     * until now so that the variable $blt_library could be set within a
-     * script.
-     */
-    if (!Blt_CommandExists(interp, "::blt::Filmstrip::Initialize")) {
-        const char cmd[] = "source [file join $blt_library bltFilmstrip.tcl]";
-        if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
-            char info[200];
-
-            Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
-                    Tcl_GetString(objv[0]));
-            Tcl_AddErrorInfo(interp, info);
-            return TCL_ERROR;;
-        }
-    }
-
-    setPtr = NewPaneset(interp, objv[1], FILMSTRIP);
-    if (setPtr == NULL) {
-        goto error;
-    }
-
-    if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, panesetSpecs, 
-        objc - 2, objv + 2, (char *)setPtr, setPtr->classPtr->type) != TCL_OK) {
+    if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, paneSetSpecs,
+        objc - 2, objv + 2, (char *)setPtr, 0) != TCL_OK) {
         goto error;
     }
     ConfigurePaneset(setPtr);
@@ -5822,10 +5457,9 @@ int
 Blt_PanesetCmdInitProc(Tcl_Interp *interp)
 {
     static Blt_CmdSpec cmdSpecs[] = {
-        { "filmstrip", FilmstripCmd },
         { "paneset",   PanesetCmd }
     };
-    return Blt_InitCmds(interp, "::blt", cmdSpecs, 2);
+    return Blt_InitCmds(interp, "::blt", cmdSpecs, 1);
 }
 
 
@@ -5868,22 +5502,7 @@ DisplayProc(ClientData clientData)
          * coordinates of the new layout.  */
         return;
     }
-    if ((setPtr->classPtr->type == FILMSTRIP) && 
-        (setPtr->flags & SCROLL_PENDING)) {
-        int width;
-
-        width = VPORTWIDTH(setPtr);
-        setPtr->scrollOffset = Blt_AdjustViewport(setPtr->scrollOffset,
-                setPtr->worldWidth, width, setPtr->scrollUnits, 
-                BLT_SCROLL_MODE_HIERBOX);
-        if (setPtr->scrollCmdObjPtr != NULL) {
-            Blt_UpdateScrollbar(setPtr->interp, setPtr->scrollCmdObjPtr,
-                setPtr->scrollOffset, setPtr->scrollOffset + width,
-                setPtr->worldWidth);
-        }
-        setPtr->flags &= ~SCROLL_PENDING;
-    }
-    setPtr->numVisible = Blt_Chain_GetLength(setPtr->chain);
+    setPtr->numVisible = Blt_Chain_GetLength(setPtr->panes);
     w = Tk_Width(setPtr->tkwin);
     h = Tk_Height(setPtr->tkwin);
     drawable = Blt_GetPixmap(setPtr->display, Tk_WindowId(setPtr->tkwin), w, h, 
@@ -5905,9 +5524,9 @@ DisplayProc(ClientData clientData)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayHandle
+ * DisplaySash
  *
- *      Draws the pane's handle at its proper location.  First determines the
+ *      Draws the pane's sash at its proper location.  First determines the
  *      size and position of the each window.  It then considers the
  *      following:
  *
@@ -5926,7 +5545,7 @@ DisplayProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayHandle(ClientData clientData)
+DisplaySash(ClientData clientData)
 {
     Pane *panePtr = clientData;
     Blt_Bg bg;
@@ -5935,33 +5554,33 @@ DisplayHandle(ClientData clientData)
     Drawable drawable;
 
     panePtr->flags &= ~REDRAW_PENDING;
-    if (panePtr->handle == NULL) {
+    if (panePtr->sash == NULL) {
         return;
     }
     setPtr = panePtr->setPtr;
     if (setPtr->activePtr == panePtr) {
-        bg = GETATTR(panePtr, activeHandleBg);
+        bg = GETATTR(panePtr, activeSashBg);
         relief = setPtr->activeRelief;
     } else {
-        bg = GETATTR(panePtr, handleBg);
+        bg = GETATTR(panePtr, sashBg);
         relief = setPtr->relief;
     }
-    drawable = Tk_WindowId(panePtr->handle);
-    Blt_Bg_FillRectangle(panePtr->handle, drawable, bg, 
-        0, 0, Tk_Width(panePtr->handle), Tk_Height(panePtr->handle), 
+    drawable = Tk_WindowId(panePtr->sash);
+    Blt_Bg_FillRectangle(panePtr->sash, drawable, bg, 
+        0, 0, Tk_Width(panePtr->sash), Tk_Height(panePtr->sash), 
         0, TK_RELIEF_FLAT);
     if (relief != TK_RELIEF_FLAT) {
-        Blt_Bg_DrawRectangle(panePtr->handle, drawable, bg, 
-                setPtr->handlePad.side1, setPtr->handlePad.side1, 
-                Tk_Width(panePtr->handle) - PADDING(setPtr->handlePad), 
-                Tk_Height(panePtr->handle) - PADDING(setPtr->handlePad),
-                setPtr->handleBW, relief);
+        Blt_Bg_DrawRectangle(panePtr->sash, drawable, bg, 
+                setPtr->sashPad.side1, setPtr->sashPad.side1, 
+                Tk_Width(panePtr->sash) - PADDING(setPtr->sashPad), 
+                Tk_Height(panePtr->sash) - PADDING(setPtr->sashPad),
+                setPtr->sashBorderWidth, relief);
     }
-    if ((setPtr->highlightThickness > 0) && (panePtr->flags & FOCUS)) {
+    if ((setPtr->sashHighlightThickness > 0) && (panePtr->flags & FOCUS)) {
         GC gc;
 
-        gc = Tk_GCForColor(panePtr->highlightColor, drawable);
-        Tk_DrawFocusHighlight(panePtr->handle, gc, setPtr->highlightThickness,
+        gc = Tk_GCForColor(panePtr->sashHighlightColor, drawable);
+        Tk_DrawFocusHighlight(panePtr->sash, gc, setPtr->sashHighlightThickness,
                 drawable);
     }
 }

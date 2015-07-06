@@ -131,7 +131,7 @@ FindTagTable(struct _Blt_Tags *tagsPtr, const char *tag)
  * GetTagTable --
  *
  *      Returns the tag table given by "tag".  May create the tag
- *      table is needed.
+ *      table if needed.
  *
  * Results:
  *      Returns the pointer to the tag table.
@@ -441,8 +441,8 @@ Blt_Tags_RemoveItemFromTag(Tags *tagsPtr, const char *tag, ClientData item)
  *
  * Blt_Tags_ClearTagsFromItem --
  *
- *      Removes all the item from all the tag tables.  It is not an
- *      error if the the tag doesn't belong to any tag.
+ *      Removes item from all the tag tables.  It is not an error if the
+ *      the item doesn't belong to any tag.
  *
  * Results:
  *      None.
@@ -501,8 +501,7 @@ Blt_Tags_AppendTagsToChain(Tags *tagsPtr, ClientData item, Blt_Chain list)
  *
  * Blt_Tags_AppendTagsToObj --
  *
- *      Appends to a Tcl_Obj list all the tags an item is associated
- *      with.
+ *      Appends to a Tcl_Obj list all the tags associated with an item.
  *
  * Results:
  *      None.
@@ -572,8 +571,8 @@ Blt_Tags_AppendAllTagsToObj(Tags *tagsPtr, Tcl_Obj *listObjPtr)
  *
  * Blt_Tags_GetItemList --
  *
- *      Returns the chain of all the items corresponding to a specific
- *      tag.  If the tag doesn't exist, NULL is return;
+ *      Returns the chain of all the items corresponding to a specific tag.
+ *      If the tag doesn't exist, NULL is return;
  *
  * Results:
  *      A chain contains all the items that have the tag.  If no

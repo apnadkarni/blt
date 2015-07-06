@@ -138,9 +138,9 @@ typedef struct _Blt_Bg Bg;
 
 #define DEF_BORDER              STD_NORMAL_BACKGROUND
 #define DEF_CENTER              "no"
-#define DEF_CHECKER_OFFCOLOR    "grey97"
-#define DEF_CHECKER_ONCOLOR     "grey90"
-#define DEF_CHECKER_STRIDE      "10"
+#define DEF_CHECKERS_OFFCOLOR    "grey97"
+#define DEF_CHECKERS_ONCOLOR     "grey90"
+#define DEF_CHECKERS_STRIDE      "10"
 #define DEF_COLOR               STD_NORMAL_BACKGROUND
 #define DEF_COLOR_SCALE         "linear"
 #define DEF_CONICAL_CENTER       "c"
@@ -161,11 +161,11 @@ typedef struct _Blt_Bg Bg;
 #define DEF_REFERENCE           "toplevel"
 #define DEF_REFERENCE           "toplevel"
 #define DEF_REPEAT              "reversing"
-#define DEF_STRIPE_OFFCOLOR    "grey97"
-#define DEF_STRIPE_ONCOLOR     "grey90"
-#define DEF_STRIPE_ORIENT       "vertical"
-#define DEF_STRIPE_STRIDE       "2"
-#define DEF_TEXTURE_TYPE        "stripe"
+#define DEF_STRIPES_OFFCOLOR    "grey97"
+#define DEF_STRIPES_ONCOLOR     "grey90"
+#define DEF_STRIPES_ORIENT      "vertical"
+#define DEF_STRIPES_STRIDE      "2"
+#define DEF_TEXTURE_TYPE        "stripes"
 #define DEF_TO                  (char *)NULL
 #define DEF_XORIGIN             "0"
 #define DEF_YORIGIN             "0"
@@ -291,44 +291,44 @@ static Blt_ConfigSpec linearGradientBrushSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec stripeBrushSpecs[] =
+static Blt_ConfigSpec stripesBrushSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
-        DEF_JITTER, Blt_Offset(Blt_StripeBrush, jitter.range), 
+        DEF_JITTER, Blt_Offset(Blt_StripesBrush, jitter.range), 
         BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-offcolor", (char *)NULL, (char *)NULL,
-        DEF_STRIPE_OFFCOLOR, Blt_Offset(Blt_StripeBrush, high)},
+        DEF_STRIPES_OFFCOLOR, Blt_Offset(Blt_StripesBrush, high)},
     {BLT_CONFIG_PIX32, "-oncolor", (char *)NULL, (char *)NULL,
-        DEF_STRIPE_ONCOLOR, Blt_Offset(Blt_StripeBrush, low)},
+        DEF_STRIPES_ONCOLOR, Blt_Offset(Blt_StripesBrush, low)},
     {BLT_CONFIG_CUSTOM, "-orient", (char *)NULL, (char *)NULL,
-        DEF_STRIPE_ORIENT, Blt_Offset(Blt_StripeBrush, flags), 
+        DEF_STRIPES_ORIENT, Blt_Offset(Blt_StripesBrush, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
     {BLT_CONFIG_PIXELS_POS, "-stride", (char *)NULL, (char *)NULL,
-        DEF_STRIPE_STRIDE, Blt_Offset(Blt_StripeBrush, stride), 
+        DEF_STRIPES_STRIDE, Blt_Offset(Blt_StripesBrush, stride), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
-        Blt_Offset(Blt_StripeBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Blt_StripesBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
-        Blt_Offset(Blt_StripeBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Blt_StripesBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec checkerBrushSpecs[] =
+static Blt_ConfigSpec checkersBrushSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
-        DEF_JITTER, Blt_Offset(Blt_CheckerBrush, jitter.range), 
+        DEF_JITTER, Blt_Offset(Blt_CheckersBrush, jitter.range), 
         BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-offcolor", (char *)NULL, (char *)NULL,
-        DEF_CHECKER_OFFCOLOR, Blt_Offset(Blt_CheckerBrush, high)},
+        DEF_CHECKERS_OFFCOLOR, Blt_Offset(Blt_CheckersBrush, high)},
     {BLT_CONFIG_PIX32, "-oncolor", (char *)NULL, (char *)NULL,
-        DEF_CHECKER_ONCOLOR, Blt_Offset(Blt_CheckerBrush, low)},
+        DEF_CHECKERS_ONCOLOR, Blt_Offset(Blt_CheckersBrush, low)},
     {BLT_CONFIG_PIXELS_POS, "-stride", (char *)NULL, (char *)NULL,
-        DEF_CHECKER_STRIDE, Blt_Offset(Blt_CheckerBrush, stride), 
+        DEF_CHECKERS_STRIDE, Blt_Offset(Blt_CheckersBrush, stride), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
-        Blt_Offset(Blt_CheckerBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Blt_CheckersBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
-        Blt_Offset(Blt_CheckerBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Blt_CheckersBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -461,11 +461,11 @@ GetBackgroundTypeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
                (strncmp(string, "conical", length) == 0)) {
         *typePtr = BLT_PAINTBRUSH_CONICAL;
     } else if ((c == 's') && (length > 2) &&
-               (strncmp(string, "stripe", length) == 0)) {
-        *typePtr = BLT_PAINTBRUSH_STRIPE;
+               (strncmp(string, "stripes", length) == 0)) {
+        *typePtr = BLT_PAINTBRUSH_STRIPES;
     } else if ((c == 'c') && (length > 2) &&
-               (strncmp(string, "checker", length) == 0)) {
-        *typePtr = BLT_PAINTBRUSH_CHECKER;
+               (strncmp(string, "checkers", length) == 0)) {
+        *typePtr = BLT_PAINTBRUSH_CHECKERS;
     } else {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "unknown background type \"", string, 
@@ -2189,13 +2189,13 @@ NewBackgroundObject(BackgroundInterpData *dataPtr, Tcl_Interp *interp,
         corePtr->brush = Blt_NewLinearGradientBrush();
         corePtr->specs = linearGradientBrushSpecs;
         break;
-    case BLT_PAINTBRUSH_STRIPE:
-        corePtr->brush = Blt_NewStripeBrush();
-        corePtr->specs = stripeBrushSpecs;
+    case BLT_PAINTBRUSH_STRIPES:
+        corePtr->brush = Blt_NewStripesBrush();
+        corePtr->specs = stripesBrushSpecs;
         break;
-    case BLT_PAINTBRUSH_CHECKER:
-        corePtr->brush = Blt_NewCheckerBrush();
-        corePtr->specs = checkerBrushSpecs;
+    case BLT_PAINTBRUSH_CHECKERS:
+        corePtr->brush = Blt_NewCheckersBrush();
+        corePtr->specs = checkersBrushSpecs;
         break;
     case BLT_PAINTBRUSH_RADIAL:
         corePtr->brush = Blt_NewRadialGradientBrush();

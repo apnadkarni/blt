@@ -113,6 +113,9 @@ BLT_EXTERN Tcl_AppInitProc Blt_ScrollsetCmdInitProc;
 #ifndef NO_PANESET
 BLT_EXTERN Tcl_AppInitProc Blt_PanesetCmdInitProc;
 #endif
+#ifndef NO_FILMSTRIP
+BLT_EXTERN Tcl_AppInitProc Blt_FilmstripCmdInitProc;
+#endif
 #ifndef NO_TKSCROLLBAR
 BLT_EXTERN Tcl_AppInitProc Blt_ScrollbarCmdInitProc;
 #endif
