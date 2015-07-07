@@ -41,7 +41,6 @@ set autocolors {
 #blt::debug 100
 
 proc Move { w pane } {
-#    puts stderr "w=$w pane=$pane"
     .ss.fs see $pane
 }
 
@@ -60,7 +59,7 @@ for { set i 0 } { $i < 32 } { incr i } {
     set color [lindex $autocolors $i]
     set g .ss.fs.g$i
     blt::graph $g -bg $color -width 500
-    set pane [.ss.fs add -window $g -fill x -showhandle yes]
+    set pane [.ss.fs add -window $g -fill x -showgrip yes]
     bind $g <ButtonPress-1>  [list Move %W $pane]
     bind $g <ButtonPress-2>  [list Move %W 0]
     bind $g <ButtonPress-3>  [list Move %W end]

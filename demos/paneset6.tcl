@@ -41,14 +41,13 @@ proc Move { w pane } {
 }
 
 blt::filmstrip .ps  -bg grey -width 600 -scrollcommand { .s set } \
-    -handlethickness 3 -handlepad 1 -handleborderwidth 2 \
-    -activehandlerelief raised -handlerelief flat
-    #-scrolldelay 10 -scrollincrement 10
+    -gripthickness 3 -grippad 1 -gripborderwidth 2 \
+    -activegriprelief raised -griprelief flat 
 
 for { set i 0 } { $i < 32 } { incr i } {
     set color [lindex $autocolors $i]
     blt::graph .ps.g$i -bg $color -width 500
-    set pane [.ps add -window .ps.g$i -fill both]
+    set pane [.ps add -window .ps.g$i -fill both -showgrip yes]
     bind .ps.g$i <ButtonPress-1>  [list Move %W $pane]
     bind .ps.g$i <ButtonPress-2>  [list Move %W pane0]
     bind .ps.g$i <ButtonPress-3>  [list Move %W pane35]

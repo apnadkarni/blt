@@ -78,14 +78,15 @@ typedef enum {
 
 typedef struct _Filmstrip Filmstrip;
 typedef struct _Frame Frame;
+typedef struct _Grip Grip;
 typedef int (LimitsProc)(int value, Blt_Limits *limitsPtr);
 typedef int (SizeProc)(Frame *framePtr);
 
 /*
  * Default values for widget attributes.
  */
-#define DEF_ACTIVE_HANDLE_COLOR   STD_ACTIVE_BACKGROUND
-#define DEF_ACTIVE_HANDLE_RELIEF  "flat"
+#define DEF_ACTIVE_GRIP_COLOR   STD_ACTIVE_BACKGROUND
+#define DEF_ACTIVE_GRIP_RELIEF  "flat"
 #define DEF_ANIMATE             "0"
 #define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
 #define DEF_BORDERWIDTH         "0"
@@ -99,20 +100,20 @@ typedef int (SizeProc)(Frame *framePtr);
 #define DEF_FRAME_PADX           "0"
 #define DEF_FRAME_PADY           "0"
 #define DEF_FRAME_RESIZE         "shrink"
-#define DEF_FRAME_SHOW_HANDLE     "1"
+#define DEF_FRAME_SHOW_GRIP     "1"
 #define DEF_FRAME_TAGS           (char *)NULL
 #define DEF_FRAME_VARIABLE       (char *)NULL
 #define DEF_FRAME_WEIGHT         "1.0"
-#define DEF_HANDLE_BORDERWIDTH  "1"
-#define DEF_HANDLE_COLOR         STD_NORMAL_BACKGROUND
-#define DEF_HANDLE_CURSOR         (char *)NULL
-#define DEF_HANDLE_HIGHLIGHT_BACKGROUND   STD_NORMAL_BACKGROUND
-#define DEF_HANDLE_HIGHLIGHT_COLOR        RGB_BLACK
-#define DEF_HANDLE_HIGHLIGHT_THICKNESS "1"
-#define DEF_HANDLE_PAD            "0"
-#define DEF_HANDLE_PAD          "0"
-#define DEF_HANDLE_RELIEF       "flat"
-#define DEF_HANDLE_THICKNESS    "2"
+#define DEF_GRIP_BORDERWIDTH  "1"
+#define DEF_GRIP_COLOR         STD_NORMAL_BACKGROUND
+#define DEF_GRIP_CURSOR         (char *)NULL
+#define DEF_GRIP_HIGHLIGHT_BACKGROUND   STD_NORMAL_BACKGROUND
+#define DEF_GRIP_HIGHLIGHT_COLOR        RGB_BLACK
+#define DEF_GRIP_HIGHLIGHT_THICKNESS "1"
+#define DEF_GRIP_PAD            "0"
+#define DEF_GRIP_PAD          "0"
+#define DEF_GRIP_RELIEF       "flat"
+#define DEF_GRIP_THICKNESS    "2"
 #define DEF_HCURSOR             "sb_h_double_arrow"
 #define DEF_HEIGHT              "0"
 #define DEF_MODE                "givetake"
@@ -121,7 +122,7 @@ typedef int (SizeProc)(Frame *framePtr);
 #define DEF_SCROLL_COMMAND      (char *)NULL
 #define DEF_SCROLL_DELAY        "30"
 #define DEF_SCROLL_INCREMENT    "10"
-#define DEF_SHOW_HANDLE         "1"
+#define DEF_SHOW_GRIP         "1"
 #define DEF_SIDE                "right"
 #define DEF_TAKEFOCUS           "1"
 #define DEF_VCURSOR             "sb_v_double_arrow"
@@ -146,16 +147,17 @@ struct _Filmstrip {
     Tk_Window tkwin;                    /* The container window into which
                                          * other widgets are arranged. */
     Tcl_Interp *interp;                 /* Interpreter associated with all
-                                         * widgets and handles. */
+                                         * widgets and grips. */
     Tcl_Command cmdToken;               /* Command token associated with
                                          * this widget.  */
     const char *name;                   /* The generated name of the frame
                                          * or the pathname of the window
                                          * created. */
-    int highlightThickness;             /* Width in pixels of highlight to
-                                         * draw around the handle when it
-                                         * has the focus.  <= 0 means don't
-                                         * draw a highlight. */
+    int side;                           /* Side where grip is located. */
+    int gripHighlightThickness;       /* Width in pixels of highlight to
+                                         * draw around the grip when it
+                                         * has the focus.  Less than 1,
+                                         * means don't draw a highlight. */
     int normalWidth;                    /* Normal dimensions of the
                                          * filmstrip */
     int normalHeight;
@@ -192,19 +194,19 @@ struct _Filmstrip {
                                          * scroll the frame. */
 
     /*
-     * Focus highlight ring
+     * Focus highlight ring 
      */
-    XColor *highlightColor;             /* Color for drawing traversal
+    XColor *gripHighlightColor;       /* Color for drawing traversal
                                          * highlight. */
     int relief;
     int activeRelief;
-    Blt_Pad handlePad;
-    int handleBorderWidth;
-    int handleThickness;                /*  */
-    int handleSize;
-    Blt_Bg handleBg;
-    Blt_Bg activeHandleBg;
-    int handleAnchor;                   /* Last known location of handle
+    Blt_Pad gripPad;
+    int gripBorderWidth;
+    int gripThickness;                /*  */
+    int gripSize;
+    Blt_Bg gripBg;
+    Blt_Bg activeGripBg;
+    int gripAnchor;                   /* Last known location of grip
                                          * during a move. */
     Blt_Chain frames;                   /* List of frames.  Describes the
                                          * order of the frames in the
@@ -213,14 +215,13 @@ struct _Filmstrip {
     Blt_HashTable frameTable;           /* Table of frames.  Serves as a
                                          * directory to look up frames from
                                          * windows. */
-    Blt_HashTable handleTable;          /* Table of handles.  Serves as a
+    Blt_HashTable gripTable;          /* Table of grips.  Serves as a
                                          * directory to look up frames from
-                                         * handle windows. */
+                                         * grip windows. */
     struct _Blt_Tags tags;              /* Table of tags. */
-    Frame *activePtr;                   /* Indicates the frame with the
-                                         * active handle. */
-    Frame *anchorPtr;                   /* Frame that is currently
-                                         * anchored */
+    Grip *activePtr;                  /* Indicates the active grip. */
+    Grip *anchorPtr;                  /* Grip of frame that is
+                                         * currently anchored */
     Tcl_Obj *cmdObjPtr;                 /* Command to invoke when the
                                          * "invoke" operation is
                                          * performed. */
@@ -228,8 +229,8 @@ struct _Filmstrip {
     GC gc;
     size_t nextId;                      /* Counter to generate unique frame
                                          * names. */
-    size_t nextHandleId;                /* Counter to generate unique frame
-                                         * handle names. */
+    size_t nextGripId;                /* Counter to generate unique frame
+                                         * grip names. */
 };
 
 /*
@@ -261,18 +262,32 @@ struct _Filmstrip {
 #define VERTICAL        (1<<7)
 
 /*
+ * Grip --
+ *
+ *      A grip is the thin area where the frame may be gripped.
+ */
+struct _Grip {
+    Frame *framePtr;                    /* Frame to which this grip
+                                         * belongs. */
+    Tk_Window tkwin;                    /* Grip window to be managed. */
+    Blt_HashEntry *hashPtr;             /* Pointer of this grip into the
+                                         * filmstrip's hashtable of
+                                         * grips. */
+};
+
+/*
  * Frame --
  *
- *      A frame holds a window and a possibly a handle.  It describes how
- *      the window should appear in the frame.  The handle is a rectangle on
- *      the far edge of the frame (horizontal right, vertical bottom).
- *      Normally the last frame does not have a handle.  Handles may be
- *      hidden.
+ *      A frame contains two windows: the embedded window and a grip.  It
+ *      describes how the window should appear in the frame.  The grip is
+ *      a rectangle on the far edge of the frame (horizontal right,
+ *      vertical bottom). Grips may be hidden. Normally the grip of the
+ *      last frame is not displayed.
  *
  *      Initially, the size of a frame consists of
  *       1. the requested size embedded window,
  *       2. any requested internal padding, and
- *       3. the size of the handle (if one is displayed). 
+ *       3. the size of the grip (if one is displayed). 
  *
  *      Note: There is no 3D border around the frame.  This can be added by
  *            embedding a frame.  This simplifies the widget so that there
@@ -281,13 +296,11 @@ struct _Filmstrip {
  */
 struct _Frame  {
     Tk_Window tkwin;                    /* Widget to be managed. */
-    Tk_Window handle;                   /* Handle subwindow. */
     Tk_Cursor cursor;                   /* X Cursor */
     const char *name;                   /* Name of frame */
     unsigned int flags;
     Filmstrip *filmPtr;                 /* Filmstrip widget managing this
                                          * frame. */
-    int side;                           /* Side where handle is located. */
     int borderWidth;                    /* The external border width of the
                                          * widget. This is needed to check
                                          * if
@@ -296,8 +309,7 @@ struct _Frame  {
     XColor *highlightBgColor;           /* Color for drawing traversal
                                          * highlight area when highlight is
                                          * off. */
-    XColor *highlightColor;             /* Color for drawing traversal
-                                         * highlight. */
+    Grip grip;
     const char *takeFocus;              /* Says whether to select this
                                          * widget during tab traveral
                                          * operations.  This value isn't
@@ -323,29 +335,27 @@ struct _Frame  {
                                          * expand/shrink. */
     int x, y;                           /* Origin of frame wrt container. */
     short int width, height;            /* Size of frame, including
-                                         * handle. */
+                                         * grip. */
     Blt_ChainLink link;                 /* Pointer of this frame into the
                                          * list of frames. */
     Blt_HashEntry *hashPtr;             /* Pointer of this frame into
                                          * hashtable of frames. */
-    Blt_HashEntry *handleHashPtr;       /* Pointer of this frame into
-                                         * hashtable of handles. */
     int index;                          /* Index of the frame. */
     int size;                           /* Current size of the frame. This
                                          * size is bounded by min and
                                          * max. */
     /*
      * nom and size perform similar duties.  I need to keep track of the
-     * amount of space allocated to the frame (using size).  But at the same
-     * time, I need to indicate that space can be parcelled out to this
-     * frame.  If a nominal size was set for this frame, I don't want to add
-     * space.
+     * amount of space allocated to the frame (using size).  But at the
+     * same time, I need to indicate that space can be parcelled out to
+     * this frame.  If a nominal size was set for this frame, I don't want
+     * to add space.
      */
     int nom;                            /* The nominal size (neither
-                                         * expanded nor shrunk) of the frame
-                                         * based upon the requested size of
-                                         * the widget embedded in this
-                                         * frame. */
+                                         * expanded nor shrunk) of the
+                                         * frame based upon the requested
+                                         * size of the widget embedded in
+                                         * this frame. */
     int min, max;                       /* Size constraints on the frame */
     float weight;                       /* Weight of frame. */
     Blt_Limits reqSize;                 /* Requested bounds for the size of
@@ -355,8 +365,6 @@ struct _Frame  {
                                          * specified (max widget size).
                                          * This includes any extra padding
                                          * which may be specified. */
-    Blt_Bg handleBg;
-    Blt_Bg activeHandleBg;
     Blt_Bg bg;                          /* 3-D background border
                                          * surrounding the widget */
     Tcl_Obj *cmdObjPtr;
@@ -369,29 +377,27 @@ struct _Frame  {
                                          * selected item. */
 };
 
-/* Frame/handle flags.  */
+/* Frame/grip flags.  */
 
 #define HIDDEN          (1<<8)          /* Do not display the frame. */
-#define DISABLED        (1<<9)          /* Handle is disabled. */
+#define DISABLED        (1<<9)          /* Grip is disabled. */
 #define ONSCREEN        (1<<10)         /* Frame is on-screen. */
-#define HANDLE_ACTIVE   (1<<11)         /* Handle is currently active. */
-#define HANDLE          (1<<12)         /* The frame has a handle. */
-#define SHOW_HANDLE     (1<<13)         /* Display the frame. */
-
-#define VIRGIN          (1<<24)
+#define GRIP_ACTIVE   (1<<11)         /* Grip is currently active. */
+#define GRIP          (1<<12)         /* The frame has a grip. */
+#define SHOW_GRIP     (1<<13)         /* Display the frame's grip. */
 
 /* Orientation. */
 #define SIDE_VERTICAL   (SIDE_TOP|SIDE_BOTTOM)
 #define SIDE_HORIZONTAL (SIDE_LEFT|SIDE_RIGHT)
 
-/* Handle positions. */
-#define HANDLE_LEFT     SIDE_RIGHT
-#define HANDLE_RIGHT    SIDE_LEFT
-#define HANDLE_TOP      SIDE_BOTTOM
-#define HANDLE_BOTTOM   SIDE_TOP
+/* Grip positions. */
+#define GRIP_LEFT     SIDE_RIGHT
+#define GRIP_RIGHT    SIDE_LEFT
+#define GRIP_TOP      SIDE_BOTTOM
+#define GRIP_BOTTOM   SIDE_TOP
 
-#define HANDLE_FARSIDE  (HANDLE_RIGHT|HANDLE_BOTTOM)    
-#define HANDLE_NEARSIDE (HANDLE_LEFT|HANDLE_TOP)        
+#define GRIP_FARSIDE  (GRIP_RIGHT|GRIP_BOTTOM)    
+#define GRIP_NEARSIDE (GRIP_LEFT|GRIP_TOP)        
 
 
 static Tk_GeomRequestProc FrameGeometryProc;
@@ -429,27 +435,12 @@ static Blt_CustomOption tagsOption = {
 
 static Blt_ConfigSpec frameSpecs[] =
 {
-    {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
-        "HandleColor", DEF_ACTIVE_HANDLE_COLOR,
-        Blt_Offset(Frame, activeHandleBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         (char *)NULL, Blt_Offset(Frame, bg), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_FRAME_FILL, 
         Blt_Offset(Frame, fill), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
-        DEF_HANDLE_COLOR, Blt_Offset(Frame, handleBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CURSOR, "-handlecursor", "handleCursor", "HandleCursor",
-        DEF_HANDLE_CURSOR, Blt_Offset(Frame, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-handlehighlightbackground",
-        "handleHighlightBackground", "HandleHighlightBackground",
-        DEF_HANDLE_HIGHLIGHT_BACKGROUND, Blt_Offset(Frame, highlightBgColor), 0},
-    {BLT_CONFIG_COLOR, "-handlehighlightcolor", "handleHighlightColor",
-        "HandleHighlightColor", DEF_HANDLE_HIGHLIGHT_COLOR,
-        Blt_Offset(Frame, highlightColor), 0},
     {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
         Blt_Offset(Frame, reqHeight), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_FRAME_HIDE, 
@@ -465,9 +456,9 @@ static Blt_ConfigSpec frameSpecs[] =
         Blt_Offset(Frame, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_FRAME_RESIZE,
         Blt_Offset(Frame, resize), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-showhandle", "showHandle", "showHandle", 
-        DEF_SHOW_HANDLE, Blt_Offset(Frame, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_HANDLE },
+    {BLT_CONFIG_BITMASK, "-showgrip", "showGrip", "showGrip", 
+        DEF_SHOW_GRIP, Blt_Offset(Frame, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_GRIP },
     {BLT_CONFIG_CUSTOM, "-size", (char *)NULL, (char *)NULL, (char *)NULL, 
         Blt_Offset(Frame, reqSize), 0, &bltLimitsOption},
      {BLT_CONFIG_CUSTOM, "-tags", (char *)NULL, (char *)NULL,
@@ -483,11 +474,11 @@ static Blt_ConfigSpec frameSpecs[] =
 
 static Blt_ConfigSpec filmStripSpecs[] =
 {
-    {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
-        "HandleColor", DEF_ACTIVE_HANDLE_COLOR,
-        Blt_Offset(Filmstrip, activeHandleBg)},
-    {BLT_CONFIG_RELIEF, "-activehandlerelief", "activeHandleRelief", 
-        "HandleRelief", DEF_ACTIVE_HANDLE_RELIEF,
+    {BLT_CONFIG_BACKGROUND, "-activegripcolor", "activeGripColor", 
+        "GripColor", DEF_ACTIVE_GRIP_COLOR,
+        Blt_Offset(Filmstrip, activeGripBg)},
+    {BLT_CONFIG_RELIEF, "-activegriprelief", "activeGripRelief", 
+        "GripRelief", DEF_ACTIVE_GRIP_RELIEF,
         Blt_Offset(Filmstrip, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-animate", "animate", "Animate", DEF_ANIMATE, 
@@ -497,24 +488,25 @@ static Blt_ConfigSpec filmStripSpecs[] =
         DEF_BACKGROUND, Blt_Offset(Filmstrip, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
         0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-handleborderwidth", "handleBorderWidth", 
-        "HandleBorderWidth", DEF_HANDLE_BORDERWIDTH, 
-        Blt_Offset(Filmstrip, handleBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT },
-    {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
-        DEF_HANDLE_COLOR, Blt_Offset(Filmstrip, handleBg), 0},
-    {BLT_CONFIG_PAD, "-handlepad", "handlePad", "HandlePad", DEF_HANDLE_PAD, 
-        Blt_Offset(Filmstrip, handlePad), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-handlerelief", "handleRelief", "HandleRelief", 
-        DEF_HANDLE_RELIEF, Blt_Offset(Filmstrip, relief),
+    {BLT_CONFIG_PIXELS_NNEG, "-gripborderwidth", "gripBorderWidth", 
+        "GripBorderWidth", DEF_GRIP_BORDERWIDTH, 
+        Blt_Offset(Filmstrip, gripBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT },
+    {BLT_CONFIG_BACKGROUND, "-gripcolor", "gripColor", "GripColor",
+        DEF_GRIP_COLOR, Blt_Offset(Filmstrip, gripBg), 0},
+    {BLT_CONFIG_PAD, "-grippad", "gripPad", "GripPad", DEF_GRIP_PAD, 
+        Blt_Offset(Filmstrip, gripPad), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_RELIEF, "-griprelief", "gripRelief", "GripRelief", 
+        DEF_GRIP_RELIEF, Blt_Offset(Filmstrip, relief),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-handlethickness", "handleThickness", 
-        "HandleThickness", DEF_HANDLE_THICKNESS,
-        Blt_Offset(Filmstrip, handleThickness), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-gripthickness", "gripThickness", 
+        "GripThickness", DEF_GRIP_THICKNESS,
+        Blt_Offset(Filmstrip, gripThickness), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
         Blt_Offset(Filmstrip, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-handlehighlightthickness",
-        "handleHighlightThickness", "HandleHighlightThickness",
-        DEF_HANDLE_HIGHLIGHT_THICKNESS, Blt_Offset(Filmstrip, highlightThickness),
+    {BLT_CONFIG_PIXELS_NNEG, "-griphighlightthickness",
+        "gripHighlightThickness", "GripHighlightThickness",
+        DEF_GRIP_HIGHLIGHT_THICKNESS,
+        Blt_Offset(Filmstrip, gripHighlightThickness),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
         Blt_Offset(Filmstrip, flags), BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
@@ -533,35 +525,6 @@ static Blt_ConfigSpec filmStripSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
         Blt_Offset(Filmstrip, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
-};
-
-static Blt_ConfigSpec handleSpecs[] =
-{
-    {BLT_CONFIG_BACKGROUND, "-activecolor", "activeColor", "ActiveColor",
-        DEF_ACTIVE_HANDLE_COLOR, Blt_Offset(Filmstrip, activeHandleBg)},
-    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
-        DEF_ACTIVE_HANDLE_RELIEF, Blt_Offset(Filmstrip, activeRelief), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_BACKGROUND, Blt_Offset(Filmstrip, bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-        DEF_HANDLE_BORDERWIDTH, Blt_Offset(Filmstrip, handleBorderWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT },
-    {BLT_CONFIG_BACKGROUND, "-color", "color", "Color", DEF_HANDLE_COLOR,
-        Blt_Offset(Filmstrip, handleBg), 0},
-    {BLT_CONFIG_PAD, "-pad", "pad", "Pad", DEF_HANDLE_PAD, 
-        Blt_Offset(Filmstrip, handlePad), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_HANDLE_RELIEF,
-        Blt_Offset(Filmstrip, relief), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-thickness", "thickness", "Thickness",
-        DEF_HANDLE_THICKNESS, Blt_Offset(Filmstrip, handleThickness),
-        BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
-        "HighlightThickness", DEF_HANDLE_HIGHLIGHT_THICKNESS,
-        Blt_Offset(Filmstrip, highlightThickness), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -606,12 +569,12 @@ typedef struct _Iterator {
  */
 static Tcl_FreeProc FilmstripFreeProc;
 static Tcl_IdleProc DisplayProc;
-static Tcl_IdleProc DisplayHandle;
+static Tcl_IdleProc DisplayGrip;
 static Tcl_ObjCmdProc FilmstripCmd;
 static Tcl_ObjCmdProc FilmstripCmd;
 static Tk_EventProc FilmstripEventProc;
 static Tk_EventProc FrameEventProc;
-static Tk_EventProc HandleEventProc;
+static Tk_EventProc GripEventProc;
 static Tcl_FreeProc FrameFreeProc;
 static Tcl_ObjCmdProc FilmstripInstCmdProc;
 static Tcl_CmdDeleteProc FilmstripInstCmdDeleteProc;
@@ -828,15 +791,17 @@ static void
 DestroyFrame(Frame *framePtr)
 {
     Filmstrip *filmPtr;
-
+    Grip *gripPtr;
+    
     filmPtr = framePtr->filmPtr;
+    gripPtr = &framePtr->grip;
     Blt_Tags_ClearTagsFromItem(&filmPtr->tags, framePtr);
     Blt_FreeOptions(frameSpecs, (char *)framePtr, filmPtr->display, 0);
     if (framePtr->timerToken != (Tcl_TimerToken)0) {
         Tcl_DeleteTimerHandler(framePtr->timerToken);
         framePtr->timerToken = 0;
     }
-    if (filmPtr->anchorPtr == framePtr) {
+    if (filmPtr->anchorPtr == gripPtr) {
         filmPtr->anchorPtr = NULL;
     }
     if (framePtr->hashPtr != NULL) {
@@ -856,19 +821,19 @@ DestroyFrame(Frame *framePtr)
         Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, framePtr);
         Tk_DestroyWindow(tkwin);
     }
-    if (framePtr->handleHashPtr != NULL) {
-        Blt_DeleteHashEntry(&filmPtr->handleTable, framePtr->handleHashPtr);
-        framePtr->handleHashPtr = NULL;
+    if (gripPtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&filmPtr->gripTable, gripPtr->hashPtr);
+        gripPtr->hashPtr = NULL;
     }
-    if (framePtr->handle != NULL) {
+    if (gripPtr->tkwin != NULL) {
         Tk_Window tkwin;
 
-        tkwin = framePtr->handle;
-        Tk_DeleteEventHandler(tkwin, 
+        tkwin = gripPtr->tkwin;
+        Tk_DeleteEventHandler(gripPtr->tkwin, 
                 ExposureMask|FocusChangeMask|StructureNotifyMask, 
-                HandleEventProc, framePtr);
-        Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, framePtr);
-        framePtr->handle = NULL;
+                GripEventProc, framePtr);
+        Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, gripPtr);
+        gripPtr->tkwin = NULL;
         Tk_DestroyWindow(tkwin);
     }
     Blt_Free(framePtr);
@@ -1159,11 +1124,11 @@ TagsToObjProc(
 }
 
 static void
-EventuallyRedrawHandle(Frame *framePtr)
+EventuallyRedrawGrip(Grip *gripPtr)
 {
-    if ((framePtr->flags & REDRAW_PENDING) == 0) {
-        framePtr->flags |= REDRAW_PENDING;
-        Tcl_DoWhenIdle(DisplayHandle, framePtr);
+    if ((gripPtr->framePtr->flags & REDRAW_PENDING) == 0) {
+        gripPtr->framePtr->flags |= REDRAW_PENDING;
+        Tcl_DoWhenIdle(DisplayGrip, gripPtr);
     }
 }
 
@@ -1283,8 +1248,12 @@ FilmstripEventProc(ClientData clientData, XEvent *eventPtr)
         }
         Tcl_EventuallyFree(filmPtr, FilmstripFreeProc);
     } else if (eventPtr->type == ConfigureNotify) {
+        Frame *framePtr;
+
         /* Reset anchor frame. */
-        filmPtr->anchorPtr = LastFrame(filmPtr, HIDDEN); 
+        framePtr = LastFrame(filmPtr, HIDDEN); 
+        filmPtr->anchorPtr = &framePtr->grip;
+
         filmPtr->flags |= SCROLL_PENDING;
         EventuallyRedraw(filmPtr);
     }
@@ -1404,10 +1373,10 @@ FrameGeometryProc(ClientData clientData, Tk_Window tkwin)
 /*
  *---------------------------------------------------------------------------
  *
- * HandleEventProc --
+ * GripEventProc --
  *
  *      This procedure is invoked by the Tk event handler when various
- *      events occur in the frame handle subwindow maintained by this
+ *      events occur in the frame grip subwindow maintained by this
  *      widget.
  *
  * Results:
@@ -1416,34 +1385,34 @@ FrameGeometryProc(ClientData clientData, Tk_Window tkwin)
  *---------------------------------------------------------------------------
  */
 static void
-HandleEventProc(
+GripEventProc(
     ClientData clientData,              /* Pointer to Frame structure for
-                                         * handle referred to by
+                                         * grip referred to by
                                          * eventPtr. */
     XEvent *eventPtr)                   /* Describes what just happened. */
 {
-    Frame *framePtr = (Frame *)clientData;
+    Grip *gripPtr = (Grip *)clientData;
 
     if (eventPtr->type == Expose) {
         if (eventPtr->xexpose.count == 0) {
-            EventuallyRedrawHandle(framePtr);
+            EventuallyRedrawGrip(gripPtr);
         }
     } else if ((eventPtr->type == FocusIn) || (eventPtr->type == FocusOut)) {
         if (eventPtr->xfocus.detail != NotifyInferior) {
             if (eventPtr->type == FocusIn) {
-                framePtr->flags |= FOCUS;
+                gripPtr->framePtr->flags |= FOCUS;
             } else {
-                framePtr->flags &= ~FOCUS;
+                gripPtr->framePtr->flags &= ~FOCUS;
             }
-            EventuallyRedrawHandle(framePtr);
+            EventuallyRedrawGrip(gripPtr);
         }
     } else if (eventPtr->type == ConfigureNotify) {
-        if (framePtr->handle == NULL) {
+        if (gripPtr->tkwin == NULL) {
             return;
         }
-        EventuallyRedrawHandle(framePtr);
+        EventuallyRedrawGrip(gripPtr);
     } else if (eventPtr->type == DestroyNotify) {
-        framePtr->handle = NULL;
+        gripPtr->tkwin = NULL;
     } 
 }
 
@@ -1610,7 +1579,9 @@ GetFrameByIndex(Tcl_Interp *interp, Filmstrip *filmPtr, const char *string,
             return TCL_ERROR;
         }               
     } else if ((c == 'a') && (strcmp(string, "active") == 0)) {
-        framePtr = filmPtr->activePtr;
+        if (filmPtr->activePtr != NULL) {
+            framePtr = filmPtr->activePtr->framePtr;
+        }
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
         framePtr = FirstFrame(filmPtr, HIDDEN | DISABLED);
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
@@ -1700,7 +1671,11 @@ GetFrameIterator(Tcl_Interp *interp, Filmstrip *filmPtr, Tcl_Obj *objPtr,
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
-    iterPtr->startPtr = iterPtr->endPtr = filmPtr->activePtr;
+    framePtr = NULL;
+    if (filmPtr->activePtr != NULL) {
+        framePtr = filmPtr->activePtr->framePtr;
+    } 
+    iterPtr->startPtr = iterPtr->endPtr = framePtr;
     iterPtr->type = ITER_SINGLE;
     result = GetFrameByIndex(interp, filmPtr, string, length, &framePtr);
     if (result == TCL_ERROR) {
@@ -1713,7 +1688,7 @@ GetFrameIterator(Tcl_Interp *interp, Filmstrip *filmPtr, Tcl_Obj *objPtr,
     if (c == '.') {
         Blt_HashEntry *hPtr;
         
-        hPtr = Blt_FindHashEntry(&filmPtr->handleTable, string);
+        hPtr = Blt_FindHashEntry(&filmPtr->gripTable, string);
         if (hPtr != NULL) {
             framePtr = Blt_GetHashValue(hPtr);
             iterPtr->startPtr = iterPtr->endPtr = framePtr;
@@ -1802,9 +1777,10 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     Blt_HashEntry *hPtr;
     Frame *framePtr;
     int isNew;
-    char *handleName;
+    char *gripName;
     char string[200];
-
+    Tk_Window tkwin;
+    
     {
         char *path;
 
@@ -1816,10 +1792,10 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
             sprintf(path, "%s.%s", Tk_PathName(filmPtr->tkwin), string);
         } while (Tk_NameToWindow(interp, path, filmPtr->tkwin) != NULL);
         Blt_Free(path);
-        handleName = string;
+        gripName = string;
     } 
     if (name == NULL) {
-        name = handleName;
+        name = gripName;
     }
 
     hPtr = Blt_CreateHashEntry(&filmPtr->frameTable, name, &isNew);
@@ -1828,42 +1804,41 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
                 (char *)NULL);
         return NULL;
     }
+    tkwin = Tk_CreateWindow(interp, filmPtr->tkwin, name, (char *)NULL);
+    if (tkwin == NULL) {
+        return NULL;
+    }
     framePtr = Blt_AssertCalloc(1, sizeof(Frame));
     Blt_ResetLimits(&framePtr->reqWidth);
     Blt_ResetLimits(&framePtr->reqHeight);
     Blt_ResetLimits(&framePtr->reqSize);
-    framePtr->filmPtr = filmPtr;
-    framePtr->name = Blt_GetHashKey(&filmPtr->frameTable, hPtr);
-    framePtr->hashPtr = hPtr;
     framePtr->anchor = TK_ANCHOR_CENTER;
     framePtr->fill = FILL_BOTH;
-    framePtr->nom  = LIMITS_NOM;
-    framePtr->size = framePtr->index = 0;
-    framePtr->flags = VIRGIN | SHOW_HANDLE;
-    framePtr->resize = RESIZE_BOTH;
-    framePtr->side = HANDLE_FARSIDE;
-    framePtr->weight = 1.0f;
-    framePtr->link = Blt_Chain_NewLink();
+    framePtr->filmPtr = filmPtr;
+    framePtr->grip.tkwin = tkwin;
+    framePtr->grip.framePtr = framePtr;
+    framePtr->hashPtr = hPtr;
     framePtr->index = Blt_Chain_GetLength(filmPtr->frames);
+    framePtr->link = Blt_Chain_NewLink();
+    framePtr->name = Blt_GetHashKey(&filmPtr->frameTable, hPtr);
+    framePtr->nom  = LIMITS_NOM;
+    framePtr->resize = RESIZE_BOTH;
+    framePtr->size = framePtr->index = 0;
+    framePtr->weight = 1.0f;
     Blt_Chain_SetValue(framePtr->link, framePtr);
     Blt_SetHashValue(hPtr, framePtr);
 
-    framePtr->handle = Tk_CreateWindow(interp, filmPtr->tkwin, name,(char *)NULL);
-    if (framePtr->handle == NULL) {
-        return NULL;
-    }
-    Tk_CreateEventHandler(framePtr->handle, 
-                          ExposureMask|FocusChangeMask|StructureNotifyMask, 
-                          HandleEventProc, framePtr);
-    Tk_SetClass(framePtr->handle, "BltFilmstripHandle");
+    Tk_SetClass(tkwin, "BltFilmstripGrip");
+    Tk_CreateEventHandler(tkwin,
+                ExposureMask|FocusChangeMask|StructureNotifyMask, 
+                GripEventProc, &framePtr->grip);
 
-    /* Also add frame to handles table */
-    hPtr = Blt_CreateHashEntry(&filmPtr->handleTable, 
-                Tk_PathName(framePtr->handle), &isNew);
-    framePtr->handleHashPtr = hPtr;
+    /* Also add frame to grips table */
+    hPtr = Blt_CreateHashEntry(&filmPtr->gripTable, Tk_PathName(tkwin),
+                &isNew);
     assert(isNew);
-    Blt_SetHashValue(hPtr, framePtr);
-
+    framePtr->grip.hashPtr = hPtr;
+    Blt_SetHashValue(hPtr, &framePtr->grip);
     return framePtr;
 }
 
@@ -1982,21 +1957,22 @@ NewFilmstrip(Tcl_Interp *interp, Tcl_Obj *objPtr)
     }
     filmPtr = Blt_AssertCalloc(1, sizeof(Filmstrip));
     Tk_SetClass(tkwin, "BltFilmstrip");
-    filmPtr->tkwin = tkwin;
-    filmPtr->interp = interp;
-    filmPtr->display = Tk_Display(tkwin);
-    filmPtr->handleThickness = 2;
-    filmPtr->handlePad.side1 = filmPtr->handlePad.side2 = 2;
-    filmPtr->relief = TK_RELIEF_FLAT;
     filmPtr->activeRelief = TK_RELIEF_RAISED;
-    filmPtr->handleBorderWidth = 1;
+    filmPtr->display = Tk_Display(tkwin);
     filmPtr->flags = LAYOUT_PENDING;
+    filmPtr->gripBorderWidth = 1;
+    filmPtr->gripHighlightThickness = 2;
+    filmPtr->gripPad.side1 = filmPtr->gripPad.side2 = 2;
+    filmPtr->gripThickness = 2;
+    filmPtr->interp = interp;
     filmPtr->interval = 30;
+    filmPtr->relief = TK_RELIEF_FLAT;
     filmPtr->scrollUnits = 10;
-    filmPtr->highlightThickness = 2;
+    filmPtr->tkwin = tkwin;
+    filmPtr->side = GRIP_FARSIDE;
     Blt_SetWindowInstanceData(tkwin, filmPtr);
     Blt_InitHashTable(&filmPtr->frameTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&filmPtr->handleTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&filmPtr->gripTable, BLT_STRING_KEYS);
     Blt_Tags_Init(&filmPtr->tags);
     Tk_CreateEventHandler(tkwin, ExposureMask|StructureNotifyMask, 
                           FilmstripEventProc, filmPtr);
@@ -2168,8 +2144,11 @@ LeftSpan(Filmstrip *filmPtr)
     total = 0;
     /* The left span is every frame before and including) the anchor
      * frame. */
-    for (framePtr = filmPtr->anchorPtr; framePtr != NULL; 
-         framePtr = PrevFrame(framePtr, HIDDEN)) {
+    framePtr = NULL;
+    if (filmPtr->anchorPtr != NULL) {
+        framePtr = filmPtr->anchorPtr->framePtr;
+    }
+    for (/*empty*/; framePtr != NULL; framePtr = PrevFrame(framePtr, HIDDEN)) {
         total += framePtr->size;
     }
     return total;
@@ -2194,7 +2173,11 @@ RightSpan(Filmstrip *filmPtr)
     Frame *framePtr;
 
     total = 0;
-    for (framePtr = NextFrame(filmPtr->anchorPtr, HIDDEN); framePtr != NULL; 
+    framePtr = NULL;
+    if (filmPtr->anchorPtr != NULL) {
+        framePtr = filmPtr->anchorPtr->framePtr;
+    }
+    for (framePtr = NextFrame(framePtr, HIDDEN); framePtr != NULL; 
          framePtr = NextFrame(framePtr, HIDDEN)) {
         total += framePtr->size;
     }
@@ -2207,8 +2190,8 @@ GetReqFrameWidth(Frame *framePtr)
     int w;
 
     w = GetReqWidth(framePtr) + PADDING(framePtr->xPad); 
-    if ((ISHORIZ(framePtr->filmPtr)) && (framePtr->flags & HANDLE)) {
-        w += framePtr->filmPtr->handleSize;
+    if ((ISHORIZ(framePtr->filmPtr)) && (framePtr->flags & GRIP)) {
+        w += framePtr->filmPtr->gripSize;
     }
     return w;
 }
@@ -2219,8 +2202,8 @@ GetReqFrameHeight(Frame *framePtr)
     int h;
 
     h = GetReqHeight(framePtr) + PADDING(framePtr->yPad);
-    if ((ISVERT(framePtr->filmPtr)) && (framePtr->flags & HANDLE)) {
-        h += framePtr->filmPtr->handleSize;
+    if ((ISVERT(framePtr->filmPtr)) && (framePtr->flags & GRIP)) {
+        h += framePtr->filmPtr->gripSize;
     }
     return h;
 }
@@ -2327,8 +2310,8 @@ ResetFrames(Filmstrip *filmPtr)
             size = BoundWidth(0, &framePtr->reqSize);
             extra = PADDING(framePtr->xPad);
         }
-        if (framePtr->flags & HANDLE) {
-            extra += filmPtr->handleSize;
+        if (framePtr->flags & GRIP) {
+            extra += filmPtr->gripSize;
         }
         if (framePtr->reqSize.flags & LIMITS_NOM_SET) {
             /*
@@ -2389,8 +2372,8 @@ SetNominalSizes(Filmstrip *filmPtr)
         } else {
             extra = PADDING(framePtr->xPad);
         }
-        if (framePtr->flags & HANDLE) {
-            extra += filmPtr->handleSize;
+        if (framePtr->flags & GRIP) {
+            extra += filmPtr->gripSize;
         }
         /*
          * Restore the real bounds after temporarily setting nominal size.
@@ -2450,25 +2433,27 @@ LayoutHorizontalFrames(Filmstrip *filmPtr)
     for (link = Blt_Chain_FirstLink(filmPtr->frames); link != NULL;
          link = next) {
         Frame *framePtr;
+        Grip *gripPtr;
         int width, height;
 
         next = Blt_Chain_NextLink(link);
         framePtr = Blt_Chain_GetValue(link);
-        framePtr->flags &= ~HANDLE;
+        framePtr->flags &= ~GRIP;
+        gripPtr = &framePtr->grip;
         if (framePtr->flags & HIDDEN) {
             if (Tk_IsMapped(framePtr->tkwin)) {
                 Tk_UnmapWindow(framePtr->tkwin);
             }
-            if (Tk_IsMapped(framePtr->handle)) {
-                Tk_UnmapWindow(framePtr->handle);
+            if (Tk_IsMapped(gripPtr->tkwin)) {
+                Tk_UnmapWindow(gripPtr->tkwin);
             }
             continue;
         }
         if (next != NULL) {
-            /* Add the size of the handle to the frame. */
-            /* width += filmPtr->handleSize; */
-            if (framePtr->flags & SHOW_HANDLE) {
-                framePtr->flags |= HANDLE;
+            /* Add the size of the grip to the frame. */
+            /* width += filmPtr->gripSize; */
+            if (framePtr->flags & SHOW_GRIP) {
+                framePtr->flags |= GRIP;
             }
         }
         width = GetReqFrameWidth(framePtr);
@@ -2541,23 +2526,25 @@ LayoutVerticalFrames(Filmstrip *filmPtr)
     for (link = Blt_Chain_FirstLink(filmPtr->frames); link != NULL; link = next) {
         Frame *framePtr;
         int width, height;
+        Grip *gripPtr;
         
         next = Blt_Chain_NextLink(link);
         framePtr = Blt_Chain_GetValue(link);
+        gripPtr = &framePtr->grip;
         if (framePtr->flags & HIDDEN) {
             if (Tk_IsMapped(framePtr->tkwin)) {
                 Tk_UnmapWindow(framePtr->tkwin);
             }
-            if (Tk_IsMapped(framePtr->handle)) {
-                Tk_UnmapWindow(framePtr->handle);
+            if (Tk_IsMapped(gripPtr->tkwin)) {
+                Tk_UnmapWindow(gripPtr->tkwin);
             }
             continue;
         }
-        framePtr->flags &= ~HANDLE;
+        framePtr->flags &= ~GRIP;
         if (next != NULL) {
-            /* height += filmPtr->handleSize; */
-            if (framePtr->flags & SHOW_HANDLE) {
-                framePtr->flags |= HANDLE;
+            /* height += filmPtr->gripSize; */
+            if (framePtr->flags & SHOW_GRIP) {
+                framePtr->flags |= GRIP;
             }
         }
         height = GetReqFrameHeight(framePtr);
@@ -2622,20 +2609,20 @@ ArrangeWindow(Frame *framePtr, int x, int y)
         yMax = y + framePtr->height;
         x += Tk_Changes(framePtr->tkwin)->border_width;
         y += Tk_Changes(framePtr->tkwin)->border_width;
-        if (framePtr->flags & HANDLE) {
+        if (framePtr->flags & GRIP) {
             if (ISVERT(filmPtr)) {
-                cavityHeight -= filmPtr->handleSize;
-                if (framePtr->side & HANDLE_FARSIDE) {
-                    yMax -= filmPtr->handleSize;
+                cavityHeight -= filmPtr->gripSize;
+                if (filmPtr->side & GRIP_FARSIDE) {
+                    yMax -= filmPtr->gripSize;
                 } else {
-                    y += filmPtr->handleSize;
+                    y += filmPtr->gripSize;
                 }
             } else {
-                cavityWidth -= filmPtr->handleSize;
-                if (framePtr->side & HANDLE_FARSIDE) {
-                    xMax -= filmPtr->handleSize;
+                cavityWidth -= filmPtr->gripSize;
+                if (filmPtr->side & GRIP_FARSIDE) {
+                    xMax -= filmPtr->gripSize;
                 } else {
-                    x += filmPtr->handleSize;
+                    x += filmPtr->gripSize;
                 }
             }
         }
@@ -2728,41 +2715,42 @@ ArrangeWindow(Frame *framePtr, int x, int y)
 }
 
 static void
-ArrangeHandle(Frame *framePtr, int x, int y) 
+ArrangeGrip(Grip *gripPtr, int x, int y) 
 {
-    Filmstrip *filmPtr;
-
-    filmPtr = framePtr->filmPtr;
-    if (framePtr->flags & HANDLE) {
+    Frame *framePtr;
+    
+    framePtr = gripPtr->framePtr;
+    if (framePtr->flags & GRIP) {
+        Filmstrip *filmPtr;
         int w, h;
         
+        filmPtr = framePtr->filmPtr;
         if (ISVERT(filmPtr)) {
             x = 0;
-            if (framePtr->side & HANDLE_FARSIDE) {
-                y += framePtr->size - filmPtr->handleSize;
+            if (filmPtr->side & GRIP_FARSIDE) {
+                y += framePtr->size - filmPtr->gripSize;
             }
             w = Tk_Width(filmPtr->tkwin);
-            h = filmPtr->handleSize; 
+            h = filmPtr->gripSize; 
         } else {
             y = 0;
-            if (framePtr->side & HANDLE_FARSIDE) {
-                x += framePtr->size - filmPtr->handleSize;
+            if (filmPtr->side & GRIP_FARSIDE) {
+                x += framePtr->size - filmPtr->gripSize;
             } 
             h = Tk_Height(filmPtr->tkwin);
-            w = filmPtr->handleSize; 
+            w = filmPtr->gripSize; 
         }
-        if ((x != Tk_X(framePtr->tkwin)) || 
-            (y != Tk_Y(framePtr->tkwin)) ||
-            (w != Tk_Width(framePtr->tkwin)) ||
-            (h != Tk_Height(framePtr->tkwin))) {
-            Tk_MoveResizeWindow(framePtr->handle, x, y, w, h);
+        if ((x != Tk_X(gripPtr->tkwin)) || (y != Tk_Y(gripPtr->tkwin)) ||
+            (w != Tk_Width(gripPtr->tkwin)) ||
+            (h != Tk_Height(gripPtr->tkwin))) {
+            Tk_MoveResizeWindow(gripPtr->tkwin, x, y, w, h);
         }
-        if (!Tk_IsMapped(framePtr->handle)) {
-            Tk_MapWindow(framePtr->handle);
+        if (!Tk_IsMapped(gripPtr->tkwin)) {
+            Tk_MapWindow(gripPtr->tkwin);
         }
-        XRaiseWindow(filmPtr->display, Tk_WindowId(framePtr->handle));
-    } else if (Tk_IsMapped(framePtr->handle)) {
-        Tk_UnmapWindow(framePtr->handle);
+        XRaiseWindow(filmPtr->display, Tk_WindowId(gripPtr->tkwin));
+    } else if (Tk_IsMapped(gripPtr->tkwin)) {
+        Tk_UnmapWindow(gripPtr->tkwin);
     }
 }
 
@@ -2803,7 +2791,7 @@ ArrangeFrame(Frame *framePtr, int x, int y)
         framePtr->height = Tk_Height(filmPtr->tkwin);
     }
     ArrangeWindow(framePtr, x, y);
-    ArrangeHandle(framePtr, x, y);
+    ArrangeGrip(&framePtr->grip, x, y);
 }
 
 
@@ -2842,7 +2830,7 @@ VerticalFrames(Filmstrip *filmPtr)
         return;
     }
     if (filmPtr->anchorPtr == NULL) {
-        filmPtr->anchorPtr = framePtr;
+        filmPtr->anchorPtr = &framePtr->grip;
     }
     if (filmPtr->flags & LAYOUT_PENDING) {
         LayoutVerticalFrames(filmPtr);
@@ -2912,7 +2900,7 @@ HorizontalFrames(Filmstrip *filmPtr)
         return;
     }
     if (filmPtr->anchorPtr == NULL) {
-        filmPtr->anchorPtr = framePtr;
+        filmPtr->anchorPtr = &framePtr->grip;
     }
     if (filmPtr->flags & LAYOUT_PENDING) {
         LayoutHorizontalFrames(filmPtr);
@@ -2977,9 +2965,9 @@ ConfigureFilmstrip(Filmstrip *filmPtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    filmPtr->handleSize =
-        MAX(PADDING(filmPtr->handlePad), filmPtr->highlightThickness) +
-        filmPtr->handleThickness;
+    filmPtr->gripSize =
+        MAX(PADDING(filmPtr->gripPad), filmPtr->gripHighlightThickness) +
+        filmPtr->gripThickness;
     gcMask = 0;
     newGC = Tk_GetGC(filmPtr->tkwin, gcMask, &gcValues);
     if (filmPtr->gc != NULL) {
@@ -2989,7 +2977,7 @@ ConfigureFilmstrip(Filmstrip *filmPtr)
 }
 
 static void
-AdjustHandle(Filmstrip *filmPtr, int delta)
+AdjustGrip(Filmstrip *filmPtr, int delta)
 {
     filmPtr->scrollOffset -= delta;
     filmPtr->flags |= SCROLL_PENDING;
@@ -3019,6 +3007,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Filmstrip *filmPtr = clientData;
     Frame *framePtr;
     const char *name;
+    Grip *gripPtr;
 
     name = NULL;
     if (objc > 2) {
@@ -3039,8 +3028,10 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (framePtr == NULL) {
         return TCL_ERROR;
     }
+
+    gripPtr = &framePtr->grip;
     Blt_Chain_AppendLink(filmPtr->frames, framePtr->link);
-    if (Blt_ConfigureWidgetFromObj(interp, framePtr->handle, frameSpecs,
+    if (Blt_ConfigureWidgetFromObj(interp, gripPtr->tkwin, frameSpecs,
                 objc - 2, objv + 2, (char *)framePtr, 0) != TCL_OK) {
         DestroyFrame(framePtr);
         return TCL_ERROR;
@@ -3188,40 +3179,42 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * HandleActivateOp --
+ * GripActivateOp --
  *
- *      Changes the cursor and schedules to redraw the handle in its
+ *      Changes the cursor and schedules to redraw the grip in its
  *      activate state (different relief, colors, etc).
  *
- *      pathName handle activate frameName 
+ *      pathName grip activate frameName 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+GripActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                  Tcl_Obj *const *objv)
 {
     Frame *framePtr;
     Filmstrip *filmPtr = clientData;
-
+    Grip *gripPtr;
+    
     if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
         return TCL_ERROR;
     }
     if (framePtr->flags & (DISABLED|HIDDEN)) {
         return TCL_OK;
     }
-    if (framePtr != filmPtr->activePtr) {
+    gripPtr = &framePtr->grip;
+    if (gripPtr != filmPtr->activePtr) {
         Tk_Cursor cursor;
         int vert;
 
         if (filmPtr->activePtr != NULL) {
-            EventuallyRedrawHandle(filmPtr->activePtr);
+            EventuallyRedrawGrip(filmPtr->activePtr);
         }
         if (framePtr != NULL) {
-            EventuallyRedrawHandle(framePtr);
+            EventuallyRedrawGrip(gripPtr);
         }
-        filmPtr->activePtr = framePtr;
+        filmPtr->activePtr = gripPtr;
         vert = ISVERT(filmPtr);
         if (framePtr->cursor != None) {
             cursor = framePtr->cursor;
@@ -3230,7 +3223,7 @@ HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         } else {
             cursor = filmPtr->defHorzCursor;
         }
-        Tk_DefineCursor(framePtr->handle, cursor);
+        Tk_DefineCursor(gripPtr->tkwin, cursor);
     }
     return TCL_OK;
 }
@@ -3238,19 +3231,19 @@ HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * HandleAnchorOp --
+ * GripAnchorOp --
  *
  *      Set the anchor for the resize/moving the frame.  Only one of the x
  *      and y coordinates are used depending upon the orientation of the
  *      frame.
  *
- *      pathName handle anchor frameName x y
+ *      pathName grip anchor frameName x y
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+GripAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
 {
     Frame *framePtr;
@@ -3269,116 +3262,39 @@ HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     filmPtr = framePtr->filmPtr;
-    filmPtr->anchorPtr = filmPtr->activePtr = framePtr;
-    filmPtr->flags |= HANDLE_ACTIVE;
+    filmPtr->anchorPtr = filmPtr->activePtr = &framePtr->grip;
+    filmPtr->flags |= GRIP_ACTIVE;
     vert = ISVERT(filmPtr);
     if (vert) {
-        filmPtr->handleAnchor = y;
+        filmPtr->gripAnchor = y;
     } else {
-        filmPtr->handleAnchor = x;
+        filmPtr->gripAnchor = x;
     } 
-    AdjustHandle(filmPtr, 0);
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleCgetOp --
- *
- *      pathName handle cget frameName option
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
-{
-    Filmstrip *filmPtr = clientData;
-    Frame *framePtr;
-
-    if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    return Blt_ConfigureValueFromObj(interp, filmPtr->tkwin, handleSpecs,
-        (char *)framePtr, objv[4], 0);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleConfigureOp --
- *
- * Results:
- *      Returns a standard TCL result.  A list of the filmstrip
- *      configuration option information is left in interp->result.
- *
- *      pathName handle configure frameName ?option value ...?
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                  Tcl_Obj *const *objv)
-{
-    Filmstrip *filmPtr = clientData;
-    Frame *framePtr;
-    FrameIterator iter;
-
-    if (objc == 4) {
-        if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        return Blt_ConfigureInfoFromObj(interp, framePtr->handle, 
-                handleSpecs, (char *)framePtr, (Tcl_Obj *)NULL,0);
-    } else if (objc == 5) {
-        if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        return Blt_ConfigureInfoFromObj(interp, framePtr->handle, 
-                handleSpecs, (char *)framePtr, objv[4], 0);
-    }
-    if (GetFrameIterator(interp, filmPtr, objv[3], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (framePtr = FirstTaggedFrame(&iter); framePtr != NULL; 
-         framePtr = NextTaggedFrame(&iter)) {
-        if (Blt_ConfigureWidgetFromObj(interp, framePtr->handle, 
-                handleSpecs, objc - 4, objv + 4,
-                (char *)framePtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-            return TCL_ERROR;
-        }
-    }
-    filmPtr->anchorPtr = NULL;
-    filmPtr->flags |= LAYOUT_PENDING;
-    EventuallyRedraw(filmPtr);
+    AdjustGrip(filmPtr, 0);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * HandleDeactivateOp --
+ * GripDeactivateOp --
  *
- *      Changes the cursor and schedules to redraw the handle in its
+ *      Changes the cursor and schedules to redraw the grip in its
  *      inactivate state (different relief, colors, etc).
  *
- *      pathName handle deactivate 
+ *      pathName grip deactivate 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-HandleDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+GripDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                    Tcl_Obj *const *objv)
 {
     Filmstrip *filmPtr = clientData;
 
     if (filmPtr->activePtr != NULL) {
-        EventuallyRedrawHandle(filmPtr->activePtr);
+        EventuallyRedrawGrip(filmPtr->activePtr);
         filmPtr->activePtr = NULL;
     }
     return TCL_OK;
@@ -3387,25 +3303,25 @@ HandleDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * HandleMarkOp --
+ * GripMarkOp --
  *
- *      Sets the current mark for moving the handle.  The change between
- *      the mark and the anchor is the amount to move the handle from its
+ *      Sets the current mark for moving the grip.  The change between
+ *      the mark and the anchor is the amount to move the grip from its
  *      previous location.
  *
- *      pathName handle mark frameName x y
+ *      pathName grip mark frameName x y
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+GripMarkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
     Frame *framePtr;
     Filmstrip *filmPtr = clientData;
     int x, y;                           /* Root coordinates of the pointer
-                                         * over the handle. */
+                                         * over the grip. */
     int delta, mark, vert;
 
     if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
@@ -3419,30 +3335,30 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     filmPtr = framePtr->filmPtr;
-    filmPtr->anchorPtr = framePtr;
+    filmPtr->anchorPtr = &framePtr->grip;
     vert = ISVERT(filmPtr);
     mark = (vert) ? y : x;
-    delta = mark - filmPtr->handleAnchor;
-    AdjustHandle(filmPtr, delta);
-    filmPtr->handleAnchor = mark;
+    delta = mark - filmPtr->gripAnchor;
+    AdjustGrip(filmPtr, delta);
+    filmPtr->gripAnchor = mark;
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * HandleMoveOp --
+ * GripMoveOp --
  *
- *      Moves the handle.  The handle is moved the given distance from its
+ *      Moves the grip.  The grip is moved the given distance from its
  *      previous location.
  *
- *      pathName handle move frameName x y
+ *      pathName grip move frameName x y
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
+GripMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Frame *framePtr;
@@ -3461,32 +3377,32 @@ HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     filmPtr = framePtr->filmPtr;
-    filmPtr->anchorPtr = framePtr;
+    filmPtr->anchorPtr = &framePtr->grip;
     vert = ISVERT(filmPtr);
     if (vert) {
         delta = y;
     } else {
         delta = x;
     }
-    AdjustHandle(filmPtr, delta);
+    AdjustGrip(filmPtr, delta);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * HandleSetOp --
+ * GripSetOp --
  *
- *      Sets the location of the handle to coordinate (x or y) specified.
+ *      Sets the location of the grip to coordinate (x or y) specified.
  *      The windows are move and/or arranged according to the mode.
  *
- *      pathName handle set frameName x y
+ *      pathName grip set frameName x y
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+GripSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
     Frame *framePtr;
@@ -3505,33 +3421,31 @@ HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     filmPtr = framePtr->filmPtr;
-    filmPtr->flags &= ~HANDLE_ACTIVE;
+    filmPtr->flags &= ~GRIP_ACTIVE;
     vert = ISVERT(filmPtr);
     mark = (vert) ? y : x;
-    delta = mark - filmPtr->handleAnchor;
-    AdjustHandle(filmPtr, delta);
-    filmPtr->handleAnchor = mark;
+    delta = mark - filmPtr->gripAnchor;
+    AdjustGrip(filmPtr, delta);
+    filmPtr->gripAnchor = mark;
     return TCL_OK;
 }
 
-static Blt_OpSpec handleOps[] =
+static Blt_OpSpec gripOps[] =
 {
-    {"activate",   2, HandleActivateOp,   4, 4, "frameName"},
-    {"anchor",     2, HandleAnchorOp,     6, 6, "frameName x y"},
-    {"cget",       2, HandleCgetOp,      5, 5, "frameName option",},
-    {"configure",  2, HandleConfigureOp, 4, 0, "frameName ?option value ...?",},
-    {"deactivate", 1, HandleDeactivateOp, 3, 3, ""},
-    {"mark",       2, HandleMarkOp,       6, 6, "frameName x y"},
-    {"move",       2, HandleMoveOp,       6, 6, "frameName x y"},
-    {"set",        1, HandleSetOp,        6, 6, "frameName x y"},
+    {"activate",   2, GripActivateOp,   4, 4, "frameName"},
+    {"anchor",     2, GripAnchorOp,     6, 6, "frameName x y"},
+    {"deactivate", 1, GripDeactivateOp, 3, 3, ""},
+    {"mark",       2, GripMarkOp,       6, 6, "frameName x y"},
+    {"move",       2, GripMoveOp,       6, 6, "frameName x y"},
+    {"set",        1, GripSetOp,        6, 6, "frameName x y"},
 };
 
-static int numHandleOps = sizeof(handleOps) / sizeof(Blt_OpSpec);
+static int numGripOps = sizeof(gripOps) / sizeof(Blt_OpSpec);
 
 /*
  *---------------------------------------------------------------------------
  *
- * HandleOp --
+ * GripOp --
  *
  * Results:
  *      A standard TCL result.
@@ -3542,12 +3456,12 @@ static int numHandleOps = sizeof(handleOps) / sizeof(Blt_OpSpec);
  *---------------------------------------------------------------------------
  */
 static int
-HandleOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+GripOp(ClientData clientData, Tcl_Interp *interp, int objc, 
         Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 
-    proc = Blt_GetOpFromObj(interp, numHandleOps, handleOps, BLT_OP_ARG2, 
+    proc = Blt_GetOpFromObj(interp, numGripOps, gripOps, BLT_OP_ARG2, 
         objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
@@ -3608,6 +3522,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Frame *framePtr, *relPtr;
     InsertOrder order;
     const char *name;
+    Grip *gripPtr;
         
     if (GetInsertOrder(interp, objv[2], &order) != TCL_OK) {
         return TCL_ERROR;
@@ -3636,8 +3551,8 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     MoveFrame(filmPtr, framePtr, order, relPtr);
     EventuallyRedraw(filmPtr);
-
-    if (Blt_ConfigureWidgetFromObj(interp, framePtr->handle, frameSpecs,
+    gripPtr = &framePtr->grip;
+    if (Blt_ConfigureWidgetFromObj(interp, gripPtr->tkwin, frameSpecs,
                 objc - 4, objv + 4, (char *)framePtr, 0) != TCL_OK) {
         DestroyFrame(framePtr);
         return TCL_ERROR;
@@ -3826,18 +3741,21 @@ FrameConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Filmstrip *filmPtr = clientData;
     Frame *framePtr;
     FrameIterator iter;
+    Tk_Window tkwin;
 
     if (objc == 4) {
         if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
             return TCL_ERROR;
         }
-        return Blt_ConfigureInfoFromObj(interp, framePtr->handle, frameSpecs,
+        tkwin = framePtr->grip.tkwin;
+        return Blt_ConfigureInfoFromObj(interp, tkwin, frameSpecs,
                 (char *)framePtr, (Tcl_Obj *)NULL,0);
     } else if (objc == 5) {
         if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
             return TCL_ERROR;
         }
-        return Blt_ConfigureInfoFromObj(interp, framePtr->handle, frameSpecs,
+        tkwin = framePtr->grip.tkwin;
+        return Blt_ConfigureInfoFromObj(interp, tkwin, frameSpecs,
                 (char *)framePtr, objv[4], 0);
     }
     if (GetFrameIterator(interp, filmPtr, objv[3], &iter) != TCL_OK) {
@@ -3845,7 +3763,8 @@ FrameConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (framePtr = FirstTaggedFrame(&iter); framePtr != NULL; 
          framePtr = NextTaggedFrame(&iter)) {
-        if (Blt_ConfigureWidgetFromObj(interp, framePtr->handle, frameSpecs,
+        tkwin = framePtr->grip.tkwin;
+        if (Blt_ConfigureWidgetFromObj(interp, tkwin, frameSpecs,
                 objc - 4, objv + 4, (char *)framePtr, BLT_CONFIG_OBJV_ONLY)
             != TCL_OK) {
             return TCL_ERROR;
@@ -4558,7 +4477,7 @@ static Blt_OpSpec filmstripOps[] =
     {"delete",     1, DeleteOp,    3, 3, "?frameName ...?",},
     {"exists",     1, ExistsOp,    3, 3, "frameName",},
     {"frame",      1, FrameOp,     2, 0, "oper ?args?",},
-    {"handle",     1, HandleOp,    2, 0, "oper ?args?",},
+    {"grip",     1, GripOp,    2, 0, "oper ?args?",},
     {"index",      3, IndexOp,     3, 3, "frame",},
     {"insert",     3, InsertOp,    4, 0, "after|before whereName ?label? ?option value ...?",},
     {"invoke",     3, InvokeOp,    3, 3, "frameName",},
@@ -4814,9 +4733,9 @@ DisplayProc(ClientData clientData)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayHandle
+ * DisplayGrip
  *
- *      Draws the frame's handle at its proper location.  First determines the
+ *      Draws the frame's grip at its proper location.  First determines the
  *      size and position of the each window.  It then considers the
  *      following:
  *
@@ -4835,42 +4754,46 @@ DisplayProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayHandle(ClientData clientData)
+DisplayGrip(ClientData clientData)
 {
-    Frame *framePtr = clientData;
     Blt_Bg bg;
-    int relief;
-    Filmstrip *filmPtr;
     Drawable drawable;
-
+    Filmstrip *filmPtr;
+    Grip *gripPtr = clientData;
+    Frame *framePtr;
+    int relief;
+    int w, h;
+    
+    framePtr = gripPtr->framePtr;
     framePtr->flags &= ~REDRAW_PENDING;
-    if (framePtr->handle == NULL) {
+    if (gripPtr->tkwin == NULL) {
         return;
     }
     filmPtr = framePtr->filmPtr;
-    if (filmPtr->activePtr == framePtr) {
-        bg = GETATTR(framePtr, activeHandleBg);
+
+    if (filmPtr->activePtr == gripPtr) {
+        bg = filmPtr->activeGripBg;
         relief = filmPtr->activeRelief;
     } else {
-        bg = GETATTR(framePtr, handleBg);
+        bg =  filmPtr->gripBg;
         relief = filmPtr->relief;
     }
-    drawable = Tk_WindowId(framePtr->handle);
-    Blt_Bg_FillRectangle(framePtr->handle, drawable, bg, 
-        0, 0, Tk_Width(framePtr->handle), Tk_Height(framePtr->handle), 
-        0, TK_RELIEF_FLAT);
+    w = Tk_Width(gripPtr->tkwin);
+    h = Tk_Height(gripPtr->tkwin);
+    drawable = Tk_WindowId(gripPtr->tkwin);
+    Blt_Bg_FillRectangle(gripPtr->tkwin, drawable, bg, 0, 0, w, h, 0,
+                TK_RELIEF_FLAT);
     if (relief != TK_RELIEF_FLAT) {
-        Blt_Bg_DrawRectangle(framePtr->handle, drawable, bg, 
-                filmPtr->handlePad.side1, filmPtr->handlePad.side1, 
-                Tk_Width(framePtr->handle) - PADDING(filmPtr->handlePad), 
-                Tk_Height(framePtr->handle) - PADDING(filmPtr->handlePad),
-                filmPtr->handleBorderWidth, relief);
+        Blt_Bg_DrawRectangle(gripPtr->tkwin, drawable, bg, 
+                filmPtr->gripPad.side1, filmPtr->gripPad.side1, 
+                w - PADDING(filmPtr->gripPad), h - PADDING(filmPtr->gripPad),
+                filmPtr->gripBorderWidth, relief);
     }
-    if ((filmPtr->highlightThickness > 0) && (framePtr->flags & FOCUS)) {
+    if ((filmPtr->gripHighlightThickness > 0) && (framePtr->flags & FOCUS)) {
         GC gc;
 
-        gc = Tk_GCForColor(framePtr->highlightColor, drawable);
-        Tk_DrawFocusHighlight(framePtr->handle, gc, filmPtr->highlightThickness,
-                drawable);
+        gc = Tk_GCForColor(filmPtr->gripHighlightColor, drawable);
+        Tk_DrawFocusHighlight(gripPtr->tkwin, gc,
+                filmPtr->gripHighlightThickness, drawable);
     }
 }
