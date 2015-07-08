@@ -807,8 +807,8 @@ PictureToJpg(
     if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
         Blt_Picture unassoc;
         /* 
-         * The picture has an alpha burned into the components.  Create a
-         * temporary copy removing pre-multiplied alphas.
+         * The picture has alphas burned into its color components.  Create
+         * a temporary copy removing pre-multiplied alphas.
          */ 
         unassoc = Blt_ClonePicture(srcPtr);
         Blt_UnmultiplyColors(unassoc);
@@ -819,10 +819,12 @@ PictureToJpg(
     }
     Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     if (Blt_Picture_IsColor(srcPtr)) {
-        cinfo.input_components = 3;   /* # of color components per pixel */
+        cinfo.input_components = 3;     /* # of color components per
+                                         * pixel */
         cinfo.in_color_space = JCS_RGB; /* Colorspace of input image */
     } else {
-        cinfo.input_components = 1;   /* # of color components per pixel */
+        cinfo.input_components = 1;     /* # of color components per
+                                         * pixel */
         cinfo.in_color_space = JCS_GRAYSCALE; /* Colorspace of input image */
     }   
     jpeg_set_defaults(&cinfo);

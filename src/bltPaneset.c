@@ -1909,6 +1909,9 @@ GetPaneIterator(Tcl_Interp *interp, Paneset *setPtr, Tcl_Obj *objPtr,
  *      container widget itself or b) a mutual ancestor of the container
  *      widget.
  *
+ *      The pane will also contain a Tk window to represent the sash.
+ *      It's name is automatically generated as "sash0", "sash1", etc.
+ *
  * Results:
  *      Returns a pointer to the new structure describing the new widget
  *      pane.  If an error occurred, then the return value is NULL and an
@@ -1925,25 +1928,6 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     Blt_HashEntry *hPtr;
     Pane *panePtr;
     int isNew;
-    char *sashName;
-    char string[200];
-
-    {
-        char *path;
-
-        /* Generate an unique subwindow name.  In theory you could have
-         * more than one drawer widget assigned to the same window.  */
-        path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
-        do {
-            sprintf(string, "sash%lu", (unsigned long)setPtr->nextId++);
-            sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
-        } while (Tk_NameToWindow(interp, path, setPtr->tkwin) != NULL);
-        Blt_Free(path);
-        sashName = string;
-    } 
-    if (name == NULL) {
-        name = sashName;
-    }
 
     hPtr = Blt_CreateHashEntry(&setPtr->paneTable, name, &isNew);
     if (!isNew) {
@@ -1970,23 +1954,37 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     panePtr->index = Blt_Chain_GetLength(setPtr->panes);
     Blt_Chain_SetValue(panePtr->link, panePtr);
     Blt_SetHashValue(hPtr, panePtr);
+    
+    /* Generate an unique subwindow name.  In theory you could have more
+     * than one drawer widget assigned to the same window.  */
+    {
+        char string[200];
+        char *path;
 
-    panePtr->sash = Tk_CreateWindow(interp, setPtr->tkwin, name,(char *)NULL);
-    if (panePtr->sash == NULL) {
-        return NULL;
-    }
+        path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
+        do {
+            sprintf(string, "sash%lu", (unsigned long)setPtr->nextId++);
+            sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
+        } while (Tk_NameToWindow(NULL, path, setPtr->tkwin) != NULL);
+        Blt_Free(path);
+        panePtr->sash = Tk_CreateWindow(interp, setPtr->tkwin, string,
+                (char *)NULL);
+        if (panePtr->sash == NULL) {
+            DestroyPane(panePtr);
+            return NULL;
+        }
+    } 
     Tk_CreateEventHandler(panePtr->sash, 
                           ExposureMask|FocusChangeMask|StructureNotifyMask, 
                           SashEventProc, panePtr);
     Tk_SetClass(panePtr->sash, "BltPanesetSash");
 
     /* Also add pane to sash table */
-    hPtr = Blt_CreateHashEntry(&setPtr->sashTable, 
-                Tk_PathName(panePtr->sash), &isNew);
+    hPtr = Blt_CreateHashEntry(&setPtr->sashTable, Tk_PathName(panePtr->sash),
+                               &isNew);
     panePtr->sashHashPtr = hPtr;
     assert(isNew);
     Blt_SetHashValue(hPtr, panePtr);
-
     return panePtr;
 }
 
@@ -3859,6 +3857,11 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
         string = Tcl_GetString(objv[2]);
         if (string[0] != '-') {
+            if (Tk_NameToWindow(NULL, string, setPtr->tkwin) != NULL) {
+                Tcl_AppendResult(interp, "a window named \"", string, 
+                                 "\" already exists", (char *)NULL);
+                return TCL_ERROR;
+            }
             if (GetPaneFromObj(NULL, setPtr, objv[2], &panePtr) == TCL_OK) {
                 Tcl_AppendResult(interp, "pane \"", string, 
                         "\" already exists", (char *)NULL);
@@ -4084,11 +4087,16 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     name = NULL;
-    if (objc > 3) {
+    if (objc > 4) {
         const char *string;
 
-        string = Tcl_GetString(objv[2]);
+        string = Tcl_GetString(objv[4]);
         if (string[0] != '-') {
+            if (Tk_NameToWindow(NULL, string, setPtr->tkwin) != NULL) {
+                Tcl_AppendResult(interp, "a window named \"", string, 
+                                 "\" already exists", (char *)NULL);
+                return TCL_ERROR;
+            }
             if (GetPaneFromObj(NULL, setPtr, objv[4], &panePtr) == TCL_OK) {
                 Tcl_AppendResult(interp, "pane \"", string, 
                         "\" already exists", (char *)NULL);

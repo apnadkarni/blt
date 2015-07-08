@@ -1690,8 +1690,10 @@ GetFrameIterator(Tcl_Interp *interp, Filmstrip *filmPtr, Tcl_Obj *objPtr,
         
         hPtr = Blt_FindHashEntry(&filmPtr->gripTable, string);
         if (hPtr != NULL) {
-            framePtr = Blt_GetHashValue(hPtr);
-            iterPtr->startPtr = iterPtr->endPtr = framePtr;
+	    Grip *gripPtr;
+
+            gripPtr = Blt_GetHashValue(hPtr);
+            iterPtr->startPtr = iterPtr->endPtr = gripPtr->framePtr;
             iterPtr->type = ITER_SINGLE;
             return TCL_OK;
         }
@@ -1777,46 +1779,23 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     Blt_HashEntry *hPtr;
     Frame *framePtr;
     int isNew;
-    char *gripName;
-    char string[200];
-    Tk_Window tkwin;
+    Grip *gripPtr;
     
-    {
-        char *path;
-
-        /* Generate an unique subwindow name.  In theory you could have
-         * more than one filmstrip widget assigned to the same window.  */
-        path = Blt_AssertMalloc(strlen(Tk_PathName(filmPtr->tkwin)) + 200);
-        do {
-            sprintf(string, "frame%lu", (unsigned long)filmPtr->nextId++);
-            sprintf(path, "%s.%s", Tk_PathName(filmPtr->tkwin), string);
-        } while (Tk_NameToWindow(interp, path, filmPtr->tkwin) != NULL);
-        Blt_Free(path);
-        gripName = string;
-    } 
-    if (name == NULL) {
-        name = gripName;
-    }
-
     hPtr = Blt_CreateHashEntry(&filmPtr->frameTable, name, &isNew);
     if (!isNew) {
         Tcl_AppendResult(interp, "frame \"", name, "\" already exists.",
                 (char *)NULL);
         return NULL;
     }
-    tkwin = Tk_CreateWindow(interp, filmPtr->tkwin, name, (char *)NULL);
-    if (tkwin == NULL) {
-        return NULL;
-    }
     framePtr = Blt_AssertCalloc(1, sizeof(Frame));
+    gripPtr = &framePtr->grip;
     Blt_ResetLimits(&framePtr->reqWidth);
     Blt_ResetLimits(&framePtr->reqHeight);
     Blt_ResetLimits(&framePtr->reqSize);
     framePtr->anchor = TK_ANCHOR_CENTER;
     framePtr->fill = FILL_BOTH;
     framePtr->filmPtr = filmPtr;
-    framePtr->grip.tkwin = tkwin;
-    framePtr->grip.framePtr = framePtr;
+    gripPtr->framePtr = framePtr;
     framePtr->hashPtr = hPtr;
     framePtr->index = Blt_Chain_GetLength(filmPtr->frames);
     framePtr->link = Blt_Chain_NewLink();
@@ -1828,17 +1807,36 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     Blt_Chain_SetValue(framePtr->link, framePtr);
     Blt_SetHashValue(hPtr, framePtr);
 
-    Tk_SetClass(tkwin, "BltFilmstripGrip");
-    Tk_CreateEventHandler(tkwin,
+    {
+        char string[200];
+        char *path;
+
+        /* Generate an unique subwindow name.  In theory you could have
+         * more than one filmstrip widget assigned to the same window.  */
+        path = Blt_AssertMalloc(strlen(Tk_PathName(filmPtr->tkwin)) + 200);
+        do {
+            sprintf(string, "grip%lu", (unsigned long)filmPtr->nextId++);
+            sprintf(path, "%s.%s", Tk_PathName(filmPtr->tkwin), string);
+        } while (Tk_NameToWindow(NULL, path, filmPtr->tkwin) != NULL);
+        Blt_Free(path);
+        gripPtr->tkwin = Tk_CreateWindow(interp, filmPtr->tkwin, string,
+                (char *)NULL);
+        if (gripPtr->tkwin == NULL) {
+            DestroyFrame(framePtr);
+            return NULL;
+        }
+    } 
+    Tk_SetClass(gripPtr->tkwin, "BltFilmstripGrip");
+    Tk_CreateEventHandler(gripPtr->tkwin,
                 ExposureMask|FocusChangeMask|StructureNotifyMask, 
-                GripEventProc, &framePtr->grip);
+                GripEventProc, gripPtr);
 
     /* Also add frame to grips table */
-    hPtr = Blt_CreateHashEntry(&filmPtr->gripTable, Tk_PathName(tkwin),
+    hPtr = Blt_CreateHashEntry(&filmPtr->gripTable, Tk_PathName(gripPtr->tkwin),
                 &isNew);
     assert(isNew);
-    framePtr->grip.hashPtr = hPtr;
-    Blt_SetHashValue(hPtr, &framePtr->grip);
+    gripPtr->hashPtr = hPtr;
+    Blt_SetHashValue(hPtr, gripPtr);
     return framePtr;
 }
 

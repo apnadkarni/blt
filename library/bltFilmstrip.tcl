@@ -44,7 +44,7 @@ namespace eval blt::Filmstrip {
 
 bind BltFilmstripGrip <Enter> { 
     if { !$blt::Filmstrip::buttonPressed } { 
-	[winfo parent %W] grip activate [winfo name %W]
+	[winfo parent %W] grip activate %W
     } 
 } 
 bind BltFilmstripGrip <Leave> { 
@@ -53,38 +53,38 @@ bind BltFilmstripGrip <Leave> {
     } 
 }
 bind BltFilmstripGrip <KeyPress-Left> { 
-    [winfo parent %W] grip move [winfo name %W] -10 0 
+    [winfo parent %W] grip move %W -10 0 
 }
 bind BltFilmstripGrip <KeyPress-Right> { 
-    [winfo parent %W] grip move [winfo name %W] 10  0 
+    [winfo parent %W] grip move %W 10  0 
 }
 bind BltFilmstripGrip <KeyPress-Up> { 
-    [winfo parent %W] grip move [winfo name %W] 0 -10 
+    [winfo parent %W] grip move %W 0 -10 
 }
 bind BltFilmstripGrip <KeyPress-Down> { 
-    [winfo parent %W] grip move [winfo name %W] 0 10 
+    [winfo parent %W] grip move %W 0 10 
 }
 bind BltFilmstripGrip <Shift-KeyPress-Left> { 
-    [winfo parent %W] grip move [winfo name %W] -100 0 
+    [winfo parent %W] grip move %W -100 0 
 }
 bind BltFilmstripGrip <Shift-KeyPress-Right> { 
-    [winfo parent %W] grip move [winfo name %W] 100  0 
+    [winfo parent %W] grip move %W 100  0 
 }
 bind BltFilmstripGrip <Shift-KeyPress-Up> { 
-    [winfo parent %W] grip move [winfo name %W] 0 -100 
+    [winfo parent %W] grip move %W 0 -100 
 }
 bind BltFilmstripGrip <Shift-KeyPress-Down> { 
-    [winfo parent %W] grip move [winfo name %W] 0 100
+    [winfo parent %W] grip move %W 0 100
 }
 bind BltFilmstripGrip <ButtonPress-1> { 
     set blt::Filmstrip::buttonPressed 1
-    [winfo parent %W] grip anchor [winfo name %W] %X %Y 
+    [winfo parent %W] grip anchor %W %X %Y 
 }
 bind BltFilmstripGrip <B1-Motion> { 
-    [winfo parent %W] grip mark [winfo name %W] %X %Y 
+    [winfo parent %W] grip mark %W %X %Y 
 }
 bind BltFilmstripGrip <ButtonRelease-1> { 
     set blt::Filmstrip::buttonPressed 0
-    [winfo parent %W] grip set [winfo name %W] %X %Y 
+    [winfo parent %W] grip set %W %X %Y 
 }
 
