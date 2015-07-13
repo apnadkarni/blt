@@ -68,9 +68,6 @@
 #define ISVERT(s)       ((s)->flags & VERTICAL)
 #define ISHORIZ(s)      (((s)->flags & VERTICAL) == 0)
 
-/* 
- * The following are the adjustment modes for the filmstrip widget.
- */
 typedef enum {
     INSERT_AFTER,                       /* Insert after named frame. */
     INSERT_BEFORE                       /* Insert before named frame. */
@@ -154,10 +151,10 @@ struct _Filmstrip {
                                          * or the pathname of the window
                                          * created. */
     int side;                           /* Side where grip is located. */
-    int gripHighlightThickness;       /* Width in pixels of highlight to
-                                         * draw around the grip when it
-                                         * has the focus.  Less than 1,
-                                         * means don't draw a highlight. */
+    int gripHighlightThickness;         /* Width in pixels of highlight to
+                                         * draw around the grip when it has
+                                         * the focus.  Less than 1, means
+                                         * don't draw a highlight. */
     int normalWidth;                    /* Normal dimensions of the
                                          * filmstrip */
     int normalHeight;
@@ -404,12 +401,12 @@ static Tk_GeomRequestProc FrameGeometryProc;
 static Tk_GeomLostSlaveProc FrameCustodyProc;
 static Tk_GeomMgr filmstripMgrInfo =
 {
-    (char *)"filmstrip",                  /* Name of geometry manager used by
+    (char *)"filmstrip",                /* Name of geometry manager used by
                                          * winfo */
-    FrameGeometryProc,                   /* Procedure to for new geometry
-                                         * requests */
-    FrameCustodyProc,                    /* Procedure when widget is taken
-                                         * away */
+    FrameGeometryProc,                  /* Procedure called for new
+                                         * geometry requests */
+    FrameCustodyProc,                   /* Procedure called when widget is
+                                         * taken away */
 };
 
 static Blt_OptionParseProc ObjToChild;
@@ -420,17 +417,17 @@ static Blt_CustomOption childOption = {
 
 extern Blt_CustomOption bltLimitsOption;
 
-static Blt_OptionParseProc ObjToOrientProc;
-static Blt_OptionPrintProc OrientToObjProc;
+static Blt_OptionParseProc ObjToOrient;
+static Blt_OptionPrintProc OrientToObj;
 static Blt_CustomOption orientOption = {
-    ObjToOrientProc, OrientToObjProc, NULL, (ClientData)0
+    ObjToOrient, OrientToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 static Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 static Blt_ConfigSpec frameSpecs[] =
@@ -509,7 +506,8 @@ static Blt_ConfigSpec filmStripSpecs[] =
         Blt_Offset(Filmstrip, gripHighlightThickness),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
-        Blt_Offset(Filmstrip, flags), BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
+        Blt_Offset(Filmstrip, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        &orientOption},
     {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
         (char *)NULL, Blt_Offset(Filmstrip, reqHeight), 0, &bltLimitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
@@ -531,8 +529,8 @@ static Blt_ConfigSpec filmStripSpecs[] =
 /*
  * FrameIterator --
  *
- *      Frames may be tagged with strings.  A frame may have many tags.  The
- *      same tag may be used for many frames.
+ *      Frames may be tagged with strings.  A frame may have many tags.
+ *      The same tag may be used for many frames.
  *      
  */
 typedef enum { 
@@ -540,8 +538,8 @@ typedef enum {
 } IteratorType;
 
 typedef struct _Iterator {
-    Filmstrip *filmPtr;                   /* Filmstrip that we're iterating
-                                        * over. */
+    Filmstrip *filmPtr;                 /* Filmstrip that we're iterating
+                                         * over. */
     IteratorType type;                  /* Type of iteration:
                                          * ITER_TAG      By item tag.
                                          * ITER_ALL      By every item.
@@ -855,14 +853,8 @@ DestroyFrame(Frame *framePtr)
  */
 /*ARGSUSED*/
 static int
-ObjToChild(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results */
-    Tk_Window parent,                   /* Parent window */
-    Tcl_Obj *objPtr,                    /* String representation. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToChild(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Frame *framePtr = (Frame *)widgRec;
     Filmstrip *filmPtr;
@@ -884,8 +876,8 @@ ObjToChild(
         }
         /*
          * Allow only widgets that are children of the filmstrip window to
-         * be used.  We are using the window as viewport to clip the
-         * children are necessary.
+         * be used.  We are using the filmstrip window as a viewport to
+         * clip the children as needed.
          */
         parent = Tk_Parent(tkwin);
         if (parent != filmPtr->tkwin) {
@@ -897,13 +889,6 @@ ObjToChild(
         Tk_ManageGeometry(tkwin, &filmstripMgrInfo, framePtr);
         Tk_CreateEventHandler(tkwin, StructureNotifyMask, FrameEventProc, 
                 framePtr);
-        /*
-         * We need to make the window to exist immediately.  If the window
-         * is torn off (placed into another container window), the timing
-         * between the container and the its new child (this window) gets
-         * tricky.  This should work for Tk 4.2.
-         */
-        Tk_MakeWindowExist(tkwin);
     }
     if (old != NULL) {
         Tk_DeleteEventHandler(old, StructureNotifyMask, FrameEventProc,
@@ -929,13 +914,8 @@ ObjToChild(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ChildToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window parent,                   /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ChildToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+           char *widgRec, int offset, int flags)  
 {
     Tk_Window tkwin = *(Tk_Window *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -951,7 +931,7 @@ ChildToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToOrientProc --
+ * ObjToOrient --
  *
  *      Converts the string representing a state into a bitflag.
  *
@@ -963,15 +943,8 @@ ChildToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToOrientProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Filmstrip *filmPtr = (Filmstrip *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -999,24 +972,19 @@ ObjToOrientProc(
 /*
  *---------------------------------------------------------------------------
  *
- * OrientToObjProc --
+ * OrientToObj --
  *
- *      Return the name of the style.
+ *      Return the name of the orientation.
  *
  * Results:
- *      The name representing the style is returned.
+ *      The name representing the orientation is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-OrientToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+            char *widgRec, int offset, int flags)  
 {
     unsigned int orient = *(unsigned int *)(widgRec + offset);
     const char *string;
@@ -1031,11 +999,7 @@ OrientToObjProc(
 
 /*ARGSUSED*/
 static void
-FreeTagsProc(
-    ClientData clientData,
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Filmstrip *filmPtr;
     Frame *framePtr = (Frame *)widgRec;
@@ -1047,7 +1011,7 @@ FreeTagsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -1059,15 +1023,8 @@ FreeTagsProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Filmstrip *filmPtr;
     Frame *framePtr = (Frame *)widgRec;
@@ -1094,24 +1051,19 @@ ObjToTagsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
- *      Return the name of the style.
+ *      Return a TCL list of tags for the pane.
  *
  * Results:
- *      The name representing the style is returned.
+ *      The tags associated with the pane are returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+          char *widgRec, int offset, int flags)  
 {
     Filmstrip *filmPtr;
     Frame *framePtr = (Frame *)widgRec;
@@ -1781,11 +1733,21 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     int isNew;
     Grip *gripPtr;
     
-    hPtr = Blt_CreateHashEntry(&filmPtr->frameTable, name, &isNew);
-    if (!isNew) {
-        Tcl_AppendResult(interp, "frame \"", name, "\" already exists.",
-                (char *)NULL);
-        return NULL;
+    if (name == NULL) {
+        char string[200];
+
+        /* Generate an unique frame name. */
+        do {
+            sprintf(string, "frame%lu", (unsigned long)filmPtr->nextId++);
+            hPtr = Blt_CreateHashEntry(&filmPtr->frameTable, string, &isNew);
+        } while (!isNew);
+    } else {
+        hPtr = Blt_CreateHashEntry(&filmPtr->frameTable, name, &isNew);
+        if (!isNew) {
+            Tcl_AppendResult(interp, "frame \"", name, "\" already exists.",
+                             (char *)NULL);
+            return NULL;
+        }
     }
     framePtr = Blt_AssertCalloc(1, sizeof(Frame));
     gripPtr = &framePtr->grip;
@@ -1807,15 +1769,16 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     Blt_Chain_SetValue(framePtr->link, framePtr);
     Blt_SetHashValue(hPtr, framePtr);
 
+    /* Generate an unique subwindow name. It will be in the form "grip0",
+     * "grip1", etc. which hopefully will not collide with any existing
+     * child window names for this widget. */
     {
         char string[200];
         char *path;
 
-        /* Generate an unique subwindow name.  In theory you could have
-         * more than one filmstrip widget assigned to the same window.  */
         path = Blt_AssertMalloc(strlen(Tk_PathName(filmPtr->tkwin)) + 200);
         do {
-            sprintf(string, "grip%lu", (unsigned long)filmPtr->nextId++);
+            sprintf(string, "grip%lu", (unsigned long)filmPtr->nextGripId++);
             sprintf(path, "%s.%s", Tk_PathName(filmPtr->tkwin), string);
         } while (Tk_NameToWindow(NULL, path, filmPtr->tkwin) != NULL);
         Blt_Free(path);
@@ -3113,11 +3076,10 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Deletes the specified frames from the widget.  Note that the frame
  *      indices can be fixed only after all the deletions have occurred.
  *
- *      pathName delete widget
- *
  * Results:
  *      Returns a standard TCL result.
  *
+ *      pathName delete widget
  *
  *---------------------------------------------------------------------------
  */
@@ -3617,6 +3579,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      pathName move before whereName frameName 
  *      pathName move after  whereName frameName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -3701,6 +3664,7 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      left in interp->result.
  *
  *      pathName frame cget frameName option
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4002,7 +3966,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns the existence of the one or more tags in the given frame.
  *      If the frame has any the tags, 1 is returned in the interpreter.
  *
- *      .t tag exists frameName ?tag ...?
+ *      pathName tag exists frameName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4154,7 +4118,7 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      node arguments are provided, then only the tags found in those
  *      nodes are returned.
  *
- *      .t tag names ?frameName ...?
+ *      pathName tag names ?frameName ...?
  *
  *---------------------------------------------------------------------------
  */

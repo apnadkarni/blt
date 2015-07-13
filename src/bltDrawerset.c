@@ -134,8 +134,8 @@ typedef int (SizeProc)(Drawer *drawPtr);
  * Drawer --
  *
  *      A drawer holds a window and a possibly a handle.  It describes how
- *      the window should appear in the drawer.  The handle is a rectangle on
- *      the far edge of the drawer (horizontal right, vertical bottom).
+ *      the window should appear in the drawer.  The handle is a rectangle
+ *      on the far edge of the drawer (horizontal right, vertical bottom).
  *      Normally the last drawer does not have a handle.  Handles may be
  *      hidden.
  *
@@ -560,8 +560,8 @@ static Blt_ConfigSpec drawerSpecs[] =
 /* 
  * Hide the handle. 
  *
- *      .p configure -handlethickness 0
- *      .p drawer configure -hide yes 
+ *      pathName configure -handlethickness 0
+ *      pathName drawer configure -hide yes 
  *      Put all the drawers in the drawerset widget, hidden by default.
  *      Reveal/hide drawers to pop them out.
  *      plotarea | sidebar | scroller
@@ -2263,7 +2263,7 @@ GetDrawerByName(Drawerset *setPtr, const char *string)
  */
 static int
 GetDrawerIterator(Tcl_Interp *interp, Drawerset *setPtr, Tcl_Obj *objPtr,
-               DrawerIterator *iterPtr)
+                  DrawerIterator *iterPtr)
 {
     Drawer *drawPtr;
     Blt_Chain chain;
@@ -2386,39 +2386,27 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
 {
     Blt_HashEntry *hPtr;
     Drawer *drawPtr;
-    Tk_Window tkwin;
-    char *handleName;
-    char *path;
-    char string[200];
-    int isNew;
 
-
-    /* Generate an unique drawer and handle window name. */
-    path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
-    do {
-        sprintf(string, "drawer%lu", (unsigned long)setPtr->nextId++);
-        sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
-    } while (Tk_NameToWindow(interp, path, setPtr->tkwin) != NULL);
-    Blt_Free(path);
-    handleName = string;
     if (name == NULL) {
-        name = string;
-    }
-    hPtr = Blt_CreateHashEntry(&setPtr->drawerTable, name, &isNew);
-    if (!isNew) {
-        Tcl_AppendResult(interp, "drawer \"", name, "\" already exists.", 
-                (char *)NULL);
-        return NULL;
-    }
+        char string[200];
+        int isNew;
 
-    tkwin = Tk_CreateWindow(interp, setPtr->tkwin, handleName, (char *)NULL);
-    if (tkwin == NULL) {
-        return NULL;
-    }
-    Tk_SetClass(tkwin, "BltDrawerHandle");
+        /* Generate an unique drawer name. */
+        do {
+            sprintf(string, "drawer%lu", (unsigned long)setPtr->nextId++);
+            hPtr = Blt_CreateHashEntry(&setPtr->drawerTable, string, &isNew);
+        } while (!isNew);
+    }  else {
+        int isNew;
 
+        hPtr = Blt_CreateHashEntry(&setPtr->drawerTable, name, &isNew);
+        if (!isNew) {
+            Tcl_AppendResult(interp, "drawer \"", name, "\" already exists.",
+                             (char *)NULL);
+            return NULL;
+        }
+    }
     drawPtr = Blt_AssertCalloc(1, sizeof(Drawer));
-    drawPtr->handle = tkwin;
     Blt_ResetLimits(&drawPtr->reqWidth);
     Blt_ResetLimits(&drawPtr->reqHeight);
     Blt_ResetLimits(&drawPtr->reqSize);
@@ -2435,16 +2423,36 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
     drawPtr->size = drawPtr->index = 0;
     Blt_SetHashValue(hPtr, drawPtr);
 
-    /* Also add drawer to handle table */
-    hPtr = Blt_CreateHashEntry(&setPtr->handleTable, 
+    {
+        Tk_Window tkwin;
+        char string[200];
+        char *path;
+        int isNew;
+        
+        /* Generate an unique handle subwindow name. */
+        path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
+        do {
+            sprintf(string, "handle%lu", (unsigned long)setPtr->nextHandleId++);
+            sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
+        } while (Tk_NameToWindow(interp, path, setPtr->tkwin) != NULL);
+        Blt_Free(path);
+        tkwin = Tk_CreateWindow(interp, setPtr->tkwin, string, (char *)NULL);
+        if (tkwin == NULL) {
+            DestroyDrawer(drawPtr);
+            return NULL;
+        }        
+        /* Also add drawer to handle table */
+        hPtr = Blt_CreateHashEntry(&setPtr->handleTable, 
                 Tk_PathName(drawPtr->handle), &isNew);
-    drawPtr->handleHashPtr = hPtr;
-    assert(isNew);
-    Blt_SetHashValue(hPtr, drawPtr);
-
-    Tk_CreateEventHandler(drawPtr->handle, 
-        ExposureMask|FocusChangeMask|StructureNotifyMask, 
-        HandleEventProc, drawPtr);
+        assert(isNew);
+        Blt_SetHashValue(hPtr, drawPtr);
+        drawPtr->handleHashPtr = hPtr;
+        drawPtr->handle = tkwin;
+        Tk_SetClass(tkwin, "BltDrawerHandle");
+        Tk_CreateEventHandler(tkwin, 
+                ExposureMask|FocusChangeMask|StructureNotifyMask, 
+                HandleEventProc, drawPtr);
+    }
     return drawPtr;
 }
 
@@ -3100,7 +3108,8 @@ AdjustDrawerDelta(Drawerset *setPtr, int delta)
     Drawer *drawPtr;
 
     min = max = 0;
-    /* The left span is every drawer before and including) the anchor drawer. */
+    /* The left span is every drawer before and including) the anchor
+     * drawer. */
     drawPtr = setPtr->anchorPtr;
     size = (drawPtr->side & SIDE_VERTICAL) 
         ? Tk_Height(setPtr->tkwin) : Tk_Width(setPtr->tkwin);
@@ -3167,7 +3176,7 @@ AdjustHandle(Drawerset *setPtr, int delta)
  *      Returns a standard TCL result.  The index of the drawer is left in
  *      interp->result.
  *
- *      pathName add ?name? ?option value...?
+ *      pathName add ?label? ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3246,7 +3255,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Returns a standard TCL result.
  *
- *      pathName open tagOrDrawer
+ *      pathName open drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -3322,7 +3331,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Returns a standard TCL result.
  *
- *      pathName delete tagOrDrawer
+ *      pathName delete drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -3354,7 +3363,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns a standard TCL result.  A list of the widget attributes is
  *      left in interp->result.
  *
- *      pathName drawer cget $drawer option
+ *      pathName drawer cget drawerName option
  *
  *---------------------------------------------------------------------------
  */
@@ -3384,7 +3393,7 @@ DrawerCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns a standard TCL result.  A list of the drawer configuration
  *      option information is left in interp->result.
  *
- *      .p drawer configure $drawer option value
+ *      pathName drawer configure drawerName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3465,7 +3474,7 @@ DrawerOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Returns a standard TCL boolean result. 
  *
- *      pathName exists drawer
+ *      pathName exists drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -3497,7 +3506,7 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Changes the cursor and schedules to redraw the handle in its
  *      activate state (different relief, colors, etc).
  *
- *      pathName handle activate drawer
+ *      pathName handle activate drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -3548,7 +3557,7 @@ HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      and y coordinates are used depending upon the orientation of the
  *      drawer or drawer.
  *
- *      pathName handle anchor $drawer x y
+ *      pathName handle anchor drawerName x y
  *
  *---------------------------------------------------------------------------
  */
@@ -3595,7 +3604,7 @@ HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Changes the cursor and schedules to redraw the handle in its
  *      inactivate state (different relief, colors, etc).
  *
- *      pathName handle deactivate $drawer
+ *      pathName handle deactivate 
  *
  *---------------------------------------------------------------------------
  */
@@ -3622,7 +3631,7 @@ HandleDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      the mark and the anchor is the amount to move the handle from its
  *      previous location.
  *
- *      pathName handle mark $drawer x y
+ *      pathName handle mark drawerName x y
  *
  *---------------------------------------------------------------------------
  */
@@ -3664,7 +3673,7 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Moves the handle. The handle is moved the given distance from its
  *      previous location.
  *
- *      pathName handle move $drawer x y
+ *      pathName handle move drawerName x y
  *
  *---------------------------------------------------------------------------
  */
@@ -3709,7 +3718,7 @@ HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Sets the location of the handle to coordinate (x or y) specified.
  *
- *      pathName handle set $drawer $x $y
+ *      pathName handle set drawerName x y
  *
  *---------------------------------------------------------------------------
  */
@@ -3750,7 +3759,7 @@ HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Sets and/or gets the size of the opening for the drawer.  This does
  *      not affect the size of the window.
  *
- *      pathName handle size $drawer ?size?
+ *      pathName handle size DrawerName numPixels
  *
  *---------------------------------------------------------------------------
  */
@@ -3820,7 +3829,8 @@ static int numHandleOps = sizeof(handleOps) / sizeof(Blt_OpSpec);
  * Side effects:
  *      See the user documentation.
  *
- *      pathName handle 
+ *      pathName handle args...
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -3850,7 +3860,7 @@ HandleOp(
  * Results:
  *      Returns a standard TCL result.
  *
- *      pathName index drawer
+ *      pathName index drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -3880,7 +3890,8 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Inserts a new drawer into the drawerset.
  *
- *      pathName insert position ?label? option-value label option-value...
+ *      pathName insert after ?label? ?option value ...?
+ *      pathName insert before ?label? ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3972,7 +3983,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
  *
- *      pathName invoke drawer
+ *      pathName invoke drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -4008,7 +4019,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Returns a standard TCL boolean result.
  *
- *      pathName isopen drawer
+ *      pathName isopen drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -4042,7 +4053,7 @@ IsOpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Returns a standard TCL result.
  *
- *      pathName raise tagOrDrawer
+ *      pathName raise drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -4076,7 +4087,8 @@ LowerOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Moves the given drawer to a new location.
  *
- *      pathName move drawer after|before drawer
+ *      pathName move after afterName drawerName
+ *      pathName move before beforeName drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -4140,7 +4152,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns the names of the drawers whose name matches the given
  *      pattern.
  *
- *      pathName names pattern
+ *      pathName names ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4196,7 +4208,7 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Returns a standard TCL result.
  *
- *      pathName open tagOrDrawer
+ *      pathName open drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -4233,7 +4245,7 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      Returns a standard TCL result.
  *
- *      pathName raise tagOrDrawer
+ *      pathName raise drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -4299,7 +4311,7 @@ SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagAddOp --
  *
- *      .t tag add tagName drawer1 drawer2 drawer2 drawer4
+ *      pathName tag add tag ?drawerName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4350,7 +4362,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagDeleteOp --
  *
- *      .t delete tagName drawer1 drawer2 drawer3
+ *      pathName delete tagName ?drawerName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4398,7 +4410,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns the existence of the one or more tags in the given node.
  *      If the node has any the tags, true is return in the interpreter.
  *
- *      .t tag exists drawer tag1 tag2 tag3...
+ *      pathName tag exists drawerName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4438,7 +4450,7 @@ TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Removes the given tags from all drawers.
  *
- *      .ts tag forget tag1 tag2 tag3...
+ *      pathNames tag forget ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4473,7 +4485,7 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns tag names for a given node.  If one of more pattern
  *      arguments are provided, then only those matching tags are returned.
  *
- *      .t tag get drawer pat1 pat2...
+ *      pathName tag get drawerName ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4550,7 +4562,7 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      node arguments are provided, then only the tags found in those
  *      nodes are returned.
  *
- *      .t tag names drawer drawer drawer...
+ *      pathName tag names ?drawerName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4624,7 +4636,7 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      returned will represent the union of drawers for all the given
  *      tags.
  *
- *      .t tag indices tag1 tag2 tag3...
+ *      pathName tag indices ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4705,7 +4717,7 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      with a digit (to distinquish them from node ids) and can't be a
  *      reserved tag ("all").
  *
- *      .t tag set drawer tag1 tag2...
+ *      pathName tag set drawerName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4753,7 +4765,7 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      exist or is a reserved tag ("all"), nothing will be done and no
  *      error message will be returned.
  *
- *      .t tag unset drawer tag1 tag2...
+ *      pathName tag unset drawerName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4837,7 +4849,7 @@ TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Results:
  *      Returns a standard TCL result.
  *
- *      .p toggle drawer
+ *      pathName toggle drawerName
  *
  *---------------------------------------------------------------------------
  */
@@ -4910,26 +4922,26 @@ DrawersetInstCmdDeleteProc(ClientData clientData)
  */
 static Blt_OpSpec drawersetOps[] =
 {
-    {"add",        1, AddOp,       2, 0, "?name? ?option value?...",},
+    {"add",        1, AddOp,       2, 0, "?label? ?option value?...",},
     {"cget",       2, CgetOp,      3, 3, "option",},
-    {"close",      2, CloseOp,     3, 3, "drawer",},
+    {"close",      2, CloseOp,     3, 3, "drawerName",},
     {"configure",  2, ConfigureOp, 2, 0, "?option value?",},
-    {"delete",     2, DeleteOp,    3, 3, "drawer",},
+    {"delete",     2, DeleteOp,    3, 3, "?drawerName ...?",},
     {"drawer",     2, DrawerOp,    2, 0, "oper ?args?",},
-    {"exists",     1, ExistsOp,    3, 3, "drawer",},
+    {"exists",     1, ExistsOp,    3, 3, "drawerName",},
     {"handle",     1, HandleOp,    2, 0, "oper ?args?",},
-    {"index",      3, IndexOp,     3, 3, "drawer",},
-    {"insert",     3, InsertOp,    4, 0, "position ?name? ?option value?...",},
-    {"invoke",     3, InvokeOp,    3, 3, "drawer",},
-    {"isopen",     2, IsOpenOp,    3, 3, "drawer",},
-    {"lower",      1, LowerOp,     3, 3, "drawer",},
-    {"move",       1, MoveOp,      3, 0, "drawer before|after drawer",},
+    {"index",      3, IndexOp,     3, 3, "drawerName",},
+    {"insert",     3, InsertOp,    4, 0, "after|before who ?label? ?option value ...?",},
+    {"invoke",     3, InvokeOp,    3, 3, "drawerName",},
+    {"isopen",     2, IsOpenOp,    3, 3, "drawerName",},
+    {"lower",      1, LowerOp,     3, 3, "drawerName",},
+    {"move",       1, MoveOp,      3, 0, "before|after whereName drawerName",},
     {"names",      1, NamesOp,     2, 0, "?pattern...?",},
-    {"open",       1, OpenOp,      3, 3, "drawer",},
-    {"raise",      1, RaiseOp,     3, 3, "drawer",},
-    {"size",       1, SizeOp,      2, 4, "?drawer? ?size?",},
+    {"open",       1, OpenOp,      3, 3, "drawerName",},
+    {"raise",      1, RaiseOp,     3, 3, "drawerName",},
+    {"size",       1, SizeOp,      2, 4, "?drawerName? ?size?",},
     {"tag",        2, TagOp,       2, 0, "oper args",},
-    {"toggle",     2, ToggleOp,    3, 3, "drawer",},
+    {"toggle",     2, ToggleOp,    3, 3, "drawerName",},
 };
 
 static int numDrawersetOps = sizeof(drawersetOps) / sizeof(Blt_OpSpec);

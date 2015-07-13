@@ -184,21 +184,15 @@ typedef int (SizeProc)(Pane *panePtr);
 struct _Paneset {
     int flags;                          /* See the flags definitions
                                          * below. */
+    unsigned int side;                  /* The side of the pane where the
+                                         * sash is attached. */
     Display *display;                   /* Display of the widget. */
     Tk_Window tkwin;                    /* The container window into which
-                                         * other widgets are arranged. For
-                                         * the paneset and filmstrip, this
-                                         * window is created.  For the
-                                         * drawer we use an existing
-                                         * window. */
+                                         * other widgets are arranged. */
     Tcl_Interp *interp;                 /* Interpreter associated with all
                                          * widgets and sashes. */
     Tcl_Command cmdToken;               /* Command token associated with
-                                         * this widget. For panesets and
-                                         * filmstrips this is the path name
-                                         * of the window created. For
-                                         * drawers, this is a generated
-                                         * name. */
+                                         * this widget. */
     const char *name;                   /* The generated name of the pane
                                          * or the pathname of the window
                                          * created (panesets and
@@ -263,9 +257,9 @@ struct _Paneset {
     size_t numVisible;                  /* # of visible panes. */
     GC gc;
     size_t nextId;                      /* Counter to generate unique
-                                         * pane/drawer names. */
+                                         * pane names. */
     size_t nextSashId;                  /* Counter to generate unique
-                                         * pane/drawer names. */
+                                         * pane names. */
     Tk_Cursor cursor;                   /* X Cursor */
 };
 
@@ -321,14 +315,13 @@ struct _Paneset {
  *            boundary of the pane are occluded.
  */
 struct _Pane  {
-    Tk_Window tkwin;                    /* Widget to be managed. */
-    Tk_Window sash;                     /* Sash subwindow. */
-    const char *name;                   /* Name of pane */
-    unsigned int side;                  /* The side of the widget where
-                                         * this drawer is attached. */
     unsigned int flags;
+    const char *name;                   /* Name of pane */
     Paneset *setPtr;                    /* Paneset widget managing this
                                          * pane. */
+    Tk_Window tkwin;                    /* Child widget of paneset to be
+                                         * managed. */
+    Tk_Window sash;                     /* Sash subwindow. */
     int borderWidth;                    /* The external border width of the
                                          * widget. This is needed to check
                                          * if
@@ -413,8 +406,6 @@ struct _Pane  {
 #define SASH_ACTIVE     (1<<11)         /* Sash is currently active. */
 #define SASH            (1<<12)         /* The pane has a sash. */
 #define SHOW_SASH       (1<<13)         /* Display the pane. */
-#define SHRINK          (1<<14)         /* Shrink the window to fit the
-                                         * drawer, instead of moving it. */
 #define VIRGIN          (1<<24)
 
 /* Orientation. */
@@ -602,7 +593,7 @@ typedef struct _Iterator {
  */
 static Tcl_FreeProc PanesetFreeProc;
 static Tcl_IdleProc DisplayProc;
-static Tcl_IdleProc DisplaySash;
+static Tcl_IdleProc DisplaySashProc;
 static Tcl_ObjCmdProc PanesetCmd;
 static Tk_EventProc PanesetEventProc;
 static Tk_EventProc PaneEventProc;
@@ -918,9 +909,9 @@ ObjToChild(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
             return TCL_OK;
         }
         /*
-         * Allow only widgets that are children of the paneset/drawer window
-         * to be used.  We are using the window as viewport to clip the
-         * children are necessary.
+         * Allow only widgets that are children of the paneset window to be
+         * used.  We are using the paneset window as a viewport to clip the
+         * children as needed.
          */
         parent = Tk_Parent(tkwin);
         if (parent != setPtr->tkwin) {
@@ -930,15 +921,8 @@ ObjToChild(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
             return TCL_ERROR;
         }
         Tk_ManageGeometry(tkwin, &panesetMgrInfo, panePtr);
-        Tk_CreateEventHandler(tkwin, StructureNotifyMask, PaneEventProc, 
+        Tk_CreateEventHandler(tkwin, StructureNotifyMask, PaneEventProc,
                 panePtr);
-        /*
-         * We need to make the window to exist immediately.  If the window is
-         * torn off (placed into another container window), the timing between
-         * the container and the its new child (this window) gets tricky.
-         * This should work for Tk 4.2.
-         */
-        Tk_MakeWindowExist(tkwin);
     }
     if (old != NULL) {
         Tk_DeleteEventHandler(old, StructureNotifyMask, PaneEventProc, panePtr);
@@ -1204,7 +1188,7 @@ EventuallyRedrawSash(Pane *panePtr)
 {
     if ((panePtr->flags & REDRAW_PENDING) == 0) {
         panePtr->flags |= REDRAW_PENDING;
-        Tcl_DoWhenIdle(DisplaySash, panePtr);
+        Tcl_DoWhenIdle(DisplaySashProc, panePtr);
     }
 }
 
@@ -1449,7 +1433,7 @@ PaneGeometryProc(ClientData clientData, Tk_Window tkwin)
  * SashEventProc --
  *
  *      This procedure is invoked by the Tk event handler when various
- *      events occur in the pane/drawer sash subwindow maintained by this
+ *      events occur in the pane's sash subwindow maintained by this
  *      widget.
  *
  * Results:
@@ -1847,11 +1831,21 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     Pane *panePtr;
     int isNew;
 
-    hPtr = Blt_CreateHashEntry(&setPtr->paneTable, name, &isNew);
-    if (!isNew) {
-        Tcl_AppendResult(interp, "sash \"", name, "\" already exists.",
-                (char *)NULL);
-        return NULL;
+    if (name == NULL) {
+        char string[200];
+
+        /* Generate an unique pane name. */
+        do {
+            sprintf(string, "pane%lu", (unsigned long)setPtr->nextId++);
+            hPtr = Blt_CreateHashEntry(&setPtr->paneTable, string, &isNew);
+        } while (!isNew);
+    }  else {
+        hPtr = Blt_CreateHashEntry(&setPtr->paneTable, name, &isNew);
+        if (!isNew) {
+            Tcl_AppendResult(interp, "pane \"", name, "\" already exists.",
+                             (char *)NULL);
+            return NULL;
+        }
     }
     panePtr = Blt_AssertCalloc(1, sizeof(Pane));
     Blt_ResetLimits(&panePtr->reqWidth);
@@ -1866,22 +1860,22 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     panePtr->size = panePtr->index = 0;
     panePtr->flags = VIRGIN | SHOW_SASH;
     panePtr->resize = RESIZE_BOTH;
-    panePtr->side = SASH_FARSIDE;
     panePtr->weight = 1.0f;
     panePtr->link = Blt_Chain_NewLink();
     panePtr->index = Blt_Chain_GetLength(setPtr->panes);
     Blt_Chain_SetValue(panePtr->link, panePtr);
     Blt_SetHashValue(hPtr, panePtr);
     
-    /* Generate an unique subwindow name.  In theory you could have more
-     * than one drawer widget assigned to the same window.  */
+    /* Generate an unique subwindow name. It will be in the form "sash0",
+     * "sash1", etc. which hopefully will not collide with any existing
+     * child window names for this widget. */
     {
         char string[200];
         char *path;
 
         path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
         do {
-            sprintf(string, "sash%lu", (unsigned long)setPtr->nextId++);
+            sprintf(string, "sash%lu", (unsigned long)setPtr->nextSashId++);
             sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
         } while (Tk_NameToWindow(NULL, path, setPtr->tkwin) != NULL);
         Blt_Free(path);
@@ -2031,6 +2025,7 @@ NewPaneset(Tcl_Interp *interp, Tcl_Obj *objPtr, int type)
     setPtr->sashBorderWidth = 1;
     setPtr->flags = LAYOUT_PENDING;
     setPtr->mode = MODE_GIVETAKE;
+    setPtr->side = SASH_FARSIDE;
     setPtr->sashHighlightThickness = 2;
     Blt_SetWindowInstanceData(tkwin, setPtr);
     Blt_InitHashTable(&setPtr->paneTable, BLT_STRING_KEYS);
@@ -3215,14 +3210,14 @@ ArrangeWindow(Pane *panePtr, int x, int y)
         if (panePtr->flags & SASH) {
             if (ISVERT(setPtr)) {
                 cavityHeight -= setPtr->sashSize;
-                if (panePtr->side & SASH_FARSIDE) {
+                if (setPtr->side & SASH_FARSIDE) {
                     yMax -= setPtr->sashSize;
                 } else {
                     y += setPtr->sashSize;
                 }
             } else {
                 cavityWidth -= setPtr->sashSize;
-                if (panePtr->side & SASH_FARSIDE) {
+                if (setPtr->side & SASH_FARSIDE) {
                     xMax -= setPtr->sashSize;
                 } else {
                     x += setPtr->sashSize;
@@ -3328,14 +3323,14 @@ ArrangeSash(Pane *panePtr, int x, int y)
         
         if (ISVERT(setPtr)) {
             x = 0;
-            if (panePtr->side & SASH_FARSIDE) {
+            if (setPtr->side & SASH_FARSIDE) {
                 y += panePtr->size - setPtr->sashSize;
             }
             w = Tk_Width(setPtr->tkwin);
             h = setPtr->sashSize; 
         } else {
             y = 0;
-            if (panePtr->side & SASH_FARSIDE) {
+            if (setPtr->side & SASH_FARSIDE) {
                 x += panePtr->size - setPtr->sashSize;
             } 
             h = Tk_Height(setPtr->tkwin);
@@ -3775,11 +3770,6 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
         string = Tcl_GetString(objv[2]);
         if (string[0] != '-') {
-            if (Tk_NameToWindow(NULL, string, setPtr->tkwin) != NULL) {
-                Tcl_AppendResult(interp, "a window named \"", string, 
-                                 "\" already exists", (char *)NULL);
-                return TCL_ERROR;
-            }
             if (GetPaneFromObj(NULL, setPtr, objv[2], &panePtr) == TCL_OK) {
                 Tcl_AppendResult(interp, "pane \"", string, 
                         "\" already exists", (char *)NULL);
@@ -4005,11 +3995,6 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         string = Tcl_GetString(objv[4]);
         if (string[0] != '-') {
-            if (Tk_NameToWindow(NULL, string, setPtr->tkwin) != NULL) {
-                Tcl_AppendResult(interp, "a window named \"", string, 
-                                 "\" already exists", (char *)NULL);
-                return TCL_ERROR;
-            }
             if (GetPaneFromObj(NULL, setPtr, objv[4], &panePtr) == TCL_OK) {
                 Tcl_AppendResult(interp, "pane \"", string, 
                         "\" already exists", (char *)NULL);
@@ -4296,7 +4281,7 @@ PaneOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Changes the cursor and schedules to redraw the sash in its
  *      activate state (different relief, colors, etc).
  *
- *      pathName sash activate drawer 
+ *      pathName sash activate paneName 
  *
  *---------------------------------------------------------------------------
  */
@@ -4343,12 +4328,11 @@ SashActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SashAnchorOp --
  *
- *      Set the anchor for the resize/moving the pane/drawer.  Only one of
- *      the x and y coordinates are used depending upon the orientation of
- *      the pane.
+ *      Set the anchor for the resize/moving the pane.  Only one of the x
+ *      and y coordinates are used depending upon the orientation of the
+ *      pane.
  *
  *      pathName sash anchor paneName x y
- *      pathName sash anchor cellName x y
  *
  *---------------------------------------------------------------------------
  */
@@ -5365,7 +5349,7 @@ DisplayProc(ClientData clientData)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplaySash
+ * DisplaySashProc
  *
  *      Draws the pane's sash at its proper location.  First determines the
  *      size and position of the each window.  It then considers the
@@ -5386,7 +5370,7 @@ DisplayProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static void
-DisplaySash(ClientData clientData)
+DisplaySashProc(ClientData clientData)
 {
     Pane *panePtr = clientData;
     Blt_Bg bg;
