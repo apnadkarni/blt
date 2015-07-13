@@ -172,13 +172,13 @@ typedef int (SizeProc)(Pane *panePtr);
  *      The bearing divides the panes into two. Each side is resized
  *      according to the adjustment mode.
  *
- *      givetake        The panes immediately to the left and right of 
- *                      the bearing are grown/shrunk.
- *      slinky          All the panes on either side of the bearing are
- *                      grown/shrunk.
- *      spreadsheet     The pane to the left of the bearing and the last pane
- *                      on the right side are grown/shrunk.  Intervening
- *                      panes are unaffected.
+ *      givetake       The panes immediately to the left and right of 
+ *                     the bearing are grown/shrunk.
+ *      slinky         All the panes on either side of the bearing are
+ *                     grown/shrunk.
+ *      spreadsheet    The pane to the left of the bearing and the last
+ *                     pane on the right side are grown/shrunk.
+ *                     Intervening panes are unaffected.
  */
 
 struct _Paneset {
@@ -266,6 +266,7 @@ struct _Paneset {
                                          * pane/drawer names. */
     size_t nextSashId;                  /* Counter to generate unique
                                          * pane/drawer names. */
+    Tk_Cursor cursor;                   /* X Cursor */
 };
 
 /*
@@ -322,7 +323,6 @@ struct _Paneset {
 struct _Pane  {
     Tk_Window tkwin;                    /* Widget to be managed. */
     Tk_Window sash;                     /* Sash subwindow. */
-    Tk_Cursor cursor;                   /* X Cursor */
     const char *name;                   /* Name of pane */
     unsigned int side;                  /* The side of the widget where
                                          * this drawer is attached. */
@@ -334,11 +334,6 @@ struct _Pane  {
                                          * if
                                          * Tk_Changes(tkwin)->border_width
                                          * changes. */
-    XColor *sashHighlightBgColor;       /* Color for drawing traversal
-                                         * highlight area when highlight is
-                                         * off. */
-    XColor *sashHighlightColor;         /* Color for drawing traversal
-                                         * highlight. */
     const char *takeFocus;              /* Says whether to select this
                                          * widget during tab traveral
                                          * operations.  This value isn't
@@ -456,32 +451,32 @@ static Blt_CustomOption childOption = {
 
 extern Blt_CustomOption bltLimitsOption;
 
-static Blt_OptionParseProc ObjToOrientProc;
-static Blt_OptionPrintProc OrientToObjProc;
+static Blt_OptionParseProc ObjToOrient;
+static Blt_OptionPrintProc OrientToObj;
 static Blt_CustomOption orientOption = {
-    ObjToOrientProc, OrientToObjProc, NULL, (ClientData)0
+    ObjToOrient, OrientToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToMode;
-static Blt_OptionPrintProc ModeToObj;
-static Blt_CustomOption adjustOption = {
-    ObjToMode, ModeToObj, NULL, (ClientData)0,
+static Blt_OptionParseProc ObjToAdjustMode;
+static Blt_OptionPrintProc AdjustModeToObj;
+static Blt_CustomOption adjustModeOption = {
+    ObjToAdjustMode, AdjustModeToObj, NULL, (ClientData)0,
 };
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 static Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 static Blt_ConfigSpec paneSetSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activesashcolor", "activeSashColor", 
-        "SashColor", DEF_ACTIVE_SASH_COLOR,
+        "ActiveSashColor", DEF_ACTIVE_SASH_COLOR,
         Blt_Offset(Paneset, activeSashBg), 0},
     {BLT_CONFIG_RELIEF, "-activesashrelief", "activeSashRelief", 
-        "SashRelief", DEF_ACTIVE_SASH_RELIEF, 
+        "ActiveSashRelief", DEF_ACTIVE_SASH_RELIEF, 
         Blt_Offset(Paneset, activeRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Paneset, bg), 0},
@@ -490,7 +485,8 @@ static Blt_ConfigSpec paneSetSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
         Blt_Offset(Paneset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_CUSTOM, "-mode", "mode", "Mode", DEF_MODE,
-        Blt_Offset(Paneset, mode), BLT_CONFIG_DONT_SET_DEFAULT, &adjustOption},
+        Blt_Offset(Paneset, mode), BLT_CONFIG_DONT_SET_DEFAULT,
+        &adjustModeOption},
     {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
         Blt_Offset(Paneset, flags), BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
     {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
@@ -503,6 +499,8 @@ static Blt_ConfigSpec paneSetSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-sashcolor", "sashColor", "SashColor",
         DEF_SASH_COLOR, Blt_Offset(Paneset, sashBg), 0},
+    {BLT_CONFIG_CURSOR, "-sashcursor", "sashCursor", "SashCursor",
+        DEF_SASH_CURSOR, Blt_Offset(Paneset, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-sashhighlightthickness",
         "sashHighlightThickness", "SashHighlightThickness",
         DEF_SASH_HIGHLIGHT_THICKNESS,
@@ -523,10 +521,6 @@ static Blt_ConfigSpec paneSetSpecs[] =
 
 static Blt_ConfigSpec paneSpecs[] =
 {
-    {BLT_CONFIG_BACKGROUND, "-activesashcolor", "activeSashColor", 
-        "ActiveSashColor", DEF_ACTIVE_SASH_COLOR, 
-        Blt_Offset(Pane, activeSashBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ANCHOR, "-anchor", (char *)NULL, (char *)NULL, DEF_PANE_ANCHOR,
         Blt_Offset(Pane, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
@@ -550,17 +544,6 @@ static Blt_ConfigSpec paneSpecs[] =
         Blt_Offset(Pane, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_PANE_RESIZE,
         Blt_Offset(Pane, resize), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-sashcolor", "sashColor", "SashColor",
-        DEF_SASH_COLOR, Blt_Offset(Pane, sashBg),
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CURSOR, "-sashcursor", "sashCursor", "SashCursor",
-        DEF_SASH_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-sashhighlightbackground", "sashHighlightBackground",
-        "SashHighlightBackground", DEF_SASH_HIGHLIGHT_BACKGROUND, 
-        Blt_Offset(Pane, sashHighlightBgColor), 0},
-    {BLT_CONFIG_COLOR, "-sashhighlightcolor", "sashHighlightColor",
-        "SashHighlightColor", DEF_SASH_HIGHLIGHT_COLOR,
-        Blt_Offset(Pane, sashHighlightColor), 0},
     {BLT_CONFIG_BITMASK, "-showsash", "showSash", "showSash", 
         DEF_SHOW_SASH, Blt_Offset(Pane, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_SASH},
@@ -576,24 +559,6 @@ static Blt_ConfigSpec paneSpecs[] =
         Blt_Offset(Pane, reqWidth), 0},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
         Blt_Offset(Pane, tkwin), BLT_CONFIG_NULL_OK, &childOption},
-    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
-};
-
-static Blt_ConfigSpec sashSpecs[] =
-{
-    {BLT_CONFIG_BACKGROUND, "-activecolor", "activeColor", "ActiveColor",
-        DEF_ACTIVE_SASH_COLOR, Blt_Offset(Pane, activeSashBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-color", "color", "color", DEF_SASH_COLOR,
-        Blt_Offset(Pane, sashBg),
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "cursor",
-        DEF_SASH_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
-        "HighlightBackground", DEF_SASH_HIGHLIGHT_BACKGROUND, 
-        Blt_Offset(Pane, sashHighlightBgColor), 0},
-    {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-        DEF_SASH_HIGHLIGHT_COLOR, Blt_Offset(Pane, sashHighlightColor), 0},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -931,14 +896,8 @@ DestroyPane(Pane *panePtr)
  */
 /*ARGSUSED*/
 static int
-ObjToChild(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results */
-    Tk_Window parent,                   /* Parent window */
-    Tcl_Obj *objPtr,                    /* String representation. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToChild(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Pane *panePtr = (Pane *)widgRec;
     Paneset *setPtr;
@@ -1004,13 +963,8 @@ ObjToChild(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ChildToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window parent,                   /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ChildToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+           char *widgRec, int offset, int flags)  
 {
     Tk_Window tkwin = *(Tk_Window *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -1027,7 +981,7 @@ ChildToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToMode --
+ * ObjToAdjustMode --
  *
  *      Converts an adjust mode name into a enum.
  *
@@ -1040,14 +994,8 @@ ChildToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToMode(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window parent,                   /* Parent window */
-    Tcl_Obj *objPtr,                    /* String representation. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToAdjustMode(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     AdjustMode *modePtr = (AdjustMode *)(widgRec + offset);
     const char *string;
@@ -1070,7 +1018,7 @@ ObjToMode(
 /*
  *---------------------------------------------------------------------------
  *
- * ChildToObj --
+ * AdjustModeToObj --
  *
  *      Converts the enum back to a mode string (i.e. its name).
  *
@@ -1081,13 +1029,8 @@ ObjToMode(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ModeToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window parent,                   /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+AdjustModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+                char *widgRec, int offset, int flags)  
 {
     AdjustMode mode = *(AdjustMode *)(widgRec + offset);
     const char *string;
@@ -1112,27 +1055,20 @@ ModeToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToOrientProc --
+ * ObjToOrient --
  *
- *      Converts the string representing a state into a bitflag.
+ *      Converts the string representing orientation into a bitflag.
  *
  * Results:
- *      The return value is a standard TCL result.  The state flags are
+ *      The return value is a standard TCL result.  The flags are
  *      updated.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToOrientProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Paneset *setPtr = (Paneset *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -1160,24 +1096,19 @@ ObjToOrientProc(
 /*
  *---------------------------------------------------------------------------
  *
- * OrientToObjProc --
+ * OrientToObj --
  *
- *      Return the name of the style.
+ *      Return the name of the orientaition.
  *
  * Results:
- *      The name representing the style is returned.
+ *      The name representing the orientation is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-OrientToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+            char *widgRec, int offset, int flags)  
 {
     unsigned int orient = *(unsigned int *)(widgRec + offset);
     const char *string;
@@ -1192,11 +1123,7 @@ OrientToObjProc(
 
 /*ARGSUSED*/
 static void
-FreeTagsProc(
-    ClientData clientData,
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Paneset *setPtr;
     Pane *panePtr = (Pane *)widgRec;
@@ -1208,7 +1135,7 @@ FreeTagsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -1220,15 +1147,8 @@ FreeTagsProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Paneset *setPtr;
     Pane *panePtr = (Pane *)widgRec;
@@ -1255,24 +1175,19 @@ ObjToTagsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
- *      Return the name of the style.
+ *      Return the tags used by the pane.
  *
  * Results:
- *      The name representing the style is returned.
+ *      A TCL list representing the tags is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+          char *widgRec, int offset, int flags)  
 {
     Paneset *setPtr;
     Pane *panePtr = (Pane *)widgRec;
@@ -1367,18 +1282,19 @@ PrevPane(Pane *panePtr, unsigned int hateFlags)
  *
  * PanesetEventProc --
  *
- *      This procedure is invoked by the Tk event handler when the container
- *      widget is reconfigured or destroyed.
+ *      This procedure is invoked by the Tk event handler when the
+ *      container widget is reconfigured or destroyed.
  *
- *      The paneset will be rearranged at the next idle point if the container
- *      widget has been resized or moved. There's a distinction made between
- *      parent and non-parent container arrangements.  When the container is
- *      the parent of the embedded widgets, the widgets will automatically
- *      keep their positions relative to the container, even when the
- *      container is moved.  But if the container is not the parent, those
- *      widgets have to be moved manually.  This can be a performance hit in
- *      rare cases where we're scrolling the container (by moving the window)
- *      and there are lots of non-child widgets arranged inside.
+ *      The paneset will be rearranged at the next idle point if the
+ *      container widget has been resized or moved. There's a distinction
+ *      made between parent and non-parent container arrangements.  When
+ *      the container is the parent of the embedded widgets, the widgets
+ *      will automatically keep their positions relative to the container,
+ *      even when the container is moved.  But if the container is not the
+ *      parent, those widgets have to be moved manually.  This can be a
+ *      performance hit in rare cases where we're scrolling the container
+ *      (by moving the window) and there are lots of non-child widgets
+ *      arranged inside.
  *
  * Results:
  *      None.
@@ -1420,26 +1336,27 @@ PanesetEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * PaneEventProc --
  *
- *      This procedure is invoked by the Tk event handler when StructureNotify
- *      events occur in a widget managed by the paneset.
+ *      This procedure is invoked by the Tk event handler when
+ *      StructureNotify events occur in a widget managed by the paneset.
  *
  *      For example, when a managed widget is destroyed, it frees the
- *      corresponding pane structure and arranges for the paneset layout to be
- *      re-computed at the next idle point.
+ *      corresponding pane structure and arranges for the paneset layout to
+ *      be re-computed at the next idle point.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      If the managed widget was deleted, the Pane structure gets cleaned up
- *      and the paneset is rearranged.
+ *      If the managed widget was deleted, the Pane structure gets cleaned
+ *      up and the paneset is rearranged.
  *
  *---------------------------------------------------------------------------
  */
 static void
 PaneEventProc(
     ClientData clientData,              /* Pointer to Pane structure for
-                                         * widget referred to by eventPtr. */
+                                         * widget referred to by
+                                         * eventPtr. */
     XEvent *eventPtr)                   /* Describes what just happened. */
 {
     Pane *panePtr = (Pane *)clientData;
@@ -1503,15 +1420,15 @@ PaneCustodyProc(ClientData clientData, Tk_Window tkwin)
  *
  * PaneGeometryProc --
  *
- *      This procedure is invoked by Tk_GeometryRequest for widgets managed by
- *      the paneset geometry manager.
+ *      This procedure is invoked by Tk_GeometryRequest for widgets managed
+ *      by the paneset geometry manager.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      Arranges for the paneset to have its layout re-computed and re-arranged
- *      at the next idle point.
+ *      Arranges for the paneset to have its layout re-computed and
+ *      re-arranged at the next idle point.
  *
  * ----------------------------------------------------------------------------
  */
@@ -1531,8 +1448,9 @@ PaneGeometryProc(ClientData clientData, Tk_Window tkwin)
  *
  * SashEventProc --
  *
- *      This procedure is invoked by the Tk event handler when various events
- *      occur in the pane/drawer sash subwindow maintained by this widget.
+ *      This procedure is invoked by the Tk event handler when various
+ *      events occur in the pane/drawer sash subwindow maintained by this
+ *      widget.
  *
  * Results:
  *      None.
@@ -1547,7 +1465,7 @@ SashEventProc(
 {
     Pane *panePtr = (Pane *)clientData;
 
-    if (eventPtr->type == Expose) {
+    if (eventPtr->type == Expose) {     
         if (eventPtr->xexpose.count == 0) {
             EventuallyRedrawSash(panePtr);
         }
@@ -1578,8 +1496,8 @@ SashEventProc(
  *      Returns the next pane derived from the given tag.
  *
  * Results:
- *      Returns the pointer to the next pane in the iterator.  If no more panes
- *      are available, then NULL is returned.
+ *      Returns the pointer to the next pane in the iterator.  If no more
+ *      panes are available, then NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1627,8 +1545,8 @@ NextTaggedPane(PaneIterator *iterPtr)
  *      Returns the first pane derived from the given tag.
  *
  * Results:
- *      Returns the first pane in the sequence.  If no more panes are in the
- *      list, then NULL is returned.
+ *      Returns the first pane in the sequence.  If no more panes are in
+ *      the list, then NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1683,7 +1601,7 @@ FirstTaggedPane(PaneIterator *iterPtr)
  */
 static int 
 GetPaneFromObj(Tcl_Interp *interp, Paneset *setPtr, Tcl_Obj *objPtr,
-              Pane **panePtrPtr)
+               Pane **panePtrPtr)
 {
     PaneIterator iter;
     Pane *firstPtr;
@@ -1909,8 +1827,8 @@ GetPaneIterator(Tcl_Interp *interp, Paneset *setPtr, Tcl_Obj *objPtr,
  *      container widget itself or b) a mutual ancestor of the container
  *      widget.
  *
- *      The pane will also contain a Tk window to represent the sash.
- *      It's name is automatically generated as "sash0", "sash1", etc.
+ *      The pane will also contain a Tk window to represent the sash.  It's
+ *      name is automatically generated as "sash0", "sash1", etc.
  *
  * Results:
  *      Returns a pointer to the new structure describing the new widget
@@ -3881,11 +3799,6 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         DestroyPane(panePtr);
         return TCL_ERROR;
     }
-    if (Blt_ConfigureWidgetFromObj(interp, panePtr->sash, sashSpecs,
-        0, NULL, (char *)panePtr, 0) != TCL_OK) {
-        DestroyPane(panePtr);
-        return TCL_ERROR;
-    }
     EventuallyRedraw(setPtr);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), panePtr->name, -1);
     return TCL_OK;
@@ -4378,84 +4291,6 @@ PaneOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * SashCgetOp --
- *
- *      pathName sash cget paneName option
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-SashCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-           Tcl_Obj *const *objv)
-{
-    Paneset *setPtr = clientData;
-    Pane *panePtr;
-
-    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, sashSpecs,
-        (char *)panePtr, objv[4], 0);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * SashConfigureOp --
- *
- *      Returns the name, position and options of a widget in the paneset.
- *
- * Results:
- *      Returns a standard TCL result.  A list of the paneset configuration
- *      option information is left in interp->result.
- *
- *      pathName sash configure paneName option value
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-SashConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                Tcl_Obj *const *objv)
-{
-    Paneset *setPtr = clientData;
-    Pane *panePtr;
-    PaneIterator iter;
-
-    if (objc == 4) {
-        if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        return Blt_ConfigureInfoFromObj(interp, panePtr->sash, 
-                sashSpecs, (char *)panePtr, (Tcl_Obj *)NULL,0);
-    } else if (objc == 5) {
-        if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        return Blt_ConfigureInfoFromObj(interp, panePtr->sash, 
-                sashSpecs, (char *)panePtr, objv[4], 0);
-    }
-    if (GetPaneIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
-         panePtr = NextTaggedPane(&iter)) {
-        if (Blt_ConfigureWidgetFromObj(interp, panePtr->sash, 
-                sashSpecs, objc - 4, objv + 4,
-                (char *)panePtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-            return TCL_ERROR;
-        }
-    }
-    setPtr->anchorPtr = NULL;
-    setPtr->flags |= LAYOUT_PENDING;
-    EventuallyRedraw(setPtr);
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
  * SashActivateOp --
  *
  *      Changes the cursor and schedules to redraw the sash in its
@@ -4491,8 +4326,8 @@ SashActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         setPtr->activePtr = panePtr;
         vert = ISVERT(setPtr);
-        if (panePtr->cursor != None) {
-            cursor = panePtr->cursor;
+        if (setPtr->cursor != None) {
+            cursor = setPtr->cursor;
         } else if (vert) {
             cursor = setPtr->defVertCursor;
         } else {
@@ -4715,8 +4550,6 @@ SashSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec sashOps[] = {
     {"activate",   2, SashActivateOp,   4, 4, "paneName"},
     {"anchor",     2, SashAnchorOp,     6, 6, "paneName x y"},
-    {"cget",       2, SashCgetOp,       5, 5, "paneName option",},
-    {"configure",  2, SashConfigureOp,  4, 0, "paneName ?option value ...?",},
     {"deactivate", 1, SashDeactivateOp, 3, 3, ""},
     {"mark",       2, SashMarkOp,       6, 6, "paneName x y"},
     {"move",       2, SashMoveOp,       6, 6, "paneName x y"},
@@ -5587,7 +5420,7 @@ DisplaySash(ClientData clientData)
     if ((setPtr->sashHighlightThickness > 0) && (panePtr->flags & FOCUS)) {
         GC gc;
 
-        gc = Tk_GCForColor(panePtr->sashHighlightColor, drawable);
+        gc = Tk_GCForColor(setPtr->sashHighlightColor, drawable);
         Tk_DrawFocusHighlight(panePtr->sash, gc, setPtr->sashHighlightThickness,
                 drawable);
     }

@@ -901,7 +901,7 @@ The resource class is "Axis".  The resource names are the names of the axes
 *pathName* **axis names** ?\ *pattern* ... ?
   Returns the names of all the axes in the graph.  If one or more *pattern*
   arguments are provided, then the name of any axis matching *pattern* will
-  be returned. *Pattern* is a glob-style pattern.
+  be returned. *Pattern* is a **glob**\ -style pattern.
 
 *pathName* **axis transform** *axisName* *value*
   Transforms *value* to a screen coordinate by mapping the it to
@@ -1505,7 +1505,7 @@ The following operations are available for elements.
 *pathName* **element names** ?\ *pattern* ... ?
   Returns the names of all the elements in the graph.  If one or more
   *pattern* arguments are provided, then the name of any element matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\ -style pattern.
 
 *pathName* **element nearest** *screenX* *screenY* ?\ *option* *value* ... ? ?\ *elemName* ... ?
   Searches for the data point closest to the given screen
@@ -1593,13 +1593,13 @@ The following operations are available for elements.
   a tag, but may not represent more than one element. By default all tags
   for *elemName* are returned.  But if one or more *pattern* arguments are
   present, then any tag that matching one of the patterns will be returned.
-  *Pattern* is a glob-style pattern.
+  *Pattern* is a **glob**\ -style pattern.
 
 *pathName* **element tag names** ?\ *pattern* ...\ ? 
   Returns the names of element tags in *pathName*. By default all element
   tags are returned. But if one or more *pattern* arguments are present,
   then any tag matching one of the patterns will be returned. *Pattern* is
-  a glob-style pattern.
+  a **glob**\ -style pattern.
 
 *pathName* **element tag search** ?\ *tag* ...\ ? 
   Returns the names of elements that have one or more the named tags. *Tag*
@@ -2103,7 +2103,7 @@ The following operations are available for pens.
 *pathName* **pen names** ?\ *pattern* ... ?
   Returns the names of all the pens in the graph.  If one or more
   *pattern* arguments are provided, then the name of any pen matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\ -style pattern.
 
 *pathName* **pen type** *penName*
 
