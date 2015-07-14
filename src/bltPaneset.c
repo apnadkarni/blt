@@ -89,9 +89,6 @@ typedef enum AdjustModes {
                                          * the last pane. */
 } AdjustMode;
 
-/* 
- * The following are the adjustment modes for the paneset widget.
- */
 typedef enum {
     INSERT_AFTER,                       /* Insert after named pane. */
     INSERT_BEFORE                       /* Insert before named pane. */
