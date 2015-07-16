@@ -2996,7 +2996,15 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     Blt_BlankPicture(elemPtr->picture, 0x0);
     x = exts.left, y = exts.top;
     for (i = 0; i < elemPtr->numTriangles; i++) {
-        DrawTriangle(elemPtr, elemPtr->picture, elemPtr->triangles + i, x, y);
+        Triangle *t;
+
+        t = elemPtr->triangles + i;
+        /* Test if min or max of triangle is outside of axis range. */
+        if ((t->min < elemPtr->zAxisPtr->min) ||
+            (t->max > elemPtr->zAxisPtr->max)) {
+            continue;
+        }
+        DrawTriangle(elemPtr, elemPtr->picture, t, x, y);
     }
     if ((elemPtr->opacity < 100.0) && (InRange(elemPtr->opacity, 0.0, 100.0))) {
             Blt_FadePicture(elemPtr->picture, 0, 0, w, h,
@@ -6634,6 +6642,7 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 #define Bb      ren.blue[1]
 #define Aa      ren.alpha[0]
 #define Ba      ren.alpha[1]
+
     if (!InitRenderer(elemPtr, t, &ren)) {
         return;
     }

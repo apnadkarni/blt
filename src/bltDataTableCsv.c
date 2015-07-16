@@ -324,7 +324,9 @@ GuessSeparator(ImportArgs *argsPtr)
     off_t pos;
     const char sepTokens[] = { ",\t|;"};
     
-    pos = Tcl_Tell(argsPtr->channel);
+    if (argsPtr->channel != NULL) {
+        pos = Tcl_Tell(argsPtr->channel);
+    }
     objPtr = NULL;                      /* Suppress compiler warning. */
     if (argsPtr->channel != NULL) {
         objPtr = Tcl_NewStringObj("", -1);
