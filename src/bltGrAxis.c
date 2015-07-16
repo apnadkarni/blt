@@ -1633,7 +1633,7 @@ MakeLabel(Axis *axisPtr, double value)
     }
     labelPtr = Blt_AssertMalloc(sizeof(TickLabel) + strlen(string));
     strcpy(labelPtr->string, string);
-    labelPtr->anchorPos.x = labelPtr->anchorPos.y = 0;
+    labelPtr->anchorPos.x = labelPtr->anchorPos.y = -1000;
     Tcl_DStringFree(&ds);
     return labelPtr;
 }
@@ -2553,7 +2553,8 @@ AxisOffsets(Axis *axisPtr, AxisInfo *infoPtr)
             axisLine -= axisPtr->colorbar.thickness + COLORBAR_PAD;
         }
         if (axisPtr->flags & EXTERIOR) {
-            axisLine -= graphPtr->plotBorderWidth + axisPad + axisPtr->lineWidth / 2;
+            axisLine -= graphPtr->plotBorderWidth + axisPad +
+                axisPtr->lineWidth / 2;
             tickLabel = axisLine - 2;
             if (axisPtr->lineWidth > 0) {
                 tickLabel -= axisPtr->tickLength;
@@ -2783,8 +2784,8 @@ AxisOffsets(Axis *axisPtr, AxisInfo *infoPtr)
             if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
 
 #ifdef notdef
-                axisLine--;                 /* Draw axis line within solid plot
-                                             * border. */
+                axisLine--;                 /* Draw axis line within solid
+                                             * plot border. */
 #endif
             } 
             axisLine -= axisPad + axisPtr->lineWidth / 2;
@@ -3314,9 +3315,6 @@ DrawColorbar(Axis *axisPtr, Drawable drawable)
  * Results:
  *      None.
  *
- * Side Effects:
- *      Axis gets drawn on window.
- *
  *---------------------------------------------------------------------------
  */
 static void
@@ -3448,11 +3446,8 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
     if ((axisPtr->numSegments > 0) && (axisPtr->lineWidth > 0)) {       
         GC gc;
 
-        if (axisPtr->flags & ACTIVE) {
-            gc = axisPtr->activeTickGC;
-        } else {
-            gc = axisPtr->tickGC;
-        }
+        gc = (axisPtr->flags & ACTIVE) ? axisPtr->activeTickGC :
+            axisPtr->tickGC;
         /* Draw the tick marks and axis line. */
         Blt_DrawSegments2d(graphPtr->display, drawable, gc, axisPtr->segments, 
                 axisPtr->numSegments);
