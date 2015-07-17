@@ -138,10 +138,11 @@ typedef enum {
 /*
  * Handle --
  *
- *      A handle is the thin area where the drawer may be gripped.
+ *      A handle is the thin window abutting the child widget (drawer). It
+ *      may be used to resize or move the drawer.
  */
 struct _Handle {
-    Drawer *drawerPtr;                  /* Drawer to which this handle
+    Drawer *drawPtr;                    /* Drawer to which this handle
                                          * belongs. */
     Tk_Window tkwin;                    /* Handle window to be managed. */
     Blt_HashEntry *hashPtr;             /* Pointer of this handle into the
@@ -160,35 +161,37 @@ struct _Handle {
 /*
  * Drawer --
  *
- *      A drawer holds a window and a possibly a handle.  It describes how
- *      the window should appear in the drawer.  The handle is a rectangle
- *      on the far edge of the drawer (horizontal right, vertical bottom).
- *      Normally the last drawer does not have a handle.  Handles may be
- *      hidden.
+ *   A drawer contains two windows: the embeded child widget and a handle
+ *   subwindow.  The drawer controls how the embedded window should appear
+ *   in the drawer.  The handle is a rectanglar window on the far edge of
+ *   the drawer (horizontal=right, vertical=bottom).  Normally the last
+ *   drawer does not have a handle.  Handles may be hidden.
  *
- *      Initially, the size of a drawer consists of
- *       1. the requested size embedded window,
- *       2. any requested internal padding, and
- *       3. the size of the handle (if one is displayed). 
- *
- *      Note: There is no 3D border around the drawer.  This can be added
- *            by embedding a frame.  This simplifies the widget so that
- *            there is only one window for the widget.  Windows outside of
- *            the boundary of the drawer are occluded.
+ *   Note: There is no 3D border around the drawer.  This can be added by
+ *         embedding a frame.  This simplifies the widget so that there is
+ *         only one window for the widget.  Windows outside of the boundary
+ *         of the drawer are occluded.
  */
 struct _Drawer  {
-    Tk_Window tkwin;                    /* Widget to be managed. */
     const char *name;                   /* Name of drawer */
+    Drawerset *setPtr;                  /* Drawerset widget containing this
+                                         * drawer. */
+    Blt_HashEntry *hashPtr;             /* Pointer of this drawer into
+                                         * hashtable of drawer. */
+    Blt_ChainLink link;                 /* Pointer of this drawer into the
+                                         * list of drawers. */
     unsigned int flags;
     unsigned int side;                  /* The side of the widget where the
                                          * drawer is attached. */
-    Drawerset *setPtr;                  /* Drawerset widget managing this
-                                         * drawer. */
+    Tk_Window tkwin;                    /* Embedded child widget to be
+                                         * managed. */
     int borderWidth;                    /* The external border width of the
-                                         * widget. This is needed to check
-                                         * if
-                                         * Tk_Changes(tkwin)->border_width
-                                         * changes. */
+                                         * embedded widget. This is needed
+                                         * to check if "border_width" of
+                                         * Tk_Changes(tkwin) changes. */
+    int x, y;                           /* Origin of drawer wrt container. */
+    int index;                          /* Index of the drawer. */
+
     const char *takeFocus;              /* Says whether to select this
                                          * widget during tab traveral
                                          * operations.  This value isn't
@@ -212,17 +215,9 @@ struct _Drawer  {
                                          * fill the drawer it occupies. */
     int resize;                         /* Indicates if the drawer should
                                          * expand/shrink. */
-    int x, y;                           /* Origin of drawer wrt container. */
-    Blt_ChainLink link;                 /* Pointer of this drawer into the
-                                         * list of drawers. */
-    Blt_HashEntry *hashPtr;             /* Pointer of this drawer into
-                                         * hashtable of drawer. */
-    int index;                          /* Index of the drawer. */
     int size;                           /* Current size of the drawer. This
-                                         * size is bounded by min and
-                                         * max. */
-
-
+                                         * size is bounded by min and max
+                                         * below. */
     /*
      * nom and size perform similar duties.  I need to keep track of the
      * amount of space allocated to the drawer (using size).  But at the
@@ -235,7 +230,8 @@ struct _Drawer  {
                                          * drawer based upon the requested
                                          * size of the widget embedded in
                                          * this drawer. */
-    int min, max;                       /* Size constraints on the drawer */
+    int min, max;                       /* Size constraints for the
+                                         * drawer. */
     Blt_Limits reqSize;                 /* Requested bounds for the size of
                                          * the drawer. The drawer will not
                                          * expand or shrink beyond these
@@ -243,9 +239,9 @@ struct _Drawer  {
                                          * specified (max widget size).
                                          * This includes any extra padding
                                          * which may be specified. */
-    int normalSize;                     /* Requested size of the drawer. This
-                                         * size is bounded by -reqwidth or
-                                         * -reqheight. */
+    int normalSize;                     /* Requested size of the
+                                         * drawer. This size is bounded by
+                                         * -reqwidth or -reqheight. */
     Blt_Bg bg;                          /* 3D background border surrounding
                                          * the widget */
     Tcl_Obj *cmdObjPtr;
@@ -254,15 +250,14 @@ struct _Drawer  {
     int scrollTarget;                   /* Target offset to scroll to. */
     int scrollIncr;                     /* Current increment. */
 
-    Tcl_Obj *varNameObjPtr;            /* Name of TCL variable.  If
+    Tcl_Obj *varNameObjPtr;             /* Name of TCL variable.  If
                                          * non-NULL, this variable will be
                                          * set to the value string of the
                                          * selected item. */
 
-    /* Checkbutton on and off values. */
-    Tcl_Obj *openValueObjPtr;           /* Drawer open-value. */
-    Tcl_Obj *closeValueObjPtr;          /* Drawer close-value. */
-
+    /* Open and close values. */
+    Tcl_Obj *openValueObjPtr;           /* Open drawer value. */
+    Tcl_Obj *closeValueObjPtr;          /* Close drawer value. */
     Tcl_Obj *openCmdObjPtr;             /* Command to be invoked whenever
                                          * the drawer has been opened. */
     Tcl_Obj *closeCmdObjPtr;            /* Command to be invoked whenever
@@ -570,7 +565,8 @@ static Blt_ConfigSpec drawersetSpecs[] =
         Blt_Offset(Drawerset, handleHighlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-handlehighlightthickness", "handleHighlightThickness",
         "HandleHighlightThickness", DEF_HANDLE_HIGHLIGHT_THICKNESS, 
-        Blt_Offset(Drawerset, handleHighlightThickness), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Drawerset, handleHighlightThickness),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
         (char *)NULL, Blt_Offset(Drawerset, reqHeight), 0, &bltLimitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
@@ -605,8 +601,8 @@ static Blt_ConfigSpec drawersetSpecs[] =
 /*
  * DrawerIterator --
  *
- *      Drawers may be tagged with strings.  A drawer may have many tags.
- *      The same tag may be used for many drawers.
+ *   Drawers may be tagged with strings.  A drawer may have many tags.  The
+ *   same tag may be used for many drawers.
  *      
  */
 typedef enum { 
@@ -794,9 +790,9 @@ ManageBase(Drawerset *setPtr, Tk_Window tkwin)
 /*
  *---------------------------------------------------------------------------
  *
- * InstallWindow --
+ * GetWindowFromObj --
  *
- *      Convert the path of a Tk window into a Tk_Window pointer.
+ *      Convert the pathname of a Tk window into a Tk_Window.
  *
  * Results:
  *      The return value is a standard TCL result.  The window pointer is
@@ -810,7 +806,7 @@ GetWindowFromObj(
     Tcl_Interp *interp,                 /* Interpreter to send results back
                                          * to */
     Drawerset *setPtr,
-    Tcl_Obj *objPtr,                    /* String representing scrollbar
+    Tcl_Obj *objPtr,                    /* String representing Tk
                                          * window. */
     Tk_Window *tkwinPtr)
 {
@@ -1071,9 +1067,11 @@ GetReqDrawerWidth(Drawer *drawPtr)
     if ((drawPtr->side & SIDE_HORIZONTAL) && (drawPtr->flags & HANDLE)) {
         w += setPtr->handleSize;
     }
+#ifdef notdef
     if ((Tk_Width(setPtr->tkwin) > 1) && (Tk_Width(setPtr->tkwin) < w)) {
         w = Tk_Width(setPtr->tkwin);
     }
+#endif
     return w;
 }
 
@@ -1082,15 +1080,19 @@ GetReqDrawerHeight(Drawer *drawPtr)
 {
     int h;
     Drawerset *setPtr;
-
+    int cavityHeight;
+    
     setPtr = drawPtr->setPtr;
     h = GetReqHeight(drawPtr);
     if ((drawPtr->side & SIDE_VERTICAL) && (drawPtr->flags & HANDLE)) {
         h += drawPtr->setPtr->handleSize;
     }
-    if ((Tk_Height(setPtr->tkwin) > 1) && (Tk_Height(setPtr->tkwin) < h)) {
-        h = Tk_Height(setPtr->tkwin);
+#ifdef notdef
+    cavityHeight = Tk_Height(setPtr->tkwin);
+    if ((cavityHeight > 1) && (cavityHeight < h)) {
+        h = cavityHeight;
     }
+#endif
     return h;
 }
 
@@ -1108,6 +1110,7 @@ InvokeDrawerCommand(Tcl_Interp *interp, Drawer *drawPtr, Tcl_Obj *cmdObjPtr)
     Tcl_DecrRefCount(cmdObjPtr);
     return result;
 }
+
 
 static void
 OpenDrawer(Drawer *drawPtr) 
@@ -1328,17 +1331,19 @@ DestroyDrawer(Drawer *drawPtr)
     }
     if (drawPtr->handle.tkwin != NULL) {
         Tk_Window tkwin;
-
-        tkwin = drawPtr->handle.tkwin;
+        Handle *handlePtr;
+        
+        handlePtr = &drawPtr->handle;
+        tkwin = handlePtr->tkwin;
         Tk_DeleteEventHandler(tkwin, 
                 ExposureMask|FocusChangeMask|StructureNotifyMask, 
                 HandleEventProc, drawPtr);
         Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, drawPtr);
-        drawPtr->handle.tkwin = NULL;
+        handlePtr->tkwin = NULL;
         Tk_DestroyWindow(tkwin);
-        if (drawPtr->handle.hashPtr != NULL) {
-            Blt_DeleteHashEntry(&setPtr->handleTable, drawPtr->handle.hashPtr);
-            drawPtr->handle.hashPtr = NULL;
+        if (handlePtr->hashPtr != NULL) {
+            Blt_DeleteHashEntry(&setPtr->handleTable, handlePtr->hashPtr);
+            handlePtr->hashPtr = NULL;
         }
     }
     Blt_Free(drawPtr);
@@ -2339,7 +2344,9 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
         char string[200];
         char *path;
         int isNew;
+        Handle *handlePtr;
         
+        handlePtr = &drawPtr->handle;
         /* Generate an unique handle subwindow name. */
         path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
         do {
@@ -2357,8 +2364,9 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
                 &isNew);
         assert(isNew);
         Blt_SetHashValue(hPtr, drawPtr);
-        drawPtr->handle.hashPtr = hPtr;
-        drawPtr->handle.tkwin = tkwin;
+        handlePtr->hashPtr = hPtr;
+        handlePtr->tkwin = tkwin;
+        handlePtr->drawPtr = drawPtr;
         Tk_SetClass(tkwin, "BltDrawerHandle");
         Tk_CreateEventHandler(tkwin, 
                 ExposureMask|FocusChangeMask|StructureNotifyMask, 
@@ -2418,14 +2426,11 @@ static void
 RenumberDrawers(Drawerset *setPtr)
 {
     int count;
-    Blt_ChainLink link;
+    Drawer *drawPtr;
 
     count = 0;
-    for (link = Blt_Chain_FirstLink(setPtr->drawers); link != NULL;
-         link = Blt_Chain_NextLink(link)) {
-        Drawer *drawPtr;
-        
-        drawPtr = Blt_Chain_GetValue(link);
+    for (drawPtr = FirstDrawer(setPtr, 0); drawPtr != NULL;
+         drawPtr = NextDrawer(drawPtr, 0)) {
         drawPtr->index = count;
         count++;
     }
@@ -2661,16 +2666,13 @@ ResetDrawers(Drawerset *setPtr)
 static void
 GetDrawersGeometry(Drawerset *setPtr)
 {
-    Blt_ChainLink link, next;
+    Drawer *drawPtr;
 
     ResetDrawers(setPtr);
-    for (link = Blt_Chain_FirstLink(setPtr->drawers); link != NULL; link = next) {
-        Drawer *drawPtr;
+    for (drawPtr = FirstDrawer(setPtr, 0); drawPtr != NULL;
+         drawPtr = NextDrawer(drawPtr, 0)) {
         int anchor;
 
-        next = Blt_Chain_NextLink(link);
-        drawPtr = Blt_Chain_GetValue(link);
-            
         if (drawPtr->side & SIDE_VERTICAL) {
             drawPtr->normalSize = GetReqDrawerHeight(drawPtr);
             anchor = drawPtr->y;
@@ -2713,7 +2715,7 @@ ArrangeDrawer(Drawer *drawPtr)
 {
     Drawerset *setPtr;
     int x, y;
-    unsigned int w, h, cw, ch;
+    unsigned int w, h, cavityWidth, cavityHeight;
     int anchor;
 
     if ((drawPtr->flags & CLOSED) || (drawPtr->tkwin == NULL)) {
@@ -2727,11 +2729,14 @@ ArrangeDrawer(Drawer *drawPtr)
     y = ScreenY(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
 
     drawPtr->size = drawPtr->normalSize;
-    ch = Tk_Height(setPtr->tkwin);
-    cw = Tk_Width(setPtr->tkwin);
+    cavityHeight = Tk_Height(setPtr->tkwin);
+    cavityWidth  = Tk_Width(setPtr->tkwin);
     w = GetReqDrawerWidth(drawPtr);
     h = GetReqDrawerHeight(drawPtr);
 
+    fprintf(stderr, "0. drawer %s, x=%d y=%d w=%d h=%d cw=%d ch=%d\n",
+            Tk_PathName(drawPtr->tkwin), x, y, w, h, cavityWidth,
+            cavityHeight);
     if (drawPtr->side & SIDE_VERTICAL) {
         if (drawPtr->y > Tk_Height(setPtr->tkwin)) {
             drawPtr->y = Tk_Height(setPtr->tkwin);
@@ -2741,7 +2746,6 @@ ArrangeDrawer(Drawer *drawPtr)
             drawPtr->x = Tk_Width(setPtr->tkwin);
         }
     }
-
 
     /*
      *
@@ -2759,49 +2763,52 @@ ArrangeDrawer(Drawer *drawPtr)
 
     if (drawPtr->side & SIDE_VERTICAL) {
         if ((drawPtr->fill & FILL_Y) || 
-            ((ch < h) && (drawPtr->flags & SHRINK))) {
-            h = ch;             
+            ((cavityHeight < h) && (drawPtr->flags & SHRINK))) {
+            h = cavityHeight;             
         }
         h = BoundHeight(h, &drawPtr->reqSize);
-        if ((cw < w) || (drawPtr->fill & FILL_X)) {
+        if ((cavityWidth < w) || (drawPtr->fill & FILL_X)) {
             /* -fill x overrides -reqwidth. */
-            w = cw;
+            w = cavityWidth;
         } 
         drawPtr->size = h;
     } else {
         if ((drawPtr->fill & FILL_X) ||
-            ((cw < w) && (drawPtr->flags & SHRINK))) {
-            w = cw;
+            ((cavityWidth < w) && (drawPtr->flags & SHRINK))) {
+            w = cavityWidth;
         }
         w = BoundWidth(w, &drawPtr->reqSize);
-        if ((ch < h) || (drawPtr->fill & FILL_Y)) {
+        if ((cavityHeight < h) || (drawPtr->fill & FILL_Y)) {
             /* -fill y overrides -reqheight. */
-            h = ch;
+            h = cavityHeight;
         }
         drawPtr->size = w;
     }
     x = ScreenX(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
     y = ScreenY(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
 
-    if ((drawPtr->side & SIDE_HORIZONTAL) && (ch > h)) {
+    fprintf(stderr, "1. drawer %s, x=%d y=%d w=%d h=%d cw=%d ch=%d\n",
+            Tk_PathName(drawPtr->tkwin), x, y, w, h, cavityWidth,
+            cavityHeight);
+    if ((drawPtr->side & SIDE_HORIZONTAL) && (cavityHeight > h)) {
         switch (drawPtr->anchor) {
-        case TK_ANCHOR_NW:                      /* Upper left corner */
-        case TK_ANCHOR_N:                       /* Top center */
-        case TK_ANCHOR_NE:                      /* Upper right corner */
+        case TK_ANCHOR_NW:              /* Upper left corner */
+        case TK_ANCHOR_N:               /* Top center */
+        case TK_ANCHOR_NE:              /* Upper right corner */
             break;
-        case TK_ANCHOR_E:                       /* Right center */
-        case TK_ANCHOR_W:                       /* Left center */
-        case TK_ANCHOR_CENTER:                  /* Centered */
-            y += (ch - h) / 2;
+        case TK_ANCHOR_E:               /* Right center */
+        case TK_ANCHOR_W:               /* Left center */
+        case TK_ANCHOR_CENTER:          /* Centered */
+            y += (cavityHeight - h) / 2;
             break;
-        case TK_ANCHOR_SW:                      /* Lower left corner */
-        case TK_ANCHOR_S:                       /* Bottom center */
-        case TK_ANCHOR_SE:                      /* Lower right corner */
-            y += ch - h;
+        case TK_ANCHOR_SW:              /* Lower left corner */
+        case TK_ANCHOR_S:               /* Bottom center */
+        case TK_ANCHOR_SE:              /* Lower right corner */
+            y += cavityHeight - h;
             break;
         }
     }
-    if ((drawPtr->side & SIDE_VERTICAL) && (cw > w)) {
+    if ((drawPtr->side & SIDE_VERTICAL) && (cavityWidth > w)) {
         switch (drawPtr->anchor) {
         case TK_ANCHOR_NW:              /* Upper left corner */
         case TK_ANCHOR_SW:              /* Lower left corner */
@@ -2810,33 +2817,33 @@ ArrangeDrawer(Drawer *drawPtr)
         case TK_ANCHOR_N:               /* Top center */
         case TK_ANCHOR_CENTER:          /* Centered */
         case TK_ANCHOR_S:               /* Bottom center */
-            x += (cw - w) / 2;
+            x += (cavityWidth - w) / 2;
             break;
         case TK_ANCHOR_E:               /* Right center */
         case TK_ANCHOR_SE:              /* Lower right corner */
         case TK_ANCHOR_NE:              /* Upper right corner */
-            x += cw - w;
+            x += cavityWidth - w;
             break;                      
         }
     }
     switch (drawPtr->side) {
     case SIDE_BOTTOM:
-        if (ch > (drawPtr->yOffset + h)) {
+        if (cavityHeight > (drawPtr->yOffset + h)) {
             y -= drawPtr->yOffset;
         }
         break;
     case SIDE_TOP:
-        if (ch > (drawPtr->yOffset + h)) {
+        if (cavityHeight > (drawPtr->yOffset + h)) {
             y += drawPtr->yOffset;
         }
         break;
     case SIDE_LEFT:
-        if (cw > (drawPtr->xOffset + w)) {
+        if (cavityWidth > (drawPtr->xOffset + w)) {
             x += drawPtr->xOffset;
         }
         break;
     case SIDE_RIGHT:
-        if (cw > (drawPtr->xOffset + w)) {
+        if (cavityWidth > (drawPtr->xOffset + w)) {
             x -= drawPtr->xOffset;
         }
         break;
@@ -2873,9 +2880,10 @@ ArrangeDrawer(Drawer *drawPtr)
         /*
          * Resize and/or move the widget as necessary.
          */
-#ifdef notdef
+#ifndef notdef
         fprintf(stderr, "drawer %s, x=%d y=%d w=%d h=%d cw=%d ch=%d\n",
-                Tk_PathName(drawPtr->tkwin), x, y, w, h, cw, ch);
+                Tk_PathName(drawPtr->tkwin), x, y, w, h, cavityWidth,
+                cavityHeight);
 #endif
         if ((x != Tk_X(drawPtr->tkwin)) || 
             (y != Tk_Y(drawPtr->tkwin)) ||

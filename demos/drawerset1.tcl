@@ -5,6 +5,7 @@ source scripts/demo.tcl
 blt::drawerset .ds \
     -handlethickness 3 \
     -animate yes \
+    -height 700 \
     -window .ds.g
 
 blt::graph .ds.g -bg \#CCCCFF -height 800 -width 801
@@ -17,8 +18,10 @@ blt::barchart .ds.b4 -bg \#CCFFFF -height 300 -width 300
 .ds add left -window .ds.b2 -side left -variable left -handlecolor \#CCFFCC \
     -showhandle yes
 .ds add right -window .ds.b3 -side right -variable right -handlecolor \#FFFFCC
+
 .ds add bottom -window .ds.b4 -side bottom -variable bottom \
-    -handlecolor \#CCFFFF  -showhandle yes
+    -handlecolor \#CCFFFF  -showhandle yes -fill both
+
 checkbutton .left -text "L" -overrelief raised  \
     -variable left -indicatoron no
 checkbutton .right -text "R" -overrelief raised  \
