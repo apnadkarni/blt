@@ -203,14 +203,15 @@ struct _Drawer  {
                                          * widget is positioned if extra
                                          * space is available in the
                                          * drawer. */
-    int xOffset;                        /* Extra padding placed left and
-                                         * right of the widget. */
-    int yOffset;                        /* Extra padding placed above and
-                                         * below the widget */
+    int xOffset, yOffset;               /* Horizontal and vertical offsets
+                                         * of the drawer. */
+    int minPos, maxPos;                 /* Minumum and maximum positions of
+                                         * drawer. */
     int iPadX, iPadY;                   /* Extra padding added to the
                                          * interior of the widget
                                          * (i.e. adds to the requested size
                                          * of the widget) */
+    float relWidth, relHeight;
     int fill;                           /* Indicates how the widget should
                                          * fill the drawer it occupies. */
     int resize;                         /* Indicates if the drawer should
@@ -937,6 +938,34 @@ LowerDrawer(Drawer *drawPtr)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * BoundWidth --
+ *
+ *      Bounds a given width value to the limits described in the limit
+ *      structure.  The initial starting value may be overridden by the
+ *      nominal value in the limits.
+ *
+ * Results:
+ *      Returns the constrained value.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+BoundSize(int size, Blt_Limits *limitsPtr)    
+{
+    if (limitsPtr->flags & LIMITS_NOM_SET) {
+        size = limitsPtr->nom;         /* Override initial value */
+    }
+    if (size < limitsPtr->min) {
+        size = limitsPtr->min;         /* Bounded by minimum value */
+    }
+    if (size > limitsPtr->max) {
+        size = limitsPtr->max;         /* Bounded by maximum value */
+    }
+    return size;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -1079,15 +1108,15 @@ static int
 GetReqDrawerHeight(Drawer *drawPtr)
 {
     int h;
-    Drawerset *setPtr;
-    int cavityHeight;
-    
-    setPtr = drawPtr->setPtr;
     h = GetReqHeight(drawPtr);
     if ((drawPtr->side & SIDE_VERTICAL) && (drawPtr->flags & HANDLE)) {
         h += drawPtr->setPtr->handleSize;
     }
 #ifdef notdef
+    Drawerset *setPtr;
+    
+    setPtr = drawPtr->setPtr;
+    int cavityHeight;
     cavityHeight = Tk_Height(setPtr->tkwin);
     if ((cavityHeight > 1) && (cavityHeight < h)) {
         h = cavityHeight;
@@ -2710,6 +2739,224 @@ GetDrawersGeometry(Drawerset *setPtr)
     }
 }
 
+
+static void
+ArrangeHorizontalDrawer(Drawer *drawPtr) 
+{
+    Drawerset *setPtr;
+    int x, y;
+    unsigned int w, h;
+    int reqWidth, reqHeight, maxWidth, maxHeight;
+
+    setPtr = drawPtr->setPtr;
+    if (drawPtr->relWidth > 0.0) {
+        reqWidth = (int)(Tk_Width(setPtr->tkwin) * drawPtr->relWidth);
+    } else {
+        reqWidth = Tk_ReqWidth(drawPtr->tkwin);
+    }
+    if (drawPtr->relHeight > 0.0) {
+        reqHeight = (int)(Tk_Height(setPtr->tkwin) * drawPtr->relHeight);
+    } else {
+        reqHeight = Tk_ReqHeight(drawPtr->tkwin);
+    }
+    reqWidth  = BoundSize(reqWidth, &drawPtr->reqWidth);
+    reqHeight = BoundSize(reqHeight, &drawPtr->reqHeight);
+    maxWidth  = MIN(reqWidth,  Tk_Width(setPtr->tkwin));
+    maxHeight = MIN(reqHeight, Tk_Height(setPtr->tkwin));
+    if (drawPtr->flags & HANDLE) {
+        maxWidth -= setPtr->handleSize; /* Subtract the size of the handle
+                                         * from the maximum requested
+                                         * size. */
+    }
+    /* Track limits of drawer. */
+    drawPtr->minPos = drawPtr->xOffset;
+    drawPtr->maxPos = drawPtr->minPos + maxWidth;
+
+    /* If x is beyond normal maximum, allow window to grow. */
+    w = maxWidth;
+    if (drawPtr->x > drawPtr->maxPos) {
+        h = drawPtr->x - drawPtr->minPos;
+    }
+    h = Tk_ReqHeight(drawPtr->tkwin);
+    if (drawPtr->fill & FILL_Y) {
+        h = Tk_Height(setPtr->tkwin);
+    }
+    if (drawPtr->side == SIDE_LEFT) {
+        x = (drawPtr->x + drawPtr->xOffset) - w;
+        y = drawPtr->yOffset;
+    } else {
+        x = Tk_Width(setPtr->tkwin) - (drawPtr->x + drawPtr->xOffset);
+        y = drawPtr->yOffset;
+    }
+    if (Tk_Height(setPtr->tkwin) > h) {
+        switch (drawPtr->anchor) {
+        case TK_ANCHOR_NW:              /* Upper left corner */
+        case TK_ANCHOR_SW:              /* Lower left corner */
+        case TK_ANCHOR_W:               /* Left center */
+            break;
+        case TK_ANCHOR_N:               /* Top center */
+        case TK_ANCHOR_CENTER:          /* Centered */
+        case TK_ANCHOR_S:               /* Bottom center */
+            y += (Tk_Height(setPtr->tkwin) - h) / 2;
+            break;
+        case TK_ANCHOR_E:               /* Right center */
+        case TK_ANCHOR_SE:              /* Lower right corner */
+        case TK_ANCHOR_NE:              /* Upper right corner */
+            y += Tk_Height(setPtr->tkwin) - h;
+            break;                      
+        }
+    }
+    if ((w < 1) || (h < 1)) {
+        if (Tk_IsMapped(drawPtr->tkwin)) {
+            Tk_UnmapWindow(drawPtr->tkwin);
+        }
+    } else {
+        /*
+         * Resize and/or move the widget as necessary.
+         */
+        if ((x != Tk_X(drawPtr->tkwin)) || (y != Tk_Y(drawPtr->tkwin)) ||
+            (w != Tk_Width(drawPtr->tkwin)) ||
+            (h != Tk_Height(drawPtr->tkwin))) {
+            Tk_MoveResizeWindow(drawPtr->tkwin, x, y, w, h);
+        }
+        if (!Tk_IsMapped(drawPtr->tkwin)) {
+            Tk_MapWindow(drawPtr->tkwin);
+        }
+        drawPtr->flags &= ~VIRGIN;
+    }
+    if (drawPtr->flags & HANDLE) {
+        Handle *handlePtr = &drawPtr->handle;
+
+        if (drawPtr->side == SIDE_LEFT) {
+            x += w;
+        } else {
+            x -= setPtr->handleSize;
+        }
+        w = setPtr->handleSize; 
+        /* Same y and h.  */
+        if ((x != Tk_X(handlePtr->tkwin)) || 
+            (y != Tk_Y(handlePtr->tkwin)) ||
+            (w != Tk_Width(handlePtr->tkwin)) ||
+            (h != Tk_Height(handlePtr->tkwin))) {
+            Tk_MoveResizeWindow(handlePtr->tkwin, x, y, w, h);
+        }
+        if (!Tk_IsMapped(handlePtr->tkwin)) {
+            Tk_MapWindow(handlePtr->tkwin);
+        }
+    } else if (Tk_IsMapped(drawPtr->handle.tkwin)) {
+        Tk_UnmapWindow(drawPtr->handle.tkwin);
+    }
+}
+
+static void
+ArrangeVerticalDrawer(Drawer *drawPtr) 
+{
+    Drawerset *setPtr;
+    int x, y;
+    unsigned int w, h;
+    int reqWidth, reqHeight, maxWidth, maxHeight;
+
+    setPtr = drawPtr->setPtr;
+    if (drawPtr->relWidth > 0.0) {
+        reqWidth = (int)(Tk_Width(setPtr->tkwin) * drawPtr->relWidth);
+    } else {
+        reqWidth = Tk_ReqWidth(drawPtr->tkwin);
+    }
+    if (drawPtr->relHeight > 0.0) {
+        reqHeight = (int)(Tk_Height(setPtr->tkwin) * drawPtr->relHeight);
+    } else {
+        reqHeight = Tk_ReqHeight(drawPtr->tkwin);
+    }
+    reqWidth  = BoundSize(reqWidth, &drawPtr->reqWidth);
+    reqHeight = BoundSize(reqHeight, &drawPtr->reqHeight);
+    maxWidth  = MIN(reqWidth,  Tk_Width(setPtr->tkwin));
+    maxHeight = MIN(reqHeight, Tk_Height(setPtr->tkwin));
+    if (drawPtr->flags & HANDLE) {
+        maxHeight -= setPtr->handleSize; /* Subtract the size of the handle
+                                          * from the maximum requested
+                                          * size. */
+    }
+    /* Track limits of drawer. */
+    drawPtr->minPos = drawPtr->yOffset;
+    drawPtr->maxPos = drawPtr->minPos + maxHeight;
+
+    /* If y is beyond normal maximum, allow window to grow. */
+    h = maxHeight;
+    if (drawPtr->y > drawPtr->maxPos) {
+        maxHeight = drawPtr->y - drawPtr->minPos;
+    }
+    w = Tk_ReqWidth(drawPtr->tkwin);
+
+    if (drawPtr->fill & FILL_X) {
+        w = Tk_Width(setPtr->tkwin);
+    }
+    if (drawPtr->side == SIDE_TOP) {
+        y = (drawPtr->y + drawPtr->yOffset) - h;
+        x = drawPtr->xOffset;
+    } else {
+        y = Tk_Height(setPtr->tkwin) - (drawPtr->y + drawPtr->yOffset);
+        x = drawPtr->xOffset;
+    }
+    if (Tk_Width(setPtr->tkwin) > w) {
+        switch (drawPtr->anchor) {
+        case TK_ANCHOR_NW:              /* Upper left corner */
+        case TK_ANCHOR_SW:              /* Lower left corner */
+        case TK_ANCHOR_W:               /* Left center */
+            break;
+        case TK_ANCHOR_N:               /* Top center */
+        case TK_ANCHOR_CENTER:          /* Centered */
+        case TK_ANCHOR_S:               /* Bottom center */
+            x += (Tk_Width(setPtr->tkwin) - w) / 2;
+            break;
+        case TK_ANCHOR_E:               /* Right center */
+        case TK_ANCHOR_SE:              /* Lower right corner */
+        case TK_ANCHOR_NE:              /* Upper right corner */
+            x += Tk_Width(setPtr->tkwin) - w;
+            break;                      
+        }
+    }
+    if ((w < 1) || (h < 1)) {
+        if (Tk_IsMapped(drawPtr->tkwin)) {
+            Tk_UnmapWindow(drawPtr->tkwin);
+        }
+    } else {
+        /*
+         * Resize and/or move the widget as necessary.
+         */
+        if ((x != Tk_X(drawPtr->tkwin)) || 
+            (y != Tk_Y(drawPtr->tkwin)) ||
+            (w != Tk_Width(drawPtr->tkwin)) || 
+            (h != Tk_Height(drawPtr->tkwin))) {
+            Tk_MoveResizeWindow(drawPtr->tkwin, x, y, w, h);
+        }
+        if (!Tk_IsMapped(drawPtr->tkwin)) {
+            Tk_MapWindow(drawPtr->tkwin);
+        }
+        drawPtr->flags &= ~VIRGIN;
+    }
+    if (drawPtr->flags & HANDLE) {
+        Handle *handlePtr = &drawPtr->handle;
+
+        if (drawPtr->side == SIDE_TOP) {
+            y += h;
+        } else {
+            y -= setPtr->handleSize;
+        }
+        h = setPtr->handleSize; 
+        /* Same x and w.  y */
+        if ((x != Tk_X(handlePtr->tkwin)) || 
+            (y != Tk_Y(handlePtr->tkwin)) ||
+            (w != Tk_Width(handlePtr->tkwin)) ||
+            (h != Tk_Height(handlePtr->tkwin))) {
+            Tk_MoveResizeWindow(handlePtr->tkwin, x, y, w, h);
+        }
+        if (!Tk_IsMapped(handlePtr->tkwin)) {
+            Tk_MapWindow(handlePtr->tkwin);
+        }
+    } else if (Tk_IsMapped(drawPtr->handle.tkwin)) {
+        Tk_UnmapWindow(drawPtr->handle.tkwin);
+    }
+}
 static void
 ArrangeDrawer(Drawer *drawPtr) 
 {
@@ -2966,13 +3213,16 @@ ArrangeBase(Drawerset *setPtr)
 static void
 ArrangeDrawers(Drawerset *setPtr)
 {
-    Blt_ChainLink link, next;
+    Drawer *drawPtr;
 
-    for (link = Blt_Chain_FirstLink(setPtr->drawers); link != NULL; link = next) {
-        Drawer *drawPtr;
-
-        next = Blt_Chain_NextLink(link);
-        drawPtr = Blt_Chain_GetValue(link);
+    for (drawPtr = FirstDrawer(setPtr, HIDDEN); drawPtr != NULL;
+         drawPtr = NextDrawer(drawPtr, HIDDEN)) {
+        if ((drawPtr->flags & CLOSED) || (drawPtr->tkwin == NULL)) {
+            if (Tk_IsMapped(drawPtr->handle.tkwin)) {
+                Tk_UnmapWindow(drawPtr->handle.tkwin);
+            }
+            continue;
+        }
         ArrangeDrawer(drawPtr);
     }
 }
