@@ -1208,6 +1208,19 @@ IcoWriteImageData(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
      * image.  It's not worth it to create bit-masked versions because
      * it's increasing unlikely the icon will be 1-bit masked. */
     srcPtr = original;
+    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+        Blt_Picture unassoc;
+        /* 
+         * The picture has alphas burned into its color components.  Create
+         * a temporary copy removing pre-multiplied alphas.
+         */ 
+        unassoc = Blt_ClonePicture(srcPtr);
+        Blt_UnmultiplyColors(unassoc);
+        if (srcPtr != original) {
+            Blt_FreePicture(srcPtr);
+        }
+        srcPtr = unassoc;
+    }
     if (switchesPtr->flags & EXPORT_ALPHA) {
         bitsPerPixel = 32;
         format = BI_BITFIELDS;

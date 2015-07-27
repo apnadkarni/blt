@@ -107,8 +107,8 @@ struct _Blt_Picture {
                                          * buffer array. */
 };
 
-#define BLT_PIC_COLOR  (1<<0)           /* Indicates if picture is color or
-                                         * greyscale. */
+#define BLT_PIC_GREYSCALE      (1<<0)   /* Indicates if the picture is
+                                         * greyscale (R==G==B). */
 #define BLT_PIC_PREMULT_COLORS (1<<2)   /* Indicates if RGB components have
                                          * been premultiplied by their
                                          * alphas. */
@@ -155,8 +155,8 @@ struct _Blt_Chain;
 #define Blt_Picture_IsOpaque(p)  (((p)->flags & BLT_PIC_COMPOSITE) == 0)
 #define Blt_Picture_IsMasked(p)  ((p)->flags & BLT_PIC_MASK) 
 #define Blt_Picture_IsBlended(p) ((p)->flags & BLT_PIC_COMPOSITE)
-#define Blt_Picture_IsColor(p)   ((p)->flags & BLT_PIC_COLOR)
-#define Blt_Picture_IsGreyscale(p)   (((p)->flags & BLT_PIC_COLOR) == 0)
+#define Blt_Picture_IsColor(p)   (((p)->flags & BLT_PIC_GREYSCALE) == 0)
+#define Blt_Picture_IsGreyscale(p)     ((p)->flags & BLT_PIC_GREYSCALE)
 #define Blt_Picture_IsPremultiplied(p) ((p)->flags & BLT_PIC_PREMULT_COLORS)
 
 typedef enum PictureArithOps {

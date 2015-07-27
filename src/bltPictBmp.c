@@ -1293,6 +1293,19 @@ PictureToBmp(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     unsigned char *bp, *destBits;
 
     srcPtr = original;
+    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+        Blt_Picture unassoc;
+        /* 
+         * The picture has alphas burned into its color components.  Create
+         * a temporary copy removing pre-multiplied alphas.
+         */ 
+        unassoc = Blt_ClonePicture(srcPtr);
+        Blt_UnmultiplyColors(unassoc);
+        if (srcPtr != original) {
+            Blt_FreePicture(srcPtr);
+        }
+        srcPtr = unassoc;
+    }
     if (switchesPtr->flags & EXPORT_ALPHA) {
         bitsPerPixel = 32;
         format = BI_BITFIELDS;

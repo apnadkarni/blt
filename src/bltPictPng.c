@@ -311,8 +311,8 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
 #endif
     }
     destPtr = Blt_CreatePicture(width, height);
-    if ((numChannels == 4) || (numChannels == 3)) {
-        destPtr->flags |= BLT_PIC_COLOR;
+    if ((numChannels == 1) || (numChannels == 2)) {
+        destPtr->flags |= BLT_PIC_GREYSCALE;
     }
     /*  Set associated colors flag.  Fixed, if necessary, below. */
     {
@@ -442,9 +442,10 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
  *---------------------------------------------------------------------------
  */
 static int
-PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
+PictureToPng(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
              PngExportSwitches *switchesPtr)
 {
+    Picture *srcPtr;
     PngMessage message;
     png_infop info;
     png_structp png;
@@ -471,29 +472,42 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
     png_set_write_fn(png, (void *)dbuffer, PngWriteToBuffer, PngFlush);
 
     png_set_compression_level(png, Z_BEST_COMPRESSION);
-    Blt_ClassifyPicture(picture);
-    Blt_QueryColors(picture, (Blt_HashTable *)NULL);
-    if (Blt_Picture_IsColor(picture)) {
-        numChannels = 3;
-        colorType = PNG_COLOR_TYPE_RGB;
-    } else {
+    srcPtr = original;
+    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+        Blt_Picture unassoc;
+        /* 
+         * The picture has alphas burned into its color components.
+         * Create a temporary copy removing pre-multiplied alphas.
+         */ 
+        unassoc = Blt_ClonePicture(srcPtr);
+        Blt_UnmultiplyColors(unassoc);
+        if (srcPtr != original) {
+            Blt_FreePicture(srcPtr);
+        }
+        srcPtr = unassoc;
+    }
+    Blt_ClassifyPicture(srcPtr);
+    if (Blt_Picture_IsGreyscale(srcPtr)) {
         numChannels = 1;
         colorType = PNG_COLOR_TYPE_GRAY;
+    } else {
+        numChannels = 3;
+        colorType = PNG_COLOR_TYPE_RGB;
     }
-    if (!Blt_Picture_IsOpaque(picture)) {
+    if (!Blt_Picture_IsOpaque(srcPtr)) {
         numChannels++;
         colorType |= PNG_COLOR_MASK_ALPHA;
     }
     bitsPerPixel = 8;
 
     png_set_IHDR(png, info, 
-        Blt_Picture_Width(picture),    /* Width */
-        Blt_Picture_Height(picture),   /* Height */
-        bitsPerPixel,                 /* Bits per pixel. */
-        colorType,                    /* Color type: RGB or GRAY */
-        PNG_INTERLACE_NONE,           /* Interlace */
-        PNG_COMPRESSION_TYPE_DEFAULT, /* Compression */
-        PNG_FILTER_TYPE_DEFAULT);     /* Filter */
+        srcPtr->width,                  /* Width */
+        srcPtr->height,                 /* Height */
+        bitsPerPixel,                   /* Bits per pixel. */
+        colorType,                      /* Color type: RGB or GRAY */
+        PNG_INTERLACE_NONE,             /* Interlace */
+        PNG_COMPRESSION_TYPE_DEFAULT,   /* Compression */
+        PNG_FILTER_TYPE_DEFAULT);       /* Filter */
 
 #ifdef PNG_TEXT_SUPPORTED
     if (switchesPtr->comments != NULL) {
@@ -504,14 +518,12 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
     png_set_packing(png);
 
     {
-        Picture *srcPtr;
         Blt_Pixel *srcRowPtr;
         int bytesPerRow;
         int y;
         unsigned char **rowArray;
         unsigned char *destBuffer, *destRowPtr;
         
-        srcPtr = picture;
         bytesPerRow = numChannels * srcPtr->width;
         destBuffer = Blt_Malloc(bytesPerRow * srcPtr->height);
         if (destBuffer == NULL) {
@@ -569,7 +581,7 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
                  unsigned char *dp;
 
                  dp = destRowPtr;
-                 for (sp = srcRowPtr, send = sp + srcPtr->width; sp<send; sp++) {
+                 for (sp = srcRowPtr, send = sp+srcPtr->width; sp<send; sp++) {
                      dp[0] = sp->Red;
                      dp[1] = sp->Alpha;
                      dp += 2;
@@ -587,7 +599,7 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
                  unsigned char *dp;
 
                  dp = destRowPtr;
-                 for (sp = srcRowPtr, send = sp + srcPtr->width; sp<send; sp++) {
+                 for (sp = srcRowPtr, send = sp+srcPtr->width; sp<send; sp++) {
                      *dp++ = sp->Red;
                  }
                  rowArray[y] = destRowPtr;
@@ -611,6 +623,9 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
          Tcl_SetErrorCode(interp, "NONE", (char *)NULL);
      }
      Tcl_DStringFree(&message.warnings);
+    if (srcPtr != original) {
+        Blt_FreePicture(srcPtr);
+    }
      if (message.numErrors > 0) {
          Tcl_DStringResult(interp, &message.errors);
          return TCL_ERROR;

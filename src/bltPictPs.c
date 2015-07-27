@@ -1072,7 +1072,17 @@ PictureToPs(Tcl_Interp *interp, Blt_Picture original, Blt_Ps ps,
         srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
-        Blt_UnmultiplyColors(srcPtr);
+        Blt_Picture unassoc;
+        /* 
+         * The picture has alphas burned into its color components.
+         * Create a temporary copy removing pre-multiplied alphas.
+         */ 
+        unassoc = Blt_ClonePicture(srcPtr);
+        Blt_UnmultiplyColors(unassoc);
+        if (srcPtr != original) {
+            Blt_FreePicture(srcPtr);
+        }
+        srcPtr = unassoc;
     }
     Blt_Ps_Rectangle(ps, 0, 0, srcPtr->width, srcPtr->height);
     Blt_Ps_Append(ps, "gsave clip\n\n");

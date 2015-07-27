@@ -1536,8 +1536,21 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     numColors = Blt_QueryColors(srcPtr, &tga.colorTable); 
     if ((writerPtr->flags & EXPORT_ALPHA) && 
         (srcPtr->flags & (BLT_PIC_COMPOSITE|BLT_PIC_MASK))) {
-            fprintf(stderr, "using transparency with %d colors\n", numColors);
         /* Want transparency and have transparency. */
+        if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+            Blt_Picture unassoc;
+            /* 
+             * The picture has alphas burned into its color components.
+             * Create a temporary copy removing pre-multiplied alphas.
+             */ 
+            unassoc = Blt_ClonePicture(srcPtr);
+            Blt_UnmultiplyColors(unassoc);
+            if (srcPtr != original) {
+                Blt_FreePicture(srcPtr);
+            }
+            srcPtr = unassoc;
+        }
+        numColors = Blt_QueryColors(srcPtr, &tga.colorTable); 
         if (numColors > 256) {
             tga.bitsPerPixel = 32;
             tga.imageType = TGA_TYPE_TRUECOLOR;
@@ -1579,11 +1592,24 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
                 Blt_FreePicture(srcPtr);
             }
             srcPtr = background;
-            /* Query the colors again after blending. */
-            Blt_DeleteHashTable(&tga.colorTable);
-            Blt_InitHashTable(&tga.colorTable, BLT_ONE_WORD_KEYS);
-            numColors = Blt_QueryColors(srcPtr, &tga.colorTable); 
         }
+        if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+            Blt_Picture unassoc;
+            /* 
+             * The picture has alphas burned into its color components.
+             * Create a temporary copy removing pre-multiplied alphas.
+             */ 
+            unassoc = Blt_ClonePicture(srcPtr);
+            Blt_UnmultiplyColors(unassoc);
+            if (srcPtr != original) {
+                Blt_FreePicture(srcPtr);
+            }
+            srcPtr = unassoc;
+        }
+        /* Query the colors again after blending. */
+        Blt_DeleteHashTable(&tga.colorTable);
+        Blt_InitHashTable(&tga.colorTable, BLT_ONE_WORD_KEYS);
+        numColors = Blt_QueryColors(srcPtr, &tga.colorTable); 
         if (numColors > 256) {
             tga.imageType = TGA_TYPE_TRUECOLOR;
             tga.bitsPerPixel = 24;
@@ -1591,7 +1617,12 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
             tga.cmBitsPerPixel = 0;
         } else {
             tga.bitsPerPixel = 8;
-            if (srcPtr->flags & BLT_PIC_COLOR) {
+            if (srcPtr->flags & BLT_PIC_GREYSCALE) {
+                tga.imageType = TGA_TYPE_GREYSCALE;
+                tga.colorMapExists = FALSE;
+                tga.cmNumEntries = 0;
+                tga.cmBitsPerPixel = 0;
+            } else {
                 int i;
                 Blt_HashEntry *hPtr;
                 Blt_HashSearch iter;
@@ -1609,11 +1640,6 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
                 tga.colorMapExists = TRUE;
                 tga.cmNumEntries = i;
                 tga.cmBitsPerPixel = 24;
-            } else {
-                tga.imageType = TGA_TYPE_GREYSCALE;
-                tga.colorMapExists = FALSE;
-                tga.cmNumEntries = 0;
-                tga.cmBitsPerPixel = 0;
             }
         }
     }

@@ -532,7 +532,7 @@ static int tifCompressionSchemes[] = {
  *---------------------------------------------------------------------------
  */
 static int 
-PictureToTif(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
+PictureToTif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
              TifExportSwitches *switchesPtr)
 {
     TIFF *tifPtr;
@@ -553,7 +553,7 @@ PictureToTif(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
         compress = COMPRESSION_NONE;
     }   
 #endif
-    srcPtr = picture;
+    srcPtr = original;
 
     Tcl_DStringInit(&message.errors);
     Tcl_DStringInit(&message.warnings);
@@ -591,6 +591,19 @@ PictureToTif(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
         }
         samplesPerPixel = 1;
         photometric = PHOTOMETRIC_MINISBLACK;
+    }
+    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+        Blt_Picture unassoc;
+        /* 
+         * The picture has alphas burned into its color components.
+         * Create a temporary copy removing pre-multiplied alphas.
+         */ 
+        unassoc = Blt_ClonePicture(srcPtr);
+        Blt_UnmultiplyColors(unassoc);
+        if (srcPtr != original) {
+            Blt_FreePicture(srcPtr);
+        }
+        srcPtr = unassoc;
     }
     TIFFSetField(tifPtr, TIFFTAG_BITSPERSAMPLE,    8);
     TIFFSetField(tifPtr, TIFFTAG_COMPRESSION, (unsigned short int)compress);
@@ -701,7 +714,7 @@ PictureToTif(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
         Tcl_DStringResult(interp, &message.errors);
     }
     Tcl_DStringFree(&message.errors);
-    if (srcPtr != picture) {
+    if (srcPtr != original) {
         Blt_FreePicture(srcPtr);
     }
     return (result == -1) ? TCL_ERROR : TCL_OK;

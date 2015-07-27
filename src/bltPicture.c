@@ -670,8 +670,7 @@ Blt_GreyscalePicture(Pict *srcPtr)
         destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags = srcPtr->flags;
-    destPtr->flags |= BLT_PIC_DIRTY;
-    destPtr->flags &= ~BLT_PIC_COLOR;
+    destPtr->flags |= BLT_PIC_DIRTY | BLT_PIC_GREYSCALE;
     return destPtr;
 }
 
@@ -6323,27 +6322,23 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
     Blt_Pixel *srcRowPtr;
     int y;
     int numColors;
-    int isAssociated;
     
     if (tablePtr == NULL) {
+        /* Just counting the number of colors. */
         Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
         tablePtr = &colorTable;
     }
-    isAssociated = (srcPtr->flags & BLT_PIC_PREMULT_COLORS);
-    if (isAssociated) {
-        Blt_UnmultiplyColors(srcPtr);
-    }
+    /* Check that the colors are not premultiplied. */
+    assert((srcPtr->flags & BLT_PIC_PREMULT_COLORS) == 0);
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
         Blt_Pixel *sp, *send;
         
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
             int isNew;
-            Blt_Pixel color;
             unsigned long key;
 
-            color.u32 = sp->u32;
-            key = (unsigned long)color.u32;
+            key = (unsigned long)sp->u32;
             Blt_CreateHashEntry(tablePtr, (char *)key, &isNew);
         }
         srcRowPtr += srcPtr->pixelsPerRow;
@@ -6351,9 +6346,6 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
     numColors = tablePtr->numEntries;
     if (tablePtr == &colorTable) {
         Blt_DeleteHashTable(&colorTable);
-    }
-    if (isAssociated) {
-        Blt_PremultiplyColors(srcPtr);
     }
     return numColors;
 }
@@ -6371,28 +6363,28 @@ Blt_ClassifyPicture(Pict *srcPtr)
     int y;
     unsigned int flags;
 
-    flags = 0;
+    flags = BLT_PIC_GREYSCALE;
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
         Blt_Pixel *sp, *send;
         
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
             if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
-                flags |= BLT_PIC_COLOR;
+                flags &= ~BLT_PIC_GREYSCALE;
             }
             if (sp->Alpha != 0xFF) {
                 flags |= BLT_PIC_COMPOSITE;
             }
-            if (flags == (BLT_PIC_COMPOSITE|BLT_PIC_COLOR)) {
-                /* Stop after first semi/fully-transparent and
-                 * non-greyscale pixel. */
+            if (flags == BLT_PIC_COMPOSITE) {
+                /* Stop after we found both a semi/fully-transparent and
+                 * color pixel. */
                 goto done;
             }
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }
  done:
-    srcPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_COLOR);
+    srcPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_GREYSCALE);
     srcPtr->flags |= flags;
 }
 

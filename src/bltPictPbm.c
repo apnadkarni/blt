@@ -749,7 +749,8 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     size_t length;
 
     srcPtr = original;
-    if (srcPtr->flags & BLT_PIC_MASK) { 
+    Blt_ClassifyPicture(srcPtr);
+    if (!Blt_Picture_IsOpaque(srcPtr)) { 
         Blt_Picture background;
         
         /* Blend picture with solid color background. */
@@ -762,9 +763,45 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
         srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
-        Blt_UnmultiplyColors(srcPtr);
+        Blt_Picture unassoc;
+        /* 
+         * The picture has alphas burned into its color components.
+         * Create a temporary copy removing pre-multiplied alphas.
+         */ 
+        unassoc = Blt_ClonePicture(srcPtr);
+        Blt_UnmultiplyColors(unassoc);
+        if (srcPtr != original) {
+            Blt_FreePicture(srcPtr);
+        }
+        srcPtr = unassoc;
     }
-    if (srcPtr->flags & BLT_PIC_COLOR) {  /* Color */
+    if (srcPtr->flags & BLT_PIC_GREYSCALE) {  /* Greyscale */
+        Blt_Pixel *srcRowPtr;
+        int bytesPerRow;
+        int y;
+        unsigned char *destRowPtr;
+
+        Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PGM_RAW, 
+                srcPtr->width, srcPtr->height);
+        bytesPerRow = srcPtr->width;
+        length = Blt_DBuffer_Length(dbuffer);
+        Blt_DBuffer_Extend(dbuffer, srcPtr->height * bytesPerRow);
+        destRowPtr = Blt_DBuffer_Bytes(dbuffer) + length;
+        length += srcPtr->height * bytesPerRow;
+        srcRowPtr = srcPtr->bits;
+        for (y = 0; y < srcPtr->height; y++) {
+            Blt_Pixel *sp, *send;
+            unsigned char *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+                dp[0] = sp->Red;
+                dp++;
+            }
+            destRowPtr += bytesPerRow;
+            srcRowPtr += srcPtr->pixelsPerRow;
+        }
+    } else {                    /* Color */
         Blt_Pixel *srcRowPtr;
         int bytesPerRow;
         int y;
@@ -788,32 +825,6 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
                 dp[1] = sp->Green;
                 dp[2] = sp->Blue;
                 dp += 3;
-            }
-            destRowPtr += bytesPerRow;
-            srcRowPtr += srcPtr->pixelsPerRow;
-        }
-    } else {                    /* Greyscale */
-        Blt_Pixel *srcRowPtr;
-        int bytesPerRow;
-        int y;
-        unsigned char *destRowPtr;
-
-        Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PGM_RAW, 
-                srcPtr->width, srcPtr->height);
-        bytesPerRow = srcPtr->width;
-        length = Blt_DBuffer_Length(dbuffer);
-        Blt_DBuffer_Extend(dbuffer, srcPtr->height * bytesPerRow);
-        destRowPtr = Blt_DBuffer_Bytes(dbuffer) + length;
-        length += srcPtr->height * bytesPerRow;
-        srcRowPtr = srcPtr->bits;
-        for (y = 0; y < srcPtr->height; y++) {
-            Blt_Pixel *sp, *send;
-            unsigned char *dp;
-
-            dp = destRowPtr;
-            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-                dp[0] = sp->Red;
-                dp++;
             }
             destRowPtr += bytesPerRow;
             srcRowPtr += srcPtr->pixelsPerRow;

@@ -660,6 +660,7 @@ JpgToPicture(
             }
             destRowPtr += destPtr->pixelsPerRow;
         }
+        destPtr->flags |= BLT_PIC_GREYSCALE;
         break;
     case 3:
         while (cinfo.output_scanline < height) {
@@ -679,7 +680,6 @@ JpgToPicture(
             }
             destRowPtr += destPtr->pixelsPerRow;
         }
-        destPtr->flags |= BLT_PIC_COLOR;
         break;
     case 4:
         while (cinfo.output_scanline < height) {
@@ -699,7 +699,7 @@ JpgToPicture(
             }
             destRowPtr += destPtr->pixelsPerRow;
         }
-        destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_COMPOSITE;
+        destPtr->flags |= BLT_PIC_COMPOSITE;
         break;
     default:
         Tcl_AppendResult(interp, "\"", fileName, "\": ",
@@ -817,15 +817,15 @@ PictureToJpg(
         }
         srcPtr = unassoc;
     }
-    Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
-    if (Blt_Picture_IsColor(srcPtr)) {
-        cinfo.input_components = 3;     /* # of color components per
-                                         * pixel */
-        cinfo.in_color_space = JCS_RGB; /* Colorspace of input image */
-    } else {
+    Blt_ClassifyPicture(srcPtr);
+    if (Blt_Picture_IsGreyscale(srcPtr)) {
         cinfo.input_components = 1;     /* # of color components per
-                                         * pixel */
+                                         * pixel. */
         cinfo.in_color_space = JCS_GRAYSCALE; /* Colorspace of input image */
+    } else {
+        cinfo.input_components = 3;     /* # of color components per
+                                         * pixel. */
+        cinfo.in_color_space = JCS_RGB; /* Colorspace of input image */
     }   
     jpeg_set_defaults(&cinfo);
 
