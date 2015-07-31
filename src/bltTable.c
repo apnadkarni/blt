@@ -528,7 +528,7 @@ ObjToLimits(
     int flags)  
 {
     Limits *limitsPtr = (Limits *)(widgRec + offset);
-    int objc;
+    int numArgs;
     int limArr[3];
     Tk_Window winArr[3];
     int limitsFlags;
@@ -540,7 +540,7 @@ ObjToLimits(
     winArr[0] = winArr[1] = winArr[2] = NULL;
     limitsFlags = 0;
 
-    objc = 0;
+    numArgs = 0;
     if (objPtr != NULL) {
         Tcl_Obj **objv;
         int objc;
@@ -589,12 +589,13 @@ ObjToLimits(
                 limArr[i] = size;
             }
         }
+        numArgs = objc;
     }
     /*
      * Check the limits specified.  We can't check the requested size of
      * widgets.
      */
-    switch (objc) {
+    switch (numArgs) {
     case 1:
         limitsFlags |= (LIMITS_SET_MIN | LIMITS_SET_MAX);
         if (winArr[0] == NULL) {
@@ -3651,10 +3652,6 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
          * container.
          */
         if ((x >= xMax) || (y >= yMax)) {
-#ifdef notdef
- fprintf(stderr, "arrange entries: unmapping window %s %d>=%d %d>=%d\n", 
-         Tk_PathName(entryPtr->tkwin), x, xMax, y, yMax);
-#endif
             if (Tk_IsMapped(entryPtr->tkwin)) {
                 if (Tk_Parent(entryPtr->tkwin) != tablePtr->tkwin) {
                     Tk_UnmaintainGeometry(entryPtr->tkwin, tablePtr->tkwin);

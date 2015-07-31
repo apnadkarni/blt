@@ -5,22 +5,41 @@ source scripts/demo.tcl
 blt::drawerset .ds \
     -handlethickness 3 \
     -animate yes \
+    -width 800 \
     -height 700 \
     -window .ds.g
 
-blt::graph .ds.g -bg \#CCCCFF -height 800 -width 801
-blt::barchart .ds.b1 -bg \#FFCCCC -height 1600 -width 300
-blt::barchart .ds.b2 -bg \#CCFFCC -height 300 -width 300
-blt::barchart .ds.b3 -bg \#FFFFCC -height 300 -width 300
-blt::barchart .ds.b4 -bg \#CCFFFF -height 300 -width 300
-.ds add top -window .ds.b1 -fill no \
-    -side top -variable top -handlecolor \#FFCCCC -showhandle no
-.ds add left -window .ds.b2 -side left -variable left -handlecolor \#CCFFCC \
-    -showhandle yes
-.ds add right -window .ds.b3 -side right -variable right -handlecolor \#FFFFCC
-
-.ds add bottom -window .ds.b4 -side bottom -variable bottom \
-    -handlecolor \#CCFFFF  -showhandle yes -fill both
+blt::graph .ds.g -bg \#CCCCFF
+blt::barchart .ds.top -bg \#FFCCCC -height 1600 -width 300
+blt::barchart .ds.left -bg \#CCFFCC -height 300  -width 300
+blt::barchart .ds.right -bg \#FFFFCC -height 300  -width 300
+blt::barchart .ds.bot -bg \#CCFFFF -height 300  -width 300
+.ds add top -window .ds.top \
+    -side top \
+    -variable top \
+    -handlecolor \#FFCCCC \
+    -showhandle no \
+    -fill none
+.ds add left \
+    -window .ds.left \
+    -side left \
+    -variable left \
+    -handlecolor \#CCFFCC \
+    -showhandle yes \
+    -fill x
+.ds add right \
+    -window .ds.right \
+    -side right \
+    -variable right \
+    -handlecolor \#FFFFCC \
+    -fill none
+.ds add bottom \
+    -window .ds.bot \
+    -side bottom \
+    -variable bottom \
+    -handlecolor \#CCFFFF \
+    -showhandle yes \
+    -fill y
 
 checkbutton .left -text "L" -overrelief raised  \
     -variable left -indicatoron no
@@ -43,7 +62,6 @@ blt::table configure . r4 -resize both
 
 .ds open all
 update
-puts stderr "left is [.ds isopen left] left=$left"
 after 2000 {
     .ds raise top
 }
