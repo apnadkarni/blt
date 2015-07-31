@@ -1513,7 +1513,6 @@ LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
     color.Green = (unsigned char)(brushPtr->low.Green + t * brushPtr->gRange);
     color.Blue  = (unsigned char)(brushPtr->low.Blue  + t * brushPtr->bRange);
     color.Alpha = (unsigned char)(brushPtr->low.Alpha + t * brushPtr->aRange);
-    color.Alpha = imul8x8(brushPtr->alpha, color.Alpha, t1);
     return color.u32;
 }
 

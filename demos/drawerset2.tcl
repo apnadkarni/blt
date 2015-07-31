@@ -21,23 +21,27 @@ blt::barchart .ds.bot2 -bg yellow -height 300 -width 300
     -resize none \
     -fill none \
     -anchor nw \
+    -handlecolor \#FFBBBB  \
     -variable first
 .ds add top \
     -side top \
     -window .ds.top \
     -fill y \
+    -handlecolor green3  \
     -anchor w \
     -variable second
 .ds add bot1 \
     -side bottom \
     -window .ds.bot1 \
     -fill y \
+    -handlecolor \#AAFFAA  \
     -anchor w \
     -variable third
 .ds add bot2 \
     -side bottom \
     -window .ds.bot2 \
     -fill y \
+    -handlecolor yellow2  \
     -anchor c \
     -variable fourth
 
