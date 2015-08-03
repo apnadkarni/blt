@@ -233,7 +233,7 @@ Blt_DBuffer_SetFromObj(DBuffer *srcPtr, Tcl_Obj *objPtr)
  * Blt_DBuffer_String --
  *      
  *      Returns a string representing the current buffer.  A NUL value is
- *      set in the byte beyond the end of the buffer.
+ *      set for the byte beyond the end of the buffer.
  */
 const char *
 Blt_DBuffer_String(DBuffer *srcPtr)
