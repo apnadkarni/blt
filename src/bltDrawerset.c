@@ -105,8 +105,6 @@ typedef enum {
 #define DEF_DRAWER_SHOW_HANDLE   "1"
 #define DEF_DRAWER_SHRINK       "0"
 #define DEF_DRAWER_VARIABLE     (char *)NULL
-#define DEF_DRAWER_XOFFSET      "0"
-#define DEF_DRAWER_YOFFSET      "0"
 #define DEF_HANDLE_BORDERWIDTH   "1"
 #define DEF_HANDLE_COLOR         STD_NORMAL_BACKGROUND
 #define DEF_HANDLE_PAD           "0"
@@ -190,11 +188,10 @@ struct _Drawer  {
                                          * embedded widget. This is needed
                                          * to check if "border_width" of
                                          * Tk_Changes(tkwin) changes. */
-    int worldX, worldY;                 /* Origin of drawer wrt container. */
-    int worldMin, worldMax;             /* Minumum and maximum positions of
+    int offset;                         /* Origin of drawer window wrt
+                                         * container. */
+    int scrollMin, scrollMax;           /* Minumum and maximum positions of
                                          * drawer. */
-    int xOffset, yOffset;               /* Horizontal and vertical offsets
-                                         * of the drawer. */
     const char *takeFocus;              /* Says whether to select this
                                          * widget during tab traveral
                                          * operations.  This value isn't
@@ -233,13 +230,6 @@ struct _Drawer  {
                                          * this drawer. */
     int min, max;                       /* Size constraints for the
                                          * drawer. */
-    Blt_Limits reqSize;                 /* Requested bounds for the size of
-                                         * the drawer. The drawer will not
-                                         * expand or shrink beyond these
-                                         * limits, regardless of how it was
-                                         * specified (max widget size).
-                                         * This includes any extra padding
-                                         * which may be specified. */
     int normalSize;                     /* Requested size of the
                                          * drawer. This size is bounded by
                                          * -reqwidth or -reqheight. */
@@ -518,8 +508,6 @@ static Blt_ConfigSpec drawerSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHRINK },
     {BLT_CONFIG_SIDE, "-side", (char *)NULL, (char *)NULL, DEF_SIDE, 
         Blt_Offset(Drawer, side), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-size", (char *)NULL, (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqSize), 0, &bltLimitsOption},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
         DEF_TAKEFOCUS, Blt_Offset(Drawer, takeFocus), BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_CUSTOM, "-variable", (char *)NULL, (char *)NULL, 
@@ -529,12 +517,6 @@ static Blt_ConfigSpec drawerSpecs[] =
         Blt_Offset(Drawer, reqWidth), 0},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
         Blt_Offset(Drawer, tkwin), BLT_CONFIG_NULL_OK, &childOption },
-    {BLT_CONFIG_PIXELS_NNEG, "-xoffset", "xOffset", "XOffset", 
-        DEF_DRAWER_XOFFSET, Blt_Offset(Drawer, xOffset), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-yoffset", "yOffset", "YOffset", 
-        DEF_DRAWER_YOFFSET, Blt_Offset(Drawer, yOffset), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -854,7 +836,7 @@ ScreenX(Drawer *drawPtr)
     Drawerset *setPtr;
     int x;
 
-    x = drawPtr->worldX;
+    x = drawPtr->offset;
     setPtr = drawPtr->setPtr;
     if (drawPtr->side & SIDE_RIGHT) {
         x = Tk_Width(setPtr->tkwin) - x;
@@ -871,7 +853,7 @@ ScreenY(Drawer *drawPtr)
     int y;
 
     setPtr = drawPtr->setPtr;
-    y = drawPtr->worldY;
+    y = drawPtr->offset;
     if (drawPtr->side & SIDE_BOTTOM) {
         y = Tk_Height(setPtr->tkwin) - y;
     } else if (drawPtr->side & SIDE_TOP) {
@@ -1134,7 +1116,7 @@ static void
 GetHorizontalDrawerGeometry(Drawerset *setPtr, Drawer *drawPtr, int *widthPtr,
                             int *heightPtr)
 {
-    int reqWidth, reqHeight, maxWidth, maxHeight;
+    int reqWidth, reqHeight, winWidth, winHeight;
 
     if (drawPtr->relWidth > 0.0) {
         reqWidth = (int)(Tk_Width(setPtr->tkwin) * drawPtr->relWidth);
@@ -1148,31 +1130,31 @@ GetHorizontalDrawerGeometry(Drawerset *setPtr, Drawer *drawPtr, int *widthPtr,
     }
     reqWidth  = BoundSize(reqWidth,  &drawPtr->reqWidth);
     reqHeight = BoundSize(reqHeight, &drawPtr->reqHeight);
-    maxHeight = Tk_Height(setPtr->tkwin) - drawPtr->yOffset;
+    winHeight = Tk_Height(setPtr->tkwin);
     if (drawPtr->flags & SHOW_HANDLE) {
-        maxHeight -= setPtr->handleSize; /* Subtract the size of the handle
+        winHeight -= setPtr->handleSize; /* Subtract the size of the handle
                                           * from the maximum window
                                           * size. */
     }
-    if ((reqHeight < maxHeight) && ((drawPtr->fill & FILL_Y) == 0)) {
-        maxHeight = reqHeight;
+    if ((reqHeight < winHeight) && ((drawPtr->fill & FILL_Y) == 0)) {
+        winHeight = reqHeight;
     }
-    maxWidth = Tk_Width(setPtr->tkwin) - drawPtr->xOffset;
-    if ((reqWidth < maxWidth) && ((drawPtr->fill & FILL_X) == 0)) {
-        maxWidth = reqWidth;
+    winWidth = Tk_Width(setPtr->tkwin);
+    if ((reqWidth < winWidth) && ((drawPtr->fill & FILL_X) == 0)) {
+        winWidth = winWidth;
     }
     /* Track limits of drawer. */
-    drawPtr->worldMin = drawPtr->xOffset;
-    drawPtr->worldMax = drawPtr->worldMin + maxWidth;
-    *widthPtr = maxWidth;
-    *heightPtr = maxHeight;
+    drawPtr->scrollMin = 0;
+    drawPtr->scrollMax = winWidth;
+    *widthPtr = winWidth;
+    *heightPtr = winHeight;
 }
 
 static void
 GetVerticalDrawerGeometry(Drawerset *setPtr, Drawer *drawPtr, int *widthPtr,
                           int *heightPtr)
 {
-    int reqWidth, reqHeight, maxWidth, maxHeight;
+    int reqWidth, reqHeight, winWidth, winHeight;
 
     if (drawPtr->relWidth > 0.0) {
         reqWidth = (int)(Tk_Width(setPtr->tkwin) * drawPtr->relWidth);
@@ -1184,32 +1166,31 @@ GetVerticalDrawerGeometry(Drawerset *setPtr, Drawer *drawPtr, int *widthPtr,
     } else {
         reqHeight = Tk_ReqHeight(drawPtr->tkwin);
     }
-    reqWidth  = BoundSize(reqWidth,  &drawPtr->reqWidth);
-    reqHeight = BoundSize(reqHeight, &drawPtr->reqHeight);
+    winHeight = Tk_Height(setPtr->tkwin);
     if (Tk_Height(setPtr->tkwin) < 2) {
-        maxHeight = Tk_ReqHeight(setPtr->tkwin) - drawPtr->yOffset;
-    } else {
-        maxHeight = Tk_Height(setPtr->tkwin) - drawPtr->yOffset;
+        winHeight = Tk_ReqHeight(setPtr->tkwin);
     }
     if (drawPtr->flags & SHOW_HANDLE) {
-        maxHeight -= setPtr->handleSize; /* Subtract the size of the handle
+        winHeight -= setPtr->handleSize; /* Subtract the size of the handle
                                           * from the maximum window
                                           * size. */
     }
-    if ((reqHeight < maxHeight) && ((drawPtr->fill & FILL_Y) == 0)) {
-        maxHeight = reqHeight;
+    if ((reqHeight < winHeight) && ((drawPtr->fill & FILL_Y) == 0)) {
+        winHeight = reqHeight;
     }
-    maxHeight = BoundSize(maxHeight, &drawPtr->reqSize);
-    maxWidth = Tk_Width(setPtr->tkwin) - drawPtr->xOffset;
-    if ((reqWidth < maxWidth) && ((drawPtr->fill & FILL_X) == 0)) {
-        maxWidth = reqWidth;
+    winWidth = Tk_Width(setPtr->tkwin);
+    if ((reqWidth < winWidth) && ((drawPtr->fill & FILL_X) == 0)) {
+        winWidth = winWidth;
     }
+    winWidth  = BoundSize(winWidth,  &drawPtr->reqWidth);
+    winHeight = BoundSize(winHeight, &drawPtr->reqHeight);
+
     /* Track limits of drawer. */
-    drawPtr->worldMin = drawPtr->yOffset;
-    drawPtr->worldMax = drawPtr->worldMin + maxHeight;
-    *widthPtr = maxWidth;
-    *heightPtr = maxHeight;
-    drawPtr->size = maxHeight;
+    drawPtr->scrollMin = 0;
+    drawPtr->scrollMax = winHeight;
+    *widthPtr = winWidth;
+    *heightPtr = winHeight;
+    drawPtr->size = winHeight;
 }
 
 static int
@@ -1270,22 +1251,21 @@ EventuallyOpenDrawer(Drawer *drawPtr)
                 int w, h;
                 GetVerticalDrawerGeometry(setPtr, drawPtr, &w, &h);
             } 
-            drawPtr->scrollTarget = drawPtr->worldMax;
-            if (drawPtr->worldY < drawPtr->worldMin) {
-                drawPtr->worldY = drawPtr->worldMin;
-            }
-            anchor = drawPtr->worldY;
+            drawPtr->scrollTarget = drawPtr->scrollMax;
         } else {
             if (setPtr->flags & LAYOUT_PENDING) {
                 int w, h;
                 GetHorizontalDrawerGeometry(setPtr, drawPtr, &w, &h);
             } 
-            drawPtr->scrollTarget = drawPtr->worldMax;
-            if (drawPtr->worldX < drawPtr->worldMin) {
-                drawPtr->worldX = drawPtr->worldMin;
-            }
-            anchor = drawPtr->worldX;
+            drawPtr->scrollTarget = drawPtr->scrollMax;
         }
+        if (drawPtr->offset < drawPtr->scrollMin) {
+            drawPtr->offset = drawPtr->scrollMin;
+        }
+        if (drawPtr->offset > drawPtr->scrollMax) {
+            drawPtr->offset = drawPtr->scrollMax;
+        }
+        anchor = drawPtr->offset;
         if (drawPtr->timerToken != (Tcl_TimerToken)0) {
             Tcl_DeleteTimerHandler(drawPtr->timerToken);
             drawPtr->timerToken = 0;
@@ -1295,11 +1275,7 @@ EventuallyOpenDrawer(Drawer *drawPtr)
         drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
                 DrawerTimerProc, drawPtr);
     } else {
-        if (drawPtr->side & SIDE_VERTICAL) {
-            drawPtr->worldY = GetReqDrawerHeight(drawPtr);
-        } else {
-            drawPtr->worldX = GetReqDrawerWidth(drawPtr);
-        }
+        drawPtr->offset = drawPtr->scrollMax;
     }
 #ifdef notdef
     setPtr->flags |= LAYOUT_PENDING;
@@ -1321,11 +1297,7 @@ CloseDrawer(Drawer *drawPtr)
     if (Tk_IsMapped(drawPtr->handle.tkwin)) {
         Tk_UnmapWindow(drawPtr->handle.tkwin);
     }
-    if (drawPtr->side & SIDE_VERTICAL) {
-        drawPtr->worldY = -1;
-    } else {
-        drawPtr->worldX = -1;
-    }
+    drawPtr->offset = -1;
     if (drawPtr->timerToken != (Tcl_TimerToken)0) {
         Tcl_DeleteTimerHandler(drawPtr->timerToken);
         drawPtr->timerToken = 0;
@@ -1495,10 +1467,9 @@ DrawerTimerProc(ClientData clientData)
         } else {
             GetHorizontalDrawerGeometry(setPtr, drawPtr, &w, &h);
         }
-        drawPtr->scrollTarget = drawPtr->worldMax;
+        drawPtr->scrollTarget = drawPtr->scrollMax;
     } 
-    anchorPtr = (drawPtr->side & SIDE_VERTICAL)
-        ? &drawPtr->worldY : &drawPtr->worldX;
+    anchorPtr = &drawPtr->offset;
     if (*anchorPtr != drawPtr->scrollTarget) {
         *anchorPtr += drawPtr->scrollIncr;
         if (((drawPtr->scrollIncr > 0) && (*anchorPtr>drawPtr->scrollTarget)) ||
@@ -2458,7 +2429,6 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
     drawPtr = Blt_AssertCalloc(1, sizeof(Drawer));
     Blt_ResetLimits(&drawPtr->reqWidth);
     Blt_ResetLimits(&drawPtr->reqHeight);
-    Blt_ResetLimits(&drawPtr->reqSize);
     drawPtr->anchor = TK_ANCHOR_CENTER;
     drawPtr->fill = FILL_NONE;
     drawPtr->flags = VIRGIN | SHOW_HANDLE | CLOSED;
@@ -2743,7 +2713,8 @@ ResetDrawers(Drawerset *setPtr)
         link = Blt_Chain_NextLink(link)) {
         Drawer *drawPtr;
         int extra, size;
-
+        Blt_Limits *limitsPtr;
+        
         drawPtr = Blt_Chain_GetValue(link);
         /*
          * The constraint procedure below also has the desired side-effect
@@ -2752,14 +2723,17 @@ ResetDrawers(Drawerset *setPtr)
          */
         extra = 0;
         if (drawPtr->side & SIDE_VERTICAL) {
-            size = BoundHeight(0, &drawPtr->reqSize);
+            limitsPtr = &drawPtr->reqHeight;
+            size = BoundHeight(0, limitsPtr);
+            
         } else {
-            size = BoundWidth(0, &drawPtr->reqSize);
+            limitsPtr = &drawPtr->reqWidth;
+            size = BoundWidth(0, limitsPtr);
         }
         if (drawPtr->flags & SHOW_HANDLE) {
             extra += setPtr->handleSize;
         }
-        if (drawPtr->reqSize.flags & LIMITS_NOM_SET) {
+        if (limitsPtr->flags & LIMITS_NOM_SET) {
             /*
              * This could be done more cleanly.  We want to ensure that the
              * requested nominal size is not overridden when determining
@@ -2770,8 +2744,8 @@ ResetDrawers(Drawerset *setPtr)
                 size + extra;
         } else {
             /* The range defaults to 0..MAXINT */
-            drawPtr->min = drawPtr->reqSize.min + extra;
-            drawPtr->max = drawPtr->reqSize.max + extra;
+            drawPtr->min = limitsPtr->min + extra;
+            drawPtr->max = limitsPtr->max + extra;
             drawPtr->nom = LIMITS_NOM;
             drawPtr->normalSize = size + extra;
         }
@@ -2806,15 +2780,13 @@ GetDrawersGeometry(Drawerset *setPtr)
         int anchor;
         int w, h;
         
+        anchor = drawPtr->offset;
         if (drawPtr->side & SIDE_VERTICAL) {
-            anchor = drawPtr->worldY;
             GetVerticalDrawerGeometry(setPtr, drawPtr, &w, &h);
-            drawPtr->normalSize = drawPtr->worldMax - drawPtr->worldMin;
         } else {
-            anchor = drawPtr->worldX;
             GetHorizontalDrawerGeometry(setPtr, drawPtr, &w, &h);
-            drawPtr->normalSize = drawPtr->worldMax - drawPtr->worldMin;
         }
+        drawPtr->normalSize = drawPtr->scrollMax - drawPtr->scrollMin;
         if (anchor < 0) {
 #ifdef notdef
             drawPtr->flags |= CLOSED;   /* Auto-close */
@@ -2850,15 +2822,16 @@ ArrangeHorizontalDrawer(Drawer *drawPtr)
     setPtr = drawPtr->setPtr;
     GetHorizontalDrawerGeometry(setPtr, drawPtr, &w, &h);
     /* If x is beyond normal maximum, allow window to grow. */
-    if (drawPtr->worldX > drawPtr->worldMax) {
-        w = drawPtr->worldX - drawPtr->worldMin;
+    w = Tk_Width(setPtr->tkwin);
+    if (drawPtr->offset > drawPtr->scrollMax) {
+        w = drawPtr->offset - drawPtr->scrollMin;
     }
     if (drawPtr->side == SIDE_LEFT) {
-        x = (drawPtr->worldX + drawPtr->xOffset) - w;
-        y = drawPtr->yOffset;
+        x = drawPtr->offset - w;
+        y = 0;
     } else {
-        x = Tk_Width(setPtr->tkwin) - (drawPtr->worldX + drawPtr->xOffset);
-        y = drawPtr->yOffset;
+        x = Tk_Width(setPtr->tkwin) - drawPtr->offset;
+        y = 0;
     }
     if (Tk_Height(setPtr->tkwin) > h) {
         switch (drawPtr->anchor) {
@@ -2933,18 +2906,18 @@ ArrangeVerticalDrawer(Drawer *drawPtr)
     GetVerticalDrawerGeometry(setPtr, drawPtr, &w, &h);
 
     /* If y is beyond normal maximum, allow window to grow. */
-    if (drawPtr->worldY > drawPtr->worldMax) {
-        drawPtr->worldY = drawPtr->worldMax;
+    if (drawPtr->offset > drawPtr->scrollMax) {
+        drawPtr->offset = drawPtr->scrollMax;
     }
-    if (drawPtr->worldY < drawPtr->worldMin) {
-        drawPtr->worldY = drawPtr->worldMin;
+    if (drawPtr->offset < drawPtr->scrollMin) {
+        drawPtr->offset = drawPtr->scrollMin;
     }
     if (drawPtr->side == SIDE_TOP) {
-        y = (drawPtr->worldY + drawPtr->yOffset) - h;
-        x = drawPtr->xOffset;
+        y = drawPtr->offset - Tk_Height(setPtr->tkwin);
+        x = 0;
     } else {
-        y = Tk_Height(setPtr->tkwin) - (drawPtr->worldY + drawPtr->yOffset);
-        x = drawPtr->xOffset;
+        y = Tk_Height(setPtr->tkwin) - drawPtr->offset;
+        x = 0;
     }
     if (Tk_Width(setPtr->tkwin) > w) {
         switch (drawPtr->anchor) {
@@ -3198,39 +3171,44 @@ AdjustDrawerDelta(Drawer *drawPtr, int delta)
 }
 
 static void
-AdjustHandle(Drawer *drawPtr, int delta)
+AdjustSize(Drawer *drawPtr, int delta)
 {
     Drawerset *setPtr;
     Drawer *iterPtr;
+    Blt_Limits *limitsPtr;
+    int size;
     
+    fprintf(stderr, "AdjustSize(%s, delta=%d) offset=%d\n",
+            drawPtr->name, delta, drawPtr->offset);
+    if (delta == 0) {
+        return;
+    }
     setPtr = drawPtr->setPtr;
     delta = AdjustDrawerDelta(drawPtr, delta);
     for (iterPtr = FirstDrawer(setPtr, HIDDEN | DISABLED); iterPtr != NULL; 
          iterPtr = NextDrawer(drawPtr, HIDDEN | DISABLED)) {
         iterPtr->nom = iterPtr->size;
     }
-    fprintf(stderr, "Drawer %s size=%d delta=%d\n",
-            drawPtr->name, drawPtr->size, delta);
-            
-    if (drawPtr->size & (SIDE_TOP | SIDE_LEFT)) {
-        SetNominal(drawPtr->size + delta, &drawPtr->reqSize);
+    if (drawPtr->side & SIDE_VERTICAL) {
+        limitsPtr = &drawPtr->reqHeight;
     } else {
-        SetNominal(drawPtr->size - delta, &drawPtr->reqSize);
-    }        
+        limitsPtr = &drawPtr->reqWidth;
+    }
     switch (drawPtr->side) {
     case SIDE_TOP:
-        drawPtr->worldY += delta;
+    case SIDE_LEFT:
+        size = drawPtr->scrollMax + delta;
         break;
     case SIDE_BOTTOM:
-        drawPtr->worldY -= delta;
-        break;
-    case SIDE_LEFT:
-        drawPtr->worldX += delta;
-        break;
     case SIDE_RIGHT:
-        drawPtr->worldX -= delta;
+        size = drawPtr->scrollMax - delta;
         break;
     }
+    size = BoundSize(size, limitsPtr);
+    SetNominal(size, limitsPtr);
+    fprintf(stderr, "After Drawer %s size=%d\n", drawPtr->name,
+            size);
+    
     EventuallyRedraw(setPtr);
 }
 
@@ -3596,7 +3574,6 @@ HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (drawPtr != setPtr->activePtr) {
         Tk_Cursor cursor;
-        int vert;
 
         if (setPtr->activePtr != NULL) {
             EventuallyRedrawHandle(setPtr->activePtr);
@@ -3605,10 +3582,9 @@ HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             EventuallyRedrawHandle(drawPtr);
         }
         setPtr->activePtr = drawPtr;
-        vert = drawPtr->side & SIDE_VERTICAL;
         if (drawPtr->handle.cursor != None) {
             cursor = drawPtr->handle.cursor;
-        } else if (vert) {
+        } else if (drawPtr->side & SIDE_VERTICAL) {
             cursor = setPtr->defVertCursor;
         } else {
             cursor = setPtr->defHorzCursor;
@@ -3639,7 +3615,6 @@ HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Drawerset *setPtr = clientData;
     Drawer *drawPtr;
     int x, y;
-    int vert;
 
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3652,8 +3627,7 @@ HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     setPtr->flags |= HANDLE_ACTIVE;
-    vert = drawPtr->side & SIDE_VERTICAL;
-    if (vert) {
+    if (drawPtr->side & SIDE_VERTICAL) {
         setPtr->bearing = ScreenY(drawPtr);
         setPtr->handleAnchor = y;
     } else {
@@ -3661,7 +3635,7 @@ HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         setPtr->handleAnchor = x;
     } 
     setPtr->bearing += drawPtr->size;
-    AdjustHandle(drawPtr, 0);
+    AdjustSize(drawPtr, 0);
     return TCL_OK;
 }
 
@@ -3713,7 +3687,7 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Drawer *drawPtr;
     int x, y;                           /* Root coordinates of the pointer
                                          * over the handle. */
-    int delta, mark, vert;
+    int delta, mark;
 
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3725,10 +3699,9 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
         return TCL_ERROR;
     } 
-    vert = drawPtr->side & SIDE_VERTICAL;
-    mark = (vert) ? y : x;
+    mark = (drawPtr->side & SIDE_VERTICAL) ? y : x;
     delta = mark - setPtr->handleAnchor;
-    AdjustHandle(drawPtr, delta);
+    AdjustSize(drawPtr, delta);
     setPtr->handleAnchor = mark;
     return TCL_OK;
 }
@@ -3753,7 +3726,6 @@ HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Drawerset *setPtr = clientData;
     Drawer *drawPtr;
     int delta, x, y;
-    int vert;
 
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3765,8 +3737,7 @@ HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
         return TCL_ERROR;
     } 
-    vert = drawPtr->side & SIDE_VERTICAL;
-    if (vert) {
+    if (drawPtr->side & SIDE_VERTICAL) {
         delta = y;
         setPtr->bearing = ScreenY(drawPtr);
     } else {
@@ -3774,7 +3745,7 @@ HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         setPtr->bearing = ScreenX(drawPtr);
     }
     setPtr->bearing += drawPtr->size;
-    AdjustHandle(drawPtr, delta);
+    AdjustSize(drawPtr, delta);
     return TCL_OK;
 }
 
@@ -3797,7 +3768,7 @@ HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Drawerset *setPtr = clientData;
     Drawer *drawPtr;
     int x, y;
-    int delta, mark, vert;
+    int delta, mark;
 
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3810,10 +3781,9 @@ HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     setPtr->flags &= ~HANDLE_ACTIVE;
-    vert = drawPtr->side & SIDE_VERTICAL;
-    mark = (vert) ? y : x;
+    mark = (drawPtr->side & SIDE_VERTICAL) ? y : x;
     delta = mark - setPtr->handleAnchor;
-    AdjustHandle(drawPtr, delta);
+    AdjustSize(drawPtr, delta);
     setPtr->handleAnchor = mark;
     return TCL_OK;
 }
@@ -3855,13 +3825,14 @@ HandleSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         drawPtr->size = newSize;
-        drawPtr->reqSize.nom = newSize;
-        drawPtr->reqSize.flags |= LIMITS_NOM_SET;
         if (drawPtr->side & SIDE_VERTICAL) {
-            drawPtr->worldY = newSize;
+            drawPtr->reqHeight.nom = newSize;
+            drawPtr->reqHeight.flags |= LIMITS_NOM_SET;
         } else {
-            drawPtr->worldX = newSize;
+            drawPtr->reqWidth.nom = newSize;
+            drawPtr->reqWidth.flags |= LIMITS_NOM_SET;
         }
+        drawPtr->offset = newSize;
         EventuallyRedraw(setPtr);
         size = newSize;
     } 
@@ -4290,6 +4261,48 @@ RaiseOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ResizeOp --
+ *
+ *      Resizes the drawer. The handle is moved the given distance from its
+ *      previous location.
+ *
+ *      pathName resize drawerName dx dy 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ResizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Drawerset *setPtr = clientData;
+    Drawer *drawPtr;
+    int dx, dy;
+
+    if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
+        return TCL_OK;
+    }
+    if (Tcl_GetIntFromObj(interp, objv[4], &dx) != TCL_OK) {
+        return TCL_ERROR;
+    } 
+    if (Tcl_GetIntFromObj(interp, objv[4], &dy) != TCL_OK) {
+        return TCL_ERROR;
+    } 
+    if (drawPtr->side & SIDE_VERTICAL) {
+        AdjustSize(drawPtr, dy);
+    } else {
+        AdjustSize(drawPtr, dx);
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SizeOp --
  *
  *      pathName size drawerName ?numPixels?
@@ -4318,11 +4331,7 @@ SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         drawPtr->size = newSize;
-        if (drawPtr->side & SIDE_VERTICAL) {
-            drawPtr->worldY = newSize;
-        } else {
-            drawPtr->worldX = newSize;
-        }
+        drawPtr->offset = newSize;
         EventuallyRedraw(setPtr);
         size = newSize;
     } 
@@ -4962,6 +4971,7 @@ static Blt_OpSpec drawersetOps[] =
     {"names",      1, NamesOp,     2, 0, "?pattern...?",},
     {"open",       1, OpenOp,      3, 3, "drawerName",},
     {"raise",      1, RaiseOp,     3, 3, "drawerName",},
+    {"resize",     2, ResizeOp,    6, 6, "drawerName dx dy"},
     {"size",       1, SizeOp,      2, 4, "?drawerName? ?size?",},
     {"tag",        2, TagOp,       2, 0, "oper args",},
     {"toggle",     2, ToggleOp,    3, 3, "drawerName",},

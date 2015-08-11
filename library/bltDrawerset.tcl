@@ -58,16 +58,16 @@ bind BltDrawerHandle <Leave> {
     } 
 }
 bind BltDrawerHandle <KeyPress-Left> { 
-    [winfo parent %W] handle move %W -10 0 
+    [winfo parent %W] resize %W 10 0
 }
 bind BltDrawerHandle <KeyPress-Right> { 
-    [winfo parent %W] handle move %W 10  0 
+    [winfo parent %W] resize %W 10 0
 }
 bind BltDrawerHandle <KeyPress-Up> { 
-    [winfo parent %W] handle move %W 0 -10 
+    [winfo parent %W] resize %W 0 10 
 }
 bind BltDrawerHandle <KeyPress-Down> { 
-    [winfo parent %W] handle move %W 0 10 
+    [winfo parent %W] resize %W 0 -10 
 }
 bind BltDrawerHandle <ButtonPress-1> { 
     set blt::Drawerset::_private(buttonDown) 1
