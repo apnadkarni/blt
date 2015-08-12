@@ -21,7 +21,7 @@ blt::barchart .ds.bot2 -bg yellow -height 300 -width 300
     -resize none \
     -fill none \
     -anchor nw \
-    -handlecolor \#FFBBBB  \
+    -handlecolor pink3  \
     -variable first
 .ds add top \
     -side top \
