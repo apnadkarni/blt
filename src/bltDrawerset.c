@@ -205,10 +205,6 @@ struct _Drawer  {
                                          * widget is positioned if extra
                                          * space is available in the
                                          * drawer. */
-    int iPadX, iPadY;                   /* Extra padding added to the
-                                         * interior of the widget
-                                         * (i.e. adds to the requested size
-                                         * of the widget) */
     int fill;                           /* Indicates how the widget should
                                          * fill the drawer it occupies. */
     int resize;                         /* Indicates if the drawer should
@@ -297,7 +293,6 @@ struct _Drawerset {
      */
     int scrollUnits;                    /* Smallest unit of scrolling for
                                          * drawer. */
-    int scrollTarget;                   /* Target offset to scroll to. */
     int scrollIncr;                     /* Current increment. */
     int delay;                          /* Delay between steps of automated 
                                          * scrolling. */
@@ -479,10 +474,6 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_COLOR, "-handlehighlightcolor", "handleHighlightColor",
         "HandleHighlightColor", DEF_HANDLE_HIGHLIGHT_COLOR,
         Blt_Offset(Drawer, handle.highlightColor), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Drawer, iPadX), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
-        (char *)NULL, Blt_Offset(Drawer, iPadY), 0},
     {BLT_CONFIG_OBJ, "-opencommand", "openCommand", "OpenCommand", 
         DEF_DRAWER_OPEN_COMMAND, Blt_Offset(Drawer, openCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
@@ -1321,7 +1312,6 @@ static void
 DrawerTimerProc(ClientData clientData)
 {
     Drawer *drawPtr = clientData;
-    int *anchorPtr;
     Drawerset *setPtr;
 
     setPtr = drawPtr->setPtr;
@@ -3687,13 +3677,13 @@ HandleSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec handleOps[] =
 {
-    {"activate",   2, HandleActivateOp,   4, 4, "drawer"},
-    {"anchor",     2, HandleAnchorOp,     6, 6, "drawer x y"},
+    {"activate",   2, HandleActivateOp,   4, 4, "drawerName"},
+    {"anchor",     2, HandleAnchorOp,     6, 6, "drawerName x y"},
     {"deactivate", 1, HandleDeactivateOp, 3, 3, ""},
-    {"mark",       2, HandleMarkOp,       6, 6, "drawer x y"},
-    {"move",       2, HandleMoveOp,       6, 6, "drawer x y"},
-    {"set",        2, HandleSetOp,        6, 6, "drawer x y"},
-    {"size",       2, HandleSizeOp,       4, 5, "drawer ?size?"},
+    {"mark",       2, HandleMarkOp,       6, 6, "drawerName x y"},
+    {"move",       2, HandleMoveOp,       6, 6, "drawerName x y"},
+    {"set",        2, HandleSetOp,        6, 6, "drawerName x y"},
+    {"size",       2, HandleSizeOp,       4, 5, "drawerName ?size?"},
 };
 
 static int numHandleOps = sizeof(handleOps) / sizeof(Blt_OpSpec);
