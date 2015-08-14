@@ -106,6 +106,7 @@ typedef enum {
 #define DEF_DRAWER_SHRINK       "0"
 #define DEF_DRAWER_VARIABLE     (char *)NULL
 #define DEF_HANDLE_BORDERWIDTH   "1"
+#define DEF_DRAWER_STEPS        "8"
 #define DEF_HANDLE_COLOR         STD_NORMAL_BACKGROUND
 #define DEF_HANDLE_PAD           "0"
 #define DEF_HANDLE_RELIEF        "flat"
@@ -115,7 +116,7 @@ typedef enum {
 #define DEF_HANDLE_HIGHLIGHT_THICKNESS "1"
 #define DEF_PAD                 "0"
 #define DEF_SCROLLCOMMAND       "0"
-#define DEF_SCROLLDELAY         "30"
+#define DEF_DELAY               "20"
 #define DEF_SCROLLINCREMENT     "10"
 #define DEF_SIDE                "right"
 #define DEF_TAKEFOCUS           "1"
@@ -188,6 +189,10 @@ struct _Drawer  {
                                          * embedded widget. This is needed
                                          * to check if "border_width" of
                                          * Tk_Changes(tkwin) changes. */
+    int numSteps;                       /* # of steps to transition between
+                                         * open/closed. */
+    int step;                           /* Current step in animation */
+
     int offset;                         /* Origin of drawer window wrt
                                          * container. */
     int scrollMin, scrollMax;           /* Minumum and maximum positions of
@@ -250,6 +255,8 @@ struct _Drawer  {
     Tcl_Obj *closeCmdObjPtr;            /* Command to be invoked whenever
                                          * the drawer has been closed. */
     Handle handle;
+    int delay;                          /* Delay between steps of automated 
+                                         * scrolling. */
 };
 
 /*
@@ -294,8 +301,6 @@ struct _Drawerset {
     int scrollUnits;                    /* Smallest unit of scrolling for
                                          * drawer. */
     int scrollIncr;                     /* Current increment. */
-    int delay;                          /* Delay between steps of automated 
-                                         * scrolling. */
     /*
      * Focus highlight ring
      */
@@ -371,6 +376,7 @@ struct _Drawerset {
 
 /* Drawer/handle flags.  */
 
+#define CLOSING   (1<<20)
 #define HIDDEN          (1<<9)          /* Do not display the handle or
                                          * drawer. */
 #define CLOSED          (1<<9)          /* Do not display the drawer. */
@@ -454,6 +460,8 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_OBJ, "-closevalue", "closeValue", "CloseValue",
         DEF_DRAWER_CLOSEVALUE, Blt_Offset(Drawer, closeValueObjPtr), 
         BLT_CONFIG_NULL_OK },
+    {BLT_CONFIG_INT_NNEG, "-delay", "delay", "Delay", DEF_DELAY,
+        Blt_Offset(Drawer, delay), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_DRAWER_FILL, 
         Blt_Offset(Drawer, fill), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
@@ -494,6 +502,8 @@ static Blt_ConfigSpec drawerSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHRINK },
     {BLT_CONFIG_SIDE, "-side", (char *)NULL, (char *)NULL, DEF_SIDE, 
         Blt_Offset(Drawer, side), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_INT_POS, "-steps", "steps", "Steps", DEF_DRAWER_STEPS,
+        Blt_Offset(Drawer, numSteps), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
         DEF_TAKEFOCUS, Blt_Offset(Drawer, takeFocus), BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_CUSTOM, "-variable", (char *)NULL, (char *)NULL, 
@@ -551,12 +561,6 @@ static Blt_ConfigSpec drawersetSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-handlethickness", "handleThickness", 
         "HandleThickness", DEF_HANDLE_THICKNESS, 
         Blt_Offset(Drawerset, handleThickness), BLT_CONFIG_DONT_SET_DEFAULT },
-    {BLT_CONFIG_PIXELS_POS, "-scrollincrement", "scrollIncrement",
-        "ScrollIncrement", DEF_SCROLLINCREMENT, 
-        Blt_Offset(Drawerset,scrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_INT_NNEG, "-scrolldelay", "scrollDelay", "ScrollDelay",
-        DEF_SCROLLDELAY, Blt_Offset(Drawerset, delay),
-        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
         Blt_Offset(Drawerset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_OBJ, "-window", "window", "Window", (char *)NULL, 
@@ -1074,7 +1078,8 @@ OpenDrawer(Drawer *drawPtr)
         Tcl_DeleteTimerHandler(drawPtr->timerToken);
         drawPtr->timerToken = 0;
     }
-    drawPtr->flags &= ~CLOSED;
+    drawPtr->flags &= ~(CLOSED | CLOSING);
+    drawPtr->step = 0;
     if (drawPtr->openCmdObjPtr != NULL) {
         int result;
         Drawerset *setPtr;
@@ -1097,13 +1102,12 @@ EventuallyOpenDrawer(Drawer *drawPtr)
         return;                         /* Already open or disabled. */
     }
     setPtr = drawPtr->setPtr;
-    drawPtr->flags &= ~CLOSED;
+    drawPtr->flags &= ~(CLOSED | CLOSING);
     if (setPtr->flags & AUTORAISE) {
         RaiseDrawer(drawPtr);
     }
+    drawPtr->step = 0;
     if (setPtr->flags & ANIMATE) {
-        int anchor;
-
         if (drawPtr->side & SIDE_VERTICAL) {
             if (setPtr->flags & LAYOUT_PENDING) {
                 int w, h;
@@ -1115,7 +1119,6 @@ EventuallyOpenDrawer(Drawer *drawPtr)
                 int w, h;
                 GetHorizontalDrawerGeometry(setPtr, drawPtr, &w, &h);
             } 
-            drawPtr->scrollTarget = drawPtr->scrollMax;
         }
         if (drawPtr->offset < drawPtr->scrollMin) {
             drawPtr->offset = drawPtr->scrollMin;
@@ -1123,14 +1126,11 @@ EventuallyOpenDrawer(Drawer *drawPtr)
         if (drawPtr->offset > drawPtr->scrollMax) {
             drawPtr->offset = drawPtr->scrollMax;
         }
-        anchor = drawPtr->offset;
         if (drawPtr->timerToken != (Tcl_TimerToken)0) {
             Tcl_DeleteTimerHandler(drawPtr->timerToken);
             drawPtr->timerToken = 0;
         }
-        drawPtr->scrollIncr = (drawPtr->nom > anchor) ? -setPtr->scrollUnits : 
-            setPtr->scrollUnits;
-        drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->delay, 
+        drawPtr->timerToken = Tcl_CreateTimerHandler(drawPtr->delay, 
                 DrawerTimerProc, drawPtr);
     } else {
         drawPtr->offset = drawPtr->scrollMax;
@@ -1156,10 +1156,12 @@ CloseDrawer(Drawer *drawPtr)
         Tk_UnmapWindow(drawPtr->handle.tkwin);
     }
     drawPtr->offset = -1;
+    drawPtr->step = 0;
     if (drawPtr->timerToken != (Tcl_TimerToken)0) {
         Tcl_DeleteTimerHandler(drawPtr->timerToken);
         drawPtr->timerToken = 0;
     }
+    drawPtr->flags &= ~CLOSING;
     drawPtr->flags |= CLOSED;
     if (drawPtr->closeCmdObjPtr != NULL) {
         int result;
@@ -1184,13 +1186,13 @@ EventuallyCloseDrawer(Drawer *drawPtr)
     }
     setPtr = drawPtr->setPtr;
     if (setPtr->flags & ANIMATE) {
-        drawPtr->scrollTarget = -1;
+        drawPtr->step = 0;
+        drawPtr->flags |= CLOSING;
         if (drawPtr->timerToken != (Tcl_TimerToken)0) {
             Tcl_DeleteTimerHandler(drawPtr->timerToken);
             drawPtr->timerToken = 0;
         }
-        drawPtr->scrollIncr = -setPtr->scrollUnits;
-        drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->delay, 
+        drawPtr->timerToken = Tcl_CreateTimerHandler(drawPtr->delay, 
                 DrawerTimerProc, drawPtr);
     } else {
         CloseDrawer(drawPtr);
@@ -1313,6 +1315,8 @@ DrawerTimerProc(ClientData clientData)
 {
     Drawer *drawPtr = clientData;
     Drawerset *setPtr;
+    double frac;
+    int range;
 
     setPtr = drawPtr->setPtr;
     
@@ -1326,29 +1330,24 @@ DrawerTimerProc(ClientData clientData)
         }
         drawPtr->scrollTarget = drawPtr->scrollMax;
     } 
-    if (drawPtr->offset != drawPtr->scrollTarget) {
-        drawPtr->offset += drawPtr->scrollIncr;
-        if (((drawPtr->scrollIncr > 0) &&
-             (drawPtr->offset > drawPtr->scrollTarget)) ||
-            ((drawPtr->scrollIncr < 0) &&
-             (drawPtr->offset < drawPtr->scrollTarget))) {
-            drawPtr->offset = drawPtr->scrollTarget;
-        }
+    drawPtr->step++;
+    frac = (double)drawPtr->step / (double)drawPtr->numSteps;
+    range = drawPtr->scrollMax - drawPtr->scrollMin;
+    frac = log10(9.0 * frac + 1.0);
+    if (drawPtr->flags & CLOSING) {
+        frac = 1.0 - frac;
     }
-    if (drawPtr->scrollTarget == drawPtr->offset) {
-        if (drawPtr->timerToken != (Tcl_TimerToken)0) {
-            Tcl_DeleteTimerHandler(drawPtr->timerToken);
-            drawPtr->timerToken = 0;
-        }
-        if (drawPtr->offset < 0) {
+    drawPtr->offset = (int)(range * frac);
+    if (drawPtr->step < drawPtr->numSteps) {
+        drawPtr->timerToken = Tcl_CreateTimerHandler(drawPtr->delay, 
+                DrawerTimerProc, drawPtr);
+    } else if (drawPtr->timerToken != (Tcl_TimerToken)0) {
+        Tcl_DeleteTimerHandler(drawPtr->timerToken);
+        if (drawPtr->flags & CLOSING) {
             CloseDrawer(drawPtr);
         } else {
             OpenDrawer(drawPtr);
         }
-    } else if (setPtr->flags & ANIMATE) {
-        drawPtr->scrollIncr += drawPtr->scrollIncr;
-        drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->delay, 
-                DrawerTimerProc, drawPtr);
     }
     EventuallyRedraw(setPtr);
 }
@@ -2297,6 +2296,8 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
     drawPtr->setPtr = setPtr;
     drawPtr->side = SIDE_RIGHT;
     drawPtr->size = drawPtr->index = 0;
+    drawPtr->numSteps = 8;
+    drawPtr->delay = 30;
     Blt_SetHashValue(hPtr, drawPtr);
     {
         Tk_Window tkwin;
@@ -2457,7 +2458,6 @@ NewDrawerset(Tcl_Interp *interp, Tcl_Obj *objPtr)
     setPtr->activeRelief = TK_RELIEF_RAISED;
     setPtr->handleBW = 1;
     setPtr->flags = LAYOUT_PENDING | RESTACK;
-    setPtr->delay = 30;
     setPtr->scrollUnits = 10;
     setPtr->handleHighlightThickness = 1;
     Blt_SetWindowInstanceData(tkwin, setPtr);
@@ -2635,21 +2635,14 @@ GetDrawersGeometry(Drawerset *setPtr)
     ResetDrawers(setPtr);
     for (drawPtr = FirstDrawer(setPtr, 0); drawPtr != NULL;
          drawPtr = NextDrawer(drawPtr, 0)) {
-        int anchor;
         int w, h;
         
-        anchor = drawPtr->offset;
         if (drawPtr->side & SIDE_VERTICAL) {
             GetVerticalDrawerGeometry(setPtr, drawPtr, &w, &h);
         } else {
             GetHorizontalDrawerGeometry(setPtr, drawPtr, &w, &h);
         }
         drawPtr->normalSize = drawPtr->scrollMax - drawPtr->scrollMin;
-        if (anchor < 0) {
-#ifdef notdef
-            drawPtr->flags |= CLOSED;   /* Auto-close */
-#endif
-        }
         if (drawPtr->flags & CLOSED) {
             if (drawPtr->tkwin != NULL) {
                 if (Tk_IsMapped(drawPtr->tkwin)) {
@@ -2889,7 +2882,7 @@ ArrangeDrawers(Drawerset *setPtr)
 
     for (drawPtr = FirstDrawer(setPtr, HIDDEN); drawPtr != NULL;
          drawPtr = NextDrawer(drawPtr, HIDDEN)) {
-        if ((drawPtr->flags & CLOSED) || (drawPtr->tkwin == NULL)) {
+        if (drawPtr->tkwin == NULL) {
             if (Tk_IsMapped(drawPtr->handle.tkwin)) {
                 Tk_UnmapWindow(drawPtr->handle.tkwin);
             }
