@@ -239,9 +239,6 @@ struct _Drawer  {
     Tcl_Obj *cmdObjPtr;
 
     Tcl_TimerToken timerToken;
-    int scrollTarget;                   /* Target offset to scroll to. */
-    int scrollIncr;                     /* Current increment. */
-
     Tcl_Obj *varNameObjPtr;             /* Name of TCL variable.  If
                                          * non-NULL, this variable will be
                                          * set to the value string of the
@@ -1113,7 +1110,6 @@ EventuallyOpenDrawer(Drawer *drawPtr)
                 int w, h;
                 GetVerticalDrawerGeometry(setPtr, drawPtr, &w, &h);
             } 
-            drawPtr->scrollTarget = drawPtr->scrollMax;
         } else {
             if (setPtr->flags & LAYOUT_PENDING) {
                 int w, h;
@@ -1327,7 +1323,6 @@ DrawerTimerProc(ClientData clientData)
         } else {
             GetHorizontalDrawerGeometry(setPtr, drawPtr, &w, &h);
         }
-        drawPtr->scrollTarget = drawPtr->scrollMax;
     } 
     drawPtr->step++;
     frac = (double)drawPtr->step / (double)drawPtr->numSteps;
@@ -1340,8 +1335,10 @@ DrawerTimerProc(ClientData clientData)
     if (drawPtr->step < drawPtr->numSteps) {
         drawPtr->timerToken = Tcl_CreateTimerHandler(drawPtr->delay, 
                 DrawerTimerProc, drawPtr);
-    } else if (drawPtr->timerToken != (Tcl_TimerToken)0) {
-        Tcl_DeleteTimerHandler(drawPtr->timerToken);
+    } else {
+        if (drawPtr->timerToken != (Tcl_TimerToken)0) {
+            Tcl_DeleteTimerHandler(drawPtr->timerToken);
+        }
         if (drawPtr->flags & CLOSING) {
             CloseDrawer(drawPtr);
         } else {
