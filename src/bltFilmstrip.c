@@ -184,26 +184,31 @@ struct _Filmstrip {
      */
     int scrollUnits;                    /* Smallest unit of scrolling for
                                          * tabs. */
+    int numSteps;                       /* Number of steps to take to
+                                         * scroll to proper frame. */
+    int step;                           /* Current step in animated scroll. */
+    int scrollDistance;                 /* Distance to scroll. */
     int scrollTarget;                   /* Target offset to scroll to. */
     int scrollIncr;                     /* Current increment. */
-    int interval;                       /* Current increment. */
+    int delay;                          /* Current increment. */
     Tcl_TimerToken timerToken;          /* Token for timer to automatically
                                          * scroll the frame. */
 
     /*
      * Focus highlight ring 
      */
-    XColor *gripHighlightColor;       /* Color for drawing traversal
+    XColor *gripHighlightColor;         /* Color for drawing traversal
                                          * highlight. */
     int relief;
     int activeRelief;
     Blt_Pad gripPad;
     int gripBorderWidth;
-    int gripThickness;                /*  */
+    int gripThickness;                  /*  */
     int gripSize;
     Blt_Bg gripBg;
     Blt_Bg activeGripBg;
-    int gripAnchor;                   /* Last known location of grip
+    Frame *currentPtr;
+    int gripAnchor;                     /* Last known location of grip
                                          * during a move. */
     Blt_Chain frames;                   /* List of frames.  Describes the
                                          * order of the frames in the
@@ -212,13 +217,13 @@ struct _Filmstrip {
     Blt_HashTable frameTable;           /* Table of frames.  Serves as a
                                          * directory to look up frames from
                                          * windows. */
-    Blt_HashTable gripTable;          /* Table of grips.  Serves as a
+    Blt_HashTable gripTable;            /* Table of grips.  Serves as a
                                          * directory to look up frames from
                                          * grip windows. */
     struct _Blt_Tags tags;              /* Table of tags. */
-    Grip *activePtr;                  /* Indicates the active grip. */
-    Grip *anchorPtr;                  /* Grip of frame that is
-                                         * currently anchored */
+    Grip *activePtr;                    /* Indicates the active grip. */
+    Grip *anchorPtr;                    /* Grip of frame that is currently
+                                         * anchored */
     Tcl_Obj *cmdObjPtr;                 /* Command to invoke when the
                                          * "invoke" operation is
                                          * performed. */
@@ -226,7 +231,7 @@ struct _Filmstrip {
     GC gc;
     size_t nextId;                      /* Counter to generate unique frame
                                          * names. */
-    size_t nextGripId;                /* Counter to generate unique frame
+    size_t nextGripId;                  /* Counter to generate unique frame
                                          * grip names. */
 };
 
@@ -519,7 +524,7 @@ static Blt_ConfigSpec filmStripSpecs[] =
         "ScrollIncrement", DEF_SCROLL_INCREMENT,
         Blt_Offset(Filmstrip,scrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT_NNEG, "-scrolldelay", "scrollDelay", "ScrollDelay",
-        DEF_SCROLL_DELAY, Blt_Offset(Filmstrip, interval),
+        DEF_SCROLL_DELAY, Blt_Offset(Filmstrip, delay),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
         Blt_Offset(Filmstrip, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
@@ -905,7 +910,7 @@ ObjToChild(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
  *
  * ChildToObj --
  *
- *      Converts the Tk window back to a Tcl_Obj (i.e. its name).
+ *      Converts the Tk window back to a Tcl_Obj (its pathname).
  *
  * Results:
  *      The name of the window is returned.
@@ -933,7 +938,7 @@ ChildToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
  *
  * ObjToOrient --
  *
- *      Converts the string representing a state into a bitflag.
+ *      Converts the string representing a orientation into a bitflag.
  *
  * Results:
  *      The return value is a standard TCL result.  The state flags are
@@ -974,7 +979,7 @@ ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
  *
  * OrientToObj --
  *
- *      Return the name of the orientation.
+ *      Returns the name of the current orientation as a Tcl_Obj.
  *
  * Results:
  *      The name representing the orientation is returned.
@@ -1053,10 +1058,10 @@ ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
  *
  * TagsToObj --
  *
- *      Return a TCL list of tags for the pane.
+ *      Return a TCL list of tags for the frame.
  *
  * Results:
- *      The tags associated with the pane are returned.
+ *      The tags associated with the frame are returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1534,12 +1539,24 @@ GetFrameByIndex(Tcl_Interp *interp, Filmstrip *filmPtr, const char *string,
         if (filmPtr->activePtr != NULL) {
             framePtr = filmPtr->activePtr->framePtr;
         }
+    } else if ((c == 'c') && (strcmp(string, "current") == 0)) {
+        if (filmPtr->currentPtr != NULL) {
+            framePtr = filmPtr->currentPtr;
+        }
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
         framePtr = FirstFrame(filmPtr, HIDDEN | DISABLED);
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
         framePtr = LastFrame(filmPtr, HIDDEN | DISABLED);
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
         framePtr = LastFrame(filmPtr, 0);
+    } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
+        if (filmPtr->currentPtr != NULL) {
+            framePtr = NextFrame(filmPtr->currentPtr, HIDDEN | DISABLED);
+        }
+    } else if ((c == 'p') && (strncmp(string, "previous", length) == 0)) {
+        if (filmPtr->currentPtr != NULL) {
+            framePtr = PrevFrame(filmPtr->currentPtr, HIDDEN | DISABLED);
+        }
     } else if ((c == 'n') && (strcmp(string, "none") == 0)) {
         framePtr = NULL;
     } else {
@@ -1926,7 +1943,7 @@ NewFilmstrip(Tcl_Interp *interp, Tcl_Obj *objPtr)
     filmPtr->gripPad.side1 = filmPtr->gripPad.side2 = 2;
     filmPtr->gripThickness = 2;
     filmPtr->interp = interp;
-    filmPtr->interval = 30;
+    filmPtr->delay = 30;
     filmPtr->relief = TK_RELIEF_FLAT;
     filmPtr->scrollUnits = 10;
     filmPtr->tkwin = tkwin;
@@ -3809,7 +3826,7 @@ MotionTimerProc(ClientData clientData)
             filmPtr->scrollIncr = filmPtr->scrollUnits;
         }
     } else {
-        filmPtr->timerToken = Tcl_CreateTimerHandler(filmPtr->interval, 
+        filmPtr->timerToken = Tcl_CreateTimerHandler(filmPtr->delay, 
                 MotionTimerProc, filmPtr);
     }
     filmPtr->flags |= SCROLL_PENDING;
@@ -3852,11 +3869,12 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     if (filmPtr->flags & ANIMATE) {
         filmPtr->scrollIncr = filmPtr->scrollUnits;
-        filmPtr->timerToken = Tcl_CreateTimerHandler(filmPtr->interval, 
+        filmPtr->timerToken = Tcl_CreateTimerHandler(filmPtr->delay, 
                 MotionTimerProc, filmPtr);
     } else {
         filmPtr->scrollOffset = filmPtr->scrollTarget;
     }
+    filmPtr->currentPtr = framePtr;
     filmPtr->flags |= SCROLL_PENDING;
     EventuallyRedraw(filmPtr);
     return TCL_OK;
@@ -4673,6 +4691,9 @@ DisplayProc(ClientData clientData)
         filmPtr->flags &= ~SCROLL_PENDING;
     }
     filmPtr->numVisible = Blt_Chain_GetLength(filmPtr->frames);
+    if (filmPtr->currentPtr == NULL) {
+        filmPtr->currentPtr = FirstFrame(filmPtr, HIDDEN | DISABLED);
+    }
     w = Tk_Width(filmPtr->tkwin);
     h = Tk_Height(filmPtr->tkwin);
     drawable = Blt_GetPixmap(filmPtr->display, Tk_WindowId(filmPtr->tkwin),

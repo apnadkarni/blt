@@ -1366,12 +1366,8 @@ DrawerTimerProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static char *
-DrawerVarTraceProc(
-    ClientData clientData,              /* Information about the item. */
-    Tcl_Interp *interp,                 /* Interpreter containing variable. */
-    const char *name1,                  /* First part of variable's name. */
-    const char *name2,                  /* Second part of variable's name. */
-    int flags)                          /* Describes what just happened. */
+DrawerVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
+                   const char *name2, int flags)
 {
     Drawer *drawPtr = clientData;
     Tcl_Obj *objPtr;
@@ -1547,9 +1543,9 @@ ObjToChild(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
             return TCL_OK;
         }
         /*
-         * Allow only widgets that are children of the drawerset window to
+         * Allow only widgets that are children of the drawerset window can
          * be used.  We are using the window as viewport to clip the
-         * children are necessary.
+         * children as necessary.
          */
         parent = Tk_Parent(tkwin);
         if (parent != setPtr->tkwin) {
@@ -1765,14 +1761,9 @@ DrawersetEventProc(ClientData clientData, XEvent *eventPtr)
  *---------------------------------------------------------------------------
  */
 static void
-DrawerEventProc(
-    ClientData clientData,              /* Pointer to Drawer structure for
-                                         * widget referred to by
-                                         * eventPtr. */
-    XEvent *eventPtr)                   /* Describes what just happened. */
+DrawerEventProc(ClientData clientData, XEvent *eventPtr)
 {
     Drawer *drawPtr = (Drawer *)clientData;
-    Drawerset *setPtr = drawPtr->setPtr;
 
     if (eventPtr->type == ConfigureNotify) {
         int borderWidth;
@@ -1783,14 +1774,14 @@ DrawerEventProc(
         borderWidth = Tk_Changes(drawPtr->tkwin)->border_width;
         if (drawPtr->borderWidth != borderWidth) {
             drawPtr->borderWidth = borderWidth;
-            EventuallyRedraw(setPtr);
+            EventuallyRedraw(drawPtr->setPtr);
         }
     } else if (eventPtr->type == DestroyNotify) {
         if (drawPtr->tkwin != NULL) {
             Tcl_EventuallyFree(drawPtr, DrawerFreeProc);
         }
-        setPtr->flags |= LAYOUT_PENDING;
-        EventuallyRedraw(setPtr);
+        drawPtr->setPtr->flags |= LAYOUT_PENDING;
+        EventuallyRedraw(drawPtr->setPtr);
     }
 }
 
@@ -1817,14 +1808,13 @@ static void
 DrawerCustodyProc(ClientData clientData, Tk_Window tkwin)
 {
     Drawer *drawPtr = (Drawer *)clientData;
-    Drawerset *setPtr = drawPtr->setPtr;
 
     if (Tk_IsMapped(drawPtr->tkwin)) {
         Tk_UnmapWindow(drawPtr->tkwin);
     }
     DestroyDrawer(drawPtr);
-    setPtr->flags |= LAYOUT_PENDING;
-    EventuallyRedraw(setPtr);
+    drawPtr->setPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(drawPtr->setPtr);
 }
 
 /*
