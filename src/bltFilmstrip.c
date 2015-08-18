@@ -3862,7 +3862,6 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *

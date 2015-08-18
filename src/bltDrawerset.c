@@ -1319,7 +1319,6 @@ DrawerTimerProc(ClientData clientData)
     int range;
 
     setPtr = drawPtr->setPtr;
-    
     if (setPtr->flags & LAYOUT_PENDING) {
         int w, h;
         
