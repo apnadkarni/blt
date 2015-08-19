@@ -59,13 +59,12 @@
 #define GETATTR(t,attr)         \
    (((t)->attr != NULL) ? (t)->attr : (t)->filmPtr->attr)
 #define VPORTWIDTH(s) \
-    (ISVERT(s)) ? Tk_Height((s)->tkwin) : Tk_Width((s)->tkwin);
+    ((s)->flags & VERTICAL) ? Tk_Height((s)->tkwin) : Tk_Width((s)->tkwin);
 
 #define TRACE   0
 #define TRACE1  0
 
 #define SCREEN(x)       ((x) - filmPtr->scrollOffset) 
-#define ISVERT(s)       ((s)->flags & VERTICAL)
 #define ISHORIZ(s)      (((s)->flags & VERTICAL) == 0)
 
 typedef enum {
@@ -1777,13 +1776,13 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     gripPtr->framePtr = framePtr;
     framePtr->hashPtr = hPtr;
     framePtr->index = Blt_Chain_GetLength(filmPtr->frames);
-    framePtr->link = Blt_Chain_NewLink();
+    framePtr->link = Blt_Chain_Append(filmPtr->frames, framePtr);
     framePtr->name = Blt_GetHashKey(&filmPtr->frameTable, hPtr);
+    fprintf(stderr, "frame %s index=%d\n", framePtr->name, framePtr->index);
     framePtr->nom  = LIMITS_NOM;
     framePtr->resize = RESIZE_BOTH;
-    framePtr->size = framePtr->index = 0;
+    framePtr->size = 0;
     framePtr->weight = 1.0f;
-    Blt_Chain_SetValue(framePtr->link, framePtr);
     Blt_SetHashValue(hPtr, framePtr);
 
     /* Generate an unique subwindow name. It will be in the form "grip0",
@@ -2180,7 +2179,7 @@ GetReqFrameHeight(Frame *framePtr)
     int h;
 
     h = GetReqHeight(framePtr) + PADDING(framePtr->yPad);
-    if ((ISVERT(framePtr->filmPtr)) && (framePtr->flags & GRIP)) {
+    if ((framePtr->filmPtr->flags & VERTICAL) && (framePtr->flags & GRIP)) {
         h += framePtr->filmPtr->gripSize;
     }
     return h;
@@ -2281,7 +2280,7 @@ ResetFrames(Filmstrip *filmPtr)
          * of setting the minimum, maximum, and nominal values to the
          * requested size of its associated widget (if one exists).
          */
-        if (ISVERT(filmPtr)) {
+        if (filmPtr->flags & VERTICAL) {
             size = BoundHeight(0, &framePtr->reqSize);
             extra = PADDING(framePtr->yPad);
         } else {
@@ -2345,7 +2344,7 @@ SetNominalSizes(Filmstrip *filmPtr)
         int extra;
 
         framePtr = Blt_Chain_GetValue(link);
-        if (ISVERT(filmPtr)) {
+        if (filmPtr->flags & VERTICAL) {
             extra = PADDING(framePtr->yPad);
         } else {
             extra = PADDING(framePtr->xPad);
@@ -2570,7 +2569,7 @@ ArrangeWindow(Frame *framePtr, int x, int y)
     int cavityWidth, cavityHeight;
 
     filmPtr = framePtr->filmPtr;
-    if (ISVERT(filmPtr)) {
+    if (filmPtr->flags & VERTICAL) {
         framePtr->height = framePtr->size;
         framePtr->width = Tk_Width(filmPtr->tkwin);
     } else {
@@ -2588,7 +2587,7 @@ ArrangeWindow(Frame *framePtr, int x, int y)
         x += Tk_Changes(framePtr->tkwin)->border_width;
         y += Tk_Changes(framePtr->tkwin)->border_width;
         if (framePtr->flags & GRIP) {
-            if (ISVERT(filmPtr)) {
+            if (filmPtr->flags & VERTICAL) {
                 cavityHeight -= filmPtr->gripSize;
                 if (filmPtr->side & GRIP_FARSIDE) {
                     yMax -= filmPtr->gripSize;
@@ -2703,7 +2702,7 @@ ArrangeGrip(Grip *gripPtr, int x, int y)
         int w, h;
         
         filmPtr = framePtr->filmPtr;
-        if (ISVERT(filmPtr)) {
+        if (filmPtr->flags & VERTICAL) {
             x = 0;
             if (filmPtr->side & GRIP_FARSIDE) {
                 y += framePtr->size - filmPtr->gripSize;
@@ -2761,7 +2760,7 @@ ArrangeFrame(Frame *framePtr, int x, int y)
     Filmstrip *filmPtr;
 
     filmPtr = framePtr->filmPtr;
-    if (ISVERT(filmPtr)) {
+    if (filmPtr->flags & VERTICAL) {
         framePtr->height = framePtr->size;
         framePtr->width = Tk_Width(filmPtr->tkwin);
     } else {
@@ -2916,7 +2915,7 @@ HorizontalFrames(Filmstrip *filmPtr)
 static void
 ComputeGeometry(Filmstrip *filmPtr) 
 {
-    if (ISVERT(filmPtr)) {
+    if (filmPtr->flags & VERTICAL) {
         LayoutVerticalFrames(filmPtr);
     } else {
         LayoutHorizontalFrames(filmPtr);
@@ -3006,9 +3005,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (framePtr == NULL) {
         return TCL_ERROR;
     }
-
     gripPtr = &framePtr->grip;
-    Blt_Chain_AppendLink(filmPtr->frames, framePtr->link);
     if (Blt_ConfigureWidgetFromObj(interp, gripPtr->tkwin, frameSpecs,
                 objc - 2, objv + 2, (char *)framePtr, 0) != TCL_OK) {
         DestroyFrame(framePtr);
@@ -3183,7 +3180,6 @@ GripActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     gripPtr = &framePtr->grip;
     if (gripPtr != filmPtr->activePtr) {
         Tk_Cursor cursor;
-        int vert;
 
         if (filmPtr->activePtr != NULL) {
             EventuallyRedrawGrip(filmPtr->activePtr);
@@ -3192,10 +3188,9 @@ GripActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             EventuallyRedrawGrip(gripPtr);
         }
         filmPtr->activePtr = gripPtr;
-        vert = ISVERT(filmPtr);
         if (framePtr->cursor != None) {
             cursor = framePtr->cursor;
-        } else if (vert) {
+        } else if (filmPtr->flags & VERTICAL) {
             cursor = filmPtr->defVertCursor;
         } else {
             cursor = filmPtr->defHorzCursor;
@@ -3226,7 +3221,6 @@ GripAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Frame *framePtr;
     Filmstrip *filmPtr = clientData;
     int x, y;
-    int vert;
 
     if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3241,8 +3235,7 @@ GripAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     filmPtr = framePtr->filmPtr;
     filmPtr->anchorPtr = filmPtr->activePtr = &framePtr->grip;
     filmPtr->flags |= GRIP_ACTIVE;
-    vert = ISVERT(filmPtr);
-    if (vert) {
+    if (filmPtr->flags & VERTICAL) {
         filmPtr->gripAnchor = y;
     } else {
         filmPtr->gripAnchor = x;
@@ -3299,7 +3292,7 @@ GripMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Filmstrip *filmPtr = clientData;
     int x, y;                           /* Root coordinates of the pointer
                                          * over the grip. */
-    int delta, mark, vert;
+    int delta, mark;
 
     if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3313,8 +3306,7 @@ GripMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     filmPtr = framePtr->filmPtr;
     filmPtr->anchorPtr = &framePtr->grip;
-    vert = ISVERT(filmPtr);
-    mark = (vert) ? y : x;
+    mark = (filmPtr->flags & VERTICAL) ? y : x;
     delta = mark - filmPtr->gripAnchor;
     AdjustGrip(filmPtr, delta);
     filmPtr->gripAnchor = mark;
@@ -3341,7 +3333,6 @@ GripMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Frame *framePtr;
     Filmstrip *filmPtr = clientData;
     int delta, x, y;
-    int vert;
 
     if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3355,12 +3346,7 @@ GripMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     filmPtr = framePtr->filmPtr;
     filmPtr->anchorPtr = &framePtr->grip;
-    vert = ISVERT(filmPtr);
-    if (vert) {
-        delta = y;
-    } else {
-        delta = x;
-    }
+    delta = (filmPtr->flags & VERTICAL) ? y : x;
     AdjustGrip(filmPtr, delta);
     return TCL_OK;
 }
@@ -3385,7 +3371,7 @@ GripSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Frame *framePtr;
     Filmstrip *filmPtr = clientData;
     int x, y;
-    int delta, mark, vert;
+    int delta, mark;
 
     if (GetFrameFromObj(interp, filmPtr, objv[3], &framePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3399,8 +3385,7 @@ GripSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     filmPtr = framePtr->filmPtr;
     filmPtr->flags &= ~GRIP_ACTIVE;
-    vert = ISVERT(filmPtr);
-    mark = (vert) ? y : x;
+    mark = (filmPtr->flags & VERTICAL) ? y : x;
     delta = mark - filmPtr->gripAnchor;
     AdjustGrip(filmPtr, delta);
     filmPtr->gripAnchor = mark;
@@ -3874,6 +3859,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else {
         filmPtr->scrollOffset = filmPtr->scrollTarget;
     }
+    fprintf(stderr, "setting current to %s %d\n", framePtr->name, framePtr->index);
     filmPtr->currentPtr = framePtr;
     filmPtr->flags |= SCROLL_PENDING;
     EventuallyRedraw(filmPtr);
@@ -4703,7 +4689,7 @@ DisplayProc(ClientData clientData)
     XCopyArea(filmPtr->display, drawable, Tk_WindowId(filmPtr->tkwin),
         filmPtr->gc, 0, 0, w, h, 0, 0);
     if (filmPtr->numVisible > 0) {
-        if (ISVERT(filmPtr)) {
+        if (filmPtr->flags & VERTICAL) {
             VerticalFrames(filmPtr);
         } else {
             HorizontalFrames(filmPtr);
