@@ -1345,7 +1345,6 @@ FrameGeometryProc(ClientData clientData, Tk_Window tkwin)
     EventuallyRedraw(framePtr->filmPtr);
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -2598,139 +2597,119 @@ LayoutVerticalFrames(Filmstrip *filmPtr)
 }
 
 static void
-ArrangeHorizontalFrame(Frame *framePtr, int x, int y) 
+ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr) 
 {
-    Filmstrip *filmPtr;
-    int cavityWidth, cavityHeight;
-    int w, h;
-    int xMax, yMax;
-
-    filmPtr = framePtr->filmPtr;
+    int winWidth, winHeight;
+    int x, y, w, h;
+    
     if (framePtr->tkwin == NULL) {
-        if (Tk_IsMapped(framePtr->tkwin)) {
-            Tk_UnmapWindow(framePtr->tkwin);
-        }
         return;
     }
     x = SCREENX(filmPtr, framePtr->worldX);
     y = SCREENY(filmPtr, framePtr->worldY);
+    /*
+     * Unmap any widgets that start beyond of the right edge of the
+     * container.
+     */
     if (((x > Tk_Width(filmPtr->tkwin)) || ((x + framePtr->width) < 0))) {
-        UnmapFrame(framePtr);
+        UnmapFrameAndGrip(framePtr);
         return;
     }
-    winWidth = framePtr->width;
+    winWidth  = framePtr->width;
     winHeight = framePtr->height;
-    if (filmPtr->relWidth > 0.0) {
-        reqWidth = (int)(Tk_Width(filmPtr->tkwin) * filmPtr->relWidth);
+    if (filmPtr->relSize > 0.0) {
+        reqWidth = (int)(Tk_Width(filmPtr->tkwin) * filmPtr->relSize);
     } else {
         reqWidth = Tk_ReqWidth(framePtr->tkwin);
     }
-    if (filmPtr->relHeight > 0.0) {
-        reqHeight = (int)(Tk_Height(filmPtr->tkwin) * filmPtr->relHeight);
+    if ((reqWidth < winWidth) && ((framePtr->fill & FILL_X) == 0)) {
+        winWidth = reqWidth;
+    }
+    w = winWidth;
+    h = winHeight;
+    
+    if (framePtr->width > w) {
+        switch (drawPtr->anchor) {
+        case TK_ANCHOR_NW:              /* Upper left corner */
+        case TK_ANCHOR_SW:              /* Lower left corner */
+        case TK_ANCHOR_W:               /* Left center */
+            break;
+        case TK_ANCHOR_N:               /* Top center */
+        case TK_ANCHOR_CENTER:          /* Centered */
+        case TK_ANCHOR_S:               /* Bottom center */
+            x += (framePtr->width - w) / 2;
+            break;
+        case TK_ANCHOR_E:               /* Right center */
+        case TK_ANCHOR_SE:              /* Lower right corner */
+        case TK_ANCHOR_NE:              /* Upper right corner */
+            x += framePtr->width - w;
+            break;                      
+        }
+    }
+    /*
+     * Resize and/or move the widget as necessary.
+     */
+    if ((x != Tk_X(framePtr->tkwin)) || 
+        (y != Tk_Y(framePtr->tkwin)) ||
+        (w != Tk_Width(framePtr->tkwin)) || 
+        (h != Tk_Height(framePtr->tkwin))) {
+        Tk_MoveResizeWindow(framePtr->tkwin, x, y, w, h);
+    }
+    if (!Tk_IsMapped(framePtr->tkwin)) {
+        Tk_MapWindow(framePtr->tkwin);
+    }
+}
+
+static void
+ArrangeVerticalFrame(FilmStrip *filmPtr, Frame *framePtr) 
+{
+    int winWidth, winHeight;
+    int x, y, w, h;
+
+    filmPtr = framePtr->filmPtr;
+    if (framePtr->tkwin == NULL) {
+        return;
+    }
+    x = SCREENX(filmPtr, framePtr->worldX);
+    y = SCREENY(filmPtr, framePtr->worldY);
+    /*
+     * Unmap any widgets that start beyond of the right edge of the
+     * container.
+     */
+    if (((y > Tk_Height(filmPtr->tkwin)) || ((y + framePtr->height) < 0))) {
+        UnmapFrameAndGrip(framePtr);
+        return;
+    }
+    winWidth  = framePtr->width;
+    winHeight = framePtr->height;
+    if (filmPtr->relSize > 0.0) {
+        reqHeight = (int)(Tk_Height(filmPtr->tkwin) * filmPtr->relSize);
     } else {
         reqHeight = Tk_ReqHeight(framePtr->tkwin);
     }
     if ((reqHeight < winHeight) && ((framePtr->fill & FILL_Y) == 0)) {
         winHeight = reqHeight;
     }
-    if ((reqWidth < winWidth) && ((framePtr->fill & FILL_X) == 0)) {
-        winWidth = reqWidth;
-    }
-
-        
-    xMax = x + framePtr->width;
-    yMax = y + framePtr->height;
-    x += Tk_Changes(framePtr->tkwin)->border_width;
-    y += Tk_Changes(framePtr->tkwin)->border_width;
-    if (framePtr->flags & GRIP) {
-        if (filmPtr->flags & VERTICAL) {
-            cavityHeight -= filmPtr->gripSize;
-            if (filmPtr->side & GRIP_FARSIDE) {
-                yMax -= filmPtr->gripSize;
-            } else {
-                y += filmPtr->gripSize;
-            }
-        } else {
-            cavityWidth -= filmPtr->gripSize;
-            if (filmPtr->side & GRIP_FARSIDE) {
-                xMax -= filmPtr->gripSize;
-            } else {
-                x += filmPtr->gripSize;
-            }
+    w = winWidth;
+    h = winHeight;
+    
+    if (framePtr->height > h) {
+        switch (drawPtr->anchor) {
+        case TK_ANCHOR_NW:              /* Upper left corner */
+        case TK_ANCHOR_SW:              /* Lower left corner */
+        case TK_ANCHOR_W:               /* Left center */
+            break;
+        case TK_ANCHOR_N:               /* Top center */
+        case TK_ANCHOR_CENTER:          /* Centered */
+        case TK_ANCHOR_S:               /* Bottom center */
+            y += (framePtr->height - h) / 2;
+            break;
+        case TK_ANCHOR_E:               /* Right center */
+        case TK_ANCHOR_SE:              /* Lower right corner */
+        case TK_ANCHOR_NE:              /* Upper right corner */
+            y += framePtr->height - h;
+            break;                      
         }
-    }
-        
-    /*
-     * Unmap any widgets that start beyond of the right edge of the
-     * container.
-     */
-    if ((x >= xMax) || (y >= yMax)) {
-        if (Tk_IsMapped(framePtr->tkwin)) {
-            Tk_UnmapWindow(framePtr->tkwin);
-        }
-        return;
-    }
-    w = GetReqWidth(framePtr);
-    h = GetReqHeight(framePtr);
-        
-    /*
-     * Compare the widget's requested size to the size of the cavity.
-     *
-     * 1) If the widget is larger than the cavity or if the fill flag
-     *    is set, make the widget the size of the cavity. Check that
-     *    the new size is within the bounds set for the widget.
-     *
-     * 2) Otherwise, position the widget in the space according to its
-     *    anchor.
-     */
-    if ((cavityWidth <= w) || (framePtr->fill & FILL_X)) {
-        w = cavityWidth;
-    } 
-    if (w > framePtr->reqWidth.max) {
-        w = framePtr->reqWidth.max;
-    }
-    if ((cavityHeight <= h) || (framePtr->fill & FILL_Y)) {
-        h = cavityHeight;
-    }
-    if (h > framePtr->reqHeight.max) {
-        h = framePtr->reqHeight.max;
-    }
-    /*
-     * Clip the widget at the bottom and/or right edge of the container.
-     */
-    if (h > (yMax - y)) {
-        h = (yMax - y);
-    }
-    if (w > (xMax - x)) {
-        w = (xMax - x);
-    }
-#ifdef notdef
-    {
-        int dx, dy;
-        dx = dy = 0;
-        if (cavityWidth > w) {
-            dx = (cavityWidth - w);
-        }
-        if (cavityHeight > h) {
-            dy = (cavityHeight - h);
-        }
-        if ((dx > 0) || (dy > 0)) {
-            TranslateAnchor(dx, dy, framePtr->anchor, &x, &y);
-        }
-        TranslateAnchor(w, h, framePtr->anchor, &x, &y);
-        fprintf(stderr, "frame=%s x=%d,y=%d, w=%d h=%d\n", 
-                framePtr->name, x, y, w, h);
-    }
-#endif
-    /*
-     * If the widget is too small (i.e. it has only an external border)
-     * then unmap it.
-     */
-    if ((w < 1) || (h < 1)) {
-        if (Tk_IsMapped(framePtr->tkwin)) {
-            Tk_UnmapWindow(framePtr->tkwin);
-        }
-        return;
     }
     /*
      * Resize and/or move the widget as necessary.
@@ -2959,7 +2938,7 @@ ArrangeFrame(Frame *framePtr, int x, int y)
 /*
  *---------------------------------------------------------------------------
  *
- * VerticalFrames --
+ * DisplayVerticalFrames --
  *
  *
  * Results:
@@ -2971,7 +2950,7 @@ ArrangeFrame(Frame *framePtr, int x, int y)
  *---------------------------------------------------------------------------
  */
 static void
-VerticalFrames(Filmstrip *filmPtr)
+DisplayVerticalFrames(Filmstrip *filmPtr)
 {
     int height;
     int top, bottom;
@@ -3024,16 +3003,14 @@ VerticalFrames(Filmstrip *filmPtr)
     y = 0;
     for (framePtr = FirstFrame(filmPtr, HIDDEN); framePtr != NULL; 
          framePtr = NextFrame(framePtr, HIDDEN)) {
-        framePtr->y = y;
-        ArrangeFrame(framePtr, 0, SCREEN(y));
-        y += framePtr->size;
+        ArrangeVerticalFrame(filmPtr, framePtr);
     }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * HorizontalFrames --
+ * DisplayHorizontalFrames --
  *
  *
  * Results:
@@ -3045,54 +3022,24 @@ VerticalFrames(Filmstrip *filmPtr)
  *---------------------------------------------------------------------------
  */
 static void
-HorizontalFrames(Filmstrip *filmPtr)
+DisplayHorizontalFrames(Filmstrip *filmPtr)
 {
     int width;
-    int left, right;
-    int x;
     Frame *framePtr;
 
     /*
-     * If the filmstrip has no children anymore, then don't do anything at all:
-     * just leave the container widget's size as-is.
+     * If the filmstrip has no children anymore, then don't do anything at
+     * all: just leave the container widget's size as-is.
      */
-    framePtr = LastFrame(filmPtr, HIDDEN);
-    if (framePtr == NULL) {
-        return;
-    }
     if (filmPtr->anchorPtr == NULL) {
         filmPtr->anchorPtr = &framePtr->grip;
     }
     if (filmPtr->flags & LAYOUT_PENDING) {
         LayoutHorizontalFrames(filmPtr);
     }
-    /*
-     * Save the width and height of the container so we know when its size
-     * has changed during ConfigureNotify events.
-     */
-
-    left = LeftSpan(filmPtr);
-    right = RightSpan(filmPtr);
-    filmPtr->worldWidth = width = left + right;
-    
-    /*
-     * If after adjusting the size of the frames the space required does not
-     * equal the size of the widget, do one of the following:
-     *
-     * 1) If it's smaller, center the filmstrip in the widget.  
-     * 2) If it's bigger, clip the frames that extend beyond the edge of the 
-     *    container.
-     *
-     * Set the row and column offsets (including the container's internal
-     * border width). To be used later when positioning the widgets.
-     */
-
-    x = 0;
     for (framePtr = FirstFrame(filmPtr, HIDDEN); framePtr != NULL; 
          framePtr = NextFrame(framePtr, HIDDEN)) {
-        framePtr->x = x;
-        ArrangeFrame(framePtr, SCREEN(x), 0);
-        x += framePtr->size;
+        ArrangeHorizontalFrame(filmPtr, framePtr);
     }
 }
 
@@ -4874,9 +4821,9 @@ DisplayProc(ClientData clientData)
         filmPtr->gc, 0, 0, w, h, 0, 0);
     if (filmPtr->numVisible > 0) {
         if (filmPtr->flags & VERTICAL) {
-            VerticalFrames(filmPtr);
+            DisplayVerticalFrames(filmPtr);
         } else {
-            HorizontalFrames(filmPtr);
+            DisplayHorizontalFrames(filmPtr);
         }
     }
     Tk_FreePixmap(filmPtr->display, drawable);
