@@ -92,18 +92,19 @@ typedef struct {
 } ImportSwitches;
 
 #define IMPORT_TRIMCDATA  (1<<0)
-#define IMPORT_OVERWRITE  (1<<1)
+#define IMPORT_SINGLECDATA (1<<1)
+#define IMPORT_OVERWRITE  (1<<2)
 
-#define IMPORT_ATTRIBUTES (1L<<2)
-#define IMPORT_BASEURI    (1L<<3)
-#define IMPORT_CDATA      (1L<<4)
-#define IMPORT_COMMENTS   (1L<<5)
-#define IMPORT_DECL       (1L<<6)
-#define IMPORT_DTD        (1L<<7)
-#define IMPORT_LOCATION   (1L<<8)
-#define IMPORT_PI         (1L<<9)
-#define IMPORT_NS         (1L<<10)
-#define IMPORT_EXTREF     (1L<<11)
+#define IMPORT_ATTRIBUTES (1L<<3)
+#define IMPORT_BASEURI    (1L<<4)
+#define IMPORT_CDATA      (1L<<5)
+#define IMPORT_COMMENTS   (1L<<6)
+#define IMPORT_DECL       (1L<<7)
+#define IMPORT_DTD        (1L<<8)
+#define IMPORT_LOCATION   (1L<<9)
+#define IMPORT_PI         (1L<<10)
+#define IMPORT_NS         (1L<<11)
+#define IMPORT_EXTREF     (1L<<12)
 #define IMPORT_ALL        (IMPORT_ATTRIBUTES | IMPORT_COMMENTS | IMPORT_CDATA |\
                            IMPORT_DTD | IMPORT_PI | IMPORT_LOCATION | \
                            IMPORT_BASEURI | IMPORT_DECL | IMPORT_EXTREF)
@@ -159,6 +160,8 @@ static Blt_SwitchSpec importSwitches[] =
         Blt_Offset(ImportSwitches, flags),      0, IMPORT_PI},
     {BLT_SWITCH_BOOLEAN,  "-trimwhitespace",    "bool", (char *)NULL,
         Blt_Offset(ImportSwitches, flags),      0, IMPORT_TRIMCDATA},
+    {BLT_SWITCH_BOOLEAN,  "-convertcdata",    "bool", (char *)NULL,
+        Blt_Offset(ImportSwitches, flags),      0, IMPORT_SINGLECDATA},
     {BLT_SWITCH_END}
 };
 
@@ -339,10 +342,11 @@ SetLocation(XmlReader *readerPtr, Blt_TreeNode node)
 static void
 TrimWhitespace(XmlReader *readerPtr)
 {
-    Blt_TreeNode root, node;
+    Blt_TreeNode root, node, next;
 
     root = readerPtr->root;
-    for (node = root; node != NULL; node = Blt_Tree_NextNode(root, node)) {
+    for (node = root; node != NULL; node = next) {
+        next = Blt_Tree_NextNode(root, node);
         if (strcmp(Blt_Tree_NodeLabel(node), SYM_CDATA) == 0) {
             Tcl_Obj *objPtr, *newPtr;
             int length;
@@ -362,12 +366,71 @@ TrimWhitespace(XmlReader *readerPtr)
                     break;
                 }
             }
-            newPtr = Tcl_NewStringObj(first, last - first);
-            Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node,
-                              SYM_CDATA, newPtr);
+            if (last > first) {
+                newPtr = Tcl_NewStringObj(first, last - first);
+                Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node,
+                                  SYM_CDATA, newPtr);
+            } else {
+                /* Remove empty CDATA nodes */
+                Blt_Tree_DeleteNode(readerPtr->tree, node);
+            }
         }
     }
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConvertSingleCDATA --
+ *
+ *      Trims leading and trailing whitespace from all the CDATA nodes 
+ *      in the tree.  This is done after the entire XML input has been
+ *      processed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+ConvertSingleCDATA(XmlReader *readerPtr)
+{
+    Blt_TreeNode root, node, next;
+
+    root = readerPtr->root;
+ fprintf(stderr, "ConvertSingleCDATA\n");
+    for (node = root; node != NULL; node = next) {
+        next = Blt_Tree_NextNode(root, node);
+        if (Blt_Tree_NodeDegree(node) == 1) {
+            Blt_TreeNode child;
+            
+            child = Blt_Tree_FirstChild(node);
+            /* If the node has only one child and it's a CDATA node, then
+             * create a data field in the parent with the label of the node
+             * and the CDATA value. */
+            if (strcmp(Blt_Tree_NodeLabel(child), SYM_CDATA) == 0) {
+                Blt_TreeNode parent;
+                Tcl_Obj *objPtr;
+                int length;
+                const char *string, *label;
+            fprintf(stderr, "%s has single child %s\n", Blt_Tree_NodeLabel(node), Blt_Tree_NodeLabel(child));
+                if (Blt_Tree_GetValue(readerPtr->interp, readerPtr->tree, child,
+                                      SYM_CDATA, &objPtr) != TCL_OK) {
+                    continue;
+                }
+                string = Tcl_GetStringFromObj(objPtr, &length);
+            fprintf(stderr, "child %s CDATA=%s\n", Blt_Tree_NodeLabel(node),
+                    string);
+                parent = Blt_Tree_ParentNode(node);
+                label = Blt_Tree_NodeLabel(node);
+                if (!Blt_Tree_ValueExists(readerPtr->tree, parent, label)) {
+                    Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree,
+                        parent, label, objPtr);
+                    next = Blt_Tree_NextNode(root, child);
+                    Blt_Tree_DeleteNode(readerPtr->tree, node);
+                }
+            }
+        }
+    }
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -856,6 +919,9 @@ ImportXmlFile(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode parent,
     XML_ParserFree(parser);
     if (flags & IMPORT_TRIMCDATA) {
         TrimWhitespace(&reader);
+    }
+    if (flags & IMPORT_SINGLECDATA) {
+        ConvertSingleCDATA(&reader);
     }
     DumpStringTable(&reader.stringTable);
     return (result) ? TCL_OK : TCL_ERROR;

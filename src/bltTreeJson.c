@@ -713,6 +713,12 @@ JsonImport(JsonReader *readerPtr, const char *fileName)
 
 
 static void
+JsonAppend(JsonWriter *writerPtr, const char *s)
+{
+    Blt_DBuffer_AppendString(writerPtr->dBuffer, s, -1);
+}
+
+static void
 JsonFormat(JsonWriter *writerPtr, const char *fmt, ...)
 {
     char string[BUFSIZ+4];
@@ -808,6 +814,13 @@ JsonTranslateString(JsonWriter *writerPtr, const char *s)
 }
 
 static void
+JsonAppendName(JsonWriter *writerPtr, const char *s)
+{
+    JsonAppend(writerPtr, JsonTranslateString(writerPtr, s));
+    JsonFormat(writerPtr, " : ");
+}
+
+static void
 JsonIndent(JsonWriter *writerPtr)
 {
     JsonFormat(writerPtr, "%*s", writerPtr->indent * 2, "");
@@ -832,7 +845,7 @@ static void
 JsonExportChild(JsonWriter *writerPtr, const char *name)
 {
     JsonIndent(writerPtr);
-    JsonFormat(writerPtr, "%s : ", JsonTranslateString(writerPtr, name));
+    JsonAppendName(writerPtr, name);
 }
 
 static void
@@ -856,7 +869,7 @@ JsonExportNull(JsonWriter *writerPtr, const char *name)
 {
     JsonIndent(writerPtr);
     if (name != NULL) {
-        JsonFormat(writerPtr, "%s : ", JsonTranslateString(writerPtr, name));
+        JsonAppendName(writerPtr, name);
     }
     JsonFormat(writerPtr, "null");
 }
@@ -866,7 +879,7 @@ JsonExportNumber(JsonWriter *writerPtr, const char *name, double number)
 {
     JsonIndent(writerPtr);
     if (name != NULL) {
-        JsonFormat(writerPtr, "%s : ", JsonTranslateString(writerPtr, name));
+        JsonAppendName(writerPtr, name);
     }
     JsonFormat(writerPtr, "%.15g", number);
 }
@@ -876,9 +889,9 @@ JsonExportString(JsonWriter *writerPtr, const char *name, const char *s)
 {
     JsonIndent(writerPtr);
     if (name != NULL) {
-        JsonFormat(writerPtr, "%s : ", JsonTranslateString(writerPtr, name));
+        JsonAppendName(writerPtr, name);
     }
-    JsonFormat(writerPtr, "%s", JsonTranslateString(writerPtr, s));
+    JsonAppend(writerPtr, JsonTranslateString(writerPtr, s));
 }
 
 static void
@@ -886,7 +899,7 @@ JsonExportBoolean(JsonWriter *writerPtr, const char *name, int state)
 {
     JsonIndent(writerPtr);
     if (name != NULL) {
-        JsonFormat(writerPtr, "%s : ", JsonTranslateString(writerPtr, name));
+        JsonAppendName(writerPtr, name);
     }
     JsonFormat(writerPtr, "%s", (state) ? "true" : "false");
 }
@@ -1057,7 +1070,7 @@ JsonExportObject(Blt_Tree tree, Blt_TreeNode parent, JsonWriter *writerPtr)
             return TCL_ERROR;
         }
         JsonExportValue(writerPtr, key, valueObjPtr);
-        if (count == lastEntry) {
+        if (count != lastEntry) {
             JsonFormat(writerPtr, ", ");
         }
         JsonFormat(writerPtr, "\n");
@@ -1072,7 +1085,7 @@ JsonExportObject(Blt_Tree tree, Blt_TreeNode parent, JsonWriter *writerPtr)
         if (JsonExportObject(tree, child, writerPtr) != TCL_OK) {
             return TCL_ERROR;
         }
-        if (count == lastEntry) {
+        if (count != lastEntry) {
             JsonFormat(writerPtr, ", ");
         }
         JsonFormat(writerPtr, "\n");

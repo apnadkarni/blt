@@ -2551,13 +2551,13 @@ Blt_Tree_PrevNode(
  *
  * Blt_Tree_NextNode --
  *
- *      Returns the "next" node in relation to the given node.  The next node
- *      (in depth-first order) is either the first child of the given node the
- *      next sibling if the node has no children (the node is a leaf).  If the
- *      given node is the last sibling, then try it's parent next sibling.
- *      Continue until we either find a next sibling for some ancestor or we
- *      reach the root node.  In this case the current node is the last node
- *      in the tree.
+ *      Returns the "next" node in relation to the given node.  The next
+ *      node (in depth-first order) is either the first child of the given
+ *      node the next sibling if the node has no children (the node is a
+ *      leaf).  If the given node is the last sibling, then try it's parent
+ *      next sibling.  Continue until we either find a next sibling for
+ *      some ancestor or we reach the root node.  In this case the current
+ *      node is the last node in the tree.
  *
  *---------------------------------------------------------------------------
  */
