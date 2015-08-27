@@ -366,6 +366,7 @@ typedef struct {
     Sink err, out;                      /* Data sinks for pipeline's output
                                          * and error channels. */
     Blt_ChainLink link;
+    char *env;
 } Bgexec;
 
 #define KEEPNEWLINE     (1<<0)          /* Indicates to set TCL output
@@ -385,6 +386,13 @@ typedef struct {
 #define DONTKILL        (1<<6)          /* Indicates that the detached
                                          * pipeline should not be signaled
                                          * on exit. */
+
+static Blt_SwitchParseProc ObjToEnvironProc;
+static Blt_SwitchFreeProc FreeEnvironProc;
+static Blt_SwitchCustom environSwitch =
+{
+    ObjToEnvironProc, NULL, FreeEnvironProc, (ClientData)0,
+};
 
 static Blt_SwitchParseProc ObjToSignalProc;
 static Blt_SwitchCustom killSignalSwitch =
@@ -409,6 +417,8 @@ static Blt_SwitchSpec switchSpecs[] =
         Blt_Offset(Bgexec, flags),          0, DONTKILL},
     {BLT_SWITCH_BOOLEAN, "-echo",               "bool",  (char *)NULL,
          Blt_Offset(Bgexec, err.echo),      0},
+    {BLT_SWITCH_CUSTOM, "-environ",                "list",  (char *)NULL,
+         Blt_Offset(Bgexec, env),           0, 0, &environSwitch},
     {BLT_SWITCH_STRING,  "-error",              "variable", (char *)NULL,
         Blt_Offset(Bgexec, err.doneVar),    0},
     {BLT_SWITCH_BOOLEAN, "-ignoreexitcode",     "bool", (char *)NULL,
@@ -567,6 +577,116 @@ FreeEncodingProc(ClientData clientData, char *record, int offset, int flags)
 
     if ((*encodingPtr != ENCODING_BINARY) && (*encodingPtr != ENCODING_ASCII)) {
         Tcl_FreeEncoding(*encodingPtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToEnvironProc --
+ *
+ *      Convert a Tcl_Obj representing a list of variable names and values
+ *      into an environment string.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToEnvironProc(
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Intrepreter to return results */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* Value representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
+{
+    char **envPtr = (char **)(record + offset);
+    int objc;
+    Tcl_Obj **objv;
+    int length;
+    int i;
+    char *p, *string;
+    Blt_HashTable table;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    extern char *environ;
+    int isNew;
+    
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (*envPtr != NULL) {
+        Blt_Free(*envPtr);
+        *envPtr = NULL;
+    }
+    if (i == 0) {
+        return TCL_OK;
+    }
+    Blt_InitHashTable(&table, BLT_STRING_KEYS);
+    length = 0;
+
+    for(p = environ; *p != '\0'; p++) {
+        char *equalSign, *q;
+        
+        equalSign = NULL;
+        for (q = p; *q != '\0'; q++) {
+            if ((*q == '=') && (equalSign != NULL)) {
+                equalSign = q;
+            }
+        }
+        if (p == q) {
+            break;
+        }
+        *equalSign = '\0';
+        hPtr = Blt_CreateHashEntry(&table, p, &isNew);
+        Blt_SetHashValue(hPtr, equalSign + 1);
+        *equalSign = '=';
+        length += q - p;
+    }
+    for (i = 0; i < objc; i += 2) {
+        int len1, len2;
+        const char *name, *value;
+
+        name = Tcl_GetStringFromObj(objv[i], &len1);
+        value = Tcl_GetStringFromObj(objv[i+1], &len2);
+        hPtr = Blt_CreateHashEntry(&table, name, &isNew);
+        Blt_SetHashValue(hPtr, value);
+        length += len1 + len2 + 2;
+    }
+    length++;                           /* Final NUL byte. */
+    string = Blt_AssertMalloc(length);
+    p = string;
+    for (hPtr = Blt_FirstHashEntry(&table, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        int numBytes;
+        const char *name, *value;
+        
+        name = Blt_GetHashKey(&table, hPtr);
+        value = Blt_GetHashValue(hPtr);
+        numBytes = sprintf(p, "%s=%s", name, value);
+        p += numBytes;
+        *p = '\0';
+        p++;
+    }
+    *p = '\0';
+    *envPtr = string;
+    Blt_DeleteHashTable(&table);
+    return TCL_OK;
+}
+
+/*ARGSUSED*/
+static void
+FreeEnvironProc(ClientData clientData, char *record, int offset, int flags)
+{
+    char **envPtr = (char **)(record + offset);
+
+    if (*envPtr != NULL) {
+        Blt_Free(*envPtr);
+        *envPtr = NULL;
     }
 }
 
@@ -1912,7 +2032,7 @@ BgexecCmdProc(
         errFdPtr = &bgPtr->err.fd;
     }
     numProcs = Blt_CreatePipeline(interp, objc - i, objv + i, &pidPtr, 
-        (int *)NULL, outFdPtr, errFdPtr);
+        (int *)NULL, outFdPtr, errFdPtr, bgPtr->env);
     if (numProcs < 0) {
         goto error;
     }

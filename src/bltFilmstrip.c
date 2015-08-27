@@ -2401,6 +2401,62 @@ SetNominalSizes(Filmstrip *filmPtr)
 }
 
 static void
+GetHorizontalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
+{
+    int reqWidth, reqHeight;
+
+    reqWidth = Tk_ReqHeight(filmPtr->tkwin);
+    if (reqHeight < 2) {
+        reqHeight = Tk_ReqHeight(framePtr->tkwin);
+    }
+    if (filmPtr->relHeight > 0.0) {
+        reqHeight = (int)(Tk_Height(filmPtr->tkwin) * filmPtr->relHeight);
+        if (framePtr->flags & SHOW_GRIP) {
+            reqHeight -= filmPtr->gripSize; /* Subtract the size of the grip
+                                             * from the maximum window size. */
+        }
+    } else {
+        reqHeight = Tk_ReqHeight(framePtr->tkwin);
+        if (reqHeight < 2) {
+            reqHeight = Tk_ReqHeight(framePtr->tkwin);
+        }
+        if (framePtr->flags & SHOW_GRIP) {
+            reqHeight += filmPtr->gripSize; /* Add the size of the grip
+                                             * from the maximum window
+                                             * size. */
+        }
+    }
+    framePtr->width = reqWidth;
+    framePtr->height = reqHeight;
+}
+
+static void
+GetVerticalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
+{
+    int reqWidth, reqHeight;
+
+    if (filmPtr->relHeight > 0.0) {
+        reqHeight = (int)(Tk_Height(filmPtr->tkwin) * filmPtr->relHeight);
+        if (framePtr->flags & SHOW_GRIP) {
+            reqHeight -= filmPtr->gripSize; /* Subtract the size of the grip
+                                             * from the maximum window size. */
+        }
+    } else {
+        reqHeight = Tk_ReqHeight(framePtr->tkwin);
+        if (reqHeight < 2) {
+            reqHeight = Tk_ReqHeight(framePtr->tkwin);
+        }
+        if (framePtr->flags & SHOW_GRIP) {
+            reqHeight += filmPtr->gripSize; /* Add the size of the grip
+                                             * from the maximum window
+                                             * size. */
+        }
+    }
+    framePtr->width = reqWidth;
+    framePtr->height = reqHeight;
+}
+
+static void
 GetFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
 {
     int reqWidth, reqHeight, winWidth, winHeight;
@@ -2435,6 +2491,7 @@ GetFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
     framePtr->width = winWidth;
     framePtr->height = winHeight;
 }
+
 
 /*
  *---------------------------------------------------------------------------

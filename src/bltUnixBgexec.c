@@ -1776,7 +1776,7 @@ ExecutePipeline(Bgexec *bgPtr, int objc, Tcl_Obj *const *objv)
     /* Always collect characters from the sinks. Display to the screen or
      * not. */
     numProcs = Blt_CreatePipeline(bgPtr->interp, objc, objv, &pids, 
-        (int *)NULL, (int *)NULL, (int *)NULL);
+        (int *)NULL, (int *)NULL, (int *)NULL, NULL);
     if (numProcs <= 0) {
         ssize_t numWritten;
         const char *mesg;

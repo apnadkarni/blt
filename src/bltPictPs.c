@@ -994,7 +994,7 @@ PsToPbm(
             Tcl_IncrRefCount(objv[i]);
         }
         numPids = Blt_CreatePipeline(interp, objc, objv, &pidPtr, &in, &out,
-                (int *)NULL);
+                (int *)NULL, NULL);
         for (i = 0; i < objc; i++) {
             Tcl_DecrRefCount(objv[i]);
         }

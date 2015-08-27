@@ -1438,6 +1438,7 @@ StartProcess(
                                          * If -1, stderr will be
                                          * discarded. Can be the same handle
                                          * as hStdOut */
+    char *env,
     HANDLE *hProcessPtr,                /* (out) Handle of child process. */
     DWORD *pidPtr)                      /* (out) Id of child process. */
 {
@@ -1649,7 +1650,7 @@ StartProcess(
         NULL,                           /* Thread security */
         TRUE,                           /* Inherit handles */
         createFlags,                    /* Creation flags */
-        NULL,                           /* Environment */
+        env,                            /* Environment */
         NULL,                           /* Current working directory */
         &si,                            /* Initialization for process:
                                          * includes standard handles,
@@ -1879,7 +1880,7 @@ Blt_CreatePipeline(
                                  * read frome this pipe is stored at
                                  * *outPipePtr.  NULL means command specified
                                  * its own output sink. */
-    int *errPipePtr)            /* If non-NULL, all stderr output from the
+    int *errPipePtr,            /* If non-NULL, all stderr output from the
                                  * pipeline will go to a temporary file
                                  * created here, and a descriptor to read
                                  * the file will be left at *errPipePtr.
@@ -1890,6 +1891,7 @@ Blt_CreatePipeline(
                                  * If the pipeline specifies redirection
                                  * then the file will still be created
                                  * but it will never get any data. */
+    char *env)
 {
     Blt_Pid *pids = NULL;       /* Points to malloc-ed array holding all
                                  * the handles of child processes. */
@@ -2215,7 +2217,7 @@ Blt_CreatePipeline(
         }
 
         if (StartProcess(interp, lastArg - i, argv + i, thisInput, thisOutput,
-                thisError, &hProcess, &dw_pid) != TCL_OK) {
+                thisError, err, &hProcess, &dw_pid) != TCL_OK) {
             goto error;
         }
         pid = (int)dw_pid;
