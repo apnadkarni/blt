@@ -93,6 +93,7 @@
 #ifdef HAVE_UNISTD_H
   #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+  #include <unistd.h>
 
 #ifdef HAVE_STRING_H
   #include <string.h>
@@ -470,9 +471,10 @@ CreateProcess(
                                  * channel. If the file isn't writeable,
                                  * errors from the child will be discarded.
                                  * stderrFd may be the same as stdoutFd. */
-    int *pidPtr)                /* (out) If this procedure is successful,
+    int *pidPtr,                /* (out) If this procedure is successful,
                                  * pidPtr is filled with the process id of the
                                  * child process. */
+    const char **env)
 {
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
     Tcl_DString *dsArr;
@@ -529,7 +531,11 @@ CreateProcess(
          * Close the input side of the error pipe.
          */
         RestoreSignals();
-        execvp(argv[0], &argv[0]);
+        if (env != NULL) {
+            execvpe(argv[0], &argv[0], env);
+        } else {
+            execvp(argv[0], &argv[0]);
+        }
         Blt_FormatString(errSpace, 200, "%dcan't execute \"%.150s\": ", errno, argv[0]);
         length = strlen(errSpace);
         numWritten = write(fd, errSpace, (size_t)strlen(errSpace));
@@ -766,7 +772,7 @@ Blt_CreatePipeline(
                                          * read frome this pipe is stored at
                                          * *stdoutPipePtr.  NULL means command
                                          * specified its own output sink. */
-    int *stderrPipePtr)                 /* (out) If non-NULL, all stderr
+    int *stderrPipePtr,                 /* (out) If non-NULL, all stderr
                                          * output from the pipeline will go to
                                          * a temporary file created here, and
                                          * a descriptor to read the file will
@@ -779,6 +785,7 @@ Blt_CreatePipeline(
                                          * redirection then the file will
                                          * still be created but it will never
                                          * get any data. */
+    const char *env)
 {
     Blt_Pid *pids = NULL;               /* Points to malloc-ed array holding
                                          * all the pids of child processes. */
@@ -1081,7 +1088,7 @@ Blt_CreatePipeline(
         }
 
         if (CreateProcess(interp, lastArg - i, argv + i, curFd[0], curFd[1], 
-                curFd[2], &pid) != TCL_OK) {
+                curFd[2], &pid, NULL) != TCL_OK) {
             goto error;
         }
         Tcl_DStringFree(&execBuffer);

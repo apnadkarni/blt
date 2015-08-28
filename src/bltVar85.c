@@ -244,7 +244,7 @@ typedef struct VarInHash {
     (varPtr)->flags &= ~(VAR_ARRAY|VAR_LINK);\
     (varPtr)->value.objPtr = NULL
 
-#define TclClearVarUndefined(varPtr)
+U#define TclClearVarUndefined(varPtr)
 
 #define TclSetVarTraceActive(varPtr) \
     (varPtr)->flags |= VAR_TRACE_ACTIVE
@@ -479,3 +479,5 @@ Blt_FreeCachedVars(Blt_HashTable *tablePtr)
     }
     Blt_DeleteHashTable(tablePtr);
 }
+
+            
