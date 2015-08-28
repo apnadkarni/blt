@@ -99,7 +99,7 @@
 static Tcl_ObjCmdProc BgexecCmd;
 
 #if (_TCL_VERSION <  _VERSION(8,1,0)) 
-typedef void *Tcl_Encoding;     /* Make up dummy type for encoding.  */
+typedef void *Tcl_Encoding;             /* Dummy type for encoding.  */
 #endif
 
 #define ENCODING_ASCII          ((Tcl_Encoding)NULL)
@@ -121,8 +121,8 @@ typedef void *Tcl_Encoding;     /* Make up dummy type for encoding.  */
                                          * buffer */
 #define DEF_BUFFER_SIZE (BLOCK_SIZE * 8)
 #define MAX_READS       100             /* Maximum # of successful reads
-                                         * before stopping to let TCL catch up
-                                         * on events */
+                                         * before stopping to let TCL catch
+                                         * up on events */
 #ifndef NSIG
 #define NSIG            32              /* # of signals available */
 #endif /*NSIG*/
@@ -285,12 +285,13 @@ static Blt_Chain activePipelines;       /* List of active pipelines and
  */
 typedef struct {
     const char *name;                   /* Name of the sink. */
-    const char *doneVar;                /* Name of a TCL variable (malloc'ed)
-                                         * set to the collected data of the
-                                         * last UNIX * subprocess. */
-    const char *updateVar;              /* Name of a TCL variable (malloc'ed)
-                                         * updated as data is read from the
-                                         * pipe. */
+    const char *doneVar;                /* Name of a TCL variable
+                                         * (malloc'ed) set to the collected
+                                         * data of the last UNIX *
+                                         * subprocess. */
+    const char *updateVar;              /* Name of a TCL variable
+                                         * (malloc'ed) updated as data is
+                                         * read from the pipe. */
     Tcl_Obj *cmdObjPtr;                 /* Start of a TCL command executed
                                          * whenever data is read from the
                                          * pipe. */
@@ -299,12 +300,13 @@ typedef struct {
                                          * translating data. */
     int fd;                             /* File descriptor of the pipe. */
     int status;
-    int echo;                           /* Indicates if the pipeline's stderr
-                                         * stream should be echoed */
+    int echo;                           /* Indicates if the pipeline's
+                                         * stderr stream should be
+                                         * echoed */
 
-    unsigned char *bytes;               /* Stores pipeline output (malloc-ed):
-                                         * Initially points to static
-                                         * storage */
+    unsigned char *bytes;               /* Stores pipeline output
+                                         * (malloc-ed): Initially points to
+                                         * static storage */
     int size;                           /* Size of dynamically allocated
                                          * buffer. */
 
@@ -312,11 +314,13 @@ typedef struct {
                                          * buffer. Marks the current fill
                                          * point of the buffer. */
 
-    int mark;                           /* # of bytes translated (cooked). */
-    int lastMark;                       /* # of bytes as of the last read. This
-                                         * indicates the start of the new data
-                                         * in the buffer since the last time
-                                         * the "update" variable was set. */
+    int mark;                           /* # of bytes translated
+                                         * (cooked). */
+    int lastMark;                       /* # of bytes as of the last
+                                         * read. This indicates the start
+                                         * of the new data in the buffer
+                                         * since the last time the "update"
+                                         * variable was set. */
     unsigned char staticSpace[DEF_BUFFER_SIZE]; /* Static space */
 
 } Sink;
@@ -326,29 +330,31 @@ typedef struct {
 #define SINK_NOTIFY             (1<<2)
 
 typedef struct {
-    const char *statusVar;              /* Name of a TCL variable set to the
-                                         * exit status of the last
+    const char *statusVar;              /* Name of a TCL variable set to
+                                         * the exit status of the last
                                          * process. Setting this variable
                                          * triggers the termination of all
                                          * subprocesses (regardless whether
                                          * they have already completed) */
-    int signalNum;                      /* If non-zero, indicates the signal
-                                         * to send subprocesses when cleaning
-                                         * up.*/
+    int signalNum;                      /* If non-zero, indicates the
+                                         * signal to send subprocesses when
+                                         * cleaning up.*/
     unsigned int flags;                 /* Various bit flags: see below. */
     int interval;                       /* Interval to poll for the exiting
                                          * processes */
     /* Private */
-    Tcl_Interp *interp;                 /* Interpreter containing variables */
+    Tcl_Interp *interp;                 /* Interpreter containing
+                                         * variables */
     int numProcs;                       /* # of processes in pipeline */
     Blt_Pid *procIds;                   /* Array of process tokens from
-                                         * pipeline.  Under Unix, tokens are
-                                         * pid_t, while for Win32 they're
-                                         * handles. */
-    Tcl_TimerToken timerToken;          /* Token for timer handler which polls
-                                         * for the exit status of each
-                                         * sub-process. If zero, there's no
-                                         * timer handler queued. */
+                                         * pipeline.  Under Unix, tokens
+                                         * are pid_t, while for Win32
+                                         * they're handles. */
+    Tcl_TimerToken timerToken;          /* Token for timer handler which
+                                         * polls for the exit status of
+                                         * each sub-process. If zero,
+                                         * there's no timer handler
+                                         * queued. */
     int *exitCodePtr;                   /* Pointer to a memory location to
                                          * contain the last process' exit
                                          * code. */
@@ -367,19 +373,20 @@ typedef struct {
 #define KEEPNEWLINE     (1<<0)          /* Indicates to set TCL output
                                          * variables with trailing newlines
                                          * intact */
-#define LINEBUFFERED    (1<<1)          /* Indicates to provide data to update
-                                         * variable and update proc on a
-                                         * line-by-line * basis. */
+#define LINEBUFFERED    (1<<1)          /* Indicates to provide data to
+                                         * update variable and update proc
+                                         * on a line-by-line * basis. */
 #define IGNOREEXITCODE  (1<<2)          /* Don't check for 0 exit status of
                                          * the pipeline.  */
-#define TRACED          (1<<3)          /* Indicates that the status variable
-                                         * is currently being traced. */
+#define TRACED          (1<<3)          /* Indicates that the status
+                                         * variable is currently being
+                                         * traced. */
 #define DETACHED        (1<<4)          /* Indicates that the pipeline is
-                                         * detached from standard I/O, running
-                                         * in the background. */
-#define KILLED          (1<<5)          /* The variable trace has been triggered
-                                         * so ignore any errors from a broken
-                                         * connection. */
+                                         * detached from standard I/O,
+                                         * running in the background. */
+#define KILLED          (1<<5)          /* The variable trace has been
+                                         * triggered so ignore any errors
+                                         * from a broken connection. */
 
 static Blt_SwitchParseProc ObjToSignalProc;
 static Blt_SwitchCustom killSignalSwitch =
