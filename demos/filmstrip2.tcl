@@ -2,7 +2,7 @@ package require BLT
 
 . configure -bg green
 
-blt::filmstrip .fs -width 550 -animate yes -scrolldelay 30
+blt::filmstrip .fs -width 550 -animate yes -scrolldelay 30 -height 400
 
 blt::tk::frame .fs.inputs -width 500
 blt::tk::frame .fs.results
