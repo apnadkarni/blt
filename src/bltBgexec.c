@@ -610,7 +610,7 @@ ObjToEnvironProc(
     int length;
     int i;
     char *p, *string;
-    Blt_HashTable table;
+    Blt_HashTable varTable;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     extern char *environ;
@@ -626,7 +626,7 @@ ObjToEnvironProc(
     if (i == 0) {
         return TCL_OK;
     }
-    Blt_InitHashTable(&table, BLT_STRING_KEYS);
+    Blt_InitHashTable(&varTable, BLT_STRING_KEYS);
     length = 0;
 
     for(p = environ; *p != '\0'; p++) {
@@ -642,7 +642,7 @@ ObjToEnvironProc(
             break;
         }
         *equalSign = '\0';
-        hPtr = Blt_CreateHashEntry(&table, p, &isNew);
+        hPtr = Blt_CreateHashEntry(&varTable, p, &isNew);
         Blt_SetHashValue(hPtr, equalSign + 1);
         *equalSign = '=';
         length += q - p;
@@ -653,19 +653,21 @@ ObjToEnvironProc(
 
         name = Tcl_GetStringFromObj(objv[i], &len1);
         value = Tcl_GetStringFromObj(objv[i+1], &len2);
-        hPtr = Blt_CreateHashEntry(&table, name, &isNew);
+        hPtr = Blt_CreateHashEntry(&varTable, name, &isNew);
         Blt_SetHashValue(hPtr, value);
         length += len1 + len2 + 2;
     }
-    length++;                           /* Final NUL byte. */
+    length++;                           /* Add space for final NUL byte. */
+
+    /* Build new environment string from hash table of variables.  */
     string = Blt_AssertMalloc(length);
     p = string;
-    for (hPtr = Blt_FirstHashEntry(&table, &iter); hPtr != NULL;
+    for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         int numBytes;
         const char *name, *value;
         
-        name = Blt_GetHashKey(&table, hPtr);
+        name = Blt_GetHashKey(&varTable, hPtr);
         value = Blt_GetHashValue(hPtr);
         numBytes = sprintf(p, "%s=%s", name, value);
         p += numBytes;
@@ -674,7 +676,7 @@ ObjToEnvironProc(
     }
     *p = '\0';
     *envPtr = string;
-    Blt_DeleteHashTable(&table);
+    Blt_DeleteHashTable(&varTable);
     return TCL_OK;
 }
 
@@ -970,8 +972,8 @@ ReadBytes(Sink *sinkPtr)
         }
         array = sinkPtr->bytes + sinkPtr->fill;
 
-        /* Read into a buffer but make sure we leave room for a trailing NUL
-         * byte. */
+        /* Read into a buffer but make sure we leave room for a trailing
+         * NUL byte. */
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
         if (numBytes == 0) {    /* EOF: break out of loop. */
             sinkPtr->status = READ_EOF;
@@ -1307,8 +1309,8 @@ KillProcess(Blt_Pid proc, int signal)
      * TerminateProcess on it.
      *
      * On Windows 95/98 this also has the added benefit of stopping
-     * KERNEL32.dll from dumping.  The 2 second number is arbitrary (1 second
-     * seems to fail intermittently).
+     * KERNEL32.dll from dumping.  The two second delay is a guess (one
+     * second seems to fail intermittently).
      */
     status = WaitForSingleObject(proc.hProcess, 2000);
     if (status == WAIT_OBJECT_0) {
