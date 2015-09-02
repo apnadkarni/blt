@@ -2524,56 +2524,52 @@ LayoutVerticalFrames(Filmstrip *filmPtr)
 static void
 ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr) 
 {
-    int winWidth, winHeight;
     int reqWidth;
     int cavityHeight;
     int x, y, w, h;
+    Grip *gripPtr;
     
     if (framePtr->tkwin == NULL) {
         return;
     }
     x = SCREEN(framePtr->worldX);
     y = 0;
-    /*
-     * Unmap any widgets that start beyond of the right edge of the
-     * container.
-     */
+
+    /* Unmap any widget that isn't viewable in the the widget. */
     if (((x > Tk_Width(filmPtr->tkwin)) || ((x + framePtr->width) < 0))) {
         UnmapFrameAndGrip(framePtr);
         return;
     }
-    winWidth  = framePtr->width;
-    winHeight = framePtr->height;
+    w = framePtr->width;
+    h = framePtr->height;
     /* If the child widget is taller that the frame or if -fill y is set,
      * resize the set the height of the child to be the height of the
      * frame. */
-    if ((winHeight > Tk_Height(filmPtr->tkwin)) || (framePtr->flags & FILL_Y)) {
-        winHeight = Tk_Height(filmPtr->tkwin);
+    if ((h > Tk_Height(filmPtr->tkwin)) || (framePtr->flags & FILL_Y)) {
+        h = Tk_Height(filmPtr->tkwin);
     }
     if (filmPtr->relSize > 0.0) {
         reqWidth = (int)(Tk_Width(filmPtr->tkwin) * filmPtr->relSize);
     } else {
         reqWidth = Tk_ReqWidth(framePtr->tkwin);
     }
-    if ((reqWidth < winWidth) && ((framePtr->fill & FILL_X) == 0)) {
-        winWidth = reqWidth;
+    if ((reqWidth < w) && ((framePtr->fill & FILL_X) == 0)) {
+        w = reqWidth;
     }
-    w = winWidth;
-    h = winHeight;
     if (framePtr->width > w) {
         switch (framePtr->anchor) {
-        case TK_ANCHOR_NW:              /* Upper left corner */
-        case TK_ANCHOR_SW:              /* Lower left corner */
-        case TK_ANCHOR_W:               /* Left center */
+        case TK_ANCHOR_NW:
+        case TK_ANCHOR_SW:
+        case TK_ANCHOR_W: 
             break;
-        case TK_ANCHOR_N:               /* Top center */
-        case TK_ANCHOR_CENTER:          /* Centered */
-        case TK_ANCHOR_S:               /* Bottom center */
+        case TK_ANCHOR_N: 
+        case TK_ANCHOR_CENTER:
+        case TK_ANCHOR_S: 
             x += (framePtr->width - w) / 2;
             break;
-        case TK_ANCHOR_E:               /* Right center */
-        case TK_ANCHOR_SE:              /* Lower right corner */
-        case TK_ANCHOR_NE:              /* Upper right corner */
+        case TK_ANCHOR_E:
+        case TK_ANCHOR_SE:
+        case TK_ANCHOR_NE:
             x += framePtr->width - w;
             break;                      
         }
@@ -2612,6 +2608,28 @@ ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr)
     }
     if (!Tk_IsMapped(framePtr->tkwin)) {
         Tk_MapWindow(framePtr->tkwin);
+    }
+    gripPtr = &framePtr->grip;
+    if (framePtr->flags & SHOW_GRIP) {
+        Filmstrip *filmPtr;
+        int w, h;
+        
+        filmPtr = framePtr->filmPtr;
+        y = 0;
+        x += framePtr->size - filmPtr->gripSize;
+        h = Tk_Height(filmPtr->tkwin);
+        w = filmPtr->gripSize; 
+        if ((x != Tk_X(gripPtr->tkwin)) || (y != Tk_Y(gripPtr->tkwin)) ||
+            (w != Tk_Width(gripPtr->tkwin)) ||
+            (h != Tk_Height(gripPtr->tkwin))) {
+            Tk_MoveResizeWindow(gripPtr->tkwin, x, y, w, h);
+        }
+        if (!Tk_IsMapped(gripPtr->tkwin)) {
+            Tk_MapWindow(gripPtr->tkwin);
+        }
+        XRaiseWindow(filmPtr->display, Tk_WindowId(gripPtr->tkwin));
+    } else if (Tk_IsMapped(gripPtr->tkwin)) {
+        Tk_UnmapWindow(gripPtr->tkwin);
     }
 }
 
