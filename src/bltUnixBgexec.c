@@ -37,7 +37,6 @@
  *
  */
 
-
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE
 #define BUILD_BLT_TCL_PROCS 1
@@ -403,25 +402,25 @@ static Blt_SwitchCustom encodingSwitch =
 
 static Blt_SwitchSpec switchSpecs[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-decodeoutput",  "encoding", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-decodeoutput",  "encodingName", (char *)NULL,
         Blt_Offset(Bgexec, out.encoding),  0, 0, &encodingSwitch}, 
-    {BLT_SWITCH_CUSTOM,  "-decodeerror",   "encoding", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-decodeerror",   "encodingName", (char *)NULL,
          Blt_Offset(Bgexec, err.encoding),  0, 0, &encodingSwitch},
     {BLT_SWITCH_BOOLEAN, "-echo",           "bool",  (char *)NULL,
          Blt_Offset(Bgexec, err.echo),   0},
-    {BLT_SWITCH_STRING,  "-error",          "variable", (char *)NULL,
-        Blt_Offset(Bgexec, err.doneVar),   0},
-    {BLT_SWITCH_STRING,  "-update",         "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-error",          "varName", (char *)NULL,
+        Blt_Offset(Bgexec, err.doneVar), 0},
+    {BLT_SWITCH_STRING,  "-update",         "varName", (char *)NULL,
          Blt_Offset(Bgexec, out.updateVar), 0},
-    {BLT_SWITCH_STRING,  "-output",         "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-output",         "varName", (char *)NULL,
         Blt_Offset(Bgexec, out.doneVar),   0},
-    {BLT_SWITCH_STRING,  "-lasterror",      "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-lasterror",      "varName", (char *)NULL,
         Blt_Offset(Bgexec, err.updateVar), 0},
-    {BLT_SWITCH_STRING,  "-lastoutput",     "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-lastoutput",     "varName", (char *)NULL,
         Blt_Offset(Bgexec, out.updateVar), 0},
-    {BLT_SWITCH_OBJ,    "-onerror",        "command", (char *)NULL,
+    {BLT_SWITCH_OBJ,    "-onerror",        "cmdString", (char *)NULL,
         Blt_Offset(Bgexec, err.cmdObjPtr), 0},
-    {BLT_SWITCH_OBJ,    "-onoutput",       "command", (char *)NULL,
+    {BLT_SWITCH_OBJ,    "-onoutput",       "cmdString", (char *)NULL,
         Blt_Offset(Bgexec, out.cmdObjPtr), 0},
     {BLT_SWITCH_BOOLEAN, "-keepnewline",    "bool", (char *)NULL,
         Blt_Offset(Bgexec, flags),         0,   KEEPNEWLINE}, 
@@ -433,7 +432,7 @@ static Blt_SwitchSpec switchSpecs[] =
         Blt_Offset(Bgexec, flags),         0,   LINEBUFFERED},
     {BLT_SWITCH_BOOLEAN, "-ignoreexitcode", "bool", (char *)NULL,
         Blt_Offset(Bgexec, flags),         0,   IGNOREEXITCODE},
-    {BLT_SWITCH_STRING,  "-variable",       "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-variable",       "varName", (char *)NULL,
         Blt_Offset(Bgexec, statusVar),   0},
     {BLT_SWITCH_END}
 };

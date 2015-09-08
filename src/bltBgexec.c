@@ -128,6 +128,8 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
 #define MAX_READS       100             /* Maximum # of successful reads
                                          * before stopping to let TCL catch
                                          * up on events */
+#define SINKOPEN(sinkPtr)  ((sinkPtr)->fd != -1)
+
 #ifndef NSIG
 #define NSIG            32              /* # of signals available */
 #endif /*NSIG*/
@@ -366,7 +368,7 @@ typedef struct {
     Sink err, out;                      /* Data sinks for pipeline's output
                                          * and error channels. */
     Blt_ChainLink link;
-    char *env;
+    char **env;
 } Bgexec;
 
 #define KEEPNEWLINE     (1<<0)          /* Indicates to set TCL output
@@ -595,20 +597,16 @@ FreeEncodingProc(ClientData clientData, char *record, int offset, int flags)
  */
 /*ARGSUSED*/
 static int
-ObjToEnvironProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Intrepreter to return results */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* Value representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToEnvironProc(ClientData clientData, Tcl_Interp *interp,
+                 const char *switchName, Tcl_Obj *objPtr, char *record,
+                 int offset, int flags)
 {
-    char **envPtr = (char **)(record + offset);
+    char ***envPtr = (char ***)(record + offset);
     int objc;
     Tcl_Obj **objv;
-    int length;
+    int length, count, numBytes;
     int i;
+    char **pp, **array;
     char *p, *string;
     Blt_HashTable varTable;
     Blt_HashEntry *hPtr;
@@ -623,45 +621,61 @@ ObjToEnvironProc(
         Blt_Free(*envPtr);
         *envPtr = NULL;
     }
-    if (i == 0) {
+    if (objc & 0x1) {
+        Tcl_AppendResult(interp,
+                         "odd number of arguments: should be \"name value\"",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (objc == 0) {
         return TCL_OK;
     }
     Blt_InitHashTable(&varTable, BLT_STRING_KEYS);
-    length = 0;
-
-    for(p = environ; *p != '\0'; p++) {
+    for (pp = (char **)environ; *pp != NULL; pp++) {
         char *equalSign, *q;
         
         equalSign = NULL;
-        for (q = p; *q != '\0'; q++) {
-            if ((*q == '=') && (equalSign != NULL)) {
+        for (q = *pp; *q != '\0'; q++) {
+            if ((*q == '=') && (equalSign == NULL)) {
                 equalSign = q;
             }
         }
-        if (p == q) {
+        if (*pp == q) {
             break;
         }
+        if (equalSign == NULL) {
+            continue;
+        }
         *equalSign = '\0';
-        hPtr = Blt_CreateHashEntry(&varTable, p, &isNew);
+        hPtr = Blt_CreateHashEntry(&varTable, *pp, &isNew);
         Blt_SetHashValue(hPtr, equalSign + 1);
         *equalSign = '=';
-        length += q - p;
     }
     for (i = 0; i < objc; i += 2) {
-        int len1, len2;
         const char *name, *value;
-
-        name = Tcl_GetStringFromObj(objv[i], &len1);
-        value = Tcl_GetStringFromObj(objv[i+1], &len2);
+        
+        name  = Tcl_GetString(objv[i]);
+        value = Tcl_GetString(objv[i+1]);
         hPtr = Blt_CreateHashEntry(&varTable, name, &isNew);
         Blt_SetHashValue(hPtr, value);
-        length += len1 + len2 + 2;
+    }
+    length = 0;
+    for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        const char *name, *value;
+        
+        name = Blt_GetHashKey(&varTable, hPtr);
+        value = Blt_GetHashValue(hPtr);
+        length += strlen(name) + strlen(value) + 2;
     }
     length++;                           /* Add space for final NUL byte. */
 
-    /* Build new environment string from hash table of variables.  */
-    string = Blt_AssertMalloc(length);
-    p = string;
+    /* Build new environment array from hash table of variables.  */
+    numBytes = (varTable.numEntries + 1) * sizeof(char **);
+    string = Blt_AssertMalloc(length + numBytes);
+    p = string + numBytes;
+    array = (char **)string;
+    count = 0;
     for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         int numBytes;
@@ -670,12 +684,14 @@ ObjToEnvironProc(
         name = Blt_GetHashKey(&varTable, hPtr);
         value = Blt_GetHashValue(hPtr);
         numBytes = sprintf(p, "%s=%s", name, value);
+        array[count] = p;
         p += numBytes;
         *p = '\0';
         p++;
+        count++;
     }
-    *p = '\0';
-    *envPtr = string;
+    array[count] = '\0';
+    *envPtr = array;
     Blt_DeleteHashTable(&varTable);
     return TCL_OK;
 }
@@ -684,7 +700,7 @@ ObjToEnvironProc(
 static void
 FreeEnvironProc(ClientData clientData, char *record, int offset, int flags)
 {
-    char **envPtr = (char **)(record + offset);
+    char ***envPtr = (char ***)(record + offset);
 
     if (*envPtr != NULL) {
         Blt_Free(*envPtr);
@@ -848,6 +864,7 @@ InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name)
     sinkPtr->fd = -1;
     sinkPtr->bytes = sinkPtr->staticSpace;
     sinkPtr->size = DEF_BUFFER_SIZE;
+    sinkPtr->encoding = ENCODING_ASCII;
 
     if (bgPtr->flags & KEEPNEWLINE) {
         sinkPtr->flags |= SINK_KEEP_NL;
@@ -975,7 +992,7 @@ ReadBytes(Sink *sinkPtr)
         /* Read into a buffer but make sure we leave room for a trailing
          * NUL byte. */
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
-        if (numBytes == 0) {    /* EOF: break out of loop. */
+        if (numBytes == 0) {            /* EOF: break out of loop. */
             sinkPtr->status = READ_EOF;
             return;
         }
@@ -1001,7 +1018,6 @@ ReadBytes(Sink *sinkPtr)
     sinkPtr->status = numBytes;
 }
 
-#define SINKOPEN(sinkPtr)  ((sinkPtr)->fd != -1)
 
 static void
 CloseSink(Tcl_Interp *interp, Sink *sinkPtr)
@@ -1010,13 +1026,10 @@ CloseSink(Tcl_Interp *interp, Sink *sinkPtr)
         close(sinkPtr->fd);
         Tcl_DeleteFileHandler(sinkPtr->fd);
         sinkPtr->fd = -1;
-
-#if WINDEBUG
-        PurifyPrintf("CloseSink: set done var %s\n", sinkPtr->name);
-#endif
         if (sinkPtr->doneVar != NULL) {
             unsigned char *data;
             size_t length;
+
             /* 
              * If data is to be collected, set the "done" variable with the
              * contents of the buffer.
@@ -1030,8 +1043,8 @@ CloseSink(Tcl_Interp *interp, Sink *sinkPtr)
             }
 #else
             if (Tcl_SetVar2Ex(interp, sinkPtr->doneVar, NULL, 
-                        Tcl_NewByteArrayObj(data, (int)length),
-                        TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
+                              Tcl_NewByteArrayObj(data, (int)length),
+                              TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
                 Tcl_BackgroundError(interp);
             }
 #endif
@@ -1423,7 +1436,7 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
     if (sinkPtr->cmdObjPtr != NULL) {
         Tcl_Obj *cmdObjPtr;
         int result;
-
+        
         cmdObjPtr = Tcl_DuplicateObj(sinkPtr->cmdObjPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
         Tcl_IncrRefCount(cmdObjPtr);
@@ -1516,7 +1529,7 @@ CreateSinkHandler(Bgexec *bgPtr, Sink *sinkPtr, Tcl_FileProc *proc)
 #endif
     if (fcntl(sinkPtr->fd, F_SETFL, flags) < 0) {
         Tcl_AppendResult(bgPtr->interp, "can't set file descriptor ",
-            Blt_Itoa(sinkPtr->fd), " to non-blocking:",
+                         Blt_Itoa(sinkPtr->fd), " to non-blocking:",
             Tcl_PosixError(bgPtr->interp), (char *)NULL);
         return TCL_ERROR;
     }
@@ -1991,8 +2004,8 @@ BgexecCmdProc(
     Tcl_MutexLock(mutexPtr);
     bgPtr->link = Blt_Chain_Append(activePipelines, bgPtr);
     Tcl_MutexUnlock(mutexPtr);
-    bgPtr->out.encoding = ENCODING_ASCII;
-    bgPtr->err.encoding = ENCODING_ASCII;
+    InitSink(bgPtr, &bgPtr->out, "stdout");
+    InitSink(bgPtr, &bgPtr->err, "stderr");
 
     /* Try to clean up any detached processes */
     Tcl_ReapDetachedProcs();
@@ -2016,9 +2029,6 @@ BgexecCmdProc(
      * to terminate the pipeline by simply setting the variable.  */
     Tcl_TraceVar(interp, bgPtr->statVar, TRACE_FLAGS, VariableProc, bgPtr);
     bgPtr->flags |= TRACED;
-
-    InitSink(bgPtr, &bgPtr->out, "stdout");
-    InitSink(bgPtr, &bgPtr->err, "stderr");
 
     outFdPtr = errFdPtr = (int *)NULL;
 #ifdef WIN32

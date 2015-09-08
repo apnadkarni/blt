@@ -83,6 +83,7 @@
  *   terms specified in this license.
  */
 
+#define _GNU_SOURCE 1
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 
@@ -474,7 +475,7 @@ CreateProcess(
     int *pidPtr,                /* (out) If this procedure is successful,
                                  * pidPtr is filled with the process id of the
                                  * child process. */
-    const char **env)
+    char *const *env)
 {
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
     Tcl_DString *dsArr;
@@ -785,7 +786,7 @@ Blt_CreatePipeline(
                                          * redirection then the file will
                                          * still be created but it will never
                                          * get any data. */
-    const char *env)
+    char *const *env)
 {
     Blt_Pid *pids = NULL;               /* Points to malloc-ed array holding
                                          * all the pids of child processes. */
@@ -1088,7 +1089,7 @@ Blt_CreatePipeline(
         }
 
         if (CreateProcess(interp, lastArg - i, argv + i, curFd[0], curFd[1], 
-                curFd[2], &pid, NULL) != TCL_OK) {
+                curFd[2], &pid, env) != TCL_OK) {
             goto error;
         }
         Tcl_DStringFree(&execBuffer);
