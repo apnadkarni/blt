@@ -183,12 +183,14 @@ OpenFile(
  */
 
 static int
-CreateTempFile(char *contents)  /* String to write into temp file, or NULL. */
+CreateTempFile(const char *contents)    /* String to write into temp file,
+                                         * or NULL. */
 {
     char fileName[L_tmpnam];
     int fd;
     size_t length = (contents == NULL) ? 0 : strlen(contents);
 
+    strcpy(fileName, "tmpXXXXXX");
     if (mkstemp(fileName) < 0) {
         panic("can't create temp file");
     }

@@ -1968,9 +1968,9 @@ DisplayScrollset(ClientData clientData)
                                          * here) */
     }
     /*
-     * The request size of the host container is always the requested 
-     * size of the slave widget without scrollbars. Only when the size
-     * of the window is less than the requested size to we add scrollbars
+     * The requested size of the host container is always the requested
+     * size of the slave widget without scrollbars. Only when the size of
+     * the window is less than the requested size to we add scrollbars
      * (non-scrolling widgets).
      */
     reqWidth = (setPtr->reqWidth > 0) ? setPtr->reqWidth : 
