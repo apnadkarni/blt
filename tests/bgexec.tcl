@@ -142,12 +142,8 @@ test bgexec.24 {bgexec myVar badCmd } {
 } {1 {can't execute "badCmd": no such file or directory}}
 
 test bgexec.25 {bgexec myVar redirect input } {
-    list [catch {blt::bgexec myVar tclsh files/redirectInput.tcl < files/redirectInput.tcl} msg] $msg
-} {0 {if { ![fblocked stdin] } {
-    set in [read stdin]
-    puts stdout $in
-}
-exit 0
+    list [catch {blt::bgexec myVar tclsh files/redirectInput.tcl < files/null.tcl} msg] $msg
+} {0 {exit 0
 }}
 
 
@@ -157,32 +153,23 @@ test bgexec.26 {bgexec myVar redirect input } {
 
 test bgexec.27 {bgexec myVar redirect input } {
     list [catch {
-	set file [open "files/redirectInput.tcl" "r"]
+	set file [open "files/null.tcl" "r"]
 	set out [blt::bgexec myVar tclsh files/redirectInput.tcl <@ $file]
 	close $file
 	set out
     } msg] $msg
-} {0 {if { ![fblocked stdin] } {
-    set in [read stdin]
-    puts stdout $in
-}
-exit 0
+} {0 {exit 0
 }}
 
 
-test bgexec.28 {bgexec myVar redirect input } {
+test bgexec.28 {bgexec myVar bad redirect syntax } {
     list [catch {
-	set file [open "files/redirectInput.tcl" "r"]
+	set file [open "files/null.tcl" "r"]
 	set out [blt::bgexec myVar tclsh files/redirectInput.tcl @< $file]
 	close $file
 	set out
     } msg] $msg
-} {0 {if { ![fblocked stdin] } {
-    set in [read stdin]
-    puts stdout $in
-}
-exit 0
-}}
+} {1 {child process exited abnormally}}
 
 
 

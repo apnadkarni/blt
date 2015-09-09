@@ -144,8 +144,8 @@ GetFdFromChannel(Tcl_Channel channel, int direction)
 
 static int
 OpenFile(
-    char *fname,                /* The name of the file to open. */
-    int mode)                   /* In what mode to open the file? */
+    const char *fname,                 /* The name of the file to open. */
+    int mode)                          /* In what mode to open the file? */
 {
     int fd;
 
