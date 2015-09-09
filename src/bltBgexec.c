@@ -269,6 +269,8 @@ static SignalToken signalTokens[] =
 static Tcl_Mutex *mutexPtr = NULL;
 #endif /* TCL_THREADS */
 
+typedef struct _Bgexec Bgexec;
+
 static Blt_Chain activePipelines;       /* List of active pipelines and
                                          * their bgexec structures. */
 
@@ -292,6 +294,7 @@ static Blt_Chain activePipelines;       /* List of active pipelines and
  *  |____________________| 0
  */
 typedef struct {
+    Bgexec *bgPtr;
     const char *name;                   /* Name of the sink */
     const char *doneVar;                /* Name of a TCL variable
                                          * (malloc'ed) set to the collected
@@ -332,11 +335,9 @@ typedef struct {
 
 } Sink;
 
-#define SINK_BUFFERED           (1<<0)
-#define SINK_KEEP_NL            (1<<1)
 #define SINK_NOTIFY             (1<<2)
 
-typedef struct {
+struct _Bgexec {
     const char *statVar;                /* Name of a TCL variable set to
                                          * the exit status of the last
                                          * process. Setting this variable
@@ -369,7 +370,7 @@ typedef struct {
                                          * and error channels. */
     Blt_ChainLink link;
     char **env;
-} Bgexec;
+};
 
 #define KEEPNEWLINE     (1<<0)          /* Indicates to set TCL output
                                          * variables with trailing newlines
@@ -411,39 +412,39 @@ static Blt_SwitchCustom encodingSwitch =
 
 static Blt_SwitchSpec switchSpecs[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-decodeerror",        "encoding", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-decodeerror",        "encodingName", (char *)NULL,
          Blt_Offset(Bgexec, err.encoding),  0, 0, &encodingSwitch},
-    {BLT_SWITCH_CUSTOM,  "-decodeoutput",       "encoding", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-decodeoutput",       "encodingName", (char *)NULL,
         Blt_Offset(Bgexec, out.encoding),   0, 0, &encodingSwitch}, 
     {BLT_SWITCH_BOOLEAN, "-detach",             "bool", (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, DONTKILL},
     {BLT_SWITCH_BOOLEAN, "-echo",               "bool",  (char *)NULL,
          Blt_Offset(Bgexec, err.echo),      0},
-    {BLT_SWITCH_CUSTOM, "-environ",                "list",  (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-environ",             "list",  (char *)NULL,
          Blt_Offset(Bgexec, env),           0, 0, &environSwitch},
-    {BLT_SWITCH_STRING,  "-error",              "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-error",              "varName", (char *)NULL,
         Blt_Offset(Bgexec, err.doneVar),    0},
     {BLT_SWITCH_BOOLEAN, "-ignoreexitcode",     "bool", (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, IGNOREEXITCODE},
     {BLT_SWITCH_BOOLEAN, "-keepnewline",        "bool", (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, KEEPNEWLINE}, 
-    {BLT_SWITCH_CUSTOM,  "-killsignal",         "signal", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-killsignal",         "signalName", (char *)NULL,
         Blt_Offset(Bgexec, signalNum),      0, 0, &killSignalSwitch},
-    {BLT_SWITCH_STRING,  "-lasterror",          "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-lasterror",          "varName", (char *)NULL,
         Blt_Offset(Bgexec, err.updateVar),  0},
-    {BLT_SWITCH_STRING,  "-lastoutput",         "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-lastoutput",         "varName", (char *)NULL,
         Blt_Offset(Bgexec, out.updateVar),  0},
     {BLT_SWITCH_BOOLEAN, "-linebuffered",       "bool", (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, LINEBUFFERED},
-    {BLT_SWITCH_OBJ,     "-onerror",            "command", (char *)NULL,
+    {BLT_SWITCH_OBJ,     "-onerror",            "cmdString", (char *)NULL,
         Blt_Offset(Bgexec, err.cmdObjPtr),  0},
-    {BLT_SWITCH_OBJ,     "-onoutput",           "command", (char *)NULL,
+    {BLT_SWITCH_OBJ,     "-onoutput",           "cmdString", (char *)NULL,
         Blt_Offset(Bgexec, out.cmdObjPtr),  0},
-    {BLT_SWITCH_STRING,  "-output",             "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-output",             "varName", (char *)NULL,
         Blt_Offset(Bgexec, out.doneVar),    0},
-    {BLT_SWITCH_INT,     "-poll",               "interval", (char *)NULL,
+    {BLT_SWITCH_INT,     "-poll",               "milliseconds", (char *)NULL,
         Blt_Offset(Bgexec, interval),       0},
-    {BLT_SWITCH_STRING,  "-update",             "variable", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-update",             "varName", (char *)NULL,
          Blt_Offset(Bgexec, out.updateVar), 0},
     {BLT_SWITCH_END}
 };
@@ -726,9 +727,11 @@ GetSinkData(Sink *sinkPtr, unsigned char **dataPtr, size_t *lengthPtr)
     length = sinkPtr->mark;
     if ((sinkPtr->mark > 0) && (sinkPtr->encoding != ENCODING_BINARY)) {
         unsigned char *last;
-
+        Bgexec *bgPtr;
+        
         last = sinkPtr->bytes + (sinkPtr->mark - 1);
-        if (((sinkPtr->flags & SINK_KEEP_NL) == 0) && (*last == '\n')) {
+        bgPtr = sinkPtr->bgPtr;
+        if (((bgPtr->flags & KEEPNEWLINE) == 0) && (*last == '\n')) {
             length--;
         }
     }
@@ -756,7 +759,10 @@ NextBlock(Sink *sinkPtr, int *lengthPtr)
     length = sinkPtr->mark - sinkPtr->lastMark;
     sinkPtr->lastMark = sinkPtr->mark;
     if (length > 0) {
-        if ((!(sinkPtr->flags & SINK_KEEP_NL)) && (string[length-1] == '\n')) {
+        Bgexec *bgPtr;
+        
+        bgPtr = sinkPtr->bgPtr;
+        if ((!(bgPtr->flags & KEEPNEWLINE)) && (string[length-1] == '\n')) {
             length--;
         }
         *lengthPtr = length;
@@ -787,10 +793,12 @@ NextLine(Sink *sinkPtr, int *lengthPtr)
         for (i = 0; i < newBytes; i++) {
             if (string[i] == '\n') {
                 int length;
+                Bgexec *bgPtr;
                 
                 length = i + 1;
                 sinkPtr->lastMark += length;
-                if (!(sinkPtr->flags & SINK_KEEP_NL)) {
+                bgPtr = sinkPtr->bgPtr;
+                if ((bgPtr->flags & KEEPNEWLINE) == 0) {
                     length--;           /* Backup over the newline. */
                 }
                 *lengthPtr = length;
@@ -821,8 +829,10 @@ NextLine(Sink *sinkPtr, int *lengthPtr)
 static void
 ResetSink(Sink *sinkPtr)
 { 
-    if ((sinkPtr->flags & SINK_BUFFERED) && 
-        (sinkPtr->fill > sinkPtr->lastMark)) {
+    Bgexec *bgPtr;
+
+    bgPtr = sinkPtr->bgPtr;
+    if ((bgPtr->flags & LINEBUFFERED) && (sinkPtr->fill > sinkPtr->lastMark)) {
         size_t i, j;
 
         /* There may be bytes remaining in the buffer, awaiting another
@@ -859,19 +869,13 @@ ResetSink(Sink *sinkPtr)
 static void
 InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name)
 {
+    sinkPtr->bgPtr = bgPtr;
     sinkPtr->name = name;
     sinkPtr->echo = FALSE;
     sinkPtr->fd = -1;
     sinkPtr->bytes = sinkPtr->staticSpace;
     sinkPtr->size = DEF_BUFFER_SIZE;
     sinkPtr->encoding = ENCODING_ASCII;
-
-    if (bgPtr->flags & KEEPNEWLINE) {
-        sinkPtr->flags |= SINK_KEEP_NL;
-    }
-    if (bgPtr->flags & LINEBUFFERED) {
-        sinkPtr->flags |= SINK_BUFFERED;
-    }   
     if ((sinkPtr->cmdObjPtr != NULL) || 
         (sinkPtr->updateVar != NULL) ||
         (sinkPtr->echo)) {
@@ -958,7 +962,7 @@ static void
 ReadBytes(Sink *sinkPtr)
 {
     int i;
-    int numBytes;
+    ssize_t numBytes;
 
     /*
      *  Worry about indefinite postponement.
@@ -971,7 +975,7 @@ ReadBytes(Sink *sinkPtr)
      */
     numBytes = 0;
     for (i = 0; i < MAX_READS; i++) {
-        int bytesLeft;
+        size_t bytesLeft;
         unsigned char *array;
 
         /* Allocate a larger buffer when the number of remaining bytes is
@@ -1466,7 +1470,7 @@ CollectData(Bgexec *bgPtr, Sink *sinkPtr)
     ReadBytes(sinkPtr);
     CookSink(bgPtr->interp, sinkPtr);
     if ((sinkPtr->mark > sinkPtr->lastMark) && (sinkPtr->flags & SINK_NOTIFY)) {
-        if (sinkPtr->flags & SINK_BUFFERED) {
+        if (bgPtr->flags & LINEBUFFERED) {
             int length;
             unsigned char *data;
 
