@@ -1834,8 +1834,9 @@ TimerProc(ClientData clientData)
         mesg = Tcl_SignalMsg((int)(WSTOPSIG(lastStatus)));
         break;
     case PROCESS_UNKNOWN:
-        Blt_FormatString(string, 200, "child completed with unknown status 0x%x",
-            *((int *)&lastStatus));
+        Blt_FormatString(string, 200,
+                         "child completed with unknown status 0x%x",
+                         *((int *)&lastStatus));
         mesg = string;
         break;
     }
@@ -1843,7 +1844,6 @@ TimerProc(ClientData clientData)
     objPtr = Tcl_NewStringObj(mesg, -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     Tcl_SetObjErrorCode(interp, listObjPtr);
-
     if (bgPtr->exitCodePtr != NULL) {
         *bgPtr->exitCodePtr = code;
     }
