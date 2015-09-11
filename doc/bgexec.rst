@@ -90,7 +90,7 @@ or double dashes (--).  The following options are available for
     performed.
 
   **-decodeoutput** *encodingName* 
-    Specifies the encoding of the stdout channels.  This affects only data
+    Specifies the encoding of the stdout channel.  This affects only data
     returned to the TCL interpreter.  No translation is done on file
     redirection.
 
@@ -105,16 +105,21 @@ or double dashes (--).  The following options are available for
 
   **-echo** *boolean*
     Indicates that the program's stderr channel should be echoed to the
-    terminal's stderr.
+    stderr of the TCL program (typically the terminal).
     
   **-error** *varName* 
-    Specifies that a global variable *varName* is to be set with the contents
-    of stderr after the program has completed.
+    Specifies that a global variable *varName* is to be set with the
+    contents of stderr after the program has completed.  Normally
+    stderr data isn't collected.
 
   **-ignoreexitcode** *boolean*
-
+    Indicates how non-zero exit codes returned from the program should
+    be handled. If *boolean* is true, then a non-zero exit code will 
+    not be treated as an error.  If false, a non-zero exit code will cause
+    **bgexec** to generate a TCL error. The default is "false".
+    
   **-keepnewline** *boolean*
-    Specifies that a trailing newline should be retained in the output. If
+    Indicates that a trailing newline should be retained in the output. If
     *boolean* is true, the trailing newline is truncated from the output of
     the **-onoutput** and **-output** variables.  The default value is
     "true".
@@ -128,14 +133,16 @@ or double dashes (--).  The following options are available for
   **-lasterror** *varName*
     Specifies a variable *varName* that is updated whenever data becomes
     available from standard error of the program.  *VarName* is a global
-    variable. Unlike the **-error** option, data is available as soon as
-    it arrives.
+    variable. Unlike the **-error** option, data is available as soon as it
+    arrives.  This is like **--onerror** option, but the data is available
+    through *varName*.
 
   **-lastoutput** *varName* 
     Specifies a variable *varName* that is updated whenever data becomes
     available from standard output of the program.  *VarName* is a global
     variable. Unlike the **-output** option, data is available as soon as
-    it arrives.
+    it arrives. This is like the **--onoutput** option, but the data is
+    available through *varName*.
 
   **-linebuffered** *boolean*
     Specifies that updates should be made on a line-by-line basis.  Normally

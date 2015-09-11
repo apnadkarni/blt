@@ -1,2 +1,2 @@
-puts -nonewline stderr "This is stderr"
-puts -nonewline stdout "This is stdout"
+puts stderr "This is stderr"
+puts stdout "This is stdout"

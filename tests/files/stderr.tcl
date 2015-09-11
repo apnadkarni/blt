@@ -1,1 +1,1 @@
-puts -nonewline stderr "This is stderr"
+puts stderr "This is stderr"

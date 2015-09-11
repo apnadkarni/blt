@@ -174,6 +174,7 @@ test bgexec.32 {bgexec myVar badCmd } {
     list [catch {blt::bgexec myVar badCmd} msg] $msg
 } {1 {can't execute "badCmd": no such file or directory}}
 
+
 test bgexec.33 {bgexec myVar redirect input } {
     list [catch {blt::bgexec myVar tclsh files/cat.tcl < files/null.tcl} msg] $msg
 } {0 {exit 0}}
@@ -318,10 +319,65 @@ test bgexec.53 {bgexec myVar -environ } {
 
 test bgexec.54 {bgexec myVar -echo } {
     list [catch {
-	blt::bgexec myVar -echo yes tclsh files/stdout.tcl
+	blt::bgexec myVar -echo yes tclsh files/both.tcl 2> /dev/null
     } msg] $msg
 } {0 {This is stdout}}
 
+test bgexec.55 {bgexec myVar -echo } {
+    list [catch {
+	blt::bgexec myVar -echo no tclsh files/both.tcl 2> /dev/null
+    } msg] $msg
+} {0 {This is stdout}}
 
+test bgexec.56 {bgexec myVar stderr collect w/ -onerror } {
+    list [catch {
+	set myErr {}
+	proc CollectStderr { data } {
+	    global myErr
+	    append myErr $data
+	}
+	blt::bgexec myVar -onerror CollectStderr tclsh files/stderr.tcl
+	set myErr
+    } msg] $msg
+} {0 {This is stderr}}
 
+test bgexec.57 {bgexec myVar stdout collect w/ -onoutput } {
+    list [catch {
+	set myOut {}
+	proc CollectStdout { data } {
+	    global myOut
+	    append myOut $data
+	}
+	blt::bgexec myVar -onoutput CollectStdout tclsh files/stdout.tcl
+	set myOut
+    } msg] $msg
+} {0 {This is stdout}}
+
+test bgexec.58 {bgexec myVar stderr collect w/ -onerror } {
+    list [catch {
+	set myErr {}
+	proc CollectStderr { data } {
+	    global myErr
+	    append myErr $data
+	}
+	blt::bgexec myVar -onerror CollectStderr -keepnewline yes \
+	    tclsh files/stderr.tcl
+	set myErr
+    } msg] $msg
+} {0 {This is stderr
+}}
+
+test bgexec.59 {bgexec myVar stdout collect w/ -onoutput } {
+    list [catch {
+	set myOut {}
+	proc CollectStdout { data } {
+	    global myOut
+	    append myOut $data
+	}
+	blt::bgexec myVar -keepnewline yes -onoutput CollectStdout \
+	    tclsh files/stdout.tcl
+	set myOut
+    } msg] $msg
+} {0 {This is stdout
+}}
 

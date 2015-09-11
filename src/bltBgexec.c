@@ -876,12 +876,17 @@ InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name)
     sinkPtr->bytes = sinkPtr->staticSpace;
     sinkPtr->size = DEF_BUFFER_SIZE;
     sinkPtr->encoding = ENCODING_ASCII;
+    ResetSink(sinkPtr);
+}
+
+static void
+ConfigureSink(Bgexec *bgPtr, Sink *sinkPtr)
+{
     if ((sinkPtr->cmdObjPtr != NULL) || 
         (sinkPtr->updateVar != NULL) ||
         (sinkPtr->echo)) {
         sinkPtr->flags |= SINK_NOTIFY;
     }
-    ResetSink(sinkPtr);
 }
 
 /*
@@ -1352,13 +1357,13 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
                int numBytes)
 {
     char save;
-
 #if WINDEBUG
     PurifyPrintf("read %s\n", data);
 #endif
     if (data[0] == '\0') {
         return;
     }
+    if (
     save = data[numBytes];
     data[numBytes] = '\0';
     if (sinkPtr->echo) {
@@ -2028,6 +2033,9 @@ BgexecCmdProc(
         FreeBgexec(bgPtr);
         return TCL_ERROR;
     }
+
+    ConfigureSink(bgPtr, &bgPtr->out);
+    ConfigureSink(bgPtr, &bgPtr->err);
 
     /* Put a trace on the exit status variable.  The will also allow the user
      * to terminate the pipeline by simply setting the variable.  */

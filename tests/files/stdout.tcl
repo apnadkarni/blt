@@ -1,1 +1,1 @@
-puts -nonewline stdout "This is stdout"
+puts stdout "This is stdout"
