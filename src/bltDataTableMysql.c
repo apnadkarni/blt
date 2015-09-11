@@ -50,7 +50,7 @@
 #include <bltDataTable.h>
 #include <bltAlloc.h>
 #include <bltSwitch.h>
-#include <mysql/mysql.h>
+#include <mysql.h>
 
 DLLEXPORT extern Tcl_AppInitProc blt_table_mysql_init;
 DLLEXPORT extern Tcl_AppInitProc blt_table_mysql_safe_init;

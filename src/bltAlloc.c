@@ -282,7 +282,7 @@ Blt_AllocInit(Blt_MallocProc *mallocProc, Blt_ReallocProc *reallocProc,
      * Try to use the same memory allocator/deallocator that TCL is
      * using. Before 8.1 it used malloc/free. 
      */
-#if (_TCL_VERSION >= _VERSION(8,1,0)) && (_TCL_VERSION < _VERSION(8,6,0)) 
+#if (_TCL_VERSION >= _VERSION(8,1,0)) && (_TCL_VERSION < _VERSION(8,5,0)) 
     /* 
      * We're pointing to the private TclpAlloc/TclpFree instead of public
      * Tcl_Alloc/Tcl_Free routines because they don't automatically trigger

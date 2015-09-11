@@ -1891,7 +1891,7 @@ Blt_CreatePipeline(
                                  * If the pipeline specifies redirection
                                  * then the file will still be created
                                  * but it will never get any data. */
-    char *env)
+    char *const *env)
 {
     Blt_Pid *pids = NULL;       /* Points to malloc-ed array holding all
                                  * the handles of child processes. */

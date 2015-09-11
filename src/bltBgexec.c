@@ -906,6 +906,7 @@ FreeSinkBuffer(Sink *sinkPtr)
 {
     if (sinkPtr->bytes != sinkPtr->staticSpace) {
         Blt_Free(sinkPtr->bytes);
+        sinkPtr->bytes = sinkPtr->staticSpace;
     }
     sinkPtr->fd = -1;
 }
@@ -923,29 +924,43 @@ FreeSinkBuffer(Sink *sinkPtr)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static ssize_t
 ExtendSinkBuffer(Sink *sinkPtr)
 {
     unsigned char *bytes;
+    size_t oldSize, newSize;
     /*
      * Allocate a new array, double the old size
      */
-    sinkPtr->size += sinkPtr->size;
-    bytes = Blt_Malloc(sizeof(unsigned char) * sinkPtr->size);
+    newSize = sinkPtr->size + sinkPtr->size;
+    oldSize = sinkPtr->size;
+    sinkPtr->bytes[sinkPtr->mark] = '\0';
+    fprintf(stderr, "before sinkbytes=%lx fill=%ld size=%ld mark=%ld\n",
+            sinkPtr->bytes, sinkPtr->fill, sinkPtr->size, sinkPtr->mark);
+    if (sinkPtr->bytes == sinkPtr->staticSpace) {
+        bytes = Blt_Malloc(sizeof(unsigned char) * newSize);
+    } else {
+        bytes = Blt_Realloc(sinkPtr->bytes, sizeof(unsigned char) * newSize);
+    }
+    fprintf(stderr, "after bytes=%lx sinkbytes=%lx fill=%ld size=%ld mark=%ld\n",
+            bytes, sinkPtr->bytes, sinkPtr->fill, sinkPtr->size, sinkPtr->mark);
     if (bytes != NULL) {
         unsigned char *sp, *dp, *send;
 
-        dp = bytes;
-        for (sp = sinkPtr->bytes, send = sp + sinkPtr->fill; sp < send; 
-             /*empty*/) {
-            *dp++ = *sp++;
-        }
-        if (sinkPtr->bytes != sinkPtr->staticSpace) {
-            Blt_Free(sinkPtr->bytes);
+        if (sinkPtr->bytes == sinkPtr->staticSpace) {
+            dp = bytes;
+            for (sp = sinkPtr->bytes, send = sp + sinkPtr->fill; sp < send; 
+                 /*empty*/) {
+                *dp++ = *sp++;
+            }
         }
         sinkPtr->bytes = bytes;
+        sinkPtr->size = newSize;
         return (sinkPtr->size - sinkPtr->fill); /* Return bytes left. */
     }
+    sinkPtr->bytes[sinkPtr->mark] = '\0';
+    fprintf(stderr, "extendsinkbuffer: alloc failed size=%ld, old=%ld\n",
+            newSize, oldSize);
     return -1;
 }
 
@@ -963,7 +978,7 @@ ExtendSinkBuffer(Sink *sinkPtr)
  *
  *---------------------------------------------------------------------------
  */
-static void
+static int
 ReadBytes(Sink *sinkPtr)
 {
     int i;
@@ -980,7 +995,7 @@ ReadBytes(Sink *sinkPtr)
      */
     numBytes = 0;
     for (i = 0; i < MAX_READS; i++) {
-        size_t bytesLeft;
+        ssize_t bytesLeft;
         unsigned char *array;
 
         /* Allocate a larger buffer when the number of remaining bytes is
@@ -990,10 +1005,11 @@ ReadBytes(Sink *sinkPtr)
 
         if (bytesLeft < BLOCK_SIZE) {
             bytesLeft = ExtendSinkBuffer(sinkPtr);
+            fprintf(stderr, "bytesLeft=%ld\n", bytesLeft);
             if (bytesLeft < 0) {
                 errno = ENOMEM;
                 sinkPtr->status = READ_ERROR;
-                return;
+                return TCL_ERROR;
             }
         }
         array = sinkPtr->bytes + sinkPtr->fill;
@@ -1003,7 +1019,7 @@ ReadBytes(Sink *sinkPtr)
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
         if (numBytes == 0) {            /* EOF: break out of loop. */
             sinkPtr->status = READ_EOF;
-            return;
+            return TCL_BREAK;
         }
         if (numBytes < 0) {
 #ifdef O_NONBLOCK
@@ -1015,30 +1031,33 @@ ReadBytes(Sink *sinkPtr)
              * available to read.  */
             if (errno == BLOCKED) {
                 sinkPtr->status = READ_AGAIN;
-                return;
+                return TCL_CONTINUE;
             }
             sinkPtr->bytes[0] = '\0';
             sinkPtr->status = READ_ERROR;
-            return;
+            return TCL_ERROR;
         }
         sinkPtr->fill += numBytes;
         sinkPtr->bytes[sinkPtr->fill] = '\0';
     }
     sinkPtr->status = numBytes;
+    return TCL_OK;
 }
 
 
 static void
-CloseSink(Tcl_Interp *interp, Sink *sinkPtr)
+CloseSink(Sink *sinkPtr)
 {
     if (SINKOPEN(sinkPtr)) {
         close(sinkPtr->fd);
         Tcl_DeleteFileHandler(sinkPtr->fd);
         sinkPtr->fd = -1;
         if (sinkPtr->doneVar != NULL) {
+            Tcl_Interp *interp;
             unsigned char *data;
             size_t length;
 
+            interp = sinkPtr->bgPtr->interp;
             /* 
              * If data is to be collected, set the "done" variable with the
              * contents of the buffer.
@@ -1080,7 +1099,7 @@ CloseSink(Tcl_Interp *interp, Sink *sinkPtr)
  *
  *---------------------------------------------------------------------------
  */
-static void
+static int
 CookSink(Tcl_Interp *interp, Sink *sinkPtr)
 {
     unsigned char *srcPtr, *endPtr;
@@ -1110,8 +1129,8 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
     } else { /* unicode. */
         int numSrcCooked, numCooked;
         int result;
-        int cookedSize, spaceLeft, needed;
-        int numRaw, numLeftOver;
+        ssize_t spaceLeft, cookedSize, needed;
+        size_t numRaw, numLeftOver;
         unsigned char *destPtr;
         unsigned char *raw, *cooked;
         unsigned char leftover[100];
@@ -1141,11 +1160,16 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
         /*
          * Create a bigger sink.
          */
-                                                 
         needed = numLeftOver + numCooked;
         spaceLeft = sinkPtr->size - sinkPtr->mark;
         if (spaceLeft >= needed) {
             spaceLeft = ExtendSinkBuffer(sinkPtr);
+            fprintf(stderr, "spaceLeft=%ld\n", spaceLeft);
+            if (spaceLeft < 0) {
+                errno = ENOMEM;
+                sinkPtr->status = READ_ERROR;
+                return TCL_ERROR;
+            }
         }
         assert(spaceLeft > needed);
         /* 
@@ -1175,7 +1199,7 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
      * this after converting the string to UTF from UNICODE.
      */
     if (sinkPtr->encoding != ENCODING_BINARY) {
-        int count;
+        size_t count;
         unsigned char *destPtr;
 
         destPtr = srcPtr = sinkPtr->bytes + oldMark;
@@ -1201,6 +1225,7 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
         }
     }
 #endif /* WIN32 */
+    return TCL_OK;
 }
 
 #ifdef WIN32
@@ -1467,13 +1492,27 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
 #endif /* < 8.1.0 */
 
 static int
-CollectData(Bgexec *bgPtr, Sink *sinkPtr)
+CollectData(Sink *sinkPtr)
 {
+    Bgexec *bgPtr;
+    int result;
+    
+    bgPtr = sinkPtr->bgPtr;
     if ((bgPtr->flags & DETACHED) && (sinkPtr->doneVar == NULL)) {
         ResetSink(sinkPtr);
     }
-    ReadBytes(sinkPtr);
-    CookSink(bgPtr->interp, sinkPtr);
+    result = ReadBytes(sinkPtr);
+    if (result == TCL_ERROR) {
+        fprintf(stderr, "Error reading bytes to sink %s\n", sinkPtr->name);
+        Tcl_BackgroundError(bgPtr->interp);
+        return TCL_ERROR;
+    }
+    result = CookSink(bgPtr->interp, sinkPtr);
+    if (result == TCL_ERROR) {
+        fprintf(stderr, "Error reading bytes to sink\n");
+        Tcl_BackgroundError(bgPtr->interp);
+        return TCL_ERROR;
+    }
     if ((sinkPtr->mark > sinkPtr->lastMark) && (sinkPtr->flags & SINK_NOTIFY)) {
         if (bgPtr->flags & LINEBUFFERED) {
             int length;
@@ -1525,7 +1564,7 @@ CollectData(Bgexec *bgPtr, Sink *sinkPtr)
  *---------------------------------------------------------------------------
  */
 static int
-CreateSinkHandler(Bgexec *bgPtr, Sink *sinkPtr, Tcl_FileProc *proc)
+CreateSinkHandler(Sink *sinkPtr, Tcl_FileProc *proc)
 {
 #ifndef WIN32
     int flags;
@@ -1537,13 +1576,13 @@ CreateSinkHandler(Bgexec *bgPtr, Sink *sinkPtr, Tcl_FileProc *proc)
     flags |= O_NDELAY;
 #endif
     if (fcntl(sinkPtr->fd, F_SETFL, flags) < 0) {
-        Tcl_AppendResult(bgPtr->interp, "can't set file descriptor ",
+        Tcl_AppendResult(sinkPtr->bgPtr->interp, "can't set file descriptor ",
                          Blt_Itoa(sinkPtr->fd), " to non-blocking:",
-            Tcl_PosixError(bgPtr->interp), (char *)NULL);
+            Tcl_PosixError(sinkPtr->bgPtr->interp), (char *)NULL);
         return TCL_ERROR;
     }
 #endif /* WIN32 */
-    Tcl_CreateFileHandler(sinkPtr->fd, TCL_READABLE, proc, bgPtr);
+    Tcl_CreateFileHandler(sinkPtr->fd, TCL_READABLE, proc, sinkPtr);
     return TCL_OK;
 }
 
@@ -1556,10 +1595,10 @@ DisableTriggers(Bgexec *bgPtr)          /* Background info record. */
         bgPtr->flags &= ~TRACED;
     }
     if (SINKOPEN(&bgPtr->out)) {
-        CloseSink(bgPtr->interp, &bgPtr->out);
+        CloseSink(&bgPtr->out);
     }
     if (SINKOPEN(&bgPtr->err)) {
-        CloseSink(bgPtr->interp, &bgPtr->err);
+        CloseSink(&bgPtr->err);
     }
     if (bgPtr->timerToken != (Tcl_TimerToken) 0) {
         Tcl_DeleteTimerHandler(bgPtr->timerToken);
@@ -1885,17 +1924,21 @@ TimerProc(ClientData clientData)
 static void
 StdoutProc(ClientData clientData, int mask)
 {
-    Bgexec *bgPtr = clientData;
-
-    if (CollectData(bgPtr, &bgPtr->out) == TCL_OK) {
+    Sink *sinkPtr = clientData;
+    Bgexec *bgPtr;
+    int result;
+    
+    result = CollectData(sinkPtr);
+    if (result == TCL_OK) {
         return;
     }
+    
     /*
      * Either EOF or an error has occurred.  In either case, close the
      * sink. Note that closing the sink will also remove the file handler,
      * so this routine will not be called again.
      */
-    CloseSink(bgPtr->interp, &bgPtr->out);
+    CloseSink(sinkPtr);
 
     /*
      * If both sinks (stdout and stderr) are closed, this doesn't
@@ -1903,8 +1946,9 @@ StdoutProc(ClientData clientData, int mask)
      * handler to periodically poll for the exit status of each process.
      * Initially check at the next idle interval.
      */
+    bgPtr = sinkPtr->bgPtr;
     if (!SINKOPEN(&bgPtr->err)) {
-        bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, clientData);
+        bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
 
@@ -1931,9 +1975,12 @@ StdoutProc(ClientData clientData, int mask)
 static void
 StderrProc(ClientData clientData, int mask)
 {
-    Bgexec *bgPtr = clientData;
-
-    if (CollectData(bgPtr, &bgPtr->err) == TCL_OK) {
+    Sink *sinkPtr = clientData;
+    Bgexec *bgPtr;
+    int result;
+    
+    result = CollectData(sinkPtr);
+    if (result == TCL_OK) {
         return;
     }
     /*
@@ -1941,7 +1988,7 @@ StderrProc(ClientData clientData, int mask)
      * sink. Note that closing the sink will also remove the file handler,
      * so this routine will not be called again.
      */
-    CloseSink(bgPtr->interp, &bgPtr->err);
+    CloseSink(sinkPtr);
 
     /*
      * If both sinks (stdout and stderr) are closed, this doesn't
@@ -1949,8 +1996,9 @@ StderrProc(ClientData clientData, int mask)
      * handler to periodically poll for the exit status of each process.
      * Initially check at the next idle interval.
      */
+    bgPtr = sinkPtr->bgPtr;
     if (!SINKOPEN(&bgPtr->out)) {
-        bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, clientData);
+        bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
 
@@ -2072,11 +2120,11 @@ BgexecCmdProc(
         bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
            bgPtr);
 
-    } else if (CreateSinkHandler(bgPtr, &bgPtr->out, StdoutProc) != TCL_OK) {
+    } else if (CreateSinkHandler(&bgPtr->out, StdoutProc) != TCL_OK) {
         goto error;
     }
     if ((bgPtr->err.fd != -1) &&
-        (CreateSinkHandler(bgPtr, &bgPtr->err, StderrProc) != TCL_OK)) {
+        (CreateSinkHandler(&bgPtr->err, StderrProc) != TCL_OK)) {
         goto error;
     }
     if (isDetached) {   
