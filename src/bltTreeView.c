@@ -870,7 +870,7 @@ ParentEntry(Entry *entryPtr)
     return NodeToEntry(viewPtr, node);
 }
 
-static int
+static INLINE int
 EntryIsHidden(Entry *entryPtr)
 {
     TreeView *viewPtr = entryPtr->viewPtr; 
@@ -881,7 +881,7 @@ EntryIsHidden(Entry *entryPtr)
     return (entryPtr->flags & ENTRY_HIDDEN) ? TRUE : FALSE;
 }
 
-static int
+static INLINE int
 EntryIsSelected(TreeView *viewPtr, Entry *entryPtr)
 {
     Blt_HashEntry *hPtr;
@@ -1210,7 +1210,6 @@ OpenEntry(TreeView *viewPtr, Entry *entryPtr)
     }
     entryPtr->flags &= ~ENTRY_CLOSED;
     viewPtr->flags |= LAYOUT_PENDING;
-
     /*
      * If there's a "open" command proc specified for the entry, use that
      * instead of the more general "open" proc for the entire treeview.  Be
@@ -1243,7 +1242,6 @@ CloseEntry(TreeView *viewPtr, Entry *entryPtr)
     }
     entryPtr->flags |= ENTRY_CLOSED;
     viewPtr->flags |= LAYOUT_PENDING;
-
     /*
      * Invoke the entry's "close" command, if there is one. Otherwise try
      * the treeview's global "close" command.
@@ -6694,6 +6692,101 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ResetCoordinates2 --
+ *
+ *      Determines the maximum height of all visible entries.
+ *
+ *      1. Sets the worldY coordinate for all mapped/open entries.
+ *      2. Determines if entry needs a button.
+ *      3. Collects the minimum height of open/mapped entries. (Do for all
+ *         entries upon insert).
+ *      4. Figures out horizontal extent of each entry (will be width of 
+ *         tree view column).
+ *      5. Collects maximum icon size for each level.
+ *      6. The height of its vertical line
+ *
+ * Results:
+ *      Returns 1 if beyond the last visible entry, 0 otherwise.
+ *
+ * Side effects:
+ *      The array of visible nodes is filled.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+ResetCoordinates2(TreeView *viewPtr, Entry *rootPtr)
+{
+    int y, index;
+    Entry *entryPtr;
+    
+    index = 0;
+    y = 0;
+    if (viewPtr->flags & HIDE_ROOT) {
+        /* If the root entry is to be hidden, cheat by offsetting the
+         * y-coordinates by the height of the entry. */
+        y = -(viewPtr->rootPtr->height);
+    } 
+    for (entryPtr = rootPtr; entryPtr != NULL;
+         entryPtr = NextEntry(entryPtr, ENTRY_HIDDEN)) {
+        int h, depth;
+        Entry *parentPtr, *nextPtr;
+
+        parentPtr = ParentEntry(entryPtr);
+        entryPtr->worldY = -1;
+        entryPtr->vertLineLength = -1;
+        entryPtr->bottomPtr = NULL;
+        if ((entryPtr != viewPtr->rootPtr) && (EntryIsHidden(entryPtr))) {
+            continue;                   /* If the entry is hidden, then
+                                         * do nothing. */
+        }
+        if (parentPtr != NULL && IsClosed(parentPtr)) {
+            continue;
+        }
+        entryPtr->worldY = y;
+        h = MAX3(entryPtr->lineHeight, entryPtr->iconHeight,
+                 viewPtr->button.height);
+        entryPtr->vertLineLength = -(y + h / 2);
+        y += entryPtr->height;
+        entryPtr->flatIndex = index;
+        index++;
+        depth = DEPTH(viewPtr, entryPtr->node) + 1;
+        /* Track the widest label and icon in the widget.  */
+        if (viewPtr->levelInfo[depth].labelWidth < entryPtr->labelWidth) {
+            viewPtr->levelInfo[depth].labelWidth = entryPtr->labelWidth;
+        }
+        if (viewPtr->levelInfo[depth].iconWidth < entryPtr->iconWidth) {
+            viewPtr->levelInfo[depth].iconWidth = entryPtr->iconWidth;
+        }
+        /* The icon width needs to be odd so that the dot patterns of the
+         * vertical and horizontal lines match up. */
+        viewPtr->levelInfo[depth].iconWidth |= 0x01;
+        if (parentPtr != NULL) {
+            parentPtr->bottomPtr = entryPtr;
+        }
+    }
+    viewPtr->worldHeight = y;           /* Set the scroll height of the
+                                         * hierarchy. */
+    if (viewPtr->worldHeight < 1) {
+        viewPtr->worldHeight = 1;
+    }
+    for (entryPtr = rootPtr; entryPtr != NULL;
+         entryPtr = NextEntry(entryPtr, ENTRY_HIDDEN)) {
+        Entry *bottomPtr;
+
+        bottomPtr = entryPtr->bottomPtr;
+        if (bottomPtr != NULL) {
+            int h;
+            
+            h = MAX3(bottomPtr->lineHeight, bottomPtr->iconHeight, 
+                     viewPtr->button.height);
+            entryPtr->vertLineLength += bottomPtr->worldY + h / 2;
+        }
+    }
+}
+
 #ifdef notdef
 /*
  *---------------------------------------------------------------------------
@@ -7133,12 +7226,16 @@ ComputeTreeLayout(TreeView *viewPtr)
         y = -(viewPtr->rootPtr->height);
     } 
     index = 0;
+#ifndef notdef
     ResetCoordinates(viewPtr, viewPtr->rootPtr, &y, &index);
     viewPtr->worldHeight = y;           /* Set the scroll height of the
                                          * hierarchy. */
     if (viewPtr->worldHeight < 1) {
         viewPtr->worldHeight = 1;
     }
+#else
+    ResetCoordinates2(viewPtr, viewPtr->rootPtr);
+#endif
     {
         int maxX;
         int sum;

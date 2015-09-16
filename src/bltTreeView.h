@@ -607,6 +607,12 @@ struct _Entry {
                                          * overrides default text color
                                          * specification. */
     GC gc;
+    Entry *bottomPtr;
+    Entry *parentPtr;                   /* Parent entry. NULL if root. */
+    Entry *firstPtr;                    /* First child entry. NULL if no
+                                         * children. */
+    Entry *lastPtr;                     /* Last child entry. NULL if no 
+                                         * children.*/
 };
 
 /*

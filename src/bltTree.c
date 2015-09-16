@@ -1759,7 +1759,7 @@ RestoreTags(Tree *treePtr, Node *nodePtr, int numTags, const char **tags)
  *      Parses and creates a node based upon the first 3 fields of a five
  *      field entry.  This is the new restore file format.
  *
- *         parentId nodeId pathList dataList tagList ?attrList?
+ *         parentId nodeId pathList dataList tagList 
  *
  *      The purpose is to attempt to save and restore the node ids embedded in
  *      the restore file information.  The old format could not distinquish
@@ -2562,20 +2562,21 @@ Blt_Tree_PrevNode(
  */
 Blt_TreeNode
 Blt_Tree_NextNode(
-    Node *rootPtr,                      /* Root of subtree. If NULL, indicates
-                                         * the tree's root. */
+    Node *rootPtr,                      /* Root of subtree. If NULL,
+                                         * indicates the tree's root. */
     Node *nodePtr)                      /* Current node in subtree. */
 {
     Node *nextPtr;
 
-    /* Pick the first sub-node. */
+    /* If children exist, pick the first child node. */
     nextPtr = nodePtr->first;
     if (nextPtr != NULL) {
         return nextPtr;
     }
     /* 
-     * Back up until we can find a level where we can pick a "next sibling".
-     * For the last entry we'll thread our way back to the root.
+     * Otherwise, back up until we can find a level where we can pick a
+     * "next sibling".  For the last entry we'll thread our way back to the
+     * root.
      */
     if (rootPtr == NULL) {
         rootPtr = nodePtr->corePtr->root;
@@ -4437,6 +4438,308 @@ Blt_Tree_DumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
     }
     Tcl_DStringEndSublist(dsPtr);
     Tcl_DStringAppend(dsPtr, "\n", -1);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Tree_BinaryDumpNode --
+ *
+ *---------------------------------------------------------------------------
+ */
+void
+Blt_Tree_BinaryDumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr, 
+                        Blt_DBuffer dbuffer)
+{
+    size_t extra;
+    const char *label;
+    
+    /* Compute length of entry. */
+    label = Blt_Tree_NodeLabel(nodePtr);
+    extra = sizeof(long) + sizeof(long) + strlen(label) + 1;
+    {
+        Blt_TreeKeyIterator iter;
+        Blt_TreeKey key;
+
+        /* Add list of key-value pairs. */
+        for (key = Blt_Tree_FirstKey(treePtr, nodePtr, &iter); key != NULL; 
+             key = Blt_Tree_NextKey(treePtr, &iter)) {
+            Tcl_Obj *objPtr;
+
+            if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, treePtr, nodePtr, 
+                        key, &objPtr) == TCL_OK) {
+                objPtr = Tcl_GetStringFromObj(&length);
+                extra += sizeof(long);
+                extra += length + 1;
+            }
+        }           
+    }
+    extra += sizeof(long);
+    {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch cursor;
+
+        /* Add list of tags. */
+        for (hPtr = Blt_Tree_FirstTag(treePtr, &cursor); hPtr != NULL; 
+             hPtr = Blt_NextHashEntry(&cursor)) {
+            Blt_TreeTagEntry *tePtr;
+
+            tePtr = Blt_GetHashValue(hPtr);
+            if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr) != NULL) {
+                extra += sizeof(long);
+                extra += strlen(tePtr->tagName) + 1;
+            }
+        }
+    }
+    extra += sizeof(long);
+    bp = Blt_DBuffer_Extend(dbuffer, extra);
+    if (bp == NULL) {
+        return TCL_ERROR;
+    }
+    DumpLong(bp, nodePtr->id);
+    DumpLong(bp + 8, nodePtr->parent);
+    DumpLong(bp + 16, length);
+    DumpString(bp + 24, label, length);
+    bp += 24 + length + 1;
+    {
+        Blt_TreeKeyIterator iter;
+        Blt_TreeKey key;
+
+        /* Add list of key-value pairs. */
+        for (key = Blt_Tree_FirstKey(treePtr, nodePtr, &iter); key != NULL; 
+             key = Blt_Tree_NextKey(treePtr, &iter)) {
+            Tcl_Obj *objPtr;
+
+            if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, treePtr, nodePtr, 
+                        key, &objPtr) == TCL_OK) {
+                const char *key;
+                
+                key = Tcl_GetStringFromObj(objPtr, &length);
+                DumpLong(bp, length);
+                DumpString(bp + 8, key, length);
+                bp += 8 + length;
+            }
+        }           
+    }
+    DumpLong(bp, 0);
+    bp += 8;
+    {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch cursor;
+
+        /* Add list of tags. */
+        for (hPtr = Blt_Tree_FirstTag(treePtr, &cursor); hPtr != NULL; 
+             hPtr = Blt_NextHashEntry(&cursor)) {
+            Blt_TreeTagEntry *tePtr;
+
+            tePtr = Blt_GetHashValue(hPtr);
+            if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr) != NULL) {
+                length = strlen(tePtr->tagName);
+                DumpLong(bp, length);
+                DumpString(bp + 8, key, length);
+                bp += 8 + length;
+            }
+        }
+    }
+    DumpLong(bp, 0);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RestoreNode5 --
+ *
+ *      Parses and creates a node based upon the first 3 fields of a five
+ *      field entry.  This is the new restore file format.
+ *
+ *         parentId nodeId pathList dataList tagList 
+ *
+ *      The purpose is to attempt to save and restore the node ids embedded in
+ *      the restore file information.  The old format could not distinquish
+ *      between two sibling nodes with the same label unless they were both
+ *      leaves.  I'm trying to avoid dependencies upon labels.
+ *
+ *      If you're starting from an empty tree, this obviously should work
+ *      without a hitch.  We only need to map the file's root id to 0.  It's a
+ *      little more complicated when adding node to an already full tree.
+ *
+ *      First see if the node id isn't already in use.  Otherwise, map the
+ *      node id (via a hashtable) to the real node. We'll need it later when
+ *      subsequent entries refer to their parent id.
+ *
+ *      If a parent id is unknown (the restore file may be out of order), then
+ *      follow plan B and use its path.
+ *      
+ *---------------------------------------------------------------------------
+ */
+static int
+RestoreBinaryNode(Tcl_Interp *interp, int argc, const char **argv, 
+                  RestoreInfo *restorePtr)
+{
+    Tree *treePtr;
+    Blt_HashEntry *hPtr;
+    Node *nodePtr, *parentPtr;
+    int isNew;
+    long pid, id;
+    const char **tags, **values, **names;
+    int numTags, numValues, numNames;
+
+    treePtr = restorePtr->treePtr;
+
+    /* 
+     * The second and first fields respectively are the ids of the node and
+     * its parent.  The parent id of the root node is always -1.
+     */
+    if ((Blt_GetLong(interp, argv[0], &pid) != TCL_OK) ||
+        (Blt_GetLong(interp, argv[1], &id) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    names = values = tags = NULL;
+    nodePtr = NULL;
+
+    /* 
+     * The third, fourth, and fifth fields respectively are the list of
+     * component names representing the path to the node including the name of
+     * the node, a key-value list of data values, and a list of tag names.
+     */     
+
+    if ((Tcl_SplitList(interp, argv[2], &numNames,  &names)  != TCL_OK) ||
+        (Tcl_SplitList(interp, argv[3], &numValues, &values) != TCL_OK) || 
+        (Tcl_SplitList(interp, argv[4], &numTags,   &tags)   != TCL_OK)) {
+        goto error;
+    }    
+
+    /* Get the parent of the node. */
+
+    if (pid == -1) {                    /* Map -1 id to the root node of the
+                                         * subtree. */
+        nodePtr = restorePtr->rootPtr;
+        hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id, &isNew);
+        Blt_SetHashValue(hPtr, nodePtr);
+        Blt_Tree_RelabelNode(treePtr, nodePtr, names[0]);
+    } else {
+
+        /* 
+         * Check if the parent has been mapped to another id in the tree.
+         * This can happen when there's a id collision with an existing node.
+         */
+
+        hPtr = Blt_FindHashEntry(&restorePtr->idTable, (char *)pid);
+        if (hPtr != NULL) {
+            parentPtr = Blt_GetHashValue(hPtr);
+        } else {
+            parentPtr = Blt_Tree_GetNodeFromIndex(treePtr, pid);
+            if (parentPtr == NULL) {
+                /* 
+                 * Normally the parent node should already exist in the tree,
+                 * but in a partial restore it might not.  "Plan B" is to use
+                 * the list of path components to create the missing
+                 * components, including the parent.
+                 */
+                if (numNames == 0) {
+                    parentPtr = restorePtr->rootPtr;
+                } else {
+                    int i;
+
+                    for (i = 1; i < (numNames - 2); i++) {
+                        nodePtr = Blt_Tree_FindChild(parentPtr, names[i]);
+                        if (nodePtr == NULL) {
+                            nodePtr = Blt_Tree_CreateNode(treePtr, parentPtr, 
+                                names[i], -1);
+                        }
+                        parentPtr = nodePtr;
+                    }
+                    /* 
+                     * If there's a node with the same label as the parent,
+                     * we'll use that node. Otherwise, try to create a new
+                     * node with the desired parent id.
+                     */
+                    nodePtr = Blt_Tree_FindChild(parentPtr, names[numNames-2]);
+                    if (nodePtr == NULL) {
+                        nodePtr = Blt_Tree_CreateNodeWithId(treePtr, parentPtr,
+                                names[numNames - 2], pid, -1);
+                        if (nodePtr == NULL) {
+                            goto error;
+                        }
+                    }
+                    parentPtr = nodePtr;
+                }
+            }
+        } 
+
+        /* 
+         * It's an error if the desired id has already been remapped.  That
+         * means there were two nodes in the dump with the same id.
+         */
+        hPtr = Blt_FindHashEntry(&restorePtr->idTable, (char *)id);
+        if (hPtr != NULL) {
+            Tcl_AppendResult(interp, "node \"", Blt_Ltoa(id), 
+                "\" has already been restored", (char *)NULL);
+            goto error;
+        }
+
+
+        if (restorePtr->flags & TREE_RESTORE_OVERWRITE) {
+            /* Can you find the child by name. */
+            nodePtr = Blt_Tree_FindChild(parentPtr, names[numNames - 1]);
+            if (nodePtr != NULL) {
+                hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id,
+                        &isNew);
+                Blt_SetHashValue(hPtr, nodePtr);
+            }
+        }
+
+        if (nodePtr == NULL) {
+            nodePtr = Blt_Tree_GetNodeFromIndex(treePtr, id);
+            if (nodePtr == NULL) {
+                nodePtr = Blt_Tree_CreateNodeWithId(treePtr, parentPtr, 
+                        names[numNames - 1], id, -1);
+            } else {
+                nodePtr = Blt_Tree_CreateNode(treePtr, parentPtr, 
+                        names[numNames - 1], -1);
+                hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id,
+                        &isNew);
+                Blt_SetHashValue(hPtr, nodePtr);
+            }
+        }
+    } 
+        
+    if (nodePtr == NULL) {
+        goto error;                     /* Couldn't create node with requested
+                                         * id. */
+    }
+    Tcl_Free((char *)names);
+    names = NULL;
+
+    /* Values */
+    if (RestoreValues(restorePtr, interp, nodePtr, numValues, values)!=TCL_OK) {
+        goto error;
+    }
+    Tcl_Free((char *)values);
+    values = NULL;
+
+    /* Tags */
+    if (!(restorePtr->flags & TREE_RESTORE_NO_TAGS)) {
+        RestoreTags(treePtr, nodePtr, numTags, tags);
+    }
+    Tcl_Free((char *)tags);
+    tags = NULL;
+    return TCL_OK;
+
+ error:
+    if (tags != NULL) {
+        Tcl_Free((char *)tags);
+    }
+    if (values != NULL) {
+        Tcl_Free((char *)values);
+    }
+    if (names != NULL) {
+        Tcl_Free((char *)names);
+    }
+    if (nodePtr != NULL) {
+        Blt_Tree_DeleteNode(treePtr, nodePtr);
+    }
+    return TCL_ERROR;
 }
 
 /*
