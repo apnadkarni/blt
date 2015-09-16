@@ -1797,7 +1797,6 @@ RestoreNode5(Tcl_Interp *interp, int argc, const char **argv,
      * The second and first fields respectively are the ids of the node and
      * its parent.  The parent id of the root node is always -1.
      */
-
     if ((Blt_GetLong(interp, argv[0], &pid) != TCL_OK) ||
         (Blt_GetLong(interp, argv[1], &id) != TCL_OK)) {
         return TCL_ERROR;
@@ -1811,9 +1810,9 @@ RestoreNode5(Tcl_Interp *interp, int argc, const char **argv,
      * the node, a key-value list of data values, and a list of tag names.
      */     
 
-    if ((Tcl_SplitList(interp, argv[2], &numNames, &names) != TCL_OK) ||
-        (Tcl_SplitList(interp, argv[3], &numValues, &values) != TCL_OK)  || 
-        (Tcl_SplitList(interp, argv[4], &numTags, &tags) != TCL_OK)) {
+    if ((Tcl_SplitList(interp, argv[2], &numNames,  &names)  != TCL_OK) ||
+        (Tcl_SplitList(interp, argv[3], &numValues, &values) != TCL_OK) || 
+        (Tcl_SplitList(interp, argv[4], &numTags,   &tags)   != TCL_OK)) {
         goto error;
     }    
 

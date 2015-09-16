@@ -6407,12 +6407,8 @@ static Blt_OpSpec treeOps[] =
 static int numTreeOps = sizeof(treeOps) / sizeof(Blt_OpSpec);
 
 static int
-TreeInstObjCmd(
-    ClientData clientData,              /* Information about the widget. */
-    Tcl_Interp *interp,                 /* Interpreter to report errors
-                                         * back to. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Vector of argument strings. */
+TreeInstObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+               Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
     TreeCmd *cmdPtr = clientData;
@@ -6647,11 +6643,8 @@ static int numCmdOps = sizeof(treeCmdOps) / sizeof(Blt_OpSpec);
 
 /*ARGSUSED*/
 static int
-TreeObjCmd(
-    ClientData clientData,              /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+TreeObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 
@@ -6681,9 +6674,7 @@ TreeObjCmd(
  */
 /* ARGSUSED */
 static void
-TreeInterpDeleteProc(
-    ClientData clientData,              /* Interpreter-specific data. */
-    Tcl_Interp *interp)
+TreeInterpDeleteProc(ClientData clientData, Tcl_Interp *interp)
 {
     TreeCmdInterpData *tdPtr = clientData;
 

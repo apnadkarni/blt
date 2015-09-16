@@ -288,8 +288,9 @@ Blt_AllocInit(Blt_MallocProc *mallocProc, Blt_ReallocProc *reallocProc,
      * Tcl_Alloc/Tcl_Free routines because they don't automatically trigger
      * a panic when not enough memory is available. There are cases (such
      * as allocating a very large vector) where an out-of-memory error is
-     * recoverable.
+     * recoverable.  
      */
+    /* Note: Tcl alloc routines are limited to 2^31-1 size 4GB.  */
     defMallocProc = (Blt_MallocProc *)TclpAlloc;
     defFreeProc = (Blt_FreeProc *)TclpFree; 
     defReallocProc = (Blt_ReallocProc *)TclpRealloc; 

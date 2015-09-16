@@ -1314,6 +1314,10 @@ AddCell(Entry *entryPtr, Column *colPtr)
     cellPtr->flags |= GEOMETRY;
     viewPtr->flags |= LAYOUT_PENDING;   /* Says that the current view is
                                          * out-of-date. */
+    if (viewPtr->flags & TV_SORT_AUTO) {
+        /* If we're auto-sorting, schedule the view to be resorted. */
+        viewPtr->flags |= SORT_PENDING;
+    }
 }
 
 /*
@@ -4665,6 +4669,9 @@ ConfigureButtons(TreeView *viewPtr)
 static void
 DestroyCell(TreeView *viewPtr, Cell *cellPtr)
 {
+    if (viewPtr->flags & TV_SORT_AUTO) {
+        viewPtr->flags |= SORT_PENDING;
+    }
     if (cellPtr->stylePtr != NULL) {
         FreeStyle(cellPtr->stylePtr);
     }
@@ -4805,6 +4812,10 @@ CreateEntry(
         return TCL_ERROR;               /* Error configuring the entry. */
     }
     viewPtr->flags |= LAYOUT_PENDING;
+    if (viewPtr->flags & TV_SORT_AUTO) {
+        /* If we're auto-sorting, schedule the view to be resorted. */
+        viewPtr->flags |= SORT_PENDING;
+    }
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
@@ -4852,6 +4863,9 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
             if (entryPtr != NULL) {
                 DestroyEntry(entryPtr);
                 viewPtr->flags |= LAYOUT_PENDING;
+                if (viewPtr->flags & TV_SORT_AUTO) {
+                    viewPtr->flags |= SORT_PENDING;
+                }
                 EventuallyRedraw(viewPtr);
             }
         }
@@ -4862,6 +4876,9 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
 
             entryPtr = NodeToEntry(viewPtr, node);
             entryPtr->flags |= GEOMETRY;
+            if (viewPtr->flags & TV_SORT_AUTO) {
+                viewPtr->flags |= SORT_PENDING;
+            }
             viewPtr->flags |= LAYOUT_PENDING;
         }
         /*FALLTHRU*/
@@ -4938,6 +4955,9 @@ TreeTraceProc(
         }
         entryPtr->flags |= GEOMETRY;
         viewPtr->flags |= LAYOUT_PENDING;
+        if (viewPtr->flags & TV_SORT_AUTO) {
+            viewPtr->flags |= SORT_PENDING;
+        }
         EventuallyRedraw(viewPtr);
         break;
 
@@ -6936,11 +6956,6 @@ ComputeFlatLayout(TreeView *viewPtr)
     viewPtr->levelInfo = 
         Blt_AssertCalloc(viewPtr->depth+2, sizeof(LevelInfo));
     viewPtr->flags &= ~(UPDATE | RESORT);
-    if (viewPtr->flags & TV_SORT_AUTO) {
-        /* If we're auto-sorting, schedule the view to be resorted. */
-        viewPtr->flags |= SORT_PENDING;
-    }
-
     if (viewPtr->flags & SORT_PENDING) {
         SortFlatView(viewPtr);
     }
@@ -7088,7 +7103,7 @@ ComputeTreeLayout(TreeView *viewPtr)
     viewPtr->levelInfo = Blt_AssertCalloc(viewPtr->depth+2, sizeof(LevelInfo));
     viewPtr->flags &= ~(GEOMETRY | RESORT);
 
-    if (viewPtr->flags & (TV_SORT_AUTO | SORT_PENDING)) {
+    if (viewPtr->flags & SORT_PENDING) {
         SortTreeView(viewPtr);
     }
 #ifdef notdef
@@ -13641,7 +13656,7 @@ SortAutoOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         if (isAuto != bool) {
-            viewPtr->flags |= (LAYOUT_PENDING | RESORT);
+            viewPtr->flags |= (LAYOUT_PENDING | SORT_PENDING | RESORT);
             EventuallyRedraw(viewPtr);
         }
         if (bool) {

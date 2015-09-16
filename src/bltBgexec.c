@@ -331,8 +331,8 @@ typedef struct {
                                          * of the new data in the buffer
                                          * since the last time the "update"
                                          * variable was set. */
+    size_t maxSize;
     unsigned char staticSpace[DEF_BUFFER_SIZE]; /* Static space */
-
 } Sink;
 
 #define SINK_NOTIFY             (1<<2)
