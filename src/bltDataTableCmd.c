@@ -4464,6 +4464,7 @@ ColumnTypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         newType = blt_table_name_to_column_type(Tcl_GetString(objv[i+1]));
+        fprintf(stderr, "newType=%d from %s\n", newType, Tcl_GetString(objv[i+1]));
         if (newType == TABLE_COLUMN_TYPE_UNKNOWN) {
             Tcl_AppendResult(interp, "unknown column type \"", 
                              Tcl_GetString(objv[i+1]), "\"", (char *)NULL);

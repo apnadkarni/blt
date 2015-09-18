@@ -157,7 +157,7 @@ typedef struct _BLT_TABLE_TRACE Trace;
 typedef struct _BLT_TABLE_NOTIFIER Notifier;
 
 static const char *valueTypes[] = {
-    "string", "int", "double", "long", "time",
+    "string", "double", "long", "time", "boolean", "blob", 
 };
 
 /*
@@ -750,7 +750,7 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     }
     ResetValue(valuePtr);
     switch (type) {
-    case TABLE_COLUMN_TYPE_TIME:        /* double */
+    case TABLE_COLUMN_TYPE_TIME:        /* time */
         if (Blt_GetTimeFromObj(interp, objPtr, &valuePtr->datum.d) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -813,31 +813,31 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
         Tcl_IncrRefCount(objPtr);
         
         switch (type) {
-        case TABLE_COLUMN_TYPE_TIME:        /* Time */
+        case TABLE_COLUMN_TYPE_TIME:    
             if (Blt_GetTimeFromObj(interp, objPtr, &d) != TCL_OK) {
                 Tcl_DecrRefCount(objPtr);
                 return TCL_ERROR;
             }
-            valuePtr->datum.d = d;
+            valuePtr->datum.d = d;      /* double */
             break;
             
-        case TABLE_COLUMN_TYPE_DOUBLE:      /* Double */
+        case TABLE_COLUMN_TYPE_DOUBLE:  
             if (Blt_GetDoubleFromObj(interp, objPtr, &d) != TCL_OK) {
                 Tcl_DecrRefCount(objPtr);
                 return TCL_ERROR;
             }
-            valuePtr->datum.d = d;
+            valuePtr->datum.d = d;      /* double */
             break;
 
-        case TABLE_COLUMN_TYPE_LONG:        /* Long */
+        case TABLE_COLUMN_TYPE_LONG:    
             if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
                 Tcl_DecrRefCount(objPtr);
                 return TCL_ERROR;
             }
-            valuePtr->datum.l = l;
+            valuePtr->datum.l = l;      /* long */
             break;
 
-        case TABLE_COLUMN_TYPE_BOOLEAN:        /* Long */
+        case TABLE_COLUMN_TYPE_BOOLEAN: 
             {
                 int ival;
                 
@@ -845,7 +845,7 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
                     Tcl_DecrRefCount(objPtr);
                     return TCL_ERROR;
                 }
-                valuePtr->datum.l = ival;
+                valuePtr->datum.l = ival; /* long */
             }
             break;
         default:
