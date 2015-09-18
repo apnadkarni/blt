@@ -4440,6 +4440,31 @@ Blt_Tree_DumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
     Tcl_DStringAppend(dsPtr, "\n", -1);
 }
 
+static void
+DumpLong(DumpInfo *dumpPtr, int value)
+{
+    unsign char buf[4];
+#ifdef WORDS_BIGENDIAN
+    buf[0] = (value >> 24) & 0xFF;
+    buf[1] = (value >> 16) & 0xFF;
+    buf[2] = (value >> 8)  & 0xFF;
+    buf[3] = (value)       & 0xFF;
+#else
+    buf[0] = (value)       & 0xFF;
+    buf[1] = (value >> 8)  & 0xFF;
+    buf[2] = (value >> 16) & 0xFF;
+    buf[3] = (value >> 24) & 0xFF;
+#endif
+    fwrite(buf, 1, 4, dumpPtr->fp);
+}
+
+static void
+DumpString(DumpInfo *dumpPtr, const char *string, int length)
+{
+    DumpLong(dumpPtr, length);
+    fwrite(string, 1, length, dumpPtr->fp);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -4448,15 +4473,20 @@ Blt_Tree_DumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
  *---------------------------------------------------------------------------
  */
 void
-Blt_Tree_BinaryDumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr, 
-                        Blt_DBuffer dbuffer)
+Blt_Tree_DumpBinaryNode(Tree *treePtr, Node *rootPtr, Node *nodePtr, 
+                        DumpInfo *dumpPtr)
 {
-    size_t extra;
     const char *label;
+    int length;
     
     /* Compute length of entry. */
     label = Blt_Tree_NodeLabel(nodePtr);
-    extra = sizeof(long) + sizeof(long) + strlen(label) + 1;
+    length = strlen(label);
+    DumpLong(dumpPtr, nodePtr->parent);
+    DumpLong(dumpPtr, nodePtr->id);
+    Tcl_DStringInit(&ds);
+    Blt_Tree_NodeRelativePath(rootPtr, nodePtr, NULL, 0, &ds);
+    DumpString(dumpPtr, Tcl_DStringValue(&ds), Tcl_DStringLength(&ds));
     {
         Blt_TreeKeyIterator iter;
         Blt_TreeKey key;
@@ -4468,61 +4498,16 @@ Blt_Tree_BinaryDumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
 
             if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, treePtr, nodePtr, 
                         key, &objPtr) == TCL_OK) {
-                objPtr = Tcl_GetStringFromObj(&length);
-                extra += sizeof(long);
-                extra += length + 1;
-            }
-        }           
-    }
-    extra += sizeof(long);
-    {
-        Blt_HashEntry *hPtr;
-        Blt_HashSearch cursor;
-
-        /* Add list of tags. */
-        for (hPtr = Blt_Tree_FirstTag(treePtr, &cursor); hPtr != NULL; 
-             hPtr = Blt_NextHashEntry(&cursor)) {
-            Blt_TreeTagEntry *tePtr;
-
-            tePtr = Blt_GetHashValue(hPtr);
-            if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr) != NULL) {
-                extra += sizeof(long);
-                extra += strlen(tePtr->tagName) + 1;
-            }
-        }
-    }
-    extra += sizeof(long);
-    bp = Blt_DBuffer_Extend(dbuffer, extra);
-    if (bp == NULL) {
-        return TCL_ERROR;
-    }
-    DumpLong(bp, nodePtr->id);
-    DumpLong(bp + 8, nodePtr->parent);
-    DumpLong(bp + 16, length);
-    DumpString(bp + 24, label, length);
-    bp += 24 + length + 1;
-    {
-        Blt_TreeKeyIterator iter;
-        Blt_TreeKey key;
-
-        /* Add list of key-value pairs. */
-        for (key = Blt_Tree_FirstKey(treePtr, nodePtr, &iter); key != NULL; 
-             key = Blt_Tree_NextKey(treePtr, &iter)) {
-            Tcl_Obj *objPtr;
-
-            if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, treePtr, nodePtr, 
-                        key, &objPtr) == TCL_OK) {
-                const char *key;
+                const char *value;
                 
-                key = Tcl_GetStringFromObj(objPtr, &length);
-                DumpLong(bp, length);
-                DumpString(bp + 8, key, length);
-                bp += 8 + length;
+                value = Tcl_GetStringFromObj(objPtr, &length);
+                keyLength = strlen(key);
+                DumpString(dumpPtr, key, keyLength);
+                DumpString(dumpPtr, value, length)
             }
         }           
     }
-    DumpLong(bp, 0);
-    bp += 8;
+    DumpLong(dumpPtr, 0);
     {
         Blt_HashEntry *hPtr;
         Blt_HashSearch cursor;
@@ -4535,19 +4520,17 @@ Blt_Tree_BinaryDumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
             tePtr = Blt_GetHashValue(hPtr);
             if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr) != NULL) {
                 length = strlen(tePtr->tagName);
-                DumpLong(bp, length);
-                DumpString(bp + 8, key, length);
-                bp += 8 + length;
+                DumpString(dumpPtr, key, length);
             }
         }
     }
-    DumpLong(bp, 0);
+    DumpLong(dumpPtr, 0);
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * RestoreNode5 --
+ * RestoreBinaryNode --
  *
  *      Parses and creates a node based upon the first 3 fields of a five
  *      field entry.  This is the new restore file format.
@@ -4586,16 +4569,9 @@ RestoreBinaryNode(Tcl_Interp *interp, int argc, const char **argv,
 
     treePtr = restorePtr->treePtr;
 
-    /* 
-     * The second and first fields respectively are the ids of the node and
-     * its parent.  The parent id of the root node is always -1.
-     */
-    if ((Blt_GetLong(interp, argv[0], &pid) != TCL_OK) ||
-        (Blt_GetLong(interp, argv[1], &id) != TCL_OK)) {
-        return TCL_ERROR;
-    }
-    names = values = tags = NULL;
-    nodePtr = NULL;
+    pid = ReadLong(restorePtr);
+    id = ReadLong(restorePtr);
+    label = ReadString(restorePtr);
 
     /* 
      * The third, fourth, and fifth fields respectively are the list of
@@ -4616,7 +4592,7 @@ RestoreBinaryNode(Tcl_Interp *interp, int argc, const char **argv,
         nodePtr = restorePtr->rootPtr;
         hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id, &isNew);
         Blt_SetHashValue(hPtr, nodePtr);
-        Blt_Tree_RelabelNode(treePtr, nodePtr, names[0]);
+        Blt_Tree_RelabelNode(treePtr, nodePtr, label);
     } else {
 
         /* 
