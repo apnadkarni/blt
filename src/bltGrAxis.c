@@ -90,7 +90,7 @@
 /*
  * Round x in terms of units
  */
-#define UROUND(x,u)     (ROUND((x)/(u))*(u))
+#define UROUND(x,u)     (round((x)/(u))*(u))
 #define UCEIL(x,u)      (ceil((x)/(u))*(u))
 #define UFLOOR(x,u)     (floor((x)/(u))*(u))
 
@@ -1628,6 +1628,11 @@ MakeLabel(Axis *axisPtr, double value)
         Blt_FormatDate(&date, axisPtr->major.ticks.fmt, &ds);
         string = Tcl_DStringValue(&ds);
     } else {
+        if ((IsTimeScale(axisPtr)) &&
+            (axisPtr->major.ticks.timeUnits == TIME_SUBSECONDS)) {
+            value = fmod(value, 60.0);
+            value = UROUND(value, axisPtr->major.ticks.step);
+        }
         Blt_FormatString(buffer, TICK_LABEL_SIZE, "%.*G", NUMDIGITS, value);
         string = buffer;
     }
@@ -2253,6 +2258,9 @@ LinearAxis(Axis *axisPtr, double min, double max)
     axisPtr->minor.ticks.numSteps = numTicks;
     axisPtr->minor.ticks.scaleType = SCALE_LINEAR;
     /* Never generate minor ticks. */
+    fprintf(stderr, "LinearAxis axis=%s tickMin=%.15g tickMax=%.15g axisMin=%.15g, axisMax=%.15g\n",
+            axisPtr->obj.name, tickMin, tickMax, axisMin, axisMax);
+            
 }
 
 /*
@@ -2924,7 +2932,7 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
     }
     numMajorTicks = axisPtr->major.ticks.numSteps;
     numMinorTicks = axisPtr->minor.ticks.numSteps;
-    arraySize = 1 + (numMajorTicks * (numMinorTicks + 1));
+    arraySize = 1 + numMajorTicks + (numMajorTicks * (numMinorTicks + 1));
     segments = Blt_AssertMalloc(arraySize * sizeof(Segment2d));
     s = segments;
     if (axisPtr->lineWidth > 0) {
@@ -2990,6 +2998,12 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
     }
     axisPtr->segments = segments;
     axisPtr->numSegments = s - segments;
+#ifdef notdef
+    fprintf(stderr,
+            "axis=%s numSegments=%d, arraySize=%d numMajor=%d numMinor=%d\n",
+            axisPtr->obj.name, axisPtr->numSegments, arraySize,
+            numMajorTicks, numMinorTicks);
+#endif
     assert(axisPtr->numSegments <= arraySize);
 }
 
@@ -6777,7 +6791,7 @@ SecondTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.step = step;
-    axisPtr->major.ticks.fmt = "%H:%M:%S";
+    axisPtr->major.ticks.fmt = "%H:%M:%s";
     axisPtr->major.ticks.timeUnits = TIME_SECONDS;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
     axisPtr->major.ticks.range = tickMax - tickMin;
@@ -6811,6 +6825,7 @@ TimeAxis(Axis *axisPtr, double min, double max)
     if (units == -1) {
         return;
     }
+    fprintf(stderr, "units=%d\n", units);
     switch (units) {
     case TIME_YEARS:
         YearTicks(axisPtr, min, max);
@@ -6835,6 +6850,8 @@ TimeAxis(Axis *axisPtr, double min, double max)
         break;
     case TIME_SUBSECONDS:
         LinearAxis(axisPtr, min, max);
+        axisPtr->major.ticks.scaleType = SCALE_TIME;
+        axisPtr->major.ticks.timeUnits = units;
         break;
     default:
         Blt_Panic("unknown time units");
@@ -6864,6 +6881,8 @@ FirstMajorTick(Axis *axisPtr)
     ticksPtr->numDaysFromInitial = 0;
     tick.isValid = FALSE;
     tick.value = Blt_NaN();
+    fprintf(stderr, "FirstMajorTick axis=%s scaleType=%d units=%d\n",
+            axisPtr->obj.name, ticksPtr->scaleType, ticksPtr->timeUnits);
     switch (ticksPtr->scaleType) {
     case SCALE_CUSTOM:                  /* User defined minor ticks */
         tick.value = ticksPtr->values[0];

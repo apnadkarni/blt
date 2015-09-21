@@ -4440,6 +4440,8 @@ Blt_Tree_DumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
     Tcl_DStringAppend(dsPtr, "\n", -1);
 }
 
+#ifdef notdef
+
 static void
 DumpLong(DumpInfo *dumpPtr, int value)
 {
@@ -4717,6 +4719,7 @@ RestoreBinaryNode(Tcl_Interp *interp, int argc, const char **argv,
     }
     return TCL_ERROR;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------

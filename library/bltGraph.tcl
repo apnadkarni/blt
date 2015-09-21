@@ -586,14 +586,14 @@ proc blt::Graph::Push { g } {
     foreach axis [$g axis names -zoom] {
 	set min [$g axis cget $axis -min] 
 	set max [$g axis cget $axis -max]
-	set logscale  [$g axis cget $axis -logscale]
+	set scale  [$g axis cget $axis -scale]
 	# Save the current scale (log or linear) so that we can restore it.
 	# This is for the case where the user changes to logscale while
 	# zooming.  A previously pushed axis limit could be negative.  It
 	# seems better for popping the zoom stack to restore a previous
 	# view (not convert the ranges).
 	set c [list $g axis configure $axis]
-	lappend c -min $min -max $max -logscale $logscale
+	lappend c -min $min -max $max -scale $scale
 	append cmd "$c\n"
     }
 
@@ -612,6 +612,7 @@ proc blt::Graph::Push { g } {
 	} else {
 	    error "unknown type $type of zoomable axis $axis"
 	}
+        puts stderr "axis=$axis min=$min max=$max"
 	if { ![SetAxisRanges $g $axis $min $max] } {
 	    Pop $g
 	    bell

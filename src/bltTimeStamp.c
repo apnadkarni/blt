@@ -2738,12 +2738,11 @@ Blt_DateToSeconds(Blt_DateTime *datePtr, double *secondsPtr)
     long numDays;
 
 #ifdef notdef
-    fprintf(stderr, "Entering Blt_DateToSeconds: year=%d mon=%d mday=%d week=%d hour=%d min=%d sec=%d\n", 
+    fprintf(stderr, "Entering Blt_DateToSeconds: year=%d mon=%d mday=%d week=%d hour=%d min=%d sec=%d, frac=%.15g\n", 
             datePtr->year, datePtr->mon, datePtr->mday, datePtr->week,
-            datePtr->hour, datePtr->min, datePtr->sec);
+            datePtr->hour, datePtr->min, datePtr->sec, datePtr->frac);
 #endif
     datePtr->isLeapYear = IsLeapYear(datePtr->year);
-
     /* Compute the number of seconds. */
 
     /* Step 1: Determine the number of days since the epoch to the
@@ -2946,6 +2945,11 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
     const char *p;
     double seconds;
 
+#ifdef notdef
+    fprintf(stderr, "Entering Blt_FormatDate: year=%d mon=%d mday=%d week=%d hour=%d min=%d sec=%d, frac=%.15g\n", 
+            datePtr->year, datePtr->mon, datePtr->mday, datePtr->week,
+            datePtr->hour, datePtr->min, datePtr->sec, datePtr->frac);
+#endif
     /* Pass 1: Compute the size of the resulting string. */
     count = 0;
     for (p = fmt; *p != '\0'; p++) {
@@ -3208,8 +3212,11 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 's':                       /* Seconds since epoch, may contain
                                          * fraction. */
-            Blt_DateToSeconds(datePtr, &seconds);
-            numBytes = sprintf(bp, "%.15g", seconds);
+            if (datePtr->sec < 10) {
+                numBytes = sprintf(bp, "0%01.6g", datePtr->sec + datePtr->frac);
+            } else {
+                numBytes = sprintf(bp, "%02.6g", datePtr->sec + datePtr->frac);
+            }
             bp += numBytes;
             break;
         case 'S':                       /* Second (00-60) */
