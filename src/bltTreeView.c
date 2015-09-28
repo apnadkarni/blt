@@ -891,15 +891,13 @@ EntryIsSelected(TreeView *viewPtr, Entry *entryPtr)
 }
 
 static Entry *
-FirstChild(Entry *entryPtr, unsigned int mask)
+FirstChild(Entry *parentPtr, unsigned int hateFlags)
 {
-    Blt_TreeNode node;
-    TreeView *viewPtr = entryPtr->viewPtr; 
+    Entry *entryPtr;
 
-    for (node = Blt_Tree_FirstChild(entryPtr->node); node != NULL; 
-         node = Blt_Tree_NextSibling(node)) {
-        entryPtr = NodeToEntry(viewPtr, node);
-        if (((mask & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
+    for (entryPtr = parentPtr->headPtr; entryPtr != NULL;
+         entryPtr = entryPtr->nextPtr) {
+        if (((hateFlags & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
             return entryPtr;
         }
     }
@@ -907,15 +905,13 @@ FirstChild(Entry *entryPtr, unsigned int mask)
 }
 
 static Entry *
-LastChild(Entry *entryPtr, unsigned int mask)
+LastChild(Entry *parentPtr, unsigned int hateFlags)
 {
-    Blt_TreeNode node;
-    TreeView *viewPtr = entryPtr->viewPtr; 
+    Entry *entryPtr;
 
-    for (node = Blt_Tree_LastChild(entryPtr->node); node != NULL; 
-         node = Blt_Tree_PrevSibling(node)) {
-        entryPtr = NodeToEntry(viewPtr, node);
-        if (((mask & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
+    for (entryPtr = parentPtr->tailPtr; entryPtr != NULL;
+         entryPtr = entryPtr->prevPtr) {
+        if (((hateFlags & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
             return entryPtr;
         }
     }
@@ -923,15 +919,11 @@ LastChild(Entry *entryPtr, unsigned int mask)
 }
 
 static Entry *
-NextSibling(Entry *entryPtr, unsigned int mask)
+NextSibling(Entry *entryPtr, unsigned int hateFlags)
 {
-    Blt_TreeNode node;
-    TreeView *viewPtr = entryPtr->viewPtr; 
-
-    for (node = Blt_Tree_NextSibling(entryPtr->node); node != NULL; 
-         node = Blt_Tree_NextSibling(node)) {
-        entryPtr = NodeToEntry(viewPtr, node);
-        if (((mask & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
+    for (entryPtr = entryPtr->nextPtr; entryPtr != NULL;
+         entryPtr = entryPtr->nextPtr) {
+        if (((hateFlags & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
             return entryPtr;
         }
     }
@@ -939,16 +931,11 @@ NextSibling(Entry *entryPtr, unsigned int mask)
 }
 
 static Entry *
-PrevSibling(Entry *entryPtr, unsigned int mask)
+PrevSibling(Entry *entryPtr, unsigned int hateFlags)
 {
-    Blt_TreeNode node;
-    TreeView *viewPtr = entryPtr->viewPtr; 
-
-    for (node = Blt_Tree_PrevSibling(entryPtr->node); node != NULL; 
-         node = Blt_Tree_PrevSibling(node)) {
-        entryPtr = NodeToEntry(viewPtr, node);
-        if (((mask & ENTRY_HIDDEN) == 0) ||
-            (!EntryIsHidden(entryPtr))) {
+    for (entryPtr = entryPtr->prevPtr; entryPtr != NULL;
+         entryPtr = entryPtr->prevPtr) {
+        if (((hateFlags & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
             return entryPtr;
         }
     }
@@ -971,16 +958,15 @@ PrevSibling(Entry *entryPtr, unsigned int mask)
 static Entry *
 PrevEntry(Entry *entryPtr, unsigned int mask)
 {
-    TreeView *viewPtr = entryPtr->viewPtr; 
     Entry *prevPtr;
 
-    if (entryPtr->node == Blt_Tree_RootNode(viewPtr->tree)) {
+    if (entryPtr->parentPtr == NULL) {
         return NULL;                    /* The root is the first node. */
     }
     prevPtr = PrevSibling(entryPtr, mask);
     if (prevPtr == NULL) {
         /* There are no siblings previous to this one, so pick the parent. */
-        prevPtr = ParentEntry(entryPtr);
+        prevPtr = entryPtr->parentPtr;
     } else {
         /*
          * Traverse down the right-most thread in order to select the last
@@ -1017,7 +1003,7 @@ PrevEntry(Entry *entryPtr, unsigned int mask)
  *---------------------------------------------------------------------------
  */
 static Entry *
-NextEntry(Entry *entryPtr, unsigned int mask)
+NextEntry(Entry *entryPtr, unsigned int hateFlags)
 {
     TreeView *viewPtr = entryPtr->viewPtr; 
     Entry *nextPtr;
@@ -1025,8 +1011,8 @@ NextEntry(Entry *entryPtr, unsigned int mask)
 
     ignoreLeaf = ((viewPtr->flags & HIDE_LEAVES) && 
                   (Blt_Tree_IsLeaf(entryPtr->node)));
-    if ((!ignoreLeaf) && ((entryPtr->flags & mask) == 0)) {
-        nextPtr = FirstChild(entryPtr, mask); 
+    if ((!ignoreLeaf) && ((entryPtr->flags & hateFlags) == 0)) {
+        nextPtr = FirstChild(entryPtr, hateFlags); 
         if (nextPtr != NULL) {
             return nextPtr;             /* Pick the first sub-node. */
         }
@@ -1037,11 +1023,11 @@ NextEntry(Entry *entryPtr, unsigned int mask)
      */
 
     while (entryPtr != viewPtr->rootPtr) {
-        nextPtr = NextSibling(entryPtr, mask);
+        nextPtr = NextSibling(entryPtr, hateFlags);
         if (nextPtr != NULL) {
             return nextPtr;
         }
-        entryPtr = ParentEntry(entryPtr);
+        entryPtr = entryPtr->parentPtr;
     }
     return NULL;                        /* At root, no next node. */
 }
@@ -1066,18 +1052,13 @@ GetPathFromRoot(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel,
         names = staticSpace;
     }
     for (i = level; i >= 0; i--) {
-        Blt_TreeNode node;
-
         /* Save the name of each ancestor in the name array. */
         if (checkEntryLabel) {
             names[i] = GETLABEL(entryPtr);
         } else {
             names[i] = Blt_Tree_NodeLabel(entryPtr->node);
         }
-        node = Blt_Tree_ParentNode(entryPtr->node);
-        if (node != NULL) {
-            entryPtr = NodeToEntry(viewPtr, node);
-        }
+        entryPtr = entryPtr->parentPtr;
     }
     Tcl_DStringInit(resultPtr);
     if (level >= 0) {
@@ -3491,18 +3472,16 @@ Apply(
         return TCL_OK;                  /* Hidden node. */
     }
     if ((flags | entryPtr->flags) & ENTRY_CLOSED) {
-        Entry *childPtr;
-        Blt_TreeNode node, next;
+        Entry *childPtr, *nextPtr;
 
-        for (node = Blt_Tree_FirstChild(entryPtr->node); node != NULL; 
-             node = next) {
-            next = Blt_Tree_NextSibling(node);
+        for (childPtr = FirstChild(entryPtr, 0); childPtr != NULL; 
+             childPtr = nextPtr) {
+            nextPtr = childPtr->nextPtr;
             /* 
              * Get the next child before calling Apply recursively.  This
              * is because the apply callback may delete the node and its
              * link.
              */
-            childPtr = NodeToEntry(viewPtr, node);
             if (Apply(viewPtr, childPtr, proc, flags) != TCL_OK) {
                 return TCL_ERROR;
             }
@@ -3691,7 +3670,7 @@ static void
 MapAncestors(TreeView *viewPtr, Entry *entryPtr)
 {
     while (entryPtr != viewPtr->rootPtr) {
-        entryPtr = ParentEntry(entryPtr);
+        entryPtr = entryPtr->parentPtr;
         if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDDEN)) {
             viewPtr->flags |= LAYOUT_PENDING;
             entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDDEN);
@@ -3721,7 +3700,7 @@ MapAncestorsApplyProc(TreeView *viewPtr, Entry *entryPtr)
      * Make sure that all the ancestors of this entry are mapped too.
      */
     while (entryPtr != viewPtr->rootPtr) {
-        entryPtr = ParentEntry(entryPtr);
+        entryPtr = entryPtr->parentPtr;
         if ((entryPtr->flags & (ENTRY_HIDDEN | ENTRY_CLOSED)) == 0) {
             break;              /* Assume ancestors are also mapped. */
         }
@@ -4712,13 +4691,13 @@ DestroyEntry(Entry *entryPtr)
 
     /* Fix pointers to destroyed entry. */
     if (viewPtr->activePtr == entryPtr) {
-        viewPtr->activePtr = ParentEntry(entryPtr);
+        viewPtr->activePtr = entryPtr->parentPtr;
     }
     if (viewPtr->activeBtnPtr == entryPtr) {
         viewPtr->activeBtnPtr = NULL;
     }
     if (viewPtr->focusPtr == entryPtr) {
-        viewPtr->focusPtr = ParentEntry(entryPtr);
+        viewPtr->focusPtr = entryPtr->parentPtr;
         Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_ENTRY);
     }
     if (viewPtr->sel.anchorPtr == entryPtr) {
@@ -4893,7 +4872,7 @@ NewEntry(TreeView *viewPtr, Blt_TreeNode node, Entry *parentPtr)
 }
 
 static void
-AttachEntries(TreeView *viewPtr, Entry *parentPtr)
+AttachChildren(TreeView *viewPtr, Entry *parentPtr)
 {
     Blt_TreeNode node;
                           
@@ -4903,7 +4882,7 @@ AttachEntries(TreeView *viewPtr, Entry *parentPtr)
         
         entryPtr = NewEntry(viewPtr, node, parentPtr);
         if (Blt_Tree_NodeDegree(node) > 0) {
-            AttachEntries(viewPtr, entryPtr);
+            AttachChildren(viewPtr, entryPtr);
         }
     }
 }
@@ -6056,6 +6035,78 @@ CompareNodes(Blt_TreeNode *n1Ptr, Blt_TreeNode *n2Ptr)
     return CompareEntries(&e1, &e2);
 }
 
+ 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SortChildren --
+ *
+ *      Sorts the child entries at a given parent entry.
+ *
+ * Results:
+ *      Returns a standard TCL result. If a temporary array of entry
+ *      pointers can't be allocated TCL_ERROR is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SortChildren(TreeView *viewPtr, Entry *parentPtr)
+{
+    Entry **entries, *childPtr;
+    long i;
+
+    if (parentPtr->numChildren < 2) {
+        return TCL_OK;
+    }
+    entries = Blt_Malloc(parentPtr->numChildren * sizeof(Entry *));
+    if (entries == NULL) {
+        Tcl_AppendResult(viewPtr->interp, "can't allocate sorting array.", 
+        (char *)NULL);
+        return TCL_ERROR;               /* Out of memory. */
+    }
+    for (i = 0, childPtr = parentPtr->headPtr; childPtr != NULL; 
+         childPtr = childPtr->nextPtr, i++) {
+        entries[i] = childPtr;
+    }
+    if ((viewPtr->flags & SORTED) &&
+        (viewPtr->sort.decreasing != viewPtr->sort.viewIsDecreasing)) {
+        int first, last;
+        /* 
+         * The children are already sorted but in the wrong direction.
+         * Reverse the entries in the array.
+         */
+        for (first = 0, last = parentPtr->numChildren - 1; last > first; 
+             first++, last--) {
+            Entry *tmpPtr;
+            
+            /* Swap first and last entries */
+            tmpPtr = entries[first];
+            entries[first] = entries[last];
+            entries[last] = tmpPtr;
+        }
+    } else {
+        qsort(entries, parentPtr->numChildren, sizeof(Entry *), CompareEntries);
+    }
+    parentPtr->headPtr = parentPtr->tailPtr = NULL;
+    for (i = 0; i < parentPtr->numChildren; i++) {
+        Entry *entryPtr;
+
+        entryPtr = entries[i];
+        if (parentPtr->tailPtr == NULL) {
+            parentPtr->headPtr = parentPtr->tailPtr = entryPtr;
+        } else {
+            entryPtr->prevPtr = parentPtr->tailPtr;
+            parentPtr->tailPtr->nextPtr = entryPtr;
+            parentPtr->tailPtr = entryPtr;
+        }
+        if (entryPtr->numChildren > 1) {
+            SortChildren(viewPtr, entryPtr);
+        }
+    }
+    Blt_Free(entries);
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -6077,55 +6128,6 @@ SortApplyProc(Blt_TreeNode node, ClientData clientData, int order)
     if (!Blt_Tree_IsLeaf(node)) {
         Blt_Tree_SortNode(viewPtr->tree, node, CompareNodes);
     }
-    return TCL_OK;
-}
- 
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_Tree_SortNode --
- *
- *      Sorts the subnodes at a given node.
- *
- * Results:
- *      Always returns TCL_OK.
- *
- *---------------------------------------------------------------------------
- */
-int
-SortEntries(TreeView *viewPtr, Entry *parentPtr, QSortCompareProc *proc)
-{
-    Entry **entries, *childPtr;
-    long i;
-
-    if (parentPtr->numChildren < 2) {
-        return TCL_OK;
-    }
-    entries = Blt_Malloc(parentPtr->numChildren * sizeof(Entry *));
-    if (entries == NULL) {
-        Tcl_AppendResult(viewPtr->interp, "can't allocate sorting array.", 
-        (char *)NULL);
-        return TCL_ERROR;               /* Out of memory. */
-    }
-    for (i = 0, childPtr = parentPtr->headPtr; childPtr != NULL; 
-         childPtr = childPtr->nextPtr, i++) {
-        entries[i] = childPtr;
-    }
-    qsort(entries, parentPtr->numChildren, sizeof(Entry *), proc);
-    parentPtr->headPtr = parentPtr->tailPtr = NULL;
-    for (i = 0; i < parentPtr->numChildren; i++) {
-        Entry *entryPtr;
-
-        entryPtr = entries[i];
-        if (parentPtr->tailPtr == NULL) {
-            parentPtr->headPtr = parentPtr->tailPtr = entryPtr;
-        } else {
-            entryPtr->prevPtr = parentPtr->tailPtr;
-            parentPtr->tailPtr->nextPtr = entryPtr;
-            parentPtr->tailPtr = entryPtr;
-        }
-    }
-    Blt_Free(entries);
     return TCL_OK;
 }
 
@@ -6191,8 +6193,9 @@ SortTreeView(TreeView *viewPtr)
 {
     viewPtr->flags &= ~SORT_PENDING;
     treeViewInstance = viewPtr;
-    Blt_Tree_Apply(viewPtr->rootPtr->node, SortApplyProc, viewPtr);
+    SortChildren(viewPtr, viewPtr->rootPtr);
     viewPtr->sort.viewIsDecreasing = viewPtr->sort.decreasing;
+    viewPtr->flags |= SORTED;
 }
 
 /*
@@ -6700,7 +6703,7 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
         TraceColumns(viewPtr);
         root = Blt_Tree_RootNode(viewPtr->tree);
         viewPtr->rootPtr = NewEntry(viewPtr, root, NULL);
-        AttachEntries(viewPtr, viewPtr->rootPtr);
+        AttachChildren(viewPtr, viewPtr->rootPtr);
         viewPtr->focusPtr = viewPtr->rootPtr;
         viewPtr->sel.markPtr = viewPtr->sel.anchorPtr = NULL;
         Blt_SetFocusItem(viewPtr->bindTable, viewPtr->rootPtr, ITEM_ENTRY);
@@ -6870,7 +6873,7 @@ ResetCoordinates2(TreeView *viewPtr, Entry *rootPtr)
         int h, depth;
         Entry *parentPtr;
 
-        parentPtr = ParentEntry(entryPtr);
+        parentPtr = entryPtr->parentPtr;
         entryPtr->worldY = -1;
         entryPtr->vertLineLength = -1;
         entryPtr->bottomPtr = NULL;
@@ -7816,7 +7819,7 @@ DrawLines(
     while (entryPtr != viewPtr->rootPtr) {
         int level;
         
-        entryPtr = ParentEntry(entryPtr);
+        entryPtr = entryPtr->parentPtr;
         if (entryPtr == NULL) {
             break;
         }
@@ -12560,7 +12563,7 @@ FixSelectionsApplyProc(TreeView *viewPtr, Entry *entryPtr)
         if ((viewPtr->focusPtr != NULL) &&
             (Blt_Tree_IsAncestor(entryPtr->node, viewPtr->focusPtr->node))) {
             if (entryPtr != viewPtr->rootPtr) {
-                entryPtr = ParentEntry(entryPtr);
+                entryPtr = entryPtr->parentPtr;
                 viewPtr->focusPtr = (entryPtr == NULL) 
                     ? viewPtr->focusPtr : entryPtr;
                 Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, 
@@ -14002,7 +14005,7 @@ SortChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
              entryPtr = NextTaggedEntry(&iter)) {
-            Blt_Tree_SortNode(viewPtr->tree, entryPtr->node, CompareNodes);
+            SortChildren(viewPtr, entryPtr);
         }
     }
     viewPtr->flags |= (LAYOUT_PENDING | UPDATE);
