@@ -1035,6 +1035,7 @@ NextEntry(Entry *entryPtr, unsigned int mask)
      * Back up to a level where we can pick a "next sibling".  For the last
      * entry we'll thread our way back to the root.
      */
+
     while (entryPtr != viewPtr->rootPtr) {
         nextPtr = NextSibling(entryPtr, mask);
         if (nextPtr != NULL) {
@@ -4730,7 +4731,21 @@ DestroyEntry(Entry *entryPtr)
         Blt_DeleteHashEntry(&viewPtr->entryTable, entryPtr->hashPtr);
     }
     entryPtr->node = NULL;
-
+    /* [prev] [entry] [next] */
+    if (entryPtr->prevPtr != NULL) {
+        entryPtr->prevPtr->nextPtr = entryPtr->nextPtr;
+    }
+    if (entryPtr->nextPtr != NULL) {
+        entryPtr->nextPtr->prevPtr = entryPtr->prevPtr;
+    }
+    if (entryPtr->parentPtr != NULL) {
+        if (entryPtr->parentPtr->headPtr == entryPtr) {
+            entryPtr->parentPtr->headPtr = entryPtr->nextPtr;
+        }
+        if (entryPtr->parentPtr->tailPtr == entryPtr) {
+            entryPtr->parentPtr->tailPtr = entryPtr->prevPtr;
+        }
+    }        
     iconsOption.clientData = viewPtr;
     cachedObjOption.clientData = viewPtr;
     labelOption.clientData = viewPtr;
@@ -4818,6 +4833,80 @@ CreateEntry(
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NewEntry --
+ *
+ *      This procedure is called by the Tree object when a node is created
+ *      and inserted into the tree.  It adds a new treeview entry field to
+ *      the node.
+ *
+ * Results:
+ *      Returns the entry.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Entry *
+NewEntry(TreeView *viewPtr, Blt_TreeNode node, Entry *parentPtr)
+{
+    Entry *entryPtr;
+    int isNew;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_CreateHashEntry(&viewPtr->entryTable, (char *)node, &isNew);
+    if (isNew) {
+        /* Create the entry structure */
+        entryPtr = Blt_Pool_AllocItem(viewPtr->entryPool, sizeof(Entry));
+        memset(entryPtr, 0, sizeof(Entry));
+        entryPtr->flags = (unsigned short) 
+            (viewPtr->buttonFlags | GEOMETRY | ENTRY_CLOSED);
+        entryPtr->viewPtr = viewPtr;
+        entryPtr->hashPtr = hPtr;
+        entryPtr->node = node;
+        Blt_SetHashValue(hPtr, entryPtr);
+        if (parentPtr != NULL) {
+            if (parentPtr->tailPtr == NULL) {
+                parentPtr->headPtr = parentPtr->tailPtr = entryPtr;
+            } else {
+                entryPtr->prevPtr = parentPtr->tailPtr;
+                parentPtr->tailPtr->nextPtr = entryPtr;
+                parentPtr->tailPtr = entryPtr;
+            }
+            entryPtr->parentPtr = parentPtr;
+            parentPtr->numChildren++;
+        }
+    } else {
+        entryPtr = Blt_GetHashValue(hPtr);
+    }
+    if (ConfigureEntry(viewPtr, entryPtr, 0, NULL, 0) != TCL_OK) {
+        DestroyEntry(entryPtr);
+        return NULL;                    /* Error configuring the entry. */
+    }
+    viewPtr->flags |= LAYOUT_PENDING;
+    if (viewPtr->flags & TV_SORT_AUTO) {
+        /* If we're auto-sorting, schedule the view to be resorted. */
+        viewPtr->flags |= SORT_PENDING;
+    }
+    EventuallyRedraw(viewPtr);
+    return entryPtr;
+}
+
+static void
+AttachEntries(TreeView *viewPtr, Entry *parentPtr)
+{
+    Blt_TreeNode node;
+                          
+    for (node = Blt_Tree_FirstChild(parentPtr->node); node != NULL; 
+         node = Blt_Tree_NextSibling(node)) {
+        Entry *entryPtr;
+        
+        entryPtr = NewEntry(viewPtr, node, parentPtr);
+        if (Blt_Tree_NodeDegree(node) > 0) {
+            AttachEntries(viewPtr, entryPtr);
+        }
+    }
+}
 /*ARGSUSED*/
 static int
 CreateApplyProc(Blt_TreeNode node, ClientData clientData, int order)
@@ -5994,6 +6083,55 @@ SortApplyProc(Blt_TreeNode node, ClientData clientData, int order)
 /*
  *---------------------------------------------------------------------------
  *
+ * Blt_Tree_SortNode --
+ *
+ *      Sorts the subnodes at a given node.
+ *
+ * Results:
+ *      Always returns TCL_OK.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+SortEntries(TreeView *viewPtr, Entry *parentPtr, QSortCompareProc *proc)
+{
+    Entry **entries, *childPtr;
+    long i;
+
+    if (parentPtr->numChildren < 2) {
+        return TCL_OK;
+    }
+    entries = Blt_Malloc(parentPtr->numChildren * sizeof(Entry *));
+    if (entries == NULL) {
+        Tcl_AppendResult(viewPtr->interp, "can't allocate sorting array.", 
+        (char *)NULL);
+        return TCL_ERROR;               /* Out of memory. */
+    }
+    for (i = 0, childPtr = parentPtr->headPtr; childPtr != NULL; 
+         childPtr = childPtr->nextPtr, i++) {
+        entries[i] = childPtr;
+    }
+    qsort(entries, parentPtr->numChildren, sizeof(Entry *), proc);
+    parentPtr->headPtr = parentPtr->tailPtr = NULL;
+    for (i = 0; i < parentPtr->numChildren; i++) {
+        Entry *entryPtr;
+
+        entryPtr = entries[i];
+        if (parentPtr->tailPtr == NULL) {
+            parentPtr->headPtr = parentPtr->tailPtr = entryPtr;
+        } else {
+            entryPtr->prevPtr = parentPtr->tailPtr;
+            parentPtr->tailPtr->nextPtr = entryPtr;
+            parentPtr->tailPtr = entryPtr;
+        }
+    }
+    Blt_Free(entries);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SortFlatView --
  *
  *      Sorts the flatten array of entries.
@@ -6561,11 +6699,9 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
                 TreeEventProc, viewPtr);
         TraceColumns(viewPtr);
         root = Blt_Tree_RootNode(viewPtr->tree);
-
-        /* Automatically add view-entry values to the new tree. */
-        Blt_Tree_Apply(root, CreateApplyProc, viewPtr);
-        viewPtr->focusPtr = viewPtr->rootPtr = 
-            NodeToEntry(viewPtr,root);
+        viewPtr->rootPtr = NewEntry(viewPtr, root, NULL);
+        AttachEntries(viewPtr, viewPtr->rootPtr);
+        viewPtr->focusPtr = viewPtr->rootPtr;
         viewPtr->sel.markPtr = viewPtr->sel.anchorPtr = NULL;
         Blt_SetFocusItem(viewPtr->bindTable, viewPtr->rootPtr, ITEM_ENTRY);
 
@@ -6732,7 +6868,7 @@ ResetCoordinates2(TreeView *viewPtr, Entry *rootPtr)
     for (entryPtr = rootPtr; entryPtr != NULL;
          entryPtr = NextEntry(entryPtr, ENTRY_HIDDEN)) {
         int h, depth;
-        Entry *parentPtr, *nextPtr;
+        Entry *parentPtr;
 
         parentPtr = ParentEntry(entryPtr);
         entryPtr->worldY = -1;

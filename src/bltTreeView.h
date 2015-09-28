@@ -609,10 +609,10 @@ struct _Entry {
     GC gc;
     Entry *bottomPtr;
     Entry *parentPtr;                   /* Parent entry. NULL if root. */
-    Entry *firstPtr;                    /* First child entry. NULL if no
-                                         * children. */
-    Entry *lastPtr;                     /* Last child entry. NULL if no 
-                                         * children.*/
+    Entry *headPtr, *tailPtr;           /* First and last child entry. NULL
+                                         * if no children. */
+    Entry *nextPtr, *prevPtr;
+    int numChildren;
 };
 
 /*
