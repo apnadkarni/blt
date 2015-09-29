@@ -1832,11 +1832,48 @@ DestroyCell(TreeView *viewPtr, Cell *cellPtr)
     if (viewPtr->postPtr == cellPtr) {
         viewPtr->postPtr = NULL;
     }
-
     if (cellPtr->dataObjPtr != NULL) {
         Tcl_DecrRefCount(cellPtr->dataObjPtr);
         cellPtr->dataObjPtr = NULL;
     }
+}
+
+static void
+AppendEntry(Entry *parentPtr, Entry *entryPtr)
+{
+    if (parentPtr != NULL) {
+        if (parentPtr->tailPtr == NULL) {
+            parentPtr->headPtr = parentPtr->tailPtr = entryPtr;
+        } else {
+            entryPtr->prevPtr = parentPtr->tailPtr;
+            parentPtr->tailPtr->nextPtr = entryPtr;
+            parentPtr->tailPtr = entryPtr;
+        }
+        entryPtr->parentPtr = parentPtr;
+        parentPtr->numChildren++;
+    }
+}
+
+
+static void
+DetachEntry(Entry *entryPtr)
+{
+    if (entryPtr->prevPtr != NULL) {
+        entryPtr->prevPtr->nextPtr = entryPtr->nextPtr;
+    }
+    if (entryPtr->nextPtr != NULL) {
+        entryPtr->nextPtr->prevPtr = entryPtr->prevPtr;
+    }
+    if (entryPtr->parentPtr != NULL) {
+        if (entryPtr->parentPtr->headPtr == entryPtr) {
+            entryPtr->parentPtr->headPtr = entryPtr->nextPtr;
+        }
+        if (entryPtr->parentPtr->tailPtr == entryPtr) {
+            entryPtr->parentPtr->tailPtr = entryPtr->prevPtr;
+        }
+        entryPtr->parentPtr->numChildren--;
+    }        
+    entryPtr->nextPtr = entryPtr->prevPtr = entryPtr->parentPtr = NULL;
 }
 
 static void
@@ -1869,21 +1906,7 @@ DestroyEntry(Entry *entryPtr)
         Blt_DeleteHashEntry(&viewPtr->entryTable, entryPtr->hashPtr);
     }
     entryPtr->node = NULL;
-    /* [prev] [entry] [next] */
-    if (entryPtr->prevPtr != NULL) {
-        entryPtr->prevPtr->nextPtr = entryPtr->nextPtr;
-    }
-    if (entryPtr->nextPtr != NULL) {
-        entryPtr->nextPtr->prevPtr = entryPtr->prevPtr;
-    }
-    if (entryPtr->parentPtr != NULL) {
-        if (entryPtr->parentPtr->headPtr == entryPtr) {
-            entryPtr->parentPtr->headPtr = entryPtr->nextPtr;
-        }
-        if (entryPtr->parentPtr->tailPtr == entryPtr) {
-            entryPtr->parentPtr->tailPtr = entryPtr->prevPtr;
-        }
-    }        
+    DetachEntry(entryPtr);
     iconsOption.clientData = viewPtr;
     cachedObjOption.clientData = viewPtr;
     labelOption.clientData = viewPtr;
@@ -4866,23 +4889,24 @@ NewEntry(TreeView *viewPtr, Blt_TreeNode node, Entry *parentPtr)
         entryPtr->hashPtr = hPtr;
         entryPtr->node = node;
         Blt_SetHashValue(hPtr, entryPtr);
-        if (parentPtr != NULL) {
-            if (parentPtr->tailPtr == NULL) {
-                parentPtr->headPtr = parentPtr->tailPtr = entryPtr;
-            } else {
-                entryPtr->prevPtr = parentPtr->tailPtr;
-                parentPtr->tailPtr->nextPtr = entryPtr;
-                parentPtr->tailPtr = entryPtr;
-            }
-            entryPtr->parentPtr = parentPtr;
-            parentPtr->numChildren++;
+        AppendEntry(parentPtr, entryPtr);
+        if (ConfigureEntry(viewPtr, entryPtr, 0, NULL, 0) != TCL_OK) {
+            DestroyEntry(entryPtr);
+            return NULL;                    /* Error configuring the entry. */
         }
     } else {
         entryPtr = Blt_GetHashValue(hPtr);
-    }
-    if (ConfigureEntry(viewPtr, entryPtr, 0, NULL, 0) != TCL_OK) {
-        DestroyEntry(entryPtr);
-        return NULL;                    /* Error configuring the entry. */
+        /* We already have an entry for the node.  Get it's  */
+        if (entryPtr != viewPtr->rootPtr) {
+            Blt_TreeNode parent;
+            
+            parent = Blt_Tree_ParentNode(entryPtr->node);
+            parentPtr = NodeToEntry(viewPtr, parent);
+        } else {
+            parentPtr = NULL;
+        }
+        DetachEntry(entryPtr);
+        AppendEntry(parentPtr, entryPtr);
     }
     viewPtr->flags |= LAYOUT_PENDING;
     if (viewPtr->flags & TV_SORT_AUTO) {
@@ -4949,9 +4973,13 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
             }
             viewPtr->flags |= LAYOUT_PENDING;
         }
-        /*FALLTHRU*/
+        viewPtr->flags |= (LAYOUT_PENDING | RESORT);
+        EventuallyRedraw(viewPtr);
     case TREE_NOTIFY_MOVE:
+        /* FIXME: reattach this node. */
+        break;
     case TREE_NOTIFY_SORT:
+        /* FIXME: reattach all nodes */
         viewPtr->flags |= (LAYOUT_PENDING | RESORT);
         EventuallyRedraw(viewPtr);
         break;
@@ -6064,8 +6092,6 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
         (viewPtr->sort.decreasing == viewPtr->sort.viewIsDecreasing)) {
         return TCL_OK;
     }
-    fprintf(stderr, "Enter SortChildren: depth=%d numchildren=%d\n",
-            Blt_Tree_NodeDepth(parentPtr->node), parentPtr->numChildren);
     entries = Blt_Malloc(parentPtr->numChildren * sizeof(Entry *));
     if (entries == NULL) {
         Tcl_AppendResult(viewPtr->interp, "can't allocate sorting array.", 
@@ -6111,15 +6137,11 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
         if (entryPtr->numChildren > 1) {
             if (SortChildren(viewPtr, entryPtr) != TCL_OK) {
                 Blt_Free(entries);
-    fprintf(stderr, "Leave SortChildren ERROR: depth=%d numchildren=%d\n",
-            Blt_Tree_NodeDepth(parentPtr->node), parentPtr->numChildren);
                 return TCL_ERROR;
             }
         }
     }
     Blt_Free(entries);
-    fprintf(stderr, "Leave SortChildren: depth=%d numchildren=%d\n",
-            Blt_Tree_NodeDepth(parentPtr->node), parentPtr->numChildren);
     return TCL_OK;
 }
 
@@ -7282,13 +7304,14 @@ ComputeTreeLayout(TreeView *viewPtr)
         colPtr->index = index;
         index++;
     }
+
     /* Get the maximum depth of the tree.  We'll use this to allocate slots
      * in the level information array. */
     viewPtr->minRowHeight = SHRT_MAX;
     viewPtr->depth = 0;
 
     for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
-         entryPtr = NextEntry(entryPtr, 0)){
+         entryPtr = NextEntry(entryPtr, 0)) {
         size_t depth;
 
         if ((viewPtr->flags|entryPtr->flags) & GEOMETRY) {
