@@ -249,8 +249,6 @@ static const char *sortTypeStrings[] = {
 typedef ClientData (TagProc)(TreeView *viewPtr, const char *string);
 typedef int (TreeViewApplyProc)(TreeView *viewPtr, Entry *entryPtr);
 
-static Blt_TreeApplyProc DeleteApplyProc;
-static Blt_TreeApplyProc CreateApplyProc;
 static CompareProc ExactCompare, GlobCompare, RegexpCompare;
 static TreeViewApplyProc ShowEntryApplyProc, HideEntryApplyProc, 
         MapAncestorsApplyProc, FixSelectionsApplyProc;
@@ -750,7 +748,6 @@ static Blt_SwitchSpec nearestEntrySwitches[] = {
 /* Forward Declarations */
 static Blt_BindAppendTagsProc AppendTagsProc;
 static Blt_BindPickProc PickItem;
-static Blt_TreeApplyProc SortApplyProc;
 static Blt_TreeCompareNodesProc CompareNodes;
 static Blt_TreeNotifyEventProc TreeEventProc;
 static Blt_TreeTraceProc TreeTraceProc;
@@ -854,22 +851,6 @@ FindEntry(TreeView *viewPtr, Blt_TreeNode node)
     return Blt_GetHashValue(hPtr);
 }
 
-static Entry *
-ParentEntry(Entry *entryPtr)
-{
-    TreeView *viewPtr = entryPtr->viewPtr; 
-    Blt_TreeNode node;
-
-    if (entryPtr->node == Blt_Tree_RootNode(viewPtr->tree)) {
-        return NULL;
-    }
-    node = Blt_Tree_ParentNode(entryPtr->node);
-    if (node == NULL) {
-        return NULL;
-    }
-    return NodeToEntry(viewPtr, node);
-}
-
 static INLINE int
 EntryIsHidden(Entry *entryPtr)
 {
@@ -889,6 +870,20 @@ EntryIsSelected(TreeView *viewPtr, Entry *entryPtr)
     hPtr = Blt_FindHashEntry(&viewPtr->sel.table, (char *)entryPtr);
     return (hPtr != NULL);
 }
+
+static Entry *
+FindChild(Entry *parentPtr, const char *name)
+{
+    Entry *entryPtr;
+    
+    for (entryPtr = parentPtr->headPtr; entryPtr != NULL;
+         entryPtr = entryPtr->nextPtr) {
+        if (strcmp(Blt_Tree_NodeLabel(entryPtr->node), name) == 0) {
+            return entryPtr;
+        }
+    }
+    return NULL;
+}    
 
 static Entry *
 FirstChild(Entry *parentPtr, unsigned int hateFlags)
@@ -1021,7 +1016,6 @@ NextEntry(Entry *entryPtr, unsigned int hateFlags)
      * Back up to a level where we can pick a "next sibling".  For the last
      * entry we'll thread our way back to the root.
      */
-
     while (entryPtr != viewPtr->rootPtr) {
         nextPtr = NextSibling(entryPtr, hateFlags);
         if (nextPtr != NULL) {
@@ -1782,6 +1776,176 @@ FreeCachedObj(TreeView *viewPtr, Tcl_Obj *objPtr)
     Tcl_DecrRefCount(objPtr);
 }
 
+static void
+DestroyStyle(CellStyle *stylePtr)
+{
+    TreeView *viewPtr;
+
+    viewPtr = stylePtr->viewPtr;
+    iconOption.clientData = viewPtr;
+    Blt_FreeOptions(stylePtr->classPtr->specs, (char *)stylePtr, 
+                    viewPtr->display, 0);
+    (*stylePtr->classPtr->freeProc)(stylePtr); 
+    /* 
+     * Removing the style from the hash tables frees up the style name
+     * again.  The style itself may not be removed until it's been released
+     * by everything using it.
+     */
+    if (stylePtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&viewPtr->styleTable, stylePtr->hashPtr);
+        stylePtr->hashPtr = NULL;
+    } 
+    if (stylePtr->link != NULL) {
+        /* Only user-generated styles will be in the list. */
+        Blt_Chain_DeleteLink(viewPtr->userStyles, stylePtr->link);
+    }
+    Blt_Free(stylePtr);
+}
+
+static void
+FreeStyle(CellStyle *stylePtr)
+{
+    stylePtr->refCount--;
+    /* If no cell is using the style, remove it.*/
+    if (stylePtr->refCount <= 0) {
+        DestroyStyle(stylePtr);
+    }
+}
+
+
+static void
+DestroyCell(TreeView *viewPtr, Cell *cellPtr)
+{
+    if (viewPtr->flags & TV_SORT_AUTO) {
+        viewPtr->flags |= SORT_PENDING;
+    }
+    if (cellPtr->stylePtr != NULL) {
+        FreeStyle(cellPtr->stylePtr);
+    }
+    /* Fix pointers to destroyed cell. */
+    if (viewPtr->activeCellPtr == cellPtr) {
+        viewPtr->activeCellPtr = NULL;
+    }
+    if (viewPtr->focusCellPtr == cellPtr) {
+        viewPtr->focusCellPtr = NULL;
+    }
+    if (viewPtr->postPtr == cellPtr) {
+        viewPtr->postPtr = NULL;
+    }
+
+    if (cellPtr->dataObjPtr != NULL) {
+        Tcl_DecrRefCount(cellPtr->dataObjPtr);
+        cellPtr->dataObjPtr = NULL;
+    }
+}
+
+static void
+DestroyEntry(Entry *entryPtr)
+{
+    TreeView *viewPtr;
+    
+    entryPtr->flags |= DELETED;         /* Mark the entry as destroyed. */
+
+    viewPtr = entryPtr->viewPtr;
+
+    /* Fix pointers to destroyed entry. */
+    if (viewPtr->activePtr == entryPtr) {
+        viewPtr->activePtr = entryPtr->parentPtr;
+    }
+    if (viewPtr->activeBtnPtr == entryPtr) {
+        viewPtr->activeBtnPtr = NULL;
+    }
+    if (viewPtr->focusPtr == entryPtr) {
+        viewPtr->focusPtr = entryPtr->parentPtr;
+        Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_ENTRY);
+    }
+    if (viewPtr->sel.anchorPtr == entryPtr) {
+        viewPtr->sel.markPtr = viewPtr->sel.anchorPtr = NULL;
+    }
+
+    DeselectEntry(viewPtr, entryPtr);
+    Blt_DeleteBindings(viewPtr->bindTable, entryPtr);
+    if (entryPtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&viewPtr->entryTable, entryPtr->hashPtr);
+    }
+    entryPtr->node = NULL;
+    /* [prev] [entry] [next] */
+    if (entryPtr->prevPtr != NULL) {
+        entryPtr->prevPtr->nextPtr = entryPtr->nextPtr;
+    }
+    if (entryPtr->nextPtr != NULL) {
+        entryPtr->nextPtr->prevPtr = entryPtr->prevPtr;
+    }
+    if (entryPtr->parentPtr != NULL) {
+        if (entryPtr->parentPtr->headPtr == entryPtr) {
+            entryPtr->parentPtr->headPtr = entryPtr->nextPtr;
+        }
+        if (entryPtr->parentPtr->tailPtr == entryPtr) {
+            entryPtr->parentPtr->tailPtr = entryPtr->prevPtr;
+        }
+    }        
+    iconsOption.clientData = viewPtr;
+    cachedObjOption.clientData = viewPtr;
+    labelOption.clientData = viewPtr;
+    Blt_FreeOptions(entrySpecs, (char *)entryPtr, viewPtr->display, 0);
+    if (viewPtr->rootPtr == entryPtr) {
+        Blt_TreeNode root;
+
+        /* Restore the root node back to the top of the tree. */
+        root = Blt_Tree_RootNode(viewPtr->tree);
+        viewPtr->rootPtr = NodeToEntry(viewPtr,root);
+    }
+    if (!Blt_Tree_TagTableIsShared(viewPtr->tree)) {
+        /* Don't clear tags unless this client is the only one using the
+         * tag table.*/
+        Blt_Tree_ClearTags(viewPtr->tree, entryPtr->node);
+    }
+    if (entryPtr->gc != NULL) {
+        Tk_FreeGC(viewPtr->display, entryPtr->gc);
+    }
+    /* Delete the chain of data cells from the entry. */
+    if (entryPtr->cells != NULL) {
+        Cell *cellPtr, *nextPtr;
+        
+        for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+             cellPtr = nextPtr) {
+            nextPtr = cellPtr->nextPtr;
+            DestroyCell(viewPtr, cellPtr);
+        }
+        entryPtr->cells = NULL;
+    }
+    FreePath(entryPtr);
+    Tcl_EventuallyFree(entryPtr, FreeEntryProc);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DeleteEntries --
+ *
+ *      Deletes the child entries at a given parent entry.
+ *
+ * Results:
+ *      Returns a standard TCL result. If a temporary array of entry
+ *      pointers can't be allocated TCL_ERROR is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DeleteEntries(TreeView *viewPtr, Entry *parentPtr)
+{
+    Entry *entryPtr, *nextPtr;
+
+    for (entryPtr = parentPtr->headPtr; entryPtr != NULL; 
+         entryPtr = nextPtr) {
+        nextPtr = entryPtr->nextPtr;
+        if (entryPtr->headPtr != NULL) {
+            DeleteEntries(viewPtr, entryPtr);
+        }
+        DestroyEntry(entryPtr);
+    }
+}
+
 /*ARGSUSED*/
 static void
 FreeTreeProc(ClientData clientData, Display *display, char *widgRec, int offset)
@@ -1789,14 +1953,12 @@ FreeTreeProc(ClientData clientData, Display *display, char *widgRec, int offset)
     Blt_Tree *treePtr = (Blt_Tree *)(widgRec + offset);
 
     if (*treePtr != NULL) {
-        Blt_TreeNode root;
         TreeView *viewPtr = clientData;
 
         /* 
          * Release the current tree, removing any entry fields. 
          */
-        root = Blt_Tree_RootNode(*treePtr);
-        Blt_Tree_Apply(root, DeleteApplyProc, viewPtr);
+        DeleteEntries(viewPtr, viewPtr->rootPtr);
         ClearSelection(viewPtr);
         Blt_Tree_Close(*treePtr);
         *treePtr = NULL;
@@ -2385,41 +2547,6 @@ GetStyleForeground(Column *colPtr)
     return colPtr->viewPtr->normalFg;
 }
 
-static void
-DestroyStyle(CellStyle *stylePtr)
-{
-    TreeView *viewPtr;
-
-    viewPtr = stylePtr->viewPtr;
-    iconOption.clientData = viewPtr;
-    Blt_FreeOptions(stylePtr->classPtr->specs, (char *)stylePtr, 
-                    viewPtr->display, 0);
-    (*stylePtr->classPtr->freeProc)(stylePtr); 
-    /* 
-     * Removing the style from the hash tables frees up the style name
-     * again.  The style itself may not be removed until it's been released
-     * by everything using it.
-     */
-    if (stylePtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&viewPtr->styleTable, stylePtr->hashPtr);
-        stylePtr->hashPtr = NULL;
-    } 
-    if (stylePtr->link != NULL) {
-        /* Only user-generated styles will be in the list. */
-        Blt_Chain_DeleteLink(viewPtr->userStyles, stylePtr->link);
-    }
-    Blt_Free(stylePtr);
-}
-
-static void
-FreeStyle(CellStyle *stylePtr)
-{
-    stylePtr->refCount--;
-    /* If no cell is using the style, remove it.*/
-    if (stylePtr->refCount <= 0) {
-        DestroyStyle(stylePtr);
-    }
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -3735,7 +3862,6 @@ MapAncestorsApplyProc(TreeView *viewPtr, Entry *entryPtr)
 static Entry *
 FindPath(TreeView *viewPtr, Entry *rootPtr, const char *path)
 {
-    Blt_TreeNode child;
     const char **argv;
     const char *name;
     long numComp;
@@ -3762,11 +3888,11 @@ FindPath(TreeView *viewPtr, Entry *rootPtr, const char *path)
     name = path;
     entryPtr = rootPtr;
     if (viewPtr->pathSep == SEPARATOR_NONE) {
-        child = Blt_Tree_FindChild(entryPtr->node, name);
-        if (child == NULL) {
+        entryPtr = FindChild(entryPtr, name);
+        if (entryPtr == NULL) {
             goto error;
         }
-        return NodeToEntry(viewPtr, child);
+        return entryPtr;
     }
 
     if (SplitPath(viewPtr, path, &numComp, &argv) != TCL_OK) {
@@ -3774,12 +3900,11 @@ FindPath(TreeView *viewPtr, Entry *rootPtr, const char *path)
     }
     for (p = argv; *p != NULL; p++) {
         name = *p;
-        child = Blt_Tree_FindChild(entryPtr->node, name);
-        if (child == NULL) {
+        entryPtr = FindChild(entryPtr, name);
+        if (entryPtr == NULL) {
             Tcl_Free((char *)argv);
             goto error;
         }
-        entryPtr = NodeToEntry(viewPtr, child);
     }
     Tcl_Free((char *)argv);
     return entryPtr;
@@ -4644,31 +4769,6 @@ ConfigureButtons(TreeView *viewPtr)
 }
 
 
-static void
-DestroyCell(TreeView *viewPtr, Cell *cellPtr)
-{
-    if (viewPtr->flags & TV_SORT_AUTO) {
-        viewPtr->flags |= SORT_PENDING;
-    }
-    if (cellPtr->stylePtr != NULL) {
-        FreeStyle(cellPtr->stylePtr);
-    }
-    /* Fix pointers to destroyed cell. */
-    if (viewPtr->activeCellPtr == cellPtr) {
-        viewPtr->activeCellPtr = NULL;
-    }
-    if (viewPtr->focusCellPtr == cellPtr) {
-        viewPtr->focusCellPtr = NULL;
-    }
-    if (viewPtr->postPtr == cellPtr) {
-        viewPtr->postPtr = NULL;
-    }
-
-    if (cellPtr->dataObjPtr != NULL) {
-        Tcl_DecrRefCount(cellPtr->dataObjPtr);
-        cellPtr->dataObjPtr = NULL;
-    }
-}
 
 static void
 FreeEntryProc(DestroyData data)
@@ -4680,84 +4780,6 @@ FreeEntryProc(DestroyData data)
     Blt_Pool_FreeItem(viewPtr->entryPool, entryPtr);
 }
 
-static void
-DestroyEntry(Entry *entryPtr)
-{
-    TreeView *viewPtr;
-    
-    entryPtr->flags |= DELETED;         /* Mark the entry as destroyed. */
-
-    viewPtr = entryPtr->viewPtr;
-
-    /* Fix pointers to destroyed entry. */
-    if (viewPtr->activePtr == entryPtr) {
-        viewPtr->activePtr = entryPtr->parentPtr;
-    }
-    if (viewPtr->activeBtnPtr == entryPtr) {
-        viewPtr->activeBtnPtr = NULL;
-    }
-    if (viewPtr->focusPtr == entryPtr) {
-        viewPtr->focusPtr = entryPtr->parentPtr;
-        Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_ENTRY);
-    }
-    if (viewPtr->sel.anchorPtr == entryPtr) {
-        viewPtr->sel.markPtr = viewPtr->sel.anchorPtr = NULL;
-    }
-
-    DeselectEntry(viewPtr, entryPtr);
-    Blt_DeleteBindings(viewPtr->bindTable, entryPtr);
-    if (entryPtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&viewPtr->entryTable, entryPtr->hashPtr);
-    }
-    entryPtr->node = NULL;
-    /* [prev] [entry] [next] */
-    if (entryPtr->prevPtr != NULL) {
-        entryPtr->prevPtr->nextPtr = entryPtr->nextPtr;
-    }
-    if (entryPtr->nextPtr != NULL) {
-        entryPtr->nextPtr->prevPtr = entryPtr->prevPtr;
-    }
-    if (entryPtr->parentPtr != NULL) {
-        if (entryPtr->parentPtr->headPtr == entryPtr) {
-            entryPtr->parentPtr->headPtr = entryPtr->nextPtr;
-        }
-        if (entryPtr->parentPtr->tailPtr == entryPtr) {
-            entryPtr->parentPtr->tailPtr = entryPtr->prevPtr;
-        }
-    }        
-    iconsOption.clientData = viewPtr;
-    cachedObjOption.clientData = viewPtr;
-    labelOption.clientData = viewPtr;
-    Blt_FreeOptions(entrySpecs, (char *)entryPtr, viewPtr->display, 0);
-    if (viewPtr->rootPtr == entryPtr) {
-        Blt_TreeNode root;
-
-        /* Restore the root node back to the top of the tree. */
-        root = Blt_Tree_RootNode(viewPtr->tree);
-        viewPtr->rootPtr = NodeToEntry(viewPtr,root);
-    }
-    if (!Blt_Tree_TagTableIsShared(viewPtr->tree)) {
-        /* Don't clear tags unless this client is the only one using the
-         * tag table.*/
-        Blt_Tree_ClearTags(viewPtr->tree, entryPtr->node);
-    }
-    if (entryPtr->gc != NULL) {
-        Tk_FreeGC(viewPtr->display, entryPtr->gc);
-    }
-    /* Delete the chain of data cells from the entry. */
-    if (entryPtr->cells != NULL) {
-        Cell *cellPtr, *nextPtr;
-        
-        for (cellPtr = entryPtr->cells; cellPtr != NULL; 
-             cellPtr = nextPtr) {
-            nextPtr = cellPtr->nextPtr;
-            DestroyCell(viewPtr, cellPtr);
-        }
-        entryPtr->cells = NULL;
-    }
-    FreePath(entryPtr);
-    Tcl_EventuallyFree(entryPtr, FreeEntryProc);
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -4885,26 +4907,6 @@ AttachChildren(TreeView *viewPtr, Entry *parentPtr)
             AttachChildren(viewPtr, entryPtr);
         }
     }
-}
-/*ARGSUSED*/
-static int
-CreateApplyProc(Blt_TreeNode node, ClientData clientData, int order)
-{
-    TreeView *viewPtr = clientData; 
-    return CreateEntry(viewPtr, node, 0, NULL, 0);
-}
-
-/*ARGSUSED*/
-static int
-DeleteApplyProc(Blt_TreeNode node, ClientData clientData, int order)
-{
-    TreeView *viewPtr = clientData;
-    /* 
-     * Unsetting the tree value triggers a call back to destroy the entry
-     * and also releases the Tcl_Obj that contains it.
-     */
-    return Blt_Tree_UnsetValueByKey(viewPtr->interp, viewPtr->tree, node, 
-        viewPtr->treeColumn.key);
 }
 
 static int
@@ -6058,6 +6060,12 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
     if (parentPtr->numChildren < 2) {
         return TCL_OK;
     }
+    if ((viewPtr->flags & SORTED) &&
+        (viewPtr->sort.decreasing == viewPtr->sort.viewIsDecreasing)) {
+        return TCL_OK;
+    }
+    fprintf(stderr, "Enter SortChildren: depth=%d numchildren=%d\n",
+            Blt_Tree_NodeDepth(parentPtr->node), parentPtr->numChildren);
     entries = Blt_Malloc(parentPtr->numChildren * sizeof(Entry *));
     if (entries == NULL) {
         Tcl_AppendResult(viewPtr->interp, "can't allocate sorting array.", 
@@ -6068,9 +6076,9 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
          childPtr = childPtr->nextPtr, i++) {
         entries[i] = childPtr;
     }
-    if ((viewPtr->flags & SORTED) &&
-        (viewPtr->sort.decreasing != viewPtr->sort.viewIsDecreasing)) {
+    if (viewPtr->flags & SORTED) {
         int first, last;
+
         /* 
          * The children are already sorted but in the wrong direction.
          * Reverse the entries in the array.
@@ -6092,6 +6100,7 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
         Entry *entryPtr;
 
         entryPtr = entries[i];
+        entryPtr->prevPtr = entryPtr->nextPtr = NULL;
         if (parentPtr->tailPtr == NULL) {
             parentPtr->headPtr = parentPtr->tailPtr = entryPtr;
         } else {
@@ -6100,34 +6109,17 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
             parentPtr->tailPtr = entryPtr;
         }
         if (entryPtr->numChildren > 1) {
-            SortChildren(viewPtr, entryPtr);
+            if (SortChildren(viewPtr, entryPtr) != TCL_OK) {
+                Blt_Free(entries);
+    fprintf(stderr, "Leave SortChildren ERROR: depth=%d numchildren=%d\n",
+            Blt_Tree_NodeDepth(parentPtr->node), parentPtr->numChildren);
+                return TCL_ERROR;
+            }
         }
     }
     Blt_Free(entries);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * SortApplyProc --
- *
- *      Sorts the subnodes at a given node.
- *
- * Results:
- *      Always returns TCL_OK.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-SortApplyProc(Blt_TreeNode node, ClientData clientData, int order)
-{
-    TreeView *viewPtr = clientData;
-
-    if (!Blt_Tree_IsLeaf(node)) {
-        Blt_Tree_SortNode(viewPtr->tree, node, CompareNodes);
-    }
+    fprintf(stderr, "Leave SortChildren: depth=%d numchildren=%d\n",
+            Blt_Tree_NodeDepth(parentPtr->node), parentPtr->numChildren);
     return TCL_OK;
 }
 
@@ -6205,12 +6197,12 @@ SortTreeView(TreeView *viewPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * CreateTreeView --
+ * NewView --
  *
  *---------------------------------------------------------------------------
  */
 static TreeView *
-CreateTreeView(Tcl_Interp *interp, Tcl_Obj *objPtr)
+NewView(Tcl_Interp *interp, Tcl_Obj *objPtr)
 {
     Tk_Window tkwin;
     TreeView *viewPtr;
@@ -15461,7 +15453,7 @@ TreeViewCmdProc(
                 " pathName ?option value?...\"", (char *)NULL);
         return TCL_ERROR;
     }
-    viewPtr = CreateTreeView(interp, objv[1]);
+    viewPtr = NewView(interp, objv[1]);
     if (viewPtr == NULL) {
         goto error;
     }
