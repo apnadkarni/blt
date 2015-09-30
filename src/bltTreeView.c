@@ -4896,15 +4896,6 @@ NewEntry(TreeView *viewPtr, Blt_TreeNode node, Entry *parentPtr)
         }
     } else {
         entryPtr = Blt_GetHashValue(hPtr);
-        /* We already have an entry for the node.  Get it's  */
-        if (entryPtr != viewPtr->rootPtr) {
-            Blt_TreeNode parent;
-            
-            parent = Blt_Tree_ParentNode(entryPtr->node);
-            parentPtr = NodeToEntry(viewPtr, parent);
-        } else {
-            parentPtr = NULL;
-        }
         DetachEntry(entryPtr);
         AppendEntry(parentPtr, entryPtr);
     }
@@ -4943,6 +4934,7 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
     switch (eventPtr->type) {
     case TREE_NOTIFY_CREATE:
         return CreateEntry(viewPtr, node, 0, NULL, 0);
+
     case TREE_NOTIFY_DELETE:
         /*  
          * Deleting the tree node triggers a call back to free the treeview
@@ -4962,6 +4954,7 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
             }
         }
         break;
+
     case TREE_NOTIFY_RELABEL:
         if (node != NULL) {
             Entry *entryPtr;
@@ -4975,14 +4968,19 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
         }
         viewPtr->flags |= (LAYOUT_PENDING | RESORT);
         EventuallyRedraw(viewPtr);
+
     case TREE_NOTIFY_MOVE:
         /* FIXME: reattach this node. */
         break;
+
     case TREE_NOTIFY_SORT:
-        /* FIXME: reattach all nodes */
+        viewPtr->rootPtr =
+            NewEntry(viewPtr, Blt_Tree_RootNode(viewPtr->tree), NULL);
+        AttachChildren(viewPtr, viewPtr->rootPtr);
         viewPtr->flags |= (LAYOUT_PENDING | RESORT);
         EventuallyRedraw(viewPtr);
         break;
+
     default:
         /* empty */
         break;
