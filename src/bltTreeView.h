@@ -110,7 +110,7 @@
 #define ICONWIDTH(d)    (viewPtr->levelInfo[(d)].iconWidth)
 #define LEVELOFFSET(d)  (viewPtr->levelInfo[(d)].offset)
 
-#define DEPTH(h, n)     (((h)->flatView) ? 0 : Blt_Tree_NodeDepth(n))
+#define DEPTH(t, n)     (((t)->flags & FLATTEN) ? 0 : Blt_Tree_NodeDepth(n))
 
 /* Shared flags. */
 #define DISABLED                (1<<0)  /* Draw cell as disabled. */
@@ -146,6 +146,8 @@
 /* Both X-scroll and  Y-scroll requests are pending. */
 #define SCROLL_PENDING  (SCROLLX | SCROLLY)
 
+#define FLATTEN                 (1<<14) /* Indicates if the view of the
+                                         * tree has been flattened. */
 #define UPDATE                  (1<<15)
 #define RESORT                  (1<<16) /* The tree has changed such that
                                          * the view needs to be resorted.
@@ -609,9 +611,9 @@ struct _Entry {
     GC gc;
     Entry *bottomPtr;
     Entry *parentPtr;                   /* Parent entry. NULL if root. */
-    Entry *headPtr, *tailPtr;           /* First and last child entry. NULL
-                                         * if no children. */
-    Entry *nextPtr, *prevPtr;
+    Entry *firstChildPtr, *lastChildPtr; /* First and last child
+                                         * entry. NULL if no children. */
+    Entry *nextPtr, *prevPtr;           /* Next and previous sibling. */
     int numChildren;
 };
 
@@ -917,8 +919,6 @@ struct _TreeView {
     Column *colActiveTitlePtr;          /* Column title currently active. */
     Column *colResizePtr;               /* Column that is being resized. */
     size_t depth;
-    int flatView;                       /* Indicates if the view of the
-                                         * tree has been flattened. */
     Entry **flatArr;                    /* Flattened array of entries. */
     SortInfo sort;                      /* Information about sorting the
                                          * tree.*/

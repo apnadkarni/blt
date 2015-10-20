@@ -293,13 +293,16 @@ typedef struct {
 #define DIR_ATIME       (1<<5)
 #define DIR_CTIME       (1<<6)
 #define DIR_MTIME       (1<<7)
-#define DIR_NLINK       (1<<8)
-#define DIR_DEV         (1<<9)
-#define DIR_INO         (1<<10)
-#define DIR_ALL         (DIR_ATIME|DIR_CTIME|DIR_MTIME|DIR_UID|DIR_GID|\
-                         DIR_TYPE|DIR_MODE|DIR_SIZE|DIR_NLINK|DIR_DEV|DIR_INO)
+#define DIR_INO         (1<<8)
+#define DIR_NLINK       (1<<9)
+#define DIR_DEV         (1<<10)
+#define DIR_PERMS       (1<<11)
 
-#define DIR_DEFAULT     (DIR_MTIME|DIR_TYPE|DIR_MODE|DIR_SIZE)
+#define DIR_ALL         (DIR_ATIME|DIR_CTIME|DIR_MTIME|DIR_UID|DIR_GID|\
+                         DIR_TYPE|DIR_MODE|DIR_SIZE|DIR_INO|DIR_NLINK|\
+                         DIR_DEV|DIR_PERMS)
+
+#define DIR_DEFAULT     (DIR_MTIME|DIR_TYPE|DIR_PERMS|DIR_SIZE)
 #define DIR_RECURSE     (1<<11)
 #define DIR_NOCASE      (1<<12)
 
@@ -1033,6 +1036,8 @@ FieldsSwitchProc(
             mask |= DIR_SIZE;
         } else if ((c == 'm') && (strcmp(string, "mode") == 0)) {
             mask |= DIR_MODE;
+        } else if ((c == 'p') && (strcmp(string, "perms") == 0)) {
+            mask |= DIR_PERMS;
         } else if ((c == 't') && (strcmp(string, "type") == 0)) {
             mask |= DIR_TYPE;
         } else if ((c == 'u') && (strcmp(string, "uid") == 0)) {
@@ -3407,6 +3412,10 @@ FillEntryData(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
         Blt_Tree_SetValue(interp, tree, node, "mode", 
                 Tcl_NewIntObj(statPtr->st_mode));
     }
+    if (switchesPtr->mask & DIR_PERMS) {
+        Blt_Tree_SetValue(interp, tree, node, "perms", 
+                Tcl_NewIntObj(statPtr->st_mode & 07777));
+    }
     if (switchesPtr->mask & DIR_UID) {
         Blt_Tree_SetValue(interp, tree, node, "uid", 
                 Tcl_NewIntObj(statPtr->st_uid));
@@ -3418,6 +3427,18 @@ FillEntryData(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
     if (switchesPtr->mask & DIR_TYPE) {
         Blt_Tree_SetValue(interp, tree, node, "type", 
                 Tcl_NewStringObj(GetTypeFromMode(statPtr->st_mode), -1));
+    }
+    if (switchesPtr->mask & DIR_INO) {
+        Blt_Tree_SetValue(interp, tree, node, "ino",  
+                Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_ino));
+    }
+    if (switchesPtr->mask & DIR_NLINK) {
+        Blt_Tree_SetValue(interp, tree, node, "nlink",  
+                Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_nlink));
+    }
+    if (switchesPtr->mask & DIR_DEV) {
+        Blt_Tree_SetValue(interp, tree, node, "dev",  
+                Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_rdev));
     }
 }
 

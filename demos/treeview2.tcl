@@ -65,7 +65,7 @@ array set modes {
    7    rwx
 }
 
-proc FormatMode { id mode } {
+proc FormatPerms { id mode } {
     global modes
     set mode [format %o [expr $mode & 07777]]
     set owner $modes([string index $mode 0])
@@ -81,7 +81,7 @@ proc Find { tree parent dir } {
     }
 }
 
-set top [file normalize "/"]
+set top [file normalize ".."]
 set trim "$top"
 
 set tree [blt::tree create]    
@@ -89,7 +89,7 @@ set tree [blt::tree create]
 proc OpenNode  { tree node parent top } {
     if { [file type $top/$parent] == "directory" } {
 	global spinner 
-	blt::busy hold .ss.t -opaque 1 -darken 50 
+	blt::busy hold .ss.t -opacity 50 
 	update
 	Find $tree $node $top/$parent
 	update
@@ -127,10 +127,10 @@ set img [image create picture -data {
 }]
 	 
 .ss.t style textbox mode -font "{courier new} 9"
-.ss.t column configure treeView -text ""  -sorttype dictionary
+.ss.t column configure treeView -text "name"  -sorttype dictionary
 .ss.t column insert end mtime -formatcommand FormatDate -justify right \
     -sorttype integer
-.ss.t column insert end mode -formatcommand FormatMode -justify right \
+.ss.t column insert end perms -formatcommand FormatPerms -justify right \
     -style mode -sorttype integer
 .ss.t column insert end type -formatcommand [list FormatType .ss.t] \
     -justify center -sorttype ascii
@@ -138,11 +138,10 @@ set img [image create picture -data {
     -sorttype integer
 focus .ss.t
 
-
 puts "$count entries"
 
 .ss.t column bind all <ButtonRelease-3> {
-    %W configure -flat no
+    %W configure -flat yes
 }
 
 .ss.t style checkbox check \
@@ -156,7 +155,7 @@ puts "$count entries"
 if 0 {
 .ss.t sort configure -column type 
 }
-.ss.t sort auto yes 
+#.ss.t sort auto yes 
 
 .ss.t entry configure 0 -font "Arial -12 italic"
 

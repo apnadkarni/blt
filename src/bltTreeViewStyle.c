@@ -1313,7 +1313,7 @@ static Tcl_Obj *
 FormatCell(CellStyle *stylePtr, Cell *cellPtr)
 {
     Column *colPtr;
-    Tcl_Obj *valueObjPtr, *fmtCmdObjPtr;;
+    Tcl_Obj *valueObjPtr, *fmtCmdObjPtr;
     Entry *rowPtr;
 
     if (cellPtr->dataObjPtr != NULL) {
@@ -2345,6 +2345,7 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     Entry *rowPtr;
     Column *colPtr;
 
+            
     viewPtr = stylePtr->viewPtr;
     cellPtr->flags &= ~GEOMETRY;        /* Remove the geometry flag from
                                          * the cell. */

@@ -436,6 +436,41 @@ the command.  The operations available for *datatables* are listed below.
   *path* is a directory, then its entries are added to the table.
   *Switches* can be any of the following:
 
+  **-fields** *list* 
+    Specifies the fields to be collected and written into the table.
+    *List* is a TCL list of field names.  Any of the field names
+    below may be used.
+
+    **size**
+      Collects a decimal string giving the size of file name in bytes.
+    **mode**
+      Collects a decimal string giving the mode of the file or directory.
+      The 12 bits corresponding to the mask 07777 are the file mode bits
+      and the least significant 9 bits (0777) are the file permission bits.
+    **type**
+      Collects the type of the file or directory. The type of file name
+      will be one of "file", "directory", "characterSpecial",
+      "blockSpecial", "fifo", "link", or "socket".
+    **uid**
+      Collects the user ID of the owner of the file or directory.
+    **gid**
+      Collects the group ID of the owner of the file or directory.
+    **atime**
+      Collects a decimal string giving the time at which file name was
+      last accessed.   
+    **ctime**
+      Collects a decimal string giving the time at which the status of file
+      name was changed. Status may be changed by writing or by setting
+      inode information (i.e., owner, group, link count, mode, etc.).
+    **mtime**
+      Collects a decimal string giving the time at which file name was
+      last modified.   
+    **permissions**
+      Collects a decimal string giving the time at which file name was
+      last modified.   
+    **all**
+      Collect the all the above fields.
+
   **-directory** 
     Add directory entries to the table.
 
@@ -463,36 +498,6 @@ the command.  The operations available for *datatables* are listed below.
 
   **-writable** 
     Add writable file and directory entries to the table.
-
-  The new columns are the following:
-   
-  *name*
-    The name of the directory entry.
-
-  *type*
-    The type of entry.  *Type* may be "file", "directory",
-    "characterSpecial", "blockSpecial", "fifo", or "link".
-
-  *size*
-    The number of bytes for the entry.
-
-  *uid*
-    The number representing the user ID or the entry,
-
-  *gid*
-    The number representing the group ID of the entry,
-
-  *atime*
-    The number representing the last access time of the entry,
-
-  *mtime*
-    The number representing the last modification time of the entry,
-
-  *ctime*
-    The number representing the last change time of the entry,
-
-  *mode*
-    The number representing the mode (permissions) of the entry,
 
 *tableName* **dump** ?\ *switches* ... ?
   Converts the contents of *tableName* into a string representation.  This

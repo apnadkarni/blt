@@ -425,14 +425,38 @@ static Blt_SwitchCustom beforeSwitch = {
 static Blt_SwitchCustom afterSwitch = {
     PositionSwitch, NULL, NULL, INSERT_AFTER,
 };
+static Blt_SwitchParseProc FieldsSwitchProc;
+static Blt_SwitchCustom fieldsSwitch = {
+    FieldsSwitchProc, NULL, NULL, (ClientData)0,
+};
 
 typedef struct {
     unsigned int perm, type;
     const char *pattern;
+    unsigned int mask;
 } DirSwitches;
+
+#define DIR_TYPE        (1<<0)
+#define DIR_MODE        (1<<1)
+#define DIR_SIZE        (1<<2)
+#define DIR_UID         (1<<3)
+#define DIR_GID         (1<<4)
+#define DIR_ATIME       (1<<5)
+#define DIR_CTIME       (1<<6)
+#define DIR_MTIME       (1<<7)
+#define DIR_INO         (1<<8)
+#define DIR_NLINK       (1<<9)
+#define DIR_DEV         (1<<10)
+#define DIR_PERMS       (1<<11)
+#define DIR_ALL         (DIR_ATIME|DIR_CTIME|DIR_MTIME|DIR_UID|DIR_GID|\
+                         DIR_TYPE|DIR_MODE|DIR_SIZE|DIR_INO|DIR_NLINK|\
+                         DIR_DEV|DIR_PERMS)
+#define DIR_DEFAULT     (DIR_MTIME|DIR_TYPE|DIR_PERMS|DIR_SIZE)
 
 static Blt_SwitchSpec dirSwitches[] = 
 {
+    {BLT_SWITCH_CUSTOM,  "-fields",  "list", (char *)NULL,
+        Blt_Offset(DirSwitches, mask),    0, 0, &fieldsSwitch},
     {BLT_SWITCH_BITMASK, "-hidden", "", (char *)NULL,
         Blt_Offset(DirSwitches, perm), 0, TCL_GLOB_PERM_HIDDEN},
     {BLT_SWITCH_BITMASK, "-readable", "", (char *)NULL,
@@ -734,6 +758,84 @@ LoadFormat(Tcl_Interp *interp, const char *name)
         return FALSE;
     }
     return TRUE;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FieldsSwitch --
+ *
+ *      Convert a string representing a list of field names into a mask.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+FieldsSwitchProc(
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
+{
+    int *maskPtr = (int *)(record + offset);
+    Tcl_Obj **objv;
+    int objc, i;
+    unsigned int mask;
+
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    mask = 0;
+    for (i = 0; i < objc; i++) {
+        const char *string;
+        char c;
+
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((c == 's') && (strcmp(string, "size") == 0)) {
+            mask |= DIR_SIZE;
+        } else if ((c == 'm') && (strcmp(string, "mode") == 0)) {
+            mask |= DIR_MODE;
+        } else if ((c == 'p') && (strcmp(string, "perms") == 0)) {
+            mask |= DIR_PERMS;
+        } else if ((c == 't') && (strcmp(string, "type") == 0)) {
+            mask |= DIR_TYPE;
+        } else if ((c == 'u') && (strcmp(string, "uid") == 0)) {
+            mask |= DIR_UID;
+        } else if ((c == 'g') && (strcmp(string, "gid") == 0)) {
+            mask |= DIR_GID;
+        } else if ((c == 'a') && (strcmp(string, "atime") == 0)) {
+            mask |= DIR_ATIME;
+        } else if ((c == 'c') && (strcmp(string, "ctime") == 0)) {
+            mask |= DIR_CTIME;
+        } else if ((c == 'm') && (strcmp(string, "mtime") == 0)) {
+            mask |= DIR_MTIME;
+        } else if ((c == 'i') && (strcmp(string, "ino") == 0)) {
+            mask |= DIR_INO;
+        } else if ((c == 'n') && (strcmp(string, "nlink") == 0)) {
+            mask |= DIR_NLINK;
+        } else if ((c == 'd') && (strcmp(string, "dev") == 0)) {
+            mask |= DIR_DEV;
+        } else if ((c == 'a') && (strcmp(string, "all") == 0)) {
+            mask |= DIR_ALL;
+        } else {
+            Tcl_AppendResult(interp, "unknown field name \"", string, "\"",
+                (char *)NULL);
+            return TCL_ERROR;
+        }
+    }
+    if (mask == 0) {
+        mask = DIR_DEFAULT;
+    }
+    *maskPtr = mask;
+    return TCL_OK;
 }
 
 /*
@@ -2327,9 +2429,23 @@ GetTypeFromMode(int mode)
 #endif
 }
 
+static INLINE BLT_TABLE_COLUMN 
+GetColumn(Tcl_Interp *interp, BLT_TABLE table, const char *label,
+          BLT_TABLE_COLUMN_TYPE type)
+{
+    BLT_TABLE_COLUMN col;
+
+    col = blt_table_get_column_by_label(table, label);
+    if (col == NULL) {
+        col = blt_table_create_column(interp, table, label);
+        blt_table_set_column_type(interp, table, col, type);
+    }
+    return col;
+}
+
 static void
 ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *fileName, 
-              Tcl_StatBuf *statPtr)
+              Tcl_StatBuf *statPtr, DirSwitches *switchesPtr)
 {
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN col;
@@ -2344,70 +2460,56 @@ ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *fileName,
         col = blt_table_create_column(interp, table, "name");
     }
     blt_table_set_string(interp, table, row, col, fileName, -1);
-    /* type */
-    col = blt_table_get_column_by_label(table, "type");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "type");
-    }
-    blt_table_set_string(interp, table, row, col,
-                         GetTypeFromMode(statPtr->st_mode), -1);
-    /* size */ 
-    col = blt_table_get_column_by_label(table, "size");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "size");
-        blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    blt_table_set_long(interp, table, row, col, statPtr->st_size);
 
-    /* uid */
-    col = blt_table_get_column_by_label(table, "uid");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "uid"); 
-        blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-   }
-    blt_table_set_long(interp, table, row, col, statPtr->st_uid);
-    /* gid */
-    col = blt_table_get_column_by_label(table, "gid");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "gid");
-        blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    if (switchesPtr->mask & DIR_TYPE) {
+        col = GetColumn(interp, table, "type", TABLE_COLUMN_TYPE_STRING);
+        blt_table_set_string(interp, table, row, col,
+                             GetTypeFromMode(statPtr->st_mode), -1);
     }
-    blt_table_set_long(interp, table, row, col, statPtr->st_gid);
-    /* atime */
-    col = blt_table_get_column_by_label(table, "atime");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "atime");
-        blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    if (switchesPtr->mask & DIR_SIZE) {
+        col = GetColumn(interp, table, "size", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_size);
     }
-    blt_table_set_long(interp, table, row, col, statPtr->st_atime);
-    /* mtime */
-    col = blt_table_get_column_by_label(table, "mtime");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "mtime");
-        blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    if (switchesPtr->mask & DIR_UID) {
+        col = GetColumn(interp, table, "uid", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_uid);
     }
-    blt_table_set_long(interp, table, row, col, statPtr->st_mtime);
-    /* ctime */
-    col = blt_table_get_column_by_label(table, "ctime");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "ctime");
-        blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    if (switchesPtr->mask & DIR_GID) {
+        col = GetColumn(interp, table, "gid", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_gid);
     }
-    blt_table_set_long(interp, table, row, col, statPtr->st_ctime);
-    /* perms */
-    col = blt_table_get_column_by_label(table, "mode");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "mode");
-        blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    if (switchesPtr->mask & DIR_ATIME) {
+        col = GetColumn(interp, table, "atime", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_atime);
     }
-    blt_table_set_long(interp, table, row, col, statPtr->st_mode);
-    /* dev */
-    col = blt_table_get_column_by_label(table, "dev");
-    if (col == NULL) {
-        col = blt_table_create_column(interp, table, "dev");
-        blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    if (switchesPtr->mask & DIR_MTIME) {
+        col = GetColumn(interp, table, "mtime", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_mtime);
     }
-    blt_table_set_long(interp, table, row, col, statPtr->st_dev);
+    if (switchesPtr->mask & DIR_CTIME) {
+        col = GetColumn(interp, table, "ctime", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_ctime);
+    }
+    if (switchesPtr->mask & DIR_MODE) {
+        col = GetColumn(interp, table, "mode", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_mode);
+    }
+    if (switchesPtr->mask & DIR_PERMS) {
+        col = GetColumn(interp, table, "perms", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_mode & 07777);
+    }
+    if (switchesPtr->mask & DIR_INO) {
+        col = GetColumn(interp, table, "ino", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_ino);
+    }
+    if (switchesPtr->mask & DIR_NLINK) {
+        col = GetColumn(interp, table, "nlink", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_nlink);
+    }
+    if (switchesPtr->mask & DIR_DEV) {
+        col = GetColumn(interp, table, "dev", TABLE_COLUMN_TYPE_LONG);
+        blt_table_set_long(interp, table, row, col, statPtr->st_rdev);
+    }
 }
 
 /*
@@ -4721,12 +4823,14 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i, n;
     Tcl_Obj **items;
     DirSwitches switches;
+    Tcl_StatBuf stat;
     const char *pattern;
     Tcl_GlobTypeData globParams = {
         0, TCL_GLOB_PERM_R, /* macType*/NULL, /*macCreator*/NULL
     };
 
     memset(&switches, 0, sizeof(switches));
+    switches.mask = DIR_DEFAULT;
     if (Blt_ParseSwitches(interp, dirSwitches, objc - 3, objv + 3, &switches,
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
@@ -4739,8 +4843,23 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } else {
         pattern = switches.pattern;
     }
+    if (Tcl_FSStat(objv[2], &stat) != 0) {
+        Tcl_AppendResult(interp, "Can't stat directory \"",
+                         Tcl_GetString(objv[2]), "\": ",
+                         Tcl_PosixError(interp), (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (strcmp(GetTypeFromMode(stat.st_mode), "directory") != 0) {
+        Tcl_AppendResult(interp, "Not a directory \"",
+                         Tcl_GetString(objv[2]), "\"", (char *)NULL);
+        return TCL_ERROR;
+    }
     if (Tcl_FSMatchInDirectory(interp, listObjPtr, objv[2], pattern, 
         &globParams) != TCL_OK) {
+        Tcl_AppendResult(interp, "Can't read directory \"",
+                         Tcl_GetString(objv[2]), "\": ",
+                         Tcl_PosixError(interp), (char *)NULL);
+        return TCL_ERROR;
     }
     if (Tcl_ListObjGetElements(interp, listObjPtr, &n, &items) != TCL_OK) {
         return TCL_OK;
@@ -4765,7 +4884,7 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_IncrRefCount(objPtr);
         Tcl_ListObjIndex(NULL, objPtr, length-1, &tailPtr);
         label = Tcl_GetString(tailPtr);
-        ExportToTable(interp, cmdPtr->table, label, &stat);
+        ExportToTable(interp, cmdPtr->table, label, &stat, &switches);
         Tcl_DecrRefCount(objPtr);
     }
     Tcl_DecrRefCount(listObjPtr);

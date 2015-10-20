@@ -294,7 +294,37 @@ command.  The operations available for trees are listed below.
   The following switches are available:
 
   **-fields** *list* 
+    Specifies the fields to be collected and written into the tree.
+    *List* is a TCL list of field names.  Any of the field names
+    below may be used.
 
+    **size**
+      Collects a decimal string giving the size of file name in bytes.
+    **mode**
+      Collects a decimal string giving the mode of the file or directory.
+      The 12 bits corresponding to the mask 07777 are the file mode bits
+      and the least significant 9 bits (0777) are the file permission bits.
+    **type**
+      Collects the type of the file or directory. The type of file name
+      will be one of "file", "directory", "characterSpecial",
+      "blockSpecial", "fifo", "link", or "socket".
+    **uid**
+      Collects the user ID of the owner of the file or directory.
+    **gid**
+      Collects the group ID of the owner of the file or directory.
+    **atime**
+      Collects a decimal string giving the time at which file name was
+      last accessed.   
+    **ctime**
+      Collects a decimal string giving the time at which the status of file
+      name was changed. Status may be changed by writing or by setting
+      inode information (i.e., owner, group, link count, mode, etc.).
+    **mtime**
+      Collects a decimal string giving the time at which file name was
+      last modified.   
+    **all**
+      Collect the all the above fields.
+   
   **-readable**
     Only load files and directories that are readable by the user.
 
