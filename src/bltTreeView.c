@@ -749,7 +749,6 @@ static Blt_SwitchSpec nearestEntrySwitches[] = {
 /* Forward Declarations */
 static Blt_BindAppendTagsProc AppendTagsProc;
 static Blt_BindPickProc PickItem;
-static Blt_TreeCompareNodesProc CompareNodes;
 static Blt_TreeNotifyEventProc TreeEventProc;
 static Blt_TreeTraceProc TreeTraceProc;
 static Tcl_CmdDeleteProc TreeViewInstCmdDeleteProc;
@@ -6061,31 +6060,6 @@ CompareEntries(const void *a, const void *b)
 /*
  *---------------------------------------------------------------------------
  *
- * CompareNodes --
- *
- *      Comparison routine (used by qsort) to sort a chain of subnodes.
- *
- * Results:
- *      1 is the first is greater, -1 is the second is greater, 0
- *      if equal.
- *
- *---------------------------------------------------------------------------
- */
-static int
-CompareNodes(Blt_TreeNode *n1Ptr, Blt_TreeNode *n2Ptr)
-{
-    TreeView *viewPtr = treeViewInstance;
-    Entry *e1, *e2;
-
-    e1 = NodeToEntry(viewPtr, *n1Ptr);
-    e2 = NodeToEntry(viewPtr, *n2Ptr);
-    return CompareEntries(&e1, &e2);
-}
-
- 
-/*
- *---------------------------------------------------------------------------
- *
  * SortChildren --
  *
  *      Sorts the child entries at a given parent entry.
@@ -6864,6 +6838,7 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     }
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -6958,6 +6933,7 @@ ResetCoordinates2(TreeView *viewPtr, Entry *rootPtr)
         }
     }
 }
+#endif
 
 #ifdef notdef
 /*
@@ -7731,7 +7707,8 @@ ComputeVisibleEntries(TreeView *viewPtr)
         viewPtr->visibleEntries[viewPtr->numVisibleEntries] = NULL;
     } else {
         Entry *ep;
-        int y, index;
+        int y;
+        long index;
         
         y = 0;
         if (viewPtr->flags & HIDE_ROOT) {
