@@ -102,7 +102,7 @@
 #define GetData(entryPtr, key, objPtrPtr) \
         Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, (entryPtr)->viewPtr->tree, \
               (entryPtr)->node, key, objPtrPtr)
-#define IsClosed(e)             ((e)->flags & ENTRY_CLOSED)
+#define IsClosed(e)             ((e)->flags & CLOSED)
 #define IsOpen(e)               (!IsClosed(e))
 
 #define DEF_ICON_WIDTH          16
@@ -798,6 +798,16 @@ Blt_TreeView_EventuallyRedraw(TreeView *viewPtr)
     EventuallyRedraw(viewPtr);
 }
 
+static int
+EntryDepth(TreeView *viewPtr, Entry *entryPtr)
+{
+    if (viewPtr->flags & FLATTEN) {
+        return 0;
+    }
+    return Blt_Tree_NodeDepth(entryPtr->node) -
+        Blt_Tree_NodeDepth(viewPtr->rootPtr->node);
+}
+
 static Tcl_Obj *
 CellToIndexObj(Tcl_Interp *interp, Cell *cellPtr)
 {
@@ -859,7 +869,7 @@ EntryIsHidden(Entry *entryPtr)
     if ((viewPtr->flags & HIDE_LEAVES) && (Blt_Tree_IsLeaf(entryPtr->node))) {
         return TRUE;
     }
-    return (entryPtr->flags & ENTRY_HIDDEN) ? TRUE : FALSE;
+    return (entryPtr->flags & HIDDEN) ? TRUE : FALSE;
 }
 
 static INLINE int
@@ -877,7 +887,7 @@ FindChild(Entry *parentPtr, const char *name)
     Entry *childPtr;
     
     for (childPtr = parentPtr->firstChildPtr; childPtr != NULL;
-         childPtr = childPtr->nextPtr) {
+         childPtr = childPtr->nextSiblingPtr) {
         if (strcmp(Blt_Tree_NodeLabel(childPtr->node), name) == 0) {
             return childPtr;
         }
@@ -890,9 +900,12 @@ FirstChild(Entry *parentPtr, unsigned int hateFlags)
 {
     Entry *childPtr;
 
+    if ((hateFlags & CLOSED) && (parentPtr->flags & CLOSED)) {
+        return NULL;
+    }
     for (childPtr = parentPtr->firstChildPtr; childPtr != NULL;
-         childPtr = childPtr->nextPtr) {
-        if (((hateFlags & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(childPtr))) {
+         childPtr = childPtr->nextSiblingPtr) {
+        if (((hateFlags & HIDDEN) == 0) || (!EntryIsHidden(childPtr))) {
             return childPtr;
         }
     }
@@ -904,9 +917,12 @@ LastChild(Entry *parentPtr, unsigned int hateFlags)
 {
     Entry *childPtr;
 
+    if ((hateFlags & CLOSED) && (parentPtr->flags & CLOSED)) {
+        return NULL;
+    }
     for (childPtr = parentPtr->lastChildPtr; childPtr != NULL;
-         childPtr = childPtr->prevPtr) {
-        if (((hateFlags & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(childPtr))) {
+         childPtr = childPtr->prevSiblingPtr) {
+        if (((hateFlags & HIDDEN) == 0) || (!EntryIsHidden(childPtr))) {
             return childPtr;
         }
     }
@@ -916,9 +932,9 @@ LastChild(Entry *parentPtr, unsigned int hateFlags)
 static Entry *
 NextSibling(Entry *entryPtr, unsigned int hateFlags)
 {
-    for (entryPtr = entryPtr->nextPtr; entryPtr != NULL;
-         entryPtr = entryPtr->nextPtr) {
-        if (((hateFlags & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
+    for (entryPtr = entryPtr->nextSiblingPtr; entryPtr != NULL;
+         entryPtr = entryPtr->nextSiblingPtr) {
+        if (((hateFlags & HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
             return entryPtr;
         }
     }
@@ -928,9 +944,9 @@ NextSibling(Entry *entryPtr, unsigned int hateFlags)
 static Entry *
 PrevSibling(Entry *entryPtr, unsigned int hateFlags)
 {
-    for (entryPtr = entryPtr->prevPtr; entryPtr != NULL;
-         entryPtr = entryPtr->prevPtr) {
-        if (((hateFlags & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
+    for (entryPtr = entryPtr->prevSiblingPtr; entryPtr != NULL;
+         entryPtr = entryPtr->prevSiblingPtr) {
+        if (((hateFlags & HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
             return entryPtr;
         }
     }
@@ -943,10 +959,10 @@ PrevSibling(Entry *entryPtr, unsigned int hateFlags)
  * PrevEntry --
  *
  *      Returns the "previous" node in the tree.  This node (in depth-first
- *      order) is its parent if the node has no siblings that are previous to
- *      it.  Otherwise it is the last descendant of the last sibling.  In this
- *      case, descend the sibling's hierarchy, using the last child at any
- *      ancestor, until we we find a leaf.
+ *      order) is its parent if the node has no siblings that are before
+ *      to it.  Otherwise it is the last descendant of the last sibling.
+ *      In this case, descend the sibling's hierarchy, using the last child
+ *      at any ancestor, until we we find a leaf.
  *
  *---------------------------------------------------------------------------
  */
@@ -1024,6 +1040,74 @@ NextEntry(Entry *entryPtr, unsigned int hateFlags)
         entryPtr = entryPtr->parentPtr;
     }
     return NULL;                        /* At root, no next node. */
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * IsBefore --
+ *
+ *      Determines if the first entry is before the second in the tree.
+ *      This is used (as opposed to the Blt_Tree_IsBefore routine) because
+ *      sorting may changed the order within the the view.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+IsBefore(Entry *entryPtr1, Entry *entryPtr2)
+{
+    long depth;
+    long i;
+    Entry *childPtr;
+    
+    if (entryPtr1 == entryPtr2) {
+        return FALSE;
+    }
+    depth = MIN(Blt_Tree_NodeDepth(entryPtr1->node),
+                Blt_Tree_NodeDepth(entryPtr2->node));
+    if (depth == 0) {                   /* One of the nodes is root. */
+        return (entryPtr1->parentPtr == NULL);
+    }
+    /* 
+     * Traverse back from the deepest entry, until both entries are at the
+     * same depth.  Check if this ancestor entry is the same for both
+     * entries.
+     */
+    for (i = Blt_Tree_NodeDepth(entryPtr1->node); i > depth; i--) {
+        entryPtr1 = entryPtr1->parentPtr;
+    }
+    if (entryPtr1 == entryPtr2) {
+        return FALSE;
+    }
+    for (i = Blt_Tree_NodeDepth(entryPtr2->node); i > depth; i--) {
+        entryPtr2 = entryPtr2->parentPtr;
+    }
+    if (entryPtr2 == entryPtr1) {
+        return TRUE;
+    }
+
+    /* 
+     * First find the mutual ancestor of both nodes.  Look at each
+     * preceding ancestor level-by-level for both nodes.  Eventually we'll
+     * find a node that's the parent of both ancestors.  Then find the
+     * first ancestor in the parent's list of subnodes.
+     */
+    for (i = depth; i > 0; i--) {
+        if (entryPtr1->parentPtr == entryPtr2->parentPtr) {
+            break;
+        }
+        entryPtr1 = entryPtr1->parentPtr;
+        entryPtr2 = entryPtr2->parentPtr;
+    }
+    for (childPtr = entryPtr1->parentPtr->firstChildPtr; childPtr != NULL; 
+         childPtr = childPtr->nextSiblingPtr) {
+        if (childPtr == entryPtr1) {
+            return TRUE;
+        } else if (childPtr == entryPtr2) {
+            return FALSE;
+        }
+    }
+    return FALSE;
 }
 
 static const char *
@@ -1184,7 +1268,7 @@ OpenEntry(TreeView *viewPtr, Entry *entryPtr)
     if (IsOpen(entryPtr)) {
         return TCL_OK;                  /* Entry is already open. */
     }
-    entryPtr->flags &= ~ENTRY_CLOSED;
+    entryPtr->flags &= ~CLOSED;
     viewPtr->flags |= LAYOUT_PENDING;
     /*
      * If there's a "open" command proc specified for the entry, use that
@@ -1216,7 +1300,7 @@ CloseEntry(TreeView *viewPtr, Entry *entryPtr)
     if (IsClosed(entryPtr)) {
         return TCL_OK;                  /* Entry is already closed. */
     }
-    entryPtr->flags |= ENTRY_CLOSED;
+    entryPtr->flags |= CLOSED;
     viewPtr->flags |= LAYOUT_PENDING;
     /*
      * Invoke the entry's "close" command, if there is one. Otherwise try
@@ -1513,12 +1597,12 @@ SelectRange(TreeView *viewPtr, Entry *fromPtr, Entry *toPtr)
     } else {
         Entry *entryPtr, *nextPtr;
         IterProc *proc;
-        /* From the range determine the direction to select entries. */
 
-        proc = (Blt_Tree_IsBefore(toPtr->node, fromPtr->node)) 
-            ? PrevEntry : NextEntry;
+        /* From the range determine the direction to select entries. */
+        proc = (IsBefore(toPtr, fromPtr)) ? PrevEntry : NextEntry;
+        /* Select entries in the range. Only select visible entries. */
         for (entryPtr = fromPtr; entryPtr != NULL; entryPtr = nextPtr) {
-            nextPtr = (*proc)(entryPtr, ENTRY_MASK);
+            nextPtr = (*proc)(entryPtr, HIDDEN | CLOSED);
             SelectEntryApplyProc(viewPtr, entryPtr);
             if (entryPtr == toPtr) {
                 break;
@@ -1841,8 +1925,8 @@ AppendEntry(Entry *parentPtr, Entry *entryPtr)
         if (parentPtr->lastChildPtr == NULL) {
             parentPtr->firstChildPtr = parentPtr->lastChildPtr = entryPtr;
         } else {
-            entryPtr->prevPtr = parentPtr->lastChildPtr;
-            parentPtr->lastChildPtr->nextPtr = entryPtr;
+            entryPtr->prevSiblingPtr = parentPtr->lastChildPtr;
+            parentPtr->lastChildPtr->nextSiblingPtr = entryPtr;
             parentPtr->lastChildPtr = entryPtr;
         }
         entryPtr->parentPtr = parentPtr;
@@ -1854,22 +1938,23 @@ AppendEntry(Entry *parentPtr, Entry *entryPtr)
 static void
 DetachEntry(Entry *entryPtr)
 {
-    if (entryPtr->prevPtr != NULL) {
-        entryPtr->prevPtr->nextPtr = entryPtr->nextPtr;
+    if (entryPtr->prevSiblingPtr != NULL) {
+        entryPtr->prevSiblingPtr->nextSiblingPtr = entryPtr->nextSiblingPtr;
     }
-    if (entryPtr->nextPtr != NULL) {
-        entryPtr->nextPtr->prevPtr = entryPtr->prevPtr;
+    if (entryPtr->nextSiblingPtr != NULL) {
+        entryPtr->nextSiblingPtr->prevSiblingPtr = entryPtr->prevSiblingPtr;
     }
     if (entryPtr->parentPtr != NULL) {
         if (entryPtr->parentPtr->firstChildPtr == entryPtr) {
-            entryPtr->parentPtr->firstChildPtr = entryPtr->nextPtr;
+            entryPtr->parentPtr->firstChildPtr = entryPtr->nextSiblingPtr;
         }
         if (entryPtr->parentPtr->lastChildPtr == entryPtr) {
-            entryPtr->parentPtr->lastChildPtr = entryPtr->prevPtr;
+            entryPtr->parentPtr->lastChildPtr = entryPtr->prevSiblingPtr;
         }
         entryPtr->parentPtr->numChildren--;
     }        
-    entryPtr->nextPtr = entryPtr->prevPtr = entryPtr->parentPtr = NULL;
+    entryPtr->nextSiblingPtr = entryPtr->prevSiblingPtr =
+        entryPtr->parentPtr = NULL;
 }
 
 static void
@@ -1957,7 +2042,7 @@ DeleteEntries(TreeView *viewPtr, Entry *parentPtr)
 
     for (entryPtr = parentPtr->firstChildPtr; entryPtr != NULL; 
          entryPtr = nextPtr) {
-        nextPtr = entryPtr->nextPtr;
+        nextPtr = entryPtr->nextSiblingPtr;
         if (entryPtr->firstChildPtr != NULL) {
             DeleteEntries(viewPtr, entryPtr);
         }
@@ -2514,15 +2599,6 @@ GetStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *name,
     *stylePtrPtr = stylePtr;
     return TCL_OK;
 }
-
-#ifdef notdef
-int
-GetStyleFromObj(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr, 
-                CellStyle **stylePtrPtr)
-{
-    return GetStyle(interp, viewPtr, Tcl_GetString(objPtr), stylePtrPtr);
-}
-#endif
 
 static INLINE Blt_Bg
 GetStyleBackground(Column *colPtr)
@@ -3618,18 +3694,18 @@ Apply(
     TreeViewApplyProc *proc,            /* Procedure called for each entry. */
     unsigned int flags)
 {
-    if ((flags & ENTRY_HIDDEN) && (EntryIsHidden(entryPtr))) {
+    if ((flags & HIDDEN) && (EntryIsHidden(entryPtr))) {
         return TCL_OK;                  /* Hidden node. */
     }
-    if ((flags & entryPtr->flags) & ENTRY_HIDDEN) {
+    if ((flags & entryPtr->flags) & HIDDEN) {
         return TCL_OK;                  /* Hidden node. */
     }
-    if ((flags | entryPtr->flags) & ENTRY_CLOSED) {
+    if ((flags | entryPtr->flags) & CLOSED) {
         Entry *childPtr, *nextPtr;
 
         for (childPtr = FirstChild(entryPtr, 0); childPtr != NULL; 
              childPtr = nextPtr) {
-            nextPtr = childPtr->nextPtr;
+            nextPtr = childPtr->nextSiblingPtr;
             /* 
              * Get the next child before calling Apply recursively.  This
              * is because the apply callback may delete the node and its
@@ -3796,7 +3872,7 @@ LastEntry(TreeView *viewPtr, Entry *entryPtr, unsigned int mask)
 static int
 ShowEntryApplyProc(TreeView *viewPtr, Entry *entryPtr)
 {
-    entryPtr->flags &= ~ENTRY_HIDDEN;
+    entryPtr->flags &= ~HIDDEN;
     return TCL_OK;
 }
 
@@ -3814,7 +3890,7 @@ ShowEntryApplyProc(TreeView *viewPtr, Entry *entryPtr)
 static int
 HideEntryApplyProc(TreeView *viewPtr, Entry *entryPtr)
 {
-    entryPtr->flags |= ENTRY_HIDDEN;
+    entryPtr->flags |= HIDDEN;
     return TCL_OK;
 }
 
@@ -3824,9 +3900,9 @@ MapAncestors(TreeView *viewPtr, Entry *entryPtr)
 {
     while (entryPtr != viewPtr->rootPtr) {
         entryPtr = entryPtr->parentPtr;
-        if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDDEN)) {
+        if (entryPtr->flags & (CLOSED | HIDDEN)) {
             viewPtr->flags |= LAYOUT_PENDING;
-            entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDDEN);
+            entryPtr->flags &= ~(CLOSED | HIDDEN);
         } 
     }
 }
@@ -3854,10 +3930,10 @@ MapAncestorsApplyProc(TreeView *viewPtr, Entry *entryPtr)
      */
     while (entryPtr != viewPtr->rootPtr) {
         entryPtr = entryPtr->parentPtr;
-        if ((entryPtr->flags & (ENTRY_HIDDEN | ENTRY_CLOSED)) == 0) {
+        if ((entryPtr->flags & (HIDDEN | CLOSED)) == 0) {
             break;              /* Assume ancestors are also mapped. */
         }
-        entryPtr->flags &= ~(ENTRY_HIDDEN | ENTRY_CLOSED);
+        entryPtr->flags &= ~(HIDDEN | CLOSED);
     }
     return TCL_OK;
 }
@@ -4054,6 +4130,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
     Entry *fromPtr, *entryPtr;
     char c;
     int length;
+    unsigned int mask;
     
     entryPtr = NULL;
     fromPtr = viewPtr->fromPtr;
@@ -4064,6 +4141,9 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         fromPtr = viewPtr->rootPtr;
     }
     string = Tcl_GetStringFromObj(objPtr, &length);
+
+    mask = CLOSED | HIDDEN;             /* Only navigate to visible
+                                         * entries. */
     c = string[0];
     if (c == '@') {
         int x, y;
@@ -4099,20 +4179,20 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
                 entryPtr = viewPtr->flatArr[i];
             }
         } else {
-            entryPtr = NextEntry(fromPtr, ENTRY_MASK);
+            entryPtr = NextEntry(fromPtr, mask);
             if (entryPtr == NULL) {
                 entryPtr = fromPtr;
             }
             if ((entryPtr == viewPtr->rootPtr) && 
                 (viewPtr->flags & HIDE_ROOT)) {
-                entryPtr = NextEntry(entryPtr, ENTRY_MASK);
+                entryPtr = NextEntry(entryPtr, mask);
             }
         }
     } else if ((c == 'e') && (strncmp(string, "end", length) == 0)) {
         if (viewPtr->flags & FLATTEN) {
             entryPtr = viewPtr->flatArr[viewPtr->numEntries - 1];
         } else {
-            entryPtr = LastEntry(viewPtr, viewPtr->rootPtr, ENTRY_MASK);
+            entryPtr = LastEntry(viewPtr, viewPtr->rootPtr, mask);
         }
         *entryPtrPtr = entryPtr;
         return TCL_OK;
@@ -4123,7 +4203,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         } else {
             entryPtr = viewPtr->rootPtr;
             if (viewPtr->flags & HIDE_ROOT) {
-                entryPtr = NextEntry(entryPtr, ENTRY_MASK);
+                entryPtr = NextEntry(entryPtr, mask);
             }
         }
     } else if ((c == 'f') && (length > 1) &&
@@ -4132,7 +4212,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         /* Fix the focus if it's the root node and we're not showing the
          * root node.  */
         if ((entryPtr == viewPtr->rootPtr) && (viewPtr->flags & HIDE_ROOT)) {
-            entryPtr = NextEntry(viewPtr->rootPtr, ENTRY_MASK);
+            entryPtr = NextEntry(viewPtr->rootPtr, mask);
         }
     } else if ((c == 'n') && (strncmp(string, "next", length) == 0)) {
         entryPtr = fromPtr;
@@ -4145,10 +4225,10 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
             }
             entryPtr = viewPtr->flatArr[i];
         } else {
-            entryPtr = NextEntry(fromPtr, ENTRY_MASK);
+            entryPtr = NextEntry(fromPtr, mask);
             if (entryPtr == NULL) {
                 if (viewPtr->flags & HIDE_ROOT) {
-                    entryPtr = NextEntry(viewPtr->rootPtr,ENTRY_MASK);
+                    entryPtr = NextEntry(viewPtr->rootPtr, mask);
                 } else {
                     entryPtr = viewPtr->rootPtr;
                 }
@@ -4165,13 +4245,13 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
             }
             entryPtr = viewPtr->flatArr[i];
         } else {
-            entryPtr = PrevEntry(fromPtr, ENTRY_MASK);
+            entryPtr = PrevEntry(fromPtr, mask);
             if (entryPtr == NULL) {
-                entryPtr = LastEntry(viewPtr, viewPtr->rootPtr, ENTRY_MASK);
+                entryPtr = LastEntry(viewPtr, viewPtr->rootPtr, mask);
             }
             if ((entryPtr == viewPtr->rootPtr) && 
                 (viewPtr->flags & HIDE_ROOT)) {
-                entryPtr = NextEntry(entryPtr, ENTRY_MASK);
+                entryPtr = NextEntry(entryPtr, mask);
             }
         }
     } else if ((c == 'u') && (strcmp(string, "up") == 0)) {
@@ -4184,13 +4264,13 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
                 entryPtr = viewPtr->flatArr[i];
             }
         } else {
-            entryPtr = PrevEntry(fromPtr, ENTRY_MASK);
+            entryPtr = PrevEntry(fromPtr, mask);
             if (entryPtr == NULL) {
                 entryPtr = fromPtr;
             }
             if ((entryPtr == viewPtr->rootPtr) && 
                 (viewPtr->flags & HIDE_ROOT)) {
-                entryPtr = NextEntry(entryPtr, ENTRY_MASK);
+                entryPtr = NextEntry(entryPtr, mask);
             }
         }
     } else if ((c == 'v') && (length > 5) &&
@@ -4692,53 +4772,6 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
     return TCL_OK;
 }
 
-#ifdef notdef
-int
-Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr, 
-                           Entry *entryPtr, Column *colPtr, const char *value)
-{
-    CellStyle *stylePtr;
-
-    stylePtr = NULL;
-    if (colPtr != &viewPtr->treeColumn) {
-        Cell *cellPtr;
-
-        cellPtr = GetCell(entryPtr, colPtr);
-        if (cellPtr != NULL) {
-            stylePtr = cellPtr->stylePtr;
-        }
-    }
-    if (stylePtr == NULL) {
-        stylePtr = colPtr->stylePtr;
-    }
-    if (colPtr == &viewPtr->treeColumn) {
-        if (entryPtr->labelObjPtr != NULL) {
-            FreeCachedObj(viewPtr, entryPtr->labelObjPtr);
-        }
-        if (value == NULL) {
-            entryPtr->labelObjPtr = GetCachedString(viewPtr, "");
-        } else {
-            entryPtr->labelObjPtr = GetCachedString(viewPtr, value);
-        }
-    } else {
-        Tcl_Obj *objPtr;
-        
-        objPtr = Tcl_NewStringObj(value, -1);
-        if (Blt_Tree_SetValueByKey(interp, viewPtr->tree, entryPtr->node, 
-                                   colPtr->key, objPtr) != TCL_OK) {
-            Tcl_DecrRefCount(objPtr);
-            return TCL_ERROR;
-        }
-        entryPtr->flags |= GEOMETRY;
-    }       
-    if (viewPtr != NULL) {
-        ConfigureEntry(viewPtr, entryPtr, 0, NULL, BLT_CONFIG_OBJV_ONLY);
-    }
-    viewPtr->flags |= LAYOUT_PENDING;
-    return TCL_OK;
-}
-#endif
-
 static void
 SizeOfIcons(Icon *icons, unsigned int *widthPtr, unsigned int *heightPtr)
 {
@@ -4837,7 +4870,7 @@ NewEntry(TreeView *viewPtr, Blt_TreeNode node, Entry *parentPtr)
         entryPtr = Blt_Pool_AllocItem(viewPtr->entryPool, sizeof(Entry));
         memset(entryPtr, 0, sizeof(Entry));
         entryPtr->flags = (unsigned short) 
-            (viewPtr->buttonFlags | GEOMETRY | ENTRY_CLOSED);
+            (viewPtr->buttonFlags | GEOMETRY | CLOSED);
         entryPtr->viewPtr = viewPtr;
         entryPtr->hashPtr = hPtr;
         entryPtr->node = node;
@@ -5169,18 +5202,6 @@ ColumnTag(TreeView *viewPtr, const char *string)
     return Blt_GetHashKey(&viewPtr->columnTagTable, hPtr);
 }
 
-#ifdef notdef
-static ClientData
-StyleTag(TreeView *viewPtr, const char *string)
-{
-    Blt_HashEntry *hPtr;
-    int isNew;                          /* Not used. */
-
-    hPtr = Blt_CreateHashEntry(&viewPtr->styleTagTable, string, &isNew);
-    return Blt_GetHashKey(&viewPtr->styleTagTable, hPtr);
-}
-#endif
-
 static void
 AddTags(TreeView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr, TagProc *tagProc)
 {
@@ -5343,7 +5364,6 @@ PickItem(
 }
 
 
-#ifdef notdef
 /* 
  *  +--------------------------------------+
  *  |                                     ||
@@ -5369,104 +5389,6 @@ PickItem(
  * tw = fp + text width + fp;
  * iw = always there's a gap?
  */
-static void
-ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
-{
-    unsigned int bw, bh, iw, ih, tw, th;
-    int entryWidth, entryHeight;
-    int width, height;
-    Column *colPtr = &viewPtr->treeColumn;
-    Blt_Font font;
-    Blt_FontMetrics fontMetrics;
-    Icon *icons;
-    const char *label;
-    
-    colWidth = PADDING(colPtr->pad) + 2 * ENTRY_PADX + colPtr->ruleWidth;
-    rowHeight = 2 * ENTRY_PADY + entryPtr->ruleHeight;
-
-    bh = viewPtr->button.height;
-    bw = viewPtr->button.width;
-    tw = th = iw = ih = 0;
-    icons = CHOOSE(viewPtr->icons, entryPtr->icons);
-    if (icons != NULL) {
-        SizeOfIcons(icons, &iw, &ih);
-        iw += 2 * ICON_PADX;
-        ih += 2 * ICON_PADY;
-    } else if ((icons == NULL) || (icons[0] == NULL)) {
-        iw = DEF_ICON_WIDTH;
-        ih = DEF_ICON_HEIGHT;
-    }
-    font = entryPtr->font;
-    if (font == NULL) {
-        font = GetStyleFont(colPtr);
-    }
-    FreePath(entryPtr);
-    Blt_Font_GetMetrics(font, &fm);
-    th = fm.linespace;
-    label = GETLABEL(entryPtr);
-    if (label[0] == '\0') {
-        width = height = fm.linespace;
-    } else {
-        TextStyle ts;
-        
-        Blt_Ts_InitStyle(ts);
-        Blt_Ts_SetFont(ts, font);
-        if (viewPtr->flags & FLATTEN) {
-            Blt_Ts_GetExtents(&ts, PathFromRoot(viewPtr, entryPtr), &tw, &th);
-        } else {
-            Blt_Ts_GetExtents(&ts, label, &tw, &th);
-        }
-    }
-    th += 2 * (FOCUS_PAD + LABEL_PADY + viewPtr->sel.borderWidth) + 
-        viewPtr->leader;
-    tw += 2 * FOCUS_PAD + LABELX;
-
-    tw += 2 * (FOCUS_PAD + LABEL_PADX + viewPtr->sel.borderWidth);
-    th += 2 * (FOCUS_PAD + LABEL_PADY + viewPtr->sel.borderWidth);
-    tw = ODD(tw);
-
-    if (entryPtr->reqHeight > height) {
-        height = entryPtr->reqHeight;
-    } 
-    height = ODD(height);
-    entryWidth = width;
-    if (entryHeight < height) {
-        entryHeight = height;
-    }
-    entryPtr->labelWidth = width;
-    entryPtr->labelHeight = height;
-    } else {
-        entryHeight = entryPtr->labelHeight;
-        entryWidth = entryPtr->labelWidth;
-    }
-    entryHeight = MAX3(entryPtr->iconHeight, entryPtr->lineHeight, 
-                       entryPtr->labelHeight);
-
-    /*  
-     * Find the maximum height of the data value entries. This also has the
-     * side effect of contributing the maximum width of the column.
-     */
-    ComputeCellsGeometry(entryPtr, &width, &height);
-    if (entryHeight < height) {
-        entryHeight = height;
-    }
-
-    entryPtr->width = entryWidth + PADDING(colPtr->pad) + 2 * LABEL_PADX;
-    entryPtr->height = entryHeight + viewPtr->leader + 2 * LABEL_PADY + 
-        entryPtr->ruleHeight;
-
-    /*
-     * Force the height of the entry to an even number. This is to make the
-     * dots or the vertical line segments coincide with the start of the
-     * horizontal lines.
-     */
-    if (entryPtr->height & 0x01) {
-        entryPtr->height++;
-    }
-    entryPtr->flags &= ~GEOMETRY;
-}
-#endif
-
 static void
 ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 {
@@ -6090,7 +6012,7 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
         return TCL_ERROR;               /* Out of memory. */
     }
     for (i = 0, childPtr = parentPtr->firstChildPtr; childPtr != NULL; 
-         childPtr = childPtr->nextPtr, i++) {
+         childPtr = childPtr->nextSiblingPtr, i++) {
         entries[i] = childPtr;
     }
     if (viewPtr->flags & SORTED) {
@@ -6117,12 +6039,12 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
         Entry *entryPtr;
 
         entryPtr = entries[i];
-        entryPtr->prevPtr = entryPtr->nextPtr = NULL;
+        entryPtr->prevSiblingPtr = entryPtr->nextSiblingPtr = NULL;
         if (parentPtr->firstChildPtr == NULL) {
             parentPtr->firstChildPtr = parentPtr->lastChildPtr = entryPtr;
         } else {
-            entryPtr->prevPtr = parentPtr->lastChildPtr;
-            parentPtr->lastChildPtr->nextPtr = entryPtr;
+            entryPtr->prevSiblingPtr = parentPtr->lastChildPtr;
+            parentPtr->lastChildPtr->nextSiblingPtr = entryPtr;
             parentPtr->lastChildPtr = entryPtr;
         }
         if (entryPtr->numChildren > 1) {
@@ -6529,7 +6451,9 @@ SelectionProc(
         }
     } else {
         for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
-             entryPtr = NextEntry(entryPtr, ENTRY_MASK)) {
+             /* Only selection non-hidden entries. It's OK is an ancestor
+              * is closed. */
+             entryPtr = NextEntry(entryPtr, HIDDEN)) {
             if (EntryIsSelected(viewPtr, entryPtr)) {
                 Tcl_DStringAppend(&ds, GETLABEL(entryPtr), -1);
                 Tcl_DStringAppend(&ds, "\n", -1);
@@ -6687,15 +6611,8 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
      * the array representing the flattened view of the tree.
      */
     if (Blt_ConfigModified(viewSpecs, "-hideleaves", "-flat", (char *)NULL)) {
-        Entry *entryPtr;
         
         viewPtr->flags |= LAYOUT_PENDING;
-#ifdef notdef
-        /* Mark all entries dirty. */
-        for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
-             entryPtr = NextEntry(entryPtr, 0)) {
-        }
-#endif
         if (((viewPtr->flags & FLATTEN) == 0) && (viewPtr->flatArr != NULL)) {
             Blt_Free(viewPtr->flatArr);
             viewPtr->flatArr = NULL;
@@ -6740,34 +6657,6 @@ ConfigureStyle(TreeView *viewPtr, CellStyle *stylePtr)
     EventuallyRedraw(viewPtr);
 }
 
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * ReconfigureStyles --
- *
- *      A global widget resource (such as -font, -focusdashes, -foreground,
- *      -selectforeground, etc) has changed.  This resource could be used
- *      in a style's GCs.  Reconfigure each style to update the GCs.
- *
- *---------------------------------------------------------------------------
- */
-static void
-ReconfigureStyles(TreeView *viewPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->styleTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        CellStyle *stylePtr;
-
-        stylePtr = Blt_GetHashValue(hPtr);
-        (*stylePtr->classPtr->configProc)(stylePtr);
-    }
-}
-#endif
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -6810,7 +6699,7 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     *yPtr += entryPtr->height;
     entryPtr->flatIndex = *indexPtr;
     (*indexPtr)++;
-    depth = DEPTH(viewPtr, entryPtr->node) + 1;
+    depth = EntryDepth(viewPtr, entryPtr) + 1;
     /* Track the widest label and icon in the widget.  */
     if (viewPtr->levelInfo[depth].labelWidth < entryPtr->labelWidth) {
         viewPtr->levelInfo[depth].labelWidth = entryPtr->labelWidth;
@@ -6827,8 +6716,8 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
 
         /* Recursively handle each child of this node. */
         bottomPtr = entryPtr;
-        for (childPtr = FirstChild(entryPtr, ENTRY_HIDDEN); childPtr != NULL; 
-             childPtr = NextSibling(childPtr, ENTRY_HIDDEN)){
+        for (childPtr = FirstChild(entryPtr, HIDDEN); childPtr != NULL; 
+             childPtr = NextSibling(childPtr, HIDDEN)){
             ResetCoordinates(viewPtr, childPtr, yPtr, indexPtr);
             bottomPtr = childPtr;
         }
@@ -6837,180 +6726,6 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
         entryPtr->vertLineLength += bottomPtr->worldY + height / 2;
     }
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * ResetCoordinates2 --
- *
- *      Determines the maximum height of all visible entries.
- *
- *      1. Sets the worldY coordinate for all mapped/open entries.
- *      2. Determines if entry needs a button.
- *      3. Collects the minimum height of open/mapped entries. (Do for all
- *         entries upon insert).
- *      4. Figures out horizontal extent of each entry (will be width of 
- *         tree view column).
- *      5. Collects maximum icon size for each level.
- *      6. The height of its vertical line
- *
- * Results:
- *      Returns 1 if beyond the last visible entry, 0 otherwise.
- *
- * Side effects:
- *      The array of visible nodes is filled.
- *
- *---------------------------------------------------------------------------
- */
-static void
-ResetCoordinates2(TreeView *viewPtr, Entry *rootPtr)
-{
-    int y, index;
-    Entry *entryPtr;
-    
-    index = 0;
-    y = 0;
-    if (viewPtr->flags & HIDE_ROOT) {
-        /* If the root entry is to be hidden, cheat by offsetting the
-         * y-coordinates by the height of the entry. */
-        y = -(viewPtr->rootPtr->height);
-    } 
-    for (entryPtr = rootPtr; entryPtr != NULL;
-         entryPtr = NextEntry(entryPtr, ENTRY_HIDDEN)) {
-        int h, depth;
-        Entry *parentPtr;
-
-        parentPtr = entryPtr->parentPtr;
-        entryPtr->worldY = -1;
-        entryPtr->vertLineLength = -1;
-        entryPtr->bottomPtr = NULL;
-        if ((entryPtr != viewPtr->rootPtr) && (EntryIsHidden(entryPtr))) {
-            continue;                   /* If the entry is hidden, then
-                                         * do nothing. */
-        }
-        if (parentPtr != NULL && IsClosed(parentPtr)) {
-            continue;
-        }
-        entryPtr->worldY = y;
-        h = MAX3(entryPtr->lineHeight, entryPtr->iconHeight,
-                 viewPtr->button.height);
-        entryPtr->vertLineLength = -(y + h / 2);
-        y += entryPtr->height;
-        entryPtr->flatIndex = index;
-        index++;
-        depth = DEPTH(viewPtr, entryPtr->node) + 1;
-        /* Track the widest label and icon in the widget.  */
-        if (viewPtr->levelInfo[depth].labelWidth < entryPtr->labelWidth) {
-            viewPtr->levelInfo[depth].labelWidth = entryPtr->labelWidth;
-        }
-        if (viewPtr->levelInfo[depth].iconWidth < entryPtr->iconWidth) {
-            viewPtr->levelInfo[depth].iconWidth = entryPtr->iconWidth;
-        }
-        /* The icon width needs to be odd so that the dot patterns of the
-         * vertical and horizontal lines match up. */
-        viewPtr->levelInfo[depth].iconWidth |= 0x01;
-        if (parentPtr != NULL) {
-            parentPtr->bottomPtr = entryPtr;
-        }
-    }
-    viewPtr->worldHeight = y;           /* Set the scroll height of the
-                                         * hierarchy. */
-    if (viewPtr->worldHeight < 1) {
-        viewPtr->worldHeight = 1;
-    }
-    for (entryPtr = rootPtr; entryPtr != NULL;
-         entryPtr = NextEntry(entryPtr, ENTRY_HIDDEN)) {
-        Entry *bottomPtr;
-
-        bottomPtr = entryPtr->bottomPtr;
-        if (bottomPtr != NULL) {
-            int h;
-            
-            h = MAX3(bottomPtr->lineHeight, bottomPtr->iconHeight, 
-                     viewPtr->button.height);
-            entryPtr->vertLineLength += bottomPtr->worldY + h / 2;
-        }
-    }
-}
-#endif
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * GetTreeCoordinates --
- *
- *      Determines the maximum height of all visible entries.
- *
- *      1. Sets the worldY coordinate for all mapped/open entries.
- *      2. Determines if entry needs a button.
- *      3. Collects the minimum height of open/mapped entries. (Do for all
- *         entries upon insert).
- *      4. Figures out horizontal extent of each entry (will be width of 
- *         tree view column).
- *      5. Collects maximum icon size for each level.
- *      6. The height of its vertical line
- *
- * Results:
- *      Returns 1 if beyond the last visible entry, 0 otherwise.
- *
- * Side effects:
- *      The array of visible nodes is filled.
- *
- *---------------------------------------------------------------------------
- */
-static void
-GetTreeCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, 
-                   long *indexPtr)
-{
-    int depth, h;
-    LevelInfo *levelPtr;
-
-    entryPtr->worldY = -1;
-    entryPtr->vertLineLength = -1;
-    if ((entryPtr != viewPtr->rootPtr) && (EntryIsHidden(entryPtr))) {
-        return;                         /* If the entry is hidden, then do
-                                         * nothing. */
-    }
-    entryPtr->worldY = *yPtr;
-    Blt_GetFontMetrics(entryPtr->font, &fm);
-    h = MAX(entryPtr->iconHeight, viewPtr->button.height);
-    entryPtr->vertLineLength = -(*yPtr + (h / 2));
-
-    *yPtr += entryPtr->height;
-    entryPtr->flatIndex = *indexPtr;
-    (*indexPtr)++;
-
-    depth = DEPTH(viewPtr, entryPtr->node) + 1;
-    levelPtr = viewPtr->levelInfo + depth;
-
-    /* Track the widest label and icon in the widget.  */
-    if (levelPtr->labelWidth < entryPtr->labelWidth) {
-        levelPtr->labelWidth = entryPtr->labelWidth;
-    }
-    if (levelPtr->iconWidth < entryPtr->iconWidth) {
-        levelPtr->iconWidth = entryPtr->iconWidth;
-    }
-    /* The icon width needs to be odd so that the dot patterns of the
-     * vertical and horizontal lines match up. */
-    levelPtr->iconWidth |= 0x01;
-
-    if (IsOpen(entryPtr)) {
-        Entry *bottomPtr, *childPtr;
-
-        /* Recursively handle each child of this node. */
-        bottomPtr = entryPtr;
-        for (childPtr = FirstChild(entryPtr, ENTRY_HIDDEN); childPtr != NULL; 
-             childPtr = NextSibling(childPtr, ENTRY_HIDDEN)){
-            GetTreeCoordinates(viewPtr, childPtr, yPtr, indexPtr);
-            bottomPtr = childPtr;
-        }
-        h = MAX(bottomPtr->iconHeight, viewPtr->button.height);
-        entryPtr->vertLineLength += bottomPtr->worldY + (h / 2);
-    }
-}
-#endif
 
 #ifdef notdef
 static void
@@ -7192,10 +6907,11 @@ ComputeFlatLayout(TreeView *viewPtr)
     /* Recreate the flat view of all the open and not-hidden entries. */
     if (viewPtr->flatArr == NULL) {
         count = 0;
+
         /* Count the number of open entries to allocate for the array. */
         for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
-             entryPtr = NextEntry(entryPtr, ENTRY_MASK)) {
-            if ((viewPtr->flags & HIDE_ROOT) && 
+             entryPtr = NextEntry(entryPtr, HIDDEN | CLOSED)) {
+            if ((viewPtr->flags & HIDE_ROOT) &&
                 (entryPtr == viewPtr->rootPtr)) {
                 continue;
             }
@@ -7208,7 +6924,7 @@ ComputeFlatLayout(TreeView *viewPtr)
         /* Fill the array with open and not-hidden entries */
         p = viewPtr->flatArr;
         for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
-             entryPtr = NextEntry(entryPtr, ENTRY_MASK)) {
+             entryPtr = NextEntry(entryPtr, HIDDEN | CLOSED)) {
             if ((viewPtr->flags & HIDE_ROOT) && 
                 (entryPtr == viewPtr->rootPtr)) {
                 continue;
@@ -7353,14 +7069,6 @@ ComputeTreeLayout(TreeView *viewPtr)
         if ((viewPtr->flags|entryPtr->flags) & GEOMETRY) {
             ComputeEntryGeometry(viewPtr, entryPtr);
         }
-#ifdef notdef
-        /* 
-         * Compute the entry height.
-         */
-        SizeOfIcons(icons, &iw, &ih);
-        h = MAX3(viewPtr->button.height, ih, entryPtr->textHeight) + 
-            PADDING(entryPtr->pad) + (2 * ENTRY_PADY) + entryPtr->ruleHeight;
-#endif
         if (viewPtr->minRowHeight > entryPtr->height) {
             viewPtr->minRowHeight = entryPtr->height;
         }
@@ -7370,10 +7078,10 @@ ComputeTreeLayout(TreeView *viewPtr)
         entryPtr->flags &= ~ENTRY_BUTTON;
         if ((entryPtr->flags & ENTRY_REQUEST_BUTTON) ||
             ((entryPtr->flags & ENTRY_AUTO_BUTTON) &&
-             (FirstChild(entryPtr, ENTRY_HIDDEN) != NULL))) {
+             (FirstChild(entryPtr, HIDDEN) != NULL))) {
             entryPtr->flags |= ENTRY_BUTTON;
         }
-        depth = DEPTH(viewPtr, entryPtr->node);
+        depth = EntryDepth(viewPtr, entryPtr);
         /* Track the overall depth of the tree. */
         if (viewPtr->depth < depth) {
             viewPtr->depth = depth;
@@ -7389,17 +7097,6 @@ ComputeTreeLayout(TreeView *viewPtr)
     if (viewPtr->flags & SORT_PENDING) {
         SortTreeView(viewPtr);
     }
-#ifdef notdef
-    { 
-        /* Above calloc makes this redundant */
-        size_t i;
-
-        for (i = 0; i <= (viewPtr->depth + 1); i++) {
-            viewPtr->levelInfo[i].labelWidth = viewPtr->levelInfo[i].offset = 
-                viewPtr->levelInfo[i].iconWidth = 0;
-        }
-    }
-#endif
     /* 
      * Pass 2:  Loop through all open/mapped nodes. 
      *
@@ -7416,16 +7113,12 @@ ComputeTreeLayout(TreeView *viewPtr)
         y = -(viewPtr->rootPtr->height);
     } 
     index = 0;
-#ifndef notdef
     ResetCoordinates(viewPtr, viewPtr->rootPtr, &y, &index);
     viewPtr->worldHeight = y;           /* Set the scroll height of the
                                          * hierarchy. */
     if (viewPtr->worldHeight < 1) {
         viewPtr->worldHeight = 1;
     }
-#else
-    ResetCoordinates2(viewPtr, viewPtr->rootPtr);
-#endif
     {
         int maxX;
         int sum;
@@ -7581,11 +7274,11 @@ ComputeLayout(TreeView *viewPtr)
     viewPtr->treeColumn.maxWidth = viewPtr->treeWidth;
 
     /* 
-     * Look at all open entries and their cells.  Determine the column
-     * widths by tracking the maximum width cell in each column.
+     * Look at all open/non-hidden entries and their cells.  Determine the
+     * column widths by tracking the maximum width cell in each column.
      */
     for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
-         entryPtr = NextEntry(entryPtr, ENTRY_MASK)) {
+         entryPtr = NextEntry(entryPtr, HIDDEN | CLOSED)) {
         for (cellPtr = entryPtr->cells; cellPtr != NULL; 
              cellPtr = cellPtr->nextPtr) {
             if (cellPtr->colPtr->maxWidth < cellPtr->width) {
@@ -7648,7 +7341,7 @@ ComputeVisibleEntries(TreeView *viewPtr)
     viewPtr->numVisibleEntries = 0;
     viewPtr->visibleEntries[numSlots] = viewPtr->visibleEntries[0] = NULL;
 
-    if (viewPtr->rootPtr->flags & ENTRY_HIDDEN) {
+    if (viewPtr->rootPtr->flags & HIDDEN) {
         return TCL_OK;                  /* Root node is hidden. */
     }
     /* Find the node where the view port starts. */
@@ -7701,12 +7394,13 @@ ComputeVisibleEntries(TreeView *viewPtr)
             if ((*epp)->worldY >= height) {
                 break;
             }
+            assert(viewPtr->numVisibleEntries < numSlots);
             viewPtr->visibleEntries[viewPtr->numVisibleEntries] = *epp;
             viewPtr->numVisibleEntries++;
         }
         viewPtr->visibleEntries[viewPtr->numVisibleEntries] = NULL;
     } else {
-        Entry *ep;
+        Entry *entryPtr;
         int y;
         long index;
         
@@ -7719,11 +7413,12 @@ ComputeVisibleEntries(TreeView *viewPtr)
         index = 0;
         ResetCoordinates(viewPtr, viewPtr->rootPtr, &y, &index);
 
-        ep = viewPtr->rootPtr;
-        while ((ep->worldY + ep->height) <= viewPtr->yOffset) {
-            for (ep = LastChild(ep, ENTRY_HIDDEN); ep != NULL; 
-                 ep = PrevSibling(ep, ENTRY_HIDDEN)) {
-                if (ep->worldY <= viewPtr->yOffset) {
+        entryPtr = viewPtr->rootPtr;
+        while ((entryPtr->worldY + entryPtr->height) <= viewPtr->yOffset) {
+            for (entryPtr = LastChild(entryPtr, HIDDEN | CLOSED);
+                 entryPtr != NULL;
+                 entryPtr = PrevSibling(entryPtr, HIDDEN | CLOSED)) {
+                if (entryPtr->worldY <= viewPtr->yOffset) {
                     break;
                 }
             }
@@ -7732,7 +7427,7 @@ ComputeVisibleEntries(TreeView *viewPtr)
              * scrolled down, but some nodes were deleted.  Reset the view
              * back to the top and try again.
              */
-            if (ep == NULL) {
+            if (entryPtr == NULL) {
                 if (viewPtr->yOffset == 0) {
                     return TCL_OK;      /* All entries are hidden. */
                 }
@@ -7745,7 +7440,8 @@ ComputeVisibleEntries(TreeView *viewPtr)
         maxX = 0;
         viewPtr->treeColumn.maxWidth = viewPtr->treeWidth;
 
-        for (; ep != NULL; ep = NextEntry(ep, ENTRY_MASK)){
+        for (/*empty*/; entryPtr != NULL;
+             entryPtr = NextEntry(entryPtr, HIDDEN | CLOSED)) {
             int x;
             int level;
 
@@ -7753,16 +7449,18 @@ ComputeVisibleEntries(TreeView *viewPtr)
              * Compute and save the entry's X-coordinate now that we know
              * the maximum level offset for the entire widget.
              */
-            level = DEPTH(viewPtr, ep->node);
-            ep->worldX = LEVELOFFSET(level) + viewPtr->treeColumn.worldX;
-            x = ep->worldX + ICONWIDTH(level) + ICONWIDTH(level+1) + ep->width;
+            level = EntryDepth(viewPtr, entryPtr);
+            entryPtr->worldX = LEVELOFFSET(level) + viewPtr->treeColumn.worldX;
+            x = entryPtr->worldX + ICONWIDTH(level) + ICONWIDTH(level+1) +
+                entryPtr->width;
             if (x > maxX) {
                 maxX = x;
             }
-            if (ep->worldY >= height) {
+            if (entryPtr->worldY >= height) {
                 break;
             }
-            viewPtr->visibleEntries[viewPtr->numVisibleEntries] = ep;
+            assert(viewPtr->numVisibleEntries < numSlots);
+            viewPtr->visibleEntries[viewPtr->numVisibleEntries] = entryPtr;
             viewPtr->numVisibleEntries++;
         }
         viewPtr->visibleEntries[viewPtr->numVisibleEntries] = NULL;
@@ -7858,7 +7556,7 @@ DrawLines(
         if (entryPtr == NULL) {
             break;
         }
-        level = DEPTH(viewPtr, entryPtr->node);
+        level = EntryDepth(viewPtr, entryPtr);
         if (entryPtr->vertLineLength > 0) {
             int ax, ay, by;
             int x, y;
@@ -7879,7 +7577,7 @@ DrawLines(
 
                 /* If the root node is hidden, go to the next entry to
                  * start the vertical line. */
-                nextPtr = NextEntry(viewPtr->rootPtr, ENTRY_MASK);
+                nextPtr = NextEntry(viewPtr->rootPtr, HIDDEN | CLOSED);
                 ay = SCREENY(viewPtr, nextPtr->worldY) + entryPtr->height / 2;
             }
             /*
@@ -7908,7 +7606,7 @@ DrawLines(
         /* Entry is open, draw vertical line. */
         x = SCREENX(viewPtr, entryPtr->worldX);
         y = SCREENY(viewPtr, entryPtr->worldY);
-        level = DEPTH(viewPtr, entryPtr->node);
+        level = EntryDepth(viewPtr, entryPtr);
         w = ICONWIDTH(level);
         h = entryPtr->height;
         entryPtr->buttonX = (w - butPtr->width) / 2;
@@ -8111,7 +7809,7 @@ DrawEntryIcon(
     int maxY;
     int ix, iy, iw, ih;
     
-    level = DEPTH(viewPtr, entryPtr->node);
+    level = EntryDepth(viewPtr, entryPtr);
     ih = IconHeight(icon);
     iw = IconWidth(icon);
     if (viewPtr->flags & FLATTEN) {
@@ -8234,104 +7932,6 @@ DrawEntryLabel(
         Blt_Free(textPtr);
     }
 }
-
-#ifdef notdef
-static void
-DrawEntryLabel2(
-    TreeView *viewPtr,                  /* Widget record. */
-    Entry *entryPtr,                    /* Entry attribute information. */
-    Drawable drawable,                  /* Pixmap or window to draw
-                                         * into. */
-    int x, int y,
-    int maxLength,
-    TkRegion rgn)                       
-{
-    Button *butPtr;
-    Icon *icons;
-    const char *label;
-    int colWidth, rowHeight;            /* Width and height of label. */
-    int isSelected;
-    unsigned int h1, ih, iw;
-
-    butPtr = &viewPtr->button;
-    isSelected = EntryIsSelected(viewPtr, entryPtr);
-
-    /* Includes padding, selection 3-D border, and focus outline. */
-    colWidth = entryPtr->textWidth;
-    rowHeight = entryPtr->textHeight;
-
-    icons = CHOOSE(viewPtr->icons, entryPtr->icons);
-    SizeOfIcons(icons, &iw, &ih);
-    h1 = MAX(ih, butPtr->height);
-    if (h1 > entryPtr->textHeight) {
-        y += (h1 - entryPtr->textHeight) / 2;
-    }
-    if ((entryPtr == viewPtr->focusPtr) && (viewPtr->flags & FOCUS)) {
-        /* Draw focus dotted rectangle. */
-        if (isSelected) {
-            XColor *color;
-
-            color = viewPtr->selectedFg;
-            XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
-        }
-        if (colWidth > maxLength) {
-            colWidth = maxLength | 0x1; /* Width has to be odd for the dots
-                                         * in the focus rectangle to
-                                         * align. */
-        }
-        if (rgn != NULL) {
-            TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
-        }       
-        XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, x + 2, 
-                y + 2, colWidth - 4, rowHeight - 4);
-        if (isSelected) {
-            XSetForeground(viewPtr->display, viewPtr->focusGC, 
-                viewPtr->focusColor->pixel);
-        }
-        if (rgn != NULL) {
-            XSetClipMask(viewPtr->display, viewPtr->focusGC, None);
-        }       
-    }
-    x += FOCUS_PAD;
-    y += FOCUS_PAD;
-
-    label = GETLABEL(entryPtr);
-    if ((label[0] != '\0') && (maxLength > 0)) {
-        Blt_Font font;
-        TextLayout *textPtr;
-        TextStyle ts;
-        XColor *color;
-        
-        font = entryPtr->font;
-        if (font == NULL) {
-            font = GetStyleFont(&viewPtr->treeColumn);
-        }
-        if (isSelected) {
-            color = viewPtr->selectedFg;
-        } else if (entryPtr->color != NULL) {
-            color = entryPtr->color;
-        } else {
-            color = GetStyleForeground(&viewPtr->treeColumn);
-        }
-        Blt_Ts_InitStyle(ts);
-        Blt_Ts_SetFont(ts, font);
-        Blt_Ts_SetForeground(ts, color);
-        Blt_Ts_SetFontClipRegion(ts, rgn);
-        Blt_Ts_SetMaxLength(ts, maxLength);
-
-        if (viewPtr->flags & FLATTEN) {
-            textPtr = Blt_Ts_CreateLayout(GetPath(viewPtr, entryPtr), -1, &ts);
-        } else {
-            textPtr = Blt_Ts_CreateLayout(label, -1, &ts);
-        }
-        Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, x, y);
-        if (entryPtr == viewPtr->activePtr) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr, &ts,x,y);
-        }
-        Blt_Free(textPtr);
-    }
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -8575,7 +8175,7 @@ DrawEntryInHierarchy(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     x = SCREENX(viewPtr, entryPtr->worldX);
     y = SCREENY(viewPtr, entryPtr->worldY);
 
-    level = DEPTH(viewPtr, entryPtr->node);
+    level = EntryDepth(viewPtr, entryPtr);
     width = ICONWIDTH(level);
     height = entryPtr->height;
 
@@ -8607,127 +8207,6 @@ DrawEntryInHierarchy(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
         viewPtr->treeColumn.pad.side2;
     DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, NULL);
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * DrawEntryInHierarchy2 --
- *
- *      Draws a button for the given entry.  Note that buttons should only be
- *      drawn if the entry has sub-entries to be opened or closed.  It's the
- *      responsibility of the calling routine to ensure this.
- *
- *      The button is drawn centered in the region immediately to the left of
- *      the origin of the entry (computed in the layout routines). The height
- *      and width of the button were previously calculated from the average
- *      row height.
- *
- *              button height = entry height - (2 * some arbitrary padding).
- *              button width = button height.
- *
- *      The button has a border.  The symbol (either a plus or minus) is
- *      slight smaller than the width or height minus the border.
- *
- *          x,y origin of entry
- *
- *              +---+
- *              | + | icon label
- *              +---+
- *             closed
- *
- *           |----|----| horizontal offset
- *
- *              +---+
- *              | - | icon label
- *              +---+
- *              open
- *
- * Results:
- *      None.
- *
- * Side Effects:
- *      A button is drawn for the entry.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawEntryInHierarchy2(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
-{
-    Button *butPtr = &viewPtr->button;
-    int depth;
-    int h1, w1, w2;
-    int x, y;
-    unsigned int rowHeight, colWidth;
-    Column *colPtr;
-    Icon icon;
-
-    colPtr = &viewPtr->treeColumn;
-    entryPtr->flags &= ~ENTRY_REDRAW;
-    x = SCREENX(viewPtr, entryPtr->worldX);
-    y = SCREENY(viewPtr, entryPtr->worldY);
-
-    depth = DEPTH(viewPtr, entryPtr->node);
-
-    /* Don't draw the background since vertical lines need to be draw. */
-    rowHeight = entryPtr->rowHeight;
-    colWidth = colPtr->width;
-    rowHeight -= 2 * ENTRY_PADY + PADDING(entryPtr->rowPad);
-    colWidth -= 2 * ENTRY_PADX + PADDING(colPtr->pad);
-    y += entryPtr->rowPad.side1 + ENTRY_PADY;
-    x += colPtr->pad.side1 + ENTRY_PADX;
-
-    h1 = rowHeight;
-    w1 = ICONWIDTH(depth);
-    w2 = ICONWIDTH(depth + 1);
-
-    /* Draw button */
-    if ((entryPtr->flags & ENTRY_BUTTON) && (entryPtr != viewPtr->rootPtr)) {
-        int bx, by;
-
-        /* Except for the root node, draw a button for every node that
-         * needs one (i.e has children or requests a button). */
-        bx = x, by = y;
-        if (w1 > butPtr->width) {
-            bx += (w1 - butPtr->width) / 2;
-        }
-        if (h1 > butPtr->height) {
-            by += (h1 - butPtr->height) / 2;
-        }
-        DrawButton(viewPtr, entryPtr, drawable, bx, by);
-    }
-    colWidth -= w1 + ENTRY_GAP;
-    x += w1 + ENTRY_GAP;
-
-    /* Draw icon. */
-    icon = GetEntryIcon(viewPtr, entryPtr);
-    if (icon != NULL) {
-        int ix, iy;
-        unsigned int iw, ih;
-
-        ih = IconHeight(icon);
-        iw = IconHeight(icon);
-        ix = x, iy = y;
-        if (h1 > ih) {
-            iy += (h1 - ih) / 2;
-        }
-        if (w2 > iw) {
-            ix += (w2 - iw) / 2;
-        }
-        Tk_RedrawImage(IconBits(icon), 0, 0, iw, ih, drawable, ix, iy);
-    } else {
-        x -= (DEF_ICON_WIDTH * 2) / 3;
-    }
-    x += w2 + ENTRY_GAP;
-    colWidth -= w2 + ENTRY_GAP;
-    /* Entry label. */
-    if (h1 > entryPtr->textHeight) {
-        y += (h1 - entryPtr->textHeight) / 2;
-    }
-    /* Draw text/image. */
-    DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, colWidth, NULL);
-}
-#endif
 
 static void
 DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable, 
@@ -8990,9 +8469,9 @@ DrawTree(TreeView *viewPtr, Drawable drawable, int x)
         Entry *entryPtr;
 
         entryPtr = viewPtr->visibleEntries[i];
-        entryPtr->flags &= ~ENTRY_SELECTED;
+        entryPtr->flags &= ~SELECTED;
         if (EntryIsSelected(viewPtr, entryPtr)) {
-            entryPtr->flags |= ENTRY_SELECTED;
+            entryPtr->flags |= SELECTED;
             count++;
         }
     }
@@ -9007,7 +8486,7 @@ DrawTree(TreeView *viewPtr, Drawable drawable, int x)
                 Entry *entryPtr;
 
                 entryPtr = viewPtr->visibleEntries[i];
-                if (entryPtr->flags & ENTRY_SELECTED) {
+                if (entryPtr->flags & SELECTED) {
                     XRectangle r;
 
                     r.x = 0;
@@ -9174,17 +8653,6 @@ DisplayProc(ClientData clientData)      /* Information about widget. */
                 DrawTree(viewPtr, drawable, x);
             }
         }
-#ifdef notdef
-        if (colPtr->relief != TK_RELIEF_FLAT) {
-            Blt_Bg bg;
-
-            /* Draw a 3D border around the column. */
-            bg = GetStyleBackground(colPtr);
-            Blt_Bg_DrawRectangle(viewPtr->tkwin, drawable, bg, x, 0, 
-                colPtr->width, Tk_Height(viewPtr->tkwin), 
-                colPtr->borderWidth, colPtr->relief);
-        }
-#endif
         count++;
     }
     if (count == 0) {
@@ -9237,7 +8705,7 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
             x -= (DEF_ICON_WIDTH * 2) / 3;
         }
     } else {
-        level = DEPTH(viewPtr, entryPtr->node);
+        level = EntryDepth(viewPtr, entryPtr);
         if ((viewPtr->flags & FLATTEN) == 0) {
             x += ICONWIDTH(level);
             w -= ICONWIDTH(level);
@@ -9472,7 +8940,7 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (entryPtr == NULL) {
             continue;
         }
-        if (entryPtr->flags & ENTRY_HIDDEN) {
+        if (entryPtr->flags & HIDDEN) {
             continue;
         }
         yBot = entryPtr->worldY + entryPtr->height;
@@ -9487,7 +8955,7 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (y1 > entryPtr->worldY) {
             y1 = entryPtr->worldY;
         }
-        d = DEPTH(viewPtr, entryPtr->node);
+        d = EntryDepth(viewPtr, entryPtr);
         x = entryPtr->worldX + ICONWIDTH(d) + ICONWIDTH(d + 1);
         if (x2 < (x + entryPtr->width)) {
             x2 = x + entryPtr->width;
@@ -9852,7 +9320,7 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (cellPtr->colPtr == &viewPtr->treeColumn) {
         int d;
         
-        d = DEPTH(viewPtr, cellPtr->entryPtr->node);
+        d = EntryDepth(viewPtr, cellPtr->entryPtr);
         x1 += ICONWIDTH(d) + ICONWIDTH(d + 1);
         x2 -= ICONWIDTH(d) + ICONWIDTH(d + 1);
     }
@@ -11340,9 +10808,10 @@ CurselectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } else {
         Entry *entryPtr;
 
+        /* It's OK is an entry's ancestor is hidden, add the selected node
+         * to the list. */
         for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
-             entryPtr = NextEntry(entryPtr, ENTRY_MASK)) {
-
+             entryPtr = NextEntry(entryPtr, HIDDEN)) {
             if (EntryIsSelected(viewPtr, entryPtr)) {
                 Tcl_Obj *objPtr;
 
@@ -11622,7 +11091,7 @@ EntryIsBeforeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (GetEntry(interp, viewPtr, objv[4], &e2Ptr) != TCL_OK)) {
         return TCL_ERROR;
     }
-    bool = Blt_Tree_IsBefore(e1Ptr->node, e2Ptr->node);
+    bool = IsBefore(e1Ptr, e2Ptr);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
 }
@@ -11647,7 +11116,7 @@ EntryIsExposedOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetEntry(interp, viewPtr, objv[3], &entryPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    bool = ((entryPtr->flags & ENTRY_HIDDEN) == 0);
+    bool = ((entryPtr->flags & HIDDEN) == 0);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
 }
@@ -11673,7 +11142,7 @@ EntryIsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetEntry(interp, viewPtr, objv[3], &entryPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    bool = (entryPtr->flags & ENTRY_HIDDEN);
+    bool = (entryPtr->flags & HIDDEN);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
 }
@@ -11766,8 +11235,8 @@ EntryDegreeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     count = 0;
-    for (entryPtr = FirstChild(parentPtr, ENTRY_HIDDEN); entryPtr != NULL; 
-         entryPtr = NextSibling(entryPtr, ENTRY_HIDDEN)) {
+    for (entryPtr = FirstChild(parentPtr, HIDDEN); entryPtr != NULL; 
+         entryPtr = NextSibling(entryPtr, HIDDEN)) {
         count++;
     }
     Tcl_SetLongObj(Tcl_GetObjResult(interp), count);
@@ -12171,7 +11640,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
     }
-    if (Blt_Tree_IsBefore(lastPtr->node, firstPtr->node)) {
+    if (IsBefore(lastPtr, firstPtr)) {
         nextProc = PrevEntry;
     }
     numMatches = 0;
@@ -12305,7 +11774,7 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         if ((entryPtr != NULL) && (entryPtr != viewPtr->focusPtr)) {
-            if (entryPtr->flags & ENTRY_HIDDEN) {
+            if (entryPtr->flags & HIDDEN) {
                 /* Doesn't make sense to set focus to a node you can't see. */
                 MapAncestors(viewPtr, entryPtr);
             }
@@ -12603,7 +12072,7 @@ SearchAndApplyToTree(TreeView *viewPtr, Tcl_Interp *interp, int objc,
 static int
 FixSelectionsApplyProc(TreeView *viewPtr, Entry *entryPtr)
 {
-    if (entryPtr->flags & ENTRY_HIDDEN) {
+    if (entryPtr->flags & HIDDEN) {
         DeselectEntry(viewPtr, entryPtr);
         if ((viewPtr->focusPtr != NULL) &&
             (Blt_Tree_IsAncestor(entryPtr->node, viewPtr->focusPtr->node))) {
@@ -13189,7 +12658,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 goto done;
             }
         } 
-        depth = DEPTH(viewPtr, entryPtr->node);
+        depth = EntryDepth(viewPtr, entryPtr);
 
         icon = GetEntryIcon(viewPtr, entryPtr);
         if (icon != NULL) {
@@ -13315,7 +12784,7 @@ RangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((string[0] == '-') && (length > 1) && 
         (strncmp(string, "-open", length) == 0)) {
         objv++, objc--;
-        mask |= ENTRY_CLOSED;
+        mask |= CLOSED;
     }
     if (GetEntry(interp, viewPtr, objv[2], &firstPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -13327,13 +12796,13 @@ RangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } else {
         lastPtr = LastEntry(viewPtr, firstPtr, mask);
     }    
-    if (mask & ENTRY_CLOSED) {
-        if (firstPtr->flags & ENTRY_HIDDEN) {
+    if (mask & CLOSED) {
+        if (firstPtr->flags & HIDDEN) {
             Tcl_AppendResult(interp, "first node \"", Tcl_GetString(objv[2]), 
                 "\" is hidden.", (char *)NULL);
             return TCL_ERROR;
         }
-        if (lastPtr->flags & ENTRY_HIDDEN) {
+        if (lastPtr->flags & HIDDEN) {
             Tcl_AppendResult(interp, "last node \"", Tcl_GetString(objv[3]), 
                 "\" is hidden.", (char *)NULL);
             return TCL_ERROR;
@@ -13345,7 +12814,7 @@ RangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
      * direction.
      */
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (Blt_Tree_IsBefore(lastPtr->node, firstPtr->node)) {
+    if (IsBefore(lastPtr, firstPtr)) {
         for (entryPtr = lastPtr; entryPtr != NULL; 
              entryPtr = PrevEntry(entryPtr, mask)) {
             objPtr = NodeToObj(entryPtr->node);
@@ -13485,7 +12954,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (entryPtr == NULL) {
         return TCL_OK;
     }
-    if (entryPtr->flags & ENTRY_HIDDEN) {
+    if (entryPtr->flags & HIDDEN) {
         /*
          * If the entry wasn't previously exposed, its world coordinates
          * aren't likely to be valid.  So re-compute the layout before we
@@ -13517,7 +12986,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     case TK_ANCHOR_NE:
     case TK_ANCHOR_SE:
         x = entryPtr->worldX + entryPtr->width + 
-            ICONWIDTH(DEPTH(viewPtr, entryPtr->node)) - width;
+            ICONWIDTH(EntryDepth(viewPtr, entryPtr)) - width;
         break;
     default:
         if (entryPtr->worldX < left) {
@@ -13812,7 +13281,7 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (firstPtr == NULL) {
             return TCL_OK;              /* Didn't pick an entry. */
         }
-        if ((firstPtr->flags & ENTRY_HIDDEN) && 
+        if ((firstPtr->flags & HIDDEN) && 
             (!(viewPtr->sel.flags & SELECT_CLEAR))) {
             if (objc > 4) {
                 Tcl_AppendResult(interp, "can't select hidden node \"", 
@@ -13827,7 +13296,7 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (GetEntry(interp, viewPtr, objv[4], &lastPtr) != TCL_OK) {
                 return TCL_ERROR;
             }
-            if ((lastPtr->flags & ENTRY_HIDDEN) && 
+            if ((lastPtr->flags & HIDDEN) && 
                 (!(viewPtr->sel.flags & SELECT_CLEAR))) {
                 Tcl_AppendResult(interp, "can't select hidden node \"", 
                         Tcl_GetString(objv[4]), "\"", (char *)NULL);
@@ -13853,7 +13322,7 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
              entryPtr = NextTaggedEntry(&iter)) {
-            if ((entryPtr->flags & ENTRY_HIDDEN) && 
+            if ((entryPtr->flags & HIDDEN) && 
                 ((viewPtr->sel.flags & SELECT_CLEAR) == 0)) {
                 continue;
             }
@@ -14093,8 +13562,8 @@ SortListOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;               /* Out of memory. */
     }
     count = 0;
-    for (childPtr = FirstChild(entryPtr, ENTRY_HIDDEN); childPtr != NULL; 
-         childPtr = NextSibling(childPtr, ENTRY_HIDDEN)) {
+    for (childPtr = FirstChild(entryPtr, HIDDEN); childPtr != NULL; 
+         childPtr = NextSibling(childPtr, HIDDEN)) {
         entries[count] = childPtr;
         count++;
     }

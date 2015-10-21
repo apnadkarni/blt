@@ -110,7 +110,9 @@
 #define ICONWIDTH(d)    (viewPtr->levelInfo[(d)].iconWidth)
 #define LEVELOFFSET(d)  (viewPtr->levelInfo[(d)].offset)
 
+#ifdef notdef
 #define DEPTH(t, n)     (((t)->flags & FLATTEN) ? 0 : Blt_Tree_NodeDepth(n))
+#endif
 
 /* Shared flags. */
 #define DISABLED                (1<<0)  /* Draw cell as disabled. */
@@ -188,10 +190,9 @@
 #define COLUMN_READONLY         (1<<8)
 
 /* Entry flags */
-#define ENTRY_SELECTED          (1<<8)
-#define ENTRY_CLOSED            (1<<9)
-#define ENTRY_HIDDEN            (1<<10)
-#define ENTRY_MASK              (ENTRY_CLOSED | ENTRY_HIDDEN)
+#define SELECTED                (1<<8)
+#define CLOSED                  (1<<9)
+#define ENTRY_MASK              (CLOSED | HIDDEN)
 #define ENTRY_BUTTON            (1<<11)
 #define ENTRY_REDRAW            (1<<12) /* Not really used. */
 #define ENTRY_AUTO_BUTTON       (1<<13)
@@ -613,7 +614,7 @@ struct _Entry {
     Entry *parentPtr;                   /* Parent entry. NULL if root. */
     Entry *firstChildPtr, *lastChildPtr; /* First and last child
                                          * entry. NULL if no children. */
-    Entry *nextPtr, *prevPtr;           /* Next and previous sibling. */
+    Entry *nextSiblingPtr, *prevSiblingPtr; /* Next and previous siblings. */
     int numChildren;
 };
 
