@@ -112,6 +112,8 @@
 #define DEF_MENU_ANCHOR         "sw"
 #define DEF_NORMAL_BG           STD_NORMAL_BACKGROUND
 #define DEF_NORMAL_FG           STD_NORMAL_FOREGROUND
+#define DEF_PADX                "0"
+#define DEF_PADY                "0"
 #define DEF_POSTED_BG           RGB_SKYBLUE4
 #define DEF_POSTED_FG           RGB_WHITE
 #define DEF_NORMAL_RELIEF       "raised"
@@ -272,6 +274,7 @@ typedef struct  {
     int prefWidth;                      /* Desired width of window, measured
                                          * in average characters. */
     int inset;
+    Blt_Pad xPad, yPad;
     short int arrowWidth, arrowHeight;
     short int iconWidth, iconHeight;
     short int textWidth, textHeight;
@@ -350,6 +353,10 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(ComboButton, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-menu", "menu", "Menu", DEF_MENU, 
         Blt_Offset(ComboButton, menuObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_PAD, "-padx", "padX", "PadX", DEF_PADX,
+        Blt_Offset(ComboButton, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_PADY,
+        Blt_Offset(ComboButton, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
         DEF_CMD, Blt_Offset(ComboButton, postCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-postedbackground", "postedBackground",
@@ -1231,18 +1238,18 @@ TextToObjProc(
 
 /* 
  *---------------------------------------------------------------------------
- *  inset
+ *  inset (highlight thickness + combobutton borderwidth + ypad)
  *  YPAD
  *  max of icon/text/image/button
  *  YPAD
- *  inset
+ *  inset (highlight thickness + combobutton borderwidth + ypad)
  *
  * |i|x|icon|x|text/image|x|B|p|arrow|p|B|x|i|
  * |i|x|icon|x|text/image|x|i|                  (without arrow)
  * |i|x|text/image|x|B|p|arrow|p|B|x|i|         (without icon)
  * |i|x|text/image|x|i|                         (without arrow & icon)
  *  
- * i = inset (highlight thickness + combobutton borderwidth)
+ * i = inset (highlight thickness + combobutton borderwidth + xpad)
  * x = xpad
  * p = arrow button pad
  * B = borderwidth
@@ -1311,8 +1318,8 @@ ComputeGeometry(ComboButton *comboPtr)
         }
         w += comboPtr->arrowWidth + XPAD;
     }
-    w += 2 * (comboPtr->inset + XPAD);
-    h += 2 * (comboPtr->inset + YPAD);
+    w += 2 * (comboPtr->inset + XPAD) + PADDING(comboPtr->xPad);
+    h += 2 * (comboPtr->inset + YPAD) + PADDING(comboPtr->yPad);
     comboPtr->width  = w;
     comboPtr->height = h;
     if (comboPtr->reqWidth > 0) {
@@ -1954,9 +1961,10 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
         Tk_Width(comboPtr->tkwin), Tk_Height(comboPtr->tkwin),
         comboPtr->borderWidth, TK_RELIEF_FLAT);
 
-    x = y = comboPtr->inset;
-    w  = Tk_Width(comboPtr->tkwin)  - 2 * (comboPtr->inset + XPAD);
-    h = Tk_Height(comboPtr->tkwin) -  2 * (comboPtr->inset + YPAD);
+    x = comboPtr->inset + comboPtr->xPad.side1;
+    y = comboPtr->inset + comboPtr->yPad.side2;
+    w  = Tk_Width(comboPtr->tkwin)  - 2 * (comboPtr->inset + XPAD) - PADDING(comboPtr->xPad);
+    h = Tk_Height(comboPtr->tkwin) -  2 * (comboPtr->inset + YPAD) - PADDING(comboPtr->yPad);
     x += XPAD;
     y += YPAD;
     /* Draw Icon. */
@@ -1996,7 +2004,7 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
         XColor *color;
 
         /*  */
-        x = Tk_Width(comboPtr->tkwin) - XPAD -  comboPtr->inset - comboPtr->arrowWidth;
+        x = Tk_Width(comboPtr->tkwin) - XPAD -  comboPtr->xPad.side2 - comboPtr->inset - comboPtr->arrowWidth;
         y = comboPtr->inset;
         if (h > comboPtr->arrowHeight) {
             y += (h - comboPtr->arrowHeight) / 2;
