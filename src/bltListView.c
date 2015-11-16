@@ -3933,6 +3933,7 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     x = SCREENX(viewPtr, itemPtr->worldX);
     y = SCREENY(viewPtr, itemPtr->worldY);
+#ifdef notdef
     Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
     if (rootX < 0) {
         rootX = 0;
@@ -3940,8 +3941,11 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (rootY < 0) {
         rootY = 0;
     }
-    x += rootX + itemPtr->textX - 3;
-    y += rootY + itemPtr->textY - 1;
+    x += rootX;
+    y += rootY;
+#endif
+    x += itemPtr->textX - 3;
+    y += itemPtr->textY - 1;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     objPtr = Tcl_NewIntObj(x);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
