@@ -66,6 +66,8 @@
 
 #define SCREEN(x)       ((x) - filmPtr->scrollOffset) 
 #define ISHORIZ(s)      (((s)->flags & VERTICAL) == 0)
+#define WORLDSIZE(s) \
+    (((s)->flags & VERTICAL) ? s->worldHeight : s->worldWidth)
 
 typedef enum {
     INSERT_AFTER,                       /* Insert after named frame. */
@@ -661,15 +663,10 @@ GetReqHeight(Frame *framePtr)
     int h;
 
     h = 2 * framePtr->iPadY;
-    fprintf(stderr, "0. %s  h=%d\n", Tk_PathName(framePtr->tkwin), h);
     if (framePtr->tkwin != NULL) {
         h += Tk_ReqHeight(framePtr->tkwin);
-        fprintf(stderr, "1. h=%d %s %d\n", h,
-                Tk_PathName(framePtr->tkwin),
-                Tk_ReqHeight(framePtr->tkwin));
     }
     h = BoundSize(h, &framePtr->reqHeight);
-    fprintf(stderr, "2. %s h=%d\n", framePtr->name, h);
     return h;
 }
 
@@ -1739,7 +1736,6 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     framePtr->index = Blt_Chain_GetLength(filmPtr->frames);
     framePtr->link = Blt_Chain_Append(filmPtr->frames, framePtr);
     framePtr->name = Blt_GetHashKey(&filmPtr->frameTable, hPtr);
-    fprintf(stderr, "frame %s index=%d\n", framePtr->name, framePtr->index);
     framePtr->nom  = LIMITS_NOM;
     framePtr->resize = RESIZE_BOTH;
     framePtr->weight = 1.0f;
@@ -2337,7 +2333,9 @@ GetHorizontalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
 {
     int reqWidth, reqHeight;
 
+#if TRACE
     fprintf(stderr, "GetHorizontalFrameGeometry(%s)\n", framePtr->name);
+#endif
     reqHeight = GetReqHeight(framePtr);
     if (filmPtr->relSize > 0.0) {
         reqWidth = (int)(Tk_Width(filmPtr->tkwin) * filmPtr->relSize);
@@ -2356,8 +2354,10 @@ GetHorizontalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
     }
     framePtr->width = reqWidth;
     framePtr->height = reqHeight;
+#if TRACE
     fprintf(stderr, "GetHorizontalFrameGeometry: w=%d h=%d\n",
             framePtr->width, framePtr->height);
+#endif
 }
 
 static void
@@ -2365,11 +2365,10 @@ GetVerticalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
 {
     int reqWidth, reqHeight;
 
-    /* The width of a vertical frame is the width of the widget. */
-    reqWidth = Tk_Width(filmPtr->tkwin);
-    if (reqWidth < 3) {
-        reqWidth = Tk_ReqWidth(framePtr->tkwin);
-    }
+#if TRACE
+    fprintf(stderr, "GetVerticalFrameGeometry(%s)\n", framePtr->name);
+#endif
+    reqWidth = GetReqWidth(framePtr);
     if (filmPtr->relSize > 0.0) {
         reqHeight = (int)(Tk_Height(filmPtr->tkwin) * filmPtr->relSize);
         if (framePtr->flags & SHOW_GRIP) {
@@ -2378,7 +2377,7 @@ GetVerticalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
                                              * size. */
         }
     } else {
-        reqHeight = GetReqWidth(framePtr);
+        reqHeight = GetReqHeight(framePtr);
         if (framePtr->flags & SHOW_GRIP) {
             reqHeight += filmPtr->gripSize; /* Add the size of the grip
                                              * from the maximum window
@@ -2387,8 +2386,10 @@ GetVerticalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
     }
     framePtr->width = reqWidth;
     framePtr->height = reqHeight;
+#if TRACE
     fprintf(stderr, "GetVerticalFrameGeometry: w=%d h=%d\n",
             framePtr->width, framePtr->height);
+#endif
 }
 
 /*
@@ -2411,8 +2412,8 @@ static void
 LayoutHorizontalFrames(Filmstrip *filmPtr)
 {
     int maxWidth, maxHeight, worldWidth;
-    int x;
     Frame *framePtr;
+    int x;
 
     maxWidth = maxHeight = 0;
     worldWidth = 0;
@@ -2449,7 +2450,6 @@ LayoutHorizontalFrames(Filmstrip *filmPtr)
     filmPtr->worldHeight = maxHeight;
     filmPtr->worldWidth = worldWidth;
     filmPtr->normalWidth = maxWidth;
-    fprintf(stderr, "horiz: normalHeight=%d\n", maxHeight);
     filmPtr->normalHeight = maxHeight;
     filmPtr->flags &= ~LAYOUT_PENDING;
     filmPtr->flags |= SCROLL_PENDING;
@@ -2636,37 +2636,38 @@ ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr)
 static void
 ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr) 
 {
-    int winWidth, winHeight;
     int reqHeight;
+    int cavityWidth;
     int x, y, w, h;
+    Grip *gripPtr;
 
-    filmPtr = framePtr->filmPtr;
     if (framePtr->tkwin == NULL) {
         return;
     }
     x = 0;
     y = SCREEN(framePtr->worldY);
-    /*
-     * Unmap any widgets that start beyond of the right edge of the
-     * container.
-     */
+
+    /* Unmap any widget that isn't viewable in the the widget. */
     if (((y > Tk_Height(filmPtr->tkwin)) || ((y + framePtr->height) < 0))) {
         UnmapFrameAndGrip(framePtr);
         return;
     }
-    winWidth  = framePtr->width;
-    winHeight = framePtr->height;
+    w = framePtr->width;
+    h = framePtr->height;
+    /* If the child widget is wider that the frame or if -fill x is set,
+     * resize the set the width of the child to be the width of the
+     * frame. */
+    if ((w > Tk_Width(filmPtr->tkwin)) || (framePtr->flags & FILL_X)) {
+        w = Tk_Width(filmPtr->tkwin);
+    }
     if (filmPtr->relSize > 0.0) {
         reqHeight = (int)(Tk_Height(filmPtr->tkwin) * filmPtr->relSize);
     } else {
         reqHeight = Tk_ReqHeight(framePtr->tkwin);
     }
-    if ((reqHeight < winHeight) && ((framePtr->fill & FILL_Y) == 0)) {
-        winHeight = reqHeight;
+    if ((reqHeight < h) && ((framePtr->fill & FILL_Y) == 0)) {
+        h = reqHeight;
     }
-    w = winWidth;
-    h = winHeight;
-    
     if (framePtr->height > h) {
         switch (framePtr->anchor) {
         case TK_ANCHOR_NW:              /* Upper left corner */
@@ -2685,6 +2686,30 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
             break;                      
         }
     }
+
+    /* If the widget is bigger than the window, adjust the position of the
+     * child widget according to the anchor specified. The default is
+     * center.  */
+    cavityWidth = Tk_Width(filmPtr->tkwin) - PADDING(framePtr->xPad);
+    x += framePtr->xPad.side1;
+    if (cavityWidth > w) {
+        switch (framePtr->anchor) {
+        case TK_ANCHOR_N:
+        case TK_ANCHOR_NE:
+        case TK_ANCHOR_NW:
+            break;
+        case TK_ANCHOR_W: 
+        case TK_ANCHOR_CENTER:
+        case TK_ANCHOR_E:     
+            x += (cavityWidth - w) / 2;
+            break;
+        case TK_ANCHOR_S:     
+        case TK_ANCHOR_SE:    
+        case TK_ANCHOR_SW:    
+            x += cavityWidth - w;
+            break;                      
+        }
+    }
     /*
      * Resize and/or move the widget as necessary.
      */
@@ -2696,6 +2721,28 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
     }
     if (!Tk_IsMapped(framePtr->tkwin)) {
         Tk_MapWindow(framePtr->tkwin);
+    }
+    gripPtr = &framePtr->grip;
+    if (framePtr->flags & SHOW_GRIP) {
+        Filmstrip *filmPtr;
+        int w, h;
+        
+        filmPtr = framePtr->filmPtr;
+        y += framePtr->size - filmPtr->gripSize;
+        x = 0;
+        w = Tk_Width(filmPtr->tkwin);
+        h = filmPtr->gripSize; 
+        if ((x != Tk_X(gripPtr->tkwin)) || (y != Tk_Y(gripPtr->tkwin)) ||
+            (w != Tk_Width(gripPtr->tkwin)) ||
+            (h != Tk_Height(gripPtr->tkwin))) {
+            Tk_MoveResizeWindow(gripPtr->tkwin, x, y, w, h);
+        }
+        if (!Tk_IsMapped(gripPtr->tkwin)) {
+            Tk_MapWindow(gripPtr->tkwin);
+        }
+        XRaiseWindow(filmPtr->display, Tk_WindowId(gripPtr->tkwin));
+    } else if (Tk_IsMapped(gripPtr->tkwin)) {
+        Tk_UnmapWindow(gripPtr->tkwin);
     }
 }
 
@@ -2799,8 +2846,6 @@ ArrangeWindow(Frame *framePtr, int x, int y)
                 TranslateAnchor(dx, dy, framePtr->anchor, &x, &y);
             }
             TranslateAnchor(w, h, framePtr->anchor, &x, &y);
-            fprintf(stderr, "frame=%s x=%d,y=%d, w=%d h=%d\n", 
-                    framePtr->name, x, y, w, h);
         }
 #endif
         /*
@@ -2927,50 +2972,19 @@ ArrangeFrame(Frame *framePtr, int x, int y)
 static void
 DisplayVerticalFrames(Filmstrip *filmPtr)
 {
-    int height;
-    int top, bottom;
     Frame *framePtr;
 
-#if TRACE
-    fprintf(stderr, "VerticalFrames\n");
-#endif
-    framePtr = LastFrame(filmPtr, HIDDEN);
     /*
-     * If the filmstrip has no frames anymore, then don't do anything at
+     * If the filmstrip has no children anymore, then don't do anything at
      * all: just leave the container widget's size as-is.
      */
-    if (framePtr == NULL) {
-        Blt_Warn("VFrames: last frame is null\n");
-        return;
-    }
     if (filmPtr->anchorPtr == NULL) {
+        framePtr = FirstFrame(filmPtr, HIDDEN);
         filmPtr->anchorPtr = &framePtr->grip;
     }
     if (filmPtr->flags & LAYOUT_PENDING) {
         LayoutVerticalFrames(filmPtr);
     }
-#ifdef notdef
-    /*
-     * Save the width and height of the container so we know when its size
-     * has changed during ConfigureNotify events.
-     */
-    top = LeftSpan(filmPtr);
-    bottom = RightSpan(filmPtr);
-    filmPtr->worldWidth = height = top + bottom;
-#endif
-    
-    /*
-     * If after adjusting the size of the frames the space required does not
-     * equal the size of the widget, do one of the following:
-     *
-     * 1) If it's smaller, center the filmstrip in the widget.
-     * 2) If it's bigger, clip the frames that extend beyond the edge of the
-     *    container.
-     *
-     * Set the row and column offsets (including the container's internal
-     * border width). To be used later when positioning the widgets.
-     */
-
     for (framePtr = FirstFrame(filmPtr, HIDDEN); framePtr != NULL; 
          framePtr = NextFrame(framePtr, HIDDEN)) {
         ArrangeVerticalFrame(filmPtr, framePtr);
@@ -3016,7 +3030,9 @@ DisplayHorizontalFrames(Filmstrip *filmPtr)
 static void
 ComputeGeometry(Filmstrip *filmPtr) 
 {
+#if TRACE
     fprintf(stderr, "ComputeGeometry\n");
+#endif
     if (filmPtr->flags & VERTICAL) {
         LayoutVerticalFrames(filmPtr);
     } else {
@@ -3030,10 +3046,12 @@ ComputeGeometry(Filmstrip *filmPtr)
     if (filmPtr->reqHeight > 0) {
         filmPtr->normalHeight = filmPtr->reqHeight;
     }
+#if TRACE
     fprintf(stderr, "ComputeGeometry: rw=%d rh=%d orw=%d orh=%d nw=%d nh=%d\n",
             Tk_ReqWidth(filmPtr->tkwin), Tk_ReqHeight(filmPtr->tkwin),
             filmPtr->reqWidth, filmPtr->reqHeight,
             filmPtr->normalWidth, filmPtr->normalHeight);
+#endif
     if ((filmPtr->normalWidth != Tk_ReqWidth(filmPtr->tkwin)) ||
         (filmPtr->normalHeight != Tk_ReqHeight(filmPtr->tkwin))) {
         Tk_GeometryRequest(filmPtr->tkwin, filmPtr->normalWidth,
@@ -3182,7 +3200,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     ConfigureFilmstrip(filmPtr);
-    /* Arrange for the filmstrip layout to be computed at the next idle point. */
+    /* Arrange for the layout to be computed at the next idle point. */
     filmPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(filmPtr);
     return TCL_OK;
@@ -3898,6 +3916,9 @@ MotionTimerProc(ClientData clientData)
 {
     Filmstrip *filmPtr = clientData;
 
+    if (filmPtr->scrollTarget == filmPtr->scrollOffset) {
+        return;
+    }
     if (filmPtr->scrollTarget > filmPtr->scrollOffset) {
         filmPtr->scrollOffset += filmPtr->scrollIncr;
         if (filmPtr->scrollOffset > filmPtr->scrollTarget) {
@@ -3931,7 +3952,6 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Filmstrip *filmPtr = clientData;
     Frame *framePtr;
-    int x1, x2, w, margin;
 
     if (GetFrameFromObj(interp, filmPtr, objv[2], &framePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3939,25 +3959,47 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if ((framePtr == NULL) || (framePtr->flags & HIDDEN)) {
         return TCL_OK;
     }
-    w = VPORTWIDTH(filmPtr);
-    x1 = filmPtr->scrollOffset;
-    x2 = filmPtr->scrollOffset + w;
-    margin = 20;
+    if (filmPtr->flags & VERTICAL) {
+        int y1, y2, h, margin;
 
-    fprintf(stderr, "frame=%s worldX=%d x1=%d x2=%d\n",
-            framePtr->name, framePtr->worldX, x1, x2);
-    
-    /* If the frame is partially obscured, scroll so that it's entirely in
-     * view. */
-    if (framePtr->worldX < x1) {
-        filmPtr->scrollTarget = framePtr->worldX - (w - framePtr->width)/2;
-        if ((framePtr->width + margin) < w) {
-            filmPtr->scrollTarget -= margin;
+        h = VPORTWIDTH(filmPtr);
+        y1 = filmPtr->scrollOffset;
+        y2 = filmPtr->scrollOffset + h;
+        margin = 20;
+        
+        /* If the frame is partially obscured, scroll so that it's entirely
+         * in view. */
+        if (framePtr->worldY < y1) {
+            filmPtr->scrollTarget = framePtr->worldY - (h - framePtr->height)/2;
+            if ((framePtr->height + margin) < h) {
+                filmPtr->scrollTarget -= margin;
+            }
+        } else if ((framePtr->worldY + framePtr->height) >= y2) {
+            filmPtr->scrollTarget = framePtr->worldY - (h - framePtr->height)/2;
+            if ((framePtr->height + margin) < h) {
+                filmPtr->scrollTarget += margin;
+            }
         }
-    } else if ((framePtr->worldX + framePtr->width) >= x2) {
-        filmPtr->scrollTarget = framePtr->worldX - (w - framePtr->width)/2;
-        if ((framePtr->width + margin) < w) {
-            filmPtr->scrollTarget += margin;
+    } else {
+        int x1, x2, w, margin;
+
+        w = VPORTWIDTH(filmPtr);
+        x1 = filmPtr->scrollOffset;
+        x2 = filmPtr->scrollOffset + w;
+        margin = 20;
+        
+        /* If the frame is partially obscured, scroll so that it's entirely in
+         * view. */
+        if (framePtr->worldX < x1) {
+            filmPtr->scrollTarget = framePtr->worldX - (w - framePtr->width)/2;
+            if ((framePtr->width + margin) < w) {
+                filmPtr->scrollTarget -= margin;
+            }
+        } else if ((framePtr->worldX + framePtr->width) >= x2) {
+            filmPtr->scrollTarget = framePtr->worldX - (w - framePtr->width)/2;
+            if ((framePtr->width + margin) < w) {
+                filmPtr->scrollTarget += margin;
+            }
         }
     }
     if (filmPtr->flags & ANIMATE) {
@@ -3966,11 +4008,10 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
                 MotionTimerProc, filmPtr);
     } else {
         filmPtr->scrollOffset = filmPtr->scrollTarget;
+        filmPtr->flags |= SCROLL_PENDING;
+        EventuallyRedraw(filmPtr);
     }
-    fprintf(stderr, "setting current to %s\n", framePtr->name);
     filmPtr->currentPtr = framePtr;
-    filmPtr->flags |= SCROLL_PENDING;
-    EventuallyRedraw(filmPtr);
     return TCL_OK;
 }
 
@@ -4522,17 +4563,17 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
          * Note: we are bounding the fractions between 0.0 and 1.0 to support
          * the "canvas"-style of scrolling.
          */
-        fract = (double)filmPtr->scrollOffset / filmPtr->worldWidth;
+        fract = (double)filmPtr->scrollOffset / WORLDSIZE(filmPtr);
         objPtr = Tcl_NewDoubleObj(FCLAMP(fract));
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        fract = (double)(filmPtr->scrollOffset + width) / filmPtr->worldWidth;
+        fract = (double)(filmPtr->scrollOffset + width) / WORLDSIZE(filmPtr);
         objPtr = Tcl_NewDoubleObj(FCLAMP(fract));
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         Tcl_SetObjResult(interp, listObjPtr);
         return TCL_OK;
     }
     if (Blt_GetScrollInfoFromObj(interp, objc - 2, objv + 2, 
-                &filmPtr->scrollOffset, filmPtr->worldWidth, width, 
+                &filmPtr->scrollOffset, WORLDSIZE(filmPtr), width, 
                 filmPtr->scrollUnits, BLT_SCROLL_MODE_HIERBOX) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -4753,7 +4794,7 @@ DisplayProc(ClientData clientData)
     unsigned int w, h;
 
     filmPtr->flags &= ~REDRAW_PENDING;
-#if TRACE || 1
+#if TRACE 
     fprintf(stderr, "DisplayProc(%s) w=%d h=%d\n",
             Tk_PathName(filmPtr->tkwin), Tk_Width(filmPtr->tkwin),
             Tk_Height(filmPtr->tkwin));
@@ -4777,12 +4818,12 @@ DisplayProc(ClientData clientData)
 
         width = VPORTWIDTH(filmPtr);
         filmPtr->scrollOffset = Blt_AdjustViewport(filmPtr->scrollOffset,
-                filmPtr->worldWidth, width, filmPtr->scrollUnits, 
+                WORLDSIZE(filmPtr), width, filmPtr->scrollUnits, 
                 BLT_SCROLL_MODE_HIERBOX);
         if (filmPtr->scrollCmdObjPtr != NULL) {
             Blt_UpdateScrollbar(filmPtr->interp, filmPtr->scrollCmdObjPtr,
                 filmPtr->scrollOffset, filmPtr->scrollOffset + width,
-                filmPtr->worldWidth);
+                WORLDSIZE(filmPtr));
         }
         filmPtr->flags &= ~SCROLL_PENDING;
     }

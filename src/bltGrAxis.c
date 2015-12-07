@@ -2258,9 +2258,6 @@ LinearAxis(Axis *axisPtr, double min, double max)
     axisPtr->minor.ticks.numSteps = numTicks;
     axisPtr->minor.ticks.scaleType = SCALE_LINEAR;
     /* Never generate minor ticks. */
-    fprintf(stderr, "LinearAxis axis=%s tickMin=%.15g tickMax=%.15g axisMin=%.15g, axisMax=%.15g\n",
-            axisPtr->obj.name, tickMin, tickMax, axisMin, axisMax);
-            
 }
 
 /*
@@ -6825,7 +6822,6 @@ TimeAxis(Axis *axisPtr, double min, double max)
     if (units == -1) {
         return;
     }
-    fprintf(stderr, "units=%d\n", units);
     switch (units) {
     case TIME_YEARS:
         YearTicks(axisPtr, min, max);
@@ -6881,8 +6877,6 @@ FirstMajorTick(Axis *axisPtr)
     ticksPtr->numDaysFromInitial = 0;
     tick.isValid = FALSE;
     tick.value = Blt_NaN();
-    fprintf(stderr, "FirstMajorTick axis=%s scaleType=%d units=%d\n",
-            axisPtr->obj.name, ticksPtr->scaleType, ticksPtr->timeUnits);
     switch (ticksPtr->scaleType) {
     case SCALE_CUSTOM:                  /* User defined minor ticks */
         tick.value = ticksPtr->values[0];
