@@ -68,6 +68,9 @@
 #define ISVERT(s)       ((s)->flags & VERTICAL)
 #define ISHORIZ(s)      (((s)->flags & VERTICAL) == 0)
 
+#define MOTION_SCALING_MASK \
+        (MOTION_SCALING_LINEAR|MOTION_SCALING_LOG)
+
 typedef struct _Drawerset Drawerset;
 typedef struct _Drawer Drawer;
 typedef struct _Handle Handle;
@@ -100,6 +103,7 @@ typedef enum {
 #define DEF_DRAWER_OPEN_COMMAND (char *)NULL
 #define DEF_DRAWER_PAD          "0"
 #define DEF_DRAWER_PADX         "0"
+#define DEF_DRAWER_SCALE         "linear"
 #define DEF_DRAWER_PADY         "0"
 #define DEF_DRAWER_RESIZE       "shrink"
 #define DEF_DRAWER_SHOW_HANDLE   "1"
@@ -364,7 +368,7 @@ struct _Drawerset {
 
 /* Drawer/handle flags.  */
 
-#define CLOSING   (1<<20)
+#define CLOSING         (1<<20)
 #define HIDDEN          (1<<9)          /* Do not display the handle or
                                          * drawer. */
 #define CLOSED          (1<<9)          /* Do not display the drawer. */
@@ -375,6 +379,8 @@ struct _Drawerset {
 #define SHRINK          (1<<15)         /* Shrink the window to fit the
                                          * drawer, instead of moving it. */
 #define VIRGIN          (1<<24)
+#define MOTION_SCALE_LINEAR (1<<21)
+#define MOTION_SCALE_LOG (1<<22)
 
 /* Orientation. */
 #define SIDE_VERTICAL   (SIDE_TOP|SIDE_BOTTOM)
@@ -411,6 +417,13 @@ static Tk_GeomMgr drawerMgrInfo =
                                          * requests */
     DrawerCustodyProc,                  /* Procedure when widget is taken
                                          * away */
+};
+
+static Blt_OptionParseProc ObjToMotionScaling;
+static Blt_OptionPrintProc MotionScalingToObj;
+static Blt_CustomOption colorScalingOption =
+{
+    ObjToMotionScaling, MotionScalingToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToChild;
@@ -482,6 +495,9 @@ static Blt_ConfigSpec drawerSpecs[] =
         Blt_Offset(Drawer, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_DRAWER_RESIZE,
         Blt_Offset(Drawer, resize), BLT_CONFIG_DONT_SET_DEFAULT },
+    {BLT_CONFIG_CUSTOM, "-scale", "scale", "Scale",
+        DEF_DRAWER_SCALE, Blt_Offset(Drawer, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, &motionScalingOption},
     {BLT_CONFIG_BITMASK, "-showhandle", "showHandle", "showHandle", 
         DEF_DRAWER_SHOW_HANDLE, Blt_Offset(Drawer, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_HANDLE },
@@ -1312,7 +1328,9 @@ DrawerTimerProc(ClientData clientData)
     drawPtr->step++;
     frac = (double)drawPtr->step / (double)drawPtr->numSteps;
     range = drawPtr->scrollMax - drawPtr->scrollMin;
-    frac = log10(9.0 * frac + 1.0);
+    if (drawPtr->flags & MOTION_SCALE_LOG) {
+        frac = log10(9.0 * frac + 1.0);
+    }
     if (drawPtr->flags & CLOSING) {
         frac = 1.0 - frac;
     }
@@ -1577,6 +1595,81 @@ ChildToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
         objPtr = Tcl_NewStringObj("", -1);
     } else {
         objPtr = Tcl_NewStringObj(Tk_PathName(tkwin), -1);
+    }
+    return objPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToMotionScaling --
+ *
+ *      Translates the given string to the motion scale it represents.  
+ *      Valid scales are "linear" or "logarithmic".
+ *
+ * Results:
+ *      A standard TCL result.  If successful the field in the structure
+ *      is updated.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToMotionScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    const char *string;
+    int length;
+    char c;
+    int flag;
+    
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    flag = 0;
+    if ((c == 'l') && (strcmp(string, "linear") == 0)) {
+        flag = MOTION_SCALING_LINEAR;
+    } else if ((c == 'l') && (length > 2) && 
+               (strncmp(string, "logarithmic", length) == 0)) {
+        flag = MOTION_SCALING_LOG;
+    } else {
+        Tcl_AppendResult(interp, "unknown coloring scaling \"", string, "\"",
+                         ": should be linear or logarithmic.",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    *flagsPtr &= ~MOTION_SCALING_MASK;
+    *flagsPtr |= flag;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MotionScalingToObj --
+ *
+ *      Convert the motion scaling flag into a string Tcl_Obj.
+ *
+ * Results:
+ *      The string representation of the color scaling flag is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+MotionScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                  char *widgRec, int offset, int flags) 
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    Tcl_Obj *objPtr;
+    
+    switch (*flagsPtr & MOTION_SCALING_MASK) {
+    case MOTION_SCALING_LINEAR:
+        objPtr = Tcl_NewStringObj("linear", 6);         break;
+    case MOTION_SCALING_LOG:
+        objPtr = Tcl_NewStringObj("log", 3);            break;
+    default:
+        objPtr = Tcl_NewStringObj("???", 3);            break;
     }
     return objPtr;
 }
