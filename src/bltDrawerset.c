@@ -68,8 +68,7 @@
 #define ISVERT(s)       ((s)->flags & VERTICAL)
 #define ISHORIZ(s)      (((s)->flags & VERTICAL) == 0)
 
-#define MOTION_SCALING_MASK \
-        (MOTION_SCALING_LINEAR|MOTION_SCALING_LOG)
+#define MOTION_MASK     (MOTION_LINEAR|MOTION_LOG)
 
 typedef struct _Drawerset Drawerset;
 typedef struct _Drawer Drawer;
@@ -379,8 +378,8 @@ struct _Drawerset {
 #define SHRINK          (1<<15)         /* Shrink the window to fit the
                                          * drawer, instead of moving it. */
 #define VIRGIN          (1<<24)
-#define MOTION_SCALE_LINEAR (1<<21)
-#define MOTION_SCALE_LOG (1<<22)
+#define MOTION_LINEAR   (1<<21)
+#define MOTION_LOG      (1<<22)
 
 /* Orientation. */
 #define SIDE_VERTICAL   (SIDE_TOP|SIDE_BOTTOM)
@@ -421,7 +420,7 @@ static Tk_GeomMgr drawerMgrInfo =
 
 static Blt_OptionParseProc ObjToMotionScaling;
 static Blt_OptionPrintProc MotionScalingToObj;
-static Blt_CustomOption colorScalingOption =
+static Blt_CustomOption motionScalingOption =
 {
     ObjToMotionScaling, MotionScalingToObj, NULL, (ClientData)0
 };
@@ -1328,7 +1327,7 @@ DrawerTimerProc(ClientData clientData)
     drawPtr->step++;
     frac = (double)drawPtr->step / (double)drawPtr->numSteps;
     range = drawPtr->scrollMax - drawPtr->scrollMin;
-    if (drawPtr->flags & MOTION_SCALE_LOG) {
+    if (drawPtr->flags & MOTION_LOG) {
         frac = log10(9.0 * frac + 1.0);
     }
     if (drawPtr->flags & CLOSING) {
@@ -1628,17 +1627,17 @@ ObjToMotionScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     c = string[0];
     flag = 0;
     if ((c == 'l') && (strcmp(string, "linear") == 0)) {
-        flag = MOTION_SCALING_LINEAR;
+        flag = MOTION_LINEAR;
     } else if ((c == 'l') && (length > 2) && 
                (strncmp(string, "logarithmic", length) == 0)) {
-        flag = MOTION_SCALING_LOG;
+        flag = MOTION_LOG;
     } else {
         Tcl_AppendResult(interp, "unknown coloring scaling \"", string, "\"",
                          ": should be linear or logarithmic.",
                          (char *)NULL);
         return TCL_ERROR;
     }
-    *flagsPtr &= ~MOTION_SCALING_MASK;
+    *flagsPtr &= ~MOTION_MASK;
     *flagsPtr |= flag;
     return TCL_OK;
 }
@@ -1663,10 +1662,10 @@ MotionScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
     
-    switch (*flagsPtr & MOTION_SCALING_MASK) {
-    case MOTION_SCALING_LINEAR:
+    switch (*flagsPtr & MOTION_MASK) {
+    case MOTION_LINEAR:
         objPtr = Tcl_NewStringObj("linear", 6);         break;
-    case MOTION_SCALING_LOG:
+    case MOTION_LOG:
         objPtr = Tcl_NewStringObj("log", 3);            break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);            break;
@@ -2335,7 +2334,7 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
     Blt_ResetLimits(&drawPtr->reqHeight);
     drawPtr->anchor = TK_ANCHOR_CENTER;
     drawPtr->fill = FILL_NONE;
-    drawPtr->flags = VIRGIN | SHOW_HANDLE | CLOSED | MOTION_SCALING_LOG;
+    drawPtr->flags = VIRGIN | SHOW_HANDLE | CLOSED | MOTION_LOG;
     drawPtr->hashPtr = hPtr;
     drawPtr->name = Blt_GetHashKey(&setPtr->drawerTable, hPtr);
     drawPtr->nom  = LIMITS_NOM;
