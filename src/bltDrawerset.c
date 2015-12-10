@@ -103,7 +103,7 @@ typedef enum {
 #define DEF_DRAWER_OPEN_COMMAND (char *)NULL
 #define DEF_DRAWER_PAD          "0"
 #define DEF_DRAWER_PADX         "0"
-#define DEF_DRAWER_SCALE         "linear"
+#define DEF_DRAWER_SCALE         "log"
 #define DEF_DRAWER_PADY         "0"
 #define DEF_DRAWER_RESIZE       "shrink"
 #define DEF_DRAWER_SHOW_HANDLE   "1"
@@ -2335,7 +2335,7 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
     Blt_ResetLimits(&drawPtr->reqHeight);
     drawPtr->anchor = TK_ANCHOR_CENTER;
     drawPtr->fill = FILL_NONE;
-    drawPtr->flags = VIRGIN | SHOW_HANDLE | CLOSED;
+    drawPtr->flags = VIRGIN | SHOW_HANDLE | CLOSED | MOTION_SCALING_LOG;
     drawPtr->hashPtr = hPtr;
     drawPtr->name = Blt_GetHashKey(&setPtr->drawerTable, hPtr);
     drawPtr->nom  = LIMITS_NOM;
