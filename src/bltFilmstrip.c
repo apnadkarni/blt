@@ -101,6 +101,7 @@ typedef int (SizeProc)(Frame *framePtr);
 #define DEF_FRAME_TAGS           (char *)NULL
 #define DEF_FRAME_VARIABLE       (char *)NULL
 #define DEF_FRAME_WEIGHT         "1.0"
+#define DEF_FRAME_STEPS        "8"
 #define DEF_GRIP_BORDERWIDTH  "1"
 #define DEF_GRIP_COLOR         STD_NORMAL_BACKGROUND
 #define DEF_GRIP_CURSOR         (char *)NULL
@@ -185,11 +186,12 @@ struct _Filmstrip {
     /* 
      * Automated scrolling information. 
      */
-    int scrollUnits;                    /* Smallest unit of scrolling for
-                                         * tabs. */
     int numSteps;                       /* Number of steps to take to
                                          * scroll to proper frame. */
-    int step;                           /* Current step in animated scroll. */
+    int step;                           /* Current step in animation */
+
+    int scrollUnits;                    /* Smallest unit of scrolling for
+                                         * frames. */
     int scrollDistance;                 /* Distance to scroll. */
     int scrollTarget;                   /* Target offset to scroll to. */
     int scrollIncr;                     /* Current increment. */
@@ -530,6 +532,8 @@ static Blt_ConfigSpec filmStripSpecs[] =
     {BLT_CONFIG_INT_NNEG, "-scrolldelay", "scrollDelay", "ScrollDelay",
         DEF_SCROLL_DELAY, Blt_Offset(Filmstrip, delay),
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_INT_POS, "-steps", "steps", "Steps", DEF_FRAME_STEPS,
+        Blt_Offset(Filmstrip, numSteps), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
         Blt_Offset(Filmstrip, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -2532,6 +2536,9 @@ ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr)
     if (framePtr->tkwin == NULL) {
         return;
     }
+    if ((framePtr->width == 0) || (framePtr->height == 0)) {
+        return;
+    }
     x = SCREEN(framePtr->worldX);
     y = 0;
 
@@ -2604,6 +2611,7 @@ ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr)
         (y != Tk_Y(framePtr->tkwin)) ||
         (w != Tk_Width(framePtr->tkwin)) || 
         (h != Tk_Height(framePtr->tkwin))) {
+        assert(w > 0 && h > 0);
         Tk_MoveResizeWindow(framePtr->tkwin, x, y, w, h);
     }
     if (!Tk_IsMapped(framePtr->tkwin)) {
@@ -2622,6 +2630,7 @@ ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr)
         if ((x != Tk_X(gripPtr->tkwin)) || (y != Tk_Y(gripPtr->tkwin)) ||
             (w != Tk_Width(gripPtr->tkwin)) ||
             (h != Tk_Height(gripPtr->tkwin))) {
+            assert(w > 0 && h > 0);
             Tk_MoveResizeWindow(gripPtr->tkwin, x, y, w, h);
         }
         if (!Tk_IsMapped(gripPtr->tkwin)) {
@@ -2642,6 +2651,9 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
     Grip *gripPtr;
 
     if (framePtr->tkwin == NULL) {
+        return;
+    }
+    if ((framePtr->width == 0) || (framePtr->height == 0)) {
         return;
     }
     x = 0;
@@ -2717,6 +2729,7 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
         (y != Tk_Y(framePtr->tkwin)) ||
         (w != Tk_Width(framePtr->tkwin)) || 
         (h != Tk_Height(framePtr->tkwin))) {
+        assert(w > 0 && h > 0);
         Tk_MoveResizeWindow(framePtr->tkwin, x, y, w, h);
     }
     if (!Tk_IsMapped(framePtr->tkwin)) {
@@ -2735,6 +2748,7 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
         if ((x != Tk_X(gripPtr->tkwin)) || (y != Tk_Y(gripPtr->tkwin)) ||
             (w != Tk_Width(gripPtr->tkwin)) ||
             (h != Tk_Height(gripPtr->tkwin))) {
+            assert(w > 0 && h > 0);
             Tk_MoveResizeWindow(gripPtr->tkwin, x, y, w, h);
         }
         if (!Tk_IsMapped(gripPtr->tkwin)) {
@@ -2865,6 +2879,7 @@ ArrangeWindow(Frame *framePtr, int x, int y)
             (y != Tk_Y(framePtr->tkwin)) ||
             (w != Tk_Width(framePtr->tkwin)) || 
             (h != Tk_Height(framePtr->tkwin))) {
+            assert(w > 0 && h > 0);
             Tk_MoveResizeWindow(framePtr->tkwin, x, y, w, h);
         }
         if (!Tk_IsMapped(framePtr->tkwin)) {
@@ -2902,6 +2917,7 @@ ArrangeGrip(Grip *gripPtr, int x, int y)
         if ((x != Tk_X(gripPtr->tkwin)) || (y != Tk_Y(gripPtr->tkwin)) ||
             (w != Tk_Width(gripPtr->tkwin)) ||
             (h != Tk_Height(gripPtr->tkwin))) {
+            assert(w > 0 && h > 0);
             Tk_MoveResizeWindow(gripPtr->tkwin, x, y, w, h);
         }
         if (!Tk_IsMapped(gripPtr->tkwin)) {
@@ -3919,6 +3935,14 @@ MotionTimerProc(ClientData clientData)
     if (filmPtr->scrollTarget == filmPtr->scrollOffset) {
         return;
     }
+#ifdef notdef
+    filmPtr->step++;
+    frac = (double)filmPtr->step / (double)filmPtr->numSteps;
+    range = filmPtr->scrollTarget - filmPtr->scrollOffset;
+    frac = log10(9.0 * frac + 1.0);
+    filmPtr->scrollOffset += (int)(range * frac);
+#endif
+    
     if (filmPtr->scrollTarget > filmPtr->scrollOffset) {
         filmPtr->scrollOffset += filmPtr->scrollIncr;
         if (filmPtr->scrollOffset > filmPtr->scrollTarget) {

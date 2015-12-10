@@ -115,20 +115,11 @@ typedef enum {
 #define DEF_HEIGHT              "0"
 #define DEF_HANDLE_HIGHLIGHT_THICKNESS "1"
 #define DEF_PAD                 "0"
-#define DEF_SCROLLCOMMAND       "0"
 #define DEF_DELAY               "20"
-#define DEF_SCROLLINCREMENT     "10"
 #define DEF_SIDE                "right"
 #define DEF_TAKEFOCUS           "1"
 #define DEF_VCURSOR             "sb_v_double_arrow"
 #define DEF_WIDTH               "0"
-
-#define DRAWER_DEF_ANCHOR       TK_ANCHOR_NW
-#define DRAWER_DEF_FILL         FILL_BOTH
-#define DRAWER_DEF_IPAD         0
-#define DRAWER_DEF_PAD          0
-#define DRAWER_DEF_PAD          0
-#define DRAWER_DEF_RESIZE       RESIZE_BOTH
 
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
@@ -1131,9 +1122,6 @@ EventuallyOpenDrawer(Drawer *drawPtr)
     } else {
         drawPtr->offset = drawPtr->scrollMax;
     }
-#ifdef notdef
-    setPtr->flags |= LAYOUT_PENDING;
-#endif
     EventuallyRedraw(setPtr);
 }
 
@@ -1193,9 +1181,6 @@ EventuallyCloseDrawer(Drawer *drawPtr)
     } else {
         CloseDrawer(drawPtr);
     }
-#ifdef notdef
-    setPtr->flags |= LAYOUT_PENDING;
-#endif
     EventuallyRedraw(setPtr);
 }
 
@@ -1657,25 +1642,6 @@ NextDrawer(Drawer *drawPtr, unsigned int hateFlags)
     return NULL;
 }
 
-#ifdef notdef
-static Drawer *
-PrevDrawer(Drawer *drawPtr, unsigned int hateFlags)
-{
-    if (drawPtr != NULL) {
-        Blt_ChainLink link;
-        
-        for (link = Blt_Chain_PrevLink(drawPtr->link); link != NULL; 
-             link = Blt_Chain_PrevLink(link)) {
-            drawPtr = Blt_Chain_GetValue(link);
-            if ((drawPtr->flags & hateFlags) == 0) {
-                return drawPtr;
-            }
-        }
-    }
-    return NULL;
-}
-#endif
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1777,11 +1743,13 @@ DrawerEventProc(ClientData clientData, XEvent *eventPtr)
             EventuallyRedraw(drawPtr->setPtr);
         }
     } else if (eventPtr->type == DestroyNotify) {
+        if (drawPtr->setPtr != NULL) {
+            drawPtr->setPtr->flags |= LAYOUT_PENDING;
+            EventuallyRedraw(drawPtr->setPtr);
+        }
         if (drawPtr->tkwin != NULL) {
             Tcl_EventuallyFree(drawPtr, DrawerFreeProc);
         }
-        drawPtr->setPtr->flags |= LAYOUT_PENDING;
-        EventuallyRedraw(drawPtr->setPtr);
     }
 }
 

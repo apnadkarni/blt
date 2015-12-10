@@ -6462,7 +6462,7 @@ MonthTicks(Axis *axisPtr, double min, double max)
     tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MONTHS, &left);
     tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MONTHS, &right);
     if (right.year > left.year) {
-        right.mon += 12;
+        right.mon += (right.year - left.year) * 12;
     }
     numMonths = right.mon - left.mon;
     numTicks = numMonths + 1;
@@ -6523,9 +6523,10 @@ WeekTicks(Axis *axisPtr, double min, double max)
     tickMin = axisMin = TimeFloor(axisPtr, min, TIME_WEEKS, &left);
     tickMax = axisMax = TimeCeil(axisPtr, max, TIME_WEEKS, &right);
     numWeeks = (tickMax - tickMin) / SECONDS_WEEK;
-    if (numWeeks > 5) {
+    if (numWeeks > 10) {
         double range;
 
+        fprintf(stderr, "Number of weeks > 10\n");
         range = numWeeks;
         range = NiceNum(range, 0);
         step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
@@ -6877,6 +6878,10 @@ FirstMajorTick(Axis *axisPtr)
     ticksPtr->numDaysFromInitial = 0;
     tick.isValid = FALSE;
     tick.value = Blt_NaN();
+#ifdef notdef
+    fprintf(stderr, "scaleType is %d, timeUnits=%d\n", ticksPtr->scaleType,
+            ticksPtr->timeUnits);
+#endif
     switch (ticksPtr->scaleType) {
     case SCALE_CUSTOM:                  /* User defined minor ticks */
         tick.value = ticksPtr->values[0];
@@ -6915,6 +6920,9 @@ FirstMajorTick(Axis *axisPtr)
     if (ticksPtr->index >= ticksPtr->numSteps) {
         return tick;
     }
+#ifdef notdef
+    fprintf(stderr, "FirstMajorTick: tick.value=%.15g\n", tick.value);
+#endif
     tick.isValid = TRUE;
     return tick;
 }
@@ -7025,6 +7033,9 @@ NextMajorTick(Axis *axisPtr)
     }
     tick.value = d;
     tick.isValid = TRUE;
+#ifdef notdef
+    fprintf(stderr, "NextMajorTick: tick.value=%.15g\n", tick.value);
+#endif
     return tick;
 }
 

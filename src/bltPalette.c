@@ -113,7 +113,7 @@ typedef struct _Blt_Palette {
     double maxColorValue;               /* Specifies the maximum RGB value.
                                          * 1, 255, ... */
     double min, max;                    /* Absolute min and max
-                                         * values. This is need if the
+                                         * values. This is needed if the
                                          * palette contains absolute values.
                                          * normalize the palette entries
                                          * to relative 0..1 values. */
@@ -264,22 +264,6 @@ HSVToPixel(double hue, double sat, double val, Blt_Pixel *colorPtr)
         break;
     }
 }
-
-#ifdef notdef
-static void
-PrintEntries(size_t numEntries, PaletteInterval *entries)
-{
-    int i;
-    
-    for (i = 0; i < numEntries; i++) {
-        PaletteInterval *entryPtr;
-
-        entryPtr = entries + i;
-        fprintf(stderr, "entry %d: min=%g max=%g\n", i, entryPtr->min,
-                entryPtr->max);
-    }
-}
-#endif
 
 static int 
 CompareEntries(const void *a, const void *b)
@@ -842,6 +826,8 @@ ParseRegularColorNames(Tcl_Interp *interp, Palette *palPtr, int objc,
     }
     palPtr->colors = entries;
     palPtr->numColors = numEntries;
+    palPtr->min = 0.0;
+    palPtr->max = 1.0;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -880,6 +866,8 @@ ParseRegularColorTriplets(Tcl_Interp *interp, Palette *palPtr, int objc,
     }
     palPtr->colors = entries;
     palPtr->numColors = numEntries;
+    palPtr->min = 0.0;
+    palPtr->max = 1.0;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -897,7 +885,10 @@ ParseIrregularColorNames(Tcl_Interp *interp, Palette *palPtr, int objc,
     PaletteInterval *entries, *entryPtr;
     double min;
     int i, numEntries;
+    double valueMin, valueMax;
     
+    valueMin = DBL_MAX;
+    valueMax = -DBL_MAX;
     numEntries = (objc / 2) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     if (GetStepFromObj(interp, objv[0], &min) != TCL_OK) {
@@ -921,7 +912,12 @@ ParseIrregularColorNames(Tcl_Interp *interp, Palette *palPtr, int objc,
         entryPtr->low.u32 = low.u32;
         entryPtr->min = min;
         entryPtr->max = max;
-
+        if (max > valueMax) {
+            valueMax = max;
+        }
+        if (min < valueMin) {
+            valueMin = min;
+        }
         low.u32 = high.u32;
         min = max;
     }
@@ -930,6 +926,8 @@ ParseIrregularColorNames(Tcl_Interp *interp, Palette *palPtr, int objc,
     }
     palPtr->colors = entries;
     palPtr->numColors = numEntries;
+    palPtr->min = valueMin;
+    palPtr->max = valueMax;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -948,7 +946,10 @@ ParseIrregularColorTriplets(Tcl_Interp *interp, Palette *palPtr, int objc,
     Blt_Pixel low;
     double min;
     GetColorProc *proc;
+    double valueMin, valueMax;
 
+    valueMin = DBL_MAX;
+    valueMax = -DBL_MAX;
     proc = (palPtr->colorFlags & COLOR_RGB) ? GetRGBFromObjv : GetHSVFromObjv;
     numEntries = (objc / 4) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
@@ -972,7 +973,12 @@ ParseIrregularColorTriplets(Tcl_Interp *interp, Palette *palPtr, int objc,
         entryPtr->low.u32 = low.u32;
         entryPtr->min = min;
         entryPtr->max = max;
-
+        if (max > valueMax) {
+            valueMax = max;
+        }
+        if (min < valueMin) {
+            valueMin = min;
+        }
         low.u32 = high.u32;
         min = max;
     }
@@ -981,6 +987,8 @@ ParseIrregularColorTriplets(Tcl_Interp *interp, Palette *palPtr, int objc,
     }
     palPtr->colors = entries;
     palPtr->numColors = numEntries;
+    palPtr->min = valueMin;
+    palPtr->max = valueMax;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -996,7 +1004,10 @@ ParseIntervalColorNames(Tcl_Interp *interp, Palette *palPtr, int objc,
 {
     PaletteInterval *entries, *entryPtr;
     int i, numEntries;
-
+    double valueMin, valueMax;
+        
+    valueMin = DBL_MAX;
+    valueMax = -DBL_MAX;
     numEntries = (objc / 4) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     for (entryPtr = entries, i = 0; i < objc; i += 4, entryPtr++) {
@@ -1019,12 +1030,20 @@ ParseIntervalColorNames(Tcl_Interp *interp, Palette *palPtr, int objc,
         entryPtr->low.u32 = low.u32;
         entryPtr->min = min;
         entryPtr->max = max;
+        if (max > valueMax) {
+            valueMax = max;
+        }
+        if (min < valueMin) {
+            valueMin = min;
+        }
     }
     if (palPtr->colors != NULL) {
         Blt_Free(palPtr->colors);
     }
     palPtr->colors = entries;
     palPtr->numColors = numEntries;
+    palPtr->min = valueMin;
+    palPtr->max = valueMax;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1041,7 +1060,10 @@ ParseIntervalColorTriplets(Tcl_Interp *interp, Palette *palPtr, int objc,
     PaletteInterval *entries, *entryPtr;
     int i, numEntries;
     GetColorProc *proc;
-
+    double valueMin, valueMax;
+        
+    valueMin = DBL_MAX;
+    valueMax = -DBL_MAX;
     proc = (palPtr->colorFlags & COLOR_RGB) ? GetRGBFromObjv : GetHSVFromObjv;
     numEntries = (objc / 8) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
@@ -1065,12 +1087,20 @@ ParseIntervalColorTriplets(Tcl_Interp *interp, Palette *palPtr, int objc,
         entryPtr->low.u32 = low.u32;
         entryPtr->min = min;
         entryPtr->max = max;
+        if (max > valueMax) {
+            valueMax = max;
+        }
+        if (min < valueMin) {
+            valueMin = min;
+        }
     }
     if (palPtr->colors != NULL) {
         Blt_Free(palPtr->colors);
     }
     palPtr->colors = entries;
     palPtr->numColors = numEntries;
+    palPtr->min = valueMin;
+    palPtr->max = valueMax;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1191,6 +1221,8 @@ ParseRegularOpacity(Tcl_Interp *interp, Palette *palPtr, int objc,
     }
     palPtr->opacities = entries;
     palPtr->numOpacities = numEntries;
+    palPtr->min = 0.0;
+    palPtr->max = 1.0;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1208,7 +1240,10 @@ ParseIrregularOpacity(Tcl_Interp *interp, Palette *palPtr, int objc,
     PaletteInterval *entries, *entryPtr;
     double min, step;
     int i, numEntries;
-    
+    double valueMin, valueMax;
+        
+    valueMin = DBL_MAX;
+    valueMax = -DBL_MAX;
     numEntries = (objc / 2) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     step = 1.0 / numEntries;
@@ -1233,6 +1268,12 @@ ParseIrregularOpacity(Tcl_Interp *interp, Palette *palPtr, int objc,
         entryPtr->high.u32 = high.u32;
         entryPtr->min = i * step;
         entryPtr->max = (i+1) * step;
+        if (max > valueMax) {
+            valueMax = max;
+        }
+        if (min < valueMin) {
+            valueMin = min;
+        }
         low.u32 = high.u32;
         min = max;
     }
@@ -1241,6 +1282,8 @@ ParseIrregularOpacity(Tcl_Interp *interp, Palette *palPtr, int objc,
     }
     palPtr->opacities = entries;
     palPtr->numOpacities = numEntries;
+    palPtr->min = valueMin;
+    palPtr->max = valueMax;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1257,7 +1300,10 @@ ParseIntervalOpacity(Tcl_Interp *interp, Palette *palPtr, int objc,
 {
     PaletteInterval *entries, *entryPtr;
     int i, numEntries;
-
+    double valueMin, valueMax;
+        
+    valueMin = DBL_MAX;
+    valueMax = -DBL_MAX;
     numEntries = (objc / 4) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
     for (entryPtr = entries, i = 0; i < objc; i += 4, entryPtr++) {
@@ -1280,12 +1326,20 @@ ParseIntervalOpacity(Tcl_Interp *interp, Palette *palPtr, int objc,
         entryPtr->low.u32 = low.u32;
         entryPtr->min = min;
         entryPtr->max = max;
+        if (max > valueMax) {
+            valueMax = max;
+        }
+        if (min < valueMin) {
+            valueMin = min;
+        }
     }
     if (palPtr->opacities != NULL) {
         Blt_Free(palPtr->opacities);
     }
     palPtr->opacities = entries;
     palPtr->numOpacities = numEntries;
+    palPtr->min = valueMin;
+    palPtr->max = valueMax;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1767,13 +1821,15 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
     h = Blt_Picture_Height(picture);
     if (w > h) {
         int x;
-
+        double range;
+        
+        range = palPtr->max - palPtr->min;
         for (x = 0; x < w; x++) {
             double value;
             int y;
             Blt_Pixel color;
 
-            value = ((double)x / (double)(w-1));
+            value = ((double)x / (double)(w-1)) * range + palPtr->min;
             InterpolateColorAndOpacity(palPtr, value, &color);
             /* Draw band. */
             for (y = 0; y < h; y++) {
@@ -1785,13 +1841,15 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     } else {
         int y;
-
+        double range;
+        
+        range = palPtr->max - palPtr->min;
         for (y = 0; y < h; y++) {
             int x;
             double value;
             Blt_Pixel color;
 
-            value = ((double)y / (double)(h-1));
+            value = ((double)y / (double)(h-1)) * range + palPtr->min;
             InterpolateColorAndOpacity(palPtr, value, &color);
             /* Draw band. */
             for (x = 0; x < w; x++) {
@@ -1841,8 +1899,8 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Computes the interpolated color value from the value given.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter result will
- *      contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter result
+ *      will contain a TCL list of the element names.
  *
  *      blt::palette interpolate $name value
  *

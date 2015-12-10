@@ -3677,6 +3677,8 @@ FadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Flips the picture either horizontally or vertically.
  *
+ *      destName flip x ?srcName?
+ *      destName flip y ?srcName?
  *---------------------------------------------------------------------------
  */
 static int
@@ -3697,10 +3699,10 @@ FlipOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 "\": should be x or y", (char *)NULL);
         return TCL_ERROR;
     }
-    if (objc > 2) {
+    if (objc > 3) {
         Blt_Picture src;
         
-        if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[3], &src) != TCL_OK) {
             return TCL_ERROR;
         }
         if (src != imgPtr->picture) {

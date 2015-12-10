@@ -3124,11 +3124,12 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
             Blt_Chain chain;
 
             chain = blt_table_get_tagged_rows(iterPtr->table, tag);
-            if (chain == NULL) {
+            if (chain != NULL) {
                 iterPtr->link = Blt_Chain_FirstLink(chain);
                 iterPtr->type = TABLE_ITERATOR_TAG;
                 iterPtr->tag = tag;
                 iterPtr->numEntries = Blt_Chain_GetLength(chain);
+                iterPtr->chain = NULL;  /* Don't free row tag chain. */
             }
             return TCL_OK;
         }
@@ -3195,7 +3196,7 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
-        iterPtr->link = Blt_Chain_FirstLink(iterPtr->chain);    
+        /* iterPtr->link is already set by blt_table_row_iterator */
         if (iterPtr->link != NULL) {
             row = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
@@ -3465,6 +3466,7 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
                 iterPtr->type = TABLE_ITERATOR_TAG;
                 iterPtr->tag = tag;
                 iterPtr->numEntries = Blt_Chain_GetLength(chain);
+                iterPtr->chain = NULL;  /* Don't free column tag chain.  */
                 return TCL_OK;
             }
         }
@@ -3529,7 +3531,7 @@ blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
-        iterPtr->link = Blt_Chain_FirstLink(iterPtr->chain);    
+        /* iterPtr->link is already set by blt_table_column_iterator */
         if (iterPtr->link != NULL) {
             col = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
@@ -3746,6 +3748,7 @@ blt_table_iterate_rows_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
     iterPtr->next = -1;
     iterPtr->start = 0;
     iterPtr->end = iterPtr->numEntries = Blt_Chain_GetLength(chain);
+    /* Indicate to free created chain. */
     iterPtr->chain = chain;
     iterPtr->tag = "";
     return TCL_OK;
@@ -3782,6 +3785,7 @@ blt_table_iterate_columns_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
     iterPtr->next = -1;
     iterPtr->start = 0;
     iterPtr->end = iterPtr->numEntries = Blt_Chain_GetLength(chain);
+    /* Indicate to free created chain. */
     iterPtr->chain = chain;
     iterPtr->tag = "";
     return TCL_OK;
