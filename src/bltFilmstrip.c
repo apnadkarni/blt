@@ -2060,6 +2060,7 @@ TranslateAnchor(
 }
 #endif
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -2120,6 +2121,7 @@ RightSpan(Filmstrip *filmPtr)
     }
     return total;
 }
+#endif
 
 static void
 UnmapFrameAndGrip(Frame *framePtr)
@@ -2260,6 +2262,7 @@ ResetFrames(Filmstrip *filmPtr)
     }
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -2331,6 +2334,7 @@ SetNominalSizes(Filmstrip *filmPtr)
     }
     return total;
 }
+#endif
 
 static void
 GetHorizontalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
@@ -2760,6 +2764,7 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
     }
 }
 
+#ifdef notdef
 static void
 ArrangeWindow(Frame *framePtr, int x, int y) 
 {
@@ -2887,6 +2892,7 @@ ArrangeWindow(Frame *framePtr, int x, int y)
         }
     }
 }
+#endif
 
 static void
 ArrangeGrip(Grip *gripPtr, int x, int y) 
@@ -4924,12 +4930,15 @@ DisplayGrip(ClientData clientData)
     w = Tk_Width(gripPtr->tkwin);
     h = Tk_Height(gripPtr->tkwin);
     drawable = Tk_WindowId(gripPtr->tkwin);
-    Blt_Bg_FillRectangle(gripPtr->tkwin, drawable, bg, 0, 0, w, h, 0,
+    if ((w > 0) && (h > 0)) {
+        Blt_Bg_FillRectangle(gripPtr->tkwin, drawable, bg, 0, 0, w, h, 0,
                 TK_RELIEF_FLAT);
-    if (relief != TK_RELIEF_FLAT) {
+    }
+    w -= PADDING(filmPtr->gripPad);
+    h -= PADDING(filmPtr->gripPad);
+    if ((relief != TK_RELIEF_FLAT) && (w > 0) && (h > 0)) {
         Blt_Bg_DrawRectangle(gripPtr->tkwin, drawable, bg, 
-                filmPtr->gripPad.side1, filmPtr->gripPad.side1, 
-                w - PADDING(filmPtr->gripPad), h - PADDING(filmPtr->gripPad),
+                filmPtr->gripPad.side1, filmPtr->gripPad.side1, w, h,
                 filmPtr->gripBorderWidth, relief);
     }
     if ((filmPtr->gripHighlightThickness > 0) && (framePtr->flags & FOCUS)) {

@@ -6920,12 +6920,16 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
      * edge will be clipped.
      */
     if (setPtr->borderWidth > 0) {
-        Blt_Bg_DrawRectangle(setPtr->tkwin, drawable, setPtr->bg,
+        int w, h;
+        
+        w = Tk_Width(setPtr->tkwin)  - 2 * setPtr->highlightWidth;
+        h = Tk_Height(setPtr->tkwin) - 2 * setPtr->highlightWidth;
+        if ((w > 0) && (h > 0)) {
+            Blt_Bg_DrawRectangle(setPtr->tkwin, drawable, setPtr->bg,
                 setPtr->highlightWidth + setPtr->xOffset, 
-                setPtr->highlightWidth + setPtr->yOffset,
-                Tk_Width(setPtr->tkwin) - 2 * setPtr->highlightWidth,
-                Tk_Height(setPtr->tkwin) - 2 * setPtr->highlightWidth,
+                setPtr->highlightWidth + setPtr->yOffset, w, h,
                 setPtr->borderWidth, setPtr->relief);
+        }
     }
     /* Draw focus highlight ring. */
     if (setPtr->highlightWidth > 0) {
@@ -7210,9 +7214,14 @@ DisplayTearoff(ClientData clientData)
 
     /* Draw 3D border. */
     if ((setPtr->borderWidth > 0) && (setPtr->relief != TK_RELIEF_FLAT)) {
-        Blt_Bg_DrawRectangle(tkwin, drawable, setPtr->bg, 0, 0,
-            Tk_Width(tkwin), Tk_Height(tkwin), setPtr->borderWidth,
-            setPtr->relief);
+        int w, h;
+
+        w = Tk_Width(tkwin);
+        h = Tk_Height(tkwin);
+        if ((w > 0) && (h > 0)) {
+            Blt_Bg_DrawRectangle(tkwin, drawable, setPtr->bg, 0, 0,
+                w, h, setPtr->borderWidth, setPtr->relief);
+        }
     }
 }
 

@@ -7106,11 +7106,11 @@ DisplayProc(ClientData clientData)
         }
         viewPtr->flags &= ~SCROLL_PENDING;
     }
+    w = Tk_Width(viewPtr->tkwin);
+    h = Tk_Height(viewPtr->tkwin);
     /*
      * Create a pixmap the size of the window for double buffering.
      */
-    w = Tk_Width(viewPtr->tkwin);
-    h = Tk_Height(viewPtr->tkwin);
     drawable = Blt_GetPixmap(viewPtr->display, Tk_WindowId(viewPtr->tkwin),
         w, h, Tk_Depth(viewPtr->tkwin));
 #ifdef WIN32

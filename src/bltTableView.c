@@ -5814,12 +5814,16 @@ DrawOuterBorders(TableView *viewPtr, Drawable drawable)
 {
     /* Draw 3D border just inside of the focus highlight ring. */
     if (viewPtr->borderWidth > 0) {
-        Blt_Bg_DrawRectangle(viewPtr->tkwin, drawable, 
+        int w, h;
+
+        w = Tk_Width(viewPtr->tkwin)  - 2 * viewPtr->highlightWidth;
+        h = Tk_Height(viewPtr->tkwin) - 2 * viewPtr->highlightWidth;
+        if ((w > 0) && (h > 0)) {
+            Blt_Bg_DrawRectangle(viewPtr->tkwin, drawable, 
                 viewPtr->rowNormalTitleBg, viewPtr->highlightWidth, 
-                viewPtr->highlightWidth, 
-                Tk_Width(viewPtr->tkwin) - 2 * viewPtr->highlightWidth,
-                Tk_Height(viewPtr->tkwin) - 2 * viewPtr->highlightWidth,
+                viewPtr->highlightWidth, w, h, 
                 viewPtr->borderWidth, viewPtr->relief);
+        }
     }
     /* Draw focus highlight ring. */
     if (viewPtr->highlightWidth > 0) {

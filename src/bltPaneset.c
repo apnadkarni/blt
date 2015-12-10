@@ -5374,7 +5374,8 @@ DisplaySashProc(ClientData clientData)
     int relief;
     Paneset *setPtr;
     Drawable drawable;
-
+    int w, h;
+    
     panePtr->flags &= ~REDRAW_PENDING;
     if (panePtr->sash == NULL) {
         return;
@@ -5388,15 +5389,20 @@ DisplaySashProc(ClientData clientData)
         relief = setPtr->relief;
     }
     drawable = Tk_WindowId(panePtr->sash);
-    Blt_Bg_FillRectangle(panePtr->sash, drawable, bg, 
-        0, 0, Tk_Width(panePtr->sash), Tk_Height(panePtr->sash), 
-        0, TK_RELIEF_FLAT);
-    if (relief != TK_RELIEF_FLAT) {
-        Blt_Bg_DrawRectangle(panePtr->sash, drawable, bg, 
-                setPtr->sashPad.side1, setPtr->sashPad.side1, 
-                Tk_Width(panePtr->sash) - PADDING(setPtr->sashPad), 
-                Tk_Height(panePtr->sash) - PADDING(setPtr->sashPad),
-                setPtr->sashBorderWidth, relief);
+    w = Tk_Width(panePtr->sash);
+    h = Tk_Height(panePtr->sash);
+    if ((w > 0) && (h > 0)) {
+        Blt_Bg_FillRectangle(panePtr->sash, drawable, bg, 0, 0, w, h,
+                                0, TK_RELIEF_FLAT);
+        if (relief != TK_RELIEF_FLAT) {
+            w -= PADDING(setPtr->sashPad);
+            h -= PADDING(setPtr->sashPad);
+            if ((w > 0) && (h > 0)) {
+                Blt_Bg_DrawRectangle(panePtr->sash, drawable, bg, 
+                        setPtr->sashPad.side1, setPtr->sashPad.side1, 
+                        w, h, setPtr->sashBorderWidth, relief);
+            }
+        }
     }
     if ((setPtr->sashHighlightThickness > 0) && (panePtr->flags & FOCUS)) {
         GC gc;

@@ -2051,11 +2051,13 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
         relief = comboPtr->relief;
     }
     if (relief != TK_RELIEF_FLAT) {
-        Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, bg, 
+        w = Tk_Width(comboPtr->tkwin)  - 2 * comboPtr->highlightWidth;
+        h = Tk_Height(comboPtr->tkwin) - 2 * comboPtr->highlightWidth;
+        if ((w > 0) && (h > 0)) {
+            Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, bg, 
                 comboPtr->highlightWidth, comboPtr->highlightWidth,
-                Tk_Width(comboPtr->tkwin)  - 2 * comboPtr->highlightWidth,
-                Tk_Height(comboPtr->tkwin) - 2 * comboPtr->highlightWidth,
-                comboPtr->borderWidth, relief);
+                w, h, comboPtr->borderWidth, relief);
+        }
     }
 }
 

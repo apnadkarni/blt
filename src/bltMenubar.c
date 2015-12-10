@@ -1979,11 +1979,13 @@ DrawItem(Item *itemPtr, Drawable drawable)
         relief = mbPtr->relief;
     }
     if (relief != TK_RELIEF_FLAT) {
-        Blt_Bg_DrawRectangle(mbPtr->tkwin, drawable, bg, 
-                mbPtr->highlightWidth, mbPtr->highlightWidth,
-                itemPtr->width  - 2 * mbPtr->highlightWidth,
-                itemPtr->height - 2 * mbPtr->highlightWidth,
+        w = itemPtr->width  - 2 * mbPtr->highlightWidth;
+        h = itemPtr->height - 2 * mbPtr->highlightWidth;
+        if ((w > 0) && (h > 0)) {
+            Blt_Bg_DrawRectangle(mbPtr->tkwin, drawable, bg, 
+                mbPtr->highlightWidth, mbPtr->highlightWidth, w, h,
                 mbPtr->borderWidth, relief);
+        }
     }
 }
 

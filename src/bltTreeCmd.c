@@ -6545,6 +6545,31 @@ TreeDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
+TreeExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
+{
+    TreeCmd *cmdPtr;
+    TreeCmdInterpData *tdPtr = clientData;
+    const char *string;
+    int state;
+    
+    string = Tcl_GetString(objv[3]);
+    cmdPtr = GetTreeCmd(tdPtr, interp, string);
+    state = (cmdPtr != NULL);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TreeNamesOp --
+ *
+ *      blt::tree names ?pattern ...?
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
 TreeNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
@@ -6654,9 +6679,10 @@ TreeLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec treeCmdOps[] =
 {
-    {"create",  1, TreeCreateOp,  2, 3, "?name?",},
-    {"destroy", 1, TreeDestroyOp, 3, 0, "name...",},
-    {"load",    1, TreeLoadOp,    4, 4, "name libpath",},
+    {"create",  1, TreeCreateOp,  2, 3, "?treeName?",},
+    {"destroy", 1, TreeDestroyOp, 3, 0, "treeName...",},
+    {"exists",  1, TreeExistsOp,  3, 3, "treeName",},
+    {"load",    1, TreeLoadOp,    4, 4, "treeName libpath",},
     {"names",   1, TreeNamesOp,   2, 3, "?pattern?...",},
 };
 

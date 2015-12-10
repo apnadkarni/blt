@@ -1537,10 +1537,12 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
     if (legendPtr->site & LEGEND_PLOTAREA_MASK) {
         Blt_DisableCrosshairs(graphPtr);
     }
-    Blt_Bg_DrawRectangle(tkwin, pixmap, bg, 0, 0, w, h, 
-        legendPtr->borderWidth, legendPtr->relief);
-    XCopyArea(graphPtr->display, pixmap, drawable, graphPtr->drawGC, 0, 0, w, h,
-        legendPtr->x, legendPtr->y);
+    if ((w > 0) && (h > 0)) {
+        Blt_Bg_DrawRectangle(tkwin, pixmap, bg, 0, 0, w, h, 
+                legendPtr->borderWidth, legendPtr->relief);
+        XCopyArea(graphPtr->display, pixmap, drawable, graphPtr->drawGC, 0, 0,
+                  w, h, legendPtr->x, legendPtr->y);
+    }
     if (legendPtr->site & LEGEND_PLOTAREA_MASK) {
         Blt_EnableCrosshairs(graphPtr);
     }

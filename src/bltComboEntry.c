@@ -4610,7 +4610,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
                 comboPtr->highlightWidth, drawable);
         }           
     }
-    w = width - 2 * comboPtr->highlightWidth;
+    w = width  - 2 * comboPtr->highlightWidth;
     h = height - 2 * comboPtr->highlightWidth;
     if ((comboPtr->relief != TK_RELIEF_FLAT) && (w > 0) && (h > 0) &&
         (comboPtr->borderWidth > 0)) {

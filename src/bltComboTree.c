@@ -5228,9 +5228,15 @@ DrawOuterBorders(ComboTree *comboPtr, Drawable drawable)
 {
     /* Draw 3D border just inside of the focus highlight ring. */
     if ((comboPtr->borderWidth > 0) && (comboPtr->relief != TK_RELIEF_FLAT)) {
-        Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, 
-            comboPtr->defStyle.normalBg, 0, 0, Tk_Width(comboPtr->tkwin),
-           Tk_Height(comboPtr->tkwin), comboPtr->borderWidth, comboPtr->relief);
+        int w, h;
+
+        w = Tk_Width(comboPtr->tkwin);
+        h = Tk_Height(comboPtr->tkwin);
+        if ((w > 0) && (h > 0)) {
+            Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, 
+                comboPtr->defStyle.normalBg, 0, 0, w, h,
+                comboPtr->borderWidth, comboPtr->relief);
+        }
     }
 }
 

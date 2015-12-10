@@ -4983,6 +4983,7 @@ DisplayHandle(ClientData clientData)
     Drawerset *setPtr;
     int relief;
     Handle *handlePtr;
+    int w, h;
     
     drawPtr->flags &= ~REDRAW_PENDING;
     handlePtr = &drawPtr->handle;
@@ -4998,15 +4999,19 @@ DisplayHandle(ClientData clientData)
         relief = setPtr->relief;
     }
     drawable = Tk_WindowId(handlePtr->tkwin);
-    Blt_Bg_FillRectangle(handlePtr->tkwin, drawable, bg, 
-        0, 0, Tk_Width(handlePtr->tkwin), Tk_Height(handlePtr->tkwin), 
-        0, TK_RELIEF_FLAT);
-    Blt_Bg_DrawRectangle(handlePtr->tkwin, drawable, bg, 
-        setPtr->handlePad.side1, setPtr->handlePad.side1, 
-        Tk_Width(handlePtr->tkwin) - PADDING(setPtr->handlePad), 
-        Tk_Height(handlePtr->tkwin) - PADDING(setPtr->handlePad),
-        setPtr->handleBW, relief);
-
+    w = Tk_Width(handlePtr->tkwin);
+    h = Tk_Height(handlePtr->tkwin);
+    if ((w > 0) && (h > 0)) {
+        Blt_Bg_FillRectangle(handlePtr->tkwin, drawable, bg, 
+                0, 0, w, h, 0, TK_RELIEF_FLAT);
+    }
+    w -= PADDING(setPtr->handlePad);
+    h -= PADDING(setPtr->handlePad);
+    if ((w > 0) && (h > 0)) {
+        Blt_Bg_DrawRectangle(handlePtr->tkwin, drawable, bg, 
+                setPtr->handlePad.side1, setPtr->handlePad.side1, w, h, 
+                setPtr->handleBW, relief);
+    }
     if ((setPtr->handleHighlightThickness > 0) && (drawPtr->flags & FOCUS)) {
         GC gc;
 

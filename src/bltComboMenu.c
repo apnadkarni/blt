@@ -7596,7 +7596,9 @@ DisplayProc(ClientData clientData)
     if (comboPtr->flags & LAYOUT_PENDING) {
         ComputeComboGeometry(comboPtr);
     }
-    if ((Tk_Width(comboPtr->tkwin) <= 1) || (Tk_Height(comboPtr->tkwin) <= 1)){
+    w = Tk_Width(comboPtr->tkwin);
+    h = Tk_Height(comboPtr->tkwin);
+    if ((w <= 1) || (w <= 1)){
         /* Don't bother computing the layout until the window size is
          * something reasonable. */
         return;
@@ -7629,8 +7631,6 @@ DisplayProc(ClientData clientData)
     /*
      * Create a pixmap the size of the window for double buffering.
      */
-    w = Tk_Width(comboPtr->tkwin);
-    h = Tk_Height(comboPtr->tkwin);
     Blt_SizeOfScreen(comboPtr->tkwin, &screenWidth, &screenHeight);
     w = CLAMP(w, 1, screenWidth);
     h = CLAMP(h, 1, screenHeight);
