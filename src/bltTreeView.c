@@ -1896,6 +1896,7 @@ FreeStyle(CellStyle *stylePtr)
 static void
 DestroyCell(TreeView *viewPtr, Cell *cellPtr)
 {
+    Blt_DeleteBindings(viewPtr->bindTable, cellPtr);
     if (viewPtr->flags & TV_SORT_AUTO) {
         viewPtr->flags |= SORT_PENDING;
     }
@@ -5625,6 +5626,7 @@ DestroyColumn(Column *colPtr)
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
 
+    Blt_DeleteBindings(viewPtr->bindTable, colPtr);
     /* Fix pointers to destroyed column. */
     if (viewPtr->colActiveTitlePtr == colPtr) {
         viewPtr->colActiveTitlePtr = NULL;

@@ -2886,6 +2886,7 @@ DestroyCell(Cell *cellPtr)
     if (cellPtr == viewPtr->activePtr) {
         viewPtr->activePtr = NULL;
     }
+    Blt_DeleteBindings(viewPtr->bindTable, cellPtr);
     if (cellPtr == viewPtr->focusPtr) {
         viewPtr->focusPtr = NULL;
         Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, 
@@ -2982,6 +2983,7 @@ DestroyRow(Row *rowPtr)
     cachedObjOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
+    Blt_DeleteBindings(viewPtr->bindTable, rowPtr);
     Blt_FreeOptions(rowSpecs, (char *)rowPtr, viewPtr->display, 0);
     if (rowPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&viewPtr->rowTable, rowPtr->hashPtr);
@@ -3053,6 +3055,7 @@ DestroyColumn(Column *colPtr)
     cachedObjOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
+    Blt_DeleteBindings(viewPtr->bindTable, colPtr);
     Blt_FreeOptions(columnSpecs, (char *)colPtr, viewPtr->display, 0);
     if (colPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&viewPtr->columnTable, colPtr->hashPtr);
@@ -4491,16 +4494,16 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
             AddBindTags(viewPtr, tags, colPtr->bindTagsObjPtr,
                         ColumnBindTagProc);
         }
-    } else if(flags & ITEM_ROW_RESIZE) {
+    } else if (flags & ITEM_ROW_RESIZE) {
         Blt_Chain_Append(tags, RowBindTagProc(viewPtr, "Resize"));
-    } else if(flags & ITEM_ROW_TITLE) {
+    } else if (flags & ITEM_ROW_TITLE) {
         Row *rowPtr = object;
 
         Blt_Chain_Append(tags, rowPtr);
         if (rowPtr->bindTagsObjPtr != NULL) {
             AddBindTags(viewPtr, tags, rowPtr->bindTagsObjPtr, RowBindTagProc);
         }
-    } else if(flags & ITEM_CELL) {
+    } else if (flags & ITEM_CELL) {
         Cell *cellPtr = object;
         CellStyle *stylePtr;
         CellKey *keyPtr;
