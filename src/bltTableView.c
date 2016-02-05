@@ -7670,7 +7670,7 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Column *colPtr;
     TableView *viewPtr = clientData;
-    long src, dest, count, i;
+    long src, dest, count;
     Column **columns;
     
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
@@ -10544,8 +10544,10 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
          */
         ComputeGeometry(viewPtr);
     }
-    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
-        return TCL_ERROR;
+    if (GetCellFromObj(NULL, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+        /* Silently ignore invalid cell selections. This is to prevent
+         * errors when the table is empty. */
+        return TCL_OK;
     }
     if (cellPtr == NULL) {
         return TCL_OK;
