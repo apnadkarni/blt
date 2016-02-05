@@ -71,12 +71,12 @@ REFERENCING TREE NODES
 ----------------------
 
 A tree object is a hierarchy of nodes. The nodes may be referenced in two
-ways: by id or by tag.
+ways: by ID or by tag.
 
-**id**
+**ID**
   Each node has a unique serial number that is assigned to that node when
   it's created. The number identifies the node.  It never changes 
-  and id numbers are not re-used.
+  and ID numbers are not re-used.
 
 **tag**
   A node may also have any number of tags associated with it.  A tag is
@@ -96,11 +96,11 @@ ways: by id or by tag.
      to the node currently set as root.
 
 When specifying nodes in tree object commands, if the specifier is an
-integer, it is assumed to refer to the single node with that id.  If the
+integer, it is assumed to refer to the single node with that ID.  If the
 specifier is not an integer, then it refers to any node that with that tag.
 
 The symbol *node* is used below to for arguments that specify a node either
-by its id or a tag that selects zero or more nodes.  Many tree commands
+by its ID or a tag that selects zero or more nodes.  Many tree commands
 only operate on a single node at a time; if *node* is specified in a way
 that names multiple items, then an error "refers to more than one node" is
 generated.
@@ -136,7 +136,7 @@ The node modifiers are listed below.
    even if the node is labeled "parent").
 
 Modifies can can be chained. For example "10->parent->firstchild" looks for
-the node with an id of 10, then its parent, and then the parent's first
+the node with an ID of 10, then its parent, and then the parent's first
 child node.  It's an error the node can't be found.  For example,
 **lastchild** and **firstchild** will generate errors if the node has no
 children.  The exception to this is the **index** operation.  You can use
@@ -215,7 +215,7 @@ command.  The operations available for trees are listed below.
 
   **-precommand** *command*
     Invoke *command* for each matching node.  Before *command* is invoked,
-    the id of the node is appended.  You can control processing by the
+    the ID of the node is appended.  You can control processing by the
     return value of *command*.  If *command* generates an error, processing
     stops and the **find** operation returns an error.  But if *command*
     returns **break**, then processing stops, no error is generated.  If
@@ -224,7 +224,7 @@ command.  The operations available for trees are listed below.
 
   **-postcommand** *command*
     Invoke *command* for each matching node.  Before *command* is invoked,
-    the id of the node is appended.  You can control processing by the
+    the ID of the node is appended.  You can control processing by the
     return value of *command*.  If *command* generates an error, processing
     stops and the **find** operation returns an error.  But if *command*
     returns **break**, then processing stops, no error is generated.  If
@@ -253,7 +253,7 @@ command.  The operations available for trees are listed below.
 
 *treeName* **copy** *parentNode* ?\ *srcTree*\ ? *srcNode* ?\ *switches*  ... ?
   Makes a copy of *srcNode* in *parentNode*. Both nodes *srcNode* and
-  *parentNode* must already exist. The id of the new node is returned. You
+  *parentNode* must already exist. The ID of the new node is returned. You
   can also copy nodes from another tree.  If a *srcTree* argument is present,
   it indicates the name of the source tree.  *Switches* may be any of
   the following.
@@ -401,9 +401,9 @@ command.  The operations available for trees are listed below.
   **-count** *number*
     Stop processing after *number* (a positive integer) matches. 
 
-  **-depth** *numLeves*
+  **-depth** *numLevels*
     Descend at most *numLevels* (a non-negative integer) levels For
-    example, if *numLeves* is "1" this means only apply the tests to the
+    example, if *numLevels* is "1" this means only apply the tests to the
     children of *node*.
 
   **-exact** *string*
@@ -411,13 +411,13 @@ command.  The operations available for trees are listed below.
 
   **-excludes** *nodeList*
     Exclude any node in the list *nodeList* from the search.  *NodeList* is
-    a list of node ids.  The subnodes of an excluded node are still
+    a list of node IDs.  The subnodes of an excluded node are still
     examined.
 
   **-exec** *cmdPrefix*
 
     Invokes a TCL command *cmdPrefix* for each matching node.  Before
-    *cmdPrefix* is invoked, the node id is appended.  The return code
+    *cmdPrefix* is invoked, the node ID is appended.  The return code
     of *cmdPrefix* controls how processing continues.
 
     **ok**
@@ -481,15 +481,15 @@ command.  The operations available for trees are listed below.
 
 *treeName* **findchild** *node* *label*
   Searches for a child node with the label *label* in the parent *node*.  
-  The id of the child node is returned if found.  Otherwise "-1" is returned.
+  The ID of the child node is returned if found.  Otherwise "-1" is returned.
 
 *treeName* **firstchild** *node* 
-  Returns the id of the first child in the *node*'s list of subtrees.  If
+  Returns the ID of the first child in the *node*'s list of subtrees.  If
   *node* is a leaf (has no children), then "-1" is returned.
 
 *treeName* **get** *node* ?\ *fieldName*\ ? ?\ *defaultValue*\ ?
   Returns a list of key-value pairs of data for the node.  If *fieldName*
-  is present, then onlyx the value for that particular data field is
+  is present, then only the value for that particular data field is
   returned.  It's normally an error if *node* does not contain the data
   field *fieldName*.  But if you provide a *defaultValue* argument, this
   value is returned instead (*node* will still not contain *fieldName*).
@@ -502,12 +502,12 @@ command.  The operations available for trees are listed below.
   are available.
 
 *treeName* **index** *node*
-  Returns the id of *node*.  If *node* is a tag, it can only specify one node.
-  If *node* does not represent a valid node id or tag, or has modifiers that
+  Returns the ID of *node*.  If *node* is a tag, it can only specify one node.
+  If *node* does not represent a valid node ID or tag, or has modifiers that
   are invalid, then "-1" is returned.
 
 *treeName* **insert** *parent* ?\ *switches* ... ? 
-  Inserts a new node into parent node *parent*.  The id of the new node is
+  Inserts a new node into parent node *parent*.  The ID of the new node is
   returned. *Switches* may be any of the following.
 
   **-after** *child* 
@@ -531,9 +531,9 @@ command.  The operations available for trees are listed below.
     are labeled as "node0", "node1", etc.
 
   **-node** *id* 
-    Designates the id for the node.  Normally new ids are automatically
-    generated.  This allows you to create a node with a specific id.
-    It is an error if the id is already used by another node in the tree.
+    Designates the ID for the node.  Normally new IDs are automatically
+    generated.  This allows you to create a node with a specific ID.
+    It is an error if the ID is already used by another node in the tree.
 
   **-tags** *tagList*
     Adds each tag in *tagList* to the new node. *TagList* is a list
@@ -568,7 +568,7 @@ command.  The operations available for trees are listed below.
   *FieldName is the name of a data field in *node*.
   
 *treeName* **lastchild** *node*
-  Returns the id of the last child in the *node*'s list
+  Returns the ID of the last child in the *node*'s list
   of subtrees.  If *node* is a leaf (has no children), 
   then "-1" is returned.
 
@@ -610,7 +610,7 @@ command.  The operations available for trees are listed below.
 
   *Command* and *args* are saved and invoked whenever the tree structure is
   changed (according to *switches*). Two arguments are appended to
-  *command* and *args* before it's invoked: the id of the node and a string
+  *command* and *args* before it's invoked: the ID of the node and a string
   representing the type of event that occured.  One of more switches can be
   set to indicate the events that are of interest.  *Switches* may be any of
   the following.
@@ -687,7 +687,7 @@ command.  The operations available for trees are listed below.
     *string*  is "", this means the path is a TCL list. The default is "".
   
 *treeName* **path parse** *path* ?\ *switches* ... ?
-  Returns the id of the node described by *path*.  By default, *path* is a
+  Returns the ID of the node described by *path*.  By default, *path* is a
   list of node labels.  But if the **-separator** switch or **path
   separator** operation define a non-empty separator, *path* is string of
   node labels separated by the separator.  
@@ -762,7 +762,7 @@ command.  The operations available for trees are listed below.
 
 *treeName* **root** ?\ *rootNode*\ ?
   Sets or gets the root node of the tree.  If no *rootNode* argument
-  is present, this command returns the id of the root node.
+  is present, this command returns the ID of the root node.
   Normally this is "0".  If a *rootNode* argument is provided,
   it will become the new root of the tree. This lets you temporarily
   work within a subset of the tree. Changing the root affects operations
@@ -849,7 +849,7 @@ command.  The operations available for trees are listed below.
 
 *treeName* **tag set** *node* ?\ *tag* ... ?
   Sets one or more tags for a given node.  Tag names can't start with a
-  digit (to distinquish them from node ids) and can't be a reserved tag
+  digit (to distinquish them from node IDs) and can't be a reserved tag
   ("root" or "all").
 
 *treeName* **tag unset** *node* ?\ *tag* ... ?
@@ -862,7 +862,7 @@ command.  The operations available for trees are listed below.
   any node with that tag can possibly trigger a trace, invoking *command*.
   *Command* is command prefix, typically a procedure name.  Whenever a
   trace is triggered, four arguments are appended to *command* before it is
-  invoked: *treeName*, node id, *fieldName* and, *ops*.  Note that no nodes
+  invoked: *treeName*, node ID, *fieldName* and, *ops*.  Note that no nodes
   need have the field *fieldName*.  A trace identifier in the form
   "trace0", "trace1", etc.  is returned.
 
@@ -894,7 +894,7 @@ command.  The operations available for trees are listed below.
   Returns information about the trace *traceName*.  *TraceName* is the name
   of trace previously created by the **trace create** operation.  The
   information is the same as what was specified for the **trace create**
-  operation.  It consists of the node id or tag, field name, a string of
+  operation.  It consists of the node ID or tag, field name, a string of
   letters indicating the operations that are traced (it's in the same form
   as *ops*) and, the command prefix.
 
@@ -1046,8 +1046,6 @@ C API
 -----
 
 #include <bltTree.h>
-
-struct Blt_Tree {
 
 int **Blt_Tree_Create**\ (Tcl_Interp *\ *interp*, const char *\ *name*, Blt_Tree \* *treePtr*)
   Creates a new tree data object with the given name. *Name* is the name of

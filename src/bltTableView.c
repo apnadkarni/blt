@@ -805,6 +805,32 @@ PossiblyRedraw(TableView *viewPtr)
 }
 
 static void
+RenumberColumns(TableView *viewPtr) 
+{
+    long i;
+
+    for (i = 0; i < viewPtr->numColumns; i++) {
+        Column *colPtr;
+        
+        colPtr = viewPtr->columns[i];
+        colPtr->index = i;
+    }
+}
+
+static void
+RenumberRows(TableView *viewPtr) 
+{
+    long i;
+
+    for (i = 0; i < viewPtr->numRows; i++) {
+        Row *rowPtr;
+        
+        rowPtr = viewPtr->rows[i];
+        rowPtr->index = i;
+    }
+}
+
+static void
 EventuallyAddRows(TableView *viewPtr) 
 {
     if ((viewPtr->tkwin != NULL) && 
@@ -4241,6 +4267,7 @@ SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
 {
     long from, to;
 
+    RenumberRows(viewPtr);
     from = fromPtr->index;
     to = toPtr->index;
     if (from > to) {
@@ -4650,7 +4677,7 @@ ResetTableView(TableView *viewPtr)
     for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         Column *colPtr;
-
+        
         colPtr = Blt_GetHashValue(hPtr);
         colPtr->hashPtr = NULL;
         colPtr->flags |= DELETED;       /* Mark the column as deleted. This
@@ -7515,6 +7542,9 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (col == NULL) {
         return TCL_ERROR;
     }
+    /* Test for position before creating the column.  */
+    if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &insertPos) != TCL_OK){        return TCL_ERROR;
+    }
     /* 
      * Column doesn't have to exist.  We'll add it when the table adds
      * columns.
@@ -7526,13 +7556,11 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 "\"", (char *)NULL);
         return TCL_ERROR;
     }
-    if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &insertPos) != TCL_OK){
-        return TCL_ERROR;
-    }
     if ((insertPos == -1) || (insertPos >= viewPtr->numRows)) {
         insertPos = viewPtr->numColumns; /* Insert at end of list. */
     }
     colPtr = NewColumn(viewPtr, col, hPtr);
+    Blt_SetHashValue(hPtr, colPtr);
     colPtr->flags |= STICKY;            /* Don't allow column to be
                                          * reset. */
     iconOption.clientData = viewPtr;
@@ -7651,12 +7679,7 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &dest) != TCL_OK){
         return TCL_ERROR;
     }
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-        
-        colPtr = viewPtr->columns[i];
-        colPtr->index = i;
-    }
+    RenumberColumns(viewPtr);
     src = colPtr->index;
     if ((dest < 0) || (dest >= viewPtr->numColumns)) {
         dest = viewPtr->numColumns - 1;
@@ -7727,12 +7750,7 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_Free(viewPtr->columns);
     }
     viewPtr->columns = columns;
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-        
-        colPtr = viewPtr->columns[i];
-        colPtr->index = i;
-    }
+    RenumberColumns(viewPtr);
     viewPtr->flags |= GEOMETRY;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
@@ -10342,7 +10360,7 @@ SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Column *colPtr;
     Row *rowPtr;
 
-    if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     if (cellPtr == NULL) {
@@ -11854,6 +11872,7 @@ RebuildTableView(TableView *viewPtr)
     /* 
      * Step 1:  Unmark rows and columns are in the table.
      */
+    if (viewPtr->flags & AUTO_COLUMNS) {
     for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         Column *colPtr;
@@ -11861,6 +11880,8 @@ RebuildTableView(TableView *viewPtr)
         colPtr = Blt_GetHashValue(hPtr);
         colPtr->flags |= DELETED;
     }
+    }
+    if (viewPtr->flags & AUTO_ROWS) {
     for (hPtr = Blt_FirstHashEntry(&viewPtr->rowTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         Row *rowPtr;
@@ -11868,51 +11889,57 @@ RebuildTableView(TableView *viewPtr)
         rowPtr = Blt_GetHashValue(hPtr);
         rowPtr->flags |= DELETED;
     }
-
+    }
     /* 
      * Step 2: Add and unmark rows and columns are in the table.
      */
-    count = 0;
-    numRows = blt_table_num_rows(viewPtr->table);
-    rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
-    for (row = blt_table_first_row(viewPtr->table); row != NULL;  
-         row = blt_table_next_row(viewPtr->table, row)) {
-        Blt_HashEntry *hPtr;
-        int isNew;
-        Row *rowPtr;
+    if (viewPtr->flags & AUTO_ROWS) {
+        count = 0;
+        numRows = blt_table_num_rows(viewPtr->table);
+        rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
+        for (row = blt_table_first_row(viewPtr->table); row != NULL;  
+             row = blt_table_next_row(viewPtr->table, row)) {
+            Blt_HashEntry *hPtr;
+            int isNew;
+            Row *rowPtr;
             
-        hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
-        if (isNew) {
-            rowPtr = CreateRow(viewPtr, row, hPtr);
-        } else if (viewPtr->flags & AUTO_ROWS) {
-            rowPtr = Blt_GetHashValue(hPtr);
-        } else {
-            continue;
+            hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
+            if (isNew) {
+                rowPtr = CreateRow(viewPtr, row, hPtr);
+            } else if (viewPtr->flags & AUTO_ROWS) {
+                rowPtr = Blt_GetHashValue(hPtr);
+            } else {
+                continue;
+            }
+            rowPtr->flags &= ~DELETED;
+            rows[count] = rowPtr;
+            count++;
         }
-        rowPtr->flags &= ~DELETED;
-        rows[count] = rowPtr;
-        count++;
     }
-    count = 0;
-    numColumns = blt_table_num_columns(viewPtr->table);
-    columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
-    for (col = blt_table_first_column(viewPtr->table); col != NULL;  
-         col = blt_table_next_column(viewPtr->table, col)) {
-        Blt_HashEntry *hPtr;
-        int isNew;
-        Column *colPtr;
-
-        hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, &isNew);
-        if (isNew) {
-            colPtr = CreateColumn(viewPtr, col, hPtr);
-        } else if (viewPtr->flags & AUTO_COLUMNS) {
-            colPtr = Blt_GetHashValue(hPtr);
-        } else {
-            continue;
+    if (viewPtr->flags & AUTO_COLUMNS) {
+        count = 0;
+        numColumns = blt_table_num_columns(viewPtr->table);
+        columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
+        for (col = blt_table_first_column(viewPtr->table); col != NULL;  
+             col = blt_table_next_column(viewPtr->table, col)) {
+            Blt_HashEntry *hPtr;
+            int isNew;
+            Column *colPtr;
+            
+            hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col,
+                                       &isNew);
+            if (isNew) {
+                colPtr = CreateColumn(viewPtr, col, hPtr);
+                Blt_SetHashValue(hPtr, colPtr);
+            } else if (viewPtr->flags & AUTO_COLUMNS) {
+                colPtr = Blt_GetHashValue(hPtr);
+            } else {
+                continue;
+            }
+            colPtr->flags &= ~DELETED;
+            columns[count] = colPtr;
+            count++;
         }
-        colPtr->flags &= ~DELETED;
-        columns[count] = colPtr;
-        count++;
     }
     /* 
      * Step 3:  Remove cells of rows and columns that were deleted.
@@ -11949,6 +11976,7 @@ RebuildTableView(TableView *viewPtr)
     /* 
      * Step 4:  Remove rows and columns that were deleted.
      */
+    if (viewPtr->flags & AUTO_ROWS) {
     for (i = 0; i < viewPtr->numRows; i++) {
         Row *rowPtr;
 
@@ -11957,24 +11985,27 @@ RebuildTableView(TableView *viewPtr)
             DestroyRow(rowPtr);
         }
     }
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
-        if (colPtr->flags & DELETED) {
-            DestroyColumn(colPtr);
-        }
-    }
-    if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
-    }
-    viewPtr->columns = columns;
-    viewPtr->numColumns = numColumns;
     if (viewPtr->rows != NULL) {
         Blt_Free(viewPtr->rows);
     }
     viewPtr->numRows = numRows;
     viewPtr->rows = rows;
+    }
+    if (viewPtr->flags & AUTO_COLUMNS) {
+        for (i = 0; i < viewPtr->numColumns; i++) {
+            Column *colPtr;
+            
+            colPtr = viewPtr->columns[i];
+            if (colPtr->flags & DELETED) {
+                DestroyColumn(colPtr);
+            }
+        }
+        if (viewPtr->columns != NULL) {
+            Blt_Free(viewPtr->columns);
+        }
+        viewPtr->columns = columns;
+        viewPtr->numColumns = numColumns;
+    }
     /* Step 5. Create cells */
     for (i = 0; i < viewPtr->numRows; i++) {
         CellKey key;
@@ -12153,6 +12184,7 @@ AddColumnsWhenIdleProc(ClientData clientData)
             long j;
             
             colPtr = CreateColumn(viewPtr, col, hPtr);
+            Blt_SetHashValue(hPtr, colPtr);
             AddColumnGeometry(viewPtr, colPtr);
             key.colPtr = colPtr;
             for (j = 0; j < viewPtr->numRows; j++) {
@@ -12370,6 +12402,7 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
                 &isNew);
             assert(isNew);
             colPtr = CreateColumn(viewPtr, col, hPtr);
+            Blt_SetHashValue(hPtr, colPtr);
             viewPtr->columns[i] = colPtr;
         }
         assert(i == viewPtr->numColumns);
