@@ -1735,6 +1735,9 @@ VariableProc(
         /* Kill all child processes that remain alive. */
         DisableTriggers(bgPtr);
         KillProcesses(bgPtr);
+        if (bgPtr->flags & DETACHED) {
+            DestroyBgexec(bgPtr);
+        }
     }
     return NULL;
 }
@@ -1882,8 +1885,10 @@ TimerProc(ClientData clientData)
         *bgPtr->exitCodePtr = code;
     }
     DisableTriggers(bgPtr);
+    /* It's OK to set the status variable, the variable trace was disabled
+     * above. */
     if (Tcl_SetVar2Ex(interp, bgPtr->statVar, NULL, listObjPtr, 
-                      TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
+        TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
         Tcl_BackgroundError(interp);
     }
     if (bgPtr->flags & DETACHED) {
@@ -2075,8 +2080,8 @@ BgexecCmdProc(
     ConfigureSink(bgPtr, &bgPtr->out);
     ConfigureSink(bgPtr, &bgPtr->err);
 
-    /* Put a trace on the exit status variable.  The will also allow the user
-     * to terminate the pipeline by simply setting the variable.  */
+    /* Put a trace on the exit status variable.  The will also allow the
+     * user to terminate the pipeline by simply setting the variable.  */
     Tcl_TraceVar(interp, bgPtr->statVar, TRACE_FLAGS, VariableProc, bgPtr);
     bgPtr->flags |= TRACED;
 
