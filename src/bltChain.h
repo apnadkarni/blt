@@ -53,7 +53,7 @@ struct _Blt_ChainLink {
 typedef int (Blt_ChainCompareProc)(Blt_ChainLink *l1Ptr, Blt_ChainLink *l2Ptr);
 
 /*
- * A Blt_Chain is a doubly chained list structure.
+ * A Blt_Chain is a doubly-linked list structure.
  */
 struct _Blt_Chain {
     Blt_ChainLink head;                 /* Pointer to first element in

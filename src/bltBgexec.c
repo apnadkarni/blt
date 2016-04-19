@@ -353,7 +353,7 @@ struct _Bgexec {
     /* Private */
     Tcl_Interp *interp;                 /* Interpreter containing variables */
     int numProcs;                       /* # of processes in pipeline */
-    Blt_Pid *procIds;                   /* Array of process tokens from
+    Blt_Pid *procTable;                 /* Array of process tokens from
                                          * pipeline.  Under Unix, tokens
                                          * are pid_t, while for Win32
                                          * they're handles. */
@@ -928,26 +928,21 @@ static ssize_t
 ExtendSinkBuffer(Sink *sinkPtr)
 {
     unsigned char *bytes;
-    size_t oldSize, newSize;
+    size_t newSize;
     /*
      * Allocate a new array, double the old size
      */
     newSize = sinkPtr->size + sinkPtr->size;
-    oldSize = sinkPtr->size;
     sinkPtr->bytes[sinkPtr->mark] = '\0';
-    fprintf(stderr, "before sinkbytes=%lx fill=%ld size=%ld mark=%ld\n",
-            sinkPtr->bytes, sinkPtr->fill, sinkPtr->size, sinkPtr->mark);
     if (sinkPtr->bytes == sinkPtr->staticSpace) {
         bytes = Blt_Malloc(sizeof(unsigned char) * newSize);
     } else {
         bytes = Blt_Realloc(sinkPtr->bytes, sizeof(unsigned char) * newSize);
     }
-    fprintf(stderr, "after bytes=%lx sinkbytes=%lx fill=%ld size=%ld mark=%ld\n",
-            bytes, sinkPtr->bytes, sinkPtr->fill, sinkPtr->size, sinkPtr->mark);
     if (bytes != NULL) {
-        unsigned char *sp, *dp, *send;
-
         if (sinkPtr->bytes == sinkPtr->staticSpace) {
+            unsigned char *sp, *dp, *send;
+
             dp = bytes;
             for (sp = sinkPtr->bytes, send = sp + sinkPtr->fill; sp < send; 
                  /*empty*/) {
@@ -959,8 +954,6 @@ ExtendSinkBuffer(Sink *sinkPtr)
         return (sinkPtr->size - sinkPtr->fill); /* Return bytes left. */
     }
     sinkPtr->bytes[sinkPtr->mark] = '\0';
-    fprintf(stderr, "extendsinkbuffer: alloc failed size=%ld, old=%ld\n",
-            newSize, oldSize);
     return -1;
 }
 
@@ -1005,7 +998,6 @@ ReadBytes(Sink *sinkPtr)
 
         if (bytesLeft < BLOCK_SIZE) {
             bytesLeft = ExtendSinkBuffer(sinkPtr);
-            fprintf(stderr, "bytesLeft=%ld\n", bytesLeft);
             if (bytesLeft < 0) {
                 errno = ENOMEM;
                 sinkPtr->status = READ_ERROR;
@@ -1164,7 +1156,6 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
         spaceLeft = sinkPtr->size - sinkPtr->mark;
         if (spaceLeft >= needed) {
             spaceLeft = ExtendSinkBuffer(sinkPtr);
-            fprintf(stderr, "spaceLeft=%ld\n", spaceLeft);
             if (spaceLeft < 0) {
                 errno = ENOMEM;
                 sinkPtr->status = READ_ERROR;
@@ -1503,13 +1494,11 @@ CollectData(Sink *sinkPtr)
     }
     result = ReadBytes(sinkPtr);
     if (result == TCL_ERROR) {
-        fprintf(stderr, "Error reading bytes to sink %s\n", sinkPtr->name);
         Tcl_BackgroundError(bgPtr->interp);
         return TCL_ERROR;
     }
     result = CookSink(bgPtr->interp, sinkPtr);
     if (result == TCL_ERROR) {
-        fprintf(stderr, "Error reading bytes to sink\n");
         Tcl_BackgroundError(bgPtr->interp);
         return TCL_ERROR;
     }
@@ -1626,8 +1615,8 @@ FreeBgexec(Bgexec *bgPtr)
     if (bgPtr->statVar != NULL) {
         Blt_Free(bgPtr->statVar);
     }
-    if (bgPtr->procIds != NULL) {
-        Blt_Free(bgPtr->procIds);
+    if (bgPtr->procTable != NULL) {
+        Blt_Free(bgPtr->procTable);
     }
     if (bgPtr->link != NULL) {
         Tcl_MutexLock(mutexPtr);
@@ -1657,7 +1646,7 @@ FreeBgexec(Bgexec *bgPtr)
 static void
 KillProcesses(Bgexec *bgPtr)            /* Background info record. */
 {
-    if (bgPtr->procIds != NULL) {
+    if (bgPtr->procTable != NULL) {
         int i;
 
         for (i = 0; i < bgPtr->numProcs; i++) {
@@ -1665,18 +1654,18 @@ KillProcesses(Bgexec *bgPtr)            /* Background info record. */
 
             if (bgPtr->signalNum > 0) {
 #ifdef WIN32
-                kill(bgPtr->procIds[i], bgPtr->signalNum);
+                kill(bgPtr->procTable[i], bgPtr->signalNum);
 #else
-                kill(bgPtr->procIds[i].pid, bgPtr->signalNum);
+                kill(bgPtr->procTable[i].pid, bgPtr->signalNum);
 #endif
             }
 #ifdef WIN32
-            tclPid = (Tcl_Pid)bgPtr->procIds[i].pid;
+            tclPid = (Tcl_Pid)bgPtr->procTable[i].pid;
 #else
             {
                 unsigned long pid;
 
-                pid = (long)bgPtr->procIds[i].pid;
+                pid = (long)bgPtr->procTable[i].pid;
                 tclPid = (Tcl_Pid)pid;
             }
 #endif /* WIN32 */
@@ -1744,6 +1733,7 @@ VariableProc(
         Bgexec *bgPtr = clientData;
 
         /* Kill all child processes that remain alive. */
+        DisableTriggers(bgPtr);
         KillProcesses(bgPtr);
     }
     return NULL;
@@ -1765,7 +1755,7 @@ VariableProc(
  *      None.  Called from the TCL event loop.
  *
  * Side effects:
- *      Many. The contents of procIds is shifted, leaving only those
+ *      Many. The contents of procTable is shifted, leaving only those
  *      sub-processes which have not yet terminated.  If there are still
  *      subprocesses left, this procedure is placed in the timer queue
  *      again. Otherwise the output and possibly the status variables are
@@ -1807,13 +1797,13 @@ TimerProc(ClientData clientData)
         int pid;
 
 #ifdef WIN32
-        pid = WaitProcess(bgPtr->procIds[i], (int *)&waitStatus, WNOHANG);
+        pid = WaitProcess(bgPtr->procTable[i], (int *)&waitStatus, WNOHANG);
 #else
-        pid = waitpid(bgPtr->procIds[i].pid, (int *)&waitStatus, WNOHANG);
+        pid = waitpid(bgPtr->procTable[i].pid, (int *)&waitStatus, WNOHANG);
 #endif
         if (pid == 0) {                 /* Process has not terminated yet. */
             if (numLeft < i) {
-                bgPtr->procIds[numLeft] = bgPtr->procIds[i];
+                bgPtr->procTable[numLeft] = bgPtr->procTable[i];
             }
             numLeft++;                  /* Count the # of processes left. */
         } else if (pid != -1) {
@@ -2027,7 +2017,7 @@ BgexecCmdProc(
     Tcl_Obj *const *objv)               /* Argument strings. */
 {
     Bgexec *bgPtr;
-    Blt_Pid *pidPtr;
+    Blt_Pid *pidsPtr;
     char *lastArg;
     int *outFdPtr, *errFdPtr;
     int isDetached;
@@ -2103,12 +2093,12 @@ BgexecCmdProc(
         (bgPtr->err.cmdObjPtr != NULL) || (bgPtr->err.echo)) {
         errFdPtr = &bgPtr->err.fd;
     }
-    numProcs = Blt_CreatePipeline(interp, objc - i, objv + i, &pidPtr, 
+    numProcs = Blt_CreatePipeline(interp, objc - i, objv + i, &pidsPtr, 
         (int *)NULL, outFdPtr, errFdPtr, bgPtr->env);
     if (numProcs < 0) {
         goto error;
     }
-    bgPtr->procIds = pidPtr;
+    bgPtr->procTable = pidsPtr;
     bgPtr->numProcs = numProcs;
     if (bgPtr->out.fd == -1) {
         /* 
@@ -2136,9 +2126,9 @@ BgexecCmdProc(
         for (i = 0; i < numProcs; i++) {
             Tcl_Obj *objPtr;
 #ifdef WIN32
-            objPtr = Tcl_NewLongObj((unsigned int)bgPtr->procIds[i].pid);
+            objPtr = Tcl_NewLongObj((unsigned long)bgPtr->procTable[i].pid);
 #else 
-            objPtr = Tcl_NewLongObj(bgPtr->procIds[i].pid);
+            objPtr = Tcl_NewLongObj(bgPtr->procTable[i].pid);
 #endif
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }

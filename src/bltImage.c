@@ -2,7 +2,7 @@
 /*
  * bltImage.c --
  *
- * This module implements image processing procedures for the BLT toolkit.
+ * This module implements extra operations on Tk images for the BLT toolkit.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *
@@ -116,7 +116,6 @@ typedef struct _TkImageMaster {
  *
  *---------------------------------------------------------------------------
  */
-/*LINTLIBRARY*/
 int
 Blt_Image_IsDeleted(Tk_Image tkImage)   /* Token for image. */
 {
@@ -128,7 +127,15 @@ Blt_Image_IsDeleted(Tk_Image tkImage)   /* Token for image. */
     return (imagePtr->masterPtr->typePtr == NULL);
 }
 
-/*LINTLIBRARY*/
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Image_GetMaster --
+ *
+ *      Returns the pointer to the Tk image master.
+ *
+ *---------------------------------------------------------------------------
+ */
 Tk_ImageMaster
 Blt_Image_GetMaster(Tk_Image tkImage)   /* Token for image. */
 {
@@ -137,7 +144,15 @@ Blt_Image_GetMaster(Tk_Image tkImage)   /* Token for image. */
     return (Tk_ImageMaster)imagePtr->masterPtr;
 }
 
-/*LINTLIBRARY*/
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Image_GetInstanceData --
+ *
+ *      Returns the pointer to the Tk image instance data.
+ *
+ *---------------------------------------------------------------------------
+ */
 ClientData
 Blt_Image_GetInstanceData(Tk_Image tkImage) /* Token for image. */
 {
@@ -146,7 +161,15 @@ Blt_Image_GetInstanceData(Tk_Image tkImage) /* Token for image. */
     return imagePtr->instanceData;
 }
 
-/*LINTLIBRARY*/
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Image_GetType --
+ *
+ *      Returns the pointer to the Tk image type.
+ *
+ *---------------------------------------------------------------------------
+ */
 Tk_ImageType *
 Blt_Image_GetType(Tk_Image tkImage)     /* Token for image. */
 {
@@ -156,6 +179,15 @@ Blt_Image_GetType(Tk_Image tkImage)     /* Token for image. */
     return masterPtr->typePtr;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Image_Name --
+ *
+ *      Returns the name of the Tk image.
+ *
+ *---------------------------------------------------------------------------
+ */
 const char *
 Blt_Image_Name(Tk_Image tkImage)
 {
@@ -165,6 +197,15 @@ Blt_Image_Name(Tk_Image tkImage)
     return Tk_NameOfImage(master);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Image_NameOfType --
+ *
+ *      Returns the name of the Tk image type.
+ *
+ *---------------------------------------------------------------------------
+ */
 const char *
 Blt_Image_NameOfType(Tk_Image tkImage)
 {

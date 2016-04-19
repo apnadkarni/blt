@@ -12131,7 +12131,7 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
         HideEntryApplyProc, &nonmatching);
 
     if (status != TCL_OK) {
-        return TCL_ERROR;
+        return TCL_OK;
     }
     /*
      * If this was an inverted search, scan back through the tree and make

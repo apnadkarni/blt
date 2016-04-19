@@ -4175,14 +4175,13 @@ DockallOp(Tabset *bookPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
- * IndexOp --
+ * ExistsOp --
  *
- *      Converts a string representing a tab index.
+ *      Returns if a given tab exists.
  *
  * Results:
- *      A standard TCL result.  Interp->result will contain the identifier of
- *      each index found. If an index could not be found, then the serial
- *      identifier will be the empty string.
+ *      A standard TCL result.  Interp->result will contain a boolean 
+ *      result.
  *
  *---------------------------------------------------------------------------
  */

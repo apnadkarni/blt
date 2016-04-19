@@ -4112,10 +4112,11 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
         tag = Tcl_GetString(objv[i]);
         if (strcmp("all", tag) == 0) {
             long j;
+
             for (j = 0; j < numCols; j++) {
                 matches[j] = TRUE;
             }
-            return matches;             /* Don't care other tags. */
+            return matches;             /* Don't care about other tags. */
         } 
         if (strcmp("end", tag) == 0) {
             matches[numCols - 1] = TRUE;
@@ -4133,8 +4134,6 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
         }
         chain = blt_table_get_tagged_columns(table, tag);
         if (chain == NULL) {
-            Tcl_AppendResult(interp, "unknown column tag \"", tag, "\"",
-                (char *)NULL);
             Blt_Free(matches);
             return NULL;
         }
@@ -4144,7 +4143,7 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
             long j;
 
             col = Blt_Chain_GetValue(link);
-            j = blt_table_column_index(col);
+             j = blt_table_column_index(col);
             assert(j >= 0);
             matches[j] = TRUE;
         }
@@ -4172,21 +4171,21 @@ ColumnTagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Cmd *cmdPtr = clientData;
     Tcl_Obj *listObjPtr;
-    long j;
     unsigned char *matches;
 
     matches = GetColumnTagMatches(interp, cmdPtr->table, objc - 4, objv + 4);
-    if (matches == NULL) {
-        return TCL_OK;
-    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (j = 0; j < blt_table_num_columns(cmdPtr->table); j++) {
-        if (matches[j]) {
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(j));
+    if (matches != NULL) {
+        long i;
+
+        for (i = 0; i < blt_table_num_columns(cmdPtr->table); i++) {
+            if (matches[i]) {
+                Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
+            }
         }
+        Blt_Free(matches);
     }
     Tcl_SetObjResult(interp, listObjPtr);
-    Blt_Free(matches);
     return TCL_OK;
 }
 
@@ -4209,26 +4208,26 @@ ColumnTagLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Cmd *cmdPtr = clientData;
     Tcl_Obj *listObjPtr;
-    long j;
     unsigned char *matches;
 
     matches = GetColumnTagMatches(interp, cmdPtr->table, objc - 4, objv + 4);
-    if (matches == NULL) {
-        return TCL_ERROR;
-    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (j = 0; j < blt_table_num_columns(cmdPtr->table); j++) {
-        if (matches[j]) {
-            BLT_TABLE_COLUMN col;
-            Tcl_Obj *objPtr;
-            
-            col = blt_table_column(cmdPtr->table, j);
-            objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    if (matches != NULL) {
+        long j;
+
+        for (j = 0; j < blt_table_num_columns(cmdPtr->table); j++) {
+            if (matches[j]) {
+                BLT_TABLE_COLUMN col;
+                Tcl_Obj *objPtr;
+                
+                col = blt_table_column(cmdPtr->table, j);
+                objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
         }
+        Blt_Free(matches);
     }
     Tcl_SetObjResult(interp, listObjPtr);
-    Blt_Free(matches);
     return TCL_OK;
 }
 
@@ -7123,21 +7122,21 @@ RowTagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Cmd *cmdPtr = clientData;
     Tcl_Obj *listObjPtr;
-    long j;
     unsigned char *matches;
 
     matches = GetRowTagMatches(cmdPtr->table, objc - 4, objv + 4);
-    if (matches == NULL) {
-        return TCL_OK;
-    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
-        if (matches[j]) {
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(j));
+    if (matches != NULL) {
+        long j;
+
+        for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
+            if (matches[j]) {
+                Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(j));
+            }
         }
+        Blt_Free(matches);
     }
     Tcl_SetObjResult(interp, listObjPtr);
-    Blt_Free(matches);
     return TCL_OK;
 }
 /*
@@ -7159,26 +7158,26 @@ RowTagLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Cmd *cmdPtr = clientData;
     Tcl_Obj *listObjPtr;
-    long j;
     unsigned char *matches;
 
     matches = GetRowTagMatches(cmdPtr->table, objc - 4, objv + 4);
-    if (matches == NULL) {
-        return TCL_OK;
-    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
-        if (matches[j]) {
-            BLT_TABLE_ROW row;
-            Tcl_Obj *objPtr;
-            
-            row = blt_table_row(cmdPtr->table, j);
-            objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    if (matches != NULL) {
+        long j;
+
+        for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
+            if (matches[j]) {
+                BLT_TABLE_ROW row;
+                Tcl_Obj *objPtr;
+                
+                row = blt_table_row(cmdPtr->table, j);
+                objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
         }
+        Blt_Free(matches);
     }
     Tcl_SetObjResult(interp, listObjPtr);
-    Blt_Free(matches);
     return TCL_OK;
 }
 

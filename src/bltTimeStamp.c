@@ -1014,7 +1014,7 @@ MatchDatePattern(Tcl_Interp *interp, TimeStampParser *parserPtr)
                         if ((t->lvalue > 0) && (t->lvalue <= 7)) {
                             continue;
                         }
-                        ParseWarning(interp, "weekday \"%d\" is out of range",
+                        ParseWarning(interp, "weekday \"%d\" is out of range\n",
                                 t->lvalue);
                         break;
 
@@ -1022,15 +1022,14 @@ MatchDatePattern(Tcl_Interp *interp, TimeStampParser *parserPtr)
                         if ((t->lvalue > 0) && (t->lvalue <= 12)) {
                             continue;
                         }
-                        ParseWarning(interp, "month \"%d\" is out of range",
-                                t->lvalue);
+                        ParseWarning(interp, "month \"%d\" is out of range for timestamp \"%s\"\n", t->lvalue, parserPtr->buffer);
                         break;
 
                     case _MDAY:
                         if ((t->lvalue > 0) && (t->lvalue <= 31)) {
                             continue;
                         }
-                        ParseWarning(interp, "day \"%d\" is out of range",
+                        ParseWarning(interp, "day \"%d\" is out of range\n",
                                 t->lvalue);
                         break;
 
@@ -2183,7 +2182,7 @@ ComputeTime(Tcl_Interp *interp, TimeStampParser *parserPtr, double *secondsPtr)
     }
     if ((datePtr->mon < 0) || (datePtr->mon > 11)) { /* 0..11 */
         if (interp != NULL) {
-            ParseError(interp, "month \"%d\" is out of range.", 
+            ParseError(interp, "month \"%d\" is out of range.\n", 
                        datePtr->mon + 1);
         }
         return TCL_ERROR;
@@ -2191,7 +2190,7 @@ ComputeTime(Tcl_Interp *interp, TimeStampParser *parserPtr, double *secondsPtr)
     if (parserPtr->flags & PARSE_WEEK) {
         if ((datePtr->week < 0) || (datePtr->week > 53)) {
             if (interp != NULL) {
-                ParseError(interp, "week \"%d\" is out of range.", 
+                ParseError(interp, "week \"%d\" is out of range.\n", 
                            datePtr->week + 1);
             }
             return TCL_ERROR;
@@ -2202,7 +2201,7 @@ ComputeTime(Tcl_Interp *interp, TimeStampParser *parserPtr, double *secondsPtr)
             (datePtr->mday > numDaysMonth[isLeapYear][datePtr->mon])) {
             if (interp != NULL) {
                 ParseError(interp, 
-                           "day \"%d\" is out of range for month \"%s\"",
+                           "day \"%d\" is out of range for month \"%s\"\n",
                            datePtr->mday, monthNames[datePtr->mon]);
             }
             return TCL_ERROR;
@@ -2212,8 +2211,8 @@ ComputeTime(Tcl_Interp *interp, TimeStampParser *parserPtr, double *secondsPtr)
         if ((datePtr->yday < 0) || (datePtr->yday > numDaysYear[isLeapYear])) {
             if (interp != NULL) {
                 ParseError(interp, 
-                           "day of year \"%d\" is out of range for \"%d\"",
-                           datePtr->yday, datePtr->year);
+        "day of year \"%d\" is out of range for \"%d\" for timestamp \"%s\"",
+                           datePtr->yday, datePtr->year, parserPtr->buffer);
             }
             return TCL_ERROR;
         }
