@@ -11860,42 +11860,47 @@ ComputeVisibleEntries(TableView *viewPtr)
 static void
 RebuildTableView(TableView *viewPtr)
 {
-    BLT_TABLE_COLUMN col;
-    BLT_TABLE_ROW row;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     long i;
     Column **columns;
     Row **rows;
-    unsigned long count, numRows, numColumns;
+    unsigned long numRows, numColumns;
     Blt_Chain deleted;
     Blt_ChainLink link;
 
+    numRows = numColumns = 0;
+    rows = NULL;
+    columns = NULL;
     /* 
      * Step 1:  Unmark rows and columns are in the table.
      */
     if (viewPtr->flags & AUTO_COLUMNS) {
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Column *colPtr;
-
-        colPtr = Blt_GetHashValue(hPtr);
-        colPtr->flags |= DELETED;
-    }
+        for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter);
+             hPtr != NULL;
+             hPtr = Blt_NextHashEntry(&iter)) {
+            Column *colPtr;
+            
+            colPtr = Blt_GetHashValue(hPtr);
+            colPtr->flags |= DELETED;
+        }
     }
     if (viewPtr->flags & AUTO_ROWS) {
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->rowTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Row *rowPtr;
-
-        rowPtr = Blt_GetHashValue(hPtr);
-        rowPtr->flags |= DELETED;
-    }
+        for (hPtr = Blt_FirstHashEntry(&viewPtr->rowTable, &iter); hPtr != NULL;
+             hPtr = Blt_NextHashEntry(&iter)) {
+            Row *rowPtr;
+            
+            rowPtr = Blt_GetHashValue(hPtr);
+            rowPtr->flags |= DELETED;
+        }
     }
     /* 
      * Step 2: Add and unmark rows and columns are in the table.
      */
     if (viewPtr->flags & AUTO_ROWS) {
+        BLT_TABLE_ROW row;
+        unsigned long count;
+
         count = 0;
         numRows = blt_table_num_rows(viewPtr->table);
         rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
@@ -11919,6 +11924,9 @@ RebuildTableView(TableView *viewPtr)
         }
     }
     if (viewPtr->flags & AUTO_COLUMNS) {
+        BLT_TABLE_COLUMN col;
+        unsigned long count;
+
         count = 0;
         numColumns = blt_table_num_columns(viewPtr->table);
         columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
@@ -11979,19 +11987,19 @@ RebuildTableView(TableView *viewPtr)
      * Step 4:  Remove rows and columns that were deleted.
      */
     if (viewPtr->flags & AUTO_ROWS) {
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
-        if (rowPtr->flags & DELETED) {
-            DestroyRow(rowPtr);
+        for (i = 0; i < viewPtr->numRows; i++) {
+            Row *rowPtr;
+            
+            rowPtr = viewPtr->rows[i];
+            if (rowPtr->flags & DELETED) {
+                DestroyRow(rowPtr);
+            }
         }
-    }
-    if (viewPtr->rows != NULL) {
-        Blt_Free(viewPtr->rows);
-    }
-    viewPtr->numRows = numRows;
-    viewPtr->rows = rows;
+        if (viewPtr->rows != NULL) {
+            Blt_Free(viewPtr->rows);
+        }
+        viewPtr->numRows = numRows;
+        viewPtr->rows = rows;
     }
     if (viewPtr->flags & AUTO_COLUMNS) {
         for (i = 0; i < viewPtr->numColumns; i++) {

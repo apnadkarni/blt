@@ -3911,7 +3911,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Results:
  *      A standard TCL result.
  *
- *   pathName bbox itemName
+ *   pathName bbox itemName 
  *
  *---------------------------------------------------------------------------
  */
@@ -3923,7 +3923,9 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Item *itemPtr;
     Tcl_Obj *listObjPtr, *objPtr;
     int x, y;
+#ifdef notdef
     int rootX, rootY;
+#endif
     
     if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) != TCL_OK) {
         return TCL_ERROR;

@@ -66,7 +66,7 @@
 #include "bltChain.h"
 #include "bltInitCmd.h"
 
-static Tcl_CmdObjTraceProc DebugProc;
+static Tcl_CmdObjTraceProc TraceCmdProc;
 static Tcl_ObjCmdProc DebugCmd;
 
 typedef struct {
@@ -198,7 +198,7 @@ DeleteWatch(DebugCmdInterpData *dataPtr, Tcl_Obj *objPtr)
 
 /*ARGSUSED*/
 static int
-DebugProc(
+TraceCmdProc(
     ClientData clientData,      /* Interpreter-specific data. */
     Tcl_Interp *interp,         /* Not used. */
     int level,                  /* Current level */
@@ -429,7 +429,7 @@ DebugCmd(
         Tcl_DeleteTrace(interp, token);
     }
     if (newLevel > 0) {
-        token = Tcl_CreateObjTrace(interp, newLevel, 0, DebugProc, 
+        token = Tcl_CreateObjTrace(interp, newLevel, 0, TraceCmdProc, 
                                    dataPtr, NULL);
     }
     level = newLevel;

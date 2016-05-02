@@ -51,7 +51,7 @@
   #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
 
-#define IsSeparator(argsPtr, c) ((argsPtr)->separatorChar == (c))
+#define IsSeparator(importPtr, c) ((importPtr)->separatorChar == (c))
 
 DLLEXPORT extern Tcl_AppInitProc blt_table_csv_init;
 DLLEXPORT extern Tcl_AppInitProc blt_table_csv_safe_init;
@@ -89,12 +89,17 @@ typedef struct {
     Tcl_Channel channel;                /* If non-NULL, channel to read
                                          * from. */
     Tcl_Obj *encodingObjPtr;
-    char *buffer;                       /* Buffer to read data into. */
-    int numBytes;                       /* # of bytes in the buffer. */
-    Tcl_DString ds;                     /* Dynamic string used to read the
+    const char *buffer;                 /* Buffer to read data into. */
+    size_t numBytes;                    /* # of bytes in the buffer. */
+
+    const char *next;                   /* Used for parsing data as a
+                                         * single string. */
+    size_t bytesLeft;                   /* Used for parsing data as a
+                                         * single string. */
+    
+    Tcl_DString currLine;               /* Dynamic string used to read the
                                          * file line-by-line. */
     Tcl_Interp *interp;
-    Blt_HashTable dataTable;
     Tcl_Obj *fileObjPtr;                /* Name of file representing the
                                          * channel used as the input
                                          * source. */
@@ -102,6 +107,7 @@ typedef struct {
                                          * input source. */
     const char *reqQuote;               /* Quoted string delimiter. */
     const char *reqSeparator;           /* Separator character. */
+    const char *testSeparators;         /* Separator character. */
     const char *reqComment;             /* Comment character. */
     char separatorChar;                 /* Separator character. */
     char quoteChar;                     /* Quote character. */
@@ -129,6 +135,8 @@ static Blt_SwitchSpec importSwitches[] =
         Blt_Offset(ImportArgs, fileObjPtr), 0},
     {BLT_SWITCH_INT_NNEG, "-maxrows", "numRows", (char *)NULL,
         Blt_Offset(ImportArgs, maxRows), 0},
+    {BLT_SWITCH_STRING, "-possibleseparators", "string", (char *)NULL,
+        Blt_Offset(ImportArgs, testSeparators), 0},
     {BLT_SWITCH_STRING, "-quote",     "char", (char *)NULL,
         Blt_Offset(ImportArgs, reqQuote), 0},
     {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
@@ -313,90 +321,42 @@ RowIterSwitchProc(
     return TCL_OK;
 }
 
+static int charCounts[10];
+
+static int
+CompareCharCounts(const void *a, const void *b)
+{
+    int i1, i2;
+
+    i1 = *(int *)a;
+    i2 = *(int *)b;
+    return (charCounts[i2] - charCounts[i1]);
+}
 
 static void
-GuessSeparator(ImportArgs *argsPtr)
+StartCsvRecord(ExportArgs *exportPtr)
 {
-    Tcl_Obj *objPtr;
-    const char *string;
-    int charCounts[4];
-    int i, max, length;
-    off_t pos;
-    const char sepTokens[] = { ",\t|;"};
-    
-    if (argsPtr->channel != NULL) {
-        pos = Tcl_Tell(argsPtr->channel);
+    if (exportPtr->channel != NULL) {
+        Tcl_DStringSetLength(exportPtr->dsPtr, 0);
+        exportPtr->length = 0;
     }
-    objPtr = NULL;                      /* Suppress compiler warning. */
-    if (argsPtr->channel != NULL) {
-        objPtr = Tcl_NewStringObj("", -1);
-        Tcl_ReadChars(argsPtr->channel, objPtr, 2000, FALSE);
-        string = Tcl_GetStringFromObj(objPtr, &length);
-    } else if (argsPtr->numBytes > 0) {
-        string = argsPtr->buffer;
-        length = MIN(argsPtr->numBytes, 2000);
-    }  else {
-        return;
-    }
-    for (i = 0; i < 4; i++) {
-        charCounts[i] = 0;
-    }
-    for (i = 0; i < length; i++) {
-        switch (string[i]) {
-        case ',':                       /* Comma */
-            charCounts[0]++;         break;
-        case '\t':                      /* Tab */
-            charCounts[1]++;         break;
-        case '|':                       /* Pipe */
-            charCounts[2]++;         break;
-        case ';':                       /* Semicolon */
-            charCounts[3]++;         break;
-        }
-    }
-    if (argsPtr->channel != NULL) {
-        Tcl_Seek(argsPtr->channel, pos, SEEK_SET);
-        Tcl_DecrRefCount(objPtr);
-    }
-    if (charCounts[0] > charCounts[1]) {
-        if (charCounts[2] > charCounts[3]) {
-            max = (charCounts[0] > charCounts[2]) ? 0 : 2;
-        } else {
-            max = (charCounts[0] > charCounts[3]) ? 0 : 3;
-        }
-    } else {
-        if (charCounts[2] > charCounts[3]) {
-            max = (charCounts[1] > charCounts[2]) ? 1 : 2;
-        } else {
-            max = (charCounts[1] > charCounts[3]) ? 1 : 3;
-        }
-    }
-    argsPtr->separatorChar = sepTokens[max];
-}
-        
-static void
-StartCsvRecord(ExportArgs *argsPtr)
-{
-    if (argsPtr->channel != NULL) {
-        Tcl_DStringSetLength(argsPtr->dsPtr, 0);
-        argsPtr->length = 0;
-    }
-    argsPtr->count = 0;
+    exportPtr->count = 0;
 }
 
 static int
-EndCsvRecord(ExportArgs *argsPtr)
+EndCsvRecord(ExportArgs *exportPtr)
 {
     int numWritten;
     char *line;
 
-    Tcl_DStringAppend(argsPtr->dsPtr, "\n", 1);
-    argsPtr->length++;
-    line = Tcl_DStringValue(argsPtr->dsPtr);
-    if (argsPtr->channel != NULL) {
-        numWritten = Tcl_Write(argsPtr->channel, line, argsPtr->length);
-        if (numWritten != argsPtr->length) {
-            Tcl_AppendResult(argsPtr->interp, "can't write csv record: ",
-                             Tcl_PosixError(argsPtr->interp), (char *)NULL);
+    Tcl_DStringAppend(exportPtr->dsPtr, "\n", 1);
+    exportPtr->length++;
+    line = Tcl_DStringValue(exportPtr->dsPtr);
+    if (exportPtr->channel != NULL) {
+        numWritten = Tcl_Write(exportPtr->channel, line, exportPtr->length);
+        if (numWritten != exportPtr->length) {
+            Tcl_AppendResult(exportPtr->interp, "can't write csv record: ",
+                             Tcl_PosixError(exportPtr->interp), (char *)NULL);
             return TCL_ERROR;
         }
     }
@@ -404,7 +364,7 @@ EndCsvRecord(ExportArgs *argsPtr)
 }
 
 static void
-AppendCsvRecord(ExportArgs *argsPtr, const char *field, int length, 
+AppendCsvRecord(ExportArgs *exportPtr, const char *field, int length, 
                 BLT_TABLE_COLUMN_TYPE type)
 {
     const char *fp;
@@ -417,10 +377,10 @@ AppendCsvRecord(ExportArgs *argsPtr, const char *field, int length,
         length = 0;
     } else {
         for (fp = field; *fp != '\0'; fp++) {
-            if ((*fp == '\n') || (*fp == argsPtr->separatorChar) || 
+            if ((*fp == '\n') || (*fp == exportPtr->separatorChar) || 
                 (*fp == ' ') || (*fp == '\t')) {
                 doQuote = TRUE;
-            } else if (*fp == argsPtr->quoteChar) {
+            } else if (*fp == exportPtr->quoteChar) {
                 doQuote = TRUE;
                 extra++;
             }
@@ -432,57 +392,57 @@ AppendCsvRecord(ExportArgs *argsPtr, const char *field, int length,
             length = fp - field;
         }
     }
-    if (argsPtr->count > 0) {
-        Tcl_DStringAppend(argsPtr->dsPtr, &argsPtr->separatorChar, 1);
-        argsPtr->length++;
+    if (exportPtr->count > 0) {
+        Tcl_DStringAppend(exportPtr->dsPtr, &exportPtr->separatorChar, 1);
+        exportPtr->length++;
     }
-    length = length + extra + argsPtr->length;
-    Tcl_DStringSetLength(argsPtr->dsPtr, length);
-    p = Tcl_DStringValue(argsPtr->dsPtr) + argsPtr->length;
-    argsPtr->length = length;
+    length = length + extra + exportPtr->length;
+    Tcl_DStringSetLength(exportPtr->dsPtr, length);
+    p = Tcl_DStringValue(exportPtr->dsPtr) + exportPtr->length;
+    exportPtr->length = length;
     if (field != NULL) {
         if (doQuote) {
-            *p++ = argsPtr->quoteChar;
+            *p++ = exportPtr->quoteChar;
         }
         for (fp = field; *fp != '\0'; fp++) {
-            if (*fp == argsPtr->quoteChar) {
-                *p++ = argsPtr->quoteChar;
+            if (*fp == exportPtr->quoteChar) {
+                *p++ = exportPtr->quoteChar;
             }
             *p++ = *fp;
         }
         if (doQuote) {
-            *p++ = argsPtr->quoteChar;
+            *p++ = exportPtr->quoteChar;
         }
     }
-    argsPtr->count++;
+    exportPtr->count++;
 }
 
 static int
-ExportCsvRows(BLT_TABLE table, ExportArgs *argsPtr)
+ExportCsvRows(BLT_TABLE table, ExportArgs *exportPtr)
 {
     BLT_TABLE_ROW row;
 
-    for (row = blt_table_first_tagged_row(&argsPtr->ri); row != NULL; 
-         row = blt_table_next_tagged_row(&argsPtr->ri)) {
+    for (row = blt_table_first_tagged_row(&exportPtr->ri); row != NULL; 
+         row = blt_table_next_tagged_row(&exportPtr->ri)) {
         BLT_TABLE_COLUMN col;
             
-        StartCsvRecord(argsPtr);
-        if (argsPtr->flags & EXPORT_ROWLABELS) {
+        StartCsvRecord(exportPtr);
+        if (exportPtr->flags & EXPORT_ROWLABELS) {
             const char *field;
 
             field = blt_table_row_label(row);
-            AppendCsvRecord(argsPtr, field, -1, TABLE_COLUMN_TYPE_STRING);
+            AppendCsvRecord(exportPtr, field, -1, TABLE_COLUMN_TYPE_STRING);
         }
-        for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL; 
-             col = blt_table_next_tagged_column(&argsPtr->ci)) {
+        for (col = blt_table_first_tagged_column(&exportPtr->ci); col != NULL; 
+             col = blt_table_next_tagged_column(&exportPtr->ci)) {
             const char *string;
             BLT_TABLE_COLUMN_TYPE type;
                 
             type = blt_table_column_type(col);
             string = blt_table_get_string(table, row, col);
-            AppendCsvRecord(argsPtr, string, -1, type);
+            AppendCsvRecord(exportPtr, string, -1, type);
         }
-        if (EndCsvRecord(argsPtr) != TCL_OK) {
+        if (EndCsvRecord(exportPtr) != TCL_OK) {
             return TCL_ERROR;
         }
     }
@@ -490,21 +450,21 @@ ExportCsvRows(BLT_TABLE table, ExportArgs *argsPtr)
 }
 
 static int
-ExportCsvColumns(ExportArgs *argsPtr)
+ExportCsvColumns(ExportArgs *exportPtr)
 {
-    if (argsPtr->flags & EXPORT_COLUMNLABELS) {
+    if (exportPtr->flags & EXPORT_COLUMNLABELS) {
         BLT_TABLE_COLUMN col;
 
-        StartCsvRecord(argsPtr);
-        if (argsPtr->flags & EXPORT_ROWLABELS) {
-            AppendCsvRecord(argsPtr, "*BLT*", 5, TABLE_COLUMN_TYPE_STRING);
+        StartCsvRecord(exportPtr);
+        if (exportPtr->flags & EXPORT_ROWLABELS) {
+            AppendCsvRecord(exportPtr, "*BLT*", 5, TABLE_COLUMN_TYPE_STRING);
         }
-        for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL; 
-             col = blt_table_next_tagged_column(&argsPtr->ci)) {
-            AppendCsvRecord(argsPtr, blt_table_column_label(col), -1, 
+        for (col = blt_table_first_tagged_column(&exportPtr->ci); col != NULL; 
+             col = blt_table_next_tagged_column(&exportPtr->ci)) {
+            AppendCsvRecord(exportPtr, blt_table_column_label(col), -1, 
                 TABLE_COLUMN_TYPE_STRING);
         }
-        return EndCsvRecord(argsPtr);
+        return EndCsvRecord(exportPtr);
     }
     return TCL_OK;
 }
@@ -596,15 +556,15 @@ ExportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
  *
  */
 static INLINE int
-IsEmpty(ImportArgs *argsPtr, const char *field, size_t count)
+IsEmpty(ImportArgs *importPtr, const char *field, size_t count)
 {
     const char *value;
     int length;
 
-    if (argsPtr->emptyValueObjPtr == NULL) {
+    if (importPtr->emptyValueObjPtr == NULL) {
         return FALSE;                   /* No empty value defined. */
     }
-    value = Tcl_GetStringFromObj(argsPtr->emptyValueObjPtr, &length);
+    value = Tcl_GetStringFromObj(importPtr->emptyValueObjPtr, &length);
     if (count > 0) {
         return (strncmp(field, value, count) == 0); /* Matches empty value. */
     }
@@ -621,20 +581,20 @@ IsEmpty(ImportArgs *argsPtr, const char *field, size_t count)
  *
  */
 static int
-ImportGetLine(Tcl_Interp *interp, ImportArgs *argsPtr, char **bufferPtr,
-                int *numBytesPtr)
+ImportGetLine(Tcl_Interp *interp, ImportArgs *importPtr, const char **bufferPtr,
+              size_t *numBytesPtr)
 {
-    if (argsPtr->channel != NULL) {
+    if (importPtr->channel != NULL) {
         int numChars;
 
-        if (Tcl_Eof(argsPtr->channel)) {
+        if (Tcl_Eof(importPtr->channel)) {
             *numBytesPtr = 0;
             return TCL_OK;
         }
-        Tcl_DStringSetLength(&argsPtr->ds, 0);
-        numChars = Tcl_Gets(argsPtr->channel, &argsPtr->ds);
+        Tcl_DStringSetLength(&importPtr->currLine, 0);
+        numChars = Tcl_Gets(importPtr->channel, &importPtr->currLine);
         if (numChars < 0) {
-            if (Tcl_Eof(argsPtr->channel)) {
+            if (Tcl_Eof(importPtr->channel)) {
                 *numBytesPtr = 0;
                 return TCL_OK;
             }
@@ -644,14 +604,14 @@ ImportGetLine(Tcl_Interp *interp, ImportArgs *argsPtr, char **bufferPtr,
             return TCL_ERROR;
         }
         /* Put back the newline. */
-        Tcl_DStringAppend(&argsPtr->ds, "\n", 1);
-        *numBytesPtr = Tcl_DStringLength(&argsPtr->ds);
-        *bufferPtr = Tcl_DStringValue(&argsPtr->ds);
+        Tcl_DStringAppend(&importPtr->currLine, "\n", 1);
+        *numBytesPtr = Tcl_DStringLength(&importPtr->currLine);
+        *bufferPtr = Tcl_DStringValue(&importPtr->currLine);
     } else {
-        char *bp, *bend;
-        int numBytes;
+        const char *bp, *bend;
+        ssize_t delta;
 
-        for (bp = argsPtr->buffer, bend = bp + argsPtr->numBytes; bp < bend;
+        for (bp = importPtr->next, bend = bp + importPtr->bytesLeft; bp < bend;
              bp++) {
             if (*bp == '\n') {
                 bp++;                   /* Keep the newline. */
@@ -659,49 +619,103 @@ ImportGetLine(Tcl_Interp *interp, ImportArgs *argsPtr, char **bufferPtr,
             }
         }
         /* Do bookkeeping on buffer pointer and size. */
-        *bufferPtr = argsPtr->buffer;
-        numBytes = bp - argsPtr->buffer;
-        *numBytesPtr = numBytes;
-        argsPtr->numBytes -= numBytes; /* Important to reduce bytes left
-                                          * regardless of trailing
-                                          * newline. */
-        if (numBytes > 0) {
+        *bufferPtr = importPtr->next;
+        delta = bp - importPtr->next;
+        *numBytesPtr = delta;
+        importPtr->bytesLeft -= delta;  /* Important to reduce bytes left
+                                         * regardless of trailing
+                                         * newline. */
+        if (delta > 0) {
             if (*(bp-1) != '\n') {
                 /* The last newline has been trimmed.  Append a newline.
                  * Don't change the data object's string
                  * representation. Copy the line and append the newline. */
                 assert(*bp == '\0');
-                Tcl_DStringSetLength(&argsPtr->ds, 0);
-                Tcl_DStringAppend(&argsPtr->ds, argsPtr->buffer, numBytes);
-                Tcl_DStringAppend(&argsPtr->ds, "\n", 1);
-                *numBytesPtr = Tcl_DStringLength(&argsPtr->ds);
-                *bufferPtr = Tcl_DStringValue(&argsPtr->ds);
+                Tcl_DStringSetLength(&importPtr->currLine, 0);
+                Tcl_DStringAppend(&importPtr->currLine, importPtr->next, delta);
+                Tcl_DStringAppend(&importPtr->currLine, "\n", 1);
+                *numBytesPtr = Tcl_DStringLength(&importPtr->currLine);
+                *bufferPtr = Tcl_DStringValue(&importPtr->currLine);
             } else {
-                argsPtr->buffer += numBytes;
+                importPtr->next += delta;
             }
         }
     }
     return TCL_OK;
 }
 
+static int
+GuessSeparator(Tcl_Interp *interp, int maxRows, ImportArgs *importPtr)
+{
+    int sepIndices[10];
+    int i, numSeparators;
+    off_t pos;
+    const char defSepTokens[] = { ",\t|;"};
+    const char *sepTokens;
+
+    sepTokens = (importPtr->testSeparators != NULL) ? 
+        importPtr->testSeparators : defSepTokens;
+    pos = 0;                            /* Suppress compiler warning. */
+    if (importPtr->channel != NULL) {
+        pos = Tcl_Tell(importPtr->channel);
+    } 
+    numSeparators = strlen(sepTokens);
+    if (numSeparators > 10) {
+        numSeparators = 10;
+    }
+    for (i = 0; i < numSeparators; i++) {
+        charCounts[i] = 0;
+        sepIndices[i] = i;
+    }
+    for (i = 0; i < importPtr->maxRows; i++) {
+        const char *bp, *bend;
+        size_t numBytes;
+        int result;
+        
+        result = ImportGetLine(interp, importPtr, &bp, &numBytes);
+        if (result != TCL_OK) {
+            return TCL_ERROR;           /* I/O Error. */
+        }
+        if (numBytes == 0) {
+            break;                      /* EOF */
+        }
+        for (i = 0; i < numSeparators; i++) {
+            for (bend = bp + numBytes; bp < bend; bp++) {
+                if (*bp == sepTokens[i]) {
+                    charCounts[i]++;
+                }
+            }
+        }
+    }
+    if (importPtr->channel != NULL) {
+        Tcl_Seek(importPtr->channel, pos, SEEK_SET);
+    } else {
+        importPtr->next = importPtr->buffer;
+        importPtr->bytesLeft = importPtr->numBytes;
+    }
+    qsort(sepIndices, numSeparators, sizeof(int), CompareCharCounts);
+    importPtr->separatorChar = sepTokens[sepIndices[0]];
+    return importPtr->separatorChar;
+}
+
 static const char *
-GetNextLabel(ImportArgs *argsPtr)
+GetNextLabel(ImportArgs *importPtr)
 {
     const char *label;
     
-    if (argsPtr->columnLabels == NULL) {
+    if (importPtr->columnLabels == NULL) {
         return NULL;
     }
-    label = argsPtr->columnLabels[argsPtr->nextLabel];
+    label = importPtr->columnLabels[importPtr->nextLabel];
     if (label != NULL) {
         return NULL;
     }
-    argsPtr->nextLabel++;
+    importPtr->nextLabel++;
     return label;
 }
 
 static int
-ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
+ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *importPtr)
 {
     Tcl_DString ds;
     char *fp, *field;
@@ -721,10 +735,10 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
     Tcl_DStringSetLength(&ds, fieldSize + 1);
     fp = field = Tcl_DStringValue(&ds);
     for (;;) {
-        char *bp, *bend;
-        int numBytes;
+        const char *bp, *bend;
+        size_t numBytes;
 
-        result = ImportGetLine(interp, argsPtr, &bp, &numBytes);
+        result = ImportGetLine(interp, importPtr, &bp, &numBytes);
         if (result != TCL_OK) {
             goto error;                 /* I/O Error. */
         }
@@ -732,24 +746,24 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
             break;                      /* EOF */
         }
         bend = bp + numBytes;
-        while ((bp < bend) && (isspace(*bp)) && (!IsSeparator(argsPtr, *bp))){
+        while ((bp < bend) && (isspace(*bp)) && (!IsSeparator(importPtr, *bp))){
             bp++;                       /* Skip leading spaces. */
         }
-        if ((*bp == '\0') || (*bp == argsPtr->commentChar)) {
+        if ((*bp == '\0') || (*bp == importPtr->commentChar)) {
             continue;                   /* Ignore blank or comment lines */
         }
         for (/*empty*/; bp < bend; bp++) {
-            if ((IsSeparator(argsPtr, *bp)) || (*bp == '\n')) {
+            if ((IsSeparator(importPtr, *bp)) || (*bp == '\n')) {
                 if (inQuotes) {
                     *fp++ = *bp;        /* Copy the separator or newline. */
                 } else {
                     BLT_TABLE_COLUMN col;
                     char *last;
 
-                    if ((isPath) && (IsSeparator(argsPtr, *bp)) && 
+                    if ((isPath) && (IsSeparator(importPtr, *bp)) && 
                         (fp != field) && (*(fp - 1) != '\\')) {
                         *fp++ = *bp;    /* Copy the separator or newline. */
-                        goto done;
+                        goto currLine;
                     }    
                     /* "last" points to the character after the last character
                      * in the field. */
@@ -764,16 +778,16 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
                     }
                     if (row == NULL) {
                         if ((*bp == '\n') &&  (fp == field)) {
-                            goto done;  /* Ignore empty lines. */
+                            goto currLine;  /* Ignore empty lines. */
                         }
                         if (blt_table_extend_rows(interp, table, 1, &row) 
                             != TCL_OK) {
                             goto error;
                         }
-                        if ((argsPtr->maxRows > 0) && 
-                            (blt_table_num_rows(table) > argsPtr->maxRows)) {
+                        if ((importPtr->maxRows > 0) && 
+                            (blt_table_num_rows(table) > importPtr->maxRows)) {
                             bp = bend;
-                            goto done;
+                            goto currLine;
                         }
                     }
                     /* End of field. Append field to row. */
@@ -784,7 +798,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
                             != TCL_OK) {
                             goto error;
                         }
-                        label = GetNextLabel(argsPtr);
+                        label = GetNextLabel(importPtr);
                         if ((label != NULL) && 
                             (blt_table_set_column_label(interp, table, col,
                                                         label) != TCL_OK)) {
@@ -794,7 +808,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
                         col = blt_table_column(table, i);
                     }
                     if (((last > field) || (isQuoted)) && 
-                        (!IsEmpty(argsPtr, field, last - field))) {
+                        (!IsEmpty(importPtr, field, last - field))) {
                         if (blt_table_set_string_rep(interp, table, row, col,
                                 field, last - field) != TCL_OK) {             
                             goto error;
@@ -808,7 +822,11 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
                     fp = field;
                     isPath = isQuoted = FALSE;
                 }
-            done:
+            currLine:
+                if ((importPtr->maxRows > 0) && 
+                    (blt_table_num_rows(table) > importPtr->maxRows)) {
+                    break;
+                }
                 ;
             } else if ((*bp == ' ') || (*bp == '\t')) {
                 /* 
@@ -827,10 +845,10 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
                     isPath = TRUE; 
                 }
                 *fp++ = *bp;
-            } else if (*bp == argsPtr->quoteChar ) {
+            } else if (*bp == importPtr->quoteChar ) {
                 if (inQuotes) {
-                    if (*(bp+1) == argsPtr->quoteChar) {
-                        *fp++ = argsPtr->quoteChar;
+                    if (*(bp+1) == importPtr->quoteChar) {
+                        *fp++ = importPtr->quoteChar;
                         bp++;
                     } else {
                         inQuotes = FALSE;
@@ -891,14 +909,14 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
                         goto error;
                     }
                 }                       
-                label = GetNextLabel(argsPtr);
+                label = GetNextLabel(importPtr);
                 if ((label != NULL) &&
                     (blt_table_set_column_label(interp, table, col,
                                                 label) != TCL_OK)) {
                     goto error;
                 }
                 if (((last > field) || (isQuoted)) && 
-                    (!IsEmpty(argsPtr, field, last - field))) {
+                    (!IsEmpty(importPtr, field, last - field))) {
                     if (blt_table_set_string(interp, table, row, col, field, 
                         last - field) != TCL_OK) {
                         goto error;
@@ -920,12 +938,12 @@ ImportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 {
     int result;
     ImportArgs args;
+#define MAX_LINES        20
 
     memset(&args, 0, sizeof(args));
     args.quoteChar   = '\"';
     args.separatorChar = ',';
     args.commentChar = '\0';
-    Blt_InitHashTable(&args.dataTable, BLT_STRING_KEYS);
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3 , objv + 3, 
         &args, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
@@ -947,16 +965,17 @@ ImportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 
         args.channel = NULL;
         args.buffer = Tcl_GetStringFromObj(args.dataObjPtr, &numBytes);
-        args.numBytes = numBytes;
+        args.next = args.buffer;
+        args.bytesLeft = args.numBytes = numBytes;
         args.fileObjPtr = NULL;
         if ((args.reqSeparator == NULL) || (args.reqSeparator[0] == '\0')) {
-            GuessSeparator(&args);
+            args.separatorChar = GuessSeparator(interp, MAX_LINES, &args);
         } else {
             args.separatorChar = args.reqSeparator[0];
         }
-        Tcl_DStringInit(&args.ds);
+        Tcl_DStringInit(&args.currLine);
         result = ImportCsv(interp, table, &args);
-        Tcl_DStringFree(&args.ds);
+        Tcl_DStringFree(&args.currLine);
     } else {
         int closeChannel;
         Tcl_Channel channel;
@@ -994,21 +1013,20 @@ ImportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
             }
         }
         args.channel = channel;
-        Tcl_DStringInit(&args.ds);
+        Tcl_DStringInit(&args.currLine);
         if ((args.reqSeparator == NULL) || (args.reqSeparator[0] == '\0')) {
-            GuessSeparator(&args);
+            args.separatorChar = GuessSeparator(interp, MAX_LINES, &args);
         } else {
             args.separatorChar = args.reqSeparator[0];
         }
         result = ImportCsv(interp, table, &args);
-        Tcl_DStringFree(&args.ds);
+        Tcl_DStringFree(&args.currLine);
         if (closeChannel) {
             Tcl_Close(interp, channel);
         }
     }
  error:
     Blt_FreeSwitches(importSwitches, (char *)&args, 0);
-    Blt_DeleteHashTable(&args.dataTable);
     return result;
 }
     
