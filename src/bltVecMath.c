@@ -740,15 +740,15 @@ MathError(
             const char *result;
 
             Tcl_AppendResult(interp, 
-                             "floating-point value too small to represent",
+                        "floating-point value too small to represent",
                 (char *)NULL);
             result = Tcl_GetString(Tcl_GetObjResult(interp));
             Tcl_SetErrorCode(interp, "ARITH", "UNDERFLOW", result,(char *)NULL);
         } else {
             const char *result;
 
-            Tcl_AppendResult(interp, 
-                             "floating-point value too large to represent",
+            Tcl_AppendResult(interp,
+                        "floating-point value too large to represent",
                 (char *)NULL);
             result = Tcl_GetString(Tcl_GetObjResult(interp));
             Tcl_SetErrorCode(interp, "ARITH", "OVERFLOW", result, (char *)NULL);
@@ -762,6 +762,64 @@ MathError(
         Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", result, (char *)NULL);
     }
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MathConvertError --
+ *
+ *      This procedure is called when an error occurs during a floating-point
+ *      operation.  It reads errno and sets interp->result accordingly.
+ *
+ * Results:
+ *      Interp->result is set to hold an error message.
+ *
+ * Side effects:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+MathConvertError(
+    Tcl_Interp *interp,                 /* Where to store error message. */
+    const char *string,                 /* String representation of value. */
+    double value)                       /* Value returned after error; used to
+                                         * distinguish underflows from
+                                         * overflows. */
+{
+    if ((errno == EDOM) || (value != value)) {
+        const char *result;
+
+        Tcl_AppendResult(interp, "domain error: argument not in valid range",
+                         (char *)NULL);
+        result = Tcl_GetString(Tcl_GetObjResult(interp));
+        Tcl_SetErrorCode(interp, "ARITH", "DOMAIN", result, (char *)NULL);
+    } else if ((errno == ERANGE) || IS_INF(value)) {
+        if (value == 0.0) {
+            const char *result;
+
+            Tcl_AppendResult(interp, "floating-point value \"", string,
+                "\" too small to represent", (char *)NULL);
+            result = Tcl_GetString(Tcl_GetObjResult(interp));
+            Tcl_SetErrorCode(interp, "ARITH", "UNDERFLOW", result,(char *)NULL);
+        } else {
+            const char *result;
+
+            Tcl_AppendResult(interp, "floating-point value \"", string,
+                "\" too large to represent", (char *)NULL);
+            result = Tcl_GetString(Tcl_GetObjResult(interp));
+            Tcl_SetErrorCode(interp, "ARITH", "OVERFLOW", result, (char *)NULL);
+        }
+    } else {
+        const char *result;
+
+        Tcl_AppendResult(interp, "unknown floating-point error for \"", string,
+                "\": errno = ", Blt_Itoa(errno), (char *)NULL);
+        result = Tcl_GetString(Tcl_GetObjResult(interp));
+        Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", result, (char *)NULL);
+    }
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -808,7 +866,7 @@ ParseString(
     if ((endPtr != string) && (*endPtr == '\0')) {
         if (errno != 0) {
             Tcl_ResetResult(interp);
-            MathError(interp, value);
+            MathConvertError(interp, string, value);
             return TCL_ERROR;
         }
         /* Numbers are stored as single element vectors. */
@@ -990,7 +1048,7 @@ NextToken(
         value = strtod(p, (char **)&endPtr);
         if (endPtr != p) {
             if (errno != 0) {
-                MathError(interp, value);
+                MathConvertError(interp, p, value);
                 return TCL_ERROR;
             }
             piPtr->token = VALUE;
@@ -2033,7 +2091,7 @@ PointFunc(
 
     for(i = 0; i < vPtr->length; i++) {
         if (!FINITE(values[i])) {
-            continue;                   /* There is a hole in vector. */
+            continue;                   /* There is a hole in the vector. */
         }
         values[i] = (*procPtr) (values[i]);
         if ((!FINITE(values[i])) || (errno != 0)) {

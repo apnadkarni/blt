@@ -574,7 +574,7 @@ IsEmpty(ImportArgs *importPtr, const char *field, size_t count)
 /* 
  * ImportGetLine -- 
  *
- *      Get a single line from the input buffer or file.  We don't remove
+ *      Gets a single line from the input buffer or file.  We don't remove
  *      newlines.  The parser needs them to determine if we are really at
  *      the end of a row or in a quoted field.  So the resulting line
  *      always contains a new line unless an error occurs or we hit EOF.

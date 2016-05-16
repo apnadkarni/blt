@@ -78,8 +78,26 @@ typedef struct {
     Blt_Chain chain;    /* Chain of watches. */
     Tcl_Interp *interp;
     unsigned char *stack;
+    Tcl_Channel channel;
+    int level;
+    int maxFileSize;
+    Tcl_Trace token;
+    int closeChannel;
 } DebugCmdInterpData;
 
+typedef struct {
+    Tcl_Obj *fileObjPtr;
+    int maxFileSize;
+} DebugArgs;
+
+static Blt_SwitchSpec debugSwitches[] = 
+{
+    {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
+        Blt_Offset(DebugArgs, fileObjPtr), 0},
+    {BLT_SWITCH_INT_NNEG, "-maxfilesize", "numBytes", (char *)NULL,
+        Blt_Offset(DebugArgs, maxFileSize), 0},
+    {BLT_SWITCH_END}
+};
 #define SETBIT(i) \
     dataPtr->stack[(i) >> 3] |= (1 << ((i) & 0x07))
 #define GETBIT(i) \
@@ -209,7 +227,7 @@ TraceCmdProc(
                                  * evaluation */
 {
     DebugCmdInterpData *dataPtr = clientData;
-    Tcl_Channel errChannel;
+    Tcl_Channel channel;
     Tcl_DString ds;
     const char *lineStart;
     const char *string;
@@ -248,19 +266,23 @@ TraceCmdProc(
             return TCL_OK;
         }
     }
-    /*
-     * Use stderr channel, for compatibility with systems that don't have a
-     * tty (like WIN32).  In reality, it doesn't make a difference since Tk's
-     * Win32 console can't handle large streams of data anyways.
-     */
-    errChannel = Tcl_GetStdChannel(TCL_STDERR);
-    if (errChannel == NULL) {
-        Tcl_AppendResult(interp, "can't get stderr channel", (char *)NULL);
-        Tcl_BackgroundError(interp);
-        return TCL_ERROR;
+    if (dataPtr->channel != NULL) {
+        channel = dataPtr->channel;
+    } else {
+        /*
+         * Use stderr channel, for compatibility with systems that don't
+         * have a tty (like WIN32).  In reality, it doesn't make a
+         * difference since Tk's Win32 console can't handle large streams
+         * of data anyways.
+         */
+        channel = Tcl_GetStdChannel(TCL_STDERR);
+        if (channel == NULL) {
+            Tcl_AppendResult(interp, "can't get stderr channel", (char *)NULL);
+            Tcl_BackgroundError(interp);
+            return TCL_ERROR;
+        }
     }
     Tcl_DStringInit(&ds);
-
     Blt_FormatString(prompt, 200, "%-2d-> ", level);
     p = command;
     /* Skip leading spaces in command line. */
@@ -307,7 +329,7 @@ TraceCmdProc(
     }
     listObjPtr = Tcl_NewListObj(objc, objv);
     Tcl_IncrRefCount(listObjPtr);
-#ifdef notdef
+#ifndef notdef
     objPtr = Tcl_SubstObj(interp, listObjPtr, TCL_SUBST_VARIABLES);
 #else
     objPtr = NULL;
@@ -359,8 +381,8 @@ TraceCmdProc(
     if (objPtr != NULL) {
         Tcl_DecrRefCount(objPtr);
     }
-    Tcl_Write(errChannel, (char *)Tcl_DStringValue(&ds), -1);
-    Tcl_Flush(errChannel);
+    Tcl_Write(channel, (char *)Tcl_DStringValue(&ds), -1);
+    Tcl_Flush(channel);
     Tcl_DStringFree(&ds);
     return TCL_OK;
 }
@@ -376,17 +398,16 @@ DebugCmd(
     Blt_ChainLink link;
     DebugCmdInterpData *dataPtr = clientData;
     Tcl_Obj *listObjPtr;
+    DebugArgs args;
     Watch *watchPtr;
     const char *string;
     char c;
     int newLevel;
     int i;
     int length;
-    static Tcl_Trace token;
-    static int level;
 
     if (objc == 1) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), level);
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), dataPtr->level);
         return TCL_OK;
     }
     string = Tcl_GetStringFromObj(objv[1], &length);
@@ -414,6 +435,7 @@ DebugCmd(
     return TCL_OK;
 
   levelTest:
+    
     if (Tcl_GetBooleanFromObj(interp, objv[1], &newLevel) == TCL_OK) {
         if (newLevel > 0) {
             newLevel = 10000;   /* Max out the level */
@@ -425,15 +447,50 @@ DebugCmd(
     } else {
         return TCL_ERROR;
     }
-    if (token != 0) {
-        Tcl_DeleteTrace(interp, token);
+    memset(&args, 0, sizeof(args));
+    if (Blt_ParseSwitches(interp, debugSwitches, objc - 2 , objv + 2, 
+                &args, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if ((dataPtr->channel != NULL) && (dataPtr->closeChannel)) {
+        Tcl_Close(interp, dataPtr->channel);
+        dataPtr->channel = NULL;
+    }
+    if (args.fileObjPtr != NULL) {
+        Tcl_Channel channel;
+        const char *fileName;
+
+        fileName = Tcl_GetString(args.fileObjPtr);
+        if ((fileName[0] == '@') && (fileName[1] != '\0')) {
+            int mode;
+            
+            channel = Tcl_GetChannel(interp, fileName+1, &mode);
+            if (channel == NULL) {
+                return TCL_ERROR;
+            }
+            if ((mode & TCL_WRITABLE) == 0) {
+                Tcl_AppendResult(interp, "channel \"", fileName, 
+                                 "\" not opened for writing", (char *)NULL);
+                return TCL_ERROR;
+            }
+            dataPtr->closeChannel = FALSE;
+        } else {
+            channel = Tcl_OpenFileChannel(interp, fileName, "r", 0);
+            if (channel == NULL) {
+                return TCL_ERROR;
+            }
+        }
+        dataPtr->channel = channel;
+    }
+    if (dataPtr->token != 0) {
+        Tcl_DeleteTrace(interp, dataPtr->token);
     }
     if (newLevel > 0) {
-        token = Tcl_CreateObjTrace(interp, newLevel, 0, TraceCmdProc, 
+        dataPtr->token = Tcl_CreateObjTrace(interp, newLevel, 0, TraceCmdProc, 
                                    dataPtr, NULL);
     }
-    level = newLevel;
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), level);
+    dataPtr->level = newLevel;
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), dataPtr->level);
     return TCL_OK;
 }
 
