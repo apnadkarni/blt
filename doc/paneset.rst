@@ -412,6 +412,12 @@ command.  The following operations are available for *paneset* widgets:
     **blt::background** command.  If *colorName* is "", the widget's
     **-background** is used. The default is "".
 
+  **-deletecommand** *string*
+    Specifies a TCL command to invoked when the pane is deleted (via the
+    *paneset*\ 's **delete** operation, or destroying the *paneset*).  The
+    command will be invoked before the pane is actually deleted.  If
+    *string* is "", no command is invoked.  The default is "".
+
   **-fill** *fillStyle* 
   **-height** *numPixels* 
   **-hide** *boolean* 

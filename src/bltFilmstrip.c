@@ -86,10 +86,12 @@ typedef int (SizeProc)(Frame *framePtr);
 #define DEF_ACTIVE_GRIP_COLOR   STD_ACTIVE_BACKGROUND
 #define DEF_ACTIVE_GRIP_RELIEF  "flat"
 #define DEF_ANIMATE             "0"
+#define DEF_ANCHOR              "c"
 #define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
-#define DEF_BORDERWIDTH         "0"
 #define DEF_FRAME_ANCHOR         "c"
 #define DEF_FRAME_BORDERWIDTH    "0"
+#define DEF_FRAME_DATA           (char *)NULL
+#define DEF_FRAME_DELETE_COMMAND (char *)NULL
 #define DEF_FRAME_FILL           "none"
 #define DEF_FRAME_HIDE           "0"
 #define DEF_FRAME_HIGHLIGHT_BACKGROUND   STD_NORMAL_BACKGROUND
@@ -213,6 +215,9 @@ struct _Filmstrip {
     Blt_Bg gripBg;
     Blt_Bg activeGripBg;
     Frame *currentPtr;
+    int anchor;                         /* Anchor of frames in
+                                         * filmstrip. This only matters if
+                                         * there is more space */
     int gripAnchor;                     /* Last known location of grip
                                          * during a move. */
     Blt_Chain frames;                   /* List of frames.  Describes the
@@ -309,7 +314,7 @@ struct _Frame  {
     unsigned int flags;
     Filmstrip *filmPtr;                 /* Filmstrip widget managing this
                                          * frame. */
-    int borderWidth;                    /* The external border width of the
+    int extBorderWidth;                 /* The external border width of the
                                          * widget. This is needed to check
                                          * if
                                          * Tk_Changes(tkwin)->border_width
@@ -329,9 +334,9 @@ struct _Frame  {
                                          * widget is positioned if extra
                                          * space is available in the
                                          * frame. */
-    Blt_Pad xPad;                       /* Extra padding placed left and
+    Blt_Pad padX;                       /* Extra padding placed left and
                                          * right of the widget. */
-    Blt_Pad yPad;                       /* Extra padding placed above and
+    Blt_Pad padY;                       /* Extra padding placed above and
                                          * below the widget */
     int iPadX, iPadY;                   /* Extra padding added to the
                                          * interior of the widget
@@ -383,6 +388,10 @@ struct _Frame  {
                                          * set to the value string of the
                                          * selected item. */
     int worldX, worldY;
+    Tcl_Obj *dataObjPtr;                /* User-defined data associated
+                                         * with this frame. */
+    Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
+                                         * when frame is deleted. */
 };
 
 /* Frame/grip flags.  */
@@ -447,6 +456,11 @@ static Blt_ConfigSpec frameSpecs[] =
         (char *)NULL, Blt_Offset(Frame, bg), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_OBJ, "-data", (char *)NULL, (char *)NULL, DEF_FRAME_DATA, 
+        Blt_Offset(Frame, dataObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
+        DEF_FRAME_DELETE_COMMAND, Blt_Offset(Frame, deleteCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_FRAME_FILL, 
         Blt_Offset(Frame, fill), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
@@ -458,6 +472,10 @@ static Blt_ConfigSpec frameSpecs[] =
         (char *)NULL, Blt_Offset(Frame, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
         (char *)NULL, Blt_Offset(Frame, iPadY), 0},
+    {BLT_CONFIG_PAD, "-padx", (char *)NULL, (char *)NULL,
+        (char *)NULL, Blt_Offset(Frame, padX), 0},
+    {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL, 
+        (char *)NULL, Blt_Offset(Frame, padY), 0},
     {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
         Blt_Offset(Frame, reqHeight), 0, &bltLimitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
@@ -489,6 +507,8 @@ static Blt_ConfigSpec filmStripSpecs[] =
         "GripRelief", DEF_ACTIVE_GRIP_RELIEF,
         Blt_Offset(Filmstrip, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_ANCHOR,
+        Blt_Offset(Filmstrip, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-animate", "animate", "Animate", DEF_ANIMATE, 
         Blt_Offset(Filmstrip, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)ANIMATE },
@@ -760,35 +780,23 @@ DestroyFrame(Frame *framePtr)
     
     filmPtr = framePtr->filmPtr;
     gripPtr = &framePtr->grip;
-    Blt_Tags_ClearTagsFromItem(&filmPtr->tags, framePtr);
-    Blt_FreeOptions(frameSpecs, (char *)framePtr, filmPtr->display, 0);
     if (framePtr->timerToken != (Tcl_TimerToken)0) {
         Tcl_DeleteTimerHandler(framePtr->timerToken);
         framePtr->timerToken = 0;
     }
-    if (filmPtr->anchorPtr == gripPtr) {
-        filmPtr->anchorPtr = NULL;
-    }
-    if (framePtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&filmPtr->frameTable, framePtr->hashPtr);
-        framePtr->hashPtr = NULL;
-    }
-    if (framePtr->link != NULL) {
-        Blt_Chain_DeleteLink(filmPtr->frames, framePtr->link);
-        framePtr->link = NULL;
-    }
     if (framePtr->tkwin != NULL) {
-        Tk_Window tkwin;
-
-        tkwin = framePtr->tkwin;
-        Tk_DeleteEventHandler(tkwin, StructureNotifyMask, FrameEventProc, 
-                framePtr);
-        Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, framePtr);
-        Tk_DestroyWindow(tkwin);
+        Tk_DeleteEventHandler(framePtr->tkwin, StructureNotifyMask,
+                FrameEventProc, framePtr);
+        Tk_ManageGeometry(framePtr->tkwin, (Tk_GeomMgr *)NULL, framePtr);
+        if (Tk_IsMapped(framePtr->tkwin)) {
+            Tk_UnmapWindow(framePtr->tkwin);
+        }
     }
-    if (gripPtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&filmPtr->gripTable, gripPtr->hashPtr);
-        gripPtr->hashPtr = NULL;
+    if (framePtr->deleteCmdObjPtr != NULL) {
+        if (Tcl_EvalObjEx(filmPtr->interp, framePtr->deleteCmdObjPtr,
+                TCL_EVAL_GLOBAL) != TCL_OK) {
+            Tcl_BackgroundError(filmPtr->interp);
+        }
     }
     if (gripPtr->tkwin != NULL) {
         Tk_Window tkwin;
@@ -800,6 +808,23 @@ DestroyFrame(Frame *framePtr)
         Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, gripPtr);
         gripPtr->tkwin = NULL;
         Tk_DestroyWindow(tkwin);
+    }
+    Blt_Tags_ClearTagsFromItem(&filmPtr->tags, framePtr);
+    Blt_FreeOptions(frameSpecs, (char *)framePtr, filmPtr->display, 0);
+    if (filmPtr->anchorPtr == gripPtr) {
+        filmPtr->anchorPtr = NULL;
+    }
+    if (framePtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&filmPtr->frameTable, framePtr->hashPtr);
+        framePtr->hashPtr = NULL;
+    }
+    if (framePtr->link != NULL) {
+        Blt_Chain_DeleteLink(filmPtr->frames, framePtr->link);
+        framePtr->link = NULL;
+    }
+    if (gripPtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&filmPtr->gripTable, gripPtr->hashPtr);
+        gripPtr->hashPtr = NULL;
     }
     Blt_Free(framePtr);
 }
@@ -1209,14 +1234,14 @@ FrameEventProc(
     Filmstrip *filmPtr = framePtr->filmPtr;
 
     if (eventPtr->type == ConfigureNotify) {
-        int borderWidth;
+        int extBorderWidth;
 
         if (framePtr->tkwin == NULL) {
             return;
         }
-        borderWidth = Tk_Changes(framePtr->tkwin)->border_width;
-        if (framePtr->borderWidth != borderWidth) {
-            framePtr->borderWidth = borderWidth;
+        extBorderWidth = Tk_Changes(framePtr->tkwin)->border_width;
+        if (framePtr->extBorderWidth != extBorderWidth) {
+            framePtr->extBorderWidth = extBorderWidth;
             EventuallyRedraw(filmPtr);
         }
     } else if (eventPtr->type == DestroyNotify) {
@@ -1800,8 +1825,11 @@ static void
 FrameFreeProc(DestroyData dataPtr)
 {
     Frame *framePtr = (Frame *)dataPtr;
+    Filmstrip *filmPtr = framePtr->filmPtr;
 
     DestroyFrame(framePtr);
+    filmPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(filmPtr);
 }
 
 static int
@@ -1895,6 +1923,7 @@ NewFilmstrip(Tcl_Interp *interp, Tcl_Obj *objPtr)
     filmPtr = Blt_AssertCalloc(1, sizeof(Filmstrip));
     Tk_SetClass(tkwin, "BltFilmstrip");
     filmPtr->activeRelief = TK_RELIEF_RAISED;
+    filmPtr->anchor = TK_ANCHOR_CENTER;
     filmPtr->display = Tk_Display(tkwin);
     filmPtr->flags = LAYOUT_PENDING;
     filmPtr->gripBorderWidth = 1;
@@ -2236,9 +2265,9 @@ ResetFrames(Filmstrip *filmPtr)
          */
         size = BoundSize(0, &framePtr->reqSize);
         if (filmPtr->flags & VERTICAL) {
-            extra = PADDING(framePtr->yPad);
+            extra = PADDING(framePtr->padY);
         } else {
-            extra = PADDING(framePtr->xPad);
+            extra = PADDING(framePtr->padX);
         }
         if (framePtr->flags & GRIP) {
             extra += filmPtr->gripSize;
@@ -2299,9 +2328,9 @@ SetNominalSizes(Filmstrip *filmPtr)
 
         framePtr = Blt_Chain_GetValue(link);
         if (filmPtr->flags & VERTICAL) {
-            extra = PADDING(framePtr->yPad);
+            extra = PADDING(framePtr->padY);
         } else {
-            extra = PADDING(framePtr->xPad);
+            extra = PADDING(framePtr->padX);
         }
         if (framePtr->flags & GRIP) {
             extra += filmPtr->gripSize;
@@ -2360,8 +2389,8 @@ GetHorizontalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
                                             * size. */
         }
     }
-    framePtr->width = reqWidth;
-    framePtr->height = reqHeight;
+    framePtr->width  = reqWidth  + PADDING(framePtr->padX);
+    framePtr->height = reqHeight + PADDING(framePtr->padY);
 #if TRACE
     fprintf(stderr, "GetHorizontalFrameGeometry: w=%d h=%d\n",
             framePtr->width, framePtr->height);
@@ -2392,8 +2421,8 @@ GetVerticalFrameGeometry(Filmstrip *filmPtr, Frame *framePtr)
                                              * size. */
         }
     }
-    framePtr->width = reqWidth;
-    framePtr->height = reqHeight;
+    framePtr->width  = reqWidth  + PADDING(framePtr->padX);
+    framePtr->height = reqHeight + PADDING(framePtr->padY);
 #if TRACE
     fprintf(stderr, "GetVerticalFrameGeometry: w=%d h=%d\n",
             framePtr->width, framePtr->height);
@@ -2457,7 +2486,7 @@ LayoutHorizontalFrames(Filmstrip *filmPtr)
     }
     filmPtr->worldHeight = maxHeight;
     filmPtr->worldWidth = worldWidth;
-    filmPtr->normalWidth = maxWidth;
+    filmPtr->normalWidth = worldWidth;
     filmPtr->normalHeight = maxHeight;
     filmPtr->flags &= ~LAYOUT_PENDING;
     filmPtr->flags |= SCROLL_PENDING;
@@ -2543,32 +2572,45 @@ ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr)
     if ((framePtr->width == 0) || (framePtr->height == 0)) {
         return;
     }
-    x = SCREEN(framePtr->worldX);
-    y = 0;
+    x = SCREEN(framePtr->worldX) + framePtr->padX.side1;
+    y = framePtr->padY.side1;
 
     /* Unmap any widget that isn't viewable in the the widget. */
     if (((x > Tk_Width(filmPtr->tkwin)) || ((x + framePtr->width) < 0))) {
         UnmapFrameAndGrip(framePtr);
         return;
     }
-    w = framePtr->width;
-    h = framePtr->height;
-    /* If the child widget is taller that the frame or if -fill y is set,
-     * resize the set the height of the child to be the height of the
-     * frame. */
-    if ((h > Tk_Height(filmPtr->tkwin)) || (framePtr->flags & FILL_Y)) {
-        h = Tk_Height(filmPtr->tkwin);
+    /* If the frame height is taller that the filmstrip widget or if -fill
+     * y is set, resize the height of the child to be the height of the
+     * filmstrip. */
+    cavityHeight = Tk_Height(filmPtr->tkwin);
+    if ((framePtr->height > cavityHeight) ||
+        (framePtr->flags & FILL_Y)) {
+        h = cavityHeight;
+    } else {
+        h = framePtr->height;
     }
+    h -= PADDING(framePtr->padY);
+
+    /* Get the request width of the frame.  It's either the a portion of
+     * the filmstrip window width or requested size of the child window */
     if (filmPtr->relSize > 0.0) {
         reqWidth = (int)(Tk_Width(filmPtr->tkwin) * filmPtr->relSize);
     } else {
         reqWidth = Tk_ReqWidth(framePtr->tkwin);
     }
-    if ((reqWidth < w) && ((framePtr->fill & FILL_X) == 0)) {
+    if ((reqWidth < framePtr->width) && ((framePtr->fill & FILL_X) == 0)) {
         w = reqWidth;
+    } else {
+        w = framePtr->width;
     }
-    if (framePtr->width > w) {
-        switch (framePtr->anchor) {
+    w -= PADDING(framePtr->padX);
+
+    /* If the filmstrip area is bigger than the set of frames inside of it,
+     * adjust the starting x position according to the global anchor for
+     * the widget. */
+    if (Tk_Width(filmPtr->tkwin) > filmPtr->worldWidth) {
+        switch (filmPtr->anchor) {
         case TK_ANCHOR_NW:
         case TK_ANCHOR_SW:
         case TK_ANCHOR_W: 
@@ -2576,20 +2618,20 @@ ArrangeHorizontalFrame(Filmstrip *filmPtr, Frame *framePtr)
         case TK_ANCHOR_N: 
         case TK_ANCHOR_CENTER:
         case TK_ANCHOR_S: 
-            x += (framePtr->width - w) / 2;
+            x += (Tk_Width(filmPtr->tkwin) - filmPtr->worldWidth) / 2;
             break;
         case TK_ANCHOR_E:
         case TK_ANCHOR_SE:
         case TK_ANCHOR_NE:
-            x += framePtr->width - w;
+            x += Tk_Width(filmPtr->tkwin) - filmPtr->worldWidth;
             break;                      
         }
     }
-    /* If the widget is bigger than the window, adjust the position of the
+
+    /* If the widget is bigger than the frame, adjust the position of the
      * child widget according to the anchor specified. The default is
      * center.  */
-    cavityHeight = Tk_Height(filmPtr->tkwin) - PADDING(framePtr->yPad);
-    y += framePtr->yPad.side1;
+    cavityHeight = Tk_Height(filmPtr->tkwin) - PADDING(framePtr->padY);
     if (cavityHeight > h) {
         switch (framePtr->anchor) {
         case TK_ANCHOR_N:
@@ -2660,32 +2702,45 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
     if ((framePtr->width == 0) || (framePtr->height == 0)) {
         return;
     }
-    x = 0;
-    y = SCREEN(framePtr->worldY);
+    x = framePtr->padX.side1;
+    y = SCREEN(framePtr->worldY) + framePtr->padY.side1;
 
     /* Unmap any widget that isn't viewable in the the widget. */
     if (((y > Tk_Height(filmPtr->tkwin)) || ((y + framePtr->height) < 0))) {
         UnmapFrameAndGrip(framePtr);
         return;
     }
-    w = framePtr->width;
-    h = framePtr->height;
-    /* If the child widget is wider that the frame or if -fill x is set,
-     * resize the set the width of the child to be the width of the
-     * frame. */
-    if ((w > Tk_Width(filmPtr->tkwin)) || (framePtr->flags & FILL_X)) {
-        w = Tk_Width(filmPtr->tkwin);
+    /* If the frame width is wider that the filmstrip widget or if -fill
+     * x is set, resize the width of the child to be the width of the
+     * filmstrip. */
+    cavityWidth = Tk_Width(filmPtr->tkwin);
+    if ((framePtr->width > cavityWidth) ||
+        (framePtr->flags & FILL_X)) {
+        w = cavityWidth;
+    } else {
+        w = framePtr->width;
     }
+    w -= PADDING(framePtr->padX);
+
+    /* Get the requested height of the frame.  It's either the a portion of
+     * the filmstrip window height or requested size of the child window */
     if (filmPtr->relSize > 0.0) {
         reqHeight = (int)(Tk_Height(filmPtr->tkwin) * filmPtr->relSize);
     } else {
         reqHeight = Tk_ReqHeight(framePtr->tkwin);
     }
-    if ((reqHeight < h) && ((framePtr->fill & FILL_Y) == 0)) {
+    if ((reqHeight < framePtr->height) && ((framePtr->fill & FILL_Y) == 0)) {
         h = reqHeight;
+    } else {
+        h = framePtr->height;
     }
-    if (framePtr->height > h) {
-        switch (framePtr->anchor) {
+    h -= PADDING(framePtr->padY);
+
+    /* If the filmstrip area is taller than the set of frames inside of it,
+     * adjust the starting y position according to the global anchor for
+     * the widget. */
+    if (Tk_Height(filmPtr->tkwin) > filmPtr->worldHeight) {
+        switch (filmPtr->anchor) {
         case TK_ANCHOR_NW:              /* Upper left corner */
         case TK_ANCHOR_SW:              /* Lower left corner */
         case TK_ANCHOR_W:               /* Left center */
@@ -2693,21 +2748,20 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
         case TK_ANCHOR_N:               /* Top center */
         case TK_ANCHOR_CENTER:          /* Centered */
         case TK_ANCHOR_S:               /* Bottom center */
-            y += (framePtr->height - h) / 2;
+            y += (Tk_Height(filmPtr->tkwin) - filmPtr->worldHeight) / 2;
             break;
         case TK_ANCHOR_E:               /* Right center */
         case TK_ANCHOR_SE:              /* Lower right corner */
         case TK_ANCHOR_NE:              /* Upper right corner */
-            y += framePtr->height - h;
+            y += Tk_Height(filmPtr->tkwin) - filmPtr->worldHeight;
             break;                      
         }
     }
 
-    /* If the widget is bigger than the window, adjust the position of the
+    /* If the widget is bigger than the frame, adjust the position of the
      * child widget according to the anchor specified. The default is
      * center.  */
-    cavityWidth = Tk_Width(filmPtr->tkwin) - PADDING(framePtr->xPad);
-    x += framePtr->xPad.side1;
+    cavityWidth = Tk_Width(filmPtr->tkwin) - PADDING(framePtr->padX);
     if (cavityWidth > w) {
         switch (framePtr->anchor) {
         case TK_ANCHOR_N:
@@ -2764,136 +2818,6 @@ ArrangeVerticalFrame(Filmstrip *filmPtr, Frame *framePtr)
     }
 }
 
-#ifdef notdef
-static void
-ArrangeWindow(Frame *framePtr, int x, int y) 
-{
-    Filmstrip *filmPtr;
-    int cavityWidth, cavityHeight;
-
-    filmPtr = framePtr->filmPtr;
-    if (filmPtr->flags & VERTICAL) {
-        framePtr->height = framePtr->size;
-        framePtr->width = Tk_Width(filmPtr->tkwin);
-    } else {
-        framePtr->width = framePtr->size;
-        framePtr->height = Tk_Height(filmPtr->tkwin);
-    }
-    cavityWidth  = framePtr->width;
-    cavityHeight = framePtr->height;
-    if (framePtr->tkwin != NULL) {
-        int w, h;
-        int xMax, yMax;
-
-        xMax = x + framePtr->width;
-        yMax = y + framePtr->height;
-        x += Tk_Changes(framePtr->tkwin)->border_width;
-        y += Tk_Changes(framePtr->tkwin)->border_width;
-        if (framePtr->flags & GRIP) {
-            if (filmPtr->flags & VERTICAL) {
-                cavityHeight -= filmPtr->gripSize;
-                if (filmPtr->side & GRIP_FARSIDE) {
-                    yMax -= filmPtr->gripSize;
-                } else {
-                    y += filmPtr->gripSize;
-                }
-            } else {
-                cavityWidth -= filmPtr->gripSize;
-                if (filmPtr->side & GRIP_FARSIDE) {
-                    xMax -= filmPtr->gripSize;
-                } else {
-                    x += filmPtr->gripSize;
-                }
-            }
-        }
-        
-        /*
-         * Unmap any widgets that start beyond of the right edge of the
-         * container.
-         */
-        if ((x >= xMax) || (y >= yMax)) {
-            if (Tk_IsMapped(framePtr->tkwin)) {
-                Tk_UnmapWindow(framePtr->tkwin);
-            }
-            return;
-        }
-        w = GetReqWidth(framePtr);
-        h = GetReqHeight(framePtr);
-        
-        /*
-         * Compare the widget's requested size to the size of the cavity.
-         *
-         * 1) If the widget is larger than the cavity or if the fill flag
-         *    is set, make the widget the size of the cavity. Check that
-         *    the new size is within the bounds set for the widget.
-         *
-         * 2) Otherwise, position the widget in the space according to its
-         *    anchor.
-         */
-        if ((cavityWidth <= w) || (framePtr->fill & FILL_X)) {
-            w = cavityWidth;
-        } 
-        if (w > framePtr->reqWidth.max) {
-            w = framePtr->reqWidth.max;
-        }
-        if ((cavityHeight <= h) || (framePtr->fill & FILL_Y)) {
-            h = cavityHeight;
-        }
-        if (h > framePtr->reqHeight.max) {
-            h = framePtr->reqHeight.max;
-        }
-        /*
-         * Clip the widget at the bottom and/or right edge of the container.
-         */
-        if (h > (yMax - y)) {
-            h = (yMax - y);
-        }
-        if (w > (xMax - x)) {
-            w = (xMax - x);
-        }
-#ifdef notdef
-        {
-            int dx, dy;
-            dx = dy = 0;
-            if (cavityWidth > w) {
-                dx = (cavityWidth - w);
-            }
-            if (cavityHeight > h) {
-                dy = (cavityHeight - h);
-            }
-            if ((dx > 0) || (dy > 0)) {
-                TranslateAnchor(dx, dy, framePtr->anchor, &x, &y);
-            }
-            TranslateAnchor(w, h, framePtr->anchor, &x, &y);
-        }
-#endif
-        /*
-         * If the widget is too small (i.e. it has only an external border)
-         * then unmap it.
-         */
-        if ((w < 1) || (h < 1)) {
-            if (Tk_IsMapped(framePtr->tkwin)) {
-                Tk_UnmapWindow(framePtr->tkwin);
-            }
-            return;
-        }
-        /*
-         * Resize and/or move the widget as necessary.
-         */
-        if ((x != Tk_X(framePtr->tkwin)) || 
-            (y != Tk_Y(framePtr->tkwin)) ||
-            (w != Tk_Width(framePtr->tkwin)) || 
-            (h != Tk_Height(framePtr->tkwin))) {
-            assert(w > 0 && h > 0);
-            Tk_MoveResizeWindow(framePtr->tkwin, x, y, w, h);
-        }
-        if (!Tk_IsMapped(framePtr->tkwin)) {
-            Tk_MapWindow(framePtr->tkwin);
-        }
-    }
-}
-#endif
-
 static void
 ArrangeGrip(Grip *gripPtr, int x, int y) 
 {
@@ -2934,48 +2858,6 @@ ArrangeGrip(Grip *gripPtr, int x, int y)
         Tk_UnmapWindow(gripPtr->tkwin);
     }
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * ArrangeFrame
- *
- *      Places each window at its proper location.  First determines the
- *      size and position of the each window.  It then considers the
- *      following:
- *
- *        1. translation of widget position its parent widget.
- *        2. fill style
- *        3. anchor
- *        4. external and internal padding
- *        5. widget size must be greater than zero
- *
- * Results:
- *      None.
- *
- * Side Effects:
- *      The size of each frame is re-initialized its minimum size.
- *
- *---------------------------------------------------------------------------
- */
-static void
-ArrangeFrame(Frame *framePtr, int x, int y) 
-{
-    Filmstrip *filmPtr;
-
-    filmPtr = framePtr->filmPtr;
-    if (filmPtr->flags & VERTICAL) {
-        framePtr->height = framePtr->size;
-        framePtr->width = Tk_Width(filmPtr->tkwin);
-    } else {
-        framePtr->width = framePtr->size;
-        framePtr->height = Tk_Height(filmPtr->tkwin);
-    }
-    ArrangeWindow(framePtr, x, y);
-    ArrangeGrip(&framePtr->grip, x, y);
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -3069,7 +2951,7 @@ ComputeGeometry(Filmstrip *filmPtr)
         filmPtr->normalHeight = filmPtr->reqHeight;
     }
 #if TRACE
-    fprintf(stderr, "ComputeGeometry: rw=%d rh=%d orw=%d orh=%d nw=%d nh=%d\n",
+    fprintf(stderr, "ComputeGeometry: rw=%d rh=%d urw=%d urh=%d nw=%d nh=%d\n",
             Tk_ReqWidth(filmPtr->tkwin), Tk_ReqHeight(filmPtr->tkwin),
             filmPtr->reqWidth, filmPtr->reqHeight,
             filmPtr->normalWidth, filmPtr->normalHeight);
@@ -3157,6 +3039,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         DestroyFrame(framePtr);
         return TCL_ERROR;
     }
+    filmPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(filmPtr);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), framePtr->name, -1);
     return TCL_OK;
@@ -3617,7 +3500,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Inserts a new frame into the filmstrip.
  *
- *      pathName insert how whereName ?label? ?option value ...?
+ *      pathName insert after|before frameName ?label? ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3717,6 +3600,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     return TCL_OK;
 }
+
 
 /*
  *---------------------------------------------------------------------------
@@ -3886,10 +3770,41 @@ FrameConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FrameLabelOp --
+ *
+ *      Returns the label of the given frame.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ *      pathName frame label frameName
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+FrameLabelOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Filmstrip *filmPtr = clientData;
+    Frame *framePtr;
+
+    if (GetFrameFromObj(NULL, filmPtr, objv[3], &framePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), framePtr->name, -1);
+    return TCL_OK;
+}
+
+
 static Blt_OpSpec frameOps[] =
 {
     {"cget",       2, FrameCgetOp,      5, 5, "frameName option",},
     {"configure",  2, FrameConfigureOp, 4, 0, "frameName ?option value?",},
+    {"label",      1, FrameLabelOp,     4, 4, "frameName",},
 };
 
 static int numFrameOps = sizeof(frameOps) / sizeof(Blt_OpSpec);
@@ -4042,6 +3957,32 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         EventuallyRedraw(filmPtr);
     }
     filmPtr->currentPtr = framePtr;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SizeOp --
+ *
+ *      Returns the number of frames in the film strip.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ *      pathName size
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+        Tcl_Obj *const *objv)
+{
+    Filmstrip *filmPtr = clientData;
+
+    Tcl_SetIntObj(Tcl_GetObjResult(interp),
+                  Blt_Chain_GetLength(filmPtr->frames));
     return TCL_OK;
 }
 
@@ -4621,13 +4562,14 @@ static Blt_OpSpec filmstripOps[] =
     {"delete",     1, DeleteOp,    3, 3, "?frameName ...?",},
     {"exists",     1, ExistsOp,    3, 3, "frameName",},
     {"frame",      1, FrameOp,     2, 0, "oper ?args?",},
-    {"grip",     1, GripOp,    2, 0, "oper ?args?",},
-    {"index",      3, IndexOp,     3, 3, "frame",},
+    {"grip",       1, GripOp,      2, 0, "oper ?args?",},
+    {"index",      3, IndexOp,     3, 3, "frameName",},
     {"insert",     3, InsertOp,    4, 0, "after|before whereName ?label? ?option value ...?",},
     {"invoke",     3, InvokeOp,    3, 3, "frameName",},
     {"move",       1, MoveOp,      4, 0, "after|before whereName frameName",},
     {"names",      1, NamesOp,     2, 0, "?pattern ...?",},
     {"see",        1, SeeOp,       3, 3, "frameName",},
+    {"size",       1, SizeOp,      2, 2, "",},
     {"tag",        1, TagOp,       2, 0, "oper args",},
     {"view",       1, ViewOp,      2, 5, 
         "?moveto fract? ?scroll number what?",},
@@ -4825,9 +4767,9 @@ DisplayProc(ClientData clientData)
 
     filmPtr->flags &= ~REDRAW_PENDING;
 #if TRACE 
-    fprintf(stderr, "DisplayProc(%s) w=%d h=%d\n",
+    fprintf(stderr, "DisplayProc(%s) w=%d h=%d numFrames=%d\n",
             Tk_PathName(filmPtr->tkwin), Tk_Width(filmPtr->tkwin),
-            Tk_Height(filmPtr->tkwin));
+            Tk_Height(filmPtr->tkwin), Blt_Chain_GetLength(filmPtr->frames));
 #endif
     if (filmPtr->flags & LAYOUT_PENDING) {
         ComputeGeometry(filmPtr);

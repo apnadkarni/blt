@@ -621,6 +621,7 @@ CsvGuessOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     result = TCL_OK;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if ((args.dataObjPtr != NULL) && (args.fileObjPtr != NULL)) {
         Tcl_AppendResult(interp, "can't set both -file and -data switches.",
                          (char *)NULL);
@@ -633,7 +634,6 @@ CsvGuessOp(ClientData clientData, Tcl_Interp *interp, int objc,
         args.commentChar = args.reqComment[0];
     }
     Tcl_DStringInit(&ds);
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (args.dataObjPtr != NULL) {
         int numBytes;
 

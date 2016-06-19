@@ -93,7 +93,7 @@ typedef enum {
 #define DEF_DRAWER_BORDERWIDTH  "0"
 #define DEF_DRAWER_CLOSEVALUE   "0"
 #define DEF_DRAWER_CLOSE_COMMAND (char *)NULL
-#define DEF_HANDLE_CURSOR               (char *)NULL
+#define DEF_DRAWER_DELETE_COMMAND (char *)NULL
 #define DEF_DRAWER_FILL         "1"
 #define DEF_DRAWER_HIDE         "0"
 #define DEF_HANDLE_HIGHLIGHT_BACKGROUND STD_NORMAL_BACKGROUND
@@ -111,6 +111,7 @@ typedef enum {
 #define DEF_HANDLE_BORDERWIDTH   "1"
 #define DEF_DRAWER_STEPS        "8"
 #define DEF_HANDLE_COLOR         STD_NORMAL_BACKGROUND
+#define DEF_HANDLE_CURSOR       (char *)NULL
 #define DEF_HANDLE_PAD           "0"
 #define DEF_HANDLE_RELIEF        "flat"
 #define DEF_HANDLE_THICKNESS     "2"
@@ -179,7 +180,7 @@ struct _Drawer  {
                                          * drawer is attached. */
     Tk_Window tkwin;                    /* Embedded child widget to be
                                          * managed. */
-    int borderWidth;                    /* The external border width of the
+    int extBorderWidth;                 /* The external border width of the
                                          * embedded widget. This is needed
                                          * to check if "border_width" of
                                          * Tk_Changes(tkwin) changes. */
@@ -245,6 +246,8 @@ struct _Drawer  {
                                          * the drawer has been opened. */
     Tcl_Obj *closeCmdObjPtr;            /* Command to be invoked whenever
                                          * the drawer has been closed. */
+    Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
+                                         * when drawer is deleted. */
     Handle handle;
     int delay;                          /* Delay between steps of automated 
                                          * scrolling. */
@@ -462,6 +465,9 @@ static Blt_ConfigSpec drawerSpecs[] =
         BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_INT_NNEG, "-delay", "delay", "Delay", DEF_DELAY,
         Blt_Offset(Drawer, delay), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
+        DEF_DRAWER_DELETE_COMMAND, Blt_Offset(Drawer, deleteCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_DRAWER_FILL, 
         Blt_Offset(Drawer, fill), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
@@ -671,13 +677,7 @@ BaseEventProc(
     Drawerset *setPtr = clientData;
 
     if (eventPtr->type == ConfigureNotify) {
-        int borderWidth;
-
-        borderWidth = Tk_Changes(setPtr->base)->border_width;
-        if (setPtr->borderWidth != borderWidth) {
-            setPtr->borderWidth = borderWidth;
-            EventuallyRedraw(setPtr);
-        }
+        EventuallyRedraw(setPtr);
     } else if (eventPtr->type == DestroyNotify) {
         setPtr->base = NULL;
         setPtr->flags |= LAYOUT_PENDING;
@@ -1255,28 +1255,23 @@ DestroyDrawer(Drawer *drawPtr)
     Drawerset *setPtr;
 
     setPtr = drawPtr->setPtr;
-    Blt_Tags_ClearTagsFromItem(&setPtr->tags, drawPtr);
-    Blt_FreeOptions(drawerSpecs, (char *)drawPtr, setPtr->display, 0);
     if (drawPtr->timerToken != (Tcl_TimerToken)0) {
         Tcl_DeleteTimerHandler(drawPtr->timerToken);
         drawPtr->timerToken = 0;
     }
-    if (drawPtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&setPtr->drawerTable, drawPtr->hashPtr);
-        drawPtr->hashPtr = NULL;
-    }
-    if (drawPtr->link != NULL) {
-        Blt_Chain_DeleteLink(setPtr->drawers, drawPtr->link);
-        drawPtr->link = NULL;
-    }
     if (drawPtr->tkwin != NULL) {
-        Tk_Window tkwin;
-
-        tkwin = drawPtr->tkwin;
-        Tk_DeleteEventHandler(tkwin, StructureNotifyMask, DrawerEventProc, 
-                drawPtr);
-        Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, drawPtr);
-        Tk_DestroyWindow(tkwin);
+        Tk_DeleteEventHandler(drawPtr->tkwin, StructureNotifyMask,
+                DrawerEventProc, drawPtr);
+        Tk_ManageGeometry(drawPtr->tkwin, (Tk_GeomMgr *)NULL, drawPtr);
+        if (Tk_IsMapped(drawPtr->tkwin)) {
+            Tk_UnmapWindow(drawPtr->tkwin);
+        }
+    }
+    if (drawPtr->deleteCmdObjPtr != NULL) {
+        if (Tcl_EvalObjEx(setPtr->interp, drawPtr->deleteCmdObjPtr,
+                TCL_EVAL_GLOBAL) != TCL_OK) {
+            Tcl_BackgroundError(setPtr->interp);
+        }
     }
     if (drawPtr->handle.tkwin != NULL) {
         Tk_Window tkwin;
@@ -1294,6 +1289,16 @@ DestroyDrawer(Drawer *drawPtr)
             Blt_DeleteHashEntry(&setPtr->handleTable, handlePtr->hashPtr);
             handlePtr->hashPtr = NULL;
         }
+    }
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, drawPtr);
+    Blt_FreeOptions(drawerSpecs, (char *)drawPtr, setPtr->display, 0);
+    if (drawPtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&setPtr->drawerTable, drawPtr->hashPtr);
+        drawPtr->hashPtr = NULL;
+    }
+    if (drawPtr->link != NULL) {
+        Blt_Chain_DeleteLink(setPtr->drawers, drawPtr->link);
+        drawPtr->link = NULL;
     }
     Blt_Free(drawPtr);
 }
@@ -1824,14 +1829,14 @@ DrawerEventProc(ClientData clientData, XEvent *eventPtr)
     Drawer *drawPtr = (Drawer *)clientData;
 
     if (eventPtr->type == ConfigureNotify) {
-        int borderWidth;
+        int extBorderWidth;
 
         if (drawPtr->tkwin == NULL) {
             return;
         }
-        borderWidth = Tk_Changes(drawPtr->tkwin)->border_width;
-        if (drawPtr->borderWidth != borderWidth) {
-            drawPtr->borderWidth = borderWidth;
+        extBorderWidth = Tk_Changes(drawPtr->tkwin)->border_width;
+        if (drawPtr->extBorderWidth != extBorderWidth) {
+            drawPtr->extBorderWidth = extBorderWidth;
             EventuallyRedraw(drawPtr->setPtr);
         }
     } else if (eventPtr->type == DestroyNotify) {
@@ -2402,8 +2407,11 @@ static void
 DrawerFreeProc(DestroyData dataPtr)
 {
     Drawer *drawPtr = (Drawer *)dataPtr;
+    Drawerset *setPtr = drawPtr->setPtr;
 
     DestroyDrawer(drawPtr);
+    setPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(setPtr);
 }
 
 

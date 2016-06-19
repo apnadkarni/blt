@@ -424,12 +424,12 @@ struct _Graph {
     short int x1, x2, y1, y2;           /* Opposite corners of plot area
                                          * bounding box. x2 and y2 are
                                          * outside of the area. */
-    Blt_Pad xPad;                       /* Vertical padding for plotarea */
+    Blt_Pad padX;                       /* Vertical padding for plotarea */
     int vRange, vOffset;                /* Vertical axis range and offset
                                          * from the left side of the graph
                                          * window. Used to transform
                                          * coordinates to vertical axes. */
-    Blt_Pad yPad;                       /* Horizontal padding for plotarea */
+    Blt_Pad padY;                       /* Horizontal padding for plotarea */
     int hRange, hOffset;                /* Horizontal axis range and offset
                                          * from the top of the graph
                                          * window. Used to transform

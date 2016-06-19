@@ -4446,7 +4446,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The listview gets a new item.
  *
- *   pathName insert before 0 after 1 -text text 
+ *   pathName insert -before 0 -after 1 -text text 
  *
  *---------------------------------------------------------------------------
  */

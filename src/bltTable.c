@@ -187,13 +187,13 @@ static Blt_ConfigSpec entryConfigSpecs[] =
     {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL,
         (char *)NULL, Blt_Offset(TableEntry, reqHeight), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(TableEntry, ixPad), 0},
+        (char *)NULL, Blt_Offset(TableEntry, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(TableEntry, iyPad), 0},
+        (char *)NULL, Blt_Offset(TableEntry, iPadY), 0},
     {BLT_CONFIG_PAD, "-padx", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(TableEntry, xPad), 0},
+        (char *)NULL, Blt_Offset(TableEntry, padX), 0},
     {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(TableEntry, yPad), 0},
+        (char *)NULL, Blt_Offset(TableEntry, padY), 0},
     {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
         Blt_Offset(TableEntry, reqHeight), 0, &limitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
@@ -216,10 +216,10 @@ static Blt_ConfigSpec entryConfigSpecs[] =
 static Blt_ConfigSpec tableConfigSpecs[] =
 {
     {BLT_CONFIG_PAD, "-padx", (char *)NULL, (char *)NULL,
-        DEF_TABLE_PAD, Blt_Offset(Table, xPad),
+        DEF_TABLE_PAD, Blt_Offset(Table, padX),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL,
-        DEF_TABLE_PAD, Blt_Offset(Table, yPad),
+        DEF_TABLE_PAD, Blt_Offset(Table, padY),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BOOLEAN, "-propagate", (char *)NULL, (char *)NULL,
         DEF_TABLE_PROPAGATE, Blt_Offset(Table, propagate),
@@ -1464,11 +1464,11 @@ PrintEntry(TableEntry *entryPtr, Blt_DBuffer dbuffer)
                        entryPtr->row.rcPtr->index,
                        entryPtr->column.rcPtr->index,
                        Tk_PathName(entryPtr->tkwin));
-    if (entryPtr->ixPad != ENTRY_DEF_PAD) {
-        Blt_DBuffer_Format(dbuffer, " -ipadx %d", entryPtr->ixPad);
+    if (entryPtr->iPadX != ENTRY_DEF_PAD) {
+        Blt_DBuffer_Format(dbuffer, " -ipadx %d", entryPtr->iPadX);
     }
-    if (entryPtr->iyPad != ENTRY_DEF_PAD) {
-        Blt_DBuffer_Format(dbuffer, " -ipady %d", entryPtr->iyPad);
+    if (entryPtr->iPadY != ENTRY_DEF_PAD) {
+        Blt_DBuffer_Format(dbuffer, " -ipady %d", entryPtr->iPadY);
     }
     if (entryPtr->row.span != ENTRY_DEF_SPAN) {
         Blt_DBuffer_Format(dbuffer, " -rowspan %d", entryPtr->row.span);
@@ -2621,7 +2621,7 @@ GetReqWidth(TableEntry *entryPtr)
 {
     int width;
 
-    width = Tk_ReqWidth(entryPtr->tkwin) + (2 * entryPtr->ixPad);
+    width = Tk_ReqWidth(entryPtr->tkwin) + (2 * entryPtr->iPadX);
     width = GetBoundedWidth(width, &entryPtr->reqWidth);
     return width;
 }
@@ -2648,7 +2648,7 @@ GetReqHeight(TableEntry *entryPtr)
 {
     int height;
 
-    height = Tk_ReqHeight(entryPtr->tkwin) + (2 * entryPtr->iyPad);
+    height = Tk_ReqHeight(entryPtr->tkwin) + (2 * entryPtr->iPadY);
     height = GetBoundedHeight(height, &entryPtr->reqHeight);
     return height;
 }
@@ -3477,7 +3477,7 @@ LayoutPartitions(Table *tablePtr)
             if (entryPtr->column.control != CONTROL_FULL) {
                 continue;
             }
-            needed = GetReqWidth(entryPtr) + PADDING(entryPtr->xPad) +
+            needed = GetReqWidth(entryPtr) + PADDING(entryPtr->padX) +
                 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
             if (needed <= 0) {
                 continue;
@@ -3505,7 +3505,7 @@ LayoutPartitions(Table *tablePtr)
 
             entryPtr = Blt_Chain_GetValue(link);
 
-            needed = GetReqWidth(entryPtr) + PADDING(entryPtr->xPad) +
+            needed = GetReqWidth(entryPtr) + PADDING(entryPtr->padX) +
                 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
 
             if (entryPtr->column.control >= 0.0) {
@@ -3522,7 +3522,7 @@ LayoutPartitions(Table *tablePtr)
     }
     total = SetNominalSizes(tablePtr, piPtr);
     tablePtr->normal.width = GetBoundedWidth(total, &tablePtr->reqWidth) +
-        PADDING(tablePtr->xPad) +
+        PADDING(tablePtr->padX) +
         2 * (tablePtr->eTablePad + Tk_InternalBorderWidth(tablePtr->tkwin));
 
     piPtr = &tablePtr->rows;
@@ -3545,7 +3545,7 @@ LayoutPartitions(Table *tablePtr)
             if (entryPtr->row.control != CONTROL_FULL) {
                 continue;
             }
-            needed = GetReqHeight(entryPtr) + PADDING(entryPtr->yPad) +
+            needed = GetReqHeight(entryPtr) + PADDING(entryPtr->padY) +
                 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
             if (needed <= 0) {
                 continue;
@@ -3570,7 +3570,7 @@ LayoutPartitions(Table *tablePtr)
             int needed, used;
 
             entryPtr = Blt_Chain_GetValue(link);
-            needed = GetReqHeight(entryPtr) + PADDING(entryPtr->yPad) +
+            needed = GetReqHeight(entryPtr) + PADDING(entryPtr->padY) +
                 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
             if (entryPtr->row.control >= 0.0) {
                 needed = (int)(needed * entryPtr->row.control);
@@ -3586,7 +3586,7 @@ LayoutPartitions(Table *tablePtr)
     }
     total = SetNominalSizes(tablePtr, piPtr);
     tablePtr->normal.height = GetBoundedHeight(total, &tablePtr->reqHeight) +
-        PADDING(tablePtr->yPad) +
+        PADDING(tablePtr->padY) +
         2 * (tablePtr->eTablePad + Tk_InternalBorderWidth(tablePtr->tkwin));
 }
 
@@ -3662,9 +3662,9 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
         }
         extra = 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
         spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
-            (extra + PADDING(entryPtr->xPad));
+            (extra + PADDING(entryPtr->padX));
         spanHeight = GetSpan(&tablePtr->rows, entryPtr) - 
-            (extra + PADDING(entryPtr->yPad));
+            (extra + PADDING(entryPtr->padY));
 
         winWidth = GetReqWidth(entryPtr);
         winHeight = GetReqHeight(entryPtr);
@@ -3780,7 +3780,7 @@ ArrangeTable(ClientData clientData)
     Table *tablePtr = clientData;
     int width, height;
     int offset, delta;
-    int xPad, yPad;
+    int padX, padY;
     int outerPad;
     Blt_ChainLink link;
 
@@ -3833,11 +3833,11 @@ ArrangeTable(ClientData clientData)
     tablePtr->container.height = Tk_Height(tablePtr->tkwin);
     outerPad = 2 * (Tk_InternalBorderWidth(tablePtr->tkwin) +
         tablePtr->eTablePad);
-    xPad = outerPad + tablePtr->columns.ePad + PADDING(tablePtr->xPad);
-    yPad = outerPad + tablePtr->rows.ePad + PADDING(tablePtr->yPad);
+    padX = outerPad + tablePtr->columns.ePad + PADDING(tablePtr->padX);
+    padY = outerPad + tablePtr->rows.ePad + PADDING(tablePtr->padY);
 
-    width = GetTotalSpan(&tablePtr->columns) + xPad;
-    height = GetTotalSpan(&tablePtr->rows) + yPad;
+    width = GetTotalSpan(&tablePtr->columns) + padX;
+    height = GetTotalSpan(&tablePtr->rows) + padY;
 
     /*
      * If the previous geometry request was not fulfilled (i.e. the size of
@@ -3851,7 +3851,7 @@ ArrangeTable(ClientData clientData)
         } else {
             ShrinkPartitions(&tablePtr->columns, delta);
         }
-        width = GetTotalSpan(&tablePtr->columns) + xPad;
+        width = GetTotalSpan(&tablePtr->columns) + padX;
     }
     delta = tablePtr->container.height - height;
     if (delta != 0) {
@@ -3860,7 +3860,7 @@ ArrangeTable(ClientData clientData)
         } else {
             ShrinkPartitions(&tablePtr->rows, delta);
         }
-        height = GetTotalSpan(&tablePtr->rows) + yPad;
+        height = GetTotalSpan(&tablePtr->rows) + padY;
     }
 
     /*

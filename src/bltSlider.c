@@ -4043,9 +4043,9 @@ LayoutSlider(Slider *sliderPtr)
     sliderPtr->bottomPtr->height = bottom + sliderPtr->inset;
             
     sliderPtr->vOffset = sliderPtr->top + sliderPtr->padTop;
-    sliderPtr->vRange  = plotHeight - PADDING(sliderPtr->yPad);
+    sliderPtr->vRange  = plotHeight - PADDING(sliderPtr->padY);
     sliderPtr->hOffset = sliderPtr->left + sliderPtr->padLeft;
-    sliderPtr->hRange  = plotWidth  - PADDING(sliderPtr->xPad);
+    sliderPtr->hRange  = plotWidth  - PADDING(sliderPtr->padX);
 
     if (sliderPtr->vRange < 1) {
         sliderPtr->vRange = 1;

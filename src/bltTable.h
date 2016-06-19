@@ -198,12 +198,12 @@ typedef struct  {
                                  * positioned if extra space is available in
                                  * the entry */
 
-    Blt_Pad xPad;               /* Extra padding placed left and right of the
+    Blt_Pad padX;               /* Extra padding placed left and right of the
                                  * widget. */
-    Blt_Pad yPad;               /* Extra padding placed above and below the
+    Blt_Pad padY;               /* Extra padding placed above and below the
                                  * widget */
 
-    int ixPad, iyPad;           /* Extra padding added to the interior of the
+    int iPadX, iPadY;           /* Extra padding added to the interior of the
                                  * widget (i.e. adds to the requested size of
                                  * the widget) */
 
@@ -330,7 +330,7 @@ struct _Table {
 
     Blt_HashTable entryTable;   /* Table of entries.  Serves as a directory to
                                  * look up entries from widget their names. */
-    Blt_Pad xPad, yPad;
+    Blt_Pad padX, padY;
 
     int propagate;              /* If non-zero, the table will make a geometry
                                  * request on behalf of the container

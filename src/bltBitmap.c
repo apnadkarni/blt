@@ -108,7 +108,7 @@ typedef struct {
     float scale;                        /* Scaling factor */
     Blt_Font font;                      /* Font pointer */
     Tk_Justify justify;                 /* Justify text */
-    Blt_Pad xPad, yPad;                 /* Padding around the text */
+    Blt_Pad padX, padY;                 /* Padding around the text */
 } BitmapInfo;
 
 /* 
@@ -139,10 +139,10 @@ static Blt_ConfigSpec composeConfigSpecs[] =
         DEF_BITMAP_JUSTIFY, Blt_Offset(BitmapInfo, justify),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-padx", (char *)NULL, (char *)NULL,
-        DEF_BITMAP_PAD, Blt_Offset(BitmapInfo, xPad),
+        DEF_BITMAP_PAD, Blt_Offset(BitmapInfo, padX),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL,
-        DEF_BITMAP_PAD, Blt_Offset(BitmapInfo, yPad),
+        DEF_BITMAP_PAD, Blt_Offset(BitmapInfo, padY),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_FLOAT, "-rotate", (char *)NULL, (char *)NULL,
         DEF_BITMAP_ANGLE, Blt_Offset(BitmapInfo, angle),
@@ -971,8 +971,8 @@ ComposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_Ts_InitStyle(ts);
     Blt_Ts_SetFont(ts, bi.font);
     Blt_Ts_SetJustify(ts, bi.justify);
-    Blt_Ts_SetPadding(ts, bi.xPad.side1, bi.yPad.side2, bi.yPad.side1, 
-        bi.yPad.side2);
+    Blt_Ts_SetPadding(ts, bi.padX.side1, bi.padX.side2, bi.padY.side1, 
+        bi.padY.side2);
 
     string = Tcl_GetStringFromObj(objv[3], &numBytes);
     textPtr = Blt_Ts_CreateLayout(string, numBytes, &ts);

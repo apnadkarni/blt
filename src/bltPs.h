@@ -56,7 +56,7 @@ typedef struct  {
                                          * the size of the graph if the
                                          * graph (plus padding) is larger
                                          * than the size of the page. */
-    Blt_Pad xPad, yPad;                 /* Requested padding on the
+    Blt_Pad padX, padY;                 /* Requested padding on the
                                          * exterior of the graph. This
                                          * forms the bounding box for the
                                          * page. */

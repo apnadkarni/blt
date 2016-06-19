@@ -882,7 +882,7 @@ typedef struct BltTclIntProcs {
     Blt_Uid (*blt_GetUid) (const char *string); /* 85 */
     void (*blt_FreeUid) (Blt_Uid uid); /* 86 */
     Blt_Uid (*blt_FindUid) (const char *string); /* 87 */
-    int (*blt_CreatePipeline) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, int *stdinPipePtr, int *stdoutPipePtr, int *stderrPipePtr, const char *env); /* 88 */
+    int (*blt_CreatePipeline) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, int *stdinPipePtr, int *stdoutPipePtr, int *stderrPipePtr, char *const *env); /* 88 */
     void (*blt_InitHexTable) (unsigned char *table); /* 89 */
     void (*blt_DStringAppendElements) (Tcl_DString *dsPtr, ...); /* 90 */
     int (*blt_LoadLibrary) (Tcl_Interp *interp, const char *libPath, const char *initProcName, const char *safeProcName); /* 91 */

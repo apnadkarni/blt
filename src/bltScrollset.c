@@ -159,12 +159,12 @@ typedef struct {
     Tk_Anchor anchor;                   /* Anchor type: indicates how the
                                          * slave is positioned if extra space
                                          * is available in the widget */
-    Blt_Pad xPad;                       /* Extra padding placed left and right
+    Blt_Pad padX;                       /* Extra padding placed left and right
                                          * of the slave. */
-    Blt_Pad yPad;                       /* Extra padding placed above and
+    Blt_Pad padY;                       /* Extra padding placed above and
                                          * below the slave */
     Blt_Bg bg;
-    int ixPad, iyPad;                   /* Extra padding added to the interior
+    int iPadX, iPadY;                   /* Extra padding added to the interior
                                          * of the widget (i.e. adds to the
                                          * requested size of the widget) */
     int fill;                           /* Indicates how the widget should
@@ -242,13 +242,13 @@ static Blt_ConfigSpec scrollsetSpecs[] =
     {BLT_CONFIG_PIXELS, "-height", "height", "Height", DEF_HEIGHT, 
         Blt_Offset(Scrollset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-ipadx", "iPadX", "IPadX", DEF_IPADX,
-        Blt_Offset(Scrollset, ixPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Scrollset, iPadX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", "iPadY", "IPadY", DEF_IPADY,
-        Blt_Offset(Scrollset, iyPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Scrollset, iPadY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX", DEF_PADX, 
-        Blt_Offset(Scrollset, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Scrollset, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_PADY, 
-        Blt_Offset(Scrollset, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Scrollset, padY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", "ReqHeight", (char *)NULL, 
         Blt_Offset(Scrollset, reqSlaveHeight), 0, &limitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", "reqSlaveWidth", "ReqWidth", (char *)NULL, 
@@ -674,7 +674,7 @@ GetSlaveReqWidth(Scrollset *setPtr)
 {
     int width;
 
-    width = 2 * setPtr->ixPad;
+    width = 2 * setPtr->iPadX;
     if (setPtr->slave != NULL) {
         width += Tk_ReqWidth(setPtr->slave);
     }
@@ -704,7 +704,7 @@ GetSlaveReqHeight(Scrollset *setPtr)
 {
     int height;
 
-    height = 2 * setPtr->iyPad;
+    height = 2 * setPtr->iPadY;
     if (setPtr->slave != NULL) {
         height += Tk_ReqHeight(setPtr->slave);
     }
@@ -968,8 +968,8 @@ ComputeSlaveGeometry(Scrollset *setPtr)
         setPtr->flags |= DISPLAY_Y;
     }
     dx = dy = 0;
-    if ((cavityWidth - PADDING(setPtr->xPad)) > slaveWidth) {
-        cavityWidth -= PADDING(setPtr->xPad);
+    if ((cavityWidth - PADDING(setPtr->padX)) > slaveWidth) {
+        cavityWidth -= PADDING(setPtr->padX);
         if (setPtr->fill & FILL_X) {
             slaveWidth = cavityWidth;
             if (slaveWidth > setPtr->reqSlaveWidth.max) {
@@ -982,8 +982,8 @@ ComputeSlaveGeometry(Scrollset *setPtr)
     } else if (setPtr->flags & SLAVE_XVIEW) {
         slaveWidth = cavityWidth;
     }
-    if ((cavityHeight - PADDING(setPtr->yPad)) > slaveHeight) {
-        cavityHeight -= PADDING(setPtr->yPad);
+    if ((cavityHeight - PADDING(setPtr->padY)) > slaveHeight) {
+        cavityHeight -= PADDING(setPtr->padY);
         if (setPtr->fill & FILL_Y) {
             slaveHeight = cavityHeight;
             if (slaveHeight > setPtr->reqSlaveHeight.max) {
@@ -1974,9 +1974,9 @@ DisplayScrollset(ClientData clientData)
      * (non-scrolling widgets).
      */
     reqWidth = (setPtr->reqWidth > 0) ? setPtr->reqWidth : 
-        GetSlaveReqWidth(setPtr);
+        GetSlaveReqWidth(setPtr) + setPtr->yScrollbarWidth;
     reqHeight = (setPtr->reqHeight > 0) ? setPtr->reqHeight : 
-        GetSlaveReqHeight(setPtr);
+        GetSlaveReqHeight(setPtr) + setPtr->xScrollbarHeight;
 
     if ((reqWidth != Tk_ReqWidth(setPtr->tkwin)) || 
         (reqHeight != Tk_ReqHeight(setPtr->tkwin))) {

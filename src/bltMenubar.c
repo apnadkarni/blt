@@ -204,7 +204,7 @@ typedef struct  {
     short int inset;
     short int index;
     short int x, y, width, height;
-    Blt_Pad xPad, yPad;
+    Blt_Pad padX, padY;
 } Item;
 
 

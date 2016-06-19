@@ -215,7 +215,7 @@ typedef struct {
     int wrapLength;             /* Line length (in pixels) at which to wrap
                                  * onto next line.  <= 0 means don't wrap
                                  * except at newlines. */
-    int xPad, yPad;             /* Extra space around text or bitmap (pixels
+    int padX, padY;             /* Extra space around text or bitmap (pixels
                                  * on each side). */
     Tk_Anchor anchor;           /* Where text/bitmap should be displayed
                                  * inside window region. */
@@ -323,9 +323,9 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_STRING, "-menu", "menu", "Menu", DEF_MENUBUTTON_MENU, 
         Blt_Offset(MenuButton, menuName), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "Pad", DEF_MENUBUTTON_PADX, 
-        Blt_Offset(MenuButton, xPad), 0},
+        Blt_Offset(MenuButton, padX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "Pad", DEF_MENUBUTTON_PADY, 
-        Blt_Offset(MenuButton, yPad), 0}, 
+        Blt_Offset(MenuButton, padY), 0}, 
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_MENUBUTTON_RELIEF, 
         Blt_Offset(MenuButton, relief), 0},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MENUBUTTON_STATE, 
@@ -686,11 +686,11 @@ ConfigureMenuButton(
     }
     mbPtr->disabledGC = newGC;
 
-    if (mbPtr->xPad < 0) {
-        mbPtr->xPad = 0;
+    if (mbPtr->padX < 0) {
+        mbPtr->padX = 0;
     }
-    if (mbPtr->yPad < 0) {
-        mbPtr->yPad = 0;
+    if (mbPtr->padY < 0) {
+        mbPtr->padY = 0;
     }
     /*
      * Get the image for the widget, if there is one.  Allocate the
@@ -889,7 +889,7 @@ DisplayMenuButton(ClientData clientData) /* Information about widget. */
         case TK_ANCHOR_NW:
         case TK_ANCHOR_W:
         case TK_ANCHOR_SW:
-            x = mbPtr->inset + mbPtr->xPad;
+            x = mbPtr->inset + mbPtr->padX;
             break;
         case TK_ANCHOR_N:
         case TK_ANCHOR_CENTER:
@@ -898,7 +898,7 @@ DisplayMenuButton(ClientData clientData) /* Information about widget. */
                     - mbPtr->indicatorWidth)) / 2;
             break;
         default:
-            x = Tk_Width(tkwin) - width - mbPtr->xPad - mbPtr->inset
+            x = Tk_Width(tkwin) - width - mbPtr->padX - mbPtr->inset
                 - mbPtr->indicatorWidth;
             break;
         }
@@ -906,7 +906,7 @@ DisplayMenuButton(ClientData clientData) /* Information about widget. */
         case TK_ANCHOR_NW:
         case TK_ANCHOR_N:
         case TK_ANCHOR_NE:
-            y = mbPtr->inset + mbPtr->yPad;
+            y = mbPtr->inset + mbPtr->padY;
             break;
         case TK_ANCHOR_W:
         case TK_ANCHOR_CENTER:
@@ -914,7 +914,7 @@ DisplayMenuButton(ClientData clientData) /* Information about widget. */
             y = ((int)(Tk_Height(tkwin) - height)) / 2;
             break;
         default:
-            y = Tk_Height(tkwin) - mbPtr->inset - mbPtr->yPad - height;
+            y = Tk_Height(tkwin) - mbPtr->inset - mbPtr->padY - height;
             break;
         }
         TkDisplayText(mbPtr->display, pixmap, mbPtr->fontPtr,
@@ -1146,8 +1146,8 @@ ComputeMenuButtonGeometry(MenuButton *mbPtr)
             height = mbPtr->height * (mbPtr->fontPtr->ascent
                 + mbPtr->fontPtr->descent);
         }
-        width += 2 * mbPtr->xPad;
-        height += 2 * mbPtr->yPad;
+        width += 2 * mbPtr->padX;
+        height += 2 * mbPtr->padY;
     }
 
     if (mbPtr->indicatorOn) {

@@ -298,7 +298,7 @@ typedef struct {
                                          * to wrap onto next line.  <= 0
                                          * means don't wrap except at
                                          * newlines. */
-    int xPad, yPad;                     /* Extra space around text (pixels
+    int padX, padY;                     /* Extra space around text (pixels
                                          * to leave on each side).  Ignored
                                          * for bitmaps and images. */
     Tk_Anchor anchor;                   /* Where text/bitmap should be
@@ -560,19 +560,19 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_LABCHKRAD_OVER_RELIEF, Blt_Offset(Button, overRelief),
         LABEL_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "Pad",
-        DEF_BUTTON_PADX, Blt_Offset(Button, xPad), BUTTON_MASK},
+        DEF_BUTTON_PADX, Blt_Offset(Button, padX), BUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "Pad",
-        DEF_LABCHKRAD_PADX, Blt_Offset(Button, xPad),
+        DEF_LABCHKRAD_PADX, Blt_Offset(Button, padX),
         LABEL_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "Pad",
-        DEF_PUSHBUTTON_PADX, Blt_Offset(Button, xPad), PUSH_BUTTON_MASK},
+        DEF_PUSHBUTTON_PADX, Blt_Offset(Button, padX), PUSH_BUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "Pad",
-        DEF_BUTTON_PADY, Blt_Offset(Button, yPad), BUTTON_MASK},
+        DEF_BUTTON_PADY, Blt_Offset(Button, padY), BUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "Pad",
-        DEF_LABCHKRAD_PADY, Blt_Offset(Button, yPad),
+        DEF_LABCHKRAD_PADY, Blt_Offset(Button, padY),
         LABEL_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "Pad",
-        DEF_PUSHBUTTON_PADY, Blt_Offset(Button, yPad), PUSH_BUTTON_MASK},
+        DEF_PUSHBUTTON_PADY, Blt_Offset(Button, padY), PUSH_BUTTON_MASK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
         DEF_BUTTON_RELIEF, Blt_Offset(Button, relief), 
         BUTTON_MASK | PUSH_BUTTON_MASK},
@@ -679,7 +679,7 @@ static Tcl_ObjCmdProc ButtonCmd, LabelCmd, CheckbuttonCmd, RadiobuttonCmd;
 BLT_EXTERN int TkCopyAndGlobalEval (Tcl_Interp *interp, char *script);
 
 BLT_EXTERN void TkComputeAnchor (Tk_Anchor anchor, Tk_Window tkwin, 
-        int xPad, int yPad, int innerWidth, int innerHeight, int *xPtr, 
+        int padX, int padY, int innerWidth, int innerHeight, int *xPtr, 
         int *yPtr);
 #endif
 
@@ -1347,11 +1347,11 @@ ConfigureButton(
     if (butPtr->copyGC == None) {
         butPtr->copyGC = Tk_GetGC(butPtr->tkwin, 0, &gcValues);
     }
-    if (butPtr->xPad < 0) {
-        butPtr->xPad = 0;
+    if (butPtr->padX < 0) {
+        butPtr->padX = 0;
     }
-    if (butPtr->yPad < 0) {
-        butPtr->yPad = 0;
+    if (butPtr->padY < 0) {
+        butPtr->padY = 0;
     }
     if (butPtr->type >= TYPE_PUSH_BUTTON) {
         const char *value;
@@ -1662,7 +1662,7 @@ DisplayButton(ClientData clientData)
 
         Tk_SizeOfImage(butPtr->image, &iw, &ih);
       imageOrBitmap:
-        TkComputeAnchor(butPtr->anchor, tkwin, butPtr->xPad, butPtr->yPad,
+        TkComputeAnchor(butPtr->anchor, tkwin, butPtr->padX, butPtr->padY,
             butPtr->indicatorSpace + iw, ih, &x, &y);
         x += butPtr->indicatorSpace;
         x += offset;
@@ -1709,7 +1709,7 @@ DisplayButton(ClientData clientData)
         Tk_SizeOfBitmap(butPtr->display, butPtr->bitmap, &width, &height);
         goto imageOrBitmap;
     } else {
-        TkComputeAnchor(butPtr->anchor, tkwin, butPtr->xPad, butPtr->yPad,
+        TkComputeAnchor(butPtr->anchor, tkwin, butPtr->padX, butPtr->padY,
             butPtr->indicatorSpace + butPtr->textWidth,
             butPtr->textHeight, &x, &y);
 
@@ -1906,12 +1906,12 @@ ComputeButtonGeometry(Button *butPtr)
 
 #ifdef notdef
     if ((butPtr->image == NULL) && (butPtr->bitmap == None)) {
-        width += 2 * butPtr->xPad;
-        height += 2 * butPtr->yPad;
+        width += 2 * butPtr->padX;
+        height += 2 * butPtr->padY;
     }
 #else 
-    width += 2 * butPtr->xPad;
-    height += 2 * butPtr->yPad;
+    width += 2 * butPtr->padX;
+    height += 2 * butPtr->padY;
 #endif
     if ((butPtr->type == TYPE_BUTTON) && !Tk_StrictMotif(butPtr->tkwin)) {
         width += 2;
@@ -2143,13 +2143,13 @@ ButtonVarProc(
     }
     if (strcmp(value, string) == 0) {
         if (butPtr->flags & SELECTED) {
-            return NULL;
+            return NULL;                /* Already selected. */
         }
         butPtr->flags |= SELECTED;
     } else if (butPtr->flags & SELECTED) {
         butPtr->flags &= ~SELECTED;
     } else {
-        return NULL;
+        return NULL;                    /* Already deselected. */
     }
   redisplay:
     if ((butPtr->tkwin != NULL) && Tk_IsMapped(butPtr->tkwin) && 

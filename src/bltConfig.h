@@ -224,10 +224,10 @@ typedef struct {
     unsigned short int side1, side2;
 } Blt_Pad;
 
-#define padLeft         xPad.side1
-#define padRight        xPad.side2
-#define padTop          yPad.side1
-#define padBottom       yPad.side2
+#define padLeft         padX.side1
+#define padRight        padX.side2
+#define padTop          padY.side1
+#define padBottom       padY.side2
 #define PADDING(x)      ((x).side1 + (x).side2)
 
 /*

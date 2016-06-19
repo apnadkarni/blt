@@ -191,9 +191,9 @@ static Blt_SwitchSpec exportSwitches[] =
     {BLT_SWITCH_BITMASK, "-maxpect",    "", (char *)NULL,
         Blt_Offset(PsExportSwitches, setup.flags), 0, PS_MAXPECT},
     {BLT_SWITCH_CUSTOM,  "-padx",       "pad", (char *)NULL,
-        Blt_Offset(PsExportSwitches, setup.xPad),  0, 0, &padSwitch},
+        Blt_Offset(PsExportSwitches, setup.padX),  0, 0, &padSwitch},
     {BLT_SWITCH_CUSTOM,  "-pady",       "pad", (char *)NULL,
-        Blt_Offset(PsExportSwitches, setup.yPad),  0, 0, &padSwitch},
+        Blt_Offset(PsExportSwitches, setup.padY),  0, 0, &padSwitch},
     {BLT_SWITCH_CUSTOM,  "-paperheight","pica", (char *)NULL,
         Blt_Offset(PsExportSwitches, setup.reqPaperHeight), 0, 0, &picaSwitch},
     {BLT_SWITCH_CUSTOM,  "-paperwidth", "pica", (char *)NULL,
@@ -1142,10 +1142,10 @@ WritePs(Tcl_Interp *interp, Blt_Picture picture)
     switches.setup.reqPaperHeight = 792; /* 11 inches */
     switches.setup.reqPaperWidth = 612; /* 8.5 inches */
     switches.setup.level = 1;
-    switches.setup.xPad.side1 = 72;
-    switches.setup.xPad.side2 = 72;
-    switches.setup.yPad.side1 = 72;
-    switches.setup.yPad.side2 = 72;
+    switches.setup.padX.side1 = 72;
+    switches.setup.padX.side2 = 72;
+    switches.setup.padY.side1 = 72;
+    switches.setup.padY.side2 = 72;
     switches.setup.flags = 0;
     ps = Blt_Ps_Create(interp, &switches.setup);
     result = PictureToPs(interp, picture, ps, &switches);
@@ -1219,10 +1219,10 @@ ExportPs(Tcl_Interp *interp, int index, Blt_Chain chain, int objc,
     switches.setup.reqPaperHeight = 792; /* 11 inches */
     switches.setup.reqPaperWidth = 612; /* 8.5 inches */
     switches.setup.level = 1;
-    switches.setup.xPad.side1 = 72;
-    switches.setup.xPad.side2 = 72;
-    switches.setup.yPad.side1 = 72;
-    switches.setup.yPad.side2 = 72;
+    switches.setup.padX.side1 = 72;
+    switches.setup.padX.side2 = 72;
+    switches.setup.padY.side1 = 72;
+    switches.setup.padY.side2 = 72;
     switches.setup.flags = 0;
     switches.index = index;
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 

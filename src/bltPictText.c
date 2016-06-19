@@ -491,7 +491,7 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
         numFrags++;
     }
     maxHeight += tsPtr->padBottom;
-    maxWidth += PADDING(tsPtr->xPad);
+    maxWidth += PADDING(tsPtr->padX);
     fp = layoutPtr->fragments;
     for (i = 0; i < numFrags; i++, fp++) {
         switch (tsPtr->justify) {

@@ -238,9 +238,9 @@ static Blt_ConfigSpec configSpecs[] =
         "PlotBorderWidth", DEF_PLOT_BORDERWIDTH, 
         Blt_Offset(Graph, plotBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-plotpadx", "plotPadX", "PlotPad", DEF_PLOT_PADX, 
-        Blt_Offset(Graph, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Graph, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-plotpady", "plotPadY", "PlotPad", DEF_PLOT_PADY, 
-        Blt_Offset(Graph, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Graph, padY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-plotrelief", "plotRelief", "Relief", DEF_PLOT_RELIEF,
         Blt_Offset(Graph, plotRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
@@ -741,12 +741,12 @@ Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
 static void
 GraphExtents(Graph *graphPtr, Region2d *regionPtr)
 {
-    regionPtr->left = (double)(graphPtr->hOffset - graphPtr->xPad.side1);
-    regionPtr->top = (double)(graphPtr->vOffset - graphPtr->yPad.side1);
+    regionPtr->left = (double)(graphPtr->hOffset - graphPtr->padX.side1);
+    regionPtr->top = (double)(graphPtr->vOffset - graphPtr->padY.side1);
     regionPtr->right = (double)(graphPtr->hOffset + graphPtr->hRange + 
-        graphPtr->xPad.side2);
+        graphPtr->padX.side2);
     regionPtr->bottom = (double)(graphPtr->vOffset + graphPtr->vRange + 
-        graphPtr->yPad.side2);
+        graphPtr->padY.side2);
 }
 
 /*

@@ -764,7 +764,7 @@ typedef struct {
                                          * row index. */
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN col;
-    int xPad, yPad;
+    int padX, padY;
 } PushButtonStyle;
 
 static Blt_ConfigSpec textBoxStyleSpecs[] =
@@ -1227,9 +1227,9 @@ static Blt_ConfigSpec pushButtonStyleSpecs[] =
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
         Blt_Offset(PushButtonStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "PadX", DEF_PUSHBUTTON_PADX,
-        Blt_Offset(PushButtonStyle, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(PushButtonStyle, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "PadY", DEF_PUSHBUTTON_PADY,
-        Blt_Offset(PushButtonStyle, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(PushButtonStyle, padY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-rowrulecolor", "rowRuleColor", "RowRuleColor", 
         DEF_RULE_COLOR, Blt_Offset(PushButtonStyle, rowRuleColor), 0},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
@@ -4493,7 +4493,7 @@ NewPushButtonStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_RAISED;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
-    stylePtr->xPad = stylePtr->yPad = 2;
+    stylePtr->padX = stylePtr->padY = 2;
     stylePtr->flags = SHOW_TEXT | UNDERLINE_ACTIVE | ACTIVE_COLORS;
     stylePtr->refCount = 1;
     Blt_SetHashValue(hPtr, stylePtr);
@@ -4639,8 +4639,8 @@ PushButtonStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
                                          * cell. */
     w = h = 0;
     cellPtr->width = cellPtr->height = 2 * (stylePtr->borderWidth + FOCUS_PAD);
-    cellPtr->width  += 2 * (CELL_PADX + stylePtr->xPad);
-    cellPtr->height += 2 * (CELL_PADY + stylePtr->yPad);
+    cellPtr->width  += 2 * (CELL_PADX + stylePtr->padX);
+    cellPtr->height += 2 * (CELL_PADY + stylePtr->padY);
     cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
 
@@ -4767,12 +4767,12 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
         XFillRectangle(viewPtr->display, drawable, stylePtr->colRuleGC, 
                 x + colWidth, y, colPtr->ruleWidth, rowHeight);
     }
-    rowHeight -= 2 * (stylePtr->borderWidth + stylePtr->yPad);
-    colWidth  -= 2 * (stylePtr->borderWidth + stylePtr->yPad) -
+    rowHeight -= 2 * (stylePtr->borderWidth + stylePtr->padY);
+    colWidth  -= 2 * (stylePtr->borderWidth + stylePtr->padY) -
         PADDING(colPtr->pad);
 
-    x += stylePtr->xPad;
-    y += stylePtr->yPad;
+    x += stylePtr->padX;
+    y += stylePtr->padY;
     
     /* Draw button. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
@@ -4793,9 +4793,9 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
     colWidth  -= 2 * (FOCUS_PAD + CELL_PADX);
 
     cellHeight = cellPtr->height - 
-        2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD + stylePtr->yPad);
+        2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD + stylePtr->padY);
     cellWidth  = cellPtr->width  - PADDING(colPtr->pad) - 
-        2 * (stylePtr->borderWidth + CELL_PADX + FOCUS_PAD + stylePtr->xPad);
+        2 * (stylePtr->borderWidth + CELL_PADX + FOCUS_PAD + stylePtr->padX);
 
     /* Justify (x) and center (y) the contents of the cell. */
     if (rowHeight > cellHeight) {

@@ -202,8 +202,8 @@ Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text, unsigned int *widthPtr,
         unsigned int w, h;
 
         Blt_GetTextExtents(tsPtr->font, tsPtr->leader, text, -1, &w, &h);
-        *widthPtr = w + PADDING(tsPtr->xPad);
-        *heightPtr = h + PADDING(tsPtr->yPad);
+        *widthPtr = w + PADDING(tsPtr->padX);
+        *heightPtr = h + PADDING(tsPtr->padY);
     } 
 }
 
@@ -657,7 +657,7 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
         numFrags++;
     }
     maxHeight += tsPtr->padBottom;
-    maxWidth += PADDING(tsPtr->xPad);
+    maxWidth += PADDING(tsPtr->padX);
     fp = layoutPtr->fragments;
     for (i = 0; i < numFrags; i++, fp++) {
         switch (tsPtr->justify) {
@@ -942,8 +942,8 @@ Blt_Ts_SetDrawStyle(
     Tk_Justify justify,
     int leader)
 {
-    stylePtr->xPad.side1 = stylePtr->xPad.side2 = 0;
-    stylePtr->yPad.side1 = stylePtr->yPad.side2 = 0;
+    stylePtr->padX.side1 = stylePtr->padX.side2 = 0;
+    stylePtr->padY.side1 = stylePtr->padY.side2 = 0;
     stylePtr->state = 0;
     stylePtr->anchor = anchor;
     stylePtr->color = normalColor;

@@ -664,9 +664,9 @@ DisplayEntry(ClientData clientData)
      */
     x = Tk_X(tePtr->tkwin) - (tePtr->padLeft + tedPtr->cavityPad);
     y = Tk_Y(tePtr->tkwin) - (tePtr->padTop + tedPtr->cavityPad);
-    width = Tk_Width(tePtr->tkwin) + PADDING(tePtr->xPad) +
+    width = Tk_Width(tePtr->tkwin) + PADDING(tePtr->padX) +
         (2 * tedPtr->cavityPad);
-    height = Tk_Height(tePtr->tkwin) + PADDING(tePtr->yPad) +
+    height = Tk_Height(tePtr->tkwin) + PADDING(tePtr->padY) +
         (2 * tedPtr->cavityPad);
 
 
@@ -1158,15 +1158,15 @@ LayoutEntries(TableEditor *tedPtr)
     for (link = Blt_Chain_FirstLink(tedPtr->tablePtr->chain);
         link != NULL; link = Blt_Chain_NextLink(link)) {
         tePtr = Blt_Chain_GetValue(link);
-        if ((PADDING(tePtr->xPad) + PADDING(tePtr->yPad)) == 0) {
+        if ((PADDING(tePtr->padX) + PADDING(tePtr->padY)) == 0) {
             continue;
         }
         rects[count].x = Tk_X(tePtr->tkwin) - tePtr->padLeft;
         rects[count].y = Tk_Y(tePtr->tkwin) - tePtr->padTop;
         rects[count].width = Tk_Width(tePtr->tkwin) +
-            PADDING(tePtr->xPad);
+            PADDING(tePtr->padX);
         rects[count].height = Tk_Height(tePtr->tkwin) +
-            PADDING(tePtr->yPad);
+            PADDING(tePtr->padY);
         count++;
     }
     if (count == 0) {
@@ -1209,9 +1209,9 @@ LayoutControlEntries(TableEditor *tedPtr)
             rects[count].x = Tk_X(tePtr->tkwin) - tePtr->padLeft;
             rects[count].y = Tk_Y(tePtr->tkwin) - tePtr->padTop;
             rects[count].width = Tk_Width(tePtr->tkwin) +
-                PADDING(tePtr->xPad);
+                PADDING(tePtr->padX);
             rects[count].height = Tk_Height(tePtr->tkwin) +
-                PADDING(tePtr->yPad);
+                PADDING(tePtr->padY);
             count++;
         }
     }
@@ -1223,9 +1223,9 @@ LayoutControlEntries(TableEditor *tedPtr)
             rects[count].x = Tk_X(tePtr->tkwin) - tePtr->padLeft;
             rects[count].y = Tk_Y(tePtr->tkwin) - tePtr->padTop;
             rects[count].width = Tk_Width(tePtr->tkwin) +
-                PADDING(tePtr->xPad);
+                PADDING(tePtr->padX);
             rects[count].height = Tk_Height(tePtr->tkwin) +
-                PADDING(tePtr->yPad);
+                PADDING(tePtr->padY);
             count++;
         }
     }
@@ -1621,10 +1621,10 @@ SelectOp(
     for (link = Blt_Chain_FirstLink(tablePtr->chain);
         link != NULL; link = Blt_Chain_NextLink(link)) {
         tePtr = Blt_Chain_GetValue(link);
-        x = tePtr->x - tePtr->xPad.side1;
-        y = tePtr->y - tePtr->yPad.side1;
-        width = Tk_Width(tePtr->tkwin) + PADDING(tePtr->xPad);
-        height = Tk_Height(tePtr->tkwin) + PADDING(tePtr->yPad);
+        x = tePtr->x - tePtr->padX.side1;
+        y = tePtr->y - tePtr->padY.side1;
+        width = Tk_Width(tePtr->tkwin) + PADDING(tePtr->padX);
+        height = Tk_Height(tePtr->tkwin) + PADDING(tePtr->padY);
         if ((ix >= x) && (ix <= (x + width)) &&
             (iy >= y) && (iy <= (y + height))) {
             int left, right, top, bottom;

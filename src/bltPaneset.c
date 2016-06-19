@@ -115,6 +115,7 @@ typedef int (SizeProc)(Pane *panePtr);
 #define DEF_PANE_ANCHOR         "nw"
 #define DEF_PANE_ANCHOR         "nw"
 #define DEF_PANE_BORDERWIDTH    "0"
+#define DEF_PANE_DELETE_COMMAND (char *)NULL
 #define DEF_PANE_FILL           "none"
 #define DEF_PANE_HIDE           "0"
 #define DEF_PANE_HIGHLIGHT_BACKGROUND   STD_NORMAL_BACKGROUND
@@ -319,7 +320,7 @@ struct _Pane  {
     Tk_Window tkwin;                    /* Child widget of paneset to be
                                          * managed. */
     Tk_Window sash;                     /* Sash subwindow. */
-    int borderWidth;                    /* The external border width of the
+    int extBorderWidth;                 /* The external border width of the
                                          * widget. This is needed to check
                                          * if
                                          * Tk_Changes(tkwin)->border_width
@@ -335,9 +336,9 @@ struct _Pane  {
                                          * widget is positioned if extra
                                          * space is available in the
                                          * pane. */
-    Blt_Pad xPad;                       /* Extra padding placed left and
+    Blt_Pad padX;                       /* Extra padding placed left and
                                          * right of the widget. */
-    Blt_Pad yPad;                       /* Extra padding placed above and
+    Blt_Pad padY;                       /* Extra padding placed above and
                                          * below the widget */
     int iPadX, iPadY;                   /* Extra padding added to the
                                          * interior of the widget
@@ -393,6 +394,8 @@ struct _Pane  {
                                          * non-NULL, this variable will be
                                          * set to the value string of the
                                          * selected item. */
+    Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
+                                         * when pane is deleted. */
 };
 
 /* Pane/sash flags.  */
@@ -470,6 +473,9 @@ static Blt_ConfigSpec paneSetSpecs[] =
         DEF_BACKGROUND, Blt_Offset(Paneset, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
         0, 0},
+    {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
+        DEF_PANE_DELETE_COMMAND, Blt_Offset(Pane, deleteCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
         Blt_Offset(Paneset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_CUSTOM, "-mode", "mode", "Mode", DEF_MODE,
@@ -824,35 +830,23 @@ DestroyPane(Pane *panePtr)
     Paneset *setPtr;
 
     setPtr = panePtr->setPtr;
-    Blt_Tags_ClearTagsFromItem(&setPtr->tags, panePtr);
-    Blt_FreeOptions(paneSpecs, (char *)panePtr, setPtr->display, 0);
     if (panePtr->timerToken != (Tcl_TimerToken)0) {
         Tcl_DeleteTimerHandler(panePtr->timerToken);
         panePtr->timerToken = 0;
     }
-    if (setPtr->anchorPtr == panePtr) {
-        setPtr->anchorPtr = NULL;
-    }
-    if (panePtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&setPtr->paneTable, panePtr->hashPtr);
-        panePtr->hashPtr = NULL;
-    }
-    if (panePtr->link != NULL) {
-        Blt_Chain_DeleteLink(setPtr->panes, panePtr->link);
-        panePtr->link = NULL;
-    }
     if (panePtr->tkwin != NULL) {
-        Tk_Window tkwin;
-
-        tkwin = panePtr->tkwin;
-        Tk_DeleteEventHandler(tkwin, StructureNotifyMask, PaneEventProc, 
-                panePtr);
-        Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, panePtr);
-        Tk_DestroyWindow(tkwin);
+        Tk_DeleteEventHandler(panePtr->tkwin, StructureNotifyMask,
+                PaneEventProc, panePtr);
+        Tk_ManageGeometry(panePtr->tkwin, (Tk_GeomMgr *)NULL, panePtr);
+        if (Tk_IsMapped(panePtr->tkwin)) {
+            Tk_UnmapWindow(panePtr->tkwin);
+        }
     }
-    if (panePtr->sashHashPtr != NULL) {
-        Blt_DeleteHashEntry(&setPtr->sashTable, panePtr->sashHashPtr);
-        panePtr->sashHashPtr = NULL;
+    if (panePtr->deleteCmdObjPtr != NULL) {
+        if (Tcl_EvalObjEx(setPtr->interp, panePtr->deleteCmdObjPtr,
+                TCL_EVAL_GLOBAL) != TCL_OK) {
+            Tcl_BackgroundError(setPtr->interp);
+        }
     }
     if (panePtr->sash != NULL) {
         Tk_Window tkwin;
@@ -864,6 +858,23 @@ DestroyPane(Pane *panePtr)
         Tk_ManageGeometry(tkwin, (Tk_GeomMgr *)NULL, panePtr);
         panePtr->sash = NULL;
         Tk_DestroyWindow(tkwin);
+    }
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, panePtr);
+    Blt_FreeOptions(paneSpecs, (char *)panePtr, setPtr->display, 0);
+    if (setPtr->anchorPtr == panePtr) {
+        setPtr->anchorPtr = NULL;
+    }
+    if (panePtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&setPtr->paneTable, panePtr->hashPtr);
+        panePtr->hashPtr = NULL;
+    }
+    if (panePtr->link != NULL) {
+        Blt_Chain_DeleteLink(setPtr->panes, panePtr->link);
+        panePtr->link = NULL;
+    }
+    if (panePtr->sashHashPtr != NULL) {
+        Blt_DeleteHashEntry(&setPtr->sashTable, panePtr->sashHashPtr);
+        panePtr->sashHashPtr = NULL;
     }
     Blt_Free(panePtr);
 }
@@ -1344,14 +1355,14 @@ PaneEventProc(
     Paneset *setPtr = panePtr->setPtr;
 
     if (eventPtr->type == ConfigureNotify) {
-        int borderWidth;
+        int extBorderWidth;
 
         if (panePtr->tkwin == NULL) {
             return;
         }
-        borderWidth = Tk_Changes(panePtr->tkwin)->border_width;
-        if (panePtr->borderWidth != borderWidth) {
-            panePtr->borderWidth = borderWidth;
+        extBorderWidth = Tk_Changes(panePtr->tkwin)->border_width;
+        if (panePtr->extBorderWidth != extBorderWidth) {
+            panePtr->extBorderWidth = extBorderWidth;
             EventuallyRedraw(setPtr);
         }
     } else if (eventPtr->type == DestroyNotify) {
@@ -1918,8 +1929,11 @@ static void
 PaneFreeProc(DestroyData dataPtr)
 {
     Pane *panePtr = (Pane *)dataPtr;
+    Paneset *setPtr = panePtr->setPtr;
 
     DestroyPane(panePtr);
+    setPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(setPtr);
 }
 
 static int
@@ -2277,7 +2291,7 @@ GetReqPaneWidth(Pane *panePtr)
 {
     int w;
 
-    w = GetReqWidth(panePtr) + PADDING(panePtr->xPad); 
+    w = GetReqWidth(panePtr) + PADDING(panePtr->padX); 
     if ((ISHORIZ(panePtr->setPtr)) && (panePtr->flags & SASH)) {
         w += panePtr->setPtr->sashSize;
     }
@@ -2289,7 +2303,7 @@ GetReqPaneHeight(Pane *panePtr)
 {
     int h;
 
-    h = GetReqHeight(panePtr) + PADDING(panePtr->yPad);
+    h = GetReqHeight(panePtr) + PADDING(panePtr->padY);
     if ((ISVERT(panePtr->setPtr)) && (panePtr->flags & SASH)) {
         h += panePtr->setPtr->sashSize;
     }
@@ -2905,10 +2919,10 @@ ResetPanes(Paneset *setPtr)
          */
         if (ISVERT(setPtr)) {
             size = BoundHeight(0, &panePtr->reqSize);
-            extra = PADDING(panePtr->yPad);
+            extra = PADDING(panePtr->padY);
         } else {
             size = BoundWidth(0, &panePtr->reqSize);
-            extra = PADDING(panePtr->xPad);
+            extra = PADDING(panePtr->padX);
         }
         if (panePtr->flags & SASH) {
             extra += setPtr->sashSize;
@@ -2968,9 +2982,9 @@ SetNominalSizes(Paneset *setPtr)
 
         panePtr = Blt_Chain_GetValue(link);
         if (ISVERT(setPtr)) {
-            extra = PADDING(panePtr->yPad);
+            extra = PADDING(panePtr->padY);
         } else {
-            extra = PADDING(panePtr->xPad);
+            extra = PADDING(panePtr->padX);
         }
         if (panePtr->flags & SASH) {
             extra += setPtr->sashSize;
@@ -3409,7 +3423,7 @@ VerticalPanes(Paneset *setPtr)
     int height;
     int top, bottom;
     int y;
-    int yPad;
+    int padY;
     Pane *panePtr;
 
     /*
@@ -3444,7 +3458,7 @@ VerticalPanes(Paneset *setPtr)
     bottom = RightSpan(setPtr);
     setPtr->worldWidth = height = top + bottom;
 
-    yPad = 2 * Tk_InternalBorderWidth(setPtr->tkwin);
+    padY = 2 * Tk_InternalBorderWidth(setPtr->tkwin);
     /*
      * If the previous geometry request was not fulfilled (i.e. the size of
      * the container is different from paneset space requirements), try to
@@ -3465,7 +3479,7 @@ VerticalPanes(Paneset *setPtr)
             } else if (dy < 0) {
                 ShrinkSpan(span, dy);
             }
-            top = LeftSpan(setPtr) + yPad;
+            top = LeftSpan(setPtr) + padY;
             Blt_Chain_Destroy(span);
         }
         dy = (Tk_Height(setPtr->tkwin) - setPtr->bearing) - bottom;
@@ -3476,7 +3490,7 @@ VerticalPanes(Paneset *setPtr)
             ShrinkSpan(span, dy);
         }
         Blt_Chain_Destroy(span);
-        bottom = RightSpan(setPtr) + yPad;
+        bottom = RightSpan(setPtr) + padY;
         setPtr->worldWidth = height = top + bottom;
     }
 
@@ -3526,7 +3540,7 @@ HorizontalPanes(Paneset *setPtr)
     int width;
     int left, right;
     int x;
-    int xPad, yPad;
+    int padX, padY;
     Pane *panePtr;
 
     /*
@@ -3553,7 +3567,7 @@ HorizontalPanes(Paneset *setPtr)
      * Save the width and height of the container so we know when its size
      * has changed during ConfigureNotify events.
      */
-    xPad = yPad = 2 * Tk_InternalBorderWidth(setPtr->tkwin);
+    padX = padY = 2 * Tk_InternalBorderWidth(setPtr->tkwin);
 
     left = LeftSpan(setPtr);
     right = RightSpan(setPtr);
@@ -3579,7 +3593,7 @@ HorizontalPanes(Paneset *setPtr)
             } else if (dx < 0) {
                 ShrinkSpan(span, dx);
             }
-            left = LeftSpan(setPtr) + xPad;
+            left = LeftSpan(setPtr) + padX;
             Blt_Chain_Destroy(span);
         }
         dx = (Tk_Width(setPtr->tkwin) - setPtr->bearing) - right;
@@ -3590,7 +3604,7 @@ HorizontalPanes(Paneset *setPtr)
             ShrinkSpan(span, dx);
         }
         Blt_Chain_Destroy(span);
-        right = RightSpan(setPtr) + xPad;
+        right = RightSpan(setPtr) + padX;
         setPtr->worldWidth = width = left + right;
     }
 
@@ -3787,6 +3801,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         return TCL_ERROR;
     }
     EventuallyRedraw(setPtr);
+    setPtr->flags |= LAYOUT_PENDING;
     Tcl_SetStringObj(Tcl_GetObjResult(interp), panePtr->name, -1);
     return TCL_OK;
 }

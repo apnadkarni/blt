@@ -196,8 +196,8 @@
 #define DEF_SCROLLTABS                  "0"
 #define DEF_SELECTBACKGROUND            STD_NORMAL_BACKGROUND
 #define DEF_SELECTBORDERWIDTH           "1"
-#define DEF_SELECTCOMMAND               (char *)NULL
-#define DEF_CLOSECOMMAND                (char *)NULL
+#define DEF_SELECT_COMMAND               (char *)NULL
+#define DEF_CLOSE_COMMAND                (char *)NULL
 #define DEF_SELECTFOREGROUND            RGB_BLACK
 #define DEF_SELECTMODE                  "multiple"
 #define DEF_SELECTPADX                  "4"
@@ -235,6 +235,7 @@
 #define DEF_TAB_CLOSEBUTTON             "1"
 #define DEF_TAB_COMMAND                 (char *)NULL
 #define DEF_TAB_DATA                    (char *)NULL
+#define DEF_TAB_DELETE_COMMAND          (char *)NULL
 #define DEF_TAB_FILL                    "none"
 #define DEF_TAB_FONT                    (char *)NULL
 #define DEF_TAB_FOREGROUND              (char *)NULL
@@ -243,10 +244,10 @@
 #define DEF_TAB_IMAGE                   (char *)NULL
 #define DEF_TAB_IPAD                    "0"
 #define DEF_TAB_PAD                     "3"
-#define DEF_TAB_PERFORATIONCOMMAND      (char *)NULL
+#define DEF_TAB_PERFORATION_COMMAND      (char *)NULL
 #define DEF_TAB_SELECTBACKGROUND        (char *)NULL
 #define DEF_TAB_SELECTBORDERWIDTH       "1"
-#define DEF_TAB_SELECTCOMMAND           (char *)NULL
+#define DEF_TAB_SELECT_COMMAND           (char *)NULL
 #define DEF_TAB_SELECTFOREGROUND        (char *)NULL
 #define DEF_TAB_STATE                   "normal"
 #define DEF_TAB_STIPPLE                 "BLT"
@@ -478,7 +479,7 @@ typedef struct {
     Tk_Anchor anchor;                   /* Anchor: indicates how the embedded
                                          * widget is positioned within the
                                          * extra space on the page. */
-    Blt_Pad xPad, yPad;                 /* Padding around embedded widget. */
+    Blt_Pad padX, padY;                 /* Padding around embedded widget. */
     int fill;                           /* Indicates how the window should
                                          * fill the page. */
 
@@ -499,6 +500,8 @@ typedef struct {
                                          * the list of tabs. */
     Tcl_Obj *perfCmdObjPtr;             /* Command invoked when the tab is
                                          * selected */
+    Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
+                                         * when tab is deleted. */
     GC textGC;
     GC backGC;
 
@@ -526,11 +529,14 @@ static Blt_ConfigSpec tabSpecs[] =
         DEF_TAB_CLOSEBUTTON, Blt_Offset(Tab, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)CLOSE_NEEDED},
     {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
-        DEF_CLOSECOMMAND, Blt_Offset(Tab, closeObjPtr), BLT_CONFIG_NULL_OK},
+        DEF_CLOSE_COMMAND, Blt_Offset(Tab, closeObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
         Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "data", DEF_TAB_DATA, 
         Blt_Offset(Tab, data), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
+        DEF_TAB_DELETE_COMMAND, Blt_Offset(Tab, deleteCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_TAB_FILL, 
         Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
@@ -545,11 +551,11 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_PAD, "-ipady", "iPadY", "PadY", DEF_TAB_IPAD, 
         Blt_Offset(Tab, iPadY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX",   DEF_TAB_PAD, 
-        Blt_Offset(Tab, xPad), 0},
+        Blt_Offset(Tab, padX), 0},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_TAB_PAD, 
-        Blt_Offset(Tab, yPad), 0},
+        Blt_Offset(Tab, padY), 0},
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
-        "PerforationCommand", DEF_TAB_PERFORATIONCOMMAND, 
+        "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
         Blt_Offset(Tab, perfCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
         "Background", DEF_TAB_SELECTBACKGROUND, Blt_Offset(Tab, selBg), 
@@ -786,7 +792,7 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_CLOSEBUTTON, Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)CLOSE_NEEDED},
     {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
-        DEF_CLOSECOMMAND, Blt_Offset(Tabset, closeObjPtr),
+        DEF_CLOSE_COMMAND, Blt_Offset(Tabset, closeObjPtr),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         DEF_CURSOR, Blt_Offset(Tabset, cursor), BLT_CONFIG_NULL_OK},
@@ -829,7 +835,7 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_PAGEWIDTH, Blt_Offset(Tabset, reqPageWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
-        "PerforationCommand", DEF_TAB_PERFORATIONCOMMAND, 
+        "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
         Blt_Offset(Tabset, defStyle.perfCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
         DEF_TABRELIEF, Blt_Offset(Tabset, defStyle.relief), 0},
@@ -850,7 +856,7 @@ static Blt_ConfigSpec configSpecs[] =
         "Foreground", DEF_SELECTBACKGROUND, Blt_Offset(Tabset, defStyle.selBg),
         0},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
-        DEF_SELECTCOMMAND, Blt_Offset(Tabset, defStyle.cmdObjPtr),
+        DEF_SELECT_COMMAND, Blt_Offset(Tabset, defStyle.cmdObjPtr),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
         DEF_SELECTFOREGROUND, Blt_Offset(Tabset, defStyle.selColor), 0},
@@ -2692,14 +2698,6 @@ DestroyTab(Tab *tabPtr)
 
     setPtr = tabPtr->setPtr;
     iconOption.clientData = setPtr;
-    Blt_FreeOptions(tabSpecs, (char *)tabPtr, setPtr->display, 0);
-    Blt_Tags_ClearTagsFromItem(&setPtr->tags, tabPtr);
-    if (tabPtr->flags & TEAROFF_REDRAW) {
-        Tcl_CancelIdleCall(DisplayTearoff, tabPtr);
-    }
-    if (tabPtr->container != NULL) {
-        Tk_DestroyWindow(tabPtr->container);
-    }
     if (tabPtr->tkwin != NULL) {
         Tk_ManageGeometry(tabPtr->tkwin, (Tk_GeomMgr *)NULL, tabPtr);
         Tk_DeleteEventHandler(tabPtr->tkwin, StructureNotifyMask, 
@@ -2707,6 +2705,20 @@ DestroyTab(Tab *tabPtr)
         if (Tk_IsMapped(tabPtr->tkwin)) {
             Tk_UnmapWindow(tabPtr->tkwin);
         }
+    }
+    if (tabPtr->deleteCmdObjPtr != NULL) {
+        if (Tcl_EvalObjEx(setPtr->interp, tabPtr->deleteCmdObjPtr,
+                TCL_EVAL_GLOBAL) != TCL_OK) {
+            Tcl_BackgroundError(setPtr->interp);
+        }
+    }
+    Blt_FreeOptions(tabSpecs, (char *)tabPtr, setPtr->display, 0);
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, tabPtr);
+    if (tabPtr->flags & TEAROFF_REDRAW) {
+        Tcl_CancelIdleCall(DisplayTearoff, tabPtr);
+    }
+    if (tabPtr->container != NULL) {
+        Tk_DestroyWindow(tabPtr->container);
     }
     if (tabPtr == setPtr->plusPtr) {
         setPtr->plusPtr = NULL;         
@@ -3187,7 +3199,7 @@ GetReqWidth(Tab *tabPtr)
     } else {
         width = Tk_ReqWidth(tabPtr->tkwin);
     }
-    width += PADDING(tabPtr->xPad) + 
+    width += PADDING(tabPtr->padX) + 
         2 * Tk_Changes(tabPtr->tkwin)->border_width;
     if (width < 1) {
         width = 1;
@@ -3218,7 +3230,7 @@ GetReqHeight(Tab *tabPtr)
     } else {
         height = Tk_ReqHeight(tabPtr->tkwin);
     }
-    height += PADDING(tabPtr->yPad) +
+    height += PADDING(tabPtr->padY) +
         2 * Tk_Changes(tabPtr->tkwin)->border_width;
     if (height < 1) {
         height = 1;
@@ -3341,8 +3353,8 @@ GetWindowRectangle(Tab *tabPtr, Tk_Window parent, int hasTearOff,
         cavityWidth = Tk_Width(parent) - (2 * pad);
         cavityHeight = Tk_Height(parent) - (y + pad);
     }
-    cavityWidth -= PADDING(tabPtr->xPad);
-    cavityHeight -= PADDING(tabPtr->yPad);
+    cavityWidth -= PADDING(tabPtr->padX);
+    cavityHeight -= PADDING(tabPtr->padY);
     if (cavityWidth < 1) {
         cavityWidth = 1;
     }
@@ -4751,7 +4763,7 @@ NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
         w = (tabPtr->reqSlaveWidth > 0) 
             ? tabPtr->reqSlaveWidth : Tk_ReqWidth(tabPtr->tkwin);
     }
-    w += PADDING(tabPtr->xPad) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
+    w += PADDING(tabPtr->padX) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
     w += 2 * (setPtr->inset2 + setPtr->inset);
 #define TEAR_OFF_TAB_SIZE       5
     h = Tk_Height(tabPtr->tkwin);
@@ -4759,7 +4771,7 @@ NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
         h = (tabPtr->reqSlaveHeight > 0)
             ? tabPtr->reqSlaveHeight : Tk_ReqHeight(tabPtr->tkwin);
     }
-    h += PADDING(tabPtr->yPad) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
+    h += PADDING(tabPtr->padY) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
     h += setPtr->inset + setPtr->inset2 + TEAR_OFF_TAB_SIZE + setPtr->outerPad;
     if (setPtr->numTiers == 1) {
         h += setPtr->ySelectPad;

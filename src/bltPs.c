@@ -207,8 +207,8 @@ Blt_Ps_ComputeBoundingBox(PageSetup *setupPtr, int width, int height)
     x = setupPtr->padLeft;
     y = setupPtr->padTop;
 
-    hBorder = PADDING(setupPtr->xPad);
-    vBorder = PADDING(setupPtr->yPad);
+    hBorder = PADDING(setupPtr->padX);
+    vBorder = PADDING(setupPtr->padY);
 
     if (setupPtr->flags & PS_LANDSCAPE) {
         hSize = height;

@@ -437,9 +437,9 @@ typedef struct {
     double relWidth, relHeight; /* Relative dimensions of embedded
                                  * widget wrt the size of the viewport */
 
-    Blt_Pad xPad, yPad;         /* Extra padding to frame around */
+    Blt_Pad padX, padY;         /* Extra padding to frame around */
 
-    int ixPad, iyPad;           /* internal padding for window */
+    int iPadX, iPadY;           /* internal padding for window */
 
     int fill;                   /* Fill style flag */
 
@@ -485,10 +485,10 @@ static Blt_ConfigSpec widgetConfigSpecs[] =
         DEF_WIDGET_JUSTIFY, Blt_Offset(EmbeddedWidget, justify),
         BLT_CONFIG_DONT_SET_DEFAULT, &justifyOption},
     {BLT_CONFIG_PAD, "-padx", (char *)NULL, (char *)NULL,
-        DEF_WIDGET_PAD_X, Blt_Offset(EmbeddedWidget, xPad),
+        DEF_WIDGET_PAD_X, Blt_Offset(EmbeddedWidget, padX),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL,
-        DEF_WIDGET_PAD_Y, Blt_Offset(EmbeddedWidget, yPad),
+        DEF_WIDGET_PAD_Y, Blt_Offset(EmbeddedWidget, padY),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_DOUBLE, "-relcavityheight", (char *)NULL, (char *)NULL,
         DEF_WIDGET_REL_HEIGHT, Blt_Offset(EmbeddedWidget, relCavityHeight),
@@ -1316,7 +1316,7 @@ GetEmbeddedWidgetWidth(EmbeddedWidget *winPtr)
     } else {
         width = Tk_ReqWidth(winPtr->tkwin);
     }
-    width += (2 * winPtr->ixPad);
+    width += (2 * winPtr->iPadX);
     return width;
 }
 
@@ -1347,7 +1347,7 @@ GetEmbeddedWidgetHeight(EmbeddedWidget *winPtr)
     } else {
         height = Tk_ReqHeight(winPtr->tkwin);
     }
-    height += (2 * winPtr->iyPad);
+    height += (2 * winPtr->iPadY);
     return height;
 }
 
@@ -2479,7 +2479,7 @@ ComputeCavitySize(EmbeddedWidget *winPtr)
         width = (int)((double)Tk_Width(winPtr->htPtr->tkwin) *
             winPtr->relCavityWidth + 0.5);
     } else {
-        width = GetEmbeddedWidgetWidth(winPtr) + PADDING(winPtr->xPad) + 
+        width = GetEmbeddedWidgetWidth(winPtr) + PADDING(winPtr->padX) + 
             twiceBW;
     }
     winPtr->cavityWidth = width;
@@ -2490,7 +2490,7 @@ ComputeCavitySize(EmbeddedWidget *winPtr)
         height = (int)((double)Tk_Height(winPtr->htPtr->tkwin) *
             winPtr->relCavityHeight + 0.5);
     } else {
-        height = GetEmbeddedWidgetHeight(winPtr) + PADDING(winPtr->yPad) + 
+        height = GetEmbeddedWidgetHeight(winPtr) + PADDING(winPtr->padY) + 
             twiceBW;
     }
     winPtr->cavityHeight = height;
@@ -2890,7 +2890,7 @@ MoveEmbeddedWidget(EmbeddedWidget *winPtr, int offset)
     y = offset + (winPtr->y + intBW + winPtr->padTop) -
         winPtr->htPtr->yOffset;
 
-    width = winPtr->cavityWidth - (2 * intBW + PADDING(winPtr->xPad));
+    width = winPtr->cavityWidth - (2 * intBW + PADDING(winPtr->padX));
     if (width < 0) {
         width = 0;
     }
@@ -2899,7 +2899,7 @@ MoveEmbeddedWidget(EmbeddedWidget *winPtr, int offset)
     }
     deltaX = width - winWidth;
 
-    height = winPtr->cavityHeight - (2 * intBW + PADDING(winPtr->yPad));
+    height = winPtr->cavityHeight - (2 * intBW + PADDING(winPtr->padY));
     if (height < 0) {
         height = 0;
     }

@@ -126,9 +126,9 @@ struct _Legend {
                                          *command. */
     int reqColumns, reqRows;
 
-    Blt_Pad ixPad, iyPad;               /* # of pixels interior padding
+    Blt_Pad iPadX, iPadY;               /* # of pixels interior padding
                                          * around legend entries */
-    Blt_Pad xPad, yPad;                 /* # of pixels padding to exterior
+    Blt_Pad padX, padY;                 /* # of pixels padding to exterior
                                          * of legend */
     Tk_Window tkwin;                    /* If non-NULL, external window to
                                          * draw legend. */
@@ -300,9 +300,9 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(Legend, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_PAD, "-ipadx", "iPadX", "Pad", DEF_IPADX, 
-        Blt_Offset(Legend, ixPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Legend, iPadX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-ipady", "iPadY", "Pad", DEF_IPADY, 
-        Blt_Offset(Legend, iyPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Legend, iPadY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-nofocusselectbackground", 
         "noFocusSelectBackground", "NoFocusSelectBackground", 
         DEF_SELECTBACKGROUND, Blt_Offset(Legend, selOutFocusBg), 0},
@@ -310,9 +310,9 @@ static Blt_ConfigSpec configSpecs[] =
         "NoFocusSelectForeground", DEF_SELECTFOREGROUND, 
         Blt_Offset(Legend, selOutFocusFgColor), 0},
     {BLT_CONFIG_PAD, "-padx", "padX", "Pad", DEF_PADX, 
-        Blt_Offset(Legend, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Legend, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "Pad", DEF_PADY, 
-        Blt_Offset(Legend, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Legend, padY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-position", "position", "Position", 
         DEF_POSITION, 0, BLT_CONFIG_DONT_SET_DEFAULT, 
         &legendPositionOption},
@@ -1069,8 +1069,8 @@ PointerToElement(Legend *legendPtr, int x, int y)
 
     x -= legendPtr->x + legendPtr->borderWidth;
     y -= legendPtr->y + legendPtr->borderWidth;
-    w -= 2 * legendPtr->borderWidth + PADDING(legendPtr->xPad);
-    h -= 2 * legendPtr->borderWidth + PADDING(legendPtr->yPad);
+    w -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padX);
+    h -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padY);
 
     if ((x < 0) || (x >= w) || (y < 0) || (y >= h)) {
         return NULL;
@@ -1122,12 +1122,12 @@ PickEntryProc(ClientData clientData, int x, int y, ClientData *contextPtr)
     h = legendPtr->height;
 
     if (legendPtr->titleHeight > 0) {
-        y -= legendPtr->titleHeight + legendPtr->yPad.side1;
+        y -= legendPtr->titleHeight + legendPtr->padY.side1;
     }
     x -= legendPtr->x + legendPtr->borderWidth;
     y -= legendPtr->y + legendPtr->borderWidth;
-    w -= 2 * legendPtr->borderWidth + PADDING(legendPtr->xPad);
-    h -= 2 * legendPtr->borderWidth + PADDING(legendPtr->yPad);
+    w -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padX);
+    h -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padY);
 
     if ((x >= 0) && (x < w) && (y >= 0) && (y < h)) {
         int row, column;
@@ -1261,18 +1261,18 @@ Blt_MapLegend(
     Blt_Font_GetMetrics(legendPtr->style.font, &fontMetrics);
     symbolWidth = 2 * fontMetrics.ascent;
 
-    maxWidth += 2 * legendPtr->entryBorderWidth + PADDING(legendPtr->ixPad) +
+    maxWidth += 2 * legendPtr->entryBorderWidth + PADDING(legendPtr->iPadX) +
         + symbolWidth + 3 * LABEL_PAD;
 
-    maxHeight += 2 * legendPtr->entryBorderWidth + PADDING(legendPtr->iyPad);
+    maxHeight += 2 * legendPtr->entryBorderWidth + PADDING(legendPtr->iPadY);
 
     maxWidth |= 0x01;
     maxHeight |= 0x01;
 
     legendWidth  = plotWidth;
     legendHeight = plotHeight;
-    legendWidth  -= 2 * legendPtr->borderWidth + PADDING(legendPtr->xPad);
-    legendHeight -= 2 * legendPtr->borderWidth + PADDING(legendPtr->yPad);
+    legendWidth  -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padX);
+    legendHeight -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padY);
 
     /*
      * The number of rows and columns is computed as one of the following:
@@ -1327,16 +1327,16 @@ Blt_MapLegend(
 
     legendHeight = (numRows * maxHeight);
     if (legendPtr->titleHeight > 0) {
-        legendHeight += legendPtr->titleHeight + legendPtr->yPad.side1;
+        legendHeight += legendPtr->titleHeight + legendPtr->padY.side1;
     }
     legendWidth = numColumns * maxWidth;
     if (legendWidth < legendPtr->titleWidth) {
         legendWidth = legendPtr->titleWidth;
     }
     legendPtr->width = legendWidth + 2 * legendPtr->borderWidth + 
-        PADDING(legendPtr->xPad);
+        PADDING(legendPtr->padX);
     legendPtr->height = legendHeight + 2 * legendPtr->borderWidth + 
-        PADDING(legendPtr->yPad);
+        PADDING(legendPtr->padY);
     legendPtr->numRows     = numRows;
     legendPtr->numColumns  = numColumns;
     legendPtr->numEntries  = numEntries;
@@ -1436,15 +1436,15 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
     xMid = symbolSize + 1 + legendPtr->entryBorderWidth;
     yMid = (symbolSize / 2) + 1 + legendPtr->entryBorderWidth;
     xLabel = 2 * symbolSize + legendPtr->entryBorderWidth + 
-        legendPtr->ixPad.side1 + 2 * LABEL_PAD;
-    ySymbol = yMid + legendPtr->iyPad.side1; 
+        legendPtr->iPadX.side1 + 2 * LABEL_PAD;
+    ySymbol = yMid + legendPtr->iPadY.side1; 
     xSymbol = xMid + LABEL_PAD;
 
     x = legendPtr->padLeft + legendPtr->borderWidth;
     y = legendPtr->padTop + legendPtr->borderWidth;
     Blt_DrawText(tkwin, pixmap, legendPtr->title, &legendPtr->titleStyle, x, y);
     if (legendPtr->titleHeight > 0) {
-        y += legendPtr->titleHeight + legendPtr->yPad.side1;
+        y += legendPtr->titleHeight + legendPtr->padY.side1;
     }
     count = 0;
     yStart = y;
@@ -1498,7 +1498,7 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
                 x + xSymbol, y + ySymbol, symbolSize);
         Blt_DrawText(tkwin, pixmap, elemPtr->label, &legendPtr->style, 
                 x + xLabel, 
-                y + legendPtr->entryBorderWidth + legendPtr->iyPad.side1);
+                y + legendPtr->entryBorderWidth + legendPtr->iPadY.side1);
         count++;
         if (legendPtr->focusPtr == elemPtr) { /* Focus outline */
             if (isSelected) {
@@ -1575,8 +1575,8 @@ Blt_LegendToPostScript(Graph *graphPtr, Blt_Ps ps)
     SetLegendOrigin(legendPtr);
 
     x = legendPtr->x, y = legendPtr->y;
-    width = legendPtr->width - PADDING(legendPtr->xPad);
-    height = legendPtr->height - PADDING(legendPtr->yPad);
+    width = legendPtr->width - PADDING(legendPtr->padX);
+    height = legendPtr->height - PADDING(legendPtr->padY);
 
     Blt_Ps_Append(ps, "% Legend\n");
     graphPtr = legendPtr->obj.graphPtr;
@@ -1603,15 +1603,15 @@ Blt_LegendToPostScript(Graph *graphPtr, Blt_Ps ps)
     xMid = symbolSize + 1 + legendPtr->entryBorderWidth;
     yMid = (symbolSize / 2) + 1 + legendPtr->entryBorderWidth;
     xLabel = 2 * symbolSize + legendPtr->entryBorderWidth +
-        legendPtr->ixPad.side1 + 5;
-    xSymbol = xMid + legendPtr->ixPad.side1;
-    ySymbol = yMid + legendPtr->iyPad.side1;
+        legendPtr->iPadX.side1 + 5;
+    xSymbol = xMid + legendPtr->iPadX.side1;
+    ySymbol = yMid + legendPtr->iPadY.side1;
 
     x += legendPtr->borderWidth;
     y += legendPtr->borderWidth;
     Blt_Ps_DrawText(ps, legendPtr->title, &legendPtr->titleStyle, x, y);
     if (legendPtr->titleHeight > 0) {
-        y += legendPtr->titleHeight + legendPtr->yPad.side1;
+        y += legendPtr->titleHeight + legendPtr->padY.side1;
     }
 
     count = 0;
@@ -1646,7 +1646,7 @@ Blt_LegendToPostScript(Graph *graphPtr, Blt_Ps ps)
         (*elemPtr->procsPtr->printSymbolProc) (graphPtr, ps, elemPtr, 
                 x + xSymbol, y + ySymbol, symbolSize);
         Blt_Ps_DrawText(ps, elemPtr->label, &legendPtr->style, x + xLabel,
-                y + legendPtr->entryBorderWidth + legendPtr->iyPad.side1);
+                y + legendPtr->entryBorderWidth + legendPtr->iPadY.side1);
         count++;
         if ((count % legendPtr->numRows) > 0) {
             y += legendPtr->entryHeight;
@@ -1849,10 +1849,10 @@ Blt_CreateLegend(Graph *graphPtr)
     legendPtr->activeRelief = TK_RELIEF_FLAT;
     legendPtr->entryBorderWidth = 2;
     legendPtr->borderWidth = 2;
-    legendPtr->ixPad.side1 = legendPtr->ixPad.side2 = 1;
-    legendPtr->iyPad.side1 = legendPtr->iyPad.side2 = 1;
-    legendPtr->xPad.side1  = legendPtr->xPad.side2  = 1;
-    legendPtr->yPad.side1  = legendPtr->yPad.side2  = 1;
+    legendPtr->iPadX.side1 = legendPtr->iPadX.side2 = 1;
+    legendPtr->iPadY.side1 = legendPtr->iPadY.side2 = 1;
+    legendPtr->padX.side1  = legendPtr->padX.side2  = 1;
+    legendPtr->padY.side1  = legendPtr->padY.side2  = 1;
     legendPtr->anchor = TK_ANCHOR_N;
     legendPtr->site = LEGEND_RIGHT;
     legendPtr->selMode = SELECT_MODE_MULTIPLE;
@@ -2270,12 +2270,12 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     symbolSize = fontMetrics.ascent;
     x = legendPtr->padLeft + legendPtr->borderWidth;
     offset = 2 * symbolSize + legendPtr->entryBorderWidth +
-        legendPtr->ixPad.side1 + 2 * LABEL_PAD;
+        legendPtr->iPadX.side1 + 2 * LABEL_PAD;
     x += offset;
     w = legendPtr->entryWidth - offset;
     y = legendPtr->padTop + legendPtr->borderWidth;
     if (legendPtr->titleHeight > 0) {
-        y += legendPtr->titleHeight + legendPtr->yPad.side1;
+        y += legendPtr->titleHeight + legendPtr->padY.side1;
     }
     y += elemPtr->row * legendPtr->entryHeight;
     x += elemPtr->col * w;
@@ -2607,8 +2607,8 @@ IconOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     Blt_Font_GetMetrics(legendPtr->style.font, &fontMetrics);
     s = fontMetrics.ascent;
-    h = s + PADDING(legendPtr->iyPad) + 1;
-    w = s + s + 1 + PADDING(legendPtr->ixPad);
+    h = s + PADDING(legendPtr->iPadY) + 1;
+    w = s + s + 1 + PADDING(legendPtr->iPadX);
     x = (w / 2);
     y = (h / 2);
     

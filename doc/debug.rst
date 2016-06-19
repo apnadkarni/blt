@@ -17,7 +17,7 @@ Print TCL commands before execution
 SYNOPSIS
 --------
 
-**blt::debug** ?\ *debugLevel*\ ?
+**blt::debug** ?\ *debugLevel*\ ? ?\ *switches* ...\?
 
 DESCRIPTION
 -----------
@@ -33,6 +33,14 @@ calling stack) before stopping tracing of commands.  If *debugLevel* is
 
 If no *debugLevel* argument is given, the current debug level is printed.
 
+*Switches* may be any of the following.
+
+  **-file** *fileName*
+    Write the debugging information to the designated file. *FileName* is
+    the name of the file to be written.  If *fileName* starts with the
+    '@' character, then the following characters are the name of a
+    previously opened TCL channel.  By default, debugging information
+    is written to standard error.
 
 KEYWORDS
 --------

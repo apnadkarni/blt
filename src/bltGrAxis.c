@@ -4250,9 +4250,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     graphPtr->bottomPtr->height = bottom + graphPtr->inset;
             
     graphPtr->vOffset = graphPtr->y1 + graphPtr->padTop;
-    graphPtr->vRange  = plotHeight - PADDING(graphPtr->yPad);
+    graphPtr->vRange  = plotHeight - PADDING(graphPtr->padY);
     graphPtr->hOffset = graphPtr->x1 + graphPtr->padLeft;
-    graphPtr->hRange  = plotWidth  - PADDING(graphPtr->xPad);
+    graphPtr->hRange  = plotWidth  - PADDING(graphPtr->padX);
 
     if (graphPtr->vRange < 1) {
         graphPtr->vRange = 1;

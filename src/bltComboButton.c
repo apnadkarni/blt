@@ -274,7 +274,7 @@ typedef struct  {
     int prefWidth;                      /* Desired width of window, measured
                                          * in average characters. */
     int inset;
-    Blt_Pad xPad, yPad;
+    Blt_Pad padX, padY;
     short int arrowWidth, arrowHeight;
     short int iconWidth, iconHeight;
     short int textWidth, textHeight;
@@ -354,9 +354,9 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_OBJ, "-menu", "menu", "Menu", DEF_MENU, 
         Blt_Offset(ComboButton, menuObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX", DEF_PADX,
-        Blt_Offset(ComboButton, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(ComboButton, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_PADY,
-        Blt_Offset(ComboButton, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(ComboButton, padY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
         DEF_CMD, Blt_Offset(ComboButton, postCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-postedbackground", "postedBackground",
@@ -1318,8 +1318,8 @@ ComputeGeometry(ComboButton *comboPtr)
         }
         w += comboPtr->arrowWidth + XPAD;
     }
-    w += 2 * (comboPtr->inset + XPAD) + PADDING(comboPtr->xPad);
-    h += 2 * (comboPtr->inset + YPAD) + PADDING(comboPtr->yPad);
+    w += 2 * (comboPtr->inset + XPAD) + PADDING(comboPtr->padX);
+    h += 2 * (comboPtr->inset + YPAD) + PADDING(comboPtr->padY);
     comboPtr->width  = w;
     comboPtr->height = h;
     if (comboPtr->reqWidth > 0) {
@@ -1961,10 +1961,10 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
         Tk_Width(comboPtr->tkwin), Tk_Height(comboPtr->tkwin),
         comboPtr->borderWidth, TK_RELIEF_FLAT);
 
-    x = comboPtr->inset + comboPtr->xPad.side1;
-    y = comboPtr->inset + comboPtr->yPad.side2;
-    w  = Tk_Width(comboPtr->tkwin)  - 2 * (comboPtr->inset + XPAD) - PADDING(comboPtr->xPad);
-    h = Tk_Height(comboPtr->tkwin) -  2 * (comboPtr->inset + YPAD) - PADDING(comboPtr->yPad);
+    x = comboPtr->inset + comboPtr->padX.side1;
+    y = comboPtr->inset + comboPtr->padY.side2;
+    w  = Tk_Width(comboPtr->tkwin)  - 2 * (comboPtr->inset + XPAD) - PADDING(comboPtr->padX);
+    h = Tk_Height(comboPtr->tkwin) -  2 * (comboPtr->inset + YPAD) - PADDING(comboPtr->padY);
     x += XPAD;
     y += YPAD;
     /* Draw Icon. */
@@ -2004,7 +2004,7 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
         XColor *color;
 
         /*  */
-        x = Tk_Width(comboPtr->tkwin) - XPAD -  comboPtr->xPad.side2 - comboPtr->inset - comboPtr->arrowWidth;
+        x = Tk_Width(comboPtr->tkwin) - XPAD -  comboPtr->padX.side2 - comboPtr->inset - comboPtr->arrowWidth;
         y = comboPtr->inset;
         if (h > comboPtr->arrowHeight) {
             y += (h - comboPtr->arrowHeight) / 2;

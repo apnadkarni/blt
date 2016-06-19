@@ -185,7 +185,7 @@ typedef struct {
     int numBars;                        /* # of visible bar segments for
                                          * element */
     int numActive;
-    int xPad;                           /* Spacing on either side of bar */
+    int padX;                           /* Spacing on either side of bar */
     ElemValues xError;                  /* Relative/symmetric X error
                                          * values. */
     ElemValues yError;                  /* Relative/symmetric Y error

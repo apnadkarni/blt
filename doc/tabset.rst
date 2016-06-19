@@ -613,21 +613,24 @@ available for *tabset* widgets:
     is "all".
 
   **-command** *string*
-
     Specifies a TCL script to be associated with *tab*.  This
     command is typically invoked when left mouse button is released over
     the tab.  Setting this option overrides the widget's **-selectcommand**
     option.
 
   **-data** *string*
-
     Specifies a string to be associated with *tab*.  This value
     isn't used in the widget code.  It may be used in TCL bindings to
     associate extra data (other than the image or text) with the tab. The
     default value is "".
 
-  **-fill** *fill*
+  **-deletecommand** *string*
+    Specifies a TCL command to invoked when the tab is deleted (via the
+    *tabset*\ 's **delete** operation, or destroying the *tabset*).  The
+    command will be invoked before the tab is actually deleted.  If
+    *string* is "", no command is invoked.  The default is "".
 
+  **-fill** *fill*
     If the space in the folder surrounding the tab's embedded widget is
     larger than the widget, then *fill* indicates if the embedded widget
     should be stretched to occupy the extra space.  *Fill* is either
