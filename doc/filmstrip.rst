@@ -23,83 +23,30 @@ DESCRIPTION
 -----------
 
 The *filmstrip* widget displays a scroll-able vertical or horizontal strip
-of embedded Tk widgets.  Each child widgets is contained in a frame (which
-is different from the Tk frame widget). Frames are optionally separated by
-handles that appear as a border between frames.  It is positioned on the
-left (horizontal arrangement) or bottom (vertical arrangement) of the
-frame.  Users can adjust the size of a frame by using the mouse or
-keyboard.
+of embedded Tk widgets.  Each child widget is contained in a filmstrip
+frame (that is different from the Tk frame widget). Frames are optionally
+separated by grips (handles) that appear as a border between frames.  It is
+positioned on the left (horizontal arrangement) or bottom (vertical
+arrangement) of the frame.  
 
 INTRODUCTION
 ------------
 
-The *filmstrip* widget displays embedded Tk widgets as a strip of frames.
-The frames may be arranged horizontally or vertically.  Frames are
-optionally separated by handles. The handle appears as a border between
-frames.  It is positioned on the right (horizontal arrangement) or bottom
-(vertical arrangement) of a frame.  The user can adjust the size of a frame
-by using the mouse or keyboard on the handle.
+The *filmstrip* widget displays embedded Tk widgets as a strip of filmstrip
+frames.  The frames may be arranged horizontally or vertically.  Frames
+have optional grips (handles) that appear as a border between frames.  They
+can be used to slide frames left-to-right (horizontal arrangement) or
+top-to-bottom (vertical arrangement).  The user can adjust the size of a
+frame by using the mouse or keyboard on the handle.
 
-The embedded widgets must be children of the filmstrip widget.  The
-filmstrip widget and its frames do not have normal Tk borders or focus
-highlight rings. If you need a border around the filmstrip, put the
-filmstrip widget in a frame.  A frame's handle may have a focus highlight
-ring.
+The *filmstrip* widget can also be used to create a wizard-like interface
+where frames contain are a sequence of dialogs that lead the user through a
+series of well-defined tasks.  In this case the size of the filmstrip widget
+is the size of a frame.  If the filmstrip widget is resized the frame
+containing the dialog is also resized.
 
-Each entry in the tree column has a label and icon.  If a node has
-children, its entry is includes with a small button to the left of the
-label.  Clicking the mouse over this button opens or closes the node.  When
-a node is *open*, its children are exposed.  When it is *closed*, the
-children and their descedants are hidden.  The button is normally a "+" or
-"-" symbol (ala Windows Explorer), but can be replaced with a pair of Tk
-images (open and closed images).
-
-ADJUSTMENT MODES
-----------------
-
-Other columns (displaying data fields in the nodes) run vertically on
-either side.  For each node, cells in the columns will display the data
-fields.  There are several adjustment modes.  They are as follows.
-
- **givetake**
-   As a handle is moved only the frames immediately to the left/right or
-   top/bottom of the handle are resized.
-   
- **slinky**
-   As a handle is moved all the frames immediately to the left/right or
-   top/bottom of the handle are resized to varying amounts.
-   
- **spreadsheet**
-   As a handle is moved the frame to the left/top of the handle and the
-   last frame on the right/bottom side are resized.  Intervening
-   frames are unaffected.
-
-The data fields at each node can be displayed in tabular columns.  By
-default, data fields are text box column You can control the color, font,
-etc. of each entry.  Any entry label or data field can be edited in-place.
-
-TREE DATA OBJECT
-----------------
-
-The tree is not stored inside the widget but in a tree data object (see the
-**blt::tree** command for a further explanation).  Tree data objects can be
-shared among different clients, such as a *filmstrip* widget or the
-**blt::tree** command.  You can walk the tree and manage its data with the
-**blt::tree** command tree, while displaying it with the *filmstrip* widget.
-Whenever the tree is updated, the *filmstrip* widget is automatically
-redrawn.
-
-By default, the *filmstrip* widget creates its own tree object.  The tree
-initially contains just a root node.  But you can also display trees
-created by the **blt::tree** command using the **-tree** configuration
-option.  *filmstrip* widgets can share the same tree object, possibly
-displaying different views of the same data.
-
-A tree object has both a TCL and C API.  You can insert or delete nodes
-using *filmstrip* widget or **tree** command operations, but also from C
-code.  For example, you can load the tree from your C code while still
-managing and displaying the tree from TCL. The widget is automatically
-notified whenever the tree is modified via C or TCL.
+The embedded widgets of a filmstrip must be children of the filmstrip
+widget.
 
 SYNTAX
 ------
@@ -123,24 +70,27 @@ form is:
 
 Both *operation* and its arguments determine the exact behavior of
 the command.  The operations available are described in the
-`FILMSTRIP OPERATIONS`_ section.
+`OPERATIONS`_ section below.
 
 REFERENCING FRAMES
------------------
+------------------
 
 Frames can be refererenced either by index, label, or by tag.
 
   **index**
-    The number of the frame.  Indices start from 0.  The index of an
-    frame may change as other frames are added or deleted.
-    There are also special non-numeric indices that can be used.
+    The number of the frame.  Indices start from 0.  The index number of a
+    frame can change as other frames are added or deleted.  There are also
+    special non-numeric indices that can be used.
 
     **active**
-      This is the frame where the mouse pointer is currently located.  When
-      a node is active, it is drawn using its active colors.  The
-      **active** id is changes when you move the mouse pointer over another
-      node or by using the **activate** operation. Note that there can be
-      only one active frame at a time.
+      This is the frame whose grip is where the mouse pointer is currently
+      located.  When a grip is active, it is drawn using its active colors.
+      The **active** index is changes when you move the mouse pointer over
+      another frame's grip or by using the **activate** operation. Note
+      that there can be only one active frame at a time.
+
+    **current**
+      The index of the current frame. This is set by the **see** operation.
 
     **end**
       The index of the last frame.
@@ -151,8 +101,26 @@ Frames can be refererenced either by index, label, or by tag.
     **last**
       The index of the last frame that is not hidden or disabled.
 
+    **previous**
+      The frame previous to the current frame. In horizontal mode, this is
+      the frame to the left, in vertical mode this is the frame above.  If
+      no previous frame exists or the preceding frame are hidden or
+      disabled, an index of "-1" is returned.
+
+    **next**
+      The frame next to the current frame. In horizontal mode, this is the
+      frame to the right, in vertical mode this is the frame below.  If no
+      next frame exists or the following frames are hidden or disabled, an
+      index of "-1" is returned.
+
+    **@**\ *x*\ ,\ *y*
+      The index of the frame that is located at the *x* and *y*
+      screen coordinates.  If no frame is at that point, then the
+      index returned is "-1".
+
   **label**
-    The name of the frame.  This is in the form "frame0", "frame1", etc.
+    The name of the frame.  This is usually in the form "frame0", "frame1",
+    etc., although you can specify the name of the frame.
 
   **tag**
     A tag is a string associated with an frame.  They are a useful for
@@ -219,16 +187,16 @@ command.  The following operations are available for *filmstrip* widgets:
 
   The following widget options are available\:
 
-  **-activehandlecolor** *colorName* 
-    Specifies the default color when a handle is active.
+  **-activegripcolor** *colorName* 
+    Specifies the default color when a grip is active.
     *ColorName* may be a color name or the name of a background object
     created by the **blt::background** command.  This option may be
     overridden by the style's **-activebackground** option.
     The default is "skyblue4". 
 
-  **-activehandleelief** *reliefName* 
-    Specifies the default relief when a handle is active.  This determines
-    the 3-D effect for the handle.  *ReliefName* indicates how the item
+  **-activegripelief** *reliefName* 
+    Specifies the default relief when a grip is active.  This determines
+    the 3-D effect for the grip.  *ReliefName* indicates how the item
     should appear relative to the window; for example, "raised" means the
     item should appear to protrude.  The default is "flat".
     
@@ -250,52 +218,52 @@ command.  The following operations are available for *filmstrip* widgets:
     "vertical" (frames run left to right) or "horizontal" (frames run
     top to bottom).  The default is "horizontal".
 
-  **-handleborderwidth** *numPixels* 
-    Specifies the default borderwidth of handles in the widget.  *NumPixels*
+  **-gripborderwidth** *numPixels* 
+    Specifies the default borderwidth of grips in the widget.  *NumPixels*
     is a non-negative value indicating the width of the 3-D border drawn
-    around the handle. The value may have any of the forms acceptable to
+    around the grip. The value may have any of the forms acceptable to
     **Tk_GetPixels**.  This option may be overridden by the style's
     **-borderwidth** option.  The default is "0".
 
-  **-handlecolor** *colorName*
-    Specifies the color of the traversal highlight region around a handle
+  **-gripcolor** *colorName*
+    Specifies the color of the traversal highlight region around a grip
     when *pathName* has input focus.  *ColorName* may be a color name or
     the name of a background object created by the **blt::background**
     command. The default is "black".
 
-  **-handlehighlightbackground** *colorName*
-    Specifies the color of the traversal highlight region around a handle
+  **-griphighlightbackground** *colorName*
+    Specifies the color of the traversal highlight region around a grip
     when *pathName* does not have the input focus.  *ColorName* may be a
     color name or the name of a background object created by the
     **blt::background** command.  The default is "grey85".
 
-  **-handlehighlightcolor** *colorName*
-    Specifies the color of the traversal highlight region when a handle
+  **-griphighlightcolor** *colorName*
+    Specifies the color of the traversal highlight region when a grip
     has input focus.  *ColorName* may be a color name or the name of a
     background object created by the **blt::background** command. The
     default is "black".
 
-  **-handlehighlightthickness** *numPixels*
+  **-griphighlightthickness** *numPixels*
     Specifies a non-negative value for the width of the highlight rectangle
-    to drawn around the outside of the handle.  *NumPixels* may have any of
+    to drawn around the outside of the grip.  *NumPixels* may have any of
     the forms acceptable to **Tk_GetPixels**.  If *numPixels* is "0", no
-    focus highlight is drawn around the handle.  The default is "2".
+    focus highlight is drawn around the grip.  The default is "2".
 
-  **-handlepad** *numPixels* 
-    Specifies the default borderwidth of handles in the widget.  *NumPixels* is
+  **-grippad** *numPixels* 
+    Specifies the default borderwidth of grips in the widget.  *NumPixels* is
     a non-negative value indicating the width of the 3-D border drawn
-    around the handle. The value may have any of the forms acceptable to
+    around the grip. The value may have any of the forms acceptable to
     **Tk_GetPixels**.  This option may be overridden by the style's
     **-borderwidth** option.  The default is "0".
 
-  **-handlerelief** *reliefName* 
-    Specifies the default relief of active handles.  This determines the 3-D
+  **-griprelief** *reliefName* 
+    Specifies the default relief of active grips.  This determines the 3-D
     effect for the item.  *Relief* indicates how the item should appear
     relative to the window; for example, "raised" means the item should
     appear to protrude.  This option may be overridden by the style's
     **-activerelief** option. The default is "flat".
     
-  **-handlethickness** *numPixels*
+  **-gripthickness** *numPixels*
     Specifies a non-negative value for the width of the highlight rectangle
     to drawn around the outside of the widget.  *NumPixels* may have any of
     the forms acceptable to **Tk_GetPixels**.  If *numPixels* is "0", no
@@ -393,8 +361,8 @@ command.  The following operations are available for *filmstrip* widgets:
   *frameName* may refer to mulitple items (for example "all").  *Option* and
   *value* are described below.
 
-  **-activehandlecolor** *colorName* 
-    Specifies the default color when the handle is active.  *ColorName* may
+  **-activegripcolor** *colorName* 
+    Specifies the default color when the grip is active.  *ColorName* may
     be a color name or the name of a background object created by the
     **blt::background** command.  This option may be overridden by the
     style's **-activebackground** option.  The default is "skyblue4".
@@ -427,22 +395,22 @@ command.  The following operations are available for *filmstrip* widgets:
   **-reqheight** *numPixels* 
   **-reqwidth** *numPixels* 
 
-  **-handlehighlightbackground** *colorName* 
-  **-handlehighlightcolor** *colorName* 
+  **-griphighlightbackground** *colorName* 
+  **-griphighlightcolor** *colorName* 
 
-  **-handlecolor** *colorName*
+  **-gripcolor** *colorName*
     Specifies the color of the traversal highlight region when *pathName*
     has input focus.  *ColorName* may be a color name or the name of a
     background object created by the **blt::background** command. The
     default is "black".
 
-  **-handlecursor** *cursorName* 
-    Specifies the cursor to be used for the handle. *CursorName* may have
+  **-gripcursor** *cursorName* 
+    Specifies the cursor to be used for the grip. *CursorName* may have
     any of the forms acceptable to **Tk_GetCursor**.  If *cursorName* is "",
     this indicates that the widget should defer to its parent for cursor
     specification.  The default is "".
 
-  **-showhandle** *boolean* 
+  **-showgrip** *boolean* 
 
   **-size** *numPixels* 
 
@@ -477,12 +445,12 @@ command.  The following operations are available for *filmstrip* widgets:
   Moves the focus to the previous item from *itemName*.  *ItemName* may be
   a label, index, or tag, but may not represent more than one item.
 
-*pathName* **handle activate** *frameName*
-*pathName* **handle anchor** *frameName* *x* *y*
-*pathName* **handle deactivate** 
-*pathName* **handle mark** *frameName* *x* *y*
-*pathName* **handle move** *frameName* *x* *y*
-*pathName* **handle set** *frameName* *x* *y*
+*pathName* **grip activate** *frameName*
+*pathName* **grip anchor** *frameName* *x* *y*
+*pathName* **grip deactivate** 
+*pathName* **grip mark** *frameName* *x* *y*
+*pathName* **grip move** *frameName* *x* *y*
+*pathName* **grip set** *frameName* *x* *y*
 
 *pathName* **scan dragto** *x* *y* This command computes the difference
   between *x* and *y* and the coordinates to the last **scan mark** command

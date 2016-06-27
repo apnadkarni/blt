@@ -34,7 +34,7 @@
 #   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import add itcl
+package require itcl
 
 class ZoomStackGraph {
 
