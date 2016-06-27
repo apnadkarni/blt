@@ -37,20 +37,16 @@
 #
 
 namespace eval blt::Filmstrip {
-    set buttonPressed 0
     proc Initialize {} {
+        # Dummy procedure to determine if this file has been loaded.
     }
 }
 
 bind BltFilmstripGrip <Enter> { 
-    if { !$blt::Filmstrip::buttonPressed } { 
-	[winfo parent %W] grip activate %W
-    } 
+    [winfo parent %W] grip activate %W
 } 
 bind BltFilmstripGrip <Leave> { 
-    if { !$blt::Filmstrip::buttonPressed } { 
-	[winfo parent %W] grip deactivate
-    } 
+    [winfo parent %W] grip deactivate
 }
 bind BltFilmstripGrip <KeyPress-Left> { 
     [winfo parent %W] grip move %W -10 0 
@@ -77,14 +73,12 @@ bind BltFilmstripGrip <Shift-KeyPress-Down> {
     [winfo parent %W] grip move %W 0 100
 }
 bind BltFilmstripGrip <ButtonPress-1> { 
-    set blt::Filmstrip::buttonPressed 1
     [winfo parent %W] grip anchor %W %X %Y 
 }
 bind BltFilmstripGrip <B1-Motion> { 
     [winfo parent %W] grip mark %W %X %Y 
 }
 bind BltFilmstripGrip <ButtonRelease-1> { 
-    set blt::Filmstrip::buttonPressed 0
     [winfo parent %W] grip set %W %X %Y 
 }
 
