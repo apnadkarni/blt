@@ -52,6 +52,7 @@ blt::scrollset .ss \
 
 blt::filmstrip .ss.fs  -height 400 \
     -scrolldelay 10 -scrollincrement 30 -animate yes \
+    -gripthickness 0 \
     -orient vertical
 
 blt::tk::scrollbar .ss.xs 

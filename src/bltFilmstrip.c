@@ -107,17 +107,15 @@ typedef int (SizeProc)(Frame *framePtr);
 #define DEF_FRAME_STEPS         "8"
 #define DEF_FRAME_TAGS          (char *)NULL
 #define DEF_FRAME_VARIABLE      (char *)NULL
-#define DEF_FRAME_WEIGHT        "1.0"
 #define DEF_GRIP_BORDERWIDTH    "1"
 #define DEF_GRIP_COLOR          STD_NORMAL_BACKGROUND
 #define DEF_GRIP_CURSOR         (char *)NULL
 #define DEF_GRIP_HIGHLIGHT_BACKGROUND   STD_NORMAL_BACKGROUND
 #define DEF_GRIP_HIGHLIGHT_COLOR        RGB_BLACK
-#define DEF_GRIP_HIGHLIGHT_THICKNESS "1"
 #define DEF_GRIP_PAD            "0"
 #define DEF_GRIP_PAD            "0"
 #define DEF_GRIP_RELIEF         "flat"
-#define DEF_GRIP_THICKNESS      "2"
+#define DEF_GRIP_THICKNESS      "3"
 #define DEF_HCURSOR             "sb_h_double_arrow"
 #define DEF_HEIGHT              "0"
 #define DEF_MODE                "givetake"
@@ -132,7 +130,6 @@ typedef int (SizeProc)(Frame *framePtr);
 #define DEF_SIDE                "right"
 #define DEF_TAKEFOCUS           "1"
 #define DEF_VCURSOR             "sb_v_double_arrow"
-#define DEF_WEIGHT              "0"
 #define DEF_WIDTH               "0"
 
 #define FRAME_DEF_ANCHOR         TK_ANCHOR_C
@@ -141,7 +138,6 @@ typedef int (SizeProc)(Frame *framePtr);
 #define FRAME_DEF_PAD            0
 #define FRAME_DEF_PAD            0
 #define FRAME_DEF_RESIZE         RESIZE_BOTH
-#define FRAME_DEF_WEIGHT         1.0
 
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
@@ -160,10 +156,6 @@ struct _Filmstrip {
                                          * or the pathname of the window
                                          * created. */
     int side;                           /* Side where grip is located. */
-    int gripHighlightThickness;         /* Width in pixels of highlight to
-                                         * draw around the grip when it has
-                                         * the focus.  Less than 1, means
-                                         * don't draw a highlight. */
     int normalWidth;                    /* Normal dimensions of the
                                          * filmstrip */
     int normalHeight;
@@ -193,8 +185,10 @@ struct _Filmstrip {
     /* 
      * Automated scrolling information. 
      */
+#ifdef notdef
     int numSteps;                       /* Number of steps to take to
                                          * scroll to proper frame. */
+#endif
     int step;                           /* Current step in animation */
 
     int scrollUnits;                    /* Smallest unit of scrolling for
@@ -212,11 +206,12 @@ struct _Filmstrip {
     XColor *gripHighlightColor;         /* Color for drawing traversal
                                          * highlight. */
     int gripRelief;
-    int activeGripRelief;
+    int gripActiveRelief;
     Blt_Pad gripPad;
     int gripBorderWidth;
-    int gripThickness;                  /*  */
+    int gripThickness;
     int gripSize;
+    
     Blt_Bg gripBg;
     Blt_Bg activeGripBg;
     Frame *currentPtr;
@@ -327,7 +322,7 @@ struct _Frame  {
     int borderWidth;                    /* The width of the 3D border
                                          * around the exterior of the
                                          * frame. */
-    int relief, activeRelief;
+    int relief;
     XColor *highlightBgColor;           /* Color for drawing traversal
                                          * highlight area when highlight is
                                          * off. */
@@ -378,7 +373,6 @@ struct _Frame  {
                                          * size of the widget embedded in
                                          * this frame. */
     int min, max;                       /* Size constraints on the frame */
-    float weight;                       /* Weight of frame. */
     Blt_Limits reqSize;                 /* Requested bounds for the size of
                                          * the frame. The frame will not
                                          * expand or shrink beyond these
@@ -459,9 +453,6 @@ static Blt_CustomOption tagsOption = {
 
 static Blt_ConfigSpec frameSpecs[] =
 {
-    {BLT_CONFIG_RELIEF, "-activeRelief", "activeRelief", "activeRelief",
-        DEF_FRAME_RELIEF, Blt_Offset(Frame, activeRelief),
-        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_FRAME_BORDERWIDTH, Blt_Offset(Frame, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT },
@@ -516,7 +507,7 @@ static Blt_ConfigSpec filmStripSpecs[] =
         Blt_Offset(Filmstrip, activeGripBg)},
     {BLT_CONFIG_RELIEF, "-activegriprelief", "activeGripRelief", 
         "GripRelief", DEF_ACTIVE_GRIP_RELIEF,
-        Blt_Offset(Filmstrip, activeGripRelief), 
+        Blt_Offset(Filmstrip, gripActiveRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_ANCHOR,
         Blt_Offset(Filmstrip, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
@@ -542,11 +533,6 @@ static Blt_ConfigSpec filmStripSpecs[] =
         Blt_Offset(Filmstrip, gripThickness), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
         Blt_Offset(Filmstrip, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-griphighlightthickness",
-        "gripHighlightThickness", "GripHighlightThickness",
-        DEF_GRIP_HIGHLIGHT_THICKNESS,
-        Blt_Offset(Filmstrip, gripHighlightThickness),
-        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
         Blt_Offset(Filmstrip, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         &orientOption},
@@ -555,21 +541,19 @@ static Blt_ConfigSpec filmStripSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_FLOAT, "-relwidth", "relWidth", "RelWidth", DEF_RELATIVE_WIDTH,
         Blt_Offset(Filmstrip, relWidth), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Filmstrip, reqHeight), 0, &bltLimitsOption},
-    {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Filmstrip, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_OBJ, "-scrollcommand", "scrollCommand", "ScrollCommand",
         DEF_SCROLL_COMMAND, Blt_Offset(Filmstrip, scrollCmdObjPtr),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_PIXELS_POS, "-scrollincrement", "scrollIncrement",
-        "ScrollIncrement", DEF_SCROLL_INCREMENT,
-        Blt_Offset(Filmstrip,scrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT_NNEG, "-scrolldelay", "scrollDelay", "ScrollDelay",
         DEF_SCROLL_DELAY, Blt_Offset(Filmstrip, delay),
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_POS, "-scrollincrement", "scrollIncrement",
+        "ScrollIncrement", DEF_SCROLL_INCREMENT,
+        Blt_Offset(Filmstrip,scrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
+#ifdef notdef
     {BLT_CONFIG_INT_POS, "-steps", "steps", "Steps", DEF_FRAME_STEPS,
         Blt_Offset(Filmstrip, numSteps), BLT_CONFIG_DONT_SET_DEFAULT},
+#endif
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
         Blt_Offset(Filmstrip, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -1870,7 +1854,6 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     framePtr->fill = FILL_BOTH;
     framePtr->filmPtr = filmPtr;
     framePtr->relief = TK_RELIEF_FLAT;
-    framePtr->activeRelief = TK_RELIEF_FLAT;
     gripPtr->framePtr = framePtr;
     framePtr->hashPtr = hPtr;
     framePtr->index = Blt_Chain_GetLength(filmPtr->frames);
@@ -1878,7 +1861,6 @@ NewFrame(Tcl_Interp *interp, Filmstrip *filmPtr, const char *name)
     framePtr->name = Blt_GetHashKey(&filmPtr->frameTable, hPtr);
     framePtr->nom  = LIMITS_NOM;
     framePtr->resize = RESIZE_BOTH;
-    framePtr->weight = 1.0f;
     Blt_SetHashValue(hPtr, framePtr);
 
     /* Generate an unique subwindow name. It will be in the form "grip0",
@@ -2033,14 +2015,13 @@ NewFilmstrip(Tcl_Interp *interp, Tcl_Obj *objPtr)
     }
     filmPtr = Blt_AssertCalloc(1, sizeof(Filmstrip));
     Tk_SetClass(tkwin, "BltFilmstrip");
-    filmPtr->activeGripRelief = TK_RELIEF_RAISED;
+    filmPtr->gripActiveRelief = TK_RELIEF_RAISED;
     filmPtr->anchor = TK_ANCHOR_CENTER;
     filmPtr->display = Tk_Display(tkwin);
     filmPtr->flags = LAYOUT_PENDING;
     filmPtr->gripBorderWidth = 1;
-    filmPtr->gripHighlightThickness = 2;
     filmPtr->gripPad.side1 = filmPtr->gripPad.side2 = 2;
-    filmPtr->gripThickness = 2;
+    filmPtr->gripThickness = 3;
     filmPtr->interp = interp;
     filmPtr->delay = 30;
     filmPtr->gripRelief = TK_RELIEF_FLAT;
@@ -2977,9 +2958,7 @@ ConfigureFilmstrip(Filmstrip *filmPtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    filmPtr->gripSize =
-        MAX(PADDING(filmPtr->gripPad), filmPtr->gripHighlightThickness) +
-        filmPtr->gripThickness;
+    filmPtr->gripSize = filmPtr->gripThickness + PADDING(filmPtr->gripPad);
     gcMask = 0;
     newGC = Tk_GetGC(filmPtr->tkwin, gcMask, &gcValues);
     if (filmPtr->gc != NULL) {
@@ -4878,7 +4857,7 @@ DisplayGrip(ClientData clientData)
 
     if (filmPtr->activePtr == gripPtr) {
         bg = filmPtr->activeGripBg;
-        relief = filmPtr->activeGripRelief;
+        relief = filmPtr->gripActiveRelief;
     } else {
         bg =  filmPtr->gripBg;
         relief = filmPtr->gripRelief;
@@ -4896,12 +4875,5 @@ DisplayGrip(ClientData clientData)
         Blt_Bg_DrawRectangle(gripPtr->tkwin, drawable, bg, 
                 filmPtr->gripPad.side1, filmPtr->gripPad.side1, w, h,
                 filmPtr->gripBorderWidth, relief);
-    }
-    if ((filmPtr->gripHighlightThickness > 0) && (framePtr->flags & FOCUS)) {
-        GC gc;
-
-        gc = Tk_GCForColor(filmPtr->gripHighlightColor, drawable);
-        Tk_DrawFocusHighlight(gripPtr->tkwin, gc,
-                filmPtr->gripHighlightThickness, drawable);
     }
 }

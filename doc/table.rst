@@ -212,11 +212,11 @@ The following operations are available for the *table* geometry manager.
     of *pathName*.  *NumPixels* must be a valid screen distance
     like "2" or "0.3i".  The default is "0".
 
-  **-padx** *pad*
+  **-padx** *numPixels*
     Sets how much padding to add to the left and right exteriors of
-    *pathName*.  *Pad* can be a list of one or two numbers.  If *pad* has
+    *pathName*.  *NumPixels* can be a list of one or two numbers.  If *numPixels* has
     two elements, the left side of *pathName* is padded by the first value
-    and the right side by the second value.  If *pad* has just one value,
+    and the right side by the second value.  If *numPixels* has just one value,
     both the left and right sides are padded evenly by the value.  The
     default is "0".
 

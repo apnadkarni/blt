@@ -203,7 +203,7 @@ The following operations are available for scrollset widgets:
     child widget.  The default is "0".
 
   **-window** *pathName*  
-    Specifies the widget to be child into the scrollset.  *PathName* must
+    Specifies the widget to be embedded into the scrollset.  *PathName* must
     be a child of the **scrollset** widget.  The scrollset will "pack" and
     manage the size and placement of *pathName*.  The default value is "".
 

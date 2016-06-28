@@ -43,11 +43,12 @@ namespace eval blt::Filmstrip {
 }
 
 bind BltFilmstripGrip <Enter> { 
+    focus %W
     [winfo parent %W] grip activate %W
 } 
 bind BltFilmstripGrip <Leave> { 
     [winfo parent %W] grip deactivate
-}
+o}
 bind BltFilmstripGrip <KeyPress-Left> { 
     [winfo parent %W] grip move %W -10 0 
 }
