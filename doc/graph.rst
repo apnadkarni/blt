@@ -876,6 +876,10 @@ The resource class is "Axis".  The resource names are the names of the axes
   configure** operation.
 
 *pathName* **axis deactivate** *axisName* 
+  Deactivates all the axes matching *pattern*.  Elements whose names
+  match any of the patterns given are redrawn using their normal colors.
+  *AxisName* is an element name or a tag and may refer to more than one
+  element.
 
 *pathName* **axis delete** ?\ *axisName*\ ... ?
   Deletes the one or more axes. Axes are reference counted. *AxisName* is

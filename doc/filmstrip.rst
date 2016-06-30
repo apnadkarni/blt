@@ -211,7 +211,7 @@ command.  The following operations are available for *filmstrip* widgets:
     created by the **blt::background** command.  
     The default is "grey90". 
 
-  **-activegripelief** *reliefName* 
+  **-activegriprelief** *reliefName* 
     Specifies the default relief when a frame's grip is active.  This
     determines the 3-D effect for the grip.  *ReliefName* indicates how
     the frame should appear relative to the window; for example, "raised"
@@ -366,8 +366,8 @@ command.  The following operations are available for *filmstrip* widgets:
 
   **-data** *string* 
     Specifies data to be associated with the frame. *String* can be an
-    arbitrary.  It is not used by the *filmstrip* widget. The default is
-    "".
+    arbitrary string.  It is not used by the *filmstrip* widget. The
+    default is "".
 
   **-deletecommand** *string*
     Specifies a TCL command to invoked when the frame is deleted (via the
@@ -375,24 +375,12 @@ command.  The following operations are available for *filmstrip* widgets:
     command will be invoked before the frame is actually deleted.  If
     *string* is "", no command is invoked.  The default is "".
 
-  **-activegripcolor** *colorName* 
-    Specifies the default color when the grip is active.  *ColorName* may
-    be a color name or the name of a background object created by the
-    **blt::background** command.  This option may be overridden by the
-    style's **-activebackground** option.  The default is "skyblue4".
-
-  **-background** *colorName* 
-    Specifies the background of *frameName*.  *ColorName* may be a color
-    name or the name of a background object created by the
-    **blt::background** command.  If *colorName* is "", the widget's
-    **-background** is used. The default is "".
-
   **-fill** *fillName* 
     If the frame is bigger than its embedded child widget, then *fillName*
     specifies if the child widget should be stretched to occupy the extra
     space.  *FillName* is either "none", "x", "y", "both".  For example, if
-    *fill* is "x", then the child widget is stretched horizontally.  If
-    *fill* is "y", the widget is stretched vertically.  The default is
+    *fillName* is "x", then the child widget is stretched horizontally.  If
+    *fillName* is "y", the widget is stretched vertically.  The default is
     "none".
 
   **-height** *numPixels* 
@@ -507,6 +495,33 @@ command.  The following operations are available for *filmstrip* widgets:
     Specifies the widget to be embedded into *frameName*.  *ChildName* must
     be a child of the *filmstrip* widget.  The *filmstrip* will "pack" and
     manage the size and placement of *childName*.  The default value is "".
+
+*pathName* **grip activate** *frameName* 
+  Specifies to draw *frameName*\ 's grip with its active colors and relief
+  (see the **-activegripcolor** and **-activegriprelief** options).
+  *FrameName* is an index, label, or tag but may not refer to more than
+  one tab.  Only one grip may be active at a time.  
+
+*pathName* **grip anchor** *frameName* *x* *y*
+   Sets the anchor for the resizing or moving *frameName*.  Either the x or
+   y coordinate is used depending upon the orientation of the frame.
+
+*pathName* **grip deactivate** 
+  Specifies to draw all grips with its default colors and relief
+  (see the **-gripcolor** and **-griprelief** options).
+
+*pathName* **grip mark** *frameName* *x* *y*
+  Records *x* or *y* coordinate in the filmstrip window; used with
+  later **grip move** commands.  Typically this command is associated
+  with a mouse button press in the widget.  It returns an empty string.
+
+*pathName* **grip move** *frameName* *x* *y*
+  Moves the grip of *frameName*.  The grip is moved the given distance
+  from its previous location (anchor).
+
+*pathName* **grip set** *frameName* *x* *y*
+  Sets the location of the *frameName*\ 's grip to the given coordinate
+  (*x* or *y*) specified.  The *filmstrip* frames are moved accordingly.
 
 *pathName* **index** *frameName* 
   Returns the index of *frameName*. *FrameName* may be a label, index, or

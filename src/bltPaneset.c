@@ -198,10 +198,6 @@ struct _Paneset {
     AdjustMode mode;                    /* Panesets only: Mode to use to
                                          * resize panes when the user
                                          * adjusts a sash. */
-    int sashHighlightThickness;         /* Width in pixels of highlight to
-                                         * draw around the sash when it
-                                         * has the focus.  <= 0 means don't
-                                         * draw a highlight. */
     int normalWidth;                    /* Normal dimensions of the paneset */
     int normalHeight;
     int reqWidth, reqHeight;            /* Constraints on the paneset's
@@ -396,6 +392,8 @@ struct _Pane  {
                                          * selected item. */
     Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
                                          * when pane is deleted. */
+    Tcl_Obj *dataObjPtr;                /* User-defined data associated
+                                         * with this pane. */
 };
 
 /* Pane/sash flags.  */
@@ -473,9 +471,6 @@ static Blt_ConfigSpec paneSetSpecs[] =
         DEF_BACKGROUND, Blt_Offset(Paneset, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
         0, 0},
-    {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
-        DEF_PANE_DELETE_COMMAND, Blt_Offset(Pane, deleteCmdObjPtr),
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
         Blt_Offset(Paneset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_CUSTOM, "-mode", "mode", "Mode", DEF_MODE,
@@ -483,10 +478,6 @@ static Blt_ConfigSpec paneSetSpecs[] =
         &adjustModeOption},
     {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
         Blt_Offset(Paneset, flags), BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
-    {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Paneset, reqHeight), 0, &bltLimitsOption},
-    {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Paneset, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_PIXELS_NNEG, "-sashborderwidth", "sashBorderWidth", 
         "SashBorderWidth", DEF_SASH_BORDERWIDTH,
         Blt_Offset(Paneset, sashBorderWidth),
@@ -495,11 +486,6 @@ static Blt_ConfigSpec paneSetSpecs[] =
         DEF_SASH_COLOR, Blt_Offset(Paneset, sashBg), 0},
     {BLT_CONFIG_CURSOR, "-sashcursor", "sashCursor", "SashCursor",
         DEF_SASH_CURSOR, Blt_Offset(Paneset, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_PIXELS_NNEG, "-sashhighlightthickness",
-        "sashHighlightThickness", "SashHighlightThickness",
-        DEF_SASH_HIGHLIGHT_THICKNESS,
-        Blt_Offset(Paneset, sashHighlightThickness),
-        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-sashpad", "sashPad", "SashPad", DEF_SASH_PAD, 
         Blt_Offset(Paneset, sashPad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-sashrelief", "sashRelief", "SashRelief", 
@@ -521,36 +507,37 @@ static Blt_ConfigSpec paneSpecs[] =
         (char *)NULL, Blt_Offset(Pane, bg), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_OBJ, "-data", "data", "Data", DEF_PANE_DATA, 
+        Blt_Offset(Pane, dataObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
+        DEF_PANE_DELETE_COMMAND, Blt_Offset(Pane, deleteCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_PANE_FILL, 
         Blt_Offset(Pane, fill), BLT_CONFIG_DONT_SET_DEFAULT },
-    {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqHeight), 0},
+    {BLT_CONFIG_CUSTOM, "-height", "height", "Height", (char *)NULL, 
+        Blt_Offset(Pane, reqHeight), 0, &bltLimitsOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_PANE_HIDE, 
         Blt_Offset(Pane, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)HIDDEN },
-    {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Pane, iPadX), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
+    {BLT_CONFIG_PIXELS_NNEG, "-ipadx", "iPadX", "IPadX", (char *)NULL,
+        Blt_Offset(Pane, iPadX), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-ipady", "iPadY", "IPadY", (char *)NULL, 
         (char *)NULL, Blt_Offset(Pane, iPadY), 0},
-    {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqHeight), 0, &bltLimitsOption},
-    {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_PANE_RESIZE,
         Blt_Offset(Pane, resize), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-showsash", "showSash", "showSash", 
         DEF_SHOW_SASH, Blt_Offset(Pane, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_SASH},
-    {BLT_CONFIG_CUSTOM, "-size", (char *)NULL, (char *)NULL, (char *)NULL, 
+    {BLT_CONFIG_CUSTOM, "-size", "size", "Size", (char *)NULL, 
         Blt_Offset(Pane, reqSize), 0, &bltLimitsOption},
-     {BLT_CONFIG_CUSTOM, "-tags", (char *)NULL, (char *)NULL,
-        DEF_PANE_TAGS, 0, BLT_CONFIG_NULL_OK, &tagsOption},
+     {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_PANE_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
         DEF_TAKEFOCUS, Blt_Offset(Pane, takeFocus), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FLOAT, "-weight", "weight", "Weight", DEF_PANE_WEIGHT,
         Blt_Offset(Pane, weight), BLT_CONFIG_DONT_SET_DEFAULT | PANESET},
-    {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Pane, reqWidth), 0},
+    {BLT_CONFIG_CUSTOM, "-width", "width", "Width", (char *)NULL, 
+        Blt_Offset(Pane, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
         Blt_Offset(Pane, tkwin), BLT_CONFIG_NULL_OK, &childOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -778,7 +765,7 @@ SetTag(Tcl_Interp *interp, Pane *panePtr, const char *tagName)
     Paneset *setPtr;
     long dummy;
     
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    if (strcmp(tagName, "all") == 0) {
         return TCL_OK;                  /* Don't need to create reserved
                                          * tags. */
     }
@@ -2037,7 +2024,6 @@ NewPaneset(Tcl_Interp *interp, Tcl_Obj *objPtr, int type)
     setPtr->flags = LAYOUT_PENDING;
     setPtr->mode = MODE_GIVETAKE;
     setPtr->side = SASH_FARSIDE;
-    setPtr->sashHighlightThickness = 2;
     Blt_SetWindowInstanceData(tkwin, setPtr);
     Blt_InitHashTable(&setPtr->paneTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->sashTable, BLT_STRING_KEYS);
@@ -3659,9 +3645,7 @@ ConfigurePaneset(Paneset *setPtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    setPtr->sashSize =
-        MAX(PADDING(setPtr->sashPad), setPtr->sashHighlightThickness) +
-        setPtr->sashThickness;
+    setPtr->sashSize = PADDING(setPtr->sashPad) + setPtr->sashThickness;
     gcMask = 0;
     newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
     if (setPtr->gc != NULL) {
@@ -5418,12 +5402,5 @@ DisplaySashProc(ClientData clientData)
                         w, h, setPtr->sashBorderWidth, relief);
             }
         }
-    }
-    if ((setPtr->sashHighlightThickness > 0) && (panePtr->flags & FOCUS)) {
-        GC gc;
-
-        gc = Tk_GCForColor(setPtr->sashHighlightColor, drawable);
-        Tk_DrawFocusHighlight(panePtr->sash, gc, setPtr->sashHighlightThickness,
-                drawable);
     }
 }
