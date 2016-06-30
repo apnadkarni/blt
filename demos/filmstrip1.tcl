@@ -63,10 +63,16 @@ blt::scrollset .ss \
     -xscrollbar .ss.xs \
     -window .ss.fs 
 
-blt::filmstrip .ss.fs -width 560 \
+if 0 {
+    blt::filmstrip .ss.fs -width 560 \
     -scrolldelay 40 -scrollincrement 30 -animate yes \
     -scrollcommand { .ss xset } -bg grey85 \
     -relwidth 1.0 \
+
+    }
+
+blt::filmstrip .ss.fs -width 560 -animate yes \
+    -scrollcommand { .ss xset } \
 
 blt::tk::scrollbar .ss.xs -orient horizontal -command { .ss xview }
 
@@ -75,7 +81,7 @@ bind .ss.fs <ButtonPress-1>  [list MoveTo %W %x %y]
 for { set i 0 } { $i < 32 } { incr i } {
     set color [lindex $autocolors $i]
     set g .ss.fs.g$i
-    blt::graph $g -bg $color -width 500
+    blt::graph $g -bg $color -width 300
     .ss.fs add \
 	-window $g \
 	-showgrip yes \

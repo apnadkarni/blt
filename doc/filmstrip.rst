@@ -23,7 +23,7 @@ DESCRIPTION
 -----------
 
 The *filmstrip* widget displays a scroll-able vertical or horizontal strip
-of embedded Tk widgets.  Each child widget is contained in a filmstrip
+of embedded Tk widgets.  Each child widget is contained in a *filmstrip*
 frame (different from the Tk frame widget). Frames are optionally
 separated by grips (handles) that appear as a border between frames.  It is
 positioned on the left (horizontal arrangement) or bottom (vertical
@@ -32,7 +32,7 @@ arrangement) of the frame.
 INTRODUCTION
 ------------
 
-The *filmstrip* widget displays embedded Tk widgets as a strip of filmstrip
+The *filmstrip* widget displays embedded Tk widgets as a strip of *filmstrip*
 frames.  The frames may be arranged horizontally or vertically.  Frames
 have optional grips (handles) that appear as a border between frames.  They
 can be used to slide frames left-to-right (horizontal arrangement) or
@@ -41,11 +41,11 @@ frame by using the mouse or keyboard on the handle.
 
 The *filmstrip* widget can also be used to create a wizard-like interface
 where frames contain are a sequence of dialogs that lead the user through a
-series of well-defined tasks.  In this case the size of the filmstrip widget
-is the size of a frame.  If the filmstrip widget is resized the frame
+series of well-defined tasks.  In this case the size of the *filmstrip* widget
+is the size of a frame.  If the *filmstrip* widget is resized the frame
 containing the dialog is also resized.
 
-The embedded widgets of a filmstrip must be children of the filmstrip
+The embedded Tk widgets of a *filmstrip* must be children of the *filmstrip*
 widget.
 
 SYNTAX
@@ -75,59 +75,59 @@ the command.  The operations available are described in the
 REFERENCING FRAMES
 ------------------
 
-Frames can be refererenced either by index, label, or by tag.
+Frames can be referenced either by index, label, or by tag.
 
-  **index**
-    The number of the frame.  Indices start from 0.  The index number of a
-    frame can change as other frames are added or deleted.  There are also
-    special non-numeric indices that can be used.
+*index*
+  The number of the frame.  Indices start from 0.  The index number of a
+  frame can change as other frames are added, deleted, or moved.  There are
+  also special non-numeric indices that can be used.
 
-    **active**
-      This is the frame whose grip is where the mouse pointer is currently
-      located.  When a grip is active, it is drawn using its active colors.
-      The **active** index is changes when you move the mouse pointer over
-      another frame's grip or by using the **activate** operation. Note
-      that there can be only one active frame at a time.
+  **active**
+    This is the frame whose grip is where the mouse pointer is currently
+    located.  When a grip is active, it is drawn using its active colors.
+    The **active** index is changes when you move the mouse pointer over
+    another frame's grip or by using the **activate** operation. Note
+    that there can be only one active frame at a time.
 
-    **current**
-      The index of the current frame. This is set by the **see** operation.
+  **current**
+    The index of the current frame. This is set by the **see** operation.
 
-    **end**
-      The index of the last frame.
-      
-    **first**
-      The index of the first frame that is not hidden or disabled.
+  **end**
+    The index of the last frame.
+    
+  **first**
+    The index of the first frame that is not hidden or disabled.
 
-    **last**
-      The index of the last frame that is not hidden or disabled.
+  **last**
+    The index of the last frame that is not hidden or disabled.
 
-    **previous**
-      The frame previous to the current frame. In horizontal mode, this is
-      the frame to the left, in vertical mode this is the frame above.  If
-      no previous frame exists or the preceding frame are hidden or
-      disabled, an index of "-1" is returned.
+  **previous**
+    The frame previous to the current frame. In horizontal mode, this is
+    the frame to the left, in vertical mode this is the frame above.  If
+    no previous frame exists or the preceding frame are hidden or
+    disabled, an index of "-1" is returned.
 
-    **next**
-      The frame next to the current frame. In horizontal mode, this is the
-      frame to the right, in vertical mode this is the frame below.  If no
-      next frame exists or the following frames are hidden or disabled, an
-      index of "-1" is returned.
+  **next**
+    The frame next to the current frame. In horizontal mode, this is the
+    frame to the right, in vertical mode this is the frame below.  If no
+    next frame exists or the following frames are hidden or disabled, an
+    index of "-1" is returned.
 
-    **@**\ *x*\ ,\ *y*
-      The index of the frame that is located at the *x* and *y*
-      screen coordinates.  If no frame is at that point, then the
-      index returned is "-1".
+  **@**\ *x*\ ,\ *y*
+    The index of the frame that is located at the *x* and *y*
+    screen coordinates.  If no frame is at that point, then the
+    index returned is "-1".
 
-  **label**
-    The name of the frame.  This is usually in the form "frame0", "frame1",
-    etc., although you can specify the name of the frame.
+*label*
+  The name of the frame.  This is usually in the form "frame0", "frame1",
+  etc., although you can specify the name of the frame.
 
-  **tag**
-    A tag is a string associated with an frame.  They are a useful for
-    referring to groups of frames. Frames can have any number of tags
-    associated with them (specified by the **-tags** item option).  A
-    tag may refer to multiple frames.  There is one built-in tag: "all".
-    Every frame has the tag "all".  
+*tag*
+  A tag is a string associated with an frame.  They are a useful for
+  referring to groups of frames. Frames can have any number of tags
+  associated with them (specified by the **-tags** item option).  A
+  tag may refer to multiple frames.  There is one built-in tag: "all".
+  Every frame has the tag "all".  
 
 If a frame is specified by an integer (or one of the non-numeric indices)
 it is assumed to be an index.  If it is specified by a string, it is first
@@ -151,11 +151,11 @@ command.  The following operations are available for *filmstrip* widgets:
 
 *pathName* **add** ?\ *label*\ ? ?\ *option* *value* ...?
   Creates a new frame, appending it to the end of the list of frames in the
-  filmstrip widget. If no *label* argument is present, then the name of
+  *filmstrip* widget. If no *label* argument is present, then the name of
   the frame is automatically generated in the form "frame0", "frame1", etc.
-  If a *label* argument is present, then this is the
-  name of the new frame.  *Label* can not start with a dash "-" or be the
-  name of another frame.  The name of the new frame is returned. 
+  If a *label* argument is present, then this is the name of the new frame.
+  *Label* can not start with a dash "-" or be the name of another frame.
+  The name of the new frame is returned.
 
   If one or more *option-value* pairs are specified, they modify the given
   frame option(s) to have the given value(s).  *Option* and *value* are
@@ -185,12 +185,12 @@ command.  The following operations are available for *filmstrip* widgets:
   operation below.
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
-  Queries or modifies the configuration options of the filmstrip widget.
+  Queries or modifies the configuration options of the *filmstrip* widget.
   If no *option* is specified, this command returns a list describing all
   the available options for *pathName* (see **Tk_ConfigureInfo** for
   information on the format of this list).  If *option* is specified with
   no *value*, then a list describing the one named option (this list will
-  be identical to the corresponding sublist of the value returned if no
+  be identical to the corresponding sub-list of the value returned if no
   *option* is specified) is returned.  If one or more *option-value* pairs
   are specified, then this command modifies the given widget option(s) to
   have the given value(s); in this case the command returns an empty
@@ -206,21 +206,21 @@ command.  The following operations are available for *filmstrip* widgets:
   The following widget options are available\:
 
   **-activegripcolor** *colorName* 
-    Specifies the backgroun color of the frame's grip when it is active.
+    Specifies the background color of the frame's grip when it is active.
     *ColorName* may be a color name or the name of a background object
     created by the **blt::background** command.  
     The default is "grey90". 
 
   **-activegripelief** *reliefName* 
     Specifies the default relief when a frame's grip is active.  This
-    determinesb the 3-D effect for the grip.  *ReliefName* indicates how
+    determines the 3-D effect for the grip.  *ReliefName* indicates how
     the frame should appear relative to the window; for example, "raised"
     means the item should appear to protrude.  The default is "flat".
     
   **-anchor** *anchorName* 
     Specifies how to position the set of frames if extra space is available
-    in the filmstrip. For example, if *anchorName* is "center" then the
-    widget is centered in the filmstrip; if *anchorName* is "n" then the
+    in the *filmstrip*. For example, if *anchorName* is "center" then the
+    widget is centered in the *filmstrip*; if *anchorName* is "n" then the
     widget will be drawn such that the top center point of the widget will
     be the top center point of the frame.  This option defaults to "c".
 
@@ -241,7 +241,7 @@ command.  The following operations are available for *filmstrip* widgets:
     should appear to protrude.  The default is "raised".
 
   **-gripborderwidth** *numPixels* 
-    Specifies the default borderwidth of grips in the widget.  *NumPixels*
+    Specifies the default border width of grips in the widget.  *NumPixels*
     is a non-negative value indicating the width of the 3-D border drawn
     around the grip. The value may have any of the forms acceptable to
     **Tk_GetPixels**.  This option may be overridden by the style's
@@ -286,7 +286,7 @@ command.  The following operations are available for *filmstrip* widgets:
   **-relheight** *number*
     Specifies the relative height of frames to the *filmstrip* window.
     *Number* is a number between 0.0 and 1.0.  If *number* is "1.0", then
-    each frame will take up the entire filmstrip window. If *number* is
+    each frame will take up the entire *filmstrip* window. If *number* is
     0.0, and **-orient** is "vertical", then the height of each frame is
     computed from the requested height of its embedded child widget.  The
     default is "0.0".
@@ -294,7 +294,7 @@ command.  The following operations are available for *filmstrip* widgets:
   **-relwidth** *number*
     Specifies the relative width of frames to the *filmstrip* window.
     *Number* is a number between 0.0 and 1.0.  If *number* is "1.0", then
-    each frame will take up the entire filmstrip window. If *number* is
+    each frame will take up the entire *filmstrip* window. If *number* is
     0.0, and **-orient** is "horizontal", then the width of each frame is
     computed from the requested width of its embedded child widget.  The
     default is "0.0".
@@ -307,15 +307,15 @@ command.  The following operations are available for *filmstrip* widgets:
     executed.
 
   **-scrolldelay** *milliseconds*
-    Specifies the delay between steps in the scrolling in milliseconds.
-    If *milliseconds* is 0, then no automatic changes will occur.
-    The default is "0".
+    Specifies the delay between steps in the scrolling in milliseconds.  If
+    *milliseconds* is 0, then no automatic changes will occur.  The default
+    is "0".
 
   **-scrollincrement** *numPixels*
-    Sets the smallest number of pixels to scroll the frames.  If *numPixels*
-    is greater than 0, this sets the units for scrolling (e.g., when you
-    the change the view by clicking on the left and right arrows of a
-    scrollbar). The default is "10".
+    Sets the smallest number of pixels to scroll the frames.  If
+    *numPixels* is greater than 0, this sets the units for scrolling (e.g.,
+    when you the change the view by clicking on the left and right arrows
+    of a scrollbar). The default is "10".
 
   **-width** *numPixels*
     Specifies the width of the *filmstrip* window.  *NumPixels* is a
@@ -349,17 +349,17 @@ command.  The following operations are available for *filmstrip* widgets:
   **Tk_ConfigureInfo** for information on the format of this list).  If
   *option* is specified with no *value*, then the command returns a list
   describing the one named option (this list will be identical to the
-  corresponding sublist of the value returned if no *option* is specified).
+  corresponding sub-list of the value returned if no *option* is specified).
   In both cases, *frameName* may not represent more than one frame.
   
   If one or more *option-value* pairs are specified, then this command
   modifies the given option(s) to have the given value(s); in this case
-  *frameName* may refer to mulitple items (for example "all").  *Option* and
+  *frameName* may refer to multiple items (for example "all").  *Option* and
   *value* are described below.
 
 
   **-borderwidth** *numPixels* 
-    Specifies the borderwidth of *frameName*.  *NumPixels* is a non-negative
+    Specifies the border width of *frameName*.  *NumPixels* is a non-negative
     value indicating the width of the 3-D border drawn around the frame.
     *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
     The default is "0".
@@ -426,7 +426,7 @@ command.  The following operations are available for *filmstrip* widgets:
   **-padx** *numPixels*
     Sets how much padding to add to the left and right exteriors of
     *frameName*.  *NumPixels* can be a list of one or two numbers.  If
-    *numPixles* has two elements, the left side of the frame is padded by
+    *numPixels* has two elements, the left side of the frame is padded by
     the first value and the right side by the second value.  If *numPixels*
     has just one value, both the left and right sides are padded evenly by
     the value.  The default is "0".
@@ -443,13 +443,13 @@ command.  The following operations are available for *filmstrip* widgets:
   **-relief** *relief* 
     Specifies the 3-D effect for the border around the frame.  *Relief*
     specifies how the interior of the frame should appear relative to the
-    filmstrip widget; for example, "raised" means the item should appear to
+    *filmstrip* widget; for example, "raised" means the item should appear to
     protrude from the window, relative to the surface of the window.  The
     default is "flat".
 
   **-resize** *resizeMode*
     Indicates that the frame can expand or shrink from its requested width
-    when the filmstrip is resized.  *ResizeMode* must be one of the
+    when the *filmstrip* is resized.  *ResizeMode* must be one of the
     following.
 
     **none**
@@ -505,7 +505,7 @@ command.  The following operations are available for *filmstrip* widgets:
 
   **-window** *childName*  
     Specifies the widget to be embedded into *frameName*.  *ChildName* must
-    be a child of the **filmstrip** widget.  The filmstrip will "pack" and
+    be a child of the *filmstrip* widget.  The *filmstrip* will "pack" and
     manage the size and placement of *childName*.  The default value is "".
 
 *pathName* **index** *frameName* 
@@ -560,12 +560,12 @@ command.  The following operations are available for *filmstrip* widgets:
   returned. *Pattern* is a **glob**\ -style pattern.
 
 *pathName* **see** *framemName* 
-  Scrolls the filmstrip so that *frameName* is visible in the widget's window.
+  Scrolls the *filmstrip* so that *frameName* is visible in the widget's window.
   *FrameName* may be a label, index, or tag, but may not represent more than
   one item.
   
 *pathName* **size** 
-  Returns the number of frames in the filmstrip.
+  Returns the number of frames in the *filmstrip*.
 
 *pathName* **tag add** *tag* ?\ *frameName* ... ?
   Adds the tag to one of more frames. *Tag* is an arbitrary string that can
@@ -595,13 +595,13 @@ command.  The following operations are available for *filmstrip* widgets:
   *tag*, then an empty string is returned.
 
 *pathName* **tag names** ?\ *frameName*\ ... ?
-  Returns a list of tags used by the *listview* widget.  If one or more
+  Returns a list of tags used by the *filmstrip* widget.  If one or more
   *frameName* arguments are present, any tag used by *frameName* is returned.
 
 *pathName* **tag set** *frameName* ?\ *tag* ... ?
   Sets one or more tags for a given frame.  *FrameName* may be a label,
   index, or tag and may refer to multiple frames.  Tag names can't start
-  with a digit (to distinquish them from indices) and can't be a reserved
+  with a digit (to distinguish them from indices) and can't be a reserved
   tag ("all").
 
 *pathName* **tag unset** *frameName* ?\ *tag* ... ?
@@ -622,11 +622,10 @@ command.  The following operations are available for *filmstrip* widgets:
   *number* units.  The number of pixel in a unit is specified by the
   **-xscrollincrement** option.  If *what* is "pages" then the view
   adjusts by *number* screenfuls.  If *number* is negative then the view
-
-if scrolled left; if it is positive then it is scrolled right.
+  if scrolled left; if it is positive then it is scrolled right.
 
 GRIP BINDINGS
-~~~~~~~~~~~~~
+-------------
 
 The follow behaviors are defined for the grip windows created for each
 frame. The widget class name is BltFilmstripGrip. 
@@ -636,34 +635,34 @@ frame. The widget class name is BltFilmstripGrip.
   **<Leave>** 
     Display the grip in its normal colors and relief.
   **<ButtonPress-1>** 
-    Start scrolling the filmstrip.
+    Start scrolling the *filmstrip*.
   **<B1-Motion>**
-    Continue scrolling the filmstrip.
+    Continue scrolling the *filmstrip*.
   **<ButtonRelease-1>** 
-    Stop scrolling the filmstrip.
+    Stop scrolling the *filmstrip*.
   **<KeyPress-Up>**
-    If orientation is vertical, then scroll the filmstrip upward by 10
+    If orientation is vertical, then scroll the *filmstrip* upward by 10
     pixels.
   **<KeyPress-Down>**
-    If orientation is vertical, then scroll the filmstrip downward by 10
+    If orientation is vertical, then scroll the *filmstrip* downward by 10
     pixels.
   **<KeyPress-Left>**
-    If orientation is horizontal, then scroll the filmstrip left by 10
+    If orientation is horizontal, then scroll the *filmstrip* left by 10
     pixels.
   **<KeyPress-Right>**
-    If orientation is horizontal, then scroll the filmstrip right by 10
+    If orientation is horizontal, then scroll the *filmstrip* right by 10
     pixels.
   **<Shift-KeyPress-Up>**
-    If orientation is vertical, then scroll the filmstrip upward by 100
+    If orientation is vertical, then scroll the *filmstrip* upward by 100
     pixels.
   **<Shift-KeyPress-Down>**
-    If orientation is vertical, then scroll the filmstrip downward by 100
+    If orientation is vertical, then scroll the *filmstrip* downward by 100
     pixels.
   **<Shift-KeyPress-Left>**
-    If orientation is horizontal, then scroll the filmstrip left by 100
+    If orientation is horizontal, then scroll the *filmstrip* left by 100
     pixels.
   **<Shift-KeyPress-Right>**
-    If orientation is horizontal, then scroll the filmstrip right by 100
+    If orientation is horizontal, then scroll the *filmstrip* right by 100
     pixels.
 
 EXAMPLE
@@ -673,336 +672,118 @@ The **filmstrip** command creates a new widget.
 
   ::
 
-    filmstrip .tv -bg white
+    package require BLT
 
-A new TCL command ".tv" is also created.  This command can be used to query
-and modify the *filmstrip* widget.  For example, to change the background
-color of the table to "green", you use the new command and the widget's
-**configure** operation.
+    blt::filmstrip .fs 
 
-  ::
-
-    # Change the background color.
-    .tv configure -background "green"
-
-By default, the *filmstrip* widget will automatically create a new tree
-object to contain the data.  The name of the new tree is the pathname of
-the widget.  Above, the new tree object name is ".tv".  But you can use the
-**-tree** option to specify the name of another tree.
+A new TCL command ".fs" is also created.  This new command can be used to
+query and modify the *filmstrip* widget.  The default orientation of the
+filmstrip is horizontal.  If you want a vertical filmstrip, where frames
+run top to bottom, you can set the **-orient** option.
 
   ::
 
-    # View the tree "myTree".
-    .tv configure -tree "myTree"
+    # Change the orientation of the filmstrip.
+    .fs configure -orient "vertical"
 
-When a new tree is created, it contains only a root node.  The node is
-automatically opened.  The id of the root node is always "0" (you can use
-also use the special id "root"). The **insert** operation lets you insert
-one or more new entries into the tree.  The last argument is the node's
-*pathname*.
+You can then add frames to the widget.  A frame is the container for an
+embedded Tk widget.  Note that the embedded Tk widget must be a child of
+the filmstrip widget.
+
+  ::
+    
+    # Add a button to the filmstrip. 
+    button .fs.b1
+    set frame [.fs add -window .fs.b1]
+
+The variable "frame" now contains the label of the frame.  You can
+use that label to set or query configuration options specific to the
+frame. You can also use the frame's index or tag to refer to the  frame.
 
   ::
 
-    # Create a new entry named "myEntry"
-    set id [.tv insert end "myEntry"]
+    # Make the button expand to the size of the frame.
+    .fs frame configure $frame -fill both
+    
+The **-fill** frame option says to may the embedded widget as big as the
+frame that contains it.
 
-This appends a new node named "myEntry".  It will positioned as the
-last child of the root of the tree (using the position "end").  You
-can supply another position to order the node within its siblings.
-
-  ::
-
-    # Prepend "fred".
-    set id [.tv insert 0 "fred"]
-
-Entry names do not need to be unique.  By default, the node's label is its
-name.  To supply a different text label, add the **-label** option.
+You can add as many frames as you want to the widget.
 
   ::
 
-    # Create a new node named "fred"
-    set id [.tv insert end "fred" -label "Fred Flintstone"]
+     button .fs.b2 -text "Second" 
+     .fs add -window .fs.b2 -fill both
+     button .fs.b3 -text "Third" 
+     .fs add -window .fs.b3 -fill both
+     button .fs.b4 -text "Fourth" 
+     .fs add -window .fs.b4 -fill both
+     button .fs.b5 -text "Fifth" 
+     .fs add -window .fs.b5 -fill both
 
-The **insert** operation returns the id of the new node.  You can also use
-the **index** operation to get this information.
-
-  ::
-
-    # Get the id of "fred"
-    .tv index "fred"
-
-To insert a node somewhere other than root, use the **-at** switch.  It
-takes the id of the node where the new child will be added.
-
-  ::
-
-    # Create a new node "barney" in "fred".
-    .tv insert -at $id end "barney" 
-
-A pathname describes the path to an entry in the hierarchy.  It's a list of
-entry names that compose the path in the tree.  Therefore, you can also add
-"barney" to "fred" as follows.
+By default, the *filmstrip* widget's requested height will be the computed
+height of all its frame (vertical orientation).  But you can set the
+**-height** option to override it.
 
   ::
 
-    # Create a new sub-entry of "fred"
-    .tv insert end "fred barney" 
+    .fs configure -height 1i
 
-Every name in the list is ancestor of the next.  All ancestors must already
-exist.  That means that an entry "fred" is an ancestor of "barney" and must
-already exist.  But you can use the **-autocreate** configuration option to
-force the creation of ancestor nodes.
+Now only a subset of frames is visible.  You can attach a scrollbar
+to the filmstrip widget to see the rest.
 
   ::
 
-    # Force the creation of ancestors.
-    .tv configure -autocreate yes 
-    .tv insert end "fred barney wilma betty" 
+    blt::tk::scrollbar .sbar -orient vertical -command { .fs view }
+    .fs configure -scrollcommand { .sbar set }
 
-Sometimes the pathname is already separated by a character sequence rather
-than formed as a list.  A file name is a good example of this.  You can use
-the **-separator** option to specify a separator string to split the path
-into its components.  Each pathname inserted is automatically split using
-the separator string as a separator.  Multiple separators are treated as
-one.
-
-  ::
-
-    .tv configure -separator /
-    .tv insert end "/usr/local/tcl/bin" 
-
-If the path is prefixed by extraneous characters, you can automatically
-trim it off using the **-trim** option.  It removed the string from the
-path before it is parsed.
+    blt::table . \
+	0,0 .fs -fill both \
+	0,1 .sbar -fill y
+    
+If you wanted to flip the filmstrip to be horizontal you would need
+to reconfigure the orientation of the filmstrip and scrollbar and
+repack.
 
   ::
 
-    .tv configure -trim C:/windows -separator /
-    .tv insert end "C:/window/system" 
+    .sbar configure -orient horizontal
+    .fs configure -orient horizontal -height 0 -width 1i
 
-You can insert more than one entry at a time with the **insert** operation.
-This can be much faster than looping over a list of names.
+    blt::table . \
+	0,0 .fs -fill both \
+	1,0 .sbar -fill x
 
-  ::
 
-    # The slow way
-    foreach f [glob $dir/*] {
-        .tv insert end $f
-    }
-    # The fast way
-    eval .tv insert end [glob $dir/*]
-
-In this case, the **insert** operation will return a list of ids of the new
-entries.
-
-You can delete entries with the **delete** operation.  It takes one or more
-tags of ids as its argument. It deletes the entry and all its children.
+If you want the size of all frames to be the size of the filmstrip
+window you can configure the frames with the **-relwidth** option.
 
   ::
 
-    .tv delete $id
+    .fs configure -relwidth 1.0
 
-Entries have several configuration options.  They control the appearance of
-the entry's icon and label.  We have already seen the **-label** option
-that sets the entry's text label.  The **entry configure** operation lets
-you set or modify an entry's configuration options.
+You can programmatically move to specific frames by the **see** operation.
 
   ::
 
-    .tv entry configure $id -color red -font fixed
+     # See the third frame. Indices are numbered from 0.
+    .fs see
 
-You can hide an entry and its children using the **-hide** option.
-
-  ::
-
-    .tv entry configure $id -hide yes
-
-More that one entry can be configured at once.  All entries specified
-are configured with the same options.
+To delete frames there is the **delete** operation.
 
   ::
 
-    .tv entry configure $i1 $i2 $i3 $i4 -color brown 
+     # Delete the first frame.
+    .fs delete 0
 
-An icon is displayed for each entry.  It's a Tk image drawn to the left of
-the label.  You can set the icon with the entry's **-icons** option.  It
-takes a list of two image names: one to represent the open entry, another
-when it is closed.
-
-  ::
-
-    set im1 [image create photo -file openfolder.gif]
-    set im2 [image create photo -file closefolder.gif]
-    .tv entry configure $id -icons "$im1 $im2"
-
-If **-icons** is set to the empty string, no icons are display.
-
-If an entry has children, a button is displayed to the left of the
-icon. Clicking the mouse on this button opens or closes the sub-hierarchy.
-The button is normally a "+" or "-" symbol, but can be configured in a
-variety of ways using the **button configure** operation.  For example, the
-"+" and "-" symbols can be replaced with Tk images.
+Note that while the frame has been delete, the button previously
+embedded in the frame still exists.  You can use the frame's 
+**-deletecommand** option to supply a TCL script to be invoked
+before the frame is deleted.
 
   ::
 
-    set im1 [image create photo -file closefolder.gif]
-    set im2 [image create photo -file downarrow.gif]
-    .tv button configure $id -images "$im1 $im2" \\
-        -openrelief raised -closerelief raised
-
-Entries can contain an arbitrary number of *data fields*.  Data
-fields are name-value pairs.  Both the value and name are strings.
-The entry's **-data** option lets you set data fields.
-
-  ::
-
-    .tv entry configure $id -data {mode 0666 group users}
-
-The **-data** takes a list of name-value pairs.  
-
-You can display these data fields as *columns* in the *filmstrip* widget.
-You can create and configure columns with the **column** operation.  For
-example, to add a new column to the widget, use the **column insert**
-operation.  The last argument is the name of the data field that you want
-to display.
-
-  ::
-
-    .tv column insert end "mode"
-
-The column title is displayed at the top of the column.  By default,
-it's is the field name.  You can override this using the column's
-**-title** option.
-
-  ::
-
-    .tv column insert end "mode" -title "File Permissions"
-
-Columns have several configuration options.  The **column configure**
-operation lets you query or modify column options.
-
-  ::
-
-    .tv column configure "mode" -justify left
-
-The **-justify** option says how the data is justified within in the
-column.  The **-hide** option indicates whether the column is displayed.
-
-  ::
-
-    .tv column configure "mode" -hide yes
-
-Entries can be selected by clicking on the mouse.  Selected entries
-are drawn using the colors specified by the **-selectforeground** 
-and **-selectbackground** configuration options.
-The selection itself is managed by the **selection** operation.
-
-  ::
-
-    # Clear all selections
-    .tv selection clear 0 end
-    # Select the root node
-    .tv selection set 0 
-
-The **curselection** operation returns a list of ids of all the selected
-entries.
-
-  ::
-
-    set ids [.tv curselection]
-
-You can use the **get** operation to convert the ids to their pathnames.
-
-  ::
-
-    set names [eval .tv get -full $ids]
-
-If a filmstrip is exporting its selection (using the **-exportselection**
-option), then it will observe the standard X11 protocols for handling the
-selection.  Filmstrip selections are available as type **STRING**; the value
-of the selection will be the pathnames of the selected entries, separated
-by newlines.
-
-The **filmstrip** supports two modes of selection: "single"
-and "multiple".  In single select mode, only one entry can be
-selected at a time, while multiple select mode allows several entries
-to be selected.  The mode is set by the widget's **-selectmode**
-option.
-
-  ::
-
-    .tv configure -selectmode "multiple"
-
-You can be notified when the list of selected entries changes.  The
-widget's **-selectcommand** specifies a TCL procedure that is called
-whenever the selection changes.
-
-  ::
-
-    proc SelectNotify { widget } {
-       set ids [\&$widget curselection]
-    }
-    .tv configure -selectcommand "SelectNotify .tv"
-
-The widget supports the standard Tk scrolling and scanning operations.  The
-**filmstrip** can be both horizontally and vertically. You can attach
-scrollbars to the **filmstrip** the same way as the listbox or canvas
-widgets.
-
-  ::
-
-    scrollbar .xbar -orient horizontal -command ".tv xview"
-    scrollbar .ybar -orient vertical -command ".tv yview"
-    .tv configure -xscrollcommand ".xbar set" \\
-        -yscrollcommand ".ybar set"
-
-There are three different modes of scrolling: "listbox", "canvas", and
-"hierbox".  In "listbox" mode, the last entry can always be scrolled to the
-top of the widget.  In "hierbox" mode, the last entry is always drawn at
-the bottom of the widget.  The scroll mode is set by the widget's
-**-selectmode** option.
-
-  ::
-
-    .tv configure -scrollmode "listbox"
-
-Entries can be programmatically opened or closed using the **open**
-and **close** operations respectively.  
-
-  ::
-
-    .tv open $id
-    .tv close $id
-
-When an entry is opened, a TCL procedure can be automatically invoked.
-The **-opencommand** option specifies this procedure.  This
-procedure can lazily insert entries as needed.
-
-  ::
-
-    proc AddEntries { dir } {
-       eval .tv insert end [glob -nocomplain $dir/*] 
-    }
-    .tv configure -opencommand "AddEntries %P"
-
-Now when an entry is opened, the procedure "AddEntries" is called and adds
-children to the entry.  Before the command is invoked, special "%"
-substitutions (like **bind**) are performed. Above, "%P" is translated to
-the pathname of the entry.
-
-The same feature exists when an entry is closed.  The **-closecommand**
-option specifies the procedure.
-
-  ::
-
-    proc DeleteEntries { id } {
-       .tv entry delete $id 0 end
-    }
-    .tv configure -closecommand "DeleteEntries %#"
-
-When an entry is closed, the procedure "DeleteEntries" is called
-and deletes the entry's children using the **entry delete** operation
-("%#" is the id of entry).
+   .fs frame configure 0 -deletecommand { destroy [%W frame cget 0 -window] }
 
 KEYWORDS
 --------

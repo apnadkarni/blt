@@ -1425,12 +1425,12 @@ SearchForHorizontalFrame(Filmstrip *filmPtr, int offset)
  *
  * NearestFrame --
  *
- *      Finds the entry closest to the given screen X-Y coordinates in the
+ *      Finds the frame closest to the given screen X-Y coordinates in the
  *      viewport.
  *
  * Results:
- *      Returns the pointer to the closest node.  If no node is visible
- *      (nodes may be hidden), NULL is returned.
+ *      Returns the pointer to the closest frame.  If no frame is visible
+ *      (frames may be hidden), NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -2580,10 +2580,8 @@ LayoutVerticalFrames(Filmstrip *filmPtr)
         ComputeVerticalScroll(filmPtr, filmPtr->currentPtr);
         filmPtr->scrollOffset = filmPtr->scrollTarget;
     }
-    filmPtr->worldHeight = worldHeight;
-    filmPtr->worldWidth = maxWidth;
-    filmPtr->normalWidth = maxWidth;
-    filmPtr->normalHeight = maxHeight;
+    filmPtr->normalHeight = filmPtr->worldHeight = worldHeight;
+    filmPtr->normalWidth  = filmPtr->worldWidth = maxWidth;
     filmPtr->flags &= ~LAYOUT_PENDING;
     filmPtr->flags |= SCROLL_PENDING;
 }
@@ -2771,6 +2769,8 @@ DrawVerticalFrame(Filmstrip *filmPtr, Frame *framePtr, Drawable drawable)
     /* If the filmstrip area is taller than the set of frames inside of it,
      * adjust the starting y position according to the global anchor for
      * the widget. */
+    fprintf(stderr, "h=%d wh=%d fh=%d\n",
+            Tk_Height(filmPtr->tkwin), filmPtr->worldHeight, framePtr->height);
     if (Tk_Height(filmPtr->tkwin) > filmPtr->worldHeight) {
         switch (filmPtr->anchor) {
         case TK_ANCHOR_NW:              /* Upper left corner */

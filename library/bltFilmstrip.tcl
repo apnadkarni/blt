@@ -48,7 +48,7 @@ bind BltFilmstripGrip <Enter> {
 } 
 bind BltFilmstripGrip <Leave> { 
     [winfo parent %W] grip deactivate
-o}
+}
 bind BltFilmstripGrip <KeyPress-Left> { 
     [winfo parent %W] grip move %W -10 0 
 }
