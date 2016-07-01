@@ -115,6 +115,7 @@ typedef int (SizeProc)(Pane *panePtr);
 #define DEF_PANE_ANCHOR         "nw"
 #define DEF_PANE_ANCHOR         "nw"
 #define DEF_PANE_BORDERWIDTH    "0"
+#define DEF_PANE_DATA           (char *)NULL
 #define DEF_PANE_DELETE_COMMAND (char *)NULL
 #define DEF_PANE_FILL           "none"
 #define DEF_PANE_HIDE           "0"
@@ -480,8 +481,7 @@ static Blt_ConfigSpec paneSetSpecs[] =
         Blt_Offset(Paneset, flags), BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
     {BLT_CONFIG_PIXELS_NNEG, "-sashborderwidth", "sashBorderWidth", 
         "SashBorderWidth", DEF_SASH_BORDERWIDTH,
-        Blt_Offset(Paneset, sashBorderWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(Paneset, sashBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-sashcolor", "sashColor", "SashColor",
         DEF_SASH_COLOR, Blt_Offset(Paneset, sashBg), 0},
     {BLT_CONFIG_CURSOR, "-sashcursor", "sashCursor", "SashCursor",
@@ -522,7 +522,7 @@ static Blt_ConfigSpec paneSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-ipadx", "iPadX", "IPadX", (char *)NULL,
         Blt_Offset(Pane, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", "iPadY", "IPadY", (char *)NULL, 
-        (char *)NULL, Blt_Offset(Pane, iPadY), 0},
+        Blt_Offset(Pane, iPadY), 0},
     {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_PANE_RESIZE,
         Blt_Offset(Pane, resize), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-showsash", "showSash", "showSash", 

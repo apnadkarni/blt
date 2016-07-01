@@ -472,7 +472,7 @@ static Blt_ConfigSpec frameSpecs[] =
         Blt_Offset(Frame, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", "iPadY", "IPadY", (char *)NULL,
         Blt_Offset(Frame, iPadY), 0},
-    {BLT_CONFIG_PAD, "-padx", "padx" "PadX", (char *)NULL,
+    {BLT_CONFIG_PAD, "-padx", "padx", "PadX", (char *)NULL,
         Blt_Offset(Frame, padX), 0},
     {BLT_CONFIG_PAD, "-pady", "pady", "PadY", (char *)NULL,
         Blt_Offset(Frame, padY), 0},

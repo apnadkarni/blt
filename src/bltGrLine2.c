@@ -1170,21 +1170,23 @@ ObjToErrorBarsProc(
     mask = 0;
     for (i = 0; i < objc; i++) {
         const char *string;
-
+        char c;
+        
         string = Tcl_GetString(objv[i]);
-        if (strcmp(string, "x") == 0) {
+        c = string[0];
+        if ((c == 'x') && (strcmp(string, "x") == 0)) {
             mask |= XERROR;
-        } else if (strcmp(string, "y") == 0) {
+        } else if ((c == 'y') && (strcmp(string, "y") == 0)) {
             mask |= YERROR;
-        } else if (strcmp(string, "xhigh") == 0) {
+        } else if ((c == 'x') && (strcmp(string, "xhigh") == 0)) {
             mask |= XHIGH;
-        } else if (strcmp(string, "yhigh") == 0) {
+        } else if ((c == 'y') && (strcmp(string, "yhigh") == 0)) {
             mask |= YHIGH;
-        } else if (strcmp(string, "xlow") == 0) {
+        } else if ((c == 'x') && (strcmp(string, "xlow") == 0)) {
             mask |= XLOW;
-        } else if (strcmp(string, "ylow") == 0) {
+        } else if ((c == 'y') && (strcmp(string, "ylow") == 0)) {
             mask |= YLOW;
-        } else if (strcmp(string, "both") == 0) {
+        } else if ((c == 'b') && (strcmp(string, "both") == 0)) {
             mask |= YERROR | XERROR;
         } else {
             Tcl_AppendResult(interp, "bad errorbar value \"", string, 
