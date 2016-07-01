@@ -1,6 +1,6 @@
-===================
+==============
 blt::timestamp
-===================
+==============
 
 --------------------------------------
 Parse and format dates and timestamps.
@@ -25,13 +25,14 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-This **blt::timestamp** command is for converting date/time timestamps to/from
-double precision numbers.  It handles timestamps with fractional seconds,
-IS08601 time formats (separated by the letter 'T'), and work week dates.
-It is not designed to be a replacement for the TCL **clock** command.
-There are differences (see the section `DIFFERENCES WITH TCL CLOCK`_ below).
-This command is used internally by the **blt::datatable** data object to
-parse timestamps where the format of the timestamp isn't known.
+This **blt::timestamp** command is for converting known date/time
+timestamps to/from double precision numbers.  It handles timestamps with
+fractional seconds, IS08601 time formats (separated by the letter 'T'), and
+work week dates.  It is not designed to be a replacement for the TCL
+**clock** command.  There are differences (see the section `DIFFERENCES
+WITH TCL CLOCK`_ below).  This command is used internally by the
+**blt::datatable** data object to parse timestamps where the precise format
+of the timestamp isn't known.
 
 **blt::timestamp format** *seconds* ?\ *switches* ...\ ?
   Formats the time that is expressed in seconds into a date/time format.
@@ -54,9 +55,9 @@ parse timestamps where the format of the timestamp isn't known.
     description of available names.
 
 **blt::timestamp parse** *timeStamp*
-  Parses the dates and returns its date and time components.  This is
+  Parses the date string and returns its date and time components.  This is
   useful when you suspect that the timestamp format is not supported.
-  *TimeStamp* is a string representing the date and/or time. This commands
+  *TimeStamp* is a string representing the date and/or time. This command
   returns a list of key/value pairs.  The keys are "year", "month", "yday",
   "isleapyear", "hour", "minute" "second", "isdist", "tzoffset". Note that
   the value for "second" is a floating point number, not an integer.
@@ -71,26 +72,28 @@ TIME ZONES
 ----------
 
 The **blt::timestamp** command recognizes many different timezone names and
-abbreviations.  If uses a TCL array variable **blt::timezones** to search
-for timezones.  The array keyed by the timezone name or abbreviation.  The
-value is a list of two strings representing the standard time and daylight
-time offsets.  Each offset is in the form
+abbreviations.  It uses a TCL array variable **blt::timezones** to look up
+timezone names and abbreviations to get their offsets from UTC.  The array
+is keyed by the timezone name or abbreviation.  Each value is a list of two
+strings representing the standard time and daylight time offsets.  
+Offsets are in the form
 
   *sign* *HH* **:** *MM* 
 
 where *sign* is either "+" or "-", *HH* are 2 digits representing the hours
-and *MM* are 2 digits representing the minutes. There are separated by a
+and *MM* are 2 digits representing the minutes. They are separated by a
 colon ":".  The first offset is the offset from UTC for the standard time.
 The second is the offset from UTC for the daylight time. If the timezone
 does not have daylight time, then the two entries are the same. For example,
 the value for the timezone "US/Hawaii" is "-10:00 -10:00".
 
-Unfortunately timezone abbreviations are not unique.  The are several
-duplicates.  For example BST matches British Summer Time (UTC+01), Brazil
-Standard Time (UTC-03), and Bering Summer Time (UTC-11).  EDT matches
-Eastern Daylight Time USA" (UTC-04) and Eastern Daylight Time Australia
-(UTC+11) EST matches Eastern Standard Time USA (UTC-05), Eastern Standard
-Time Australia (UTC+10), and Eastern Brazil Standard Time (UTC-03).
+Unfortunately timezone abbreviations are not unique.  There are several
+duplicate abbreviations.  For example BST matches British Summer Time
+(UTC+01), Brazil Standard Time (UTC-03), and Bering Summer Time (UTC-11).
+EDT matches Eastern Daylight Time USA" (UTC-04) and Eastern Daylight Time
+Australia (UTC+11) EST matches Eastern Standard Time USA (UTC-05), Eastern
+Standard Time Australia (UTC+10), and Eastern Brazil Standard Time
+(UTC-03).
 
 If you don't find a timezone name or abbreviation in the **blt::timezones**
 array or there is an entry with the wrong offsets, you can set the array

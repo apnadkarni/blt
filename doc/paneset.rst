@@ -71,7 +71,7 @@ the command.  The operations available are described in the
 REFERENCING PANES
 ------------------
 
-Panes can be referenced either by index, label, or by tag.
+Panes can be referenced by using either an index, label, or tag.
 
 *index*
   The number of the pane.  Indices start from 0.  The index number of a
@@ -349,7 +349,7 @@ command.  The following operations are available for *paneset* widgets:
 
 
   **-anchor** *anchorName* 
-    Specifies how to position embedded Tk widget in *paneName* if extra
+    Specifies how to position the embedded Tk widget in *paneName* if extra
     space is available. For example, if *anchorName* is "center" then the
     widget is centered in the *paneName*; if *anchorName* is "n" then the
     widget will be drawn such that the top center point of the pane will be

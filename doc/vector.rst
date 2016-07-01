@@ -30,7 +30,7 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-The **blt::vector** command creates an array of floating point values
+The **blt::vector** command creates an array of floating point numbers
 representing 1-D points.  The vector's points can be manipulated in three
 ways: through a TCL array variable, a TCL command, or the C API.
 
@@ -41,13 +41,13 @@ A *vector* is an ordered set of real numbers representing points of the
 vector.  The points are indexed by integers.
 
 Vectors are common data structures for many applications.  For example, a
-graph may use two vectors to represent the X-Y coordinates of the data
-plotted.  The graph will automatically be redrawn when the vectors are
-updated or changed. By using vectors, you can separate data analysis from
-the graph widget.  This makes it easier, for example, to add data
-transformations, such as splines.  It's possible to plot the same data to
-in multiple graphs, where each graph presents a different view or scale of
-the data.
+**blt::graph** can use two vectors to represent the X-Y coordinates of the
+data points plotted.  The graph will automatically be redrawn when the
+vectors are updated or changed. By using **blt::vector**\ s, you can
+separate data analysis from the graph widget.  This makes it easier, for
+example, to add data transformations, such as splines.  It's possible to
+plot the same data to multiple graphs, where each graph presents a
+different view or scale of the data.
 
 VECTOR INDICES
 ==============
@@ -58,12 +58,12 @@ its integer, expression, a range, or a special keyword.
 
  *number*
   The index is a integer that must lie within the current range of the
-  vector, otherwise an an error message is returned.  Normally the indices
-  of a vector are start from 0, but you can use the **offset** operation to
-  change a vector's indices.
+  vector, otherwise an error message is returned.  Normally the indices
+  of a vector start from 0, but you can use the **offset** operation to
+  change a *vector*\ 's indices.
 
  *expr*
-  As a convenience, you can also use numeric expressions with indices (such
+  You can also use numeric expressions with indices (such
   as "$i+3").  The result of the expression must be an integer value.
 
  *keyword*
@@ -108,36 +108,36 @@ VECTOR COMMAND OPERATIONS
      can be any integer value so long as *first* is less than *last*. The
      default value for the points is "0.0".
 
-  Vector names must start with a letter and consist of letters, digits, or
-  underscores.  You can automatically generate vector names using the
-  "#auto" vector name.
+  *VecName* must start with a letter and consist of letters, digits, or
+  underscores.  You can automatically generate *vector* names using the
+  "#auto" *vector* name.
 
-  Both a TCL command and array variable *vecName* are also created.  The
+  Both a TCL command and an array variable *vecName* are also created.  The
   name *vecName* must be unique, so another TCL command or array variable
-  can not already exist in that scope.  You can access the points of the
-  vector using its variable.  If you change a value in the array, or unset
-  an array element, the vector is updated to reflect the changes.  When the
-  variable *vecName* is unset, the vector and its TCL command are also
-  destroyed.
+  can not already exist.  You can access the points of the *vector* using
+  its variable.  If you change the value of an element in the array or
+  unset an array element, *vecName* is updated to reflect the changes.
+  When the variable *vecName* is unset, the vector and its TCL command are
+  also destroyed.
 
   Switches can be any of the following:
 
   **-command** *cmdName*
-     Maps a TCL command to the vector. The vector can be accessed using
-     *cmdName* and one of the vector instance operations.  A TCL command by
+     Maps a TCL command to *vecName*. The vector can be accessed using
+     *cmdName* and one of the *vector* instance operations.  A TCL command by
      that name cannot already exist.  If *cmdName* is the empty string, no
      command mapping will be made.
 
   **-variable** *varName*
-     Specifies the name of a TCL variable to be mapped to the vector. If
+     Specifies the name of a TCL variable to be mapped to *vecName*. If
      the variable already exists, it is first deleted, then recreated. 
      If *varName* is the empty string, then no variable will be mapped.
-     You can always map a variable back to the vector using the vector's 
+     You can also map a variable to the vector using the vector's 
      **variable** operation.
 
   **-watchunset** *boolean*
-    Indicates if the vector should automatically be destroyed if the
-    variable associated with the vector is unset.  If *boolean* is true,
+    Indicates if *vecName* should automatically be destroyed if the
+    TCL variable associated with the vector is unset.  If *boolean* is true,
     the vector will be destroyed. The default is 0.
 
 **blt::vector destroy** ?\ *vecName* ... ?
@@ -145,12 +145,12 @@ VECTOR COMMAND OPERATIONS
   are removed.
 
 **blt::vector expr** *exprString*
-  All binary operators take vectors as operands (remember that numbers are
+  All binary operators take vectors as operands (numbers are
   treated as one-point vectors).  The exact action of binary operators
   depends upon the length of the second operand.  If the second operand has
-  only one point, then each element of the first vector operand is
+  only one point, then each element of the first *vector* operand is
   computed by that value.  For example, the expression "x * 2" multiples
-  all elements of the vector x by 2.  If the second operand has more than
+  all elements of the *vector* x by 2.  If the second operand has more than
   one point, both operands must be the same length.  Each pair of
   corresponding elements are computed.  So "x + y" adds the the first
   points of x and y together, the second, and so on.
@@ -160,9 +160,9 @@ VECTOR COMMAND OPERATIONS
 
     **-**  **!**
       Unary minus and logical NOT.  The unary minus flips the sign of each
-      point in the vector.  The logical not operator returns a vector of
-      whose values are 0.0 or 1.0.  For each non-zero point 1.0 is returned,
-      0.0 otherwise.
+      point in the *vector*.  The logical not operator returns a *vector*
+      whose values are 0.0 or 1.0.  For each "true" value the point 1.0 is
+      returned, 0.0 otherwise.
 
     **^**
       Exponentiation.  
@@ -204,52 +204,51 @@ VECTOR COMMAND OPERATIONS
   operator.  All of the binary operators group left-to-right within the
   same precedence level.
 
-  Several mathematical functions are supported for vectors.  Each of the
+  Several mathematical functions are supported for *vector*\ s.  Each of the
   following functions invokes the math library function of the same name;
   see the manual entries for the library functions for details on what they
-  do.  The operation is applied to all points of the vector returning the
-  results.
+  do.  The operation is applied to all the points of the *vector*.
 
     **abs**\ (*vecName*)
-      Returns the absolute value of each floating-point number in the vector.
+      Returns the absolute value of each floating-point number in *vecName*.
 
     **acos**\ (*vecName*)
-      Returns the arc cosine function of each number in the vector.
+      Returns the arc cosine function of each number in *vecName*.
 
     **asin**\ (*vecName*)
-      Returns the arc sine function of each number in the vector.
+      Returns the arc sine function of each number in *vecName*.
 
     **asinh**\ (*vecName*)
-      Returns the hyperbolic arc sine function of each number in the vector.
+      Returns the hyperbolic arc sine function of each number in *vecName*.
 
     **atan**\ (*vecName*)
-      Returns the arc tangent function of each number in the vector.
+      Returns the arc tangent function of each number in *vecName*.
 
     **ceil**\ (*vecName*)
       Returns the smallest integral value not less than the floating-point
-      number for each number in the vector.
+      number for each number in *vecName*.
 
     **cos**\ (*vecName*)
-      Returns the cosine function of each number in the vector.
+      Returns the cosine function of each number in *vecName*.
 
     **cosh**\ (*vecName*)
-      Returns the hyperbolic cosine function of each number in the vector.
+      Returns the hyperbolic cosine function of each number in *vecName*.
 
     **exp**\ (*vecName*)
       Returns the value of e (the base of natural logarithms) raised to the
-      point of the floating point number for each number in the vector.
+      point of the floating point number for each number in *vecName*.
 
     **floor**\ (*vecName*)
       Returns the largest integral value not greater than the floating-point
-      number for each number in the vector.
+      number for each number in *vecName*.
 
     **log**\ (*vecName*)
-      Returns the natural logarithm of each floating-point number in the
-      vector. If the number is a NaN, a NaN is returned. 
+      Returns the natural logarithm of each floating-point number of
+      *vecName*. If the number is a NaN, a NaN is returned. 
 
     **log10**\ (*vecName*)
-      Returns the base 10 logarithm of each floating-point number in the
-      vector. If the number is a NaN, a NaN is returned. 
+      Returns the base 10 logarithm of each floating-point number of
+      *vecName*. If the number is a NaN, a NaN is returned. 
 
     **random**\ (*vecName*)
       Returns a vector of non-negative values uniformly distributed between
@@ -258,92 +257,92 @@ VECTOR COMMAND OPERATIONS
       length of the returned vector is the same as the length of *vecName*.
 
     **round**\ (*vecName*)
-      Returns the rounded number for each point of the vector.
+      Returns the rounded number for each point of *vecName*.
       The numbers are rounded to the nearest integer, but rounds halfway
       cases away from zero. For example, rounding of 0.5 is 1.0, and
       rounding of -0.5 is -1.0.
 
     **sin**\ (*vecName*)
-      Returns the sine function of each number in the vector.
+      Returns the sine function of each number of *vecName*.
 
     **sinh**\ (*vecName*)
-      Returns the hyperbolic sine function of each number in the vector.
+      Returns the hyperbolic sine function of each number in *vecName*.
 
     **sqrt**\ (*vecName*)
-      Returns the square root of each floating-point number in the vector. If
+      Returns the square root of each floating-point number in *vecName*. If
       the number is a NaN, a NaN is returned.
 
     **tan**\ (*vecName*)
-      Returns the tangent function of each number in the vector.
+      Returns the tangent function of each number in *vecName*.
 
     **tanh**\ (*vecName*)
-      Returns the hyperbolic tangent function of each number in the vector.
+      Returns the hyperbolic tangent function of each number in *vecName*.
 
   The following functions return a single value.
 
     **adev**\ (*vecName*)
       Returns the average deviation (defined as the sum of the absolute values 
       of the differences between point and the mean, divided by the length
-      of the vector).
+      of *vecName*).
 
     **kurtosis**\ (*vecName*)
-     Returns the degree of peakedness (fourth moment) of the vector.
+     Returns the degree of peakedness (fourth moment) of *vecName*.
 
     **length**\ (*vecName*)
-     Returns the number of points in the vector.
+     Returns the number of points in *vecName*.
 
     **max**\ (*vecName*)
-      Returns the vector's maximum value.
+      Returns *vecName*\ 's maximum value.
 
     **mean**\ (*vecName*)
-      Returns the mean value of the vector.
+      Returns the mean value of *vecName*.
 
     **median**\ (*vecName*)
-      Returns the median of the vector.
+      Returns the median of *vecName*.
 
     **min**\ (*vecName*)
-      Returns the vector's minimum value.
+      Returns *vecName*\ 's minimum value.
 
     **nonempty**\ (*vecName*)
-      Returns the number of non-empty points in the vector.  
+      Returns the number of non-empty points in *vecName*.  
 
     **nonzero**\ (*vecName*)
-      Returns the number of non-zero points in the vector.  This does not
+      Returns the number of non-zero points in *vecName*.  This does not
       include empty values.
 
     **q1**\ (*vecName*)
-      Returns the first quartile of the vector.
+      Returns the first quartile of *vecName*.
 
     **q3**\ (*vecName*)
-      Returns the third quartile of the vector.
+      Returns the third quartile of *vecName*.
 
     **prod**\ (*vecName*)
       Returns the product of the points.
 
     **sdev**\ (*vecName*) 
       Returns the standard deviation (defined as the square root of the variance)
-      of the vector.
+      of *vecName*.
 
     **skew**\ (*vecName*) 
-      Returns the skewness (or third moment) of the vector.  This characterizes
+      Returns the skewness (or third moment) of *vecName*.  This characterizes
       the degree of asymmetry of the vector about the mean.
 
     **sum**\ (*vecName*) 
       Returns the sum of the points.
 
     **var**\ (*vecName*)
-      Returns the variance of the vector. The sum of the squared differences 
+      Returns the variance of *vecName*. The sum of the squared differences 
       between each point and the mean is computed.  The variance is 
-      the sum divided by the length of the vector minus 1.
+      the sum divided by the length of *vecName* minus 1.
 
   The last set returns a vector of the same length as the argument.
 
     **norm**\ (*vecName*) 
-     Scales the normalized values of the vector (values lie in the range
+     Scales the normalized values of *vecName* (values lie in the range
      [0.0..1.0]).
 
     **sort**\ (*vecName*)
-      Returns the vector points sorted in ascending order.
+      Returns *vecName*\ 's points sorted in ascending order.
 
 
 **blt::vector names** ?\ *pattern* ... ?
@@ -393,16 +392,16 @@ the command.  The operations available for vectors are listed below.
 
 *vecName* **clear** 
   Clears the element indices from the array variable associated with
-  *vecName*.  This doesn't affect the points of the vector.  By
+  *vecName*.  This doesn't affect the points of *vecName*.  By
   default, the number of entries in the TCL array doesn't match the number
-  of points in the vector.  This is because its too expensive to
+  of points in *vecName*.  This is because its too expensive to
   maintain decimal strings for both the index and value for each point.
   Instead, the index and value are saved only when you read or write an
   element with a new index.  This command removes the index and value
   strings from the array.  This is useful when the vector is large.
 
 *vecName* **count** *valueType*
-  Returns the number of points in the vector. *ValueType* specifies the
+  Returns the number of points in *vecName*. *ValueType* specifies the
   the type of points to count. *ValueType* is one of the following:
 
   **empty**
@@ -429,7 +428,7 @@ the command.  The operations available for vectors are listed below.
   "vector0", "vector1", etc.  A vector *destName* can not already exist.
 
 *vecName* **export** *format* ?\ *switches* ... ?
-  Exports the vector as a binary string. *Format* is either "double" or
+  Exports *vecName* as a binary string. *Format* is either "double" or
   "float".  If neither a **-data** or **-file** switch is given, then 
   this command returns the binary string.
   
@@ -449,10 +448,10 @@ the command.  The operations available for vectors are listed below.
 
   **-to** *index*
    Specifies the ending index of values to export.  *Index* is vector
-   index. The default is to export values to the end of the vector.
+   index. The default is to export values to the end of *vecName*.
 
 *vecName* **expr** *exprString*
-  Computes the expression and resets the values of the vector accordingly.
+  Computes the expression and resets the values of *vecName* accordingly.
   The is similar to the **blt::vector expr** operation. The difference is
   that *vecName* is reset with the new values.  The format of *exprString*
   is described above for the **blt::vector expr** operation.
@@ -463,7 +462,7 @@ the command.  The operations available for vectors are listed below.
   the real-valued results.
   
   **-imagpart** *vecName*
-   Specifies the vector to store the imaginary part transform.
+   Specifies *vecName* to store the imaginary part transform.
 
   **-noconstant**
 
@@ -476,10 +475,10 @@ the command.  The operations available for vectors are listed below.
 
   **-delta** *number*
    Specifies the ending index of values to export.  *Index* is vector
-   index. The default is to export values to the end of the vector.
+   index. The default is to export values to the end of *vecName*.
 
   **-frequencies** *vecName*
-   Specifies the vector to store the frequencies of the transform.
+   Specifies *vecName* to store the frequencies of the transform.
 
   Reference: This was contributed by Andrea Spinelli (spinellia@acm.org).
   
@@ -491,7 +490,7 @@ the command.  The operations available for vectors are listed below.
   values from the minimum to the maximum vector value.
 
 *vecName* **indices** *valueType*
-  Returns the indices of points in the vector. *ValueType* specifies the
+  Returns the indices of points in *vecName*. *ValueType* specifies the
   type of points to consider. *ValueType* is one of the following:
 
   **empty**
@@ -513,7 +512,7 @@ the command.  The operations available for vectors are listed below.
   the real-valued results.
   
   **-imagpart** *vecName*
-   Specifies the vector to store the imaginary part transform.
+   Specifies *vecName* to store the imaginary part transform.
 
   **-noconstant**
 
@@ -526,20 +525,20 @@ the command.  The operations available for vectors are listed below.
 
   **-delta** *number*
    Specifies the ending index of values to export.  *Index* is vector
-   index. The default is to export values to the end of the vector.
+   index. The default is to export values to the end of *vecName*.
 
   **-frequencies** *vecName*
-   Specifies the vector to store the frequencies of the transform.
+   Specifies *vecName* to store the frequencies of the transform.
 
   Reference: This was contributed by Andrea Spinelli (spinellia@acm.org).
 
 *vecName* **length** ?\ *newSize*\ ?
   Queries or resets the number of points in *vecName*.  *NewSize* is a
-  number specifying the new size of the vector.  If *newSize* is smaller
+  number specifying the new size of *vecName*.  If *newSize* is smaller
   than the current size of *vecName*, *vecName* is truncated.  If *newSize*
-  is greater, the vector is extended and the new points are initialized
+  is greater, *vecName* is extended and the new points are initialized
   to "0.0".  If no *newSize* argument is present, the current length
-  of the vector is returned.
+  of *vecName* is returned.
 
 *vecName* **linspace** *firstValue* *lastValue* ?\ *numSteps*\ ?
   Generates linearly spaced vector values. *FirstValue* and *lastValue* are
@@ -550,7 +549,7 @@ the command.  The operations available for vectors are listed below.
   length of *vecName* is used as the number of points.
   
 *vecName* **maximum**
-  Returns the maximum value in the vector.
+  Returns the maximum value in *vecName*.
 
 *vecName* **merge** ?\ *srcName* ...?
   Merges one or more vectors into *vecName*.  *SrcName* is the name a
@@ -560,17 +559,17 @@ the command.  The operations available for vectors are listed below.
   time for each index, by adding the points for each vector *srcName*,
 
 *vecName* **minimum**
-  Returns the maximum value in the vector.
+  Returns the maximum value in *vecName*.
 
 *vecName* **normalize** ?\ *destName*\ ?
-  Normalizes the vector to have values between 0 and 1.  If a *destName*
+  Normalizes *vecName* to have values between 0 and 1.  If a *destName*
   exists, it is the name a vector created by the **create** operation.
   *DestName* will be resized if necessary to hold the normalized values.
   If no *destName* argument is present, then this command will return the
   normalized values.
 
 *vecName* **notify** *keyword*
-  Controls how vector clients are notified of changes to the vector.  
+  Controls how vector clients are notified of changes to *vecName*.  
   The exact behavior is determined by *keyword*.
 
   **always**
@@ -582,22 +581,22 @@ the command.  The operations available for vectors are listed below.
 
   **whenidle**
     Indicates that clients are to be notified at the next idle point
-    whenever the vector is updated.
+    whenever *vecName* is updated.
 
   **now**
    If any client notifications are currently pending, they are notified
    immediately.
 
   **cancel**
-   Cancels pending notifications of clients using the vector.
+   Cancels pending notifications of clients using *vecName*.
 
   **pending**
    Returns "1" if a client notification is pending, and "0" otherwise.
 
 *vecName* **offset** ?\ *count*\ ?
-  Offsets the indices of the vector by the amount specified by *count*.
+  Offsets the indices of *vecName* by the amount specified by *count*.
   *Count* is an integer number.  For example if *count* is "-5", the index
-  of the first point in the vector is "-5".  If no *count* argument is
+  of the first point in *vecName* is "-5".  If no *count* argument is
   given, the current offset is returned.
 
 *vecName* **populate** *destName* ?\ *density*\ ?
@@ -620,7 +619,7 @@ the command.  The operations available for vectors are listed below.
 
   **-to** *index*
    Specifies the ending index of values to print.  *Index* is vector
-   index. The default is to print values to the end of the vector.
+   index. The default is to print values to the end of *vecName*.
 
 *vecName* **random** ?\ *seed*\ ?
   Generates a random value for each point in *vecName*.  *Seed* is a
@@ -643,12 +642,12 @@ the command.  The operations available for vectors are listed below.
 
 *vecName* **sequence** *start* ?\ *stop*\ ? ?\ *step*\ ?
   Generates a sequence of values starting with the number *start*.  *Stop*
-  indicates the terminating number of the sequence.  The vector is
+  indicates the terminating number of the sequence.  *VecName* is
   automatically resized to contain just the sequence.  If three arguments
   are present, *step* designates the interval.
 
   With only two arguments (no *stop* argument), the sequence will
-  continue until the vector is filled.  With one argument, the interval
+  continue until *vecName* is filled.  With one argument, the interval
   defaults to 1.0.
 
 *vecName* **set** *item*
@@ -656,7 +655,7 @@ the command.  The operations available for vectors are listed below.
   numbers or a vector name.
 
 *vecName* **simplify** *x* *y* ?\ *tolerance*\ ?
-  Reduces the number of points in the vector using the Douglas-Peucker line
+  Reduces the number of points in *vecName* using the Douglas-Peucker line
   simplification algorithm, first selecting a single line from start to end
   and then finding the largest deviation from this straight line, and if it
   is greater than *tolerance*, the point is added, splitting the original
@@ -699,23 +698,23 @@ the command.  The operations available for vectors are listed below.
 
   **-values** 
    Returns a list of the values from the sorted points.  For each point
-   the will be as many values as vectors. The points of *vecName* and
+   there will be as many values as vectors. The points of *vecName* and
    *destName* are not rearranged.
 
 *vecName* **value get** *index* 
-  Returns the value at the point in the vector indexed by *index*. *Index*
+  Returns the value at the point in *vecName* indexed by *index*. *Index*
   is a vector index. 
 
 *vecName* **value set** *index* *value*
-  Sets the value at the point in the vector indexed by *index*. *Index*
+  Sets the value at the point in *vecName* indexed by *index*. *Index*
   is a vector index. *Value* is a real number.
 
 *vecName* **value unset** ?\ *index* ... ?
-  Unsets the value at the point in the vector indexed by *index*. *Index*
+  Unsets the value at the point in *vecName* indexed by *index*. *Index*
   is a *vector* index. The value of the point becomes NaN.
 
 *vecName* **values** ?\ *switches* ... \?
-  Returns a list of the values in the vector.  *Switches* can be any
+  Returns a list of the values in *vecName*.  *Switches* can be any
   of the following:
   
   **-empty** *value*
@@ -723,7 +722,7 @@ the command.  The operations available for vectors are listed below.
    written for each empty point.  *Value* is a real number.
 
   **-format** *fmtString*
-   Specifies how to format each value in the vector.  *FmtString* is a
+   Specifies how to format each value in *vecName*.  *FmtString* is a
    **printf**\ -like format string. There can be only one specifier in
    *fmtString*.
 
@@ -733,12 +732,12 @@ the command.  The operations available for vectors are listed below.
 
   **-to** *index*
    Specifies the ending index of values to print.  *Index* is vector
-   index. The default is to print values to the end of the vector.
+   index. The default is to print values to the end of *vecName*.
 
 *vecName* **variable** *varName*
-  Maps a TCL variable to the vector, creating another means for accessing
-  the vector.  The variable *varName* can't already exist. This overrides
-  any current variable mapping the vector may have. 
+  Maps a TCL variable to *vecName*, creating another means for accessing
+  *vecName*.  The variable *varName* can't already exist. This overrides
+  any current variable mapping *vecName* may have. 
 
 C LANGUAGE API
 ==============
@@ -781,7 +780,7 @@ identified by the vector name.
 **Blt_DeleteVectorByName**\ (Tcl_Interp *\ *interp*, char *\ *vecName*)
   Removes the vector *vecName*.  *VecName* is the name of a vector
   which must already exist.  Both the TCL command and array variable
-  *vecName* are destroyed.  All clients of the vector will be notified
+  *vecName* are destroyed.  All clients of *vecName* will be notified
   immediately that the vector has been destroyed.
 
   Returns TCL_OK if the vector is successfully deleted.  If
