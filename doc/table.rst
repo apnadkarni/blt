@@ -679,7 +679,8 @@ EXAMPLE
 The table geometry manager is created by invoking the **blt::table** command.
 
  ::
-
+    package require BLT
+    
     # Manage the toplevel "." with table geometry manager.
     blt::table .
 

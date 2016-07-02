@@ -34,8 +34,8 @@ DESCRIPTION
 
 The **blt::palette** creates a color palette that can be used with the
 **-palette** options of the BLT widgets.  A palette object contains a color
-(RGB) lookup table and optionally opacity lookup table that translate a
-data value into a color.  
+(RGB) mapping table and optionally opacity mapping table that translate a
+data value into a color and opacity.
 
 INTRODUCTION
 ============
@@ -46,15 +46,15 @@ numeric value to a color.  For example, the **blt::contour** widget uses
 color palettes to determine the color to draw based on a numeric field
 value for each location in the plot.
 
-The palette object contains a color lookup table and optionally an opacity
-lookup table.  Given some data value, the lookup tables convert the value
+The palette object contains a color look-up table and optionally an opacity
+look-up table.  Given some data value, the look-up tables convert the value
 into a color and opacity (alpha value).  Combined together, they represent
 the color associated with data value.  But rather than specifying a color
 for every possible data value, you can specify a range and a starting and
 ending color for that range.  The color for a specific value will be
 interpolated linearly from the value.
 
-Lookup tables contain one or more entries in the form 
+Look-up tables contain one or more entries in the form
 
    *firstValue* *lastValue* *color1* *color2* 
 
@@ -63,18 +63,18 @@ where *firstValue* is the starting value, *lastValue* is the ending value.
 color at *lastValue*.  If a data value is within the range represented by
 *firstValue* and *lastValue*, its color it interpolated from *color1* and
 *color2*.  If a data value isn't within the range of any table entries
-a default color (usually transparent) is returned.  For opacity lookup
+a default color (usually transparent) is returned.  For opacity look-up
 tables, color is just the opacity (alpha value).
    
-LOOKUP TABLE ENTRIES
-====================
+LOOK-UP TABLE ENTRIES
+=====================
 
-There are several ways to define lookup table entries.  It depends on the
+There are several ways to define look-up table entries.  It depends on the
 type of spacing designated (see the **-colorspacing** and
 **-opacityspacing** options).
 
   **regular**
-    The lookup table is generated from a list of two or more colors.  The
+    The look-up table is generated from a list of two or more colors.  The
     colors are regularly spaced at values from 0 to 1. The number of
     entries is determined is number of colors minus 1. For example if the
     list contains 5 colors
@@ -114,7 +114,7 @@ type of spacing designated (see the **-colorspacing** and
       0.4  0.5 yellow green
       0.5  1.0 green indigo
 
-    The first and last values for each entry are explict from the 
+    The first and last values for each entry are explicit from the 
     values in the list. Note that the values do not have to be evenly spaced.
     They values can be any scale.
 
@@ -143,7 +143,7 @@ type of spacing designated (see the **-colorspacing** and
 COLOR SPECIFICATIONS
 ====================
 
-Colors for the lookup tables above can be specified any of the following
+Colors for the look-up tables above can be specified any of the following
 ways.
 
   *colorName* 
@@ -155,7 +155,7 @@ ways.
     numbers.
 
   *h* *s* *v* 
-    Each color is a triplet of 3 numbers, representing the hue, satuation,
+    Each color is a triplet of 3 numbers, representing the hue, saturation,
     and value components for the color.  
 
 OPERATIONS
@@ -208,7 +208,7 @@ The following operations are available for the **blt::palette** command.
     
   **-colorspacing** *spacingType*
     Specifies the spacing colors.  *SpacingType* can be in any of the
-    "regular", "irregular", or "interval". See `LOOKUP TABLE ENTRIES`_ for
+    "regular", "irregular", or "interval". See `LOOK-UP TABLE ENTRIES`_ for
     details.  The default is "regular".
 
   **-fade** *percent*
@@ -233,7 +233,7 @@ The following operations are available for the **blt::palette** command.
 
   **-opacityspacing** *spacingType*
     Specifies the spacing of opacities.  *SpacingType* can be in any of the
-    "regular", "irregular", or "interval". See `LOOKUP TABLE ENTRIES`_ for
+    "regular", "irregular", or "interval". See `LOOK-UP TABLE ENTRIES`_ for
     details.  The default is "regular".
 
 **blt::palette delete** ?\ *paletteName* ... ?
@@ -259,7 +259,7 @@ The following operations are available for the **blt::palette** command.
   This is useful for debugging palettes.
 
 **blt::palette names** ?\ *pattern* ... ?
-  Returns the names of all the palettees currently created.  If one or more
+  Returns the names of all the palettes currently created.  If one or more
   *pattern* arguments are provided, then the name of any palette matching
   *pattern* will be returned. *Pattern* is a **glob**\ -style pattern.
 
@@ -293,10 +293,10 @@ To remove the palette, use the **delete** operation.
      
 Please note the following:
 
-1. The palettees created by the **blt::palette** command are only recognized by
+1. The palettes created by the **blt::palette** command are only recognized by
    BLT widgets.
 
-2. Palettees are reference counted.  If you delete a palette, its resources
+2. Palette-es are reference counted.  If you delete a palette, its resources
    are not freed until there is no widget is using it.
    
 KEYWORDS

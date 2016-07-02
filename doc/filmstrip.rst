@@ -80,7 +80,7 @@ Frames can be referenced either by index, label, or by tag.
 *index*
   The number of the frame.  Indices start from 0.  The index number of a
   frame can change as other frames are added, deleted, or moved.  There are
-  also special non-numeric indices that can be used.
+  also the following special non-numeric indices.
 
   **active**
     This is the frame whose grip is where the mouse pointer is currently

@@ -60,68 +60,68 @@ CHARACTER INDICES
 Character positions in the text can be defined by using one of more
 indices. An index can be in one of the following forms.
 
-  *number*
-    The index of the character.  Character indices start at 0.
-    
-  **anchor**
-    The index of the character anchoring of the selection.
+*number*
+  The index of the character.  Character indices start at 0.
 
-  **down**
-    The index of the character one line down from the insertion cursor. 
+**anchor**
+  The index of the character anchoring of the selection.
 
-  **end**
-    The index of the next character after the last character in the text.
+**down**
+  The index of the character one line down from the insertion cursor. 
 
-  **next**
-    The index of the next character in the text from the insertion cursor.
+**end**
+  The index of the next character after the last character in the text.
 
-  **line.end**
-    The index of the character ending the current line from the
-    insertion cursor.  
+**next**
+  The index of the next character in the text from the insertion cursor.
 
-  **line.start**
-    The index of character starting the current line from the insertion
-    cursor.  
+**line.end**
+  The index of the character ending the current line from the
+  insertion cursor.  
 
-  **previous**
-    The index of the previous character in the text from the insertion cursor.  
+**line.start**
+  The index of character starting the current line from the insertion
+  cursor.  
 
-  **sel.first**
-    The index of the first character in the selection.  If there are no
-    selected characters, the index is "-1".
+**previous**
+  The index of the previous character in the text from the insertion cursor.  
 
-  **sel.last**
-    The index of the last character in the selection.  If there are no
-    selected characters, the index is "-1".
+**sel.first**
+  The index of the first character in the selection.  If there are no
+  selected characters, the index is "-1".
 
-  **space.end**
-    The index after the last consecutive whitespace character from
-    the insertion cursor.  If the insertion cursor is over a non-whitespace
-    character, the index is the position of the insertion cursor.
+**sel.last**
+  The index of the last character in the selection.  If there are no
+  selected characters, the index is "-1".
 
-  **space.start**
-    The index of the first consecutive whitespace character from
-    the insertion cursor.  If the insertion cursor is over a non-whitespace
-    character, the index is the position of the insertion cursor.
+**space.end**
+  The index after the last consecutive whitespace character from
+  the insertion cursor.  If the insertion cursor is over a non-whitespace
+  character, the index is the position of the insertion cursor.
 
-  **up**
-    The index of the character on the previous line from the insertion
-    cursor.
+**space.start**
+  The index of the first consecutive whitespace character from
+  the insertion cursor.  If the insertion cursor is over a non-whitespace
+  character, the index is the position of the insertion cursor.
 
-  **word.end**
-    The index of the character after the end of the current word from the
-    insertion cursor.  If the insertion cursor is over whitespace, the
-    index is the position of the insertion cursor.
+**up**
+  The index of the character on the previous line from the insertion
+  cursor.
 
-  **word.start**
-    The index of the character at the beginning of the current word from the
-    insertion cursor.  If the insertion cursor is over whitespace, the
-    index is the position of the insertion cursor.
+**word.end**
+  The index of the character after the end of the current word from the
+  insertion cursor.  If the insertion cursor is over whitespace, the
+  index is the position of the insertion cursor.
 
-  **@**\ *x*\ ,\ *y*
-    The index of the character that is located at the *x* and *y*
-    screen coordinates.  If no character is at that point, then the
-    index is "-1".
+**word.start**
+  The index of the character at the beginning of the current word from the
+  insertion cursor.  If the insertion cursor is over whitespace, the
+  index is the position of the insertion cursor.
+
+**@**\ *x*\ ,\ *y*
+  The index of the character that is located at the *x* and *y*
+  screen coordinates.  If no character is at that point, then the
+  index is "-1".
 
 OPERATIONS
 ----------

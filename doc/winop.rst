@@ -140,6 +140,8 @@ EXAMPLE
 
  ::
 
+    package require BLT
+
     toplevel .top
     wm withdraw .top
 

@@ -1,0 +1,26 @@
+Manuals that still need to started:
+----------------------------------
+
+comboentry.rst
+combotree.rst
+contour.rst
+crc32.rst
+drawerset.rst
+pushbutton.rst
+scrollbar.rst
+tableview.rst
+
+Manuals that need overhaul:
+--------------------------
+base64.rst
+csv.rst
+graph.rst
+barchart.rst
+tree.rst
+  Needs EXAMPLE
+filmstrip.rst
+  -size is missing
+paneset.rst
+  -size is missing
+comboentry.rst
+   example is wrong

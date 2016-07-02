@@ -21,17 +21,17 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **blt::combomenu** command creates and manages *combomenu* widgets.
-The *combomenu* widget contains a menu and optional scrollbars (vertical
-and/or horizontal).  The scrollbars are automatically exposed or hidden as
-necessary when the *combomenu* widget is resized.  Whenever the
-*combomenu* window is smaller horizontally and/or vertically than the
-actual menu, the appropiate scrollbar is exposed.
+The **blt::combomenu** command creates and manages *combomenu* widgets.  A
+*combomenu* widget contains a menu and optional embedded Tk scrollbar
+widgets (vertical and/or horizontal).  The scrollbars are automatically
+exposed or hidden as necessary when the *combomenu* widget is resized.
+Whenever the *combomenu* window is smaller horizontally and/or vertically
+than the actual menu, the appropiate scrollbar is exposed.
 
-A *combomenu* is a widget that displays a menu items.  There exist several
-different types of items, each with different properties.  Items of
-different types may be combined in a single menu.  Menu items are not
-distinct widgets; the entire *combomenu* is one widget.
+When mapped, the *combomenu* displays a menu items.  There exist several
+different types of items, each with different actions and properties.
+Items of different types may be combined in a single menu.  Menu items are
+not distinct widgets; the entire *combomenu* is one widget.
 
 SYNTAX
 ------
@@ -68,98 +68,129 @@ distinct widgets; the entire *combomenu* is one widget.
 
 A menu item can be one of the following types: 
 
-  **button**
-    The *button* is the most common type of menu item that behaves much
-    like a Tk **button** widget.  When it isinvoked, a TCL command is
-    executed.  The TCL command is specified with the **-command** option.
+**button**
+  The *button* is the most common type of menu item that behaves much
+  like a Tk **button** widget.  When it isinvoked, a TCL command is
+  executed.  The TCL command is specified with the **-command** option.
 
-  **cascade**
-    A *cascade* item has an associated *combomenu* (specified by the item's
-    **-menu** option) that is posted to the right of the *cascade* item
-    when the item is active.  The **postcascade** operation also posts the
-    associated *combomenu*. *Cascade* items allow the construction of
-    cascading menus.  The associated menu must be a child of the
-    *combomenu* containing the *cascade* item.
+**cascade**
+  A *cascade* item has an associated *combomenu* (specified by the item's
+  **-menu** option) that is posted to the right of the *cascade* item
+  when the item is active.  The **postcascade** operation also posts the
+  associated *combomenu*. *Cascade* items allow the construction of
+  cascading menus.  The associated menu must be a child of the
+  *combomenu* containing the *cascade* item.
 
-  **checkbutton**
-    A *checkbutton* menu item behaves much like a Tk **checkbutton** widget.
-    When it is invoked it toggles back and forth between the selected and
-    deselected states.  When the item is selected, a particular value is
-    stored in a particular global variable (as determined by the
-    **-onvalue** and **-variable** options for the item); when the item is
-    deselected another value (determined by the **-offvalue** option) is
-    stored in the global variable.  An indicator box is displayed to the
-    left of the label.  When the item is selected, a check is displayed in
-    the indicator. If a **-command** option is specified, its value is
-    evaluated as a TCL command each time the item is invoked; this happens
-    after toggling the item's selected state.
+**checkbutton**
+  A *checkbutton* menu item behaves much like a Tk **checkbutton** widget.
+  When it is invoked it toggles back and forth between the selected and
+  deselected states.  When the item is selected, a particular value is
+  stored in a particular global variable (as determined by the
+  **-onvalue** and **-variable** options for the item); when the item is
+  deselected another value (determined by the **-offvalue** option) is
+  stored in the global variable.  An indicator box is displayed to the
+  left of the label.  When the item is selected, a check is displayed in
+  the indicator. If a **-command** option is specified, its value is
+  evaluated as a TCL command each time the item is invoked; this happens
+  after toggling the item's selected state.
 
-  **radiobutton**
-    A *radiobutton* menu item behaves much like a Tk **radiobutton** widget.
-    *Radiobutton* items are organized in groups of which only one item may be
-    selected at a time.  Whenever a particular item becomes selected it
-    stores a particular value into a particular global variable (as
-    determined by the **-value** and **-variable** options for the item).
-    This action causes any previously selected item in the same group to
-    deselect itself.  Once an item has become selected, any change to the
-    item's associated variable will cause the item to deselect itself.
-    Grouping of *radiobutton* items is determined by their associated
-    variables: if two items have the same associated variable then they are
-    in the same group.  An indicator circle is displayed to the left of the
-    label.  If the item is selected then the indicator's center is filled
-    with a solid color.  If a **-command** option is specified then its value
-    is evaluated as a TCL command when the item is invoked; this happens
-    after selecting the item.
+**radiobutton**
+  A *radiobutton* menu item behaves much like a Tk **radiobutton** widget.
+  *Radiobutton* items are organized in groups of which only one item may be
+  selected at a time.  Whenever a particular item becomes selected it
+  stores a particular value into a particular global variable (as
+  determined by the **-value** and **-variable** options for the item).
+  This action causes any previously selected item in the same group to
+  deselect itself.  Once an item has become selected, any change to the
+  item's associated variable will cause the item to deselect itself.
+  Grouping of *radiobutton* items is determined by their associated
+  variables: if two items have the same associated variable then they are
+  in the same group.  An indicator circle is displayed to the left of the
+  label.  If the item is selected then the indicator's center is filled
+  with a solid color.  If a **-command** option is specified then its value
+  is evaluated as a TCL command when the item is invoked; this happens
+  after selecting the item.
 
-  **separator**
-    A *separator* item displays a horizontal dividing line.  A *separator*
-    can't be activated or invoked, and it has no behavior other than its
-    display appearance.
+**separator**
+  A *separator* item displays a horizontal dividing line.  A *separator*
+  can't be activated or invoked, and it has no behavior other than its
+  display appearance.
 
 Menu items are displayed with up to four separate fields.
 
-  *label*
-    The main field is a label in the form of a text string, or an image,
-    controlled by the **-text** and **-image** options for the item.
+*label*
+  The main field is a label in the form of a text string, or an image,
+  controlled by the **-text** and **-image** options for the item.
 
-  *icon*
-    If the **-icon** option is specified, then a image is displayed to the
-    left of the label.
+*icon*
+  If the **-icon** option is specified, then a image is displayed to the
+  left of the label.
 
-  *accelerator*
-    If the **-accelerator** option is specified for an item then a second
-    textual field is displayed to the right of the label.  The accelerator
-    typically describes a keystroke sequence that may be typed in the
-    application to cause the same result as invoking the menu entry.
+*accelerator*
+  If the **-accelerator** option is specified for an item then a second
+  textual field is displayed to the right of the label.  The accelerator
+  typically describes a keystroke sequence that may be typed in the
+  application to cause the same result as invoking the menu entry.
 
-  *indicator*
-    The indicator is present only for *checkbutton*, *radiobutton*, and
-    *cascade* entries.  For *checkbutton* and *radiobutton* items it
-    indicates whether the item is selected or not, and is displayed to the
-    left of the entry's string.  For *cascade* items it indicates that
-    clicking on item will post yet another menu and is displayed to the right
-    of the accelerator.
+*indicator*
+  The indicator is present only for *checkbutton*, *radiobutton*, and
+  *cascade* entries.  For *checkbutton* and *radiobutton* items it
+  indicates whether the item is selected or not, and is displayed to the
+  left of the entry's string.  For *cascade* items it indicates that
+  clicking on item will post yet another menu and is displayed to the right
+  of the accelerator.
 
 REFERENCING MENU ITEMS
 ----------------------
 
 Menu items may be referred to by either their index, label, or tag.
 
-  **index**
-    The number of the menu item.  Indices start from 0.  The index of an
-    item as other items are added, deleted, moved, or sorted.
+*index*
+  The number of the menu item.  Indices start from 0.  The index of an
+  item as other items are added, deleted, moved, or sorted. There are
+  also the following special non-numeric indices.
 
-  **label**
-    The label of the item (specified by the **-text** menu item option).
-    Labels should not be numbers (to distinguish them from indices) or tags.
+  **active**
+    The item that that is currently active.  Typically this is the
+    one that the pointer is over.
 
-  **tag**
-    A tag is a string associated with an item.  They are a useful for
-    referring to groups of items. Items can have any number of tags
-    associated with them (specified by the **-tags** menu item option).  A
-    tag may refer to multiple items.  There are two built-in tags: "all" and
-    "end".  Every item has the tag "all".  The last item in the menu will
-    have the tag "end".
+  **end**
+    The last item in the menu. 
+    
+  **first**
+    The first item in the menu. Disable and hidden items are ignored.
+
+  **last**
+    The last item in the menu. Disable and hidden items are ignored.
+
+  **next**
+    The next item from the currently active item.
+    
+  **previous**
+    The previous item from the currently active item.
+
+  **selected**
+    The last selected menu item.   
+    
+  **view.bottom**
+    The last visible item in the menu.  This changes are the the
+    menu is scrolled.
+    
+  **view.top**
+    The first visible item in the menu.  This changes are the the
+    menu is scrolled.
+
+*label*
+  The label of the item (specified by the **-text** menu item option).
+  Labels should not be numbers (to distinguish them from indices) or tags.
+
+*tag*
+  A tag is a string associated with an item.  They are a useful for
+  referring to groups of items. Items can have any number of tags
+  associated with them (specified by the **-tags** menu item option).  A
+  tag may refer to multiple items.  There are two built-in tags: "all" and
+  "end".  Every item has the tag "all".  The last item in the menu will
+  have the tag "end".
      
 If an item is specified by an integer it is assumed to be an index.  If it
 is specified by a string, it is first tested if it's a valid label and then

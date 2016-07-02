@@ -94,6 +94,8 @@ going to fit.  Obviously, both vectors must be the same length.
 
   ::
 
+    package require BLT
+
     # Create sample data of ten points. 
     blt::vector x(10) y(10)
 

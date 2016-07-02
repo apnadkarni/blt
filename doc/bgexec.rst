@@ -1,7 +1,7 @@
 
-===============
+===========
 blt::bgexec
-===============
+===========
 
 --------------------------------------------------------
 Run programs in the background while handling Tk events.
@@ -198,6 +198,8 @@ syntax to invoke "du" is exactly the same as the previous example, when we
 used **exec**.
 
   ::
+
+     package require BLT
 
      global myStatus myOutput
      blt::bgexec myStatus -output myOutput du -s $dir

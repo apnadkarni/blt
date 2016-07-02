@@ -3024,7 +3024,12 @@ GetItemByIndex(Tcl_Interp *interp, ComboMenu *comboPtr, const char *string,
             itemPtr = comboPtr->activePtr;
         }
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
-        itemPtr = LastItem(comboPtr);
+        Blt_ChainLink link;
+        
+        link = Blt_Chain_LastLink(comboPtr->chain); 
+        if (link != NULL) {
+            itemPtr = Blt_Chain_GetValue(link);
+        }
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
         itemPtr = FirstItem(comboPtr);
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {

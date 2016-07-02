@@ -127,6 +127,8 @@ grab using the **push** operation.
 
   ::
 
+     package require BLT
+
      frame .top
      button .top.button; canvas .top.canvas
      pack .top.button .top.canvas

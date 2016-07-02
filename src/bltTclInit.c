@@ -146,8 +146,8 @@ static Tcl_AppInitProc *cmdProcs[] =
 #ifndef NO_PTYEXEC
     Blt_PtyExecCmdInitProc,
 #endif
-#ifndef NO_CRC32
-    Blt_Crc32CmdInitProc,
+#ifndef NO_CHECKSUM
+    Blt_ChecksumCmdInitProc,
 #endif
 #ifndef NO_CSV
     Blt_CsvCmdInitProc,

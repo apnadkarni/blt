@@ -1134,40 +1134,50 @@ format in the **import** or **export** operations.
   specified, but not both.
 
   **-autoheaders** 
-   Set the column labels from the first row of the CSV data.  
+    Set the column labels from the first row of the CSV data.  
 
   **-columnlabels** *labelList*
-   Set the column labels from the list of labels in *labelList*.
+    Set the column labels from the list of labels in *labelList*.
 
-  **-comment** *char*
+  **-comment** *commChar*
    Specifies a comment character.  Any line in the CSV file starting
    with this character is treated as a comment and ignored.  By default
    the comment character is "", indicating no comments.
 
   **-data** *string*
-   Read the CSV information from *string*.
+    Read the CSV data from *string*.
 
   **-emptyvalue** *string*
-   Specifies a string value to use for cells when empty fields
-   are found in the CSV data.
+    Specifies a string value to use for cells when empty fields
+    are found in the CSV data.
+
+  **-encoding**  *encodingName*
+    Specifies the encoding of the CSV data.  
 
   **-headers** *labelList*
-   Specifies the column labels from the list of labels in *labelList*.
+    Specifies the column labels from the list of labels in *labelList*.
 
   **-file** *fileName*
-   Read the CSV file from *fileName*.
+    Read the CSV data from *fileName*. If *fileName* starts with an '@'
+    character, then what follows is the name of a TCL channel,
+    instead of a file name.
 
   **-maxrows** *numRows*
-   Specifies the maximum number of rows to load into the table. 
+    Specifies the maximum number of rows to load into the table. 
 
-  **-quote** *char*
-   Specifies the quote character.  This is by default the double quote (")
-   character.
+  **-possibleseparators**  *string*
+    Specifies a string of chararacters to test as possible separators for
+    the data. It *string* is "", then default set of characters is used.
+    The default is ",\t|;".
 
-  **-separator** *char*
-   Specifies the separator character.  By default this is the comma (,)
-   character. If *char* is "auto", then the separator is automatically
-   determined.
+  **-quote** *quoteChar*
+    Specifies the quote character.  This is by default the double quote (")
+    character.
+
+  **-separator** *sepChar*
+    Specifies the separator character.  By default this is the comma (,)
+    character. If *char* is "auto", then the separator is automatically
+    determined.
 
 *tableName* **export csv** ?\ *switches* ... ?
   Exports the datatable into CSV data.  If no **-file** switch is provided,
@@ -1175,35 +1185,37 @@ format in the **import** or **export** operations.
   import switches are supported:
 
   **-columnlabels** 
-   Indicates to create an extra row in the CSV containing the
-   column labels.
+    Indicates to create an extra row in the CSV containing the
+    column labels.
 
   **-columns** *columnList*
-   Specifies the subset of columns from *tableName* to export.
-   *ColumnList* is a list of column specifiers. Each specifier may be a
-   column label, index, or tag and may refer to multiple columns (example:
-   "all"). By default all columns are exported.
+    Specifies the subset of columns from *tableName* to export.
+    *ColumnList* is a list of column specifiers. Each specifier may be a
+    column label, index, or tag and may refer to multiple columns (example:
+    "all"). By default all columns are exported.
 
   **-file** *fileName*
-   Write the CSV output to the file *fileName*.
+    Write the CSV output to the file *fileName*.  If *fileName* starts with
+    an '@' character, then what follows is the name of a TCL channel,
+    instead of a file name.
 
-  **-quote** *char*
+  **-quote** *quoteChar*
     Specifies the quote character.  This is by default the double quote (")
     character.
 
   **-rowlabels** 
-   Indicates to create an extra column in the CSV containing the
-   row labels.
+    Indicates to create an extra column in the CSV containing the
+    row labels.
 
   **-rows** *rowList*
-   Specifies the subset of rows from *tableName* to export.  *RowList* is a
-   list of row specifiers. Each specifier may be a row label, index, or tag
-   and may refer to multiple row (example: "all").  By default all rows are
-   exported.
+    Specifies the subset of rows from *tableName* to export.  *RowList* is a
+    list of row specifiers. Each specifier may be a row label, index, or tag
+    and may refer to multiple row (example: "all").  By default all rows are
+    exported.
 
-  **-separator** *char*
-   Specifies the separator character.  This is by default the comma (,)
-   character.
+  **-separator** *sepChar*
+    Specifies the separator character.  This is by default the comma (,)
+    character.
 
 **mysql**
 ~~~~~~~~~

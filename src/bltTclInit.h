@@ -70,8 +70,8 @@ extern Tcl_AppInitProc Blt_BgexecCmdInitProc;
 #ifndef NO_PTYEXEC
 extern Tcl_AppInitProc Blt_PtyExecCmdInitProc;
 #endif
-#ifndef NO_CRC32
-extern Tcl_AppInitProc Blt_Crc32CmdInitProc;
+#ifndef NO_CHECKSUM
+extern Tcl_AppInitProc Blt_ChecksumCmdInitProc;
 #endif
 #ifndef NO_CSV
 extern Tcl_AppInitProc Blt_CsvCmdInitProc;

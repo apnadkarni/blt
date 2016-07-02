@@ -20,6 +20,7 @@ PDF =		$(patsubst $(srcdir)/%.rst,%.pdf,$(SRC))
 SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/arcball.rst \
 		$(srcdir)/background.rst \
+		$(srcdir)/base64.rst \
 		$(srcdir)/beep.rst \
 		$(srcdir)/bgexec.rst \
 		$(srcdir)/bitmap.rst \
@@ -27,10 +28,12 @@ SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/comboeditor.rst \
 		$(srcdir)/combomenu.rst \
 		$(srcdir)/compare.rst \
+		$(srcdir)/csv.rst \
 		$(srcdir)/cutbuffer.rst \
 		$(srcdir)/datatable.rst \
 		$(srcdir)/debug.rst \
 		$(srcdir)/eps.rst \
+		$(srcdir)/filmstrip.rst \
 		$(srcdir)/grab.rst \
 		$(srcdir)/graph.rst \
 		$(srcdir)/htext.rst \
@@ -38,6 +41,7 @@ SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/mesh.rst \
 		$(srcdir)/paintbrush.rst \
 		$(srcdir)/palette.rst \
+		$(srcdir)/paneset.rst \
 		$(srcdir)/picture.rst \
 		$(srcdir)/scrollset.rst \
 		$(srcdir)/sftp.rst \

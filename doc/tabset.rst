@@ -885,9 +885,11 @@ EXAMPLE
 You create a tabset widget with the **blt::tabset** command.
 
   ::
-
+   
+     package require BLT
+     
      # Create a new tabset
-     tabset .ts -relief sunken -borderwidth 2 
+     blt::tabset .ts -relief sunken -borderwidth 2 
 
 A new TCL command ".ts" is also created.  This command can be
 used to query and modify the tabset.  For example, to change the
@@ -943,7 +945,7 @@ and arranging the widget for you.
 
   ::
 
-     graph .ts.graph
+     blt::graph .ts.graph
      .ts tab configure "f1" -window ".ts.graph" \\
         -fill both -padx 0.25i -pady 0.25i
 

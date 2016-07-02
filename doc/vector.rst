@@ -941,6 +941,8 @@ operation.
 
   ::
 
+    package require BLT
+
     # Create a new vector. 
     blt::vector create y(50)
 

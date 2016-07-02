@@ -1849,7 +1849,9 @@ The **treeview** command creates a new widget.
 
   ::
 
-    treeview .tv -bg white
+    package require BLT
+
+    blt::treeview .tv -bg white
 
 A new TCL command ".tv" is also created.  This command can be used to query
 and modify the *treeview* widget.  For example, to change the background
