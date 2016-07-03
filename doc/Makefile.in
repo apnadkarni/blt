@@ -25,6 +25,7 @@ SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/bgexec.rst \
 		$(srcdir)/bitmap.rst \
 		$(srcdir)/busy.rst \
+		$(srcdir)/checksum.rst \
 		$(srcdir)/comboeditor.rst \
 		$(srcdir)/combomenu.rst \
 		$(srcdir)/compare.rst \

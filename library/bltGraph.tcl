@@ -612,7 +612,7 @@ proc blt::Graph::Push { g } {
 	} else {
 	    error "unknown type $type of zoomable axis $axis"
 	}
-        puts stderr "axis=$axis min=$min max=$max"
+        #puts stderr "axis=$axis min=$min max=$max"
 	if { ![SetAxisRanges $g $axis $min $max] } {
 	    Pop $g
 	    bell
