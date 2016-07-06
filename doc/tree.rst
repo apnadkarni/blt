@@ -856,33 +856,33 @@ command.  The operations available for trees are listed below.
   Removes one or more tags from a given node. Tag names that don't exist 
   or are reserved ("root" or "all") are silently ignored.
 
-*treeName* **trace create** *node* *fieldName* *ops* *traceCommand*
+*treeName* **trace create** *node* *fieldName* *ops* *cmdPrefix*
   Creates a trace for *node* on data field *fieldName*.  *Node* can refer
   to more than one node (for example, the tag **all**). If *node* is a tag,
-  any node with that tag can possibly trigger a trace, invoking *command*.
-  *Command* is command prefix, typically a procedure name.  Whenever a
-  trace is triggered, four arguments are appended to *command* before it is
-  invoked: *treeName*, node ID, *fieldName* and, *ops*.  Note that no nodes
-  need have the field *fieldName*.  A trace identifier in the form
-  "trace0", "trace1", etc.  is returned.
+  any node with that tag can possibly trigger a trace, invoking
+  *cmdPrefix*.  *CmdPrefix* is TCL command prefix, typically a procedure
+  name.  Whenever a trace is triggered, four arguments are appended to
+  *cmdPrefix* before it is invoked: *treeName*, node ID, *fieldName* and,
+  *ops*.  Note that no nodes need have the field *fieldName*.  A trace
+  identifier in the form "trace0", "trace1", etc.  is returned.
 
   *Ops* indicates which operations are of interest, and consists of one or
   more of the following letters:
 
   **r**
-    Invoke *traceCommand* whenever *fieldName* is read. Both read and
-    write traces are temporarily disabled when *command* is executed.
+    Invoke *cmdPrefix* whenever *fieldName* is read. Both read and
+    write traces are temporarily disabled when *cmdPrefix* is executed.
 
   **w**
-    Invoke *traceCommand* whenever *fieldName* is written.  Both read and
-    write traces are temporarily disabled when *command* is executed.
+    Invoke *cmdPrefix* whenever *fieldName* is written.  Both read and
+    write traces are temporarily disabled when *cmdPrefix* is executed.
 
   **c**
-    Invoke *traceCommand* whenever *fieldName* is created.
+    Invoke *cmdPrefix* whenever *fieldName* is created.
 
   **u** 
-    Invoke *traceCommand* whenever *fieldName* is unset.  Data fields are
-    typically unset with the **unset** command.   Data fields are also 
+    Invoke *cmdPrefix* whenever *fieldName* is unset.  Data fields are
+    typically unset with the **unset** operation.   Data fields are also 
     unset when the tree is released, but all traces are disabled prior
     to that.
 
