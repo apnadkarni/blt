@@ -73,12 +73,12 @@ REFERENCING TREE NODES
 A tree object is a hierarchy of nodes. The nodes may be referenced in two
 ways: by ID or by tag.
 
-**ID**
+*id*
   Each node has a unique serial number that is assigned to that node when
   it's created. The number identifies the node.  It never changes 
   and ID numbers are not re-used.
 
-**tag**
+*tag*
   A node may also have any number of tags associated with it.  A tag is
   just a string of characters, and it may take any form except that of
   an integer.  For example, "x123" is valid, but "123"
@@ -87,13 +87,13 @@ ways: by ID or by tag.
 
   There are two built-in tags
 
-   **all**
-     Every node in the tree implicitly has this tag.  It may be used to
-     invoke operations on all the nodes in the tree.
+  **all**
+    Every node in the tree implicitly has this tag.  It may be used to
+    invoke operations on all the nodes in the tree.
 
-   **root**
-     The tag "root" is managed automatically by the tree object. It applies
-     to the node currently set as root.
+  **root**
+    The tag "root" is managed automatically by the tree object. It applies
+    to the node currently set as root.
 
 When specifying nodes in tree object commands, if the specifier is an
 integer, it is assumed to refer to the single node with that ID.  If the
@@ -109,31 +109,31 @@ Nodes can also have modifiers.  They specify a relationship to the node.
 For example, "root->firstchild" selects the first subtree of the root node.
 The node modifiers are listed below.  
 
-  **firstchild**
-     Selects the first child of the node.  
+**firstchild**
+   Selects the first child of the node.  
 
-  **lastchild**
-    Selects the last child of the node.  
+**lastchild**
+  Selects the last child of the node.  
 
-  **next**
-    Selects the next node in preorder to the node.  
+**next**
+  Selects the next node in preorder to the node.  
 
-  **nextsibling**
-    Selects the next sibling of the node.  
+**nextsibling**
+  Selects the next sibling of the node.  
 
-  **parent**
-    Selects the parent of the node.  
+**parent**
+  Selects the parent of the node.  
 
-  **previous**
-    Selects the previous node in preorder to the node.  
+**previous**
+  Selects the previous node in preorder to the node.  
 
-  **prevsibling**
-    Selects the previous sibling of the node.  
+**prevsibling**
+  Selects the previous sibling of the node.  
 
-  *label*
-   Selects the node whose label is *label*.  Enclosing *label* in 
-   quotes indicates to always search for a node by its label (for example, 
-   even if the node is labeled "parent").
+*childLabel*
+ Selects the child node whose label is *label*.  Enclosing *label* in
+ quotes indicates to always search for a node by its label (for example,
+ even if the node is labeled "parent").
 
 Modifies can can be chained. For example "10->parent->firstchild" looks for
 the node with an ID of 10, then its parent, and then the parent's first
@@ -856,7 +856,7 @@ command.  The operations available for trees are listed below.
   Removes one or more tags from a given node. Tag names that don't exist 
   or are reserved ("root" or "all") are silently ignored.
 
-*treeName* **trace create** *node* *fieldName* *ops* *command*
+*treeName* **trace create** *node* *fieldName* *ops* *traceCommand*
   Creates a trace for *node* on data field *fieldName*.  *Node* can refer
   to more than one node (for example, the tag **all**). If *node* is a tag,
   any node with that tag can possibly trigger a trace, invoking *command*.
@@ -870,18 +870,18 @@ command.  The operations available for trees are listed below.
   more of the following letters:
 
   **r**
-    Invoke *command* whenever *fieldName* is read. Both read and
+    Invoke *traceCommand* whenever *fieldName* is read. Both read and
     write traces are temporarily disabled when *command* is executed.
 
   **w**
-    Invoke *command* whenever *fieldName* is written.  Both read and
+    Invoke *traceCommand* whenever *fieldName* is written.  Both read and
     write traces are temporarily disabled when *command* is executed.
 
   **c**
-    Invoke *command* whenever *fieldName* is created.
+    Invoke *traceCommand* whenever *fieldName* is created.
 
   **u** 
-    Invoke *command* whenever *fieldName* is unset.  Data fields are
+    Invoke *traceCommand* whenever *fieldName* is unset.  Data fields are
     typically unset with the **unset** command.   Data fields are also 
     unset when the tree is released, but all traces are disabled prior
     to that.
@@ -979,40 +979,40 @@ Then the following **import** and **export** commands become available.
     Read the JSON information from *dataString*. It is an error
     to set both the **-file** and **-data** switches.
 
-  **-declaration**  *bool*
+  **-declaration**  *boolean*
     If true, import XML declarations.  The default is "0".
 
-  **-extref**  *bool*
+  **-extref**  *boolean*
     If true, import XML external references.  The default is "0".
 
   **-file** *fileName*
     Read the JSON file *fileName* to load the tree. It is an error
     to set both the **-file** and **-data** switches.
 
-  **-locations**  *bool*
+  **-locations**  *boolean*
     If true, import XML locations.  The default is "0".
 
   **-root** *node*
     Load the XML information into the tree starting at *node*.  The
     default is the root node of the tree.
 
-  **-attributes**  *bool*
+  **-attributes**  *boolean*
     If true, import XML attributes.  The default is "1".
 
-  **-namespace**  *bool*
+  **-namespace**  *boolean*
     If true, import XML namespaces.  The default is "0".
 
-  **-cdata**  *bool*
+  **-cdata**  *boolean*
     If true, import XML character data.  The default is "1".
 
-  **-overwrite**  *bool*
+  **-overwrite**  *boolean*
     If true, overwrite tree nodes is they already exist.  
     The default is "0".
 
-  **-processinginstructions**  *bool*
+  **-processinginstructions**  *boolean*
     If true, import XML processing instructions.  The default is "0".
 
-  **-trimwhitespace**  *bool*
+  **-trimwhitespace**  *boolean*
     If true, trim white space from XML character data.  The default is "0".
 
 *treeName* **export xml** ?\ *switches* ... ?
@@ -1041,6 +1041,8 @@ Then the following **import** and **export** commands become available.
 
 EXAMPLE
 -------
+
+FIXME
 
 C API
 -----

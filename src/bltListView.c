@@ -815,6 +815,19 @@ static Blt_SwitchSpec findSwitches[] =
     {BLT_SWITCH_END}
 };
 
+typedef struct {
+    unsigned int flags;
+} BBoxSwitches;
+
+#define BBOX_ROOT     (1<<0)
+
+static Blt_SwitchSpec bboxSwitches[] = 
+{
+    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+        Blt_Offset(BBoxSwitches, flags), 0, BBOX_ROOT},
+    {BLT_SWITCH_END}
+};
+
 static int GetItemIterator(Tcl_Interp *interp, ListView *viewPtr,
         Tcl_Obj *objPtr, ItemIterator *iterPtr);
 static int GetItemFromObj(Tcl_Interp *interp, ListView *viewPtr,
@@ -3911,7 +3924,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Results:
  *      A standard TCL result.
  *
- *   pathName bbox itemName 
+ *   pathName bbox itemName ?-root?
  *
  *---------------------------------------------------------------------------
  */
@@ -3920,12 +3933,10 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
+    BBoxSwitches switches;
     Item *itemPtr;
     Tcl_Obj *listObjPtr, *objPtr;
     int x, y;
-#ifdef notdef
-    int rootX, rootY;
-#endif
     
     if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3935,17 +3946,25 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     x = SCREENX(viewPtr, itemPtr->worldX);
     y = SCREENY(viewPtr, itemPtr->worldY);
-#ifdef notdef
-    Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
-    if (rootX < 0) {
-        rootX = 0;
+    /* Process switches  */
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, bboxSwitches, objc - 3, objv + 3, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
-    if (rootY < 0) {
-        rootY = 0;
+    if (switches.flags & BBOX_ROOT) {
+        int rootX, rootY;
+
+        Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+        if (rootX < 0) {
+            rootX = 0;
+        }
+        if (rootY < 0) {
+            rootY = 0;
+        }
+        x += rootX;
+        y += rootY;
     }
-    x += rootX;
-    y += rootY;
-#endif
     x += itemPtr->textX - 3;
     y += itemPtr->textY - 1;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -6613,7 +6632,7 @@ static Blt_OpSpec listViewOps[] =
 {
     {"activate",    2, ActivateOp,    3, 3, "itemName",},
     {"add",         2, AddOp,         2, 0, "?option value ...?",},
-    {"bbox",        1, BBoxOp,        3, 3, "itemName",},
+    {"bbox",        1, BBoxOp,        3, 0, "itemName ?switches?",},
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"curselection",2, CurselectionOp,2, 2, "",},

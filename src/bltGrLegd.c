@@ -356,6 +356,19 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
+typedef struct {
+    unsigned int flags;
+} BBoxSwitches;
+
+#define BBOX_ROOT     (1<<0)
+
+static Blt_SwitchSpec bboxSwitches[] = 
+{
+    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+        Blt_Offset(BBoxSwitches, flags), 0, BBOX_ROOT},
+    {BLT_SWITCH_END}
+};
+
 static Tcl_IdleProc DisplayProc;
 static Blt_BindPickProc PickEntryProc;
 static Tk_EventProc LegendEventProc;
@@ -2247,7 +2260,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Returns the bounding box of the legend entry.
  *
- *      pathName legend bbox elemName
+ *      pathName legend bbox elemName ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -2261,9 +2274,16 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Legend *legendPtr;
     Tcl_Obj *listObjPtr, *objPtr;
     int x, y, w, offset, symbolSize;
+    BBoxSwitches switches;
 
     legendPtr = graphPtr->legend;
     if (Blt_GetElement(interp, graphPtr, objv[3], &elemPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    /* Process switches  */
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, bboxSwitches, objc - 4, objv + 4, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
     Blt_Font_GetMetrics(legendPtr->style.font, &fontMetrics);
@@ -2280,6 +2300,19 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     y += elemPtr->row * legendPtr->entryHeight;
     x += elemPtr->col * w;
 
+    if (switches.flags & BBOX_ROOT) {
+        int rootX, rootY;
+
+        Tk_GetRootCoords(graphPtr->tkwin, &rootX, &rootY);
+        if (rootX < 0) {
+            rootX = 0;
+        }
+        if (rootY < 0) {
+            rootY = 0;
+        }
+        x += rootX;
+        y += rootY;
+    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 
     /* x */
@@ -2289,10 +2322,10 @@ BBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Tcl_NewIntObj(y);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     /* width */
-    objPtr = Tcl_NewIntObj(w);
+    objPtr = Tcl_NewIntObj(x + w);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     /* height */
-    objPtr = Tcl_NewIntObj(legendPtr->entryHeight);
+    objPtr = Tcl_NewIntObj(y + legendPtr->entryHeight);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     Tcl_SetObjResult(interp, listObjPtr);
@@ -3008,7 +3041,7 @@ SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec legendOps[] =
 {
     {"activate",     1, ActivateOp,      3, 4, "?elemName?",},
-    {"bbox",         2, BBoxOp,          4, 4, "elemName",},
+    {"bbox",         2, BBoxOp,          4, 0, "elemName ?switches?",},
     {"bind",         2, BindOp,          3, 6, "elemName sequence command",},
     {"cget",         2, CgetOp,          4, 4, "option",},
     {"configure",    2, ConfigureOp,     3, 0, "?option value ...?",},

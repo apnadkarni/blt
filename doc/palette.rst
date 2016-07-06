@@ -73,72 +73,72 @@ There are several ways to define look-up table entries.  It depends on the
 type of spacing designated (see the **-colorspacing** and
 **-opacityspacing** options).
 
-  **regular**
-    The look-up table is generated from a list of two or more colors.  The
-    colors are regularly spaced at values from 0 to 1. The number of
-    entries is determined is number of colors minus 1. For example if the
-    list contains 5 colors
+**regular**
+  The look-up table is generated from a list of two or more colors.  The
+  colors are regularly spaced at values from 0 to 1. The number of
+  entries is determined is number of colors minus 1. For example if the
+  list contains 5 colors
 
-    ::
+  ::
 
-      red orange yellow green indigo
+    red orange yellow green indigo
 
-    there would be four table entries.
+  there would be four table entries.
 
-    ::
+  ::
 
-      0.0  0.25 red orange
-      0.25 0.5  orange yellow
-      0.5  0.75 yellow green
-      0.75 1.0  green indigo
-  
-    The first and last values for each entry are computed by evenly
-    spacing the colors between 0 and 1.  Data values are always
-    relative (normalized to be between 0 and 1).
+    0.0  0.25 red orange
+    0.25 0.5  orange yellow
+    0.5  0.75 yellow green
+    0.75 1.0  green indigo
 
-  **irregular**
-    The palette is defined by two or more pairs of value and color.
-    The number of entries is determined is number of pairs minus 1.
-    For example if the list contains 5 pairs
+  The first and last values for each entry are computed by evenly
+  spacing the colors between 0 and 1.  Data values are always
+  relative (normalized to be between 0 and 1).
 
-    ::
+**irregular**
+  The palette is defined by two or more pairs of value and color.
+  The number of entries is determined is number of pairs minus 1.
+  For example if the list contains 5 pairs
 
-      0.0 red 0.2 orange 0.4 yellow 0.5 green 1.0 indigo
+  ::
 
-    there would be four table entries.
+    0.0 red 0.2 orange 0.4 yellow 0.5 green 1.0 indigo
 
-    ::
-       
-      0.0  0.2 red orange
-      0.2  0.4 orange yellow
-      0.4  0.5 yellow green
-      0.5  1.0 green indigo
+  there would be four table entries.
 
-    The first and last values for each entry are explicit from the 
-    values in the list. Note that the values do not have to be evenly spaced.
-    They values can be any scale.
+  ::
 
-  **interval**
-    The palette is defined by specifying individual entries: a starting
-    and ending value and color.
-    For example if the list was
+    0.0  0.2 red orange
+    0.2  0.4 orange yellow
+    0.4  0.5 yellow green
+    0.5  1.0 green indigo
 
-    ::
+  The first and last values for each entry are explicit from the 
+  values in the list. Note that the values do not have to be evenly spaced.
+  They values can be any scale.
 
-      0.0 red 0.2 orange 0.2 orange 0.4 yellow 0.5 green 1.0 indigo
-    
+**interval**
+  The palette is defined by specifying individual entries: a starting
+  and ending value and color.
+  For example if the list was
 
-    there would be three table entries.  
+  ::
 
-    ::
-       
-      0.0  0.2 red orange
-      0.2  0.4 orange yellow
-      0.5  1.0 green indigo
+    0.0 red 0.2 orange 0.2 orange 0.4 yellow 0.5 green 1.0 indigo
 
-    Note that entries to not need to cover the entire range of values.
-    Here there is a hole between 0.4 and 0.5.  The default color is
-    returned.
+
+  there would be three table entries.  
+
+  ::
+
+    0.0  0.2 red orange
+    0.2  0.4 orange yellow
+    0.5  1.0 green indigo
+
+  Note that entries to not need to cover the entire range of values.
+  Here there is a hole between 0.4 and 0.5.  The default color is
+  returned.
 
 COLOR SPECIFICATIONS
 ====================
@@ -146,17 +146,17 @@ COLOR SPECIFICATIONS
 Colors for the look-up tables above can be specified any of the following
 ways.
 
-  *colorName* 
-    Each color is a single name such as "red" or "#FF0000".
+*colorName* 
+  Each color is a single name such as "red" or "#FF0000".
 
-  *r* *g* *b* 
-    Each color is a triplet of 3 numbers, representing the red, green,
-    and blue components for the color.  The numbers are floating point
-    numbers.
+*r* *g* *b* 
+  Each color is a triplet of 3 numbers, representing the red, green,
+  and blue components for the color.  The numbers are floating point
+  numbers.
 
-  *h* *s* *v* 
-    Each color is a triplet of 3 numbers, representing the hue, saturation,
-    and value components for the color.  
+*h* *s* *v* 
+  Each color is a triplet of 3 numbers, representing the hue, saturation,
+  and value components for the color.  
 
 OPERATIONS
 ==========

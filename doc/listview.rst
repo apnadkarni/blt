@@ -159,11 +159,16 @@ command.  The following operations are available for *listview* widgets:
   to have the given value(s).  *Option* and *value* are described in the
   **item configure** operation.
 
-*pathName* **bbox** *itemName* 
-  Returns of list of four numbers describing the bounding box of *itemName*.
-  The numbers represent the x and y root coordinates of two opposite
-  corners of the box. *Item* may be a label, index, or tag, but may not
-  represent more than one item.
+*pathName* **bbox** *itemName* ?\ *switches* ... ?
+  Returns of list of four numbers describing the bounding box of
+  *itemName*.  The numbers represent the x and y root coordinates of two
+  opposite corners of the box. *Item* may be a label, index, or tag, but
+  may not represent more than one item. *Switches* can be one of the 
+  following:
+
+  **-root** 
+    Return the bounding box coordinates in root screen coordinates instead
+    of relative to the *listview* window.
 
 *pathName* **cget** *option*  
   Returns the current value of the widget configuration option given by

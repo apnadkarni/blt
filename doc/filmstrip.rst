@@ -161,28 +161,21 @@ command.  The following operations are available for *filmstrip* widgets:
   frame option(s) to have the given value(s).  *Option* and *value* are
   described in the **frame configure** operation.
 
-*pathName* **bbox** *frameName*  
-  Returns a list of 4 numbers, representing a bounding box of *frameName*.
-  *FrameName* may be a label, index, or tag, but may not represent more
-  than one frame. The returned list contains the following values.
+*pathName* **bbox** *frameName*  ?\ *switches* ... ?
+  Returns the bounding box of *frameName*.  *FrameName* may be a label,
+  index, or tag, but may not represent more than one frame. The returned
+  list contains 4 numbers: two sets of x,y coordinates that represent the
+  opposite corners of the bounding box. *Switches* can be one of the 
+  following:
 
-  *x* 
-     X-coordinate of the upper-left corner of the bounding box.
-
-  *y*
-     Y-coordinate of the upper-left corner of the bounding box.
-
-  *width*
-     Width of the bounding box.
-
-  *height*
-     Height of the bounding box.
-
-*pathName* **cget** *option*  
-  Returns the current value of the widget configuration option given by
-  *option*. *Option* may have any of the values accepted by the
-  **configure** operation. They are described in the **configure**
-  operation below.
+  **-root** 
+    Return the bounding box coordinates in root screen coordinates instead
+    of relative to the *filmstrip* window.
+    
+*pathName* **cget** *option* Returns the current value of the widget
+  configuration option given by *option*. *Option* may have any of the
+  values accepted by the **configure** operation. They are described in the
+  **configure** operation below.
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
   Queries or modifies the configuration options of the *filmstrip* widget.

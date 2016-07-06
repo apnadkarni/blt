@@ -591,6 +591,19 @@ typedef struct _Iterator {
 } FrameIterator;
 
 
+typedef struct {
+    unsigned int flags;
+} BBoxSwitches;
+
+#define BBOX_ROOT     (1<<0)
+
+static Blt_SwitchSpec bboxSwitches[] = 
+{
+    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+        Blt_Offset(BBoxSwitches, flags), 0, BBOX_ROOT},
+    {BLT_SWITCH_END}
+};
+
 /*
  * Forward declarations
  */
@@ -3032,7 +3045,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * BoxOp --
  *
- *      pathName bbox frameName
+ *      pathName bbox frameName ?switches?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -3041,11 +3054,18 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     Filmstrip *filmPtr = clientData;
+    BBoxSwitches switches;
     Frame *framePtr;
     Tcl_Obj *listObjPtr;
     int x1, y1, x2, y2;
 
     if (GetFrameFromObj(interp, filmPtr, objv[2], &framePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    /* Process switches  */
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, bboxSwitches, objc - 3, objv + 3, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
     if (framePtr->flags & HIDDEN) {
@@ -3061,6 +3081,21 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         x2 = framePtr->width;
         y1 = SCREEN(filmPtr, framePtr->worldY);
         y2 = y1 + framePtr->height;
+    }
+    if (switches.flags & BBOX_ROOT) {
+        int rootX, rootY;
+
+        Tk_GetRootCoords(filmPtr->tkwin, &rootX, &rootY);
+        if (rootX < 0) {
+            rootX = 0;
+        }
+        if (rootY < 0) {
+            rootY = 0;
+        }
+        x1 += rootX;
+        x2 += rootX;
+        y1 += rootY;
+        y2 += rootY;
     }
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -4545,7 +4580,7 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec filmstripOps[] =
 {
     {"add",        1, AddOp,       2, 0, "?label? ?option value ...?",},
-    {"bbox",       1, BboxOp,      3, 3, "frameName",},
+    {"bbox",       1, BboxOp,      3, 0, "frameName ?switches?",},
     {"cget",       2, CgetOp,      3, 3, "option",},
     {"configure",  2, ConfigureOp, 2, 0, "?option value ...?",},
     {"delete",     1, DeleteOp,    3, 3, "?frameName ...?",},

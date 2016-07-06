@@ -55,54 +55,54 @@ between different widgets.
 
 A mesh can have one of the following input types: 
 
-  **cloud**
-    The mesh is defined by a point cloud. A point cloud is unordered set of
-    points.  A triangular mesh is computed using Delaunay triangulation
-    from the points. A network of triangles is built over the existing
-    vertices of the point cloud.  Field values associated with a *cloud*
-    mesh should have the same ordering as the cloud points.
+**cloud**
+  The mesh is defined by a point cloud. A point cloud is unordered set of
+  points.  A triangular mesh is computed using Delaunay triangulation
+  from the points. A network of triangles is built over the existing
+  vertices of the point cloud.  Field values associated with a *cloud*
+  mesh should have the same ordering as the cloud points.
 
-    Reference: Steve J. Fortune (1987) A Sweepline Algorithm for Voronoi
-    Diagrams, Algorithmica 2, 153-174.
+  Reference: Steve J. Fortune (1987) A Sweepline Algorithm for Voronoi
+  Diagrams, Algorithmica 2, 153-174.
 
-  **irregular**
-    The mesh is defined by a non-uniform rectilinear grid.  The coordinates
-    of the grid lines the run along the X and Y axes are exactly
-    specified. The coordinates do not have to be uniformly spaced.  Field
-    values associated with an *irregular* mesh should follow the convention
-    of x-coordinates changing fastest (row-major). For example in a 20x10
-    non-uniform grid the order of the field values would be:
-
-       ::
-
-         (0,0), (0,1), (0,2) ... (0,19)
-	 (1,0), (1,1), (1,2) ... (1,19)
-	 ...
-         (9,0), (9,1), (9,2) ... (9,19)
-
-    
-  **regular**
-    The mesh is defined by a uniform rectangular grid where the grid lines
-    run along the X and Y axes. Each axis has 3 numbers that specify the
-    minimum and maximum values, and the number of grid lines.  Field values
-    associated with a *regular* mesh should follow the convention of
-    x-coordinates changing fastest (row-major). For example in a 20x10 grid
-    the order of the field values would be:
+**irregular**
+  The mesh is defined by a non-uniform rectilinear grid.  The coordinates
+  of the grid lines the run along the X and Y axes are exactly
+  specified. The coordinates do not have to be uniformly spaced.  Field
+  values associated with an *irregular* mesh should follow the convention
+  of x-coordinates changing fastest (row-major). For example in a 20x10
+  non-uniform grid the order of the field values would be:
 
      ::
 
-         (0,0), (0,1), (0,2) ... (0,19)
-	 (1,0), (1,1), (1,2) ... (1,19)
-	 ...
-         (9,0), (9,1), (9,2) ... (9,19)
+       (0,0), (0,1), (0,2) ... (0,19)
+       (1,0), (1,1), (1,2) ... (1,19)
+       ...
+       (9,0), (9,1), (9,2) ... (9,19)
 
-    
-  **triangle**
-    The mesh is defined by a set of triangles that are connected by their
-    common edges or corners.  The vertices of the triangles and the
-    individual triangles (by the indices of the vertices) must be
-    specified.  Field values associated with a *triangle* mesh should have
-    the same ordering as the vertices.
+
+**regular**
+  The mesh is defined by a uniform rectangular grid where the grid lines
+  run along the X and Y axes. Each axis has 3 numbers that specify the
+  minimum and maximum values, and the number of grid lines.  Field values
+  associated with a *regular* mesh should follow the convention of
+  x-coordinates changing fastest (row-major). For example in a 20x10 grid
+  the order of the field values would be:
+
+   ::
+
+       (0,0), (0,1), (0,2) ... (0,19)
+       (1,0), (1,1), (1,2) ... (1,19)
+       ...
+       (9,0), (9,1), (9,2) ... (9,19)
+
+
+**triangle**
+  The mesh is defined by a set of triangles that are connected by their
+  common edges or corners.  The vertices of the triangles and the
+  individual triangles (by the indices of the vertices) must be
+  specified.  Field values associated with a *triangle* mesh should have
+  the same ordering as the vertices.
 
 DATA SOURCES
 ============
@@ -110,18 +110,18 @@ DATA SOURCES
 Data can be supplied in a variety of ways: a list of numbers,
 a BLT *vector*, or a column in a BLT *datatable*.
 
-  *list*
-    The coordinates are in a list of floating point numbers.
+*list*
+  The coordinates are in a list of floating point numbers.
 
-  *vector*
-    The coordinates are in a BLT vector.  *Vector* is the name of a vector
-    returned by the **blt::vector** command.
+*vector*
+  The coordinates are in a BLT vector.  *Vector* is the name of a vector
+  returned by the **blt::vector** command.
 
-  *dataTable* *column* 
-     The coordinates are in a column in BLT datatable.  *DataTable* is the
-     name of a datatable returned by the **blt::datatable**
-     command. *Column* is the label, index, or tag representing the column,
-     but may not refer to more than one column.
+*dataTable*  *column* 
+   The coordinates are in a column in BLT datatable.  *DataTable* is the
+   name of a datatable returned by the **blt::datatable**
+   command. *Column* is the label, index, or tag representing the column,
+   but may not refer to more than one column.
      
 The order of the coordinates specified for the mesh determines the order of
 the field values.
@@ -337,21 +337,6 @@ mesh
 COPYRIGHT
 =========
 
-The author of the sweep-line triangulator is Steven Fortune.  
-
-Copyright (c) 1994 by AT&T Bell Laboratories.
-
-Permission to use, copy, modify, and distribute this software for any
-purpose without fee is hereby granted, provided that this entire notice is
-included in all copies of any software which is or includes a copy or
-modification of this software and in all copies of the supporting
-documentation for such software.  THIS SOFTWARE IS BEING PROVIDED "AS IS",
-WITHOUT ANY EXPRESS OR IMPLIED WARRANTY.  IN PARTICULAR, NEITHER THE
-AUTHORS NOR AT&T MAKE ANY REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING
-THE MERCHANTABILITY OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR
-PURPOSE.
-
-
 2015 George A. Howlett. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -380,3 +365,19 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The author of the sweep-line triangulator is Steven Fortune.  
+
+  Copyright (c) 1994 by AT&T Bell Laboratories.
+
+  Permission to use, copy, modify, and distribute this software for any
+  purpose without fee is hereby granted, provided that this entire notice is
+  included in all copies of any software which is or includes a copy or
+  modification of this software and in all copies of the supporting
+  documentation for such software.  THIS SOFTWARE IS BEING PROVIDED "AS IS",
+  WITHOUT ANY EXPRESS OR IMPLIED WARRANTY.  IN PARTICULAR, NEITHER THE
+  AUTHORS NOR AT&T MAKE ANY REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING
+  THE MERCHANTABILITY OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR
+  PURPOSE.
+
+

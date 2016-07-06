@@ -360,7 +360,7 @@ proc blt::ListView::EditLabel { w item } {
     }
     $w see $index
     update
-    set bbox [$w bbox $index] 
+    set bbox [$w bbox $index -root] 
     if { $bbox == "" } {
         return
     }
