@@ -2128,6 +2128,19 @@ PicturesToAnimatedGif(Tcl_Interp *interp, Blt_Chain chain, Blt_DBuffer dbuffer,
             Blt_CompositePictures(bg, srcPtr);
             srcPtr = fp->current = bg;
         }
+        if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+            Blt_Picture unassoc;
+            /* 
+             * The picture has alphas burned into its color components.  Create
+             * a temporary copy removing pre-multiplied alphas.
+             */ 
+            unassoc = Blt_ClonePicture(srcPtr);
+            Blt_UnmultiplyColors(unassoc);
+            if (srcPtr != fp->current) {
+                Blt_FreePicture(srcPtr);
+            }
+            srcPtr = unassoc;
+        }
         Blt_QueryColors(srcPtr, &colorTable);
     }
     /* 

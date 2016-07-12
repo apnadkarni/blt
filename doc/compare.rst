@@ -23,10 +23,10 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-These utility commands are used by the **treeview** widget to filter rows.
-The **number** operations handle cases where the floating point numbers are
-almost equal. The **string** operations provide switches to compactly
-handle different cases.
+These utility commands are used by the **blt::tableview** widget to filter
+rows.  The **number** operations handle cases where the floating point
+numbers are almost equal. The **string** operations provide switches to
+compactly handle different cases.
 
 SYNTAX
 ------
@@ -45,10 +45,10 @@ SYNTAX
 NUMBER COMPARISONS
 ------------------
 
-**blt::utils::number between** *number* *first* *last*
-  Indicates if *number* is between *first* and *last*.  *Number*, *first*,
-  and *last* are floating point numbers.  If *number* is greater than or
-  equal to *first* and *number* is less than of equal to *last* "1" is
+**blt::utils::number between** *number* *minNum* *maxNum*
+  Indicates if *number* is between *first* and *last*.  *Number*, *minNum*,
+  and *maxNum* are floating point numbers.  If *number* is greater than or
+  equal to *minNum* and *number* is less than of equal to *maxNum* "1" is
   returned.  Otherwise "0".
 
 **blt::utils::number eq** *number1* *number2* 
@@ -105,11 +105,12 @@ STRING COMPARISONS
     Trims leading whitespace from *string* before determining if *string*
     starts with *pattern*.
 
-**blt::utils::string between** *string* *first* *last** ?\ *switches* ... ?
-  Indicates if *string* is between *first* and *last*.  *String*, *first*
-  and *last* are ordinary TCL strings.  If *string* is greater than or
-  equal to *first* and *string* is less than or equal to *last* "1" is
-  returned, otherwise "0". *Switches* can be any of the following.
+**blt::utils::string between** *string* *firstStr* *lastStr** ?\ *switches* ... ?
+  Indicates if *string* is between *firstStr* and *lastStr*.  *String*,
+  *firstStr* and *lastStr* are ordinary TCL strings.  If *string* is
+  greater than or equal to *first* and *string* is less than or equal to
+  *lastStr* "1" is returned, otherwise "0". *Switches* can be any of the
+  following.
 
   **-nocase** 
     Specifies to ignore case when comparing strings.

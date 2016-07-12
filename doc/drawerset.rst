@@ -22,21 +22,22 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **blt::drawerset** command is a geometry manager for Tk.  It manages
-embedded Tk widgets as drawers that slide in and out from a selected side
-of a parent Tk widget.  The drawers (embedded widgets) may have a handle
-attached to them that allows the user to adjust the amount the drawer is
-pulled out from the side of the parent widget.
+The **blt::drawerset** displays an embedded Tk widget, but also lets you
+designate other embedded Tk widgets to act as drawers that slide in and out
+from a side of the *drawerset* widget. The drawers (embedded Tk widgets)
+can optionally have a handle attached to them that allows the user to
+manually adjust how much the drawer is pulled out from the side of the
+widget.
 
 INTRODUCTION
 ------------
 
-The *drawerset* widget displays embedded Tk widgets as a strip of *drawerset*
-drawers.  The drawers may be arranged horizontally or vertically.  Drawers
-have optional grips (handles) that appear as a border between drawers.  They
-can be used to slide drawers left-to-right (horizontal arrangement) or
-top-to-bottom (vertical arrangement).  The user can adjust the size of a
-drawer by using the mouse or keyboard on the handle.
+The *drawerset* widget displays an embedded Tk widget as its base, but also
+lets you designate other embedded Tk widgets to act as drawers that slide
+out for a selected side of the widget. The drawers (embedded widgets) may
+each have a handle attached to them that allows the user to how much the
+drawer is pulled out from the side of the widget.  The user can adjust the
+size of a drawer by using the mouse or keyboard on the handle.
 
 The *drawerset* widget can also be used to create a wizard-like interface
 where drawers contain are a sequence of dialogs that lead the user through a
@@ -52,17 +53,17 @@ SYNTAX
 
   **blt::drawerset** *pathName* ?\ *option* *value* ... ?
 
-The **blt::drawerset** manages the geometry for embedded Tk widget of
-*pathName*.  *PathName* can be any Tk widget. The window *pathName*
-must already exist.
+The **blt::drawerset** command creates a new window *pathName* and makes it
+into a *drawerset* widget.  At the time this command is invoked, there must
+not exist a window named *pathName*, but *pathName*'s parent must exist.
 Additional options may be specified on the command line or in the option
 database to configure aspects of the widget such as its colors and font.
 See the widget's **configure** operation below for the exact details about
 what *option* and *value* pairs are valid.
 
-If successful, **blt::drawerset** returns the path name of the widget.  It also
-creates a new TCL command by the same name.  You can use this command to
-invoke various operations that query or modify the widget.  The general
+If successful, **blt::drawerset** returns the path name of the widget.  It
+also creates a new TCL command by the same name.  You can use this command
+to invoke various operations that query or modify the widget.  The general
 form is:
 
   *pathName* *operation* ?\ *arg* ... ?
@@ -72,7 +73,7 @@ the command.  The operations available are described in the
 `OPERATIONS`_ section below.
 
 REFERENCING DRAWERS
-------------------
+-------------------
 
 Drawers can be referenced either by index, label, or by tag.
 
@@ -82,10 +83,10 @@ Drawers can be referenced either by index, label, or by tag.
   also the following special non-numeric indices.
 
   **active**
-    This is the drawer whose grip is where the mouse pointer is currently
-    located.  When a grip is active, it is drawn using its active colors.
+    This is the drawer whose handle is where the mouse pointer is currently
+    located.  When a handle is active, it is drawn using its active colors.
     The **active** index is changes when you move the mouse pointer over
-    another drawer's grip or by using the **activate** operation. Note
+    another drawer's handle or by using the **activate** operation. Note
     that there can be only one active drawer at a time.
 
   **current**
@@ -156,25 +157,18 @@ command.  The following operations are available for *drawerset* widgets:
   *Label* can not start with a dash "-" or be the name of another drawer.
   The name of the new drawer is returned.
 
+  The drawers are stacked in the order that they are added. The last drawer
+  created is above previous drawers.
+
   If one or more *option-value* pairs are specified, they modify the given
   drawer option(s) to have the given value(s).  *Option* and *value* are
   described in the **drawer configure** operation.
 
-*pathName* **bbox** *drawerName*  ?\ *switches* ... ?
-  Returns the bounding box of *drawerName*.  *DrawerName* may be a label,
-  index, or tag, but may not represent more than one drawer. The returned
-  list contains 4 numbers: two sets of x,y coordinates that represent the
-  opposite corners of the bounding box. *Switches* can be one of the 
-  following:
-
-  **-root** 
-    Return the bounding box coordinates in root screen coordinates instead
-    of relative to the *drawerset* window.
-    
-*pathName* **cget** *option* Returns the current value of the widget
-  configuration option given by *option*. *Option* may have any of the
-  values accepted by the **configure** operation. They are described in the
-  **configure** operation below.
+*pathName* **cget** *option*
+  Returns the current value of the widget configuration option given by
+  *option*. *Option* may have any of the values accepted by the
+  **configure** operation. They are described in the **configure**
+  operation below.
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
   Queries or modifies the configuration options of the *drawerset* widget.
@@ -197,15 +191,15 @@ command.  The following operations are available for *drawerset* widgets:
 
   The following widget options are available\:
 
-  **-activegripcolor** *colorName* 
-    Specifies the background color of the drawer's grip when it is active.
+  **-activehandlecolor** *colorName* 
+    Specifies the background color of the drawer's handle when it is active.
     *ColorName* may be a color name or the name of a background object
     created by the **blt::background** command.  
     The default is "grey90". 
 
-  **-activegriprelief** *reliefName* 
-    Specifies the default relief when a drawer's grip is active.  This
-    determines the 3-D effect for the grip.  *ReliefName* indicates how
+  **-activehandlerelief** *reliefName* 
+    Specifies the default relief when a drawer's handle is active.  This
+    determines the 3-D effect for the handle.  *ReliefName* indicates how
     the drawer should appear relative to the window; for example, "raised"
     means the item should appear to protrude.  The default is "flat".
     
@@ -226,40 +220,40 @@ command.  The following operations are available for *drawerset* widgets:
     *ColorName* may be a color name or the name of a background object
     created by the **blt::background** command.  The default is "grey85".
     
-  **-gripactiverelief** *reliefName* 
-    Specifies the relief of grips when they are active.  This determines
-    the 3-D effect for the grip.  *Relief* indicates how the grip should
-    appear relative to the window; for example, "raised" means the grip
+  **-handleactiverelief** *reliefName* 
+    Specifies the relief of handles when they are active.  This determines
+    the 3-D effect for the handle.  *Relief* indicates how the handle should
+    appear relative to the window; for example, "raised" means the handle
     should appear to protrude.  The default is "raised".
 
-  **-gripborderwidth** *numPixels* 
-    Specifies the default border width of grips in the widget.  *NumPixels*
+  **-handleborderwidth** *numPixels* 
+    Specifies the default border width of handles in the widget.  *NumPixels*
     is a non-negative value indicating the width of the 3-D border drawn
-    around the grip. The value may have any of the forms acceptable to
+    around the handle. The value may have any of the forms acceptable to
     **Tk_GetPixels**.  This option may be overridden by the style's
     **-borderwidth** option.  The default is "1".
 
-  **-gripcolor** *colorName*
-    Specifies the default color of grips.  *ColorName* may be a color name or
+  **-handlecolor** *colorName*
+    Specifies the default color of handles.  *ColorName* may be a color name or
     the name of a background object created by the **blt::background**
     command. The default is "grey85".
 
-  **-grippad** *numPixels* 
-    Specifies extra padding for grips.  *NumPixels* is a non-negative value
-    indicating the width of the border drawn around the grip. The value may
+  **-handlepad** *numPixels* 
+    Specifies extra padding for handles.  *NumPixels* is a non-negative value
+    indicating the width of the border drawn around the handle. The value may
     have any of the forms acceptable to **Tk_GetPixels**.  The default is
     "0".
 
-  **-griprelief** *reliefName* 
-    Specifies the default relief of grips.  This determines the 3-D
-    effect for the grip.  *Relief* indicates how the grip should appear
+  **-handlerelief** *reliefName* 
+    Specifies the default relief of handles.  This determines the 3-D
+    effect for the handle.  *Relief* indicates how the handle should appear
     relative to the window; for example, "raised" means the item should
     appear to protrude.  The default is "flat".
     
-  **-gripthickness** *numPixels*
-    Specifies a non-negative value for the thickness in pixels of the grip
+  **-handlethickness** *numPixels*
+    Specifies a non-negative value for the thickness in pixels of the handle
     rectangle.  This doesn't include any extra padding (see the
-    **-grippad** option).  *NumPixels* may have any of the forms acceptable
+    **-handlepad** option).  *NumPixels* may have any of the forms acceptable
     to **Tk_GetPixels**.  The default is "3".
 
   **-height** *numPixels*
@@ -361,19 +355,20 @@ command.  The following operations are available for *drawerset* widgets:
     arbitrary string.  It is not used by the *drawerset* widget. The
     default is "".
 
-  **-deletecommand** *string*
+  **-deletecommand** *cmdString*
     Specifies a TCL command to invoked when the drawer is deleted (via the
-    *drawerset*\ 's **delete** operation, or destroying the *drawerset*).  The
-    command will be invoked before the drawer is actually deleted.  If
-    *string* is "", no command is invoked.  The default is "".
+    *drawerset*\ 's **delete** operation, or destroying the *drawerset*).
+    *CmdString* is the TCL command that will be invoked before the drawer
+    is actually deleted.  If *cmdString* is "", no command is invoked.  The
+    default is "".
 
   **-fill** *fillName* 
-    If the drawer is bigger than its embedded child widget, then *fillName*
-    specifies if the child widget should be stretched to occupy the extra
-    space.  *FillName* is either "none", "x", "y", "both".  For example, if
-    *fillName* is "x", then the child widget is stretched horizontally.  If
-    *fillName* is "y", the widget is stretched vertically.  The default is
-    "none".
+    If the widget is bigger than the drawer (the embedded child widget),
+    then *fillName* specifies if the child widget should be stretched to
+    occupy the extra space.  *FillName* is either "none", "x", "y", "both".
+    For example, if *fillName* is "x", then the child widget is stretched
+    horizontally.  If *fillName* is "y", the widget is stretched
+    vertically.  The default is "none".
 
   **-height** *numPixels* 
     Specifies the height of *drawerName*. *NumPixels* can be
@@ -448,8 +443,8 @@ command.  The following operations are available for *drawerset* widgets:
 
     The default is "none".
 
-  **-showgrip** *boolean* 
-    Indicates if the grip for *drawerName* should be displayed. The default is
+  **-showhandle** *boolean* 
+    Indicates if the handle for *drawerName* should be displayed. The default is
     "1".
     
   **-size** *numPixels* 
@@ -461,11 +456,11 @@ command.  The following operations are available for *drawerset* widgets:
     refer to more than one drawer.  Tags should not be the same as labels or
     the non-numeric indices.  The default is "".
 
-  **-takefocus** *bool* 
+  **-takefocus** *boolean* 
     Provides information used when moving the focus from window to window
-    via keyboard traversal (e.g., Tab and Shift-Tab).  If *bool* is "0",
-    this means that this grip window should be skipped entirely during
-    keyboard traversal.  "1" means that the this drawer's grip window should
+    via keyboard traversal (e.g., Tab and Shift-Tab).  If *boolean* is "0",
+    this means that this handle window should be skipped entirely during
+    keyboard traversal.  "1" means that the this drawer's handle window should
     always receive the input focus.  An empty value means that the
     traversal scripts make the decision whether to focus on the window.
     The default is "".
@@ -488,31 +483,31 @@ command.  The following operations are available for *drawerset* widgets:
     be a child of the *drawerset* widget.  The *drawerset* will "pack" and
     manage the size and placement of *childName*.  The default value is "".
 
-*pathName* **grip activate** *drawerName* 
-  Specifies to draw *drawerName*\ 's grip with its active colors and relief
-  (see the **-activegripcolor** and **-activegriprelief** options).
+*pathName* **handle activate** *drawerName* 
+  Specifies to draw *drawerName*\ 's handle with its active colors and relief
+  (see the **-activehandlecolor** and **-activehandlerelief** options).
   *DrawerName* is an index, label, or tag but may not refer to more than
-  one tab.  Only one grip may be active at a time.  
+  one tab.  Only one handle may be active at a time.  
 
-*pathName* **grip anchor** *drawerName* *x* *y*
+*pathName* **handle anchor** *drawerName* *x* *y*
    Sets the anchor for the resizing or moving *drawerName*.  Either the x or
    y coordinate is used depending upon the orientation of the drawer.
 
-*pathName* **grip deactivate** 
-  Specifies to draw all grips with its default colors and relief
-  (see the **-gripcolor** and **-griprelief** options).
+*pathName* **handle deactivate** 
+  Specifies to draw all handles with its default colors and relief
+  (see the **-handlecolor** and **-handlerelief** options).
 
-*pathName* **grip mark** *drawerName* *x* *y*
+*pathName* **handle mark** *drawerName* *x* *y*
   Records *x* or *y* coordinate in the drawerset window; used with
-  later **grip move** commands.  Typically this command is associated
+  later **handle move** commands.  Typically this command is associated
   with a mouse button press in the widget.  It returns an empty string.
 
-*pathName* **grip move** *drawerName* *x* *y*
-  Moves the grip of *drawerName*.  The grip is moved the given distance
+*pathName* **handle move** *drawerName* *x* *y*
+  Moves the handle of *drawerName*.  The handle is moved the given distance
   from its previous location (anchor).
 
-*pathName* **grip set** *drawerName* *x* *y*
-  Sets the location of the *drawerName*\ 's grip to the given coordinate
+*pathName* **handle set** *drawerName* *x* *y*
+  Sets the location of the *drawerName*\ 's handle to the given coordinate
   (*x* or *y*) specified.  The *drawerset* drawers are moved accordingly.
 
 *pathName* **index** *drawerName* 
@@ -631,8 +626,8 @@ command.  The following operations are available for *drawerset* widgets:
   adjusts by *number* screenfuls.  If *number* is negative then the view
   if scrolled left; if it is positive then it is scrolled right.
 
-GRIP BINDINGS
--------------
+HANDLE BINDINGS
+---------------
 
 The follow behaviors are defined for the grip windows created for each
 drawer. The widget class name is BltDrawersetGrip. 

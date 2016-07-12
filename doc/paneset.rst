@@ -361,24 +361,35 @@ command.  The following operations are available for *paneset* widgets:
     **blt::background** command.  If *colorName* is "", the widget's
     **-background** is used. The default is "".
 
-  **-data** *string* 
-    Specifies data to be associated with the pane. *String* can be an
-    arbitrary string.  It is not used by the *paneset* widget. The default is
-    "".
+  **-data** *dataString* 
+    Specifies data to be associated with the pane. *DataString* can be an
+    arbitrary string.  It is not used by the *paneset* widget. The default
+    is "".
 
-  **-deletecommand** *string*
+  **-deletecommand** *cmdString*
     Specifies a TCL command to invoked when the pane is deleted (via the
     *paneset*\ 's **delete** operation, or destroying the *paneset*).  The
     command will be invoked before the pane is actually deleted.  If
-    *string* is "", no command is invoked.  The default is "".
+    *cmdString* is "", no command is invoked.  The default is "".
 
   **-fill** *fillName* 
     If the pane is bigger than its embedded child widget, then *fillName*
     specifies if the child widget should be stretched to occupy the extra
-    space.  *FillName* is either "none", "x", "y", "both".  For example, if
-    *fillName* is "x", then the child widget is stretched horizontally.  If
-    *fillName* is "y", the widget is stretched vertically.  The default is
-    "none".
+    space. *FillName* is one of the following.
+  
+    **x**
+      The embedded widget can grow horizontally.  
+
+    **y**
+      The embedded widget can grow vertically.  
+
+    **both**
+      The embedded widget can grow both vertically and horizontally.  
+
+    **none**
+      The embedded widget does not grow along with the span.  
+
+    The default is "none".
 
   **-height** *numPixels* 
     Specifies the height of *paneName*. *NumPixels* can be
@@ -466,9 +477,9 @@ command.  The following operations are available for *paneset* widgets:
     refer to more than one pane.  Tags should not be the same as labels or
     the non-numeric indices.  The default is "".
 
-  **-takefocus** *bool* 
+  **-takefocus** *boolean* 
     Provides information used when moving the focus from window to window
-    via keyboard traversal (e.g., Tab and Shift-Tab).  If *bool* is "0",
+    via keyboard traversal (e.g., Tab and Shift-Tab).  If *boolean* is "0",
     this means that this sash window should be skipped entirely during
     keyboard traversal.  "1" means that the this pane's sash window should
     always receive the input focus.  An empty value means that the

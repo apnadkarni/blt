@@ -213,22 +213,22 @@ command.  The operations available for trees are listed below.
     a list of labels, starting from the root of each ancestor and the node
     itself.
 
-  **-precommand** *command*
-    Invoke *command* for each matching node.  Before *command* is invoked,
+  **-precommand** *cmdPrefix*
+    Invoke *cmdPrefix* for each matching node.  Before *cmdPrefix* is invoked,
     the ID of the node is appended.  You can control processing by the
-    return value of *command*.  If *command* generates an error, processing
-    stops and the **find** operation returns an error.  But if *command*
+    return value of *cmdPrefix*.  If *cmdPrefix* generates an error, processing
+    stops and the **find** operation returns an error.  But if *cmdPrefix*
     returns **break**, then processing stops, no error is generated.  If
-    *command* returns **continue**, then processing stops on that subtree
+    *cmdPrefix* returns **continue**, then processing stops on that subtree
     and continues on the next.
 
-  **-postcommand** *command*
-    Invoke *command* for each matching node.  Before *command* is invoked,
+  **-postcommand** *cmdPrefix*
+    Invoke *cmdPrefix* for each matching node.  Before *cmdPrefix* is invoked,
     the ID of the node is appended.  You can control processing by the
-    return value of *command*.  If *command* generates an error, processing
-    stops and the **find** operation returns an error.  But if *command*
+    return value of *cmdPrefix*.  If *cmdPrefix* generates an error, processing
+    stops and the **find** operation returns an error.  But if *cmdPrefix*
     returns **break**, then processing stops, no error is generated.  If
-    *command* returns **continue**, then processing stops on that subtree
+    *cmdPrefix* returns **continue**, then processing stops on that subtree
     and continues on the next.
 
   **-regexp** *string*
@@ -510,16 +510,16 @@ command.  The operations available for trees are listed below.
   Inserts a new node into parent node *parent*.  The ID of the new node is
   returned. *Switches* may be any of the following.
 
-  **-after** *child* 
-    Position *node* after *child*.  The node *child* must be a 
+  **-after** *childNode* 
+    Position *node* after *childNode*.  The node *childNode* must be a 
     child of *parent*.
 
   **-at** *number* 
     Inserts the node into *parent*'s list of children at 
-    position *number*.  The default is to append *node*.
+    position *number*.  
 
-  **-before** *child* 
-    Position *node* before *child*.  The node *child* must be a 
+  **-before** *childNode* 
+    Position *node* before *childNode*.  The node *childNode* must be a 
     child of *parent*.
 
   **-data** *dataList*
@@ -552,41 +552,39 @@ command.  The operations available for trees are listed below.
   Returns "1" if true and "0" otherwise.  
 
 *treeName* **isroot** *node*
-  Indicates if *node* is the designated root.  This can be changed
-  by the **chroot** operation.
-  Returns "1" if true and "0" otherwise.  
+  Indicates if *node* is the designated root.  This can be changed by the
+  **chroot** operation.  Returns "1" if true and "0" otherwise.
 
 *treeName* **keys** *node* ?\ *node*...\ ?
   Returns the field names for one or more nodes.
 
 *treeName* **label** *node* ?\ *newLabel*\ ?
-  Returns the label of the node designated by *node*.  If *newLabel*
-  is present, the node is relabeled using it as the new label.
+  Returns the label of the node designated by *node*.  If *newLabel* is
+  present, the node is relabeled using it as the new label.
 
 *treeName* **lappend** *node* *fieldName* ?\ *value* ... ?
   Appends one or more values to the current value for *fieldName* in *node*.
   *FieldName is the name of a data field in *node*.
   
 *treeName* **lastchild** *node*
-  Returns the ID of the last child in the *node*'s list
-  of subtrees.  If *node* is a leaf (has no children), 
-  then "-1" is returned.
+  Returns the ID of the last child in the *node*'s list of subtrees.  If
+  *node* is a leaf (has no children), then "-1" is returned.
 
 *treeName* **move** *node* *newParent* ?\ *switches* ... ?
   Moves *node* into *newParent*. *Node* is appended to the list children of
   *newParent*.  *Node* can not be an ancestor of *newParent*.  *Switches*
   may be any of the following.
 
-  **-after** *child* 
-    Position *node* after *child*.  The node *child* must be a 
+  **-after** *childNode* 
+    Position *node* after *childNode*.  The node *childNode* must be a 
     child of *newParent*.
 
   **-at** *number* 
     Inserts *node* into *parent*'s list of children at 
-    position *number*. The default is to append the node.
+    position *number*. 
 
-  **-before** *child* 
-    Position *node* before *child*.  The node *child* must be a 
+  **-before** *childNode* 
+    Position *node* before *childNode*.  The node *childNode* must be a 
     child of *newParent*.
 
 *treeName* **names** *node* ?\ *fieldName*\ ?
@@ -595,55 +593,54 @@ command.  The operations available for trees are listed below.
   the array elements are returned.
 
 *treeName* **next** *node*
-  Returns the next node from *node* in a preorder traversal.
-  If *node* is the last node in the tree, 
-  then "-1" is returned.
+  Returns the next node from *node* in a preorder traversal.  If *node* is
+  the last node in the tree, then "-1" is returned.
 
 *treeName* **nextsibling** *node*
-  Returns the node representing the next subtree from *node*
-  in its parent's list of children.  If *node* is the last child, 
-  then "-1" is returned.
+  Returns the node representing the next subtree from *node* in its
+  parent's list of children.  If *node* is the last child, then "-1" is
+  returned.
 
-*treeName* **notify create** ?\ *switches* ... ? *command* ?\ *args* ... ?
+*treeName* **notify create** ?\ *switches* ... ? *cmdPrefix* ?\ *args* ... ?
   Creates a notifier for the tree.  A notify identifier in the form
   "notify0", "notify1", etc.  is returned.
 
-  *Command* and *args* are saved and invoked whenever the tree structure is
+  *CmdPrefix* and *args* are saved and invoked whenever the tree structure is
   changed (according to *switches*). Two arguments are appended to
-  *command* and *args* before it's invoked: the ID of the node and a string
+  *cmdPrefix* and *args* before it's invoked: the ID of the node and a string
   representing the type of event that occured.  One of more switches can be
-  set to indicate the events that are of interest.  *Switches* may be any of
-  the following.
+  set to indicate the events that are of interest.  *Switches* may be any
+  of the following.
 
   **-create** 
-    Invoke *command* whenever a new node has been added.
+    Invoke *cmdPrefix* whenever a new node has been added.
 
   **-delete**
-    Invoke *command* whenever a node has been deleted.
+    Invoke *cmdPrefix* whenever a node has been deleted.
 
   **-move**
-    Invoke *command* whenever a node has been moved.
+    Invoke *cmdPrefix* whenever a node has been moved.
 
   **-node** *node*
     Only watch *node**.
 
   **-sort**
-    Invoke *command* whenever the tree has been sorted and reordered.
+    Invoke *cmdPrefix* whenever the tree has been sorted and reordered.
 
   **-tag** *tag*
     Watch nodes that has the tag *tag*.
     
   **-relabel**
-    Invoke *command* whenever a node has been relabeled.
+    Invoke *cmdPrefix* whenever a node has been relabeled.
 
   **-allevents**
-    Invoke *command* whenever any of the above events occur.
+    Invoke *cmdPrefix* whenever any of the above events occur.
 
   **-whenidle**
-    When an event occurs don't invoke *command* immediately, but queue it to
+    When an event occurs don't invoke *cmdPrefix* immediately, but queue it to
     be run the next time the event loop is entered and there are no events to
     process.  If subsequent events occur before the event loop is entered,
-    *command* will still be invoked only once.
+    *cmdPrefix* will still be invoked only once.
 
 *treeName* **notify delete** *notifyName* 
   Deletes one or more notifiers from the tree.  *NotifyName* is a name
@@ -800,11 +797,12 @@ command.  The operations available for trees are listed below.
     Compare strings using a dictionary-style comparison.  This is the same as
     **-ascii** except (a) case is ignored except as a tie-breaker and (b) if
     two strings contain embedded numbers, the numbers compare as integers, not
-    characters.  For example, in **-dictionary** mode, bigBoy sorts between
+    characters.  For example, if **-dictionary** is set, bigBoy sorts between
     bigbang and bigboy, and x10y sorts between x9y and x11y.
 
   **-integer**
-    Compare the nodes as integers.  
+    Compare the nodes as integers.  This is useful for comparing fields
+    that are integers (see the **-key** switch).
 
   **-key** *fieldName*
     Sort based upon the node's data field keyed by *fieldName*. Normally
@@ -815,14 +813,18 @@ command.  The operations available for trees are listed below.
     label.
 
   **-real**
-    Compare the nodes as real numbers.
+    Compare the nodes as real numbers. This is useful for comparing fields
+    that are real numbers (see the **-key** switch).
 
   **-recurse**
     Recursively sort the entire subtree rooted at *node*.
 
   **-reorder** 
-    Recursively sort subtrees for each node.  **Warning**.  Unlike the normal
-    flat sort, where a list of nodes is returned, this will reorder the tree.
+    Recursively sort subtrees for each node.
+
+    Warning: This changes the order of the nodes in the tree.  Without this
+    switch a list of sorted nodes is returned but the actual of the
+    nodes is unchanged.
 
 *treeName* **tag add** *tag* ?\ *node* ... ?
   Adds the tag to one of more nodes. *Tag* is an arbitrary string
@@ -860,7 +862,7 @@ command.  The operations available for trees are listed below.
   Creates a trace for *node* on data field *fieldName*.  *Node* can refer
   to more than one node (for example, the tag **all**). If *node* is a tag,
   any node with that tag can possibly trigger a trace, invoking
-  *cmdPrefix*.  *CmdPrefix* is TCL command prefix, typically a procedure
+  *cmdPrefix*.  *CmdPrefix* is a TCL command prefix, typically a procedure
   name.  Whenever a trace is triggered, four arguments are appended to
   *cmdPrefix* before it is invoked: *treeName*, node ID, *fieldName* and,
   *ops*.  Note that no nodes need have the field *fieldName*.  A trace
@@ -1049,29 +1051,29 @@ C API
 
 #include <bltTree.h>
 
-int **Blt_Tree_Create**\ (Tcl_Interp *\ *interp*, const char *\ *name*, Blt_Tree \* *treePtr*)
-  Creates a new tree data object with the given name. *Name* is the name of
-  the new tree object.  The form of name is the same as the **blt::tree
-  create** operation.  Returns a token to the new tree data object. The
-  tree will initially contain only a root node.
+int **Blt_Tree_Create**\ (Tcl_Interp *\ *interp*, const char *\ *treeName*, Blt_Tree \* *treePtr*)
+  Creates a new tree data object with the given name. *TreeName* is the
+  name of the new tree object.  The form of *treeName* is the same as the
+  **blt::tree create** operation.  Returns a token to the new tree data
+  object. The tree will initially contain only a root node.
 
-Blt_TreeNode **Blt_Tree_CreateNode**\ (Blt_Tree *tree*, Blt_TreeNode *parent*, const char *\ *name*, int *position*)
+Blt_TreeNode **Blt_Tree_CreateNode**\ (Blt_Tree *tree*, Blt_TreeNode *parent*, const char *\ *nodeLabel*, int *position*)
   Creates a new child node in *parent*.  The new node is
   initially empty, but data values can be added with **Blt_Tree_SetValue**.
   Each node has a serial number that identifies it within the tree.  No two
   nodes in the same tree will ever have the same ID.  You can find a node's
   ID with **Blt_Tree_NodeId**.
 
-  The label of the node is *name*.  If *name* is NULL, a label in the form
-  ""node0"", ""node1"", etc. will automatically be generated.  *Name* can
-  be any string.  Labels are non-unique.  A parent can contain two nodes
-  with the same label. Nodes can be relabeled using
-  **Blt_Tree_RelabelNode**.
+  The label of the node is *nodeLabel*.  If *nodeLabel* is NULL, a label in
+  the form ""node0"", ""node1"", etc. will automatically be generated.
+  *NodeLabel* can be any string.  Labels do not need to be unique.  A
+  parent can contain two nodes with the same label. Nodes can be relabeled
+  using **Blt_Tree_RelabelNode**.
 
-  The position of the new node in the list of children is determined
-  by *position*. For example, if *position* is 0, then the new node
-  is prepended to the beginning of the list.  If *position* is -1,
-  then the node is appended onto the end of the parent's list.  
+  The position of the new node in the list of children is determined by
+  *position*. For example, if *position* is 0, then the new node is
+  prepended to the beginning of the list.  If *position* is -1, then the
+  node is appended onto the end of the parent's list.
 
 Blt_TreeNode **Blt_Tree_DeleteNode**\ (Blt_Tree *tree*, Blt_TreeNode *node*)
   Deletes a given node and all it descendants.  *Node* is the node to be
@@ -1084,7 +1086,7 @@ Blt_TreeNode **Blt_Tree_DeleteNode**\ (Blt_Tree *tree*, Blt_TreeNode *node*)
   destroyed. Therefore you can clear a tree by deleting its root, but the
   root node will remain until the tree is destroyed.
 
-int **Blt_Tree_Exists**\ (Tcl_Interp *\ *interp*, const char *\ *name*)
+int **Blt_Tree_Exists**\ (Tcl_Interp *\ *interp*, const char *\ *treeName*)
   Indicates if a tree data object exists by the given name.
   If the tree exists 1 is returned, 0 otherwise.
 
@@ -1093,9 +1095,10 @@ Blt_TreeNode **Blt_Tree_GetNode**\ (Blt_Tree *tree*, long *number*)
   serial number. If no node with that ID exists in *tree* then NULL is
   returned.
 
-int **Blt_Tree_GetToken**\ (Tcl_Interp *\ *interp*, const char *\ *name*, Blt_Tree *\ *treePtr*)
-  Obtains a token to a tree data object.  *Name* is the name of an existing
-  tree data object.  The pointer to the tree is returned via *tokenPtr*.
+int **Blt_Tree_GetToken**\ (Tcl_Interp *\ *interp*, const char *\ *treeName*, Blt_Tree *\ *treePtr*)
+  Obtains A Token To A Tree Data Object.  *TreeName* is the name of an
+  existing tree data object.  The pointer to the tree is returned via
+  *tokenPtr*.
 
 const char * \ **Blt_Tree_Name**\ (Blt_Tree *tree*)
   Returns the name of the tree data object.
@@ -1104,9 +1107,9 @@ unsigned int **Blt_Tree_NodeId**\ (Blt_TreeNode *node*)
   Returns the node serial number of *node*.  
 
 int **Blt_Tree_ReleaseToken**\ (Blt_Tree *tree*)
-  Releases the token associated with a tree data object.
-  Only when all no when else is using the tree data object will
-  the data object itself will be freed.
+  Releases the token associated with a tree data object.  Only when all no
+  when else is using the tree data object will the data object itself will
+  be freed.
 
 KEYWORDS
 --------

@@ -348,10 +348,10 @@ GRAPH OPERATIONS
     Specifies the width of widget. *NumPixels* may have any of the forms
     acceptable to **Tk_GetPixels**. The default is "5i".
 
-*pathName* **crosshairs** *operation* ?*\ arg* ... ?
+*pathName* **crosshairs** *operation* ?\ *arg* ... ?
   See the `CROSSHAIRS`_ section.
 
-*pathName* **element** *operation* ?*\ arg* ... ?
+*pathName* **element** *operation* ?\ *arg* ... ?
   See the  `ELEMENTS`_ section.
 
 *pathName* **extents**  *item* 
@@ -388,7 +388,7 @@ GRAPH OPERATIONS
   for line elements.  This is the default element type for **blt::graph**
   widgets. See the `ELEMENTS`_ section.
 
-*pathName* **marker** *operation* ?*\ arg* ... ?
+*pathName* **marker** *operation* ?\ *arg* ... ?
   See the `MARKERS`_ section.
 
 *pathName* **pen** *operation* ?\ *arg* ... ?
@@ -588,21 +588,21 @@ The resource class is "Axis".  The resource names are the names of the axes
 
 *pathName* **axis activate** *axisName* 
 
-*pathName* **axis bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *command*\ ?
-  Associates *command* with *bindTag* such that whenever the event sequence
-  given by *eventSequence* occurs for an axis with this tag, *command* will
+*pathName* **axis bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ?
+  Associates *cmdString* with *bindTag* such that whenever the event sequence
+  given by *eventSequence* occurs for an axis with this tag, *cmdString* will
   be invoked.  The syntax is similar to the **bind** command except that it
   operates on graph axes, rather than widgets. See the **bind** manual
   page for complete details on *eventSequence* and the substitutions
-  performed on *command* before invoking it.
+  performed on *cmdString* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *eventSequence* and *bindTag*.  If the
-  first character of *command* is "+" then *command* augments an existing
-  binding rather than replacing it.  If no *command* argument is provided
+  first character of *cmdString* is "+" then *command* augments an existing
+  binding rather than replacing it.  If no *cmdString* argument is provided
   then the command currently associated with *bindTag* and *eventSequence*
   (it's an error occurs if there's no such binding) is returned.  If both
-  *command* and *eventSequence* are missing then a list of all the event
+  *cmdString* and *eventSequence* are missing then a list of all the event
   sequences for which bindings have been defined for *bindTag*.
 
 *pathName* **axis cget** *axisName* *option*
@@ -788,7 +788,7 @@ The resource class is "Axis".  The resource names are the names of the axes
       displayed in a date or time format (years, months, days, hours,
       minutes, or seconds).
 
-  **-scrollcommand** *command*
+  **-scrollcommand** *cmdPrefix*
     Specify the prefix for a command used to communicate with scrollbars
     for this axis.
 
@@ -1061,24 +1061,24 @@ The following operations are available for elements.
   arguments are present, they are the indices of the data points to be
   activated. By default all data points of *elemName* will become active.
 
-*pathName* **element bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *command*\ ? 
-  Associates *command* with *bindTag* such that whenever the event sequence
+*pathName* **element bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
+  Associates *cmdString* with *bindTag* such that whenever the event sequence
   given by *eventSequence* occurs for an element with this binding tag,
-  *command* will be invoked.  The syntax is similar to the **bind** command
+  *cmdString* will be invoked.  The syntax is similar to the **bind** command
   except that it operates on graph elements, rather than widgets. See the
   **bind** manual entry for complete details on *eventSequence* and the
-  substitutions performed on *command* before invoking it. *BindTag* is an
+  substitutions performed on *cmdString* before invoking it. *BindTag* is an
   arbitrary string that matches one of the binding tags (see the
   **-bindtags** option) in *elemName*.
 
-  If both *eventSequence* and *command* arguments are present, then a new
+  If both *eventSequence* and *cmdString* arguments are present, then a new
   binding is created. If a binding for *eventSequence* and *bindTag*
-  already exists it is replaced. But if the first character of *command* is
-  "+" then *command* augments an existing binding rather than replacing it.
+  already exists it is replaced. But if the first character of *cmdString* is
+  "+" then *cmdString* augments an existing binding rather than replacing it.
 
-  If no *command* argument is present then this returns the command
+  If no *cmdString* argument is present then this returns the command
   currently associated with *bindTag* and *eventSequence* (it's an error if
-  there's no such binding).  If both *command* and *eventSequence* are
+  there's no such binding).  If both *cmdString* and *eventSequence* are
   missing then a list of all the event sequences for which bindings have
   been defined for *bindTag*.
 
@@ -1654,26 +1654,26 @@ The following operations are valid for the legend.
 
   Returns the bounding box of *elemName* in the legend. The bounding box is
   the region of the entry's label in the legend. *ElemName* can be the name
-  of the entry, or it's index in the legend.  The returned bounding box is
+  of the entry, or it's an index in the legend.  The returned bounding box is
   a list of 4 numbers: x and y coordinates of the upper left corner and
   width and height of the entry.
 
-*pathName* **legend bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *command*\ ? 
-  Associates *command* with *bindTag* such that whenever the event sequence
+*pathName* **legend bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
+  Associates *cmdString* with *bindTag* such that whenever the event sequence
   given by *eventSequence* occurs for a legend entry with this tag,
-  *command* will be invoked.  Implicitly the element names in the entry are
+  *cmdString* will be invoked.  Implicitly the element names in the entry are
   tags.  The syntax is similar to the **bind** command except that it
   operates on legend entries, rather than widgets. See the **bind** manual
   entry for complete details on *eventSequence* and the substitutions
-  performed on *command* before invoking it.
+  performed on *cmdString* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *eventSequence* and *bindTag*.  If the
-  first character of *command* is "+" then *command* augments an existing
-  binding rather than replacing it.  If no *command* argument is provided
+  first character of *cmdString* is "+" then *command* augments an existing
+  binding rather than replacing it.  If no *cmdString* argument is provided
   then the command currently associated with *bindTag* and *eventSequence*
   (it's an error occurs if there's no such binding) is returned.  If both
-  *command* and *eventSequence* are missing then a list of all the event
+  *cmdString* and *eventSequence* are missing then a list of all the event
   sequences for which bindings have been defined for *bindTag*.
 
 *pathName* **legend cget** *option*
@@ -2304,21 +2304,21 @@ coordinates "-Inf","-Inf".
 
 The following operations are available for markers.
 
-*pathName* **marker** bind *bindTag* ?\ *eventSequence*\ ?  ?\ *command*\ ? 
-  Associates *command* with *bindTag* such that whenever the event sequence
-  given by *eventSequence* occurs for a marker with this tag, *command*
+*pathName* **marker** bind *bindTag* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
+  Associates *cmdString* with *bindTag* such that whenever the event sequence
+  given by *eventSequence* occurs for a marker with this tag, *cmdString*
   will be invoked.  The syntax is similar to the **bind** command except
   that it operates on graph markers, rather than widgets. See the **bind**
   manual entry for complete details on *eventSequence* and the
-  substitutions performed on *command* before invoking it.
+  substitutions performed on *cmdString* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *eventSequence* and *bindTag*.  If the
-  first character of *command* is "+" then *command* augments an existing
-  binding rather than replacing it.  If no *command* argument is provided
+  first character of *cmdString* is "+" then *cmdString* augments an existing
+  binding rather than replacing it.  If no *cmdString* argument is provided
   then the command currently associated with *bindTag* and *eventSequence*
   (it's an error occurs if there's no such binding) is returned.  If both
-  *command* and *eventSequence* are missing then a list of all the event
+  *cmdString* and *eventSequence* are missing then a list of all the event
   sequences for which bindings have been defined for *bindTag*.
 
 *pathName* **marker cget** *markerName* *option*

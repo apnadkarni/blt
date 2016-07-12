@@ -411,9 +411,9 @@ command.  The following operations are available for *combomenu* widgets:
     **none**
       Don't restrict the menu width. This is the default.
        
-  **-takefocus** *bool*
+  **-takefocus** *boolean*
     Provides information used when moving the focus from window to window
-    via keyboard traversal (e.g., Tab and Shift-Tab).  If *bool* is "0",
+    via keyboard traversal (e.g., Tab and Shift-Tab).  If *boolean* is "0",
     this means that this window should be skipped entirely during keyboard
     traversal.  "1" means that the this window should always receive the
     input focus.  An empty value means that the traversal scripts make the

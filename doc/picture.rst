@@ -302,7 +302,7 @@ the command.  The operations available for pictures are listed below.
   returns an empty string.  The valid option-value pairs are described
   below.
 
-  **-autoscale** *bool*
+  **-autoscale** *boolean*
     When the dimensions of the image change, automatically resize the
     image to match the new dimensions.  The **-filter** and **-maxpect**
     also control how the image is resized.
@@ -314,7 +314,7 @@ the command.  The operations available for pictures are listed below.
     that will accept string data.  It is an error if both the **-data** and
     **-file** options are specified.
 
-  **-dither** *bool*
+  **-dither** *boolean*
     Indicates to dither the picture.  Dithering scatters different colored
     pixels in an image to make it appear as though there are intermediate
     colors in images with a limited color palette. Dithering propagates
@@ -350,29 +350,30 @@ the command.  The operations available for pictures are listed below.
     draw into it. If *numPixels* is 0, the image will expand or shrink
     vertically to fit the data stored in it.  The default is 0.
 
-  **-maxpect** *bool*
-    When resizing the image, maintain the aspect ratio of the original picture.
+  **-maxpect** *boolean*
+    When resizing the image, maintain the aspect ratio of the original
+    picture.
 
   **-rotate** *angle*
     Rotates the image by *angle*. *Angle* is the number of degrees
     to rotate the image.
 
-  **-sharpen** *bool*
+  **-sharpen** *boolean*
     Automatically sharpens the image.
 
   **-width** *numPixels*
     Specifies the width of the image in pixels.  *NumPixels* may have any
     of the forms acceptable to **Tk_GetPixels**, such as "200" or
-    "2.4i". This option let you specify an image of a particular size and
-    then draw into it. If *numPixels* is 0, the image will expand or shrink
-    horizontally to fit the data stored in it.  The default is 0.
+    "2.4i". If *numPixels* is 0, the width of the image will be adjusted to
+    fit the data stored in it.  The default is 0.
 
   **-window** *windowName*
-    Specifies a window of a file that is to be read to supply data for the
-    picture image.  The format *windowName* is either a Tk window name
-    or a hexadecimal number (e.g. "0x000000002100") if the window is
-    an external window.  It is an error if *windowName* is obscured.
-    You should raise it beforehand.
+    Specifies a window to be snapped. The screen contents of *windowName*
+    are captured in the picture image.  The format *windowName* is either a
+    Tk window name or a hexadecimal number (e.g. "0x000000002100") if the
+    window is an external window.  *WindowName* can must be fully visible.
+    It can not be partially off-screen or covered by another window.
+    You should raise the window before using this option.
 
 *imageName* **copy** *srcName* ?\ *switches* ... ?
   Copies a region from the image called *srcName* (which must be a picture
@@ -565,86 +566,36 @@ the command.  The operations available for pictures are listed below.
   below. *Switches* are specific to *imageFormat*.
 
 *imageName* **info** 
-  Returns a key-value list of information about *imageName*. The
-  keys are the following.
+  Returns a key-value list of information about *imageName*. The keys are
+  the following.
 
   **colors**
-     The number of colors used.
+    The number of colors used.
 
   **count**
-     The number of pictures in *imageName*.  
+    The number of pictures in *imageName*.  
 
   **format**
-     Indicates the original format *imageName*.  
+    Indicates the original format *imageName*.  
 
   **height**
-     The height of *imageName* in pixels.
+    The height of *imageName* in pixels.
 
   **index**
-     The index of the current picture in *imageName*.
+    The index of the current picture in *imageName*.
 
   **isassociated**
-     Indicates if the alpha-values have been pre-multipled in RGB values
-     of the images.
+    Indicates if the alpha-values have been pre-multipled in RGB values
+    of the images.
 
   **isgreyscale**
-     Indicates if the *imageName* is greyscale (R = G = B for each pixel).
+    Indicates if the *imageName* is greyscale (R = G = B for each pixel).
 
   **isopaque**
-     Indicates if the *imageName* is opaque (all alpha-values are 0xFF).
+    Indicates if the *imageName* is opaque (all alpha-values are 0xFF).
 
   **width**
-     The width of *imageName* in pixels.
-
-*imageName* **list append** ?\ *srcName* ... ?
-   Appends *srcName* to the list of pictures for *imageName*. The contents
-   of *srcName* are copied and appended the list of pictures for
-   *imageName*. *SrcName* is the name of a *picture* image and may not be
-   the same as *imageName*.
-   
-*imageName* **list current** ?\ *numPicture*\ ?
-   Sets or gets the index of the current picture displayed for *imageName*.
-   If no *numPicture* argument is present, this command returns the current
-   index.  Otherwise *numPicture* is the position in the list of the new
-   current picture.  Picture indices start from 0.
-
-*imageName* **list delay** *delay*
-   Sets or gets the current delay between automatic picture changes.
-   *Delay* is an integer representing the number of milliseconds to wait
-   between picture changes.  See the **list start** operation for details
-   how to automatically change pictures.
-
-*imageName* **list delete** *firstIndex* ?\ *lastIndex*\ ?
-   Deletes one or more pictures from *imageName*.  *FirstIndex* and
-   *lastIndex* are picture indices.  The pictures from *firstIndex* to
-   *lastIndex* will be deleted.  If no *lastIndex* argument is present,
-   then only *firstIndex* is deleted.
-
-*imageName* **list length** 
-   Returns the number of pictures in *imageName*.
-   
-*imageName* **list next** 
-   Moves the current index to the next picture of *imageName*.  The next
-   picture will be displayed. If the current picture is at the end of the
-   list, the next index will be the first picture.
-   
-*imageName* **list previous** 
-   Moves the current index to the next picture of *imageName*.  The
-   previous picture will be displayed. If the current picture is at the
-   beginning of the list, the previous index will be the last picture.
-   
-*imageName* **list replace** *firstIndex*  *lastIndex* ?\ *srcName* ... ?
-   Replaces one or pictures in the list of *imageName*.  The pictures
-   in the range *firstIndex* to *lastIndex* are removed and replaced
-   with the *srcName*.  *SrcName* is the name of a *picture* image.
-   *FirstIndex* and *lastIndex* are picture indices.     
-
-*imageName* **list start**
-   Starts rotating pictures in *imageName*.  The time between picture
-   changes is set by the **list delay** operation.
-
-*imageName* **list stop**
-   Stops the rotation of pictures. 
+    The width of *imageName* in pixels.
 
 *imageName* **max** *pictOrColor*
   Computes the maximum of the picture or color and *imageName*.  The
@@ -667,8 +618,8 @@ the command.  The operations available for pictures are listed below.
   is saved in *imageName*.
 
   **-invert** *boolean*
-     Indicates to invert mask.  This only has affect is the **-mask** switch
-     is set.
+    Indicates to invert mask.  This only has affect is the **-mask** switch
+    is set.
 
   **-mask** *mask*
     Only change the non-zero pixels of *mask* in *imageName*.
@@ -874,84 +825,172 @@ the command.  The operations available for pictures are listed below.
     If *numPixels* is "0", then the width of *imageName* will not change.
 
 *imageName* **rotate** *srcName* *angle*
-   Rotates *srcName* by *angle* and saves the result in *imageName*.
-   *SrcName* is the name of a picture image and may be the same as
-   *imageName*.  *Angle* is the number of degrees to rotate the picture.
-   If the angel is not orthogonal, then the unpainted areas will be
-   transparent (0x00).
+  Rotates *srcName* by *angle* and saves the result in *imageName*.
+  *SrcName* is the name of a picture image and may be the same as
+  *imageName*.  *Angle* is the number of degrees to rotate the picture.
+  If the angel is not orthogonal, then the unpainted areas will be
+  transparent (0x00).
    
 *imageName* **select** *srcName* *firstColor* ?\ *lastColor*\ ?
-   Creates a mask by selecting the pixels in *srcName* that are between two
-   colors.  *SrcName* is the name of a picture image but may not be the
-   same as *imageName*.  The resulting mask is saved in *imageName*. The
-   pixels of *imageName* that represent selected pixels in *srcName* will
-   be 1 (0xFFFFFFFF), otherwise 0 (0x00000000). *FirstColor* and
-   *lastColor* are color specifications that represent a range of colors to
-   be selected.
+  Creates a mask by selecting the pixels in *srcName* that are between two
+  colors.  *SrcName* is the name of a picture image but may not be the
+  same as *imageName*.  The resulting mask is saved in *imageName*. The
+  pixels of *imageName* that represent selected pixels in *srcName* will
+  be 1 (0xFFFFFFFF), otherwise 0 (0x00000000). *FirstColor* and
+  *lastColor* are color specifications that represent a range of colors to
+  be selected.
    
+*imageName* **sequence append** ?\ *pictName* ... ?
+  Appends *pictName* to the sequence for *imageName*. The contents of
+  *pictName* are copied and appended the sequence of pictures for
+  *imageName*. *PictName* is the name of a *picture* image and may not be
+  the same as *imageName*.
+   
+*imageName* **sequence delay** ?\ *newDelay*\ ?
+  Sets or gets the current delay between automatic picture changes.  If no
+  *newDelay* argument is present, then the current delay between for the
+  sequence is returned.  Otherwise *newDelay* is the number of milliseconds
+  to delay between changing pictures in the sequence (see the **sequence
+  start** operation for details how to automatically change pictures).
+
+*imageName* **sequence delete** *firstIndex* ?\ *lastIndex*\ ?
+  Deletes one or more picture slots from *imageName*.  *FirstIndex* and
+  *lastIndex* are picture indices.  They can be in any of the forms
+  described in the **sequence index** operation below. The slots from
+  *firstIndex* to *lastIndex* will be deleted.  If no *lastIndex* argument
+  is present, then only *firstIndex* is deleted. The pictures associated
+  with the slots are freed.
+
+*imageName* **sequence get** *indexName* ?\ *pictName*\ ?
+  Gets the picture at *indexName* in the sequence and copies it into
+  *pictName*.  *IndexName* is a sequence index that can be any of the forms
+  described in the **sequence index** operation below.  If a *pictName*
+  argument is present, it is the name of a picture image to copy the
+  contents of the picture from the sequence.  If there is a picture at
+  *indexName* "1" is returned and the contents of *pictName* are replaced
+  with the picture. Otherwise "0" is returned and *pictName* is not changed.
+
+*imageName* **sequence index** ?\ *indexName* ?
+  Returns the index of the picture in the sequence given *indexName*.
+  *IndexName* can be one of the following.
+
+  **current**
+    The number (starting from 0) of a picture in the sequence.
+  **end**
+    The last picture in the sequence.  If there are no
+    pictures in the sequence, "-1" is returned.
+  **next**
+    The next picture from the currently displayed one in the
+    sequence.  If there is no next picture, "-1" is returned.
+  **previous**
+    The previous picture from the currently displayed one in the
+    sequence.  If there is no previous picture, "-1" is returned.
+  *number*
+    This is an integer representing the index of the slot in the
+    sequence.  There does not have to be a picture in the slot.
+      
+*imageName* **sequence length** ?\ *newLength* ?
+  Sets or gets the length of the sequence in *imageName*.  If no
+  *newLength* argument is given, this command returns the length of the
+  sequence for *imageName*. Otherwise *newLength* is the new length
+  (number of picture slots) of the sequence.  If *imageName* currently are
+  more slots than *newLength*, the extra trailing slots (and pictures) are
+  freed.  If *newLength* is greater than the current number of slots, new
+  slots are created. The new slots are empty. Use the **sequence put**
+  operation to fill them.
+   
+*imageName* **sequence put** *indexName* *pictName*
+  Copies the contents of *pictName* to the sequence at *indexName*.
+  *IndexName* is a sequence index that can be any of the forms described in
+  the **sequence index** operation below. *PictName* is the name
+  of a picture image.  If there is already the picture at *indexName*,
+  its contents are replaced with that of *pictName*.
+  
+*imageName* **sequence replace** *firstIndex*  *lastIndex* ?\ *pictName* ... ?
+  Replaces one or pictures in the list of *imageName*.  The pictures in the
+  range *firstIndex* to *lastIndex* are removed and replaced with the
+  *pictName*.  *PictName* is the name of a *picture* image.  *FirstIndex*
+  and *lastIndex* are picture indices.  They can be in any of the forms
+  described in the **sequence index** operation.
+
+*imageName* **sequence see** ?\ *indexName*\ ?
+  Sets or gets the index of the currently visible picture in the sequence.
+  If no *indexName* argument is present, then the index of current picture
+  in the sequence is returned.  Otherwise *indexName* is the index of the
+  picture in the index to be displayed. *IndexName* can be in any of the
+  forms described in the **sequence index** operation.  It is an error is
+  there is no picture at *indexName* (i.e. the slot is empty).
+  
+*imageName* **sequence start**
+  Starts rotating pictures in *imageName*.  The time between picture
+  changes is set by the **sequence delay** operation.
+
+*imageName* **sequence stop**
+  Stops the rotation of pictures. 
+
 *imageName* **sharpen** 
-   Sharpens *imageName*.  Sharpening is done by blurring *imageName* and
-   subtracting the blur from it.  The result is saved in *imageName*.
+  Sharpens *imageName*.  Sharpening is done by blurring *imageName* and
+  subtracting the blur from it.  The result is saved in *imageName*.
 
 *imageName* **snap** *windowName* ?\ *switches* ... ?
-   Takes a snapshot of the *window* and saves the result in *imageName*.
-   *WindowName* can be one of the following.
+  Takes a snapshot of the *window* and saves the result in *imageName*.
+  *WindowName* can be one of the following.
 
-      **.**\ *pathName*
-        The path of any Tk widget. If *windowName* is a BLT **graph**,
-	**barchart**, **stripchart**, **contour** widget or a Tk **canvas**
-	widget, the window does not have to be viewable on the screen to be
-	snapped. Its underlying pixmap is read directly.
+  *pathName*
+    The path of any Tk widget. If *pathName* is a **blt::graph**,
+    **blt::barchart**, **blt::stripchart**, **blt::contour** widget or a
+    Tk **canvas** widget, the window does not have to be viewable on the
+    screen to be snapped. Its underlying pixmap is read directly.
 
-      **root**
-        The root window.
+  **root**
+    The root window.
 
-      *number*
-        The ID of the window.  In X11 the number will be a hexadecimal number
-        such as "0x2e00004".
+  *number*
+    The ID of the window.  In X11 the number will be a hexadecimal number
+    such as "0x2e00004".
 
-   *Switches* can be any of the following.
+  *Switches* can be any of the following.
 
-   **-filter** *filterName*
-     Specifies the image filter to use for both the horizontal and vertical
-     resampling.  *FilterName* can be any one of the values described in
-     the **resample** operation.
+  **-filter** *filterName*
+    Specifies the image filter to use for both the horizontal and vertical
+    resampling.  *FilterName* can be any one of the values described in
+    the **resample** operation.
 
-   **-from** *bbox*
-     Specifies the sub-region in *windowName* to snap.  *Bbox* is a list in
-     the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
-     describes the subregion to be snaped.  The second indicates to copy
-     the subimage starting at *x1*,\ *y1* of *windowName* extending to the
-     lower right corner.
+  **-from** *bbox*
+    Specifies the sub-region in *windowName* to snap.  *Bbox* is a list in
+    the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
+    describes the subregion to be snaped.  The second indicates to copy
+    the subimage starting at *x1*,\ *y1* of *windowName* extending to the
+    lower right corner.
 
-   **-height** *numPixels*
-     Specifies the height of the resampled image.  *NumPixels* may have any
-     of the forms acceptable to **Tk_GetPixels**, such as "200" or "2.4i".
-     If *numPixels* is "0", then the height of *imageName* is the height
-     of *windowName*.  The default is "0".
-    
-   **-hfilter** *filterName*
-     Specifies the image filter to use for horizontal resampling. 
-     *FilterName* can be any of the filter described in **-filter**
-     switch.
-     
-   **-maxpect** 
-     Forces the *imageName* to retain the same aspect ratio as *srcName*.
-     The maximum of **-width** and **-height** is used.
+  **-height** *numPixels*
+    Specifies the height of the resampled image.  *NumPixels* may have any
+    of the forms acceptable to **Tk_GetPixels**, such as "200" or "2.4i".
+    If *numPixels* is "0", then the height of *imageName* is the height
+    of *windowName*.  The default is "0".
 
-   **-raise** 
-     Indicates to raise the window before snapping. The is sometimes
-     required for non-Tk windows.  The default is not to raise *windowName*.
-     
-   **-vfilter** *filterName*
-     Specifies the image filter to use for vertical resampling.
-     *FilterName* can be any of the filter described in **-filter** switch.
+  **-hfilter** *filterName*
+    Specifies the image filter to use for horizontal resampling. 
+    *FilterName* can be any of the filter described in **-filter**
+    switch.
 
-   **-width** *numPixels*
-     Specifies the width of the image.  *NumPixels* may have any of the
-     forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
-     *numPixels* is "0", then the width of *imageName* is the width of
-     *windowName*. The default is "0".
+  **-maxpect** 
+    Forces the *imageName* to retain the same aspect ratio as *srcName*.
+    The maximum of **-width** and **-height** is used.
+
+  **-raise** 
+    Indicates to raise the window before snapping. The is sometimes
+    required for non-Tk windows.  The default is not to raise *windowName*.
+
+  **-vfilter** *filterName*
+    Specifies the image filter to use for vertical resampling.
+    *FilterName* can be any of the filter described in **-filter** switch.
+
+  **-width** *numPixels*
+    Specifies the width of the image.  *NumPixels* may have any of the
+    forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+    *numPixels* is "0", then the width of *imageName* is the width of
+    *windowName*. The default is "0".
 
 *imageName* **subtract** *pictOrColor*
   Performs an arithmetic-subtraction of the picture or color from Each color
@@ -974,33 +1013,33 @@ the command.  The operations available for pictures are listed below.
   or "2.4i".
 
 *imageName* **wipe** *fromImage* *toImage* ?\ *switches* ... ?
-   Transitions from *fromImage* to *toImage* by wiping. *toImage* is
-   *toImage* into *fromImage* and saving the result in
-   *imageName*. *FromImage* and *toImage* can be either the name of a
-   picture (it can not be *imageName*) or a color specification.
-   *FromImage* and *toImage* cannot both be colors. *ImageName* starts as a
-   copy of *fromImage*.  It is progressively changed by randomly copying
-   pixels from *toImage* into it.
+  Transitions from *fromImage* to *toImage* by wiping. *toImage* is
+  *toImage* into *fromImage* and saving the result in
+  *imageName*. *FromImage* and *toImage* can be either the name of a
+  picture (it can not be *imageName*) or a color specification.
+  *FromImage* and *toImage* cannot both be colors. *ImageName* starts as a
+  copy of *fromImage*.  It is progressively changed by randomly copying
+  pixels from *toImage* into it.
 
-   This transition will start after this command completes, when an idle
-   point is reached. Care must be taken not to change *imageName* while the
-   transition is occurring. The results may be unexpected. You can specify a
-   TCL variable that will be automatically set when the transition has
-   completed. See the **-variable** switch.  The rate of transition is
-   determined by both the **-interval** and **-steps** switches.
-   *Switches* may be any of the following.
+  This transition will start after this command completes, when an idle
+  point is reached. Care must be taken not to change *imageName* while the
+  transition is occurring. The results may be unexpected. You can specify a
+  TCL variable that will be automatically set when the transition has
+  completed. See the **-variable** switch.  The rate of transition is
+  determined by both the **-interval** and **-steps** switches.
+  *Switches* may be any of the following.
 
-   **-interval** *milliseconds*
-     Specifies the time between steps in the transition. The default is
-     "50". 
+  **-interval** *milliseconds*
+    Specifies the time between steps in the transition. The default is
+    "50". 
 
-   **-steps** *numSteps*
-     Specifies how may steps the transition should take.  The default is
-     "10".
-     
-   **-variable** *varName*
-     Specifies the name of a TCL variable that will be set when the
-     transition has completed.
+  **-steps** *numSteps*
+    Specifies how may steps the transition should take.  The default is
+    "10".
+
+  **-variable** *varName*
+    Specifies the name of a TCL variable that will be set when the
+    transition has completed.
 
 
 *imageName* **xor** *pictOrColor* ?\ *switches* ... ?
@@ -1045,50 +1084,50 @@ By default this package is automatically loaded when you use the *bmp*
 format in the **import** or **export** operations.
 
 *imageName* **import bmp** ?\ *switches* ... ?
-    Imports BMP data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required. The following import switches are
-    supported:
+  Imports BMP data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required. The following import switches are
+  supported:
 
-    **-data** *string*
-     Read the BMP information from *string*.
+  **-data** *string*
+   Read the BMP information from *string*.
 
-    **-file** *fileName*
-     Read the BMP file from *fileName*.
+  **-file** *fileName*
+   Read the BMP file from *fileName*.
 
 *imageName* **export bmp** ?\ *switches* ... ?
-    Exports *imageName* into BMP data.  If no **-file** or **-data** switch
-    is provided, this command returns the BMP output as a base64 string.  If
-    *imageName* is greyscale, then the BMP output will be 1 8-bit component
-    per pixel, otherwise it will contain 3 8-bit components per pixel.  If
-    any pixel in *imageName* is not opaque, then an extra alpha component is
-    output.
+  Exports *imageName* into BMP data.  If no **-file** or **-data** switch
+  is provided, this command returns the BMP output as a base64 string.  If
+  *imageName* is greyscale, then the BMP output will be 1 8-bit component
+  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  any pixel in *imageName* is not opaque, then an extra alpha component is
+  output.
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-alpha**
-      Indicates to create BMP data with an 8-bit alpha channel.  This
-      option affects only non-opaque pixels in *imageName*.  By default
-      non-opaque pixels are blended with a background color (see the
-      **-background** option).
+  **-alpha**
+    Indicates to create BMP data with an 8-bit alpha channel.  This
+    option affects only non-opaque pixels in *imageName*.  By default
+    non-opaque pixels are blended with a background color (see the
+    **-background** option).
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels and the **-alpha** switch is not set.
-      *ColorSpec* is a color specification. The default background color
-      is "white".
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels and the **-alpha** switch is not set.
+    *ColorSpec* is a color specification. The default background color
+    is "white".
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the binary BMP
-      data. *VarName* is the name of a global TCL variable.  It will
-      contain a byte array object.
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the binary BMP
+    data. *VarName* is the name of a global TCL variable.  It will
+    contain a byte array object.
 
-    **-file** *fileName*
-      Write the BMP output to the file *fileName*.
+  **-file** *fileName*
+    Write the BMP output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
 **gif**
 ~~~~~~~~
@@ -1102,48 +1141,48 @@ By default this package is automatically loaded when you use the *gif*
 format in the **import** or **export** operations.
 
 *imageName* **import gif** ?\ *switches* ... ?
-    Imports GIF data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required.  The following import switches
-    are supported:
+  Imports GIF data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required.  The following import switches
+  are supported:
 
-    **-data** *string*
-     Read the GIF information from *string*.
+  **-data** *string*
+   Read the GIF information from *string*.
 
-    **-file** *fileName*
-     Read the GIF file from *fileName*.
+  **-file** *fileName*
+   Read the GIF file from *fileName*.
 
 *imageName* **export gif** ?\ *switches* ... ?
-    Exports *imageName* into GIF data.  If no **-file** or **-data** switch
-    is provided, this command returns the GIF output as a base64 string.
-    The following switches are supported:
+  Exports *imageName* into GIF data.  If no **-file** or **-data** switch
+  is provided, this command returns the GIF output as a base64 string.
+  The following switches are supported:
 
-    **-animate** 
-     Generates animated GIF output using the list of pictures in
-     *imageName*. All the pictures in *imageName* should be the same size.
+  **-animate** 
+   Generates animated GIF output using the list of pictures in
+   *imageName*. All the pictures in *imageName* should be the same size.
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains semi-transparent pixels.  *ColorSpec* is a color specification.
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains semi-transparent pixels.  *ColorSpec* is a color specification.
 
-    **-comments** *string*
-      Specifies comments to be included in the GIF data. *String* is a TCL list
-      of key value pairs.
+  **-comments** *string*
+    Specifies comments to be included in the GIF data. *String* is a TCL list
+    of key value pairs.
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the binary GIF
-      data. *VarName* is the name of a global TCL variable.  It will
-      contain a byte array object.
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the binary GIF
+    data. *VarName* is the name of a global TCL variable.  It will
+    contain a byte array object.
 
-    **-delay** *milliseconds*
-     Specifies the delay between images for the animated GIF.
+  **-delay** *milliseconds*
+   Specifies the delay between images for the animated GIF.
 
-    **-file** *fileName*
-      Write the GIF output to the file *fileName*.
+  **-file** *fileName*
+    Write the GIF output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
 **ico**
 ~~~~~~~
@@ -1159,50 +1198,50 @@ By default this package is automatically loaded when you use the *ico*
 format in the **import** or **export** operations.
 
 *imageName* **import ico** ?\ *switches* ... ?
-    Imports ICO data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required. The following import switches are
-    supported:
+  Imports ICO data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required. The following import switches are
+  supported:
 
-    **-data** *string*
-     Read the ICO information from *string*.
+  **-data** *string*
+   Read the ICO information from *string*.
 
-    **-file** *fileName*
-     Read the ICO file from *fileName*.
+  **-file** *fileName*
+   Read the ICO file from *fileName*.
 
 *imageName* **export ico** ?\ *switches* ... ?
-    Exports *imageName* into ICO data.  If no **-file** or **-data** switch
-    is provided, this command returns the ICO output as a base64 string.  If
-    *imageName* is greyscale, then the ICO output will be 1 8-bit component
-    per pixel, otherwise it will contain 3 8-bit components per pixel.  If
-    any pixel in *imageName* is not opaque, then an extra alpha component is
-    output.
+  Exports *imageName* into ICO data.  If no **-file** or **-data** switch
+  is provided, this command returns the ICO output as a base64 string.  If
+  *imageName* is greyscale, then the ICO output will be 1 8-bit component
+  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  any pixel in *imageName* is not opaque, then an extra alpha component is
+  output.
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-alpha**
-      Indicates to create ICO data with an 8-bit alpha channel.  This
-      option affects only non-opaque pixels in *imageName*.  By default
-      non-opaque pixels are blended with a background color (see the
-      **-background** option).
+  **-alpha**
+    Indicates to create ICO data with an 8-bit alpha channel.  This
+    option affects only non-opaque pixels in *imageName*.  By default
+    non-opaque pixels are blended with a background color (see the
+    **-background** option).
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels and the **-alpha** switch is not set.
-      *ColorSpec* is a color specification. The default background color
-      is "white".
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels and the **-alpha** switch is not set.
+    *ColorSpec* is a color specification. The default background color
+    is "white".
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the binary ICO
-      data. *VarName* is the name of a global TCL variable.  It will
-      contain a byte array object.
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the binary ICO
+    data. *VarName* is the name of a global TCL variable.  It will
+    contain a byte array object.
 
-    **-file** *fileName*
-      Write the ICO output to the file *fileName*.
+  **-file** *fileName*
+    Write the ICO output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
 **jpg**
 ~~~~~~~
@@ -1216,67 +1255,67 @@ By default this package is automatically loaded when you use the *jpg*
 format in the **import** or **export** operations.
 
 *imageName* **import jpg** ?\ *switches* ... ?
-    Imports JPEG data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required.  The following import switches are
-    supported:
+  Imports JPEG data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required.  The following import switches are
+  supported:
 
-    **-data** *string*
-     Reads the JPEG information from *string*.
+  **-data** *string*
+   Reads the JPEG information from *string*.
 
-    **-dct** *method*
-      Specifies the discrete cosine transform method. *Method* must be one
-      of the following.
+  **-dct** *method*
+    Specifies the discrete cosine transform method. *Method* must be one
+    of the following.
 
-      **slow**
-        Uses a slow but accurate integer algorithm. This is the default.
+    **slow**
+      Uses a slow but accurate integer algorithm. This is the default.
 
-      **fast**
-        Uses a faster but less accurate integer algorithm.
+    **fast**
+      Uses a faster but less accurate integer algorithm.
 
-      **float**
-        Uses floating-point. More accurate and faster depending on your
-        hardware.
+    **float**
+      Uses floating-point. More accurate and faster depending on your
+      hardware.
 
-    **-file** *fileName*
-      Reads the JPEG file from *fileName*.
+  **-file** *fileName*
+    Reads the JPEG file from *fileName*.
 
-    **-tags** *varName*
-      Specifies the name of a TCL array variable to contain the EXIF tags
-      found in the JPEG input.  If *varName* is "", tags are not parsed.
-      The default is "".
+  **-tags** *varName*
+    Specifies the name of a TCL array variable to contain the EXIF tags
+    found in the JPEG input.  If *varName* is "", tags are not parsed.
+    The default is "".
 
 *imageName* **export jpg** ?\ *switches* ... ?
-    Exports *imageName* into JPEG data.  If no **-file** or **-data** switch
-    is provided, this command returns the JPEG output as a base64 string.
-    The following switches are supported:
+  Exports *imageName* into JPEG data.  If no **-file** or **-data** switch
+  is provided, this command returns the JPEG output as a base64 string.
+  The following switches are supported:
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains transparent pixels.  *ColorSpec* is a color specification.
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains transparent pixels.  *ColorSpec* is a color specification.
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the binary JPEG
-      data. *VarName* is the name of a global TCL variable.  It will
-      contain a byte array object.
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the binary JPEG
+    data. *VarName* is the name of a global TCL variable.  It will
+    contain a byte array object.
 
-    **-file** *fileName*
-      Write the JPEG output to the file *fileName*.
+  **-file** *fileName*
+    Write the JPEG output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
-    **-quality** *percent*
-      Specifies the percent quality.  *Percent* must be a number between
-      0 and 100.
+  **-quality** *percent*
+    Specifies the percent quality.  *Percent* must be a number between
+    0 and 100.
 
-    **-progressive** 
-      Indicates to create a progressive JPEG.
+  **-progressive** 
+    Indicates to create a progressive JPEG.
 
-    **-smooth** *percent*
-      Specifies the percent of smoothing. *Percent* must be a number between
-      0 and 100.
+  **-smooth** *percent*
+    Specifies the percent of smoothing. *Percent* must be a number between
+    0 and 100.
 
 **photo**
 ~~~~~~~~~
@@ -1290,25 +1329,25 @@ By default this package is automatically loaded when you use the *photo*
 format in the **import** or **export** operations.
 
 *imageName* **import photo** ?\ *switches* ... ?
-    Imports Tk photo data into *imageName*.  The **-image** 
-    switch is required.  The following import switches are supported:
+  Imports Tk photo data into *imageName*.  The **-image** 
+  switch is required.  The following import switches are supported:
 
-    **-image** *photoName*
-      Reads the photo information from image *photoName*. *PhotoName* must
-      be the name of a Tk photo image.
+  **-image** *photoName*
+    Reads the photo information from image *photoName*. *PhotoName* must
+    be the name of a Tk photo image.
 
 *imageName* **export photo** ?\ *switches* ... ?
-    Exports *imageName* into a Tk photo image.  The **-image** switch is
-    required.  The following import switches are supported:
+  Exports *imageName* into a Tk photo image.  The **-image** switch is
+  required.  The following import switches are supported:
 
-    **-image** *photoName*
-      Write the picture information to the photo image *photoName*.
-      *PhotoName* must be the name of a Tk photo image.
+  **-image** *photoName*
+    Write the picture information to the photo image *photoName*.
+    *PhotoName* must be the name of a Tk photo image.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default, 0,
-      is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default, 0,
+    is the first picture.
 
 **pbm**
 ~~~~~~~
@@ -1325,42 +1364,42 @@ By default this package is automatically loaded when you use the *pbm*
 format in the **import** or **export** operations.
 
 *imageName* **import pbm** ?\ *switches* ... ?
-    Imports NETPBM data into *imageName*.  Either the **-file** or
-    **-data** switch (described below) is required. The following import
-    switches are supported:
+  Imports NETPBM data into *imageName*.  Either the **-file** or
+  **-data** switch (described below) is required. The following import
+  switches are supported:
 
-    **-data** *string*
-     Read the NETPBM information from *string*.
+  **-data** *string*
+   Read the NETPBM information from *string*.
 
-    **-file** *fileName*
-     Read the NETPBM file from *fileName*.
+  **-file** *fileName*
+   Read the NETPBM file from *fileName*.
 
 *imageName* **export pbm** ?\ *switches* ... ?
-    Exports *imageName* into NETPBM data.  If no **-file** or **-data**
-    switch is provided, this command returns the NETPBM output as a base64
-    string.  If *imageName* is greyscale, then the NETPBM output will be 1
-    8-bit component per pixel (PGMRAW), otherwise it will contain 3 8-bit
-    components per pixel (PPMRAW).  
+  Exports *imageName* into NETPBM data.  If no **-file** or **-data**
+  switch is provided, this command returns the NETPBM output as a base64
+  string.  If *imageName* is greyscale, then the NETPBM output will be 1
+  8-bit component per pixel (PGMRAW), otherwise it will contain 3 8-bit
+  components per pixel (PPMRAW).  
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels.  *ColorSpec* is a color
-      specification. The default background color is "white".
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels.  *ColorSpec* is a color
+    specification. The default background color is "white".
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the binary PBM
-      data. *VarName* is the name of a global TCL variable.  It will
-      contain a byte array object.
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the binary PBM
+    data. *VarName* is the name of a global TCL variable.  It will
+    contain a byte array object.
 
-    **-file** *fileName*
-      Write the PBM output to the file *fileName*.
+  **-file** *fileName*
+    Write the PBM output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. If *numPicture* is a negative, all pictures will be
-      exported.  The default is 0, which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. If *numPicture* is a negative, all pictures will be
+    exported.  The default is 0, which is the first picture.
 
 **pdf**
 ~~~~~~~
@@ -1375,64 +1414,64 @@ By default this package is automatically loaded when you use the *pdf*
 format in the **import** or **export** operations.
 
 *imageName* **import pdf** ?\ *switches* ... ?
-    Imports PDF data into *imageName*.  This command requires that the
-    **ghostscript** interpreter **gs** be in your PATH.  Either the
-    **-file** or **-data** switch (described below) is required. The
-    following import switches are supported:
+  Imports PDF data into *imageName*.  This command requires that the
+  **ghostscript** interpreter **gs** be in your PATH.  Either the
+  **-file** or **-data** switch (described below) is required. The
+  following import switches are supported:
 
-    **-data** *string*
-     Reads the PDF information from *string*.
+  **-data** *string*
+   Reads the PDF information from *string*.
 
-    **-dpi** *number*
-     Specifies the dots per index (DPI) when converting the PDF input.
-     The default is "100".
+  **-dpi** *number*
+   Specifies the dots per index (DPI) when converting the PDF input.
+   The default is "100".
 
-    **-file** *fileName*
-     Reads the PDF file from *fileName*.
+  **-file** *fileName*
+   Reads the PDF file from *fileName*.
 
-    **-nocrop** 
-     Indicates to not crop the image at the BoundingBox.  The can
-     add a border around the image.  The default is to crop the data.
+  **-nocrop** 
+   Indicates to not crop the image at the BoundingBox.  The can
+   add a border around the image.  The default is to crop the data.
 
-    **-papersize** *string*
-     Specifies the paper size. *String* is . The default is "letter".
+  **-papersize** *string*
+   Specifies the paper size. *String* is . The default is "letter".
 
 *imageName* **export pdf** ?\ *switches* ... ?
-    Exports *imageName* into PDF data.  If no **-file** or **-data** switch
-    is provided, this command returns the binary PDF output as a string.  
-    If *imageName* contains non-opaque pixels, *imageName* will be blended
-    in with the background color specified by the **-background** switch
-    or the PDF output will contain a SoftMask depending on the **-alpha**
-    switch.
+  Exports *imageName* into PDF data.  If no **-file** or **-data** switch
+  is provided, this command returns the binary PDF output as a string.  
+  If *imageName* contains non-opaque pixels, *imageName* will be blended
+  in with the background color specified by the **-background** switch
+  or the PDF output will contain a SoftMask depending on the **-alpha**
+  switch.
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-alpha**
-      Indicates to create PDF data with an SoftMask for the 8-bit alpha
-      channel.  This option affects only non-opaque pixels in *imageName*.
-      By default non-opaque pixels are blended with a background color (see
-      the **-background** option).
+  **-alpha**
+    Indicates to create PDF data with an SoftMask for the 8-bit alpha
+    channel.  This option affects only non-opaque pixels in *imageName*.
+    By default non-opaque pixels are blended with a background color (see
+    the **-background** option).
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels. *ColorSpec* is a color specification. The
-      default background color is "white".
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels. *ColorSpec* is a color specification. The
+    default background color is "white".
 
-    **-comments** *string*
-      Specifies comments to be included in the PDF data. *String* is a TCL
-      list of key value pairs.
+  **-comments** *string*
+    Specifies comments to be included in the PDF data. *String* is a TCL
+    list of key value pairs.
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the PDF
-      data. *VarName* is the name of a global TCL variable.  
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the PDF
+    data. *VarName* is the name of a global TCL variable.  
 
-    **-file** *fileName*
-      Writes the PDF output to the file *fileName*.
+  **-file** *fileName*
+    Writes the PDF output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
 **png**
 ~~~~~~~
@@ -1446,37 +1485,37 @@ By default this package is automatically loaded when you use the *png*
 format in the **import** or **export** operations.
 
 *imageName* **import png** ?\ *switches* ... ?
-    Imports PNG data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required.  The following import switches are
-    supported:
+  Imports PNG data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required.  The following import switches are
+  supported:
 
-    **-data** *string*
-     Read the PNG information from *string*.
+  **-data** *string*
+   Read the PNG information from *string*.
 
-    **-file** *fileName*
-     Read the PNG file from *fileName*.
+  **-file** *fileName*
+   Read the PNG file from *fileName*.
 
 *imageName* **export png** ?\ *switches* ... ?
-    Exports *imageName* into PNG data.  If no **-file** or **-data** switch
-    is provided, this command returns the PNG output as a base64 string.  If
-    *imageName* is greyscale, then the PNG output will be 1 8-bit component
-    per pixel, otherwise it will contain 3 8-bit components per pixel.  If
-    any pixel in *imageName* is not opaque, then an extra alpha component is
-    output.
+  Exports *imageName* into PNG data.  If no **-file** or **-data** switch
+  is provided, this command returns the PNG output as a base64 string.  If
+  *imageName* is greyscale, then the PNG output will be 1 8-bit component
+  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  any pixel in *imageName* is not opaque, then an extra alpha component is
+  output.
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-comments** *list*
-      Specifies comments to be included in the PNG data. *List* is a TCL list
-      of key value pairs.
+  **-comments** *list*
+    Specifies comments to be included in the PNG data. *List* is a TCL list
+    of key value pairs.
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the binary PNG
-      data. *VarName* is the name of a global TCL variable.  It will
-      contain a byte array object.
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the binary PNG
+    data. *VarName* is the name of a global TCL variable.  It will
+    contain a byte array object.
 
-    **-file** *fileName*
-      Write the PNG output to the file *fileName*.
+  **-file** *fileName*
+    Write the PNG output to the file *fileName*.
 
 **ps**
 ~~~~~~
@@ -1491,97 +1530,97 @@ By default this package is automatically loaded when you use the *ps*
 format in the **import** or **export** operations.
 
 *imageName* **import ps** ?\ *switches* ... ?
-    Imports PS data into *imageName*. This command requires that the
-    **ghostscript** interpreter **gs** be in your PATH.  Either the
-    **-file** or **-data** switch (described below) is required. The
-    following import switches are supported:
+  Imports PS data into *imageName*. This command requires that the
+  **ghostscript** interpreter **gs** be in your PATH.  Either the
+  **-file** or **-data** switch (described below) is required. The
+  following import switches are supported:
 
-    **-data** *string*
-     Reads the PS information from *string*.
+  **-data** *string*
+   Reads the PS information from *string*.
 
-    **-dpi** *number*
-     Specifies the dots per index (DPI) when converting the PS input.
-     The default is "100".
+  **-dpi** *number*
+   Specifies the dots per index (DPI) when converting the PS input.
+   The default is "100".
 
-    **-file** *fileName*
-     Reads the PS file from *fileName*.
+  **-file** *fileName*
+   Reads the PS file from *fileName*.
 
-    **-nocrop** 
-     Indicates to not crop the image at the BoundingBox.  The can
-     add a border around the image.  The default is to crop the data.
+  **-nocrop** 
+   Indicates to not crop the image at the BoundingBox.  The can
+   add a border around the image.  The default is to crop the data.
 
-    **-papersize** *string*
-     Specifies the paper size. *String* is . The default is "letter".
+  **-papersize** *string*
+   Specifies the paper size. *String* is . The default is "letter".
 
 *imageName* **export ps** ?\ *switches* ... ?
-    Exports *imageName* into PS data.  If no **-file** or **-data** switch
-    is provided, this command returns the PS output as a string.  If
-    *imageName* contains non-opaque pixels, *imageName* will be blended in
-    with the background color specified by the **-background** switch.  The
-    following switches are supported.
+  Exports *imageName* into PS data.  If no **-file** or **-data** switch
+  is provided, this command returns the PS output as a string.  If
+  *imageName* contains non-opaque pixels, *imageName* will be blended in
+  with the background color specified by the **-background** switch.  The
+  following switches are supported.
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels. *ColorSpec* is a color specification. The
-      default background color is "white".
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels. *ColorSpec* is a color specification. The
+    default background color is "white".
 
-    **-center** 
-      Indicates to center the image on the page.
+  **-center** 
+    Indicates to center the image on the page.
 
-    **-comments** *string*
-      Specifies comments to be included in the PS data. 
+  **-comments** *string*
+    Specifies comments to be included in the PS data. 
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the PS
-      data. *VarName* is the name of a global TCL variable.  
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the PS
+    data. *VarName* is the name of a global TCL variable.  
 
-    **-file** *fileName*
-      Writes the PS output to the file *fileName*.
+  **-file** *fileName*
+    Writes the PS output to the file *fileName*.
 
-    **-greyscale** 
-      Indicates to convert the image to greyscale before exporting to PS.
+  **-greyscale** 
+    Indicates to convert the image to greyscale before exporting to PS.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
-    **-landscape**
-      Indicates to rotate the image 90 degrees. The the x-coordinates of
-      the image run along the long dimension of the page.
+  **-landscape**
+    Indicates to rotate the image 90 degrees. The the x-coordinates of
+    the image run along the long dimension of the page.
 
-    **-level** *pslevel*
-      Specifies the PostScript level.
+  **-level** *pslevel*
+    Specifies the PostScript level.
 
-    **-maxpect** 
-      Indicates to scale the image so that it fills the PostScript page.
-      The aspect ratio of the picture is still retained.  
+  **-maxpect** 
+    Indicates to scale the image so that it fills the PostScript page.
+    The aspect ratio of the picture is still retained.  
 
-    **-padx** *numPica*
-      Specifies the horizontal padding for the left and right page borders.
-      The borders are exterior to the image.  *NumPixels* can be a list of
-      one or two screen distances.  If *numPica* has two elements, the left
-      border is padded by the first distance and the right border by the
-      second.  If *numPica* has just one distance, both the left and right
-      borders are padded evenly. The default is "1i".
+  **-padx** *numPica*
+    Specifies the horizontal padding for the left and right page borders.
+    The borders are exterior to the image.  *NumPixels* can be a list of
+    one or two screen distances.  If *numPica* has two elements, the left
+    border is padded by the first distance and the right border by the
+    second.  If *numPica* has just one distance, both the left and right
+    borders are padded evenly. The default is "1i".
 
-    **-pady** *numPica*
-      Specifies the vertical padding for the top and bottom page
-      borders. The borders are exterior to the image.  *NumPica* can be a
-      list of one or two page distances.  If *numPica* has two elements,
-      the top border is padded by the first distance and the bottom border
-      by the second.  If *numPica* has just one distance, both the top and
-      bottom borders are padded evenly.  The default is "1i".
+  **-pady** *numPica*
+    Specifies the vertical padding for the top and bottom page
+    borders. The borders are exterior to the image.  *NumPica* can be a
+    list of one or two page distances.  If *numPica* has two elements,
+    the top border is padded by the first distance and the bottom border
+    by the second.  If *numPica* has just one distance, both the top and
+    bottom borders are padded evenly.  The default is "1i".
 
-    **-paperheight** *numPica*
-      Specifies the height of the PostScript page.  This can be used to
-      select between different page sizes (letter, A4, etc).  The default
-      height is "11.0i".
+  **-paperheight** *numPica*
+    Specifies the height of the PostScript page.  This can be used to
+    select between different page sizes (letter, A4, etc).  The default
+    height is "11.0i".
 
-    **-paperwidth** *numPica*
-      Specifies the width of the PostScript page.  This can be used to
-      select between different page sizes (letter, A4, etc).  The default
-      width is "8.5i".
+  **-paperwidth** *numPica*
+    Specifies the width of the PostScript page.  This can be used to
+    select between different page sizes (letter, A4, etc).  The default
+    width is "8.5i".
 
 **tga**
 ~~~~~~~
@@ -1597,76 +1636,76 @@ By default this package is automatically loaded when you use the *tga*
 format in the **import** or **export** operations.
 
 *imageName* **import tga** ?\ *switches* ... ?
-    Imports TGA data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required.  The following import switches
-    are supported:
+  Imports TGA data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required.  The following import switches
+  are supported:
 
-    **-data** *string*
-     Read the TGA information from *string*.
+  **-data** *string*
+   Read the TGA information from *string*.
 
-    **-file** *fileName*
-     Read the TGA file from *fileName*.
+  **-file** *fileName*
+   Read the TGA file from *fileName*.
 
-    **-info** *varName*
-     Specifies the name of TCL variable *varName* that will be set with a
-     list of metadata from the TGA data examined.  *VarName* is the name of
-     a global TCL variable.  The list will contain key/value pairs.
+  **-info** *varName*
+   Specifies the name of TCL variable *varName* that will be set with a
+   list of metadata from the TGA data examined.  *VarName* is the name of
+   a global TCL variable.  The list will contain key/value pairs.
      
 *imageName* **export tga** ?\ *switches* ... ?
-    Exports *imageName* into TGA data.  If no **-file** or **-data** switch
-    is provided, this command returns the TGA output as a base64 string.  If
-    *imageName* is greyscale, then the TGA output will be 1 8-bit component
-    per pixel, otherwise it will contain 3 8-bit components per pixel.  If
-    any pixel in *imageName* is not opaque, then an extra alpha component is
-    output.
+  Exports *imageName* into TGA data.  If no **-file** or **-data** switch
+  is provided, this command returns the TGA output as a base64 string.  If
+  *imageName* is greyscale, then the TGA output will be 1 8-bit component
+  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  any pixel in *imageName* is not opaque, then an extra alpha component is
+  output.
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-alpha**
-      Indicates to create TGA data with an 8-bit alpha channel.  This
-      option affects only non-opaque pixels in *imageName*.  By default
-      non-opaque pixels are blended with a background color (see the
-      **-background** option).
+  **-alpha**
+    Indicates to create TGA data with an 8-bit alpha channel.  This
+    option affects only non-opaque pixels in *imageName*.  By default
+    non-opaque pixels are blended with a background color (see the
+    **-background** option).
 
-    **-author** *string*
-      Specifies a string for the author's name to included in the TGA data. 
-      *String* may contain no more than 40 characters.
-      
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels and the **-alpha** switch is not set.
-      *ColorSpec* is a color specification. The default background color
-      is "white".
+  **-author** *string*
+    Specifies a string for the author's name to included in the TGA data. 
+    *String* may contain no more than 40 characters.
 
-    **-comments** *string*
-      Specifies comments to be included in the TGA data. *String* may
-      contain up to 4 lines (separated by newlines) with each line no more
-      than of 80 characters.
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels and the **-alpha** switch is not set.
+    *ColorSpec* is a color specification. The default background color
+    is "white".
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the binary TGA
-      data. *VarName* is the name of a global TCL variable.  It will
-      contain a byte array object.
+  **-comments** *string*
+    Specifies comments to be included in the TGA data. *String* may
+    contain up to 4 lines (separated by newlines) with each line no more
+    than of 80 characters.
 
-    **-file** *fileName*
-      Write the TGA output to the file *fileName*.
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the binary TGA
+    data. *VarName* is the name of a global TCL variable.  It will
+    contain a byte array object.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-file** *fileName*
+    Write the TGA output to the file *fileName*.
 
-    **-job** *string*
-      Specifies a job name (image name) to be included an ID for the TGA
-      data. *String* is may be a maximum of 40 characters.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
-    **-rle** 
-      Indicates to compress the image data using run-length encoding.
+  **-job** *string*
+    Specifies a job name (image name) to be included an ID for the TGA
+    data. *String* is may be a maximum of 40 characters.
 
-    **-software** *string*
-      Specifies an application name that created the image data to be
-      included the software name for the TGA data. *String* is may contain
-      no more than 40 characters.
+  **-rle** 
+    Indicates to compress the image data using run-length encoding.
+
+  **-software** *string*
+    Specifies an application name that created the image data to be
+    included the software name for the TGA data. *String* is may contain
+    no more than 40 characters.
 
 **tif**
 ~~~~~~~
@@ -1678,96 +1717,95 @@ package can be manually loaded as follows.
 
     **package require blt_picture_tif**
 
-  By default this package is automatically loaded when you use the *tif*
-  format in the **import** or **export** operations.
+By default this package is automatically loaded when you use the *tif*
+format in the **import** or **export** operations.
 
 *imageName* **import tif** ?\ *switches* ... ?
-    Imports TIFF data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required. The following import switches are
-    supported:
+  Imports TIFF data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required. The following import switches are
+  supported:
 
-    **-data** *string*
-     Reads the TIFF information from *string*.
+  **-data** *string*
+   Reads the TIFF information from *string*.
 
-    **-file** *fileName*
-     Reads the TIFF file from *fileName*.
+  **-file** *fileName*
+   Reads the TIFF file from *fileName*.
 
-    **-tags** *varName*
-      Specifies the name of a TCL array variable to contain the tags
-      found in the TIFF input.  If *varName* is "", tags are not parsed.
-      The default is "".
+  **-tags** *varName*
+    Specifies the name of a TCL array variable to contain the tags
+    found in the TIFF input.  If *varName* is "", tags are not parsed.
+    The default is "".
 
 *imageName* **export tif** ?\ *switches* ... ?
-    Exports *imageName* into TIFF data.  If no **-file** or **-data** switch
-    is provided, this command returns the TIFF output as a base64 string.  If
-    *imageName* is greyscale, then the TIFF output will be 1 8-bit component
-    per pixel, otherwise it will contain 3 8-bit components per pixel.  If
-    any pixel in *imageName* is not opaque, then an extra alpha component is
-    output.
+  Exports *imageName* into TIFF data.  If no **-file** or **-data** switch
+  is provided, this command returns the TIFF output as a base64 string.  If
+  *imageName* is greyscale, then the TIFF output will be 1 8-bit component
+  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  any pixel in *imageName* is not opaque, then an extra alpha component is
+  output.
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels and the **-alpha** switch is not set.
-      *ColorSpec* is a color specification. The default is "white".
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels and the **-alpha** switch is not set.
+    *ColorSpec* is a color specification. The default is "white".
 
-    **-compress** *compressType*
+  **-compress** *compressType*
+    Specifies the type of compression to perform on the image
+    data. *CompressType* can be one of the following.
 
-      Specifies the type of compress to perform on the image
-      data. *CompressType* can be one of the following.
+    **lzw**
+      Lempel-Ziv & Welch
 
-      **lzw**
-        Lempel-Ziv & Welch
+    **ojpeg**
+      6.0 JPEG
 
-      **ojpeg**
-        6.0 JPEG
-  
-      **peg**
-        JPEG DCT compression.
+    **peg**
+      JPEG DCT compression.
 
-      **next**
-        NeXT 2-bit RLE.
+    **next**
+      NeXT 2-bit RLE.
 
-      **packbits**
-        Macintosh RLE.
+    **packbits**
+      Macintosh RLE.
 
-      **thunderscan**
-        ThunderScan RLE
+    **thunderscan**
+      ThunderScan RLE
 
-      **pixarfilm**
-        Pixar companded 10bit LZW
+    **pixarfilm**
+      Pixar companded 10bit LZW
 
-      **pixarlog**
-        Pixar companded 11bit ZIP
+    **pixarlog**
+      Pixar companded 11bit ZIP
 
-      **deflate**
-        Deflate compression.
+    **deflate**
+      Deflate compression.
 
-      **adobe_deflate**
-        Adobe's deflate.
+    **adobe_deflate**
+      Adobe's deflate.
 
-      **dcs**
-        Kodak DCS encoding.
+    **dcs**
+      Kodak DCS encoding.
 
-      **sgilog**
-        SGI Log Luminance RLE.
+    **sgilog**
+      SGI Log Luminance RLE.
 
-      **sgilog24**
-        SGI Log 24-bit packed
+    **sgilog24**
+      SGI Log 24-bit packed
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the binary TIFF
-      data. *VarName* is the name of a global TCL variable.  It will
-      contain a byte array object.
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the binary TIFF
+    data. *VarName* is the name of a global TCL variable.  It will
+    contain a byte array object.
 
-    **-file** *fileName*
-      Writes the TIFF output to the file *fileName*.
+  **-file** *fileName*
+    Writes the TIFF output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
 
 **xbm**
@@ -1783,53 +1821,53 @@ By default this package is automatically loaded when you use the *xbm*
 format in the **import** or **export** operations.
 
 *imageName* **import xbm** ?\ *switches* ... ?
-    Imports XBM data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required. The following import switches are
-    supported:
+  Imports XBM data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required. The following import switches are
+  supported:
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  These are 0 pixels in the
-      bitmap. The default is "black".
+  **-background** *colorSpec*
+    Specifies the color of the background.  These are 0 pixels in the
+    bitmap. The default is "black".
 
-    **-data** *string*
-     Reads the XBM information from *string*.
+  **-data** *string*
+   Reads the XBM information from *string*.
 
-    **-file** *fileName*
-     Reads the XBM file from *fileName*.
+  **-file** *fileName*
+   Reads the XBM file from *fileName*.
 
-    **-foreground** *colorSpec*
-      Specifies the color of the foreground.  These are 1 pixels in the
-      bitmap. The default is "white".
+  **-foreground** *colorSpec*
+    Specifies the color of the foreground.  These are 1 pixels in the
+    bitmap. The default is "white".
 
-    **-maskdata** *string*
-     Reads the XBM information from *string* representing the bitmap mask.
+  **-maskdata** *string*
+   Reads the XBM information from *string* representing the bitmap mask.
 
-    **-maskfile** *fileName*
-     Reads the XBM file from *fileName* representing the bitmap mask.
+  **-maskfile** *fileName*
+   Reads the XBM file from *fileName* representing the bitmap mask.
 
 *imageName* **export xbm** ?\ *switches* ... ?
-    Exports *imageName* into XBM data.  If no **-file** or **-data** switch
-    is provided, this command returns the XBM output as a string.  If
-    *imageName* contains more than 2 colors, it will be dithered to 2 colors.
+  Exports *imageName* into XBM data.  If no **-file** or **-data** switch
+  is provided, this command returns the XBM output as a string.  If
+  *imageName* contains more than 2 colors, it will be dithered to 2 colors.
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels. *ColorSpec* is a color specification. The
-      default is "white".
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels. *ColorSpec* is a color specification. The
+    default is "white".
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the XBM
-      data. *VarName* is the name of a global TCL variable.  
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the XBM
+    data. *VarName* is the name of a global TCL variable.  
 
-    **-file** *fileName*
-      Writes the XBM output to the file *fileName*.
+  **-file** *fileName*
+    Writes the XBM output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
 **xpm**
 ~~~~~~~
@@ -1844,44 +1882,44 @@ By default this package is automatically loaded when you use the *xpm*
 format in the **import** or **export** operations.
 
 *imageName* **import xpm** ?\ *switches* ... ?
-    Imports XPM data into *imageName*.  Either the **-file** or **-data**
-    switch (described below) is required.  The following import switches are
-    supported:
+  Imports XPM data into *imageName*.  Either the **-file** or **-data**
+  switch (described below) is required.  The following import switches are
+  supported:
 
-    **-data** *string*
-     Reads the XPM information from *string*.
+  **-data** *string*
+   Reads the XPM information from *string*.
 
-    **-file** *fileName*
-     Reads the XPM file from *fileName*.
+  **-file** *fileName*
+   Reads the XPM file from *fileName*.
 
 *imageName* **export xpm** ?\ *switches* ... ?
-    Exports *imageName* into XPM data.  If no **-file** or **-data** switch
-    is provided, this command returns the XPM output as a string.  If
-    *imageName* contains more than 2 colors, it will be dithered to 2 colors.
+  Exports *imageName* into XPM data.  If no **-file** or **-data** switch
+  is provided, this command returns the XPM output as a string.  If
+  *imageName* contains more than 2 colors, it will be dithered to 2 colors.
 
-    The following switches are supported:
+  The following switches are supported:
 
-    **-background** *colorSpec*
-      Specifies the color of the background.  This is used if *imageName*
-      contains non-opaque pixels. *ColorSpec* is a color specification. The
-      default is "white".
+  **-background** *colorSpec*
+    Specifies the color of the background.  This is used if *imageName*
+    contains non-opaque pixels. *ColorSpec* is a color specification. The
+    default is "white".
 
-    **-data** *varName*
-      Specifies the name of TCL variable to be set with the XPM
-      data. *VarName* is the name of a global TCL variable.  
+  **-data** *varName*
+    Specifies the name of TCL variable to be set with the XPM
+    data. *VarName* is the name of a global TCL variable.  
 
-    **-file** *fileName*
-      Writes the XPM output to the file *fileName*.
+  **-file** *fileName*
+    Writes the XPM output to the file *fileName*.
 
-    **-index** *numPicture*
-      Specifies the picture in the list of pictures of *imageName* to be
-      exported. *NumPicture* is a non-negative number.  The default is 0,
-      which is the first picture.
+  **-index** *numPicture*
+    Specifies the picture in the list of pictures of *imageName* to be
+    exported. *NumPicture* is a non-negative number.  The default is 0,
+    which is the first picture.
 
-    **-noquantize** 
-      Indicates to not reduce the number of colors in *imageName* before
-      outputing the XPM data.  The default is to reduce the number of
-      colors by quantizing *imageName*.
+  **-noquantize** 
+    Indicates to not reduce the number of colors in *imageName* before
+    outputing the XPM data.  The default is to reduce the number of
+    colors by quantizing *imageName*.
 
 KEYWORDS
 ========

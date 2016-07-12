@@ -84,14 +84,17 @@ install: all
 
 .rst.n: 
 	$(RM) $@
+	echo "" > toc.rst
 	rst2man.py $< > $@
 
 .rst.pdf: 
 	$(RM) $@
+	echo ".. contents:: Table of contents" > toc.rst
 	rst2pdf $< -o $@
 
 .rst.htm: 
 	$(RM) $@
+	echo ".. contents:: Table of contents" > toc.rst
 	rst2html.py $< > $@
 
 clean:

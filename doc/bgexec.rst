@@ -153,12 +153,12 @@ or double dashes (--).  The following options are available for
     will be delivered.  This can be useful when you want to process the
     output on a line-by-line basis.  The default value is "false".
 
-  **-onerror** *command*
+  **-onerror** *cmdPrefix*
     Specifies the start of a TCL command that will be executed whenever new
     data is available from standard error. The data is appended to the
     command as an extra argument before it is executed.
 
-  **-onoutput** *command* 
+  **-onoutput** *cmdPrefix* 
     Specifies the start of a TCL command that will be executed whenever new
     data is available from standard output. The data is appended to the
     command as an extra argument before it is executed.
@@ -213,7 +213,7 @@ will store the output of the program.
 You can also terminate the program by setting the variable
 "myStatus".  If "myStatus" is set before "du" has
 completed, the process is killed. Under Unix, this is done sending by
-a configurable signal (by default it's SIGKILL). Under Win32, this
+a configurable signal (by default it is SIGKILL). Under Win32, this
 is done by calling **TerminateProcess**. It makes no
 difference what "myStatus" is set to.
 

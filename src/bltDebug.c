@@ -153,12 +153,13 @@ GetDebugCmdInterpData(Tcl_Interp *interp)
     dataPtr = (DebugCmdInterpData *)
         Tcl_GetAssocData(interp, DEBUG_THREAD_KEY, &proc);
     if (dataPtr == NULL) {
-        dataPtr = Blt_AssertMalloc(sizeof(DebugCmdInterpData));
+        dataPtr = Blt_AssertCalloc(1, sizeof(DebugCmdInterpData));
         dataPtr->interp = interp;
         Tcl_SetAssocData(interp, DEBUG_THREAD_KEY, DebugInterpDeleteProc,
                  dataPtr);
         dataPtr->chain = Blt_Chain_Create();
         dataPtr->stack = Blt_Malloc(MAX_STACK);
+        dataPtr->closeChannel = FALSE;
     }
     return dataPtr;
 }
@@ -497,10 +498,13 @@ DebugCmd(
 int
 Blt_DebugCmdInitProc(Tcl_Interp *interp)
 {
-    static Blt_CmdSpec cmdSpec = {"debug", DebugCmd,};
-
-    cmdSpec.clientData = GetDebugCmdInterpData(interp);
-    return Blt_InitCmd(interp, "::blt", &cmdSpec);
+    static Blt_CmdSpec cmdSpecs[2] = { 
+        { "debug",     DebugCmd, },
+        { "bltdebug",  DebugCmd, },
+    };
+    cmdSpecs[1].clientData = cmdSpecs[0].clientData =
+        GetDebugCmdInterpData(interp);
+    return Blt_InitCmds(interp, "::blt", cmdSpecs, 2);
 }
 
 #endif /* NO_BLTDEBUG */

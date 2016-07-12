@@ -163,12 +163,11 @@ command.  The following operations are available for *listview* widgets:
   Returns of list of four numbers describing the bounding box of
   *itemName*.  The numbers represent the x and y root coordinates of two
   opposite corners of the box. *Item* may be a label, index, or tag, but
-  may not represent more than one item. *Switches* can be one of the 
+  may not represent more than one item. *Switches* can be one of the
   following:
 
-  **-root** 
-    Return the bounding box coordinates in root screen coordinates instead
-    of relative to the *listview* window.
+  **-root** Return the bounding box coordinates in root screen coordinates
+    instead of relative to the *listview* window.
 
 *pathName* **cget** *option*  
   Returns the current value of the widget configuration option given by
@@ -383,9 +382,9 @@ command.  The following operations are available for *listview* widgets:
     should appear to protrude.  This option may be overridden by the
     style's **-selectrelief** option. The default is "flat".
 
-  **-takefocus** *bool*
+  **-takefocus** *boolean*
     Provides information used when moving the focus from window to window
-    via keyboard traversal (e.g., Tab and Shift-Tab).  If *bool* is "0",
+    via keyboard traversal (e.g., Tab and Shift-Tab).  If *boolean* is "0",
     this means that this window should be skipped entirely during keyboard
     traversal.  "1" means that the this window should always receive the
     input focus.  An empty value means that the traversal scripts make the

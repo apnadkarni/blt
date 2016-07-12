@@ -715,6 +715,19 @@ static Blt_ConfigSpec sortSpecs[] =
 };
 
 typedef struct {
+    unsigned int flags;
+} BBoxSwitches;
+
+#define BBOX_ROOT     (1<<0)
+
+static Blt_SwitchSpec bboxSwitches[] = 
+{
+    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+        Blt_Offset(BBoxSwitches, flags), 0, BBOX_ROOT},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
     int mask;
 } ChildrenSwitches;
 
@@ -8994,8 +9007,8 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2 - x1 + 1));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2 - y1 + 1));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
@@ -9294,7 +9307,7 @@ CellActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellBboxOp --
  *
- *      pathName cell bbox cellSpec
+ *      pathName cell bbox cellName ?switches?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -9302,6 +9315,7 @@ static int
 CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
+    BBoxSwitches switches;
     Cell *cellPtr;
     Tcl_Obj *listObjPtr;
     TreeView *viewPtr = clientData;
@@ -9317,6 +9331,12 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (cellPtr == NULL) {
         return TCL_OK;
+    }
+    /* Process switches  */
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, bboxSwitches, objc - 4, objv + 4, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
     }
     x1 = cellPtr->colPtr->worldX;
     x2 = cellPtr->colPtr->worldX + cellPtr->colPtr->width;
@@ -9349,6 +9369,21 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         y1 = SCREENY(viewPtr, y1);
         x2 = SCREENX(viewPtr, x2);
         y2 = SCREENY(viewPtr, y2);
+    }
+    if (switches.flags & BBOX_ROOT) {
+        int rootX, rootY;
+
+        Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+        if (rootX < 0) {
+            rootX = 0;
+        }
+        if (rootY < 0) {
+            rootY = 0;
+        }
+        x1 += rootX;
+        y1 += rootY;
+        x2 += rootX;
+        y2 += rootY;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
@@ -9477,7 +9512,7 @@ CellDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
  *
- *      pathName cell focus ?cellSpec? 
+ *      pathName cell focus ?cellName? 
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -10028,8 +10063,6 @@ ColumnCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      This procedure is called to process a list of configuration
  *      options database, in order to reconfigure the one of more
  *      entries in the widget.
- *
- *        .h entryconfigure node node node node option value
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then

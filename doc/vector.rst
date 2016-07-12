@@ -13,8 +13,7 @@ Vector data object
 :Manual section: n
 :Manual group: BLT built-in commands
 
-.. contents:: Table of Contents
-
+.. include:: toc.rst
 
 SYNOPSIS
 ========
@@ -56,17 +55,17 @@ Individual points in the *vector* can be accessed via the *vector*'s array
 variable or TCL command.  You can reference points in the vector either by
 its integer, expression, a range, or a special keyword.
 
- *number*
+*number*
   The index is a integer that must lie within the current range of the
   vector, otherwise an error message is returned.  Normally the indices
   of a vector start from 0, but you can use the **offset** operation to
   change a *vector*\ 's indices.
 
- *expr*
+*expr*
   You can also use numeric expressions with indices (such
   as "$i+3").  The result of the expression must be an integer value.
 
- *keyword*
+*keyword*
   The following special non-numeric indices are available.
 
   **min**
@@ -79,7 +78,7 @@ its integer, expression, a range, or a special keyword.
      Adds a new point to the vector.  It is the index of the new
      last point in the vector. 
 
- *first*:\ *last*
+*first*:\ *last*
   A range of indices can be indicated by a colon (:).  *First* and *last*
   are integer indices.  *Last* must be greater than or equal to *first*. 
   If *first* isn't supplied the first point is assumed. If *last* isn't
@@ -92,21 +91,21 @@ VECTOR COMMAND OPERATIONS
   Creates a new vector *vecName*.  The **create** operation can be invoked
   in one of three forms:
 
-   **blt::vector create** ?\ *vecName*\ ?
-     This creates a new vector *vecName* which initially has no points.
-     If no *vecName* argument is given, then a name is generated in the
-     form "vector0", "vector1", etc.
+  **blt::vector create** ?\ *vecName*\ ?
+    This creates a new vector *vecName* which initially has no points.
+    If no *vecName* argument is given, then a name is generated in the
+    form "vector0", "vector1", etc.
 
-   **blt::vector create** *vecName*\ (*size*)
-     Creates a new vector *vecName* and sets the number of points.  The
-     points will be indexed starting from zero. The default value for the
-     points is "0.0".
+  **blt::vector create** *vecName*\ (*size*)
+    Creates a new vector *vecName* and sets the number of points.  The
+    points will be indexed starting from zero. The default value for the
+    points is "0.0".
 
-   **blt::vector create** *vecName*\ (*first*:*last*)
-     Creates a new vector *vecName* and sets the number of points.  The
-     points will be indexed *first* through *last*.  *First* and *last*
-     can be any integer value so long as *first* is less than *last*. The
-     default value for the points is "0.0".
+  **blt::vector create** *vecName*\ (*first*:*last*)
+    Creates a new vector *vecName* and sets the number of points.  The
+    points will be indexed *first* through *last*.  *First* and *last*
+    can be any integer value so long as *first* is less than *last*. The
+    default value for the points is "0.0".
 
   *VecName* must start with a letter and consist of letters, digits, or
   underscores.  You can automatically generate *vector* names using the
@@ -123,17 +122,17 @@ VECTOR COMMAND OPERATIONS
   Switches can be any of the following:
 
   **-command** *cmdName*
-     Maps a TCL command to *vecName*. The vector can be accessed using
-     *cmdName* and one of the *vector* instance operations.  A TCL command by
-     that name cannot already exist.  If *cmdName* is the empty string, no
-     command mapping will be made.
+    Maps a TCL command to *vecName*. The vector can be accessed using
+    *cmdName* and one of the *vector* instance operations.  A TCL command by
+    that name cannot already exist.  If *cmdName* is the empty string, no
+    command mapping will be made.
 
   **-variable** *varName*
-     Specifies the name of a TCL variable to be mapped to *vecName*. If
-     the variable already exists, it is first deleted, then recreated. 
-     If *varName* is the empty string, then no variable will be mapped.
-     You can also map a variable to the vector using the vector's 
-     **variable** operation.
+    Specifies the name of a TCL variable to be mapped to *vecName*. If
+    the variable already exists, it is first deleted, then recreated. 
+    If *varName* is the empty string, then no variable will be mapped.
+    You can also map a variable to the vector using the vector's 
+    **variable** operation.
 
   **-watchunset** *boolean*
     Indicates if *vecName* should automatically be destroyed if the
@@ -405,16 +404,16 @@ the command.  The operations available for vectors are listed below.
   the type of points to count. *ValueType* is one of the following:
 
   **empty**
-     Counts the number of empty points (i.e. where the value is NaN).
+    Counts the number of empty points (i.e. where the value is NaN).
      
   **nonempty**
-     Counts the number of non-empty point values.
+    Counts the number of non-empty point values.
 
   **nonzero**
-     Counts the number of non-zero point values.
+    Counts the number of non-zero point values.
   
   **zero**
-     Counts the number of zero point values.
+    Counts the number of zero point values.
 
 *vecName* **delete** ?\ *index* ... ?
   Deletes points from *vecName*.  *Index* is
@@ -462,7 +461,7 @@ the command.  The operations available for vectors are listed below.
   the real-valued results.
   
   **-imagpart** *vecName*
-   Specifies *vecName* to store the imaginary part transform.
+    Specifies *vecName* to store the imaginary part transform.
 
   **-noconstant**
 
@@ -471,14 +470,14 @@ the command.  The operations available for vectors are listed below.
     or 1/(N * Wss) for windowed data.
 
   **-bartlett** 
-   Specifies the use a Bartlett Window.
+    Specifies the use a Bartlett Window.
 
   **-delta** *number*
-   Specifies the ending index of values to export.  *Index* is vector
-   index. The default is to export values to the end of *vecName*.
+    Specifies the ending index of values to export.  *Index* is vector
+    index. The default is to export values to the end of *vecName*.
 
   **-frequencies** *vecName*
-   Specifies *vecName* to store the frequencies of the transform.
+    Specifies *vecName* to store the frequencies of the transform.
 
   Reference: This was contributed by Andrea Spinelli (spinellia@acm.org).
   
@@ -494,17 +493,17 @@ the command.  The operations available for vectors are listed below.
   type of points to consider. *ValueType* is one of the following:
 
   **empty**
-     Returns the indices of the empty points (i.e. where the value
-     is NaN).
+    Returns the indices of the empty points (i.e. where the value
+    is NaN).
      
   **nonempty**
-     Returns the indices of non-empty point values.
+    Returns the indices of non-empty point values.
 
   **nonzero**
-     Returns the indices non-zero point values.
+    Returns the indices non-zero point values.
   
   **zero**
-     Returns the indices of non-empty point values.
+    Returns the indices of non-empty point values.
 
 *vecName* **inversefft** *vecName* *vecName*
   Returns the discrete Fourier transform (DFT) of *vecName*, computed with
@@ -512,7 +511,7 @@ the command.  The operations available for vectors are listed below.
   the real-valued results.
   
   **-imagpart** *vecName*
-   Specifies *vecName* to store the imaginary part transform.
+    Specifies *vecName* to store the imaginary part transform.
 
   **-noconstant**
 
@@ -521,14 +520,14 @@ the command.  The operations available for vectors are listed below.
     or 1/(N * Wss) for windowed data.
 
   **-bartlett** 
-   Specifies the use a Bartlett Window.
+    Specifies the use a Bartlett Window.
 
   **-delta** *number*
-   Specifies the ending index of values to export.  *Index* is vector
-   index. The default is to export values to the end of *vecName*.
+    Specifies the ending index of values to export.  *Index* is vector
+    index. The default is to export values to the end of *vecName*.
 
   **-frequencies** *vecName*
-   Specifies *vecName* to store the frequencies of the transform.
+    Specifies *vecName* to store the frequencies of the transform.
 
   Reference: This was contributed by Andrea Spinelli (spinellia@acm.org).
 
@@ -584,14 +583,14 @@ the command.  The operations available for vectors are listed below.
     whenever *vecName* is updated.
 
   **now**
-   If any client notifications are currently pending, they are notified
-   immediately.
+    If any client notifications are currently pending, they are notified
+    immediately.
 
   **cancel**
-   Cancels pending notifications of clients using *vecName*.
+    Cancels pending notifications of clients using *vecName*.
 
   **pending**
-   Returns "1" if a client notification is pending, and "0" otherwise.
+    Returns "1" if a client notification is pending, and "0" otherwise.
 
 *vecName* **offset** ?\ *count*\ ?
   Offsets the indices of *vecName* by the amount specified by *count*.
@@ -614,12 +613,12 @@ the command.  The operations available for vectors are listed below.
   *Switches* may be any of the following:
 
   **-from** *index*
-   Specifies the starting index of values to print.  *Index* is vector
-   index. The default is to print values from 0.
+    Specifies the starting index of values to print.  *Index* is vector
+    index. The default is to print values from 0.
 
   **-to** *index*
-   Specifies the ending index of values to print.  *Index* is vector
-   index. The default is to print values to the end of *vecName*.
+    Specifies the ending index of values to print.  *Index* is vector
+    index. The default is to print values to the end of *vecName*.
 
 *vecName* **random** ?\ *seed*\ ?
   Generates a random value for each point in *vecName*.  *Seed* is a
@@ -682,24 +681,24 @@ the command.  The operations available for vectors are listed below.
   can be any of the following:
   
   **-decreasing**
-   Sort the points from highest to lowest.  By default points are
-   sorted lowest to highest.
+    Sort the points from highest to lowest.  By default points are
+    sorted lowest to highest.
 
   **-indices** 
-   Returns the indices of the sorted points instead of their values.
-   Returns a list of the indices from the sorted points.  The points of
-   *vecName* and *destName* are not rearranged.
+    Returns the indices of the sorted points instead of their values.
+    Returns a list of the indices from the sorted points.  The points of
+    *vecName* and *destName* are not rearranged.
 
-  **-reverse** *
-   Same as the **-decreasing** switch above.
+  **-reverse** 
+    Same as the **-decreasing** switch above.
 
   **-unique** 
-   Returns the unique values.  
+    Returns the unique values.  
 
   **-values** 
-   Returns a list of the values from the sorted points.  For each point
-   there will be as many values as vectors. The points of *vecName* and
-   *destName* are not rearranged.
+    Returns a list of the values from the sorted points.  For each point
+    there will be as many values as vectors. The points of *vecName* and
+    *destName* are not rearranged.
 
 *vecName* **value get** *index* 
   Returns the value at the point in *vecName* indexed by *index*. *Index*
@@ -718,21 +717,21 @@ the command.  The operations available for vectors are listed below.
   of the following:
   
   **-empty** *value*
-   Specifies the a value for empty points.  By default, a NaN is
-   written for each empty point.  *Value* is a real number.
+    Specifies the a value for empty points.  By default, a NaN is
+    written for each empty point.  *Value* is a real number.
 
   **-format** *fmtString*
-   Specifies how to format each value in *vecName*.  *FmtString* is a
-   **printf**\ -like format string. There can be only one specifier in
-   *fmtString*.
+    Specifies how to format each value in *vecName*.  *FmtString* is a
+    **printf**\ -like format string. There can be only one specifier in
+    *fmtString*.
 
   **-from** *index*
-   Specifies the starting index of values to print.  *Index* is vector
-   index. The default is 0.
+    Specifies the starting index of values to print.  *Index* is vector
+    index. The default is 0.
 
   **-to** *index*
-   Specifies the ending index of values to print.  *Index* is vector
-   index. The default is to print values to the end of *vecName*.
+    Specifies the ending index of values to print.  *Index* is vector
+    index. The default is to print values to the end of *vecName*.
 
 *vecName* **variable** *varName*
   Maps a TCL variable to *vecName*, creating another means for accessing
@@ -1234,4 +1233,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-               
+The **binread** operation was contributed by Harold Kirsch.
+
+The **fft** and **inversefft** operations were contributed by Andrea
+Spinelli (spinellia@acm.org).

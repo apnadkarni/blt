@@ -74,8 +74,9 @@ fields.  There are several styles of cells (the default is a text box):
    Displays an image.
    
 The data fields at each node can be displayed in tabular columns.  By
-default, data fields are text box column You can control the color, font,
-etc. of each entry.  Any entry label or data field can be edited in-place.
+default, data fields are styled as text boxes. You can control the color,
+font, etc. of each entry.  Any entry label or data field can be edited
+in-place.
 
 TREE DATA OBJECT
 ----------------
@@ -207,20 +208,21 @@ by id or by tag (see the **blt::tree** manual for details). In addition the
 
 REFERENCING COLUMNS
 -------------------
+FIXME
 
   **active**
     This is the node where the mouse pointer is currently located.  When a
     node is active, it is drawn using its active icon (see the
     **-activeicon** option).  The **active** id is changes when
-    you move the mouse pointer over another node or by using the **entry
+    you move the mouse pointer over another node or by using the **column
     activate** operation. Note that there can be only one active node at a
     time.
 
   **current**
-    The is the node where the mouse pointer is currently located.  Unlike
+    The is the node where the mouse pointer is currently located.  
 
   **treeView**
-    The is the node where the mouse pointer is currently located.  Unlike
+    The is the node where the mouse pointer is currently located.  
 
   *index*
     The index of the column.  Columns are number from zero. Add and deleting
@@ -229,6 +231,32 @@ REFERENCING COLUMNS
   *name*
      The name of the column.
      
+REFERENCING CELLS
+-----------------
+
+Cells within the *treeview* widget can be specified as a TCL list of entry
+and column indices or by one of the special identifiers below.
+
+  **active** This is the cell where the mouse pointer is currently located.
+    When a cell is active, it is drawn using its active colors.  The
+    **active** id is changes when you move the mouse pointer over another
+    cell or by using the **cell activate** operation. Note that there can
+    be only one active cell at a time.
+
+  **current**
+    This is the cell that was last active.
+
+  **focus**
+    The cell that currently has focus.  When a cell has focus, it receives
+    key events.  You can change the focus using the **cell focus**
+    operation.
+
+  **@**\ *x*\ **,**\ *y*
+    Indicates the cell that covers the point in the treeview window
+    specified by *x* and *y* (in pixel coordinates).  If no
+    part of a cell covers that point, then "-1" returned as the index.
+
+
 DATA FIELDS
 -----------
 
@@ -263,64 +291,52 @@ to that operation.  The general form is:
 *Operation* and the *arg*s determine the exact behavior of the
 command.  The following operation are available for *treeview* widgets:
 
-*pathName* **bbox** ?**-screen**? *tagOrId...*
-  Returns a list of 4 numbers, representing a bounding box of around the
-  specified entries. The entries is given by one or more *tagOrId*
-  arguments.  If the **-screen** flag is given, then the x-y coordinates of
-  the bounding box are returned as screen coordinates, not virtual
-  coordinates. Virtual coordinates start from "0" from the root node.  The
-  returned list contains the following values.
-
-  *x* 
-     X-coordinate of the upper-left corner of the bounding box.
-
-  *y*
-     Y-coordinate of the upper-left corner of the bounding box.
-
-  *width*
-     Width of the bounding box.
-
-  *height*
-     Height of the bounding box.
-
-*pathName* **bind** *tagName* ?\ *sequence*\? ?\ *command*\ ?
-  Associates *command* with *tagName* such that whenever the event sequence
-  given by *sequence* occurs for a node with this tag, *command* will be
+*pathName* **bbox** ?\ **-screen**\ ? *tagOrId...*
+  Returns of list of four numbers describing the bounding box of the
+  specified entries *tagOrId*.  The numbers represent the x and y root
+  coordinates of two opposite corners of the box.  If the **-screen** flag
+  is given, then the x-y coordinates of the bounding box are returned as
+  screen coordinates, not virtual world coordinates. Virtual coordinates
+  start from "0" from the root node.
+  
+*pathName* **bind** *tagName* ?\ *sequence*\? ?\ *cmdString*\ ?
+  Associates *cmdString* with *tagName* such that whenever the event sequence
+  given by *sequence* occurs for a node with this tag, *cmdString* will be
   invoked.  The syntax is similar to the **bind** command except that it
   operates on **treeview** entries, rather than widgets. See the **bind**
   manual entry for complete details on *sequence* and the substitutions
-  performed on *command* before invoking it.
+  performed on *cmdString* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *sequence* and *tagName*.  If the first
-  character of *command* is "+" then *command* augments an existing binding
-  rather than replacing it.  If no *command* argument is provided then the
+  character of *cmdString* is "+" then *cmdString* augments an existing binding
+  rather than replacing it.  If no *cmdString* argument is provided then the
   command currently associated with *tagName* and *sequence* (it's an error
-  occurs if there's no such binding) is returned.  If both *command* and
+  occurs if there's no such binding) is returned.  If both *cmdString* and
   *sequence* are missing then a list of all the event sequences for which
   bindings have been defined for *tagName*.
 
 *pathName* **button activate** *tagOrId*
   Designates the node given by *tagOrId* as active.  
-  When a node is active it's entry is drawn using its active icon 
+  When a node is active its entry is drawn using its active icon 
   (see the **-activeicon** option). 
   Note that there can be only one active entry at a time.
   The special id **active** indicates the currently active node.
 
-*pathName* **button bind** *tagName* ?\ *sequence*\ ? ?\ *command*\ ?
-  Associates *command* with *tagName* such that whenever the event sequence
+*pathName* **button bind** *tagName* ?\ *sequence*\ ? ?\ *cmdString*\ ?
+  Associates *cmdString* with *tagName* such that whenever the event sequence
   given by *sequence* occurs for an button of a node entry with this tag,
-  *command* will be invoked.  The syntax is similar to the **bind** command
+  *cmdString* will be invoked.  The syntax is similar to the **bind** command
   except that it operates on **treeview** buttons, rather than widgets. See
   the **bind** manual entry for complete details on *sequence* and the
-  substitutions performed on *command* before invoking it.
+  substitutions performed on *cmdString* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *sequence* and *tagName*.  If the first
-  character of *command* is "+" then *command* augments an existing binding
-  rather than replacing it.  If no *command* argument is provided then the
+  character of *cmdString* is "+" then *cmdString* augments an existing binding
+  rather than replacing it.  If no *cmdString* argument is provided then the
   command currently associated with *tagName* and *sequence* (it's an error
-  occurs if there's no such binding) is returned.  If both *command* and
+  occurs if there's no such binding) is returned.  If both *cmdString* and
   *sequence* are missing then a list of all the event sequences for which
   bindings have been defined for *tagName*.
 
@@ -329,7 +345,7 @@ command.  The following operation are available for *treeview* widgets:
   *Option* may have any of the values accepted by the **configure**
   operation described below.
 
-*pathName* **button configure** ?*option*? ?\ *value*\ ? ?\ *option* *value* ... ?
+*pathName* **button configure** ?\ *option*\ ? ?\ *value*\ ? ?\ *option* *value* ... ?
   Query or modify the configuration options of the widget.  If no *option*
   is specified, returns a list describing all of the available options for
   *pathName* (see **Tk_ConfigureInfo** for information on the format of
@@ -384,6 +400,101 @@ command.  The following operation are available for *treeview* widgets:
   have any of the values accepted by the **configure** operation described
   below.
 
+*pathName* **cell activate** ?\ *cellName*\ ?
+  Designates the cell given by *cellName* as active.  
+  When a cell is active its entry is drawn using its active icon 
+  (see the **-activeicon** option). 
+  Note that there can be only one active entry at a time.
+  The special id **active** indicates the currently active node.
+
+*pathName* **cell bbox** *cellName*  ?\ *switches* ... ?
+  Returns of list of four numbers describing the bounding box of the
+  *cellName*.  The numbers represent the x and y coordinates of two
+  opposite corners of the box.  *Switches* can be one of the following:
+
+  **-root**
+    Return the bounding box coordinates in root screen coordinates instead
+    of relative to the *treeview* window.
+
+*pathName* **cell cget** *cellName* *option*
+  Returns the current value of the cell configuration option given by
+  *option*.  *CellName* is the name of the cell and may not refer to more
+  than one cell. *Option* may have any of the values accepted by the **cell
+  configure** operation described below.
+
+*pathName* **cell configure** *cellName* ?\ *option*\ ? ?\ *value*\ ? ?\ *option* *value* ... ?
+  Query or modify the configuration options of the cell.  If no *option*
+  is specified, returns a list describing all of the available options for
+  *cellName* (see **Tk_ConfigureInfo** for information on the format of
+  this list).  If *option* is specified with no *value*, then the command
+  returns a list describing the one named option (this list will be
+  identical to the corresponding sublist of the value returned if no
+  *option* is specified).  If one or more *option*-*value* pairs are
+  specified, then the command modifies the given widget option(s) to have
+  the given value(s); in this case the command returns an empty string.
+  *Option* and *value* are described below.
+
+  **-state** *stateName*
+    Specifies one of three states for *cellName*: 
+
+    **normal**
+      In normal state *cellName* is displayed using the **-foreground**
+      **-background**, and **-relief**  options.
+
+    **disabled**
+      Disabled state means that *cellName* should be insensitive: the default
+      bindings will not activate or invoke the item.  In this state
+      *cellName* is displayed according to the **-disabledforeground** and
+      the **-disabledbackground** options of its style.
+
+    **posted**
+      The menu associated with *cellName* is posted.
+      *CellName* is displayed according to the **-postedforeground**,
+      the **-postedbackground**, and **-postrelief**  options.
+
+    The default is "normal".
+
+  **-style** *styleName*
+    Specifies the style of *cellName*. *StyleName* is the name of a
+    previously created style (see the **style create** operation).
+
+*pathName* **cell deactivate** 
+  Redisplays all cells using their normal colors.  This typically is used
+  by widget bindings to un-highlight cells as the pointer is moved over the
+  widget.
+
+*pathName* **cell focus** ?\ *cellName*\ ?
+  Sets or gets focus for the cell.  If no *cellName* argument is present,
+  the name of the cell that currently has focus is returned.  If no
+  cell has focus, then "" is returned.  Otherwise *cellName* is the
+  name of the cell to has focus set.
+  
+*pathName* **cell identify** *cellName* *rootX* *rootY*
+  Returns the name of the portion of the cell that the pointer is over.
+  *RootX* and *rootY* are root coordinates of the pointer.  This is for
+  cell styles that are **checkbox** or **combobox**.  It identifies if the
+  pointer is over the cell's button or its text.
+  
+*pathName* **cell index** *cellName*
+  Returns the index of *cellName*. *CellName* is the name of a cell.
+  If the cell does not exist, "-1" is returned.
+
+*pathName* **cell invoke** *cellName*
+  Selects *cellName* and invokes the TCL command associate with the cell
+  via its style (see the **-style** cell option). *CellName* is the name
+  of a cell.
+
+*pathName* **cell see** *cellName*
+  Adjusts the view of entries so that the cell given by *cellName* is
+  visible in the widget window.  
+
+*pathName* **cell style** *cellName*
+  Returns the name of the style used by *cellName*.
+  
+*pathName* **cell writable** *cellName*
+  Indicates if *cellName* can be edited according to its current style.
+  Returns "1" is the cell is writable, "0" otherwise.
+  
 *pathName* **close** ?\ **-recurse**\ ? *entryName* ... ?
   Closes the entry specified by *entryName*.  In addition, if a TCL
   script was specified by the **-closecommand** option, it is
@@ -490,6 +601,7 @@ command.  The following operation are available for *treeview* widgets:
     column should appear relative to the widget; for example, "raised"
     means the column should appear to protrude.  The default is "flat".
 
+FIXME
   **-rulecolor** *colorName*
 
   **-ruledashes** *dashlist*
@@ -602,11 +714,11 @@ command.  The following operation are available for *treeview* widgets:
 
   **-activebackground** *colorName*
     Sets the background color for active entries.  A node is active when
-    the mouse passes over it's entry or using the **activate** operation.
+    the mouse passes over its entry or using the **activate** operation.
 
   **-activeforeground** *colorName*
     Sets the foreground color of the active node.  A node is active when
-    the mouse passes over it's entry or using the **activate** operation.
+    the mouse passes over its entry or using the **activate** operation.
 
   **-activeicons** *images*
     Specifies images to be displayed for an entry's icon when it is
@@ -880,24 +992,27 @@ command.  The following operation are available for *treeview* widgets:
   are given, then the ids of all the children in that range are returned.
   Otherwise the ids of all children are returned.
 
-*pathName* **entry configure** ?\ *option*\ ? ?\ *value*\? ?\ *option* *value* ... ?
-  Query or modify the configuration options of the widget.  If no *option*
-  is specified, returns a list describing all of the available options for
-  *pathName* (see **Tk_ConfigureInfo** for information on the format of
-  this list).  If *option* is specified with no *value*, then the command
-  returns a list describing the one named option (this list will be
+*pathName* **entry configure** *entryName* ?\ *option*\ ? ?\ *value*\? ?\ *option* *value* ... ?
+  Query or modify the configuration options of the *treeview* entry.  If no
+  *option* is specified, returns a list describing all of the available
+  options for *entryName* (see **Tk_ConfigureInfo** for information on the
+  format of this list).  If *option* is specified with no *value*, then the
+  command returns a list describing the one named option (this list will be
   identical to the corresponding sublist of the value returned if no
-  *option* is specified).  If one or more *option*-*value* pairs are
-  specified, then the command modifies the given widget option(s) to have
-  the given value(s); in this case the command returns an empty string.
-  *Option* and *value* are described below:
+  *option* is specified). *EntryName* is a tag of id, but may not refer to
+  more than one entry.
+
+  If one or more *option*-*value* pairs are specified, then the command
+  modifies the given entry option(s) to have the given value(s); in this
+  case the command returns an empty string.  In this case, *entryName* may
+  refer to more than one entry.  *Option* and *value* are described below:
 
   **-bindtags** *tagList*
-    Specifies the binding tags for entries.  *TagList* is a list of binding
-    tag names.  The tags and their order will determine how events are
-    handled for entries.  Each tag in the list matching the current event
-    sequence will have its TCL command executed.  The default value is
-    "all".
+    Specifies the binding tags for *entryName*.  *TagList* is a list of
+    binding tag names.  The tags and their order will determine how events
+    are handled for entries.  Each tag in the list matching the current
+    event sequence will have its TCL command executed.  The default value
+    is "all".
 
   **-button** *how*
     Indicates whether a button should be displayed on the left side of the
@@ -905,10 +1020,10 @@ command.  The following operation are available for *treeview* widgets:
     button is automatically displayed if the node has children.  This is
     the default.
 
-  **-closecommand** *commandString*
+  **-closecommand** *cmdString*
     Specifies a TCL script to be invoked when the node is closed.  This
     overrides the global **-closecommand** option for this entry.  The
-    default is "".  Percent substitutions are performed on *commandString*
+    default is "".  Percent substitutions are performed on *cmdString*
     before it is executed.  The following substitutions are valid:
 
     **%W**
@@ -926,7 +1041,7 @@ command.  The following operation are available for *treeview* widgets:
     **%%**
       Translates to a single percent.
 
-  **-command** *commandString*
+  **-command** *cmdString*
 
   **-data** *string*
     Sets data fields for the node.  *String* is a list of name-value pairs
@@ -950,10 +1065,10 @@ command.  The following operation are available for *treeview* widgets:
     Sets the text for the entry's label.  If not set, this defaults to the
     name of the node. The default is "".
 
-  **-opencommand** *commandString*
+  **-opencommand** *cmdString*
     Specifies a TCL script to be invoked when the entry is opened.  This
     overrides the widget's **-opencommand** option for this node.  The
-    default is "".  Percent substitutions are performed on *commandString*
+    default is "".  Percent substitutions are performed on *cmdString*
     before it is executed.  The following substitutions are valid:
 
     **%W**
@@ -1146,7 +1261,7 @@ command.  The following operation are available for *treeview* widgets:
   **--**
     Indicates the end of flags.
 
-*pathName* **index** ?\ **-at**\ ?**-path**? *tagOrId*? *string* 
+*pathName* **index** ?\ **-at**\ ?\ **-path**\ ? *tagOrId*? *string* 
   Returns the id of the node specified by *string*.  *String* may be a tag
   or node id.  Some special ids are normally relative to the node that has
   focus.  The **-at** flag lets you select another node.
@@ -1217,7 +1332,7 @@ command.  The following operation are available for *treeview* widgets:
   produce the effect of dragging the list at high speed through the window.
   The return value is an empty string.
 
-*pathName* **see** ?**-anchor** *anchor*? *tagOrId*
+*pathName* **see** ?\ **-anchor** *anchor*\ ? *tagOrId*
   Adjusts the view of entries so that the node given by *tagOrId* is
   visible in the widget window.  It is an error if **tagOrId** is a
   tag that refers to more than one node.  By default the node's entry
@@ -1321,7 +1436,7 @@ command.  The following operation are available for *treeview* widgets:
   **--**
     Indicates the end of flags.
 
-*pathName* **sort auto** ?*boolean*
+*pathName* **sort auto** ?\ *boolean*\ ?
   Turns on/off automatic sorting of node entries.  If *boolean* is
   true, entries will be automatically sorted as they are opened,
   closed, inserted, or deleted.  If no *boolean* argument is
@@ -1332,7 +1447,7 @@ command.  The following operation are available for *treeview* widgets:
   *Option* may have any of the values accepted by the **sort configure**
   operation described below.
 
-*pathName* **sort configure** ?*option*? ?\ *value*\ ? ?\ *option* *value* ... ?
+*pathName* **sort configure** ?\ *option*\ ? ?\ *value*\ ? ?\ *option* *value* ... ?
   Query or modify the sorting configuration options of the widget.  If no
   *option* is specified, returns a list describing all of the available
   options for *pathName* (see **Tk_ConfigureInfo** for information on the
@@ -1399,7 +1514,7 @@ command.  The following operation are available for *treeview* widgets:
   Removes the tag *string* from all entries.  It's not an error if no
   entries are tagged as *string*.
 
-*pathName* **tag names** ?*id*?
+*pathName* **tag names** ?\ *id*\ ?
   Returns a list of tags used.  If an *id* argument
   is present, only those tags used by the node designated by *id* 
   are returned.
@@ -1408,7 +1523,7 @@ command.  The following operation are available for *treeview* widgets:
   Returns a list of ids that have the tag *string*.  If no node
   is tagged as *string*, then an empty string is returned.
 
-*pathName* **text** *operation* ?*args*?
+*pathName* **text** *operation* ?\ *args*\ ?
   This operation is used to provide text editing for cells (data fields in
   a column) or entry labels.  It has several forms, depending on
   *operation*:
@@ -2049,7 +2164,7 @@ to display.
     .tv column insert end "mode"
 
 The column title is displayed at the top of the column.  By default,
-it's is the field name.  You can override this using the column's
+it is the field name.  You can override this using the column's
 **-title** option.
 
   ::

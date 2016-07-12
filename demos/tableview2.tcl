@@ -133,12 +133,12 @@ proc FormatMode { w row col } {
 
 set view .ss.view
 
-set top [file normalize $env(HOME)]
+set top [file normalize $env(HOME)/src/blt]
 set trim "$top"
 
 set table [blt::datatable create]    
-puts stderr [time { $table dir $top -pattern "*"}]
-puts stderr [time { $table dir $top -pattern ".*"}]
+puts stderr [time { $table dir $top -pattern "*" -fields all }]
+#puts stderr [time { $table dir $top -pattern ".*" -fields all}]
 
 blt::scrollset .ss \
     -window $view \

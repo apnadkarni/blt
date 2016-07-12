@@ -831,11 +831,7 @@ proc blt::TreeView::PostComboBoxMenu { w cell } {
 	[list blt::TreeView::ImportFromComboMenu $w $_private(posting) $menu]
 
     # Post the combo menu at the bottom of the cell.
-    foreach { x1 y1 x2 y2 } [$w cell bbox $cell] break
-    incr x1 [winfo rootx $w]
-    incr y1 [winfo rooty $w]
-    incr x2 [winfo rootx $w]
-    incr y2 [winfo rooty $w]
+    foreach { x1 y1 x2 y2 } [$w cell bbox $cell -root] break
     $menu post -align right -box [list $x2 $y2 $x1 $y1]
     blt::grab push $menu 
     bind $menu <Unmap> [list blt::TreeView::UnpostComboBoxMenu $w]
@@ -919,11 +915,7 @@ proc blt::TreeView::PostEditor { w cell } {
     foreach { row col } [$w cell index $cell] break
     set value [$tree get $row $col ""]
     # Post the editor over the cell.
-    foreach { x1 y1 x2 y2 } [$w cell bbox $cell] break
-    incr x1 [winfo rootx $w] 
-    incr y1 [winfo rooty $w]
-    incr x2 [winfo rootx $w]
-    incr y2 [winfo rooty $w]
+    foreach { x1 y1 x2 y2 } [$w cell bbox $cell -root] break
     $editor post -align right -box [list $x1 $y1 $x2 $y2] \
         -command [list blt::TreeView::ImportFromEditor $tree $row $col] \
         -text $value

@@ -24,20 +24,20 @@ DESCRIPTION
 
 The *filmstrip* widget displays a scroll-able vertical or horizontal strip
 of embedded Tk widgets.  Each child widget is contained in a *filmstrip*
-frame (different from the Tk frame widget). Frames are optionally
-separated by grips (handles) that appear as a border between frames.  It is
+frame (different from the Tk frame widget). Frames are optionally separated
+by grips (handles) that appear as a border between frames.  It is
 positioned on the left (horizontal arrangement) or bottom (vertical
-arrangement) of the frame.  
+arrangement) of the frame.
 
 INTRODUCTION
 ------------
 
-The *filmstrip* widget displays embedded Tk widgets as a strip of *filmstrip*
-frames.  The frames may be arranged horizontally or vertically.  Frames
-have optional grips (handles) that appear as a border between frames.  They
-can be used to slide frames left-to-right (horizontal arrangement) or
-top-to-bottom (vertical arrangement).  The user can adjust the size of a
-frame by using the mouse or keyboard on the handle.
+The *filmstrip* widget displays embedded Tk widgets as a strip of
+*filmstrip* frames.  The frames may be arranged horizontally or vertically.
+Frames have optional grips (handles) that appear as a border between
+frames.  They can be used to slide frames left-to-right (horizontal
+arrangement) or top-to-bottom (vertical arrangement).  The user can adjust
+the size of a frame by using the mouse or keyboard on the handle.
 
 The *filmstrip* widget can also be used to create a wizard-like interface
 where frames contain are a sequence of dialogs that lead the user through a
@@ -45,8 +45,8 @@ series of well-defined tasks.  In this case the size of the *filmstrip* widget
 is the size of a frame.  If the *filmstrip* widget is resized the frame
 containing the dialog is also resized.
 
-The embedded Tk widgets of a *filmstrip* must be children of the *filmstrip*
-widget.
+The embedded Tk widgets of a *filmstrip* must be children of the
+*filmstrip* widget.
 
 SYNTAX
 ------
@@ -172,10 +172,11 @@ command.  The following operations are available for *filmstrip* widgets:
     Return the bounding box coordinates in root screen coordinates instead
     of relative to the *filmstrip* window.
     
-*pathName* **cget** *option* Returns the current value of the widget
-  configuration option given by *option*. *Option* may have any of the
-  values accepted by the **configure** operation. They are described in the
-  **configure** operation below.
+*pathName* **cget** *option*
+  Returns the current value of the widget configuration option given by
+  *option*. *Option* may have any of the values accepted by the
+  **configure** operation. They are described in the **configure**
+  operation below.
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
   Queries or modifies the configuration options of the *filmstrip* widget.
@@ -273,8 +274,8 @@ command.  The following operations are available for *filmstrip* widgets:
 
   **-orient** *orientation*
     Specifies the orientation of the *filmstrip*.  *Orientation* may be
-    "vertical" (frames run left to right) or "horizontal" (frames run
-    top to bottom).  The default is "horizontal".
+    "vertical" (frames run left to right) or "horizontal" (frames run top
+    to bottom).  The default is "horizontal".
 
   **-relheight** *number*
     Specifies the relative height of frames to the *filmstrip* window.
@@ -462,9 +463,9 @@ command.  The following operations are available for *filmstrip* widgets:
     refer to more than one frame.  Tags should not be the same as labels or
     the non-numeric indices.  The default is "".
 
-  **-takefocus** *bool* 
+  **-takefocus** *boolean* 
     Provides information used when moving the focus from window to window
-    via keyboard traversal (e.g., Tab and Shift-Tab).  If *bool* is "0",
+    via keyboard traversal (e.g., Tab and Shift-Tab).  If *boolean* is "0",
     this means that this grip window should be skipped entirely during
     keyboard traversal.  "1" means that the this frame's grip window should
     always receive the input focus.  An empty value means that the

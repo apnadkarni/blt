@@ -23,13 +23,13 @@ SYNOPSIS
 
 **blt::winop map** ? *windowName* ... ?
 
-**blt::winop move** *windowName* *x* *y*
+**blt::winop move** *windowName* *dx* *dy*
 
 **blt::winop query** 
 
 **blt::winop raise** ?\ *windowName* ... ?
 
-**blt::winop top** *x* *y*
+**blt::winop top** *rootX* *rootY*
 
 **blt::winop tree** *windowName* *treeName*
 
@@ -66,9 +66,15 @@ REFERENCING WINDOWS
 
 Windows can be referenced by their path name if they are a Tk window, or
 their Window ID if they are a window belonging to another application.
-Tk window path names always start with a period (such as ".top"), while
-Window IDs are prefixed by "0x" (such as "0xc00051").
-  
+
+*pathName*
+  Tk pathname of the a widget.  These windows are internal to the the
+  program. *PathName* is a Tk pathname. It will always start with a
+  period (such as ".top").
+
+*hexNumber*
+  A window ID of a window belonging to another application.  *HexNumber*
+  is a window id. It must are prefixed by "0x" (such as "0xc00051").
 
 OPERATIONS
 ----------
@@ -89,11 +95,11 @@ The following operations are available for the **blt::winop** command:
   the screen.  If *windowName* is already mapped, this command has no
   effect.
 
-**blt::winop move** *windowName* *x* *y*
-  Move *windowName* to the screen location specified by *x* and *y*.  *X*
-  and *y* are screen distances. They may be in any of the forms acceptable
-  to **Tk_GetPixels**.  Negative *x* values move the window left. Negative
-  *y* values move the window up.
+**blt::winop move** *windowName* *dx* *dy*
+  Move *windowName* to the screen location specified by *dx* and *dy*.
+  *Dx* and *dy* are screen distances. They may be in any of the forms
+  acceptable to **Tk_GetPixels**.  Negative *dx* values move the window
+  left. Negative *dy* values move the window up.
 
 **blt::winop query** 
   Returns the position of the mouse pointer.  This command returns a list
@@ -105,10 +111,10 @@ The following operations are available for the **blt::winop** command:
   *WindowName* must be the path name of a Tk window or a numeric
   window Id.  This command returns the empty string.
 
-**blt::winop top** *x* *y*
+**blt::winop top** *rootX* *rootY*
   Returns the pathname or window ID of the topmost window at the given
-  screen location. *X* and *y* are screen coordinates relative to the the
-  root window.  If no window is at the location, "" is returned.
+  screen location. *RootX* and *rootY* are screen coordinates relative to
+  the the root window.  If no window is at the location, "" is returned.
 
 **blt::winop tree** *windowName* *treeName*
   Fills the BLT tree object *treeName* with the window hierarchy starting
@@ -138,7 +144,7 @@ The following operations are available for the **blt::winop** command:
 EXAMPLE
 -------
 
- ::
+  ::
 
     package require BLT
 

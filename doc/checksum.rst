@@ -23,7 +23,7 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-This **blt::checksum** command provides a utility for computing a checksum
+This **blt::checksum** command lets you compute MD5 or CRC-32 checksums
 given either a string or file.
 
 SYNTAX
@@ -45,7 +45,7 @@ SYNTAX
     of a file name (such as "@stdin").
 
 **blt::checksum md5** ?\ *switches* ... ?
-  Computes the md5 hash. A 32 character hexidecimal string is returned
+  Computes the MD5 hash. A 32 character hexidecimal string is returned
   representing the checksum.  *Switches* control how the data is parsed.
   Either the **-file** or **-data** switch must be given, but not both. The
   following switches are available.
@@ -61,9 +61,8 @@ SYNTAX
 EXAMPLE
 -------
 
-You supply data use wish to checksum to the **blt::checksum** command with
-either the **-data** or **-file** switches.  One of these switches must be
-used.
+You supply data to checksum to the **blt::checksum** command with either
+the **-data** or **-file** switches.  One of these switches must be used.
 
   ::
 

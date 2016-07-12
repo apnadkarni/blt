@@ -173,7 +173,7 @@ The following operations are available for scrollset widgets:
   **-xscrollincrement** *numPixels*  
     Sets the horizontal scrolling distance. The default is 20 pixels.
 
-  **-xviewcommand** *command*  
+  **-xviewcommand** *cmdPrefix*  
     Sets the width of the 3-D border around the outside edge of the widget.
     The **-relief** option determines how the border is to be drawn.  The
     default is "0".
@@ -192,7 +192,7 @@ The following operations are available for scrollset widgets:
   **-yscrollincrement** *numPixels*  
     Sets the vertical scrolling distance. The default is 20 pixels.
 
-  **-yviewcommand** *command*  
+  **-yviewcommand** *cmdPrefix*  
     Sets the width of the 3-D border around the outside edge of the widget.  The
     **-relief** option determines how the border is to be drawn.  The default is
     "0".

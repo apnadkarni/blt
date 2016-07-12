@@ -953,7 +953,7 @@ the command.  The operations available for *datatables* are listed below.
     *tableName* will not be rearranged.  A list of the row values
     will be returned instead.
 
-*tableName* **trace cell** *row* *column* *ops* *command*
+*tableName* **trace cell** *row* *column* *ops* *cmdPrefix*
   Registers a command to be invoked when the cell (designated by *row* and
   *column*) value is read, written, or unset. *Row* and *column* may be a
   label, index, or tag and may refer to multiple rows (example: "all").
@@ -961,36 +961,36 @@ the command.  The operations available for *datatables* are listed below.
   more of the following letters:
 
   **r**
-    Invoke *command* whenever the cell value is read. 
+    Invoke *cmdPrefix* whenever the cell value is read. 
   **w**
-    Invoke *command* whenever the cell value is written.  
+    Invoke *cmdPrefix* whenever the cell value is written.  
   **c**
-    Invoke *command* whenever the cell value is created.  This happens
+    Invoke *cmdPrefix* whenever the cell value is created.  This happens
     when the cell was previously empty.
   **u** 
-    Invoke *command* whenever the cell value is unset.  
+    Invoke *cmdPrefix* whenever the cell value is unset.  
 
-  *Command* is a TCL command prefix.  The traced row index, column index
+  *CmdPrefix* is a TCL command prefix.  The traced row index, column index
   and the operation letter are appended to the command before it is
   invoked.
 
-*tableName* **trace column** *column* *ops* *command*
+*tableName* **trace column** *column* *ops* *cmdPrefix*
   Registers a command to be invoked any cell in *column* is read,
   written, or unset. *Column* may be a label, index, or tag and may refer
   to multiple columns (example: "all").  *Ops* indicates which operations
   are of interest, and consists of one or more of the following letters:
 
   **r**
-    Invoke *command* whenever the cell value is read. 
+    Invoke *cmdPrefix* whenever the cell value is read. 
   **w**
-    Invoke *command* whenever the cell value is written.  
+    Invoke *cmdPrefix* whenever the cell value is written.  
   **c**
-    Invoke *command* whenever the cell value is created.  This happens
+    Invoke *cmdPrefix* whenever the cell value is created.  This happens
     when the cell was previously empty.
   **u** 
-    Invoke *command* whenever the cell value is unset.  
+    Invoke *cmdPrefix* whenever the cell value is unset.  
 
-  *Command* is a TCL command prefix.  The traced row index, column index
+  *CmdPrefix* is a TCL command prefix.  The traced row index, column index
   and the operation letter are appended to the command before it is
   invoked.
 
@@ -1009,23 +1009,23 @@ the command.  The operations available for *datatables* are listed below.
   then any trace name matching one of the patterns is returned. *Pattern*
   is a glob-style pattern.
    
-*tableName* **trace row** *row* *how* *command*
+*tableName* **trace row** *row* *how* *cmdPrefix*
   Registers a command when any cell in *row* is read, written, or
   unset. *Row* may be a label, index, or tag and may refer to multiple rows
   (example: "all").  *Ops* indicates which operations are of interest, and
   consists of one or more of the following letters:
 
   **r**
-    Invoke *command* whenever the cell value is read. 
+    Invoke *cmdPrefix* whenever the cell value is read. 
   **w**
-    Invoke *command* whenever the cell value is written.  
+    Invoke *cmdPrefix* whenever the cell value is written.  
   **c**
-    Invoke *command* whenever the cell value is created.  This happens
+    Invoke *cmdPrefix* whenever the cell value is created.  This happens
     when the cell was previously empty.
   **u** 
-    Invoke *command* whenever the cell value is unset.  
+    Invoke *cmdPrefix* whenever the cell value is unset.  
 
-  *Command* is a TCL command prefix.  The traced row index, column index
+  *CmdPrefix* is a TCL command prefix.  The traced row index, column index
   and the operation letter are appended to the command before it is
   invoked.
 
@@ -1035,7 +1035,7 @@ the command.  The operations available for *datatables* are listed below.
   to multiple rows or columns (example "all").  When a value
   is unset the cell becomes empty.
   
-*tableName* **watch column**  *column* ?\ *flags* ... ? *command*
+*tableName* **watch column**  *column* ?\ *flags* ... ? *cmdPrefix*
   Registers a command to be invoked when an event occurs on a column of
   *tableName*. The events include when columns are added, deleted, moved or
   relabeled.  *Column* may be a label, index, or tag and may refer to
@@ -1060,7 +1060,7 @@ the command.  The operations available for *datatables* are listed below.
   **-whenidle** 
     Don't trigger the callback immediately.  Wait until the next idle time.
 
-  *Command* is a TCL command prefix.  The name of the event and column index
+  *CmdPrefix* is a TCL command prefix.  The name of the event and column index
   are appended to the command before it is invoked.
 
 *tableName* **watch delete** *watchName*...
@@ -1078,7 +1078,7 @@ the command.  The operations available for *datatables* are listed below.
   then any watch name matching one of the patterns is returned. *Pattern*
   is a glob-style pattern.
    
-*tableName* **watch row**  *row* ?\ *flags*\ ? *command*
+*tableName* **watch row**  *row* ?\ *flags*\ ? *cmdPrefix*
   Registers a command to be invoked when an event occurs on a row of
   *tableName*. The events include when rows are added, deleted, moved or
   relabeled.  *Row* may be a label, index, or tag and may refer to
@@ -1103,7 +1103,7 @@ the command.  The operations available for *datatables* are listed below.
   **-whenidle** 
     Don't trigger the callback immediately.  Wait until the next idle time.
 
-  *Command* is a TCL command prefix.  The name of the event and column index
+  *CmdPrefix* is a TCL command prefix.  The name of the event and column index
   are appended to the command before it is invoked.
 
 DATATABLE FORMATS

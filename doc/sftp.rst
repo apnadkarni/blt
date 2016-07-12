@@ -67,7 +67,7 @@ SYNTAX
   **-password** *string* 
     Specifies the password of the user account on the remote SFTP server.
 
-  **-prompt** *command* 
+  **-prompt** *cmdString* 
     Specifies a TCL script to be called whenever the user name or password of
     the user account on the remote SFTP is required. The script should return a
     list in the form "*username password*".
@@ -278,9 +278,9 @@ command.  The operations available for *sftp* objects are listed below.
     Discontinue retrieving the directory listing after the specified number
     of seconds.
 
-*sftpName* **exec** *command* 
+*sftpName* **exec** *cmdString* 
   Executes a Unix shell command on the remote system.  The output of
-  *command* will be the returned.
+  *cmdString* will be the returned.
 
 *sftpName* **exists** *path* 
   Return "1" is the file or directory *path* exists on the 

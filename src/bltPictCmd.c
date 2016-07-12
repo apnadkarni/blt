@@ -191,7 +191,7 @@ static Blt_HashTable procTable;
 #define IMPORTED_WINDOW         (1<<2)
 #define IMPORTED_DATA           (1<<3)
 #define IMPORTED_MASK   \
-        (IMPORTED_FILE|IMPORTED_IMAGE|IMPORTED_WINDOW|IMPORTED_DATA)
+    (IMPORTED_FILE|IMPORTED_IMAGE|IMPORTED_WINDOW|IMPORTED_DATA)
 
 #define NOTIFY_PENDING          (1<<8)
 
@@ -266,7 +266,7 @@ typedef struct _Blt_PictureImage {
     const char *name;                   /* Name of the image, file, or
                                          * window read into the picture
                                          * image. */
-    int index;                          /* Index of the picture in the above
+    int current;                       /* Index of the picture in the above
                                          * list. */
     Tcl_TimerToken timerToken;          /* Token for timer handler which
                                          * polls for the exit status of
@@ -818,6 +818,90 @@ Jitter(Blt_Jitter *jitterPtr)
     return (t * jitterPtr->range) + jitterPtr->offset;
 }
 
+static Blt_ChainLink
+GetFirstImageIndex(PictImage *imgPtr, int *indexPtr)
+{
+    int i;
+    Blt_ChainLink link;
+    
+    link = Blt_Chain_FirstLink(imgPtr->chain);
+    for (i = 0; link != NULL; link = Blt_Chain_NextLink(link), i++) {
+        if (link != NULL) {
+            *indexPtr = i;
+            return link;
+        }
+    }
+    return NULL;
+}
+
+static Blt_ChainLink
+GetNextImageIndex(PictImage *imgPtr, int index, int *indexPtr)
+{
+    int i;
+    Blt_ChainLink link;
+    
+    link = Blt_Chain_GetNthLink(imgPtr->chain, index + 1);
+    for (i = index + 1; link != NULL; link = Blt_Chain_NextLink(link), i++) {
+        if (link != NULL) {
+            *indexPtr = i;
+            return link;
+        }
+    }
+    return NULL;
+}
+                   
+static Blt_ChainLink
+GetPreviousImageIndex(PictImage *imgPtr, int index, int *indexPtr)
+{
+    int i;
+    Blt_ChainLink link;
+    
+    link = Blt_Chain_GetNthLink(imgPtr->chain, index - 1);
+    for (i = index - 1; link != NULL; link = Blt_Chain_PrevLink(link), i--) {
+        if (link != NULL) {
+            *indexPtr = i;
+            return link;
+        }
+    }
+    return NULL;
+}
+
+static int
+GetSequenceIndexFromObj(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr,
+                        int *indexPtr)
+{
+    int index, numPicts;
+    const char *string;
+    char c;
+    
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    numPicts = Blt_Chain_GetLength(imgPtr->chain) - 1;
+    index = -1;
+    if ((c == 'e') && (strcmp(string, "end") == 0)) {
+        index = numPicts - 1;
+    } else if ((c == 'p') && (strcmp(string, "previous") == 0)) {
+        GetPreviousImageIndex(imgPtr, imgPtr->current - 1, &index);
+    } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
+        GetNextImageIndex(imgPtr, imgPtr->current + 1, &index);
+    } else if ((c == 'c') && (strcmp(string, "current") == 0)) {
+        index = imgPtr->current;
+    } else if (Tcl_GetIntFromObj(interp, objPtr, &index) == TCL_OK) {
+        if ((index < 0) || (index >= numPicts)) {
+            Tcl_AppendResult(interp, "invalid image index \"", 
+                             Tcl_GetString(objPtr), "\"", (char *)NULL);
+            return TCL_ERROR;
+        }
+    } else {
+        Tcl_AppendResult(interp, "unknown image index \"", 
+                         Tcl_GetString(objPtr), "\"", (char *)NULL);
+        return TCL_ERROR;
+    }
+    *indexPtr = index;
+    return TCL_OK;
+    
+}
+
 Blt_Picture
 Blt_GetNthPicture(Blt_Chain chain, size_t index)
 {
@@ -841,9 +925,9 @@ CopyPicture(Pict *destPtr, Pict *srcPtr)
 }
 
 static Blt_Picture
-PictureFromPictImage(PictImage *imgPtr)
+CurrentPictureFromPictImage(PictImage *imgPtr)
 {
-    imgPtr->picture = Blt_GetNthPicture(imgPtr->chain, imgPtr->index);
+    imgPtr->picture = Blt_GetNthPicture(imgPtr->chain, imgPtr->current);
     return imgPtr->picture;
 }
 
@@ -855,18 +939,18 @@ ReplacePicture(PictImage *imgPtr, Blt_Picture picture)
     if (imgPtr->chain == NULL) {
         imgPtr->chain = Blt_Chain_Create();
     }
-    link = Blt_Chain_GetNthLink(imgPtr->chain, imgPtr->index);
+    link = Blt_Chain_GetNthLink(imgPtr->chain, imgPtr->current);
     if (link == NULL) {
         int n;
 
         n = Blt_Chain_GetLength(imgPtr->chain);
         link = Blt_Chain_Append(imgPtr->chain, picture);
-        imgPtr->index = n;
+        imgPtr->current = n;
     } else {
         Blt_Picture old;
 
         old = Blt_Chain_GetValue(link);
-        if (old != picture) {
+        if ((old != NULL) && (old != picture)) {
             Blt_FreePicture(old);
         }
     }
@@ -884,11 +968,13 @@ FreePictures(PictImage *imgPtr)
         Blt_Picture picture;
         
         picture = Blt_Chain_GetValue(link);
-        Blt_FreePicture(picture);
+        if (picture != NULL) {
+            Blt_FreePicture(picture);
+        }
     }
     Blt_Chain_Destroy(imgPtr->chain);
     imgPtr->chain = NULL;
-    imgPtr->index = 0;
+    imgPtr->current = 0;
     imgPtr->picture = NULL;
 }
 
@@ -902,7 +988,7 @@ Blt_GetPictureFromPictureImage(Tcl_Interp *interp, Tk_Image tkImage)
         return NULL;
     }
     instancePtr = Blt_Image_GetInstanceData(tkImage);
-    return PictureFromPictImage(instancePtr->image);
+    return CurrentPictureFromPictImage(instancePtr->image);
 }
 
 Blt_Chain
@@ -1411,6 +1497,7 @@ ObjToFile(
     int flags)                          /* Not used. */
 {
     Blt_Chain chain;
+    Blt_ChainLink link;
     Blt_DBuffer dbuffer;
     Blt_Picture *picturePtr = (Blt_Picture *)(widgRec + offset);
     PictImage *imgPtr = (PictImage *)widgRec;
@@ -1464,8 +1551,12 @@ ObjToFile(
     }
     FreePictures(imgPtr);
     imgPtr->chain = chain;
-    imgPtr->index = 0;
-    imgPtr->picture = Blt_Chain_FirstValue(chain);
+    link = GetFirstImageIndex(imgPtr, &imgPtr->current);
+    if (link != NULL) {
+        imgPtr->picture = Blt_Chain_GetValue(link);
+    } else {
+        imgPtr->picture = NULL;
+    }
     if (imgPtr->name != NULL) {
         Blt_Free(imgPtr->name);
     }
@@ -1687,9 +1778,16 @@ ObjToData(
         imgPtr->flags &= ~IMPORTED_MASK;
         FreePictures(imgPtr);
         if (result == TCL_OK) {
+            Blt_ChainLink link;
+
             imgPtr->chain = chain;
             imgPtr->fmtPtr = fmtPtr;
-            imgPtr->picture = Blt_Chain_FirstValue(chain);
+            link = GetFirstImageIndex(imgPtr, &imgPtr->current);
+            if (link != NULL) {
+                imgPtr->picture = Blt_Chain_GetValue(link);
+            } else {
+                imgPtr->picture = NULL;
+            }
             imgPtr->flags |= IMPORTED_DATA;
         }
         Blt_DBuffer_Destroy(dbuffer);
@@ -2033,7 +2131,7 @@ GetInstanceProc(
     PictInstance *cachePtr;
     int isNew;
 
-    keyPtr = CacheKey(tkwin, imgPtr->index);
+    keyPtr = CacheKey(tkwin, imgPtr->current);
     hPtr = Blt_CreateHashEntry(&imgPtr->cacheTable, (char *)keyPtr, &isNew);
     if (isNew) {
         cachePtr = Blt_Malloc(sizeof(PictInstance));    
@@ -2156,7 +2254,7 @@ ConfigureImage(Tcl_Interp *interp, PictImage *imgPtr, int objc,
         objc, objv, (char *)imgPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
-    imgPtr->picture = PictureFromPictImage(imgPtr);
+    imgPtr->picture = CurrentPictureFromPictImage(imgPtr);
     if (imgPtr->picture == NULL) {
         int w, h;
 
@@ -2320,7 +2418,7 @@ DisplayProc(
 
     imgPtr = instPtr->image;
     
-    picture = PictureFromPictImage(imgPtr);
+    picture = CurrentPictureFromPictImage(imgPtr);
     if (picture == NULL) {
         return;
     }
@@ -2369,6 +2467,9 @@ PostScriptProc(
     PictImage *imgPtr = clientData;
 
     if (prepass) {
+        return TCL_OK;
+    }
+    if (imgPtr->picture == NULL) {
         return TCL_OK;
     }
     if (Blt_Picture_IsOpaque(imgPtr->picture)) {
@@ -2598,32 +2699,70 @@ BlendingModeSwitchProc(
     return TCL_OK;
 }
 
+
 static Blt_Picture
 NextImage(PictImage *imgPtr)
 {
-    Blt_Picture picture;
-
-    imgPtr->index++;
-    if (imgPtr->index >= Blt_Chain_GetLength(imgPtr->chain)) {
-        imgPtr->index = 0;
+    Blt_ChainLink link;
+    int index;
+    
+    link = GetNextImageIndex(imgPtr, imgPtr->current + 1, &index);
+    if (link != NULL) {
+        imgPtr->current = index;
+        imgPtr->picture = Blt_Chain_GetValue(link);
+        Blt_NotifyImageChanged(imgPtr);
+        return imgPtr->picture;
     }
-    picture = PictureFromPictImage(imgPtr);
-    Blt_NotifyImageChanged(imgPtr);
-    return picture;
+    return NULL;
+}
+
+static Blt_Picture
+PreviousImage(PictImage *imgPtr)
+{
+    Blt_ChainLink link;
+    int index;
+    
+    link = GetPreviousImageIndex(imgPtr, imgPtr->current - 1, &index);
+    if (link != NULL) {
+        imgPtr->current = index;
+        imgPtr->picture = Blt_Chain_GetValue(link);
+        Blt_NotifyImageChanged(imgPtr);
+        return imgPtr->picture;
+    }
+    return NULL;
+}
+
+static Blt_Picture
+FirstImage(PictImage *imgPtr)
+{
+    Blt_ChainLink link;
+    int index;
+    
+    link = GetFirstImageIndex(imgPtr, &index);
+    if (link != NULL) {
+        imgPtr->current = index;
+        imgPtr->picture = Blt_Chain_GetValue(link);
+        Blt_NotifyImageChanged(imgPtr);
+        return imgPtr->picture;
+    }
+    return NULL;
 }
 
 static void
-ListTimerProc(ClientData clientData)
+SequenceTimerProc(ClientData clientData)
 {
     PictImage *imgPtr = clientData;
     int delay;
 
     NextImage(imgPtr);
-    delay = Blt_Picture_Delay(imgPtr->picture);
+    if (imgPtr->picture == NULL) {
+        delay = Blt_Picture_Delay(imgPtr->picture);
+    }
     if (imgPtr->interval > 0) {
         delay = imgPtr->interval;
     }
-    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, ListTimerProc, imgPtr);
+    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, SequenceTimerProc,
+        imgPtr);
 }
 
 /*
@@ -2933,7 +3072,7 @@ CompositeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    dst = PictureFromPictImage(imgPtr);
+    dst = CurrentPictureFromPictImage(imgPtr);
     tmp = NULL;
     if (dst == fg) {
         fg = tmp = Blt_ClonePicture(fg);
@@ -2984,7 +3123,7 @@ ColorBlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    dst = PictureFromPictImage(imgPtr);
+    dst = CurrentPictureFromPictImage(imgPtr);
     CopyPicture(dst, bg);
     Blt_ColorBlendPictures(dst, fg, switches.mode); 
     Blt_NotifyImageChanged(imgPtr);
@@ -3018,7 +3157,7 @@ BlurOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          (char *)NULL);
         return TCL_ERROR;
     }
-    dst = PictureFromPictImage(imgPtr);
+    dst = CurrentPictureFromPictImage(imgPtr);
     Blt_BlurPicture(dst, src, r, 3);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -3118,7 +3257,7 @@ ConvolveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         switches.hFilter = switches.vFilter = switches.filter;
     }
 #ifdef notdef
-    dst = PictureFromPictImage(imgPtr);
+    dst = CurrentPictureFromPictImage(imgPtr);
     Blt_ConvolvePicture(dst, src, switches.vFilter, switches.hFilter);
 #endif
     Blt_NotifyImageChanged(imgPtr);
@@ -3165,7 +3304,7 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;                  /* Region is not inside of source. */
     }
     imgPtr = clientData;
-    dst = PictureFromPictImage(imgPtr);
+    dst = CurrentPictureFromPictImage(imgPtr);
     if (!Blt_AdjustRegionToPicture(dst, &switches.to)) {
         return TCL_OK;                  /* Region is not inside of
                                          * destination. */
@@ -3208,7 +3347,7 @@ CropOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     imgPtr = clientData;
-    src = PictureFromPictImage(imgPtr);
+    src = CurrentPictureFromPictImage(imgPtr);
     if (!Blt_AdjustRegionToPicture(src, &from)) {
         Tcl_AppendResult(interp, "impossible coordinates for region", 
                          (char *)NULL);
@@ -3357,7 +3496,7 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    picture = PictureFromPictImage(imgPtr);
+    picture = CurrentPictureFromPictImage(imgPtr);
     result = (*proc) (picture, interp, objc, objv);
     if (result == TCL_OK) {
         Blt_NotifyImageChanged(imgPtr);
@@ -3626,7 +3765,7 @@ ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          fmtPtr->name, "\"", (char *)NULL);
         return TCL_ERROR;
     }
-    result = (*fmtPtr->exportProc)(interp, imgPtr->index, imgPtr->chain, 
+    result = (*fmtPtr->exportProc)(interp, imgPtr->current, imgPtr->chain, 
         objc, objv);
     return result;
 }
@@ -3882,6 +4021,7 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     Blt_Chain chain;
+    Blt_ChainLink link;
     Blt_HashEntry *hPtr;
     Blt_PictFormat *fmtPtr;
     PictImage *imgPtr = clientData;
@@ -3924,8 +4064,12 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     FreePictures(imgPtr);
     imgPtr->chain = chain;
-    imgPtr->index = 0;
-    imgPtr->picture = Blt_Chain_FirstValue(chain);
+    link = GetFirstImageIndex(imgPtr, &imgPtr->current);
+    if (link != NULL) {
+        imgPtr->picture = Blt_Chain_GetValue(link);
+    } else {
+        imgPtr->picture = NULL;
+    }
 
     /* 
      * Save the format type and file name in the image record.  The file
@@ -4022,7 +4166,7 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     objPtr = Tcl_NewStringObj("index", 5);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(imgPtr->index);
+    objPtr = Tcl_NewIntObj(imgPtr->current);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     objPtr = Tcl_NewStringObj("format", 6);
@@ -4061,40 +4205,18 @@ MultiplyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 
-static int
-GetImageIndex(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr, 
-              int *indexPtr)
-{
-    int index;
-    const char *string;
-
-    string = Tcl_GetString(objPtr);
-    if (strcmp(string, "end") == 0) {
-        index = Blt_Chain_GetLength(imgPtr->chain) - 1;
-    } else if (Tcl_GetIntFromObj(interp, objPtr, &index) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if ((index < 0) || (index >= Blt_Chain_GetLength(imgPtr->chain))) {
-        Tcl_AppendResult(interp, "invalid image index \"", 
-                         Tcl_GetString(objPtr), "\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    *indexPtr = index;
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
- * ListAppendOp --
+ * SequenceAppendOp --
  *
- *      $im list append $img...
+ *      imageName sequence append pictName...
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListAppendOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+SequenceAppendOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
@@ -4112,55 +4234,24 @@ ListAppendOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
- * ListCurrentOp --
+ * SequenceDeleteOp --
  *
- *      $im list current index 
+ *      imageName sequence delete firstIndex ?lastIndex?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
-{
-    PictImage *imgPtr = clientData;
-
-    if (objc == 4) {
-        int index;
-
-        if (GetImageIndex(interp, imgPtr, objv[3], &index) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        imgPtr->picture = Blt_GetNthPicture(imgPtr->chain, index);
-        imgPtr->index = index;
-        Blt_NotifyImageChanged(imgPtr);
-    }
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), imgPtr->index);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ListDeleteOp --
- *
- *      $im list delete first last
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int 
-ListDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+SequenceDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int first;
 
-    if (GetImageIndex(interp, imgPtr, objv[3], &first) != TCL_OK) {
+    if (GetSequenceIndexFromObj(interp, imgPtr, objv[3], &first) != TCL_OK) {
         return TCL_ERROR;
     }
     if (objc == 4) {
@@ -4172,14 +4263,16 @@ ListDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_OK;
         }
         picture = Blt_Chain_GetValue(link);
-        Blt_FreePicture(picture);
+        if (picture != NULL) {
+            Blt_FreePicture(picture);
+        }
         Blt_Chain_DeleteLink(imgPtr->chain, link);
     } else {
         int i;
         int last;
         Blt_ChainLink link, next;
 
-        if (GetImageIndex(interp, imgPtr, objv[4], &last) != TCL_OK) {
+        if (GetSequenceIndexFromObj(interp, imgPtr, objv[4], &last) != TCL_OK) {
             return TCL_ERROR;
         }
         if (first > last) {
@@ -4192,35 +4285,34 @@ ListDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Blt_Picture picture;
                 
                 picture = Blt_Chain_GetValue(link);
-                Blt_FreePicture(picture);
+                if (picture != NULL) {
+                    Blt_FreePicture(picture);
+                }
                 Blt_Chain_DeleteLink(imgPtr->chain, link);
             }
         }
     }
-    imgPtr->index = 0;
-    imgPtr->picture = Blt_Chain_FirstValue(imgPtr->chain);
-    Blt_NotifyImageChanged(imgPtr);
+    FirstImage(imgPtr);
     return TCL_OK;
 }
-
 
 /*
  *---------------------------------------------------------------------------
  *
- * ListDelayOp --
+ * SequenceDelayOp --
  *
- *      imageName list delay ?milliseconds?
+ *      imageName sequence delay ?milliseconds?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListDelayOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+SequenceDelayOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     
-    if (objc > 3) {
+    if (objc == 4) {
         int delay;
 
         if (Tcl_GetIntFromObj(interp, objv[3], &delay) != TCL_OK) {
@@ -4236,68 +4328,147 @@ ListDelayOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * ListLengthOp --
+ * SequenceGetOp --
  *
- *      $im list length
+ *      imageName sequence get indexName ?pictName?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListLengthOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+SequenceGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+    int index;
+    
+    index = -1;
+    if (GetSequenceIndexFromObj(NULL, imgPtr, objv[3], &index) == TCL_OK) {
+        if (objc == 5) {
+            Blt_Picture picture;
+
+            picture = Blt_GetNthPicture(imgPtr->chain, index);
+            if (picture != NULL) {
+                if (Blt_ResetPicture(interp, Tcl_GetString(objv[4]), picture)
+                    != TCL_OK) {
+                    return TCL_ERROR;
+                }
+            } else {
+                index = -1;             /* Override the index */
+            }
+        }
+    }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), index);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SequenceIndexOp --
+ *
+ *      imageName sequence index indexName
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+SequenceIndexOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+    int index;
+    
+    index = -1;
+    GetSequenceIndexFromObj(NULL, imgPtr, objv[3], &index);
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), index);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SequenceLengthOp --
+ *
+ *      imageName sequence length ?newLength?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+SequenceLengthOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
-    int count;
+    int numPicts;
 
-    count = Blt_Chain_GetLength(imgPtr->chain);
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), count);
+    numPicts = Blt_Chain_GetLength(imgPtr->chain);
+    if (objc == 4) {
+        long count;
+        
+        if (Blt_GetCountFromObj(interp, objv[3], COUNT_NNEG, &count) != TCL_OK){
+            return TCL_OK;
+        }
+        if (count < numPicts) {
+            Blt_ChainLink link, next;
+            
+            /* Remove trailing links from list of images. */
+            if (imgPtr->current >= count) {
+                PreviousImage(imgPtr);
+            }
+            link = Blt_Chain_GetNthLink(imgPtr->chain, count);
+            for (/*empty*/; link != NULL; link = next) {
+                Blt_Picture picture;
+                
+                next = Blt_Chain_NextLink(link);
+                picture = Blt_Chain_GetValue(link);
+                if (picture != NULL) {
+                    Blt_FreePicture(picture);
+                }
+                Blt_Chain_DeleteLink(imgPtr->chain, link);
+            }
+        } else if (count > numPicts) {
+            int i;
+            
+            /* Assume the index is valid, create empty slots. */
+            for (i = Blt_Chain_GetLength(imgPtr->chain); i < count; i++) {
+                Blt_Chain_Append(imgPtr->chain, NULL);
+            }
+        }
+    }
+    numPicts = Blt_Chain_GetLength(imgPtr->chain);
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), numPicts);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ListNextOp --
+ * SequencePutOp --
  *
- *      $im list next
+ *      imageName sequence put indexName pictName
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListNextOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-           Tcl_Obj *const *objv)
+SequencePutOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
+    Blt_Picture picture;
+    Blt_ChainLink link;
+    int index;
     
-    NextImage(imgPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ListPreviousOp --
- *
- *      $im list previous
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int 
-ListPreviousOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-               Tcl_Obj *const *objv)
-{
-    PictImage *imgPtr = clientData;
-
-    imgPtr->index--;
-    if (imgPtr->index < 0) {
-        imgPtr->index = Blt_Chain_GetLength(imgPtr->chain) - 1;
+    if (GetSequenceIndexFromObj(interp, imgPtr, objv[3], &index) != TCL_OK) {
+        return TCL_ERROR;
     }
-    if (imgPtr->index < 0) {
-        imgPtr->index = 0;
+    if (Blt_GetPictureFromObj(interp, objv[4], &picture) != TCL_OK) {
+        return TCL_ERROR;
     }
+    picture = Blt_ClonePicture(picture);
+    link = Blt_Chain_GetNthLink(imgPtr->chain, index);
+    Blt_Chain_SetValue(link, picture);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -4305,15 +4476,15 @@ ListPreviousOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * ListReplaceOp --
+ * SequenceReplaceOp --
  *
- *      $im list replace first last $img...
+ *      imageName sequence replace firstIndex lastIndex pictName...
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+SequenceReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
@@ -4321,10 +4492,8 @@ ListReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int first, last;
     Blt_ChainLink link, next, head, tail;
 
-    if (GetImageIndex(interp, imgPtr, objv[3], &first) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (GetImageIndex(interp, imgPtr, objv[4], &last) != TCL_OK) {
+    if ((GetSequenceIndexFromObj(interp, imgPtr, objv[3], &first) != TCL_OK) ||
+        (GetSequenceIndexFromObj(interp, imgPtr, objv[4], &last) != TCL_OK)) {
         return TCL_ERROR;
     }
     if (first > last) {
@@ -4338,7 +4507,9 @@ ListReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Blt_Picture picture;
 
             picture = Blt_Chain_GetValue(link);
-            Blt_FreePicture(picture);
+            if (picture != NULL) {
+                Blt_FreePicture(picture);
+            }
             Blt_Chain_DeleteLink(imgPtr->chain, link);
         } else if (head == NULL) {
             head = link;
@@ -4383,24 +4554,59 @@ ListReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Blt_Chain_Append(imgPtr->chain, dst);
         }
     }   
-    imgPtr->index = 0;
-    imgPtr->picture = Blt_Chain_FirstValue(imgPtr->chain);
-    Blt_NotifyImageChanged(imgPtr);
+    FirstImage(imgPtr);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ListStartOp --
+ * SequenceSeeOp --
  *
- *      imageName list stop
+ *      imageName sequence see ?indexName?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListStartOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+SequenceSeeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+
+    if (objc == 4) {
+        int index;
+        Blt_Picture picture;
+        
+        if (GetSequenceIndexFromObj(interp, imgPtr, objv[3], &index) != TCL_OK){
+            return TCL_ERROR;
+        }
+        picture = Blt_GetNthPicture(imgPtr->chain, index);
+        if (picture == NULL) {
+            Tcl_AppendResult(interp, "no picture at sequence slot \"",
+                        Tcl_GetString(objv[3]), "\"", (char *)NULL);
+            return TCL_ERROR;
+        }
+        imgPtr->current = index;
+        imgPtr->picture = picture;
+        Blt_NotifyImageChanged(imgPtr);
+    }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), imgPtr->current);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SequenceStartOp --
+ *
+ *      imageName sequence start 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+SequenceStartOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
@@ -4409,24 +4615,25 @@ ListStartOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (imgPtr->timerToken != 0) {
         return TCL_OK;
     }
+    FirstImage(imgPtr);
     delay = Blt_Picture_Delay(imgPtr->picture);
-    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, ListTimerProc, imgPtr);
+    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, SequenceTimerProc,
+        imgPtr);
     return TCL_OK;
 }
-
 
 /*
  *---------------------------------------------------------------------------
  *
- * ListStopOp --
+ * SequenceStopOp --
  *
- *      imageName list stop
+ *      imageName sequence stop
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListStopOp(ClientData clientData, Tcl_Interp *interp, int objc,
+SequenceStopOp(ClientData clientData, Tcl_Interp *interp, int objc,
            Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
@@ -4438,46 +4645,50 @@ ListStopOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-static Blt_OpSpec listOps[] =
+static Blt_OpSpec sequenceOps[] =
 {
-    {"append",    2, ListAppendOp,    3, 0, "?image...?",},
-    {"current",   1, ListCurrentOp,   3, 4, "?index?",},
-    {"delay",     4, ListDelayOp,     3, 3, "?milliseconds?",},
-    {"delete",    4, ListDeleteOp,    4, 5, "first ?last?",},
-    {"length",    1, ListLengthOp,    3, 3, "",},
-    {"next",      1, ListNextOp,      3, 3, "",},
-    {"previous",  1, ListPreviousOp,  3, 3, "",},
-    {"replace",   1, ListReplaceOp,   5, 0, "first last ?image...?",},
-    {"start",     3, ListStartOp,     3, 3, "",},
-    {"stop",      3, ListStopOp,      3, 3, "",},
+    {"append",  2, SequenceAppendOp,  3, 0, "?pictName...?",},
+    {"delay",   4, SequenceDelayOp,   3, 4, "?milliseconds?",},
+    {"delete",  4, SequenceDeleteOp,  4, 5, "firstIndex ?lastIndex?",},
+    {"get",     1, SequenceGetOp,     4, 5, "indexName ?pictName?",},
+    {"index",   1, SequenceIndexOp,   4, 4, "indexName",},
+    {"length",  1, SequenceLengthOp,  3, 4, "?newLength?",},
+    {"put",     1, SequencePutOp,     5, 5, "indexName pictName",},
+    {"replace", 1, SequenceReplaceOp, 5, 0, "firstIndex lastIndex ?pictName...?",},
+    {"see",     2, SequenceSeeOp,     3, 4, "?indexName?",},
+    {"start"    3, SequenceStartOp,   3, 3, "",},
+    {"stop",    3, SequenceStopOp,    3, 3, "",},
 };
 
-static int numListOps = sizeof(listOps) / sizeof(Blt_OpSpec);
+static int numSequenceOps = sizeof(sequenceOps) / sizeof(Blt_OpSpec);
 
 /*
  *---------------------------------------------------------------------------
  *
- * ListOp --
+ * SequenceOp --
  *
- *      $img list animate 
- *      $img list append image image image
- *      $img list current ?index?
- *      $img list delete 0 end 
- *      $img list length
- *      $img list next
- *      $img list previous
- *      $img list replace 0 end image image image image
+ *      imageName sequence append pictName...
+ *      imageName sequence delay ?milliseconds?
+ *      imageName sequence delete firstIndex ?lastIndex?
+ *      imageName sequence get indexName ?pictName?
+ *      imageName sequence index indexName
+ *      imageName sequence length ?newLength?
+ *      imageName sequence put indexName pictName
+ *      imageName sequence replace firstIndex lastIndex ?pictName...?
+ *      imageName sequence see ?indexName?
+ *      imageName sequence start
+ *      imageName sequence stop
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-ListOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+SequenceOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
     PictCmdProc *proc;
 
-    proc = Blt_GetOpFromObj(interp, numListOps, listOps, BLT_OP_ARG2, 
+    proc = Blt_GetOpFromObj(interp, numSequenceOps, sequenceOps, BLT_OP_ARG2, 
         objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
@@ -5276,7 +5487,6 @@ static Blt_OpSpec pictInstOps[] =
     {"height",    1, HeightOp,    2, 3, "?newHeight?",},
     {"import",    2, ImportOp,    2, 0, "format ?switches ...?",},
     {"info",      2, InfoOp,      2, 2, "info",},
-    {"list",      1, ListOp,      2, 0, "?args ...?",},
     {"max",       2, ArithOp,     3, 0, "pictOrColor",},
     {"min",       2, ArithOp,     3, 0, "pictOrColor",},
     {"multiply",  2, MultiplyOp,  3, 3, "float",},
@@ -5289,7 +5499,8 @@ static Blt_OpSpec pictInstOps[] =
     {"reflect",   3, ReflectOp,   3, 0, "src ?switches ...?",},
     {"resample",  3, ResampleOp,  3, 0, "src ?switches ...?",},
     {"rotate",    2, RotateOp,    4, 4, "src angle",},
-    {"select",    2, SelectOp,    4, 5, "src ?color ...?",},
+    {"select",    3, SelectOp,    4, 5, "src ?color ...?",},
+    {"sequence",  3, SequenceOp,  2, 0, "?args ...?",},
     {"sharpen",   2, SharpenOp,   2, 0, "",},
     {"snap",      2, SnapOp,      3, 0, "window ?switches ...?",},
     {"subtract",  2, ArithOp,     3, 0, "pictOrColor",},

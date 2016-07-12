@@ -22,11 +22,11 @@ SYNOPSIS
 
 **blt::drag&drop source** *windowName* ?\ *option* *value* ... ?
 
-**blt::drag&drop source** *windowName* **handler** ?\ *dataType*\ ? ?\ *command* *arg* *arg* ...  ?
+**blt::drag&drop source** *windowName* **handler** ?\ *dataType*\ ? ?\ *cmdString* *arg* *arg* ...  ?
 
 **blt::drag&drop target**
 
-**blt::drag&drop target** *windowName* **handler**  ?\ *dataType*  *command* *arg* *arg* ... ?
+**blt::drag&drop target** *windowName* **handler**  ?\ *dataType*  *cmdString* *arg* *arg* ... ?
 
 **blt::drag&drop target** *windowName* **handle** *dataType* ?\ *value*\ ?
 
@@ -105,14 +105,14 @@ process; further details are presented below:
     The default value is button 3.  If the value "0" is specified, then no
     bindings are added; this enables the user to establish bindings manually.
 
-  **-packagecmd** *command*
+  **-packagecmd** *cmdString*
     Specifies a TCL command used to establish the appearance of the token
     window at the start of each drag-and-drop operation.  This command is
     automatically invoked by the **drag** operation whenever the token window
     is about to be mapped for a drag operation.  It should update the
     appearance of the token window to represent the data that is being moved.
 
-    The following substitutions are made in the *command* string before it is
+    The following substitutions are made in the *cmdString* string before it is
     executed:
 
     **%t**
@@ -188,7 +188,7 @@ process; further details are presented below:
     Specifies a *list* of *dataTypes* enabled for communication.  Only
     *dataTypes* defined by commands of the form
 
-       **blt::drag&drop source** *windowName* **handler** ?\ *dataType*\ ? *command* arg* *arg* ...  ?
+       **blt::drag&drop source** *windowName* **handler** ?\ *dataType*\ ? *cmdString* arg* *arg* ...  ?
        
     are allowed.  This list also determines the priority of the various
     *dataTypes*.  When a token window is over a potential drag-and-drop target,
@@ -204,13 +204,13 @@ process; further details are presented below:
     Setting the value to an empty string disables the source; setting the
     value back to "all" restores communication.
 
-  **-sitecmd** *command*
+  **-sitecmd** *cmdString*
     Specifies a TCL command used to update the appearance of the token
     window.  If specified, this command is automatically invoked by the
     **drag** operation whenever the token window is over a compatible
     drag-and-drop target.
 
-    The following substitutions are made in the *command* string before it
+    The following substitutions are made in the *cmdString* string before it
     is executed:
 
     **%s**
@@ -246,15 +246,15 @@ process; further details are presented below:
     have any of the forms acceptable to **Tk_GetCursor**.  The default
     value is "center_ptr".
 
-**blt::drag&drop source** *windowName* **handler** ?\ *dataType*\ ? ?\ *command* *arg* *arg* ... ?
+**blt::drag&drop source** *windowName* **handler** ?\ *dataType*\ ? ?\ *cmdPrefix* *arg* *arg* ... ?
   With no extra arguments, this command returns a list of all *dataType*
   names that have been registered for the source *windowName*.  If only the
   *dataType* is specified, then the *dataType* is created if necessary, and
   the command associated with the *dataType* is returned.  Otherwise, it
-  concatenates the *command* and any extra *arg* strings, and registers a
+  concatenates the *cmdPrefix* and any extra *arg* strings, and registers a
   new *dataType* with this command.
 
-  The following substitutions are made in the *command* string before it is
+  The following substitutions are made in the *cmdPrefix* string before it is
   executed:
 
   **%i**
@@ -283,16 +283,16 @@ process; further details are presented below:
   Returns a list of path names for widgets registered as drag-and-drop
   targets.  Returns an empty string if no widgets have been registered.
 
-**blt::drag&drop target** *windowName* **handler** ?\ *dataType* *command* *arg* *arg* ... ?
+**blt::drag&drop target** *windowName* **handler** ?\ *dataType* *cmdString* *arg* *arg* ... ?
   Registers a new drag-and-drop target window with a given handler, or
   modifies the handlers for an existing window.  If no *dataType* is
   specified, this command returns the current list of recognized *dataType*
   strings.  Each *dataType* is a symbolic name representing a form of data,
-  and the corresponding *command* is a TCL command that specifies how the
+  and the corresponding *cmdString* is a TCL command that specifies how the
   target will make use of the data.  This command is invoked indirectly
   after a source has transferred data to a target application.
 
-  The following substitutions are made in the *command* string before it is
+  The following substitutions are made in the *cmdString* string before it is
   executed:
 
   **%v**
