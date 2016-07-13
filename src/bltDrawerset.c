@@ -543,25 +543,19 @@ static Blt_ConfigSpec drawersetSpecs[] =
         DEF_BACKGROUND, Blt_Offset(Drawerset, bg), 0 },
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
         0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
-        Blt_Offset(Drawerset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT },
-    {BLT_CONFIG_COLOR, "-handlehighlightcolor", "handleHighlightColor",
-        "HandleHighlightColor", DEF_HANDLE_HIGHLIGHT_COLOR,
-        Blt_Offset(Drawerset, handleHighlightColor), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-handlehighlightthickness",
-        "handleHighlightThickness",
-        "HandleHighlightThickness", DEF_HANDLE_HIGHLIGHT_THICKNESS, 
-        Blt_Offset(Drawerset, handleHighlightThickness),
-        BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Drawerset, reqHeight), 0, &bltLimitsOption},
-    {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Drawerset, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_PIXELS_NNEG, "-handleborderwidth", "handleBorderWidth", 
         "HandleBorderWidth", DEF_HANDLE_BORDERWIDTH, 
         Blt_Offset(Drawerset, handleBW), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
         DEF_HANDLE_COLOR, Blt_Offset(Drawerset, handleBg), 0},
+    {BLT_CONFIG_COLOR, "-handlehighlightcolor", "handleHighlightColor",
+        "HandleHighlightColor", DEF_HANDLE_HIGHLIGHT_COLOR,
+        Blt_Offset(Drawerset, handleHighlightColor), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-handlehighlightthickness",
+        "handleHighlightThickness", "HandleHighlightThickness",
+        DEF_HANDLE_HIGHLIGHT_THICKNESS, 
+        Blt_Offset(Drawerset, handleHighlightThickness),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-handlepad", "handlePad", "HandlePad", DEF_HANDLE_PAD, 
         Blt_Offset(Drawerset, handlePad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-handlerelief", "handleRelief", "HandleRelief", 
@@ -570,6 +564,12 @@ static Blt_ConfigSpec drawersetSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-handlethickness", "handleThickness", 
         "HandleThickness", DEF_HANDLE_THICKNESS, 
         Blt_Offset(Drawerset, handleThickness), BLT_CONFIG_DONT_SET_DEFAULT },
+    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
+        Blt_Offset(Drawerset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT },
+    {BLT_CONFIG_CUSTOM, "-reqheight", (char *)NULL, (char *)NULL,
+        (char *)NULL, Blt_Offset(Drawerset, reqHeight), 0, &bltLimitsOption},
+    {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
+        (char *)NULL, Blt_Offset(Drawerset, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
         Blt_Offset(Drawerset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_OBJ, "-window", "window", "Window", (char *)NULL, 
@@ -3043,7 +3043,7 @@ ConfigureDrawerset(Drawerset *setPtr)
 }
 
 static void
-AdjustSize(Drawer *drawPtr, int delta)
+SlideDrawer(Drawer *drawPtr, int delta)
 {
     Drawerset *setPtr;
     Drawer *iterPtr;
@@ -3051,7 +3051,7 @@ AdjustSize(Drawer *drawPtr, int delta)
     int size;
     
 #if TRACE
-    fprintf(stderr, "AdjustSize(%s, delta=%d) size=%d, offset=%d\n",
+    fprintf(stderr, "SlideDrawer(%s, delta=%d) size=%d, offset=%d\n",
             drawPtr->name, delta, drawPtr->scrollMax - drawPtr->scrollMin,
             drawPtr->offset);
 #endif
@@ -3581,7 +3581,7 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     mark = (drawPtr->side & SIDE_VERTICAL) ? y : x;
     delta = mark - setPtr->handleAnchor;
-    AdjustSize(drawPtr, delta);
+    SlideDrawer(drawPtr, delta);
     setPtr->handleAnchor = mark;
     return TCL_OK;
 }
@@ -3623,7 +3623,7 @@ HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         delta = x;
     }
     if (delta != 0)  {
-        AdjustSize(drawPtr, delta);
+        SlideDrawer(drawPtr, delta);
     }
     return TCL_OK;
 }
@@ -3663,7 +3663,7 @@ HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     mark = (drawPtr->side & SIDE_VERTICAL) ? y : x;
     delta = mark - setPtr->handleAnchor;
     if (delta != 0) {
-        AdjustSize(drawPtr, delta);
+        SlideDrawer(drawPtr, delta);
     }
     setPtr->handleAnchor = mark;
     return TCL_OK;
@@ -4142,19 +4142,19 @@ RaiseOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * ResizeOp --
+ * SlideOp --
  *
  *      Resizes the drawer. The handle is moved the given distance from its
  *      previous location.
  *
- *      pathName resize drawerName dx dy 
+ *      pathName slide drawerName dx dy 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ResizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
+SlideOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+        Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Drawer *drawPtr;
@@ -4174,11 +4174,11 @@ ResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     if (drawPtr->side & SIDE_VERTICAL) {
         if (dy != 0) {
-            AdjustSize(drawPtr, dy);
+            SlideDrawer(drawPtr, dy);
         }
     } else {
         if (dx != 0) {
-            AdjustSize(drawPtr, dx);
+            SlideDrawer(drawPtr, dx);
         }
     }
     return TCL_OK;
@@ -4842,7 +4842,7 @@ static Blt_OpSpec drawersetOps[] =
     {"add",        1, AddOp,       2, 0, "?label? ?option value?...",},
     {"cget",       2, CgetOp,      3, 3, "option",},
     {"close",      2, CloseOp,     3, 3, "drawerName",},
-    {"configure",  2, ConfigureOp, 2, 0, "?option value?",},
+    {"configure",  2, ConfigureOp, 2, 0, "?option value ...?",},
     {"delete",     2, DeleteOp,    3, 3, "?drawerName ...?",},
     {"drawer",     2, DrawerOp,    2, 0, "oper ?args?",},
     {"exists",     1, ExistsOp,    3, 3, "drawerName",},
@@ -4856,8 +4856,8 @@ static Blt_OpSpec drawersetOps[] =
     {"names",      1, NamesOp,     2, 0, "?pattern...?",},
     {"open",       1, OpenOp,      3, 3, "drawerName",},
     {"raise",      1, RaiseOp,     3, 3, "drawerName",},
-    {"resize",     2, ResizeOp,    6, 6, "drawerName dx dy"},
-    {"size",       1, SizeOp,      2, 4, "?drawerName? ?size?",},
+    {"size",       2, SizeOp,      2, 4, "?drawerName? ?size?",},
+    {"slide",      2, SlideOp,     5, 5, "drawerName dx dy"},
     {"tag",        2, TagOp,       2, 0, "oper args",},
     {"toggle",     2, ToggleOp,    3, 3, "drawerName",},
 };

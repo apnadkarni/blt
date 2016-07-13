@@ -17,7 +17,7 @@ Create and manipulate drawerset widgets.
 SYNOPSIS
 --------
 
-**blt::drawerset** *pathName* ?\ *option* *value* ... ?
+  **blt::drawerset** *pathName* ?\ *option* *value* ... ?
 
 DESCRIPTION
 -----------
@@ -34,19 +34,17 @@ INTRODUCTION
 
 The *drawerset* widget displays an embedded Tk widget as its base, but also
 lets you designate other embedded Tk widgets to act as drawers that slide
-out for a selected side of the widget. The drawers (embedded widgets) may
-each have a handle attached to them that allows the user to how much the
-drawer is pulled out from the side of the widget.  The user can adjust the
-size of a drawer by using the mouse or keyboard on the handle.
+out from a side of the *drawerset* widget.  The embedded Tk widgets of a
+*drawerset* must be children of the *drawerset* widget.
 
-The *drawerset* widget can also be used to create a wizard-like interface
-where drawers contain are a sequence of dialogs that lead the user through a
-series of well-defined tasks.  In this case the size of the *drawerset* widget
-is the size of a drawer.  If the *drawerset* widget is resized the drawer
-containing the dialog is also resized.
+The drawers (embedded widgets) may each have an attached handle that allows
+the user to manually adjust how much the drawer is pulled out from the side
+of the widget. Drawers are opened (made visible) programatically (by
+setting a TCL variable) or manually by the user clicking on the handle and
+dragging it or by the keyboard.
 
-The embedded Tk widgets of a *drawerset* must be children of the *drawerset*
-widget.
+The *drawerset* widget can also be to implement a sliding menu-like
+interface.  
 
 SYNTAX
 ------
@@ -79,18 +77,15 @@ Drawers can be referenced either by index, label, or by tag.
 
 *index*
   The number of the drawer.  Indices start from 0.  The index number of a
-  drawer can change as other drawers are added, deleted, or moved.  There are
-  also the following special non-numeric indices.
+  drawer can change as other drawers are added, deleted, or moved.  There
+  are also the following special non-numeric indices.
 
   **active**
     This is the drawer whose handle is where the mouse pointer is currently
     located.  When a handle is active, it is drawn using its active colors.
     The **active** index is changes when you move the mouse pointer over
-    another drawer's handle or by using the **activate** operation. Note
-    that there can be only one active drawer at a time.
-
-  **current**
-    The index of the current drawer. This is set by the **see** operation.
+    another drawer's handle or by using the **handle activate**
+    operation. Note that there can be only one active drawer at a time.
 
   **end**
     The index of the last drawer.
@@ -100,23 +95,6 @@ Drawers can be referenced either by index, label, or by tag.
 
   **last**
     The index of the last drawer that is not hidden or disabled.
-
-  **previous**
-    The drawer previous to the current drawer. In horizontal mode, this is
-    the drawer to the left, in vertical mode this is the drawer above.  If
-    no previous drawer exists or the preceding drawer are hidden or
-    disabled, an index of "-1" is returned.
-
-  **next**
-    The drawer next to the current drawer. In horizontal mode, this is the
-    drawer to the right, in vertical mode this is the drawer below.  If no
-    next drawer exists or the following drawers are hidden or disabled, an
-    index of "-1" is returned.
-
-  **@**\ *x*\ ,\ *y*
-    The index of the drawer that is located at the *x* and *y*
-    screen coordinates.  If no drawer is at that point, then the
-    index returned is "-1".
 
 *label*
   The name of the drawer.  This is usually in the form "drawer0", "drawer1",
@@ -170,6 +148,13 @@ command.  The following operations are available for *drawerset* widgets:
   **configure** operation. They are described in the **configure**
   operation below.
 
+*pathName* **close** *drawerName*
+  Closes *drawerName*, sliding the window back into the side of the
+  *drawerset* widget.  *DrawerName* may be a label, index, or tag and may
+  refer to multiple drawers (for example "all"). If there is TCL variable
+  associated with the drawer (see the drawer **-variable** option), it is
+  set to "0".
+  
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
   Queries or modifies the configuration options of the *drawerset* widget.
   If no *option* is specified, this command returns a list describing all
@@ -186,16 +171,17 @@ command.  The following operations are available for *drawerset* widgets:
   operation or the Tk **option** command.  The resource class is
   "BltDrawerset".  The resource name is the name of the widget::
 
-    option add *BltDrawerset.anchor n
-    option add *BltDrawerset.Anchor e
+    option add *BltDrawerset.autoraise true
+    option add *BltDrawerset.Background grey70
 
   The following widget options are available\:
 
   **-activehandlecolor** *colorName* 
-    Specifies the background color of the drawer's handle when it is active.
-    *ColorName* may be a color name or the name of a background object
-    created by the **blt::background** command.  
-    The default is "grey90". 
+    Specifies the background color of a drawer handles when they are
+    active.  *ColorName* may be a color name or the name of a background
+    object created by the **blt::background** command.  This can be
+    overriden by the drawer's **-activehandlecolor** option.  The default
+    is "grey90".
 
   **-activehandlerelief** *reliefName* 
     Specifies the default relief when a drawer's handle is active.  This
@@ -204,6 +190,7 @@ command.  The following operations are available for *drawerset* widgets:
     means the item should appear to protrude.  The default is "flat".
     
   **-anchor** *anchorName* 
+    FIXME
     Specifies how to position the set of drawers if extra space is available
     in the *drawerset*. For example, if *anchorName* is "center" then the
     widget is centered in the *drawerset*; if *anchorName* is "n" then the
@@ -211,21 +198,19 @@ command.  The following operations are available for *drawerset* widgets:
     be the top center point of the drawer.  This option defaults to "c".
 
   **-animate** *boolean*
-    Indicates to animate the movement of drawers.  The **-scrolldelay** and
-    **--scrollincrement** options determine how the animation is
-    performed. The default is "0".
+    Indicates to animate the movement of drawers.  The **-delay** and
+    **-steps** options determine how the animation is performed.
+    The default is "0".
+
+  **-autoraise** *boolean*
+    Indicates to automatically raise drawers when they are opened. 
+    The default is "0".
 
   **-background** *colorName* 
     Specifies the default background of the widget including its drawers.
     *ColorName* may be a color name or the name of a background object
     created by the **blt::background** command.  The default is "grey85".
     
-  **-handleactiverelief** *reliefName* 
-    Specifies the relief of handles when they are active.  This determines
-    the 3-D effect for the handle.  *Relief* indicates how the handle should
-    appear relative to the window; for example, "raised" means the handle
-    should appear to protrude.  The default is "raised".
-
   **-handleborderwidth** *numPixels* 
     Specifies the default border width of handles in the widget.  *NumPixels*
     is a non-negative value indicating the width of the 3-D border drawn
@@ -237,6 +222,9 @@ command.  The following operations are available for *drawerset* widgets:
     Specifies the default color of handles.  *ColorName* may be a color name or
     the name of a background object created by the **blt::background**
     command. The default is "grey85".
+
+  **-handlehighlightcolor** *colorSpec* 
+  **-handlehighlightthickness** *numPixels* 
 
   **-handlepad** *numPixels* 
     Specifies extra padding for handles.  *NumPixels* is a non-negative value
@@ -264,45 +252,6 @@ command.  The following operations are available for *drawerset* widgets:
     "horizontal", then the height calculated to display all the drawers.
     The default is "0".
 
-  **-orient** *orientation*
-    Specifies the orientation of the *drawerset*.  *Orientation* may be
-    "vertical" (drawers run left to right) or "horizontal" (drawers run
-    top to bottom).  The default is "horizontal".
-
-  **-relheight** *number*
-    Specifies the relative height of drawers to the *drawerset* window.
-    *Number* is a number between 0.0 and 1.0.  If *number* is "1.0", then
-    each drawer will take up the entire *drawerset* window. If *number* is
-    0.0, and **-orient** is "vertical", then the height of each drawer is
-    computed from the requested height of its embedded child widget.  The
-    default is "0.0".
-
-  **-relwidth** *number*
-    Specifies the relative width of drawers to the *drawerset* window.
-    *Number* is a number between 0.0 and 1.0.  If *number* is "1.0", then
-    each drawer will take up the entire *drawerset* window. If *number* is
-    0.0, and **-orient** is "horizontal", then the width of each drawer is
-    computed from the requested width of its embedded child widget.  The
-    default is "0.0".
-
-  **-scrollcommand** *string*
-    Specifies the prefix for a command for communicating with scrollbars.
-    Whenever the view in the widget's window changes, the widget will
-    generate a TCL command by concatenating the scroll command and two
-    numbers.  If this option is not specified, then no command will be
-    executed.
-
-  **-scrolldelay** *milliseconds*
-    Specifies the delay between steps in the scrolling in milliseconds.  If
-    *milliseconds* is 0, then no automatic changes will occur.  The default
-    is "0".
-
-  **-scrollincrement** *numPixels*
-    Sets the smallest number of pixels to scroll the drawers.  If
-    *numPixels* is greater than 0, this sets the units for scrolling (e.g.,
-    when you the change the view by clicking on the left and right arrows
-    of a scrollbar). The default is "10".
-
   **-width** *numPixels*
     Specifies the width of the *drawerset* window.  *NumPixels* is a
     non-negative value indicating the width the widget. The value may have
@@ -311,17 +260,19 @@ command.  The following operations are available for *drawerset* widgets:
     "vertical", then the width is calculated to display all the drawers.
     The default is "0".
 
+  **-window** *childName*  
+    Specifies the Tk widget to be embedded into *drawerName*. *ChildName*
+    will be displayed at the base of the *drawerset*.  *ChildName* is the
+    name of a Tk widget.  It must be a child of the *drawerset* widget.
+    The *drawerset* will "pack" and manage the size and placement of
+    *childName*.  The default value is "".
+
 *pathName* **delete** *drawerName*\ ...
   Deletes one or more drawers from the widget. *DrawerName* may be a label,
   index, or tag and may refer to multiple drawers (for example "all").
   If there is a **-deletecommand** option specified a deleted drawer, that
   command is invoke before the drawer is deleted.
 
-*pathName* **exists** *drawerName*
-  Indicates if *drawerName* exists in the widget. *DrawerName* may be a label,
-  index, or tag, but may not represent more than one drawer.  Returns "1" is
-  the drawer exists, "0" otherwise.
-  
 *pathName* **drawer cget** *drawerName* *option*
   Returns the current value of the drawer configuration option given by
   *option*. *Option* may have any of the values accepted by the
@@ -483,6 +434,11 @@ command.  The following operations are available for *drawerset* widgets:
     be a child of the *drawerset* widget.  The *drawerset* will "pack" and
     manage the size and placement of *childName*.  The default value is "".
 
+*pathName* **exists** *drawerName*
+  Indicates if *drawerName* exists in the widget. *DrawerName* may be a label,
+  index, or tag, but may not represent more than one drawer.  Returns "1" is
+  the drawer exists, "0" otherwise.
+  
 *pathName* **handle activate** *drawerName* 
   Specifies to draw *drawerName*\ 's handle with its active colors and relief
   (see the **-activehandlecolor** and **-activehandlerelief** options).
@@ -546,6 +502,16 @@ command.  The following operations are available for *drawerset* widgets:
   *DrawerName* may be a label, index, or tag, but may not represent more
   than one drawer.  If *drawerName* is disabled, no command is invoked.
   
+*pathName* **isopen** *drawerName* 
+  Indicates if *drawerName* is open or closed.  *DrawerName* may be a
+  label, index, or tag, but may not represent more than one drawer.
+  Returns "1" is the drawer is currently open, "0" otherwise.
+  
+*pathName* **lower** *drawerName* 
+  Lowers *drawerName* so that other drawers will be displayed above it.
+  *DrawerName* may be a label, index, or tag and may
+  refer to multiple drawers (for example "all").
+  
 *pathName* **move after** *whereName* *drawerName*
   Moves *drawerName* after the drawer *whereName*.  Both *whereName* and
   *drawerName* may be a label, index, or tag, but may not represent more than
@@ -561,13 +527,28 @@ command.  The following operations are available for *drawerset* widgets:
   are provided, then the label of any drawer matching *pattern* will be
   returned. *Pattern* is a **glob**\ -style pattern.
 
-*pathName* **see** *drawermName* 
-  Scrolls the *drawerset* so that *drawerName* is visible in the widget's window.
-  *DrawerName* may be a label, index, or tag, but may not represent more than
-  one item.
+*pathName* **open** *drawerName*
+  Opens *drawerName*, sliding the window out from the side of the
+  *drawerset* widget.  *DrawerName* may be a label, index, or tag and may
+  refer to multiple drawers (for example "all"). Disabled or hidden drawers
+  are ignored. If there is TCL variable associated with the drawer (see the
+  drawer **-variable** option), it is set to "1".
+  
+*pathName* **raise** *drawerName* 
+  Raises *drawerName* so that it will be displayed above all other drawers.
+  *DrawerName* may be a label, index, or tag and may refer to multiple
+  drawers (for example "all").
   
 *pathName* **size** 
   Returns the number of drawers in the *drawerset*.
+
+*pathName* **slide** *drawerName dx dy* 
+  Slides *drawerName* the designated distance.  *DrawerName* may be a
+  label, index, or tag and may refer to multiple drawers (for example
+  "all").  *Dx* and *dy* are integers. Negative values indicate to close
+  the drawer, positive values open the drawer.  If the side of the drawer
+  is "left" or "right" only *dx* is considered.  If the side of the drawer
+  is "top" or "bottom" only *dy* is considered.
 
 *pathName* **tag add** *tag* ?\ *drawerName* ... ?
   Adds the tag to one of more drawers. *Tag* is an arbitrary string that can
@@ -611,20 +592,13 @@ command.  The following operations are available for *drawerset* widgets:
   index, or tag and may refer to multiple drawers.  Tag names that don't
   exist or are reserved ("all") are silently ignored.
 
-*pathName* **view moveto** *fraction*
-  Adjusts the view in the *drawerset* window so the portion of
-  the drawers starting from *fraction* is displayed.  *Fraction* is a number
-  between 0.0 and 1.0 representing the position where to
-  start displaying drawers.
-   
-*pathName* **view scroll** *number* *what*
-  Adjusts the view in the *drawerset* window according to *number* and
-  *what*.  *Number* must be an integer.  *What* must be either "units" or
-  "pages".  If *what* is "units", the view adjusts left or right by
-  *number* units.  The number of pixel in a unit is specified by the
-  **-xscrollincrement** option.  If *what* is "pages" then the view
-  adjusts by *number* screenfuls.  If *number* is negative then the view
-  if scrolled left; if it is positive then it is scrolled right.
+*pathName* **toggle** *drawerName*
+  Toggles the state of *drawerName*, opening the drawer if it is closed,
+  closing the drawer if it is open.  *DrawerName* may be a label, index, or
+  tag and may refer to multiple drawers (for example "all"). Disabled or
+  hidden drawers are ignored. If there is TCL variable associated with the
+  drawer (see the drawer **-variable** option), it will be set "1" if the
+  drawer is open and "0" if it is closed.
 
 HANDLE BINDINGS
 ---------------

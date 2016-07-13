@@ -17,7 +17,7 @@ Full color image type.
 SYNOPSIS
 ========
 
-**image create picture** ?\ *imageName*\ ? ?\ *options* ... ? 
+  **image create picture** ?\ *imageName*\ ? ?\ *options* ... ? 
 
 DESCRIPTION
 ===========
@@ -31,10 +31,16 @@ are supported (JPEG, GIF, TGA, BMP, TIFF, ICO, PDF, PS, etc.) as well as a
 number of operations that can be performed on the image such as resizing
 (through resampling).
 
+A **picture** image can contain more than one image.  For example, if you
+read in a PDF of multiple pages, each page will be an image in the
+**picture** object.  The series of images represent a sequence that can be
+animated, such as images from an animated GIF.  You can also construct your
+own sequence of images.
+
 SYNTAX
 ======
 
-**image create picture** ?\ *imageName*\ ? ?\ *options* ... ? 
+  **image create picture** ?\ *imageName*\ ? ?\ *options* ... ? 
 
 Creates a new *picture* image.  The name of the new *picture* is returned.
 If no *imageName* argument is present, then the name of the picture is
@@ -53,23 +59,24 @@ COLOR SPECIFICATIONS
 
 Pixel color values can be described in any of the following forms:
 
-  *colorName*           
-    Any of the valid textual names for a color defined in the 
-    server's color database file, such as red or "PeachPuff".
+*colorName*           
+  Any of the valid textual names for a color defined in the server's
+  color database file, such as "red" or "PeachPuff".
 
-  #\ *RGB*  #\ *RRGGBB* #\ *RRRGGGBBB*  #\ *RRRRGGGGBBBB*               
-    A numeric specification of the red, green, and blue intensities to use
-    to display the color. Each R, G, or B represents a single hexadecimal
-    digit.  The four forms permit colors to be specified with 4-bit, 8-bit,
-    12-bit or 16-bit values.  When fewer than 16 bits are provided for each
-    color, they represent the most significant bits of the color.  For
-    example, #3a7 is the same as #3000a0007000.
+#\ *RGB* #\ *RRGGBB* #\ *RRRGGGBBB* #\ *RRRRGGGGBBBB*
+  A numeric specification of the red, green, and blue intensities to use
+  to display the color. Each R, G, or B represents a single hexadecimal
+  digit.  The four forms permit colors to be specified with 4-bit, 8-bit,
+  12-bit or 16-bit values.  When fewer than 16 bits are provided for each
+  color, they represent the most significant bits of the color.  For
+  example, #3a7 is the same as #3000a0007000.
 
-  0x\ *AARRGGBB*                
-    A numeric specification of the alpha, red, green, and blue intensities
-    to use to display the color. Each A, R, G, or B represents a single
-    hexadecimal digit. The alpha value represents the transparency of the
-    pixel: "FF" is fully opaque, "00" is fully transparent.
+0x\ *AARRGGBB*                
+  A numeric specification of the alpha, red, green, and blue intensities
+  to use to display the color. Each A, R, G, or B represents a single
+  hexadecimal digit (for example, 0xFFFF0000 is fully opaque red). The
+  alpha value represents the transparency of the pixel: "FF" is fully
+  opaque, "00" is fully transparent.
 
 PICTURE OPERATIONS
 ==================
@@ -97,7 +104,7 @@ the command.  The operations available for pictures are listed below.
     *Mask* is either the name of a *picture* image. 
 
 *imageName* **and** *pictOrColor* 
-  Performs a bitwise-and of each color component of *imageName* with the
+  Performs a bitwise-and on each color component of *imageName* with the
   picture or color. *PictOrColor* is either the name of a *picture* image
   or a color specification.  The resulting image is saved in *imageName*.
   
@@ -112,7 +119,7 @@ the command.  The operations available for pictures are listed below.
 *imageName* **blank** ?\ *colorSpec*\ ?
   Blanks the image filling it with *colorSpec*.  This sets the initial
   layer of the picture.  *ColorSpec* is a color name or pixel hex value.
-  If no *colorSpec* argument is the color defaults to "white".
+  If no *colorSpec* argument is present, the color defaults to "white".
 
 *imageName* **blur** *srcName* *numPixels* 
   Blurs *srcName* performing a boxcar blur using *numPixels* as the radius
@@ -535,7 +542,7 @@ the command.  The operations available for pictures are listed below.
 
      L = pow(v, gammaValue);
 
-   where L is the radiance (light intensity) and v is the voltage applied.
+  where L is the radiance (light intensity) and v is the voltage applied.
 
 *imageName* **get** *x* *y* 
   Returns the pixel value at the designated coordinates in *imageName*. The
@@ -697,9 +704,9 @@ the command.  The operations available for pictures are listed below.
     Specifies the radius of the blur.  If *blurRadius* is 0, no blurring
     of the reflection is performed.  The default is 0.
 
-  **-colorscale** *scale*
-    Specifies the scale when interpolating color values. *Scale* can be
-    "linear", or "logarithmic"".
+  **-colorscale** *scaleName*
+    Specifies the scale when interpolating color values. *ScaleName* can be
+    "linear" or "logarithmic"".
 
     **linear**
         Colors are interpolated on a linear scale between 0.0 and 1.0.
@@ -1097,8 +1104,8 @@ format in the **import** or **export** operations.
 *imageName* **export bmp** ?\ *switches* ... ?
   Exports *imageName* into BMP data.  If no **-file** or **-data** switch
   is provided, this command returns the BMP output as a base64 string.  If
-  *imageName* is greyscale, then the BMP output will be 1 8-bit component
-  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  *imageName* is greyscale, then the BMP output will be one 8-bit component
+  per pixel, otherwise it will contain three 8-bit components per pixel.  If
   any pixel in *imageName* is not opaque, then an extra alpha component is
   output.
 
@@ -1124,9 +1131,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Write the BMP output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
 **gif**
@@ -1179,9 +1186,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Write the GIF output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
 **ico**
@@ -1211,8 +1218,8 @@ format in the **import** or **export** operations.
 *imageName* **export ico** ?\ *switches* ... ?
   Exports *imageName* into ICO data.  If no **-file** or **-data** switch
   is provided, this command returns the ICO output as a base64 string.  If
-  *imageName* is greyscale, then the ICO output will be 1 8-bit component
-  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  *imageName* is greyscale, then the ICO output will be one 8-bit component
+  per pixel, otherwise it will contain three 8-bit components per pixel.  If
   any pixel in *imageName* is not opaque, then an extra alpha component is
   output.
 
@@ -1238,9 +1245,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Write the ICO output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
 **jpg**
@@ -1301,9 +1308,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Write the JPEG output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
   **-quality** *percent*
@@ -1344,9 +1351,9 @@ format in the **import** or **export** operations.
     Write the picture information to the photo image *photoName*.
     *PhotoName* must be the name of a Tk photo image.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default, 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default, 0,
     is the first picture.
 
 **pbm**
@@ -1377,9 +1384,9 @@ format in the **import** or **export** operations.
 *imageName* **export pbm** ?\ *switches* ... ?
   Exports *imageName* into NETPBM data.  If no **-file** or **-data**
   switch is provided, this command returns the NETPBM output as a base64
-  string.  If *imageName* is greyscale, then the NETPBM output will be 1
-  8-bit component per pixel (PGMRAW), otherwise it will contain 3 8-bit
-  components per pixel (PPMRAW).  
+  string.  If *imageName* is greyscale, then the NETPBM output will be one
+  8-bit component per pixel (PGMRAW), otherwise it will contain three 8-bit
+  components per pixel (PPMRAW).
 
   The following switches are supported:
 
@@ -1396,9 +1403,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Write the PBM output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. If *numPicture* is a negative, all pictures will be
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. If *pictIndex* is a negative, all pictures will be
     exported.  The default is 0, which is the first picture.
 
 **pdf**
@@ -1468,9 +1475,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Writes the PDF output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
 **png**
@@ -1498,8 +1505,8 @@ format in the **import** or **export** operations.
 *imageName* **export png** ?\ *switches* ... ?
   Exports *imageName* into PNG data.  If no **-file** or **-data** switch
   is provided, this command returns the PNG output as a base64 string.  If
-  *imageName* is greyscale, then the PNG output will be 1 8-bit component
-  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  *imageName* is greyscale, then the PNG output will be one 8-bit component
+  per pixel, otherwise it will contain three 8-bit components per pixel.  If
   any pixel in *imageName* is not opaque, then an extra alpha component is
   output.
 
@@ -1580,9 +1587,9 @@ format in the **import** or **export** operations.
   **-greyscale** 
     Indicates to convert the image to greyscale before exporting to PS.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
   **-landscape**
@@ -1654,8 +1661,8 @@ format in the **import** or **export** operations.
 *imageName* **export tga** ?\ *switches* ... ?
   Exports *imageName* into TGA data.  If no **-file** or **-data** switch
   is provided, this command returns the TGA output as a base64 string.  If
-  *imageName* is greyscale, then the TGA output will be 1 8-bit component
-  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  *imageName* is greyscale, then the TGA output will be one 8-bit component
+  per pixel, otherwise it will contain three 8-bit components per pixel.  If
   any pixel in *imageName* is not opaque, then an extra alpha component is
   output.
 
@@ -1690,9 +1697,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Write the TGA output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
   **-job** *string*
@@ -1739,8 +1746,8 @@ format in the **import** or **export** operations.
 *imageName* **export tif** ?\ *switches* ... ?
   Exports *imageName* into TIFF data.  If no **-file** or **-data** switch
   is provided, this command returns the TIFF output as a base64 string.  If
-  *imageName* is greyscale, then the TIFF output will be 1 8-bit component
-  per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+  *imageName* is greyscale, then the TIFF output will be one 8-bit component
+  per pixel, otherwise it will contain three 8-bit components per pixel.  If
   any pixel in *imageName* is not opaque, then an extra alpha component is
   output.
 
@@ -1802,9 +1809,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Writes the TIFF output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
 
@@ -1864,9 +1871,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Writes the XBM output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
 **xpm**
@@ -1911,9 +1918,9 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Writes the XPM output to the file *fileName*.
 
-  **-index** *numPicture*
-    Specifies the picture in the list of pictures of *imageName* to be
-    exported. *NumPicture* is a non-negative number.  The default is 0,
+  **-index** *pictIndex*
+    Specifies the picture in the sequence of pictures of *imageName* to be
+    exported. *PictIndex* is a non-negative number.  The default is 0,
     which is the first picture.
 
   **-noquantize** 

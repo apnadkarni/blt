@@ -134,14 +134,14 @@ or double dashes (--).  The following options are available for
     Specifies a variable *varName* that is updated whenever data becomes
     available from standard error of the program.  *VarName* is a global
     variable. Unlike the **-error** option, data is available as soon as it
-    arrives.  This is like **--onerror** option, but the data is available
+    arrives.  This is like **-onerror** option, but the data is available
     through *varName*.
 
   **-lastoutput** *varName* 
     Specifies a variable *varName* that is updated whenever data becomes
     available from standard output of the program.  *VarName* is a global
     variable. Unlike the **-output** option, data is available as soon as
-    it arrives. This is like the **--onoutput** option, but the data is
+    it arrives. This is like the **-onoutput** option, but the data is
     available through *varName*.
 
   **-linebuffered** *boolean*

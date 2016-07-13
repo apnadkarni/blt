@@ -147,7 +147,7 @@ by id or by tag (see the **blt::tree** manual for details). In addition the
 
   **endview**
     This is the last node in the treeview.  If may be different depending
-    id **--flatview** is set.
+    id **-flatview** is set.
 
   **current**
     The is the node where the mouse pointer is currently located.  Unlike
@@ -177,11 +177,11 @@ by id or by tag (see the **blt::tree** manual for details). In addition the
 
   **view.first**
     This is the first node in the treeview.  If may be different depending
-    id **--flatview** is set.
+    id **-flatview** is set.
 
   **view.last**
     This is the first node in the treeview.  If may be different depending
-    id **--flatview** is set.
+    id **-flatview** is set.
 
   **view.next**
     The next open node from the current focus.  But unlike **down**,

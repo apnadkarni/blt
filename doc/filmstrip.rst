@@ -220,7 +220,7 @@ command.  The following operations are available for *filmstrip* widgets:
 
   **-animate** *boolean*
     Indicates to animate the movement of frames.  The **-scrolldelay** and
-    **--scrollincrement** options determine how the animation is
+    **-scrollincrement** options determine how the animation is
     performed. The default is "0".
 
   **-background** *colorName* 

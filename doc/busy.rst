@@ -242,7 +242,7 @@ an example.
 OPAQUE BUSY WINDOWS
 -------------------
 
-If the busy window is semi-opaque (see the **--opacity** option), the
+If the busy window is semi-opaque (see the **-opacity** option), the
 window should not be resized while the window is busy.  A snapshot of the
 contents of the reference window is taken when the window becomes busy.  If
 the window is resized, the snapshot won't fit the reference window.  You
