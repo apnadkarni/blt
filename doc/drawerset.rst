@@ -193,13 +193,13 @@ command.  The following operations are available for *drawerset* widgets:
     be the top center point of the drawer.  This option defaults to "c".
 
   **-animate** *boolean*
-    Indicates to animate the movement of drawers.  The **-delay** and
-    **-steps** options determine how the animation is performed.
-    The default is "0".
+    Indicates to animate the movement of drawers.  The drawer's **-delay**
+    and **-steps** options determine how the movement is performed.  The
+    default is "0".
 
   **-autoraise** *boolean*
-    Indicates to automatically raise drawers when they are opened. 
-    The default is "0".
+    Indicates to automatically raise drawers when they are opened.  The
+    default is "0".
 
   **-background** *colorName* 
     Specifies the default background of the widget including its drawers.
@@ -207,11 +207,10 @@ command.  The following operations are available for *drawerset* widgets:
     created by the **blt::background** command.  The default is "grey85".
     
   **-handleborderwidth** *numPixels* 
-    Specifies the default border width of handles in the widget.  *NumPixels*
-    is a non-negative value indicating the width of the 3-D border drawn
-    around the handle. The value may have any of the forms acceptable to
-    **Tk_GetPixels**.  This option may be overridden by the style's
-    **-borderwidth** option.  The default is "1".
+    Specifies the default border width of handles in the *drawerset* widget.
+    *NumPixels* is a non-negative value indicating the width of the 3-D
+    border drawn around the handle. The value may have any of the forms
+    acceptable to **Tk_GetPixels**. The default is "1".
 
   **-handlecolor** *colorName*
     Specifies the default color of handles.  *ColorName* may be a color name or
@@ -559,15 +558,15 @@ command.  The following operations are available for *drawerset* widgets:
   *DrawerName* may be a label, index, or tag and may
   refer to multiple drawers (for example "all").
   
-*pathName* **move after** *whereName* *drawerName*
-  Moves *drawerName* after the drawer *whereName*.  Both *whereName* and
-  *drawerName* may be a label, index, or tag, but may not represent more than
-  one drawer.  The indices of drawers may change.
+*pathName* **move after** *refDrawerName* *drawerName*
+  Moves *drawerName* after the drawer *refDrawerName*.  Both
+  *refDrawerName* and *drawerName* may be a label, index, or tag, but may
+  not represent more than one drawer.  The indices of drawers may change.
   
-*pathName* **move before** *whereName* *drawerName*
-  Moves *drawerName* before the drawer *whereName*.  Both *whereName* and
-  *drawerName* may be a label, index, or tag, but may not represent more than
-  one drawer. The indices of drawers may change.
+*pathName* **move before** *refDrawerName* *drawerName*
+  Moves *drawerName* before the drawer *refDrawerName*.  Both
+  *refDrawerName* and *drawerName* may be a label, index, or tag, but may
+  not represent more than one drawer. The indices of drawers may change.
 
 *pathName* **names** ?\ *pattern* ... ?
   Returns the labels of all the drawers.  If one or more *pattern* arguments
@@ -575,7 +574,7 @@ command.  The following operations are available for *drawerset* widgets:
   returned. *Pattern* is a **glob**\ -style pattern.
 
 *pathName* **open** *drawerName*
-  Opens *drawerName*, sliding the window out from the side of the
+  Opens *drawerName*, sliding the embedded Tk widget out from the side of the
   *drawerset* widget.  *DrawerName* may be a label, index, or tag and may
   refer to multiple drawers (for example "all"). Disabled or hidden drawers
   are ignored. If there is TCL variable associated with the drawer (see the
