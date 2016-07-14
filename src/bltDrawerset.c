@@ -89,41 +89,42 @@ typedef enum {
 #define DEF_ANIMATE             "0"
 #define DEF_AUTORAISE           "0"
 #define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
+#define DEF_DELAY               "20"
+#define DEF_HCURSOR             "sb_h_double_arrow"
+#define DEF_HEIGHT              "0"
+#define DEF_PAD                 "0"
+#define DEF_SIDE                "right"
+#define DEF_TAKEFOCUS           "1"
+#define DEF_VCURSOR             "sb_v_double_arrow"
+#define DEF_WIDTH               "0"
+
 #define DEF_DRAWER_ANCHOR       "c"
 #define DEF_DRAWER_BORDERWIDTH  "0"
 #define DEF_DRAWER_CLOSEVALUE   "0"
 #define DEF_DRAWER_CLOSE_COMMAND (char *)NULL
+#define DEF_DRAWER_DATA         (char *)NULL
 #define DEF_DRAWER_DELETE_COMMAND (char *)NULL
 #define DEF_DRAWER_FILL         "1"
 #define DEF_DRAWER_HIDE         "0"
-#define DEF_HANDLE_HIGHLIGHT_BACKGROUND STD_NORMAL_BACKGROUND
-#define DEF_HANDLE_HIGHLIGHT_COLOR      RGB_BLACK
 #define DEF_DRAWER_OPENVALUE    "1"
 #define DEF_DRAWER_OPEN_COMMAND (char *)NULL
 #define DEF_DRAWER_PAD          "0"
 #define DEF_DRAWER_PADX         "0"
-#define DEF_DRAWER_SCALE         "log"
 #define DEF_DRAWER_PADY         "0"
 #define DEF_DRAWER_RESIZE       "shrink"
+#define DEF_DRAWER_SCALE         "log"
 #define DEF_DRAWER_SHOW_HANDLE   "1"
 #define DEF_DRAWER_SHRINK       "0"
-#define DEF_DRAWER_VARIABLE     (char *)NULL
-#define DEF_HANDLE_BORDERWIDTH   "1"
 #define DEF_DRAWER_STEPS        "8"
+#define DEF_DRAWER_TAGS         (char *)NULL
+#define DEF_DRAWER_VARIABLE     (char *)NULL
+
+#define DEF_HANDLE_BORDERWIDTH   "1"
 #define DEF_HANDLE_COLOR         STD_NORMAL_BACKGROUND
 #define DEF_HANDLE_CURSOR       (char *)NULL
 #define DEF_HANDLE_PAD           "0"
 #define DEF_HANDLE_RELIEF        "flat"
 #define DEF_HANDLE_THICKNESS     "2"
-#define DEF_HCURSOR             "sb_h_double_arrow"
-#define DEF_HEIGHT              "0"
-#define DEF_HANDLE_HIGHLIGHT_THICKNESS "1"
-#define DEF_PAD                 "0"
-#define DEF_DELAY               "20"
-#define DEF_SIDE                "right"
-#define DEF_TAKEFOCUS           "1"
-#define DEF_VCURSOR             "sb_v_double_arrow"
-#define DEF_WIDTH               "0"
 
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
@@ -141,11 +142,6 @@ struct _Handle {
     Blt_HashEntry *hashPtr;             /* Pointer of this handle into the
                                          * draweset's hashtable of
                                          * handles. */
-    XColor *highlightBgColor;           /* Color for drawing traversal
-                                         * highlight area when highlight is
-                                         * off. */
-    XColor *highlightColor;             /* Color for drawing traversal
-                                         * highlight. */
     Blt_Bg bg;
     Blt_Bg activeBg;
     Tk_Cursor cursor;                   /* X Cursor */
@@ -248,6 +244,7 @@ struct _Drawer  {
                                          * the drawer has been closed. */
     Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
                                          * when drawer is deleted. */
+    Tcl_Obj *dataObjPtr;
     Handle handle;
     int delay;                          /* Delay between steps of automated 
                                          * scrolling. */
@@ -295,15 +292,6 @@ struct _Drawerset {
     int scrollUnits;                    /* Smallest unit of scrolling for
                                          * drawer. */
     int scrollIncr;                     /* Current increment. */
-    /*
-     * Focus highlight ring
-     */
-    int handleHighlightThickness;       /* Width in pixels of highlight to
-                                         * draw around the handle when it
-                                         * has the focus.  <= 0 means don't
-                                         * draw a highlight. */
-    XColor *handleHighlightColor;       /* Color for drawing traversal
-                                         * highlight. */
     int relief;
     int activeRelief;
     Blt_Pad handlePad;
@@ -443,6 +431,13 @@ static Blt_CustomOption traceVarOption = {
     ObjToTraceVar, TraceVarToObj, FreeTraceVarProc, (ClientData)0
 };
 
+static Blt_OptionFreeProc FreeTagsProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
+static Blt_CustomOption tagsOption = {
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
+};
+
 static Blt_ConfigSpec drawerSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
@@ -463,6 +458,8 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_OBJ, "-closevalue", "closeValue", "CloseValue",
         DEF_DRAWER_CLOSEVALUE, Blt_Offset(Drawer, closeValueObjPtr), 
         BLT_CONFIG_NULL_OK },
+    {BLT_CONFIG_OBJ, "-data", "data", "Data", DEF_DRAWER_DATA, 
+        Blt_Offset(Drawer, dataObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_INT_NNEG, "-delay", "delay", "Delay", DEF_DELAY,
         Blt_Offset(Drawer, delay), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
@@ -476,28 +473,14 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_CURSOR, "-handlecursor", "handleCursor", "HandleCursor",
         DEF_HANDLE_CURSOR, Blt_Offset(Drawer, handle.cursor),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqHeight), 0},
+    {BLT_CONFIG_CUSTOM, "-height", "height", "Height", (char *)NULL, 
+        Blt_Offset(Drawer, reqHeight), 0, &bltLimitsOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_DRAWER_HIDE, 
         Blt_Offset(Drawer, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)HIDDEN },
-    {BLT_CONFIG_COLOR, "-handlehighlightbackground",
-        "handleHighlightBackground", "HandleHighlightBackground",
-        DEF_HANDLE_HIGHLIGHT_BACKGROUND, 
-        Blt_Offset(Drawer, handle.highlightBgColor), 0},
-    {BLT_CONFIG_COLOR, "-handlehighlightcolor", "handleHighlightColor",
-        "HandleHighlightColor", DEF_HANDLE_HIGHLIGHT_COLOR,
-        Blt_Offset(Drawer, handle.highlightColor), 0},
-    {BLT_CONFIG_OBJ, "-opencommand", "openCommand", "OpenCommand", 
-        DEF_DRAWER_OPEN_COMMAND, Blt_Offset(Drawer, openCmdObjPtr), 
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-openvalue", "openValue", "OpenValue", 
         DEF_DRAWER_OPENVALUE, Blt_Offset(Drawer, openValueObjPtr), 
         BLT_CONFIG_NULL_OK },
-    {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqHeight), 0, &bltLimitsOption},
-    {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_DRAWER_RESIZE,
         Blt_Offset(Drawer, resize), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_CUSTOM, "-scale", "scale", "Scale",
@@ -513,13 +496,15 @@ static Blt_ConfigSpec drawerSpecs[] =
         Blt_Offset(Drawer, side), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT_POS, "-steps", "steps", "Steps", DEF_DRAWER_STEPS,
         Blt_Offset(Drawer, numSteps), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_DRAWER_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
         DEF_TAKEFOCUS, Blt_Offset(Drawer, takeFocus), BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_CUSTOM, "-variable", (char *)NULL, (char *)NULL, 
         DEF_DRAWER_VARIABLE, Blt_Offset(Drawer, varNameObjPtr), 
         BLT_CONFIG_NULL_OK, &traceVarOption},
-    {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqWidth), 0},
+    {BLT_CONFIG_CUSTOM, "-width", "width", "Width", (char *)NULL, 
+        Blt_Offset(Drawer, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
         Blt_Offset(Drawer, tkwin), BLT_CONFIG_NULL_OK, &childOption },
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -548,14 +533,6 @@ static Blt_ConfigSpec drawersetSpecs[] =
         Blt_Offset(Drawerset, handleBW), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
         DEF_HANDLE_COLOR, Blt_Offset(Drawerset, handleBg), 0},
-    {BLT_CONFIG_COLOR, "-handlehighlightcolor", "handleHighlightColor",
-        "HandleHighlightColor", DEF_HANDLE_HIGHLIGHT_COLOR,
-        Blt_Offset(Drawerset, handleHighlightColor), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-handlehighlightthickness",
-        "handleHighlightThickness", "HandleHighlightThickness",
-        DEF_HANDLE_HIGHLIGHT_THICKNESS, 
-        Blt_Offset(Drawerset, handleHighlightThickness),
-        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-handlepad", "handlePad", "HandlePad", DEF_HANDLE_PAD, 
         Blt_Offset(Drawerset, handlePad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-handlerelief", "handleRelief", "HandleRelief", 
@@ -1678,6 +1655,138 @@ MotionScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     return objPtr;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SetTag --
+ *
+ *      Associates a tag with a given row.  Individual row tags are
+ *      stored in hash tables keyed by the tag name.  Each table is in
+ *      turn stored in a hash table keyed by the row location.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects:
+ *      A tag is stored for a particular row.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SetTag(Tcl_Interp *interp, Drawer *drawPtr, const char *tagName)
+{
+    Drawerset *setPtr;
+    long dummy;
+    
+    if (strcmp(tagName, "all") == 0) {
+        return TCL_OK;                  /* Don't need to create reserved
+                                         * tags. */
+    }
+    if (tagName[0] == '\0') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+                (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (tagName[0] == '-') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, 
+                "\" can't start with a '-'.", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    setPtr = drawPtr->setPtr;
+    Blt_Tags_AddItemToTag(&setPtr->tags, tagName, drawPtr);
+    return TCL_OK;
+}
+
+/*ARGSUSED*/
+static void
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
+{
+    Drawerset *setPtr;
+    Drawer *drawPtr = (Drawer *)widgRec;
+
+    setPtr = drawPtr->setPtr;
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, drawPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToTags --
+ *
+ *      Convert the string representation of a list of tags.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The tags are
+ *      save in the widget.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    Drawerset *setPtr;
+    Drawer *drawPtr = (Drawer *)widgRec;
+    int i;
+    char *string;
+    int objc;
+    Tcl_Obj **objv;
+
+    setPtr = drawPtr->setPtr;
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, drawPtr);
+    string = Tcl_GetString(objPtr);
+    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+        return TCL_OK;
+    }
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i++) {
+        SetTag(interp, drawPtr, Tcl_GetString(objv[i]));
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagsToObj --
+ *
+ *      Return the tags used by the pane.
+ *
+ * Results:
+ *      A TCL list representing the tags is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+          char *widgRec, int offset, int flags)  
+{
+    Drawerset *setPtr;
+    Drawer *drawPtr = (Drawer *)widgRec;
+    Tcl_Obj *listObjPtr;
+
+    setPtr = drawPtr->setPtr;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Blt_Tags_AppendTagsToObj(&setPtr->tags, drawPtr, listObjPtr);
+    return listObjPtr;
+}
+
 static void
 EventuallyRedrawHandle(Drawer *drawPtr)
 {
@@ -1686,6 +1795,7 @@ EventuallyRedrawHandle(Drawer *drawPtr)
         Tcl_DoWhenIdle(DisplayHandle, drawPtr);
     }
 }
+
 
 static Drawer *
 FirstDrawer(Drawerset *setPtr, unsigned int hateFlags)
@@ -2513,7 +2623,6 @@ NewDrawerset(Tcl_Interp *interp, Tcl_Obj *objPtr)
     setPtr->handleBW = 1;
     setPtr->flags = LAYOUT_PENDING | RESTACK;
     setPtr->scrollUnits = 10;
-    setPtr->handleHighlightThickness = 1;
     Blt_SetWindowInstanceData(tkwin, setPtr);
     Blt_InitHashTable(&setPtr->drawerTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->handleTable, BLT_STRING_KEYS);
@@ -3038,8 +3147,8 @@ ConfigureDrawerset(Drawerset *setPtr)
         Tk_GeometryRequest(setPtr->tkwin, setPtr->normalWidth,
                            setPtr->normalHeight);
     }       
-    setPtr->handleSize = MAX(PADDING(setPtr->handlePad),
-        setPtr->handleHighlightThickness) + setPtr->handleThickness;
+    setPtr->handleSize = PADDING(setPtr->handlePad) + 
+        setPtr->handleThickness;
 }
 
 static void
@@ -5111,12 +5220,5 @@ DisplayHandle(ClientData clientData)
         Blt_Bg_DrawRectangle(handlePtr->tkwin, drawable, bg, 
                 setPtr->handlePad.side1, setPtr->handlePad.side1, w, h, 
                 setPtr->handleBW, relief);
-    }
-    if ((setPtr->handleHighlightThickness > 0) && (drawPtr->flags & FOCUS)) {
-        GC gc;
-
-        gc = Tk_GCForColor(setPtr->handleHighlightColor, drawable);
-        Tk_DrawFocusHighlight(handlePtr->tkwin, gc,
-                setPtr->handleHighlightThickness, drawable);
     }
 }

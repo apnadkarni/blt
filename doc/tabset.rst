@@ -362,9 +362,9 @@ available for *tabset* widgets:
     Specifies extra padding to be displayed around the selected tab.  The
     default value is "3".
 
-  **-side** *tabSide*
-    Specifies the side of the widget to place tabs.  *TabSide* can be any of
-    the following values.
+  **-side** *sideName*
+    Specifies the side of the widget to place tabs.  *SideName* can be any
+    of the following values.
 
     **top**
       Tabs are drawn along the top.

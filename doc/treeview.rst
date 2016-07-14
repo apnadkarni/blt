@@ -565,8 +565,7 @@ command.  The following operation are available for *treeview* widgets:
     value) that are appended to the end.
 
   **-hide** *boolean*
-    If *boolean* is true, the column is not displayed.  The default is
-    "yes".
+    If *boolean* is true, the column is not displayed.  The default is "0".
 
   **-icon** *imageName*
     Specifies an image to displayed to the left of the column title.
@@ -809,7 +808,7 @@ FIXME
 
   **-hideroot** *boolean*
     If *boolean* is true, it indicates that no entry for the root node
-    should be displayed.  The default is "no".
+    should be displayed.  The default is "0".
 
   **-highlightbackground**  *colorName*
     Specifies the normal color of the traversal highlight region when the

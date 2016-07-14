@@ -84,6 +84,13 @@ install: all
 
 .rst.n: 
 	$(RM) $@
+        echo "
+:Author: George A Howlett
+:Date:   2012-11-28
+:Copyright: 2015 (c) George A. Howlett
+:Version: 4.0
+:Manual section: n
+:Manual group: BLT Built-In Commands" > man.rst
 	echo "" > toc.rst
 	rst2man.py $< > $@
 

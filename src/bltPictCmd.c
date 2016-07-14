@@ -4584,7 +4584,7 @@ SequenceSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         picture = Blt_GetNthPicture(imgPtr->chain, index);
         if (picture == NULL) {
             Tcl_AppendResult(interp, "no picture at sequence slot \"",
-                        Tcl_GetString(objv[3]), "\"", (char *)NULL);
+                             Tcl_GetString(objv[3]), "\"", (char *)NULL);
             return TCL_ERROR;
         }
         imgPtr->current = index;
@@ -4607,7 +4607,7 @@ SequenceSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 SequenceStartOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
+                Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int delay;
@@ -4656,7 +4656,7 @@ static Blt_OpSpec sequenceOps[] =
     {"put",     1, SequencePutOp,     5, 5, "indexName pictName",},
     {"replace", 1, SequenceReplaceOp, 5, 0, "firstIndex lastIndex ?pictName...?",},
     {"see",     2, SequenceSeeOp,     3, 4, "?indexName?",},
-    {"start"    3, SequenceStartOp,   3, 3, "",},
+    {"start",   3, SequenceStartOp,   3, 3, "",},
     {"stop",    3, SequenceStopOp,    3, 3, "",},
 };
 

@@ -999,7 +999,7 @@ The following operations are available for cross hairs:
 
   **-hide**  *boolean*
     Indicates whether cross hairs are drawn. If *boolean* is true, cross
-    hairs are not drawn.  The default is "yes".
+    hairs are not drawn.  The default is "0".
 
   **-linewidth**  *numPixels*
     Set the line width of the cross hairs.  The default is "1".
@@ -1238,7 +1238,7 @@ The following operations are available for elements.
     "defcolor".
 
   **-hide**  *boolean*
-    Indicates whether the element is displayed.  The default is "no".
+    Indicates whether the element is displayed.  The default is "0".
 
   **-label**  *labelString*
     Sets the element's label in the legend.  If *labelString* is "", the
@@ -1773,7 +1773,7 @@ The following operations are valid for the legend.
 
   **-hide**  *boolean*
     Indicates whether the legend should be displayed. If *boolean* is true,
-    the legend will not be drawn.  The default is "no".
+    the legend will not be drawn.  The default is "0".
 
   **-ipadx**  *numPixels* 
     Sets the amount of internal padding to be added to the width of each
@@ -2400,7 +2400,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
+    is not drawn.  The default is "0".
 
   **-mapx**  *axisName* 
     Specifies the X-axis to map the marker's X-coordinates onto.
@@ -2504,7 +2504,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
+    is not drawn.  The default is "0".
 
   **-image**  *imageName*
     Specifies the image to be drawn.  If *imageName* is "", the marker will
@@ -2605,7 +2605,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
+    is not drawn.  The default is "0".
 
   **-join**  *joinStyle*
 
@@ -2707,7 +2707,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
+    is not drawn.  The default is "0".
 
   **-join**  *joinStyle* 
 
@@ -2828,7 +2828,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is hidden. If *boolean* is true, the
-    marker is not drawn.  The default is "no".
+    marker is not drawn.  The default is "0".
 
   **-justify**  *justifyName*
     Specifies how the text should be justified.  This matters only when the
@@ -2950,7 +2950,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the to hide the marker. If *boolean* is true, the
-    marker is not drawn.  The default is "no".
+    marker is not drawn.  The default is "0".
 
   **-mapx**  *axisName* 
     Specifies the X-axis to map the marker's X-coordinates onto.
