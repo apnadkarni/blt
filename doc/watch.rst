@@ -6,12 +6,8 @@ blt::watch
 Call TCL procedures before and after each command
 -------------------------------------------------
 
-:Author: George A Howlett
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 --------

@@ -74,7 +74,7 @@ Drawers can be referenced either by index, label, or by tag.
   are also the following special non-numeric indices.
 
   **active**
-    This is the drawer whose handle is where the mouse pointer is currently
+x    This is the drawer whose handle is where the mouse pointer is currently
     located.  When a handle is active, it is drawn using its active colors.
     The **active** index is changes when you move the mouse pointer over
     another drawer's handle or by using the **handle activate**

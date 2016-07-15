@@ -68,13 +68,37 @@ MISSING =	$(srcdir)/barchart.rst \
 INSTALL =	@INSTALL@
 INSTALL_DATA =	@INSTALL_DATA@
 SHELL =		/bin/sh
-RM =		rm -rf
+RM =		rm -f
 MKDIR_P =	@MKDIR_P@
 VPATH =		$(srcdir)
 
 .SUFFIXES: .pdf .n .htm .rst 
+.NOTPARALLEL:
 
-all: $(MAN) $(HTM) $(PDF)
+all: man html pdf
+
+toc:
+	echo ".. contents:: Table of contents" > toc.rst
+notoc:
+	echo "" > toc.rst
+
+maninfo:
+	echo ":Author: George A Howlett" > man.rst
+	echo ":Date:   2012-11-28" >> man.rst
+	echo ":Copyright: 2015 (c) George A. Howlett" >> man.rst
+	echo ":Version: 4.0" >> man.rst
+	echo ":Manual section: n" >> man.rst
+	echo ":Manual group: BLT Built-In Commands" >> man.rst
+
+nomaninfo:
+	echo "" > man.rst
+
+man: notoc maninfo $(MAN)
+	echo ".. contents:: Table of contents" > toc.rst
+
+html: nomaninfo toc $(HTM)
+
+pdf: nomaninfo notoc $(PDF)
 
 install: all
 	$(MKDIR_P) $(DESTDIR)$(manndir)
@@ -83,29 +107,16 @@ install: all
 	done
 
 .rst.n: 
-	$(RM) $@
-        echo "
-:Author: George A Howlett
-:Date:   2012-11-28
-:Copyright: 2015 (c) George A. Howlett
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands" > man.rst
-	echo "" > toc.rst
-	rst2man.py $< > $@
+	/bin/sh $(srcdir)/rst2man.sh $< $@
 
 .rst.pdf: 
-	$(RM) $@
-	echo ".. contents:: Table of contents" > toc.rst
-	rst2pdf $< -o $@
+	/bin/sh $(srcdir)/rst2pdf.sh $< $@
 
 .rst.htm: 
-	$(RM) $@
-	echo ".. contents:: Table of contents" > toc.rst
-	rst2html.py $< > $@
+	/bin/sh $(srcdir)/rst2html.sh $< $@
 
 clean:
-	$(RM) *.n *.htm *.pdf
+	$(RM) *.n *.htm *.pdf man.rst toc.rst
 
 distclean: clean
 	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* Makefile

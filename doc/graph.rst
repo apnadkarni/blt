@@ -7,12 +7,8 @@ blt::graph
 2D graph for plotting X-Y coordinate data.
 -------------------------------------------
 
-:Author: George A. Howlett, Sani R. Nassif
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 --------
@@ -3003,12 +2999,12 @@ The following operations are available for markers.
 *pathName* **marker find enclosed**  *x1* *y1* *x2* *y2*
   Finds all the markers that are completely enclosed within
   the  rectangular region given by *x1*, *y1*, *x2*, and *y2*.
-  *X1*, *y1* and *x2*, *y2 are opposite corners of the region.
+  *X1*, *y1* and *x2*, *y2* are opposite corners of the region.
 
 *pathName* **marker find overlapping**  *x1* *y1* *x2* *y2*
   Finds all the markers that overlap or are enclosed within
   the  rectangular region given by *x1*, *y1*, *x2*, and *y2*.
-  *X1*, *y1* and *x2*, *y2 are opposite corners of the region.
+  *X1*, *y1* and *x2*, *y2* are opposite corners of the region.
   
 *pathName* **marker get** *markerName*
   Converts the special marker specifier to it name.  This is

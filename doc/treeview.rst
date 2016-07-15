@@ -7,12 +7,8 @@ blt::treeview
 Create and manipulate treeview widgets.
 ----------------------------------------
 
-:Author: George A Howlett
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 --------
@@ -1521,70 +1517,6 @@ FIXME
 *pathName* **tag nodes** *string*
   Returns a list of ids that have the tag *string*.  If no node
   is tagged as *string*, then an empty string is returned.
-
-*pathName* **text** *operation* ?\ *args*\ ?
-  This operation is used to provide text editing for cells (data fields in
-  a column) or entry labels.  It has several forms, depending on
-  *operation*:
-
-*pathName* **text apply**
-  Applies the edited buffer, replacing the entry label or data field. The
-  edit window is hidden.
-
-*pathName* **text cancel**
- Cancels the editing operation, reverting the entry label or data value
- back to the previous value. The edit window is hidden.
-
-*pathName* **text cget** *value*
-  Returns the current value of the configuration option given by *option*.
-  *Option* may have any of the values accepted by the **configure**
-  operation described below.
-
-*pathName* **text configure** ?\ *option* *value* ... ?
-  Query or modify the configuration options of the edit window.  If no
-  *option* is specified, returns a list describing all of the available
-  options (see **Tk_ConfigureInfo** for information on the format of this
-  list).  If *option* is specified with no *value*, then the command
-  returns a list describing the one named option (this list will be
-  identical to the corresponding sublist of the value returned if no
-  *option* is specified).  If one or more *option*-*value* pairs are
-  specified, then the command modifies the given widget option(s) to have
-  the given value(s); in this case the command returns an empty string.
-  *Option* and *value* are described in the section `TEXT EDITING OPTIONS`_
-  below.
-
-*pathName* **text delete** *first* last*
-  Deletes the characters in the edit buffer between the two given
-  character positions.  
-
-*pathName* **text get** ? **-root** ? *x* *y*
-
-*pathName* **text icursor** *index*
-
-*pathName* **text index** *index*
-  Returns the text index of given *index*.
-
-*pathName* **text insert** *index* *string*
-  Insert the text string *string* into the edit buffer at the index 
-  *index*.  For example, the index 0 will prepend the buffer.
-
-*pathName* **text selection adjust** *index*
-  Adjusts either the first or last index of the selection.
-
-*pathName* **text selection clear**
-  Clears the selection.
-
-*pathName* **text selection from** *index*
-  Sets the anchor of the selection.
-
-*pathName* **text selection present**
-  Indicates if a selection is present.
-
-*pathName* **text selection range** *start* *end*
-Sets both the anchor and mark of the selection.
-
-*pathName* **text selection to** *index*
-Sets the unanchored end (mark) of the selection.
 
 *pathName* **toggle** *tagOrId*
   Opens or closes the node given by *tagOrId*.  If the corresponding 

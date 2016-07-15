@@ -7,19 +7,15 @@ blt::background
 Create and manage background styles for widgets.
 ------------------------------------------------
 
-:Author: George A. Howlett
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 --------
 
 **blt::background cget** *bgName* ?\ *option*\ ?
 
-**blt::background configure** *window* ?\ *option* *value* ... ?
+**blt::background configure** *windowName* ?\ *option* *value* ... ?
 
 **blt::background create** *type* ?\ *bgName*\ ? ?\ *option* *value* ... ?
 
@@ -166,14 +162,16 @@ The following operations are available for the **blt::background** command:
     Specifies the border color of the background object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
-  **-colorscale** *scale*
-    Specifies the scale when interpolating values. *Scale* can be "linear",
-    or "logarithmic"".
+  **-colorscale** *scaleName*
+    Specifies the scale when interpolating values. *ScaleName* can be
+    "linear", or "logarithmic"".
 
     **linear**
       Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
       Colors are interpolated using the log of the value.
+
+    The default is "linear".
     
   **-decreasing**
     Indicates that the colors are interpolated from high to low.  By
@@ -184,13 +182,13 @@ The following operations are available for the **blt::background** command:
     position is a relative location in the reference window.  *Position*
     can be one of the following forms.
 
-    *anchor*
+    *anchorName*
       The position is an anchor position: **nw**, **n**, **ne**,
-      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *AnchorName*
       represents a location in the reference window.  For example "nw"
       is the upper left corner of the reference window.
 
-    *side side*
+    *vertSide* *horzSide*
       The position is a 2 element list. The first element can be **top**,
       **bottom**, or **center**. The second element can be **left**,
       **right**, or **center**.  The combination of the two sides
@@ -227,11 +225,12 @@ The following operations are available for the **blt::background** command:
 
   **-repeat** *string*
 
-  **-relativeto** *window*
+  **-relativeto** *windowName*
     Specifies a reference window for the linear gradient.  This is useful
     for creating seamless gradients with many widgets.  For example if a
-    *window* is a frame then all the children packed in *window* can use
-    the background seamlessly.  *Window* can be one of the following.
+    *windowName* is a frame then all the children packed in *window* can
+    use the background seamlessly.  *WindowName* can be one of the
+    following.
 
     **self**
       The reference window is the window whose background is being drawn.  
@@ -240,12 +239,13 @@ The following operations are available for the **blt::background** command:
       The reference window is the toplevel window whose background is
       being drawn.  This is the default.
        
-    *window*
-      The reference window is *window*.  *Window* is the name of a Tk
-      widget.  It must be an ancestor of the window whose background is
-      being drawn. *Window* doesn't have to exist yet. At an idle point
-      later, the background will check for the widget, If *window* is
-      destroyed, the reference window reverts to **self**.
+    *refWindowName*
+      The reference window is *refWindowName*.  *RefWindowName* is the name
+      of a Tk widget.  It must be an ancestor of the window whose
+      background is being drawn. *RefWindowName* doesn't have to exist
+      yet. At an idle point later, the background will check for the
+      widget, If *refWindowName* is destroyed, the reference window reverts
+      to **self**.
        
   **-xoffset** *numPixels*
     Specifies the horizontal offset of the background. *NumPixels* is
@@ -277,14 +277,16 @@ The following operations are available for the **blt::background** command:
     Specifies the border color of the background object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
-  **-colorscale** *scale*
-    Specifies the scale when interpolating values. *Scale* can be "linear",
-    or "logarithmic"".
+  **-colorscale** *scaleName*
+    Specifies the scale when interpolating values. *ScaleName* can be
+    "linear", or "logarithmic"".
 
     **linear**
         Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
         Colors are interpolated using the log of the value.
+    
+    The default is "linear".
     
   **-decreasing**
     Indicates that the colors are interpolated from high to low.  By
@@ -295,13 +297,13 @@ The following operations are available for the **blt::background** command:
     position is a relative location in the reference window.  *Position*
     can be one of the following forms.
 
-    *anchor*
+    *anchorName*
       The position is an anchor position: **nw**, **n**, **ne**,
-      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *AnchorName*
       represents a location in the reference window.  For example "nw"
       is the upper left corner of the reference window.
 
-    *side side*
+    *vertSide* *horzSide*
       The position is a 2 element list. The first element can be **top**,
       **bottom**, or **center**. The second element can be **left**,
       **right**, or **center**.  The combination of the two sides
@@ -338,11 +340,11 @@ The following operations are available for the **blt::background** command:
 
   **-repeat** *string*
 
-  **-relativeto** *window*
+  **-relativeto** *windowName*
     Specifies a reference window for the linear gradient.  This is useful
     for creating seamless gradients with many widgets.  For example if a
-    *window* is a frame then all the children packed in *window* can use
-    the background seamlessly.  *Window* can be one of the following.
+    *windowName* is a frame then all the children packed in *window* can use
+    the background seamlessly.  *WindowName* can be one of the following.
 
     **self**
        The reference window is the window whose background is being drawn.  
@@ -351,25 +353,26 @@ The following operations are available for the **blt::background** command:
        The reference window is the toplevel window whose background is
        being drawn.  This is the default.
        
-    *window*
-      The reference window is *window*.  *Window* is the name of a Tk
-      widget.  It must be an ancestor of the window whose background is
-      being drawn. *Window* doesn't have to exist yet. At an idle point
-      later, the background will check for the widget, If *window* is
-      destroyed, the reference window reverts to **self**.
+    *refWindowName*
+      The reference window is *refWindowName*.  *RefWindowName* is the name
+      of a Tk widget.  It must be an ancestor of the window whose
+      background is being drawn. *RefWindowName* doesn't have to exist
+      yet. At an idle point later, the background will check for the
+      widget, If *refWindowName* is destroyed, the reference window reverts
+      to **self**.
        
   **-to** *position*
     Specifies the ending position of linear gradient axis.  The ending
     position is a relative location in the reference window.  *Position*
     can be one of the following.
 
-    *anchor*
+    *anchorName*
       The position is an anchor position: **nw**, **n**, **ne**,
       **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
       represents a location in the reference window.  For example "nw"
       is the upper left corner of the reference window.
 
-    *side side*
+    *vertSide* *horzSide*
       The position is a 2 element list. The first element can be **top**,
       **bottom**, or **center**. The second element can be **left**,
       **right**, or **center**.  The combination of the two sides
@@ -413,14 +416,16 @@ The following operations are available for the **blt::background** command:
     Specifies the border color of the background object.  If a widget has a
     3D relief, this specifies the colors of the bevels.
     
-  **-colorscale** *scale*
-    Specifies the scale when interpolating values. *Scale* can be "linear",
-    or "logarithmic".
+  **-colorscale** *scaleName*
+    Specifies the scale when interpolating values. *ScaleName* can be
+    "linear", or "logarithmic".
 
     **linear**
       Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
       Colors are interpolated using the log of the value.
+    
+    The default is "linear".
     
   **-decreasing**
     Indicates that the colors are interpolated from high to low.  By
@@ -431,13 +436,13 @@ The following operations are available for the **blt::background** command:
     position is a relative location in the reference window.  *Position*
     can be one of the following forms.
 
-    *anchor*
+    *anchorName*
       The position is an anchor position: **nw**, **n**, **ne**,
-      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *AnchorName*
       represents a location in the reference window.  For example "nw"
       is the upper left corner of the reference window.
 
-    *side side*
+    *vertSide*  *horzSide*
       The position is a 2 element list. The first element can be **top**,
       **bottom**, or **center**. The second element can be **left**,
       **right**, or **center**.  The combination of the two sides
@@ -479,11 +484,12 @@ The following operations are available for the **blt::background** command:
 
   **-repeat** *string*
 
-  **-relativeto** *window*
+  **-relativeto** *windowName*
     Specifies a reference window for the linear gradient.  This is useful
     for creating seamless gradients with many widgets.  For example if a
-    *window* is a frame then all the children packed in *window* can use
-    the background seamlessly.  *Window* can be one of the following.
+    *windowName* is a frame then all the children packed in *windowName*
+    can use the background seamlessly.  *WindowName* can be one of the
+    following.
 
     **self**
       The reference window is the window whose background is being drawn.  
@@ -492,17 +498,18 @@ The following operations are available for the **blt::background** command:
       The reference window is the toplevel window whose background is being
       drawn.  This is the default.
        
-    *window*
-      The reference window is *window*.  *Window* is the name of a Tk
-      widget.  It must be an ancestor of the window whose background is
-      being drawn. *Window* doesn't have to exist yet. At an idle point
-      later, the background will check for the widget, If *window* is
-      destroyed, the reference window reverts to **self**.
+    *refWindowName*
+      The reference window is *refWindowName*.  *RefWindowName* is the name
+      of a Tk widget.  It must be an ancestor of the window whose
+      background is being drawn. *RefWindowName* doesn't have to exist
+      yet. At an idle point later, the background will check for the
+      widget, If *refWindowName* is destroyed, the reference window reverts
+      to **self**.
        
   **-width** *number*
     Specifies the width of the gradient ellipse.  This is the color when
     the gradient value is 1.  This option can be overridden by the
-    **-palette** option. The default is "grey90".
+    **-palette** option. FIXME The default is "grey90".
 
   **-xoffset** *numPixels*
     Specifies the horizontal offset of the background. *NumPixels* is
@@ -524,7 +531,8 @@ The following operations are available for the **blt::background** command:
   stripes backgrounds and are listed below.
 
   **-background** *colorName*
-
+    FIXME
+    
   **-border** *colorName*
     Specifies the border color of the background object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
@@ -579,13 +587,13 @@ The following operations are available for the **blt::background** command:
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
-  **-relativeto** *refName*
-    Specifies a reference window to use of the origin the tile. *RefName*
-    is the name of a Tk widget.  This is useful for creating seamless tiles
-    with many widgets.  For example is a frame is *refName* then all the
-    children packed in *refName* can use the same tile seamlessly.  If
-    *refName* is "", then the origin is based on the widget using the tile.
-    The default is "".
+  **-relativeto** *refWindowName*
+    Specifies a reference window to use of the origin the
+    tile. *RefWindowName* is the name of a Tk widget.  This is useful for
+    creating seamless tiles with many widgets.  For example is a frame is
+    *refWindowName* then all the children packed in *refWindowName* can use
+    the same tile seamlessly.  If *refWindowName* is "", then the origin is
+    based on the widget using the tile.  The default is "".
 
   **-xoffset** *numPixels*
     Specifies the horizontal offset of the background. *NumPixels* is
