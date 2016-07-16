@@ -58,8 +58,8 @@ The *comboentry* widget is composed of the followung elements.
   The clear button is displayed on the right, before the arrow.  It is
   typically used to clear the text.
 
- The **identify** operation is used to determine the element the mouse is
- currently over.
+The **identify** operation is used to determine the element the mouse is
+currently over.
 
 CHARACTER INDICES
 -----------------
@@ -238,9 +238,11 @@ command.  The following operations are available for *comboentry* widgets:
     *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
     The default is "1".
 
-  **-arrowpad** *padName*
-    FIXME
-
+  **-arrowpad** *numPixels*
+    Specifies the amount of padding for the left and right sides of the
+    arrow button.  *NumPixels* is a non-negative value and may have any of
+    the forms acceptable to **Tk_GetPixels**.  The default is "0".
+    
   **-arrowrelief** *reliefName* 
     Specifies the relief of the arrow.  This determines the 3-D effect for
     the arrow.  *ReliefName* indicates how the arrow should appear relative
@@ -480,9 +482,9 @@ command.  The following operations are available for *comboentry* widgets:
     *pathName* will change accordingly. If *varName* is "", no variable is
     used. The default is "".
 
-  **-textwidth** *numCharacters* 
+  **-textwidth** *numChars* 
     Specifies the preferred width of widget in terms of characters.
-    If *numCharacters* is "0", then the **-width** option is used to determine
+    If *numChars* is "0", then the **-width** option is used to determine
     the width of the widget. The default is "0".
 
   **-width** *numPixels*
@@ -741,58 +743,43 @@ There are several default class bindings for *comboentry* widgets.
   Shift-End moves the cursor to the end and extends the selection to that
   point.
 
-       [12]   The Select key and Control-Space set the selection anchor to the
-              position  of  the insertion cursor.  They do not affect the cur-
-              rent selection.  Shift-Select and Control-Shift-Space adjust the
-              selection  to  the  current  position  of  the insertion cursor,
-              selecting from the anchor to the insertion cursor if  there  was
-              not any selection previously.
+**<Control-KeyPress-space>**
+  Control-Space sets the selection anchor to the position of the insertion
+  cursor.  They do not affect the current selection.
 
-       [13]   Control-/ selects all the text in the entry.
+**<Control-Shift-KeyPress-space>**
+  Control-Shift-Space adjusts the selection to the current position of the
+  insertion cursor, selecting from the anchor to the insertion cursor if
+  there was not any selection previously.
 
-       [14]   Control-\ clears any selection in the entry.
+**<Control-slash>**
+   Control-/ selects all the text in the entry.
 
-       [15]   The  F16  key (labelled Copy on many Sun workstations) or Meta-w
-              copies the selection in the widget to the clipboard, if there is
-              a selection.
+**<Control-backslash>**
+  Control-\ clears any selection in the entry.
 
-       [16]   The F20 key (labelled Cut on many Sun workstations) or Control-w
-              copies the selection in the widget to the clipboard and  deletes
-              the  selection.   If  there  is  no selection in the widget then
-              these keys have no effect.
+**<KeyPress-Delete>**
+  The Delete key deletes the selection, if there is one in the entry.  If
+  there is no selection, it deletes the character to the right of the
+  insertion cursor.
 
-       [17]   The F18 key (labelled Paste on many Sun  workstations)  or  Con-
-              trol-y  inserts the contents of the clipboard at the position of
-              the insertion cursor.
+**<KeyPress-Backspace>** and **<Control-KeyPress-h>**
+  The BackSpace key and Control-h delete the selection, if there is one in
+  the entry.  If there is no selection, it deletes the character to the
+  left of the insertion cursor.
 
-       [18]   The Delete key deletes the selection, if there  is  one  in  the
-              entry.   If  there  is no selection, it deletes the character to
-              the right of the insertion cursor.
+**<Control-KeyPress-d>**
+  Control-d deletes the character to the right of the insertion cursor.
 
-       [19]   The BackSpace key and Control-h delete the selection,  if  there
-              is  one  in the entry.  If there is no selection, it deletes the
-              character to the left of the insertion cursor.
+**<Alt-KeyPress-d>**
+  Meta-d deletes the word to the right of the insertion cursor.
 
-       [20]   Control-d deletes the character to the right  of  the  insertion
-              cursor.
+**<Control-KeyPress-k>**
+  Control-k deletes all the characters to the right of the insertion cursor.
 
-       [21]   Meta-d deletes the word to the right of the insertion cursor.
-
-       [22]   Control-k  deletes all the characters to the right of the inser-
-              tion cursor.
-
-       [23]   Control-t reverses the order of the two characters to the  right
-              of the insertion cursor.
-
-       If the entry is disabled using the -state option, then the entry's view
-       can still be adjusted and text in the entry can still be selected,  but
-       no  insertion  cursor  will be displayed and no text modifications will
-       take place except if the entry  is  linked  to  a  variable  using  the
-       -textvariable  option,  in  which  case any changes to the variable are
-       reflected by the entry whatever the value of its -state option.
-
-       The behavior of entries can be changed by  defining  new  bindings  for
-       individual widgets or by redefining the class bindings.
+**<Control-KeyPress-t>**
+  Control-t reverses the order of the two characters to the right of the
+  insertion cursor.
 
 The behavior of *comboentry* widgets can be changed by defining new
 bindings for individual widgets or by redefining the class bindings.
@@ -808,15 +795,15 @@ You create a *comboentry* widget with the **blt::comboentry** command.
 
     # Create a new comboentry and combomenu.
 
-    blt::comboentry .file \
+    blt::comboentry .ce \
 	-textvariable "myTextVar" \
 	-iconvariable "myIconVar" \
-	-menu .file.m 
+	-menu .ce.m 
 
-    blt::combomenu .file.m  \
+    blt::combomenu .ce.menu  \
 	-textvariable "myTextVar" \
 	-iconvariable "myIconVar"
-    .file.m add -text "New" -accelerator "Ctrl+N" -underline 0 \
+    .ce.menu add -text "New" -accelerator "Ctrl+N" -underline 0 \
         -icon $image(new_window)
 
 Please note the following:

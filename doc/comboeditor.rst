@@ -301,9 +301,9 @@ command.  The following operations are available for *comboeditor* widgets:
   **-textforeground** *colorName* 
     Specifies the color of the text.  The default is "black".
 
-  **-textwidth** *numCharacters* 
+  **-textwidth** *numChars* 
     Specifies the preferred width of widget in terms of characters.
-    If *numCharacters* is "0", then the **-width** option is used to determine
+    If *numChars* is "0", then the **-width** option is used to determine
     the width of the widget. The default is "0".
 
   **-unpostcommand** *string*

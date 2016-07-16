@@ -59,9 +59,6 @@
 #include "bltInitCmd.h"
 
 #define CharIndexToByteOffset(s, n)     (Tcl_UtfAtIndex(s, n) - s)
-#define TEXT_ENTRY_MASK         BLT_CONFIG_USER_BIT
-#define COMBO_ENTRY_MASK        BLT_CONFIG_USER_BIT << 1
-#define ALL_MASK                (TEXT_ENTRY_MASK | COMBO_ENTRY_MASK)
 
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define IPAD            4               /* Internal pad between components. */
@@ -338,7 +335,6 @@ typedef struct  {
                                          * command. */
     Tk_Cursor cursor;                   /* Current cursor for window or
                                          * None. */
-    int mask;                           /* Type of widget. */
     int reqWidth, reqHeight;     
     int relief;
     int borderWidth;
@@ -522,165 +518,154 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_RELIEF, "-activearrowrelief", "activeArrowRelief","ArrowRelief",
         DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, activeArrowRelief), 
-        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ARROW_ACTIVE_BG, 
-        Blt_Offset(ComboEntry, activeBg), ALL_MASK},
+        Blt_Offset(ComboEntry, activeBg), 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ARROW_ACTIVE_FG, 
-        Blt_Offset(ComboEntry, activeColor), ALL_MASK},
+        Blt_Offset(ComboEntry, activeColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
         "ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
         Blt_Offset(ComboEntry, arrowBorderWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK },
+        BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_PIXELS_NNEG, "-arrowpad", "arrowPad", "ArrowPad", 
         DEF_ARROW_PAD, Blt_Offset(ComboEntry, arrowPad), 
-        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-arrowrelief", "arrowRelief","ArrowRelief",
         DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, arrowRelief), 
-        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowwidth", "arrowWidth","ArrowWidth",
         DEF_ARROW_WIDTH, Blt_Offset(ComboEntry, reqArrowWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
-        DEF_NORMAL_BG, Blt_Offset(ComboEntry, normalBg), ALL_MASK },
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,
-        ALL_MASK },
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 
-        ALL_MASK },
+        DEF_NORMAL_BG, Blt_Offset(ComboEntry, normalBg), 0 },
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(ComboEntry, borderWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-clearbutton", "clearButton", "ClearButton", 
         DEF_CLRBUTTON, Blt_Offset(ComboEntry, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
+        BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)CLRBUTTON},
     {BLT_CONFIG_OBJ, "-clearcommand", "clearCommand", "ClearCommand", 
         DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, clearButton.cmdObjPtr), 
-        BLT_CONFIG_NULL_OK | ALL_MASK },
+        BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_OBJ, "-command", "command", "Command", 
         DEF_CMD, Blt_Offset(ComboEntry, cmdObjPtr), 
-        BLT_CONFIG_NULL_OK | ALL_MASK, },
+        BLT_CONFIG_NULL_OK, },
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         DEF_CURSOR, Blt_Offset(ComboEntry, cursor), 
-        BLT_CONFIG_NULL_OK | ALL_MASK, },
+        BLT_CONFIG_NULL_OK, },
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground", 
         "DisabledBackground", DEF_DISABLED_BG, 
-        Blt_Offset(ComboEntry, disabledBg), ALL_MASK, },
+        Blt_Offset(ComboEntry, disabledBg), 0, },
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
         "DisabledForeground", DEF_DISABLED_FG, 
-        Blt_Offset(ComboEntry, disabledColor), ALL_MASK, },
+        Blt_Offset(ComboEntry, disabledColor), 0, },
     {BLT_CONFIG_BITMASK_INVERT, "-editable", "editable", "Editable", 
         DEF_EDITABLE, Blt_Offset(ComboEntry, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-        (Blt_CustomOption *)READONLY},
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)READONLY},
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
         "ExportSelection", DEF_EXPORTSELECTION, Blt_Offset(ComboEntry, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-        (Blt_CustomOption *)EXPORT_SELECTION},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 
-        ALL_MASK},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
-        Blt_Offset(ComboEntry, font), ALL_MASK, },
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)EXPORT_SELECTION},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT,
+        Blt_Offset(ComboEntry, font), 0, },
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-        DEF_NORMAL_FG, Blt_Offset(ComboEntry, normalColor), ALL_MASK, },
+        DEF_NORMAL_FG, Blt_Offset(ComboEntry, normalColor), 0, },
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
         Blt_Offset(ComboEntry, reqHeight), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, },
+        BLT_CONFIG_DONT_SET_DEFAULT, },
     {BLT_CONFIG_BITMASK_INVERT, "-hidearrow", "hideArrow", "HideArrow", 
         DEF_HIDE_ARROW, Blt_Offset(ComboEntry, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, (Blt_CustomOption *)ARROW},
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ARROW},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG_COLOR, 
-        Blt_Offset(ComboEntry, highlightBgColor), BLT_CONFIG_NULL_OK|ALL_MASK},
+        Blt_Offset(ComboEntry, highlightBgColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-        DEF_HIGHLIGHT_COLOR, Blt_Offset(ComboEntry, highlightColor),
-        ALL_MASK},
+        DEF_HIGHLIGHT_COLOR, Blt_Offset(ComboEntry, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
         "HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
         Blt_Offset(ComboEntry, highlightWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", DEF_ICON, 
-        Blt_Offset(ComboEntry, icon), BLT_CONFIG_NULL_OK | ALL_MASK, 
-        &iconOption},
+        Blt_Offset(ComboEntry, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_CUSTOM, "-iconvariable", "iconVariable", "IconVariable", 
         DEF_TEXT_VARIABLE, Blt_Offset(ComboEntry, iconVarObjPtr), 
-        BLT_CONFIG_NULL_OK | ALL_MASK, &iconVarOption},
+        BLT_CONFIG_NULL_OK, &iconVarOption},
     {BLT_CONFIG_PIXELS_NNEG, "-iconwidth", "iconWidth", "IconWidth",
         DEF_WIDTH, Blt_Offset(ComboEntry, prefIconWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_IMAGE, 
-        Blt_Offset(ComboEntry, image), BLT_CONFIG_NULL_OK | ALL_MASK, 
-        &iconOption},
+        Blt_Offset(ComboEntry, image), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_COLOR, "-insertcolor", "insertColor", "InsertColor",
-        DEF_INSERT_COLOR, Blt_Offset(ComboEntry, insertColor), ALL_MASK},
+        DEF_INSERT_COLOR, Blt_Offset(ComboEntry, insertColor), 0},
     {BLT_CONFIG_INT, "-insertofftime", "insertOffTime", "OffTime",
         DEF_INSERT_OFFTIME, Blt_Offset(ComboEntry, insertOffTime), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_INT, "-insertontime", "insertOnTime", "OnTime",
         DEF_INSERT_ONTIME, Blt_Offset(ComboEntry, insertOnTime), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_OBJ, "-menu", "menu", "Menu", DEF_MENU, 
         Blt_Offset(ComboEntry, menuObjPtr), 
-        BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
         DEF_CMD, Blt_Offset(ComboEntry, postCmdObjPtr), 
-        BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
-        Blt_Offset(ComboEntry, relief), ALL_MASK},
+        Blt_Offset(ComboEntry, relief), 0},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-        "Foreground", DEF_SELECT_BG, Blt_Offset(ComboEntry, selectBg),  
-        ALL_MASK},
+        "Foreground", DEF_SELECT_BG, Blt_Offset(ComboEntry, selectBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-selectborderwidth", "selectBorderWidth", 
         "BorderWidth", DEF_SELECT_BORDERWIDTH, Blt_Offset(ComboEntry, selBW), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
-        DEF_SELECT_CMD, Blt_Offset(ComboEntry, selCmdObjPtr), 
-        BLT_CONFIG_NULL_OK | ALL_MASK},
+        DEF_SELECT_CMD, Blt_Offset(ComboEntry, selCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-        DEF_SELECT_FG, Blt_Offset(ComboEntry, selFgColor), ALL_MASK},
+        DEF_SELECT_FG, Blt_Offset(ComboEntry, selFgColor), 0},
     {BLT_CONFIG_RELIEF, "-selectrelief", "selectRelief", "Relief",
         DEF_SELECT_RELIEF, Blt_Offset(ComboEntry, selRelief),
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-show", "show", "Show", DEF_SHOW, 
         Blt_Offset(ComboEntry, cipher), 
-        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_STATE, 
-        Blt_Offset(ComboEntry, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, &stateOption},
+        Blt_Offset(ComboEntry, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        &stateOption},
     {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus", DEF_TAKE_FOCUS, 
-        Blt_Offset(ComboEntry, takeFocusObjPtr), 
-        BLT_CONFIG_NULL_OK|ALL_MASK},
+        Blt_Offset(ComboEntry, takeFocusObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-text", "text", "Text", DEF_TEXT, 
-        Blt_Offset(ComboEntry, text), ALL_MASK, &textOption},
+        Blt_Offset(ComboEntry, text), 0, &textOption},
     {BLT_CONFIG_BACKGROUND, "-textbackground", "textBackground", "Background", 
-        DEF_TEXT_NORMAL_BG, Blt_Offset(ComboEntry, outFocusBg), ALL_MASK},
+        DEF_TEXT_NORMAL_BG, Blt_Offset(ComboEntry, outFocusBg), 0},
     {BLT_CONFIG_BACKGROUND, "-textfocusbackground", "textFocusBackground",
         "FocusBackground", DEF_TEXT_FOCUS_BG, 
-        Blt_Offset(ComboEntry, inFocusBg), ALL_MASK},
+        Blt_Offset(ComboEntry, inFocusBg), 0},
     {BLT_CONFIG_COLOR, "-textfocusforeground", "textFocusForeground",
         "focusForeground", DEF_TEXT_FOCUS_FG, 
-        Blt_Offset(ComboEntry, textInFocusColor), ALL_MASK},
+        Blt_Offset(ComboEntry, textInFocusColor), 0},
     {BLT_CONFIG_COLOR, "-textforeground", "textForeground", "TextForeground",
-        DEF_TEXT_NORMAL_FG, Blt_Offset(ComboEntry, textOutFocusColor), 
-        ALL_MASK},
+        DEF_TEXT_NORMAL_FG, Blt_Offset(ComboEntry, textOutFocusColor), 0},
     {BLT_CONFIG_CUSTOM, "-textvariable", "textVariable", "TextVariable", 
         DEF_TEXT_VARIABLE, Blt_Offset(ComboEntry, textVarObjPtr), 
-        BLT_CONFIG_NULL_OK | ALL_MASK, &textVarOption},
+        BLT_CONFIG_NULL_OK, &textVarOption},
     {BLT_CONFIG_PIXELS_NNEG, "-textwidth", "textWidth", "TextWidth",
         DEF_WIDTH, Blt_Offset(ComboEntry, prefTextWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width",
         DEF_WIDTH, Blt_Offset(ComboEntry, reqWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
         DEF_SCROLL_CMD, Blt_Offset(ComboEntry, scrollCmdObjPtr), 
-        BLT_CONFIG_NULL_OK | ALL_MASK},
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-xscrollincrement", "xScrollIncrement",
         "ScrollIncrement", DEF_SCROLL_INCR, Blt_Offset(ComboEntry, scrollUnits),
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
-        0, ALL_MASK}
+        0, 0}
 };
 
 static Tcl_CmdDeleteProc ComboEntryInstCmdDeletedProc;
@@ -1076,7 +1061,8 @@ ComputeGeometry(ComboEntry *comboPtr)
             comboPtr->arrowWidth = Blt_TextWidth(comboPtr->font, "0", 1);
             comboPtr->arrowWidth = comboPtr->arrowWidth + 4;
         }
-        comboPtr->arrowWidth  += 2 * (comboPtr->arrowBorderWidth + comboPtr->arrowPad + 1);
+        comboPtr->arrowWidth  += 2 * (comboPtr->arrowBorderWidth +
+                                      comboPtr->arrowPad + 1);
         comboPtr->arrowHeight += 2 * (comboPtr->arrowBorderWidth + 1);
         if (comboPtr->arrowHeight > comboPtr->entryHeight) {
             comboPtr->height = comboPtr->entryHeight = comboPtr->arrowHeight;
@@ -1472,7 +1458,7 @@ SelectText(ComboEntry *comboPtr, CharIndex index)
     /*
      * Grab the selection if we don't own it already.
      */
-    if ((comboPtr->flags&EXPORT_SELECTION) && (comboPtr->selFirst == -1)) {
+    if ((comboPtr->flags & EXPORT_SELECTION) && (comboPtr->selFirst == -1)) {
         Tk_OwnSelection(comboPtr->tkwin, XA_PRIMARY, ComboEntryLostSelProc, 
                 comboPtr);
     }
@@ -2421,7 +2407,7 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
     GC newGC;
 
     if (Blt_ConfigureWidgetFromObj(interp, comboPtr->tkwin, configSpecs, objc, 
-                objv, (char *)comboPtr, comboPtr->mask | flags) != TCL_OK) {
+                objv, (char *)comboPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
     if (comboPtr->flags & READONLY) {
@@ -2533,9 +2519,10 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     const char *string;
     unsigned int old;
 
@@ -2571,9 +2558,10 @@ ActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ButtonActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     unsigned int oldFlags;
 
     if (comboPtr->flags & DISABLED) {
@@ -2597,9 +2585,11 @@ ButtonActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ButtonCgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     iconOption.clientData = comboPtr;
     return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, buttonSpecs,
         (char *)&comboPtr->clearButton, objv[2], 0);
@@ -2627,9 +2617,11 @@ ButtonCgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ButtonConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ButtonConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                   Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     iconOption.clientData = comboPtr;
     if (objc == 2) {
         return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, buttonSpecs,
@@ -2661,9 +2653,11 @@ ButtonConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ButtonDeactivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ButtonDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                    Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     if (comboPtr->flags & DISABLED) {
         return TCL_OK;                  /* The widget is currently disabled. */
     }
@@ -2691,9 +2685,11 @@ ButtonDeactivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ButtonInvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ButtonInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     if (comboPtr->flags & (READONLY|DISABLED)) {
         return TCL_OK;                  /* Writing is currently disabled. */
     }
@@ -2742,10 +2738,11 @@ static int numButtonOps = sizeof(buttonOps) / sizeof(Blt_OpSpec);
 
 
 static int
-ButtonOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ButtonOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
-    ComboEntryCmdProc *proc;
+    ComboEntry *comboPtr = clientData;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numButtonOps, buttonOps, 
@@ -2774,11 +2771,13 @@ ButtonOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-CgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     iconOption.clientData = comboPtr;
     return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, configSpecs,
-        (char *)comboPtr, objv[2], comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
+        (char *)comboPtr, objv[2], BLT_CONFIG_OBJV_ONLY);
 }
 
 /*
@@ -2797,9 +2796,10 @@ CgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ClosestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
           Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     ByteOffset offset;
     CharIndex index;
     int x;
@@ -2856,24 +2856,23 @@ ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     int result;
 
     iconOption.clientData = comboPtr;
     if (objc == 2) {
         return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, configSpecs, 
-                (char *)comboPtr, (Tcl_Obj *)NULL,  
-                comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
+                (char *)comboPtr, (Tcl_Obj *)NULL, BLT_CONFIG_OBJV_ONLY);
     } else if (objc == 3) {
         return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, configSpecs, 
-                (char *)comboPtr, objv[2], 
-                comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
+                (char *)comboPtr, objv[2], BLT_CONFIG_OBJV_ONLY);
     }
     Tcl_Preserve(comboPtr);
     result = ConfigureComboEntry(interp, comboPtr, objc - 2, objv + 2, 
-                comboPtr->mask | BLT_CONFIG_OBJV_ONLY);
+                BLT_CONFIG_OBJV_ONLY);
     Tcl_Release(comboPtr);
     if (result == TCL_ERROR) {
         return TCL_ERROR;
@@ -2906,9 +2905,10 @@ ConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex first, last;
     ByteOffset firstOffset, lastOffset;
     const char *text;
@@ -2961,8 +2961,9 @@ DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-GetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     Tcl_Obj *objPtr;
 
     objPtr = Tcl_NewStringObj(comboPtr->text, comboPtr->numBytes);
@@ -2994,9 +2995,10 @@ GetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-IndexOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+IndexOp(ClientData clientData, Tcl_Interp *interp, int objc, 
         Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex index;
 
     if (GetTextIndex(interp, comboPtr, objv[2], &index) != TCL_OK) {
@@ -3022,9 +3024,10 @@ IndexOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-IcursorOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+IcursorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
           Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
@@ -3062,9 +3065,10 @@ IcursorOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     int x, y, width, height;
     int isRoot;
     char *string;
@@ -3168,9 +3172,10 @@ IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-InvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     int result;
 
     if (comboPtr->flags & DISABLED) {
@@ -3201,9 +3206,10 @@ InvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-InsertOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+InsertOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex index;
     char *insertText;
     int numBytes;
@@ -3255,8 +3261,9 @@ InsertOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-PostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+PostOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     char *menuName;
     Tk_Window menuWin;
     
@@ -3359,8 +3366,9 @@ PostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-ScanOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ScanOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     int oper;
     int x;
 
@@ -3420,14 +3428,17 @@ ScanOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static int
-SeeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex index;
     ByteOffset offset;
 
+#ifdef notdef
     if (comboPtr->flags & DISABLED) {
         return TCL_OK;          /* Widget is currently disabled. */
     }
+#endif
     if (GetTextIndex(interp, comboPtr, objv[2], &index) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -3485,15 +3496,18 @@ SeeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-SelectionAdjustOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
+SelectionAdjustOp(ClientData clientData, Tcl_Interp *interp, int objc,
                   Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex index;
     int half1, half2;
 
+#ifdef notdef
     if (comboPtr->flags & DISABLED) {
         return TCL_OK;                  /* Widget is currently disabled. */
     }
+#endif
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -3527,12 +3541,16 @@ SelectionAdjustOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionClearOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
+SelectionClearOp(ClientData clientData, Tcl_Interp *interp, int objc,
                  Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
+#ifdef notdef
     if (comboPtr->flags & DISABLED) {
         return TCL_OK;                  /* Widget is currently disabled. */
     }
+#endif
     if (comboPtr->selFirst != -1) {
         comboPtr->selFirst = comboPtr->selLast = -1;
         EventuallyRedraw(comboPtr);
@@ -3560,14 +3578,17 @@ SelectionClearOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionFromOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+SelectionFromOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex index;
 
+#ifdef notdef
     if (comboPtr->flags & DISABLED) {
         return TCL_OK;                  /* Widget is currently disabled. */
     }
+#endif
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -3593,9 +3614,11 @@ SelectionFromOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionPresentOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
+SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
                    Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), (comboPtr->selFirst!=-1));
     return TCL_OK;
 }
@@ -3617,9 +3640,10 @@ SelectionPresentOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionRangeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
+SelectionRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
                  Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex first, last;
 
     if (comboPtr->flags & DISABLED) {
@@ -3653,14 +3677,17 @@ SelectionRangeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-SelectionToOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
+SelectionToOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
     CharIndex index;
 
+#ifdef notdef
     if (comboPtr->flags & DISABLED) {
         return TCL_OK;                  /* Widget is currently disabled. */
     }
+#endif
     if (GetTextIndex(interp, comboPtr, objv[3], &index) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -3694,10 +3721,11 @@ static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
  *---------------------------------------------------------------------------
  */
 static int
-SelectionOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
+SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
-    ComboEntryCmdProc *proc;
+    ComboEntry *comboPtr = clientData;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numSelectionOps, selectionOps, BLT_OP_ARG2, 
@@ -3727,8 +3755,10 @@ SelectionOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-RedoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+RedoOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     if (comboPtr->flags & (READONLY|DISABLED)) {
         return TCL_OK;                 /* Writing is currently disabled. */
     }
@@ -3774,8 +3804,10 @@ RedoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+UndoOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     if (comboPtr->flags & (READONLY|DISABLED)) {
         return TCL_OK;                 /* Writing is currently disabled. */
     }
@@ -3818,9 +3850,11 @@ UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-UnpostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     if (comboPtr->menuWin != NULL) {
         comboPtr->flags &= ~STATE_MASK;
         Blt_UnmapToplevelWindow(comboPtr->menuWin);
@@ -3832,9 +3866,11 @@ UnpostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 }
     
 static int
-XviewOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+XviewOp(ClientData clientData, Tcl_Interp *interp, int objc, 
         Tcl_Obj *const *objv)
 {
+    ComboEntry *comboPtr = clientData;
+
     int width;
 
     if (comboPtr->flags & (DISABLED|READONLY)) {
@@ -3892,8 +3928,7 @@ FreeComboEntryProc(DestroyData dataPtr) /* Pointer to the widget record. */
     ComboEntry *comboPtr = (ComboEntry *)dataPtr;
 
     iconOption.clientData = comboPtr;
-    Blt_FreeOptions(configSpecs, (char *)comboPtr, comboPtr->display, 
-        comboPtr->mask);
+    Blt_FreeOptions(configSpecs, (char *)comboPtr, comboPtr->display, 0);
     if (comboPtr->textInFocusGC != NULL) {
         Tk_FreeGC(comboPtr->display, comboPtr->textInFocusGC);
     }
@@ -3945,7 +3980,7 @@ FreeComboEntryProc(DestroyData dataPtr) /* Pointer to the widget record. */
  *---------------------------------------------------------------------------
  */
 static ComboEntry *
-NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
+NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin)
 {
     ComboEntry *comboPtr;
 
@@ -3961,7 +3996,6 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->insertOffTime = 300;
     comboPtr->insertOnTime = 600;
     comboPtr->interp = interp;
-    comboPtr->mask = mask;
     comboPtr->relief = TK_RELIEF_SUNKEN;
     comboPtr->scrollUnits = 2;
     comboPtr->selAnchor = -1;
@@ -3969,9 +4003,7 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->text = emptyString;
     comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     comboPtr->tkwin = tkwin;
-    if (mask == COMBO_ENTRY_MASK) {
-        comboPtr->flags |= ARROW;
-    }
+    comboPtr->flags |= ARROW;
     return comboPtr;
 }
 
@@ -4020,36 +4052,6 @@ static Blt_OpSpec comboEntryOps[] =
 
 static int numComboEntryOps = sizeof(comboEntryOps) / sizeof(Blt_OpSpec);
 
-static Blt_OpSpec textEntryOps[] =
-{
-    {"activate",  1, ActivateOp,  3, 3, "what",},
-    {"button",    2, ButtonOp,    2, 0, "args",},
-    {"cget",      2, CgetOp,      3, 3, "option",},
-    {"closest",   2, ClosestOp,   3, 3, "x",},
-    {"configure", 2, ConfigureOp, 2, 0, "?option value?...",},
-    {"delete",    1, DeleteOp,    2, 0, "first ?last?",},
-    {"get",       1, GetOp,       2, 2, "",},
-    {"icursor",   2, IcursorOp,   3, 3, "index",},
-    {"identify",  2, IdentifyOp,  4, 5, "x y",},
-    {"index",     3, IndexOp,     3, 3, "index",},
-    {"insert",    3, InsertOp,    3, 0, "index string",},
-    {"invoke",    3, InvokeOp,    2, 2, "",},
-    {"redo",      1, RedoOp,      2, 2, "",},
-    {"scan",      2, ScanOp,      3, 4, "dragto|mark x",},
-    {"see",       3, SeeOp,       3, 3, "index",},
-    {"selection", 3, SelectionOp, 2, 0, "args",},
-    {"undo",      1, UndoOp,      2, 2, "",},
-#ifdef notdef
-    {"validate",  1, ValidateOp,  3, 3, "item",},
-#endif
-    {"xview",     1, XviewOp,     2, 5, "?moveto fract? ?scroll number what?",},
-};
-
-static int numTextEntryOps = sizeof(textEntryOps) / sizeof(Blt_OpSpec);
-
-typedef int (ComboInstOp)(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv);
-
 static int
 ComboEntryInstCmdProc(
     ClientData clientData,      /* Information about the widget. */
@@ -4057,22 +4059,17 @@ ComboEntryInstCmdProc(
     int objc,                   /* Number of arguments. */
     Tcl_Obj *const *objv)       /* Argument vector. */
 {
-    ComboInstOp *proc;
+    Tcl_ObjCmdProc *proc;
     ComboEntry *comboPtr = clientData;
     int result;
 
-    if (comboPtr->mask == COMBO_ENTRY_MASK) {
-        proc = Blt_GetOpFromObj(interp, numComboEntryOps, comboEntryOps, 
+    proc = Blt_GetOpFromObj(interp, numComboEntryOps, comboEntryOps, 
                 BLT_OP_ARG1, objc, objv, 0);
-    } else {
-        proc = Blt_GetOpFromObj(interp, numTextEntryOps, textEntryOps, 
-                BLT_OP_ARG1, objc, objv, 0);
-    }
     if (proc == NULL) {
         return TCL_ERROR;
     }
     Tcl_Preserve(comboPtr);
-    result = (*proc) (comboPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     Tcl_Release(comboPtr);
     return result;
 }
@@ -4114,7 +4111,7 @@ ComboEntryInstCmdDeletedProc(ClientData clientData)
 /*
  *---------------------------------------------------------------------------
  *
- * CreateEntry --
+ * ComboEntryCmd --
  *
  *      This procedure is invoked to process the TCL command that
  *      corresponds to a widget managed by this module. See the user
@@ -4130,10 +4127,8 @@ ComboEntryInstCmdDeletedProc(ClientData clientData)
  */
 /* ARGSUSED */
 static int
-CreateEntry(Tcl_Interp *interp,         /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv,               /* Argument strings. */
-    int mask)                           /* Combo or Line entry. */
+ComboEntryCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
 {
     ComboEntry *comboPtr;
     Tk_Window tkwin;
@@ -4170,19 +4165,15 @@ CreateEntry(Tcl_Interp *interp,         /* Current interpreter. */
     if (tkwin == NULL) {
         return TCL_ERROR;
     }
-    comboPtr = NewComboEntry(interp, tkwin, mask);
+    comboPtr = NewComboEntry(interp, tkwin);
     Tk_CreateEventHandler(tkwin, EVENT_MASK, ComboEntryEventProc, comboPtr);
     Tk_CreateSelHandler(tkwin, XA_PRIMARY, XA_STRING, ComboEntrySelectionProc,
         comboPtr, XA_STRING);
-    if (mask == COMBO_ENTRY_MASK) {
-        Tk_SetClass(tkwin, "BltComboEntry");
-    } else {
-        Tk_SetClass(tkwin, "BltTextEntry");
-    }   
+    Tk_SetClass(tkwin, "BltComboEntry");
     comboPtr->cmdToken = Tcl_CreateObjCommand(interp, path, 
         ComboEntryInstCmdProc, comboPtr, ComboEntryInstCmdDeletedProc);
     Blt_SetWindowInstanceData(tkwin, comboPtr);
-    if (ConfigureComboEntry(interp, comboPtr, objc-2, objv+2, mask) != TCL_OK) {
+    if (ConfigureComboEntry(interp, comboPtr, objc-2, objv+2, 0) != TCL_OK) {
         Tk_DestroyWindow(comboPtr->tkwin);
         return TCL_ERROR;
     }
@@ -4194,64 +4185,12 @@ CreateEntry(Tcl_Interp *interp,         /* Current interpreter. */
     return TCL_OK;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * ComboEntryCmd --
- *
- *      This procedure is invoked to process the TCL command that
- *      corresponds to a widget managed by this module. See the user
- *      documentation for details on what it does.
- *
- * Results:
- *      A standard TCL result.
- *
- * Side Effects:
- *      See the user documentation.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
-static int
-ComboEntryCmd(ClientData clientData, Tcl_Interp *interp, int objc,
-              Tcl_Obj *const *objv)
-{
-    return CreateEntry(interp, objc, objv, COMBO_ENTRY_MASK);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * TextEntryCmd --
- *
- *      This procedure is invoked to process the TCL command that
- *      corresponds to a widget managed by this module. See the user
- *      documentation for details on what it does.
- *
- * Results:
- *      A standard TCL result.
- *
- * Side Effects:
- *      See the user documentation.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
-static int
-TextEntryCmd(ClientData clientData, Tcl_Interp *interp, int objc,
-             Tcl_Obj *const *objv)
-{
-    return CreateEntry(interp, objc, objv, TEXT_ENTRY_MASK);
-}
-
 int
 Blt_ComboEntryInitProc(Tcl_Interp *interp)
 {
-    static Blt_CmdSpec cmdSpecs[2] = { 
-        { "comboentry", ComboEntryCmd, },
-        { "textentry",  TextEntryCmd, },
-    };
-    return Blt_InitCmds(interp, "::blt", cmdSpecs, 2);
+    static Blt_CmdSpec cmdSpec = {"comboentry", ComboEntryCmd };
+
+    return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }
 
 /*
@@ -4375,7 +4314,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     insertX = -1;
     insertOffset = CharIndexToByteOffset(comboPtr->screenText, 
         comboPtr->insertIndex);
-    if (((comboPtr->flags & (FOCUS|ICURSOR_ON|DISABLED|READONLY)) 
+    if (((comboPtr->flags & (FOCUS|ICURSOR_ON|DISABLED|READONLY|DISABLED)) 
          == (FOCUS|ICURSOR_ON)) && (comboPtr->selFirst == -1) && 
         (insertOffset >= comboPtr->firstOffset) && 
         (insertOffset <= comboPtr->lastOffset)) {
