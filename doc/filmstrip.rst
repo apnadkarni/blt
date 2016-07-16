@@ -555,11 +555,6 @@ command.  The following operations are available for *filmstrip* widgets:
   given frame option(s) to have the given value(s).  *Option* and *value*
   are described in the **frame configure** operation.  
   
-*pathName* **invoke** *frameName* 
-  Invokes the TCL command specified by frame's **-command** option.
-  *FrameName* may be a label, index, or tag, but may not represent more
-  than one frame.  If *frameName* is disabled, no command is invoked.
-  
 *pathName* **move after** *whereName* *frameName*
   Moves *frameName* after the frame *whereName*.  Both *whereName* and
   *frameName* may be a label, index, or tag, but may not represent more than

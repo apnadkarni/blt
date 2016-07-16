@@ -234,9 +234,6 @@ struct _Filmstrip {
     Grip *activePtr;                    /* Indicates the active grip. */
     Grip *anchorPtr;                    /* Grip of frame that is currently
                                          * anchored */
-    Tcl_Obj *cmdObjPtr;                 /* Command to invoke when the
-                                         * "invoke" operation is
-                                         * performed. */
     size_t numVisible;                  /* # of visible frames. */
     GC gc;
     size_t nextId;                      /* Counter to generate unique frame
@@ -380,7 +377,6 @@ struct _Frame  {
                                          * specified (max widget size).
                                          * This includes any extra padding
                                          * which may be specified. */
-    Tcl_Obj *cmdObjPtr;
     Tcl_TimerToken timerToken;
     int scrollTarget;                   /* Target offset to scroll to. */
     int scrollIncr;                     /* Current increment. */
@@ -3617,55 +3613,6 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * InvokeOp --
- *
- *      This procedure is called to invoke a TCL command.
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *      contains an error message.
- *
- *        pathName invoke frameName
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
-{
-    Filmstrip *filmPtr = clientData;
-    Frame *framePtr;
-    Tcl_Obj *cmdObjPtr;
-
-    if (GetFrameFromObj(interp, filmPtr, objv[2], &framePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if ((framePtr == NULL) || (framePtr->flags & DISABLED)) {
-        return TCL_OK;
-    }
-    cmdObjPtr = GETATTR(framePtr, cmdObjPtr);
-    if (cmdObjPtr != NULL) {
-        Tcl_Obj *objPtr;
-        int result;
-
-        cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);
-        objPtr = Tcl_NewIntObj(framePtr->index);
-        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        Tcl_IncrRefCount(cmdObjPtr);
-        result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-        Tcl_DecrRefCount(cmdObjPtr);
-        if (result != TCL_OK) {
-            return TCL_ERROR;
-        }
-    }
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
  * MoveOp --
  *
  *      Moves a frame to a new location.
@@ -4589,7 +4536,6 @@ static Blt_OpSpec filmstripOps[] =
     {"grip",       1, GripOp,      2, 0, "oper ?args?",},
     {"index",      3, IndexOp,     3, 3, "frameName",},
     {"insert",     3, InsertOp,    4, 0, "after|before whereName ?label? ?option value ...?",},
-    {"invoke",     3, InvokeOp,    3, 3, "frameName",},
     {"move",       1, MoveOp,      4, 0, "after|before whereName frameName",},
     {"names",      1, NamesOp,     2, 0, "?pattern ...?",},
     {"see",        1, SeeOp,       3, 3, "frameName",},

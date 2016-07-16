@@ -177,6 +177,12 @@ command.  The following operations are available for *paneset* widgets:
     *ColorName* may be a color name or the name of a background object
     created by the **blt::background** command.  The default is "grey85".
     
+  **-disabledsashcolor** *colorName* 
+    Specifies the background color of the pane's sash when it is disabled.
+    *ColorName* may be a color name or the name of a background object
+    created by the **blt::background** command.  
+    The default is "grey90". 
+
   **-height** *numPixels*
     Specifies the height of the *paneset* window.  *NumPixels* is a
     non-negative value indicating the height the widget. The value may have
@@ -300,11 +306,6 @@ command.  The following operations are available for *paneset* widgets:
   If one or more *option*\ -\ *value* pairs are specified, they modify the
   given pane option(s) to have the given value(s).  *Option* and *value*
   are described in the **pane configure** operation.  
-  
-*pathName* **invoke** *paneName* 
-  Invokes the TCL command specified by pane's **-command** option.
-  *PaneName* may be a label, index, or tag, but may not represent more
-  than one pane.  If *paneName* is disabled, no command is invoked.
   
 *pathName* **move after** *whereName* *paneName*
   Moves *paneName* after the pane *whereName*.  Both *whereName* and
@@ -464,6 +465,22 @@ command.  The following operations are available for *paneset* widgets:
     "1".
     
   **-size** *numPixels* 
+     FIXME
+     
+  **-state** *stateName*
+    Sets the state of the pane's sash. *StateName* can be one of the following.
+
+    **normal**
+      In normal state the sash for *paneName* is displayed using 
+      its default background and relief.
+
+    **disabled**
+      Disabled state means that the sash for *paneName* should be
+      insensitive: the default bindings will not activate the item, the
+      sash can not be moved, etc.  In this state *paneName* is displayed
+      according to the *paneset*\ 's **-disabledsashcolor** option.
+
+    The default is "normal".
 
   **-tags** *tagList* 
     Specifies a list of tags to associate with the pane.  *TagList* is a

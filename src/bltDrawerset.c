@@ -122,6 +122,7 @@ typedef enum {
 #define DEF_HANDLE_CURSOR       (char *)NULL
 #define DEF_HANDLE_PAD           "0"
 #define DEF_HANDLE_RELIEF        "flat"
+#define DEF_HANDLE_STATE         "normal"
 #define DEF_HANDLE_THICKNESS     "2"
 
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
@@ -223,8 +224,6 @@ struct _Drawer  {
                                          * -reqwidth or -reqheight. */
     Blt_Bg bg;                          /* 3D background border surrounding
                                          * the widget */
-    Tcl_Obj *cmdObjPtr;
-
     Tcl_TimerToken timerToken;
     Tcl_Obj *varNameObjPtr;             /* Name of TCL variable.  If
                                          * non-NULL, this variable will be
@@ -312,9 +311,6 @@ struct _Drawerset {
     struct _Blt_Tags tags;              /* Table of tags. */
     Drawer *activePtr;                  /* Indicates the drawer with the
                                          * active handle. */
-    Tcl_Obj *cmdObjPtr;                 /* Command to invoke when the
-                                         * "invoke" operation is
-                                         * performed. */
     size_t numVisible;                  /* # of visible drawers. */
     GC gc;
     size_t nextId;                      /* Counter to generate unique
@@ -358,7 +354,8 @@ struct _Drawerset {
 #define HIDDEN          (1<<9)          /* Do not display the handle or
                                          * drawer. */
 #define CLOSED          (1<<9)          /* Do not display the drawer. */
-#define DISABLED        (1<<10)         /* Handle is disabled. */
+#define DISABLED        (1<<10)         /* Handle is disabled. Can't move
+                                         * drawer by dragging handle. */
 #define ONSCREEN        (1<<11)         /* Drawer is on-screen. */
 #define HANDLE_ACTIVE   (1<<12)         /* Handle is currently active. */
 #define SHOW_HANDLE     (1<<14)         /* Display the drawer. */
@@ -434,6 +431,12 @@ static Blt_CustomOption tagsOption = {
     ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
+static Blt_OptionParseProc ObjToStateProc;
+static Blt_OptionPrintProc StateToObjProc;
+static Blt_CustomOption stateOption = {
+    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+};
+
 static Blt_ConfigSpec drawerSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
@@ -491,6 +494,9 @@ static Blt_ConfigSpec drawerSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_HANDLE },
     {BLT_CONFIG_SIDE, "-side", (char *)NULL, (char *)NULL, DEF_SIDE, 
         Blt_Offset(Drawer, side), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_HANDLE_STATE, 
+        Blt_Offset(Drawer, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &stateOption},
     {BLT_CONFIG_INT_POS, "-steps", "steps", "Steps", DEF_DRAWER_STEPS,
         Blt_Offset(Drawer, numSteps), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_DRAWER_TAGS, 0,
@@ -1085,12 +1091,12 @@ EventuallyOpenDrawer(Drawer *drawPtr)
 {
     Drawerset *setPtr;
 
-    if ((drawPtr->flags & (CLOSED|DISABLED)) != CLOSED) {
-        return;                         /* Already open or disabled. */
+    if ((drawPtr->flags & CLOSED) == 0) {
+        return;                         /* Already open. */
     }
     setPtr = drawPtr->setPtr;
     drawPtr->flags &= ~(CLOSED | CLOSING);
-    if (setPtr->flags & AUTORAISE) {
+    if ((setPtr->flags & AUTORAISE) && ((drawPtr->flags & DISABLED) == 0)) {
         RaiseDrawer(drawPtr);
     }
     drawPtr->step = 0;
@@ -1127,8 +1133,8 @@ EventuallyOpenDrawer(Drawer *drawPtr)
 static void
 CloseDrawer(Drawer *drawPtr) 
 {
-    if (drawPtr->flags & (CLOSED|DISABLED)) {
-        return;                         /* Already closed or disabled. */
+    if (drawPtr->flags & CLOSED) {
+        return;                         /* Already closed. */
     }
     if (drawPtr->tkwin != NULL) {
         if (Tk_IsMapped(drawPtr->tkwin)) {
@@ -1164,8 +1170,8 @@ EventuallyCloseDrawer(Drawer *drawPtr)
 {
     Drawerset *setPtr;
 
-    if (drawPtr->flags & (DISABLED|CLOSED)) {
-        return;                         /* Already closed or disabled. */
+    if (drawPtr->flags & CLOSED) {
+        return;                         /* Already closed. */
     }
     setPtr = drawPtr->setPtr;
     if (setPtr->flags & ANIMATE) {
@@ -1661,6 +1667,72 @@ MotionScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         objPtr = Tcl_NewStringObj("???", 3);            break;
     }
     return objPtr;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToStateProc --
+ *
+ *      Converts the string representing a state into a bitflag.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The state flags are
+ *      updated.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    char *string;
+    int flag;
+
+    string = Tcl_GetString(objPtr);
+    if (strcmp(string, "disabled") == 0) {
+        flag = DISABLED;
+    } else if (strcmp(string, "normal") == 0) {
+        flag = 0;
+    } else {
+        Tcl_AppendResult(interp, "unknown state \"", string, 
+            "\": should be disabled, or normal.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    *flagsPtr &= ~DISABLED;
+    *flagsPtr |= flag;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StateToObjProc --
+ *
+ *      Return the name of the state.
+ *
+ * Results:
+ *      The name representing the style is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)  
+{
+    unsigned int state = *(unsigned int *)(widgRec + offset);
+    const char *string;
+
+    if (state & DISABLED) {
+        string = "disabled";
+    } else {
+        string = "normal";
+    }
+    return Tcl_NewStringObj(string, -1);
 }
 
 
@@ -3691,18 +3763,18 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * HandleSetOp --
+ * HandleMoveToOp --
  *
  *      Sets the location of the handle to coordinate (x or y) specified.
  *
- *      pathName handle set drawerName x y
+ *      pathName handle moveto drawerName x y
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
+HandleMoveToOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+               Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Drawer *drawPtr;
@@ -3828,8 +3900,8 @@ static Blt_OpSpec handleOps[] =
     {"activate",   2, HandleActivateOp,   4, 4, "drawerName"},
     {"anchor",     2, HandleAnchorOp,     6, 6, "drawerName x y"},
     {"deactivate", 1, HandleDeactivateOp, 3, 3, ""},
-    {"mark",       1, HandleMarkOp,       6, 6, "drawerName x y"},
-    {"set",        2, HandleSetOp,        6, 6, "drawerName x y"},
+    {"mark",       2, HandleMarkOp,       6, 6, "drawerName x y"},
+    {"moveto",     2, HandleMoveToOp,     6, 6, "drawerName x y"},
     {"size",       2, HandleSizeOp,       4, 5, "drawerName ?numPixels?"},
     {"slide",      2, HandleSlideOp,      6, 6, "drawerName dx dy"},
 };
@@ -3968,44 +4040,6 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * InvokeOp --
- *
- *      This procedure is called to invoke a command associated with a
- *      drawer.
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then
- *      interp->result contains an error message.
- *
- *      pathName invoke drawerName
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
-{
-    Drawer *drawPtr;
-    Drawerset *setPtr = clientData;
-    Tcl_Obj *cmdObjPtr;
-
-    if (GetDrawerFromObj(interp, setPtr, objv[2], &drawPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
-        return TCL_OK;
-    }
-    cmdObjPtr = GETATTR(drawPtr, cmdObjPtr);
-    if (cmdObjPtr != NULL) {
-        return InvokeDrawerCommand(interp, drawPtr, cmdObjPtr);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * IsOpenOp --
  *
  *      Indicates if drawer is open or closed.
@@ -4065,7 +4099,7 @@ LowerOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
          drawPtr = NextTaggedDrawer(&iter)) {
-        if (drawPtr->flags & (DISABLED|HIDDEN)) {
+        if (drawPtr->flags & HIDDEN) {
             continue;
         }
         LowerDrawer(drawPtr);
@@ -4079,7 +4113,7 @@ LowerOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * MoveOp --
  *
- *      Moves the given drawer to a new location.
+ *      Moves the given drawer to a position in the stacking list.
  *
  *      pathName move after afterName drawerName
  *      pathName move before beforeName drawerName
@@ -4104,8 +4138,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[4], &drawPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if ((drawPtr == NULL) || (drawPtr->flags & DISABLED) ||
-        (drawPtr == relPtr)) {
+    if ((drawPtr == NULL) || (drawPtr == relPtr)) {
         return TCL_OK;
     }
     MoveDrawer(setPtr, drawPtr, order, relPtr);
@@ -4189,9 +4222,8 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
          drawPtr = NextTaggedDrawer(&iter)) {
-        if (drawPtr->flags & (DISABLED|HIDDEN)) {
-            continue;                   /* Can't open hidden or disabled
-                                         * drawers. */
+        if (drawPtr->flags & HIDDEN) {
+            continue;                   /* Can't open hidden drawers. */
         }
         if ((drawPtr->flags & CLOSED) == 0) {
             continue;                   /* Don't do anything if the drawer
@@ -4231,8 +4263,8 @@ RaiseOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
          drawPtr = NextTaggedDrawer(&iter)) {
-        if (drawPtr->flags & (DISABLED|HIDDEN)) {
-            continue;
+        if (drawPtr->flags & HIDDEN) {
+            continue;                   /* Can't raised hidden drawers. */
         }
         RaiseDrawer(drawPtr);
     }
@@ -4882,7 +4914,7 @@ ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[2], &drawPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if ((drawPtr->tkwin == NULL) || (drawPtr->flags & DISABLED)) {
+    if (drawPtr->tkwin == NULL) {
         return TCL_OK;
     }
     if (drawPtr->flags & CLOSED) {
@@ -4950,7 +4982,6 @@ static Blt_OpSpec drawersetOps[] =
     {"handle",     1, HandleOp,    2, 0, "oper ?args?",},
     {"index",      3, IndexOp,     3, 3, "drawerName",},
     {"insert",     3, InsertOp,    4, 0, "after|before who ?label? ?option value ...?",},
-    {"invoke",     3, InvokeOp,    3, 3, "drawerName",},
     {"isopen",     2, IsOpenOp,    3, 3, "drawerName",},
     {"lower",      1, LowerOp,     3, 3, "drawerName",},
     {"move",       1, MoveOp,      3, 0, "before|after whereName drawerName",},

@@ -103,6 +103,7 @@ typedef int (SizeProc)(Pane *panePtr);
  * Default values for widget attributes.
  */
 #define DEF_ACTIVE_SASH_COLOR   STD_ACTIVE_BACKGROUND
+#define DEF_DISABLED_SASH_COLOR STD_DISABLED_BACKGROUND
 #define DEF_ACTIVE_SASH_RELIEF  "flat"
 #define DEF_ANIMATE             "0"
 #define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
@@ -138,6 +139,7 @@ typedef int (SizeProc)(Pane *panePtr);
 #define DEF_SASH_RELIEF       "flat"
 #define DEF_SASH_THICKNESS    "2"
 #define DEF_SHOW_SASH           "1"
+#define DEF_SASH_STATE          "normal"
 #define DEF_SIDE                "right"
 #define DEF_TAKEFOCUS           "1"
 #define DEF_VCURSOR             "sb_v_double_arrow"
@@ -227,7 +229,7 @@ struct _Paneset {
     int sashBorderWidth;
     int sashThickness;                  /*  */
     int sashSize;
-    Blt_Bg sashBg, activeSashBg;
+    Blt_Bg sashBg, activeSashBg, disabledSashBg;
     int sashAnchor;                     /* Last known location of sash
                                          * during a move. */
     Blt_Chain panes;                    /* List of panes.  Describes the
@@ -246,9 +248,6 @@ struct _Paneset {
                                          * anchored */
     int bearing;                        /* Location of the split
                                          * (paneset). */
-    Tcl_Obj *cmdObjPtr;                 /* Command to invoke when the
-                                         * "invoke" operation is
-                                         * performed. */
     size_t numVisible;                  /* # of visible panes. */
     GC gc;
     size_t nextId;                      /* Counter to generate unique
@@ -381,9 +380,9 @@ struct _Pane  {
                                          * which may be specified. */
     Blt_Bg sashBg;
     Blt_Bg activeSashBg;
+    Blt_Bg disabledSashBg;
     Blt_Bg bg;                          /* 3-D background border
                                          * surrounding the widget */
-    Tcl_Obj *cmdObjPtr;
     Tcl_TimerToken timerToken;
     int scrollTarget;                   /* Target offset to scroll to. */
     int scrollIncr;                     /* Current increment. */
@@ -405,6 +404,7 @@ struct _Pane  {
 #define SASH_ACTIVE     (1<<11)         /* Sash is currently active. */
 #define SASH            (1<<12)         /* The pane has a sash. */
 #define SHOW_SASH       (1<<13)         /* Display the pane. */
+
 #define VIRGIN          (1<<24)
 
 /* Orientation. */
@@ -460,6 +460,12 @@ static Blt_CustomOption tagsOption = {
     ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
+static Blt_OptionParseProc ObjToStateProc;
+static Blt_OptionPrintProc StateToObjProc;
+static Blt_CustomOption stateOption = {
+    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+};
+
 static Blt_ConfigSpec paneSetSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activesashcolor", "activeSashColor", 
@@ -472,6 +478,9 @@ static Blt_ConfigSpec paneSetSpecs[] =
         DEF_BACKGROUND, Blt_Offset(Paneset, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
         0, 0},
+    {BLT_CONFIG_BACKGROUND, "-disabledsashcolor", "disabledSashColor", 
+        "DisabledSashColor", DEF_DISABLED_SASH_COLOR,
+        Blt_Offset(Paneset, disabledSashBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT,
         Blt_Offset(Paneset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_CUSTOM, "-mode", "mode", "Mode", DEF_MODE,
@@ -530,6 +539,9 @@ static Blt_ConfigSpec paneSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_SASH},
     {BLT_CONFIG_CUSTOM, "-size", "size", "Size", (char *)NULL, 
         Blt_Offset(Pane, reqSize), 0, &bltLimitsOption},
+    {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_SASH_STATE, 
+        Blt_Offset(Pane, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &stateOption},
      {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_PANE_TAGS, 0,
         BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
@@ -1177,6 +1189,73 @@ TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
     Blt_Tags_AppendTagsToObj(&setPtr->tags, panePtr, listObjPtr);
     return listObjPtr;
 }
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToStateProc --
+ *
+ *      Converts the string representing a state into a bitflag.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The state flags are
+ *      updated.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    char *string;
+    int flag;
+
+    string = Tcl_GetString(objPtr);
+    if (strcmp(string, "disabled") == 0) {
+        flag = DISABLED;
+    } else if (strcmp(string, "normal") == 0) {
+        flag = 0;
+    } else {
+        Tcl_AppendResult(interp, "unknown state \"", string, 
+            "\": should be disabled, or normal.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    *flagsPtr &= ~DISABLED;
+    *flagsPtr |= flag;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StateToObjProc --
+ *
+ *      Return the name of the state.
+ *
+ * Results:
+ *      The name representing the style is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)  
+{
+    unsigned int state = *(unsigned int *)(widgRec + offset);
+    const char *string;
+
+    if (state & DISABLED) {
+        string = "disabled";
+    } else {
+        string = "normal";
+    }
+    return Tcl_NewStringObj(string, -1);
+}
+
 
 static void
 EventuallyRedrawSash(Pane *panePtr)
@@ -4020,54 +4099,6 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * InvokeOp --
- *
- *      This procedure is called to invoke a TCL command.
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *      contains an error message.
- *
- *        pathName invoke paneName
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
-{
-    Paneset *setPtr = clientData;
-    Pane *panePtr;
-    Tcl_Obj *cmdObjPtr;
-
-    if (GetPaneFromObj(interp, setPtr, objv[2], &panePtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if ((panePtr == NULL) || (panePtr->flags & DISABLED)) {
-        return TCL_OK;
-    }
-    cmdObjPtr = GETATTR(panePtr, cmdObjPtr);
-    if (cmdObjPtr != NULL) {
-        Tcl_Obj *objPtr;
-        int result;
-
-        cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);
-        objPtr = Tcl_NewIntObj(panePtr->index);
-        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        Tcl_IncrRefCount(cmdObjPtr);
-        result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-        Tcl_DecrRefCount(cmdObjPtr);
-        if (result != TCL_OK) {
-            return TCL_ERROR;
-        }
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * MoveOp --
  *
  *      Moves a pane to a new location.
@@ -5164,7 +5195,6 @@ static Blt_OpSpec panesetOps[] =
     {"exists",     1, ExistsOp,    3, 3, "paneName",},
     {"index",      3, IndexOp,     3, 3, "paneName",},
     {"insert",     3, InsertOp,    4, 0, "after|before whereName ?label? ?option value ...?",},
-    {"invoke",     3, InvokeOp,    3, 3, "paneName",},
     {"move",       1, MoveOp,      4, 0, "after|before whereName paneName",},
     {"names",      1, NamesOp,     2, 0, "?pattern...?",},
     {"pane",       1, PaneOp,      2, 0, "oper ?args?",},
@@ -5380,7 +5410,10 @@ DisplaySashProc(ClientData clientData)
         return;
     }
     setPtr = panePtr->setPtr;
-    if (setPtr->activePtr == panePtr) {
+    if (panePtr->flags & DISABLED) {
+        bg = GETATTR(panePtr, disabledSashBg);
+        relief = setPtr->relief;
+    } else if (setPtr->activePtr == panePtr) {
         bg = GETATTR(panePtr, activeSashBg);
         relief = setPtr->activeRelief;
     } else {

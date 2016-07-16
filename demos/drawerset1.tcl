@@ -43,14 +43,13 @@ blt::barchart .ds.bot -bg \#CCFFFF -height 300  -width 300
     -resize no \
     -fill both
 
-checkbutton .left -text "L" -overrelief raised  \
-    -variable left -indicatoron no
-checkbutton .right -text "R" -overrelief raised  \
-    -variable right -indicatoron no
-checkbutton .top -text "T" -overrelief raised  \
-    -variable top -indicatoron no
-checkbutton .bottom -text "B" -overrelief raised  \
-    -variable bottom -indicatoron no
+blt::tk::pushbutton .left -text "L" -variable left 
+blt::tk::pushbutton .right -text "R" -overrelief raised  \
+    -variable right
+blt::tk::pushbutton .top -text "T" -overrelief raised  \
+    -variable top 
+blt::tk::pushbutton .bottom -text "B" -overrelief raised  \
+    -variable bottom
 
 blt::table . \
     0,0 .ds -fill both -rspan 5 \

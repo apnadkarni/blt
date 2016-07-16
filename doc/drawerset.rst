@@ -74,11 +74,12 @@ Drawers can be referenced either by index, label, or by tag.
   are also the following special non-numeric indices.
 
   **active**
-x    This is the drawer whose handle is where the mouse pointer is currently
-    located.  When a handle is active, it is drawn using its active colors.
-    The **active** index is changes when you move the mouse pointer over
-    another drawer's handle or by using the **handle activate**
-    operation. Note that there can be only one active drawer at a time.
+    This represents the drawer whose handle is where the mouse pointer is
+    currently located.  When a handle is active, it is drawn using its
+    active colors.  The **active** index is changes when you move the mouse
+    pointer over another drawer's handle or by using the **handle
+    activate** operation. Note that there can be only one active drawer at
+    a time.
 
   **end**
     The index of the last drawer.
@@ -162,7 +163,7 @@ command.  The following operations are available for *drawerset* widgets:
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
-  "BltDrawerset".  The resource name is the name of the widget::
+  **BltDrawerset**.  The resource name is the name of the widget::
 
     option add *BltDrawerset.autoraise true
     option add *BltDrawerset.Background grey70
@@ -182,14 +183,6 @@ command.  The following operations are available for *drawerset* widgets:
     the drawer should appear relative to the window; for example, "raised"
     means the item should appear to protrude.  The default is "flat".
     
-  **-anchor** *anchorName* 
-    FIXME
-    Specifies how to position the set of drawers if extra space is available
-    in the *drawerset*. For example, if *anchorName* is "center" then the
-    widget is centered in the *drawerset*; if *anchorName* is "n" then the
-    widget will be drawn such that the top center point of the widget will
-    be the top center point of the drawer.  This option defaults to "c".
-
   **-animate** *boolean*
     Indicates to animate the movement of drawers.  The drawer's **-delay**
     and **-steps** options determine how the movement is performed.  The
@@ -282,7 +275,6 @@ command.  The following operations are available for *drawerset* widgets:
   modifies the given option(s) to have the given value(s); in this case
   *drawerName* may refer to multiple items (for example "all").  *Option* and
   *value* are described below.
-
 
   **-activehandlecolor** *colorName* 
     Specifies the background color of a drawer handles when they are
@@ -396,7 +388,7 @@ command.  The following operations are available for *drawerset* widgets:
     of the drawer is maintained while sliding the drawer.  If *boolean* is
     "1", then embedded Tk widget is resized.  You can use the drawer's
     **-width** and **-height** options to control the minumum and maximum
-    sizes of the drawer. The default is "0".
+    sizes of the drawer. The default is "1".
 
   **-scale** *scaleName* 
     Specifies the scale of the steps when transitioning between open and
@@ -485,14 +477,17 @@ command.  The following operations are available for *drawerset* widgets:
   earlier **handle anchor** command. Typically this command is associated
   with a handle is dragged.  It returns an empty string.
 
-*pathName* **handle set** *drawerName* *x* *y*
-  Sets the location of *drawerName*\ 's handle to the given coordinate
-  (*x* or *y*) specified.  *DrawerName* is moved accordingly.
+*pathName* **handle moveto** *drawerName* *x* *y*
+  Moves *drawerName* to the given coordinate specified. Either the *x* or
+  *y* coordinate is used depending upon the **-side** option of the drawer
+  (if "left" or "right", *x* is used; "top" or "bottom", *y* is used).
+  *DrawerName* is moved and/or resized accordingly.
 
 *pathName* **handle size** *drawerName* ?\ *numPixels*\ ?
   Sets the size of *drawerName* to the given size.  *NumPixels* is a
   non-negative value indicating the new size (width/height) of the drawer.
   This value may have any of the forms acceptable to **Tk_GetPixels**.
+  *DrawerName* is moved and/or resized accordingly.
 
 *pathName* **handle slide** *drawerName* *dx* *dy*
   Slides *drawerName* by the given distance *Dx* and *dy* are integers
@@ -532,11 +527,6 @@ command.  The following operations are available for *drawerset* widgets:
   If one or more *option*\ -\ *value* pairs are specified, they modify the
   given drawer option(s) to have the given value(s).  *Option* and *value*
   are described in the **drawer configure** operation.  
-  
-*pathName* **invoke** *drawerName* 
-  Invokes the TCL command specified by drawer's **-command** option.
-  *DrawerName* may be a label, index, or tag, but may not represent more
-  than one drawer.  If *drawerName* is disabled, no command is invoked.
   
 *pathName* **isopen** *drawerName* 
   Indicates if *drawerName* is open or closed.  *DrawerName* may be a
@@ -642,7 +632,7 @@ HANDLE BINDINGS
 ---------------
 
 The follow behaviors are defined for the handle windows created for each
-drawer. The widget class name is "BltDrawersetHandle". 
+drawer. The resource class name is **BltDrawersetHandle**.
 
   **<Enter>** 
     Display the handle in its active colors and relief.
@@ -682,122 +672,140 @@ drawer. The widget class name is "BltDrawersetHandle".
 EXAMPLE
 -------
 
-The **drawerset** command creates a new widget.  
+The **blt::drawerset** command creates a new widget.  
 
   ::
 
     package require BLT
 
-    blt::drawerset .ds 
+    blt::drawerset .ds -window .ds.g
 
 A new TCL command ".ds" is also created.  This new command can be used to
-query and modify the *drawerset* widget.  The default orientation of the
-drawerset is horizontal.  If you want a vertical drawerset, where drawers
-run top to bottom, you can set the **-orient** option.
+query and modify the *drawerset* widget.  The **-window** option specifies
+the embedded Tk widget that will sit at base of the *drawerset* widget.
+Note that is must be a child of the *drawerset* widget, but doesn't already
+have to exist. 
 
-  ::
-
-    # Change the orientation of the drawerset.
-    .ds configure -orient "vertical"
-
-You can then add drawers to the widget.  A drawer is the container for an
-embedded Tk widget.  Note that the embedded Tk widget must be a child of
-the drawerset widget.
-
-  ::
+ ::
     
-    # Add a button to the drawerset. 
-    button .ds.b1
-    set drawer [.ds add -window .ds.b1]
+   blt::graph .ds.g 
 
-The variable "drawer" now contains the label of the drawer.  You can
-use that label to set or query configuration options specific to the
-drawer. You can also use the drawer's index or tag to refer to the  drawer.
+You can now add drawers to the widget.  A drawer is an embedded Tk widget
+with an optional handle.  Note that the embedded Tk widget must be a child
+of the drawerset widget.
 
-  ::
-
-    # Make the button expand to the size of the drawer.
-    .ds drawer configure $drawer -fill both
+ ::
     
-The **-fill** drawer option says to may the embedded widget as big as the
-drawer that contains it.
+   # Add a new drawer to the drawerset. It's the barchart.
+   blt::barchart .ds.left -height 300  -width 300
+   .ds add "left" \
+     -window .ds.left \
+     -side left \
+     -showhandle yes
 
-You can add as many drawers as you want to the widget.
+The **-side** option selects the side of the widget the drawer will
+slide out from.  The **-showhandle** option indicates to display a
+handle that the user can drag to move and/or resize the drawer.
+
+Pack the drawerset widget.  
+
+ ::
+
+   blt::table . \
+      0,0 .ds -fill both
+
+You can use the  **open** and **close** operation to open and close
+the drawer. 
+
+ ::
+
+   .ds open "left" 
+   .ds close "left"
+   
+You can also designate a global TCL variable that triggers whether the
+drawer is open or closed.
+
+ ::
+
+   .ds drawer configure "left" -variable "left"
+
+If the variable "left" is "1", the drawer is opened. If "0" it is
+closed.  You can create a **blt::tk::pushbutton** widget to do this
+for you.
+
+ ::
+
+   # Create a pushbutton to open and close the left drawer.
+   blt::tk::pushbutton .left -text "Left" -variable left
+
+When the button is pushed in the drawer will open because the variable
+is set to "1".  When the button is pushed out, the drawer will close.
+
+The handle displayed on the side of the drawer lets the user to resize or
+slide the drawer. By default drawers are resized (see the **-resize**
+drawer option).  You can control the bounds of the drawer with the
+**-width** option (for drawer's whose **-side** option is "left" or
+"right"). Here we can specify that the drawer only be expanded a maximum of
+4 inches and a minimum of 2 inches.
+
+ ::
+
+   .ds drawer configure "left" -width { 2i 4i }
+
+If you don't want the drawer to be resized at all you can set the **-resize**
+option to false.
+
+ ::
+
+   .ds drawer configure "left" -resize no
+
+Now the drawer will slide but not be resized.
+
+You can add as many drawers as you want. Drawers are drawn in the order
+that you create them.
 
   ::
 
-     button .ds.b2 -text "Second" 
-     .ds add -window .ds.b2 -fill both
-     button .ds.b3 -text "Third" 
-     .ds add -window .ds.b3 -fill both
-     button .ds.b4 -text "Fourth" 
-     .ds add -window .ds.b4 -fill both
-     button .ds.b5 -text "Fifth" 
-     .ds add -window .ds.b5 -fill both
+    blt::barchart .ds.right -height 300  -width 300
+    blt::barchart .ds.top   -height 1600 -width 300
+    blt::barchart .ds.bot   -height 300  -width 300
 
-By default, the *drawerset* widget's requested height will be the computed
-height of all its drawer (vertical orientation).  But you can set the
-**-height** option to override it.
+    .ds add right -window .ds.right -side right -variable "right"
+    .ds add top -window .ds.top -side top -variable "top"
+    .ds add bottom -window .ds.bot -side right -variable "bottom"
 
-  ::
-
-    .ds configure -height 1i
-
-Now only a subset of drawers is visible.  You can attach a scrollbar
-to the drawerset widget to see the rest.
-
-  ::
-
-    blt::tk::scrollbar .sbar -orient vertical -command { .ds view }
-    .ds configure -scrollcommand { .sbar set }
+    blt::tk::pushbutton .right -text "Right" -variable "right"
+    blt::tk::pushbutton .top -text "Top" -variable "top"
+    blt::tk::pushbutton .bot -text "Bottom" -variable "bottom"
 
     blt::table . \
-	0,0 .ds -fill both \
-	0,1 .sbar -fill y
-    
-If you wanted to flip the drawerset to be horizontal you would need
-to reconfigure the orientation of the drawerset and scrollbar and
-repack.
+      0,1 .left   \
+      1,1 .right  \
+      2,1 .top    \
+      3,1 .bottom 
+
+If you want the most recently opened drawer to always be on top, you
+use the **-autoraise** option.
 
   ::
 
-    .sbar configure -orient horizontal
-    .ds configure -orient horizontal -height 0 -width 1i
+    .ds configure -autoraise yes
 
-    blt::table . \
-	0,0 .ds -fill both \
-	1,0 .sbar -fill x
-
-
-If you want the size of all drawers to be the size of the drawerset
-window you can configure the drawers with the **-relwidth** option.
+You can delete a drawer by the **delete** operation.  
 
   ::
 
-    .ds configure -relwidth 1.0
+    .ds delete "right"
 
-You can programmatically move to specific drawers by the **see** operation.
-
-  ::
-
-     # See the third drawer. Indices are numbered from 0.
-    .ds see
-
-To delete drawers there is the **delete** operation.
-
-  ::
-
-     # Delete the first drawer.
-    .ds delete 0
-
-Note that while the drawer has been delete, the button previously
-embedded in the drawer still exists.  You can use the drawer's 
-**-deletecommand** option to supply a TCL script to be invoked
-before the drawer is deleted.
+The **delete** operation does not destroy the associated window with the
+drawer.  But you can use the drawer's **-deletecommand** option to specify
+a TCL script to do that. The script is invoked before the drawer is
+actually deleted.
 
   ::
 
    .ds drawer configure 0 -deletecommand { destroy [%W drawer cget 0 -window] }
+
 
 KEYWORDS
 --------
@@ -835,3 +843,4 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+

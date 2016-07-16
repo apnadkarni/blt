@@ -521,15 +521,15 @@ typedef struct  {
 
 static Blt_ConfigSpec configSpecs[] =
 {
+    {BLT_CONFIG_RELIEF, "-activearrowrelief", "activeArrowRelief","ArrowRelief",
+        DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, activeArrowRelief), 
+        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ARROW_ACTIVE_BG, 
         Blt_Offset(ComboEntry, activeBg), ALL_MASK},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ARROW_ACTIVE_FG, 
         Blt_Offset(ComboEntry, activeColor), ALL_MASK},
-    {BLT_CONFIG_RELIEF, "-activearrowrelief", "activeArrowRelief","ArrowRelief",
-        DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, activeArrowRelief), 
-        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
         "ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
         Blt_Offset(ComboEntry, arrowBorderWidth), 
@@ -571,6 +571,10 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
         "DisabledForeground", DEF_DISABLED_FG, 
         Blt_Offset(ComboEntry, disabledColor), ALL_MASK, },
+    {BLT_CONFIG_BITMASK_INVERT, "-editable", "editable", "Editable", 
+        DEF_EDITABLE, Blt_Offset(ComboEntry, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
+        (Blt_CustomOption *)READONLY},
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
         "ExportSelection", DEF_EXPORTSELECTION, Blt_Offset(ComboEntry, flags),
         BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
@@ -589,7 +593,7 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, (Blt_CustomOption *)ARROW},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG_COLOR, 
-        Blt_Offset(ComboEntry, highlightBgColor), BLT_CONFIG_NULL_OK | ALL_MASK},
+        Blt_Offset(ComboEntry, highlightBgColor), BLT_CONFIG_NULL_OK|ALL_MASK},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
         DEF_HIGHLIGHT_COLOR, Blt_Offset(ComboEntry, highlightColor),
         ALL_MASK},
@@ -627,10 +631,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
         DEF_CMD, Blt_Offset(ComboEntry, postCmdObjPtr), 
         BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
-    {BLT_CONFIG_BITMASK_INVERT, "-editable", "editable", "Editable", 
-        DEF_EDITABLE, Blt_Offset(ComboEntry, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-        (Blt_CustomOption *)READONLY},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
         Blt_Offset(ComboEntry, relief), ALL_MASK},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
@@ -2533,7 +2533,7 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      pathName activate bool
+ *      pathName activate what
  *
  *---------------------------------------------------------------------------
  */
