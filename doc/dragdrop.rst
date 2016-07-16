@@ -220,7 +220,7 @@ process; further details are presented below:
     raised whenever the token is over a valid target.  This command
     can be used to display other visual cues.
 
-  **-tokenanchor** *anchor*
+  **-tokenanchor** *anchorName*
     Specifies how the token window is positioned relative to the mouse
     pointer coordinates passed to the **drag** operation.  Must be one of
     the values n, s, e, w, center, nw, ne, sw or se.  For example, "nw"

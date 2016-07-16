@@ -371,7 +371,7 @@ The following operations are available for the **blt::background** command:
 
     *anchorName*
       The position is an anchor position: **nw**, **n**, **ne**,
-      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
+      **w**, **c**, **e**, **sw**, **s**, or **sw**.  *AnchorName*
       represents a location in the reference window.  For example "nw"
       is the upper left corner of the reference window.
 

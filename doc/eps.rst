@@ -41,7 +41,7 @@ SYNTAX
   aspects of the eps item such as its color, stipple, and font.  The
   following *option* and *value* pairs are valid.
 
-  **-anchor** *anchor*
+  **-anchor** *anchorName*
      Specifies how to position the EPS item relative to its X-Y coordinate.
      The default is "center".
 
@@ -83,10 +83,12 @@ SYNTAX
      the title contains more than one line of text. *Justify* must be
      "left", "right", or "center".  The default is "center".
 
-  **-relief** *relief*
-     Specifies the 3-D effect for the EPS item.  *Relief* specifies how the
-     item should appear relative to canvas; for example, "raised" means the
-     item should appear to protrude.  The default is "flat".
+  **-relief** *reliefName*
+     Specifies the 3-D effect for the EPS item.  *ReliefName* specifies how
+     the item should appear relative to canvas. Acceptable values are
+     **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+     **groove**. For example, "raised" means the item should appear to
+     protrude.  The default is "flat".
 
   **-shadowcolor** *colorName*
      Specifies the color of the drop shadow used for the title.  The option
@@ -110,7 +112,7 @@ SYNTAX
      title specified by the PostScript "Title:" entry is used.  You can set
      the string a single space to display no title.  The default is "".
 
-  **-titleanchor** *anchor*
+  **-titleanchor** *anchorName*
      Tells how to position the title within EPS item.  The default is "n".
 
   **-titlecolor** *colorName*

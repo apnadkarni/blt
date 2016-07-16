@@ -180,13 +180,15 @@ command.  The following operations are available for *drawerset* widgets:
   **-activehandlerelief** *reliefName* 
     Specifies the default relief when a drawer's handle is active.  This
     determines the 3-D effect for the handle.  *ReliefName* indicates how
-    the drawer should appear relative to the window; for example, "raised"
-    means the item should appear to protrude.  The default is "flat".
+    the drawer's handle should appear relative to the drawer's
+    window. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means the
+    handle should appear to protrude.  The default is "flat".
     
   **-animate** *boolean*
     Indicates to animate the movement of drawers.  The drawer's **-delay**
     and **-steps** options determine how the movement is performed.  The
-    default is "0".
+    default is "1".
 
   **-autoraise** *boolean*
     Indicates to automatically raise drawers when they are opened.  The
@@ -216,9 +218,11 @@ command.  The following operations are available for *drawerset* widgets:
 
   **-handlerelief** *reliefName* 
     Specifies the default relief of handles.  This determines the 3-D
-    effect for the handle.  *Relief* indicates how the handle should appear
-    relative to the window; for example, "raised" means the item should
-    appear to protrude.  The default is "flat".
+    effect for the handle.  *ReliefName* indicates how the handle should
+    appear relative to the window. Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the handle should appear to protrude.  The
+    default is "flat".
     
   **-handlethickness** *numPixels*
     Specifies a non-negative value for the thickness in pixels of the handle

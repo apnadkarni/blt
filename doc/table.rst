@@ -143,13 +143,13 @@ The following operations are available for the *table* geometry manager.
   of *tableName*. *PathName* doesn't have to be a child of *tableName*,
   but it is more efficent if it is.  *Option* and *value* are described below.
 
-  **-anchor** *anchor* 
+  **-anchor** *anchorName* 
     Anchors *pathName* to a particular edge of the cell(s) it resides.
     This option has effect only if the space of the spans surrounding
-    *pathName* is larger than *pathName*. *Anchor* specifies
+    *pathName* is larger than *pathName*. *AnchorName* specifies
     how *pathName* will be positioned in the space.  For example, if
-    *anchor* is "center" then the window is centered in the rows
-    and columns it spans; if *anchor* is "w" then the window will
+    *anchorName* is "center" then the window is centered in the rows
+    and columns it spans; if *anchorName* is "w" then the window will
     be aligned with the leftmost edge of the span. The default is
     "center".
 

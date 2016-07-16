@@ -153,7 +153,7 @@ command.  The following operations are available for *paneset* widgets:
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
-  "BltPaneset".  The resource name is the name of the widget::
+  **BltPaneset**.  The resource name is the name of the widget::
 
     option add *BltPaneset.anchor n
     option add *BltPaneset.Anchor e
@@ -168,9 +168,11 @@ command.  The following operations are available for *paneset* widgets:
 
   **-activesashelief** *reliefName* 
     Specifies the default relief when a pane's sash is active.  This
-    determines the 3-D effect for the sash.  *ReliefName* indicates how
-    the pane should appear relative to the window; for example, "raised"
-    means the item should appear to protrude.  The default is "flat".
+    determines the 3-D effect for the sash.  *ReliefName* indicates how the
+    pane should appear relative to the *paneset* window. Acceptable values
+    are **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the sash should appear to
+    protrude.  The default is "flat".
     
   **-background** *colorName* 
     Specifies the default background of the widget including its panes.
@@ -246,10 +248,12 @@ command.  The following operations are available for *paneset* widgets:
     The default is "0".
 
   **-sashrelief** *reliefName* 
-    Specifies the default relief of sashes.  This determines the 3-D
-    effect for the sash.  *Relief* indicates how the sash should appear
-    relative to the window; for example, "raised" means the item should
-    appear to protrude.  The default is "flat".
+    Specifies the default relief of sashes.  This determines the 3-D effect
+    for the sash.  *ReliefName* indicates how the sash should appear
+    relative to the *paneset* window. Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the sash should appear to protrude.  The
+    default is "flat".
     
   **-sashthickness** *numPixels*
     Specifies a non-negative value for the thickness in pixels of the sash
@@ -432,12 +436,12 @@ command.  The following operations are available for *paneset* widgets:
     just one element, both the top and bottom areas are padded by the same
     distance.  The default is "0".
   
-  **-relief** *relief* 
-    Specifies the 3-D effect for the border around the pane.  *Relief*
+  **-relief** *reliefName* 
+    Specifies the 3-D effect for the border around the pane.  *ReliefName*
     specifies how the interior of the pane should appear relative to the
-    *paneset* widget; for example, "raised" means the item should appear to
-    protrude from the window, relative to the surface of the window.  The
-    default is "flat".
+    *paneset* window. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the pane should appear to protrude.  The default is "flat".
 
   **-resize** *resizeMode*
     Indicates that the pane can expand or shrink from its requested width

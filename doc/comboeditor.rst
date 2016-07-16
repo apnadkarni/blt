@@ -151,7 +151,7 @@ command.  The following operations are available for *comboeditor* widgets:
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
-  "BltComboEditor".  The resource name is the name of the widget::
+  **BltComboEditor**.  The resource name is the name of the widget::
 
     option add *BltComboeditor.anchor n
     option add *BltComboeditor.Anchor e
@@ -238,10 +238,12 @@ command.  The following operations are available for *comboeditor* widgets:
     cursor will be displayed and the **insert** and **delete** operations
     are ignored. The default is "0".
 
-  **-relief** *relief* 
-    Specifies the 3-D effect for the editor.  *Relief* indicates how the
-    editor should appear relative to the root window; for example, "raised"
-    means the editor should appear to protrude.  The default is "solid".
+  **-relief** *reliefName* 
+    Specifies the 3-D effect for the editor.  *ReliefName* indicates how
+    the editor should appear relative to the root window.  Acceptable
+    values are **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means *pathName* should appear to
+    protrude. The default is "solid".
 
   **-restrictwidth** *option* 
     Specifies how the editor width should be restricted according to the
@@ -276,11 +278,12 @@ command.  The following operations are available for *comboeditor* widgets:
   **-selectforeground** *colorName* 
     Specifies the color of selected text.  The default is "white".
 
-  **-selectrelief** *relief* 
+  **-selectrelief** *reliefName* 
     Specifies the 3-D effect for the rectangle surrounding the selected
-    text.  *Relief* indicates how the rectangle should appear relative to the
-    normal text; for example, "raised" means the rectangle should appear to
-    protrude.  The default is "flat".  
+    text.  *ReliefName* indicates how the rectangle should appear relative
+    to the normal text. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the rectangle should appear to protrude.  The default is "flat".
 
   **-show** *boolean* 
     Indicates to display text as circles instead of the text itself.

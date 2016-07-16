@@ -188,7 +188,7 @@ command.  The following operations are available for *filmstrip* widgets:
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
-  "BltFilmstrip".  The resource name is the name of the widget::
+  **BltFilmstrip**.  The resource name is the name of the widget::
 
     option add *BltFilmstrip.anchor n
     option add *BltFilmstrip.Anchor e
@@ -203,9 +203,11 @@ command.  The following operations are available for *filmstrip* widgets:
 
   **-activegriprelief** *reliefName* 
     Specifies the default relief when a frame's grip is active.  This
-    determines the 3-D effect for the grip.  *ReliefName* indicates how
-    the frame should appear relative to the window; for example, "raised"
-    means the item should appear to protrude.  The default is "flat".
+    determines the 3-D effect for the grip.  *ReliefName* indicates how the
+    grip should appear relative to the *filmstrip* window. Acceptable
+    values are **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the grip should appear to
+    protrude.  The default is "raised".
     
   **-anchor** *anchorName* 
     Specifies how to position the set of frames if extra space is available
@@ -226,9 +228,11 @@ command.  The following operations are available for *filmstrip* widgets:
     
   **-gripactiverelief** *reliefName* 
     Specifies the relief of grips when they are active.  This determines
-    the 3-D effect for the grip.  *Relief* indicates how the grip should
-    appear relative to the window; for example, "raised" means the grip
-    should appear to protrude.  The default is "raised".
+    the 3-D effect for the grip.  *ReliefName* indicates how the grip
+    should appear relative to the *filmstrip* window.  Acceptable values
+    are **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the grip should appear to
+    protrude.  The default is "raised".
 
   **-gripborderwidth** *numPixels* 
     Specifies the default border width of grips in the widget.  *NumPixels*
@@ -249,10 +253,12 @@ command.  The following operations are available for *filmstrip* widgets:
     "0".
 
   **-griprelief** *reliefName* 
-    Specifies the default relief of grips.  This determines the 3-D
-    effect for the grip.  *Relief* indicates how the grip should appear
-    relative to the window; for example, "raised" means the item should
-    appear to protrude.  The default is "flat".
+    Specifies the default relief of grips.  This determines the 3-D effect
+    for the grip.  *ReliefName* indicates how the grip should appear
+    relative to the *filmstrip* window. Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the grip should appear to protrude.  The
+    default is "flat".
     
   **-gripthickness** *numPixels*
     Specifies a non-negative value for the thickness in pixels of the grip
@@ -429,12 +435,12 @@ command.  The following operations are available for *filmstrip* widgets:
     just one element, both the top and bottom areas are padded by the same
     distance.  The default is "0".
   
-  **-relief** *relief* 
-    Specifies the 3-D effect for the border around the frame.  *Relief*
+  **-relief** *reliefName* 
+    Specifies the 3-D effect for the border around the frame.  *ReliefName*
     specifies how the interior of the frame should appear relative to the
-    *filmstrip* widget; for example, "raised" means the item should appear to
-    protrude from the window, relative to the surface of the window.  The
-    default is "flat".
+    *filmstrip* widget. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the frame should appear to protrude.  The default is "flat".
 
   **-resize** *resizeMode*
     Indicates that the frame can expand or shrink from its requested width

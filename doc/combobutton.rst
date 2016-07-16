@@ -79,7 +79,7 @@ command.  The following operations are available for *combobutton* widgets:
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
-  "BltComboButton".  The resource name is the name of the widget::
+  **BltComboButton**.  The resource name is the name of the widget::
 
     option add *BltComboButton.anchor n
     option add *BltComboButton.Anchor e
@@ -105,11 +105,13 @@ command.  The following operations are available for *combobutton* widgets:
     *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
     The default is "1".
 
-  **-arrowrelief** *relief* 
+  **-arrowrelief** *reliefName* 
     Specifies the relief of the arrow.  This determines the 3-D effect for
-    the arrow.  *Relief* indicates how the arrow should appear relative to
-    the combobutton window; for example, "raised" means the arrow should
-    appear to protrude.  The default is "raised".
+    the arrow.  *ReliefName* indicates how the arrow should appear relative
+    to the combobutton window. Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the arrow should appear to protrude.  The
+    default is "raised".
     
   **-arrowwidth** *numPixels* 
     Specifies the width of the arrow.  *NumPixels* is a non-negative value
@@ -222,18 +224,21 @@ command.  The following operations are available for *combobutton* widgets:
     Specifies the text color when *pathName* when its menu is posted.  The
     default is "white".
 
-  **-postedrelief**  *relief*
+  **-postedrelief**  *reliefName*
     Specifies the 3-D effect for *pathName* when its menu is posted.
-    *Relief* indicates how *pathName* should appear relative to the
-    root window; for example, "raised" means the button should appear
-    to protrude.  The default is "sunken".
+    *ReliefName* indicates how *pathName* should appear relative to the
+    window it's packed into. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the button should appear to protrude.  The default is "sunken".
 
-  **-relief** *relief* 
-    Specifies the 3-D effect for *pathName*.  *Relief* indicates how the
-    menu should appear relative to the root window; for example, "raised"
-    means *pathName* should appear to protrude.  The default is "raised".
+  **-relief** *reliefName* 
+    Specifies the 3-D effect for *pathName*.  *ReliefName* indicates how
+    the button should appear relative to the window it's packed
+    into. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means
+    *pathName* should appear to protrude.  The default is "raised".
 
-  **-state** *state*
+  **-state** *stateName*
     Specifies one of three states for *pathName*: 
 
     **normal**

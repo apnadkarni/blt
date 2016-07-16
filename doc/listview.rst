@@ -185,7 +185,7 @@ command.  The following operations are available for *listview* widgets:
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
-  "BltListview".  The resource name is the name of the widget::
+  **BltListview**.  The resource name is the name of the widget::
 
     option add *BltListview.anchor n
     option add *BltListview.Anchor e
@@ -204,12 +204,14 @@ command.  The following operations are available for *listview* widgets:
     option may be overridden the style's **-activeforeground** option.  The
     default is "white".
 
-  **-activerelief** *relief* 
+  **-activerelief** *reliefName* 
     Specifies the default relief of active items.  This determines the 3-D
-    effect for the item.  *Relief* indicates how the item should appear
-    relative to the window; for example, "raised" means the item should
-    appear to protrude.  This option may be overridden by the style's
-    **-activerelief** option. The default is "flat".
+    effect for the item.  *ReliefName* indicates how the item should appear
+    relative to the window. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the item should appear to protrude.  This option may be
+    overridden by the style's **-activerelief** option. The default is
+    "flat".
     
   **-background** *colorName* 
     Specifies the default background of the items.  *ColorName* may be a
@@ -331,10 +333,12 @@ command.  The following operations are available for *listview* widgets:
     **Tk_GetPixels**.  If *numPixels* is 0, the width of an item is the
     maximum width of its icon and label. The default is "1i".
 
-  **-relief** *relief* 
-    Specifies the 3-D effect for *pathName*.  *Relief* indicates how the
-    window should appear relative to the root window; for example, "raised"
-    means the window should appear to protrude.  The default is "raised".
+  **-relief** *reliefName* 
+    Specifies the 3-D effect for *pathName*.  *ReliefName* indicates how
+    the *pathName* should appear relative to the window it's packed
+    into. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means the
+    *pathName* should appear to protrude.  The default is "raised".
 
   **-selectbackground** *colorName* 
     Specifies the default background of items that are selected.
@@ -371,12 +375,14 @@ command.  The following operations are available for *listview* widgets:
     list's order. If false, items will be returned in the order that they
     were selected. The default is "0".
 
-  **-selectrelief** *relief* 
+  **-selectrelief** *reliefName* 
     Specifies the default relief of selected items.  This determines the
-    3-D effect for the item.  *Relief* indicates how the item should appear
-    relative to the widget window; for example, "raised" means the item
-    should appear to protrude.  This option may be overridden by the
-    style's **-selectrelief** option. The default is "flat".
+    3-D effect for the item.  *ReliefName* indicates how the item should
+    appear relative to the widget window. Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the item should appear to protrude.  This
+    option may be overridden by the style's **-selectrelief** option. The
+    default is "flat".
 
   **-takefocus** *boolean*
     Provides information used when moving the focus from window to window
@@ -793,11 +799,13 @@ command.  The following operations are available for *listview* widgets:
     Specifies the text color of the item when it is active.  The default is
     "black".
 
-  **-activerelief** *relief* 
+  **-activerelief** *reliefName* 
     Specifies the relief of the item when it is active.  This determines
-    the 3-D effect for the item.  *Relief* indicates how the item should
-    appear relative to the widget window; for example, "raised" means the
-    item should appear to protrude.  The default is "flat".
+    the 3-D effect for the item.  *ReliefName* indicates how the item
+    should appear relative to the widget window. Acceptable values are
+    **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the item should appear to
+    protrude.  The default is "flat".
     
   **-background** *colorName* 
     Specifies the background of the item.  *ColorName* may be a color
@@ -826,12 +834,12 @@ command.  The following operations are available for *listview* widgets:
   **-foreground** *colorName* 
     Specifies the color of the text for the item.  The default is "black".
 
-  **-relief** *relief* 
-    Specifies the 3-D effect for the border around the item.  *Relief*
-    specifies how the interior of the legend should appear relative to the
-    widget; for example, "raised" means the item should appear to protrude
-    from the window, relative to the surface of the window.  The default is
-    "flat".
+  **-relief** *reliefName* 
+    Specifies the 3-D effect for the border around the item.  *ReliefName*
+    specifies how the item should appear relative to the *listview*
+    widget. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means the
+    item should appear to protrude.  The default is "flat".
 
   **-selectbackground** *colorName* 
     Specifies the background color of the item when it is selected.
@@ -842,11 +850,13 @@ command.  The following operations are available for *listview* widgets:
     Specifies the color of the text of the item when it is selected.  The
     default is "white".
 
-  **-selectrelief** *relief* 
+  **-selectrelief** *reliefName* 
     Specifies the relief of the item when it is selected.  This determines
-    the 3-D effect for the item.  *Relief* indicates how the item should
-    appear relative to the widget window; for example, "raised" means the
-    item should appear to protrude.  The default is "flat".
+    the 3-D effect for the item.  *ReliefName* indicates how the item
+    should appear relative to the widget window. Acceptable values are
+    **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the item should appear to
+    protrude.  The default is "flat".
     
 *pathName* **style create** *styleName* ?\ *option* *value* ... ?
   Creates a new style named *styleName*.  By default all list use the same
@@ -986,7 +996,7 @@ There are many default class bindings for *listview* widgets.
 
 There are class bindings that supply listview widgets their default
 behaviors. The following event sequences are set by default for listview
-widgets (via the class bind tag "BltListView"):
+widgets (via the class bind tag **BltListView**):
 
   **<ButtonPress-2>** 
     Starts scanning. 

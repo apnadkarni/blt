@@ -78,14 +78,14 @@ The following operations are available for scrollset widgets:
 
   Widget configuration options may be set either by the **configure** 
   operation or the Tk **option** command.  The resource class
-  is "BltScrollset".  The resource name is the name of the widget::
+  is **BltScrollset**.  The resource name is the name of the widget::
 
     option add *BltScrollset.anchor n
     option add *BltScrollset.Anchor e
 
   The following widget options are available:
 
-  **-anchor** *anchor* 
+  **-anchor** *anchorName* 
     It the **scrollset** window is bigger than the child widget, this
     option specifies how the child widget should be positioned within the
     scrollset. The default is "center".

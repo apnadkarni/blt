@@ -369,10 +369,12 @@ command.  The following operation are available for *treeview* widgets:
     Sets the width of the 3-D border around the button.  The **-relief**
     option determines if a border is to be drawn.  The default is "1".
 
-  **-closerelief** *relief*
-    Specifies the 3-D effect for the closed button.  *Relief* indicates how
-    the button should appear relative to the widget; for example, "raised"
-    means the button should appear to protrude.  The default is "solid".
+  **-closerelief** *reliefName*
+    Specifies the 3-D effect for the button when closed.  *ReliefName*
+    indicates how the button should appear relative to the
+    widget. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means the
+    button should appear to protrude.  The default is "solid".
 
   **-foreground** *colorName* 
     Sets the foreground color of buttons.  The default is "black".
@@ -383,10 +385,12 @@ command.  The following operation are available for *treeview* widgets:
     the second when it is closed.  If the *imageList* is the empty string,
     then a plus/minus gadget is drawn.  The default is "".
 
-  **-openrelief** *relief*
-    Specifies the 3-D effect of the open button.  *Relief* indicates how
-    the button should appear relative to the widget; for example, "raised"
-    means the button should appear to protrude.  The default is "flat".
+  **-openrelief** *reliefName*
+    Specifies the 3-D effect of the button when open.  *ReliefName*
+    indicates how the button should appear relative to the
+    widget. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means the
+    button should appear to protrude.  The default is "flat".
 
   **-size** *numPixels*
     Sets the requested size of the button.  The default is "0".
@@ -579,10 +583,12 @@ command.  The following operation are available for *treeview* widgets:
     field to be display.  *Justify* must be "left", "right", or "center".
     The default is "left".
 
-  **-max** *relief*
+  **-max** *reliefName*
+    FIXME
 
-  **-min** *relief*
-
+  **-min** *reliefName*
+    FIXME
+    
   **-pad** *numPixels*
     Specifies how much padding for the left and right sides of the column.
     *NumPixels* is a list of one or two screen distances.  If *numPixels*
@@ -591,23 +597,30 @@ command.  The following operation are available for *treeview* widgets:
     distance, both the left and right sides are padded evenly.  The default
     is "2".
 
-  **-relief** *relief*
-    Specifies the 3-D effect of the column.  *Relief* specifies how the
-    column should appear relative to the widget; for example, "raised"
-    means the column should appear to protrude.  The default is "flat".
+  **-relief** *reliefName*
+    Specifies the 3-D effect of the column.  *ReliefName* specifies how the
+    column should appear relative to the widget.  Acceptable values are
+    **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the column should appear to
+    protrude.  The default is "flat".
 
-FIXME
   **-rulecolor** *colorName*
+    FIXME
 
   **-ruledashes** *dashlist*
+    FIXME
 
   **-rulewidth** *numPixels*
+    FIXME
 
   **-show** *boolean*
+    FIXME
 
   **-sortcommand** *cmdPrefix*
+    FIXME
 
   **-sorttype** *sortType*
+    FIXME
 
   **-state** *state*
     Sets the state of *columnName*. If *state* is "disable" then the column
@@ -635,10 +648,12 @@ FIXME
     This matters only when the column is wider than the title.  *Justify*
     must be "left", "right", or "center".  The default is "left".
 
-  **-titlerelief** *relief*
-    Specifies the 3-D effect of the column title.  *Relief* specifies how the
-    title should appear relative to the widget; for example, "raised"
-    means the title should appear to protrude.  The default is "flat".
+  **-titlerelief** *reliefName*
+    Specifies the 3-D effect of the column title.  *ReliefName* specifies
+    how the title should appear relative to the widget. Acceptable values
+    are **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the column title should appear
+    to protrude.  The default is "flat".
 
   **-weight** *number*
     Sets the requested width of the column.  This overrides the computed
@@ -862,15 +877,16 @@ FIXME
     **%%**
       Translates to a single percent.
 
-  **-relief** *relief*
-    Specifies the 3-D effect for the widget.  *Relief* specifies how the
-    *treeview* widget should appear relative to widget it is packed into;
-    for example, "raised" means the *treeview* widget should appear to
-    protrude.  The default is "sunken".
+  **-relief** *reliefName*
+    Specifies the 3-D effect for the widget.  *ReliefName* specifies how
+    the *treeview* widget should appear relative to widget it is packed
+    into. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means the
+    *treeview* widget should appear to protrude.  The default is "sunken".
 
-  **-scrollmode** *mode* 
-    Specifies the style of scrolling to be used.  The following styles are
-    valid.  This is the default is "hierbox".
+  **-scrollmode** *scrollMode* 
+    Specifies the style of scrolling to be used.  *ScrollMode* can be any
+    of the following styles.
 
     **listbox**
       Like the **listbox** widget, the last entry can always be scrolled to
@@ -885,6 +901,8 @@ FIXME
       Like the **canvas** widget, the entries are bound within the
       scrolling area.
 
+    This is the default is "hierbox".
+
   **-selectbackground** *colorName*
     Sets the background color selected node entries.  The default is
     "#ffffea".
@@ -893,7 +911,7 @@ FIXME
     Sets the width of the raised 3-D border drawn around the labels of
     selected entries. The default is "0".
 
-  **-selectcommand** *string*
+  **-selectcommand** *cmdString*
     Specifies a TCL script to invoked when the set of selected nodes
     changes.  The default is "".
 
@@ -901,10 +919,10 @@ FIXME
     Sets the color of the labels of selected node entries.  The default is
     "black".
 
-  **-selectmode** *mode*
-    Specifies the selection mode. If *mode* is "single", only one node can
-    be selected at a time.  If "multiple" more than one node can be
-    selected.  The default is "single".
+  **-selectmode** *selectMode*
+    Specifies the selection mode. If *selectMode* is "single", only one
+    node can be selected at a time.  If "multiple" more than one node can
+    be selected.  The default is "single".
 
   **-separator** *string*
     Specifies the character sequence to use when spliting the path
@@ -914,13 +932,12 @@ FIXME
     element is a path component.  The default is "".
 
   **-showtitles** *boolean*
-    If *boolean* is false, column titles are not be displayed.  The default
-    is "yes".
+    Indicates if column titles are displayed.  The default is "1".
 
   **-sortselection** *boolean*
-    If *boolean* is true, nodes in the selection are ordered as they are
-    currently displayed (depth-first or sorted), not in the order they were
-    selected. The default is "no".
+    Indicates if nodes in the selection are ordered as they are currently
+    displayed (depth-first or sorted), not in the order they were
+    selected. The default is "0".
 
   **-takefocus** *focus* 
     Provides information used when moving the focus from window to window
@@ -940,7 +957,7 @@ FIXME
     with is computed from the contents of the *treeview* widget.  The
     default is "200".
 
-  **-xscrollcommand** *string*
+  **-xscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with horizontal
     scrollbars.  Whenever the horizontal view in the widget's window
     changes, the widget will generate a TCL command by concatenating the
@@ -950,7 +967,7 @@ FIXME
   **-xscrollincrement** *numPixels*
     Sets the horizontal scrolling distance. The default is 20 pixels.
 
-  **-yscrollcommand** *string*
+  **-yscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with vertical
     scrollbars.  Whenever the vertical view in the widget's window changes,
     the widget will generate a TCL command by concatenating the scroll
@@ -1038,9 +1055,9 @@ FIXME
 
   **-command** *cmdString*
 
-  **-data** *string*
-    Sets data fields for the node.  *String* is a list of name-value pairs
-    to be set. The default is "".
+  **-data** *dataList*
+    Sets data fields for the node.  *DataList* is a list of name-value pairs
+    of data fields to be set. The default is "".
 
   **-font** *fontName* 
     Sets the font for entry labels.  This overrides the widget's **-font**
@@ -1056,7 +1073,7 @@ FIXME
     two Tk images: the first image is displayed when the node is open, the
     second when it is closed.
 
-  **-label** *string*
+  **-label** *labelString*
     Sets the text for the entry's label.  If not set, this defaults to the
     name of the node. The default is "".
 
@@ -1327,7 +1344,7 @@ FIXME
   produce the effect of dragging the list at high speed through the window.
   The return value is an empty string.
 
-*pathName* **see** ?\ **-anchor** *anchor*\ ? *tagOrId*
+*pathName* **see** ?\ **-anchor** *anchorName*\ ? *tagOrId*
   Adjusts the view of entries so that the node given by *tagOrId* is
   visible in the widget window.  It is an error if **tagOrId** is a
   tag that refers to more than one node.  By default the node's entry

@@ -122,8 +122,13 @@ The following operations are available for scrollbar widgets:
 
   **-activerelief** *reliefName*
     Specifies the relief to use when displaying the element that is active,
-    if any.  Elements other than the active element are always displayed
-    with a raised relief.
+    if any. Specifies the 3-D effect for *pathName*.  *ReliefName*
+    indicates how the element appear relative to the *scrollbar*
+    window. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means
+    element should appear to protrude.  The default is "raised".  Elements
+    other than the active element are always displayed with a raised
+    relief.
 
   **-background** *bgName*
     Specifies the background color of *pathName*.  *BgName* may be a
@@ -180,19 +185,27 @@ The following operations are available for scrollbar widgets:
     the forms acceptable to **Tk_GetPixels**.  If *numPixels* is "0", no
     focus highlight is drawn around the widget.  The default is "2".
 
-  **-jump**
-     FIXME
-     
+  **-jump** *boolean*
+     For widgets with a slider that can be dragged to adjust a value, such
+     as scrollbars, this option determines when notifications are made
+     about changes in the value.  The option's value must be a boolean of
+     the form accepted by Tcl_GetBoolean.  If the value is false, updates
+     are made continuously as the slider is dragged.  If the value is true,
+     updates are delayed until the mouse button is released to end the
+     drag; at that point a single notification is made (the value "jumps"
+     rather than changing smoothly).
+
   **-orient** *orientName*
-    FIXME
-    Specifies the orientation of the *filmstrip*.  *OrientName* may be
-    "vertical" (frames run left to right) or "horizontal" (frames run top
-    to bottom).  The default is "horizontal".
+    Specifies the orientation of the *scrollbar*.  *OrientName* may be
+    "vertical" (scrollbar runs left to right) or "horizontal" (scrollbar
+    runs top to bottom).  The default is "horizontal".
     
   **-relief** *reliefName*
-    Specifies the 3-D effect for *pathName*.  *Relief* indicates how the
-    menu should appear relative to the root window; for example, "raised"
-    means *pathName* should appear to protrude.  The default is "raised".
+    Specifies the 3-D effect for *pathName*.  *ReliefName* indicates how
+    the menu should appear relative to the window it's packed
+    into. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means
+    *pathName* should appear to protrude.  The default is "raised".
 
   **-repeatdelay**
 

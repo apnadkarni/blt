@@ -120,8 +120,10 @@ command.  The following operations are available for *comboentry* widgets:
   **-activerelief** *reliefName* 
     Specifies the relief of the button when it is active.  This determines
     the 3-D effect for the arrow.  *ReliefName* indicates how the button
-    should appear relative to the comboentry window; for example, "raised"
-    means the arrow should appear to protrude.  The default is "raised".
+    should appear relative to the *comboentry* window. Acceptable values are
+    **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the button should appear to
+    protrude.  The default is "raised".
 
   **-background** *bgName* 
     Specifies the background color of *pathName*.  *BgName* may be a
@@ -141,9 +143,10 @@ command.  The following operations are available for *comboentry* widgets:
 
   **-relief** *reliefName* 
     Specifies the 3-D effect for the button.  *ReliefName* indicates how
-    the button should appear relative to the *comboentry* window; for
-    example, "raised" means the button should appear to protrude.  The
-    default is "raised".
+    the button should appear relative to the *comboentry* window.
+    Acceptable values are **raised**, **sunken**, **flat**, **ridge**,
+    **solid**, and **groove**. For example, "raised" means the button
+    should appear to protrude.  The default is "raised".
 
 *pathName* **button invoke** 
   FIXME
@@ -176,16 +179,19 @@ command.  The following operations are available for *comboentry* widgets:
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
-  "BltComboentry".  The resource name is the name of the widget::
+  **BltComboentry**.  The resource name is the name of the widget::
 
     option add *BltComboentry.anchor n
     option add *BltComboentry.Anchor e
 
   The following widget options are available\:
 
-  **-activearrowrelief** *colorName* 
-    Specifies the color of the text when *pathName* is active.  The
-    default is "black".
+  **-activearrowrelief** *reliefName* 
+    Specifies the 3-D effect for the arrow.  *ReliefName* indicates how the
+    arrow should appear relative to the widget window. Acceptable values
+    are **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the arrow should appear to
+    protrude.  The default is "raised".
 
   **-activebackground** *background* 
     Specifies the background color of *pathName* when it is active.
@@ -204,11 +210,13 @@ command.  The following operations are available for *comboentry* widgets:
 
   **-arrowpad** *padName*
   
-  **-arrowrelief** *relief* 
+  **-arrowrelief** *reliefName* 
     Specifies the relief of the arrow.  This determines the 3-D effect for
-    the arrow.  *Relief* indicates how the arrow should appear relative to
-    the comboentry window; for example, "raised" means the arrow should
-    appear to protrude.  The default is "raised".
+    the arrow.  *ReliefName* indicates how the arrow should appear relative
+    to the *comboentry* window.  Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the arrow should appear to protrude.  The
+    default is "raised".
     
   **-arrowwidth** *numPixels* 
     Specifies the width of the arrow.  *NumPixels* is a non-negative value
@@ -336,10 +344,12 @@ command.  The following operations are available for *comboentry* widgets:
     when the menu is posted. If *cmdString* is "", no command is invoked.
     The default is "".
 
-  **-relief** *relief* 
-    Specifies the 3-D effect for *pathName*.  *Relief* indicates how the
-    menu should appear relative to the root window; for example, "raised"
-    means *pathName* should appear to protrude.  The default is "raised".
+  **-relief** *reliefName* 
+    Specifies the 3-D effect for *pathName*.  *ReliefName* indicates how
+    the menu should appear relative to the window it's packed into.
+    Acceptable values are **raised**, **sunken**, **flat**, **ridge**,
+    **solid**, and **groove**. For example, "raised" means *pathName*
+    should appear to protrude.  The default is "raised".
 
   **-selectbackground** *colorName* 
     Specifies the color of the rectangle surrounding selected text.
@@ -362,9 +372,10 @@ command.  The following operations are available for *comboentry* widgets:
 
   **-selectrelief** *reliefName*
     Specifies the 3-D effect for the rectangle surrounding the selected
-    text.  *Relief* indicates how the rectangle should appear relative to the
-    normal text; for example, "raised" means the rectangle should appear to
-    protrude.  The default is "flat".  
+    text.  *ReliefName* indicates how the rectangle should appear relative
+    to the normal text. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the rectangle should appear to protrude.  The default is "flat".
 
   **-show** *boolean*
     Indicates to display text as circles instead of the text itself.

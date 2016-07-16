@@ -218,11 +218,12 @@ available for *tabset* widgets:
     **-relief** option determines how the border is to be drawn.  The
     default is "1".
 
-  **-relief** *relief*
-    Specifies the 3-D effect for both tabs and folders.  *Relief* specifies
-    how the tabs should appear relative to background of the widget; for
-    example, "raised" means the tab should appear to protrude.  The default
-    is "raised".
+  **-relief** *reliefName*
+    Specifies the 3-D effect for both tabs and folders.  *ReliefName*
+    specifies how the tabs should appear relative to background of the
+    *tabset* widget. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the tab should appear to protrude.  The default is "raised".
 
   **-troughbackground** *colorName*
     Sets the background color of the trough under the tabs.  
@@ -236,11 +237,12 @@ available for *tabset* widgets:
     Sets the amount of padding between the highlight ring on the outer edge
     of the tabset and the folder.  The default is "0".
 
-  **-outerrelief** *relief*
-    Specifies the 3-D effect for the tabset widget.  *Relief* specifies how
-    the tabset should appear relative to widget that it is packed into; for
-    example, "raised" means the tabset should appear to protrude.  The
-    default is "sunken".
+  **-outerrelief** *reliefName*
+    Specifies the 3-D effect for the tabset widget.  *ReliefName* specifies
+    how the tabset should appear relative to widget that it is packed
+    into. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means the
+    *tabset* should appear to protrude.  The default is "sunken".
 
   **-cursor** *cursor*
     Specifies the widget's cursor.  The default cursor is "".

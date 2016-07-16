@@ -85,7 +85,7 @@ typedef enum {
  */
 #define DEF_ACTIVE_HANDLE_COLOR   STD_ACTIVE_BACKGROUND
 #define DEF_ACTIVE_HANDLE_RELIEF  "flat"
-#define DEF_ANIMATE             "0"
+#define DEF_ANIMATE             "1"
 #define DEF_AUTORAISE           "0"
 #define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
 #define DEF_DELAY               "20"
@@ -2700,7 +2700,7 @@ NewDrawerset(Tcl_Interp *interp, Tcl_Obj *objPtr)
     setPtr->relief = TK_RELIEF_FLAT;
     setPtr->activeRelief = TK_RELIEF_RAISED;
     setPtr->handleBW = 1;
-    setPtr->flags = LAYOUT_PENDING | RESTACK;
+    setPtr->flags = LAYOUT_PENDING | RESTACK | ANIMATE;
     setPtr->scrollUnits = 10;
     Blt_SetWindowInstanceData(tkwin, setPtr);
     Blt_InitHashTable(&setPtr->drawerTable, BLT_STRING_KEYS);

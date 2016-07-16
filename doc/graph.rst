@@ -288,15 +288,17 @@ GRAPH OPERATIONS
   **-plotrelief**  *reliefName*
     Specifies the 3-D effect for the plotting area.  *ReliefName* specifies
     how the interior of the plotting area should appear relative to rest of
-    the graph; for example, "raised" means the plot should appear to
-    protrude from the graph, relative to the surface of the graph.  The
-    default is "sunken".
+    the graph; for example. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the plot should appear to protrude from the graph.  The default
+    is "sunken".
 
   **-relief**  *reliefName*
     Specifies the 3-D effect for the graph widget.  *ReliefName* specifies
-    how the graph should appear relative to widget it is packed int. For
-    example, "raised" means the graph should appear to protrude.  The
-    default is "flat".
+    how the graph should appear relative to widget it is packed
+    into. Acceptable values are **raised**, **sunken**, **flat**,
+    **ridge**, **solid**, and **groove**. For example, "raised" means the
+    graph should appear to protrude.  The default is "flat".
 
   **-rightmargin**  *numPixels*
     Specifies the width of the right margin to the right the plot area.
@@ -619,8 +621,9 @@ The resource class is "Axis".  The resource names are the names of the axes
 
   **-activeforeground** *colorName*
 
-  **-activerelief** *relief*
-
+  **-activerelief** *reliefName*
+     FIXME
+     
   **-autorange** *windowSize*
 
   **-background** *colorName*
@@ -760,9 +763,10 @@ The resource class is "Axis".  The resource names are the names of the axes
     computed. The default is "".
 
   **-palette** *paletteName*
-
-  **-relief** *relief*
-
+    FIXME
+  **-relief** *reliefName*
+    FIXME
+    
   **-rotate** *numDegrees*
     Specifies the how many degrees to rotate the axis tick labels.
     *NumDegrees* is a real value representing the number of degrees to
@@ -1241,8 +1245,9 @@ The following operations are available for elements.
     element will have no entry in the legend.  The default label is the
     element's name.
 
-  **-legendrelief**  *relief* 
-
+  **-legendrelief**  *reliefName* 
+    FIXME
+    
   **-linewidth**  *numPixels* 
     Sets the width of the connecting lines between data points.  If
     *numPixels* is "0", no connecting lines will be drawn between symbols.
@@ -1397,7 +1402,7 @@ The following operations are available for elements.
     increasing.  If *direction* is "both", connecting lines will be draw
     between all data points.  The default is "both".
 
-  **-valueanchor**  *anchor* 
+  **-valueanchor**  *anchorName* 
 
   **-valuecolor**  *colorName* 
 
@@ -1701,14 +1706,15 @@ The following operations are valid for the legend.
     marked as active (see the legend **activate** operation) are drawn using
     this foreground color.
 
-  **-activerelief**  *relief* 
-    Specifies the 3-D effect desired for active legend entries.  *Relief*
-    denotes how the interior of the entry should appear relative to the
-    legend; for example, "raised" means the entry should appear to protrude
-    from the legend, relative to the surface of the legend.  The default is
-    "flat".
+  **-activerelief**  *reliefName* 
+    Specifies the 3-D effect desired for active legend entries.
+    *ReliefName* denotes how the interior of the entry should appear
+    relative to the legend. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the entry should appear to protrude from the legend.  The default
+    is "flat".
 
-  **-anchor**  *anchor*
+  **-anchor**  *anchorName*
     Tells how to position the legend relative to the positioning point for
     the legend.  This is dependent on the value of the **-position** option.
     The default is "center".
@@ -1721,15 +1727,15 @@ The following operations are valid for the legend.
 
     **plotarea**
       The anchor specifies how to position the legend relative to the
-      plotting area. For example, if *anchor* is "center" then the legend is
-      centered in the plotting area; if *anchor* is "ne" then the legend will
+      plotting area. For example, if *anchorName* is "center" then the legend is
+      centered in the plotting area; if *anchorName* is "ne" then the legend will
       be drawn such that occupies the upper right corner of the plotting
       area.
 
     **@**\ *x*\ **,**\ *y*
       The anchor specifies how to position the legend relative to the
-      positioning point. For example, if *anchor* is "center" then the legend
-      is centered on the point; if *anchor* is "n" then the legend will be
+      positioning point. For example, if *anchorName* is "center" then the legend
+      is centered on the point; if *anchorName* is "n" then the legend will be
       drawn such that the top center point of the rectangular region occupied
       by the legend will be at the positioning point.
 
@@ -1746,7 +1752,7 @@ The following operations are valid for the legend.
 
   **-borderwidth**  *numPixels*
     Sets the width of the 3-D border around the outside edge of the legend
-    (if such border is being drawn; the **relief** option determines this).
+    (if such border is being drawn; the **-relief** option determines this).
     The default is "2" pixels.
 
   **-columns**  *numColumns* 
@@ -1821,12 +1827,13 @@ The following operations are valid for the legend.
     true, the legend will be drawn on top of any elements that may overlap
     it. The default is "no".
 
-  **-relief**  *relief*
-    Specifies the 3-D effect for the border around the legend.  *Relief*
-    specifies how the interior of the legend should appear relative to the
-    graph; for example, "raised" means the legend should appear to protrude
-    from the graph, relative to the surface of the graph.  The default is
-    "sunken".
+  **-relief**  *reliefName*
+    Specifies the 3-D effect for the border around the legend.
+    *ReliefName* specifies how the interior of the legend should appear
+    relative to the graph. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the legend should appear to protrude from the graph.  The default
+    is "sunken".
 
   **-rows**  *numRows*
 
@@ -1838,8 +1845,8 @@ The following operations are valid for the legend.
 
   **-selectmode**  *modeName*
 
-  **-selectrelief**  *relief*
-
+  **-selectrelief**  *reliefName*
+    FIXME
   **-takefocus**  *how*
 
   **-title**  *titleString*
@@ -2071,7 +2078,7 @@ The following operations are available for pens.
     wish to mix different types of elements (bars and lines) on the same
     graph.  The default type is "line".
 
-  **-valueanchor**  *anchor* 
+  **-valueanchor**  *anchorName* 
 
   **-valuecolor**  *colorName* 
 
@@ -2464,10 +2471,10 @@ The following operations are available for markers.
 
   The following options are specific to image markers:
 
-  **-anchor**  *anchor*
-    *Anchor* tells how to position the image relative to the positioning
-    point for the image. For example, if *anchor* is "center" then the
-    image is centered on the point; if *anchor* is "n" then the image will
+  **-anchor**  *anchorName*
+    *AnchorName* tells how to position the image relative to the positioning
+    point for the image. For example, if *anchorName* is "center" then the
+    image is centered on the point; if *anchorName* is "n" then the image will
     be drawn such that the top center point of the rectangular region
     occupied by the image will be at the positioning point.  This option
     defaults to "center".
@@ -2777,10 +2784,10 @@ The following operations are available for markers.
 
   The following options are specific to text markers:
 
-  **-anchor**  *anchor*
-    *Anchor* tells how to position the text relative to the positioning point
-    for the text. For example, if *anchor* is "center" then the text is
-    centered on the point; if *anchor* is "n" then the text will be drawn
+  **-anchor**  *anchorName*
+    *AnchorName* tells how to position the text relative to the positioning point
+    for the text. For example, if *anchorName* is "center" then the text is
+    centered on the point; if *anchorName* is "n" then the text will be drawn
     such that the top center point of the rectangular region occupied by the
     text will be at the positioning point.  This default is "center".
 
@@ -2907,10 +2914,10 @@ The following operations are available for markers.
 
   The following options are specific to window markers:
 
-  **-anchor**  *anchor*
-    *Anchor* tells how to position the marker relative its positioning
-    point. For example, if *anchor* is "center" then the marker is centered
-    on the point; if *anchor* is "n" then the marker will be displayed such
+  **-anchor**  *anchorName*
+    *AnchorName* tells how to position the marker relative its positioning
+    point. For example, if *anchorName* is "center" then the marker is centered
+    on the point; if *anchorName* is "n" then the marker will be displayed such
     that the top center point of the rectangular region occupied by the
     widget will be at the positioning point.  This option defaults to
     "center".

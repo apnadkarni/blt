@@ -249,7 +249,7 @@ command.  The following operations are available for *combomenu* widgets:
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
-  "BltCombomenu".  The resource name is the name of the widget::
+  **BltCombomenu**.  The resource name is the name of the widget::
 
     option add *BltCombomenu.anchor n
     option add *BltCombomenu.Anchor e
@@ -270,11 +270,13 @@ command.  The following operations are available for *combomenu* widgets:
     Specifies the color of the label when the menu item is active.  The
     default is "white".
 
-  **-activerelief** *relief* 
+  **-activerelief** *reliefName* 
     Specifies the relief of active menu items.  This determines the 3-D
-    effect for the menu item.  *Relief* indicates how the item should
-    appear relative to the menu window; for example, "raised" means the
-    item should appear to protrude.  The default is "flat".
+    effect for the menu item.  *ReliefName* indicates how the item should
+    appear relative to the menu window. Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the item should appear to protrude.  The
+    default is "flat".
     
   **-background** *background* 
     Specifies the background of the menu items.  *Background* may be a
@@ -383,10 +385,12 @@ command.  The following operations are available for *combomenu* widgets:
     circle. The value may have any of the forms acceptable to
     *Tk_GetPixels*, such as "1.2i".  The default is "12".
 
-  **-relief** *relief* 
-    Specifies the 3-D effect for the menu.  *Relief* indicates how the
-    menu should appear relative to the root window; for example, "raised"
-    means the menu should appear to protrude.  The default is "raised".
+  **-relief** *reliefName* 
+    Specifies the 3-D effect for the menu.  *ReliefName* indicates how the
+    menu should appear relative to the root window. Acceptable values are
+    **raised**, **sunken**, **flat**, **ridge**, **solid**, and
+    **groove**. For example, "raised" means the menu should appear to
+    protrude.  The default is "raised".
 
   **-restrictwidth** *option* 
     Specifies how the menu width should be restricted according to the
@@ -910,11 +914,13 @@ command.  The following operations are available for *combomenu* widgets:
     Specifies the active color of the label.  The default is
     "black".
 
-  **-activerelief** *relief* 
+  **-activerelief** *reliefName* 
     Specifies the relief of active menu items.  This determines the 3-D
-    effect for the menu item.  *Relief* indicates how the item should
-    appear relative to the menu window; for example, "raised" means the
-    item should appear to protrude.  The default is "flat".
+    effect for the menu item.  *ReliefName* indicates how the item should
+    appear relative to the menu window.  Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the item should appear to protrude.  The
+    default is "flat".
     
   **-background** *background* 
     Specifies the background of the menu item.  *Background* may be a color
@@ -981,12 +987,13 @@ command.  The following operations are available for *combomenu* widgets:
     circle. The value may have any of the forms acceptable to
     *Tk_GetPixels*, such as "1.2i".  The default is "12".
 
-  **-relief** *relief* 
+  **-relief** *reliefName* 
     Specifies the 3-D effect for the border around the menu item.
-    *Relief* specifies how the interior of the legend should appear
-    relative to the menu; for example, "raised" means the item
-    should appear to protrude from the menu, relative to the surface of
-    the menu.  The default is "flat".
+    *ReliefName* specifies how the interior of the legend should appear
+    relative to the menu.  Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the item should appear to protrude from the menu.  The default is
+    "flat".
 
 *pathName* **style create** *styleName* ?\ *option* *value* ... ?
   Creates a new style named *styleName*.  By default all menu items use the
