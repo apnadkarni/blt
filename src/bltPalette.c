@@ -2,8 +2,7 @@
 /*
  * bltPalette.c --
  *
- * This module implements palettes for contour elements for the BLT graph
- * widget.
+ * This module implements palettes for the BLT graph widget.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *
@@ -2051,7 +2050,7 @@ PaletteObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PaletteInterpDeleteProc --
  *
- *      This is called when the interpreter registering the "contourpalette"
+ *      This is called when the interpreter registering the "palette"
  *      command is deleted.
  *
  * Results:
@@ -2105,7 +2104,7 @@ GetPaletteCmdInterpData(Tcl_Interp *interp)
  *
  * Blt_PaletteCmdInitProc --
  *
- *      This procedure is invoked to initialize the "contourpalette" command.
+ *      This procedure is invoked to initialize the "palette" command.
  *
  * Results:
  *      None.
