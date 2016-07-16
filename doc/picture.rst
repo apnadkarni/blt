@@ -7,12 +7,8 @@ picture
 Full color image type.
 ----------------------
 
-:Author: George A Howlett
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 ========
@@ -731,9 +727,9 @@ the command.  The operations available for pictures are listed below.
   **-ratio** *number*
     Specifies the ratio between the *srcName* and the reflection.
 
-  **-side** *side*
-    Specifies the side of *srcName* to be reflected.  Side can be "bottom"
-    "top", "left" or "right".
+  **-side** *sideName*
+    Specifies the side of *srcName* to be reflected.  *SideName* can be
+    "bottom" "top", "left" or "right".
 
 *imageName* **resample** *srcName* ?\ *switches* ... ?
   Resizes *srcName* with the resulting image saved in *imageName*.
@@ -1020,13 +1016,12 @@ the command.  The operations available for pictures are listed below.
   or "2.4i".
 
 *imageName* **wipe** *fromImage* *toImage* ?\ *switches* ... ?
-  Transitions from *fromImage* to *toImage* by wiping. *toImage* is
-  *toImage* into *fromImage* and saving the result in
-  *imageName*. *FromImage* and *toImage* can be either the name of a
-  picture (it can not be *imageName*) or a color specification.
-  *FromImage* and *toImage* cannot both be colors. *ImageName* starts as a
-  copy of *fromImage*.  It is progressively changed by randomly copying
-  pixels from *toImage* into it.
+  Transitions from *fromImage* to *toImage* by wiping *toImage* into
+  *fromImage* and saving the result in *imageName*. *FromImage* and
+  *toImage* can be either the name of a picture (it can not be *imageName*)
+  or a color specification.  *FromImage* and *toImage* cannot both be
+  colors. *ImageName* starts as a copy of *fromImage*.  It is progressively
+  changed by randomly copying pixels from *toImage* into it.
 
   This transition will start after this command completes, when an idle
   point is reached. Care must be taken not to change *imageName* while the

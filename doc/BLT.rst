@@ -7,12 +7,8 @@ BLT
 Introduction to the BLT library.
 --------------------------------
 
-:Author: George A. Howlett
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 DESCRIPTION
 -----------
@@ -376,57 +372,57 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-..  _blt::arcball: file:://arcball.html
-..  _blt::background: file:://background.html
-..  _blt::barchart: file:://barchart.html
-..  _blt::base64: file:://base64.html
-..  _blt::beep: file:://beep.html
-..  _blt::bgexec: file:://bgexec.html
-..  _blt::bitmap: file:://bitmap.html
-..  _blt::busy: file:://busy.html
-..  _blt::checksum: file:://checksum.html
-..  _blt::combobutton: file:://combobutton.html
-..  _blt::comboeditor: file:://comboeditor.html
-..  _blt::comboentry: file:://comboentry.html
-..  _blt::combolist: file:://combolist.html
-..  _blt::combomenu: file:://combomenu.html
-..  _blt::combomenu: file:://combomenu.html
-..  _blt::combotree: file:://combotree.html
-..  _blt::contour: file:://contour.html
-..  _blt::csv: file:://csv.html
-..  _blt::cutbuffer: file:://cutbuffer.html
-..  _blt::datatable: file:://datatable.html
-..  _blt::debug: file:://debug.html
-..  _blt::drag&drop: file:://dragdrop.html
-..  _blt::drawerset: file:://drawerset.html
-..  _blt::filmstrip: file:://filmstrip.html
-..  _blt::graph: file:://graph.html
-..  _blt::htext: file:://htext.html
-..  _blt::listview: file:://listview.html
-..  _blt::mesh: file:://mesh.html
-..  _blt::paintbrush: file:://paintbrush.html
-..  _blt::palette: file:://palette.html
-..  _blt::paneset: file:://paneset.html
-..  _blt::scrollset: file:://scrollset.html
-..  _blt::sftp: file:://sftp.html
-..  _blt::spline: file:://spline.html
-..  _blt::stripchart: file:://stripchart.html
-..  _blt::table: file:://table.html
-..  _blt::tableview: file:://tableview.html
-..  _blt::tabset: file:://tabset.html
-..  _blt::timestamp: file:://timestamp.html
-..  _blt::tk::button: file:://pushbutton.html
-..  _blt::tk::checkbutton: file:://pushbutton.html
-..  _blt::tk::frame: file:://pushbutton.html
-..  _blt::tk::pushbutton: file:://pushbutton.html
-..  _blt::tk::radiobutton: file:://pushbutton.html
-..  _blt::tk::scrollbar: file:://pushbutton.html
-..  _blt::tk::toplevel: file:://pushbutton.html
-..  _blt::tree: file:://tree.html
-..  _blt::treeview: file:://treeview.html
-..  _blt::utils::compare: file:://compare.html
-..  _blt::vector: file:://vector.html
-..  _blt::watch: file:://watch.html
-..  _blt::winop: file:://winop.html
-..  _eps: file:://eps.html
-..  _picture: file:://picture.html
+..  _blt::arcball: arcball.htm
+..  _blt::background: background.htm
+..  _blt::barchart: barchart.htm
+..  _blt::base64: base64.htm
+..  _blt::beep: beep.htm
+..  _blt::bgexec: bgexec.htm
+..  _blt::bitmap: bitmap.htm
+..  _blt::busy: busy.htm
+..  _blt::checksum: checksum.htm
+..  _blt::combobutton: combobutton.htm
+..  _blt::comboeditor: comboeditor.htm
+..  _blt::comboentry: comboentry.htm
+..  _blt::combolist: combolist.htm
+..  _blt::combomenu: combomenu.htm
+..  _blt::combomenu: combomenu.htm
+..  _blt::combotree: combotree.htm
+..  _blt::contour: contour.htm
+..  _blt::csv: csv.htm
+..  _blt::cutbuffer: cutbuffer.htm
+..  _blt::datatable: datatable.htm
+..  _blt::debug: debug.htm
+..  _blt::drag&drop: dragdrop.htm
+..  _blt::drawerset: drawerset.htm
+..  _blt::filmstrip: filmstrip.htm
+..  _blt::graph: graph.htm
+..  _blt::htext: htext.htm
+..  _blt::listview: listview.htm
+..  _blt::mesh: mesh.htm
+..  _blt::paintbrush: paintbrush.htm
+..  _blt::palette: palette.htm
+..  _blt::paneset: paneset.htm
+..  _blt::scrollset: scrollset.htm
+..  _blt::sftp: sftp.htm
+..  _blt::spline: spline.htm
+..  _blt::stripchart: stripchart.htm
+..  _blt::table: table.htm
+..  _blt::tableview: tableview.htm
+..  _blt::tabset: tabset.htm
+..  _blt::timestamp: timestamp.htm
+..  _blt::tk::button: pushbutton.htm
+..  _blt::tk::checkbutton: pushbutton.htm
+..  _blt::tk::frame: pushbutton.htm
+..  _blt::tk::pushbutton: pushbutton.htm
+..  _blt::tk::radiobutton: pushbutton.htm
+..  _blt::tk::scrollbar: pushbutton.htm
+..  _blt::tk::toplevel: pushbutton.htm
+..  _blt::tree: tree.htm
+..  _blt::treeview: treeview.htm
+..  _blt::utils::compare: compare.htm
+..  _blt::vector: vector.htm
+..  _blt::watch: watch.htm
+..  _blt::winop: winop.htm
+..  _eps: eps.htm
+..  _picture: picture.htm

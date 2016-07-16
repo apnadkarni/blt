@@ -7,12 +7,7 @@ blt::vector
 Vector data object
 ------------------
 
-:Author: George A. Howlett
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT built-in commands
-
+.. include:: man.rst
 .. include:: toc.rst
 
 SYNOPSIS

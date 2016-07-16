@@ -63,7 +63,6 @@
     (ISVERT(s)) ? Tk_Height((s)->tkwin) : Tk_Width((s)->tkwin);
 
 #define TRACE   0
-#define TRACE1  0
 
 #define ISVERT(s)       ((s)->flags & VERTICAL)
 #define ISHORIZ(s)      (((s)->flags & VERTICAL) == 0)
@@ -89,41 +88,41 @@ typedef enum {
 #define DEF_ANIMATE             "0"
 #define DEF_AUTORAISE           "0"
 #define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
+#define DEF_DELAY               "20"
+#define DEF_HCURSOR             "sb_h_double_arrow"
+#define DEF_HEIGHT              "0"
+#define DEF_PAD                 "0"
+#define DEF_SIDE                "right"
+#define DEF_TAKEFOCUS           "1"
+#define DEF_VCURSOR             "sb_v_double_arrow"
+#define DEF_WIDTH               "0"
+
 #define DEF_DRAWER_ANCHOR       "c"
 #define DEF_DRAWER_BORDERWIDTH  "0"
 #define DEF_DRAWER_CLOSEVALUE   "0"
 #define DEF_DRAWER_CLOSE_COMMAND (char *)NULL
+#define DEF_DRAWER_DATA         (char *)NULL
 #define DEF_DRAWER_DELETE_COMMAND (char *)NULL
 #define DEF_DRAWER_FILL         "1"
 #define DEF_DRAWER_HIDE         "0"
-#define DEF_HANDLE_HIGHLIGHT_BACKGROUND STD_NORMAL_BACKGROUND
-#define DEF_HANDLE_HIGHLIGHT_COLOR      RGB_BLACK
 #define DEF_DRAWER_OPENVALUE    "1"
 #define DEF_DRAWER_OPEN_COMMAND (char *)NULL
 #define DEF_DRAWER_PAD          "0"
 #define DEF_DRAWER_PADX         "0"
-#define DEF_DRAWER_SCALE         "log"
 #define DEF_DRAWER_PADY         "0"
-#define DEF_DRAWER_RESIZE       "shrink"
+#define DEF_DRAWER_SCALE         "log"
 #define DEF_DRAWER_SHOW_HANDLE   "1"
-#define DEF_DRAWER_SHRINK       "0"
-#define DEF_DRAWER_VARIABLE     (char *)NULL
-#define DEF_HANDLE_BORDERWIDTH   "1"
+#define DEF_DRAWER_RESIZE       "1"
 #define DEF_DRAWER_STEPS        "8"
+#define DEF_DRAWER_TAGS         (char *)NULL
+#define DEF_DRAWER_VARIABLE     (char *)NULL
+
+#define DEF_HANDLE_BORDERWIDTH   "1"
 #define DEF_HANDLE_COLOR         STD_NORMAL_BACKGROUND
 #define DEF_HANDLE_CURSOR       (char *)NULL
 #define DEF_HANDLE_PAD           "0"
 #define DEF_HANDLE_RELIEF        "flat"
 #define DEF_HANDLE_THICKNESS     "2"
-#define DEF_HCURSOR             "sb_h_double_arrow"
-#define DEF_HEIGHT              "0"
-#define DEF_HANDLE_HIGHLIGHT_THICKNESS "1"
-#define DEF_PAD                 "0"
-#define DEF_DELAY               "20"
-#define DEF_SIDE                "right"
-#define DEF_TAKEFOCUS           "1"
-#define DEF_VCURSOR             "sb_v_double_arrow"
-#define DEF_WIDTH               "0"
 
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
@@ -141,11 +140,6 @@ struct _Handle {
     Blt_HashEntry *hashPtr;             /* Pointer of this handle into the
                                          * draweset's hashtable of
                                          * handles. */
-    XColor *highlightBgColor;           /* Color for drawing traversal
-                                         * highlight area when highlight is
-                                         * off. */
-    XColor *highlightColor;             /* Color for drawing traversal
-                                         * highlight. */
     Blt_Bg bg;
     Blt_Bg activeBg;
     Tk_Cursor cursor;                   /* X Cursor */
@@ -207,8 +201,6 @@ struct _Drawer  {
                                          * drawer. */
     int fill;                           /* Indicates how the widget should
                                          * fill the drawer it occupies. */
-    int resize;                         /* Indicates if the drawer should
-                                         * expand/shrink. */
     int size;                           /* Current size of the drawer. This
                                          * size is bounded by min and max
                                          * below. */
@@ -248,6 +240,7 @@ struct _Drawer  {
                                          * the drawer has been closed. */
     Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
                                          * when drawer is deleted. */
+    Tcl_Obj *dataObjPtr;
     Handle handle;
     int delay;                          /* Delay between steps of automated 
                                          * scrolling. */
@@ -295,15 +288,6 @@ struct _Drawerset {
     int scrollUnits;                    /* Smallest unit of scrolling for
                                          * drawer. */
     int scrollIncr;                     /* Current increment. */
-    /*
-     * Focus highlight ring
-     */
-    int handleHighlightThickness;       /* Width in pixels of highlight to
-                                         * draw around the handle when it
-                                         * has the focus.  <= 0 means don't
-                                         * draw a highlight. */
-    XColor *handleHighlightColor;       /* Color for drawing traversal
-                                         * highlight. */
     int relief;
     int activeRelief;
     Blt_Pad handlePad;
@@ -378,7 +362,7 @@ struct _Drawerset {
 #define ONSCREEN        (1<<11)         /* Drawer is on-screen. */
 #define HANDLE_ACTIVE   (1<<12)         /* Handle is currently active. */
 #define SHOW_HANDLE     (1<<14)         /* Display the drawer. */
-#define SHRINK          (1<<15)         /* Shrink the window to fit the
+#define RESIZE          (1<<15)         /* Resize the window to fit the
                                          * drawer, instead of moving it. */
 #define VIRGIN          (1<<24)
 #define MOTION_LINEAR   (1<<21)
@@ -443,6 +427,13 @@ static Blt_CustomOption traceVarOption = {
     ObjToTraceVar, TraceVarToObj, FreeTraceVarProc, (ClientData)0
 };
 
+static Blt_OptionFreeProc FreeTagsProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
+static Blt_CustomOption tagsOption = {
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
+};
+
 static Blt_ConfigSpec drawerSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
@@ -463,6 +454,8 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_OBJ, "-closevalue", "closeValue", "CloseValue",
         DEF_DRAWER_CLOSEVALUE, Blt_Offset(Drawer, closeValueObjPtr), 
         BLT_CONFIG_NULL_OK },
+    {BLT_CONFIG_OBJ, "-data", "data", "Data", DEF_DRAWER_DATA, 
+        Blt_Offset(Drawer, dataObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_INT_NNEG, "-delay", "delay", "Delay", DEF_DELAY,
         Blt_Offset(Drawer, delay), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
@@ -476,50 +469,39 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_CURSOR, "-handlecursor", "handleCursor", "HandleCursor",
         DEF_HANDLE_CURSOR, Blt_Offset(Drawer, handle.cursor),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqHeight), 0},
+    {BLT_CONFIG_CUSTOM, "-height", "height", "Height", (char *)NULL, 
+        Blt_Offset(Drawer, reqHeight), 0, &bltLimitsOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_DRAWER_HIDE, 
         Blt_Offset(Drawer, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)HIDDEN },
-    {BLT_CONFIG_COLOR, "-handlehighlightbackground",
-        "handleHighlightBackground", "HandleHighlightBackground",
-        DEF_HANDLE_HIGHLIGHT_BACKGROUND, 
-        Blt_Offset(Drawer, handle.highlightBgColor), 0},
-    {BLT_CONFIG_COLOR, "-handlehighlightcolor", "handleHighlightColor",
-        "HandleHighlightColor", DEF_HANDLE_HIGHLIGHT_COLOR,
-        Blt_Offset(Drawer, handle.highlightColor), 0},
     {BLT_CONFIG_OBJ, "-opencommand", "openCommand", "OpenCommand", 
         DEF_DRAWER_OPEN_COMMAND, Blt_Offset(Drawer, openCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-openvalue", "openValue", "OpenValue", 
         DEF_DRAWER_OPENVALUE, Blt_Offset(Drawer, openValueObjPtr), 
         BLT_CONFIG_NULL_OK },
-    {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqHeight), 0, &bltLimitsOption},
-    {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqWidth), 0, &bltLimitsOption},
-    {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_DRAWER_RESIZE,
-        Blt_Offset(Drawer, resize), BLT_CONFIG_DONT_SET_DEFAULT },
+    {BLT_CONFIG_BITMASK, "-resize", "resize", "resize", 
+        DEF_DRAWER_RESIZE, Blt_Offset(Drawer, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)RESIZE },
     {BLT_CONFIG_CUSTOM, "-scale", "scale", "Scale",
         DEF_DRAWER_SCALE, Blt_Offset(Drawer, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, &motionScalingOption},
     {BLT_CONFIG_BITMASK, "-showhandle", "showHandle", "showHandle", 
         DEF_DRAWER_SHOW_HANDLE, Blt_Offset(Drawer, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_HANDLE },
-    {BLT_CONFIG_BITMASK, "-shrink", "shrink", "Shrink", 
-        DEF_DRAWER_SHRINK, Blt_Offset(Drawer, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHRINK },
     {BLT_CONFIG_SIDE, "-side", (char *)NULL, (char *)NULL, DEF_SIDE, 
         Blt_Offset(Drawer, side), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT_POS, "-steps", "steps", "Steps", DEF_DRAWER_STEPS,
         Blt_Offset(Drawer, numSteps), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_DRAWER_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
         DEF_TAKEFOCUS, Blt_Offset(Drawer, takeFocus), BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_CUSTOM, "-variable", (char *)NULL, (char *)NULL, 
         DEF_DRAWER_VARIABLE, Blt_Offset(Drawer, varNameObjPtr), 
         BLT_CONFIG_NULL_OK, &traceVarOption},
-    {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(Drawer, reqWidth), 0},
+    {BLT_CONFIG_CUSTOM, "-width", "width", "Width", (char *)NULL, 
+        Blt_Offset(Drawer, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
         Blt_Offset(Drawer, tkwin), BLT_CONFIG_NULL_OK, &childOption },
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -548,14 +530,6 @@ static Blt_ConfigSpec drawersetSpecs[] =
         Blt_Offset(Drawerset, handleBW), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
         DEF_HANDLE_COLOR, Blt_Offset(Drawerset, handleBg), 0},
-    {BLT_CONFIG_COLOR, "-handlehighlightcolor", "handleHighlightColor",
-        "HandleHighlightColor", DEF_HANDLE_HIGHLIGHT_COLOR,
-        Blt_Offset(Drawerset, handleHighlightColor), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-handlehighlightthickness",
-        "handleHighlightThickness", "HandleHighlightThickness",
-        DEF_HANDLE_HIGHLIGHT_THICKNESS, 
-        Blt_Offset(Drawerset, handleHighlightThickness),
-        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-handlepad", "handlePad", "HandlePad", DEF_HANDLE_PAD, 
         Blt_Offset(Drawerset, handlePad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-handlerelief", "handleRelief", "HandleRelief", 
@@ -889,7 +863,7 @@ SetNominal(int nom, Blt_Limits *limitsPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * BoundWidth --
+ * BoundSize --
  *
  *      Bounds a given width value to the limits described in the limit
  *      structure.  The initial starting value may be overridden by the
@@ -915,6 +889,7 @@ BoundSize(int size, Blt_Limits *limitsPtr)
     return size;
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -972,12 +947,13 @@ BoundHeight(int height, Blt_Limits *limitsPtr)
     }
     return height;
 }
+#endif
 
 static void
 GetHorizontalDrawerGeometry(Drawerset *setPtr, Drawer *drawPtr, int *widthPtr,
                             int *heightPtr)
 {
-    int reqWidth, reqHeight, winWidth, winHeight;
+    int reqWidth, reqHeight, w, h;
 
     if (drawPtr->relWidth > 0.0) {
         reqWidth = (int)(Tk_Width(setPtr->tkwin) * drawPtr->relWidth);
@@ -989,37 +965,41 @@ GetHorizontalDrawerGeometry(Drawerset *setPtr, Drawer *drawPtr, int *widthPtr,
     } else {
         reqHeight = Tk_ReqHeight(drawPtr->tkwin);
     }
-    winHeight = Tk_Height(setPtr->tkwin);
-    winWidth  = Tk_Width(setPtr->tkwin);
-    if (winWidth < 2) {
-        winWidth = Tk_ReqWidth(setPtr->tkwin);
+    h = Tk_Height(setPtr->tkwin);
+    w = Tk_Width(setPtr->tkwin);
+    if (w < 2) {
+        w = Tk_ReqWidth(setPtr->tkwin);
     }
     if (drawPtr->flags & SHOW_HANDLE) {
-        winWidth -= setPtr->handleSize; /* Subtract the size of the handle
-                                          * from the maximum window
-                                          * size. */
+        w -= setPtr->handleSize;        /* Subtract the size of the handle
+                                         * from the maximum window size. */
     }
-    if ((reqWidth < winWidth) && ((drawPtr->fill & FILL_X) == 0)) {
-        winWidth = reqWidth;
+    if ((reqWidth < w) && ((drawPtr->fill & FILL_X) == 0)) {
+        w = reqWidth;
     }
-    if ((reqHeight < winHeight) && ((drawPtr->fill & FILL_Y) == 0)) {
-        winHeight = reqHeight;
+    if ((reqHeight < h) && ((drawPtr->fill & FILL_Y) == 0)) {
+        h = reqHeight;
     }
-    winWidth  = BoundSize(winWidth,  &drawPtr->reqWidth);
-    winHeight = BoundSize(winHeight, &drawPtr->reqHeight);
-
+    w = BoundSize(w, &drawPtr->reqWidth);
+    h = BoundSize(h, &drawPtr->reqHeight);
     /* Track limits of drawer. */
+    if (w > Tk_Width(setPtr->tkwin)) {
+        w = Tk_Width(setPtr->tkwin);
+    }
+    if (h > Tk_Height(setPtr->tkwin)) {
+        h = Tk_Height(setPtr->tkwin);
+    }
     drawPtr->scrollMin = 0;
-    drawPtr->scrollMax = winWidth;
-    *widthPtr = winWidth;
-    *heightPtr = winHeight;
+    drawPtr->scrollMax = w;
+    *widthPtr = w;
+    *heightPtr = h;
 }
 
 static void
 GetVerticalDrawerGeometry(Drawerset *setPtr, Drawer *drawPtr, int *widthPtr,
                           int *heightPtr)
 {
-    int reqWidth, reqHeight, winWidth, winHeight;
+    int reqWidth, reqHeight, w, h;
 
     if (drawPtr->relWidth > 0.0) {
         reqWidth = (int)(Tk_Width(setPtr->tkwin) * drawPtr->relWidth);
@@ -1031,31 +1011,35 @@ GetVerticalDrawerGeometry(Drawerset *setPtr, Drawer *drawPtr, int *widthPtr,
     } else {
         reqHeight = Tk_ReqHeight(drawPtr->tkwin);
     }
-    winHeight = Tk_Height(setPtr->tkwin);
-    winWidth  = Tk_Width(setPtr->tkwin);
-    if (winHeight < 2) {
-        winHeight = Tk_ReqHeight(setPtr->tkwin);
+    h = Tk_Height(setPtr->tkwin);
+    w  = Tk_Width(setPtr->tkwin);
+    if (h < 2) {
+        h = Tk_ReqHeight(setPtr->tkwin);
     }
     if (drawPtr->flags & SHOW_HANDLE) {
-        winHeight -= setPtr->handleSize; /* Subtract the size of the handle
-                                          * from the maximum window
-                                          * size. */
+        h -= setPtr->handleSize;        /* Subtract the size of the handle
+                                         * from the maximum window size. */
     }
-    if ((reqHeight < winHeight) && ((drawPtr->fill & FILL_Y) == 0)) {
-        winHeight = reqHeight;
+    if ((reqHeight < h) && ((drawPtr->fill & FILL_Y) == 0)) {
+        h = reqHeight;
     }
-    if ((reqWidth < winWidth) && ((drawPtr->fill & FILL_X) == 0)) {
-        winWidth = reqWidth;
+    if ((reqWidth < w) && ((drawPtr->fill & FILL_X) == 0)) {
+        w = reqWidth;
     }
-    winWidth  = BoundSize(winWidth,  &drawPtr->reqWidth);
-    winHeight = BoundSize(winHeight, &drawPtr->reqHeight);
-
+    w = BoundSize(w, &drawPtr->reqWidth);
+    h = BoundSize(h, &drawPtr->reqHeight);
+    if (w > Tk_Width(setPtr->tkwin)) {
+        w = Tk_Width(setPtr->tkwin);
+    }
+    if (h > Tk_Height(setPtr->tkwin)) {
+        h = Tk_Height(setPtr->tkwin);
+    }
     /* Track limits of drawer. */
     drawPtr->scrollMin = 0;
-    drawPtr->scrollMax = winHeight;
-    *widthPtr = winWidth;
-    *heightPtr = winHeight;
-    drawPtr->size = winHeight;
+    drawPtr->scrollMax = h;
+    *widthPtr = w;
+    *heightPtr = h;
+    drawPtr->size = h;
 }
 
 static int
@@ -1154,7 +1138,7 @@ CloseDrawer(Drawer *drawPtr)
     if (Tk_IsMapped(drawPtr->handle.tkwin)) {
         Tk_UnmapWindow(drawPtr->handle.tkwin);
     }
-    drawPtr->offset = -1;
+    /* drawPtr->offset = -1; */
     drawPtr->step = 0;
     if (drawPtr->timerToken != (Tcl_TimerToken)0) {
         Tcl_DeleteTimerHandler(drawPtr->timerToken);
@@ -1337,6 +1321,7 @@ DrawerTimerProc(ClientData clientData)
     }
     if (drawPtr->flags & CLOSING) {
         frac = 1.0 - frac;
+        range = drawPtr->offset - drawPtr->scrollMin;
     }
     drawPtr->offset = (int)(range * frac);
     if (drawPtr->step < drawPtr->numSteps) {
@@ -1678,6 +1663,138 @@ MotionScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     return objPtr;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SetTag --
+ *
+ *      Associates a tag with a given row.  Individual row tags are
+ *      stored in hash tables keyed by the tag name.  Each table is in
+ *      turn stored in a hash table keyed by the row location.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects:
+ *      A tag is stored for a particular row.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SetTag(Tcl_Interp *interp, Drawer *drawPtr, const char *tagName)
+{
+    Drawerset *setPtr;
+    long dummy;
+    
+    if (strcmp(tagName, "all") == 0) {
+        return TCL_OK;                  /* Don't need to create reserved
+                                         * tags. */
+    }
+    if (tagName[0] == '\0') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+                (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (tagName[0] == '-') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, 
+                "\" can't start with a '-'.", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    setPtr = drawPtr->setPtr;
+    Blt_Tags_AddItemToTag(&setPtr->tags, tagName, drawPtr);
+    return TCL_OK;
+}
+
+/*ARGSUSED*/
+static void
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
+{
+    Drawerset *setPtr;
+    Drawer *drawPtr = (Drawer *)widgRec;
+
+    setPtr = drawPtr->setPtr;
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, drawPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToTags --
+ *
+ *      Convert the string representation of a list of tags.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The tags are
+ *      save in the widget.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    Drawerset *setPtr;
+    Drawer *drawPtr = (Drawer *)widgRec;
+    int i;
+    char *string;
+    int objc;
+    Tcl_Obj **objv;
+
+    setPtr = drawPtr->setPtr;
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, drawPtr);
+    string = Tcl_GetString(objPtr);
+    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+        return TCL_OK;
+    }
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i++) {
+        SetTag(interp, drawPtr, Tcl_GetString(objv[i]));
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagsToObj --
+ *
+ *      Return the tags used by the pane.
+ *
+ * Results:
+ *      A TCL list representing the tags is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
+          char *widgRec, int offset, int flags)  
+{
+    Drawerset *setPtr;
+    Drawer *drawPtr = (Drawer *)widgRec;
+    Tcl_Obj *listObjPtr;
+
+    setPtr = drawPtr->setPtr;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Blt_Tags_AppendTagsToObj(&setPtr->tags, drawPtr, listObjPtr);
+    return listObjPtr;
+}
+
 static void
 EventuallyRedrawHandle(Drawer *drawPtr)
 {
@@ -1686,6 +1803,7 @@ EventuallyRedrawHandle(Drawer *drawPtr)
         Tcl_DoWhenIdle(DisplayHandle, drawPtr);
     }
 }
+
 
 static Drawer *
 FirstDrawer(Drawerset *setPtr, unsigned int hateFlags)
@@ -2339,11 +2457,10 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
     Blt_ResetLimits(&drawPtr->reqHeight);
     drawPtr->anchor = TK_ANCHOR_CENTER;
     drawPtr->fill = FILL_NONE;
-    drawPtr->flags = VIRGIN | SHOW_HANDLE | CLOSED | MOTION_LOG;
+    drawPtr->flags = VIRGIN | SHOW_HANDLE | CLOSED | MOTION_LOG | RESIZE;
     drawPtr->hashPtr = hPtr;
     drawPtr->name = Blt_GetHashKey(&setPtr->drawerTable, hPtr);
     drawPtr->nom  = LIMITS_NOM;
-    drawPtr->resize = RESIZE_SHRINK;
     drawPtr->setPtr = setPtr;
     drawPtr->side = SIDE_RIGHT;
     drawPtr->size = drawPtr->index = 0;
@@ -2513,7 +2630,6 @@ NewDrawerset(Tcl_Interp *interp, Tcl_Obj *objPtr)
     setPtr->handleBW = 1;
     setPtr->flags = LAYOUT_PENDING | RESTACK;
     setPtr->scrollUnits = 10;
-    setPtr->handleHighlightThickness = 1;
     Blt_SetWindowInstanceData(tkwin, setPtr);
     Blt_InitHashTable(&setPtr->drawerTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->handleTable, BLT_STRING_KEYS);
@@ -2636,11 +2752,11 @@ ResetDrawers(Drawerset *setPtr)
         extra = 0;
         if (drawPtr->side & SIDE_VERTICAL) {
             limitsPtr = &drawPtr->reqHeight;
-            size = BoundHeight(0, limitsPtr);
+            size = BoundSize(0, limitsPtr);
             
         } else {
             limitsPtr = &drawPtr->reqWidth;
-            size = BoundWidth(0, limitsPtr);
+            size = BoundSize(0, limitsPtr);
         }
         if (drawPtr->flags & SHOW_HANDLE) {
             extra += setPtr->handleSize;
@@ -2691,6 +2807,7 @@ GetDrawersGeometry(Drawerset *setPtr)
          drawPtr = NextDrawer(drawPtr, 0)) {
         int w, h;
         
+        drawPtr->offset = drawPtr->scrollMax;
         if (drawPtr->side & SIDE_VERTICAL) {
             GetVerticalDrawerGeometry(setPtr, drawPtr, &w, &h);
         } else {
@@ -2708,12 +2825,6 @@ GetDrawersGeometry(Drawerset *setPtr)
             }
             continue;
         }
-        if ((drawPtr->resize & RESIZE_EXPAND) == 0) {
-            drawPtr->max = drawPtr->normalSize;
-        }
-        if ((drawPtr->resize & RESIZE_SHRINK) == 0) {
-            drawPtr->min = drawPtr->normalSize;
-        }
     }
 }
 
@@ -2725,7 +2836,7 @@ ArrangeHorizontalDrawer(Drawer *drawPtr)
     int x, y, w, h;
 
 #if TRACE
-    fprintf(stderr, "ArrangeHorizontalDrawer(%s)\n", drawPtr->name);
+    fprintf(stderr, "ArrangeHorizontalDrawer(%s, offset=%d)\n", drawPtr->name, drawPtr->offset);
 #endif
     setPtr = drawPtr->setPtr;
     GetHorizontalDrawerGeometry(setPtr, drawPtr, &w, &h);
@@ -2766,9 +2877,7 @@ ArrangeHorizontalDrawer(Drawer *drawPtr)
             Tk_UnmapWindow(drawPtr->tkwin);
         }
     } else {
-        /*
-         * Resize and/or move the widget as necessary.
-         */
+        /* Resize and/or move the widget as necessary. */
         if ((x != Tk_X(drawPtr->tkwin)) || (y != Tk_Y(drawPtr->tkwin)) ||
             (w != Tk_Width(drawPtr->tkwin)) ||
             (h != Tk_Height(drawPtr->tkwin))) {
@@ -2858,11 +2967,7 @@ ArrangeVerticalDrawer(Drawer *drawPtr)
             (y != Tk_Y(drawPtr->tkwin)) ||
             (w != Tk_Width(drawPtr->tkwin)) || 
             (h != Tk_Height(drawPtr->tkwin))) {
-#if TRACE
-    fprintf(stderr, "ArrangeVerticalDrawer(%s): x=%d y=%d w=%d h=%d\n",
-            Tk_PathName(drawPtr->tkwin), x, y, w, h);
-#endif
-    Tk_MoveResizeWindow(drawPtr->tkwin, x, y, w, h);
+            Tk_MoveResizeWindow(drawPtr->tkwin, x, y, w, h);
         }
         if (!Tk_IsMapped(drawPtr->tkwin)) {
             Tk_MapWindow(drawPtr->tkwin);
@@ -3038,33 +3143,28 @@ ConfigureDrawerset(Drawerset *setPtr)
         Tk_GeometryRequest(setPtr->tkwin, setPtr->normalWidth,
                            setPtr->normalHeight);
     }       
-    setPtr->handleSize = MAX(PADDING(setPtr->handlePad),
-        setPtr->handleHighlightThickness) + setPtr->handleThickness;
+    setPtr->handleSize = PADDING(setPtr->handlePad) + 
+        setPtr->handleThickness;
 }
 
 static void
-SlideDrawer(Drawer *drawPtr, int delta)
+ResizeOrSlideDrawer(Drawer *drawPtr, int delta)
 {
     Drawerset *setPtr;
-    Drawer *iterPtr;
     Blt_Limits *limitsPtr;
     int size;
     
+    setPtr = drawPtr->setPtr;
 #if TRACE
-    fprintf(stderr, "SlideDrawer(%s, delta=%d) size=%d, offset=%d\n",
+    fprintf(stderr, "ResizeOrSlideDrawer(%s, delta=%d) size=%d, max=%d, min=%d, offset=%d\n",
             drawPtr->name, delta, drawPtr->scrollMax - drawPtr->scrollMin,
-            drawPtr->offset);
+            drawPtr->scrollMax, drawPtr->scrollMin, drawPtr->offset);
 #endif
     if (delta == 0) {
         return;
     }
-    setPtr = drawPtr->setPtr;
     if (drawPtr->side & (SIDE_LEFT|SIDE_TOP)) {
         delta = -delta;
-    }
-    for (iterPtr = FirstDrawer(setPtr, HIDDEN | DISABLED); iterPtr != NULL; 
-         iterPtr = NextDrawer(drawPtr, HIDDEN | DISABLED)) {
-        iterPtr->nom = iterPtr->size;
     }
     if (drawPtr->side & SIDE_VERTICAL) {
         int maxHeight;
@@ -3074,7 +3174,7 @@ SlideDrawer(Drawer *drawPtr, int delta)
         if (drawPtr->flags & SHOW_HANDLE) {
             maxHeight -= setPtr->handleSize;
         }
-        if ((drawPtr->scrollMax - delta) > maxHeight) {
+        if ((drawPtr->scrollMax - ABS(delta)) > maxHeight) {
             delta = maxHeight - drawPtr->scrollMax;
         }
     } else {
@@ -3085,13 +3185,15 @@ SlideDrawer(Drawer *drawPtr, int delta)
         if (drawPtr->flags & SHOW_HANDLE) {
             maxWidth -= setPtr->handleSize;
         }
-        if ((drawPtr->scrollMax - delta) > maxWidth) {
+        if ((drawPtr->scrollMax - ABS(delta)) > maxWidth) {
             delta = maxWidth - drawPtr->scrollMax;
         }
     }
     drawPtr->offset -= delta;
     size = drawPtr->scrollMax - delta;
-    SetNominal(size, limitsPtr);
+    if ((drawPtr->flags & RESIZE) && (drawPtr->offset >= limitsPtr->min)) {
+        SetNominal(size, limitsPtr);
+    }
     size = BoundSize(size, limitsPtr);
     EventuallyRedraw(setPtr);
 }
@@ -3581,50 +3683,8 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     mark = (drawPtr->side & SIDE_VERTICAL) ? y : x;
     delta = mark - setPtr->handleAnchor;
-    SlideDrawer(drawPtr, delta);
+    ResizeOrSlideDrawer(drawPtr, delta);
     setPtr->handleAnchor = mark;
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * HandleMoveOp --
- *
- *      Moves the handle. The handle is moved the given distance from its
- *      previous location.
- *
- *      pathName handle move drawerName x y
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
-{
-    Drawerset *setPtr = clientData;
-    Drawer *drawPtr;
-    int delta, x, y;
-
-    if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
-        return TCL_OK;
-    }
-    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
-        return TCL_ERROR;
-    } 
-    if (drawPtr->side & SIDE_VERTICAL) {
-        delta = y;
-    } else {
-        delta = x;
-    }
-    if (delta != 0)  {
-        SlideDrawer(drawPtr, delta);
-    }
     return TCL_OK;
 }
 
@@ -3663,7 +3723,7 @@ HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     mark = (drawPtr->side & SIDE_VERTICAL) ? y : x;
     delta = mark - setPtr->handleAnchor;
     if (delta != 0) {
-        SlideDrawer(drawPtr, delta);
+        ResizeOrSlideDrawer(drawPtr, delta);
     }
     setPtr->handleAnchor = mark;
     return TCL_OK;
@@ -3721,16 +3781,57 @@ HandleSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * HandleSlideOp --
+ *
+ *      Moves the handle. The handle is moved the given distance from its
+ *      previous location.
+ *
+ *      pathName handle slide drawerName dx dy
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+HandleSlideOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Drawerset *setPtr = clientData;
+    Drawer *drawPtr;
+    int delta, dx, dy;
+
+    if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
+        return TCL_OK;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[4], &dx) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[5], &dy) != TCL_OK)) {
+        return TCL_ERROR;
+    } 
+    if (drawPtr->side & SIDE_VERTICAL) {
+        delta = dy;
+    } else {
+        delta = dx;
+    }
+    if (delta != 0)  {
+        ResizeOrSlideDrawer(drawPtr, delta);
+    }
+    return TCL_OK;
+}
 
 static Blt_OpSpec handleOps[] =
 {
     {"activate",   2, HandleActivateOp,   4, 4, "drawerName"},
     {"anchor",     2, HandleAnchorOp,     6, 6, "drawerName x y"},
     {"deactivate", 1, HandleDeactivateOp, 3, 3, ""},
-    {"mark",       2, HandleMarkOp,       6, 6, "drawerName x y"},
-    {"move",       2, HandleMoveOp,       6, 6, "drawerName x y"},
+    {"mark",       1, HandleMarkOp,       6, 6, "drawerName x y"},
     {"set",        2, HandleSetOp,        6, 6, "drawerName x y"},
-    {"size",       2, HandleSizeOp,       4, 5, "drawerName ?size?"},
+    {"size",       2, HandleSizeOp,       4, 5, "drawerName ?numPixels?"},
+    {"slide",      2, HandleSlideOp,      6, 6, "drawerName dx dy"},
 };
 
 static int numHandleOps = sizeof(handleOps) / sizeof(Blt_OpSpec);
@@ -4174,11 +4275,11 @@ SlideOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     if (drawPtr->side & SIDE_VERTICAL) {
         if (dy != 0) {
-            SlideDrawer(drawPtr, dy);
+            ResizeOrSlideDrawer(drawPtr, dy);
         }
     } else {
         if (dx != 0) {
-            SlideDrawer(drawPtr, dx);
+            ResizeOrSlideDrawer(drawPtr, dx);
         }
     }
     return TCL_OK;
@@ -4856,7 +4957,7 @@ static Blt_OpSpec drawersetOps[] =
     {"names",      1, NamesOp,     2, 0, "?pattern...?",},
     {"open",       1, OpenOp,      3, 3, "drawerName",},
     {"raise",      1, RaiseOp,     3, 3, "drawerName",},
-    {"size",       2, SizeOp,      2, 4, "?drawerName? ?size?",},
+    {"size",       2, SizeOp,      2, 4, "?drawerName? ?numPixels?",},
     {"slide",      2, SlideOp,     5, 5, "drawerName dx dy"},
     {"tag",        2, TagOp,       2, 0, "oper args",},
     {"toggle",     2, ToggleOp,    3, 3, "drawerName",},
@@ -5111,12 +5212,5 @@ DisplayHandle(ClientData clientData)
         Blt_Bg_DrawRectangle(handlePtr->tkwin, drawable, bg, 
                 setPtr->handlePad.side1, setPtr->handlePad.side1, w, h, 
                 setPtr->handleBW, relief);
-    }
-    if ((setPtr->handleHighlightThickness > 0) && (drawPtr->flags & FOCUS)) {
-        GC gc;
-
-        gc = Tk_GCForColor(setPtr->handleHighlightColor, drawable);
-        Tk_DrawFocusHighlight(handlePtr->tkwin, gc,
-                setPtr->handleHighlightThickness, drawable);
     }
 }

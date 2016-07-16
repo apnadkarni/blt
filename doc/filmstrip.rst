@@ -7,12 +7,8 @@ blt::filmstrip
 Create and manipulate filmstrip widgets.
 ----------------------------------------
 
-:Author: George A Howlett
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 --------
@@ -372,10 +368,21 @@ command.  The following operations are available for *filmstrip* widgets:
   **-fill** *fillName* 
     If the frame is bigger than its embedded child widget, then *fillName*
     specifies if the child widget should be stretched to occupy the extra
-    space.  *FillName* is either "none", "x", "y", "both".  For example, if
-    *fillName* is "x", then the child widget is stretched horizontally.  If
-    *fillName* is "y", the widget is stretched vertically.  The default is
-    "none".
+    space. *FillName* can be one of the following:
+
+    **x**
+      The width of the frame's embedded widget is expanded to fill the
+      window.
+    **y**
+      The height of the frame's embedded widget is expanded to fill the
+      window.
+    **both**
+      Both the width and height of the frame's embedded widget are
+      expanded.
+    **none**
+      The frame's embedded widget not resized.
+
+    The default is "none".
 
   **-height** *numPixels* 
     Specifies the height of *frameName*. *NumPixels* can be
@@ -391,8 +398,8 @@ command.  The following operations are available for *filmstrip* widgets:
     of the requested height of the child widget is used. The default is "".
 
   **-hide** *boolean*
-    If *boolean* is true, then *frameName* is not displayed.
-    The default is "yes".
+    If *boolean* is true, then *frameName* is not displayed.  The default
+    is "0".
 
   **-ipadx** *numPixels* 
     Sets how much horizontal padding to add internally on the left and

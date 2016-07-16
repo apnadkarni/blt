@@ -7,12 +7,8 @@ blt::paneset
 Create and manipulate paneset widgets.
 --------------------------------------
 
-:Author: George A Howlett
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 --------
@@ -231,8 +227,7 @@ command.  The following operations are available for *paneset* widgets:
 
   **-sashcursor** *cursorName*
     Specifies the cursor for sashes.  *CursorName* can be in any form
-    accepted by **Tk_GetCursor**.  the name of a background object created
-    by the **blt::background** command. The default is "sb_h_double_arrow"
+    accepted by **Tk_GetCursor**.  The default is "sb_h_double_arrow"
     if the **-orient** option is "horizontal", "sb_v_double_arrow" if it is
     "vertical".
 
@@ -406,7 +401,7 @@ command.  The following operations are available for *paneset* widgets:
 
   **-hide** *boolean*
     If *boolean* is true, then *paneName* is not displayed.
-    The default is "yes".
+    The default is "0".
 
   **-ipadx** *numPixels* 
     Sets how much horizontal padding to add internally on the left and

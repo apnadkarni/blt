@@ -7,12 +7,8 @@ blt::graph
 2D graph for plotting X-Y coordinate data.
 -------------------------------------------
 
-:Author: George A. Howlett, Sani R. Nassif
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 --------
@@ -999,7 +995,7 @@ The following operations are available for cross hairs:
 
   **-hide**  *boolean*
     Indicates whether cross hairs are drawn. If *boolean* is true, cross
-    hairs are not drawn.  The default is "yes".
+    hairs are not drawn.  The default is "0".
 
   **-linewidth**  *numPixels*
     Set the line width of the cross hairs.  The default is "1".
@@ -1238,7 +1234,7 @@ The following operations are available for elements.
     "defcolor".
 
   **-hide**  *boolean*
-    Indicates whether the element is displayed.  The default is "no".
+    Indicates whether the element is displayed.  The default is "0".
 
   **-label**  *labelString*
     Sets the element's label in the legend.  If *labelString* is "", the
@@ -1773,7 +1769,7 @@ The following operations are valid for the legend.
 
   **-hide**  *boolean*
     Indicates whether the legend should be displayed. If *boolean* is true,
-    the legend will not be drawn.  The default is "no".
+    the legend will not be drawn.  The default is "0".
 
   **-ipadx**  *numPixels* 
     Sets the amount of internal padding to be added to the width of each
@@ -2400,7 +2396,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
+    is not drawn.  The default is "0".
 
   **-mapx**  *axisName* 
     Specifies the X-axis to map the marker's X-coordinates onto.
@@ -2504,7 +2500,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
+    is not drawn.  The default is "0".
 
   **-image**  *imageName*
     Specifies the image to be drawn.  If *imageName* is "", the marker will
@@ -2605,7 +2601,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
+    is not drawn.  The default is "0".
 
   **-join**  *joinStyle*
 
@@ -2707,7 +2703,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
+    is not drawn.  The default is "0".
 
   **-join**  *joinStyle* 
 
@@ -2828,7 +2824,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the marker is hidden. If *boolean* is true, the
-    marker is not drawn.  The default is "no".
+    marker is not drawn.  The default is "0".
 
   **-justify**  *justifyName*
     Specifies how the text should be justified.  This matters only when the
@@ -2950,7 +2946,7 @@ The following operations are available for markers.
 
   **-hide**  *boolean* 
     Indicates whether the to hide the marker. If *boolean* is true, the
-    marker is not drawn.  The default is "no".
+    marker is not drawn.  The default is "0".
 
   **-mapx**  *axisName* 
     Specifies the X-axis to map the marker's X-coordinates onto.
@@ -3003,12 +2999,12 @@ The following operations are available for markers.
 *pathName* **marker find enclosed**  *x1* *y1* *x2* *y2*
   Finds all the markers that are completely enclosed within
   the  rectangular region given by *x1*, *y1*, *x2*, and *y2*.
-  *X1*, *y1* and *x2*, *y2 are opposite corners of the region.
+  *X1*, *y1* and *x2*, *y2* are opposite corners of the region.
 
 *pathName* **marker find overlapping**  *x1* *y1* *x2* *y2*
   Finds all the markers that overlap or are enclosed within
   the  rectangular region given by *x1*, *y1*, *x2*, and *y2*.
-  *X1*, *y1* and *x2*, *y2 are opposite corners of the region.
+  *X1*, *y1* and *x2*, *y2* are opposite corners of the region.
   
 *pathName* **marker get** *markerName*
   Converts the special marker specifier to it name.  This is

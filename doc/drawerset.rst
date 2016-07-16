@@ -2,17 +2,12 @@
 ==============
 blt::drawerset
 ==============
-
 ----------------------------------------
 Create and manipulate drawerset widgets.
 ----------------------------------------
 
-:Author: George A Howlett
-:Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-:Version: 4.0
-:Manual section: n
-:Manual group: BLT Built-In Commands
+.. include:: man.rst
+.. include:: toc.rst
 
 SYNOPSIS
 --------
@@ -26,8 +21,7 @@ The **blt::drawerset** displays an embedded Tk widget, but also lets you
 designate other embedded Tk widgets to act as drawers that slide in and out
 from a side of the *drawerset* widget. The drawers (embedded Tk widgets)
 can optionally have a handle attached to them that allows the user to
-manually adjust how much the drawer is pulled out from the side of the
-widget.
+manually adjust the size of the drawer.
 
 INTRODUCTION
 ------------
@@ -38,10 +32,9 @@ out from a side of the *drawerset* widget.  The embedded Tk widgets of a
 *drawerset* must be children of the *drawerset* widget.
 
 The drawers (embedded widgets) may each have an attached handle that allows
-the user to manually adjust how much the drawer is pulled out from the side
-of the widget. Drawers are opened (made visible) programatically (by
-setting a TCL variable) or manually by the user clicking on the handle and
-dragging it or by the keyboard.
+the user to manually adjust the siz of the drawer. Drawers are opened (made
+visible) programatically by setting a TCL variable or invoking the **open**
+operation.
 
 The *drawerset* widget can also be to implement a sliding menu-like
 interface.  
@@ -81,7 +74,7 @@ Drawers can be referenced either by index, label, or by tag.
   are also the following special non-numeric indices.
 
   **active**
-    This is the drawer whose handle is where the mouse pointer is currently
+x    This is the drawer whose handle is where the mouse pointer is currently
     located.  When a handle is active, it is drawn using its active colors.
     The **active** index is changes when you move the mouse pointer over
     another drawer's handle or by using the **handle activate**
@@ -198,13 +191,13 @@ command.  The following operations are available for *drawerset* widgets:
     be the top center point of the drawer.  This option defaults to "c".
 
   **-animate** *boolean*
-    Indicates to animate the movement of drawers.  The **-delay** and
-    **-steps** options determine how the animation is performed.
-    The default is "0".
+    Indicates to animate the movement of drawers.  The drawer's **-delay**
+    and **-steps** options determine how the movement is performed.  The
+    default is "0".
 
   **-autoraise** *boolean*
-    Indicates to automatically raise drawers when they are opened. 
-    The default is "0".
+    Indicates to automatically raise drawers when they are opened.  The
+    default is "0".
 
   **-background** *colorName* 
     Specifies the default background of the widget including its drawers.
@@ -212,19 +205,15 @@ command.  The following operations are available for *drawerset* widgets:
     created by the **blt::background** command.  The default is "grey85".
     
   **-handleborderwidth** *numPixels* 
-    Specifies the default border width of handles in the widget.  *NumPixels*
-    is a non-negative value indicating the width of the 3-D border drawn
-    around the handle. The value may have any of the forms acceptable to
-    **Tk_GetPixels**.  This option may be overridden by the style's
-    **-borderwidth** option.  The default is "1".
+    Specifies the default border width of handles in the *drawerset* widget.
+    *NumPixels* is a non-negative value indicating the width of the 3-D
+    border drawn around the handle. The value may have any of the forms
+    acceptable to **Tk_GetPixels**. The default is "1".
 
   **-handlecolor** *colorName*
     Specifies the default color of handles.  *ColorName* may be a color name or
     the name of a background object created by the **blt::background**
     command. The default is "grey85".
-
-  **-handlehighlightcolor** *colorSpec* 
-  **-handlehighlightthickness** *numPixels* 
 
   **-handlepad** *numPixels* 
     Specifies extra padding for handles.  *NumPixels* is a non-negative value
@@ -295,16 +284,46 @@ command.  The following operations are available for *drawerset* widgets:
   *value* are described below.
 
 
-  **-borderwidth** *numPixels* 
-    Specifies the border width of *drawerName*.  *NumPixels* is a non-negative
-    value indicating the width of the 3-D border drawn around the drawer.
-    *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
-    The default is "0".
+  **-activehandlecolor** *colorName* 
+    Specifies the background color of a drawer handles when they are
+    active.  *ColorName* may be a color name or the name of a background
+    object created by the **blt::background** command.  This can be
+    overriden by the drawer's **-activehandlecolor** option.  The default
+    is "grey90".
+
+  **-anchor** *anchorName* 
+    Specifies how to position the drawer if extra space is available
+    in the *drawerset*. For example, if *anchorName* is "center" then the
+    widget is centered in the *drawerset*; if *anchorName* is "n" then the
+    widget will be drawn such that the top center point of the widget will
+    be the top center point of the drawer.  This option defaults to "c".
+
+  **-background** *colorName* 
+    Specifies the default background of the drawer's handle.
+    *ColorName* may be a color name or the name of a background object
+    created by the **blt::background** command.  The default is "grey85".
+
+  **-closecommand** *cmdString* 
+    Specifies a TCL command to invoked when the drawer is closed (via the
+    *drawerset*\ 's **close** operation.  *CmdString* is the TCL command
+    that when to drawer is actually closed.  If *cmdString* is "", no
+    command is invoked.  The default is "".
+
+  **-closevalue** *string* 
+    Specifies he value to be stored in drawer's associated global TCL
+    variable (see the **-variable** option) when the drawer is closed.
+    *String* is an arbitrary string but should be unique among drawers
+    using the same TCL variable.  The default is "0".
 
   **-data** *string* 
     Specifies data to be associated with the drawer. *String* can be an
     arbitrary string.  It is not used by the *drawerset* widget. The
     default is "".
+
+  **-delay** *miilliseconds* 
+    Specifies the delay between steps in the scrolling in milliseconds.  If
+    *milliseconds* is 0, then no automatic changes will occur.  The default
+    is "0".
 
   **-deletecommand** *cmdString*
     Specifies a TCL command to invoked when the drawer is deleted (via the
@@ -314,91 +333,92 @@ command.  The following operations are available for *drawerset* widgets:
     default is "".
 
   **-fill** *fillName* 
-    If the widget is bigger than the drawer (the embedded child widget),
-    then *fillName* specifies if the child widget should be stretched to
-    occupy the extra space.  *FillName* is either "none", "x", "y", "both".
-    For example, if *fillName* is "x", then the child widget is stretched
-    horizontally.  If *fillName* is "y", the widget is stretched
-    vertically.  The default is "none".
+    If the *drawerset* widget is bigger than the drawer (the embedded child
+    widget), then *fillName* specifies if the child widget should be
+    stretched to occupy the extra space.  *FillName* can be one of the
+    following:
 
-  **-height** *numPixels* 
-    Specifies the height of *drawerName*. *NumPixels* can be
-    single value or a list.  If *numPixels* is a single value it is a
-    non-negative value indicating the height the drawer. The value may have
-    any of the forms accept able to **Tk_GetPixels**, such as "200" or
-    "2.4i".  If *numPixels* is a 2 element list, then this sets the minimum
-    and maximum limits for the height of the drawer. The drawer will be at
-    least the minimum height and less than or equal to the maximum. If
-    *numPixels* is a 3 element list, then this specifies minimum, maximum,
-    and nominal height or the drawer.  The nominal size overrides the
-    calculated height of the drawer.  If *numPixels* is "", then the height
-    of the requested height of the child widget is used. The default is "".
-
-  **-hide** *boolean*
-    If *boolean* is true, then *drawerName* is not displayed.
-    The default is "yes".
-
-  **-ipadx** *numPixels* 
-    Sets how much horizontal padding to add internally on the left and
-    right sides of the embedded child widget of *drawerName*.
-    *NumPixels* must be a valid screen distance
-    like "2" or "0.3i".  The default is "0".
-
-  **-ipady** *numPixels*
-    Sets how much vertical padding to add internally on the top and bottom
-    of embedded child widget of *drawerName*.  *NumPixels* must be a valid
-    screen distance like "2" or "0.3i".  The default is "0".
-
-  **-padx** *numPixels*
-    Sets how much padding to add to the left and right exteriors of
-    *drawerName*.  *NumPixels* can be a list of one or two numbers.  If
-    *numPixels* has two elements, the left side of the drawer is padded by
-    the first value and the right side by the second value.  If *numPixels*
-    has just one value, both the left and right sides are padded evenly by
-    the value.  The default is "0".
-
-  **-pady** *numPixels*
-    Sets how much padding to add to the top and bottom exteriors of
-    *drawerName*.  *NumPixels* can be a list of one or two elements where
-    each element is a valid screen distance like "2" or "0.3i".  If
-    *numPixels* is two elements, the area above *pathName* is padded by the
-    first distance and the area below by the second.  If *numPixels* is
-    just one element, both the top and bottom areas are padded by the same
-    distance.  The default is "0".
-  
-  **-relief** *relief* 
-    Specifies the 3-D effect for the border around the drawer.  *Relief*
-    specifies how the interior of the drawer should appear relative to the
-    *drawerset* widget; for example, "raised" means the item should appear to
-    protrude from the window, relative to the surface of the window.  The
-    default is "flat".
-
-  **-resize** *resizeMode*
-    Indicates that the drawer can expand or shrink from its requested width
-    when the *drawerset* is resized.  *ResizeMode* must be one of the
-    following.
-
-    **none**
-      The size of the embedded child widget in *drawerName* does not change
-      as the drawer is resized.
-    **expand**
-      The size of the embedded child widget in *drawerName* is expanded if
-      there is extra space in drawer.
-    **shrink**
-      The size of the embedded child widget in *drawerName* is reduced
-      beyond its requested width if there is not enough space in the
-      drawer.
+    **x**
+      The width of the drawer's embedded widget is expanded to fill the
+      window.
+    **y**
+      The height of the drawer's embedded widget is expanded to fill the
+      window.
     **both**
-      The size of the embedded child widget in *drawerName* may grow or
-      shrink depending on the size of the drawer.
+      Both the width and height of the drawer's embedded widget are
+      expanded.
+    **none**
+      The drawer's embedded widget not resized.
 
     The default is "none".
 
+  **-handlecolor** *colorName*
+    Specifies the default color of handles.  *ColorName* may be a color
+    name or the name of a background object created by the
+    **blt::background** command. The default is "grey85".
+
+  **-handlecursor** *cursorName*
+    Specifies the cursor for handles.  *CursorName* can be in any form
+    accepted by **Tk_GetCursor**.  The default is ""
+
+  **-height** *numPixels* 
+    Specifies the height of *drawerName*. *NumPixels* can be single value
+    or a list.  If *numPixels* is a single value it is a non-negative value
+    indicating the height the drawer. The value may have any of the forms
+    accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+    *numPixels* is a 2 element list, then this sets the minimum and maximum
+    limits for the height of the drawer. The drawer will be at least the
+    minimum height and less than or equal to the maximum. If *numPixels* is
+    a 3 element list, then this specifies minimum, maximum, and nominal
+    height or the drawer.  The nominal size overrides the calculated height
+    of the drawer.  If *numPixels* is "", then the height of the requested
+    height of the child widget is used. The default is "".
+
+  **-hide** *boolean*
+    If *boolean* is true, then *drawerName* is not displayed.
+    The default is "0".
+
+  **-opencommand** *cmdString* 
+    Specifies a TCL command to invoked when the drawer is opened (via the
+    *drawerset*\ 's **open** operation.  *CmdString* is the TCL command
+    that when to drawer is opened.  If *cmdString* is "", no command is
+    invoked.  The default is "".
+
+  **-openvalue** *string* 
+    Specifies he value to be stored in drawer's associated global TCL
+    variable (see the **-variable** option) when the drawer is opened.
+    *String* is an arbitrary string but should be unique among drawers
+    using the same TCL variable.  The default is "1".
+
+  **-resize** *boolean*
+    Indicates that the drawer can be expanded or shrunk when sliding the
+    drawer by dragging its handle.  If *boolean* is "0", the requested size
+    of the drawer is maintained while sliding the drawer.  If *boolean* is
+    "1", then embedded Tk widget is resized.  You can use the drawer's
+    **-width** and **-height** options to control the minumum and maximum
+    sizes of the drawer. The default is "0".
+
+  **-scale** *scaleName* 
+    Specifies the scale of the steps when transitioning between open and
+    closed positions. *ScaleName* can be "linear", or "logarithmic"".
+
+    **linear**
+      Steps are interpolated on a linear scale between 0.0 and 1.0.
+    **logarithmic**
+      Steps are interpolated using the log of the value.
+
   **-showhandle** *boolean* 
-    Indicates if the handle for *drawerName* should be displayed. The default is
-    "1".
+    Indicates if the handle for *drawerName* should be displayed. The
+    default is "1".
     
-  **-size** *numPixels* 
+  **-side** *sideName* 
+    Specifies the side of the drawerset widget to slide the drawer in/out
+    from. *SideName* can be "bottom" "top", "left" or "right".
+    The default is "right".
+
+  **-steps** *numSteps* 
+    Specifies how may steps the transition from open/closed should take.
+    The default is "10".
 
   **-tags** *tagList* 
     Specifies a list of tags to associate with the drawer.  *TagList* is a
@@ -416,18 +436,24 @@ command.  The following operations are available for *drawerset* widgets:
     traversal scripts make the decision whether to focus on the window.
     The default is "".
 
+  **-variable** *varName* 
+    Specifies the name of a global TCL variable to set whenever this drawer
+    item is opened or closed.  Changes in *varName* also cause the item to
+    open or close itself.  If *varName* is "", then no variable is
+    designated.  The default value is "".
+
   **-width** *numPixels* 
-    Specifies the width of *drawerName*. *NumPixels* can be
-    single value or a list.  If *numPixels* is a single value it is a
-    non-negative value indicating the width the drawer. The value may have
-    any of the forms accept able to **Tk_GetPixels**, such as "200" or
-    "2.4i".  If *numPixels* is a 2 element list, then this sets the minimum
-    and maximum limits for the width of the drawer. The drawer will be at
-    least the minimum width and less than or equal to the maximum. If
-    *numPixels* is a 3 element list, then this specifies minimum, maximum,
-    and nominal width or the drawer.  The nominal size overrides the
-    calculated height of the drawer.  If *numPixels* is "", then the height
-    of the requested height of the child widget is used. The default is "".
+    Specifies the width of *drawerName*. *NumPixels* can be single value or
+    a list.  If *numPixels* is a single value it is a non-negative value
+    indicating the width the drawer. The value may have any of the forms
+    accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+    *numPixels* is a 2 element list, then this sets the minimum and maximum
+    limits for the width of the drawer. The drawer will be at least the
+    minimum width and less than or equal to the maximum. If *numPixels* is
+    a 3 element list, then this specifies minimum, maximum, and nominal
+    width or the drawer.  The nominal size overrides the calculated height
+    of the drawer.  If *numPixels* is "", then the height of the requested
+    height of the child widget is used. The default is "".
 
   **-window** *childName*  
     Specifies the widget to be embedded into *drawerName*.  *ChildName* must
@@ -446,25 +472,35 @@ command.  The following operations are available for *drawerset* widgets:
   one tab.  Only one handle may be active at a time.  
 
 *pathName* **handle anchor** *drawerName* *x* *y*
-   Sets the anchor for the resizing or moving *drawerName*.  Either the x or
-   y coordinate is used depending upon the orientation of the drawer.
+  Sets the anchor for the resizing or moving *drawerName*; used with 
+  later **handle mark** commands. Either the x or y coordinate is used
+  depending upon the **-side** option of the drawer.
 
 *pathName* **handle deactivate** 
   Specifies to draw all handles with its default colors and relief
   (see the **-handlecolor** and **-handlerelief** options).
 
 *pathName* **handle mark** *drawerName* *x* *y*
-  Records *x* or *y* coordinate in the drawerset window; used with
-  later **handle move** commands.  Typically this command is associated
-  with a mouse button press in the widget.  It returns an empty string.
-
-*pathName* **handle move** *drawerName* *x* *y*
-  Moves the handle of *drawerName*.  The handle is moved the given distance
-  from its previous location (anchor).
+  Records *x* or *y* coordinate in the drawerset window; used with an
+  earlier **handle anchor** command. Typically this command is associated
+  with a handle is dragged.  It returns an empty string.
 
 *pathName* **handle set** *drawerName* *x* *y*
-  Sets the location of the *drawerName*\ 's handle to the given coordinate
-  (*x* or *y*) specified.  The *drawerset* drawers are moved accordingly.
+  Sets the location of *drawerName*\ 's handle to the given coordinate
+  (*x* or *y*) specified.  *DrawerName* is moved accordingly.
+
+*pathName* **handle size** *drawerName* ?\ *numPixels*\ ?
+  Sets the size of *drawerName* to the given size.  *NumPixels* is a
+  non-negative value indicating the new size (width/height) of the drawer.
+  This value may have any of the forms acceptable to **Tk_GetPixels**.
+
+*pathName* **handle slide** *drawerName* *dx* *dy*
+  Slides *drawerName* by the given distance *Dx* and *dy* are integers
+  representing the amount the move the drawer.  *Dx* is only considered
+  when the drawer's **-side** option is "left" or "right".  Negative *dx*
+  values move the drawer left, positive values move it right. *Dy* is only
+  considered when the drawer's **-side** option is "top" or "bottom".
+  Negative *dy* values move the drawer up, positive values move it down.
 
 *pathName* **index** *drawerName* 
   Returns the index of *drawerName*. *DrawerName* may be a label, index, or
@@ -512,15 +548,15 @@ command.  The following operations are available for *drawerset* widgets:
   *DrawerName* may be a label, index, or tag and may
   refer to multiple drawers (for example "all").
   
-*pathName* **move after** *whereName* *drawerName*
-  Moves *drawerName* after the drawer *whereName*.  Both *whereName* and
-  *drawerName* may be a label, index, or tag, but may not represent more than
-  one drawer.  The indices of drawers may change.
+*pathName* **move after** *refDrawerName* *drawerName*
+  Moves *drawerName* after the drawer *refDrawerName*.  Both
+  *refDrawerName* and *drawerName* may be a label, index, or tag, but may
+  not represent more than one drawer.  The indices of drawers may change.
   
-*pathName* **move before** *whereName* *drawerName*
-  Moves *drawerName* before the drawer *whereName*.  Both *whereName* and
-  *drawerName* may be a label, index, or tag, but may not represent more than
-  one drawer. The indices of drawers may change.
+*pathName* **move before** *refDrawerName* *drawerName*
+  Moves *drawerName* before the drawer *refDrawerName*.  Both
+  *refDrawerName* and *drawerName* may be a label, index, or tag, but may
+  not represent more than one drawer. The indices of drawers may change.
 
 *pathName* **names** ?\ *pattern* ... ?
   Returns the labels of all the drawers.  If one or more *pattern* arguments
@@ -528,7 +564,7 @@ command.  The following operations are available for *drawerset* widgets:
   returned. *Pattern* is a **glob**\ -style pattern.
 
 *pathName* **open** *drawerName*
-  Opens *drawerName*, sliding the window out from the side of the
+  Opens *drawerName*, sliding the embedded Tk widget out from the side of the
   *drawerset* widget.  *DrawerName* may be a label, index, or tag and may
   refer to multiple drawers (for example "all"). Disabled or hidden drawers
   are ignored. If there is TCL variable associated with the drawer (see the
@@ -539,55 +575,57 @@ command.  The following operations are available for *drawerset* widgets:
   *DrawerName* may be a label, index, or tag and may refer to multiple
   drawers (for example "all").
   
-*pathName* **size** 
-  Returns the number of drawers in the *drawerset*.
+*pathName* **size** *drawerName* ?\ *numPixels*\ ?
+  Sets the size of *drawerName* to the given size.  *NumPixels* is a
+  non-negative value indicating the new size (width/height) of the drawer.
+  This value may have any of the forms acceptable to **Tk_GetPixels**.
 
-*pathName* **slide** *drawerName dx dy* 
-  Slides *drawerName* the designated distance.  *DrawerName* may be a
-  label, index, or tag and may refer to multiple drawers (for example
-  "all").  *Dx* and *dy* are integers. Negative values indicate to close
-  the drawer, positive values open the drawer.  If the side of the drawer
-  is "left" or "right" only *dx* is considered.  If the side of the drawer
-  is "top" or "bottom" only *dy* is considered.
+*pathName* **slide** *drawerName* *dx* *dy* 
+  Slides *drawerName* the distance designated by *dx* or *dy*.
+  *DrawerName* may be a label, index, or tag and may refer to multiple
+  drawers (for example "all").  *Dx* and *dy* are integers. Negative values
+  indicate to close the drawer, positive values open the drawer.  If the
+  side of the drawer is "left" or "right" only *dx* is considered.  If the
+  side of the drawer is "top" or "bottom" only *dy* is considered.
 
-*pathName* **tag add** *tag* ?\ *drawerName* ... ?
-  Adds the tag to one of more drawers. *Tag* is an arbitrary string that can
-  not start with a number.  *DrawerName* may be a label, index, or tag and
-  may refer to multiple drawers (for example "all").
+*pathName* **tag add** *tagName* ?\ *drawerName* ... ?
+  Adds the tag to one of more drawers. *TagName* is an arbitrary string
+  that can not start with a number.  *DrawerName* may be a label, index, or
+  tag and may refer to multiple drawers (for example "all").
   
-*pathName* **tag delete** *tag* ?\ *drawerName* ... ?
+*pathName* **tag delete** *tagName* ?\ *drawerName* ... ?
   Deletes the tag from one or more drawers. *DrawerName* may be a label, index,
   or tag and may refer to multiple drawers (for example "all").
   
-*pathName* **tag exists** *drawerName* ?\ *tag* ... ?
+*pathName* **tag exists** *drawerName* ?\ *tagName* ... ?
   Indicates if the drawer has any of the given tags.  Returns "1" if
   *drawerName* has one or more of the named tags, "0" otherwise.  *DrawerName*
   may be a label, index, or tag and may refer to multiple drawers (for example
   "all").
 
-*pathName* **tag forget** *tag*
-  Removes the tag *tag* from all drawers.  It's not an error if no
-  drawers are tagged as *tag*.
+*pathName* **tag forget** *tagName*
+  Removes the tag *tagName* from all drawers.  It's not an error if no
+  drawers are tagged as *tagName*.
 
 *pathName* **tag get** *drawerName* ?\ *pattern* ... ?
   Returns the tag names for a given drawer.  If one of more pattern
   arguments are provided, then only those matching tags are returned.
 
-*pathName* **tag indices**  ?\ *tag* ... ?
+*pathName* **tag indices**  ?\ *tagName* ... ?
   Returns a list of drawers that have the tag.  If no drawer is tagged as
-  *tag*, then an empty string is returned.
+  *tagName*, then an empty string is returned.
 
 *pathName* **tag names** ?\ *drawerName*\ ... ?
   Returns a list of tags used by the *drawerset* widget.  If one or more
   *drawerName* arguments are present, any tag used by *drawerName* is returned.
 
-*pathName* **tag set** *drawerName* ?\ *tag* ... ?
+*pathName* **tag set** *drawerName* ?\ *tagName* ... ?
   Sets one or more tags for a given drawer.  *DrawerName* may be a label,
   index, or tag and may refer to multiple drawers.  Tag names can't start
   with a digit (to distinguish them from indices) and can't be a reserved
   tag ("all").
 
-*pathName* **tag unset** *drawerName* ?\ *tag* ... ?
+*pathName* **tag unset** *drawerName* ?\ *tagName* ... ?
   Removes one or more tags from a given drawer. *DrawerName* may be a label,
   index, or tag and may refer to multiple drawers.  Tag names that don't
   exist or are reserved ("all") are silently ignored.
@@ -603,42 +641,42 @@ command.  The following operations are available for *drawerset* widgets:
 HANDLE BINDINGS
 ---------------
 
-The follow behaviors are defined for the grip windows created for each
-drawer. The widget class name is BltDrawersetGrip. 
+The follow behaviors are defined for the handle windows created for each
+drawer. The widget class name is "BltDrawersetHandle". 
 
   **<Enter>** 
-    Display the grip in its active colors and relief.
+    Display the handle in its active colors and relief.
   **<Leave>** 
-    Display the grip in its normal colors and relief.
+    Display the handle in its normal colors and relief.
   **<ButtonPress-1>** 
-    Start scrolling the *drawerset*.
+    Start sliding the drawer associated with the handle.
   **<B1-Motion>**
-    Continue scrolling the *drawerset*.
+    Continue sliding the drawer associated with the handle.
   **<ButtonRelease-1>** 
-    Stop scrolling the *drawerset*.
+    Stop sliding the drawer associated with the handle.
   **<KeyPress-Up>**
-    If orientation is vertical, then scroll the *drawerset* upward by 10
+    If orientation is vertical, then slide the drawer upward by 10
     pixels.
   **<KeyPress-Down>**
-    If orientation is vertical, then scroll the *drawerset* downward by 10
+    If orientation is vertical, then slide the drawer downward by 10
     pixels.
   **<KeyPress-Left>**
-    If orientation is horizontal, then scroll the *drawerset* left by 10
+    If orientation is horizontal, then slide the drawer left by 10
     pixels.
   **<KeyPress-Right>**
-    If orientation is horizontal, then scroll the *drawerset* right by 10
+    If orientation is horizontal, then slide the drawer right by 10
     pixels.
   **<Shift-KeyPress-Up>**
-    If orientation is vertical, then scroll the *drawerset* upward by 100
+    If orientation is vertical, then slide the drawer upward by 100
     pixels.
   **<Shift-KeyPress-Down>**
-    If orientation is vertical, then scroll the *drawerset* downward by 100
+    If orientation is vertical, then slide the drawer downward by 100
     pixels.
   **<Shift-KeyPress-Left>**
-    If orientation is horizontal, then scroll the *drawerset* left by 100
+    If orientation is horizontal, then slide the drawer left by 100
     pixels.
   **<Shift-KeyPress-Right>**
-    If orientation is horizontal, then scroll the *drawerset* right by 100
+    If orientation is horizontal, then slide the drawer right by 100
     pixels.
 
 EXAMPLE
@@ -650,9 +688,9 @@ The **drawerset** command creates a new widget.
 
     package require BLT
 
-    blt::drawerset .fs 
+    blt::drawerset .ds 
 
-A new TCL command ".fs" is also created.  This new command can be used to
+A new TCL command ".ds" is also created.  This new command can be used to
 query and modify the *drawerset* widget.  The default orientation of the
 drawerset is horizontal.  If you want a vertical drawerset, where drawers
 run top to bottom, you can set the **-orient** option.
@@ -660,7 +698,7 @@ run top to bottom, you can set the **-orient** option.
   ::
 
     # Change the orientation of the drawerset.
-    .fs configure -orient "vertical"
+    .ds configure -orient "vertical"
 
 You can then add drawers to the widget.  A drawer is the container for an
 embedded Tk widget.  Note that the embedded Tk widget must be a child of
@@ -669,8 +707,8 @@ the drawerset widget.
   ::
     
     # Add a button to the drawerset. 
-    button .fs.b1
-    set drawer [.fs add -window .fs.b1]
+    button .ds.b1
+    set drawer [.ds add -window .ds.b1]
 
 The variable "drawer" now contains the label of the drawer.  You can
 use that label to set or query configuration options specific to the
@@ -679,7 +717,7 @@ drawer. You can also use the drawer's index or tag to refer to the  drawer.
   ::
 
     # Make the button expand to the size of the drawer.
-    .fs drawer configure $drawer -fill both
+    .ds drawer configure $drawer -fill both
     
 The **-fill** drawer option says to may the embedded widget as big as the
 drawer that contains it.
@@ -688,14 +726,14 @@ You can add as many drawers as you want to the widget.
 
   ::
 
-     button .fs.b2 -text "Second" 
-     .fs add -window .fs.b2 -fill both
-     button .fs.b3 -text "Third" 
-     .fs add -window .fs.b3 -fill both
-     button .fs.b4 -text "Fourth" 
-     .fs add -window .fs.b4 -fill both
-     button .fs.b5 -text "Fifth" 
-     .fs add -window .fs.b5 -fill both
+     button .ds.b2 -text "Second" 
+     .ds add -window .ds.b2 -fill both
+     button .ds.b3 -text "Third" 
+     .ds add -window .ds.b3 -fill both
+     button .ds.b4 -text "Fourth" 
+     .ds add -window .ds.b4 -fill both
+     button .ds.b5 -text "Fifth" 
+     .ds add -window .ds.b5 -fill both
 
 By default, the *drawerset* widget's requested height will be the computed
 height of all its drawer (vertical orientation).  But you can set the
@@ -703,18 +741,18 @@ height of all its drawer (vertical orientation).  But you can set the
 
   ::
 
-    .fs configure -height 1i
+    .ds configure -height 1i
 
 Now only a subset of drawers is visible.  You can attach a scrollbar
 to the drawerset widget to see the rest.
 
   ::
 
-    blt::tk::scrollbar .sbar -orient vertical -command { .fs view }
-    .fs configure -scrollcommand { .sbar set }
+    blt::tk::scrollbar .sbar -orient vertical -command { .ds view }
+    .ds configure -scrollcommand { .sbar set }
 
     blt::table . \
-	0,0 .fs -fill both \
+	0,0 .ds -fill both \
 	0,1 .sbar -fill y
     
 If you wanted to flip the drawerset to be horizontal you would need
@@ -724,10 +762,10 @@ repack.
   ::
 
     .sbar configure -orient horizontal
-    .fs configure -orient horizontal -height 0 -width 1i
+    .ds configure -orient horizontal -height 0 -width 1i
 
     blt::table . \
-	0,0 .fs -fill both \
+	0,0 .ds -fill both \
 	1,0 .sbar -fill x
 
 
@@ -736,21 +774,21 @@ window you can configure the drawers with the **-relwidth** option.
 
   ::
 
-    .fs configure -relwidth 1.0
+    .ds configure -relwidth 1.0
 
 You can programmatically move to specific drawers by the **see** operation.
 
   ::
 
      # See the third drawer. Indices are numbered from 0.
-    .fs see
+    .ds see
 
 To delete drawers there is the **delete** operation.
 
   ::
 
      # Delete the first drawer.
-    .fs delete 0
+    .ds delete 0
 
 Note that while the drawer has been delete, the button previously
 embedded in the drawer still exists.  You can use the drawer's 
@@ -759,7 +797,7 @@ before the drawer is deleted.
 
   ::
 
-   .fs drawer configure 0 -deletecommand { destroy [%W drawer cget 0 -window] }
+   .ds drawer configure 0 -deletecommand { destroy [%W drawer cget 0 -window] }
 
 KEYWORDS
 --------
