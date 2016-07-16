@@ -651,8 +651,24 @@ There are several default class bindings for *comboentry* widgets.
   Pressing button 1 over the *comboentry* clear button clears the text
   in the widget.
   
-  Pressing button 1 over the *comboentry* text. Start the selection
-  of chararacters in the widget.
+  Clicking mouse button 1 positions the insertion cursor just before the
+  character underneath the mouse cursor, sets the input focus to this
+  widget, and clears any selection in the widget.  Dragging with mouse
+  button 1 strokes out a selection between the insertion cursor and the
+  character under the mouse.
+
+**<Triple-ButtonPress-1>**
+  Triple-clicking with mouse button 1 selects all of the text in the entry
+  and positions the insertion cursor at the end of the line.
+
+**<Shift-ButtonPress-1>**
+  The ends of the selection can be adjusted by dragging with mouse button
+  1 while the Shift key is down; this will adjust the end of the selection
+  that was nearest to the mouse cursor when button 1 was pressed.
+
+**<Control-ButtonPress-1>**
+  Clicking mouse button 1 with the Control key down will position the
+  insertion cursor in the entry without affecting the selection.
 
 **<B1-Motion>**
   If the mouse is dragged down into the menu with the button still down,
@@ -672,16 +688,111 @@ There are several default class bindings for *comboentry* widgets.
   *comboentry* or menu, the *comboentry* unposts without invoking any menu
   item.
 
-**<Alt-KeyPress-**\ *key *\ **>**
-  If the **-underline** option has been specified then keyboard traversal
-  may be used to post the *comboentry*'s menu: Alt+\ *key*, where *key* is the
-  underlined character (or its lower-case or upper-case equivalent), may be
-  typed in any window under the *comboentry*'s toplevel to post the
-  *comboentry*'s menu.
+**<KeyPress>**
+  If any normal printing characters are typed in an entry, they are
+  inserted at the point of the insertion cursor.
 
-**<KeyPress-Space>** or  **<KeyPress-Return>**
-   If a *comboentry* has the input focus, the space and  return  keys
-   post the *comboentry*'s menu.
+**<KeyPress-Return>**
+  If a *comboentry* has the input focus, the return  key posts
+  menu associated with the *comboentry*.
+
+**<ButtonPress-2>**
+  The view in the entry can be adjusted by dragging with mouse button 2.
+  If mouse button 2 is clicked without moving the mouse, the selection is
+  copied into the entry at the position of the mouse cursor.
+
+**<KeyPress-Left>** and **<KeyPress-Right>**
+  The Left and Right keys move the insertion cursor one character to the
+  left or right; they also clear any selection in the entry and set the
+  selection anchor.
+
+**<Shift-KeyPress-Left>** and **<Shift-KeyPress-Right>**
+  If Left or Right  is  typed with the Shift key down, then the
+  insertion cursor moves and the selection is extended to include the
+  new  character.
+
+**<Control-KeyPress-Left>** and **<Control-KeyPress-Right>**
+  Control-Left  and  Control-Right move the insertion cursor by words.
+
+**<Control-Shift-KeyPress-Left>** and **<Control-Shift-KeyPress-Right>**
+  Control-Shift-Left and Control-Shift-Right move the insertion cursor by
+  words and also extend the selection.
+
+**<Control-KeyPress-b>** and **<Control-KeyPress-f>**
+  Control-b and Control-f behave the same as Left and Right, respectively.
+   
+**<Alt-KeyPress-b>** and **<Alt-KeyPress-f>**
+  Meta-b and Meta-f behave the same as Control-Left and Control-Right,
+  respectively.
+
+**<KeyPress-Home>** and **<Control-KeyPress-a>**
+  The Home key, or Control-a, will move the insertion cursor to the
+  beginning of the entry and clear any selection in the entry.
+
+**<Shift-KeyPress-Home>** 
+  Shift-Home moves the insertion cursor to the  beginning  of  the
+  entry and also extends the selection to that point.
+
+**<KeyPress-End>** and **<Control-KeyPress-e>**
+  The End key, or Control-e, will move the insertion cursor to the
+  end of the entry and clear any selection in the  entry.
+
+**<Shift-KeyPress-End>**
+  Shift-End moves the cursor to the end and extends the selection to that
+  point.
+
+       [12]   The Select key and Control-Space set the selection anchor to the
+              position  of  the insertion cursor.  They do not affect the cur-
+              rent selection.  Shift-Select and Control-Shift-Space adjust the
+              selection  to  the  current  position  of  the insertion cursor,
+              selecting from the anchor to the insertion cursor if  there  was
+              not any selection previously.
+
+       [13]   Control-/ selects all the text in the entry.
+
+       [14]   Control-\ clears any selection in the entry.
+
+       [15]   The  F16  key (labelled Copy on many Sun workstations) or Meta-w
+              copies the selection in the widget to the clipboard, if there is
+              a selection.
+
+       [16]   The F20 key (labelled Cut on many Sun workstations) or Control-w
+              copies the selection in the widget to the clipboard and  deletes
+              the  selection.   If  there  is  no selection in the widget then
+              these keys have no effect.
+
+       [17]   The F18 key (labelled Paste on many Sun  workstations)  or  Con-
+              trol-y  inserts the contents of the clipboard at the position of
+              the insertion cursor.
+
+       [18]   The Delete key deletes the selection, if there  is  one  in  the
+              entry.   If  there  is no selection, it deletes the character to
+              the right of the insertion cursor.
+
+       [19]   The BackSpace key and Control-h delete the selection,  if  there
+              is  one  in the entry.  If there is no selection, it deletes the
+              character to the left of the insertion cursor.
+
+       [20]   Control-d deletes the character to the right  of  the  insertion
+              cursor.
+
+       [21]   Meta-d deletes the word to the right of the insertion cursor.
+
+       [22]   Control-k  deletes all the characters to the right of the inser-
+              tion cursor.
+
+       [23]   Control-t reverses the order of the two characters to the  right
+              of the insertion cursor.
+
+       If the entry is disabled using the -state option, then the entry's view
+       can still be adjusted and text in the entry can still be selected,  but
+       no  insertion  cursor  will be displayed and no text modifications will
+       take place except if the entry  is  linked  to  a  variable  using  the
+       -textvariable  option,  in  which  case any changes to the variable are
+       reflected by the entry whatever the value of its -state option.
+
+       The behavior of entries can be changed by  defining  new  bindings  for
+       individual widgets or by redefining the class bindings.
 
 The behavior of *comboentry* widgets can be changed by defining new
 bindings for individual widgets or by redefining the class bindings.

@@ -2574,7 +2574,6 @@ static int
 ButtonActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
-    const char *string;
     unsigned int oldFlags;
 
     if (comboPtr->flags & DISABLED) {
@@ -2665,8 +2664,6 @@ static int
 ButtonDeactivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
                    Tcl_Obj *const *objv)
 {
-    const char *string;
-
     if (comboPtr->flags & DISABLED) {
         return TCL_OK;                  /* The widget is currently disabled. */
     }

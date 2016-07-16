@@ -226,12 +226,12 @@ bind BltComboEntry <Shift-Control-Right> {
     %W see insert
 }
 
-bind BltComboEntry <Home> {
+bind BltComboEntry <KeyPress-Home> {
     %W icursor 0
     %W see insert
 }
 
-bind BltComboEntry <Shift-Home> {
+bind BltComboEntry <Shift-KeyPress-Home> {
     if {![%W selection present]} {
 	%W selection range 0 insert
     } else {
@@ -241,12 +241,12 @@ bind BltComboEntry <Shift-Home> {
     %W see insert
 }
 
-bind BltComboEntry <End> {
+bind BltComboEntry <KeyPress-End> {
     %W icursor end
     %W see insert
 }
 
-bind BltComboEntry <Shift-End> {
+bind BltComboEntry <Shift-KeyPress-End> {
     if {![%W selection present]} {
 	%W selection range insert end
     } else {
@@ -383,17 +383,17 @@ bind BltComboEntry <KeyPress> {
 
 # Additional emacs-like bindings:
 
-bind BltComboEntry <Control-a> {
+bind BltComboEntry <Control-KeyPress-a> {
     %W icursor 0
     %W see insert
 }
 
-bind BltComboEntry <Control-b> {
+bind BltComboEntry <Control-KeyPress-b> {
     %W icursor previous 
     %W see insert
 }
 
-bind BltComboEntry <Control-d> {
+bind BltComboEntry <Control-KeyPress-d> {
     if { [%W selection present] } {
 	%W delete sel.first sel.last
     } else {
@@ -401,17 +401,17 @@ bind BltComboEntry <Control-d> {
     }
 }
 
-bind BltComboEntry <Control-e> {
+bind BltComboEntry <Control-KeyPress-e> {
     %W icursor end
     %W see insert
 }
 
-bind BltComboEntry <Control-f> {
+bind BltComboEntry <Control-KeyPress-f> {
     %W icursor next
     %W see insert
 }
 
-bind BltComboEntry <Control-h> {
+bind BltComboEntry <Control-KeyPress-h> {
     if { [%W selection present] } {
 	%W delete sel.first sel.last
     } else {
@@ -420,7 +420,7 @@ bind BltComboEntry <Control-h> {
     }
 }
 
-bind BltComboEntry <Control-k> {
+bind BltComboEntry <Control-KeyPress-k> {
     %W delete insert end
 }
 
@@ -434,22 +434,22 @@ bind BltComboEntry <Control-t> {
     }
 }
 
-bind BltComboEntry <Alt-b> {
+bind BltComboEntry <Alt-KeyPress-b> {
     %W icursor [string wordstart [%W get] [%W index previous]]
     %W see insert
 }
 
-bind BltComboEntry <Alt-d> {
+bind BltComboEntry <Alt-KeyPress-d> {
     %W delete insert [string wordend [%W get] [%W index insert]]
     %W see insert
 }
 
-bind BltComboEntry <Alt-f> {
+bind BltComboEntry <Alt-KeyPress-f> {
     %W icursor [string wordend [%W get] [%W index insert]]
     %W see insert
 }
 
-bind BltComboEntry <Alt-BackSpace> {
+bind BltComboEntry <Alt-KeyPress-BackSpace> {
     %W delete [string wordstart [%W get] [%W index previous]] insert
     %W see insert
 }
