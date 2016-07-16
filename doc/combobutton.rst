@@ -86,9 +86,9 @@ command.  The following operations are available for *combobutton* widgets:
 
   The following widget options are available\:
 
-  **-activebackground** *background* 
+  **-activebackground** *bgName** 
     Specifies the background color of *pathName* when it is active.
-    *Background* may be a color name or the name of a background object
+    *bgName** may be a color name or the name of a background object
     created by the **blt::background** command.  The default is "white".
 
   **-activeforeground** *colorName* 
@@ -119,8 +119,8 @@ command.  The following operations are available for *combobutton* widgets:
     If *numPixels* is "0", the width of the arrow is determined from the
     size of the font (see the **-font** option) The default is "0".
 
-  **-background** *background* 
-    Specifies the background color of *pathName*.  *Background* may be a
+  **-background** *bgName** 
+    Specifies the background color of *pathName*.  *bgName** may be a
     color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
     
@@ -314,16 +314,16 @@ DEFAULT BINDINGS
 
 There are several default class bindings for *combobutton* widgets.
 
-**Enter** 
+**<Enter>** 
   The button activates whenever the pointer passes over the button window.
-**Leave**
+**<Leave>**
   The button deactivates whenever the pointer leaves the button window.
-**ButtonPress-1**
+**<ButtonPress-1>**
   Pressing button 1 over the combobutton posts its associated combomenu
   if one is specified. The relief  of the button  changes to raised and
   its associated menu is posted under the combobutton.
 
-**B1-Motion**
+**<B1-Motion>**
   If the mouse is dragged down into the menu with the button still down,
   and if the mouse button is then released over an entry in the menu, the
   combobutton is unposted and the menu item is invoked.

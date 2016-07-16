@@ -278,8 +278,8 @@ command.  The following operations are available for *combomenu* widgets:
     example, "raised" means the item should appear to protrude.  The
     default is "flat".
     
-  **-background** *background* 
-    Specifies the background of the menu items.  *Background* may be a
+  **-background** *bgName* 
+    Specifies the background of the menu items.  *BgName* may be a
     color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
     
@@ -922,8 +922,8 @@ command.  The following operations are available for *combomenu* widgets:
     example, "raised" means the item should appear to protrude.  The
     default is "flat".
     
-  **-background** *background* 
-    Specifies the background of the menu item.  *Background* may be a color
+  **-background** *bgName* 
+    Specifies the background of the menu item.  *BgName* may be a color
     name or the name of a background object created by the
     **blt::background** command.  The default is "white".
     
@@ -956,8 +956,8 @@ command.  The following operations are available for *combomenu* widgets:
     Specifies the color of the accelerator of menu items that are
     disabled. The default is "grey90".
 
-  **-disabledbackground** *background* 
-    Specifies the background of menu items that are disabled.  *Background*
+  **-disabledbackground** *bgName* 
+    Specifies the background of menu items that are disabled. *BgName*
     may be a color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
 

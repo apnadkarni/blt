@@ -109,29 +109,29 @@
                                          * entered. */
 #define ACTIVE_ARROW     (1<<16)        /* The arrow button is currently
                                            active. */
-#define ACTIVE_CLEAR     (1<<17)        /* The clear button is currently
+#define ACTIVE_BUTTON     (1<<17)        /* The clear button is currently
                                          * active. */
-#define ACTIVE_MASK      ((ACTIVE_ARROW)|(ACTIVE_CLEAR))
+#define ACTIVE_MASK      ((ACTIVE_ARROW)|(ACTIVE_BUTTON))
 
 #define MODIFIED         (1<<18)        /* The contents of the text of the
                                          * entry have been modified. */
 #define TRACE_VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
 
 
+#define DEF_HIDE_ARROW          "0"
 #define DEF_ARROW_ACTIVE_BG     STD_ACTIVE_BACKGROUND
 #define DEF_ARROW_ACTIVE_FG     STD_ACTIVE_FOREGROUND
-#define DEF_BORDERWIDTH         "0"
-#define DEF_ARROW               "1"
 #define DEF_ARROW_BORDERWIDTH   "2"
 #define DEF_ARROW_PAD           "0"
 #define DEF_ARROW_RELIEF        "raised"
 #define DEF_ARROW_WIDTH         "0"
-#define DEF_SHOW                (char *)NULL
+#define DEF_BORDERWIDTH         "0"
 #define DEF_CLRBUTTON           "0"
 #define DEF_CMD                 ((char *)NULL)
 #define DEF_CURSOR              ((char *)NULL)
 #define DEF_DISABLED_BG         STD_DISABLED_BACKGROUND
 #define DEF_DISABLED_FG         STD_DISABLED_FOREGROUND
+#define DEF_EDITABLE            "1"
 #define DEF_EXPORTSELECTION     "1"
 #define DEF_FONT                STD_FONT_NORMAL
 #define DEF_HEIGHT              "0"
@@ -149,15 +149,15 @@
 #define DEF_MENU_ANCHOR         "sw"
 #define DEF_NORMAL_BG           STD_NORMAL_BACKGROUND
 #define DEF_NORMAL_FG           STD_NORMAL_FOREGROUND
-#define DEF_EDITABLE            "1"
 #define DEF_RELIEF              "sunken"
 #define DEF_SCROLL_CMD          ((char *)NULL)
 #define DEF_SCROLL_INCR         "2"
+#define DEF_SELECT_BG           RGB_SKYBLUE4
 #define DEF_SELECT_BORDERWIDTH  "0"
 #define DEF_SELECT_CMD          ((char *)NULL)
 #define DEF_SELECT_FG           RGB_WHITE
-#define DEF_SELECT_BG           RGB_SKYBLUE4
 #define DEF_SELECT_RELIEF       "flat"
+#define DEF_SHOW                (char *)NULL
 #define DEF_STATE               "normal"
 #define DEF_TAKE_FOCUS          "1"
 #define DEF_TEXT                (char *)NULL
@@ -285,8 +285,6 @@ static Blt_ConfigSpec buttonSpecs[] =
         Blt_Offset(Button, activeFg), 0},
     {BLT_CONFIG_COLOR, "-background", "backrgound", "Background", 
         DEF_BUTTON_BACKGROUND, Blt_Offset(Button, normalBg), 0},
-    {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
-        DEF_BUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
         DEF_BUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
@@ -295,6 +293,8 @@ static Blt_ConfigSpec buttonSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_BUTTON_COMMAND, 
         Blt_Offset(Button, cmdObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
+        DEF_BUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_BUTTON_RELIEF, 
         Blt_Offset(Button, relief), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
@@ -511,7 +511,6 @@ typedef struct  {
     Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
                                          * executed when this menu is
                                          * posted. */
-    int menuAnchor;
     unsigned int flags;
     EditRecord *undoPtr, *redoPtr;
     const char *cipher;                 /* If non-NULL, this is the
@@ -589,7 +588,7 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(ComboEntry, reqHeight), 
         BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, },
     {BLT_CONFIG_BITMASK_INVERT, "-hidearrow", "hideArrow", "HideArrow", 
-        DEF_ARROW, Blt_Offset(ComboEntry, flags), 
+        DEF_HIDE_ARROW, Blt_Offset(ComboEntry, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, (Blt_CustomOption *)ARROW},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG_COLOR, 
@@ -613,9 +612,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_IMAGE, 
         Blt_Offset(ComboEntry, image), BLT_CONFIG_NULL_OK | ALL_MASK, 
         &iconOption},
-    {BLT_CONFIG_COLOR, "-insertbackground", "insertBackground", 
-        "InsertBackground", DEF_INSERT_COLOR, 
-        Blt_Offset(ComboEntry, insertColor), ALL_MASK},
+    {BLT_CONFIG_COLOR, "-insertcolor", "insertColor", "InsertColor",
+        DEF_INSERT_COLOR, Blt_Offset(ComboEntry, insertColor), ALL_MASK},
     {BLT_CONFIG_INT, "-insertofftime", "insertOffTime", "OffTime",
         DEF_INSERT_OFFTIME, Blt_Offset(ComboEntry, insertOffTime), 
         BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
@@ -624,9 +622,6 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_OBJ, "-menu", "menu", "Menu", DEF_MENU, 
         Blt_Offset(ComboEntry, menuObjPtr), 
-        BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
-    {BLT_CONFIG_ANCHOR, "-menuanchor", "menuAnchor", "MenuAnchor", 
-        DEF_MENU_ANCHOR, Blt_Offset(ComboEntry, menuAnchor),
         BLT_CONFIG_NULL_OK | COMBO_ENTRY_MASK},
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
         DEF_CMD, Blt_Offset(ComboEntry, postCmdObjPtr), 
@@ -758,9 +753,9 @@ EventuallyInvokeSelectCmd(ComboEntry *comboPtr)
  *
  * EventuallyInvokeCmd --
  *
- *      Queues a request to execute the -selectcommand code associated with
- *      the widget at the next idle point.  Invoked whenever the selection
- *      changes.
+ *      Queues a request to execute the -command code associated with
+ *      the widget at the next idle point.  Invoked whenever the text
+ *      changes via its text variable.
  *
  * Results:
  *      None.
@@ -2551,11 +2546,44 @@ ActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     old = (comboPtr->flags & ACTIVE_MASK);
     comboPtr->flags &= ~ACTIVE_MASK;
     if (strcmp(string, "button") == 0) {
-        comboPtr->flags |= ACTIVE_CLEAR;
+        comboPtr->flags |= ACTIVE_BUTTON;
     } else if (strcmp(string, "arrow") == 0) {
         comboPtr->flags |= ACTIVE_ARROW;
     }   
     if (old != (comboPtr->flags & ACTIVE_MASK)) {
+        EventuallyRedraw(comboPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ButtonActivateOp --
+ *
+ *      Activates the button. 
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ *      pathName button activate
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ButtonActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    const char *string;
+    unsigned int oldFlags;
+
+    if (comboPtr->flags & DISABLED) {
+        return TCL_OK;                  /* The widget is currently disabled. */
+    }
+    oldFlags = (comboPtr->flags & ACTIVE_MASK);
+    comboPtr->flags &= ~ACTIVE_MASK;
+    comboPtr->flags |= ACTIVE_BUTTON;
+    if (oldFlags != (comboPtr->flags & ACTIVE_MASK)) {
         EventuallyRedraw(comboPtr);
     }
     return TCL_OK;
@@ -2622,6 +2650,36 @@ ButtonConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ButtonDeactivateOp --
+ *
+ *      Deactivates the button. 
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ *      pathName button deactivate
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ButtonDeactivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
+                   Tcl_Obj *const *objv)
+{
+    const char *string;
+
+    if (comboPtr->flags & DISABLED) {
+        return TCL_OK;                  /* The widget is currently disabled. */
+    }
+    if (comboPtr->flags & ACTIVE_BUTTON) {
+        EventuallyRedraw(comboPtr);
+    }
+    comboPtr->flags &= ~ACTIVE_BUTTON;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ButtonInvokeOp --
  *
  *      This procedure is called to invoke a button command.
@@ -2677,9 +2735,11 @@ ButtonInvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec buttonOps[] =
 {
-    {"cget",       2, ButtonCgetOp,      4, 4, "option",},
-    {"configure",  2, ButtonConfigureOp, 3, 0, "?option value?...",},
-    {"invoke",     1, ButtonInvokeOp,    3, 3, "",},
+    {"activate",   1, ButtonActivateOp,   3, 3, "",},
+    {"cget",       2, ButtonCgetOp,       4, 4, "option",},
+    {"configure",  2, ButtonConfigureOp,  3, 0, "?option value?...",},
+    {"deactivate", 1, ButtonDeactivateOp, 3, 3, "",},
+    {"invoke",     1, ButtonInvokeOp,     3, 3, "",},
 };
 static int numButtonOps = sizeof(buttonOps) / sizeof(Blt_OpSpec);
 
@@ -3905,7 +3965,6 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->insertOnTime = 600;
     comboPtr->interp = interp;
     comboPtr->mask = mask;
-    comboPtr->menuAnchor = TK_ANCHOR_SW;
     comboPtr->relief = TK_RELIEF_SUNKEN;
     comboPtr->scrollUnits = 2;
     comboPtr->selAnchor = -1;
@@ -4527,7 +4586,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         if (comboPtr->entryHeight > butPtr->height) {
             butPtr->y +=  (comboPtr->entryHeight - butPtr->height) / 2;
         }
-        if (comboPtr->flags & ACTIVE_CLEAR) {
+        if (comboPtr->flags & ACTIVE_BUTTON) {
             if (butPtr->activePicture == NULL) {
                 butPtr->activePicture = Blt_PaintDelete(BUTTON_WIDTH, 
                                                         BUTTON_HEIGHT, 

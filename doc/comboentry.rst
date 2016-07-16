@@ -21,6 +21,10 @@ The **blt::comboentry** command creates and manages *comboentry* widgets.
 A *comboentry* widget displays button, that when pressed, posts a
 **blt::combomenu** widget.
 
+The *comboentry* widget can be used as a normal entry widget. It
+has undo and redo capabilities, a configurable clear button, and a
+icon.
+
 SYNTAX
 ------
 
@@ -31,7 +35,7 @@ following form.
   **blt::comboentry** *pathName* ?\ *option value* ... ?
 
 Additional options may be specified on the command line or in the option
-database to configure aspects of the comboentry such as its background
+database to configure aspects of the *comboentry* such as its background
 color or scrollbars. The **blt::comboentry** command returns its *pathName*
 argument.  There must not already exist a window named *pathName*, but
 *pathName*'s parent must exist.
@@ -40,14 +44,30 @@ The normal size of the *comboentry* is the computed size to display the
 text. You can specify the width and height of the *comboentry* window using
 the **-width** and **-height** widget options.
 
+ELEMENTS
+--------
+
+The *comboentry* widget is composed of the followung elements.
+
+**text**
+  This is the region in the widget where the text is displayed.
+**arrow**
+  The arrow button is displayed on the far right side of the widget. It is
+  used to post the associated menu.
+**button**
+  The clear button is displayed on the right, before the arrow.  It is
+  typically used to clear the text.
+
+ The **identify** operation is used to determine the element the mouse is
+ currently over.
+
 CHARACTER INDICES
 -----------------
 
-Character positions in the text can be defined by using one of more
-indices. An index can be in one of the following forms.
+Character positions in the text can be designated in the following forms.
 
 *number*
-  The index of the character.  Character indices start at 0.
+  The index of the character.  The index of the first character is 0.
 
 **anchor**
   The index of the character anchoring of the selection.
@@ -70,8 +90,9 @@ indices. An index can be in one of the following forms.
   selected characters, the index is "-1".
 
 **@**\ *x*\
-  The index of the character that is located at the *x* screen coordinates.
-  If no character is at that point, then the index is "-1".
+  The index of the character that is located at the given x-coordinate.
+  *X* is relative to the *comboentry* window.  If no character is at that
+  point, then the index is "-1".
 
 OPERATIONS
 ----------
@@ -91,31 +112,35 @@ command.  The following operations are available for *comboentry* widgets:
   over items in the menu. Any previously active item is deactivated.
   *ItemName* may be "button" or "arrow".
 
+*pathName* **button activate** 
+  Redisplays the button using its active colors and relief.  This typically
+  is used by widget bindings to highlight the button when the pointer is
+  moved over it.
+
 *pathName* **button cget**  *option*
   Returns the current value of the configuration option given by *option*.
   *Option* may have any of the values accepted by the **configure**
   operation described below.
 
 *pathName* **button configure**  ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
-  Query or modify the configuration options of the widget.  If no *option*
-  is specified, returns a list describing all of the available options for
-  *pathName* (see **Tk_ConfigureInfo** for information on the format of
-  this list).  If *option* is specified with no *value*, then the command
-  returns a list describing the one named option (this list will be
+  Query or modify the configuration options of the button element.  If no
+  *option* is specified, returns a list describing all of the available
+  options for the button.  If *option* is specified with no *value*, then the
+  command returns a list describing the one named option (this list will be
   identical to the corresponding sublist of the value returned if no
-  *option* is specified).  If one or more *option*-*value* pairs are
-  specified, then the command modifies the given widget option(s) to have
+  *option* is specified).  If one or more *option*\ -\ *value* pairs are
+  specified, then the command modifies the given button option(s) to have
   the given value(s); in this case the command returns an empty string.
   *Option* and *value* are described below.
 
   **-activebackground** *bgName* 
     Specifies the background color of the button when it is active.
     *BgName* may be a color name or the name of a background object
-    created by the **blt::background** command.  The default is "white".
+    created by the **blt::background** command.  The default is "red".
 
   **-activeforeground** *colorName* 
-    Specifies the color of the button it is active.  The
-    default is "black".
+    Specifies the foreground color of the button when it is active.  The
+    default is "white".
 
   **-activerelief** *reliefName* 
     Specifies the relief of the button when it is active.  This determines
@@ -126,12 +151,12 @@ command.  The following operations are available for *comboentry* widgets:
     protrude.  The default is "raised".
 
   **-background** *bgName* 
-    Specifies the background color of *pathName*.  *BgName* may be a
+    Specifies the background color of the button.  *BgName* may be a
     color name or the name of a background object created by the
-    **blt::background** command.  The default is "white".
+    **blt::background** command.  The default is "lightblue".
     
   **-borderwidth** *numPixels* 
-    Specifies the borderwidth of *pathName*.  *NumPixels* is a non-negative
+    Specifies the borderwidth of the button.  *NumPixels* is a non-negative
     value indicating the width of the 3-D border drawn around the button.
     *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
     The default is "1".
@@ -141,6 +166,10 @@ command.  The following operations are available for *comboentry* widgets:
     either by clicking on the menu item or using the **invoke** operation.
     If *cmdString* is "", then no command is invoked. The default is "".
 
+  **-foreground** *colorName* 
+    Specifies the foreground color of the button.  The default is
+    "lightblue2".
+
   **-relief** *reliefName* 
     Specifies the 3-D effect for the button.  *ReliefName* indicates how
     the button should appear relative to the *comboentry* window.
@@ -148,10 +177,13 @@ command.  The following operations are available for *comboentry* widgets:
     **solid**, and **groove**. For example, "raised" means the button
     should appear to protrude.  The default is "raised".
 
+*pathName* **button deactivate** 
+  Redisplays the button using its normal colors and relief.  
+
 *pathName* **button invoke** 
-  FIXME
-  Selects *cellName* and invokes the TCL command associated the button
-  (see the **-command** button or **-clearcommand** widget option). 
+  Invokes a TCL command specified by *widget*'s **-closecommand** or
+  button's **-command** option.  This is typically called from the widget's
+  bindings when the user clicks on the button.
 
 *pathName* **cget** *option*  
   Returns the current value of the widget configuration option given by
@@ -161,10 +193,8 @@ command.  The following operations are available for *comboentry* widgets:
 
 *pathName* **closest** *x*  
   Returns the index of the character closest to the given screen
-  coordinate.  *X* is screen coordinates relative to the
-  *comboentry* window unless the **-root** switch is given.
-  *Switches* can be any of the following.
-
+  coordinate.  *X* is screen coordinates relative to the *comboentry*
+  
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
   Queries or modifies the configuration options of the widget.  If no
   *option* is specified, this command returns a list describing all the
@@ -181,8 +211,8 @@ command.  The following operations are available for *comboentry* widgets:
   operation or the Tk **option** command.  The resource class is
   **BltComboentry**.  The resource name is the name of the widget::
 
-    option add *BltComboentry.anchor n
-    option add *BltComboentry.Anchor e
+    option add *BltComboentry.anchor activebackground white
+    option add *BltComboentry.Anchor ActiveForeground black
 
   The following widget options are available\:
 
@@ -193,9 +223,9 @@ command.  The following operations are available for *comboentry* widgets:
     **groove**. For example, "raised" means the arrow should appear to
     protrude.  The default is "raised".
 
-  **-activebackground** *background* 
+  **-activebackground** *bgName* 
     Specifies the background color of *pathName* when it is active.
-    *Background* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command.  The default is "white".
 
   **-activeforeground** *colorName* 
@@ -209,7 +239,8 @@ command.  The following operations are available for *comboentry* widgets:
     The default is "1".
 
   **-arrowpad** *padName*
-  
+    FIXME
+
   **-arrowrelief** *reliefName* 
     Specifies the relief of the arrow.  This determines the 3-D effect for
     the arrow.  *ReliefName* indicates how the arrow should appear relative
@@ -224,49 +255,56 @@ command.  The following operations are available for *comboentry* widgets:
     If *numPixels* is "0", the width of the arrow is determined from the
     size of the font (see the **-font** option) The default is "0".
 
-  **-background** *background* 
-    Specifies the background color of *pathName*.  *Background* may be a
+  **-background** *bgName** 
+    Specifies the background color of *pathName*.  *BgName* may be a
     color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
     
   **-borderwidth** *numPixels* 
     Specifies the borderwidth of *pathName*.  *NumPixels* is a non-negative
-    value indicating the width of the 3-D border drawn around the button.
-    *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
-    The default is "1".
+    value indicating the width of the 3-D border drawn around the
+    *comboentry* window.  *NumPixels* may have any of the forms acceptable
+    to **Tk_GetPixels**.  The default is "1".
 
   **-clearbutton** *boolean* 
-
+    Indicates whether to display the clear button. The default is "0".
+    
   **-clearcommand** *cmdString* 
+    Specifies a TCL command to be executed when the clean button is
+    invoked: either by clicking on the button or using the button's
+    **invoke** operation.  If *cmdString* is "", then no command is
+    invoked. The default is "".
 
   **-command** *cmdString* 
-    Specifies a TCL command to be executed when a button is invoked:
-    either by clicking on the menu item or using the **invoke** operation.
-    If *cmdString* is "", then no command is invoked. The default is "".
+    Specifies a TCL command to be executed when the widget's arrow is
+    clicking on. If *cmdString* is "", then no command is invoked. The
+    default is "".
 
   **-cursor** *cursorName* 
-    Specifies the cursor to be used for the widget. *CursorName* may have
-    any of the forms acceptable to **Tk_GetCursor**.  If *cursorName* is "",
-    this indicates that the widget should defer to its parent for cursor
-    specification.  The default is "".
+    Specifies the cursor to be used for the *comboentry*
+    widget. *CursorName* may have any of the forms acceptable to
+    **Tk_GetCursor**.  If *cursorName* is "", this indicates that the
+    widget should defer to its parent for cursor specification.  The
+    default is "".
 
-  **-disabledbackground** *colorName* 
-    Specifies the background of *pathName* when it is disabled.  *ColorName*
+  **-disabledbackground** *bgName* 
+    Specifies the background of *pathName* when it is disabled.  *BgName*
     may be a color name or the name of a background object created by the
-    **blt::background** command.  The default is "white".
+    **blt::background** command.  The default is "grey90".
 
   **-disabledforeground** *colorName* 
     Specifies the color of the text when *pathName* is disabled.  The
     default is "grey70".
 
   **-editable** *boolean* 
-
+    Indicates whether the text can be edited.  The default is "1".
+    
   **-exportselection** *boolean* 
-    Indicates if the selections are to be exported and copied to the
+    Indicates whether selections are to be exported and copied to the
     clipboard.  The default is "0".
 
   **-font** *colorName* 
-    Specifies the font of the text.  The default is "{Sans Serif} 11".
+    Specifies the font of the text.  The default is "{Sans Serif} 10".
 
   **-foreground** *colorName* 
     Specifies the color of the text.  The default is "black".
@@ -279,16 +317,20 @@ command.  The following operations are available for *comboentry* widgets:
     text. The default is "0".
 
   **-hidearrow** *boolean* 
-
-  **-highlightbackground** *colorName*
+    Indicates whether to display the arrow that is used to post to the
+    menu.  The default is "0".
+    
+  **-highlightbackground** *bgName*
     Specifies the color of the traversal highlight region when the
-    graph does not have the input focus.  *ColorName* may be a color name
-    or the name of a background object created by the **blt::background**
-    command.  The default is "grey85".
+    *comboentry* does not have the input focus.  *BgName* may be a color
+    name or the name of a background object created by the
+    **blt::background** command.  If *bgName* is "", the widget's
+    background color (see the **-background** option) is used.  The default
+    is "".
 
-  **-highlightcolor** *colorName*
+  **-highlightcolor** *bgName*
     Specifies the color of the traversal highlight region when *pathName*
-    has input focus.  *ColorName* may be a color name or the name of a
+    has input focus.  *BgName* may be a color name or the name of a
     background object created by the **blt::background** command. The
     default is "black".
 
@@ -299,9 +341,9 @@ command.  The following operations are available for *comboentry* widgets:
     focus highlight is drawn around the widget.  The default is "2".
 
   **-icon** *imageName* 
-    Specifies an image to be displayed as an icon on the left of the text
-    in *pathName*.  *ImageName* is the name of an Tk photo or BLT picture.
-    If *imageName* is "", no icon is displayed. The default is "".
+    Specifies an image to be displayed as an icon to the left of the text.
+    *ImageName* is the name of an Tk photo or BLT picture. If *imageName*
+    is "", no icon is displayed. The default is "".
 
   **-iconvariable** *varName* 
     Specifies the name of a global TCL variable that will be set to the
@@ -310,13 +352,16 @@ command.  The following operations are available for *comboentry* widgets:
     *varName* is "", no variable is used. The default is "".
 
   **-iconwidth** *numPixels* 
-
+    Specifies the width of the icon.  *NumPixels* may have any of the forms
+    acceptable to **Tk_GetPixels**.  If *numPixels* is "0", the width of
+    the icon is set from the width of the image.  The default is "0".
+    
   **-image** *imageName* 
-    Specifies the name of a global TCL variable that will be set to the
-    name of the image representing the icon of *pathName*.  If *varName* is
-    "", no variable is used. The default is "".
+    Specifies an image to be displayed instead of the text for the *combentry*.
+    *ImageName* is the name of an Tk photo or BLT picture.
+    If *imageName* is "", the text is displayed. The default is "".
 
-  **-insertbackground** *colorName* 
+  **-insertcolor** *colorName* 
     Specifies the color of the insertion cursor.  The default is "black".
     
   **-insertofftime** *milliseconds* 
@@ -330,30 +375,27 @@ command.  The following operations are available for *comboentry* widgets:
     will be displayed.  The default is "600".
 
   **-menu** *menuName* 
-    Specifies the path name of the menu associated with this comboentry.
+    Specifies the path name of the menu associated with this *comboentry*.
     *MenuName* must be a **blt::combomenu** widget and a child of
     *pathName*.  If *menuName* is "", no menu will be displayed. The
     default is "".
 
-  **-menuanchor** *anchorName* 
-
   **-postcommand** *cmdString* 
     Specifies a TCL command to invoked when the menu is posted.  The
-    command will be invoked before the menu is displayed onscreen.  For
-    example, this may be used to disable buttons that may not be valid
-    when the menu is posted. If *cmdString* is "", no command is invoked.
-    The default is "".
+    command will be invoked before the menu is displayed onscreen.
+    If *cmdString* is "", no command is invoked. The default is "".
 
   **-relief** *reliefName* 
     Specifies the 3-D effect for *pathName*.  *ReliefName* indicates how
-    the menu should appear relative to the window it's packed into.
+    the *comboentry* should appear relative to the window it's packed into.
     Acceptable values are **raised**, **sunken**, **flat**, **ridge**,
     **solid**, and **groove**. For example, "raised" means *pathName*
     should appear to protrude.  The default is "raised".
 
-  **-selectbackground** *colorName* 
+  **-selectbackground** *bgName* 
     Specifies the color of the rectangle surrounding selected text.
-    The default is "skyblue4".
+    *BgName* may be a color name or the name of a background object created
+    by the **blt::background** command.  The default is "skyblue4".
 
   **-selectborderwidth** *numPixels* 
     Specifies the borderwidth of the selected rectangle.  *NumPixels* is a
@@ -363,9 +405,8 @@ command.  The following operations are available for *comboentry* widgets:
     The default is "0".
 
   **-selectcommand** *cmdString*
-    Specifies a TCL command to be invoked when an item is selected: either
-    by clicking on the item or using the **select** operation.  If
-    *cmdString* is "", then no command is invoked. The default is "".
+    Specifies a TCL command to be invoked the selection changes.
+    If *cmdString* is "", then no command is invoked. The default is "".
 
   **-selectforeground** *colorName* 
     Specifies the color of selected text.  The default is "white".
@@ -377,61 +418,65 @@ command.  The following operations are available for *comboentry* widgets:
     **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
     means the rectangle should appear to protrude.  The default is "flat".
 
-  **-show** *boolean*
-    Indicates to display text as circles instead of the text itself.
-    The default is "0".
+  **-show** *cipherChar*
+    Specifies a character to displayed instead of the actual characters in
+    the text.  This may be used for displaying passwords. If *cipherChar*
+    is "", then the normal chararcters are displayed .  The default is "".
 
   **-state** *state*
     Specifies one of three states for *pathName*: 
 
     **normal**
-      In normal state *pathName* is displayed using the **-foreground**
-      **-background**, and **-relief**  options.
+      Display the widget in its normal colors and relief (see the
+      **-foreground**, **-background**, and **-relief** options).
 
     **disabled**
-      Disabled state means that *pathName* should be insensitive: the default
-      bindings will not activate or invoke the item.  In this state
-      *pathName* is displayed according to the **-disabledforeground** and
-      the **-disabledbackground** options.
+      Display the widget in its disabled colors (see the
+      **-displayforeground**, **-disabledbackground** options).  Disabled
+      state means that *pathName* should be insensitive: the default
+      bindings will not activate or invoke the item.
 
     **posted**
       The menu associated with *pathName* is posted.
-      *pathName* is displayed according to the **-postedforeground**,
+      The widget* is displayed according to the **-postedforeground**,
       the **-postedbackground**, and **-postrelief**  options.
 
     The default is "normal".
 
-  **-takefocus** *boolean*
+  **-takefocus** *focusBool*
     Provides information used when moving the focus from window to window
-    via keyboard traversal (e.g., Tab and Shift-Tab).  If *boolean* is "0",
-    this means that this window should be skipped entirely during keyboard
-    traversal.  "1" means that the this window should always receive the
-    input focus.  An empty value means that the traversal scripts make the
-    decision whether to focus on the window.  The default is "".
+    via keyboard traversal (e.g., Tab and Shift-Tab).  If *focusBool* is
+    "0", this means that this window should be skipped entirely during
+    keyboard traversal.  "1" means that the this window should always
+    receive the input focus.  An empty value means that the traversal
+    scripts make the decision whether to focus on the window.  The default
+    is "1".
 
   **-text** *textString* 
     Specifies the text to be display in *pathName*. If *textString* is not
     "", this option overrides the **-textvariable** option.  The default is
     "".
 
-  **-textbackground** *colorName* 
-    Specifies the background color of the text area.  *ColorName* may be a
+  **-textbackground** *bgName* 
+    Specifies the background color of the text area.  *BgName* may be a
     color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
 
   **-textfocusbackground** *bgName* 
-    Specifies the background color of the text area.  *ColorName* may be a
-    color name or the name of a background object created by the
-    **blt::background** command.  The default is "white".
+    Specifies the background color of the text area when the widget has
+    focus.  *BgName* may be a color name or the name of a background object
+    created by the **blt::background** command.  The default is "white".
 
   **-textfocusforeground** *colorName* 
-
+    Specifies the color of the text when the widget has focus.  The default
+    is "black".
+    
   **-textforeground** *colorName* 
     Specifies the color of the text.  The default is "black".
 
   **-textvariable** *varName* 
     Specifies the name of a global TCL variable that will be set to the
-    text of *pathName*.  If *varName* is set to another value, the text in
+    text of *pathName*.  If the value of *varName* is changed, the text in
     *pathName* will change accordingly. If *varName* is "", no variable is
     used. The default is "".
 
@@ -441,9 +486,9 @@ command.  The following operations are available for *comboentry* widgets:
     the width of the widget. The default is "0".
 
   **-width** *numPixels*
-    Specifies the width of the widget*.  *NumPixels* is a non-negative value
-    indicating the width of *pathName*. The value may have any of the forms
-    accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+    Specifies the width of the widget*.  *NumPixels* is a non-negative
+    value indicating the width of *pathName*. The value may have any of the
+    forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
     *numPixels* is "0", the width of *pathName* is computed from its text.
     The default is "".
 
@@ -452,15 +497,14 @@ command.  The following operations are available for *comboentry* widgets:
     scrollbars.  Whenever the horizontal view in the widget's window
     changes, the widget will generate a TCL command by concatenating the
     scroll command and two numbers. If this option is not specified, then
-    no command will be executed.  The widget's initialization script
-    will automatically set this for you.
-
+    no command will be executed.
+    
   **-xscrollincrement** *numPixels*
     Sets the horizontal scrolling unit. This is the distance the editor is
     scrolled horizontally by one unit. *NumPixels* is a non-negative value
     indicating the width of the 3-D border drawn around the editor. The
     value may have any of the forms accept able to **Tk_GetPixels**.  The
-    default is "20".
+    default is "2".
   
 *pathName* **deactivate** 
   Redisplays *pathName* using its normal colors.  This typically is used by
@@ -475,20 +519,21 @@ command.  The following operations are available for *comboentry* widgets:
   two characters are deleted.
   
 *pathName* **get** ?\ *firstIndex* *lastIndex*\ ?
-  Returns the text from the widget.  If *firstIndex* and *lastIndex*
-  arguments are present, they describe the region of characters to be
-  returned.
+  Returns the text from the widget.  But default, the entire text is
+  returned. But if *firstIndex* and *lastIndex* arguments are present, they
+  indicate the range of characters to be returned.
 
 *pathName* **icursor** *charIndex*
   Specifies the location of the insertion cursor.  *CharIndex* is the index
-  of character before which the insertion cursor will be placed. *CharIndex*
-  may be in any of the forms described in `CHARACTER INDICES`_.
+  of character before which the insertion cursor will be
+  placed. *CharIndex* may be in any of the forms described in `CHARACTER
+  INDICES`_.
 
 *pathName* **identify** *x* *y*
   Returns the name of the element under the point given by *x* and *y*
   (such as **button** or **arrow**), or an empty string if the point does
   not lie in any element of the *comboentry* widget.  *X* and *y* must be
-  pixel coordinates relative to the widget.
+  screen coordinates relative to the *comboentry* widget.
 
 *pathName* **index** *charIndex*
   Returns the index of *charIndex*. *CharIndex* may be in any of the forms
@@ -500,12 +545,12 @@ command.  The following operations are available for *comboentry* widgets:
   *charIndex* is "end", the characters are appended.
   
 *pathName* **invoke** 
-  Invokes the TCL command specified by the **-command** option. 
+  Invokes the TCL command specified by the **-command** option.  
   
 *pathName* **post** 
   Posts the menu associated with the widget (see the **-menu** option)
-  to be displayed on the screen. The menu is displayed underneath
-  the comboentry window.
+  to be displayed on the screen. The menu is displayed directly below
+  the *comboentry* window.
 
 *pathName* **redo** 
   Re-applies the last reverted change.  This command only has effect if the
@@ -516,20 +561,20 @@ command.  The following operations are available for *comboentry* widgets:
   This command computes the difference between *x* and *y* and the
   coordinates to the last **scan mark** command for the widget.  It then
   adjusts the view by 10 times the difference in coordinates.  *X* and *y*
-  are screen coordinates relative to editor window.  This command is
+  are screen coordinates relative to *comboentry* window.  This command is
   typically associated with mouse motion events in the widget, to produce
   the effect of dragging the item list at high speed through the window.
    
 *pathName* **scan mark** *x* *y*
-  Records *x* and *y* and the current view in the editor window; to be used
-  with later **scan dragto** commands. *X* and *y* are screen coordinates
-  relative to editor window.  Typically this command is associated
-  with a mouse button press in the widget.  
+  Records *x* and *y* and the current view in the *comboentry* window; to
+  be used with later **scan dragto** commands. *X* and *y* are screen
+  coordinates relative to editor window.  Typically this command is
+  associated with a mouse button press in the widget.
 
 *pathName* **see** *charIndex*
   Scrolls the editor so that character at *charIndex* is visible in the
-  widget's window. *CharIndex* may be in any of the forms described in
-  `CHARACTER INDICES`_.
+  *comboentry* widget's window. *CharIndex* may be in any of the forms
+  described in `CHARACTER INDICES`_.
 
 *pathName* **selection adjust** *charIndex*
   Sets the end of the selection nearest to the character given by
@@ -572,7 +617,7 @@ command.  The following operations are available for *comboentry* widgets:
 
 *pathName* **unpost**
   Unposts the menu associated with *comboentry* widget (see the **-menu**
-  option) so it is no longer displayed onscreen.  
+  option) so it is no longer displayed on-screen.
 
 *pathName* **xview moveto** fraction
   Adjusts the horizontal view in the *combontry* window so the portion of
@@ -594,47 +639,52 @@ DEFAULT BINDINGS
 
 There are several default class bindings for *comboentry* widgets.
 
-**<Enter>** 
-  The button activates whenever the pointer passes over the button window.
-**<Leave>**
-  The button deactivates whenever the pointer leaves the button window.
+**<Motion>** 
+  Activates/deactivates the *comboentry* elements as the mouse pointer
+  is passed over them.
+
 **<ButtonPress-1>**
-  Pressing button 1 over the comboentry posts its associated combomenu
-  if one is specified. The relief  of the button  changes to raised and
-  its associated menu is posted under the comboentry.
+  Pressing button 1 over the *comboentry* arrow posts its associated
+  combomenu if one is specified. The relief of the arrow changes to raised
+  and its associated menu is posted under the *comboentry*.
+
+  Pressing button 1 over the *comboentry* clear button clears the text
+  in the widget.
+  
+  Pressing button 1 over the *comboentry* text. Start the selection
+  of chararacters in the widget.
 
 **<B1-Motion>**
   If the mouse is dragged down into the menu with the button still down,
   and if the mouse button is then released over an entry in the menu, the
-  comboentry is unposted and the menu item is invoked.
+  *comboentry* is unposted and the menu item is invoked.
 
-  If button 1 is pressed over a comboentry and then dragged over some
-  other comboentry, the original comboentry unposts itself and the new
-  comboentry posts.
-
+  If a selection was started, it is continued, adding characters that
+  the mouse passes over.
+  
 **<ButtonRelease-1>**
-  If button 1 is pressed over a comboentry and then released over that
-  comboentry, the comboentry stays posted: you can still move the mouse
+  If button 1 is pressed over a *comboentry* and then released over that
+  *comboentry*, the *comboentry* stays posted: you can still move the mouse
   over the menu and click button 1 on an entry to invoke it.  Once a menu
-  item has been invoked, the comboentry unposts itself.
+  item has been invoked, the *comboentry* unposts itself.
 
-  If button 1 is pressed over a comboentry and released outside any
-  comboentry or menu, the comboentry unposts without invoking any menu
+  If button 1 is pressed over a *comboentry* and released outside any
+  *comboentry* or menu, the *comboentry* unposts without invoking any menu
   item.
 
 **<Alt-KeyPress-**\ *key *\ **>**
   If the **-underline** option has been specified then keyboard traversal
-  may be used to post the comboentry's menu: Alt+\ *key*, where *key* is the
+  may be used to post the *comboentry*'s menu: Alt+\ *key*, where *key* is the
   underlined character (or its lower-case or upper-case equivalent), may be
-  typed in any window under the comboentry's toplevel to post the
-  comboentry's menu.
+  typed in any window under the *comboentry*'s toplevel to post the
+  *comboentry*'s menu.
 
 **<KeyPress-Space>** or  **<KeyPress-Return>**
-   If a comboentry has the input focus, the space and  return  keys
-   post the comboentry's menu.
+   If a *comboentry* has the input focus, the space and  return  keys
+   post the *comboentry*'s menu.
 
-The behavior of comboentrys can be changed by defining new bindings for
-individual widgets or by redefining the class bindings.
+The behavior of *comboentry* widgets can be changed by defining new
+bindings for individual widgets or by redefining the class bindings.
 
 EXAMPLE
 -------
@@ -676,7 +726,7 @@ DIFFERENCES WITH TK MENUS
 The **blt::comboentry** widget has the following differences with the Tk
 **menubutton** widget.
 
-1. *Comboentrys* can not post by a Tk **menu**.
+1. A *comboentry* can not post a Tk **menu**.
 
    
 KEYWORDS
