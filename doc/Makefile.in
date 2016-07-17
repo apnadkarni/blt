@@ -30,6 +30,7 @@ SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/comboeditor.rst \
 		$(srcdir)/comboentry.rst \
 		$(srcdir)/combomenu.rst \
+		$(srcdir)/combotree.rst \
 		$(srcdir)/compare.rst \
 		$(srcdir)/csv.rst \
 		$(srcdir)/cutbuffer.rst \

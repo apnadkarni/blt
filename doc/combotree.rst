@@ -261,8 +261,7 @@ command.  The following operations are available for *combotree* widgets:
   *option* is specified).  If one or more *option*-*value* pairs are
   specified, then the command modifies the given button option(s) to have
   the given value(s); in this case the command returns an empty string.
-  *Option* and *value* are described in the section `BUTTON OPTIONS`_
-  below.
+  *Option* and *value* are described below.
 
   **-activebackground** *colorName*
     Sets the background color of an active button.  A button is made active
@@ -535,7 +534,7 @@ command.  The following operations are available for *combotree* widgets:
   **-yscrollincrement** *numPixels*
     Sets the vertical scrolling distance. The default is 20 pixels.
 
-  -------------------------
+  ####-------------------------
   
   **-acceleratorfont** *fontName* 
     Specifies the font for the accelerator.  The default is "{Sans Serif}
