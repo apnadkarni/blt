@@ -1,20 +1,17 @@
 Manuals that still need to started:
 ----------------------------------
 
-comboentry.rst
 combotree.rst
 contour.rst
-drawerset.rst
 pushbutton.rst
-scrollbar.rst
 tableview.rst
 
 Manuals that need overhaul:
 --------------------------
 base64.rst
-csv.rst
 graph.rst
 barchart.rst
+stripchart.rst
 tree.rst
   Needs EXAMPLE
 filmstrip.rst
