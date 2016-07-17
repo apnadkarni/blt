@@ -1,5 +1,5 @@
 
-This is version 3.0 of the BLT library.  It's an extension to the
+This is version 4.0 of the BLT library.  It's an extension to the
 Tcl/Tk toolkit.  You simply compile and link with the Tcl/Tk
 libraries. It does not require the Tcl or Tk source files.
 
@@ -14,12 +14,10 @@ versions:
 	Tcl/Tk 8.1
 	Tcl/Tk 8.2
 	Tcl/Tk 8.3 
-        Tcl/Tk 8.4 thru 8.4.0
+        Tcl/Tk 8.4 thru 8.6
 
 Tcl 7.6/Tk 4.2 isn't supported any more.  If you need Tcl 7.x, use the
 2.4z release.
-
-Avoid alpha and beta versions of Tcl/Tk.  They probably won't work.
 
 What is BLT? 
 
@@ -172,7 +170,7 @@ What does BLT stand for?
 
 Where to send bugs reports, suggestions, etc. ?
 
-	ghowlett@grandecom.net
+	gahowlett@gmail.com
 
   Make sure you include BLT and the version number in the subject line.
 
