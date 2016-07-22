@@ -197,22 +197,24 @@ available for *tabset* widgets:
 
   *Option* and *value* are described below.
 
-  **-activebackground** *colorName*
+  **-activebackground** *bgName*
     Sets the default active background color for tabs.  A tab is active
     when the mouse is positioned over it or set by the **activate**
     operation.  Individual tabs may override this option by setting the
     tab's **-activebackground** option.
-
+    FIXME
+    
   **-activeforeground** *colorName*
     Sets the default active foreground color for tabs.  A tab is active
     when the mouse is positioned over it or set by the **activate**
     operation.  Individual tabs may override this option by setting the
     tab's **-activeforeground** option.
 
-  **-background** *colorName*
+  **-background** *bgName*
     Sets the default background color of folders.  Individual tabs can
     override this with their own **-background** option.
-
+    FIXME
+    
   **-borderwidth** *numPixels*
     Sets the width of the 3\-D border around tabs and folders. The
     **-relief** option determines how the border is to be drawn.  The
@@ -225,8 +227,9 @@ available for *tabset* widgets:
     **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
     means the tab should appear to protrude.  The default is "raised".
 
-  **-troughbackground** *colorName*
+  **-troughbackground** *bgName*
     Sets the background color of the trough under the tabs.  
+    FIXME
 
   **-outerborderwidth** *numPixels*
     Sets the width of the 3\-D border around the outside edge of the
@@ -273,10 +276,11 @@ available for *tabset* widgets:
     height of the widget will be calculated based on the size the tabs and
     their pages.  The default is "0".
 
-  **-highlightbackground**  *colorName*
+  **-highlightbackground**  *bgName*
     Sets the color to display in the traversal highlight region when the
     tabset does not have the input focus.
-
+    FIXME
+    
   **-highlightcolor** *colorName*
     Sets the color to use for the traversal highlight rectangle that is
     drawn around the widget when it has the input focus.  The default is
@@ -340,11 +344,12 @@ available for *tabset* widgets:
     the change the view by clicking on the left and right arrows of a
     scrollbar).
 
-  **-selectbackground** *colorName*
+  **-selectbackground** *bgName*
     Sets the color to use when displaying background of the selected
     tab. Individual tabs can override this option by setting the tab's
     **-selectbackground** option.
-
+    FIXME
+    
   **-selectcommand** *cmdString*
     Specifies a default TCL script to be associated with tabs.  This
     command is typically invoked when left mouse button is released over
@@ -519,11 +524,12 @@ FIXME
 
   *Option* and *value* are described below.
 
-  **-activebackground** *colorName*
+  **-activebackground** *bgName*
     Sets the active background color for *tabName*.  A tab is active when
     the mouse is positioned over it or set by the **activate** operation.
     This overrides the widget's **-activebackground** option.
-
+    FIXME
+    
   **-activeforeground** *colorName*
     Sets the default active foreground color *tabName*.  A tab is active
     when the mouse is positioned over it or set by the **activate**
@@ -540,10 +546,11 @@ FIXME
     be aligned with the leftmost edge of the folder. The default value is
     "center".
 
-  **-background** *colorName*
+  **-background** *bgName*
     Sets the background color for *tabName*.  Setting this option overides
     the widget's **-tabbackground** option.
-
+    FIXME
+    
   **-bindtags** *tagList*
     Specifies the binding tags for this tab.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how
@@ -635,11 +642,12 @@ FIXME
     both the top and bottom sides are padded evenly.  The default value is
     "0".
 
-  **-selectbackground** *colorName*
+  **-selectbackground** *bgName*
     Sets the color to use when displaying background of the selected
-    tab. If *color* is not the empty string, this overrides the widget's
+    tab. If *bgName* is not the empty string, this overrides the widget's
     **-selectbackground** option. The default value is "".
-
+    FIXME
+    
   **-shadow** *colorName*
     Sets the shadow color for the text in the tab's label. Drop shadows are
     useful when both the foreground and background of the tab have similar

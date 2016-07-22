@@ -160,9 +160,9 @@ command.  The following operations are available for *paneset* widgets:
 
   The following widget options are available\:
 
-  **-activesashcolor** *colorName* 
+  **-activesashcolor** *bgName* 
     Specifies the background color of the pane's sash when it is active.
-    *ColorName* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command.  
     The default is "grey90". 
 
@@ -174,14 +174,14 @@ command.  The following operations are available for *paneset* widgets:
     **groove**. For example, "raised" means the sash should appear to
     protrude.  The default is "flat".
     
-  **-background** *colorName* 
+  **-background** *bgName* 
     Specifies the default background of the widget including its panes.
-    *ColorName* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command.  The default is "grey85".
     
-  **-disabledsashcolor** *colorName* 
+  **-disabledsashcolor** *bgName* 
     Specifies the background color of the pane's sash when it is disabled.
-    *ColorName* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command.  
     The default is "grey90". 
 
@@ -228,8 +228,8 @@ command.  The following operations are available for *paneset* widgets:
     **Tk_GetPixels**.  This option may be overridden by the style's
     **-borderwidth** option.  The default is "1".
 
-  **-sashcolor** *colorName*
-    Specifies the default color of sashes.  *ColorName* may be a color name or
+  **-sashcolor** *bgName*
+    Specifies the default color of sashes.  *BgName* may be a color name or
     the name of a background object created by the **blt::background**
     command. The default is "grey85".
 
@@ -355,11 +355,11 @@ command.  The following operations are available for *paneset* widgets:
     widget will be drawn such that the top center point of the pane will be
     the top center point of the pane.  This option defaults to "c".
 
-  **-background** *colorName* 
-    Specifies the background of *paneName*.  *ColorName* may be a color
-    name or the name of a background object created by the
-    **blt::background** command.  If *colorName* is "", the widget's
-    **-background** is used. The default is "".
+  **-background** *bgName* 
+    Specifies the background of *paneName*.  *BgName* may be a color name
+    or the name of a background object created by the **blt::background**
+    command.  If *colorName* is "", the widget's **-background** is
+    used. The default is "".
 
   **-data** *dataString* 
     Specifies data to be associated with the pane. *DataString* can be an

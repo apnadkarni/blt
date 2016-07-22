@@ -90,13 +90,14 @@ The following operations are available for scrollset widgets:
     option specifies how the child widget should be positioned within the
     scrollset. The default is "center".
 
-  **-background** *colorName*  
+  **-background** *bgName*  
     Sets the default background for the scrollset widget.  The background is
     normally completely obscurred by the child widget.  But if both
     scrollbars are exposed, there will be a square region in lower right
     corner.  This option defines the color of that region.  The default is
     "grey85".
-
+    FIXME
+    
   **-cursor** *cursor*  
     Specifies the widget's cursor.  The default cursor is "".
 

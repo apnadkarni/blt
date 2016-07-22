@@ -74,7 +74,7 @@ ways: by ID or by tag.
   it's created. The number identifies the node.  It never changes 
   and ID numbers are not re-used.
 
-*tag*
+*tagName*
   A node may also have any number of tags associated with it.  A tag is
   just a string of characters, and it may take any form except that of
   an integer.  For example, "x123" is valid, but "123"
@@ -230,8 +230,8 @@ command.  The operations available for trees are listed below.
   **-regexp** *string*
     Test each node using *string* as a regular expression pattern.
 
-  **-tag** *tag*
-    Only test nodes that have the tag *tag*.
+  **-tag** *tagName*
+    Only test nodes that have the tag *tagName*.
 
 *treeName* **attach** *treeObject* ?\ *switches* ... ?
   Attaches to an existing tree object *treeObject*.  The current tree
@@ -391,8 +391,8 @@ command.  The operations available for trees are listed below.
 
   *Switches* may be any of the following.
 
-  **-addtag** *tag* 
-    Add the tag *tag* to each selected node.  
+  **-addtag** *tagName* 
+    Add the tag *tagName* to each selected node.  
 
   **-count** *number*
     Stop processing after *number* (a positive integer) matches. 
@@ -472,8 +472,8 @@ command.  The operations available for trees are listed below.
   **-regexp** *string*
     Test each node using *string* as a regular expression pattern.
 
-  **-tag** *tag*
-    Only test nodes that have the tag *tag*.
+  **-tag** *tagName*
+    Only test nodes that have the tag *tagName*.
 
 *treeName* **findchild** *node* *label*
   Searches for a child node with the label *label* in the parent *node*.  
@@ -623,8 +623,8 @@ command.  The operations available for trees are listed below.
   **-sort**
     Invoke *cmdPrefix* whenever the tree has been sorted and reordered.
 
-  **-tag** *tag*
-    Watch nodes that has the tag *tag*.
+  **-tag** *tagName*
+    Watch nodes that has the tag *tagName*.
     
   **-relabel**
     Invoke *cmdPrefix* whenever a node has been relabeled.
@@ -822,16 +822,21 @@ command.  The operations available for trees are listed below.
     switch a list of sorted nodes is returned but the actual of the
     nodes is unchanged.
 
-*treeName* **tag add** *tag* ?\ *node* ... ?
-  Adds the tag to one of more nodes. *Tag* is an arbitrary string
+*treeName* **tag add** *tagName* ?\ *node* ... ?
+  Adds the tag to one of more nodes. *TagName* is an arbitrary string
   that can not start with a number.
 
-*treeName* **tag delete** *tag* ?\ *node* ... ?
+*treeName* **tag delete** *tagName* ?\ *node* ... ?
   Deletes the tag from one or more nodes.  
 
-*treeName* **tag forget** *tag*
-  Removes the tag *tag* from all nodes.  It's not an error if no
-  nodes are tagged as *tag*.
+*treeName* **tag exists** *tagName* ?\ *node*\ ?
+  Returns whether a tags exists in the tree.  If a *node* argument
+  is present, only if *tagName* is used by *node* is "1" returned,
+  "0" otherwise.
+
+*treeName* **tag forget** *tagName*
+  Removes the tag *tagName* from all nodes.  It's not an error if no
+  nodes are tagged as *tagName*.
 
 *treeName* **tag get** *node* ?\ *pattern* ... ?
   Returns the tag names for a given node.  If one of more pattern
@@ -841,16 +846,16 @@ command.  The operations available for trees are listed below.
   Returns a list of tags used by the tree.  If a *node* argument
   is present, only those tags used by *node* are returned.
 
-*treeName* **tag nodes** *tag*
+*treeName* **tag nodes** *tagName*
   Returns a list of nodes that have the tag.  If no node
-  is tagged as *tag*, then an empty string is returned.
+  is tagged as *tagName*, then an empty string is returned.
 
-*treeName* **tag set** *node* ?\ *tag* ... ?
+*treeName* **tag set** *node* ?\ *tagName* ... ?
   Sets one or more tags for a given node.  Tag names can't start with a
   digit (to distinquish them from node IDs) and can't be a reserved tag
   ("root" or "all").
 
-*treeName* **tag unset** *node* ?\ *tag* ... ?
+*treeName* **tag unset** *node* ?\ *tagName* ... ?
   Removes one or more tags from a given node. Tag names that don't exist 
   or are reserved ("root" or "all") are silently ignored.
 

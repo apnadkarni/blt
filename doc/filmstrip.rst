@@ -195,9 +195,9 @@ command.  The following operations are available for *filmstrip* widgets:
 
   The following widget options are available\:
 
-  **-activegripcolor** *colorName* 
+  **-activegripcolor** *bgName* 
     Specifies the background color of the frame's grip when it is active.
-    *ColorName* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command.  
     The default is "grey90". 
 
@@ -221,9 +221,9 @@ command.  The following operations are available for *filmstrip* widgets:
     **-scrollincrement** options determine how the animation is
     performed. The default is "0".
 
-  **-background** *colorName* 
+  **-background** *bgName* 
     Specifies the default background of the widget including its frames.
-    *ColorName* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command.  The default is "grey85".
     
   **-gripactiverelief** *reliefName* 
@@ -241,8 +241,8 @@ command.  The following operations are available for *filmstrip* widgets:
     **Tk_GetPixels**.  This option may be overridden by the style's
     **-borderwidth** option.  The default is "1".
 
-  **-gripcolor** *colorName*
-    Specifies the default color of grips.  *ColorName* may be a color name or
+  **-gripcolor** *bgName*
+    Specifies the default color of grips.  *BgName* may be a color name or
     the name of a background object created by the **blt::background**
     command. The default is "grey85".
 

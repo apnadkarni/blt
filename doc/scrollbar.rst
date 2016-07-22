@@ -167,15 +167,16 @@ The following operations are available for scrollbar widgets:
     than zero, the value of the **-borderWidth** option is used in its
     place.
 
-  **-highlightbackground** *colorName*
+  **-highlightbackground** *bgName*
     Specifies the color of the traversal highlight region when the
-    graph does not have the input focus.  *ColorName* may be a color name
+    scrollbar does not have the input focus.  *BgName* may be a color name
     or the name of a background object created by the **blt::background**
     command.  The default is "grey85".
+    FIXME
     
-  **-highlightcolor** *colorName*
+  **-highlightcolor** *bgName*
     Specifies the color of the traversal highlight region when *pathName*
-    has input focus.  *ColorName* may be a color name or the name of a
+    has input focus.  *BgName* may be a color name or the name of a
     background object created by the **blt::background** command. The
     default is "black".
 

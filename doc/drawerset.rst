@@ -170,9 +170,9 @@ command.  The following operations are available for *drawerset* widgets:
 
   The following widget options are available\:
 
-  **-activehandlecolor** *colorName* 
+  **-activehandlecolor** *bgName* 
     Specifies the background color of a drawer handles when they are
-    active.  *ColorName* may be a color name or the name of a background
+    active.  *BgName* may be a color name or the name of a background
     object created by the **blt::background** command.  This can be
     overriden by the drawer's **-activehandlecolor** option.  The default
     is "grey90".
@@ -194,9 +194,9 @@ command.  The following operations are available for *drawerset* widgets:
     Indicates to automatically raise drawers when they are opened.  The
     default is "0".
 
-  **-background** *colorName* 
+  **-background** *bgName* 
     Specifies the default background of the widget including its drawers.
-    *ColorName* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command.  The default is "grey85".
     
   **-handleborderwidth** *numPixels* 
@@ -205,9 +205,9 @@ command.  The following operations are available for *drawerset* widgets:
     border drawn around the handle. The value may have any of the forms
     acceptable to **Tk_GetPixels**. The default is "1".
 
-  **-handlecolor** *colorName*
-    Specifies the default color of handles.  *ColorName* may be a color name or
-    the name of a background object created by the **blt::background**
+  **-handlecolor** *bgName*
+    Specifies the default color of handles.  *BgName* may be a color name
+    or the name of a background object created by the **blt::background**
     command. The default is "grey85".
 
   **-handlepad** *numPixels* 
@@ -280,9 +280,9 @@ command.  The following operations are available for *drawerset* widgets:
   *drawerName* may refer to multiple items (for example "all").  *Option* and
   *value* are described below.
 
-  **-activehandlecolor** *colorName* 
+  **-activehandlecolor** *bgName* 
     Specifies the background color of a drawer handles when they are
-    active.  *ColorName* may be a color name or the name of a background
+    active.  *BgName* may be a color name or the name of a background
     object created by the **blt::background** command.  This can be
     overriden by the drawer's **-activehandlecolor** option.  The default
     is "grey90".
@@ -294,10 +294,10 @@ command.  The following operations are available for *drawerset* widgets:
     widget will be drawn such that the top center point of the widget will
     be the top center point of the drawer.  This option defaults to "c".
 
-  **-background** *colorName* 
-    Specifies the default background of the drawer's handle.
-    *ColorName* may be a color name or the name of a background object
-    created by the **blt::background** command.  The default is "grey85".
+  **-background** *bgName* 
+    Specifies the default background of the drawer's handle.  *BgName* may
+    be a color name or the name of a background object created by the
+    **blt::background** command.  The default is "grey85".
 
   **-closecommand** *cmdString* 
     Specifies a TCL command to invoked when the drawer is closed (via the
@@ -348,8 +348,8 @@ command.  The following operations are available for *drawerset* widgets:
 
     The default is "none".
 
-  **-handlecolor** *colorName*
-    Specifies the default color of handles.  *ColorName* may be a color
+  **-handlecolor** *bgName*
+    Specifies the default color of handles.  *BgName* may be a color
     name or the name of a background object created by the
     **blt::background** command. The default is "grey85".
 

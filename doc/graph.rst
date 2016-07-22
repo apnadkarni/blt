@@ -138,9 +138,9 @@ GRAPH OPERATIONS
   **-aspect** *aspectRatio*
     Force a fixed aspect ratio of width/height, a floating point number.
 
-  **-background** *colorName*
+  **-background** *bgName*
     Specifies the background color of the widget. This includes the margins
-    and legend, but not the plotting area.  *ColorName* may be a color name
+    and legend, but not the plotting area.  *BgName* may be a color name
     or the name of a background object created by the **blt::background**
     command.  The default is "grey85".
 
@@ -193,18 +193,19 @@ GRAPH OPERATIONS
     Specifies the height of widget. *NumPixels* may have any of the forms
     acceptable to **Tk_GetPixels**. The default is "4i".
 
-  **-highlightbackground** *colorName*
+  **-highlightbackground** *bgName*
     Specifies the color of the traversal highlight region when the
-    graph does not have the input focus.  *ColorName* may be a color name
+    graph does not have the input focus.  *BgName* may be a color name
     or the name of a background object created by the **blt::background**
     command.  The default is "grey85".
 
-  **-highlightcolor** *colorName*
+  **-highlightcolor** *bgName*
     Specifies the color of the traversal highlight region when the
-    graph has input focus.   *ColorName* may be a color name
+    graph has input focus.   *BgName* may be a color name
     or the name of a background object created by the **blt::background**
     command. The default is "black".
-
+    FIXME
+    
   **-highlightthickness** *numPixels*
     Specifies a non-negative value for the width of the highlight rectangle
     to drawn around the outside of the widget.  *NumPixels* may have any of
@@ -247,8 +248,8 @@ GRAPH OPERATIONS
        Consider elements that are not hidden.  When an element is hidden,
        the graph will be automatically rescaled.
        
-  **-plotbackground**  *colorName*
-    Specifies the background color of the plotting area.  *ColorName* may
+  **-plotbackground**  *bgName*
+    Specifies the background color of the plotting area.  *BgName* may
     be a color name or the name of a background object created by the
     **blt::background** command. The default is "white".
 
@@ -617,7 +618,7 @@ The resource class is "Axis".  The resource names are the names of the axes
   then for each pair, the axis option *option* is set to *value*.  The
   following options are valid for axes.
 
-  **-activebackground** *colorName*
+  **-activebackground** *bgName*
 
   **-activeforeground** *colorName*
 
@@ -626,7 +627,7 @@ The resource class is "Axis".  The resource names are the names of the axes
      
   **-autorange** *windowSize*
 
-  **-background** *colorName*
+  **-background** *bgName*
 
   **-bindtags** *tagsList*
     Specifies the binding tags for the axis.  *TagsList* is a list of
@@ -1692,11 +1693,12 @@ The following operations are valid for the legend.
   *option* is set to *value*.  The following options are valid for the
   legend.
 
-  **-activebackground**  *colorName*
+  **-activebackground**  *bgName*
     Sets the background color for active legend entries.  All legend entries
     marked active (see the legend **activate** operation) are drawn using
     this background color.
-
+    FIXME
+    
   **-activeborderwidth**  *numPixels*
     Sets the width of the 3-D border around the outside edge of the active
     legend entries.  The default is "2".
@@ -1739,10 +1741,11 @@ The following operations are valid for the legend.
       drawn such that the top center point of the rectangular region occupied
       by the legend will be at the positioning point.
 
-  **-background**  *colorName*
+  **-background**  *bgName*
     Sets the background color of the legend. If *colorName* is "", the legend
     background with be transparent.
-
+    FIXME
+    
   **-bindtags**  *tagList*
     Specifies the binding tags for legend entries.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
@@ -1793,7 +1796,7 @@ The following operations are valid for the legend.
     both the top and bottom of the entry are padded evenly.  The default is
     "2".
 
-  **-nofocusselectbackground**  *colorName*
+  **-nofocusselectbackground**  *bgName*
 
   **-nofocusselectforeground**  *colorName*
 
@@ -1837,7 +1840,7 @@ The following operations are valid for the legend.
 
   **-rows**  *numRows*
 
-  **-selectbackground**  *colorName*
+  **-selectbackground**  *bgName*
 
   **-selectcommand**  *cmdString*
 
@@ -2365,7 +2368,7 @@ The following operations are available for markers.
 
   **-anchor**  *anchorName*
 
-  **-background**  *colorName*
+  **-background**  *bgName*
     Same as the **-fill** option.
 
   **-bindtags**  *tagList*
@@ -2393,8 +2396,8 @@ The following operations are available for markers.
     element's **show** operation).  If *elemName* is "", the marker is
     always drawn.  The default is "".
 
-  **-fill**  *colorName*
-    Sets the background color of the bitmap.  If *colorName* is the empty
+  **-fill**  *bgName*
+    Sets the background color of the bitmap.  If *bgName* is the empty
     string, no background will be transparent.  The default background
     color is "".
 

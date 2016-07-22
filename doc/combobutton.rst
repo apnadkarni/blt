@@ -141,8 +141,8 @@ command.  The following operations are available for *combobutton* widgets:
     this indicates that the widget should defer to its parent for cursor
     specification.  The default is "".
 
-  **-disabledbackground** *colorName* 
-    Specifies the background of *pathName* when it is disabled.  *ColorName*
+  **-disabledbackground** *bgName* 
+    Specifies the background of *pathName* when it is disabled.  *BgName*
     may be a color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
 
@@ -163,15 +163,15 @@ command.  The following operations are available for *combobutton* widgets:
     *numPixels* is 0, then the height is computed from the size of the
     text. The default is "0".
 
-  **-highlightbackground** *colorName*
+  **-highlightbackground** *BgName*
     Specifies the color of the traversal highlight region when the
-    graph does not have the input focus.  *ColorName* may be a color name
+    graph does not have the input focus.  *BgName* may be a color name
     or the name of a background object created by the **blt::background**
     command.  The default is "grey85".
 
-  **-highlightcolor** *colorName*
+  **-highlightcolor** *bgName*
     Specifies the color of the traversal highlight region when *pathName*
-    has input focus.  *ColorName* may be a color name or the name of a
+    has input focus.  *BgName* may be a color name or the name of a
     background object created by the **blt::background** command. The
     default is "black".
 
@@ -215,9 +215,9 @@ command.  The following operations are available for *combobutton* widgets:
     when the menu is posted. If *cmdString* is "", no command is invoked.
     The default is "".
 
-  **-postedbackground** *colorName*
+  **-postedbackground** *bgName*
     Specifies the background color of *pathName* when its menu is posted.
-    *ColorName* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command. The default is "skyblue4".
 
   **-postedforeground** *colorName*

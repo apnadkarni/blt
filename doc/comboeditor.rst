@@ -158,9 +158,9 @@ command.  The following operations are available for *comboeditor* widgets:
 
   The following widget options are available\:
 
-  **-background** *colorName* 
+  **-background** *bgName* 
     Specifies the background color of the editor.  This only affects the
-    rectangular area not covered by the scrollbars.  *ColorName* may be a
+    rectangular area not covered by the scrollbars.  *BgName* may be a
     color name or the name of a background object created by the
     **blt::background** command.  The default is "grey85".
     
@@ -293,8 +293,8 @@ command.  The following operations are available for *comboeditor* widgets:
     Specifies to text to edit. Setting this option resets the undo and
     redo buffers. The default is "".
 
-  **-textbackground** *colorName* 
-    Specifies the background color of the text area.  *ColorName* may be a
+  **-textbackground** *bgName* 
+    Specifies the background color of the text area.  *BgName* may be a
     color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
 

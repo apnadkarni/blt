@@ -253,9 +253,10 @@ The following operations are available for *htext* widgets:
 
   The following options are valid for the htext widget.
 
-  **-background** *colorName*
-    Sets the background to *colorName*.  This default is "white".
-
+  **-background** *bgName*
+    Sets the background to *bgName*.  This default is "white".
+    FIXME
+    
   **-cursor** *cursor*
     Specifies the cursor.  The default cursor is "pencil".
 

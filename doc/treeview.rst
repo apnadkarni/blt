@@ -530,7 +530,7 @@ command.  The following operation are available for *treeview* widgets:
   case the command returns an empty string.  *Option* and *value* are
   described below.
 
-  **-activetitlebackground** *colorName*
+  **-activetitlebackground** *bgName*
 
   **-activetitleforeground** *colorName*
 
@@ -629,9 +629,10 @@ command.  The following operation are available for *treeview* widgets:
   **-title** *string*
     Sets the title for *columnName*.  The default is "".
 
-  **-titlebackground** *colorName* 
+  **-titlebackground** *bgName* 
     Sets the background color of the column title.  The default is "black".
-
+    FIXME
+    
   **-titleborderwidth** *numPixels*
     Sets the width of the 3-D border around the column title.  The
     **-titlerelief** option determines if a border is to be drawn.  The
@@ -722,10 +723,11 @@ command.  The following operation are available for *treeview* widgets:
   the given value(s); in this case the command returns an empty string.
   *Option* and *value* are described below.
 
-  **-activebackground** *colorName*
+  **-activebackground** *bgName*
     Sets the background color for active entries.  A node is active when
     the mouse passes over its entry or using the **activate** operation.
-
+    FIXME
+    
   **-activeforeground** *colorName*
     Sets the foreground color of the active node.  A node is active when
     the mouse passes over its entry or using the **activate** operation.
@@ -743,9 +745,10 @@ command.  The following operation are available for *treeview* widgets:
     If *boolean* is true, allow nodes with duplicate pathnames when
     inserting new nodes.  Otherwise flag an error.  The default is "no".
 
-  **-background** *colorName*
+  **-background** *bgName*
     Sets the background color of the widget.  The default is "white".
-
+    FIXME
+    
   **-borderwidth** *numPixels*
     Sets the width of the 3-D border around the outside edge of the widget.
     The **-relief** option determines if the border is to be drawn.  The
@@ -821,14 +824,16 @@ command.  The following operation are available for *treeview* widgets:
     If *boolean* is true, it indicates that no entry for the root node
     should be displayed.  The default is "0".
 
-  **-highlightbackground**  *colorName*
+  **-highlightbackground**  *bgName*
     Specifies the normal color of the traversal highlight region when the
     widget does not have the input focus.
-
-  **-highlightcolor** *colorName*
+    FIXME
+    
+  **-highlightcolor** *bgName*
     Specifies the color of the traversal highlight rectangle when the
     widget has the input focus.  The default is "black".
-
+    FIXME
+    
   **-highlightthickness** *numPixels*
     Specifies the width of the highlight rectangle indicating when the
     widget has input focus. The value may have any of the forms acceptable
@@ -903,10 +908,11 @@ command.  The following operation are available for *treeview* widgets:
 
     This is the default is "hierbox".
 
-  **-selectbackground** *colorName*
+  **-selectbackground** *bgName*
     Sets the background color selected node entries.  The default is
     "#ffffea".
-
+    FIXME
+    
   **-selectborderwidth** *numPixels*
     Sets the width of the raised 3-D border drawn around the labels of
     selected entries. The default is "0".

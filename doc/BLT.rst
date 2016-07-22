@@ -387,7 +387,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ..  _blt::combolist: combolist.htm
 ..  _blt::combomenu: combomenu.htm
 ..  _blt::combomenu: combomenu.htm
-..  _blt::combotree: combotree.htm
+..  _blt::combotree: combotree.pdf
 ..  _blt::contour: contour.htm
 ..  _blt::csv: csv.htm
 ..  _blt::cutbuffer: cutbuffer.htm

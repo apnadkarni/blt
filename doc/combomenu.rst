@@ -323,8 +323,8 @@ command.  The following operations are available for *combomenu* widgets:
     Specifies the color of the accelerator of menu items that are
     disabled. The default is "grey90".
 
-  **-disabledbackground** *colorName* 
-    Specifies the background of menu items that are disabled.  *ColorName*
+  **-disabledbackground** *bgName* 
+    Specifies the background of menu items that are disabled.  *BgName*
     may be a color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
 

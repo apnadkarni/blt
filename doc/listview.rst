@@ -192,12 +192,11 @@ command.  The following operations are available for *listview* widgets:
 
   The following widget options are available\:
 
-  **-activebackground** *colorName* 
+  **-activebackground** *bgName* 
     Specifies the default color of the text when the item is active.
-    *ColorName* may be a color name or the name of a background object
-    created by the **blt::background** command.  This option may be
-    overridden by the style's **-activebackground** option.
-    The default is "white". 
+    *BgName* may be a color name or the name of a background object created
+    by the **blt::background** command.  This option may be overridden by
+    the style's **-activebackground** option.  The default is "white".
 
   **-activeforeground** *colorName* 
     Specifies the default color of the label when the item is active.  This
@@ -213,9 +212,9 @@ command.  The following operations are available for *listview* widgets:
     overridden by the style's **-activerelief** option. The default is
     "flat".
     
-  **-background** *colorName* 
-    Specifies the default background of the items.  *ColorName* may be a
-    color name or the name of a background object created by the
+  **-background** *bgName* 
+    Specifies the default background of the items.  *BgName* may be a color
+    name or the name of a background object created by the
     **blt::background** command.  This option may be overridden the style's
     **-background** option. The default is "white".
     
@@ -230,12 +229,11 @@ command.  The following operations are available for *listview* widgets:
     by clicking on the item or using the **select** operation.  If
     *cmdString* is "", then no command is invoked. The default is "".
 
-  **-disabledbackground** *colorName* 
-    Specifies the default background of items that are disabled.
-    *ColorName* may be a color name or the name of a background object
-    created by the **blt::background** command.  This option may be
-    overridden the style's **-disabledbackground** option.  The default is
-    "grey90".
+  **-disabledbackground** *bgName* 
+    Specifies the default background of items that are disabled.  *BgName*
+    may be a color name or the name of a background object created by the
+    **blt::background** command.  This option may be overridden the style's
+    **-disabledbackground** option.  The default is "grey90".
 
   **-disabledforeground** *colorName* 
     Specifies the default color of the text of items that are
@@ -277,18 +275,19 @@ command.  The following operations are available for *listview* widgets:
     calculated height of the list.  If *numPixels* is "", then the height
     of the list is calculated based on all the items.  The default is "".
 
-  **-highlightbackground** *colorName*
+  **-highlightbackground** *bgName*
     Specifies the color of the traversal highlight region when *pathName*
-    does not have the input focus.  *ColorName* may be a color name or the
+    does not have the input focus.  *BgName* may be a color name or the
     name of a background object created by the **blt::background** command.
     The default is "grey85".
 
-  **-highlightcolor** *colorName*
+  **-highlightcolor** *bgName*
     Specifies the color of the traversal highlight region when *pathName*
-    has input focus.  *ColorName* may be a color name or the name of a
+    has input focus.  *BgName* may be a color name or the name of a
     background object created by the **blt::background** command. The
     default is "black".
-
+    FIXME
+    
   **-highlightthickness** *numPixels*
     Specifies a non-negative value for the width of the highlight rectangle
     to drawn around the outside of the widget.  *NumPixels* may have any of
@@ -340,9 +339,9 @@ command.  The following operations are available for *listview* widgets:
     **ridge**, **solid**, and **groove**. For example, "raised" means the
     *pathName* should appear to protrude.  The default is "raised".
 
-  **-selectbackground** *colorName* 
+  **-selectbackground** *bgName* 
     Specifies the default background of items that are selected.
-    *ColorName* may be a color name or the name of a background object
+    *BgName* may be a color name or the name of a background object
     created by the **blt::background** command.  This option may be
     overridden by the style's **-selectbackground** option.  The default is
     "grey90".
@@ -790,8 +789,8 @@ command.  The following operations are available for *listview* widgets:
   case the command returns an empty string.  *Option* and *value* are
   described below.
 
-  **-activebackground** *colorName* 
-    Specifies the background of the item when it is active.  *ColorName*
+  **-activebackground** *bgName* 
+    Specifies the background of the item when it is active.  *BgName*
     may be a color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
 
@@ -807,10 +806,10 @@ command.  The following operations are available for *listview* widgets:
     **groove**. For example, "raised" means the item should appear to
     protrude.  The default is "flat".
     
-  **-background** *colorName* 
-    Specifies the background of the item.  *ColorName* may be a color
-    name or the name of a background object created by the
-    **blt::background** command.  The default is "white".
+  **-background** *bgName* 
+    Specifies the background of the item.  *BgName* may be a color name or
+    the name of a background object created by the **blt::background**
+    command.  The default is "white".
     
   **-borderwidth** *numPixels* 
     Specifies the borderwidth of the item.  *NumPixels* is a non-negative
@@ -818,9 +817,9 @@ command.  The following operations are available for *listview* widgets:
     value may have any of the forms accept able to **Tk_GetPixels**.  The
     default is "1".
 
-  **-disabledbackground** *colorName* 
-    Specifies the background of the item when it is disabled.  *ColorName*
-    may be a color name or the name of a background object created by the
+  **-disabledbackground** *bgName* 
+    Specifies the background of the item when it is disabled.  *BgName* may
+    be a color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
 
   **-disabledforeground** *colorName* 
@@ -841,11 +840,12 @@ command.  The following operations are available for *listview* widgets:
     **ridge**, **solid**, and **groove**. For example, "raised" means the
     item should appear to protrude.  The default is "flat".
 
-  **-selectbackground** *colorName* 
+  **-selectbackground** *bgName* 
     Specifies the background color of the item when it is selected.
-    *ColorName* may be a color name or the name of a background object
-    created by the **blt::background** command.  The default is "skyblue4".
-
+    *BgName* may be a color name or the name of a background object created
+    by the **blt::background** command.  The default is "skyblue4".
+    FIXME
+    
   **-selectforeground** *colorName* 
     Specifies the color of the text of the item when it is selected.  The
     default is "white".
