@@ -870,16 +870,16 @@ static int
 GetSequenceIndexFromObj(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr,
                         int *indexPtr)
 {
-    int index, numPicts;
+    int index, length;
     const char *string;
     char c;
     
     string = Tcl_GetString(objPtr);
     c = string[0];
-    numPicts = Blt_Chain_GetLength(imgPtr->chain) - 1;
+    length = Blt_Chain_GetLength(imgPtr->chain);
     index = -1;
     if ((c == 'e') && (strcmp(string, "end") == 0)) {
-        index = numPicts - 1;
+        index = length - 1;
     } else if ((c == 'p') && (strcmp(string, "previous") == 0)) {
         GetPreviousImageIndex(imgPtr, imgPtr->current - 1, &index);
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
@@ -887,7 +887,7 @@ GetSequenceIndexFromObj(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr,
     } else if ((c == 'c') && (strcmp(string, "current") == 0)) {
         index = imgPtr->current;
     } else if (Tcl_GetIntFromObj(interp, objPtr, &index) == TCL_OK) {
-        if ((index < 0) || (index >= numPicts)) {
+        if ((index < 0) || (index >= length)) {
             Tcl_AppendResult(interp, "invalid image index \"", 
                              Tcl_GetString(objPtr), "\"", (char *)NULL);
             return TCL_ERROR;

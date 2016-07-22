@@ -152,7 +152,7 @@ struct _Blt_Chain;
 #define Blt_Picture_Delay(p)     ((p)->delay)
 
 #define Blt_Picture_IsDirty(p)   ((p)->flags & BLT_PIC_DIRTY)
-#define Blt_Picture_IsOpaque(p)  (((p)->flags & BLT_PIC_COMPOSITE) == 0)
+#define Blt_Picture_IsOpaque(p)  (((p)->flags & (BLT_PIC_COMPOSITE|BLT_PIC_MASK)) == 0)
 #define Blt_Picture_IsMasked(p)  ((p)->flags & BLT_PIC_MASK) 
 #define Blt_Picture_IsBlended(p) ((p)->flags & BLT_PIC_COMPOSITE)
 #define Blt_Picture_IsColor(p)   (((p)->flags & BLT_PIC_GREYSCALE) == 0)

@@ -10,52 +10,61 @@ BLT is available from
 This release has been built and tested with the following Tcl/Tk
 versions:
 
-	Tcl/Tk 8.0
-	Tcl/Tk 8.1
-	Tcl/Tk 8.2
-	Tcl/Tk 8.3 
-        Tcl/Tk 8.4 thru 8.6
+        Tcl/Tk 8.0 thru 8.6
 
 Tcl 7.6/Tk 4.2 isn't supported any more.  If you need Tcl 7.x, use the
 2.4z release.
 
 What is BLT? 
 
-  BLT is an extension to Tcl/Tk.  It adds plotting widgets (X-Y graph, 
-  barchart, stripchart), a powerful geometry manager, a new canvas 
-  item, and several new commands to Tk.  
+  BLT is an extension that adds new widgets and commands to Tcl/Tk.  It
+  adds plotting widgets (X-Y graph, barchart, stripchart), a powerful
+  geometry manager, a new canvas item, tree and table data objects.
 
   Plotting widgets:  
 
-    graph, barchart, stripchart
+    blt::graph, blt::barchart, blt::stripchart
 		BLT has X-Y graph, barchart, and stripchart widgets that are
 		both easy to use and customize.  All the widgets work with
 		BLT vector data objects, which makes it easy to manage data.
  
   Tree viewer
-
-    treeview 	Displays a general ordered tree which may be built 
+  
+    blt::treeview 	Displays a general ordered tree which may be built 
 		on-the-fly or all at once.
 
-    tree 	Tree data object.  
-
+    blt::tree 	Tree data object.  
+    blt::datatable
+    blt::tableview
+    
   Tab set:
 
-    tabset	Can be used either as a tab notebook or simple tabset.
+    blt::tabset	Can be used either as a tab notebook or simple tabset.
 		Multi-tiered and/or scrolled tabsets are available.
 		Notebook pages can be torn-off into separate windows and 
 		later put back. 
     
-  Geometry Manager:  
+  Geometry Managers:  
 
-    table	A table-based geometry manager. Lets you specify widget
+    blt::table	A table-based geometry manager. Lets you specify widget
 	      	layouts by row and column positions in the table. Unlike the
 		packer or grid, you can finely control and constrain window
 		sizes.
 
+    blt::paneset
+    blt::filmstrip
+    blt::drawerset
+    blt::scrollset
+
+    blt::combobutton
+    blt::comboeditor
+    blt::comboentry
+    blt::combomenu
+    blt::combotree
+    
   Vector Data Object:
 
-    vector	Lets you manage a vector of floating point values in a
+    blt::vector	Lets you manage a vector of floating point values in a
 		high-level fashion.  Vectors inter-operate seamlessly with 
 		the plotting widgets. The graphs will automatically redraw 
 		themselves when the vector data changes. Vector's components 
@@ -64,13 +73,13 @@ What is BLT?
 
   Background Program Execution:
 
-    bgexec	Like Tcl's "exec ... &", but collects the output, error, and 
+    blt::bgexec	Like Tcl's "exec ... &", but collects the output, error, and 
 		status of the detached UNIX subprocesses.  Sets a Tcl variable 
 		upon completion.  
 
   Busy Command:
 
-    busy	For preventing user-interactions when the application is
+    blt::busy	For preventing user-interactions when the application is
 		busy.  Manages an invisible "busy" window which prevents
 		further user interactions (keyboard, mouse, button, etc.).
 		Also you can provide a busy cursor that temporarily 
@@ -93,14 +102,14 @@ What is BLT?
 
   Drag & Drop Facility:
 
-    drag&drop	Adds drag-n-drop capabilities to Tk.  It uses "send"-style 
+    blt::drag&drop	Adds drag-n-drop capabilities to Tk.  It uses "send"-style 
 		communication between drag-drop sources and targets.  The 
 		result is a much more powerful drag-and-drop mechanism than 
 		is available with OpenLook or Motif.  
 
   Bitmap Command:
 
-    bitmap	Lets you read and write bitmaps from Tcl.  You can define
+    blt::bitmap	Lets you read and write bitmaps from Tcl.  You can define
 		bitmaps from ordinary text strings.  Bitmaps can also be
 		scaled and rotated.  For example, you can create a button
 		with rotated text by defining a bitmap from a text string
@@ -109,22 +118,22 @@ What is BLT?
 
   Miscellaneous Commands:
 
-    winop	Basic window operations. You can raise, lower, map, or, 
+    blt::winop	Basic window operations. You can raise, lower, map, or, 
 		unmap windows.  Other operations let you move the pointer
 		or take photo image snapshots of Tk widgets.
 
-    bltdebug	Lets you trace the execution of Tcl commands and procedures.
+    blt::debug	Lets you trace the execution of Tcl commands and procedures.
 		Prints out each Tcl command before it's executed.  
 
-    watch	Lets you specify Tcl procedures to be run before and/or
+    blt::watch	Lets you specify Tcl procedures to be run before and/or
 		after every Tcl command.  May be used for logging, tracing, 
 		profiling, or debugging or Tcl code.
 
-    spline	Computes a spline fitting a set of data points (x and y 
+    blt::spline	Computes a spline fitting a set of data points (x and y 
 		vectors) and produces a vector of the interpolated images 
 		(y-coordinates) at a given set of x-coordinates.
 
-    htext	A simple hypertext widget. Allows text and Tk widgets to
+    blt::htext	A simple hypertext widget. Allows text and Tk widgets to
 		be combined in a scroll-able text window.  Any Tk widget 
 		can be embedded and used to form hyper-links.  Other 
 		options allow for selections and text searches.

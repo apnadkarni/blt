@@ -590,7 +590,7 @@ Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer,
 
 int 
 Blt_DBuffer_AppendBase85(DBuffer *destPtr, const unsigned char *buffer, 
-        size_t bufsize) 
+                         size_t bufsize) 
 {
     size_t oldLength, numBytes, length;
     unsigned char *destBytes;

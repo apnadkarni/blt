@@ -1163,7 +1163,8 @@ TgaToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     picture = NULL;
     if ((tga.width > 0) && (tga.height > 0)) {
         picture = TgaGetImageData(&tga);
-        if ((tga.bitsPerPixel == 16) || (tga.bitsPerPixel == 32)) {
+        if ((tga.bitsPerPixel == 16) || (tga.bitsPerPixel == 32) ||
+            (Blt_Picture_Flags(picture) & BLT_PIC_MASK)) {
             Blt_PremultiplyColors(picture);
         }
         /* Set associated colors flag.  */

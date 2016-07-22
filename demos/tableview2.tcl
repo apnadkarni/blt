@@ -5,12 +5,15 @@ package require BLT
 
 set spinner [image create picture]
 set files [glob -nocomplain ./images/spinner*.png]
-foreach file [lsort -dictionary $files] {
-    set img [image create picture -file $file]
-    $spinner list append $img
-    image delete $img 
+set numFiles [llength $files]
+set img [image create picture]
+puts $numFiles
+$spinner sequence length $numFiles
+for { set i 0 } { $i < $numFiles } { incr i } {
+    $img configure -file [lindex $files $i]
+    $spinner sequence put $i $img
 }
-$spinner list delete 0 1
+image delete $img 
 
 lappend iconpath ~/hubs/neeshub/indeed/src/icons/filetype/22x22
 

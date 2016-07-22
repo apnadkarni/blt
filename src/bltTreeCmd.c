@@ -658,7 +658,10 @@ static Blt_SwitchSpec pathCreateSwitches[] =
 typedef struct {
     Blt_TreeNode root;                  /* Starting node of path. */
     Tcl_Obj *pathSepObjPtr;             /* Path separator. */
+    unsigned int flags;
 } PathPrintSwitches;
+
+#define PATH_NO_LEADING_SEPARATOR            (1<<3)
 
 static Blt_SwitchSpec pathPrintSwitches[] = 
 {
@@ -666,6 +669,8 @@ static Blt_SwitchSpec pathPrintSwitches[] =
         Blt_Offset(PathPrintSwitches, root),  0, 0, &nodeSwitch},
     {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
         Blt_Offset(PathPrintSwitches, pathSepObjPtr), 0}, 
+    {BLT_SWITCH_BITMASK,  "-noleadingseparator", "", (char *)NULL,
+        Blt_Offset(PathPrintSwitches, flags),  0, PATH_NO_LEADING_SEPARATOR},
     {BLT_SWITCH_END}
 };
 
@@ -4702,6 +4707,9 @@ PathPrintOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (switches.pathSepObjPtr != NULL) {
         flags = TREE_INCLUDE_ROOT;
         pathSeparator = Tcl_GetString(switches.pathSepObjPtr);
+    }
+    if (switches.flags & PATH_NO_LEADING_SEPARATOR) {
+        flags = 0;
     }
     Blt_Tree_NodeRelativePath(switches.root, node, pathSeparator, flags, &ds);
     Tcl_DStringResult(interp, &ds);

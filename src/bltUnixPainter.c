@@ -145,6 +145,35 @@ typedef struct {
 
 static Tcl_FreeProc FreePainter;
 
+#ifdef notdef
+static void
+PrintFlags(unsigned int flags)
+{
+    if (flags & BLT_PIC_GREYSCALE) {
+        fprintf(stderr, " greyscale");
+    }
+    if (flags & BLT_PIC_PREMULT_COLORS) {
+        fprintf(stderr, " premultcolors");
+    }
+    if (flags & BLT_PIC_DIRTY) {
+        fprintf(stderr, " dirty");
+    }
+    if (flags & BLT_PIC_COMPOSITE) {
+         fprintf(stderr, " composite");
+    }
+    if (flags & BLT_PIC_MASK) {
+         fprintf(stderr, " mask");
+    }
+    if (flags & BLT_PIC_UNINITIALIZED) {
+         fprintf(stderr, " uninitialized");
+    }
+    if (flags & BLT_PAINTER_DITHER) {
+         fprintf(stderr, " dither");
+    }
+    fprintf(stderr, "\n");
+}
+#endif
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1746,8 +1775,9 @@ Blt_PaintPicture(
     int x1, y1, x2, y2;
 
 #ifdef notdef
-    fprintf(stderr, "Blt_PaintPicture: drawable=%x, picture=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d picture flags=%x\n",
-            drawable, picture, x, y, w, h, dx, dy, Blt_Picture_Flags(picture));
+    fprintf(stderr, "Blt_PaintPicture: drawable=%x, picture=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d picture flags=%x, opaque=%x\n",
+            drawable, picture, x, y, w, h, dx, dy, Blt_Picture_Flags(picture),
+            Blt_Picture_IsOpaque(picture));
 #endif
     /* 
      * Nothing to draw. The selected region is outside of the picture.
