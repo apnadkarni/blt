@@ -2970,13 +2970,13 @@ MapGridlines(Axis *sliderPtr)
 
                 subValue = value + (sliderPtr->major.step * 
                                     t2Ptr->values[j]);
-                if (InRange(subValue, &sliderPtr->axisRange)) {
+                if (InRange(subValue, &sliderPtr->tickRange)) {
                     MakeGridLine(sliderPtr, subValue, s2);
                     s2++;
                 }
             }
         }
-        if (InRange(value, &sliderPtr->axisRange)) {
+        if (InRange(value, &sliderPtr->tickRange)) {
             MakeGridLine(sliderPtr, value, s1);
             s1++;
         }
@@ -3049,7 +3049,7 @@ GetAxisGeometry(Slider *sliderPtr)
             if (sliderPtr->labelOffset) {
                 x2 += sliderPtr->major.step * 0.5;
             }
-            if (!InRange(x2, &sliderPtr->axisRange)) {
+            if (!InRange(x2, &sliderPtr->tickRange)) {
                 continue;
             }
             labelPtr = MakeLabel(sliderPtr, x);
@@ -4419,11 +4419,11 @@ LimitsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     double min, max;
 
     if (IsLogScale(sliderPtr)) {
-        min = EXP10(sliderPtr->axisRange.min);
-        max = EXP10(sliderPtr->axisRange.max);
+        min = EXP10(sliderPtr->tickRange.min);
+        max = EXP10(sliderPtr->tickRange.max);
     } else {
-        min = sliderPtr->axisRange.min;
-        max = sliderPtr->axisRange.max;
+        min = sliderPtr->tickRange.min;
+        max = sliderPtr->tickRange.max;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(min));
@@ -5362,7 +5362,7 @@ TimeAxis(Axis *sliderPtr, double min, double max)
          (DEFINED(sliderPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&sliderPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&sliderPtr->tickRange, axisMin, axisMax);
 
     /* Now calculate the minor tick step and number. */
 

@@ -265,7 +265,7 @@ struct _Axis {
                                          * mapped to this axis. This is
                                          * used to auto-scale the axis in
                                          * "tight" mode. */
-    AxisRange axisRange;                /* Smallest and largest major tick
+    AxisRange tickRange;                /* Smallest and largest major tick
                                          * values for the axis.  The tick
                                          * values lie outside the range of
                                          * data values.  This is used to

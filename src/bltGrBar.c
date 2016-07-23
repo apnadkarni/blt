@@ -1661,8 +1661,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
         int height;
         double right, left, top, bottom;
 
-        if (((x[i] - barWidth) > elemPtr->axes.x->axisRange.max) ||
-            ((x[i] + barWidth) < elemPtr->axes.x->axisRange.min)) {
+        if (((x[i] - barWidth) > elemPtr->axes.x->tickRange.max) ||
+            ((x[i] + barWidth) < elemPtr->axes.x->tickRange.min)) {
             continue;                   /* Abscissa is out of range of the
                                          * x-axis. */
         }
@@ -1915,7 +1915,7 @@ GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
     } else {
         return TCL_ERROR;
     }
-    rangePtr = &elemPtr->zAxisPtr->axisRange;
+    rangePtr = &elemPtr->zAxisPtr->tickRange;
     *valuePtr = (value - rangePtr->min) / rangePtr->range;
     return TCL_OK;
 }

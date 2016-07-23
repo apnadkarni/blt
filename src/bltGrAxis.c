@@ -411,9 +411,8 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(Axis, reqScrollMax),  ALL_GRAPHS, &bltLimitOption},
     {BLT_CONFIG_CUSTOM, "-scrollmin", "scrollMin", "ScrollMin", (char *)NULL, 
         Blt_Offset(Axis, reqScrollMin), ALL_GRAPHS, &bltLimitOption},
-    {BLT_CONFIG_DOUBLE, "-shiftby", "shiftBy", "ShiftBy",
-        DEF_SHIFTBY, Blt_Offset(Axis, shiftBy),
-        ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_DOUBLE, "-shiftby", "shiftBy", "ShiftBy", DEF_SHIFTBY,
+        Blt_Offset(Axis, shiftBy), ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-showticks", "showTicks", "ShowTicks",
         DEF_SHOWTICKLABELS, Blt_Offset(Axis, flags), 
         ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT,
@@ -425,7 +424,7 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_SUBDIVISIONS, Blt_Offset(Axis, reqNumMinorTicks), ALL_GRAPHS},
     {BLT_CONFIG_ANCHOR, "-tickanchor", "tickAnchor", "Anchor",
         DEF_TICK_ANCHOR, Blt_Offset(Axis, reqTickAnchor), ALL_GRAPHS},
-    {BLT_CONFIG_CUSTOM, "-tickdirection", "tickDirection", "TickDirectoin",
+    {BLT_CONFIG_CUSTOM, "-tickdirection", "tickDirection", "TickDirection",
         DEF_TICK_DIRECTION, Blt_Offset(Axis, flags),
         ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, &tickDirectionOption},
     {BLT_CONFIG_FONT, "-tickfont", "tickFont", "Font",
@@ -1666,7 +1665,7 @@ Blt_InvHMap(Axis *axisPtr, double x)
     if (axisPtr->decreasing) {
         x = 1.0 - x;
     }
-    value = (x * axisPtr->axisRange.range) + axisPtr->axisRange.min;
+    value = (x * axisPtr->tickRange.range) + axisPtr->tickRange.min;
     if (IsLogScale(axisPtr)) {
         value = EXP10(value);
     }
@@ -1696,7 +1695,7 @@ Blt_InvVMap(Axis *axisPtr, double y) /* Screen coordinate */
     if (axisPtr->decreasing) {
         y = 1.0 - y;
     }
-    value = ((1.0 - y) * axisPtr->axisRange.range) + axisPtr->axisRange.min;
+    value = ((1.0 - y) * axisPtr->tickRange.range) + axisPtr->tickRange.min;
     if (IsLogScale(axisPtr)) {
         value = EXP10(value);
     }
@@ -1724,7 +1723,7 @@ Blt_HMap(Axis *axisPtr, double x)
         x = log10(FABS(x));
     }
     /* Map graph coordinate to normalized coordinates [0..1] */
-    x = (x - axisPtr->axisRange.min) * axisPtr->axisRange.scale;
+    x = (x - axisPtr->tickRange.min) * axisPtr->tickRange.scale;
     if (axisPtr->decreasing) {
         x = 1.0 - x;
     }
@@ -1752,7 +1751,7 @@ Blt_VMap(Axis *axisPtr, double y)
         y = log10(FABS(y));
     }
     /* Map graph coordinate to normalized coordinates [0..1] */
-    y = (y - axisPtr->axisRange.min) * axisPtr->axisRange.scale;
+    y = (y - axisPtr->tickRange.min) * axisPtr->tickRange.scale;
     if (axisPtr->decreasing) {
         y = 1.0 - y;
     }
@@ -2118,7 +2117,7 @@ LogAxis(Axis *axisPtr, double min, double max)
     axisPtr->minor.ticks.initial = axisPtr->minor.ticks.step = minorStep;
     axisPtr->minor.ticks.numSteps = numMinor;
     axisPtr->minor.ticks.scaleType = SCALE_LOG;
-    SetAxisRange(&axisPtr->axisRange, tickMin, tickMax);
+    SetAxisRange(&axisPtr->tickRange, tickMin, tickMax);
     /* Never generate minor ticks. */
 }
 
@@ -2235,7 +2234,7 @@ LinearAxis(Axis *axisPtr, double min, double max)
          (DEFINED(axisPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
 
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
@@ -2853,8 +2852,8 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
 {
     double min, max;
     int x1, y1, x2, y2;
-    min = axisPtr->axisRange.min;
-    max = axisPtr->axisRange.max;
+    min = axisPtr->tickRange.min;
+    max = axisPtr->tickRange.max;
     if (IsLogScale(axisPtr)) {
         min = EXP10(min);
         max = EXP10(max);
@@ -2881,8 +2880,8 @@ MakeAxisLine(Axis *axisPtr, int line, Segment2d *s)
 {
     double min, max;
 
-    min = axisPtr->axisRange.min;
-    max = axisPtr->axisRange.max;
+    min = axisPtr->tickRange.min;
+    max = axisPtr->tickRange.max;
     if (IsLogScale(axisPtr)) {
         min = EXP10(min);
         max = EXP10(max);
@@ -2955,7 +2954,7 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
                 axisPtr->minor.ticks.initial = left.value;
                 for (minor = FirstMinorTick(axisPtr); minor.isValid; 
                      minor = NextMinorTick(axisPtr)) {
-                    if (InRange(minor.value, &axisPtr->axisRange)) {
+                    if (InRange(minor.value, &axisPtr->tickRange)) {
                         /* Add minor tick. */
                         MakeTick(axisPtr, minor.value, infoPtr->t2, 
                                 infoPtr->axisLength, s);
@@ -2963,7 +2962,7 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
                     }
                 }        
             }
-            if (InRange(left.value, &axisPtr->axisRange)) {
+            if (InRange(left.value, &axisPtr->tickRange)) {
                 double mid;
 
                 /* Add major tick. This could be the last major tick. */
@@ -2974,7 +2973,7 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
                 if ((axisPtr->labelOffset) && (right.isValid)) {
                     mid = (right.value - left.value) * 0.5;
                 }
-                if (InRange(mid, &axisPtr->axisRange)) {
+                if (InRange(mid, &axisPtr->tickRange)) {
                     TickLabel *labelPtr;
 
                     labelPtr = Blt_Chain_GetValue(link);
@@ -3643,13 +3642,13 @@ MapGridlines(Axis *axisPtr)
             axisPtr->minor.ticks.initial = left.value;
             for (minor = FirstMinorTick(axisPtr); minor.isValid; 
                  minor = NextMinorTick(axisPtr)) {
-                if (InRange(minor.value, &axisPtr->axisRange)) {
+                if (InRange(minor.value, &axisPtr->tickRange)) {
                     MakeGridLine(axisPtr, minor.value, s2);
                     s2++;
                 }
             }
         }
-        if (InRange(left.value, &axisPtr->axisRange)) {
+        if (InRange(left.value, &axisPtr->tickRange)) {
             MakeGridLine(axisPtr, left.value, s1);
             s1++;
         }
@@ -3718,7 +3717,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
             if ((axisPtr->labelOffset) && (right.isValid)) {
                 mid = (right.value - left.value) * 0.5;
             }
-            if (!InRange(mid, &axisPtr->axisRange)) {
+            if (!InRange(mid, &axisPtr->tickRange)) {
                 continue;
             }
             labelPtr = MakeLabel(axisPtr, left.value);
@@ -4760,11 +4759,11 @@ LimitsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_ResetAxes(graphPtr);
     }
     if (IsLogScale(axisPtr)) {
-        min = EXP10(axisPtr->axisRange.min);
-        max = EXP10(axisPtr->axisRange.max);
+        min = EXP10(axisPtr->tickRange.min);
+        max = EXP10(axisPtr->tickRange.max);
     } else {
-        min = axisPtr->axisRange.min;
-        max = axisPtr->axisRange.max;
+        min = axisPtr->tickRange.min;
+        max = axisPtr->tickRange.max;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(min));
@@ -5991,11 +5990,11 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
         }
         if (minFmt[0] != '\0') {
             minPtr = minString;
-            Blt_FormatString(minString, 200, minFmt, axisPtr->axisRange.min);
+            Blt_FormatString(minString, 200, minFmt, axisPtr->tickRange.min);
         }
         if (maxFmt[0] != '\0') {
             maxPtr = maxString;
-            Blt_FormatString(maxString, 200, maxFmt, axisPtr->axisRange.max);
+            Blt_FormatString(maxString, 200, maxFmt, axisPtr->tickRange.max);
         }
         if (axisPtr->decreasing) {
             char *tmp;
@@ -6071,7 +6070,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
             maxFmt = Tcl_GetString(objv[1]);
         }
         if (*maxFmt != '\0') {
-            Blt_FormatString(string, 200, maxFmt, axisPtr->axisRange.max);
+            Blt_FormatString(string, 200, maxFmt, axisPtr->tickRange.max);
             Blt_GetTextExtents(axisPtr->tickFont, 0, string, -1, &textWidth,
                 &textHeight);
             if ((textWidth > 0) && (textHeight > 0)) {
@@ -6091,7 +6090,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
             }
         }
         if (*minFmt != '\0') {
-            Blt_FormatString(string, 200, minFmt, axisPtr->axisRange.min);
+            Blt_FormatString(string, 200, minFmt, axisPtr->tickRange.min);
             Blt_GetTextExtents(axisPtr->tickFont, 0, string, -1, &textWidth,
                 &textHeight);
             if ((textWidth > 0) && (textHeight > 0)) {
@@ -6438,7 +6437,7 @@ YearTicks(Axis *axisPtr, double min, double max)
          (DEFINED(axisPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
 
     axisPtr->major.ticks.timeUnits = TIME_YEARS;
     axisPtr->major.ticks.fmt = "%Y";
@@ -6475,7 +6474,7 @@ MonthTicks(Axis *axisPtr, double min, double max)
          (DEFINED(axisPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
     if (axisPtr->major.ticks.values != NULL) {
         Blt_Free(axisPtr->major.ticks.values);
     }
@@ -6551,7 +6550,7 @@ WeekTicks(Axis *axisPtr, double min, double max)
          (DEFINED(axisPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
 
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
@@ -6601,7 +6600,7 @@ DayTicks(Axis *axisPtr, double min, double max)
          (DEFINED(axisPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
 
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
@@ -6666,7 +6665,7 @@ HourTicks(Axis *axisPtr, double min, double max)
          (DEFINED(axisPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
@@ -6721,7 +6720,7 @@ MinuteTicks(Axis *axisPtr, double min, double max)
          (DEFINED(axisPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
     if (axisPtr->major.ticks.values != NULL) {
         Blt_Free(axisPtr->major.ticks.values);
     }
@@ -6785,7 +6784,7 @@ SecondTicks(Axis *axisPtr, double min, double max)
          (DEFINED(axisPtr->reqMax)))) {
         axisMax = max;
     }
-    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.step = step;

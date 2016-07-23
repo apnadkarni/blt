@@ -69,7 +69,7 @@
 #define IMAGE_PHOTO             (1<<7)
 
 /* Map graph coordinates to normalized coordinates [0..1] */
-#define NORMALIZE(A,x)  (((x) - (A)->axisRange.min) * (A)->axisRange.scale)
+#define NORMALIZE(A,x)  (((x) - (A)->tickRange.min) * (A)->tickRange.scale)
 
 #define DEF_MARKER_ANCHOR       "center"
 #define DEF_MARKER_BACKGROUND   RGB_WHITE

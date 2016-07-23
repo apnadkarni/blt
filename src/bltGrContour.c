@@ -1863,7 +1863,8 @@ GetScreenPoints(ContourElement *elemPtr)
      */
     vertices = Blt_AssertMalloc(sizeof(Vertex) * elemPtr->z.numValues);
     Blt_GraphExtents(elemPtr, &exts);
-    rangePtr = &zAxisPtr->axisRange;
+    /* Don't use tick range, because axis for z values is always tight. */
+    rangePtr = &zAxisPtr->valueRange;
     
     meshVertices = Blt_Mesh_GetVertices(elemPtr->mesh, &numMeshVertices);
     for (i = 0; i < numMeshVertices; i++) {
@@ -1883,9 +1884,6 @@ GetScreenPoints(ContourElement *elemPtr)
         /* Map graph z-coordinate to normalized coordinates [0..1] */
         z = elemPtr->z.values[i];
         z = (z - rangePtr->min)  * rangePtr->scale;
-        if ((IsLogScale(elemPtr->zAxisPtr)) && (z != 0.0)) {
-            z = log10(z);
-        } 
         v->z = z;
         if (zAxisPtr->palette != NULL) {
             v->color.u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette,
@@ -1899,10 +1897,13 @@ GetScreenPoints(ContourElement *elemPtr)
     hull = Blt_Mesh_GetHull(elemPtr->mesh, &numHullPts);
     for (i = 0; i < numHullPts; i++) {
         TracePoint *p;
+        Point2d p1;
         int j;
 
         j = hull[i];
-        p = NewPoint(elemPtr, meshVertices[j].x, meshVertices[j].y, j);
+        p1 = Blt_Map2D(graphPtr, meshVertices[j].x, meshVertices[j].y,
+                      &elemPtr->axes);
+        p = NewPoint(elemPtr, p1.x, p1.y, j);
         AppendPoint(tracePtr, p);
     }
 }    
@@ -2374,7 +2375,8 @@ MapIsoline(Isoline *isoPtr)
     
     elemPtr = isoPtr->elemPtr;
     zAxisPtr = elemPtr->zAxisPtr;
-    rangePtr = &zAxisPtr->axisRange;
+    /* Don't use tick range, because axis for z values is always tight. */
+    rangePtr = &zAxisPtr->valueRange;
     if (isoPtr->flags & ABSOLUT) {
         if (fabs(rangePtr->range) < DBL_EPSILON) {
             return;
@@ -2985,6 +2987,8 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     Region2d exts;
     int i;
     int x, y, w, h;
+    Axis *axisPtr;
+    double min, max;
     
     Blt_GraphExtents(elemPtr, &exts);
     w = (exts.right - exts.left) + 1;
@@ -2995,14 +2999,25 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     elemPtr->picture = Blt_CreatePicture(w, h);
     Blt_BlankPicture(elemPtr->picture, 0x0);
     x = exts.left, y = exts.top;
+    axisPtr = elemPtr->zAxisPtr;
+    /* Get min and max of axis as normalized values (between 0 and 1)  */
+    min = (axisPtr->min - axisPtr->valueRange.min) / axisPtr->valueRange.range;
+    max = (axisPtr->max - axisPtr->valueRange.min) / axisPtr->valueRange.range;
     for (i = 0; i < elemPtr->numTriangles; i++) {
         Triangle *t;
 
         t = elemPtr->triangles + i;
         /* Test if min or max of triangle is outside of axis range. */
-        if ((t->min < elemPtr->zAxisPtr->min) ||
-            (t->max > elemPtr->zAxisPtr->max)) {
+        if ((t->min > max) || (t->max < min)) {
+#ifdef notdef
+            fprintf(stderr,
+ "triangle %d is outside axis range tmin=%g, tmax=%g min=%g max=%g amin=%g amax=%g rmin=%g rmax=%g rrange=%g\n",
+                    i, t->min, t->max, min, max, axisPtr->min, axisPtr->max,
+                    axisPtr->valueRange.min, axisPtr->valueRange.max,
+                    axisPtr->valueRange.range);
+#endif
             continue;
+
         }
         DrawTriangle(elemPtr, elemPtr->picture, t, x, y);
     }

@@ -14,7 +14,7 @@ set mesh [blt::mesh create cloud -x $xv -y $yv]
 .g element create sine -values $zv -mesh $mesh 
 .g element isoline steps sine $numIsolines
 .g axis configure z -palette rainbow -colorbarthickness 15 -margin right \
-    -tickdirecton out -rotate -90 -title "Units"  
+    -tickdirection out -rotate -90 -title "Units"  
 .g legend configure -hide yes
 proc UpdateColors {} {
     global usePaletteColors

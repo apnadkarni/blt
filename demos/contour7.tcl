@@ -14,11 +14,10 @@ $y2 expr { $y * $y}
 set z {}
 foreach  i [$y2 values] {
     foreach  j [$x2 values] k [$x values] {
-	lappend z [expr $k * exp(-($i + $j)) + 0.01 * rand()*0.4]
+	lappend z [expr ($k * exp(-($i + $j)) + 0.01 * rand()*0.4) * 1000]
     }
 }
 
-#.g axis configure z -logscale yes
 
 set mesh [blt::mesh create regular -y {0 100 100} -x {0 100 100}]
 
@@ -27,6 +26,7 @@ blt::contour .g -highlightthickness 0
 .g element isoline steps myContour 10 
 .g legend configure -hide yes
 .g axis configure z -palette $palette
+.g axis configure z -logscale yes
 proc UpdateColors {} {
      global usePaletteColors
      if { $usePaletteColors } {
