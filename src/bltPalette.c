@@ -1595,8 +1595,7 @@ InterpolateOpacity(Palette *palPtr, double value, unsigned int *alphaPtr)
 }
 
 static int 
-InterpolateColorAndOpacity(Palette *palPtr, double value,
-                           Blt_Pixel *colorPtr)
+InterpolateColorAndOpacity(Palette *palPtr, double value, Blt_Pixel *colorPtr)
 {
     Blt_Pixel color;
 

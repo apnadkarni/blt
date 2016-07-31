@@ -75,19 +75,19 @@ proc Fix { what } {
 }
 
 array set show {
-    hull 0
+    boundary 0
     values 0
     symbols 0
     isolines 0
     colormap 0
     symbols 0
-    edges 0
+    wireframe 0
 }
 
-blt::tk::checkbutton .hull -text "Boundary" -variable show(hull) \
-    -command "Fix hull"
-blt::tk::checkbutton .edges -text "Edges" -variable show(edges) \
-    -command "Fix edges"
+blt::tk::checkbutton .boundary -text "Boundary" -variable show(boundary) \
+    -command "Fix boundary"
+blt::tk::checkbutton .wireframe -text "Wireframe" -variable show(wireframe) \
+    -command "Fix wireframe"
 blt::tk::checkbutton .colormap -text "Colormap"  \
     -variable show(colormap) -command "Fix colormap"
 blt::tk::checkbutton .isolines -text "Isolines" \
@@ -104,10 +104,10 @@ blt::tk::checkbutton .logscale -text "Log scale" \
 blt::table . \
     0,0 .label -fill x \
     1,0 .g -fill both -rowspan 9 \
-    1,1 .hull -anchor w \
+    1,1 .boundary -anchor w \
     2,1 .colormap -anchor w \
     3,1 .isolines -anchor w \
-    4,1 .edges -anchor w \
+    4,1 .wireframe -anchor w \
     5,1 .symbols -anchor w \
     6,1 .values -anchor w \
     7,1 .palette -anchor w \

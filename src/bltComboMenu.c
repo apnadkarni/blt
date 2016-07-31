@@ -497,8 +497,6 @@ typedef struct  {
 
     /* Cascade menu. */
     Tcl_Obj *menuObjPtr;                /* Name of the sub-menu. */
-    Tcl_Obj *tagsObjPtr;
-
     Tcl_Obj *tipObjPtr;
 
     short int textWidth, textHeight;

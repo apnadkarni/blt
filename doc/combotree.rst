@@ -52,8 +52,8 @@ Scrollbars are specified for *combotree* by the **-xscrollbar** and
 specified width or height is less than the computed size of the combotree,
 the appropiate scrollbar is automatically displayed.
 
-MENU ITEMS
-----------
+TREE ENTRIES
+------------
 
 A menu is a widget that displays a collection of item arranged in one or
 more columns.  There exist several different types of items (specified by
@@ -135,10 +135,10 @@ Menu items are displayed with up to four separate fields.
   clicking on item will post yet another menu and is displayed to the right
   of the accelerator.
 
-REFERENCING MENU ITEMS
-----------------------
+REFERENCING ENTRIES
+-------------------
 
-Menu items may be referred to by either their index, label, or tag.
+Entries may be referred to by either their node index, label, or tag.
 
 *index*
   The number of the menu item.  Indices start from 0.  The index of an
@@ -219,23 +219,25 @@ command.  The following operations are available for *combotree* widgets:
 *pathName* **bbox** *entryName* 
   Returns of list of four numbers describing the bounding box of *entryName*.
   The numbers represent the x and y root coordinates of two opposite
-  corners of the box. *EntryName* may be a label, index, or tag, but may not
-  represent more than one entry.
+  corners of the box.  *EntryName* may be a label, index, or tag, but may
+  not represent more than one entry.
 
-*pathName* **button activate** *tagOrId*
-  Designates the node given by *tagOrId* as active.  
-  When a node is active its entry is drawn using its active icon 
-  (see the **-activeicon** option). 
-  Note that there can be only one active entry at a time.
-  The special id **active** indicates the currently active node.
-
+*pathName* **button activate** *entryName*
+  Designates the button associated with *entryName* as active.  When an entry's
+  button is active it is drawn using its active colors (see the button's
+  **-activeforground** and **-activebackground** options).  Note that there
+  can be only one active entry at a time.  *EntryName* is a node id, label or a
+  tag but may not reference multiple entries.  For example the special id
+  **active** indicates the currently active entry.
+  
 *pathName* **button bind** *tagName* ?\ *sequence*\ ? ?\ *cmdString*\ ?
-  Associates *cmdString* with *tagName* such that whenever the event sequence
-  given by *sequence* occurs for an button of a node entry with this tag,
-  *cmdString* will be invoked.  The syntax is similar to the **bind** command
-  except that it operates on **treeview** buttons, rather than widgets. See
-  the **bind** manual entry for complete details on *sequence* and the
-  substitutions performed on *cmdString* before invoking it.
+  Associates *cmdString* with *tagName* such that whenever the event
+  sequence given by *sequence* occurs for an button of a node entry with
+  this tag, *cmdString* will be invoked.  The syntax is similar to the
+  **bind** command except that it operates on **treeview** buttons, rather
+  than widgets. See the **bind** manual entry for complete details on
+  *sequence* and the substitutions performed on *cmdString* before invoking
+  it.
 
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *sequence* and *tagName*.  If the first
@@ -252,7 +254,7 @@ command.  The following operations are available for *combotree* widgets:
   configure** operation described below.
 
 *pathName* **button configure** ?\ *option*\ ? ?\ *value*\ ? ?\ *option* *value* ... ?
-  Query or modify the configuration options of the button.  If no *option*
+  Query or modify the button configuration options.  If no *option*
   is specified, returns a list describing all of the available options for
   the button (see **Tk_ConfigureInfo** for information on the format of
   this list).  If *option* is specified with no *value*, then the command
@@ -311,11 +313,12 @@ command.  The following operations are available for *combotree* widgets:
   operation below.
 
 *pathName* **close** ?\ **-recurse**\ ? *entryName* ... ?
-  Closes the entry specified by *entryName*.  In addition, if a TCL
-  script was specified by the **-closecommand** option, it is
-  invoked.  If the entry is already closed, this command has no effect.
-  If the **-recurse** flag is present, each child node is
-  recursively closed.
+  Closes the entry specified by *entryName*.  In addition, if a TCL script
+  was specified by the **-closecommand** option, it is invoked.
+  *EntryName* may be a label, index, or tag, and may refer to more than one
+  entry (such as "all"). If the **-recurse** flag is present, each child
+  node is recursively closed.  If *entryName* is already closed, the TCL
+  command is not invoked.
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
   Queries or modifies the configuration options of the widget.  If no
@@ -768,7 +771,7 @@ command.  The following operations are available for *combotree* widgets:
 *pathName* **deactivate** 
   Redisplays all entries using their normal colors.  This typically is
   used by widget bindings to un-highlight entries as the pointer is
-  moved over the menu. 
+  moved over the tree. 
 
 *pathName* **entry activate** *entryName*
   Sets the active entry to *entryName*.  When an entry is active it is
@@ -788,13 +791,14 @@ command.  The following operations are available for *combotree* widgets:
   format of this list).  If *option* is specified with no *value*, then the
   command returns a list describing the one named option (this list will be
   identical to the corresponding sublist of the value returned if no
-  *option* is specified). *EntryName* is a tag of id, but may not refer to
-  more than one entry.
+  *option* is specified). In this case, *entryName* may be a label, index,
+  or tag, but may not represent more than one entry.  
 
   If one or more *option*-*value* pairs are specified, then the command
   modifies the given entry option(s) to have the given value(s); in this
   case the command returns an empty string.  In this case, *entryName* may
-  refer to more than one entry.  *Option* and *value* are described below:
+  refer to multiple entries (such as "all").  *Option* and *value* are
+  described below:
 
   **-bindtags** *tagList*
     Specifies the binding tags for *entryName*.  *TagList* is a list of
@@ -861,37 +865,92 @@ command.  The following operations are available for *combotree* widgets:
 *pathName* **entry ishidden** *entryName*
   Returns 1 if the node is currently hidden and 0 otherwise.  A node is
   also hidden if any of its ancestor nodes are closed or hidden.
+  *EntryName* may be a node id, label, or tag, but may not represent more
+  than one entry.
 
 *pathName* **entry isopen** *entryName*
   Returns 1 if the node is currently open and 0 otherwise.
+  *EntryName* may be a node id, label, or tag, but may not represent more
+  than one entry.
 
-*pathName* **exists** *item*...
-  Returns the *item* exists in the menu. *Item* may be a label, index, or
-  tag, but may not represent more than one menu item.  Returns "1" is
-  the item exists, "0" otherwise.
+*pathName* **exists** *entryName*
+  Returns the *entryName* exists in the tree.  *EntryName* may be a node
+  id, label, or tag, but may not represent more than one entry. Returns "1"
+  is the entry exists, "0" otherwise.
   
 *pathName* **get** *string* ?\ *switches* ... ?
   Searches for the next menu item that matches *string*.  Returns the
   index of the matching item or "-1" if no match is found.  *Switches* can
   be one of the following:
 
-*pathName* **hide** *item*...
+    
+
+*pathName* **hide** *item* ?\ *switches*\ ? ?\ *entry*\ ... ?
+
+  **-exact**
+  **-glob**
+  **-regexp**
+  **-nonmatching**
+  **-name** *string*
+  **-full** *string*
+  **-data** *string*
+  **--**
+  The **-exact**, **-glob**, and **-regexp** switches indicate both what
+  kind of pattern matching to perform and the pattern.  By default each
+  pattern will be compared with the node label.  You can set more than one
+  of these switches.  If any of the patterns match (logical or), the node
+  matches.  If the **-key** switch is used, it designates the data field to
+  be matched.  *Switches* may be any of the following.
+
+  **-exact** *string*
+    Matches each entry with the label *string*.  
+
+  **-glob** *pattern*
+    Test each entry label against *pattern* using global pattern matching.
+    Matching is done in a fashion similar to that used by the **glob**
+    command.
+
+  **-invert**
+    Select non-matching nodes.  Any node that *doesn't* match the given
+    criteria will be selected.
+
+  **-name** *tagName*
+    Only test nodes that have the tag *tagName*.
+
+  **-regexp** *string*
+    Test each entry label *string* as a regular expression pattern.
+
+  **-tag** *tagName*
+    Only test nodes that have the tag *tagName*.
 
 *pathName* **identify** *entryName* ?\ **-root**\ ? *x* *y*
+  Returns the name of the portion of the entry that the pointer is over.
+  *X* and *y* are the window coordinates of the pointer.  If the **-root**
+  switch is present, then *x* and *y* represent root coordinates. This
+  command returns a string described below.
 
-*pathName* **index** *item* 
-  Returns the index of *item*. *Item* may be a label, index, or tag, but
-  may not represent more than one menu item.  If the item does not
+  **button**
+    The mouse pointer is over the entry's button.
+  **icon**
+    The mouse pointer is over the entry's icon.
+  **label**
+    The mouse pointer is over the entry's label.
+  ""
+    The mouse pointer is not over the entry.
+
+*pathName* **index** *entryName* 
+  Returns the index of *entryName*. *Item* may be a label, index, or tag, but
+  may not represent more than one menu item.  If the entry does not
   exist, "-1" is returned.
   
-*pathName* **nearest** *x* *y*
-  Returns the index of the menu item closest to the coordinates specified.
-  *X* and *y* are root coordinates.
-
+*pathName* **nearest**  ?\ **-root**\ ? *x* *y*
+  Returns the index of the entry closest to the coordinates specified.  *X*
+  and *y* are the window coordinates of the pointer.  If the **-root**
+  switch is present, then *x* and *y* represent root coordinates.  
+  
 *pathName* **open** ?\ **-recurse**\ ? *entryName* 
 
 *pathName* **overbutton** *x* *y* 
-  Indicates if the x and y coordinates specified are over the button region
   for this menu.  *X* and *y* are root coordinates.  This command uses the
   information set by the **post** operation to determine where the button
   region is.  Returns "1" if the coordinate is in the button region, "0"

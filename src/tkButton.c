@@ -464,11 +464,11 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_BUTTON_ACTIVE_BG_MONO, Blt_Offset(Button, activeBg),
         BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK
         | BLT_CONFIG_MONO_ONLY},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "Background",
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "ActiveBackground",
         DEF_BUTTON_ACTIVE_FOREGROUND, Blt_Offset(Button, activeFg),
         BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK
         | BLT_CONFIG_COLOR_ONLY},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "Background",
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "ActiveForeground",
         DEF_BUTTON_ACTIVE_FG_MONO, Blt_Offset(Button, activeFg),
         BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK
         | BLT_CONFIG_MONO_ONLY},
@@ -683,6 +683,19 @@ BLT_EXTERN void TkComputeAnchor (Tk_Anchor anchor, Tk_Window tkwin,
         int *yPtr);
 #endif
 
+static void
+EventuallyRedraw(ClientData clientData)
+{
+    Button *butPtr = clientData;
+
+    if (butPtr->tkwin != NULL) {
+        if (Tk_IsMapped(butPtr->tkwin) && !(butPtr->flags & REDRAW_PENDING)) {
+            Tcl_DoWhenIdle(DisplayButton, (ClientData)butPtr);
+            butPtr->flags |= REDRAW_PENDING;
+        }
+    }
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -702,11 +715,8 @@ ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
 
     if (butPtr->tkwin != NULL) {
         ComputeButtonGeometry(butPtr);
-        if (Tk_IsMapped(butPtr->tkwin) && !(butPtr->flags & REDRAW_PENDING)) {
-            Tcl_DoWhenIdle(DisplayButton, (ClientData)butPtr);
-            butPtr->flags |= REDRAW_PENDING;
-        }
     }
+    EventuallyRedraw(clientData);
 }
 
 
@@ -1277,6 +1287,15 @@ ConfigureButton(
             return TCL_ERROR;
         }
     }
+    if (butPtr->normalBg != NULL) {
+        Blt_Bg_SetChangedProc(butPtr->normalBg, EventuallyRedraw, butPtr);
+    }
+    if (butPtr->activeBg != NULL) {
+        Blt_Bg_SetChangedProc(butPtr->activeBg, EventuallyRedraw, butPtr);
+    }
+    if (butPtr->selectBg != NULL) {
+        Blt_Bg_SetChangedProc(butPtr->selectBg, EventuallyRedraw, butPtr);
+    }
 
     if ((butPtr->defaultState != STATE_ACTIVE)
         && (butPtr->defaultState != STATE_DISABLED)
@@ -1458,11 +1477,7 @@ ConfigureButton(
     /*
      * Lastly, arrange for the button to be redisplayed.
      */
-
-    if (Tk_IsMapped(butPtr->tkwin) && !(butPtr->flags & REDRAW_PENDING)) {
-        Tcl_DoWhenIdle(DisplayButton, (ClientData)butPtr);
-        butPtr->flags |= REDRAW_PENDING;
-    }
+    EventuallyRedraw(butPtr);
     return TCL_OK;
 }
 
@@ -1982,10 +1997,7 @@ ButtonEventProc(ClientData clientData, XEvent *eventPtr)
     return;
 
   redraw:
-    if ((butPtr->tkwin != NULL) && !(butPtr->flags & REDRAW_PENDING)) {
-        Tcl_DoWhenIdle(DisplayButton, (ClientData)butPtr);
-        butPtr->flags |= REDRAW_PENDING;
-    }
+    EventuallyRedraw(butPtr);
 }
 
 /*
@@ -2152,11 +2164,7 @@ ButtonVarProc(
         return NULL;                    /* Already deselected. */
     }
   redisplay:
-    if ((butPtr->tkwin != NULL) && Tk_IsMapped(butPtr->tkwin) && 
-        !(butPtr->flags & REDRAW_PENDING)) {
-        Tcl_DoWhenIdle(DisplayButton, (ClientData)butPtr);
-        butPtr->flags |= REDRAW_PENDING;
-    }
+    EventuallyRedraw(butPtr);
     return NULL;
 }
 
@@ -2215,11 +2223,7 @@ ButtonTextVarProc(
     butPtr->text = Blt_AssertStrdup(value);
     ComputeButtonGeometry(butPtr);
 
-    if ((butPtr->tkwin != NULL) && Tk_IsMapped(butPtr->tkwin)
-        && !(butPtr->flags & REDRAW_PENDING)) {
-        Tcl_DoWhenIdle(DisplayButton, (ClientData)butPtr);
-        butPtr->flags |= REDRAW_PENDING;
-    }
+    EventuallyRedraw(butPtr);
     return (char *) NULL;
 }
 

@@ -73,8 +73,6 @@ typedef struct {
     const char *className;              /* Class name of object. */
 
     Graph *graphPtr;                    /* Graph containing of the object. */
-
-    Tcl_Obj *tagsObjPtr;                /* Binding tags for the object. */
     int deleted;                        /* If non-zero, object has been
                                          * deleted. */
 } GraphObj;

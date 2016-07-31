@@ -116,10 +116,10 @@
                                          * mesh. */
 #define COLORMAP        (1<<13)         /* Fill the triangles of the
                                          * mesh. */
-#define HULL            (1<<14)         /* Draw the convex hull
+#define BOUNDARY        (1<<14)         /* Draw the convex hull
                                          * representing the outer boundary
                                          * of the mesh. */
-#define WIRES           (1<<20)         /* Draw the edges of the triangular
+#define WIREFRAME       (1<<20)         /* Draw the edges of the triangular
                                          * mesh. */
 #define TRIANGLES       (1<<21)         /* Map mesh. */
 #define VALUES          (1<<16)         /* Display the z-values at the
@@ -522,14 +522,6 @@ typedef struct _IsolineIterator {
 } IsolineIterator;
 
 
-BLT_EXTERN Blt_CustomOption bltContourPenOption;
-BLT_EXTERN Blt_CustomOption bltLimitOption;
-BLT_EXTERN Blt_CustomOption bltValuesOption;
-BLT_EXTERN Blt_CustomOption bltValuePairsOption;
-BLT_EXTERN Blt_CustomOption bltXAxisOption;
-BLT_EXTERN Blt_CustomOption bltYAxisOption;
-BLT_EXTERN Blt_CustomOption bltZAxisOption;
-
 static Blt_OptionFreeProc FreeColor;
 static Blt_OptionParseProc ObjToColor;
 static Blt_OptionPrintProc ColorToObj;
@@ -552,38 +544,49 @@ static Blt_CustomOption meshOption = {
     ObjToMesh, MeshToObj, FreeMesh, (ClientData)0
 };
 
+static Blt_OptionFreeProc FreeTagsProc;
+static Blt_OptionParseProc ObjToTagsProc;
+static Blt_OptionPrintProc TagsToObjProc;
+Blt_CustomOption isoTagsOption = {
+    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+};
+
+BLT_EXTERN Blt_CustomOption bltContourPenOption;
+BLT_EXTERN Blt_CustomOption bltElementTagsOption;
+BLT_EXTERN Blt_CustomOption bltLimitOption;
+BLT_EXTERN Blt_CustomOption bltValuePairsOption;
+BLT_EXTERN Blt_CustomOption bltValuesOption;
+BLT_EXTERN Blt_CustomOption bltXAxisOption;
+BLT_EXTERN Blt_CustomOption bltYAxisOption;
+BLT_EXTERN Blt_CustomOption bltZAxisOption;
+
 #define DEF_ACTIVE_PEN          "activeContour"
 #define DEF_AXIS_X              "x"
 #define DEF_AXIS_Y              "y"
 #define DEF_AXIS_Z              "z"
 #define DEF_BACKGROUND          "navyblue"
-#define DEF_SHOW_COLORMAP       "1"
-#define DEF_SHOW_EDGES          "0"
-#define DEF_SHOW_HULL           "1"
-#define DEF_SHOW_ISOLINES       "1"
-#define DEF_SHOW_SYMBOLS        "0"
-#define DEF_SHOW_VALUES         "0"
 #define DEF_FOREGROUND          "blue"
 #define DEF_HIDE                "no"
+#define DEF_ISOLINE_ACTIVE_PEN  "activeContour"
+#define DEF_ISOLINE_HIDE        "no"
+#define DEF_ISOLINE_LABEL       (char *)NULL
+#define DEF_ISOLINE_MAX         ""
+#define DEF_ISOLINE_MIN         ""
+#define DEF_ISOLINE_PEN         (char *)NULL
+#define DEF_ISOLINE_SHOW        "yes"
+#define DEF_ISOLINE_SYMBOLS     "0"
+#define DEF_ISOLINE_TAGS        "all"
+#define DEF_ISOLINE_VALUE       "0.0"
 #define DEF_LABEL_RELIEF        "flat"
 #define DEF_MAX_SYMBOLS         "0"
 #define DEF_MESH                (char *)NULL
-#define DEF_NORMAL_STIPPLE      ""
-#define DEF_OPACITY             "100.0"
-#define DEF_RELIEF              "raised"
-#define DEF_SCALE_SYMBOLS       "yes"
-#define DEF_SHOW                "yes"
-#define DEF_SHOW_ERRORBARS      "both"
-#define DEF_STATE               "normal"
-#define DEF_TAGS                "all"
-#define DEF_WIDTH               "0.0"
-
 #define DEF_MESH_COLOR          RGB_BLACK
 #define DEF_MESH_DASHES         (char *)NULL
 #define DEF_MESH_LINEWIDTH      "1"
 #define DEF_MESH_OFFDASH_COLOR  (char *)NULL
-
-#define DEF_PEN_ACTIVE_COLOR    RGB_BLUE
+#define DEF_NORMAL_STIPPLE      ""
+#define DEF_OPACITY             "100.0"
+#define DEF_PEN_ACTIVE_COLOR    RGB_RED
 #define DEF_PEN_COLOR           RGB_BLACK
 #define DEF_PEN_DASHES          (char *)NULL
 #define DEF_PEN_DASHES          (char *)NULL
@@ -596,18 +599,34 @@ static Blt_CustomOption meshOption = {
 #define DEF_PEN_OUTLINE_WIDTH   "1"
 #define DEF_PEN_PIXELS          "0.05i"
 #define DEF_PEN_SHOW_VALUES     "no"
-#define DEF_PEN_SYMBOL          "circle"
+#define DEF_PEN_SYMBOL          "none"
+#define DEF_PEN_ACTIVE_SYMBOL   "circle"
 #define DEF_PEN_TYPE            "line"
 #define DEF_PEN_VALUE_ANCHOR    "s"
 #define DEF_PEN_VALUE_ANGLE     (char *)NULL
 #define DEF_PEN_VALUE_COLOR     RGB_BLACK
 #define DEF_PEN_VALUE_FONT      STD_FONT_NUMBERS
 #define DEF_PEN_VALUE_FORMAT    "%g"
+#define DEF_RELIEF              "raised"
+#define DEF_SCALE_SYMBOLS       "yes"
+#define DEF_SHOW                "yes"
+#define DEF_SHOW_BOUNDARY       "0"
+#define DEF_SHOW_COLORMAP       "1"
+#define DEF_SHOW_ERRORBARS      "both"
+#define DEF_SHOW_ISOLINES       "1"
+#define DEF_SHOW_SYMBOLS        "0"
+#define DEF_SHOW_VALUES         "0"
+#define DEF_SHOW_WIREFRAME      "0"
+#define DEF_STATE               "normal"
+#define DEF_TAGS                "all"
+#define DEF_WIDTH               "0.0"
 
 static Blt_ConfigSpec penSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_COLOR, 
         Blt_Offset(ContourPen, traceColor), NORMAL_PEN, &colorOption},
+    {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_ACTIVE_COLOR, 
+        Blt_Offset(ContourPen, traceColor), ACTIVE_PEN, &colorOption},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
         Blt_Offset(ContourPen, traceDashes), BLT_CONFIG_NULL_OK | ALL_PENS},
     {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_PEN_FILL_COLOR, 
@@ -627,8 +646,11 @@ static Blt_ConfigSpec penSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-pixels", "pixels", "Pixels", DEF_PEN_PIXELS, 
         Blt_Offset(ContourPen, symbol.size), ALL_PENS},
     {BLT_CONFIG_CUSTOM, "-symbol", "symbol", "Symbol", DEF_PEN_SYMBOL, 
-        Blt_Offset(ContourPen, symbol), BLT_CONFIG_DONT_SET_DEFAULT | ALL_PENS, 
-        &symbolOption},
+        Blt_Offset(ContourPen, symbol),
+        BLT_CONFIG_DONT_SET_DEFAULT | NORMAL_PEN, &symbolOption},
+    {BLT_CONFIG_CUSTOM, "-symbol", "symbol", "Symbol", DEF_PEN_ACTIVE_SYMBOL, 
+        Blt_Offset(ContourPen, symbol),
+        BLT_CONFIG_DONT_SET_DEFAULT | ACTIVE_PEN, &symbolOption},
     {BLT_CONFIG_STRING, "-type", (char *)NULL, (char *)NULL, DEF_PEN_TYPE, 
         Blt_Offset(Pen, typeId), ALL_PENS | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ANCHOR, "-valueanchor", "valueAnchor", "ValueAnchor",
@@ -653,8 +675,7 @@ static Blt_ConfigSpec contourSpecs[] =
     {BLT_CONFIG_CUSTOM, "-activepen", "activePen", "ActivePen",
         DEF_ACTIVE_PEN, Blt_Offset(ContourElement, activePenPtr),
         BLT_CONFIG_NULL_OK, &bltContourPenOption},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
-        Blt_Offset(ContourElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_COLOR, 
         Blt_Offset(ContourElement, builtinPen.traceColor), NORMAL_PEN, 
         &colorOption},
@@ -744,23 +765,26 @@ static Blt_ConfigSpec contourSpecs[] =
         Blt_Offset(ContourElement, builtinPen.valueStyle.angle), 0},
     {BLT_CONFIG_CUSTOM, "-weights", "weights", "Weights", (char *)NULL, 
         Blt_Offset(ContourElement, w), 0, &bltValuesOption},
-    {BLT_CONFIG_BITMASK, "-showhull", "showHull", "ShowHull", DEF_SHOW_HULL,
-        Blt_Offset(ContourElement, flags), 0, (Blt_CustomOption *)HULL},
+    {BLT_CONFIG_BITMASK, "-showboundary", "showBoundary", "ShowBoundary",
+        DEF_SHOW_BOUNDARY, Blt_Offset(ContourElement, flags), 0,
+        (Blt_CustomOption *)BOUNDARY},
     {BLT_CONFIG_BITMASK, "-showcolormap", "showColormap", "ShowColormap",
         DEF_SHOW_COLORMAP, Blt_Offset(ContourElement, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLORMAP},
     {BLT_CONFIG_BITMASK, "-showisolines", "showIsolines", "ShowIsolines",
         DEF_SHOW_ISOLINES, Blt_Offset(ContourElement, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ISOLINES},
-    {BLT_CONFIG_BITMASK, "-showedges", "showEdges", "ShowEdges",
-        DEF_SHOW_EDGES, Blt_Offset(ContourElement, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)WIRES},
     {BLT_CONFIG_BITMASK, "-showsymbols", "showSymbols", "ShowSymbols",
         DEF_SHOW_SYMBOLS, Blt_Offset(ContourElement, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SYMBOLS},
     {BLT_CONFIG_BITMASK, "-showvalues", "showValues", "ShowValues",
         DEF_SHOW_VALUES, Blt_Offset(ContourElement, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)VALUES},
+    {BLT_CONFIG_BITMASK, "-showwireframe", "showWireframe", "ShowWireframe",
+        DEF_SHOW_WIREFRAME, Blt_Offset(ContourElement, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)WIREFRAME},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &bltElementTagsOption},
     {BLT_CONFIG_CUSTOM, "-values", "values", "Values", (char *)NULL, 
         Blt_Offset(ContourElement, z), 0, &bltValuesOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -769,26 +793,32 @@ static Blt_ConfigSpec contourSpecs[] =
 static Blt_ConfigSpec isolineSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-activepen", "activePen", "ActivePen",
-        DEF_ACTIVE_PEN, Blt_Offset(Isoline, activePenPtr), 
+        DEF_ISOLINE_ACTIVE_PEN, Blt_Offset(Isoline, activePenPtr), 
         BLT_CONFIG_NULL_OK, &bltContourPenOption},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
-        Blt_Offset(Isoline, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_ISOLINE_HIDE, 
          Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)HIDDEN},
-    {BLT_CONFIG_STRING, "-label", "label", "Label", (char *)NULL, 
+    {BLT_CONFIG_STRING, "-label", "label", "Label", DEF_ISOLINE_LABEL, 
         Blt_Offset(Isoline, label), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CUSTOM, "-pen", "pen", "Pen", (char *)NULL, 
+    {BLT_CONFIG_CUSTOM, "-pen", "pen", "Pen", DEF_ISOLINE_PEN, 
         Blt_Offset(Isoline, penPtr), BLT_CONFIG_NULL_OK, 
         &bltContourPenOption},
-    {BLT_CONFIG_CUSTOM, "-min", "min", "Min", "", Blt_Offset(Isoline, reqMin), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &bltLimitOption},
-    {BLT_CONFIG_CUSTOM, "-max", "max", "Max", "", Blt_Offset(Isoline, reqMax), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &bltLimitOption},
-    {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_SHOW, 
+    {BLT_CONFIG_CUSTOM, "-min", "min", "Min", DEF_ISOLINE_MIN,
+        Blt_Offset(Isoline, reqMin), BLT_CONFIG_DONT_SET_DEFAULT,
+        &bltLimitOption},
+    {BLT_CONFIG_CUSTOM, "-max", "max", "Max", DEF_ISOLINE_MAX,
+        Blt_Offset(Isoline, reqMax), BLT_CONFIG_DONT_SET_DEFAULT,
+        &bltLimitOption},
+    {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_ISOLINE_SHOW, 
          Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)HIDDEN},
-    {BLT_CONFIG_DOUBLE, "-value", "value", "Value", "0.0",
+    {BLT_CONFIG_BITMASK, "-symbols", "symbols", "Symbols", DEF_ISOLINE_SYMBOLS,
+        Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)SYMBOLS}, 
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_ISOLINE_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &isoTagsOption},
+    {BLT_CONFIG_DOUBLE, "-value", "value", "Value", DEF_ISOLINE_VALUE,
         Blt_Offset(Isoline, reqValue), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
@@ -1236,6 +1266,129 @@ MeshToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 }
 
 /* Isoline procedures. */
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SetTag --
+ *
+ *      Associates a tag with a given isoline.  Individual isoline tags are
+ *      stored in hash tables keyed by the tag name.  Each table is in turn
+ *      stored in a hash table keyed by the isoline pointer.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects:
+ *      A tag is stored for a particular isoline.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SetTag(Tcl_Interp *interp, Isoline *isoPtr, const char *tagName)
+{
+    long dummy;
+    
+    if (strcmp(tagName, "all") == 0) {
+        return TCL_OK;                  /* Don't need to create reserved
+                                         * tag. */
+    }
+    if (tagName[0] == '\0') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+                (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (tagName[0] == '-') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, 
+                "\" can't start with a '-'.", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    Blt_Tags_AddItemToTag(&isoPtr->elemPtr->isoTags, tagName, isoPtr);
+    return TCL_OK;
+}
+
+/*ARGSUSED*/
+static void
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
+{
+    Isoline *isoPtr = (Isoline *)widgRec;
+
+    Blt_Tags_ClearTagsFromItem(&isoPtr->elemPtr->isoTags, isoPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToTagsProc --
+ *
+ *      Convert the string representation of a list of tags.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The tags are
+ *      save in the widget.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    Isoline *isoPtr = (Isoline *)widgRec;
+    int i;
+    const char *string;
+    int objc;
+    Tcl_Obj **objv;
+
+    Blt_Tags_ClearTagsFromItem(&isoPtr->elemPtr->isoTags, isoPtr);
+    string = Tcl_GetString(objPtr);
+    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+        return TCL_OK;
+    }
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i++) {
+        SetTag(interp, isoPtr, Tcl_GetString(objv[i]));
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagsToObjProc --
+ *
+ *      Returns the tags associated with the element.
+ *
+ * Results:
+ *      The names representing the tags are returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
+{
+    Isoline *isoPtr = (Isoline *)widgRec;
+    Tcl_Obj *listObjPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Blt_Tags_AppendTagsToObj(&isoPtr->elemPtr->isoTags, isoPtr, listObjPtr);
+    return listObjPtr;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -1700,12 +1853,17 @@ AddSegment(ContourElement *elemPtr, float x1, float y1, float x2, float y2,
     TraceSegment *s;
 
     s = Blt_Pool_AllocItem(elemPtr->segmentPool, sizeof(TraceSegment));
+    memset(s, 0, sizeof(TraceSegment));
     s->x1 = x1;
     s->y1 = y1;
     s->x2 = x2;
     s->y2 = y2;
     s->next = NULL;
     s->flags = 0;
+#ifdef notdef
+    fprintf(stderr, "adding segment %ld px=%.15g py=%.15g qx=%.15g qy=%.15g\n",
+            isoPtr->numSegments, s->x1, s->y1, s->x2, s->y2);
+#endif
     if (isoPtr->segments == NULL) {
         isoPtr->segments = s;
     } else {
@@ -1863,8 +2021,7 @@ GetScreenPoints(ContourElement *elemPtr)
      */
     vertices = Blt_AssertMalloc(sizeof(Vertex) * elemPtr->z.numValues);
     Blt_GraphExtents(elemPtr, &exts);
-    /* Don't use tick range, because axis for z values is always tight. */
-    rangePtr = &zAxisPtr->valueRange;
+    rangePtr = &zAxisPtr->tickRange;
     
     meshVertices = Blt_Mesh_GetVertices(elemPtr->mesh, &numMeshVertices);
     for (i = 0; i < numMeshVertices; i++) {
@@ -1936,7 +2093,7 @@ CompareTriangles(const void *a, const void *b)
 /*
  *---------------------------------------------------------------------------
  *
- * MapWires --
+ * MapWireframe --
  *
  *      Creates an array of the visible (possible clipped) line segments
  *      representing the wireframe of the mesh.
@@ -1954,7 +2111,7 @@ CompareTriangles(const void *a, const void *b)
  *---------------------------------------------------------------------------
  */
 static void
-MapWires(ContourElement *elemPtr)
+MapWireframe(ContourElement *elemPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
@@ -2247,6 +2404,8 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
         t1 = (isoPtr->value - Az) / range; /* A to B */
         if (Blt_AlmostEquals(t1, 0.0)) {
             ab = 1;                     /* At a vertex. */
+        } else if (Blt_AlmostEquals(t1, 1.0)) {
+            ab = 1;                     /* At a vertex. */
         } else if ((t1 < 0.0) || (t1 > 1.0)) {
             ab = 0;                     /* Outside of edge. */
         } else {
@@ -2259,6 +2418,8 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     } else {
         t2 = (isoPtr->value - Bz) / range; /* B to C */
         if (Blt_AlmostEquals(t2, 0.0)) {
+            bc = 1;                     /* At a vertex. */
+        } else if (Blt_AlmostEquals(t2, 1.0)) {
             bc = 1;                     /* At a vertex. */
         } else if ((t2 < 0.0) || (t2 > 1.0)) {
             bc = 0;                     /* Outside of edge. */
@@ -2273,6 +2434,8 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     } else {
         t3 = (isoPtr->value - Cz) / range; /* A to B */
         if (Blt_AlmostEquals(t3, 0.0)) {
+            ca = 1;                     /* At a vertex. */
+        } else if (Blt_AlmostEquals(t3, 1.0)) {
             ca = 1;                     /* At a vertex. */
         } else if ((t3 < 0.0) || (t3 > 1.0)) {
             ca = 0;                     /* Outside of edge. */
@@ -2350,6 +2513,74 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     }
 }
 
+#ifdef notdef
+/* 
+ * For labeling:  
+ *      Create polylines from list of isoline segments.  
+ *      Simplify each polyline to produce the longest segment.  
+ *      Place rotated labels above/below left/right from the center of
+ *      the longest segment.
+ */
+static void
+StitchSegments(Isoline *isoPtr)
+{
+    long count;
+    long i;
+    Blt_HashTable pointTable;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    TraceSegment *s;
+    
+    Blt_InitHashTable(&pointTable, sizeof(PointKey) / sizeof(int));
+    for (i = 0, s = isoPtr->segments; s != NULL; s = s->next, i++) {
+        PointKey key;
+        int isNew;
+        
+        if (s->x1 == s->x2 && s->y1 == s->y2) {
+            continue;
+        }
+        MakePointKey(&key, s->x1, s->y1);
+        hPtr = Blt_CreateHashEntry(&pointTable, &key, &isNew);
+#ifdef notdef
+        fprintf(stderr, "segment %ld px=%.15g py=%.15g qx=%.15g qy=%.15g\n",
+                i, s->x1, s->y1, s->x2, s->y2);
+#endif
+        if (isNew) {
+            count = 1;
+        } else {
+            count = Blt_GetHashValue(hPtr);
+            count++;
+        }
+        Blt_SetHashValue(hPtr, count);
+        key.x = s->x2;
+        key.y = s->y2;
+        hPtr = Blt_CreateHashEntry(&pointTable, &key, &isNew);
+        if (isNew) {
+            count = 1;
+        } else {
+            count = Blt_GetHashValue(hPtr);
+            count++;
+        }
+        Blt_SetHashValue(hPtr, count);
+    }
+    i = 0;
+    for (hPtr = Blt_FirstHashEntry(&pointTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        PointKey *keyPtr;
+        keyPtr = Blt_GetHashKey(&pointTable, hPtr);
+        count = Blt_GetHashValue(hPtr);
+#ifdef notdef
+        if (count == 1) {
+            fprintf(stderr, "point %ld x=%.15g y=%.15g count=%ld\n",
+                i, keyPtr->x, keyPtr->y, count);
+        }
+#endif
+        i++;
+    }
+    Blt_DeleteHashTable(&pointTable);
+}
+#endif
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2372,22 +2603,48 @@ MapIsoline(Isoline *isoPtr)
     AxisRange *rangePtr;
     ContourElement *elemPtr;
     int i;
+    double value;
     
     elemPtr = isoPtr->elemPtr;
     zAxisPtr = elemPtr->zAxisPtr;
-    /* Don't use tick range, because axis for z values is always tight. */
-    rangePtr = &zAxisPtr->valueRange;
+    rangePtr = &zAxisPtr->tickRange;
+    /* Step 1: Convert relative isoline values to absolute. */
     if (isoPtr->flags & ABSOLUT) {
         if (fabs(rangePtr->range) < DBL_EPSILON) {
             return;
         }
-        isoPtr->value = (isoPtr->reqValue - rangePtr->min) * rangePtr->scale;
+        value = isoPtr->reqValue;
     } else {
-        isoPtr->value = isoPtr->reqValue;
+        value = (isoPtr->reqValue * rangePtr->range) + rangePtr->min;
     }
+#ifdef notdef
+    /* Step 2: Apply log scale if necessary. */
+    if (IsLogScale(zAxisPtr)) {
+        if (zAxisPtr->min < 1.0) {
+            value = log10(value - zAxisPtr->min + 1.0);
+        } else {
+            value = log10(value);
+        }            
+    }
+#endif
+    /* Step 3: Convert to normalized value 0..1 */
+#ifdef notdef
+    fprintf(stderr, "2. req=%g value=%g amin=%g min=%g max=%g\n",
+            isoPtr->reqValue,
+            value, zAxisPtr->min, rangePtr->min, rangePtr->max);
+#endif
+    isoPtr->value = (value - rangePtr->min) * rangePtr->scale;
+#ifdef notdef
+    fprintf(stderr, "3. req=%g value=%g amin=%g min=%g max=%g\n",
+            isoPtr->reqValue,
+            value, zAxisPtr->min, rangePtr->min, rangePtr->max);
+#endif
     if (zAxisPtr->palette != NULL) {
+        double value;
+
+        value = isoPtr->value;
         isoPtr->paletteColor.u32 = Blt_Palette_GetAssociatedColor(
-                zAxisPtr->palette, isoPtr->value);
+                zAxisPtr->palette, value);
     } else {
         isoPtr->paletteColor.u32 = 0xFF000000; /* Solid black. */
     }
@@ -2413,6 +2670,9 @@ MapIsoline(Isoline *isoPtr)
         }
     }
     Blt_DeleteHashTable(&isoPtr->pointTable);
+#ifdef notdef
+    StitchSegments(isoPtr);
+#endif
 }
 
 /* Draw single symbol procedures. */
@@ -3032,7 +3292,7 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * DrawWires --
+ * DrawWireframe --
  *
  *      Draws the segments forming of the mesh grid.
  *
@@ -3042,8 +3302,8 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
  *---------------------------------------------------------------------------
  */
 static void
-DrawWires(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
-          ContourPen *penPtr)
+DrawWireframe(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
+              ContourPen *penPtr)
 {
     XSegment *segments;
     Segment2d *s, *send;
@@ -3125,10 +3385,10 @@ DrawMesh(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr)
     if (elemPtr->flags & COLORMAP) {
         DrawTriangles(graphPtr, drawable, elemPtr, penPtr);
     }
-    if ((elemPtr->numWires > 0) && (elemPtr->flags & WIRES)) {
-        DrawWires(graphPtr, drawable, elemPtr, penPtr);
+    if ((elemPtr->numWires > 0) && (elemPtr->flags & WIREFRAME)) {
+        DrawWireframe(graphPtr, drawable, elemPtr, penPtr);
     }
-    if (elemPtr->flags & HULL) {
+    if (elemPtr->flags & BOUNDARY) {
         DrawHull(graphPtr, drawable, elemPtr);
     }
 }
@@ -3911,7 +4171,7 @@ DrawIsoline(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
         return;
     }
 
-    colorPtr = NULL;
+    colorPtr = NULL;                    /* FIXME */
     if (penPtr->traceColor == COLOR_PALETTE) {
         if (colorPtr == NULL) {
             XColor color;
@@ -3920,6 +4180,7 @@ DrawIsoline(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
             color.green = isoPtr->paletteColor.Green * 257;
             color.blue  = isoPtr->paletteColor.Blue * 257;
             colorPtr = Tk_GetColorByValue(graphPtr->tkwin, &color);
+            fprintf(stderr, "colorPtr is set to palette\n");
         }
         /* Temporarily set the color from the interpolated value. */
         XSetForeground(graphPtr->display, penPtr->traceGC, colorPtr->pixel);
@@ -3938,6 +4199,8 @@ DrawIsoline(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
         }
     }
     if (count > 0) {
+        fprintf(stderr, "DrawSegments isoline=%s pen=%s\n",
+                isoPtr->obj.name, penPtr->name);
         XDrawSegments(graphPtr->display, drawable, penPtr->traceGC, 
                       segments, count);
     }
@@ -4005,6 +4268,7 @@ NearestPoint(ContourElement *elemPtr, NearestElement *nearestPtr)
             nearestPtr->index = v->index;
             nearestPtr->distance = d;
             nearestPtr->item = elemPtr;
+            nearestPtr->value = elemPtr->z.values[nearestPtr->index];
             nearestPtr->point.x = elemPtr->vertices[nearestPtr->index].x;
             nearestPtr->point.y = elemPtr->vertices[nearestPtr->index].y;
         }
@@ -4030,6 +4294,7 @@ NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
         d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
         if (d < nearestPtr->distance) {
             nearestPtr->index = t->a;
+            nearestPtr->value = elemPtr->z.values[nearestPtr->index];
             nearestPtr->distance = d;
             nearestPtr->item = elemPtr;
             nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,&elemPtr->axes);
@@ -4040,6 +4305,7 @@ NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
         d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
         if (d < nearestPtr->distance) {
             nearestPtr->index = t->b;
+            nearestPtr->value = elemPtr->z.values[nearestPtr->index];
             nearestPtr->distance = d;
             nearestPtr->item = elemPtr;
             nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,&elemPtr->axes);
@@ -4050,9 +4316,86 @@ NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
         d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
         if (d < nearestPtr->distance) {
             nearestPtr->index = t->c;
+            nearestPtr->value = elemPtr->z.values[nearestPtr->index];
             nearestPtr->distance = d;
             nearestPtr->item = elemPtr;
             nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,&elemPtr->axes);
+        }
+    }   
+}
+
+static void
+NearestIsolinePoint(ContourElement *elemPtr, NearestElement *nearestPtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    Graph *graphPtr = elemPtr->obj.graphPtr;
+
+    for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        int i;
+        Isoline *isoPtr;
+        TraceSegment *s;
+        
+        isoPtr = Blt_GetHashValue(hPtr);
+        for (i = 0, s = isoPtr->segments; s != NULL; s = s->next, i++) {
+            double d1, d2;
+            
+            d1 = hypot(s->x1 - nearestPtr->x, s->y1 - nearestPtr->y);
+            d2 = hypot(s->x2 - nearestPtr->x, s->y2 - nearestPtr->y);
+#ifdef notdef
+            fprintf(stderr, "segment %d: x=%d, y=%d d1=%g d2=%g x1=%g y1=%g x2=%g y2=%g\n",
+                    i, nearestPtr->x, nearestPtr->y, d1, d2,
+                    s->x1, s->y1, s->x2, s->y2);
+#endif
+            if ((d1 < d2) && (d1 < nearestPtr->distance)) {
+                nearestPtr->index = i;
+                nearestPtr->distance = d1;
+                nearestPtr->item = isoPtr;
+                nearestPtr->value = isoPtr->value;
+                nearestPtr->point = Blt_InvMap2D(graphPtr, s->x1, s->y1,
+                                                 &elemPtr->axes);
+            } else if (d2 < nearestPtr->distance) {
+                nearestPtr->index = i;
+                nearestPtr->distance = d2;
+                nearestPtr->item = isoPtr;
+                nearestPtr->value = isoPtr->value;
+                nearestPtr->point = Blt_InvMap2D(graphPtr, s->x2, s->y2,
+                                                 &elemPtr->axes);
+            }
+        }
+    }
+}
+
+static void
+NearestIsolineSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
+{
+    Graph *graphPtr = elemPtr->obj.graphPtr;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+
+    for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        int i;
+        Isoline *isoPtr;
+        TraceSegment *s;
+
+        isoPtr = Blt_GetHashValue(hPtr);
+        for (i = 0, s = isoPtr->segments; s != NULL; s = s->next, i++) {
+            Point2d p1, p2, b;
+            double d;
+            
+            p1.x = s->x1, p1.y = s->y1;
+            p2.x = s->x2, p2.y = s->y2;
+            d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
+            if (d < nearestPtr->distance) {
+                nearestPtr->index = i;
+                nearestPtr->distance = d;
+                nearestPtr->item = isoPtr;
+                nearestPtr->value = isoPtr->value;
+                nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,
+                        &elemPtr->axes);
+            }
         }
     }   
 }
@@ -4069,8 +4412,9 @@ InitPen(ContourPen *penPtr)
     penPtr->flags = NORMAL_PEN;
     penPtr->symbol.bitmap = penPtr->symbol.mask = None;
     penPtr->symbol.outlineColor = penPtr->symbol.fillColor = COLOR_DEFAULT;
+    penPtr->traceColor = COLOR_DEFAULT;
     penPtr->symbol.outlineWidth = penPtr->traceWidth = 1;
-    penPtr->symbol.type = SYMBOL_CIRCLE;
+    penPtr->symbol.type = SYMBOL_NONE;
     penPtr->valueFlags = SHOW_NONE;
 }
 
@@ -4104,7 +4448,7 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
     XColor *colorPtr;
     unsigned long defColor, color;
 
-    if (penPtr->traceColor == COLOR_PALETTE) {
+    if (ISALIASED(penPtr->traceColor)) {
         defColor = BlackPixel(graphPtr->display, 
                               Tk_ScreenNumber(graphPtr->tkwin));
     } else {
@@ -4145,8 +4489,7 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
 
     gcMask = (GCLineWidth | GCForeground | GCLineStyle | GCCapStyle |
         GCJoinStyle);
-    gcValues.cap_style = CapButt;
-    gcValues.cap_style = CapRound;
+    gcValues.cap_style = CapProjecting;
     gcValues.join_style = JoinRound;
     gcValues.line_style = LineSolid;
     gcValues.line_width = LineWidth(penPtr->traceWidth);
@@ -4173,6 +4516,7 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
     if (penPtr->traceGC != NULL) {
         Blt_FreePrivateGC(graphPtr->display, penPtr->traceGC);
     }
+    fprintf(stderr, "pen=%x TraceGC = %x\n", penPtr, newGC);
     penPtr->traceGC = newGC;
 
     return TCL_OK;
@@ -4251,7 +4595,7 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
         return TCL_ERROR;
     }
 
-    if (Blt_ConfigModified(elemPtr->configSpecs, "-*data", "-showedges", 
+    if (Blt_ConfigModified(elemPtr->configSpecs, "-*data", "-showwireframe", 
             "-map*", "-label", "-hide", "-z", "-mesh", (char *)NULL)) {
         elemPtr->flags |= MAP_ITEM;
     }
@@ -4262,7 +4606,7 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
 
     gcMask = (GCLineWidth | GCForeground | GCLineStyle | GCCapStyle |
         GCJoinStyle);
-    gcValues.cap_style  = CapButt;
+    gcValues.cap_style  = CapRound;
     gcValues.join_style = JoinRound;
     gcValues.line_style = LineSolid;
     gcValues.line_width = LineWidth(elemPtr->meshWidth);
@@ -4375,9 +4719,6 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
     ContourElement *elemPtr = (ContourElement *)basePtr;
 
     DestroyPenProc(graphPtr, (Pen *)elemPtr->builtinPenPtr);
-    if (elemPtr->activePenPtr != NULL) {
-        Blt_FreePen((Pen *)elemPtr->activePenPtr);
-    }
     ResetElement(elemPtr);
     if (elemPtr->triangles != NULL) {
         Blt_Free(elemPtr->triangles);
@@ -4437,8 +4778,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
     if (elemPtr->flags & TRIANGLES) {
         MapMesh(elemPtr);
     }
-    if (elemPtr->flags & WIRES) {
-        MapWires(elemPtr);
+    if (elemPtr->flags & WIREFRAME) {
+        MapWireframe(elemPtr);
     }
     /* Map the convex hull representing the boundary of the mesh. */
     MapTraces(elemPtr, &elemPtr->traces);
@@ -4487,7 +4828,7 @@ DrawProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
         if (elemPtr->flags & ISOLINES) {
             DrawIsoline(graphPtr, drawable, elemPtr, isoPtr, isoPtr->penPtr);
         }
-        if (elemPtr->flags & SYMBOLS) {
+        if (isoPtr->penPtr->symbol.type != SYMBOL_NONE) {
             DrawSymbols(graphPtr, drawable, isoPtr, isoPtr->penPtr);
         }
     }
@@ -4515,21 +4856,23 @@ DrawActiveProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
 
-    DrawMesh(graphPtr, drawable, elemPtr);
+    /*  DrawMesh(graphPtr, drawable, elemPtr); */
     for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         Isoline *isoPtr;
+        ContourPen *penPtr;
 
         isoPtr = Blt_GetHashValue(hPtr);
         if ((isoPtr->flags & ACTIVE) == 0) {
             continue;                   /* Only draw active isolines. */
         }
+        penPtr = (isoPtr->activePenPtr != NULL) ? isoPtr->activePenPtr :
+            elemPtr->activePenPtr;
         if (elemPtr->flags & ISOLINES) {
-            DrawIsoline(graphPtr, drawable, elemPtr, isoPtr, 
-                        isoPtr->activePenPtr);
+            DrawIsoline(graphPtr, drawable, elemPtr, isoPtr, penPtr);
         }
-        if (elemPtr->flags & SYMBOLS) {
-            DrawSymbols(graphPtr, drawable, isoPtr, isoPtr->activePenPtr);
+        if (penPtr->symbol.type != SYMBOL_NONE) {
+            DrawSymbols(graphPtr, drawable, isoPtr, penPtr);
         }
     }
 }
@@ -4663,7 +5006,7 @@ HullToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * WiresToPostScript --
+ * WireframeToPostScript --
  *
  *      Draws the segments forming of the mesh grid.
  *
@@ -4673,8 +5016,8 @@ HullToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
  *---------------------------------------------------------------------------
  */
 static void
-WiresToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
-                  ContourPen *penPtr)
+WireframeToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
+                      ContourPen *penPtr)
 {
     Blt_Ps_XSetLineAttributes(ps, elemPtr->meshColor, elemPtr->meshWidth + 2,
                  &elemPtr->meshDashes, CapButt, JoinRound);
@@ -4744,10 +5087,10 @@ MeshToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
     if (elemPtr->flags & COLORMAP) {
         TrianglesToPostScript(graphPtr, ps, elemPtr, penPtr);
     }
-    if (elemPtr->flags & WIRES) {
-        WiresToPostScript(graphPtr, ps, elemPtr, penPtr);
+    if (elemPtr->flags & WIREFRAME) {
+        WireframeToPostScript(graphPtr, ps, elemPtr, penPtr);
     }
-    if (elemPtr->flags & HULL) {
+    if (elemPtr->flags & BOUNDARY) {
         HullToPostScript(graphPtr, ps, elemPtr);
     }
 }
@@ -4925,6 +5268,7 @@ SymbolsToPostScript(Graph *graphPtr, Blt_Ps ps, Isoline *isoPtr,
 #endif
 }
 
+#ifdef notdef
 static void
 ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
 {
@@ -4958,6 +5302,7 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
         Blt_Ps_DrawText(ps, string, &penPtr->valueStyle, p->x, p->y);
     }
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -5021,7 +5366,7 @@ NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
         if (elemPtr->flags & ISOLINES) {
             IsolineToPostScript(graphPtr, ps, elemPtr, isoPtr, isoPtr->penPtr);
         }
-        if (elemPtr->flags & SYMBOLS) {
+        if ((elemPtr->flags | isoPtr->flags) & SYMBOLS) {
             SymbolsToPostScript(graphPtr, ps, isoPtr, isoPtr->penPtr);
         }
     }
@@ -5039,7 +5384,7 @@ NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
  * Results:
  *      The return value is a standard TCL result. 
  *
- *      .g element isoline exists elemName isoNameOrTag
+ *      pathName element isoline activate elemName isoName
  *
  *---------------------------------------------------------------------------
  */
@@ -5061,6 +5406,7 @@ IsolineActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
          isoPtr = NextTaggedIsoline(&iter)) {
         isoPtr->flags |= ACTIVE;
+        elemPtr->flags |= ACTIVE;
     }
     graphPtr->flags |= CACHE_DIRTY;
     graphPtr->flags |= REDRAW_WORLD;
@@ -5099,55 +5445,6 @@ IsolineCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * DistanceToIsoline --
- *
- *      Find the nearest mesh vertex to the specified screen coordinates.
- *
- * Results:
- *      None.
- *
- * Side Effects:  
- *      The search structure will be willed with the information of the
- *      nearest point.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static double
-DistanceToIsoline(
-    int x, int y,                     /* Sample X-Y coordinate. */
-    Point2d *p, Point2d *q,           /* End points of the line segment. */
-    Point2d *t)                       /* (out) Point on line segment. */
-{
-    double right, left, top, bottom;
-
-    *t = Blt_GetProjection(x, y, p, q);
-    if (p->x > q->x) {
-        right = p->x, left = q->x;
-    } else {
-        left = p->x, right = q->x;
-    }
-    if (p->y > q->y) {
-        bottom = p->y, top = q->y;
-    } else {
-        top = p->y, bottom = q->y;
-    }
-    if (t->x > right) {
-        t->x = right;
-    } else if (t->x < left) {
-        t->x = left;
-    }
-    if (t->y > bottom) {
-        t->y = bottom;
-    } else if (t->y < top) {
-        t->y = top;
-    }
-    return hypot(t->x - x, t->y - y);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * IsolineNearestOp --
  *
  *      Finds the isoline in the given element closest to the given screen
@@ -5163,6 +5460,8 @@ DistanceToIsoline(
 static Blt_ConfigSpec nearestSpecs[] = {
     {BLT_CONFIG_PIXELS_NNEG, "-halo", (char *)NULL, (char *)NULL,
         (char *)NULL, Blt_Offset(NearestElement, halo), 0},
+    {BLT_CONFIG_BOOLEAN, "-interpolate", (char *)NULL, (char *)NULL,
+        (char *)NULL, Blt_Offset(NearestElement, mode), 0 }, 
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -5174,8 +5473,6 @@ IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Graph *graphPtr = clientData;
     ContourElement *elemPtr;
     NearestElement nearest;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
     int x, y;
 
     if (graphPtr->flags & RESET_AXES) {
@@ -5201,9 +5498,27 @@ IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;               /* Error occurred processing an
                                          * option. */
     }
-    nearest.maxDistance = graphPtr->halo;
+    if (nearest.halo == 0) {
+        nearest.halo = graphPtr->halo;
+    }
+    nearest.maxDistance = nearest.halo + 1;
     nearest.distance = nearest.maxDistance + 1;
+    nearest.along = NEAREST_SEARCH_XY;
+    nearest.x = x;
+    nearest.y = y;
 
+    if (nearest.mode == NEAREST_SEARCH_POINTS) {
+        NearestIsolinePoint(elemPtr, &nearest);
+    } else {
+        int found;
+        
+        NearestIsolineSegment(elemPtr, &nearest);
+        found = (nearest.distance <= nearest.maxDistance);
+        if ((!found) && (nearest.along != NEAREST_SEARCH_XY)) {
+            NearestIsolinePoint(elemPtr, &nearest);
+        }
+    }
+#ifdef notdef
     /* Search all the isolines in the element. */
     for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL; 
          hPtr = Blt_NextHashEntry(&iter)) {
@@ -5235,6 +5550,7 @@ IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
     }
+#endif
     if (nearest.distance <= nearest.maxDistance) {
         Tcl_Obj *objPtr, *listObjPtr;   /* Return a list of name value
                                          * pairs. */
@@ -5250,9 +5566,9 @@ IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
         /* Value of isoline. */
-        objPtr = Tcl_NewStringObj("z", 1);
+        objPtr = Tcl_NewStringObj("value", 5);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewDoubleObj(isoPtr->value);
+        objPtr = Tcl_NewDoubleObj(nearest.value);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
         /* X-coordinate of nearest point on isoline. */
@@ -5271,6 +5587,12 @@ IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         objPtr = Tcl_NewStringObj("dist", 4);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         objPtr = Tcl_NewDoubleObj(nearest.distance);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+
+        /* Distance to from search point. */
+        objPtr = Tcl_NewStringObj("index", 5);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewIntObj(nearest.index);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
         Tcl_SetObjResult(interp, listObjPtr);
@@ -5418,7 +5740,7 @@ IsolineCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      The return value is a standard TCL result. 
  *
- *      .g element isoline deactivate elemName isoNameOrTag
+ *      pathName element isoline deactivate elemName isoName
  *
  *---------------------------------------------------------------------------
  */
@@ -5665,7 +5987,7 @@ IsolineStepsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagAddOp --
  *
- *      .t element isotag add elemName tagName ?isoNameOrTag...?
+ *      pathName element isotag add elemName tagName ?isoName...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5710,7 +6032,7 @@ IsoTagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagDeleteOp --
  *
- *      .g element isotag delete elemName tagName ?isoNameOrTag...?
+ *      pathName element isotag delete elemName tagName ?isoName...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5753,7 +6075,7 @@ IsoTagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      If the isoline has any the tags, true is returned in the
  *      interpreter.
  *
- *      .g element isotag exists elemName isoNameOrTag ?tag...?
+ *      pathName element isotag exists elemName isoName ?tagName...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5797,7 +6119,7 @@ IsoTagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Removes the given tags from all isolines in the element.
  *
- *      .g element isotag forget elemName ?tag...?
+ *      pathName element isotag forget elemName ?tagName...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5829,7 +6151,7 @@ IsoTagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns tag names for a given isoline.  If one of more pattern
  *      arguments are provided, then only those matching tags are returned.
  *
- *      .g element isotag get elemName isoNameOrTag pat1 pat2...
+ *      pathName element isotag get elemName isoName pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
@@ -5906,7 +6228,7 @@ IsoTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      isoline arguments are provided, then only the tags found in those
  *      isolines are returned.
  *
- *      .g element isotag elemName ?isoNameOrTag...?
+ *      pathName element isotag elemName ?isoName...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5979,7 +6301,7 @@ IsoTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Sets one or more tags for a given isoline.  Tag names can't start
  *      with a digit and can't be a reserved tag ("all").
  *
- *      .g element isotag set elemName isoNameOrTag tag1 tag2...
+ *      pathName element isotag set elemName isoName tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -6021,7 +6343,7 @@ IsoTagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      exist or is a reserved tag ("all"), nothing will be done and no
  *      error message will be returned.
  *
- *      .t element isotag unset elemName isoNameOrTag tag1 tag2...
+ *      pathName element isotag unset elemName isoName tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -6130,7 +6452,7 @@ static Blt_OpSpec isolineOps[] = {
     {"cget",      2, IsolineCgetOp,     6, 7, "elemName isoName option",},
     {"configure", 2, IsolineConfigureOp,6, 0, "elemName isoName ?option value?...",},
     {"create",    2, IsolineCreateOp,   5, 0, "elemName ?isoName? ?option value?...",},
-    {"deactivate",3, IsolineDeactivateOp,5, 5, "elemName",},
+    {"deactivate",3, IsolineDeactivateOp,6, 6, "elemName isoName",},
     {"delete",    3, IsolineDeleteOp,   5, 0, "elemName ?isoName?...",},
     {"exists",    1, IsolineExistsOp,   6, 6, "elemName isoName",},
     {"names",     2, IsolineNamesOp,    5, 0, "elemName ?pattern?...",},
@@ -6913,6 +7235,14 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
                 if (cz < t->min) {
                     cz = t->min;
                 }
+                if (IsLogScale(zAxisPtr)) {
+                    cz = log10(9.0 * cz + 1.0);
+                }
+#ifdef notdef
+                if (zAxisPtr->decreasing) {
+                    cz = 1.0 - cz;
+                }
+#endif
                 dp->u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette, cz);
 #ifdef notdef
                 fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",
@@ -6946,6 +7276,7 @@ Blt_CreateContourPen(Graph *graphPtr, ClassId id, Blt_HashEntry *hPtr)
     InitPen(penPtr);
     if (strcmp(penPtr->name, "activeContour") == 0) {
         penPtr->flags = ACTIVE_PEN;
+        penPtr->symbol.type = SYMBOL_CIRCLE;
     }
     Blt_SetHashValue(hPtr, penPtr);
     return (Pen *)penPtr;
@@ -7004,7 +7335,7 @@ Blt_ContourElement(Graph *graphPtr, ClassId classId, Blt_HashEntry *hPtr)
     elemPtr->penPtr = elemPtr->builtinPenPtr;
     elemPtr->hashPtr = hPtr;
     elemPtr->boundaryPenPtr = &elemPtr->builtinPen;
-    elemPtr->flags |= COLORMAP | ISOLINES | HULL | TRIANGLES;
+    elemPtr->flags |= COLORMAP | ISOLINES | TRIANGLES;
     elemPtr->opacity = 100.0;
     Blt_SetHashValue(hPtr, elemPtr);
     Blt_InitHashTable(&elemPtr->isoTable, BLT_STRING_KEYS);

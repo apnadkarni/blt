@@ -436,6 +436,12 @@ ReferenceWindowEventProc(ClientData clientData, XEvent *eventPtr)
     if ((eventPtr->type == DestroyNotify) && (corePtr->tkRef != NULL) &&
         (eventPtr->xany.window == Tk_WindowId(corePtr->tkRef))) {
         corePtr->tkRef = NULL;
+    } else if (eventPtr->type == ConfigureNotify) {
+        if ((corePtr->flags & BACKGROUND_SOLID) == 0) {
+            /* Notify clients to redraw themselves if the background type
+             * isn't solid. */
+            NotifyClients(corePtr);
+        }
     }
 }
 

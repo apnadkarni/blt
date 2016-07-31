@@ -200,6 +200,7 @@ FreePen(
 
     if (*penPtrPtr != NULL) {
         Blt_FreePen(*penPtrPtr);
+        *penPtrPtr = NULL;
     }
 }
 
@@ -412,12 +413,16 @@ Blt_CreatePen(Graph *graphPtr, const char *penName, ClassId classId,
     } else {
         if (classId == CID_ELEM_BAR) {
             penPtr = Blt_CreateBarPen(graphPtr, hPtr);
-        } else {
+        } else if (classId == CID_ELEM_LINE) {
 #ifdef OLDLINES
             penPtr = Blt_CreateLinePen(graphPtr, classId, hPtr);
 #else
             penPtr = Blt_CreateLinePen2(graphPtr, classId, hPtr);
 #endif
+        } else if (classId == CID_ELEM_CONTOUR) {
+            penPtr = Blt_CreateContourPen(graphPtr, classId, hPtr);
+        } else {
+            panic("unknown classId for pen");
         }
     }
     configFlags = (penPtr->flags & (ACTIVE_PEN | NORMAL_PEN));
@@ -429,6 +434,8 @@ Blt_CreatePen(Graph *graphPtr, const char *penName, ClassId classId,
         }
         return NULL;
     }
+    fprintf(stderr, "CreatePen: pen=%x name=%s calling configure proc=%x\n",
+            penPtr, penPtr->name, penPtr->configProc);
     (*penPtr->configProc) (graphPtr, penPtr);
     return penPtr;
 }

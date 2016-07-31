@@ -116,7 +116,7 @@ enum TickRange {
 #define DEF_BACKGROUND          (char *)NULL
 #define DEF_BORDERWIDTH         "0"
 #define DEF_CHECKLIMITS         "0"
-#define DEF_COLORBAR_THICKNESS  "20"
+#define DEF_COLORBAR_THICKNESS  "0"
 #define DEF_COMMAND             (char *)NULL
 #define DEF_DECREASING          "0"
 #define DEF_DIVISIONS           "10"
@@ -186,6 +186,37 @@ static AxisName axisNames[] = {
     { "z",  CID_AXIS_Z, MARGIN_NONE,   MARGIN_NONE   }
 } ;
 static int numAxisNames = sizeof(axisNames) / sizeof(AxisName);
+
+
+/*
+ * AxisIterator --
+ *
+ *      Axes may be tagged with strings.  An axis may have many
+ *      tags.  The same tag may be used for many axes.
+ *      
+ */
+typedef enum { 
+    ITER_SINGLE, ITER_ALL, ITER_TAG, 
+} IteratorType;
+
+typedef struct _Iterator {
+    Graph *graphPtr;                    /* Graph that we're iterating
+                                         * over. */
+
+    IteratorType type;                  /* Type of iteration:
+                                         * ITER_TAG      By item tag.
+                                         * ITER_ALL      By every item.
+                                         * ITER_SINGLE   Single item: either 
+                                         *               tag or name.
+                                         */
+    Axis *axisPtr;
+    const char *tagName;                /* If non-NULL, is the tag that we
+                                         * are currently iterating over. */
+    Blt_HashTable *tablePtr;            /* Pointer to tag hash table. */
+    Blt_HashSearch cursor;              /* Search iterator for tag hash
+                                         * table. */
+    Blt_ChainLink link;
+} AxisIterator;
 
 static Blt_OptionParseProc ObjToLimit;
 static Blt_OptionPrintProc LimitToObj;
@@ -281,6 +312,13 @@ static Blt_CustomOption paletteOption =
     ObjToPalette, PaletteToObj, FreePalette, (ClientData)0
 };
 
+static Blt_OptionFreeProc FreeTagsProc;
+static Blt_OptionParseProc ObjToTagsProc;
+static Blt_OptionPrintProc TagsToObjProc;
+Blt_CustomOption tagsOption = {
+    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+};
+
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
@@ -299,8 +337,7 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_BACKGROUND, Blt_Offset(Axis, normalBg),
         ALL_GRAPHS | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
-        Blt_Offset(Axis, obj.tagsObjPtr), ALL_GRAPHS | BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
         0, ALL_GRAPHS},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
@@ -422,6 +459,8 @@ static Blt_ConfigSpec configSpecs[] =
         ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT, "-subdivisions", "subdivisions", "Subdivisions",
         DEF_SUBDIVISIONS, Blt_Offset(Axis, reqNumMinorTicks), ALL_GRAPHS},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_ANCHOR, "-tickanchor", "tickAnchor", "Anchor",
         DEF_TICK_ANCHOR, Blt_Offset(Axis, reqTickAnchor), ALL_GRAPHS},
     {BLT_CONFIG_CUSTOM, "-tickdirection", "tickDirection", "TickDirection",
@@ -1545,6 +1584,137 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 }
 
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SetTag --
+ *
+ *      Associates a tag with a given axis.  Individual element tags are
+ *      stored in hash tables keyed by the tag name.  Each table is in turn
+ *      stored in a hash table keyed by the axis pointer.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects:
+ *      A tag is stored for a particular axis.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SetTag(Tcl_Interp *interp, Axis *axisPtr, const char *tagName)
+{
+    Graph *graphPtr;
+    long dummy;
+    
+    if (strcmp(tagName, "all") == 0) {
+        return TCL_OK;                  /* Don't need to create reserved
+                                         * tag. */
+    }
+    if (tagName[0] == '\0') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+                (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (tagName[0] == '-') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, 
+                "\" can't start with a '-'.", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    graphPtr = axisPtr->obj.graphPtr;
+    Blt_Tags_AddItemToTag(&graphPtr->axes.tags, tagName, axisPtr);
+    return TCL_OK;
+}
+
+/*ARGSUSED*/
+static void
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
+{
+    Graph *graphPtr;
+    Axis *axisPtr = (Axis *)widgRec;
+
+    graphPtr = axisPtr->obj.graphPtr;
+    Blt_Tags_ClearTagsFromItem(&graphPtr->axes.tags, axisPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToTagsProc --
+ *
+ *      Convert the string representation of a list of tags.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The tags are
+ *      save in the widget.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    Graph *graphPtr;
+    Axis *axisPtr = (Axis *)widgRec;
+    int i;
+    const char *string;
+    int objc;
+    Tcl_Obj **objv;
+
+    graphPtr = axisPtr->obj.graphPtr;
+    Blt_Tags_ClearTagsFromItem(&graphPtr->axes.tags, axisPtr);
+    string = Tcl_GetString(objPtr);
+    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+        return TCL_OK;
+    }
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i++) {
+        SetTag(interp, axisPtr, Tcl_GetString(objv[i]));
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagsToObjProc --
+ *
+ *      Returns the tags associated with the element.
+ *
+ * Results:
+ *      The names representing the tags are returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
+{
+    Graph *graphPtr;
+    Axis *axisPtr = (Axis *)widgRec;
+    Tcl_Obj *listObjPtr;
+
+    graphPtr = axisPtr->obj.graphPtr;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Blt_Tags_AppendTagsToObj(&graphPtr->axes.tags,  axisPtr, listObjPtr);
+    return listObjPtr;
+}
+
 static void
 FreeTickLabels(Blt_Chain chain)
 {
@@ -1667,7 +1837,11 @@ Blt_InvHMap(Axis *axisPtr, double x)
     }
     value = (x * axisPtr->tickRange.range) + axisPtr->tickRange.min;
     if (IsLogScale(axisPtr)) {
-        value = EXP10(value);
+        if (axisPtr->min > 0.0) {
+            value = EXP10(value);
+        } else {
+            value = EXP10(value) + axisPtr->min - 1.0;
+        }
     }
     return value;
 }
@@ -1697,7 +1871,11 @@ Blt_InvVMap(Axis *axisPtr, double y) /* Screen coordinate */
     }
     value = ((1.0 - y) * axisPtr->tickRange.range) + axisPtr->tickRange.min;
     if (IsLogScale(axisPtr)) {
-        value = EXP10(value);
+        if (axisPtr->min > 0.0) {
+            value = EXP10(value);
+        } else {
+            value = EXP10(value) + axisPtr->min - 1.0;
+        }
     }
     return value;
 }
@@ -1719,8 +1897,12 @@ Blt_InvVMap(Axis *axisPtr, double y) /* Screen coordinate */
 double
 Blt_HMap(Axis *axisPtr, double x)
 {
-    if ((IsLogScale(axisPtr)) && (x != 0.0)) {
-        x = log10(FABS(x));
+    if (IsLogScale(axisPtr)) {
+        if (axisPtr->min > 0.0) {
+            x = log10(x);
+        } else {
+            x = log10(x - axisPtr->min + 1.0);
+        }
     }
     /* Map graph coordinate to normalized coordinates [0..1] */
     x = (x - axisPtr->tickRange.min) * axisPtr->tickRange.scale;
@@ -1747,8 +1929,12 @@ Blt_HMap(Axis *axisPtr, double x)
 double
 Blt_VMap(Axis *axisPtr, double y)
 {
-    if ((IsLogScale(axisPtr)) && (y > 0.0)) {
-        y = log10(FABS(y));
+    if (IsLogScale(axisPtr)) {
+        if (axisPtr->min > 0.0) {
+            y = log10(y);
+        } else {
+            y = log10(y - axisPtr->min + 1.0);
+        }
     }
     /* Map graph coordinate to normalized coordinates [0..1] */
     y = (y - axisPtr->tickRange.min) * axisPtr->tickRange.scale;
@@ -2065,11 +2251,17 @@ LogAxis(Axis *axisPtr, double min, double max)
     majorStep = minorStep = 0.0;
     tickMin = tickMax = Blt_NaN();
     if (min < max) {
-        min = (min != 0.0) ? log10(FABS(min)) : 0.0;
-        max = (max != 0.0) ? log10(FABS(max)) : 1.0;
-
-        tickMin = floor(min);
-        tickMax = ceil(max);
+        double amin, amax;
+        
+        if (min > 0.0) {
+            amin = log10(min);
+            amax = log10(max);
+        } else {
+            amin = 0.0;
+            amax = log10(max - min + 1.0);
+        }
+        tickMin = floor(amin);
+        tickMax = ceil(amax);
         range = tickMax - tickMin;
         
         if (range > 10) {
@@ -2091,7 +2283,7 @@ LogAxis(Axis *axisPtr, double min, double max)
                 tickMax++;
             }
             majorStep = 1.0;
-            numMajor = (int)(tickMax - tickMin + 1); /* FIXME: Check this. */
+            numMajor = (int)(tickMax - tickMin) + 1; /* FIXME: Check this. */
             
             minorStep = 0.0;            /* This is a special hack to pass
                                          * information to the GenerateTicks
@@ -2102,12 +2294,12 @@ LogAxis(Axis *axisPtr, double min, double max)
         }
         if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) && 
              (DEFINED(axisPtr->reqMin)))) {
-            tickMin = min;
+            tickMin = amin;
             numMajor++;
         }
         if ((axisPtr->looseMax == TIGHT) || ((axisPtr->looseMax == LOOSE) &&
              (DEFINED(axisPtr->reqMax)))) {
-            tickMax = max;
+            tickMax = amax;
         }
     }
     axisPtr->major.ticks.scaleType = SCALE_LOG;
@@ -2115,6 +2307,7 @@ LogAxis(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.initial = floor(tickMin);
     axisPtr->major.ticks.numSteps = numMajor;
     axisPtr->minor.ticks.initial = axisPtr->minor.ticks.step = minorStep;
+    axisPtr->major.ticks.range = tickMax - tickMin;
     axisPtr->minor.ticks.numSteps = numMinor;
     axisPtr->minor.ticks.scaleType = SCALE_LOG;
     SetAxisRange(&axisPtr->tickRange, tickMin, tickMax);
@@ -2472,6 +2665,7 @@ DestroyAxis(Axis *axisPtr)
     if (axisPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&graphPtr->axes.nameTable, axisPtr->hashPtr);
     }
+    Blt_Tags_ClearTagsFromItem(&graphPtr->axes.tags, axisPtr);
     Blt_Ts_FreeStyle(graphPtr->display, &axisPtr->limitsTextStyle);
 
     if (axisPtr->tickGC != NULL) {
@@ -2804,7 +2998,7 @@ AxisOffsets(Axis *axisPtr, AxisInfo *infoPtr)
             axisPtr->right = mark + axisPtr->width - 1;
         }
         axisPtr->top = axisPtr->screenMin - inset - 2;
-        axisPtr->bottom = axisPtr->screenMin + axisPtr->screenRange + inset -1;
+        axisPtr->bottom = axisPtr->screenMin + axisPtr->screenRange + inset-1;
         if (axisPtr->titleAlternate) {
             x = mark + (axisPtr->width / 2);
             y = graphPtr->y1 - AXIS_PAD_TITLE;
@@ -2854,10 +3048,21 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
     int x1, y1, x2, y2;
     min = axisPtr->tickRange.min;
     max = axisPtr->tickRange.max;
+    fprintf(stderr, "MakeColorbar: axis=%s, min=%g max=%g\n",
+            axisPtr->obj.name, min, max);
     if (IsLogScale(axisPtr)) {
-        min = EXP10(min);
-        max = EXP10(max);
+        /* Axis lines are already log10 scale. Convert back to linear to
+         * let Blt_HMap and Blt_VMap convert them back to log10. */
+        if (axisPtr->min > 0.0) {
+            min = EXP10(min);
+            max = EXP10(max);
+        } else {
+            min = EXP10(min) + axisPtr->min - 1.0;
+            max = EXP10(max) + axisPtr->min - 1.0;
+        }
     }
+    fprintf(stderr, "2. MakeColorbar: axis=%s, min=%g max=%g\n",
+            axisPtr->obj.name, min, max);
     if (HORIZONTAL(axisPtr->marginPtr)) {
         x2 = Blt_HMap(axisPtr, min);
         x1 = Blt_HMap(axisPtr, max);
@@ -2868,6 +3073,8 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
     } else {
         y2 = Blt_VMap(axisPtr, min);
         y1 = Blt_VMap(axisPtr, max);
+    fprintf(stderr, "3. MakeColorbar: axis=%s, y2=%d y1=%d\n",
+            axisPtr->obj.name, y2, y1);
         axisPtr->colorbar.rect.x = infoPtr->colorbar;
         axisPtr->colorbar.rect.y = MIN(y1,y2);
         axisPtr->colorbar.rect.height = ABS(y1 - y2) + 1;
@@ -2883,8 +3090,13 @@ MakeAxisLine(Axis *axisPtr, int line, Segment2d *s)
     min = axisPtr->tickRange.min;
     max = axisPtr->tickRange.max;
     if (IsLogScale(axisPtr)) {
-        min = EXP10(min);
-        max = EXP10(max);
+        if (axisPtr->min > 0.0) {
+            min = EXP10(min);
+            max = EXP10(max);
+        } else {
+            min = EXP10(min) + axisPtr->min - 1.0;
+            max = EXP10(max) + axisPtr->min - 1.0;
+        }
     }
     if (HORIZONTAL(axisPtr->marginPtr)) {
         s->p.x = Blt_HMap(axisPtr, min);
@@ -2902,7 +3114,11 @@ static void
 MakeTick(Axis *axisPtr, double value, int tick, int line, Segment2d *s)
 {
     if (IsLogScale(axisPtr)) {
-        value = EXP10(value);
+        if (axisPtr->min > 0.0) {
+            value = EXP10(value);
+        } else {
+            value = EXP10(value) + axisPtr->min - 1.0;
+        }
     }
     if (HORIZONTAL(axisPtr->marginPtr)) {
         s->p.x = s->q.x = Blt_HMap(axisPtr, value);
@@ -2944,7 +3160,6 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
         link = Blt_Chain_FirstLink(axisPtr->tickLabels);
         labelPos = (double)infoPtr->label;
         for (left = FirstMajorTick(axisPtr); left.isValid; left = right) {
-
             right = NextMajorTick(axisPtr);
             if (right.isValid) {
                 Tick minor;
@@ -2968,7 +3183,6 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
                 /* Add major tick. This could be the last major tick. */
                 MakeTick(axisPtr, left.value, infoPtr->t1,
                         infoPtr->axisLength, s);
-                
                 mid = left.value;
                 if ((axisPtr->labelOffset) && (right.isValid)) {
                     mid = (right.value - left.value) * 0.5;
@@ -3219,7 +3433,7 @@ static int
 GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
 {
     Axis *axisPtr = clientData;
-    double value;
+    double value, t;
     Graph *graphPtr;
 
     graphPtr = axisPtr->obj.graphPtr;
@@ -3240,7 +3454,16 @@ GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
     } else {
         return TCL_ERROR;
     }
-    *valuePtr = (value - axisPtr->valueRange.min) / axisPtr->valueRange.range;
+    t = (value - axisPtr->tickRange.min) / axisPtr->tickRange.range;
+    if (IsLogScale(axisPtr)) {
+        t = (log10(value) - axisPtr->tickRange.min) / axisPtr->tickRange.range;
+    }
+#ifdef notdef
+    if (axisPtr->decreasing) {
+        t = 1.0 - t;
+    }
+#endif
+    *valuePtr = t;
     return TCL_OK;
 }
 
@@ -3333,6 +3556,12 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
     Graph *graphPtr = axisPtr->obj.graphPtr;
     int isHoriz;
 
+#ifdef notdef
+    fprintf(stderr, "axis=%s scale=%d tmin=%g tmax=%g vmin=%g vmax=%g\n",
+            axisPtr->obj.name, axisPtr->scale, axisPtr->tickRange.min,
+            axisPtr->tickRange.max, axisPtr->valueRange.min,
+            axisPtr->valueRange.max);
+#endif
     if (axisPtr->normalBg != NULL) {
         Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, 
                 axisPtr->normalBg, 
@@ -3411,8 +3640,13 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
             axisPtr->max = axisPtr->min + viewWidth;
             viewMax = viewMin + viewWidth;
             if (IsLogScale(axisPtr)) {
-                axisPtr->min = EXP10(axisPtr->min);
-                axisPtr->max = EXP10(axisPtr->max);
+                if (axisPtr->min > 0.0) {
+                    axisPtr->min = EXP10(axisPtr->min);
+                    axisPtr->max = EXP10(axisPtr->max);
+                } else {
+                    axisPtr->min = EXP10(axisPtr->min) + axisPtr->min - 1.0;
+                    axisPtr->max = EXP10(axisPtr->max) + axisPtr->min - 1.0;
+                }
             }
             Blt_UpdateScrollbar(graphPtr->interp, axisPtr->scrollCmdObjPtr,
                 (int)viewMin, (int)viewMax, (int)worldWidth);
@@ -3422,8 +3656,13 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
             axisPtr->min = axisPtr->max - viewWidth;
             viewMin = viewMax + viewWidth;
             if (IsLogScale(axisPtr)) {
-                axisPtr->min = EXP10(axisPtr->min);
-                axisPtr->max = EXP10(axisPtr->max);
+                if (axisPtr->min > 0.0) {
+                    axisPtr->min = EXP10(axisPtr->min);
+                    axisPtr->max = EXP10(axisPtr->max);
+                } else {
+                    axisPtr->min = EXP10(axisPtr->min) + axisPtr->min - 1.0;
+                    axisPtr->max = EXP10(axisPtr->max) + axisPtr->min - 1.0;
+                }
             }
             Blt_UpdateScrollbar(graphPtr->interp, axisPtr->scrollCmdObjPtr,
                 (int)viewMax, (int)viewMin, (int)worldWidth);
@@ -3563,7 +3802,13 @@ MakeGridLine(Axis *axisPtr, double value, Segment2d *s)
     Graph *graphPtr = axisPtr->obj.graphPtr;
 
     if (IsLogScale(axisPtr)) {
-        value = EXP10(value);
+        /* Axis lines are already log10 scale. Convert back to linear to
+         * let Blt_HMap and Blt_VMap convert them back to log10. */
+        if (axisPtr->min > 0.0) {
+            value = EXP10(value);
+        } else {
+            value = EXP10(value) + axisPtr->min - 1.0;
+        }
     }
     /* Grid lines run orthogonally to the axis */
     if (HORIZONTAL(axisPtr->marginPtr)) {
@@ -4440,30 +4685,272 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
     return axisPtr;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NextTaggedAxis --
+ *
+ *      Returns the next axis derived from the given tag.
+ *
+ * Results:
+ *      Returns the pointer to the next axis in the iterator.  If 
+ *      no more axes are available, then NULL is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Axis *
+NextTaggedAxis(AxisIterator *iterPtr)
+{
+    switch (iterPtr->type) {
+    case ITER_TAG:
+        if (iterPtr->link != NULL) {
+            Axis *axisPtr;
+            
+            axisPtr = Blt_Chain_GetValue(iterPtr->link);
+            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+            return axisPtr;
+        }
+        break;
+    case ITER_ALL:
+        {
+            Blt_HashEntry *hPtr;
+            
+            hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
+            if (hPtr != NULL) {
+                return Blt_GetHashValue(hPtr);
+            }
+            break;
+        }
+    default:
+        break;
+    }   
+    return NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FirstTaggedAxis --
+ *
+ *      Returns the first axis derived from the given tag.
+ *
+ * Results:
+ *      Returns the first axis in the sequence.  If no more axes are in
+ *      the list, then NULL is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Axis *
+FirstTaggedAxis(AxisIterator *iterPtr)
+{
+    switch (iterPtr->type) {
+    case ITER_TAG:
+        if (iterPtr->link != NULL) {
+            Axis *axisPtr;
+            
+            axisPtr = Blt_Chain_GetValue(iterPtr->link);
+            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+            return axisPtr;
+        }
+        break;
+    case ITER_ALL:
+        {
+            Blt_HashEntry *hPtr;
+            
+            hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
+            if (hPtr != NULL) {
+                return Blt_GetHashValue(hPtr);
+            }
+        }
+    case ITER_SINGLE:
+        return iterPtr->axisPtr;
+    } 
+    return NULL;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetAxisByName --
+ *
+ *      Find the axis represented the given name, returning a pointer to
+ *      its data structure via axisPtrPtr.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
-GetAxisFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr, 
-               Axis **axisPtrPtr)
+GetAxisByName(Tcl_Interp *interp, Graph *graphPtr, const char *name, 
+                 Axis **axisPtrPtr)
 {
     Blt_HashEntry *hPtr;
-    const char *name;
 
-    *axisPtrPtr = NULL;
-    name = Tcl_GetString(objPtr);
     hPtr = Blt_FindHashEntry(&graphPtr->axes.nameTable, name);
-    if (hPtr != NULL) {
-        Axis *axisPtr;
+    if (hPtr == NULL) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "can't find axis \"", name,
+                "\" in \"", Tk_PathName(graphPtr->tkwin), "\"", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    *axisPtrPtr = Blt_GetHashValue(hPtr);
+    return TCL_OK;
+}
 
-        axisPtr = Blt_GetHashValue(hPtr);
-        if ((axisPtr->flags & DELETED) == 0) {
-            *axisPtrPtr = axisPtr;
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetAxisIterator --
+ *
+ *      Converts a string representing one or more axes into an iterator.  
+ *      The string in one of the following forms:
+ *
+ *       string         Name of axis.
+ *       tag            All axes having the tag.
+ *       @x,y           Axis nearest to the specified X-Y screen coordinates.
+ *       "active"       All active axes.
+ *       "all"          All axes.
+ *       "current"      Currently selected axis.
+ *      "name:string"   Axis named "string".
+ *      "tag:string"    Axes tagged by "string".
+ *      "label:pattern" Axes with label matching "pattern".
+ *      
+ * Results:
+ *      If the string is successfully converted, TCL_OK is returned.  The
+ *      pointer to the axis is returned via axisPtrPtr.  Otherwise, 
+ *      TCL_ERROR is returned and an error message is left in interpreter's 
+ *      result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetAxisIterator(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
+               AxisIterator *iterPtr)
+{
+    Axis *axisPtr;
+    Blt_Chain chain;
+    const char *string;
+    char c;
+    int numBytes;
+    int length;
+
+    iterPtr->graphPtr = graphPtr;
+    iterPtr->type = ITER_SINGLE;
+    iterPtr->link = NULL;
+    iterPtr->tagName = Tcl_GetStringFromObj(objPtr, &numBytes);
+    iterPtr->axisPtr = NULL;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    axisPtr = NULL;
+    if (c == '\0') {
+        axisPtr = NULL;
+    } 
+    if ((c == 'a') && (strcmp(iterPtr->tagName, "all") == 0)) {
+        iterPtr->type  = ITER_ALL;
+        iterPtr->tablePtr = &graphPtr->axes.nameTable;
+    } else if ((c == 'c') && (strcmp(string, "current") == 0)) {
+        GraphObj *objPtr;
+
+        objPtr = Blt_GetCurrentItem(graphPtr->bindTable);
+        /* Report only on axes. */
+        if ((objPtr != NULL) && (!objPtr->deleted) &&
+            (objPtr->classId >= CID_AXIS_X) &&
+            (objPtr->classId <= CID_AXIS_Z)) {
+            iterPtr->type = ITER_SINGLE;
+            iterPtr->axisPtr = (Axis *)objPtr;
+        }
+    } else if ((c == 'n') && (length > 5) && 
+               (strncmp(string, "name:", 5) == 0)) {
+        if (GetAxisByName(interp, graphPtr, string + 5, &axisPtr) != TCL_OK){
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "can't find an axis named \"", 
+                        string + 5, "\" in \"", Tk_PathName(graphPtr->tkwin), 
+                        "\"", (char *)NULL);
+            }
+            return TCL_ERROR;
+        }
+        iterPtr->type = ITER_SINGLE;
+        iterPtr->axisPtr = axisPtr;
+    } else if ((c == 't') && (length > 4) && 
+               (strncmp(string, "tag:", 4) == 0)) {
+        Blt_Chain chain;
+
+        chain = Blt_Tags_GetItemList(&graphPtr->axes.tags, string + 4);
+        if (chain == NULL) {
             return TCL_OK;
         }
+        iterPtr->tagName = string + 4;
+        iterPtr->link = Blt_Chain_FirstLink(chain);
+        iterPtr->type = ITER_TAG;
+    } else if (GetAxisByName(NULL, graphPtr, string, &axisPtr) == TCL_OK) {
+        iterPtr->type = ITER_SINGLE;
+        iterPtr->axisPtr = axisPtr;
+    } else if ((chain = Blt_Tags_GetItemList(&graphPtr->axes.tags, string)) 
+               != NULL) {
+        iterPtr->tagName = string;
+        iterPtr->link = Blt_Chain_FirstLink(chain);
+        iterPtr->type = ITER_TAG;
+    } else {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "can't find axis name or tag \"", 
+                string, "\" in \"", Tk_PathName(graphPtr->tkwin), "\"", 
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
+    }   
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetAxisFromObj --
+ *
+ *      Gets the axis associated the given index, tag, or label.  This
+ *      routine is used when you want only one tab.  It's an error if more
+ *      than one tab is specified (e.g. "all" tag).  It's also an error if
+ *      the tag is empty (no tabs are currently tagged).
+ *
+ *---------------------------------------------------------------------------
+ */
+static int 
+GetAxisFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
+                  Axis **axisPtrPtr)
+{
+    AxisIterator iter;
+    Axis *firstPtr;
+
+    if (GetAxisIterator(interp, graphPtr, objPtr, &iter) != TCL_OK) {
+        return TCL_ERROR;
     }
-    if (interp != NULL) {
-        Tcl_AppendResult(interp, "can't find axis \"", name, "\" in \"", 
-                Tk_PathName(graphPtr->tkwin), "\"", (char *)NULL);
+    firstPtr = FirstTaggedAxis(&iter);
+    if (firstPtr != NULL) {
+        Axis *nextPtr;
+
+        if (firstPtr->flags & DELETED) {
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "can't find axis \"",
+                        Tcl_GetString(objPtr), "\" in \"",
+                        Tk_PathName(graphPtr->tkwin), "\"", (char *)NULL);
+            }
+            return TCL_ERROR;
+        }
+        nextPtr = NextTaggedAxis(&iter);
+        if (nextPtr != NULL) {
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "multiple axes specified by \"", 
+                        Tcl_GetString(objPtr), "\"", (char *)NULL);
+            }
+            return TCL_ERROR;
+        }
     }
-    return TCL_ERROR;
+    *axisPtrPtr = firstPtr;
+    return TCL_OK;
 }
 
 static int
@@ -4759,8 +5246,13 @@ LimitsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_ResetAxes(graphPtr);
     }
     if (IsLogScale(axisPtr)) {
-        min = EXP10(axisPtr->tickRange.min);
-        max = EXP10(axisPtr->tickRange.max);
+        if (axisPtr->min > 0.0) {
+            min = EXP10(axisPtr->tickRange.min);
+            max = EXP10(axisPtr->tickRange.max);
+        } else {
+            min = EXP10(axisPtr->tickRange.min) + axisPtr->min - 1.0;
+            max = EXP10(axisPtr->tickRange.max) + axisPtr->min - 1.0;
+        }
     } else {
         min = axisPtr->tickRange.min;
         max = axisPtr->tickRange.max;
@@ -5080,8 +5572,13 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
         axisPtr->reqMin = axisPtr->reqMax - viewWidth;
     }
     if (IsLogScale(axisPtr)) {
-        axisPtr->reqMin = EXP10(axisPtr->reqMin);
-        axisPtr->reqMax = EXP10(axisPtr->reqMax);
+        if (axisPtr->min > 0.0) {
+            axisPtr->reqMin = EXP10(axisPtr->reqMin);
+            axisPtr->reqMax = EXP10(axisPtr->reqMax);
+        } else {
+            axisPtr->reqMin = EXP10(axisPtr->reqMin) + axisPtr->min - 1.0;
+            axisPtr->reqMax = EXP10(axisPtr->reqMax) + axisPtr->min - 1.0;
+        }
     }
     graphPtr->flags |= (GET_AXIS_GEOMETRY | LAYOUT_NEEDED | RESET_AXES);
     Blt_EventuallyRedrawGraph(graphPtr);
@@ -5233,48 +5730,40 @@ AxisCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Axis resources are possibly allocated (GC, font). Axis layout is
  *      deferred until the height and width of the window are known.
  *
+ *      pathName axis configure axisName ?option value ...?
  *---------------------------------------------------------------------------
  */
 static int
 AxisConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
 {
+    Axis *axisPtr;
+    AxisIterator iter;
     Graph *graphPtr = clientData;
-    Tcl_Obj *const *options;
-    int i;
-    int numNames, numOpts;
 
     /* Figure out where the option value pairs begin */
-    objc -= 3;
-    objv += 3;
-    for (i = 0; i < objc; i++) {
-        Axis *axisPtr;
-        const char *string;
-
-        string = Tcl_GetString(objv[i]);
-        if (string[0] == '-') {
-            break;
+    if (objc == 4) {
+        if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
+            return TCL_ERROR;           /* Can't find named axis */
         }
-        if (GetAxisFromObj(interp, graphPtr, objv[i], &axisPtr) != TCL_OK) {
-            return TCL_ERROR;
+        return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
+                (char *)axisPtr, (Tcl_Obj *)NULL, BLT_CONFIG_OBJV_ONLY);
+    } else if (objc == 5) {
+        if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
+            return TCL_ERROR;           /* Can't find named axis */
         }
-    }
-    numNames = i;                               /* Number of pen names specified */
-    numOpts = objc - i;                 /* Number of options specified */
-    options = objv + i;                 /* Start of options in objv  */
-
-    for (i = 0; i < numNames; i++) {
-        Axis *axisPtr;
-
-        if (GetAxisFromObj(interp, graphPtr, objv[i], &axisPtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (ConfigureOp(axisPtr, interp, numOpts, options) != TCL_OK) {
-            break;
-        }
-    }
-    if (i < numNames) {
+        return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
+                (char *)axisPtr, objv[4], BLT_CONFIG_OBJV_ONLY);
+    } 
+    if (GetAxisIterator(interp, graphPtr, objv[3], &iter) != TCL_OK) {
         return TCL_ERROR;
+    }
+    for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+         axisPtr = NextTaggedAxis(&iter)) {
+
+        if (ConfigureOp(axisPtr, interp, objc - 4, objv + 4) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -5298,20 +5787,41 @@ static int
 AxisDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    Blt_HashTable selected;
     Graph *graphPtr = clientData;
     int i;
 
+    Blt_InitHashTable(&selected, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
         Axis *axisPtr;
+        AxisIterator iter;
 
-        if (GetAxisFromObj(interp, graphPtr, objv[i], &axisPtr) != TCL_OK) {
+        if (GetAxisIterator(interp, graphPtr, objv[i], &iter) != TCL_OK) {
+            Blt_DeleteHashTable(&selected);
             return TCL_ERROR;
         }
+        for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+             axisPtr = NextTaggedAxis(&iter)) {
+            int isNew;
+            Blt_HashEntry *hPtr;
+
+            hPtr = Blt_CreateHashEntry(&selected, (char *)axisPtr, &isNew);
+            Blt_SetHashValue(hPtr, axisPtr);
+        }
+    }
+    for (hPtr = Blt_FirstHashEntry(&selected, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Axis *axisPtr;
+
+        axisPtr = Blt_GetHashValue(hPtr);
         axisPtr->flags |= DELETED;
         if (axisPtr->refCount == 0) {
             DestroyAxis(axisPtr);
         }
     }
+    Blt_DeleteHashTable(&selected);
     return TCL_OK;
 }
 
@@ -5510,6 +6020,7 @@ static Blt_SwitchSpec namesSwitches[] =
  * Results:
  *      Returns a standard TCL result.
  *
+ *      pathName axis names -zoom -visible ?pattern...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5583,6 +6094,514 @@ AxisNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagAddOp --
+ *
+ *      .g axis tag add tagName elem1 elem2 elem2 elem4
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    const char *tag;
+
+    tag = Tcl_GetString(objv[4]);
+    if (strcmp(tag, "all") == 0) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (objc == 5) {
+        /* No axes specified.  Just add the tag. */
+        Blt_Tags_AddTag(&graphPtr->axes.tags, tag);
+    } else {
+        int i;
+
+        for (i = 5; i < objc; i++) {
+            Axis *axisPtr;
+            AxisIterator iter;
+            
+            if (GetAxisIterator(interp, graphPtr, objv[i], &iter) != TCL_OK){
+                return TCL_ERROR;
+            }
+            for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+                 axisPtr = NextTaggedAxis(&iter)) {
+                Blt_Tags_AddItemToTag(&graphPtr->axes.tags, tag, axisPtr);
+            }
+        }
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagDeleteOp --
+ *
+ *      .g axis tag delete tagName tab1 tab2 tab3
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    const char *tag;
+    int i;
+
+    tag = Tcl_GetString(objv[4]);
+    if (strcmp(tag, "all") == 0) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    for (i = 4; i < objc; i++) {
+        Axis *axisPtr;
+        AxisIterator iter;
+        
+        if (GetAxisIterator(interp, graphPtr, objv[i], &iter) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+             axisPtr = NextTaggedAxis(&iter)) {
+            Blt_Tags_RemoveItemFromTag(&graphPtr->axes.tags, tag, axisPtr);
+        }
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagExistsOp --
+ *
+ *      Returns the existence of the one or more tags in the given node.  If
+ *      the node has any the tags, true is return in the interpreter.
+ *
+ *      .g axis tag exists elem tag1 tag2 tag3...
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
+{
+    AxisIterator iter;
+    Graph *graphPtr = clientData;
+    int i;
+
+    if (GetAxisIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 5; i < objc; i++) {
+        const char *tag;
+        Axis *axisPtr;
+
+        tag = Tcl_GetString(objv[i]);
+        for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+             axisPtr = NextTaggedAxis(&iter)) {
+            if (Blt_Tags_ItemHasTag(&graphPtr->axes.tags, axisPtr, tag)) {
+                Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
+                return TCL_OK;
+            }
+        }
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), FALSE);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagForgetOp --
+ *
+ *      Removes the given tags from all tabs.
+ *
+ *      .g axis tag forget tag1 tag2 tag3...
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    int i;
+
+    for (i = 4; i < objc; i++) {
+        const char *tag;
+
+        tag = Tcl_GetString(objv[i]);
+        Blt_Tags_ForgetTag(&graphPtr->axes.tags, tag);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagGetOp --
+ *
+ *      Returns tag names for a given node.  If one of more pattern arguments
+ *      are provided, then only those matching tags are returned.
+ *
+ *      .t axis tag get elem pat1 pat2...
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Axis *axisPtr; 
+    AxisIterator iter;
+    Graph *graphPtr = clientData;
+    Tcl_Obj *listObjPtr;
+
+    if (GetAxisIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+         axisPtr = NextTaggedAxis(&iter)) {
+        if (objc == 5) {
+            Blt_Tags_AppendTagsToObj(&graphPtr->axes.tags, axisPtr, 
+                listObjPtr);
+            Tcl_ListObjAppendElement(interp, listObjPtr, 
+                Tcl_NewStringObj("all", 3));
+        } else {
+            int i;
+            
+            /* Check if we need to add the special tags "all" */
+            for (i = 5; i < objc; i++) {
+                const char *pattern;
+
+                pattern = Tcl_GetString(objv[i]);
+                if (Tcl_StringMatch("all", pattern)) {
+                    Tcl_Obj *objPtr;
+
+                    objPtr = Tcl_NewStringObj("all", 3);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                    break;
+                }
+            }
+            /* Now process any standard tags. */
+            for (i = 5; i < objc; i++) {
+                Blt_ChainLink link;
+                const char *pattern;
+                Blt_Chain chain;
+
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&graphPtr->axes.tags, axisPtr, 
+                        chain);
+                pattern = Tcl_GetString(objv[i]);
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    const char *tag;
+                    Tcl_Obj *objPtr;
+
+                    tag = (const char *)Blt_Chain_GetValue(link);
+                    if (!Tcl_StringMatch(tag, pattern)) {
+                        continue;
+                    }
+                    objPtr = Tcl_NewStringObj(tag, -1);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                }
+                Blt_Chain_Destroy(chain);
+            }
+        }    
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagNamesOp --
+ *
+ *      Returns the names of all the tags in the graph.  If one of more
+ *      axis arguments are provided, then only the tags found in those
+ *      axes are returned.
+ *
+ *      .g axis tag names elem elem elem...
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    Tcl_Obj *listObjPtr, *objPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewStringObj("all", -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    if (objc == 4) {
+        Blt_Tags_AppendAllTagsToObj(&graphPtr->axes.tags, listObjPtr);
+    } else {
+        Blt_HashTable selected;
+        int i;
+
+        Blt_InitHashTable(&selected, BLT_STRING_KEYS);
+        for (i = 4; i < objc; i++) {
+            AxisIterator iter;
+            Axis *axisPtr;
+
+            if (GetAxisIterator(interp, graphPtr, objv[i], &iter) != TCL_OK){
+                goto error;
+            }
+            for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+                 axisPtr = NextTaggedAxis(&iter)) {
+                Blt_ChainLink link;
+                Blt_Chain chain;
+
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&graphPtr->axes.tags, axisPtr,
+                        chain);
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    const char *tag;
+                    int isNew;
+
+                    tag = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&selected, tag, &isNew);
+                }
+                Blt_Chain_Destroy(chain);
+            }
+        }
+        {
+            Blt_HashEntry *hPtr;
+            Blt_HashSearch hiter;
+
+            for (hPtr = Blt_FirstHashEntry(&selected, &hiter); hPtr != NULL;
+                 hPtr = Blt_NextHashEntry(&hiter)) {
+                objPtr = Tcl_NewStringObj(Blt_GetHashKey(&selected, hPtr), -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
+        }
+        Blt_DeleteHashTable(&selected);
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+ error:
+    Tcl_DecrRefCount(listObjPtr);
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagSearchOp --
+ *
+ *      Returns the names of axis associated with the given tags.  The
+ *      name returned will represent the union of tabs for all the given
+ *      tags.
+ *
+ *      pathName axis tag search tag1 tag2 tag3...
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagSearchOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
+{
+    Blt_HashTable selected;
+    Graph *graphPtr = clientData;
+    int i;
+        
+    Blt_InitHashTable(&selected, BLT_ONE_WORD_KEYS);
+    for (i = 4; i < objc; i++) {
+        const char *tag;
+
+        tag = Tcl_GetString(objv[i]);
+        if (strcmp(tag, "all") == 0) {
+            break;
+        } else {
+            Blt_Chain chain;
+
+            chain = Blt_Tags_GetItemList(&graphPtr->axes.tags, tag);
+            if (chain != NULL) {
+                Blt_ChainLink link;
+
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    Axis *axisPtr;
+                    int isNew;
+                    
+                    axisPtr = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&selected, (char *)axisPtr, &isNew);
+                }
+            }
+            continue;
+        }
+        Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
+                         (char *)NULL);
+        goto error;
+    }
+    {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
+        Tcl_Obj *listObjPtr;
+
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+        for (hPtr = Blt_FirstHashEntry(&selected, &iter); hPtr != NULL; 
+             hPtr = Blt_NextHashEntry(&iter)) {
+            Axis *axisPtr;
+            Tcl_Obj *objPtr;
+
+            axisPtr = (Axis *)Blt_GetHashKey(&selected, hPtr);
+            objPtr = Tcl_NewStringObj(axisPtr->obj.name, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
+        Tcl_SetObjResult(interp, listObjPtr);
+    }
+    Blt_DeleteHashTable(&selected);
+    return TCL_OK;
+
+ error:
+    Blt_DeleteHashTable(&selected);
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagSetOp --
+ *
+ *      Sets one or more tags for a given tab.  Tag names can't start with a
+ *      digit (to distinquish them from node ids) and can't be a reserved tag
+ *      ("all").
+ *
+ *      pathName axis tag set axisName tag1 tag2...
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    AxisIterator iter;
+    Graph *graphPtr = clientData;
+    int i;
+
+    if (GetAxisIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 5; i < objc; i++) {
+        const char *tag;
+        Axis *axisPtr;
+
+        tag = Tcl_GetString(objv[i]);
+        if (strcmp(tag, "all") == 0) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+                             (char *)NULL);     
+            return TCL_ERROR;
+        }
+        for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+             axisPtr = NextTaggedAxis(&iter)) {
+            Blt_Tags_AddItemToTag(&graphPtr->axes.tags, tag, axisPtr);
+        }    
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagUnsetOp --
+ *
+ *      Removes one or more tags from a given axis. If a tag doesn't exist 
+ *      or is a reserved tag ("all"), nothing will be done and no error
+ *      message will be returned.
+ *
+ *      pathName axis tag unset axisName tagName...
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    Axis *axisPtr;
+    AxisIterator iter;
+    Graph *graphPtr = clientData;
+
+    if (GetAxisIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (axisPtr = FirstTaggedAxis(&iter); axisPtr != NULL; 
+         axisPtr = NextTaggedAxis(&iter)) {
+        int i;
+
+        for (i = 5; i < objc; i++) {
+            const char *tag;
+
+            tag = Tcl_GetString(objv[i]);
+            Blt_Tags_RemoveItemFromTag(&graphPtr->axes.tags, tag, axisPtr);
+        }    
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagOp --
+ *
+ *      This procedure is invoked to process tag operations.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ * Side Effects:
+ *      See the user documentation.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec tagOps[] =
+{
+    {"add",      1, TagAddOp,      5, 0, "tagName ?axisName ...?",},
+    {"delete",   1, TagDeleteOp,   5, 0, "axisName ?tagName ...?",},
+    {"exists",   1, TagExistsOp,   5, 0, "axisName ?tagName ...?",},
+    {"forget",   1, TagForgetOp,   4, 0, "?tagName ...?",},
+    {"get",      1, TagGetOp,      5, 0, "axisName ?pattern ...?",},
+    {"names",    1, TagNamesOp,    4, 0, "?axisName ...?",},
+    {"search",   3, TagSearchOp,   4, 0, "?tagName ...?",},
+    {"set",      3, TagSetOp,      5, 0, "axisName ?tagName ...?",},
+    {"unset",    1, TagUnsetOp,    5, 0, "axisName ?tagName ...?",},
+};
+
+static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
+
+static int
+TagOp(ClientData clientData, Tcl_Interp *interp, int objc,
+      Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+    int result;
+
+    proc = Blt_GetOpFromObj(interp, numTagOps, tagOps, BLT_OP_ARG2,
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    result = (*proc)(clientData, interp, objc, objv);
+    return result;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -5612,14 +6631,14 @@ AxisTransformOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * AxisMarginOp --
+ * AxisTypeOp --
  *
- *      This procedure returns a string representing the axis limits of the
- *      graph.  The format of the string is { left top right bottom}.
+ *      This procedure returns a string representing the type of the
+ *      axis.  The format of the string is x, y or z.
  *
  * Results:
  *      Always returns TCL_OK.  The interp->result field is
- *      a list of the graph axis limits.
+ *      the type of the axis.
  *
  *---------------------------------------------------------------------------
  */
@@ -5654,8 +6673,7 @@ static Blt_OpSpec virtAxisOps[] = {
     {"activate",     1, AxisActivateOp,     4, 4, "axisName"},
     {"bind",         1, AxisBindOp,         3, 6, "bindTag sequence command"},
     {"cget",         2, AxisCgetOp,         5, 5, "axisName option"},
-    {"configure",    2, AxisConfigureOp,    4, 0, "axisName ?axisName?... "
-        "?option value?..."},
+    {"configure",    2, AxisConfigureOp,    4, 0, "axisName ?option value?..."},
     {"create",       2, AxisCreateOp,       4, 0, "axisName ?option value?..."},
     {"deactivate",   3, AxisActivateOp,     4, 4, "axisName"},
     {"delete",       3, AxisDeleteOp,       3, 0, "?axisName?..."},
@@ -5665,8 +6683,9 @@ static Blt_OpSpec virtAxisOps[] = {
     {"limits",       1, AxisLimitsOp,       4, 4, "axisName"},
     {"margin",       1, AxisMarginOp,       4, 4, "axisName"},
     {"names",        1, AxisNamesOp,        3, 0, "?pattern?..."},
+    {"tag",          2, TagOp,              2, 0, "args"},
     {"transform",    2, AxisTransformOp,    5, 5, "axisName value"},
-    {"type",         2, AxisTypeOp,       4, 4, "axisName"},
+    {"type",         2, AxisTypeOp,         4, 4, "axisName"},
     {"view",         1, AxisViewOp,         4, 7, "axisName ?moveto fract? "
         "?scroll number what?"},
 };
@@ -6950,7 +7969,11 @@ NextMajorTick(Axis *axisPtr)
         break;
 
     case SCALE_LOG:
+        d += ticksPtr->index * ticksPtr->step;
+        d = UROUND(d, ticksPtr->step) + 0.0;
+#ifdef notdef
         d += ticksPtr->range * logTable[ticksPtr->index];
+#endif
         break;
 
     case SCALE_CUSTOM:                  /* User defined minor ticks */

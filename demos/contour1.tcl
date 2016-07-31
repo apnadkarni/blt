@@ -1010,12 +1010,12 @@ blt::contour .g
 
 set elem substrate
 .g element create substrate -mesh regular -values substrate 
-.g element isoline step substrate 10 
+.g element isoline step substrate 1000
 set elem particle
 .g element create particle -mesh regular -values particle 
 .g element isoline step particle 10 
-.g axis configure z -palette greyscale
-foreach key { hull values symbols isolines colormap symbols edges } {
+.g axis configure z -palette blue.rgb
+foreach key { boundary values symbols isolines colormap symbols wireframe } {
     set show($key) [.g element cget $elem -show$key]
 }
 
@@ -1025,12 +1025,16 @@ proc SetOpacity {} {
     if { $current == "particle" } {
 	.g element configure particle -opacity 100.0 
 	.g element configure substrate -opacity 50.0 
+	.g element configure substrate -hide yes
+	.g element configure particle -hide no
 	.g legend deactivate
 	.g legend activate particle
 	.g element show { substrate particle }
     } else {
 	.g element configure substrate -opacity 100.0 
 	.g element configure particle -opacity 50.0 
+	.g element configure particle -hide yes
+	.g element configure substrate -hide no
 	.g legend deactivate
 	.g legend activate substrate
 	.g element show { particle substrate }
@@ -1043,10 +1047,10 @@ proc Fix { what } {
     .g element configure $elem -show$what $bool
 }
 
-blt::tk::checkbutton .hull -text "Boundary" -variable show(hull) \
-    -command "Fix hull"
-blt::tk::checkbutton .edges -text "Edges" -variable show(edges) \
-    -command "Fix edges"
+blt::tk::checkbutton .boundary -text "Boundary" -variable show(boundary) \
+    -command "Fix boundary"
+blt::tk::checkbutton .wireframe -text "Wireframe" -variable show(wireframe) \
+    -command "Fix wireframe"
 blt::tk::checkbutton .colormap -text "Colormap"  \
     -variable show(colormap) -command "Fix colormap"
 blt::tk::checkbutton .isolines -text "Isolines" \
@@ -1060,10 +1064,10 @@ blt::tk::checkbutton .symbols -text "Symbols" \
 
 blt::table . \
     0,0 .g -fill both -rowspan 7 \
-    0,1 .hull -anchor w \
+    0,1 .boundary -anchor w \
     1,1 .colormap -anchor w \
     2,1 .isolines -anchor w \
-    3,1 .edges -anchor w \
+    3,1 .wireframe -anchor w \
     4,1 .symbols -anchor w \
     5,1 .values -anchor w 
 blt::table configure . r* -resize none

@@ -1,11 +1,25 @@
 
 package require BLT
 
-set palette blue.rgb
+set bg [blt::background create linear  \
+	    -jitter 3 \
+	    -from w -to e \
+	    -colorscale log \
+	    -lowcolor "grey99"\
+	    -highcolor "grey85"\
+	    -repeat reversing \
+	    -relativeto .controls]
+blt::tk::frame .controls -bg $bg -borderwidth 4
+
+option add *BltTkCheckbutton*background $bg
+option add *BltTkLabel*background $bg
+
+option add *HighlightThickness 0
+set palette amwg_blueyellowred.rgb
 set x [blt::vector create]
 set y [blt::vector create]
-$x linspace -2 2 100
-$y linspace -2 3 100
+$x linspace -2 2 50
+$y linspace -2 2.3 50
 set x2 [blt::vector create]
 $x2 expr { $x* $x }
 set y2 [blt::vector create]
@@ -14,19 +28,27 @@ $y2 expr { $y * $y}
 set z {}
 foreach  i [$y2 values] {
     foreach  j [$x2 values] k [$x values] {
-	lappend z [expr ($k * exp(-($i + $j)) + 0.01 * rand()*0.4) * 1000]
+	set value [expr ($k * exp(-($i + $j)) + 0.001 * rand()*0.0) * 1000]
+	lappend z $value
     }
 }
 
 
-set mesh [blt::mesh create regular -y {0 100 100} -x {0 100 100}]
+set mesh [blt::mesh create regular -y {0 100 50} -x {0 100 50}]
 
-blt::contour .g -highlightthickness 0 
+blt::contour .g -highlightthickness 0 -bg white
 .g element create myContour -values $z -mesh $mesh 
-.g element isoline steps myContour 10 
-.g legend configure -hide yes
-.g axis configure z -palette $palette
-.g axis configure z -logscale yes
+.g element isoline steps myContour 10
+.g legend configure -hide yes 
+.g axis configure x -tickdirection in  -scale linear
+.g axis configure y -tickdirection in  -scale linear
+.g axis configure z \
+    -palette $palette \
+    -colorbarthickness 20 \
+    -tickdirection in \
+    -scale linear \
+    -margin right 
+
 proc UpdateColors {} {
      global usePaletteColors
      if { $usePaletteColors } {
@@ -40,6 +62,20 @@ proc FixPalette {} {
     .g axis configure z -palette $palette
 }
 
+proc LogScale {} {
+    global logScale
+    if { $logScale } {
+	.g axis configure z -scale "log"
+    } else {
+	.g axis configure z -scale "linear"
+    }
+}
+
+proc Decreasing {} {
+    global decreasing
+    .g axis configure z -decreasing $decreasing
+}
+
 proc Fix { what } {
     global show
 
@@ -48,69 +84,77 @@ proc Fix { what } {
 }
 
 array set show {
-    hull 0
+    boundary 0
     values 0
     symbols 0
     isolines 0
     colormap 0
     symbols 0
-    edges 0
+    wireframe 0
 }
 
-blt::tk::checkbutton .hull -text "Boundary" -variable show(hull) \
-    -command "Fix hull"
-blt::tk::checkbutton .edges -text "Edges" -variable show(edges) \
-    -command "Fix edges"
-blt::tk::checkbutton .colormap -text "Colormap"  \
+blt::tk::checkbutton .controls.boundary -text "Boundary" -variable show(boundary) \
+    -command "Fix boundary"
+blt::tk::checkbutton .controls.wireframe -text "Wireframe" -variable show(wireframe) \
+    -command "Fix wireframe"
+blt::tk::checkbutton .controls.colormap -text "Colormap"  \
     -variable show(colormap) -command "Fix colormap"
-blt::tk::checkbutton .isolines -text "Isolines" \
+blt::tk::checkbutton .controls.isolines -text "Isolines" \
     -variable show(isolines) -command "Fix isolines"
-blt::tk::checkbutton .values -text "Values" \
+blt::tk::checkbutton .controls.values -text "Values" \
     -variable show(values) -command "Fix values"
-blt::tk::checkbutton .symbols -text "Symbols" \
+blt::tk::checkbutton .controls.symbols -text "Symbols" \
     -variable show(symbols) -command "Fix symbols"
-blt::tk::label .label -text ""
-blt::tk::checkbutton .interp -text "Use palette colors" \
+blt::tk::checkbutton .controls.interp -text "Use palette colors" \
     -variable usePaletteColors -command "UpdateColors"
-blt::combobutton .palettes \
+blt::tk::checkbutton .controls.logscale -text "Log scale" \
+    -variable logScale -command "LogScale"
+blt::tk::checkbutton .controls.decreasing -text "Decreasing" \
+    -variable decreasing -command "Decreasing"
+blt::combobutton .controls.palettes \
     -textvariable palette \
     -relief sunken \
     -background white \
     -arrowon yes \
-    -menu .palettes.menu 
-blt::tk::label .palettesl -text "Palettes" 
-blt::combomenu .palettes.menu \
+    -menu .controls.palettes.menu 
+blt::tk::label .controls.palettesl -text "Palettes" 
+blt::combomenu .controls.palettes.menu \
     -background white \
     -textvariable palette \
     -height 200 \
-    -yscrollbar .palettes.menu.ybar \
-    -xscrollbar .palettes.menu.xbar
+    -yscrollbar .controls.palettes.menu.ybar \
+    -xscrollbar .controls.palettes.menu.xbar
 
-blt::tk::scrollbar .palettes.menu.xbar 
-blt::tk::scrollbar .palettes.menu.ybar
+blt::tk::scrollbar .controls.palettes.menu.xbar 
+blt::tk::scrollbar .controls.palettes.menu.ybar
 
 foreach pal [blt::palette names] {
     set pal [string trim $pal ::]
     lappend palettes $pal
 }
 
-.palettes.menu listadd [lsort -dictionary $palettes] -command FixPalette
+.controls.palettes.menu listadd [lsort -dictionary $palettes] -command FixPalette
+
+blt::table .controls \
+    0,0 .controls.boundary -anchor w -cspan 2 \
+    1,0 .controls.colormap -anchor w -cspan 2\
+    2,0 .controls.isolines -anchor w -cspan 2 \
+    3,0 .controls.wireframe -anchor w -cspan 2 \
+    4,0 .controls.symbols -anchor w -cspan 2 \
+    5,0 .controls.values -anchor w -cspan 2 \
+    6,0 .controls.interp -anchor w -cspan 2 \
+    7,0 .controls.logscale -anchor w -cspan 2 \
+    8,0 .controls.decreasing -anchor w -cspan 2 \
+    9,0 .controls.palettesl -anchor w  \
+    9,1 .controls.palettes -fill x
+
+blt::table configure .controls r* c1 -resize none
+blt::table configure .controls r10 -resize both
 
 blt::table . \
-    0,0 .label -fill x \
-    1,0 .g -fill both -rowspan 9 \
-    1,1 .hull -anchor w -cspan 2 \
-    2,1 .colormap -anchor w -cspan 2\
-    3,1 .isolines -anchor w -cspan 2 \
-    4,1 .edges -anchor w -cspan 2 \
-    5,1 .symbols -anchor w -cspan 2 \
-    6,1 .values -anchor w -cspan 2 \
-    7,1 .interp -anchor w -cspan 2 \
-    8,1 .palettesl -anchor w  \
-    8,2 .palettes -fill x
+    0,0 .g -fill both \
+    0,1 .controls -fill both 
 
-blt::table configure . r* c1 -resize none
-blt::table configure . r9 -resize both
 
 foreach key [array names show] {
     set show($key) [.g element cget myContour -show$key]

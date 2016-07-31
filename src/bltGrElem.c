@@ -138,6 +138,13 @@ Blt_CustomOption bltBarStylesOption =
     ObjToStyles, StylesToObj, FreeStyles, (ClientData)0,
 };
 
+static Blt_OptionFreeProc FreeTagsProc;
+static Blt_OptionParseProc ObjToTagsProc;
+static Blt_OptionPrintProc TagsToObjProc;
+Blt_CustomOption bltElementTagsOption = {
+    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+};
+
 #include "bltGrElem.h"
 
 static Blt_VectorChangedProc VectorChangedProc;
@@ -1186,6 +1193,138 @@ StylesToObj(
 /*
  *---------------------------------------------------------------------------
  *
+ * SetTag --
+ *
+ *      Associates a tag with a given element.  Individual element tags are
+ *      stored in hash tables keyed by the tag name.  Each table is in turn
+ *      stored in a hash table keyed by the element pointer.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects:
+ *      A tag is stored for a particular element.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SetTag(Tcl_Interp *interp, Element *elemPtr, const char *tagName)
+{
+    Graph *graphPtr;
+    long dummy;
+    
+    if (strcmp(tagName, "all") == 0) {
+        return TCL_OK;                  /* Don't need to create reserved
+                                         * tag. */
+    }
+    if (tagName[0] == '\0') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+                (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (tagName[0] == '-') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, 
+                "\" can't start with a '-'.", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    graphPtr = elemPtr->obj.graphPtr;
+    Blt_Tags_AddItemToTag(&graphPtr->elements.tags, tagName, elemPtr);
+    return TCL_OK;
+}
+
+/*ARGSUSED*/
+static void
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
+{
+    Graph *graphPtr;
+    Element *elemPtr = (Element *)widgRec;
+
+    graphPtr = elemPtr->obj.graphPtr;
+    Blt_Tags_ClearTagsFromItem(&graphPtr->elements.tags, elemPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToTagsProc --
+ *
+ *      Convert the string representation of a list of tags.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The tags are
+ *      save in the widget.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    Graph *graphPtr;
+    Element *elemPtr = (Element *)widgRec;
+    int i;
+    const char *string;
+    int objc;
+    Tcl_Obj **objv;
+
+    graphPtr = elemPtr->obj.graphPtr;
+    Blt_Tags_ClearTagsFromItem(&graphPtr->elements.tags, elemPtr);
+    string = Tcl_GetString(objPtr);
+    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+        return TCL_OK;
+    }
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i++) {
+        SetTag(interp, elemPtr, Tcl_GetString(objv[i]));
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagsToObjProc --
+ *
+ *      Returns the tags associated with the element.
+ *
+ * Results:
+ *      The names representing the tags are returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
+{
+    Graph *graphPtr;
+    Element *elemPtr = (Element *)widgRec;
+    Tcl_Obj *listObjPtr;
+
+    graphPtr = elemPtr->obj.graphPtr;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Blt_Tags_AppendTagsToObj(&graphPtr->elements.tags,  elemPtr, listObjPtr);
+    return listObjPtr;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * Blt_StyleMap --
  *
  *      Creates an array of style indices and fills it based on the weight
@@ -1527,7 +1666,7 @@ GetElementFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
 static int
 GetIndex(Tcl_Interp *interp, Element *elemPtr, Tcl_Obj *objPtr, int *indexPtr)
 {
-    char *string;
+    const char *string;
 
     string = Tcl_GetString(objPtr);
     if ((*string == 'e') && (strcmp("end", string) == 0)) {
@@ -1920,11 +2059,12 @@ Blt_ActiveElementsToPostScript( Graph *graphPtr, Blt_Ps ps)
  */
 /*ARGSUSED*/
 static int
-ActiveClearOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
+ActiveClearOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
     Element *elemPtr;
     ElementIterator iter;
+    Graph *graphPtr = clientData;
 
     if (GetElementIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
         return TCL_ERROR;               /* Can't find named element */
@@ -1957,12 +2097,13 @@ ActiveClearOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ActiveIndicesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
+ActiveIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                Tcl_Obj *const *objv)
 {
-    Element *elemPtr;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
+    Element *elemPtr;
+    Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr;
 
     if (GetElementFromObj(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
@@ -1996,10 +2137,11 @@ ActiveIndicesOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ActiveSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
+ActiveSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     Element *elemPtr;
+    Graph *graphPtr = clientData;
     int i;
 
     if (GetElementFromObj(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
@@ -2047,10 +2189,11 @@ ActiveSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ActiveToggleOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
+ActiveToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
+               Tcl_Obj *const *objv)
 {
     Element *elemPtr;
+    Graph *graphPtr = clientData;
     int i;
 
     if (GetElementFromObj(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
@@ -2101,10 +2244,11 @@ ActiveToggleOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ActiveUnsetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
+ActiveUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
     Element *elemPtr;
+    Graph *graphPtr = clientData;
     int i;
 
     if (GetElementFromObj(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
@@ -2159,20 +2303,17 @@ static Blt_OpSpec activeOps[] =
 static int numActiveOps = sizeof(activeOps) / sizeof(Blt_OpSpec);
 
 static int
-ActiveOp(
-    Graph *graphPtr,                    /* Graph widget */
-    Tcl_Interp *interp,                 /* Interpreter to report errors to */
-    int objc,                           /* Number of element names */
-    Tcl_Obj *const *objv)               /* List of element names */
+ActiveOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
-    GraphElementProc *proc;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numActiveOps, activeOps, BLT_OP_ARG3, 
         objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    return (*proc) (graphPtr, interp, objc, objv);
+    return (*proc) (clientData, interp, objc, objv);
 }
 
 /*
@@ -2192,12 +2333,10 @@ ActiveOp(
  *---------------------------------------------------------------------------
  */
 static int
-ActivateOp(
-    Graph *graphPtr,                    /* Graph widget */
-    Tcl_Interp *interp,                 /* Interpreter to report errors to */
-    int objc,                           /* Number of element names */
-    Tcl_Obj *const *objv)               /* List of element names */
+ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
 
     if (objc == 3) {
         Blt_HashEntry *hPtr;
@@ -2290,12 +2429,11 @@ Blt_MakeElementTag(Graph *graphPtr, const char *tagName)
  */
 /*ARGSUSED*/
 static int
-BindOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
+
     if (objc == 3) {
         Blt_HashEntry *hPtr;
         Blt_HashSearch iter;
@@ -2332,12 +2470,8 @@ BindOp(
  *---------------------------------------------------------------------------
  */
 static int
-CreateOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv,
-    ClassId classId)
+CreateOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
+         ClassId classId)
 {
     return CreateElement(graphPtr, interp, objc, objv, classId);
 }
@@ -2351,19 +2485,17 @@ CreateOp(
  */
 /*ARGSUSED*/
 static int
-CgetOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Element *elemPtr;
+    Graph *graphPtr = clientData;
 
     if (GetElementFromObj(interp, graphPtr, objv[3], &elemPtr) != TCL_OK) {
         return TCL_ERROR;               /* Can't find named element */
     }
     if (Blt_ConfigureValueFromObj(interp, graphPtr->tkwin, elemPtr->configSpecs,
-                                  (char *)elemPtr, objv[4], 0) != TCL_OK) {
+        (char *)elemPtr, objv[4], 0) != TCL_OK) {
         return TCL_ERROR;
     }
     return TCL_OK;
@@ -2414,16 +2546,14 @@ static Blt_ConfigSpec nearestSpecs[] = {
 };
 
 static int
-NearestOp(
-    Graph *graphPtr,                    /* Graph widget */
-    Tcl_Interp *interp,                 /* Interpreter to report results to */
-    int objc,                           /* # of arguments */
-    Tcl_Obj *const *objv)               /* List of element names */
+NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     Element *elemPtr;
+    Graph *graphPtr = clientData;
     NearestElement nearest;
+    const char *string;
     int i, x, y;
-    char *string;
 
     if (graphPtr->flags & RESET_AXES) {
         Blt_ResetAxes(graphPtr);
@@ -2582,16 +2712,14 @@ NearestOp(
  */
 
 static int
-ClosestOp(
-    Graph *graphPtr,                    /* Graph widget */
-    Tcl_Interp *interp,                 /* Interpreter to report results to */
-    int objc,                           /* # of arguments */
-    Tcl_Obj *const *objv)               /* List of element names */
+ClosestOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     NearestElement nearest;
-    int i, x, y;
     const char *string;
     const char *varName;
+    int i, x, y;
 
     if (graphPtr->flags & RESET_AXES) {
         Blt_ResetAxes(graphPtr);
@@ -2738,11 +2866,12 @@ ClosestOp(
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     Element *elemPtr;
     ElementIterator iter;
+    Graph *graphPtr = clientData;
 
     /* Figure out where the option value pairs begin */
     if (objc == 4) {
@@ -2813,12 +2942,10 @@ ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-DeactivateOp(
-    Graph *graphPtr,                    /* Graph widget */
-    Tcl_Interp *interp,                 /* Not used. */
-    int objc,                           /* Number of element names */
-    Tcl_Obj *const *objv)               /* List of element names */
+DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -2864,16 +2991,14 @@ DeactivateOp(
  */
 /*ARGSUSED*/
 static int
-DeleteOp(
-    Graph *graphPtr,                    /* Graph widget */
-    Tcl_Interp *interp,                 /* Not used. */
-    int objc,                           /* Number of element names */
-    Tcl_Obj *const *objv)               /* List of element names */
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
-    int i;
-    Blt_HashTable selected;
-    Blt_HashSearch cursor;
     Blt_HashEntry *hPtr;
+    Blt_HashSearch cursor;
+    Blt_HashTable selected;
+    Graph *graphPtr = clientData;
+    int i;
 
     Blt_InitHashTable(&selected, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
@@ -2921,9 +3046,11 @@ DeleteOp(
  */
 /* ARGSUSED */
 static int
-ExistsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
+    Graph *graphPtr = clientData;
     const char *name;
 
     name = Tcl_GetString(objv[3]);
@@ -2950,9 +3077,11 @@ ExistsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /* ARGSUSED */
 static int
-FindOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Element *elemPtr;
+    Graph *graphPtr = clientData;
 
     if (Blt_GetElement(interp, graphPtr, objv[3], &elemPtr) != TCL_OK) {
         return TCL_ERROR;               /* Can't find named element */
@@ -3032,13 +3161,11 @@ FindOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-GetOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)
+GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
-    char *string;
+    Graph *graphPtr = clientData;
+    const char *string;
 
     string = Tcl_GetString(objv[3]);
     if ((string[0] == 'c') && (strcmp(string, "current") == 0)) {
@@ -3087,12 +3214,13 @@ DisplayListObj(Graph *graphPtr)
  *---------------------------------------------------------------------------
  */
 static int
-LowerOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+LowerOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     Blt_Chain chain;
     Blt_ChainLink link, next;
     Blt_HashTable selected;
-
+    Graph *graphPtr = clientData;
     int i;
 
     Blt_InitHashTable(&selected, BLT_ONE_WORD_KEYS);
@@ -3152,8 +3280,10 @@ LowerOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-NamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -3208,11 +3338,13 @@ NamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-RaiseOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+RaiseOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     Blt_Chain chain;
     Blt_ChainLink link, prev;
     Blt_HashTable selected;
+    Graph *graphPtr = clientData;
     int i;
 
     Blt_InitHashTable(&selected, BLT_ONE_WORD_KEYS);
@@ -3270,13 +3402,15 @@ RaiseOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ShowOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Blt_Chain chain;
     Blt_ChainLink link;
+    Blt_HashTable selected;
+    Graph *graphPtr = clientData;
     Tcl_Obj **elem;
     int i, n;
-    Blt_HashTable selected;
     
     if (objc == 3) {
         Tcl_SetObjResult(interp, DisplayListObj(graphPtr));
@@ -3346,8 +3480,10 @@ ShowOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagAddOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     const char *tag;
 
     tag = Tcl_GetString(objv[4]);
@@ -3389,8 +3525,10 @@ TagAddOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagDeleteOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     const char *tag;
     int i;
 
@@ -3430,10 +3568,12 @@ TagDeleteOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TagExistsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
-    int i;
     ElementIterator iter;
+    Graph *graphPtr = clientData;
+    int i;
 
     if (GetElementIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
         return TCL_ERROR;
@@ -3468,8 +3608,10 @@ TagExistsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TagForgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     int i;
 
     for (i = 4; i < objc; i++) {
@@ -3494,10 +3636,12 @@ TagForgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagGetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     Element *elemPtr; 
     ElementIterator iter;
+    Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr;
 
     if (GetElementIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
@@ -3571,8 +3715,10 @@ TagGetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagNamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr, *objPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -3644,10 +3790,11 @@ TagNamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagSearchOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
+TagSearchOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     Blt_HashTable selected;
+    Graph *graphPtr = clientData;
     int i;
         
     Blt_InitHashTable(&selected, BLT_ONE_WORD_KEYS);
@@ -3718,10 +3865,12 @@ TagSearchOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-TagSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
-    int i;
     ElementIterator iter;
+    Graph *graphPtr = clientData;
+    int i;
 
     if (GetElementIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
         return TCL_ERROR;
@@ -3758,10 +3907,12 @@ TagSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagUnsetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Element *elemPtr;
     ElementIterator iter;
+    Graph *graphPtr = clientData;
 
     if (GetElementIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
         return TCL_ERROR;
@@ -3811,9 +3962,10 @@ static Blt_OpSpec tagOps[] =
 static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
 
 static int
-TagOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagOp(ClientData clientData, Tcl_Interp *interp, int objc,
+      Tcl_Obj *const *objv)
 {
-    GraphElementProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numTagOps, tagOps, BLT_OP_ARG2,
@@ -3821,7 +3973,7 @@ TagOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc)(graphPtr, interp, objc, objv);
+    result = (*proc)(clientData, interp, objc, objv);
     return result;
 }
 
@@ -3841,13 +3993,11 @@ TagOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TypeOp(
-    Graph *graphPtr,                    /* Graph widget */
-    Tcl_Interp *interp,
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)               /* Element name */
+TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Element *elemPtr;
+    Graph *graphPtr = clientData;
     const char *string;
 
     if (GetElementFromObj(interp, graphPtr, objv[3], &elemPtr) != TCL_OK) {
@@ -3918,12 +4068,8 @@ static int numElemOps = sizeof(elemOps) / sizeof(Blt_OpSpec);
  *---------------------------------------------------------------------------
  */
 int
-Blt_ElementOp(
-    Graph *graphPtr,                    /* Graph widget record */
-    Tcl_Interp *interp,
-    int objc,                           /* # arguments */
-    Tcl_Obj *const *objv,               /* Argument list */
-    ClassId classId)
+Blt_ElementOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv, ClassId classId)
 {
     void *ptr;
     int result;
@@ -3936,7 +4082,7 @@ Blt_ElementOp(
     if (ptr == CreateOp) {
         result = CreateOp(graphPtr, interp, objc, objv, classId);
     } else {
-        GraphElementProc *proc;
+        Tcl_ObjCmdProc *proc;
         
         proc = ptr;
         result = (*proc) (graphPtr, interp, objc, objv);

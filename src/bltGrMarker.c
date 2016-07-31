@@ -141,6 +141,13 @@ BLT_EXTERN Blt_CustomOption bltXAxisOption;
 BLT_EXTERN Blt_CustomOption bltYAxisOption;
 BLT_EXTERN Blt_CustomOption bltFilterOption;
 
+static Blt_OptionFreeProc FreeTagsProc;
+static Blt_OptionParseProc ObjToTagsProc;
+static Blt_OptionPrintProc TagsToObjProc;
+static Blt_CustomOption tagsOption = {
+    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+};
+
 typedef Marker *(MarkerCreateProc)(void);
 typedef void    (MarkerDrawProc)(Marker *markerPtr, Drawable drawable);
 typedef void    (MarkerFreeProc)(Marker *markerPtr);
@@ -163,6 +170,44 @@ typedef struct {
     MarkerPostscriptProc *psProc;
 
 }  MarkerClass;
+
+
+/*
+ * MarkerIterator --
+ *
+ *      Tabs may be tagged with strings.  A tab may have many tags.  The
+ *      same tag may be used for many tabs.
+ *      
+ */
+typedef enum { 
+    ITER_SINGLE, ITER_ALL, ITER_TAG, 
+} IteratorType;
+
+typedef struct _MarkerIterator {
+    Graph *graphPtr;                    /* Element that we're iterating
+                                         * over. */
+    IteratorType type;                  /* Type of iteration:
+                                         * ITER_TAG      By item tag.
+                                         * ITER_ALL      By every item.
+                                         * ITER_SINGLE   Single item: either 
+                                         *               tag or index.
+                                         */
+
+    Marker *startPtr;                   /* Starting item.  Starting point
+                                         * of search, saved if iterator is
+                                         * reused.  Used for ITER_ALL and
+                                         * ITER_SINGLE searches. */
+    Marker *endPtr;                     /* Ending item (inclusive). */
+    Marker *nextPtr;                    /* Next item. */
+    /* For tag-based searches. */
+    const char *tagName;                /* If non-NULL, is the tag that we
+                                         * are currently iterating over. */
+    Blt_HashTable *tablePtr;            /* Pointer to tag hash table. */
+    Blt_HashSearch cursor;              /* Search iterator for tag hash
+                                         * table. */
+    Blt_ChainLink link;
+} MarkerIterator;
+
 
 /*
  *---------------------------------------------------------------------------
@@ -243,7 +288,7 @@ typedef struct {
                                          * position */
     int state;
 
-    /* Fields specific to bitmap markers. */
+    /* Bitmap marker specific fields. */
 
     Pixmap srcBitmap;                   /* Original bitmap. May be further
                                          * scaled or rotated. */
@@ -281,8 +326,6 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         DEF_MARKER_BACKGROUND, Blt_Offset(BitmapMarker, fillColor),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_BITMAP_TAGS, 
-        Blt_Offset(BitmapMarker, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMAP, "-bitmap", "bitmap", "Bitmap", DEF_MARKER_BITMAP, 
         Blt_Offset(BitmapMarker, srcBitmap), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -311,6 +354,8 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         Blt_Offset(BitmapMarker, reqAngle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
         Blt_Offset(BitmapMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_BITMAP_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
         Blt_Offset(BitmapMarker, drawUnder), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-xoffset", "xOffset", "XOffset", DEF_MARKER_X_OFFSET, 
@@ -375,6 +420,9 @@ typedef struct {
     int xOffset, yOffset;               /* Pixel offset from graph
                                            position */
     int state;
+
+    /* Image marker specific fields */
+
     Tk_Image tkImage;                   /* Tk image to be displayed. */
     Tk_Anchor anchor;                   /* Indicates how to translate the
                                          * given marker position. */
@@ -394,8 +442,6 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(ImageMarker, anchor), 0},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_IMAGE_TAGS, 
-        Blt_Offset(ImageMarker, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(ImageMarker, worldPts), BLT_CONFIG_NULL_OK, &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
@@ -416,6 +462,8 @@ static Blt_ConfigSpec imageConfigSpecs[] =
         Blt_Offset(ImageMarker, obj.name), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
         Blt_Offset(ImageMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_IMAGE_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
         Blt_Offset(ImageMarker, drawUnder), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-xoffset", "xOffset", "XOffset", DEF_MARKER_X_OFFSET, 
@@ -480,6 +528,8 @@ typedef struct {
     int xOffset, yOffset;               /* Pixel offset from graph
                                          * position */
     int state;
+
+    /* Line marker specific fields */
     XColor *fillColor;
     XColor *outlineColor;               /* Foreground and background
                                          * colors */
@@ -503,8 +553,6 @@ typedef struct {
 
 static Blt_ConfigSpec lineConfigSpecs[] =
 {
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_LINE_TAGS, 
-        Blt_Offset(LineMarker, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(LineMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -537,6 +585,8 @@ static Blt_ConfigSpec lineConfigSpecs[] =
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
         Blt_Offset(LineMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_LINE_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
         Blt_Offset(LineMarker, drawUnder), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-xoffset", "xOffset", "XOffset", DEF_MARKER_X_OFFSET, 
@@ -603,6 +653,8 @@ typedef struct {
     int xOffset, yOffset;               /* Pixel offset from graph
                                          * position */
     int state;
+
+    /* Polygon marker specific fields */
     Point2d *screenPts;                 /* Array of points representing the
                                          * polygon in screen
                                          * coordinates. It's not used for
@@ -650,8 +702,6 @@ typedef struct {
 
 static Blt_ConfigSpec polygonConfigSpecs[] =
 {
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_POLYGON_TAGS, 
-        Blt_Offset(PolygonMarker, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(PolygonMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -686,6 +736,8 @@ static Blt_ConfigSpec polygonConfigSpecs[] =
         Blt_Offset(PolygonMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_MARKER_STIPPLE, 
         Blt_Offset(PolygonMarker, stipple), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_POLYGON_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
         Blt_Offset(PolygonMarker, drawUnder), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -753,6 +805,8 @@ typedef struct {
     int xOffset, yOffset;               /* Pixel offset from graph
                                          * position */
     int state;
+
+    /* Rectangle marker specific fields */
     ColorPair outline;
     ColorPair fill;
     Pixmap stipple;                     /* Stipple pattern to fill the
@@ -794,9 +848,6 @@ typedef struct {
 
 static Blt_ConfigSpec rectangleConfigSpecs[] =
 {
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags",
-        DEF_RECTANGLE_TAGS, Blt_Offset(RectangleMarker, obj.tagsObjPtr),
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(RectangleMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -833,6 +884,8 @@ static Blt_ConfigSpec rectangleConfigSpecs[] =
         Blt_Offset(RectangleMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_MARKER_STIPPLE, 
         Blt_Offset(RectangleMarker, stipple), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_RECTANGLE_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
         Blt_Offset(RectangleMarker, drawUnder), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -902,7 +955,7 @@ typedef struct {
                                          * position */
     int state;
 
-    /* Fields specific to text markers. */
+    /* Text marker specific fields */
 #ifdef notdef
     const char *textVarName;            /* Name of variable (malloc'ed) or
                                          * NULL. If non-NULL, graph
@@ -930,8 +983,6 @@ static Blt_ConfigSpec textConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-background", "background", "MarkerBackground",
         (char *)NULL, Blt_Offset(TextMarker, fillColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bg", "background", "Background", (char *)NULL, 0, 0},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TEXT_TAGS,
-        Blt_Offset(TextMarker, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(TextMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
@@ -967,6 +1018,8 @@ static Blt_ConfigSpec textConfigSpecs[] =
         Blt_Offset(TextMarker, style.angle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
         Blt_Offset(TextMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_TEXT_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_STRING, "-text", "text", "Text", DEF_MARKER_TEXT, 
         Blt_Offset(TextMarker, string), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
@@ -1034,8 +1087,7 @@ typedef struct {
                                          * position */
     int state;
 
-    /* Fields specific to window markers. */
-
+    /* Window marker specific fields */
     const char *childName;              /* Name of child widget. */
     Tk_Window child;                    /* Window to display. */
     int reqWidth, reqHeight;            /* If non-zero, this overrides the
@@ -1053,8 +1105,6 @@ static Blt_ConfigSpec windowConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(WindowMarker, anchor), 0},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_WINDOW_TAGS, 
-        Blt_Offset(WindowMarker, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(WindowMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
@@ -1073,6 +1123,8 @@ static Blt_ConfigSpec windowConfigSpecs[] =
         Blt_Offset(WindowMarker, obj.name), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
         Blt_Offset(WindowMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_WINDOW_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
         Blt_Offset(WindowMarker, drawUnder), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_POS, "-width", "width", "Width", DEF_MARKER_WIDTH, 
@@ -1128,6 +1180,94 @@ static Tcl_FreeProc FreeMarker;
 
 #define SWAP(a,b)       { double tmp; tmp = a, a = b, b = tmp; }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NextTaggedMarker --
+ *
+ *      Returns the next marker derived from the given tag.
+ *
+ * Results:
+ *      Returns the pointer to the next marker in the iterator.  If no more
+ *      markers are available, then NULL is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Marker *
+NextTaggedMarker(MarkerIterator *iterPtr)
+{
+    switch (iterPtr->type) {
+    case ITER_TAG:
+        if (iterPtr->link != NULL) {
+            Marker *markerPtr;
+            
+            markerPtr = Blt_Chain_GetValue(iterPtr->link);
+            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+            return markerPtr;
+        }
+        break;
+
+    case ITER_ALL:
+        {
+            Blt_HashEntry *hPtr;
+            
+            hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
+            if (hPtr != NULL) {
+                return Blt_GetHashValue(hPtr);
+            }
+            break;
+        }
+
+    default:
+        break;
+    }   
+    return NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FirstTaggedMarker --
+ *
+ *      Returns the first isoline derived from the given tag.
+ *
+ * Results:
+ *      Returns the first isoline in the sequence.  If no more isolines are in
+ *      the list, then NULL is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Marker *
+FirstTaggedMarker(MarkerIterator *iterPtr)
+{
+    switch (iterPtr->type) {
+    case ITER_TAG:
+        if (iterPtr->link != NULL) {
+            Marker *markerPtr;
+            
+            markerPtr = Blt_Chain_GetValue(iterPtr->link);
+            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+            return markerPtr;
+        }
+        break;
+    case ITER_ALL:
+        {
+            Blt_HashEntry *hPtr;
+            
+            hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
+            if (hPtr != NULL) {
+                return Blt_GetHashValue(hPtr);
+            }
+        }
+        break;
+
+    case ITER_SINGLE:
+        return iterPtr->startPtr;
+    } 
+    return NULL;
+}
+
 static int
 GetMarkerFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
                  Marker **markerPtrPtr)
@@ -1147,6 +1287,61 @@ GetMarkerFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
     }
     return TCL_ERROR;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetMarkerIterator --
+ *
+ *      Converts a string representing a tab index into an tab pointer.  The
+ *      index may be in one of the following forms:
+ *
+ *       "all"          All isolines.
+ *       name           Name of the isoline.
+ *       tag            Tag associated with isolines.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetMarkerIterator(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
+                  MarkerIterator *iterPtr)
+{
+    Marker *markerPtr;
+    Blt_Chain chain;
+    const char *string;
+    char c;
+    int numBytes, length;
+
+    iterPtr->type = ITER_SINGLE;
+    iterPtr->tagName = Tcl_GetStringFromObj(objPtr, &numBytes);
+    iterPtr->link = NULL;
+    iterPtr->nextPtr = NULL;
+    iterPtr->startPtr = iterPtr->endPtr = NULL;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'a') && (strcmp(iterPtr->tagName, "all") == 0)) {
+        iterPtr->type  = ITER_ALL;
+        iterPtr->tablePtr = &graphPtr->markers.nameTable;
+    } else if (GetMarkerFromObj(NULL, graphPtr, objPtr, &markerPtr) == TCL_OK) {
+        iterPtr->startPtr = iterPtr->endPtr = markerPtr;
+        iterPtr->type = ITER_SINGLE;
+    } else if ((chain = Blt_Tags_GetItemList(&graphPtr->markers.tags, string)) 
+               != NULL) {
+        iterPtr->tagName = string;
+        iterPtr->link = Blt_Chain_FirstLink(chain);
+        iterPtr->type = ITER_TAG;
+    } else {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "can't find marker name or tag \"", 
+                string, "\" in \"", Tk_PathName(graphPtr->tkwin), 
+                "\"", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }   
+    return TCL_OK;
+}
+
 
 
 static int
@@ -1268,7 +1463,7 @@ GetCoordinate(
         *valuePtr = -DBL_MAX;           /* Elastic lower bound */
     } else if ((c == '+') && (expr[1] == 'I') && (strcmp(expr, "+Inf") == 0)) {
         *valuePtr = DBL_MAX;            /* Elastic upper bound */
-    } else if (Blt_ExprDoubleFromObj(interp, objPtr, valuePtr) != TCL_OK) {
+    } else if (Blt_GetDoubleFromObj(interp, objPtr, valuePtr) != TCL_OK) {
         return TCL_ERROR;
     }
     return TCL_OK;
@@ -1816,6 +2011,137 @@ IsElementHidden(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
+ * SetTag --
+ *
+ *      Associates a tag with a given row.  Individual row tags are stored
+ *      in hash tables keyed by the tag name.  Each table is in turn stored
+ *      in a hash table keyed by the row location.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects:
+ *      A tag is stored for a particular marker.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SetTag(Tcl_Interp *interp, Marker *markerPtr, const char *tagName)
+{
+    Graph *graphPtr;
+    long dummy;
+    
+    if (strcmp(tagName, "all") == 0) {
+        return TCL_OK;                  /* Don't need to create reserved
+                                         * tag. */
+    }
+    if (tagName[0] == '\0') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+                (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (tagName[0] == '-') {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, 
+                "\" can't start with a '-'.", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    graphPtr = markerPtr->obj.graphPtr;
+    Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tagName, markerPtr);
+    return TCL_OK;
+}
+
+/*ARGSUSED*/
+static void
+FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
+{
+    Graph *graphPtr;
+    Marker *markerPtr = (Marker *)widgRec;
+
+    graphPtr = markerPtr->obj.graphPtr;
+    Blt_Tags_ClearTagsFromItem(&graphPtr->markers.tags, markerPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToTagsProc --
+ *
+ *      Convert the string representation of a list of tags.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The tags are
+ *      save in the widget.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    Graph *graphPtr;
+    Marker *markerPtr = (Marker *)widgRec;
+    int i;
+    const char *string;
+    int objc;
+    Tcl_Obj **objv;
+
+    graphPtr = markerPtr->obj.graphPtr;
+    Blt_Tags_ClearTagsFromItem(&graphPtr->markers.tags, markerPtr);
+    string = Tcl_GetString(objPtr);
+    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+        return TCL_OK;
+    }
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i++) {
+        SetTag(interp, markerPtr, Tcl_GetString(objv[i]));
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagsToObjProc --
+ *
+ *      Returns the tags associated with the marker.
+ *
+ * Results:
+ *      The names representing the tags are returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
+{
+    Graph *graphPtr;
+    Marker *markerPtr = (Marker *)widgRec;
+    Tcl_Obj *listObjPtr;
+
+    graphPtr = markerPtr->obj.graphPtr;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Blt_Tags_AppendTagsToObj(&graphPtr->markers.tags,  markerPtr, listObjPtr);
+    return listObjPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * HMap --
  *
  *      Maps the given graph coordinate value to its axis, returning a
@@ -2028,6 +2354,7 @@ DestroyMarker(Marker *markerPtr)
          * elements, then backing store needs to be repaired. */
         graphPtr->flags |= CACHE_DIRTY;
     }
+    Blt_Tags_ClearTagsFromItem(&graphPtr->markers.tags, markerPtr);
     /* 
      * Call the marker's type-specific deallocation routine. We do it first
      * while all the marker fields are still valid.
@@ -5092,6 +5419,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * Side Effects:
  *
+ *      pathName marker configure markerName ?option arg?
  *---------------------------------------------------------------------------
  */
 static int
@@ -5100,49 +5428,37 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Graph *graphPtr = clientData;
     Marker *markerPtr;
-    Tcl_Obj *const *options;
-    const char *oldName;
-    const char *string;
-    int flags = BLT_CONFIG_OBJV_ONLY;
-    int numNames, numOpts;
-    int i;
-    int under;
+    MarkerIterator iter;
 
-    markerPtr = NULL;                   /* Suppress compiler warning. */
-
-    /* Figure out where the option value pairs begin */
-    objc -= 3;
-    objv += 3;
-    for (i = 0; i < objc; i++) {
-        string = Tcl_GetString(objv[i]);
-        if (string[0] == '-') {
-            break;
-        }
-        if (GetMarkerFromObj(interp, graphPtr, objv[i], &markerPtr) != TCL_OK) {
+    if (objc == 3) {
+        if (GetMarkerFromObj(interp, graphPtr, objv[3], &markerPtr) != TCL_OK) {
             return TCL_ERROR;
         }
-    }
-    numNames = i;                       /* # of element names specified */
-    numOpts = objc - i;                 /* # of options specified */
-    options = objv + numNames;          /* Start of options in objv  */
-    
-    for (i = 0; i < numNames; i++) {
-        GetMarkerFromObj(interp, graphPtr, objv[i], &markerPtr);
-        if (numOpts == 0) {
-            return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, 
-                markerPtr->classPtr->configSpecs, (char *)markerPtr, 
-                (Tcl_Obj *)NULL, flags);
-        } else if (numOpts == 1) {
-            return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin,
-                markerPtr->classPtr->configSpecs, (char *)markerPtr, 
-                options[0], flags);
+        return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin,
+            markerPtr->classPtr->configSpecs, (char *)markerPtr,
+            (Tcl_Obj *)NULL, 0);
+    } else if (objc == 4) {
+        if (GetMarkerFromObj(interp, graphPtr, objv[3], &markerPtr) != TCL_OK) {
+            return TCL_ERROR;
         }
+        return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin,
+            markerPtr->classPtr->configSpecs, (char *)markerPtr, objv[3], 0);
+    }
+            
+    if (GetMarkerIterator(interp, graphPtr, objv[3], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+         markerPtr = NextTaggedMarker(&iter)) {
+        const char *oldName;
+        int under;
+        
         /* Save the old marker name. */
         oldName = markerPtr->obj.name;
         under = markerPtr->drawUnder;
-        if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, 
-                markerPtr->classPtr->configSpecs, numOpts, options, 
-                (char *)markerPtr, flags) != TCL_OK) {
+        if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin,
+                markerPtr->classPtr->configSpecs, objc - 4, objv + 4,
+                (char *)markerPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
             return TCL_ERROR;
         }
         if (oldName != markerPtr->obj.name) {
@@ -5153,7 +5469,6 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
         if ((*markerPtr->classPtr->configProc) (markerPtr) != TCL_OK) {
-
             return TCL_ERROR;
         }
         if (markerPtr->drawUnder != under) {
@@ -5178,6 +5493,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      Memory is allocated, etc.
  *
+ *      pathName marker create typeName 
  *---------------------------------------------------------------------------
  */
 static int
@@ -5286,6 +5602,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side Effects:
  *      Graph will be redrawn to reflect the new display list.
  *
+ *      pathName marker delete ?markerName ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5293,17 +5610,42 @@ static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
+    Blt_HashTable delTable;
     Graph *graphPtr = clientData;
     int i;
 
+    Blt_InitHashTable(&delTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
+        MarkerIterator iter;
         Marker *markerPtr;
+            
+        if (GetMarkerIterator(NULL, graphPtr, objv[i], &iter) != TCL_OK) {
+            continue;
+        }
+        for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+             markerPtr = NextTaggedMarker(&iter)) {
+            Blt_HashEntry *hPtr;
+            int isNew;
 
-        if (GetMarkerFromObj(NULL, graphPtr, objv[i], &markerPtr) == TCL_OK) {
-            DestroyMarker(markerPtr);
+            hPtr = Blt_CreateHashEntry(&delTable, markerPtr, &isNew);
+            Blt_SetHashValue(hPtr, markerPtr);
+
         }
     }
-    Blt_EventuallyRedrawGraph(graphPtr);
+    if (delTable.numEntries > 0) {
+        Blt_HashSearch iter;
+        Blt_HashEntry *hPtr;
+
+        for (hPtr = Blt_FirstHashEntry(&delTable, &iter); hPtr != NULL;
+             hPtr = Blt_NextHashEntry(&iter)) {
+            Marker *markerPtr;
+
+            markerPtr = Blt_GetHashValue(hPtr);
+            DestroyMarker(markerPtr);
+        }
+        Blt_EventuallyRedrawGraph(graphPtr);
+    }
+    Blt_DeleteHashTable(&delTable);
     return TCL_OK;
 }
 
@@ -5523,6 +5865,458 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * TagAddOp --
+ *
+ *      pathName marker tag add tag ?markerName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    const char *tag;
+    long markerId;
+
+    tag = Tcl_GetString(objv[4]);
+    if (Blt_GetLongFromObj(NULL, objv[4], &markerId) == TCL_OK) {
+        Tcl_AppendResult(interp, "bad tag \"", tag, 
+                 "\": can't be a number.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (strcmp(tag, "all") == 0) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (objc == 5) {
+        /* No nodes specified.  Just add the tag. */
+        Blt_Tags_AddTag(&graphPtr->markers.tags, tag);
+    } else {
+        int i;
+
+        for (i = 5; i < objc; i++) {
+            Marker *markerPtr;
+            MarkerIterator iter;
+            
+            if (GetMarkerIterator(interp, graphPtr, objv[i], &iter) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+                 markerPtr = NextTaggedMarker(&iter)) {
+                Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tag, markerPtr);
+            }
+        }
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagDeleteOp --
+ *
+ *      pathName marker tag delete tagName ?markerName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    const char *tag;
+    long markerId;
+    int i;
+
+    tag = Tcl_GetString(objv[4]);
+    if (Blt_GetLongFromObj(NULL, objv[4], &markerId) == TCL_OK) {
+        Tcl_AppendResult(interp, "bad tag \"", tag, 
+                 "\": can't be a number.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (strcmp(tag, "all") == 0) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    for (i = 5; i < objc; i++) {
+        Marker *markerPtr;
+        MarkerIterator iter;
+        
+        if (GetMarkerIterator(interp, graphPtr, objv[i], &iter) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+             markerPtr = NextTaggedMarker(&iter)) {
+            Blt_Tags_RemoveItemFromTag(&graphPtr->markers.tags, tag, markerPtr);
+        }
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagExistsOp --
+ *
+ *      Returns the existence of the one or more tags in the given node.
+ *      If the node has any the tags, true is return in the interpreter.
+ *
+ *      pathName marker tag exists markerName ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    MarkerIterator iter;
+    Graph *graphPtr = clientData;
+    int i;
+
+    if (GetMarkerIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 5; i < objc; i++) {
+        Marker *markerPtr;
+        const char *tag;
+
+        tag = Tcl_GetString(objv[i]);
+        for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+             markerPtr = NextTaggedMarker(&iter)) {
+            if (Blt_Tags_ItemHasTag(&graphPtr->markers.tags, markerPtr, tag)) {
+                Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
+                return TCL_OK;
+            }
+        }
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), FALSE);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagForgetOp --
+ *
+ *      Removes the given tags from all markers.
+ *
+ *      pathNames marker tag forget ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    int i;
+
+    for (i = 4; i < objc; i++) {
+        const char *tag;
+        long markerId;
+
+        tag = Tcl_GetString(objv[i]);
+        if (Blt_GetLongFromObj(NULL, objv[i], &markerId) == TCL_OK) {
+            Tcl_AppendResult(interp, "bad tag \"", tag, 
+                             "\": can't be a number.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        Blt_Tags_ForgetTag(&graphPtr->markers.tags, tag);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagGetOp --
+ *
+ *      Returns tag names for a given node.  If one of more pattern
+ *      arguments are provided, then only those matching tags are returned.
+ *
+ *      pathName marker tag get markerName ?pattern ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    Marker *markerPtr; 
+    MarkerIterator iter;
+    Tcl_Obj *listObjPtr;
+
+    if (GetMarkerIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+         markerPtr = NextTaggedMarker(&iter)) {
+        if (objc == 5) {
+            Blt_Tags_AppendTagsToObj(&graphPtr->markers.tags, markerPtr, listObjPtr);
+            Tcl_ListObjAppendElement(interp, listObjPtr, 
+                                     Tcl_NewStringObj("all", 3));
+        } else {
+            int i;
+            
+            /* Check if we need to add the special tags "all" */
+            for (i = 5; i < objc; i++) {
+                const char *pattern;
+
+                pattern = Tcl_GetString(objv[i]);
+                if (Tcl_StringMatch("all", pattern)) {
+                    Tcl_Obj *objPtr;
+
+                    objPtr = Tcl_NewStringObj("all", 3);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                    break;
+                }
+            }
+            /* Now process any standard tags. */
+            for (i = 5; i < objc; i++) {
+                Blt_ChainLink link;
+                const char *pattern;
+                Blt_Chain chain;
+
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&graphPtr->markers.tags, markerPtr, chain);
+                pattern = Tcl_GetString(objv[i]);
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    const char *tag;
+                    Tcl_Obj *objPtr;
+
+                    tag = (const char *)Blt_Chain_GetValue(link);
+                    if (!Tcl_StringMatch(tag, pattern)) {
+                        continue;
+                    }
+                    objPtr = Tcl_NewStringObj(tag, -1);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                }
+                Blt_Chain_Destroy(chain);
+            }
+        }    
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagNamesOp --
+ *
+ *      Returns the names of all the tags in the markerset.  If one of more
+ *      node arguments are provided, then only the tags found in those
+ *      nodes are returned.
+ *
+ *      pathName marker tag names ?markerName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    Tcl_Obj *listObjPtr, *objPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewStringObj("all", -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    if (objc == 4) {
+        Blt_Tags_AppendAllTagsToObj(&graphPtr->markers.tags, listObjPtr);
+    } else {
+        Blt_HashTable uniqTable;
+        int i;
+
+        Blt_InitHashTable(&uniqTable, BLT_STRING_KEYS);
+        for (i = 4; i < objc; i++) {
+            MarkerIterator iter;
+            Marker *markerPtr;
+
+            if (GetMarkerIterator(interp, graphPtr, objPtr, &iter) != TCL_OK) {
+                goto error;
+            }
+            for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+                 markerPtr = NextTaggedMarker(&iter)) {
+                Blt_ChainLink link;
+                Blt_Chain chain;
+
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&graphPtr->markers.tags, markerPtr, chain);
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    const char *tag;
+                    int isNew;
+
+                    tag = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
+                }
+                Blt_Chain_Destroy(chain);
+            }
+        }
+        {
+            Blt_HashEntry *hPtr;
+            Blt_HashSearch hiter;
+
+            for (hPtr = Blt_FirstHashEntry(&uniqTable, &hiter); hPtr != NULL;
+                 hPtr = Blt_NextHashEntry(&hiter)) {
+                objPtr = Tcl_NewStringObj(Blt_GetHashKey(&uniqTable, hPtr), -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
+        }
+        Blt_DeleteHashTable(&uniqTable);
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+ error:
+    Tcl_DecrRefCount(listObjPtr);
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagSetOp --
+ *
+ *      Sets one or more tags for a given marker.  Tag names can't start
+ *      with a digit (to distinquish them from node ids) and can't be a
+ *      reserved tag ("all").
+ *
+ *      pathName marker tag set markerName ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    int i;
+    MarkerIterator iter;
+
+    if (GetMarkerIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 5; i < objc; i++) {
+        const char *tag;
+        Marker *markerPtr;
+        long markerId;
+
+        tag = Tcl_GetString(objv[i]);
+        if (Blt_GetLongFromObj(NULL, objv[i], &markerId) == TCL_OK) {
+            Tcl_AppendResult(interp, "bad tag \"", tag, 
+                             "\": can't be a number.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        if (strcmp(tag, "all") == 0) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+                             (char *)NULL);     
+            return TCL_ERROR;
+        }
+        for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+             markerPtr = NextTaggedMarker(&iter)) {
+            Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tag, markerPtr);
+        }    
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagUnsetOp --
+ *
+ *      Removes one or more tags from a given marker. If a tag doesn't
+ *      exist or is a reserved tag ("all"), nothing will be done and no
+ *      error message will be returned.
+ *
+ *      pathName marker tag unset markerName ?tag ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    Graph *graphPtr = clientData;
+    Marker *markerPtr;
+    MarkerIterator iter;
+
+    if (GetMarkerIterator(interp, graphPtr, objv[4], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
+         markerPtr = NextTaggedMarker(&iter)) {
+        int i;
+
+        for (i = 5; i < objc; i++) {
+            const char *tag;
+
+            tag = Tcl_GetString(objv[i]);
+            Blt_Tags_RemoveItemFromTag(&graphPtr->markers.tags, tag, markerPtr);
+        }    
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagOp --
+ *
+ *      This procedure is invoked to process tag operations.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ * Side Effects:
+ *      See the user documentation.
+ *
+ *      pathName marker tag op args
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec tagOps[] =
+{
+    {"add",     1, TagAddOp,      3, 0, "tagName ?markerName ...?",},
+    {"delete",  1, TagDeleteOp,   3, 0, "?markerName ...?",},
+    {"exists",  1, TagExistsOp,   5, 0, "markerName  ?tag ...?",},
+    {"forget",  1, TagForgetOp,   4, 0, "?tag ...?",},
+    {"get",     1, TagGetOp,      5, 0, "markerName ?pattern ...?",},
+    {"names",   1, TagNamesOp,    4, 0, "?markerName ...?",},
+    {"set",     1, TagSetOp,      5, 0, "markerName ?tag ...?",},
+    {"unset",   1, TagUnsetOp,    5, 0, "markerName ?tag ...?",},
+};
+
+static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
+
+static int
+TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+    int result;
+
+    proc = Blt_GetOpFromObj(interp, numTagOps, tagOps, BLT_OP_ARG3,
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    result = (*proc)(clientData, interp, objc, objv);
+    return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * TypeOp --
  *
  *      Returns a symbolic name for the type of the marker whose ID is
@@ -5603,7 +6397,8 @@ static Blt_OpSpec markerOps[] =
     {"lower",     1, RelinkOp, 4, 5, "markerName ?afterName?",},
     {"names",     1, NamesOp,  3, 0, "?pattern?...",},
     {"raise",     1, RelinkOp, 4, 5, "markerName ?beforeName?",},
-    {"type",      1, TypeOp,   4, 4, "markerName",},
+    {"tag",       2, TagOp,    3, 0, "args...",},
+    {"type",      2, TypeOp,   4, 4, "markerName",},
 };
 static int numMarkerOps = sizeof(markerOps) / sizeof(Blt_OpSpec);
 

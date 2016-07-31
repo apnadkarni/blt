@@ -453,14 +453,15 @@ static Blt_CustomOption backgroundOption = {
     ObjToBackground, BackgroundToObj, FreeBackground, (ClientData)0
 };
 
-BLT_EXTERN Blt_CustomOption bltLineStylesOption;
+BLT_EXTERN Blt_CustomOption bltAxisOption;
 BLT_EXTERN Blt_CustomOption bltColorOption;
-BLT_EXTERN Blt_CustomOption bltValuesOption;
-BLT_EXTERN Blt_CustomOption bltValuePairsOption;
+BLT_EXTERN Blt_CustomOption bltElementTagsOption;
 BLT_EXTERN Blt_CustomOption bltLinePenOption;
+BLT_EXTERN Blt_CustomOption bltLineStylesOption;
+BLT_EXTERN Blt_CustomOption bltValuePairsOption;
+BLT_EXTERN Blt_CustomOption bltValuesOption;
 BLT_EXTERN Blt_CustomOption bltXAxisOption;
 BLT_EXTERN Blt_CustomOption bltYAxisOption;
-BLT_EXTERN Blt_CustomOption bltAxisOption;
 
 #define DEF_ACTIVE_PEN          "activeLine"
 #define DEF_AXIS_X              "x"
@@ -522,8 +523,7 @@ static Blt_ConfigSpec lineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
         "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
         &backgroundOption},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
-        Blt_Offset(LineElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_PEN_COLOR, 
         Blt_Offset(LineElement, builtinPen.traceColor), 0},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
@@ -603,6 +603,8 @@ static Blt_ConfigSpec lineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-symbol", "symbol", "Symbol", DEF_PEN_SYMBOL, 
         Blt_Offset(LineElement, builtinPen.symbol), 
         BLT_CONFIG_DONT_SET_DEFAULT, &symbolOption},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &bltElementTagsOption},
     {BLT_CONFIG_CUSTOM, "-trace", "trace", "Trace", DEF_PEN_DIRECTION, 
         Blt_Offset(LineElement, penDir), 
         BLT_CONFIG_DONT_SET_DEFAULT, &penDirOption},
@@ -657,8 +659,7 @@ static Blt_ConfigSpec stripSpecs[] =
     {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
         "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
         &backgroundOption},
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
-        Blt_Offset(LineElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_COLOR, "-color", "color", "Color",
         DEF_PEN_COLOR, Blt_Offset(LineElement, builtinPen.traceColor), 0},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
@@ -731,6 +732,8 @@ static Blt_ConfigSpec stripSpecs[] =
     {BLT_CONFIG_CUSTOM, "-symbol", "symbol", "Symbol", DEF_PEN_SYMBOL, 
         Blt_Offset(LineElement, builtinPen.symbol), 
         BLT_CONFIG_DONT_SET_DEFAULT, &symbolOption},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &bltElementTagsOption},
     {BLT_CONFIG_ANCHOR, "-valueanchor", "valueAnchor", "ValueAnchor",
         DEF_PEN_VALUE_ANCHOR, 
         Blt_Offset(LineElement, builtinPen.valueStyle.anchor), 0},
@@ -1594,7 +1597,6 @@ DestroyPenProc(Graph *graphPtr, Pen *basePtr)
         Blt_FreePrivateGC(graphPtr->display, penPtr->traceGC);
     }
 }
-
 
 static void
 InitPen(LinePen *penPtr)

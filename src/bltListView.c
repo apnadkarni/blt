@@ -412,8 +412,6 @@ typedef struct  {
                                          * is clicked. */
     Tcl_Obj *dataObjPtr;                /* User-data associated with this
                                          * item. */
-    Tcl_Obj *tagsObjPtr;
-
     Tcl_Obj *tipObjPtr;
     const char *type;
 

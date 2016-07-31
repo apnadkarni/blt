@@ -202,13 +202,14 @@ typedef struct {
     Axis *zAxisPtr;
 } BarElement;
 
+BLT_EXTERN Blt_CustomOption bltAxisOption;
 BLT_EXTERN Blt_CustomOption bltBarPenOption;
-BLT_EXTERN Blt_CustomOption bltValuesOption;
+BLT_EXTERN Blt_CustomOption bltBarStylesOption;
+BLT_EXTERN Blt_CustomOption bltElementTagsOption;
 BLT_EXTERN Blt_CustomOption bltValuePairsOption;
+BLT_EXTERN Blt_CustomOption bltValuesOption;
 BLT_EXTERN Blt_CustomOption bltXAxisOption;
 BLT_EXTERN Blt_CustomOption bltYAxisOption;
-BLT_EXTERN Blt_CustomOption bltBarStylesOption;
-BLT_EXTERN Blt_CustomOption bltAxisOption;
 
 static Blt_OptionParseProc ObjToBarMode;
 static Blt_OptionPrintProc BarModeToObj;
@@ -352,8 +353,7 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth" },
     {BLT_CONFIG_SYNONYM, "-bg", "background" },
-    {BLT_CONFIG_LISTOBJ, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
-        Blt_Offset(BarElement, obj.tagsObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(BarElement, builtinPen.borderWidth), 0},
     {BLT_CONFIG_COLOR, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
@@ -409,6 +409,8 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-styles", "styles", "Styles", DEF_STYLES, 
         Blt_Offset(BarElement, styles), 0, &bltBarStylesOption},
+    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_TAGS, 0,
+        BLT_CONFIG_NULL_OK, &bltElementTagsOption},
     {BLT_CONFIG_ANCHOR, "-valueanchor", "valueAnchor", "ValueAnchor",
         DEF_PEN_VALUE_ANCHOR, 
         Blt_Offset(BarElement, builtinPen.valueStyle.anchor), 0},

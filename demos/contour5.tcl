@@ -13,8 +13,12 @@ blt::contour .g -highlightthickness 0
     -fill palette \
     -outline black 
 .g legend configure -hide yes
-.g axis configure z -palette $palette
-foreach key { hull values symbols isolines colormap symbols edges } {
+.g axis configure z \
+    -palette $palette \
+    -margin right \
+    -colorbarthickness 20 \
+    -tickdirection in 
+foreach key { boundary values symbols isolines colormap symbols wireframe } {
     set show($key) [.g element cget myContour -show$key]
 }
 
@@ -24,10 +28,10 @@ proc Fix { what } {
     .g element configure myContour -show$what $bool
 }
 
-blt::tk::checkbutton .hull -text "Boundary" -variable show(hull) \
-    -command "Fix hull"
-blt::tk::checkbutton .edges -text "Edges" -variable show(edges) \
-    -command "Fix edges"
+blt::tk::checkbutton .boundary -text "Boundary" -variable show(boundary) \
+    -command "Fix boundary"
+blt::tk::checkbutton .wireframe -text "Wireframe" -variable show(wireframe) \
+    -command "Fix wireframe"
 blt::tk::checkbutton .colormap -text "Colormap"  \
     -variable show(colormap) -command "Fix colormap"
 blt::tk::checkbutton .isolines -text "Isolines" \
@@ -39,10 +43,10 @@ blt::tk::checkbutton .symbols -text "Symbols" \
 
 blt::table . \
     0,0 .g -fill both -rowspan 7 \
-    0,1 .hull -anchor w \
+    0,1 .boundary -anchor w \
     1,1 .colormap -anchor w \
     2,1 .isolines -anchor w \
-    3,1 .edges -anchor w \
+    3,1 .wireframe -anchor w \
     4,1 .symbols -anchor w \
     5,1 .values -anchor w 
 blt::table configure . r* c1 -resize none
@@ -50,4 +54,44 @@ blt::table configure . r6 -resize both
 
 Blt_ZoomStack .g
 
+proc FindIsoline { g x y } {
+    set results [$g element isoline nearest myContour $x $y -halo 1i]
+    set markerName "myMarker"
+    $g marker delete active
+    $g element isoline deactivate myContour all
+    if { $results == "" } {
+	return
+    }
+    array set info $results
+    # --------------------------------------------------------------
+    # info(name)		- element Id
+    # info(index)		- index of closest point
+    # info(x) find(y)		- coordinates of closest point
+    #				  or closest point on line segment.
+    # info(dist)		- distance from sample coordinate
+    # --------------------------------------------------------------
+    set mesg [format "%s: #%d value=%g\n x=%g y=%g" \
+		  $info(name) $info(index) $info(value) $info(x) $info(y)]
+    set coords [$g invtransform $x $y]
+    set nx [lindex $coords 0]
+    set ny [lindex $coords 1]
+    set id [$g marker create text \
+	-coords [list $nx $ny] \
+	-text $mesg \
+	-font "Arial 6" \
+	-anchor center \
+	-justify left \
+	-yoffset 0 -bg {}]
+    $g marker tag add "active" $id
 
+    $g element isoline activate myContour $info(name)
+    set id [$g marker create line -coords "$nx $ny $info(x) $info(y)"]
+    $g marker tag add "active" $id 
+}
+
+set coords [.g invtransform 100 100]
+puts stderr coords=$coords
+
+bind .g <Motion>  {
+    FindIsoline %W %x %y
+}

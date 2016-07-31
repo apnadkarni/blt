@@ -148,6 +148,7 @@ typedef struct {
                                          * or isoline. */
     Point2d point;                      /* Graph coordinates of nearest
                                          * point */
+    double value;
     int index;                          /* Index of nearest data point */
     double distance, maxDistance;
 } NearestElement;

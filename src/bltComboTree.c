@@ -5948,6 +5948,39 @@ EntryOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return result;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * IndexOp --
+ *
+ *      Converts one of more words representing indices of the entries in
+ *      the widget to their respective serial identifiers.
+ *
+ * Results:
+ *      A standard TCL result.  Interp->result will contain the identifier
+ *      of each inode found. If an inode could not be found, then the
+ *      serial identifier will be the empty string.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    ComboTree *comboPtr = clientData;
+    Entry *entryPtr;
+    int state;
+
+    state = FALSE;
+    if ((GetEntryFromObj(NULL, comboPtr, objv[2], &entryPtr) == TCL_OK) && 
+        (entryPtr != NULL)) {
+        state = TRUE;;
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
 /*ARGSUSED*/
 static int
 ExactCompare(Tcl_Interp *interp, const char *name, const char *pattern)
@@ -7466,7 +7499,8 @@ static Blt_OpSpec comboOps[] =
     {"close",     2, CloseOp,     2, 4, "?-recurse? entryName",}, 
     {"configure", 2, ConfigureOp, 2, 0, "?option value ...?",},
     {"deactivate",1, DeactivateOp,2, 2, "",},
-    {"entry",     1, EntryOp,     2, 0, "oper args",},
+    {"entry",     2, EntryOp,     2, 0, "oper args",},
+    {"exists",    2, ExistsOp,    3, 3, "entryName",},
     {"get",       1, GetOp,       2, 0, "?-full? ?entryName ...?",},
     {"hide",      1, HideOp,      2, 0, "?-exact|-glob|-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entry...?",},
     {"identify",  2, IdentifyOp,  5, 6, "entryName ?-root? x y",},

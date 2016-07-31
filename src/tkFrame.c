@@ -317,6 +317,19 @@ Tk_SetClassProcs(Tk_Window tkwin, void *procs, ClientData instanceData)
 #endif 
 
 
+static void
+EventuallyRedraw(ClientData clientData)
+{
+    Frame *framePtr = clientData;
+    
+    if ((framePtr->tkwin != NULL) && (Tk_IsMapped(framePtr->tkwin))) {
+        if (!(framePtr->flags & REDRAW_PENDING)) {
+            Tcl_DoWhenIdle(DisplayFrame, (ClientData)framePtr);
+        }
+        framePtr->flags |= REDRAW_PENDING;
+    }
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -761,6 +774,9 @@ ConfigureFrame(
         Tk_SetWindowBackgroundPixmap(framePtr->tkwin, None);
     }
 #endif
+    if (framePtr->normalBg != NULL) {
+        Blt_Bg_SetChangedProc(framePtr->normalBg, EventuallyRedraw, framePtr);
+    }
     Tk_SetWindowBackgroundPixmap(framePtr->tkwin, None);
     if (framePtr->highlightWidth < 0) {
         framePtr->highlightWidth = 0;
@@ -775,12 +791,7 @@ ConfigureFrame(
     if (oldMenuName != NULL) {
         Blt_Free(oldMenuName);
     }
-    if (Tk_IsMapped(framePtr->tkwin)) {
-        if (!(framePtr->flags & REDRAW_PENDING)) {
-            Tcl_DoWhenIdle(DisplayFrame, (ClientData)framePtr);
-        }
-        framePtr->flags |= REDRAW_PENDING;
-    }
+    EventuallyRedraw(framePtr);
     return TCL_OK;
 }
 
@@ -909,10 +920,7 @@ FrameEventProc(
     return;
 
   redraw:
-    if ((framePtr->tkwin != NULL) && !(framePtr->flags & REDRAW_PENDING)) {
-        Tcl_DoWhenIdle(DisplayFrame, (ClientData)framePtr);
-        framePtr->flags |= REDRAW_PENDING;
-    }
+    EventuallyRedraw(framePtr);
 }
 
 /*

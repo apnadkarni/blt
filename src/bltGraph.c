@@ -646,12 +646,13 @@ InitPens(Graph *graphPtr)
 /*ARGSUSED*/
 void
 Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
-              Blt_Chain tags)
+              Blt_Chain chain)
 {
     GraphObj *objPtr;
     MakeTagProc *tagProc;
     Graph *graphPtr;
-
+    Blt_Tags tags;
+    
     graphPtr = (Graph *)Blt_GetBindingData(table);
 
     /* 
@@ -663,19 +664,23 @@ Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
     if (objPtr->deleted) {
         return;                         /* Don't pick deleted objects. */
     }
+    tags = NULL;
     switch (objPtr->classId) {
     case CID_ELEM_BAR:          
     case CID_ELEM_CONTOUR:
     case CID_ELEM_LINE: 
     case CID_ELEM_STRIP: 
+        tags = &graphPtr->elements.tags;
         tagProc = Blt_MakeElementTag;
         break;
     case CID_LEGEND: 
+        tags = &graphPtr->elements.tags;
         tagProc = Blt_MakeElementTag;
         break;
     case CID_AXIS_X:
     case CID_AXIS_Y:
     case CID_AXIS_Z:
+        tags = &graphPtr->axes.tags;
         tagProc = Blt_MakeAxisTag;
         break;
     case CID_MARKER_BITMAP:
@@ -685,34 +690,21 @@ Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
     case CID_MARKER_RECTANGLE:
     case CID_MARKER_TEXT:
     case CID_MARKER_WINDOW:
+        tags = &graphPtr->markers.tags;
         tagProc = Blt_MakeMarkerTag;
         break;
     case CID_NONE:
         panic("unknown object type");
-        tagProc = NULL;
         break;
     default:
         panic("bogus object type");
-        tagProc = NULL;
         break;
     }
     assert(objPtr->name != NULL);
-
     /* Always add the name of the object to the tag array. */
-    Blt_Chain_Append(tags, (*tagProc)(graphPtr, objPtr->name));
-    Blt_Chain_Append(tags, (*tagProc)(graphPtr, objPtr->className));
-    if (objPtr->tagsObjPtr != NULL) {
-        Tcl_Obj **objv;
-        int i, objc;
-        
-        Tcl_ListObjGetElements(NULL, objPtr->tagsObjPtr, &objc, &objv);
-        for (i = 0; i < objc; i++) {
-            const char *string;
-
-            string = Tcl_GetString(objv[i]);
-            Blt_Chain_Append(tags, (*tagProc) (graphPtr, string));
-        }
-    }
+    Blt_Chain_Append(chain, (*tagProc)(graphPtr, objPtr->name));
+    Blt_Chain_Append(chain, (*tagProc)(graphPtr, objPtr->className));
+    Blt_Tags_AppendTagsToChain(tags, objPtr, chain);
 }
 
 /*
@@ -1360,6 +1352,7 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     if (graphPtr->flags & RESET_AXES) {
         Blt_ResetAxes(graphPtr);
     }
+    memset(&args, 0, sizeof(args));
     args.elemPtr = NULL;
     args.graphPtr = graphPtr;
     bltXAxisSwitch.clientData = graphPtr;
@@ -1379,7 +1372,7 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
         axes.y = args.yAxisPtr;
     } 
     /* Override if element is specified. */
-    if (args.elemPtr == NULL) {
+    if (args.elemPtr != NULL) {
         axes = args.elemPtr->axes;
     }
     point = Blt_InvMap2D(graphPtr, x, y, &axes);
@@ -2357,8 +2350,8 @@ DrawPlot(Graph *graphPtr, Drawable drawable)
 
     x = graphPtr->x1 - graphPtr->plotBorderWidth;
     y = graphPtr->y1 - graphPtr->plotBorderWidth;
-    w = graphPtr->x2 - graphPtr->x1 + (2 * graphPtr->plotBorderWidth);
-    h = graphPtr->y2 - graphPtr->y1 + (2 * graphPtr->plotBorderWidth);
+    w = (graphPtr->x2 - graphPtr->x1) + (2 * graphPtr->plotBorderWidth);
+    h = (graphPtr->y2 - graphPtr->y1) + (2 * graphPtr->plotBorderWidth);
 
     if ((w > 0) && (h > 0)) {
         /* Draw the background of the plotting area with 3D border. */
@@ -2379,7 +2372,15 @@ DrawPlot(Graph *graphPtr, Drawable drawable)
     }
     Blt_DrawAxisLimits(graphPtr, drawable);
     Blt_DrawElements(graphPtr, drawable);
-    /* Blt_DrawAxes(graphPtr, drawable); */
+    if (Blt_GraphType(graphPtr) == CONTOUR) {
+        Blt_DrawAxes(graphPtr, drawable);
+
+        /* Draw 3D border around the plotting area */
+        if ((w > 0) && (h > 0) && (graphPtr->plotBorderWidth > 0)) {
+            Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg,
+                x, y, w, h, graphPtr->plotBorderWidth, graphPtr->plotRelief);
+        }
+    }
 }
 
 void

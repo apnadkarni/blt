@@ -2071,7 +2071,6 @@ Blt_SimplifyLine(Point2d *inputPts, int low, int high, double tolerance,
     return count;
 }
 
-
 /* 
  * Converts the list from TCL memory into normal memory. This is
  * because the list could be either a split list or a (malloc-ed)
