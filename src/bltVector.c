@@ -2597,9 +2597,9 @@ Blt_SetVectorChangedProc(
     Blt_VectorId clientId,              /* Client token identifying the
                                          * vector */
     Blt_VectorChangedProc *proc,        /* Address of routine to call when
-                                        * the contents of the vector
-                                        * change. If NULL, no routine will
-                                        * be called */
+                                         * the contents of the vector
+                                         * change. If NULL, no routine will
+                                         * be called */
     ClientData clientData)              /* One word of information to pass
                                          * along when the above routine is
                                          * called */

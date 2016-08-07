@@ -172,6 +172,8 @@ typedef struct {
                                          * ranges: used to scale the size
                                          * of element's symbol. */
     int state;
+    Blt_HashTable isoTable;             /* Table of isolines to be
+                                         * displayed. */
 
     /* Barchart-specific fields. */
     float barWidth;

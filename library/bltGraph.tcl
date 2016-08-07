@@ -402,7 +402,7 @@ proc blt::Graph::FindElement { g x y } {
     # --------------------------------------------------------------
     set markerName "bltClosest_$info(name)"
     catch { $g marker delete $markerName }
-    $g marker create text -coords { $info(x) $info(y) } \
+    $g marker create text -coords [list $info(x) $info(y)] \
 	-name $markerName \
 	-text "$info(name): $info(dist)\nindex $info(index)" \
 	-font "Arial 6" \
@@ -413,7 +413,7 @@ proc blt::Graph::FindElement { g x y } {
     set nx [lindex $coords 0]
     set ny [lindex $coords 1]
 
-    $g marker create line -coords "$nx $ny $info(x) $info(y)" \
+    $g marker create line -coords [list $nx $ny $info(x) $info(y)] \
 	-name line.$markerName 
 
     FlashPoint $g $info(name) $info(index) 10
@@ -788,7 +788,7 @@ proc blt::Graph::Box { g } {
 	set x2 [$g xaxis invtransform $_private($g,B,x)]
 	set y2 [$g yaxis invtransform $_private($g,B,y)]
     }
-    set coords { $x1 $y1 $x2 $y2 }
+    set coords [list $x1 $y1 $x2 $y2]
     if { [$g marker exists "zoomOutline"] } {
 	$g marker configure "zoomOutline" -coords $coords 
     } else {

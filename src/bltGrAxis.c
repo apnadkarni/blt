@@ -321,9 +321,6 @@ Blt_CustomOption tagsOption = {
 
 static Blt_ConfigSpec configSpecs[] =
 {
-    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-        "ActiveBackground", DEF_ACTIVEBACKGROUND, 
-        Blt_Offset(Axis, activeBg), ALL_GRAPHS | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground",
         "ActiveForeground", DEF_ACTIVEFOREGROUND,
         Blt_Offset(Axis, activeFgColor), ALL_GRAPHS}, 
@@ -4577,10 +4574,6 @@ ConfigureAxis(Axis *axisPtr)
         Blt_Bg_SetChangedProc(axisPtr->normalBg, Blt_UpdateGraph, 
                 graphPtr);
     }
-    if (axisPtr->activeBg != NULL) {
-        Blt_Bg_SetChangedProc(axisPtr->activeBg, Blt_UpdateGraph, 
-                graphPtr);
-    }
     axisPtr->tickAngle = angle;
     ResetTextStyles(axisPtr);
 
@@ -5894,8 +5887,7 @@ AxisGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Blt_GetCurrentItem(graphPtr->bindTable);
     /* Report only on axes. */
     if ((objPtr != NULL) && (!objPtr->deleted) &&
-        ((objPtr->classId == CID_AXIS_X) || (objPtr->classId == CID_AXIS_Y) || 
-         (objPtr->classId == CID_NONE))) {
+        ((objPtr->classId >= CID_NONE) && (objPtr->classId <= CID_AXIS_Z))) {
         char c;
         char  *string;
 

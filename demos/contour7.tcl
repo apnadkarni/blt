@@ -38,7 +38,7 @@ set mesh [blt::mesh create regular -y {0 100 50} -x {0 100 50}]
 
 blt::contour .g -highlightthickness 0 -bg white
 .g element create myContour -values $z -mesh $mesh 
-.g element isoline steps myContour 10
+.g isoline steps 10 -element myContour
 .g legend configure -hide yes 
 .g axis configure x -tickdirection in  -scale linear
 .g axis configure y -tickdirection in  -scale linear
@@ -161,3 +161,13 @@ foreach key [array names show] {
 }
 
 Blt_ZoomStack .g
+
+.g isoline bind all <Enter> {
+    %W isoline deactivate all
+    %W isoline activate current
+}
+
+.g isoline bind all <Leave> {
+    %W isoline deactivate all
+}
+

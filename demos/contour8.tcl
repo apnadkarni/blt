@@ -49,7 +49,7 @@ set count 0
 
 blt::contour .g -highlightthickness 0
 .g element create myContour -color blue
-.g element isoline steps myContour 10 
+.g isoline steps 10 -element myContour
 .g legend configure -hide yes
 .g axis configure z -palette $palette
 

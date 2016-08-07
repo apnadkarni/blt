@@ -1010,10 +1010,10 @@ blt::contour .g
 
 set elem substrate
 .g element create substrate -mesh regular -values substrate 
-.g element isoline step substrate 1000
+.g isoline step 1000 -element substrate
 set elem particle
 .g element create particle -mesh regular -values particle 
-.g element isoline step particle 10 
+.g isoline step 10 -element particle
 .g axis configure z -palette blue.rgb
 foreach key { boundary values symbols isolines colormap symbols wireframe } {
     set show($key) [.g element cget $elem -show$key]

@@ -282,6 +282,7 @@ GRAPH_OBJS =		bltGrAxis.o \
 			bltGrBar.o \
 			bltGrElem.o \
 			bltGrHairs.o \
+			bltGrIsoline.o \
 			bltGrLegd.o \
 			bltGrLine2.o \
 			bltGrMarker.o \

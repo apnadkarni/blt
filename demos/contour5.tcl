@@ -8,7 +8,7 @@ $values set { 1 1 10 1 }
 blt::contour .g -highlightthickness 0
 
 .g element create myContour -mesh $mesh -values $values
-.g element isoline step myContour 20
+.g isoline step 20 -element myContour
 .g element configure myContour \
     -fill palette \
     -outline black 
@@ -52,13 +52,13 @@ blt::table . \
 blt::table configure . r* c1 -resize none
 blt::table configure . r6 -resize both
 
-Blt_ZoomStack .g
+#Blt_ZoomStack .g
 
 proc FindIsoline { g x y } {
-    set results [$g element isoline nearest myContour $x $y -halo 1i]
+    set results [$g isoline nearest $x $y -halo 1i]
     set markerName "myMarker"
     $g marker delete active
-    $g element isoline deactivate myContour all
+    $g isoline deactivate all
     if { $results == "" } {
 	return
     }
@@ -84,14 +84,17 @@ proc FindIsoline { g x y } {
 	-yoffset 0 -bg {}]
     $g marker tag add "active" $id
 
-    $g element isoline activate myContour $info(name)
+    $g isoline activate $info(name)
     set id [$g marker create line -coords "$nx $ny $info(x) $info(y)"]
     $g marker tag add "active" $id 
 }
 
-set coords [.g invtransform 100 100]
-puts stderr coords=$coords
-
-bind .g <Motion>  {
-    FindIsoline %W %x %y
+.g isoline bind all <Enter> {
+    %W isoline deactivate all
+    %W isoline activate current
 }
+
+.g isoline bind all <Leave> {
+    %W isoline deactivate all
+}
+

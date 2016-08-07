@@ -44,26 +44,27 @@ typedef struct _Element Element;
 typedef struct _Legend Legend;
 typedef struct _Axis Axis;
 typedef struct _Graph Graph;
+typedef struct _Isoline Isoline;
 
 typedef enum {
-    CID_NONE, 
-    CID_AXIS_X,
-    CID_AXIS_Y,
-    CID_AXIS_Z,
-    CID_LEGEND,
-    CID_ELEM_BAR,
-    CID_ELEM_CONTOUR,
-    CID_ELEM_LINE,
-    CID_ELEM_STRIP,
-    CID_MARKER_BITMAP,
-    CID_MARKER_IMAGE,
-    CID_MARKER_LINE,
-    CID_MARKER_POLYGON,
-    CID_MARKER_RECTANGLE,
-    CID_MARKER_TEXT,
-    CID_MARKER_WINDOW,
-    CID_LEGEND_ENTRY,
-    CID_ISOLINE,
+    CID_NONE,                           /* 0 */
+    CID_AXIS_X,                         /* 1 */
+    CID_AXIS_Y,                         /* 2 */
+    CID_AXIS_Z,                         /* 3 */
+    CID_LEGEND,                         /* 4 */
+    CID_ELEM_BAR,                       /* 5 */
+    CID_ELEM_CONTOUR,                   /* 6 */
+    CID_ELEM_LINE,                      /* 7 */
+    CID_ELEM_STRIP,                     /* 8 */
+    CID_MARKER_BITMAP,                  /* 9 */
+    CID_MARKER_IMAGE,                   /* 10 */
+    CID_MARKER_LINE,                    /* 11 */
+    CID_MARKER_POLYGON,                 /* 12 */
+    CID_MARKER_RECTANGLE,               /* 13 */
+    CID_MARKER_TEXT,                    /* 14 */
+    CID_MARKER_WINDOW,                  /* 15 */
+    CID_LEGEND_ENTRY,                   /* 16 */
+    CID_ISOLINE,                        /* 17 */
 } ClassId;
 
 /* Generic fields common to all graph objects. */
@@ -378,13 +379,15 @@ struct _Graph {
         Blt_HashTable nameTable;        /* Hash table of ids. */
         Blt_HashTable bindTagTable;     /* Table of bind tags. */
         struct _Blt_Tags tags;          /* Table of tags. */
-    } elements, markers, axes;
+    } elements, markers, axes, isolines;
 
     Blt_HashTable dataTables;           /* Hash table of datatable
                                          * clients. */
     ClassId classId;                    /* Default element type */
     Blt_BindTable bindTable;
     int nextMarkerId;                   /* Tracks next marker identifier
+                                         * available */
+    int nextIsolineId;                  /* Tracks next isoline identifier
                                          * available */
     int axisSpacing;
     Margin margins[4];
@@ -722,6 +725,7 @@ BLT_EXTERN int Blt_AxisOp(ClientData clientData, Tcl_Interp *interp,
 BLT_EXTERN int Blt_ElementOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
         Tcl_Obj *const *objv, ClassId classId);
 
+BLT_EXTERN Tcl_ObjCmdProc Blt_IsolineOp;
 BLT_EXTERN Tcl_ObjCmdProc Blt_CrosshairsOp;
 BLT_EXTERN Tcl_ObjCmdProc Blt_GraphRegionOp;
 BLT_EXTERN Tcl_ObjCmdProc Blt_MarkerOp;
@@ -752,11 +756,14 @@ BLT_EXTERN Element *Blt_NearestElement(Graph *graphPtr, int x, int y);
 
 BLT_EXTERN Axis *Blt_NearestAxis(Graph *graphPtr, int x, int y);
 
+BLT_EXTERN Isoline *Blt_NearestIsoline(Graph *graphPtr, int x, int y);
+
 typedef ClientData (MakeTagProc)(Graph *graphPtr, const char *tagName);
 
 BLT_EXTERN MakeTagProc Blt_MakeElementTag;
 BLT_EXTERN MakeTagProc Blt_MakeMarkerTag;
 BLT_EXTERN MakeTagProc Blt_MakeAxisTag;
+BLT_EXTERN MakeTagProc Blt_MakeIsolineTag;
 BLT_EXTERN Blt_BindAppendTagsProc Blt_GraphTags;
 BLT_EXTERN Blt_BindAppendTagsProc Blt_AxisTags;
 
@@ -780,6 +787,9 @@ BLT_EXTERN Element *Blt_LineElement2(Graph *graphPtr, ClassId id,
         Blt_HashEntry *hPtr);
 BLT_EXTERN Element *Blt_ContourElement(Graph *graphPtr, ClassId id,
         Blt_HashEntry *hPtr);
+
+BLT_EXTERN void Blt_ClearIsolines(Graph *graphPtr, Element *elemPtr);
+BLT_EXTERN void Blt_DestroyIsolines(Graph *graphPtr);
 
 BLT_EXTERN void Blt_DrawGrids(Graph *graphPtr, Drawable drawable);
 

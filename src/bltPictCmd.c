@@ -2755,7 +2755,8 @@ SequenceTimerProc(ClientData clientData)
     int delay;
 
     NextImage(imgPtr);
-    if (imgPtr->picture == NULL) {
+    delay = 100;                        /* 100 milliseconds. */
+    if (imgPtr->picture != NULL) {
         delay = Blt_Picture_Delay(imgPtr->picture);
     }
     if (imgPtr->interval > 0) {

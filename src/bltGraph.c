@@ -92,22 +92,24 @@
  * window will be from the list below.
  */
 static const char *objectClassNames[] = {
-    "unknown",
-    "X", 
-    "Y",
-    "Z",
-    "BarElement", 
-    "ContourElement",
-    "LineElement", 
-    "StripElement", 
-    "BitmapMarker", 
-    "ImageMarker", 
-    "LineMarker", 
-    "PolygonMarker",
-    "TextMarker", 
-    "WindowMarker",
-    "LegendEntry",
-    "Isoline",
+    "unknown",                          /* 0 */
+    "X",                                /* 1 */
+    "Y",                                /* 2 */
+    "Z",                                /* 3 */
+    "Legend",                           /* 4 */
+    "BarElement",                       /* 5 */
+    "ContourElement",                   /* 6 */
+    "LineElement",                      /* 7 */
+    "StripElement",                     /* 8 */
+    "BitmapMarker",                     /* 9 */
+    "ImageMarker",                      /* 10 */
+    "LineMarker",                       /* 11 */
+    "PolygonMarker",                    /* 12 */
+    "RectangleMarker",                  /* 13 */
+    "TextMarker",                       /* 14 */
+    "WindowMarker",                     /* 15 */
+    "LegendEntry",                      /* 16 */
+    "Isoline",                          /* 17 */
 };
 
 static Blt_OptionParseProc ObjToMapElements;
@@ -459,7 +461,7 @@ Blt_EventuallyRedrawGraph(Graph *graphPtr)
 const char *
 Blt_GraphClassName(ClassId classId) 
 {
-    if ((classId >= CID_NONE) && (classId <= CID_MARKER_WINDOW)) {
+    if ((classId >= CID_NONE) && (classId <= CID_ISOLINE)) {
         return objectClassNames[classId];
     }
     return NULL;
@@ -665,6 +667,7 @@ Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
         return;                         /* Don't pick deleted objects. */
     }
     tags = NULL;
+    tagProc = NULL;
     switch (objPtr->classId) {
     case CID_ELEM_BAR:          
     case CID_ELEM_CONTOUR:
@@ -672,6 +675,10 @@ Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
     case CID_ELEM_STRIP: 
         tags = &graphPtr->elements.tags;
         tagProc = Blt_MakeElementTag;
+        break;
+    case CID_ISOLINE: 
+        tags = &graphPtr->isolines.tags;
+        tagProc = Blt_MakeIsolineTag;
         break;
     case CID_LEGEND: 
         tags = &graphPtr->elements.tags;
@@ -705,6 +712,7 @@ Blt_GraphTags(Blt_BindTable table, ClientData object, ClientData context,
     Blt_Chain_Append(chain, (*tagProc)(graphPtr, objPtr->name));
     Blt_Chain_Append(chain, (*tagProc)(graphPtr, objPtr->className));
     Blt_Tags_AppendTagsToChain(tags, objPtr, chain);
+    Blt_Chain_Append(chain, (*tagProc)(graphPtr, "all"));
 }
 
 /*
@@ -761,7 +769,8 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
     Element *elemPtr;
     Marker *markerPtr;
     Region2d exts;
-
+    Isoline *isoPtr;
+    
     if (graphPtr->flags & MAP_ALL) {
         return NULL;                    /* Don't pick anything until the
                                          * next redraw occurs. */
@@ -779,12 +788,17 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
     /* 
      * From top-to-bottom check:
      *  1. markers drawn on top (-under false).
+     *  2  isolines using its display list back to front.
      *  2. elements using its display list back to front.
      *  3. markers drawn under element (-under true).
      */
     markerPtr = Blt_NearestMarker(graphPtr, x, y, FALSE);
     if (markerPtr != NULL) {
         return markerPtr;               /* Found a marker (-under false). */
+    }
+    isoPtr = Blt_NearestIsoline(graphPtr, x, y);
+    if (isoPtr != NULL) {
+        return isoPtr;
     }
     elemPtr = Blt_NearestElement(graphPtr, x, y);
     if (elemPtr != NULL) {
@@ -1018,26 +1032,31 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     graphPtr->relief = TK_RELIEF_FLAT;
     graphPtr->flags = RESET_WORLD | DOUBLE_BUFFER | BACKING_STORE;
     graphPtr->nextMarkerId = 1;
+    graphPtr->nextIsolineId = 1;
     graphPtr->padLeft = graphPtr->padRight = 0;
     graphPtr->padTop = graphPtr->padBottom = 0;
     graphPtr->axisSpacing = 0;
     
     Blt_Ts_InitStyle(graphPtr->titleTextStyle);
     Blt_Ts_SetAnchor(graphPtr->titleTextStyle, TK_ANCHOR_N);
-
-    Blt_InitHashTable(&graphPtr->axes.nameTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&graphPtr->axes.bindTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&graphPtr->elements.nameTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&graphPtr->elements.bindTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&graphPtr->markers.nameTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&graphPtr->markers.bindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&graphPtr->dataTables, BLT_STRING_KEYS);
-    Blt_Tags_Init(&graphPtr->elements.tags);
-    Blt_Tags_Init(&graphPtr->markers.tags);
+
+    Blt_InitHashTable(&graphPtr->axes.bindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&graphPtr->axes.nameTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&graphPtr->elements.bindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&graphPtr->elements.nameTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&graphPtr->isolines.bindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&graphPtr->isolines.nameTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&graphPtr->markers.bindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&graphPtr->markers.nameTable, BLT_STRING_KEYS);
     Blt_Tags_Init(&graphPtr->axes.tags);
-    graphPtr->elements.displayList = Blt_Chain_Create();
-    graphPtr->markers.displayList = Blt_Chain_Create();
+    Blt_Tags_Init(&graphPtr->elements.tags);
+    Blt_Tags_Init(&graphPtr->isolines.tags);
+    Blt_Tags_Init(&graphPtr->markers.tags);
     graphPtr->axes.displayList = Blt_Chain_Create();
+    graphPtr->elements.displayList = Blt_Chain_Create();
+    graphPtr->isolines.displayList = Blt_Chain_Create();
+    graphPtr->markers.displayList = Blt_Chain_Create();
 
     switch (classId) {
     case CID_ELEM_LINE:
@@ -2055,6 +2074,7 @@ static Blt_OpSpec graphOps[] =
     {"extents",      2, ExtentsOp,         3, 3, "item",},
     {"inside",       3, InsideOp,          4, 4, "x y",},
     {"invtransform", 3, InvtransformOp,    4, 0, "x y ?switches ...?",},
+    {"isoline",      2, Blt_IsolineOp,     2, 0, "args..."},
     {"legend",       2, Blt_LegendOp,      2, 0, "args ...",},
     {"line",         2, LineOp,            2, 0, "args ...",},
     {"marker",       1, Blt_MarkerOp,      2, 0, "args ...",},

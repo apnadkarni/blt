@@ -145,6 +145,20 @@ Blt_CustomOption bltElementTagsOption = {
     ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
 };
 
+
+static Blt_OptionFreeProc FreeElementProc;
+static Blt_OptionParseProc ObjToElementProc;
+static Blt_OptionPrintProc ElementToObjProc;
+Blt_CustomOption bltElementOption =
+{
+    ObjToElementProc, ElementToObjProc, FreeElementProc, (ClientData)0
+};
+Blt_CustomOption bltContourElementOption =
+{
+    ObjToElementProc, ElementToObjProc, FreeElementProc,
+    (ClientData)CID_ELEM_CONTOUR
+};
+
 #include "bltGrElem.h"
 
 static Blt_VectorChangedProc VectorChangedProc;
@@ -156,6 +170,8 @@ typedef int (GraphElementProc)(Graph *graphPtr, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv);
 
 static Tcl_FreeProc FreeElement;
+static int GetElementFromObj(Tcl_Interp *interp, Graph *graphPtr,
+        Tcl_Obj *objPtr, Element **elemPtrPtr);
 
 static void
 FreeElement(DestroyData data)
@@ -308,6 +324,7 @@ VectorChangedProc(Tcl_Interp *interp, ClientData clientData,
             return;
         }
     }
+
     {
         Element *elemPtr = valuesPtr->elemPtr;
         Graph *graphPtr;
@@ -1321,6 +1338,86 @@ TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     return listObjPtr;
 }
 
+/*ARGSUSED*/
+static void
+FreeElementProc(ClientData clientData, Display *display, char *widgRec,
+                int offset)
+{
+    Element **elemPtrPtr = (Element **)(widgRec + offset);
+
+    *elemPtrPtr = NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToElementProc --
+ *
+ *      This procedure is like ObjToValues except that it interprets
+ *      the list of numeric expressions as X Y coordinate pairs.  The
+ *      minimum and maximum for both the X and Y vectors are
+ *      determined.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The vectors are
+ *      passed back via the widget record (elemPtr).
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToElementProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    Element **elemPtrPtr = (Element **)(widgRec + offset);
+    Element *elemPtr;
+    GraphObj *graphObjPtr = (GraphObj *)widgRec;
+    Graph *graphPtr;
+    ClassId classId = (ClassId)clientData; /* Element type. */
+
+    graphPtr = graphObjPtr->graphPtr;
+    if (GetElementFromObj(interp, graphPtr, objPtr, &elemPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if ((classId != CID_NONE) && (elemPtr->obj.classId != classId)) {
+        Tcl_AppendResult(interp, "element \"", elemPtr->obj.name, 
+                "\" is the wrong type (is \"", 
+                Blt_GraphClassName(elemPtr->obj.classId), "\"", ", wanted \"", 
+                Blt_GraphClassName(classId), "\")", (char *)NULL);
+        return TCL_ERROR;
+    }
+    *elemPtrPtr = elemPtr;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ValuePairsToObj --
+ *
+ *      Convert pairs of floating point values in the X and Y arrays
+ *      into a TCL list.
+ *
+ * Results:
+ *      The return value is a string (TCL list).
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+ElementToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                 char *widgRec, int offset, int flags)
+{
+    Element *elemPtr = *(Element **)(widgRec + offset);
+    Tcl_Obj *objPtr;
+    
+    if (elemPtr != NULL) {
+        objPtr = Tcl_NewStringObj(elemPtr->obj.name, -1);
+    } else {
+        objPtr = Tcl_NewStringObj("", -1);
+    }
+    return objPtr;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -1723,6 +1820,9 @@ DestroyElement(Element *elemPtr)
     /* Remove it also from the element display list */
     if (elemPtr->link != NULL) {
         Blt_Chain_DeleteLink(graphPtr->elements.displayList, elemPtr->link);
+    }
+    if (elemPtr->obj.classId == CID_ELEM_CONTOUR) {
+        Blt_ClearIsolines(graphPtr, elemPtr);
     }
     Blt_Tags_ClearTagsFromItem(&graphPtr->elements.tags, elemPtr);
     Blt_DeleteBindings(graphPtr->bindTable, elemPtr);
@@ -3150,7 +3250,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * GetOp --
  *
- *      Returns the name of the picked element (using the element * bind
+ *      Returns the name of the picked element (using the element bind
  *      operation).  Right now, the only name accepted is "current".
  *
  * Results:
@@ -4037,8 +4137,6 @@ static Blt_OpSpec elemOps[] = {
     {"exists",     1, ExistsOp,      4, 4, "elemName"},
     {"find",       1, FindOp,        7, 8, "elemName x1 y1 x2 y2"},
     {"get",        1, GetOp,         4, 4, "elemName"},
-    {"isoline",    4, Blt_IsolineOp, 2, 0, "args..."},
-    {"isotag",     4, Blt_IsoTagOp,  2, 0, "args..."},
     {"lower",      1, LowerOp,       3, 0, "?elemName?..."},
     {"names",      2, NamesOp,       3, 0, "?pattern?..."},
     {"nearest",    2, NearestOp,     5, 0,
@@ -4055,9 +4153,9 @@ static int numElemOps = sizeof(elemOps) / sizeof(Blt_OpSpec);
  *
  * Blt_ElementOp --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module.  See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module.  See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -4099,16 +4197,17 @@ Blt_ElementOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  *      graph. This data structure is used to clip the points and line
  *      segments of the line element.
  *
- *      The clip region is the plotting area plus such arbitrary extra space.
- *      The reason we clip with a bounding box larger than the plot area is so
- *      that symbols will be drawn even if their center point isn't in the
- *      plotting area.
+ *      The clip region is the plotting area plus such arbitrary extra
+ *      space.  The reason we clip with a bounding box larger than the plot
+ *      area is so that symbols will be drawn even if their center point
+ *      isn't in the plotting area.
  *
  * Results:
  *      None.
  *
  * Side Effects:
- *      The bounding box is filled with the dimensions of the plotting area.
+ *      The bounding box is filled with the dimensions of the plotting
+ *      area.
  *
  *---------------------------------------------------------------------------
  */
@@ -4156,11 +4255,37 @@ Blt_NearestElement(Graph *graphPtr, int x, int y)
         if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
             continue;
         }
-        (*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);
+        (*elemPtr->procsPtr->nearestProc)(graphPtr, elemPtr, &nearest);
     }
     if (nearest.distance <= nearest.maxDistance) {
-        return nearest.item;    /* Found an element within the minimum
-                                 * halo distance. */
+        return nearest.item;         /* Found an element within the minimum
+                                      * halo distance. */
     }
     return NULL;
 }
+
+void
+Blt_RemoveIsoline(Element *elemPtr, Isoline *isoPtr)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&elemPtr->isoTable, (char *)isoPtr);
+    if (hPtr != NULL) {
+        Blt_DeleteHashEntry(&elemPtr->isoTable, hPtr);
+    }
+    Blt_EventuallyRedrawGraph(elemPtr->obj.graphPtr);
+}
+
+void
+Blt_AddIsoline(Element *elemPtr, Isoline *isoPtr)
+{
+    Blt_HashEntry *hPtr;
+    int isNew;
+    
+    hPtr = Blt_CreateHashEntry(&elemPtr->isoTable, (char *)isoPtr, &isNew);
+    if (isNew) {
+        Blt_SetHashValue(hPtr, isoPtr);
+    }
+    Blt_EventuallyRedrawGraph(elemPtr->obj.graphPtr);
+}
+

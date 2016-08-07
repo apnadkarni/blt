@@ -326,6 +326,7 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         DEF_MARKER_BACKGROUND, Blt_Offset(BitmapMarker, fillColor),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_BITMAP, "-bitmap", "bitmap", "Bitmap", DEF_MARKER_BITMAP, 
         Blt_Offset(BitmapMarker, srcBitmap), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -442,6 +443,7 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(ImageMarker, anchor), 0},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(ImageMarker, worldPts), BLT_CONFIG_NULL_OK, &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
@@ -553,6 +555,7 @@ typedef struct {
 
 static Blt_ConfigSpec lineConfigSpecs[] =
 {
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(LineMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -702,6 +705,7 @@ typedef struct {
 
 static Blt_ConfigSpec polygonConfigSpecs[] =
 {
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(PolygonMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -848,6 +852,7 @@ typedef struct {
 
 static Blt_ConfigSpec rectangleConfigSpecs[] =
 {
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(RectangleMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -978,11 +983,13 @@ typedef struct {
 
 static Blt_ConfigSpec textConfigSpecs[] =
 {
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(TextMarker, anchor), 0},
     {BLT_CONFIG_COLOR, "-background", "background", "MarkerBackground",
         (char *)NULL, Blt_Offset(TextMarker, fillColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bg", "background", "Background", (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(TextMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
@@ -1105,6 +1112,7 @@ static Blt_ConfigSpec windowConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(WindowMarker, anchor), 0},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(WindowMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
@@ -4546,7 +4554,7 @@ PolygonMapProc(Marker *markerPtr)
 
         /* 
          * Generate line segments representing the polygon outline.  The
-         * resulting outline may or may not be closed from viewport
+         * resulting outline may or may not be closed due to viewport
          * clipping.
          */
         outlinePts = Blt_Malloc(numScreenPts * sizeof(Segment2d));

@@ -534,3 +534,26 @@ blt::table . \
     1,0 .g -fill both -cspan 3
 
 blt::table configure . r0 c1 c2 -resize none
+
+.g element bind all <Enter> {
+    puts stderr "entered element [.g element get current]"
+}
+.g axis bind all <Enter> {
+    puts stderr "entered axis [.g axis get current]"
+}
+
+.g axis configure all -activeforeground red
+
+.g axis bind all <Enter> {
+    set axis [%W axis get current]
+    puts stderr ENTER=$axis
+    %W axis activate $axis
+    %W axis focus $axis
+}
+
+.g axis bind all <Leave> {
+    set axis [%W axis get current]
+    puts stderr LEAVE=$axis
+    %W axis deactivate $axis
+    %W axis focus ""
+}

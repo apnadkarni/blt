@@ -1010,7 +1010,7 @@ blt::contour .g
 
 set elem substrate
 .g element create substrate -mesh regular -values substrate -pixels 5 
-.g element isoline step substrate 16
+.g isoline step 16 -element substrate
 .g legend configure -hide yes
 .g axis configure z \
     -palette nanohub \

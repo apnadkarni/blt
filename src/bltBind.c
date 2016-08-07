@@ -166,11 +166,12 @@ static const char *eventNames[] = {
 /*
  * How to make drag&drop work?
  *
- *      Right now we generate pseudo <Enter> <Leave> events within button grab
- *      on an object.  They're marked NotifyVirtual instead of NotifyAncestor.
- *      A better solution: generate new-style virtual <<DragEnter>>
- *      <<DragMotion>> <<DragLeave>> events.  These virtual events don't have
- *      to exist as "real" event sequences, like virtual events do now.
+ *      Right now we generate pseudo <Enter> <Leave> events within button
+ *      grab on an object.  They're marked NotifyVirtual instead of
+ *      NotifyAncestor.  A better solution: generate new-style virtual
+ *      <<DragEnter>> <<DragMotion>> <<DragLeave>> events.  These virtual
+ *      events don't have to exist as "real" event sequences, like virtual
+ *      events do now.
  */
 
 /*
@@ -178,27 +179,27 @@ static const char *eventNames[] = {
  *
  * DoEvent --
  *
- *      This procedure is called to invoke binding processing for a new event
- *      that is associated with the current object for a legend.
+ *      This procedure is called to invoke binding processing for a new
+ *      event that is associated with the current object.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      Depends on the bindings for the legend.  A binding script could delete
- *      an entry, so callers should protect themselves with Tcl_Preserve and
- *      Tcl_Release.
+ *      Depends on the bindings for the object.  A binding script could
+ *      delete an object, so callers should protect themselves with
+ *      Tcl_Preserve and Tcl_Release.
  *
  *---------------------------------------------------------------------------
  */
 static void
 DoEvent(
-    BindTable *bindPtr,         /* Binding information for widget in which
-                                 * event occurred. */
-    XEvent *eventPtr,           /* Real or simulated X event that is to be
-                                 * processed. */
-    ClientData object,          /* Object picked. */
-    ClientData hint)            /* Context of object.  */
+    BindTable *bindPtr,                 /* Binding information for widget
+                                         * in which event occurred. */
+    XEvent *eventPtr,                   /* Real or simulated X event that
+                                         * is to be processed. */
+    ClientData object,                  /* Object picked. */
+    ClientData hint)                    /* Context of object.  */
 {
     Blt_Chain tags;
 
@@ -233,7 +234,6 @@ DoEvent(
         numTags = Blt_Chain_GetLength(tags);
         if (numTags >= MAX_STATIC_TAGS) {
             tagArray = Blt_AssertMalloc(sizeof(ClientData) * numTags);
-            
         } 
         for (i = 0, link = Blt_Chain_FirstLink(tags); link != NULL;
              link = Blt_Chain_NextLink(link), i++) {
@@ -253,20 +253,21 @@ DoEvent(
  *
  * PickCurrentObj --
  *
- *      Picks the object in a binding table give the location of the 
+ *      Picks the object in a binding table give the location of the
  *      pointer (x-y coordinates).  If the current object has changed,
- *      generate a fake exit event on the old current object and a fake enter
- *      event on the new current object.
+ *      generate a fake exit event on the old current object and a fake
+ *      enter event on the new current object.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      The current object may change.  If it does, then the commands associated
- *      with object entry and exit could do just about anything.  A binding
- *      script could delete the object or parent widget, so callers should 
- *      protect themselves with Tcl_Preserve and Tcl_Release.  This is
- *      done automatically if you set bindPtr->clientData;
+ *      The current object may change.  If it does, then the commands
+ *      associated with object entry and exit could do just about anything.
+ *      A binding script could delete the object or parent widget, so
+ *      callers should protect themselves with Tcl_Preserve and
+ *      Tcl_Release.  This is done automatically if you set
+ *      bindPtr->clientData;
  *
  *---------------------------------------------------------------------------
  */
@@ -283,10 +284,10 @@ PickCurrentObj(
     ClientData newHint;
 
     /*
-     * Check whether or not a button is down.  If so, we'll log entry and exit
-     * into and out of the current object, but not entry into any other object.
-     * This implements a form of grabbing equivalent to what the X server does
-     * for windows.
+     * Check whether or not a button is down.  If so, we'll log entry and
+     * exit into and out of the current object, but not entry into any
+     * other object.  This implements a form of grabbing equivalent to what
+     * the X server does for windows.
      */
     buttonDown = (bindPtr->state & ALL_BUTTONS_MASK);
     if (!buttonDown) {
@@ -298,9 +299,12 @@ PickCurrentObj(
      * widget is used for two purposes:
      *
      * 1. Event bindings: if the current object changes, fake events are
-     *    generated to allow object-enter and object-leave bindings to trigger.
+     *    generated to allow object-enter and object-leave bindings to
+     *    trigger.
+     *
      * 2. Reselection: if the current object gets deleted, can use the
      *    saved event to find a new current object.
+     *
      * Translate MotionNotify events into EnterNotify events, since that's
      * what gets reported to object handlers.
      */
@@ -333,10 +337,10 @@ PickCurrentObj(
     bindPtr->activePick = TRUE;
 
     /*
-     * If this is a recursive call (there's already a partially completed call
-     * pending on the stack; it's in the middle of processing a Leave event
-     * handler for the old current object) then just return; the pending call
-     * will do everything that's needed.
+     * If this is a recursive call (there's already a partially completed
+     * call pending on the stack; it's in the middle of processing a Leave
+     * event handler for the old current object) then just return; the
+     * pending call will do everything that's needed.
      */
     if (bindPtr->flags & REPICK_IN_PROGRESS) {
         return bindPtr->currentObj;
@@ -347,15 +351,15 @@ PickCurrentObj(
     newHint = bindPtr->currentHint;     
 
     /*
-     * A LeaveNotify event automatically means that there's no current object,
-     * so the check for closest object can be skipped.
+     * A LeaveNotify event automatically means that there's no current
+     * object, so the check for closest object can be skipped.
      */
     if (bindPtr->pickEvent.type == LeaveNotify) {
         /* If we've entered an inferior window, there can't be a current
-         * object.  Otherwise, the Leave event may be part of a Button event.
-         * (The mode field doesn't seem like it's getting set correctly here.
-         * It should be NotifyGrab or NotifyUngrab.)  In this case, assume
-         * we're still on the same object. */
+         * object.  Otherwise, the Leave event may be part of a Button
+         * event.  (The mode field doesn't seem like it's getting set
+         * correctly here.  It should be NotifyGrab or NotifyUngrab.)  In
+         * this case, assume we're still on the same object. */
         if (bindPtr->pickEvent.xcrossing.detail == NotifyInferior) {
             newObj = NULL;
             newHint = NULL;
@@ -370,8 +374,9 @@ PickCurrentObj(
 
     if (((newObj==bindPtr->currentObj) && (newHint==bindPtr->currentHint)) && 
         ((bindPtr->flags & LEFT_GRABBED_OBJECT) == 0)) {
-        return bindPtr->currentObj;     /* Nothing to do: the current object
-                                         * and hint haven't changed. */
+        return bindPtr->currentObj;     /* Nothing to do: the current
+                                         * object and hint haven't
+                                         * changed. */
     }
 #if FULLY_SIMULATE_GRAB
     /* Simulate an implicit grab on button presses by ignoring any other
@@ -387,8 +392,8 @@ PickCurrentObj(
     }
 
     /* Save the newly picked object and hint. If bindPtr->newObj becomes
-     * NULL, this means that Blt_DeleteBindings was called and that the object
-     * was destroyed. */
+     * NULL, this means that Blt_DeleteBindings was called and that the
+     * object was destroyed. */
     bindPtr->newObj = newObj;           
     bindPtr->newHint = newHint;
 
@@ -397,8 +402,9 @@ PickCurrentObj(
     }
     /*
      * Simulate a LeaveNotify event on the previous current object and an
-     * EnterNotify event on the new current object.  Remove the "current" tag
-     * from the previous current object and place it on the new current object.
+     * EnterNotify event on the new current object.  Remove the "current"
+     * tag from the previous current object and place it on the new current
+     * object.
      */
     if ((bindPtr->currentObj != NULL) && 
         ((newObj != bindPtr->currentObj) || 
@@ -423,8 +429,8 @@ PickCurrentObj(
         bindPtr->flags &= ~REPICK_IN_PROGRESS;
 
         /*
-         * Note: during DoEvent above, it's possible that bindPtr->newObj got
-         * reset to NULL because the object was deleted.
+         * Note: during DoEvent above, it's possible that bindPtr->newObj
+         * got reset to NULL because the object was deleted.
          */
     }
 
@@ -497,11 +503,12 @@ BindProc(
             mask = buttonMasks[eventPtr->xbutton.button];
         }
         /*
-         * For button press events, repick the current object using the button
-         * state before the event, then process the event.  For button release
-         * events, first process the event, then repick the current object using
-         * the button state *after* the event (the button has logically gone
-         * up before we change the current object).
+         * For button press events, repick the current object using the
+         * button state before the event, then process the event.  For
+         * button release events, first process the event, then repick the
+         * current object using the button state *after* the event (the
+         * button has logically gone up before we change the current
+         * object).
          */
         if (eventPtr->type == ButtonPress) {
             /*
@@ -518,9 +525,9 @@ BindProc(
             Tcl_Release(object);
         } else {
             /*
-             * Button release: first process the event, with the button still
-             * considered to be down.  Then repick the current object under the
-             * assumption that the button is no longer down.
+             * Button release: first process the event, with the button
+             * still considered to be down.  Then repick the current object
+             * under the assumption that the button is no longer down.
              */
             bindPtr->state = eventPtr->xbutton.state;
             object = bindPtr->currentObj;
@@ -1705,7 +1712,8 @@ SendEventCmd(ClientData clientData, Tcl_Interp *interp, int objc,
             break;
         }
         case EVENT_ROOTX: {
-            if (Tk_GetPixelsFromObj(interp, tkwin, valuePtr, &number)!=TCL_OK) {
+            if (Tk_GetPixelsFromObj(interp, tkwin, valuePtr, &number)
+                != TCL_OK) {
                 return TCL_ERROR;
             }
             if (flags & (KEY_BUTTON_MOTION_VIRTUAL|CROSSING)) {
@@ -1716,7 +1724,8 @@ SendEventCmd(ClientData clientData, Tcl_Interp *interp, int objc,
             break;
         }
         case EVENT_ROOTY: {
-            if (Tk_GetPixelsFromObj(interp, tkwin, valuePtr, &number) != TCL_OK) {
+            if (Tk_GetPixelsFromObj(interp, tkwin, valuePtr, &number)
+                != TCL_OK) {
                 return TCL_ERROR;
             }
             if (flags & (KEY_BUTTON_MOTION_VIRTUAL|CROSSING)) {

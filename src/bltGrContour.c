@@ -68,6 +68,7 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 #include "bltGrElem.h"
+#include "bltGrIsoline.h"
 #include "bltMesh.h"
 
 /* Use to compute symbol for isolines. */
@@ -228,25 +229,6 @@ typedef struct _TracePoint {
 } TracePoint;
 
 /* 
- * TraceSegment --
- * 
- *      Represents an individual line segment of a isoline. 
- */
-typedef struct _TraceSegment {
-    struct _TraceSegment *next;         /* Points to next point in
-                                         * trace. */
-    float x1, y1, x2, y2;               /* Screen coordinate of the
-                                         * point. */
-    int index;                          /* Index of this coordinate
-                                         * pointing back to the raw world
-                                         * values in the individual data
-                                         * arrays. This index is replicated
-                                         * for generated values. */
-    unsigned int flags;                 /* Flags associated with a segment
-                                         * are described below. */
-} TraceSegment;
-
-/* 
  * Trace -- 
  *
  *      Represents a polyline of connected line segments using the same
@@ -324,31 +306,6 @@ typedef struct {
                                          * transparent pixels of the
                                          * symbol */
 } Symbol;
-
-typedef struct {
-    GraphObj obj;
-    ContourElement *elemPtr;            /* Element this isoline belongs
-                                         * to. */
-    unsigned int flags;
-    const char *label;                  /* Label to be displayed for
-                                         * isoline. */
-    double reqValue;                    /* Requested isoline value.  Could
-                                         * be either absolute or
-                                         * relative. */
-    double reqMin, reqMax;
-
-    Blt_HashEntry *hashPtr;
-    ContourPen *penPtr;
-    ContourPen *activePenPtr;
-    double value;                       /* Value of the isoline. */
-    Blt_Chain traces;                   /* Set of traces that describe the
-                                         * polyline(s) that represent the
-                                         * isoline. */
-    Blt_HashTable pointTable;
-    TraceSegment *segments;             /* Segments used for isolnes. */
-    int numSegments;
-    Blt_Pixel paletteColor;
-} Isoline;
 
 /* HIDDEN               (1<<0) */
 #define ABSOLUT         (1<<4)
@@ -435,6 +392,8 @@ struct _ContourElement {
                                          * ranges: used to scale the size
                                          * of element's symbol. */
     int state;
+    Blt_HashTable isoTable;             /* Table of isolines to be
+                                         * displayed. */
 
     /* Contour-specific fields. */
     ContourPen builtinPen;
@@ -448,8 +407,6 @@ struct _ContourElement {
     Blt_Pool pointPool;                 /* Pool of the points used in the
                                          * traces formed by the isolines. */
     Blt_Pool segmentPool;
-    Blt_HashTable isoTable;             /* Table of isolines to be
-                                         * displayed. */
     Blt_Chain traces;                   /* List of traces representing the 
                                          * boundary of the contour.  */
     Vertex *vertices;                   /* Vertices of mesh converted to
@@ -544,13 +501,7 @@ static Blt_CustomOption meshOption = {
     ObjToMesh, MeshToObj, FreeMesh, (ClientData)0
 };
 
-static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
-Blt_CustomOption isoTagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
-};
-
+BLT_EXTERN Blt_CustomOption bltElementOption;
 BLT_EXTERN Blt_CustomOption bltContourPenOption;
 BLT_EXTERN Blt_CustomOption bltElementTagsOption;
 BLT_EXTERN Blt_CustomOption bltLimitOption;
@@ -790,40 +741,6 @@ static Blt_ConfigSpec contourSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec isolineSpecs[] =
-{
-    {BLT_CONFIG_CUSTOM, "-activepen", "activePen", "ActivePen",
-        DEF_ISOLINE_ACTIVE_PEN, Blt_Offset(Isoline, activePenPtr), 
-        BLT_CONFIG_NULL_OK, &bltContourPenOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
-    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_ISOLINE_HIDE, 
-         Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
-    {BLT_CONFIG_STRING, "-label", "label", "Label", DEF_ISOLINE_LABEL, 
-        Blt_Offset(Isoline, label), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CUSTOM, "-pen", "pen", "Pen", DEF_ISOLINE_PEN, 
-        Blt_Offset(Isoline, penPtr), BLT_CONFIG_NULL_OK, 
-        &bltContourPenOption},
-    {BLT_CONFIG_CUSTOM, "-min", "min", "Min", DEF_ISOLINE_MIN,
-        Blt_Offset(Isoline, reqMin), BLT_CONFIG_DONT_SET_DEFAULT,
-        &bltLimitOption},
-    {BLT_CONFIG_CUSTOM, "-max", "max", "Max", DEF_ISOLINE_MAX,
-        Blt_Offset(Isoline, reqMax), BLT_CONFIG_DONT_SET_DEFAULT,
-        &bltLimitOption},
-    {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_ISOLINE_SHOW, 
-         Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
-    {BLT_CONFIG_BITMASK, "-symbols", "symbols", "Symbols", DEF_ISOLINE_SYMBOLS,
-        Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)SYMBOLS}, 
-    {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_ISOLINE_TAGS, 0,
-        BLT_CONFIG_NULL_OK, &isoTagsOption},
-    {BLT_CONFIG_DOUBLE, "-value", "value", "Value", DEF_ISOLINE_VALUE,
-        Blt_Offset(Isoline, reqValue), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
-};
-
-
 /* Forward declarations */
 static PenConfigureProc ConfigurePenProc;
 static PenDestroyProc DestroyPenProc;
@@ -842,24 +759,6 @@ static ElementMapProc MapProc;
 
 static void DrawTriangle(ContourElement *elemPtr, Blt_Picture picture, 
         Triangle *t, int xOffset, int yOffset);
-
-static int 
-GetContourElement(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr, 
-                  ContourElement **elemPtrPtr)
-{
-    Element *basePtr;
-
-    if (Blt_GetElement(interp, graphPtr, objPtr, &basePtr) != TCL_OK) {
-        return TCL_ERROR;       /* Can't find named element */
-    }
-    if (basePtr->obj.classId != CID_ELEM_CONTOUR) {
-        Tcl_AppendResult(interp, "element \"", Tcl_GetString(objPtr), 
-                "\" is not a contour element", (char *)NULL);
-        return TCL_ERROR;
-    }
-    *elemPtrPtr = (ContourElement *)basePtr;
-    return TCL_OK;
-}
 
 INLINE static int
 InRange(double x, double min, double max)
@@ -1265,402 +1164,6 @@ MeshToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     return Tcl_NewStringObj(Blt_Mesh_Name(mesh), -1);
 }
 
-/* Isoline procedures. */
-
-/*
- *---------------------------------------------------------------------------
- *
- * SetTag --
- *
- *      Associates a tag with a given isoline.  Individual isoline tags are
- *      stored in hash tables keyed by the tag name.  Each table is in turn
- *      stored in a hash table keyed by the isoline pointer.
- *
- * Results:
- *      None.
- *
- * Side Effects:
- *      A tag is stored for a particular isoline.
- *
- *---------------------------------------------------------------------------
- */
-static int
-SetTag(Tcl_Interp *interp, Isoline *isoPtr, const char *tagName)
-{
-    long dummy;
-    
-    if (strcmp(tagName, "all") == 0) {
-        return TCL_OK;                  /* Don't need to create reserved
-                                         * tag. */
-    }
-    if (tagName[0] == '\0') {
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
-                (char *)NULL);
-        }
-        return TCL_ERROR;
-    }
-    if (tagName[0] == '-') {
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, 
-                "\" can't start with a '-'.", (char *)NULL);
-        }
-        return TCL_ERROR;
-    }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
-                             (char *)NULL);
-        }
-        return TCL_ERROR;
-    }
-    Blt_Tags_AddItemToTag(&isoPtr->elemPtr->isoTags, tagName, isoPtr);
-    return TCL_OK;
-}
-
-/*ARGSUSED*/
-static void
-FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
-{
-    Isoline *isoPtr = (Isoline *)widgRec;
-
-    Blt_Tags_ClearTagsFromItem(&isoPtr->elemPtr->isoTags, isoPtr);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToTagsProc --
- *
- *      Convert the string representation of a list of tags.
- *
- * Results:
- *      The return value is a standard TCL result.  The tags are
- *      save in the widget.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
-{
-    Isoline *isoPtr = (Isoline *)widgRec;
-    int i;
-    const char *string;
-    int objc;
-    Tcl_Obj **objv;
-
-    Blt_Tags_ClearTagsFromItem(&isoPtr->elemPtr->isoTags, isoPtr);
-    string = Tcl_GetString(objPtr);
-    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
-        return TCL_OK;
-    }
-    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (i = 0; i < objc; i++) {
-        SetTag(interp, isoPtr, Tcl_GetString(objv[i]));
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * TagsToObjProc --
- *
- *      Returns the tags associated with the element.
- *
- * Results:
- *      The names representing the tags are returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
-{
-    Isoline *isoPtr = (Isoline *)widgRec;
-    Tcl_Obj *listObjPtr;
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    Blt_Tags_AppendTagsToObj(&isoPtr->elemPtr->isoTags, isoPtr, listObjPtr);
-    return listObjPtr;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * NextTaggedIsoline --
- *
- *      Returns the next isoline derived from the given tag.
- *
- * Results:
- *      Returns the pointer to the next tab in the iterator.  If no more
- *      tabs are available, then NULL is returned.
- *
- *---------------------------------------------------------------------------
- */
-static Isoline *
-NextTaggedIsoline(IsolineIterator *iterPtr)
-{
-    switch (iterPtr->type) {
-    case ITER_TAG:
-        if (iterPtr->link != NULL) {
-            Isoline *isoPtr;
-            
-            isoPtr = Blt_Chain_GetValue(iterPtr->link);
-            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
-            return isoPtr;
-        }
-        break;
-
-    case ITER_ALL:
-        {
-            Blt_HashEntry *hPtr;
-            
-            hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-            if (hPtr != NULL) {
-                return Blt_GetHashValue(hPtr);
-            }
-            break;
-        }
-
-    default:
-        break;
-    }   
-    return NULL;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * FirstTaggedIsoline --
- *
- *      Returns the first isoline derived from the given tag.
- *
- * Results:
- *      Returns the first isoline in the sequence.  If no more isolines are in
- *      the list, then NULL is returned.
- *
- *---------------------------------------------------------------------------
- */
-static Isoline *
-FirstTaggedIsoline(IsolineIterator *iterPtr)
-{
-    switch (iterPtr->type) {
-    case ITER_TAG:
-        if (iterPtr->link != NULL) {
-            Isoline *isoPtr;
-            
-            isoPtr = Blt_Chain_GetValue(iterPtr->link);
-            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
-            return isoPtr;
-        }
-        break;
-    case ITER_ALL:
-        {
-            Blt_HashEntry *hPtr;
-            
-            hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-            if (hPtr != NULL) {
-                return Blt_GetHashValue(hPtr);
-            }
-        }
-        break;
-
-    case ITER_SINGLE:
-        return iterPtr->startPtr;
-    } 
-    return NULL;
-}
-
-static int
-GetIsolineFromObj(Tcl_Interp *interp, ContourElement *elemPtr, Tcl_Obj *objPtr,
-                  Isoline **isoPtrPtr)
-{
-    Blt_HashEntry *hPtr;
-    const char *string;
-
-    string = Tcl_GetString(objPtr);
-    hPtr = Blt_FindHashEntry(&elemPtr->isoTable, string);
-    if (hPtr == NULL) {
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "can't find an isoline \"", string, 
-                "\" in element \"", elemPtr->obj.name, "\"", (char *)NULL);
-        }
-        return TCL_ERROR;
-    }
-    *isoPtrPtr = Blt_GetHashValue(hPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * GetIsolineIterator --
- *
- *      Converts a string representing a tab index into an tab pointer.  The
- *      index may be in one of the following forms:
- *
- *       "all"          All isolines.
- *       name           Name of the isoline.
- *       tag            Tag associated with isolines.
- *
- *---------------------------------------------------------------------------
- */
-static int
-GetIsolineIterator(Tcl_Interp *interp, ContourElement *elemPtr, Tcl_Obj *objPtr,
-                   IsolineIterator *iterPtr)
-{
-    Isoline *isoPtr;
-    Blt_Chain chain;
-    const char *string;
-    char c;
-    int numBytes, length;
-
-    iterPtr->elemPtr = elemPtr;
-    iterPtr->type = ITER_SINGLE;
-    iterPtr->tagName = Tcl_GetStringFromObj(objPtr, &numBytes);
-    iterPtr->link = NULL;
-    iterPtr->nextPtr = NULL;
-    iterPtr->startPtr = iterPtr->endPtr = NULL;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'a') && (strcmp(iterPtr->tagName, "all") == 0)) {
-        iterPtr->type  = ITER_ALL;
-        iterPtr->tablePtr = &elemPtr->isoTable;
-    } else if (GetIsolineFromObj(NULL, elemPtr, objPtr, &isoPtr) == TCL_OK) {
-        iterPtr->startPtr = iterPtr->endPtr = isoPtr;
-        iterPtr->type = ITER_SINGLE;
-    } else if ((chain = Blt_Tags_GetItemList(&elemPtr->isoTags, string)) 
-               != NULL) {
-        iterPtr->tagName = string;
-        iterPtr->link = Blt_Chain_FirstLink(chain);
-        iterPtr->type = ITER_TAG;
-    } else {
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "can't find isoline name or tag \"", 
-                string, "\" in \"", Tk_PathName(elemPtr->obj.graphPtr->tkwin), 
-                "\"", (char *)NULL);
-        }
-        return TCL_ERROR;
-    }   
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * NewIsoline --
- *
- *      Creates a new isoline structure and inserts it into the element's
- *      isoline table.h
- *
- *---------------------------------------------------------------------------
- */
-static Isoline *
-NewIsoline(Tcl_Interp *interp, ContourElement *elemPtr, const char *name)
-{
-    Isoline *isoPtr;
-    Blt_HashEntry *hPtr;
-    int isNew;
-    char string[200];
-
-    isoPtr = Blt_AssertCalloc(1, sizeof(Isoline));
-    if (name == NULL) {
-        sprintf(string, "isoline%u", elemPtr->nextIsoline++);
-        name = string;
-    }
-    hPtr = Blt_CreateHashEntry(&elemPtr->isoTable, name, &isNew);
-    assert(isNew);
-    isoPtr->obj.graphPtr = elemPtr->obj.graphPtr;
-    isoPtr->obj.name = Blt_GetHashKey(&elemPtr->isoTable, hPtr);
-    isoPtr->obj.classId = CID_ISOLINE;
-    isoPtr->flags = 0;
-    isoPtr->value = Blt_NaN();
-    isoPtr->reqValue = 0.0;
-    isoPtr->reqMin = isoPtr->reqMax = Blt_NaN();
-    isoPtr->elemPtr = elemPtr;
-    isoPtr->traces = NULL;
-    isoPtr->penPtr = elemPtr->penPtr;
-    Blt_SetHashValue(hPtr, isoPtr);
-    isoPtr->hashPtr = hPtr;
-    return isoPtr;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DestroyIsoline --
- *
- *      Creates a new isoline structure and inserts it into the element's
- *      isoline table.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DestroyIsoline(Isoline *isoPtr)
-{
-    Graph *graphPtr;
-    ContourElement *elemPtr;
-
-    elemPtr = isoPtr->elemPtr;
-    if (isoPtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&elemPtr->isoTable, isoPtr->hashPtr);
-    }
-    Blt_Tags_ClearTagsFromItem(&elemPtr->isoTags, isoPtr);
-    graphPtr = elemPtr->obj.graphPtr;
-    Blt_FreeOptions(isolineSpecs, (char *)isoPtr, graphPtr->display, 0);
-    if (elemPtr->activePtr == isoPtr) {
-        elemPtr->activePtr = NULL;
-    }
-    Blt_Free(isoPtr);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DestroyIsolines --
- *
- *---------------------------------------------------------------------------
- */
-static void
-DestroyIsolines(ContourElement *elemPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Isoline *isoPtr;
-
-        isoPtr = Blt_GetHashValue(hPtr);
-        isoPtr->hashPtr = NULL;
-        DestroyIsoline(isoPtr);
-    }   
-    Blt_DeleteHashTable(&elemPtr->isoTable);
-}
-
-static int
-ConfigureIsoline(Tcl_Interp *interp, Isoline *isoPtr, int objc, 
-                 Tcl_Obj *const *objv, int flags)
-{
-    Graph *graphPtr;
-
-    graphPtr = isoPtr->elemPtr->obj.graphPtr;
-    if (Blt_ConfigureComponentFromObj(interp, graphPtr->tkwin, isoPtr->obj.name,
-        "Isoline", isolineSpecs, objc, objv, (char *)isoPtr, flags) != TCL_OK) {
-        return TCL_ERROR;
-    }
-
-    return TCL_OK;
-}
-
-
 /* Trace/point generation procedures. */
 
 /*
@@ -1846,14 +1349,14 @@ NewPoint(ContourElement *elemPtr, double x, double y, int index)
  *
  *---------------------------------------------------------------------------
  */
-static TraceSegment *
+static IsolineSegment *
 AddSegment(ContourElement *elemPtr, float x1, float y1, float x2, float y2, 
            Isoline *isoPtr)
 {
-    TraceSegment *s;
+    IsolineSegment *s;
 
-    s = Blt_Pool_AllocItem(elemPtr->segmentPool, sizeof(TraceSegment));
-    memset(s, 0, sizeof(TraceSegment));
+    s = Blt_Pool_AllocItem(elemPtr->segmentPool, sizeof(IsolineSegment));
+    memset(s, 0, sizeof(IsolineSegment));
     s->x1 = x1;
     s->y1 = y1;
     s->x2 = x2;
@@ -2456,7 +1959,7 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
                 q.y = By + t2 * (Cy - By);
                 result = Blt_LineRectClip(&exts, &p, &q);
                 if (result > 0) {
-                    TraceSegment *s;
+                    IsolineSegment *s;
 
                     s = AddSegment(elemPtr, p.x, p.y, q.x, q.y, isoPtr);
                     s->flags |= result;
@@ -2472,7 +1975,7 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
                 q.y = Cy + t3 * (Ay - Cy);
                 result = Blt_LineRectClip(&exts, &p, &q);
                 if (result > 0) {
-                    TraceSegment *s;
+                    IsolineSegment *s;
 
                     s = AddSegment(elemPtr, p.x, p.y, q.x, q.y, isoPtr);
                     s->flags |= result;
@@ -2490,7 +1993,7 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
                 q.y = Cy + t3 * (Ay - Cy);
                 result = Blt_LineRectClip(&exts, &p, &q);
                 if (result > 0) {
-                    TraceSegment *s;
+                    IsolineSegment *s;
 
                     s = AddSegment(elemPtr, p.x, p.y, q.x, q.y, isoPtr);
                     s->flags |= result;
@@ -2529,7 +2032,7 @@ StitchSegments(Isoline *isoPtr)
     Blt_HashTable pointTable;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
-    TraceSegment *s;
+    IsolineSegment *s;
     
     Blt_InitHashTable(&pointTable, sizeof(PointKey) / sizeof(int));
     for (i = 0, s = isoPtr->segments; s != NULL; s = s->next, i++) {
@@ -2597,15 +2100,13 @@ StitchSegments(Isoline *isoPtr)
  *---------------------------------------------------------------------------
  */
 static void
-MapIsoline(Isoline *isoPtr)
+MapIsoline(ContourElement *elemPtr, Isoline *isoPtr)
 {
     Axis *zAxisPtr;
     AxisRange *rangePtr;
-    ContourElement *elemPtr;
     int i;
     double value;
     
-    elemPtr = isoPtr->elemPtr;
     zAxisPtr = elemPtr->zAxisPtr;
     rangePtr = &zAxisPtr->tickRange;
     /* Step 1: Convert relative isoline values to absolute. */
@@ -3950,7 +3451,7 @@ DrawSymbols(Graph *graphPtr, Drawable drawable, Isoline *isoPtr,
 {
     int size;
     Blt_HashTable pointTable;
-    TraceSegment *s;
+    IsolineSegment *s;
     Trace trace, *tracePtr;
     TracePoint *p, *next;
     ContourElement *elemPtr;
@@ -3984,7 +3485,7 @@ DrawSymbols(Graph *graphPtr, Drawable drawable, Isoline *isoPtr,
         XSetForeground(graphPtr->display, penPtr->symbol.outlineGC, 
                        colorPtr->pixel);
     }   
-    elemPtr = isoPtr->elemPtr;
+    elemPtr = (ContourElement *)isoPtr->elemPtr;
     memset(&trace, 0, sizeof(trace));
     tracePtr = &trace;
     Blt_InitHashTable(&pointTable, sizeof(PointKey) / sizeof(int));
@@ -4149,7 +3650,7 @@ DrawIsoline(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
             Isoline *isoPtr, ContourPen *penPtr)
 {
     XSegment *segments;
-    TraceSegment *s;
+    IsolineSegment *s;
     XColor *colorPtr;
     size_t numMax, numReq, count;
 
@@ -4199,8 +3700,6 @@ DrawIsoline(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
         }
     }
     if (count > 0) {
-        fprintf(stderr, "DrawSegments isoline=%s pen=%s\n",
-                isoPtr->obj.name, penPtr->name);
         XDrawSegments(graphPtr->display, drawable, penPtr->traceGC, 
                       segments, count);
     }
@@ -4324,82 +3823,6 @@ NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
     }   
 }
 
-static void
-NearestIsolinePoint(ContourElement *elemPtr, NearestElement *nearestPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    Graph *graphPtr = elemPtr->obj.graphPtr;
-
-    for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        int i;
-        Isoline *isoPtr;
-        TraceSegment *s;
-        
-        isoPtr = Blt_GetHashValue(hPtr);
-        for (i = 0, s = isoPtr->segments; s != NULL; s = s->next, i++) {
-            double d1, d2;
-            
-            d1 = hypot(s->x1 - nearestPtr->x, s->y1 - nearestPtr->y);
-            d2 = hypot(s->x2 - nearestPtr->x, s->y2 - nearestPtr->y);
-#ifdef notdef
-            fprintf(stderr, "segment %d: x=%d, y=%d d1=%g d2=%g x1=%g y1=%g x2=%g y2=%g\n",
-                    i, nearestPtr->x, nearestPtr->y, d1, d2,
-                    s->x1, s->y1, s->x2, s->y2);
-#endif
-            if ((d1 < d2) && (d1 < nearestPtr->distance)) {
-                nearestPtr->index = i;
-                nearestPtr->distance = d1;
-                nearestPtr->item = isoPtr;
-                nearestPtr->value = isoPtr->value;
-                nearestPtr->point = Blt_InvMap2D(graphPtr, s->x1, s->y1,
-                                                 &elemPtr->axes);
-            } else if (d2 < nearestPtr->distance) {
-                nearestPtr->index = i;
-                nearestPtr->distance = d2;
-                nearestPtr->item = isoPtr;
-                nearestPtr->value = isoPtr->value;
-                nearestPtr->point = Blt_InvMap2D(graphPtr, s->x2, s->y2,
-                                                 &elemPtr->axes);
-            }
-        }
-    }
-}
-
-static void
-NearestIsolineSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
-{
-    Graph *graphPtr = elemPtr->obj.graphPtr;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        int i;
-        Isoline *isoPtr;
-        TraceSegment *s;
-
-        isoPtr = Blt_GetHashValue(hPtr);
-        for (i = 0, s = isoPtr->segments; s != NULL; s = s->next, i++) {
-            Point2d p1, p2, b;
-            double d;
-            
-            p1.x = s->x1, p1.y = s->y1;
-            p2.x = s->x2, p2.y = s->y2;
-            d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
-            if (d < nearestPtr->distance) {
-                nearestPtr->index = i;
-                nearestPtr->distance = d;
-                nearestPtr->item = isoPtr;
-                nearestPtr->value = isoPtr->value;
-                nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,
-                        &elemPtr->axes);
-            }
-        }
-    }   
-}
-
 /* Contour pen procedures.  */
 
 static void
@@ -4516,7 +3939,6 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
     if (penPtr->traceGC != NULL) {
         Blt_FreePrivateGC(graphPtr->display, penPtr->traceGC);
     }
-    fprintf(stderr, "pen=%x TraceGC = %x\n", penPtr, newGC);
     penPtr->traceGC = newGC;
 
     return TCL_OK;
@@ -4726,7 +4148,7 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
         elemPtr->numTriangles = 0;
     }
     Blt_Tags_Reset(&elemPtr->isoTags);
-    DestroyIsolines(elemPtr);
+    Blt_ClearIsolines(graphPtr, (Element *)elemPtr);
     if (elemPtr->meshGC != NULL) {
         Blt_FreePrivateGC(graphPtr->display, elemPtr->meshGC);
     }
@@ -4792,7 +4214,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
         Isoline *isoPtr;
 
         isoPtr = Blt_GetHashValue(hPtr);
-        MapIsoline(isoPtr);
+        MapIsoline(elemPtr, isoPtr);
     }
 }
 
@@ -4820,16 +4242,21 @@ DrawProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
     for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         Isoline *isoPtr;
-
+        ContourPen *penPtr;
+        
         isoPtr = Blt_GetHashValue(hPtr);
         if (isoPtr->flags & HIDDEN) {
             continue;                   /* Don't draw this isoline. */
         }
-        if (elemPtr->flags & ISOLINES) {
-            DrawIsoline(graphPtr, drawable, elemPtr, isoPtr, isoPtr->penPtr);
+        penPtr = (ContourPen *)isoPtr->penPtr;
+        if (penPtr == NULL) {
+            penPtr = elemPtr->penPtr;
         }
-        if (isoPtr->penPtr->symbol.type != SYMBOL_NONE) {
-            DrawSymbols(graphPtr, drawable, isoPtr, isoPtr->penPtr);
+        if (elemPtr->flags & ISOLINES) {
+            DrawIsoline(graphPtr, drawable, elemPtr, isoPtr, penPtr);
+        }
+        if (penPtr->symbol.type != SYMBOL_NONE) {
+            DrawSymbols(graphPtr, drawable, isoPtr, penPtr);
         }
     }
 }
@@ -4866,8 +4293,10 @@ DrawActiveProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
         if ((isoPtr->flags & ACTIVE) == 0) {
             continue;                   /* Only draw active isolines. */
         }
-        penPtr = (isoPtr->activePenPtr != NULL) ? isoPtr->activePenPtr :
-            elemPtr->activePenPtr;
+        penPtr = (ContourPen *)isoPtr->activePenPtr;
+        if (penPtr == NULL) {
+            penPtr = elemPtr->activePenPtr;
+        }
         if (elemPtr->flags & ISOLINES) {
             DrawIsoline(graphPtr, drawable, elemPtr, isoPtr, penPtr);
         }
@@ -5174,7 +4603,7 @@ static void
 IsolineToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
                     Isoline *isoPtr, ContourPen *penPtr)
 {
-    TraceSegment *s;
+    IsolineSegment *s;
     XColor *colorPtr;
 
     SetLineAttributes(ps, penPtr);
@@ -5358,1123 +4787,23 @@ NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
     for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         Isoline *isoPtr;
-
+        ContourPen *penPtr;
+        
         isoPtr = Blt_GetHashValue(hPtr);
         if (isoPtr->flags & HIDDEN) {
             continue;                   /* Don't draw this isoline. */
         }
+        penPtr = (ContourPen *)isoPtr->penPtr;
+        if (penPtr == NULL) {
+            penPtr = elemPtr->penPtr;
+        }
         if (elemPtr->flags & ISOLINES) {
-            IsolineToPostScript(graphPtr, ps, elemPtr, isoPtr, isoPtr->penPtr);
+            IsolineToPostScript(graphPtr, ps, elemPtr, isoPtr, penPtr);
         }
-        if ((elemPtr->flags | isoPtr->flags) & SYMBOLS) {
-            SymbolsToPostScript(graphPtr, ps, isoPtr, isoPtr->penPtr);
-        }
-    }
-}
-
-/* Isoline TCL API operations. */
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineActivateOp --
- *
- *      Activates the given isolines in the element.
- *
- * Results:
- *      The return value is a standard TCL result. 
- *
- *      pathName element isoline activate elemName isoName
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsolineActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                  Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    ContourElement *elemPtr;
-    IsolineIterator iter;
-    Isoline *isoPtr;
-
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;               /* Can't find named element */
-    }
-    if (GetIsolineIterator(interp, elemPtr, objv[5], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-         isoPtr = NextTaggedIsoline(&iter)) {
-        isoPtr->flags |= ACTIVE;
-        elemPtr->flags |= ACTIVE;
-    }
-    graphPtr->flags |= CACHE_DIRTY;
-    graphPtr->flags |= REDRAW_WORLD;
-    Blt_EventuallyRedrawGraph(graphPtr);
-    return TCL_OK;
-}    
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineCgetOp --
- *
- *      .g element isoline cget elemName isoName -option
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-IsolineCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    ContourElement *elemPtr;
-    Isoline *isoPtr;
-
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;               /* Can't find named element. */
-    }
-    if (GetIsolineFromObj(interp, elemPtr, objv[5], &isoPtr) != TCL_OK) {
-        return TCL_ERROR;               /* Can't find named isoline. */
-    }
-    return Blt_ConfigureValueFromObj(interp, graphPtr->tkwin, isolineSpecs,
-        (char *)isoPtr, objv[6], 0);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineNearestOp --
- *
- *      Finds the isoline in the given element closest to the given screen
- *      coordinates.
- *
- * Results:
- *      The return value is a standard TCL result. 
- *
- *      .g element isoline nearest elemName x y ?option value?...
- *
- *---------------------------------------------------------------------------
- */
-static Blt_ConfigSpec nearestSpecs[] = {
-    {BLT_CONFIG_PIXELS_NNEG, "-halo", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(NearestElement, halo), 0},
-    {BLT_CONFIG_BOOLEAN, "-interpolate", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(NearestElement, mode), 0 }, 
-    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
-        (char *)NULL, 0, 0}
-};
-
-static int
-IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                 Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    ContourElement *elemPtr;
-    NearestElement nearest;
-    int x, y;
-
-    if (graphPtr->flags & RESET_AXES) {
-        Blt_ResetAxes(graphPtr);
-    }
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;               /* Can't find named element */
-    }
-    if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
-        return TCL_OK;
-    }
-    if (Tcl_GetIntFromObj(interp, objv[5], &x) != TCL_OK) {
-        Tcl_AppendResult(interp, ": bad window x-coordinate", (char *)NULL);
-        return TCL_ERROR;
-    }
-    if (Tcl_GetIntFromObj(interp, objv[6], &y) != TCL_OK) {
-        Tcl_AppendResult(interp, ": bad window y-coordinate", (char *)NULL);
-        return TCL_ERROR;
-    }
-    memset(&nearest, 0, sizeof(NearestElement));
-    if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, nearestSpecs, 
-        objc - 7, objv + 7, (char *)&nearest, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-        return TCL_ERROR;               /* Error occurred processing an
-                                         * option. */
-    }
-    if (nearest.halo == 0) {
-        nearest.halo = graphPtr->halo;
-    }
-    nearest.maxDistance = nearest.halo + 1;
-    nearest.distance = nearest.maxDistance + 1;
-    nearest.along = NEAREST_SEARCH_XY;
-    nearest.x = x;
-    nearest.y = y;
-
-    if (nearest.mode == NEAREST_SEARCH_POINTS) {
-        NearestIsolinePoint(elemPtr, &nearest);
-    } else {
-        int found;
-        
-        NearestIsolineSegment(elemPtr, &nearest);
-        found = (nearest.distance <= nearest.maxDistance);
-        if ((!found) && (nearest.along != NEAREST_SEARCH_XY)) {
-            NearestIsolinePoint(elemPtr, &nearest);
+        if (penPtr->symbol.type != SYMBOL_NONE) {
+            SymbolsToPostScript(graphPtr, ps, isoPtr, penPtr);
         }
     }
-#ifdef notdef
-    /* Search all the isolines in the element. */
-    for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL; 
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Isoline *isoPtr;
-        Blt_ChainLink link;
-
-        isoPtr = Blt_GetHashValue(hPtr);
-        /* Examine every trace that represents the isoline. */
-        for (link = Blt_Chain_FirstLink(isoPtr->traces); link != NULL; 
-             link = Blt_Chain_NextLink(link)) {
-            Trace *tracePtr;
-            TracePoint *p, *q;
-
-            tracePtr = Blt_Chain_GetValue(link);
-            /* Examine every line segment in the trace. */
-            for (p = tracePtr->head, q = p->next; q != NULL; q = q->next) {
-                Point2d p1, p2, b;
-                double d;
-
-                p1.x = p->x, p1.y = p->y;
-                p2.x = q->x, p2.y = q->y;
-                d = DistanceToIsoline(x, y, &p1, &p2, &b);
-                if (d < nearest.distance) {
-                    nearest.point = b;
-                    nearest.distance = d;
-                    nearest.item = isoPtr;
-                }
-                p = q;
-            }
-        }
-    }
-#endif
-    if (nearest.distance <= nearest.maxDistance) {
-        Tcl_Obj *objPtr, *listObjPtr;   /* Return a list of name value
-                                         * pairs. */
-        Isoline *isoPtr;
-
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-
-        isoPtr = nearest.item;
-        /* Name of isoline. */
-        objPtr = Tcl_NewStringObj("name", 4);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj(isoPtr->obj.name, -1); 
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-
-        /* Value of isoline. */
-        objPtr = Tcl_NewStringObj("value", 5);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewDoubleObj(nearest.value);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-
-        /* X-coordinate of nearest point on isoline. */
-        objPtr = Tcl_NewStringObj("x", 1);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewDoubleObj(nearest.point.x);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-
-        /* Y-coordinate of nearest point on isoline. */
-        objPtr = Tcl_NewStringObj("y", 1);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewDoubleObj(nearest.point.y);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-
-        /* Distance to from search point. */
-        objPtr = Tcl_NewStringObj("dist", 4);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewDoubleObj(nearest.distance);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-
-        /* Distance to from search point. */
-        objPtr = Tcl_NewStringObj("index", 5);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewIntObj(nearest.index);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-
-        Tcl_SetObjResult(interp, listObjPtr);
-    }
-    return TCL_OK;
-}    
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineConfigureOp --
- *
- *      This procedure is called to process an objv/objc list, plus the Tk
- *      option database, in order to configure (or reconfigure) the
- *      isoline.
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then the
- *      interpreter result will contain an error message.
- *
- * Side Effects:
- *      Configuration information, such as text string, colors, font,
- *      etc. get set for setPtr; old resources get freed, if there were
- *      any.  The widget is redisplayed.
- *
- *      .g element isoline configure elemName isoNameOrTag ?option value?...
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsolineConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                   Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    ContourElement *elemPtr;
-    Isoline *isoPtr;
-    IsolineIterator iter;
-
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;               /* Can't find named element. */
-    }
-    if (objc <= 7) {
-        if (GetIsolineFromObj(interp, elemPtr, objv[5], &isoPtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (objc == 6) {
-            return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, 
-                isolineSpecs, (char *)isoPtr, (Tcl_Obj *)NULL, 0);
-        } else if (objc == 7) {
-            return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, 
-                isolineSpecs, (char *)isoPtr, objv[6], 0);
-        }
-    }
-    if (GetIsolineIterator(interp, elemPtr, objv[5], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-         isoPtr = NextTaggedIsoline(&iter)) {
-        if (ConfigureIsoline(interp, isoPtr, objc - 6, objv + 6, 
-                BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-            return TCL_ERROR;
-        }
-    }
-    graphPtr->flags |= CACHE_DIRTY;
-    graphPtr->flags |= REDRAW_WORLD;
-    Blt_EventuallyRedrawGraph(graphPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineCreateOp --
- *
- *      Creates a isoline for the named element.
- *
- * Results:
- *      The return value is a standard TCL result. 
- *
- *      .g element isoline create elemName ?isoName? ?option value?...
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsolineCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                Tcl_Obj *const *objv)
-{
-    ContourElement *elemPtr;
-    Graph *graphPtr = clientData;
-    Isoline *isoPtr;
-    const char *name;
-    char ident[200];
-
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;       /* Can't find named element */
-    }
-    name = NULL;
-    if (objc > 5) {
-        const char *string;
-
-        string = Tcl_GetString(objv[5]);
-        if (string[0] != '-') {
-            if (GetIsolineFromObj(NULL, elemPtr, objv[5], &isoPtr) == TCL_OK) {
-                Tcl_AppendResult(interp, "isoline \"", string, 
-                        "\" already exists", (char *)NULL);
-                return TCL_ERROR;
-            }
-            name = string;
-            objc--, objv++;
-        }
-    }
-    /* If no name was given for the marker, make up one. */
-    if (name == NULL) {
-        Blt_FormatString(ident, 200, "isoline%d", elemPtr->nextIsoline++);
-        name = ident;
-    }
-    isoPtr = NewIsoline(interp, elemPtr, name);
-    if (isoPtr == NULL) {
-        return TCL_ERROR;
-    }
-
-    if (ConfigureIsoline(interp, isoPtr, objc - 5, objv + 5, 0) != TCL_OK) {
-        DestroyIsoline(isoPtr);
-        return TCL_ERROR;
-    }
-
-    if (Blt_ConfigureComponentFromObj(interp, graphPtr->tkwin, name, "Isoline",
-        isolineSpecs, objc - 5, objv + 5, (char *)isoPtr, 0) != TCL_OK) {
-        DestroyIsoline(isoPtr);
-        return TCL_ERROR;
-    }
-    elemPtr->flags |= REDRAW_WORLD;
-    Blt_EventuallyRedrawGraph(graphPtr);
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), isoPtr->obj.name, -1);
-    return TCL_OK;
-}    
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineDeactivateOp --
- *
- *      Deactivates the given isoline in the element.
- *
- * Results:
- *      The return value is a standard TCL result. 
- *
- *      pathName element isoline deactivate elemName isoName
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsolineDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                    Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    ContourElement *elemPtr;
-    IsolineIterator iter;
-    Isoline *isoPtr;
-
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;               /* Can't find named element */
-    }
-    if (GetIsolineIterator(interp, elemPtr, objv[5], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-         isoPtr = NextTaggedIsoline(&iter)) {
-        isoPtr->flags &= ~ACTIVE;
-    }
-    graphPtr->flags |= CACHE_DIRTY;
-    graphPtr->flags |= REDRAW_WORLD;
-    Blt_EventuallyRedrawGraph(graphPtr);
-    return TCL_OK;
-}    
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineDeleteOp --
- *
- *      Deletes one or more isolines from the named element.
- *
- * Results:
- *      The return value is a standard TCL result. 
- *
- *      .g element isoline delete elemName ?isoNameOrTag...?
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsolineDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    ContourElement *elemPtr;
-    Blt_HashTable deleteTable;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    int i;
-
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;       /* Can't find named element */
-    }
-    Blt_InitHashTable(&deleteTable, BLT_ONE_WORD_KEYS);
-    for (i = 5; i < objc; i++) {
-        IsolineIterator iter;
-        Isoline *isoPtr;
-        
-        if (GetIsolineIterator(interp, elemPtr, objv[i], &iter) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-             isoPtr = NextTaggedIsoline(&iter)) {
-            Blt_HashEntry *hPtr;
-            int isNew;
-
-            hPtr = Blt_CreateHashEntry(&deleteTable, (char *)isoPtr, &isNew);
-            if (isNew) {
-                Blt_SetHashValue(hPtr, isoPtr);
-            }
-        }
-    }
-    for (hPtr = Blt_FirstHashEntry(&deleteTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Isoline *isoPtr;
-
-        isoPtr = Blt_GetHashValue(hPtr);
-        DestroyIsoline(isoPtr);
-    }
-    Blt_DeleteHashTable(&deleteTable);
-    elemPtr->flags |= REDRAW_WORLD;
-    Blt_EventuallyRedrawGraph(graphPtr);
-    return TCL_OK;
-}    
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineExistsOp --
- *
- *      Indicates if a isoline by the given name exists in the element.
- *
- * Results:
- *      The return value is a standard TCL result. 
- *
- *      .g element isoline exists elemName isoName
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsolineExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    ContourElement *elemPtr;
-    Isoline *isoPtr;
-    int bool;
-
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;       /* Can't find named element */
-    }
-    bool = (GetIsolineFromObj(NULL, elemPtr, objv[5], &isoPtr) == TCL_OK);
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
-    return TCL_OK;
-}    
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineNamesOp --
- *
- *      Returns the names of the isolines in the element matching one of
- *      the patterns provided.  If no pattern arguments are given, then
- *      all isoline names will be returned.
- *
- * Results:
- *      The return value is a standard TCL result. The interpreter result
- *      will contain a TCL list of the isoline names.
- *
- *      .g element isoline names elemName ?pattern...?
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsolineNamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-               Tcl_Obj *const *objv)
-{
-    Tcl_Obj *listObjPtr;
-    ContourElement *elemPtr;
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;               /* Can't find named element */
-    }
-    if (objc == 5) {
-        Blt_HashEntry *hPtr;
-        Blt_HashSearch iter;
-
-        for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter);
-             hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-            Isoline *isoPtr;
-            Tcl_Obj *objPtr;
-
-            isoPtr = Blt_GetHashValue(hPtr);
-            objPtr = Tcl_NewStringObj(isoPtr->obj.name, -1);
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
-    } else {
-        Blt_HashEntry *hPtr;
-        Blt_HashSearch iter;
-
-        for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter);
-             hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-            Isoline *isoPtr;
-            int i;
-
-            isoPtr = Blt_GetHashValue(hPtr);
-            for (i = 5; i < objc; i++) {
-                const char *pattern;
-
-                pattern = Tcl_GetString(objv[i]);
-                if (Tcl_StringMatch(isoPtr->obj.name, pattern)) {
-                    Tcl_Obj *objPtr;
-
-                    objPtr = Tcl_NewStringObj(isoPtr->obj.name, -1);
-                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                    break;
-                }
-            }
-        }
-    }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineStepsOp --
- *
- *      Generates the given number of evenly placed isolines in the
- *      element.
- *
- * Results:
- *      The return value is a standard TCL result. 
- *
- *      .g element isoline steps elemName numSteps ?option value?...
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsolineStepsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-               Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    ContourElement *elemPtr;
-    Isoline *isoPtr;
-    long count, i;
-
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;       /* Can't find named element */
-    }
-    if (Blt_GetCountFromObj(interp, objv[5], COUNT_POS, &count) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (count < 2) {
-        Tcl_AppendResult(interp, "two few steps: must >= 2", (char *)NULL);
-        return TCL_ERROR;
-    }
-    for (i = 0; i < count; i++) {
-        isoPtr = NewIsoline(interp, elemPtr, NULL);
-        if (isoPtr == NULL) {
-            return TCL_ERROR;
-        }
-        isoPtr->reqValue = (double)i / (double)(count - 1);
-        if (ConfigureIsoline(interp, isoPtr, objc - 6, objv + 6, 0) != TCL_OK) {
-            DestroyIsoline(isoPtr);
-            return TCL_ERROR;
-        }
-    }
-    elemPtr->flags |= REDRAW_WORLD;
-    Blt_EventuallyRedrawGraph(graphPtr);
-    return TCL_OK;
-}    
-
-/* Isoline tag api */
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsoTagAddOp --
- *
- *      pathName element isotag add elemName tagName ?isoName...?
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsoTagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
-{
-    ContourElement *elemPtr = clientData;
-    const char *tag;
-
-    tag = Tcl_GetString(objv[5]);
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
-                         (char *)NULL);
-        return TCL_ERROR;
-    }
-    if (objc == 6) {
-        /* No nodes specified.  Just add the tag. */
-        Blt_Tags_AddTag(&elemPtr->isoTags, tag);
-    } else {
-        int i;
-
-        for (i = 7; i < objc; i++) {
-            Isoline *isoPtr;
-            IsolineIterator iter;
-            
-            if (GetIsolineIterator(interp, elemPtr, objv[i], &iter) != TCL_OK) {
-                return TCL_ERROR;
-            }
-            for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-                 isoPtr = NextTaggedIsoline(&iter)) {
-                Blt_Tags_AddItemToTag(&elemPtr->isoTags, tag, isoPtr);
-            }
-        }
-    }
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsoTagDeleteOp --
- *
- *      pathName element isotag delete elemName tagName ?isoName...?
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsoTagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
-{
-    ContourElement *elemPtr = clientData;
-    const char *tag;
-    int i;
-
-    tag = Tcl_GetString(objv[5]);
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
-                         (char *)NULL);
-        return TCL_ERROR;
-    }
-    for (i = 6; i < objc; i++) {
-        Isoline *isoPtr;
-        IsolineIterator iter;
-        
-        if (GetIsolineIterator(interp, elemPtr, objv[i], &iter) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-             isoPtr = NextTaggedIsoline(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, tag, isoPtr);
-        }
-    }
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsoTagExistsOp --
- *
- *      Returns the existence of the one or more tags in the given isoline.
- *      If the isoline has any the tags, true is returned in the
- *      interpreter.
- *
- *      pathName element isotag exists elemName isoName ?tagName...?
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-IsoTagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
-{
-    ContourElement *elemPtr = clientData;
-    IsolineIterator iter;
-    int i;
-
-    if (GetIsolineIterator(interp, elemPtr, objv[5], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (i = 6; i < objc; i++) {
-        const char *tag;
-        Isoline *isoPtr;
-
-        tag = Tcl_GetString(objv[i]);
-        if (strcmp(tag, "all") == 0) {
-            Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-            return TCL_OK;
-        }
-        for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-             isoPtr = NextTaggedIsoline(&iter)) {
-            if (Blt_Tags_ItemHasTag(&elemPtr->isoTags, isoPtr, tag)) {
-                Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-                return TCL_OK;
-            }
-        }
-    }
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), FALSE);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsoTagForgetOp --
- *
- *      Removes the given tags from all isolines in the element.
- *
- *      pathName element isotag forget elemName ?tagName...?
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-IsoTagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
-{
-    ContourElement *elemPtr = clientData;
-    int i;
-
-    for (i = 5; i < objc; i++) {
-        const char *tag;
-
-        tag = Tcl_GetString(objv[i]);
-        if (strcmp(tag, "all") == 0) {
-            continue;                   /* Can't remove tag "all". */
-        }
-        Blt_Tags_ForgetTag(&elemPtr->isoTags, tag);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsoTagGetOp --
- *
- *      Returns tag names for a given isoline.  If one of more pattern
- *      arguments are provided, then only those matching tags are returned.
- *
- *      pathName element isotag get elemName isoName pat1 pat2...
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsoTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
-{
-    ContourElement *elemPtr = clientData;
-    Isoline *isoPtr;
-    IsolineIterator iter;
-    Tcl_Obj *listObjPtr;
-
-    if (GetIsolineIterator(interp, elemPtr, objv[5], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-         isoPtr = NextTaggedIsoline(&iter)) {
-        if (objc == 6) {
-            Blt_Tags_AppendTagsToObj(&elemPtr->isoTags, isoPtr, listObjPtr);
-            Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewStringObj("all", 3));
-        } else {
-            int i;
-            
-            /* Check if we need to add the special tags "all" */
-            for (i = 6; i < objc; i++) {
-                const char *pattern;
-
-                pattern = Tcl_GetString(objv[i]);
-                if (Tcl_StringMatch("all", pattern)) {
-                    Tcl_Obj *objPtr;
-
-                    objPtr = Tcl_NewStringObj("all", 3);
-                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                    break;
-                }
-            }
-            /* Now process any standard tags. */
-            for (i = 7; i < objc; i++) {
-                Blt_ChainLink link;
-                const char *pattern;
-                Blt_Chain chain;
-
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&elemPtr->isoTags, isoPtr, chain);
-                pattern = Tcl_GetString(objv[i]);
-                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
-                    const char *tag;
-                    Tcl_Obj *objPtr;
-
-                    tag = (const char *)Blt_Chain_GetValue(link);
-                    if (!Tcl_StringMatch(tag, pattern)) {
-                        continue;
-                    }
-                    objPtr = Tcl_NewStringObj(tag, -1);
-                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                }
-                Blt_Chain_Destroy(chain);
-            }
-        }    
-    }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsoTagNamesOp --
- *
- *      Returns the names of all the tags for the isoline.  If one of more
- *      isoline arguments are provided, then only the tags found in those
- *      isolines are returned.
- *
- *      pathName element isotag elemName ?isoName...?
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsoTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
-{
-    ContourElement *elemPtr = clientData;
-    Tcl_Obj *listObjPtr, *objPtr;
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    objPtr = Tcl_NewStringObj("all", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (objc == 5) {
-        Blt_Tags_AppendAllTagsToObj(&elemPtr->isoTags, listObjPtr);
-    } else {
-        Blt_HashTable uniqTable;
-        int i;
-
-        Blt_InitHashTable(&uniqTable, BLT_STRING_KEYS);
-        for (i = 5; i < objc; i++) {
-            IsolineIterator iter;
-            Isoline *isoPtr;
-
-            if (GetIsolineIterator(interp, elemPtr, objPtr, &iter) != TCL_OK) {
-                goto error;
-            }
-            for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-                 isoPtr = NextTaggedIsoline(&iter)) {
-                Blt_ChainLink link;
-                Blt_Chain chain;
-
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&elemPtr->isoTags, isoPtr, chain);
-                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
-                    const char *tag;
-                    int isNew;
-
-                    tag = Blt_Chain_GetValue(link);
-                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
-                }
-                Blt_Chain_Destroy(chain);
-            }
-        }
-        {
-            Blt_HashEntry *hPtr;
-            Blt_HashSearch hiter;
-
-            for (hPtr = Blt_FirstHashEntry(&uniqTable, &hiter); hPtr != NULL;
-                 hPtr = Blt_NextHashEntry(&hiter)) {
-                objPtr = Tcl_NewStringObj(Blt_GetHashKey(&uniqTable, hPtr), -1);
-                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-            }
-        }
-        Blt_DeleteHashTable(&uniqTable);
-    }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
- error:
-    Tcl_DecrRefCount(listObjPtr);
-    return TCL_ERROR;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsoTagSetOp --
- *
- *      Sets one or more tags for a given isoline.  Tag names can't start
- *      with a digit and can't be a reserved tag ("all").
- *
- *      pathName element isotag set elemName isoName tag1 tag2...
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsoTagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
-{
-    int i;
-    IsolineIterator iter;
-    ContourElement *elemPtr = clientData;
-
-    if (GetIsolineIterator(interp, elemPtr, objv[5], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (i = 6; i < objc; i++) {
-        const char *tag;
-        Isoline *isoPtr;
-
-        tag = Tcl_GetString(objv[i]);
-        if (strcmp(tag, "all") == 0) {
-            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
-                             (char *)NULL);     
-            return TCL_ERROR;
-        }
-        for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-             isoPtr = NextTaggedIsoline(&iter)) {
-            Blt_Tags_AddItemToTag(&elemPtr->isoTags, tag, isoPtr);
-        }    
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsoTagUnsetOp --
- *
- *      Removes one or more tags from a given isoline. If a isoline doesn't
- *      exist or is a reserved tag ("all"), nothing will be done and no
- *      error message will be returned.
- *
- *      pathName element isotag unset elemName isoName tag1 tag2...
- *
- *---------------------------------------------------------------------------
- */
-static int
-IsoTagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
-{
-    ContourElement *elemPtr = clientData;
-    Isoline *isoPtr;
-    IsolineIterator iter;
-
-    if (GetIsolineIterator(interp, elemPtr, objv[5], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-         isoPtr = NextTaggedIsoline(&iter)) {
-        int i;
-        for (i = 6; i < objc; i++) {
-            const char *tag;
-
-            tag = Tcl_GetString(objv[i]);
-            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, tag, isoPtr);
-        }    
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_IsoTagOp --
- *
- *      This procedure is invoked to process tag operations.
- *
- * Results:
- *      A standard TCL result.
- *
- * Side Effects:
- *      See the user documentation.
- *
- *      .g element isotag elemName isoName args...
- *
- *---------------------------------------------------------------------------
- */
-static Blt_OpSpec isoTagOps[] =
-{
-    {"add",     1, IsoTagAddOp,      4, 0, "elemName isoName ?tag...?",},
-    {"delete",  1, IsoTagDeleteOp,   4, 0, "elemName isoName ?tag...?",},
-    {"exists",  1, IsoTagExistsOp,   4, 0, "elemName isoName ?tag...?",},
-    {"forget",  1, IsoTagForgetOp,   3, 0, "elemName ?tag...?",},
-    {"get",     1, IsoTagGetOp,      4, 0, "elemName isoName ?pattern...?",},
-    {"names",   1, IsoTagNamesOp,    3, 0, "elemName ?tab...?",},
-    {"set",     1, IsoTagSetOp,      4, 0, "elemName isoName ?tag...",},
-    {"unset",   1, IsoTagUnsetOp,    4, 0, "elemName isoName ?tag...",},
-};
-
-static int numIsoTagOps = sizeof(isoTagOps) / sizeof(Blt_OpSpec);
-
-int
-Blt_IsoTagOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
-{
-    Graph *graphPtr = clientData;
-    Tcl_ObjCmdProc *proc;
-    ContourElement *elemPtr;
-    int result;
-
-    proc = Blt_GetOpFromObj(interp, numIsoTagOps, isoTagOps, BLT_OP_ARG2,
-                            objc, objv, 0);
-    if (proc == NULL) {
-        return TCL_ERROR;
-    }
-    if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-        return TCL_ERROR;               /* Can't find named element */
-    }
-    result = (*proc)(elemPtr, interp, objc, objv);
-    return result;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IsolineOp --
- *
- *      .g element isoline create $elem $name -value $value -color $color
- *      .g element isoline configure $elem $name -value $value \
- *              -color $color -symbol triangle -hide no -dashes dot 
- *      .g element isoline delete $elem delete $name
- *
- *      .g element isoline delete $elem all
- *      .g element isoline steps $elem 10 ?value option?
- *
- *      .g element isoline create $elem $name -value $value -color $color
- *      .g element isoline configure $elem -values $values \
- *              -hide no -loose yes -logscale yes -showvalues yes \
- *              -stepsize 0.5 -symbols triangle \
- *      .g element isoline delete $elem delete $name
- *
- *      .g element isoline delete $elem all
- *      .g element isoline steps $elem 10 ?value option?
- *
- *---------------------------------------------------------------------------
- */
-static Blt_OpSpec isolineOps[] = {
-    {"activate",  1, IsolineActivateOp, 6, 6, "elemName isoName",},
-    {"cget",      2, IsolineCgetOp,     6, 7, "elemName isoName option",},
-    {"configure", 2, IsolineConfigureOp,6, 0, "elemName isoName ?option value?...",},
-    {"create",    2, IsolineCreateOp,   5, 0, "elemName ?isoName? ?option value?...",},
-    {"deactivate",3, IsolineDeactivateOp,6, 6, "elemName isoName",},
-    {"delete",    3, IsolineDeleteOp,   5, 0, "elemName ?isoName?...",},
-    {"exists",    1, IsolineExistsOp,   6, 6, "elemName isoName",},
-    {"names",     2, IsolineNamesOp,    5, 0, "elemName ?pattern?...",},
-    {"nearest",   2, IsolineNearestOp,  6, 0, "elemName x y ?switches?",},
-    {"steps",     1, IsolineStepsOp,    6, 0, "elemName count",},
-};
-
-static int numIsolineOps = sizeof(isolineOps) / sizeof(Blt_OpSpec);
-
-/*ARGSUSED*/
-int
-Blt_IsolineOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
-{
-    Tcl_ObjCmdProc *proc;
-
-    proc = Blt_GetOpFromObj(interp, numIsolineOps, isolineOps, BLT_OP_ARG3, 
-        objc, objv, 0);
-    if (proc == NULL) {
-        return TCL_ERROR;
-    }
-    return (*proc) (clientData, interp, objc, objv);
 }
 
 #ifdef notdef
@@ -7338,7 +5667,7 @@ Blt_ContourElement(Graph *graphPtr, ClassId classId, Blt_HashEntry *hPtr)
     elemPtr->flags |= COLORMAP | ISOLINES | TRIANGLES;
     elemPtr->opacity = 100.0;
     Blt_SetHashValue(hPtr, elemPtr);
-    Blt_InitHashTable(&elemPtr->isoTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&elemPtr->isoTable, BLT_ONE_WORD_KEYS);
     elemPtr->painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
     return (Element *)elemPtr;
 }

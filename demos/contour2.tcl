@@ -14,7 +14,7 @@ $zv expr {abs(sin($xv*$yv/70.0))}
 blt::contour .g -highlightthickness 0
 set mesh [blt::mesh create cloud -x $xv -y $yv]
 .g element create sine -values $zv -mesh $mesh 
-.g element isoline steps sine $numIsolines
+.g isoline steps $numIsolines -element sine
 .g axis configure z \
     -palette rainbow \
     -colorbarthickness 15 \
@@ -37,7 +37,7 @@ proc Fix { what } {
 
     set bool $show($what)
     if { [scan $what "isoline%d" number] == 1 } {
-	.g element isoline configure sine $what -show $bool
+	.g isoline configure $what -show $bool
 	return
     }
     if { 0 && $what == "colormap" } {
@@ -92,11 +92,11 @@ foreach key [array names show] {
 Blt_ZoomStack .g
 
 set count 7
-foreach name [lsort -dictionary [.g element isoline names sine]] {
+foreach name [lsort -dictionary [.g isoline names]] {
     blt::tk::checkbutton .$name -text "$name"  \
 	-variable show($name) -command "Fix $name"
-    .g element isoline configure sine $name -show yes
-    set show($name) [.g element isoline cget sine $name -show]
+    .g isoline configure $name -show yes -element sine
+    set show($name) [.g isoline cget $name -show]
     blt::table . \
 	$count,1 .$name -anchor w 
     incr count

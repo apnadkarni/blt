@@ -2,7 +2,7 @@
 
 package require BLT
 source scripts/stipples.tcl
-source PrintGraph.tcl
+#source PrintGraph.tcl
 set visual [winfo screenvisual .]
 
 proc PrintDialog { graph } {
@@ -11,7 +11,7 @@ proc PrintDialog { graph } {
     }
     toplevel .p1
     update
-    PrintGraph .p1.print 
+    #PrintGraph .p1.print 
     pack .p1.print -fill both -expand yes 
     .p1.print print $graph toolName plotName
 }

@@ -47,7 +47,7 @@ set min [$tmp min]
 $tmp set [$table max]
 set max [$tmp max]
 blt::vector destroy $tmp
-.g element isoline steps sine 10 -min $min -max $max 
+.g isoline steps 10 -min $min -max $max -element sine
 .g legend configure -hide yes
 .g axis configure z \
     -min $min -max $max \

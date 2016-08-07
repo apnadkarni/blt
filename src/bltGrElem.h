@@ -151,6 +151,7 @@ typedef struct {
     double value;
     int index;                          /* Index of nearest data point */
     double distance, maxDistance;
+    Element *elemPtr;                   /* Reference element for isolines. */
 } NearestElement;
 
 typedef void (ElementDrawProc) (Graph *graphPtr, Drawable drawable, 
@@ -270,6 +271,8 @@ struct _Element {
                                          * ranges: used to scale the size
                                          * of element's symbol. */
     int state;
+    Blt_HashTable isoTable;             /* Table of isolines to be
+                                         * displayed. */
 };
 
 
@@ -288,7 +291,9 @@ BLT_EXTERN void Blt_DestroyTableClients(Graph *graphPtr);
 BLT_EXTERN void Blt_DestroyElementTags(Graph *graphPtr);
 
 BLT_EXTERN void Blt_GraphExtents(void *elemPtr, Region2d *extsPtr);
-BLT_EXTERN Tcl_ObjCmdProc Blt_IsolineOp;
+BLT_EXTERN Tcl_ObjCmdProc Blt_ElementIsolineOp;
 BLT_EXTERN Tcl_ObjCmdProc Blt_IsoTagOp;
+BLT_EXTERN void Blt_AddIsoline(Element *elemPtr, Isoline *isoPtr);
+BLT_EXTERN void Blt_RemoveIsoline(Element *elemPtr, Isoline *isoPtr);
 
 #endif /* _BLT_GR_ELEM_H */

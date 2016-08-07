@@ -366,6 +366,8 @@ struct _LineElement {
                                          * used to scale the size of element's
                                          * symbol. */
     int state;
+    Blt_HashTable isoTable;             /* Table of isolines to be
+                                         * displayed. */
 
     /* Line-specific fields. */
     ElemValues xError;                  /* Relative/symmetric X error

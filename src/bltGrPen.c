@@ -394,6 +394,7 @@ Blt_CreatePen(Graph *graphPtr, const char *penName, ClassId classId,
         classId = CID_ELEM_LINE;
     }
     hPtr = Blt_CreateHashEntry(&graphPtr->penTable, penName, &isNew);
+    penPtr = NULL;
     if (!isNew) {
         penPtr = Blt_GetHashValue(hPtr);
         if ((penPtr->flags & DELETED) == 0) {
@@ -434,8 +435,6 @@ Blt_CreatePen(Graph *graphPtr, const char *penName, ClassId classId,
         }
         return NULL;
     }
-    fprintf(stderr, "CreatePen: pen=%x name=%s calling configure proc=%x\n",
-            penPtr, penPtr->name, penPtr->configProc);
     (*penPtr->configProc) (graphPtr, penPtr);
     return penPtr;
 }
