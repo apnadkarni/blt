@@ -686,9 +686,9 @@ NearestSegment(Graph *graphPtr, NearestElement *nearestPtr)
     for (link = Blt_Chain_FirstLink(graphPtr->isolines.displayList); 
          link != NULL; link = Blt_Chain_NextLink(link)) {
         Element *elemPtr;
-        int i;
         Isoline *isoPtr;
         IsolineSegment *s;
+        int i;
 
         isoPtr = Blt_Chain_GetValue(link);
 	if (isoPtr->flags & HIDDEN) {

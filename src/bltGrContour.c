@@ -518,16 +518,6 @@ BLT_EXTERN Blt_CustomOption bltZAxisOption;
 #define DEF_BACKGROUND          "navyblue"
 #define DEF_FOREGROUND          "blue"
 #define DEF_HIDE                "no"
-#define DEF_ISOLINE_ACTIVE_PEN  "activeContour"
-#define DEF_ISOLINE_HIDE        "no"
-#define DEF_ISOLINE_LABEL       (char *)NULL
-#define DEF_ISOLINE_MAX         ""
-#define DEF_ISOLINE_MIN         ""
-#define DEF_ISOLINE_PEN         (char *)NULL
-#define DEF_ISOLINE_SHOW        "yes"
-#define DEF_ISOLINE_SYMBOLS     "0"
-#define DEF_ISOLINE_TAGS        "all"
-#define DEF_ISOLINE_VALUE       "0.0"
 #define DEF_LABEL_RELIEF        "flat"
 #define DEF_MAX_SYMBOLS         "0"
 #define DEF_MESH                (char *)NULL

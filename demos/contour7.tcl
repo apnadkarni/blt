@@ -62,6 +62,11 @@ proc FixPalette {} {
     .g axis configure z -palette $palette
 }
 
+proc FixSymbols {} {
+    global palette
+    .g pen configure activeContour configure z -palette $palette
+}
+
 proc LogScale {} {
     global logScale
     if { $logScale } {
