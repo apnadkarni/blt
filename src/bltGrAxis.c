@@ -8201,20 +8201,20 @@ NextMinorTick(Axis *axisPtr)
         case TIME_MONTHS:
             {
                 int mon, year;
+                long numDays;
                 int i;
 
-                mon = ticksPtr->month + 1, year = ticksPtr->year;
+                mon = ticksPtr->month + 1;
+                year = ticksPtr->year;
+                numDays = 0;
                 for (i = 0; i <= ticksPtr->index; i++, mon++) {
-                    int numDays;
-
                     if (mon > 11) {
                         mon = 0;
                         year++;
                     }
-                    numDays = numDaysMonth[IsLeapYear(year)][mon];
-                    d += numDays;
+                    numDays += numDaysMonth[IsLeapYear(year)][mon];
                 }
-                d *= SECONDS_DAY;
+                d += numDays * SECONDS_DAY;
             }
             break;
         case TIME_WEEKS:

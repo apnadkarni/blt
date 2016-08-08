@@ -63,8 +63,12 @@ proc FixPalette {} {
 }
 
 proc FixSymbols {} {
-    global palette
-    .g pen configure activeContour configure z -palette $palette
+    global show
+    if { $show(symbols) } {
+	.g pen configure activeIsoline -symbol circle
+    } else {
+	.g pen configure activeIsoline -symbol none
+    }
 }
 
 proc LogScale {} {
@@ -109,7 +113,7 @@ blt::tk::checkbutton .controls.isolines -text "Isolines" \
 blt::tk::checkbutton .controls.values -text "Values" \
     -variable show(values) -command "Fix values"
 blt::tk::checkbutton .controls.symbols -text "Symbols" \
-    -variable show(symbols) -command "Fix symbols"
+    -variable show(symbols) -command "FixSymbols"
 blt::tk::checkbutton .controls.interp -text "Use palette colors" \
     -variable usePaletteColors -command "UpdateColors"
 blt::tk::checkbutton .controls.logscale -text "Log scale" \

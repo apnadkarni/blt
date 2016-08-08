@@ -607,7 +607,7 @@ InitPens(Graph *graphPtr)
     if (Blt_CreatePen(graphPtr, "activeBar", CID_ELEM_BAR, 0, NULL) == NULL) {
         return TCL_ERROR;
     }
-    if (Blt_CreatePen(graphPtr, "activeContour", CID_ELEM_CONTOUR, 0, NULL) 
+    if (Blt_CreatePen(graphPtr, "activeIsoline", CID_ELEM_CONTOUR, 0, NULL) 
         == NULL) {
         return TCL_ERROR;
     }

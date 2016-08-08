@@ -50,31 +50,19 @@
 
 #include <X11/Xutil.h>
 #include "bltAlloc.h"
-#include "bltMath.h"
-#include "bltPool.h"
 #include "bltChain.h"
 #include "bltHash.h"
 #include "bltBind.h"
 #include "bltBg.h"
 #include "bltOp.h"
-#include "bltImage.h"
-#include "bltPalette.h"
-#include "bltPicture.h"
-#include "bltPainter.h"
-#include "tkDisplay.h"
-#include "bltPs.h"
 #include "bltGraph.h"
-#include "bltPicture.h"
-#include "bltGrAxis.h"
-#include "bltGrLegd.h"
 #include "bltGrElem.h"
-#include "bltMesh.h"
 #include "bltGrIsoline.h"
 
 #define SYMBOLS         (1<<17)         /* Draw the symbols on top of the
                                          * isolines. */
 
-#define DEF_ACTIVE_PEN  "activeContour"
+#define DEF_ACTIVE_PEN  "activeIsoline"
 #define DEF_HIDE        "no"
 #define DEF_ELEMENT     (char *)NULL
 #define DEF_LABEL       (char *)NULL
@@ -85,14 +73,6 @@
 #define DEF_SYMBOLS     "0"
 #define DEF_TAGS        "all"
 #define DEF_VALUE       "0.0"
-
-typedef struct _ContourElement ContourElement;
-typedef struct _ContourPen ContourPen;
-typedef struct _Blt_Picture Pict;
-
-/* HIDDEN               (1<<0) */
-#define ABSOLUT         (1<<4)
-/* ACTIVE               (1<<6) */
 
 /*
  * IsolineIterator --
@@ -189,8 +169,8 @@ Blt_MakeIsolineTag(Graph *graphPtr, const char *tagName)
                 &isNew);
     return Blt_GetHashKey(&graphPtr->isolines.bindTagTable, hPtr);
 }
-/* Isoline procedures. */
 
+/* Isoline procedures. */
 /*
  *---------------------------------------------------------------------------
  *
@@ -438,7 +418,8 @@ GetIsolineFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
  *      Converts a string representing a tab index into an tab pointer.  The
  *      index may be in one of the following forms:
  *
- *       "all"          All isolines.
+ *       "all"      
+    All isolines.
  *       name           Name of the isoline.
  *       tag            Tag associated with isolines.
  *
@@ -470,7 +451,7 @@ GetIsolineIterator(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
         GraphObj *objPtr;
 
         objPtr = Blt_GetCurrentItem(graphPtr->bindTable);
-        /* Report only on axes. */
+        /* Report only on isolines. */
         if ((objPtr != NULL) && (!objPtr->deleted) &&
             (objPtr->classId == CID_ISOLINE)) {
             iterPtr->type = ITER_SINGLE;
@@ -1739,7 +1720,7 @@ TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	pathName isoline exists isoName
  *	pathName isoline names ?pattern ...?
  *	pathName isoline nearest x y ?switches?
- *	pathName isoline steps count
+ *	pathName isoline steps count ?option values...?
  *	pathName isoline tag args...
  *
  *---------------------------------------------------------------------------
@@ -1755,7 +1736,7 @@ static Blt_OpSpec isolineOps[] = {
     {"exists",     1, ExistsOp,     4, 4, "isoName",},
     {"names",      2, NamesOp,      3, 0, "?pattern ...?",},
     {"nearest",    2, NearestOp,    5, 0, "x y ?switches?",},
-    {"steps",      1, StepsOp,      4, 0, "numSteps ?option value?",},
+    {"steps",      1, StepsOp,      4, 0, "numSteps ?option value ...?",},
     {"tag",        1, TagOp,        3, 0, "args",},
 };
 

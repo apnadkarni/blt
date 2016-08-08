@@ -511,7 +511,7 @@ BLT_EXTERN Blt_CustomOption bltXAxisOption;
 BLT_EXTERN Blt_CustomOption bltYAxisOption;
 BLT_EXTERN Blt_CustomOption bltZAxisOption;
 
-#define DEF_ACTIVE_PEN          "activeContour"
+#define DEF_ACTIVE_PEN          "activeIsoline"
 #define DEF_AXIS_X              "x"
 #define DEF_AXIS_Y              "y"
 #define DEF_AXIS_Z              "z"
@@ -5593,7 +5593,7 @@ Blt_CreateContourPen(Graph *graphPtr, ClassId id, Blt_HashEntry *hPtr)
     penPtr->graphPtr = graphPtr;
     penPtr->hashPtr = hPtr;
     InitPen(penPtr);
-    if (strcmp(penPtr->name, "activeContour") == 0) {
+    if (strcmp(penPtr->name, "activeIsoline") == 0) {
         penPtr->flags = ACTIVE_PEN;
         penPtr->symbol.type = SYMBOL_CIRCLE;
     }

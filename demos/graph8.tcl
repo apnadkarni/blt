@@ -62,7 +62,7 @@ proc test1 { t } {
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::timestamp format [expr $d1]]
+	#puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
@@ -84,7 +84,7 @@ proc test2 { t } {
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/12.0)]
-	puts stderr [blt::timestamp format [expr $d1]]
+	#puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
@@ -102,7 +102,7 @@ proc test3 { t } {
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::timestamp format [expr $d1]]
+	#puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
@@ -120,7 +120,7 @@ proc test4 { t } {
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/6.0)]
-	puts stderr [blt::timestamp format [expr $d1]]
+	#puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
@@ -142,7 +142,7 @@ proc test5 { t } {
 	}
 	$t set $i "date" $d1
 	$t set $i "value" [expr sin($i/2.0)]
-	puts stderr [blt::timestamp format [expr $d1]]
+	#puts stderr [blt::timestamp format [expr $d1]]
     }
 }
 
@@ -535,25 +535,3 @@ blt::table . \
 
 blt::table configure . r0 c1 c2 -resize none
 
-.g element bind all <Enter> {
-    puts stderr "entered element [.g element get current]"
-}
-.g axis bind all <Enter> {
-    puts stderr "entered axis [.g axis get current]"
-}
-
-.g axis configure all -activeforeground red
-
-.g axis bind all <Enter> {
-    set axis [%W axis get current]
-    puts stderr ENTER=$axis
-    %W axis activate $axis
-    %W axis focus $axis
-}
-
-.g axis bind all <Leave> {
-    set axis [%W axis get current]
-    puts stderr LEAVE=$axis
-    %W axis deactivate $axis
-    %W axis focus ""
-}
