@@ -1001,8 +1001,8 @@ SetLegendOrigin(Legend *legendPtr)
         }
         break;
     }
-    legendPtr->x = x + legendPtr->padLeft;
-    legendPtr->y = y + legendPtr->padTop;
+    legendPtr->x = x;
+    legendPtr->y = y;
 }
 
 static int
@@ -1219,8 +1219,8 @@ Blt_MapLegend(
     Legend *legendPtr = graphPtr->legend;
     Blt_ChainLink link;
     int numRows, numColumns, numEntries;
-    int legendWidth, legendHeight;
-    int maxWidth, maxHeight;
+    int cavityWidth, cavityHeight;
+    int maxEntryWidth, maxEntryHeight;
     int symbolWidth;
     Blt_FontMetrics fontMetrics;
     unsigned int tw, th;
@@ -1247,7 +1247,7 @@ Blt_MapLegend(
      * of elements, but elements can have no legend entry (-label "").
      */
     numEntries = 0;
-    maxWidth = maxHeight = 0;
+    maxEntryWidth = maxEntryHeight = 0;
     for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList);
         link != NULL; link = Blt_Chain_NextLink(link)) {
         unsigned int w, h;
@@ -1258,11 +1258,11 @@ Blt_MapLegend(
             continue;                   /* Element has no legend entry. */
         }
         Blt_Ts_GetExtents(&legendPtr->style, elemPtr->label, &w, &h);
-        if (maxWidth < w) {
-            maxWidth = w;
+        if (maxEntryWidth < w) {
+            maxEntryWidth = w;
         }
-        if (maxHeight < h) {
-            maxHeight = h;
+        if (maxEntryHeight < h) {
+            maxEntryHeight = h;
         }
         numEntries++;
     }
@@ -1274,18 +1274,19 @@ Blt_MapLegend(
     Blt_Font_GetMetrics(legendPtr->style.font, &fontMetrics);
     symbolWidth = 2 * fontMetrics.ascent;
 
-    maxWidth += 2 * legendPtr->entryBorderWidth + PADDING(legendPtr->iPadX) +
-        + symbolWidth + 3 * LABEL_PAD;
+    maxEntryWidth += 2 * legendPtr->entryBorderWidth +
+        PADDING(legendPtr->iPadX) + symbolWidth + 3 * LABEL_PAD;
+    maxEntryHeight += 2 * legendPtr->entryBorderWidth +
+        PADDING(legendPtr->iPadY);
 
-    maxHeight += 2 * legendPtr->entryBorderWidth + PADDING(legendPtr->iPadY);
+    /* Make entry width and height odd so that dotted lines mesh. */
+    maxEntryWidth |= 0x01;              
+    maxEntryHeight |= 0x01;
 
-    maxWidth |= 0x01;
-    maxHeight |= 0x01;
-
-    legendWidth  = plotWidth;
-    legendHeight = plotHeight;
-    legendWidth  -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padX);
-    legendHeight -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padY);
+    cavityWidth  = plotWidth;
+    cavityHeight = plotHeight;
+    cavityWidth  -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padX);
+    cavityHeight -= 2 * legendPtr->borderWidth + PADDING(legendPtr->padY);
 
     /*
      * The number of rows and columns is computed as one of the following:
@@ -1308,8 +1309,8 @@ Blt_MapLegend(
         numRows = ((numEntries - 1) / numColumns) + 1;
     } else {                    
         /* Compute # of rows and columns from the legend size. */
-        numRows = legendHeight / maxHeight;
-        numColumns = legendWidth / maxWidth;
+        numRows = cavityHeight / maxEntryHeight;
+        numColumns = cavityWidth / maxEntryWidth;
         if (numRows < 1) {
             numRows = numEntries;
         }
@@ -1338,23 +1339,23 @@ Blt_MapLegend(
         numRows = 1;
     }
 
-    legendHeight = (numRows * maxHeight);
+    cavityHeight = (numRows * maxEntryHeight);
     if (legendPtr->titleHeight > 0) {
-        legendHeight += legendPtr->titleHeight + legendPtr->padY.side1;
+        cavityHeight += legendPtr->titleHeight + legendPtr->padY.side1;
     }
-    legendWidth = numColumns * maxWidth;
-    if (legendWidth < legendPtr->titleWidth) {
-        legendWidth = legendPtr->titleWidth;
+    cavityWidth = numColumns * maxEntryWidth;
+    if (cavityWidth < legendPtr->titleWidth) {
+        cavityWidth = legendPtr->titleWidth;
     }
-    legendPtr->width = legendWidth + 2 * legendPtr->borderWidth + 
+    legendPtr->width = cavityWidth + 2 * legendPtr->borderWidth + 
         PADDING(legendPtr->padX);
-    legendPtr->height = legendHeight + 2 * legendPtr->borderWidth + 
+    legendPtr->height = cavityHeight + 2 * legendPtr->borderWidth + 
         PADDING(legendPtr->padY);
     legendPtr->numRows     = numRows;
     legendPtr->numColumns  = numColumns;
     legendPtr->numEntries  = numEntries;
-    legendPtr->entryHeight = maxHeight;
-    legendPtr->entryWidth  = maxWidth;
+    legendPtr->entryHeight = maxEntryHeight;
+    legendPtr->entryWidth  = maxEntryWidth;
 
     {
         int row, col, count;
@@ -1378,7 +1379,8 @@ Blt_MapLegend(
     if ((legendPtr->site == LEGEND_WINDOW) &&
         ((Tk_ReqWidth(legendPtr->tkwin) != legendPtr->width) ||
          (Tk_ReqHeight(legendPtr->tkwin) != legendPtr->height))) {
-        Tk_GeometryRequest(legendPtr->tkwin,legendPtr->width,legendPtr->height);
+        Tk_GeometryRequest(legendPtr->tkwin, legendPtr->width,
+                legendPtr->height);
     }
 }
 
@@ -1763,7 +1765,9 @@ Blt_ConfigureLegend(Graph *graphPtr)
     if (legendPtr->site == LEGEND_WINDOW) {
         Blt_Legend_EventuallyRedraw(graphPtr);
     } else if (Blt_ConfigModified(configSpecs, "-*border*", "-*pad?",
-        "-hide", "-font", "-rows", (char *)NULL)) {
+        "-hide", "-font", "-rows", "-*background", "-*foreground",
+        "-*relief", 
+        (char *)NULL)) {
         graphPtr->flags |= RESET_WORLD;
         graphPtr->flags |= (REDRAW_WORLD | CACHE_DIRTY);
         Blt_EventuallyRedrawGraph(graphPtr);

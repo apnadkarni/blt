@@ -35,7 +35,6 @@ blt::graph .g \
     -relief flat 
 
 .g axis configure x \
-    -activebackground white \
     -activeforeground red3 \
     -tickdirection in \
     -scale log \
@@ -45,7 +44,6 @@ blt::graph .g \
     -title "X" 
 
 .g axis configure y \
-    -activebackground white \
     -activeforeground red3 \
     -tickdirection in \
     -rotate 0 \

@@ -142,29 +142,6 @@
 #define Bz elemPtr->vertices[t->b].z
 #define Cz elemPtr->vertices[t->c].z
 
-/* 
- * .c element create 
- * .c level create name 0 0 -min -max -foreground -linewidth -background -color 
- * .c level configure 
- * .c level nearest x y 
- * .c element nearest x y 
- * .c element level add x y z 
- *
- *  .g element create 
- *  .g mesh create 
- *  .g element isoline create $element $name  
- *  .g element isoline configure $element $name  
- *  .g element isoline cget $element $name  
- *  .g element isoline delete $element $name $name $name
- *  .g element isoline names $element $pattern
- *  .g element isoline activate $element $name
- *  .g element isoline deactivate $element $name
- *  .g element isoline deactivate $element $name
- *
- *  .g element xcutline elemName x
- *  .g element ycutline elemName y
- */
-
 typedef struct _ContourElement ContourElement;
 typedef struct _ContourPen ContourPen;
 typedef struct _Blt_Picture Pict;
@@ -1514,7 +1491,7 @@ GetScreenPoints(ContourElement *elemPtr)
      */
     vertices = Blt_AssertMalloc(sizeof(Vertex) * elemPtr->z.numValues);
     Blt_GraphExtents(elemPtr, &exts);
-    rangePtr = &zAxisPtr->tickRange;
+    rangePtr = &zAxisPtr->dataRange;
     
     meshVertices = Blt_Mesh_GetVertices(elemPtr->mesh, &numMeshVertices);
     for (i = 0; i < numMeshVertices; i++) {
@@ -1879,7 +1856,7 @@ TriangleHasIntersection(int ab, int bc, int ac) {
     return triangleIntersections[ab][bc][ac];
 }
 
-/* Process a Cont triangle  */
+/* Process a triangle  */
 static void 
 ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr) 
 {
@@ -1892,9 +1869,9 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     ab = bc = ca = 0;
     range = Bz - Az;
     if (fabs(range) < DBL_EPSILON) {
-        ab = Blt_AlmostEquals(Az, isoPtr->value);
+        ab = Blt_AlmostEquals(Az, isoPtr->relValue);
     } else {
-        t1 = (isoPtr->value - Az) / range; /* A to B */
+        t1 = (isoPtr->relValue - Az) / range; /* A to B */
         if (Blt_AlmostEquals(t1, 0.0)) {
             ab = 1;                     /* At a vertex. */
         } else if (Blt_AlmostEquals(t1, 1.0)) {
@@ -1907,9 +1884,9 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     }
     range = Cz - Bz;
     if (fabs(range) < DBL_EPSILON) {
-        bc = Blt_AlmostEquals(Bz, isoPtr->value);
+        bc = Blt_AlmostEquals(Bz, isoPtr->relValue);
     } else {
-        t2 = (isoPtr->value - Bz) / range; /* B to C */
+        t2 = (isoPtr->relValue - Bz) / range; /* B to C */
         if (Blt_AlmostEquals(t2, 0.0)) {
             bc = 1;                     /* At a vertex. */
         } else if (Blt_AlmostEquals(t2, 1.0)) {
@@ -1923,9 +1900,9 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
 
     range = Az - Cz;
     if (fabs(range) < DBL_EPSILON) {
-        ca = Blt_AlmostEquals(Cz, isoPtr->value);
+        ca = Blt_AlmostEquals(Cz, isoPtr->relValue);
     } else {
-        t3 = (isoPtr->value - Cz) / range; /* A to B */
+        t3 = (isoPtr->relValue - Cz) / range; /* A to B */
         if (Blt_AlmostEquals(t3, 0.0)) {
             ca = 1;                     /* At a vertex. */
         } else if (Blt_AlmostEquals(t3, 1.0)) {
@@ -1996,8 +1973,8 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     } else {
 #ifdef notdef
         fprintf(stderr,
-                "ignoring triangle %d a=%d b=%d c=%d value=%.17g a=%.17g b=%.17g c=%.17g\n",
-                t->index, t->a, t->b, t->c, isoPtr->value, Az, Bz, Cz);
+                "ignoring triangle %d a=%d b=%d c=%d relvalue=%.17g a=%.17g b=%.17g c=%.17g\n",
+                t->index, t->a, t->b, t->c, isoPtr->relValue, Az, Bz, Cz);
         fprintf(stderr, "\tab=%d, bc=%d ca=%d\n", ab, bc, ca);
         fprintf(stderr, "\tt1=%.17g t2=%.17g t3=%.17g\n", t1, t2, t3);
         fprintf(stderr, "\tt->min=%.17g t->max=%.17g MIN3=%.17g MAX3=%.17g\n", 
@@ -2006,73 +1983,6 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     }
 }
 
-#ifdef notdef
-/* 
- * For labeling:  
- *      Create polylines from list of isoline segments.  
- *      Simplify each polyline to produce the longest segment.  
- *      Place rotated labels above/below left/right from the center of
- *      the longest segment.
- */
-static void
-StitchSegments(Isoline *isoPtr)
-{
-    long count;
-    long i;
-    Blt_HashTable pointTable;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    IsolineSegment *s;
-    
-    Blt_InitHashTable(&pointTable, sizeof(PointKey) / sizeof(int));
-    for (i = 0, s = isoPtr->segments; s != NULL; s = s->next, i++) {
-        PointKey key;
-        int isNew;
-        
-        if (s->x1 == s->x2 && s->y1 == s->y2) {
-            continue;
-        }
-        MakePointKey(&key, s->x1, s->y1);
-        hPtr = Blt_CreateHashEntry(&pointTable, &key, &isNew);
-#ifdef notdef
-        fprintf(stderr, "segment %ld px=%.15g py=%.15g qx=%.15g qy=%.15g\n",
-                i, s->x1, s->y1, s->x2, s->y2);
-#endif
-        if (isNew) {
-            count = 1;
-        } else {
-            count = Blt_GetHashValue(hPtr);
-            count++;
-        }
-        Blt_SetHashValue(hPtr, count);
-        key.x = s->x2;
-        key.y = s->y2;
-        hPtr = Blt_CreateHashEntry(&pointTable, &key, &isNew);
-        if (isNew) {
-            count = 1;
-        } else {
-            count = Blt_GetHashValue(hPtr);
-            count++;
-        }
-        Blt_SetHashValue(hPtr, count);
-    }
-    i = 0;
-    for (hPtr = Blt_FirstHashEntry(&pointTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        PointKey *keyPtr;
-        keyPtr = Blt_GetHashKey(&pointTable, hPtr);
-        count = Blt_GetHashValue(hPtr);
-#ifdef notdef
-        if (count == 1) {
-            fprintf(stderr, "point %ld x=%.15g y=%.15g count=%ld\n",
-                i, keyPtr->x, keyPtr->y, count);
-        }
-#endif
-        i++;
-    }
-    Blt_DeleteHashTable(&pointTable);
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2092,50 +2002,27 @@ StitchSegments(Isoline *isoPtr)
 static void
 MapIsoline(ContourElement *elemPtr, Isoline *isoPtr)
 {
-    Axis *zAxisPtr;
+    Axis *axisPtr;
     AxisRange *rangePtr;
     int i;
-    double value;
     
-    zAxisPtr = elemPtr->zAxisPtr;
-    rangePtr = &zAxisPtr->tickRange;
+    axisPtr = elemPtr->zAxisPtr;
+    rangePtr = &axisPtr->tickRange;
     /* Step 1: Convert relative isoline values to absolute. */
     if (isoPtr->flags & ABSOLUT) {
         if (fabs(rangePtr->range) < DBL_EPSILON) {
             return;
         }
-        value = isoPtr->reqValue;
+        isoPtr->relValue = (isoPtr->reqValue - rangePtr->min) * rangePtr->scale;
     } else {
-        value = (isoPtr->reqValue * rangePtr->range) + rangePtr->min;
+        isoPtr->relValue = isoPtr->reqValue;
     }
-#ifdef notdef
-    /* Step 2: Apply log scale if necessary. */
-    if (IsLogScale(zAxisPtr)) {
-        if (zAxisPtr->min < 1.0) {
-            value = log10(value - zAxisPtr->min + 1.0);
-        } else {
-            value = log10(value);
-        }            
-    }
-#endif
-    /* Step 3: Convert to normalized value 0..1 */
-#ifdef notdef
-    fprintf(stderr, "2. req=%g value=%g amin=%g min=%g max=%g\n",
-            isoPtr->reqValue,
-            value, zAxisPtr->min, rangePtr->min, rangePtr->max);
-#endif
-    isoPtr->value = (value - rangePtr->min) * rangePtr->scale;
-#ifdef notdef
-    fprintf(stderr, "3. req=%g value=%g amin=%g min=%g max=%g\n",
-            isoPtr->reqValue,
-            value, zAxisPtr->min, rangePtr->min, rangePtr->max);
-#endif
-    if (zAxisPtr->palette != NULL) {
+    if (axisPtr->palette != NULL) {
         double value;
 
-        value = isoPtr->value;
+        value = isoPtr->relValue;
         isoPtr->paletteColor.u32 = Blt_Palette_GetAssociatedColor(
-                zAxisPtr->palette, value);
+                axisPtr->palette, value);
     } else {
         isoPtr->paletteColor.u32 = 0xFF000000; /* Solid black. */
     }
@@ -2152,7 +2039,7 @@ MapIsoline(ContourElement *elemPtr, Isoline *isoPtr)
             continue;                   /* All three vertices have the same 
                                          * value. */
         } 
-        norm = (isoPtr->value - t->min) / range;
+        norm = (isoPtr->relValue - t->min) / range;
         if ((norm < 0.0) && (!Blt_AlmostEquals(norm, 0.0))) {
             break;                      /* No more triangles in range. */
         }
@@ -2752,8 +2639,8 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     x = exts.left, y = exts.top;
     axisPtr = elemPtr->zAxisPtr;
     /* Get min and max of axis as normalized values (between 0 and 1)  */
-    min = (axisPtr->min - axisPtr->valueRange.min) / axisPtr->valueRange.range;
-    max = (axisPtr->max - axisPtr->valueRange.min) / axisPtr->valueRange.range;
+    min = (axisPtr->min - axisPtr->dataRange.min) / axisPtr->dataRange.range;
+    max = (axisPtr->max - axisPtr->dataRange.min) / axisPtr->dataRange.range;
     for (i = 0; i < elemPtr->numTriangles; i++) {
         Triangle *t;
 
@@ -2764,8 +2651,8 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
             fprintf(stderr,
  "triangle %d is outside axis range tmin=%g, tmax=%g min=%g max=%g amin=%g amax=%g rmin=%g rmax=%g rrange=%g\n",
                     i, t->min, t->max, min, max, axisPtr->min, axisPtr->max,
-                    axisPtr->valueRange.min, axisPtr->valueRange.max,
-                    axisPtr->valueRange.range);
+                    axisPtr->dataRange.min, axisPtr->dataRange.max,
+                    axisPtr->dataRange.range);
 #endif
             continue;
 
@@ -3645,11 +3532,11 @@ DrawIsoline(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     size_t numMax, numReq, count;
 
 #ifdef notdef
-    fprintf(stderr, "DrawIsoline isoline=%s #segments=%d value=%g, reqValue=%g\n", 
-            isoPtr->obj.name, isoPtr->numSegments, isoPtr->value, 
+    fprintf(stderr, "DrawIsoline isoline=%s #segments=%d relValue=%g, reqValue=%g\n", 
+            isoPtr->obj.name, isoPtr->numSegments, isoPtr->relValue, 
             isoPtr->reqValue);
-    fprintf(stderr, "DrawIsoline isoline=%s #segments=%d value=%g, reqValue=%g penPtr=%x, elemPtr->builtinPenPtr=%x\n", 
-            isoPtr->obj.name, isoPtr->numSegments, isoPtr->value, 
+    fprintf(stderr, "DrawIsoline isoline=%s #segments=%d relValue=%g, reqValue=%g penPtr=%x, elemPtr->builtinPenPtr=%x\n", 
+            isoPtr->obj.name, isoPtr->numSegments, isoPtr->relValue, 
             isoPtr->reqValue, penPtr, elemPtr->builtinPenPtr);
 #endif
     numReq = isoPtr->numSegments;
@@ -3671,7 +3558,6 @@ DrawIsoline(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
             color.green = isoPtr->paletteColor.Green * 257;
             color.blue  = isoPtr->paletteColor.Blue * 257;
             colorPtr = Tk_GetColorByValue(graphPtr->tkwin, &color);
-            fprintf(stderr, "colorPtr is set to palette\n");
         }
         /* Temporarily set the color from the interpolated value. */
         XSetForeground(graphPtr->display, penPtr->traceGC, colorPtr->pixel);
@@ -3808,7 +3694,8 @@ NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
             nearestPtr->value = elemPtr->z.values[nearestPtr->index];
             nearestPtr->distance = d;
             nearestPtr->item = elemPtr;
-            nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,&elemPtr->axes);
+            nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,
+                &elemPtr->axes);
         }
     }   
 }
@@ -4062,23 +3949,23 @@ ExtentsProc(Element *basePtr)
         return;
     }
     Blt_Mesh_GetExtents(elemPtr->mesh, &xMin, &yMin, &xMax, &yMax);
-    if (xMin < elemPtr->axes.x->valueRange.min) {
-        elemPtr->axes.x->valueRange.min = xMin;
+    if (xMin < elemPtr->axes.x->dataRange.min) {
+        elemPtr->axes.x->dataRange.min = xMin;
     }
-    if (xMax > elemPtr->axes.x->valueRange.max) {
-        elemPtr->axes.x->valueRange.max = xMax;
+    if (xMax > elemPtr->axes.x->dataRange.max) {
+        elemPtr->axes.x->dataRange.max = xMax;
     }
-    if (yMin < elemPtr->axes.y->valueRange.min) {
-        elemPtr->axes.y->valueRange.min = yMin;
+    if (yMin < elemPtr->axes.y->dataRange.min) {
+        elemPtr->axes.y->dataRange.min = yMin;
     }
-    if (yMax > elemPtr->axes.y->valueRange.max) {
-        elemPtr->axes.y->valueRange.max = yMax;
+    if (yMax > elemPtr->axes.y->dataRange.max) {
+        elemPtr->axes.y->dataRange.max = yMax;
     }
-    if (elemPtr->z.min < elemPtr->zAxisPtr->valueRange.min) {
-        elemPtr->zAxisPtr->valueRange.min = elemPtr->z.min;
+    if (elemPtr->z.min < elemPtr->zAxisPtr->dataRange.min) {
+        elemPtr->zAxisPtr->dataRange.min = elemPtr->z.min;
     } 
-    if (elemPtr->z.max > elemPtr->zAxisPtr->valueRange.max) {
-        elemPtr->zAxisPtr->valueRange.max = elemPtr->z.max;
+    if (elemPtr->z.max > elemPtr->zAxisPtr->dataRange.max) {
+        elemPtr->zAxisPtr->dataRange.max = elemPtr->z.max;
     } 
 }
 
@@ -4225,16 +4112,18 @@ static void
 DrawProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
 {
     ContourElement *elemPtr = (ContourElement *)basePtr;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
+    Blt_ChainLink link;
 
     DrawMesh(graphPtr, drawable, elemPtr);
-    for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
+    for (link = Blt_Chain_FirstLink(graphPtr->isolines.displayList);
+         link != NULL; link = Blt_Chain_NextLink(link)) {
         Isoline *isoPtr;
         ContourPen *penPtr;
         
-        isoPtr = Blt_GetHashValue(hPtr);
+        isoPtr = Blt_Chain_GetValue(link);
+        if (isoPtr->elemPtr != basePtr) {
+            continue;
+        }
         if (isoPtr->flags & HIDDEN) {
             continue;                   /* Don't draw this isoline. */
         }
@@ -4287,7 +4176,7 @@ DrawActiveProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
         if (penPtr == NULL) {
             penPtr = elemPtr->activePenPtr;
         }
-        if (elemPtr->flags & ISOLINES) {
+        if ((elemPtr->flags & ISOLINES) && (penPtr->traceWidth > 0)) {
             DrawIsoline(graphPtr, drawable, elemPtr, isoPtr, penPtr);
         }
         if (penPtr->symbol.type != SYMBOL_NONE) {
@@ -4989,8 +4878,8 @@ CutTriangleAlongX(Stitches *stitchesPtr, Triangle *t, double x)
     } else {
 #ifndef notdef
         fprintf(stderr,
-                "ignoring triangle %d a=%d b=%d c=%d value=%.17g a=%.17g b=%.17g c=%.17g\n",
-                t->index, t->a, t->b, t->c, isoPtr->value, Az, Bz, Cz);
+                "ignoring triangle %d a=%d b=%d c=%d relValue=%.17g a=%.17g b=%.17g c=%.17g\n",
+                t->index, t->a, t->b, t->c, isoPtr->relValue, Az, Bz, Cz);
         fprintf(stderr, "\tab=%d, bc=%d ca=%d\n", ab, bc, ca);
         fprintf(stderr, "\tt1=%.17g t2=%.17g t3=%.17g\n", t1, t2, t3);
         fprintf(stderr, "\tt->min=%.17g t->max=%.17g MIN3=%.17g MAX3=%.17g\n", 
@@ -5554,14 +5443,6 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
                 if (cz < t->min) {
                     cz = t->min;
                 }
-                if (IsLogScale(zAxisPtr)) {
-                    cz = log10(9.0 * cz + 1.0);
-                }
-#ifdef notdef
-                if (zAxisPtr->decreasing) {
-                    cz = 1.0 - cz;
-                }
-#endif
                 dp->u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette, cz);
 #ifdef notdef
                 fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",

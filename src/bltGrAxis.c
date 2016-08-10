@@ -1880,10 +1880,61 @@ Blt_InvVMap(Axis *axisPtr, double y) /* Screen coordinate */
 /*
  *---------------------------------------------------------------------------
  *
+ * ConvertToScreenX --
+ *
+ *      Map the given graph value to its axis, returning a screen
+ *      x-coordinate.
+ *
+ * Results:
+ *      Returns a double precision number representing the screen coordinate
+ *      of the value on the given axis.
+ *
+ *---------------------------------------------------------------------------
+ */
+static INLINE double
+ConvertToScreenX(Axis *axisPtr, double x)
+{
+    /* Map graph coordinate to normalized coordinates [0..1] */
+    x = (x - axisPtr->tickRange.min) * axisPtr->tickRange.scale;
+    if (axisPtr->decreasing) {
+        x = 1.0 - x;
+    }
+    return (x * axisPtr->screenRange + axisPtr->screenMin);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConvertToScreenY --
+ *
+ *      Map the given graph value to its axis, returning a screen
+ *      y-coordinate.
+ *
+ * Results:
+ *      Returns a double precision number representing the screen coordinate
+ *      of the value on the given axis.
+ *
+ *---------------------------------------------------------------------------
+ */
+static INLINE double
+ConvertToScreenY(Axis *axisPtr, double y)
+{
+    /* Map graph coordinate to normalized coordinates [0..1] */
+    y = (y - axisPtr->tickRange.min) * axisPtr->tickRange.scale;
+    if (axisPtr->decreasing) {
+        y = 1.0 - y;
+    }
+    return ((1.0 - y) * axisPtr->screenRange + axisPtr->screenMin);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * Blt_HMap --
  *
- *      Map the given graph coordinate value to its axis, returning a window
- *      position.
+ *      Map the given graph coordinate value to its axis, returning a
+ *      window position.  Automatically converts the value to log scale if
+ *      the axis is in log scale.
  *
  * Results:
  *      Returns a double precision number representing the window coordinate
@@ -1901,12 +1952,7 @@ Blt_HMap(Axis *axisPtr, double x)
             x = log10(x - axisPtr->min + 1.0);
         }
     }
-    /* Map graph coordinate to normalized coordinates [0..1] */
-    x = (x - axisPtr->tickRange.min) * axisPtr->tickRange.scale;
-    if (axisPtr->decreasing) {
-        x = 1.0 - x;
-    }
-    return (x * axisPtr->screenRange + axisPtr->screenMin);
+    return ConvertToScreenX(axisPtr, x);
 }
 
 /*
@@ -1914,8 +1960,9 @@ Blt_HMap(Axis *axisPtr, double x)
  *
  * Blt_VMap --
  *
- *      Map the given graph coordinate value to its axis, returning a window
- *      position.
+ *      Map the given graph coordinate value to its axis, returning a
+ *      window position. Automatically converts the value to log scale if
+ *      the axis is in log scale.
  *
  * Results:
  *      Returns a double precision number representing the window coordinate
@@ -1933,12 +1980,7 @@ Blt_VMap(Axis *axisPtr, double y)
             y = log10(y - axisPtr->min + 1.0);
         }
     }
-    /* Map graph coordinate to normalized coordinates [0..1] */
-    y = (y - axisPtr->tickRange.min) * axisPtr->tickRange.scale;
-    if (axisPtr->decreasing) {
-        y = 1.0 - y;
-    }
-    return ((1.0 - y) * axisPtr->screenRange + axisPtr->screenMin);
+    return ConvertToScreenY(axisPtr, y);
 }
 
 /*
@@ -2009,8 +2051,8 @@ FixAxisRange(Axis *axisPtr)
      * When auto-scaling, the axis limits are the bounds of the element data.
      * If no data exists, set arbitrary limits (wrt to log/linear scale).
      */
-    min = axisPtr->valueRange.min;
-    max = axisPtr->valueRange.max;
+    min = axisPtr->dataRange.min;
+    max = axisPtr->dataRange.max;
 
     /* Check the requested axis limits. Can't allow -min to be greater
      * than -max, or have undefined log scale limits.  */
@@ -2059,7 +2101,7 @@ FixAxisRange(Axis *axisPtr)
         max = min + 0.5;
         min = min - 0.5;
     }
-    SetAxisRange(&axisPtr->valueRange, min, max);
+    SetAxisRange(&axisPtr->dataRange, min, max);
 
     /*   
      * The axis limits are either the current data range or overridden by the
@@ -2308,7 +2350,16 @@ LogAxis(Axis *axisPtr, double min, double max)
     axisPtr->minor.ticks.numSteps = numMinor;
     axisPtr->minor.ticks.scaleType = SCALE_LOG;
     SetAxisRange(&axisPtr->tickRange, tickMin, tickMax);
-    /* Never generate minor ticks. */
+    if (min > 0.0) {
+        axisPtr->tickMin = EXP10(tickMin);
+        axisPtr->tickMax = EXP10(tickMax);
+    } else {
+        axisPtr->tickMin = EXP10(tickMin) + min - 1.0;
+        axisPtr->tickMax = EXP10(tickMax) + min - 1.0;
+    }
+    fprintf(stderr, "LogAxis: min=%g, max=%g, tickMin=%g tickMax=%g ltmin=%g ltmax=%g\n",
+            min, max, axisPtr->tickMin, axisPtr->tickMax, tickMin, tickMax);
+    /* FIXME */
 }
 
 /*
@@ -2425,6 +2476,8 @@ LinearAxis(Axis *axisPtr, double min, double max)
         axisMax = max;
     }
     SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
 
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
@@ -2481,8 +2534,8 @@ Blt_ResetAxes(Graph *graphPtr)
         Axis *axisPtr;
 
         axisPtr = Blt_GetHashValue(hPtr);
-        axisPtr->min = axisPtr->valueRange.min = DBL_MAX;
-        axisPtr->max = axisPtr->valueRange.max = -DBL_MAX;
+        axisPtr->min = axisPtr->dataRange.min = DBL_MAX;
+        axisPtr->max = axisPtr->dataRange.max = -DBL_MAX;
     }
 
     /*
@@ -3043,23 +3096,8 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
 {
     double min, max;
     int x1, y1, x2, y2;
-    min = axisPtr->tickRange.min;
-    max = axisPtr->tickRange.max;
-    fprintf(stderr, "MakeColorbar: axis=%s, min=%g max=%g\n",
-            axisPtr->obj.name, min, max);
-    if (IsLogScale(axisPtr)) {
-        /* Axis lines are already log10 scale. Convert back to linear to
-         * let Blt_HMap and Blt_VMap convert them back to log10. */
-        if (axisPtr->min > 0.0) {
-            min = EXP10(min);
-            max = EXP10(max);
-        } else {
-            min = EXP10(min) + axisPtr->min - 1.0;
-            max = EXP10(max) + axisPtr->min - 1.0;
-        }
-    }
-    fprintf(stderr, "2. MakeColorbar: axis=%s, min=%g max=%g\n",
-            axisPtr->obj.name, min, max);
+    min = axisPtr->tickMin;
+    max = axisPtr->tickMax;
     if (HORIZONTAL(axisPtr->marginPtr)) {
         x2 = Blt_HMap(axisPtr, min);
         x1 = Blt_HMap(axisPtr, max);
@@ -3070,8 +3108,6 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
     } else {
         y2 = Blt_VMap(axisPtr, min);
         y1 = Blt_VMap(axisPtr, max);
-    fprintf(stderr, "3. MakeColorbar: axis=%s, y2=%d y1=%d\n",
-            axisPtr->obj.name, y2, y1);
         axisPtr->colorbar.rect.x = infoPtr->colorbar;
         axisPtr->colorbar.rect.y = MIN(y1,y2);
         axisPtr->colorbar.rect.height = ABS(y1 - y2) + 1;
@@ -3084,17 +3120,8 @@ MakeAxisLine(Axis *axisPtr, int line, Segment2d *s)
 {
     double min, max;
 
-    min = axisPtr->tickRange.min;
-    max = axisPtr->tickRange.max;
-    if (IsLogScale(axisPtr)) {
-        if (axisPtr->min > 0.0) {
-            min = EXP10(min);
-            max = EXP10(max);
-        } else {
-            min = EXP10(min) + axisPtr->min - 1.0;
-            max = EXP10(max) + axisPtr->min - 1.0;
-        }
-    }
+    min = axisPtr->tickMin;
+    max = axisPtr->tickMax;
     if (HORIZONTAL(axisPtr->marginPtr)) {
         s->p.x = Blt_HMap(axisPtr, min);
         s->q.x = Blt_HMap(axisPtr, max);
@@ -3107,23 +3134,21 @@ MakeAxisLine(Axis *axisPtr, int line, Segment2d *s)
 }
 
 
+/* 
+ * If the axis is in log scale, the value is also in log scale.  we must
+ * convert it back to linear, because the Blt_HMap and Blt_VMap routines
+ * will convert it back to log before computing a scene value.
+ */
 static void
 MakeTick(Axis *axisPtr, double value, int tick, int line, Segment2d *s)
 {
-    if (IsLogScale(axisPtr)) {
-        if (axisPtr->min > 0.0) {
-            value = EXP10(value);
-        } else {
-            value = EXP10(value) + axisPtr->min - 1.0;
-        }
-    }
     if (HORIZONTAL(axisPtr->marginPtr)) {
-        s->p.x = s->q.x = Blt_HMap(axisPtr, value);
+        s->p.x = s->q.x = ConvertToScreenX(axisPtr, value);
         s->p.y = line;
         s->q.y = tick;
     } else {
         s->p.x = line;
-        s->p.y = s->q.y = Blt_VMap(axisPtr, value);
+        s->p.y = s->q.y = ConvertToScreenY(axisPtr, value);
         s->q.x = tick;
     }
 }
@@ -3430,36 +3455,27 @@ static int
 GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
 {
     Axis *axisPtr = clientData;
-    double value, t;
+    double t;
     Graph *graphPtr;
 
     graphPtr = axisPtr->obj.graphPtr;
     if ((axisPtr->marginPtr->side == MARGIN_Y) ||
         (axisPtr->marginPtr->side == MARGIN_Y2)) {
         if (graphPtr->flags & INVERTED) {
-            value = Blt_InvHMap(axisPtr, x + axisPtr->screenMin);
+            t = (double)(x - axisPtr->screenMin) * axisPtr->screenScale;
         } else {
-            value = Blt_InvVMap(axisPtr, y + axisPtr->screenMin);
+            t = (double)(y - axisPtr->screenMin) * axisPtr->screenScale;
         }
     } else if ((axisPtr->marginPtr->side == MARGIN_X) ||
                (axisPtr->marginPtr->side == MARGIN_X2)) {
         if (graphPtr->flags & INVERTED) {
-            value = Blt_InvVMap(axisPtr, y + axisPtr->screenMin);
+            t = (double)(y - axisPtr->screenMin) * axisPtr->screenScale;
         } else {
-            value = Blt_InvHMap(axisPtr, x + axisPtr->screenMin);
+            t = (double)(x - axisPtr->screenMin) * axisPtr->screenScale;
         }
     } else {
         return TCL_ERROR;
     }
-    t = (value - axisPtr->tickRange.min) / axisPtr->tickRange.range;
-    if (IsLogScale(axisPtr)) {
-        t = (log10(value) - axisPtr->tickRange.min) / axisPtr->tickRange.range;
-    }
-#ifdef notdef
-    if (axisPtr->decreasing) {
-        t = 1.0 - t;
-    }
-#endif
     *valuePtr = t;
     return TCL_OK;
 }
@@ -3556,8 +3572,8 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
 #ifdef notdef
     fprintf(stderr, "axis=%s scale=%d tmin=%g tmax=%g vmin=%g vmax=%g\n",
             axisPtr->obj.name, axisPtr->scale, axisPtr->tickRange.min,
-            axisPtr->tickRange.max, axisPtr->valueRange.min,
-            axisPtr->valueRange.max);
+            axisPtr->tickRange.max, axisPtr->dataRange.min,
+            axisPtr->dataRange.max);
 #endif
     if (axisPtr->normalBg != NULL) {
         Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, 
@@ -3598,8 +3614,8 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
         double worldWidth, worldMin, worldMax;
         double fract;
 
-        worldMin = axisPtr->valueRange.min;
-        worldMax = axisPtr->valueRange.max;
+        worldMin = axisPtr->dataRange.min;
+        worldMax = axisPtr->dataRange.max;
         if (DEFINED(axisPtr->scrollMin)) {
             worldMin = axisPtr->scrollMin;
         }
@@ -3798,24 +3814,15 @@ MakeGridLine(Axis *axisPtr, double value, Segment2d *s)
 {
     Graph *graphPtr = axisPtr->obj.graphPtr;
 
-    if (IsLogScale(axisPtr)) {
-        /* Axis lines are already log10 scale. Convert back to linear to
-         * let Blt_HMap and Blt_VMap convert them back to log10. */
-        if (axisPtr->min > 0.0) {
-            value = EXP10(value);
-        } else {
-            value = EXP10(value) + axisPtr->min - 1.0;
-        }
-    }
     /* Grid lines run orthogonally to the axis */
     if (HORIZONTAL(axisPtr->marginPtr)) {
         s->p.y = graphPtr->y1;
         s->q.y = graphPtr->y2;
-        s->p.x = s->q.x = Blt_HMap(axisPtr, value);
+        s->p.x = s->q.x = ConvertToScreenX(axisPtr, value);
     } else {
         s->p.x = graphPtr->x1;
         s->q.x = graphPtr->x2;
-        s->p.y = s->q.y = Blt_VMap(axisPtr, value);
+        s->p.y = s->q.y = ConvertToScreenY(axisPtr, value);
     }
 }
 
@@ -5232,27 +5239,27 @@ LimitsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Axis *axisPtr = clientData;
     Graph *graphPtr = axisPtr->obj.graphPtr;
-    Tcl_Obj *listObjPtr;
+    Tcl_Obj *listObjPtr, *objPtr;
     double min, max;
-
+    
     if (graphPtr->flags & RESET_AXES) {
         Blt_ResetAxes(graphPtr);
     }
-    if (IsLogScale(axisPtr)) {
-        if (axisPtr->min > 0.0) {
-            min = EXP10(axisPtr->tickRange.min);
-            max = EXP10(axisPtr->tickRange.max);
-        } else {
-            min = EXP10(axisPtr->tickRange.min) + axisPtr->min - 1.0;
-            max = EXP10(axisPtr->tickRange.max) + axisPtr->min - 1.0;
-        }
+    if (axisPtr->looseMin == TIGHT) {
+        min = axisPtr->dataRange.min;
     } else {
-        min = axisPtr->tickRange.min;
-        max = axisPtr->tickRange.max;
+        min = axisPtr->tickMin;
+    }
+    if (axisPtr->looseMax == TIGHT) {
+        max = axisPtr->dataRange.max;
+    } else {
+        max = axisPtr->tickMax;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(min));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(max));
+    objPtr = Tcl_NewDoubleObj(min);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewDoubleObj(max);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
@@ -5503,8 +5510,8 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
     double viewWidth, worldWidth;
 
     graphPtr = axisPtr->obj.graphPtr;
-    worldMin = axisPtr->valueRange.min;
-    worldMax = axisPtr->valueRange.max;
+    worldMin = axisPtr->dataRange.min;
+    worldMax = axisPtr->dataRange.max;
     /* Override data dimensions with user-selected limits. */
     if (DEFINED(axisPtr->scrollMin)) {
         worldMin = axisPtr->scrollMin;
@@ -7001,11 +7008,11 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
         }
         if (minFmt[0] != '\0') {
             minPtr = minString;
-            Blt_FormatString(minString, 200, minFmt, axisPtr->tickRange.min);
+            Blt_FormatString(minString, 200, minFmt, axisPtr->tickMin);
         }
         if (maxFmt[0] != '\0') {
             maxPtr = maxString;
-            Blt_FormatString(maxString, 200, maxFmt, axisPtr->tickRange.max);
+            Blt_FormatString(maxString, 200, maxFmt, axisPtr->tickMax);
         }
         if (axisPtr->decreasing) {
             char *tmp;
@@ -7081,7 +7088,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
             maxFmt = Tcl_GetString(objv[1]);
         }
         if (*maxFmt != '\0') {
-            Blt_FormatString(string, 200, maxFmt, axisPtr->tickRange.max);
+            Blt_FormatString(string, 200, maxFmt, axisPtr->tickMax);
             Blt_GetTextExtents(axisPtr->tickFont, 0, string, -1, &textWidth,
                 &textHeight);
             if ((textWidth > 0) && (textHeight > 0)) {
@@ -7101,7 +7108,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
             }
         }
         if (*minFmt != '\0') {
-            Blt_FormatString(string, 200, minFmt, axisPtr->tickRange.min);
+            Blt_FormatString(string, 200, minFmt, axisPtr->tickMin);
             Blt_GetTextExtents(axisPtr->tickFont, 0, string, -1, &textWidth,
                 &textHeight);
             if ((textWidth > 0) && (textHeight > 0)) {
@@ -7449,7 +7456,8 @@ YearTicks(Axis *axisPtr, double min, double max)
         axisMax = max;
     }
     SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
-
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
     axisPtr->major.ticks.timeUnits = TIME_YEARS;
     axisPtr->major.ticks.fmt = "%Y";
     axisPtr->major.ticks.scaleType = SCALE_TIME;
@@ -7486,9 +7494,9 @@ MonthTicks(Axis *axisPtr, double min, double max)
         axisMax = max;
     }
     SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
-    if (axisPtr->major.ticks.values != NULL) {
-        Blt_Free(axisPtr->major.ticks.values);
-    }
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
+
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.step = step;
@@ -7562,7 +7570,9 @@ WeekTicks(Axis *axisPtr, double min, double max)
         axisMax = max;
     }
     SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
-
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
+    
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
@@ -7612,6 +7622,8 @@ DayTicks(Axis *axisPtr, double min, double max)
         axisMax = max;
     }
     SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
 
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
@@ -7677,6 +7689,9 @@ HourTicks(Axis *axisPtr, double min, double max)
         axisMax = max;
     }
     SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
+
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
@@ -7732,9 +7747,9 @@ MinuteTicks(Axis *axisPtr, double min, double max)
         axisMax = max;
     }
     SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
-    if (axisPtr->major.ticks.values != NULL) {
-        Blt_Free(axisPtr->major.ticks.values);
-    }
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
+
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
@@ -7796,6 +7811,11 @@ SecondTicks(Axis *axisPtr, double min, double max)
         axisMax = max;
     }
     SetAxisRange(&axisPtr->tickRange, axisMin, axisMax);
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
+
+    axisPtr->tickMin = axisMin;
+    axisPtr->tickMax = axisMax;
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.step = step;

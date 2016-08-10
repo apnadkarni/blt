@@ -76,7 +76,8 @@ struct _Isoline {
     /* Fields used by the contour element. */
     Blt_HashEntry *hashPtr;		/* Pointer to entry in contour
 					 * element's hash table */
-    double value;                       /* Value of the isoline. */
+    double relValue;                    /* Relative value 0..1 of the
+                                         * isoline. */
     Blt_Chain traces;                   /* Set of traces that describe the
                                          * polyline(s) that represent the
                                          * isoline. */

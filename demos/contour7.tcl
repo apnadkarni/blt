@@ -71,15 +71,6 @@ proc FixSymbols {} {
     }
 }
 
-proc LogScale {} {
-    global logScale
-    if { $logScale } {
-	.g axis configure z -scale "log"
-    } else {
-	.g axis configure z -scale "linear"
-    }
-}
-
 proc Decreasing {} {
     global decreasing
     .g axis configure z -decreasing $decreasing
@@ -116,8 +107,6 @@ blt::tk::checkbutton .controls.symbols -text "Symbols" \
     -variable show(symbols) -command "FixSymbols"
 blt::tk::checkbutton .controls.interp -text "Use palette colors" \
     -variable usePaletteColors -command "UpdateColors"
-blt::tk::checkbutton .controls.logscale -text "Log scale" \
-    -variable logScale -command "LogScale"
 blt::tk::checkbutton .controls.decreasing -text "Decreasing" \
     -variable decreasing -command "Decreasing"
 blt::combobutton .controls.palettes \
@@ -152,13 +141,12 @@ blt::table .controls \
     4,0 .controls.symbols -anchor w -cspan 2 \
     5,0 .controls.values -anchor w -cspan 2 \
     6,0 .controls.interp -anchor w -cspan 2 \
-    7,0 .controls.logscale -anchor w -cspan 2 \
-    8,0 .controls.decreasing -anchor w -cspan 2 \
-    9,0 .controls.palettesl -anchor w  \
-    9,1 .controls.palettes -fill x
+    7,0 .controls.decreasing -anchor w -cspan 2 \
+    8,0 .controls.palettesl -anchor w  \
+    8,1 .controls.palettes -fill x
 
 blt::table configure .controls r* c1 -resize none
-blt::table configure .controls r10 -resize both
+blt::table configure .controls r9 -resize both
 
 blt::table . \
     0,0 .g -fill both \

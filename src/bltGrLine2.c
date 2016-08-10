@@ -3291,17 +3291,17 @@ ExtentsProc(Element *basePtr)
         }
     }
 #endif
-    if (elemPtr->axes.x->valueRange.min > exts.left) {
-        elemPtr->axes.x->valueRange.min = exts.left;
+    if (elemPtr->axes.x->dataRange.min > exts.left) {
+        elemPtr->axes.x->dataRange.min = exts.left;
     }
-    if (elemPtr->axes.x->valueRange.max < exts.right) {
-        elemPtr->axes.x->valueRange.max = exts.right;
+    if (elemPtr->axes.x->dataRange.max < exts.right) {
+        elemPtr->axes.x->dataRange.max = exts.right;
     }
-    if (elemPtr->axes.y->valueRange.min > exts.top) {
-        elemPtr->axes.y->valueRange.min = exts.top;
+    if (elemPtr->axes.y->dataRange.min > exts.top) {
+        elemPtr->axes.y->dataRange.min = exts.top;
     }
-    if (elemPtr->axes.y->valueRange.max < exts.bottom) {
-        elemPtr->axes.y->valueRange.max = exts.bottom;
+    if (elemPtr->axes.y->dataRange.max < exts.bottom) {
+        elemPtr->axes.y->dataRange.max = exts.bottom;
     }
 }
 
@@ -4173,7 +4173,7 @@ GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
     } else {
         return TCL_ERROR;
     }
-    rangePtr = &elemPtr->zAxisPtr->valueRange;
+    rangePtr = &elemPtr->zAxisPtr->dataRange;
     *valuePtr = (value - rangePtr->min) / rangePtr->range;
     return TCL_OK;
 }

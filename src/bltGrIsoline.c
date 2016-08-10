@@ -505,7 +505,7 @@ NewIsoline(Tcl_Interp *interp, Graph *graphPtr, const char *name)
     Blt_GraphSetObjectClass(&isoPtr->obj, CID_ISOLINE);
     isoPtr->obj.graphPtr = graphPtr;
     isoPtr->obj.name = Blt_GetHashKey(&graphPtr->isolines.nameTable, hPtr);
-    isoPtr->value = Blt_NaN();
+    isoPtr->relValue = Blt_NaN();
     isoPtr->reqMin = isoPtr->reqMax = Blt_NaN();
     Blt_SetHashValue(hPtr, isoPtr);
     isoPtr->hashPtr = hPtr;
@@ -644,14 +644,14 @@ NearestPoint(Graph *graphPtr, NearestElement *nearestPtr)
                 nearestPtr->index = i;
                 nearestPtr->distance = d1;
                 nearestPtr->item = isoPtr;
-                nearestPtr->value = isoPtr->value;
+                nearestPtr->value = isoPtr->relValue;
                 nearestPtr->point = Blt_InvMap2D(graphPtr, s->x1, s->y1,
                                                  &elemPtr->axes);
             } else if (d2 < nearestPtr->distance) {
                 nearestPtr->index = i;
                 nearestPtr->distance = d2;
                 nearestPtr->item = isoPtr;
-                nearestPtr->value = isoPtr->value;
+                nearestPtr->value = isoPtr->relValue;
                 nearestPtr->point = Blt_InvMap2D(graphPtr, s->x2, s->y2,
                                                  &elemPtr->axes);
             }
@@ -696,7 +696,7 @@ NearestSegment(Graph *graphPtr, NearestElement *nearestPtr)
                 nearestPtr->index = i;
                 nearestPtr->distance = d;
                 nearestPtr->item = isoPtr;
-                nearestPtr->value = isoPtr->value;
+                nearestPtr->value = isoPtr->relValue;
                 nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,
                         &elemPtr->axes);
             }
@@ -1826,3 +1826,96 @@ Blt_NearestIsoline(Graph *graphPtr, int x, int y)
     isoPtr = nearest.item;
     return isoPtr;
 }
+
+#ifdef notdef
+/* 
+ * For labeling:  
+ *      Create polylines from list of isoline segments.  
+ *      Simplify each polyline to produce the longest segment.  
+ *      Place rotated labels above/below left/right from the center of
+ *      the longest segment.
+ */
+static void
+StitchSegments(Isoline *isoPtr)
+{
+    long count;
+    long i;
+    Blt_HashTable pointTable;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    IsolineSegment *s;
+    
+    Blt_InitHashTable(&pointTable, sizeof(PointKey) / sizeof(int));
+    for (i = 0, s = isoPtr->segments; s != NULL; s = s->next, i++) {
+        PointKey key;
+        int isNew;
+        
+        if (s->x1 == s->x2 && s->y1 == s->y2) {
+            continue;
+        }
+        MakePointKey(&key, s->x1, s->y1);
+        hPtr = Blt_CreateHashEntry(&pointTable, &key, &isNew);
+#ifdef notdef
+        fprintf(stderr, "segment %ld px=%.15g py=%.15g qx=%.15g qy=%.15g\n",
+                i, s->x1, s->y1, s->x2, s->y2);
+#endif
+        if (isNew) {
+            count = 1;
+        } else {
+            count = Blt_GetHashValue(hPtr);
+            count++;
+        }
+        Blt_SetHashValue(hPtr, count);
+        key.x = s->x2;
+        key.y = s->y2;
+        hPtr = Blt_CreateHashEntry(&pointTable, &key, &isNew);
+        if (isNew) {
+            count = 1;
+        } else {
+            count = Blt_GetHashValue(hPtr);
+            count++;
+        }
+        Blt_SetHashValue(hPtr, count);
+    }
+    i = 0;
+    for (hPtr = Blt_FirstHashEntry(&pointTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        PointKey *keyPtr;
+        keyPtr = Blt_GetHashKey(&pointTable, hPtr);
+        count = Blt_GetHashValue(hPtr);
+#ifdef notdef
+        if (count == 1) {
+            fprintf(stderr, "point %ld x=%.15g y=%.15g count=%ld\n",
+                i, keyPtr->x, keyPtr->y, count);
+        }
+#endif
+        i++;
+    }
+    Blt_DeleteHashTable(&pointTable);
+}
+
+typedef struct {
+    Blt_Pool pool;                      /* Pool of points. */
+    Blt_HashTable edgeTable;            /* Hashtable of edges */
+    int numPoints;
+} Stitches;
+
+static Stitch *
+NewStitch(Stitches *stitchesPtr, Point2d *p)
+{
+    stitchPtr = Blt_Pool_AllocItem(stitchesPtr->pool, sizeof(Stitch));
+    stitchPtr->x = p.x;
+    stitchPtr->y = p.y;
+    stitchPtr->next = stitchPtr->last = NULL;
+    stitchesPtr->numPoints++;
+    return stitchPtr;
+}
+
+static void
+FreeStitch(Stitches *stitchesPtr, pool, Stitch *s)
+{
+    Blt_Pool_FreeItem(stitchesPtr->pool, s);
+    stitchesPtr->numPoints--;
+}
+
+#endif

@@ -261,7 +261,7 @@ struct _Axis {
                                          * values override the
                                          * data-range. */
 
-    AxisRange valueRange;               /* Range of data values of elements
+    AxisRange dataRange;               /* Range of data values of elements
                                          * mapped to this axis. This is
                                          * used to auto-scale the axis in
                                          * "tight" mode. */
@@ -271,6 +271,7 @@ struct _Axis {
                                          * data values.  This is used to
                                          * auto-scale the axis in "loose"
                                          * mode. */
+    double tickMin, tickMax;            /* Tick range in linear scale. */
     double prevMin, prevMax;
     double reqStep;                     /* If > 0.0, overrides the computed
                                          * major tick interval.  Otherwise

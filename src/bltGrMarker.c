@@ -4600,7 +4600,7 @@ GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
      */
     graphPtr = elemPtr->obj.graphPtr;
     point = Blt_InvMap2D(graphPtr, x, y, &elemPtr->axes);
-    rangePtr = &elemPtr->zAxisPtr->valueRange;
+    rangePtr = &elemPtr->zAxisPtr->dataRange;
     if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_Y) {
         value = point.y;
     } else if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_X) {
@@ -5089,7 +5089,7 @@ GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
      */
     graphPtr = elemPtr->obj.graphPtr;
     point = Blt_InvMap2D(graphPtr, x, y, &elemPtr->axes);
-    rangePtr = &elemPtr->zAxisPtr->valueRange;
+    rangePtr = &elemPtr->zAxisPtr->dataRange;
     if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_Y) {
         value = point.y;
     } else if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_X) {
