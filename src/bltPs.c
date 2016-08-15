@@ -645,7 +645,7 @@ Blt_Ps_XSetBitmapData(Blt_Ps ps, Display *display, Pixmap bitmap, int w, int h)
     int y, bitPos;
 
     imagePtr = XGetImage(display, bitmap, 0, 0, w, h, 1, ZPixmap);
-    Blt_Ps_Append(ps, "\t<");
+    Blt_Ps_Append(ps, "       <");
     byteCount = bitPos = 0;     /* Suppress compiler warning */
     for (y = 0; y < h; y++) {
         unsigned char byte;
@@ -677,9 +677,15 @@ Blt_Ps_XSetBitmapData(Blt_Ps ps, Display *display, Pixmap bitmap, int w, int h)
         if (bitPos != 7) {
             byte = ReverseBits(byte);
             ByteToHex(byte, string);
-            string[2] = '\0';
-            Blt_Ps_Append(ps, string);
             byteCount++;
+            string[2] = '\0';
+            if (byteCount >= 30) {
+                string[2] = '\n';
+                string[3] = '\t';
+                string[4] = '\0';
+                byteCount = 0;
+            }
+            Blt_Ps_Append(ps, string);
         }
     }                           /* y */
     Blt_Ps_Append(ps, ">\n");

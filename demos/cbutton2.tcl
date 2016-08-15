@@ -24,7 +24,6 @@ blt::combobutton .b \
     -iconvariable myIcon1 \
     -arrowon yes \
     -menu .b.m \
-    -menuanchor se \
     -command "puts {button pressed}"
 
 blt::combomenu .b.m  \

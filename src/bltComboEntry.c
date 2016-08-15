@@ -3327,7 +3327,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv
             if (x1 < 0) {
                 x1 = comboPtr->inset;
             }
-            x1 += rootX;
+            x1 = rootX;
             x2 = Tk_Width(comboPtr->tkwin) + rootX;
             y1 = comboPtr->inset + 1 + rootY;
             y2 = Tk_Height(comboPtr->tkwin) + rootY;

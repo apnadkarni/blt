@@ -333,10 +333,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Axis, normalBg),
         ALL_GRAPHS | BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, ALL_GRAPHS},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0,
+        ALL_GRAPHS},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags", (char *)NULL, (char *)NULL, 0,
+        ALL_GRAPHS},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,
+        ALL_GRAPHS},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(Axis, borderWidth),
         ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
@@ -457,7 +459,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_INT, "-subdivisions", "subdivisions", "Subdivisions",
         DEF_SUBDIVISIONS, Blt_Offset(Axis, reqNumMinorTicks), ALL_GRAPHS},
     {BLT_CONFIG_CUSTOM, "-tags", "tags", "Tags", DEF_TAGS, 0,
-        BLT_CONFIG_NULL_OK, &tagsOption},
+        BLT_CONFIG_NULL_OK | ALL_GRAPHS, &tagsOption},
     {BLT_CONFIG_ANCHOR, "-tickanchor", "tickAnchor", "Anchor",
         DEF_TICK_ANCHOR, Blt_Offset(Axis, reqTickAnchor), ALL_GRAPHS},
     {BLT_CONFIG_CUSTOM, "-tickdirection", "tickDirection", "TickDirection",
@@ -2357,9 +2359,6 @@ LogAxis(Axis *axisPtr, double min, double max)
         axisPtr->tickMin = EXP10(tickMin) + min - 1.0;
         axisPtr->tickMax = EXP10(tickMax) + min - 1.0;
     }
-    fprintf(stderr, "LogAxis: min=%g, max=%g, tickMin=%g tickMax=%g ltmin=%g ltmax=%g\n",
-            min, max, axisPtr->tickMin, axisPtr->tickMax, tickMin, tickMax);
-    /* FIXME */
 }
 
 /*

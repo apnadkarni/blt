@@ -186,6 +186,7 @@ static const char emptyString[] = "";
 #define DEF_TAKE_FOCUS                  "1"
 #define DEF_TEXT_VARIABLE               ((char *)NULL)
 #define DEF_UNPOSTCOMMAND               ((char *)NULL)
+#define DEF_VALUE_VARIABLE               ((char *)NULL)
 #define DEF_WIDTH                       "0"
 
 #define DEF_CHECKBUTTON_FILL_COLOR      (char *)NULL
@@ -543,7 +544,7 @@ static Blt_ConfigSpec itemConfigSpecs[] =
         DEF_ITEM_UNDERLINE, Blt_Offset(Item, underline), 
         BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_OBJ, "-value", (char *)NULL, (char *)NULL, DEF_ITEM_VALUE, 
-         Blt_Offset(Item, valueObjPtr), BLT_CONFIG_NULL_OK},
+         Blt_Offset(Item, valueObjPtr), 0},
     {BLT_CONFIG_CUSTOM, "-variable", (char *)NULL, (char *)NULL, 
         DEF_ITEM_VARIABLE, Blt_Offset(Item, variableObjPtr), BLT_CONFIG_NULL_OK,
         &traceVarOption},
@@ -605,6 +606,10 @@ struct _ComboMenu {
                                          * non-NULL, this variable will be
                                          * set to the text string of the
                                          * text of the selected item. */
+    Tcl_Obj *valueVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable will be
+                                         * set to the value of the selected
+                                         * item. */
     Tcl_Obj *takeFocusObjPtr;           /* Value of -takefocus option; not
                                          * used in the C code, but used by
                                          * keyboard * traversal scripts. */
@@ -764,6 +769,9 @@ static Blt_ConfigSpec comboConfigSpecs[] =
         &restrictOption},
     {BLT_CONFIG_OBJ, "-textvariable", "textVariable", "TextVariable", 
         DEF_TEXT_VARIABLE, Blt_Offset(ComboMenu, textVarObjPtr), 
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-valuevariable", "valueVariable", "ValueVariable", 
+        DEF_VALUE_VARIABLE, Blt_Offset(ComboMenu, valueVarObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-xscrollbar", "xScrollbar", "Scrollbar", 
         DEF_SCROLLBAR, Blt_Offset(ComboMenu, xScrollbarObjPtr), 
@@ -1335,10 +1343,14 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr, int newState)
     if (newState == -1) {
         newState = (itemPtr->flags & ITEM_SELECTED) == 0;
     }
-    if ((comboPtr->iconVarObjPtr != NULL) && (itemPtr->icon != NULL)) {
+    if (comboPtr->iconVarObjPtr != NULL) {
         Tcl_Obj *objPtr;
         
-        objPtr = Tcl_NewStringObj(IconName(itemPtr->icon), -1);
+        if (itemPtr->icon == NULL) {
+            objPtr = Tcl_NewStringObj("", -1);
+        } else {
+            objPtr = Tcl_NewStringObj(IconName(itemPtr->icon), -1);
+        }
         if (Tcl_ObjSetVar2(interp, comboPtr->iconVarObjPtr, NULL, objPtr, 
                            TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
             return TCL_ERROR;
@@ -1349,6 +1361,18 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr, int newState)
         
         objPtr = Tcl_NewStringObj(itemPtr->text, -1);
         if (Tcl_ObjSetVar2(interp, comboPtr->textVarObjPtr, NULL, objPtr, 
+                           TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
+            return TCL_ERROR;
+        }
+    }
+    if (comboPtr->valueVarObjPtr != NULL) {
+        Tcl_Obj *objPtr;
+        
+        objPtr = itemPtr->valueObjPtr;
+        if (objPtr == NULL) {
+            objPtr = Tcl_NewStringObj(itemPtr->text, -1);
+        }
+        if (Tcl_ObjSetVar2(interp, comboPtr->valueVarObjPtr, NULL, objPtr, 
                            TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
             return TCL_ERROR;
         }
@@ -3276,6 +3300,18 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
                 return FALSE;
             }
         }
+        if (comboPtr->valueVarObjPtr != NULL) {
+            Tcl_Obj *objPtr;
+            
+            objPtr = itemPtr->valueObjPtr;
+            if (objPtr == NULL) {
+                objPtr = Tcl_NewStringObj(itemPtr->text, -1);
+            }
+            if (Tcl_ObjSetVar2(interp, comboPtr->valueVarObjPtr, NULL, objPtr, 
+                               TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
+                return FALSE;
+            }
+        }
         itemPtr->flags |= ITEM_SELECTED;
     } else if (itemPtr->flags & ITEM_SELECTED) {
         itemPtr->flags &= ~ITEM_SELECTED;
@@ -5088,9 +5124,7 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     state = FALSE;
     if (GetItemFromObj(NULL, comboPtr, objv[2], &itemPtr) == TCL_OK) {
-        if (itemPtr != NULL) {
-            state = TRUE;
-        }
+        state = (itemPtr != NULL);
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -5774,16 +5808,18 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     case POST_PARENT:
     case POST_WINDOW:
         {
-            Tk_Window tkwin;
+            Tk_Window tkwin, parent;
             int x, y, w, h;
             int rootX, rootY;
             
             tkwin = comboPtr->post.tkwin;
+            parent = Tk_Parent(tkwin);
             w = Tk_Width(tkwin);
             h = Tk_Height(tkwin);
+            
             x = Tk_X(tkwin);
             y = Tk_Y(tkwin);
-            Tk_GetRootCoords(Tk_Parent(tkwin), &rootX, &rootY);
+            Tk_GetRootCoords(parent, &rootX, &rootY);
             x += rootX;
             y += rootY;
             comboPtr->post.x1 = x;
@@ -5821,7 +5857,11 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         break;
     case ALIGN_RIGHT:
-        x = comboPtr->post.x2 - comboPtr->normalWidth;
+        if (comboPtr->post.menuWidth > comboPtr->normalWidth) {
+            x = comboPtr->post.x2 - comboPtr->post.menuWidth;
+        } else {
+            x = comboPtr->post.x2 - comboPtr->normalWidth;
+        }
         break;
     }
     FixMenuCoords(comboPtr, &x, &y);

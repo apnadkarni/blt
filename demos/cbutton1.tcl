@@ -59,7 +59,6 @@ blt::combobutton .mbar.file \
     -arrowon off \
     -bg $bg \
     -font { Arial 9 } -justify left \
-    -menuanchor sw \
     -menu .mbar.file.m
 
 
@@ -102,7 +101,6 @@ blt::combobutton .mbar.edit \
     -font { Arial 9 } -justify left \
     -underline 0 \
     -arrowon no \
-    -menuanchor nw \
     -menu .mbar.edit.m
 
 blt::combomenu .mbar.edit.m \
@@ -148,7 +146,6 @@ blt::combobutton .mbar.view \
     -font { Arial 9 } -justify left \
     -underline 0 \
     -arrowon no \
-    -menuanchor nw \
     -menu .mbar.view.m
 
 blt::combomenu .mbar.view.m \
@@ -185,7 +182,6 @@ blt::combobutton .mbar.history \
     -font { Arial 9 } -justify left \
     -underline 0 \
     -arrowon no \
-    -menuanchor nw \
     -menu .mbar.history.m
 
 blt::combomenu .mbar.history.m \
@@ -211,7 +207,6 @@ blt::combobutton .mbar.bmarks \
     -font { Arial 9 } -justify left \
     -underline 0 \
     -arrowon no \
-    -menuanchor nw \
     -menu .mbar.bmarks.m
 
 blt::combomenu .mbar.bmarks.m \
@@ -247,7 +242,6 @@ blt::combobutton .mbar.tools \
     -font { Arial 9 } -justify left \
     -underline 0 \
     -arrowon no \
-    -menuanchor nw \
     -menu .mbar.tools.m
 
 blt::combomenu .mbar.tools.m \
@@ -282,7 +276,6 @@ blt::combobutton .mbar.help \
     -font { Arial 9 } -justify left \
     -underline 0 \
     -arrowon no \
-    -menuanchor nw \
     -menu .mbar.help.m
 
 blt::combomenu .mbar.help.m \

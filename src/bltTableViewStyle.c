@@ -583,7 +583,6 @@ typedef struct {
     Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
                                          * executed when this menu is
                                          * posted. */
-    int menuAnchor;
 } ComboBoxStyle;
 
 /* 

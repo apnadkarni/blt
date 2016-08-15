@@ -32,7 +32,6 @@ blt::comboentry .e \
     -iconvariable myIcon1 \
     -textwidth 20 \
     -menu .e.m \
-    -menuanchor se \
     -exportselection yes \
     -command {puts "button pressed: [blt::grab current]"}
 

@@ -3107,3 +3107,14 @@ Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr)
     *yPtr = brushPtr->yOrigin;
 }
 
+int
+Blt_IsVerticalLinearBrush(Blt_PaintBrush brush)
+{
+    Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
+
+    if ((brushPtr->classPtr->type == BLT_PAINTBRUSH_LINEAR) && 
+        (brushPtr->flags & BLT_PAINTBRUSH_VERTICAL)) {
+        return 1;
+    }
+    return 0;
+}

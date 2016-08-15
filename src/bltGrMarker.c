@@ -313,7 +313,7 @@ typedef struct {
     int destWidth, destHeight;          /* Dimensions of the final
                                          * bitmap */
 
-    Point2d outline[MAX_OUTLINE_POINTS];/* Polygon representing the
+    Point2d outlinePts[MAX_OUTLINE_POINTS];/* Polygon representing the
                                          * background of the bitmap. */
     int numOutlinePts;
 } BitmapMarker;
@@ -688,14 +688,14 @@ typedef struct {
                                          * degenerate polygon after
                                          * clipping. */
     int numFillPts;                     /* # points in the above array. */
-    Segment2d *outlinePts;              /* Malloc'ed array of points.
+    Segment2d *outlineSegments;         /* Malloc'ed array of segments.
                                          * Represents individual line
                                          * segments (2 points per segment)
                                          * comprising the outline of the
                                          * polygon.  The segments may not
                                          * necessarily be closed or
                                          * connected after clipping. */
-    int numOutlinePts;                  /* # points in the above array. */
+    int numOutlineSegments;             /* # segments in the above array. */
     int xor;
     int xorState;                       /* State of XOR drawing. Indicates
                                          * if the marker is visible. We
@@ -975,7 +975,7 @@ typedef struct {
     int width, height;                  /* Dimension of bounding box. */
     TextStyle style;                    /* Text attributes (font, fg, anchor,
                                          * etc) */
-    Point2d outline[5];
+    Point2d outlinePts[5];
     XColor *fillColor;
     GC fillGC;
 } TextMarker;
@@ -2653,10 +2653,10 @@ BitmapMapProc(Marker *markerPtr)
             polygon[i].y = (polygon[i].y * yScale) + ty;
         }
         GraphExtents(markerPtr, &extents);
-        n = Blt_PolyRectClip(&extents, polygon, 4, bmPtr->outline); 
+        n = Blt_PolyRectClip(&extents, polygon, 4, bmPtr->outlinePts); 
         assert(n <= MAX_OUTLINE_POINTS);
         if (n < 3) { 
-            memcpy(&bmPtr->outline, polygon, sizeof(Point2d) * 4);
+            memcpy(&bmPtr->outlinePts, polygon, sizeof(Point2d) * 4);
             bmPtr->numOutlinePts = 4;
         } else {
             bmPtr->numOutlinePts = n;
@@ -2694,8 +2694,8 @@ BitmapPointProc(Marker *markerPtr, Point2d *samplePtr)
          * see if the point is inside of it.
          */
         for (i = 0; i < bmPtr->numOutlinePts; i++) {
-            points[i].x = bmPtr->outline[i].x + bmPtr->anchorPt.x;
-            points[i].y = bmPtr->outline[i].y + bmPtr->anchorPt.y;
+            points[i].x = bmPtr->outlinePts[i].x + bmPtr->anchorPt.x;
+            points[i].y = bmPtr->outlinePts[i].y + bmPtr->anchorPt.y;
         }
         return Blt_PointInPolygon(samplePtr, points, bmPtr->numOutlinePts);
     }
@@ -2730,8 +2730,8 @@ BitmapAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
          * see if the point is inside of it.
          */
         for (i = 0; i < bmPtr->numOutlinePts; i++) {
-            points[i].x = bmPtr->outline[i].x + bmPtr->anchorPt.x;
-            points[i].y = bmPtr->outline[i].y + bmPtr->anchorPt.y;
+            points[i].x = bmPtr->outlinePts[i].x + bmPtr->anchorPt.x;
+            points[i].y = bmPtr->outlinePts[i].y + bmPtr->anchorPt.y;
         }
         return Blt_RegionInPolygon(extsPtr, points, bmPtr->numOutlinePts, 
                    enclosed);
@@ -2788,8 +2788,8 @@ BitmapDrawProc(Marker *markerPtr, Drawable drawable)
             XPoint polygon[MAX_OUTLINE_POINTS];
 
             for (i = 0; i < bmPtr->numOutlinePts; i++) {
-                polygon[i].x = (short int)bmPtr->outline[i].x;
-                polygon[i].y = (short int)bmPtr->outline[i].y;
+                polygon[i].x = (short int)bmPtr->outlinePts[i].x;
+                polygon[i].y = (short int)bmPtr->outlinePts[i].y;
             }
             XFillPolygon(graphPtr->display, drawable, bmPtr->fillGC,
                  polygon, bmPtr->numOutlinePts, Convex, CoordModeOrigin);
@@ -2831,21 +2831,20 @@ BitmapPostscriptProc(Marker *markerPtr, Blt_Ps ps)
     }
     if (bmPtr->fillColor != NULL) {
         Blt_Ps_XSetBackground(ps, bmPtr->fillColor);
-        Blt_Ps_XFillPolygon(ps, 4, bmPtr->outline);
+        Blt_Ps_XFillPolygon(ps, bmPtr->numOutlinePts, bmPtr->outlinePts);
     }
     Blt_Ps_XSetForeground(ps, bmPtr->outlineColor);
 
-    Blt_Ps_Format(ps,
-        "  gsave\n    %g %g translate\n    %d %d scale\n", 
+    Blt_Ps_Format(ps, "gsave\n  %g %g translate\n  %d %d scale\n", 
            bmPtr->anchorPt.x, bmPtr->anchorPt.y + bmPtr->destHeight, 
            bmPtr->destWidth, -bmPtr->destHeight);
-    Blt_Ps_Format(ps, "    %d %d true [%d 0 0 %d 0 %d] {",
+    Blt_Ps_Format(ps, "  %d %d true [%d 0 0 %d 0 %d] {\n",
         bmPtr->destWidth, bmPtr->destHeight, bmPtr->destWidth, 
         -bmPtr->destHeight, bmPtr->destHeight);
     Blt_Ps_XSetBitmapData(ps, graphPtr->display, bitmap,
         bmPtr->destWidth, bmPtr->destHeight);
     Blt_Ps_VarAppend(ps, 
-                     "    } imagemask\n",
+                     "  } imagemask\n",
                      "grestore\n", (char *)NULL);
 }
 
@@ -3344,15 +3343,15 @@ TextMapProc(Marker *markerPtr)
         return;
     }
     Blt_Ts_GetExtents(&tmPtr->style, tmPtr->string, &w, &h);
-    Blt_GetBoundingBox(w, h, tmPtr->style.angle, &rw, &rh, tmPtr->outline);
+    Blt_GetBoundingBox(w, h, tmPtr->style.angle, &rw, &rh, tmPtr->outlinePts);
     tmPtr->width = ROUND(rw);
     tmPtr->height = ROUND(rh);
     for (i = 0; i < 4; i++) {
-        tmPtr->outline[i].x += ROUND(rw * 0.5);
-        tmPtr->outline[i].y += ROUND(rh * 0.5);
+        tmPtr->outlinePts[i].x += ROUND(rw * 0.5);
+        tmPtr->outlinePts[i].y += ROUND(rh * 0.5);
     }
-    tmPtr->outline[4].x = tmPtr->outline[0].x;
-    tmPtr->outline[4].y = tmPtr->outline[0].y;
+    tmPtr->outlinePts[4].x = tmPtr->outlinePts[0].x;
+    tmPtr->outlinePts[4].y = tmPtr->outlinePts[0].y;
     anchorPt = MapPoint(markerPtr->worldPts, &markerPtr->axes);
     anchorPt = Blt_AnchorPoint(anchorPt.x, anchorPt.y, (double)(tmPtr->width), 
         (double)(tmPtr->height), tmPtr->anchor);
@@ -3388,8 +3387,8 @@ TextPointProc(Marker *markerPtr, Point2d *samplePtr)
          * see if the point is inside of it.
          */
         for (i = 0; i < 5; i++) {
-            points[i].x = tmPtr->outline[i].x + tmPtr->anchorPt.x;
-            points[i].y = tmPtr->outline[i].y + tmPtr->anchorPt.y;
+            points[i].x = tmPtr->outlinePts[i].x + tmPtr->anchorPt.x;
+            points[i].y = tmPtr->outlinePts[i].y + tmPtr->anchorPt.y;
         }
         return Blt_PointInPolygon(samplePtr, points, 5);
     } 
@@ -3423,8 +3422,8 @@ TextAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
          * see if the point is inside of it.
          */
         for (i = 0; i < 4; i++) {
-            points[i].x = tmPtr->outline[i].x + tmPtr->anchorPt.x;
-            points[i].y = tmPtr->outline[i].y + tmPtr->anchorPt.y;
+            points[i].x = tmPtr->outlinePts[i].x + tmPtr->anchorPt.x;
+            points[i].y = tmPtr->outlinePts[i].y + tmPtr->anchorPt.y;
         }
         return Blt_RegionInPolygon(extsPtr, points, 4, enclosed);
     } 
@@ -3473,8 +3472,10 @@ TextDrawProc(Marker *markerPtr, Drawable drawable)
          * bounding polygon with the background color.
          */
         for (i = 0; i < 4; i++) {
-            points[i].x = (short int)(tmPtr->outline[i].x + tmPtr->anchorPt.x);
-            points[i].y = (short int)(tmPtr->outline[i].y + tmPtr->anchorPt.y);
+            points[i].x = (short int)(tmPtr->outlinePts[i].x +
+                                      tmPtr->anchorPt.x);
+            points[i].y = (short int)(tmPtr->outlinePts[i].y +
+                                      tmPtr->anchorPt.y);
         }
         XFillPolygon(graphPtr->display, drawable, tmPtr->fillGC, points, 4,
             Convex, CoordModeOrigin);
@@ -3518,8 +3519,8 @@ TextPostscriptProc(Marker *markerPtr, Blt_Ps ps)
          * bounding polygon with the background color.
          */
         for (i = 0; i < 4; i++) {
-            points[i].x = tmPtr->outline[i].x + tmPtr->anchorPt.x;
-            points[i].y = tmPtr->outline[i].y + tmPtr->anchorPt.y;
+            points[i].x = tmPtr->outlinePts[i].x + tmPtr->anchorPt.x;
+            points[i].y = tmPtr->outlinePts[i].y + tmPtr->anchorPt.y;
         }
         Blt_Ps_XSetBackground(ps, tmPtr->fillColor);
         Blt_Ps_XFillPolygon(ps, 4, points);
@@ -4320,8 +4321,8 @@ PolygonFreeProc(Marker *markerPtr)
     if (pmPtr->fillPts != NULL) {
         Blt_Free(pmPtr->fillPts);
     }
-    if (pmPtr->outlinePts != NULL) {
-        Blt_Free(pmPtr->outlinePts);
+    if (pmPtr->outlineSegments != NULL) {
+        Blt_Free(pmPtr->outlineSegments);
     }
     if (pmPtr->screenPts != NULL) {
         Blt_Free(pmPtr->screenPts);
@@ -4493,10 +4494,10 @@ PolygonMapProc(Marker *markerPtr)
     Region2d extents;
     int numScreenPts;
 
-    if (pmPtr->outlinePts != NULL) {
-        Blt_Free(pmPtr->outlinePts);
-        pmPtr->outlinePts = NULL;
-        pmPtr->numOutlinePts = 0;
+    if (pmPtr->outlineSegments != NULL) {
+        Blt_Free(pmPtr->outlineSegments);
+        pmPtr->outlineSegments = NULL;
+        pmPtr->numOutlineSegments = 0;
     }
     if (pmPtr->fillPts != NULL) {
         Blt_Free(pmPtr->fillPts);
@@ -4548,7 +4549,7 @@ PolygonMapProc(Marker *markerPtr)
         }
     }
     if ((pmPtr->outline.fgColor != NULL) && (pmPtr->lineWidth > 0)) { 
-        Segment2d *outlinePts;
+        Segment2d *outlineSegments;
         Segment2d *segPtr;
         Point2d *sp, *send;
 
@@ -4557,15 +4558,15 @@ PolygonMapProc(Marker *markerPtr)
          * resulting outline may or may not be closed due to viewport
          * clipping.
          */
-        outlinePts = Blt_Malloc(numScreenPts * sizeof(Segment2d));
-        if (outlinePts == NULL) {
+        outlineSegments = Blt_Malloc(numScreenPts * sizeof(Segment2d));
+        if (outlineSegments == NULL) {
             return;                     /* Can't allocate point array */
         }
         /* 
          * Note that this assumes that the point array contains an extra
          * point that closes the polygon.
          */
-        segPtr = outlinePts;
+        segPtr = outlineSegments;
         for (sp = screenPts, send = sp + (numScreenPts - 1); sp < send; sp++) {
             segPtr->p = sp[0];
             segPtr->q = sp[1];
@@ -4573,9 +4574,9 @@ PolygonMapProc(Marker *markerPtr)
                 segPtr++;
             }
         }
-        pmPtr->numOutlinePts = segPtr - outlinePts;
-        pmPtr->outlinePts = outlinePts;
-        if (pmPtr->numOutlinePts > 0) {
+        pmPtr->numOutlineSegments = segPtr - outlineSegments;
+        pmPtr->outlineSegments = outlineSegments;
+        if (pmPtr->numOutlineSegments > 0) {
             markerPtr->offScreen = FALSE;
         }
     }
@@ -4695,10 +4696,10 @@ PolygonDrawProc(Marker *markerPtr, Drawable drawable)
         Blt_Free(points);
     }
     /* and then the outline */
-    if ((pmPtr->numOutlinePts > 0) && (pmPtr->lineWidth > 0) && 
+    if ((pmPtr->numOutlineSegments > 0) && (pmPtr->lineWidth > 0) && 
         (pmPtr->outline.fgColor != NULL)) {
         Blt_DrawSegments2d(graphPtr->display, drawable, pmPtr->outlineGC,
-            pmPtr->outlinePts, pmPtr->numOutlinePts);
+            pmPtr->outlineSegments, pmPtr->numOutlineSegments);
     }
 }
 
@@ -4761,7 +4762,8 @@ PolygonPostscriptProc(Marker *markerPtr, Blt_Ps ps)
         } else {
             Blt_Ps_Append(ps, "/DashesProc {} def\n");
         }
-        Blt_Ps_DrawSegments2d(ps, pmPtr->numOutlinePts, pmPtr->outlinePts);
+        Blt_Ps_DrawSegments2d(ps, pmPtr->numOutlineSegments,
+                              pmPtr->outlineSegments);
     }
 }
 
@@ -5438,19 +5440,19 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Marker *markerPtr;
     MarkerIterator iter;
 
-    if (objc == 3) {
+    if (objc == 4) {
         if (GetMarkerFromObj(interp, graphPtr, objv[3], &markerPtr) != TCL_OK) {
             return TCL_ERROR;
         }
         return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin,
             markerPtr->classPtr->configSpecs, (char *)markerPtr,
             (Tcl_Obj *)NULL, 0);
-    } else if (objc == 4) {
+    } else if (objc == 5) {
         if (GetMarkerFromObj(interp, graphPtr, objv[3], &markerPtr) != TCL_OK) {
             return TCL_ERROR;
         }
         return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin,
-            markerPtr->classPtr->configSpecs, (char *)markerPtr, objv[3], 0);
+            markerPtr->classPtr->configSpecs, (char *)markerPtr, objv[4], 0);
     }
             
     if (GetMarkerIterator(interp, graphPtr, objv[3], &iter) != TCL_OK) {

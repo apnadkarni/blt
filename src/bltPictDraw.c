@@ -1451,11 +1451,23 @@ BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
         tmp = x1, x1 = x2, x2 = tmp;
     }
     dp = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
-    for (x = x1; x <= x2; x++, dp++) {
+    /* Cheat for vertical linear brushes. */
+    /* If linear and vertical get color once and set across */
+    if (Blt_IsVerticalLinearBrush(brush)) {
         Blt_Pixel color;
 
-        color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-        BlendPixels(dp, &color);
+        fprintf(stderr, "is vertical linear brush\n");
+        color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
+        for (x = x1; x <= x2; x++, dp++) {
+            BlendPixels(dp, &color);
+        }
+    } else {
+        for (x = x1; x <= x2; x++, dp++) {
+            Blt_Pixel color;
+            
+            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+            BlendPixels(dp, &color);
+        }
     }
 }
 

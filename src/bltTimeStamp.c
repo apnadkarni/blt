@@ -1421,7 +1421,7 @@ ExtractDateTimeSeparator(TimeStampParser *parserPtr)
  *      Convert 3, 4, and 8 digit number token IDs to more specific IDs.
  *      This is done for pattern matching. 
  *
- *      3 digit number          oridinal day of year (ddd)
+ *      3 digit number          ordinal day of year (ddd)
  *      4 digit number          year (yyyy)
  *      7 digit number          year (yyyyddd)
  *      8 digit number          ISO date format (yyyymmdd)
@@ -1755,7 +1755,6 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
         case _YEAR:                    /* 0000-9999 or 00-99 */
             parserPtr->date.year = tokenPtr->lvalue;
             if (tokenPtr->length == 2) {
-
                 parserPtr->date.year += 1900;
             }
             break;
@@ -1849,7 +1848,7 @@ NumberDaysFromStartOfYear(int year, int month, int mday)
  * NumberDaysFromEpoch --
  *
  *      Computes the number of days from the epoch (0 secs) to the given
- *      year.  Note that returned value may be negative if the give year
+ *      year.  Note that returned value may be negative if the given year
  *      occurs before the epoch.
  *
  * Returns:
@@ -2539,18 +2538,18 @@ ComputeTime(Tcl_Interp *interp, TimeStampParser *parserPtr, double *secondsPtr)
  * ParseTimeStamp --
  *
  *      Parses the date/time string into the number of seconds since the
- *      epoch.  The date string can be in one many formats accepted.
+ *      epoch.  The date string can be in one of many formats accepted.
  *
  *      We're trying to parse somewhat standard timestamps, not validate
- *      any timestamp.  This is an easier requirement.  Our purpose here is
+ *      arbitrary timestamp.  This is an easier requirement.  Our purpose here is
  *      to parse known formats quickly. For example this might be used to
  *      process measurement data where there may be hundreds of thousands
- *      of timestamps.  If there are invalid patterns that are also
- *      accepted, that's OK.  We won't see them.
+ *      of timestamps.  If there exist invalid patterns that are also
+ *      accepted, that's OK.  We won't see them in normal use.
  *
- *      The idea here is to remove the unambiguous parts first an then
+ *      The idea here is to remove the unambiguous parts first and then
  *      attack the harder patterns.  We can remove the time separator, DST,
- *      timezone, tnime, tokens without much problem.  This leaves a smaller
+ *      timezone, time, tokens without much problem.  This leaves a smaller
  *      number of accepted date patterns to match.
  *
  * Returns:
@@ -2716,9 +2715,9 @@ TimeStampCmd(
  *
  * Blt_DateToSeconds --
  *
- *      Converts a Blt_DateTime structure into the number of second since
+ *      Converts a Blt_DateTime structure into the number of seconds since
  *      the epoch.  The date can contain fractional seconds.  The date
- *      fields year, mon, and mday are used to compute the time, while
+ *      fields year, mon, and mday are used to compute the time while
  *      week, wday, and yday and ignored.  You must have previously
  *      converted the them to year, mon, and mday.
  *

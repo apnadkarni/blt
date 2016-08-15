@@ -593,17 +593,16 @@ typedef struct {
 
     Blt_Font font;
 
-    XColor *textColor;
-    Blt_Bg bg;                          /* Normal background. */
-
+    XColor *activeFg;                   /* Active foreground. */
+    XColor *textColor;                  /* Normal text foreground. */
     XColor *selColor;                   /* Selected foreground. */
+    Blt_Bg activeBg;                    /* Active background. */
+    Blt_Bg bg;                          /* Normal background. */
     Blt_Bg selBg;                       /* Selected background. */
 
-    Blt_Bg activeBg;                    /* Active background. */
-    XColor *activeFg;                   /* Active foreground. */
+    GC activeGC;
 
     Blt_Dashes dashes;
-    GC activeGC;
     int relief;
     Tcl_Obj *cmdObjPtr;                 /* Command invoked when the tab is
                                          * selected */
@@ -3631,7 +3630,8 @@ ConfigureTabset(
     unsigned long gcMask;
     GC newGC;
     int slantLeft, slantRight;
-
+    TabStyle *stylePtr;
+    
     iconOption.clientData = setPtr;
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, configSpecs, 
            objc, objv, (char *)setPtr, flags) != TCL_OK) {
@@ -3661,25 +3661,23 @@ ConfigureTabset(
     if (setPtr->bg != NULL) {
         Blt_Bg_SetChangedProc(setPtr->bg, BackgroundChangedProc, setPtr);
     }
+    stylePtr = &setPtr->defStyle;
     /*
      * GC for active line.
      */
-    gcMask = GCForeground | GCLineWidth | GCLineStyle | GCCapStyle;
-    gcValues.foreground = setPtr->defStyle.textColor->pixel;
-    gcValues.line_width = 0;
-    gcValues.cap_style = CapProjecting;
-    gcValues.line_style = (LineIsDashed(setPtr->defStyle.dashes))
+    gcMask = GCForeground | GCLineStyle;
+    gcValues.foreground = setPtr->highlightColor->pixel;
+    gcValues.line_style = (LineIsDashed(stylePtr->dashes))
         ? LineOnOffDash : LineSolid;
-
     newGC = Blt_GetPrivateGC(setPtr->tkwin, gcMask, &gcValues);
-    if (LineIsDashed(setPtr->defStyle.dashes)) {
-        setPtr->defStyle.dashes.offset = 2;
-        Blt_SetDashes(setPtr->display, newGC, &setPtr->defStyle.dashes);
+    if (LineIsDashed(stylePtr->dashes)) {
+        stylePtr->dashes.offset = 2;
+        Blt_SetDashes(setPtr->display, newGC, &stylePtr->dashes);
     }
-    if (setPtr->defStyle.activeGC != NULL) {
-        Blt_FreePrivateGC(setPtr->display, setPtr->defStyle.activeGC);
+    if (stylePtr->activeGC != NULL) {
+        Blt_FreePrivateGC(setPtr->display, stylePtr->activeGC);
     }
-    setPtr->defStyle.activeGC = newGC;
+    stylePtr->activeGC = newGC;
 
     setPtr->angle = FMOD(setPtr->angle, 360.0);
     if (setPtr->angle < 0.0) {
@@ -3692,7 +3690,6 @@ ConfigureTabset(
         setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth + 
             setPtr->outerPad;
     }
-#ifndef notdef
     if (Blt_ConfigModified(configSpecs, "-font", "-*foreground", "-rotate",
                 "-*background", "-side", "-iconposition", "-tiers", "-tabwidth",
                 (char *)NULL)) {
@@ -3704,7 +3701,6 @@ ConfigureTabset(
         }
         setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING | REDRAW_ALL);
     }
-#endif
     /* Swap slant flags if side is left. */
     slantLeft = slantRight = FALSE;
     if (setPtr->reqSlant & SLANT_LEFT) {
@@ -3726,7 +3722,7 @@ ConfigureTabset(
     if (setPtr->flags & NO_TABS) {
         setPtr->inset2 = 0;
     } else {
-        setPtr->inset2 = setPtr->defStyle.borderWidth + setPtr->corner;
+        setPtr->inset2 = stylePtr->borderWidth + setPtr->corner;
     }
     EventuallyRedraw(setPtr);
     return TCL_OK;
@@ -7764,7 +7760,6 @@ static void
 DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 {
     int x, y;
-    int maxLength;
     Blt_Bg bg;
     TabStyle *stylePtr;
     int xSelPad, ySelPad;
@@ -7916,7 +7911,8 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr) && 
         (rPtr->w > 0) && (rPtr->h > 0)) {
         XColor *fg;
-
+        int w, h;
+        
         if (tabPtr == setPtr->selectPtr) {
             fg = GETATTR(tabPtr, selColor);
         } else if (tabPtr == setPtr->activePtr) {
@@ -7925,13 +7921,18 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
             fg = GETATTR(tabPtr, textColor);
         }
         XSetForeground(setPtr->display, stylePtr->activeGC, fg->pixel);
-        maxLength = rPtr->w + xSelPad;
+        w = rPtr->w + xSelPad;
+        w &= ~0x1;                      /* Width has to be odd for the dots
+                                         * in the focus rectangle to
+                                         * align. */
+        h = rPtr->h;
+        h |= 0x1;
         if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
             XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
-                x + rPtr->x - 1, y + rPtr->y, maxLength+1, rPtr->h+1);
+                x + rPtr->x + 1, y + rPtr->y + 1, w, h);
         } else {
             XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
-                x + rPtr->x, y + rPtr->y - 1, maxLength-1, rPtr->h + 1);
+                x + rPtr->x, y + rPtr->y - 1, w, h);
         }
     }
 }

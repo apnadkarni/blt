@@ -419,43 +419,6 @@ struct _ContourElement {
                                          * drawn, only symbols. */
 };
 
-/*
- * IsolineIterator --
- *
- *      Tabs may be tagged with strings.  A tab may have many tags.  The
- *      same tag may be used for many tabs.
- *      
- */
-typedef enum { 
-    ITER_SINGLE, ITER_ALL, ITER_TAG, 
-} IteratorType;
-
-typedef struct _IsolineIterator {
-    ContourElement *elemPtr;           /* Element that we're iterating over. */
-
-    IteratorType type;                  /* Type of iteration:
-                                         * ITER_TAG      By item tag.
-                                         * ITER_ALL      By every item.
-                                         * ITER_SINGLE   Single item: either 
-                                         *               tag or index.
-                                         */
-
-    Isoline *startPtr;                  /* Starting item.  Starting point
-                                         * of search, saved if iterator is
-                                         * reused.  Used for ITER_ALL and
-                                         * ITER_SINGLE searches. */
-    Isoline *endPtr;                    /* Ending item (inclusive). */
-    Isoline *nextPtr;                   /* Next item. */
-                                        /* For tag-based searches. */
-    const char *tagName;                /* If non-NULL, is the tag that we
-                                         * are currently iterating over. */
-    Blt_HashTable *tablePtr;            /* Pointer to tag hash table. */
-    Blt_HashSearch cursor;              /* Search iterator for tag hash
-                                         * table. */
-    Blt_ChainLink link;
-} IsolineIterator;
-
-
 static Blt_OptionFreeProc FreeColor;
 static Blt_OptionParseProc ObjToColor;
 static Blt_OptionPrintProc ColorToObj;
@@ -1306,13 +1269,13 @@ NewPoint(ContourElement *elemPtr, double x, double y, int index)
  *
  * AddSegment --
  *
- *      Creates a new segment of the trace's errorbars.
+ *      Creates a new segment in the isoline.
  *
  * Results:
- *      Returns a pointer to the new trace.
+ *      Returns a pointer to the new segment.
  *
  * Side Effects:
- *      The trace is prepended to the element's list of traces.
+ *      The segment is prepended to the isoline's list of segments.
  *
  *---------------------------------------------------------------------------
  */
@@ -1474,15 +1437,15 @@ ResetElement(ContourElement *elemPtr)
 static void
 GetScreenPoints(ContourElement *elemPtr)
 {
-    int i;
-    Vertex *vertices;
+    Axis *zAxisPtr;
+    AxisRange *rangePtr;
     Graph *graphPtr = elemPtr->obj.graphPtr;
+    Point2d *meshVertices;
     Region2d exts;
     Trace *tracePtr;
-    AxisRange *rangePtr;
-    Axis *zAxisPtr;
-    Point2d *meshVertices;
+    Vertex *vertices;
     int *hull;
+    int i;
     int numMeshVertices, numHullPts;
     
     zAxisPtr = elemPtr->zAxisPtr;
@@ -1588,8 +1551,8 @@ MapWireframe(ContourElement *elemPtr)
     Blt_HashTable edgeTable;
     Region2d exts;
     Segment2d *segments;
-    int i;
     int count;
+    int i;
 
     /* Use a hash table to generate a list of unique edges.  */
     Blt_InitHashTable(&edgeTable, sizeof(EdgeKey) / sizeof(int));
@@ -1654,8 +1617,8 @@ MapWireframe(ContourElement *elemPtr)
 static void
 MapTrace(ContourElement *elemPtr, Blt_Chain *tracesPtr, Trace *tracePtr)
 {
-    TracePoint *p, *q;
     Region2d exts;
+    TracePoint *p, *q;
 
     Blt_GraphExtents(elemPtr, &exts);
     for (p = tracePtr->head, q = p->next; q != NULL; q = q->next) {
@@ -1766,9 +1729,9 @@ MapTraces(ContourElement *elemPtr, Blt_Chain *tracesPtr)
 static void
 MapMesh(ContourElement *elemPtr)
 { 
+    Blt_MeshTriangle *meshTriangles;
     Triangle *triangles;
     int i;
-    Blt_MeshTriangle *meshTriangles;
     int numMeshTriangles;
     
     meshTriangles = Blt_Mesh_GetTriangles(elemPtr->mesh, &numMeshTriangles);

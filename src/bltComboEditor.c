@@ -309,7 +309,6 @@ typedef struct {
                                          * keyboard traversal scripts.
                                          * Malloc'ed, but may be NULL. */
 
-    int menuAnchor;
     Blt_Font font;                      /* Font of text to be display in
                                          * entry. */
     int flags;                          /* Various flags; see below for

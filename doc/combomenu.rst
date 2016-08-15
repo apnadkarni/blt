@@ -420,13 +420,20 @@ command.  The following operations are available for *combomenu* widgets:
     decision whether to focus on the window.  The default is "".
 
   **-textvariable** *varName* 
-    Specifies the name of a global TCL variable that will be set to the
-    label of the selected item.  If *varName* is "", no variable is
-    used. The default is "".
+    Specifies the name of a global TCL variable that contains the label of
+    the selected item.  *VarName* is the name of a TCL variable. When an
+    item is selected, *varName* is set to its label.  If *varName* is
+    "", no variable is set. The default is "".
 
-  **-unpostcommand** *string*
-    Specifies the TCL command to be invoked when the menu is unposted.  If
-    *string* is "", no command is invoked. The default is "".
+  **-unpostcommand** *cmdString* Specifies the TCL command to be invoked
+    when the menu is unposted.  If *cmdString* is "", no command is
+    invoked. The default is "".
+
+  **-valuevariable** *varName* 
+    Specifies the name of a global TCL variable that contains the value of
+    the selected item.  *VarName* is the name of a TCL variable. When an
+    item is selected, *varName* is set to its value. If *varName* is "",
+    no variable is set. The default is "".
 
   **-width** *numPixels*
    Specifies the width in the *combomenu*.  *NumPixels* can be single
@@ -698,10 +705,10 @@ command.  The following operations are available for *combomenu* widgets:
     is underlined. The default is -1.
 
   **-value** *string* 
-    Specifies the value to be stored in the radiobutton item's associated
-    global TCL variable (see the **-variable** option) when the item is
-    selected.  *String* is a arbitrary string but should be unique among
-    radiobutton items using the same TCL variable.  The default is "".
+    Specifies the value to be stored in the item.  This is for cases where
+    you want to display text that is different from the actual value (such
+    as "none" for the value "").  *String* is a arbitrary string.  The
+    default is "".
 
   **-variable** *varName* 
     Specifies the name of a global TCL variable to set whenever this

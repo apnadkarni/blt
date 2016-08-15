@@ -27,7 +27,6 @@ blt::comboentry .e \
     -arrowrelief flat \
     -textwidth 0 \
     -menu .e.m \
-    -menuanchor se \
     -exportselection yes \
     -xscrollcommand { .s set }  \
     -clearbutton yes 
