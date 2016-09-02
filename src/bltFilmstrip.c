@@ -121,8 +121,9 @@ typedef int (SizeProc)(Frame *framePtr);
 #define DEF_MODE                "givetake"
 #define DEF_ORIENT              "horizontal"
 #define DEF_PAD                 "0"
-#define DEF_RELATIVE_WIDTH      "0.0"
+#define DEF_POST_SCROLL_COMMAND (char *)NULL
 #define DEF_RELATIVE_HEIGHT     "0.0"
+#define DEF_RELATIVE_WIDTH      "0.0"
 #define DEF_SCROLL_COMMAND      (char *)NULL
 #define DEF_SCROLL_DELAY        "30"
 #define DEF_SCROLL_INCREMENT    "10"
@@ -181,6 +182,8 @@ struct _Filmstrip {
                                          * coordinates. */
     Tcl_Obj *scrollCmdObjPtr;           /* Command strings to control
                                          * scrollbar.*/
+    Tcl_Obj *postScrollCmdObjPtr;       /* Command to be executed when 
+                                         * scrolling stops. */
 
     /* 
      * Automated scrolling information. 
@@ -528,6 +531,9 @@ static Blt_ConfigSpec filmStripSpecs[] =
     {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
         Blt_Offset(Filmstrip, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         &orientOption},
+    {BLT_CONFIG_OBJ, "-postscrollcommand", "postScrollCommand",
+        "PostScrollCommand", DEF_POST_SCROLL_COMMAND,
+        Blt_Offset(Filmstrip, postScrollCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FLOAT, "-relheight", "relHeight", "RelHeight",
         DEF_RELATIVE_HEIGHT, Blt_Offset(Filmstrip, relHeight),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -3890,6 +3896,12 @@ MotionTimerProc(ClientData clientData)
             filmPtr->timerToken = 0;
             filmPtr->scrollIncr = filmPtr->scrollUnits;
         }
+        if (filmPtr->postScrollCmdObjPtr != NULL) {
+            if (Tcl_EvalObjEx(filmPtr->interp, filmPtr->postScrollCmdObjPtr,
+                TCL_EVAL_GLOBAL) != TCL_OK) {
+                Tcl_BackgroundError(filmPtr->interp);
+            }
+        }
     } else {
         filmPtr->timerToken = Tcl_CreateTimerHandler(filmPtr->delay, 
                 MotionTimerProc, filmPtr);
@@ -3924,6 +3936,12 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else {
         filmPtr->scrollOffset = filmPtr->scrollTarget;
         filmPtr->flags |= SCROLL_PENDING;
+        if (filmPtr->postScrollCmdObjPtr != NULL) {
+            if (Tcl_EvalObjEx(filmPtr->interp, filmPtr->postScrollCmdObjPtr,
+                TCL_EVAL_GLOBAL) != TCL_OK) {
+                Tcl_BackgroundError(filmPtr->interp);
+            }
+        }
         EventuallyRedraw(filmPtr);
     }
     filmPtr->currentPtr = framePtr;
