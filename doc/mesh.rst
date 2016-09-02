@@ -45,8 +45,8 @@ INTRODUCTION
 Many types of data define a topology (a mesh) for one or more data
 measurements.  For example, a contour plot uses 2-D mesh and interpolates
 the data measurements (field values) based on that mesh.  It is not unusual
-to have several different measurements at the same points of the mesh.
-The **blt::mesh** command lets you define a mesh that you can also share
+to have several different measurements at the same points of the mesh.  The
+**blt::mesh** command lets you define a mesh that you can also share
 between different widgets.
 
 A mesh can have one of the following input types: 

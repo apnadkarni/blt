@@ -387,16 +387,17 @@ Please note the following:
    **-textvariable** and **-iconvariable** options that let them change
    the text and icon through TCL variables.
 
-3. You can't use a Tk **menu** with *combobutton*\ s.  The menu must
+3. You can't use a Tk **menu** with *combobutton* widgets.  The menu must
    be a **blt::combomenu** widget.
 
-DIFFERENCES WITH TK MENUS
--------------------------
+DIFFERENCES WITH TK MENUBUTTONS
+-------------------------------
 
 The **blt::combobutton** widget has the following differences with the Tk
 **menubutton** widget.
 
-1. *Combobuttons* can not post by a Tk **menu**.
+1. *Combobuttons* can not post by a Tk **menu**, only a BLT **combomenu**
+    widget.
 
    
 KEYWORDS

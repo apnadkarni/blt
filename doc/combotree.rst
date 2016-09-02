@@ -24,7 +24,7 @@ exposed or hidden as necessary when the *combotree* widget is resized.
 Whenever the *combotree* window is smaller horizontally and/or vertically
 than the actual menu, the appropiate scrollbar is exposed.
 
-When mapped, the *combotree* displays a tree of items.  There exist several
+When mapped, the *combotree* displays a tree of entries.  There exist several
 different types of items, each with different actions and properties.
 Items of different types may be combined in a single menu.  
 
@@ -212,7 +212,7 @@ command.  The following operations are available for *combotree* widgets:
 *pathName* **activate** *entryName* 
   Redisplays *entryName* using its active colors and relief.  This
   typically is used by widget bindings to highlight tree entries when the
-  pointer is moved over items in the menu. Any previously active entry is
+  pointer is moved over entries in the menu. Any previously active entry is
   deactivated.  *EntryName* may be a label, index, or tag, but may not
   represent more than one entry.
 
@@ -492,7 +492,7 @@ command.  The following operations are available for *combotree* widgets:
 
   **-textvariable** *varName* 
     Specifies the name of a global TCL variable that will be set to the
-    label of the selected item.  If *varName* is "", no variable is
+    label of the selected entry.  If *varName* is "", no variable is
     used. The default is "".
 
   **-tree** *treeName* 
@@ -550,19 +550,19 @@ command.  The following operations are available for *combotree* widgets:
     Specifies the active color of the accelerator.  The default is "white".
 
   **-activeforeground** *colorName* 
-    Specifies the color of the label when the menu item is active.  The
+    Specifies the color of the label when the entry is active.  The
     default is "white".
 
   **-activerelief** *reliefName* 
-    Specifies the relief of active menu items.  This determines the 3-D
-    effect for the menu item.  *ReliefName* indicates how the item should
+    Specifies the relief of active entries.  This determines the 3-D
+    effect for the entry.  *ReliefName* indicates how the entry should
     appear relative to the menu window. Acceptable values are **raised**,
     **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
-    example, "raised" means the item should appear to protrude.  The
+    example, "raised" means the entry should appear to protrude.  The
     default is "flat".
     
   **-background** *bgName* 
-    Specifies the background of the menu items.  *BgName* may be a
+    Specifies the background of the entries.  *BgName* may be a
     color name or the name of a background object created by the
     **blt::background** command.  The default is "white".
     
@@ -591,10 +591,10 @@ command.  The following operations are available for *combotree* widgets:
     box. The value may have any of the forms accept able to Tk_GetPixels.
     The default is "12".
 
-  **-command** *string* 
+  **-command** *cmdString* 
     Specifies a TCL command to be invoked when a menu item is selected:
     either by clicking on the menu item or using the **select** operation.
-    If *string* is "", then no command is invoked. The default is "".
+    If *cmdString* is "", then no command is invoked. The default is "".
 
   **-cursor** *cursorName* 
     Specifies the cursor to be used for the widget. *CursorName* may have
@@ -646,11 +646,11 @@ command.  The following operations are available for *combotree* widgets:
     the item. The value may have any of the forms acceptable to
     **Tk_GetPixels**.  The default is "0". 
 
-  **-postcommand** *string* 
+  **-postcommand** *cmdString* 
     Specifies a TCL command to invoked when the menu is posted.  The
     command will be invoked before the menu is displayed onscreen.  For
     example, this may be used to disable menu items that may not be valid
-    when the menu is posted. If *string* is "", no command is invoked.  The
+    when the menu is posted. If *cmdString* is "", no command is invoked.  The
     default is "".
 
   **-radiobuttoncolor** *colorName*
@@ -707,9 +707,9 @@ command.  The following operations are available for *combotree* widgets:
     label of the selected item.  If *varName* is "", no variable is
     used. The default is "".
 
-  **-unpostcommand** *string*
+  **-unpostcommand** *cmdString*
     Specifies the TCL command to be invoked when the menu is unposted.  If
-    *string* is "", no command is invoked. The default is "".
+    *cmdString* is "", no command is invoked. The default is "".
 
   **-width** *numPixels*
    Specifies the width in the *combotree*.  *NumPixels* can be single
@@ -731,7 +731,7 @@ command.  The following operations are available for *combotree* widgets:
     combotree will attach the scrollbar to widget, effectively packing the
     scrollbar into the menu.
 
-  **-xscrollcommand** *string*
+  **-xscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with horizontal
     scrollbars.  Whenever the horizontal view in the widget's window
     changes, the widget will generate a TCL command by concatenating the
@@ -753,7 +753,7 @@ command.  The following operations are available for *combotree* widgets:
     combotree will attach the scrollbar to widget, effectively packing the
     scrollbar into the menu.
 
-  **-yscrollcommand** *string*
+  **-yscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with vertical
     scrollbars.  Whenever the vertical view in the widget's window
     changes, the widget will generate a TCL command by concatenating the
@@ -885,7 +885,7 @@ command.  The following operations are available for *combotree* widgets:
 
     
 
-*pathName* **hide** *item* ?\ *switches*\ ? ?\ *entry*\ ... ?
+*pathName* **hide** *entryName* ?\ *switches*\ ? ?\ *entry*\ ... ?
 
   **-exact**
   **-glob**
@@ -939,7 +939,7 @@ command.  The following operations are available for *combotree* widgets:
     The mouse pointer is not over the entry.
 
 *pathName* **index** *entryName* 
-  Returns the index of *entryName*. *Item* may be a label, index, or tag, but
+  Returns the index of *entryName*. *EntryName* may be a label, index, or tag, but
   may not represent more than one menu item.  If the entry does not
   exist, "-1" is returned.
   
@@ -1009,10 +1009,10 @@ command.  The following operations are available for *combotree* widgets:
   (i.e. relative to menu window).  Typically this command is associated
   with a mouse button press in the widget.  It returns an empty string.
 
-*pathName* **see** *item* 
-  Scrolls the menu so that *item* is visible in the widget's window.
-  *Item* may be a label, index, or tag, but may not represent more than one
-  menu item.
+*pathName* **see** *entryName* 
+  Scrolls the menu so that *entryName* is visible in the widget's window.
+  *EntryName* may be a label, index, or tag, but may not represent more
+  than one menu item.
   
 *pathName* **show**
 
@@ -1157,8 +1157,8 @@ command.  The following operations are available for *combotree* widgets:
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 *pathName* **toggle** *entryName*
-  Returns the type of *item*.  The returned type is either "button",
-  "cascade", "checkbutton", "radiobutton", or "separator".  *Item* may be a
+  Returns the type of *entryName*.  The returned type is either "button",
+  "cascade", "checkbutton", "radiobutton", or "separator".  *EntryName* may be a
   label, index, or tag, but may not represent more than one menu item.
    
 *pathName* **unpost**

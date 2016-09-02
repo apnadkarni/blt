@@ -279,6 +279,13 @@ command.  The following operations are available for *filmstrip* widgets:
     "vertical" (frames run left to right) or "horizontal" (frames run top
     to bottom).  The default is "horizontal".
 
+  **-postscrollcommand** *cmdString*
+    Specifies a TCL command to invoked when the *filmstrip* widget is done
+    scrolling frames. This is useful (when the **-animate** option is true)
+    to know when the frame is positioned.  The command will be invoked when
+    the widget is scrolled into position.  If *cmdString* is "", no command
+    is invoked.  The default is "".
+
   **-relheight** *number*
     Specifies the relative height of frames to the *filmstrip* window.
     *Number* is a number between 0.0 and 1.0.  If *number* is "1.0", then
@@ -295,7 +302,7 @@ command.  The following operations are available for *filmstrip* widgets:
     computed from the requested width of its embedded child widget.  The
     default is "0.0".
 
-  **-scrollcommand** *string*
+  **-scrollcommand** *cmdPrefix*
     Specifies the prefix for a command for communicating with scrollbars.
     Whenever the view in the widget's window changes, the widget will
     generate a TCL command by concatenating the scroll command and two
@@ -360,16 +367,16 @@ command.  The following operations are available for *filmstrip* widgets:
     *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
     The default is "0".
 
-  **-data** *string* 
-    Specifies data to be associated with the frame. *String* can be an
+  **-data** *dataString* 
+    Specifies data to be associated with the frame. *DataString* can be an
     arbitrary string.  It is not used by the *filmstrip* widget. The
     default is "".
 
-  **-deletecommand** *string*
+  **-deletecommand** *cmdString*
     Specifies a TCL command to invoked when the frame is deleted (via the
     *filmstrip*\ 's **delete** operation, or destroying the *filmstrip*).  The
     command will be invoked before the frame is actually deleted.  If
-    *string* is "", no command is invoked.  The default is "".
+    *cmdString* is "", no command is invoked.  The default is "".
 
   **-fill** *fillName* 
     If the frame is bigger than its embedded child widget, then *fillName*

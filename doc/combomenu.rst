@@ -25,7 +25,7 @@ Whenever the *combomenu* window is smaller horizontally and/or vertically
 than the actual menu, the appropiate scrollbar is exposed.
 
 When mapped, the *combomenu* displays a menu items.  There exist several
-different types of items, each with different actions and properties.
+different types of items, each with different actions and attributes.
 Items of different types may be combined in a single menu.  Menu items are
 not distinct widgets; the entire *combomenu* is one widget.
 
@@ -148,7 +148,7 @@ Menu items may be referred to by either their index, label, or tag.
 
   **active**
     The item that that is currently active.  Typically this is the
-    one that the pointer is over.
+    item that the pointer is currently over.
 
   **end**
     The last item in the menu. 
@@ -210,24 +210,24 @@ operation.  The general form is:
 *Operation* and the *arg*\ s determine the exact behavior of the
 command.  The following operations are available for *combomenu* widgets:
 
-*pathName* **activate** *item* 
-  Redisplays *item* using its active colors and relief.  This typically is
-  used by widget bindings to highlight menu items when the pointer is moved
-  over items in the menu. Any previously active item is deactivated.
-  *Item* may be a label, index, or tag, but may not represent more than one
-  menu item.
+*pathName* **activate** *itemName* 
+  Redisplays *itemName* using its active colors and relief.  This typically
+  is used by widget bindings to highlight menu items when the pointer is
+  moved over items in the menu. Any previously active item is deactivated.
+  *ItemName* may be a label, index, or tag, but may not represent more than
+  one menu item.
 
-*pathName* **add** ?\ *option* *value* ...?
-  Creates a new menu item, adding it to the end of the menu.  If one or
-  more *option-value* pairs are specified, they modify the given menu item
-  option(s) to have the given value(s).  *Option* and *value* are described
-  in the **item configure** operation.
+*pathName* **add** ?\ *option* *value* ...?  Creates a new menu item,
+  adding it to the end of the menu.  If one or more *option-value* pairs
+  are specified, they modify the given menu item option(s) to have the
+  given value(s).  *Option* and *value* are described in the **item
+  configure** operation.
 
-*pathName* **bbox** *item* 
-  Returns of list of four numbers describing the bounding box of *item*.
-  The numbers represent the x and y root coordinates of two opposite
-  corners of the box. *Item* may be a label, index, or tag, but may not
-  represent more than one menu item.
+*pathName* **bbox** *itemName* 
+  Returns of list of four numbers describing the bounding box of
+  *itemName*.  The numbers represent the x and y root coordinates of two
+  opposite corners of the box. *ItemName* may be a label, index, or tag,
+  but may not represent more than one menu item.
 
 *pathName* **cget** *option*  
   Returns the current value of the widget configuration option given by
@@ -290,28 +290,28 @@ command.  The following operations are available for *combomenu* widgets:
     The default is "1".
 
   **-checkbuttoncolor** *colorName*
-    Specifies the color of the check for checkbutton items.  The default is
+    Specifies the color of the check in *checkbutton* items.  The default is
     "red3".
 
   **-checkbuttonfillcolor** *colorName*
-    Specifies the fill color of the box for checkbutton items. If
+    Specifies the fill color of the box for *checkbutton* items. If
     *colorName* is "", then the box color is the background color of
     the menu item.  The default is "".
 
   **-checkbuttonoutlinecolor** *colorName*
-    Specifies the outline color of the box for checkbutton items.  If
+    Specifies the outline color of the box for *checkbutton* items.  If
     *colorName* is "", then the no outline is drawn. The default is "".
 
   **-checkbuttonsize** *numPixels*
-    Specifies the size of the box of for checkbutton items.  *NumPixels* is
+    Specifies the size of the box of for *checkbutton* items.  *NumPixels* is
     a non-negative value indicating the width and height of the check
     box. The value may have any of the forms accept able to Tk_GetPixels.
     The default is "12".
 
-  **-command** *string* 
+  **-command** *cmdString* 
     Specifies a TCL command to be invoked when a menu item is selected:
     either by clicking on the menu item or using the **select** operation.
-    If *string* is "", then no command is invoked. The default is "".
+    If *cmdString* is "", then no command is invoked. The default is "".
 
   **-cursor** *cursorName* 
     Specifies the cursor to be used for the widget. *CursorName* may have
@@ -332,9 +332,10 @@ command.  The following operations are available for *combomenu* widgets:
     Specifies the color of the label for menu items that are disabled.  The
     default is "grey70".
 
-  **-font** *colorName* 
-    Specifies the font of labels in menu items.  The default is "{Sans
-    Serif} 11".
+  **-font** *fontName* 
+    Specifies the default font of labels in menu items.  This can
+    be overridden by the **-font** option for a menu item style.
+    The default is "{Sans Serif} 11".
 
   **-foreground** *colorName* 
     Specifies the color of labels in menu items.  The default is "black".
@@ -363,24 +364,24 @@ command.  The following operations are available for *combomenu* widgets:
     the item. The value may have any of the forms acceptable to
     **Tk_GetPixels**.  The default is "0". 
 
-  **-postcommand** *string* 
+  **-postcommand** *cmdString* 
     Specifies a TCL command to invoked when the menu is posted.  The
     command will be invoked before the menu is displayed onscreen.  For
     example, this may be used to disable menu items that may not be valid
-    when the menu is posted. If *string* is "", no command is invoked.  The
-    default is "".
+    when the menu is posted. If *cmdString* is "", no command is invoked.
+    The default is "".
 
   **-radiobuttoncolor** *colorName*
-    Specifies the color of the indicator circle for radiobutton items. The
+    Specifies the color of the indicator circle for *radiobutton* items. The
     indicator circle is displayed when the radiobutton item is
     selected. The default is "red3".
 
   **-radiobuttonfillcolor** *colorName*
-    Specifies the fill color of the circle for radiobutton items.  The
+    Specifies the fill color of the circle for *radiobutton* items.  The
     default is "white".
 
   **-radiobuttonsize** *numPixels*
-    Specifies the size of the circle for radiobutton items.  *NumPixels* is
+    Specifies the size of the circle for *radiobutton* items.  *NumPixels* is
     a non-negative value indicating the width and height of the radiobutton
     circle. The value may have any of the forms acceptable to
     *Tk_GetPixels*, such as "1.2i".  The default is "12".
@@ -392,9 +393,9 @@ command.  The following operations are available for *combomenu* widgets:
     **groove**. For example, "raised" means the menu should appear to
     protrude.  The default is "raised".
 
-  **-restrictwidth** *option* 
+  **-restrictwidth** *optionName* 
     Specifies how the menu width should be restricted according to the
-    parent widget that posted it. *Option* can be one of the following
+    parent widget that posted it. *OptionName* can be one of the following
     "none".
 
     **max**
@@ -425,9 +426,9 @@ command.  The following operations are available for *combomenu* widgets:
     item is selected, *varName* is set to its label.  If *varName* is
     "", no variable is set. The default is "".
 
-  **-unpostcommand** *cmdString* Specifies the TCL command to be invoked
-    when the menu is unposted.  If *cmdString* is "", no command is
-    invoked. The default is "".
+  **-unpostcommand** *cmdString*
+    Specifies the TCL command to be invoked when the menu is unposted.  If
+    *cmdString* is "", no command is invoked. The default is "".
 
   **-valuevariable** *varName* 
     Specifies the name of a global TCL variable that contains the value of
@@ -436,26 +437,26 @@ command.  The following operations are available for *combomenu* widgets:
     no variable is set. The default is "".
 
   **-width** *numPixels*
-   Specifies the width in the *combomenu*.  *NumPixels* can be single
-   value or a list.  If *numPixels* is a single value it is a non-negative
-   value indicating the width the menu. The value may have any of the
-   forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
-   *numPixels* is a 2 element list, then this sets the minimum and maximum
-   limits for the width of the menu. The menu will be at least the minimum
-   width and less than or equal to the maximum. If *numPixels* is a 3
-   element list, then this specifies minimum, maximum, and nominal width
-   or the menu.  The nominal size overrides the calculated width of the
-   menu.  If *numPixels* is "", then the width of the menu is calculated
-   based on the widths of all the menu items.  The default is "".
+    Specifies the width in the *combomenu*.  *NumPixels* can be single
+    value or a list.  If *numPixels* is a single value it is a non-negative
+    value indicating the width the menu. The value may have any of the
+    forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+    *numPixels* is a 2 element list, then this sets the minimum and maximum
+    limits for the width of the menu. The menu will be at least the minimum
+    width and less than or equal to the maximum. If *numPixels* is a 3
+    element list, then this specifies minimum, maximum, and nominal width
+    or the menu.  The nominal size overrides the calculated width of the
+    menu.  If *numPixels* is "", then the width of the menu is calculated
+    based on the widths of all the menu items.  The default is "".
 
-  **-xscrollbar** *widget*
+  **-xscrollbar** *widgetName*
     Specifies the name of a scrollbar widget to use as the horizontal
     scrollbar for this menu.  The scrollbar widget must be a child of the
     combomenu and doesn't have to exist yet.  At an idle point later, the
     combomenu will attach the scrollbar to widget, effectively packing the
     scrollbar into the menu.
 
-  **-xscrollcommand** *string*
+  **-xscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with horizontal
     scrollbars.  Whenever the horizontal view in the widget's window
     changes, the widget will generate a TCL command by concatenating the
@@ -470,14 +471,14 @@ command.  The following operations are available for *combomenu* widgets:
     value may have any of the forms accept able to **Tk_GetPixels**.  The
     default is "20".
 
-  **-yscrollbar** *widget*
+  **-yscrollbar** *widgetName*
     Specifies the name of a scrollbar widget to use as the vertical
     scrollbar for this menu.  The scrollbar widget must be a child of the
     combomenu and doesn't have to exist yet.  At an idle point later, the
     combomenu will attach the scrollbar to widget, effectively packing the
     scrollbar into the menu.
 
-  **-yscrollcommand** *string*
+  **-yscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with vertical
     scrollbars.  Whenever the vertical view in the widget's window
     changes, the widget will generate a TCL command by concatenating the
@@ -497,20 +498,20 @@ command.  The following operations are available for *combomenu* widgets:
   used by widget bindings to un-highlight menu items as the pointer is
   moved over the menu. 
 
-*pathName* **delete** *item*...
-  Deletes one or more items from the menu. *Item* may be a label, index, or
-  tag and may refer to multiple items (example: "all"). 
+*pathName* **delete** *itemName*\ ...
+  Deletes one or more items from the menu. *ItemName* may be a label,
+  index, or tag and may refer to multiple items (example: "all").
 
-*pathName* **deselect** *item*...
-  Deselects *item* and sets the associated variables to their off values.
-  *Item* may be a label, index, or tag, but may not represent more than one
+*pathName* **deselect** *itemName*
+  Deselects *itemName* and sets the associated variables to their off values.
+  *ItemName* may be a label, index, or tag, but may not represent more than one
   menu item.  If this item was not currently selected, the command has no
   effect.
 
-*pathName* **exists** *item*...
-  Returns the *item* exists in the menu. *Item* may be a label, index, or
-  tag, but may not represent more than one menu item.  Returns "1" is
-  the item exists, "0" otherwise.
+*pathName* **exists** *itemName*
+  Returns the *itemName* exists in the menu. *ItemName* may be a label,
+  index, or tag, but may not represent more than one menu item.  Returns
+  "1" is the item exists, "0" otherwise.
   
 *pathName* **find** *string* ?\ *switches* ... ?
   Searches for the next menu item that matches *string*.  Returns the
@@ -520,9 +521,10 @@ command.  The following operations are available for *combomenu* widgets:
   **-decreasing** 
     Search menu items in order of the highest to lowest index.
 
-  **-from** *item* 
-    Specifies the menu item frow where to start searching.  *Item* may be a
-    label, index, or tag, but may not represent more than one menu item.
+  **-from** *itemName* 
+    Specifies the menu item frow where to start searching.  *ItemName* may
+    be a label, index, or tag, but may not represent more than one menu
+    item.
 
   **-glob** 
     Indicates that *string* is glob-style pattern.  Matching is done in a
@@ -540,65 +542,65 @@ command.  The following operations are available for *combomenu* widgets:
     Specifies to match the items underlined character instead of its
     entire label.
 
-*pathName* **index** *item* 
-  Returns the index of *item*. *Item* may be a label, index, or tag, but
-  may not represent more than one menu item.  If the item does not
+*pathName* **index** *itemName* 
+  Returns the index of *itemName*. *ItemName* may be a label, index, or
+  tag, but may not represent more than one menu item.  If the item does not
   exist, "-1" is returned.
   
-*pathName* **insert after** *item* ?\ *option *value* ... ? 
-  Creates a new menu item and inserts it after *item*.  Normally menu items
-  are appended to the end of the menu, but this command allows you to
-  specify its location. Note that this may change the indices of previously
-  created menu items. *Item* may be a label, index, or tag, but may not
-  represent more than one menu item. If one or more *option-value* pairs
-  are specified, they modifies the given menu item option(s) to have the
-  given value(s).  *Option* and *value* are described in the **item
-  configure** operation.
-  
-*pathName* **insert at** *item* ?\ *option *value* ... ? 
-  Creates a new menu item and inserts it at the index specified by *item*.
-  Normally menu items are appended to the end of the menu, but this command
-  allows you to specify its location. Note that this may change the indices
-  of previously created menu items. *Item* may be a label, index, or tag,
-  but may not represent more than one menu item. If one or more
-  *option-value* pairs are specified, they modifies the given menu item
-  option(s) to have the given value(s).  *Option* and *value* are described
-  in the **item configure** operation.
-  
-*pathName* **insert before** *item* ?\ *option *value* ... ? 
-  Creates a new menu item and inserts it before *item*.  Normally menu
+*pathName* **insert after** *itemName* ?\ *option *value* ... ? 
+  Creates a new menu item and inserts it after *itemName*.  Normally menu
   items are appended to the end of the menu, but this command allows you to
   specify its location. Note that this may change the indices of previously
-  created menu items. *Item* may be a label, index, or tag, but may not
+  created menu items. *ItemName* may be a label, index, or tag, but may not
   represent more than one menu item. If one or more *option-value* pairs
   are specified, they modifies the given menu item option(s) to have the
   given value(s).  *Option* and *value* are described in the **item
   configure** operation.
   
-*pathName* **invoke** *item* 
-  Selects the *item and invokes the TCL command specified by *item*'s
-  **-command** option. *Item* may be a label, index, or tag, but may not
-  represent more than one menu item.
+*pathName* **insert at** *itemName* ?\ *option *value* ... ? 
+  Creates a new menu item and inserts it at the index specified by
+  *itemName*.  Normally menu items are appended to the end of the menu, but
+  this command allows you to specify its location. Note that this may
+  change the indices of previously created menu items. *ItemName* may be a
+  label, index, or tag, but may not represent more than one menu item. If
+  one or more *option-value* pairs are specified, they modifies the given
+  menu item option(s) to have the given value(s).  *Option* and *value* are
+  described in the **item configure** operation.
   
-*pathName* **item cget** *item* *option*
-  Returns the current value of the configuration option for *item* given by
-  *option*.  *Option* may be any option described below for the **item
-  configure** operation below. *Item* may be a label, index, or tag, but
-  may not represent more than one menu item.
-
-*pathName* **item configure** *item* ?\ *option* *value* ... ?
-  Queries or modifies the configuration options of *item*.  *Item* may be a
-  label, index, or tag.  If no *option* is specified, returns a list
-  describing all the available options for *item* (see **Tk_ConfigureInfo**
-  for information on the format of this list).  If *option* is specified
-  with no *value*, then the command returns a list describing the one named
-  option (this list will be identical to the corresponding sublist of the
-  value returned if no *option* is specified).  In both cases, *item* may
+*pathName* **insert before** *itemName* ?\ *option *value* ... ? 
+  Creates a new menu item and inserts it before *itemName*.  Normally menu
+  items are appended to the end of the menu, but this command allows you to
+  specify its location. Note that this may change the indices of previously
+  created menu items. *ItemName* may be a label, index, or tag, but may not
+  represent more than one menu item. If one or more *option-value* pairs
+  are specified, they modifies the given menu item option(s) to have the
+  given value(s).  *Option* and *value* are described in the **item
+  configure** operation.
+  
+*pathName* **invoke** *itemName* 
+  Selects the *item and invokes the TCL command specified by *itemName*'s
+  **-command** option. *ItemName* may be a label, index, or tag, but may
   not represent more than one menu item.
+  
+*pathName* **item cget** *itemName* *option*
+  Returns the current value of the configuration option for *itemName*
+  given by *option*.  *Option* may be any option described below for the
+  **item configure** operation below. *ItemName* may be a label, index, or
+  tag, but may not represent more than one menu item.
+
+*pathName* **item configure** *itemName* ?\ *option* *value* ... ?
+  Queries or modifies the configuration options of *itemName*.  *ItemName*
+  may be a label, index, or tag.  If no *option* is specified, returns a
+  list describing all the available options for *itemName* (see
+  **Tk_ConfigureInfo** for information on the format of this list).  If
+  *option* is specified with no *value*, then the command returns a list
+  describing the one named option (this list will be identical to the
+  corresponding sublist of the value returned if no *option* is specified).
+  In both cases, *itemName* may not represent more than one menu item.
   
   If one or more *option-value* pairs are specified, then this command
   modifies the given option(s) to have the given value(s); in this case
-  *item* may refer to mulitple items (example: "all").  *Option* and
+  *itemName* may refer to mulitple items (example: "all").  *Option* and
   *value* are described below.
 
   **-accelerator** *string* 
@@ -607,9 +609,9 @@ command.  The following operations are available for *combomenu* widgets:
     typed in the application to cause the same result as invoking the menu
     item.  The default is "".
 
-  **-command** *string* 
-    Specifies a TCL command to be invoked when *item* is selected. If
-    *string* is "", then no command is executed.  The default is "".
+  **-command** *cmdString* 
+    Specifies a TCL command to be invoked when *itemName* is selected. If
+    *cmdString* is "", then no command is executed.  The default is "".
 
   **-data** *string* 
     Specifies data to be associated with the menu item. *String* can be an
@@ -648,7 +650,7 @@ command.  The following operations are available for *combomenu* widgets:
     the item is selected.  This option only affects *checkbutton* items.
     The default is "".
 
-  **-state** *state*
+  **-state** *stateName*
     Specifies one of three states for the item: 
 
     **normal**
@@ -732,9 +734,9 @@ command.  The following operations are available for *combomenu* widgets:
   Returns the index of the menu item closest to the coordinates specified.
   *X* and *y* are root coordinates.
 
-*pathName* **next** *item* 
-  Moves the focus to the next menu item from *item*.  *Item* may be a
-  label, index, or tag, but may not represent more than one menu item.
+*pathName* **next** *itemName* 
+  Moves the focus to the next menu item from *itemName*.  *ItemName* may be
+  a label, index, or tag, but may not represent more than one menu item.
 
 *pathName* **overbutton** *x* *y* 
   Indicates if the x and y coordinates specified are over the button region
@@ -777,20 +779,21 @@ command.  The following operations are available for *combomenu* widgets:
     *popup* menus. *CoordList* is a list of x and y coordinates
     representing the position of the popup menu.
 
-  **-window** *window*
-    Specifies the name of window to align the menu to.  Normally *combomenu*s
-    are aligned to its parent window.  *Window* is the name of another
-    widget.
+  **-window** *windowName*
+    Specifies the name of window to align the menu to.  Normally
+    *combomenu*s are aligned to its parent window.  *WindowName* is the
+    name of another widget.
 
-*pathName* **postcascade** ?\ *item*\ ? 
-  Posts the the *combomenu* associated with *item* (the menu is specified
-  by the **-menu** option for menu items). This command is only affects
-  *cascade* items.  *Item* may be a label, index, or tag, but may not
-  represent more than one menu item.
+*pathName* **postcascade** ?\ *itemName*\ ? 
+  Posts the the *combomenu* associated with *itemName* (the menu is
+  specified by the **-menu** option for menu items). This command is only
+  affects *cascade* items.  *ItemName* may be a label, index, or tag, but
+  may not represent more than one menu item.
 
-*pathName* **previous** *item*
-  Moves the focus to the previous menu item from *item*.  *Item* may be a
-  label, index, or tag, but may not represent more than one menu item.
+*pathName* **previous** *itemName*
+  Moves the focus to the previous menu item from *itemName*.  *ItemName*
+  may be a label, index, or tag, but may not represent more than one menu
+  item.
 
 *pathName* **scan dragto** *x* *y*
   This command computes the difference between *x* and *y* and the
@@ -806,16 +809,16 @@ command.  The following operations are available for *combomenu* widgets:
   (i.e. relative to menu window).  Typically this command is associated
   with a mouse button press in the widget.  It returns an empty string.
 
-*pathName* **see** *item* 
-  Scrolls the menu so that *item* is visible in the widget's window.
-  *Item* may be a label, index, or tag, but may not represent more than one
-  menu item.
+*pathName* **see** *itemName* 
+  Scrolls the menu so that *itemName* is visible in the widget's window.
+  *ItemName* may be a label, index, or tag, but may not represent more than
+  one menu item.
   
-*pathName* **select** *item* 
-  Selects *item* in the menu. The item is drawn in its selected colors and
-  its TCL command is invoked (see the **-command** menu item option).
-  *Item* may be a label, index, or tag, but may not represent more than one
-  menu item.
+*pathName* **select** *itemName* 
+  Selects *itemName* in the menu. The item is drawn in its selected colors
+  and its TCL command is invoked (see the **-command** menu item option).
+  *ItemName* may be a label, index, or tag, but may not represent more than
+  one menu item.
   
 *pathName* **size**
   Returns the number of items in the menu.  
@@ -845,13 +848,13 @@ command.  The following operations are available for *combomenu* widgets:
     Sort items using their values.  By default the items are sorted
     by their labels.
 
-  **-command** *string*
-    Specifies *string* as a TCL command to use for comparing items.  To
-    compare two items, evaluate a TCL script consisting of command with the
-    two item appended as additional arguments.  The script should return an
-    integer less than, equal to, or greater than zero if the first item
-    is to be considered less than, equal to, or greater than the second,
-    respectively.
+  **-command** *cmdPrefix*
+    Specifies *cmdPrefix* as a prefix to a TCL command to use for comparing
+    items.  To compare two items, evaluate a TCL script consisting of
+    command with the two item appended as additional arguments.  The script
+    should return an integer less than, equal to, or greater than zero if
+    the first item is to be considered less than, equal to, or greater than
+    the second, respectively.
 
   **-decreasing** 
     Sort the items highest to lowest. By default items are sorted
@@ -996,11 +999,10 @@ command.  The following operations are available for *combomenu* widgets:
 
   **-relief** *reliefName* 
     Specifies the 3-D effect for the border around the menu item.
-    *ReliefName* specifies how the interior of the legend should appear
-    relative to the menu.  Acceptable values are **raised**, **sunken**,
-    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
-    means the item should appear to protrude from the menu.  The default is
-    "flat".
+    *ReliefName* specifies how the item should appear relative to the menu.
+    Acceptable values are **raised**, **sunken**, **flat**, **ridge**,
+    **solid**, and **groove**. For example, "raised" means the item should
+    appear to protrude from the menu.  The default is "flat".
 
 *pathName* **style create** *styleName* ?\ *option* *value* ... ?
   Creates a new style named *styleName*.  By default all menu items use the
@@ -1026,23 +1028,23 @@ command.  The following operations are available for *combomenu* widgets:
   *pattern* arguments are provided, then the names of any style matching
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
-*pathName* **type** *item*
-  Returns the type of *item*.  The returned type is either "button",
-  "cascade", "checkbutton", "radiobutton", or "separator".  *Item* may be a
-  label, index, or tag, but may not represent more than one menu item.
+*pathName* **type** *itemName*
+  Returns the type of *itemName*.  The returned type is either "button",
+  "cascade", "checkbutton", "radiobutton", or "separator".  *ItemName* may
+  be a label, index, or tag, but may not represent more than one menu item.
    
 *pathName* **unpost**
   Unposts the *combomenu* window so it is no longer displayed onscreen.  If
   one or more lower level cascaded menus are posted, they are unposted too.
 
-*pathName* **value** *item*
-  Returns the value associated with *item*.  The value is specified by the
-  menu item's **-value** option.  *Item* may be a label, index, or tag,
-  but may not represent more than one menu item.
+*pathName* **value** *itemName*
+  Returns the value associated with *itemName*.  The value is specified by
+  the menu item's **-value** option.  *ItemName* may be a label, index, or
+  tag, but may not represent more than one menu item.
    
-*pathName* **xposition** *item*
+*pathName* **xposition** *itemName*
   Returns the horizontal position of the item from left of the *combmenu*
-  menu window.  The returned value is in pixels. Item* may be a label,
+  menu window.  The returned value is in pixels. *ItemName* may be a label,
   index, or tag, but may not represent more than one menu item.
    
 *pathName* **xview moveto** fraction
@@ -1060,9 +1062,9 @@ command.  The following operations are available for *combomenu* widgets:
   adjusts by *number* screenfuls.  If *number* is negative then the view
   if scrolled left; if it is positive then it is scrolled right.
 
-*pathName* **yposition** *item*
-  Returns the vertical position of the item from top of the *combmenu*
-  menu window.  The returned value is in pixels. Item* may be a label,
+*pathName* **yposition** *itemName*
+  Returns the vertical position of the item from top of the *combmenu* menu
+  window.  The returned value is in pixels. *ItemName* may be a label,
   index, or tag, but may not represent more than one menu item.
    
 *pathName* **yview moveto** fraction
