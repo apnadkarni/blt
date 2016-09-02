@@ -3,7 +3,7 @@ package require BLT
 . configure -bg green
 
 blt::filmstrip .fs -height 550 -animate yes -scrolldelay 30 -height 400 \
-    -orient vertical
+    -orient vertical -postscrollcommand { puts stderr "I'm done" }
 
 blt::tk::frame .fs.inputs -height 500
 blt::tk::frame .fs.results

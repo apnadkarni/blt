@@ -14,10 +14,12 @@ proc PrintDialog { graph } {
     blt::PrintGraph .p1.print 
     pack .p1.print -fill both -expand yes 
     set out [.p1.print print $graph]
-    set file "saved[lindex $out 0]"
-    set f [open $file "w"]
-    puts $f [lindex $out 1]
-    close $f
+    if { $out != "" } {
+	set file "saved[lindex $out 0]"
+	set f [open $file "w"]
+	puts $f [lindex $out 1]
+	close $f
+    }
     destroy .p1
 }
 
