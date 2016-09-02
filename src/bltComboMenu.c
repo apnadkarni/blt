@@ -911,7 +911,7 @@ typedef struct {
 
 static Blt_SwitchSpec findSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM, "-from", "item", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-from", "itemName", (char *)NULL,
         Blt_Offset(FindSwitches, fromPtr), 0, 0, &itemSwitch},
     {BLT_SWITCH_BITMASK, "-decreasing", "", (char *)NULL,
         Blt_Offset(FindSwitches, mask), 0, FIND_DECREASING},
@@ -4969,7 +4969,7 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      pathName configure ?option value?...
+ *      pathName configure ?option value ... ?
  *
  *---------------------------------------------------------------------------
  */
@@ -5519,8 +5519,8 @@ ItemCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec itemOps[] = {
-    {"cget",      2, ItemCgetOp,      5, 5, "item option",},
-    {"configure", 2, ItemConfigureOp, 4, 0, "item ?option value?...",},
+    {"cget",      2, ItemCgetOp,      5, 5, "itemName option",},
+    {"configure", 2, ItemConfigureOp, 4, 0, "itemName ?option value ...?",},
 };
     
 static int numItemOps = sizeof(itemOps) / sizeof(Blt_OpSpec);
@@ -6363,7 +6363,7 @@ SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec sortOps[] =
 {
     {"cget",      2, SortCgetOp,      4, 4, "option",},
-    {"configure", 2, SortConfigureOp, 3, 0, "?option value?...",},
+    {"configure", 2, SortConfigureOp, 3, 0, "?option value ...?",},
     {"once",      1, SortOnceOp,      2, 0, "",},
 };
 static int numSortOps = sizeof(sortOps) / sizeof(Blt_OpSpec);
@@ -6545,11 +6545,11 @@ StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec styleOps[] =
 {
     {"cget",      2, StyleCgetOp,        5, 5, "styleName option",},
-    {"configure", 2, StyleConfigureOp,   4, 0, "styleName ?option value?...",},
-    {"create",    2, StyleCreateOp,      4, 0, "styleName ?option value?...",},
-    {"delete",    1, StyleDeleteOp,      3, 0, "?styleName...?",},
+    {"configure", 2, StyleConfigureOp,   4, 0, "styleName ?option value ...?",},
+    {"create",    2, StyleCreateOp,      4, 0, "styleName ?option value ...?",},
+    {"delete",    1, StyleDeleteOp,      3, 0, "?styleName ...?",},
     {"exists",    1, StyleExistsOp,      4, 4, "styleName"},
-    {"names",     1, StyleNamesOp,       3, 0, "?pattern...?",},
+    {"names",     1, StyleNamesOp,       3, 0, "?pattern ...?",},
 };
 
 static int numStyleOps = sizeof(styleOps) / sizeof(Blt_OpSpec);
@@ -6905,43 +6905,43 @@ NewComboMenu(Tcl_Interp *interp, Tk_Window tkwin)
  */
 static Blt_OpSpec menuOps[] =
 {
-    {"activate",    2, ActivateOp,    3, 3, "item",},
-    {"add",         2, AddOp,         2, 0, "?option value?",},
-    {"bbox",        1, BboxOp,        3, 3, "item",},
+    {"activate",    2, ActivateOp,    3, 3, "itemName",},
+    {"add",         2, AddOp,         2, 0, "?option value ...?",},
+    {"bbox",        1, BboxOp,        3, 3, "itemName",},
     {"cget",        2, CgetOp,        3, 3, "option",},
-    {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
+    {"configure",   2, ConfigureOp,   2, 0, "?option value ...?",},
     {"deactivate",  3, DeactivateOp,  2, 2, "",},
-    {"delete",      3, DeleteOp,      2, 0, "items...",},
-    {"deselect",    3, SelectOp,      3, 3, "item",},
-    {"exists",      1, ExistsOp,      3, 3, "item",},
+    {"delete",      3, DeleteOp,      2, 0, "itemName ...",},
+    {"deselect",    3, SelectOp,      3, 3, "itemName",},
+    {"exists",      1, ExistsOp,      3, 3, "itemName",},
     {"find",        1, FindOp,        3, 0, "string ?switches?",},
-    {"index",       3, IndexOp,       3, 4, "?-value? item",},
+    {"index",       3, IndexOp,       3, 4, "?-value? itemName",},
     {"insert",      3, InsertOp,      3, 0, 
         "after|at|before index ?option value?",},
-    {"invoke",      3, InvokeOp,      3, 3, "item",},
+    {"invoke",      3, InvokeOp,      3, 3, "itemName",},
     {"item",        2, ItemOp,        2, 0, "oper args",},
     {"listadd",     1, AddListOp,     3, 0, "labelList ?option value?",},
-    {"names",       2, NamesOp,       2, 0, "?pattern...?",},
+    {"names",       2, NamesOp,       2, 0, "?pattern ...?",},
     {"nearest",     3, NearestOp,     4, 4, "x y",},
-    {"next",        3, NextOp,        3, 3, "item",},
+    {"next",        3, NextOp,        3, 3, "itemName",},
     {"overbutton",  1, OverButtonOp,  4, 4, "x y",},
-    {"post",        4, PostOp,        2, 0, "switches...",},
-    {"postcascade", 5, PostCascadeOp, 2, 3, "?item?",},
-    {"previous",    2, PreviousOp,    3, 3, "item",},
+    {"post",        4, PostOp,        2, 0, "switches ...",},
+    {"postcascade", 5, PostCascadeOp, 2, 3, "?itemName?",},
+    {"previous",    2, PreviousOp,    3, 3, "itemName",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},
-    {"see",         3, SeeOp,         3, 5, "item",},
-    {"select",      3, SelectOp,      3, 3, "item",},
+    {"see",         3, SeeOp,         3, 5, "itemName",},
+    {"select",      3, SelectOp,      3, 3, "itemName",},
     {"size",        2, SizeOp,        2, 2, "",},
     {"sort",        2, SortOp,        2, 0, "args",},
-    {"style",       2, StyleOp,       2, 0, "op ?args...?",},
-    {"type",        1, TypeOp,        3, 3, "item",},
+    {"style",       2, StyleOp,       2, 0, "op ?args ...?",},
+    {"type",        1, TypeOp,        3, 3, "itemName",},
     {"unpost",      1, UnpostOp,      2, 2, "",},
-    {"value",       1, ValueOp,       3, 3, "item",},
+    {"value",       1, ValueOp,       3, 3, "itemName",},
     {"withdraw",    1, WithdrawOp,    2, 2, "",},
-    {"xposition",   2, XPositionOp,   3, 3, "item",},
+    {"xposition",   2, XPositionOp,   3, 3, "itemName",},
     {"xview",       2, XViewOp,       2, 5, 
         "?moveto fract? ?scroll number what?",},
-    {"yposition",   2, YPositionOp,   3, 3, "item",},
+    {"yposition",   2, YPositionOp,   3, 3, "itemName",},
     {"yview",       2, YViewOp,       2, 5, 
         "?moveto fract? ?scroll number what?",},
 };
@@ -7039,7 +7039,7 @@ ComboMenuCmd(
 
     if (objc < 2) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " pathName ?option value?...\"", 
+                Tcl_GetString(objv[0]), " pathName ?option value ...?\"", 
                 (char *)NULL);
         return TCL_ERROR;
     }
@@ -7124,7 +7124,7 @@ ComboViewCmd(
 
     if (objc < 2) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " pathName ?option value?...\"", 
+                Tcl_GetString(objv[0]), " pathName ?option value ...?\"", 
                 (char *)NULL);
         return TCL_ERROR;
     }
