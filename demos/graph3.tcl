@@ -1,26 +1,33 @@
 #!../src/bltwish
 
 package require BLT
-source scripts/stipples.tcl
-source bltPrintGraph.tcl
 set visual [winfo screenvisual .]
+source scripts/stipples.tcl
 
-proc PrintDialog { graph } {
-    if { [winfo exists .p1] } {
-	return
+if { [file isdirectory ../library] } {
+    set blt_library ../library
+}
+
+if { [catch { package require Itk} ] == 0 }  {
+
+    source $blt_library/bltPrintGraph.tcl
+    proc PrintDialog { graph } {
+	if { [winfo exists .p1] } {
+	    return
+	}
+	toplevel .p1
+	update
+	blt::PrintGraph .p1.print 
+	pack .p1.print -fill both -expand yes 
+	set out [.p1.print print $graph]
+	if { $out != "" } {
+	    set file "saved[lindex $out 0]"
+	    set f [open $file "w"]
+	    puts $f [lindex $out 1]
+	    close $f
+	}
+	destroy .p1
     }
-    toplevel .p1
-    update
-    blt::PrintGraph .p1.print 
-    pack .p1.print -fill both -expand yes 
-    set out [.p1.print print $graph]
-    if { $out != "" } {
-	set file "saved[lindex $out 0]"
-	set f [open $file "w"]
-	puts $f [lindex $out 1]
-	close $f
-    }
-    destroy .p1
 }
 
 if { $visual != "staticgray" && $visual != "grayscale" } {
@@ -78,12 +85,8 @@ bind $graph <Shift-ButtonPress-1> {
     MakePsLayout $graph
 }
 
-if 0 {
-set printer [printer open [lindex [printer names] 0]]
-after 2000 {
-	$graph print2 $printer
-}
-}
-after 2000 {
-    PrintDialog $graph
+if { [info commands PrintDialog] == "PrintDialog" } {
+    after 2000 {
+	PrintDialog $graph
+    }
 }
