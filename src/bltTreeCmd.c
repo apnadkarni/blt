@@ -3510,7 +3510,12 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
         Tcl_IncrRefCount(objPtr);
         Tcl_ListObjIndex(NULL, objPtr, numComponents-1, &tailPtr);
         label = Tcl_GetString(tailPtr);
-
+        /* Workaround bug in Tcl_FSSplitPath. Files that start with "~" are
+         * prepended with "./" */
+        if ((label[0] == '.') && (label[1] == '/')) {
+            label += 2;
+        }
+        fprintf(stderr, "label=%s path=%s\n", label, Tcl_GetString(objPtr));
         if ((switchesPtr->flags & DIR_RECURSE) && (S_ISDIR(stat.st_mode))) {
             /* Create a node for the subdirectory and recursively call this
              * routine. */
