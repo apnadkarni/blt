@@ -100,8 +100,6 @@ typedef struct {
                                          * associated with the background
                                          * creation "background
                                          * create...". */
-    Blt_HashTable pictTable;            /* Table of pictures cached for
-                                         * each background reference. */
     Blt_Chain chain;                    /* List of background tokens.  Used
                                          * to register callbacks for each
                                          * client of the background. */
@@ -115,16 +113,16 @@ typedef struct {
                                          * background color. */
     Blt_ConfigSpec *specs;              /* Configuration specifications
                                          * this background. */
+    Blt_HashTable instTable;
 } BackgroundObject;
 
-#define REFERENCE_PENDING       (1<<0)
-#define REFERENCE_SELF          (1<<1)
-#define REFERENCE_TOPLEVEL      (1<<2)
-#define REFERENCE_WINDOW        (1<<3)
+#define REFERENCE_PENDING        (1<<0)
+#define RELATIVETO_SELF          (1<<1)
+#define RELATIVETO_TOPLEVEL      (1<<2)
+#define RELATIVETO_WINDOW        (1<<3)
+#define RELATIVETO_MASK \
+    (RELATIVETO_SELF|RELATIVETO_TOPLEVEL|RELATIVETO_WINDOW)
 #define BACKGROUND_SOLID        (1<<5)
-
-#define REFERENCE_MASK \
-    (REFERENCE_SELF|REFERENCE_TOPLEVEL|REFERENCE_WINDOW)
 
 struct _Blt_Bg {
     BackgroundObject *corePtr;          /* Pointer to master background. */
@@ -135,6 +133,33 @@ struct _Blt_Bg {
 };
 
 typedef struct _Blt_Bg Bg;
+
+/* 
+ * BgInstance --
+ *
+ *      A single background can be used to refer to multiple reference
+ *      windows by using the "self" and "toplevel" references.  This
+ *      structure is stored in a hash table keyed by the different
+ *      reference windows.
+ */
+typedef struct _BgInstance {
+    BackgroundObject *corePtr;          /* Pointer to master background. */
+    Blt_HashEntry *hashPtr;
+    unsigned int flags;
+    Pixmap pixmap;                      /* Cached pixmap associated with
+                                         * reference window. */
+    GC gc;                              /* GC associated with reference
+                                         * window. This is used to draw the
+                                         * background rectangles and
+                                         * polygons.  The above pixmap will
+                                         * be selected as its tile. */
+    Display *display;                   /* Display of this reference. */
+    Tk_Window tkwin;
+    int width, height;                  /* Current size of reference
+                                         * window. */
+} BgInstance;
+
+#define NOTIFY_PENDING          (1<<16)
 
 #define DEF_BORDER              STD_NORMAL_BACKGROUND
 #define DEF_CENTER              "no"
@@ -158,8 +183,8 @@ typedef struct _Blt_Bg Bg;
 #define DEF_RADIAL_DIAMETER     "0.0"
 #define DEF_RADIAL_HEIGHT       "1.0"
 #define DEF_RADIAL_WIDTH        "1.0"
-#define DEF_REFERENCE           "toplevel"
-#define DEF_REFERENCE           "toplevel"
+#define DEF_RELATIVETO           "toplevel"
+#define DEF_RELATIVETO           "toplevel"
 #define DEF_REPEAT              "reversing"
 #define DEF_STRIPES_OFFCOLOR    "grey97"
 #define DEF_STRIPES_ONCOLOR     "grey90"
@@ -235,7 +260,7 @@ static Blt_ConfigSpec bgSpecs[] =
     {BLT_CONFIG_BORDER, "-border", "color", "Color", DEF_BORDER, 
         Blt_Offset(BackgroundObject, border), 0},
     {BLT_CONFIG_CUSTOM, "-relativeto", (char *)NULL, (char *)NULL, 
-        DEF_REFERENCE, 0, BLT_CONFIG_DONT_SET_DEFAULT, &referenceOption},
+        DEF_RELATIVETO, 0, BLT_CONFIG_DONT_SET_DEFAULT, &referenceOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -412,11 +437,38 @@ static Blt_ConfigSpec conicalGradientBrushSpecs[] =
 static void NotifyClients(BackgroundObject *corePtr);
 
 static Tcl_IdleProc SetReferenceWindowFromPath;
+static Tcl_IdleProc NotifyProc;
+
+static Tk_Window
+GetReferenceWindow(BackgroundObject *corePtr, Tk_Window tkwin)
+{
+    Tk_Window tkRef;
+    
+    tkRef = NULL;
+    switch (corePtr->flags & RELATIVETO_MASK) {
+    case RELATIVETO_SELF:
+        tkRef = tkwin;                              break;
+    case RELATIVETO_TOPLEVEL:
+        tkRef = Blt_Toplevel(tkwin);                break;
+    case RELATIVETO_WINDOW:                      
+        tkRef = corePtr->tkRef;                     break;
+    }
+    return tkRef;
+}
+        
+static void
+EventuallyNotify(BgInstance *instPtr)
+{
+    if ((instPtr->flags & NOTIFY_PENDING) == 0) {
+        instPtr->flags |= NOTIFY_PENDING;
+        Tcl_DoWhenIdle(NotifyProc, instPtr);
+    }
+}
 
 /*
  *---------------------------------------------------------------------------
  *
- * ReferenceWindowEventProc --
+ * InstanceEventProc --
  *
  *      This procedure is invoked by the Tk event handler when
  *      StructureNotify events occur in a reference window managed by the
@@ -429,21 +481,90 @@ static Tcl_IdleProc SetReferenceWindowFromPath;
  *---------------------------------------------------------------------------
  */
 static void
-ReferenceWindowEventProc(ClientData clientData, XEvent *eventPtr)
+InstanceEventProc(ClientData clientData, XEvent *eventPtr)
 {
-    BackgroundObject *corePtr = clientData;
+    BgInstance *instPtr = clientData;
 
-    if ((eventPtr->type == DestroyNotify) && (corePtr->tkRef != NULL) &&
-        (eventPtr->xany.window == Tk_WindowId(corePtr->tkRef))) {
-        corePtr->tkRef = NULL;
+    if ((eventPtr->type == DestroyNotify) && (instPtr->tkwin != NULL) &&
+        (eventPtr->xany.window == Tk_WindowId(instPtr->tkwin))) {
+        instPtr->tkwin = NULL;
     } else if (eventPtr->type == ConfigureNotify) {
-        if ((corePtr->flags & BACKGROUND_SOLID) == 0) {
-            /* Notify clients to redraw themselves if the background type
-             * isn't solid. */
-            NotifyClients(corePtr);
+        if ((instPtr->corePtr->flags & BACKGROUND_SOLID) == 0) {
+            EventuallyNotify(instPtr);
         }
     }
 }
+
+static void
+DestroyInstance(BgInstance *instPtr)
+{
+    BackgroundObject *corePtr;
+    
+    corePtr = instPtr->corePtr;
+    if (instPtr->flags & NOTIFY_PENDING) {
+        instPtr->flags &= ~NOTIFY_PENDING;
+        Tcl_CancelIdleCall(NotifyProc, instPtr);
+    }
+    if (instPtr->pixmap != None) {
+        Tk_FreePixmap(instPtr->display, instPtr->pixmap);
+    }
+    if (instPtr->gc != None) {
+        Blt_FreePrivateGC(instPtr->display, instPtr->gc);
+    }
+    if (instPtr->tkwin != NULL) {
+        Tk_DeleteEventHandler(instPtr->tkwin, StructureNotifyMask,
+                InstanceEventProc, instPtr);
+    }
+    if (instPtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&corePtr->instTable, instPtr->hashPtr);
+    }
+    Blt_Free(instPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ClearInstances --
+ *
+ *      Remove all the references associated with this background.  
+ *      StructureNotify events occur in a reference window managed by the
+ *      background.  Specifically we need to know if the reference window
+ *      was destroyed and dereference the pointer to it.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+ClearInstances(BackgroundObject *corePtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+
+    for (hPtr = Blt_FirstHashEntry(&corePtr->instTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        BgInstance *instPtr;
+
+        instPtr = Blt_GetHashValue(hPtr);
+        instPtr->hashPtr = NULL;
+        DestroyInstance(instPtr);
+    }
+    Blt_DeleteHashTable(&corePtr->instTable);
+    Blt_InitHashTable(&corePtr->instTable, sizeof(BgInstance)/sizeof(int));
+}
+
+static void
+NotifyProc(ClientData clientData)
+{
+    BgInstance *instPtr = clientData;
+    BackgroundObject *corePtr;
+
+    corePtr = instPtr->corePtr;
+    DestroyInstance(instPtr);
+    NotifyClients(corePtr);
+}
+
 
 static int 
 GetBackgroundTypeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
@@ -517,11 +638,8 @@ SetReferenceWindowFromPath(ClientData clientData)
         return;
     }
     if (corePtr->tkRef != NULL) {
-        Tk_DeleteEventHandler(corePtr->tkRef, StructureNotifyMask,
-              ReferenceWindowEventProc, corePtr);
+        ClearInstances(corePtr);
     }
-    Tk_CreateEventHandler(tkwin, StructureNotifyMask, 
-        ReferenceWindowEventProc, corePtr);
     corePtr->tkRef = tkwin;
 }
 
@@ -531,16 +649,8 @@ GetReferenceWindowDimensions(BackgroundObject *corePtr, Tk_Window tkwin,
 {
     Tk_Window tkRef;
 
-    tkRef = NULL;
     *heightPtr = *widthPtr = 0;
-    switch (corePtr->flags & REFERENCE_MASK) {
-    case REFERENCE_SELF:
-        tkRef = tkwin;                              break;
-    case REFERENCE_TOPLEVEL:
-        tkRef = Blt_Toplevel(tkwin);                break;
-    case REFERENCE_WINDOW:                      
-        tkRef = corePtr->tkRef;                     break;
-    }
+    tkRef = GetReferenceWindow(corePtr, tkwin);
     if (tkRef != NULL) {
         *widthPtr = Tk_Width(tkRef);
         *heightPtr = Tk_Height(tkRef);
@@ -1223,21 +1333,21 @@ ObjToReference(
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
     if ((c == 's') && (strncmp(string, "self", length) == 0)) {
-        flag = REFERENCE_SELF;
+        flag = RELATIVETO_SELF;
     } else if ((c == 't') && (strncmp(string, "toplevel", length) == 0)) {
-        flag = REFERENCE_TOPLEVEL;
+        flag = RELATIVETO_TOPLEVEL;
     } else if (c == '.') {
         if ((corePtr->flags & REFERENCE_PENDING) == 0) {
             Tcl_DoWhenIdle(SetReferenceWindowFromPath, corePtr);
             corePtr->flags |= REFERENCE_PENDING;
         }           
-        flag = REFERENCE_WINDOW;
+        flag = RELATIVETO_WINDOW;
     } else {
         Tcl_AppendResult(interp, "unknown reference type \"", string, "\"",
                          (char *)NULL);
         return TCL_ERROR;
     }
-    corePtr->flags &= ~REFERENCE_MASK;
+    corePtr->flags &= ~RELATIVETO_MASK;
     corePtr->flags |= flag;
     corePtr->refNameObjPtr = objPtr;
     Tcl_IncrRefCount(corePtr->refNameObjPtr);
@@ -1266,7 +1376,6 @@ ReferenceToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     return corePtr->refNameObjPtr;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1294,21 +1403,6 @@ NotifyClients(BackgroundObject *corePtr)
         if (bgPtr->notifyProc != NULL) {
             (*bgPtr->notifyProc)(bgPtr->clientData);
         }
-    }
-}
-
-static void
-ClearCache(BackgroundObject *corePtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&corePtr->pictTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Blt_Picture picture;
-
-        picture = Blt_GetHashValue(hPtr);
-        Blt_FreePicture(picture);
     }
 }
 
@@ -1345,20 +1439,12 @@ GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y,
 {
     Tk_Window tkRef;
 
-    tkRef = NULL;
-    switch (corePtr->flags & REFERENCE_MASK) {
-    case REFERENCE_SELF:
-        tkRef = tkwin;                      break;
-    case REFERENCE_TOPLEVEL:
-        tkRef = Blt_Toplevel(tkwin);        break;
-    case REFERENCE_WINDOW:
-        tkRef = corePtr->tkRef;             break;
-    }
+    tkRef = GetReferenceWindow(corePtr, tkwin);
     if (tkRef == NULL) {
         *xOffsetPtr = *yOffsetPtr = 0;
         return;                         
     }
-    if (corePtr->flags & (REFERENCE_WINDOW|REFERENCE_TOPLEVEL)) {
+    if (corePtr->flags & (RELATIVETO_WINDOW|RELATIVETO_TOPLEVEL)) {
         Tk_Window tkwin2;
         
         tkwin2 = tkwin;
@@ -1375,11 +1461,11 @@ GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y,
              * convert to a self reference.
              */
             fprintf(stderr, "reference type is %x, refwin=%s tkwin=%s\n",
-                    corePtr->flags & REFERENCE_MASK, Tk_PathName(tkRef),
+                    corePtr->flags & RELATIVETO_MASK, Tk_PathName(tkRef),
                     Tk_PathName(tkwin));
                     
 #ifdef notdef
-            corePtr->flags = REFERENCE_SELF;
+            corePtr->flags = RELATIVETO_SELF;
             tkRef = tkwin;
 #endif
             abort();
@@ -2000,6 +2086,60 @@ GetOptionLists(Tcl_Interp *interp, BackgroundObject *corePtr)
     return TCL_OK;
 }
 
+static BgInstance *
+GetBgInstance(Tk_Window tkwin, int w, int h, BackgroundObject *corePtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_Painter painter;
+    Blt_Picture picture;
+    GC newGC;
+    BgInstance *instPtr;
+    Tk_Window tkRef;
+    XGCValues gcValues;
+    int isNew;
+    unsigned int gcMask;
+    
+    tkRef = GetReferenceWindow(corePtr, tkwin);
+    hPtr = Blt_CreateHashEntry(&corePtr->instTable, (char *)tkRef, &isNew);
+    if (!isNew) {
+        return Tcl_GetHashValue(hPtr);
+    }
+    picture = Blt_CreatePicture(w, h);
+    if (picture == NULL) {
+        return NULL;                    /* Can't allocate picture */
+    }
+    instPtr = Blt_AssertCalloc(1, sizeof(BgInstance));
+    instPtr->corePtr = corePtr;
+    instPtr->width = w;
+    instPtr->height = h;
+    instPtr->tkwin = tkRef;
+    instPtr->display = corePtr->display;
+    instPtr->hashPtr = hPtr;
+    Tk_CreateEventHandler(instPtr->tkwin, StructureNotifyMask,
+              InstanceEventProc, instPtr);
+    Blt_SetBrushRegion(corePtr->brush, 0, 0, w, h);
+    Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush, TRUE);
+
+    /* Create a pixmap the size of the reference window. */
+    instPtr->pixmap = Blt_GetPixmap(corePtr->display, Tk_WindowId(tkRef),
+        w, h, Tk_Depth(tkRef));
+
+    painter = Blt_GetPainter(tkwin, 1.0);
+    Blt_PaintPicture(painter, instPtr->pixmap, picture, 0, 0, w, h, 0, 0, 0);
+    Blt_FreePicture(picture);
+
+    gcMask = (GCTile | GCFillStyle);
+    gcValues.fill_style = FillTiled;
+    gcValues.tile = instPtr->pixmap;
+    newGC = Blt_GetPrivateGC(tkRef, gcMask, &gcValues);
+    if (instPtr->gc != NULL) {
+        Blt_FreePrivateGC(corePtr->display, instPtr->gc);
+    }
+    instPtr->gc = newGC;
+    Blt_SetHashValue(hPtr, instPtr);
+    return instPtr;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2033,22 +2173,16 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
     }
     GetReferenceWindowDimensions(corePtr, tkwin, &rw, &rh);
     if ((rw > 0) && (rh > 0)) {
-        Blt_Picture picture;
-        Blt_Painter painter;
+        BgInstance *instPtr;
         int xOffset, yOffset;           /* Starting upper left corner of
                                          * region. */
-        picture = Blt_CreatePicture(w, h);
-        if (picture == NULL) {
-            return;                         /* Can't allocate picure. */
+        GetOffsets(tkwin, corePtr, 0, 0, &xOffset, &yOffset);
+        instPtr = GetBgInstance(tkwin, rw, rh, corePtr);
+        if (instPtr == NULL) {
+            return;
         }
-        GetOffsets(tkwin, corePtr, x, y, &xOffset, &yOffset);
-        /* This defines the region of the background in local coordinate window
-         * coordinates, plus the offset of x and y. */
-        Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, rw, rh);
-        Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush, TRUE);
-        painter = Blt_GetPainter(tkwin, 1.0);
-        Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
-        Blt_FreePicture(picture);
+        XSetTSOrigin(corePtr->display, instPtr->gc, xOffset, yOffset);
+	XFillRectangle(corePtr->display, drawable, instPtr->gc, x, y, w, h);
     }
 }
 
@@ -2072,11 +2206,6 @@ DrawBackgroundPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
                       int numPoints, XPoint *points)
 {
     BackgroundObject *corePtr = bgPtr->corePtr;
-    Blt_Picture bg;
-    int i;
-    int w, h;
-    int x1, x2, y1, y2;
-    Point2f *vertices;
     int rw, rh;
     
     /* Handle the simple case where it's a solid color background. */
@@ -2085,34 +2214,24 @@ DrawBackgroundPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
                          0, TK_RELIEF_FLAT);
         return;
     }
-    /* Grab the rectangular background that contains the polygon. */
-    GetPolygonBBox(points, numPoints, &x1, &x2, &y1, &y2);
-    w = x2 - x1 + 1;
-    h = y2 - y1 + 1;
-    bg = Blt_DrawableToPicture(tkwin, drawable, x1, y1, w, h, 1.0);
-    if (bg == NULL) {
-        return;                         /* Can't allocate picture */
-    }
-    vertices = Blt_AssertMalloc(numPoints * sizeof(Point2f));
-    /* Translate the polygon */
-    for (i = 0; i < numPoints; i++) {
-        vertices[i].x = (float)(points[i].x - x1);
-        vertices[i].y = (float)(points[i].y - y1);
-    }
     GetReferenceWindowDimensions(corePtr, tkwin, &rw, &rh);
     if ((rw > 0) && (rh > 0)) {
-        Blt_Painter painter;
+        BgInstance *instPtr;
+        int x1, x2, y1, y2;
         int xOffset, yOffset;           /* Starting upper left corner of
                                          * region. */
 
+        /* Grab the rectangular background that contains the polygon. */
+        GetPolygonBBox(points, numPoints, &x1, &x2, &y1, &y2);
         GetOffsets(tkwin, corePtr, x1, y1, &xOffset, &yOffset);
-        Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, rw, rh);
-        Blt_PaintPolygon(bg, numPoints, vertices, corePtr->brush);
-        painter = Blt_GetPainter(tkwin, 1.0);
-        Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
+        instPtr = GetBgInstance(tkwin, rw, rh, corePtr);
+        if (instPtr == NULL) {
+            return;
+        }
+        XSetTSOrigin(corePtr->display, instPtr->gc, xOffset, yOffset);
+        XFillPolygon(corePtr->display, drawable, instPtr->gc, points,
+                     numPoints, Complex, CoordModeOrigin);
     }
-    Blt_Free(vertices);
-    Blt_FreePicture(bg);
 }
 
 /*
@@ -2149,13 +2268,8 @@ DestroyBackgroundObject(BackgroundObject *corePtr)
     if (corePtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&corePtr->dataPtr->instTable, corePtr->hashPtr);
     }
-    if (corePtr->tkRef != NULL) {
-        Tk_DeleteEventHandler(corePtr->tkRef, StructureNotifyMask,
-              ReferenceWindowEventProc, corePtr);
-    }
-    ClearCache(corePtr);
+    ClearInstances(corePtr);
     Blt_Chain_Destroy(corePtr->chain);
-    Blt_DeleteHashTable(&corePtr->pictTable);
     Blt_Free(corePtr);
 }
 
@@ -2178,14 +2292,13 @@ NewBackgroundObject(BackgroundInterpData *dataPtr, Tcl_Interp *interp,
     BackgroundObject *corePtr;
 
     corePtr = Blt_AssertCalloc(1, sizeof(BackgroundObject));
-    corePtr->flags = REFERENCE_TOPLEVEL;
-    Blt_InitHashTable(&corePtr->pictTable, BLT_ONE_WORD_KEYS);
+    corePtr->flags = RELATIVETO_TOPLEVEL;
     corePtr->chain = Blt_Chain_Create();
     corePtr->tkwin = Tk_MainWindow(interp);
     corePtr->display = Tk_Display(corePtr->tkwin);
     corePtr->dataPtr = dataPtr;
     corePtr->border = border;
-
+    Blt_InitHashTable(&corePtr->instTable, sizeof(BgInstance)/sizeof(int));
     switch (type) {
     case BLT_PAINTBRUSH_TILE:
         corePtr->brush = Blt_NewTileBrush();
@@ -2355,7 +2468,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }    
 
 /*
- * background cget $bg ?option?...
+ * background cget bgName option
  */
 static int
 CgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -2371,7 +2484,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 /*
- * background configure $bg ?option?...
+ * background configure bgName ?option value ...?
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -2394,14 +2507,13 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
             != TCL_OK) {
             return TCL_ERROR;
         }
-        ClearCache(corePtr);
         NotifyClients(corePtr);
         return TCL_OK;
     }
 }
 
 /*
- * background delete $bg... 
+ * background delete bgName ... 
  */
 static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -2457,7 +2569,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Indicates if the named background exists.
  *
- *      blt::background exists bgName
+ *      background exists bgName
  *
  *---------------------------------------------------------------------------
  */
@@ -2483,7 +2595,7 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *      blt::background names ?pattern ... ?
+ *      background names ?pattern ... ?
  *
  *---------------------------------------------------------------------- 
  */
@@ -2524,7 +2636,7 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 /*
- * background type $bg
+ * background type bgName
  */
 static int
 TypeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
