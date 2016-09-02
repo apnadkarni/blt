@@ -529,7 +529,7 @@ BLT_EXTERN Blt_Uid	Blt_FindUid(const char *string);
 BLT_EXTERN int		Blt_CreatePipeline(Tcl_Interp *interp, int objc,
 				Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr,
 				int *stdinPipePtr, int *stdoutPipePtr,
-                                int *stderrPipePtr, char *const *env);
+				int *stderrPipePtr, char *const *env);
 #endif
 #ifndef Blt_InitHexTable_DECLARED
 #define Blt_InitHexTable_DECLARED
@@ -608,185 +608,287 @@ BLT_EXTERN const char *	 Blt_Utoa(unsigned int value);
 /* 102 */
 BLT_EXTERN const char *	 Blt_Dtoa(Tcl_Interp *interp, double value);
 #endif
+#ifndef Blt_Base16_Decode_DECLARED
+#define Blt_Base16_Decode_DECLARED
+/* 103 */
+BLT_EXTERN int		Blt_Base16_Decode(Tcl_Interp *interp,
+				const char *src, size_t numChars,
+				unsigned char *dest, size_t *numBytesPtr,
+				DecodingSwitches *switchesPtr);
+#endif
 #ifndef Blt_Base64_Decode_DECLARED
 #define Blt_Base64_Decode_DECLARED
-/* 103 */
-BLT_EXTERN unsigned char * Blt_Base64_Decode(Tcl_Interp *interp,
-				const char *string, size_t *lengthPtr);
+/* 104 */
+BLT_EXTERN int		Blt_Base64_Decode(Tcl_Interp *interp,
+				const char *src, size_t numChars,
+				unsigned char *dest, size_t *numBytesPtr,
+				DecodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base85_Decode_DECLARED
+#define Blt_Base85_Decode_DECLARED
+/* 105 */
+BLT_EXTERN int		Blt_Base85_Decode(Tcl_Interp *interp,
+				const char *src, size_t numChars,
+				unsigned char *dest, size_t *numBytesPtr,
+				DecodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Ascii85_Decode_DECLARED
+#define Blt_Ascii85_Decode_DECLARED
+/* 106 */
+BLT_EXTERN int		Blt_Ascii85_Decode(Tcl_Interp *interp,
+				const char *src, size_t numChars,
+				unsigned char *dest, size_t *numBytesPtr,
+				DecodingSwitches *switchesPtr);
 #endif
 #ifndef Blt_Base64_DecodeToBuffer_DECLARED
 #define Blt_Base64_DecodeToBuffer_DECLARED
-/* 104 */
+/* 107 */
 BLT_EXTERN Blt_DBuffer	Blt_Base64_DecodeToBuffer(Tcl_Interp *interp,
-				const char *string, size_t length);
+				const char *src, size_t numChars);
+#endif
+#ifndef Blt_Base16_DecodeToObj_DECLARED
+#define Blt_Base16_DecodeToObj_DECLARED
+/* 108 */
+BLT_EXTERN Tcl_Obj *	Blt_Base16_DecodeToObj(Tcl_Interp *interp,
+				const char *src, size_t numChars);
 #endif
 #ifndef Blt_Base64_DecodeToObj_DECLARED
 #define Blt_Base64_DecodeToObj_DECLARED
-/* 105 */
-BLT_EXTERN Tcl_Obj *	Blt_Base64_DecodeToObj(Tcl_Interp *interp,
-				const char *string, size_t length);
-#endif
-#ifndef Blt_Base64_EncodeToObj_DECLARED
-#define Blt_Base64_EncodeToObj_DECLARED
-/* 106 */
-BLT_EXTERN Tcl_Obj *	Blt_Base64_EncodeToObj(const unsigned char *buffer,
-				size_t bufsize);
-#endif
-#ifndef Blt_Base64_MaxBufferLength_DECLARED
-#define Blt_Base64_MaxBufferLength_DECLARED
-/* 107 */
-BLT_EXTERN size_t	Blt_Base64_MaxBufferLength(size_t bufsize);
-#endif
-#ifndef Blt_Base64_Encode_DECLARED
-#define Blt_Base64_Encode_DECLARED
-/* 108 */
-BLT_EXTERN size_t	Blt_Base64_Encode(const unsigned char *buffer,
-				size_t bufsize, unsigned char *destBytes);
-#endif
-#ifndef Blt_Base85_MaxBufferLength_DECLARED
-#define Blt_Base85_MaxBufferLength_DECLARED
 /* 109 */
-BLT_EXTERN size_t	Blt_Base85_MaxBufferLength(size_t bufsize);
+BLT_EXTERN Tcl_Obj *	Blt_Base64_DecodeToObj(Tcl_Interp *interp,
+				const char *src, size_t numChars);
 #endif
-#ifndef Blt_Base85_Encode_DECLARED
-#define Blt_Base85_Encode_DECLARED
+#ifndef Blt_Base85_DecodeToObj_DECLARED
+#define Blt_Base85_DecodeToObj_DECLARED
 /* 110 */
-BLT_EXTERN size_t	Blt_Base85_Encode(const unsigned char *buffer,
-				size_t bufsize, unsigned char *destBytes);
+BLT_EXTERN Tcl_Obj *	Blt_Base85_DecodeToObj(Tcl_Interp *interp,
+				const char *src, size_t numChars);
 #endif
 #ifndef Blt_Base16_Encode_DECLARED
 #define Blt_Base16_Encode_DECLARED
 /* 111 */
-BLT_EXTERN const char *	 Blt_Base16_Encode(const unsigned char *buffer,
-				size_t bufsize);
+BLT_EXTERN int		Blt_Base16_Encode(const unsigned char *src,
+				size_t numBytes, char *dest,
+				size_t *numCharsPtr,
+				EncodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base64_Encode_DECLARED
+#define Blt_Base64_Encode_DECLARED
+/* 112 */
+BLT_EXTERN int		Blt_Base64_Encode(const unsigned char *src,
+				size_t numBytes, char *dest,
+				size_t *numCharsPtr,
+				EncodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base85_Encode_DECLARED
+#define Blt_Base85_Encode_DECLARED
+/* 113 */
+BLT_EXTERN int		Blt_Base85_Encode(const unsigned char *src,
+				size_t numBytes, char *dest,
+				size_t *numCharsPtr,
+				EncodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Ascii85_Encode_DECLARED
+#define Blt_Ascii85_Encode_DECLARED
+/* 114 */
+BLT_EXTERN int		Blt_Ascii85_Encode(const unsigned char *src,
+				size_t numBytes, char *dest,
+				size_t *numCharsPtr,
+				EncodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base16_EncodeToObj_DECLARED
+#define Blt_Base16_EncodeToObj_DECLARED
+/* 115 */
+BLT_EXTERN Tcl_Obj *	Blt_Base16_EncodeToObj(const unsigned char *src,
+				size_t numBytes);
+#endif
+#ifndef Blt_Base64_EncodeToObj_DECLARED
+#define Blt_Base64_EncodeToObj_DECLARED
+/* 116 */
+BLT_EXTERN Tcl_Obj *	Blt_Base64_EncodeToObj(const unsigned char *src,
+				size_t numBytes);
+#endif
+#ifndef Blt_Base85_EncodeToObj_DECLARED
+#define Blt_Base85_EncodeToObj_DECLARED
+/* 117 */
+BLT_EXTERN Tcl_Obj *	Blt_Base85_EncodeToObj(const unsigned char *src,
+				size_t numBytes);
+#endif
+#ifndef Blt_Base16_MaxDecodeBufferSize_DECLARED
+#define Blt_Base16_MaxDecodeBufferSize_DECLARED
+/* 118 */
+BLT_EXTERN size_t	Blt_Base16_MaxDecodeBufferSize(size_t numBytes,
+				DecodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base16_MaxEncodeBufferSize_DECLARED
+#define Blt_Base16_MaxEncodeBufferSize_DECLARED
+/* 119 */
+BLT_EXTERN size_t	Blt_Base16_MaxEncodeBufferSize(size_t numChars,
+				EncodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base64_MaxDecodeBufferSize_DECLARED
+#define Blt_Base64_MaxDecodeBufferSize_DECLARED
+/* 120 */
+BLT_EXTERN size_t	Blt_Base64_MaxDecodeBufferSize(size_t numBytes,
+				DecodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base64_MaxEncodeBufferSize_DECLARED
+#define Blt_Base64_MaxEncodeBufferSize_DECLARED
+/* 121 */
+BLT_EXTERN size_t	Blt_Base64_MaxEncodeBufferSize(size_t numChars,
+				EncodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base85_MaxDecodeBufferSize_DECLARED
+#define Blt_Base85_MaxDecodeBufferSize_DECLARED
+/* 122 */
+BLT_EXTERN size_t	Blt_Base85_MaxDecodeBufferSize(size_t numBytes,
+				DecodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Base85_MaxEncodeBufferSize_DECLARED
+#define Blt_Base85_MaxEncodeBufferSize_DECLARED
+/* 123 */
+BLT_EXTERN size_t	Blt_Base85_MaxEncodeBufferSize(size_t numChars,
+				EncodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Ascii85_MaxDecodeBufferSize_DECLARED
+#define Blt_Ascii85_MaxDecodeBufferSize_DECLARED
+/* 124 */
+BLT_EXTERN size_t	Blt_Ascii85_MaxDecodeBufferSize(size_t numBytes,
+				DecodingSwitches *switchesPtr);
+#endif
+#ifndef Blt_Ascii85_MaxEncodeBufferSize_DECLARED
+#define Blt_Ascii85_MaxEncodeBufferSize_DECLARED
+/* 125 */
+BLT_EXTERN size_t	Blt_Ascii85_MaxEncodeBufferSize(size_t numChars,
+				EncodingSwitches *switchesPtr);
 #endif
 #ifndef Blt_IsBase64_DECLARED
 #define Blt_IsBase64_DECLARED
-/* 112 */
+/* 126 */
 BLT_EXTERN int		Blt_IsBase64(const char *buf, size_t length);
 #endif
 #ifndef Blt_GetDoubleFromString_DECLARED
 #define Blt_GetDoubleFromString_DECLARED
-/* 113 */
+/* 127 */
 BLT_EXTERN int		Blt_GetDoubleFromString(Tcl_Interp *interp,
 				const char *s, double *valuePtr);
 #endif
 #ifndef Blt_GetDoubleFromObj_DECLARED
 #define Blt_GetDoubleFromObj_DECLARED
-/* 114 */
+/* 128 */
 BLT_EXTERN int		Blt_GetDoubleFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, double *valuePtr);
 #endif
 #ifndef Blt_GetTimeFromObj_DECLARED
 #define Blt_GetTimeFromObj_DECLARED
-/* 115 */
+/* 129 */
 BLT_EXTERN int		Blt_GetTimeFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, double *secondsPtr);
 #endif
 #ifndef Blt_GetTime_DECLARED
 #define Blt_GetTime_DECLARED
-/* 116 */
+/* 130 */
 BLT_EXTERN int		Blt_GetTime(Tcl_Interp *interp, const char *string,
 				double *secondsPtr);
 #endif
 #ifndef Blt_SecondsToDate_DECLARED
 #define Blt_SecondsToDate_DECLARED
-/* 117 */
+/* 131 */
 BLT_EXTERN void		Blt_SecondsToDate(double seconds,
 				Blt_DateTime *datePtr);
 #endif
 #ifndef Blt_DateToSeconds_DECLARED
 #define Blt_DateToSeconds_DECLARED
-/* 118 */
+/* 132 */
 BLT_EXTERN void		Blt_DateToSeconds(Blt_DateTime *datePtr,
 				double *secondsPtr);
 #endif
 #ifndef Blt_FormatDate_DECLARED
 #define Blt_FormatDate_DECLARED
-/* 119 */
+/* 133 */
 BLT_EXTERN void		Blt_FormatDate(Blt_DateTime *datePtr,
 				const char *format, Tcl_DString *resultPtr);
 #endif
 #ifndef Blt_GetPositionFromObj_DECLARED
 #define Blt_GetPositionFromObj_DECLARED
-/* 120 */
+/* 134 */
 BLT_EXTERN int		Blt_GetPositionFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, long *indexPtr);
 #endif
 #ifndef Blt_GetCountFromObj_DECLARED
 #define Blt_GetCountFromObj_DECLARED
-/* 121 */
+/* 135 */
 BLT_EXTERN int		Blt_GetCountFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int check, long *valuePtr);
 #endif
 #ifndef Blt_SimplifyLine_DECLARED
 #define Blt_SimplifyLine_DECLARED
-/* 122 */
+/* 136 */
 BLT_EXTERN int		Blt_SimplifyLine(Point2d *origPts, int low, int high,
 				double tolerance, int *indices);
 #endif
 #ifndef Blt_GetLong_DECLARED
 #define Blt_GetLong_DECLARED
-/* 123 */
+/* 137 */
 BLT_EXTERN int		Blt_GetLong(Tcl_Interp *interp, const char *s,
 				long *longPtr);
 #endif
 #ifndef Blt_GetLongFromObj_DECLARED
 #define Blt_GetLongFromObj_DECLARED
-/* 124 */
+/* 138 */
 BLT_EXTERN int		Blt_GetLongFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, long *longPtr);
 #endif
 #ifndef Blt_FormatString_DECLARED
 #define Blt_FormatString_DECLARED
-/* 125 */
+/* 139 */
 BLT_EXTERN int		Blt_FormatString(char *s, size_t size,
 				const char *fmt, ...);
 #endif
 #ifndef Blt_LowerCase_DECLARED
 #define Blt_LowerCase_DECLARED
-/* 126 */
+/* 140 */
 BLT_EXTERN void		Blt_LowerCase(char *s);
 #endif
 #ifndef Blt_UpperCase_DECLARED
 #define Blt_UpperCase_DECLARED
-/* 127 */
+/* 141 */
 BLT_EXTERN void		Blt_UpperCase(char *s);
 #endif
 #ifndef Blt_GetPlatformId_DECLARED
 #define Blt_GetPlatformId_DECLARED
-/* 128 */
+/* 142 */
 BLT_EXTERN int		Blt_GetPlatformId(void );
 #endif
 #ifndef Blt_LastError_DECLARED
 #define Blt_LastError_DECLARED
-/* 129 */
+/* 143 */
 BLT_EXTERN const char *	 Blt_LastError(void );
 #endif
 #ifndef Blt_NaN_DECLARED
 #define Blt_NaN_DECLARED
-/* 130 */
+/* 144 */
 BLT_EXTERN double	Blt_NaN(void );
 #endif
 #ifndef Blt_AlmostEquals_DECLARED
 #define Blt_AlmostEquals_DECLARED
-/* 131 */
+/* 145 */
 BLT_EXTERN int		Blt_AlmostEquals(double x, double y);
 #endif
 #ifndef Blt_ConvertListToList_DECLARED
 #define Blt_ConvertListToList_DECLARED
-/* 132 */
+/* 146 */
 BLT_EXTERN const char ** Blt_ConvertListToList(int argc, const char **argv);
 #endif
 #ifndef Blt_GetCachedVar_DECLARED
 #define Blt_GetCachedVar_DECLARED
-/* 133 */
+/* 147 */
 BLT_EXTERN Tcl_Var	Blt_GetCachedVar(Blt_HashTable *tablePtr,
 				const char *label, Tcl_Obj *objPtr);
 #endif
 #ifndef Blt_FreeCachedVars_DECLARED
 #define Blt_FreeCachedVars_DECLARED
-/* 134 */
+/* 148 */
 BLT_EXTERN void		Blt_FreeCachedVars(Blt_HashTable *tablePtr);
 #endif
 
@@ -897,38 +999,52 @@ typedef struct BltTclIntProcs {
     const char * (*blt_Ltoa) (long value); /* 100 */
     const char * (*blt_Utoa) (unsigned int value); /* 101 */
     const char * (*blt_Dtoa) (Tcl_Interp *interp, double value); /* 102 */
-    unsigned char * (*blt_Base64_Decode) (Tcl_Interp *interp, const char *string, size_t *lengthPtr); /* 103 */
-    Blt_DBuffer (*blt_Base64_DecodeToBuffer) (Tcl_Interp *interp, const char *string, size_t length); /* 104 */
-    Tcl_Obj * (*blt_Base64_DecodeToObj) (Tcl_Interp *interp, const char *string, size_t length); /* 105 */
-    Tcl_Obj * (*blt_Base64_EncodeToObj) (const unsigned char *buffer, size_t bufsize); /* 106 */
-    size_t (*blt_Base64_MaxBufferLength) (size_t bufsize); /* 107 */
-    size_t (*blt_Base64_Encode) (const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 108 */
-    size_t (*blt_Base85_MaxBufferLength) (size_t bufsize); /* 109 */
-    size_t (*blt_Base85_Encode) (const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 110 */
-    const char * (*blt_Base16_Encode) (const unsigned char *buffer, size_t bufsize); /* 111 */
-    int (*blt_IsBase64) (const char *buf, size_t length); /* 112 */
-    int (*blt_GetDoubleFromString) (Tcl_Interp *interp, const char *s, double *valuePtr); /* 113 */
-    int (*blt_GetDoubleFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr); /* 114 */
-    int (*blt_GetTimeFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *secondsPtr); /* 115 */
-    int (*blt_GetTime) (Tcl_Interp *interp, const char *string, double *secondsPtr); /* 116 */
-    void (*blt_SecondsToDate) (double seconds, Blt_DateTime *datePtr); /* 117 */
-    void (*blt_DateToSeconds) (Blt_DateTime *datePtr, double *secondsPtr); /* 118 */
-    void (*blt_FormatDate) (Blt_DateTime *datePtr, const char *format, Tcl_DString *resultPtr); /* 119 */
-    int (*blt_GetPositionFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *indexPtr); /* 120 */
-    int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, long *valuePtr); /* 121 */
-    int (*blt_SimplifyLine) (Point2d *origPts, int low, int high, double tolerance, int *indices); /* 122 */
-    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, long *longPtr); /* 123 */
-    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *longPtr); /* 124 */
-    int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 125 */
-    void (*blt_LowerCase) (char *s); /* 126 */
-    void (*blt_UpperCase) (char *s); /* 127 */
-    int (*blt_GetPlatformId) (void); /* 128 */
-    const char * (*blt_LastError) (void); /* 129 */
-    double (*blt_NaN) (void); /* 130 */
-    int (*blt_AlmostEquals) (double x, double y); /* 131 */
-    const char ** (*blt_ConvertListToList) (int argc, const char **argv); /* 132 */
-    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 133 */
-    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 134 */
+    int (*blt_Base16_Decode) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 103 */
+    int (*blt_Base64_Decode) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 104 */
+    int (*blt_Base85_Decode) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 105 */
+    int (*blt_Ascii85_Decode) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 106 */
+    Blt_DBuffer (*blt_Base64_DecodeToBuffer) (Tcl_Interp *interp, const char *src, size_t numChars); /* 107 */
+    Tcl_Obj * (*blt_Base16_DecodeToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 108 */
+    Tcl_Obj * (*blt_Base64_DecodeToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 109 */
+    Tcl_Obj * (*blt_Base85_DecodeToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 110 */
+    int (*blt_Base16_Encode) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 111 */
+    int (*blt_Base64_Encode) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 112 */
+    int (*blt_Base85_Encode) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 113 */
+    int (*blt_Ascii85_Encode) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 114 */
+    Tcl_Obj * (*blt_Base16_EncodeToObj) (const unsigned char *src, size_t numBytes); /* 115 */
+    Tcl_Obj * (*blt_Base64_EncodeToObj) (const unsigned char *src, size_t numBytes); /* 116 */
+    Tcl_Obj * (*blt_Base85_EncodeToObj) (const unsigned char *src, size_t numBytes); /* 117 */
+    size_t (*blt_Base16_MaxDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 118 */
+    size_t (*blt_Base16_MaxEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 119 */
+    size_t (*blt_Base64_MaxDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 120 */
+    size_t (*blt_Base64_MaxEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 121 */
+    size_t (*blt_Base85_MaxDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 122 */
+    size_t (*blt_Base85_MaxEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 123 */
+    size_t (*blt_Ascii85_MaxDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 124 */
+    size_t (*blt_Ascii85_MaxEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 125 */
+    int (*blt_IsBase64) (const char *buf, size_t length); /* 126 */
+    int (*blt_GetDoubleFromString) (Tcl_Interp *interp, const char *s, double *valuePtr); /* 127 */
+    int (*blt_GetDoubleFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr); /* 128 */
+    int (*blt_GetTimeFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *secondsPtr); /* 129 */
+    int (*blt_GetTime) (Tcl_Interp *interp, const char *string, double *secondsPtr); /* 130 */
+    void (*blt_SecondsToDate) (double seconds, Blt_DateTime *datePtr); /* 131 */
+    void (*blt_DateToSeconds) (Blt_DateTime *datePtr, double *secondsPtr); /* 132 */
+    void (*blt_FormatDate) (Blt_DateTime *datePtr, const char *format, Tcl_DString *resultPtr); /* 133 */
+    int (*blt_GetPositionFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *indexPtr); /* 134 */
+    int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, long *valuePtr); /* 135 */
+    int (*blt_SimplifyLine) (Point2d *origPts, int low, int high, double tolerance, int *indices); /* 136 */
+    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, long *longPtr); /* 137 */
+    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *longPtr); /* 138 */
+    int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 139 */
+    void (*blt_LowerCase) (char *s); /* 140 */
+    void (*blt_UpperCase) (char *s); /* 141 */
+    int (*blt_GetPlatformId) (void); /* 142 */
+    const char * (*blt_LastError) (void); /* 143 */
+    double (*blt_NaN) (void); /* 144 */
+    int (*blt_AlmostEquals) (double x, double y); /* 145 */
+    const char ** (*blt_ConvertListToList) (int argc, const char **argv); /* 146 */
+    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 147 */
+    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 148 */
 } BltTclIntProcs;
 
 #ifdef __cplusplus
@@ -1354,133 +1470,189 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_Dtoa \
 	(bltTclIntProcsPtr->blt_Dtoa) /* 102 */
 #endif
+#ifndef Blt_Base16_Decode
+#define Blt_Base16_Decode \
+	(bltTclIntProcsPtr->blt_Base16_Decode) /* 103 */
+#endif
 #ifndef Blt_Base64_Decode
 #define Blt_Base64_Decode \
-	(bltTclIntProcsPtr->blt_Base64_Decode) /* 103 */
+	(bltTclIntProcsPtr->blt_Base64_Decode) /* 104 */
+#endif
+#ifndef Blt_Base85_Decode
+#define Blt_Base85_Decode \
+	(bltTclIntProcsPtr->blt_Base85_Decode) /* 105 */
+#endif
+#ifndef Blt_Ascii85_Decode
+#define Blt_Ascii85_Decode \
+	(bltTclIntProcsPtr->blt_Ascii85_Decode) /* 106 */
 #endif
 #ifndef Blt_Base64_DecodeToBuffer
 #define Blt_Base64_DecodeToBuffer \
-	(bltTclIntProcsPtr->blt_Base64_DecodeToBuffer) /* 104 */
+	(bltTclIntProcsPtr->blt_Base64_DecodeToBuffer) /* 107 */
+#endif
+#ifndef Blt_Base16_DecodeToObj
+#define Blt_Base16_DecodeToObj \
+	(bltTclIntProcsPtr->blt_Base16_DecodeToObj) /* 108 */
 #endif
 #ifndef Blt_Base64_DecodeToObj
 #define Blt_Base64_DecodeToObj \
-	(bltTclIntProcsPtr->blt_Base64_DecodeToObj) /* 105 */
+	(bltTclIntProcsPtr->blt_Base64_DecodeToObj) /* 109 */
 #endif
-#ifndef Blt_Base64_EncodeToObj
-#define Blt_Base64_EncodeToObj \
-	(bltTclIntProcsPtr->blt_Base64_EncodeToObj) /* 106 */
-#endif
-#ifndef Blt_Base64_MaxBufferLength
-#define Blt_Base64_MaxBufferLength \
-	(bltTclIntProcsPtr->blt_Base64_MaxBufferLength) /* 107 */
-#endif
-#ifndef Blt_Base64_Encode
-#define Blt_Base64_Encode \
-	(bltTclIntProcsPtr->blt_Base64_Encode) /* 108 */
-#endif
-#ifndef Blt_Base85_MaxBufferLength
-#define Blt_Base85_MaxBufferLength \
-	(bltTclIntProcsPtr->blt_Base85_MaxBufferLength) /* 109 */
-#endif
-#ifndef Blt_Base85_Encode
-#define Blt_Base85_Encode \
-	(bltTclIntProcsPtr->blt_Base85_Encode) /* 110 */
+#ifndef Blt_Base85_DecodeToObj
+#define Blt_Base85_DecodeToObj \
+	(bltTclIntProcsPtr->blt_Base85_DecodeToObj) /* 110 */
 #endif
 #ifndef Blt_Base16_Encode
 #define Blt_Base16_Encode \
 	(bltTclIntProcsPtr->blt_Base16_Encode) /* 111 */
 #endif
+#ifndef Blt_Base64_Encode
+#define Blt_Base64_Encode \
+	(bltTclIntProcsPtr->blt_Base64_Encode) /* 112 */
+#endif
+#ifndef Blt_Base85_Encode
+#define Blt_Base85_Encode \
+	(bltTclIntProcsPtr->blt_Base85_Encode) /* 113 */
+#endif
+#ifndef Blt_Ascii85_Encode
+#define Blt_Ascii85_Encode \
+	(bltTclIntProcsPtr->blt_Ascii85_Encode) /* 114 */
+#endif
+#ifndef Blt_Base16_EncodeToObj
+#define Blt_Base16_EncodeToObj \
+	(bltTclIntProcsPtr->blt_Base16_EncodeToObj) /* 115 */
+#endif
+#ifndef Blt_Base64_EncodeToObj
+#define Blt_Base64_EncodeToObj \
+	(bltTclIntProcsPtr->blt_Base64_EncodeToObj) /* 116 */
+#endif
+#ifndef Blt_Base85_EncodeToObj
+#define Blt_Base85_EncodeToObj \
+	(bltTclIntProcsPtr->blt_Base85_EncodeToObj) /* 117 */
+#endif
+#ifndef Blt_Base16_MaxDecodeBufferSize
+#define Blt_Base16_MaxDecodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base16_MaxDecodeBufferSize) /* 118 */
+#endif
+#ifndef Blt_Base16_MaxEncodeBufferSize
+#define Blt_Base16_MaxEncodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base16_MaxEncodeBufferSize) /* 119 */
+#endif
+#ifndef Blt_Base64_MaxDecodeBufferSize
+#define Blt_Base64_MaxDecodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base64_MaxDecodeBufferSize) /* 120 */
+#endif
+#ifndef Blt_Base64_MaxEncodeBufferSize
+#define Blt_Base64_MaxEncodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base64_MaxEncodeBufferSize) /* 121 */
+#endif
+#ifndef Blt_Base85_MaxDecodeBufferSize
+#define Blt_Base85_MaxDecodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base85_MaxDecodeBufferSize) /* 122 */
+#endif
+#ifndef Blt_Base85_MaxEncodeBufferSize
+#define Blt_Base85_MaxEncodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base85_MaxEncodeBufferSize) /* 123 */
+#endif
+#ifndef Blt_Ascii85_MaxDecodeBufferSize
+#define Blt_Ascii85_MaxDecodeBufferSize \
+	(bltTclIntProcsPtr->blt_Ascii85_MaxDecodeBufferSize) /* 124 */
+#endif
+#ifndef Blt_Ascii85_MaxEncodeBufferSize
+#define Blt_Ascii85_MaxEncodeBufferSize \
+	(bltTclIntProcsPtr->blt_Ascii85_MaxEncodeBufferSize) /* 125 */
+#endif
 #ifndef Blt_IsBase64
 #define Blt_IsBase64 \
-	(bltTclIntProcsPtr->blt_IsBase64) /* 112 */
+	(bltTclIntProcsPtr->blt_IsBase64) /* 126 */
 #endif
 #ifndef Blt_GetDoubleFromString
 #define Blt_GetDoubleFromString \
-	(bltTclIntProcsPtr->blt_GetDoubleFromString) /* 113 */
+	(bltTclIntProcsPtr->blt_GetDoubleFromString) /* 127 */
 #endif
 #ifndef Blt_GetDoubleFromObj
 #define Blt_GetDoubleFromObj \
-	(bltTclIntProcsPtr->blt_GetDoubleFromObj) /* 114 */
+	(bltTclIntProcsPtr->blt_GetDoubleFromObj) /* 128 */
 #endif
 #ifndef Blt_GetTimeFromObj
 #define Blt_GetTimeFromObj \
-	(bltTclIntProcsPtr->blt_GetTimeFromObj) /* 115 */
+	(bltTclIntProcsPtr->blt_GetTimeFromObj) /* 129 */
 #endif
 #ifndef Blt_GetTime
 #define Blt_GetTime \
-	(bltTclIntProcsPtr->blt_GetTime) /* 116 */
+	(bltTclIntProcsPtr->blt_GetTime) /* 130 */
 #endif
 #ifndef Blt_SecondsToDate
 #define Blt_SecondsToDate \
-	(bltTclIntProcsPtr->blt_SecondsToDate) /* 117 */
+	(bltTclIntProcsPtr->blt_SecondsToDate) /* 131 */
 #endif
 #ifndef Blt_DateToSeconds
 #define Blt_DateToSeconds \
-	(bltTclIntProcsPtr->blt_DateToSeconds) /* 118 */
+	(bltTclIntProcsPtr->blt_DateToSeconds) /* 132 */
 #endif
 #ifndef Blt_FormatDate
 #define Blt_FormatDate \
-	(bltTclIntProcsPtr->blt_FormatDate) /* 119 */
+	(bltTclIntProcsPtr->blt_FormatDate) /* 133 */
 #endif
 #ifndef Blt_GetPositionFromObj
 #define Blt_GetPositionFromObj \
-	(bltTclIntProcsPtr->blt_GetPositionFromObj) /* 120 */
+	(bltTclIntProcsPtr->blt_GetPositionFromObj) /* 134 */
 #endif
 #ifndef Blt_GetCountFromObj
 #define Blt_GetCountFromObj \
-	(bltTclIntProcsPtr->blt_GetCountFromObj) /* 121 */
+	(bltTclIntProcsPtr->blt_GetCountFromObj) /* 135 */
 #endif
 #ifndef Blt_SimplifyLine
 #define Blt_SimplifyLine \
-	(bltTclIntProcsPtr->blt_SimplifyLine) /* 122 */
+	(bltTclIntProcsPtr->blt_SimplifyLine) /* 136 */
 #endif
 #ifndef Blt_GetLong
 #define Blt_GetLong \
-	(bltTclIntProcsPtr->blt_GetLong) /* 123 */
+	(bltTclIntProcsPtr->blt_GetLong) /* 137 */
 #endif
 #ifndef Blt_GetLongFromObj
 #define Blt_GetLongFromObj \
-	(bltTclIntProcsPtr->blt_GetLongFromObj) /* 124 */
+	(bltTclIntProcsPtr->blt_GetLongFromObj) /* 138 */
 #endif
 #ifndef Blt_FormatString
 #define Blt_FormatString \
-	(bltTclIntProcsPtr->blt_FormatString) /* 125 */
+	(bltTclIntProcsPtr->blt_FormatString) /* 139 */
 #endif
 #ifndef Blt_LowerCase
 #define Blt_LowerCase \
-	(bltTclIntProcsPtr->blt_LowerCase) /* 126 */
+	(bltTclIntProcsPtr->blt_LowerCase) /* 140 */
 #endif
 #ifndef Blt_UpperCase
 #define Blt_UpperCase \
-	(bltTclIntProcsPtr->blt_UpperCase) /* 127 */
+	(bltTclIntProcsPtr->blt_UpperCase) /* 141 */
 #endif
 #ifndef Blt_GetPlatformId
 #define Blt_GetPlatformId \
-	(bltTclIntProcsPtr->blt_GetPlatformId) /* 128 */
+	(bltTclIntProcsPtr->blt_GetPlatformId) /* 142 */
 #endif
 #ifndef Blt_LastError
 #define Blt_LastError \
-	(bltTclIntProcsPtr->blt_LastError) /* 129 */
+	(bltTclIntProcsPtr->blt_LastError) /* 143 */
 #endif
 #ifndef Blt_NaN
 #define Blt_NaN \
-	(bltTclIntProcsPtr->blt_NaN) /* 130 */
+	(bltTclIntProcsPtr->blt_NaN) /* 144 */
 #endif
 #ifndef Blt_AlmostEquals
 #define Blt_AlmostEquals \
-	(bltTclIntProcsPtr->blt_AlmostEquals) /* 131 */
+	(bltTclIntProcsPtr->blt_AlmostEquals) /* 145 */
 #endif
 #ifndef Blt_ConvertListToList
 #define Blt_ConvertListToList \
-	(bltTclIntProcsPtr->blt_ConvertListToList) /* 132 */
+	(bltTclIntProcsPtr->blt_ConvertListToList) /* 146 */
 #endif
 #ifndef Blt_GetCachedVar
 #define Blt_GetCachedVar \
-	(bltTclIntProcsPtr->blt_GetCachedVar) /* 133 */
+	(bltTclIntProcsPtr->blt_GetCachedVar) /* 147 */
 #endif
 #ifndef Blt_FreeCachedVars
 #define Blt_FreeCachedVars \
-	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 134 */
+	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 148 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TCL_PROCS) */

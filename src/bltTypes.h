@@ -172,3 +172,31 @@ typedef enum  ScaleTypes {
 } ScaleType;
 
 #endif /*_BLT_TYPES_H*/
+
+/*
+ * EncodingSwitches --
+ */
+typedef struct _EncodingSwitches {
+    unsigned int flags;
+    unsigned int fill;
+    const char *pad;                    /* If non-NULL, padding before each
+                                         * line of encoded characters. */
+    const char *wrap;                   /* If non-NULL, end of line
+                                         * character sequence. By default
+                                         * it's "\n". */
+    int wrapLength;                     /* Maximum length of line of encoded
+                                         * character before wrapping. */
+    Tcl_Obj *fileObjPtr;                /* Name of file representing the
+                                         * channel used as the input
+                                         * source. */
+    Tcl_Obj *dataObjPtr;                /* If non-NULL, data object to use
+                                         * as input source. */
+} EncodingSwitches;
+
+typedef struct _DecodingSwitches {
+    Tcl_Obj *fileObjPtr;                /* Name of file representing the
+                                         * channel used as the input
+                                         * source. */
+    Tcl_Obj *dataObjPtr;                /* If non-NULL, data object to use
+                                         * as input source. */
+} DecodingSwitches;

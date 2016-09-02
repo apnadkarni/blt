@@ -110,38 +110,52 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_Ltoa, /* 100 */
     Blt_Utoa, /* 101 */
     Blt_Dtoa, /* 102 */
-    Blt_Base64_Decode, /* 103 */
-    Blt_Base64_DecodeToBuffer, /* 104 */
-    Blt_Base64_DecodeToObj, /* 105 */
-    Blt_Base64_EncodeToObj, /* 106 */
-    Blt_Base64_MaxBufferLength, /* 107 */
-    Blt_Base64_Encode, /* 108 */
-    Blt_Base85_MaxBufferLength, /* 109 */
-    Blt_Base85_Encode, /* 110 */
+    Blt_Base16_Decode, /* 103 */
+    Blt_Base64_Decode, /* 104 */
+    Blt_Base85_Decode, /* 105 */
+    Blt_Ascii85_Decode, /* 106 */
+    Blt_Base64_DecodeToBuffer, /* 107 */
+    Blt_Base16_DecodeToObj, /* 108 */
+    Blt_Base64_DecodeToObj, /* 109 */
+    Blt_Base85_DecodeToObj, /* 110 */
     Blt_Base16_Encode, /* 111 */
-    Blt_IsBase64, /* 112 */
-    Blt_GetDoubleFromString, /* 113 */
-    Blt_GetDoubleFromObj, /* 114 */
-    Blt_GetTimeFromObj, /* 115 */
-    Blt_GetTime, /* 116 */
-    Blt_SecondsToDate, /* 117 */
-    Blt_DateToSeconds, /* 118 */
-    Blt_FormatDate, /* 119 */
-    Blt_GetPositionFromObj, /* 120 */
-    Blt_GetCountFromObj, /* 121 */
-    Blt_SimplifyLine, /* 122 */
-    Blt_GetLong, /* 123 */
-    Blt_GetLongFromObj, /* 124 */
-    Blt_FormatString, /* 125 */
-    Blt_LowerCase, /* 126 */
-    Blt_UpperCase, /* 127 */
-    Blt_GetPlatformId, /* 128 */
-    Blt_LastError, /* 129 */
-    Blt_NaN, /* 130 */
-    Blt_AlmostEquals, /* 131 */
-    Blt_ConvertListToList, /* 132 */
-    Blt_GetCachedVar, /* 133 */
-    Blt_FreeCachedVars, /* 134 */
+    Blt_Base64_Encode, /* 112 */
+    Blt_Base85_Encode, /* 113 */
+    Blt_Ascii85_Encode, /* 114 */
+    Blt_Base16_EncodeToObj, /* 115 */
+    Blt_Base64_EncodeToObj, /* 116 */
+    Blt_Base85_EncodeToObj, /* 117 */
+    Blt_Base16_MaxDecodeBufferSize, /* 118 */
+    Blt_Base16_MaxEncodeBufferSize, /* 119 */
+    Blt_Base64_MaxDecodeBufferSize, /* 120 */
+    Blt_Base64_MaxEncodeBufferSize, /* 121 */
+    Blt_Base85_MaxDecodeBufferSize, /* 122 */
+    Blt_Base85_MaxEncodeBufferSize, /* 123 */
+    Blt_Ascii85_MaxDecodeBufferSize, /* 124 */
+    Blt_Ascii85_MaxEncodeBufferSize, /* 125 */
+    Blt_IsBase64, /* 126 */
+    Blt_GetDoubleFromString, /* 127 */
+    Blt_GetDoubleFromObj, /* 128 */
+    Blt_GetTimeFromObj, /* 129 */
+    Blt_GetTime, /* 130 */
+    Blt_SecondsToDate, /* 131 */
+    Blt_DateToSeconds, /* 132 */
+    Blt_FormatDate, /* 133 */
+    Blt_GetPositionFromObj, /* 134 */
+    Blt_GetCountFromObj, /* 135 */
+    Blt_SimplifyLine, /* 136 */
+    Blt_GetLong, /* 137 */
+    Blt_GetLongFromObj, /* 138 */
+    Blt_FormatString, /* 139 */
+    Blt_LowerCase, /* 140 */
+    Blt_UpperCase, /* 141 */
+    Blt_GetPlatformId, /* 142 */
+    Blt_LastError, /* 143 */
+    Blt_NaN, /* 144 */
+    Blt_AlmostEquals, /* 145 */
+    Blt_ConvertListToList, /* 146 */
+    Blt_GetCachedVar, /* 147 */
+    Blt_FreeCachedVars, /* 148 */
 };
 
 /* !END!: Do not edit above this line. */

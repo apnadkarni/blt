@@ -519,7 +519,7 @@ BLT_EXTERN void		Blt_FadeColor(Blt_Pixel *colorPtr,
 #define Blt_Dissolve2_DECLARED
 /* 86 */
 BLT_EXTERN long		Blt_Dissolve2(Blt_Picture dest, Blt_Picture src,
-                                long start, long finish);
+				long start, long finish);
 #endif
 #ifndef Blt_CrossFadePictures_DECLARED
 #define Blt_CrossFadePictures_DECLARED

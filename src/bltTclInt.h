@@ -179,30 +179,61 @@ BLT_EXTERN const char *Blt_Utoa(unsigned int value);
 
 BLT_EXTERN const char *Blt_Dtoa(Tcl_Interp *interp, double value);
 
-BLT_EXTERN unsigned char *Blt_Base64_Decode(Tcl_Interp *interp, 
-        const char *string, size_t *lengthPtr);
+BLT_EXTERN int Blt_Base16_Decode(Tcl_Interp *interp, const char *src,
+        size_t numChars, unsigned char *dest, size_t *numBytesPtr,
+        DecodingSwitches *switchesPtr);
+BLT_EXTERN int Blt_Base64_Decode(Tcl_Interp *interp, const char *src,
+        size_t numChars, unsigned char *dest, size_t *numBytesPtr,
+        DecodingSwitches *switchesPtr);
+BLT_EXTERN int Blt_Base85_Decode(Tcl_Interp *interp, const char *src,
+        size_t numChars, unsigned char *dest, size_t *numBytesPtr,
+        DecodingSwitches *switchesPtr);
+BLT_EXTERN int Blt_Ascii85_Decode(Tcl_Interp *interp, const char *src,
+        size_t numChars, unsigned char *dest, size_t *numBytesPtr,
+        DecodingSwitches *switchesPtr);
 
 BLT_EXTERN Blt_DBuffer Blt_Base64_DecodeToBuffer(Tcl_Interp *interp, 
-        const char *string, size_t length);
+        const char *src, size_t numChars);
 
+BLT_EXTERN Tcl_Obj *Blt_Base16_DecodeToObj(Tcl_Interp *interp, 
+        const char *src, size_t numChars);
 BLT_EXTERN Tcl_Obj *Blt_Base64_DecodeToObj(Tcl_Interp *interp, 
-        const char *string, size_t length);
+        const char *src, size_t numChars);
+BLT_EXTERN Tcl_Obj *Blt_Base85_DecodeToObj(Tcl_Interp *interp, 
+        const char *src, size_t numChars);
 
-BLT_EXTERN Tcl_Obj *Blt_Base64_EncodeToObj(const unsigned char *buffer, 
-        size_t bufsize);
+BLT_EXTERN int Blt_Base16_Encode(const unsigned char *src, size_t numBytes,
+        char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr);
+BLT_EXTERN int Blt_Base64_Encode(const unsigned char *src, size_t numBytes,
+        char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr);
+BLT_EXTERN int Blt_Base85_Encode(const unsigned char *src, size_t numBytes,
+        char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr);
+BLT_EXTERN int Blt_Ascii85_Encode(const unsigned char *src, size_t numBytes,
+        char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr);
 
-BLT_EXTERN size_t Blt_Base64_MaxBufferLength(size_t bufsize);
+BLT_EXTERN Tcl_Obj *Blt_Base16_EncodeToObj(const unsigned char *src, 
+        size_t numBytes);
+BLT_EXTERN Tcl_Obj *Blt_Base64_EncodeToObj(const unsigned char *src, 
+        size_t numBytes);
+BLT_EXTERN Tcl_Obj *Blt_Base85_EncodeToObj(const unsigned char *src, 
+        size_t numBytes);
 
-BLT_EXTERN size_t Blt_Base64_Encode(const unsigned char *buffer, 
-        size_t bufsize, unsigned char *destBytes);
-
-BLT_EXTERN size_t Blt_Base85_MaxBufferLength(size_t bufsize);
-
-BLT_EXTERN size_t Blt_Base85_Encode(const unsigned char *buffer, size_t bufsize,
-        unsigned char *destBytes);
-
-BLT_EXTERN const char *Blt_Base16_Encode(const unsigned char *buffer, 
-        size_t bufsize);
+BLT_EXTERN size_t Blt_Base16_MaxDecodeBufferSize(size_t numBytes,
+        DecodingSwitches *switchesPtr);
+BLT_EXTERN size_t Blt_Base16_MaxEncodeBufferSize(size_t numChars,
+        EncodingSwitches *switchesPtr);
+BLT_EXTERN size_t Blt_Base64_MaxDecodeBufferSize(size_t numBytes,
+        DecodingSwitches *switchesPtr);
+BLT_EXTERN size_t Blt_Base64_MaxEncodeBufferSize(size_t numChars,
+        EncodingSwitches *switchesPtr);
+BLT_EXTERN size_t Blt_Base85_MaxDecodeBufferSize(size_t numBytes,
+        DecodingSwitches *switchesPtr);
+BLT_EXTERN size_t Blt_Base85_MaxEncodeBufferSize(size_t numChars,
+        EncodingSwitches *switchesPtr);
+BLT_EXTERN size_t Blt_Ascii85_MaxDecodeBufferSize(size_t numBytes,
+        DecodingSwitches *switchesPtr);
+BLT_EXTERN size_t Blt_Ascii85_MaxEncodeBufferSize(size_t numChars,
+        EncodingSwitches *switchesPtr);
 
 BLT_EXTERN int Blt_IsBase64(const char *buf, size_t length);
 

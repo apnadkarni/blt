@@ -542,67 +542,67 @@ Blt_DBuffer_GetNext(DBuffer *srcPtr)
 #endif
 
 int
-Blt_DBuffer_Base64Decode(Tcl_Interp *interp, const char *string, size_t length,
+Blt_DBuffer_Base64Decode(Tcl_Interp *interp, const char *src, size_t numChars,
                          DBuffer *destPtr)
 {
-    unsigned char *bp;
+    size_t numBytes, maxBytes;
+    DecodingSwitches switches;
 
-    bp = Blt_Base64_Decode(interp, string, &length);    
-    if (bp == NULL) {
+    memset(&switches, 0, sizeof(DecodingSwitches));
+    maxBytes = Blt_Base64_MaxDecodeBufferSize(numChars, &switches);
+    Blt_DBuffer_SetLength(destPtr, maxBytes);
+    if (Blt_Base64_Decode(interp, src, numChars, destPtr->bytes, &numBytes,
+                          &switches) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (destPtr->bytes != NULL) {
-        Blt_Free(destPtr->bytes);
-    }
-    destPtr->bytes = bp;
-    destPtr->size = destPtr->length = length;
-    destPtr->cursor = 0;
-    destPtr->chunk = 64;
+    Blt_DBuffer_SetLength(destPtr, numBytes);
     return TCL_OK;
 }
 
-
 Tcl_Obj *
-Blt_DBuffer_Base64EncodeToObj(
-    DBuffer *srcPtr)                    /* Input binary buffer. */
+Blt_DBuffer_Base64EncodeToObj(DBuffer *srcPtr) /* Input binary buffer. */
 {
     return Blt_Base64_EncodeToObj(srcPtr->bytes, srcPtr->length);
 }
 
 int
-Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer, 
-        size_t bufsize) 
+Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *src, 
+                         size_t numBytes) 
 {
-    size_t oldLength, numBytes, length;
-    unsigned char *destBytes;
+    size_t oldLength, numChars, maxChars;
+    char *dest;
+    EncodingSwitches switches;
 
-    length = Blt_Base64_MaxBufferLength(bufsize);
+    memset(&switches, 0, sizeof(EncodingSwitches));
+    maxChars = Blt_Base64_MaxEncodeBufferSize(numBytes, &switches);
     oldLength = Blt_DBuffer_Length(destPtr);
-    destBytes = Blt_DBuffer_Extend(destPtr, length);
-    if (destBytes == NULL) {
+    dest = (char *)Blt_DBuffer_Extend(destPtr, maxChars);
+    if (dest == NULL) {
         return FALSE;
     }
-    numBytes = Blt_Base64_Encode(buffer, bufsize, destBytes);
-    assert(numBytes < length);
-    Blt_DBuffer_SetLength(destPtr, oldLength + numBytes);
+    Blt_Base64_Encode(src, numBytes, dest, &numChars, &switches);
+    assert(numChars < maxChars);
+    Blt_DBuffer_SetLength(destPtr, oldLength + numChars);
     return TRUE;
 }
 
 int 
-Blt_DBuffer_AppendBase85(DBuffer *destPtr, const unsigned char *buffer, 
-                         size_t bufsize) 
+Blt_DBuffer_AppendBase85(DBuffer *destPtr, const unsigned char *src, 
+                         size_t numBytes) 
 {
-    size_t oldLength, numBytes, length;
-    unsigned char *destBytes;
+    size_t oldLength, numChars, maxChars;
+    char *dest;
+    EncodingSwitches switches;
 
-    length = Blt_Base85_MaxBufferLength(bufsize);
+    memset(&switches, 0, sizeof(EncodingSwitches));
+    maxChars = Blt_Base85_MaxEncodeBufferSize(numBytes, &switches);
     oldLength = Blt_DBuffer_Length(destPtr);
-    destBytes = Blt_DBuffer_Extend(destPtr, length);
-    if (destBytes == NULL) {
+    dest = (char *)Blt_DBuffer_Extend(destPtr, maxChars);
+    if (dest == NULL) {
         return FALSE;
     }
-    numBytes = Blt_Base85_Encode(buffer, bufsize, destBytes);
-    assert(numBytes < length);
-    Blt_DBuffer_SetLength(destPtr, oldLength + numBytes);
+    Blt_Base85_Encode(src, numBytes, dest, &numChars, &switches);
+    assert(numChars <= maxChars);
+    Blt_DBuffer_SetLength(destPtr, oldLength + numChars);
     return TRUE;
 }
