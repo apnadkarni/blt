@@ -194,6 +194,7 @@ typedef struct _EncodingSwitches {
 } EncodingSwitches;
 
 typedef struct _DecodingSwitches {
+    unsigned int flags;
     Tcl_Obj *fileObjPtr;                /* Name of file representing the
                                          * channel used as the input
                                          * source. */

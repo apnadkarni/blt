@@ -608,158 +608,158 @@ BLT_EXTERN const char *	 Blt_Utoa(unsigned int value);
 /* 102 */
 BLT_EXTERN const char *	 Blt_Dtoa(Tcl_Interp *interp, double value);
 #endif
-#ifndef Blt_Base16_Decode_DECLARED
-#define Blt_Base16_Decode_DECLARED
+#ifndef Blt_DecodeHexadecimal_DECLARED
+#define Blt_DecodeHexadecimal_DECLARED
 /* 103 */
-BLT_EXTERN int		Blt_Base16_Decode(Tcl_Interp *interp,
+BLT_EXTERN int		Blt_DecodeHexadecimal(Tcl_Interp *interp,
 				const char *src, size_t numChars,
 				unsigned char *dest, size_t *numBytesPtr,
 				DecodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base64_Decode_DECLARED
-#define Blt_Base64_Decode_DECLARED
+#ifndef Blt_DecodeBase64_DECLARED
+#define Blt_DecodeBase64_DECLARED
 /* 104 */
-BLT_EXTERN int		Blt_Base64_Decode(Tcl_Interp *interp,
-				const char *src, size_t numChars,
-				unsigned char *dest, size_t *numBytesPtr,
+BLT_EXTERN int		Blt_DecodeBase64(Tcl_Interp *interp, const char *src,
+				size_t numChars, unsigned char *dest,
+				size_t *numBytesPtr,
 				DecodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base85_Decode_DECLARED
-#define Blt_Base85_Decode_DECLARED
+#ifndef Blt_DecodeBase85_DECLARED
+#define Blt_DecodeBase85_DECLARED
 /* 105 */
-BLT_EXTERN int		Blt_Base85_Decode(Tcl_Interp *interp,
-				const char *src, size_t numChars,
-				unsigned char *dest, size_t *numBytesPtr,
+BLT_EXTERN int		Blt_DecodeBase85(Tcl_Interp *interp, const char *src,
+				size_t numChars, unsigned char *dest,
+				size_t *numBytesPtr,
 				DecodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Ascii85_Decode_DECLARED
-#define Blt_Ascii85_Decode_DECLARED
+#ifndef Blt_DecodeAscii85_DECLARED
+#define Blt_DecodeAscii85_DECLARED
 /* 106 */
-BLT_EXTERN int		Blt_Ascii85_Decode(Tcl_Interp *interp,
+BLT_EXTERN int		Blt_DecodeAscii85(Tcl_Interp *interp,
 				const char *src, size_t numChars,
 				unsigned char *dest, size_t *numBytesPtr,
 				DecodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base64_DecodeToBuffer_DECLARED
-#define Blt_Base64_DecodeToBuffer_DECLARED
+#ifndef Blt_DecodeBase64ToBuffer_DECLARED
+#define Blt_DecodeBase64ToBuffer_DECLARED
 /* 107 */
-BLT_EXTERN Blt_DBuffer	Blt_Base64_DecodeToBuffer(Tcl_Interp *interp,
+BLT_EXTERN Blt_DBuffer	Blt_DecodeBase64ToBuffer(Tcl_Interp *interp,
 				const char *src, size_t numChars);
 #endif
-#ifndef Blt_Base16_DecodeToObj_DECLARED
-#define Blt_Base16_DecodeToObj_DECLARED
+#ifndef Blt_DecodeHexadecimalToObj_DECLARED
+#define Blt_DecodeHexadecimalToObj_DECLARED
 /* 108 */
-BLT_EXTERN Tcl_Obj *	Blt_Base16_DecodeToObj(Tcl_Interp *interp,
+BLT_EXTERN Tcl_Obj *	Blt_DecodeHexadecimalToObj(Tcl_Interp *interp,
 				const char *src, size_t numChars);
 #endif
-#ifndef Blt_Base64_DecodeToObj_DECLARED
-#define Blt_Base64_DecodeToObj_DECLARED
+#ifndef Blt_DecodeBase64ToObj_DECLARED
+#define Blt_DecodeBase64ToObj_DECLARED
 /* 109 */
-BLT_EXTERN Tcl_Obj *	Blt_Base64_DecodeToObj(Tcl_Interp *interp,
+BLT_EXTERN Tcl_Obj *	Blt_DecodeBase64ToObj(Tcl_Interp *interp,
 				const char *src, size_t numChars);
 #endif
-#ifndef Blt_Base85_DecodeToObj_DECLARED
-#define Blt_Base85_DecodeToObj_DECLARED
+#ifndef Blt_DecodeBase85ToObj_DECLARED
+#define Blt_DecodeBase85ToObj_DECLARED
 /* 110 */
-BLT_EXTERN Tcl_Obj *	Blt_Base85_DecodeToObj(Tcl_Interp *interp,
+BLT_EXTERN Tcl_Obj *	Blt_DecodeBase85ToObj(Tcl_Interp *interp,
 				const char *src, size_t numChars);
 #endif
-#ifndef Blt_Base16_Encode_DECLARED
-#define Blt_Base16_Encode_DECLARED
+#ifndef Blt_EncodeHexadecimal_DECLARED
+#define Blt_EncodeHexadecimal_DECLARED
 /* 111 */
-BLT_EXTERN int		Blt_Base16_Encode(const unsigned char *src,
+BLT_EXTERN int		Blt_EncodeHexadecimal(const unsigned char *src,
 				size_t numBytes, char *dest,
 				size_t *numCharsPtr,
 				EncodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base64_Encode_DECLARED
-#define Blt_Base64_Encode_DECLARED
+#ifndef Blt_EncodeBase64_DECLARED
+#define Blt_EncodeBase64_DECLARED
 /* 112 */
-BLT_EXTERN int		Blt_Base64_Encode(const unsigned char *src,
+BLT_EXTERN int		Blt_EncodeBase64(const unsigned char *src,
 				size_t numBytes, char *dest,
 				size_t *numCharsPtr,
 				EncodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base85_Encode_DECLARED
-#define Blt_Base85_Encode_DECLARED
+#ifndef Blt_EncodeBase85_DECLARED
+#define Blt_EncodeBase85_DECLARED
 /* 113 */
-BLT_EXTERN int		Blt_Base85_Encode(const unsigned char *src,
+BLT_EXTERN int		Blt_EncodeBase85(const unsigned char *src,
 				size_t numBytes, char *dest,
 				size_t *numCharsPtr,
 				EncodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Ascii85_Encode_DECLARED
-#define Blt_Ascii85_Encode_DECLARED
+#ifndef Blt_EncodeAscii85_DECLARED
+#define Blt_EncodeAscii85_DECLARED
 /* 114 */
-BLT_EXTERN int		Blt_Ascii85_Encode(const unsigned char *src,
+BLT_EXTERN int		Blt_EncodeAscii85(const unsigned char *src,
 				size_t numBytes, char *dest,
 				size_t *numCharsPtr,
 				EncodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base16_EncodeToObj_DECLARED
-#define Blt_Base16_EncodeToObj_DECLARED
+#ifndef Blt_EncodeHexadecimalToObj_DECLARED
+#define Blt_EncodeHexadecimalToObj_DECLARED
 /* 115 */
-BLT_EXTERN Tcl_Obj *	Blt_Base16_EncodeToObj(const unsigned char *src,
+BLT_EXTERN Tcl_Obj *	Blt_EncodeHexadecimalToObj(const unsigned char *src,
 				size_t numBytes);
 #endif
-#ifndef Blt_Base64_EncodeToObj_DECLARED
-#define Blt_Base64_EncodeToObj_DECLARED
+#ifndef Blt_EncodeBase64ToObj_DECLARED
+#define Blt_EncodeBase64ToObj_DECLARED
 /* 116 */
-BLT_EXTERN Tcl_Obj *	Blt_Base64_EncodeToObj(const unsigned char *src,
+BLT_EXTERN Tcl_Obj *	Blt_EncodeBase64ToObj(const unsigned char *src,
 				size_t numBytes);
 #endif
-#ifndef Blt_Base85_EncodeToObj_DECLARED
-#define Blt_Base85_EncodeToObj_DECLARED
+#ifndef Blt_EncodeBase85ToObj_DECLARED
+#define Blt_EncodeBase85ToObj_DECLARED
 /* 117 */
-BLT_EXTERN Tcl_Obj *	Blt_Base85_EncodeToObj(const unsigned char *src,
+BLT_EXTERN Tcl_Obj *	Blt_EncodeBase85ToObj(const unsigned char *src,
 				size_t numBytes);
 #endif
-#ifndef Blt_Base16_MaxDecodeBufferSize_DECLARED
-#define Blt_Base16_MaxDecodeBufferSize_DECLARED
+#ifndef Blt_HexadecimalDecodeBufferSize_DECLARED
+#define Blt_HexadecimalDecodeBufferSize_DECLARED
 /* 118 */
-BLT_EXTERN size_t	Blt_Base16_MaxDecodeBufferSize(size_t numBytes,
+BLT_EXTERN size_t	Blt_HexadecimalDecodeBufferSize(size_t numBytes,
 				DecodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base16_MaxEncodeBufferSize_DECLARED
-#define Blt_Base16_MaxEncodeBufferSize_DECLARED
+#ifndef Blt_HexadecimalEncodeBufferSize_DECLARED
+#define Blt_HexadecimalEncodeBufferSize_DECLARED
 /* 119 */
-BLT_EXTERN size_t	Blt_Base16_MaxEncodeBufferSize(size_t numChars,
+BLT_EXTERN size_t	Blt_HexadecimalEncodeBufferSize(size_t numChars,
 				EncodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base64_MaxDecodeBufferSize_DECLARED
-#define Blt_Base64_MaxDecodeBufferSize_DECLARED
+#ifndef Blt_Base64DecodeBufferSize_DECLARED
+#define Blt_Base64DecodeBufferSize_DECLARED
 /* 120 */
-BLT_EXTERN size_t	Blt_Base64_MaxDecodeBufferSize(size_t numBytes,
+BLT_EXTERN size_t	Blt_Base64DecodeBufferSize(size_t numBytes,
 				DecodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base64_MaxEncodeBufferSize_DECLARED
-#define Blt_Base64_MaxEncodeBufferSize_DECLARED
+#ifndef Blt_Base64EncodeBufferSize_DECLARED
+#define Blt_Base64EncodeBufferSize_DECLARED
 /* 121 */
-BLT_EXTERN size_t	Blt_Base64_MaxEncodeBufferSize(size_t numChars,
+BLT_EXTERN size_t	Blt_Base64EncodeBufferSize(size_t numChars,
 				EncodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base85_MaxDecodeBufferSize_DECLARED
-#define Blt_Base85_MaxDecodeBufferSize_DECLARED
+#ifndef Blt_Base85DecodeBufferSize_DECLARED
+#define Blt_Base85DecodeBufferSize_DECLARED
 /* 122 */
-BLT_EXTERN size_t	Blt_Base85_MaxDecodeBufferSize(size_t numBytes,
+BLT_EXTERN size_t	Blt_Base85DecodeBufferSize(size_t numBytes,
 				DecodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Base85_MaxEncodeBufferSize_DECLARED
-#define Blt_Base85_MaxEncodeBufferSize_DECLARED
+#ifndef Blt_Base85EncodeBufferSize_DECLARED
+#define Blt_Base85EncodeBufferSize_DECLARED
 /* 123 */
-BLT_EXTERN size_t	Blt_Base85_MaxEncodeBufferSize(size_t numChars,
+BLT_EXTERN size_t	Blt_Base85EncodeBufferSize(size_t numChars,
 				EncodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Ascii85_MaxDecodeBufferSize_DECLARED
-#define Blt_Ascii85_MaxDecodeBufferSize_DECLARED
+#ifndef Blt_Ascii85DecodeBufferSize_DECLARED
+#define Blt_Ascii85DecodeBufferSize_DECLARED
 /* 124 */
-BLT_EXTERN size_t	Blt_Ascii85_MaxDecodeBufferSize(size_t numBytes,
+BLT_EXTERN size_t	Blt_Ascii85DecodeBufferSize(size_t numBytes,
 				DecodingSwitches *switchesPtr);
 #endif
-#ifndef Blt_Ascii85_MaxEncodeBufferSize_DECLARED
-#define Blt_Ascii85_MaxEncodeBufferSize_DECLARED
+#ifndef Blt_Ascii85EncodeBufferSize_DECLARED
+#define Blt_Ascii85EncodeBufferSize_DECLARED
 /* 125 */
-BLT_EXTERN size_t	Blt_Ascii85_MaxEncodeBufferSize(size_t numChars,
+BLT_EXTERN size_t	Blt_Ascii85EncodeBufferSize(size_t numChars,
 				EncodingSwitches *switchesPtr);
 #endif
 #ifndef Blt_IsBase64_DECLARED
@@ -999,29 +999,29 @@ typedef struct BltTclIntProcs {
     const char * (*blt_Ltoa) (long value); /* 100 */
     const char * (*blt_Utoa) (unsigned int value); /* 101 */
     const char * (*blt_Dtoa) (Tcl_Interp *interp, double value); /* 102 */
-    int (*blt_Base16_Decode) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 103 */
-    int (*blt_Base64_Decode) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 104 */
-    int (*blt_Base85_Decode) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 105 */
-    int (*blt_Ascii85_Decode) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 106 */
-    Blt_DBuffer (*blt_Base64_DecodeToBuffer) (Tcl_Interp *interp, const char *src, size_t numChars); /* 107 */
-    Tcl_Obj * (*blt_Base16_DecodeToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 108 */
-    Tcl_Obj * (*blt_Base64_DecodeToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 109 */
-    Tcl_Obj * (*blt_Base85_DecodeToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 110 */
-    int (*blt_Base16_Encode) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 111 */
-    int (*blt_Base64_Encode) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 112 */
-    int (*blt_Base85_Encode) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 113 */
-    int (*blt_Ascii85_Encode) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 114 */
-    Tcl_Obj * (*blt_Base16_EncodeToObj) (const unsigned char *src, size_t numBytes); /* 115 */
-    Tcl_Obj * (*blt_Base64_EncodeToObj) (const unsigned char *src, size_t numBytes); /* 116 */
-    Tcl_Obj * (*blt_Base85_EncodeToObj) (const unsigned char *src, size_t numBytes); /* 117 */
-    size_t (*blt_Base16_MaxDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 118 */
-    size_t (*blt_Base16_MaxEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 119 */
-    size_t (*blt_Base64_MaxDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 120 */
-    size_t (*blt_Base64_MaxEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 121 */
-    size_t (*blt_Base85_MaxDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 122 */
-    size_t (*blt_Base85_MaxEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 123 */
-    size_t (*blt_Ascii85_MaxDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 124 */
-    size_t (*blt_Ascii85_MaxEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 125 */
+    int (*blt_DecodeHexadecimal) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 103 */
+    int (*blt_DecodeBase64) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 104 */
+    int (*blt_DecodeBase85) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 105 */
+    int (*blt_DecodeAscii85) (Tcl_Interp *interp, const char *src, size_t numChars, unsigned char *dest, size_t *numBytesPtr, DecodingSwitches *switchesPtr); /* 106 */
+    Blt_DBuffer (*blt_DecodeBase64ToBuffer) (Tcl_Interp *interp, const char *src, size_t numChars); /* 107 */
+    Tcl_Obj * (*blt_DecodeHexadecimalToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 108 */
+    Tcl_Obj * (*blt_DecodeBase64ToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 109 */
+    Tcl_Obj * (*blt_DecodeBase85ToObj) (Tcl_Interp *interp, const char *src, size_t numChars); /* 110 */
+    int (*blt_EncodeHexadecimal) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 111 */
+    int (*blt_EncodeBase64) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 112 */
+    int (*blt_EncodeBase85) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 113 */
+    int (*blt_EncodeAscii85) (const unsigned char *src, size_t numBytes, char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr); /* 114 */
+    Tcl_Obj * (*blt_EncodeHexadecimalToObj) (const unsigned char *src, size_t numBytes); /* 115 */
+    Tcl_Obj * (*blt_EncodeBase64ToObj) (const unsigned char *src, size_t numBytes); /* 116 */
+    Tcl_Obj * (*blt_EncodeBase85ToObj) (const unsigned char *src, size_t numBytes); /* 117 */
+    size_t (*blt_HexadecimalDecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 118 */
+    size_t (*blt_HexadecimalEncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 119 */
+    size_t (*blt_Base64DecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 120 */
+    size_t (*blt_Base64EncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 121 */
+    size_t (*blt_Base85DecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 122 */
+    size_t (*blt_Base85EncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 123 */
+    size_t (*blt_Ascii85DecodeBufferSize) (size_t numBytes, DecodingSwitches *switchesPtr); /* 124 */
+    size_t (*blt_Ascii85EncodeBufferSize) (size_t numChars, EncodingSwitches *switchesPtr); /* 125 */
     int (*blt_IsBase64) (const char *buf, size_t length); /* 126 */
     int (*blt_GetDoubleFromString) (Tcl_Interp *interp, const char *s, double *valuePtr); /* 127 */
     int (*blt_GetDoubleFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr); /* 128 */
@@ -1470,97 +1470,97 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_Dtoa \
 	(bltTclIntProcsPtr->blt_Dtoa) /* 102 */
 #endif
-#ifndef Blt_Base16_Decode
-#define Blt_Base16_Decode \
-	(bltTclIntProcsPtr->blt_Base16_Decode) /* 103 */
+#ifndef Blt_DecodeHexadecimal
+#define Blt_DecodeHexadecimal \
+	(bltTclIntProcsPtr->blt_DecodeHexadecimal) /* 103 */
 #endif
-#ifndef Blt_Base64_Decode
-#define Blt_Base64_Decode \
-	(bltTclIntProcsPtr->blt_Base64_Decode) /* 104 */
+#ifndef Blt_DecodeBase64
+#define Blt_DecodeBase64 \
+	(bltTclIntProcsPtr->blt_DecodeBase64) /* 104 */
 #endif
-#ifndef Blt_Base85_Decode
-#define Blt_Base85_Decode \
-	(bltTclIntProcsPtr->blt_Base85_Decode) /* 105 */
+#ifndef Blt_DecodeBase85
+#define Blt_DecodeBase85 \
+	(bltTclIntProcsPtr->blt_DecodeBase85) /* 105 */
 #endif
-#ifndef Blt_Ascii85_Decode
-#define Blt_Ascii85_Decode \
-	(bltTclIntProcsPtr->blt_Ascii85_Decode) /* 106 */
+#ifndef Blt_DecodeAscii85
+#define Blt_DecodeAscii85 \
+	(bltTclIntProcsPtr->blt_DecodeAscii85) /* 106 */
 #endif
-#ifndef Blt_Base64_DecodeToBuffer
-#define Blt_Base64_DecodeToBuffer \
-	(bltTclIntProcsPtr->blt_Base64_DecodeToBuffer) /* 107 */
+#ifndef Blt_DecodeBase64ToBuffer
+#define Blt_DecodeBase64ToBuffer \
+	(bltTclIntProcsPtr->blt_DecodeBase64ToBuffer) /* 107 */
 #endif
-#ifndef Blt_Base16_DecodeToObj
-#define Blt_Base16_DecodeToObj \
-	(bltTclIntProcsPtr->blt_Base16_DecodeToObj) /* 108 */
+#ifndef Blt_DecodeHexadecimalToObj
+#define Blt_DecodeHexadecimalToObj \
+	(bltTclIntProcsPtr->blt_DecodeHexadecimalToObj) /* 108 */
 #endif
-#ifndef Blt_Base64_DecodeToObj
-#define Blt_Base64_DecodeToObj \
-	(bltTclIntProcsPtr->blt_Base64_DecodeToObj) /* 109 */
+#ifndef Blt_DecodeBase64ToObj
+#define Blt_DecodeBase64ToObj \
+	(bltTclIntProcsPtr->blt_DecodeBase64ToObj) /* 109 */
 #endif
-#ifndef Blt_Base85_DecodeToObj
-#define Blt_Base85_DecodeToObj \
-	(bltTclIntProcsPtr->blt_Base85_DecodeToObj) /* 110 */
+#ifndef Blt_DecodeBase85ToObj
+#define Blt_DecodeBase85ToObj \
+	(bltTclIntProcsPtr->blt_DecodeBase85ToObj) /* 110 */
 #endif
-#ifndef Blt_Base16_Encode
-#define Blt_Base16_Encode \
-	(bltTclIntProcsPtr->blt_Base16_Encode) /* 111 */
+#ifndef Blt_EncodeHexadecimal
+#define Blt_EncodeHexadecimal \
+	(bltTclIntProcsPtr->blt_EncodeHexadecimal) /* 111 */
 #endif
-#ifndef Blt_Base64_Encode
-#define Blt_Base64_Encode \
-	(bltTclIntProcsPtr->blt_Base64_Encode) /* 112 */
+#ifndef Blt_EncodeBase64
+#define Blt_EncodeBase64 \
+	(bltTclIntProcsPtr->blt_EncodeBase64) /* 112 */
 #endif
-#ifndef Blt_Base85_Encode
-#define Blt_Base85_Encode \
-	(bltTclIntProcsPtr->blt_Base85_Encode) /* 113 */
+#ifndef Blt_EncodeBase85
+#define Blt_EncodeBase85 \
+	(bltTclIntProcsPtr->blt_EncodeBase85) /* 113 */
 #endif
-#ifndef Blt_Ascii85_Encode
-#define Blt_Ascii85_Encode \
-	(bltTclIntProcsPtr->blt_Ascii85_Encode) /* 114 */
+#ifndef Blt_EncodeAscii85
+#define Blt_EncodeAscii85 \
+	(bltTclIntProcsPtr->blt_EncodeAscii85) /* 114 */
 #endif
-#ifndef Blt_Base16_EncodeToObj
-#define Blt_Base16_EncodeToObj \
-	(bltTclIntProcsPtr->blt_Base16_EncodeToObj) /* 115 */
+#ifndef Blt_EncodeHexadecimalToObj
+#define Blt_EncodeHexadecimalToObj \
+	(bltTclIntProcsPtr->blt_EncodeHexadecimalToObj) /* 115 */
 #endif
-#ifndef Blt_Base64_EncodeToObj
-#define Blt_Base64_EncodeToObj \
-	(bltTclIntProcsPtr->blt_Base64_EncodeToObj) /* 116 */
+#ifndef Blt_EncodeBase64ToObj
+#define Blt_EncodeBase64ToObj \
+	(bltTclIntProcsPtr->blt_EncodeBase64ToObj) /* 116 */
 #endif
-#ifndef Blt_Base85_EncodeToObj
-#define Blt_Base85_EncodeToObj \
-	(bltTclIntProcsPtr->blt_Base85_EncodeToObj) /* 117 */
+#ifndef Blt_EncodeBase85ToObj
+#define Blt_EncodeBase85ToObj \
+	(bltTclIntProcsPtr->blt_EncodeBase85ToObj) /* 117 */
 #endif
-#ifndef Blt_Base16_MaxDecodeBufferSize
-#define Blt_Base16_MaxDecodeBufferSize \
-	(bltTclIntProcsPtr->blt_Base16_MaxDecodeBufferSize) /* 118 */
+#ifndef Blt_HexadecimalDecodeBufferSize
+#define Blt_HexadecimalDecodeBufferSize \
+	(bltTclIntProcsPtr->blt_HexadecimalDecodeBufferSize) /* 118 */
 #endif
-#ifndef Blt_Base16_MaxEncodeBufferSize
-#define Blt_Base16_MaxEncodeBufferSize \
-	(bltTclIntProcsPtr->blt_Base16_MaxEncodeBufferSize) /* 119 */
+#ifndef Blt_HexadecimalEncodeBufferSize
+#define Blt_HexadecimalEncodeBufferSize \
+	(bltTclIntProcsPtr->blt_HexadecimalEncodeBufferSize) /* 119 */
 #endif
-#ifndef Blt_Base64_MaxDecodeBufferSize
-#define Blt_Base64_MaxDecodeBufferSize \
-	(bltTclIntProcsPtr->blt_Base64_MaxDecodeBufferSize) /* 120 */
+#ifndef Blt_Base64DecodeBufferSize
+#define Blt_Base64DecodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base64DecodeBufferSize) /* 120 */
 #endif
-#ifndef Blt_Base64_MaxEncodeBufferSize
-#define Blt_Base64_MaxEncodeBufferSize \
-	(bltTclIntProcsPtr->blt_Base64_MaxEncodeBufferSize) /* 121 */
+#ifndef Blt_Base64EncodeBufferSize
+#define Blt_Base64EncodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base64EncodeBufferSize) /* 121 */
 #endif
-#ifndef Blt_Base85_MaxDecodeBufferSize
-#define Blt_Base85_MaxDecodeBufferSize \
-	(bltTclIntProcsPtr->blt_Base85_MaxDecodeBufferSize) /* 122 */
+#ifndef Blt_Base85DecodeBufferSize
+#define Blt_Base85DecodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base85DecodeBufferSize) /* 122 */
 #endif
-#ifndef Blt_Base85_MaxEncodeBufferSize
-#define Blt_Base85_MaxEncodeBufferSize \
-	(bltTclIntProcsPtr->blt_Base85_MaxEncodeBufferSize) /* 123 */
+#ifndef Blt_Base85EncodeBufferSize
+#define Blt_Base85EncodeBufferSize \
+	(bltTclIntProcsPtr->blt_Base85EncodeBufferSize) /* 123 */
 #endif
-#ifndef Blt_Ascii85_MaxDecodeBufferSize
-#define Blt_Ascii85_MaxDecodeBufferSize \
-	(bltTclIntProcsPtr->blt_Ascii85_MaxDecodeBufferSize) /* 124 */
+#ifndef Blt_Ascii85DecodeBufferSize
+#define Blt_Ascii85DecodeBufferSize \
+	(bltTclIntProcsPtr->blt_Ascii85DecodeBufferSize) /* 124 */
 #endif
-#ifndef Blt_Ascii85_MaxEncodeBufferSize
-#define Blt_Ascii85_MaxEncodeBufferSize \
-	(bltTclIntProcsPtr->blt_Ascii85_MaxEncodeBufferSize) /* 125 */
+#ifndef Blt_Ascii85EncodeBufferSize
+#define Blt_Ascii85EncodeBufferSize \
+	(bltTclIntProcsPtr->blt_Ascii85EncodeBufferSize) /* 125 */
 #endif
 #ifndef Blt_IsBase64
 #define Blt_IsBase64 \

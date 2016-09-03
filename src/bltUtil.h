@@ -59,16 +59,16 @@ BLT_EXTERN const char *Blt_Utoa(unsigned int value);
 
 BLT_EXTERN const char *Blt_Dtoa(Tcl_Interp *interp, double value);
 
-BLT_EXTERN unsigned char *Blt_Base64_Decode(Tcl_Interp *interp, 
+BLT_EXTERN unsigned char *Blt_DecodeBase64(Tcl_Interp *interp, 
         const char *string, size_t *lengthPtr);
 
-BLT_EXTERN const char *Blt_Base64_Encode(const unsigned char *buffer, 
+BLT_EXTERN const char *Blt_EncodeBase64(const unsigned char *buffer, 
         size_t bufsize);
 
-BLT_EXTERN const char *Blt_Base85_Encode(const unsigned char *buffer, 
+BLT_EXTERN const char *Blt_EncodeBase85(const unsigned char *buffer, 
         size_t bufsize);
 
-BLT_EXTERN const char *Blt_Base16_Encode(const unsigned char *buffer, 
+BLT_EXTERN const char *Blt_EncodeHexadecimal(const unsigned char *buffer, 
         size_t bufsize);
 
 BLT_EXTERN int Blt_IsBase64(const char *buf, size_t length);

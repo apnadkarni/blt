@@ -837,13 +837,13 @@ static Tcl_Obj *
 PrintMakerNote(TifParser *tifPtr, const unsigned char *bp, int count)
 {
     return Tcl_NewStringObj("???", 3);
-    return Blt_Base64_EncodeToObj(bp, count);
+    return Blt_EncodeBase64ToObj(bp, count);
 }
 
 static Tcl_Obj *
 PrintImageMatching(TifParser *tifPtr, const unsigned char *bp, int count)
 {
-    return Blt_Base64_EncodeToObj(bp, count);
+    return Blt_EncodeBase64ToObj(bp, count);
 }
 
 static Tcl_Obj *
@@ -1111,7 +1111,7 @@ ValueToObj(TifParser *tifPtr, const unsigned char *bp, int count,
         break;
         
     case TIF_UNDEFINED:
-        resultObjPtr = Blt_Base64_EncodeToObj(bp, count);
+        resultObjPtr = Blt_EncodeBase64ToObj(bp, count);
         break;
 
     case TIF_SBYTE:

@@ -49,14 +49,12 @@
 #include "bltDBuffer.h"
 #include "bltInitCmd.h"
 
-#define DIV85_MAGIC 3233857729ULL
-// make sure magic constant is 64-bit
-#define DIV85(number) ((uint32_t)((DIV85_MAGIC * number) >> 32) >> 6)
-
 #define BRACKETS        (1<<0)          /* Add <,> brackets to output. */
-#define UPPER_CASE      (1<<1)          /* Convert a-f to A-F. */
+#define LOWER_CASE      (1<<1)          /* Convert A-F to a-f. */
 #define COMPRESS_SPACES (1<<2)          /* Use 'y' to represent all spaces. */
 #define COMPRESS_ZEROS  (1<<3)          /* Use 'z' to represent all zeros.  */
+#define IGNORE_BAD_CHARS (1<<4)         /* Ignore invalid encoding
+                                         * characters. */
 
 static Blt_SwitchSpec ascii85DecodingSwitches[] = 
 {
@@ -64,83 +62,89 @@ static Blt_SwitchSpec ascii85DecodingSwitches[] =
         Blt_Offset(DecodingSwitches, dataObjPtr), 0, 0, NULL},
     {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
         Blt_Offset(DecodingSwitches, fileObjPtr), 0},
+    {BLT_SWITCH_BITMASK, "-ignorebadchars", "", (char *)NULL,
+        Blt_Offset(DecodingSwitches, flags), 0, IGNORE_BAD_CHARS},
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec base16DecodingSwitches[] = 
+static Blt_SwitchSpec hexadecimalDecodingSwitches[] = 
 {
     {BLT_SWITCH_OBJ,    "-data",      "string", (char *)NULL,
         Blt_Offset(DecodingSwitches, dataObjPtr), 0, 0, NULL},
     {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
         Blt_Offset(DecodingSwitches, fileObjPtr), 0},
+    {BLT_SWITCH_BITMASK, "-ignorebadchars", "", (char *)NULL,
+        Blt_Offset(DecodingSwitches, flags), 0, IGNORE_BAD_CHARS},
     {BLT_SWITCH_END}
 };
 
 static Blt_SwitchSpec base64DecodingSwitches[] = 
 {
-    {BLT_SWITCH_OBJ,    "-data",      "string", (char *)NULL,
+    {BLT_SWITCH_OBJ,     "-data",      "string", (char *)NULL,
         Blt_Offset(DecodingSwitches, dataObjPtr), 0, 0, NULL},
-    {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
+    {BLT_SWITCH_OBJ,     "-file",      "fileName", (char *)NULL,
         Blt_Offset(DecodingSwitches, fileObjPtr), 0},
+    {BLT_SWITCH_BITMASK, "-ignorebadchars", "", (char *)NULL,
+        Blt_Offset(DecodingSwitches, flags), 0, IGNORE_BAD_CHARS},
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec base16EncodingSwitches[] = 
+static Blt_SwitchSpec hexadecimalEncodingSwitches[] = 
 {
-    {BLT_SWITCH_OBJ,    "-data",      "string", (char *)NULL,
+    {BLT_SWITCH_OBJ,      "-data",      "string", (char *)NULL,
         Blt_Offset(EncodingSwitches, dataObjPtr), 0, 0, NULL},
-    {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
+    {BLT_SWITCH_OBJ,      "-file",      "fileName", (char *)NULL,
         Blt_Offset(EncodingSwitches, fileObjPtr), 0},
-    {BLT_SWITCH_INT_NNEG,    "-wraplength",      "number", (char *)NULL,
-        Blt_Offset(EncodingSwitches, wrapLength), 0, 0, NULL},
+    {BLT_SWITCH_BITMASK,  "-lowercase", "", (char *)NULL,
+        Blt_Offset(EncodingSwitches, flags), 0, LOWER_CASE},
+    {BLT_SWITCH_STRING,   "-pad",      "fileName", (char *)NULL,
+        Blt_Offset(EncodingSwitches, pad), 0},
     {BLT_SWITCH_STRING,    "-wrapchars",      "string", (char *)NULL,
         Blt_Offset(EncodingSwitches, wrap), 0, 0, NULL},
-    {BLT_SWITCH_STRING, "-pad",      "fileName", (char *)NULL,
-        Blt_Offset(EncodingSwitches, pad), 0},
-    {BLT_SWITCH_BITMASK, "-uppercase", "", (char *)NULL,
-        Blt_Offset(EncodingSwitches, flags), 0, UPPER_CASE},
+    {BLT_SWITCH_INT_NNEG, "-wraplength",      "number", (char *)NULL,
+        Blt_Offset(EncodingSwitches, wrapLength), 0, 0, NULL},
     {BLT_SWITCH_END}
 };
 
 static Blt_SwitchSpec ascii85EncodingSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-brackets", "", (char *)NULL,
+    {BLT_SWITCH_BITMASK,   "-brackets", "", (char *)NULL,
        Blt_Offset(EncodingSwitches, flags), 0, BRACKETS},
-    {BLT_SWITCH_BITMASK, "-foldspaces", "", (char *)NULL,
-        Blt_Offset(EncodingSwitches, flags), 0, COMPRESS_SPACES},
-    {BLT_SWITCH_BITMASK, "-foldzeros", "", (char *)NULL,
-        Blt_Offset(EncodingSwitches, flags), 0, COMPRESS_ZEROS},
-    {BLT_SWITCH_OBJ,    "-data",      "varName", (char *)NULL,
+    {BLT_SWITCH_OBJ,       "-data",      "varName", (char *)NULL,
         Blt_Offset(EncodingSwitches, dataObjPtr), 0, 0, NULL},
-    {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
+    {BLT_SWITCH_OBJ,       "-file",      "fileName", (char *)NULL,
         Blt_Offset(EncodingSwitches, fileObjPtr), 0},
-    {BLT_SWITCH_STRING, "-pad",      "string", (char *)NULL,
+    {BLT_SWITCH_BITMASK,   "-foldspaces", "", (char *)NULL,
+        Blt_Offset(EncodingSwitches, flags), 0, COMPRESS_SPACES},
+    {BLT_SWITCH_BITMASK,   "-foldzeros", "", (char *)NULL,
+        Blt_Offset(EncodingSwitches, flags), 0, COMPRESS_ZEROS},
+    {BLT_SWITCH_STRING,    "-pad",      "string", (char *)NULL,
         Blt_Offset(EncodingSwitches, pad), 0},
-    {BLT_SWITCH_INT_NNEG,    "-wraplength",      "number", (char *)NULL,
-        Blt_Offset(EncodingSwitches, wrapLength), 0, 0, NULL},
     {BLT_SWITCH_STRING,    "-wrapchars",      "string", (char *)NULL,
         Blt_Offset(EncodingSwitches, wrap), 0, 0, NULL},
+    {BLT_SWITCH_INT_NNEG, "-wraplength",      "number", (char *)NULL,
+        Blt_Offset(EncodingSwitches, wrapLength), 0, 0, NULL},
     {BLT_SWITCH_END}
 };
 
 static Blt_SwitchSpec base64EncodingSwitches[] = 
 {
-    {BLT_SWITCH_OBJ,    "-data",      "string", (char *)NULL,
+    {BLT_SWITCH_OBJ,       "-data",      "string", (char *)NULL,
         Blt_Offset(EncodingSwitches, dataObjPtr), 0, 0, NULL},
-    {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
+    {BLT_SWITCH_OBJ,       "-file",      "fileName", (char *)NULL,
         Blt_Offset(EncodingSwitches, fileObjPtr), 0},
-    {BLT_SWITCH_INT_NNEG,    "-wraplength",      "number", (char *)NULL,
-        Blt_Offset(EncodingSwitches, wrapLength), 0, 0, NULL},
+    {BLT_SWITCH_STRING,    "-pad",      "fileName", (char *)NULL,
+        Blt_Offset(EncodingSwitches, pad), 0},
     {BLT_SWITCH_STRING,    "-wrapchars",      "string", (char *)NULL,
         Blt_Offset(EncodingSwitches, wrap), 0, 0, NULL},
-    {BLT_SWITCH_STRING, "-pad",      "fileName", (char *)NULL,
-        Blt_Offset(EncodingSwitches, pad), 0},
+    {BLT_SWITCH_INT_NNEG, "-wraplength",      "number", (char *)NULL,
+        Blt_Offset(EncodingSwitches, wrapLength), 0, 0, NULL},
     {BLT_SWITCH_END}
 };
 
-typedef size_t (FormatMaxEncodeSizeProc)(size_t numBytes,
+typedef size_t (FormatEncodeSizeProc)(size_t numBytes,
         EncodingSwitches *switchesPtr);
-typedef size_t (FormatMaxDecodeSizeProc)(size_t numChars,
+typedef size_t (FormatDecodeSizeProc)(size_t numChars,
         DecodingSwitches *switchesPtr);
 typedef int (FormatDecodeProc)(Tcl_Interp *interp, const char *src,
         size_t numChars, unsigned char *dest, size_t *numBytesPtr,
@@ -154,42 +158,45 @@ typedef struct {
     Blt_SwitchSpec *decodeSpecs;
     FormatEncodeProc *encodeProc;
     FormatDecodeProc *decodeProc;
-    FormatMaxEncodeSizeProc *maxEncodeSizeProc;
-    FormatMaxDecodeSizeProc *maxDecodeSizeProc;
+    FormatEncodeSizeProc *encodeSizeProc;
+    FormatDecodeSizeProc *decodeSizeProc;
+    int wrapLength;
 }  FormatClass;
 
 static FormatClass base64Class = {
     "base64",
     base64EncodingSwitches,
     base64DecodingSwitches,
-    Blt_Base64_Encode,
-    Blt_Base64_Decode,
-    Blt_Base64_MaxEncodeBufferSize,
-    Blt_Base64_MaxDecodeBufferSize
+    Blt_EncodeBase64,
+    Blt_DecodeBase64,
+    Blt_Base64EncodeBufferSize,
+    Blt_Base64DecodeBufferSize,
+    76
 };
 
-static FormatClass base16Class = {
-    "base16",
-    base16EncodingSwitches,
-    base16DecodingSwitches,
-    Blt_Base16_Encode,
-    Blt_Base16_Decode,
-    Blt_Base16_MaxEncodeBufferSize,
-    Blt_Base16_MaxDecodeBufferSize
+static FormatClass hexadecimalClass = {
+    "hexadecimal",
+    hexadecimalEncodingSwitches,
+    hexadecimalDecodingSwitches,
+    Blt_EncodeHexadecimal,
+    Blt_DecodeHexadecimal,
+    Blt_HexadecimalEncodeBufferSize,
+    Blt_HexadecimalDecodeBufferSize,
+    60,
 };
 
 static FormatClass ascii85Class = {
     "ascii85",
     ascii85EncodingSwitches,
     ascii85DecodingSwitches,
-    Blt_Ascii85_Encode,
-    Blt_Ascii85_Decode,
-    Blt_Ascii85_MaxEncodeBufferSize,
-    Blt_Ascii85_MaxDecodeBufferSize
+    Blt_EncodeAscii85,
+    Blt_DecodeAscii85,
+    Blt_Ascii85EncodeBufferSize,
+    Blt_Ascii85DecodeBufferSize,
+    60
 };
 
 #define NA      0xFF
-#define SPACE   0xFE
 
 
 /*
@@ -201,6 +208,7 @@ static FormatClass ascii85Class = {
  */
 
 const static char encode16[] = "0123456789ABCDEF";
+const static char encode16lower[] = "0123456789abcdef";
 
 const static char encode64[] = {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -314,41 +322,55 @@ Blt_IsBase64(const char *string, size_t numBytes)
 }
 
 static INLINE unsigned char
-NextChar(const unsigned char **bp, const unsigned char *lastPtr) 
+NextBase64EncodedChar(const char **bp, const char *lastPtr,
+                      DecodingSwitches *switchesPtr) 
 {
     char c;
-
-    /* Skip whitespace and invalid characters. Let's see if being
-     * fault-tolerant is better than erroring out here.*/
-    while (((*bp) < lastPtr) &&  (decode64[(**bp)] == NA)) {
-        (*bp)++;
+    const char *p;
+    
+    p = *bp;
+    if (switchesPtr->flags & IGNORE_BAD_CHARS) {
+        /* Skip whitespace and invalid characters. Let's see if being
+         * fault-tolerant is better than erroring out here.*/
+        while (((isspace(*p)) || (decode64[(int)*p] == NA)) && (p < lastPtr)) {
+            p++;
+        }
+    } else {
+        while ((isspace(*p)) && (p < lastPtr)) {
+            p++;
+        }
     }
-    c = ((*bp) < lastPtr) ? **bp : 0;
+    c = (p < lastPtr) ? *p : 0;
     if ((c != '\0') && (c != '=')) {
-        (*bp)++;
+        p++;
     }
+    *bp = p;
     return c;                           /* Valid symbol */
 }
 
 static INLINE unsigned char
-GetNextChar(const char **chPtrPtr, const char *endPtr) 
+GetNextEncodedChar(const char **chPtrPtr, const char *endPtr,
+                   DecodingSwitches *switchesPtr, const unsigned char *table) 
 {
     char c;
-    const char *bp;
+    const char *p;
 
-    /* Skip whitespace.*/
-    for (bp = *chPtrPtr; bp < endPtr; bp++) {
-        if (!isspace(*bp)) {
-            break;    
+    for (p = *chPtrPtr; p < endPtr; p++) {
+        if (isspace(*p)) {
+            continue;                   /* Skip whitespace.*/
         }
+        if ((table[(int)*p] == NA) && (switchesPtr->flags & IGNORE_BAD_CHARS)) {
+            continue;                   /* Skip invalid characters. */
+        }
+        break;
     }
-    if (bp < endPtr) {
-        c = *bp;
-        bp++;
+    if (p < endPtr) {
+        c = *p;
+        p++;
     } else {
         c = 0;
     }
-    *chPtrPtr = bp;
+    *chPtrPtr = p;
     return c;
 }
 
@@ -388,8 +410,19 @@ AddEncodedChar(char **dpp, int c, EncodingSwitches *switchesPtr)
     *dpp = dp;
 }
 
+static void
+InitAscii85DecodeTable(unsigned char *table)
+{
+    int i;
+    
+    memset(table, NA, sizeof(unsigned char) * 256);
+    for (i = 0; i < 85; i++) {
+        table[i + '!'] = i;
+    }
+}
+
 size_t 
-Blt_Base16_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
+Blt_HexadecimalEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
 {
     size_t numChars, numLines;
 
@@ -416,7 +449,8 @@ Blt_Base16_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
 }
 
 size_t 
-Blt_Base16_MaxDecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
+Blt_HexadecimalDecodeBufferSize(size_t numChars,
+                                    DecodingSwitches *switchesPtr)
 {
     size_t numBytes;
 
@@ -425,9 +459,9 @@ Blt_Base16_MaxDecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
 }
 
 int
-Blt_Base16_Decode(Tcl_Interp *interp, const char *src,  size_t numChars,
-                  unsigned char *dest, size_t *numBytesPtr,
-                  DecodingSwitches *switchesPtr)
+Blt_DecodeHexadecimal(Tcl_Interp *interp, const char *src,  size_t numChars,
+                      unsigned char *dest, size_t *numBytesPtr,
+                      DecodingSwitches *switchesPtr)
 {
     unsigned char *dp;
     const char *p, *pend;
@@ -444,30 +478,32 @@ Blt_Base16_Decode(Tcl_Interp *interp, const char *src,  size_t numChars,
      */
     dp = dest;
     for (p = src, pend = p + numChars; p < pend; /*empty*/) {
-        unsigned char a, b;
-        unsigned char ch;
+        unsigned int byte[2];
+        unsigned char c;
         
-        ch = GetNextChar(&p, pend);
-        if (ch == '\0') {
+        c = GetNextEncodedChar(&p, pend, switchesPtr, decode16);
+        if (c == '\0') {
             break;                      /* EOF */
         }
-        a = decode16[ch];
-        if (a == NA) {
-            Tcl_AppendResult(interp, "invalid characters found ", (char *)NULL);
+        byte[0] = decode16[c];
+        if (byte[0] == NA) {
+            Tcl_AppendResult(interp, "invalid character found at ",
+                             Blt_Itoa(p - src), (char *)NULL);
             return TCL_ERROR;
         }
-        ch = GetNextChar(&p, pend);
-        if (ch == '\0') {               /* Unexpected EOF */
-            Tcl_AppendResult(interp, "odd number of hexidecimal digits.",
+        c = GetNextEncodedChar(&p, pend, switchesPtr, decode16);
+        if (c == '\0') {               /* Unexpected EOF */
+            Tcl_AppendResult(interp, "odd number of hexadecimal digits.",
                          (char *)NULL);
             return TCL_ERROR;
         }
-        b = decode16[ch];
-        if (b == NA) {                  
-            Tcl_AppendResult(interp, "invalid characters found ", (char *)NULL);
+        byte[1] = decode16[c];
+        if (byte[1] == NA) {                  
+            Tcl_AppendResult(interp, "invalid character found at ",
+                             Blt_Itoa(p - src), (char *)NULL);
             return TCL_ERROR;
         }
-        dp[0] = (a << 4) | b;
+        dp[0] = (byte[0] << 4) | byte[1];
         dp++;
     }
     *numBytesPtr = dp - dest;
@@ -475,24 +511,30 @@ Blt_Base16_Decode(Tcl_Interp *interp, const char *src,  size_t numChars,
 }
 
 int
-Blt_Base16_Encode(const unsigned char *src, size_t numBytes, char *dest,
-                  size_t *numCharsPtr, EncodingSwitches *switchesPtr) 
+Blt_EncodeHexadecimal(const unsigned char *src, size_t numBytes, char *dest,
+                      size_t *numCharsPtr, EncodingSwitches *switchesPtr) 
 {
     char *dp;
     const unsigned char *sp, *send;
-
+    const char *table;
+    
+    if (switchesPtr->flags & LOWER_CASE) {
+        table = encode16lower;
+    } else {
+        table = encode16;
+    }
     dp = dest;
     for (sp = src, send = sp + numBytes; sp < send; sp++) {
-        AddEncodedChar(&dp, encode16[*sp >> 4], switchesPtr);
-        AddEncodedChar(&dp, encode16[*sp & 0x0F], switchesPtr);
+        AddEncodedChar(&dp, table[*sp >> 4], switchesPtr);
+        AddEncodedChar(&dp, table[*sp & 0x0F], switchesPtr);
     }
-    *dp++ = '\0';
     *numCharsPtr = (dp - dest);
+    *dp++ = '\0';
     return TCL_OK;
 }
 
 size_t 
-Blt_Base64_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
+Blt_Base64EncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
 {
     size_t numChars, numLines;
 
@@ -516,7 +558,7 @@ Blt_Base64_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
 }
 
 size_t 
-Blt_Base64_MaxDecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
+Blt_Base64DecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
 {
     size_t numBytes;
     /* 
@@ -528,25 +570,28 @@ Blt_Base64_MaxDecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
 }
 
 int
-Blt_Base64_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
-                  unsigned char *dest, size_t *numBytesPtr,
-                  DecodingSwitches *switchesPtr)
+Blt_DecodeBase64(Tcl_Interp *interp, const char *src, size_t numChars,
+                 unsigned char *dest, size_t *numBytesPtr,
+                 DecodingSwitches *switchesPtr)
 {
     unsigned char *dp;
-    const unsigned char *p, *pend;
+    const char *p, *pend;
 
     dp = dest;
-    for (p = (unsigned char *)src, pend = p + numChars; p < pend; /*empty*/) {
-        unsigned char a, b, c, d;
+    for (p = src, pend = p + numChars; p < pend; /*empty*/) {
+        unsigned char byte[4];
         unsigned int u1, u2, u3;
+        const char *start;
+        int i;
+        
+        start = p;
+        byte[0] = NextBase64EncodedChar(&p, pend, switchesPtr);
+        byte[1] = NextBase64EncodedChar(&p, pend, switchesPtr);
+        byte[2] = NextBase64EncodedChar(&p, pend, switchesPtr);
+        byte[3] = NextBase64EncodedChar(&p, pend, switchesPtr);
 
-        a = NextChar(&p, pend);
-        b = NextChar(&p, pend);
-        c = NextChar(&p, pend);
-        d = NextChar(&p, pend);
-
-        if (d == '\0') {
-            if (a != '\0') {
+        if (byte[3] == '\0') {
+            if (byte[0] != '\0') {
                 Tcl_AppendResult(interp, "premature end of base64 data",
                         (char *)NULL);
                 return TCL_ERROR;
@@ -554,6 +599,13 @@ Blt_Base64_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
             break;
         }
 
+        for (i = 0; i < 4; i++) {
+            if (decode64[byte[i]] == NA) {
+                Tcl_AppendResult(interp, "invalid character found at ",
+                        Blt_Itoa(start - src + i + 1), (char *)NULL);
+                return TCL_ERROR;
+            }
+        }
         /*
          * in:     a      b      c     d
          *       ------.......-------......
@@ -562,17 +614,18 @@ Blt_Base64_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
          */
 
         /* a = [543210xx] | [xxxxxx54] >> 4 */
-        u1 = (decode64[a] << 2) | ((decode64[b] & 0x30) >> 4);
+        u1 = (decode64[byte[0]] << 2) | ((decode64[byte[1]] & 0x30) >> 4);
         /* b = [3210xxxx] | [xxxx5432]  */
-        u2 = ((decode64[b] & 0x0F) << 4) |((decode64[c] & 0x3C) >> 2);
+        u2 = (((decode64[byte[1]] & 0x0F) << 4) |
+              ((decode64[byte[2]] & 0x3C) >> 2));
         /* c = [10xxxxxx] | [xx543210]  */
-        u3 = ((decode64[c] & 0x03) << 6) | decode64[d];
+        u3 = ((decode64[byte[2]] & 0x03) << 6) | decode64[byte[3]];
 
-        if (d == '=') {
-            if ((a == '=') || (b == '=')) {
+        if (byte[3] == '=') {
+            if ((byte[0] == '=') || (byte[1] == '=')) {
                 break;                  /* This should not be possible. */
             }
-            if (c == '=') {
+            if (byte[2] == '=') {
                 *dp++ = (unsigned char)u1;
             } else {
                 *dp++ = (unsigned char)u1;
@@ -590,8 +643,8 @@ Blt_Base64_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
 }
 
 int
-Blt_Base64_Encode(const unsigned char *src, size_t numBytes, char *dest,
-                  size_t *numCharsPtr, EncodingSwitches *switchesPtr) 
+Blt_EncodeBase64(const unsigned char *src, size_t numBytes, char *dest,
+                 size_t *numCharsPtr, EncodingSwitches *switchesPtr) 
 {
     char *dp;
     int remainder;
@@ -651,7 +704,7 @@ Blt_Base64_Encode(const unsigned char *src, size_t numBytes, char *dest,
 }
 
 size_t 
-Blt_Base85_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
+Blt_Base85EncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
 {
     size_t numChars, numLines;
     /*
@@ -678,7 +731,7 @@ Blt_Base85_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
 }
 
 size_t 
-Blt_Base85_MaxDecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
+Blt_Base85DecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
 {
     size_t numBytes;
     /*
@@ -692,9 +745,9 @@ Blt_Base85_MaxDecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
 }
 
 int
-Blt_Base85_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
-                  unsigned char *dest, size_t *numBytesPtr,
-                  DecodingSwitches *switchesPtr)
+Blt_DecodeBase85(Tcl_Interp *interp, const char *src, size_t numChars,
+                 unsigned char *dest, size_t *numBytesPtr,
+                 DecodingSwitches *switchesPtr)
 {
     unsigned char *dp;
     const char *p, *pend;
@@ -708,31 +761,31 @@ Blt_Base85_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
         unsigned int i;
         
         numBytesInBlock = 0;
-        c = GetNextChar(&p, pend);
+        c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
         if (c == '\0') {
             break;
         }
         value = 0;
         byte[0] = c;
-        c = GetNextChar(&p, pend);
+        c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
         if (c == '\0') {
             numBytesInBlock = 1;
             break;
         }
         byte[1] = c;
-        c = GetNextChar(&p, pend);
+        c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
         if (c == '\0') {
             numBytesInBlock = 2;
             break;
         }
         byte[2] = c;
-        c = GetNextChar(&p, pend);
+        c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
         if (c == '\0') {
             numBytesInBlock = 3;
             break;
         }
         byte[3] = c;
-        c = GetNextChar(&p, pend);
+        c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
         if (c == '\0') {
             numBytesInBlock = 4;
             break;
@@ -791,8 +844,8 @@ Blt_Base85_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
 }
 
 int
-Blt_Base85_Encode(const unsigned char *src, size_t numBytes, char *dest,
-                  size_t *numCharsPtr, EncodingSwitches *switchesPtr) 
+Blt_EncodeBase85(const unsigned char *src, size_t numBytes, char *dest,
+                 size_t *numCharsPtr, EncodingSwitches *switchesPtr) 
 {
     char *dp; 
     int fill, remainder;
@@ -887,7 +940,7 @@ Blt_Base85_Encode(const unsigned char *src, size_t numBytes, char *dest,
 }
 
 size_t 
-Blt_Ascii85_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
+Blt_Ascii85EncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
 {
     size_t numChars, numLines;
     /*
@@ -902,7 +955,9 @@ Blt_Ascii85_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
     if (switchesPtr->wrapLength > 0) {  /* Newlines required. */
         numLines = (numChars + (switchesPtr->wrapLength - 1)) /
             switchesPtr->wrapLength;    
-    } 
+    } else {
+        numLines = 1;
+    }
     if (switchesPtr->wrap != NULL) {
         numChars += numLines * strlen(switchesPtr->wrap);
     } else {
@@ -916,7 +971,7 @@ Blt_Ascii85_MaxEncodeBufferSize(size_t numBytes, EncodingSwitches *switchesPtr)
 }
 
 size_t 
-Blt_Ascii85_MaxDecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
+Blt_Ascii85DecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
 {
     size_t numBytes;
     /*
@@ -937,8 +992,8 @@ Blt_Ascii85_MaxDecodeBufferSize(size_t numChars, DecodingSwitches *switchesPtr)
  * -yoption yes
  */
 int
-Blt_Ascii85_Encode(const unsigned char *src, size_t numBytes, char *dest,
-                   size_t *numCharsPtr, EncodingSwitches *switchesPtr) 
+Blt_EncodeAscii85(const unsigned char *src, size_t numBytes, char *dest,
+                  size_t *numCharsPtr, EncodingSwitches *switchesPtr) 
 {
     char *dp; 
     int remainder, initial;
@@ -1036,27 +1091,33 @@ Blt_Ascii85_Encode(const unsigned char *src, size_t numBytes, char *dest,
         AddEncodedChar(&dp, '-', switchesPtr);
         AddEncodedChar(&dp, '>', switchesPtr);
     }
-    *dp++ = '\0';
     *numCharsPtr = (dp - dest);
+    *dp++ = '\0';
     return TCL_OK;
 }
 
 int
-Blt_Ascii85_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
-                   unsigned char *dest, size_t *numBytesPtr,
-                   DecodingSwitches *switchesPtr)
+Blt_DecodeAscii85(Tcl_Interp *interp, const char *src, size_t numChars,
+                  unsigned char *dest, size_t *numBytesPtr,
+                  DecodingSwitches *switchesPtr)
 {
     unsigned char *dp;
     const char *p, *pend;
     int numBytesInBlock;
     unsigned int byte[5];
+    static unsigned char decode85[256];
+    static int initialized = FALSE;
     
+    if (!initialized) {
+        InitAscii85DecodeTable(decode85);
+        initialized = TRUE;
+    }
     dp = dest;
     for (p = src, pend = p + numChars; p < pend; /*empty*/) {
         unsigned int c;
         
         numBytesInBlock = 0;
-        c = GetNextChar(&p, pend);
+        c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
         if (c == '\0') {
             break;
         }
@@ -1072,25 +1133,25 @@ Blt_Ascii85_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
 
             value = 0;
             byte[0] = c;
-            c = GetNextChar(&p, pend);
+            c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
             if (c == '\0') {
                 numBytesInBlock = 1;
                 break;
             }
             byte[1] = c;
-            c = GetNextChar(&p, pend);
+            c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
             if (c == '\0') {
                 numBytesInBlock = 2;
                 break;
             }
             byte[2] = c;
-            c = GetNextChar(&p, pend);
+            c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
             if (c == '\0') {
                 numBytesInBlock = 3;
                 break;
             }
             byte[3] = c;
-            c = GetNextChar(&p, pend);
+            c = GetNextEncodedChar(&p, pend, switchesPtr, decode85);
             if (c == '\0') {
                 numBytesInBlock = 4;
                 break;
@@ -1099,6 +1160,8 @@ Blt_Ascii85_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
             
             for (i = 0; i < 5; i++) {
                 if ((byte[i] < '!') || (byte[i] > 'u')) {
+                    Tcl_AppendResult(interp, "invalid character found at ",
+                        Blt_Itoa(p - src - 5 + i + 1), (char *)NULL);
                     return TCL_ERROR;
                 }
                 value = (value * 85) + (byte[i] - '!');
@@ -1122,6 +1185,17 @@ Blt_Ascii85_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
         unsigned int value;
         int i;
         
+        if (numBytesInBlock == 1) {
+            if (byte[0] == 'z') {
+                /* Start of block is 'z' */
+                dp[0] = dp[1] = dp[2] = dp[3] = '\0';
+                goto done;
+            } else if (byte[0] == 'y') {
+                /* Start of block is 'y' */
+                dp[0] = dp[1] = dp[2] = dp[3] = ' ';
+                goto done;
+            }
+        }
         for (i = numBytesInBlock; i < 5; i++) {
             byte[i] = 'u';              /* Pad block with 'u' */
         }
@@ -1140,13 +1214,14 @@ Blt_Ascii85_Decode(Tcl_Interp *interp, const char *src, size_t numChars,
         dp[2] = (value >> 8)  & 0xFF;
         dp[3] = (value)       & 0xFF;
 #endif
+ done:
         dp += 4;
     }
-    *dp++ = '\0';
     *numBytesPtr = dp - dest;
     if (numBytesInBlock > 0) {
-        *numBytesPtr -= (6 - numBytesInBlock);
+        *numBytesPtr -= (5 - numBytesInBlock);
     }
+    *dp++ = '\0';
     return TCL_OK;
 }
 
@@ -1162,23 +1237,27 @@ DecodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     int numChars;
     size_t numBytes, maxBytes;
     unsigned char *dest;
+    int length;
+    char c;
     
     if (objc < 3) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " format bytes\"", (char *)NULL);
+                Tcl_GetString(objv[0]), " formatName string ?switches ...?\"",
+                (char *)NULL);
         return TCL_ERROR;
     }
-    format = Tcl_GetString(objv[1]);
+    format = Tcl_GetStringFromObj(objv[1], &length);
+    c = format[0];
     src = Tcl_GetStringFromObj(objv[2], &numChars);
-    if (strcmp(format, "base64") == 0) {
+    if ((c == 'b') && (strncmp(format, "base64", length) == 0)) {
         classPtr = &base64Class;
-    } else if (strcmp(format, "base16") == 0) {
-        classPtr = &base16Class;
-    } else if (strcmp(format, "ascii85") == 0) {
+    } else if ((c == 'h') && (strncmp(format, "hexadecimal", length) == 0)) {
+        classPtr = &hexadecimalClass;
+    } else if ((c == 'a') && (strncmp(format, "ascii85", length) == 0)) {
         classPtr = &ascii85Class;
     } else {
         Tcl_AppendResult(interp, "bad format \"", format, 
-                "\": should be base16, base64, or ascii85", (char *)NULL);
+                "\": should be hexadecimal, base64, or ascii85", (char *)NULL);
         return TCL_ERROR;
     }
     memset(&args, 0, sizeof(args));
@@ -1187,7 +1266,7 @@ DecodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     
-    maxBytes = (*classPtr->maxDecodeSizeProc)(numChars, &args);
+    maxBytes = (*classPtr->decodeSizeProc)(numChars, &args);
     dest = Blt_Malloc(sizeof(unsigned char) * maxBytes);
     if (dest == NULL) {
         Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(maxBytes),
@@ -1215,16 +1294,16 @@ DecodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
             if (channel == NULL) {
                 goto error;
             }
-            if ((mode & TCL_READABLE) == 0) {
+            if ((mode & TCL_WRITABLE) == 0) {
                 Tcl_AppendResult(interp, "channel \"", fileName, 
-                                 "\" not opened for reading", (char *)NULL);
+                                 "\" not opened for writing", (char *)NULL);
                 goto error;
             }
             closeChannel = FALSE;
         } else {
-            channel = Tcl_OpenFileChannel(interp, fileName, "r", 0);
+            channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
             if (channel == NULL) {
-                goto error;             /* Can't open dump file. */
+                goto error;             /* Can't open file. */
             }
         }
         Tcl_WriteObj(channel, objPtr);
@@ -1260,32 +1339,36 @@ EncodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     const unsigned char *src;
     int numBytes;
     size_t numChars, maxChars;
-
+    int length;
+    char c;
+    
     if (objc < 3) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " format bytes\"", (char *)NULL);
+                Tcl_GetString(objv[0]), " formatName string ?switches ...?\"",
+                (char *)NULL);
         return TCL_ERROR;
     }
-    format = Tcl_GetString(objv[1]);
+    format = Tcl_GetStringFromObj(objv[1], &length);
+    c = format[0];
     src = Tcl_GetByteArrayFromObj(objv[2], &numBytes);
-    if (strcmp(format, "base64") == 0) {
+    if ((c == 'b') && (strncmp(format, "base64", length) == 0)) {
         classPtr = &base64Class;
-    } else if (strcmp(format, "base16") == 0) {
-        classPtr = &base16Class;
-    } else if (strcmp(format, "ascii85") == 0) {
+    } else if ((c == 'h') && (strncmp(format, "hexadecimal", length) == 0)) {
+        classPtr = &hexadecimalClass;
+    } else if ((c == 'a') && (strncmp(format, "ascii85", length) == 0)) {
         classPtr = &ascii85Class;
     } else {
         Tcl_AppendResult(interp, "bad format \"", format, 
-                "\": should be base16, base64, or ascii85", (char *)NULL);
+                "\": should be hexadecimal, base64, or ascii85", (char *)NULL);
         return TCL_ERROR;
     }
     memset(&args, 0, sizeof(args));
-    args.wrapLength = 60;
+    args.wrapLength = classPtr->wrapLength;
     if (Blt_ParseSwitches(interp, classPtr->encodeSpecs, objc - 3 , objv + 3, 
         &args, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    maxChars = (*classPtr->maxEncodeSizeProc)(numBytes, &args);
+    maxChars = (*classPtr->encodeSizeProc)(numBytes, &args);
     dest = Blt_Malloc(sizeof(char) * maxChars);
     if (dest == NULL) {
         Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(maxChars),
@@ -1293,7 +1376,9 @@ EncodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     (*classPtr->encodeProc)(src, numBytes, dest, &numChars, &args);
+#ifdef notdef
     fprintf(stderr, "numChars=%ld maxChars=%ld\n", numChars, maxChars);
+#endif
     assert(numChars <= maxChars);
     objPtr = Tcl_NewStringObj(dest, numChars);
     Blt_Free(dest);
@@ -1311,16 +1396,16 @@ EncodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
             if (channel == NULL) {
                 goto error;
             }
-            if ((mode & TCL_READABLE) == 0) {
+            if ((mode & TCL_WRITABLE) == 0) {
                 Tcl_AppendResult(interp, "channel \"", fileName, 
-                                 "\" not opened for reading", (char *)NULL);
+                                 "\" not opened for writing", (char *)NULL);
                 goto error;
             }
             closeChannel = FALSE;
         } else {
-            channel = Tcl_OpenFileChannel(interp, fileName, "r", 0);
+            channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
             if (channel == NULL) {
-                goto error;             /* Can't open dump file. */
+                goto error;             /* Can't open output file. */
             }
         }
         Tcl_WriteObj(channel, objPtr);
@@ -1344,7 +1429,7 @@ EncodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 Blt_DBuffer 
-Blt_Base64_DecodeToBuffer(Tcl_Interp *interp, const char *src, size_t numChars)
+Blt_DecodeBase64ToBuffer(Tcl_Interp *interp, const char *src, size_t numChars)
 {
     Blt_DBuffer dbuffer;
     size_t numBytes, maxBytes;
@@ -1352,14 +1437,14 @@ Blt_Base64_DecodeToBuffer(Tcl_Interp *interp, const char *src, size_t numChars)
     DecodingSwitches switches;
 
     memset(&switches, 0, sizeof(DecodingSwitches));
-    maxBytes = Blt_Base64_MaxDecodeBufferSize(numChars, &switches);
+    maxBytes = Blt_Base64DecodeBufferSize(numChars, &switches);
     dest = Blt_Malloc(sizeof(unsigned char) * maxBytes);
     if (dest == NULL) {
         Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(maxBytes),
                 " bytes for decode buffer.", (char *)NULL);
         return NULL;
     }
-    if (Blt_Base16_Decode(interp, src, numChars, dest, &numBytes, &switches)
+    if (Blt_DecodeHexadecimal(interp, src, numChars, dest, &numBytes, &switches)
         != TCL_OK) {
         Blt_Free(dest);
         return NULL;
@@ -1371,7 +1456,7 @@ Blt_Base64_DecodeToBuffer(Tcl_Interp *interp, const char *src, size_t numChars)
 }
 
 Tcl_Obj *
-Blt_Base16_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
+Blt_DecodeHexadecimalToObj(Tcl_Interp *interp, const char *src, size_t numChars)
 {
     unsigned char *dest;
     size_t numBytes, maxBytes;
@@ -1379,14 +1464,14 @@ Blt_Base16_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
     DecodingSwitches switches;
 
     memset(&switches, 0, sizeof(DecodingSwitches));
-    maxBytes = Blt_Base16_MaxDecodeBufferSize(numChars, &switches);
+    maxBytes = Blt_HexadecimalDecodeBufferSize(numChars, &switches);
     dest = Blt_Malloc(sizeof(unsigned char) * maxBytes);
     if (dest == NULL) {
         Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(maxBytes),
                 " bytes for decode buffer.", (char *)NULL);
         return NULL;
     }
-    if (Blt_Base16_Decode(interp, src, numChars, dest, &numBytes, &switches)
+    if (Blt_DecodeHexadecimal(interp, src, numChars, dest, &numBytes, &switches)
         != TCL_OK) {
         Blt_Free(dest);
         return NULL;
@@ -1397,7 +1482,7 @@ Blt_Base16_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
 }
 
 Tcl_Obj *
-Blt_Base64_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
+Blt_DecodeBase64ToObj(Tcl_Interp *interp, const char *src, size_t numChars)
 {
     Tcl_Obj *objPtr;
     size_t numBytes, maxBytes;
@@ -1405,14 +1490,14 @@ Blt_Base64_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
     DecodingSwitches switches;
 
     memset(&switches, 0, sizeof(DecodingSwitches));
-    maxBytes = Blt_Base64_MaxDecodeBufferSize(numChars, &switches);
+    maxBytes = Blt_Base64DecodeBufferSize(numChars, &switches);
     dest = Blt_Malloc(sizeof(unsigned char) * maxBytes);
     if (dest == NULL) {
         Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(maxBytes),
                 " bytes for decode buffer.", (char *)NULL);
         return NULL;
     }
-    if (Blt_Base64_Decode(interp, src, numChars, dest, &numBytes, &switches)
+    if (Blt_DecodeBase64(interp, src, numChars, dest, &numBytes, &switches)
         != TCL_OK) {
         Blt_Free(dest);
         return NULL;
@@ -1423,7 +1508,7 @@ Blt_Base64_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
 }
 
 Tcl_Obj *
-Blt_Base85_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
+Blt_DecodeBase85ToObj(Tcl_Interp *interp, const char *src, size_t numChars)
 {
     unsigned char *dest;
     Tcl_Obj *objPtr;
@@ -1431,14 +1516,14 @@ Blt_Base85_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
     DecodingSwitches switches;
 
     memset(&switches, 0, sizeof(DecodingSwitches));
-    maxBytes = Blt_Base85_MaxDecodeBufferSize(numChars, &switches);
+    maxBytes = Blt_Base85DecodeBufferSize(numChars, &switches);
     dest = Blt_Malloc(sizeof(unsigned char) * maxBytes);
     if (dest == NULL) {
         Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(maxBytes),
                 " bytes for decode buffer.", (char *)NULL);
         return NULL;
     }
-    if (Blt_Base85_Decode(interp, src, numChars, dest, &numBytes, &switches)
+    if (Blt_DecodeBase85(interp, src, numChars, dest, &numBytes, &switches)
         != TCL_OK) {
         Blt_Free(dest);
         return NULL;
@@ -1449,7 +1534,7 @@ Blt_Base85_DecodeToObj(Tcl_Interp *interp, const char *src, size_t numChars)
 }
 
 Tcl_Obj *
-Blt_Base64_EncodeToObj(const unsigned char *src, size_t numBytes) 
+Blt_EncodeBase64ToObj(const unsigned char *src, size_t numBytes) 
 {
     Tcl_Obj *objPtr;
     char *dest;
@@ -1457,12 +1542,12 @@ Blt_Base64_EncodeToObj(const unsigned char *src, size_t numBytes)
     EncodingSwitches switches;
 
     memset(&switches, 0, sizeof(EncodingSwitches));
-    maxChars = Blt_Base64_MaxEncodeBufferSize(numBytes, &switches);
+    maxChars = Blt_Base64EncodeBufferSize(numBytes, &switches);
     dest = Blt_Malloc(sizeof(char) * maxChars);
     if (dest == NULL) {
         return NULL;
     }
-    Blt_Base64_Encode(src, numBytes, dest, &numChars, &switches);
+    Blt_EncodeBase64(src, numBytes, dest, &numChars, &switches);
     assert(numChars <= maxChars);
     objPtr = Tcl_NewStringObj(dest, numChars);
     Blt_Free(dest);
@@ -1470,7 +1555,7 @@ Blt_Base64_EncodeToObj(const unsigned char *src, size_t numBytes)
 }
 
 Tcl_Obj *
-Blt_Base85_EncodeToObj(const unsigned char *src, size_t numBytes) 
+Blt_EncodeBase85ToObj(const unsigned char *src, size_t numBytes) 
 {
     Tcl_Obj *objPtr;
     char *dest;
@@ -1478,12 +1563,12 @@ Blt_Base85_EncodeToObj(const unsigned char *src, size_t numBytes)
     EncodingSwitches switches;
 
     memset(&switches, 0, sizeof(EncodingSwitches));
-    maxChars = Blt_Base85_MaxEncodeBufferSize(numBytes, &switches);
+    maxChars = Blt_Base85EncodeBufferSize(numBytes, &switches);
     dest = Blt_Malloc(sizeof(char) * maxChars);
     if (dest == NULL) {
         return NULL;
     }
-    Blt_Base85_Encode(src, numBytes, dest, &numChars, &switches);
+    Blt_EncodeBase85(src, numBytes, dest, &numChars, &switches);
     assert(numChars <= maxChars);
     objPtr = Tcl_NewStringObj(dest, numChars);
     Blt_Free(dest);
@@ -1491,7 +1576,7 @@ Blt_Base85_EncodeToObj(const unsigned char *src, size_t numBytes)
 }
 
 Tcl_Obj *
-Blt_Base16_EncodeToObj(const unsigned char *src, size_t numBytes) 
+Blt_EncodeHexadecimalToObj(const unsigned char *src, size_t numBytes) 
 {
     Tcl_Obj *objPtr;
     char *dest;
@@ -1499,22 +1584,17 @@ Blt_Base16_EncodeToObj(const unsigned char *src, size_t numBytes)
     EncodingSwitches switches;
 
     memset(&switches, 0, sizeof(EncodingSwitches));
-    maxChars = Blt_Base16_MaxEncodeBufferSize(numBytes, &switches);
+    maxChars = Blt_HexadecimalEncodeBufferSize(numBytes, &switches);
     dest = Blt_Malloc(sizeof(char) * maxChars);
     if (dest == NULL) {
         return NULL;
     }
-    Blt_Base16_Encode(src, numBytes, dest, &numChars, &switches);
+    Blt_EncodeHexadecimal(src, numBytes, dest, &numChars, &switches);
     assert(numChars <= maxChars);
     objPtr = Tcl_NewStringObj(dest, numChars);
     Blt_Free(dest);
     return objPtr;
 }
-
-/* blt::encode base64 -file file -data data */ 
-/* blt::decode base64 -file file -data data */ 
-/* blt::decode ascii85 -file file -data data */ 
-/* blt::decode ascii85 -file file -data data -pad -zero */ 
 
 int
 Blt_Base64CmdInitProc(Tcl_Interp *interp)

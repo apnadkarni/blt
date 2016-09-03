@@ -110,29 +110,29 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_Ltoa, /* 100 */
     Blt_Utoa, /* 101 */
     Blt_Dtoa, /* 102 */
-    Blt_Base16_Decode, /* 103 */
-    Blt_Base64_Decode, /* 104 */
-    Blt_Base85_Decode, /* 105 */
-    Blt_Ascii85_Decode, /* 106 */
-    Blt_Base64_DecodeToBuffer, /* 107 */
-    Blt_Base16_DecodeToObj, /* 108 */
-    Blt_Base64_DecodeToObj, /* 109 */
-    Blt_Base85_DecodeToObj, /* 110 */
-    Blt_Base16_Encode, /* 111 */
-    Blt_Base64_Encode, /* 112 */
-    Blt_Base85_Encode, /* 113 */
-    Blt_Ascii85_Encode, /* 114 */
-    Blt_Base16_EncodeToObj, /* 115 */
-    Blt_Base64_EncodeToObj, /* 116 */
-    Blt_Base85_EncodeToObj, /* 117 */
-    Blt_Base16_MaxDecodeBufferSize, /* 118 */
-    Blt_Base16_MaxEncodeBufferSize, /* 119 */
-    Blt_Base64_MaxDecodeBufferSize, /* 120 */
-    Blt_Base64_MaxEncodeBufferSize, /* 121 */
-    Blt_Base85_MaxDecodeBufferSize, /* 122 */
-    Blt_Base85_MaxEncodeBufferSize, /* 123 */
-    Blt_Ascii85_MaxDecodeBufferSize, /* 124 */
-    Blt_Ascii85_MaxEncodeBufferSize, /* 125 */
+    Blt_DecodeHexadecimal, /* 103 */
+    Blt_DecodeBase64, /* 104 */
+    Blt_DecodeBase85, /* 105 */
+    Blt_DecodeAscii85, /* 106 */
+    Blt_DecodeBase64ToBuffer, /* 107 */
+    Blt_DecodeHexadecimalToObj, /* 108 */
+    Blt_DecodeBase64ToObj, /* 109 */
+    Blt_DecodeBase85ToObj, /* 110 */
+    Blt_EncodeHexadecimal, /* 111 */
+    Blt_EncodeBase64, /* 112 */
+    Blt_EncodeBase85, /* 113 */
+    Blt_EncodeAscii85, /* 114 */
+    Blt_EncodeHexadecimalToObj, /* 115 */
+    Blt_EncodeBase64ToObj, /* 116 */
+    Blt_EncodeBase85ToObj, /* 117 */
+    Blt_HexadecimalDecodeBufferSize, /* 118 */
+    Blt_HexadecimalEncodeBufferSize, /* 119 */
+    Blt_Base64DecodeBufferSize, /* 120 */
+    Blt_Base64EncodeBufferSize, /* 121 */
+    Blt_Base85DecodeBufferSize, /* 122 */
+    Blt_Base85EncodeBufferSize, /* 123 */
+    Blt_Ascii85DecodeBufferSize, /* 124 */
+    Blt_Ascii85EncodeBufferSize, /* 125 */
     Blt_IsBase64, /* 126 */
     Blt_GetDoubleFromString, /* 127 */
     Blt_GetDoubleFromObj, /* 128 */

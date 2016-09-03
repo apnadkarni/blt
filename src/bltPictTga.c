@@ -1737,7 +1737,7 @@ ImportTga(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
         bytes = Tcl_GetByteArrayFromObj(reader.dataObjPtr, &numBytes);
         string = (const char *)bytes;
         if (Blt_IsBase64(string, numBytes)) {
-            dbuffer = Blt_Base64_DecodeToBuffer(interp, string, numBytes);
+            dbuffer = Blt_DecodeBase64ToBuffer(interp, string, numBytes);
             if (dbuffer == NULL) {
                 goto error;
             }

@@ -265,7 +265,7 @@ Base64Op(ClientData clientData, Tcl_Interp *interp, int objc,
             const char *string;
 
             string = Tcl_GetStringFromObj(objv[3], &length);
-            objPtr = Blt_Base64_DecodeToObj(interp, string, (size_t)length); 
+            objPtr = Blt_DecodeBase64ToObj(interp, string, (size_t)length); 
             if (objPtr == NULL) {
                 return TCL_ERROR;
             }
@@ -279,7 +279,7 @@ Base64Op(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *objPtr;
 
             bp = Tcl_GetByteArrayFromObj(objv[3], &length);
-            objPtr = Blt_Base64_EncodeToObj(bp, length);
+            objPtr = Blt_EncodeBase64ToObj(bp, length);
             if (objPtr == NULL) {
                 return TCL_ERROR;
             }
@@ -324,7 +324,7 @@ ParseCsvChannel(Tcl_Interp *interp, Tcl_Channel channel)
                 /* 
                  * Add whitespace only if it's not leading or we're inside of
                  * quotes or a path.
-                 */
+           b      */
                 if ((fp != field) || (inQuotes) || (isPath)) {
                     *fp++ = *bp; 
                 }
