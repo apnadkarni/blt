@@ -18,17 +18,18 @@ SYNOPSIS
 
 **blt::decode hexadecimal** *encodedString* ?\ *switches*\ ...?
 
-**blt::encode ascii85** *byteString* ?\ *switches*\ ...?
+**blt::encode ascii85** *binaryString* ?\ *switches*\ ...?
 
-**blt::encode base64** *byteString* ?\ *switches*\ ...?
+**blt::encode base64** *binaryString* ?\ *switches*\ ...?
 
-**blt::encode hexadecimal** *byteString* ?\ *switches*\ ...?
+**blt::encode hexadecimal** *binaryString* ?\ *switches*\ ...?
 
 DESCRIPTION
 -----------
 
-This **blt::base64** command provides a utility for encode and decoding
-base64 strings.  
+This **blt::encode** and **blt::decode** commands provide a utility for
+encoding binary data to printable ASCII characters and decoding such
+encodings back to binary data.
 
 SYNTAX
 ------
@@ -90,8 +91,8 @@ SYNTAX
     Indicates to ignore invalid characters in *encodedString*.
     The default is to return an error when an invalid character is found.
     
-**blt::encode ascii85** *byteString*  ?\ *switches*\ ...?
-  Encodes *byteString* with base64 encoding.  The encoded string is
+**blt::encode ascii85** *binaryString*  ?\ *switches*\ ...?
+  Encodes *binaryString* with base64 encoding.  The encoded string is
   returned. The following switches are available:
 
   **-brackets**
@@ -128,8 +129,8 @@ SYNTAX
     **-wrapchars** switches). If *numChars* is 0, then no line wrapping
     is performed. The default is 60.
 
-**blt::encode base64** *byteString*  ?\ *switches*\ ...?
-  Encodes *byteString* with base64 encoding.  The encoded string is
+**blt::encode base64** *binaryString*  ?\ *switches*\ ...?
+  Encodes *binaryString* with base64 encoding.  The encoded string is
   returned. The following switches are available:
 
   **-data** *varName*
@@ -154,8 +155,8 @@ SYNTAX
     **-wrapchars** switches). If *numChars* is 0, then no line wrapping
     is performed. The default is 76.
 
-**blt::encode hexadecimal** *byteString*  ?\ *switches*\ ...?
-  Encodes *byteString* with base64 encoding.  The encoded string is
+**blt::encode hexadecimal** *binaryString*  ?\ *switches*\ ...?
+  Encodes *binaryString* with base64 encoding.  The encoded string is
   returned. The following switches are available:
 
   **-data** *varName*

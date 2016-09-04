@@ -181,16 +181,16 @@ BLT_EXTERN const char *Blt_Dtoa(Tcl_Interp *interp, double value);
 
 BLT_EXTERN int Blt_DecodeHexadecimal(Tcl_Interp *interp, const char *src,
         size_t numChars, unsigned char *dest, size_t *numBytesPtr,
-        DecodingSwitches *switchesPtr);
+        BinaryDecoder *switchesPtr);
 BLT_EXTERN int Blt_DecodeBase64(Tcl_Interp *interp, const char *src,
         size_t numChars, unsigned char *dest, size_t *numBytesPtr,
-        DecodingSwitches *switchesPtr);
+        BinaryDecoder *switchesPtr);
 BLT_EXTERN int Blt_DecodeBase85(Tcl_Interp *interp, const char *src,
         size_t numChars, unsigned char *dest, size_t *numBytesPtr,
-        DecodingSwitches *switchesPtr);
+        BinaryDecoder *switchesPtr);
 BLT_EXTERN int Blt_DecodeAscii85(Tcl_Interp *interp, const char *src,
         size_t numChars, unsigned char *dest, size_t *numBytesPtr,
-        DecodingSwitches *switchesPtr);
+        BinaryDecoder *switchesPtr);
 
 BLT_EXTERN Blt_DBuffer Blt_DecodeBase64ToBuffer(Tcl_Interp *interp, 
         const char *src, size_t numChars);
@@ -203,13 +203,13 @@ BLT_EXTERN Tcl_Obj *Blt_DecodeBase85ToObj(Tcl_Interp *interp,
         const char *src, size_t numChars);
 
 BLT_EXTERN int Blt_EncodeHexadecimal(const unsigned char *src, size_t numBytes,
-        char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr);
+        char *dest, size_t *numCharsPtr, BinaryEncoder *switchesPtr);
 BLT_EXTERN int Blt_EncodeBase64(const unsigned char *src, size_t numBytes,
-        char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr);
+        char *dest, size_t *numCharsPtr, BinaryEncoder *switchesPtr);
 BLT_EXTERN int Blt_EncodeBase85(const unsigned char *src, size_t numBytes,
-        char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr);
+        char *dest, size_t *numCharsPtr, BinaryEncoder *switchesPtr);
 BLT_EXTERN int Blt_EncodeAscii85(const unsigned char *src, size_t numBytes,
-        char *dest, size_t *numCharsPtr, EncodingSwitches *switchesPtr);
+        char *dest, size_t *numCharsPtr, BinaryEncoder *switchesPtr);
 
 BLT_EXTERN Tcl_Obj *Blt_EncodeHexadecimalToObj(const unsigned char *src, 
         size_t numBytes);
@@ -219,21 +219,21 @@ BLT_EXTERN Tcl_Obj *Blt_EncodeBase85ToObj(const unsigned char *src,
         size_t numBytes);
 
 BLT_EXTERN size_t Blt_HexadecimalDecodeBufferSize(size_t numBytes,
-        DecodingSwitches *switchesPtr);
+        BinaryDecoder *switchesPtr);
 BLT_EXTERN size_t Blt_HexadecimalEncodeBufferSize(size_t numChars,
-        EncodingSwitches *switchesPtr);
+        BinaryEncoder *switchesPtr);
 BLT_EXTERN size_t Blt_Base64DecodeBufferSize(size_t numBytes,
-        DecodingSwitches *switchesPtr);
+        BinaryDecoder *switchesPtr);
 BLT_EXTERN size_t Blt_Base64EncodeBufferSize(size_t numChars,
-        EncodingSwitches *switchesPtr);
+        BinaryEncoder *switchesPtr);
 BLT_EXTERN size_t Blt_Base85DecodeBufferSize(size_t numBytes,
-        DecodingSwitches *switchesPtr);
+        BinaryDecoder *switchesPtr);
 BLT_EXTERN size_t Blt_Base85EncodeBufferSize(size_t numChars,
-        EncodingSwitches *switchesPtr);
+        BinaryEncoder *switchesPtr);
 BLT_EXTERN size_t Blt_Ascii85DecodeBufferSize(size_t numBytes,
-        DecodingSwitches *switchesPtr);
+        BinaryDecoder *switchesPtr);
 BLT_EXTERN size_t Blt_Ascii85EncodeBufferSize(size_t numChars,
-        EncodingSwitches *switchesPtr);
+        BinaryEncoder *switchesPtr);
 
 BLT_EXTERN int Blt_IsBase64(const char *buf, size_t length);
 

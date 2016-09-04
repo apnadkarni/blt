@@ -174,30 +174,37 @@ typedef enum  ScaleTypes {
 #endif /*_BLT_TYPES_H*/
 
 /*
- * EncodingSwitches --
+ * BinaryEncoder --
  */
-typedef struct _EncodingSwitches {
+typedef struct _BinaryEncoder {
     unsigned int flags;
-    unsigned int fill;
+    int wrapLength;                     /* Maximum length of line of encoded
+                                         * character before wrapping. */
     const char *pad;                    /* If non-NULL, padding before each
                                          * line of encoded characters. */
     const char *wrap;                   /* If non-NULL, end of line
                                          * character sequence. By default
                                          * it's "\n". */
-    int wrapLength;                     /* Maximum length of line of encoded
-                                         * character before wrapping. */
+    const char *altChars;               /* Alternate character base64
+                                         * encodings for 63 and 64
+                                         * values. */
     Tcl_Obj *fileObjPtr;                /* Name of file representing the
                                          * channel used as the input
                                          * source. */
     Tcl_Obj *dataObjPtr;                /* If non-NULL, data object to use
                                          * as input source. */
-} EncodingSwitches;
+    /* Used internally. */
+    unsigned int fill;
+} BinaryEncoder;
 
-typedef struct _DecodingSwitches {
+typedef struct _BinaryDecoder {
     unsigned int flags;
     Tcl_Obj *fileObjPtr;                /* Name of file representing the
                                          * channel used as the input
                                          * source. */
     Tcl_Obj *dataObjPtr;                /* If non-NULL, data object to use
                                          * as input source. */
-} DecodingSwitches;
+    const char *altChars;               /* Alternate character base64
+                                         * encodings for 63 and 64
+                                         * values. */
+} BinaryDecoder;
