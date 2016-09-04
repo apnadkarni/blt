@@ -723,7 +723,7 @@ test base64.79 {encode base64 -file /tmp/myFile} {
     } msg] $msg
 } {0 {VGhlIHNob3J0IHJlZCBmb3ggcmFuIHF1aWNrbHkgdGhyb3VnaCB0aGUgZ3JlZW4gZmllbGQgYW5k
 IGp1bXBlZCBvdmVyIHRoZSB0YWxsIGJyb3duIGJlYXIK}}
-
+
 # Decode
 
 test base64.80 {decode no args} {
