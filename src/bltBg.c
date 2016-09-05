@@ -70,7 +70,7 @@
     (BLT_PAINTBRUSH_REPEAT_NORMAL|BLT_PAINTBRUSH_REPEAT_OPPOSITE)
 #define ORIENT_MASK \
     (BLT_PAINTBRUSH_ORIENT_VERTICAL|BLT_PAINTBRUSH_ORIENT_HORIZONTAL)
-#define COLOR_SCALING_MASK \
+#define COLOR_SCALE_MASK \
         (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG)
 
 #define BG_BACKGROUND_THREAD_KEY        "BLT Background Data"
@@ -162,7 +162,7 @@ typedef struct _BgInstance {
 #define NOTIFY_PENDING          (1<<16)
 
 #define DEF_BORDER              STD_NORMAL_BACKGROUND
-#define DEF_CENTER              "no"
+#define DEF_CENTER              "0"
 #define DEF_CHECKERS_OFFCOLOR    "grey97"
 #define DEF_CHECKERS_ONCOLOR     "grey90"
 #define DEF_CHECKERS_STRIDE      "10"
@@ -184,8 +184,7 @@ typedef struct _BgInstance {
 #define DEF_RADIAL_HEIGHT       "1.0"
 #define DEF_RADIAL_WIDTH        "1.0"
 #define DEF_RELATIVETO           "toplevel"
-#define DEF_RELATIVETO           "toplevel"
-#define DEF_REPEAT              "reversing"
+#define DEF_REPEAT              "no"
 #define DEF_STRIPES_OFFCOLOR    "grey97"
 #define DEF_STRIPES_ONCOLOR     "grey90"
 #define DEF_STRIPES_ORIENT      "vertical"
@@ -203,11 +202,11 @@ static Blt_CustomOption imageOption =
     ObjToImage, ImageToObj, FreeImage, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToColorScaling;
-static Blt_OptionPrintProc ColorScalingToObj;
-static Blt_CustomOption colorScalingOption =
+static Blt_OptionParseProc ObjToColorScale;
+static Blt_OptionPrintProc ColorScaleToObj;
+static Blt_CustomOption colorScaleOption =
 {
-    ObjToColorScaling, ColorScalingToObj, NULL, (ClientData)0
+    ObjToColorScale, ColorScaleToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToJitter;
@@ -283,7 +282,7 @@ static Blt_ConfigSpec linearGradientBrushSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
         DEF_COLOR_SCALE, Blt_Offset(Blt_LinearGradientBrush, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+        BLT_CONFIG_DONT_SET_DEFAULT, &colorScaleOption},
     {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
         DEF_DECREASING, Blt_Offset(Blt_LinearGradientBrush, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT,
@@ -364,7 +363,7 @@ static Blt_ConfigSpec radialGradientBrushSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, &positionOption},
     {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
         DEF_COLOR_SCALE, Blt_Offset(Blt_RadialGradientBrush, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+        BLT_CONFIG_DONT_SET_DEFAULT, &colorScaleOption},
     {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
         DEF_DECREASING, Blt_Offset(Blt_RadialGradientBrush, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT,
@@ -407,7 +406,7 @@ static Blt_ConfigSpec conicalGradientBrushSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, &positionOption},
     {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
         DEF_COLOR_SCALE, Blt_Offset(Blt_ConicalGradientBrush, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+        BLT_CONFIG_DONT_SET_DEFAULT, &colorScaleOption},
     {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
         DEF_DECREASING, Blt_Offset(Blt_ConicalGradientBrush, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT,
@@ -873,6 +872,8 @@ ObjToPosition(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 return TCL_ERROR;
             }
         }
+        string = Tcl_GetString(objv[1]);
+        c = string[0];
         if (Tcl_GetDoubleFromObj(NULL, objv[1], &pointPtr->y) != TCL_OK) {
             if ((c == 'l') && (strcmp(string, "left") == 0)) {
                 pointPtr->x = 0.0;
@@ -1090,10 +1091,13 @@ static void
 FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
-    Blt_PaintBrush brush = (Blt_PaintBrush)widgRec;
 
-    Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brush);
-    *palPtr = NULL;
+    if (*palPtr != NULL) {
+        Blt_PaintBrush brush = (Blt_PaintBrush)widgRec;
+
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brush);
+        *palPtr = NULL;
+    }
 }
 
 /*
@@ -1157,7 +1161,7 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColorScaling --
+ * ObjToColorScale --
  *
  *      Translates the given string to the gradient scale it represents.  
  *      Valid scales are "linear" or "logarithmic"
@@ -1170,7 +1174,7 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToColorScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+ObjToColorScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -1188,12 +1192,12 @@ ObjToColorScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                (strncmp(string, "logarithmic", length) == 0)) {
         flag = BLT_PAINTBRUSH_SCALING_LOG;
     } else {
-        Tcl_AppendResult(interp, "unknown coloring scaling \"", string, "\"",
+        Tcl_AppendResult(interp, "unknown color scale \"", string, "\"",
                          ": should be linear or logarithmic.",
                          (char *)NULL);
         return TCL_ERROR;
     }
-    *flagsPtr &= ~COLOR_SCALING_MASK;
+    *flagsPtr &= ~COLOR_SCALE_MASK;
     *flagsPtr |= flag;
     return TCL_OK;
 }
@@ -1201,28 +1205,28 @@ ObjToColorScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ColorScalingToObj --
+ * ColorScaleToObj --
  *
- *      Convert the color scaling flag into a string Tcl_Obj.
+ *      Convert the color scale flag into a string Tcl_Obj.
  *
  * Results:
- *      The string representation of the color scaling flag is returned.
+ *      The string representation of the color scale flag is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColorScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+ColorScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                   char *widgRec, int offset, int flags) 
 {
-    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    unsigned int coreFlags = *(unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
     
-    switch (*flagsPtr & COLOR_SCALING_MASK) {
+    switch (coreFlags & COLOR_SCALE_MASK) {
     case BLT_PAINTBRUSH_SCALING_LINEAR:
         objPtr = Tcl_NewStringObj("linear", 6);         break;
     case BLT_PAINTBRUSH_SCALING_LOG:
-        objPtr = Tcl_NewStringObj("log", 3);            break;
+        objPtr = Tcl_NewStringObj("logarithmic", 11);   break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);            break;
     }
@@ -1372,8 +1376,24 @@ ReferenceToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                char *widgRec, int offset, int flags)    
 {
     BackgroundObject *corePtr = (BackgroundObject *)(widgRec);
-
-    return corePtr->refNameObjPtr;
+    Tcl_Obj *objPtr;
+    
+    switch (corePtr->flags & RELATIVETO_MASK) {
+    case RELATIVETO_SELF:
+        objPtr = Tcl_NewStringObj("self", 4);           break;
+    case RELATIVETO_TOPLEVEL:
+        objPtr = Tcl_NewStringObj("toplevel", 8);       break;
+    default:
+        if (corePtr->flags & REFERENCE_PENDING) {
+            SetReferenceWindowFromPath(corePtr);
+        }           
+        if (corePtr->refNameObjPtr == NULL) {
+            objPtr = Tcl_NewStringObj("", -1);
+        } else {
+            objPtr = corePtr->refNameObjPtr;
+        }
+    }
+    return objPtr;
 }
 
 /*
@@ -2008,6 +2028,34 @@ ConfigureBackground(Tcl_Interp *interp, BackgroundObject *corePtr, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * GetInfo --
+ *
+ *      Configures the background object depending upon the options and
+ *      values given int the objv vector.  We first segregate the
+ *      background options and the brush options into separate vectors
+ *      because we have to make separate calls to configure each set.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetInfo(Tcl_Interp *interp, BackgroundObject *corePtr, Tcl_Obj *objPtr)
+{
+    if (IsBackgroundOption(objPtr)) {
+        return Blt_ConfigureInfoFromObj(interp, corePtr->tkwin, bgSpecs,
+                (char *)corePtr, objPtr, 0);
+    } else if (corePtr->brush != NULL) {
+        return Blt_ConfigureInfoFromObj(interp, corePtr->tkwin,
+                corePtr->specs, (char *)corePtr->brush, objPtr, 0);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * GetValue --
  *
  *      Configures the background object depending upon the options and
@@ -2501,7 +2549,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 3) {
         return GetOptionLists(interp, corePtr);
     } else if (objc == 4) {
-        return GetValue(interp, corePtr, objv[3]);
+        return GetInfo(interp, corePtr, objv[3]);
     } else {
         if (ConfigureBackground(interp, corePtr, objc - 3, objv + 3, flags)
             != TCL_OK) {
@@ -2658,10 +2706,10 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec backgroundOps[] =
 {
     {"cget",      2, CgetOp,      4, 4, "bgName option",},
-    {"configure", 2, ConfigureOp, 3, 0, "bgName ?option value?...",},
-    {"create",    2, CreateOp,    3, 0, "type ?name? ?args?",},
+    {"configure", 2, ConfigureOp, 3, 0, "bgName ?option value ...?",},
+    {"create",    2, CreateOp,    3, 0, "type ?bgName? ?args ...?",},
+    {"delete",    1, DeleteOp,    2, 0, "?bgName ...?",},
     {"exists",    1, ExistsOp,    3, 3, "bgName",},
-    {"delete",    1, DeleteOp,    2, 0, "bgName...",},
     {"names",     1, NamesOp,     2, 3, "?pattern?",},
     {"type",      1, TypeOp,      3, 3, "bgName",},
 };

@@ -19,12 +19,12 @@ test mesh.1 {mesh no args} {
     list [catch {blt::mesh} msg] $msg
 } {1 {wrong # args: should be one of...
   blt::mesh cget meshName option
-  blt::mesh configure meshName ?option value?...
-  blt::mesh create type ?meshName? ?option value?...
-  blt::mesh delete ?meshName?...
-  blt::mesh hide meshName ?indices...?
+  blt::mesh configure meshName ?option value ...?
+  blt::mesh create type ?meshName? ?option value ...?
+  blt::mesh delete ?meshName ...?
+  blt::mesh hide meshName ?indices ...?
   blt::mesh hull meshName ?-vertices?
-  blt::mesh names ?pattern?...
+  blt::mesh names ?pattern ...?
   blt::mesh triangles meshName
   blt::mesh type meshName
   blt::mesh vertices meshName}}
@@ -33,19 +33,19 @@ test mesh.2 {mesh badOp} {
     list [catch {blt::mesh badOp} msg] $msg
 } {1 {bad operation "badOp": should be one of...
   blt::mesh cget meshName option
-  blt::mesh configure meshName ?option value?...
-  blt::mesh create type ?meshName? ?option value?...
-  blt::mesh delete ?meshName?...
-  blt::mesh hide meshName ?indices...?
+  blt::mesh configure meshName ?option value ...?
+  blt::mesh create type ?meshName? ?option value ...?
+  blt::mesh delete ?meshName ...?
+  blt::mesh hide meshName ?indices ...?
   blt::mesh hull meshName ?-vertices?
-  blt::mesh names ?pattern?...
+  blt::mesh names ?pattern ...?
   blt::mesh triangles meshName
   blt::mesh type meshName
   blt::mesh vertices meshName}}
 
 test mesh.3 {mesh create} {
     list [catch {blt::mesh create} msg] $msg
-} {1 {wrong # args: should be "blt::mesh create type ?meshName? ?option value?..."}}
+} {1 {wrong # args: should be "blt::mesh create type ?meshName? ?option value ...?"}}
 
 test mesh.4 {mesh create regular} {
     list [catch {blt::mesh create regular} msg] $msg
@@ -436,8 +436,7 @@ test mesh.41 {mesh create regular (bad namespace)} {
 
 test mesh.42 {mesh create (wrong # args)} {
     list [catch {blt::mesh create} msg] $msg
-} {1 {wrong # args: should be "blt::mesh create type ?meshName? ?option value?..."}}
-
+} {1 {wrong # args: should be "blt::mesh create type ?meshName? ?option value ...?"}}
 
 test mesh.43 {mesh names} {
     list [catch {blt::mesh names} msg] [lsort $msg]

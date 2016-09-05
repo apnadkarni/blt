@@ -791,12 +791,13 @@ ObjToPosition(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         return TCL_OK;
     } 
     if (objc == 2) {
-        const char *string;
-        char c;
-        
-        string = Tcl_GetString(objv[0]);
-        c = string[0];
-        if (Tcl_GetDoubleFromObj(NULL, objv[0], &pointPtr->x) != TCL_OK) {
+        if (Tcl_GetDoubleFromObj(NULL, objv[0], &pointPtr->x) == TCL_OK) {
+        } else {
+            const char *string;
+            char c;
+            
+            string = Tcl_GetString(objv[0]);
+            c = string[0];
             if ((c == 't') && (strcmp(string, "top") == 0)) {
                 pointPtr->y = 0.0;
             } else if ((c == 'b') && (strcmp(string, "bottom") == 0)) {
@@ -809,7 +810,13 @@ ObjToPosition(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 return TCL_ERROR;
             }
         }
-        if (Tcl_GetDoubleFromObj(NULL, objv[1], &pointPtr->y) != TCL_OK) {
+        if (Tcl_GetDoubleFromObj(NULL, objv[1], &pointPtr->y) == TCL_OK) {
+        } else {
+            const char *string;
+            char c;
+            
+            string = Tcl_GetString(objv[1]);
+            c = string[0];
             if ((c == 'l') && (strcmp(string, "left") == 0)) {
                 pointPtr->x = 0.0;
             } else if ((c == 'r') && (strcmp(string, "right") == 0)) {
@@ -2226,6 +2233,7 @@ Blt_NewLinearGradientBrush()
     brushPtr->from.y = 0.0;
     brushPtr->to.x = 0.5;
     brushPtr->to.y = 1.0;
+    brushPtr->flags = BLT_PAINTBRUSH_SCALING_LINEAR;
     JitterInit(&brushPtr->jitter);
     return (Blt_PaintBrush)brushPtr;
 }
@@ -2308,6 +2316,7 @@ Blt_NewRadialGradientBrush()
     brushPtr->center.y = 0.5;
     brushPtr->width = 1.0;
     brushPtr->height = 1.0;
+    brushPtr->flags = BLT_PAINTBRUSH_SCALING_LINEAR;
     JitterInit(&brushPtr->jitter);
     return (Blt_PaintBrush)brushPtr;
 }
@@ -2336,6 +2345,7 @@ Blt_NewConicalGradientBrush()
     brushPtr->center.x = 0.5;
     brushPtr->center.y = 0.5;
     brushPtr->angle = 45;
+    brushPtr->flags = BLT_PAINTBRUSH_SCALING_LINEAR;
     JitterInit(&brushPtr->jitter);
     return (Blt_PaintBrush)brushPtr;
 }

@@ -176,12 +176,12 @@ The following operations are available for the **blt::palette** command.
     Same as **-colorfile** option.
 
   **-colordata** *dataString*
-    Specifies the data for the color portion of the palette. The exact
-    format of *dataString* is determined by the **-colorformat** option.
+    Specifies the data for the color look-up table. The format of
+    *dataString* is specified by the **-colorformat** option.
     
   **-colorfile** *fileName*
-    Specifies the file to read data for the color portion of the palette.
-    The exact format of *dataString* is determined by the **-colorformat**
+    Specifies a file that contains data for the color look-up table.
+    The format of *fileName* is specified by the **-colorformat**
     option.  The data isn't read and loaded until the palette is used.
     
   **-colorformat** *formatType*
@@ -203,9 +203,22 @@ The following operations are available for the **blt::palette** command.
     The default is "rgb".
     
   **-colorspacing** *spacingType*
-    Specifies the spacing colors.  *SpacingType* can be in any of the
-    "regular", "irregular", or "interval". See `LOOK-UP TABLE ENTRIES`_ for
-    details.  The default is "regular".
+    Specifies the spacing of colors intervals.  *SpacingType* can be
+    one of the following:
+
+    **regular**
+      The color look-up table is a list of two or more colors.  The colors
+      are regularly spaced at values from 0 to 1.
+
+    **irregular**
+      The color look-up table is defined by two or more pairs of
+      value and color.
+
+    **interval**
+      The color look-up table is defined by specifying individual entries:
+      a starting and ending value and color.
+
+    See `LOOK-UP TABLE ENTRIES`_ for details.  The default is "regular".
 
   **-fade** *percent*
     Specifies an overall transparency to be applied to the computed
@@ -218,24 +231,35 @@ The following operations are available for the **blt::palette** command.
     Same as **-opacityfile** option.
 
   **-opacitydata** *dataString*
-    Specifies the a list of numbers defining the opacities in the palette.
-    The format of *dataString* is determined by the **-opacityspacing**
-    option.  
+    Specifies the data for the opacity look-up table.  The format of
+    *dataString* is specified by the **-opacityspacing** option.
 
   **-opacityfile** *fileName*
-    Specifies the a file containing list of numbers defining the opacities
-    in the palette.  The format of *dataString* is determined by the
-    **-opacityspacing** option.
+    Specifies a file containing data for the opacity look-up table.  The
+    format of *fileName* is specified by the **-opacityspacing** option.
 
   **-opacityspacing** *spacingType*
     Specifies the spacing of opacities.  *SpacingType* can be in any of the
-    "regular", "irregular", or "interval". See `LOOK-UP TABLE ENTRIES`_ for
-    details.  The default is "regular".
+    the following:
+
+    **regular**
+      The opacity look-up table is a list of two or more value.  The opacities
+      are regularly spaced at values from 0 to 1.
+
+    **irregular**
+      The opacity look-up table is defined by two or more pairs of
+      value and opacity.
+
+    **interval**
+      The opacity look-up table is defined by specifying individual entries:
+      a starting and ending value and opacity.
+
+    See `LOOK-UP TABLE ENTRIES`_ for details.  The default is "regular".
 
 **blt::palette delete** ?\ *paletteName* ... ?
   Releases resources allocated by one or more palettes.  Palettes are
   reference counted so that the internal palette structures are not
-  actually deleted until no one is using the palette any
+  actually deleted until no widget is using the palette any
   more. *PaletteName* must be the name of a palette returned by the
   **create** operation, otherwise an error is reported.
 
@@ -248,11 +272,13 @@ The following operations are available for the **blt::palette** command.
   Returns "1" if a palette *paletteName* exists, and "0" otherwise.
 
 **blt::palette interpolate** *paletteName* *value*
-  Returns the interpolated color for the given value. *Value* is a floating
-  point number.  The color is returned as a list of 4 decimal numbers 0 to
-  255 representing the alpha, red, green, and blue channels of the color.
-  If the value isn't in range of any palette entry, the "" is returned.
-  This is useful for debugging palettes.
+  Returns the interpolated color for the given value.  This is useful for
+  debugging palettes.  *Value* is a floating point number. If *value* ends
+  with a percent sign '%', then the number must be 0 and 100 and represents
+  a relative value in the palette.  The color is returned as a list of 4
+  decimal numbers 0 to 255 representing the alpha, red, green, and blue
+  channels of the color.  If the value isn't in range of any palette entry,
+  then "" is returned.
 
 **blt::palette names** ?\ *pattern* ... ?
   Returns the names of all the palettes currently created.  If one or more
@@ -292,7 +318,7 @@ Please note the following:
 1. The palettes created by the **blt::palette** command are only recognized by
    BLT widgets.
 
-2. Palette-es are reference counted.  If you delete a palette, its resources
+2. Palettes are reference counted.  If you delete a palette, its resources
    are not freed until there is no widget is using it.
    
 KEYWORDS

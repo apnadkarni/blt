@@ -14,14 +14,14 @@ set VERBOSE 0
 test timestamp.1 {timestamp no args} {
     list [catch {blt::timestamp} msg] $msg
 } {1 {wrong # args: should be one of...
-  blt::timestamp format seconds ?switches?
+  blt::timestamp format seconds ?switches ...?
   blt::timestamp parse timeStamp
   blt::timestamp scan timeStamp}}
 
 test timestamp.2 {timestamp bad arg} {
     list [catch {blt::timestamp badArg} msg] $msg
 } {1 {bad operation "badArg": should be one of...
-  blt::timestamp format seconds ?switches?
+  blt::timestamp format seconds ?switches ...?
   blt::timestamp parse timeStamp
   blt::timestamp scan timeStamp}}
 
@@ -31,7 +31,7 @@ test timestamp.3 {timestamp scan no arg} {
 
 test timestamp.4 {timestamp format no arg} {
     list [catch {blt::timestamp format} msg] $msg
-} {1 {wrong # args: should be "blt::timestamp format seconds ?switches?"}}
+} {1 {wrong # args: should be "blt::timestamp format seconds ?switches ...?"}}
 
 test timestamp.5 {timestamp scan 0} {
     list [catch {blt::timestamp scan 0} msg] $msg
