@@ -1236,8 +1236,7 @@ EventuallyRedrawToken(Dnd *dndPtr)
         return;
     }
     tokenPtr = dndPtr->tokenPtr;
-    if ((tokenPtr->tkwin != NULL) && (tokenPtr->tkwin != NULL) && 
-        !(tokenPtr->flags & TOKEN_REDRAW)) {
+    if ((tokenPtr->tkwin != NULL) && ((tokenPtr->flags & TOKEN_REDRAW) == 0)) {
         tokenPtr->flags |= TOKEN_REDRAW;
         Tcl_DoWhenIdle(DisplayToken, dndPtr);
     }
