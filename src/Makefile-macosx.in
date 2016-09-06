@@ -283,8 +283,7 @@ endif
 # 	You don't need to edit anything beyond this point
 # ------------------------------------------------------------------------
 
-N_OBJS =		bltTed.o
-NOT_YET = 		bltMenubar.o 
+N_OBJS =		bltTed.o bltKiosk.o
 
 TK_OBJS =		tkButton.o \
 			tkFrame.o \
@@ -294,6 +293,7 @@ GRAPH_OBJS =		bltGrAxis.o \
 			bltGrBar.o \
 			bltGrElem.o \
 			bltGrHairs.o \
+			bltGrIsoline.o \
 			bltGrLegd.o \
 			bltGrLine2.o \
 			bltGrMarker.o \
@@ -359,7 +359,7 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltBgexec.o \
 			bltChain.o \
 			bltCompare.o \
-			bltCrc32.o \
+			bltChecksum.o \
 			bltCsv.o \
 			bltDBuffer.o \
 			bltDebug.o \
@@ -417,6 +417,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltCutbuffer.o \
 			bltDragdrop.o \
 			bltDrawerset.o \
+			bltFilmstrip.o \
 			bltGrab.o \
 			bltHtext.o \
 			bltImage.o \
@@ -433,6 +434,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltTable.o \
 			bltTabset.o \
 			bltText.o \
+			bltTifTags.o \
 			bltTkInit.o \
 			bltTkIntProcs.o \
 			bltTkProcs.o \
@@ -443,7 +445,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltUnixWindow.o \
 			bltWindow.o \
 			bltWinop.o  \
-			$(TK_OBJS) $(N_OBJS) 
+			$(TK_OBJS)
 
 BLT_TK_OBJS =		$(BLT_TK_SO_OBJS) \
 			bltStaticInit.o \
@@ -677,19 +679,30 @@ $(blt_pict_text_so): bltPictText.o $(blt_stub_lib)
 	$(SO_LD) $(SO_BUNDLE_FLAGS) -o $@ bltPictText.o \
 		$(blt_stub_lib) $(FT2_LIB_SPEC) $(tcl_lib_spec)
 
-BLT_TCL_INT_HEADERS = \
-			bltArrayObj.h bltAssert.h bltDBuffer.h bltInitCmd.h \
-			bltInt.h bltMath.h bltOp.h bltNsUtil.h bltSpline.h \
-			bltSwitch.h bltTclInt.h bltVar.h
+BLT_TCL_INT_HEADERS =	\
+		$(srcdir)/bltArrayObj.h \
+		$(srcdir)/bltAssert.h  \
+		$(srcdir)/bltDBuffer.h  \
+		$(srcdir)/bltInitCmd.h \
+		$(srcdir)/bltInt.h \
+		$(srcdir)/bltMath.h \
+		$(srcdir)/bltMesh.h \
+		$(srcdir)/bltNsUtil.h \
+		$(srcdir)/bltOp.h \
+		$(srcdir)/bltSpline.h \
+		$(srcdir)/bltSwitch.h \
+		$(srcdir)/bltTclInt.h \
+		$(srcdir)/bltVar.h
+
 BLT_TCL_HEADERS = \
 		$(srcdir)/bltAlloc.h \
 		$(srcdir)/bltChain.h \
-		$(srcdir)/bltDataTable.h \
 		$(srcdir)/bltHash.h.in \
+		$(srcdir)/bltTags.h \
 		$(srcdir)/bltList.h \
 		$(srcdir)/bltPool.h \
-		$(srcdir)/bltTags.h \
 		$(srcdir)/bltTree.h \
+		$(srcdir)/bltDataTable.h \
 		$(srcdir)/bltVector.h
 
 BLT_TK_INT_HEADERS = \

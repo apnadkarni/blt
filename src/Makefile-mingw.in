@@ -301,16 +301,17 @@ endif
 # 	You don't need to edit anything beyond this point
 # ------------------------------------------------------------------------
 
-N_OBJS =		bltTed.o
-V3_OBJS =		
-NOT_YET =		bltMenubar.o 
+N_OBJS =		bltTed.o bltKiosk.o
 
-TK_OBJS =		tkButton.o tkFrame.o bltScrollbar.o 
+TK_OBJS =		tkButton.o \
+			tkFrame.o \
+			bltScrollbar.o 
 
 GRAPH_OBJS =		bltGrAxis.o \
 			bltGrBar.o \
 			bltGrElem.o \
 			bltGrHairs.o \
+			bltGrIsoline.o \
 			bltGrLegd.o \
 			bltGrLine2.o \
 			bltGrMarker.o \
@@ -330,7 +331,8 @@ TABLEVIEW_OBJS =	bltTableView.o \
 PICTURE_OBJS =		bltPicture.o \
 			bltPictCanv.o \
 			bltPictColor.o \
-			bltPictMmx.o 
+			bltPictMmx.o \
+			bltPictText.o 
 
 PICTURE_PKG_OBJS =	bltPictBmp.o \
 			bltPictGif.o \
@@ -375,7 +377,7 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltBgexec.o \
 			bltChain.o \
 			bltCompare.o \
-			bltCrc32.o \
+			bltChecksum.o \
 			bltCsv.o \
 			bltDBuffer.o \
 			bltDebug.o \
@@ -434,6 +436,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltCutbuffer.o \
 			bltDragdrop.o \
 			bltDrawerset.o \
+			bltFilmstrip.o \
 			bltGrab.o \
 			bltHtext.o \
 			bltImage.o \
@@ -450,6 +453,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltTable.o \
 			bltTabset.o \
 			bltText.o \
+			bltTifTags.o \
 			bltTkInit.o \
 			bltTkIntProcs.o \
 			bltTkProcs.o \
@@ -461,7 +465,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltWinWindow.o \
 			bltWindow.o \
 			bltWinop.o  \
-			$(TK_OBJS) $(N_OBJS) 
+			$(TK_OBJS)
 
 BLT_TK_OBJS =		$(BLT_TK_SO_OBJS) \
 			bltTkPkgsInit.o \
@@ -738,6 +742,71 @@ $(blt_sftp_so): bltSftp.o $(blt_tcl_lib)
 	$(CC) -shared -o $(blt_sftp_so) \
 	    -Wl,--out-implib=$(blt_sftp_implib) bltSftp.o  \
 	    $(blt_tcl_lib)  $(tcl_lib_spec)  $(LIBSSH2_LIB_SPEC) $(ZLIB_SPEC)
+
+BLT_TCL_INT_HEADERS =	\
+		$(srcdir)/bltArrayObj.h \
+		$(srcdir)/bltAssert.h  \
+		$(srcdir)/bltDBuffer.h  \
+		$(srcdir)/bltInitCmd.h \
+		$(srcdir)/bltInt.h \
+		$(srcdir)/bltMath.h \
+		$(srcdir)/bltMesh.h \
+		$(srcdir)/bltNsUtil.h \
+		$(srcdir)/bltOp.h \
+		$(srcdir)/bltSpline.h \
+		$(srcdir)/bltSwitch.h \
+		$(srcdir)/bltTclInt.h \
+		$(srcdir)/bltVar.h
+
+BLT_TCL_HEADERS = \
+		$(srcdir)/bltAlloc.h \
+		$(srcdir)/bltChain.h \
+		$(srcdir)/bltHash.h.in \
+		$(srcdir)/bltTags.h \
+		$(srcdir)/bltList.h \
+		$(srcdir)/bltPool.h \
+		$(srcdir)/bltTree.h \
+		$(srcdir)/bltDataTable.h \
+		$(srcdir)/bltVector.h
+
+BLT_TK_INT_HEADERS = \
+		$(srcdir)/bltTkInt.h \
+		$(srcdir)/bltFont.h \
+		$(srcdir)/bltPaintBrush.h \
+		$(srcdir)/bltBg.h \
+		$(srcdir)/bltBind.h \
+		$(srcdir)/bltAfm.h \
+		$(srcdir)/bltConfig.h \
+		$(srcdir)/bltImage.h \
+		$(srcdir)/bltPainter.h \
+		$(srcdir)/bltPs.h \
+		$(srcdir)/bltText.h
+
+BLT_TK_HEADERS = \
+		$(srcdir)/bltPicture.h \
+		$(srcdir)/bltPictFmts.h
+
+build-tcl-stubs:
+	$(RM) bltTclInt.decls bltTcl.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTclInt -- \
+		$(BLT_TCL_INT_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl -module Tcl -- \
+		bltTclInt.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTcl -hooks bltTclInt -- \
+		$(BLT_TCL_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl -module Tcl  -hook bltTclIntProcs -- \
+		bltTcl.decls
+
+build-tk-stubs:
+	$(RM) bltTkInt.decls bltTk.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTkInt -- \
+		$(BLT_TK_INT_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl -module Tk -- \
+		bltTkInt.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTk -hooks bltTkInt -- \
+		$(BLT_TK_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl -module Tk -hook bltTkIntProcs -- \
+		bltTk.decls
 
 install: install-demos install-libs install-headers install-packages
 
