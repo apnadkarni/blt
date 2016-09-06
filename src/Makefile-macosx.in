@@ -313,8 +313,7 @@ TABLEVIEW_OBJS =	bltTableView.o \
 PICTURE_OBJS =		bltPicture.o \
 			bltPictCanv.o \
 			bltPictColor.o \
-			bltPictMmx.o \
-			bltPictText.o 
+			bltPictMmx.o 
 
 PICTURE_PKG_OBJS =	bltPictBmp.o \
 			bltPictGif.o \

@@ -62,8 +62,6 @@ typedef struct _Blt_Picture Picture;
 #endif  /* WIN32 */
 #undef EXTERN
 #undef FAR
-#include "jpeglib.h"
-#include "jerror.h"
 #include <setjmp.h>
 
 #define DEBUG 0
