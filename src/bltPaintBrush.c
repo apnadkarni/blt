@@ -139,7 +139,7 @@ typedef struct _Blt_PaintBrushNotifier {
 #define DEF_CONICAL_ROTATE      "45.0"
 #define DEF_CONICAL_WIDTH       "1.0"
 #define DEF_DECREASING          "0"
-#define DEF_HIGH_COLOR          "grey50"
+#define DEF_HIGH_COLOR          "grey90"
 #define DEF_TO                  (char *)NULL
 #define DEF_JITTER              "0"
 #define DEF_OPACITY             "100.0"
@@ -148,8 +148,8 @@ typedef struct _Blt_PaintBrushNotifier {
 #define DEF_RADIAL_DIAMETER     "0.0"
 #define DEF_RADIAL_HEIGHT       "1.0"
 #define DEF_RADIAL_WIDTH        "1.0"
-#define DEF_REPEAT              "reversing"
-#define DEF_LOW_COLOR           "grey90"
+#define DEF_REPEAT              "no"
+#define DEF_LOW_COLOR           "grey50"
 #define DEF_FROM                "top center"
 #define DEF_STRIPES_OFFCOLOR    "grey97"
 #define DEF_STRIPES_ONCOLOR     "grey90"
@@ -166,11 +166,11 @@ static Blt_CustomOption imageOption =
     ObjToImage, ImageToObj, FreeImage, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToColorScaling;
-static Blt_OptionPrintProc ColorScalingToObj;
-static Blt_CustomOption colorScalingOption =
+static Blt_OptionParseProc ObjToColorScale;
+static Blt_OptionPrintProc ColorScaleToObj;
+static Blt_CustomOption colorScaleOption =
 {
-    ObjToColorScaling, ColorScalingToObj, NULL, (ClientData)0
+    ObjToColorScale, ColorScaleToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToOpacity;
@@ -187,7 +187,6 @@ static Blt_CustomOption jitterOption =
     ObjToJitter, JitterToObj, NULL, (ClientData)0
 };
 
-
 static Blt_ConfigSpec colorBrushSpecs[] =
 {
     {BLT_CONFIG_PIX32, "-color", (char *)NULL, (char *)NULL, DEF_COLOR, 
@@ -200,7 +199,6 @@ static Blt_ConfigSpec colorBrushSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, &opacityOption},
     {BLT_CONFIG_END}
 };
-
 
 static Blt_ConfigSpec tileBrushSpecs[] =
 {
@@ -244,7 +242,7 @@ static Blt_ConfigSpec linearGradientBrushSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
         DEF_COLOR_SCALE, Blt_Offset(Blt_LinearGradientBrush, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+        BLT_CONFIG_DONT_SET_DEFAULT, &colorScaleOption},
     {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
         DEF_DECREASING, Blt_Offset(Blt_LinearGradientBrush, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT,
@@ -341,7 +339,7 @@ static Blt_ConfigSpec radialGradientBrushSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, &positionOption},
     {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
         DEF_COLOR_SCALE, Blt_Offset(Blt_RadialGradientBrush, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+        BLT_CONFIG_DONT_SET_DEFAULT, &colorScaleOption},
     {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
         DEF_DECREASING, Blt_Offset(Blt_RadialGradientBrush, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT,
@@ -387,7 +385,7 @@ static Blt_ConfigSpec conicalGradientBrushSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, &positionOption},
     {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
         DEF_COLOR_SCALE, Blt_Offset(Blt_ConicalGradientBrush, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+        BLT_CONFIG_DONT_SET_DEFAULT, &colorScaleOption},
     {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
         DEF_DECREASING, Blt_Offset(Blt_ConicalGradientBrush, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT,
@@ -513,7 +511,7 @@ static Blt_PaintBrushClass conicalGradientBrushClass = {
 static void NotifyClients(Blt_PaintBrush brush);
 
 
-#define COLOR_SCALING_MASK \
+#define COLOR_SCALE_MASK \
         (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG)
 
 /* 
@@ -1031,8 +1029,10 @@ FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     PaintBrush *brushPtr = (PaintBrush *)widgRec;
 
-    Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brushPtr);
-    *palPtr = NULL;
+    if (*palPtr != NULL) {
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brushPtr);
+        *palPtr = NULL;
+    }
 }
 
 /*
@@ -1096,7 +1096,7 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColorScaling --
+ * ObjToColorScale --
  *
  *      Translates the given string to the gradient scale it represents.  
  *      Valid scales are "linear" or "logarithmic".
@@ -1109,8 +1109,8 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToColorScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
+ObjToColorScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     const char *string;
@@ -1127,12 +1127,12 @@ ObjToColorScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                (strncmp(string, "logarithmic", length) == 0)) {
         flag = BLT_PAINTBRUSH_SCALING_LOG;
     } else {
-        Tcl_AppendResult(interp, "unknown coloring scaling \"", string, "\"",
+        Tcl_AppendResult(interp, "unknown color scale \"", string, "\"",
                          ": should be linear or logarithmic.",
                          (char *)NULL);
         return TCL_ERROR;
     }
-    *flagsPtr &= ~COLOR_SCALING_MASK;
+    *flagsPtr &= ~COLOR_SCALE_MASK;
     *flagsPtr |= flag;
     return TCL_OK;
 }
@@ -1140,28 +1140,29 @@ ObjToColorScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ColorScalingToObj --
+ * ColorScaleToObj --
  *
- *      Convert the color scaling flag into a string Tcl_Obj.
+ *      Convert the color scale flag into a string Tcl_Obj.
  *
  * Results:
- *      The string representation of the color scaling flag is returned.
+ *      The string representation of the color scale flag is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColorScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+ColorScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                   char *widgRec, int offset, int flags) 
 {
+    unsigned int scale = *(unsigned int *)(widgRec + offset);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
     
-    switch (*flagsPtr & COLOR_SCALING_MASK) {
+    switch (scale & COLOR_SCALE_MASK) {
     case BLT_PAINTBRUSH_SCALING_LINEAR:
         objPtr = Tcl_NewStringObj("linear", 6);         break;
     case BLT_PAINTBRUSH_SCALING_LOG:
-        objPtr = Tcl_NewStringObj("log", 3);            break;
+        objPtr = Tcl_NewStringObj("logarithmic", 11);   break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);            break;
     }
@@ -2454,7 +2455,7 @@ ConfigurePaintBrushCmd(Tcl_Interp *interp, PaintBrushCmd *cmdPtr, int objc,
  *
  *      Creates a new paintbrush object.
  *
- *      blt::paintbrush create type ?name? ?option values?...
+ *      blt::paintbrush create type ?brushName? ?option values?...
  *
  *---------------------------------------------------------------------------
  */
@@ -2518,7 +2519,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CgetOp --
  *
- *      blt::paintbrush cget $brush ?option?...
+ *      blt::paintbrush cget brushName option
  *
  *---------------------------------------------------------------------------
  */
@@ -2534,7 +2535,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     imageOption.clientData = cmdPtr;
     return Blt_ConfigureValueFromObj(interp, cmdPtr->tkwin, cmdPtr->specs,
-        (char *)cmdPtr, objv[3], 0);
+        (char *)cmdPtr->brush, objv[3], 0);
 }
 
 /*
@@ -2606,6 +2607,34 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         assert(cmdPtr->hashPtr == hPtr);
         DestroyPaintBrushCmd(cmdPtr);
     }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ExistOp --
+ *
+ *      Indicates if the named paintbrush exists.
+ *
+ *      blt::paintbrush exists brushName
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    PaintBrushCmdInterpData *dataPtr = clientData;
+    PaintBrushCmd *cmdPtr;
+    int state;
+    
+    state = FALSE;
+    if (GetPaintBrushCmdFromObj(NULL, dataPtr, objv[2], &cmdPtr) == TCL_OK) {
+        state = TRUE;
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
 
@@ -2685,8 +2714,9 @@ static Blt_OpSpec paintbrushOps[] =
 {
     {"cget",      2, CgetOp,      4, 4, "brushName option",},
     {"configure", 2, ConfigureOp, 3, 0, "brushName ?option value ...?",},
-    {"create",    2, CreateOp,    3, 0, "type ?name? ?option value ...?",},
+    {"create",    2, CreateOp,    3, 0, "type ?brushName? ?option value ...?",},
     {"delete",    1, DeleteOp,    2, 0, "?brushName ...?",},
+    {"exists",    1, ExistsOp,    3, 3, "brushName",},
     {"names",     1, NamesOp,     2, 3, "brushName ?pattern ...?",},
     {"type",      1, TypeOp,      3, 3, "brushName",},
 };

@@ -1219,10 +1219,10 @@ static Tcl_Obj *
 ColorScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                   char *widgRec, int offset, int flags) 
 {
-    unsigned int coreFlags = *(unsigned int *)(widgRec + offset);
+    unsigned int scale = *(unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
     
-    switch (coreFlags & COLOR_SCALE_MASK) {
+    switch (scale & COLOR_SCALE_MASK) {
     case BLT_PAINTBRUSH_SCALING_LINEAR:
         objPtr = Tcl_NewStringObj("linear", 6);         break;
     case BLT_PAINTBRUSH_SCALING_LOG:
@@ -2707,7 +2707,7 @@ static Blt_OpSpec backgroundOps[] =
 {
     {"cget",      2, CgetOp,      4, 4, "bgName option",},
     {"configure", 2, ConfigureOp, 3, 0, "bgName ?option value ...?",},
-    {"create",    2, CreateOp,    3, 0, "type ?bgName? ?args ...?",},
+    {"create",    2, CreateOp,    3, 0, "type ?bgName? ?option value ...?",},
     {"delete",    1, DeleteOp,    2, 0, "?bgName ...?",},
     {"exists",    1, ExistsOp,    3, 3, "bgName",},
     {"names",     1, NamesOp,     2, 3, "?pattern?",},
