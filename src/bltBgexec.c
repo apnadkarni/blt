@@ -369,7 +369,8 @@ struct _Bgexec {
     Sink err, out;                      /* Data sinks for pipeline's output
                                          * and error channels. */
     Blt_ChainLink link;
-    char **env;
+    Blt_HashTable varTable;             /* Table of overriding environment
+                                         * variables. */
 };
 
 #define KEEPNEWLINE     (1<<0)          /* Indicates to set TCL output
@@ -421,7 +422,7 @@ static Blt_SwitchSpec switchSpecs[] =
     {BLT_SWITCH_BOOLEAN, "-echo",               "bool",  (char *)NULL,
          Blt_Offset(Bgexec, err.echo),      0},
     {BLT_SWITCH_CUSTOM, "-environ",             "list",  (char *)NULL,
-         Blt_Offset(Bgexec, env),           0, 0, &environSwitch},
+         Blt_Offset(Bgexec, varTable),      0, 0, &environSwitch},
     {BLT_SWITCH_STRING,  "-error",              "varName", (char *)NULL,
         Blt_Offset(Bgexec, err.doneVar),    0},
     {BLT_SWITCH_BOOLEAN, "-ignoreexitcode",     "bool", (char *)NULL,
@@ -583,6 +584,24 @@ FreeEncodingProc(ClientData clientData, char *record, int offset, int flags)
     }
 }
 
+static void
+ClearEnvironTable(Blt_HashTable *tablePtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    
+    for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Tcl_Obj *objPtr;
+        
+        objPtr = Blt_GetHashValue(hPtr);
+        Tcl_DecrRefCount(objPtr);
+    }
+    Blt_DeleteHashTable(tablePtr);
+    Blt_InitHashTable(tablePtr, BLT_STRING_KEYS);
+}
+
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -602,25 +621,15 @@ ObjToEnvironProc(ClientData clientData, Tcl_Interp *interp,
                  const char *switchName, Tcl_Obj *objPtr, char *record,
                  int offset, int flags)
 {
-    char ***envPtr = (char ***)(record + offset);
-    int objc;
+    Blt_HashTable *tablePtr = (Blt_HashTable *)(record + offset);
     Tcl_Obj **objv;
-    int length, count, numBytes;
-    int i;
-    char **pp, **array;
-    char *p, *string;
-    Blt_HashTable varTable;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    extern char *environ;
-    int isNew;
+    int i, objc;
     
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (*envPtr != NULL) {
-        Blt_Free(*envPtr);
-        *envPtr = NULL;
+    if (tablePtr->numEntries > 0) {
+        ClearEnvironTable(tablePtr);
     }
     if (objc & 0x1) {
         Tcl_AppendResult(interp,
@@ -631,69 +640,18 @@ ObjToEnvironProc(ClientData clientData, Tcl_Interp *interp,
     if (objc == 0) {
         return TCL_OK;
     }
-    Blt_InitHashTable(&varTable, BLT_STRING_KEYS);
-    for (pp = (char **)environ; *pp != NULL; pp++) {
-        char *equalSign, *q;
-        
-        equalSign = NULL;
-        for (q = *pp; *q != '\0'; q++) {
-            if ((*q == '=') && (equalSign == NULL)) {
-                equalSign = q;
-            }
-        }
-        if (*pp == q) {
-            break;
-        }
-        if (equalSign == NULL) {
-            continue;
-        }
-        *equalSign = '\0';
-        hPtr = Blt_CreateHashEntry(&varTable, *pp, &isNew);
-        Blt_SetHashValue(hPtr, equalSign + 1);
-        *equalSign = '=';
-    }
     for (i = 0; i < objc; i += 2) {
-        const char *name, *value;
+        const char *varName;
+        Tcl_Obj *valueObjPtr;
+        Blt_HashEntry *hPtr;
+        int isNew;
         
-        name  = Tcl_GetString(objv[i]);
-        value = Tcl_GetString(objv[i+1]);
-        hPtr = Blt_CreateHashEntry(&varTable, name, &isNew);
-        Blt_SetHashValue(hPtr, value);
+        varName  = Tcl_GetString(objv[i]);
+        valueObjPtr = objv[i+1];
+        Tcl_IncrRefCount(valueObjPtr);
+        hPtr = Blt_CreateHashEntry(tablePtr, varName, &isNew);
+        Blt_SetHashValue(hPtr, valueObjPtr);
     }
-    length = 0;
-    for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        const char *name, *value;
-        
-        name = Blt_GetHashKey(&varTable, hPtr);
-        value = Blt_GetHashValue(hPtr);
-        length += strlen(name) + strlen(value) + 2;
-    }
-    length++;                           /* Add space for final NUL byte. */
-
-    /* Build new environment array from hash table of variables.  */
-    numBytes = (varTable.numEntries + 1) * sizeof(char **);
-    string = Blt_AssertMalloc(length + numBytes);
-    p = string + numBytes;
-    array = (char **)string;
-    count = 0;
-    for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        int numBytes;
-        const char *name, *value;
-        
-        name = Blt_GetHashKey(&varTable, hPtr);
-        value = Blt_GetHashValue(hPtr);
-        numBytes = sprintf(p, "%s=%s", name, value);
-        array[count] = p;
-        p += numBytes;
-        *p = '\0';
-        p++;
-        count++;
-    }
-    array[count] = '\0';
-    *envPtr = array;
-    Blt_DeleteHashTable(&varTable);
     return TCL_OK;
 }
 
@@ -1618,6 +1576,9 @@ FreeBgexec(Bgexec *bgPtr)
     if (bgPtr->procTable != NULL) {
         Blt_Free(bgPtr->procTable);
     }
+    if (bgPtr->varTable.numEntries > 0) {
+        ClearEnvironTable(&bgPtr->varTable);
+    }
     if (bgPtr->link != NULL) {
         Tcl_MutexLock(mutexPtr);
         Blt_Chain_DeleteLink(activePipelines, bgPtr->link);
@@ -2052,6 +2013,7 @@ BgexecCmdProc(
     if (isDetached) {
         bgPtr->flags |= DETACHED;
     }
+    Blt_InitHashTable(&bgPtr->varTable, BLT_STRING_KEYS);
     bgPtr->statVar = Blt_AssertStrdup(Tcl_GetString(objv[1]));
     Tcl_MutexLock(mutexPtr);
     bgPtr->link = Blt_Chain_Append(activePipelines, bgPtr);
@@ -2099,7 +2061,7 @@ BgexecCmdProc(
         errFdPtr = &bgPtr->err.fd;
     }
     numProcs = Blt_CreatePipeline(interp, objc - i, objv + i, &pidsPtr, 
-        (int *)NULL, outFdPtr, errFdPtr, bgPtr->env);
+        (int *)NULL, outFdPtr, errFdPtr, &bgPtr->varTable);
     if (numProcs < 0) {
         goto error;
     }

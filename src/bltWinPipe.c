@@ -848,8 +848,8 @@ PipeWriterThread(void *clientData)
  * TempFileName --
  *
  *      Gets a temporary file name and deals with the fact that the temporary
- *      file path provided by Windows may not actually exist if the TMP or
- *      TEMP environment variables refer to a non-existent directory.
+ *      file path provided by Windows may not actually exist if the "TMP" or
+ *      "TEMP" environment variables refer to a non-existent directory.
  *
  * Results:
  *      0 if error, non-zero otherwise.  If non-zero is returned, the name
@@ -1162,6 +1162,113 @@ GetApplicationType(const char *file, char *cmdPrefix)
 /*
  *---------------------------------------------------------------------------
  *
+ * CreateEnviron --
+ *
+ *      Creates an environ array from the current enviroment variable and
+ *      the override variables stored in the given hash table.
+ *
+ * Results:
+ *      Returns an new environ array.  
+ *
+ * Side effects:
+ *      The array is malloc-ed. It is the responsibility of the caller to
+ *      free the array when it is done with it.
+ *
+ *---------------------------------------------------------------------------
+ */
+static const char *
+CreateEnviron(Blt_HashTable *tablePtr)
+{
+    extern char **environ;
+    const char *p;
+    char *env;
+    int length;
+    Blt_HashTable varTable;
+    
+    if ((tablePtr == NULL) || (tablePtr->numEntries == 0)) {
+        return NULL;
+    }
+    Blt_InitHashTable(&varTable, BLT_STRING_KEYS);
+    length = 0;        /* Counter for length of new buffer */
+
+    /* Step 1: Add the new enviroment variables to the table. */
+    for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Tcl_HashEntry *hPtr2;
+        Tcl_Obj *objPtr;
+        const char *name, value;
+        int isNew;
+        int valueLen;
+        
+        objPtr = Blt_GetValue(hPtr);
+        name = Blt_GetHashKey(tablePtr, &hPtr);
+        objPtr = Blt_GetHashValue(hPtr);
+        value = Tcl_GetStringFromObj(objPtr, &valueLen);
+        hPtr2 = Blt_CreateHashEntry(&varTable, name, &isNew);
+        length += strlen(name) + valueLen + 2; /* Include '\0' plus '=' */
+        Blt_SetHashValue(hPtr2, value);
+    }
+    /* Step 2:  Add the current environment variables, but don't overwrite
+     *          the existing table entries. */
+    for (p = (char *)environ; *p != '\0'; p++) {
+        char *eq, *q;
+        
+        eq = NULL;
+        /* Search for the end of the string, save the equalize. */
+        for (q = p; *q != '\0'; q++) {
+            if ((*q == '=') && (eq == NULL)) {
+                eq = q;
+            }
+        }
+        if (eq != NULL) {
+            /* name=value\0 
+             *  p   eq     q
+             */
+            /* Overwrite and restore the equalsign. */
+            *eq = '\0';
+            hPtr = Blt_FindHashEntry(&varTable, p);
+            *eq = '=';
+            if (hPtr != NULL) {
+                /* Not already in table, add variable as is including the
+                   NUL byte. */
+                length += p - q + 1;    /* Include NUL byte */
+            }
+        }
+        p = q;
+    }
+    length++;                           /* Final NUL byte. */
+
+    /* Step 3: Allocate an environment array */
+    env = Blt_AssertMalloc(length * sizeof(char));
+
+    /* Step 4: Add the name/value pairs from the hashtable to the array. */
+    dp = env;
+    for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        const char *name, value;
+        int valueLen, nameLen;
+        
+        objPtr = Blt_GetValue(hPtr);
+        name = Blt_GetHashKey(tablePtr, &hPtr);
+        nameLen = strlen(name);
+        strncpy(dp, name, nameLen);     /* varName */
+        dp += nameLen;
+        *dp++ = '=';                    /* '=' */
+        value = Blt_GetHashValue(hPtr);
+        valueLen = strlen(value);
+        strncpy(dp, name, nameLen);     /* value */
+        dp += valueLen;
+        *dp++ = '=';                    /* '\0' */
+    }
+    *dp++ = '\0';                       /* Add final NUL byte. */
+    assert((dp - env) == length);
+    Blt_DeleteHashTable(&varTable);
+    return env;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * GetFullPath --
  *
  *      Look for the program as an external program.  First try the name as it
@@ -1438,7 +1545,7 @@ StartProcess(
                                          * If -1, stderr will be
                                          * discarded. Can be the same handle
                                          * as hStdOut */
-    char *env,
+    Blt_HashTable *tablePtr,
     HANDLE *hProcessPtr,                /* (out) Handle of child process. */
     DWORD *pidPtr)                      /* (out) Id of child process. */
 {
@@ -1456,7 +1563,8 @@ StartProcess(
     HANDLE hProcess, hPipe;
     char progPath[MAX_PATH];
     char cmdPrefix[MAX_PATH];
-
+    char *env;
+    
     *pidPtr = 0;
     *hProcessPtr = INVALID_HANDLE_VALUE;
     GetFullPath(interp, argv[0], progPath, cmdPrefix, &applType);
@@ -1643,6 +1751,10 @@ StartProcess(
 #if KILL_DEBUG
     PurifyPrintf("command is %s\n", command);
 #endif
+    env = NULL;
+    if ((tablePtr != NULL) && (tablePtr->numEntries > 0)) {
+        env = CreateEnviron(tablePtr);
+    }
     result = CreateProcess(
         NULL,                           /* Module name. */
         (TCHAR *)command,               /* Command line */
@@ -1659,7 +1771,9 @@ StartProcess(
         &pi);                           /* (out) Information about newly
                                          * created process */
     Tcl_DStringFree(&ds);
-
+    if (env != NULL) {
+        Blt_Free(env);
+    }
     if (!result) {
         Tcl_AppendResult(interp, "can't execute \"", argv[0], "\": ",
             Blt_LastError(), (char *)NULL);
@@ -1891,7 +2005,7 @@ Blt_CreatePipeline(
                                  * If the pipeline specifies redirection
                                  * then the file will still be created
                                  * but it will never get any data. */
-    char *const *env)
+    Blt_HashTable *tablePtr)
 {
     Blt_Pid *pids = NULL;       /* Points to malloc-ed array holding all
                                  * the handles of child processes. */
@@ -2217,7 +2331,7 @@ Blt_CreatePipeline(
         }
 
         if (StartProcess(interp, lastArg - i, argv + i, thisInput, thisOutput,
-                thisError, err, &hProcess, &dw_pid) != TCL_OK) {
+                thisError, err, tablePtr, &hProcess, &dw_pid) != TCL_OK) {
             goto error;
         }
         pid = (int)dw_pid;

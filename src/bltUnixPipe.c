@@ -477,7 +477,7 @@ CreateProcess(
     int *pidPtr,                /* (out) If this procedure is successful,
                                  * pidPtr is filled with the process id of the
                                  * child process. */
-    char *const *env)
+    Blt_HashTable *tablePtr)
 {
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
     Tcl_DString *dsArr;
@@ -534,12 +534,23 @@ CreateProcess(
          * Close the input side of the error pipe.
          */
         RestoreSignals();
-        if (env != NULL) {
-            execvpe(argv[0], &argv[0], env);
-        } else {
-            execvp(argv[0], &argv[0]);
+        if (tablePtr != NULL) {
+            Blt_HashEntry *hPtr;
+            Blt_HashSearch iter;
+
+            /* Set the environment for the child. */
+            for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+                 hPtr = Blt_NextHashEntry(&iter)) {
+                const char *name, *value;
+
+                name = Blt_GetHashKey(tablePtr, hPtr);
+                value = Blt_GetHashValue(hPtr);
+                setenv(name, value, TRUE);
+            }
         }
-        Blt_FormatString(errSpace, 200, "%dcan't execute \"%.150s\": ", errno, argv[0]);
+        execvp(argv[0], argv);
+        Blt_FormatString(errSpace, 200, "%dcan't execute \"%.150s\": ",
+                         errno, argv[0]);
         length = strlen(errSpace);
         numWritten = write(fd, errSpace, (size_t)strlen(errSpace));
         assert(numWritten == length);
@@ -788,7 +799,7 @@ Blt_CreatePipeline(
                                          * redirection then the file will
                                          * still be created but it will never
                                          * get any data. */
-    char *const *env)
+    Blt_HashTable *tablePtr)
 {
     Blt_Pid *pids = NULL;               /* Points to malloc-ed array holding
                                          * all the pids of child processes. */
@@ -1091,7 +1102,7 @@ Blt_CreatePipeline(
         }
 
         if (CreateProcess(interp, lastArg - i, argv + i, curFd[0], curFd[1], 
-                curFd[2], &pid, env) != TCL_OK) {
+                curFd[2], &pid, tablePtr) != TCL_OK) {
             goto error;
         }
         Tcl_DStringFree(&execBuffer);
