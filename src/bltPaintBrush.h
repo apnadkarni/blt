@@ -461,6 +461,7 @@ BLT_EXTERN int Blt_GetBrushAlpha(Blt_PaintBrush brush);
 BLT_EXTERN void Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr);
 BLT_EXTERN int Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, int x,
         int y);
+BLT_EXTERN int Blt_IsVerticalLinearBrush(Blt_PaintBrush brush);
 
 BLT_EXTERN void Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, 
         int h, int dx, int dy, Blt_PaintBrush brush, int composite);

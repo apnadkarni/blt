@@ -1155,7 +1155,6 @@ ColorScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                   char *widgRec, int offset, int flags) 
 {
     unsigned int scale = *(unsigned int *)(widgRec + offset);
-    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
     
     switch (scale & COLOR_SCALE_MASK) {

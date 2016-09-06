@@ -1135,6 +1135,43 @@ NotifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * PackOp --
+ *
+ *      Packs the vector, throwing away empty points.
+ *
+ * Results:
+ *      A standard TCL result. 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PackOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    Vector *vPtr = clientData;
+    int i, j;
+
+    for (i = 0, j = 0; i < vPtr->length; i++) {
+        if (FINITE(vPtr->valueArr[i])) {
+            if (j < i) {
+                vPtr->valueArr[j] = vPtr->valueArr[i];
+            }
+            j++;
+        }
+    }
+    if (j < i) {
+        if (Blt_Vec_SetLength(interp, vPtr, j) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), i - j);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * PopulateOp --
  *
  *      Creates or resizes a new vector based upon the density specified.
@@ -3385,6 +3422,53 @@ Blt_Vec_SortMap(Vector **vectors, int numVectors, size_t **mapPtr)
 /*
  *---------------------------------------------------------------------------
  *
+ * Blt_Vec_NonemptySortMap --
+ *
+ *      Returns an array of indices that represents the sorted mapping of
+ *      the original vector. Only non-empty points are considered.
+ *
+ * Results:
+ *      A standard TCL result.  If any of the auxiliary vectors are a
+ *      different size than the sorted vector object, TCL_ERROR is
+ *      returned.  Otherwise TCL_OK is returned.
+ *
+ * Side Effects:
+ *      The vectors are sorted.
+ *
+ *      vecName sort ?switches? vecName vecName...
+ *---------------------------------------------------------------------------
+ */
+
+int
+Blt_Vec_NonemptySortMap(Vector *vPtr, size_t **mapPtr)
+{
+    size_t *map;
+    int i, j, count;
+
+    count = 0;
+    for (i = 0; i < vPtr->length; i++) {
+        if (FINITE(vPtr->valueArr[i])) {
+            count++;
+        }
+    }
+    map = Blt_AssertMalloc(sizeof(size_t) * count);
+    for (i = 0, j = 0; i < vPtr->length; i++) {
+        if (FINITE(vPtr->valueArr[i])) {
+            map[j] = i;
+            j++;
+        }
+    }
+    /* Set global variables for sorting routine. */
+    sortVectors = &vPtr;
+    numSortVectors = 1;
+    qsort((char *)map, count, sizeof(size_t), ComparePoints);
+    *mapPtr = map;
+    return count;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SortOp --
  *
  *      Sorts the vector object and any other vectors according to sorting
@@ -3731,6 +3815,7 @@ static Blt_OpSpec vectorInstOps[] =
     {"normalize", 3, NormalizeOp, 2, 3, "?vecName?",},  /*Deprecated*/
     {"notify",    3, NotifyOp,    3, 3, "keyword",},
     {"offset",    1, OffsetOp,    2, 3, "?offset?",},
+    {"pack",      2, PackOp,      2, 2, "",},
     {"populate",  2, PopulateOp,  4, 4, "vecName density",},
     {"print",     2, PrintOp,     3, 0, "format ?switches?",},
     {"random",    4, RandomOp,    2, 3, "?seed?",},     /*Deprecated*/

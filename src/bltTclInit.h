@@ -48,6 +48,9 @@
 #  define       NO_PRINTER      1
 #endif /* WIN32 */
 
+#  define       NO_KIOSK        1  
+#  define       NO_TED          1  
+
 #ifndef HAVE_LIBLIBSSH2
 #define NO_SFTP 1
 #endif

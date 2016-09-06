@@ -222,6 +222,8 @@ BLT_EXTERN void Blt_Vec_Free(Vector *vPtr);
 BLT_EXTERN void Blt_Vec_SortMap(Vector **vectors, int numVectors,
         size_t **mapPtr);
 
+BLT_EXTERN int Blt_Vec_NonemptySortMap(Vector *vPtr, size_t **mapPtr);
+
 BLT_EXTERN int Blt_Vec_Find(VectorCmdInterpData *dataPtr, const char *vecName,
         Vector **vPtrPtr);
 

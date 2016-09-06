@@ -46,6 +46,9 @@
 #ifdef HAVE_LIBXFT
   #include <ft2build.h>
   #include FT_FREETYPE_H
+  #ifndef TT_CONFIG_OPTION_SUBPIXEL_HINTING
+    #define TT_CONFIG_OPTION_SUBPIXEL_HINTING 0
+  #endif 
   #include <X11/Xft/Xft.h>
 #endif  /* HAVE_LIBXFT */
 

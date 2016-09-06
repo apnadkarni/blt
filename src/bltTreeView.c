@@ -7899,11 +7899,6 @@ DrawEntryLabel(
         }       
         XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, 
                 x + 1, y + 1, width - 3, height - 3);
-    fprintf(stderr, "focusGC=%x dashes[0][1][2]=%d %d %d\n",
-            viewPtr->focusGC,
-            viewPtr->focusDashes.values[0],
-            viewPtr->focusDashes.values[1],
-            viewPtr->focusDashes.values[2]);
         if (isSelected) {
             XSetForeground(viewPtr->display, viewPtr->focusGC, 
                 viewPtr->focusColor->pixel);

@@ -3515,7 +3515,6 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
         if ((label[0] == '.') && (label[1] == '/')) {
             label += 2;
         }
-        fprintf(stderr, "label=%s path=%s\n", label, Tcl_GetString(objPtr));
         if ((switchesPtr->flags & DIR_RECURSE) && (S_ISDIR(stat.st_mode))) {
             /* Create a node for the subdirectory and recursively call this
              * routine. */

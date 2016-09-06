@@ -498,9 +498,7 @@ Median(Blt_Vector *vectorPtr)
     if (vPtr->length == 0) {
         return -DBL_MAX;
     }
-    /* FIXME: compute number of nonempty slots.  */
-    sortLength = vPtr->length;
-    Blt_Vec_SortMap(&vPtr, 1, &map);
+    sortLength = Blt_Vec_NonemptySortMap(vPtr, &map);
     mid = (sortLength - 1) / 2;
 
     /*  
@@ -529,10 +527,7 @@ Q1(Blt_Vector *vectorPtr)
     if (vPtr->length == 0) {
         return -DBL_MAX;
     } 
-    /* FIXME: compute number of nonempty slots.  */
-    sortLength = vPtr->length;
-    Blt_Vec_SortMap(&vPtr, 1, &map);
-
+    sortLength = Blt_Vec_NonemptySortMap(vPtr, &map);
     if (sortLength < 4) {
         q1 = vPtr->valueArr[map[0]];
     } else {
@@ -568,10 +563,7 @@ Q3(Blt_Vector *vectorPtr)
     if (vPtr->length == 0) {
         return -DBL_MAX;
     } 
-    /* FIXME: compute number of nonempty slots.  */
-    sortLength = vPtr->length;
-    Blt_Vec_SortMap(&vPtr, 1, &map);
-
+    sortLength = Blt_Vec_NonemptySortMap(vPtr, &map);
     if (sortLength < 4) {
         q3 = vPtr->valueArr[map[sortLength - 1]];
     } else {

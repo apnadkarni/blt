@@ -219,6 +219,7 @@ typedef int (GetColorProc)(Tcl_Interp *interp, Palette *palPtr,
                            (c)->Green = (int)((g) * 255.0), \
                            (c)->Blue = (int)((b) * 255.0))
 
+#ifdef notdef
 static void
 PixelToHSV(Blt_Pixel *colorPtr, float *huePtr, float *satPtr, float *valPtr)
 {
@@ -261,6 +262,7 @@ PixelToHSV(Blt_Pixel *colorPtr, float *huePtr, float *satPtr, float *valPtr)
     }
     *huePtr = h, *satPtr = s, *valPtr = v;
 }
+#endif
 
 static void
 HSVToPixel(double hue, double sat, double val, Blt_Pixel *colorPtr)
@@ -1310,7 +1312,7 @@ ParseIrregularOpacity(Tcl_Interp *interp, Palette *palPtr, int objc,
 {
     Blt_Pixel low;
     PaletteInterval *entries, *entryPtr;
-    double min, step;
+    double min;
     int i, numEntries;
     double valueMin, valueMax;
         
@@ -1318,7 +1320,6 @@ ParseIrregularOpacity(Tcl_Interp *interp, Palette *palPtr, int objc,
     valueMax = -DBL_MAX;
     numEntries = (objc / 2) - 1;
     entries = Blt_AssertMalloc(sizeof(PaletteInterval) * numEntries);
-    step = 1.0 / numEntries;
 
     if (GetStepFromObj(interp, objv[0], &min) != TCL_OK) {
         goto error;

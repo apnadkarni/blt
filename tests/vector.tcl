@@ -165,7 +165,7 @@ test vector.27 {myVec} {
   myVec range first last
   myVec search ?-value? value ?value?
   myVec sequence start stop ?step?
-  myVec set list
+  myVec set item
   myVec simplify 
   myVec sort ?switches? ?vecName...?
   myVec split ?vecName...?
@@ -207,7 +207,7 @@ test vector.28 {myVec badOp} {
   myVec range first last
   myVec search ?-value? value ?value?
   myVec sequence start stop ?step?
-  myVec set list
+  myVec set item
   myVec simplify 
   myVec sort ?switches? ?vecName...?
   myVec split ?vecName...?
@@ -600,11 +600,20 @@ test vector.121 {blt::vector expr tanh(myVec1)} {
 
 test vector.122 {blt::vector expr sort(myVec1)} {
     list [catch {blt::vector expr sort(myVec1)} msg] $msg
-} {0 {1.0 3.0 4.0}}
+} {0 {1.0 3.0 4.0 NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN}}
 
 test vector.123 {blt::vector expr median(myVec1)} {
     list [catch {blt::vector expr median(myVec1)} msg] $msg
 } {0 3.0}
+
+test vector.122 {blt::vector expr sort(myVec1)} {
+    list [catch {blt::vector expr sort(myVec1)} msg] $msg
+} {0 {1.0 3.0 4.0 NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN}}
+
+test vector.123 {blt::vector expr median(myVec1)} {
+    list [catch {blt::vector expr median(myVec1)} msg] $msg
+} {0 3.0}
+
 
 test vector.124 {blt::vector expr exp(myVec1)} {
     list [catch {blt::vector expr exp(myVec1)} msg] $msg

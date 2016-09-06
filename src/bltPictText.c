@@ -44,6 +44,9 @@
 #ifdef HAVE_LIBXFT
   #include <ft2build.h>
   #include FT_FREETYPE_H
+  #ifndef TT_CONFIG_OPTION_SUBPIXEL_HINTING
+    #define TT_CONFIG_OPTION_SUBPIXEL_HINTING 0
+  #endif 
   #include <X11/Xft/Xft.h>
 #endif  /* HAVE_LIBXFT */
 
@@ -63,18 +66,20 @@
 
 #define DEBUG 0
 
+#if defined (HAVE_FT2BUILD_H)
+#  define HAVE_FT2
+#  include <ft2build.h>
+#  include FT_FREETYPE_H
+#  ifndef TT_CONFIG_OPTION_SUBPIXEL_HINTING
+#    define TT_CONFIG_OPTION_SUBPIXEL_HINTING 0
+#  endif 
+#endif
 #ifndef WIN32 
 #  if defined (HAVE_LIBXFT) && defined(HAVE_X11_XFT_XFT_H)
 #    define HAVE_XFT
 #    include <X11/Xft/Xft.h>
 #  endif        /* HAVE_XFT */
 #endif /*WIN32*/
-
-#if defined (HAVE_FT2BUILD_H)
-#  define HAVE_FT2
-#  include <ft2build.h>
-#  include FT_FREETYPE_H
-#endif
 
 #ifndef HAVE_FT2
 #  define DRAWTEXT 0
