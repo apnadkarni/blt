@@ -675,7 +675,7 @@ CsvOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (char *)NULL);
     return TCL_ERROR;
 }
-    
+
 static Blt_OpSpec fileOps[] =
 {
     {"base64",    1, Base64Op,    3, 0, "encode|decode fileName",},

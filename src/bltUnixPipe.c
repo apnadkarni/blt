@@ -113,6 +113,213 @@
 
 typedef int Tcl_File;
 
+#ifdef MACOSX
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetCwd --
+ *
+ *      Fills the dynamic string with the current working directory.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetCwd(Tcl_Interp *interp, Tcl_DString *resultPtr)
+{
+    size_t length;
+    char *bp, *cwd;
+    
+    length = BUFSIZ;
+    do {
+        Tcl_DStringSetLength(resultPtr, length);
+        bp = Tcl_DStringValue(resultPtr);
+        cwd = getcwd(bp, length);
+        if ((cwd == NULL) && (errno != ERANGE)) {
+            Tcl_AppendResult(interp, "can't get current working directory: "
+                             Tcl_ErrnoMsg(errno), (char *)NULL);
+            return TCL_ERROR;
+        }
+        length += length;
+    } while (cwd == NULL);
+    Tcl_DStringSetLength(resultPtr, strlen(cwd));
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NormalizePath --
+ *
+ *      Returns the normalized path of the program. 
+ *
+ * Results:
+ *      A standard TCL result. Whether the path is found is returned
+ *      via *foundPtr*.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+NormalizePath(Tcl_Interp *interp, const char *program, Tcl_DString *resultPtr,
+              int *foundPtr)
+{
+    char *copy;
+    int last, length;
+    char *p;
+    
+    *foundPtr = FALSE;
+    Tcl_DStringSetLength(resultPtr, 0);
+    if (strchr(program, '/') == NULL) { /* Just the program name. */
+        Tcl_DStringAppend(resultPtr, program, -1);
+        return TCL_OK;                  
+    }
+    if (*program == '/') {              /* Absolute path */
+        Tcl_DStringAppend(resultPtr, program, -1);
+        *foundPtr = TRUE;
+        return TCL_OK;
+    }
+    /* Relative path. */
+    /* Load the current loading directory into the buffer. */
+    if (GetCwd(interp, resultPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    length = Tcl_DStringLength(resultPtr) - 1;
+    last = length - 1;
+    copy = (char *)Blt_AssertStrdup(program);
+    for (p = strtok(copy, "/"); p != NULL; p = strtok(NULL, "/")) {
+        if ((p[0] == '.') && (p[1] == '\0')) {
+            continue;                   /* Ignore "." */
+        }
+        if ((p[0] == '.') && (p[1] == '.') && (p[2] == '\0')) {
+            char *slash;
+            
+            slash = strrchr(Tcl_DStringValue(resultPtr), '/');
+            if (slash == NULL) {
+                fprintf(stderr, "No slash in %s\n",
+                        Tcl_DStringValue(resultPtr));
+                goto error;             /* Can't find previous
+                                         * component in cwd. */
+            }
+            if (last <= 0) {
+                goto error;
+            }
+            last = (slash - Tcl_DStringValue(resultPtr));
+            /* Peel off last component from
+             * current working directory.  */
+            Tcl_DStringSetLength(resultPtr, last);
+            continue;
+        }
+        Tcl_DStringAppend(resultPtr, "/", 1);
+        Tcl_DStringAppend(resultPtr, p, -1);
+        last = Tcl_DStringLength(resultPtr);
+        if (access(Tcl_DStringValue(resultPtr), F_OK) == -1) {
+            Tcl_AppendResult(interp, "can't find file \"",
+                             Tcl_DStringValue(resultPtr), "\": ",
+                             Tcl_ErrnoMsg(errno), (char *)NULL);
+            Tcl_DStringSetLength(resultPtr, 0);
+            Tcl_DStringAppend(resultPtr, program, -1);
+            return TCL_ERROR;
+        }
+    }
+    Blt_Free(copy);
+    *foundPtr = TRUE;
+     return TCL_OK;
+ error:
+    Blt_Free(copy);
+    Tcl_DStringSetLength(resultPtr, 0);
+    Tcl_DStringAppend(resultPtr, program, -1);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FindProgrsm --
+ *
+ *      Finds the named program in the PATH environment variable.
+ *      We only check if the program file exists.  We'll let execve
+ *      check whether it's executable.
+ *
+ * Results:
+ *      A standard TCL result. The found program is 
+ *      via *foundPtr*.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+FindProgram(Tcl_Interp *interp, const char *program, Tcl_DString *resultPtr)
+{
+    char *path, *dirs, *copy;
+    char *p;
+    int found, pathLen;
+    
+    Tcl_DStringInit(resultPtr);
+    if (NormalizePath(interp, program, resultPtr, &found) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    path = Tcl_DStringValue(resultPtr);
+    if (found) {
+        if (access(path, F_OK) == -1) {
+            Tcl_AppendResult(interp, "can't find program \"", path, "\": ",
+                             Tcl_ErrnoMsg(errno), (char *)NULL);
+            Tcl_DStringFree(resultPtr);
+            return TCL_ERROR;
+        }
+        return TCL_OK;
+    }
+    dirs = getenv("PATH");
+    if (dirs == NULL) {
+        /* No PATH variable, so no access for program even if it's in the
+         * current working directory. */
+        Tcl_AppendResult(interp, "can't find program \"", path, "\": ",
+                         Tcl_ErrnoMsg(errno), (char *)NULL);
+        Tcl_DStringFree(resultPtr);
+        return TCL_ERROR;
+    }
+    path = Blt_AssertStrdup(path);
+    pathLen = strlen(path);
+    copy = (char *)Blt_AssertStrdup(dirs);
+    found = FALSE;
+    for (p = strtok(copy, ":"); p != NULL; p = strtok(NULL, ":")) {
+        Tcl_DStringSetLength(resultPtr, 0);
+        Tcl_DStringAppend(resultPtr, p, -1); 
+        Tcl_DStringAppend(resultPtr, "/", 1);
+        Tcl_DStringAppend(resultPtr, path, pathLen);
+        if (access(Tcl_DStringValue(resultPtr), F_OK) != -1) {
+            found = TRUE;
+            break;
+        }
+    }
+    if (!found) {
+        Tcl_AppendResult(interp, "can't find program \"", path, "\": ",
+                         Tcl_ErrnoMsg(errno), (char *)NULL);
+    }
+    Blt_Free(copy);
+    Blt_Free(path);
+    return (found) ? TCL_OK : TCL_ERROR;
+}
+
+static int
+execvpe(const char *file, char *const *argv, char *const *envp)
+{
+    char *program;
+    Tcl_DString ds;
+    
+    Tcl_DStringInit(&ds);
+    if (FindProgram(interp, file, &ds) == TCL_OK) {
+        program = Tcl_DStringValue(&ds);
+    } else {
+        program = file;
+    }
+    result = execve(program, argv, env);
+    Tcl_DStringFree(&ds);
+    return result;
+}
+
+#endif /* MACOSX */
+
 static int
 GetFdFromChannel(Tcl_Channel channel, int direction)
 {
@@ -477,7 +684,7 @@ CreateProcess(
     int *pidPtr,                /* (out) If this procedure is successful,
                                  * pidPtr is filled with the process id of the
                                  * child process. */
-    Blt_HashTable *tablePtr)
+    char *const *env)
 {
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
     Tcl_DString *dsArr;
@@ -534,21 +741,7 @@ CreateProcess(
          * Close the input side of the error pipe.
          */
         RestoreSignals();
-        if (tablePtr != NULL) {
-            Blt_HashEntry *hPtr;
-            Blt_HashSearch iter;
-
-            /* Set the environment for the child. */
-            for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
-                 hPtr = Blt_NextHashEntry(&iter)) {
-                const char *name, *value;
-
-                name = Blt_GetHashKey(tablePtr, hPtr);
-                value = Blt_GetHashValue(hPtr);
-                setenv(name, value, TRUE);
-            }
-        }
-        execvp(argv[0], argv);
+        execvpe(argv[0], argv, env);
         Blt_FormatString(errSpace, 200, "%dcan't execute \"%.150s\": ",
                          errno, argv[0]);
         length = strlen(errSpace);
@@ -799,7 +992,7 @@ Blt_CreatePipeline(
                                          * redirection then the file will
                                          * still be created but it will never
                                          * get any data. */
-    Blt_HashTable *tablePtr)
+    char *const *env)
 {
     Blt_Pid *pids = NULL;               /* Points to malloc-ed array holding
                                          * all the pids of child processes. */
@@ -1102,7 +1295,7 @@ Blt_CreatePipeline(
         }
 
         if (CreateProcess(interp, lastArg - i, argv + i, curFd[0], curFd[1], 
-                curFd[2], &pid, tablePtr) != TCL_OK) {
+                curFd[2], &pid, env) != TCL_OK) {
             goto error;
         }
         Tcl_DStringFree(&execBuffer);

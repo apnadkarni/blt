@@ -529,7 +529,7 @@ BLT_EXTERN Blt_Uid	Blt_FindUid(const char *string);
 BLT_EXTERN int		Blt_CreatePipeline(Tcl_Interp *interp, int objc,
 				Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr,
 				int *stdinPipePtr, int *stdoutPipePtr,
-				int *stderrPipePtr, Blt_HashTable *tablePtr);
+				int *stderrPipePtr, char *const *env);
 #endif
 #ifndef Blt_InitHexTable_DECLARED
 #define Blt_InitHexTable_DECLARED

@@ -391,11 +391,13 @@ test bgexec.60 {bgexec myVar stdout collect w/ -onoutput } {
 } {0 {This is stdout
 }}
 
-
 test bgexec.61 {bgexec myVar stdout collect w/ -output -keepnewline} {
     list [catch {
 	set myOut {}
-	blt::bgexec myVar -output -keepnewline yes myOut tclsh files/stdout.tcl
+	blt::bgexec myVar \
+	    -output myOut \
+	    -keepnewline yes \
+	    tclsh files/stdout.tcl
 	set myOut
     } msg] $msg
 } {0 {This is stdout

@@ -112,7 +112,7 @@ typedef struct {
 
 BLT_EXTERN int Blt_CreatePipeline(Tcl_Interp *interp, int objc, 
         Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, int *stdinPipePtr,
-        int *stdoutPipePtr, int *stderrPipePtr, Blt_HashTable *tablePtr);
+        int *stdoutPipePtr, int *stderrPipePtr, char *const *env);
 
 BLT_EXTERN void Blt_InitHexTable (unsigned char *table);
 
