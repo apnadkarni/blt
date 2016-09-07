@@ -114,6 +114,10 @@
 typedef int Tcl_File;
 
 #ifdef MACOSX
+
+/* The following routines are used to emulate the "execvpe" system call for
+ * MacOSX. */
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -122,30 +126,29 @@ typedef int Tcl_File;
  *      Fills the dynamic string with the current working directory.
  *
  * Results:
- *      A standard TCL result.
+ *      Returns 1 if the current working directory was obtained, 0 otherwise.
  *
  *---------------------------------------------------------------------------
  */
 static int
-GetCwd(Tcl_Interp *interp, Tcl_DString *resultPtr)
+GetCwd(Tcl_DString *resultPtr)
 {
     size_t length;
-    char *bp, *cwd;
+    char *cwd;
     
     length = BUFSIZ;
     do {
         Tcl_DStringSetLength(resultPtr, length);
-        bp = Tcl_DStringValue(resultPtr);
-        cwd = getcwd(bp, length);
+        cwd = getcwd(Tcl_DStringValue(resultPtr), length);
         if ((cwd == NULL) && (errno != ERANGE)) {
-            Tcl_AppendResult(interp, "can't get current working directory: "
-                             Tcl_ErrnoMsg(errno), (char *)NULL);
-            return TCL_ERROR;
+            return FALSE;
         }
+        /* Keep doubling space until current working directory fits into
+         * the string. */
         length += length;
     } while (cwd == NULL);
     Tcl_DStringSetLength(resultPtr, strlen(cwd));
-    return TCL_OK;
+    return TRUE;
 }
 
 /*
@@ -153,17 +156,18 @@ GetCwd(Tcl_Interp *interp, Tcl_DString *resultPtr)
  *
  * NormalizePath --
  *
- *      Returns the normalized path of the program. 
+ *      Returns the normalized path of the file. 
  *
  * Results:
- *      A standard TCL result. Whether the path is found is returned
- *      via *foundPtr*.
+ *      Returns 1 is the path was normalized or if the path is a single 
+ *      component.  *foundPtr* will indicate if the file was found or
+ *      not.  This indicates whether we need to be search for it in the
+ *      PATH.
  *
  *---------------------------------------------------------------------------
  */
 static int
-NormalizePath(Tcl_Interp *interp, const char *program, Tcl_DString *resultPtr,
-              int *foundPtr)
+NormalizePath(const char *path, Tcl_DString *resultPtr, int *foundPtr)
 {
     char *copy;
     int last, length;
@@ -171,23 +175,26 @@ NormalizePath(Tcl_Interp *interp, const char *program, Tcl_DString *resultPtr,
     
     *foundPtr = FALSE;
     Tcl_DStringSetLength(resultPtr, 0);
-    if (strchr(program, '/') == NULL) { /* Just the program name. */
-        Tcl_DStringAppend(resultPtr, program, -1);
-        return TCL_OK;                  
+    if (strchr(path, '/') == NULL) {  /* Path is just the one component. */
+        Tcl_DStringAppend(resultPtr, path, -1);
+        return TRUE;                  
     }
-    if (*program == '/') {              /* Absolute path */
-        Tcl_DStringAppend(resultPtr, program, -1);
+    if (path[0] == '/') {               /* Absolute path */
+        if (access(path, F_OK) == -1) {
+            return FALSE;
+        }
+        Tcl_DStringAppend(resultPtr, path, -1);
         *foundPtr = TRUE;
-        return TCL_OK;
+        return TRUE;
     }
     /* Relative path. */
     /* Load the current loading directory into the buffer. */
-    if (GetCwd(interp, resultPtr) != TCL_OK) {
-        return TCL_ERROR;
+    if (!GetCwd(resultPtr)) {
+        return FALSE;
     }
     length = Tcl_DStringLength(resultPtr) - 1;
     last = length - 1;
-    copy = (char *)Blt_AssertStrdup(program);
+    copy = (char *)Blt_AssertStrdup(path);
     for (p = strtok(copy, "/"); p != NULL; p = strtok(NULL, "/")) {
         if ((p[0] == '.') && (p[1] == '\0')) {
             continue;                   /* Ignore "." */
@@ -197,17 +204,16 @@ NormalizePath(Tcl_Interp *interp, const char *program, Tcl_DString *resultPtr,
             
             slash = strrchr(Tcl_DStringValue(resultPtr), '/');
             if (slash == NULL) {
-                fprintf(stderr, "No slash in %s\n",
-                        Tcl_DStringValue(resultPtr));
-                goto error;             /* Can't find previous
-                                         * component in cwd. */
+                errno = ENOENT;
+                goto error;             /* Can't find previous component in
+                                         * cwd. */
             }
             if (last <= 0) {
+                errno = ENOENT;
                 goto error;
             }
             last = (slash - Tcl_DStringValue(resultPtr));
-            /* Peel off last component from
-             * current working directory.  */
+            /* Peel off last component from current working directory.  */
             Tcl_DStringSetLength(resultPtr, last);
             continue;
         }
@@ -215,100 +221,107 @@ NormalizePath(Tcl_Interp *interp, const char *program, Tcl_DString *resultPtr,
         Tcl_DStringAppend(resultPtr, p, -1);
         last = Tcl_DStringLength(resultPtr);
         if (access(Tcl_DStringValue(resultPtr), F_OK) == -1) {
-            Tcl_AppendResult(interp, "can't find file \"",
-                             Tcl_DStringValue(resultPtr), "\": ",
-                             Tcl_ErrnoMsg(errno), (char *)NULL);
             Tcl_DStringSetLength(resultPtr, 0);
-            Tcl_DStringAppend(resultPtr, program, -1);
-            return TCL_ERROR;
+            Tcl_DStringAppend(resultPtr, path, -1);
+            return FALSE;
         }
     }
     Blt_Free(copy);
     *foundPtr = TRUE;
-     return TCL_OK;
+    return TRUE;
  error:
     Blt_Free(copy);
     Tcl_DStringSetLength(resultPtr, 0);
-    Tcl_DStringAppend(resultPtr, program, -1);
-    return TCL_OK;
+    Tcl_DStringAppend(resultPtr, path, -1);
+    return TRUE;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * FindProgrsm --
+ * FindProgram --
  *
- *      Finds the named program in the PATH environment variable.
- *      We only check if the program file exists.  We'll let execve
- *      check whether it's executable.
+ *      Finds the named program.  If the program is just the name, then in
+ *      the PATH environment variable is searched. We only check if the
+ *      program is executable when we are looking for it in the PATH.
+ *      We'll let execve tell us whether it's executable for paths with
+ *      "/".
  *
  * Results:
- *      A standard TCL result. The found program is 
- *      via *foundPtr*.
+ *      Return 1 if a program was found. The full path to the program
+ *      if returned in *resultPtr*.
  *
  *---------------------------------------------------------------------------
  */
 static int
-FindProgram(Tcl_Interp *interp, const char *program, Tcl_DString *resultPtr)
+FindProgram(const char *program, Tcl_DString *resultPtr)
 {
-    char *path, *dirs, *copy;
-    char *p;
-    int found, pathLen;
+    int found;
     
     Tcl_DStringInit(resultPtr);
-    if (NormalizePath(interp, program, resultPtr, &found) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    path = Tcl_DStringValue(resultPtr);
-    if (found) {
-        if (access(path, F_OK) == -1) {
-            Tcl_AppendResult(interp, "can't find program \"", path, "\": ",
-                             Tcl_ErrnoMsg(errno), (char *)NULL);
-            Tcl_DStringFree(resultPtr);
-            return TCL_ERROR;
-        }
-        return TCL_OK;
-    }
-    dirs = getenv("PATH");
-    if (dirs == NULL) {
-        /* No PATH variable, so no access for program even if it's in the
-         * current working directory. */
-        Tcl_AppendResult(interp, "can't find program \"", path, "\": ",
-                         Tcl_ErrnoMsg(errno), (char *)NULL);
-        Tcl_DStringFree(resultPtr);
-        return TCL_ERROR;
-    }
-    path = Blt_AssertStrdup(path);
-    pathLen = strlen(path);
-    copy = (char *)Blt_AssertStrdup(dirs);
-    found = FALSE;
-    for (p = strtok(copy, ":"); p != NULL; p = strtok(NULL, ":")) {
-        Tcl_DStringSetLength(resultPtr, 0);
-        Tcl_DStringAppend(resultPtr, p, -1); 
-        Tcl_DStringAppend(resultPtr, "/", 1);
-        Tcl_DStringAppend(resultPtr, path, pathLen);
-        if (access(Tcl_DStringValue(resultPtr), F_OK) != -1) {
-            found = TRUE;
-            break;
-        }
+    if (!NormalizePath(program, resultPtr, &found)) {
+        return FALSE;
     }
     if (!found) {
-        Tcl_AppendResult(interp, "can't find program \"", path, "\": ",
-                         Tcl_ErrnoMsg(errno), (char *)NULL);
+        int progLen;
+        char *dirs, *copy;
+        char *p;
+        
+        /* Path was a single name like "ls". Search for program in PATH. */
+        dirs = getenv("PATH");
+        if (dirs == NULL) {
+            /* No PATH variable, so no access for program even if it's in the
+             * current working directory. */
+            errno = ENOENT;
+            Tcl_DStringFree(resultPtr);
+            return FALSE;
+        }
+        program = Tcl_DStringValue(resultPtr);
+        progLen = Tcl_DStringLength(resultPtr);
+        /* Make a copy of the program name because we're going to store the
+         * full path in the dynamic string.  */
+        program = Blt_AssertStrdup(program);
+        copy = (char *)Blt_AssertStrdup(dirs);
+        for (p = strtok(copy, ":"); p != NULL; p = strtok(NULL, ":")) {
+            Tcl_DStringSetLength(resultPtr, 0);
+            Tcl_DStringAppend(resultPtr, p, -1); 
+            Tcl_DStringAppend(resultPtr, "/", 1);
+            Tcl_DStringAppend(resultPtr, program, progLen);
+            if (access(Tcl_DStringValue(resultPtr), X_OK|F_OK) != -1) {
+                 found = TRUE;
+                 break;
+            }
+        }    
+        Blt_Free(copy);
+        Blt_Free(program);
     }
-    Blt_Free(copy);
-    Blt_Free(path);
-    return (found) ? TCL_OK : TCL_ERROR;
+    return found;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * execvpe --
+ *
+ *      Emulates the execvpe linux system call for MacOSX.  Emulates the
+ *      "p" part by searching for the program in the PATH. Eventually calls
+ *      the "execve" system call.
+ *
+ * Results:
+ *      Doesn't return if successful. Errno will contain the id of
+ *      the error.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
-execvpe(const char *file, char *const *argv, char *const *envp)
+execvpe(const char *file, char *const *argv, char *const *env)
 {
-    char *program;
+    const char *program;
     Tcl_DString ds;
+    int result;
     
     Tcl_DStringInit(&ds);
-    if (FindProgram(interp, file, &ds) == TCL_OK) {
+    if (FindProgram(file, &ds)) {
         program = Tcl_DStringValue(&ds);
     } else {
         program = file;
