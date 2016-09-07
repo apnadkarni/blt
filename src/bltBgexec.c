@@ -68,6 +68,10 @@
   #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
+#ifdef MACOSX
+  #include <crt_externs.h>
+#endif
+
 #include "bltAlloc.h"
 #include "bltChain.h"
 #include "bltSwitch.h"
@@ -479,11 +483,16 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Blt_HashTable varTable;
+    int count, i, n, numBytes;
     char **array;
     char *const *envPtr;
-    extern char **environ;
-    int count, i, n, numBytes;
     char *p;
+#ifdef MACOSX
+    char **environ;
+    environ = _NSGetEnviron();
+#else
+    extern char **environ;
+#endif
     
     Blt_InitHashTable(&varTable, BLT_STRING_KEYS);
     count = 0;        /* Counter for length of new buffer */
