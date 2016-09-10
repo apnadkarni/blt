@@ -941,7 +941,7 @@ FileForRedirect(
  *
  * Results:
  *      The return value is a count of the number of new processes created, or
- *      -1 if an error occurred while creating the pipeline.  *pidArrayPtr is
+ *      -1 if an error occurred while creating the pipeline.  *pidsPtr is
  *      filled in with the address of a dynamically allocated array giving the
  *      ids of all of the processes.
  *
@@ -973,7 +973,7 @@ Blt_CreatePipeline(
                                          * commands in pipeline plus I/O
                                          * redirection * with <, <<, >, etc.
                                          * Objv[objc] must be * NULL. */
-    Blt_Pid **pidArrayPtr,              /* (out) Word at *pidArrayPtr gets
+    Blt_Pid **pidsPtr,              /* (out) Word at *pidsPtr gets
                                          * filled in with address of array of
                                          * pids for processes in pipeline
                                          * (first pid is first process in
@@ -1332,7 +1332,7 @@ Blt_CreatePipeline(
         curFd[1] = -1;
     }
 
-    *pidArrayPtr = pids;
+    *pidsPtr = pids;
 
     /*
      * All done.  Cleanup open files lying around and then return.

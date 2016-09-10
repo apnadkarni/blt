@@ -824,7 +824,7 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     char string1[200];
     char string2[200];
     int numPids;
-    Blt_Pid *pidPtr;
+    Blt_Pid *pids;
     int result;
     pid_t child;
     const char **p;
@@ -870,7 +870,7 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
             objv[i] = Tcl_NewStringObj(*p, -1);
             Tcl_IncrRefCount(objv[i]);
         }
-        numPids = Blt_CreatePipeline(interp, objc, objv, &pidPtr, &in, &out,
+        numPids = Blt_CreatePipeline(interp, objc, objv, &pids, &in, &out,
                 (int *)NULL, NULL);
         for (i = 0; i < objc; i++) {
             Tcl_DecrRefCount(objv[i]);
@@ -879,7 +879,8 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     if (numPids < 0) {
         return TCL_ERROR;
     }
-    Tcl_DetachPids(numPids, (Tcl_Pid *)pidPtr);
+    Tcl_DetachPids(numPids, (Tcl_Pid *)pids);
+    Blt_Free(pids);
     child = WriteToGhostscript(interp, in, dbuffer);
     if (child == 0) {
         return TCL_ERROR;

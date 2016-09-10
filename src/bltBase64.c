@@ -767,6 +767,8 @@ Blt_DecodeBase85(Tcl_Interp *interp, const char *src, size_t numChars,
     unsigned int byte[5];
     
     dp = dest;
+    /* Suppress compiler warning. */
+    byte[0] = byte[1] = byte[2] = byte[3] = byte[4] = '\0';
     for (p = src, pend = p + numChars; p < pend; /*empty*/) {
         unsigned int c;
         unsigned int value;

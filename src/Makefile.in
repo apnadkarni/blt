@@ -352,7 +352,6 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltCsv.o \
 			bltDBuffer.o \
 			bltDebug.o \
-			bltFileCmd.o \
 			bltHash.o \
 			bltInitCmd.o \
 			bltList.o \

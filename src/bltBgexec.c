@@ -304,23 +304,24 @@ typedef struct {
                                          * (malloc'ed) set to the collected
                                          * data of the last UNIX
                                          * subprocess. */
-    const char *updateVar;              /* Name of a TCL variable (malloc'ed)
-                                         * updated as data is read from the
-                                         * pipe. */
+    const char *updateVar;              /* Name of a TCL variable
+                                         * (malloc'ed) updated as data is
+                                         * read from the pipe. */
     Tcl_Obj *cmdObjPtr;                 /* Start of a TCL command executed
                                          * whenever data is read from the
                                          * pipe. */
-    int flags;                  
+    unsigned int flags;                  
     Tcl_Encoding encoding;              /* Decoding scheme to use when
                                          * translating data. */
     int fd;                             /* File descriptor of the pipe. */
     int status;
-    int echo;                           /* Indicates if the pipeline's stderr
-                                         * stream should be echoed */
+    int echo;                           /* Indicates if the pipeline's
+                                         * stderr stream should be
+                                         * echoed */
 
-    unsigned char *bytes;               /* Stores pipeline output (malloc-ed):
-                                         * Initially points to static
-                                         * storage */
+    unsigned char *bytes;               /* Stores pipeline output
+                                         * (malloc-ed): Initially points to
+                                         * static storage */
     size_t size;                        /* Size of dynamically allocated
                                          * buffer. */
 
@@ -340,6 +341,9 @@ typedef struct {
 } Sink;
 
 #define SINK_NOTIFY             (1<<2)
+#define SINK_ECHO               (1<<3)  /* Indicates if the pipeline
+                                         * stderr stream should be
+                                         * echoed */
 
 struct _Bgexec {
     const char *statVar;                /* Name of a TCL variable set to
@@ -356,8 +360,8 @@ struct _Bgexec {
                                          * processes in milliseconds. */
     /* Private */
     Tcl_Interp *interp;                 /* Interpreter containing variables */
-    int numProcs;                       /* # of processes in pipeline */
-    Blt_Pid *procTable;                 /* Array of process tokens from
+    int numPids;                        /* # of processes in pipeline */
+    Blt_Pid *pids;                      /* Array of process tokens from
                                          * pipeline.  Under Unix, tokens
                                          * are pid_t, while for Win32
                                          * they're handles. */
@@ -417,39 +421,39 @@ static Blt_SwitchCustom encodingSwitch =
 
 static Blt_SwitchSpec switchSpecs[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-decodeerror",        "encodingName", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-decodeerror",   "encodingName",      (char *)NULL,
          Blt_Offset(Bgexec, err.encoding),  0, 0, &encodingSwitch},
-    {BLT_SWITCH_CUSTOM,  "-decodeoutput",       "encodingName", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-decodeoutput",  "encodingName",      (char *)NULL,
         Blt_Offset(Bgexec, out.encoding),   0, 0, &encodingSwitch}, 
-    {BLT_SWITCH_BOOLEAN, "-detach",             "bool", (char *)NULL,
+    {BLT_SWITCH_BOOLEAN, "-detach",        "bool",              (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, DONTKILL},
-    {BLT_SWITCH_BOOLEAN, "-echo",               "bool",  (char *)NULL,
+    {BLT_SWITCH_BOOLEAN, "-echo",          "bool",              (char *)NULL,
          Blt_Offset(Bgexec, err.echo),      0},
-    {BLT_SWITCH_CUSTOM, "-environ",             "list",  (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-environ",        "list",              (char *)NULL,
          Blt_Offset(Bgexec, env),           0, 0, &environSwitch},
-    {BLT_SWITCH_STRING,  "-error",              "varName", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-error",          "varName",          (char *)NULL,
         Blt_Offset(Bgexec, err.doneVar),    0},
-    {BLT_SWITCH_BOOLEAN, "-ignoreexitcode",     "bool", (char *)NULL,
+    {BLT_SWITCH_BOOLEAN, "-ignoreexitcode", "bool",             (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, IGNOREEXITCODE},
-    {BLT_SWITCH_BOOLEAN, "-keepnewline",        "bool", (char *)NULL,
+    {BLT_SWITCH_BOOLEAN, "-keepnewline",    "bool",             (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, KEEPNEWLINE}, 
-    {BLT_SWITCH_CUSTOM,  "-killsignal",         "signalName", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-killsignal",     "signalName",       (char *)NULL,
         Blt_Offset(Bgexec, signalNum),      0, 0, &killSignalSwitch},
-    {BLT_SWITCH_STRING,  "-lasterror",          "varName", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-lasterror",      "varName",          (char *)NULL,
         Blt_Offset(Bgexec, err.updateVar),  0},
-    {BLT_SWITCH_STRING,  "-lastoutput",         "varName", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-lastoutput",     "varName",          (char *)NULL,
         Blt_Offset(Bgexec, out.updateVar),  0},
-    {BLT_SWITCH_BOOLEAN, "-linebuffered",       "bool", (char *)NULL,
+    {BLT_SWITCH_BOOLEAN, "-linebuffered",   "bool",             (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, LINEBUFFERED},
-    {BLT_SWITCH_OBJ,     "-onerror",            "cmdString", (char *)NULL,
+    {BLT_SWITCH_OBJ,     "-onerror",        "cmdString",        (char *)NULL,
         Blt_Offset(Bgexec, err.cmdObjPtr),  0},
-    {BLT_SWITCH_OBJ,     "-onoutput",           "cmdString", (char *)NULL,
+    {BLT_SWITCH_OBJ,     "-onoutput",       "cmdString",        (char *)NULL,
         Blt_Offset(Bgexec, out.cmdObjPtr),  0},
-    {BLT_SWITCH_STRING,  "-output",             "varName", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-output",         "varName",          (char *)NULL,
         Blt_Offset(Bgexec, out.doneVar),    0},
-    {BLT_SWITCH_INT,     "-poll",               "milliseconds", (char *)NULL,
+    {BLT_SWITCH_INT,     "-poll",           "milliseconds",     (char *)NULL,
         Blt_Offset(Bgexec, interval),       0},
-    {BLT_SWITCH_STRING,  "-update",             "varName", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-update",         "varName",          (char *)NULL,
          Blt_Offset(Bgexec, out.updateVar), 0},
     {BLT_SWITCH_END}
 };
@@ -465,7 +469,7 @@ static Tcl_ExitProc BgexecExitProc;
  * CreateEnviron --
  *
  *      Creates an environ array from the current enviroment variable and
- *      the override variables stored in the given hash table.
+ *      the override variables stored in the given Tcl list.
  *
  * Results:
  *      Returns an new environ array.  
@@ -480,96 +484,110 @@ static int
 CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
               char *const **envPtrPtr)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    Blt_HashTable varTable;
-    int count, i, n, numBytes;
-    char **array;
-    char *const *envPtr;
-    char *p;
-#ifdef MACOSX
-    char **environ;
-    environ = _NSGetEnviron();
-#else
-    extern char **environ;
-#endif
+    Blt_HashTable varTable;         /* Temporary hash table for environment
+                                     * variables. */
+    int count;                      /* Counter for # bytes in new buffer */
     
     Blt_InitHashTable(&varTable, BLT_STRING_KEYS);
-    count = 0;        /* Counter for length of new buffer */
-    /* Step 1: Add the new enviroment variables to the table. */
-    for (i = 0; i < objc; i += 2) {
-        Blt_HashEntry *hPtr;
-        const char *name, *value;
-        int isNew, length;
+    count = 0;
+    {
+        int i;
         
-        name = Tcl_GetStringFromObj(objv[i], &length);
-        count += length;
-        hPtr = Blt_CreateHashEntry(&varTable, name, &isNew);
-        value = Tcl_GetStringFromObj(objv[i+1], &length);
-        Blt_SetHashValue(hPtr, value);
-        count += length;
-        count += 2;                     /* Include '\0' plus '=' */
-    }
-    /* Step 2:  Add the current environment variables, but don't overwrite
-     *          the existing table entries. */
-    for (envPtr = environ; *envPtr != NULL; envPtr++) {
-        char *eqsign;
-        
-        eqsign = NULL;
-        /* Search for the end of the string, save the equalize. */
-        for (p = (char *)*envPtr; *p != '\0'; p++) {
-            if ((*p == '=') && (eqsign == NULL)) {
-                eqsign = p;
-            }
-        }
-        if (*envPtr == p) {
-            break;
-        }
-        if (eqsign != NULL) {
+        /* Step 1: Add the override enviroment variables to the empty
+         *         table. */
+        for (i = 0; i < objc; i += 2) {
             Blt_HashEntry *hPtr;
-            int isNew;
+            const char *name, *value;
+            int isNew, length;
             
-            /* name=value\0 
-             *  envPtr  eq     p
-             */
-            /* Overwrite and restore the equalsign. */
-            *eqsign = '\0';
-            hPtr = Blt_CreateHashEntry(&varTable, *envPtr, &isNew);
-            if (isNew) {
-                Blt_SetHashValue(hPtr, eqsign + 1);
-                /* Not already in table, add variable as is including the
-                 * NUL byte. */
-                count += p - *envPtr + 1;    /* Include NUL byte */
-            }
-            *eqsign = '=';
+            name = Tcl_GetStringFromObj(objv[i], &length);
+            count += length;
+            hPtr = Blt_CreateHashEntry(&varTable, name, &isNew);
+            value = Tcl_GetStringFromObj(objv[i+1], &length);
+            Blt_SetHashValue(hPtr, value);
+            count += length;
+            count += 2;                     /* Include '\0' and '=' */
         }
     }
-    count++;                           /* Final NUL byte. */
-    assert(count < 100000);
-    /* Step 3: Allocate an environment array */
-    numBytes = (varTable.numEntries + 1) * sizeof(char **);
-    array = Blt_AssertMalloc(numBytes + count * sizeof(char));
-    p = (char *)array + numBytes;
-    /* Step 4: Add the name/value pairs from the hashtable to the array. */
-    n = 0;
-    for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        const char *name, *value;
-        
-        name = Blt_GetHashKey(&varTable, hPtr);
-        value = Blt_GetHashValue(hPtr);
-        numBytes = sprintf(p, "%s=%s", name, value);
-        array[n] = p;
-        p += numBytes;
-        *p++ = '\0';
-        n++;
-    }
-    array[n] = '\0';                       /* Add final NUL byte. */
-    Blt_DeleteHashTable(&varTable);
-    *envPtrPtr = (char **)array;
-    return TCL_OK;
-}
+    {
+        char *const *envPtr;
+#ifdef MACOSX
+        char **environ;
+        environ = _NSGetEnviron();
+#else
+        extern char **environ;
+#endif
 
+        /* Step 2:  Add the current environment variables, but don't
+         *          overwrite the existing table entries. */
+        for (envPtr = environ; *envPtr != NULL; envPtr++) {
+            char *eqsign;
+            char *p;
+            
+            eqsign = NULL;
+            /* Search for the end of the string, saving the position of the
+             * first '=' found. */
+            for (p = (char *)*envPtr; *p != '\0'; p++) {
+                if ((*p == '=') && (eqsign == NULL)) {
+                    eqsign = p;
+                }
+            }
+            if (*envPtr == p) {
+                break;
+            }
+            if (eqsign != NULL) {
+                Blt_HashEntry *hPtr;
+                int isNew;
+                
+                /* Temporarily terminate the variable name at the '=' and
+                 * create a hash table entry for the variable. */
+                *eqsign = '\0';
+                hPtr = Blt_CreateHashEntry(&varTable, *envPtr, &isNew);
+                if (isNew) {    /* Ignore the variable if it already exists. */
+                    Blt_SetHashValue(hPtr, eqsign + 1);
+                    /* Not already in table, add variable as is including the
+                     * NUL byte. */
+                    count += p - *envPtr + 1;    /* Include NUL byte */
+                }
+                *eqsign = '=';              /* Restore the '='. */
+            }
+        }
+        count++;                           /* Final NUL byte. */
+        assert(count < 100000);
+    }
+    {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
+        char **array;
+        char *p;
+        int n, numBytes;
+        
+        /* Step 3: Allocate an environment array */
+        numBytes = (varTable.numEntries + 1) * sizeof(char **);
+        array = Blt_AssertMalloc(numBytes + count * sizeof(char));
+        p = (char *)array + numBytes;
+        
+        /* Step 4: Add the name/value pairs from the hashtable to the
+         *         array as "name=value". */
+        n = 0;
+        for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
+             hPtr = Blt_NextHashEntry(&iter)) {
+            const char *name, *value;
+            
+            name = Blt_GetHashKey(&varTable, hPtr);
+            value = Blt_GetHashValue(hPtr);
+            numBytes = sprintf(p, "%s=%s", name, value);
+            array[n] = p;
+            p += numBytes;
+            *p++ = '\0';
+            n++;
+        }
+        array[n] = '\0';                       /* Add final NUL byte. */
+        Blt_DeleteHashTable(&varTable);
+        *envPtrPtr = (char **)array;
+    }
+    return TCL_OK;
+}  
 /*
  *---------------------------------------------------------------------------
  *
@@ -922,6 +940,7 @@ InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name)
     sinkPtr->name = name;
     sinkPtr->echo = FALSE;
     sinkPtr->fd = -1;
+    sinkPtr->flags = 0;
     sinkPtr->bytes = sinkPtr->staticSpace;
     sinkPtr->size = DEF_BUFFER_SIZE;
     sinkPtr->encoding = ENCODING_ASCII;
@@ -1111,7 +1130,7 @@ CloseSink(Sink *sinkPtr)
                 Tcl_BackgroundError(interp);
             }
 #else
-            if (Tcl_SetVar2Ex(interp, sinkPtr->doneVar, NULL, 
+            if (Tcl_SetVar2Ex(interp, sinkPtr->doneVar, NULL /*part2*/, 
                               Tcl_NewByteArrayObj(data, (int)length),
                               TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
                 Tcl_BackgroundError(interp);
@@ -1428,7 +1447,6 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
     if (data[0] == '\0') {
         return;
     }
-    if (
     save = data[numBytes];
     data[numBytes] = '\0';
     if (sinkPtr->echo) {
@@ -1463,7 +1481,7 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
         }
     }
     if (sinkPtr->updateVar != NULL) {
-        if (Tcl_SetVar2Ex(interp, sinkPtr->updateVar, NULL, objPtr, 
+        if (Tcl_SetVar2Ex(interp, sinkPtr->updateVar, NULL /*part2*/, objPtr, 
                 TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
             Tcl_BackgroundError(interp);
         }
@@ -1521,7 +1539,7 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
         }
     }
     if (sinkPtr->updateVar != NULL) {
-        if (Tcl_SetVar2Ex(interp, sinkPtr->updateVar, NULL, objPtr, 
+        if (Tcl_SetVar2Ex(interp, sinkPtr->updateVar, NULL /*part2*/, objPtr, 
                 TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
             Tcl_BackgroundError(interp);
         }
@@ -1664,8 +1682,8 @@ FreeBgexec(Bgexec *bgPtr)
     if (bgPtr->statVar != NULL) {
         Blt_Free(bgPtr->statVar);
     }
-    if (bgPtr->procTable != NULL) {
-        Blt_Free(bgPtr->procTable);
+    if (bgPtr->pids != NULL) {
+        Blt_Free(bgPtr->pids);
     }
     if (bgPtr->env != NULL) {
         Blt_Free(bgPtr->env);
@@ -1682,7 +1700,7 @@ FreeBgexec(Bgexec *bgPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * KillProcesses --
+ * KillPipeline --
  *
  *      Cleans up background execution processes and memory.
  *
@@ -1696,28 +1714,28 @@ FreeBgexec(Bgexec *bgPtr)
  */
 /* ARGSUSED */
 static void
-KillProcesses(Bgexec *bgPtr)            /* Background info record. */
+KillPipeline(Bgexec *bgPtr)            /* Background info record. */
 {
-    if (bgPtr->procTable != NULL) {
+    if (bgPtr->pids != NULL) {
         int i;
 
-        for (i = 0; i < bgPtr->numProcs; i++) {
+        for (i = 0; i < bgPtr->numPids; i++) {
             Tcl_Pid tclPid;
 
             if (bgPtr->signalNum > 0) {
 #ifdef WIN32
-                kill(bgPtr->procTable[i], bgPtr->signalNum);
+                kill(bgPtr->pids[i], bgPtr->signalNum);
 #else
-                kill(bgPtr->procTable[i].pid, bgPtr->signalNum);
+                kill(bgPtr->pids[i].pid, bgPtr->signalNum);
 #endif
             }
 #ifdef WIN32
-            tclPid = (Tcl_Pid)bgPtr->procTable[i].pid;
+            tclPid = (Tcl_Pid)bgPtr->pids[i].pid;
 #else
             {
                 unsigned long pid;
 
-                pid = (long)bgPtr->procTable[i].pid;
+                pid = (long)bgPtr->pids[i].pid;
                 tclPid = (Tcl_Pid)pid;
             }
 #endif /* WIN32 */
@@ -1749,7 +1767,7 @@ DestroyBgexec(Bgexec *bgPtr)            /* Background info record. */
     DisableTriggers(bgPtr);
     FreeSinkBuffer(&bgPtr->err);
     FreeSinkBuffer(&bgPtr->out);
-    KillProcesses(bgPtr);
+    KillPipeline(bgPtr);
     FreeBgexec(bgPtr);
 }
 
@@ -1786,7 +1804,7 @@ VariableProc(
 
         /* Kill all child processes that remain alive. */
         DisableTriggers(bgPtr);
-        KillProcesses(bgPtr);
+        KillPipeline(bgPtr);
         if (bgPtr->flags & DETACHED) {
             DestroyBgexec(bgPtr);
         }
@@ -1810,7 +1828,7 @@ VariableProc(
  *      None.  Called from the TCL event loop.
  *
  * Side effects:
- *      Many. The contents of procTable is shifted, leaving only those
+ *      Many. The contents of pids is shifted, leaving only those
  *      sub-processes which have not yet terminated.  If there are still
  *      subprocesses left, this procedure is placed in the timer queue
  *      again. Otherwise the output and possibly the status variables are
@@ -1848,17 +1866,17 @@ TimerProc(ClientData clientData)
     *((int *)&lastStatus) = 0;
 
     numLeft = 0;
-    for (i = 0; i < bgPtr->numProcs; i++) {
+    for (i = 0; i < bgPtr->numPids; i++) {
         int pid;
 
 #ifdef WIN32
-        pid = WaitProcess(bgPtr->procTable[i], (int *)&waitStatus, WNOHANG);
+        pid = WaitProcess(bgPtr->pids[i], (int *)&waitStatus, WNOHANG);
 #else
-        pid = waitpid(bgPtr->procTable[i].pid, (int *)&waitStatus, WNOHANG);
+        pid = waitpid(bgPtr->pids[i].pid, (int *)&waitStatus, WNOHANG);
 #endif
         if (pid == 0) {                 /* Process has not terminated yet. */
             if (numLeft < i) {
-                bgPtr->procTable[numLeft] = bgPtr->procTable[i];
+                bgPtr->pids[numLeft] = bgPtr->pids[i];
             }
             numLeft++;                  /* Count the # of processes left. */
         } else if (pid != -1) {
@@ -1871,7 +1889,7 @@ TimerProc(ClientData clientData)
             lastPid = (unsigned int)pid;
         }
     }
-    bgPtr->numProcs = numLeft;
+    bgPtr->numPids = numLeft;
 
     if ((numLeft > 0) || (SINKOPEN(&bgPtr->out)) || 
         (SINKOPEN(&bgPtr->err))) {
@@ -1879,7 +1897,7 @@ TimerProc(ClientData clientData)
         bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
            bgPtr);
 #if WINDEBUG
-        PurifyPrintf("schedule TimerProc(numProcs=%d)\n", numLeft);
+        PurifyPrintf("schedule TimerProc(numPids=%d)\n", numLeft);
 #endif
         return;
     }
@@ -2067,19 +2085,16 @@ StderrProc(ClientData clientData, int mask)
  */
 /* ARGSUSED */
 static int
-BgexecCmdProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* # of arguments. */
-    Tcl_Obj *const *objv)               /* Argument strings. */
+BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
 {
     Bgexec *bgPtr;
-    Blt_Pid *pidsPtr;
+    Blt_Pid *pids;                      /* Array of process Ids. */
     char *lastArg;
     int *outFdPtr, *errFdPtr;
     int isDetached;
     int i;
-    int numProcs;
+    int numPids;
 
     if (objc < 3) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", 
@@ -2099,8 +2114,8 @@ BgexecCmdProc(
     /* Initialize the background information record */
     bgPtr->interp = interp;
     bgPtr->signalNum = SIGTERM;
-    bgPtr->numProcs = -1;
-    bgPtr->interval = 1000;             /* One second. */
+    bgPtr->numPids = -1;
+    bgPtr->interval = 1000;             /* Poll every 1 second. */
     if (isDetached) {
         bgPtr->flags |= DETACHED;
     }
@@ -2133,7 +2148,7 @@ BgexecCmdProc(
     ConfigureSink(bgPtr, &bgPtr->err);
 
     /* Put a trace on the exit status variable.  The will also allow the
-     * user to terminate the pipeline by simply setting the variable.  */
+     * user to terminate the pipeline by setting the variable.  */
     Tcl_TraceVar(interp, bgPtr->statVar, TRACE_FLAGS, VariableProc, bgPtr);
     bgPtr->flags |= TRACED;
 
@@ -2150,13 +2165,13 @@ BgexecCmdProc(
         (bgPtr->err.cmdObjPtr != NULL) || (bgPtr->err.echo)) {
         errFdPtr = &bgPtr->err.fd;
     }
-    numProcs = Blt_CreatePipeline(interp, objc - i, objv + i, &pidsPtr, 
+    numPids = Blt_CreatePipeline(interp, objc - i, objv + i, &pids, 
         (int *)NULL, outFdPtr, errFdPtr, bgPtr->env);
-    if (numProcs < 0) {
+    if (numPids < 0) {
         goto error;
     }
-    bgPtr->procTable = pidsPtr;
-    bgPtr->numProcs = numProcs;
+    bgPtr->pids = pids;
+    bgPtr->numPids = numPids;
     if (bgPtr->out.fd == -1) {
         /* 
          * If output has been redirected, start polling immediately for the
@@ -2180,12 +2195,12 @@ BgexecCmdProc(
         /* If detached, return a list of the child process ids instead of
          * the output of the pipeline. */
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-        for (i = 0; i < numProcs; i++) {
+        for (i = 0; i < numPids; i++) {
             Tcl_Obj *objPtr;
 #ifdef WIN32
-            objPtr = Tcl_NewLongObj((unsigned long)bgPtr->procTable[i].pid);
+            objPtr = Tcl_NewLongObj((unsigned long)bgPtr->pids[i].pid);
 #else 
-            objPtr = Tcl_NewLongObj(bgPtr->procTable[i].pid);
+            objPtr = Tcl_NewLongObj(bgPtr->pids[i].pid);
 #endif
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
@@ -2231,8 +2246,6 @@ BgexecCmdProc(
     return TCL_ERROR;
 }
 
-
-
 static void
 BgexecExitProc(ClientData clientData)
 {
@@ -2242,12 +2255,12 @@ BgexecExitProc(ClientData clientData)
     for (link = Blt_Chain_FirstLink(activePipelines); link != NULL; 
          link = next) {
         Bgexec *bgPtr;
-        next = Blt_Chain_NextLink(link);
 
+        next = Blt_Chain_NextLink(link);
         bgPtr = Blt_Chain_GetValue(link);
-        bgPtr->link = NULL;
+        bgPtr->link = NULL;             
         if ((bgPtr->flags & DONTKILL) == 0) {
-            KillProcesses(bgPtr);
+            KillPipeline(bgPtr);
         }
     }
     Blt_Chain_Destroy(activePipelines);
@@ -2259,7 +2272,7 @@ BgexecExitProc(ClientData clientData)
  *
  * Blt_BgexecCmdInitProc --
  *
- *      This procedure is invoked to initialize the "bgexec" TCL command.  See
+ *      This procedure is invoked to initialize the "bgexec" command.  See
  *      the user documentation for details on what it does.
  *
  * Results:

@@ -161,9 +161,6 @@ static Tcl_AppInitProc *cmdProcs[] =
 #ifndef NO_DEBUG
     Blt_DebugCmdInitProc,
 #endif
-#ifndef NO_FILECMD
-    Blt_FileCmdInitProc,
-#endif
 #ifndef NO_SPLINE
     Blt_SplineCmdInitProc,
 #endif
