@@ -575,73 +575,78 @@ BLT_EXTERN void		Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr,
 BLT_EXTERN int		Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush,
 				int x, int y);
 #endif
+#ifndef Blt_IsVerticalLinearBrush_DECLARED
+#define Blt_IsVerticalLinearBrush_DECLARED
+/* 96 */
+BLT_EXTERN int		Blt_IsVerticalLinearBrush(Blt_PaintBrush brush);
+#endif
 #ifndef Blt_PaintRectangle_DECLARED
 #define Blt_PaintRectangle_DECLARED
-/* 96 */
+/* 97 */
 BLT_EXTERN void		Blt_PaintRectangle(Blt_Picture picture, int x, int y,
 				int w, int h, int dx, int dy,
 				Blt_PaintBrush brush, int composite);
 #endif
 #ifndef Blt_PaintPolygon_DECLARED
 #define Blt_PaintPolygon_DECLARED
-/* 97 */
+/* 98 */
 BLT_EXTERN void		Blt_PaintPolygon(Blt_Picture picture, int n,
 				Point2f *vertices, Blt_PaintBrush brush);
 #endif
 #ifndef Blt_CreateBrushNotifier_DECLARED
 #define Blt_CreateBrushNotifier_DECLARED
-/* 98 */
+/* 99 */
 BLT_EXTERN void		Blt_CreateBrushNotifier(Blt_PaintBrush brush,
 				Blt_BrushChangedProc *notifyProc,
 				ClientData clientData);
 #endif
 #ifndef Blt_DeleteBrushNotifier_DECLARED
 #define Blt_DeleteBrushNotifier_DECLARED
-/* 99 */
+/* 100 */
 BLT_EXTERN void		Blt_DeleteBrushNotifier(Blt_PaintBrush brush,
 				Blt_BrushChangedProc *notifyProc,
 				ClientData clientData);
 #endif
 #ifndef Blt_GetBg_DECLARED
 #define Blt_GetBg_DECLARED
-/* 100 */
+/* 101 */
 BLT_EXTERN int		Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin,
 				const char *bgName, Blt_Bg *bgPtr);
 #endif
 #ifndef Blt_GetBgFromObj_DECLARED
 #define Blt_GetBgFromObj_DECLARED
-/* 101 */
+/* 102 */
 BLT_EXTERN int		Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin,
 				Tcl_Obj *objPtr, Blt_Bg *bgPtr);
 #endif
 #ifndef Blt_Bg_BorderColor_DECLARED
 #define Blt_Bg_BorderColor_DECLARED
-/* 102 */
+/* 103 */
 BLT_EXTERN XColor *	Blt_Bg_BorderColor(Blt_Bg bg);
 #endif
 #ifndef Blt_Bg_Border_DECLARED
 #define Blt_Bg_Border_DECLARED
-/* 103 */
+/* 104 */
 BLT_EXTERN Tk_3DBorder	Blt_Bg_Border(Blt_Bg bg);
 #endif
 #ifndef Blt_Bg_PaintBrush_DECLARED
 #define Blt_Bg_PaintBrush_DECLARED
-/* 104 */
+/* 105 */
 BLT_EXTERN Blt_PaintBrush Blt_Bg_PaintBrush(Blt_Bg bg);
 #endif
 #ifndef Blt_Bg_Name_DECLARED
 #define Blt_Bg_Name_DECLARED
-/* 105 */
+/* 106 */
 BLT_EXTERN const char *	 Blt_Bg_Name(Blt_Bg bg);
 #endif
 #ifndef Blt_Bg_Free_DECLARED
 #define Blt_Bg_Free_DECLARED
-/* 106 */
+/* 107 */
 BLT_EXTERN void		Blt_Bg_Free(Blt_Bg bg);
 #endif
 #ifndef Blt_Bg_DrawRectangle_DECLARED
 #define Blt_Bg_DrawRectangle_DECLARED
-/* 107 */
+/* 108 */
 BLT_EXTERN void		Blt_Bg_DrawRectangle(Tk_Window tkwin,
 				Drawable drawable, Blt_Bg bg, int x, int y,
 				int width, int height, int borderWidth,
@@ -649,7 +654,7 @@ BLT_EXTERN void		Blt_Bg_DrawRectangle(Tk_Window tkwin,
 #endif
 #ifndef Blt_Bg_FillRectangle_DECLARED
 #define Blt_Bg_FillRectangle_DECLARED
-/* 108 */
+/* 109 */
 BLT_EXTERN void		Blt_Bg_FillRectangle(Tk_Window tkwin,
 				Drawable drawable, Blt_Bg bg, int x, int y,
 				int width, int height, int borderWidth,
@@ -657,7 +662,7 @@ BLT_EXTERN void		Blt_Bg_FillRectangle(Tk_Window tkwin,
 #endif
 #ifndef Blt_Bg_DrawPolygon_DECLARED
 #define Blt_Bg_DrawPolygon_DECLARED
-/* 109 */
+/* 110 */
 BLT_EXTERN void		Blt_Bg_DrawPolygon(Tk_Window tkwin,
 				Drawable drawable, Blt_Bg bg, XPoint *points,
 				int numPoints, int borderWidth,
@@ -665,7 +670,7 @@ BLT_EXTERN void		Blt_Bg_DrawPolygon(Tk_Window tkwin,
 #endif
 #ifndef Blt_Bg_FillPolygon_DECLARED
 #define Blt_Bg_FillPolygon_DECLARED
-/* 110 */
+/* 111 */
 BLT_EXTERN void		Blt_Bg_FillPolygon(Tk_Window tkwin,
 				Drawable drawable, Blt_Bg bg, XPoint *points,
 				int numPoints, int borderWidth,
@@ -673,75 +678,75 @@ BLT_EXTERN void		Blt_Bg_FillPolygon(Tk_Window tkwin,
 #endif
 #ifndef Blt_Bg_GetOrigin_DECLARED
 #define Blt_Bg_GetOrigin_DECLARED
-/* 111 */
+/* 112 */
 BLT_EXTERN void		Blt_Bg_GetOrigin(Blt_Bg bg, int *xPtr, int *yPtr);
 #endif
 #ifndef Blt_Bg_SetChangedProc_DECLARED
 #define Blt_Bg_SetChangedProc_DECLARED
-/* 112 */
+/* 113 */
 BLT_EXTERN void		Blt_Bg_SetChangedProc(Blt_Bg bg,
 				Blt_BackgroundChangedProc *notifyProc,
 				ClientData clientData);
 #endif
 #ifndef Blt_Bg_SetOrigin_DECLARED
 #define Blt_Bg_SetOrigin_DECLARED
-/* 113 */
+/* 114 */
 BLT_EXTERN void		Blt_Bg_SetOrigin(Tk_Window tkwin, Blt_Bg bg, int x,
 				int y);
 #endif
 #ifndef Blt_Bg_DrawFocus_DECLARED
 #define Blt_Bg_DrawFocus_DECLARED
-/* 114 */
+/* 115 */
 BLT_EXTERN void		Blt_Bg_DrawFocus(Tk_Window tkwin, Blt_Bg bg,
 				int highlightWidth, Drawable drawable);
 #endif
 #ifndef Blt_Bg_BorderGC_DECLARED
 #define Blt_Bg_BorderGC_DECLARED
-/* 115 */
+/* 116 */
 BLT_EXTERN GC		Blt_Bg_BorderGC(Tk_Window tkwin, Blt_Bg bg,
 				int which);
 #endif
 #ifndef Blt_Bg_SetFromBackground_DECLARED
 #define Blt_Bg_SetFromBackground_DECLARED
-/* 116 */
+/* 117 */
 BLT_EXTERN void		Blt_Bg_SetFromBackground(Tk_Window tkwin, Blt_Bg bg);
 #endif
 #ifndef Blt_Bg_UnsetClipRegion_DECLARED
 #define Blt_Bg_UnsetClipRegion_DECLARED
-/* 117 */
+/* 118 */
 BLT_EXTERN void		Blt_Bg_UnsetClipRegion(Tk_Window tkwin, Blt_Bg bg);
 #endif
 #ifndef Blt_Bg_SetClipRegion_DECLARED
 #define Blt_Bg_SetClipRegion_DECLARED
-/* 118 */
+/* 119 */
 BLT_EXTERN void		Blt_Bg_SetClipRegion(Tk_Window tkwin, Blt_Bg bg,
 				TkRegion rgn);
 #endif
 #ifndef Blt_Bg_GetColor_DECLARED
 #define Blt_Bg_GetColor_DECLARED
-/* 119 */
+/* 120 */
 BLT_EXTERN unsigned int	 Blt_Bg_GetColor(Blt_Bg bg);
 #endif
 #ifndef Blt_3DBorder_SetClipRegion_DECLARED
 #define Blt_3DBorder_SetClipRegion_DECLARED
-/* 120 */
+/* 121 */
 BLT_EXTERN void		Blt_3DBorder_SetClipRegion(Tk_Window tkwin,
 				Tk_3DBorder border, TkRegion rgn);
 #endif
 #ifndef Blt_3DBorder_UnsetClipRegion_DECLARED
 #define Blt_3DBorder_UnsetClipRegion_DECLARED
-/* 121 */
+/* 122 */
 BLT_EXTERN void		Blt_3DBorder_UnsetClipRegion(Tk_Window tkwin,
 				Tk_3DBorder border);
 #endif
 #ifndef Blt_DestroyBindingTable_DECLARED
 #define Blt_DestroyBindingTable_DECLARED
-/* 122 */
+/* 123 */
 BLT_EXTERN void		Blt_DestroyBindingTable(Blt_BindTable table);
 #endif
 #ifndef Blt_CreateBindingTable_DECLARED
 #define Blt_CreateBindingTable_DECLARED
-/* 123 */
+/* 124 */
 BLT_EXTERN Blt_BindTable Blt_CreateBindingTable(Tcl_Interp *interp,
 				Tk_Window tkwin, ClientData clientData,
 				Blt_BindPickProc *pickProc,
@@ -749,103 +754,103 @@ BLT_EXTERN Blt_BindTable Blt_CreateBindingTable(Tcl_Interp *interp,
 #endif
 #ifndef Blt_ConfigureBindings_DECLARED
 #define Blt_ConfigureBindings_DECLARED
-/* 124 */
+/* 125 */
 BLT_EXTERN int		Blt_ConfigureBindings(Tcl_Interp *interp,
 				Blt_BindTable table, ClientData item,
 				int argc, const char **argv);
 #endif
 #ifndef Blt_ConfigureBindingsFromObj_DECLARED
 #define Blt_ConfigureBindingsFromObj_DECLARED
-/* 125 */
+/* 126 */
 BLT_EXTERN int		Blt_ConfigureBindingsFromObj(Tcl_Interp *interp,
 				Blt_BindTable table, ClientData item,
 				int objc, Tcl_Obj *const *objv);
 #endif
 #ifndef Blt_PickCurrentItem_DECLARED
 #define Blt_PickCurrentItem_DECLARED
-/* 126 */
+/* 127 */
 BLT_EXTERN void		Blt_PickCurrentItem(Blt_BindTable table);
 #endif
 #ifndef Blt_DeleteBindings_DECLARED
 #define Blt_DeleteBindings_DECLARED
-/* 127 */
+/* 128 */
 BLT_EXTERN void		Blt_DeleteBindings(Blt_BindTable table,
 				ClientData object);
 #endif
 #ifndef Blt_MoveBindingTable_DECLARED
 #define Blt_MoveBindingTable_DECLARED
-/* 128 */
+/* 129 */
 BLT_EXTERN void		Blt_MoveBindingTable(Blt_BindTable table,
 				Tk_Window tkwin);
 #endif
 #ifndef Blt_Afm_SetPrinting_DECLARED
 #define Blt_Afm_SetPrinting_DECLARED
-/* 129 */
+/* 130 */
 BLT_EXTERN void		Blt_Afm_SetPrinting(Tcl_Interp *interp, int value);
 #endif
 #ifndef Blt_Afm_IsPrinting_DECLARED
 #define Blt_Afm_IsPrinting_DECLARED
-/* 130 */
+/* 131 */
 BLT_EXTERN int		Blt_Afm_IsPrinting(void );
 #endif
 #ifndef Blt_Afm_TextWidth_DECLARED
 #define Blt_Afm_TextWidth_DECLARED
-/* 131 */
+/* 132 */
 BLT_EXTERN int		Blt_Afm_TextWidth(Blt_Font font, const char *s,
 				int numBytes);
 #endif
 #ifndef Blt_Afm_GetMetrics_DECLARED
 #define Blt_Afm_GetMetrics_DECLARED
-/* 132 */
+/* 133 */
 BLT_EXTERN int		Blt_Afm_GetMetrics(Blt_Font font,
 				Blt_FontMetrics *fmPtr);
 #endif
 #ifndef Blt_Afm_GetPostscriptFamily_DECLARED
 #define Blt_Afm_GetPostscriptFamily_DECLARED
-/* 133 */
+/* 134 */
 BLT_EXTERN const char *	 Blt_Afm_GetPostscriptFamily(const char *family);
 #endif
 #ifndef Blt_Afm_GetPostscriptName_DECLARED
 #define Blt_Afm_GetPostscriptName_DECLARED
-/* 134 */
+/* 135 */
 BLT_EXTERN void		Blt_Afm_GetPostscriptName(const char *family,
 				int flags, Tcl_DString *resultPtr);
 #endif
 #ifndef Blt_SetDashes_DECLARED
 #define Blt_SetDashes_DECLARED
-/* 135 */
+/* 136 */
 BLT_EXTERN void		Blt_SetDashes(Display *display, GC gc,
 				Blt_Dashes *dashesPtr);
 #endif
 #ifndef Blt_ResetLimits_DECLARED
 #define Blt_ResetLimits_DECLARED
-/* 136 */
+/* 137 */
 BLT_EXTERN void		Blt_ResetLimits(Blt_Limits *limitsPtr);
 #endif
 #ifndef Blt_GetLimitsFromObj_DECLARED
 #define Blt_GetLimitsFromObj_DECLARED
-/* 137 */
+/* 138 */
 BLT_EXTERN int		Blt_GetLimitsFromObj(Tcl_Interp *interp,
 				Tk_Window tkwin, Tcl_Obj *objPtr,
 				Blt_Limits *limitsPtr);
 #endif
 #ifndef Blt_ConfigureInfoFromObj_DECLARED
 #define Blt_ConfigureInfoFromObj_DECLARED
-/* 138 */
+/* 139 */
 BLT_EXTERN int		Blt_ConfigureInfoFromObj(Tcl_Interp *interp,
 				Tk_Window tkwin, Blt_ConfigSpec *specs,
 				char *widgRec, Tcl_Obj *objPtr, int flags);
 #endif
 #ifndef Blt_ConfigureValueFromObj_DECLARED
 #define Blt_ConfigureValueFromObj_DECLARED
-/* 139 */
+/* 140 */
 BLT_EXTERN int		Blt_ConfigureValueFromObj(Tcl_Interp *interp,
 				Tk_Window tkwin, Blt_ConfigSpec *specs,
 				char *widgRec, Tcl_Obj *objPtr, int flags);
 #endif
 #ifndef Blt_ConfigureWidgetFromObj_DECLARED
 #define Blt_ConfigureWidgetFromObj_DECLARED
-/* 140 */
+/* 141 */
 BLT_EXTERN int		Blt_ConfigureWidgetFromObj(Tcl_Interp *interp,
 				Tk_Window tkwin, Blt_ConfigSpec *specs,
 				int objc, Tcl_Obj *const *objv,
@@ -853,7 +858,7 @@ BLT_EXTERN int		Blt_ConfigureWidgetFromObj(Tcl_Interp *interp,
 #endif
 #ifndef Blt_ConfigureComponentFromObj_DECLARED
 #define Blt_ConfigureComponentFromObj_DECLARED
-/* 141 */
+/* 142 */
 BLT_EXTERN int		Blt_ConfigureComponentFromObj(Tcl_Interp *interp,
 				Tk_Window tkwin, const char *name,
 				const char *className, Blt_ConfigSpec *specs,
@@ -862,134 +867,134 @@ BLT_EXTERN int		Blt_ConfigureComponentFromObj(Tcl_Interp *interp,
 #endif
 #ifndef Blt_ConfigModified_DECLARED
 #define Blt_ConfigModified_DECLARED
-/* 142 */
+/* 143 */
 BLT_EXTERN int		Blt_ConfigModified(Blt_ConfigSpec *specs, ...);
 #endif
 #ifndef Blt_NameOfState_DECLARED
 #define Blt_NameOfState_DECLARED
-/* 143 */
+/* 144 */
 BLT_EXTERN const char *	 Blt_NameOfState(int state);
 #endif
 #ifndef Blt_FreeOptions_DECLARED
 #define Blt_FreeOptions_DECLARED
-/* 144 */
+/* 145 */
 BLT_EXTERN void		Blt_FreeOptions(Blt_ConfigSpec *specs, char *widgRec,
 				Display *display, int needFlags);
 #endif
 #ifndef Blt_ObjIsOption_DECLARED
 #define Blt_ObjIsOption_DECLARED
-/* 145 */
+/* 146 */
 BLT_EXTERN int		Blt_ObjIsOption(Blt_ConfigSpec *specs,
 				Tcl_Obj *objPtr, int flags);
 #endif
 #ifndef Blt_GetPixelsFromObj_DECLARED
 #define Blt_GetPixelsFromObj_DECLARED
-/* 146 */
+/* 147 */
 BLT_EXTERN int		Blt_GetPixelsFromObj(Tcl_Interp *interp,
 				Tk_Window tkwin, Tcl_Obj *objPtr, int flags,
 				int *valuePtr);
 #endif
 #ifndef Blt_GetPadFromObj_DECLARED
 #define Blt_GetPadFromObj_DECLARED
-/* 147 */
+/* 148 */
 BLT_EXTERN int		Blt_GetPadFromObj(Tcl_Interp *interp,
 				Tk_Window tkwin, Tcl_Obj *objPtr,
 				Blt_Pad *padPtr);
 #endif
 #ifndef Blt_GetStateFromObj_DECLARED
 #define Blt_GetStateFromObj_DECLARED
-/* 148 */
+/* 149 */
 BLT_EXTERN int		Blt_GetStateFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int *statePtr);
 #endif
 #ifndef Blt_GetFillFromObj_DECLARED
 #define Blt_GetFillFromObj_DECLARED
-/* 149 */
+/* 150 */
 BLT_EXTERN int		Blt_GetFillFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int *fillPtr);
 #endif
 #ifndef Blt_GetResizeFromObj_DECLARED
 #define Blt_GetResizeFromObj_DECLARED
-/* 150 */
+/* 151 */
 BLT_EXTERN int		Blt_GetResizeFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int *fillPtr);
 #endif
 #ifndef Blt_GetDashesFromObj_DECLARED
 #define Blt_GetDashesFromObj_DECLARED
-/* 151 */
+/* 152 */
 BLT_EXTERN int		Blt_GetDashesFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, Blt_Dashes *dashesPtr);
 #endif
 #ifndef Blt_Image_IsDeleted_DECLARED
 #define Blt_Image_IsDeleted_DECLARED
-/* 152 */
+/* 153 */
 BLT_EXTERN int		Blt_Image_IsDeleted(Tk_Image tkImage);
 #endif
 #ifndef Blt_Image_GetMaster_DECLARED
 #define Blt_Image_GetMaster_DECLARED
-/* 153 */
+/* 154 */
 BLT_EXTERN Tk_ImageMaster Blt_Image_GetMaster(Tk_Image tkImage);
 #endif
 #ifndef Blt_Image_GetType_DECLARED
 #define Blt_Image_GetType_DECLARED
-/* 154 */
+/* 155 */
 BLT_EXTERN Tk_ImageType * Blt_Image_GetType(Tk_Image tkImage);
 #endif
 #ifndef Blt_Image_GetInstanceData_DECLARED
 #define Blt_Image_GetInstanceData_DECLARED
-/* 155 */
+/* 156 */
 BLT_EXTERN ClientData	Blt_Image_GetInstanceData(Tk_Image tkImage);
 #endif
 #ifndef Blt_Image_Name_DECLARED
 #define Blt_Image_Name_DECLARED
-/* 156 */
+/* 157 */
 BLT_EXTERN const char *	 Blt_Image_Name(Tk_Image tkImage);
 #endif
 #ifndef Blt_Image_NameOfType_DECLARED
 #define Blt_Image_NameOfType_DECLARED
-/* 157 */
+/* 158 */
 BLT_EXTERN const char *	 Blt_Image_NameOfType(Tk_Image tkImage);
 #endif
 #ifndef Blt_FreePainter_DECLARED
 #define Blt_FreePainter_DECLARED
-/* 158 */
+/* 159 */
 BLT_EXTERN void		Blt_FreePainter(Blt_Painter painter);
 #endif
 #ifndef Blt_GetPainter_DECLARED
 #define Blt_GetPainter_DECLARED
-/* 159 */
+/* 160 */
 BLT_EXTERN Blt_Painter	Blt_GetPainter(Tk_Window tkwin, float gamma);
 #endif
 #ifndef Blt_GetPainterFromDrawable_DECLARED
 #define Blt_GetPainterFromDrawable_DECLARED
-/* 160 */
+/* 161 */
 BLT_EXTERN Blt_Painter	Blt_GetPainterFromDrawable(Display *display,
 				Drawable drawable, float gamma);
 #endif
 #ifndef Blt_PainterGC_DECLARED
 #define Blt_PainterGC_DECLARED
-/* 161 */
+/* 162 */
 BLT_EXTERN GC		Blt_PainterGC(Blt_Painter painter);
 #endif
 #ifndef Blt_PainterDepth_DECLARED
 #define Blt_PainterDepth_DECLARED
-/* 162 */
+/* 163 */
 BLT_EXTERN int		Blt_PainterDepth(Blt_Painter painter);
 #endif
 #ifndef Blt_SetPainterClipRegion_DECLARED
 #define Blt_SetPainterClipRegion_DECLARED
-/* 163 */
+/* 164 */
 BLT_EXTERN void		Blt_SetPainterClipRegion(Blt_Painter painter,
 				TkRegion rgn);
 #endif
 #ifndef Blt_UnsetPainterClipRegion_DECLARED
 #define Blt_UnsetPainterClipRegion_DECLARED
-/* 164 */
+/* 165 */
 BLT_EXTERN void		Blt_UnsetPainterClipRegion(Blt_Painter painter);
 #endif
 #ifndef Blt_PaintPicture_DECLARED
 #define Blt_PaintPicture_DECLARED
-/* 165 */
+/* 166 */
 BLT_EXTERN int		Blt_PaintPicture(Blt_Painter painter,
 				Drawable drawable, Blt_Picture src, int srcX,
 				int srcY, int width, int height, int destX,
@@ -997,7 +1002,7 @@ BLT_EXTERN int		Blt_PaintPicture(Blt_Painter painter,
 #endif
 #ifndef Blt_PaintPictureWithBlend_DECLARED
 #define Blt_PaintPictureWithBlend_DECLARED
-/* 166 */
+/* 167 */
 BLT_EXTERN int		Blt_PaintPictureWithBlend(Blt_Painter painter,
 				Drawable drawable, Blt_Picture src, int srcX,
 				int srcY, int width, int height, int destX,
@@ -1005,176 +1010,176 @@ BLT_EXTERN int		Blt_PaintPictureWithBlend(Blt_Painter painter,
 #endif
 #ifndef Blt_PaintCheckbox_DECLARED
 #define Blt_PaintCheckbox_DECLARED
-/* 167 */
+/* 168 */
 BLT_EXTERN Blt_Picture	Blt_PaintCheckbox(int width, int height,
 				XColor *fillColor, XColor *outlineColor,
 				XColor *checkColor, int isOn);
 #endif
 #ifndef Blt_PaintRadioButton_DECLARED
 #define Blt_PaintRadioButton_DECLARED
-/* 168 */
+/* 169 */
 BLT_EXTERN Blt_Picture	Blt_PaintRadioButton(int width, int height,
 				Blt_Bg bg, XColor *fill, XColor *outline,
 				int isOn);
 #endif
 #ifndef Blt_PaintRadioButtonOld_DECLARED
 #define Blt_PaintRadioButtonOld_DECLARED
-/* 169 */
+/* 170 */
 BLT_EXTERN Blt_Picture	Blt_PaintRadioButtonOld(int width, int height,
 				XColor *bg, XColor *fill, XColor *outline,
 				XColor *check, int isOn);
 #endif
 #ifndef Blt_PaintDelete_DECLARED
 #define Blt_PaintDelete_DECLARED
-/* 170 */
+/* 171 */
 BLT_EXTERN Blt_Picture	Blt_PaintDelete(int width, int height,
 				XColor *bgColor, XColor *fillColor,
 				XColor *symColor, int isActive);
 #endif
 #ifndef Blt_Ps_Create_DECLARED
 #define Blt_Ps_Create_DECLARED
-/* 171 */
+/* 172 */
 BLT_EXTERN Blt_Ps	Blt_Ps_Create(Tcl_Interp *interp,
 				PageSetup *setupPtr);
 #endif
 #ifndef Blt_Ps_Free_DECLARED
 #define Blt_Ps_Free_DECLARED
-/* 172 */
+/* 173 */
 BLT_EXTERN void		Blt_Ps_Free(Blt_Ps ps);
 #endif
 #ifndef Blt_Ps_GetValue_DECLARED
 #define Blt_Ps_GetValue_DECLARED
-/* 173 */
+/* 174 */
 BLT_EXTERN const char *	 Blt_Ps_GetValue(Blt_Ps ps, int *lengthPtr);
 #endif
 #ifndef Blt_Ps_GetDBuffer_DECLARED
 #define Blt_Ps_GetDBuffer_DECLARED
-/* 174 */
+/* 175 */
 BLT_EXTERN Blt_DBuffer	Blt_Ps_GetDBuffer(Blt_Ps ps);
 #endif
 #ifndef Blt_Ps_GetInterp_DECLARED
 #define Blt_Ps_GetInterp_DECLARED
-/* 175 */
+/* 176 */
 BLT_EXTERN Tcl_Interp *	 Blt_Ps_GetInterp(Blt_Ps ps);
 #endif
 #ifndef Blt_Ps_GetScratchBuffer_DECLARED
 #define Blt_Ps_GetScratchBuffer_DECLARED
-/* 176 */
+/* 177 */
 BLT_EXTERN char *	Blt_Ps_GetScratchBuffer(Blt_Ps ps);
 #endif
 #ifndef Blt_Ps_SetInterp_DECLARED
 #define Blt_Ps_SetInterp_DECLARED
-/* 177 */
+/* 178 */
 BLT_EXTERN void		Blt_Ps_SetInterp(Blt_Ps ps, Tcl_Interp *interp);
 #endif
 #ifndef Blt_Ps_Append_DECLARED
 #define Blt_Ps_Append_DECLARED
-/* 178 */
+/* 179 */
 BLT_EXTERN void		Blt_Ps_Append(Blt_Ps ps, const char *string);
 #endif
 #ifndef Blt_Ps_AppendBytes_DECLARED
 #define Blt_Ps_AppendBytes_DECLARED
-/* 179 */
+/* 180 */
 BLT_EXTERN void		Blt_Ps_AppendBytes(Blt_Ps ps, const char *string,
 				int numBytes);
 #endif
 #ifndef Blt_Ps_VarAppend_DECLARED
 #define Blt_Ps_VarAppend_DECLARED
-/* 180 */
+/* 181 */
 BLT_EXTERN void		Blt_Ps_VarAppend(Blt_Ps ps, ...);
 #endif
 #ifndef Blt_Ps_Format_DECLARED
 #define Blt_Ps_Format_DECLARED
-/* 181 */
+/* 182 */
 BLT_EXTERN void		Blt_Ps_Format(Blt_Ps ps, const char *fmt, ...);
 #endif
 #ifndef Blt_Ps_SetClearBackground_DECLARED
 #define Blt_Ps_SetClearBackground_DECLARED
-/* 182 */
+/* 183 */
 BLT_EXTERN void		Blt_Ps_SetClearBackground(Blt_Ps ps);
 #endif
 #ifndef Blt_Ps_IncludeFile_DECLARED
 #define Blt_Ps_IncludeFile_DECLARED
-/* 183 */
+/* 184 */
 BLT_EXTERN int		Blt_Ps_IncludeFile(Tcl_Interp *interp, Blt_Ps ps,
 				const char *fileName);
 #endif
 #ifndef Blt_Ps_GetPicaFromObj_DECLARED
 #define Blt_Ps_GetPicaFromObj_DECLARED
-/* 184 */
+/* 185 */
 BLT_EXTERN int		Blt_Ps_GetPicaFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int *picaPtr);
 #endif
 #ifndef Blt_Ps_GetPadFromObj_DECLARED
 #define Blt_Ps_GetPadFromObj_DECLARED
-/* 185 */
+/* 186 */
 BLT_EXTERN int		Blt_Ps_GetPadFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, Blt_Pad *padPtr);
 #endif
 #ifndef Blt_Ps_ComputeBoundingBox_DECLARED
 #define Blt_Ps_ComputeBoundingBox_DECLARED
-/* 186 */
+/* 187 */
 BLT_EXTERN int		Blt_Ps_ComputeBoundingBox(PageSetup *setupPtr, int w,
 				int h);
 #endif
 #ifndef Blt_Ps_DrawPicture_DECLARED
 #define Blt_Ps_DrawPicture_DECLARED
-/* 187 */
+/* 188 */
 BLT_EXTERN void		Blt_Ps_DrawPicture(Blt_Ps ps, Blt_Picture picture,
 				double x, double y);
 #endif
 #ifndef Blt_Ps_Rectangle_DECLARED
 #define Blt_Ps_Rectangle_DECLARED
-/* 188 */
+/* 189 */
 BLT_EXTERN void		Blt_Ps_Rectangle(Blt_Ps ps, int x, int y, int w,
 				int h);
 #endif
 #ifndef Blt_Ps_Rectangle2_DECLARED
 #define Blt_Ps_Rectangle2_DECLARED
-/* 189 */
+/* 190 */
 BLT_EXTERN void		Blt_Ps_Rectangle2(Blt_Ps ps, double x1, double y1,
 				double x2, double y2);
 #endif
 #ifndef Blt_Ps_SaveFile_DECLARED
 #define Blt_Ps_SaveFile_DECLARED
-/* 190 */
+/* 191 */
 BLT_EXTERN int		Blt_Ps_SaveFile(Tcl_Interp *interp, Blt_Ps ps,
 				const char *fileName);
 #endif
 #ifndef Blt_Ps_XSetLineWidth_DECLARED
 #define Blt_Ps_XSetLineWidth_DECLARED
-/* 191 */
+/* 192 */
 BLT_EXTERN void		Blt_Ps_XSetLineWidth(Blt_Ps ps, int lineWidth);
 #endif
 #ifndef Blt_Ps_XSetBackground_DECLARED
 #define Blt_Ps_XSetBackground_DECLARED
-/* 192 */
+/* 193 */
 BLT_EXTERN void		Blt_Ps_XSetBackground(Blt_Ps ps, XColor *colorPtr);
 #endif
 #ifndef Blt_Ps_XSetBitmapData_DECLARED
 #define Blt_Ps_XSetBitmapData_DECLARED
-/* 193 */
+/* 194 */
 BLT_EXTERN void		Blt_Ps_XSetBitmapData(Blt_Ps ps, Display *display,
 				Pixmap bitmap, int width, int height);
 #endif
 #ifndef Blt_Ps_XSetForeground_DECLARED
 #define Blt_Ps_XSetForeground_DECLARED
-/* 194 */
+/* 195 */
 BLT_EXTERN void		Blt_Ps_XSetForeground(Blt_Ps ps, XColor *colorPtr);
 #endif
 #ifndef Blt_Ps_XSetFont_DECLARED
 #define Blt_Ps_XSetFont_DECLARED
-/* 195 */
+/* 196 */
 BLT_EXTERN void		Blt_Ps_XSetFont(Blt_Ps ps, Blt_Font font);
 #endif
 #ifndef Blt_Ps_XSetDashes_DECLARED
 #define Blt_Ps_XSetDashes_DECLARED
-/* 196 */
+/* 197 */
 BLT_EXTERN void		Blt_Ps_XSetDashes(Blt_Ps ps, Blt_Dashes *dashesPtr);
 #endif
 #ifndef Blt_Ps_XSetLineAttributes_DECLARED
 #define Blt_Ps_XSetLineAttributes_DECLARED
-/* 197 */
+/* 198 */
 BLT_EXTERN void		Blt_Ps_XSetLineAttributes(Blt_Ps ps,
 				XColor *colorPtr, int lineWidth,
 				Blt_Dashes *dashesPtr, int capStyle,
@@ -1182,161 +1187,161 @@ BLT_EXTERN void		Blt_Ps_XSetLineAttributes(Blt_Ps ps,
 #endif
 #ifndef Blt_Ps_XSetStipple_DECLARED
 #define Blt_Ps_XSetStipple_DECLARED
-/* 198 */
+/* 199 */
 BLT_EXTERN void		Blt_Ps_XSetStipple(Blt_Ps ps, Display *display,
 				Pixmap bitmap);
 #endif
 #ifndef Blt_Ps_Polyline_DECLARED
 #define Blt_Ps_Polyline_DECLARED
-/* 199 */
+/* 200 */
 BLT_EXTERN void		Blt_Ps_Polyline(Blt_Ps ps, int n, Point2d *points);
 #endif
 #ifndef Blt_Ps_XDrawLines_DECLARED
 #define Blt_Ps_XDrawLines_DECLARED
-/* 200 */
+/* 201 */
 BLT_EXTERN void		Blt_Ps_XDrawLines(Blt_Ps ps, int n, XPoint *points);
 #endif
 #ifndef Blt_Ps_XDrawSegments_DECLARED
 #define Blt_Ps_XDrawSegments_DECLARED
-/* 201 */
+/* 202 */
 BLT_EXTERN void		Blt_Ps_XDrawSegments(Blt_Ps ps, int n,
 				XSegment *segments);
 #endif
 #ifndef Blt_Ps_DrawPolyline_DECLARED
 #define Blt_Ps_DrawPolyline_DECLARED
-/* 202 */
+/* 203 */
 BLT_EXTERN void		Blt_Ps_DrawPolyline(Blt_Ps ps, int n,
 				Point2d *points);
 #endif
 #ifndef Blt_Ps_DrawSegments2d_DECLARED
 #define Blt_Ps_DrawSegments2d_DECLARED
-/* 203 */
+/* 204 */
 BLT_EXTERN void		Blt_Ps_DrawSegments2d(Blt_Ps ps, int n,
 				Segment2d *segments);
 #endif
 #ifndef Blt_Ps_Draw3DRectangle_DECLARED
 #define Blt_Ps_Draw3DRectangle_DECLARED
-/* 204 */
+/* 205 */
 BLT_EXTERN void		Blt_Ps_Draw3DRectangle(Blt_Ps ps, Tk_3DBorder border,
 				double x, double y, int width, int height,
 				int borderWidth, int relief);
 #endif
 #ifndef Blt_Ps_Fill3DRectangle_DECLARED
 #define Blt_Ps_Fill3DRectangle_DECLARED
-/* 205 */
+/* 206 */
 BLT_EXTERN void		Blt_Ps_Fill3DRectangle(Blt_Ps ps, Tk_3DBorder border,
 				double x, double y, int width, int height,
 				int borderWidth, int relief);
 #endif
 #ifndef Blt_Ps_XFillRectangle_DECLARED
 #define Blt_Ps_XFillRectangle_DECLARED
-/* 206 */
+/* 207 */
 BLT_EXTERN void		Blt_Ps_XFillRectangle(Blt_Ps ps, double x, double y,
 				int width, int height);
 #endif
 #ifndef Blt_Ps_XFillRectangles_DECLARED
 #define Blt_Ps_XFillRectangles_DECLARED
-/* 207 */
+/* 208 */
 BLT_EXTERN void		Blt_Ps_XFillRectangles(Blt_Ps ps, int n,
 				XRectangle *rects);
 #endif
 #ifndef Blt_Ps_XFillPolygon_DECLARED
 #define Blt_Ps_XFillPolygon_DECLARED
-/* 208 */
+/* 209 */
 BLT_EXTERN void		Blt_Ps_XFillPolygon(Blt_Ps ps, int n,
 				Point2d *points);
 #endif
 #ifndef Blt_Ps_DrawPhoto_DECLARED
 #define Blt_Ps_DrawPhoto_DECLARED
-/* 209 */
+/* 210 */
 BLT_EXTERN void		Blt_Ps_DrawPhoto(Blt_Ps ps,
 				Tk_PhotoHandle photoToken, double x,
 				double y);
 #endif
 #ifndef Blt_Ps_XDrawWindow_DECLARED
 #define Blt_Ps_XDrawWindow_DECLARED
-/* 210 */
+/* 211 */
 BLT_EXTERN void		Blt_Ps_XDrawWindow(Blt_Ps ps, Tk_Window tkwin,
 				double x, double y);
 #endif
 #ifndef Blt_Ps_DrawText_DECLARED
 #define Blt_Ps_DrawText_DECLARED
-/* 211 */
+/* 212 */
 BLT_EXTERN void		Blt_Ps_DrawText(Blt_Ps ps, const char *string,
 				TextStyle *attrPtr, double x, double y);
 #endif
 #ifndef Blt_Ps_DrawBitmap_DECLARED
 #define Blt_Ps_DrawBitmap_DECLARED
-/* 212 */
+/* 213 */
 BLT_EXTERN void		Blt_Ps_DrawBitmap(Blt_Ps ps, Display *display,
 				Pixmap bitmap, double scaleX, double scaleY);
 #endif
 #ifndef Blt_Ps_XSetCapStyle_DECLARED
 #define Blt_Ps_XSetCapStyle_DECLARED
-/* 213 */
+/* 214 */
 BLT_EXTERN void		Blt_Ps_XSetCapStyle(Blt_Ps ps, int capStyle);
 #endif
 #ifndef Blt_Ps_XSetJoinStyle_DECLARED
 #define Blt_Ps_XSetJoinStyle_DECLARED
-/* 214 */
+/* 215 */
 BLT_EXTERN void		Blt_Ps_XSetJoinStyle(Blt_Ps ps, int joinStyle);
 #endif
 #ifndef Blt_Ps_PolylineFromXPoints_DECLARED
 #define Blt_Ps_PolylineFromXPoints_DECLARED
-/* 215 */
+/* 216 */
 BLT_EXTERN void		Blt_Ps_PolylineFromXPoints(Blt_Ps ps, int n,
 				XPoint *points);
 #endif
 #ifndef Blt_Ps_Polygon_DECLARED
 #define Blt_Ps_Polygon_DECLARED
-/* 216 */
+/* 217 */
 BLT_EXTERN void		Blt_Ps_Polygon(Blt_Ps ps, Point2d *points,
 				int numPoints);
 #endif
 #ifndef Blt_Ps_SetPrinting_DECLARED
 #define Blt_Ps_SetPrinting_DECLARED
-/* 217 */
+/* 218 */
 BLT_EXTERN void		Blt_Ps_SetPrinting(Blt_Ps ps, int value);
 #endif
 #ifndef Blt_Ts_CreateLayout_DECLARED
 #define Blt_Ts_CreateLayout_DECLARED
-/* 218 */
+/* 219 */
 BLT_EXTERN TextLayout *	 Blt_Ts_CreateLayout(const char *string, int length,
 				TextStyle *tsPtr);
 #endif
 #ifndef Blt_Ts_TitleLayout_DECLARED
 #define Blt_Ts_TitleLayout_DECLARED
-/* 219 */
+/* 220 */
 BLT_EXTERN TextLayout *	 Blt_Ts_TitleLayout(const char *string, int length,
 				TextStyle *tsPtr);
 #endif
 #ifndef Blt_Ts_DrawLayout_DECLARED
 #define Blt_Ts_DrawLayout_DECLARED
-/* 220 */
+/* 221 */
 BLT_EXTERN void		Blt_Ts_DrawLayout(Tk_Window tkwin, Drawable drawable,
 				TextLayout *textPtr, TextStyle *tsPtr, int x,
 				int y);
 #endif
 #ifndef Blt_Ts_GetExtents_DECLARED
 #define Blt_Ts_GetExtents_DECLARED
-/* 221 */
+/* 222 */
 BLT_EXTERN void		Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text,
 				unsigned int *widthPtr,
 				unsigned int *heightPtr);
 #endif
 #ifndef Blt_Ts_ResetStyle_DECLARED
 #define Blt_Ts_ResetStyle_DECLARED
-/* 222 */
+/* 223 */
 BLT_EXTERN void		Blt_Ts_ResetStyle(Tk_Window tkwin, TextStyle *tsPtr);
 #endif
 #ifndef Blt_Ts_FreeStyle_DECLARED
 #define Blt_Ts_FreeStyle_DECLARED
-/* 223 */
+/* 224 */
 BLT_EXTERN void		Blt_Ts_FreeStyle(Display *display, TextStyle *tsPtr);
 #endif
 #ifndef Blt_Ts_SetDrawStyle_DECLARED
 #define Blt_Ts_SetDrawStyle_DECLARED
-/* 224 */
+/* 225 */
 BLT_EXTERN void		Blt_Ts_SetDrawStyle(TextStyle *tsPtr, Blt_Font font,
 				GC gc, XColor *fgColor, float angle,
 				Tk_Anchor anchor, Tk_Justify justify,
@@ -1344,28 +1349,28 @@ BLT_EXTERN void		Blt_Ts_SetDrawStyle(TextStyle *tsPtr, Blt_Font font,
 #endif
 #ifndef Blt_DrawText_DECLARED
 #define Blt_DrawText_DECLARED
-/* 225 */
+/* 226 */
 BLT_EXTERN void		Blt_DrawText(Tk_Window tkwin, Drawable drawable,
 				const char *string, TextStyle *tsPtr, int x,
 				int y);
 #endif
 #ifndef Blt_DrawText2_DECLARED
 #define Blt_DrawText2_DECLARED
-/* 226 */
+/* 227 */
 BLT_EXTERN void		Blt_DrawText2(Tk_Window tkwin, Drawable drawable,
 				const char *string, TextStyle *tsPtr, int x,
 				int y, Dim2d *dimPtr);
 #endif
 #ifndef Blt_Ts_Bitmap_DECLARED
 #define Blt_Ts_Bitmap_DECLARED
-/* 227 */
+/* 228 */
 BLT_EXTERN Pixmap	Blt_Ts_Bitmap(Tk_Window tkwin, TextLayout *textPtr,
 				TextStyle *tsPtr, int *widthPtr,
 				int *heightPtr);
 #endif
 #ifndef Blt_DrawTextWithRotatedFont_DECLARED
 #define Blt_DrawTextWithRotatedFont_DECLARED
-/* 228 */
+/* 229 */
 BLT_EXTERN int		Blt_DrawTextWithRotatedFont(Tk_Window tkwin,
 				Drawable drawable, float angle,
 				TextStyle *tsPtr, TextLayout *textPtr, int x,
@@ -1373,7 +1378,7 @@ BLT_EXTERN int		Blt_DrawTextWithRotatedFont(Tk_Window tkwin,
 #endif
 #ifndef Blt_DrawLayout_DECLARED
 #define Blt_DrawLayout_DECLARED
-/* 229 */
+/* 230 */
 BLT_EXTERN void		Blt_DrawLayout(Tk_Window tkwin, Drawable drawable,
 				GC gc, Blt_Font font, int depth, float angle,
 				int x, int y, TextLayout *layoutPtr,
@@ -1381,7 +1386,7 @@ BLT_EXTERN void		Blt_DrawLayout(Tk_Window tkwin, Drawable drawable,
 #endif
 #ifndef Blt_GetTextExtents_DECLARED
 #define Blt_GetTextExtents_DECLARED
-/* 230 */
+/* 231 */
 BLT_EXTERN void		Blt_GetTextExtents(Blt_Font font, int leader,
 				const char *text, int textLen,
 				unsigned int *widthPtr,
@@ -1389,13 +1394,13 @@ BLT_EXTERN void		Blt_GetTextExtents(Blt_Font font, int leader,
 #endif
 #ifndef Blt_RotateStartingTextPositions_DECLARED
 #define Blt_RotateStartingTextPositions_DECLARED
-/* 231 */
+/* 232 */
 BLT_EXTERN void		Blt_RotateStartingTextPositions(TextLayout *textPtr,
 				float angle);
 #endif
 #ifndef Blt_ComputeTextLayout_DECLARED
 #define Blt_ComputeTextLayout_DECLARED
-/* 232 */
+/* 233 */
 BLT_EXTERN Tk_TextLayout Blt_ComputeTextLayout(Blt_Font font,
 				const char *string, int numChars,
 				int wrapLength, Tk_Justify justify,
@@ -1403,7 +1408,7 @@ BLT_EXTERN Tk_TextLayout Blt_ComputeTextLayout(Blt_Font font,
 #endif
 #ifndef Blt_DrawTextLayout_DECLARED
 #define Blt_DrawTextLayout_DECLARED
-/* 233 */
+/* 234 */
 BLT_EXTERN void		Blt_DrawTextLayout(Display *display,
 				Drawable drawable, GC gc,
 				Tk_TextLayout layout, int x, int y,
@@ -1411,14 +1416,14 @@ BLT_EXTERN void		Blt_DrawTextLayout(Display *display,
 #endif
 #ifndef Blt_CharBbox_DECLARED
 #define Blt_CharBbox_DECLARED
-/* 234 */
+/* 235 */
 BLT_EXTERN int		Blt_CharBbox(Tk_TextLayout layout, int index,
 				int *xPtr, int *yPtr, int *widthPtr,
 				int *heightPtr);
 #endif
 #ifndef Blt_UnderlineTextLayout_DECLARED
 #define Blt_UnderlineTextLayout_DECLARED
-/* 235 */
+/* 236 */
 BLT_EXTERN void		Blt_UnderlineTextLayout(Display *display,
 				Drawable drawable, GC gc,
 				Tk_TextLayout layout, int x, int y,
@@ -1426,27 +1431,27 @@ BLT_EXTERN void		Blt_UnderlineTextLayout(Display *display,
 #endif
 #ifndef Blt_Ts_UnderlineLayout_DECLARED
 #define Blt_Ts_UnderlineLayout_DECLARED
-/* 236 */
+/* 237 */
 BLT_EXTERN void		Blt_Ts_UnderlineLayout(Tk_Window tkwin,
 				Drawable drawable, TextLayout *layoutPtr,
 				TextStyle *tsPtr, int x, int y);
 #endif
 #ifndef Blt_Ts_DrawText_DECLARED
 #define Blt_Ts_DrawText_DECLARED
-/* 237 */
+/* 238 */
 BLT_EXTERN void		Blt_Ts_DrawText(Tk_Window tkwin, Drawable drawable,
 				const char *text, int textLen,
 				TextStyle *tsPtr, int x, int y);
 #endif
 #ifndef Blt_MeasureText_DECLARED
 #define Blt_MeasureText_DECLARED
-/* 238 */
+/* 239 */
 BLT_EXTERN int		Blt_MeasureText(Blt_Font font, const char *text,
 				int textLen, int maxLength, int *nBytesPtr);
 #endif
 #ifndef Blt_FreeTextLayout_DECLARED
 #define Blt_FreeTextLayout_DECLARED
-/* 239 */
+/* 240 */
 BLT_EXTERN void		Blt_FreeTextLayout(Tk_TextLayout layout);
 #endif
 
@@ -1550,150 +1555,151 @@ typedef struct BltTkIntProcs {
     int (*blt_GetBrushAlpha) (Blt_PaintBrush brush); /* 93 */
     void (*blt_GetBrushOrigin) (Blt_PaintBrush brush, int *xPtr, int *yPtr); /* 94 */
     int (*blt_GetAssociatedColorFromBrush) (Blt_PaintBrush brush, int x, int y); /* 95 */
-    void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_PaintBrush brush, int composite); /* 96 */
-    void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_PaintBrush brush); /* 97 */
-    void (*blt_CreateBrushNotifier) (Blt_PaintBrush brush, Blt_BrushChangedProc *notifyProc, ClientData clientData); /* 98 */
-    void (*blt_DeleteBrushNotifier) (Blt_PaintBrush brush, Blt_BrushChangedProc *notifyProc, ClientData clientData); /* 99 */
-    int (*blt_GetBg) (Tcl_Interp *interp, Tk_Window tkwin, const char *bgName, Blt_Bg *bgPtr); /* 100 */
-    int (*blt_GetBgFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, Blt_Bg *bgPtr); /* 101 */
-    XColor * (*blt_Bg_BorderColor) (Blt_Bg bg); /* 102 */
-    Tk_3DBorder (*blt_Bg_Border) (Blt_Bg bg); /* 103 */
-    Blt_PaintBrush (*blt_Bg_PaintBrush) (Blt_Bg bg); /* 104 */
-    const char * (*blt_Bg_Name) (Blt_Bg bg); /* 105 */
-    void (*blt_Bg_Free) (Blt_Bg bg); /* 106 */
-    void (*blt_Bg_DrawRectangle) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, int x, int y, int width, int height, int borderWidth, int relief); /* 107 */
-    void (*blt_Bg_FillRectangle) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, int x, int y, int width, int height, int borderWidth, int relief); /* 108 */
-    void (*blt_Bg_DrawPolygon) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, int leftRelief); /* 109 */
-    void (*blt_Bg_FillPolygon) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, int leftRelief); /* 110 */
-    void (*blt_Bg_GetOrigin) (Blt_Bg bg, int *xPtr, int *yPtr); /* 111 */
-    void (*blt_Bg_SetChangedProc) (Blt_Bg bg, Blt_BackgroundChangedProc *notifyProc, ClientData clientData); /* 112 */
-    void (*blt_Bg_SetOrigin) (Tk_Window tkwin, Blt_Bg bg, int x, int y); /* 113 */
-    void (*blt_Bg_DrawFocus) (Tk_Window tkwin, Blt_Bg bg, int highlightWidth, Drawable drawable); /* 114 */
-    GC (*blt_Bg_BorderGC) (Tk_Window tkwin, Blt_Bg bg, int which); /* 115 */
-    void (*blt_Bg_SetFromBackground) (Tk_Window tkwin, Blt_Bg bg); /* 116 */
-    void (*blt_Bg_UnsetClipRegion) (Tk_Window tkwin, Blt_Bg bg); /* 117 */
-    void (*blt_Bg_SetClipRegion) (Tk_Window tkwin, Blt_Bg bg, TkRegion rgn); /* 118 */
-    unsigned int (*blt_Bg_GetColor) (Blt_Bg bg); /* 119 */
-    void (*blt_3DBorder_SetClipRegion) (Tk_Window tkwin, Tk_3DBorder border, TkRegion rgn); /* 120 */
-    void (*blt_3DBorder_UnsetClipRegion) (Tk_Window tkwin, Tk_3DBorder border); /* 121 */
-    void (*blt_DestroyBindingTable) (Blt_BindTable table); /* 122 */
-    Blt_BindTable (*blt_CreateBindingTable) (Tcl_Interp *interp, Tk_Window tkwin, ClientData clientData, Blt_BindPickProc *pickProc, Blt_BindAppendTagsProc *tagProc); /* 123 */
-    int (*blt_ConfigureBindings) (Tcl_Interp *interp, Blt_BindTable table, ClientData item, int argc, const char **argv); /* 124 */
-    int (*blt_ConfigureBindingsFromObj) (Tcl_Interp *interp, Blt_BindTable table, ClientData item, int objc, Tcl_Obj *const *objv); /* 125 */
-    void (*blt_PickCurrentItem) (Blt_BindTable table); /* 126 */
-    void (*blt_DeleteBindings) (Blt_BindTable table, ClientData object); /* 127 */
-    void (*blt_MoveBindingTable) (Blt_BindTable table, Tk_Window tkwin); /* 128 */
-    void (*blt_Afm_SetPrinting) (Tcl_Interp *interp, int value); /* 129 */
-    int (*blt_Afm_IsPrinting) (void); /* 130 */
-    int (*blt_Afm_TextWidth) (Blt_Font font, const char *s, int numBytes); /* 131 */
-    int (*blt_Afm_GetMetrics) (Blt_Font font, Blt_FontMetrics *fmPtr); /* 132 */
-    const char * (*blt_Afm_GetPostscriptFamily) (const char *family); /* 133 */
-    void (*blt_Afm_GetPostscriptName) (const char *family, int flags, Tcl_DString *resultPtr); /* 134 */
-    void (*blt_SetDashes) (Display *display, GC gc, Blt_Dashes *dashesPtr); /* 135 */
-    void (*blt_ResetLimits) (Blt_Limits *limitsPtr); /* 136 */
-    int (*blt_GetLimitsFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, Blt_Limits *limitsPtr); /* 137 */
-    int (*blt_ConfigureInfoFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Blt_ConfigSpec *specs, char *widgRec, Tcl_Obj *objPtr, int flags); /* 138 */
-    int (*blt_ConfigureValueFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Blt_ConfigSpec *specs, char *widgRec, Tcl_Obj *objPtr, int flags); /* 139 */
-    int (*blt_ConfigureWidgetFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Blt_ConfigSpec *specs, int objc, Tcl_Obj *const *objv, char *widgRec, int flags); /* 140 */
-    int (*blt_ConfigureComponentFromObj) (Tcl_Interp *interp, Tk_Window tkwin, const char *name, const char *className, Blt_ConfigSpec *specs, int objc, Tcl_Obj *const *objv, char *widgRec, int flags); /* 141 */
-    int (*blt_ConfigModified) (Blt_ConfigSpec *specs, ...); /* 142 */
-    const char * (*blt_NameOfState) (int state); /* 143 */
-    void (*blt_FreeOptions) (Blt_ConfigSpec *specs, char *widgRec, Display *display, int needFlags); /* 144 */
-    int (*blt_ObjIsOption) (Blt_ConfigSpec *specs, Tcl_Obj *objPtr, int flags); /* 145 */
-    int (*blt_GetPixelsFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, int flags, int *valuePtr); /* 146 */
-    int (*blt_GetPadFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, Blt_Pad *padPtr); /* 147 */
-    int (*blt_GetStateFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *statePtr); /* 148 */
-    int (*blt_GetFillFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *fillPtr); /* 149 */
-    int (*blt_GetResizeFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *fillPtr); /* 150 */
-    int (*blt_GetDashesFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Dashes *dashesPtr); /* 151 */
-    int (*blt_Image_IsDeleted) (Tk_Image tkImage); /* 152 */
-    Tk_ImageMaster (*blt_Image_GetMaster) (Tk_Image tkImage); /* 153 */
-    Tk_ImageType * (*blt_Image_GetType) (Tk_Image tkImage); /* 154 */
-    ClientData (*blt_Image_GetInstanceData) (Tk_Image tkImage); /* 155 */
-    const char * (*blt_Image_Name) (Tk_Image tkImage); /* 156 */
-    const char * (*blt_Image_NameOfType) (Tk_Image tkImage); /* 157 */
-    void (*blt_FreePainter) (Blt_Painter painter); /* 158 */
-    Blt_Painter (*blt_GetPainter) (Tk_Window tkwin, float gamma); /* 159 */
-    Blt_Painter (*blt_GetPainterFromDrawable) (Display *display, Drawable drawable, float gamma); /* 160 */
-    GC (*blt_PainterGC) (Blt_Painter painter); /* 161 */
-    int (*blt_PainterDepth) (Blt_Painter painter); /* 162 */
-    void (*blt_SetPainterClipRegion) (Blt_Painter painter, TkRegion rgn); /* 163 */
-    void (*blt_UnsetPainterClipRegion) (Blt_Painter painter); /* 164 */
-    int (*blt_PaintPicture) (Blt_Painter painter, Drawable drawable, Blt_Picture src, int srcX, int srcY, int width, int height, int destX, int destY, unsigned int flags); /* 165 */
-    int (*blt_PaintPictureWithBlend) (Blt_Painter painter, Drawable drawable, Blt_Picture src, int srcX, int srcY, int width, int height, int destX, int destY, unsigned int flags); /* 166 */
-    Blt_Picture (*blt_PaintCheckbox) (int width, int height, XColor *fillColor, XColor *outlineColor, XColor *checkColor, int isOn); /* 167 */
-    Blt_Picture (*blt_PaintRadioButton) (int width, int height, Blt_Bg bg, XColor *fill, XColor *outline, int isOn); /* 168 */
-    Blt_Picture (*blt_PaintRadioButtonOld) (int width, int height, XColor *bg, XColor *fill, XColor *outline, XColor *check, int isOn); /* 169 */
-    Blt_Picture (*blt_PaintDelete) (int width, int height, XColor *bgColor, XColor *fillColor, XColor *symColor, int isActive); /* 170 */
-    Blt_Ps (*blt_Ps_Create) (Tcl_Interp *interp, PageSetup *setupPtr); /* 171 */
-    void (*blt_Ps_Free) (Blt_Ps ps); /* 172 */
-    const char * (*blt_Ps_GetValue) (Blt_Ps ps, int *lengthPtr); /* 173 */
-    Blt_DBuffer (*blt_Ps_GetDBuffer) (Blt_Ps ps); /* 174 */
-    Tcl_Interp * (*blt_Ps_GetInterp) (Blt_Ps ps); /* 175 */
-    char * (*blt_Ps_GetScratchBuffer) (Blt_Ps ps); /* 176 */
-    void (*blt_Ps_SetInterp) (Blt_Ps ps, Tcl_Interp *interp); /* 177 */
-    void (*blt_Ps_Append) (Blt_Ps ps, const char *string); /* 178 */
-    void (*blt_Ps_AppendBytes) (Blt_Ps ps, const char *string, int numBytes); /* 179 */
-    void (*blt_Ps_VarAppend) (Blt_Ps ps, ...); /* 180 */
-    void (*blt_Ps_Format) (Blt_Ps ps, const char *fmt, ...); /* 181 */
-    void (*blt_Ps_SetClearBackground) (Blt_Ps ps); /* 182 */
-    int (*blt_Ps_IncludeFile) (Tcl_Interp *interp, Blt_Ps ps, const char *fileName); /* 183 */
-    int (*blt_Ps_GetPicaFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *picaPtr); /* 184 */
-    int (*blt_Ps_GetPadFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pad *padPtr); /* 185 */
-    int (*blt_Ps_ComputeBoundingBox) (PageSetup *setupPtr, int w, int h); /* 186 */
-    void (*blt_Ps_DrawPicture) (Blt_Ps ps, Blt_Picture picture, double x, double y); /* 187 */
-    void (*blt_Ps_Rectangle) (Blt_Ps ps, int x, int y, int w, int h); /* 188 */
-    void (*blt_Ps_Rectangle2) (Blt_Ps ps, double x1, double y1, double x2, double y2); /* 189 */
-    int (*blt_Ps_SaveFile) (Tcl_Interp *interp, Blt_Ps ps, const char *fileName); /* 190 */
-    void (*blt_Ps_XSetLineWidth) (Blt_Ps ps, int lineWidth); /* 191 */
-    void (*blt_Ps_XSetBackground) (Blt_Ps ps, XColor *colorPtr); /* 192 */
-    void (*blt_Ps_XSetBitmapData) (Blt_Ps ps, Display *display, Pixmap bitmap, int width, int height); /* 193 */
-    void (*blt_Ps_XSetForeground) (Blt_Ps ps, XColor *colorPtr); /* 194 */
-    void (*blt_Ps_XSetFont) (Blt_Ps ps, Blt_Font font); /* 195 */
-    void (*blt_Ps_XSetDashes) (Blt_Ps ps, Blt_Dashes *dashesPtr); /* 196 */
-    void (*blt_Ps_XSetLineAttributes) (Blt_Ps ps, XColor *colorPtr, int lineWidth, Blt_Dashes *dashesPtr, int capStyle, int joinStyle); /* 197 */
-    void (*blt_Ps_XSetStipple) (Blt_Ps ps, Display *display, Pixmap bitmap); /* 198 */
-    void (*blt_Ps_Polyline) (Blt_Ps ps, int n, Point2d *points); /* 199 */
-    void (*blt_Ps_XDrawLines) (Blt_Ps ps, int n, XPoint *points); /* 200 */
-    void (*blt_Ps_XDrawSegments) (Blt_Ps ps, int n, XSegment *segments); /* 201 */
-    void (*blt_Ps_DrawPolyline) (Blt_Ps ps, int n, Point2d *points); /* 202 */
-    void (*blt_Ps_DrawSegments2d) (Blt_Ps ps, int n, Segment2d *segments); /* 203 */
-    void (*blt_Ps_Draw3DRectangle) (Blt_Ps ps, Tk_3DBorder border, double x, double y, int width, int height, int borderWidth, int relief); /* 204 */
-    void (*blt_Ps_Fill3DRectangle) (Blt_Ps ps, Tk_3DBorder border, double x, double y, int width, int height, int borderWidth, int relief); /* 205 */
-    void (*blt_Ps_XFillRectangle) (Blt_Ps ps, double x, double y, int width, int height); /* 206 */
-    void (*blt_Ps_XFillRectangles) (Blt_Ps ps, int n, XRectangle *rects); /* 207 */
-    void (*blt_Ps_XFillPolygon) (Blt_Ps ps, int n, Point2d *points); /* 208 */
-    void (*blt_Ps_DrawPhoto) (Blt_Ps ps, Tk_PhotoHandle photoToken, double x, double y); /* 209 */
-    void (*blt_Ps_XDrawWindow) (Blt_Ps ps, Tk_Window tkwin, double x, double y); /* 210 */
-    void (*blt_Ps_DrawText) (Blt_Ps ps, const char *string, TextStyle *attrPtr, double x, double y); /* 211 */
-    void (*blt_Ps_DrawBitmap) (Blt_Ps ps, Display *display, Pixmap bitmap, double scaleX, double scaleY); /* 212 */
-    void (*blt_Ps_XSetCapStyle) (Blt_Ps ps, int capStyle); /* 213 */
-    void (*blt_Ps_XSetJoinStyle) (Blt_Ps ps, int joinStyle); /* 214 */
-    void (*blt_Ps_PolylineFromXPoints) (Blt_Ps ps, int n, XPoint *points); /* 215 */
-    void (*blt_Ps_Polygon) (Blt_Ps ps, Point2d *points, int numPoints); /* 216 */
-    void (*blt_Ps_SetPrinting) (Blt_Ps ps, int value); /* 217 */
-    TextLayout * (*blt_Ts_CreateLayout) (const char *string, int length, TextStyle *tsPtr); /* 218 */
-    TextLayout * (*blt_Ts_TitleLayout) (const char *string, int length, TextStyle *tsPtr); /* 219 */
-    void (*blt_Ts_DrawLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *textPtr, TextStyle *tsPtr, int x, int y); /* 220 */
-    void (*blt_Ts_GetExtents) (TextStyle *tsPtr, const char *text, unsigned int *widthPtr, unsigned int *heightPtr); /* 221 */
-    void (*blt_Ts_ResetStyle) (Tk_Window tkwin, TextStyle *tsPtr); /* 222 */
-    void (*blt_Ts_FreeStyle) (Display *display, TextStyle *tsPtr); /* 223 */
-    void (*blt_Ts_SetDrawStyle) (TextStyle *tsPtr, Blt_Font font, GC gc, XColor *fgColor, float angle, Tk_Anchor anchor, Tk_Justify justify, int leader); /* 224 */
-    void (*blt_DrawText) (Tk_Window tkwin, Drawable drawable, const char *string, TextStyle *tsPtr, int x, int y); /* 225 */
-    void (*blt_DrawText2) (Tk_Window tkwin, Drawable drawable, const char *string, TextStyle *tsPtr, int x, int y, Dim2d *dimPtr); /* 226 */
-    Pixmap (*blt_Ts_Bitmap) (Tk_Window tkwin, TextLayout *textPtr, TextStyle *tsPtr, int *widthPtr, int *heightPtr); /* 227 */
-    int (*blt_DrawTextWithRotatedFont) (Tk_Window tkwin, Drawable drawable, float angle, TextStyle *tsPtr, TextLayout *textPtr, int x, int y); /* 228 */
-    void (*blt_DrawLayout) (Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font, int depth, float angle, int x, int y, TextLayout *layoutPtr, int maxLength); /* 229 */
-    void (*blt_GetTextExtents) (Blt_Font font, int leader, const char *text, int textLen, unsigned int *widthPtr, unsigned int *heightPtr); /* 230 */
-    void (*blt_RotateStartingTextPositions) (TextLayout *textPtr, float angle); /* 231 */
-    Tk_TextLayout (*blt_ComputeTextLayout) (Blt_Font font, const char *string, int numChars, int wrapLength, Tk_Justify justify, int flags, int *widthPtr, int *heightPtr); /* 232 */
-    void (*blt_DrawTextLayout) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int firstChar, int lastChar); /* 233 */
-    int (*blt_CharBbox) (Tk_TextLayout layout, int index, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 234 */
-    void (*blt_UnderlineTextLayout) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int underline); /* 235 */
-    void (*blt_Ts_UnderlineLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y); /* 236 */
-    void (*blt_Ts_DrawText) (Tk_Window tkwin, Drawable drawable, const char *text, int textLen, TextStyle *tsPtr, int x, int y); /* 237 */
-    int (*blt_MeasureText) (Blt_Font font, const char *text, int textLen, int maxLength, int *nBytesPtr); /* 238 */
-    void (*blt_FreeTextLayout) (Tk_TextLayout layout); /* 239 */
+    int (*blt_IsVerticalLinearBrush) (Blt_PaintBrush brush); /* 96 */
+    void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_PaintBrush brush, int composite); /* 97 */
+    void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_PaintBrush brush); /* 98 */
+    void (*blt_CreateBrushNotifier) (Blt_PaintBrush brush, Blt_BrushChangedProc *notifyProc, ClientData clientData); /* 99 */
+    void (*blt_DeleteBrushNotifier) (Blt_PaintBrush brush, Blt_BrushChangedProc *notifyProc, ClientData clientData); /* 100 */
+    int (*blt_GetBg) (Tcl_Interp *interp, Tk_Window tkwin, const char *bgName, Blt_Bg *bgPtr); /* 101 */
+    int (*blt_GetBgFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, Blt_Bg *bgPtr); /* 102 */
+    XColor * (*blt_Bg_BorderColor) (Blt_Bg bg); /* 103 */
+    Tk_3DBorder (*blt_Bg_Border) (Blt_Bg bg); /* 104 */
+    Blt_PaintBrush (*blt_Bg_PaintBrush) (Blt_Bg bg); /* 105 */
+    const char * (*blt_Bg_Name) (Blt_Bg bg); /* 106 */
+    void (*blt_Bg_Free) (Blt_Bg bg); /* 107 */
+    void (*blt_Bg_DrawRectangle) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, int x, int y, int width, int height, int borderWidth, int relief); /* 108 */
+    void (*blt_Bg_FillRectangle) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, int x, int y, int width, int height, int borderWidth, int relief); /* 109 */
+    void (*blt_Bg_DrawPolygon) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, int leftRelief); /* 110 */
+    void (*blt_Bg_FillPolygon) (Tk_Window tkwin, Drawable drawable, Blt_Bg bg, XPoint *points, int numPoints, int borderWidth, int leftRelief); /* 111 */
+    void (*blt_Bg_GetOrigin) (Blt_Bg bg, int *xPtr, int *yPtr); /* 112 */
+    void (*blt_Bg_SetChangedProc) (Blt_Bg bg, Blt_BackgroundChangedProc *notifyProc, ClientData clientData); /* 113 */
+    void (*blt_Bg_SetOrigin) (Tk_Window tkwin, Blt_Bg bg, int x, int y); /* 114 */
+    void (*blt_Bg_DrawFocus) (Tk_Window tkwin, Blt_Bg bg, int highlightWidth, Drawable drawable); /* 115 */
+    GC (*blt_Bg_BorderGC) (Tk_Window tkwin, Blt_Bg bg, int which); /* 116 */
+    void (*blt_Bg_SetFromBackground) (Tk_Window tkwin, Blt_Bg bg); /* 117 */
+    void (*blt_Bg_UnsetClipRegion) (Tk_Window tkwin, Blt_Bg bg); /* 118 */
+    void (*blt_Bg_SetClipRegion) (Tk_Window tkwin, Blt_Bg bg, TkRegion rgn); /* 119 */
+    unsigned int (*blt_Bg_GetColor) (Blt_Bg bg); /* 120 */
+    void (*blt_3DBorder_SetClipRegion) (Tk_Window tkwin, Tk_3DBorder border, TkRegion rgn); /* 121 */
+    void (*blt_3DBorder_UnsetClipRegion) (Tk_Window tkwin, Tk_3DBorder border); /* 122 */
+    void (*blt_DestroyBindingTable) (Blt_BindTable table); /* 123 */
+    Blt_BindTable (*blt_CreateBindingTable) (Tcl_Interp *interp, Tk_Window tkwin, ClientData clientData, Blt_BindPickProc *pickProc, Blt_BindAppendTagsProc *tagProc); /* 124 */
+    int (*blt_ConfigureBindings) (Tcl_Interp *interp, Blt_BindTable table, ClientData item, int argc, const char **argv); /* 125 */
+    int (*blt_ConfigureBindingsFromObj) (Tcl_Interp *interp, Blt_BindTable table, ClientData item, int objc, Tcl_Obj *const *objv); /* 126 */
+    void (*blt_PickCurrentItem) (Blt_BindTable table); /* 127 */
+    void (*blt_DeleteBindings) (Blt_BindTable table, ClientData object); /* 128 */
+    void (*blt_MoveBindingTable) (Blt_BindTable table, Tk_Window tkwin); /* 129 */
+    void (*blt_Afm_SetPrinting) (Tcl_Interp *interp, int value); /* 130 */
+    int (*blt_Afm_IsPrinting) (void); /* 131 */
+    int (*blt_Afm_TextWidth) (Blt_Font font, const char *s, int numBytes); /* 132 */
+    int (*blt_Afm_GetMetrics) (Blt_Font font, Blt_FontMetrics *fmPtr); /* 133 */
+    const char * (*blt_Afm_GetPostscriptFamily) (const char *family); /* 134 */
+    void (*blt_Afm_GetPostscriptName) (const char *family, int flags, Tcl_DString *resultPtr); /* 135 */
+    void (*blt_SetDashes) (Display *display, GC gc, Blt_Dashes *dashesPtr); /* 136 */
+    void (*blt_ResetLimits) (Blt_Limits *limitsPtr); /* 137 */
+    int (*blt_GetLimitsFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, Blt_Limits *limitsPtr); /* 138 */
+    int (*blt_ConfigureInfoFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Blt_ConfigSpec *specs, char *widgRec, Tcl_Obj *objPtr, int flags); /* 139 */
+    int (*blt_ConfigureValueFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Blt_ConfigSpec *specs, char *widgRec, Tcl_Obj *objPtr, int flags); /* 140 */
+    int (*blt_ConfigureWidgetFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Blt_ConfigSpec *specs, int objc, Tcl_Obj *const *objv, char *widgRec, int flags); /* 141 */
+    int (*blt_ConfigureComponentFromObj) (Tcl_Interp *interp, Tk_Window tkwin, const char *name, const char *className, Blt_ConfigSpec *specs, int objc, Tcl_Obj *const *objv, char *widgRec, int flags); /* 142 */
+    int (*blt_ConfigModified) (Blt_ConfigSpec *specs, ...); /* 143 */
+    const char * (*blt_NameOfState) (int state); /* 144 */
+    void (*blt_FreeOptions) (Blt_ConfigSpec *specs, char *widgRec, Display *display, int needFlags); /* 145 */
+    int (*blt_ObjIsOption) (Blt_ConfigSpec *specs, Tcl_Obj *objPtr, int flags); /* 146 */
+    int (*blt_GetPixelsFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, int flags, int *valuePtr); /* 147 */
+    int (*blt_GetPadFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr, Blt_Pad *padPtr); /* 148 */
+    int (*blt_GetStateFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *statePtr); /* 149 */
+    int (*blt_GetFillFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *fillPtr); /* 150 */
+    int (*blt_GetResizeFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *fillPtr); /* 151 */
+    int (*blt_GetDashesFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Dashes *dashesPtr); /* 152 */
+    int (*blt_Image_IsDeleted) (Tk_Image tkImage); /* 153 */
+    Tk_ImageMaster (*blt_Image_GetMaster) (Tk_Image tkImage); /* 154 */
+    Tk_ImageType * (*blt_Image_GetType) (Tk_Image tkImage); /* 155 */
+    ClientData (*blt_Image_GetInstanceData) (Tk_Image tkImage); /* 156 */
+    const char * (*blt_Image_Name) (Tk_Image tkImage); /* 157 */
+    const char * (*blt_Image_NameOfType) (Tk_Image tkImage); /* 158 */
+    void (*blt_FreePainter) (Blt_Painter painter); /* 159 */
+    Blt_Painter (*blt_GetPainter) (Tk_Window tkwin, float gamma); /* 160 */
+    Blt_Painter (*blt_GetPainterFromDrawable) (Display *display, Drawable drawable, float gamma); /* 161 */
+    GC (*blt_PainterGC) (Blt_Painter painter); /* 162 */
+    int (*blt_PainterDepth) (Blt_Painter painter); /* 163 */
+    void (*blt_SetPainterClipRegion) (Blt_Painter painter, TkRegion rgn); /* 164 */
+    void (*blt_UnsetPainterClipRegion) (Blt_Painter painter); /* 165 */
+    int (*blt_PaintPicture) (Blt_Painter painter, Drawable drawable, Blt_Picture src, int srcX, int srcY, int width, int height, int destX, int destY, unsigned int flags); /* 166 */
+    int (*blt_PaintPictureWithBlend) (Blt_Painter painter, Drawable drawable, Blt_Picture src, int srcX, int srcY, int width, int height, int destX, int destY, unsigned int flags); /* 167 */
+    Blt_Picture (*blt_PaintCheckbox) (int width, int height, XColor *fillColor, XColor *outlineColor, XColor *checkColor, int isOn); /* 168 */
+    Blt_Picture (*blt_PaintRadioButton) (int width, int height, Blt_Bg bg, XColor *fill, XColor *outline, int isOn); /* 169 */
+    Blt_Picture (*blt_PaintRadioButtonOld) (int width, int height, XColor *bg, XColor *fill, XColor *outline, XColor *check, int isOn); /* 170 */
+    Blt_Picture (*blt_PaintDelete) (int width, int height, XColor *bgColor, XColor *fillColor, XColor *symColor, int isActive); /* 171 */
+    Blt_Ps (*blt_Ps_Create) (Tcl_Interp *interp, PageSetup *setupPtr); /* 172 */
+    void (*blt_Ps_Free) (Blt_Ps ps); /* 173 */
+    const char * (*blt_Ps_GetValue) (Blt_Ps ps, int *lengthPtr); /* 174 */
+    Blt_DBuffer (*blt_Ps_GetDBuffer) (Blt_Ps ps); /* 175 */
+    Tcl_Interp * (*blt_Ps_GetInterp) (Blt_Ps ps); /* 176 */
+    char * (*blt_Ps_GetScratchBuffer) (Blt_Ps ps); /* 177 */
+    void (*blt_Ps_SetInterp) (Blt_Ps ps, Tcl_Interp *interp); /* 178 */
+    void (*blt_Ps_Append) (Blt_Ps ps, const char *string); /* 179 */
+    void (*blt_Ps_AppendBytes) (Blt_Ps ps, const char *string, int numBytes); /* 180 */
+    void (*blt_Ps_VarAppend) (Blt_Ps ps, ...); /* 181 */
+    void (*blt_Ps_Format) (Blt_Ps ps, const char *fmt, ...); /* 182 */
+    void (*blt_Ps_SetClearBackground) (Blt_Ps ps); /* 183 */
+    int (*blt_Ps_IncludeFile) (Tcl_Interp *interp, Blt_Ps ps, const char *fileName); /* 184 */
+    int (*blt_Ps_GetPicaFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *picaPtr); /* 185 */
+    int (*blt_Ps_GetPadFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pad *padPtr); /* 186 */
+    int (*blt_Ps_ComputeBoundingBox) (PageSetup *setupPtr, int w, int h); /* 187 */
+    void (*blt_Ps_DrawPicture) (Blt_Ps ps, Blt_Picture picture, double x, double y); /* 188 */
+    void (*blt_Ps_Rectangle) (Blt_Ps ps, int x, int y, int w, int h); /* 189 */
+    void (*blt_Ps_Rectangle2) (Blt_Ps ps, double x1, double y1, double x2, double y2); /* 190 */
+    int (*blt_Ps_SaveFile) (Tcl_Interp *interp, Blt_Ps ps, const char *fileName); /* 191 */
+    void (*blt_Ps_XSetLineWidth) (Blt_Ps ps, int lineWidth); /* 192 */
+    void (*blt_Ps_XSetBackground) (Blt_Ps ps, XColor *colorPtr); /* 193 */
+    void (*blt_Ps_XSetBitmapData) (Blt_Ps ps, Display *display, Pixmap bitmap, int width, int height); /* 194 */
+    void (*blt_Ps_XSetForeground) (Blt_Ps ps, XColor *colorPtr); /* 195 */
+    void (*blt_Ps_XSetFont) (Blt_Ps ps, Blt_Font font); /* 196 */
+    void (*blt_Ps_XSetDashes) (Blt_Ps ps, Blt_Dashes *dashesPtr); /* 197 */
+    void (*blt_Ps_XSetLineAttributes) (Blt_Ps ps, XColor *colorPtr, int lineWidth, Blt_Dashes *dashesPtr, int capStyle, int joinStyle); /* 198 */
+    void (*blt_Ps_XSetStipple) (Blt_Ps ps, Display *display, Pixmap bitmap); /* 199 */
+    void (*blt_Ps_Polyline) (Blt_Ps ps, int n, Point2d *points); /* 200 */
+    void (*blt_Ps_XDrawLines) (Blt_Ps ps, int n, XPoint *points); /* 201 */
+    void (*blt_Ps_XDrawSegments) (Blt_Ps ps, int n, XSegment *segments); /* 202 */
+    void (*blt_Ps_DrawPolyline) (Blt_Ps ps, int n, Point2d *points); /* 203 */
+    void (*blt_Ps_DrawSegments2d) (Blt_Ps ps, int n, Segment2d *segments); /* 204 */
+    void (*blt_Ps_Draw3DRectangle) (Blt_Ps ps, Tk_3DBorder border, double x, double y, int width, int height, int borderWidth, int relief); /* 205 */
+    void (*blt_Ps_Fill3DRectangle) (Blt_Ps ps, Tk_3DBorder border, double x, double y, int width, int height, int borderWidth, int relief); /* 206 */
+    void (*blt_Ps_XFillRectangle) (Blt_Ps ps, double x, double y, int width, int height); /* 207 */
+    void (*blt_Ps_XFillRectangles) (Blt_Ps ps, int n, XRectangle *rects); /* 208 */
+    void (*blt_Ps_XFillPolygon) (Blt_Ps ps, int n, Point2d *points); /* 209 */
+    void (*blt_Ps_DrawPhoto) (Blt_Ps ps, Tk_PhotoHandle photoToken, double x, double y); /* 210 */
+    void (*blt_Ps_XDrawWindow) (Blt_Ps ps, Tk_Window tkwin, double x, double y); /* 211 */
+    void (*blt_Ps_DrawText) (Blt_Ps ps, const char *string, TextStyle *attrPtr, double x, double y); /* 212 */
+    void (*blt_Ps_DrawBitmap) (Blt_Ps ps, Display *display, Pixmap bitmap, double scaleX, double scaleY); /* 213 */
+    void (*blt_Ps_XSetCapStyle) (Blt_Ps ps, int capStyle); /* 214 */
+    void (*blt_Ps_XSetJoinStyle) (Blt_Ps ps, int joinStyle); /* 215 */
+    void (*blt_Ps_PolylineFromXPoints) (Blt_Ps ps, int n, XPoint *points); /* 216 */
+    void (*blt_Ps_Polygon) (Blt_Ps ps, Point2d *points, int numPoints); /* 217 */
+    void (*blt_Ps_SetPrinting) (Blt_Ps ps, int value); /* 218 */
+    TextLayout * (*blt_Ts_CreateLayout) (const char *string, int length, TextStyle *tsPtr); /* 219 */
+    TextLayout * (*blt_Ts_TitleLayout) (const char *string, int length, TextStyle *tsPtr); /* 220 */
+    void (*blt_Ts_DrawLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *textPtr, TextStyle *tsPtr, int x, int y); /* 221 */
+    void (*blt_Ts_GetExtents) (TextStyle *tsPtr, const char *text, unsigned int *widthPtr, unsigned int *heightPtr); /* 222 */
+    void (*blt_Ts_ResetStyle) (Tk_Window tkwin, TextStyle *tsPtr); /* 223 */
+    void (*blt_Ts_FreeStyle) (Display *display, TextStyle *tsPtr); /* 224 */
+    void (*blt_Ts_SetDrawStyle) (TextStyle *tsPtr, Blt_Font font, GC gc, XColor *fgColor, float angle, Tk_Anchor anchor, Tk_Justify justify, int leader); /* 225 */
+    void (*blt_DrawText) (Tk_Window tkwin, Drawable drawable, const char *string, TextStyle *tsPtr, int x, int y); /* 226 */
+    void (*blt_DrawText2) (Tk_Window tkwin, Drawable drawable, const char *string, TextStyle *tsPtr, int x, int y, Dim2d *dimPtr); /* 227 */
+    Pixmap (*blt_Ts_Bitmap) (Tk_Window tkwin, TextLayout *textPtr, TextStyle *tsPtr, int *widthPtr, int *heightPtr); /* 228 */
+    int (*blt_DrawTextWithRotatedFont) (Tk_Window tkwin, Drawable drawable, float angle, TextStyle *tsPtr, TextLayout *textPtr, int x, int y); /* 229 */
+    void (*blt_DrawLayout) (Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font, int depth, float angle, int x, int y, TextLayout *layoutPtr, int maxLength); /* 230 */
+    void (*blt_GetTextExtents) (Blt_Font font, int leader, const char *text, int textLen, unsigned int *widthPtr, unsigned int *heightPtr); /* 231 */
+    void (*blt_RotateStartingTextPositions) (TextLayout *textPtr, float angle); /* 232 */
+    Tk_TextLayout (*blt_ComputeTextLayout) (Blt_Font font, const char *string, int numChars, int wrapLength, Tk_Justify justify, int flags, int *widthPtr, int *heightPtr); /* 233 */
+    void (*blt_DrawTextLayout) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int firstChar, int lastChar); /* 234 */
+    int (*blt_CharBbox) (Tk_TextLayout layout, int index, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 235 */
+    void (*blt_UnderlineTextLayout) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int underline); /* 236 */
+    void (*blt_Ts_UnderlineLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y); /* 237 */
+    void (*blt_Ts_DrawText) (Tk_Window tkwin, Drawable drawable, const char *text, int textLen, TextStyle *tsPtr, int x, int y); /* 238 */
+    int (*blt_MeasureText) (Blt_Font font, const char *text, int textLen, int maxLength, int *nBytesPtr); /* 239 */
+    void (*blt_FreeTextLayout) (Tk_TextLayout layout); /* 240 */
 } BltTkIntProcs;
 
 #ifdef __cplusplus
@@ -2091,581 +2097,585 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_GetAssociatedColorFromBrush \
 	(bltTkIntProcsPtr->blt_GetAssociatedColorFromBrush) /* 95 */
 #endif
+#ifndef Blt_IsVerticalLinearBrush
+#define Blt_IsVerticalLinearBrush \
+	(bltTkIntProcsPtr->blt_IsVerticalLinearBrush) /* 96 */
+#endif
 #ifndef Blt_PaintRectangle
 #define Blt_PaintRectangle \
-	(bltTkIntProcsPtr->blt_PaintRectangle) /* 96 */
+	(bltTkIntProcsPtr->blt_PaintRectangle) /* 97 */
 #endif
 #ifndef Blt_PaintPolygon
 #define Blt_PaintPolygon \
-	(bltTkIntProcsPtr->blt_PaintPolygon) /* 97 */
+	(bltTkIntProcsPtr->blt_PaintPolygon) /* 98 */
 #endif
 #ifndef Blt_CreateBrushNotifier
 #define Blt_CreateBrushNotifier \
-	(bltTkIntProcsPtr->blt_CreateBrushNotifier) /* 98 */
+	(bltTkIntProcsPtr->blt_CreateBrushNotifier) /* 99 */
 #endif
 #ifndef Blt_DeleteBrushNotifier
 #define Blt_DeleteBrushNotifier \
-	(bltTkIntProcsPtr->blt_DeleteBrushNotifier) /* 99 */
+	(bltTkIntProcsPtr->blt_DeleteBrushNotifier) /* 100 */
 #endif
 #ifndef Blt_GetBg
 #define Blt_GetBg \
-	(bltTkIntProcsPtr->blt_GetBg) /* 100 */
+	(bltTkIntProcsPtr->blt_GetBg) /* 101 */
 #endif
 #ifndef Blt_GetBgFromObj
 #define Blt_GetBgFromObj \
-	(bltTkIntProcsPtr->blt_GetBgFromObj) /* 101 */
+	(bltTkIntProcsPtr->blt_GetBgFromObj) /* 102 */
 #endif
 #ifndef Blt_Bg_BorderColor
 #define Blt_Bg_BorderColor \
-	(bltTkIntProcsPtr->blt_Bg_BorderColor) /* 102 */
+	(bltTkIntProcsPtr->blt_Bg_BorderColor) /* 103 */
 #endif
 #ifndef Blt_Bg_Border
 #define Blt_Bg_Border \
-	(bltTkIntProcsPtr->blt_Bg_Border) /* 103 */
+	(bltTkIntProcsPtr->blt_Bg_Border) /* 104 */
 #endif
 #ifndef Blt_Bg_PaintBrush
 #define Blt_Bg_PaintBrush \
-	(bltTkIntProcsPtr->blt_Bg_PaintBrush) /* 104 */
+	(bltTkIntProcsPtr->blt_Bg_PaintBrush) /* 105 */
 #endif
 #ifndef Blt_Bg_Name
 #define Blt_Bg_Name \
-	(bltTkIntProcsPtr->blt_Bg_Name) /* 105 */
+	(bltTkIntProcsPtr->blt_Bg_Name) /* 106 */
 #endif
 #ifndef Blt_Bg_Free
 #define Blt_Bg_Free \
-	(bltTkIntProcsPtr->blt_Bg_Free) /* 106 */
+	(bltTkIntProcsPtr->blt_Bg_Free) /* 107 */
 #endif
 #ifndef Blt_Bg_DrawRectangle
 #define Blt_Bg_DrawRectangle \
-	(bltTkIntProcsPtr->blt_Bg_DrawRectangle) /* 107 */
+	(bltTkIntProcsPtr->blt_Bg_DrawRectangle) /* 108 */
 #endif
 #ifndef Blt_Bg_FillRectangle
 #define Blt_Bg_FillRectangle \
-	(bltTkIntProcsPtr->blt_Bg_FillRectangle) /* 108 */
+	(bltTkIntProcsPtr->blt_Bg_FillRectangle) /* 109 */
 #endif
 #ifndef Blt_Bg_DrawPolygon
 #define Blt_Bg_DrawPolygon \
-	(bltTkIntProcsPtr->blt_Bg_DrawPolygon) /* 109 */
+	(bltTkIntProcsPtr->blt_Bg_DrawPolygon) /* 110 */
 #endif
 #ifndef Blt_Bg_FillPolygon
 #define Blt_Bg_FillPolygon \
-	(bltTkIntProcsPtr->blt_Bg_FillPolygon) /* 110 */
+	(bltTkIntProcsPtr->blt_Bg_FillPolygon) /* 111 */
 #endif
 #ifndef Blt_Bg_GetOrigin
 #define Blt_Bg_GetOrigin \
-	(bltTkIntProcsPtr->blt_Bg_GetOrigin) /* 111 */
+	(bltTkIntProcsPtr->blt_Bg_GetOrigin) /* 112 */
 #endif
 #ifndef Blt_Bg_SetChangedProc
 #define Blt_Bg_SetChangedProc \
-	(bltTkIntProcsPtr->blt_Bg_SetChangedProc) /* 112 */
+	(bltTkIntProcsPtr->blt_Bg_SetChangedProc) /* 113 */
 #endif
 #ifndef Blt_Bg_SetOrigin
 #define Blt_Bg_SetOrigin \
-	(bltTkIntProcsPtr->blt_Bg_SetOrigin) /* 113 */
+	(bltTkIntProcsPtr->blt_Bg_SetOrigin) /* 114 */
 #endif
 #ifndef Blt_Bg_DrawFocus
 #define Blt_Bg_DrawFocus \
-	(bltTkIntProcsPtr->blt_Bg_DrawFocus) /* 114 */
+	(bltTkIntProcsPtr->blt_Bg_DrawFocus) /* 115 */
 #endif
 #ifndef Blt_Bg_BorderGC
 #define Blt_Bg_BorderGC \
-	(bltTkIntProcsPtr->blt_Bg_BorderGC) /* 115 */
+	(bltTkIntProcsPtr->blt_Bg_BorderGC) /* 116 */
 #endif
 #ifndef Blt_Bg_SetFromBackground
 #define Blt_Bg_SetFromBackground \
-	(bltTkIntProcsPtr->blt_Bg_SetFromBackground) /* 116 */
+	(bltTkIntProcsPtr->blt_Bg_SetFromBackground) /* 117 */
 #endif
 #ifndef Blt_Bg_UnsetClipRegion
 #define Blt_Bg_UnsetClipRegion \
-	(bltTkIntProcsPtr->blt_Bg_UnsetClipRegion) /* 117 */
+	(bltTkIntProcsPtr->blt_Bg_UnsetClipRegion) /* 118 */
 #endif
 #ifndef Blt_Bg_SetClipRegion
 #define Blt_Bg_SetClipRegion \
-	(bltTkIntProcsPtr->blt_Bg_SetClipRegion) /* 118 */
+	(bltTkIntProcsPtr->blt_Bg_SetClipRegion) /* 119 */
 #endif
 #ifndef Blt_Bg_GetColor
 #define Blt_Bg_GetColor \
-	(bltTkIntProcsPtr->blt_Bg_GetColor) /* 119 */
+	(bltTkIntProcsPtr->blt_Bg_GetColor) /* 120 */
 #endif
 #ifndef Blt_3DBorder_SetClipRegion
 #define Blt_3DBorder_SetClipRegion \
-	(bltTkIntProcsPtr->blt_3DBorder_SetClipRegion) /* 120 */
+	(bltTkIntProcsPtr->blt_3DBorder_SetClipRegion) /* 121 */
 #endif
 #ifndef Blt_3DBorder_UnsetClipRegion
 #define Blt_3DBorder_UnsetClipRegion \
-	(bltTkIntProcsPtr->blt_3DBorder_UnsetClipRegion) /* 121 */
+	(bltTkIntProcsPtr->blt_3DBorder_UnsetClipRegion) /* 122 */
 #endif
 #ifndef Blt_DestroyBindingTable
 #define Blt_DestroyBindingTable \
-	(bltTkIntProcsPtr->blt_DestroyBindingTable) /* 122 */
+	(bltTkIntProcsPtr->blt_DestroyBindingTable) /* 123 */
 #endif
 #ifndef Blt_CreateBindingTable
 #define Blt_CreateBindingTable \
-	(bltTkIntProcsPtr->blt_CreateBindingTable) /* 123 */
+	(bltTkIntProcsPtr->blt_CreateBindingTable) /* 124 */
 #endif
 #ifndef Blt_ConfigureBindings
 #define Blt_ConfigureBindings \
-	(bltTkIntProcsPtr->blt_ConfigureBindings) /* 124 */
+	(bltTkIntProcsPtr->blt_ConfigureBindings) /* 125 */
 #endif
 #ifndef Blt_ConfigureBindingsFromObj
 #define Blt_ConfigureBindingsFromObj \
-	(bltTkIntProcsPtr->blt_ConfigureBindingsFromObj) /* 125 */
+	(bltTkIntProcsPtr->blt_ConfigureBindingsFromObj) /* 126 */
 #endif
 #ifndef Blt_PickCurrentItem
 #define Blt_PickCurrentItem \
-	(bltTkIntProcsPtr->blt_PickCurrentItem) /* 126 */
+	(bltTkIntProcsPtr->blt_PickCurrentItem) /* 127 */
 #endif
 #ifndef Blt_DeleteBindings
 #define Blt_DeleteBindings \
-	(bltTkIntProcsPtr->blt_DeleteBindings) /* 127 */
+	(bltTkIntProcsPtr->blt_DeleteBindings) /* 128 */
 #endif
 #ifndef Blt_MoveBindingTable
 #define Blt_MoveBindingTable \
-	(bltTkIntProcsPtr->blt_MoveBindingTable) /* 128 */
+	(bltTkIntProcsPtr->blt_MoveBindingTable) /* 129 */
 #endif
 #ifndef Blt_Afm_SetPrinting
 #define Blt_Afm_SetPrinting \
-	(bltTkIntProcsPtr->blt_Afm_SetPrinting) /* 129 */
+	(bltTkIntProcsPtr->blt_Afm_SetPrinting) /* 130 */
 #endif
 #ifndef Blt_Afm_IsPrinting
 #define Blt_Afm_IsPrinting \
-	(bltTkIntProcsPtr->blt_Afm_IsPrinting) /* 130 */
+	(bltTkIntProcsPtr->blt_Afm_IsPrinting) /* 131 */
 #endif
 #ifndef Blt_Afm_TextWidth
 #define Blt_Afm_TextWidth \
-	(bltTkIntProcsPtr->blt_Afm_TextWidth) /* 131 */
+	(bltTkIntProcsPtr->blt_Afm_TextWidth) /* 132 */
 #endif
 #ifndef Blt_Afm_GetMetrics
 #define Blt_Afm_GetMetrics \
-	(bltTkIntProcsPtr->blt_Afm_GetMetrics) /* 132 */
+	(bltTkIntProcsPtr->blt_Afm_GetMetrics) /* 133 */
 #endif
 #ifndef Blt_Afm_GetPostscriptFamily
 #define Blt_Afm_GetPostscriptFamily \
-	(bltTkIntProcsPtr->blt_Afm_GetPostscriptFamily) /* 133 */
+	(bltTkIntProcsPtr->blt_Afm_GetPostscriptFamily) /* 134 */
 #endif
 #ifndef Blt_Afm_GetPostscriptName
 #define Blt_Afm_GetPostscriptName \
-	(bltTkIntProcsPtr->blt_Afm_GetPostscriptName) /* 134 */
+	(bltTkIntProcsPtr->blt_Afm_GetPostscriptName) /* 135 */
 #endif
 #ifndef Blt_SetDashes
 #define Blt_SetDashes \
-	(bltTkIntProcsPtr->blt_SetDashes) /* 135 */
+	(bltTkIntProcsPtr->blt_SetDashes) /* 136 */
 #endif
 #ifndef Blt_ResetLimits
 #define Blt_ResetLimits \
-	(bltTkIntProcsPtr->blt_ResetLimits) /* 136 */
+	(bltTkIntProcsPtr->blt_ResetLimits) /* 137 */
 #endif
 #ifndef Blt_GetLimitsFromObj
 #define Blt_GetLimitsFromObj \
-	(bltTkIntProcsPtr->blt_GetLimitsFromObj) /* 137 */
+	(bltTkIntProcsPtr->blt_GetLimitsFromObj) /* 138 */
 #endif
 #ifndef Blt_ConfigureInfoFromObj
 #define Blt_ConfigureInfoFromObj \
-	(bltTkIntProcsPtr->blt_ConfigureInfoFromObj) /* 138 */
+	(bltTkIntProcsPtr->blt_ConfigureInfoFromObj) /* 139 */
 #endif
 #ifndef Blt_ConfigureValueFromObj
 #define Blt_ConfigureValueFromObj \
-	(bltTkIntProcsPtr->blt_ConfigureValueFromObj) /* 139 */
+	(bltTkIntProcsPtr->blt_ConfigureValueFromObj) /* 140 */
 #endif
 #ifndef Blt_ConfigureWidgetFromObj
 #define Blt_ConfigureWidgetFromObj \
-	(bltTkIntProcsPtr->blt_ConfigureWidgetFromObj) /* 140 */
+	(bltTkIntProcsPtr->blt_ConfigureWidgetFromObj) /* 141 */
 #endif
 #ifndef Blt_ConfigureComponentFromObj
 #define Blt_ConfigureComponentFromObj \
-	(bltTkIntProcsPtr->blt_ConfigureComponentFromObj) /* 141 */
+	(bltTkIntProcsPtr->blt_ConfigureComponentFromObj) /* 142 */
 #endif
 #ifndef Blt_ConfigModified
 #define Blt_ConfigModified \
-	(bltTkIntProcsPtr->blt_ConfigModified) /* 142 */
+	(bltTkIntProcsPtr->blt_ConfigModified) /* 143 */
 #endif
 #ifndef Blt_NameOfState
 #define Blt_NameOfState \
-	(bltTkIntProcsPtr->blt_NameOfState) /* 143 */
+	(bltTkIntProcsPtr->blt_NameOfState) /* 144 */
 #endif
 #ifndef Blt_FreeOptions
 #define Blt_FreeOptions \
-	(bltTkIntProcsPtr->blt_FreeOptions) /* 144 */
+	(bltTkIntProcsPtr->blt_FreeOptions) /* 145 */
 #endif
 #ifndef Blt_ObjIsOption
 #define Blt_ObjIsOption \
-	(bltTkIntProcsPtr->blt_ObjIsOption) /* 145 */
+	(bltTkIntProcsPtr->blt_ObjIsOption) /* 146 */
 #endif
 #ifndef Blt_GetPixelsFromObj
 #define Blt_GetPixelsFromObj \
-	(bltTkIntProcsPtr->blt_GetPixelsFromObj) /* 146 */
+	(bltTkIntProcsPtr->blt_GetPixelsFromObj) /* 147 */
 #endif
 #ifndef Blt_GetPadFromObj
 #define Blt_GetPadFromObj \
-	(bltTkIntProcsPtr->blt_GetPadFromObj) /* 147 */
+	(bltTkIntProcsPtr->blt_GetPadFromObj) /* 148 */
 #endif
 #ifndef Blt_GetStateFromObj
 #define Blt_GetStateFromObj \
-	(bltTkIntProcsPtr->blt_GetStateFromObj) /* 148 */
+	(bltTkIntProcsPtr->blt_GetStateFromObj) /* 149 */
 #endif
 #ifndef Blt_GetFillFromObj
 #define Blt_GetFillFromObj \
-	(bltTkIntProcsPtr->blt_GetFillFromObj) /* 149 */
+	(bltTkIntProcsPtr->blt_GetFillFromObj) /* 150 */
 #endif
 #ifndef Blt_GetResizeFromObj
 #define Blt_GetResizeFromObj \
-	(bltTkIntProcsPtr->blt_GetResizeFromObj) /* 150 */
+	(bltTkIntProcsPtr->blt_GetResizeFromObj) /* 151 */
 #endif
 #ifndef Blt_GetDashesFromObj
 #define Blt_GetDashesFromObj \
-	(bltTkIntProcsPtr->blt_GetDashesFromObj) /* 151 */
+	(bltTkIntProcsPtr->blt_GetDashesFromObj) /* 152 */
 #endif
 #ifndef Blt_Image_IsDeleted
 #define Blt_Image_IsDeleted \
-	(bltTkIntProcsPtr->blt_Image_IsDeleted) /* 152 */
+	(bltTkIntProcsPtr->blt_Image_IsDeleted) /* 153 */
 #endif
 #ifndef Blt_Image_GetMaster
 #define Blt_Image_GetMaster \
-	(bltTkIntProcsPtr->blt_Image_GetMaster) /* 153 */
+	(bltTkIntProcsPtr->blt_Image_GetMaster) /* 154 */
 #endif
 #ifndef Blt_Image_GetType
 #define Blt_Image_GetType \
-	(bltTkIntProcsPtr->blt_Image_GetType) /* 154 */
+	(bltTkIntProcsPtr->blt_Image_GetType) /* 155 */
 #endif
 #ifndef Blt_Image_GetInstanceData
 #define Blt_Image_GetInstanceData \
-	(bltTkIntProcsPtr->blt_Image_GetInstanceData) /* 155 */
+	(bltTkIntProcsPtr->blt_Image_GetInstanceData) /* 156 */
 #endif
 #ifndef Blt_Image_Name
 #define Blt_Image_Name \
-	(bltTkIntProcsPtr->blt_Image_Name) /* 156 */
+	(bltTkIntProcsPtr->blt_Image_Name) /* 157 */
 #endif
 #ifndef Blt_Image_NameOfType
 #define Blt_Image_NameOfType \
-	(bltTkIntProcsPtr->blt_Image_NameOfType) /* 157 */
+	(bltTkIntProcsPtr->blt_Image_NameOfType) /* 158 */
 #endif
 #ifndef Blt_FreePainter
 #define Blt_FreePainter \
-	(bltTkIntProcsPtr->blt_FreePainter) /* 158 */
+	(bltTkIntProcsPtr->blt_FreePainter) /* 159 */
 #endif
 #ifndef Blt_GetPainter
 #define Blt_GetPainter \
-	(bltTkIntProcsPtr->blt_GetPainter) /* 159 */
+	(bltTkIntProcsPtr->blt_GetPainter) /* 160 */
 #endif
 #ifndef Blt_GetPainterFromDrawable
 #define Blt_GetPainterFromDrawable \
-	(bltTkIntProcsPtr->blt_GetPainterFromDrawable) /* 160 */
+	(bltTkIntProcsPtr->blt_GetPainterFromDrawable) /* 161 */
 #endif
 #ifndef Blt_PainterGC
 #define Blt_PainterGC \
-	(bltTkIntProcsPtr->blt_PainterGC) /* 161 */
+	(bltTkIntProcsPtr->blt_PainterGC) /* 162 */
 #endif
 #ifndef Blt_PainterDepth
 #define Blt_PainterDepth \
-	(bltTkIntProcsPtr->blt_PainterDepth) /* 162 */
+	(bltTkIntProcsPtr->blt_PainterDepth) /* 163 */
 #endif
 #ifndef Blt_SetPainterClipRegion
 #define Blt_SetPainterClipRegion \
-	(bltTkIntProcsPtr->blt_SetPainterClipRegion) /* 163 */
+	(bltTkIntProcsPtr->blt_SetPainterClipRegion) /* 164 */
 #endif
 #ifndef Blt_UnsetPainterClipRegion
 #define Blt_UnsetPainterClipRegion \
-	(bltTkIntProcsPtr->blt_UnsetPainterClipRegion) /* 164 */
+	(bltTkIntProcsPtr->blt_UnsetPainterClipRegion) /* 165 */
 #endif
 #ifndef Blt_PaintPicture
 #define Blt_PaintPicture \
-	(bltTkIntProcsPtr->blt_PaintPicture) /* 165 */
+	(bltTkIntProcsPtr->blt_PaintPicture) /* 166 */
 #endif
 #ifndef Blt_PaintPictureWithBlend
 #define Blt_PaintPictureWithBlend \
-	(bltTkIntProcsPtr->blt_PaintPictureWithBlend) /* 166 */
+	(bltTkIntProcsPtr->blt_PaintPictureWithBlend) /* 167 */
 #endif
 #ifndef Blt_PaintCheckbox
 #define Blt_PaintCheckbox \
-	(bltTkIntProcsPtr->blt_PaintCheckbox) /* 167 */
+	(bltTkIntProcsPtr->blt_PaintCheckbox) /* 168 */
 #endif
 #ifndef Blt_PaintRadioButton
 #define Blt_PaintRadioButton \
-	(bltTkIntProcsPtr->blt_PaintRadioButton) /* 168 */
+	(bltTkIntProcsPtr->blt_PaintRadioButton) /* 169 */
 #endif
 #ifndef Blt_PaintRadioButtonOld
 #define Blt_PaintRadioButtonOld \
-	(bltTkIntProcsPtr->blt_PaintRadioButtonOld) /* 169 */
+	(bltTkIntProcsPtr->blt_PaintRadioButtonOld) /* 170 */
 #endif
 #ifndef Blt_PaintDelete
 #define Blt_PaintDelete \
-	(bltTkIntProcsPtr->blt_PaintDelete) /* 170 */
+	(bltTkIntProcsPtr->blt_PaintDelete) /* 171 */
 #endif
 #ifndef Blt_Ps_Create
 #define Blt_Ps_Create \
-	(bltTkIntProcsPtr->blt_Ps_Create) /* 171 */
+	(bltTkIntProcsPtr->blt_Ps_Create) /* 172 */
 #endif
 #ifndef Blt_Ps_Free
 #define Blt_Ps_Free \
-	(bltTkIntProcsPtr->blt_Ps_Free) /* 172 */
+	(bltTkIntProcsPtr->blt_Ps_Free) /* 173 */
 #endif
 #ifndef Blt_Ps_GetValue
 #define Blt_Ps_GetValue \
-	(bltTkIntProcsPtr->blt_Ps_GetValue) /* 173 */
+	(bltTkIntProcsPtr->blt_Ps_GetValue) /* 174 */
 #endif
 #ifndef Blt_Ps_GetDBuffer
 #define Blt_Ps_GetDBuffer \
-	(bltTkIntProcsPtr->blt_Ps_GetDBuffer) /* 174 */
+	(bltTkIntProcsPtr->blt_Ps_GetDBuffer) /* 175 */
 #endif
 #ifndef Blt_Ps_GetInterp
 #define Blt_Ps_GetInterp \
-	(bltTkIntProcsPtr->blt_Ps_GetInterp) /* 175 */
+	(bltTkIntProcsPtr->blt_Ps_GetInterp) /* 176 */
 #endif
 #ifndef Blt_Ps_GetScratchBuffer
 #define Blt_Ps_GetScratchBuffer \
-	(bltTkIntProcsPtr->blt_Ps_GetScratchBuffer) /* 176 */
+	(bltTkIntProcsPtr->blt_Ps_GetScratchBuffer) /* 177 */
 #endif
 #ifndef Blt_Ps_SetInterp
 #define Blt_Ps_SetInterp \
-	(bltTkIntProcsPtr->blt_Ps_SetInterp) /* 177 */
+	(bltTkIntProcsPtr->blt_Ps_SetInterp) /* 178 */
 #endif
 #ifndef Blt_Ps_Append
 #define Blt_Ps_Append \
-	(bltTkIntProcsPtr->blt_Ps_Append) /* 178 */
+	(bltTkIntProcsPtr->blt_Ps_Append) /* 179 */
 #endif
 #ifndef Blt_Ps_AppendBytes
 #define Blt_Ps_AppendBytes \
-	(bltTkIntProcsPtr->blt_Ps_AppendBytes) /* 179 */
+	(bltTkIntProcsPtr->blt_Ps_AppendBytes) /* 180 */
 #endif
 #ifndef Blt_Ps_VarAppend
 #define Blt_Ps_VarAppend \
-	(bltTkIntProcsPtr->blt_Ps_VarAppend) /* 180 */
+	(bltTkIntProcsPtr->blt_Ps_VarAppend) /* 181 */
 #endif
 #ifndef Blt_Ps_Format
 #define Blt_Ps_Format \
-	(bltTkIntProcsPtr->blt_Ps_Format) /* 181 */
+	(bltTkIntProcsPtr->blt_Ps_Format) /* 182 */
 #endif
 #ifndef Blt_Ps_SetClearBackground
 #define Blt_Ps_SetClearBackground \
-	(bltTkIntProcsPtr->blt_Ps_SetClearBackground) /* 182 */
+	(bltTkIntProcsPtr->blt_Ps_SetClearBackground) /* 183 */
 #endif
 #ifndef Blt_Ps_IncludeFile
 #define Blt_Ps_IncludeFile \
-	(bltTkIntProcsPtr->blt_Ps_IncludeFile) /* 183 */
+	(bltTkIntProcsPtr->blt_Ps_IncludeFile) /* 184 */
 #endif
 #ifndef Blt_Ps_GetPicaFromObj
 #define Blt_Ps_GetPicaFromObj \
-	(bltTkIntProcsPtr->blt_Ps_GetPicaFromObj) /* 184 */
+	(bltTkIntProcsPtr->blt_Ps_GetPicaFromObj) /* 185 */
 #endif
 #ifndef Blt_Ps_GetPadFromObj
 #define Blt_Ps_GetPadFromObj \
-	(bltTkIntProcsPtr->blt_Ps_GetPadFromObj) /* 185 */
+	(bltTkIntProcsPtr->blt_Ps_GetPadFromObj) /* 186 */
 #endif
 #ifndef Blt_Ps_ComputeBoundingBox
 #define Blt_Ps_ComputeBoundingBox \
-	(bltTkIntProcsPtr->blt_Ps_ComputeBoundingBox) /* 186 */
+	(bltTkIntProcsPtr->blt_Ps_ComputeBoundingBox) /* 187 */
 #endif
 #ifndef Blt_Ps_DrawPicture
 #define Blt_Ps_DrawPicture \
-	(bltTkIntProcsPtr->blt_Ps_DrawPicture) /* 187 */
+	(bltTkIntProcsPtr->blt_Ps_DrawPicture) /* 188 */
 #endif
 #ifndef Blt_Ps_Rectangle
 #define Blt_Ps_Rectangle \
-	(bltTkIntProcsPtr->blt_Ps_Rectangle) /* 188 */
+	(bltTkIntProcsPtr->blt_Ps_Rectangle) /* 189 */
 #endif
 #ifndef Blt_Ps_Rectangle2
 #define Blt_Ps_Rectangle2 \
-	(bltTkIntProcsPtr->blt_Ps_Rectangle2) /* 189 */
+	(bltTkIntProcsPtr->blt_Ps_Rectangle2) /* 190 */
 #endif
 #ifndef Blt_Ps_SaveFile
 #define Blt_Ps_SaveFile \
-	(bltTkIntProcsPtr->blt_Ps_SaveFile) /* 190 */
+	(bltTkIntProcsPtr->blt_Ps_SaveFile) /* 191 */
 #endif
 #ifndef Blt_Ps_XSetLineWidth
 #define Blt_Ps_XSetLineWidth \
-	(bltTkIntProcsPtr->blt_Ps_XSetLineWidth) /* 191 */
+	(bltTkIntProcsPtr->blt_Ps_XSetLineWidth) /* 192 */
 #endif
 #ifndef Blt_Ps_XSetBackground
 #define Blt_Ps_XSetBackground \
-	(bltTkIntProcsPtr->blt_Ps_XSetBackground) /* 192 */
+	(bltTkIntProcsPtr->blt_Ps_XSetBackground) /* 193 */
 #endif
 #ifndef Blt_Ps_XSetBitmapData
 #define Blt_Ps_XSetBitmapData \
-	(bltTkIntProcsPtr->blt_Ps_XSetBitmapData) /* 193 */
+	(bltTkIntProcsPtr->blt_Ps_XSetBitmapData) /* 194 */
 #endif
 #ifndef Blt_Ps_XSetForeground
 #define Blt_Ps_XSetForeground \
-	(bltTkIntProcsPtr->blt_Ps_XSetForeground) /* 194 */
+	(bltTkIntProcsPtr->blt_Ps_XSetForeground) /* 195 */
 #endif
 #ifndef Blt_Ps_XSetFont
 #define Blt_Ps_XSetFont \
-	(bltTkIntProcsPtr->blt_Ps_XSetFont) /* 195 */
+	(bltTkIntProcsPtr->blt_Ps_XSetFont) /* 196 */
 #endif
 #ifndef Blt_Ps_XSetDashes
 #define Blt_Ps_XSetDashes \
-	(bltTkIntProcsPtr->blt_Ps_XSetDashes) /* 196 */
+	(bltTkIntProcsPtr->blt_Ps_XSetDashes) /* 197 */
 #endif
 #ifndef Blt_Ps_XSetLineAttributes
 #define Blt_Ps_XSetLineAttributes \
-	(bltTkIntProcsPtr->blt_Ps_XSetLineAttributes) /* 197 */
+	(bltTkIntProcsPtr->blt_Ps_XSetLineAttributes) /* 198 */
 #endif
 #ifndef Blt_Ps_XSetStipple
 #define Blt_Ps_XSetStipple \
-	(bltTkIntProcsPtr->blt_Ps_XSetStipple) /* 198 */
+	(bltTkIntProcsPtr->blt_Ps_XSetStipple) /* 199 */
 #endif
 #ifndef Blt_Ps_Polyline
 #define Blt_Ps_Polyline \
-	(bltTkIntProcsPtr->blt_Ps_Polyline) /* 199 */
+	(bltTkIntProcsPtr->blt_Ps_Polyline) /* 200 */
 #endif
 #ifndef Blt_Ps_XDrawLines
 #define Blt_Ps_XDrawLines \
-	(bltTkIntProcsPtr->blt_Ps_XDrawLines) /* 200 */
+	(bltTkIntProcsPtr->blt_Ps_XDrawLines) /* 201 */
 #endif
 #ifndef Blt_Ps_XDrawSegments
 #define Blt_Ps_XDrawSegments \
-	(bltTkIntProcsPtr->blt_Ps_XDrawSegments) /* 201 */
+	(bltTkIntProcsPtr->blt_Ps_XDrawSegments) /* 202 */
 #endif
 #ifndef Blt_Ps_DrawPolyline
 #define Blt_Ps_DrawPolyline \
-	(bltTkIntProcsPtr->blt_Ps_DrawPolyline) /* 202 */
+	(bltTkIntProcsPtr->blt_Ps_DrawPolyline) /* 203 */
 #endif
 #ifndef Blt_Ps_DrawSegments2d
 #define Blt_Ps_DrawSegments2d \
-	(bltTkIntProcsPtr->blt_Ps_DrawSegments2d) /* 203 */
+	(bltTkIntProcsPtr->blt_Ps_DrawSegments2d) /* 204 */
 #endif
 #ifndef Blt_Ps_Draw3DRectangle
 #define Blt_Ps_Draw3DRectangle \
-	(bltTkIntProcsPtr->blt_Ps_Draw3DRectangle) /* 204 */
+	(bltTkIntProcsPtr->blt_Ps_Draw3DRectangle) /* 205 */
 #endif
 #ifndef Blt_Ps_Fill3DRectangle
 #define Blt_Ps_Fill3DRectangle \
-	(bltTkIntProcsPtr->blt_Ps_Fill3DRectangle) /* 205 */
+	(bltTkIntProcsPtr->blt_Ps_Fill3DRectangle) /* 206 */
 #endif
 #ifndef Blt_Ps_XFillRectangle
 #define Blt_Ps_XFillRectangle \
-	(bltTkIntProcsPtr->blt_Ps_XFillRectangle) /* 206 */
+	(bltTkIntProcsPtr->blt_Ps_XFillRectangle) /* 207 */
 #endif
 #ifndef Blt_Ps_XFillRectangles
 #define Blt_Ps_XFillRectangles \
-	(bltTkIntProcsPtr->blt_Ps_XFillRectangles) /* 207 */
+	(bltTkIntProcsPtr->blt_Ps_XFillRectangles) /* 208 */
 #endif
 #ifndef Blt_Ps_XFillPolygon
 #define Blt_Ps_XFillPolygon \
-	(bltTkIntProcsPtr->blt_Ps_XFillPolygon) /* 208 */
+	(bltTkIntProcsPtr->blt_Ps_XFillPolygon) /* 209 */
 #endif
 #ifndef Blt_Ps_DrawPhoto
 #define Blt_Ps_DrawPhoto \
-	(bltTkIntProcsPtr->blt_Ps_DrawPhoto) /* 209 */
+	(bltTkIntProcsPtr->blt_Ps_DrawPhoto) /* 210 */
 #endif
 #ifndef Blt_Ps_XDrawWindow
 #define Blt_Ps_XDrawWindow \
-	(bltTkIntProcsPtr->blt_Ps_XDrawWindow) /* 210 */
+	(bltTkIntProcsPtr->blt_Ps_XDrawWindow) /* 211 */
 #endif
 #ifndef Blt_Ps_DrawText
 #define Blt_Ps_DrawText \
-	(bltTkIntProcsPtr->blt_Ps_DrawText) /* 211 */
+	(bltTkIntProcsPtr->blt_Ps_DrawText) /* 212 */
 #endif
 #ifndef Blt_Ps_DrawBitmap
 #define Blt_Ps_DrawBitmap \
-	(bltTkIntProcsPtr->blt_Ps_DrawBitmap) /* 212 */
+	(bltTkIntProcsPtr->blt_Ps_DrawBitmap) /* 213 */
 #endif
 #ifndef Blt_Ps_XSetCapStyle
 #define Blt_Ps_XSetCapStyle \
-	(bltTkIntProcsPtr->blt_Ps_XSetCapStyle) /* 213 */
+	(bltTkIntProcsPtr->blt_Ps_XSetCapStyle) /* 214 */
 #endif
 #ifndef Blt_Ps_XSetJoinStyle
 #define Blt_Ps_XSetJoinStyle \
-	(bltTkIntProcsPtr->blt_Ps_XSetJoinStyle) /* 214 */
+	(bltTkIntProcsPtr->blt_Ps_XSetJoinStyle) /* 215 */
 #endif
 #ifndef Blt_Ps_PolylineFromXPoints
 #define Blt_Ps_PolylineFromXPoints \
-	(bltTkIntProcsPtr->blt_Ps_PolylineFromXPoints) /* 215 */
+	(bltTkIntProcsPtr->blt_Ps_PolylineFromXPoints) /* 216 */
 #endif
 #ifndef Blt_Ps_Polygon
 #define Blt_Ps_Polygon \
-	(bltTkIntProcsPtr->blt_Ps_Polygon) /* 216 */
+	(bltTkIntProcsPtr->blt_Ps_Polygon) /* 217 */
 #endif
 #ifndef Blt_Ps_SetPrinting
 #define Blt_Ps_SetPrinting \
-	(bltTkIntProcsPtr->blt_Ps_SetPrinting) /* 217 */
+	(bltTkIntProcsPtr->blt_Ps_SetPrinting) /* 218 */
 #endif
 #ifndef Blt_Ts_CreateLayout
 #define Blt_Ts_CreateLayout \
-	(bltTkIntProcsPtr->blt_Ts_CreateLayout) /* 218 */
+	(bltTkIntProcsPtr->blt_Ts_CreateLayout) /* 219 */
 #endif
 #ifndef Blt_Ts_TitleLayout
 #define Blt_Ts_TitleLayout \
-	(bltTkIntProcsPtr->blt_Ts_TitleLayout) /* 219 */
+	(bltTkIntProcsPtr->blt_Ts_TitleLayout) /* 220 */
 #endif
 #ifndef Blt_Ts_DrawLayout
 #define Blt_Ts_DrawLayout \
-	(bltTkIntProcsPtr->blt_Ts_DrawLayout) /* 220 */
+	(bltTkIntProcsPtr->blt_Ts_DrawLayout) /* 221 */
 #endif
 #ifndef Blt_Ts_GetExtents
 #define Blt_Ts_GetExtents \
-	(bltTkIntProcsPtr->blt_Ts_GetExtents) /* 221 */
+	(bltTkIntProcsPtr->blt_Ts_GetExtents) /* 222 */
 #endif
 #ifndef Blt_Ts_ResetStyle
 #define Blt_Ts_ResetStyle \
-	(bltTkIntProcsPtr->blt_Ts_ResetStyle) /* 222 */
+	(bltTkIntProcsPtr->blt_Ts_ResetStyle) /* 223 */
 #endif
 #ifndef Blt_Ts_FreeStyle
 #define Blt_Ts_FreeStyle \
-	(bltTkIntProcsPtr->blt_Ts_FreeStyle) /* 223 */
+	(bltTkIntProcsPtr->blt_Ts_FreeStyle) /* 224 */
 #endif
 #ifndef Blt_Ts_SetDrawStyle
 #define Blt_Ts_SetDrawStyle \
-	(bltTkIntProcsPtr->blt_Ts_SetDrawStyle) /* 224 */
+	(bltTkIntProcsPtr->blt_Ts_SetDrawStyle) /* 225 */
 #endif
 #ifndef Blt_DrawText
 #define Blt_DrawText \
-	(bltTkIntProcsPtr->blt_DrawText) /* 225 */
+	(bltTkIntProcsPtr->blt_DrawText) /* 226 */
 #endif
 #ifndef Blt_DrawText2
 #define Blt_DrawText2 \
-	(bltTkIntProcsPtr->blt_DrawText2) /* 226 */
+	(bltTkIntProcsPtr->blt_DrawText2) /* 227 */
 #endif
 #ifndef Blt_Ts_Bitmap
 #define Blt_Ts_Bitmap \
-	(bltTkIntProcsPtr->blt_Ts_Bitmap) /* 227 */
+	(bltTkIntProcsPtr->blt_Ts_Bitmap) /* 228 */
 #endif
 #ifndef Blt_DrawTextWithRotatedFont
 #define Blt_DrawTextWithRotatedFont \
-	(bltTkIntProcsPtr->blt_DrawTextWithRotatedFont) /* 228 */
+	(bltTkIntProcsPtr->blt_DrawTextWithRotatedFont) /* 229 */
 #endif
 #ifndef Blt_DrawLayout
 #define Blt_DrawLayout \
-	(bltTkIntProcsPtr->blt_DrawLayout) /* 229 */
+	(bltTkIntProcsPtr->blt_DrawLayout) /* 230 */
 #endif
 #ifndef Blt_GetTextExtents
 #define Blt_GetTextExtents \
-	(bltTkIntProcsPtr->blt_GetTextExtents) /* 230 */
+	(bltTkIntProcsPtr->blt_GetTextExtents) /* 231 */
 #endif
 #ifndef Blt_RotateStartingTextPositions
 #define Blt_RotateStartingTextPositions \
-	(bltTkIntProcsPtr->blt_RotateStartingTextPositions) /* 231 */
+	(bltTkIntProcsPtr->blt_RotateStartingTextPositions) /* 232 */
 #endif
 #ifndef Blt_ComputeTextLayout
 #define Blt_ComputeTextLayout \
-	(bltTkIntProcsPtr->blt_ComputeTextLayout) /* 232 */
+	(bltTkIntProcsPtr->blt_ComputeTextLayout) /* 233 */
 #endif
 #ifndef Blt_DrawTextLayout
 #define Blt_DrawTextLayout \
-	(bltTkIntProcsPtr->blt_DrawTextLayout) /* 233 */
+	(bltTkIntProcsPtr->blt_DrawTextLayout) /* 234 */
 #endif
 #ifndef Blt_CharBbox
 #define Blt_CharBbox \
-	(bltTkIntProcsPtr->blt_CharBbox) /* 234 */
+	(bltTkIntProcsPtr->blt_CharBbox) /* 235 */
 #endif
 #ifndef Blt_UnderlineTextLayout
 #define Blt_UnderlineTextLayout \
-	(bltTkIntProcsPtr->blt_UnderlineTextLayout) /* 235 */
+	(bltTkIntProcsPtr->blt_UnderlineTextLayout) /* 236 */
 #endif
 #ifndef Blt_Ts_UnderlineLayout
 #define Blt_Ts_UnderlineLayout \
-	(bltTkIntProcsPtr->blt_Ts_UnderlineLayout) /* 236 */
+	(bltTkIntProcsPtr->blt_Ts_UnderlineLayout) /* 237 */
 #endif
 #ifndef Blt_Ts_DrawText
 #define Blt_Ts_DrawText \
-	(bltTkIntProcsPtr->blt_Ts_DrawText) /* 237 */
+	(bltTkIntProcsPtr->blt_Ts_DrawText) /* 238 */
 #endif
 #ifndef Blt_MeasureText
 #define Blt_MeasureText \
-	(bltTkIntProcsPtr->blt_MeasureText) /* 238 */
+	(bltTkIntProcsPtr->blt_MeasureText) /* 239 */
 #endif
 #ifndef Blt_FreeTextLayout
 #define Blt_FreeTextLayout \
-	(bltTkIntProcsPtr->blt_FreeTextLayout) /* 239 */
+	(bltTkIntProcsPtr->blt_FreeTextLayout) /* 240 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TK_PROCS) */
