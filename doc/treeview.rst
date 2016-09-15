@@ -694,7 +694,9 @@ command.  The following operation are available for *treeview* widgets:
 *pathName* **column names** ? *pattern* ... ?
   Returns the names of all the columns in the widget. If one or more
   *pattern* arguments are provided, then the name of any column matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 *pathName* **column nearest**  *x* *y* ?\ *switches* ... ?
   Returns the name of the column closest to the given screen

@@ -626,7 +626,9 @@ The following operations are available for the **blt::background** command:
 **blt::background names** ?\ *pattern* ... ?
   Returns the names of all the backgrounds.  If one or more *pattern*
   arguments are provided, then the name of any background matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 **blt::background type** *bgName*
   Returns the type of the background for *bgName*.  *BgName* is the name of

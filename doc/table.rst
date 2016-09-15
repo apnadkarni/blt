@@ -491,8 +491,8 @@ The following operations are available for the *table* geometry manager.
 
   **-pattern** *pattern*
     Returns a list of path names for all container windows matching
-    *pattern*.  *Pattern* is glob-style pattern.  Matching is done in a
-    fashion similar to that used by the TCL **glob** command.
+    *pattern*.  *Pattern* is **glob**\-style pattern.  Matching is done in
+    a fashion similar to that used by the TCL **glob** command.
 
   **-slave** *pathName*
     Returns the name of the container window of table managing *pathName*.
@@ -526,8 +526,8 @@ The following operations are available for the *table* geometry manager.
 
   **-pattern** *pattern*
     Returns a list of path names for all container windows matching
-    *pattern*.  *Pattern* is glob-style pattern.  Matching is done in a
-    fashion similar to that used by the TCL **glob** command.
+    *pattern*.  *Pattern* is **glob**\-style pattern.  Matching is done in
+    a fashion similar to that used by the TCL **glob** command.
 
   **-slave** *pathName*
     Returns the name of the container window of table managing *pathName*.

@@ -86,7 +86,7 @@ SYNTAX
 **blt::sftp names** ?\ *pattern* ... ?
   Returns the names of all sftp objects.  If a *pattern* argument is given,
   then the any sftp objects whose name matches *pattern* will be listed.
-  *Pattern* is a glob-style pattern to match.  Matching is done in a
+  *Pattern* is a **glob**\-style pattern to match.  Matching is done in a
   fashion similar to that TCL **glob** command.
 
 REMOTE PATHS

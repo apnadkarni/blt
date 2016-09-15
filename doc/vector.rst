@@ -342,7 +342,9 @@ VECTOR COMMAND OPERATIONS
 **blt::vector names** ?\ *pattern* ... ?
   Returns the names of all the BLT vectors.  If one or more *pattern*
   arguments are provided, then the name of any vector matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 VECTOR INSTANCE OPERATIONS
 ==========================

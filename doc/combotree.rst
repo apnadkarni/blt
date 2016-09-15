@@ -1154,7 +1154,9 @@ command.  The following operations are available for *combotree* widgets:
 *pathName* **style names** ?\ *pattern* ... ?
   Returns the names of all the styles in the widget.  If one or more
   *pattern* arguments are provided, then the names of any style matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 *pathName* **toggle** *entryName*
   Returns the type of *entryName*.  The returned type is either "button",

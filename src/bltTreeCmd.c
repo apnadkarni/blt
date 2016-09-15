@@ -285,10 +285,12 @@ typedef struct {
     unsigned int flags;
 } ReadDirectory;
 
+/* Status flags for read dir operations. */
 #define READ_DIR_MATCH       (1)
 #define READ_DIR_NOMATCH     (0)
 #define READ_DIR_ERROR       (-1)
 
+/* Flags to indicate what output fields to create. */
 #define READ_DIR_TYPE        (1<<0)
 #define READ_DIR_MODE        (1<<1)
 #define READ_DIR_SIZE        (1<<2)
@@ -310,15 +312,10 @@ typedef struct {
 #define READ_DIR_DEFAULT     \
     (READ_DIR_MTIME|READ_DIR_TYPE|READ_DIR_PERMS|READ_DIR_SIZE)
 
-#define READ_DIR_RECURSE     (1<<11)
-#define READ_DIR_NOCASE      (1<<12)
-
-#define READ_DIR_TYPE_FILE   (1<<0)
-#define READ_DIR_TYPE_DIR    (1<<1)
-#define READ_DIR_TYPE_LINK   (1<<2)
-#define READ_DIR_TYPE_SOCK   (1<<3)
-#define READ_DIR_TYPE_BLOCK  (1<<4)
-#define READ_DIR_TYPE_CHAR   (1<<5)
+/* Various flags for read dir operation */
+#define READ_DIR_RECURSE             (1<<11)
+#define READ_DIR_NOCASE              (1<<12)
+#define READ_DIR_IGNORE_HIDDEN_DIRS  (1<<13)
 
 static Blt_SwitchParseProc FieldsSwitchProc;
 static Blt_SwitchCustom fieldsSwitch = {
@@ -340,6 +337,8 @@ static Blt_SwitchSpec dirSwitches[] =
         Blt_Offset(ReadDirectory, mask),    0, 0, &fieldsSwitch},
     {BLT_SWITCH_BITMASK, "-hidden", "", (char *)NULL,
         Blt_Offset(ReadDirectory, perm), 0, TCL_GLOB_PERM_HIDDEN},
+    {BLT_SWITCH_BITMASK, "-ignorehiddendirs", "", (char *)NULL,
+        Blt_Offset(ReadDirectory, flags), 0, READ_DIR_IGNORE_HIDDEN_DIRS},
     {BLT_SWITCH_BITMASK, "-nocase",       "", (char *)NULL,
         Blt_Offset(ReadDirectory, flags), 0, READ_DIR_NOCASE},
     {BLT_SWITCH_OBJ,     "-patterns",     "list", (char *)NULL,
@@ -3503,11 +3502,11 @@ FillEntryData(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
     }
 }
 
-static int TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr,
+static int ReadDirectoryIntoTree(Tcl_Interp *interp, TreeCmd *cmdPtr,
         Tcl_Obj *dirObjPtr, Blt_TreeNode parent, ReadDirectory *readPtr);
 
 static int
-TreeMakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
+MakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
                 Blt_TreeNode parent, ReadDirectory *readPtr, int hidden)
 {
     Tcl_GlobTypeData data = {
@@ -3524,10 +3523,10 @@ TreeMakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
     result = READ_DIR_ERROR;
     if (Tcl_FSMatchInDirectory(interp, listObjPtr, objPtr, "*", &data)
         != TCL_OK) {
-        goto error;
+        goto error;                     /* Can't match directory. */
     }
     if (Tcl_ListObjGetElements(interp, listObjPtr, &objc, &objv)!= TCL_OK) {
-        goto error;
+        goto error;                     /* Can't split entry list. */
     }
     Tcl_GetStringFromObj(objPtr, &length);
     count = 0;
@@ -3539,16 +3538,16 @@ TreeMakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
         const char *label;
         
         if (Tcl_FSConvertToPathType(interp, objv[i]) != TCL_OK) {
-            goto error;
+            goto error;                 /* Can't convert path. */
         }
         memset(&stat, 0, sizeof(Tcl_StatBuf));
         if (Tcl_FSStat(objv[i], &stat) < 0) {
-            continue;               /* Can't stat entry. */
+            continue;                   /* Can't stat entry. */
         }
         /* Get the tail of the path. */
         partsObjPtr = Tcl_FSSplitPath(objv[i], &numParts);
         if ((partsObjPtr == NULL) || (numParts == 0)) {
-            goto error;
+            goto error;                 /* Can't split path. */
         }
         Tcl_IncrRefCount(partsObjPtr);
         Tcl_ListObjIndex(NULL, partsObjPtr, numParts - 1, &tailObjPtr);
@@ -3556,11 +3555,11 @@ TreeMakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
         if (label[0] == '.') {
             if (label[1] == '\0') {
                 Tcl_DecrRefCount(partsObjPtr);
-                continue;           /* Ignore . */
+                continue;               /* Ignore . */
             }
             if ((label[1] == '.') && (label[2] == '\0')) {
                 Tcl_DecrRefCount(partsObjPtr);
-                continue;           /* Ignore .. */
+                continue;               /* Ignore .. */
             }
             /* Workaround bug in Tcl_FSSplitPath. Files that start with "~"
              * are prepended with "./" */
@@ -3572,10 +3571,10 @@ TreeMakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
         Tcl_DecrRefCount(partsObjPtr);
         FillEntryData(interp, cmdPtr->tree, child, &stat, readPtr);
 
-        /* Did we get any entries? Tell the caller yes. */
-        result = TreeReadDirectory(interp, cmdPtr, objv[i], child, readPtr);
+        /* Recursively read the subdirectory into the tree. */
+        result = ReadDirectoryIntoTree(interp, cmdPtr, objv[i], child, readPtr);
         if (result == READ_DIR_ERROR) {
-            goto error;
+            goto error;                 /* Error while reading subdir. */
         }
         if ((result == READ_DIR_NOMATCH) &&
             ((readPtr->patternsObjPtr != NULL) || (readPtr->perm != 0) ||
@@ -3593,8 +3592,8 @@ TreeMakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
 }
 
 static int
-TreeMatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
-                 Blt_TreeNode parent, ReadDirectory *readPtr)
+MatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
+             Blt_TreeNode parent, ReadDirectory *readPtr)
 {
     Tcl_Obj **objv, *listObjPtr, **patterns;
     int objc, i, numMatches, numPatterns;
@@ -3619,10 +3618,10 @@ TreeMatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (Tcl_FSMatchInDirectory(interp, listObjPtr, objPtr, "*", &data)
         != TCL_OK) {
-        goto error;
+        goto error;                     /* Can't find match in directory. */
     }
      if (Tcl_ListObjGetElements(interp, listObjPtr, &objc, &objv) != TCL_OK) {
-        goto error;
+        goto error;                     /* Can't split entry list. */
     }
     numMatches = 0;                     /* Count # of matches. */
     for (i = 0; i < objc; i++) {
@@ -3632,7 +3631,7 @@ TreeMatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
         int isMatch, numParts;
         
         if (Tcl_FSConvertToPathType(interp, objv[i]) != TCL_OK) {
-            goto error;
+           goto error;                 /* Can't convert path. */
         }
         memset(&stat, 0, sizeof(Tcl_StatBuf));
         if (Tcl_FSStat(objv[i], &stat) < 0) {
@@ -3641,7 +3640,7 @@ TreeMatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
         /* Get the tail of the path. */
         partsObjPtr = Tcl_FSSplitPath(objv[i], &numParts);
         if ((partsObjPtr == NULL) || (numParts == 0)) {
-            goto error;
+            goto error;                 /* Can't split path. */
         }
         Tcl_IncrRefCount(partsObjPtr);
         Tcl_ListObjIndex(NULL, partsObjPtr, numParts - 1, &tailObjPtr);
@@ -3665,7 +3664,7 @@ TreeMatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
                 pattern = Tcl_GetString(patterns[j]);
                 if (Tcl_StringCaseMatch(label, pattern, patternFlags)) {
                     isMatch = TRUE;
-                    break;
+                    break;              /* Found a match. */
                 }
             }
         }
@@ -3693,7 +3692,7 @@ TreeMatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * TreeReadDirectory --
+ * ReadDirectoryIntoTree --
  *
  *      Loads contents of directory into the specified node, creating a new
  *      node for each entry.
@@ -3701,8 +3700,8 @@ TreeMatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 static int
-TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
-                  Blt_TreeNode node, ReadDirectory *readPtr)
+ReadDirectoryIntoTree(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
+                      Blt_TreeNode node, ReadDirectory *readPtr)
 {
     int numMatches;
     int result;
@@ -3712,26 +3711,28 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
     if (readPtr->flags & READ_DIR_RECURSE) {
         /* Tcl_FSMatchInDirectory can only match hidden or non-hidden
          * subdirectories, but not both at the same time.  This means we
-         * have to make separate calls to TreeMakeSubdirs, once for
+         * have to make separate calls to MakeSubdirs, once for
          * non-hidden and again for hidden (that start with a ".")
          * subdirectories.  */
-        result = TreeMakeSubdirs(interp, cmdPtr, objPtr, node, readPtr, FALSE);
+        result = MakeSubdirs(interp, cmdPtr, objPtr, node, readPtr, FALSE);
         if (result == READ_DIR_ERROR) {
             return READ_DIR_ERROR;
         }
         if (result == READ_DIR_MATCH) {
             numMatches++;
         }
-        result = TreeMakeSubdirs(interp, cmdPtr, objPtr, node, readPtr, TRUE);
-        if (result == READ_DIR_ERROR) {
-            return READ_DIR_ERROR;
-        }
-        if (result == READ_DIR_MATCH) {
-            numMatches++;
+        if ((readPtr->flags & READ_DIR_IGNORE_HIDDEN_DIRS) == 0) {
+            result = MakeSubdirs(interp, cmdPtr, objPtr, node, readPtr, TRUE);
+            if (result == READ_DIR_ERROR) {
+                return READ_DIR_ERROR;
+            }
+            if (result == READ_DIR_MATCH) {
+                numMatches++;
+            }
         }
     }
     /* Pass 2:  Search directory for matching entries. */
-    result = TreeMatchEntries(interp, cmdPtr, objPtr, node, readPtr);
+    result = MatchEntries(interp, cmdPtr, objPtr, node, readPtr);
     if (result == READ_DIR_ERROR) {
         return READ_DIR_ERROR;
     }
@@ -3746,7 +3747,7 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
  *
  * DirOp --
  *
- *      tree dir $path $node ?switches ...? -recurse -types { read 
+ *      treeName dir pathName nodeName ?switches ...? 
  *
  *---------------------------------------------------------------------------
  */
@@ -3771,8 +3772,8 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (reader.mask == 0) {
         reader.mask = READ_DIR_DEFAULT;
     }
-    result = TreeReadDirectory(interp, cmdPtr, objv[3], parent, &reader);
-    Blt_FreeSwitches(dirSwitches, (char *)&reader, 0);
+    result = ReadDirectoryIntoTree(interp, cmdPtr, objv[3], parent, &reader);
+    Blt_FreeSwitches(dirSwitches, &reader, 0);
     return (result == READ_DIR_ERROR) ? TCL_ERROR: TCL_OK;
 }
 

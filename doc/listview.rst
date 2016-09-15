@@ -495,8 +495,8 @@ command.  The following operations are available for *listview* widgets:
       Indicates that *pattern* should be matched exactly. 
 
     **glob**
-      Indicates that *pattern* is glob-style pattern.  Matching is done in a
-      fashion similar to that used by the TCL **glob** command.
+      Indicates that *pattern* is **glob**\-style pattern.  Matching is
+      done in a fashion similar to that used by the TCL **glob** command.
 
     **regexp** 
       Indicates that *pattern* is a regular expression.  Matching is done
@@ -639,7 +639,9 @@ command.  The following operations are available for *listview* widgets:
 *pathName* **names** ?\ *pattern* ... ?
   Returns the labels of all the items in the list.  If one or more
   *pattern* arguments are provided, then the label of any item matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 *pathName* **nearest** *x* *y*
   Returns the index of the item closest to the coordinates specified.  *X*

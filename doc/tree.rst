@@ -322,7 +322,11 @@ command.  The operations available for trees are listed below.
       Collect the all the above fields.
 
   **-hidden**   
-    Include case when matching patterns using the **-patterns** switch.
+    Include hidden files (files that start with a ".")
+
+  **-ignorehiddendirs**   
+    Don't include directories that start with a "." when recursively
+    tranversing directories (see the **-recurse** switch).
 
   **-nocase**   
     Ignore case when matching patterns using the **-patterns** switch.

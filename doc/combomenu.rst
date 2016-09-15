@@ -527,7 +527,7 @@ command.  The following operations are available for *combomenu* widgets:
     item.
 
   **-glob** 
-    Indicates that *string* is glob-style pattern.  Matching is done in a
+    Indicates that *string* is **glob**\-style pattern.  Matching is done in a
     fashion similar to that used by the TCL **glob** command.
 
   **-regexp** 
@@ -728,7 +728,9 @@ command.  The following operations are available for *combomenu* widgets:
 *pathName* **names** ?\ *pattern* ... ?
   Returns the labels of all the items in the menu.  If one or more
   *pattern* arguments are provided, then the label of any item matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 *pathName* **nearest** *x* *y*
   Returns the index of the menu item closest to the coordinates specified.
@@ -1026,7 +1028,9 @@ command.  The following operations are available for *combomenu* widgets:
 *pathName* **style names** ?\ *pattern* ... ?
   Returns the names of all the styles in the widget.  If one or more
   *pattern* arguments are provided, then the names of any style matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 *pathName* **type** *itemName*
   Returns the type of *itemName*.  The returned type is either "button",

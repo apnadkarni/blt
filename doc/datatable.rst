@@ -66,7 +66,9 @@ SYNTAX
 **blt::datatable names** ?\ *pattern* ... ?
   Returns the names of all datatable objects.  If one or more *pattern*
   arguments are provided, then the names of any datatable matching 
-  *pattern* will be returned. *Pattern* is a glob-style pattern. 
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern. 
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 REFERENCING ROWS AND COLUMNS
 ----------------------------
@@ -245,7 +247,7 @@ the command.  The operations available for *datatables* are listed below.
   
 *tableName* **column indices** ?\ *switches* ... ? ?\ *pattern* ... ?
   Returns the indices of the column whose labels match any *pattern*.
-  *Pattern* is a glob-style pattern to match.  Matching is done in a
+  *Pattern* is a **glob**\-style pattern to match.  Matching is done in a
   fashion similar to that TCL **glob** command.  *Switches* can be any of
   the following:
 
@@ -295,7 +297,9 @@ the command.  The operations available for *datatables* are listed below.
 *tableName* **column names**  ?\ *pattern* ... ?
   Returns the labels of the columns in *tableName*.  If one of *pattern*
   arguments are present, then the label of any column matching one
-  of the patterns is returned. *Pattern* is a glob-style pattern. 
+  of the patterns is returned. *Pattern* is a **glob**\-style pattern. 
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 *tableName* **column nonempty**  *column*
   Returns the row indices of the non-empty cells in the column.  *Column*
@@ -342,7 +346,8 @@ the command.  The operations available for *datatables* are listed below.
   but may not represent more than one column. By default all tags for
   *column* are returned.  But if one or more *pattern* arguments are
   present, then any tag that matching one of the patterns will be returned.
-  *Pattern* is a glob-style pattern.
+  *Pattern* is a **glob**\-style pattern.  Matching is done in a fashion
+  similar to that used by the TCL **glob** command.
 
 *tableName* **column tag indices** ?\ *tag* ... ? 
   Returns the indices of columns that have one or more *tag*. *Tag* is an
@@ -356,7 +361,8 @@ the command.  The operations available for *datatables* are listed below.
   Returns the column tags of the table. By default all column tags are
   returned. But if one or more *pattern* arguments are present, then any
   tag matching one of the patterns will be returned. *Pattern* is a
-  glob-style pattern.
+  **glob**\-style pattern.  Matching is done in a fashion similar to that
+  used by the TCL **glob** command.
 
 *tableName* **column tag range** *first* *last* ?\ *tag* ... ? 
   Adds one or more tags the columns in the range given.  *First* and *last*
@@ -484,7 +490,9 @@ the command.  The operations available for *datatables* are listed below.
 
   **-pattern** *pattern*
     Only add entries matching *pattern* to the table. *Pattern* is a
-    glob-style pattern. 
+    **glob**\-style pattern.  Matching is done in a fashion similar to that
+    used by the TCL **glob** command.
+
 
   **-readable** 
     Add readable file and directory entries to the table.
@@ -732,7 +740,7 @@ the command.  The operations available for *datatables* are listed below.
   
 *tableName* **row indices** ?\ *switches* ... ? ?\ *pattern* ... ?
   Returns the indices of the row whose labels match any *pattern*.
-  *Pattern* is a glob-style pattern to match.  Matching is done in a
+  *Pattern* is a **glob**\-style pattern to match.  Matching is done in a
   fashion similar to that TCL **glob** command.  *Switches* can be any of
   the following:
 
@@ -781,7 +789,9 @@ the command.  The operations available for *datatables* are listed below.
 *tableName* **row names**  ?\ *pattern* ... ?
   Returns the labels of the rows in *tableName*.  If one of *pattern*
   arguments are present, then the label of any row matching one of the
-  patterns is returned. *Pattern* is a glob-style pattern.
+  patterns is returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 *tableName* **row nonempty**  *row*
   Returns the column indices of the non-empty cells in the row.  *Row* may
@@ -826,7 +836,8 @@ the command.  The operations available for *datatables* are listed below.
   not represent more than one row. By default all tags for *row* are
   returned.  But if one or more *pattern* arguments are present, then any
   tag that matching one of the patterns will be returned.  *Pattern* is a
-  glob-style pattern.
+  **glob**\-style pattern.  Matching is done in a fashion similar to that
+  used by the TCL **glob** command.
 
 *tableName* **row tag indices** ?\ *tag* ... ? 
   Returns the indices of rows that have one or more *tag*. *Tag* is an
@@ -840,7 +851,8 @@ the command.  The operations available for *datatables* are listed below.
   Returns the row tags of the table. By default all row tags are
   returned. But if one or more *pattern* arguments are present, then any
   tag matching one of the patterns will be returned. *Pattern* is a
-  glob-style pattern.
+  **glob**\-style pattern.  Matching is done in a fashion similar to that
+  used by the TCL **glob** command.
 
 *tableName* **row tag range** *first* *last* ?\ *tag* ... ? 
   Adds one or more tags the rows in the range given.  *First* and *last*
@@ -1001,9 +1013,10 @@ the command.  The operations available for *datatables* are listed below.
   
 *tableName* **trace names** ?\ *pattern* ... ?
   Returns the names of the traces currently registered. This includes cell,
-  row, and column traces.  If one or more of *pattern* arguments are present
-  then any trace name matching one of the patterns is returned. *Pattern*
-  is a glob-style pattern.
+  row, and column traces.  If one or more of *pattern* arguments are
+  present then any trace name matching one of the patterns is
+  returned. *Pattern* is a **glob**\-style pattern.  Matching is done in a
+  fashion similar to that used by the TCL **glob** command.
    
 *tableName* **trace row** *row* *how* *cmdPrefix*
   Registers a command when any cell in *row* is read, written, or
@@ -1070,9 +1083,10 @@ the command.  The operations available for *datatables* are listed below.
 
 *tableName* **watch names** ?\ *pattern* ... ?
   Returns the names of the watches currently registered. This includes both
-  row and column watches.  If one or more of *pattern* arguments are present
-  then any watch name matching one of the patterns is returned. *Pattern*
-  is a glob-style pattern.
+  row and column watches.  If one or more of *pattern* arguments are
+  present then any watch name matching one of the patterns is
+  returned. *Pattern* is a **glob**\-style pattern.  Matching is done in a
+  fashion similar to that used by the TCL **glob** command.
    
 *tableName* **watch row**  *row* ?\ *flags*\ ? *cmdPrefix*
   Registers a command to be invoked when an event occurs on a row of
