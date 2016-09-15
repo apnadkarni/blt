@@ -469,7 +469,7 @@ static Tcl_ExitProc BgexecExitProc;
  * CreateEnviron --
  *
  *      Creates an environ array from the current enviroment variable and
- *      the override variables stored in the given Tcl list.
+ *      the override variables stored in the given TCL list.
  *
  * Results:
  *      Returns an new environ array.  

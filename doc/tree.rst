@@ -320,32 +320,53 @@ command.  The operations available for trees are listed below.
       last modified.   
     **all**
       Collect the all the above fields.
-   
-  **-readable**
-    Only load files and directories that are readable by the user.
+
+  **-hidden**   
+    Include case when matching patterns using the **-patterns** switch.
+
+  **-nocase**   
+    Ignore case when matching patterns using the **-patterns** switch.
+    
+  **-patterns** *patternList*
+    Only include files and directories that match one or more patterns
+    in *patternList*.  *PatternList* is a TCL list of glob-like patterns.
+    (such as "*.jpg").
+
+  **-permissions** *permString*
+    Only include files or directories that have the one or more of the
+    permssions in *permString*.  *PermString* is a string that may contain
+    any of the following letters.
+
+    **r**
+      Type of entry is readable by the user.
+    **w**
+      Type of entry is writable by the user.
+    **x**
+      Type of entry is executable by the user.
 
   **-readonly**
-    Only load files and directories that are readable by the user.
-
-  **-writable**
-    Only load files and directories that are writable by the user.
-
-  **-executable**
-    Only load files and directories that are executable by the user.
-
-  **-directory**
-    Only load directories.
-
-  **-link**
-    Only load links.
-
-  **-pattern** *pattern*
-    Only load files and directories that match *pattern*.  The default
-    pattern is "*".
+    Only include files and directories that are readable by the user.
 
   **-recurse** 
     If *path* is a directory, recusively load files and subdirectories
     into the tree.  New nodes are created for each file and subdirectory.
+
+  **-type** *typeName*
+    Only include files or directories that have the type *typeName*.
+    *TypeName* may be one of the following.
+
+    **block**
+      Type of entry is block (buffered) special.
+    **character**
+      Type of entry is character (unbuffered) special.
+    **directory**
+      Type of entry is a directory.
+    **file**
+      Type of entry is a regular file.
+    **link**
+      Type of entry is a link.  
+    **socket**
+      Type of entry is a socket.
 
 *treeName* **dump** *node* ?\ *switches* ... ?
   Returns a list of the paths and respective data for *node* and its

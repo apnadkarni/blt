@@ -7,6 +7,7 @@
 # 	C Compiler options 
 # ------------------------------------------------------------------------
 
+BLT_TARGET =		@BLT_TARGET@
 BLT_LIBRARY =		@BLT_LIBRARY@
 BLT_STUBS_ENABLED =	@BLT_STUBS_ENABLED@
 CC =			@CC@
@@ -477,12 +478,12 @@ XREFFLAGS =		-dltR
 LN_S =			@LN_S@
 VPATH =			$(srcdir)
 
-all: build-libs build-demos build-packages
+all: build-libs build-demos 
 
 build-demos: $(bltsh) $(bltwish) 
 
-build-libs: build-static build-shared build-stubs 
-build-shared: $(blt_tcl_so) $(blt_tk_so) $(blt_so) 
+build-libs: build-$(BLT_TARGET) build-stubs 
+build-shared: $(blt_tcl_so) $(blt_tk_so) $(blt_so) build-packages
 build-static: $(blt_a)	
 build-stubs: $(blt_stub_a)
 
@@ -733,9 +734,9 @@ build-tk-stubs:
 	tclsh $(srcdir)/bltprocs.tcl -module Tk -hook bltTkIntProcs -- \
 		bltTk.decls
 
-install: install-demos install-libs install-headers install-packages
+install: install-demos install-libs install-headers 
 
-install-libs: install-static install-shared
+install-libs: install-$(BLT_TARGET)
 
 install-demos: $(bltwish) $(bltsh)
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(bindir)
@@ -744,7 +745,7 @@ install-demos: $(bltwish) $(bltsh)
 	$(RM) $(DESTDIR)$(bindir)/$(bltsh)
 	$(INSTALL) -m 0555 $(bltsh) $(DESTDIR)$(bindir)
 
-install-shared: $(blt_so) $(blt_tcl_so) $(blt_tk_so)
+install-shared: $(blt_so) $(blt_tcl_so) $(blt_tk_so) install-packages
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(libdir)
 	$(RM) $(DESTDIR)$(libdir)/$(blt_so)
 	$(INSTALL) -m 0555 $(blt_so) $(DESTDIR)$(libdir)

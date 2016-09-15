@@ -283,35 +283,42 @@ typedef struct {
                                          * patterns to match contents of
                                          * each directory.  */
     unsigned int flags;
-} DirSwitches;
+} ReadDirectory;
 
-#define DIR_TYPE        (1<<0)
-#define DIR_MODE        (1<<1)
-#define DIR_SIZE        (1<<2)
-#define DIR_UID         (1<<3)
-#define DIR_GID         (1<<4)
-#define DIR_ATIME       (1<<5)
-#define DIR_CTIME       (1<<6)
-#define DIR_MTIME       (1<<7)
-#define DIR_INO         (1<<8)
-#define DIR_NLINK       (1<<9)
-#define DIR_DEV         (1<<10)
-#define DIR_PERMS       (1<<11)
+#define READ_DIR_MATCH       (1)
+#define READ_DIR_NOMATCH     (0)
+#define READ_DIR_ERROR       (-1)
 
-#define DIR_ALL         (DIR_ATIME|DIR_CTIME|DIR_MTIME|DIR_UID|DIR_GID|\
-                         DIR_TYPE|DIR_MODE|DIR_SIZE|DIR_INO|DIR_NLINK|\
-                         DIR_DEV|DIR_PERMS)
+#define READ_DIR_TYPE        (1<<0)
+#define READ_DIR_MODE        (1<<1)
+#define READ_DIR_SIZE        (1<<2)
+#define READ_DIR_UID         (1<<3)
+#define READ_DIR_GID         (1<<4)
+#define READ_DIR_ATIME       (1<<5)
+#define READ_DIR_CTIME       (1<<6)
+#define READ_DIR_MTIME       (1<<7)
+#define READ_DIR_INO         (1<<8)
+#define READ_DIR_NLINK       (1<<9)
+#define READ_DIR_DEV         (1<<10)
+#define READ_DIR_PERMS       (1<<11)
 
-#define DIR_DEFAULT     (DIR_MTIME|DIR_TYPE|DIR_PERMS|DIR_SIZE)
-#define DIR_RECURSE     (1<<11)
-#define DIR_NOCASE      (1<<12)
+#define READ_DIR_ALL         \
+    (READ_DIR_ATIME|READ_DIR_CTIME|READ_DIR_MTIME|READ_DIR_UID|READ_DIR_GID|\
+     READ_DIR_TYPE|READ_DIR_MODE|READ_DIR_SIZE|READ_DIR_INO|READ_DIR_NLINK|\
+     READ_DIR_DEV|READ_DIR_PERMS)
 
-#define DIR_TYPE_FILE   (1<<0)
-#define DIR_TYPE_DIR    (1<<1)
-#define DIR_TYPE_LINK   (1<<2)
-#define DIR_TYPE_SOCK   (1<<3)
-#define DIR_TYPE_BLOCK  (1<<4)
-#define DIR_TYPE_CHAR   (1<<5)
+#define READ_DIR_DEFAULT     \
+    (READ_DIR_MTIME|READ_DIR_TYPE|READ_DIR_PERMS|READ_DIR_SIZE)
+
+#define READ_DIR_RECURSE     (1<<11)
+#define READ_DIR_NOCASE      (1<<12)
+
+#define READ_DIR_TYPE_FILE   (1<<0)
+#define READ_DIR_TYPE_DIR    (1<<1)
+#define READ_DIR_TYPE_LINK   (1<<2)
+#define READ_DIR_TYPE_SOCK   (1<<3)
+#define READ_DIR_TYPE_BLOCK  (1<<4)
+#define READ_DIR_TYPE_CHAR   (1<<5)
 
 static Blt_SwitchParseProc FieldsSwitchProc;
 static Blt_SwitchCustom fieldsSwitch = {
@@ -322,32 +329,29 @@ static Blt_SwitchCustom typeSwitch = {
     TypeSwitchProc, NULL, NULL, (ClientData)0,
 };
 
+static Blt_SwitchParseProc PermSwitchProc;
+static Blt_SwitchCustom permSwitch = {
+    PermSwitchProc, NULL, NULL, (ClientData)0,
+};
+
 static Blt_SwitchSpec dirSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-fields",  "list", (char *)NULL,
-        Blt_Offset(DirSwitches, mask),    0, 0, &fieldsSwitch},
-    {BLT_SWITCH_BITMASK, "-readable", "", (char *)NULL,
-        Blt_Offset(DirSwitches, perm), 0, TCL_GLOB_PERM_R},
-    {BLT_SWITCH_BITMASK, "-readonly", "", (char *)NULL,
-        Blt_Offset(DirSwitches, perm), 0, TCL_GLOB_PERM_RONLY},
-    {BLT_SWITCH_BITMASK, "-writable", "", (char *)NULL,
-        Blt_Offset(DirSwitches, perm), 0, TCL_GLOB_PERM_W},
-    {BLT_SWITCH_BITMASK, "-executable", "", (char *)NULL,
-        Blt_Offset(DirSwitches, perm), 0, TCL_GLOB_PERM_X},
-    {BLT_SWITCH_BITMASK, "-file", "", (char *)NULL,
-        Blt_Offset(DirSwitches, type), 0, TCL_GLOB_TYPE_FILE},
-    {BLT_SWITCH_BITMASK, "-directory", "", (char *)NULL,
-        Blt_Offset(DirSwitches, type), 0, TCL_GLOB_TYPE_DIR},
-    {BLT_SWITCH_BITMASK, "-link", "", (char *)NULL,
-        Blt_Offset(DirSwitches, type), 0, TCL_GLOB_TYPE_LINK},
-    {BLT_SWITCH_OBJ, "-patterns",     "list", (char *)NULL,
-        Blt_Offset(DirSwitches, patternsObjPtr), 0},
+    {BLT_SWITCH_CUSTOM,  "-fields",  "fieldList", (char *)NULL,
+        Blt_Offset(ReadDirectory, mask),    0, 0, &fieldsSwitch},
+    {BLT_SWITCH_BITMASK, "-hidden", "", (char *)NULL,
+        Blt_Offset(ReadDirectory, perm), 0, TCL_GLOB_PERM_HIDDEN},
     {BLT_SWITCH_BITMASK, "-nocase",       "", (char *)NULL,
-        Blt_Offset(DirSwitches, flags), 0, DIR_NOCASE},
+        Blt_Offset(ReadDirectory, flags), 0, READ_DIR_NOCASE},
+    {BLT_SWITCH_OBJ,     "-patterns",     "list", (char *)NULL,
+        Blt_Offset(ReadDirectory, patternsObjPtr), 0},
+    {BLT_SWITCH_CUSTOM,  "-permissions", "permList", (char *)NULL,
+        Blt_Offset(ReadDirectory, perm),    0, 0, &permSwitch},
+    {BLT_SWITCH_BITMASK, "-readonly", "", (char *)NULL,
+        Blt_Offset(ReadDirectory, perm), 0, TCL_GLOB_PERM_RONLY},
     {BLT_SWITCH_BITMASK, "-recurse", "", (char *)NULL,
-        Blt_Offset(DirSwitches, flags), 0, DIR_RECURSE},
-    {BLT_SWITCH_CUSTOM,  "-type",    "list", (char *)NULL,
-        Blt_Offset(DirSwitches, type),    0, 0, &typeSwitch},
+        Blt_Offset(ReadDirectory, flags), 0, READ_DIR_RECURSE},
+    {BLT_SWITCH_CUSTOM,  "-type",    "typeList", (char *)NULL,
+        Blt_Offset(ReadDirectory, type),    0, 0, &typeSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -359,13 +363,13 @@ static Blt_SwitchSpec insertSwitches[] =
         Blt_Offset(InsertSwitches, position), 0},
     {BLT_SWITCH_CUSTOM, "-before", "position", (char *)NULL,
         Blt_Offset(InsertSwitches, position), 0, 0, &beforeSwitch},
-    {BLT_SWITCH_LIST, "-data", "{name value ?name value?...}", (char *)NULL,
+    {BLT_SWITCH_LIST, "-data", "{name value ?name value ...?}", (char *)NULL,
         Blt_Offset(InsertSwitches, dataPairs), 0},
     {BLT_SWITCH_STRING, "-label", "string", (char *)NULL,
         Blt_Offset(InsertSwitches, label), 0},
     {BLT_SWITCH_LONG_NNEG, "-node", "number", (char *)NULL,
         Blt_Offset(InsertSwitches, inode), 0},
-    {BLT_SWITCH_OBJ, "-tags", "{?tagName?...}", (char *)NULL,
+    {BLT_SWITCH_OBJ, "-tags", "tagList", (char *)NULL,
         Blt_Offset(InsertSwitches, tagsObjPtr), 0},
     {BLT_SWITCH_END}
 };
@@ -470,7 +474,7 @@ static Blt_SwitchSpec findSwitches[] = {
         Blt_Offset(FindSwitches, flags), 0, MATCH_PATHNAME},
     {BLT_SWITCH_CUSTOM, "-regexp", "pattern",  (char *)NULL,
         Blt_Offset(FindSwitches, patternList),0, 0, &regexpSwitch},
-    {BLT_SWITCH_CUSTOM, "-tag", "{?tag?...}", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-tag", "tagList", (char *)NULL,
         Blt_Offset(FindSwitches, tagList), 0, 0, &tagSwitch},
     {BLT_SWITCH_END}
 };
@@ -565,7 +569,7 @@ static Blt_SwitchSpec applySwitches[] =
         Blt_Offset(ApplySwitches, flags), 0, MATCH_PATHNAME},
     {BLT_SWITCH_CUSTOM, "-regexp", "pattern", (char *)NULL,
         Blt_Offset(ApplySwitches, patternList), 0, 0, &regexpSwitch},
-    {BLT_SWITCH_CUSTOM, "-tag", "{?tag?...}", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-tag", "tagList", (char *)NULL,
         Blt_Offset(ApplySwitches, tagList), 0, 0, &tagSwitch},
     {BLT_SWITCH_END}
 };
@@ -1038,31 +1042,31 @@ FieldsSwitchProc(
         string = Tcl_GetString(objv[i]);
         c = string[0];
         if ((c == 's') && (strcmp(string, "size") == 0)) {
-            mask |= DIR_SIZE;
+            mask |= READ_DIR_SIZE;
         } else if ((c == 'm') && (strcmp(string, "mode") == 0)) {
-            mask |= DIR_MODE;
+            mask |= READ_DIR_MODE;
         } else if ((c == 'p') && (strcmp(string, "perms") == 0)) {
-            mask |= DIR_PERMS;
+            mask |= READ_DIR_PERMS;
         } else if ((c == 't') && (strcmp(string, "type") == 0)) {
-            mask |= DIR_TYPE;
+            mask |= READ_DIR_TYPE;
         } else if ((c == 'u') && (strcmp(string, "uid") == 0)) {
-            mask |= DIR_UID;
+            mask |= READ_DIR_UID;
         } else if ((c == 'g') && (strcmp(string, "gid") == 0)) {
-            mask |= DIR_GID;
+            mask |= READ_DIR_GID;
         } else if ((c == 'a') && (strcmp(string, "atime") == 0)) {
-            mask |= DIR_ATIME;
+            mask |= READ_DIR_ATIME;
         } else if ((c == 'c') && (strcmp(string, "ctime") == 0)) {
-            mask |= DIR_CTIME;
+            mask |= READ_DIR_CTIME;
         } else if ((c == 'm') && (strcmp(string, "mtime") == 0)) {
-            mask |= DIR_MTIME;
+            mask |= READ_DIR_MTIME;
         } else if ((c == 'i') && (strcmp(string, "ino") == 0)) {
-            mask |= DIR_INO;
+            mask |= READ_DIR_INO;
         } else if ((c == 'd') && (strcmp(string, "dev") == 0)) {
-            mask |= DIR_DEV;
+            mask |= READ_DIR_DEV;
         } else if ((c == 'n') && (strcmp(string, "nlink") == 0)) {
-            mask |= DIR_NLINK;
+            mask |= READ_DIR_NLINK;
         } else if ((c == 'a') && (strcmp(string, "all") == 0)) {
-            mask |= DIR_ALL;
+            mask |= READ_DIR_ALL;
         } else {
             Tcl_AppendResult(interp, "unknown field name \"", string, "\"",
                 (char *)NULL);
@@ -1070,7 +1074,7 @@ FieldsSwitchProc(
         }
     }
     if (mask == 0) {
-        mask = DIR_DEFAULT;
+        mask = READ_DIR_DEFAULT;
     }
     *maskPtr = mask;
     return TCL_OK;
@@ -1112,33 +1116,85 @@ TypeSwitchProc(
     for (i = 0; i < objc; i++) {
         const char *string;
         char c;
-
-        string = Tcl_GetString(objv[i]);
+        int length;
+        
+        string = Tcl_GetStringFromObj(objv[i], &length);
         c = string[0];
-        if ((c == 'f') && (strcmp(string, "file") == 0)) {
-            mask |= DIR_TYPE_FILE;
-        } else if ((c == 'd') && (strcmp(string, "directory") == 0)) {
-            mask |= DIR_TYPE_DIR;
-        } else if ((c == 'l') && (strcmp(string, "link") == 0)) {
-            mask |= DIR_TYPE_LINK;
-        } else if ((c == 's') && (strcmp(string, "socket") == 0)) {
-            mask |= DIR_TYPE_SOCK;
-        } else if ((c == 'b') && (strcmp(string, "block") == 0)) {
-            mask |= DIR_TYPE_BLOCK;
-        } else if ((c == 'c') && (strcmp(string, "character") == 0)) {
-            mask |= DIR_TYPE_CHAR;
+        if ((c == 'f') && (strncmp(string, "file", length) == 0)) {
+            mask |= TCL_GLOB_TYPE_FILE;
+        } else if ((c == 'd') && (strncmp(string, "directory", length) == 0)) {
+            mask |= TCL_GLOB_TYPE_DIR;
+        } else if ((c == 'l') && (strncmp(string, "link", length) == 0)) {
+            mask |= TCL_GLOB_TYPE_LINK;
+        } else if ((c == 'p') && (strncmp(string, "pipe", length) == 0)) {
+            mask |= TCL_GLOB_TYPE_PIPE;
+        } else if ((c == 's') && (strncmp(string, "socket", length) == 0)) {
+            mask |= TCL_GLOB_TYPE_SOCK;
+        } else if ((c == 'b') && (strncmp(string, "block", length) == 0)) {
+            mask |= TCL_GLOB_TYPE_BLOCK;
+        } else if ((c == 'c') && (strncmp(string, "character", length) == 0)) {
+            mask |= TCL_GLOB_TYPE_CHAR;
         } else {
             Tcl_AppendResult(interp, "unknown type name \"", string, "\"",
                 (char *)NULL);
             return TCL_ERROR;
         }
     }
-    if (mask == 0) {
-        mask = DIR_DEFAULT;
+    *maskPtr = mask;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PermSwitch --
+ *
+ *      Convert a string representing a list of permissions into a mask.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PermSwitchProc(
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
+{
+    int *maskPtr = (int *)(record + offset);
+    int i, length;
+    unsigned int mask;
+    const char *string;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    mask = 0;
+    for (i = 0; i < length; i++) {
+        char c;
+        
+        c = string[i];
+        if (c == 'r') {
+            mask |= TCL_GLOB_PERM_R;
+        } else if (c == 'w') {
+            mask |= TCL_GLOB_PERM_W;
+        } else if (c == 'x') {
+            mask |= TCL_GLOB_PERM_X;
+        } else {
+            Tcl_AppendResult(interp, "unknown permssions \"", string, "\"",
+                (char *)NULL);
+            return TCL_ERROR;
+        }
     }
     *maskPtr = mask;
     return TCL_OK;
 }
+
 
 /*
  *---------------------------------------------------------------------------
@@ -3395,56 +3451,242 @@ GetTypeFromMode(int mode)
         
 static void
 FillEntryData(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, 
-               Tcl_StatBuf *statPtr, DirSwitches *switchesPtr)
+               Tcl_StatBuf *statPtr, ReadDirectory *readPtr)
 {    
-    if (switchesPtr->mask & DIR_SIZE) {
+    if (readPtr->mask & READ_DIR_SIZE) {
         Blt_Tree_SetValue(interp, tree, node, "size",  
                 Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_size));
     }
-    if (switchesPtr->mask & DIR_MTIME) {
+    if (readPtr->mask & READ_DIR_MTIME) {
         Blt_Tree_SetValue(interp, tree, node, "mtime",  
                 Tcl_NewLongObj((long)statPtr->st_mtime));
     }
-    if (switchesPtr->mask & DIR_CTIME) {
+    if (readPtr->mask & READ_DIR_CTIME) {
         Blt_Tree_SetValue(interp, tree, node, "ctime",  
                 Tcl_NewLongObj((long)statPtr->st_ctime));
     }
-    if (switchesPtr->mask & DIR_ATIME) {
+    if (readPtr->mask & READ_DIR_ATIME) {
         Blt_Tree_SetValue(interp, tree, node, "atime",  
                 Tcl_NewLongObj((long)statPtr->st_atime));
     }
-    if (switchesPtr->mask & DIR_MODE) {
+    if (readPtr->mask & READ_DIR_MODE) {
         Blt_Tree_SetValue(interp, tree, node, "mode", 
                 Tcl_NewIntObj(statPtr->st_mode));
     }
-    if (switchesPtr->mask & DIR_PERMS) {
+    if (readPtr->mask & READ_DIR_PERMS) {
         Blt_Tree_SetValue(interp, tree, node, "perms", 
                 Tcl_NewIntObj(statPtr->st_mode & 07777));
     }
-    if (switchesPtr->mask & DIR_UID) {
+    if (readPtr->mask & READ_DIR_UID) {
         Blt_Tree_SetValue(interp, tree, node, "uid", 
                 Tcl_NewIntObj(statPtr->st_uid));
     }
-    if (switchesPtr->mask & DIR_GID) {
+    if (readPtr->mask & READ_DIR_GID) {
         Blt_Tree_SetValue(interp, tree, node, "gid", 
                 Tcl_NewIntObj(statPtr->st_gid));
     }
-    if (switchesPtr->mask & DIR_TYPE) {
+    if (readPtr->mask & READ_DIR_TYPE) {
         Blt_Tree_SetValue(interp, tree, node, "type", 
                 Tcl_NewStringObj(GetTypeFromMode(statPtr->st_mode), -1));
     }
-    if (switchesPtr->mask & DIR_INO) {
+    if (readPtr->mask & READ_DIR_INO) {
         Blt_Tree_SetValue(interp, tree, node, "ino",  
                 Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_ino));
     }
-    if (switchesPtr->mask & DIR_NLINK) {
+    if (readPtr->mask & READ_DIR_NLINK) {
         Blt_Tree_SetValue(interp, tree, node, "nlink",  
                 Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_nlink));
     }
-    if (switchesPtr->mask & DIR_DEV) {
+    if (readPtr->mask & READ_DIR_DEV) {
         Blt_Tree_SetValue(interp, tree, node, "dev",  
                 Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_rdev));
     }
+}
+
+static int TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr,
+        Tcl_Obj *dirObjPtr, Blt_TreeNode parent, ReadDirectory *readPtr);
+
+static int
+TreeMakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
+                Blt_TreeNode parent, ReadDirectory *readPtr, int hidden)
+{
+    Tcl_GlobTypeData data = {
+        TCL_GLOB_TYPE_DIR, TCL_GLOB_PERM_R, NULL, NULL
+    };
+    Tcl_Obj **objv, *listObjPtr;
+    int objc, length, i;
+    int result, count;
+    
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    if (hidden) {
+        data.perm |= TCL_GLOB_PERM_HIDDEN;
+    }
+    result = READ_DIR_ERROR;
+    if (Tcl_FSMatchInDirectory(interp, listObjPtr, objPtr, "*", &data)
+        != TCL_OK) {
+        goto error;
+    }
+    if (Tcl_ListObjGetElements(interp, listObjPtr, &objc, &objv)!= TCL_OK) {
+        goto error;
+    }
+    Tcl_GetStringFromObj(objPtr, &length);
+    count = 0;
+    for (i = 0; i < objc; i++) {
+        Tcl_StatBuf stat;
+        int numParts;
+        Tcl_Obj *tailObjPtr, *partsObjPtr;
+        Blt_TreeNode child;
+        const char *label;
+        
+        if (Tcl_FSConvertToPathType(interp, objv[i]) != TCL_OK) {
+            goto error;
+        }
+        memset(&stat, 0, sizeof(Tcl_StatBuf));
+        if (Tcl_FSStat(objv[i], &stat) < 0) {
+            continue;               /* Can't stat entry. */
+        }
+        /* Get the tail of the path. */
+        partsObjPtr = Tcl_FSSplitPath(objv[i], &numParts);
+        if ((partsObjPtr == NULL) || (numParts == 0)) {
+            goto error;
+        }
+        Tcl_IncrRefCount(partsObjPtr);
+        Tcl_ListObjIndex(NULL, partsObjPtr, numParts - 1, &tailObjPtr);
+        label = Tcl_GetString(tailObjPtr);
+        if (label[0] == '.') {
+            if (label[1] == '\0') {
+                Tcl_DecrRefCount(partsObjPtr);
+                continue;           /* Ignore . */
+            }
+            if ((label[1] == '.') && (label[2] == '\0')) {
+                Tcl_DecrRefCount(partsObjPtr);
+                continue;           /* Ignore .. */
+            }
+            /* Workaround bug in Tcl_FSSplitPath. Files that start with "~"
+             * are prepended with "./" */
+            if (label[1] == '/') {
+                label += 2;
+            }
+        }
+        child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
+        Tcl_DecrRefCount(partsObjPtr);
+        FillEntryData(interp, cmdPtr->tree, child, &stat, readPtr);
+
+        /* Did we get any entries? Tell the caller yes. */
+        result = TreeReadDirectory(interp, cmdPtr, objv[i], child, readPtr);
+        if (result == READ_DIR_ERROR) {
+            goto error;
+        }
+        if ((result == READ_DIR_NOMATCH) &&
+            ((readPtr->patternsObjPtr != NULL) || (readPtr->perm != 0) ||
+             (readPtr->type != 0))) {
+            DeleteNode(cmdPtr, child);
+        } else {
+            count++;
+        }
+    }
+    Tcl_DecrRefCount(listObjPtr);
+    return (count > 0) ? READ_DIR_MATCH : READ_DIR_NOMATCH;
+ error:
+    Tcl_DecrRefCount(listObjPtr);
+    return READ_DIR_ERROR;
+}
+
+static int
+TreeMatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
+                 Blt_TreeNode parent, ReadDirectory *readPtr)
+{
+    Tcl_Obj **objv, *listObjPtr, **patterns;
+    int objc, i, numMatches, numPatterns;
+    unsigned int patternFlags;
+    Tcl_GlobTypeData data = {
+        0, 0, NULL, NULL
+    };
+
+    numPatterns = 0;
+    if (readPtr->patternsObjPtr != NULL) {
+        if (Tcl_ListObjGetElements(interp, readPtr->patternsObjPtr, 
+                &numPatterns, &patterns) != TCL_OK) {
+            return READ_DIR_ERROR;           /* Can't split patterns. */
+        }
+    }
+    patternFlags = 0;
+    if (readPtr->flags & READ_DIR_NOCASE) {
+        patternFlags =  TCL_MATCH_NOCASE;
+    }
+    data.perm = readPtr->perm;
+    data.type = readPtr->type;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    if (Tcl_FSMatchInDirectory(interp, listObjPtr, objPtr, "*", &data)
+        != TCL_OK) {
+        goto error;
+    }
+     if (Tcl_ListObjGetElements(interp, listObjPtr, &objc, &objv) != TCL_OK) {
+        goto error;
+    }
+    numMatches = 0;                     /* Count # of matches. */
+    for (i = 0; i < objc; i++) {
+        Tcl_Obj *partsObjPtr, *tailObjPtr;
+        Tcl_StatBuf stat;
+        const char *label;
+        int isMatch, numParts;
+        
+        if (Tcl_FSConvertToPathType(interp, objv[i]) != TCL_OK) {
+            goto error;
+        }
+        memset(&stat, 0, sizeof(Tcl_StatBuf));
+        if (Tcl_FSStat(objv[i], &stat) < 0) {
+            continue;                   /* Can't stat entry. */
+        }
+        /* Get the tail of the path. */
+        partsObjPtr = Tcl_FSSplitPath(objv[i], &numParts);
+        if ((partsObjPtr == NULL) || (numParts == 0)) {
+            goto error;
+        }
+        Tcl_IncrRefCount(partsObjPtr);
+        Tcl_ListObjIndex(NULL, partsObjPtr, numParts - 1, &tailObjPtr);
+        label = Tcl_GetString(tailObjPtr);
+
+        /* Workaround bug in Tcl_FSSplitPath. Files that start with "~" are
+         * prepended with "./" */
+        if ((label[0] == '.') && (label[1] == '/')) {
+            label += 2;
+        }
+
+        isMatch = TRUE;
+        if (numPatterns > 0) {
+            /* Match files or subdirectories against patterns. */
+            int j;
+            
+            isMatch = FALSE;
+            for (j = 0; j < numPatterns; j++) {
+                const char *pattern;
+                
+                pattern = Tcl_GetString(patterns[j]);
+                if (Tcl_StringCaseMatch(label, pattern, patternFlags)) {
+                    isMatch = TRUE;
+                    break;
+                }
+            }
+        }
+        if (isMatch) {
+            Blt_TreeNode child;
+            
+            numMatches++;
+            child = Blt_Tree_FindChild(parent, label);
+            if (child == NULL) {
+                child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
+                assert(child != NULL);
+                FillEntryData(interp, cmdPtr->tree, child, &stat, readPtr);
+            }
+        }
+        Tcl_DecrRefCount(partsObjPtr);
+    }
+    Tcl_DecrRefCount(listObjPtr);
+    return (numMatches > 0) ? READ_DIR_MATCH : READ_DIR_NOMATCH;
+ error:
+    Tcl_DecrRefCount(listObjPtr);
+    return READ_DIR_ERROR;
 }
 
 
@@ -3459,108 +3701,44 @@ FillEntryData(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
  *---------------------------------------------------------------------------
  */
 static int
-TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
-                  Blt_TreeNode parent, DirSwitches *switchesPtr)
+TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
+                  Blt_TreeNode node, ReadDirectory *readPtr)
 {
-    Tcl_GlobTypeData readableFiles = {
-        0, TCL_GLOB_PERM_R, NULL, NULL
-    };
-    Tcl_Obj *listObjPtr;
-    int i, objc, numPatterns, patternFlags, length;
-    Tcl_Obj **objv, **patterns;
-
-    readableFiles.perm = switchesPtr->perm;
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    numPatterns = 0;
-    if (switchesPtr->patternsObjPtr != NULL) {
-        if (Tcl_ListObjGetElements(interp, switchesPtr->patternsObjPtr, 
-                &numPatterns, &patterns) != TCL_OK) {
-            return TCL_ERROR;
+    int numMatches;
+    int result;
+    
+    /* Pass 1: Recurse downward, creating directory nodes */
+    numMatches = 0;
+    if (readPtr->flags & READ_DIR_RECURSE) {
+        /* Tcl_FSMatchInDirectory can only match hidden or non-hidden
+         * subdirectories, but not both at the same time.  This means we
+         * have to make separate calls to TreeMakeSubdirs, once for
+         * non-hidden and again for hidden (that start with a ".")
+         * subdirectories.  */
+        result = TreeMakeSubdirs(interp, cmdPtr, objPtr, node, readPtr, FALSE);
+        if (result == READ_DIR_ERROR) {
+            return READ_DIR_ERROR;
+        }
+        if (result == READ_DIR_MATCH) {
+            numMatches++;
+        }
+        result = TreeMakeSubdirs(interp, cmdPtr, objPtr, node, readPtr, TRUE);
+        if (result == READ_DIR_ERROR) {
+            return READ_DIR_ERROR;
+        }
+        if (result == READ_DIR_MATCH) {
+            numMatches++;
         }
     }
-    patternFlags = (switchesPtr->flags & DIR_NOCASE) ? TCL_MATCH_NOCASE : 0;
-
-    /* Get all the entries directories in the directory. */
-    if (Tcl_FSMatchInDirectory(interp, listObjPtr, dirObjPtr, "*", 
-                &readableFiles) != TCL_OK) {
+    /* Pass 2:  Search directory for matching entries. */
+    result = TreeMatchEntries(interp, cmdPtr, objPtr, node, readPtr);
+    if (result == READ_DIR_ERROR) {
+        return READ_DIR_ERROR;
     }
-    if (Tcl_ListObjGetElements(interp, listObjPtr, &objc, &objv) != TCL_OK) {
-        return TCL_OK;
+    if (result == READ_DIR_MATCH) {
+        numMatches++;
     }
-    Tcl_GetStringFromObj(dirObjPtr, &length);
-    for (i = 0; i < objc; i++) {
-        Tcl_StatBuf stat;
-        int numComponents;
-        Tcl_Obj *objPtr, *tailPtr;
-        Blt_TreeNode child;
-        const char *label;
-
-        if (Tcl_FSConvertToPathType(interp, objv[i]) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        memset(&stat, 0, sizeof(Tcl_StatBuf));
-        if (Tcl_FSStat(objv[i], &stat) < 0) {
-            continue;
-        }
-        /* Get the tail of the path. */
-        objPtr = Tcl_FSSplitPath(objv[i], &numComponents);
-        if (objPtr == NULL) {
-            return TCL_ERROR;
-        }
-        Tcl_IncrRefCount(objPtr);
-        Tcl_ListObjIndex(NULL, objPtr, numComponents-1, &tailPtr);
-        label = Tcl_GetString(tailPtr);
-        /* Workaround bug in Tcl_FSSplitPath. Files that start with "~" are
-         * prepended with "./" */
-        if ((label[0] == '.') && (label[1] == '/')) {
-            label += 2;
-        }
-        if ((switchesPtr->flags & DIR_RECURSE) && (S_ISDIR(stat.st_mode))) {
-            /* Create a node for the subdirectory and recursively call this
-             * routine. */
-            Tcl_Obj *subDirObjPtr;
-            int result;
-
-            child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
-            FillEntryData(interp, cmdPtr->tree, child, &stat, switchesPtr);
-            
-            subDirObjPtr = Tcl_DuplicateObj(dirObjPtr);
-            Tcl_IncrRefCount(subDirObjPtr);
-            /* Now recurse into subdirectories. */
-            Tcl_AppendStringsToObj(subDirObjPtr, "/", label, (char *)NULL);
-            result = TreeReadDirectory(interp, cmdPtr, subDirObjPtr, child, 
-                switchesPtr);
-            Tcl_DecrRefCount(subDirObjPtr);
-            if (result != TCL_OK) {
-                Tcl_DecrRefCount(objPtr);
-                Tcl_DecrRefCount(listObjPtr);
-                return TCL_ERROR;
-            }
-        } else {
-            /* Match files or subdirectories against patterns. */
-            if (numPatterns > 0) {
-                int j;
-                
-                for (j = 0; j < numPatterns; j++) {
-                    const char *pattern;
-                    
-                    pattern = Tcl_GetString(patterns[j]);
-                    if (Tcl_StringCaseMatch(label, pattern, patternFlags)) {
-                        goto found;
-                    }
-                }
-                Tcl_DecrRefCount(objPtr);
-                continue;
-            }
-            /* Match against type. */
-        found:
-            child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
-            FillEntryData(interp, cmdPtr->tree, child, &stat, switchesPtr);
-        }
-        Tcl_DecrRefCount(objPtr);
-    }
-    Tcl_DecrRefCount(listObjPtr);
-    return TCL_OK;
+    return (numMatches > 0) ? READ_DIR_MATCH : READ_DIR_NOMATCH;
 }
 
 /*
@@ -3578,24 +3756,24 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     TreeCmd *cmdPtr = clientData;
     Blt_TreeNode parent;
-    DirSwitches switches;
+    ReadDirectory reader;
     int result;
-
+    
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &parent)
         != TCL_OK) {
         return TCL_ERROR;
     }
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, dirSwitches, objc - 4, objv + 4, &switches,
+    memset(&reader, 0, sizeof(reader));
+    if (Blt_ParseSwitches(interp, dirSwitches, objc - 4, objv + 4, &reader,
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    if (switches.mask == 0) {
-        switches.mask = DIR_DEFAULT;
+    if (reader.mask == 0) {
+        reader.mask = READ_DIR_DEFAULT;
     }
-    result = TreeReadDirectory(interp, cmdPtr, objv[3], parent, &switches);
-    Blt_FreeSwitches(dirSwitches, (char *)&switches, 0);
-    return result;
+    result = TreeReadDirectory(interp, cmdPtr, objv[3], parent, &reader);
+    Blt_FreeSwitches(dirSwitches, (char *)&reader, 0);
+    return (result == READ_DIR_ERROR) ? TCL_ERROR: TCL_OK;
 }
 
 
@@ -6550,9 +6728,9 @@ TreeDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * TreeNamesOp --
+ * TreeExistsOp --
  *
- *      blt::tree names ?pattern ...?
+ *      blt::tree exists treeName
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -6606,8 +6784,8 @@ TreeNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         objName.name = Tcl_GetCommandName(interp, cmdPtr->cmdToken);
         objName.nsPtr = Blt_GetCommandNamespace(cmdPtr->cmdToken);
         qualName = Blt_MakeQualifiedName(&objName, &ds);
-        match = (objc == 3);
-        for (i = 3; i < objc; i++) {
+        match = (objc == 2);
+        for (i = 2; i < objc; i++) {
             if (Tcl_StringMatch(qualName, Tcl_GetString(objv[i]))) {
                 match = TRUE;
                 break;
@@ -6692,10 +6870,10 @@ TreeLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec treeCmdOps[] =
 {
     {"create",  1, TreeCreateOp,  2, 3, "?treeName?",},
-    {"destroy", 1, TreeDestroyOp, 3, 0, "treeName...",},
+    {"destroy", 1, TreeDestroyOp, 2, 0, "?treeName ...?",},
     {"exists",  1, TreeExistsOp,  3, 3, "treeName",},
     {"load",    1, TreeLoadOp,    4, 4, "treeName libpath",},
-    {"names",   1, TreeNamesOp,   2, 3, "?pattern?...",},
+    {"names",   1, TreeNamesOp,   2, 3, "?pattern ...?",},
 };
 
 static int numCmdOps = sizeof(treeCmdOps) / sizeof(Blt_OpSpec);
