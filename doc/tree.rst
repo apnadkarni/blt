@@ -365,6 +365,8 @@ command.  The operations available for trees are listed below.
       Type of entry is a regular file.
     **link**
       Type of entry is a link.  
+    **pipe**
+      Type of entry is a pipe (fifo).  
     **socket**
       Type of entry is a socket.
 
