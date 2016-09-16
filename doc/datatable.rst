@@ -104,7 +104,7 @@ prefixing them with "index:", "label:", or "tag:".
 
 You can refer to multiple rows or columns in a tag (such as 'all') or
 label.  Some datatable commands only operate on a single row or column at a
-time; if *tag* or *label* refer to multiple rows or columns, then an error
+time; if a tag or label refer to multiple rows or columns, then an error
 is generated.
 
 DATATABLE OPERATIONS
@@ -140,11 +140,12 @@ the command.  The operations available for *datatables* are listed below.
     tag and may refer to multiple row (example: "all").  By default all
     rows are added.
     
-*tableName* **append** *row* *column* ?\ *value* ... ?
-  Appends one or more values to the current value at *row*, *column* in
-  *tableName*.  This is normally used for "string" type cells, but can be
-  used for other types as well.  Both *row* and *column* may be a label,
-  index, or tag, and may represent more than one row or column.
+*tableName* **append** *rowName* *columnName* ?\ *value* ... ?
+  Appends one or more values to the current value at *rowName*,
+  *columnName* in *tableName*.  This is normally used for "string" type
+  cells, but can be used for other types as well.  Both *rowName* and
+  *columnName* may be a label, index, or tag, and may represent more than
+  one row or column.
 
 *tableName* **attach** *anotherTable*
   Attaches to an existing datatable object *anotherTable*.  The underlying
@@ -182,15 +183,15 @@ the command.  The operations available for *datatables* are listed below.
   is initially empty. The index of the new column is returned.
   *Switches* can be any of the following:  
 
-  **-after** *column*
-    The position of the new column will be after *column*. *Column* may
-    be a label, index, or tag, but may not represent more than one
+  **-after** *columnName*
+    The position of the new column will be after *columnName*. *ColumnName*
+    may be a label, index, or tag, but may not represent more than one
     column.
 
-  **-before** *column*
-    The position of the new column will be before *column*. *Column* may
-    be a label, index, or tag, but may not represent more than one
-    column.
+  **-before** *columnName*
+    The position of the new column will be before
+    *columnName*. *ColumnName* may be a label, index, or tag, but may not
+    represent more than one column.
 
   **-label** *label*
     Specifies the label for the new column.
@@ -203,24 +204,25 @@ the command.  The operations available for *datatables* are listed below.
     "integer", "boolean", "time", or , "blob". See the **column type**
     operation for a description of the different types.
 
-*tableName* **column delete** ?\ *column* ... ?
-  Deletes one or more columns from *tableName*. *Column* may be a column
-  label, index, or tag and may refer to multiple columns (example: "all").
+*tableName* **column delete** ?\ *columnName* ... ?
+  Deletes one or more columns from *tableName*. *ColumnName* may be a
+  column label, index, or tag and may refer to multiple columns (example:
+  "all").
 
-*tableName* **column duplicate** ?\ *column* ... ?
-  Creates duplicate columns for each *column* given.  The column label is
-  duplicated and column tags are copied. *Column* may be a column label,
-  index, or tag and may refer to multiple columns (example: "all").
+*tableName* **column duplicate** ?\ *columnName* ... ?
+  Creates duplicate columns for each *columnName* given.  The column label
+  is duplicated and column tags are copied. *ColumnName* may be a column
+  label, index, or tag and may refer to multiple columns (example: "all").
   
-*tableName* **column empty** *column*
-  Returns the row indices of the empty cells in *column*.  *Column*
+*tableName* **column empty** *columnName*
+  Returns the row indices of the empty cells in *columnName*.  *ColumnName*
   may be a label, index, or tag, but may not represent more than one
   column.
 
-*tableName* **column exists** *column*
-  Indicates if *column* exists in *tableName*. *Column* may be a label,
-  index, or tag, but may not represent more than one column.  Returns "1"
-  if the column exists, "0" otherwise.
+*tableName* **column exists** *columnName*
+  Indicates if *columnName* exists in *tableName*. *ColumnName* may be a
+  label, index, or tag, but may not represent more than one column.
+  Returns "1" if the column exists, "0" otherwise.
 
 *tableName* **column extend** *numColumns* ?\ *switches* ... ?
   Extends *tableName* by one of more columns.  *NumColumns* indicates how
@@ -229,20 +231,20 @@ the command.  The operations available for *datatables* are listed below.
   **-labels** *list*
     Specifies the labels for the new columns.  
 
-*tableName* **column get** ?\ *-labels*\ ? *column* ?\ *row* ... ?
-  Returns the values from the specified column.  *Column* may be a label,
-  index, or tag, but may not represent more than one column.  By default
-  all the values of *column* are returned, but if one or more *row*
-  arguments are specified, then only the values for specified rows are
-  retrieved.  *Row* may be a row label, index, or tag and may not represent
-  more than one row.
+*tableName* **column get** ?\ *-labels*\ ? *columnName* ?\ *rowName* ... ?
+  Returns the values from the specified column.  *ColumnName* may be a
+  label, index, or tag, but may not represent more than one column.  By
+  default all the values of *columnName* are returned, but if one or more
+  *rowName* arguments are specified, then only the values for specified
+  rows are retrieved.  *RowName* may be a row label, index, or tag and may
+  not represent more than one row.
 
   This command returns pairs of values and row indices of the selected
   cells. If the *-labels* flag is present, the row label is returned
   instead of the index.
 
-*tableName* **column index** *column* 
-  Returns the index of the specified column.  *Column* may be a
+*tableName* **column index** *columnName* 
+  Returns the index of the specified column.  *ColumnName* may be a
   label, index, or tag, but may not represent more than one column.
   
 *tableName* **column indices** ?\ *switches* ... ? ?\ *pattern* ... ?
@@ -275,15 +277,15 @@ the command.  The operations available for *datatables* are listed below.
     tag and may refer to multiple row (example: "all").  By default all
     rows are added.
     
-*tableName* **column label** *column* ?\ *label*\ ?  ?\ *column* *label* ... ?
-  Gets or sets the label of the specified column(s).  *Column* may be a
+*tableName* **column label** *columnName* ?\ *label*\ ?  ?\ *columnName* *label* ... ?
+  Gets or sets the label of the specified column(s).  *ColumnName* may be a
   label, index, or tag, but may not represent more than one column.  If
-  *column* is the only argument, then the column label is returned.  If one
-  or more *column* and *label* pairs are specified, this command sets the
-  labels of the specified columns.
+  *columnName* is the only argument, then the column label is returned.  If
+  one or more *columnName* and *label* pairs are specified, this command
+  sets the labels of the specified columns.
   
-*tableName* **column labels** *column* ?\ *labelList*\ ?
-  Gets or sets the labels of the specified column.  *Column* may be a
+*tableName* **column labels** *columnName* ?\ *labelList*\ ?
+  Gets or sets the labels of the specified column.  *ColumnName* may be a
   label, index, or tag, but may not represent more than one column. If a
   *labelList* argument is present, then the column labels are set from the
   list of labels.
@@ -301,61 +303,62 @@ the command.  The operations available for *datatables* are listed below.
   Matching is done in a fashion similar to that used by the TCL **glob**
   command.
 
-*tableName* **column nonempty**  *column*
-  Returns the row indices of the non-empty cells in the column.  *Column*
-  may be a label, index, or tag, but may not represent more than one
-  column.
+*tableName* **column nonempty**  *columnName*
+  Returns the row indices of the non-empty cells in the column.
+  *ColumnName* may be a label, index, or tag, but may not represent more
+  than one column.
 
-*tableName* **column set**  *column* ?\ *row* *value* ... ? 
-  Sets values for cells in the specified column. *Column* may be a label,
-  index, or tag and may refer to multiple columns (example: "all").  If one
-  or more *row* *value* pairs are given then the cell at *row*, *column* is
-  set to *value*.  If either *row* or *column* does not exist, the row or
-  column is automatically created. If the row or column is an index,
-  *tableName* may automatically grow. If the column type is something other
-  than *string*, *value* will be converted into the correct type.  If the
-  conversion fails, an error will be returned.  See the **column type**
-  operation for a description of the different types.
+*tableName* **column set**  *columnName* ?\ *rowName* *value* ... ? 
+  Sets values for cells in the specified column. *ColumnName* may be a
+  label, index, or tag and may refer to multiple columns (example: "all").
+  If one or more *rowName* *value* pairs are given then the cell at
+  *rowName*, *columnName* is set to *value*.  If either *rowName* or
+  *columnName* does not exist, the row or column is automatically
+  created. If the row or column is an index, *tableName* may automatically
+  grow. If the column type is something other than **string**, *value* will
+  be converted into the correct type.  If the conversion fails, an error
+  will be returned.  See the **column type** operation for a description of
+  the different types.
 
-*tableName* **column tag add**  *tag* ?\ *column* ... ? 
-  Adds the tag to *column*.  *Tag* is an arbitrary string but can't be one
-  of the built-in tags ("all" or "end"). It is not an error if *column*
-  already has the tag. If no *column* arguments are present, *tag* is added
-  to *tableName* but refers to no columns.  This is useful for creating
-  empty column tags.
+*tableName* **column tag add**  *tagName* ?\ *columnName* ... ? 
+  Adds the tag to *columnName*.  *TagName* is an arbitrary string but can't
+  be one of the built-in tags ("all" or "end"). It is not an error if
+  *columnName* already has the tag. If no *columnName* arguments are
+  present, *tagName* is added to *tableName* but refers to no columns.
+  This is useful for creating empty column tags.
 
-*tableName* **column tag delete**  *column* ?\ *tag* ... ? 
-  Removes one or more tags from *column*.  *Tag* is an arbitrary string but
-  can't be one of the built-in tags ("all" or "end"). The built-in tags
-  "all" and "end" can't be deleted.
+*tableName* **column tag delete**  *columnName* ?\ *tagName* ... ? 
+  Removes one or more tags from *columnName*.  *TagName* is an arbitrary
+  string but can't be one of the built-in tags ("all" or "end"). The
+  built-in tags "all" and "end" can't be deleted.
 
-*tableName* **column tag exists**  *tag* ?\ *column* ... ? 
-  Indicates if any column in *tableName* has the tag.  *Tag* is an
+*tableName* **column tag exists**  *tagName* ?\ *columnName* ... ? 
+  Indicates if any column in *tableName* has the tag.  *TagName* is an
   arbitrary string.  Returns "1" if the tag exists, "0" otherwise.  By
-  default all columns are searched. But if one or more *column* arguments
-  are present, then if the tag is found in any *column*, "1" is
-  returned. *Column* may be a label, index, or tag and may refer to
+  default all columns are searched. But if one or more *columnName*
+  arguments are present, then if the tag is found in any *columnName*, "1"
+  is returned. *ColumnName* may be a label, index, or tag and may refer to
   multiple columns (example: "all").
 
-*tableName* **column tag forget**  ?\ *tag* ... ? 
-  Remove one or more tags from all the columns in *tableName*. *Tag* is an
-  arbitrary string but can't be one of the built-in tags ("all" or "end").
+*tableName* **column tag forget**  ?\ *tagName* ... ? 
+  Remove one or more tags from all the columns in *tableName*. *TagName* is
+  a column tag, but can't be one of the built-in tags ("all" or "end").
 
-*tableName* **column tag get** *column* ?\ *pattern* ... ? 
-  Returns the tags for *column*. *Column* may be a label, index, or tag,
-  but may not represent more than one column. By default all tags for
-  *column* are returned.  But if one or more *pattern* arguments are
+*tableName* **column tag get** *columnName* ?\ *pattern* ... ? 
+  Returns the tags for *columnName*. *ColumnName* may be a label, index, or
+  tag, but may not represent more than one column. By default all tags for
+  *columnName* are returned.  But if one or more *pattern* arguments are
   present, then any tag that matching one of the patterns will be returned.
   *Pattern* is a **glob**\-style pattern.  Matching is done in a fashion
   similar to that used by the TCL **glob** command.
 
-*tableName* **column tag indices** ?\ *tag* ... ? 
-  Returns the indices of columns that have one or more *tag*. *Tag* is an
-  arbitrary string.
+*tableName* **column tag indices** ?\ *tagName* ... ? 
+  Returns the indices of columns that have one or more tags. *TagName* is
+  an is a tag string.
 
-*tableName* **column tag labels** ?\ *tag* ... ? 
-  Returns the column labels that have one or more *tag*. *Tag* is an
-  arbitrary string.
+*tableName* **column tag labels** ?\ *tagName* ... ? 
+  Returns the column labels that have one or more tags. *TagName* is a 
+  tag string.
 
 *tableName* **column tag names** ?\ *pattern* ... ? 
   Returns the column tags of the table. By default all column tags are
@@ -364,144 +367,162 @@ the command.  The operations available for *datatables* are listed below.
   **glob**\-style pattern.  Matching is done in a fashion similar to that
   used by the TCL **glob** command.
 
-*tableName* **column tag range** *first* *last* ?\ *tag* ... ? 
-  Adds one or more tags the columns in the range given.  *First* and *last*
-  may be a column label, index, or tag, but may not represent more than one
-  column. *Tag* is an arbitrary string but can't be one of the built-in
+*tableName* **column tag range** *firstColumn* *lastColumn* ?\ *tagName* ... ? 
+  Adds one or more tags the columns in the range given.  *FirstColumn* and
+  *lastColumn* may be a column label, index, or tag, but may not represent
+  more than one column. *TagName* is an arbitrary string but can't be one
+  of the built-in tags ("all" or "end").
+
+*tableName* **column tag set** *columnName* ?\ *tagName* ... ?
+  Adds one or more tags to *columnName*. *ColumnName* may be a column
+  label, index, or tag and may refer to multiple columns (example:
+  "all"). *TagName* is an arbitrary string but can't be one of the built-in
   tags ("all" or "end").
 
-*tableName* **column tag set** *column* ?\ *tag* ... ?
-  Adds one or more tags to *column*. *Column* may be a column label, index,
-  or tag and may refer to multiple columns (example: "all"). *Tag* is an
-  arbitrary string but can't be one of the built-in tags ("all" or "end").
+*tableName* **column tag unset** *columnName*  ?\ *tagName* ... ?
+  Remove one or more tags from *columnName*. *ColumnName* may be a column
+  label, index, or tag and may refer to multiple columns (example: "all").
+  *TagName* is an arbitrary string but can't be one of the built-in tags
+  ("all" or "end").
 
-*tableName* **column tag unset** *column*  ?\ *tag* ... ?
-  Remove one or more tags from *column*. *Column* may be a column label,
-  index, or tag and may refer to multiple columns (example: "all").  *Tag*
-  is an arbitrary string but can't be one of the built-in tags ("all" or
-  "end").
+*tableName* **column type**  *columnName* ?\ *typeName*\ ? ?\ *columnName* *typeName* ... ?
+  Gets or sets the type of values for the specified column.  *ColumnName*
+  may be a label, index, or tag, but may not represent more than one
+  column.  If only one *columnName* argument is present, the current type
+  of *columnName* is returned.  If one or more *columnName* and *type*
+  pairs are specified, then this command sets the column type. *Type* can
+  any of the following:
 
-*tableName* **column type**  *column* ?\ *type*\ ? ?\ *column* *type* ... ?
-  Gets or sets the type of values for the specified column.  *Column* may
-  be a label, index, or tag, but may not represent more than one column.
-  If only one *column* argument is present, the current type of *column*
-  is returned.  If one or more *column* and *type* pairs are specified,
-  then this command sets the column type. *Type* can any of the following:
-
-  *string*
+  **string**
     Values in the column are strings.  
 
-  *double*
+  **double**
     Values in the column are double precision numbers. Each value
     in the column is converted to double precision number.  
 
-  *integer*
+  **integer**
     Values in the column are integers.  Each value in the column
     is converted to an integer.
 
-  *boolean*
+  **boolean**
     Values in the column are booleans.  Acceptable boolean values are
     "0", "false", "no", "off", "1", "true", "yes", or "on". The values
     is converted to 0 (false) or 1 (true).
 
-  *time*
+  **time**
     Values in the column are timestamps.  The timestamps can be in any
     form accepts by the **blt::date** command.  Each value in the column
     is converted to a double precision number representing the time.
 
-  *blob*
+  **blob**
     Values in the column are blobs. 
 
-*tableName* **column unset**  *column* ?\ *row* ... ?
-  Unsets the cell values of *column*.  *Column* may be a label, index, or
-  tag, but may not represent more than one column.  Bu default all cells in
-  *column* are unset, but one or more *row* and *value* pairs are
-  specified, only those cells at *row*, *column* are unset.  *Row* may be a
-  row label, index, or tag and may refer to multiple rows (example: "all").
+*tableName* **column unset**  *columnName* ?\ *rowName* ... ?
+  Unsets the cell values of *columnName*.  *ColumnName* may be a label,
+  index, or tag, but may not represent more than one column.  Bu default
+  all cells in *columnName* are unset, but one or more *rowName* and
+  *value* pairs are specified, only those cells at *rowName*, *columnName*
+  are unset.  *RowName* may be a row label, index, or tag and may refer to
+  multiple rows (example: "all").
 
-*tableName* **column values**  *column* ?\ *valueList*\ ?
-  Gets or sets the cell values of *column*.  *Column* may be a label,
-  index, or tag, but may not represent more than one column.  If no
+*tableName* **column values**  *columnName* ?\ *valueList*\ ?
+  Gets or sets the cell values of *columnName*.  *ColumnName* may be a
+  label, index, or tag, but may not represent more than one column.  If no
   *valueList* argument is present, this command returns the values of all
-  the cells in *column*.  Otherwise this command sets the cell values of
-  *column* from the elements of the list *valueList*.  If there are more
-  values in *valueList* than rows in the table, the table is extended.  If
-  there are less, the remaining cells remain the same.
+  the cells in *columnName*.  Otherwise this command sets the cell values
+  of *columnName* from the elements of the list *valueList*.  If there are
+  more values in *valueList* than rows in the table, the table is extended.
+  If there are less, the remaining cells remain the same.
 
 *tableName* **copy** *srcTable* 
   Makes a copy of *srcTable in *tableName*.  *SrcTable* is the another
   datatable.  Any datatable data in *tableName* (rows, column, cells, and
   tags) are first removed.
 
-*tableName* **dir** *path* ?\ *switches* ... ?
-  Fills *tableName* with the directory listing specified by *path*. If
-  *path* is a directory, then its entries are added to the table.
+*tableName* **dir** *pathName* ?\ *switches* ... ?
+  Fills *tableName* with the directory listing specified by *pathName*. If
+  *pathName* is a directory, then its entries are added to the table.
   *Switches* can be any of the following:
 
-  **-fields** *list* 
-    Specifies the fields to be collected and written into the table.
-    *List* is a TCL list of field names.  Any of the field names
-    below may be used.
+  The following switches are available:
+
+  **-fields** *fieldsList* 
+    Specifies what directory information is to be added as columns in the
+    table.  *FieldsList* is a TCL list of field names.  The valid field
+    names is listed below.
 
     **size**
-      Collects a decimal string giving the size of file name in bytes.
+      Adds a decimal string giving the size of file name in bytes.
     **mode**
-      Collects a decimal string giving the mode of the file or directory.
+      Adds a decimal string giving the mode of the file or directory.
       The 12 bits corresponding to the mask 07777 are the file mode bits
       and the least significant 9 bits (0777) are the file permission bits.
     **type**
-      Collects the type of the file or directory. The type of file name
+      Adds the type of the file or directory. The type of file name
       will be one of "file", "directory", "characterSpecial",
       "blockSpecial", "fifo", "link", or "socket".
     **uid**
-      Collects the user ID of the owner of the file or directory.
+      Adds the user ID of the owner of the file or directory.
     **gid**
-      Collects the group ID of the owner of the file or directory.
+      Adds the group ID of the owner of the file or directory.
     **atime**
-      Collects a decimal string giving the time at which file name was
+      Adds a decimal string giving the time at which file name was
       last accessed.   
     **ctime**
-      Collects a decimal string giving the time at which the status of file
+      Adds a decimal string giving the time at which the status of file
       name was changed. Status may be changed by writing or by setting
       inode information (i.e., owner, group, link count, mode, etc.).
     **mtime**
-      Collects a decimal string giving the time at which file name was
-      last modified.   
-    **permissions**
-      Collects a decimal string giving the time at which file name was
+      Adds a decimal string giving the time at which file name was
       last modified.   
     **all**
-      Collect the all the above fields.
+      Adds all the above fields.
 
-  **-directory** 
-    Add directory entries to the table.
+  **-hidden**   
+    Include hidden files (files that start with a ".")
 
-  **-executable** 
-    Add executable file and directory entries to the table.
+  **-nocase**   
+    Ignore case when matching patterns using the **-patterns** switch.
+    
+  **-patterns** *patternList*
+    Only include files and directories that match one or more patterns.
+    *PatternList* is a TCL list of **glob**\-style patterns.  (such as
+    "*.jpg").  Matching is done in a fashion similar to that used by the
+    TCL **glob** command.
 
-  **-file** 
-    Add file entries to the table.
+  **-permissions** *permString*
+    Only include files or directories that have the one or more of the
+    permssions in *permString*.  *PermString* is a string that may contain
+    any of the following letters.
 
-  **-hidden** 
-    Add hidden file and directory entries to the table.  
+    **r**
+      Entry is readable by the user.
+    **w**
+      Entry is writable by the user.
+    **x**
+      Entry is executable by the user.
 
-  **-link** 
-    Add link entries to the table.
+  **-readonly**
+    Only include files and directories that are readable by the user.
 
-  **-pattern** *pattern*
-    Only add entries matching *pattern* to the table. *Pattern* is a
-    **glob**\-style pattern.  Matching is done in a fashion similar to that
-    used by the TCL **glob** command.
+  **-type** *typeList*
+    Only include files or directories that have the match types in
+    *typeList*.  *TypeList* may contain any of the following.
 
-
-  **-readable** 
-    Add readable file and directory entries to the table.
-
-  **-readonly** 
-    Add read-only (not writable) file and directory entries to the table.
-
-  **-writable** 
-    Add writable file and directory entries to the table.
+    **block**
+      Type of entry is block (buffered) special.
+    **character**
+      Type of entry is character (unbuffered) special.
+    **directory**
+      Type of entry is a directory.
+    **file**
+      Type of entry is a regular file.
+    **link**
+      Type of entry is a link.  
+    **pipe**
+      Type of entry is a pipe (fifo).  
+    **socket**
+      Type of entry is a socket.
 
 *tableName* **dump** ?\ *switches* ... ?
   Converts the contents of *tableName* into a string representation.  This
@@ -537,12 +558,12 @@ the command.  The operations available for *datatables* are listed below.
   values**, **get** **sort**, **row get**, and **row values** operations.
   The default is "".
 
-*tableName* **exists** *row* *column*
-  Indicates if a cell value exists at *row*, *column* in *tableName*.
-  *Row* and *column* may be a label, index, or tag, but may not represent
-  more than one row or column. If the cell is empty, then "0" is returned.
-  If either *row* or *column* do not exist, "0" is returned.  Otherwise,
-  "1" is returned.
+*tableName* **exists** *rowName* *columnName*
+  Indicates if a cell value exists at *rowName*, *columnName* in
+  *tableName*.  *RowName* and *columnName* may be a label, index, or tag,
+  but may not represent more than one row or column. If the cell is empty,
+  then "0" is returned.  If either *rowName* or *columnName* do not exist,
+  "0" is returned.  Otherwise, "1" is returned.
 
 *tableName* **export** *dataFormat* ?\ *switches* ... ?
   Exports *tableName* into another format. *DataFormat* is one of the
@@ -562,8 +583,8 @@ the command.  The operations available for *datatables* are listed below.
   **-addtag**  *tagName*
     Add *tagName* to each returned row.
 
-  **-emptyvalue**  *string*
-    Return *string* for empty cells when evaluating column variables.
+  **-emptyvalue**  *emptyString*
+    Return *emptyString* for empty cells when evaluating column variables.
 
   **-invert**  
     Returns rows that where *rowExpr* is false.
@@ -575,37 +596,38 @@ the command.  The operations available for *datatables* are listed below.
     Consider only the rows in *rowList*.  *RowList* is a list of
     of row labels, indices, or tags that may refer to multiple rows.
 
-*tableName* **get** *row* *column* ?\ *defValue*\ ?
-  Returns the cell value at *row*, *column* in *tableName*.  
-  *Row* and *column* may be a label, index, or tag, but may not represent
-  more than one row or column. If the cell is empty, then the empty value
-  string is returned. By default it's an error if either *row* or *column*
-  do not exist but the *defValue* argument lets you return a known value
-  instead of generating an error. *DefValue* can be any string.
+*tableName* **get** *rowName* *columnName* ?\ *defValue*\ ?
+  Returns the cell value at *rowName*, *columnName* in *tableName*.
+  *RowName* and *columnName* may be a label, index, or tag, but may not
+  represent more than one row or column. If the cell is empty, then the
+  empty value string is returned. By default it's an error if either
+  *rowName* or *columnName* do not exist but the *defValue* argument lets
+  you return a known value instead of generating an error. *DefValue* can
+  be any string.
   
 *tableName* **import** *dataFormat* ?\ *switches* ... ?
   Import data into *tableName* from another format. *DataFormat* is one of
   the different formats are described in the section `DATATABLE FORMATS`_
   below. *Switches* are specific to *dataFormat*.
 
-*tableName* **keys** *column* ?\ *column* ... ?
-
+*tableName* **keys** *columnName* ?\ *columnName* ... ?
   Generates an internal lookup table from the columns given.  This is
   especially useful when a combination of column values uniquely represent
-  rows of the table. *Column* may be a label, index, or tag, but may not
-  represent more than one row or column.
+  rows of the table. *ColumnName* may be a label, index, or tag, but may
+  not represent more than one row or column.
   
-*tableName* **lappend** *row* *column* ?\ *value* ... ?
-  Appends one or more values to the current value at *row*, *column* in
-  *tableName*.  Each new value is appended as a list element. Both *row*
-  and *column* may be a label, index, or tag, and may represent more than
-  one row or column. This command is for "string" cells only.
+*tableName* **lappend** *rowName* *columnName* ?\ *value* ... ?
+  Appends one or more values to the current value at *rowName*,
+  *columnName* in *tableName*.  Each new value is appended as a list
+  element. Both *rowName* and *columnName* may be a label, index, or tag,
+  and may represent more than one row or column. This command is for
+  "string" cells only.
 
-*tableName* **limits** ?\ *column*\ ?
-  Returns the minimum and maximum cell values in *tableName*.  If *column*
-  is present, the minimum and maximum cell values in *column* are returned.
-  *Column* may be a column label, index, or tag, but may not represent more
-  than one column.
+*tableName* **limits** ?\ *columnName*\ ?
+  Returns the minimum and maximum cell values in *tableName*.  If
+  *columnName* is present, the minimum and maximum cell values in
+  *columnName* are returned.  *ColumnName* may be a column label, index, or
+  tag, but may not represent more than one column.
 
 *tableName* **lookup** ?\ *value* ... ?
   Searches for the row matching the values keys given.  *Value* is a value
@@ -614,17 +636,17 @@ the command.  The operations available for *datatables* are listed below.
   **keys** operation.  If a matching combination is found, the index of the
   row is returned, otherwise "-1".
 
-*tableName* **maximum** ?\ *column*\ ?
-  Returns the maximum cell value in the table.  If a *column* argument is
-  present, the maximum cell value in *column* is returned.  *Column* may be
-  a column label, index, or tag, but may not represent more than one
-  column.
+*tableName* **maximum** ?\ *columnName*\ ?
+  Returns the maximum cell value in the table.  If a *columnName* argument
+  is present, the maximum cell value in *columnName* is returned.
+  *ColumnName* may be a column label, index, or tag, but may not represent
+  more than one column.
 
-*tableName* **minimum** ?\ *column*\ ?
-  Returns the minimum cell value in the table.  If a *column* argument is
-  present, the maximum cell value in *column* is returned.  *Column* may be
-  a column label, index, or tag, but may not represent more than one
-  column.
+*tableName* **minimum** ?\ *columnName*\ ?
+  Returns the minimum cell value in the table.  If a *columnName* argument
+  is present, the maximum cell value in *columnName* is returned.
+  *ColumnName* may be a column label, index, or tag, but may not represent
+  more than one column.
 
 *tableName* **numcolumns** ?\ *numColumns*\ ?
   Sets or gets the number of column in *tableName*.  If no *numColumns*
@@ -642,8 +664,8 @@ the command.  The operations available for *datatables* are listed below.
   Restores *tableName* from a previously dumped state (see the **dump**
   operation).  *Switches* can be any of the following:
   
-  **-data**  *string*
-    Reads the dump information from *string*.
+  **-data**  *dataString*
+    Reads the dump information from *dataString*.
 
   **-file**  *fileName*
     Reads the dump information from *fileName*.
@@ -676,19 +698,17 @@ the command.  The operations available for *datatables* are listed below.
     to *tableName* is also the source table.
 
 *tableName* **row create** ?\ *switches* ... ?
-  Creates a new row in *tableName*. The cells of the new row
-  is initially empty. The index of the new row is returned.
-  *Switches* can be any of the following:  
+  Creates a new row in *tableName*. The cells of the new row is initially
+  empty. The index of the new row is returned.  *Switches* can be any of
+  the following:
 
-  **-after** *row*
-    The position of the new row will be after *row*. *Row* may
-    be a label, index, or tag, but may not represent more than one
-    row.
+  **-after** *rowName*
+    The position of the new row will be after *rowName*. *RowName* may be a
+    label, index, or tag, but may not represent more than one row.
 
-  **-before** *row*
-    The position of the new row will be before *row*. *Row* may
-    be a label, index, or tag, but may not represent more than one
-    row.
+  **-before** *rowName*
+    The position of the new row will be before *rowName*. *RowName* may be
+    a label, index, or tag, but may not represent more than one row.
 
   **-label** *label*
     Specifies the label for the new row.
@@ -696,47 +716,46 @@ the command.  The operations available for *datatables* are listed below.
   **-tags** *tagList*
     Specifies the tags for the new row.
 
-*tableName* **row delete** ?\ *row* ... ?
-  Deletes one or more rows from *tableName*. *Row* may be a row
-  label, index, or tag and may refer to multiple rows (example: "all").
-
-*tableName* **row duplicate** ?\ *row* ... ?
-  Creates duplicate rows for each *row* given.  The row label is
-  duplicated and row tags are copied. *Row* may be a row label,
+*tableName* **row delete** ?\ *rowName* ... ?
+  Deletes one or more rows from *tableName*. *RowName* may be a row label,
   index, or tag and may refer to multiple rows (example: "all").
-  
-*tableName* **row empty** *row*
-  Returns the column indices of the empty cells in *row*.  *Row*
-  may be a label, index, or tag, but may not represent more than one
-  row.
 
-*tableName* **row exists** *row*
-  Indicates if *row* exists in *tableName*. *Row* may be a label,
-  index, or tag, but may not represent more than one row.  Returns "1"
-  if the row exists, "0" otherwise.
+*tableName* **row duplicate** ?\ *rowName* ... ?
+  Creates duplicate rows for each *rowName* given.  The row label is
+  duplicated and row tags are copied. *RowName* may be a row label, index,
+  or tag and may refer to multiple rows (example: "all").
+  
+*tableName* **row empty** *rowName*
+  Returns the column indices of the empty cells in *rowName*.  *RowName*
+  may be a label, index, or tag, but may not represent more than one row.
+
+*tableName* **row exists** *rowName*
+  Indicates if *rowName* exists in *tableName*. *RowName* may be a label,
+  index, or tag, but may not represent more than one row.  Returns "1" if
+  the row exists, "0" otherwise.
 
 *tableName* **row extend** *numRows* ?\ *switches* ... ?
-  Extends *tableName* by one of more rows.  *NumRows* indicates how
-  many new rows to add. *Switches* can be any of the following:
+  Extends *tableName* by one of more rows.  *NumRows* indicates how many
+  new rows to add. *Switches* can be any of the following:
 
   **-labels** *list*
     Specifies the labels for the new rows.  
 
-*tableName* **row get** ?\ *-labels*\ ? *row* ?\ *column* ... ?
-  Returns the values from the specified row.  *Row* may be a label, index,
-  or tag, but may not represent more than one row.  By default all the
-  values of *row* are returned, but if one or more *column* arguments are
-  specified, then only the values for specified columns are retrieved.
-  *Column* may be a column label, index, or tag and may not represent more
-  than one column.
+*tableName* **row get** ?\ *-labels*\ ? *rowName* ?\ *columnName* ... ?
+  Returns the values from the specified row.  *RowName* may be a label,
+  index, or tag, but may not represent more than one row.  By default all
+  the values of *rowName* are returned, but if one or more *columnName*
+  arguments are specified, then only the values for specified columns are
+  retrieved.  *ColumnName* may be a column label, index, or tag and may not
+  represent more than one column.
 
   This command returns pairs of values and column indices of the selected
   cells. If the *-labels* flag is present, the column label is returned
   instead of the index.
 
-*tableName* **row index** *row* 
-  Returns the index of the specified row.  *Row* may be a
-  label, index, or tag, but may not represent more than one row.
+*tableName* **row index** *rowName* 
+  Returns the index of the specified row.  *RowName* may be a label, index,
+  or tag, but may not represent more than one row.
   
 *tableName* **row indices** ?\ *switches* ... ? ?\ *pattern* ... ?
   Returns the indices of the row whose labels match any *pattern*.
@@ -748,10 +767,9 @@ the command.  The operations available for *datatables* are listed below.
     Return only the indices of rows with duplicate labels.
 
 *tableName* **row join** *srcTable* ?\ *switches* ... ?
-  Copies the rows of *srcTable* into *tableName*. New rows are
-  created for each row in *srcTable*. Duplicate row labels may be
-  created. Row tags are also copied. *Switches* can be any of the
-  following:
+  Copies the rows of *srcTable* into *tableName*. New rows are created for
+  each row in *srcTable*. Duplicate row labels may be created. Row tags are
+  also copied. *Switches* can be any of the following:
 
   **-rows** *rowList*
     Specifies the subset of rows from *srcTable* to add.  *RowList* is a
@@ -768,15 +786,15 @@ the command.  The operations available for *datatables* are listed below.
     index, or tag and may refer to multiple columns (example: "all"). By
     default all columns are added.
     
-*tableName* **row label** *row* ?\ *label*\ ?  ?\ *row* *label* ... ?
-  Gets or sets the label of the specified row(s).  *Row* may be a label,
-  index, or tag, but may not represent more than one row.  If *row* is the
-  only argument, then the row label is returned.  If one or more *row* and
-  *label* pairs are specified, this command sets the labels of the
-  specified rows.
+*tableName* **row label** *rowName* ?\ *label*\ ?  ?\ *rowName* *label* ... ?
+  Gets or sets the label of the specified row(s).  *RowName* may be a
+  label, index, or tag, but may not represent more than one row.  If
+  *rowName* is the only argument, then the row label is returned.  If one
+  or more *rowName* and *label* pairs are specified, this command sets the
+  labels of the specified rows.
   
-*tableName* **row labels** *row* ?\ *labelList*\ ?
-  Gets or sets the labels of the specified row.  *Row* may be a label,
+*tableName* **row labels** *rowName* ?\ *labelList*\ ?
+  Gets or sets the labels of the specified row.  *RowName* may be a label,
   index, or tag, but may not represent more than one row. If a *labelList*
   argument is present, then the row labels are set from the list of labels.
 
@@ -789,63 +807,63 @@ the command.  The operations available for *datatables* are listed below.
 *tableName* **row names**  ?\ *pattern* ... ?
   Returns the labels of the rows in *tableName*.  If one of *pattern*
   arguments are present, then the label of any row matching one of the
-  patterns is returned. *Pattern* is a **glob**\-style pattern.
-  Matching is done in a fashion similar to that used by the TCL **glob**
-  command.
+  patterns is returned. *Pattern* is a **glob**\-style pattern.  Matching
+  is done in a fashion similar to that used by the TCL **glob** command.
 
-*tableName* **row nonempty**  *row*
-  Returns the column indices of the non-empty cells in the row.  *Row* may
+*tableName* **row nonempty**  *rowName*
+  Returns the column indices of the non-empty cells in the row.  *RowName* may
   be a label, index, or tag, but may not represent more than one row.
 
-*tableName* **row set**  *row* ?\ *column* *value* ... ? 
-  Sets values for cells in the specified row. *Row* may be a label, index,
-  or tag and may refer to multiple rows (example: "all").  If one or more
-  *column* *value* pairs are given then the cell at *column*, *row* is set
-  to *value*.  If either *column* or *row* does not exist, the column or
-  row is automatically created. If the column or row is an index,
-  *tableName* may automatically grow. If the column type is something other
-  than *string*, *value* will be converted into the correct type.  If the
-  conversion fails, an error will be returned.  See the **column type**
-  operation for a description of the different types.
+*tableName* **row set**  *rowName* ?\ *columnName* *value* ... ? 
+  Sets values for cells in the specified row. *RowName* may be a label,
+  index, or tag and may refer to multiple rows (example: "all").  If one or
+  more *columnName* *value* pairs are given then the cell at *columnName*,
+  *rowName* is set to *value*.  If either *columnName* or *rowName* does
+  not exist, the column or row is automatically created. If the column or
+  row is an index, *tableName* may automatically grow. If the column type
+  is something other than **string**, *value* will be converted into the
+  correct type.  If the conversion fails, an error will be returned.  See
+  the **column type** operation for a description of the different types.
 
-*tableName* **row tag add**  *tag* ?\ *row* ... ? 
-  Adds the tag to *row*.  *Tag* is an arbitrary string but can't be one of
-  the built-in tags ("all" or "end"). It is not an error if *row* already
-  has the tag. If no *row* arguments are present, *tag* is added to
-  *tableName* but refers to no rows.  This is useful for creating empty row
-  tags.
+*tableName* **row tag add**  *tagName* ?\ *rowName* ... ? 
+  Adds the tag to *rowName*.  *TagName* is an arbitrary string but can't be
+  one of the built-in tags ("all" or "end"). It is not an error if
+  *rowName* already has the tag. If no *rowName* arguments are present,
+  *tagName* is added to *tableName* but refers to no rows.  This is useful
+  for creating empty row tags.
 
-*tableName* **row tag delete**  *row* ?\ *tag* ... ? 
-  Removes one or more tags from *row*.  *Tag* is an arbitrary string but
-  can't be one of the built-in tags ("all" or "end"). The built-in tags
-  "all" and "end" can't be deleted.
+*tableName* **row tag delete**  *rowName* ?\ *tagName* ... ? 
+  Removes one or more tags from *rowName*.  *TagName* is an arbitrary
+  string but can't be one of the built-in tags ("all" or "end"). The
+  built-in tags "all" and "end" can't be deleted.
 
-*tableName* **row tag exists**  *tag* ?\ *row* ... ? 
-  Indicates if any row in *tableName* has the tag.  *Tag* is an arbitrary
-  string.  Returns "1" if the tag exists, "0" otherwise.  By default all
-  rows are searched. But if one or more *row* arguments are present, then
-  if the tag is found in any *row*, "1" is returned. *Row* may be a label,
-  index, or tag and may refer to multiple rows (example: "all").
+*tableName* **row tag exists**  *tagName* ?\ *rowName* ... ? 
+  Indicates if any row in *tableName* has the tag.  *TagName* is an
+  arbitrary string.  Returns "1" if the tag exists, "0" otherwise.  By
+  default all rows are searched. But if one or more *rowName* arguments are
+  present, then if the tag is found in any *rowName*, "1" is
+  returned. *RowName* may be a label, index, or tag and may refer to
+  multiple rows (example: "all").
 
-*tableName* **row tag forget**  ?\ *tag* ... ? 
-  Remove one or more tags from all the rows in *tableName*. *Tag* is an
+*tableName* **row tag forget**  ?\ *tagName* ... ? 
+  Remove one or more tags from all the rows in *tableName*. *TagName* is an
   arbitrary string but can't be one of the built-in tags ("all" or "end").
 
-*tableName* **row tag get** *row* ?\ *pattern* ... ? 
-  Returns the tags for *row*. *Row* may be a label, index, or tag, but may
-  not represent more than one row. By default all tags for *row* are
-  returned.  But if one or more *pattern* arguments are present, then any
-  tag that matching one of the patterns will be returned.  *Pattern* is a
-  **glob**\-style pattern.  Matching is done in a fashion similar to that
-  used by the TCL **glob** command.
+*tableName* **row tag get** *rowName* ?\ *pattern* ... ? 
+  Returns the tags for *rowName*. *RowName* may be a label, index, or tag,
+  but may not represent more than one row. By default all tags for
+  *rowName* are returned.  But if one or more *pattern* arguments are
+  present, then any tag that matching one of the patterns will be returned.
+  *Pattern* is a **glob**\-style pattern.  Matching is done in a fashion
+  similar to that used by the TCL **glob** command.
 
-*tableName* **row tag indices** ?\ *tag* ... ? 
-  Returns the indices of rows that have one or more *tag*. *Tag* is an
+*tableName* **row tag indices** ?\ *tagName* ... ? 
+  Returns the indices of rows that have one or more *tagName*. *TagName* is
+  an arbitrary string.
+
+*tableName* **row tag labels** ?\ *tagName* ... ? 
+  Returns the row labels that have one or more *tagName*. *TagName* is an
   arbitrary string.
-
-*tableName* **row tag labels** ?\ *tag* ... ? 
-  Returns the row labels that have one or more *tag*. *Tag* is an arbitrary
-  string.
 
 *tableName* **row tag names** ?\ *pattern* ... ? 
   Returns the row tags of the table. By default all row tags are
@@ -854,47 +872,49 @@ the command.  The operations available for *datatables* are listed below.
   **glob**\-style pattern.  Matching is done in a fashion similar to that
   used by the TCL **glob** command.
 
-*tableName* **row tag range** *first* *last* ?\ *tag* ... ? 
+*tableName* **row tag range** *first* *last* ?\ *tagName* ... ? 
   Adds one or more tags the rows in the range given.  *First* and *last*
   may be a row label, index, or tag, but may not represent more than one
-  row. *Tag* is an arbitrary string but can't be one of the built-in tags
-  ("all" or "end").
+  row. *TagName* is an arbitrary string but can't be one of the built-in
+  tags ("all" or "end").
 
-*tableName* **row tag set** *row* ?\ *tag* ... ?
-  Adds one or more tags to *row*. *Row* may be a row label, index, or tag
-  and may refer to multiple rows (example: "all"). *Tag* is an arbitrary
-  string but can't be one of the built-in tags ("all" or "end").
-
-*tableName* **row tag unset** *row* \? *tag* ... ?
-  Remove one or more tags from *row*. *Row* may be a row label, index, or
-  tag and may refer to multiple rows (example: "all").  *Tag* is an
+*tableName* **row tag set** *rowName* ?\ *tagName* ... ?
+  Adds one or more tags to *rowName*. *RowName* may be a row label, index,
+  or tag and may refer to multiple rows (example: "all"). *TagName* is an
   arbitrary string but can't be one of the built-in tags ("all" or "end").
 
-*tableName* **row unset**  *row* ?\ *column* ... ?
-  Unsets the cell values of *row*.  *Row* may be a label, index, or tag,
-  but may not represent more than one row.  Bu default all cells in *row*
-  are unset, but one or more *column* and *value* pairs are specified, only
-  those cells at *column*, *row* are unset.  *Column* may be a column
-  label, index, or tag and may refer to multiple columns (example: "all").
+*tableName* **row tag unset** *rowName* \? *tagName* ... ?
+  Remove one or more tags from *rowName*. *RowName* may be a row label,
+  index, or tag and may refer to multiple rows (example: "all").  *TagName*
+  is an arbitrary string but can't be one of the built-in tags ("all" or
+  "end").
 
-*tableName* **row values**  *row* ?\ *valueList*\ ?
-  Gets or sets the cell values of *row*.  *Row* may be a label, index, or
-  tag, but may not represent more than one row.  If no *valueList* argument
-  is present, this command returns the values of all the cells in *row*.
-  Otherwise this command sets the cell values of *row* from the elements of
-  the list *valueList*.  If there are more values in *valueList* than
-  columns in the table, the table is extended.  If there are less, the
-  remaining cells remain the same.
+*tableName* **row unset**  *rowName* ?\ *columnName* ... ?
+  Unsets the cell values of *rowName*.  *RowName* may be a label, index, or
+  tag, but may not represent more than one row.  Bu default all cells in
+  *rowName* are unset, but one or more *columnName* and *value* pairs are
+  specified, only those cells at *columnName*, *rowName* are unset.
+  *ColumnName* may be a column label, index, or tag and may refer to
+  multiple columns (example: "all").
 
-*tableName* **set** *row* *column* *value* 
-  Sets the value at *row*, *column* in *tableName*.  *Row* and *column* may
-  be a label, index, or tag and may refer to multiple rows (example:
-  "all"). If either *row* or *column* is and index or label and does not
-  already exist, the row or column is automatically created.  If the row or
-  column is an index, *tableName* may automatically grow. *Value* is the
-  value to be set.  If the column type is not *string*, *value* is
-  converted into the correct type.  If the conversion fails, an error will
-  be returned.
+*tableName* **row values**  *rowName* ?\ *valueList*\ ?
+  Gets or sets the cell values of *rowName*.  *RowName* may be a label,
+  index, or tag, but may not represent more than one row.  If no
+  *valueList* argument is present, this command returns the values of all
+  the cells in *rowName*.  Otherwise this command sets the cell values of
+  *rowName* from the elements of the list *valueList*.  If there are more
+  values in *valueList* than columns in the table, the table is extended.
+  If there are less, the remaining cells remain the same.
+
+*tableName* **set** *rowName* *columnName* *value* 
+  Sets the value at *rowName*, *columnName* in *tableName*.  *RowName* and
+  *columnName* may be a label, index, or tag and may refer to multiple rows
+  (example: "all"). If either *rowName* or *columnName* is and index or
+  label and does not already exist, the row or column is automatically
+  created.  If the row or column is an index, *tableName* may automatically
+  grow. *Value* is the value to be set.  If the column type is not
+  **string**, *value* is converted into the correct type.  If the conversion
+  fails, an error will be returned.
 
 *tableName* **sort** ?\ *switches* ... ?
   Sorts the table.  Column are compared in order. The type comparison is
@@ -961,12 +981,12 @@ the command.  The operations available for *datatables* are listed below.
     *tableName* will not be rearranged.  A list of the row values
     will be returned instead.
 
-*tableName* **trace cell** *row* *column* *ops* *cmdPrefix*
-  Registers a command to be invoked when the cell (designated by *row* and
-  *column*) value is read, written, or unset. *Row* and *column* may be a
-  label, index, or tag and may refer to multiple rows (example: "all").
-  *Ops* indicates which operations are of interest, and consists of one or
-  more of the following letters:
+*tableName* **trace cell** *rowName* *columnName* *ops* *cmdPrefix*
+  Registers a command to be invoked when the cell (designated by *rowName*
+  and *columnName*) value is read, written, or unset. *RowName* and
+  *columnName* may be a label, index, or tag and may refer to multiple rows
+  (example: "all").  *Ops* indicates which operations are of interest, and
+  consists of one or more of the following letters:
 
   **r**
     Invoke *cmdPrefix* whenever the cell value is read. 
@@ -982,11 +1002,12 @@ the command.  The operations available for *datatables* are listed below.
   and the operation letter are appended to the command before it is
   invoked.
 
-*tableName* **trace column** *column* *ops* *cmdPrefix*
-  Registers a command to be invoked any cell in *column* is read,
-  written, or unset. *Column* may be a label, index, or tag and may refer
-  to multiple columns (example: "all").  *Ops* indicates which operations
-  are of interest, and consists of one or more of the following letters:
+*tableName* **trace column** *columnName* *ops* *cmdPrefix*
+  Registers a command to be invoked any cell in *columnName* is read,
+  written, or unset. *ColumnName* may be a label, index, or tag and may
+  refer to multiple columns (example: "all").  *Ops* indicates which
+  operations are of interest, and consists of one or more of the following
+  letters:
 
   **r**
     Invoke *cmdPrefix* whenever the cell value is read. 
@@ -1008,8 +1029,8 @@ the command.  The operations available for *datatables* are listed below.
   or **trace row** operations.
 
 *tableName* **trace info** *traceName*
-  Describes *traceName*.  A list of the trace's *name*, *row*, *column*,
-  *flags*, and *command* and their values is returned.
+  Describes *traceName*.  A list of the trace's name, row, column, flags,
+  and command and their values is returned.
   
 *tableName* **trace names** ?\ *pattern* ... ?
   Returns the names of the traces currently registered. This includes cell,
@@ -1018,11 +1039,11 @@ the command.  The operations available for *datatables* are listed below.
   returned. *Pattern* is a **glob**\-style pattern.  Matching is done in a
   fashion similar to that used by the TCL **glob** command.
    
-*tableName* **trace row** *row* *how* *cmdPrefix*
-  Registers a command when any cell in *row* is read, written, or
-  unset. *Row* may be a label, index, or tag and may refer to multiple rows
-  (example: "all").  *Ops* indicates which operations are of interest, and
-  consists of one or more of the following letters:
+*tableName* **trace row** *rowName* *how* *cmdPrefix*
+  Registers a command when any cell in *rowName* is read, written, or
+  unset. *RowName* may be a label, index, or tag and may refer to multiple
+  rows (example: "all").  *Ops* indicates which operations are of interest,
+  and consists of one or more of the following letters:
 
   **r**
     Invoke *cmdPrefix* whenever the cell value is read. 
@@ -1038,16 +1059,16 @@ the command.  The operations available for *datatables* are listed below.
   and the operation letter are appended to the command before it is
   invoked.
 
-*tableName* **unset** *row* *column* ?\ *row* *column* ... ?
-  Unsets the values located at one or more *row*, *column* locations.
-  *Row* and *column* may be a label, index, or tag and may refer
-  to multiple rows or columns (example "all").  When a value
-  is unset the cell becomes empty.
+*tableName* **unset** *rowName* *columnName* ?\ *rowName* *columnName* ... ?
+  Unsets the values located at one or more *rowName*, *columnName*
+  locations.  *RowName* and *columnName* may be a label, index, or tag and
+  may refer to multiple rows or columns (example "all").  When a value is
+  unset the cell becomes empty.
   
-*tableName* **watch column**  *column* ?\ *flags* ... ? *cmdPrefix*
+*tableName* **watch column**  *columnName* ?\ *flags* ... ? *cmdPrefix*
   Registers a command to be invoked when an event occurs on a column of
   *tableName*. The events include when columns are added, deleted, moved or
-  relabeled.  *Column* may be a label, index, or tag and may refer to
+  relabeled.  *ColumnName* may be a label, index, or tag and may refer to
   multiple columns (example: "all").  *Flags* indicates which events are of
   interest. They are described below.
 
@@ -1088,10 +1109,10 @@ the command.  The operations available for *datatables* are listed below.
   returned. *Pattern* is a **glob**\-style pattern.  Matching is done in a
   fashion similar to that used by the TCL **glob** command.
    
-*tableName* **watch row**  *row* ?\ *flags*\ ? *cmdPrefix*
+*tableName* **watch row**  *rowName* ?\ *flags*\ ? *cmdPrefix*
   Registers a command to be invoked when an event occurs on a row of
   *tableName*. The events include when rows are added, deleted, moved or
-  relabeled.  *Row* may be a label, index, or tag and may refer to
+  relabeled.  *RowName* may be a label, index, or tag and may refer to
   multiple rows (example: "all").  *Flags* indicates which events are of
   interest. They are described below.
 
@@ -1149,15 +1170,15 @@ format in the **import** or **export** operations.
   **-columnlabels** *labelList*
     Set the column labels from the list of labels in *labelList*.
 
-  **-comment** *commChar*
+  **-comment** *commentChar*
    Specifies a comment character.  Any line in the CSV file starting
    with this character is treated as a comment and ignored.  By default
    the comment character is "", indicating no comments.
 
-  **-data** *string*
-    Read the CSV data from *string*.
+  **-data** *dataString*
+    Read the CSV data from *dataString*.
 
-  **-emptyvalue** *string*
+  **-emptyvalue** *emptyString*
     Specifies a string value to use for cells when empty fields
     are found in the CSV data.
 
@@ -1175,10 +1196,10 @@ format in the **import** or **export** operations.
   **-maxrows** *numRows*
     Specifies the maximum number of rows to load into the table. 
 
-  **-possibleseparators**  *string*
+  **-possibleseparators**  *separatorsString*
     Specifies a string of chararacters to test as possible separators for
-    the data. It *string* is "", then default set of characters is used.
-    The default is ",\t|;".
+    the data. It *separatorsString* is "", then default set of characters
+    is used.  The default is ",\t|;".
 
   **-quote** *quoteChar*
     Specifies the quote character.  This is by default the double quote (")
@@ -1186,7 +1207,7 @@ format in the **import** or **export** operations.
 
   **-separator** *sepChar*
     Specifies the separator character.  By default this is the comma (,)
-    character. If *char* is "auto", then the separator is automatically
+    character. If *sepChar* is "auto", then the separator is automatically
     determined.
 
 *tableName* **export csv** ?\ *switches* ... ?
@@ -1195,8 +1216,8 @@ format in the **import** or **export** operations.
   import switches are supported:
 
   **-columnlabels** 
-    Indicates to create an extra row in the CSV containing the
-    column labels.
+    Indicates to create an extra row in the CSV containing the column
+    labels.
 
   **-columns** *columnList*
     Specifies the subset of columns from *tableName* to export.
@@ -1218,10 +1239,10 @@ format in the **import** or **export** operations.
     row labels.
 
   **-rows** *rowList*
-    Specifies the subset of rows from *tableName* to export.  *RowList* is a
-    list of row specifiers. Each specifier may be a row label, index, or tag
-    and may refer to multiple row (example: "all").  By default all rows are
-    exported.
+    Specifies the subset of rows from *tableName* to export.  *RowList* is
+    a list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are exported.
 
   **-separator** *sepChar*
     Specifies the separator character.  This is by default the comma (,)
@@ -1260,19 +1281,19 @@ format in the **import** or **export** operations.
   **-port** *portNumber*
     Specifies the port number of the *Mysql* server.
 
-  **-query** *string*
+  **-query** *queryString*
     Specifies the SQL query to make to the *Mysql* database.
 
 *tableName* **export mysql** ?\ *switches* ... ?
   Exports *tableName* to a *Mysql* database.  The **-db**, **-host**,
-  **-password**, **-port** and **-query** switches are required.
-  The following switches are supported:
+  **-password**, **-port** and **-query** switches are required.  The
+  following switches are supported:
 
   **-columns** *columnList*
-    Specifies the subset of columns from *tableName* to export.  *ColumnList*
-    is a list of column specifiers. Each specifier may be a column label,
-    index, or tag and may refer to multiple columns (example: "all"). By
-    default all columns are exported.
+    Specifies the subset of columns from *tableName* to export.
+    *ColumnList* is a list of column specifiers. Each specifier may be a
+    column label, index, or tag and may refer to multiple columns (example:
+    "all"). By default all columns are exported.
 
   **-db** *dbName*
     Specifies the name of the database.  
@@ -1287,10 +1308,10 @@ format in the **import** or **export** operations.
     Specifies the port number of the *Mysql* server.
 
   **-rows** *rowList*
-    Specifies the subset of rows from *tableName* to export.  *RowList* is a
-    list of row specifiers. Each specifier may be a row label, index, or tag
-    and may refer to multiple row (example: "all").  By default all rows are
-    exported.
+    Specifies the subset of rows from *tableName* to export.  *RowList* is
+    a list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are exported.
 
   **-table** *tableName*
     Specifies the name of the table.
@@ -1331,7 +1352,7 @@ format in the **import** or **export** operations.
   **-port** *portNumber*
     Specifies the port number of the *Postgresql* server.
 
-  **-query** *string*
+  **-query** *queryString*
     Specifies the SQL query to make to the *Postgresql* database.
 
   **-table** *tableName*
@@ -1343,10 +1364,10 @@ format in the **import** or **export** operations.
   following switches are supported:
 
   **-columns** *columnList*
-    Specifies the subset of columns from *tableName* to export.  *ColumnList*
-    is a list of column specifiers. Each specifier may be a column label,
-    index, or tag and may refer to multiple columns (example: "all"). By
-    default all columns are exported.
+    Specifies the subset of columns from *tableName* to export.
+    *ColumnList* is a list of column specifiers. Each specifier may be a
+    column label, index, or tag and may refer to multiple columns (example:
+    "all"). By default all columns are exported.
 
   **-db** *dbName*
     Specifies the name of the database.  
@@ -1365,10 +1386,10 @@ format in the **import** or **export** operations.
     Specifies the port number of the *Postgresql* server.
 
   **-rows** *rowList*
-    Specifies the subset of rows from *tableName* to export.  *RowList* is a
-    list of row specifiers. Each specifier may be a row label, index, or tag
-    and may refer to multiple row (example: "all").  By default all rows are
-    exported.
+    Specifies the subset of rows from *tableName* to export.  *RowList* is
+    a list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are exported.
 
   **-table** *tableName*
     Specifies the name of the *Postgresql* table being written.
@@ -1391,7 +1412,7 @@ format in the **import** or **export** operations.
   **-file** *fileName*
     Read from the *Sqlite* file *fileName*.
 
-  **-query** *string*
+  **-query** *queryString*
     Specifies the SQL query to make to the *Sqlite* database.
 
 *tableName* **export sqlist** ?\ *switches* ... ?
@@ -1399,10 +1420,10 @@ format in the **import** or **export** operations.
   required. The following import switches are supported:
 
   **-columns** *columnList*
-    Specifies the subset of columns from *tableName* to export.  *ColumnList*
-    is a list of column specifiers. Each specifier may be a column label,
-    index, or tag and may refer to multiple columns (example: "all"). By
-    default all columns are exported.
+    Specifies the subset of columns from *tableName* to export.
+    *ColumnList* is a list of column specifiers. Each specifier may be a
+    column label, index, or tag and may refer to multiple columns (example:
+    "all"). By default all columns are exported.
 
   **-file** *fileName*
     Write the *Sqlite* output to the file *fileName*.
@@ -1412,10 +1433,10 @@ format in the **import** or **export** operations.
     the *Sqlite* table.
 
   **-rows** *rowList*
-    Specifies the subset of rows from *tableName* to export.  *RowList* is a
-    list of row specifiers. Each specifier may be a row label, index, or tag
-    and may refer to multiple row (example: "all").  By default all rows are
-    exported.
+    Specifies the subset of rows from *tableName* to export.  *RowList* is
+    a list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are exported.
 
   **-table** *tableName*
     Name of the *Sqlite* table to write to.  If a *tableName* already
@@ -1506,8 +1527,8 @@ format in the **import** or **export** operations.
   Imports XML data into the datatable.  The following export switches are
   supported:
 
-  **-data** *string*
-    Read XML from the data *string*.
+  **-data** *dataString*
+    Read XML from the data *dataString*.
 
   **-file** *fileName*
     Read XML from the file *fileName*.
@@ -1536,10 +1557,10 @@ format in the **import** or **export** operations.
     Write the XML output to the file *fileName*.
 
   **-rows** *rowList*
-    Specifies the subset of rows from *tableName* to export.  *RowList* is a
-    list of row specifiers. Each specifier may be a row label, index, or tag
-    and may refer to multiple row (example: "all").  By default all rows are
-    exported.
+    Specifies the subset of rows from *tableName* to export.  *RowList* is
+    a list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are exported.
 
 EXAMPLE
 -------

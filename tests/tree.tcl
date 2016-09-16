@@ -2129,80 +2129,115 @@ test tree.387 {copy tree to tree -recurse} {
 0 56 {{} node14} {key1 myValue} {}
 }}
 
-test tree.389 {tree dir (no recurse flag)} {
+test tree.388 {tree dir (no recurse flag)} {
     list [catch {
-	file delete -force /tmp/testdir
-	file mkdir /tmp/testdir/dir1
-	file mkdir /tmp/testdir/dir2
-	file mkdir /tmp/testdir/dir3
-	file copy defs /tmp/testdir/dir1
+	file delete -force ./testdir
+	file mkdir ./testdir/dir1
+	file mkdir ./testdir/dir2
+	file mkdir ./testdir/dir3
+	file copy defs ./testdir/dir1
 	set tree [blt::tree create]
-	$tree dir 0 /tmp/testdir \
-	    -fields { size perms type } \
+	$tree dir 0 ./testdir \
+	    -fields { perms type } \
 	    -pattern defs \
 	    -recurse
 	set contents [$tree dump 0]
 	blt::tree destroy $tree
-	file delete -force /tmp/testdir
+	file delete -force ./testdir
 	set contents
     } msg] $msg
 } {0 {-1 0 {{}} {} {}
-0 3 {{} dir1} {size 60 perms 493 type directory} {}
-3 4 {{} dir1 defs} {size 2894 perms 420 type file} {}
+0 2 {{} dir1} {perms 493 type directory} {}
+2 3 {{} dir1 defs} {perms 420 type file} {}
 }}
+
+
+test tree.389 {tree dir -recurse} {
+    list [catch {
+	file delete -force ./testdir
+	file mkdir ./testdir/.dir0
+	file mkdir ./testdir/dir1/dir2
+	file copy defs ./testdir/dir1/dir2
+	set tree [blt::tree create]
+	$tree dir 0 ./testdir  -recurse -fields { perms type } -type f
+	set contents [$tree dump 0]
+	blt::tree destroy $tree
+	set contents
+    } msg] $msg
+} {0 {-1 0 {{}} {} {}
+0 1 {{} dir1} {perms 493 type directory} {}
+1 2 {{} dir1 dir2} {perms 493 type directory} {}
+2 3 {{} dir1 dir2 defs} {perms 420 type file} {}
+}}
+
+
 
 test tree.390 {tree dir -recurse} {
     list [catch {
-	file delete -force /tmp/testdir
-	file mkdir /tmp/testdir/.dir0
-	file mkdir /tmp/testdir/dir1/dir2
-	file copy defs /tmp/testdir/dir1/dir2
+	file delete -force ./testdir
+	file mkdir ./testdir
+	file copy defs ./testdir
 	set tree [blt::tree create]
-	$tree dir 0 /tmp/testdir  -recurse -fields { size perms type } -type f
+	$tree dir 0 ./testdir -recurse -fields { size perms type }
 	set contents [$tree dump 0]
 	blt::tree destroy $tree
-	set contents
-    } msg] $msg
-} {0 {-1 0 {{}} {} {}
-0 1 {{} dir1} {size 60 perms 493 type directory} {}
-1 2 {{} dir1 dir2} {size 60 perms 493 type directory} {}
-2 3 {{} dir1 dir2 defs} {size 2894 perms 420 type file} {}
-}}
-
-
-test tree.388 {tree dir -recurse} {
-    list [catch {
-	file delete -force /tmp/testdir
-	file mkdir /tmp/testdir
-	file copy defs /tmp/testdir
-	set tree [blt::tree create]
-	$tree dir 0 /tmp/testdir -recurse -fields { size perms type }
-	set contents [$tree dump 0]
-	blt::tree destroy $tree
-	file delete -force /tmp/testdir
+	file delete -force ./testdir
 	set contents
     } msg] $msg
 } {0 {-1 0 {{}} {} {}
 0 1 {{} defs} {size 2894 perms 420 type file} {}
 }}
 
-test tree.389 {tree dir (no recurse flag)} {
+test tree.391 {tree dir (default settings, no -recurse)} {
     list [catch {
-	file delete -force /tmp/testdir
-	file mkdir /tmp/testdir/dir1
-	file copy defs /tmp/testdir/dir1
+	file delete -force ./testdir
+	file mkdir ./testdir/dir1
+	file copy defs ./testdir/dir1
 	set tree [blt::tree create]
-	$tree dir 0 /tmp/testdir -fields { size perms type }
+	$tree dir 0 ./testdir -fields { perms type }
 	set contents [$tree dump 0]
 	blt::tree destroy $tree
-	file delete -force /tmp/testdir
+	file delete -force ./testdir
 	set contents
     } msg] $msg
 } {0 {-1 0 {{}} {} {}
-0 1 {{} dir1} {size 60 perms 493 type directory} {}
+0 1 {{} dir1} {perms 493 type directory} {}
+}}
+
+test tree.392 {tree dir -type "file pipe"} {
+    list [catch {
+	set tree [blt::tree create]
+	$tree dir 0 /dev -fields { size perms type } -type "file pipe"
+	set contents [$tree dump 0]
+	blt::tree destroy $tree
+	set contents
+    } msg] $msg
+} {0 {-1 0 {{}} {} {}
+0 1 {{} core} {size 140737477881856 perms 256 type file} {}
+0 2 {{} stderr} {size 0 perms 384 type fifo} {}
+0 3 {{} stdout} {size 0 perms 384 type fifo} {}
+0 4 {{} initctl} {size 0 perms 384 type fifo} {}
+}}
+
+test tree.393 {tree dir -type link -recurse} {
+    list [catch {
+	file delete -force ./testdir
+	file mkdir ./testdir/dir1
+	file copy defs ./testdir/dir1
+	file link -symbolic [pwd]/testdir/mylink [pwd]/testdir/dir1/defs 
+	set tree [blt::tree create]
+	$tree dir 0 ./testdir -fields { size perms type } -type "link" -recurse
+	set contents [$tree dump 0]
+	blt::tree destroy $tree
+	file delete -force ./testdir
+	set contents
+    } msg] $msg
+} {0 {-1 0 {{}} {} {}
+0 2 {{} mylink} {size 2894 perms 420 type file} {}
 }}
 
 exit 0
+
 
 
 
