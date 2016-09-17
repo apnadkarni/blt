@@ -361,7 +361,7 @@ command.  The operations available for *sftp* objects are listed below.
   existing file with a directory will result in an error.  *Switches*
   can be any of the following.
 
-  **-mode** *mode*  
+  **-mode** *modeString*  
     Specifies the permissions for the newly created directory.
 
 *sftpName* **mtime** *path* ?\ *time*\ ?
@@ -377,12 +377,13 @@ command.  The operations available for *sftp* objects are listed below.
 *sftpName* **owned** *path* 
   Returns "1" if *path* is owned by the current user, 0 otherwise.
 
-*sftpName* **put** *file* ?\ *path*\ ? ?\ *switches* ... ? 
-  Transfers *file* to the remote SFTP server.  *File* is a file on the local
-  machine. If *path* is not specified, the remote file will be create ing
-  in the current working directory on the remote and have the same name
-  as *file* on the local machine.  It is an error if the remote file already
-  exists or is a directory.  *Switches* can be any of the following.
+*sftpName* **put** *fileName* ?\ *path*\ ? ?\ *switches* ... ? 
+  Transfers *fileName* to the remote SFTP server.  *FileName* is a file on
+  the local machine. If *path* is not specified, the remote file will be
+  create ing in the current working directory on the remote and have the
+  same name as *fileName* on the local machine.  It is an error if the
+  remote file already exists or is a directory.  *Switches* can be any of
+  the following.
 
   **-cancel** *varName*  
     Specifies the name of a TCL variable to terminate the operation.
@@ -392,7 +393,7 @@ command.  The operations available for *sftp* objects are listed below.
     If the remote file already exists, it will be overwritten.  By default,
     it is an error to overwrite a remote file.
 
-  **-mode** *mode*  
+  **-mode** *modeString*  
     Specifies the permissions for the newly created file.
 
   **-progress** *cmdPrefix*  

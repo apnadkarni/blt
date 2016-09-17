@@ -612,7 +612,7 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
 {
     PaintBrushCmd *cmdPtr = clientData;
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)cmdPtr->brush;
-    int isNew;
+    int isPicture;
 
     /* Get picture from image. */
     if ((brushPtr->tile != NULL) &&
@@ -624,14 +624,13 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
         return;                         /* Image was deleted. */
     }
     brushPtr->tile = Blt_GetPictureFromImage(cmdPtr->dataPtr->interp,
-        brushPtr->tkImage, &isNew);
+        brushPtr->tkImage, &isPicture);
     if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
     }
-    if (isNew) {
+    brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
+    if (!isPicture) {
         brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
-    } else {
-        brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
     }
 }
 
@@ -1583,21 +1582,20 @@ TileBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
     
     if (brushPtr->tkImage != NULL) {
-        int isNew;
+        int isPicture;
         
         if ((brushPtr->tile != NULL) &&
             (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
             Blt_FreePicture(brushPtr->tile);
         }
         brushPtr->tile = Blt_GetPictureFromImage(interp, brushPtr->tkImage,
-                &isNew);
+                &isPicture);
         if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
             Blt_UnmultiplyColors(brushPtr->tile);
         }
-        if (isNew) {
+        brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
+        if (!isPicture) {
             brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
-        } else {
-            brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
         }
     }
     /* This is where you initialize the coloring variables. */

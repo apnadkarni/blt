@@ -78,6 +78,23 @@ markers.
   The widget can generate encapsulated PostScript output. This component
   has several options to configure how the PostScript is generated.
 
+DATA SOURCES
+------------
+
+Data for the graph is specified by the element component's **-x** and
+**-y** options.  Together they represent data points for the individual
+graph elements. The option values are data sources that can be provided in
+one of the following ways.
+
+*numberList*
+   A TCL list of floating point numbers. Data points with NaNs are
+   considered empty.
+*vectorName*
+   The name of a BLT vector.
+*tableName columnName*
+   A TCL list of two elements: the name of a BLT datatable and its
+   corresponding column.
+   
 SYNTAX
 ------
 
@@ -168,10 +185,10 @@ GRAPH OPERATIONS
     moving a marker across the plot).  See the `SPEED TIPS`_ section.  The
     default is "1".
 
-  **-cursor** *cursor*
+  **-cursor** *cursorName*
     Specifies the widget's cursor.  The default cursor is "crosshair".
 
-  **-data** *string*
+  **-data** *dataString*
     Sets an arbritrary string.  This isn't used by the widget but may be
     useful for associating data with the graph.  The default is "".
 
@@ -353,8 +370,8 @@ GRAPH OPERATIONS
 *pathName* **element** *operation* ?\ *arg*\ ... ?
   See the  `ELEMENT OPERATIONS`_ section.
 
-*pathName* **extents**  *item* 
-  Returns the size of a particular item in the graph.  *Item* must be
+*pathName* **extents**  *itemName* 
+  Returns the size of a particular item in the graph.  *ItemName* must be
   either "leftmargin", "rightmargin", "topmargin", "bottommargin",
   "plotwidth", or "plotheight".
 
@@ -412,9 +429,12 @@ GRAPH OPERATIONS
     region will be displayed.  Otherwise, the entire set of data points
     is plotted.
 
-  **-elements** *list*
-    Specifies the elements to display only the region of data points.
-    If *list* is "", all elements are affected.
+  **-elements** *nameList*
+    Specifies the elements to be considered and their order.  *NameList* is
+    a list of element names.  Only elements on *nameList* will be drawn in
+    order.  This differs from the **-hide** element option. Only extents of
+    each element on this list contribute to axis scaling.  If *nameList* is
+    "", all elements are drawn. The default is "".
     
   **-from** *fromIndex*
     Specifies the index of the first data point to be played. *FromIndex*
@@ -535,26 +555,26 @@ The following operations are available for elements.
   arguments are present, they are the indices of the data points to be
   activated. By default all data points of *elemName* will become active.
 
-*pathName* **element bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
-  Associates *cmdString* with *bindTag* such that whenever the event sequence
+*pathName* **element bind** *tagName* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
+  Associates *cmdString* with *tagName* such that whenever the event sequence
   given by *eventSequence* occurs for an element with this binding tag,
   *cmdString* will be invoked.  The syntax is similar to the **bind** command
   except that it operates on graph elements, rather than widgets. See the
   **bind** manual entry for complete details on *eventSequence* and the
-  substitutions performed on *cmdString* before invoking it. *BindTag* is an
+  substitutions performed on *cmdString* before invoking it. *TagName* is an
   arbitrary string that matches one of the binding tags (see the
   **-bindtags** option) in *elemName*.
 
   If both *eventSequence* and *cmdString* arguments are present, then a new
-  binding is created. If a binding for *eventSequence* and *bindTag*
+  binding is created. If a binding for *eventSequence* and *tagName*
   already exists it is replaced. But if the first character of *cmdString* is
   "+" then *cmdString* augments an existing binding rather than replacing it.
 
   If no *cmdString* argument is present then this returns the command
-  currently associated with *bindTag* and *eventSequence* (it's an error if
+  currently associated with *tagName* and *eventSequence* (it's an error if
   there's no such binding).  If both *cmdString* and *eventSequence* are
   missing then a list of all the event sequences for which bindings have
-  been defined for *bindTag*.
+  been defined for *tagName*.
 
 *pathName* **element cget** *elemName* *option*
   Returns the current value of the element configuration option given by
@@ -671,25 +691,25 @@ The following operations are available for elements.
     Specifies how to represent error bars on the graph.
 
     **x**
-      Display error bars  or the x-axis.
+      Display error bars for the x-axis.
 
     **xhigh**
-      Display error bars  or the x-axis.
+      Display error bars  for the x-axis.
 
     **xlow**
-      Display error bars  or the x-axis.
+      Display error bars  for the x-axis.
 
     **y**
-      Display error bars  or the y-axis.
+      Display error bars  for the y-axis.
 
     **yhigh**
-      Display error bars  or the x-axis.
+      Display error bars  for the x-axis.
 
     **ylow**
-      Display error bars  or the x-axis.
+      Display error bars  for the x-axis.
 
     **both**
-      Display error bars  or the y-axis.
+      Display error bars  for the y-axis.
 
   **-errorbarcolor**  *colorName*
     Specifies the color of the error bars.  If *colorName* is "defcolor",
@@ -867,14 +887,23 @@ The following operations are available for elements.
       Draw an image *imageName*.  The image may contain transparent
       pixels.  
 
-  **-trace**  *direction* 
+  **-trace**  *directionName* 
     Indicates whether connecting lines between data points (whose
     X-coordinate values are either increasing or decreasing) are drawn.
-    *Direction* must be "increasing", "decreasing", or "both".  For example,
-    if *direction* is "increasing", connecting lines will be drawn only
-    between those data points where X-coordinate values are monotonically
-    increasing.  If *direction* is "both", connecting lines will be draw
-    between all data points.  The default is "both".
+    *DirectionName* must be one of the following.
+
+    **increasing**
+      Connecting lines will be drawn only between those data points where
+      X-coordinate values are monotonically increasing.
+
+    **decreasing**
+      Connecting lines will be drawn only between those data points where
+      X-coordinate values are monotonically decreasing.
+
+    **both**
+      Connecting lines will be draw between all data points.
+
+    The default is "both".
 
   **-valueanchor**  *anchorName* 
 
@@ -892,42 +921,42 @@ The following operations are available for elements.
     are drawn.  *WVec* is the name of a BLT vector or a list of numeric
     expressions representing the weights for each data point.
 
-  **-x**  *data* 
+  **-x**  *dataSource* 
     Same as the **-xdata** option.
 
-  **-xdata**  *data* 
-    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+  **-xdata** *dataSource* 
+    Specifies the X-coordinates of the data.  *Data* is the name of a BLT
     vector or a list of numeric expressions.
 
-  **-xerror**  *data* 
-    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+  **-xerror**  *dataSource* 
+    Specifies the X-coordinates of the data.  *Data* is the name of a BLT
     vector or a list of numeric expressions.
 
-  **-xhigh**  *data* 
-    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+  **-xhigh**  *dataSource* 
+    Specifies the X-coordinates of the data.  *Data* is the name of a BLT
     vector or a list of numeric expressions.
 
-  **-xlow**  *data* 
-    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+  **-xlow**  *dataSouce* 
+    Specifies the X-coordinates of the data.  *Data* is the name of a BLT
     vector or a list of numeric expressions.
 
-  **-y**  *data* 
+  **-y**  *dataSource* 
     Same as the **-ydata** option.
 
-  **-ydata**  *data* 
-    Specifies the Y-coordinates of the data.  *Data* is the name of a BLT
+  **-ydata**  *dataSource* 
+    Specifies the Y-coordinates of the data.  *DataSource* is the name of a BLT
     vector or a list of numeric expressions.
 
-  **-yerror**  *data* 
-    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+  **-yerror**  *dataSource* 
+    Specifies the X-coordinates of the data.  *Data* is the name of a BLT
     vector or a list of numeric expressions.
 
-  **-yhigh**  *data* 
-    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+  **-yhigh**  *dataSource* 
+    Specifies the X-coordinates of the data.  *Data* is the name of a BLT
     vector or a list of numeric expressions.
 
-  **-ylow**  *data* 
-    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+  **-ylow**  *dataSource* 
+    Specifies the X-coordinates of the data.  *Data* is the name of a BLT
     vector or a list of numeric expressions.
 
 *pathName* **element create** *elemName* ?\ *option* *value* ... ?
@@ -1176,8 +1205,8 @@ The resource class is "Axis".  The resource names are the names of the axes
 
 *pathName* **axis activate** *axisName* 
 
-*pathName* **axis bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ?
-  Associates *cmdString* with *bindTag* such that whenever the event sequence
+*pathName* **axis bind** *tagName* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ?
+  Associates *cmdString* with *tagName* such that whenever the event sequence
   given by *eventSequence* occurs for an axis with this tag, *cmdString* will
   be invoked.  The syntax is similar to the **bind** command except that it
   operates on graph axes, rather than widgets. See the **bind** manual
@@ -1185,13 +1214,13 @@ The resource class is "Axis".  The resource names are the names of the axes
   performed on *cmdString* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *eventSequence* and *bindTag*.  If the
+  any existing binding for the same *eventSequence* and *tagName*.  If the
   first character of *cmdString* is "+" then *command* augments an existing
   binding rather than replacing it.  If no *cmdString* argument is provided
-  then the command currently associated with *bindTag* and *eventSequence*
+  then the command currently associated with *tagName* and *eventSequence*
   (it's an error occurs if there's no such binding) is returned.  If both
   *cmdString* and *eventSequence* are missing then a list of all the event
-  sequences for which bindings have been defined for *bindTag*.
+  sequences for which bindings have been defined for *tagName*.
 
 *pathName* **axis cget** *axisName* *option*
   Returns the current value of the option given by *option* for *axisName*.
@@ -1654,8 +1683,8 @@ coordinates "-Inf","-Inf".
 
 The following operations are available for markers.
 
-*pathName* **marker** bind *bindTag* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
-  Associates *cmdString* with *bindTag* such that whenever the event sequence
+*pathName* **marker** bind *tagName* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
+  Associates *cmdString* with *tagName* such that whenever the event sequence
   given by *eventSequence* occurs for a marker with this tag, *cmdString*
   will be invoked.  The syntax is similar to the **bind** command except
   that it operates on graph markers, rather than widgets. See the **bind**
@@ -1663,13 +1692,13 @@ The following operations are available for markers.
   substitutions performed on *cmdString* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *eventSequence* and *bindTag*.  If the
+  any existing binding for the same *eventSequence* and *tagName*.  If the
   first character of *cmdString* is "+" then *cmdString* augments an existing
   binding rather than replacing it.  If no *cmdString* argument is provided
-  then the command currently associated with *bindTag* and *eventSequence*
+  then the command currently associated with *tagName* and *eventSequence*
   (it's an error occurs if there's no such binding) is returned.  If both
   *cmdString* and *eventSequence* are missing then a list of all the event
-  sequences for which bindings have been defined for *bindTag*.
+  sequences for which bindings have been defined for *tagName*.
 
 *pathName* **marker cget** *markerName* *option*
   Returns the current value of the marker configuration option given by
@@ -1776,8 +1805,9 @@ The following operations are available for markers.
     rotated and then placed according to its anchor position.  The default
     rotation is "0.0".
 
-  **-state**  *state*
-    Specifies the state of the marker. *State* can be "normal" or "disabled".
+  **-state**  *stateName*
+    Specifies the state of the marker. *StateName* can be "normal" or
+    "disabled".
 
   **-under**  *boolean*
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2125,11 +2155,12 @@ The following operations are available for markers.
   The following options are specific to text markers:
 
   **-anchor**  *anchorName*
-    *AnchorName* tells how to position the text relative to the positioning point
-    for the text. For example, if *anchorName* is "center" then the text is
-    centered on the point; if *anchorName* is "n" then the text will be drawn
-    such that the top center point of the rectangular region occupied by the
-    text will be at the positioning point.  This default is "center".
+    *AnchorName* tells how to position the text relative to the positioning
+    point for the text. For example, if *anchorName* is "center" then the
+    text is centered on the point; if *anchorName* is "n" then the text
+    will be drawn such that the top center point of the rectangular region
+    occupied by the text will be at the positioning point.  This default is
+    "center".
 
   **-background**  *color*
     Same as the **-fill** option.
@@ -2307,8 +2338,9 @@ The following operations are available for markers.
     used by another marker.  If this option isn't specified, the marker's
     name is uniquely generated.
 
-  **-state**  *state*
-    Specifies the state of the marker. *State* can be "normal" or "disabled".
+  **-state**  *stateName*
+    Specifies the state of the marker. *StateName* can be "normal" or
+    "disabled".
     
   **-under**  *boolean*
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2463,8 +2495,8 @@ The following operations are valid for the legend.
   a list of 4 numbers: x and y coordinates of the upper left corner and
   width and height of the entry.
 
-*pathName* **legend bind** *bindTag* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
-  Associates *cmdString* with *bindTag* such that whenever the event sequence
+*pathName* **legend bind** *tagName* ?\ *eventSequence*\ ?  ?\ *cmdString*\ ? 
+  Associates *cmdString* with *tagName* such that whenever the event sequence
   given by *eventSequence* occurs for a legend entry with this tag,
   *cmdString* will be invoked.  Implicitly the element names in the entry are
   tags.  The syntax is similar to the **bind** command except that it
@@ -2473,13 +2505,13 @@ The following operations are valid for the legend.
   performed on *cmdString* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *eventSequence* and *bindTag*.  If the
+  any existing binding for the same *eventSequence* and *tagName*.  If the
   first character of *cmdString* is "+" then *command* augments an existing
   binding rather than replacing it.  If no *cmdString* argument is provided
-  then the command currently associated with *bindTag* and *eventSequence*
+  then the command currently associated with *tagName* and *eventSequence*
   (it's an error occurs if there's no such binding) is returned.  If both
   *cmdString* and *eventSequence* are missing then a list of all the event
-  sequences for which bindings have been defined for *bindTag*.
+  sequences for which bindings have been defined for *tagName*.
 
 *pathName* **legend cget** *option*
   Returns the current value of a legend configuration option.  *Option* may

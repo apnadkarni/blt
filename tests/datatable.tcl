@@ -1678,7 +1678,10 @@ test datatable.283 {exportfile csv -file @badChannel } {
 } {1 {can not find channel named "badChannel"}}
 
 test datatable.284 {export csv -file table.csv} {
-    list [catch {datatable1 export csv -file table.csv} msg] $msg
+    list [catch {
+	datatable1 export csv -file table.csv
+	file delete table.csv
+    } msg] $msg
 } {0 {}}
 
 test datatable.285 {dup} {
@@ -1705,7 +1708,10 @@ test datatable.288 {column type @all string} {
 
 
 test datatable.289 {dump -file table.dump} {
-    list [catch {datatable0 dump -file table.dump} msg] $msg
+    list [catch {
+	datatable0 dump -file table.dump
+	file delete table.dump
+    } msg] $msg
 } {0 {}}
 
 test datatable.290 {datatable0 set (no args)} {
@@ -3066,7 +3072,10 @@ r 1 r2 {}
 }}
 
 test datatable.541 {dump -file myout.dump} {
-    list [catch {datatable0 dump -file myout.dump} msg] $msg
+    list [catch {
+	datatable0 dump -file myout.dump
+	file delete myout.dump
+    } msg] $msg
 } {0 {}}
 
 test datatable.542 {blt::datatable destroy datatable0} {
@@ -3187,29 +3196,5 @@ test datatable.548 {dirtest dir /tmp} {
 "defs","file",420
 }}
 
-
-
 #----------------------
 exit 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

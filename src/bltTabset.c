@@ -7840,18 +7840,18 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
             
             iconPtr = tabPtr->icon;
             if (iconPtr->angle != setPtr->angle) {
-                int isPhoto;
+                int isPicture;
                 Blt_Picture picture, rotated;
 
                 if (iconPtr->picture != NULL) {
                     Blt_FreePicture(iconPtr->picture);
                 }
                 picture = Blt_GetPictureFromImage(setPtr->interp, tkImage,
-                        &isPhoto);
+                        &isPicture);
                 rotated = Blt_RotatePicture(picture, setPtr->angle);
                 iconPtr->picture = rotated;
                 iconPtr->angle = setPtr->angle;
-                if (isPhoto) {
+                if (!isPicture) {
                     Blt_FreePicture(picture);
                 }
             }

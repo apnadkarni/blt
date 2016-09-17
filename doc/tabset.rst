@@ -263,7 +263,7 @@ available for *tabset* widgets:
     override this by setting the tab's **-font** option.  The default value
     is "Arial 9".
 
-  **-foreground** *color* 
+  **-foreground** *colorName* 
     Sets the default color of tab labels.  Individual tabs may override
     this option by setting the tab's **-foreground** option.  The default
     value is "black".
@@ -310,13 +310,13 @@ available for *tabset* widgets:
     released over the tab perforation.  The default action is to tear-off
     the page and place it into a new toplevel window.
 
-  **-rotate** *angle*
-    Specifies the degrees to rotate text in tab labels.  *Angle* is a real
-    value representing the number of degrees to rotate the text labels.
-    The default is "0.0" degrees.
+  **-rotate** *numDegrees*
+    Specifies the degrees to rotate text in tab labels.  *NumDegrees* is a
+    real value representing the number of degrees to rotate the text
+    labels.  The default is "0.0" degrees.
 
-  **-tabwidth** *width*
-    Indicates the width of each tab.  *Width* can be one of the
+  **-tabwidth** *widthName*
+    Indicates the width of each tab.  *WidthName* can be one of the
     following:
 
     **variable**
@@ -380,9 +380,9 @@ available for *tabset* widgets:
 
     The default value is "top".
 
-  **-slant** *tabSlant*
+  **-slant** *slantName*
     Specifies if the tabs should be slanted 45 degrees on the left and/or
-    right sides. *TabSlant* can be any of the following values.
+    right sides. *SlantName* can be any of the following values.
 
     **none**
       Tabs are drawn as a rectangle.  
@@ -406,7 +406,7 @@ available for *tabset* widgets:
   **-tearoff** *boolean*
     FIXME
 
-  **-textside** *side*
+  **-textside** *sideName*
     If both images and text are specified for a tab, this option determines
     on which side of the tab the text is to be displayed. The valid sides
     are "left", "right", "top", and "bottom".  The default value is "left".
@@ -466,14 +466,14 @@ available for *tabset* widgets:
   Returns the name of the tab nearest to given X-Y screen coordinate.
 
 *pathName* **perforation highlight** *tabName* *boolean*
-FIXME
+  FIXME
 
 *pathName* **perforation invoke** *tabName*
   Invokes the command specified for perforations (see the
   **-perforationcommand** widget option). Typically this command places the
   page into a top level widget. The name of the toplevel is in the form
-  "*pathName*-*tabName*".  This command is ignored if the tab's state (see the
-  **-state** option) is disabled.
+  "*pathName*-*tabName*".  This command is ignored if the tab's state (see
+  the **-state** option) is disabled.
 
 *pathName* **scan mark** *x y*
   Records *x* and *y* and the current view in the tabset window; used with

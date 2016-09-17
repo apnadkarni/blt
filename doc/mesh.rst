@@ -109,15 +109,15 @@ a BLT *vector*, or a column in a BLT *datatable*.
 *list*
   The coordinates are in a list of floating point numbers.
 
-*vector*
-  The coordinates are in a BLT vector.  *Vector* is the name of a vector
+*vectorName*
+  The coordinates are in a BLT vector.  *VectorName* is the name of a vector
   returned by the **blt::vector** command.
 
-*dataTable*  *column* 
-   The coordinates are in a column in BLT datatable.  *DataTable* is the
-   name of a datatable returned by the **blt::datatable**
-   command. *Column* is the label, index, or tag representing the column,
-   but may not refer to more than one column.
+*dataTableName*  *columnName* 
+   The coordinates are in a column in BLT datatable.  *DataTableName* is
+   the name of a datatable returned by the **blt::datatable**
+   command. *ColumnName* is the label, index, or tag representing the
+   column, but may not refer to more than one column.
      
 The order of the coordinates specified for the mesh determines the order of
 the field values.

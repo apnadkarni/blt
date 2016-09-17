@@ -357,8 +357,8 @@ the command.  The operations available for pictures are listed below.
     When resizing the image, maintain the aspect ratio of the original
     picture.
 
-  **-rotate** *angle*
-    Rotates the image by *angle*. *Angle* is the number of degrees
+  **-rotate** *numDegrees*
+    Rotates the image by *numDegrees*. *NumDegrees* is the number of degrees
     to rotate the image.
 
   **-sharpen** *boolean*
@@ -827,12 +827,12 @@ the command.  The operations available for pictures are listed below.
     of the forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".
     If *numPixels* is "0", then the width of *imageName* will not change.
 
-*imageName* **rotate** *srcName* *angle*
-  Rotates *srcName* by *angle* and saves the result in *imageName*.
+*imageName* **rotate** *srcName* *numDegrees*
+  Rotates *srcName* by *numDegrees* and saves the result in *imageName*.
   *SrcName* is the name of a picture image and may be the same as
-  *imageName*.  *Angle* is the number of degrees to rotate the picture.
-  If the angel is not orthogonal, then the unpainted areas will be
-  transparent (0x00).
+  *imageName*.  *NumDegrees* is the number of degrees to rotate the
+  picture.  If the angel is not orthogonal, then the unpainted areas will
+  be transparent (0x00).
    
 *imageName* **select** *srcName* *firstColor* ?\ *lastColor*\ ?
   Creates a mask by selecting the pixels in *srcName* that are between two

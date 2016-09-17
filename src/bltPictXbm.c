@@ -114,6 +114,8 @@ static Blt_SwitchSpec importSwitches[] =
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
+    {BLT_SWITCH_CUSTOM, "-background", "color", (char *)NULL,
+        Blt_Offset(XbmExportSwitches, bg), 0, 0, &colorSwitch},
     {BLT_SWITCH_CUSTOM, "-bg", "color", (char *)NULL,
         Blt_Offset(XbmExportSwitches, bg), 0, 0, &colorSwitch},
     {BLT_SWITCH_OBJ, "-data", "varName", (char *)NULL,

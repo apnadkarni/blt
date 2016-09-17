@@ -48,3 +48,5 @@ BLT_EXTERN Pixmap Blt_ScaleRotateBitmapArea(Tk_Window tkwin, Pixmap srcBitmap,
         unsigned int srcWidth, unsigned int srcHeight, int regionX, int regionY,
         unsigned int regionWidth, unsigned int regionHeight, 
         unsigned int destWidth, unsigned int destHeight, float angle);
+
+BLT_EXTERN Blt_Picture Blt_BitmapImageToPicture(Tk_Image tkImage);

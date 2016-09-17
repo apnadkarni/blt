@@ -182,6 +182,8 @@ static Blt_SwitchSpec exportSwitches[] =
 {
     {BLT_SWITCH_BITMASK, "-animate", "", (char *)NULL,
         Blt_Offset(GifExportSwitches, flags),      0, EXPORT_ANIMATE},
+    {BLT_SWITCH_CUSTOM, "-background", "color", (char *)NULL,
+        Blt_Offset(GifExportSwitches, bg),         0, 0, &colorSwitch},
     {BLT_SWITCH_CUSTOM, "-bg", "color", (char *)NULL,
         Blt_Offset(GifExportSwitches, bg),         0, 0, &colorSwitch},
     {BLT_SWITCH_BITMASK, "-blend", "", (char *)NULL,

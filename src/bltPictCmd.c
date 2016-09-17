@@ -361,6 +361,13 @@ Blt_CustomOption bltFilterOption =
     ObjToFilter, FilterToObj, NULL, (ClientData)0
 };
 
+static Blt_OptionParseProc ObjToGamma;
+static Blt_OptionPrintProc GammaToObj;
+Blt_CustomOption gammaOption =
+{
+    ObjToGamma, GammaToObj, NULL, (ClientData)0
+};
+
 static Blt_OptionParseProc ObjToImage;
 static Blt_OptionPrintProc ImageToObj;
 static Blt_CustomOption imageOption =
@@ -386,8 +393,9 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(PictImage, picture), 0, &fileOption},
     {BLT_CONFIG_CUSTOM, "-filter", (char *)NULL, (char *)NULL, 
         DEF_FILTER, Blt_Offset(PictImage, filter), 0, &bltFilterOption},
-    {BLT_CONFIG_FLOAT, "-gamma", (char *)NULL, (char *)NULL, DEF_GAMMA,
-        Blt_Offset(PictImage, gamma), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-gamma", (char *)NULL, (char *)NULL, DEF_GAMMA,
+        Blt_Offset(PictImage, gamma), BLT_CONFIG_DONT_SET_DEFAULT,
+        &gammaOption},
    {BLT_CONFIG_PIXELS_NNEG, "-height", (char *)NULL, (char *)NULL,
         DEF_HEIGHT, Blt_Offset(PictImage, reqHeight), 0},
     {BLT_CONFIG_CUSTOM, "-image", (char *)NULL, (char *)NULL, DEF_IMAGE,
@@ -1349,15 +1357,20 @@ static int
 ImageToPicture(Tcl_Interp *interp, PictImage *imgPtr, const char *imageName)
 {
     Blt_Picture picture;
-    Tk_PhotoHandle photo;
-
-    photo = Tk_FindPhoto(interp, imageName);
-    if (photo != NULL) {
-        picture = Blt_PhotoToPicture(photo);
-    } else if (Blt_GetPicture(interp, imageName, &picture) == TCL_OK) {
-        picture = Blt_ClonePicture(picture);
-    } else {
+    Tk_Image tkImage;
+    int isPicture;
+    
+    tkImage = Tk_GetImage(interp, Tk_MainWindow(interp), imageName, NULL, 0);
+    if (tkImage == NULL) {
         return TCL_ERROR;
+    }
+    picture = Blt_GetPictureFromImage(interp, tkImage, &isPicture);
+    Tk_FreeImage(tkImage);
+    if (picture == NULL) {
+        return TCL_ERROR;
+    }
+    if (isPicture) {
+        picture = Blt_ClonePicture(picture);
     }
     ReplacePicture(imgPtr, picture);
     if (imgPtr->name != NULL) {
@@ -1487,14 +1500,8 @@ PercentSwitchProc(ClientData clientData, Tcl_Interp *interp,
  */
 /*ARGSUSED*/
 static int
-ObjToFile(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of value. */
-    char *widgRec,                      /* Widget record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToFile(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Blt_Chain chain;
     Blt_ChainLink link;
@@ -1587,13 +1594,8 @@ ObjToFile(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-FileToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+FileToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     PictImage *imgPtr = (PictImage *)widgRec;
 
@@ -1617,14 +1619,8 @@ FileToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToFilter(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of value. */
-    char *widgRec,                      /* Widget record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToFilter(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Blt_ResampleFilter *filterPtr = (Blt_ResampleFilter *)(widgRec + offset);
     const char *string;
@@ -1651,13 +1647,8 @@ ObjToFilter(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-FilterToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+FilterToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)  
 {
     Blt_ResampleFilter filter = *(Blt_ResampleFilter *)(widgRec + offset);
 
@@ -1715,14 +1706,8 @@ GetPictProc2(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ObjToData(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of value. */
-    char *widgRec,                      /* Widget record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToData(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Blt_Picture *picturePtr = (Blt_Picture *)(widgRec + offset);
     PictImage *imgPtr = (PictImage *)widgRec;
@@ -1810,13 +1795,8 @@ ObjToData(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-DataToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+DataToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     PictImage *imgPtr = (PictImage *)(widgRec);
     Blt_PictFormat *fmtPtr;
@@ -1843,6 +1823,67 @@ DataToObj(
 /*
  *---------------------------------------------------------------------------
  *
+ * ObjToGamma --
+ *
+ *      Convert a string to a gamma value.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToGamma(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    float *gammaPtr = (float *)(widgRec + offset);
+    double value;
+        
+    if (Tcl_GetDoubleFromObj(interp, objPtr, &value) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (value < 0.0) {
+        Tcl_AppendResult(interp, "gamma value can't be negative", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (value == 0.0) {
+        Tcl_AppendResult(interp, "gamma value can't be zero", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (value > 20.0) {
+        value = 20.0;
+    }
+    *gammaPtr = value;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GammaToObj --
+ *
+ *      Convert the gamma value into a string representation.
+ *
+ * Results:
+ *      The string representation of the gamma value is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+GammaToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
+{
+    float gamma = *(float *)(widgRec + offset);
+
+    return Tcl_NewDoubleObj(gamma);
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ObjToImage --
  *
  *      Convert a named image into a picture.
@@ -1854,15 +1895,8 @@ DataToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToImage(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of
-                                         * value. */
-    char *widgRec,                      /* Widget record. */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+ObjToImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     PictImage *imgPtr = (PictImage *)(widgRec);
 
@@ -1883,13 +1917,8 @@ ObjToImage(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ImageToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+ImageToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     PictImage *imgPtr = (PictImage *)widgRec;
 
@@ -1914,15 +1943,8 @@ ImageToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToWindow(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of value. */
-    char *widgRec,                      /* Widget record. */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+ObjToWindow(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     PictImage *imgPtr = (PictImage *)(widgRec);
 
@@ -1943,13 +1965,8 @@ ObjToWindow(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-WindowToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+WindowToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)  
 {
     PictImage *imgPtr = (PictImage *)widgRec;
 

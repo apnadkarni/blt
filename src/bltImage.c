@@ -164,6 +164,23 @@ Blt_Image_GetInstanceData(Tk_Image tkImage) /* Token for image. */
 /*
  *---------------------------------------------------------------------------
  *
+ * Blt_Image_GetInstanceData --
+ *
+ *      Returns the pointer to the Tk image instance data.
+ *
+ *---------------------------------------------------------------------------
+ */
+ClientData
+Blt_Image_GetMasterData(Tk_Image tkImage) /* Token for image. */
+{
+    TkImage *imagePtr = (TkImage *)tkImage;
+
+    return imagePtr->masterPtr->masterData;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * Blt_Image_GetType --
  *
  *      Returns the pointer to the Tk image type.

@@ -349,7 +349,7 @@ BitmapToData(
         for (x = 0; x < width; /* empty */ ) {
             unsigned long pixel;
 
-            pixel = (*srcPtr & (0x80 >> (x % 8)));
+            pixel = (*srcPtr & (0x80 >> (x & 7)));
             if (pixel) {
                 value |= bitMask;
             }

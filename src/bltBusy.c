@@ -142,8 +142,8 @@ typedef struct {
 #define SNAPSHOT        (1<<3)          /* Indicates whether the busy
                                          * window is a snapshot of the
                                          * parent. */
-#define IMAGE_PHOTO     (1<<4)          /* Indicates that the image was a
-                                         * photo. */
+#define IMAGE_PICTURE   (1<<4)          /* Indicates that the original
+                                         * image was a picture image. */
 #define IMAGE_SEQUENCE  (1<<5)          /* Indicates that the image is a
                                          * picture sequence. */
 
@@ -265,23 +265,23 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
                  int imageWidth, int imageHeight)
 {
     Busy *busyPtr = clientData;
-    int isPhoto;
+    int isPicture;
 
-    if ((busyPtr->layer != NULL) && (busyPtr->flags & IMAGE_PHOTO)) {
+    if ((busyPtr->layer != NULL) && ((busyPtr->flags & IMAGE_PICTURE) == 0)) {
         Blt_FreePicture(busyPtr->layer);
         busyPtr->layer = NULL;
     }
     EventuallyRedraw(busyPtr);
-    busyPtr->flags &= ~IMAGE_PHOTO;
+    busyPtr->flags &= ~IMAGE_PICTURE;
     if (Blt_Image_IsDeleted(busyPtr->tkImage)) {
         Tk_FreeImage(busyPtr->tkImage);
         busyPtr->tkImage = NULL;
         return;
     }
     busyPtr->layer = Blt_GetPictureFromImage(busyPtr->interp, 
-        busyPtr->tkImage, &isPhoto);
-    if (isPhoto) {
-        busyPtr->flags |= IMAGE_PHOTO;
+        busyPtr->tkImage, &isPicture);
+    if (isPicture) {
+        busyPtr->flags |= IMAGE_PICTURE;
     }
 }
 
@@ -292,7 +292,7 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
 {
     Busy *busyPtr = (Busy *)widgRec;
 
-    if ((busyPtr->layer != NULL) && (busyPtr->flags & IMAGE_PHOTO)) {
+    if ((busyPtr->layer != NULL) && ((busyPtr->flags & IMAGE_PICTURE) == 0)) {
         Blt_FreePicture(busyPtr->layer);
         busyPtr->layer = NULL;
     }
@@ -301,7 +301,7 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
     }
     busyPtr->tkImage = NULL;
     busyPtr->layer = NULL;
-    busyPtr->flags &= ~IMAGE_PHOTO;
+    busyPtr->flags &= ~IMAGE_PICTURE;
 }
 
 /*
@@ -324,7 +324,7 @@ ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Busy *busyPtr = (Busy *)widgRec;
     Tk_Image tkImage;
     const char *name;
-    int isPhoto;
+    int isPicture;
 
     name = Tcl_GetString(objPtr);
     tkImage = Tk_GetImage(interp, tkwin, name, ImageChangedProc, busyPtr);
@@ -334,15 +334,13 @@ ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if (busyPtr->tkImage != NULL) {
         Tk_FreeImage(busyPtr->tkImage);
     }
-    if ((busyPtr->layer != NULL) && (busyPtr->flags & IMAGE_PHOTO)) {
-        /* Only free the picture is this is a photo image. */
+    if ((busyPtr->layer != NULL) && ((busyPtr->flags & IMAGE_PICTURE) == 0)) {
+        /* Only free the picture if this is not already a picture image. */
         Blt_FreePicture(busyPtr->layer);
     }
     busyPtr->tkImage = tkImage;
-    busyPtr->layer = Blt_GetPictureFromImage(interp, tkImage, &isPhoto);
-    if (isPhoto) {
-        busyPtr->flags |= IMAGE_PHOTO;
-    } else {
+    busyPtr->layer = Blt_GetPictureFromImage(interp, tkImage, &isPicture);
+    if (isPicture) {
         busyPtr->chain = Blt_GetPicturesFromPictureImage(interp, tkImage);
         if (busyPtr->chain == NULL) {
             return TCL_ERROR;
@@ -351,7 +349,7 @@ ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
             busyPtr->flags |= IMAGE_SEQUENCE;
             busyPtr->link = NULL;
         }
-        busyPtr->flags &= ~IMAGE_PHOTO;
+        busyPtr->flags |= IMAGE_PICTURE;
     }
     EventuallyRedraw(busyPtr);
     return TCL_OK;
@@ -1812,15 +1810,15 @@ StatusOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec busyOps[] =
 {
     {"active",    1, ActiveOp,    2, 3, "?pattern?",},
-    {"cget",      2, CgetOp,      4, 4, "window option",},
-    {"check",     2, CheckOp,     3, 3, "window",},
-    {"configure", 2, ConfigureOp, 3, 0, "window ?options?...",},
-    {"forget",    1, ForgetOp,    2, 0, "?window?...",},
-    {"hold",      1, HoldOp,      3, 0, "window ?options?... ?window options?...",},
-    {"isbusy",    1, IsBusyOp,    3, 3, "window",},
+    {"cget",      2, CgetOp,      4, 4, "windowName option",},
+    {"check",     2, CheckOp,     3, 3, "windowName",},
+    {"configure", 2, ConfigureOp, 3, 0, "windowName ?options?...",},
+    {"forget",    1, ForgetOp,    2, 0, "?windowName?...",},
+    {"hold",      1, HoldOp,      3, 0, "windowName ?option value ...? ?windowName options value ...?",},
+    {"isbusy",    1, IsBusyOp,    3, 3, "windowName",},
     {"names",     1, NamesOp,     2, 0, "?pattern ... ?",},
-    {"release",   1, ReleaseOp,   2, 0, "?window?...",},
-    {"status",    1, StatusOp,    3, 3, "window",},
+    {"release",   1, ReleaseOp,   2, 0, "?windowName?...",},
+    {"status",    1, StatusOp,    3, 3, "windowName",},
     {"windows",   1, NamesOp,     2, 3, "?pattern?",},
 };
 static int numBusyOps = sizeof(busyOps) / sizeof(Blt_OpSpec);

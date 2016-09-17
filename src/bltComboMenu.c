@@ -1142,9 +1142,8 @@ ConfigureScrollbarsProc(ClientData clientData)
     Tcl_Interp *interp;
 
     interp = comboPtr->interp;
-    /* 
-     * Execute the initialization procedure on this widget.
-     */
+
+    /* Execute the initialization procedure on this widget. */
     comboPtr->flags &= ~UPDATE_PENDING;
     if (Tcl_VarEval(interp, "::blt::ComboMenu::ConfigureScrollbars ", 
         Tk_PathName(comboPtr->tkwin), (char *)NULL) != TCL_OK) {
@@ -2301,8 +2300,8 @@ ComputeComboGeometry(ComboMenu *comboPtr)
     w += comboPtr->rightIndWidth;
     comboPtr->worldWidth = w + 2 * ITEM_PADX;
 
-    /* Figure out the requested size of the widget.  This will also tell us if
-     * we need scrollbars. */
+    /* Figure out the requested size of the widget.  This will also tell us
+     * if we need scrollbars. */
  
     reqWidth  = comboPtr->worldWidth  + 2 * comboPtr->borderWidth;
     reqHeight = comboPtr->worldHeight + 2 * comboPtr->borderWidth;
@@ -3712,12 +3711,8 @@ ScrollbarGeometryProc(
  *---------------------------------------------------------------------------
  */
 static char *
-ItemVarTraceProc(
-    ClientData clientData,              /* Information about the item. */
-    Tcl_Interp *interp,                 /* Interpreter containing variable. */
-    const char *name1,                  /* First part of variable's name. */
-    const char *name2,                  /* Second part of variable's name. */
-    int flags)                          /* Describes what just happened. */
+ItemVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
+                 const char *name2, int flags)
 {
     Item *itemPtr = clientData;
 
@@ -3825,7 +3820,7 @@ ObjToTraceVarProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static Tcl_Obj *
 TraceVarToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+                  char *widgRec, int offset, int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     Tcl_Obj *objPtr;
@@ -4148,8 +4143,8 @@ TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /* ARGSUSED */
 static void
-IconChangedProc(ClientData clientData, int x, int y, int w, int h, int imageWidth,
-                int imageHeight)   
+IconChangedProc(ClientData clientData, int x, int y, int w, int h,
+                int imageWidth, int imageHeight)   
 {
     ComboMenu *comboPtr = clientData;
 
@@ -4702,14 +4697,9 @@ PostCascadeSwitchProc(ClientData clientData, Tcl_Interp *interp,
  */
 /*ARGSUSED*/
 static int
-PostBoxSwitchProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+PostBoxSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                  const char *switchName, Tcl_Obj *objPtr, char *record,
+                  int offset, int flags)
 {
     ComboMenu *comboPtr = (ComboMenu *)record;
     Box2d box;
@@ -4739,14 +4729,8 @@ PostBoxSwitchProc(
  */
 /*ARGSUSED*/
 static int
-TypeSwitch(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+TypeSwitch(ClientData clientData, Tcl_Interp *interp, const char *switchName,
+           Tcl_Obj *objPtr, char *record, int offset, int flags)
 {
     unsigned int *typePtr = (unsigned int *)(record + offset);
     int flag;
@@ -4773,14 +4757,8 @@ TypeSwitch(
  */
 /*ARGSUSED*/
 static int
-ItemSwitch(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ItemSwitch(ClientData clientData, Tcl_Interp *interp, const char *switchName,
+           Tcl_Obj *objPtr, char *record, int offset, int flags)
 {
     Item **itemPtrPtr = (Item **)(record + offset);
     ComboMenu *comboPtr = clientData;
@@ -5070,7 +5048,7 @@ DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      pathName delete itemName ...
+ *      pathName delete ?itemName ... ?
  *
  *---------------------------------------------------------------------------
  */
@@ -5533,8 +5511,8 @@ ItemOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ComboMenuCmdProc *proc;
     int result;
 
-    proc = Blt_GetOpFromObj(interp, numItemOps, itemOps, BLT_OP_ARG2, objc, objv, 
-                0);
+    proc = Blt_GetOpFromObj(interp, numItemOps, itemOps, BLT_OP_ARG2, objc,
+        objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
@@ -6383,7 +6361,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return (*proc) (clientData, interp, objc, objv);
 }
 
-/* .m style create ?name? option value option value */
+/* pathName style create ?styleName? ?option value ...? */
     
 static int
 StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -6572,7 +6550,8 @@ StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 static int
-TypeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
      ComboMenu *comboPtr = clientData;
    Item *itemPtr;
@@ -6911,7 +6890,7 @@ static Blt_OpSpec menuOps[] =
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value ...?",},
     {"deactivate",  3, DeactivateOp,  2, 2, "",},
-    {"delete",      3, DeleteOp,      2, 0, "itemName ...",},
+    {"delete",      3, DeleteOp,      2, 0, "?itemName ...?",},
     {"deselect",    3, SelectOp,      3, 3, "itemName",},
     {"exists",      1, ExistsOp,      3, 3, "itemName",},
     {"find",        1, FindOp,        3, 0, "string ?switches?",},
@@ -7096,9 +7075,9 @@ ComboMenuCmd(
  *
  * ComboViewCmd --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module. See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module. See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -7140,7 +7119,8 @@ ComboViewCmd(
                 "source [file join $blt_library bltComboView.tcl]") != TCL_OK) {
             char info[200];
 
-            Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
+            Blt_FormatString(info, 200,
+                             "\n    (while loading bindings for %.50s)", 
                     Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             return TCL_ERROR;

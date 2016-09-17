@@ -118,8 +118,8 @@ SYNTAX
   **-titlecolor** *colorName*
      Specifies the color of the title.  The default is "white".
 
-  **-titlerotate** *degrees*
-     Sets the rotation of the title.  *Degrees* is a real number
+  **-titlerotate** *numDegrees*
+     Sets the rotation of the title.  *NumDegrees* is a real number
      representing the angle of rotation.  The title is first rotated in
      space and then placed according to the **-titleanchor** position.
      The default rotation is "0.0".

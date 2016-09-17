@@ -53,6 +53,8 @@ BLT_EXTERN Tk_ImageType *Blt_Image_GetType(Tk_Image tkImage);
 
 BLT_EXTERN ClientData Blt_Image_GetInstanceData(Tk_Image tkImage);
 
+BLT_EXTERN ClientData Blt_Image_GetMasterData(Tk_Image tkImage);
+
 BLT_EXTERN const char *Blt_Image_Name(Tk_Image tkImage);
 BLT_EXTERN const char *Blt_Image_NameOfType(Tk_Image tkImage);
 

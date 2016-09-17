@@ -1442,6 +1442,225 @@ EncodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_ERROR;
 }
 
+/*ARGSUSED*/
+static int
+FileDecodeCmd(ClientData clientData, Tcl_Interp *interp, int objc, 
+          Tcl_Obj *const *objv)
+{
+    BinaryDecoder decode;
+    Blt_DBuffer dbuffer;
+    FormatClass *classPtr;
+    Tcl_Obj *objPtr;
+    char c;
+    const char *format, *fileName, *src;
+    int length, result;
+    int numChars;
+    size_t numBytes, maxBytes;
+    unsigned char *dest;
+    
+    if (objc < 3) {
+        Tcl_AppendResult(interp, "wrong # args: should be \"", 
+                Tcl_GetString(objv[0]), " formatName fileName ?switches ...?\"",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    format = Tcl_GetStringFromObj(objv[1], &length);
+    fileName = Tcl_GetString(objv[2]);
+    c = format[0];
+    if ((c == 'b') && (strncmp(format, "base64", length) == 0)) {
+        classPtr = &base64Class;
+    } else if ((c == 'h') && (strncmp(format, "hexadecimal", length) == 0)) {
+        classPtr = &hexadecimalClass;
+    } else if ((c == 'a') && (strncmp(format, "ascii85", length) == 0)) {
+        classPtr = &ascii85Class;
+    } else {
+        Tcl_AppendResult(interp, "bad format \"", format, 
+                "\": should be hexadecimal, base64, or ascii85", (char *)NULL);
+        return TCL_ERROR;
+    }
+    memset(&decode, 0, sizeof(BinaryDecoder));
+    if (Blt_ParseSwitches(interp, classPtr->decodeSpecs, objc - 3 , objv + 3, 
+        &decode, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    dbuffer = Blt_DBuffer_Create();
+    if (Blt_DBuffer_LoadFile(interp, fileName, dbuffer) != TCL_OK) {
+        goto error;
+    }
+    numChars = Blt_DBuffer_Length(dbuffer);
+    src = Blt_DBuffer_String(dbuffer);
+    maxBytes = (*classPtr->decodeSizeProc)(numChars, &decode);
+    dest = Blt_Malloc(sizeof(unsigned char) * maxBytes);
+    if (dest == NULL) {
+        Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(maxBytes),
+                " bytes for decode buffer.", (char *)NULL);
+        Blt_DBuffer_Free(dbuffer);
+        goto error;
+    }
+    result = (*classPtr->decodeProc)(interp, src, numChars, dest, &numBytes,
+        &decode);
+    Blt_DBuffer_Free(dbuffer);
+    if (result != TCL_OK) {
+        Blt_Free(dest);
+        goto error;
+    }
+    objPtr = Tcl_NewByteArrayObj(dest, numBytes);
+    Blt_Free(dest);
+    if (decode.fileObjPtr != NULL) {
+        Tcl_Channel channel;
+        const char *fileName;
+        int closeChannel;
+        
+        closeChannel = TRUE;
+        fileName = Tcl_GetString(decode.fileObjPtr);
+        if ((fileName[0] == '@') && (fileName[1] != '\0')) {
+            int mode;
+            
+            channel = Tcl_GetChannel(interp, fileName+1, &mode);
+            if (channel == NULL) {
+                goto error;
+            }
+            if ((mode & TCL_WRITABLE) == 0) {
+                Tcl_AppendResult(interp, "channel \"", fileName, 
+                                 "\" not opened for writing", (char *)NULL);
+                goto error;
+            }
+            closeChannel = FALSE;
+        } else {
+            channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
+            if (channel == NULL) {
+                goto error;             /* Can't open file. */
+            }
+        }
+        Tcl_WriteObj(channel, objPtr);
+        if (closeChannel) {
+            Tcl_Close(interp, channel);
+        }
+    } else if (decode.dataObjPtr != NULL) {
+        /* Write the image into the designated TCL variable. */
+        objPtr = Tcl_ObjSetVar2(interp, decode.dataObjPtr, NULL, objPtr, 0);
+        if (objPtr == NULL) {
+            goto error;
+        }
+    } else {
+        Tcl_SetObjResult(interp, objPtr);
+    }
+    Blt_FreeSwitches(classPtr->decodeSpecs, (char *)&decode, 0);
+    return TCL_OK;
+ error:
+    Blt_FreeSwitches(classPtr->decodeSpecs, (char *)&decode, 0);
+    return TCL_ERROR;
+}
+
+/*ARGSUSED*/
+static int
+FileEncodeCmd(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    BinaryEncoder encode;
+    Blt_DBuffer dbuffer;
+    FormatClass *classPtr;
+    Tcl_Obj *objPtr;
+    char *dest;
+    char c;
+    const char *format, *fileName;
+    const unsigned char *src;
+    int length;
+    int numBytes;
+    size_t numChars, maxChars;
+    
+    if (objc < 3) {
+        Tcl_AppendResult(interp, "wrong # args: should be \"", 
+                Tcl_GetString(objv[0]), " formatName fileName ?switches ...?\"",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    fileName = Tcl_GetString(objv[2]);
+    format = Tcl_GetStringFromObj(objv[1], &length);
+    c = format[0];
+    if ((c == 'b') && (strncmp(format, "base64", length) == 0)) {
+        classPtr = &base64Class;
+    } else if ((c == 'h') && (strncmp(format, "hexadecimal", length) == 0)) {
+        classPtr = &hexadecimalClass;
+    } else if ((c == 'a') && (strncmp(format, "ascii85", length) == 0)) {
+        classPtr = &ascii85Class;
+    } else {
+        Tcl_AppendResult(interp, "bad format \"", format, 
+                "\": should be hexadecimal, base64, or ascii85", (char *)NULL);
+        return TCL_ERROR;
+    }
+    memset(&encode, 0, sizeof(BinaryEncoder));
+    encode.wrapLength = classPtr->wrapLength;
+    if (Blt_ParseSwitches(interp, classPtr->encodeSpecs, objc - 3 , objv + 3, 
+        &encode, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    dbuffer = Blt_DBuffer_Create();
+    if (Blt_DBuffer_LoadFile(interp, fileName, dbuffer) != TCL_OK) {
+        goto error;
+    }
+    numBytes = Blt_DBuffer_Length(dbuffer);
+    src = Blt_DBuffer_Bytes(dbuffer);
+
+    maxChars = (*classPtr->encodeSizeProc)(numBytes, &encode);
+    dest = Blt_Malloc(sizeof(char) * maxChars);
+    if (dest == NULL) {
+        Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(maxChars),
+                " bytes for encode buffer.", (char *)NULL);
+        Blt_DBuffer_Free(dbuffer);
+        goto error;
+    }
+    (*classPtr->encodeProc)(src, numBytes, dest, &numChars, &encode);
+    Blt_DBuffer_Free(dbuffer);
+    assert(numChars <= maxChars);
+    objPtr = Tcl_NewStringObj(dest, numChars);
+    Blt_Free(dest);
+    if (encode.fileObjPtr != NULL) {
+        Tcl_Channel channel;
+        const char *fileName;
+        int closeChannel;
+        
+        closeChannel = TRUE;
+        fileName = Tcl_GetString(encode.fileObjPtr);
+        if ((fileName[0] == '@') && (fileName[1] != '\0')) {
+            int mode;
+            
+            channel = Tcl_GetChannel(interp, fileName+1, &mode);
+            if (channel == NULL) {
+                goto error;
+            }
+            if ((mode & TCL_WRITABLE) == 0) {
+                Tcl_AppendResult(interp, "channel \"", fileName, 
+                                 "\" not opened for writing", (char *)NULL);
+                goto error;
+            }
+            closeChannel = FALSE;
+        } else {
+            channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
+            if (channel == NULL) {
+                goto error;             /* Can't open output file. */
+            }
+        }
+        Tcl_WriteObj(channel, objPtr);
+        if (closeChannel) {
+            Tcl_Close(interp, channel);
+        }
+    } else if (encode.dataObjPtr != NULL) {
+        /* Write the image into the designated TCL variable. */
+        objPtr = Tcl_ObjSetVar2(interp, encode.dataObjPtr, NULL, objPtr, 0);
+        if (objPtr == NULL) {
+            goto error;
+        }
+    } else {
+        Tcl_SetObjResult(interp, objPtr);
+    }
+    Blt_FreeSwitches(classPtr->encodeSpecs, (char *)&encode, 0);
+    return TCL_OK;
+ error:
+    Blt_FreeSwitches(classPtr->encodeSpecs, (char *)&encode, 0);
+    return TCL_ERROR;
+}
+
 Blt_DBuffer 
 Blt_DecodeBase64ToBuffer(Tcl_Interp *interp, const char *src, size_t numChars)
 {
@@ -1615,8 +1834,10 @@ Blt_Base64CmdInitProc(Tcl_Interp *interp)
 {
     static Blt_CmdSpec cmdSpecs[] = {
         { "encode", EncodeCmd, 0, 0 },
-        { "decode", DecodeCmd, 0, 0 }
+        { "decode", DecodeCmd, 0, 0 },
+        { "fencode", FileEncodeCmd, 0, 0 },
+        { "fdecode", FileDecodeCmd, 0, 0 }
     };
-    return Blt_InitCmds(interp, "::blt", cmdSpecs, 2);
+    return Blt_InitCmds(interp, "::blt", cmdSpecs, 4);
 }
 

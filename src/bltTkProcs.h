@@ -458,7 +458,7 @@ BLT_EXTERN int		Blt_IsPicture(Tk_Image tkImage);
 #define Blt_GetPictureFromImage_DECLARED
 /* 76 */
 BLT_EXTERN Blt_Picture	Blt_GetPictureFromImage(Tcl_Interp *interp,
-				Tk_Image tkImage, int *isPhotoPtr);
+				Tk_Image tkImage, int *isPicturePtr);
 #endif
 #ifndef Blt_GetPictureFromPictureImage_DECLARED
 #define Blt_GetPictureFromPictureImage_DECLARED
@@ -475,8 +475,7 @@ BLT_EXTERN struct _Blt_Chain * Blt_GetPicturesFromPictureImage(
 #ifndef Blt_GetPictureFromPhotoImage_DECLARED
 #define Blt_GetPictureFromPhotoImage_DECLARED
 /* 79 */
-BLT_EXTERN Blt_Picture	Blt_GetPictureFromPhotoImage(Tcl_Interp *interp,
-				Tk_Image tkImage);
+BLT_EXTERN Blt_Picture	Blt_GetPictureFromPhotoImage(Tk_Image tkImage);
 #endif
 #ifndef Blt_CanvasToPicture_DECLARED
 #define Blt_CanvasToPicture_DECLARED
@@ -654,10 +653,10 @@ typedef struct BltTkProcs {
     int (*blt_SnapPicture) (Tcl_Interp *interp, Tk_Window tkwin, Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, const char *imageName, float gamma); /* 73 */
     unsigned int (*blt_XColorToPixel) (XColor *colorPtr); /* 74 */
     int (*blt_IsPicture) (Tk_Image tkImage); /* 75 */
-    Blt_Picture (*blt_GetPictureFromImage) (Tcl_Interp *interp, Tk_Image tkImage, int *isPhotoPtr); /* 76 */
+    Blt_Picture (*blt_GetPictureFromImage) (Tcl_Interp *interp, Tk_Image tkImage, int *isPicturePtr); /* 76 */
     Blt_Picture (*blt_GetPictureFromPictureImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 77 */
     struct _Blt_Chain * (*blt_GetPicturesFromPictureImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 78 */
-    Blt_Picture (*blt_GetPictureFromPhotoImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 79 */
+    Blt_Picture (*blt_GetPictureFromPhotoImage) (Tk_Image tkImage); /* 79 */
     Blt_Picture (*blt_CanvasToPicture) (Tcl_Interp *interp, Tk_Window tkwin, float gamma); /* 80 */
     Blt_Picture (*blt_GraphToPicture) (Tcl_Interp *interp, Tk_Window tkwin, float gamma); /* 81 */
     int (*blt_PictureRegisterProc) (Tcl_Interp *interp, const char *name, Tcl_ObjCmdProc *proc); /* 82 */

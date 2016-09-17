@@ -528,13 +528,11 @@ Blt_SnapPicture(
 
 
 Blt_Picture
-Blt_GetPictureFromPhotoImage(Tcl_Interp *interp, Tk_Image tkImage)
+Blt_GetPictureFromPhotoImage(Tk_Image tkImage)
 {
-    const char *name;
     Tk_PhotoHandle photo;
 
-    name = Blt_Image_Name(tkImage);
-    photo = Tk_FindPhoto(interp, name);
+    photo = Blt_Image_GetMasterData(tkImage);
     if (photo == NULL) {
         return NULL;
     }
@@ -542,29 +540,26 @@ Blt_GetPictureFromPhotoImage(Tcl_Interp *interp, Tk_Image tkImage)
 }
 
 Blt_Picture
-Blt_GetPictureFromImage(Tcl_Interp *interp, Tk_Image tkImage, int *isPhotoPtr)
+Blt_GetPictureFromImage(Tcl_Interp *interp, Tk_Image tkImage, int *isPicturePtr)
 {
-    const char *type;
     Blt_Picture picture;
-    int isPhoto;
-
-    type = Blt_Image_NameOfType(tkImage);
-    if (strcmp(type, "picture") == 0) {
+    Tk_ImageType *typePtr;
+    char c;
+    
+    *isPicturePtr = FALSE;
+    typePtr = Blt_Image_GetType(tkImage);
+    c = typePtr->name[0];
+    if ((c == 'p') && (strcmp(typePtr->name, "photo") == 0)) {
+        picture = Blt_GetPictureFromPhotoImage(tkImage);
+    } else if ((c == 'p') && (strcmp(typePtr->name, "picture") == 0)) {
         picture = Blt_GetPictureFromPictureImage(interp, tkImage);
-        isPhoto = FALSE;
-    } else if (strcmp(type, "photo") == 0) {
-        picture = Blt_GetPictureFromPhotoImage(interp, tkImage);
-        isPhoto = TRUE;
-    } else {
-        isPhoto = FALSE;
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "image is not a photo or picture",
-                (char *)NULL);
-        }
+        *isPicturePtr = TRUE;
+    } else if ((c == 'b') && (strcmp(typePtr->name, "bitmap") == 0)) {
+        picture = Blt_BitmapImageToPicture(tkImage);
+    } else  {
+        Tcl_AppendResult(interp, "can't handle \"", typePtr->name,
+                         "\" image type.", (char *)NULL);
         return NULL;
-    }
-    if (isPhotoPtr != NULL) {
-        *isPhotoPtr = isPhoto;
     }
     return picture;
 }

@@ -95,6 +95,32 @@
 #include "bltPicture.h"
 #include "bltPictInt.h"
 
+typedef struct BitmapMaster {
+    Tk_ImageMaster tkMaster;	/* Tk's token for image master. NULL means the
+				 * image is being deleted. */
+    Tcl_Interp *interp;		/* Interpreter for application that is using
+				 * image. */
+    Tcl_Command imageCmd;	/* Token for image command (used to delete it
+				 * when the image goes away). NULL means the
+				 * image command has already been deleted. */
+    int width, height;		/* Dimensions of image. */
+    char *data;			/* Data comprising bitmap (suitable for input
+				 * to XCreateBitmapFromData). May be NULL if
+				 * no data. Malloc'ed. */
+    char *maskData;		/* Data for bitmap's mask (suitable for input
+				 * to XCreateBitmapFromData). Malloc'ed. */
+    Tk_Uid fgUid;		/* Value of -foreground option (malloc'ed). */
+    Tk_Uid bgUid;		/* Value of -background option (malloc'ed). */
+    char *fileString;		/* Value of -file option (malloc'ed). */
+    char *dataString;		/* Value of -data option (malloc'ed). */
+    char *maskFileString;	/* Value of -maskfile option (malloc'ed). */
+    char *maskDataString;	/* Value of -maskdata option (malloc'ed). */
+    struct BitmapInstance *instancePtr;
+				/* First in list of all instances associated
+				 * with this master. */
+} BitmapMaster;
+
+
 #define ROTATE_0        0
 #define ROTATE_90       1
 #define ROTATE_180      2
@@ -718,4 +744,70 @@ Blt_ScaleRotateBitmapArea(
     /* Clean up the temporary resources used. */
     XDestroyImage(srcImgPtr), XDestroyImage(destImgPtr);
     return destBitmap;
+}
+
+Blt_Picture 
+Blt_BitmapImageToPicture(Tk_Image tkImage)
+{
+    BitmapMaster *masterPtr;
+    Blt_Picture picture;
+    int bytesPerRow;
+    
+    masterPtr = Blt_Image_GetMasterData(tkImage);
+    /* Process data and mask. */
+    bytesPerRow = (masterPtr->width + 7) / 8;
+    picture = Blt_CreatePicture(masterPtr->width, masterPtr->height);
+    if (masterPtr->data != NULL) {
+        int y;
+        Blt_Pixel *destRowPtr;
+        unsigned char *srcRowPtr;
+        
+        destRowPtr = Blt_Picture_Bits(picture);
+        srcRowPtr = (unsigned char *)masterPtr->data;
+        for (y = 0; y < masterPtr->height; y++) {
+            int x;
+            Blt_Pixel *dp;
+            unsigned char *sp, *send;
+            
+            dp = destRowPtr;
+            x = 0;
+            for (sp = srcRowPtr, send = sp + bytesPerRow; sp < send; sp++) {
+                int i;
+                
+                for (i = 0; (x < masterPtr->width) && (i < 8); i++, x++) {
+                    dp->u32 = (*sp & (1<<i)) ? 0xFF000000 : 0xFFFFFFFF;
+                    dp++;
+                }
+            }
+            destRowPtr += Blt_Picture_Stride(picture);
+            srcRowPtr += bytesPerRow;
+        }
+    }
+    if (masterPtr->maskData != NULL) {
+        int y;
+        Blt_Pixel *destRowPtr;
+        unsigned char *srcRowPtr;
+        
+        destRowPtr = Blt_Picture_Bits(picture);
+        srcRowPtr = (unsigned char *)masterPtr->maskData;
+        for (y = 0; y < masterPtr->height; y++) {
+            int x;
+            Blt_Pixel *dp;
+            unsigned char *sp, *send;
+            
+            dp = destRowPtr;
+            x = 0;
+            for (sp = srcRowPtr, send = sp + bytesPerRow; sp < send; sp++) {
+                int i;
+                
+                for (i = 0; (x < masterPtr->width) && (i < 8); i++, x++) {
+                    dp->Alpha = (*sp & (1<<i)) ? 0xFF : 0x00;
+                    dp++;
+                }
+            }
+            destRowPtr += Blt_Picture_Stride(picture);
+            srcRowPtr += bytesPerRow;
+        }
+    }
+    return picture;
 }
