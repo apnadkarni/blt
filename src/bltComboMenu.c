@@ -7347,8 +7347,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                 Blt_Painter painter;
 
                 painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
-                src = Blt_GetPictureFromPictureImage(comboPtr->interp,
-                        IconImage(itemPtr->icon));
+                src = Blt_GetPictureFromPictureImage(IconImage(itemPtr->icon));
                 dst = Blt_ClonePicture(src);
                 Blt_FadePicture(dst, 0, 0, Blt_Picture_Width(src), 
                         Blt_Picture_Height(src), 1.0 - (140 / 255.0));

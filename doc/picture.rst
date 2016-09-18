@@ -201,16 +201,32 @@ the command.  The operations available for pictures are listed below.
       increasing the brightness. If the *fgImage* color is darker than 50%
       gray, the image is darkened by decreasing the brightness.
 
-    **normal**
-      Copies *fgImage* into *bgImage*.  The resulting color is always
-      the same as *fgImage*.
-      
     **multiply**
       Multiplies each color component in *bgImage* with *fgImage*. The
       resulting color is always a darker color. Pixels lighter than the
       *fgImage* color are replaced, and pixels darker than the *fgImage*
       color do not change.
     
+    **normal**
+      Copies *fgImage* into *bgImage*.  The resulting color is always
+      the same as *fgImage*.
+      
+    **overlay**
+      Multiplies or screens the colors, depending on the *bgImage*
+      color. Patterns or colors overlay the existing pixels while
+      preserving the highlights and shadows of the *bgImage* color. The
+      *bgImage* color is not replaced, but mixed with the *fgImage* color
+      to reflect the lightness or darkness of the original color.
+
+    **pinlight**
+      Replaces the colors, depending on the *fgImage* color. If the
+      *fgImage* color (light source) is lighter than 50% gray, pixels
+      darker than the *fgImage* color are replaced, and pixels lighter than
+      the *fgImage* color do not change. If the *fgImage* color is darker
+      than 50% gray, pixels lighter than the *fgImage* color are replaced,
+      and pixels darker than the *fgImage* color do not change. This is
+      useful for adding special effects to an image.
+
     **screen**
       Multiplies the inverse of each color component of *bgImage* and
       *fgImage*.  The resulting color is always a lighter color. Screening
@@ -231,22 +247,6 @@ the command.  The operations available for pictures are listed below.
       Subtracts the *fgImage* color from the *bgImage* color.  Any
       resulting negative values are clipped to zero.
     
-    **overlay**
-      Multiplies or screens the colors, depending on the *bgImage*
-      color. Patterns or colors overlay the existing pixels while
-      preserving the highlights and shadows of the *bgImage* color. The
-      *bgImage* color is not replaced, but mixed with the *fgImage* color
-      to reflect the lightness or darkness of the original color.
-
-    **pinlight**
-      Replaces the colors, depending on the *fgImage* color. If the
-      *fgImage* color (light source) is lighter than 50% gray, pixels
-      darker than the *fgImage* color are replaced, and pixels lighter than
-      the *fgImage* color do not change. If the *fgImage* color is darker
-      than 50% gray, pixels lighter than the *fgImage* color are replaced,
-      and pixels darker than the *fgImage* color do not change. This is
-      useful for adding special effects to an image.
-
     **vividlight**
       Burns or dodges the colors by increasing or decreasing the contrast,
       depending on the *fgImage* color. If the *fgImage* color (light

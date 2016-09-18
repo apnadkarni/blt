@@ -89,24 +89,25 @@ BltTkProcs bltTkProcs = {
     Blt_SnapPicture, /* 73 */
     Blt_XColorToPixel, /* 74 */
     Blt_IsPicture, /* 75 */
-    Blt_GetPictureFromImage, /* 76 */
-    Blt_GetPictureFromPictureImage, /* 77 */
-    Blt_GetPicturesFromPictureImage, /* 78 */
+    Blt_GetPicturesFromPictureImage, /* 76 */
+    Blt_GetPictureFromImage, /* 77 */
+    Blt_GetPictureFromPictureImage, /* 78 */
     Blt_GetPictureFromPhotoImage, /* 79 */
-    Blt_CanvasToPicture, /* 80 */
-    Blt_GraphToPicture, /* 81 */
-    Blt_PictureRegisterProc, /* 82 */
-    Blt_Shadow_Set, /* 83 */
-    Blt_EmbossPicture, /* 84 */
-    Blt_FadeColor, /* 85 */
-    Blt_Dissolve2, /* 86 */
-    Blt_CrossFadePictures, /* 87 */
-    Blt_FadeFromColor, /* 88 */
-    Blt_FadeToColor, /* 89 */
-    Blt_WipePictures, /* 90 */
-    Blt_PictureRegisterFormat, /* 91 */
-    Blt_GetNthPicture, /* 92 */
-    Blt_FindPictureFormat, /* 93 */
+    Blt_GetPictureFromBitmapImage, /* 80 */
+    Blt_CanvasToPicture, /* 81 */
+    Blt_GraphToPicture, /* 82 */
+    Blt_PictureRegisterProc, /* 83 */
+    Blt_Shadow_Set, /* 84 */
+    Blt_EmbossPicture, /* 85 */
+    Blt_FadeColor, /* 86 */
+    Blt_Dissolve2, /* 87 */
+    Blt_CrossFadePictures, /* 88 */
+    Blt_FadeFromColor, /* 89 */
+    Blt_FadeToColor, /* 90 */
+    Blt_WipePictures, /* 91 */
+    Blt_PictureRegisterFormat, /* 92 */
+    Blt_GetNthPicture, /* 93 */
+    Blt_FindPictureFormat, /* 94 */
 };
 
 /* !END!: Do not edit above this line. */

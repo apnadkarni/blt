@@ -180,7 +180,7 @@ static Blt_HashTable procTable;
 #define DEF_WIDTH               "0"
 #define DEF_WINDOW              (char *)NULL
 #define DEF_IMAGE               (char *)NULL
-#define DEF_SHARPEN             "no"
+#define DEF_SHARPEN             "0"
 
 #define DEF_OPAQUE              "0"
 #define DEF_OPAQUE_BACKGROUND   "white"
@@ -202,7 +202,6 @@ static Blt_HashTable procTable;
                                          * drawing. */
 #define SHARPEN                 (1<<12) /* Sharpen the image. */
 
-#define INUSE                   (1<<13) /* Image is in use. */
 #define RAISE                   (1<<14) 
 
 /*
@@ -263,16 +262,13 @@ typedef struct _Blt_PictureImage {
                                          * assuming (almost certainly
                                          * wrong) that both monitors will
                                          * have the same gamma value. */
-    const char *name;                   /* Name of the image, file, or
+    const char *sourceName;             /* Name of the image, file, or
                                          * window read into the picture
                                          * image. */
-    int current;                       /* Index of the picture in the above
-                                         * list. */
-    Tcl_TimerToken timerToken;          /* Token for timer handler which
-                                         * polls for the exit status of
-                                         * each sub-process. If zero,
-                                         * there's no timer handler
-                                         * queued. */
+    int current;                        /* Index of the picture in the
+                                         * above list. */
+    Tcl_TimerToken timerToken;          /* Token for timer handler for
+                                         * sequences. */
     int interval;
     int lastIndex;
     Blt_PictFormat *fmtPtr;             /* External format of last image
@@ -283,6 +279,8 @@ typedef struct _Blt_PictureImage {
     Blt_HashTable cacheTable;           /* Table of cache entries specific
                                          * to each visual context where
                                          * this picture is displayed. */
+    ClientData clientData;              /* Holder for transition
+                                         * information. */
 } PictImage;
 
 
@@ -339,6 +337,33 @@ typedef struct {
     unsigned int flags;
 } PictInstance;
 
+typedef struct {
+    PictImage *imgPtr;
+    Tcl_TimerToken timerToken;          /* Token for timer handler for
+                                         * transition. */
+    Blt_SwitchSpec *specs;
+    Blt_Picture from, to;               /* From and to pictures. */
+    Blt_Picture picture;                /* Holds the result. */
+    int scale;
+    int interval;                       /* # of milliseconds delay between
+                                         * steps. */
+    int numSteps;                       /* # of steps. */
+    int count;                          /* Current step. */
+    Tcl_Interp *interp;                 /* Interpreter used to set
+                                         * variable.  */
+    Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
+                                         * variable to set when transition
+                                         * is completed. */
+    /* Crossfade and Disolve fields. */
+    Blt_Pixel fromColor;                /* Defaults to white. */
+    Blt_Pixel toColor;                  /* Defaults to black. */
+
+    /* Dissolve-specific fields. */
+    long numPixels;                     /* ! # pixels in each step.  */
+    long last;                          /* ! Last position in dissolve. */
+    /* Wipe-specific fields. */
+    int direction;
+} Transition;
 
 static Blt_OptionParseProc ObjToFile;
 static Blt_OptionPrintProc FileToObj;
@@ -646,112 +671,50 @@ static Blt_SwitchSpec projectSwitches[] = {
     {BLT_SWITCH_END}
 };
 
-typedef struct {
-    PictImage *imgPtr;
-    Blt_Picture from, to;               /* From and to pictures. */
-    Blt_Picture picture;                /* Holds the result. */
-    Blt_Pixel fromColor;                /* Defaults to white. */
-    Blt_Pixel toColor;                  /* Defaults to black. */
-    Tcl_TimerToken timerToken;
-    int scale;
-    int interval;                       /* # of milliseconds delay between
-                                         * steps. */
-    int numSteps;                       /* # of steps. */
-    int count;                          /* Current step. */
-    Tcl_Interp *interp;                 /* Interpreter used to set
-                                         * variable.  */
-    Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
-                                         * variable to set when transition
-                                         * is completed. */
-} CrossFade;
-
-static Blt_SwitchSpec crossFadeSwitches[] = 
+static Blt_SwitchSpec crossFadeTransitionSwitches[] = 
 {
     {BLT_SWITCH_INT_NNEG, "-goto", "step", (char *)NULL,
-        Blt_Offset(CrossFade, count), 0},
+        Blt_Offset(Transition, count), 0},
     {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
-        Blt_Offset(CrossFade, interval), 0},
+        Blt_Offset(Transition, interval), 0},
     {BLT_SWITCH_CUSTOM, "-scale", "step", (char *)NULL,
-        Blt_Offset(CrossFade, scale), 0, 0, &scaleSwitch},
+        Blt_Offset(Transition, scale), 0, 0, &scaleSwitch},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
-        Blt_Offset(CrossFade, numSteps), 0},
+        Blt_Offset(Transition, numSteps), 0},
     {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
-        Blt_Offset(CrossFade, varNameObjPtr), 0},
+        Blt_Offset(Transition, varNameObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
-typedef struct {
-    PictImage *imgPtr;
-    Blt_Picture from, to;
-    Blt_Picture picture;                /* Holds the result. */
-    Blt_Pixel fromColor;                /* Defaults to white. */
-    Blt_Pixel toColor;                  /* Defaults to black. */
-    Tcl_TimerToken timerToken;
-    int interval;                       /* # of milliseconds delay between
-                                         * steps. */
-    int numSteps;                       /* # of steps. */
-    int count;                          /* Current step. */
-    int scale;
-    long numPixels;                     /* # pixels in each step.  */
-    long last;                          /* Last position in dissolve. */
-    
-    Tcl_Interp *interp;                 /* Interpreter used to set
-                                         * variable.  */
-    Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
-                                         * variable to set when transition
-                                         * is completed. */
-
-} DissolveArgs;
-
-static Blt_SwitchSpec dissolveSwitches[] = 
+static Blt_SwitchSpec dissolveTransitionSwitches[] = 
 {
     {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
-        Blt_Offset(DissolveArgs, interval), 0},
+        Blt_Offset(Transition, interval), 0},
     {BLT_SWITCH_INT_NNEG, "-goto", "step", (char *)NULL,
-        Blt_Offset(DissolveArgs, count), 0},
+        Blt_Offset(Transition, count), 0},
     {BLT_SWITCH_CUSTOM, "-scale", "scaleType", (char *)NULL,
-        Blt_Offset(DissolveArgs, scale), 0, 0, &scaleSwitch},
+        Blt_Offset(Transition, scale), 0, 0, &scaleSwitch},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
-        Blt_Offset(DissolveArgs, numSteps), 0},
+        Blt_Offset(Transition, numSteps), 0},
     {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
-        Blt_Offset(DissolveArgs, varNameObjPtr), 0},
+        Blt_Offset(Transition, varNameObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
-typedef struct {
-    PictImage *imgPtr;
-    Blt_Picture from, to;
-    Blt_Picture picture;                /* Hold the result. */
-    Blt_Pixel fromColor;                /* Defaults to white. */
-    Blt_Pixel toColor;                  /* Defaults to black. */
-    Tcl_TimerToken timerToken;
-    int scale;
-    int direction;
-    int interval;                       /* # of milliseconds delay between
-                                         * steps. */
-    int numSteps;                       /* # of steps. */
-    int count;                          /* Current step. */
-    Tcl_Interp *interp;                 /* Interpreter used to set
-                                         * variable.  */
-    Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
-                                         * variable to set when transition
-                                         * is completed. */
-} WipeArgs;
-
-static Blt_SwitchSpec wipeSwitches[] = 
+static Blt_SwitchSpec wipeTransitionSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-direction", "n|s|e|w", (char *)NULL,
-        Blt_Offset(WipeArgs, direction), 0, 0, &directionSwitch},
+        Blt_Offset(Transition, direction), 0, 0, &directionSwitch},
     {BLT_SWITCH_INT_NNEG, "-goto", "step", (char *)NULL,
-        Blt_Offset(WipeArgs, count), 0},
+        Blt_Offset(Transition, count), 0},
     {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
-        Blt_Offset(WipeArgs, interval), 0},
+        Blt_Offset(Transition, interval), 0},
     {BLT_SWITCH_CUSTOM, "-scale", "scaleType", (char *)NULL,
-        Blt_Offset(WipeArgs, scale), 0, 0, &scaleSwitch},
+        Blt_Offset(Transition, scale), 0, 0, &scaleSwitch},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
-        Blt_Offset(WipeArgs, numSteps), 0},
+        Blt_Offset(Transition, numSteps), 0},
     {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
-        Blt_Offset(WipeArgs, varNameObjPtr), 0},
+        Blt_Offset(Transition, varNameObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
@@ -987,12 +950,11 @@ FreePictures(PictImage *imgPtr)
 }
 
 Blt_Picture
-Blt_GetPictureFromPictureImage(Tcl_Interp *interp, Tk_Image tkImage)
+Blt_GetPictureFromPictureImage(Tk_Image tkImage)
 {
     PictInstance *instancePtr;
 
     if (!Blt_IsPicture(tkImage)) {
-        Tcl_AppendResult(interp, "image is not a picture", (char *)NULL);
         return NULL;
     }
     instancePtr = Blt_Image_GetInstanceData(tkImage);
@@ -1048,7 +1010,7 @@ Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     double left, top, right, bottom;
 
     if ((objc != 2) && (objc != 4)) {
-        Tcl_AppendResult(interp, "wrong # elements in bounding box ", 
+        Tcl_AppendResult(interp, "wrong # elements in bounding box", 
                 (char *)NULL);
         return TCL_ERROR;
     }
@@ -1066,8 +1028,8 @@ Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
         return TCL_ERROR;
     }
 
-    /* Flip the coordinates of the bounding box if necessary so that its the
-     * upper-left and lower-right corners */
+    /* Flip the coordinates of the bounding box if necessary so that its
+     * the upper-left and lower-right corners */
     if (left > right) {
         double tmp;
 
@@ -1373,10 +1335,10 @@ ImageToPicture(Tcl_Interp *interp, PictImage *imgPtr, const char *imageName)
         picture = Blt_ClonePicture(picture);
     }
     ReplacePicture(imgPtr, picture);
-    if (imgPtr->name != NULL) {
-        Blt_Free(imgPtr->name);
+    if (imgPtr->sourceName != NULL) {
+        Blt_Free(imgPtr->sourceName);
     }
-    imgPtr->name = Blt_AssertStrdup(imageName);
+    imgPtr->sourceName = Blt_AssertStrdup(imageName);
     imgPtr->flags &= ~IMPORTED_MASK;
     imgPtr->flags |= IMPORTED_IMAGE;
     return TCL_OK;
@@ -1407,10 +1369,10 @@ WindowToPicture(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr)
         return TCL_ERROR;
     }
     ReplacePicture(imgPtr, picture);
-    if (imgPtr->name != NULL) {
-        Blt_Free(imgPtr->name);
+    if (imgPtr->sourceName != NULL) {
+        Blt_Free(imgPtr->sourceName);
     }
-    imgPtr->name = Blt_AssertStrdup(Tcl_GetString(objPtr));
+    imgPtr->sourceName = Blt_AssertStrdup(Tcl_GetString(objPtr));
     imgPtr->flags &= ~IMPORTED_MASK;
     imgPtr->flags |= IMPORTED_WINDOW;
     return TCL_OK;
@@ -1515,9 +1477,9 @@ ObjToFile(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     fileName = Tcl_GetString(objPtr);
     if (fileName[0] == '\0') {
         FreePictures(imgPtr);
-        if (imgPtr->name != NULL) {
-            Blt_Free(imgPtr->name);
-            imgPtr->name = NULL;
+        if (imgPtr->sourceName != NULL) {
+            Blt_Free(imgPtr->sourceName);
+            imgPtr->sourceName = NULL;
         }
         imgPtr->fmtPtr = NULL;
         imgPtr->flags &= ~IMPORTED_MASK;
@@ -1564,11 +1526,11 @@ ObjToFile(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     } else {
         imgPtr->picture = NULL;
     }
-    if (imgPtr->name != NULL) {
-        Blt_Free(imgPtr->name);
+    if (imgPtr->sourceName != NULL) {
+        Blt_Free(imgPtr->sourceName);
     }
     imgPtr->fmtPtr = fmtPtr;
-    imgPtr->name = Blt_AssertStrdup(fileName);
+    imgPtr->sourceName = Blt_AssertStrdup(fileName);
     imgPtr->flags &= ~IMPORTED_MASK;
     imgPtr->flags |= IMPORTED_FILE;
     imgPtr->interval = 0;
@@ -1599,10 +1561,11 @@ FileToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 {
     PictImage *imgPtr = (PictImage *)widgRec;
 
-    if (((imgPtr->flags & IMPORTED_FILE) == 0) || (imgPtr->name == NULL)) {
+    if (((imgPtr->flags & IMPORTED_FILE) == 0) ||
+        (imgPtr->sourceName == NULL)) {
         return Tcl_NewStringObj("", -1);
     }
-    return Tcl_NewStringObj(imgPtr->name, -1);
+    return Tcl_NewStringObj(imgPtr->sourceName, -1);
 }
 
 /*
@@ -1806,7 +1769,7 @@ DataToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     }
     fmtPtr = imgPtr->fmtPtr;
     if (fmtPtr == NULL) {
-        Tcl_AppendResult(interp, "image \"", imgPtr->name, 
+        Tcl_AppendResult(interp, "image \"", Tk_NameOfImage(imgPtr->imgToken),
                 "\" has no assigned format.", (char *)NULL);
         Tcl_BackgroundError(interp);
         return Tcl_NewStringObj("", -1);
@@ -1922,10 +1885,11 @@ ImageToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 {
     PictImage *imgPtr = (PictImage *)widgRec;
 
-    if (((imgPtr->flags & IMPORTED_IMAGE) == 0) || (imgPtr->name == NULL)) {
+    if (((imgPtr->flags & IMPORTED_IMAGE) == 0) ||
+        (imgPtr->sourceName == NULL)) {
         return Tcl_NewStringObj("", -1);
     }
-    return Tcl_NewStringObj(imgPtr->name, -1);
+    return Tcl_NewStringObj(imgPtr->sourceName, -1);
 }
 
 /*
@@ -1947,7 +1911,17 @@ ObjToWindow(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     PictImage *imgPtr = (PictImage *)(widgRec);
+    const char *string;
 
+    string = Tcl_GetString(objPtr);
+    if (string[0] == '\0') {
+        if (imgPtr->sourceName != NULL) {
+            Blt_Free(imgPtr->sourceName);
+        }
+        imgPtr->sourceName = NULL;
+        imgPtr->flags &= ~IMPORTED_MASK;
+        return TCL_OK;
+    }
     return WindowToPicture(interp, imgPtr, objPtr);
 }
 
@@ -1970,10 +1944,11 @@ WindowToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 {
     PictImage *imgPtr = (PictImage *)widgRec;
 
-    if (((imgPtr->flags & IMPORTED_WINDOW) == 0) || (imgPtr->name == NULL)) {
+    if (((imgPtr->flags & IMPORTED_WINDOW) == 0) ||
+        (imgPtr->sourceName == NULL)) {
         return Tcl_NewStringObj("", -1);
     }
-    return Tcl_NewStringObj(imgPtr->name, -1);
+    return Tcl_NewStringObj(imgPtr->sourceName, -1);
 }
 
 /*
@@ -2226,10 +2201,9 @@ FreeInstanceProc(
  *---------------------------------------------------------------------------
  */
 static void
-DeleteProc(
-    ClientData clientData)              /* Pointer to picture image master
-                                         * structure for image.  Must not
-                                         * have any more instances. */
+DeleteProc(ClientData clientData)      /* Pointer to picture image master
+                                        * structure for image.  Must not
+                                        * have any more instances. */
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
@@ -2254,8 +2228,8 @@ DeleteProc(
     if (imgPtr->cmdToken != NULL) {
         Tcl_DeleteCommandFromToken(imgPtr->interp, imgPtr->cmdToken);
     }
-    if (imgPtr->name != NULL) {
-        Blt_Free(imgPtr->name);
+    if (imgPtr->sourceName != NULL) {
+        Blt_Free(imgPtr->sourceName);
     }
     Blt_DeleteHashTable(&imgPtr->cacheTable);
     Blt_FreeOptions(configSpecs, (char *)imgPtr, imgPtr->display, 0);
@@ -2380,9 +2354,6 @@ CreateProc(
     tkwin = Tk_MainWindow(interp);
     imgPtr->display = Tk_Display(tkwin);
     imgPtr->colormap = Tk_Colormap(tkwin);
-#ifdef notdef
-    imgPtr->typePtr = typePtr;
-#endif
     Blt_InitHashTable(&imgPtr->cacheTable, sizeof(PictCacheKey)/sizeof(int));
 
     /*
@@ -2783,6 +2754,29 @@ SequenceTimerProc(ClientData clientData)
         imgPtr);
 }
 
+static void
+FreeTransition(PictImage *imgPtr)
+{
+    Transition *transPtr;
+
+    transPtr = imgPtr->clientData;
+    assert(transPtr != NULL);
+    if (transPtr->timerToken != (Tcl_TimerToken)0) {
+        Tcl_DeleteTimerHandler(transPtr->timerToken);
+        transPtr->timerToken = 0;
+    }
+    if (transPtr->varNameObjPtr != NULL) {
+        Tcl_Obj *objPtr;
+        
+        objPtr = Tcl_NewIntObj(TRUE);
+        Tcl_ObjSetVar2(transPtr->interp, transPtr->varNameObjPtr, NULL,
+                objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+    }
+    Blt_FreeSwitches(transPtr->specs, transPtr, 0);
+    Blt_Free(transPtr);
+    imgPtr->clientData = NULL;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2793,62 +2787,55 @@ SequenceTimerProc(ClientData clientData)
 static void
 CrossFadeTimerProc(ClientData clientData)
 {
-    CrossFade *fadePtr = clientData;
-    
-    fadePtr->count++;
-    if (fadePtr->count <= fadePtr->numSteps) {
+    Transition *transPtr = clientData;
+    PictImage *imgPtr;
+
+    imgPtr = transPtr->imgPtr;
+    transPtr->count++;
+    if (transPtr->count <= transPtr->numSteps) {
         double opacity;
 
-        opacity = fadePtr->count / (double)fadePtr->numSteps;
-        if (fadePtr->scale == SCALE_LOG) {
+        opacity = transPtr->count / (double)transPtr->numSteps;
+        if (transPtr->scale == SCALE_LOG) {
             opacity = log10(9.0 * opacity + 1.0);
         }
-        if (fadePtr->from == NULL) {
-            Blt_FadeFromColor(fadePtr->picture, fadePtr->to,
-                              &fadePtr->fromColor, opacity);
-        } else if (fadePtr->to == NULL) {
-            Blt_FadeToColor(fadePtr->picture, fadePtr->from,
-                              &fadePtr->toColor, opacity);
+        if (transPtr->from == NULL) {
+            Blt_FadeFromColor(transPtr->picture, transPtr->to,
+                              &transPtr->fromColor, opacity);
+        } else if (transPtr->to == NULL) {
+            Blt_FadeToColor(transPtr->picture, transPtr->from,
+                              &transPtr->toColor, opacity);
         } else {
-            Blt_CrossFadePictures(fadePtr->picture, fadePtr->from, fadePtr->to,
-                          opacity);
+            Blt_CrossFadePictures(transPtr->picture, transPtr->from,
+                                  transPtr->to, opacity);
         }
-        Blt_NotifyImageChanged(fadePtr->imgPtr);
-        fadePtr->timerToken = Tcl_CreateTimerHandler(fadePtr->interval, 
-                CrossFadeTimerProc, fadePtr);
+        Blt_NotifyImageChanged(transPtr->imgPtr);
+        transPtr->timerToken = Tcl_CreateTimerHandler(transPtr->interval, 
+                CrossFadeTimerProc, transPtr);
     } else {
-        fadePtr->imgPtr->flags &= ~INUSE;
-        if (fadePtr->varNameObjPtr != NULL) {
-            Tcl_Obj *objPtr;
-
-            objPtr = Tcl_NewIntObj(TRUE);
-            Tcl_ObjSetVar2(fadePtr->interp, fadePtr->varNameObjPtr, NULL,
-                           objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
-        }
-        Blt_FreeSwitches(crossFadeSwitches, fadePtr, 0);
-        Blt_Free(fadePtr);
+        FreeTransition(imgPtr);
     }
 }
 
 static void
-DoDissolve(DissolveArgs *argsPtr)
+DoDissolve(Transition *transPtr)
 {
     long last, next;
     double position;
     
-    position = argsPtr->count / (double)argsPtr->numSteps;
-    if (argsPtr->scale == SCALE_LOG) {
+    position = transPtr->count / (double)transPtr->numSteps;
+    if (transPtr->scale == SCALE_LOG) {
         position = log10(9.0 * position + 1.0);
     }
-    next = (int)(position * argsPtr->numPixels);
-    last = argsPtr->last;
+    next = (int)(position * transPtr->numPixels);
+    last = transPtr->last;
     if (next < last) {
-        Blt_CopyPictures(argsPtr->picture, argsPtr->from);
-        next = Blt_Dissolve2(argsPtr->picture, argsPtr->to, 0, next);
+        Blt_CopyPictures(transPtr->picture, transPtr->from);
+        next = Blt_Dissolve2(transPtr->picture, transPtr->to, 0, next);
     } else {
-        next = Blt_Dissolve2(argsPtr->picture, argsPtr->to, last, next);
+        next = Blt_Dissolve2(transPtr->picture, transPtr->to, last, next);
     }        
-    argsPtr->last = next;
+    transPtr->last = next;
 }
     
 /*
@@ -2861,25 +2848,18 @@ DoDissolve(DissolveArgs *argsPtr)
 static void
 DissolveTimerProc(ClientData clientData)
 {
-    DissolveArgs *argsPtr = clientData;
-    
-    argsPtr->count++;
-    if (argsPtr->count <= argsPtr->numSteps) {
-        DoDissolve(argsPtr);
-        Blt_NotifyImageChanged(argsPtr->imgPtr);
-        argsPtr->timerToken = Tcl_CreateTimerHandler(argsPtr->interval, 
-                DissolveTimerProc, argsPtr);
-    } else {
-        argsPtr->imgPtr->flags &= ~INUSE;
-        if (argsPtr->varNameObjPtr != NULL) {
-            Tcl_Obj *objPtr;
+    Transition *transPtr = clientData;
+    PictImage *imgPtr;
 
-            objPtr = Tcl_NewIntObj(TRUE);
-            Tcl_ObjSetVar2(argsPtr->interp, argsPtr->varNameObjPtr, NULL,
-                           objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
-        }
-        Blt_FreeSwitches(dissolveSwitches, argsPtr, 0);
-        Blt_Free(argsPtr);
+    imgPtr = transPtr->imgPtr;
+    transPtr->count++;
+    if (transPtr->count <= transPtr->numSteps) {
+        DoDissolve(transPtr);
+        Blt_NotifyImageChanged(imgPtr);
+        transPtr->timerToken = Tcl_CreateTimerHandler(transPtr->interval, 
+                DissolveTimerProc, transPtr);
+    } else {
+        FreeTransition(imgPtr);
     }
 }
 
@@ -2893,32 +2873,25 @@ DissolveTimerProc(ClientData clientData)
 static void
 WipeTimerProc(ClientData clientData)
 {
-    WipeArgs *argsPtr = clientData;
-    
-    argsPtr->count++;
-    if (argsPtr->count <= argsPtr->numSteps) {
+    Transition *transPtr = clientData;
+    PictImage *imgPtr;
+
+    imgPtr = transPtr->imgPtr;
+    transPtr->count++;
+    if (transPtr->count <= transPtr->numSteps) {
         double position;
 
-        position = argsPtr->count / (double)argsPtr->numSteps;
-        if (argsPtr->scale == SCALE_LOG) {
+        position = transPtr->count / (double)transPtr->numSteps;
+        if (transPtr->scale == SCALE_LOG) {
             position = log10(9.0 * position + 1.0);
         }
-        Blt_WipePictures(argsPtr->picture, argsPtr->from, argsPtr->to,
-                        argsPtr->direction, position);
-        Blt_NotifyImageChanged(argsPtr->imgPtr);
-        argsPtr->timerToken = Tcl_CreateTimerHandler(argsPtr->interval, 
-                WipeTimerProc, argsPtr);
+        Blt_WipePictures(transPtr->picture, transPtr->from, transPtr->to,
+                        transPtr->direction, position);
+        Blt_NotifyImageChanged(imgPtr);
+        transPtr->timerToken = Tcl_CreateTimerHandler(transPtr->interval, 
+                WipeTimerProc, transPtr);
     } else {
-        argsPtr->imgPtr->flags &= ~INUSE;
-        if (argsPtr->varNameObjPtr != NULL) {
-            Tcl_Obj *objPtr;
-
-            objPtr = Tcl_NewIntObj(TRUE);
-            Tcl_ObjSetVar2(argsPtr->interp, argsPtr->varNameObjPtr, NULL,
-                           objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
-        }
-        Blt_FreeSwitches(wipeSwitches, argsPtr, 0);
-        Blt_Free(argsPtr);
+        FreeTransition(imgPtr);
     }
 }
 
@@ -3105,6 +3078,18 @@ CompositeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (switches.from.h == Blt_Picture_Height(bg))) {
         Blt_CompositePictures(dst, fg);
     } else {
+        if (!Blt_AdjustRegionToPicture(fg, &switches.from)) {
+            Tcl_AppendResult(interp,
+                        "source bounding box lies outside of picture", 
+                        (char *)NULL);
+            return TCL_ERROR;
+        }
+        if (!Blt_AdjustRegionToPicture(dst, &switches.to)) {
+            Tcl_AppendResult(interp,
+                        "destination bounding box lies outside of picture", 
+                        (char *)NULL);
+            return TCL_ERROR;
+        }
         Blt_CompositeRegion(dst, fg, switches.from.x, switches.from.y, 
                 switches.from.w, switches.from.h, 
                 switches.to.x, switches.to.y);
@@ -3170,7 +3155,11 @@ BlurOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetIntFromObj(interp, objv[3], &r) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (r < 1) {
+    if (r < 0) {
+        Tcl_AppendResult(interp, "blur radius can't be negative", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (r < 2) {
         Tcl_AppendResult(interp, "radius of blur must be > 1 pixel wide",
                          (char *)NULL);
         return TCL_ERROR;
@@ -3351,28 +3340,28 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      None.
  *
+ *      pictureName crop x1 y1 x2 y2
  *---------------------------------------------------------------------------
  */
 static int
 CropOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
-    PictRegion from;
     Blt_Picture src, dst;
-    PictImage *imgPtr;
+    PictImage *imgPtr = clientData;
+    PictRegion reg;
 
-    if (Blt_GetBBoxFromObjv(interp, objc - 2, objv + 2, &from) != TCL_OK) {
+    if (Blt_GetBBoxFromObjv(interp, objc - 2, objv + 2, &reg) != TCL_OK) {
         return TCL_ERROR;
     }
-    imgPtr = clientData;
     src = CurrentPictureFromPictImage(imgPtr);
-    if (!Blt_AdjustRegionToPicture(src, &from)) {
+    if (!Blt_AdjustRegionToPicture(src, &reg)) {
         Tcl_AppendResult(interp, "impossible coordinates for region", 
                          (char *)NULL);
         return TCL_ERROR;
     }
-    dst = Blt_CreatePicture(from.w, from.h);
-    Blt_CopyRegion(dst, src, from.x, from.y, from.w, from.h, 0,0);
+    dst = Blt_CreatePicture(reg.w, reg.h);
+    Blt_CopyRegion(dst, src, reg.x, reg.y, reg.w, reg.h, 0, 0);
     ReplacePicture(imgPtr, dst);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -3384,6 +3373,8 @@ CropOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CrossFadeOp --
  *
+ *      pictureName crossfade fromPicture toPicture ?switches...?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -3392,95 +3383,97 @@ CrossFadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
-    int w, h;
-    CrossFade *fadePtr;
+    Transition *transPtr;
     double opacity;
+    int w, h;
     
-    if (imgPtr->flags & INUSE) {
-        Tcl_AppendResult(interp, "what? image \"", imgPtr->name,
-                         "\" is busy.", (char *)NULL);
-            return TCL_ERROR;
+    if (imgPtr->clientData != NULL) {
+        FreeTransition(imgPtr);
     }
-    fadePtr = Blt_AssertCalloc(1, sizeof(CrossFade));
-    fadePtr->numSteps = 10;
-    fadePtr->fromColor.u32 = 0xFFFFFFFF;
-    fadePtr->toColor.u32 = 0xFF000000;
-    fadePtr->interp = interp;
-    fadePtr->imgPtr = imgPtr;
-    fadePtr->count = 1;
-    if (Blt_GetPixelFromObj(NULL, objv[2], &fadePtr->fromColor) != TCL_OK) {
-        if (Blt_GetPictureFromObj(interp, objv[2], &fadePtr->from) != TCL_OK) {
-            return TCL_ERROR;
+    transPtr = Blt_AssertCalloc(1, sizeof(Transition));
+    transPtr->numSteps = 10;
+    transPtr->fromColor.u32 = 0xFFFFFFFF;
+    transPtr->toColor.u32 = 0xFF000000;
+    transPtr->interp = interp;
+    transPtr->imgPtr = imgPtr;
+    transPtr->count = 1;
+    transPtr->specs = crossFadeTransitionSwitches;
+    imgPtr->clientData = transPtr;
+    if (Blt_GetPixelFromObj(NULL, objv[2], &transPtr->fromColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[2], &transPtr->from) != TCL_OK) {
+            goto error;
         }
     }
-    if (Blt_GetPixelFromObj(NULL, objv[3], &fadePtr->toColor) != TCL_OK) {
-        if (Blt_GetPictureFromObj(interp, objv[3], &fadePtr->to) != TCL_OK) {
-            return TCL_ERROR;
+    if (Blt_GetPixelFromObj(NULL, objv[3], &transPtr->toColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[3], &transPtr->to) != TCL_OK) {
+            goto error;
         }
     }
-    if (Blt_ParseSwitches(interp, crossFadeSwitches, objc - 4, objv + 4,
-                          fadePtr, BLT_SWITCH_DEFAULTS) < 0) {
-        return TCL_ERROR;
+    if (Blt_ParseSwitches(interp, transPtr->specs, objc - 4, objv + 4,
+                          transPtr, BLT_SWITCH_DEFAULTS) < 0) {
+        goto error;
     }
-    if (fadePtr->from == imgPtr->picture) {
-        Tcl_AppendResult(interp, "from picture can not be \"", imgPtr->name,
-                         "\"", (char *)NULL);
-            return TCL_ERROR;
+    if (transPtr->from == imgPtr->picture) {
+        Tcl_AppendResult(interp, "\"from\" picture can not be \"",
+                Tk_NameOfImage(imgPtr->imgToken), "\"", (char *)NULL);
+        goto error;
     }
-    if (fadePtr->to == imgPtr->picture) {
-        Tcl_AppendResult(interp, "to picture can not be \"", imgPtr->name,
-                         "\"", (char *)NULL);
-            return TCL_ERROR;
+    if (transPtr->to == imgPtr->picture) {
+        Tcl_AppendResult(interp, "\"to\" picture can not be \"",
+                Tk_NameOfImage(imgPtr->imgToken), "\"", (char *)NULL);
+        goto error;
     }
-    if (fadePtr->from == NULL) {
-        if (fadePtr->to == NULL) {
+    if (transPtr->from == NULL) {
+        if (transPtr->to == NULL) {
             Tcl_AppendResult(interp, "either from or to must ",
                              "be a picture image.", (char *)NULL);
-            return TCL_ERROR;
+            goto error;
         }
-        w = Blt_Picture_Width(fadePtr->to);
-        h = Blt_Picture_Height(fadePtr->to);
-    } else if (fadePtr->to == NULL) {
-        w = Blt_Picture_Width(fadePtr->from);
-        h = Blt_Picture_Height(fadePtr->from);
+        w = Blt_Picture_Width(transPtr->to);
+        h = Blt_Picture_Height(transPtr->to);
+    } else if (transPtr->to == NULL) {
+        w = Blt_Picture_Width(transPtr->from);
+        h = Blt_Picture_Height(transPtr->from);
     } else {
-        w = Blt_Picture_Width(fadePtr->from);
-        h = Blt_Picture_Height(fadePtr->from);
-        if ((w != Blt_Picture_Width(fadePtr->to)) ||
-            (h != Blt_Picture_Height(fadePtr->to))) {
+        w = Blt_Picture_Width(transPtr->from);
+        h = Blt_Picture_Height(transPtr->from);
+        if ((w != Blt_Picture_Width(transPtr->to)) ||
+            (h != Blt_Picture_Height(transPtr->to))) {
             Tcl_AppendResult(interp, "from and to picture ",
                              "must be the same size.", (char *)NULL);
-            return TCL_ERROR;
+            goto error;
         }
     }
-    fadePtr->picture = Blt_CreatePicture(w, h);
-    if (fadePtr->count > fadePtr->numSteps) {
-        fadePtr->count = fadePtr->numSteps;
+    transPtr->picture = Blt_CreatePicture(w, h);
+    if (transPtr->count > transPtr->numSteps) {
+        transPtr->count = transPtr->numSteps;
     } 
-    opacity = (double)fadePtr->count / (double)fadePtr->numSteps;
-    if (fadePtr->scale == SCALE_LOG) {
+    opacity = (double)transPtr->count / (double)transPtr->numSteps;
+    if (transPtr->scale == SCALE_LOG) {
         opacity = log10(9.0 * opacity + 1.0);
     }
-    if (fadePtr->from == NULL) {
-        Blt_FadeFromColor(fadePtr->picture, fadePtr->to, &fadePtr->fromColor,
+    if (transPtr->from == NULL) {
+        Blt_FadeFromColor(transPtr->picture, transPtr->to, &transPtr->fromColor,
                 opacity);
-    } else if (fadePtr->to == NULL) {
-        Blt_FadeToColor(fadePtr->picture, fadePtr->from, &fadePtr->toColor,
+    } else if (transPtr->to == NULL) {
+        Blt_FadeToColor(transPtr->picture, transPtr->from, &transPtr->toColor,
                 opacity);
     } else {
-        Blt_CrossFadePictures(fadePtr->picture, fadePtr->from, fadePtr->to,
+        Blt_CrossFadePictures(transPtr->picture, transPtr->from, transPtr->to,
                               opacity);
     }
-    ReplacePicture(fadePtr->imgPtr, fadePtr->picture);
+    ReplacePicture(transPtr->imgPtr, transPtr->picture);
     Blt_NotifyImageChanged(imgPtr);
-    if (fadePtr->interval > 0) {
-        imgPtr->flags |= INUSE;
-        fadePtr->timerToken = Tcl_CreateTimerHandler(fadePtr->interval, 
-                CrossFadeTimerProc, fadePtr);
+    if (transPtr->interval > 0) {
+        imgPtr->timerToken = Tcl_CreateTimerHandler(transPtr->interval, 
+                CrossFadeTimerProc, transPtr);
     } else {
-        Blt_Free(fadePtr);
+        FreeTransition(imgPtr);
     }
     return TCL_OK;
+ error:
+    FreeTransition(imgPtr);
+    return TCL_ERROR;
 }
 
 /*
@@ -3538,87 +3531,89 @@ DissolveOp(ClientData clientData, Tcl_Interp *interp, int objc,
            Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
+    Transition *transPtr;
     int w, h;
-    DissolveArgs *argsPtr;
     
-    if (imgPtr->flags & INUSE) {
-        Tcl_AppendResult(interp, "image \"", imgPtr->name,
-                         "\" is busy.", (char *)NULL);
- fprintf(stderr, "image is busy\n");
-            return TCL_ERROR;
+    if (imgPtr->clientData != NULL) {
+        FreeTransition(imgPtr);
     }
-    argsPtr = Blt_AssertCalloc(1, sizeof(DissolveArgs));
-    argsPtr->numSteps = 10;
-    argsPtr->scale = SCALE_LINEAR;
-    argsPtr->fromColor.u32 = 0xFFFFFFFF;
-    argsPtr->toColor.u32 = 0xFF000000;
-    argsPtr->interp = interp;
-    argsPtr->imgPtr = imgPtr;
-    argsPtr->last = 1;
-    
-    if (Blt_GetPixelFromObj(NULL, objv[2], &argsPtr->fromColor) != TCL_OK) {
-        if (Blt_GetPictureFromObj(interp, objv[2], &argsPtr->from) != TCL_OK) {
-            return TCL_ERROR;
+    transPtr = Blt_AssertCalloc(1, sizeof(Transition));
+    transPtr->numSteps = 10;
+    transPtr->scale = SCALE_LINEAR;
+    transPtr->fromColor.u32 = 0xFFFFFFFF;
+    transPtr->toColor.u32 = 0xFF000000;
+    transPtr->interp = interp;
+    transPtr->imgPtr = imgPtr;
+    transPtr->last = 1;
+    transPtr->specs = dissolveTransitionSwitches;
+    imgPtr->clientData = transPtr;
+    if (Blt_GetPixelFromObj(NULL, objv[2], &transPtr->fromColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[2], &transPtr->from) != TCL_OK) {
+            goto error;
         }
     }
-    if (Blt_GetPixelFromObj(NULL, objv[3], &argsPtr->toColor) != TCL_OK) {
-        if (Blt_GetPictureFromObj(interp, objv[3], &argsPtr->to) != TCL_OK) {
-            return TCL_ERROR;
+    if (Blt_GetPixelFromObj(NULL, objv[3], &transPtr->toColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[3], &transPtr->to) != TCL_OK) {
+            goto error;
         }
     }
-    if (Blt_ParseSwitches(interp, dissolveSwitches, objc - 4, objv + 4,
-                          argsPtr, BLT_SWITCH_DEFAULTS) < 0) {
-        return TCL_ERROR;
+    if (Blt_ParseSwitches(interp, transPtr->specs, objc - 4, objv + 4,
+                          transPtr, BLT_SWITCH_DEFAULTS) < 0) {
+        goto error;
     }
-    if (argsPtr->from == imgPtr->picture) {
-        Tcl_AppendResult(interp, "\"from\" picture can not be \"", imgPtr->name,
+    if (transPtr->from == imgPtr->picture) {
+        Tcl_AppendResult(interp, "\"from\" picture can not be \"",
+                         Tk_NameOfImage(imgPtr->imgToken),
                          "\".", (char *)NULL);
-            return TCL_ERROR;
+        goto error;
     }
-    if (argsPtr->to == imgPtr->picture) {
-        Tcl_AppendResult(interp, "\"to\" picture can not be \"", imgPtr->name,
+    if (transPtr->to == imgPtr->picture) {
+        Tcl_AppendResult(interp, "\"to\" picture can not be \"",
+                         Tk_NameOfImage(imgPtr->imgToken),
                          "\".", (char *)NULL);
-            return TCL_ERROR;
+        goto error;
     }
-    if (argsPtr->from == NULL) {
-        if (argsPtr->to == NULL) {
+    if (transPtr->from == NULL) {
+        if (transPtr->to == NULL) {
             Tcl_AppendResult(interp, "either \"from\" or \"to\" must ",
                              "be a picture image.", (char *)NULL);
-            return TCL_ERROR;
+            goto error;
         }
-        w = Blt_Picture_Width(argsPtr->to);
-        h = Blt_Picture_Height(argsPtr->to);
-    } else if (argsPtr->to == NULL) {
-        w = Blt_Picture_Width(argsPtr->from);
-        h = Blt_Picture_Height(argsPtr->from);
+        w = Blt_Picture_Width(transPtr->to);
+        h = Blt_Picture_Height(transPtr->to);
+    } else if (transPtr->to == NULL) {
+        w = Blt_Picture_Width(transPtr->from);
+        h = Blt_Picture_Height(transPtr->from);
     } else {
-        w = Blt_Picture_Width(argsPtr->from);
-        h = Blt_Picture_Height(argsPtr->from);
-        if ((w != Blt_Picture_Width(argsPtr->to)) ||
-            (h != Blt_Picture_Height(argsPtr->to))) {
+        w = Blt_Picture_Width(transPtr->from);
+        h = Blt_Picture_Height(transPtr->from);
+        if ((w != Blt_Picture_Width(transPtr->to)) ||
+            (h != Blt_Picture_Height(transPtr->to))) {
             Tcl_AppendResult(interp, "from and to picture ",
                              "must be the same size.", (char *)NULL);
-            return TCL_ERROR;
+            goto error;
         }
     }
-    argsPtr->numPixels = (w * h);
-    argsPtr->picture = Blt_CreatePicture(w, h);
-    if (argsPtr->from != NULL) {
-        Blt_CopyPictures(argsPtr->picture, argsPtr->from);
+    transPtr->numPixels = (w * h);
+    transPtr->picture = Blt_CreatePicture(w, h);
+    if (transPtr->from != NULL) {
+        Blt_CopyPictures(transPtr->picture, transPtr->from);
     } else {
-        Blt_BlankPicture(argsPtr->picture, argsPtr->fromColor.u32);
+        Blt_BlankPicture(transPtr->picture, transPtr->fromColor.u32);
     } 
-    DoDissolve(argsPtr);
-    ReplacePicture(argsPtr->imgPtr, argsPtr->picture);
+    DoDissolve(transPtr);
+    ReplacePicture(transPtr->imgPtr, transPtr->picture);
     Blt_NotifyImageChanged(imgPtr);
-    if (argsPtr->interval > 0) {
-        imgPtr->flags |= INUSE;
-        argsPtr->timerToken = Tcl_CreateTimerHandler(argsPtr->interval, 
-                DissolveTimerProc, argsPtr);
+    if (transPtr->interval > 0) {
+        imgPtr->timerToken = Tcl_CreateTimerHandler(transPtr->interval, 
+                DissolveTimerProc, transPtr);
     } else {
-        Blt_Free(argsPtr);
+        FreeTransition(imgPtr);
     }
     return TCL_OK;
+ error:
+    FreeTransition(imgPtr);
+    return TCL_ERROR;
 }
 
 
@@ -4097,15 +4092,15 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
      */
     imgPtr->fmtPtr = fmtPtr;
     imgPtr->flags &= ~IMPORTED_MASK;
-    if (imgPtr->name != NULL) {
-        Blt_Free(imgPtr->name);
-        imgPtr->name = NULL;
+    if (imgPtr->sourceName != NULL) {
+        Blt_Free(imgPtr->sourceName);
+        imgPtr->sourceName = NULL;
     }
     if (fileName == NULL) {
-        imgPtr->name = NULL;
+        imgPtr->sourceName = NULL;
         imgPtr->flags |= IMPORTED_DATA;
     } else {
-        imgPtr->name = Blt_AssertStrdup(fileName);
+        imgPtr->sourceName = Blt_AssertStrdup(fileName);
         imgPtr->flags |= IMPORTED_FILE;
     }
     Blt_NotifyImageChanged(imgPtr);
@@ -5336,9 +5331,9 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     ReplacePicture(imgPtr, picture);
-    if (imgPtr->name != NULL) {
-        Blt_Free(imgPtr->name);
-        imgPtr->name = NULL;
+    if (imgPtr->sourceName != NULL) {
+        Blt_Free(imgPtr->sourceName);
+        imgPtr->sourceName = NULL;
     }
     Blt_NotifyImageChanged(imgPtr);
     imgPtr->flags &= ~IMPORTED_MASK;
@@ -5394,72 +5389,75 @@ WipeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
-    WipeArgs *argsPtr;
+    Transition *transPtr;
     double position;
     int w, h;
     
-    if (imgPtr->flags & INUSE) {
-        Tcl_AppendResult(interp, "image \"", imgPtr->name,
-                         "\" is busy.", (char *)NULL);
-            return TCL_ERROR;
+    if (imgPtr->clientData != NULL) {
+        FreeTransition(imgPtr);
     }
-    argsPtr = Blt_AssertCalloc(1, sizeof(WipeArgs));
-    argsPtr->numSteps = 10;
-    argsPtr->fromColor.u32 = 0xFFFFFFFF;
-    argsPtr->toColor.u32 = 0xFF000000;
-    argsPtr->interp = interp;
-    argsPtr->imgPtr = imgPtr;
-    argsPtr->count = 1;
-    argsPtr->direction = TK_ANCHOR_E;
-
-    if (Blt_GetPictureFromObj(interp, objv[2], &argsPtr->from) != TCL_OK) {
-        return TCL_ERROR;
+    transPtr = Blt_AssertCalloc(1, sizeof(Transition));
+    transPtr->numSteps = 10;
+    transPtr->fromColor.u32 = 0xFFFFFFFF;
+    transPtr->toColor.u32 = 0xFF000000;
+    transPtr->interp = interp;
+    transPtr->imgPtr = imgPtr;
+    transPtr->count = 1;
+    transPtr->direction = TK_ANCHOR_E;
+    transPtr->specs = wipeTransitionSwitches;
+    imgPtr->clientData = transPtr;
+    if (Blt_GetPictureFromObj(interp, objv[2], &transPtr->from) != TCL_OK) {
+        goto error;
     }
-    if (Blt_GetPictureFromObj(interp, objv[3], &argsPtr->to) != TCL_OK) {
-        return TCL_ERROR;
+    if (Blt_GetPictureFromObj(interp, objv[3], &transPtr->to) != TCL_OK) {
+        goto error;
     }
-    if (Blt_ParseSwitches(interp, wipeSwitches, objc - 4, objv + 4,
-                argsPtr, BLT_SWITCH_DEFAULTS) < 0) {
-        return TCL_ERROR;
+    if (Blt_ParseSwitches(interp, transPtr->specs, objc - 4, objv + 4,
+                transPtr, BLT_SWITCH_DEFAULTS) < 0) {
+        goto error;
     }
-    if (argsPtr->from == imgPtr->picture) {
-        Tcl_AppendResult(interp, "from picture can not be \"", imgPtr->name,
-                "\"", (char *)NULL);
-            return TCL_ERROR;
-    }
-    if (argsPtr->to == imgPtr->picture) {
-        Tcl_AppendResult(interp, "to picture can not be \"", imgPtr->name,
+    if (transPtr->from == imgPtr->picture) {
+        Tcl_AppendResult(interp, "\"from\" picture can not be \"",
+                         Tk_NameOfImage(imgPtr->imgToken),
                          "\"", (char *)NULL);
-            return TCL_ERROR;
+        goto error;
     }
-    w = Blt_Picture_Width(argsPtr->from);
-    h = Blt_Picture_Height(argsPtr->from);
-    if ((w != Blt_Picture_Width(argsPtr->to)) ||
-        (h != Blt_Picture_Height(argsPtr->to))) {
+    if (transPtr->to == imgPtr->picture) {
+        Tcl_AppendResult(interp, "\"to\" picture can not be \"",
+                         Tk_NameOfImage(imgPtr->imgToken),
+                         "\"", (char *)NULL);
+        goto error;
+    }
+    w = Blt_Picture_Width(transPtr->from);
+    h = Blt_Picture_Height(transPtr->from);
+    if ((w != Blt_Picture_Width(transPtr->to)) ||
+        (h != Blt_Picture_Height(transPtr->to))) {
         Tcl_AppendResult(interp, "from and to picture ",
                          "must be the same size.", (char *)NULL);
-        return TCL_ERROR;
+        goto error;
     }
-    argsPtr->picture = Blt_CreatePicture(w, h);
-    if (argsPtr->count > argsPtr->numSteps) {
-        argsPtr->count = argsPtr->numSteps;
+    transPtr->picture = Blt_CreatePicture(w, h);
+    if (transPtr->count > transPtr->numSteps) {
+        transPtr->count = transPtr->numSteps;
     } 
-    position = (double)argsPtr->count / (double)argsPtr->numSteps;
-    if (argsPtr->scale == SCALE_LOG) {
+    position = (double)transPtr->count / (double)transPtr->numSteps;
+    if (transPtr->scale == SCALE_LOG) {
         position = log10(9.0 * position + 1.0);
     }
-    Blt_WipePictures(argsPtr->picture, argsPtr->from, argsPtr->to,
-                argsPtr->direction, position);
-    ReplacePicture(argsPtr->imgPtr, argsPtr->picture);
+    Blt_WipePictures(transPtr->picture, transPtr->from, transPtr->to,
+                transPtr->direction, position);
+    ReplacePicture(transPtr->imgPtr, transPtr->picture);
     Blt_NotifyImageChanged(imgPtr);
-    if (argsPtr->interval > 0) {
-        imgPtr->flags |= INUSE;
-        argsPtr->timerToken = Tcl_CreateTimerHandler(argsPtr->interval, 
-                WipeTimerProc, argsPtr);
+    if (transPtr->interval > 0) {
+        transPtr->timerToken = Tcl_CreateTimerHandler(transPtr->interval, 
+                WipeTimerProc, transPtr);
     } else {
-        Blt_Free(argsPtr);
+        FreeTransition(imgPtr);
     }
     return TCL_OK;
+ error:
+    FreeTransition(imgPtr);
+    return TCL_ERROR;
 }
 
 /*
@@ -5489,7 +5487,7 @@ static Blt_OpSpec pictInstOps[] =
     {"configure", 4, ConfigureOp, 2, 0, "?option value ...?",},
     {"convolve",  4, ConvolveOp,  3, 0, "srcName ?switches ...?",},
     {"copy",      3, CopyOp,      3, 0, "srcName ?switches ...?",},
-    {"crop",      4, CropOp,      2, 0, "bbox",},
+    {"crop",      4, CropOp,      6, 6, "x1 y1 x2 y2",},
     {"crossfade", 4, CrossFadeOp, 4, 0, "fromName toName ?switches ...?",},
     {"dissolve",  2, DissolveOp,  4, 0, "fromName toName ?switches ...?",},
     {"draw",      2, DrawOp,      2, 0, "?args ...?",},

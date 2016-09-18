@@ -4470,8 +4470,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
             int w, h;
 
             painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
-            src = Blt_GetPictureFromPictureImage(comboPtr->interp, 
-                IconImage(comboPtr->icon));
+            src = Blt_GetPictureFromPictureImage(IconImage(comboPtr->icon));
             w = Blt_Picture_Width(src);
             h = Blt_Picture_Height(src);
             dst = Blt_ClonePicture(src);

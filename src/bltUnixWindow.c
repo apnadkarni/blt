@@ -552,6 +552,7 @@ int
 Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
 {
     const char *string;
+    int id;
 
     string = Tcl_GetString(objPtr);
     if (string[0] == '.') {
@@ -568,14 +569,12 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
             Tk_WindowId(tkwin);
     } else if (strcmp(string, "root") == 0) {
         *windowPtr = Tk_RootWindow(Tk_MainWindow(interp));
-    } else {
-
-        int id;
-
-        if (Tcl_GetIntFromObj(interp, objPtr, &id) != TCL_OK) {
-            return TCL_ERROR;
-        }
+    } else if (Tcl_GetIntFromObj(NULL, objPtr, &id) == TCL_OK) {
         *windowPtr = (Window)id;
+    } else {
+        Tcl_AppendResult(interp, "can't find window \"", string, "\"",
+                         (char *)NULL);
+        return TCL_ERROR;
     }
     return TCL_OK;
 }

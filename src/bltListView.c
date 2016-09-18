@@ -6852,8 +6852,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             int w, h;
             
             painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
-            src = Blt_GetPictureFromPictureImage(viewPtr->interp, 
-                IconImage(icon));
+            src = Blt_GetPictureFromPictureImage(IconImage(icon));
             w = Blt_Picture_Width(src);
             h = Blt_Picture_Height(src);
             dst = Blt_ClonePicture(src);
