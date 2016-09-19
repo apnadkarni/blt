@@ -1930,6 +1930,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     int n;
     int numColors, maxColors;
     unsigned char *bp;
+    size_t colorTableSize;
     GifMessage message;
 
     gifMessagePtr = &message;
@@ -2021,8 +2022,12 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
                                     bitsPerPixel, bp);
     bp += 7;                            /* Size of logical screen
                                          * descriptor. */
+    colorTableSize = 3 * (1<<bitsPerPixel);
+    memset(bp, 0, colorTableSize);      /* Suppress uninitialized memory
+                                         * warnings for unused slots in
+                                         * global color table. */
     GifWriteGlobalColorTable(&colorTable, bp);
-    bp += 3 * (1<<bitsPerPixel);        /* Size of global color table. */
+    bp += colorTableSize;               /* Size of global color table. */
     if (isMasked) {
         GifWriteGraphicControlExtension(numColors, 0, bp);
         bp += 8;                        /* size of graphic control
@@ -2039,6 +2044,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     if (srcPtr != original) {
         Blt_FreePicture(srcPtr);
     }
+    Blt_DeleteHashTable(&colorTable);
     return TCL_OK;
 }
 

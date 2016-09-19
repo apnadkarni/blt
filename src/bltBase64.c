@@ -331,11 +331,11 @@ NextBase64EncodedChar(const char **srcPtrPtr, const char *lastPtr,
     if (decodePtr->flags & IGNORE_BAD_CHARS) {
         /* Skip whitespace and invalid characters. Let's see if being
          * fault-tolerant is better than erroring out here.*/
-        while (((isspace(*p)) || (decode64[(int)*p] == NA)) && (p < lastPtr)) {
+        while ((p < lastPtr) && ((isspace(*p)) || (decode64[(int)*p] == NA))) {
             p++;
         }
     } else {
-        while ((isspace(*p)) && (p < lastPtr)) {
+        while ((p < lastPtr) && (isspace(*p))) {
             p++;
         }
     }
@@ -852,7 +852,6 @@ Blt_DecodeBase85(Tcl_Interp *interp, const char *src, size_t numChars,
 #endif
         dp += 4;
     }
-    *dp++ = '\0';
     *numBytesPtr = dp - dest - (5 - numBytesInBlock);
     return TCL_OK;
 }
@@ -1127,6 +1126,7 @@ Blt_DecodeAscii85(Tcl_Interp *interp, const char *src, size_t numChars,
         initialized = TRUE;
     }
     dp = dest;
+    numBytesInBlock = 0;                         
     for (p = src, pend = p + numChars; p < pend; /*empty*/) {
         unsigned int c;
         
@@ -1235,7 +1235,6 @@ Blt_DecodeAscii85(Tcl_Interp *interp, const char *src, size_t numChars,
     if (numBytesInBlock > 0) {
         *numBytesPtr -= (5 - numBytesInBlock);
     }
-    *dp++ = '\0';
     return TCL_OK;
 }
 

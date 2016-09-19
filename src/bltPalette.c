@@ -1850,7 +1850,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         const char *fileName;
 
         fileName = Tcl_GetString(palPtr->colorFileObjPtr);
-        if (access(fileName, R_OK) != 0) {
+        if (Tcl_Access(fileName, R_OK) != 0) {
             Tcl_AppendResult(interp, "can't access \"", fileName, "\":",
                 Tcl_PosixError(interp), (char *)NULL);
             goto error;
@@ -1867,7 +1867,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         const char *fileName;
 
         fileName = Tcl_GetString(palPtr->opacityFileObjPtr);
-        if (access(fileName, R_OK) != 0) {
+        if (Tcl_Access(fileName, R_OK) != 0) {
             Tcl_AppendResult(interp, "can't access \"", fileName, "\":",
                 Tcl_PosixError(interp), (char *)NULL);
             goto error;

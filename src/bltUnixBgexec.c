@@ -1487,7 +1487,7 @@ GetMaster(Bgexec *bgPtr)
 
         ptyName[8] = *p;
         ptyName[9] = *ptyChars;
-        if (access(proto, F_OK) == -1) {
+        if (Tcl_Access(proto, F_OK) == -1) {
             if (errno == E_NOENT) {
                 /* If there is no /dev/ptyX0, skip all Xs. */
                 continue;

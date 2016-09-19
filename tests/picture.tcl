@@ -150,7 +150,7 @@ test picture.31 {myPicture} {
   myPicture configure ?option value ...?
   myPicture convolve srcName ?switches ...?
   myPicture copy srcName ?switches ...?
-  myPicture crop x1 y1 x2 y2
+  myPicture crop x1 y1 ?x2 y2?
   myPicture crossfade fromName toName ?switches ...?
   myPicture dissolve fromName toName ?switches ...?
   myPicture draw ?args ...?
@@ -199,7 +199,7 @@ test picture.32 {myPicture badOper} {
   myPicture configure ?option value ...?
   myPicture convolve srcName ?switches ...?
   myPicture copy srcName ?switches ...?
-  myPicture crop x1 y1 x2 y2
+  myPicture crop x1 y1 ?x2 y2?
   myPicture crossfade fromName toName ?switches ...?
   myPicture dissolve fromName toName ?switches ...?
   myPicture draw ?args ...?
@@ -1945,11 +1945,11 @@ test picture.333 {myPicture copy myPicture -composite 0 } {
 
 test picture.333 {myPicture crop } {
     list [catch { myPicture crop } msg] $msg
-} {1 {wrong # args: should be "myPicture crop x1 y1 x2 y2"}}
+} {1 {wrong # args: should be "myPicture crop x1 y1 ?x2 y2?"}}
 
 test picture.333 {myPicture crop } {
     list [catch { myPicture crop } msg] $msg
-} {1 {wrong # args: should be "myPicture crop x1 y1 x2 y2"}}
+} {1 {wrong # args: should be "myPicture crop x1 y1 ?x2 y2?"}}
 
 test picture.333 {myPicture crop badValue 0 0 0 } {
     list [catch { myPicture crop badValue 0 0 0 } msg] $msg
@@ -2023,7 +2023,7 @@ test picture.210 {myPicture crossfade myPicture myPicture -badSwitch} {
 following switches are available:
    -goto step
    -delay milliseconds
-   -scale step
+   -logscale bool
    -steps numSteps
    -variable varName}}
 
@@ -2164,11 +2164,3 @@ test picture.210 {myPicture crossfade myPicture myPicture -delay 0} {
 
 
 exit 0
-
-
-
-
-
-
-
-

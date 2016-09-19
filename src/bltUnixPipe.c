@@ -180,7 +180,7 @@ NormalizePath(const char *path, Tcl_DString *resultPtr, int *foundPtr)
         return TRUE;                  
     }
     if (path[0] == '/') {               /* Absolute path */
-        if (access(path, F_OK) == -1) {
+        if (Tcl_Access(path, F_OK) == -1) {
             return FALSE;
         }
         Tcl_DStringAppend(resultPtr, path, -1);
@@ -220,7 +220,7 @@ NormalizePath(const char *path, Tcl_DString *resultPtr, int *foundPtr)
         Tcl_DStringAppend(resultPtr, "/", 1);
         Tcl_DStringAppend(resultPtr, p, -1);
         last = Tcl_DStringLength(resultPtr);
-        if (access(Tcl_DStringValue(resultPtr), F_OK) == -1) {
+        if (Tcl_Access(Tcl_DStringValue(resultPtr), F_OK) == -1) {
             Tcl_DStringSetLength(resultPtr, 0);
             Tcl_DStringAppend(resultPtr, path, -1);
             return FALSE;
@@ -287,7 +287,7 @@ FindProgram(const char *program, Tcl_DString *resultPtr)
             Tcl_DStringAppend(resultPtr, p, -1); 
             Tcl_DStringAppend(resultPtr, "/", 1);
             Tcl_DStringAppend(resultPtr, program, progLen);
-            if (access(Tcl_DStringValue(resultPtr), X_OK|F_OK) != -1) {
+            if (Tcl_Access(Tcl_DStringValue(resultPtr), X_OK|F_OK) != -1) {
                  found = TRUE;
                  break;
             }

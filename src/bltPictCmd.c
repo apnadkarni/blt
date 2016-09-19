@@ -344,7 +344,7 @@ typedef struct {
     Blt_SwitchSpec *specs;
     Blt_Picture from, to;               /* From and to pictures. */
     Blt_Picture picture;                /* Holds the result. */
-    int scale;
+    int logScale;
     int interval;                       /* # of milliseconds delay between
                                          * steps. */
     int numSteps;                       /* # of steps. */
@@ -472,16 +472,16 @@ static Blt_SwitchCustom directionSwitch =
     DirectionSwitchProc, NULL, NULL, (ClientData)0
 };
 
-static Blt_SwitchParseProc ScaleSwitchProc;
-static Blt_SwitchCustom scaleSwitch =
-{
-    ScaleSwitchProc, NULL, NULL, (ClientData)0
-};
-
 static Blt_SwitchParseProc PercentSwitchProc;
 static Blt_SwitchCustom percentSwitch =
 {
     PercentSwitchProc, NULL, NULL, (ClientData)0
+};
+
+static Blt_SwitchParseProc ScaleSwitchProc;
+static Blt_SwitchCustom scaleSwitch =
+{
+    ScaleSwitchProc, NULL, NULL, (ClientData)0
 };
 
 typedef struct {
@@ -677,8 +677,8 @@ static Blt_SwitchSpec crossFadeTransitionSwitches[] =
         Blt_Offset(Transition, count), 0},
     {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
         Blt_Offset(Transition, interval), 0},
-    {BLT_SWITCH_CUSTOM, "-scale", "step", (char *)NULL,
-        Blt_Offset(Transition, scale), 0, 0, &scaleSwitch},
+    {BLT_SWITCH_BOOLEAN, "-logscale", "bool", (char *)NULL,
+        Blt_Offset(Transition, logScale), 0, 0},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
         Blt_Offset(Transition, numSteps), 0},
     {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
@@ -692,8 +692,8 @@ static Blt_SwitchSpec dissolveTransitionSwitches[] =
         Blt_Offset(Transition, interval), 0},
     {BLT_SWITCH_INT_NNEG, "-goto", "step", (char *)NULL,
         Blt_Offset(Transition, count), 0},
-    {BLT_SWITCH_CUSTOM, "-scale", "scaleType", (char *)NULL,
-        Blt_Offset(Transition, scale), 0, 0, &scaleSwitch},
+    {BLT_SWITCH_BOOLEAN, "-logscale", "bool", (char *)NULL,
+        Blt_Offset(Transition, logScale), 0, 0},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
         Blt_Offset(Transition, numSteps), 0},
     {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
@@ -709,8 +709,8 @@ static Blt_SwitchSpec wipeTransitionSwitches[] =
         Blt_Offset(Transition, count), 0},
     {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
         Blt_Offset(Transition, interval), 0},
-    {BLT_SWITCH_CUSTOM, "-scale", "scaleType", (char *)NULL,
-        Blt_Offset(Transition, scale), 0, 0, &scaleSwitch},
+    {BLT_SWITCH_BOOLEAN, "-logscale", "bool", (char *)NULL,
+        Blt_Offset(Transition, logScale), 0, 0},
     {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
         Blt_Offset(Transition, numSteps), 0},
     {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
@@ -1446,6 +1446,42 @@ PercentSwitchProc(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ScaleSwitchProc --
+ *
+ * Results:
+ *      The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ScaleSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                const char *switchName, Tcl_Obj *objPtr, char *record,
+                int offset, int flags)  
+{
+    int *scalePtr = (int *)(record + offset);
+    const char *string;
+    int length;
+    char c;
+    
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'l') && (strcmp(string, "linear") == 0)) {
+        *scalePtr = SCALE_LINEAR;
+    } else if ((c == 'l') && (length > 2) && 
+               (strncmp(string, "logarithmic", length) == 0)) {
+        *scalePtr = SCALE_LOG;
+    } else {
+        Tcl_AppendResult(interp, "unknown scale \"", string, "\"",
+                         ": should be linear or logarithmic.",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+} 
 
 /*
  *---------------------------------------------------------------------------
@@ -1986,43 +2022,6 @@ DirectionSwitchProc(ClientData clientData, Tcl_Interp *interp,
     } else {
         Tcl_AppendResult(interp, "unknown direction \"", string,
                 "\": should be n, s, e, or w.", (char *)NULL);
-        return TCL_ERROR;
-    }
-    return TCL_OK;
-} 
-
-/*
- *---------------------------------------------------------------------------
- *
- * ScaleSwitchProc --
- *
- * Results:
- *      The return value is a standard TCL result.  
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ScaleSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                const char *switchName, Tcl_Obj *objPtr, char *record,
-                int offset, int flags)  
-{
-    int *scalePtr = (int *)(record + offset);
-    const char *string;
-    int length;
-    char c;
-    
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'l') && (strcmp(string, "linear") == 0)) {
-        *scalePtr = SCALE_LINEAR;
-    } else if ((c == 'l') && (length > 2) && 
-               (strncmp(string, "logarithmic", length) == 0)) {
-        *scalePtr = SCALE_LOG;
-    } else {
-        Tcl_AppendResult(interp, "unknown scale \"", string, "\"",
-                         ": should be linear or logarithmic.",
-                         (char *)NULL);
         return TCL_ERROR;
     }
     return TCL_OK;
@@ -2796,7 +2795,7 @@ CrossFadeTimerProc(ClientData clientData)
         double opacity;
 
         opacity = transPtr->count / (double)transPtr->numSteps;
-        if (transPtr->scale == SCALE_LOG) {
+        if (transPtr->logScale) {
             opacity = log10(9.0 * opacity + 1.0);
         }
         if (transPtr->from == NULL) {
@@ -2824,7 +2823,7 @@ DoDissolve(Transition *transPtr)
     double position;
     
     position = transPtr->count / (double)transPtr->numSteps;
-    if (transPtr->scale == SCALE_LOG) {
+    if (transPtr->logScale) {
         position = log10(9.0 * position + 1.0);
     }
     next = (int)(position * transPtr->numPixels);
@@ -2882,7 +2881,7 @@ WipeTimerProc(ClientData clientData)
         double position;
 
         position = transPtr->count / (double)transPtr->numSteps;
-        if (transPtr->scale == SCALE_LOG) {
+        if (transPtr->logScale) {
             position = log10(9.0 * position + 1.0);
         }
         Blt_WipePictures(transPtr->picture, transPtr->from, transPtr->to,
@@ -3082,13 +3081,13 @@ CompositeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_AppendResult(interp,
                         "source bounding box lies outside of picture", 
                         (char *)NULL);
-            return TCL_ERROR;
+            goto error;
         }
         if (!Blt_AdjustRegionToPicture(dst, &switches.to)) {
             Tcl_AppendResult(interp,
                         "destination bounding box lies outside of picture", 
                         (char *)NULL);
-            return TCL_ERROR;
+            goto error;
         }
         Blt_CompositeRegion(dst, fg, switches.from.x, switches.from.y, 
                 switches.from.w, switches.from.h, 
@@ -3099,6 +3098,11 @@ CompositeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
+ error:
+    if (tmp != NULL) {
+        Blt_FreePicture(tmp);
+    }
+    return TCL_ERROR;
 }
 
 /*
@@ -3340,7 +3344,7 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      None.
  *
- *      pictureName crop x1 y1 x2 y2
+ *      pictureName crop x1 y1 ?x2 y2?
  *---------------------------------------------------------------------------
  */
 static int
@@ -3449,7 +3453,7 @@ CrossFadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         transPtr->count = transPtr->numSteps;
     } 
     opacity = (double)transPtr->count / (double)transPtr->numSteps;
-    if (transPtr->scale == SCALE_LOG) {
+    if (transPtr->logScale) {
         opacity = log10(9.0 * opacity + 1.0);
     }
     if (transPtr->from == NULL) {
@@ -3539,7 +3543,6 @@ DissolveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     transPtr = Blt_AssertCalloc(1, sizeof(Transition));
     transPtr->numSteps = 10;
-    transPtr->scale = SCALE_LINEAR;
     transPtr->fromColor.u32 = 0xFFFFFFFF;
     transPtr->toColor.u32 = 0xFF000000;
     transPtr->interp = interp;
@@ -5441,7 +5444,7 @@ WipeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         transPtr->count = transPtr->numSteps;
     } 
     position = (double)transPtr->count / (double)transPtr->numSteps;
-    if (transPtr->scale == SCALE_LOG) {
+    if (transPtr->logScale) {
         position = log10(9.0 * position + 1.0);
     }
     Blt_WipePictures(transPtr->picture, transPtr->from, transPtr->to,
@@ -5487,7 +5490,7 @@ static Blt_OpSpec pictInstOps[] =
     {"configure", 4, ConfigureOp, 2, 0, "?option value ...?",},
     {"convolve",  4, ConvolveOp,  3, 0, "srcName ?switches ...?",},
     {"copy",      3, CopyOp,      3, 0, "srcName ?switches ...?",},
-    {"crop",      4, CropOp,      6, 6, "x1 y1 x2 y2",},
+    {"crop",      4, CropOp,      6, 6, "x1 y1 ?x2 y2?",},
     {"crossfade", 4, CrossFadeOp, 4, 0, "fromName toName ?switches ...?",},
     {"dissolve",  2, DissolveOp,  4, 0, "fromName toName ?switches ...?",},
     {"draw",      2, DrawOp,      2, 0, "?args ...?",},
