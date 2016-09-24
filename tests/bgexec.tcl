@@ -22,12 +22,12 @@ puts stderr msg=$msg
 
 test bgexec.63 {bgexec myVar redirect input } {
     list [catch {
-	blt::bgexec myVar -pty tclsh files/cat.tcl << "testme"
-    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+	blt::bgexec myVar -pty tclsh files/cat.tcl < mesh.tcl
+    } msg] [string length $msg]
 } {0 {exit 0}}
 
-regsub -all {[\0- ]} $msg {_} msg
-puts stderr msg=$msg
+#regsub -all {[\0- ]} $msg {_} msg
+#puts stderr msg=$msg
 
 after 2000
 exit 0
