@@ -436,6 +436,7 @@ AC_CHECK_HEADERS(string.h ctype.h)
 AC_CHECK_HEADERS(errno.h float.h math.h ieeefp.h)
 AC_CHECK_HEADERS(sys/time.h waitflags.h sys/wait.h)
 AC_CHECK_HEADERS(malloc.h memory.h)
+AC_CHECK_HEADERS(pty.h)
 AC_CHECK_HEADERS(setjmp.h)
 AC_CHECK_HEADERS(stdlib.h stddef.h unistd.h)
 AC_CHECK_HEADERS(stropts.h termios.h)
@@ -541,6 +542,20 @@ if test "${blt_cv_struct_wait_works}" = "yes"; then
     AC_DEFINE([HAVE_UNION_WAIT], 1, [Define if 'wait' is a union.])
 fi
 AC_MSG_RESULT([$blt_cv_struct_wait_works])
+
+AC_CHECKING(for ptyranges)
+if test -d /dev/ptym ; then
+    pdir='/dev/ptym'
+else
+    pdir='/dev'
+fi
+ptys=`echo $pdir/pty??`
+if test "$ptys" != "$pdir/pty??" ; then
+    p0=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\).$/\1/g' | sort -u | tr -d '\012'`
+    p1=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\)$/\1/g'  | sort -u | tr -d '\012'`
+    AC_DEFINE(PTYRANGE0,\"$p0\", [First PTY in range.])
+    AC_DEFINE(PTYRANGE1,\"$p1\", [Last PTY in range.])
+fi
 
 
 # -----------------------------------------------------------------------

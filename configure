@@ -6013,6 +6013,18 @@ fi
 
 done
 
+for ac_header in pty.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "pty.h" "ac_cv_header_pty_h" "$ac_includes_default"
+if test "x$ac_cv_header_pty_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_PTY_H 1
+_ACEOF
+
+fi
+
+done
+
 for ac_header in setjmp.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "setjmp.h" "ac_cv_header_setjmp_h" "$ac_includes_default"
@@ -6801,6 +6813,27 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $blt_cv_struct_wait_works" >&5
 $as_echo "$blt_cv_struct_wait_works" >&6; }
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ptyranges..." >&5
+$as_echo "$as_me: checking for ptyranges..." >&6;}
+if test -d /dev/ptym ; then
+    pdir='/dev/ptym'
+else
+    pdir='/dev'
+fi
+ptys=`echo $pdir/pty??`
+if test "$ptys" != "$pdir/pty??" ; then
+    p0=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\).$/\1/g' | sort -u | tr -d '\012'`
+    p1=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\)$/\1/g'  | sort -u | tr -d '\012'`
+    cat >>confdefs.h <<_ACEOF
+#define PTYRANGE0 \"$p0\"
+_ACEOF
+
+    cat >>confdefs.h <<_ACEOF
+#define PTYRANGE1 \"$p1\"
+_ACEOF
+
+fi
+
 
 # -----------------------------------------------------------------------
 #
@@ -6918,7 +6951,7 @@ $as_echo_n "checking whether DBL_EPSILON can be computed.... " >&6; }
     as_fn_error $? "can not run test program while cross compiling" "$LINENO" 5
 else
 cat > conftest.$ac_ext <<EOF
-#line 6921 "configure"
+#line 6954 "configure"
 #include "confdefs.h"
 #ifdef __cplusplus
 extern "C" void exit(int);

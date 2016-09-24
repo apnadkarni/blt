@@ -1293,7 +1293,7 @@ CollectData(Bgexec *bgPtr, Sink *sinkPtr)
 #endif
             length = 0;                 /* Suppress compiler warning. */
             data = NextBlock(sinkPtr, &length);
-            #ifdef notdef
+#ifdef notdef
             count = 0;
             for (i = 0; i < length; i++) {
                 if (data[i] == '\r') {
@@ -1305,9 +1305,9 @@ CollectData(Bgexec *bgPtr, Sink *sinkPtr)
                 count++;
             }
             fprintf(stderr, "\n");
-            #else 
+#else 
             count = length;
-            #endif
+#endif
             NotifyOnUpdate(bgPtr->interp, sinkPtr, data, count);
         }
     }
@@ -1435,6 +1435,9 @@ GetMaster(Bgexec *bgPtr)
 {
     int f;
 
+#ifdef notdef
+    fprintf(stderr, "getpt version of OpenMaster\n");
+#endif
     f = getpt();
     if (f < 0) {
         Tcl_AppendResult(bgPtr->interp, "failed getpt: ", 
@@ -1453,6 +1456,9 @@ GetMaster(Bgexec *bgPtr)
 {
     int f;
 
+#ifdef notdef
+    fprintf(stderr, "posix_openpt version of OpenMaster\n");
+#endif
     f = posix_openpt(O_RDWR | O_NOCTTY);
     if (f < 0) {
         Tcl_AppendResult(bgPtr->interp, "failed openpt: ", 
@@ -1475,6 +1481,9 @@ GetMaster(Bgexec *bgPtr)
     const char *p;
     char ptyName[11];
 
+#ifdef notdef
+    fprintf(stderr, "other version of OpenMaster\n");
+#endif
     strcpy(bgPtr->masterName, "/dev/ptmx");
     f = open(bgPtr->masterName, O_RDWR | O_NOCTTY);
     if (f >= 0) {
@@ -1553,6 +1562,9 @@ OpenMaster(Bgexec *bgPtr)
     const char *name;
     int f;
 
+#ifdef notdef
+    fprintf(stderr, "open_controlling_pty version of GetMasterPty\n");
+#endif
     f = open_controlling_pty(name);
     if (f < 0) {
         Tcl_AppendResult(bgPtr->interp, "can't open controlling pty: ",
@@ -1573,6 +1585,9 @@ OpenMaster(Bgexec *bgPtr)
 {
     const char *name;
 
+#ifdef notdef
+    fprintf(stderr, "grantpt version of GetMasterPty\n");
+#endif
     if (GetMaster(bgPtr) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -1593,6 +1608,9 @@ OpenMaster(Bgexec *bgPtr)
         return TCL_ERROR;
     }
     strcpy(bgPtr->slaveName, name);
+#ifdef notdef
+    fprintf(stderr, "slaveName is %s\n", name);
+#endif
     if (InitMaster(bgPtr) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -1605,6 +1623,9 @@ OpenMaster(Bgexec *bgPtr)
 static int
 OpenMaster(Bgexec *bgPtr)
 {
+#ifdef notdef
+    fprintf(stderr, "openpty version of GetMasterPty\n");
+#endif
     if (openpty(&bgPtr->master, &bgPtr->slave, NULL, NULL, NULL) < 0) {
         Tcl_AppendResult(bgPtr->interp, "can't open pty: ", 
                 Tcl_PosixError(bgPtr->interp), (char *)NULL);
@@ -1789,7 +1810,9 @@ ExecutePipeline(Bgexec *bgPtr, int objc, Tcl_Obj *const *objv)
         int length;
 
         mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(bgPtr->interp), &length);
+#ifdef notdef
         fprintf(stderr, "child: %s\n", mesg);
+#endif
         numWritten = write(mesgOut, mesg, length);
         assert(numWritten == length);
         _exit(1);
@@ -2166,7 +2189,6 @@ TimerProc(ClientData clientData)
     } else {
         code = CheckPipeline(bgPtr, &resultObjPtr);
     }
-    assert(resultObjPtr != NULL);
     if (code < 0) {
         /* Keep polling for the status of the children that are left */
         return;
@@ -2175,6 +2197,7 @@ TimerProc(ClientData clientData)
         *bgPtr->exitCodePtr = code;
     }
     DisableTriggers(bgPtr);
+    assert(resultObjPtr != NULL);
     if (Tcl_SetVar2Ex(bgPtr->interp, bgPtr->statusVar, NULL, resultObjPtr, 
                       TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
         Tcl_BackgroundError(bgPtr->interp);

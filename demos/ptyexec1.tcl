@@ -21,14 +21,9 @@ package require BLT
 #
 # --------------------------------------------------------------------------
 
-if { $tcl_version >= 8.0 } {
-    namespace import blt::*
-    namespace import -force blt::tk::*
-}
-
 source scripts/demo.tcl
 
-bitmap define blt.0 {{40 40} {
+blt::bitmap define blt.0 {{40 40} {
     00 00 00 00 00 00 fc 07 00 00 00 04 08 00 00 00 04 04 00 00 00 e4 03 00
     00 00 64 fe 07 00 00 64 02 04 00 00 e4 03 04 00 00 64 7e 02 00 00 64 1a
     02 00 00 e4 1b 01 00 00 04 1a 01 00 00 04 1a 01 00 00 fc 1b 02 00 00 0c
@@ -40,7 +35,7 @@ bitmap define blt.0 {{40 40} {
     fe ff 00 00 00 00 00 00}
 }
 
-bitmap define blt.1 {{40 40} {
+blt::bitmap define blt.1 {{40 40} {
     00 00 00 00 00 00 fc 07 00 00 00 04 08 00 00 00 04 04 00 00 00 e4 ff 0f
     00 00 64 06 08 00 00 64 06 08 00 00 e4 ff 04 00 00 64 36 04 00 00 64 36
     02 00 00 e4 37 02 00 00 04 34 02 00 00 04 34 04 00 00 fc 35 04 00 00 0c
@@ -52,7 +47,7 @@ bitmap define blt.1 {{40 40} {
     fe ff 00 00 00 00 00 00}
 }
 
-bitmap define blt.2 {{40 40} {
+blt::bitmap define blt.2 {{40 40} {
     00 00 00 00 00 00 fc 0f 00 00 00 04 10 00 00 00 04 10 00 00 00 e4 fb 3f
     00 00 64 0e 20 00 00 64 0e 20 00 00 e4 fb 13 00 00 64 ce 10 00 00 64 ce
     08 00 00 e4 cb 08 00 00 04 c8 08 00 00 04 c8 10 00 00 fc cf 10 00 00 0c
@@ -64,7 +59,7 @@ bitmap define blt.2 {{40 40} {
     fe ff 00 00 00 00 00 00}
 }
 
-bitmap define blt.3 {{40 40} {
+blt::bitmap define blt.3 {{40 40} {
     00 00 00 00 00 00 fc 0f 00 00 00 04 f0 ff 00 00 04 00 80 00 00 e4 03 80
     00 00 64 d6 4f 00 00 64 16 43 00 00 e4 13 23 00 00 64 16 23 00 00 64 16
     23 00 00 e4 13 43 00 00 04 70 43 00 00 04 00 80 00 00 fc 0f 80 00 00 0c
@@ -76,7 +71,7 @@ bitmap define blt.3 {{40 40} {
     fe ff 00 00 00 00 00 00}
 }
 
-bitmap define blt.4 {{40 40} {
+blt::bitmap define blt.4 {{40 40} {
     00 00 00 00 00 00 fc ff ff 03 00 04 00 00 02 00 04 00 00 02 00 e4 33 3f
     01 00 64 36 0c 01 00 64 36 8c 00 00 e4 33 8c 00 00 64 36 8c 00 00 64 36
     0c 01 00 e4 f3 0d 01 00 04 00 00 02 00 04 00 00 02 00 fc ff ff 03 00 0c
@@ -89,9 +84,9 @@ bitmap define blt.4 {{40 40} {
 }
 
 #set animate(colors) { #ff8813 #ffaa13 #ffcc13 #ffff13 #ffcc13 #ffaa13 #ff8813 }
-bitmap define blt.5 [bitmap data blt.3]
-bitmap define blt.6 [bitmap data blt.2]
-bitmap define blt.7 [bitmap data blt.1]
+blt::bitmap define blt.5 [blt::bitmap data blt.3]
+blt::bitmap define blt.6 [blt::bitmap data blt.2]
+blt::bitmap define blt.7 [blt::bitmap data blt.1]
 
 
 set interval 200
@@ -107,7 +102,7 @@ proc AnimateBitmap { index } {
 	if { $index >= 7 } {
 	    set index 0
 	}
-	set afterId [after $interval "AnimateBitmap $index"]
+	set afterId [after $interval [list AnimateBitmap $index]]
     }
 }
 
@@ -160,10 +155,10 @@ button .quit \
     -text Quit 
 button .stop \
     -command Toggle \
-    -text Stop
+    -text Start
 label .logo  \
     -relief sunken \
-    -padx 4
+    -padx 4 -bitmap blt.0
 label .title \
     -text "Virtual Memory Statistics" \
     -font "Arial 12"
@@ -190,27 +185,29 @@ proc DisplayStats { data } {
 
 proc Toggle { args } {			
     set text [.stop cget -text]
-    global bgStatus
-    set bgStatus 0
+    global bgStatus afterId command
     if { $text == "Stop" } {		
-	global bgStatus
-	puts stderr "change $text to Start bgStatus=$bgStatus"
+	# Turn off animation by canceling any pending after task.
+	if { [info exists afterId] } {
+	    after cancel $afterId
+	}
+	set bgStatus 0
 	.stop configure -text "Start"
-    } else {
-	global command
-	global bgStatus
-	puts stderr "change $text to Stop bgStatus=$bgStatus"
+    } elseif { $text == "Start" } {
+	eval blt::bgexec bgStatus -session -onoutput DisplayStats $command &
+	AnimateBitmap 0
 	.stop configure -text "Stop"
-	eval blt::ptyexec -variable bgStatus -onoutput DisplayStats $command
     }
 }
 
 set command { vmstat 1 }
 #set command { netstat -c }
-
-trace variable bgStatus w Toggle 
-AnimateBitmap 0
+update idletasks
+set w [winfo reqwidth .]
+set h [winfo reqheight .]
+wm geometry . ${w}x${h}
 set bgStatus 0
+#trace variable bgStatus w Toggle 
 
 
 #
@@ -219,7 +216,3 @@ set bgStatus 0
 #    2) flushes output each time.
 #
 
-# Turn off animation by canceling any pending after task.
-if { [info exists afterId] } {
-    after cancel $afterId
-}

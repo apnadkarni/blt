@@ -223,6 +223,9 @@
 /* Define to 1 if you have the `ptsname' function. */
 #undef HAVE_PTSNAME
 
+/* Define to 1 if you have the <pty.h> header file. */
+#undef HAVE_PTY_H
+
 /* Define to 1 if you have the <setjmp.h> header file. */
 #undef HAVE_SETJMP_H
 
@@ -351,6 +354,12 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
+
+/* First PTY in range. */
+#undef PTYRANGE0
+
+/* Last PTY in range. */
+#undef PTYRANGE1
 
 /* The size of `float', as computed by sizeof. */
 #undef SIZEOF_FLOAT

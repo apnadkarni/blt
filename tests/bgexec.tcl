@@ -10,6 +10,43 @@ if [file exists ../library] {
 
 #set VERBOSE 1
 
+set myVar ""
+test bgexec.63 {bgexec myVar redirect input } {
+    list [catch {
+	blt::bgexec myVar -keepnewline 1 -pty tclsh files/cat.tcl < files/null.tcl
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {exit 0}}
+
+regsub -all {[\0- ]} $msg {_} msg
+puts stderr msg=$msg
+
+test bgexec.63 {bgexec myVar redirect input } {
+    list [catch {
+	blt::bgexec myVar -pty tclsh files/cat.tcl << "testme"
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {exit 0}}
+
+regsub -all {[\0- ]} $msg {_} msg
+puts stderr msg=$msg
+
+after 2000
+exit 0
+
+test bgexec.96 {bgexec myVar stdout collect w/ -onoutput } {
+    list [catch {
+	set myOut {}
+	proc CollectStdout { data } {
+	    global myOut
+	    append myOut $data
+	}
+	blt::bgexec myVar -pty -keepnewline yes -onoutput CollectStdout \
+	    tclsh files/stdout.tcl
+	set myOut
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {This is stdout\n}}
+
+exit 0
+
 test bgexec.1 {bgexec (no args) } {
     list [catch {blt::bgexec} msg] $msg
 } {1 {wrong # args: should be "blt::bgexec varName ?options? command ?arg...?"}}
@@ -41,6 +78,7 @@ test bgexec.4 {bgexec var -help } {
    -onoutput cmdString
    -output varName
    -poll milliseconds
+   -pty 
    -update varName}}
 
 test bgexec.5 {bgexec myVar -badSwitch } {
@@ -63,6 +101,7 @@ following switches are available:
    -onoutput cmdString
    -output varName
    -poll milliseconds
+   -pty 
    -update varName}}
 
 test bgexec.6 {bgexec myVar -decodeerror (no arg) } {
@@ -176,7 +215,9 @@ test bgexec.32 {bgexec myVar badCmd } {
 
 
 test bgexec.33 {bgexec myVar redirect input } {
-    list [catch {blt::bgexec myVar tclsh files/cat.tcl < files/null.tcl} msg] $msg
+    list [catch {
+	blt::bgexec myVar tclsh files/cat.tcl < files/null.tcl
+    } msg] $msg
 } {0 {exit 0}}
 
 test bgexec.34 {bgexec myVar redirect input } {
@@ -204,14 +245,21 @@ test bgexec.36 {bgexec myVar bad redirect syntax } {
 
 
 test bgexec.37 {bgexec myVar -keepnewline } {
-    list [catch {blt::bgexec myVar -keepnewline yes  tclsh files/cat.tcl < files/null.tcl} msg] $msg
+    list [catch {
+	blt::bgexec myVar \
+	    -keepnewline yes  \
+	    tclsh files/cat.tcl < files/null.tcl
+    } msg] $msg
 } {0 {exit 0
 }}
 
 test bgexec.38 {bgexec myVar -keepnewline } {
-    list [catch {blt::bgexec myVar -keepnewline yes  tclsh files/cat.tcl < files/null.tcl} msg] $msg
-} {0 {exit 0
-}}
+    list [catch {
+	blt::bgexec myVar \
+	    -keepnewline yes \
+	    tclsh files/cat.tcl < files/null.tcl
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {exit 0\n}}
 
 test bgexec.39 {bgexec myVar stderr collect w/ -error } {
     list [catch {
@@ -226,23 +274,22 @@ test bgexec.40 {bgexec myVar stderr collect w/ -error -keepnewline } {
 	set myErr {}
 	blt::bgexec myVar -error myErr -keepnewline yes tclsh files/stderr.tcl
 	set myErr
-    } msg] $msg
-} {0 {This is stderr
-}}
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {This is stderr\n}}
 
 test bgexec.41 {bgexec myVar stdout collect w/ -output } {
     list [catch {
 	set myOut {}
 	blt::bgexec myVar -output myOut tclsh files/stdout.tcl
 	set myOut
-    } msg] $msg
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stdout}}
 
 
 test bgexec.42 {bgexec myVar stdout collect } {
     list [catch {
 	blt::bgexec myVar tclsh files/stdout.tcl
-    } msg] $msg
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stdout}}
 
 test bgexec.43 {bgexec pipeline } {
@@ -370,12 +417,13 @@ test bgexec.59 {bgexec myVar stderr collect w/ -onerror } {
 	    global myErr
 	    append myErr $data
 	}
-	blt::bgexec myVar -onerror CollectStderr -keepnewline yes \
+	blt::bgexec myVar \
+	    -onerror CollectStderr \
+	    -keepnewline yes \
 	    tclsh files/stderr.tcl
 	set myErr
-    } msg] $msg
-} {0 {This is stderr
-}}
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {This is stderr\n}}
 
 test bgexec.60 {bgexec myVar stdout collect w/ -onoutput } {
     list [catch {
@@ -384,17 +432,73 @@ test bgexec.60 {bgexec myVar stdout collect w/ -onoutput } {
 	    global myOut
 	    append myOut $data
 	}
-	blt::bgexec myVar -keepnewline yes -onoutput CollectStdout \
+	blt::bgexec myVar\
+	    -keepnewline yes \
+	    -onoutput CollectStdout \
 	    tclsh files/stdout.tcl
 	set myOut
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {This is stdout\n}}
+
+# PTY tests
+test bgexec.61 {bgexec myVar badCmd } {
+    list [catch {blt::bgexec myVar -pty badCmd} msg] $msg
+} {1 {can't execute "badCmd": no such file or directory}}
+
+test bgexec.62 {bgexec myVar badCmd } {
+    list [catch {blt::bgexec myVar -pty badCmd} msg] $msg
+} {1 {can't execute "badCmd": no such file or directory}}
+
+
+test bgexec.63 {bgexec myVar redirect input } {
+    list [catch {
+	blt::bgexec myVar -pty tclsh files/cat.tcl < files/null.tcl
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {exit 0}}
+
+exit 0
+
+test bgexec.64 {bgexec myVar redirect input } {
+    list [catch {
+	blt::bgexec myVar -pty tclsh files/cat.tcl << "test me"
     } msg] $msg
-} {0 {This is stdout
+} {0 {test me}}
+
+test bgexec.65 {bgexec myVar redirect input } {
+    list [catch {
+	set file [open "files/null.tcl" "r"]
+	set out [blt::bgexec myVar -pty tclsh files/cat.tcl <@ $file]
+	close $file
+	set out
+    } msg] $msg
+} {0 {exit 0}}
+
+
+test bgexec.66 {bgexec myVar bad redirect syntax } {
+    list [catch {
+	set file [open "files/null.tcl" "r"]
+	set out [blt::bgexec myVar -pty tclsh files/cat.tcl @< $file]
+	close $file
+	set out
+    } msg] $msg
+} {1 {child process exited abnormally}}
+
+
+test bgexec.67 {bgexec myVar -keepnewline } {
+    list [catch {
+	blt::bgexec myVar \
+	    -keepnewline 1 \
+	    -pty \
+	    tclsh files/cat.tcl < files/null.tcl
+    } msg] $msg
+} {0 {exit 0
 }}
 
-test bgexec.61 {bgexec myVar stdout collect w/ -output -keepnewline} {
+test bgexec.68 {bgexec myVar stdout collect w/ -output -keepnewline} {
     list [catch {
 	set myOut {}
 	blt::bgexec myVar \
+	    -pty \
 	    -output myOut \
 	    -keepnewline yes \
 	    tclsh files/stdout.tcl
@@ -402,4 +506,260 @@ test bgexec.61 {bgexec myVar stdout collect w/ -output -keepnewline} {
     } msg] $msg
 } {0 {This is stdout
 }}
+
+test bgexec.69 {bgexec myVar redirect input } {
+    list [catch {
+	blt::bgexec myVar -pty tclsh files/cat.tcl < files/null.tcl
+    } msg] $msg
+} {0 {exit 0}}
+
+test bgexec.70 {bgexec myVar redirect input } {
+    list [catch {
+	blt::bgexec myVar -pty tclsh files/cat.tcl << "test me"
+    } msg] $msg
+} {0 {test me}}
+
+test bgexec.71 {bgexec myVar redirect input } {
+    list [catch {
+	set file [open "files/null.tcl" "r"]
+	set out [blt::bgexec myVar -pty tclsh files/cat.tcl <@ $file]
+	close $file
+	set out
+    } msg] $msg
+} {0 {exit 0}}
+
+
+test bgexec.72 {bgexec myVar bad redirect syntax } {
+    list [catch {
+	set file [open "files/null.tcl" "r"]
+	set out [blt::bgexec myVar -pty tclsh files/cat.tcl @< $file]
+	close $file
+	set out
+    } msg] $msg
+} {1 {child process exited abnormally}}
+
+
+test bgexec.73 {bgexec myVar -keepnewline } {
+    list [catch {
+	blt::bgexec myVar \
+	    -keepnewline yes \
+	    -pty \
+	    tclsh files/cat.tcl < files/null.tcl
+    } msg] $msg
+} {0 {exit 0
+}}
+
+test bgexec.74 {bgexec myVar -keepnewline } {
+    list [catch {
+	blt::bgexec myVar \
+	    -pty \
+	    -keepnewline yes \
+	    tclsh files/cat.tcl < files/null.tcl
+    } msg] $msg
+} {0 {exit 0
+}}
+
+test bgexec.75 {bgexec myVar stderr collect w/ -error } {
+    list [catch {
+	set myErr {}
+	blt::bgexec myVar -pty -error myErr tclsh files/stderr.tcl
+	set myErr
+    } msg] $msg
+} {0 {This is stderr}}
+
+test bgexec.76 {bgexec myVar stderr collect w/ -error -keepnewline } {
+    list [catch {
+	set myErr {}
+	blt::bgexec myVar \
+	    -pty \
+	    -error myErr \
+	    -keepnewline 1 \
+	    tclsh files/stderr.tcl
+	set myErr
+    } msg] $msg
+} {0 {This is stderr
+}}
+
+test bgexec.77 {bgexec myVar stdout collect w/ -output } {
+    list [catch {
+	set myOut {}
+	blt::bgexec myVar -pty -output myOut tclsh files/stdout.tcl
+	set myOut
+    } msg] $msg
+} {0 {This is stdout}}
+
+
+test bgexec.78 {bgexec myVar stdout collect } {
+    list [catch {
+	blt::bgexec myVar -pty tclsh files/stdout.tcl
+    } msg] $msg
+} {0 {This is stdout}}
+
+test bgexec.79 {bgexec pipeline } {
+    list [catch {
+	blt::bgexec myVar -pty tclsh files/stdout.tcl | tclsh files/cat.tcl
+    } msg] $msg
+} {0 {This is stdout}}
+
+test bgexec.80 {bgexec exitcode } {
+    set code [catch {
+	blt::bgexec myVar -pty tclsh files/exitcode.tcl 0
+    } msg]
+    list $code [lindex $myVar 2]
+} {0 0}
+
+test bgexec.81 {bgexec exitcode } {
+    set code [catch {
+	blt::bgexec myVar -pty tclsh files/exitcode.tcl 1
+    } msg]
+    list $code [lindex $myVar 2]
+} {1 1}
+
+test bgexec.82 {bgexec exitcode } {
+    set code [catch {
+	blt::bgexec myVar -pty tclsh files/exitcode.tcl 100
+    } msg]
+    list $code [lindex $myVar 2]
+} {1 100}
+
+test bgexec.83 {bgexec exitcode } {
+    set code [catch {
+	blt::bgexec myVar -pty tclsh files/exitcode.tcl -1
+    } msg]
+    list $code [lindex $myVar 2]
+} {1 255}
+
+test bgexec.84 {bgexec pipeline } {
+    list [catch {
+	blt::bgexec myVar -pty \
+	    tclsh files/stdout.tcl | tclsh files/cat.tcl | tclsh files/cat.tcl 
+    } msg] $msg
+} {0 {This is stdout}}
+
+test bgexec.85 {bgexec -ignoreexitcode } {
+    set code [catch {
+	blt::bgexec myVar -pty -ignoreexitcode yes \
+	    tclsh files/exitcode.tcl 1
+    } msg]
+    list $code [lindex $myVar 2]
+} {0 1}
+
+test bgexec.86 {bgexec -ignoreexitcode } {
+    set code [catch {
+	blt::bgexec myVar -pty -ignoreexitcode yes \
+	    tclsh files/exitcode.tcl 0
+    } msg]
+    list $code [lindex $myVar 2]
+} {0 0}
+
+test bgexec.87 {bgexec -ignoreexitcode } {
+    set code [catch {
+	blt::bgexec myVar -pty -ignoreexitcode no \
+	    tclsh files/exitcode.tcl 100
+    } msg]
+    list $code [lindex $myVar 2]
+} {1 100}
+
+test bgexec.88 {bgexec myVar -environ } {
+    list [catch {
+	blt::bgexec myVar -pty -environ "MYVAR myValue" \
+	    tclsh files/printenv.tcl MYVAR
+    } msg] $msg
+} {0 {MYVAR myValue}}
+
+test bgexec.89 {bgexec myVar -environ } {
+    list [catch {
+	blt::bgexec myVar -pty -environ "" \
+	    tclsh files/printenv.tcl MYVAR
+    } msg] $msg
+} {0 {}}
+
+test bgexec.90 {bgexec myVar -environ } {
+    list [catch {
+	blt::bgexec myVar -pty -environ "PATH myPath" \
+	    tclsh files/printenv.tcl PATH
+    } msg] $msg
+} {0 {PATH myPath}}
+
+test bgexec.91 {bgexec myVar -echo } {
+    list [catch {
+	blt::bgexec myVar -pty -echo yes tclsh files/both.tcl 2> /dev/null
+    } msg] $msg
+} {0 {This is stdout}}
+
+test bgexec.92 {bgexec myVar -echo } {
+    list [catch {
+	blt::bgexec myVar -pty -echo no tclsh files/both.tcl 2> /dev/null
+    } msg] $msg
+} {0 {This is stdout}}
+
+test bgexec.93 {bgexec myVar stderr collect w/ -onerror } {
+    list [catch {
+	set myErr {}
+	proc CollectStderr { data } {
+	    global myErr
+	    append myErr $data
+	}
+	blt::bgexec myVar -pty -onerror CollectStderr tclsh files/stderr.tcl
+	set myErr
+    } msg] $msg
+} {0 {This is stderr}}
+
+test bgexec.94 {bgexec myVar stdout collect w/ -onoutput } {
+    list [catch {
+	set myOut {}
+	proc CollectStdout { data } {
+	    global myOut
+	    append myOut $data
+	}
+	blt::bgexec myVar -pty \
+	    -onoutput CollectStdout \
+	    tclsh files/stdout.tcl
+	set myOut
+    } msg] $msg
+} {0 {This is stdout}}
+
+test bgexec.95 {bgexec myVar stderr collect w/ -onerror } {
+    list [catch {
+	set myErr {}
+	proc CollectStderr { data } {
+	    global myErr
+	    append myErr $data
+	}
+	blt::bgexec myVar -pty -onerror CollectStderr -keepnewline yes \
+	    tclsh files/stderr.tcl
+	set myErr
+    } msg] $msg
+} {0 {This is stderr
+}}
+
+test bgexec.96 {bgexec myVar stdout collect w/ -onoutput } {
+    list [catch {
+	set myOut {}
+	proc CollectStdout { data } {
+	    global myOut
+	    append myOut $data
+	}
+	blt::bgexec myVar -pty -keepnewline yes -onoutput CollectStdout \
+	    tclsh files/stdout.tcl
+	set myOut
+    } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
+} {0 {This is stdout
+}}
+
+test bgexec.97 {bgexec myVar stdout collect w/ -output -keepnewline} {
+    list [catch {
+	set myOut {}
+	blt::bgexec myVar \
+	    -output myOut \
+	    -keepnewline yes \
+	    -pty \
+	    tclsh files/stdout.tcl
+	set myOut
+    } msg] $msg
+} {0 {This is stdout
+}}
+
+exit 0
+
 

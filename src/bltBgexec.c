@@ -36,13 +36,20 @@
  *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _GNU_SOURCE
+#define _XOPEN_SOURCE
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 
 #ifndef NO_BGEXEC
 
-#include <fcntl.h>
-#include <signal.h>
+#ifdef HAVE_FCNTL_H
+  #include <fcntl.h>
+#endif  /* HAVE_FCNTL_H */
+
+#ifdef HAVE_SIGNAL_H
+  #include <signal.h>
+#endif  /* HAVE_SIGNAL_H */
 
 #ifdef HAVE_STDLIB_H
   #include <stdlib.h>
@@ -72,6 +79,25 @@
   #include <crt_externs.h>
 #endif
 
+#ifdef HAVE_STROPTS_H
+  #include <stropts.h>
+#endif  /* HAVE_STROPTS_H */
+
+#ifdef HAVE_PTY_H
+  #include <pty.h>
+#endif  /* HAVE_PTY_H */
+
+#ifdef HAVE_TERMIOS_H
+  #include <termios.h>
+  #include <unistd.h>
+#endif  /* HAVE_TERMIOS_H */
+
+#if defined(HAVE_GETPT) || defined(HAVE_POSIX_OPENPT) || defined(PTYRANGE0) 
+  #define HAVE_SESSION 1
+#else
+  #define HAVE_SESSION 0
+#endif
+
 #include "bltAlloc.h"
 #include "bltChain.h"
 #include "bltSwitch.h"
@@ -81,6 +107,8 @@
 static Tcl_ObjCmdProc BgexecCmdProc;
 
 #define WINDEBUG        0
+
+#define PTY_NAME_SIZE   32
 
 #if (_TCL_VERSION <  _VERSION(8,1,0)) 
 typedef void *Tcl_Encoding;             /* Make up dummy type for
@@ -97,6 +125,51 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
      #endif
   #endif /* __GNUC__ */
 #endif /* WIN32 */
+
+typedef struct _Bgexec Bgexec;
+
+typedef int (ExecutePipelineProc)(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
+        Tcl_Obj *const *objv);
+typedef void (KillPipelineProc)(Bgexec *bgPtr);
+typedef Tcl_Obj *(CheckPipelineProc)(Bgexec *bgPtr);
+typedef void (ReportPipelineProc)(Tcl_Interp *interp, Bgexec *bgPtr);
+
+typedef struct _BgexecClass {
+    const char *name;
+    ExecutePipelineProc *execProc;
+    KillPipelineProc *killProc;
+    ReportPipelineProc *reportProc;
+    CheckPipelineProc *checkProc;
+} BgexecClass;
+
+#ifdef HAVE_SESSION
+
+static ExecutePipelineProc ExecutePipelineWithSession;
+static KillPipelineProc KillSession;
+static ReportPipelineProc ReportSession;
+static CheckPipelineProc CheckSession;
+
+static BgexecClass sessionClass = {
+    "session",
+    ExecutePipelineWithSession,
+    KillSession,
+    ReportSession,
+    CheckSession,
+};
+#endif
+
+static ExecutePipelineProc ExecutePipeline;
+static KillPipelineProc KillPipeline;
+static ReportPipelineProc ReportPipeline;
+static CheckPipelineProc CheckPipeline;
+
+static BgexecClass pipelineClass = {
+    "pipeline",
+    ExecutePipeline,
+    KillPipeline,
+    ReportPipeline,
+    CheckPipeline,
+};
 
 /*
  *  This module creates a stand in for the old Tcl_CreatePipeline call in
@@ -273,8 +346,6 @@ static SignalToken signalTokens[] =
 static Tcl_Mutex *mutexPtr = NULL;
 #endif /* TCL_THREADS */
 
-typedef struct _Bgexec Bgexec;
-
 static Blt_Chain activePipelines;       /* List of active pipelines and
                                          * their bgexec structures. */
 
@@ -300,13 +371,12 @@ static Blt_Chain activePipelines;       /* List of active pipelines and
 typedef struct {
     Bgexec *bgPtr;
     const char *name;                   /* Name of the sink */
-    const char *doneVar;                /* Name of a TCL variable
-                                         * (malloc'ed) set to the collected
-                                         * data of the last UNIX
-                                         * subprocess. */
-    const char *updateVar;              /* Name of a TCL variable
-                                         * (malloc'ed) updated as data is
-                                         * read from the pipe. */
+    Tcl_Obj *doneVarObjPtr;             /* Name of a TCL variable set to
+                                         * the collected data of the last
+                                         * UNIX subprocess. */
+    Tcl_Obj *updateVarObjPtr;           /* Name of a TCL variable updated
+                                         * as data is read from the
+                                         * pipe. */
     Tcl_Obj *cmdObjPtr;                 /* Start of a TCL command executed
                                          * whenever data is read from the
                                          * pipe. */
@@ -346,7 +416,8 @@ typedef struct {
                                          * echoed */
 
 struct _Bgexec {
-    const char *statVar;                /* Name of a TCL variable set to
+    BgexecClass *classPtr;
+    Tcl_Obj *statVarObjPtr;             /* Name of a TCL variable set to
                                          * the exit status of the last
                                          * process. Setting this variable
                                          * triggers the termination of all
@@ -374,11 +445,18 @@ struct _Bgexec {
                                          * contain the last process' exit
                                          * code. */
     int *donePtr;
-    Sink err, out;                      /* Data sinks for pipeline's output
-                                         * and error channels. */
+    Sink errSink, outSink;              /* Data sinks for pipeline's stdout
+                                         * and stderr channels. */
     Blt_ChainLink link;
     char *const *env;                   /* Table of overriding environment
                                          * variables. */
+#if HAVE_SESSION
+    int master;                         /* File descriptor of pty master. */
+    int slave;                          /* File descriptor of pty slave.  */
+    char masterName[PTY_NAME_SIZE+1];
+    char slaveName[PTY_NAME_SIZE+1];
+    pid_t sid;                          /* Pid of session leader. */
+#endif
 };
 
 #define KEEPNEWLINE     (1<<0)          /* Indicates to set TCL output
@@ -398,70 +476,86 @@ struct _Bgexec {
 #define DONTKILL        (1<<6)          /* Indicates that the detached
                                          * pipeline should not be signaled
                                          * on exit. */
+#define SESSION         (1<<7)          /* Indicates that the pipeline
+                                         * should use a pseudo terminal and
+                                         * session group. */
 
-static Blt_SwitchParseProc ObjToEnvironProc;
-static Blt_SwitchFreeProc FreeEnvironProc;
+static Blt_SwitchParseProc ObjToEnvironSwitchProc;
+static Blt_SwitchFreeProc FreeEnvironSwitchProc;
 static Blt_SwitchCustom environSwitch =
 {
-    ObjToEnvironProc, NULL, FreeEnvironProc, (ClientData)0,
+    ObjToEnvironSwitchProc, NULL, FreeEnvironSwitchProc, (ClientData)0,
 };
 
-static Blt_SwitchParseProc ObjToSignalProc;
+static Blt_SwitchParseProc ObjToSignalSwitchProc;
 static Blt_SwitchCustom killSignalSwitch =
 {
-    ObjToSignalProc, NULL, NULL, (ClientData)0,
+    ObjToSignalSwitchProc, NULL, NULL, (ClientData)0,
 };
 
-static Blt_SwitchParseProc ObjToEncodingProc;
-static Blt_SwitchFreeProc FreeEncodingProc;
+static Blt_SwitchParseProc ObjToEncodingSwitchProc;
+static Blt_SwitchFreeProc FreeEncodingSwitchProc;
 static Blt_SwitchCustom encodingSwitch =
 {
-    ObjToEncodingProc, NULL, FreeEncodingProc, (ClientData)0
+    ObjToEncodingSwitchProc, NULL, FreeEncodingSwitchProc, (ClientData)0
 };
 
 static Blt_SwitchSpec switchSpecs[] = 
 {
     {BLT_SWITCH_CUSTOM,  "-decodeerror",   "encodingName",      (char *)NULL,
-         Blt_Offset(Bgexec, err.encoding),  0, 0, &encodingSwitch},
+         Blt_Offset(Bgexec, errSink.encoding),  0, 0, &encodingSwitch},
     {BLT_SWITCH_CUSTOM,  "-decodeoutput",  "encodingName",      (char *)NULL,
-        Blt_Offset(Bgexec, out.encoding),   0, 0, &encodingSwitch}, 
+        Blt_Offset(Bgexec, outSink.encoding),   0, 0, &encodingSwitch}, 
     {BLT_SWITCH_BOOLEAN, "-detach",        "bool",              (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, DONTKILL},
     {BLT_SWITCH_BOOLEAN, "-echo",          "bool",              (char *)NULL,
-         Blt_Offset(Bgexec, err.echo),      0},
+         Blt_Offset(Bgexec, errSink.echo),      0},
     {BLT_SWITCH_CUSTOM, "-environ",        "list",              (char *)NULL,
          Blt_Offset(Bgexec, env),           0, 0, &environSwitch},
-    {BLT_SWITCH_STRING,  "-error",          "varName",          (char *)NULL,
-        Blt_Offset(Bgexec, err.doneVar),    0},
+    {BLT_SWITCH_OBJ,     "-error",          "varName",          (char *)NULL,
+        Blt_Offset(Bgexec, errSink.doneVarObjPtr),    0},
     {BLT_SWITCH_BOOLEAN, "-ignoreexitcode", "bool",             (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, IGNOREEXITCODE},
     {BLT_SWITCH_BOOLEAN, "-keepnewline",    "bool",             (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, KEEPNEWLINE}, 
     {BLT_SWITCH_CUSTOM,  "-killsignal",     "signalName",       (char *)NULL,
         Blt_Offset(Bgexec, signalNum),      0, 0, &killSignalSwitch},
-    {BLT_SWITCH_STRING,  "-lasterror",      "varName",          (char *)NULL,
-        Blt_Offset(Bgexec, err.updateVar),  0},
-    {BLT_SWITCH_STRING,  "-lastoutput",     "varName",          (char *)NULL,
-        Blt_Offset(Bgexec, out.updateVar),  0},
+    {BLT_SWITCH_OBJ,    "-lasterror",      "varName",          (char *)NULL,
+        Blt_Offset(Bgexec, errSink.updateVarObjPtr),  0},
+    {BLT_SWITCH_OBJ,     "-lastoutput",     "varName",          (char *)NULL,
+        Blt_Offset(Bgexec, outSink.updateVarObjPtr),  0},
     {BLT_SWITCH_BOOLEAN, "-linebuffered",   "bool",             (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, LINEBUFFERED},
     {BLT_SWITCH_OBJ,     "-onerror",        "cmdString",        (char *)NULL,
-        Blt_Offset(Bgexec, err.cmdObjPtr),  0},
+        Blt_Offset(Bgexec, errSink.cmdObjPtr),  0},
     {BLT_SWITCH_OBJ,     "-onoutput",       "cmdString",        (char *)NULL,
-        Blt_Offset(Bgexec, out.cmdObjPtr),  0},
-    {BLT_SWITCH_STRING,  "-output",         "varName",          (char *)NULL,
-        Blt_Offset(Bgexec, out.doneVar),    0},
+        Blt_Offset(Bgexec, outSink.cmdObjPtr),  0},
+    {BLT_SWITCH_OBJ,     "-output",         "varName",          (char *)NULL,
+        Blt_Offset(Bgexec, outSink.doneVarObjPtr),    0},
     {BLT_SWITCH_INT,     "-poll",           "milliseconds",     (char *)NULL,
         Blt_Offset(Bgexec, interval),       0},
-    {BLT_SWITCH_STRING,  "-update",         "varName",          (char *)NULL,
-         Blt_Offset(Bgexec, out.updateVar), 0},
+    {BLT_SWITCH_BITMASK, "-pty",            "",                  (char *)NULL,
+        Blt_Offset(Bgexec, flags),          0, SESSION},
+    {BLT_SWITCH_OBJ,     "-update",         "varName",          (char *)NULL,
+         Blt_Offset(Bgexec, outSink.updateVarObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
 static Tcl_VarTraceProc VariableProc;
 static Tcl_TimerProc TimerProc;
-static Tcl_FileProc StdoutProc, StderrProc;
+static Tcl_FileProc CollectStdout, CollectStderr;
 static Tcl_ExitProc BgexecExitProc;
+
+static void
+ExplainError(Tcl_Interp *interp, const char *mesg)
+{
+    if (mesg != NULL) {
+        Tcl_AppendResult(interp, mesg, ": ", Tcl_PosixError(interp),
+                         (char *)NULL);
+    } else {
+        Tcl_AppendResult(interp, Tcl_PosixError(interp), (char *)NULL);
+    }
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -484,17 +578,17 @@ static int
 CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
               char *const **envPtrPtr)
 {
-    Blt_HashTable varTable;         /* Temporary hash table for environment
+    Blt_HashTable envTable;         /* Temporary hash table for environment
                                      * variables. */
     int count;                      /* Counter for # bytes in new buffer */
     
-    Blt_InitHashTable(&varTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&envTable, BLT_STRING_KEYS);
     count = 0;
+
+    /* Step 1: Add the override enviroment variables to the empty table. */
     {
         int i;
         
-        /* Step 1: Add the override enviroment variables to the empty
-         *         table. */
         for (i = 0; i < objc; i += 2) {
             Blt_HashEntry *hPtr;
             const char *name, *value;
@@ -502,13 +596,15 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
             
             name = Tcl_GetStringFromObj(objv[i], &length);
             count += length;
-            hPtr = Blt_CreateHashEntry(&varTable, name, &isNew);
+            hPtr = Blt_CreateHashEntry(&envTable, name, &isNew);
             value = Tcl_GetStringFromObj(objv[i+1], &length);
             Blt_SetHashValue(hPtr, value);
             count += length;
             count += 2;                     /* Include '\0' and '=' */
         }
     }
+    /* Step 2:  Add the current environment variables, but don't overwrite
+     *          the existing table entries. */
     {
         char *const *envPtr;
 #ifdef MACOSX
@@ -518,8 +614,6 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
         extern char **environ;
 #endif
 
-        /* Step 2:  Add the current environment variables, but don't
-         *          overwrite the existing table entries. */
         for (envPtr = environ; *envPtr != NULL; envPtr++) {
             char *eqsign;
             char *p;
@@ -542,7 +636,7 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
                 /* Temporarily terminate the variable name at the '=' and
                  * create a hash table entry for the variable. */
                 *eqsign = '\0';
-                hPtr = Blt_CreateHashEntry(&varTable, *envPtr, &isNew);
+                hPtr = Blt_CreateHashEntry(&envTable, *envPtr, &isNew);
                 if (isNew) {    /* Ignore the variable if it already exists. */
                     Blt_SetHashValue(hPtr, eqsign + 1);
                     /* Not already in table, add variable as is including the
@@ -555,6 +649,9 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
         count++;                           /* Final NUL byte. */
         assert(count < 100000);
     }
+    /* Step 3: Allocate an environment array */
+    /* Step 4: Add the name/value pairs from the hashtable to the array as
+     *         "name=value". */
     {
         Blt_HashEntry *hPtr;
         Blt_HashSearch iter;
@@ -562,19 +659,16 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
         char *p;
         int n, numBytes;
         
-        /* Step 3: Allocate an environment array */
-        numBytes = (varTable.numEntries + 1) * sizeof(char **);
+        numBytes = (envTable.numEntries + 1) * sizeof(char **);
         array = Blt_AssertMalloc(numBytes + count * sizeof(char));
         p = (char *)array + numBytes;
         
-        /* Step 4: Add the name/value pairs from the hashtable to the
-         *         array as "name=value". */
         n = 0;
-        for (hPtr = Blt_FirstHashEntry(&varTable, &iter); hPtr != NULL;
+        for (hPtr = Blt_FirstHashEntry(&envTable, &iter); hPtr != NULL;
              hPtr = Blt_NextHashEntry(&iter)) {
             const char *name, *value;
             
-            name = Blt_GetHashKey(&varTable, hPtr);
+            name = Blt_GetHashKey(&envTable, hPtr);
             value = Blt_GetHashValue(hPtr);
             numBytes = sprintf(p, "%s=%s", name, value);
             array[n] = p;
@@ -583,7 +677,7 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
             n++;
         }
         array[n] = '\0';                       /* Add final NUL byte. */
-        Blt_DeleteHashTable(&varTable);
+        Blt_DeleteHashTable(&envTable);
         *envPtrPtr = (char **)array;
     }
     return TCL_OK;
@@ -591,7 +685,7 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSignalProc --
+ * ObjToSignalSwitchProc --
  *
  *      Convert a Tcl_Obj representing a signal number into its integer
  *      value.
@@ -603,14 +697,9 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
  */
 /*ARGSUSED*/
 static int
-ObjToSignalProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Intrepreter to return results */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* Value representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToSignalSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                      const char *switchName, Tcl_Obj *objPtr, char *record,
+                      int offset, int flags)
 {
     char *string;
     int *signalPtr = (int *)(record + offset);
@@ -661,7 +750,7 @@ ObjToSignalProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToEncodingProc --
+ * ObjToEncodingSwitchProc --
  *
  *      Convert a Tcl_Obj representing a encoding into a Tcl_Encoding.
  *
@@ -672,14 +761,9 @@ ObjToSignalProc(
  */
 /*ARGSUSED*/
 static int
-ObjToEncodingProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Intrepreter to return results */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* Value representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToEncodingSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                        const char *switchName, Tcl_Obj *objPtr, char *record,
+                        int offset, int flags)
 {
     Tcl_Encoding *encodingPtr = (Tcl_Encoding *)(record + offset);
     Tcl_Encoding encoding;
@@ -708,7 +792,8 @@ ObjToEncodingProc(
 
 /*ARGSUSED*/
 static void
-FreeEncodingProc(ClientData clientData, char *record, int offset, int flags)
+FreeEncodingSwitchProc(ClientData clientData, char *record, int offset,
+                       int flags)
 {
     Tcl_Encoding *encodingPtr = (Tcl_Encoding *)(record + offset);
 
@@ -720,7 +805,7 @@ FreeEncodingProc(ClientData clientData, char *record, int offset, int flags)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToEnvironProc --
+ * ObjToEnvironSwitchProc --
  *
  *      Convert a Tcl_Obj representing a list of variable names and values
  *      into an environment string.
@@ -732,9 +817,9 @@ FreeEncodingProc(ClientData clientData, char *record, int offset, int flags)
  */
 /*ARGSUSED*/
 static int
-ObjToEnvironProc(ClientData clientData, Tcl_Interp *interp,
-                 const char *switchName, Tcl_Obj *objPtr, char *record,
-                 int offset, int flags)
+ObjToEnvironSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                       const char *switchName, Tcl_Obj *objPtr, char *record,
+                       int offset, int flags)
 {
     char *const **envPtrPtr = (char *const **)(record + offset);
     char *const *env;
@@ -766,7 +851,8 @@ ObjToEnvironProc(ClientData clientData, Tcl_Interp *interp,
 
 /*ARGSUSED*/
 static void
-FreeEnvironProc(ClientData clientData, char *record, int offset, int flags)
+FreeEnvironSwitchProc(ClientData clientData, char *record, int offset,
+                      int flags)
 {
     char *const **envPtrPtr = (char *const **)(record + offset);
 
@@ -790,7 +876,10 @@ GetSinkData(Sink *sinkPtr, unsigned char **dataPtr, size_t *lengthPtr)
 {
     size_t length;
 
+#ifdef notdef
     sinkPtr->bytes[sinkPtr->mark] = '\0';
+#endif
+    fprintf(stderr, "GetSinkData %s=(%s)\n", sinkPtr->name, sinkPtr->bytes);
     length = sinkPtr->mark;
     if ((sinkPtr->mark > 0) && (sinkPtr->encoding != ENCODING_BINARY)) {
         unsigned char *last;
@@ -819,21 +908,21 @@ GetSinkData(Sink *sinkPtr, unsigned char **dataPtr, size_t *lengthPtr)
 static unsigned char *
 NextBlock(Sink *sinkPtr, int *lengthPtr)
 {
-    unsigned char *string;
+    unsigned char *bp;
     int length;
 
-    string = sinkPtr->bytes + sinkPtr->lastMark;
+    bp = sinkPtr->bytes + sinkPtr->lastMark;
     length = sinkPtr->mark - sinkPtr->lastMark;
     sinkPtr->lastMark = sinkPtr->mark;
     if (length > 0) {
         Bgexec *bgPtr;
         
         bgPtr = sinkPtr->bgPtr;
-        if ((!(bgPtr->flags & KEEPNEWLINE)) && (string[length-1] == '\n')) {
+        if ((!(bgPtr->flags & KEEPNEWLINE)) && (bp[length-1] == '\n')) {
             length--;
         }
         *lengthPtr = length;
-        return string;
+        return bp;
     }
     return NULL;
 }
@@ -951,7 +1040,7 @@ static void
 ConfigureSink(Bgexec *bgPtr, Sink *sinkPtr)
 {
     if ((sinkPtr->cmdObjPtr != NULL) || 
-        (sinkPtr->updateVar != NULL) ||
+        (sinkPtr->updateVarObjPtr != NULL) ||
         (sinkPtr->echo)) {
         sinkPtr->flags |= SINK_NOTIFY;
     }
@@ -1001,7 +1090,9 @@ ExtendSinkBuffer(Sink *sinkPtr)
      * Allocate a new array, double the old size
      */
     newSize = sinkPtr->size + sinkPtr->size;
+#ifdef notdef
     sinkPtr->bytes[sinkPtr->mark] = '\0';
+#endif
     if (sinkPtr->bytes == sinkPtr->staticSpace) {
         bytes = Blt_Malloc(sizeof(unsigned char) * newSize);
     } else {
@@ -1021,7 +1112,9 @@ ExtendSinkBuffer(Sink *sinkPtr)
         sinkPtr->size = newSize;
         return (sinkPtr->size - sinkPtr->fill); /* Return bytes left. */
     }
+#ifdef notdef
     sinkPtr->bytes[sinkPtr->mark] = '\0';
+#endif
     return -1;
 }
 
@@ -1077,11 +1170,13 @@ ReadBytes(Sink *sinkPtr)
         /* Read into a buffer but make sure we leave room for a trailing
          * NUL byte. */
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
+        fprintf(stderr, "read numBytes=%d\n", numBytes);
         if (numBytes == 0) {            /* EOF: break out of loop. */
             sinkPtr->status = READ_EOF;
             return TCL_BREAK;
         }
         if (numBytes < 0) {
+            Bgexec *bgPtr;
 #ifdef O_NONBLOCK
   #define BLOCKED         EAGAIN
 #else
@@ -1093,12 +1188,16 @@ ReadBytes(Sink *sinkPtr)
                 sinkPtr->status = READ_AGAIN;
                 return TCL_CONTINUE;
             }
-            sinkPtr->bytes[0] = '\0';
+            bgPtr = sinkPtr->bgPtr;
+            ExplainError(bgPtr->interp, "read");
             sinkPtr->status = READ_ERROR;
             return TCL_ERROR;
         }
         sinkPtr->fill += numBytes;
+#ifndef notdef
         sinkPtr->bytes[sinkPtr->fill] = '\0';
+        fprintf(stderr, "pid=%d %s=(%s)\n", getpid(), sinkPtr->name, array);
+#endif
     }
     sinkPtr->status = numBytes;
     return TCL_OK;
@@ -1112,7 +1211,7 @@ CloseSink(Sink *sinkPtr)
         close(sinkPtr->fd);
         Tcl_DeleteFileHandler(sinkPtr->fd);
         sinkPtr->fd = -1;
-        if (sinkPtr->doneVar != NULL) {
+        if (sinkPtr->doneVarObjPtr != NULL) {
             Tcl_Interp *interp;
             unsigned char *data;
             size_t length;
@@ -1125,14 +1224,14 @@ CloseSink(Sink *sinkPtr)
             GetSinkData(sinkPtr, &data, &length);
 #if (_TCL_VERSION <  _VERSION(8,1,0)) 
             data[length] = '\0';
-            if (Tcl_SetVar(interp, sinkPtr->doneVar, data, 
+            if (Tcl_SetVar(interp, Tcl_GetString(sinkPtr->doneVarObjPtr), data, 
                            TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
                 Tcl_BackgroundError(interp);
             }
 #else
-            if (Tcl_SetVar2Ex(interp, sinkPtr->doneVar, NULL /*part2*/, 
-                              Tcl_NewByteArrayObj(data, (int)length),
-                              TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
+            if (Tcl_ObjSetVar2(interp, sinkPtr->doneVarObjPtr, NULL /*part2*/, 
+                        Tcl_NewByteArrayObj(data, (int)length),
+                        TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
                 Tcl_BackgroundError(interp);
             }
 #endif
@@ -1169,6 +1268,7 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
     oldMark = sinkPtr->mark;
 #endif
     if (sinkPtr->encoding == ENCODING_BINARY) { /* binary */
+        fprintf(stderr, "encoding is binary\n");
         /* No translation needed. */
         sinkPtr->mark = sinkPtr->fill; 
     } else if (sinkPtr->encoding == ENCODING_ASCII) { /* ascii */
@@ -1184,9 +1284,11 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
         }
 #endif /* < 8.1.0 */
         /* One-to-one translation. mark == fill. */
+        fprintf(stderr, "CookSink: %s=(%s)\n", sinkPtr->name,
+                sinkPtr->bytes);
         sinkPtr->mark = sinkPtr->fill;
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
-    } else { /* unicode. */
+    } else { /* Unicode. */
         int numSrcCooked, numCooked;
         int result;
         ssize_t spaceLeft, cookedSize, needed;
@@ -1307,10 +1409,7 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
  *---------------------------------------------------------------------------
  */
 static int
-WaitProcess(
-    Blt_Pid child,
-    int *statusPtr,
-    int flags)
+WaitProcess(Blt_Pid child, int *statusPtr, int flags)
 {
     DWORD status, exitCode;
     int result;
@@ -1448,7 +1547,9 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
         return;
     }
     save = data[numBytes];
+#ifdef notdef
     data[numBytes] = '\0';
+#endif
     if (sinkPtr->echo) {
         Tcl_Channel channel;
         
@@ -1480,9 +1581,9 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
             Tcl_BackgroundError(interp);
         }
     }
-    if (sinkPtr->updateVar != NULL) {
-        if (Tcl_SetVar2Ex(interp, sinkPtr->updateVar, NULL /*part2*/, objPtr, 
-                TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
+    if (sinkPtr->updateVarObjPtr != NULL) {
+        if (Tcl_ObjSetVar2(interp, sinkPtr->updateVarObjPtr, NULL /*part2*/,
+                objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
             Tcl_BackgroundError(interp);
         }
     }
@@ -1538,9 +1639,9 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
             Tcl_BackgroundError(interp);
         }
     }
-    if (sinkPtr->updateVar != NULL) {
-        if (Tcl_SetVar2Ex(interp, sinkPtr->updateVar, NULL /*part2*/, objPtr, 
-                TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
+    if (sinkPtr->updateVarObjPtr != NULL) {
+        if (Tcl_ObjSetVar2(interp, sinkPtr->updateVarObjPtr, NULL /*part2*/,
+                objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
             Tcl_BackgroundError(interp);
         }
     }
@@ -1555,20 +1656,25 @@ CollectData(Sink *sinkPtr)
     Bgexec *bgPtr;
     int result;
     
+    fprintf(stderr, "calling CollectData (sink=%s)\n", sinkPtr->name);
     bgPtr = sinkPtr->bgPtr;
-    if ((bgPtr->flags & DETACHED) && (sinkPtr->doneVar == NULL)) {
+    if ((bgPtr->flags & DETACHED) && (sinkPtr->doneVarObjPtr == NULL)) {
         ResetSink(sinkPtr);
     }
     result = ReadBytes(sinkPtr);
     if (result == TCL_ERROR) {
+        fprintf(stderr, "ReadBytes result=%d error=%s\n",
+                result, Tcl_GetString(Tcl_GetObjResult(bgPtr->interp)));
         Tcl_BackgroundError(bgPtr->interp);
         return TCL_ERROR;
     }
     result = CookSink(bgPtr->interp, sinkPtr);
     if (result == TCL_ERROR) {
+        fprintf(stderr, "CookSink error=%s\n", Tcl_GetString(Tcl_GetObjResult(bgPtr->interp)));
         Tcl_BackgroundError(bgPtr->interp);
         return TCL_ERROR;
     }
+    fprintf(stderr, "CollectData: result=%d\n", result);
     if ((sinkPtr->mark > sinkPtr->lastMark) && (sinkPtr->flags & SINK_NOTIFY)) {
         if (bgPtr->flags & LINEBUFFERED) {
             int length;
@@ -1576,6 +1682,7 @@ CollectData(Sink *sinkPtr)
 
             /* For line-by-line updates, call NotifyOnUpdate for each new
              * complete line.  */
+            fprintf(stderr, "output is linebuffered\n");
             while ((data = NextLine(sinkPtr, &length)) != NULL) {
                 NotifyOnUpdate(bgPtr->interp, sinkPtr, data, length);
             }
@@ -1583,11 +1690,14 @@ CollectData(Sink *sinkPtr)
             int length;
             unsigned char *data;
 
+            fprintf(stderr, "output is blocked\n");
             length = 0;                 /* Suppress compiler warning. */
             data = NextBlock(sinkPtr, &length);
             NotifyOnUpdate(bgPtr->interp, sinkPtr, data, length);
         }
     }
+    fprintf(stderr, "numBytes=%d %s=(%s)\n", sinkPtr->fill, sinkPtr->name,
+            sinkPtr->bytes);
     if (sinkPtr->status >= 0) {
         return TCL_OK;
     }
@@ -1595,6 +1705,7 @@ CollectData(Sink *sinkPtr)
         Tcl_AppendResult(bgPtr->interp, "can't read data from ", sinkPtr->name,
             ": ", Tcl_PosixError(bgPtr->interp), (char *)NULL);
         Tcl_BackgroundError(bgPtr->interp);
+        abort();
         return TCL_ERROR;
     }
 #if WINDEBUG
@@ -1632,8 +1743,9 @@ CreateSinkHandler(Sink *sinkPtr, Tcl_FileProc *proc)
     flags |= O_NDELAY;
 #endif
     if (fcntl(sinkPtr->fd, F_SETFL, flags) < 0) {
-        Tcl_AppendResult(sinkPtr->bgPtr->interp, "can't set file descriptor ",
-                         Blt_Itoa(sinkPtr->fd), " to non-blocking:",
+        Tcl_AppendResult(sinkPtr->bgPtr->interp, "can't set ",
+                         sinkPtr->name, " file descriptor ",
+                         Blt_Itoa(sinkPtr->fd), " to non-blocking: ",
             Tcl_PosixError(sinkPtr->bgPtr->interp), (char *)NULL);
         return TCL_ERROR;
     }
@@ -1646,15 +1758,15 @@ static void
 DisableTriggers(Bgexec *bgPtr)          /* Background info record. */
 {
     if (bgPtr->flags & TRACED) {
-        Tcl_UntraceVar(bgPtr->interp, bgPtr->statVar, TRACE_FLAGS, 
-                VariableProc, bgPtr);
+        Tcl_UntraceVar(bgPtr->interp, Tcl_GetString(bgPtr->statVarObjPtr),
+                TRACE_FLAGS, VariableProc, bgPtr);
         bgPtr->flags &= ~TRACED;
     }
-    if (SINKOPEN(&bgPtr->out)) {
-        CloseSink(&bgPtr->out);
+    if (SINKOPEN(&bgPtr->outSink)) {
+        CloseSink(&bgPtr->outSink);
     }
-    if (SINKOPEN(&bgPtr->err)) {
-        CloseSink(&bgPtr->err);
+    if (SINKOPEN(&bgPtr->errSink)) {
+        CloseSink(&bgPtr->errSink);
     }
     if (bgPtr->timerToken != (Tcl_TimerToken) 0) {
         Tcl_DeleteTimerHandler(bgPtr->timerToken);
@@ -1665,37 +1777,202 @@ DisableTriggers(Bgexec *bgPtr)          /* Background info record. */
     }
 }
 
-
-/*
- *---------------------------------------------------------------------------
- *
- * FreeBgexec --
- *
- *      Releases the memory allocated for the backgrounded process.
- *
- *---------------------------------------------------------------------------
- */
-static void
-FreeBgexec(Bgexec *bgPtr)
+static int
+SetErrorCode(Tcl_Interp *interp, int lastPid, WAIT_STATUS_TYPE lastStatus,
+             Tcl_Obj *listObjPtr)
 {
-    Blt_FreeSwitches(switchSpecs, (char *)bgPtr, 0);
-    if (bgPtr->statVar != NULL) {
-        Blt_Free(bgPtr->statVar);
+    Tcl_Obj *objPtr;
+    int code;
+    enum PROCESS_STATUS { 
+        PROCESS_EXITED, PROCESS_STOPPED, PROCESS_KILLED, PROCESS_UNKNOWN
+    } pcode;
+    static const char *tokens[] = { 
+        "EXITED", "KILLED", "STOPPED", "UNKNOWN"
+    };
+    const char *mesg;
+    char string[200];
+
+    /*
+     * All child processes have completed.  Set the status variable with
+     * the status of the last process reaped.  The status is a list of an
+     * error token, the exit status, and a message.
+     */
+    code = WEXITSTATUS(lastStatus);
+    mesg = NULL;                        /* Suppress compiler warning.  */
+    if (WIFEXITED(lastStatus)) {
+        pcode = PROCESS_EXITED;
+    } else if (WIFSIGNALED(lastStatus)) {
+        pcode = PROCESS_KILLED;
+        code = -1;
+    } else if (WIFSTOPPED(lastStatus)) {
+        pcode = PROCESS_STOPPED;
+        code = -1;
+    } else {
+        pcode = PROCESS_UNKNOWN;
     }
-    if (bgPtr->pids != NULL) {
-        Blt_Free(bgPtr->pids);
+    /* Token */
+    objPtr = Tcl_NewStringObj(tokens[pcode], -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Pid */
+    objPtr = Tcl_NewLongObj(lastPid);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Exit code. */
+    objPtr = Tcl_NewIntObj(code);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    switch(pcode) {
+    case PROCESS_EXITED:
+        mesg = "child completed normally";
+        break;
+    case PROCESS_KILLED:
+        mesg = Tcl_SignalMsg((int)(WTERMSIG(lastStatus)));
+        break;
+    case PROCESS_STOPPED:
+        mesg = Tcl_SignalMsg((int)(WSTOPSIG(lastStatus)));
+        break;
+    case PROCESS_UNKNOWN:
+        Blt_FormatString(string, 200,
+                         "child completed with unknown status 0x%x",
+                         *((int *)&lastStatus));
+        mesg = string;
+        break;
     }
-    if (bgPtr->env != NULL) {
-        Blt_Free(bgPtr->env);
-    }
-    if (bgPtr->link != NULL) {
-        Tcl_MutexLock(mutexPtr);
-        Blt_Chain_DeleteLink(activePipelines, bgPtr->link);
-        Tcl_MutexUnlock(mutexPtr);
-    }
-    Blt_Free(bgPtr);
+    /* Message */
+    objPtr = Tcl_NewStringObj(mesg, -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    Tcl_SetObjErrorCode(interp, listObjPtr);
+    return code;
 }
 
+static Tcl_Obj *
+CheckPipeline(Bgexec *bgPtr)
+{
+    Tcl_Obj *listObjPtr;
+    Tcl_Interp *interp;
+    WAIT_STATUS_TYPE waitStatus, lastStatus;
+    int code;
+    int i;
+    int numPidsLeft;                    /* # of processes still not
+                                         * reaped */
+    unsigned int lastPid;
+
+    interp = bgPtr->interp;
+    lastPid = (unsigned int)-1;
+    *((int *)&waitStatus) = 0;
+    *((int *)&lastStatus) = 0;
+
+    numPidsLeft = 0;
+    for (i = 0; i < bgPtr->numPids; i++) {
+        int pid;
+
+#ifdef WIN32
+        pid = WaitProcess(bgPtr->pids[i], (int *)&waitStatus, WNOHANG);
+#else
+        pid = waitpid(bgPtr->pids[i].pid, (int *)&waitStatus, WNOHANG);
+#endif
+        if (pid == 0) {                 /* Process has not terminated yet */
+            if (numPidsLeft < i) {
+                bgPtr->pids[numPidsLeft] = bgPtr->pids[i];
+            }
+            numPidsLeft++;              /* Count the # of processes left */
+        } else if (pid != -1) {
+            /*
+             * Save the status information associated with the subprocess.
+             * We'll use it only if this is the last subprocess to be reaped.
+             */
+            lastStatus = waitStatus;
+            lastPid = (unsigned int)pid;
+        }
+    }
+    bgPtr->numPids = numPidsLeft;
+    if ((numPidsLeft > 0) || (SINKOPEN(&bgPtr->outSink)) || 
+        (SINKOPEN(&bgPtr->errSink))) {
+        /* Keep polling for the status of the children that are left */
+        bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, 
+                TimerProc, bgPtr);
+        return NULL;
+    }
+
+    /*
+     * All child processes have completed.  Set the status variable with the
+     * status of the last process reaped.  The status is a list of an error
+     * token, the exit status, and a message.
+     */
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    code = SetErrorCode(interp, lastPid, lastStatus, listObjPtr);
+    if (bgPtr->exitCodePtr != NULL) {
+        *bgPtr->exitCodePtr = code;
+    }
+    return listObjPtr;
+}
+
+static void
+ReportPipeline(Tcl_Interp *interp, Bgexec *bgPtr)
+{
+    Tcl_Obj *listObjPtr;
+    int i;
+    
+    fprintf(stderr, "reportpipeline %s=(%s)\n",
+            bgPtr->outSink.name, bgPtr->outSink.bytes);
+    /* If detached, return a list of the child process ids instead of
+     * the output of the pipeline. */
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (i = 0; i < bgPtr->numPids; i++) {
+        Tcl_Obj *objPtr;
+#ifdef WIN32
+        objPtr = Tcl_NewLongObj((unsigned long)bgPtr->pids[i].pid);
+#else 
+        objPtr = Tcl_NewLongObj(bgPtr->pids[i].pid);
+#endif
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+}
+
+
+
+static int
+ExecutePipeline(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
+                Tcl_Obj *const *objv)
+{
+    int *outFdPtr, *errFdPtr;
+    int numPids;
+    Blt_Pid *pids;                      /* Array of process Ids. */
+
+    outFdPtr = errFdPtr = (int *)NULL;
+#ifdef WIN32
+    if ((bgPtr->flags & DETACHED) == 0) ||
+        (bgPtr->outSink.doneVarObjPtr != NULL) || 
+        (bgPtr->outSink.updateVarObjPtr != NULL) ||
+        (bgPtr->outSink.cmdObjPtr != NULL)) {
+        outFdPtr = &bgPtr->outSink.fd;
+    }
+#else
+    outFdPtr = &bgPtr->outSink.fd;
+#endif
+    if ((bgPtr->errSink.doneVarObjPtr != NULL) ||
+        (bgPtr->errSink.updateVarObjPtr != NULL) ||
+        (bgPtr->errSink.cmdObjPtr != NULL) || (bgPtr->errSink.echo)) {
+        errFdPtr = &bgPtr->errSink.fd;
+    }
+    numPids = Blt_CreatePipeline(interp, objc, objv, &pids, 
+        (int *)NULL, outFdPtr, errFdPtr, bgPtr->env);
+    if (numPids < 0) {
+        return TCL_ERROR;
+    }
+    bgPtr->pids = pids;
+    bgPtr->numPids = numPids;
+    if (bgPtr->outSink.fd == -1) {
+        /* 
+         * If output has been redirected, start polling immediately for the
+         * exit status of each process.  Normally, this is done only after
+         * stdout has been closed by the last process, but here stdout has
+         * been redirected. The default polling interval is every 1 second.
+         */
+        bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
+           bgPtr);
+    }
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -1745,6 +2022,554 @@ KillPipeline(Bgexec *bgPtr)            /* Background info record. */
     Tcl_ReapDetachedProcs();
 }
 
+#if HAVE_SESSION
+
+static Tcl_Obj *
+CheckSession(Bgexec *bgPtr)
+{
+    Tcl_Obj *listObjPtr;
+    Tcl_Interp *interp;
+    WAIT_STATUS_TYPE waitStatus;
+    int code;
+    int pid;
+
+    interp = bgPtr->interp;
+    *((int *)&waitStatus) = 0;
+    pid = waitpid(bgPtr->sid, (int *)&waitStatus, WNOHANG);
+    if (pid == 0) {                     /* Process has not terminated yet */
+        /* Keep polling for the status of the children that are left */
+        bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, 
+                TimerProc, bgPtr);
+        return NULL;
+    }
+    /*
+     * All child processes have completed.  Set the status variable with the
+     * status of the last process reaped.  The status is a list of an error
+     * token, the exit status, and a message.
+     */
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    code = SetErrorCode(interp, pid, waitStatus, listObjPtr);
+    if (bgPtr->exitCodePtr != NULL) {
+        *bgPtr->exitCodePtr = code;
+    }
+    return listObjPtr;
+}
+
+static void
+ReportSession(Tcl_Interp *interp, Bgexec *bgPtr)
+{
+    /* If detached, return the process id of the session instead of the
+     * output of the pipeline. */
+    fprintf(stderr, "reportsession=(%s)\n", bgPtr->outSink.bytes);
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), bgPtr->sid);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CreatePipe --
+ *
+ *      Creates a pipe by simply calling the pipe() function.  
+ *
+ * Results:
+ *      Returns 1 on success, 0 on failure.
+ *
+ * Side effects:
+ *      Creates a pipe.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+CreatePipeWithCloseOnExec(Tcl_Interp *interp, int *pipefds)
+{
+    if (pipe(pipefds) < 0) {
+        ExplainError(interp, "can't create pipe");
+        return TCL_ERROR;
+    }
+    fcntl(pipefds[0], F_SETFD, FD_CLOEXEC);
+    fcntl(pipefds[1], F_SETFD, FD_CLOEXEC);
+    return TCL_OK;
+}
+
+#ifdef HAVE_GETPT
+
+static int 
+AcquirePtyMaster(Bgexec *bgPtr)
+{
+    int master;
+
+    master = getpt();
+    if (master < 0) {
+        ExplainError(bgPtr->interp, "getpt");
+        return TCL_ERROR;
+    }
+    bgPtr->masterName[0] = '\0';
+    bgPtr->master = master;
+    return TCL_OK;
+}
+
+#elif defined(HAVE_POSIX_OPENPT)
+
+static int 
+AcquirePtyMaster(Bgexec *bgPtr)
+{
+    int master;
+
+    master = posix_openpt(O_RDWR | O_NOCTTY);
+    if (master < 0) {
+        ExplainError(bgPtr->interp, "openpt");
+        return TCL_ERROR;
+    }
+    bgPtr->masterName[0] = '\0';
+    bgPtr->master = master;
+    return TCL_OK;
+}
+
+#else 
+
+static int 
+AcquirePtyMaster(Bgexec *bgPtr)
+{
+    int master;
+    const char *p;
+    char ptyName[11];
+
+    strcpy(bgPtr->masterName, "/dev/ptmx");
+    master = open(bgPtr->masterName, O_RDWR | O_NOCTTY);
+    if (master >= 0) {
+        bgPtr->master = master;
+        return TCL_OK;
+    }
+    strcpy(ptyName, "/dev/ptyXY");
+    for (p = PTYRANGE0; *p != '\0'; p++) {
+        const char *q;
+
+        ptyName[8] = *p;
+        for (q = PTYRANGE1; *q != '\0'; q++) {
+            int master;
+
+            ptyName[9] = *q;
+            master = open(ptyName, O_RDWR);
+            if (master >= 0) {
+                bgPtr->master = master;
+                strcpy(bgPtr->masterName, ptyName);
+                return TCL_OK;
+            }
+            if (errno == E_NOENT) {
+                break;
+            } 
+        }
+    }
+    Tcl_AppendResult(bgPtr->interp, "can't access any ptys", (char *)NULL);
+    return TCL_ERROR;
+}
+#endif  /* HAVE_POSIX_OPENPT */
+
+static int
+InitPtyMaster(Bgexec *bgPtr) 
+{
+#ifdef HAVE_TCFLUSH
+    if (tcflush(bgPtr->master, TCIOFLUSH) < 0) {
+        ExplainError(bgPtr->interp, "tcflush");
+        return TCL_ERROR;
+    }
+#else
+#if defined(TIOCFLUSH)
+    if (ioctl(bgPtr->master, TIOCFLUSH, NULL) < 0) {
+        ExplainError(bgPtr->interp, "can't set TIOCFLUSH on master");
+        return TCL_ERROR;
+    }
+#endif  /* TIOCFLUSH */
+#endif  /* HAVE_TCFLUSH */
+    {    
+    struct termios tt;
+
+    if (tcgetattr(0, &tt) == -1) {
+        ExplainError(bgPtr->interp, "master tcgetattr");
+        return TCL_ERROR;
+    }
+    tt.c_lflag |= ICANON;
+    tt.c_iflag &= ~(INLCR);
+    tt.c_iflag |= ICRNL; 
+    if (tcsetattr(bgPtr->master, TCSANOW, &tt) == -1) {
+        ExplainError(bgPtr->interp, "tcsetattr");
+        return TCL_ERROR;
+    }
+    }
+#ifdef TIOCEXCL
+    if (ioctl(bgPtr->master, TIOCEXCL, NULL) < 0) {
+        ExplainError(bgPtr->interp, "can't set TIOCEXCL on master");
+        return TCL_ERROR;
+    }
+#endif  /* TIOCEXCL */
+    return TCL_OK;
+}
+
+#ifdef HAVE_OPEN_CONTROLLING_PTY
+static int
+OpenPtyMaster(Tcl_Interp *interp, Bgexec *bgPtr)
+{
+    char slaveName[PTY_NAME_SIZE+1];
+    int master;
+
+    master = open_controlling_pty(slaveName);
+    if (master < 0) {
+        ExplainError(interp, "can't open controlling pty");
+        return TCL_ERROR;
+    }
+    bgPtr->master = master;
+    strcpy(bgPtr->slaveName, slaveName);
+    if (InitPtyMaster(bgPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    return TCL_OK
+}
+#endif  /* HAVE_OPEN_CONTROLLING_PTY */
+
+#ifdef HAVE_GRANTPT
+static int 
+OpenPtyMaster(Tcl_Interp *interp, Bgexec *bgPtr)
+{
+    const char *slaveName;
+
+    if (AcquirePtyMaster(bgPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (grantpt(bgPtr->master) < 0) {
+        ExplainError(interp, "grantpt");
+        return TCL_ERROR;
+    }
+    if (unlockpt(bgPtr->master) < 0) {
+        ExplainError(interp, "unlockpt");
+        return TCL_ERROR;
+    }
+    slaveName = ptsname(bgPtr->master);
+    if (slaveName == NULL) {
+        ExplainError(interp, "ptsname");
+        return TCL_ERROR;
+    }
+    strcpy(bgPtr->slaveName, slaveName);
+    if (InitPtyMaster(bgPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+#else
+
+#ifdef HAVE_OPENPTY
+#include <util.h>
+static int
+OpenPtyMaster(Tcl_Interp *interp, Bgexec *bgPtr)
+{
+    if (openpty(&bgPtr->master, &bgPtr->slave, NULL, NULL, NULL) < 0) {
+        ExplainError(interp, "openpty");
+        return TCL_ERROR;
+    }
+    if (InitPtyMaster(bgPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+#endif  /* HAVE_OPENPT */
+#endif  /* HAVE_GRANTPT */
+
+static int
+OpenPtySlave(Tcl_Interp *interp, Bgexec *bgPtr) 
+{
+    int slave;
+    struct termios tt;
+
+    if (setsid() == -1) {
+        ExplainError(interp, "setsid");
+        return TCL_ERROR;
+    }
+    close(bgPtr->master);
+    bgPtr->master = -1;
+#ifdef notdef
+    pid_t pid;
+
+    pid = getpid();                     /* This process will be the session
+                                         * leader. */
+    if (setpgid(0, pid) == -1) {
+        ExplainError(interp, "setpgid");
+        return TCL_ERROR;
+    }
+#endif
+    slave = open(bgPtr->slaveName, O_RDWR | O_NOCTTY);
+    if (slave == -1) {
+        Tcl_AppendResult(interp, "can't open \"", bgPtr->slaveName, 
+                "\": ", Tcl_PosixError(interp), (char *)NULL);
+        return TCL_ERROR;
+    }
+    bgPtr->slave = slave;
+
+#ifdef TIOCSCTTY
+    if (ioctl(slave, TIOCSCTTY, (char *)1) == -1) {
+        Tcl_AppendResult(interp, "can't set ioctl TIOCSCTTY for \"",
+                bgPtr->slaveName, "\": ", Tcl_PosixError(interp), (char *)NULL);
+        return TCL_ERROR;
+    }
+#endif  /* TIOCSCTTY */
+#ifdef I_PUSH
+    if (isastream(slave)) {
+        if (ioctl(slave, I_PUSH, "p_tem") == -1) {
+            ExplainError(interp, "can't set ioctl \"p_tem\"");
+            return TCL_ERROR;
+        }
+        if (ioctl(slave, I_PUSH, "ldterm") == -1) {
+            ExplainError(interp, "can't set ioctl \"ldterm\"");
+            return TCL_ERROR;
+        }
+    }
+#endif
+    if (tcgetattr(0, &tt) == -1) {
+        ExplainError(interp, "slave tcgetattr");
+        return TCL_ERROR;
+    }
+    tt.c_lflag |= ICANON;
+    tt.c_oflag &= ~(ONLCR | OCRNL);
+    tt.c_oflag |= ONLRET; 
+    if (tcsetattr(slave, TCSANOW, &tt) == -1) {
+        ExplainError(interp, "tcsetattr");
+        return TCL_ERROR;
+    }
+    if (dup2(slave, 0) == -1) {
+        ExplainError(interp, "can't dup stdin");
+        return TCL_ERROR;
+    }
+    if (dup2(slave, 1) == -1) {
+        ExplainError(interp, "can't dup stdout");
+        return TCL_ERROR;
+    }
+#ifdef notdef
+    if (dup2(slave, 2) == -1) {
+        ExplainError(interp, "can't dup stderr");
+        return TCL_ERROR;
+    }
+#endif
+    /*
+     * Must clear the close-on-exec flag for the target FD, since some
+     * systems (e.g. Ultrix) do not clear the CLOEXEC flag on the
+     * target FD.
+     */
+    fcntl(0, F_SETFD, 0);
+    fcntl(1, F_SETFD, 0);
+    fcntl(2, F_SETFD, 0);
+    return TCL_OK;
+}
+
+static int
+ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
+                           Tcl_Obj *const *objv)
+{
+    WAIT_STATUS_TYPE waitStatus, lastStatus;
+    int numPids;                               /* # of processes. */
+    pid_t child;
+    int pipe[2], errPipe[2];
+    Blt_Pid *pids;
+
+    pipe[0] = pipe[1] = errPipe[0] = errPipe[1] = -1;
+
+    /*
+     * Create a pipe that the child can use to return error information if
+     * anything goes wrong in creating the pipeline.
+     */
+    if (CreatePipeWithCloseOnExec(interp, pipe) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    /* Open a pseudo terminal for the pipeline. */
+    if (OpenPtyMaster(interp, bgPtr) != TCL_OK) {
+        goto error;
+    }
+    if (CreatePipeWithCloseOnExec(interp, errPipe) != TCL_OK) {
+        goto error;
+    }
+    bgPtr->errSink.fd = bgPtr->outSink.fd = bgPtr->master;
+#ifdef notdef
+    if ((bgPtr->errSink.doneVarObjPtr != NULL) ||
+        (bgPtr->errSink.updateVarObjPtr != NULL) ||
+        (bgPtr->errSink.cmdObjPtr != NULL) ||
+        (!bgPtr->errSink.echo)) {
+        /* If we want stderr separately, create a pipe for the error
+         * channel.  */
+        bgPtr->errSink.fd = errPipe[0];
+    }
+#endif
+    child = fork();
+    if (child == -1) {
+        ExplainError(interp, "fork");
+        close(bgPtr->master);
+        bgPtr->master = -1;
+        return TCL_ERROR;
+    }
+    if (child != 0) {                   /* Parent */
+        char mesg[BUFSIZ+1];
+        ssize_t numRead;
+
+        /*
+         * Read back from the error pipe to see if the pipeline started up
+         * properly. The info in the pipe (if any) if the TCL error message
+         * from the child process.
+         */
+        close(pipe[1]);
+        numRead = read(pipe[0], mesg, BUFSIZ);
+        if (numRead == 0) {
+            bgPtr->sid = child;
+        bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
+           bgPtr);
+            return TCL_OK;
+        }
+        close(pipe[0]);
+        mesg[numRead] = '\0';
+        Tcl_AppendResult(bgPtr->interp, mesg, (char *)NULL);
+    error:
+        if (pipe[0] >= 0) {
+            close(pipe[0]);
+        }
+        if (pipe[1] >= 0) {
+            close(pipe[1]);
+        }
+        if (errPipe[0] >= 0) {
+            close(errPipe[0]);
+        }
+        if (errPipe[1] >= 0) {
+            close(errPipe[1]);
+        }
+        return TCL_ERROR;
+    }
+    /* Child */
+    close(bgPtr->master);
+    bgPtr->master = -1;
+    close(pipe[0]);
+    /* Open the slave side of the pseudo terminal for the pipeline. */
+    /* The default descriptor for 0, 1, and 2 are now the pseudo terminal. */
+    if (OpenPtySlave(interp, bgPtr) != TCL_OK) {
+        Blt_Warn("OpenPtySlave: %s\n", Tcl_GetStringResult(bgPtr->interp));
+        return TCL_ERROR;
+    }    
+    /* Always collect characters from the sinks. Display to the screen or
+     * not. */
+    numPids = Blt_CreatePipeline(interp, objc, objv, &pids, (int *)NULL,
+        (int *)NULL, (int *)NULL, bgPtr->env);
+    if (numPids <= 0) {
+        ssize_t numWritten;
+        const char *mesg;
+        int length;
+
+        mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &length);
+        numWritten = write(pipe[1], mesg, length);
+        assert(numWritten == length);
+        _exit(1);
+    }
+    close(pipe[1]);                     /* The pipeline has started. */
+    *((int *)&waitStatus) = 0;
+    *((int *)&lastStatus) = 0;
+    while (numPids > 0) {
+        int pid;
+
+        pid = waitpid(0, (int *)&waitStatus, 0);
+        if (pid < 0) {
+            fprintf(stderr, "waitpid: %s\n", Tcl_PosixError(interp));
+            continue;
+        }
+        /*
+         * Save the status information associated with the subprocess.
+         * We'll use it only if this is the last subprocess to be reaped.
+         */
+        lastStatus = waitStatus;
+        --numPids;
+    }
+#ifdef notdef
+    close(bgPtr->slave);
+    bgPtr->slave = -1;
+    close(pipe[0]);
+    close(errPipe[0]);
+    close(errPipe[1]);
+#endif
+    /*
+     * All pipeline processes have completed.  Exit the child replicating the
+     * exit code.
+     */
+    fprintf(stderr, "Exiting %d\n", getpid());
+    exit(WEXITSTATUS(lastStatus));
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * KillSession --
+ *
+ *      Cleans up background execution processes and memory.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The memory allocated to the Bgexec structure released.
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static void
+KillSession(Bgexec *bgPtr)            /* Background info record. */
+{
+    unsigned long pid;
+    Tcl_Pid tclPid;
+    
+    if (bgPtr->master != -1) {
+        close(bgPtr->master);
+        bgPtr->master = -1;
+    }
+    if (bgPtr->slave != -1) {
+        close(bgPtr->slave);
+        bgPtr->slave = -1;
+    }
+#ifdef notdef
+    if (bgPtr->signalNum > 0) {
+        kill(-bgPtr->sid, bgPtr->signalNum);
+    }
+#endif
+    pid = (long)bgPtr->sid;
+    tclPid = (Tcl_Pid)pid;
+    Tcl_DetachPids(1, &tclPid);
+    Tcl_ReapDetachedProcs();
+}
+
+#endif  /* HAVE_SESSION */
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FreeBgexec --
+ *
+ *      Releases the memory allocated for the backgrounded process.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+FreeBgexec(Bgexec *bgPtr)
+{
+    Blt_FreeSwitches(switchSpecs, (char *)bgPtr, 0);
+    if (bgPtr->statVarObjPtr != NULL) {
+        Tcl_DecrRefCount(bgPtr->statVarObjPtr);
+    }
+    if (bgPtr->pids != NULL) {
+        Blt_Free(bgPtr->pids);
+    }
+    if (bgPtr->env != NULL) {
+        Blt_Free(bgPtr->env);
+    }
+    if (bgPtr->link != NULL) {
+        Tcl_MutexLock(mutexPtr);
+        Blt_Chain_DeleteLink(activePipelines, bgPtr->link);
+        Tcl_MutexUnlock(mutexPtr);
+    }
+    Blt_Free(bgPtr);
+}
+
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1765,9 +2590,10 @@ static void
 DestroyBgexec(Bgexec *bgPtr)            /* Background info record. */
 {
     DisableTriggers(bgPtr);
-    FreeSinkBuffer(&bgPtr->err);
-    FreeSinkBuffer(&bgPtr->out);
-    KillPipeline(bgPtr);
+    FreeSinkBuffer(&bgPtr->errSink);
+    FreeSinkBuffer(&bgPtr->outSink);
+    /* Kill all remaining processes. */
+    (*bgPtr->classPtr->killProc)(bgPtr);
     FreeBgexec(bgPtr);
 }
 
@@ -1792,19 +2618,15 @@ DestroyBgexec(Bgexec *bgPtr)            /* Background info record. */
  */
 /* ARGSUSED */
 static char *
-VariableProc(
-    ClientData clientData,      /* File output information. */
-    Tcl_Interp *interp,         /* Not used. */
-    const char *part1,          /* Not used. */
-    const char *part2,          /* Not Used. */
-    int flags)
+VariableProc(ClientData clientData, Tcl_Interp *interp, const char *part1,
+             const char *part2, int flags)
 {
     if (flags & TRACE_FLAGS) {
         Bgexec *bgPtr = clientData;
 
-        /* Kill all child processes that remain alive. */
         DisableTriggers(bgPtr);
-        KillPipeline(bgPtr);
+        /* Kill all child processes that remain alive. */
+        (*bgPtr->classPtr->killProc)(bgPtr);
         if (bgPtr->flags & DETACHED) {
             DestroyBgexec(bgPtr);
         }
@@ -1841,128 +2663,33 @@ VariableProc(
 static void
 TimerProc(ClientData clientData)
 {
-    enum PROCESS_STATUS { 
-        PROCESS_EXITED, PROCESS_STOPPED, PROCESS_KILLED, PROCESS_UNKNOWN
-    } pcode;
-    static const char *tokens[] = { 
-        "EXITED", "KILLED", "STOPPED", "UNKNOWN"
-    };
     Bgexec *bgPtr = clientData;
-    Tcl_Obj *listObjPtr, *objPtr;
-    Tcl_Interp *interp;
-    WAIT_STATUS_TYPE waitStatus, lastStatus;
-    char string[200];
-    const char *mesg;
-    int code;
-    int i;
-    int numLeft;                        /* # of processes still not
-                                         * reaped. */
-    unsigned int lastPid;
+    Tcl_Obj *listObjPtr;
 
-    interp = bgPtr->interp;
-    mesg = NULL;                        /* Suppress compiler warning.  */
-    lastPid = (unsigned int)-1;
-    *((int *)&waitStatus) = 0;
-    *((int *)&lastStatus) = 0;
+    fprintf(stderr, "TimerProc (%d) (%s)\n", getpid(), bgPtr->outSink.bytes);
+    /* Check to see what processes remain. */
+    listObjPtr = (*bgPtr->classPtr->checkProc)(bgPtr);
+    if (listObjPtr != NULL) {
+        Tcl_Interp *interp;
 
-    numLeft = 0;
-    for (i = 0; i < bgPtr->numPids; i++) {
-        int pid;
+        DisableTriggers(bgPtr);
 
-#ifdef WIN32
-        pid = WaitProcess(bgPtr->pids[i], (int *)&waitStatus, WNOHANG);
-#else
-        pid = waitpid(bgPtr->pids[i].pid, (int *)&waitStatus, WNOHANG);
-#endif
-        if (pid == 0) {                 /* Process has not terminated yet. */
-            if (numLeft < i) {
-                bgPtr->pids[numLeft] = bgPtr->pids[i];
-            }
-            numLeft++;                  /* Count the # of processes left. */
-        } else if (pid != -1) {
-            /*
-             * Save the status information associated with the subprocess.
-             * We'll use it only if this is the last subprocess to be
-             * reaped.
-             */
-            lastStatus = waitStatus;
-            lastPid = (unsigned int)pid;
+        /* It's OK to set the status variable, the variable trace was
+         * disabled above. */
+        interp = bgPtr->interp;
+        if (Tcl_ObjSetVar2(interp, bgPtr->statVarObjPtr, /*part2*/NULL,
+                listObjPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
+            Tcl_BackgroundError(interp);
         }
-    }
-    bgPtr->numPids = numLeft;
-
-    if ((numLeft > 0) || (SINKOPEN(&bgPtr->out)) || 
-        (SINKOPEN(&bgPtr->err))) {
-        /* Keep polling for the status of the children that are left */
+        if (bgPtr->flags & DETACHED) {
+            DestroyBgexec(bgPtr);
+        }
+    } else {
         bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
            bgPtr);
 #if WINDEBUG
         PurifyPrintf("schedule TimerProc(numPids=%d)\n", numLeft);
 #endif
-        return;
-    }
-
-    /*
-     * All child processes have completed.  Set the status variable with
-     * the status of the last process reaped.  The status is a list of an
-     * error token, the exit status, and a message.
-     */
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    code = WEXITSTATUS(lastStatus);
-    if (WIFEXITED(lastStatus)) {
-        pcode = PROCESS_EXITED;
-    } else if (WIFSIGNALED(lastStatus)) {
-        pcode = PROCESS_KILLED;
-        code = -1;
-    } else if (WIFSTOPPED(lastStatus)) {
-        pcode = PROCESS_STOPPED;
-        code = -1;
-    } else {
-        pcode = PROCESS_UNKNOWN;
-    }
-    /* Token */
-    objPtr = Tcl_NewStringObj(tokens[pcode], -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    /* Pid */
-    objPtr = Tcl_NewLongObj(lastPid);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    /* Exit code. */
-    objPtr = Tcl_NewIntObj(code);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    switch(pcode) {
-    case PROCESS_EXITED:
-        mesg = "child completed normally";
-        break;
-    case PROCESS_KILLED:
-        mesg = Tcl_SignalMsg((int)(WTERMSIG(lastStatus)));
-        break;
-    case PROCESS_STOPPED:
-        mesg = Tcl_SignalMsg((int)(WSTOPSIG(lastStatus)));
-        break;
-    case PROCESS_UNKNOWN:
-        Blt_FormatString(string, 200,
-                         "child completed with unknown status 0x%x",
-                         *((int *)&lastStatus));
-        mesg = string;
-        break;
-    }
-    /* Message */
-    objPtr = Tcl_NewStringObj(mesg, -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    Tcl_SetObjErrorCode(interp, listObjPtr);
-    if (bgPtr->exitCodePtr != NULL) {
-        *bgPtr->exitCodePtr = code;
-    }
-    DisableTriggers(bgPtr);
-    /* It's OK to set the status variable, the variable trace was disabled
-     * above. */
-    if (Tcl_SetVar2Ex(interp, bgPtr->statVar, NULL, listObjPtr, 
-        TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
-        Tcl_BackgroundError(interp);
-    }
-    if (bgPtr->flags & DETACHED) {
-        DestroyBgexec(bgPtr);
     }
 }
 
@@ -1987,7 +2714,7 @@ TimerProc(ClientData clientData)
  */
 /* ARGSUSED */
 static void
-StdoutProc(ClientData clientData, int mask)
+CollectStdout(ClientData clientData, int mask)
 {
     Sink *sinkPtr = clientData;
     Bgexec *bgPtr;
@@ -1997,6 +2724,8 @@ StdoutProc(ClientData clientData, int mask)
     if (result == TCL_OK) {
         return;
     }
+    fprintf(stderr, "result=%d, done with stdout numBytes=%d, (%s)\n", result,
+            sinkPtr->fill, sinkPtr->bytes);
     
     /*
      * Either EOF or an error has occurred.  In either case, close the
@@ -2012,7 +2741,7 @@ StdoutProc(ClientData clientData, int mask)
      * Initially check at the next idle interval.
      */
     bgPtr = sinkPtr->bgPtr;
-    if (!SINKOPEN(&bgPtr->err)) {
+    if (!SINKOPEN(&bgPtr->errSink)) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -2020,7 +2749,7 @@ StdoutProc(ClientData clientData, int mask)
 /*
  *---------------------------------------------------------------------------
  *
- * StderrProc --
+ * CollectStderr --
  *
  *      This procedure is called when error from the detached pipeline is
  *      available.  The error is read and saved in a buffer in the Bgexec
@@ -2038,7 +2767,7 @@ StdoutProc(ClientData clientData, int mask)
  */
 /* ARGSUSED */
 static void
-StderrProc(ClientData clientData, int mask)
+CollectStderr(ClientData clientData, int mask)
 {
     Sink *sinkPtr = clientData;
     Bgexec *bgPtr;
@@ -2062,7 +2791,7 @@ StderrProc(ClientData clientData, int mask)
      * Initially check at the next idle interval.
      */
     bgPtr = sinkPtr->bgPtr;
-    if (!SINKOPEN(&bgPtr->out)) {
+    if (!SINKOPEN(&bgPtr->outSink)) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -2089,12 +2818,9 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
     Bgexec *bgPtr;
-    Blt_Pid *pids;                      /* Array of process Ids. */
     char *lastArg;
-    int *outFdPtr, *errFdPtr;
     int isDetached;
     int i;
-    int numPids;
 
     if (objc < 3) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", 
@@ -2102,7 +2828,6 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
                 (char *)NULL);
         return TCL_ERROR;
     }
-
     /* Check if the command line is to be run detached (the last argument is
      * "&") */
     lastArg = Tcl_GetString(objv[objc - 1]);
@@ -2119,12 +2844,17 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
     if (isDetached) {
         bgPtr->flags |= DETACHED;
     }
-    bgPtr->statVar = Blt_AssertStrdup(Tcl_GetString(objv[1]));
+#ifdef HAVE_SESSION
+    bgPtr->master = bgPtr->slave = -1;
+    bgPtr->sid = -1;
+#endif
+    bgPtr->statVarObjPtr = objv[1];
+    Tcl_IncrRefCount(bgPtr->statVarObjPtr);
     Tcl_MutexLock(mutexPtr);
     bgPtr->link = Blt_Chain_Append(activePipelines, bgPtr);
     Tcl_MutexUnlock(mutexPtr);
-    InitSink(bgPtr, &bgPtr->out, "stdout");
-    InitSink(bgPtr, &bgPtr->err, "stderr");
+    InitSink(bgPtr, &bgPtr->outSink, "stdout");
+    InitSink(bgPtr, &bgPtr->errSink, "stderr");
 
     /* Try to clean up any detached processes */
     Tcl_ReapDetachedProcs();
@@ -2134,6 +2864,13 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
         FreeBgexec(bgPtr);
         return TCL_ERROR;
     }
+    bgPtr->classPtr = &pipelineClass;
+#if HAVE_SESSION
+    if (bgPtr->flags & SESSION) {
+        fprintf(stderr, "BgexecCmdProc pid=%d\n", getpid());
+        bgPtr->classPtr = &sessionClass;
+    } 
+#endif
     i += 2;
     /* Must be at least one argument left as the command to execute. */
     if (objc <= i) {
@@ -2144,67 +2881,32 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
 
-    ConfigureSink(bgPtr, &bgPtr->out);
-    ConfigureSink(bgPtr, &bgPtr->err);
+    ConfigureSink(bgPtr, &bgPtr->outSink);
+    ConfigureSink(bgPtr, &bgPtr->errSink);
 
     /* Put a trace on the exit status variable.  The will also allow the
      * user to terminate the pipeline by setting the variable.  */
-    Tcl_TraceVar(interp, bgPtr->statVar, TRACE_FLAGS, VariableProc, bgPtr);
+    Tcl_TraceVar(interp, Tcl_GetString(bgPtr->statVarObjPtr), TRACE_FLAGS,
+        VariableProc, bgPtr);
     bgPtr->flags |= TRACED;
 
-    outFdPtr = errFdPtr = (int *)NULL;
-#ifdef WIN32
-    if ((!isDetached) || (bgPtr->out.doneVar != NULL) || 
-        (bgPtr->out.updateVar != NULL) || (bgPtr->out.cmdObjPtr != NULL)) {
-        outFdPtr = &bgPtr->out.fd;
-    }
-#else
-    outFdPtr = &bgPtr->out.fd;
-#endif
-    if ((bgPtr->err.doneVar != NULL) || (bgPtr->err.updateVar != NULL) ||
-        (bgPtr->err.cmdObjPtr != NULL) || (bgPtr->err.echo)) {
-        errFdPtr = &bgPtr->err.fd;
-    }
-    numPids = Blt_CreatePipeline(interp, objc - i, objv + i, &pids, 
-        (int *)NULL, outFdPtr, errFdPtr, bgPtr->env);
-    if (numPids < 0) {
+    if ((*bgPtr->classPtr->execProc)(interp, bgPtr, objc - i, objv + i)
+        != TCL_OK) {
         goto error;
     }
-    bgPtr->pids = pids;
-    bgPtr->numPids = numPids;
-    if (bgPtr->out.fd == -1) {
-        /* 
-         * If output has been redirected, start polling immediately for the
-         * exit status of each process.  Normally, this is done only after
-         * stdout has been closed by the last process, but here stdout has
-         * been redirected. The default polling interval is every 1 second.
-         */
-        bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
-           bgPtr);
-
-    } else if (CreateSinkHandler(&bgPtr->out, StdoutProc) != TCL_OK) {
+    if (CreateSinkHandler(&bgPtr->outSink, CollectStdout) != TCL_OK) {
         goto error;
     }
-    if ((bgPtr->err.fd != -1) &&
-        (CreateSinkHandler(&bgPtr->err, StderrProc) != TCL_OK)) {
-        goto error;
+    if (bgPtr->errSink.fd != bgPtr->master) {
+        if (CreateSinkHandler(&bgPtr->errSink, CollectStderr) != TCL_OK) {
+            goto error;
+        }
     }
     if (isDetached) {   
-        Tcl_Obj *listObjPtr;
-
         /* If detached, return a list of the child process ids instead of
          * the output of the pipeline. */
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-        for (i = 0; i < numPids; i++) {
-            Tcl_Obj *objPtr;
-#ifdef WIN32
-            objPtr = Tcl_NewLongObj((unsigned long)bgPtr->pids[i].pid);
-#else 
-            objPtr = Tcl_NewLongObj(bgPtr->pids[i].pid);
-#endif
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
-        Tcl_SetObjResult(interp, listObjPtr);
+        /* Report the session pid or the array of pids from the pipeline.  */
+        (*bgPtr->classPtr->reportProc)(interp, bgPtr);
     } else {
         int exitCode;
         int done;
@@ -2212,21 +2914,25 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
         bgPtr->exitCodePtr = &exitCode;
         bgPtr->donePtr = &done;
 
+        fprintf(stderr, "before doevent=(%s)\n", bgPtr->outSink.bytes);
         exitCode = done = 0;
         while (!done) {
             Tcl_DoOneEvent(0);
         }
+        fprintf(stderr, "after doevent=(%s)\n", bgPtr->outSink.bytes);
         DisableTriggers(bgPtr);
         if ((bgPtr->flags & IGNOREEXITCODE) || (exitCode == 0)) {
-            if (bgPtr->out.doneVar == NULL) {
+            if (bgPtr->outSink.doneVarObjPtr == NULL) {
                 unsigned char *data;
                 size_t length;
                 
                 /* Return the output of the pipeline. */
-                GetSinkData(&bgPtr->out, &data, &length);
+                GetSinkData(&bgPtr->outSink, &data, &length);
                 assert(length <= UINT_MAX);
 #if (_TCL_VERSION <  _VERSION(8,1,0)) 
+#ifdef notdef
                 data[length] = '\0';
+#endif
                 Tcl_SetObjResult(interp, Tcl_NewStringObj(data, length));
 #else
                 Tcl_SetObjResult(interp, Tcl_NewByteArrayObj(data, length));
@@ -2260,7 +2966,8 @@ BgexecExitProc(ClientData clientData)
         bgPtr = Blt_Chain_GetValue(link);
         bgPtr->link = NULL;             
         if ((bgPtr->flags & DONTKILL) == 0) {
-            KillPipeline(bgPtr);
+            /* Kill all remaining processes. */
+            (*bgPtr->classPtr->killProc)(bgPtr);
         }
     }
     Blt_Chain_Destroy(activePipelines);
