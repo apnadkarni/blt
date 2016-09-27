@@ -59,7 +59,7 @@ DoHelp(Tcl_Interp *interp, Blt_SwitchSpec *specs)
     Blt_SwitchSpec *sp;
 
     Tcl_DStringInit(&ds);
-    Tcl_DStringAppend(&ds, "following switches are available:", -1);
+    Tcl_DStringAppend(&ds, "The following switches are available:", -1);
     for (sp = specs; sp->type != BLT_SWITCH_END; sp++) {
             Tcl_DStringAppend(&ds, "\n    ", 4);
             Tcl_DStringAppend(&ds, sp->switchName, -1);

@@ -110,9 +110,10 @@ static const char emptyString[] = "";
 #define SORT_DECREASING         (1<<14)
 #define SORT_PENDING            (1<<15)         
 #define SORTED                  (1<<17) /* The menu is currently sorted.
-                                         * This is used to simply reverse
-                                         * the menu when the sort
-                                         * -decreasing flag is changed. */
+                                         * This flag is used to determine
+                                         * if we can simply reverse the
+                                         * menu when the sort -decreasing
+                                         * flag is changed. */
 
 #define RESTRICT_NONE           (0)
 #define COMBOMENU               (1<<20)
@@ -308,14 +309,14 @@ typedef struct _ComboMenu ComboMenu;
  *      windows with possibly different color palettes, Tk internally
  *      stores each instance in a linked list.  But if the instances are
  *      used in the same widget and therefore use the same color palette,
- *      this adds a lot of overhead, especially when deleting instances
- *      from the linked list.
+ *      this adds a lot of overhead, especially when deleting hundreds of 
+ *      instances of the same image from the linked list.
  *
  *      For the combomenu widget, we never need more than a single instance
  *      of an image, regardless of how many times it's used.  Cache the
- *      image, maintaining a reference count for each image used in the
- *      widget.  It's likely that the combomenu widget will use many
- *      instances of the same image.
+ *      image, maintaining a reference count for each time the image used
+ *      in the widget.  It's likely that the combomenu widget will use the
+ *      same image in many places.
  */
 
 typedef struct _Icon {
@@ -463,27 +464,28 @@ typedef struct  {
     ComboMenu *comboPtr;                /* Combomenu containing this
                                          * item. */
     long index;                         /* Index of the item (numbered from
-                                         * 0)*/
-    int worldX, worldY;                 /* Upper left world-coordinate of
-                                         * item in menu. */
+                                         * zero). */
+    int worldX, worldY;                 /* Upper-left world-coordinate of
+                                         * menu item. */
     Style *stylePtr;                    /* Style used by this item. */
     unsigned int flags;                 /* Contains various bits of
                                          * information about the item, such
                                          * as type, state. */
     Blt_ChainLink link;
     int relief;
-    int underline;                      /* Underlined character. */
+    int underline;                      /* Index of underlined
+                                         * character. */
     int indent;                         /* # of pixels to indent the
                                          * icon. */
     Icon image;                         /* If non-NULL, image to be
                                          * displayed instead of label
                                          * text. */
-    Icon icon;                          /* Button, RadioButton, and
-                                         * CheckButton entries. */
+    Icon icon;                          /* For button, radiobutton, and
+                                         * checkbutton entries. */
     const char *text;                   /* Text label to be displayed. */
     const char *accel;                  /* Accelerator text. May be NULL.*/
-    Tcl_Obj *cmdObjPtr;                 /* Command to be invoked when item
-                                         * is clicked. */
+    Tcl_Obj *cmdObjPtr;                 /* Command to be invoked when menu
+                                         * item is clicked. */
     Tcl_Obj *dataObjPtr;                /* User-data associated with this
                                          * item. */
     Tcl_Obj *variableObjPtr;            /* Name of TCL variable.  If

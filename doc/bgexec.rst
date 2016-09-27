@@ -95,45 +95,45 @@ or double dashes (--).  The following options are available for
     performed.
 
   **-detach** *boolean*
-    Indicates that the detached program should not be killed when the
-    calling TCL interpreter exits.  By default all detached programs are
-    killed when the TCL interpreter ends.
+    Indicates the backgrounded pipelines should not be killed when the
+    calling TCL interpreter exits.  By default all background pipelines are
+    killed when the TCL interpreter ends. The default is "0".
 
   **-echo** *boolean*
     Indicates that the program's stderr channel should be echoed to the
-    stderr of the TCL program (typically the terminal).
+    stderr of the TCL program (typically the terminal).  The default is "0".
     
-  **-error** *varName* 
+  **-errorvariable** *varName* 
     Specifies that a global variable *varName* is to be set with the
-    contents of stderr after the program has completed.  Normally
-    stderr data isn't collected.
+    contents of stderr channel after the program has completed.  If this
+    option is not set, no stderr channel data will be collected.
 
   **-ignoreexitcode** *boolean*
-    Indicates how non-zero exit codes returned from the program should
-    be handled. If *boolean* is true, then a non-zero exit code will 
-    not be treated as an error.  If false, a non-zero exit code will cause
-    **bgexec** to generate a TCL error. The default is "false".
+    Indicates if non-zero exit codes returned from the pipeline should be
+    ignored. If *boolean* is true, a non-zero exit code will not be treated
+    as an error.  Otherwise, a non-zero exit code will cause **bgexec** to
+    generate a TCL error. The default is "0".
     
   **-keepnewline** *boolean*
     Indicates that a trailing newline should be retained in the output. If
-    *boolean* is true, the trailing newline is truncated from the output of
-    the **-onoutput** and **-output** variables.  The default value is
-    "true".
+    *boolean* is true, the trailing newline is truncated from the output.
+    (See the **-onoutput** and **-outputvariable** options).  The default
+    value is "0".
 
-  **-killsignal** *signal*
-    Specifies the signal to be sent to the program when terminating. This is
-    available only under Unix.  *Signal* can either be a number (typically
-    1-32) or a mnemonic (such as SIGINT). If *signal* is the empty string,
-    then no signal is sent.  The default signal is "9" (SIGKILL).
+  **-killsignal** *signalName*
+    Specifies the signal to be sent to the program when terminating. This
+    is available only under Unix.  *SignalName* can either be a number
+    (1 - 32) or a mnemonic (such as "INT"). If *signalName* is "", then no
+    signal will be sent.  The default signal is "15" (SIGTERM).
 
-  **-lasterror** *varName*
+  **-lasterrorvariable** *varName*
     Specifies a variable *varName* that is updated whenever data becomes
     available from standard error of the program.  *VarName* is a global
-    variable. Unlike the **-error** option, data is available as soon as it
-    arrives.  This is like **-onerror** option, but the data is available
-    through *varName*.
+    variable. Unlike the **-errorvariable** option, data is available as
+    soon as it arrives.  This is like **-onerror** option, but the data is
+    available through *varName*.
 
-  **-lastoutput** *varName* 
+  **-lastoutputvariable** *varName* 
     Specifies a variable *varName* that is updated whenever data becomes
     available from standard output of the program.  *VarName* is a global
     variable. Unlike the **-output** option, data is available as soon as
@@ -151,35 +151,42 @@ or double dashes (--).  The following options are available for
 
   **-onerror** *cmdPrefix*
     Specifies the start of a TCL command that will be executed whenever new
-    data is available from standard error. The data is appended to the
-    command as an extra argument before it is executed.
+    data is available from the standard error channel. The data is appended
+    to the command as an extra argument before it is executed.
 
   **-onoutput** *cmdPrefix* 
     Specifies the start of a TCL command that will be executed whenever new
-    data is available from standard output. The data is appended to the
-    command as an extra argument before it is executed.
+    data is available from the standard output channel. The data is
+    appended to the command as an extra argument before it is executed.
 
-  **-output** *varName*
+  **-outputvariable** *varName*
     Specifies that a global variable *varName* is to be set with the output
-    of the program, once it has completed.  If this option is not set, no
-    output will be accumulated.
+    of the program, once it has completed.
 
   **-poll** *milliseconds* 
     Specifies the time to wait before checking if the program has
     terminated.  Typically a program will close its stdout and stderr
     channels right before it terminates.  But for programs that close
-    stdout early, **blt::bgexec** will wait for the program to finish.
-    *Milliseconds* is the number of milliseconds to wait before checking if the
-    program has terminated.  The default is "1000".
+    stdout early, **bgexec** will wait for the program to finish.
+    *Milliseconds* is the number of milliseconds to wait before polling to
+    see if the program has terminated.  The default is "1000".
 
-  **-pty** *boolean* 
+  **-pty** 
     For Unix programs only, this flags indicates to use a pseudo-terminal
     and runs the program in a session (see **setsid**). The advantages
-    are 1) output is not buffered and 2) child processes of the the program
-    and killed when the program is terminated.
+    are 1) output is not buffered and 2) child processes of the the
+    pipeline and killed when the pipeline is aborted.
     
-  **-update** *varName* 
-    Deprecated. This option is replaced by **-lasterror**.
+  **-session** 
+    For Unix programs only, this flags indicates to use a new session (see
+    **setsid**) group is to be created for the pipeline.  If the
+    pipeline is aborted by setting the **bgexec** status variable, then the
+    child processes of the pipeline will also be signaled. You can use
+    this to kill all processes related to pipeline, even if the parent
+    programs do not properly handle signals.
+
+  **-updatevariable** *varName* 
+    Deprecated. This option is the same as **-lasterrorvariable**.
 
   **--**
     This marks the end of the options.  The following argument will
