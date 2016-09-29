@@ -550,7 +550,7 @@ ClearInstances(BackgroundObject *corePtr)
         DestroyInstance(instPtr);
     }
     Blt_DeleteHashTable(&corePtr->instTable);
-    Blt_InitHashTable(&corePtr->instTable, sizeof(BgInstance)/sizeof(int));
+    Blt_InitHashTable(&corePtr->instTable, BLT_ONE_WORD_KEYS);
 }
 
 static void
@@ -2346,7 +2346,7 @@ NewBackgroundObject(BackgroundInterpData *dataPtr, Tcl_Interp *interp,
     corePtr->display = Tk_Display(corePtr->tkwin);
     corePtr->dataPtr = dataPtr;
     corePtr->border = border;
-    Blt_InitHashTable(&corePtr->instTable, sizeof(BgInstance)/sizeof(int));
+    Blt_InitHashTable(&corePtr->instTable, BLT_ONE_WORD_KEYS);
     switch (type) {
     case BLT_PAINTBRUSH_TILE:
         corePtr->brush = Blt_NewTileBrush();

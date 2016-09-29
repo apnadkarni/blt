@@ -5,12 +5,14 @@ package require BLT
 
 set spinner [image create picture]
 set files [glob -nocomplain ./images/spinner*.png]
+set i 0
+$spinner sequence length [llength $files] 
 foreach file [lsort -dictionary $files] {
     set img [image create picture -file $file]
-    $spinner list append $img
+    $spinner sequence put $i $img
     image delete $img 
+    incr i
 }
-$spinner list delete 0 1
 
 proc FormatType { w id value } {
     if { $value != "directory" } {

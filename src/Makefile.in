@@ -772,9 +772,9 @@ install-packages: $(blt_tcl_pkg_so) $(blt_tk_pkg_so) $(blt_tcl_pkgs) $(blt_tk_pk
         done
 
 install-headers:
-	$(INSTALL) -d $(DESTDIR)$(incdir)
+	$(INSTALL) -d $(DESTDIR)$(incdir)/blt
 	for i in $(headers) ; do \
-	    $(INSTALL_DATA) -m 0444 $$i $(DESTDIR)$(incdir) ; \
+	    $(INSTALL_DATA) -m 0444 $$i $(DESTDIR)$(incdir)/blt ; \
 	done
 
 lint:

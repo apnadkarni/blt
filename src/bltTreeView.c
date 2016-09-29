@@ -733,7 +733,9 @@ typedef struct {
 
 static Blt_SwitchSpec childrenSwitches[] = {
     {BLT_SWITCH_BITMASK, "-exposed", "", (char *)NULL,
-        Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
+        Blt_Offset(ChildrenSwitches, mask), 0, HIDDEN|CLOSED},
+    {BLT_SWITCH_BITMASK, "-nothidden", "", (char *)NULL,
+        Blt_Offset(ChildrenSwitches, mask), 0, HIDDEN},
     {BLT_SWITCH_END}
 };
 
@@ -4973,7 +4975,7 @@ static void
 AttachChildren(TreeView *viewPtr, Entry *parentPtr)
 {
     Blt_TreeNode node;
-                          
+
     for (node = Blt_Tree_FirstChild(parentPtr->node); node != NULL; 
          node = Blt_Tree_NextSibling(node)) {
         Entry *entryPtr;
@@ -11960,7 +11962,7 @@ SearchAndApplyToTree(TreeView *viewPtr, Tcl_Interp *interp, int objc,
     withTagObjPtr = NULL;
 
     entryPtr = viewPtr->rootPtr;
-    for (i = 2; i < objc; i++) {
+    for (i = 0; i < objc; i++) {
         string = Tcl_GetStringFromObj(objv[i], &length);
         if (string[0] != '-') {
             break;
@@ -12076,7 +12078,9 @@ SearchAndApplyToTree(TreeView *viewPtr, Tcl_Interp *interp, int objc,
                 }
             }
             /* Finally, apply the procedure to the node */
-            (*proc) (viewPtr, entryPtr);
+            if ((*proc) (viewPtr, entryPtr) != TCL_OK) {
+                return TCL_ERROR;
+            }
         }
         Tcl_ResetResult(interp);
         Blt_List_Destroy(options);
@@ -12160,7 +12164,7 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeView *viewPtr = clientData;
     int status, nonmatching;
 
-    status = SearchAndApplyToTree(viewPtr, interp, objc, objv, 
+    status = SearchAndApplyToTree(viewPtr, interp, objc - 2, objv + 2, 
         HideEntryApplyProc, &nonmatching);
 
     if (status != TCL_OK) {
@@ -12209,8 +12213,8 @@ ShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    if (SearchAndApplyToTree(viewPtr, interp, objc, objv, ShowEntryApplyProc,
-            (int *)NULL) != TCL_OK) {
+    if (SearchAndApplyToTree(viewPtr, interp, objc - 2, objv + 2,
+                ShowEntryApplyProc, (int *)NULL) != TCL_OK) {
         return TCL_ERROR;
     }
     viewPtr->flags |= LAYOUT_PENDING;
