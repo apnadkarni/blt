@@ -40,7 +40,7 @@ test csv.4 {csv parse -badSwitch badArg } {
 	blt::csv parse -badSwitch badArg
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -comment char
    -data string
    -emptyvalue string
@@ -313,7 +313,7 @@ test csv.26 {csv guess -badSwitch } {
 	blt::csv guess -badSwitch
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -comment char
    -data string
    -encoding string

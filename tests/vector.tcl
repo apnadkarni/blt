@@ -75,7 +75,7 @@ test vector.13 {vector create (bad namespace)} {
 test vector.14 {vector create (bad switch)} {
     list [catch {blt::vector create a badSwitch} msg] $msg
 } {1 {unknown switch "badSwitch"
-following switches are available:
+The following switches are available:
    -variable varName
    -command command
    -watchunset bool
@@ -159,6 +159,7 @@ test vector.27 {myVec} {
   myVec normalize ?vecName?
   myVec notify keyword
   myVec offset ?offset?
+  myVec pack 
   myVec populate vecName density
   myVec print format ?switches?
   myVec random ?seed?
@@ -201,6 +202,7 @@ test vector.28 {myVec badOp} {
   myVec normalize ?vecName?
   myVec notify keyword
   myVec offset ?offset?
+  myVec pack 
   myVec populate vecName density
   myVec print format ?switches?
   myVec random ?seed?
@@ -312,7 +314,7 @@ test vector.51 {test.vector5 values -empty yes} {
 test vector.52 {test.vector5 values -badSwitch} {
     list [catch {test.vector5 values -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -format string
    -from index
    -to index
@@ -870,21 +872,47 @@ test vector.184 {myVec3 values} {
     list [catch {myVec3 values} msg] $msg
 } {0 {0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0}}
 
+test vector.185 {myVec1 values} {
+    list [catch {myVec1 values} msg] $msg
+} {0 {NaN NaN 3.0 4.0 NaN NaN NaN NaN NaN NaN 1.0 NaN NaN NaN NaN NaN NaN NaN NaN NaN}}
+
+test vector.185 {myVec1 sort -help} {
+    list [catch {myVec1 sort -help} msg] $msg
+} {1 {The following switches are available:
+   -decreasing 
+   -indices 
+   -reverse 
+   -unique 
+   -values }}
 
 test vector.185 {myVec1 sort -indices} {
     list [catch {myVec1 sort -indices} msg] $msg
-} {0 {10 2 3}}
+} {0 {10 2 3 0 1 4 5 6 7 8 9 11 12 13 14 15 16 17 18 19}}
 
-test vector.186 {myVec1 sort -decreasing} {
-    list [catch {myVec1 sort -decreasing} msg] $msg
-} {0 {4.0 3.0 1.0}}
+test vector.186 {myVec1 sort -values} {
+    list [catch {
+	myVec1 sort -values
+    } msg] $msg
+} {0 {1.0 3.0 4.0 NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN}}
 
-test vector.187 {myVec1 sort -uniq} {
-    list [catch {myVec1 sort -uniq} msg] $msg
-} {0 {1.0 3.0 4.0}}
+test vector.186 {myVec1 sort -decreasing -values} {
+    list [catch {myVec1 sort -decreasing -values} msg] $msg
+} {0 {NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN 4.0 3.0 1.0}}
+
+test vector.187 {myVec1 sort -uniq -values} {
+    list [catch {myVec1 sort -uniq -values} msg] $msg
+} {0 {1.0 3.0 4.0 NaN}}
 
 test vector.188 {myVec1 sort myVec1} {
     list [catch {myVec1 sort myVec1} msg] $msg
+} {0 {}}
+
+test vector.189 {myVec1 pack} {
+    list [catch {myVec1 pack} msg] $msg
+} {0 17}
+
+test vector.189 {myVec1 sort} {
+    list [catch {myVec1 sort} msg] $msg
 } {0 {}}
 
 test vector.189 {myVec1 values} {
@@ -937,7 +965,8 @@ test vector.200 {blt::vector destroy myVec4 vector7} {
 
 test vector.201 {myVec set (missing arg)} {
     list [catch {myVec set} msg] $msg
-} {1 {wrong # args: should be "myVec set list"}}
+} {1 {wrong # args: should be "myVec set item"}}
+
 
 test vector.202 {myVec3 value badOp} {
     list [catch {myVec3 value badOp} msg] $msg

@@ -814,7 +814,7 @@ test picture.128 {myPicture add 0x0 -badSwitch } {
 	myPicture add 0x0 -badSwitch
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -invert 
    -mask mask}}
 
@@ -823,7 +823,7 @@ test picture.129 {myPicture add 0x0 -invert -badSwitch} {
 	myPicture add 0x0 -invert -badSwitch
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -invert 
    -mask mask}}
 
@@ -876,7 +876,7 @@ test picture.137 {myPicture and 0x0 -badSwitch } {
 	myPicture and 0x0 -badSwitch
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -invert 
    -mask mask}}
 
@@ -885,7 +885,7 @@ test picture.138 {myPicture and 0x0 -invert -badSwitch} {
 	myPicture and 0x0 -invert -badSwitch
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -invert 
    -mask mask}}
 
@@ -1068,7 +1068,7 @@ test picture.178 {myPicture colorblend badSwitch} {
 	myPicture colorblend myPicture myPicture -badSwitch
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -mode blendingMode
    -from bbox
    -to bbox}}
@@ -1362,7 +1362,7 @@ test picture.227 {myPicture composite badSwitch} {
 	myPicture composite myPicture myPicture -badSwitch
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -from bbox
    -to bbox}}
 
@@ -1521,7 +1521,7 @@ test picture.253 {myPicture convolve one args} {
 test picture.254 {myPicture convolve} {
     list [catch { myPicture convolve myPicture myPicture} msg] $msg
 } {1 {unknown switch "myPicture"
-following switches are available:
+The following switches are available:
    -filter filter
    -hfilter filter
    -vfilter filter}}
@@ -1539,7 +1539,7 @@ test picture.256 {myPicture convolve badSwitch} {
 	myPicture convolve myPicture -badSwitch
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -filter filter
    -hfilter filter
    -vfilter filter}}
@@ -1794,7 +1794,7 @@ test picture.298 {myPicture copy myPicture} {
 test picture.299 {myPicture copy myPicture -badSwitch } {
     list [catch { myPicture copy myPicture -badSwitch } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -composite 
    -from bbox
    -to bbox}}
@@ -2020,7 +2020,7 @@ test picture.210 {myPicture crossfade myPicture myPicture -badSwitch} {
 	image delete mySrc1 mySrc2
     } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -goto step
    -delay milliseconds
    -logscale bool

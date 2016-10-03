@@ -557,7 +557,7 @@ test tree.104 {tree0 dump this} {
 test tree.105 {tree0 dump 1 badSwitch} {
     list [catch {tree0 dump 1 badSwitch} msg] $msg
 } {1 {unknown switch "badSwitch"
-following switches are available:
+The following switches are available:
    -data data
    -file fileName}}
 
@@ -915,7 +915,7 @@ test tree.178 {tree0 restore (missing arg)} {
 test tree.179 {tree0 restore 0 badSwitch} {
     list [catch {tree0 restore 0 badSwitch} msg] $msg
 } {1 {unknown switch "badSwitch"
-following switches are available:
+The following switches are available:
    -data data
    -file fileName
    -notags 
@@ -925,7 +925,7 @@ following switches are available:
 test tree.180 {tree0 restore 0 {} arg (extra arg)} {
     list [catch {tree0 restore 0 {} arg} msg] $msg
 } {1 {unknown switch ""
-following switches are available:
+The following switches are available:
    -data data
    -file fileName
    -notags 
@@ -1014,7 +1014,7 @@ test tree.193 {tree0 apply 0} {
 test tree.194 {tree0 apply 0 -badSwitch} {
     list [catch {tree0 apply 0 -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -precommand command
    -postcommand command
    -depth number
@@ -1436,7 +1436,7 @@ test tree.277 {tree0 path print all} {
 test tree.278 {tree0 path print 0 badSwitch} {
     list [catch {tree0 path print 0 badSwitch} msg] $msg
 } {1 {unknown switch "badSwitch"
-following switches are available:
+The following switches are available:
    -from node
    -separator char
    -noleadingseparator }}
@@ -1553,7 +1553,7 @@ test tree.299 {tree0 attach} {
 test tree.300 {tree0 attach tree2 badArg} {
     list [catch {tree0 attach tree2 badArg} msg] $msg
 } {1 {unknown switch "badArg"
-following switches are available:
+The following switches are available:
    -newtags }}
 
 
@@ -1619,7 +1619,7 @@ test tree.304 {blt::tree destroy tree1} {
 test tree.305 {tree0 find root -badSwitch} {
     list [catch {tree0 find root -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -addtag tagName
    -count number
    -depth number
@@ -1734,7 +1734,7 @@ test tree.328 {tree0 sort 0 -decreasing -key} {
 test tree.329 {tree0 sort 0 -re} {
     list [catch {tree0 sort 0 -re} msg] $msg
 } {1 {ambiguous switch "-re"
-following switches are available:
+The following switches are available:
    -ascii 
    -command command
    -decreasing 

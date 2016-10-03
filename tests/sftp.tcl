@@ -81,7 +81,7 @@ test sftp.14 {sftp names} {
 test sftp.15 {sftp create -badSwitch} {
     list [catch {blt::sftp create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -user string
    -host string
    -numtries number
@@ -302,7 +302,7 @@ test sftp.55 {chmod} {
 test sftp.56 {chmod -badSwitch } {
     list [catch {$sftp chmod test_directory/test_file 0666 -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -recurse }}
 
 test sftp.57 {chmod badFile} {
@@ -416,7 +416,7 @@ test sftp.82 {chgrp} {
 test sftp.83 {chgrp -badswitch } {
     list [catch {$sftp chgrp test_directory/test_file 100 -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -recurse }}
 
 test sftp.84 {isdirectory test_directory} {
@@ -699,7 +699,7 @@ test sftp.147 {isdirectory test_directory} {
 test sftp.148 {get file -badSwitch } {
     list [catch {$sftp get test_directory/test_file -badSwitch } msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -cancel varName
    -maxsize number
    -progress command
@@ -729,7 +729,7 @@ test sftp.153 {sftp create (bad namespace)} {
 test sftp.154 {sftp create (wrong # args)} {
     list [catch {blt::sftp create a b} msg] $msg
 } {1 {unknown switch "b"
-following switches are available:
+The following switches are available:
    -user string
    -host string
    -numtries number

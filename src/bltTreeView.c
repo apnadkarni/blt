@@ -732,9 +732,9 @@ typedef struct {
 } ChildrenSwitches;
 
 static Blt_SwitchSpec childrenSwitches[] = {
-    {BLT_SWITCH_BITMASK, "-exposed", "", (char *)NULL,
-        Blt_Offset(ChildrenSwitches, mask), 0, HIDDEN|CLOSED},
-    {BLT_SWITCH_BITMASK, "-nothidden", "", (char *)NULL,
+    {BLT_SWITCH_BITMASK, "-open", "", (char *)NULL,
+        Blt_Offset(ChildrenSwitches, mask), 0, CLOSED},
+    {BLT_SWITCH_BITMASK, "-showing", "", (char *)NULL,
         Blt_Offset(ChildrenSwitches, mask), 0, HIDDEN},
     {BLT_SWITCH_END}
 };

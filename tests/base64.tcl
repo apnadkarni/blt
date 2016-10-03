@@ -32,7 +32,7 @@ test base64.3 {encode ascii85 no args} {
 test base64.4 {encode ascii85 -badSwitch} {
     list [catch {blt::encode ascii85 "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -brackets 
    -data varName
    -file fileName
@@ -199,7 +199,7 @@ test base64.24 {encode ascii85 -foldspaces extra arg} {
     append str "and jumped over the tall brown bear\n"
     list [catch {blt::encode ascii85 $str -foldspaces extraArg} msg] $msg
 } {1 {unknown switch "extraArg"
-following switches are available:
+The following switches are available:
    -brackets 
    -data varName
    -file fileName
@@ -302,7 +302,7 @@ test base64.33 {encode hexadecimal no args} {
 test base64.34 {encode hexadecimal -badSwitch} {
     list [catch {blt::encode hexadecimal "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -lowercase 
@@ -535,7 +535,7 @@ test base64.58 {encode base64 no args} {
 test base64.59 {encode base64 -badSwitch} {
     list [catch {blt::encode base64 "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -pad fileName
@@ -745,7 +745,7 @@ test base64.83 {decode ascii85 no args} {
 test base64.84 {decode ascii85 -badSwitch} {
     list [catch {blt::decode ascii85 "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -ignorebadchars }}
@@ -1010,7 +1010,7 @@ test base64.119 {decode hexadecimal no args} {
 test base64.120 {decode hexadecimal -badSwitch} {
     list [catch {blt::decode hexadecimal "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -ignorebadchars }}
@@ -1220,7 +1220,7 @@ test base64.149 {decode base64 no args} {
 test base64.150 {decode base64 -badSwitch} {
     list [catch {blt::decode base64 "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -ignorebadchars }}
@@ -1416,7 +1416,7 @@ test base64.178 {fencode ascii85 no args} {
 test base64.179 {fencode ascii85 -badSwitch} {
     list [catch {blt::fencode ascii85 "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -brackets 
    -data varName
    -file fileName
@@ -1561,7 +1561,7 @@ AnbgmA0<!;yyyyyyyyyyyyy@;]TuC3=B4ARlp%G%G\:FD,5.FCB!%+C]A0GA
 test base64.200 {fencode ascii85 -foldspaces extra arg} {
     list [catch {blt::fencode ascii85 $str -foldspaces extraArg} msg] $msg
 } {1 {unknown switch "extraArg"
-following switches are available:
+The following switches are available:
    -brackets 
    -data varName
    -file fileName
@@ -1650,7 +1650,7 @@ test base64.209 {fencode hexadecimal no args} {
 test base64.210 {fencode hexadecimal -badSwitch} {
     list [catch {blt::fencode hexadecimal "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -lowercase 
@@ -1843,7 +1843,7 @@ test base64.234 {fencode base64 no args} {
 test base64.235 {fencode base64 -badSwitch} {
     list [catch {blt::fencode base64 "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -pad fileName
@@ -2010,7 +2010,7 @@ test base64.259 {fdecode ascii85 no args} {
 test base64.260 {fdecode ascii85 -badSwitch} {
     list [catch {blt::fdecode ascii85 "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -ignorebadchars }}
@@ -2285,7 +2285,7 @@ test base64.295 {fdecode hexadecimal no args} {
 test base64.296 {fdecode hexadecimal -badSwitch} {
     list [catch {blt::fdecode hexadecimal badFile -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -ignorebadchars }}
@@ -2489,7 +2489,7 @@ test base64.325 {fdecode base64 no args} {
 test base64.326 {fdecode base64 -badSwitch} {
     list [catch {blt::fdecode base64 "" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -data string
    -file fileName
    -ignorebadchars }}

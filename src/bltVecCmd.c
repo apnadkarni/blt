@@ -3538,7 +3538,6 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_Free(vectors);
         return TCL_ERROR;
     }
-
     /* If all we care about is the unique values then compress the map. */
     if (switches.flags & SORT_UNIQUE) {
         size_t count, i;

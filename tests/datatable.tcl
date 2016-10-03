@@ -963,7 +963,7 @@ test datatable.181 {column names} {
 test datatable.182 {column extend 4 badSwitch } {
     list [catch {datatable0 column extend 4 badSwitch} msg] $msg
 } {1 {unknown switch "badSwitch"
-following switches are available:
+The following switches are available:
    -labels list}}
 
 test datatable.183 {column names} {
@@ -1052,7 +1052,7 @@ test datatable.200 {column label @end c18} {
 test datatable.201 {column create -before 1 -badSwitch} {
     list [catch {datatable0 column create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -after column
    -after row
    -before column
@@ -1064,7 +1064,7 @@ following switches are available:
 test datatable.202 {datatable0 column create -badSwitch -before 1} {
     list [catch {datatable0 column create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -after column
    -after row
    -before column
@@ -1076,7 +1076,7 @@ following switches are available:
 test datatable.203 {datatable0 column create -before 1 -badSwitch arg} {
     list [catch {datatable0 column create -badSwitch arg} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -after column
    -after row
    -before column
@@ -2483,7 +2483,7 @@ test datatable.440 {datatable1 row unset 1 @end} {
 test datatable.441 {datatable1 row extend 5 badArg } {
     list [catch {datatable1 row extend 5 badArg} msg] $msg
 } {1 {unknown switch "badArg"
-following switches are available:
+The following switches are available:
    -labels list}}
 
 
@@ -2537,7 +2537,7 @@ test datatable.452 {datatable1 row create} {
 test datatable.453 {datatable1 row create -before 1 -badSwitch} {
     list [catch {datatable1 row create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -after column
    -after row
    -before column
@@ -2549,7 +2549,7 @@ following switches are available:
 test datatable.454 {datatable1 row create -badSwitch -before 1} {
     list [catch {datatable1 row create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -after column
    -after row
    -before column
@@ -2561,7 +2561,7 @@ following switches are available:
 test datatable.455 {datatable1 row create -before 1 -badSwitch arg} {
     list [catch {datatable1 row create -badSwitch arg} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -after column
    -after row
    -before column
@@ -3005,7 +3005,7 @@ test datatable.533 {test unset trace} {
 test datatable.534 {datatable0 dump -badSwitch} {
     list [catch {datatable0 dump -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -rows rows
    -columns columns
    -file fileName}}

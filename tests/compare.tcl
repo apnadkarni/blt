@@ -182,7 +182,7 @@ test utils.37 {number inlist 100 "3 1 2 1e2" -sorted badValue} {
 test utils.38 {number inlist 100 "3 1 2 1e2" -badSwitch} {
     list [catch {blt::utils::number inlist 100 "3 2 1e2" -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
-following switches are available:
+The following switches are available:
    -sorted decreasing|increasing}}
 
 test utils.14 {string between d a z} {
