@@ -188,7 +188,7 @@ typedef struct {
     const char *name;
 } SignalToken;
 
-static SignalToken signalTokens[] =
+static SignalToken signalTable[] =
 {
 #ifdef SIGABRT
     {SIGABRT, "SIGABRT"},
@@ -439,15 +439,17 @@ typedef struct {
 
 struct _Bgexec {
     BgexecClass *classPtr;
-    Tcl_Obj *statVarObjPtr;             /* Name of a TCL variable set to
-                                         * the exit status of the last
-                                         * process. Setting this variable
-                                         * triggers the termination of all
-                                         * subprocesses (regardless whether
-                                         * they have already completed) */
+    Tcl_Obj *statVarObjPtr;             /* Name of a TCL variable. Will be
+                                         * set to the exit status of the
+                                         * last process in the pipeline. If
+                                         * the user sets this variable, the
+                                         * processes in the pipeline
+                                         * (i.e. processes that have not
+                                         * yet completed) will be signaled
+                                         * (default signal is SIGTERM). */
     int signalNum;                      /* If non-zero, indicates the
-                                         * signal to send subprocesses when
-                                         * cleaning up.*/
+                                         * signal to send processes of the
+                                         * pipeline when cleaning up.*/
     unsigned int flags;                 /* Various bit flags: see below. */
     int interval;                       /* Interval to poll for the exiting
                                          * processes in milliseconds. */
@@ -470,8 +472,7 @@ struct _Bgexec {
     Sink errSink, outSink;              /* Data sinks for pipeline's stdout
                                          * and stderr channels. */
     Blt_ChainLink link;
-    char *const *env;                   /* Table of overriding environment
-                                         * variables. */
+    char *const *env;                   /* Environment variables. */
 #ifdef HAVE_PTY
     int master;                         /* File descriptor of pty master. */
     int slave;                          /* File descriptor of pty slave.  */
@@ -483,31 +484,38 @@ struct _Bgexec {
 #endif /* HAVE_SESSION */
 };
 
-#define KEEPNEWLINE     (1<<0)          /* Indicates to set TCL output
-                                         * variables with trailing newlines
-                                         * intact */
-#define LINEBUFFERED    (1<<1)          /* Indicates to provide data to
-                                         * update variable and update proc
-                                         * on a line-by-line * basis. */
-#define IGNOREEXITCODE  (1<<2)          /* Don't check for 0 exit status of
-                                         * the pipeline.  */
+#define KEEPNEWLINE     (1<<0)          /* Indicates to not trim the
+                                         * trailing newline from pipeline
+                                         * data as it is deliveried to TCL
+                                         * output variables. */
+#define LINEBUFFERED    (1<<1)          /* Indicates to deliver data to
+                                         * designated update TCL variable
+                                         * and/or update TCL proc one line
+                                         * at a time. */
+#define IGNOREEXITCODE  (1<<2)          /* Don't generate an error if the
+                                         * pipeline terminates with a
+                                         * non-zero exit code.  */
 #define TRACED          (1<<3)          /* Indicates that the status
                                          * variable is currently being
                                          * traced. */
 #define FOREGROUND      (1<<4)          /* Indicates that the pipeline is
-                                         * running in the foreground. We
-                                         * will wait for the pipeline to
-                                         * complete. */
+                                         * running in the foreground. The
+                                         * bgexec command will wait for the
+                                         * pipeline to complete. */
 #define DONTKILL        (1<<6)          /* Indicates that the detached
                                          * pipeline should not be signaled
                                          * on exit. */
-#define SESSION         (1<<7)          /* Indicates that a new session for 
-                                         * the pipeline.  When the pipeline
-                                         * is aborted all sub-processes will
-                                         * be signaled. */
+#define SESSION         (1<<7)          /* Indicates that a new session
+                                         * leader for the pipeline has been
+                                         * created.  When the session
+                                         * leader is signaled (by setting
+                                         * the status TCL variable), all
+                                         * the processes and subprocesses
+                                         * of the pipeline will be also be
+                                         * signaled. */
 #define PTY             (1<<8)          /* Indicates that the pipeline
                                          * should use a pseudo terminal and
-                                         * session group. */
+                                         * session leader. */
 
 static Blt_SwitchParseProc ObjToEnvironSwitchProc;
 static Blt_SwitchFreeProc FreeEnvironSwitchProc;
@@ -725,6 +733,7 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
     }
     return TCL_OK;
 }  
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -768,7 +777,7 @@ ObjToSignalSwitchProc(ClientData clientData, Tcl_Interp *interp,
             name += 3;
         }
         signalNum = -1;
-        for (sp = signalTokens; sp->number > 0; sp++) {
+        for (sp = signalTable; sp->number != -1; sp++) {
             if (strcmp(sp->name + 3, name) == 0) {
                 signalNum = sp->number;
                 break;
@@ -1910,7 +1919,7 @@ CheckPipeline(Bgexec *bgPtr)
     int code;
     int i;
     int numPidsLeft;                    /* # of processes still not
-                                         * reaped */
+                                         * reaped. */
     unsigned int lastPid;
 
     interp = bgPtr->interp;
@@ -1935,7 +1944,8 @@ CheckPipeline(Bgexec *bgPtr)
         } else if (pid != -1) {
             /*
              * Save the status information associated with the subprocess.
-             * We'll use it only if this is the last subprocess to be reaped.
+             * We'll use it only if this is the last subprocess to be
+             * reaped.
              */
             lastStatus = waitStatus;
             lastPid = (unsigned int)pid;
@@ -1947,7 +1957,7 @@ CheckPipeline(Bgexec *bgPtr)
     }
 
     /*
-     * All child processes have completed.  Set the status variable with the
+     * All child processes have completed.  Set the error code with the
      * status of the last process reaped.  The status is a list of an error
      * token, the exit status, and a message.
      */
@@ -2096,7 +2106,7 @@ CheckSession(Bgexec *bgPtr)
         return NULL;
     }
     /*
-     * All child processes have completed.  Set the status variable with the
+     * All child processes have completed.  Set the error code with the
      * status of the last process reaped.  The status is a list of an error
      * token, the exit status, and a message.
      */
@@ -2111,8 +2121,8 @@ CheckSession(Bgexec *bgPtr)
 static void
 ReportSession(Tcl_Interp *interp, Bgexec *bgPtr)
 {
-    /* If backgrounded, return the process id of the session instead of the
-     * output of the pipeline. */
+    /* If the pipeline is backgrounded, return the process id of the
+     * session leader instead of the output of the pipeline. */
     Tcl_SetLongObj(Tcl_GetObjResult(interp), bgPtr->sid);
 }
 
@@ -2151,11 +2161,11 @@ static int
 ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
                            Tcl_Obj *const *objv)
 {
-    int numPids;
     Blt_Pid *pids;                      /* Array of process Ids. */
     WAIT_STATUS_TYPE waitStatus, lastStatus;
-    pid_t child;
+    int numPids;
     int stdoutPipe[2], stderrPipe[2], mesgPipe[2];
+    pid_t child;
 
     stdoutPipe[0] = stdoutPipe[1] = stderrPipe[0] = stderrPipe[1] = -1;
     /*
@@ -2574,23 +2584,24 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
     WAIT_STATUS_TYPE waitStatus, lastStatus;
     int numPids;                               /* # of processes. */
     pid_t child;
-    int pipeStdout[2], pipeStderr[2], slave;
+    int stdoutPipe[2], stderrPipe[2], slave;
     Blt_Pid *pids;
     struct termios tt;
 
-    pipeStdout[0] = pipeStdout[1] = pipeStderr[0] = pipeStderr[1] = -1;
+    stdoutPipe[0] = stdoutPipe[1] = stderrPipe[0] = stderrPipe[1] = -1;
     /*
      * Create a pipe that the child can use to return error information if
      * anything goes wrong in creating the pipeline.
      */
+
     /* Open a pseudo terminal for the pipeline. */
     if (OpenPtyMaster(interp, bgPtr) != TCL_OK) {
         goto error;
     }
-    if (CreatePipeWithCloseOnExec(interp, pipeStdout) != TCL_OK) {
+    if (CreatePipeWithCloseOnExec(interp, stdoutPipe) != TCL_OK) {
         goto error;
     }
-    if (CreatePipeWithCloseOnExec(interp, pipeStdout) != TCL_OK) {
+    if (CreatePipeWithCloseOnExec(interp, stdoutPipe) != TCL_OK) {
         goto error;
     }
     bgPtr->errSink.fd = bgPtr->outSink.fd = bgPtr->master;
@@ -2601,7 +2612,7 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         (bgPtr->errSink.flags & SINK_ECHO)) {
         /* If we want stderr separately, create a pipe for the error
          * channel.  */
-        bgPtr->errSink.fd = pipeStderr[0];
+        bgPtr->errSink.fd = stderrPipe[0];
     }
 #endif
 
@@ -2624,9 +2635,9 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
          * properly. The info in the pipe (if any) if the TCL error message
          * from the child process.
          */
-        close(pipeStdout[1]);
-        numRead = read(pipeStdout[0], mesg, BUFSIZ);
-        close(pipeStdout[0]);
+        close(stdoutPipe[1]);
+        numRead = read(stdoutPipe[0], mesg, BUFSIZ);
+        close(stdoutPipe[0]);
         if (numRead == 0) {
             bgPtr->sid = child;
         bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
@@ -2636,25 +2647,25 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         mesg[numRead] = '\0';
         Tcl_AppendResult(bgPtr->interp, mesg, (char *)NULL);
     error:
-        if (pipeStdout[0] >= 0) {
-            close(pipeStdout[0]);
+        if (stdoutPipe[0] >= 0) {
+            close(stdoutPipe[0]);
         }
-        if (pipeStdout[1] >= 0) {
-            close(pipeStdout[1]);
+        if (stdoutPipe[1] >= 0) {
+            close(stdoutPipe[1]);
         }
 #ifdef notdef
-        if (pipeStderr[0] >= 0) {
-            close(pipeStderr[0]);
+        if (stderrPipe[0] >= 0) {
+            close(stderrPipe[0]);
         }
-        if (pipeStderr[1] >= 0) {
-            close(pipeStderr[1]);
+        if (stderrPipe[1] >= 0) {
+            close(stderrPipe[1]);
         }
 #endif
         return TCL_ERROR;
     }
 
     /* Child process */
-    close(pipeStdout[0]);
+    close(stdoutPipe[0]);
 
     if (setsid() == -1) {
         ExplainError(interp, "setsid");
@@ -2664,7 +2675,7 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         int i;
 
         for (i = 0; i < sysconf(_SC_OPEN_MAX); i++) {
-            if ((i == pipeStdout[1]) || (i == pipeStderr[1])) {
+            if ((i == stdoutPipe[1]) || (i == stderrPipe[1])) {
                 continue;
             }
             close(i);
@@ -2751,12 +2762,12 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         int length;
 
         mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &length);
-        numWritten = write(pipeStdout[1], mesg, length);
+        numWritten = write(stdoutPipe[1], mesg, length);
         assert(numWritten == length);
         _exit(1);
     }
-    close(pipeStdout[1]);                     /* The pipeline has started. */
-    close(pipeStdout[0]);
+    close(stdoutPipe[1]);                     /* The pipeline has started. */
+    close(stdoutPipe[0]);
     *((int *)&waitStatus) = 0;
     *((int *)&lastStatus) = 0;
     while (numPids > 0) {
@@ -2776,9 +2787,9 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
     }
 #ifndef notdef
     close(0); close(1);
-    close(pipeStdout[0]);
-    close(pipeStderr[0]);
-    close(pipeStderr[1]);
+    close(stdoutPipe[0]);
+    close(stderrPipe[0]);
+    close(stderrPipe[1]);
 #endif
     /*
      * All pipeline processes have completed.  Exit the child replicating the
@@ -2858,9 +2869,9 @@ DestroyBgexec(Bgexec *bgPtr)            /* Background info record. */
  *
  * VariableProc --
  *
- *      Kills all currently running subprocesses (given the specified
- *      signal). This procedure is called when the user sets the status
- *      variable associated with this group of child subprocesses.
+ *      Kills all currently running pipeline of subprocesses (given the
+ *      specified signal). This procedure is called when the user sets the
+ *      status variable associated with this pipeline.
  *
  * Results:
  *      Always returns NULL.  Only called from a variable trace.
@@ -2881,7 +2892,7 @@ VariableProc(ClientData clientData, Tcl_Interp *interp, const char *part1,
         Bgexec *bgPtr = clientData;
 
         DisableTriggers(bgPtr);
-        /* Kill all child processes that remain alive. */
+        /* Kill all child processes that remain. */
         (*bgPtr->classPtr->killProc)(bgPtr);
         if ((bgPtr->flags & FOREGROUND) == 0) {
             DestroyBgexec(bgPtr);
