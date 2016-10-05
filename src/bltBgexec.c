@@ -1215,7 +1215,9 @@ ReadBytes(Sink *sinkPtr)
 {
     int i;
     ssize_t numBytes;
+    Tcl_Interp *interp;
 
+    interp = sinkPtr->bgPtr->interp;
     /*
      *  Worry about indefinite postponement.
      *
@@ -1240,7 +1242,7 @@ ReadBytes(Sink *sinkPtr)
             if (bytesLeft < 0) {
                 errno = ENOMEM;
                 sinkPtr->status = READ_ERROR;
-                ExplainError(sinkPtr->bgPtr->interp, "ExtendSinkBuffer");
+                ExplainError(interp, "ExtendSinkBuffer");
                 return TCL_ERROR;
             }
         }
@@ -1249,25 +1251,32 @@ ReadBytes(Sink *sinkPtr)
         /* Read into a buffer but make sure we leave room for a trailing
          * NUL byte. */
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
+        fprintf(stderr, "ReadBytes(%s): sid=%d pid=%d pgrp=%d: Read %ld bytes errno=%d %s\n",
+                sinkPtr->name, getsid(getpid()), getpid(), getpgrp(),
+                numBytes, errno, strerror(errno));
+        if (numBytes > 0) {
+            fprintf(stderr, "ReadBytes(%s): read %ld bytes: array=%s\n",
+                    sinkPtr->name, numBytes, array);
+        }
         if (numBytes == 0) {            /* EOF: break out of loop. */
             sinkPtr->status = READ_EOF;
             return TCL_BREAK;
         }
         if (numBytes < 0) {
-            Bgexec *bgPtr;
+
 #ifdef O_NONBLOCK
   #define BLOCKED         EAGAIN
 #else
   #define BLOCKED         EWOULDBLOCK
 #endif /*O_NONBLOCK*/
+
             /* Either an error has occurred or no more data is currently
              * available to read.  */
             if (errno == BLOCKED) {
                 sinkPtr->status = READ_AGAIN;
                 return TCL_CONTINUE;
             }
-            bgPtr = sinkPtr->bgPtr;
-            ExplainError(bgPtr->interp, "read");
+            ExplainError(interp, "read");
             sinkPtr->status = READ_ERROR;
             return TCL_ERROR;
         }
@@ -1736,14 +1745,10 @@ CollectData(Sink *sinkPtr)
     if (((bgPtr->flags & FOREGROUND) == 0) && (sinkPtr->doneVarObjPtr == NULL)) {
         ResetSink(sinkPtr);
     }
-    result = ReadBytes(sinkPtr);
-    if (result == TCL_ERROR) {
-        Tcl_BackgroundError(bgPtr->interp);
+    if (ReadBytes(sinkPtr) == TCL_ERROR) {
         return TCL_ERROR;               /* Error reading */
     }
-    result = CookSink(bgPtr->interp, sinkPtr);
-    if (result == TCL_ERROR) {
-        Tcl_BackgroundError(bgPtr->interp);
+    if (CookSink(bgPtr->interp, sinkPtr) != TCL_OK) {
         return TCL_ERROR;               /* Error cooking data. */
     }
     if ((sinkPtr->mark > sinkPtr->lastMark) && (sinkPtr->flags & SINK_NOTIFY)) {
@@ -1771,8 +1776,6 @@ CollectData(Sink *sinkPtr)
     if (sinkPtr->status == READ_ERROR) {
         Tcl_AppendResult(bgPtr->interp, "can't read data from ", sinkPtr->name,
             ": ", Tcl_PosixError(bgPtr->interp), (char *)NULL);
-        Tcl_BackgroundError(bgPtr->interp);
-        abort();
         return TCL_ERROR;
     }
 #if WINDEBUG
@@ -2315,6 +2318,7 @@ KillSession(Bgexec *bgPtr)            /* Background info record. */
         close(bgPtr->master);
         bgPtr->master = -1;
     }
+    fprintf(stderr, "KillSession pid=%d, sid=%d\n", getpid(), bgPtr->sid);
     if ((bgPtr->numPids > 0) && (bgPtr->signalNum > 0)) {
         kill(-bgPtr->sid, bgPtr->signalNum);
     }
@@ -2583,12 +2587,12 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
 {
     WAIT_STATUS_TYPE waitStatus, lastStatus;
     int numPids;                               /* # of processes. */
-    pid_t child;
-    int stdoutPipe[2], stderrPipe[2], slave;
+    pid_t child, parent;
+    int mesgPipe[2];
+    int slave;
     Blt_Pid *pids;
     struct termios tt;
 
-    stdoutPipe[0] = stdoutPipe[1] = stderrPipe[0] = stderrPipe[1] = -1;
     /*
      * Create a pipe that the child can use to return error information if
      * anything goes wrong in creating the pipeline.
@@ -2596,15 +2600,13 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
 
     /* Open a pseudo terminal for the pipeline. */
     if (OpenPtyMaster(interp, bgPtr) != TCL_OK) {
-        goto error;
+        return TCL_ERROR;
     }
-    if (CreatePipeWithCloseOnExec(interp, stdoutPipe) != TCL_OK) {
-        goto error;
+    if (CreatePipeWithCloseOnExec(interp, mesgPipe) != TCL_OK) {
+        return TCL_ERROR;
     }
-    if (CreatePipeWithCloseOnExec(interp, stdoutPipe) != TCL_OK) {
-        goto error;
-    }
-    bgPtr->errSink.fd = bgPtr->outSink.fd = bgPtr->master;
+    bgPtr->errSink.fd = -1;
+    bgPtr->outSink.fd = bgPtr->master;
 #ifdef notdef
     if ((bgPtr->errSink.doneVarObjPtr != NULL) ||
         (bgPtr->errSink.updateVarObjPtr != NULL) ||
@@ -2616,14 +2618,13 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
     }
 #endif
 
-    fprintf(stderr, "sid=%d pid=%d ppid=%d pgrp=%d tpgrp=%d\n", 
+    fprintf(stderr, "before fork: sid=%d pid=%d ppid=%d pgrp=%d tpgrp=%d\n", 
             getsid(getpid()), getpid(), getppid(), getpgrp(), tcgetpgrp(STDIN_FILENO));
+    parent = getpid();
     child = fork();
 
     if (child == -1) {
         ExplainError(interp, "fork");
-        close(bgPtr->master);
-        bgPtr->master = -1;
         return TCL_ERROR;
     }
     if (child != 0) {                   /* Parent */
@@ -2635,102 +2636,86 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
          * properly. The info in the pipe (if any) if the TCL error message
          * from the child process.
          */
-        close(stdoutPipe[1]);
-        numRead = read(stdoutPipe[0], mesg, BUFSIZ);
-        close(stdoutPipe[0]);
+        close(mesgPipe[1]);
+        numRead = read(mesgPipe[0], mesg, BUFSIZ);
+        bgPtr->numPids = 1;
+        bgPtr->pids = NULL;
+        bgPtr->sid = child;
+
         if (numRead == 0) {
             bgPtr->sid = child;
-        bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
-           bgPtr);
             return TCL_OK;
         }
         mesg[numRead] = '\0';
         Tcl_AppendResult(bgPtr->interp, mesg, (char *)NULL);
-    error:
-        if (stdoutPipe[0] >= 0) {
-            close(stdoutPipe[0]);
-        }
-        if (stdoutPipe[1] >= 0) {
-            close(stdoutPipe[1]);
-        }
-#ifdef notdef
-        if (stderrPipe[0] >= 0) {
-            close(stderrPipe[0]);
-        }
-        if (stderrPipe[1] >= 0) {
-            close(stderrPipe[1]);
-        }
-#endif
         return TCL_ERROR;
     }
 
     /* Child process */
-    close(stdoutPipe[0]);
-
+    close(mesgPipe[0]);
+    fprintf(stderr, "before setsid: tcgetpgrp=%d\n", tcgetpgrp(0));
     if (setsid() == -1) {
         ExplainError(interp, "setsid");
-        return TCL_ERROR;
+        goto error;
     }
-    {
-        int i;
-
-        for (i = 0; i < sysconf(_SC_OPEN_MAX); i++) {
-            if ((i == stdoutPipe[1]) || (i == stderrPipe[1])) {
-                continue;
-            }
-            close(i);
-        }
+    if (setpgrp() == getpid()) {
+        ExplainError(interp, "setpgrp");
+        goto error;
     }
     slave = open(bgPtr->slaveName, O_RDWR | O_NOCTTY);
     if (slave == -1) {
         Tcl_AppendResult(interp, "can't open \"", bgPtr->slaveName, 
                 "\": ", Tcl_PosixError(interp), (char *)NULL);
-        return TCL_ERROR;
+        goto error;
+    }
+    if (tcsetpgrp(slave, getpid())) {
+        ExplainError(interp, "tcsetgrp");
+        fprintf(stderr, "tcsetpgrp failed: tcgetpgrp=%d\n",
+                tcgetpgrp(slave));
+        goto error;
     }
 #ifdef TIOCSCTTY
     if (ioctl(slave, TIOCSCTTY, slave) == -1) {
         Tcl_AppendResult(interp, "can't set ioctl TIOCSCTTY for \"",
                 bgPtr->slaveName, "\": ", Tcl_PosixError(interp), (char *)NULL);
-        return TCL_ERROR;
+        goto error;
     }
 #endif  /* TIOCSCTTY */
 #ifdef I_PUSH
     if (isastream(slave)) {
         if (ioctl(slave, I_PUSH, "p_tem") == -1) {
             ExplainError(interp, "can't set ioctl \"p_tem\"");
-            return TCL_ERROR;
+            goto error;
         }
         if (ioctl(slave, I_PUSH, "ldterm") == -1) {
             ExplainError(interp, "can't set ioctl \"ldterm\"");
-            return TCL_ERROR;
+            goto error;
         }
     }
 #endif
     if (tcgetattr(0, &tt) == -1) {
         ExplainError(interp, "slave tcgetattr");
-        return TCL_ERROR;
+        goto error;
     }
     tt.c_lflag |= ICANON;
     tt.c_oflag &= ~(ONLCR | OCRNL);
     tt.c_oflag |= ONLRET; 
     if (tcsetattr(slave, TCSANOW, &tt) == -1) {
         ExplainError(interp, "tcsetattr");
-        return TCL_ERROR;
+        goto error;
     }
-#ifdef notdef
     if (dup2(slave, 0) == -1) {
         ExplainError(interp, "can't dup stdin");
-        return TCL_ERROR;
+        goto error;
     }
-#endif
     if (dup2(slave, 1) == -1) {
         ExplainError(interp, "can't dup stdout");
-        return TCL_ERROR;
+        goto error;
     }
 #ifdef notdef
     if (dup2(slave, 2) == -1) {
         ExplainError(interp, "can't dup stderr");
-        return TCL_ERROR;
+        goto error;
     }
 #endif
     /*
@@ -2744,30 +2729,18 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
 
     close(bgPtr->master);
     bgPtr->master = -1;
-    close(slave);
-
-    fprintf(stderr, "child=%d, ppid=%d pgrp=%d tpgrp=%d\n",
-            getpid(), getppid(), getpgrp(), tcgetpgrp(STDIN_FILENO));
-
-    /* Open the slave side of the pseudo terminal for the pipeline. */
-    /* The default descriptor for 0, 1, and 2 are now the pseudo terminal. */
+    fprintf(stderr,
+            "after fork: child=%d, parent=%d sid=%d, pgrp=%d tpgrp=%d\n",
+            getpid(), getppid(), getsid(getpid()),
+            getpgrp(), tcgetpgrp(STDIN_FILENO));
 
     /* Always collect characters from the sinks. Display to the screen or
      * not. */
     numPids = Blt_CreatePipeline(interp, objc, objv, &pids, (int *)NULL,
         (int *)NULL, (int *)NULL, bgPtr->env);
     if (numPids <= 0) {
-        ssize_t numWritten;
-        const char *mesg;
-        int length;
-
-        mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &length);
-        numWritten = write(stdoutPipe[1], mesg, length);
-        assert(numWritten == length);
-        _exit(1);
+        goto error;
     }
-    close(stdoutPipe[1]);                     /* The pipeline has started. */
-    close(stdoutPipe[0]);
     *((int *)&waitStatus) = 0;
     *((int *)&lastStatus) = 0;
     while (numPids > 0) {
@@ -2785,19 +2758,26 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         lastStatus = waitStatus;
         --numPids;
     }
-#ifndef notdef
-    close(0); close(1);
-    close(stdoutPipe[0]);
-    close(stderrPipe[0]);
-    close(stderrPipe[1]);
-#endif
+    Blt_Free(pids);
     /*
      * All pipeline processes have completed.  Exit the child replicating the
      * exit code.
      */
-    fprintf(stderr, "Exiting %d\n", getpid());
+    close(slave);
     exit(WEXITSTATUS(lastStatus));
     return TCL_OK;
+ error:
+    {
+        ssize_t numWritten;
+        const char *mesg;
+        int length;
+
+        mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &length);
+        numWritten = write(mesgPipe[1], mesg, length);
+        assert(numWritten == length);
+        _exit(1);
+        return TCL_OK;
+    }
 }
 #endif /* HAVE_PTY */
 
@@ -2996,7 +2976,6 @@ CollectStdout(ClientData clientData, int mask)
      * so this routine will not be called again.
      */
     CloseSink(sinkPtr);
-
     /*
      * If both sinks (stdout and stderr) are closed, this doesn't
      * necessarily mean that the process has terminated.  Set up a timer
@@ -3004,7 +2983,9 @@ CollectStdout(ClientData clientData, int mask)
      * Initially check at the next idle interval.
      */
     bgPtr = sinkPtr->bgPtr;
-    if (bgPtr->errSink.fd == -1) {
+    if (result == TCL_ERROR) {
+        CloseSink(&bgPtr->errSink);
+    } else if (bgPtr->errSink.fd == -1) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -3054,7 +3035,9 @@ CollectStderr(ClientData clientData, int mask)
      * Initially check at the next idle interval.
      */
     bgPtr = sinkPtr->bgPtr;
-    if (bgPtr->outSink.fd == -1) {
+    if (result == TCL_ERROR) {
+        CloseSink(&bgPtr->outSink);
+    } else if (bgPtr->outSink.fd == -1) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -3187,6 +3170,16 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
         exitCode = done = 0;
         while (!done) {
             Tcl_DoOneEvent(0);
+            if (bgPtr->outSink.status == READ_ERROR) {
+                fprintf(stderr, "error reading from stdout: %s\n",
+                        Tcl_GetString(Tcl_GetObjResult(interp)));
+                goto error;
+            }
+            if (bgPtr->errSink.status == READ_ERROR) {
+                fprintf(stderr, "error reading from stderr: %s\n",
+                        Tcl_GetString(Tcl_GetObjResult(interp)));
+                goto error;
+            }
         }
         DisableTriggers(bgPtr);
         if ((bgPtr->flags & IGNOREEXITCODE) || (exitCode == 0)) {

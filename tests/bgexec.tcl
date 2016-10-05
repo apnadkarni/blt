@@ -10,6 +10,14 @@ if [file exists ../library] {
 
 #set VERBOSE 1
 
+test bgexec.41 {bgexec myVar stdout collect w/ -output } {
+    list [catch {
+	blt::bgexec myVar -pty tclsh files/stdout.tcl
+    } msg] $msg
+} {0 {This is stdout}}
+
+exit 0
+
 test bgexec.1 {bgexec (no args) } {
     list [catch {blt::bgexec} msg] $msg
 } {1 {wrong # args: should be "blt::bgexec varName ?options? command ?arg...?"}}

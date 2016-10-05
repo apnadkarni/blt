@@ -6824,13 +6824,11 @@ ptys=`echo $pdir/pty??`
 if test "$ptys" != "$pdir/pty??" ; then
     p0=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\).$/\1/g' | sort -u | tr -d '\012'`
     p1=`echo $ptys | tr ' ' '\012' | sed -e 's/^.*\(.\)$/\1/g'  | sort -u | tr -d '\012'`
-    cat >>confdefs.h <<_ACEOF
-#define PTYRANGE0 \"$p0\"
-_ACEOF
 
-    cat >>confdefs.h <<_ACEOF
-#define PTYRANGE1 \"$p1\"
-_ACEOF
+$as_echo "#define PTYRANGE0 \"\$p0\"" >>confdefs.h
+
+
+$as_echo "#define PTYRANGE1 \"\$p1\"" >>confdefs.h
 
 fi
 
@@ -6951,7 +6949,7 @@ $as_echo_n "checking whether DBL_EPSILON can be computed.... " >&6; }
     as_fn_error $? "can not run test program while cross compiling" "$LINENO" 5
 else
 cat > conftest.$ac_ext <<EOF
-#line 6954 "configure"
+#line 6952 "configure"
 #include "confdefs.h"
 #ifdef __cplusplus
 extern "C" void exit(int);
