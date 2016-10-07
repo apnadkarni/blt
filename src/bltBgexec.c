@@ -395,7 +395,7 @@ typedef struct {
                                          * whenever data is read from the
                                          * pipe. */
     unsigned int flags;                  
-    int channel;                        /* Channel to echo data. */
+    int channelNum;                     /* Number of channel to echo data. */
     Tcl_Encoding encoding;              /* Decoding scheme to use when
                                          * translating data. */
     int fd;                             /* File descriptor of the pipe. */
@@ -537,6 +537,12 @@ static Blt_SwitchCustom encodingSwitch =
     ObjToEncodingSwitchProc, NULL, FreeEncodingSwitchProc, (ClientData)0
 };
 
+static Blt_SwitchParseProc ObjToEchoSwitchProc;
+static Blt_SwitchCustom echoSwitch =
+{
+    ObjToEchoSwitchProc, NULL, NULL, (ClientData)0
+};
+
 static Blt_SwitchSpec switchSpecs[] = 
 {
     {BLT_SWITCH_CUSTOM,  "-decodeerror",    "encodingName",     (char *)NULL,
@@ -545,8 +551,8 @@ static Blt_SwitchSpec switchSpecs[] =
         Blt_Offset(Bgexec, outSink.encoding),   0, 0, &encodingSwitch}, 
     {BLT_SWITCH_BOOLEAN, "-detach",         "bool",             (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, DONTKILL},
-    {BLT_SWITCH_BOOLEAN, "-echo",           "bool",             (char *)NULL,
-        Blt_Offset(Bgexec, errSink.flags),      0, SINK_ECHO},
+    {BLT_SWITCH_CUSTOM, "-echo",           "echoName",          (char *)NULL,
+        0, 0, 0, &echoSwitch},
     {BLT_SWITCH_CUSTOM,  "-environ",       "list",              (char *)NULL,
          Blt_Offset(Bgexec, env),           0, 0, &environSwitch},
     {BLT_SWITCH_OBJ,     "-errorvariable",  "varName",          (char *)NULL,
@@ -571,10 +577,10 @@ static Blt_SwitchSpec switchSpecs[] =
         Blt_Offset(Bgexec, outSink.doneVarObjPtr),    0},
     {BLT_SWITCH_INT,     "-poll",           "milliseconds",     (char *)NULL,
         Blt_Offset(Bgexec, interval),       0},
-    {BLT_SWITCH_BITMASK, "-pty",            "",                 (char *)NULL,
-        Blt_Offset(Bgexec, flags),          0, PTY},
     {BLT_SWITCH_BITMASK, "-session",        "",                 (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, SESSION},
+    {BLT_SWITCH_BITMASK, "-tty",            "",                 (char *)NULL,
+        Blt_Offset(Bgexec, flags),          0, PTY},
     {BLT_SWITCH_OBJ,     "-updatevariable", "varName",          (char *)NULL,
          Blt_Offset(Bgexec, outSink.updateVarObjPtr), 0},
     {BLT_SWITCH_END}
@@ -606,6 +612,44 @@ ExplainError(Tcl_Interp *interp, const char *mesg)
     } else {
         Tcl_AppendResult(interp, Tcl_PosixError(interp), (char *)NULL);
     }
+}
+
+static int
+WriteErrorMesgToParent(Tcl_Interp *interp, int f)
+{
+    ssize_t numWritten;
+    const char *mesg;
+    int length;
+    
+    mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &length);
+    numWritten = write(f, mesg, length);
+    assert(numWritten == length);
+    return TCL_OK;
+}
+
+static int
+ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
+{
+    char mesg[BUFSIZ+1];
+    ssize_t numRead, numBytes;
+    
+    /*
+     * Read back from the error pipe to see if the pipeline started up
+     * properly. The info in the pipe (if any) if the TCL error message
+     * from the child process.
+     */
+    numBytes = 0;
+    do {
+        numRead = read(f, mesg, BUFSIZ);
+        if (numRead == -1) {
+            return TCL_ERROR;
+        }
+        mesg[numRead] = '\0';
+        Tcl_AppendResult(interp, mesg, (char *)NULL);
+        numBytes += numRead;
+    } while (numRead > 0);
+    close(f);
+    return (numBytes > 0) ? TCL_ERROR : TCL_OK;
 }
 
 /*
@@ -917,6 +961,50 @@ FreeEnvironSwitchProc(ClientData clientData, char *record, int offset,
 /*
  *---------------------------------------------------------------------------
  *
+ * ObjToEchoSwitchProc --
+ *
+ *      Convert a Tcl_Obj representing echo flags.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToEchoSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    Bgexec *bgPtr = (Bgexec *)(record);
+    const char *string;
+    char c;
+    
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'b') && (strcmp(string, "both") == 0)) {
+        bgPtr->outSink.flags |= SINK_ECHO;
+        bgPtr->errSink.flags |= SINK_ECHO;
+    } else if ((c == 'e') && (strcmp(string, "error") == 0)) {
+        bgPtr->outSink.flags &= ~SINK_ECHO;
+        bgPtr->errSink.flags |= SINK_ECHO;
+    } else if ((c == 'n') && (strcmp(string, "none") == 0)) {
+        bgPtr->outSink.flags &= ~SINK_ECHO;
+        bgPtr->errSink.flags &= ~SINK_ECHO;
+    } else if ((c == 'o') && (strcmp(string, "output") == 0)) {
+        bgPtr->outSink.flags |= SINK_ECHO;
+        bgPtr->errSink.flags &= ~SINK_ECHO;
+    } else {
+        Tcl_AppendResult(interp, "unknown echo value \"", string,
+                "\": should be error, output, both, or none.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * GetSinkData --
  *
  *      Returns the data currently saved in the buffer
@@ -1074,7 +1162,7 @@ ResetSink(Sink *sinkPtr)
  *---------------------------------------------------------------------------
  */
 static void
-InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name, int channel)
+InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name, int channelNum)
 {
     sinkPtr->bgPtr = bgPtr;
     sinkPtr->name = name;
@@ -1083,7 +1171,7 @@ InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name, int channel)
     sinkPtr->bytes = sinkPtr->staticSpace;
     sinkPtr->size = DEF_BUFFER_SIZE;
     sinkPtr->encoding = ENCODING_ASCII;
-    sinkPtr->channel = channel;
+    sinkPtr->channelNum = channelNum;
     ResetSink(sinkPtr);
 }
 
@@ -1251,17 +1339,12 @@ ReadBytes(Sink *sinkPtr)
         /* Read into a buffer but make sure we leave room for a trailing
          * NUL byte. */
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
-        fprintf(stderr, "ReadBytes(%s): sid=%d pid=%d pgrp=%d: Read %ld bytes errno=%d %s\n",
-                sinkPtr->name, getsid(getpid()), getpid(), getpgrp(),
-                numBytes, errno, strerror(errno));
-        if (numBytes > 0) {
-            fprintf(stderr, "ReadBytes(%s): read %ld bytes: array=%s\n",
-                    sinkPtr->name, numBytes, array);
-        }
         if (numBytes == 0) {            /* EOF: break out of loop. */
             sinkPtr->status = READ_EOF;
             return TCL_BREAK;
         }
+        /* This is really weird. Closing the slave generates an I/O error
+         * here. */
         if (numBytes < 0) {
 
 #ifdef O_NONBLOCK
@@ -1275,10 +1358,14 @@ ReadBytes(Sink *sinkPtr)
             if (errno == BLOCKED) {
                 sinkPtr->status = READ_AGAIN;
                 return TCL_CONTINUE;
+            } else if ((errno == EIO) && (sinkPtr->bgPtr->flags & PTY)) {
+                sinkPtr->status = READ_EOF;
+                return TCL_BREAK;
+            } else {
+                ExplainError(interp, "read");
+                sinkPtr->status = READ_ERROR;
+                return TCL_ERROR;
             }
-            ExplainError(interp, "read");
-            sinkPtr->status = READ_ERROR;
-            return TCL_ERROR;
         }
         sinkPtr->fill += numBytes;
 #ifndef notdef
@@ -1296,7 +1383,7 @@ CloseSink(Sink *sinkPtr)
     if (sinkPtr->fd >= 0) {
         close(sinkPtr->fd);
         Tcl_DeleteFileHandler(sinkPtr->fd);
-        sinkPtr->fd = -1;               /* Make sink as closed. */
+        sinkPtr->fd = -1;               /* Mark sink as closed. */
         if (sinkPtr->doneVarObjPtr != NULL) {
             Tcl_Interp *interp;
             unsigned char *data;
@@ -1348,11 +1435,10 @@ static int
 CookSink(Tcl_Interp *interp, Sink *sinkPtr)
 {
     unsigned char *srcPtr, *endPtr;
-#ifdef WIN32
+    int crlf;
     int oldMark;
 
     oldMark = sinkPtr->mark;
-#endif
     if (sinkPtr->encoding == ENCODING_BINARY) { /* binary */
         /* No translation needed. */
         sinkPtr->mark = sinkPtr->fill; 
@@ -1438,11 +1524,15 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
 #endif /* >= 8.1.0  */
     }
 #ifdef WIN32
+    crlf = TRUE;
+#else
+    crlf = (sinkPtr->bgPtr->flags & PTY);
+#endif
     /* 
      * Translate CRLF character sequences to LF characters.  We have to do
      * this after converting the string to UTF from UNICODE.
      */
-    if (sinkPtr->encoding != ENCODING_BINARY) {
+    if ((crlf) && (sinkPtr->encoding != ENCODING_BINARY)) {
         size_t count;
         unsigned char *destPtr;
 
@@ -1468,7 +1558,6 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
             sinkPtr->mark--;
         }
     }
-#endif /* WIN32 */
     return TCL_OK;
 }
 
@@ -1636,7 +1725,7 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
     if (sinkPtr->flags & SINK_ECHO) {
         Tcl_Channel channel;
         
-        channel = Tcl_GetStdChannel(sinkPtr->channel);
+        channel = Tcl_GetStdChannel(sinkPtr->channelNum);
         if (channel == NULL) {
             Tcl_AppendResult(interp, "can't get ", sinkPtr->name, " channel",
                 (char *)NULL);
@@ -1692,7 +1781,7 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
     if (sinkPtr->flags & SINK_ECHO) {
         Tcl_Channel channel;
         
-        channel = Tcl_GetStdChannel(sinkPtr->channel);
+        channel = Tcl_GetStdChannel(sinkPtr->channelNum);
         if (channel == NULL) {
             Tcl_AppendResult(interp, "can't get ", sinkPtr->name, " channel",
                 (char *)NULL);
@@ -1742,10 +1831,11 @@ CollectData(Sink *sinkPtr)
     int result;
     
     bgPtr = sinkPtr->bgPtr;
-    if (((bgPtr->flags & FOREGROUND) == 0) && (sinkPtr->doneVarObjPtr == NULL)) {
+    if (((bgPtr->flags & FOREGROUND) == 0) && (sinkPtr->doneVarObjPtr == NULL)){
         ResetSink(sinkPtr);
     }
-    if (ReadBytes(sinkPtr) == TCL_ERROR) {
+    result = ReadBytes(sinkPtr);
+    if (result == TCL_ERROR) {
         return TCL_ERROR;               /* Error reading */
     }
     if (CookSink(bgPtr->interp, sinkPtr) != TCL_OK) {
@@ -2184,7 +2274,7 @@ ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         return TCL_ERROR;
     }
     if (CreatePipeWithCloseOnExec(interp, mesgPipe) != TCL_OK) {
-        goto error;
+        goto cleanup;
     }
     bgPtr->outSink.fd = stdoutPipe[0];
     bgPtr->errSink.fd = stderrPipe[0];
@@ -2192,12 +2282,9 @@ ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
 
     if (child == -1) {
         ExplainError(interp, "fork");
-        return TCL_ERROR;
+        goto cleanup;
     }
     if (child != 0) {                   /* Parent */
-        char mesg[BUFSIZ+1];
-        ssize_t numRead;
-
         /*
          * Read back from the error pipe to see if the pipeline started up
          * properly. The info in the pipe (if any) if the TCL error message
@@ -2206,18 +2293,14 @@ ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         close(stdoutPipe[1]);
         close(stderrPipe[1]);
         close(mesgPipe[1]);
-        numRead = read(mesgPipe[0], mesg, BUFSIZ);
         bgPtr->numPids = 1;
         bgPtr->pids = NULL;
         bgPtr->sid = child;
 
-        if (numRead == 0) {
-            bgPtr->sid = child;
+        if (ReadErrorMesgFromChild(interp, mesgPipe[0]) == TCL_OK) {
             return TCL_OK;
         }
-        mesg[numRead] = '\0';
-        Tcl_AppendResult(bgPtr->interp, mesg, (char *)NULL);
-    error:
+    cleanup:
         if (stdoutPipe[0] >= 0) {
             close(stdoutPipe[0]);
         }
@@ -2239,32 +2322,25 @@ ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
     close(stderrPipe[0]);
     if (setsid() == -1) {
         ExplainError(interp, "setsid");
-        return TCL_ERROR;
+        goto error;
     }
-    if (dup2(stdoutPipe[1], 1) == -1) {
+    if (dup2(stdoutPipe[1], STDOUT_FILENO) == -1) {
         ExplainError(interp, "can't dup stdout");
-        return TCL_ERROR;
+        goto error;
     }
-    if (stderrPipe[1] != -1) {
-        if (dup2(stderrPipe[1], 2) == -1) {
-            ExplainError(interp, "can't dup stderr");
-            return TCL_ERROR;
-        }
+    if (dup2(stderrPipe[1], STDERR_FILENO) == -1) {
+        ExplainError(interp, "can't dup stderr");
+        goto error;
     }
     /* Always collect characters from the sinks. Display to the screen or
      * not. */
     numPids = Blt_CreatePipeline(interp, objc, objv, &pids, (int *)NULL,
         (int *)NULL, (int *)NULL, bgPtr->env);
     if (numPids <= 0) {
-        ssize_t numWritten;
-        const char *mesg;
-        int length;
-
-        mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &length);
-        numWritten = write(mesgPipe[1], mesg, length);
-        assert(numWritten == length);
-        _exit(1);
+        goto error;
     }
+    close(mesgPipe[1]);                 /* This frees the parent to start
+                                         * collecting data. */
     *((int *)&waitStatus) = 0;
     *((int *)&lastStatus) = 0;
     while (numPids > 0) {
@@ -2288,6 +2364,12 @@ ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
      * exit code.
      */
     exit(WEXITSTATUS(lastStatus));
+    /* notreached */
+    return TCL_OK;
+ error:
+    WriteErrorMesgToParent(interp, mesgPipe[1]);
+    exit(1);
+    /* notreached */
     return TCL_OK;
 }
 
@@ -2318,7 +2400,6 @@ KillSession(Bgexec *bgPtr)            /* Background info record. */
         close(bgPtr->master);
         bgPtr->master = -1;
     }
-    fprintf(stderr, "KillSession pid=%d, sid=%d\n", getpid(), bgPtr->sid);
     if ((bgPtr->numPids > 0) && (bgPtr->signalNum > 0)) {
         kill(-bgPtr->sid, bgPtr->signalNum);
     }
@@ -2424,13 +2505,14 @@ InitPtyMaster(Bgexec *bgPtr)
     {    
     struct termios tt;
 
-    if (tcgetattr(0, &tt) == -1) {
+    if (tcgetattr(STDIN_FILENO, &tt) == -1) {
         ExplainError(bgPtr->interp, "master tcgetattr");
         return TCL_ERROR;
     }
-    tt.c_lflag |= ICANON;
-    tt.c_iflag &= ~(INLCR);
-    tt.c_iflag |= ICRNL; 
+    /* tt.c_lflag |= ICANON; */
+    tt.c_iflag = ~(INLCR | ICRNL | ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+    tt.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+    /* tt.c_iflag |= ICRNL;  */
     if (tcsetattr(bgPtr->master, TCSANOW, &tt) == -1) {
         ExplainError(bgPtr->interp, "tcsetattr");
         return TCL_ERROR;
@@ -2519,13 +2601,12 @@ OpenPtySlave(Tcl_Interp *interp, Bgexec *bgPtr)
     int slave;
     struct termios tt;
 
-    slave = open(bgPtr->slaveName, O_RDWR | O_NOCTTY);
+    bgPtr->slave = slave = open(bgPtr->slaveName, O_RDWR | O_NOCTTY);
     if (slave == -1) {
         Tcl_AppendResult(interp, "can't open \"", bgPtr->slaveName, 
                 "\": ", Tcl_PosixError(interp), (char *)NULL);
         return TCL_ERROR;
     }
-    bgPtr->slave = slave;
 #ifdef TIOCSCTTY
     if (ioctl(slave, TIOCSCTTY, slave) == -1) {
         Tcl_AppendResult(interp, "can't set ioctl TIOCSCTTY for \"",
@@ -2546,38 +2627,15 @@ OpenPtySlave(Tcl_Interp *interp, Bgexec *bgPtr)
     }
 #endif
     if (tcgetattr(0, &tt) == -1) {
-        ExplainError(interp, "slave tcgetattr");
+        ExplainError(interp, "tcgetattr on slave");
         return TCL_ERROR;
     }
-    tt.c_lflag |= ICANON;
-    tt.c_oflag &= ~(ONLCR | OCRNL);
-    tt.c_oflag |= ONLRET; 
+    tt.c_oflag = 0;
+    tt.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
     if (tcsetattr(slave, TCSANOW, &tt) == -1) {
-        ExplainError(interp, "tcsetattr");
+        ExplainError(interp, "tcsetattr on slave");
         return TCL_ERROR;
     }
-    if (dup2(slave, 0) == -1) {
-        ExplainError(interp, "can't dup stdin");
-        return TCL_ERROR;
-    }
-    if (dup2(slave, 1) == -1) {
-        ExplainError(interp, "can't dup stdout");
-        return TCL_ERROR;
-    }
-#ifdef notdef
-    if (dup2(slave, 2) == -1) {
-        ExplainError(interp, "can't dup stderr");
-        return TCL_ERROR;
-    }
-#endif
-    /*
-     * Must clear the close-on-exec flag for the target FD, since some
-     * systems (e.g. Ultrix) do not clear the CLOEXEC flag on the
-     * target FD.
-     */
-    fcntl(0, F_SETFD, 0);
-    fcntl(1, F_SETFD, 0);
-    fcntl(2, F_SETFD, 0);
     return TCL_OK;
 }
 
@@ -2587,12 +2645,11 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
 {
     WAIT_STATUS_TYPE waitStatus, lastStatus;
     int numPids;                               /* # of processes. */
-    pid_t child, parent;
-    int mesgPipe[2];
-    int slave;
+    pid_t child;
+    int mesgPipe[2], stderrPipe[2];
     Blt_Pid *pids;
-    struct termios tt;
 
+    mesgPipe[0] = mesgPipe[1] = stderrPipe[0] = stderrPipe[1] = -1;
     /*
      * Create a pipe that the child can use to return error information if
      * anything goes wrong in creating the pipeline.
@@ -2602,25 +2659,15 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
     if (OpenPtyMaster(interp, bgPtr) != TCL_OK) {
         return TCL_ERROR;
     }
+    if (pipe(stderrPipe) == -1) {
+        ExplainError(interp, "can't create stderr pipe");
+        return TCL_ERROR;
+    }
     if (CreatePipeWithCloseOnExec(interp, mesgPipe) != TCL_OK) {
         return TCL_ERROR;
     }
-    bgPtr->errSink.fd = -1;
     bgPtr->outSink.fd = bgPtr->master;
-#ifdef notdef
-    if ((bgPtr->errSink.doneVarObjPtr != NULL) ||
-        (bgPtr->errSink.updateVarObjPtr != NULL) ||
-        (bgPtr->errSink.cmdObjPtr != NULL) ||
-        (bgPtr->errSink.flags & SINK_ECHO)) {
-        /* If we want stderr separately, create a pipe for the error
-         * channel.  */
-        bgPtr->errSink.fd = stderrPipe[0];
-    }
-#endif
-
-    fprintf(stderr, "before fork: sid=%d pid=%d ppid=%d pgrp=%d tpgrp=%d\n", 
-            getsid(getpid()), getpid(), getppid(), getpgrp(), tcgetpgrp(STDIN_FILENO));
-    parent = getpid();
+    bgPtr->errSink.fd = stderrPipe[0];
     child = fork();
 
     if (child == -1) {
@@ -2628,111 +2675,48 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         return TCL_ERROR;
     }
     if (child != 0) {                   /* Parent */
-        char mesg[BUFSIZ+1];
-        ssize_t numRead;
-
-        /*
-         * Read back from the error pipe to see if the pipeline started up
-         * properly. The info in the pipe (if any) if the TCL error message
-         * from the child process.
-         */
         close(mesgPipe[1]);
-        numRead = read(mesgPipe[0], mesg, BUFSIZ);
+        close(stderrPipe[1]);
         bgPtr->numPids = 1;
         bgPtr->pids = NULL;
         bgPtr->sid = child;
-
-        if (numRead == 0) {
-            bgPtr->sid = child;
-            return TCL_OK;
-        }
-        mesg[numRead] = '\0';
-        Tcl_AppendResult(bgPtr->interp, mesg, (char *)NULL);
-        return TCL_ERROR;
+        return ReadErrorMesgFromChild(bgPtr->interp, mesgPipe[0]);
     }
 
     /* Child process */
     close(mesgPipe[0]);
-    fprintf(stderr, "before setsid: tcgetpgrp=%d\n", tcgetpgrp(0));
+    close(stderrPipe[0]);
     if (setsid() == -1) {
         ExplainError(interp, "setsid");
         goto error;
     }
-    if (setpgrp() == getpid()) {
-        ExplainError(interp, "setpgrp");
+    if (OpenPtySlave(interp, bgPtr) != TCL_OK) {
         goto error;
     }
-    slave = open(bgPtr->slaveName, O_RDWR | O_NOCTTY);
-    if (slave == -1) {
-        Tcl_AppendResult(interp, "can't open \"", bgPtr->slaveName, 
-                "\": ", Tcl_PosixError(interp), (char *)NULL);
-        goto error;
-    }
-    if (tcsetpgrp(slave, getpid())) {
-        ExplainError(interp, "tcsetgrp");
-        fprintf(stderr, "tcsetpgrp failed: tcgetpgrp=%d\n",
-                tcgetpgrp(slave));
-        goto error;
-    }
-#ifdef TIOCSCTTY
-    if (ioctl(slave, TIOCSCTTY, slave) == -1) {
-        Tcl_AppendResult(interp, "can't set ioctl TIOCSCTTY for \"",
-                bgPtr->slaveName, "\": ", Tcl_PosixError(interp), (char *)NULL);
-        goto error;
-    }
-#endif  /* TIOCSCTTY */
-#ifdef I_PUSH
-    if (isastream(slave)) {
-        if (ioctl(slave, I_PUSH, "p_tem") == -1) {
-            ExplainError(interp, "can't set ioctl \"p_tem\"");
-            goto error;
-        }
-        if (ioctl(slave, I_PUSH, "ldterm") == -1) {
-            ExplainError(interp, "can't set ioctl \"ldterm\"");
-            goto error;
-        }
-    }
-#endif
-    if (tcgetattr(0, &tt) == -1) {
-        ExplainError(interp, "slave tcgetattr");
-        goto error;
-    }
-    tt.c_lflag |= ICANON;
-    tt.c_oflag &= ~(ONLCR | OCRNL);
-    tt.c_oflag |= ONLRET; 
-    if (tcsetattr(slave, TCSANOW, &tt) == -1) {
-        ExplainError(interp, "tcsetattr");
-        goto error;
-    }
-    if (dup2(slave, 0) == -1) {
+    /* Dup descriptors to slave. */
+    if (dup2(bgPtr->slave, STDIN_FILENO) == -1) {
         ExplainError(interp, "can't dup stdin");
         goto error;
     }
-    if (dup2(slave, 1) == -1) {
+    if (dup2(bgPtr->slave, STDOUT_FILENO) == -1) {
         ExplainError(interp, "can't dup stdout");
         goto error;
     }
-#ifdef notdef
-    if (dup2(slave, 2) == -1) {
+    if (dup2(stderrPipe[1], STDERR_FILENO) == -1) {
         ExplainError(interp, "can't dup stderr");
         goto error;
     }
-#endif
     /*
      * Must clear the close-on-exec flag for the target FD, since some
      * systems (e.g. Ultrix) do not clear the CLOEXEC flag on the
      * target FD.
      */
-    fcntl(0, F_SETFD, 0);
-    fcntl(1, F_SETFD, 0);
-    fcntl(2, F_SETFD, 0);
+    fcntl(STDIN_FILENO,  F_SETFD, 0);
+    fcntl(STDOUT_FILENO, F_SETFD, 0);
+    fcntl(STDERR_FILENO, F_SETFD, 0);
 
     close(bgPtr->master);
     bgPtr->master = -1;
-    fprintf(stderr,
-            "after fork: child=%d, parent=%d sid=%d, pgrp=%d tpgrp=%d\n",
-            getpid(), getppid(), getsid(getpid()),
-            getpgrp(), tcgetpgrp(STDIN_FILENO));
 
     /* Always collect characters from the sinks. Display to the screen or
      * not. */
@@ -2741,13 +2725,15 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
     if (numPids <= 0) {
         goto error;
     }
+    close(mesgPipe[1]);                 /* This frees the parent to start
+                                         * collecting data. */
     *((int *)&waitStatus) = 0;
     *((int *)&lastStatus) = 0;
     while (numPids > 0) {
         int pid;
 
         pid = waitpid(0, (int *)&waitStatus, 0);
-        if (pid < 0) {
+        if (pid == -1) {
             fprintf(stderr, "waitpid: %s\n", Tcl_PosixError(interp));
             continue;
         }
@@ -2763,21 +2749,14 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
      * All pipeline processes have completed.  Exit the child replicating the
      * exit code.
      */
-    close(slave);
+    close(bgPtr->slave);
     exit(WEXITSTATUS(lastStatus));
     return TCL_OK;
  error:
-    {
-        ssize_t numWritten;
-        const char *mesg;
-        int length;
-
-        mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &length);
-        numWritten = write(mesgPipe[1], mesg, length);
-        assert(numWritten == length);
-        _exit(1);
-        return TCL_OK;
-    }
+    WriteErrorMesgToParent(interp, mesgPipe[1]);
+    exit(1);
+    /* notreached */
+    return TCL_OK;
 }
 #endif /* HAVE_PTY */
 
@@ -2985,7 +2964,8 @@ CollectStdout(ClientData clientData, int mask)
     bgPtr = sinkPtr->bgPtr;
     if (result == TCL_ERROR) {
         CloseSink(&bgPtr->errSink);
-    } else if (bgPtr->errSink.fd == -1) {
+    }
+    if (bgPtr->errSink.fd == -1) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -3037,7 +3017,8 @@ CollectStderr(ClientData clientData, int mask)
     bgPtr = sinkPtr->bgPtr;
     if (result == TCL_ERROR) {
         CloseSink(&bgPtr->outSink);
-    } else if (bgPtr->outSink.fd == -1) {
+    }
+    if (bgPtr->outSink.fd == -1) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -3170,14 +3151,8 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
         exitCode = done = 0;
         while (!done) {
             Tcl_DoOneEvent(0);
-            if (bgPtr->outSink.status == READ_ERROR) {
-                fprintf(stderr, "error reading from stdout: %s\n",
-                        Tcl_GetString(Tcl_GetObjResult(interp)));
-                goto error;
-            }
-            if (bgPtr->errSink.status == READ_ERROR) {
-                fprintf(stderr, "error reading from stderr: %s\n",
-                        Tcl_GetString(Tcl_GetObjResult(interp)));
+            if ((bgPtr->outSink.status == READ_ERROR) ||
+                (bgPtr->errSink.status == READ_ERROR)) { 
                 goto error;
             }
         }
@@ -3191,9 +3166,6 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
                 GetSinkData(&bgPtr->outSink, &data, &length);
                 assert(length <= UINT_MAX);
 #if (_TCL_VERSION <  _VERSION(8,1,0)) 
-#ifdef notdef
-                data[length] = '\0';
-#endif
                 Tcl_SetObjResult(interp, Tcl_NewStringObj(data, length));
 #else
                 Tcl_SetObjResult(interp, Tcl_NewByteArrayObj(data, length));
