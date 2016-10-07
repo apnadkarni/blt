@@ -113,6 +113,71 @@
 
 typedef int Tcl_File;
 
+typedef struct {
+    int file;
+    int currFile;
+    int redirected;
+    int mustClose;
+} FileInfo;
+
+static void
+InitFileInfo(FileInfo *infoPtr)
+{
+    infoPtr->file = -1;
+    infoPtr->currFile = -1;
+    infoPtr->redirected = FALSE;
+    infoPtr->mustClose = FALSE;
+}
+
+static void
+ExplainError(Tcl_Interp *interp, const char *mesg)
+{
+    if (mesg != NULL) {
+        Tcl_AppendResult(interp, mesg, ": ", Tcl_PosixError(interp),
+                         (char *)NULL);
+    } else {
+        Tcl_AppendResult(interp, Tcl_PosixError(interp), (char *)NULL);
+    }
+}
+
+static int
+WriteErrorMesgToParent(Tcl_Interp *interp, int f)
+{
+    ssize_t numWritten;
+    const char *mesg;
+    int length;
+    
+    mesg = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &length);
+    numWritten = write(f, mesg, length);
+    assert(numWritten == length);
+    return TCL_OK;
+}
+
+static int
+ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
+{
+    char mesg[BUFSIZ+1];
+    ssize_t numRead, numBytes;
+    
+    /*
+     * Read back from the error pipe to see if the pipeline started up
+     * properly. The info in the pipe (if any) if the TCL error message
+     * from the child process.
+     */
+    numBytes = 0;
+    do {
+        numRead = read(f, mesg, BUFSIZ);
+        if (numRead == -1) {
+            return TCL_ERROR;
+        }
+        mesg[numRead] = '\0';
+        Tcl_AppendResult(interp, mesg, (char *)NULL);
+        numBytes += numRead;
+    } while (numRead > 0);
+    close(f);
+    return (numBytes > 0) ? TCL_ERROR : TCL_OK;
+}
+
 #ifdef MACOSX
 
 /* The following routines are used to emulate the "execvpe" system call for
@@ -457,8 +522,7 @@ CreatePipe(
     int fd[2];
 
     if (pipe(fd) < 0) {
-        Tcl_AppendResult(interp, "can't create pipe for command: ",
-                    Tcl_PosixError(interp), (char *)NULL);
+        ExplainError(interp, "can't create pipe for command");
         return TCL_ERROR;
     }
     fcntl(fd[0], F_SETFD, FD_CLOEXEC);
@@ -588,6 +652,7 @@ RestoreSignals(void)
  */
 static int
 SetupStdFile(
+    Tcl_Interp *interp,
     int fd,                             /* File descriptor to dup, or -1. */
     int type)                           /* One of TCL_STDIN, TCL_STDOUT,
                                          * TCL_STDERR */
@@ -621,7 +686,8 @@ SetupStdFile(
     if (fd >= 0) {
         if (fd != targetFd) {
             if (dup2(fd, targetFd) == -1) {
-                return 0;
+                ExplainError(interp, "dup");
+                return TCL_ERROR;
             }
             /*
              * Must clear the close-on-exec flag for the target FD, since some
@@ -640,7 +706,68 @@ SetupStdFile(
     } else {
         close(targetFd);
     }
-    return 1;
+    return TCL_OK;
+}
+
+static int
+SetupStdFiles(Tcl_Interp *interp, int stdinFd, int stdoutFd, int stderrFd)
+{
+    int joinThisError;
+
+    joinThisError = (stderrFd == stdoutFd);
+    if (SetupStdFile(interp, stdinFd, TCL_STDIN) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (SetupStdFile(interp, stdoutFd, TCL_STDOUT) != TCL_OK)  {
+        return TCL_ERROR;
+    }
+    if (joinThisError) {
+        if (dup2(STDOUT_FILENO, STDERR_FILENO) == -1) {
+            ExplainError(interp, "can't dup stderr");
+            return TCL_ERROR;
+        }
+        if (fcntl(STDERR_FILENO, F_SETFD, 0) != 0) {
+            ExplainError(interp, "can't clear flags on stderr");
+            return TCL_ERROR;
+        }
+    } else {
+        if (SetupStdFile(interp, stderrFd, TCL_STDERR) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    return TCL_OK;
+}
+
+static char **
+EncodeArgs(Tcl_Interp *interp, int argc, char **argv)
+{
+    char **array;                 /* Array of encoded arguments. */
+    Tcl_Encoding encoding;
+    size_t numBytes, arraySize;
+    char *p;
+    Tcl_DString ds;
+    int i;
+    
+    /* Pass 1: Get size of encoded arguments. */
+    numBytes = 0;
+    encoding = Tcl_GetEncoding(interp, NULL);
+    for (i = 0; i < argc; i++) {
+        Tcl_UtfToExternalDString(encoding, argv[i], strlen(argv[i]), &ds);
+        numBytes += Tcl_DStringLength(&ds) + 1;
+    }
+    arraySize = (sizeof(char *) * (argc + 1));
+    array = Blt_AssertMalloc(arraySize + numBytes);
+    p = (char *)array + arraySize;
+    /* Pass 2: Fill the array. */
+    for (i = 0; i < argc; i++) {
+        array[i] = p;
+        Tcl_UtfToExternalDString(encoding, argv[i], strlen(argv[i]), &ds);
+        strcpy(p, Tcl_DStringValue(&ds));
+        p += Tcl_DStringLength(&ds) + 1;
+    }
+    array[i] = NULL;
+    Tcl_DStringFree(&ds);
+    return array; 
 }
 
 /*
@@ -699,100 +826,57 @@ CreateProcess(
                                  * child process. */
     char *const *env)
 {
-#if (_TCL_VERSION >= _VERSION(8,1,0)) 
-    Tcl_DString *dsArr;
-    Tcl_Encoding encoding;
-#endif
-    char errSpace[200];
-    int errPipeIn, errPipeOut;
-    int i;
-    int joinThisError, status, fd;
+    int mesgPipe[2];
+    int status;
     long pid;
-    size_t count;
 
-    errPipeIn = errPipeOut = -1;
+    mesgPipe[0] = mesgPipe[1] = -1;
     pid = -1;
 
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
-    dsArr = Blt_AssertMalloc(argc * sizeof(Tcl_DString));
-    encoding = Tcl_GetEncoding(interp, NULL);
-    for(i = 0; i < argc; i++) {
-        argv[i] = Tcl_UtfToExternalDString(encoding, argv[i], 
-                strlen(argv[i]), dsArr + i);
-    }
+    argv = EncodeArgs(interp, argc, argv); /* Replace argv with encoded args. */
 #endif
     /*
      * Create a pipe that the child can use to return error information if
      * anything goes wrong.
      */
-    if (CreatePipe(interp, &errPipeIn, &errPipeOut) != TCL_OK) {
+    if (CreatePipe(interp, &mesgPipe[0], &mesgPipe[1]) != TCL_OK) {
         goto error;
     }
-    joinThisError = (stderrFd == stdoutFd);
     pid = fork();
-    if (pid == 0) {
-        ssize_t numWritten;
-        size_t length;
-        fd = errPipeOut;
+    if (pid == -1) {
+        ExplainError(interp, "fork");
+        goto error;
+    }
+    if (pid == 0) {                     /* Child */
 
-        /*
-         * Set up stdio file handles for the child process.
-         */
-        if (!SetupStdFile(stdinFd, TCL_STDIN) ||
-            !SetupStdFile(stdoutFd, TCL_STDOUT) ||
-            (!joinThisError && !SetupStdFile(stderrFd, TCL_STDERR)) ||
-            (joinThisError &&
-                ((dup2(1, 2) == -1) || (fcntl(2, F_SETFD, 0) != 0)))) {
-            Blt_FormatString(errSpace, 200, 
-                "%dforked process can't set up input/output: ", errno);
-            length = strlen(errSpace);
-            numWritten = write(fd, errSpace, length);
-            assert(numWritten == length);
-            _exit(1);
+        close(mesgPipe[0]);            /* Close the input side of the error
+                                        * message pipe. */
+        if (SetupStdFiles(interp, stdinFd, stdoutFd, stderrFd) == TCL_OK) {
+            RestoreSignals();
+            execvpe(argv[0], argv, env);
+            /* Not reached if command was successfully executed. */
+            Tcl_AppendResult(interp, "can't execute \"", argv[0], "\": ", 
+                         Tcl_PosixError(interp), (char *)NULL);
         }
-        /*
-         * Close the input side of the error pipe.
-         */
-        RestoreSignals();
-        execvpe(argv[0], argv, env);
-        Blt_FormatString(errSpace, 200, "%dcan't execute \"%.150s\": ",
-                         errno, argv[0]);
-        length = strlen(errSpace);
-        numWritten = write(fd, errSpace, (size_t)strlen(errSpace));
-        assert(numWritten == length);
+        WriteErrorMesgToParent(interp, mesgPipe[1]);
         _exit(1);
     }
-    if (pid == -1) {
-        Tcl_AppendResult(interp, "can't fork child process: ",
-            Tcl_PosixError(interp), (char *)NULL);
-        goto error;
-    }
+    /* Parent */
+    CloseFile(mesgPipe[1]);
+    mesgPipe[1] = -1;
 
     /*
      * Read back from the error pipe to see if the child started up OK.  The
      * info in the pipe (if any) consists of a decimal errno value followed by
      * an error message.
      */
-    CloseFile(errPipeOut);
-    errPipeOut = -1;
-
-    fd = errPipeIn;
-    count = read(fd, errSpace, (size_t) (sizeof(errSpace) - 1));
-    if (count > 0) {
-        char *end;
-
-        errSpace[count] = 0;
-        errno = strtol(errSpace, &end, 10);
-        Tcl_AppendResult(interp, end, Tcl_PosixError(interp), (char *)NULL);
+    if (ReadErrorMesgFromChild(interp, mesgPipe[0]) != TCL_OK) {
         goto error;
     }
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
-    for(i = 0; i < argc; i++) {
-        Tcl_DStringFree(dsArr + i);
-    }
-    Blt_Free(dsArr);
+    Blt_Free(argv);
 #endif
-    CloseFile(errPipeIn);
     *pidPtr = pid;
     return TCL_OK;
 
@@ -803,17 +887,14 @@ CreateProcess(
          */
         Tcl_WaitPid((Tcl_Pid)pid, &status, WNOHANG);
     }
-    if (errPipeIn >= 0) {
-        CloseFile(errPipeIn);
+    if (mesgPipe[0] >= 0) {
+        CloseFile(mesgPipe[0]);
     }
-    if (errPipeOut >= 0) {
-        CloseFile(errPipeOut);
+    if (mesgPipe[1] >= 0) {
+        CloseFile(mesgPipe[1]);
     }
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
-    for(i = 0; i < argc; i++) {
-        Tcl_DStringFree(dsArr + i);
-    }
-    Blt_Free(dsArr);
+    Blt_Free(argv);
 #endif
     return TCL_ERROR;
 }
@@ -844,11 +925,11 @@ FileForRedirect(
     Tcl_Interp *interp,         /* Intepreter to use for error reporting. */
     char *spec,                 /* Points to character just after redirection
                                  * character. */
-    char *arg,                  /* Pointer to entire argument containing spec:
-                                 * used for error reporting. */
     int atOK,                   /* Non-zero means that '@' notation can be
                                  * used to specify a channel, zero means that
                                  * it isn't. */
+    char *arg,                  /* Pointer to entire argument containing spec:
+                                 * used for error reporting. */
     char *nextArg,              /* Next argument in argc/argv array, if needed
                                  * for file name or channel name.  May be
                                  * NULL. */
@@ -864,7 +945,7 @@ FileForRedirect(
     int fd;
 
     *skipPtr = 1;
-    if ((atOK != 0) && (*spec == '@')) {
+    if ((atOK) && (*spec == '@')) {
         int direction;
         Tcl_Channel chan;
 
@@ -973,7 +1054,7 @@ Blt_CreatePipeline(
                                          * commands in pipeline plus I/O
                                          * redirection * with <, <<, >, etc.
                                          * Objv[objc] must be * NULL. */
-    Blt_Pid **pidsPtr,              /* (out) Word at *pidsPtr gets
+    Blt_Pid **pidsPtr,                  /* (out) Word at *pidsPtr gets
                                          * filled in with address of array of
                                          * pids for processes in pipeline
                                          * (first pid is first process in
@@ -1019,18 +1100,19 @@ Blt_CreatePipeline(
                                          * the first process in the
                                          * pipeline. */
     char *p;
-    int skip, lastBar, lastArg, i, j, atOK, flags, errorToOutput;
+    int skip, lastBar, lastArg, i, j, atOK, flags, errorToOutput, needCmd;
     Tcl_DString execBuffer;
+    FileInfo in, out, err;
     int pipeIn;
-    int isOpen[3];
-    int curFd[3];               /* If non-zero, then fd should be closed
-                                 * when cleaning up. */
-    int fd[3];
-    
     char **argv;
-
-    fd[0] = fd[1] = fd[2] = -1;
-    isOpen[0] = isOpen[1] = isOpen[2] = FALSE;
+    inputLiteral = NULL;
+    pipeIn = -1;
+    numPids = 0;
+    
+    InitFileInfo(&in);
+    InitFileInfo(&out);
+    InitFileInfo(&err);
+    
     if (stdinPipePtr != NULL) {
         *stdinPipePtr = -1;
     }
@@ -1041,9 +1123,6 @@ Blt_CreatePipeline(
         *stderrPipePtr = -1;
     }
     Tcl_DStringInit(&execBuffer);
-
-    pipeIn = curFd[0] = curFd[1] = curFd[2] = -1;
-    numPids = 0;
 
     /*
      * First, scan through all the arguments to figure out the structure of
@@ -1059,16 +1138,20 @@ Blt_CreatePipeline(
      * the argument list.
      */
 
-    /* Convert all the Tcl_Objs to strings. */
+    /* Step 1: Convert all the Tcl_Objs to strings. */
     argv = Blt_AssertMalloc((objc + 1) *  sizeof(char *));
     for (i = 0; i < objc; i++) {
         argv[i] = Tcl_GetString(objv[i]);
     }
     argv[i] = NULL;
 
+    /* Step 2: Extract redirection syntax and count the number of
+     *         individual commands. */
     lastBar = -1;
     cmdCount = 1;
+    needCmd = TRUE;
     for (i = 0; i < objc; i++) {
+        errorToOutput = FALSE;
         skip = 0;
         p = argv[i];
         switch (*p++) {
@@ -1082,22 +1165,28 @@ Blt_CreatePipeline(
             }
             if (*p == '\0') {
                 if ((i == (lastBar + 1)) || (i == (objc - 1))) {
-                    Tcl_AppendResult(interp, 
+                    Tcl_AppendResult(interp,
                         "illegal use of | or |& in command", (char *)NULL);
                     goto error;
                 }
             }
             lastBar = i;
             cmdCount++;
+            needCmd = TRUE;
             break;
 
         case '<':
-            if (isOpen[0] != 0) {
-                isOpen[0] = FALSE;
-                CloseFile(fd[0]);
+            if (in.redirected) {
+                Tcl_AppendResult(interp, "ambigious input redirect.",
+                        (char *)NULL);
+                goto error;
+            }
+            if (in.mustClose) {
+                in.mustClose = FALSE;
+                CloseFile(in.file);
             }
             if (*p == '<') {
-                fd[0] = -1;
+                in.file = -1;
                 inputLiteral = p + 1;
                 skip = 1;
                 if (*inputLiteral == '\0') {
@@ -1111,44 +1200,66 @@ Blt_CreatePipeline(
                 }
             } else {
                 inputLiteral = NULL;
-                fd[0] = FileForRedirect(interp, p, argv[i], TRUE, argv[i + 1],
-                        O_RDONLY, &skip, &isOpen[0]);
-                if (fd[0] < 0) {
+                in.file = FileForRedirect(interp, p, TRUE, argv[i], argv[i + 1],
+                        O_RDONLY, &skip, &in.mustClose);
+                if (in.file < 0) {
                     goto error;
                 }
             }
+            in.redirected = TRUE;
             break;
 
         case '>':
             atOK = TRUE;
             flags = O_WRONLY | O_CREAT | O_TRUNC;
-            errorToOutput = FALSE;
             if (*p == '>') {
                 p++;
                 atOK = FALSE;
-                flags = O_WRONLY | O_CREAT;
+		flags = O_WRONLY | O_CREAT | O_APPEND;
             }
             if (*p == '&') {
-                if (isOpen[2] != 0) {
-                    isOpen[2] = FALSE;
-                    CloseFile(fd[2]);
+                if (err.redirected) {
+                    Tcl_AppendResult(interp, "ambigious error redirect.",
+                                     (char *)NULL);
+                    goto error;
+                }
+                if (err.mustClose) {
+                    err.mustClose = FALSE;
+                    CloseFile(err.file);
                 }
                 errorToOutput = TRUE;
                 p++;
             }
-            if (isOpen[1] != 0) {
-                isOpen[1] = FALSE;
-                CloseFile(fd[1]);
+            /*
+	     * Close the old output file, but only if the error file is not
+	     * also using it.
+	     */
+            if (out.mustClose) {
+                if (out.redirected) {
+                    Tcl_AppendResult(interp, "ambigious output redirect.",
+                                     (char *)NULL);
+                    goto error;
+                }
+                out.mustClose = FALSE;
+                if (err.file == out.file) {
+                    err.mustClose = TRUE;
+                } else {
+                    CloseFile(out.file);
+                }
             }
-            fd[1] = FileForRedirect(interp, p, argv[i], atOK, argv[i + 1], 
-                flags, &skip, &isOpen[1]);
-            if (fd[1] < 0) {
+           out.file = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1],
+                flags, &skip, &out.mustClose);
+            if (out.file == -1) {
                 goto error;
             }
             if (errorToOutput) {
-                isOpen[2] = FALSE;
-                fd[2] = fd[1];
+                if (err.mustClose) {
+                    err.mustClose = FALSE;
+                    close(err.file);
+                }
+                err.file = out.file;
             }
+            out.redirected = TRUE;
             break;
 
         case '2':
@@ -1163,100 +1274,135 @@ Blt_CreatePipeline(
                 atOK = FALSE;
                 flags = O_WRONLY | O_CREAT;
             }
-            if (isOpen[2] != 0) {
-                isOpen[2] = FALSE;
-                CloseFile(fd[2]);
+            if (err.mustClose) {
+                if (err.redirected) {
+                    Tcl_AppendResult(interp, "ambigious error redirect.",
+                                     (char *)NULL);
+                    goto error;
+                }
+                err.mustClose = FALSE;
+                CloseFile(err.file);
             }
-            fd[2] = FileForRedirect(interp, p, argv[i], atOK, argv[i + 1], 
-                flags, &skip, &isOpen[2]);
-            if (fd[2] < 0) {
-                goto error;
-            }
-            break;
-        }
+	    if ((atOK) && (p[0] == '@') && (p[1] == '1') && (p[2] == '\0')) {
+		/*
+		 * Special case handling of 2>@1 to redirect stderr to the
+		 * exec/open output pipe as well. This is meant for the end of
+		 * the command string, otherwise use |& between commands.
+		 */
+		if (i != (objc - 1)) {
+		    Tcl_AppendResult(interp, "must specify \"", argv[i],
+			    "\" as last word in command", NULL);
+		    goto error;
+		}
+		err.file = out.file;
+		errorToOutput = 2;
+		skip = 1;
+	    } else {
+		err.file = FileForRedirect(interp, p, atOK, argv[i],
+                        argv[i + 1], flags, &skip, &err.mustClose);
+		if (err.file == -1) {
+		    goto error;
+		}
+                err.redirected = TRUE;
+	    }
+	    break;
 
-        if (skip != 0) {
-            for (j = i + skip; j < objc; j++) {
-                argv[j - skip] = argv[j];
-            }
-            objc -= skip;
-            i -= 1;
+	default:
+	  /* Got a command word, not a redirection */
+	  needCmd = FALSE;
+	  break;
         }
+	if (skip != 0) {
+	    for (j = i + skip; j < objc; j++) {
+		argv[j - skip] = argv[j];
+	    }
+	    objc -= skip;
+	    i -= 1;
+	}
+    }
+    if (needCmd) {
+	/* We had a bar followed only by redirections. */
+
+        Tcl_AppendResult(interp, "missing command for \"", argv[0], "\"",
+                         (char *)NULL);
+	goto error;
     }
 
-    if (fd[0] == -1) {
+    /* Step 3: Create temporary files for redirection literals and 
+     *         pipes for the pipeline. */
+    if (in.file == -1) {
         if (inputLiteral != NULL) {
             /*
              * The input for the first process is immediate data coming from
              * Tcl.  Create a temporary file for it and put the data into the
              * file.
              */
-            fd[0] = CreateTempFile(inputLiteral);
-            if (fd[0] < 0) {
-                Tcl_AppendResult(interp,
-                    "can't create input file for command: ",
-                    Tcl_PosixError(interp), (char *)NULL);
+            in.file = CreateTempFile(inputLiteral);
+            if (in.file < 0) {
+                ExplainError(interp, "can't create input file for command");
                 goto error;
             }
-            isOpen[0] = TRUE;
+            in.mustClose = TRUE;
         } else if (stdinPipePtr != NULL) {
             /*
              * The input for the first process in the pipeline is to come from
              * a pipe that can be written from by the caller.
              */
-            if (CreatePipe(interp, &fd[0], stdinPipePtr) != TCL_OK) {
+            if (CreatePipe(interp, &in.file, stdinPipePtr) != TCL_OK) {
                 goto error;
             }
-            isOpen[0] = TRUE;
+            in.mustClose = TRUE;
         } else {
             /*
              * The input for the first process comes from stdin.
              */
-            fd[0] = 0;
+            in.file = STDIN_FILENO;
         }
     }
-    if (fd[1] == -1) {
+    if (out.file == -1) {
         if (stdoutPipePtr != NULL) {
             /*
-             * Output from the last process in the pipeline is to go to a pipe
-             * that can be read by the caller.
+             * Output from the last process in the pipeline is to go to a
+             * pipe that can be read by the caller.
              */
-            if (CreatePipe(interp, stdoutPipePtr, &fd[1]) != TCL_OK) {
+            if (CreatePipe(interp, stdoutPipePtr, &out.file) != TCL_OK) {
                 goto error;
             }
-            isOpen[1] = TRUE;
+            out.mustClose = TRUE;
         } else {
             /*
              * The output for the last process goes to stdout.
              */
-            fd[1] = 1;
+            out.file = STDOUT_FILENO;
         }
     }
-    if (fd[2] == -1) {
-        if (stderrPipePtr != NULL) {
+    if (err.file == -1) {
+	if (errorToOutput == 2) {
+	    /* Handle 2>@1 special case at end of cmd line. */
+	    err.file = out.file;
+        } else if (stderrPipePtr != NULL) {
             /*
              * Stderr from the last process in the pipeline is to go to a pipe
              * that can be read by the caller.
              */
-            if (CreatePipe(interp, stderrPipePtr, &fd[2]) != TCL_OK) {
+            if (CreatePipe(interp, stderrPipePtr, &err.file) != TCL_OK) {
                 goto error;
             }
-            isOpen[2] = TRUE;
+            err.mustClose = TRUE;
         } else {
             /*
              * Errors from the pipeline go to stderr.
              */
-            fd[2] = 2;
+            err.file = 2;
         }
     }
     /*
-     * Scan through the objc array, creating a process for each group of
-     * arguments between the "|" characters.
+     * Step 4: Scan through the objc array, creating a process for each
+     *         group of arguments between the "|" characters.
      */
-
     Tcl_ReapDetachedProcs();
     pids = Blt_AssertMalloc(cmdCount * sizeof(int));
-    curFd[0] = fd[0];
+    in.currFile = in.file;
 
     lastArg = 0;                        /* Suppress compiler warning */
     for (i = 0; i < objc; i = lastArg + 1) {
@@ -1294,21 +1440,21 @@ Blt_CreatePipeline(
          * the next segment of the pipe.
          */
         if (lastArg == objc) {
-            curFd[1] = fd[1];
+            out.currFile = out.file;
         } else {
-            if (CreatePipe(interp, &pipeIn, &curFd[1]) != TCL_OK) {
+            if (CreatePipe(interp, &pipeIn, &out.currFile) != TCL_OK) {
                 goto error;
             }
         }
 
         if (joinThisError != 0) {
-            curFd[2] = curFd[1];
+            err.currFile = out.currFile;
         } else {
-            curFd[2] = fd[2];
+            err.currFile = err.file;
         }
 
-        if (CreateProcess(interp, lastArg - i, argv + i, curFd[0], curFd[1], 
-                curFd[2], &pid, env) != TCL_OK) {
+        if (CreateProcess(interp, lastArg - i, argv + i, in.currFile,
+                out.currFile, err.currFile, &pid, env) != TCL_OK) {
             goto error;
         }
         Tcl_DStringFree(&execBuffer);
@@ -1320,16 +1466,16 @@ Blt_CreatePipeline(
          * Close off our copies of file descriptors that were set up for this
          * child, then set up the input for the next child.
          */
-        if ((curFd[0] >= 0) && (curFd[0] != fd[0])) {
-            CloseFile(curFd[0]);
+        if ((in.currFile >= 0) && (in.currFile != in.file)) {
+            CloseFile(in.currFile);
         }
-        curFd[0] = pipeIn;
+        in.currFile = pipeIn;
         pipeIn = -1;
 
-        if ((curFd[1] >= 0) && (curFd[1] != fd[1])) {
-            CloseFile(curFd[1]);
+        if ((out.currFile >= 0) && (out.currFile != out.file)) {
+            CloseFile(out.currFile);
         }
-        curFd[1] = -1;
+        out.currFile = -1;
     }
 
     *pidsPtr = pids;
@@ -1341,10 +1487,14 @@ Blt_CreatePipeline(
   cleanup:
     Tcl_DStringFree(&execBuffer);
 
-    for (i = 0; i < 3; i++) {
-        if (isOpen[i]) {
-            CloseFile(fd[i]);
-        }
+    if (in.mustClose) {
+        CloseFile(in.file);
+    }
+    if (out.mustClose) {
+        CloseFile(out.file);
+    }
+    if (err.mustClose) {
+        CloseFile(err.file);
     }
     if (argv != NULL) {
         Blt_Free(argv);
@@ -1361,14 +1511,14 @@ Blt_CreatePipeline(
     if (pipeIn >= 0) {
         CloseFile(pipeIn);
     }
-    if ((curFd[2] >= 0) && (curFd[2] != fd[2])) {
-        CloseFile(curFd[2]);
+    if ((err.currFile >= 0) && (err.currFile != err.file)) {
+        CloseFile(err.currFile);
     }
-    if ((curFd[1] >= 0) && (curFd[1] != fd[1])) {
-        CloseFile(curFd[1]);
+    if ((out.currFile >= 0) && (out.currFile != out.file)) {
+        CloseFile(out.currFile);
     }
-    if ((curFd[0] >= 0) && (curFd[0] != fd[0])) {
-        CloseFile(curFd[0]);
+    if ((in.currFile >= 0) && (in.currFile != in.file)) {
+        CloseFile(in.currFile);
     }
     if ((stdinPipePtr != NULL) && (*stdinPipePtr >= 0)) {
         CloseFile(*stdinPipePtr);
