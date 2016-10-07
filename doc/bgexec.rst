@@ -99,9 +99,27 @@ or double dashes (--).  The following options are available for
     calling TCL interpreter exits.  By default all background pipelines are
     killed when the TCL interpreter ends. The default is "0".
 
-  **-echo** *boolean*
-    Indicates that the program's stderr channel should be echoed to the
-    stderr of the TCL program (typically the terminal).  The default is "0".
+  **-echo** *echoName*
+    Specificies if the program's stdout and/or stderr channel should be
+    echoed to the stdout/stderr of the TCL program. *EchoName* can
+    be one of the following.
+
+    **stderr**
+      Echo the standard error of the pipeline to the standard error
+      of the TCL program.
+
+    **stdout**
+      Echo the standard output of the pipeline to the standard output
+      of the TCL program.
+
+    **both**
+      Echo both the standard output and error of the pipeline to the
+      standard output and error of the TCL program.
+
+    **none**
+      Do not echo the standard output and error of the pipeline.
+
+    The default is "none".
     
   **-errorvariable** *varName* 
     Specifies that a global variable *varName* is to be set with the
@@ -171,20 +189,23 @@ or double dashes (--).  The following options are available for
     *Milliseconds* is the number of milliseconds to wait before polling to
     see if the program has terminated.  The default is "1000".
 
-  **-pty** 
-    For Unix programs only, this flags indicates to use a pseudo-terminal
-    and runs the program in a session (see **setsid**). The advantages
-    are 1) output is not buffered and 2) child processes of the the
-    pipeline and killed when the pipeline is aborted.
-    
   **-session** 
-    For Unix programs only, this flags indicates to use a new session (see
-    **setsid**) group is to be created for the pipeline.  If the
-    pipeline is aborted by setting the **bgexec** status variable, then the
-    child processes of the pipeline will also be signaled. You can use
-    this to kill all processes related to pipeline, even if the parent
-    programs do not properly handle signals.
+    For Unix programs only.  Indicates to create a new session leader (see
+    **setsid**) for the pipeline.  If you terminate the pipeline by setting
+    the **bgexec** status variable, then all child processes of the
+    pipeline will also be signaled. You can use this to kill all processes
+    related to pipeline, even if their parent programs do not properly
+    handle signals.
 
+  **-tty** 
+    For Unix programs only. Indicates to connect the pipeline the a
+    pseudo-terminal.  This is useful for running programs that require
+    their input and/or to be connected to a terminal.  Also output is not
+    buffered. Characters will become immediately available to be
+    displayed. This option implies the **-session** option. You can kill
+    all processes related to pipeline, even if the parent programs do not
+    properly handle signals.
+    
   **-updatevariable** *varName* 
     Deprecated. This option is the same as **-lasterrorvariable**.
 

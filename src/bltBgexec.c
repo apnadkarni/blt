@@ -603,6 +603,16 @@ static Tcl_TimerProc TimerProc;
 static Tcl_FileProc CollectStdout, CollectStderr;
 static Tcl_ExitProc BgexecExitProc;
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ExplainError --
+ *
+ *      Generate and error message in the interpreter given a message
+ *      string and the current errno value.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 ExplainError(Tcl_Interp *interp, const char *mesg)
 {
@@ -614,6 +624,19 @@ ExplainError(Tcl_Interp *interp, const char *mesg)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WriteErrorMesgToParent --
+ *
+ *      Writes the error message to the parent process.  The error message
+ *      if the current result in the child's interpreter.  
+ *
+ * Results:
+ *      Always returns TCL_OK.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 WriteErrorMesgToParent(Tcl_Interp *interp, int f)
 {
@@ -627,6 +650,22 @@ WriteErrorMesgToParent(Tcl_Interp *interp, int f)
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ReadErrorMesgFromChild --
+ *
+ *      Reads back the error message sent by the child process to see if
+ *      the pipeline started up properly. The informaation in the pipe (if
+ *      any) is the TCL error message from the child process.
+ *
+ * Results:
+ *      Returns a standard TCL result.  It the pipeline start correctly,
+ *      TCL_OK is returned.  Otherwise TCL_ERROR and the interpreter
+ *      will contain the error message from the child process.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
 {
@@ -675,10 +714,10 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
 {
     Blt_HashTable envTable;         /* Temporary hash table for environment
                                      * variables. */
-    int count;                      /* Counter for # bytes in new buffer */
+    size_t numBytes;                /* Counter for # bytes in new buffer */
     
     Blt_InitHashTable(&envTable, BLT_STRING_KEYS);
-    count = 0;
+    numBytes = 0;
 
     /* Step 1: Add the override enviroment variables to the empty table. */
     {
@@ -690,12 +729,12 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
             int isNew, length;
             
             name = Tcl_GetStringFromObj(objv[i], &length);
-            count += length;
+            numBytes += length;
             hPtr = Blt_CreateHashEntry(&envTable, name, &isNew);
             value = Tcl_GetStringFromObj(objv[i+1], &length);
             Blt_SetHashValue(hPtr, value);
-            count += length;
-            count += 2;                     /* Include '\0' and '=' */
+            numBytes += length;
+            numBytes += 2;                     /* Include '\0' and '=' */
         }
     }
     /* Step 2:  Add the current environment variables, but don't overwrite
@@ -736,13 +775,13 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
                     Blt_SetHashValue(hPtr, eqsign + 1);
                     /* Not already in table, add variable as is including the
                      * NUL byte. */
-                    count += p - *envPtr + 1;    /* Include NUL byte */
+                    numBytes += p - *envPtr + 1;    /* Include NUL byte */
                 }
                 *eqsign = '=';              /* Restore the '='. */
             }
         }
-        count++;                           /* Final NUL byte. */
-        assert(count < 100000);
+        numBytes++;                           /* Final NUL byte. */
+        assert(numBytes < 100000);
     }
     /* Step 3: Allocate an environment array */
     /* Step 4: Add the name/value pairs from the hashtable to the array as
@@ -752,15 +791,16 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
         Blt_HashSearch iter;
         char **array;
         char *p;
-        int n, numBytes;
+        int n, arraySize;
         
-        numBytes = (envTable.numEntries + 1) * sizeof(char **);
-        array = Blt_AssertMalloc(numBytes + count * sizeof(char));
-        p = (char *)array + numBytes;
+        arraySize = (envTable.numEntries + 1) * sizeof(char **);
+        array = Blt_AssertMalloc(arraySize + (numBytes * sizeof(char)));
+        p = (char *)array + arraySize;
         
         n = 0;
         for (hPtr = Blt_FirstHashEntry(&envTable, &iter); hPtr != NULL;
              hPtr = Blt_NextHashEntry(&iter)) {
+            size_t numBytes;
             const char *name, *value;
             
             name = Blt_GetHashKey(&envTable, hPtr);
