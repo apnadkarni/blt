@@ -77,6 +77,7 @@
 
 #ifdef MACOSX
   #include <crt_externs.h>
+  #include <sys/ioctl.h>
 #endif
 
 #ifdef HAVE_STROPTS_H
@@ -740,27 +741,27 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
     /* Step 2:  Add the current environment variables, but don't overwrite
      *          the existing table entries. */
     {
-        char *const *envPtr;
+        char *const *varPtr;
 #ifdef MACOSX
         char **environ;
-        environ = _NSGetEnviron();
+        environ = (char **)_NSGetEnviron();
 #else
         extern char **environ;
 #endif
 
-        for (envPtr = environ; *envPtr != NULL; envPtr++) {
+        for (varPtr = environ; *varPtr != NULL; varPtr++) {
             char *eqsign;
             char *p;
             
             eqsign = NULL;
             /* Search for the end of the string, saving the position of the
              * first '=' found. */
-            for (p = (char *)*envPtr; *p != '\0'; p++) {
+            for (p = (char *)*varPtr; *p != '\0'; p++) {
                 if ((*p == '=') && (eqsign == NULL)) {
                     eqsign = p;
                 }
             }
-            if (*envPtr == p) {
+            if (*varPtr == p) {
                 break;
             }
             if (eqsign != NULL) {
@@ -770,12 +771,12 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
                 /* Temporarily terminate the variable name at the '=' and
                  * create a hash table entry for the variable. */
                 *eqsign = '\0';
-                hPtr = Blt_CreateHashEntry(&envTable, *envPtr, &isNew);
+                hPtr = Blt_CreateHashEntry(&envTable, *varPtr, &isNew);
                 if (isNew) {    /* Ignore the variable if it already exists. */
                     Blt_SetHashValue(hPtr, eqsign + 1);
                     /* Not already in table, add variable as is including the
                      * NUL byte. */
-                    numBytes += p - *envPtr + 1;    /* Include NUL byte */
+                    numBytes += p - *varPtr + 1;    /* Include NUL byte */
                 }
                 *eqsign = '=';              /* Restore the '='. */
             }
