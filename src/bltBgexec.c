@@ -2561,7 +2561,7 @@ InitPtyMaster(Bgexec *bgPtr)
     }
 #ifdef TIOCEXCL
     if (ioctl(bgPtr->master, TIOCEXCL, NULL) == -1) {
-        ExplainError(bgPtr->interp, "can't set TIOCEXCL on master");
+        ExplainError(bgPtr->interp, "can't get exclusive access to terminal");
         return TCL_ERROR;
     }
 #endif  /* TIOCEXCL */
@@ -2650,8 +2650,9 @@ OpenPtySlave(Tcl_Interp *interp, Bgexec *bgPtr)
     }
 #ifdef TIOCSCTTY
     if (ioctl(slave, TIOCSCTTY, slave) == -1) {
-        Tcl_AppendResult(interp, "can't set ioctl TIOCSCTTY for \"",
-                bgPtr->slaveName, "\": ", Tcl_PosixError(interp), (char *)NULL);
+        Tcl_AppendResult(interp, "can't make \"", bgPtr->slaveName,
+                "\" controlling terminal : ", Tcl_PosixError(interp),
+                (char *)NULL);
         return TCL_ERROR;
     }
 #endif  /* TIOCSCTTY */

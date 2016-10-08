@@ -1230,16 +1230,16 @@ Blt_CreatePipeline(
                 errorToOutput = TRUE;
                 p++;
             }
+            if (out.redirected) {
+                Tcl_AppendResult(interp, "ambigious output redirect.",
+                                 (char *)NULL);
+                goto error;
+            }
             /*
 	     * Close the old output file, but only if the error file is not
 	     * also using it.
 	     */
             if (out.mustClose) {
-                if (out.redirected) {
-                    Tcl_AppendResult(interp, "ambigious output redirect.",
-                                     (char *)NULL);
-                    goto error;
-                }
                 out.mustClose = FALSE;
                 if (err.file == out.file) {
                     err.mustClose = TRUE;
@@ -1247,7 +1247,7 @@ Blt_CreatePipeline(
                     CloseFile(out.file);
                 }
             }
-           out.file = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1],
+            out.file = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1],
                 flags, &skip, &out.mustClose);
             if (out.file == -1) {
                 goto error;
@@ -1258,6 +1258,7 @@ Blt_CreatePipeline(
                     close(err.file);
                 }
                 err.file = out.file;
+                err.redirected = TRUE;
             }
             out.redirected = TRUE;
             break;
@@ -1274,12 +1275,12 @@ Blt_CreatePipeline(
                 atOK = FALSE;
                 flags = O_WRONLY | O_CREAT;
             }
+            if (err.redirected) {
+                Tcl_AppendResult(interp, "ambigious error redirect.",
+                                 (char *)NULL);
+                goto error;
+            }
             if (err.mustClose) {
-                if (err.redirected) {
-                    Tcl_AppendResult(interp, "ambigious error redirect.",
-                                     (char *)NULL);
-                    goto error;
-                }
                 err.mustClose = FALSE;
                 CloseFile(err.file);
             }
@@ -1303,8 +1304,8 @@ Blt_CreatePipeline(
 		if (err.file == -1) {
 		    goto error;
 		}
-                err.redirected = TRUE;
 	    }
+            err.redirected = TRUE;
 	    break;
 
 	default:
