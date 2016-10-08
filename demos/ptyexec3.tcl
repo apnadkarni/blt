@@ -177,14 +177,14 @@ proc Start { command } {
         set results {}
         set animate(index) 0
 	lappend switches \
-	    -variable results \
+	    -pty \
 	    -error barney \
 	    -output fred \
 	    -killsignal SIGINT \
 	    -onoutput DisplayOutput \
 	    -onerror DisplayErrors \
 	    -linebuffered no
-        eval "blt::ptyexec $switches $command &"
+         eval "blt::bgexec results $switches $command &"
 #        Animate
     }
 }

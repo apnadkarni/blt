@@ -933,6 +933,10 @@ test bgexec.133 { kill by setting status variable } {
     } msg] $msg
 } {0 {}}
 
+
+if { $tcl_platform(platform) == "windows" } {
+    exit 0
+}
 ########################################################################
 #	Session tests
 ########################################################################

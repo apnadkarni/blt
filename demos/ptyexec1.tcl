@@ -194,7 +194,7 @@ proc Toggle { args } {
 	set bgStatus 0
 	.stop configure -text "Start"
     } elseif { $text == "Start" } {
-	eval blt::bgexec bgStatus -session -onoutput DisplayStats $command &
+	eval blt::bgexec bgStatus -onoutput DisplayStats $command &
 	AnimateBitmap 0
 	.stop configure -text "Stop"
     }

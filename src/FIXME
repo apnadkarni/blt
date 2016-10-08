@@ -9,12 +9,12 @@
     bltUnixFont.c but not in bltWinFont.c. Don't require Window users to
     link with freetype.
 
-15. Remove Makefile.vc and Makefile.bc files.
+15. (done) Remove Makefile.vc and Makefile.bc files.
 -------------------------------------------------------------------------
 
 The following bugs are all show-stoppers for the next release.
 
-1.  Unify or separate bgexec Unix/Max/Win implementations.
+1.  (done) Unify or separate bgexec Unix/Max/Win implementations.
 
 3.  Fix TreeView bindings to handle editing entry.
 
@@ -22,7 +22,7 @@ The following bugs are all show-stoppers for the next release.
 
 6.  -values* descriptions for graph.
 
-7. Remove bltTile*
+7. Remove bltTile* (clean up)
 
 9. Add paintbrush callbacks to graph and barchart.  Backgrounds don't have
    opacity.  Paintbrushes do.  Add origin interface to paintbrushes.

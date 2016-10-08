@@ -151,12 +151,20 @@ if { [string match *color $visual] } {
 proc Start { command } {
     global results animate
     .text delete 1.0 end
+    lappend switches \
+	-error barney \
+	-output fred \
+	-killsignal SIGINT \
+	-onoutput DisplayOutput \
+	-onerror DisplayErrors \
+	-linebuffered no 
+    if { $tcl_platform(platform) != "windows" } {
+	lappend switches "-tty"
+    }
     if { $animate(index) < 0 } {
         set results {}
         set animate(index) 0
-        eval "blt::ptyexec -variable results -error barney -output fred -killsignal SIGINT \
-	    -onoutput DisplayOutput -onerror DisplayErrors -linebuffered no \
-		$command &"
+        eval "blt::bgexec results $switches $command &"
         Animate
     }
 }
