@@ -225,7 +225,8 @@ BLT_EXTERN void		Blt_UnmultiplyColors(Blt_Picture picture);
 #ifndef Blt_MultiplyPixels_DECLARED
 #define Blt_MultiplyPixels_DECLARED
 /* 37 */
-BLT_EXTERN void		Blt_MultiplyPixels(Blt_Picture picture, float value);
+BLT_EXTERN void		Blt_MultiplyPixels(Blt_Picture dst, Blt_Picture src,
+        float value);
 #endif
 #ifndef Blt_GetBBoxFromObjv_DECLARED
 #define Blt_GetBBoxFromObjv_DECLARED
@@ -618,7 +619,7 @@ typedef struct BltTkProcs {
     void (*blt_UnmultiplyColor) (Blt_Pixel *colorPtr); /* 34 */
     void (*blt_PremultiplyColors) (Blt_Picture picture); /* 35 */
     void (*blt_UnmultiplyColors) (Blt_Picture picture); /* 36 */
-    void (*blt_MultiplyPixels) (Blt_Picture picture, float value); /* 37 */
+    void (*blt_MultiplyPixels) (Blt_Picture dst, Blt_Picture src, float value); /* 37 */
     int (*blt_GetBBoxFromObjv) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, PictRegion *regionPtr); /* 38 */
     int (*blt_AdjustRegionToPicture) (Blt_Picture picture, PictRegion *regionPtr); /* 39 */
     int (*blt_GetPixelFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr); /* 40 */

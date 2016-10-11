@@ -327,7 +327,8 @@ BLT_EXTERN void Blt_PremultiplyColors(Blt_Picture picture);
 
 BLT_EXTERN void Blt_UnmultiplyColors(Blt_Picture picture);
 
-BLT_EXTERN void Blt_MultiplyPixels(Blt_Picture picture, float value);
+BLT_EXTERN void Blt_MultiplyPixels(Blt_Picture dst, Blt_Picture src,
+        float value);
 
 BLT_EXTERN int Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc, 
         Tcl_Obj *const *objv, PictRegion *regionPtr);
