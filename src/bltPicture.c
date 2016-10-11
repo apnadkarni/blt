@@ -5615,71 +5615,35 @@ ApplyScalarToPictureWithMask(Pict *srcPtr, Blt_Pixel *colorPtr, Pict *maskPtr,
 }
 
 void
-Blt_MultiplyPixels(Pict *srcPtr, float scalar)
+Blt_MultiplyPixels(Pict *destPtr, Pict *srcPtr, float scale)
 {
-    Blt_Pixel *srcRowPtr;
-    short int s15;
+    Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
-    float x;
-    int numBits, bias;
 
-    x = FABS(scalar);
-    if (FABS(x) > 127.0) {
-        return;
+    if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
+        Blt_UnmultiplyColors(srcPtr);
     }
-    /* Figure out how many bits we need. */
-    numBits = 0;
-    while ((1 << numBits) < x) {
-        numBits++;
-    }
-    numBits = 15 - numBits;
-    bias = (1 << numBits) / 2;
-    if (scalar < 0) {
-        bias = -bias;
-    }
-    
-    s15 = (short int)((scalar * (float)(1 << numBits)) + 0.5);
-
     srcRowPtr = srcPtr->bits;
+    destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
-        Blt_Pixel *sp, *send;
+        Blt_Pixel *dp, *sp, *send;
         
         sp = srcRowPtr;
+        dp = destRowPtr;
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-            short int r15, g15, b15, a15;
-            int i31;
-            short int i15;
+            double r, g, b;
             
-            r15 = ((sp->Red << 8) + sp->Red) >> 1;
-            g15 = ((sp->Green << 8) + sp->Green) >> 1;
-            b15 = ((sp->Blue << 8) + sp->Blue) >> 1;
-            a15 = ((sp->Alpha << 8) + sp->Alpha) >> 1;
-            
-            i31 = r15 * s15;
-            i15 = i31 >> 16;            /* Truncate lower 16 bits */
-            i15 += bias;
-            i15 >>= numBits;
-            sp->Red = (i15 > 255) ? 255 : i15;
-            
-            i31 = g15 * s15;
-            i15 = i31 >> 16;            /* Truncate lower 16 bits */
-            i15 += bias;
-            i15 >>= numBits;
-            sp->Green = (i15 > 255) ? 255 : i15;
-            
-            i31 = b15 * s15;
-            i15 = i31 >> 16;            /* Truncate lower 16 bits */
-            i15 += bias;
-            i15 >>= numBits;
-            sp->Green = (i15 > 255) ? 255 : i15;
-            
-            i31 = a15 * s15;
-            i15 = i31 >> 16;            /* Truncate lower 16 bits */
-            i15 += bias;
-            i15 >>= numBits;
-            sp->Alpha = (i15 > 255) ? 255 : i15;
+            r = (sp->Red * scale);
+            g = (sp->Green * scale);
+            b = (sp->Blue * scale);
+
+            dp->Red = (unsigned char)CLAMP(r);
+            dp->Green = (unsigned char)CLAMP(g);
+            dp->Blue = (unsigned char)CLAMP(b);
+            dp->Alpha = sp->Alpha;
         }
         srcRowPtr += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
     }
 }
 
@@ -6193,8 +6157,8 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
      * dest = src + tmp
      */
     tmp = Blt_ClonePicture(srcPtr);
-    Blt_MultiplyPixels(tmp, 1.5);
-    Blt_MultiplyPixels(blur, 0.5);
+    Blt_MultiplyPixels(tmp, tmp, 1.5);
+    Blt_MultiplyPixels(blur, blur, 0.5);
     Blt_SubtractPictures(tmp, blur);
     Blt_AddPictures(tmp, srcPtr);
     Blt_FreePicture(blur);

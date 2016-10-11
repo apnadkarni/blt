@@ -4215,7 +4215,7 @@ MultiplyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetDoubleFromObj(interp, objv[2], &scalar) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_MultiplyPixels(imgPtr->picture, (float)scalar);
+    Blt_MultiplyPixels(imgPtr->picture, imgPtr->picture, (float)scalar);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
