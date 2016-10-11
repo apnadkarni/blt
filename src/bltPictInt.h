@@ -231,6 +231,8 @@ typedef struct {
     Blt_CopyPicturesProc *copyPicturesProc;
     Blt_CrossFadePicturesProc *crossFadePicturesProc;
     Blt_BlankPictureProc *blankPictureProc;
+    Blt_ZoomHorizontallyProc *zoomHorizontallyProc2;
+    Blt_ZoomVerticallyProc *zoomVerticallyProc2;
 } Blt_PictureProcs;
 
 BLT_EXTERN Blt_PictureProcs *bltPictProcsPtr;

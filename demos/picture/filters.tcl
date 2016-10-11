@@ -15,23 +15,26 @@ if { [ file exists $imgfile] } {
 }
 set name [file root [file tail $imgfile]]
 set width [image width $src]
+set width [expr [image width $src]+[image width $src]]
 set height [image height $src]
+set height [expr [image height $src]+[image height $src]]
 set filter sinc
 
 option add *BltTkLabel.background white
 option add *BltTkRadiobutton.background white
-label .l0 -image $src
-label .header0 -text "$width x $height"
-label .footer0 -text "100%"
-. configure -bg white
 set iw $width
 set ih $height
 set dest [image create picture -width $iw -height $ih]
 $dest resample $src -filter $filter
+
+blt::tk::label .header0 -text "$width x $height"
+blt::tk::label .footer0 -text "100%"
 blt::tk::label .header1 -text "Original Image" 
 blt::tk::label .header2 -text "Filtered Image"
 blt::tk::label .footer -text "$filter"
-blt::tk::label .l1 -image $dest
+blt::tk::label .orig -image $src
+blt::tk::label .filtered -image $dest
+. configure -bg white
 set filters {
     "bell"    
     "bessel"  
@@ -55,6 +58,8 @@ proc Doit { filter } {
     global dest src
     set time [time {$dest resample $src -filter $filter}]
     .footer configure -text $time
+    set test 2
+    $dest export pbm -file ${filter}${test}.pbm
 }
 
 set i 0
@@ -66,11 +71,12 @@ foreach f $filters {
     incr i
 }
 blt::table . \
-   0,0 .f -rspan 3 \
-   0,1 .header1 \
-   0,2 .header2 \
-   1,1 .l0 1,2 .l1 \
-   2,1 .footer -cspan 2
+    0,0 .f -rspan 3 \
+    0,1 .header1 \
+    0,2 .header2 \
+    1,1 .orig \
+    1,2 .filtered \
+    2,1 .footer -cspan 2
 
 blt::table configure . r* -resize none
 blt::table configure . r1 -resize both

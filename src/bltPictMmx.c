@@ -1867,19 +1867,21 @@ PremultiplyColors(Pict *srcPtr)
     }
 }
 
+typedef union _Pixel2 {
+    uint64_t lval;
+    uint32_t ival[2];
+} Pixel2;
 
 static void
 ZoomVertically2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 {
-    Sample *samples, *send;
+    Sample *samples;
     int x;
     int bytesPerSample;                 /* Size of sample. */
 
     /* Pre-calculate filter contributions for each row. */
     bytesPerSample = Blt_ComputeWeights(srcPtr->height, destPtr->height, 
         filterPtr, &samples);
-    send = (Sample *)((char *)samples + (destPtr->height * bytesPerSample));
-
     /* 
      * xmm7 = unused
      * xmm6 = zero
@@ -1907,66 +1909,69 @@ ZoomVertically2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
         "psubw   %xmm6, %xmm2     # xmm2 = _1_1_1_1 x 4\n\t"
         "psllw   $4, %xmm2        # mm2 = bias\n");
     /* Apply filter to each row. */
-    for (x = 0; x < srcPtr->width; x++) {
-        Blt_Pixel *dp, *srcColPtr;
+    for (x = 0; x < srcPtr->width; x += 2) {
+        Blt_Pixel *srcColPtr, *dp;
         Sample *splPtr;
-
+        int y;
+        
         srcColPtr = srcPtr->bits + x;
         dp = destPtr->bits + x;
-        for (splPtr = samples; splPtr < send; 
-             splPtr = (Sample *)((char *)splPtr + bytesPerSample)) {
+        for (y = 0, splPtr = samples; y < destPtr->height;
+             splPtr = (Sample *)((char *)splPtr + bytesPerSample), y++) {
             Blt_Pixel *sp;
             PixelWeight *wp;
-
+            
+            sp = srcColPtr + (splPtr->start * srcPtr->pixelsPerRow);
             asm volatile (
-                /* Clear the accumulator mm5. */
+                /* Clear the accumulator xmm5. */
                 "pxor   %xmm5, %xmm5        #  xmm5 = 0\n\t");
 
-            sp = srcColPtr + (splPtr->start * srcPtr->pixelsPerRow);
             for (wp = splPtr->weights; wp < splPtr->wend; wp++) {
                 asm volatile (
-                    /* Load the weighting factor into mm1. */
-                    "movdqa    (%0), %%xmm1    # xmm1 = 0,0,0,W\n\t"
-                    /* Load the source pixel into mm0. */
-                    "movdqa    (%1), %%xmm0    # xmm0 = S\n\t" 
-                    /* Unpack the weighting factor into mm1. */
-                    "punpcklwd %%xmm1, %%xmm1  # xmm1 = 0,0,W,W\n\t"
-                    /* Unpack the pixel components into 16-bit words.*/
-                    "punpcklbw %%xmm6, %%xmm0  # xmm0 = Sa,Sb,Sg,Sr\n\t" 
-                    /*  */
-                    "punpcklwd %%xmm1, %%xmm1  # xmm1 = W,W,W,W\n\t"
-                    /* Scale the 8-bit components to 15 bits. (S * 257) >> 1 */
-                    "movdqa    %%xmm0, %%xmm3  # xmm3 = S8\n\t" 
-                    "psllw     $8, %%xmm3      # xmm3 = S8 * 256\n\t" 
-                    "paddw     %%xmm3, %%xmm0  # xmm0 = S16\n\t" 
-                    "psrlw $1, %%xmm0          # xmm0 = S15\n\t" 
-                    /* Multiple each pixel component by the weight.  Note that
-                     * the lower 16-bits of the product are truncated (bad)
-                     * creating round-off error in the sum. */
-                    "pmulhw %%xmm1, %%xmm0     # xmm0 = S15 * W14\n\t" 
-                    /* Accumulate upper 16-bit results of product in xmm5. */
-                    "paddsw %%xmm0, %%xmm5     # xmm5 = prod + xmm5\n\t" 
-                    : /* outputs */ 
-                    : /* inputs */
-                      "r" (wp), 
-                      "r" (sp));
+                   /* Load the weighting factor into mm1. */
+                   "movd        (%0), %%xmm1    # xmm1 = 0,0,0,w\n\t" 
+                   /* Get the source RGBA pixel. */
+                   "movq        (%1), %%xmm0    # xmm0 = 0,0,sp2,sp1\n\t" 
+                   /* Unpack the weighting factor into mm1. */
+                   "punpcklwd    %%xmm1, %%xmm1 #  mm1 = 0,0,w,w\n\t"
+                   /* Unpack the pixel into mm0. */
+                   "punpcklbw   %%xmm6, %%xmm0  # xmm0 = _b_g_r_a x 2\n\t" 
+                   /*  */
+                   "punpcklwd   %%xmm1, %%xmm1  # xmm1 = _w_w_w_w x 2\n\t"
+                   /* Scale the 8-bit color components to 15 bits: (S *
+                    * 257) >> 1 */
+                   "movdqa      %%xmm0, %%xmm3  # xmm3 = xmm0\n\t" 
+                   "psllw       $8, %%xmm3      # xmm3 = b_g_r_a_ x 4\n\t" 
+                   "paddw       %%xmm3, %%xmm0  # xmm0 = P * 257\n\t" 
+                   "psrlw       $1, %%xmm0      # xmm0 = S15\n\t" 
+                   /* Multiple each pixel component by the weight.  It's a
+                    * signed mulitply because weights can be negative. Note
+                    * that the lower 16-bits of the product are truncated
+                    * (bad) creating round-off error in the sum. */
+                   "pmulhw      %%xmm1, %%xmm0  # xmm0 = S15 * W14\n\t"  
+                   /* Add the 16-bit components to mm5. */
+                   "paddsw      %%xmm0, %%xmm5  # xmm5 = A13 + mm5\n\t" 
+                   : /* outputs */ 
+                   : /* inputs */
+                     "r" (wp), 
+                     "r" (sp));
                 sp += srcPtr->pixelsPerRow;
             }
 
             asm volatile (
-                /* Add a rounding bias to the pixel sum */
+                /* Add a rounding bias to the pixel sum. */
                 "paddw    %%xmm2, %%xmm5   # xmm5 = A13 + BIAS\n\t" 
-                /* Shift off fractional part */
+                /* Shift off fractional portion. */
                 "psraw    $5, %%xmm5       # xmm5 = A8\n\t" 
                 /* Pack 16-bit components into lower 4 bytes. */
-                "packuswb %%xmm5, %%xmm5   # Pack 4 low-order bytes.\n\t" 
-                /* Save the word (pixel) in the destination. */
-                "movdqa   %%xmm5,(%0)      # dp = word\n" 
+                "packuswb %%xmm5, %%xmm5   # Pack A8 into low 4 bytes.\n\t" 
+                /* Store the word (pixel) in the destination. */
+                "pshufd $0x8, %%xmm5, %%xmm5 # Move pixels to lower dword\n\t"
+                "movq  %%xmm5, (%0)        # Save the pixels.\n\t" 
                 : /* outputs */ 
                   "+r" (dp));
             dp += destPtr->pixelsPerRow;
-
-        }
+        } /* for each y */
     }
     /* Free the memory allocated for filter weights. */
     Blt_Free(samples);
@@ -1999,54 +2004,59 @@ ZoomVertically2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 static void
 ZoomHorizontally2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 {
-    Sample *samples, *send;
+    Sample *samples;
     int y;
-    Blt_Pixel *srcRowPtr, *destRowPtr;
+    Blt_Pixel *srcRowPtr, *destRowPtr1, *destRowPtr2;
     int bytesPerSample;                 /* Size of sample. */
 
     /* Pre-calculate filter contributions for each column. */
     bytesPerSample = Blt_ComputeWeights(srcPtr->width, destPtr->width, 
         filterPtr, &samples);
-    send = (Sample *)((char *)samples + (destPtr->width * bytesPerSample));
 
     /* Apply filter to each column. */
-    srcRowPtr = srcPtr->bits;
-    destRowPtr = destPtr->bits;
+    srcRowPtr = srcPtr->bits;          /* First source row */
+    destRowPtr1 = destPtr->bits;       /* First destination row. */
+    destRowPtr2 = destPtr->bits + destPtr->pixelsPerRow; 
 
     asm volatile (
         "pxor    %xmm6, %xmm6   # xmm6 = 0\n\t"
         "pxor    %xmm3, %xmm3   # xmm3 = 0\n\t"
         "pcmpeqw %xmm2, %xmm2   # xmm2 = -1 x 8\n\t"
-        "psubw   %xmm3, %xmm2   # xmm2 = _1_1_1_1 x 4\n\t"
-        "psllw   $4, %xmm2      # xmm2 = bias\n");
+        "psubw   %xmm3, %xmm2   # xmm2 = _1 x 8\n\t"
+        "psllw   $4, %xmm2      # xmm2 = bias x 8\n\t");
 
-    for (y = 0; y < srcPtr->height; y++) {
-        Blt_Pixel *dp;
-        Sample *splPtr;
+    for (y = 0; y < srcPtr->height; y += 2) {
+        int x;
+        Sample *sampPtr;
 
-        dp = destRowPtr;
-        for (splPtr = samples; splPtr < send; 
-             splPtr = (Sample *)((char *)splPtr + bytesPerSample)) {
-            Blt_Pixel *sp;
+        for (x = 0, sampPtr = samples; x < destPtr->width; 
+             sampPtr = (Sample *)((char *)sampPtr + bytesPerSample), x++) {
+            Blt_Pixel *sp1, *sp2;
+            Pixel2 p2;
             PixelWeight *wp;
-
-            sp = srcRowPtr + splPtr->start;
+            
+            sp1 = srcRowPtr + sampPtr->start;
+            sp2 = sp1 + srcPtr->pixelsPerRow; /* Next row */
             asm volatile (
                 /* Clear the accumulator mm5. */
-                "pxor    %xmm5, %xmm5        #  mm5 = 0\n\n");
+                "pxor    %xmm5, %xmm5        #  xmm5 = 0\n\t");
 
-            for (wp = splPtr->weights; wp < splPtr->wend; wp++) {
+            for (wp = sampPtr->weights; wp < sampPtr->wend; wp++) {
+                
+                /* Gather the pixel values into p2. */
+                p2.ival[0] = sp1->u32;
+                p2.ival[1] = sp2->u32;
                 asm volatile (
                    /* Load the weighting factor into mm1. */
-                   "movdqa      (%0), %%xmm1    # xmm1 = W x 4\n\t" 
+                   "movd        (%0), %%xmm1    # xmm1 = 0,0,0,w\n\t" 
                    /* Get the source RGBA pixel. */
-                   "movdqa      (%1), %%xmm0    # xmm0 = sp\n\t" 
+                   "movq        %1, %%xmm0      # xmm0 = 0,0,sp2,sp1\n\t" 
                    /* Unpack the weighting factor into mm1. */
-                   "punpcklwd    %%xmm1, %%xmm1 #  mm1 = 0,0,W,W\n\t"
+                   "punpcklwd    %%xmm1, %%xmm1 #  mm1 = 0,0,w,w\n\t"
                    /* Unpack the pixel into mm0. */
-                   "punpcklbw   %%xmm6, %%xmm0  # xmm0 = _b_g_r_a x 4\n\t" 
+                   "punpcklbw   %%xmm6, %%xmm0  # xmm0 = _b_g_r_a x 2\n\t" 
                    /*  */
-                   "punpcklwd   %%xmm1, %%xmm1  # xmm1 = _W_W_W_W x 4\n\t"
+                   "punpcklwd   %%xmm1, %%xmm1  # xmm1 = _w_w_w_w x 2\n\t"
                    /* Scale the 8-bit color components to 15 bits: (S *
                     * 257) >> 1 */
                    "movdqa      %%xmm0, %%xmm3  # xmm3 = xmm0\n\t" 
@@ -2059,12 +2069,12 @@ ZoomHorizontally2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
                     * (bad) creating round-off error in the sum. */
                    "pmulhw      %%xmm1, %%xmm0  # xmm0 = S15 * W14\n\t"  
                    /* Add the 16-bit components to mm5. */
-                   "paddsw      %x%mm0, %%xmm5  # xmm5 = A13 + mm5\n\t" 
+                   "paddsw      %%xmm0, %%xmm5  # xmm5 = A13 + mm5\n\t" 
                    : /* outputs */ 
                    : /* inputs */
                      "r" (wp), 
-                     "r" (sp));
-                sp++;
+                     "r" (p2.lval));
+                sp1++, sp2++;
             }                   
 
             asm volatile (
@@ -2075,13 +2085,16 @@ ZoomHorizontally2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
                 /* Pack 16-bit components into lower 4 bytes. */
                 "packuswb %%xmm5, %%xmm5   # Pack A8 into low 4 bytes.\n\t" 
                 /* Store the word (pixel) in the destination. */
-                "movdqa   %%xmm5,(%0)      # Save the 2 pixels.\n" 
+                "movd  %%xmm5, %0          # Save the pixels.\n\t" 
+                "movhlps %%xmm5, %%xmm5    # Move high to low\n\t"
+                "movd  %%xmm5, %1          # Save the pixels.\n" 
                 : /* outputs */ 
-                  "+r" (dp));
-            dp++;
+                  "+r" (destRowPtr1[x].u32),
+                  "+r" (destRowPtr2[x].u32));
         }
-        srcRowPtr += srcPtr->pixelsPerRow;
-        destRowPtr += destPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow + srcPtr->pixelsPerRow;
+        destRowPtr1 += destPtr->pixelsPerRow + destPtr->pixelsPerRow;
+        destRowPtr2 += destPtr->pixelsPerRow + destPtr->pixelsPerRow;
     }
     /* Free the memory allocated for horizontal filter weights. */
     Blt_Free(samples);
@@ -2354,6 +2367,10 @@ Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
             bltPictProcsPtr->compositePicturesProc = CompositePictures;
             bltPictProcsPtr->blankPictureProc = BlankPicture;
             bltPictProcsPtr->crossFadePicturesProc = CrossFadePictures;
+            bltPictProcsPtr->zoomVerticallyProc2 = ZoomVertically2;
+            bltPictProcsPtr->zoomHorizontallyProc2 = ZoomHorizontally;
+#ifdef notdef
+#endif
         }
 #endif  /* SIZEOF_LONG == 8 */
     }

@@ -5060,6 +5060,78 @@ ResampleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ResampleOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+ResampleOp2(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
+{
+    Blt_Picture src, tmp;
+    PictImage *imgPtr = clientData;
+    ResampleSwitches switches;
+
+    if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    memset(&switches, 0, sizeof(switches));
+    /* Default source region is the entire picture. */
+    switches.from.w = Blt_Picture_Width(src);
+    switches.from.h = Blt_Picture_Height(src);
+    /* Default destination picture size */
+    switches.width    = Blt_Picture_Width(imgPtr->picture);
+    switches.height   = Blt_Picture_Height(imgPtr->picture);
+    if (Blt_ParseSwitches(interp, resampleSwitches, objc - 3, objv + 3, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if (!Blt_AdjustRegionToPicture(src, &switches.from)) {
+        Tcl_AppendResult(interp, "impossible coordinates for region", 
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    if ((switches.flags | imgPtr->flags) & MAXPECT) {
+        double xScale, yScale, s;
+            
+        xScale = (double)switches.width  / (double)switches.from.w;
+        yScale = (double)switches.height / (double)switches.from.h;
+        s = MIN(xScale, yScale);
+        switches.width  = (int)(switches.from.w * s + 0.5);
+        switches.height = (int)(switches.from.h * s + 0.5);
+    }       
+    if ((Blt_Picture_Width(imgPtr->picture) != switches.width) ||
+        (Blt_Picture_Height(imgPtr->picture) != switches.height)) {
+        Blt_AdjustPictureSize(imgPtr->picture, switches.width, switches.height);
+    }
+    if (switches.vFilter == NULL) {
+        switches.vFilter = switches.filter;
+    }
+    if (switches.hFilter == NULL) {
+        switches.hFilter = switches.filter;
+    }
+    if (switches.hFilter == NULL) {
+        switches.hFilter = (switches.from.w < switches.width) ?
+            bltMitchellFilter : bltBoxFilter; 
+    }
+    if (switches.vFilter == NULL) {
+        switches.vFilter = (switches.from.h < switches.height) ?
+            bltMitchellFilter : bltBoxFilter;
+    }
+    tmp = Blt_CreatePicture(switches.from.w, switches.from.h);
+    Blt_CopyRegion(tmp, src, switches.from.x, switches.from.y, switches.from.w,
+                   switches.from.h, 0, 0);
+    Blt_ResamplePicture2(imgPtr->picture, tmp, switches.vFilter, 
+        switches.hFilter);
+    Blt_FreePicture(tmp);
+    Blt_NotifyImageChanged(imgPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * RotateOp --
  *
  *      $img rotate $src 90 
@@ -5525,6 +5597,7 @@ static Blt_OpSpec pictInstOps[] =
     {"width",     3, WidthOp,     2, 3, "?newWidth?",},
     {"wipe",      3, WipeOp,      4, 0, "fromName toName ?switches ...?",},
     {"xor",       1, ArithOp,     3, 0, "pictOrColor ?switches ...?",},
+    {"zresample", 1, ResampleOp2, 3, 0, "srcName ?switches ...?",},
 };
 
 static int numPictInstOps = sizeof(pictInstOps) / sizeof(Blt_OpSpec);

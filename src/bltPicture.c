@@ -195,6 +195,19 @@ Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
 }
 
 void 
+Blt_ZoomVertically2(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
+{
+    (*bltPictProcsPtr->zoomVerticallyProc2)(dest, src, filter);
+}
+
+void 
+Blt_ZoomHorizontally2(Blt_Picture dest, Blt_Picture src, 
+                     Blt_ResampleFilter filter)
+{
+    (*bltPictProcsPtr->zoomHorizontallyProc2)(dest, src, filter);
+}
+
+void 
 Blt_CompositeRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
                     int h, int dx, int dy)
 {
@@ -342,6 +355,7 @@ Blt_CreatePicture(int w, int h)
     destPtr->reserved = 0;
     /* Over-allocate a buffer so that we can align it (if needed) to a
      * 16-byte boundary. */
+    h = ((h + 1) / 2) * 2;              /* Make even number of rows. */
     size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
     buffer = Blt_AssertCalloc(1, size); /* All zeros. */
     ptr = (ptrdiff_t)buffer;
@@ -2061,16 +2075,16 @@ Blt_GetTableFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 
 #ifdef notdef
 unsigned int
-Blt_FreeSamples(Sample *samplePtr)
+Blt_FreeSamples(Sample *sampPtr)
 {
-    Blt_Free(samplePtr->buffer);
-    Blt_Free(samplePtr);
+    Blt_Free(sampPtr->buffer);
+    Blt_Free(sampPtr);
 }
 #endif
 
 unsigned int
 Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
-                   Sample **samplePtrPtr)
+                   Sample **sampPtrPtr)
 {
     Sample *samples;
     double scale;
@@ -2079,7 +2093,7 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
     /* Pre-calculate filter contributions for a row or column. */
     scale = (double)dw / (double)sw;
     if (scale < 1.0) {
-        Sample *samplePtr;
+        Sample *sampPtr;
         double r, fscale;
         int filterSize, x;
 
@@ -2092,7 +2106,7 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
         bytesPerSample = sizeof(Sample) + 
             ((filterSize - 1) * sizeof(PixelWeight));
         samples = Blt_AssertCalloc(dw, bytesPerSample);
-        samplePtr = samples;
+        sampPtr = samples;
 #define DEBUG 0
 #if DEBUG
         fprintf(stderr, "downscale=%g, fscale=%g, radius=%g\n", 
@@ -2122,24 +2136,24 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
             if (right >= sw) {
                 right = sw - 1;
             }
-            samplePtr->start = left;
-            samplePtr->wend = samplePtr->weights + (right - left + 1);
+            sampPtr->start = left;
+            sampPtr->wend = sampPtr->weights + (right - left + 1);
 
             sum = 0.0;
-            for (wp = samplePtr->weights, i = left; i <= right; i++, wp++) {
+            for (wp = sampPtr->weights, i = left; i <= right; i++, wp++) {
                 double val = ((double)i - center) * scale;
                 wp->f32 = (float)(*filterPtr->proc)(val);
                 sum += wp->f32;
             }
             factor = (sum == 0.0) ? 1.0 : (1.0 / sum);
-            for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
+            for (wp = sampPtr->weights; wp < sampPtr->wend; wp++) {
                 wp->f32 = (float)(wp->f32 * factor);
                 wp->i32 = float2si(wp->f32);
             }
-            samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
+            sampPtr = (Sample *)((char *)sampPtr + bytesPerSample);
         }
     } else {
-        Sample *samplePtr;
+        Sample *sampPtr;
         double fscale;
         int filterSize, x;
 
@@ -2151,7 +2165,7 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
         samples = Blt_AssertCalloc(dw, bytesPerSample);
         fscale = 1.0 / scale;
 
-        samplePtr = samples;
+        sampPtr = samples;
 #if DEBUG
         fprintf(stderr, "upscale=%g, fscale=%g, radius=%g\n",
                     scale, fscale, filterPtr->support);
@@ -2178,12 +2192,12 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
             if (right >= sw) {
                 right = sw - 1;
             }
-            samplePtr->start = left;
-            samplePtr->wend = samplePtr->weights + (right - left + 1);
+            sampPtr->start = left;
+            sampPtr->wend = sampPtr->weights + (right - left + 1);
 
             /* Sum the contributions for each pixel in the filter. */
             sum = 0.0;
-            for (wp = samplePtr->weights, i = left; i <= right;i++, wp++) {
+            for (wp = sampPtr->weights, i = left; i <= right;i++, wp++) {
                 wp->f32 = (float) (*filterPtr->proc) ((double)i - center);
                 sum += wp->f32;
             }
@@ -2191,10 +2205,10 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
             /* The sum of the contributions should not be greater than 1.0 */
             factor = (sum == 0.0) ? 1.0 : (1.0 / sum);
 
-            for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
+            for (wp = sampPtr->weights; wp < sampPtr->wend; wp++) {
 #ifdef notdef
                 fprintf(stderr, "w[%d]=%g, %g sum=%g\n", 
-                        wp - samplePtr->weights, 
+                        wp - sampPtr->weights, 
                         wp->f32, wp->f32 * factor, sum);
 #endif
                 wp->f32 = (float)(wp->f32 * factor);
@@ -2203,10 +2217,10 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
 
             }
             /* Go to the next sample. */
-            samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
+            sampPtr = (Sample *)((char *)sampPtr + bytesPerSample);
         }
     }
-    *samplePtrPtr = samples;
+    *sampPtrPtr = samples;
     return bytesPerSample;
 }
 
@@ -2225,19 +2239,19 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter filter)
     /* Apply filter to each row. */
     for (x = 0; x < srcPtr->width; x++) {
         Blt_Pixel *dp, *srcColPtr;
-        Sample *samplePtr;
+        Sample *sampPtr;
 
         srcColPtr = srcPtr->bits + x;
         dp = destPtr->bits + x;
-        for (samplePtr = samples; samplePtr < send; 
-             samplePtr = (Sample *)((char *)samplePtr + bytesPerSample)) {
+        for (sampPtr = samples; sampPtr < send; 
+             sampPtr = (Sample *)((char *)sampPtr + bytesPerSample)) {
             Blt_Pixel *sp;
             int r, g, b, a;
             PixelWeight *wp;
 
             r = g = b = a = 0;
-            sp = srcColPtr + (samplePtr->start * srcPtr->pixelsPerRow);
-            for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
+            sp = srcColPtr + (sampPtr->start * srcPtr->pixelsPerRow);
+            for (wp = sampPtr->weights; wp < sampPtr->wend; wp++) {
                 a += wp->i32 * sp->Alpha;
                 r += wp->i32 * sp->Red;
                 g += wp->i32 * sp->Green;
@@ -2279,18 +2293,18 @@ ZoomHorizontally(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter filter)
     destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
         Blt_Pixel *dp;
-        Sample *samplePtr;
+        Sample *sampPtr;
 
         dp = destRowPtr;
-        for (samplePtr = samples; samplePtr < send; 
-             samplePtr = (Sample *)((char *)samplePtr + bytesPerSample)) {
+        for (sampPtr = samples; sampPtr < send; 
+             sampPtr = (Sample *)((char *)sampPtr + bytesPerSample)) {
             Blt_Pixel *sp;
             int r, g, b, a;
             PixelWeight *wp;
 
             r = g = b = a = 0;
-            sp = srcRowPtr + samplePtr->start;
-            for (wp = samplePtr->weights; wp < samplePtr->wend; wp++) {
+            sp = srcRowPtr + sampPtr->start;
+            for (wp = sampPtr->weights; wp < sampPtr->wend; wp++) {
                 a += wp->i32 * sp->Alpha;
                 r += wp->i32 * sp->Red;
                 g += wp->i32 * sp->Green;
@@ -2355,6 +2369,45 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
     destPtr->flags |= BLT_PIC_DIRTY;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_ResamplePicture --
+ *
+ *      Resamples a given picture using 1-D filters and returns a new
+ *      picture of the designated size.
+ *
+ * Results:
+ *      Returns the resampled picture. The original picture is left intact.
+ *
+ *---------------------------------------------------------------------------
+ */
+void
+Blt_ResamplePicture2(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter, 
+                    Blt_ResampleFilter vFilter)
+{
+    Pict *tmpPtr;
+
+    tmpPtr = Blt_CreatePicture(destPtr->width, srcPtr->height);
+    if ((srcPtr->flags & (BLT_PIC_COMPOSITE | BLT_PIC_PREMULT_COLORS)) == 
+        BLT_PIC_COMPOSITE) {
+        Blt_PremultiplyColors(srcPtr);
+    }
+    if ((destPtr->flags & (BLT_PIC_COMPOSITE | BLT_PIC_PREMULT_COLORS)) == 
+        BLT_PIC_COMPOSITE) {
+        Blt_PremultiplyColors(destPtr);
+    }
+
+    /* 
+     * It's usually faster to zoom vertically last.  This has to do with
+     * the fact that pictures are stored in contiguous rows.
+     */
+    Blt_ZoomHorizontally2(tmpPtr, srcPtr, hFilter);
+    Blt_ZoomVertically2(destPtr, tmpPtr, vFilter);
+    Blt_FreePicture(tmpPtr);
+    destPtr->flags = srcPtr->flags;
+    destPtr->flags |= BLT_PIC_DIRTY;
+}
 
 static void
 FillScaleTables(
@@ -5736,7 +5789,7 @@ ComputeWeights(
     unsigned int sw, unsigned int dw,   /* Source and destination
                                          * widths. */
     ResampleFilter *filterPtr,
-    Sample **samplePtrPtr)
+    Sample **sampPtrPtr)
 {
     Sample *samples;
     double scale;
@@ -5745,7 +5798,7 @@ ComputeWeights(
     /* Pre-calculate filter contributions for a row */
     scale = (double)dw / (double)sw;
     if (scale < 1.0) {
-        Sample *samplePtr;
+        Sample *sampPtr;
         double radius, fscale;
         int filterSize, x;
 
@@ -5758,7 +5811,7 @@ ComputeWeights(
         bytesPerSample = sizeof(Sample) + 
             ((filterSize - 1) * sizeof(PixelWeight));
         samples = Blt_AssertCalloc(dw, bytesPerSample);
-        samplePtr = samples;
+        sampPtr = samples;
 #define DEBUG 0
 #if DEBUG
         fprintf(stderr, "downscale=%g, fscale=%g, radius=%g\n",
@@ -5780,18 +5833,18 @@ ComputeWeights(
             if (right >= sw) {
                 right = sw - 1;
             }
-            samplePtr->start = left;
-            samplePtr->wend = samplePtr->weights + (right - left + 1);
+            sampPtr->start = left;
+            sampPtr->wend = sampPtr->weights + (right - left + 1);
 
-            for (wp = samplePtr->weights, i = left; i <= right; i++, wp++) {
+            for (wp = sampPtr->weights, i = left; i <= right; i++, wp++) {
                 wp->f32 = (float)
                     (*filterPtr->proc)(((double)i - center) * scale);
                 wp->i32 = float2si(wp->f32);
             }
-            samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
+            sampPtr = (Sample *)((char *)sampPtr + bytesPerSample);
         }
     } else {
-        Sample *samplePtr;
+        Sample *sampPtr;
         double fscale;
         int filterSize, x;
 
@@ -5803,7 +5856,7 @@ ComputeWeights(
         samples = Blt_AssertCalloc(dw, bytesPerSample);
         fscale = 1.0 / scale;
 
-        samplePtr = samples;
+        sampPtr = samples;
 #if DEBUG
         fprintf(stderr, "upscale=%g, fscale=%g, radius=%g\n",
                     scale, fscale, filterPtr->support);
@@ -5822,19 +5875,19 @@ ComputeWeights(
             if (right >= sw) {
                 right = sw - 1;
             }
-            samplePtr->start = left;
-            samplePtr->wend = samplePtr->weights + (right - left + 1);
+            sampPtr->start = left;
+            sampPtr->wend = sampPtr->weights + (right - left + 1);
 
             /* Sum the contributions for each pixel in the filter. */
-            for (wp = samplePtr->weights, i = left; i <= right;i++, wp++) {
+            for (wp = sampPtr->weights, i = left; i <= right;i++, wp++) {
                 wp->f32 = (float) (*filterPtr->proc)((double)i - center);
                 wp->i32 = float2si(wp->f32);
             }
             /* Go get the next sample. */
-            samplePtr = (Sample *)((char *)samplePtr + bytesPerSample);
+            sampPtr = (Sample *)((char *)sampPtr + bytesPerSample);
         }
     }
-    *samplePtrPtr = samples;
+    *sampPtrPtr = samples;
     return bytesPerSample;
 }
 #endif
