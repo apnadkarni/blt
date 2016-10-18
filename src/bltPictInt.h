@@ -164,14 +164,10 @@ typedef union {
 
 typedef struct {
     int start;
+    int numWeights;
     PixelWeight *wend;                  /* Points to just beyond the last
                                          * weight.  Tracks the number of
                                          * weights in array below. */
-#ifdef notdef
-    int numWeights;
-    void *buffer;
-    PixelWeight *start;
-#endif
     PixelWeight weights[1];             /* Array of weights. */
     
 } Sample;

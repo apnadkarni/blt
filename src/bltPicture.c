@@ -2137,6 +2137,7 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
                 right = sw - 1;
             }
             sampPtr->start = left;
+            sampPtr->numWeights = (right - left + 1);
             sampPtr->wend = sampPtr->weights + (right - left + 1);
 
             sum = 0.0;
@@ -2193,6 +2194,7 @@ Blt_ComputeWeights(unsigned int sw, unsigned int dw, ResampleFilter *filterPtr,
                 right = sw - 1;
             }
             sampPtr->start = left;
+            sampPtr->numWeights = (right - left + 1);
             sampPtr->wend = sampPtr->weights + (right - left + 1);
 
             /* Sum the contributions for each pixel in the filter. */
@@ -5798,6 +5800,7 @@ ComputeWeights(
                 right = sw - 1;
             }
             sampPtr->start = left;
+            sampPtr->numWeights = (right - left + 1);
             sampPtr->wend = sampPtr->weights + (right - left + 1);
 
             for (wp = sampPtr->weights, i = left; i <= right; i++, wp++) {
@@ -5840,6 +5843,7 @@ ComputeWeights(
                 right = sw - 1;
             }
             sampPtr->start = left;
+            sampPtr->numWeights = (right - left + 1);
             sampPtr->wend = sampPtr->weights + (right - left + 1);
 
             /* Sum the contributions for each pixel in the filter. */

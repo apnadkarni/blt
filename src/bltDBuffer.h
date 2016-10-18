@@ -89,7 +89,7 @@ BLT_EXTERN const char *Blt_DBuffer_String(Blt_DBuffer buffer);
 #define Blt_DBuffer_Bytes(s)            ((s)->bytes)
 #define Blt_DBuffer_Size(s)             ((s)->size)
 
-#define Blt_DBuffer_BytesLeft(s)        ((s)->length - (s)->cursor)
+#define Blt_DBuffer_BytesLeft(s)        ((ssize_t)((s)->length - (s)->cursor))
 #define Blt_DBuffer_NextByte(s)         ((s)->bytes[(s)->cursor++])
 #define Blt_DBuffer_Pointer(s)          ((s)->bytes + (s)->cursor)
 #define Blt_DBuffer_SetPointer(s,p)     ((s)->cursor = (p) - (s)->bytes)

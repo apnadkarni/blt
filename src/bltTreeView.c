@@ -8944,7 +8944,7 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         objc--, objv++;
     }
     for (i = 2; i < objc; i++) {
-        int x, h, d;
+        int d, x, y;
         const char *string;
         int yBot;
 
@@ -8964,20 +8964,17 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (entryPtr->flags & HIDDEN) {
             continue;
         }
-        yBot = entryPtr->worldY + entryPtr->height;
-        h = VPORTHEIGHT(viewPtr);
-        if ((yBot <= viewPtr->yOffset) &&
-            (entryPtr->worldY >= (viewPtr->yOffset + h))) {
-            continue;
-        }
+        x = SCREENX(viewPtr, entryPtr->worldX);
+        y = SCREENY(viewPtr, entryPtr->worldY);
+        yBot = y + entryPtr->height;
         if (y2 < yBot) {
             y2 = yBot;
         }
-        if (y1 > entryPtr->worldY) {
-            y1 = entryPtr->worldY;
+        if (y1 > y) {
+            y1 = y;
         }
         d = EntryDepth(viewPtr, entryPtr);
-        x = entryPtr->worldX + ICONWIDTH(d) + ICONWIDTH(d + 1);
+        x += ICONWIDTH(d) + ICONWIDTH(d + 1);
         if (x2 < (x + entryPtr->width)) {
             x2 = x + entryPtr->width;
         }

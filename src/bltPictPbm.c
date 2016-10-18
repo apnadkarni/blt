@@ -75,6 +75,7 @@ typedef struct {
     Tcl_DString errors;
     Tcl_DString warnings;
     int numWarnings, numErrors;
+    int numLines;
 } PbmMessage;
 
 typedef struct {
@@ -101,12 +102,14 @@ typedef struct {
     Tcl_Obj *fileObjPtr;
     Blt_Pixel bg;
     int index;
+    int flags;
 } PbmExportSwitches;
 
 #define MAXCOLORS       256
+#define PLAIN           (1<<0)
 
 enum PbmVersions {
-    PBM_UNKNOWN,
+    PBM_UNKNOWN,                        
     PBM_PLAIN,                          /* Monochrome: 1-bit per pixel */
     PGM_PLAIN,                          /* 8-bits per pixel */
     PPM_PLAIN,                          /* 24-bits per pixel */
@@ -151,6 +154,8 @@ static Blt_SwitchSpec exportSwitches[] =
         Blt_Offset(PbmExportSwitches, fileObjPtr), 0},
     {BLT_SWITCH_INT_NNEG, "-index", "numPixture", (char *)NULL,
         Blt_Offset(PbmExportSwitches, index), 0},
+    {BLT_SWITCH_BITMASK, "-plain", "", (char *)NULL,
+        Blt_Offset(PbmExportSwitches, flags), 0, PLAIN},
     {BLT_SWITCH_END}
 };
 
@@ -209,6 +214,9 @@ PbmError(const char *fmt, ...)
     if (length > BUFSIZ) {
         strcat(string, "...");
     }
+    Tcl_DStringAppend(&pbmMessagePtr->errors, Blt_Itoa(pbmMessagePtr->numLines),
+        -1);
+    Tcl_DStringAppend(&pbmMessagePtr->errors, ": ", 2);
     Tcl_DStringAppend(&pbmMessagePtr->errors, string, -1);
     va_end(args);
     longjmp(pbmMessagePtr->jmpbuf, 0);
@@ -246,6 +254,9 @@ PbmComment(Pbm *pbmPtr, char *bp)
         while((*p != '\n') && (p != '\0')) {
             p++;
         }
+        if (*p == '\n') {
+            pbmMessagePtr->numLines++;
+        }
         PbmWarning("comment: %.*s\n", p-bp, bp);
     }
     return p;
@@ -259,23 +270,37 @@ PbmNextValue(Pbm *pbmPtr)
 
     p = (char *)Blt_DBuffer_Pointer(pbmPtr->dbuffer);
     while(isspace(*p)) {
+        if (*p == '\n') {
+            pbmMessagePtr->numLines++;
+        }
         p++;
     }
     if (*p == '#') {
         p = PbmComment(pbmPtr, p);
     }
     while(isspace(*p)) {
+        if (*p == '\n') {
+            pbmMessagePtr->numLines++;
+        }
         p++;
+    }
+    if (*p == '\0') {
+        PbmError("unexpected EOF in image data");
     }
     value = strtoul(p, &endp, 10);
     if (endp == p) {
-        PbmError("bad value in %s image data", pbmFormat[pbmPtr->version]);
+        PbmError("bad value \"%.10s\" in %s image data", 
+                 p, pbmFormat[pbmPtr->version]);
     }
     if (value > pbmPtr->maxval) {
         PbmError("value (%d) greater than %s image max value %d", value, 
                 pbmFormat[pbmPtr->version], pbmPtr->maxval);
     }
+    p = endp;
     while (isspace(*p)) {
+        if (*p == '\n') {
+            pbmMessagePtr->numLines++;
+        }
         p++;
     }
     Blt_DBuffer_SetPointer(pbmPtr->dbuffer, (unsigned char*)p);
@@ -545,10 +570,11 @@ PbmImage(Pbm *pbmPtr)
     }
     bp = (char *)start;
     if ((bp[0] != 'P') || (bp[1] < '1') || (bp[1] > '6')) {
-        PbmError("unknown PBM image header (%c%c).", bp[0], bp[1]);
+        PbmError("unknown PBM image header (%c%c) (%d).", bp[0], bp[1],
+                 Blt_DBuffer_Cursor(pbmPtr->dbuffer));
     }
     pbmPtr->version = bp[1] - '0';
-    pbmPtr->isRaw = (pbmPtr->version > 2);
+    pbmPtr->isRaw = (pbmPtr->version > 3);
     switch(pbmPtr->version) {   
     case PBM_PLAIN:             /* P2 */
     case PBM_RAW:               /* P5 */
@@ -567,6 +593,9 @@ PbmImage(Pbm *pbmPtr)
     if (!isspace(bp[2])) {
         PbmError("no white space after version in %s header.", type);
     }
+    if (bp[2] == '\n') {
+        pbmMessagePtr->numLines++;
+    }
     p = bp + 3;
     if (*p == '#') {
         p = PbmComment(pbmPtr, p);
@@ -577,6 +606,9 @@ PbmImage(Pbm *pbmPtr)
     }
     if (!isspace(*p)) {
         PbmError("no white space after width in %s header.", type);
+    }
+    if (*p == '\n') {
+        pbmMessagePtr->numLines++;
     }
     p++;
     if (*p == '#') {
@@ -589,6 +621,9 @@ PbmImage(Pbm *pbmPtr)
     if (!isspace(*p)) {
         PbmError("no white space after height in %s header.", type);
     }
+    if (*p == '\n') {
+        pbmMessagePtr->numLines++;
+    }
     p++;
     if (*p == '#') {
         p = PbmComment(pbmPtr, p);
@@ -600,6 +635,9 @@ PbmImage(Pbm *pbmPtr)
         }
         if (!isspace(*p)) {
             PbmError("no white space after maxval in %s header.", type);
+        }
+        if (*p == '\n') {
+            pbmMessagePtr->numLines++;
         }
         p++;
         if (*p == '#') {
@@ -624,6 +662,7 @@ PbmImage(Pbm *pbmPtr)
         Blt_DBuffer_SetPointer(pbmPtr->dbuffer, pbmPtr->data + 
                                (pbmPtr->height * pbmPtr->bytesPerRow));
     } else {
+        Blt_DBuffer_SetPointer(pbmPtr->dbuffer, pbmPtr->data);
         destPtr = PbmPlainData(pbmPtr);
     }
     destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
@@ -684,6 +723,7 @@ PbmToPictures(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
 
     pbmMessagePtr = &message;
     message.numWarnings = 0;
+    message.numLines = 0;
     memset(&pbm, 0, sizeof(pbm)); /* Clear the structure. */
     pbm.dbuffer = dbuffer;
 
@@ -728,6 +768,132 @@ PbmToPictures(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     return chain;
 }
 
+static void
+WritePlainGreyscale(Picture *srcPtr, Blt_DBuffer dbuffer)
+{
+    Blt_Pixel *srcRowPtr;
+    int y, count;
+    
+    Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n", PGM_PLAIN, 
+                       srcPtr->width, srcPtr->height);
+    srcRowPtr = srcPtr->bits;
+    count = 0;
+    for (y = 0; y < srcPtr->height; y++) {
+        Blt_Pixel *sp, *send;
+        
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            char *bp;
+            
+            bp = (char *)Blt_DBuffer_Extend(dbuffer, 2);
+            sprintf(bp, "%3d ", (sp->Red) ? 1 : 0);
+            count++;
+            if ((count % 15) == 0) {
+                Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+            }
+        }
+        Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+        count = 0;
+        srcRowPtr += srcPtr->pixelsPerRow;
+    }
+    Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+}
+
+static void
+WritePlainColor(Picture *srcPtr, Blt_DBuffer dbuffer)
+{
+    Blt_Pixel *srcRowPtr;
+    int y, count;
+    
+    Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PPM_PLAIN, 
+        srcPtr->width, srcPtr->height);
+    srcRowPtr = srcPtr->bits;
+    count = 0;
+    for (y = 0; y < srcPtr->height; y++) {
+        Blt_Pixel *sp, *send;
+        
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            char *bp;
+            
+            bp = (char *)Blt_DBuffer_Extend(dbuffer, 13);
+            sprintf(bp, "%3d %3d %3d  ", sp->Red, sp->Green, sp->Blue);
+            count++;
+            if ((count % 5) == 0) {
+                Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+            }
+        }
+        Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+        count = 0;
+        srcRowPtr += srcPtr->pixelsPerRow;
+    }
+    Blt_DBuffer_AppendString(dbuffer, "\n", 1);
+}
+
+static void
+WriteBinaryGreyscale(Picture *srcPtr, Blt_DBuffer dbuffer)
+{
+    Blt_Pixel *srcRowPtr;
+    int bytesPerRow;
+    int y;
+    size_t length;
+    unsigned char *destRowPtr;
+    
+    Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PGM_RAW, 
+        srcPtr->width, srcPtr->height);
+    bytesPerRow = srcPtr->width;
+    length = Blt_DBuffer_Length(dbuffer);
+    Blt_DBuffer_Extend(dbuffer, srcPtr->height * bytesPerRow);
+    destRowPtr = Blt_DBuffer_Bytes(dbuffer) + length;
+    length += srcPtr->height * bytesPerRow;
+    srcRowPtr = srcPtr->bits;
+    for (y = 0; y < srcPtr->height; y++) {
+        Blt_Pixel *sp, *send;
+        unsigned char *dp;
+        
+        dp = destRowPtr;
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            dp[0] = sp->Red;
+            dp++;
+        }
+        destRowPtr += bytesPerRow;
+        srcRowPtr  += srcPtr->pixelsPerRow;
+    }
+    Blt_DBuffer_SetLength(dbuffer, length);
+}
+
+static void
+WriteBinaryColor(Picture *srcPtr, Blt_DBuffer dbuffer)
+{
+    size_t length;
+    Blt_Pixel *srcRowPtr;
+    int bytesPerRow;
+    int y;
+    unsigned char *destRowPtr;
+    
+    Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PPM_RAW, 
+                       srcPtr->width, srcPtr->height);
+    bytesPerRow = srcPtr->width * 3;
+    length = Blt_DBuffer_Length(dbuffer);
+    Blt_DBuffer_Extend(dbuffer, srcPtr->height * bytesPerRow);
+    destRowPtr = Blt_DBuffer_Bytes(dbuffer) + length;
+    length += srcPtr->height * bytesPerRow;
+    srcRowPtr = srcPtr->bits;
+    for (y = 0; y < srcPtr->height; y++) {
+        Blt_Pixel *sp, *send;
+        unsigned char *dp;
+        
+        dp = destRowPtr;
+        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+            dp[0] = sp->Red;
+            dp[1] = sp->Green;
+            dp[2] = sp->Blue;
+            dp += 3;
+        }
+        destRowPtr += bytesPerRow;
+        srcRowPtr  += srcPtr->pixelsPerRow;
+    }
+    Blt_DBuffer_SetLength(dbuffer, length);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -746,7 +912,6 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
              PbmExportSwitches *switchesPtr)
 {
     Picture *srcPtr;
-    size_t length;
 
     srcPtr = original;
     Blt_ClassifyPicture(srcPtr);
@@ -776,61 +941,18 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
         srcPtr = unassoc;
     }
     if (srcPtr->flags & BLT_PIC_GREYSCALE) {  /* Greyscale */
-        Blt_Pixel *srcRowPtr;
-        int bytesPerRow;
-        int y;
-        unsigned char *destRowPtr;
-
-        Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PGM_RAW, 
-                srcPtr->width, srcPtr->height);
-        bytesPerRow = srcPtr->width;
-        length = Blt_DBuffer_Length(dbuffer);
-        Blt_DBuffer_Extend(dbuffer, srcPtr->height * bytesPerRow);
-        destRowPtr = Blt_DBuffer_Bytes(dbuffer) + length;
-        length += srcPtr->height * bytesPerRow;
-        srcRowPtr = srcPtr->bits;
-        for (y = 0; y < srcPtr->height; y++) {
-            Blt_Pixel *sp, *send;
-            unsigned char *dp;
-
-            dp = destRowPtr;
-            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-                dp[0] = sp->Red;
-                dp++;
-            }
-            destRowPtr += bytesPerRow;
-            srcRowPtr += srcPtr->pixelsPerRow;
+        if (switchesPtr->flags & PLAIN) {
+            WritePlainGreyscale(srcPtr, dbuffer);
+        } else {
+            WriteBinaryGreyscale(srcPtr, dbuffer);
         }
-    } else {                    /* Color */
-        Blt_Pixel *srcRowPtr;
-        int bytesPerRow;
-        int y;
-        unsigned char *destRowPtr;
-
-        Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PPM_RAW, 
-                srcPtr->width, srcPtr->height);
-        bytesPerRow = srcPtr->width * 3;
-        length = Blt_DBuffer_Length(dbuffer);
-        Blt_DBuffer_Extend(dbuffer, srcPtr->height * bytesPerRow);
-        destRowPtr = Blt_DBuffer_Bytes(dbuffer) + length;
-        length += srcPtr->height * bytesPerRow;
-        srcRowPtr = srcPtr->bits;
-        for (y = 0; y < srcPtr->height; y++) {
-            Blt_Pixel *sp, *send;
-            unsigned char *dp;
-
-            dp = destRowPtr;
-            for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-                dp[0] = sp->Red;
-                dp[1] = sp->Green;
-                dp[2] = sp->Blue;
-                dp += 3;
-            }
-            destRowPtr += bytesPerRow;
-            srcRowPtr += srcPtr->pixelsPerRow;
+    } else {                    /* Color PPM */
+        if (switchesPtr->flags & PLAIN) {
+            WritePlainColor(srcPtr, dbuffer);
+        } else {
+            WriteBinaryColor(srcPtr, dbuffer);
         }
     }
-    Blt_DBuffer_SetLength(dbuffer, length);
     if (srcPtr != original) {
         Blt_FreePicture(srcPtr);
     }
