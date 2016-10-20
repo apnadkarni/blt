@@ -555,7 +555,7 @@ static Blt_SwitchSpec switchSpecs[] =
     {BLT_SWITCH_CUSTOM, "-echo",           "echoName",          (char *)NULL,
         0, 0, 0, &echoSwitch},
     {BLT_SWITCH_CUSTOM,  "-environ",       "list",              (char *)NULL,
-         Blt_Offset(Bgexec, env),           0, 0, &environSwitch},
+         Blt_Offset(Bgexec, env), BLT_SWITCH_NULL_OK, 0, &environSwitch},
     {BLT_SWITCH_OBJ,     "-errorvariable",  "varName",          (char *)NULL,
         Blt_Offset(Bgexec, errSink.doneVarObjPtr),    0},
     {BLT_SWITCH_BOOLEAN, "-ignoreexitcode", "bool",             (char *)NULL,

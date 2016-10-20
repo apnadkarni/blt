@@ -854,7 +854,11 @@ CreateProcess(
                                         * message pipe. */
         if (SetupStdFiles(interp, stdinFd, stdoutFd, stderrFd) == TCL_OK) {
             RestoreSignals();
-            execvpe(argv[0], argv, env);
+            if (env != NULL) {
+                execvpe(argv[0], argv, env);
+            } else {
+                execvp(argv[0], argv);
+            }
             /* Not reached if command was successfully executed. */
             Tcl_AppendResult(interp, "can't execute \"", argv[0], "\": ", 
                          Tcl_PosixError(interp), (char *)NULL);
