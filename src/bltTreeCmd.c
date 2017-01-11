@@ -6667,7 +6667,6 @@ TreeInstDeleteProc(ClientData clientData)
     Blt_Free(cmdPtr);
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
