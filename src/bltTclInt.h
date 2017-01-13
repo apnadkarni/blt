@@ -138,10 +138,6 @@ BLT_EXTERN Tcl_Obj *Tcl_GetVar2Ex (Tcl_Interp *interp, const char *part1,
         const char *part2, int flags);
 #endif /* _TCL_VERSION < 8.1.0 */
 
-#ifndef WIN32
-#  define PurifyPrintf  printf
-#endif /* WIN32 */
-
 #undef panic
 #define panic(mesg)     Blt_Panic("%s:%d %s", __FILE__, __LINE__, (mesg))
 

@@ -78,64 +78,66 @@ typedef struct {
     enum WatchStates state;     /* Current state of watch: either
                                  * WATCH_STATE_IDLE or WATCH_STATE_ACTIVE */
     int maxLevel;               /* Maximum depth of tracing allowed */
-    char **preCmd;              /* Procedure to be invoked before the
-                                 * command is executed (but after
-                                 * substitutions have occurred). */
-    char **postCmd;             /* Procedure to be invoked after the command
-                                 * is executed. */
-    Tcl_Trace trace;            /* Trace handler which activates "pre"
-                                 * command procedures */
-    Tcl_AsyncHandler asyncHandle;       /* Async handler which triggers the
-                                         * "post" command procedure (if one
-                                         * exists) */
+    Tcl_Obj *preCmdObjPtr;              /* Procedure to be invoked before
+                                         * the command is executed (but
+                                         * after substitutions have
+                                         * occurred). */
+    Tcl_Obj *postCmdObjPtr;             /* Procedure to be invoked after
+                                         * the command is executed. */
+    Tcl_Trace token;                 /* Trace handler which activates "pre"
+                                      * command procedures */
+    Tcl_AsyncHandler asyncHandle;    /* Async handler which triggers the
+                                      * "post" command procedure (if one
+                                      * exists) */
     int active;                         /* Indicates if a trace is
                                          * currently active.  This prevents
                                          * recursive tracing of the "pre"
                                          * and "post" procedures. */
-    int level;                  /* Current level of traced command. */
-    char *cmdPtr;               /* Command string before substitutions.
-                                 * Points to a original command buffer. */
-    char *args;                 /* TCL list of the command after
-                                 * substitutions. List is malloc-ed by
-                                 * Tcl_Merge. Must be freed in handler
-                                 * procs */
+    int level;                      /* Current level of traced command. */
+    const char *cmdPtr;             /* Command string before substitutions.
+                                     * Points to a original command buffer. */
+    Tcl_Obj *argsObjPtr;            /* TCL listobj of the command after
+                                         * substitutions. List is malloc-ed
+                                         * by Tcl_Merge. Must be freed in
+                                         * handler procs */
+    Blt_HashEntry *hashPtr;
 } Watch;
 
 typedef struct {
-    Blt_HashTable watchTable;   /* Hash table of trees keyed by address. */
+    Blt_HashTable watchTable;   /* Hash table of watches keyed by address. */
     Tcl_Interp *interp;
 } WatchCmdInterpData;
 
 static Blt_SwitchSpec switchSpecs[] = 
 {
-    {BLT_SWITCH_LIST, "-precmd", "command", (char *)NULL,
-        Blt_Offset(Watch, preCmd), 0}, 
-    {BLT_SWITCH_LIST, "-postcmd", "command", (char *)NULL,
-        Blt_Offset(Watch, postCmd), 0},
+    {BLT_SWITCH_OBJ, "-precmd", "cmdPrefix", (char *)NULL,
+        Blt_Offset(Watch, preCmdObjPtr), 0}, 
+    {BLT_SWITCH_OBJ, "-postcmd", "cmdPrefix", (char *)NULL,
+        Blt_Offset(Watch, postCmdObjPtr), 0},
     {BLT_SWITCH_BOOLEAN, "-active", "bool", (char *)NULL,
         Blt_Offset(Watch, state), 0},
-    {BLT_SWITCH_INT_NNEG, "-maxlevel", "number", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-maxlevel", "numLevels", (char *)NULL,
         Blt_Offset(Watch, maxLevel), 0},
     {BLT_SWITCH_END}
 };
 
-static Tcl_CmdTraceProc PreCmdProc;
+static Tcl_CmdObjTraceProc PreCmdObjProc;
 static Tcl_AsyncProc PostCmdProc;
 static Tcl_ObjCmdProc WatchCmd;
 
 /*
  *---------------------------------------------------------------------------
  *
- * TreeInterpDeleteProc --
+ * WatchInterpDeleteProc --
  *
- *      This is called when the interpreter hosting the "tree" command
+ *      This is called when the interpreter hosting the "watch" command
  *      is deleted.
  *
  * Results:
  *      None.
  *
  * Side effects:
- *      Removes the hash table managing all tree names.
+ *      Removes the hash table managing all watch names.
  *
  *---------------------------------------------------------------------------
  */
@@ -147,7 +149,7 @@ WatchInterpDeleteProc(
 {
     WatchCmdInterpData *dataPtr = clientData;
 
-    /* All tree instances should already have been destroyed when
+    /* All watch instances should already have been destroyed when
      * their respective TCL commands were deleted. */
     Blt_DeleteHashTable(&dataPtr->watchTable);
     Tcl_DeleteAssocData(interp, WATCH_THREAD_KEY);
@@ -182,7 +184,7 @@ GetWatchCmdInterpData(Tcl_Interp *interp)
 /*
  *---------------------------------------------------------------------------
  *
- * PreCmdProc --
+ * PreCmdObjProc --
  *
  *      Procedure callback for Tcl_Trace. Gets called before the
  *      command is executed, but after substitutions have occurred.
@@ -209,65 +211,59 @@ GetWatchCmdInterpData(Tcl_Interp *interp)
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
-static void
-PreCmdProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Not used. */
-    int level,                  /* Current level */
-    char *command,              /* Command before substitution */
-    Tcl_CmdProc *cmdProc,       /* Not used. */
-    ClientData cmdClientData,   /* Not used. */
-    int argc,
-    const char **argv)          /* Command after parsing, but before
-                                 * evaluation */
+static int
+PreCmdObjProc(ClientData clientData, Tcl_Interp *interp, int level,
+              const char *command, Tcl_Command token, int objc,
+              Tcl_Obj *const *objv)
 {
     Watch *watchPtr = clientData;
 
     if (watchPtr->active) {
-        return;                 /* Don't re-enter from Tcl_Eval below */
+        return TCL_OK;             /* Don't re-enter from Tcl_Eval below */
     }
     watchPtr->cmdPtr = command;
     watchPtr->level = level;
+
     /*
-     * There's no guarantee that the calls to PreCmdProc will match
-     * up with PostCmdProc.  So free up argument lists that are still
+     * There's no guarantee that the calls to PreCmdObjProc will match
+     * up with PostCmdObjProc.  So free up argument lists that are still
      * hanging around before allocating a new one.
      */
-    if (watchPtr->args != NULL) {
-        Blt_Free(watchPtr->args);
+    if (watchPtr->argsObjPtr != NULL) {
+        Tcl_DecrRefCount(watchPtr->argsObjPtr);
     }
-    watchPtr->args = Tcl_Merge(argc, argv);
-
-    if (watchPtr->preCmd != NULL) {
-        Tcl_DString buffer;
-        char string[200];
+    watchPtr->argsObjPtr = Tcl_NewListObj(objc, objv);
+    if (watchPtr->preCmdObjPtr != NULL) {
         int status;
-        char **p;
+        Tcl_Obj *objPtr, *cmdObjPtr;
 
-        /* Create the "pre" command procedure call */
-        Tcl_DStringInit(&buffer);
-        for (p = watchPtr->preCmd; *p != NULL; p++) {
-            Tcl_DStringAppendElement(&buffer, *p);
-        }
-        Blt_FormatString(string, 200, "%d", watchPtr->level);
-        Tcl_DStringAppendElement(&buffer, string);
-        Tcl_DStringAppendElement(&buffer, watchPtr->cmdPtr);
-        Tcl_DStringAppendElement(&buffer, watchPtr->args);
-
+        /* pre command */
+        cmdObjPtr = Tcl_DuplicateObj(watchPtr->preCmdObjPtr);
+        /* level */
+        objPtr = Tcl_NewIntObj(watchPtr->level);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        /* command */
+        objPtr = Tcl_NewStringObj(watchPtr->cmdPtr, -1);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        /* args */
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, watchPtr->argsObjPtr);
+        Tcl_IncrRefCount(cmdObjPtr);
+        Tcl_Preserve(watchPtr);
         watchPtr->active = 1;
-        status = Tcl_Eval(interp, Tcl_DStringValue(&buffer));
+        status = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
         watchPtr->active = 0;
-
-        Tcl_DStringFree(&buffer);
+        Tcl_Release(watchPtr);
+        Tcl_DecrRefCount(cmdObjPtr);
         if (status != TCL_OK) {
-            Blt_Warn("%s failed: %s\n", watchPtr->preCmd[0], 
+            Blt_Warn("%s failed: %s\n", Tcl_GetString(watchPtr->preCmdObjPtr), 
                      Tcl_GetStringResult(interp));
         }
     }
     /* Set the trigger for the "post" command procedure */
-    if (watchPtr->postCmd != NULL) {
+    if (watchPtr->postCmdObjPtr != NULL) {
         Tcl_AsyncMark(watchPtr->asyncHandle);
     }
+    return TCL_OK;
 }
 
 /*
@@ -300,86 +296,76 @@ PreCmdProc(
 static int
 PostCmdProc(ClientData clientData, Tcl_Interp *interp, int code)
 {
+    Tcl_Obj *errorInfoObjPtr, *errorCodeObjPtr;
+    Tcl_Obj *objPtr, *cmdObjPtr;
+    Tcl_Obj *resultsObjPtr;
     Watch *watchPtr = clientData;
-
+    int status;
+    
+    if (interp == NULL) {
+        return code;                    /* No interpreter available. */
+    }
+    if (watchPtr->postCmdObjPtr == NULL) {
+        return code;
+    }
     if (watchPtr->active) {
         return code;
     }
-    if (watchPtr->postCmd != NULL) {
-        int status;
-        Tcl_DString buffer;
-        char string[200];
-        const char *results;
-        char **p;
-        const char *retCode;
-        const char *errorCode, *errorInfo;
-        errorInfo = errorCode = NULL;
+    errorInfoObjPtr = errorCodeObjPtr = NULL;
 
-        results = "NO INTERPRETER AVAILABLE";
+    /*
+     * Save the state of the interpreter.
+     */
+    errorInfoObjPtr = Tcl_GetVar2Ex(interp, "errorInfo", (char *)NULL,
+                                    TCL_GLOBAL_ONLY);
+    errorCodeObjPtr = Tcl_GetVar2Ex(interp, "errorCode", (char *)NULL,
+                                    TCL_GLOBAL_ONLY);
+    resultsObjPtr = Tcl_GetObjResult(interp);
 
-        /*
-         * Save the state of the interpreter.
-         */
-        if (interp != NULL) {
-            errorInfo = (char *)Tcl_GetVar2(interp, "errorInfo", (char *)NULL,
-                TCL_GLOBAL_ONLY);
-            if (errorInfo != NULL) {
-                errorInfo = Blt_AssertStrdup(errorInfo);
-            }
-            errorCode = (char *)Tcl_GetVar2(interp, "errorCode", (char *)NULL,
-                TCL_GLOBAL_ONLY);
-            if (errorCode != NULL) {
-                errorCode = Blt_AssertStrdup(errorCode);
-            }
-            results = Blt_AssertStrdup(Tcl_GetStringResult(interp));
-        }
-        /* Create the "post" command procedure call */
-        Tcl_DStringInit(&buffer);
-        for (p = watchPtr->postCmd; *p != NULL; p++) {
-            Tcl_DStringAppendElement(&buffer, *p);
-        }
-        Blt_FormatString(string, 200, "%d", watchPtr->level);
-        Tcl_DStringAppendElement(&buffer, string);
-        Tcl_DStringAppendElement(&buffer, watchPtr->cmdPtr);
-        Tcl_DStringAppendElement(&buffer, watchPtr->args);
-        if (code < UNKNOWN_RETURN_CODE) {
-            retCode = codeNames[code];
-        } else {
-            Blt_FormatString(string, 200, "%d", code);
-            retCode = string;
-        }
-        Tcl_DStringAppendElement(&buffer, retCode);
-        Tcl_DStringAppendElement(&buffer, results);
-
-        watchPtr->active = 1;
-        status = Tcl_Eval(watchPtr->interp, Tcl_DStringValue(&buffer));
-        watchPtr->active = 0;
-
-        Tcl_DStringFree(&buffer);
-        Blt_Free(watchPtr->args);
-        watchPtr->args = NULL;
-
-        if (status != TCL_OK) {
-            Blt_Warn("%s failed: %s\n", watchPtr->postCmd[0],
-                Tcl_GetStringResult(watchPtr->interp));
-        }
-        /*
-         * Restore the state of the interpreter.
-         */
-        if (interp != NULL) {
-            if (errorInfo != NULL) {
-                Tcl_SetVar2(interp, "errorInfo", (char *)NULL, errorInfo,
-                    TCL_GLOBAL_ONLY);
-                Blt_Free(errorInfo);
-            }
-            if (errorCode != NULL) {
-                Tcl_SetVar2(interp, "errorCode", (char *)NULL, errorCode,
-                    TCL_GLOBAL_ONLY);
-                Blt_Free(errorCode);
-            }
-            Tcl_SetStringObj(Tcl_GetObjResult(interp), results, -1);
-        }
+    /* pre command */
+    cmdObjPtr = Tcl_DuplicateObj(watchPtr->postCmdObjPtr);
+    /* level */
+    objPtr = Tcl_NewIntObj(watchPtr->level);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    /* command */
+    objPtr = Tcl_NewStringObj(watchPtr->cmdPtr, -1);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    /* args */
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, watchPtr->argsObjPtr);
+    /* return code */
+    if (code < UNKNOWN_RETURN_CODE) {
+        objPtr = Tcl_NewStringObj(codeNames[code], -1);
+    } else {
+        objPtr = Tcl_NewIntObj(code);
     }
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, resultsObjPtr);
+    
+    Tcl_IncrRefCount(cmdObjPtr);
+    Tcl_Preserve(watchPtr);
+    watchPtr->active = 1;
+    status = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+    watchPtr->active = 0;
+    Tcl_Release(watchPtr);
+    Tcl_DecrRefCount(cmdObjPtr);
+    Tcl_DecrRefCount(watchPtr->argsObjPtr);
+    watchPtr->argsObjPtr = NULL;
+    if (status != TCL_OK) {
+        Blt_Warn("%s failed: %s\n", Tcl_GetString(watchPtr->postCmdObjPtr), 
+                 Tcl_GetStringResult(interp));
+    }
+    /*
+     * Restore the state of the interpreter.
+     */
+    if (errorInfoObjPtr != NULL) {
+        Tcl_SetVar2Ex(interp, "errorInfo", (char *)NULL, 
+                      errorInfoObjPtr, TCL_GLOBAL_ONLY);
+    }
+    if (errorCodeObjPtr != NULL) {
+        Tcl_SetVar2Ex(interp, "errorCode", (char *)NULL, 
+                      errorCodeObjPtr, TCL_GLOBAL_ONLY);
+    }
+    Tcl_SetObjResult(interp, resultsObjPtr);
     return code;
 }
 
@@ -404,7 +390,7 @@ PostCmdProc(ClientData clientData, Tcl_Interp *interp, int code)
  *---------------------------------------------------------------------------
  */
 static Watch *
-NewWatch(Tcl_Interp *interp, const char *name)
+NewWatch(Tcl_Interp *interp, WatchCmdInterpData *dataPtr, Blt_HashEntry *hPtr)
 {
     Watch *watchPtr;
 
@@ -415,9 +401,11 @@ NewWatch(Tcl_Interp *interp, const char *name)
     }
     watchPtr->state = WATCH_STATE_ACTIVE;
     watchPtr->maxLevel = WATCH_MAX_LEVEL;
-    watchPtr->name = Blt_AssertStrdup(name);
+    watchPtr->name = Blt_GetHashKey(&dataPtr->watchTable, hPtr);
     watchPtr->interp = interp;
     watchPtr->asyncHandle = Tcl_AsyncCreate(PostCmdProc, watchPtr);
+    watchPtr->hashPtr = hPtr;
+    Blt_SetHashValue(hPtr, watchPtr);
     return watchPtr;
 }
 
@@ -445,25 +433,21 @@ NewWatch(Tcl_Interp *interp, const char *name)
 static void
 DestroyWatch(WatchCmdInterpData *dataPtr, Watch *watchPtr)
 {
-    Blt_HashEntry *hPtr;
-
     Tcl_AsyncDelete(watchPtr->asyncHandle);
     if (watchPtr->state == WATCH_STATE_ACTIVE) {
-        Tcl_DeleteTrace(watchPtr->interp, watchPtr->trace);
+        Tcl_DeleteTrace(watchPtr->interp, watchPtr->token);
     }
-    if (watchPtr->preCmd != NULL) {
-        Blt_Free(watchPtr->preCmd);
+    if (watchPtr->preCmdObjPtr != NULL) {
+        Tcl_DecrRefCount(watchPtr->preCmdObjPtr);
     }
-    if (watchPtr->postCmd != NULL) {
-        Blt_Free(watchPtr->postCmd);
+    if (watchPtr->postCmdObjPtr != NULL) {
+        Tcl_DecrRefCount(watchPtr->postCmdObjPtr);
     }
-    if (watchPtr->args != NULL) {
-        Blt_Free(watchPtr->args);
+    if (watchPtr->argsObjPtr!= NULL) {
+        Tcl_DecrRefCount(watchPtr->argsObjPtr);
     }
-    hPtr = Blt_FindHashEntry(&dataPtr->watchTable, (char *)watchPtr->name);
-    Blt_DeleteHashEntry(&dataPtr->watchTable, hPtr);
-    if (watchPtr->name != NULL) {
-        Blt_Free(watchPtr->name);
+    if (watchPtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&dataPtr->watchTable, watchPtr->hashPtr);
     }
     Blt_Free(watchPtr);
 }
@@ -569,13 +553,13 @@ ConfigWatch(Watch *watchPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     /*
      * If the watch's max depth changed or its state, reset the traces.
      */
-    if (watchPtr->trace != (Tcl_Trace) 0) {
-        Tcl_DeleteTrace(interp, watchPtr->trace);
-        watchPtr->trace = (Tcl_Trace) 0;
+    if (watchPtr->token != (Tcl_Trace)0) {
+        Tcl_DeleteTrace(interp, watchPtr->token);
+        watchPtr->token = (Tcl_Trace)0;
     }
     if (watchPtr->state == WATCH_STATE_ACTIVE) {
-        watchPtr->trace = Tcl_CreateTrace(interp, watchPtr->maxLevel,
-            PreCmdProc, watchPtr);
+        watchPtr->token = Tcl_CreateObjTrace(interp, watchPtr->maxLevel, 0,
+            PreCmdObjProc, watchPtr, NULL);
     }
     return TCL_OK;
 }
@@ -614,11 +598,10 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          (char *)NULL);
         return TCL_ERROR;
     }
-    watchPtr = NewWatch(interp, string);
+    watchPtr = NewWatch(interp, dataPtr, hPtr);
     if (watchPtr == NULL) {
         return TCL_ERROR;       /* Can't create new watch */
     }
-    Blt_SetHashValue(hPtr, watchPtr);
     return ConfigWatch(watchPtr, interp, objc - 3, objv + 3);
 }
 
@@ -677,12 +660,12 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     string = Tcl_GetString(objv[1]);
     state = (string[0] == 'a') ? WATCH_STATE_ACTIVE : WATCH_STATE_IDLE;
     if (state != watchPtr->state) {
-        if (watchPtr->trace == (Tcl_Trace) 0) {
-            watchPtr->trace = Tcl_CreateTrace(interp, watchPtr->maxLevel,
-                PreCmdProc, watchPtr);
+        if (watchPtr->token == (Tcl_Trace)0) {
+            watchPtr->token = Tcl_CreateObjTrace(interp, watchPtr->maxLevel, 0,
+                PreCmdObjProc, watchPtr, NULL);
         } else {
-            Tcl_DeleteTrace(interp, watchPtr->trace);
-            watchPtr->trace = (Tcl_Trace) 0;
+            Tcl_DeleteTrace(interp, watchPtr->token);
+            watchPtr->token = (Tcl_Trace)0;
         }
         watchPtr->state = state;
     }
@@ -776,27 +759,36 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     WatchCmdInterpData *dataPtr = clientData;
     Watch *watchPtr;
-    char **p;
+    Tcl_Obj *objPtr, *listObjPtr;
 
     if (GetWatchFromObj(dataPtr, interp, objv[2], &watchPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (watchPtr->preCmd != NULL) {
-        Tcl_AppendResult(interp, "-precmd", (char *)NULL);
-        for (p = watchPtr->preCmd; *p != NULL; p++) {
-            Tcl_AppendResult(interp, " ", *p, (char *)NULL);
-        }
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    if (watchPtr->preCmdObjPtr != NULL) {
+        /* -precmd */
+        objPtr = Tcl_NewStringObj("-precmd", 7);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->preCmdObjPtr);
     }
-    if (watchPtr->postCmd != NULL) {
-        Tcl_AppendResult(interp, "-postcmd", (char *)NULL);
-        for (p = watchPtr->postCmd; *p != NULL; p++) {
-            Tcl_AppendResult(interp, " ", *p, (char *)NULL);
-        }
+    if (watchPtr->postCmdObjPtr != NULL) {
+        /* -postcmd */
+        objPtr = Tcl_NewStringObj("-postcmd", 8);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->postCmdObjPtr);
     }
-    Tcl_AppendResult(interp, "-maxlevel ", Blt_Itoa(watchPtr->maxLevel), " ", 
-                     (char *)NULL);
-    Tcl_AppendResult(interp, "-active ", (watchPtr->state == WATCH_STATE_ACTIVE)
-        ? "true" : "false", " ", (char *)NULL);
+    /* -maxlevel */
+    objPtr = Tcl_NewStringObj("-maxlevel", 9);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(watchPtr->maxLevel);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* -active */
+    objPtr = Tcl_NewStringObj("-active", 7);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewBooleanObj(watchPtr->state == WATCH_STATE_ACTIVE);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 

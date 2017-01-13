@@ -91,9 +91,6 @@
 #endif /* _MSC_VER || __BORLANDC__ */
 
 #define DEBUG_READER 0
-#ifndef WIN32
-  #define PurifyPrintf printf
-#endif  /* WIN32 */
 #define PS_PREVIEW_EPSI 0
 #define PS_PREVIEW_WMF  1
 #define PS_PREVIEW_TIFF 2
@@ -262,8 +259,13 @@ typedef struct {
 
 static int StringToFont(ClientData clientData, Tcl_Interp *interp,
         Tk_Window tkwin, const char *string, char *widgRec, int offset);
+#if (_TCL_VERSION >= _VERSION(8,6,0)) 
+static const char *FontToString (ClientData clientData, Tk_Window tkwin, 
+        char *widgRec, int offset, Tcl_FreeProc **proc);
+#else
 static char *FontToString (ClientData clientData, Tk_Window tkwin, 
         char *widgRec, int offset, Tcl_FreeProc **proc);
+#endif
 
 static Tk_CustomOption bltFontOption =
 {
@@ -378,7 +380,11 @@ StringToFont(
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
+#if (_TCL_VERSION >= _VERSION(8,6,0)) 
+static const char *
+#else
 static char *
+#endif
 FontToString(
     ClientData clientData,              /* Not used. */
     Tk_Window tkwin,                    /* Not used. */
@@ -486,22 +492,13 @@ GetHexValue(ParseInfo *piPtr, unsigned char *bytePtr)
 
       nextLine:
         if (!ReadPsLine(piPtr)) {
-#if DEBUG_READER
-            PurifyPrintf("short file\n");
-#endif
             return TCL_ERROR;           /* Short file */
         }
         if (piPtr->line[0] != '%') {
-#if DEBUG_READER
-            PurifyPrintf("line doesn't start with %% (%s)\n", piPtr->line);
-#endif
             return TCL_ERROR;
         }
         if ((piPtr->line[1] == '%') &&
             (strncmp(piPtr->line + 2, "EndPreview", 10) == 0)) {
-#if DEBUG_READER
-            PurifyPrintf("end of preview (%s)\n", piPtr->line);
-#endif
             return TCL_RETURN;
         }
         p = piPtr->line + 1;
@@ -517,9 +514,6 @@ GetHexValue(ParseInfo *piPtr, unsigned char *bytePtr)
     b = piPtr->hexTable[(int)p[1]];
 
     if ((a == 0xFF) || (b == 0xFF)) {
-#if DEBUG_READER
-        PurifyPrintf("not a hex digit (%s)\n", piPtr->line);
-#endif
         return TCL_ERROR;
     }
     byte = (a << 4) | b;
@@ -554,16 +548,10 @@ ReadEPSI(EpsItem *itemPtr, ParseInfo *piPtr)
     dscBeginPreview = piPtr->line + 16;
     if (sscanf(dscBeginPreview, "%d %d %d %d", &width, &height, &bitsPerPixel, 
         &numLines) != 4) {
-#if DEBUG_READER
-        PurifyPrintf("bad %%BeginPreview (%s) format\n", dscBeginPreview);
-#endif
         return;
     }
     if (((bitsPerPixel != 1) && (bitsPerPixel != 8)) || (width < 1) ||
         (width > SHRT_MAX) || (height < 1) || (height > SHRT_MAX)) {
-#if DEBUG_READER
-        PurifyPrintf("Bad %%BeginPreview (%s) values\n", dscBeginPreview);
-#endif
         return;                 /* Bad "%%BeginPreview:" information */
     }
     itemPtr->firstLine = piPtr->lineNumber;

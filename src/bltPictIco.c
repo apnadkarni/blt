@@ -142,7 +142,7 @@ static Blt_SwitchCustom colorSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-alpha", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-alpha", "", (char *)NULL,
         Blt_Offset(IcoExportSwitches, flags),   0, EXPORT_ALPHA},
     {BLT_SWITCH_CUSTOM, "-background", "color", (char *)NULL,
         Blt_Offset(IcoExportSwitches, bg),         0, 0, &colorSwitch},

@@ -491,7 +491,7 @@ typedef struct {
 
 static Blt_SwitchSpec arithSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-invert", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-invert", "", (char *)NULL,
         Blt_Offset(ArithSwitches, invert), 0, TRUE},
     {BLT_SWITCH_OBJ,     "-mask",   "mask", (char *)NULL,
         Blt_Offset(ArithSwitches, maskObjPtr), 0},
@@ -622,7 +622,7 @@ static Blt_SwitchSpec resampleSwitches[] = {
         Blt_Offset(ResampleSwitches, height),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_CUSTOM, "-hfilter", "filter", (char *)NULL,
         Blt_Offset(ResampleSwitches, hFilter), 0, 0, &filterSwitch},
-    {BLT_SWITCH_BITMASK, "-maxpect", "", (char *)NULL, 
+    {BLT_SWITCH_BITS_NOARG, "-maxpect", "", (char *)NULL, 
         Blt_Offset(ResampleSwitches, flags), 0, MAXPECT},
     {BLT_SWITCH_CUSTOM, "-vfilter", "filter", (char *)NULL,
         Blt_Offset(ResampleSwitches, vFilter), 0, 0, &filterSwitch},
@@ -648,9 +648,9 @@ static Blt_SwitchSpec snapSwitches[] =
         Blt_Offset(SnapArgs, height),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_CUSTOM, "-hfilter", "filter", (char *)NULL,
         Blt_Offset(SnapArgs, hFilter), 0, 0, &filterSwitch},
-    {BLT_SWITCH_BITMASK, "-maxpect", "", (char *)NULL, 
+    {BLT_SWITCH_BITS_NOARG, "-maxpect", "", (char *)NULL, 
         Blt_Offset(ResampleSwitches, flags), 0, MAXPECT},
-    {BLT_SWITCH_BITMASK, "-raise",  "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-raise",  "", (char *)NULL,
         Blt_Offset(SnapArgs, flags),  0, RAISE},
     {BLT_SWITCH_CUSTOM, "-vfilter", "filter", (char *)NULL,
         Blt_Offset(SnapArgs, vFilter), 0, 0, &filterSwitch},

@@ -180,13 +180,13 @@ static Blt_SwitchCustom colorSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-animate", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-animate", "", (char *)NULL,
         Blt_Offset(GifExportSwitches, flags),      0, EXPORT_ANIMATE},
     {BLT_SWITCH_CUSTOM, "-background", "color", (char *)NULL,
         Blt_Offset(GifExportSwitches, bg),         0, 0, &colorSwitch},
     {BLT_SWITCH_CUSTOM, "-bg", "color", (char *)NULL,
         Blt_Offset(GifExportSwitches, bg),         0, 0, &colorSwitch},
-    {BLT_SWITCH_BITMASK, "-blend", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-blend", "", (char *)NULL,
         Blt_Offset(GifExportSwitches, flags),      0, EXPORT_BLEND},
     {BLT_SWITCH_OBJ, "-data",  "data", (char *)NULL,
         Blt_Offset(GifExportSwitches, dataObjPtr), 0},

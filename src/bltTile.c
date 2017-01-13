@@ -817,13 +817,6 @@ TileArea(
             startY -= delta;
         }
     }
-#ifdef notdef
-    PurifyPrintf("tile is (%d,%d,%d,%d)\n", 
-                 clientPtr->xOrigin, clientPtr->yOrigin, 
-                 tilePtr->width, tilePtr->height);
-    PurifyPrintf("region is (%d,%d,%d,%d)\n", x, y, width, height);
-    PurifyPrintf("starting at %d,%d\n", startX, startY);
-#endif
     left = x;
     right = x + width;
     top = y;
@@ -852,10 +845,6 @@ TileArea(
             if ((destX + destWidth) > right) {
                 destWidth = (right - destX);
             }
-#ifdef notdef
-            PurifyPrintf("drawing pattern (%d,%d,%d,%d) at %d,%d\n",
-                 srcX , srcY, destWidth, destHeight, destX, destY);
-#endif
             if (tilePtr->mask != None) { /* With transparency. */
 #ifdef notdef
                 HDC maskDC;

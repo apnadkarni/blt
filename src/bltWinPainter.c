@@ -382,15 +382,10 @@ DrawableToPicture(
 
     /* Copy the window contents to the memory surface. */
     if (!BitBlt(memdc, 0, 0, w, h, dc, x, y, SRCCOPY)) {
-#ifdef notdef
-        PurifyPrintf("can't blit: %s\n", Blt_LastError());
-#endif
         goto done;
     }
     if (GetObject(hBitmap, sizeof(DIBSECTION), &ds) == 0) {
-#ifdef notdef
-        PurifyPrintf("can't get object: %s\n", Blt_LastError());
-#endif
+
     } else {
         Blt_Pixel *destRowPtr;
         unsigned char *bits, *sp;

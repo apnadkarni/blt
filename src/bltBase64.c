@@ -63,7 +63,7 @@ static Blt_SwitchSpec ascii85DecoderSwitches[] =
         Blt_Offset(BinaryDecoder, dataObjPtr), 0, 0, NULL},
     {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
         Blt_Offset(BinaryDecoder, fileObjPtr), 0},
-    {BLT_SWITCH_BITMASK, "-ignorebadchars", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-ignorebadchars", "", (char *)NULL,
         Blt_Offset(BinaryDecoder, flags), 0, IGNORE_BAD_CHARS},
     {BLT_SWITCH_END}
 };
@@ -74,7 +74,7 @@ static Blt_SwitchSpec hexadecimalDecoderSwitches[] =
         Blt_Offset(BinaryDecoder, dataObjPtr), 0, 0, NULL},
     {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
         Blt_Offset(BinaryDecoder, fileObjPtr), 0},
-    {BLT_SWITCH_BITMASK, "-ignorebadchars", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-ignorebadchars", "", (char *)NULL,
         Blt_Offset(BinaryDecoder, flags), 0, IGNORE_BAD_CHARS},
     {BLT_SWITCH_END}
 };
@@ -85,7 +85,7 @@ static Blt_SwitchSpec base64DecoderSwitches[] =
         Blt_Offset(BinaryDecoder, dataObjPtr), 0, 0, NULL},
     {BLT_SWITCH_OBJ,     "-file",      "fileName", (char *)NULL,
         Blt_Offset(BinaryDecoder, fileObjPtr), 0},
-    {BLT_SWITCH_BITMASK, "-ignorebadchars", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-ignorebadchars", "", (char *)NULL,
         Blt_Offset(BinaryDecoder, flags), 0, IGNORE_BAD_CHARS},
     {BLT_SWITCH_END}
 };
@@ -96,7 +96,7 @@ static Blt_SwitchSpec hexadecimalEncoderSwitches[] =
         Blt_Offset(BinaryEncoder, dataObjPtr), 0, 0, NULL},
     {BLT_SWITCH_OBJ,      "-file",      "fileName", (char *)NULL,
         Blt_Offset(BinaryEncoder, fileObjPtr), 0},
-    {BLT_SWITCH_BITMASK,  "-lowercase", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,  "-lowercase", "", (char *)NULL,
         Blt_Offset(BinaryEncoder, flags), 0, LOWER_CASE},
     {BLT_SWITCH_STRING,   "-pad",      "fileName", (char *)NULL,
         Blt_Offset(BinaryEncoder, pad), 0},
@@ -109,15 +109,15 @@ static Blt_SwitchSpec hexadecimalEncoderSwitches[] =
 
 static Blt_SwitchSpec ascii85EncoderSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK,   "-brackets", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,   "-brackets", "", (char *)NULL,
        Blt_Offset(BinaryEncoder, flags), 0, BRACKETS},
     {BLT_SWITCH_OBJ,       "-data",      "varName", (char *)NULL,
         Blt_Offset(BinaryEncoder, dataObjPtr), 0, 0, NULL},
     {BLT_SWITCH_OBJ,       "-file",      "fileName", (char *)NULL,
         Blt_Offset(BinaryEncoder, fileObjPtr), 0},
-    {BLT_SWITCH_BITMASK,   "-foldspaces", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,   "-foldspaces", "", (char *)NULL,
         Blt_Offset(BinaryEncoder, flags), 0, COMPRESS_SPACES},
-    {BLT_SWITCH_BITMASK,   "-foldzeros", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,   "-foldzeros", "", (char *)NULL,
         Blt_Offset(BinaryEncoder, flags), 0, COMPRESS_ZEROS},
     {BLT_SWITCH_STRING,    "-pad",      "string", (char *)NULL,
         Blt_Offset(BinaryEncoder, pad), 0},

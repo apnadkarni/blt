@@ -51,8 +51,6 @@
 #include "bltWinPainter.h"
 #include "tkDisplay.h"
 
-#define WINDEBUG 0
-
 #define GetBit(x, y) \
    srcBits[(srcBytesPerRow * (srcHeight - y - 1)) + (x>>3)] & (0x80 >> (x&7))
 #define SetBit(x, y) \
@@ -382,9 +380,6 @@ Blt_RotateBitmap(
         (BITMAPINFO *)&mb, DIB_RGB_COLORS);
     TkWinReleaseDrawableDC(destBitmap, hDC, &state);
     if (!result) {
-#if WINDEBUG
-        PurifyPrintf("can't setDIBits: %s\n", Blt_LastError());
-#endif
         destBitmap = None;
     }
     if (destBits != NULL) {
@@ -703,9 +698,6 @@ Blt_ScaleRotateBitmapArea(
         TkWinReleaseDrawableDC(destBitmap, hDC, &state);
     }
     if (!result) {
-#if WINDEBUG
-        PurifyPrintf("can't setDIBits: %s\n", Blt_LastError());
-#endif
         destBitmap = None;
     }
     if (destBits != NULL) {

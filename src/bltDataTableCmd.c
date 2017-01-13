@@ -316,15 +316,17 @@ static Blt_SwitchSpec dirSwitches[] =
 {
     {BLT_SWITCH_CUSTOM,  "-fields",  "fieldList", (char *)NULL,
         Blt_Offset(ReadDirectory, mask),    0, 0, &fieldsSwitch},
-    {BLT_SWITCH_BITMASK, "-hidden", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-hidden", "", (char *)NULL,
         Blt_Offset(ReadDirectory, perm), 0, TCL_GLOB_PERM_HIDDEN},
-    {BLT_SWITCH_BITMASK, "-nocase",       "", (char *)NULL,
+#if (_TCL_VERSION > _VERSION(8,5,0)) 
+    {BLT_SWITCH_BITS_NOARG, "-nocase",       "", (char *)NULL,
         Blt_Offset(ReadDirectory, flags), 0, READ_DIR_NOCASE},
+#endif
     {BLT_SWITCH_OBJ,     "-patterns",     "list", (char *)NULL,
         Blt_Offset(ReadDirectory, patternsObjPtr), 0},
     {BLT_SWITCH_CUSTOM,  "-permissions", "permList", (char *)NULL,
         Blt_Offset(ReadDirectory, perm),    0, 0, &permSwitch},
-    {BLT_SWITCH_BITMASK, "-readonly", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-readonly", "", (char *)NULL,
         Blt_Offset(ReadDirectory, perm), 0, TCL_GLOB_PERM_RONLY},
     {BLT_SWITCH_CUSTOM,  "-type",    "typeList", (char *)NULL,
         Blt_Offset(ReadDirectory, type),    0, 0, &typeSwitch},
@@ -369,7 +371,7 @@ typedef struct {
 
 static Blt_SwitchSpec indicesSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-duplicates",  "",    (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-duplicates",  "",    (char *)NULL,
         Blt_Offset(IndicesSwitches, flags), 0, INDICES_DUPLICATES},
     {BLT_SWITCH_END}
 };
@@ -386,11 +388,11 @@ typedef struct {
 
 static Blt_SwitchSpec copySwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-append", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-append", "", (char *)NULL,
         Blt_Offset(CopySwitches, flags), 0, COPY_APPEND},
-    {BLT_SWITCH_BITMASK, "-new", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-new", "", (char *)NULL,
         Blt_Offset(CopySwitches, flags), 0, COPY_NEW},
-    {BLT_SWITCH_BITMASK, "-notags", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-notags", "", (char *)NULL,
         Blt_Offset(CopySwitches, flags), 0, COPY_NOTAGS},
     {BLT_SWITCH_CUSTOM, "-table", "srcTable", (char *)NULL,
         Blt_Offset(CopySwitches, table), 0, 0, &tableSwitch},
@@ -423,7 +425,7 @@ static Blt_SwitchSpec joinSwitches[] =
 {
     {BLT_SWITCH_CUSTOM, "-columns",   "columnList" ,(char *)NULL,
         Blt_Offset(JoinSwitches, ci),   JOIN_COLUMN, 0, &columnIterSwitch},
-    {BLT_SWITCH_BITMASK, "-notags", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-notags", "", (char *)NULL,
         Blt_Offset(JoinSwitches, flags), JOIN_BOTH, JOIN_NOTAGS},
     {BLT_SWITCH_CUSTOM, "-rows",      "rowList", (char *)NULL,
         Blt_Offset(JoinSwitches, ri),   JOIN_ROW, 0, &rowIterSwitch},
@@ -439,7 +441,7 @@ typedef struct {
 
 static Blt_SwitchSpec addSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-notags", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-notags", "", (char *)NULL,
         Blt_Offset(AddSwitches, flags), 0, ADD_NOTAGS},
     {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
         Blt_Offset(AddSwitches, ci),   0, 0, &columnIterSwitch},
@@ -484,9 +486,9 @@ static Blt_SwitchSpec restoreSwitches[] =
         Blt_Offset(RestoreSwitches, dataObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
         Blt_Offset(RestoreSwitches, fileObjPtr), 0, 0},
-    {BLT_SWITCH_BITMASK, "-notags", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-notags", "", (char *)NULL,
         Blt_Offset(RestoreSwitches, flags), 0, TABLE_RESTORE_NO_TAGS},
-    {BLT_SWITCH_BITMASK, "-overwrite", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-overwrite", "", (char *)NULL,
         Blt_Offset(RestoreSwitches, flags), 0, TABLE_RESTORE_OVERWRITE},
     {BLT_SWITCH_END}
 };
@@ -505,27 +507,27 @@ typedef struct {
 
 static Blt_SwitchSpec sortSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-ascii",      "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-ascii",      "", (char *)NULL,
         Blt_Offset(SortSwitches, sortFlags),  0, TABLE_SORT_ASCII},
     {BLT_SWITCH_CUSTOM, "-columns", "", (char *)NULL,
         Blt_Offset(SortSwitches, ci), 0, 0, &columnIterSwitch},
-    {BLT_SWITCH_BITMASK, "-decreasing", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-decreasing", "", (char *)NULL,
         Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_DECREASING},
-    {BLT_SWITCH_BITMASK, "-dictionary", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-dictionary", "", (char *)NULL,
         Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_DICTIONARY},
-    {BLT_SWITCH_BITMASK, "-frequency", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-frequency", "", (char *)NULL,
         Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_FREQUENCY},
-    {BLT_SWITCH_BITMASK, "-list", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-list", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_LIST},
-    {BLT_SWITCH_BITMASK, "-nocase", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_IGNORECASE},
-    {BLT_SWITCH_BITMASK, "-nonempty", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nonempty", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_NONEMPTY|SORT_LIST},
     {BLT_SWITCH_CUSTOM, "-rows", "", (char *)NULL,
         Blt_Offset(SortSwitches, ri), 0, 0, &rowIterSwitch},
-    {BLT_SWITCH_BITMASK, "-unique", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-unique", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_UNIQUE|SORT_LIST},
-    {BLT_SWITCH_BITMASK, "-values", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-values", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_VALUES|SORT_LIST},
     {BLT_SWITCH_END}
 };
@@ -536,17 +538,17 @@ typedef struct {
 
 static Blt_SwitchSpec watchSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-allevents", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-allevents", "", (char *)NULL,
         Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_ALL_EVENTS},
-    {BLT_SWITCH_BITMASK, "-create", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-create", "", (char *)NULL,
         Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_CREATE},
-    {BLT_SWITCH_BITMASK, "-delete", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-delete", "", (char *)NULL,
         Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_DELETE},
-    {BLT_SWITCH_BITMASK, "-move", "",  (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-move", "",  (char *)NULL,
         Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_MOVE},
-    {BLT_SWITCH_BITMASK, "-relabel", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-relabel", "", (char *)NULL,
         Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_RELABEL},
-    {BLT_SWITCH_BITMASK, "-whenidle", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-whenidle", "", (char *)NULL,
         Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_WHENIDLE},
     {BLT_SWITCH_END}
 };
@@ -573,7 +575,7 @@ static Blt_SwitchSpec findSwitches[] =
         Blt_Offset(FindSwitches, tag), 0},
     {BLT_SWITCH_OBJ,    "-emptyvalue", "string", (char *)NULL,
         Blt_Offset(FindSwitches, emptyValueObjPtr), 0},
-    {BLT_SWITCH_BITMASK, "-invert", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-invert", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_INVERT},
     {BLT_SWITCH_LONG_NNEG, "-maxrows", "numRows", (char *)NULL,
         Blt_Offset(FindSwitches, maxMatches), 0},
@@ -4775,9 +4777,11 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     patternFlags = 0;
+#if (_TCL_VERSION > _VERSION(8,5,0)) 
     if (reader.flags & READ_DIR_NOCASE) {
         patternFlags =  TCL_MATCH_NOCASE;
     }
+#endif
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (Tcl_FSStat(objv[2], &stat) != 0) {
         Tcl_AppendResult(interp, "Can't stat directory \"",
@@ -4785,7 +4789,7 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          Tcl_PosixError(interp), (char *)NULL);
         goto error;
     }
-    if (strcmp(GetTypeFromMode(stat.st_mode), "directory") != 0) {
+    if (!S_ISDIR(stat.st_mode)) {
         Tcl_AppendResult(interp, "\"", Tcl_GetString(objv[2]),
                          "\" is not a directory", (char *)NULL);
         goto error;

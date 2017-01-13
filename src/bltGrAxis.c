@@ -6001,9 +6001,9 @@ typedef struct {
 
 static Blt_SwitchSpec namesSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-zoom", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-zoom", "", (char *)NULL,
         Blt_Offset(NamesArgs, flags), 0, ZOOM},
-    {BLT_SWITCH_BITMASK, "-visible", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-visible", "", (char *)NULL,
         Blt_Offset(NamesArgs, flags), 0, VISIBLE},
     {BLT_SWITCH_END}
 };

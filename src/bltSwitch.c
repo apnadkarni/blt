@@ -107,7 +107,8 @@ FormatSwitchValue(
     ptr = (char *)record + sp->offset;
     string = "";
     switch (sp->type) {
-    case BLT_SWITCH_BITMASK:
+    case BLT_SWITCH_BITS:
+    case BLT_SWITCH_BITS_NOARG:
         {
             unsigned long flag;
 
@@ -115,7 +116,8 @@ FormatSwitchValue(
             return Tcl_NewBooleanObj((flag != 0));
         }
 
-    case BLT_SWITCH_BITMASK_INVERT:
+    case BLT_SWITCH_INVERT_BITS:
+    case BLT_SWITCH_INVERT_BITS_NOARG:
         {
             unsigned long flag;
 
@@ -124,6 +126,7 @@ FormatSwitchValue(
         }
 
     case BLT_SWITCH_BOOLEAN: 
+    case BLT_SWITCH_BOOLEAN_NOARG: 
         return Tcl_NewBooleanObj(*(int *)ptr);
 
     case BLT_SWITCH_DOUBLE: 
@@ -360,7 +363,7 @@ DoSwitch(
         ptr = (char *)record + sp->offset;
         switch (sp->type) {
 
-        case BLT_SWITCH_BITMASK: 
+        case BLT_SWITCH_BITS: 
             {
                 int bool;
                 unsigned long mask, flags;
@@ -378,7 +381,7 @@ DoSwitch(
             }
             break;
 
-        case BLT_SWITCH_BITMASK_INVERT: 
+        case BLT_SWITCH_INVERT_BITS: 
             {
                 int bool;
                 unsigned long mask, flags;
@@ -681,12 +684,17 @@ Blt_ParseSwitches(
         if (sp == NULL) {
             return -1;
         }
-        if (sp->type == BLT_SWITCH_BITMASK) {
+        if (sp->type == BLT_SWITCH_BITS_NOARG) {
             char *ptr;
 
             ptr = (char *)record + sp->offset;
             *((int *)ptr) |= sp->mask;
-        } else if (sp->type == BLT_SWITCH_BITMASK_INVERT) {
+        } else if (sp->type == BLT_SWITCH_BOOLEAN_NOARG) {
+            char *ptr;
+
+            ptr = (char *)record + sp->offset;
+            *((int *)ptr) = TRUE;
+        } else if (sp->type == BLT_SWITCH_INVERT_BITS_NOARG) {
             char *ptr;
             
             ptr = (char *)record + sp->offset;

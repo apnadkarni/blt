@@ -546,24 +546,20 @@ TifGetLong8(TifParser *tifPtr, const unsigned char *bp)
 static float
 TifGetFloat(TifParser *tifPtr, const unsigned char *bp)
 {
-    uint32_t *ip;
-    float f;
+    uint32_t i;
     
-    ip = (uint32_t *)&f;
-    *ip = TifGetLong(tifPtr, bp);
-    return f;
+    i = TifGetLong(tifPtr, bp);
+    return (float)i;
 }
 
 
 static double
 TifGetDouble(TifParser *tifPtr, const unsigned char *bp)
 {
-    uint64_t *lp;
-    double d;
+    uint64_t l;
     
-    lp = (uint64_t *)&d;
-    *lp = TifGetLong8(tifPtr, bp);
-    return d;
+    l = TifGetLong8(tifPtr, bp);
+    return (double)l;
 }
 
 static Tcl_Obj *
@@ -654,18 +650,23 @@ PrintFileSource(TifParser *tifPtr, const unsigned char *bp, int count)
 static Tcl_Obj *
 PrintGPSVersionId(TifParser *tifPtr, const unsigned char *bp, int count)
 {
-    return Tcl_ObjPrintf("%d.%d.%d.%d", bp[0], bp[1], bp[2], bp[3]);
+    char buffer[200];
+    
+    sprintf(buffer, "%d.%d.%d.%d", bp[0], bp[1], bp[2], bp[3]);
+    return Tcl_NewStringObj(buffer, -1);
 }
 
 static Tcl_Obj *
 PrintGPSTimeStamp(TifParser *tifPtr, const unsigned char *bp, int count)
 {
     double h, m, s;
+    char buffer[200];
 
     h = TifGetRational(tifPtr, bp);
     m = TifGetRational(tifPtr, bp + 8);
     s = TifGetRational(tifPtr, bp + 12);
-    return Tcl_ObjPrintf("%g:%g:%g", h, m, s);
+    sprintf(buffer, "%g:%g:%g", h, m, s);
+    return Tcl_NewStringObj(buffer, -1);
 }
 
 static Tcl_Obj *

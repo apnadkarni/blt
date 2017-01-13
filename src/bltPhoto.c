@@ -174,11 +174,11 @@ Blt_PictureToPhoto(Pict *srcPtr, Tk_PhotoHandle photo)
         Blt_UnmultiplyColors(tmpPtr);
         dest.pixelPtr = (unsigned char *)tmpPtr->bits;
         Tk_PhotoSetSize(photo, tmpPtr->width, tmpPtr->height);
-        Tk_PhotoPutBlock(photo, &dest, 0, 0, tmpPtr->width, tmpPtr->height);
+        Tk_PhotoPutBlock_NoComposite(photo, &dest, 0, 0, tmpPtr->width, tmpPtr->height);
         Blt_FreePicture(tmpPtr);
     } else {
         dest.pixelPtr = (unsigned char *)srcPtr->bits;
-        Tk_PhotoPutBlock(photo, &dest, 0, 0, srcPtr->width, srcPtr->height);
+        Tk_PhotoPutBlock_NoComposite(photo, &dest, 0, 0, srcPtr->width, srcPtr->height);
     }
 }
 #endif  /* < 8.5 */

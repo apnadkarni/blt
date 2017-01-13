@@ -56,8 +56,10 @@
  */
 
 #include "bltVecInt.h"
+#if (_TCL_VERSION > _VERSION(8,5,0)) 
 #undef SIGN
 #include "tclTomMath.h"
+#endif
 
 #ifdef HAVE_STDLIB_H
   #include <stdlib.h>
@@ -152,15 +154,15 @@ typedef struct {
 
 static Blt_SwitchSpec sortSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-decreasing", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-decreasing", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_DECREASING},
-    {BLT_SWITCH_BITMASK, "-indices", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-indices", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_INDICES},
-    {BLT_SWITCH_BITMASK, "-reverse", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-reverse", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_DECREASING},
-    {BLT_SWITCH_BITMASK, "-unique", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-unique", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_UNIQUE},
-    {BLT_SWITCH_BITMASK, "-values", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-values", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_VALUES},
     {BLT_SWITCH_END}
 };
@@ -178,11 +180,11 @@ typedef struct {
 static Blt_SwitchSpec fftSwitches[] = {
     {BLT_SWITCH_CUSTOM, "-imagpart",    "vector", (char *)NULL,
         Blt_Offset(FFTData, imagPtr), 0, 0, &fftVectorSwitch},
-    {BLT_SWITCH_BITMASK, "-noconstant", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-noconstant", "", (char *)NULL,
         Blt_Offset(FFTData, mask), 0, FFT_NO_CONSTANT},
-    {BLT_SWITCH_BITMASK, "-spectrum", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-spectrum", "", (char *)NULL,
           Blt_Offset(FFTData, mask), 0, FFT_SPECTRUM},
-    {BLT_SWITCH_BITMASK, "-bartlett",  "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-bartlett",  "", (char *)NULL,
          Blt_Offset(FFTData, mask), 0, FFT_BARTLETT},
     {BLT_SWITCH_DOUBLE, "-delta",   "float", (char *)NULL,
         Blt_Offset(FFTData, mask), 0, 0, },
@@ -1945,8 +1947,10 @@ AppendFormatToObj(Tcl_Interp *interp, Tcl_Obj *appendObjPtr, const char *format,
 
         default:
             if (interp != NULL) {
-                Tcl_SetObjResult(interp,
-                        Tcl_ObjPrintf("bad field specifier \"%c\"", parser.ch));
+                char mesg[200];
+                    
+                sprintf(mesg, "bad field specifier \"%c\"", parser.ch);
+                Tcl_AppendResult(interp, mesg, (char *)NULL);
             }
             goto error;
         }
@@ -3363,12 +3367,17 @@ CompareValues(double a, double b)
 }
 
 static int
-ComparePoints(const void *a, const void *b)
+ComparePoints(const void *aPtr, const void *bPtr)
 {
     int i;
-    size_t i1 = *(int *)a;
-    size_t i2 = *(int *)b;
+    const char *i1Ptr;
+    const char *i2Ptr;
+    int i1, i2;
 
+    i1Ptr = aPtr;
+    i1 = *i1Ptr;
+    i2Ptr = bPtr;
+    i2 = *i2Ptr;
     for (i = 0; i < numSortVectors; i++) {
         int cond;
         Vector *vPtr;

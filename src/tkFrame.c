@@ -308,7 +308,8 @@ BLT_EXTERN int TkpUseWindow (Tcl_Interp * interp, Tk_Window tkwin, char * string
 BLT_EXTERN void TkpMakeContainer (Tk_Window tkwin);
 #endif  /* USE_TK_STUBS */
 
-#if (_TK_VERSION < _VERSION(8,5,0)) 
+#if (_TK_VERSION < _VERSION(8,4,0)) 
+
 static void 
 Tk_SetClassProcs(Tk_Window tkwin, void *procs, ClientData instanceData)
 {

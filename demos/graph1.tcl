@@ -250,7 +250,8 @@ if { $tcl_platform(platform) == "windows" } {
     }	
     if 1 {
 	after 2000 {
-	    $graph snap -format emf CLIPBOARD
+		
+	    $graph snap CLIPBOARD -format emf
 	}
     }
 }

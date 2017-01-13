@@ -151,7 +151,7 @@ static Blt_SwitchSpec exportSwitches[] =
         Blt_Offset(JpgExportSwitches, quality), 0, 0, &percentSwitch},
     {BLT_SWITCH_INT_NNEG,  "-smooth",      "percent", (char *)NULL,
         Blt_Offset(JpgExportSwitches, smoothing), 0, 0, &percentSwitch},
-    {BLT_SWITCH_BITMASK,   "-progressive", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,   "-progressive", "", (char *)NULL,
         Blt_Offset(JpgExportSwitches, flags), 0, PIC_PROGRESSIVE},
     {BLT_SWITCH_END}
 };
@@ -322,7 +322,7 @@ jpeg_getc(j_decompress_ptr cinfo)
     return GETJOCTET(*datasrc->next_input_byte++);
 }
 
-static int
+static boolean
 JpgApp1Proc(j_decompress_ptr commPtr)
 {
     int length;

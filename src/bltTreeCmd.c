@@ -220,7 +220,7 @@ typedef struct {
 
 static Blt_SwitchSpec attachSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-newtags", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-newtags", "", (char *)NULL,
         Blt_Offset(AttachSwitches, mask), 0, TREE_NEWTAGS},
     {BLT_SWITCH_END}
 };
@@ -233,23 +233,23 @@ typedef struct {
 
 static Blt_SwitchSpec notifySwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-allevents", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-allevents", "", (char *)NULL,
         Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_ALL},
-    {BLT_SWITCH_BITMASK, "-create", "",  (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-create", "",  (char *)NULL,
         Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_CREATE},
-    {BLT_SWITCH_BITMASK, "-delete", "",  (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-delete", "",  (char *)NULL,
         Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_DELETE},
-    {BLT_SWITCH_BITMASK, "-move", "",   (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-move", "",   (char *)NULL,
         Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_MOVE},
     {BLT_SWITCH_CUSTOM,  "-node",  "node", (char *)NULL,
         Blt_Offset(NotifySwitches, node),    0, 0, &nodeSwitch},
-    {BLT_SWITCH_BITMASK, "-relabel", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-relabel", "", (char *)NULL,
         Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_RELABEL},
-    {BLT_SWITCH_BITMASK, "-sort", "",   (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-sort", "",   (char *)NULL,
         Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_SORT},
     {BLT_SWITCH_STRING,  "-tag", "string", (char *)NULL,
         Blt_Offset(NotifySwitches, tag), 0},
-    {BLT_SWITCH_BITMASK, "-whenidle", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-whenidle", "", (char *)NULL,
         Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_WHENIDLE},
     {BLT_SWITCH_END}
 };
@@ -335,19 +335,21 @@ static Blt_SwitchSpec dirSwitches[] =
 {
     {BLT_SWITCH_CUSTOM,  "-fields",  "fieldList", (char *)NULL,
         Blt_Offset(ReadDirectory, mask),    0, 0, &fieldsSwitch},
-    {BLT_SWITCH_BITMASK, "-hidden", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-hidden", "", (char *)NULL,
         Blt_Offset(ReadDirectory, perm), 0, TCL_GLOB_PERM_HIDDEN},
-    {BLT_SWITCH_BITMASK, "-ignorehiddendirs", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-ignorehiddendirs", "", (char *)NULL,
         Blt_Offset(ReadDirectory, flags), 0, READ_DIR_IGNORE_HIDDEN_DIRS},
-    {BLT_SWITCH_BITMASK, "-nocase",       "", (char *)NULL,
+#if (_TCL_VERSION > _VERSION(8,5,0)) 
+    {BLT_SWITCH_BITS_NOARG, "-nocase",       "", (char *)NULL,
         Blt_Offset(ReadDirectory, flags), 0, READ_DIR_NOCASE},
+#endif
     {BLT_SWITCH_OBJ,     "-patterns",     "list", (char *)NULL,
         Blt_Offset(ReadDirectory, patternsObjPtr), 0},
     {BLT_SWITCH_CUSTOM,  "-permissions", "permList", (char *)NULL,
         Blt_Offset(ReadDirectory, perm),    0, 0, &permSwitch},
-    {BLT_SWITCH_BITMASK, "-readonly", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-readonly", "", (char *)NULL,
         Blt_Offset(ReadDirectory, perm), 0, TCL_GLOB_PERM_RONLY},
-    {BLT_SWITCH_BITMASK, "-recurse", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-recurse", "", (char *)NULL,
         Blt_Offset(ReadDirectory, flags), 0, READ_DIR_RECURSE},
     {BLT_SWITCH_CUSTOM,  "-type",    "typeList", (char *)NULL,
         Blt_Offset(ReadDirectory, type),    0, 0, &typeSwitch},
@@ -453,7 +455,7 @@ static Blt_SwitchSpec findSwitches[] = {
         Blt_Offset(FindSwitches, cmdObjPtr),    0}, 
     {BLT_SWITCH_CUSTOM, "-glob", "pattern", (char *)NULL,
         Blt_Offset(FindSwitches, patternList),0, 0, &globSwitch},
-    {BLT_SWITCH_BITMASK, "-invert", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-invert", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_INVERT},
     {BLT_SWITCH_CUSTOM, "-key", "string",  (char *)NULL,
         Blt_Offset(FindSwitches, keyList),    0, 0, &exactSwitch},
@@ -463,13 +465,13 @@ static Blt_SwitchSpec findSwitches[] = {
         Blt_Offset(FindSwitches, keyList),    0, 0, &globSwitch},
     {BLT_SWITCH_CUSTOM, "-keyregexp","pattern", (char *)NULL,
         Blt_Offset(FindSwitches, keyList), 0, 0, &regexpSwitch},
-    {BLT_SWITCH_BITMASK, "-leafonly", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-leafonly", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_LEAFONLY},
-    {BLT_SWITCH_BITMASK, "-nocase", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_NOCASE},
     {BLT_SWITCH_CUSTOM, "-order", "order", (char *)NULL,
         Blt_Offset(FindSwitches, order), 0, 0, &orderSwitch},
-    {BLT_SWITCH_BITMASK, "-path", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-path", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_PATHNAME},
     {BLT_SWITCH_CUSTOM, "-regexp", "pattern",  (char *)NULL,
         Blt_Offset(FindSwitches, patternList),0, 0, &regexpSwitch},
@@ -514,11 +516,11 @@ static Blt_SwitchSpec copySwitches[] =
 {
     {BLT_SWITCH_STRING, "-label", "string", (char *)NULL,
         Blt_Offset(CopySwitches, label), 0},
-    {BLT_SWITCH_BITMASK, "-recurse", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-recurse", "", (char *)NULL,
         Blt_Offset(CopySwitches, flags), 0, COPY_RECURSE},
-    {BLT_SWITCH_BITMASK, "-tags", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-tags", "", (char *)NULL,
         Blt_Offset(CopySwitches, flags), 0, COPY_TAGS},
-    {BLT_SWITCH_BITMASK, "-overwrite", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-overwrite", "", (char *)NULL,
         Blt_Offset(CopySwitches, flags), 0, COPY_OVERWRITE},
     {BLT_SWITCH_END}
 };
@@ -550,7 +552,7 @@ static Blt_SwitchSpec applySwitches[] =
         Blt_Offset(ApplySwitches, patternList), 0, 0, &exactSwitch},
     {BLT_SWITCH_CUSTOM, "-glob", "pattern", (char *)NULL,
         Blt_Offset(ApplySwitches, patternList), 0, 0, &globSwitch},
-    {BLT_SWITCH_BITMASK, "-invert", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-invert", "", (char *)NULL,
         Blt_Offset(ApplySwitches, flags), 0, MATCH_INVERT},
     {BLT_SWITCH_CUSTOM, "-key", "pattern", (char *)NULL,
         Blt_Offset(ApplySwitches, keyList), 0, 0, &exactSwitch},
@@ -560,11 +562,11 @@ static Blt_SwitchSpec applySwitches[] =
         Blt_Offset(ApplySwitches, keyList), 0, 0, &globSwitch},
     {BLT_SWITCH_CUSTOM, "-keyregexp", "pattern", (char *)NULL,
         Blt_Offset(ApplySwitches, keyList), 0, 0, &regexpSwitch},
-    {BLT_SWITCH_BITMASK, "-leafonly", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-leafonly", "", (char *)NULL,
         Blt_Offset(ApplySwitches, flags), 0, MATCH_LEAFONLY},
-    {BLT_SWITCH_BITMASK, "-nocase", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(ApplySwitches, flags), 0, MATCH_NOCASE},
-    {BLT_SWITCH_BITMASK, "-path", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-path", "", (char *)NULL,
         Blt_Offset(ApplySwitches, flags), 0, MATCH_PATHNAME},
     {BLT_SWITCH_CUSTOM, "-regexp", "pattern", (char *)NULL,
         Blt_Offset(ApplySwitches, patternList), 0, 0, &regexpSwitch},
@@ -589,9 +591,9 @@ static Blt_SwitchSpec restoreSwitches[] =
         Blt_Offset(RestoreSwitches, dataObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
         Blt_Offset(RestoreSwitches, fileObjPtr), 0, 0},
-    {BLT_SWITCH_BITMASK, "-notags", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-notags", "", (char *)NULL,
         Blt_Offset(RestoreSwitches, flags), 0, RESTORE_NO_TAGS},
-    {BLT_SWITCH_BITMASK, "-overwrite", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-overwrite", "", (char *)NULL,
         Blt_Offset(RestoreSwitches, flags), 0, RESTORE_OVERWRITE},
     {BLT_SWITCH_END}
 };
@@ -629,7 +631,7 @@ typedef struct {
 
 static Blt_SwitchSpec positionSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-sort", "",  (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-sort", "",  (char *)NULL,
         Blt_Offset(PositionSwitches, sort), 0, POSITION_SORTED},
     {BLT_SWITCH_CUSTOM, "-format", "format",  (char *)NULL,
         0, 0, 0, &formatSwitch},
@@ -649,9 +651,9 @@ static Blt_SwitchSpec pathCreateSwitches[] =
 {
     {BLT_SWITCH_CUSTOM,  "-from",  "node", (char *)NULL,
         Blt_Offset(PathCreateSwitches, root),  0, 0, &nodeSwitch},
-    {BLT_SWITCH_BITMASK, "-nocomplain", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nocomplain", "", (char *)NULL,
         Blt_Offset(PathCreateSwitches, flags), 0, PATH_NOCOMPLAIN},
-    {BLT_SWITCH_BITMASK, "-parents", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-parents", "", (char *)NULL,
         Blt_Offset(PathCreateSwitches, flags), 0, PATH_PARENTS},
     {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
         Blt_Offset(PathCreateSwitches, pathSepObjPtr), 0}, 
@@ -672,7 +674,7 @@ static Blt_SwitchSpec pathPrintSwitches[] =
         Blt_Offset(PathPrintSwitches, root),  0, 0, &nodeSwitch},
     {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
         Blt_Offset(PathPrintSwitches, pathSepObjPtr), 0}, 
-    {BLT_SWITCH_BITMASK,  "-noleadingseparator", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,  "-noleadingseparator", "", (char *)NULL,
         Blt_Offset(PathPrintSwitches, flags),  0, PATH_NO_LEADING_SEPARATOR},
     {BLT_SWITCH_END}
 };
@@ -687,7 +689,7 @@ static Blt_SwitchSpec pathParseSwitches[] =
 {
     {BLT_SWITCH_CUSTOM,  "-from",  "node", (char *)NULL,
         Blt_Offset(PathParseSwitches, root),  0, 0, &nodeSwitch},
-    {BLT_SWITCH_BITMASK, "-nocomplain", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nocomplain", "", (char *)NULL,
         Blt_Offset(PathParseSwitches, flags), 0, PATH_NOCOMPLAIN},
     {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
         Blt_Offset(PathParseSwitches, pathSepObjPtr), 0}, 
@@ -700,7 +702,7 @@ typedef struct {
 
 static Blt_SwitchSpec traceSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-whenidle", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-whenidle", "", (char *)NULL,
         Blt_Offset(TraceSwitches, mask), 0, TREE_NOTIFY_WHENIDLE},
     {BLT_SWITCH_END}
 };
@@ -3609,9 +3611,11 @@ MatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
         }
     }
     patternFlags = 0;
+#if (_TCL_VERSION > _VERSION(8,5,0)) 
     if (readPtr->flags & READ_DIR_NOCASE) {
         patternFlags =  TCL_MATCH_NOCASE;
     }
+#endif
     data.perm = readPtr->perm;
     data.type = readPtr->type;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -6234,7 +6238,7 @@ static Blt_SwitchSpec sortSwitches[] =
         Blt_Offset(SortSwitches, type),    0, SORT_ASCII},
     {BLT_SWITCH_STRING,  "-command",    "command", (char *)NULL,
         Blt_Offset(SortSwitches, command), 0},
-    {BLT_SWITCH_BITMASK, "-decreasing", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-decreasing", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags),   0, SORT_DECREASING},
     {BLT_SWITCH_VALUE,   "-dictionary", "", (char *)NULL,
         Blt_Offset(SortSwitches, type),    0, SORT_DICTIONARY},
@@ -6242,7 +6246,7 @@ static Blt_SwitchSpec sortSwitches[] =
         Blt_Offset(SortSwitches, type),    0, SORT_INTEGER},
     {BLT_SWITCH_STRING,  "-key",        "string", (char *)NULL,
         Blt_Offset(SortSwitches, key),     0},
-    {BLT_SWITCH_BITMASK, "-path",       "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-path",       "", (char *)NULL,
         Blt_Offset(SortSwitches, flags),   0, SORT_PATHNAME},
     {BLT_SWITCH_VALUE,   "-real",       "", (char *)NULL,
         Blt_Offset(SortSwitches, type),    0, SORT_REAL},

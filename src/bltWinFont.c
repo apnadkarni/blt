@@ -57,7 +57,6 @@
 #include "bltFont.h"
 #include "bltAfm.h"
 
-#define WINDEBUG                0
 #define DEBUG_FONT_SELECTION    0
 #define DEBUG_FONT_SELECTION2   0
 
@@ -1283,9 +1282,7 @@ WinCreateRotatedFont(
     }
 
     if (hfont == NULL) {
-#if WINDEBUG
-        PurifyPrintf("can't create font: %s\n", Blt_LastError());
-#endif
+
     } else { 
         HFONT oldFont;
         TEXTMETRIC tm;
@@ -1301,9 +1298,6 @@ WinCreateRotatedFont(
         (void)SelectFont(hdc, oldFont);
         ReleaseDC(NULL, hdc);
         if (!result) {
-#if WINDEBUG
-            PurifyPrintf("not a true type font\n");
-#endif
             DeleteFont(hfont);
             return NULL;
         }

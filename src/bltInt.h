@@ -53,6 +53,11 @@
 #  include <windowsx.h>
 #endif /* WIN32 */
 
+/* Need off_t typedef before including tk.h (mingw32) */
+#ifdef HAVE_SYS_TYPES_H
+  #include <sys/types.h>
+#endif  /* HAVE_SYS_TYPES_H */
+
 #ifndef __STDC_VERSION__
 #  define __STDC_VERSION__ 0L
 #endif

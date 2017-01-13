@@ -132,7 +132,7 @@ static Blt_SwitchCustom nodeSwitch = {
 
 static Blt_SwitchSpec importSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK,  "-all",               "", (char *)NULL, 
+    {BLT_SWITCH_BITS_NOARG,  "-all",               "", (char *)NULL, 
         Blt_Offset(ImportSwitches, flags), 0, IMPORT_ALL},
     {BLT_SWITCH_BOOLEAN,  "-comments",          "bool", (char *)NULL, 
         Blt_Offset(ImportSwitches, flags),      0, IMPORT_COMMENTS},
@@ -189,11 +189,11 @@ static Blt_SwitchSpec exportSwitches[] =
 {
     {BLT_SWITCH_OBJ, "-data", "data", (char *)NULL,
         Blt_Offset(XmlWriter, dataObj), 0, 0},
-    {BLT_SWITCH_BITMASK, "-declaration", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-declaration", "", (char *)NULL,
         Blt_Offset(XmlWriter, flags),   0, EXPORT_DECLARATION},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
         Blt_Offset(XmlWriter, fileObj), 0, 0},
-    {BLT_SWITCH_BITMASK_INVERT, "-hideroot", "", (char *)NULL,
+    {BLT_SWITCH_INVERT_BITS_NOARG, "-hideroot", "", (char *)NULL,
         Blt_Offset(XmlWriter, flags),   0, EXPORT_ROOT},
     {BLT_SWITCH_INT_POS, "-indent", "number", (char *)NULL,
         Blt_Offset(XmlWriter, indent),  0, 0},

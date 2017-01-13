@@ -170,7 +170,7 @@ static Blt_SwitchCustom padSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-alpha", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-alpha", "", (char *)NULL,
         Blt_Offset(PdfExportSwitches, flags),   0, EXPORT_ALPHA},
     {BLT_SWITCH_CUSTOM,  "-background",         "color", (char *)NULL,
         Blt_Offset(PdfExportSwitches, bg),         0, 0, &colorSwitch},
@@ -194,7 +194,7 @@ static Blt_SwitchSpec importSwitches[] =
         Blt_Offset(PdfImportSwitches, dpi), 0},
     {BLT_SWITCH_OBJ,     "-file",       "fileName", (char *)NULL,
         Blt_Offset(PdfImportSwitches, fileObjPtr),  0},
-    {BLT_SWITCH_BITMASK,  "-nocrop",    "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,  "-nocrop",    "", (char *)NULL,
         Blt_Offset(PdfImportSwitches, crop), 0, FALSE},
     {BLT_SWITCH_STRING,  "-papersize",  "string", (char *)NULL,
         Blt_Offset(PdfImportSwitches, paperSize),   0},

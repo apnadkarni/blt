@@ -40,7 +40,13 @@
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
-#include <string.h>
+#ifdef HAVE_STRING_H
+  #include <string.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+  #include <stdlib.h>
+#endif
 
 #ifdef HAVE_LIBXFT
   #include <ft2build.h>

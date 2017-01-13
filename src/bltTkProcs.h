@@ -226,7 +226,7 @@ BLT_EXTERN void		Blt_UnmultiplyColors(Blt_Picture picture);
 #define Blt_MultiplyPixels_DECLARED
 /* 37 */
 BLT_EXTERN void		Blt_MultiplyPixels(Blt_Picture dst, Blt_Picture src,
-        float value);
+				float value);
 #endif
 #ifndef Blt_GetBBoxFromObjv_DECLARED
 #define Blt_GetBBoxFromObjv_DECLARED

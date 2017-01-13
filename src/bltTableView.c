@@ -8208,7 +8208,7 @@ static Blt_SwitchSpec findSwitches[] =
         Blt_Offset(FindSwitches, emptyValueObjPtr), 0},
     {BLT_SWITCH_STRING, "-addtag", "tagName", (char *)NULL,
         Blt_Offset(FindSwitches, tag), 0},
-    {BLT_SWITCH_BITMASK, "-invert", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-invert", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_INVERT},
     {BLT_SWITCH_END}
 };

@@ -172,7 +172,7 @@
 /* Define to 1 if you have the `XDMCP' library (-lXdmcp). */
 #undef HAVE_LIBXDMCP
 
-/* Define to 1 if you have the `XFT' library (-lXft -lexpat). */
+/* Define to 1 if you have the `XFT' library (-lXft). */
 #undef HAVE_LIBXFT
 
 /* Define to 1 if you have the `XPM' library (-lXpm). */
@@ -405,6 +405,9 @@
 #  undef WORDS_BIGENDIAN
 # endif
 #endif
+
+/* Define to `long int' if <sys/types.h> does not define. */
+#undef off_t
 
 /* Define to `int' if <sys/types.h> does not define. */
 #undef pid_t

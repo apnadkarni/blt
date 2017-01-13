@@ -722,7 +722,7 @@ typedef struct {
 
 static Blt_SwitchSpec bboxSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
         Blt_Offset(BBoxSwitches, flags), 0, BBOX_ROOT},
     {BLT_SWITCH_END}
 };
@@ -732,9 +732,9 @@ typedef struct {
 } ChildrenSwitches;
 
 static Blt_SwitchSpec childrenSwitches[] = {
-    {BLT_SWITCH_BITMASK, "-open", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-open", "", (char *)NULL,
         Blt_Offset(ChildrenSwitches, mask), 0, CLOSED},
-    {BLT_SWITCH_BITMASK, "-showing", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-showing", "", (char *)NULL,
         Blt_Offset(ChildrenSwitches, mask), 0, HIDDEN},
     {BLT_SWITCH_END}
 };
@@ -747,15 +747,15 @@ typedef struct {
 #define NEAREST_TITLE   (1<<1)          /* Return only in title. */
 
 static Blt_SwitchSpec nearestColumnSwitches[] = {
-    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
         Blt_Offset(NearestSwitches, flags), 0, NEAREST_ROOT},
-    {BLT_SWITCH_BITMASK, "-title", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-title", "", (char *)NULL,
         Blt_Offset(NearestSwitches, flags), 0, NEAREST_TITLE},
     {BLT_SWITCH_END}
 };
 
 static Blt_SwitchSpec nearestEntrySwitches[] = {
-    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
         Blt_Offset(NearestSwitches, flags), 0, NEAREST_ROOT},
     {BLT_SWITCH_END}
 };

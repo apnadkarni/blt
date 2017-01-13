@@ -915,7 +915,7 @@ static Blt_SwitchSpec findSwitches[] =
 {
     {BLT_SWITCH_CUSTOM, "-from", "itemName", (char *)NULL,
         Blt_Offset(FindSwitches, fromPtr), 0, 0, &itemSwitch},
-    {BLT_SWITCH_BITMASK, "-decreasing", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-decreasing", "", (char *)NULL,
         Blt_Offset(FindSwitches, mask), 0, FIND_DECREASING},
     {BLT_SWITCH_VALUE, "-glob", "", (char *)NULL,
         Blt_Offset(FindSwitches, search), 0, FIND_GLOB},
@@ -923,7 +923,7 @@ static Blt_SwitchSpec findSwitches[] =
         Blt_Offset(FindSwitches, search), 0, FIND_REGEXP},
     {BLT_SWITCH_CUSTOM, "-type", "type", (char *)NULL,
         Blt_Offset(FindSwitches, type), 0, 0, &typeSwitch},
-    {BLT_SWITCH_BITMASK, "-underline", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-underline", "", (char *)NULL,
         Blt_Offset(FindSwitches, mask), 0, FIND_UNDERLINE},
     {BLT_SWITCH_END}
 };

@@ -38,7 +38,7 @@
  */
 
 #define _GNU_SOURCE
-#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE 500
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 

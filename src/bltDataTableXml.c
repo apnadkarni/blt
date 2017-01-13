@@ -99,11 +99,11 @@ static Blt_SwitchSpec importSwitches[] =
          Blt_Offset(ImportSwitches, dataObj), 0, 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
         Blt_Offset(ImportSwitches, fileObj), 0, 0},
-    {BLT_SWITCH_BITMASK_INVERT,"-noattrs", "", (char *)NULL,
+    {BLT_SWITCH_INVERT_BITS_NOARG,"-noattrs", "", (char *)NULL,
         Blt_Offset(ImportSwitches, flags), 0, IMPORT_ATTRIBUTES},
-    {BLT_SWITCH_BITMASK_INVERT,"-noelems", "", (char *)NULL,
+    {BLT_SWITCH_INVERT_BITS_NOARG,"-noelems", "", (char *)NULL,
         Blt_Offset(ImportSwitches, flags), 0, IMPORT_ELEMENTS},
-    {BLT_SWITCH_BITMASK_INVERT,"-nocdata", "", (char *)NULL,
+    {BLT_SWITCH_INVERT_BITS_NOARG,"-nocdata", "", (char *)NULL,
         Blt_Offset(ImportSwitches, flags), 0, IMPORT_CDATA},
     {BLT_SWITCH_END}
 };

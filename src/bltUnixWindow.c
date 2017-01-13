@@ -389,23 +389,6 @@ Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr,
     return TCL_OK;
 }
 
-int
-Blt_GetRootWindowSize(Display *display, Window window, unsigned int *widthPtr,
-                      unsigned int *heightPtr)
-{
-    XWindowAttributes attr;
-    int result;
-    
-    *widthPtr = *heightPtr = 0;
-    result = XGetWindowAttributes(display, window, &attr);
-    if (result == 0) {
-        return FALSE;
-    }
-    *widthPtr = WidthOfScreen(attr.screen);
-    *heightPtr = HeightOfScreen(attr.screen);
-    return TRUE;
-}
-
 /*
  *---------------------------------------------------------------------------
  *

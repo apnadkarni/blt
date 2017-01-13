@@ -345,7 +345,7 @@ typedef struct {
 
 static Blt_SwitchSpec chgrpSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-recurse", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-recurse", "", (char *)NULL,
         Blt_Offset(ChgrpSwitches, flags), 0, RECURSE},
     {BLT_SWITCH_END}
 };
@@ -359,7 +359,7 @@ typedef struct {
 
 static Blt_SwitchSpec chmodSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-recurse", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-recurse", "", (char *)NULL,
         Blt_Offset(ChmodSwitches, flags), 0, RECURSE},
     {BLT_SWITCH_END}
 };
@@ -370,7 +370,7 @@ typedef struct {
 
 static Blt_SwitchSpec deleteSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-force", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-force", "", (char *)NULL,
         Blt_Offset(DeleteSwitches, flags), 0, FORCE},
     {BLT_SWITCH_END}
 };
@@ -388,9 +388,9 @@ static Blt_SwitchSpec dirListSwitches[] =
         Blt_Offset(DirectoryReader, excludeObjPtr), 0},
     {BLT_SWITCH_CUSTOM,   "-fields",   "list",    (char *)NULL,
         Blt_Offset(DirectoryReader, flags), 0, 0, &fieldsSwitch},
-    {BLT_SWITCH_BITMASK,  "-listing",  "",    (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,  "-listing",  "",    (char *)NULL,
         Blt_Offset(DirectoryReader, flags), 0, DIR_LISTING},
-    {BLT_SWITCH_BITMASK,  "-long",     "",    (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,  "-long",     "",    (char *)NULL,
         Blt_Offset(DirectoryReader, flags), 0, DIR_LONG},
     {BLT_SWITCH_CUSTOM,   "-table",    "name",    (char *)NULL,
         Blt_Offset(DirectoryReader, table), 0, 0, &tableSwitch},
@@ -407,7 +407,7 @@ static Blt_SwitchSpec getSwitches[] =
         Blt_Offset(FileReader, maxSize),       0},
     {BLT_SWITCH_OBJ,       "-progress", "command",  (char *)NULL,
         Blt_Offset(FileReader, progCmdObjPtr), 0},
-    {BLT_SWITCH_BITMASK,   "-resume",   "",         (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,   "-resume",   "",         (char *)NULL,
         Blt_Offset(FileReader, flags),         0, RESUME},
     {BLT_SWITCH_INT_NNEG,  "-timeout",  "seconds",  (char *)NULL,
         Blt_Offset(FileReader, timeout),       0},
@@ -429,13 +429,13 @@ static Blt_SwitchSpec putSwitches[] =
 {
     {BLT_SWITCH_STRING,    "-cancel",  "varName",   (char *)NULL,
         Blt_Offset(FileWriter, cancelVarName), 0},
-    {BLT_SWITCH_BITMASK,   "-force",   "",          (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,   "-force",   "",          (char *)NULL,
         Blt_Offset(FileWriter, flags),         0, FORCE},
     {BLT_SWITCH_OBJ,       "-progress", "command",  (char *)NULL,
         Blt_Offset(FileWriter, progCmdObjPtr), 0},
     {BLT_SWITCH_INT,      "-mode",      "mode",     (char *)NULL,
         Blt_Offset(FileWriter, mode),          0},
-    {BLT_SWITCH_BITMASK,  "-resume",    "",         (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,  "-resume",    "",         (char *)NULL,
         Blt_Offset(FileWriter, flags),         0, RESUME},
     {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds",  (char *)NULL,
         Blt_Offset(FileWriter, timeout),       0},
@@ -461,7 +461,7 @@ typedef struct {
 
 static Blt_SwitchSpec renameSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-force", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-force", "", (char *)NULL,
         Blt_Offset(RenameSwitches, flags), 0, FORCE},
     {BLT_SWITCH_END}
 };
@@ -492,13 +492,13 @@ static Blt_SwitchSpec dirTreeSwitches[] =
         Blt_Offset(TreeWriter, cancelVarName), 0},
     {BLT_SWITCH_INT_NNEG, "-depth",     "number",       (char *)NULL,
         Blt_Offset(TreeWriter, maxDepth),       0},
-    {BLT_SWITCH_BITMASK,  "-dotfiles",  "",             (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,  "-dotfiles",  "",             (char *)NULL,
         Blt_Offset(TreeWriter, flags), 0, DIR_DOTFILES},
     {BLT_SWITCH_OBJ,      "-exclude",   "list",         (char *)NULL,
         Blt_Offset(TreeWriter, excludeObjPtr),  0},
     {BLT_SWITCH_CUSTOM,   "-fields",    "list",         (char *)NULL,
         Blt_Offset(TreeWriter, flags), 0, 0, &fieldsSwitch},
-    {BLT_SWITCH_BITMASK,  "-overwrite", "",             (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,  "-overwrite", "",             (char *)NULL,
         Blt_Offset(TreeWriter, flags), 0, DIR_OVERWRITE},
     {BLT_SWITCH_CUSTOM,   "-root",      "node",         (char *)NULL,
         Blt_Offset(TreeWriter, root),  0, 0, &treeNodeSwitch},
@@ -509,7 +509,7 @@ static Blt_SwitchSpec dirTreeSwitches[] =
 
 static Blt_SwitchSpec writeSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK,   "-append",   "",        (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG,   "-append",   "",        (char *)NULL,
         Blt_Offset(FileWriter, flags), 0, APPEND},
     {BLT_SWITCH_STRING,    "-cancel",   "varName", (char *)NULL,
         Blt_Offset(FileWriter, cancelVarName), 0},

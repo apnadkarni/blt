@@ -792,23 +792,23 @@ typedef struct {
 
 static Blt_SwitchSpec findSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-any", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-any", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_ANY},
     {BLT_SWITCH_INT_NNEG, "-count", "number", (char *)NULL,
         Blt_Offset(FindSwitches, count), 0, 0},
-    {BLT_SWITCH_BITMASK, "-disabled", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-disabled", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_DISABLED},
     {BLT_SWITCH_CUSTOM, "-from", "itemName", (char *)NULL,
         Blt_Offset(FindSwitches, fromPtr), 0, 0, &itemSwitch},
-    {BLT_SWITCH_BITMASK, "-hidden", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-hidden", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_HIDDEN},
-    {BLT_SWITCH_BITMASK, "-reverse", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-reverse", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_REVERSE},
     {BLT_SWITCH_CUSTOM, "-to", "itemName", (char *)NULL,
         Blt_Offset(FindSwitches, toPtr), 0, 0, &itemSwitch},
     {BLT_SWITCH_CUSTOM, "-type", "glob|regexp|exact", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, 0, &patternSwitch},
-    {BLT_SWITCH_BITMASK, "-wrap", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-wrap", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, FIND_WRAP},
     {BLT_SWITCH_END}
 };
@@ -821,7 +821,7 @@ typedef struct {
 
 static Blt_SwitchSpec bboxSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
         Blt_Offset(BBoxSwitches, flags), 0, BBOX_ROOT},
     {BLT_SWITCH_END}
 };

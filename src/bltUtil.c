@@ -75,7 +75,7 @@
 
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
-#define _XOPEN_SOURCE       /* See feature_test_macros(7) */
+#define _XOPEN_SOURCE 500      /* See feature_test_macros(7) */
 #include <stdio.h>
 
 #ifdef HAVE_STDARG_H
@@ -918,10 +918,6 @@ Blt_DictionaryCompare(const char *left, const char *right)
 void
 Blt_Assert(const char *testExpr, const char *fileName, int lineNumber)
 {
-#ifdef WINDEBUG
-    PurifyPrintf("line %d of %s: Assert \"%s\" failed\n", lineNumber,
-        fileName, testExpr);
-#endif
     fprintf(stderr, "line %d of %s: Assert \"%s\" failed\n",
         lineNumber, fileName, testExpr);
     fflush(stderr);

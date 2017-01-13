@@ -9,7 +9,7 @@ image create picture bgTile -file ./images/chalk.gif
 image create picture img1 -file ./images/mini-book1.gif
 image create picture img2 -file ./images/mini-book2.gif
 image create picture img3 -width 10 -height 10
-img3 blank white
+img3 blank purple
 
 blt::tabset .t \
     -outerrelief raised \

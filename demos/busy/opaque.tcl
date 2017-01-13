@@ -24,10 +24,10 @@ set spinner [image create picture]
 set files [glob -nocomplain ./images/spinner*.png]
 foreach file [lsort -dictionary $files] {
     set img [image create picture -file $file]
-    $spinner list append $img
+    $spinner sequence append $img
     image delete $img 
 }
-$spinner list delete 0 1
+$spinner sequence delete 0 1
 
 menu .menu 
 .menu add command -label "First"

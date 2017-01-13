@@ -99,7 +99,7 @@ static Blt_SwitchSpec exportSwitches[] =
         Blt_Offset(XpmExportSwitches, dataObjPtr), 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
         Blt_Offset(XpmExportSwitches, fileObjPtr), 0},
-    {BLT_SWITCH_BITMASK, "-noquantize", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-noquantize", "", (char *)NULL,
         Blt_Offset(XpmExportSwitches, flags), 0, PIC_NOQUANTIZE},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
         Blt_Offset(XpmExportSwitches, index), 0},

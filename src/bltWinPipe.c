@@ -331,17 +331,8 @@ PeekOnPipe(
     int state;
 
     *numAvailPtr = -1;
-#if PEEK_DEBUG
-    PurifyPrintf("PEEK(%d): waiting for reader\n", pipePtr->hPipe);
-#endif
     state = WaitForSingleObject(pipePtr->readyEvent, 0);
-#if PEEK_DEBUG
-    PurifyPrintf("PEEK(%d): state is %d\n", pipePtr->hPipe, state);
-#endif
     if (state == WAIT_TIMEOUT) {
-#if PEEK_DEBUG
-        PurifyPrintf("PEEK(%d): try again, %d\n", pipePtr->hPipe, state);
-#endif
         errno = EAGAIN;
         return FALSE;                   /* Reader thread is currently
                                          * blocked. */
@@ -354,23 +345,12 @@ PeekOnPipe(
         ssize_t numAvail;
 
         numAvail = pipePtr->end - pipePtr->start;
-#if PEEK_DEBUG
-        PurifyPrintf("PEEK(%d): Found %d bytes available\n", 
-                pipePtr->hPipe, numAvail);
-#endif
         if ((numAvail <= 0) && !(pipePtr->flags & PIPE_EOF)) {
             TclWinConvertError(pipePtr->lastError);
-#if PEEK_DEBUG
-            PurifyPrintf("PEEK(%d): Error = %d\n", 
-                pipePtr->hPipe, pipePtr->lastError);
-#endif
             numAvail = -1;
         }
         *numAvailPtr = numAvail;
     }
-#if PEEK_DEBUG
-    PurifyPrintf("PEEK(%d): Reseting events\n", pipePtr->hPipe);
-#endif
     return TRUE;
 }
 
@@ -449,9 +429,6 @@ SetupHandlers(ClientData clientData, int flags)
      */
     dontBlock = FALSE;
     blockTime.sec = blockTime.usec = 0L;
-#if QUEUE_DEBUG
-    PurifyPrintf("SetupHandlers: before loop\n");
-#endif
     for (link = Blt_Chain_FirstLink(chain); link != NULL;
         link = Blt_Chain_NextLink(link)) {
         PipeHandler *pipePtr;
@@ -472,9 +449,6 @@ SetupHandlers(ClientData clientData, int flags)
             }
         }
     }
-#if QUEUE_DEBUG
-    PurifyPrintf("SetupHandlers: after loop\n");
-#endif
     if (dontBlock) {
         Tcl_SetMaxBlockTime(&blockTime);
     }
@@ -531,9 +505,6 @@ CheckHandlers(ClientData clientData, int flags)
                 queueEvent = TRUE;
             }
         }
-#if QUEUE_DEBUG
-        PurifyPrintf("Queue event is %d \n", queueEvent);
-#endif
         if (queueEvent) {
             PipeEvent *eventPtr;
 
@@ -604,9 +575,6 @@ DestroyPipe(DestroyData data)
 static void
 DeletePipeHandler(PipeHandler * pipePtr)
 {
-#if KILL_DEBUG
-    PurifyPrintf("DestroyPipeHandler(%d)\n", pipePtr->hPipe);
-#endif
     if ((pipePtr->flags & TCL_WRITABLE) &&
         (pipePtr->hPipe != INVALID_HANDLE_VALUE)) {
         /* Wait for the writer thread to finish with the current buffer */
@@ -745,18 +713,9 @@ PipeReaderThread(void *clientData)
         }
         /* Synchronize with the main thread so that we don't try to read from
          * the pipe while it's copying to the buffer.  */
-#if READER_DEBUG
-        PurifyPrintf("READER(%d): waiting\n", pipePtr->hPipe);
-#endif
         WaitForSingleObject(pipePtr->idleEvent, INFINITE);
-#if READER_DEBUG
-        PurifyPrintf("READER(%d): ok\n", pipePtr->hPipe);
-#endif
         /* Read from the pipe. The thread will block here until some data is
          * read into its buffer.  */
-#if READER_DEBUG
-        PurifyPrintf("READER(%d): before read\n", pipePtr->hPipe);
-#endif
         assert(pipePtr->start == pipePtr->end);
         result = ReadFile(
             pipePtr->hPipe,             /* Handle to anonymous pipe. */
@@ -768,10 +727,6 @@ PipeReaderThread(void *clientData)
             NULL);                      /* Overlapping I/O */
 
         if (result) {
-#if READER_DEBUG
-            PurifyPrintf("READER(%d): after read. status=%d, count=%d\n", 
-                pipePtr->hPipe, result, count);
-#endif
         }
         /*
          * Reset counters to indicate that the buffer has been refreshed.
@@ -785,17 +740,10 @@ PipeReaderThread(void *clientData)
                 (pipePtr->lastError == ERROR_HANDLE_EOF)) {
                 pipePtr->flags |= PIPE_EOF;
             }
-#if READER_DEBUG
-            PurifyPrintf("READER(%d): error is %s\n", 
-                pipePtr->hPipe, Blt_LastError());
-#endif
         }
         WakeupNotifier(pipePtr->hWindow);
         SetEvent(pipePtr->readyEvent);
         if (count == 0) {
-#if READER_DEBUG
-            PurifyPrintf("READER(%d): exiting\n", pipePtr->hPipe);
-#endif
             ExitThread(0);
         }
     }
@@ -1091,9 +1039,6 @@ GetApplicationType(const char *file, char *cmdPrefix)
     if ((!result) || (numBytes != sizeof(IMAGE_DOS_HEADER))) {
         goto done;
     }
-#if KILL_DEBUG
-    PurifyPrintf("magic number is %x\n", imageDosHeader.e_magic);
-#endif
     if (imageDosHeader.e_magic == 0x2123) {     /* #! */
         char *p;
         unsigned int i;
@@ -1123,16 +1068,10 @@ GetApplicationType(const char *file, char *cmdPrefix)
      * everything.
      */
     if ((dot != NULL) && (strcmp(dot, ".com") == 0)) {
-#if KILL_DEBUG
-        PurifyPrintf(".com\n");
-#endif
         type = APPL_DOS;
         goto done;
     }
     if (imageDosHeader.e_magic != IMAGE_DOS_SIGNATURE) {
-#if KILL_DEBUG
-        PurifyPrintf("Application doesn't have correct sig?\n");
-#endif
     }
     if (imageDosHeader.e_lfarlc != sizeof(IMAGE_DOS_HEADER)) {
         /* This assumes that all 3.x and Win32 programs have their file
@@ -1142,9 +1081,6 @@ GetApplicationType(const char *file, char *cmdPrefix)
          * here.  If it doesn't, assume that since it already had the other
          * magic number it was a DOS application.
          */
-#if KILL_DEBUG
-        PurifyPrintf("wrong reloc table address\n");
-#endif
         type = APPL_DOS;
         goto done;
     }
@@ -1156,9 +1092,6 @@ GetApplicationType(const char *file, char *cmdPrefix)
     if ((!result) || (numBytes != sizeof(ULONG))) {
         goto done;
     }
-#if KILL_DEBUG
-    PurifyPrintf("signature is %x\n", signature);
-#endif
     switch (signature) {
     case IMAGE_NT_SIGNATURE:
         type = APPL_WIN32;
@@ -1475,14 +1408,10 @@ StartProcess(
     HANDLE hProcess, hPipe;
     char progPath[MAX_PATH];
     char cmdPrefix[MAX_PATH];
-    char *env;
     
     *pidPtr = 0;
     *hProcessPtr = INVALID_HANDLE_VALUE;
     GetFullPath(interp, argv[0], progPath, cmdPrefix, &applType);
-#if KILL_DEBUG
-    PurifyPrintf("Application type is %d\n", (int)applType);
-#endif
     if (applType == APPL_NONE) {
         return TCL_ERROR;
     }
@@ -1660,9 +1589,6 @@ StartProcess(
     argv[0] = progPath;
 
     command = ConcatCmdArgs(interp, argc, argv, &ds);
-#if KILL_DEBUG
-    PurifyPrintf("command is %s\n", command);
-#endif
     result = CreateProcess(
         NULL,                           /* Module name. */
         (TCHAR *)command,               /* Command line */
@@ -1670,7 +1596,7 @@ StartProcess(
         NULL,                           /* Thread security */
         TRUE,                           /* Inherit handles */
         createFlags,                    /* Creation flags */
-        env,                            /* Environment */
+        (char **)env,                            /* Environment */
         NULL,                           /* Current working directory */
         &si,                            /* Initialization for process:
                                          * includes standard handles,
@@ -1687,10 +1613,6 @@ StartProcess(
             Blt_LastError(), (char *)NULL);
         goto closeHandles;
     }
-#if KILL_DEBUG
-    PurifyPrintf("Starting process with handle of %d\n", pi.hProcess);
-    PurifyPrintf("Starting process with id of %d\n", pi.dwProcessId);
-#endif
     if (applType == APPL_DOS) {
         /* Force the OS to give some time to the DOS process. */
         WaitForSingleObject(hProcess, 50);
@@ -1712,9 +1634,6 @@ StartProcess(
      *    the problem does not occur."  */
     idleResult = WaitForInputIdle(pi.hProcess, 1000);
     if (idleResult == (DWORD) - 1) {
-#if KILL_DEBUG
-        PurifyPrintf("wait failed on %d: %s\n", pi.hProcess, Blt_LastError());
-#endif
     }
 #endif
     CloseHandle(pi.hThread);
@@ -2099,8 +2018,8 @@ Blt_CreatePipeline(
 		errorToOutput = 2;
 		skip = 1;
 	    } else {
-                err.file = FileForRedirect(interp, p, atOK, argv[i],
-                        argv[i + 1], flags, &skip, &err.mustClose);
+                err.file = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1], 
+                    GENERIC_WRITE, flags, &skip, &err.mustClose);
 		if (err.file == INVALID_HANDLE_VALUE) {
 		    goto error;
 		}
@@ -2146,7 +2065,7 @@ Blt_CreatePipeline(
                 goto error;
             }
             in.mustClose = TRUE;
-            *inPipePtr = in.file;
+            *inPipePtr = (int)in.file;
         } else if (inPipePtr != NULL) {
             /*
              * The input for the first process in the pipeline is to
@@ -2160,7 +2079,7 @@ Blt_CreatePipeline(
                 goto error;
             }
             in.mustClose = TRUE;
-            *inPipePtr = in.file;
+            *inPipePtr = (int)in.file;
         } else {
             /*
              * The input for the first process comes from stdin.
@@ -2182,7 +2101,7 @@ Blt_CreatePipeline(
                 goto error;
             }
             out.mustClose = TRUE;
-            *outPipePtr = out.file;
+            *outPipePtr = (int)out.file;
         } else {
             /*
              * The output for the last process goes to stdout.
@@ -2208,7 +2127,7 @@ Blt_CreatePipeline(
                 goto error;
             }
             err.mustClose = TRUE;
-            *errPipePtr = err.file;
+            *errPipePtr = (int)err.file;
         } else {
             /*
              * Errors from the pipeline go to stderr.
@@ -2279,7 +2198,7 @@ Blt_CreatePipeline(
         }
 
         if (StartProcess(interp, lastArg - i, argv + i, in.currFile,
-                out.currFile, err.currFile, err, env, &hProcess, &dw_pid)
+                out.currFile, err.currFile, env, &hProcess, &dw_pid)
             != TCL_OK) {
             goto error;
         }
@@ -2437,9 +2356,6 @@ Blt_DeleteFileHandler(int fd)   /* Descriptor or handle of file */
     if (!initialized) {
         PipeInit();
     }
-#if KILL_DEBUG
-    PurifyPrintf("Blt_DeleteFileHandler(%d)\n", fd);
-#endif
     hPipe = (HANDLE) fd;
     EnterCriticalSection(&pipeCriticalSection);
 
@@ -2455,9 +2371,6 @@ Blt_DeleteFileHandler(int fd)   /* Descriptor or handle of file */
         }
     }
     LeaveCriticalSection(&pipeCriticalSection);
-#if KILL_DEBUG
-    PurifyPrintf("Blt_DeleteFileHandler: done\n");
-#endif
 }
 
 /*
@@ -2473,27 +2386,18 @@ Blt_DeleteFileHandler(int fd)   /* Descriptor or handle of file */
  *---------------------------------------------------------------------------
  */
 ssize_t
-Blt_AsyncRead(int f, unsigned char *buffer, size_t size)
+Blt_AsyncRead(int f, char *buffer, size_t size)
 {
     PipeHandler *pipePtr;
     unsigned int count;
     ssize_t numBytes;
 
-#if ASYNC_DEBUG
-    PurifyPrintf("Blt_AsyncRead(f=%d)\n", f);
-#endif
     pipePtr = GetPipeHandler((HANDLE) f);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         errno = EBADF;
-#if ASYNC_DEBUG
-        PurifyPrintf("Blt_AsyncRead: bad file\n");
-#endif
         return -1;
     }
     if (!PeekOnPipe(pipePtr, &numBytes)) {
-#if ASYNC_DEBUG
-        PurifyPrintf("Blt_AsyncRead: pipe is drained (numBytes=%d).\n", numBytes);
-#endif
         return -1;              /* No data available. */
     }
     /*
@@ -2502,21 +2406,12 @@ Blt_AsyncRead(int f, unsigned char *buffer, size_t size)
      *                  1+      Number of bytes available.
      */
     if (numBytes == -1) {
-#if ASYNC_DEBUG
-        PurifyPrintf("Blt_AsyncRead: Error\n");
-#endif
         return -1;
     }
     if (numBytes == 0) {
-#if ASYNC_DEBUG
-        PurifyPrintf("Blt_AsyncRead: EOF\n");
-#endif
         return 0;
     }
     count = pipePtr->end - pipePtr->start;
-#if ASYNC_DEBUG
-    PurifyPrintf("Blt_AsyncRead: numBytes is %d, %d\n", numBytes, count);
-#endif
     assert(count == (unsigned int)numBytes);
     if (size > count) {
         size = count;           /* Reset request to what's available. */
@@ -2524,9 +2419,6 @@ Blt_AsyncRead(int f, unsigned char *buffer, size_t size)
     memcpy(buffer, pipePtr->buffer + pipePtr->start, size);
     pipePtr->start += size;
     if (pipePtr->start == pipePtr->end) {
-#if ASYNC_DEBUG
-        PurifyPrintf("Blt_AsyncRead: signaling idle\n");
-#endif
         ResetEvent(pipePtr->readyEvent);
         SetEvent(pipePtr->idleEvent);
     }
@@ -2546,7 +2438,7 @@ Blt_AsyncRead(int f, unsigned char *buffer, size_t size)
  *---------------------------------------------------------------------------
  */
 ssize_t
-Blt_AsyncWrite(int f, const unsigned char *buffer, size_t size)
+Blt_AsyncWrite(int f, const char *buffer, size_t size)
 {
     PipeHandler *pipePtr;
 

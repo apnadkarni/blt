@@ -1571,9 +1571,6 @@ Blt_RotateBitmap(
         (BITMAPINFO *)&mb, DIB_RGB_COLORS);
     TkWinReleaseDrawableDC(destBitmap, hDC, &state);
     if (!result) {
-#if WINDEBUG
-        PurifyPrintf("can't setDIBits: %s\n", Blt_LastError());
-#endif
         destBitmap = None;
     }
     if (destBits != NULL) {
@@ -1888,9 +1885,6 @@ Blt_ScaleRotateBitmapRegion(
         TkWinReleaseDrawableDC(destBitmap, hDC, &state);
     }
     if (!result) {
-#if WINDEBUG
-        PurifyPrintf("can't setDIBits: %s\n", Blt_LastError());
-#endif
         destBitmap = None;
     }
     if (destBits != NULL) {

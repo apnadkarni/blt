@@ -37,7 +37,7 @@
  */
 
 #define _GNU_SOURCE
-#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE 500
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 
@@ -107,8 +107,6 @@
 #include "bltInitCmd.h"
 
 static Tcl_ObjCmdProc BgexecCmdProc;
-
-#define WINDEBUG        0
 
 #define PTY_NAME_SIZE   32
 
@@ -578,9 +576,9 @@ static Blt_SwitchSpec switchSpecs[] =
         Blt_Offset(Bgexec, outSink.doneVarObjPtr),    0},
     {BLT_SWITCH_INT,     "-poll",           "milliseconds",     (char *)NULL,
         Blt_Offset(Bgexec, interval),       0},
-    {BLT_SWITCH_BITMASK, "-session",        "",                 (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-session",        "",                 (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, SESSION},
-    {BLT_SWITCH_BITMASK, "-tty",            "",                 (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-tty",            "",                 (char *)NULL,
         Blt_Offset(Bgexec, flags),          0, PTY},
     {BLT_SWITCH_OBJ,     "-updatevariable", "varName",          (char *)NULL,
          Blt_Offset(Bgexec, outSink.updateVarObjPtr), 0},
@@ -624,6 +622,8 @@ ExplainError(Tcl_Interp *interp, const char *mesg)
         Tcl_AppendResult(interp, Tcl_PosixError(interp), (char *)NULL);
     }
 }
+
+#ifndef WIN32
 
 /*
  *---------------------------------------------------------------------------
@@ -691,6 +691,7 @@ ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
     close(f);
     return (numBytes > 0) ? TCL_ERROR : TCL_OK;
 }
+#endif /*!WIN32*/
 
 /*
  *---------------------------------------------------------------------------
@@ -1359,7 +1360,7 @@ ReadBytes(Sink *sinkPtr)
     numBytes = 0;
     for (i = 0; i < MAX_READS; i++) {
         ssize_t bytesLeft;
-        unsigned char *array;
+        char *array;
 
         /* Allocate a larger buffer when the number of remaining bytes is
          * below the threshold BLOCK_SIZE.  */
@@ -1375,7 +1376,7 @@ ReadBytes(Sink *sinkPtr)
                 return TCL_ERROR;
             }
         }
-        array = sinkPtr->bytes + sinkPtr->fill;
+        array = (char *)(sinkPtr->bytes + sinkPtr->fill);
 
         /* Read into a buffer but make sure we leave room for a trailing
          * NUL byte. */
@@ -1450,9 +1451,6 @@ CloseSink(Sink *sinkPtr)
             }
 #endif
         }
-#if WINDEBUG
-        PurifyPrintf("CloseSink %s: done\n", sinkPtr->name);
-#endif
     }
 }
 
@@ -1628,23 +1626,14 @@ WaitProcess(Blt_Pid child, int *statusPtr, int flags)
     int result;
     int timeout;
 
-#if WINDEBUG
-    PurifyPrintf("WAITPID(%x)\n", child.hProcess);
-#endif
     *statusPtr = 0;
     if (child.hProcess == INVALID_HANDLE_VALUE) {
         errno = EINVAL;
         return -1;
     }
-#if WINDEBUG
-    PurifyPrintf("WAITPID: waiting for 0x%x\n", child.hProcess);
-#endif
     timeout = (flags & WNOHANG) ? 0 : INFINITE;
     status = WaitForSingleObject(child.hProcess, timeout);
                                  
-#if WINDEBUG
-    PurifyPrintf("WAITPID: wait status is %d\n", status);
-#endif
     switch (status) {
     case WAIT_FAILED:
         errno = ECHILD;
@@ -1664,10 +1653,6 @@ WaitProcess(Blt_Pid child, int *statusPtr, int flags)
     case WAIT_OBJECT_0:
         GetExitCodeProcess(child.hProcess, &exitCode);
         *statusPtr = ((exitCode << 8) & 0xff00);
-#if WINDEBUG
-        PurifyPrintf("WAITPID: exit code of %d is %d (%x)\n", child.hProcess,
-            *statusPtr, exitCode);
-#endif
         result = child.pid;
         assert(result != -1);
         break;
@@ -1735,10 +1720,6 @@ KillProcess(Blt_Pid proc, int signal)
         return 0;
     }
     if (!TerminateProcess(proc.hProcess, 1)) {
-#if WINDEBUG
-        PurifyPrintf("can't terminate process (handle=%d): %s\n",
-                     proc.hProcess, Blt_LastError());
-#endif /* WINDEBUG */
         return -1;
     }
     return 0;
@@ -1753,9 +1734,7 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
                int numBytes)
 {
     char save;
-#if WINDEBUG
-    PurifyPrintf("read %s\n", data);
-#endif
+
     if (data[0] == '\0') {
         return;
     }
@@ -1813,9 +1792,6 @@ NotifyOnUpdate(Tcl_Interp *interp, Sink *sinkPtr, unsigned char *data,
 {
     Tcl_Obj *objPtr;
 
-#if WINDEBUG
-    PurifyPrintf("read %s\n", data);
-#endif
     if ((numBytes == 0) || (data[0] == '\0')) {
         return;
     }
@@ -1909,9 +1885,6 @@ CollectData(Sink *sinkPtr)
             ": ", Tcl_PosixError(bgPtr->interp), (char *)NULL);
         return TCL_ERROR;
     }
-#if WINDEBUG
-    PurifyPrintf("CollectData %s: done\n", sinkPtr->name);
-#endif
     return TCL_RETURN;
 }
 
@@ -2954,9 +2927,6 @@ TimerProc(ClientData clientData)
     } else {
         bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, TimerProc,
            bgPtr);
-#if WINDEBUG
-        PurifyPrintf("schedule TimerProc(numPids=%d)\n", numLeft);
-#endif
     }
 }
 

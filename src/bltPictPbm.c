@@ -154,7 +154,7 @@ static Blt_SwitchSpec exportSwitches[] =
         Blt_Offset(PbmExportSwitches, fileObjPtr), 0},
     {BLT_SWITCH_INT_NNEG, "-index", "numPixture", (char *)NULL,
         Blt_Offset(PbmExportSwitches, index), 0},
-    {BLT_SWITCH_BITMASK, "-plain", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-plain", "", (char *)NULL,
         Blt_Offset(PbmExportSwitches, flags), 0, PLAIN},
     {BLT_SWITCH_END}
 };

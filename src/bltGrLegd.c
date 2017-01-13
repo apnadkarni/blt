@@ -364,7 +364,7 @@ typedef struct {
 
 static Blt_SwitchSpec bboxSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
         Blt_Offset(BBoxSwitches, flags), 0, BBOX_ROOT},
     {BLT_SWITCH_END}
 };

@@ -114,7 +114,7 @@ static Blt_SwitchSpec numberInListSwitches[] =
 
 static Blt_SwitchSpec stringSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-nocase", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(StringSwitches, flags), 0, NOCASE},
     {BLT_SWITCH_CUSTOM,  "-trim",  "left|right|both|none", (char *)NULL,
         Blt_Offset(StringSwitches, trim),    0, 0, &trimSwitch},
@@ -123,24 +123,24 @@ static Blt_SwitchSpec stringSwitches[] =
 
 static Blt_SwitchSpec stringBetweenSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-nocase", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(StringSwitches, flags), 0, NOCASE},
-    {BLT_SWITCH_BITMASK, "-dictionary", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-dictionary", "", (char *)NULL,
         Blt_Offset(StringSwitches, flags), 0, DICTIONARY},
-    {BLT_SWITCH_BITMASK, "-ascii", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-ascii", "", (char *)NULL,
         Blt_Offset(StringSwitches, flags), 0, ASCII},
     {BLT_SWITCH_END}
 };
 
 static Blt_SwitchSpec stringInListSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-nocase", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(StringSwitches, flags), 0, NOCASE},
     {BLT_SWITCH_CUSTOM,  "-sorted",  "decreasing|increasing", (char *)NULL,
         Blt_Offset(StringSwitches, sorted),  0, 0, &sortedSwitch},
-    {BLT_SWITCH_BITMASK, "-dictionary", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-dictionary", "", (char *)NULL,
         Blt_Offset(StringSwitches, flags), 0, DICTIONARY},
-    {BLT_SWITCH_BITMASK, "-ascii", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-ascii", "", (char *)NULL,
         Blt_Offset(StringSwitches, flags), 0, ASCII},
     {BLT_SWITCH_CUSTOM,  "-trim",  "left|right|both|none", (char *)NULL,
         Blt_Offset(StringSwitches, trim),    0, 0, &trimSwitch},

@@ -8,14 +8,12 @@ set i3 [image create picture -width $w -height $h]
 
 proc Transition { value } {
     global i3 i1 i2 transition scale
-    $i3 $transition $i1 $i2 -steps 100 -goto $value -scale $scale
+    $i3 $transition $i1 $i2 -steps 100 -goto $value -logscale $scale
     .s set $value
 }
 blt::tk::label .transition_l -text "Transition"
 blt::tk::checkbutton .logscale \
     -text "Log scale" \
-    -offvalue "linear" \
-    -onvalue "log" \
     -variable scale 
 
 scale .s -from 0 -to 100  -orient horizontal -command Transition

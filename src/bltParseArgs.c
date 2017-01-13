@@ -79,6 +79,8 @@ typedef struct {
     Blt_Chain args;			/* List of arguments. */
 } ParserCmd;
 
+#define ALLOW_ABBREV    (1<<1)
+
 typedef struct {
     ParserCmd *cmdPtr;			/* Parser this argument belongs to. */
     const char *name;			/* Name of the argument. */
@@ -93,6 +95,8 @@ typedef struct {
     int defValueType;			/* Type of default value. */
 } ParserArg;
 
+#define ARG_REQUIRED    (1<<0)
+
 static Blt_SwitchSpec cmdSpecs[] = 
 {
     {BLT_SWITCH_STRING, "-program", "string", (char *)NULL,
@@ -105,8 +109,8 @@ static Blt_SwitchSpec cmdSpecs[] =
         Blt_Offset(ParseArg, prefixChars), BLT_SWITCH_NULL_OK},
     {BLT_SWITCH_STRING, "-argument_default", "string", (char *)NULL,
         Blt_Offset(ParseArg, argDefault), BLT_SWITCH_NULL_OK},
-    {BLT_SWITCH_BOOLEAN, "-allow_abbreviations", "bool", (char *)NULL,
-        Blt_Offset(ParseArg, allowAbbrev), 0},
+    {BLT_SWITCH_BITS_NOARG, "-allow_abbreviations", "bool", (char *)NULL,
+        Blt_Offset(ParseArg, flags), 0, ALLOW_ABBREV},
     {BLT_SWITCH_CUSTOM, "-addhelp", "???", (char *)NULL,
         Blt_Offset(ParseArg, position), 0, 0, &beforeSwitch},
     {BLT_SWITCH_BOOLEAN, "-error", "bool", (char *)NULL,
@@ -120,16 +124,18 @@ static Blt_SwitchSpec argSpecs[] =
         Blt_Offset(ParseArg, desc), BLT_SWITCH_NULL_OK},
     {BLT_SWITCH_STRING, "-help", "string", (char *)NULL,
         Blt_Offset(ParseArg, helpMesg), BLT_SWITCH_NULL_OK},
-    {BLT_SWITCH_LONG_NNEG, "-type", "typeName", (char *)NULL,
-        Blt_Offset(ParseArg, position), 0},
+    {BLT_SWITCH_CUSTOM, "-type", "typeName", (char *)NULL,
+        Blt_Offset(ParseArg, position), 0, 0, &typeSwitch},
     {BLT_SWITCH_CUSTOM, "-default", "defValue", (char *)NULL,
         Blt_Offset(ParseArg, position), 0, 0, &beforeSwitch},
     {BLT_SWITCH_LIST, "-data", "{name value ?name value ...?}", (char *)NULL,
         Blt_Offset(ParseArg, dataPairs), 0},
+    {BLT_SWITCH_CUSTOM, "-nargs", "number", (char *)NULL,
+        Blt_Offset(ParseArg, numArgs), 0, 0, &numArgsSwitch},
     {BLT_SWITCH_STRING, "-short", "string", (char *)NULL,
         Blt_Offset(ParseArg, label), 0},
-    {BLT_SWITCH_BOOLEAN, "-required", "bool", (char *)NULL,
-        Blt_Offset(ParseArg, isRequired), 0},
+    {BLT_SWITCH_BITS, "-required", "bool", (char *)NULL,
+        Blt_Offset(ParseArg, flags), 0, ARG_REQUIRED},
     {BLT_SWITCH_OBJ,    "-variable", "varName", (char *)NULL,
         Blt_Offset(ParseArg, varNameObjPtr), 0},
     {BLT_SWITCH_OBJ,    "-command",  "cmdPrefix", (char *)NULL,
@@ -138,6 +144,77 @@ static Blt_SwitchSpec argSpecs[] =
         Blt_Offset(ParseArg, tagsObjPtr), 0},
     {BLT_SWITCH_END}
 };
+
+
+static ParseArg *
+LookupSwitch(Tcl_Interp *interp, ParserCmd *parserPtr, Tcl_Obj *objPtr)
+{
+    const char *switchName;
+    int length;
+    int isLongName;
+    
+    isLongName = FALSE;
+    switchName = Tcl_GetStringFromObj(objPtr, &length);
+    if (length > 2) {
+        isLongName = (switchName[1] == '-');
+    } 
+    if (isLongName) {
+        int count;
+        Blt_ChainLink link;
+        
+        count = 0;
+        /* Long or short look up. */
+        for (link = Blt_Chain_FirstLink(parserPtr->args); link != NULL;
+             link = Blt_Chain_NextLink(link)) {
+            ParserArg *argPtr;
+            
+            argsPtr = Blt_Chain_GetValue(link);
+            if (parserPtr->flags & ALLOW_ABBREV) {
+                if (strncmp(switchName, argPtr->longName, length) == 0) {
+                    if (length == strlen(argPtr->longName)) {
+                        return argPtr;
+                    }
+                    foundPtr = argPtr;
+                    count++;
+                }
+            } else {
+                if (strcmp(switchName, argPtr->longName) == 0) {
+                    return argPtr;
+                }
+            }
+        }
+        if (count == 0) {
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "switch not found.", (char *)NULL);
+            }
+        } else if (count == 1) {
+            return foundPtr;
+        } else {
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "switch is ambigous.", (char *)NULL);
+            }
+        }
+    } else {
+        int count;
+        Blt_ChainLink link;
+        
+        count = 0;
+        /* short look up. */
+        for (link = Blt_Chain_FirstLink(parserPtr->args); link != NULL;
+             link = Blt_Chain_NextLink(link)) {
+            ParserArg *argPtr;
+            
+            argsPtr = Blt_Chain_GetValue(link);
+            if (argPtr->shortName[1] == swithName[0]) {
+                return argPtr;
+            }
+        }
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "switch not found.", (char *)NULL);
+        }
+    }
+    return NULL;
+}
 
 static ParserCmd *
 CreateParserCmd(ClientData clientData, Tcl_Interp *interp, const char *name)

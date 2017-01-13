@@ -97,7 +97,7 @@ static Blt_SwitchSpec importSwitches[] =
 {
     {BLT_SWITCH_INT_NNEG, "-depth", "number", (char *)NULL,
         Blt_Offset(ImportArgs, maxDepth), 0},
-    {BLT_SWITCH_BITMASK, "-inodes",  "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-inodes",  "", (char *)NULL,
         Blt_Offset(ImportArgs, flags), 0, IMPORT_INODES},
     {BLT_SWITCH_CUSTOM, "-root", "node", (char *)NULL,
         Blt_Offset(ImportArgs, root), 0, 0, &nodeSwitch},

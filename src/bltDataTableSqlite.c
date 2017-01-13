@@ -113,7 +113,7 @@ static Blt_SwitchSpec exportSwitches[] =
         Blt_Offset(ExportArgs, fileObjPtr), 0, 0},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
         Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
-    {BLT_SWITCH_BITMASK, "-rowlabels",  "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-rowlabels",  "", (char *)NULL,
         Blt_Offset(ExportArgs, flags), 0, EXPORT_ROWLABELS},
     {BLT_SWITCH_OBJ, "-table", "tableName", (char *)NULL,
         Blt_Offset(ExportArgs, tableObjPtr), 0, 0},

@@ -196,7 +196,7 @@ typedef struct {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-alpha", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-alpha", "", (char *)NULL,
         Blt_Offset(TgaWriter, flags),   0, EXPORT_ALPHA},
     {BLT_SWITCH_STRING, "-author", "string", (char *)NULL,
         Blt_Offset(TgaWriter, author),   0},
@@ -212,7 +212,7 @@ static Blt_SwitchSpec exportSwitches[] =
         Blt_Offset(TgaWriter, index), 0},
     {BLT_SWITCH_STRING, "-job",  "string", (char *)NULL,
         Blt_Offset(TgaWriter, jobName), 0},
-    {BLT_SWITCH_BITMASK, "-rle", "", (char *)NULL,
+    {BLT_SWITCH_BITS_NOARG, "-rle", "", (char *)NULL,
         Blt_Offset(TgaWriter, flags),   0, EXPORT_RLE},
     {BLT_SWITCH_STRING, "-software", "string", (char *)NULL,
         Blt_Offset(TgaWriter, software),   0},

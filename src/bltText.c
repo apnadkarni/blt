@@ -60,7 +60,6 @@
 #include "bltFont.h"
 #include "bltText.h"
 #include "bltBg.h"
-#define WINDEBUG        0
 
 static Blt_HashTable bitmapGCTable;
 static int initialized;

@@ -76,8 +76,8 @@ BLT_EXTERN double hypot(double x, double y);
 #endif
 #endif /* __BORLANDC__ || _MSC_VER */
 
-BLT_EXTERN ssize_t Blt_AsyncRead(int fd, unsigned char *buffer, size_t size);
-BLT_EXTERN ssize_t Blt_AsyncWrite(int fd, const unsigned char *buffer, 
+BLT_EXTERN ssize_t Blt_AsyncRead(int fd, char *buffer, size_t size);
+BLT_EXTERN ssize_t Blt_AsyncWrite(int fd, const char *buffer, 
         size_t size);
 BLT_EXTERN void Blt_CreateFileHandler(int fd, int flags, Tcl_FileProc *proc, 
         ClientData clientData);

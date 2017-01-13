@@ -6768,6 +6768,17 @@ _ACEOF
 
 fi
 
+ac_fn_c_check_type "$LINENO" "off_t" "ac_cv_type_off_t" "$ac_includes_default"
+if test "x$ac_cv_type_off_t" = xyes; then :
+
+else
+
+cat >>confdefs.h <<_ACEOF
+#define off_t long int
+_ACEOF
+
+fi
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether union wait is defined correctly" >&5
 $as_echo_n "checking whether union wait is defined correctly... " >&6; }
@@ -6949,7 +6960,7 @@ $as_echo_n "checking whether DBL_EPSILON can be computed.... " >&6; }
     as_fn_error $? "can not run test program while cross compiling" "$LINENO" 5
 else
 cat > conftest.$ac_ext <<EOF
-#line 6952 "configure"
+#line 6963 "configure"
 #include "confdefs.h"
 #ifdef __cplusplus
 extern "C" void exit(int);
@@ -8835,7 +8846,7 @@ if test "$blt_with_xft_lib_dir" != "no" ; then
   save_LIBS="${LIBS}"
   if test "$blt_with_xft_lib_dir" = "yes" ; then
     # Check standard system location
-    lib_spec="-lXft -lexpat"
+    lib_spec="-lXft"
     dir=""
     LIBS="${lib_spec} ${save_LIBS}"
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -8864,7 +8875,7 @@ rm -f core conftest.err conftest.$ac_objext \
     if test "${found}" = "no" ; then
       # Then check locations based on prefix
       dir=$prefix/lib
-      lib_spec="-L${dir} -lXft -lexpat "
+      lib_spec="-L${dir} -lXft "
       LIBS="${lib_spec} ${save_LIBS}"
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -8893,7 +8904,7 @@ rm -f core conftest.err conftest.$ac_objext \
   else
     # A path was specified.
     for dir in $blt_with_xft_lib_dir $blt_with_xft_lib_dir/lib ; do
-      lib_spec="-L${dir} -lXft -lexpat "
+      lib_spec="-L${dir} -lXft "
       LIBS="${lib_spec} ${save_LIBS}"
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -8933,8 +8944,8 @@ $as_echo "#define HAVE_LIBXFT 1" >>confdefs.h
     XFT_LIB_DIR="$dir"
     XFT_LIB_SPEC=$lib_spec
   fi
-  if test -r "${dir}/libXft -lexpat.a" ; then
-    XFT_STATIC_LIB="${dir}/libXft -lexpat.a"
+  if test -r "${dir}/libXft.a" ; then
+    XFT_STATIC_LIB="${dir}/libXft.a"
   fi
 
 

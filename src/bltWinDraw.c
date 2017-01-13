@@ -50,8 +50,6 @@
 #include "tkFont.h"
 #include "tkIntBorder.h"
 
-#define WINDEBUG 0
-
 #define EXT_GC  ('\xFF')
 
 /*
@@ -301,9 +299,7 @@ CreateRotatedFont(
     }
 
     if (hFont == NULL) {
-#if WINDEBUG
-        PurifyPrintf("can't create font: %s\n", Blt_LastError());
-#endif
+
     } else { 
         HFONT oldFont;
         TEXTMETRIC tm;
@@ -319,9 +315,6 @@ CreateRotatedFont(
         SelectFont(hRefDC, oldFont);
         ReleaseDC(NULL, hRefDC);
         if (!result) {
-#if WINDEBUG
-            PurifyPrintf("not a true type font\n");
-#endif
             DeleteFont(hFont);
             return NULL;
         }
@@ -1705,12 +1698,6 @@ TileArea(HDC destDC, HDC srcDC, int tileOriginX, int tileOriginY,
             yOrigin -= delta;
         }
     }
-#ifdef notdef
-    PurifyPrintf("tile is (%d,%d,%d,%d)\n", tileOriginX, tileOriginY, 
-                 tileWidth, tileHeight);
-    PurifyPrintf("region is (%d,%d,%d,%d)\n", x, y, width, height);
-    PurifyPrintf("starting at %d,%d\n", xOrigin, yOrigin);
-#endif
     left = x;
     right = x + width;
     top = y;
@@ -1739,10 +1726,6 @@ TileArea(HDC destDC, HDC srcDC, int tileOriginX, int tileOriginY,
             if ((destX + destWidth) > right) {
                 destWidth = (right - destX);
             }
-#ifdef notdef
-            PurifyPrintf("drawing pattern (%d,%d,%d,%d) at %d,%d\n",
-                 srcX , srcY, destWidth, destHeight, destX, destY);
-#endif
             BitBlt(destDC, destX, destY, destWidth, destHeight, 
                 srcDC, srcX, srcY, SRCCOPY);
         }
@@ -2338,11 +2321,6 @@ Blt_EmulateXCopyPlane(
          */
         mask = clipPtr->value.pixmap;
 
-#if WINDEBUG
-        PurifyPrintf("mask %s src\n", (mask == src) ? "==" : "!=");
-        PurifyPrintf("GetDeviceCaps=%x\n", 
-                GetDeviceCaps(destDC, TECHNOLOGY) & TABLE_RASDISPLAY);
-#endif
         {
             HDC maskDC;
             TkWinDCState maskState;
@@ -2492,12 +2470,6 @@ StippleArea(
             startY -= dy;
         }
     }
-#ifdef notdef
-    PurifyPrintf("tile is (%d,%d,%d,%d)\n", gc->ts_x_origin, gc->ts_y_origin, 
-                 bm.bmWidth, bm.bmHeight);
-    PurifyPrintf("region is (%d,%d,%d,%d)\n", x, y, w, h);
-    PurifyPrintf("starting at %d,%d\n", startX, startY);
-#endif
     left = x;
     right = x + w;
     top = y;
@@ -2548,10 +2520,6 @@ StippleArea(
             if ((destX + destWidth) > right) {
                 destWidth = (right - destX);
             }
-#ifdef notdef
-            PurifyPrintf("drawing pattern (%d,%d,%d,%d) at %d,%d\n",
-                 srcX , srcY, destWidth, destHeight, destX, destY);
-#endif
             if (gc->fill_style == FillStippled) { /* With transparency. */
                 SetBkMode(hDC, OPAQUE);
                 SetTextColor(hDC, gc->background);

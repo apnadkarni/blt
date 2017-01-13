@@ -1103,10 +1103,6 @@ InitializeBusy(Busy *busyPtr)
             if (GetWindowRect(hWnd, &rect)) {
                 busyPtr->width = rect.right - rect.left;
                 busyPtr->height = rect.bottom - rect.top;
-#if BUSYDEBUG
-                PurifyPrintf("menubar: width=%d, height=%d\n",
-                    busyPtr->width, busyPtr->height);
-#endif
             }
         }
 #else
