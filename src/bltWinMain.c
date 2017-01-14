@@ -120,12 +120,15 @@
  * Forward declarations for procedures defined later in this file:
  */
 static void setargv(int *argcPtr, char ***argvPtr);
+static Tcl_PanicProc WishPanic;
 
 #ifdef HAVE_TCL_STUBS
 #undef Tcl_InitStubs
 extern const char *Tcl_InitStubs(Tcl_Interp *interp, const char *version, 
         int exact);
 #endif
+
+static BOOL consoleRequired = TRUE;
 
 /*
  *---------------------------------------------------------------------------
@@ -246,8 +249,6 @@ extern Tcl_AppInitProc Blt_TclPkgsInit;
 static int
 InitializeForTclOnly(Tcl_Interp *interp) /* Interpreter for application. */
 {
-    WCHAR msgString[TK_MAX_WARN_LEN + 5];
-
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
         return TCL_ERROR;
     }
@@ -334,31 +335,33 @@ main(int argc, char **argv)
 
 #else /* TCL_ONLY */
 
-static BOOL consoleRequired = TRUE;
 
 extern Tcl_AppInitProc Blt_TclInit;
 extern Tcl_AppInitProc Blt_TkInit;
 extern Tcl_AppInitProc Blt_TclPkgsInit;
 extern Tcl_AppInitProc Blt_TkPkgsInit;
-static Tcl_PanicProc WishPanic;
 
 static int
 InitializeForTclTk(Tcl_Interp *interp)  /* Interpreter for application. */
 {
     WCHAR msgString[TK_MAX_WARN_LEN + 5];
 
-    if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-        goto error;
-    }
+#ifdef STATIC_PKGS
     if (Tcl_Init(interp) != TCL_OK) {
-        goto error;
-    }
-    if (Tcl_PkgRequire(interp, "Tk", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
         goto error;
     }
     if (Tk_Init(interp) != TCL_OK) {
         goto error;
     }
+#else
+    if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
+        return TCL_ERROR;
+        goto error;
+    }
+    if (Tcl_PkgRequire(interp, "Tk", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
+        goto error;
+    }
+#endif  /*STATIC_PKGS*/
     if (consoleRequired) {
         if (Tk_CreateConsoleWindow(interp) == TCL_ERROR) {
             goto error;
@@ -376,31 +379,30 @@ InitializeForTclTk(Tcl_Interp *interp)  /* Interpreter for application. */
 #endif /* TCLLIBPATH */
 #ifdef USE_BLT_STUBS
     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-        return TCL_ERROR;
+        goto error;
     };
     if (Blt_InitTkStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-        return TCL_ERROR;
+        goto error;
     };
 #else 
     if (Blt_TclInit(interp) != TCL_OK) {
-        return TCL_ERROR;
+        goto error;
     }
     if (Blt_TkInit(interp)  != TCL_OK) {
-        return TCL_ERROR;
+        goto error;
     }
 #endif  /*USE_BLT_STUBS*/
 #ifdef STATIC_PKGS
     if (Blt_TclPkgsInit(interp) != TCL_OK) {
-        return TCL_ERROR;
+        goto error;
     }
     if (Blt_TkPkgsInit(interp) != TCL_OK) {
-        return TCL_ERROR;
+        goto error;
     }
-#endif  /*STATIC_PACKAGES*/
+#endif  /*STATIC_PKGS*/
     Tcl_SetVar(interp, "tcl_rcFileName", "~/wishrc.tcl", TCL_GLOBAL_ONLY);
     return TCL_OK;
   error:
-error:
     MultiByteToWideChar(CP_UTF8, 0, Tcl_GetStringResult(interp), -1,
 	    msgString, TK_MAX_WARN_LEN);
     /*
@@ -420,41 +422,6 @@ error:
     return TCL_ERROR;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * WishPanic --
- *
- *      Display a message and exit.
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      Exits the program.
- *
- *---------------------------------------------------------------------------
- */
-static void
-WishPanic(const char *fmt, ...)
-{
-    va_list args;
-    char buf[TK_MAX_WARN_LEN];
-    WCHAR msgString[TK_MAX_WARN_LEN + 5];
-
-    va_start(args, fmt);
-    vsnprintf(buf, TK_MAX_WARN_LEN, fmt, args);
-    va_end(args);
-    MultiByteToWideChar(CP_UTF8, 0, buf, -1, msgString, TK_MAX_WARN_LEN);
-    memcpy(msgString + TK_MAX_WARN_LEN, L" ...", 5 * sizeof(WCHAR));
-    MessageBeep(MB_ICONEXCLAMATION);
-    MessageBoxW(NULL, msgString, L"Fatal Error in Bltwish",
-	    MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
-#if defined(_MSC_VER) 
-    DebugBreak();
-#endif /* _MSC_VER || __BORLANDC__ */
-    ExitProcess(1);
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -483,8 +450,9 @@ WinMain(
     int argc;
     char *p;
     
+#ifdef notdef
     Tcl_SetPanicProc(WishPanic);
-
+#endif
     /*
      * Create the console channels and install them as the standard channels.
      * All I/O will be discarded until Tk_CreateConsoleWindow is called to
@@ -524,3 +492,41 @@ WinMain(
 }
 
 #endif /* TCL_ONLY */
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WishPanic --
+ *
+ *      Display a message and exit.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      Exits the program.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+WishPanic(const char *fmt, ...)
+{
+    va_list args;
+    char buf[TK_MAX_WARN_LEN];
+    WCHAR msgString[TK_MAX_WARN_LEN + 5];
+
+    va_start(args, fmt);
+    vsnprintf(buf, TK_MAX_WARN_LEN, fmt, args);
+    va_end(args);
+    MultiByteToWideChar(CP_UTF8, 0, buf, -1, msgString, TK_MAX_WARN_LEN);
+    memcpy(msgString + TK_MAX_WARN_LEN, L" ...", 5 * sizeof(WCHAR));
+    MessageBeep(MB_ICONEXCLAMATION);
+    MessageBoxW(NULL, msgString, L"Fatal Error in Bltwish",
+	    MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+#if defined(_MSC_VER) 
+    DebugBreak();
+#endif /* _MSC_VER || __BORLANDC__ */
+    ExitProcess(1);
+}
+
