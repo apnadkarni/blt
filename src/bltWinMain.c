@@ -114,23 +114,12 @@
 #endif /* WIN32 */
 
 #define vsnprintf               _vsnprintf
+#define TK_MAX_WARN_LEN 1024
 
 /*
  * Forward declarations for procedures defined later in this file:
  */
 static void setargv(int *argcPtr, char ***argvPtr);
-
-static Tcl_AppInitProc Initialize;
-
-#if (_TCL_VERSION < _VERSION(8,2,0)) 
-/*
- * The following declarations refer to internal Tk routines.  These interfaces
- * are available for use, but are not supported.
- */
-extern void Blt_ConsoleCreate(void);
-extern int Blt_ConsoleInit(Tcl_Interp *interp);
-
-#endif /* _TCL_VERSION < 8.2.0 */
 
 #ifdef HAVE_TCL_STUBS
 #undef Tcl_InitStubs
@@ -255,8 +244,10 @@ extern Tcl_AppInitProc Blt_TclInit;
 extern Tcl_AppInitProc Blt_TclPkgsInit;
 
 static int
-Initialize(Tcl_Interp *interp)          /* Interpreter for application. */
+InitializeForTclOnly(Tcl_Interp *interp) /* Interpreter for application. */
 {
+    WCHAR msgString[TK_MAX_WARN_LEN + 5];
+
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
         return TCL_ERROR;
     }
@@ -308,12 +299,11 @@ Initialize(Tcl_Interp *interp)          /* Interpreter for application. */
  *---------------------------------------------------------------------------
  */
 int
-main(argc, argv)
-    int argc;                   /* Number of command-line arguments. */
-    char **argv;                /* Values of command-line arguments. */
+main(int argc, char **argv)
 {
-    char buffer[MAX_PATH +1];
     char *p;
+    
+    Tcl_SetPanicProc(WishPanic);
 
     /*
      * Set up the default locale to be standard "C" locale so parsing is
@@ -321,29 +311,30 @@ main(argc, argv)
      */
 
     setlocale(LC_ALL, "C");
-    setargv(&argc, &argv);
 
     /*
-     * Replace argv[0] with full pathname of executable, and forward slashes
-     * substituted for backslashes.
+     * Console emulation widget not required as this entry is from the
+     * console subsystem, thus stdin,out,err already have end-points.
      */
 
-    GetModuleFileName(NULL, buffer, sizeof(buffer));
-    argv[0] = buffer;
-    for (p = buffer; *p != '\0'; p++) {
-        if (*p == '\\') {
-            *p = '/';
-        }
+    consoleRequired = FALSE;
+
+    /*
+     * Forward slashes substituted for backslashes.
+     */
+    for (p = argv[0]; *p != '\0'; p++) {
+	if (*p == '\\') {
+	    *p = '/';
+	}
     }
-    Tcl_Main(argc, argv, Initialize);
+
+    Tcl_Main(argc, argv, InitializeForTclOnly);
     return 0;                   /* Needed only to prevent compiler warning. */
 }
 
 #else /* TCL_ONLY */
 
-#if (_TCL_VERSION >= _VERSION(8,2,0)) 
 static BOOL consoleRequired = TRUE;
-#endif
 
 extern Tcl_AppInitProc Blt_TclInit;
 extern Tcl_AppInitProc Blt_TkInit;
@@ -352,17 +343,28 @@ extern Tcl_AppInitProc Blt_TkPkgsInit;
 static Tcl_PanicProc WishPanic;
 
 static int
-Initialize(Tcl_Interp *interp)  /* Interpreter for application. */
+InitializeForTclTk(Tcl_Interp *interp)  /* Interpreter for application. */
 {
+    WCHAR msgString[TK_MAX_WARN_LEN + 5];
+
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-        return TCL_ERROR;
+        goto error;
     }
     if (Tcl_Init(interp) != TCL_OK) {
-        return TCL_ERROR;
+        goto error;
     }
     if (Tcl_PkgRequire(interp, "Tk", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-        return TCL_ERROR;
+        goto error;
     }
+    if (Tk_Init(interp) != TCL_OK) {
+        goto error;
+    }
+    if (consoleRequired) {
+        if (Tk_CreateConsoleWindow(interp) == TCL_ERROR) {
+            goto error;
+        }
+    }
+
 #ifdef TCLLIBPATH
     /* 
      * It seems that some distributions of TCL don't compile-in a
@@ -396,24 +398,25 @@ Initialize(Tcl_Interp *interp)  /* Interpreter for application. */
     }
 #endif  /*STATIC_PACKAGES*/
     Tcl_SetVar(interp, "tcl_rcFileName", "~/wishrc.tcl", TCL_GLOBAL_ONLY);
-#if (_TCL_VERSION >= _VERSION(8,2,0)) 
-    if (consoleRequired) {
-        if (Tk_CreateConsoleWindow(interp) == TCL_ERROR) {
-            goto error;
-        }
-    }
-#else
-    /*
-     * Initialize the console only if we are running as an interactive
-     * application.
-     */
-    if (Blt_ConsoleInit(interp) == TCL_ERROR) {
-        goto error;
-    }
-#endif  /* _TCL_VERSION >= 8.2.0 */
     return TCL_OK;
   error:
-    WishPanic(Tcl_GetStringResult(interp));
+error:
+    MultiByteToWideChar(CP_UTF8, 0, Tcl_GetStringResult(interp), -1,
+	    msgString, TK_MAX_WARN_LEN);
+    /*
+     * Truncate MessageBox string if it is too long to not overflow the screen
+     * and cause possible oversized window error.
+     */
+    memcpy(msgString + TK_MAX_WARN_LEN, L" ...", 5 * sizeof(WCHAR));
+    MessageBeep(MB_ICONEXCLAMATION);
+    MessageBoxW(NULL, msgString, L"Error in Bltwish",
+	    MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+    ExitProcess(1);
+
+    /*
+     * We won't reach this, but we need the return.
+     */
+
     return TCL_ERROR;
 }
 
@@ -436,23 +439,19 @@ static void
 WishPanic(const char *fmt, ...)
 {
     va_list args;
-    char buf[1024];
+    char buf[TK_MAX_WARN_LEN];
+    WCHAR msgString[TK_MAX_WARN_LEN + 5];
 
     va_start(args, fmt);
-    vsnprintf(buf, 1024, fmt, args);
+    vsnprintf(buf, TK_MAX_WARN_LEN, fmt, args);
     va_end(args);
-    buf[1023] = '\0';
+    MultiByteToWideChar(CP_UTF8, 0, buf, -1, msgString, TK_MAX_WARN_LEN);
+    memcpy(msgString + TK_MAX_WARN_LEN, L" ...", 5 * sizeof(WCHAR));
     MessageBeep(MB_ICONEXCLAMATION);
-    MessageBox(NULL, buf, "Fatal Error in Wish",
-        MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
-#if defined(_MSC_VER) || defined(__BORLANDC__)
+    MessageBoxW(NULL, msgString, L"Fatal Error in Bltwish",
+	    MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+#if defined(_MSC_VER) 
     DebugBreak();
-#ifdef notdef                   /* Panics shouldn't cause exceptions.  Simply
-                                 * let the program exit. */
-    _asm {
-        int 3
-    }
-#endif
 #endif /* _MSC_VER || __BORLANDC__ */
     ExitProcess(1);
 }
@@ -482,28 +481,16 @@ WinMain(
 {
     char **argv;
     int argc;
-    Tcl_Interp *interp;
-
-    interp = Tcl_CreateInterp();
-    if (Tcl_Init(interp) != TCL_OK) {
-        Tcl_Panic("can't initialize Tcl");
-    }
-#ifdef HAVE_TCL_STUBS
-#undef Tcl_InitStubs
-    if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-        Tcl_Panic("Can't initialize TCL stubs");
-    }
-#endif
-#ifdef USE_TK_STUBS
-    if (Tk_InitStubs(interp, TK_VERSION_COMPILED, PKG_ANY) == NULL) {
-        Tcl_Panic("Can't initialize Tk stubs");
-    }
-#else
-    if (Tk_Init(interp) != TCL_OK) {
-        return TCL_ERROR;
-    }
-#endif
+    char *p;
+    
     Tcl_SetPanicProc(WishPanic);
+
+    /*
+     * Create the console channels and install them as the standard channels.
+     * All I/O will be discarded until Tk_CreateConsoleWindow is called to
+     * attach the console to a text widget.
+     */
+    consoleRequired = TRUE;
 
     /*
      * Set up the default locale to be standard "C" locale so parsing is
@@ -511,28 +498,28 @@ WinMain(
      */
 
     setlocale(LC_ALL, "C");
+
+    /*
+     * Get our args from the c-runtime. Ignore lpszCmdLine.
+     */
+
+#if defined(__CYGWIN__)
     setargv(&argc, &argv);
-
-    /*
-     * Increase the application queue size from default value of 8.  At the
-     * default value, cross application SendMessage of WM_KILLFOCUS will fail
-     * because the handler will not be able to do a PostMessage!  This is only
-     * needed for Windows 3.x, since NT dynamically expands the queue.
-     */
-
-    SetMessageQueue(64);
-
-    /*
-     * Create the console channels and install them as the standard channels.
-     * All I/O will be discarded until Blt_ConsoleInit is called to attach the
-     * console to a text widget.
-     */
-#if (_TCL_VERSION >= _VERSION(8,2,0)) 
-    consoleRequired = TRUE;
 #else
-    Blt_ConsoleCreate();
+    argc = __argc;
+    argv = __argv;
 #endif
-    Tk_MainEx(argc, argv, Initialize, interp);
+
+    /*
+     * Forward slashes substituted for backslashes.
+     */
+    for (p = argv[0]; *p != '\0'; p++) {
+	if (*p == '\\') {
+	    *p = '/';
+	}
+    }
+
+    Tk_Main(argc, argv, InitializeForTclTk);
     return 0;
 }
 
