@@ -292,9 +292,9 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
     maxDepth = topDepth = Blt_Tree_NodeDepth(argsPtr->root);
     for (node = Blt_Tree_NextNode(argsPtr->root, argsPtr->root); node != NULL;
          node = Blt_Tree_NextNode(argsPtr->root, node)) {
+        BLT_TABLE_ROW row;
         Blt_TreeNode parent;
         int depth;
-        BLT_TABLE_ROW row;
         size_t colIndex;
 
         depth = Blt_Tree_NodeDepth(node);
@@ -398,22 +398,22 @@ ExportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
          row = blt_table_next_tagged_row(&argsPtr->ri)) {
         BLT_TABLE_COLUMN col;
         Blt_TreeNode node;
-        const char *label;
+        const char *rowName;
 
-        label = blt_table_row_label(row);
-        node = Blt_Tree_FindChild(argsPtr->root, label);
+        rowName = blt_table_row_label(row);
+        node = Blt_Tree_FindChild(argsPtr->root, rowName);
         if (node == NULL) {
-            node = Blt_Tree_CreateNode(tree, argsPtr->root, label, -1);
+            node = Blt_Tree_CreateNode(tree, argsPtr->root, rowName, -1);
         }
-        for (col = blt_table_first_tagged_column(&argsPtr->ci); 
-             col != NULL;
+        for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL;
              col = blt_table_next_tagged_column(&argsPtr->ci)) {
             Tcl_Obj *objPtr;
-            const char *key;
+            const char *colName;
 
             objPtr = blt_table_get_obj(table, row, col);
-            key = blt_table_column_label(col);
-            if (Blt_Tree_SetValue(interp, tree, node, key, objPtr) != TCL_OK) {
+            colName = blt_table_column_label(col);
+            if (Blt_Tree_SetValue(interp, tree, node, colName, objPtr) 
+                != TCL_OK) {
                 return TCL_ERROR;
             }           
         }
@@ -421,6 +421,9 @@ ExportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
     return TCL_OK;
 }
 
+/* 
+ * tableName import tree treeName switches...
+ */
 static int
 ImportTreeProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
@@ -442,7 +445,7 @@ ImportTreeProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     memset(&args, 0, sizeof(args));
     nodeSwitch.clientData = tree;
     args.root = Blt_Tree_RootNode(tree);
-    if (Blt_ParseSwitches(interp, importSwitches, objc - 5, objv + 5, &args,
+    if (Blt_ParseSwitches(interp, importSwitches, objc - 4, objv + 4, &args,
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
@@ -451,6 +454,9 @@ ImportTreeProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     return result;
 }
 
+/* 
+ * tableName export tree treeName switches...
+ */
 static int
 ExportTreeProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)

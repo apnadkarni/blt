@@ -35,6 +35,20 @@
  *
  */
 
+/* 
+   set parser [blt::argsparse create parser \
+        -description "Process some integers"]
+   $parser add "integers" -metavar N -type int -nargs +
+   $parser add "--sum" -dest accumulate -action store_const -const sum \
+        -default max -help "sum the integers (default: find the max)'
+
+   set results [$parser parse $argv]
+   
+   store_const
+   append_const
+   -type int | double | 
+ */
+
 #define BUILD_BLT_TCL_PROCS 1
 #include <bltInt.h>
 
@@ -127,14 +141,14 @@ static Blt_SwitchSpec argSpecs[] =
     {BLT_SWITCH_CUSTOM, "-type", "typeName", (char *)NULL,
         Blt_Offset(ParseArg, position), 0, 0, &typeSwitch},
     {BLT_SWITCH_CUSTOM, "-default", "defValue", (char *)NULL,
-        Blt_Offset(ParseArg, position), 0, 0, &beforeSwitch},
+        Blt_Offset(ParseArg, position), 0, 0, &defaultSwitch},
     {BLT_SWITCH_LIST, "-data", "{name value ?name value ...?}", (char *)NULL,
         Blt_Offset(ParseArg, dataPairs), 0},
     {BLT_SWITCH_CUSTOM, "-nargs", "number", (char *)NULL,
         Blt_Offset(ParseArg, numArgs), 0, 0, &numArgsSwitch},
     {BLT_SWITCH_STRING, "-short", "string", (char *)NULL,
         Blt_Offset(ParseArg, label), 0},
-    {BLT_SWITCH_BITS, "-required", "bool", (char *)NULL,
+    {BLT_SWITCH_BOOLEAN, "-required", "bool", (char *)NULL,
         Blt_Offset(ParseArg, flags), 0, ARG_REQUIRED},
     {BLT_SWITCH_OBJ,    "-variable", "varName", (char *)NULL,
         Blt_Offset(ParseArg, varNameObjPtr), 0},
@@ -191,7 +205,7 @@ LookupSwitch(Tcl_Interp *interp, ParserCmd *parserPtr, Tcl_Obj *objPtr)
             return foundPtr;
         } else {
             if (interp != NULL) {
-                Tcl_AppendResult(interp, "switch is ambigous.", (char *)NULL);
+                Tcl_AppendResult(interp, "switch is ambiguous.", (char *)NULL);
             }
         }
     } else {
@@ -216,12 +230,73 @@ LookupSwitch(Tcl_Interp *interp, ParserCmd *parserPtr, Tcl_Obj *objPtr)
     return NULL;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetParserCmd --
+ *
+ *      Find the parser command associated with the TCL command "string".
+ *      
+ *      We have to do multiple lookups to get this right.  
+ *
+ *      The first step is to generate a canonical command name.  If an
+ *      unqualified command name (i.e. no namespace qualifier) is given, we
+ *      should search first the current namespace and then the global one.
+ *      Most TCL commands (like Tcl_GetCmdInfo) look only at the global
+ *      namespace.
+ *
+ *      Next check if the string is 
+ *              a) a TCL command and 
+ *              b) really is a command for a parser object.  
+ *      Tcl_GetCommandInfo will get us the objClientData field that should be
+ *      a cmdPtr.  We can verify that by searching our hashtable of cmdPtr
+ *      addresses.
+ *
+ * Results:
+ *      A pointer to the parser command.  If no associated parser command
+ *      can be found, NULL is returned.  It's up to the calling routines to
+ *      generate an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
 static ParserCmd *
-CreateParserCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
+GetParserCmd(ParserCmdInterpData *dataPtr, Tcl_Interp *interp, 
+             const char *string)
 {
-    ParserCmdInterpData *tdPtr = clientData;
+    Blt_HashEntry *hPtr;
+    Blt_ObjectName objName;
+    Tcl_CmdInfo cmdInfo;
     Tcl_DString ds;
-    Blt_Tree tree;
+    const char *parserName;
+    int result;
+
+    /* Pull apart the parser name and put it back together in a standard
+     * format. */
+    if (!Blt_ParseObjectName(interp, string, &objName, BLT_NO_ERROR_MSG)) {
+        return NULL;                    /* No such parent namespace. */
+    }
+    /* Rebuild the fully qualified name. */
+    parserName = Blt_MakeQualifiedName(&objName, &ds);
+    result = Tcl_GetCommandInfo(interp, parserName, &cmdInfo);
+    Tcl_DStringFree(&ds);
+
+    if (!result) {
+        return NULL;
+    }
+    hPtr = Blt_FindHashEntry(&dataPtr->parserTable, 
+                             (char *)(cmdInfo.objClientData));
+    if (hPtr == NULL) {
+        return NULL;
+    }
+    return Blt_GetHashValue(hPtr);
+}
+
+static ParserCmd *
+NewParserCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
+{
+    ParserCmdInterpData *dataPtr = clientData;
+    Tcl_DString ds;
+    ParserCmd *cmdPtr;
 
     Tcl_DStringInit(&ds);
     if (name == NULL) {
@@ -258,8 +333,8 @@ CreateParserCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
                                  "\" already exists", (char *)NULL);
                 goto error;
             }
-            if (Blt_Tree_Exists(interp, name)) {
-                Tcl_AppendResult(interp, "a tree \"", name, 
+            if (ParserExists(interp, name)) {
+                Tcl_AppendResult(interp, "an argument parser \"", name, 
                         "\" already exists", (char *)NULL);
                 goto error;
             }
@@ -270,11 +345,10 @@ CreateParserCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
     }
     {
         int isNew;
-        TreeCmd *cmdPtr;
+        ParserCmd *cmdPtr;
 
         cmdPtr = Blt_AssertCalloc(1, sizeof(ParserCmd));
-        cmdPtr->tdPtr = tdPtr;
-        cmdPtr->parser = parser;
+        cmdPtr->dataPtr = dataPtr;
         cmdPtr->interp = interp;
         Blt_InitHashTable(&cmdPtr->argTable, BLT_STRING_KEYS);
         Blt_InitHashTable(&cmdPtr->notifyTable, BLT_STRING_KEYS);
@@ -298,7 +372,47 @@ CreateParserCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
 /*
  *---------------------------------------------------------------------------
  *
+ * AddOp --
+ *
+ *      parserName add argName ?switches...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+AddOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    ParserCmd *cmdPtr = clientData;
+    ParserArg *argPtr;
+    Blt_HashEntry *hPtr;
+    const char *name;
+
+    name = Tcl_GetString(objv[2]);
+    hPtr = Blt_CreateHashEntry(&cmdPtr->argTable, name, &isNew);
+    if (!isNew) {
+        Tcl_AppendResult(interp, "argument \"", name, 
+                         "\" already exists in the parser.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    argPtr = NewArg(interp, cmdPtr, hPtr);
+    if (argPtr == NULL) {
+        return TCL_ERROR;
+    }
+    if (Blt_ParseSwitches(interp, argSpecs, objc - 3, objv + 3, argPtr,
+        BLT_SWITCH_DEFAULTS) < 0) {
+        DestroyArg(argPtr);
+        return TCL_ERROR;
+    }
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), argsPtr->name);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ExistsOp --
+ *
+ *      parserName exists argName
  *
  *---------------------------------------------------------------------------
  */
@@ -311,7 +425,7 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int bool;
     
     bool = TRUE;
-    if (GetArgFromObj(interp, cmdPtr, objv[2], &argPtr) != TCL_OK) {
+    if (GetArgFromObj(NULL, cmdPtr, objv[2], &argPtr) != TCL_OK) {
         bool = FALSE;
     } 
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
@@ -337,16 +451,16 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec parserInstOps[] =
 {
-    {"add",         2, AddOp,         3, 0, "argName ?switches ...?",},
+    {"add",         1, AddOp,         3, 0, "argName ?switches ...?",},
     {"cget",        2, CgetOp,        3, 0, "argNane ?switches ...?",},
-    {"configure",   4, ConfigureOp,   4, 0, "argName key ?value ...?",},
-    {"delete",      2, DeleteOp,      2, 0, "?argName ...?",},
-    {"exists",      2, ExistsOp,      3, 3, "argName",},
-    {"get",         4, GetOp,         3, 4, "argName ?defValue?",},
-    {"help",        4, HelpOp,        2, 0, "",},
-    {"parse",       2, ParseOp,       3, 0, "parse ?args ...?",},
-    {"reset",	    2, ResetOp	      2, 2, "",},
-    {"set",         2, SetOp,         4, 4, "argName varName",},
+    {"configure",   2, ConfigureOp,   4, 0, "argName key ?value ...?",},
+    {"delete",      1, DeleteOp,      2, 0, "?argName ...?",},
+    {"exists",      1, ExistsOp,      3, 3, "argName",},
+    {"get",         1, GetOp,         3, 4, "argName ?defValue?",},
+    {"help",        1, HelpOp,        2, 0, "",},
+    {"parse",       1, ParseOp,       3, 0, "parse ?args ...?",},
+    {"reset",	    1, ResetOp	      2, 2, "",},
+    {"set",         1, SetOp,         4, 4, "argName varName",},
 };
 
 static int numParserInstOps = sizeof(parserInstOps) / sizeof(Blt_OpSpec);
@@ -355,8 +469,8 @@ static int
 ParserInstObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
+    ParserCmd *cmdPtr = clientData;
     Tcl_ObjCmdProc *proc;
-    TreeCmd *cmdPtr = clientData;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numParserInstOps, parserInstOps,
@@ -399,8 +513,9 @@ ParserInstDeleteProc(ClientData clientData)
 /*
  *---------------------------------------------------------------------------
  *
- * TreeCreateOp --
+ * ParserCreateOp --
  *
+ *      blt::parseargs create ?name? ?switches...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -415,7 +530,7 @@ ParserCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 3) {
         name = Tcl_GetString(objv[2]);
     }
-    cmdPtr = ParserCmd(clientData, interp, name);
+    cmdPtr = NewParserCmd(clientData, interp, name);
     if (cmdPtr == NULL) {
         return TCL_ERROR;
     }
@@ -426,6 +541,8 @@ ParserCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  *
  * ParserDestroyOp --
+ *
+ *      blt::parseargs destory ?parserName...? 
  *
  *---------------------------------------------------------------------------
  */
@@ -439,7 +556,7 @@ ParserDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 2; i < objc; i++) {
         ParserCmd *cmdPtr;
-        char *string;
+        const char *string;
 
         string = Tcl_GetString(objv[i]);
         cmdPtr = GetParserCmd(tdPtr, interp, string);
@@ -458,7 +575,7 @@ ParserDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ParserExistsOp --
  *
- *      blt::argsparser exists parserName
+ *      blt::parseargs exists parserName
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/

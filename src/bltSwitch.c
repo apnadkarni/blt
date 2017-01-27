@@ -933,7 +933,15 @@ Blt_FreeSwitches(
             ptr = (char *)record + sp->offset;
             switch (sp->type) {
             case BLT_SWITCH_STRING:
+                /* Strings are allocated via Blt_Strdup */
+                if (*((char **) ptr) != NULL) {
+                    Blt_Free(*((char **) ptr));
+                    *((char **) ptr) = NULL;
+                }
+                break;
+
             case BLT_SWITCH_LIST:
+                /* Lists are allocated via Tcl_SplitList */
                 if (*((char **) ptr) != NULL) {
                     Tcl_Free(*((char **) ptr));
                     *((char **) ptr) = NULL;

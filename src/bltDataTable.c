@@ -356,9 +356,11 @@ static int
 SetHeaderLabel(Tcl_Interp *interp, RowColumn *rcPtr, Header *headerPtr, 
                const char *newLabel)
 {
+#ifdef notdef
     if (CheckLabel(interp, rcPtr, newLabel) != TCL_OK) {
         return TCL_ERROR;
     }
+#endif
     SetLabel(rcPtr, headerPtr, newLabel);
     return TCL_OK;
 }

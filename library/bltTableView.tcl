@@ -987,15 +987,17 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
     set _private(activeSelection) 0
     switch -- [$w cget -selectmode] {
         "cells" {
+            $w see $cell
+            $w focus $cell
             $w selection clearall
             $w selection anchor $cell
         } "single" {
-            $w see $cell
+            $w row see $row
             $w focus $cell
             $w selection clearall
             $w selection set $cell 
         } "multiple" {
-            $w see $cell
+            $w row see $row
             $w focus $cell
             $w selection clearall
             $w selection set $cell 
@@ -1695,7 +1697,7 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
         set list [list $list]
         set expr "(!\[info exists ${index}\]) ||
             (!\[blt::utils::number inlist \$${index} $list])"
-        puts stderr expr=$expr
+        #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {
@@ -2030,7 +2032,7 @@ proc blt::TableView::EqualsTextSearch { w } {
         set list [list $list]
         set expr "\[info exists ${index}\] &&
             (\[blt::utils::string inlist \$${index} $list $flags])"
-        puts stderr expr=$expr
+        #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {
@@ -2105,7 +2107,7 @@ proc blt::TableView::NotEqualsTextSearch { w } {
         set list [list $list]
         set expr "(!\[info exists ${index}\]) ||
             (!\[blt::utils::string inlist \$${index} $list $flags])"
-        puts stderr expr=$expr
+        #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {
@@ -2174,7 +2176,7 @@ proc blt::TableView::BeginsWithTextSearch { w } {
         set value [list $value]
         set expr "(\[info exists ${index}\]) ||
             (\[blt::utils::string begins \$${index} $value $flags])"
-        puts stderr expr=$expr
+        #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {
@@ -2244,7 +2246,7 @@ proc blt::TableView::EndsWithTextSearch { w } {
         set value [list $value]
         set expr "(\[info exists ${index}\]) &&
             (\[blt::utils::string ends \$${index} $value $flags])"
-        puts stderr expr=$expr
+        #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {
@@ -2307,7 +2309,7 @@ proc blt::TableView::ContainsTextSearch { w } {
         set value [list $value]
         set expr "(\[info exists ${index}\]) &&
             (\[blt::utils::string contains \$${index} $value $flags])"
-        puts stderr expr=$expr
+        #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {
@@ -2369,7 +2371,7 @@ proc blt::TableView::NotContainsTextSearch { w } {
         set value [list $value]
         set expr "(!\[info exists ${index}\]) ||
             (!\[blt::utils::string contains \$${index} $value $flags])"
-        puts stderr expr=$expr
+        #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {
@@ -2443,7 +2445,7 @@ proc blt::TableView::BetweenTextSearch { w } {
         set last [list $last]
         set expr "(\[info exists ${index}\]) &&
             (\[blt::utils::string between \$${index} $first $last $flags])"
-        puts stderr expr=$expr
+        #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {

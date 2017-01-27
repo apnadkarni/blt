@@ -79,6 +79,13 @@
 #define MAXTOKENS       64              /* Specifies the maximum number of
                                          * tokens that have been
                                          * pre-allocated */
+
+typedef enum {
+    UNITS_SECS,
+    UNITS_MSECS,
+    UNITS_USECS,
+} TimeUnits;
+
 #define TRACE_ALL \
     (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_TRACE_READS | TCL_GLOBAL_ONLY)
 
@@ -225,21 +232,82 @@ static Pattern datePatterns[] = {
 
 static int numDatePatterns = sizeof(datePatterns) / sizeof(Pattern);
 
+static Blt_SwitchParseProc ObjToUnitsSwitchProc;
+static Blt_SwitchCustom unitsSwitch =
+{
+    ObjToUnitsSwitchProc, NULL, NULL, (ClientData)0
+};
+
 typedef struct {
     Tcl_Obj *tzObjPtr;
     Tcl_Obj *fmtObjPtr;
+    TimeUnits units;                    /* 0 = seconds, 1 = milliseconds, 
+                                         * 2 = microseconds. */
 } FormatSwitches;
 
 static Blt_SwitchSpec formatSwitches[] = 
 {
-    {BLT_SWITCH_OBJ, "-timezone", "",  (char *)NULL,
-        Blt_Offset(FormatSwitches, tzObjPtr), 0},
     {BLT_SWITCH_OBJ, "-format", "",  (char *)NULL,
         Blt_Offset(FormatSwitches, fmtObjPtr), 0},
+    {BLT_SWITCH_OBJ, "-timezone", "",  (char *)NULL,
+        Blt_Offset(FormatSwitches, tzObjPtr), 0},
+    {BLT_SWITCH_CUSTOM,  "-units",    "s|ms|us",     (char *)NULL,
+         Blt_Offset(FormatSwitches, units),  0, 0, &unitsSwitch},
     {BLT_SWITCH_END}
 };
 
 static Tcl_ObjCmdProc TimeStampCmd;
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToUnitsSwitchProc --
+ *
+ *      Convert a Tcl_Obj representing a time unit into a TimeUnits value.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToUnitsSwitchProc(ClientData clientData, Tcl_Interp *interp, 
+                     const char *switchName, Tcl_Obj *objPtr, char *record,
+                     int offset, int flags)
+{
+    TimeUnits *unitsPtr = (TimeUnits *)(record + offset);
+    int length;
+    const char *string;
+    char c;
+    
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 's') && (strncmp(string, "seconds", length) == 0)) {
+        *unitsPtr = UNITS_SECS;
+    } else if ((c == 'c') && (strncmp(string, "clicks", length) == 0)) {
+        *unitsPtr = UNITS_USECS;
+    } else if ((c == 't') && (strncmp(string, "ticks", length) == 0)) {
+        *unitsPtr = UNITS_USECS;
+    } else if ((c == 'm') && (length > 2) &&
+               (strncmp(string, "microseconds", length) == 0)) {
+        *unitsPtr = UNITS_USECS;
+    } else if ((c == 'm') && (length > 2) && 
+               (strncmp(string, "milliseconds", length) == 0)) {
+        *unitsPtr = UNITS_MSECS;
+    } else if ((c == 'm') && (length > 1) && 
+               (strncmp(string, "mseconds", length) == 0)) {
+        *unitsPtr = UNITS_MSECS;
+    } else if ((c == 'u') && (length > 1) && 
+               (strncmp(string, "useconds", length) == 0)) {
+        *unitsPtr = UNITS_USECS;
+    } else {
+        Tcl_AppendResult(interp, "unknown units \"", string, "\"",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }                                                                            
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -2605,7 +2673,7 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
     double seconds;
     Tcl_DString ds;
 
-    if (Tcl_GetDoubleFromObj(interp, objv[2], &seconds) != TCL_OK) {
+    if (Blt_GetDoubleFromObj(interp, objv[2], &seconds) != TCL_OK) {
         return TCL_ERROR;
     }
     /* Process switches  */
@@ -2613,6 +2681,11 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_ParseSwitches(interp, formatSwitches, objc - 3, objv + 3,
                 &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
+    }
+    if (switches.units == UNITS_USECS) {
+        seconds = seconds / 1e+6;
+    } else if (switches.units == UNITS_MSECS) {
+        seconds = seconds / 1e+3;
     }
     Blt_SecondsToDate(seconds, &date);
     Tcl_DStringInit(&ds);
@@ -2801,7 +2874,7 @@ Blt_DateToSeconds(Blt_DateTime *datePtr, double *secondsPtr)
 void
 Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
 {
-    int mon, year;
+    long mon, year;
     long rem;
     long numDays;
 
@@ -2812,15 +2885,10 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
     numDays = ((long)seconds) / SECONDS_DAY;
     rem  = ((long)seconds) % SECONDS_DAY;
     if (rem < 0) {
-#ifdef notdef
- fprintf(stderr, "rem=%ld numDays=%ld rem < 0\n", rem, numDays);
-#endif
         rem += SECONDS_DAY;
         numDays--;
     }
     if (rem >= SECONDS_DAY) {
- fprintf(stderr, "rem=%ld numDays=%ld rem >= SECONDS_DAY\n", 
-                rem, numDays);
         rem -= SECONDS_DAY;
         numDays++;
     }
@@ -3278,7 +3346,9 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             bp += 2;
             break;
         }
+#ifdef notdef
         assert((bp - buffer) < count);
+#endif
     }
     *bp = '\0';    
 }

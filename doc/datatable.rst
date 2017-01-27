@@ -1464,9 +1464,9 @@ format in the **import** or **export** operations.
   **-inodes** 
     Store the indices of the tree nodes in a column called "inode".
 
-   **-root** *node*
-     Specifies the root node of the branch to be imported. By default,
-     the root of the tree is the root node.
+  **-root** *node*
+    Specifies the root node of the branch to be imported. By default,
+    the root of the tree is the root node.
 
 *tableName* **export tree** *treeName* ?\ *switches* ... ?
   Exports the datatable into a BLT tree.  *TreeName* is the name of the

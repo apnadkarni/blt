@@ -4838,8 +4838,11 @@ PathParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_DString ds;
             
             Tcl_DStringInit(&ds);
-            Tcl_AppendResult(interp, "can't find node \"", argv[i], "\" in \"", 
-                Blt_Tree_NodePath(parent, &ds), "\"", (char *)NULL);
+            Tcl_AppendResult(interp, "can't find child labeled \"", argv[i], 
+                             "\" in parent \"", 
+                Blt_Tree_NodePath(parent, &ds), "\" ", 
+                             Blt_Itoa(Blt_Tree_NodeId(parent)),
+                             (char *)NULL);
             Tcl_DStringFree(&ds);
             Blt_Free(argv);
             return TCL_ERROR;

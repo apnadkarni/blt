@@ -922,6 +922,18 @@ struct _TableView {
     int reqArrowWidth, arrowWidth;
     SortInfo sort;
     FilterInfo filter;
+    int maxRowHeight;                   /* This sets the maximum for all row
+                                         * heights.  This is needed for
+                                         * cases where you don't know the
+                                         * row heights beforehand (such as
+                                         * when loading a table with
+                                         * -table). */
+    int maxColWidth;                    /* This sets the maximum for all
+                                         * column widths.  This is needed
+                                         * for cases where you don't know
+                                         * the column widths beforehand
+                                         * (such as when loading a table
+                                         * with -table). */
 };
 
 BLT_EXTERN CellStyle *Blt_TableView_CreateCellStyle(Tcl_Interp *interp,

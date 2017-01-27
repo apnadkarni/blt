@@ -228,6 +228,8 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_TAKE_FOCUS                  "1"
 #define DEF_TITLES                      "column"
 #define DEF_WIDTH                       "200"
+#define DEF_MAX_COLUMN_WIDTH            "0"
+#define DEF_MAX_ROW_HEIGHT              "0"
 
 static const char *sortTypeStrings[] = {
     "dictionary", "ascii", "integer", "real", "command", "none", "auto", NULL
@@ -428,6 +430,12 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_CUSTOM, "-increasingicon", "increaingIcon", "IncreasingIcon", 
         DEF_SORT_UP_ICON, Blt_Offset(TableView, sort.up), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
+    {BLT_CONFIG_PIXELS_NNEG, "-maxcolumnwidth", "maxColumnWidth", 
+        "MaxColumnWidth", DEF_MAX_COLUMN_WIDTH, 
+        Blt_Offset(TableView, maxColWidth), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-maxrowheight", "maxRowHeight", "MaxRowHeight", 
+        DEF_MAX_ROW_HEIGHT, Blt_Offset(TableView, maxRowHeight), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-rowcommand", "rowCommand", "RowCommand", 
         DEF_ROW_COMMAND, Blt_Offset(TableView, rowCmdObjPtr),
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
@@ -896,7 +904,12 @@ EventuallyDeleteColumn(TableView *viewPtr, BLT_TABLE_COLUMN col)
     Column *colPtr;
 
     colPtr = GetColumnContainer(viewPtr, col);
-    assert(colPtr);
+    if (colPtr == NULL) {
+        /* Debug row delete and column delete */
+        fprintf(stderr, "col=%x, %s numCols=%ld\n", col, 
+                blt_table_column_label(col), viewPtr->numColumns);
+    }
+    assert(colPtr != NULL);
     colPtr->flags |= DELETED;
     if ((viewPtr->tkwin != NULL) && 
         ((viewPtr->flags & (DONT_UPDATE|COLUMNS_DELETED)) == 0)) {
@@ -6783,11 +6796,12 @@ CellSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
         y = rowPtr->worldY + rowPtr->height - viewHeight;
     }
-    if (colPtr->worldX < x) {
-        x = colPtr->worldX;
-    } else if ((colPtr->worldX + colPtr->width) > (x + viewWidth)) {
-        x = colPtr->worldX + colPtr->width - viewWidth;
-    }
+    if ((colPtr->worldX < x) ||
+        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
+        /* Column starts before the viewport or the column ends after
+         * the viewport. Move the start of the column into the viewport. */
+        x = colPtr->worldX;             
+    } 
     if (x < 0) {
         x = 0;
     }
@@ -8085,6 +8099,7 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Column *colPtr;
     TableView *viewPtr = clientData;
     long x;
+    int viewWidth;
 
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -8095,10 +8110,13 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     x = viewPtr->xOffset;
-    if (((colPtr->worldX + colPtr->width) < viewPtr->xOffset) ||
-        (colPtr->worldX >= viewPtr->xOffset)) {
-        x = colPtr->worldX - VPORTWIDTH(viewPtr) / 2;
-    }
+    viewWidth = VPORTWIDTH(viewPtr);
+    if ((colPtr->worldX < x) ||
+        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
+        /* Column starts before the viewport or the column ends after
+         * the viewport. Move the start of the column into the viewport. */
+        x = colPtr->worldX;             
+    } 
     if (x < 0) {
         x = 0;
     }
@@ -10223,11 +10241,12 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
         y = rowPtr->worldY + rowPtr->height - viewHeight;
     }
-    if (colPtr->worldX < x) {
-        x = colPtr->worldX;
-    } else if ((colPtr->worldX + colPtr->width) > (x + viewWidth)) {
-        x = colPtr->worldX + colPtr->width - viewWidth;
-    }
+    if ((colPtr->worldX < x) ||
+        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
+        /* Column starts before the viewport or the column ends after
+         * the viewport. Move the start of the column into the viewport. */
+        x = colPtr->worldX;             
+    } 
     if (x < 0) {
         x = 0;
     }
@@ -11591,8 +11610,20 @@ ComputeGeometry(TableView *viewPtr)
         if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & GEOMETRY) {
             GetCellGeometry(cellPtr);
         }
+        /* Override the initial width of the cell if it exceeds the
+         * designated maximum.  */
+        if ((viewPtr->maxColWidth > 0) && 
+            (cellPtr->width > viewPtr->maxColWidth)) {
+            cellPtr->width = viewPtr->maxColWidth;
+        }
         if (cellPtr->width > colPtr->nom) {
             colPtr->nom = cellPtr->width;
+        }
+        /* Override the initial height of the cell if it exceeds the
+         * designated maximum.  */
+        if ((viewPtr->maxRowHeight > 0) && 
+            (cellPtr->height > viewPtr->maxRowHeight)) {
+            cellPtr->height = viewPtr->maxRowHeight;
         }
         if (cellPtr->height > rowPtr->nom) {
             rowPtr->nom = cellPtr->height;
@@ -12052,8 +12083,20 @@ AddCellGeometry(TableView *viewPtr, Cell *cellPtr)
     rowPtr = keyPtr->rowPtr;
     colPtr = keyPtr->colPtr;
     GetCellGeometry(cellPtr);
+    /* Override the initial width of the cell if it exceeds the designated
+     * maximum.  */
+    if ((viewPtr->maxColWidth > 0) && 
+        (cellPtr->width > viewPtr->maxColWidth)) {
+        cellPtr->width = viewPtr->maxColWidth;
+    }
     if (cellPtr->width > colPtr->nom) {
         colPtr->nom = cellPtr->width;
+    }
+    /* Override the initial height of the cell if it exceeds the designated
+     * maximum.  */
+    if ((viewPtr->maxRowHeight > 0) && 
+        (cellPtr->height > viewPtr->maxRowHeight)) {
+        cellPtr->height = viewPtr->maxRowHeight;
     }
     if (cellPtr->height > rowPtr->nom) {
         rowPtr->nom = cellPtr->height;
@@ -12061,7 +12104,7 @@ AddCellGeometry(TableView *viewPtr, Cell *cellPtr)
 }
 
 static void
-AddColumnGeometry(TableView *viewPtr, Column *colPtr)
+AddColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
 {
     if (colPtr->flags & GEOMETRY) {
         if (viewPtr->flags & COLUMN_TITLES) {
@@ -12082,7 +12125,7 @@ AddColumnGeometry(TableView *viewPtr, Column *colPtr)
 }
 
 static void
-AddRowGeometry(TableView *viewPtr, Row *rowPtr)
+AddRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
 {
     if (rowPtr->flags & GEOMETRY) {
         if (viewPtr->flags & ROW_TITLES) {
@@ -12195,7 +12238,7 @@ AddColumnsWhenIdleProc(ClientData clientData)
             
             colPtr = CreateColumn(viewPtr, col, hPtr);
             Blt_SetHashValue(hPtr, colPtr);
-            AddColumnGeometry(viewPtr, colPtr);
+            AddColumnTitleGeometry(viewPtr, colPtr);
             key.colPtr = colPtr;
             for (j = 0; j < viewPtr->numRows; j++) {
                 Cell *cellPtr;
@@ -12307,7 +12350,7 @@ AddRowsWhenIdleProc(ClientData clientData)
             long j;
             
             rowPtr = CreateRow(viewPtr, row, hPtr);
-            AddRowGeometry(viewPtr, rowPtr);
+            AddRowTitleGeometry(viewPtr, rowPtr);
             key.rowPtr = rowPtr;
             for (j = 0; j < viewPtr->numColumns; j++) {
                 Cell *cellPtr;
