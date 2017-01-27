@@ -471,7 +471,7 @@ WinMain(
      * Get our args from the c-runtime. Ignore lpszCmdLine.
      */
 
-#if defined(__CYGWIN__)
+#if defined(__CYGWIN__) || defined(__MINGW32__)
     setargv(&argc, &argv);
 #else
     argc = __argc;
