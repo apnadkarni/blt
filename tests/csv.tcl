@@ -276,11 +276,11 @@ test csv.23 {csv parse -file} {
 	    A,B,C,D
 	    1,2,3
 	}
-	set f [open "/tmp/tmpdata.csv" "w"]
+	set f [open "tmpdata.csv" "w"]
 	puts $f $tmpdata
 	close $f
-	set data [blt::csv parse -file /tmp/tmpdata.csv]
-	file delete -force /tmp/tmpdata.csv
+	set data [blt::csv parse -file tmpdata.csv]
+	file delete -force tmpdata.csv
 	set data
     } msg] $msg
 } {0 {{a b c d e f} {1 2 3 4 5} {A B C D} {1 2 3}}}
@@ -293,11 +293,11 @@ test csv.24 {csv parse -file -data} {
 	    A,B,C,D
 	    1,2,3
 	}
-	set f [open "/tmp/tmpdata.csv" "w"]
+	set f [open "tmpdata.csv" "w"]
 	puts $f $tmpdata
 	close $f
-	set data [blt::csv parse -file /tmp/tmpdata.csv -data $tmpdata]
-	file delete -force /tmp/tmpdata.csv
+	set data [blt::csv parse -file tmpdata.csv -data $tmpdata]
+	file delete -force tmpdata.csv
 	set data
     } msg] $msg
 } {1 {can't set both -file and -data switches.}}

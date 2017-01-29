@@ -10,7 +10,13 @@ if [file exists ../library] {
     set blt_library ../library
 }
 
-#set VERBOSE 1
+set VERBOSE 1
+test bgexec.39 { redirect input from literal } {
+    list [catch {
+	blt::bgexec myVar $tclsh files/cat.tcl << "test me"
+    } msg] $msg
+} {0 {test me}}
+exit 0
 
 test bgexec.1 {set up file channel } {
     list [catch {

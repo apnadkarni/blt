@@ -3300,7 +3300,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             Blt_DateToSeconds(datePtr, &seconds);
 #if SIZEOF_LONG == 4
 #if defined(__MINGW32__) || defined(__CYGWIN__)
-            numBytes = sprintf(bp, "%I64d", (int32_t)seconds);
+            numBytes = sprintf(bp, "%I64d", (int64_t)seconds);
 #else 
             numBytes = sprintf(bp, "%lld", (int64_t)seconds);
 #endif  /* MINGW32 || CYGWIN */

@@ -2073,7 +2073,9 @@ Blt_CreatePipeline(
                 goto error;
             }
             in.mustClose = TRUE;
+#ifdef notdef
             *inPipePtr = (int)in.file;
+#endif
         } else if (inPipePtr != NULL) {
             /*
              * The input for the first process in the pipeline is to
