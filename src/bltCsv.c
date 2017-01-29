@@ -412,23 +412,12 @@ ParseCsv(Tcl_Interp *interp, Tcl_Obj *listObjPtr, ImportArgs *importPtr)
     return result;
 }
 
-static int charCounts[10];
-
-static int
-CompareCharCounts(const void *a, const void *b)
-{
-    int i1, i2;
-
-    i1 = *(int *)a;
-    i2 = *(int *)b;
-    return (charCounts[i2] - charCounts[i1]);
-}
 
 static int
 GuessSeparator(Tcl_Interp *interp, int maxRows, ImportArgs *importPtr,
                Tcl_Obj *listObjPtr)
 {
-    int sepIndices[10];
+    int charCounts[10];
     int i, numSeparators, numRows;
     off_t pos;
     const char defSepTokens[] = { ",\t|;"};
@@ -449,7 +438,6 @@ GuessSeparator(Tcl_Interp *interp, int maxRows, ImportArgs *importPtr,
     }
     for (i = 0; i < numSeparators; i++) {
         charCounts[i] = 0;
-        sepIndices[i] = i;
     }
     numRows = 0;
     for (;;) {
@@ -485,17 +473,26 @@ GuessSeparator(Tcl_Interp *interp, int maxRows, ImportArgs *importPtr,
         importPtr->next = importPtr->buffer;
         importPtr->bytesLeft = importPtr->numBytes;
     }
-    qsort(sepIndices, numSeparators, sizeof(int), CompareCharCounts);
-    importPtr->separatorChar = sepTokens[sepIndices[0]];
+    {
+	int maxCount;
+
+        maxCount = -1;
+        for (i = 0; i < numSeparators; i++) {
+            if (maxCount < charCounts[i]) {
+	        maxCount = charCounts[i];
+                importPtr->separatorChar = sepTokens[i];
+            }
+        }
+    }
     if (listObjPtr != NULL) {
         for (i = 0; i < numSeparators; i++) {
             Tcl_Obj *objPtr;
             char string[3];
             
-            sprintf(string, "%c", sepTokens[sepIndices[i]]);
+            sprintf(string, "%c", sepTokens[i]);
             objPtr = Tcl_NewStringObj(string, -1);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-            objPtr = Tcl_NewIntObj(charCounts[sepIndices[i]]);
+            objPtr = Tcl_NewIntObj(charCounts[i]);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
     }

@@ -4,6 +4,8 @@ if {[info procs test] != "test"} {
     source defs
 }
 
+set tclsh tclsh
+
 if [file exists ../library] {
     set blt_library ../library
 }
@@ -25,7 +27,7 @@ test bgexec.3 {bgexec var (no args) } {
 } {1 {wrong # args: should be "blt::bgexec varName ?options? command ?arg...?"}}
 
 test bgexec.4 {bgexec var tclsh files/null.tcl} {
-    list [catch {blt::bgexec myVar tclsh files/null.tcl} msg] $msg
+    list [catch {blt::bgexec myVar $tclsh files/null.tcl} msg] $msg
 } {0 {}}
 
 test bgexec.5 {bgexec var -help } {
@@ -187,77 +189,103 @@ test bgexec.33 { badCmd } {
 #	Standard tests for all platforms
 ########################################################################
 
-test bgexec.34 { redirect input from file } {
+test bgexec.34 { null } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl < files/null.tcl
+	blt::bgexec myVar $tclsh files/null.tcl
+    } msg] $msg
+} {0 {}}
+
+test bgexec.35 { stderr } {
+    list [catch {
+	blt::bgexec myVar $tclsh files/stderr.tcl
+    } msg] $msg
+} {0 {}}
+
+test bgexec.36 { stderr with collection } {
+    list [catch {
+	set myErr {}
+	blt::bgexec myVar -errorvariable myErr $tclsh files/stderr.tcl
+        set msg $myErr
+    } msg] $msg
+} {0 {This is stderr}}
+
+test bgexec.37 { stdout } {
+    list [catch {
+	blt::bgexec myVar $tclsh files/stdout.tcl
+    } msg] $msg
+} {0 {This is stdout}}
+
+test bgexec.38 { redirect input from file } {
+    list [catch {
+	blt::bgexec myVar $tclsh files/cat.tcl < files/null.tcl
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.35 { redirect input from literal } {
+test bgexec.39 { redirect input from literal } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl << "test me"
+	blt::bgexec myVar $tclsh files/cat.tcl << "test me"
     } msg] $msg
 } {0 {test me}}
 
-test bgexec.36 { redirect input from channel } {
+test bgexec.40 { redirect input from channel } {
     list [catch {
 	seek $file 0
-	blt::bgexec myVar tclsh files/cat.tcl <@ $file
+	blt::bgexec myVar $tclsh files/cat.tcl <@ $file
     } msg] $msg
 } {0 {exit 0}}
 
 
-test bgexec.37 { bad redirect syntax is considered arg } {
+test bgexec.41 { bad redirect syntax is considered arg } {
     list [catch {
 	seek $file 0
-	blt::bgexec myVar tclsh files/cat.tcl @< $file
+	blt::bgexec myVar $tclsh files/cat.tcl @< $file
     } msg] $msg
 } {1 {child process exited abnormally}}
 
-test bgexec.38 { -keepnewline yes } {
+test bgexec.42 { -keepnewline yes } {
     list [catch {
 	blt::bgexec myVar \
 	    -keepnewline yes  \
-	    tclsh files/cat.tcl < files/null.tcl
+	    $tclsh files/cat.tcl < files/null.tcl
     } msg] $msg
 } {0 {exit 0
 }}
 
-test bgexec.39 { -keepnewline yes } {
+test bgexec.43 { -keepnewline yes } {
     list [catch {
 	blt::bgexec myVar \
 	    -keepnewline yes \
-	    tclsh files/cat.tcl < files/null.tcl
+	    $tclsh files/cat.tcl < files/null.tcl
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {exit 0\n}}
 
-test bgexec.40 { collect stderr w/ -errorvariable } {
+test bgexec.44 { collect stderr w/ -errorvariable } {
     list [catch {
 	set myErr {}
-	blt::bgexec myVar -errorvariable myErr tclsh files/stderr.tcl
+	blt::bgexec myVar -errorvariable myErr $tclsh files/stderr.tcl
 	set myErr
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.41 { collect stderr w/ -errorvariable -keepnewline } {
+test bgexec.45 { collect stderr w/ -errorvariable -keepnewline } {
     list [catch {
 	set myErr {}
 	blt::bgexec myVar -errorvariable myErr -keepnewline yes \
-	    tclsh files/stderr.tcl
+	    $tclsh files/stderr.tcl
 	set myErr
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\n}}
 
-test bgexec.42 { collect stdout w/ -outputvariable } {
+test bgexec.46 { collect stdout w/ -outputvariable } {
     list [catch {
 	set myOut {}
-	blt::bgexec myVar -outputvariable myOut tclsh files/stdout.tcl
+	blt::bgexec myVar -outputvariable myOut $tclsh files/stdout.tcl
 	set myOut
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stdout}}
 
 
-test bgexec.43 { collect stdout /w -updatevariable } {
+test bgexec.47 { collect stdout /w -updatevariable } {
     list [catch {
 	set myOut {}
 	trace variable myUpdateVar w CollectStdout
@@ -266,139 +294,139 @@ test bgexec.43 { collect stdout /w -updatevariable } {
 	    append myOut $myUpdateVar
 	    set myUpdateVar {}
 	}
-	blt::bgexec myVar -updatevariable myUpdateVar tclsh files/stdout.tcl
+	blt::bgexec myVar -updatevariable myUpdateVar $tclsh files/stdout.tcl
 	set myOut
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.44 { collect stdout (command result) } {
+test bgexec.48 { collect stdout (command result) } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl
+	blt::bgexec myVar $tclsh files/stdout.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.45 { pipe output } {
+test bgexec.49 { pipe output } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl | tclsh files/cat.tcl
+	blt::bgexec myVar $tclsh files/stdout.tcl | $tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.46 { command returns exit code 0 } {
+test bgexec.50 { command returns exit code 0 } {
     set code [catch {
-	blt::bgexec myVar tclsh files/exitcode.tcl 0
+	blt::bgexec myVar $tclsh files/exitcode.tcl 0
     } msg]
     list $code [lindex $myVar 2]
 } {0 0}
 
-test bgexec.47 { command returns exit code 1 } {
+test bgexec.51 { command returns exit code 1 } {
     set code [catch {
-	blt::bgexec myVar tclsh files/exitcode.tcl 1
+	blt::bgexec myVar $tclsh files/exitcode.tcl 1
     } msg]
     list $code [lindex $myVar 2]
 } {1 1}
 
-test bgexec.48 { command returns exit code 100 } {
+test bgexec.52 { command returns exit code 100 } {
     set code [catch {
-	blt::bgexec myVar tclsh files/exitcode.tcl 100
+	blt::bgexec myVar $tclsh files/exitcode.tcl 100
     } msg]
     list $code [lindex $myVar 2]
 } {1 100}
 
-test bgexec.49 { command returns exit code -1 } {
+test bgexec.53 { command returns exit code -1 } {
     set code [catch {
-	blt::bgexec myVar tclsh files/exitcode.tcl -1
+	blt::bgexec myVar $tclsh files/exitcode.tcl -1
     } msg]
     list $code [lindex $myVar 2]
 } {1 255}
 
-test bgexec.50 { multiple pipes } {
+test bgexec.54 { multiple pipes } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl | tclsh files/cat.tcl | tclsh files/cat.tcl 
+	blt::bgexec myVar $tclsh files/stdout.tcl | $tclsh files/cat.tcl | $tclsh files/cat.tcl 
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.51 { -ignoreexitcode yes (exit code 1) } {
+test bgexec.55 { -ignoreexitcode yes (exit code 1) } {
     set code [catch {
 	blt::bgexec myVar -ignoreexitcode yes \
-	    tclsh files/exitcode.tcl 1
+	    $tclsh files/exitcode.tcl 1
     } msg]
     list $code [lindex $myVar 2]
 } {0 1}
 
-test bgexec.52 { -ignoreexitcode yes (exit code 0) } {
+test bgexec.56 { -ignoreexitcode yes (exit code 0) } {
     set code [catch {
 	blt::bgexec myVar -ignoreexitcode yes \
-	    tclsh files/exitcode.tcl 0
+	    $tclsh files/exitcode.tcl 0
     } msg]
     list $code [lindex $myVar 2]
 } {0 0}
 
-test bgexec.53 { -ignoreexitcode no (exit code 100) } {
+test bgexec.57 { -ignoreexitcode no (exit code 100) } {
     set code [catch {
 	blt::bgexec myVar -ignoreexitcode no \
-	    tclsh files/exitcode.tcl 100
+	    $tclsh files/exitcode.tcl 100
     } msg]
     list $code [lindex $myVar 2]
 } {1 100}
 
-test bgexec.54 { -environ "MYVAR myValue" } {
+test bgexec.58 { -environ "MYVAR myValue" } {
     list [catch {
 	blt::bgexec myVar -environ "MYVAR myValue" \
-	    tclsh files/printenv.tcl MYVAR
+	    $tclsh files/printenv.tcl MYVAR
     } msg] $msg
 } {0 {MYVAR myValue}}
 
-test bgexec.55 { -environ "" } {
+test bgexec.59 { -environ "" } {
     list [catch {
 	blt::bgexec myVar -environ "" \
-	    tclsh files/printenv.tcl MYVAR
+	    $tclsh files/printenv.tcl MYVAR
     } msg] $msg
 } {0 {}}
 
-test bgexec.56 { -environ "PATH myPath" } {
+test bgexec.60 { -environ "PATH myPath" } {
     list [catch {
 	blt::bgexec myVar -environ "PATH myPath" \
-	    tclsh files/printenv.tcl PATH
+	    $tclsh files/printenv.tcl PATH
     } msg] $msg
 } {0 {PATH myPath}}
 
-test bgexec.57 { -echo error (see on screen) } {
+test bgexec.61 { -echo error (see on screen) } {
     list [catch {
-	blt::bgexec myVar -echo error tclsh files/both.tcl
+	blt::bgexec myVar -echo error $tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.58 { -echo output (see on screen) } {
+test bgexec.62 { -echo output (see on screen) } {
     list [catch {
-	blt::bgexec myVar -echo output tclsh files/both.tcl
+	blt::bgexec myVar -echo output $tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.59 { -echo both (see on screen) } {
+test bgexec.63 { -echo both (see on screen) } {
     list [catch {
-	blt::bgexec myVar -echo both tclsh files/both.tcl
+	blt::bgexec myVar -echo both $tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.60 { -echo none } {
+test bgexec.64 { -echo none } {
     list [catch {
-	blt::bgexec myVar -echo none tclsh files/both.tcl
+	blt::bgexec myVar -echo none $tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.61 { collect stdout w/ -onoutput } {
+test bgexec.65 { collect stdout w/ -onoutput } {
     list [catch {
 	set myOut {}
 	proc CollectStdout { data } {
 	    global myOut
 	    append myOut $data
 	}
-	blt::bgexec myVar -onoutput CollectStdout tclsh files/stdout.tcl
+	blt::bgexec myVar -onoutput CollectStdout $tclsh files/stdout.tcl
 	set myOut
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.62 { collect stdout w/ -onoutput -keepnewline } {
+test bgexec.66 { collect stdout w/ -onoutput -keepnewline } {
     list [catch {
 	set myOut {}
 	proc CollectStdout { data } {
@@ -408,24 +436,24 @@ test bgexec.62 { collect stdout w/ -onoutput -keepnewline } {
 	blt::bgexec myVar\
 	    -keepnewline yes \
 	    -onoutput CollectStdout \
-	    tclsh files/stdout.tcl
+	    $tclsh files/stdout.tcl
 	set myOut
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stdout\n}}
 
-test bgexec.63 { collect stderr w/ -onerror } {
+test bgexec.67 { collect stderr w/ -onerror } {
     list [catch {
 	set myErr {}
 	proc CollectStderr { data } {
 	    global myErr
 	    append myErr $data
 	}
-	blt::bgexec myVar -onerror CollectStderr tclsh files/stderr.tcl
+	blt::bgexec myVar -onerror CollectStderr $tclsh files/stderr.tcl
 	set myErr
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.64 { collect stderr w/ -onerror -keepnewline } {
+test bgexec.68 { collect stderr w/ -onerror -keepnewline } {
     list [catch {
 	set myErr {}
 	proc CollectStderr { data } {
@@ -435,498 +463,498 @@ test bgexec.64 { collect stderr w/ -onerror -keepnewline } {
 	blt::bgexec myVar \
 	    -onerror CollectStderr \
 	    -keepnewline yes \
-	    tclsh files/stderr.tcl
+	    $tclsh files/stderr.tcl
 	set myErr
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\n}}
 
-test bgexec.65 { pipe both stderr and stdout w/ |&  } {
+test bgexec.69 { pipe both stderr and stdout w/ |&  } {
     list [catch {
 	blt::bgexec myVar \
-	    tclsh files/both.tcl |& tclsh files/cat.tcl
+	    $tclsh files/both.tcl |& $tclsh files/cat.tcl
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\nThis is stdout}}
 
-test bgexec.66 { pipe just stderr w/ |&  } {
+test bgexec.70 { pipe just stderr w/ |&  } {
     list [catch {
 	blt::bgexec myVar \
-	    tclsh files/stderr.tcl |& tclsh files/cat.tcl
+	    $tclsh files/stderr.tcl |& $tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.67 { pipe just stdout w/ |&  } {
+test bgexec.71 { pipe just stdout w/ |&  } {
     list [catch {
 	blt::bgexec myVar \
-	    tclsh files/stdout.tcl |& tclsh files/cat.tcl
+	    $tclsh files/stdout.tcl |& $tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.68 { redirect input from file } {
+test bgexec.72 { redirect input from file } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl < files/null.tcl
+	blt::bgexec myVar $tclsh files/cat.tcl < files/null.tcl
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.69 { redirect input badFile } {
+test bgexec.73 { redirect input badFile } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl < badFile
+	blt::bgexec myVar $tclsh files/cat.tcl < badFile
     } msg] $msg
 } {1 {can't read file "badFile": no such file or directory}}
 
-test bgexec.70 { multiple input redirections w/ two files } {
+test bgexec.74 { multiple input redirections w/ two files } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl < files/null.tcl < files/null.tcl
+	blt::bgexec myVar $tclsh files/cat.tcl < files/null.tcl < files/null.tcl
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.71 { redirect input w/ missing file } {
+test bgexec.75 { redirect input w/ missing file } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl <
+	blt::bgexec myVar $tclsh files/cat.tcl <
     } msg] $msg
 } {1 {can't specify "<" as last word in command}}
 
-test bgexec.72 { redirect input w/ missing literal } {
+test bgexec.76 { redirect input w/ missing literal } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl <<
+	blt::bgexec myVar $tclsh files/cat.tcl <<
     } msg] $msg
 } {1 {can't specify "<<" as last word in command}}
 
-test bgexec.73 { redirect input w/ missing channel } {
+test bgexec.77 { redirect input w/ missing channel } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl <@
+	blt::bgexec myVar $tclsh files/cat.tcl <@
     } msg] $msg
 } {1 {can't specify "<@" as last word in command}}
 
-test bgexec.74 { multiple input redirections /w literal and file } {
+test bgexec.78 { multiple input redirections /w literal and file } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl < files/null.tcl << "hi"
+	blt::bgexec myVar $tclsh files/cat.tcl < files/null.tcl << "hi"
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.75 { multiple input redirections w/ two literals. } {
+test bgexec.79 { multiple input redirections w/ two literals. } {
     list [catch {
-	blt::bgexec myVar tclsh files/cat.tcl << "hi" << "there"
+	blt::bgexec myVar $tclsh files/cat.tcl << "hi" << "there"
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.76 { multiple input redirections w/ literal and channel } {
+test bgexec.80 { multiple input redirections w/ literal and channel } {
     list [catch {
 	seek $file 0
-	blt::bgexec myVar tclsh files/cat.tcl << "hi" <@ $file
+	blt::bgexec myVar $tclsh files/cat.tcl << "hi" <@ $file
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.77 { redirect input /w channel } {
+test bgexec.81 { redirect input /w channel } {
     list [catch {
 	seek $file 0
-	blt::bgexec myVar tclsh files/cat.tcl <@ $file
+	blt::bgexec myVar $tclsh files/cat.tcl <@ $file
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.78 { redirect input /w channel and pipe } {
+test bgexec.82 { redirect input /w channel and pipe } {
     list [catch {
 	seek $file 0
-	blt::bgexec myVar tclsh files/cat.tcl <@ $file | tclsh files/cat.tcl
+	blt::bgexec myVar $tclsh files/cat.tcl <@ $file | $tclsh files/cat.tcl
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.79 {  redirect input from file w/ no command } {
+test bgexec.83 {  redirect input from file w/ no command } {
     list [catch {
 	blt::bgexec myVar < files/null.tcl
     } msg] $msg
 } {1 {missing command for "<"}}
 
-test bgexec.80 { redirect input from literal w/ no command } {
+test bgexec.84 { redirect input from literal w/ no command } {
     list [catch {
 	blt::bgexec myVar << "hi"
     } msg] $msg
 } {1 {missing command for "<<"}}
 
-test bgexec.81 { redirect input from channel w/ no command } {
+test bgexec.85 { redirect input from channel w/ no command } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar <@ $file
     } msg] $msg
 } {1 {missing command for "<@"}}
 
-test bgexec.82 { pipe w/ no commands } {
+test bgexec.86 { pipe w/ no commands } {
     list [catch {
 	blt::bgexec myVar |
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.83 { pipe w/ no output command } {
+test bgexec.87 { pipe w/ no output command } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl |
+	blt::bgexec myVar $tclsh files/stdout.tcl |
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.84 {  pipe w/ no input command } {
+test bgexec.88 {  pipe w/ no input command } {
     list [catch {
-	blt::bgexec myVar | tclsh files/stdout.tcl
+	blt::bgexec myVar | $tclsh files/stdout.tcl
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.85 { pipe both |& w/ no commands } {
+test bgexec.89 { pipe both |& w/ no commands } {
     list [catch {
 	blt::bgexec myVar |&
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.86 { pipe both |& w/ no output command } {
+test bgexec.90 { pipe both |& w/ no output command } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl |&
+	blt::bgexec myVar $tclsh files/stdout.tcl |&
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.87 { pipe both |& w/ no input command } {
+test bgexec.91 { pipe both |& w/ no input command } {
     list [catch {
-	blt::bgexec myVar |& tclsh files/stdout.tcl
+	blt::bgexec myVar |& $tclsh files/stdout.tcl
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.88 { echo of switches -- } {
+test bgexec.92 { echo of switches -- } {
     list [catch {
-	blt::bgexec myVar -- tclsh files/stdout.tcl
+	blt::bgexec myVar -- $tclsh files/stdout.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.89 { redirect output to no file } {
+test bgexec.93 { redirect output to no file } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl > 
+	blt::bgexec myVar $tclsh files/stdout.tcl > 
     } msg] $msg
 } {1 {can't specify ">" as last word in command}}
 
-test bgexec.90 { redirect output to bad file } {
+test bgexec.94 { redirect output to bad file } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl > badDir/badFile
+	blt::bgexec myVar $tclsh files/stdout.tcl > badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.91 { redirect output to file } {
+test bgexec.95 { redirect output to file } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stdout.tcl > testfile
+	blt::bgexec myVar $tclsh files/stdout.tcl > testfile
 	file size testfile
     } msg] $msg
 } {0 15}
 
-test bgexec.92 { redirect output and append to file } {
+test bgexec.96 { redirect output and append to file } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stdout.tcl > testfile
-	blt::bgexec myVar tclsh files/stdout.tcl >> testfile
+	blt::bgexec myVar $tclsh files/stdout.tcl > testfile
+	blt::bgexec myVar $tclsh files/stdout.tcl >> testfile
 	file size testfile
     } msg] $msg
 } {0 30}
 
-test bgexec.93 { redirect output append to no file } {
+test bgexec.97 { redirect output append to no file } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl >> 
+	blt::bgexec myVar $tclsh files/stdout.tcl >> 
     } msg] $msg
 } {1 {can't specify ">>" as last word in command}}
 
-test bgexec.94 { redirect output append to bad file } {
+test bgexec.98 { redirect output append to bad file } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl >> badDir/badFile
+	blt::bgexec myVar $tclsh files/stdout.tcl >> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.95 { redirect output append to file (file doesn't exist) } {
+test bgexec.99 { redirect output append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stdout.tcl >> testfile
+	blt::bgexec myVar $tclsh files/stdout.tcl >> testfile
 	file size testfile
     } msg] $msg
 } {0 15}
 
-test bgexec.96 { multiple output redirections w/ two files } {
+test bgexec.100 { multiple output redirections w/ two files } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stdout.tcl > testfile > testfile
+	blt::bgexec myVar $tclsh files/stdout.tcl > testfile > testfile
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.97 { multiple output redirections w/ two files } {
+test bgexec.101 { multiple output redirections w/ two files } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stdout.tcl > testfile >> testfile
+	blt::bgexec myVar $tclsh files/stdout.tcl > testfile >> testfile
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.98 { redirect stdout to channel } {
+test bgexec.102 { redirect stdout to channel } {
     list [catch {
 	set f [open testfile "w"]
-	blt::bgexec myVar tclsh files/stdout.tcl >@ $f
+	blt::bgexec myVar $tclsh files/stdout.tcl >@ $f
 	close $f
 	file size testfile
     } msg] $msg
 } {0 15}
 
-test bgexec.99 { redirect stdout to no channel } {
+test bgexec.103 { redirect stdout to no channel } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl >@ 
+	blt::bgexec myVar $tclsh files/stdout.tcl >@ 
     } msg] $msg
 } {1 {can't specify ">@" as last word in command}}
 
-test bgexec.100 { redirect stdout to bad channel } {
+test bgexec.104 { redirect stdout to bad channel } {
     list [catch {
-	blt::bgexec myVar tclsh files/stdout.tcl >@ badChannel
+	blt::bgexec myVar $tclsh files/stdout.tcl >@ badChannel
     } msg] $msg
 } {1 {can not find channel named "badChannel"}}
 
-test bgexec.101 { redirect stdout to file (verify empty string is result) } {
+test bgexec.105 { redirect stdout to file (verify empty string is result) } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stdout.tcl > testfile
+	blt::bgexec myVar $tclsh files/stdout.tcl > testfile
     } msg] $msg
 } {0 {}}
 
-test bgexec.102 { multiple output redirections /w two channels } {
+test bgexec.106 { multiple output redirections /w two channels } {
     list [catch {
 	set f [open testfile "w"]
-	blt::bgexec myVar tclsh files/stdout.tcl >@ $f >@ $f
+	blt::bgexec myVar $tclsh files/stdout.tcl >@ $f >@ $f
 	close $f
 	file size testfile
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.103 { redirect stderr to file } {
+test bgexec.107 { redirect stderr to file } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stderr.tcl 2> testfile
+	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile
 	file size testfile
     } msg] $msg
 } {0 15}
 
-test bgexec.104 { redirect input (literal) and output (file) } {
+test bgexec.108 { redirect input (literal) and output (file) } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/cat.tcl << "testme" > testfile
+	blt::bgexec myVar $tclsh files/cat.tcl << "testme" > testfile
 	file size testfile
     } msg] $msg
 } {0 6}
 
-test bgexec.105 { redirect stderr to no file } {
+test bgexec.109 { redirect stderr to no file } {
     list [catch {
-	blt::bgexec myVar tclsh files/stderr.tcl 2> 
+	blt::bgexec myVar $tclsh files/stderr.tcl 2> 
     } msg] $msg
 } {1 {can't specify "2>" as last word in command}}
 
-test bgexec.106 { redirect stderr to bad file } {
+test bgexec.110 { redirect stderr to bad file } {
     list [catch {
-	blt::bgexec myVar tclsh files/stderr.tcl 2> badDir/badFile
+	blt::bgexec myVar $tclsh files/stderr.tcl 2> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.107 { redirect stderr append to file } {
+test bgexec.111 { redirect stderr append to file } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stderr.tcl 2> testfile
-	blt::bgexec myVar tclsh files/stderr.tcl 2>> testfile
+	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile
+	blt::bgexec myVar $tclsh files/stderr.tcl 2>> testfile
 	file size testfile
     } msg] $msg
 } {0 30}
 
-test bgexec.108 { redirect stderr append to no file } {
+test bgexec.112 { redirect stderr append to no file } {
     list [catch {
-	blt::bgexec myVar tclsh files/stderr.tcl 2>>
+	blt::bgexec myVar $tclsh files/stderr.tcl 2>>
     } msg] $msg
 } {1 {can't specify "2>>" as last word in command}}
 
-test bgexec.109 { redirect stderr append to bad file } {
+test bgexec.113 { redirect stderr append to bad file } {
     list [catch {
-	blt::bgexec myVar tclsh files/stderr.tcl 2>> badDir/badFile
+	blt::bgexec myVar $tclsh files/stderr.tcl 2>> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.110 { redirect stderr append to file (file doesn't exist) } {
+test bgexec.114 { redirect stderr append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stderr.tcl 2>> testfile
+	blt::bgexec myVar $tclsh files/stderr.tcl 2>> testfile
 	file size testfile
     } msg] $msg
 } {0 15}
 
-test bgexec.111 { multiple stderr redirections w/ two files } {
+test bgexec.115 { multiple stderr redirections w/ two files } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stderr.tcl 2> testfile 2> testfile
+	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile 2> testfile
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.112 { multiple stderr redirections w/ two files } {
+test bgexec.116 { multiple stderr redirections w/ two files } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/stderr.tcl 2> testfile 2>> testfile
+	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile 2>> testfile
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.113 { redirect both stderr and stdout to files } {
+test bgexec.117 { redirect both stderr and stdout to files } {
     list [catch {
 	file delete -force testfile1 testfile2
-	blt::bgexec myVar tclsh files/both.tcl 2> testfile1 > testfile2
+	blt::bgexec myVar $tclsh files/both.tcl 2> testfile1 > testfile2
 	expr [file size testfile1] + [file size testfile2]
     } msg] $msg
 } {0 30}
 
-test bgexec.114 { redirect both stderr and stdout append to files } {
+test bgexec.118 { redirect both stderr and stdout append to files } {
     list [catch {
 	file delete -force testfile1 testfile2
-	blt::bgexec myVar tclsh files/both.tcl 2>> testfile1 >> testfile2
+	blt::bgexec myVar $tclsh files/both.tcl 2>> testfile1 >> testfile2
 	expr [file size testfile1] + [file size testfile2]
     } msg] $msg
 } {0 30}
 
-test bgexec.115 { redirect both stderr and stdout to one file } {
+test bgexec.119 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/both.tcl 2> testfile > testfile
+	blt::bgexec myVar $tclsh files/both.tcl 2> testfile > testfile
 	expr [file size testfile]
     } msg] $msg
 } {0 15}
-
-test bgexec.116 { redirect both stderr and stdout appending to one file } {
-    list [catch {
-	file delete -force testfile
-	blt::bgexec myVar tclsh files/both.tcl 2>> testfile >> testfile
-	expr [file size testfile]
-    } msg] $msg
-} {0 30}
-
-test bgexec.117 { redirect both stderr and stdout to one file } {
-    list [catch {
-	file delete -force testfile
-	blt::bgexec myVar tclsh files/both.tcl >& testfile
-	expr [file size testfile]
-    } msg] $msg
-} {0 30}
-
-test bgexec.118 { redirect both stderr and stdout to no file } {
-    list [catch {
-	blt::bgexec myVar tclsh files/both.tcl >& 
-    } msg] $msg
-} {1 {can't specify ">&" as last word in command}}
-
-test bgexec.119 { redirect both stderr and stdout to bad file } {
-    list [catch {
-	blt::bgexec myVar tclsh files/both.tcl >& badDir/badFile
-    } msg] $msg
-} {1 {can't write file "badDir/badFile": no such file or directory}}
 
 test bgexec.120 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar tclsh files/both.tcl >>& testfile
+	blt::bgexec myVar $tclsh files/both.tcl 2>> testfile >> testfile
 	expr [file size testfile]
     } msg] $msg
 } {0 30}
 
-test bgexec.121 { redirect stderr to channel } {
+test bgexec.121 { redirect both stderr and stdout to one file } {
+    list [catch {
+	file delete -force testfile
+	blt::bgexec myVar $tclsh files/both.tcl >& testfile
+	expr [file size testfile]
+    } msg] $msg
+} {0 30}
+
+test bgexec.122 { redirect both stderr and stdout to no file } {
+    list [catch {
+	blt::bgexec myVar $tclsh files/both.tcl >& 
+    } msg] $msg
+} {1 {can't specify ">&" as last word in command}}
+
+test bgexec.123 { redirect both stderr and stdout to bad file } {
+    list [catch {
+	blt::bgexec myVar $tclsh files/both.tcl >& badDir/badFile
+    } msg] $msg
+} {1 {can't write file "badDir/badFile": no such file or directory}}
+
+test bgexec.124 { redirect both stderr and stdout appending to one file } {
+    list [catch {
+	file delete -force testfile
+	blt::bgexec myVar $tclsh files/both.tcl >>& testfile
+	expr [file size testfile]
+    } msg] $msg
+} {0 30}
+
+test bgexec.125 { redirect stderr to channel } {
     list [catch {
 	set f [open testfile "w"]
-	blt::bgexec myVar tclsh files/stderr.tcl 2>@ $f
+	blt::bgexec myVar $tclsh files/stderr.tcl 2>@ $f
 	close $f
 	file size testfile
     } msg] $msg
 } {0 15}
 
-test bgexec.122 { redirect stderr to no channel } {
+test bgexec.126 { redirect stderr to no channel } {
     list [catch {
-	blt::bgexec myVar tclsh files/stderr.tcl 2>@ 
+	blt::bgexec myVar $tclsh files/stderr.tcl 2>@ 
     } msg] $msg
 } {1 {can't specify "2>@" as last word in command}}
 
-test bgexec.123 { redirect stderr to bad channel } {
+test bgexec.127 { redirect stderr to bad channel } {
     list [catch {
-	blt::bgexec myVar tclsh files/stderr.tcl 2>@ badChannel
+	blt::bgexec myVar $tclsh files/stderr.tcl 2>@ badChannel
     } msg] $msg
 } {1 {can not find channel named "badChannel"}}
 
-test bgexec.124 { redirect stderr to file (verify empty string is result) } {
+test bgexec.128 { redirect stderr to file (verify empty string is result) } {
     list [catch {
 	file delete -force testfile
 	set myErr {}
 	blt::bgexec myVar -errorvariable myErr \
-	    tclsh files/stderr.tcl 2> testfile 
+	    $tclsh files/stderr.tcl 2> testfile 
 	set myErr
     } msg] $msg
 } {0 {}}
 
-test bgexec.125 { multiple stderr redirections /w two channels } {
+test bgexec.129 { multiple stderr redirections /w two channels } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
-	blt::bgexec myVar tclsh files/stdout.tcl 2>@ $f 2>@ $f
+	blt::bgexec myVar $tclsh files/stdout.tcl 2>@ $f 2>@ $f
 	close $f
 	file size testfile
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.126 { redirect both stderr and stdout to one channel } {
+test bgexec.130 { redirect both stderr and stdout to one channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
-	blt::bgexec myVar tclsh files/both.tcl >&@ $f
+	blt::bgexec myVar $tclsh files/both.tcl >&@ $f
 	close $f
 	file size testfile
     } msg] $msg
 } {0 30}
 
-test bgexec.127 { redirect both stderr and stdout to no channel } {
+test bgexec.131 { redirect both stderr and stdout to no channel } {
     list [catch {
-	blt::bgexec myVar tclsh files/both.tcl >&@ 
+	blt::bgexec myVar $tclsh files/both.tcl >&@ 
     } msg] $msg
 } {1 {can't specify ">&@" as last word in command}}
 
-test bgexec.128 { multiple stderr/stdout redirections /w channels } {
+test bgexec.132 { multiple stderr/stdout redirections /w channels } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
-	blt::bgexec myVar tclsh files/both.tcl >&@ $f >&@ $f
+	blt::bgexec myVar $tclsh files/both.tcl >&@ $f >&@ $f
 	close $f
 	file size testfile
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.129 { multiple output redirections /w file and channel } {
+test bgexec.133 { multiple output redirections /w file and channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
-	blt::bgexec myVar tclsh files/both.tcl >&@ $f > testfile
+	blt::bgexec myVar $tclsh files/both.tcl >&@ $f > testfile
 	close $f
 	file size tetfile
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.130 { multiple output redirections /w file and channel } {
+test bgexec.134 { multiple output redirections /w file and channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
-	blt::bgexec myVar tclsh files/both.tcl >&@ $f 2> testfile
+	blt::bgexec myVar $tclsh files/both.tcl >&@ $f 2> testfile
 	close $f
 	file size testfile
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.131 { redirect both stderr and stdout  } {
+test bgexec.135 { redirect both stderr and stdout  } {
     list [catch {
-	blt::bgexec myVar tclsh files/both.tcl 2>@1
+	blt::bgexec myVar $tclsh files/both.tcl 2>@1
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\nThis is stdout}}
 
-test bgexec.132 { redirect both stderr and stdout /w extraArg } {
+test bgexec.136 { redirect both stderr and stdout /w extraArg } {
     list [catch {
-	blt::bgexec myVar tclsh files/both.tcl 2>@1 extraArg
+	blt::bgexec myVar $tclsh files/both.tcl 2>@1 extraArg
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {1 {must specify "2>@1" as last word in command}}
 
-test bgexec.133 { kill by setting status variable } {
+test bgexec.137 { kill by setting status variable } {
     list [catch {
 	set myVar -1
 	set myOut {}
 	blt::bgexec ::myVar -outputvariable myOut \
-	    tclsh files/sleep.tcl 4000 &
+	    $tclsh files/sleep.tcl 4000 &
 	after 100
 	set myVar die
 	set myOut
@@ -942,78 +970,78 @@ if { $tcl_platform(platform) == "windows" } {
 ########################################################################
 
 
-test bgexec.134 { redirect input from file } {
+test bgexec.138 { redirect input from file } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/cat.tcl < files/null.tcl
+	blt::bgexec myVar -session $tclsh files/cat.tcl < files/null.tcl
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.135 { redirect input from literal } {
+test bgexec.139 { redirect input from literal } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/cat.tcl << "test me"
+	blt::bgexec myVar -session $tclsh files/cat.tcl << "test me"
     } msg] $msg
 } {0 {test me}}
 
-test bgexec.136 { redirect input from channel } {
+test bgexec.140 { redirect input from channel } {
     list [catch {
 	seek $file 0
-	blt::bgexec myVar -session tclsh files/cat.tcl <@ $file
+	blt::bgexec myVar -session $tclsh files/cat.tcl <@ $file
     } msg] $msg
 } {0 {exit 0}}
 
 
-test bgexec.137 { bad redirect syntax is considered arg } {
+test bgexec.141 { bad redirect syntax is considered arg } {
     list [catch {
 	seek $file 0
-	blt::bgexec myVar -session tclsh files/cat.tcl @< $file
+	blt::bgexec myVar -session $tclsh files/cat.tcl @< $file
     } msg] $msg
 } {1 {child process exited abnormally}}
 
-test bgexec.138 { -keepnewline yes } {
+test bgexec.142 { -keepnewline yes } {
     list [catch {
 	blt::bgexec myVar -session \
 	    -keepnewline yes  \
-	    tclsh files/cat.tcl < files/null.tcl
+	    $tclsh files/cat.tcl < files/null.tcl
     } msg] $msg
 } {0 {exit 0
 }}
 
-test bgexec.139 { -keepnewline yes } {
+test bgexec.143 { -keepnewline yes } {
     list [catch {
 	blt::bgexec myVar -session \
 	    -keepnewline yes \
-	    tclsh files/cat.tcl < files/null.tcl
+	    $tclsh files/cat.tcl < files/null.tcl
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {exit 0\n}}
 
-test bgexec.140 { collect stderr w/ -errorvariable } {
+test bgexec.144 { collect stderr w/ -errorvariable } {
     list [catch {
 	set myErr {}
-	blt::bgexec myVar -session -errorvariable myErr tclsh files/stderr.tcl
+	blt::bgexec myVar -session -errorvariable myErr $tclsh files/stderr.tcl
 	set myErr
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.141 { collect stderr w/ -errorvariable -keepnewline } {
+test bgexec.145 { collect stderr w/ -errorvariable -keepnewline } {
     list [catch {
 	set myErr {}
 	blt::bgexec myVar -session -errorvariable myErr -keepnewline yes \
-	    tclsh files/stderr.tcl
+	    $tclsh files/stderr.tcl
 	set myErr
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\n}}
 
-test bgexec.142 { collect stdout w/ -outputvariable } {
+test bgexec.146 { collect stdout w/ -outputvariable } {
     list [catch {
 	set myOut {}
 	blt::bgexec myVar -session -outputvariable myOut \
-	    tclsh files/stdout.tcl
+	    $tclsh files/stdout.tcl
 	set myOut
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stdout}}
 
 
-test bgexec.143 { collect stdout /w -updatevariable } {
+test bgexec.147 { collect stdout /w -updatevariable } {
     list [catch {
 	set myOut {}
 	trace variable myUpdateVar w CollectStdout
@@ -1023,128 +1051,128 @@ test bgexec.143 { collect stdout /w -updatevariable } {
 	    set myUpdateVar {}
 	}
 	blt::bgexec myVar -session -updatevariable myUpdateVar \
-	    tclsh files/stdout.tcl
+	    $tclsh files/stdout.tcl
 	set myOut
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.144 { collect stdout (command result) } {
+test bgexec.148 { collect stdout (command result) } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/stdout.tcl
+	blt::bgexec myVar -session $tclsh files/stdout.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.145 { pipe output } {
+test bgexec.149 { pipe output } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/stdout.tcl | tclsh files/cat.tcl
+	blt::bgexec myVar -session $tclsh files/stdout.tcl | $tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.146 { command returns exit code 0 } {
+test bgexec.150 { command returns exit code 0 } {
     set code [catch {
-	blt::bgexec myVar -session tclsh files/exitcode.tcl 0
+	blt::bgexec myVar -session $tclsh files/exitcode.tcl 0
     } msg]
     list $code [lindex $myVar 2]
 } {0 0}
 
-test bgexec.147 { command returns exit code 1 } {
+test bgexec.151 { command returns exit code 1 } {
     set code [catch {
-	blt::bgexec myVar -session tclsh files/exitcode.tcl 1
+	blt::bgexec myVar -session $tclsh files/exitcode.tcl 1
     } msg]
     list $code [lindex $myVar 2]
 } {1 1}
 
-test bgexec.148 { command returns exit code 100 } {
+test bgexec.152 { command returns exit code 100 } {
     set code [catch {
-	blt::bgexec myVar -session tclsh files/exitcode.tcl 100
+	blt::bgexec myVar -session $tclsh files/exitcode.tcl 100
     } msg]
     list $code [lindex $myVar 2]
 } {1 100}
 
-test bgexec.149 { command returns exit code -1 } {
+test bgexec.153 { command returns exit code -1 } {
     set code [catch {
-	blt::bgexec myVar -session tclsh files/exitcode.tcl -1
+	blt::bgexec myVar -session $tclsh files/exitcode.tcl -1
     } msg]
     list $code [lindex $myVar 2]
 } {1 255}
 
-test bgexec.150 { multiple pipes } {
+test bgexec.154 { multiple pipes } {
     list [catch {
 	blt::bgexec myVar -session \
-	    tclsh files/stdout.tcl | tclsh files/cat.tcl | tclsh files/cat.tcl 
+	    $tclsh files/stdout.tcl | $tclsh files/cat.tcl | $tclsh files/cat.tcl 
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.151 { -ignoreexitcode yes (exit code 1) } {
+test bgexec.155 { -ignoreexitcode yes (exit code 1) } {
     set code [catch {
 	blt::bgexec myVar -session -ignoreexitcode yes \
-	    tclsh files/exitcode.tcl 1
+	    $tclsh files/exitcode.tcl 1
     } msg]
     list $code [lindex $myVar 2]
 } {0 1}
 
-test bgexec.152 { -ignoreexitcode yes (exit code 0) } {
+test bgexec.156 { -ignoreexitcode yes (exit code 0) } {
     set code [catch {
 	blt::bgexec myVar -session -ignoreexitcode yes \
-	    tclsh files/exitcode.tcl 0
+	    $tclsh files/exitcode.tcl 0
     } msg]
     list $code [lindex $myVar 2]
 } {0 0}
 
-test bgexec.153 { -ignoreexitcode no (exit code 100) } {
+test bgexec.157 { -ignoreexitcode no (exit code 100) } {
     set code [catch {
 	blt::bgexec myVar -session -ignoreexitcode no \
-	    tclsh files/exitcode.tcl 100
+	    $tclsh files/exitcode.tcl 100
     } msg]
     list $code [lindex $myVar 2]
 } {1 100}
 
-test bgexec.154 { -environ "MYVAR myValue" } {
+test bgexec.158 { -environ "MYVAR myValue" } {
     list [catch {
 	blt::bgexec myVar -session -environ "MYVAR myValue" \
-	    tclsh files/printenv.tcl MYVAR
+	    $tclsh files/printenv.tcl MYVAR
     } msg] $msg
 } {0 {MYVAR myValue}}
 
-test bgexec.155 { -environ "" } {
+test bgexec.159 { -environ "" } {
     list [catch {
 	blt::bgexec myVar -session -environ "" \
-	    tclsh files/printenv.tcl MYVAR
+	    $tclsh files/printenv.tcl MYVAR
     } msg] $msg
 } {0 {}}
 
-test bgexec.156 { -environ "PATH myPath" } {
+test bgexec.160 { -environ "PATH myPath" } {
     list [catch {
 	blt::bgexec myVar -session -environ "PATH myPath" \
-	    tclsh files/printenv.tcl PATH
+	    $tclsh files/printenv.tcl PATH
     } msg] $msg
 } {0 {PATH myPath}}
 
-test bgexec.157 { -echo error (see on screen) } {
+test bgexec.161 { -echo error (see on screen) } {
     list [catch {
-	blt::bgexec myVar -session -echo error tclsh files/both.tcl
+	blt::bgexec myVar -session -echo error $tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.158 { -echo output (see on screen) } {
+test bgexec.162 { -echo output (see on screen) } {
     list [catch {
-	blt::bgexec myVar -session -echo output tclsh files/both.tcl
+	blt::bgexec myVar -session -echo output $tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.159 { -echo both (see on screen) } {
+test bgexec.163 { -echo both (see on screen) } {
     list [catch {
-	blt::bgexec myVar -session -echo both tclsh files/both.tcl
+	blt::bgexec myVar -session -echo both $tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.160 { -echo none } {
+test bgexec.164 { -echo none } {
     list [catch {
-	blt::bgexec myVar -session -echo none tclsh files/both.tcl
+	blt::bgexec myVar -session -echo none $tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.161 { collect stdout w/ -onoutput } {
+test bgexec.165 { collect stdout w/ -onoutput } {
     list [catch {
 	set myOut {}
 	proc CollectStdout { data } {
@@ -1152,12 +1180,12 @@ test bgexec.161 { collect stdout w/ -onoutput } {
 	    append myOut $data
 	}
 	blt::bgexec myVar -session -onoutput CollectStdout \
-	    tclsh files/stdout.tcl
+	    $tclsh files/stdout.tcl
 	set myOut
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.162 { collect stdout w/ -onoutput -keepnewline } {
+test bgexec.166 { collect stdout w/ -onoutput -keepnewline } {
     list [catch {
 	set myOut {}
 	proc CollectStdout { data } {
@@ -1167,12 +1195,12 @@ test bgexec.162 { collect stdout w/ -onoutput -keepnewline } {
 	blt::bgexec myVar -session\
 	    -keepnewline yes \
 	    -onoutput CollectStdout \
-	    tclsh files/stdout.tcl
+	    $tclsh files/stdout.tcl
 	set myOut
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stdout\n}}
 
-test bgexec.163 { collect stderr w/ -onerror } {
+test bgexec.167 { collect stderr w/ -onerror } {
     list [catch {
 	set myErr {}
 	proc CollectStderr { data } {
@@ -1180,12 +1208,12 @@ test bgexec.163 { collect stderr w/ -onerror } {
 	    append myErr $data
 	}
 	blt::bgexec myVar -session -onerror CollectStderr \
-	    tclsh files/stderr.tcl
+	    $tclsh files/stderr.tcl
 	set myErr
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.164 { collect stderr w/ -onerror -keepnewline } {
+test bgexec.168 { collect stderr w/ -onerror -keepnewline } {
     list [catch {
 	set myErr {}
 	proc CollectStderr { data } {
@@ -1193,215 +1221,215 @@ test bgexec.164 { collect stderr w/ -onerror -keepnewline } {
 	    append myErr $data
 	}
 	blt::bgexec myVar -session -onerror CollectStderr -keepnewline yes \
-	    tclsh files/stderr.tcl
+	    $tclsh files/stderr.tcl
 	set myErr
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\n}}
 
-test bgexec.165 { pipe both stderr and stdout w/ |&  } {
+test bgexec.169 { pipe both stderr and stdout w/ |&  } {
     list [catch {
 	blt::bgexec myVar -session \
-	    tclsh files/both.tcl |& tclsh files/cat.tcl
+	    $tclsh files/both.tcl |& $tclsh files/cat.tcl
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\nThis is stdout}}
 
-test bgexec.166 { pipe just stderr w/ |&  } {
+test bgexec.170 { pipe just stderr w/ |&  } {
     list [catch {
 	blt::bgexec myVar -session \
-	    tclsh files/stderr.tcl |& tclsh files/cat.tcl
+	    $tclsh files/stderr.tcl |& $tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.167 { pipe just stdout w/ |&  } {
+test bgexec.171 { pipe just stdout w/ |&  } {
     list [catch {
 	blt::bgexec myVar -session \
-	    tclsh files/stdout.tcl |& tclsh files/cat.tcl
+	    $tclsh files/stdout.tcl |& $tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.168 { redirect input from file } {
+test bgexec.172 { redirect input from file } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/cat.tcl < files/null.tcl
+	blt::bgexec myVar -session $tclsh files/cat.tcl < files/null.tcl
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.169 { redirect input badFile } {
+test bgexec.173 { redirect input badFile } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/cat.tcl < badFile
+	blt::bgexec myVar -session $tclsh files/cat.tcl < badFile
     } msg] $msg
 } {1 {can't read file "badFile": no such file or directory}}
 
-test bgexec.170 { multiple input redirections w/ two files } {
+test bgexec.174 { multiple input redirections w/ two files } {
     list [catch {
 	blt::bgexec myVar -session \
-	    tclsh files/cat.tcl < files/null.tcl < files/null.tcl
+	    $tclsh files/cat.tcl < files/null.tcl < files/null.tcl
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.171 { redirect input w/ missing file } {
+test bgexec.175 { redirect input w/ missing file } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/cat.tcl <
+	blt::bgexec myVar -session $tclsh files/cat.tcl <
     } msg] $msg
 } {1 {can't specify "<" as last word in command}}
 
-test bgexec.172 { redirect input w/ missing literal } {
+test bgexec.176 { redirect input w/ missing literal } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/cat.tcl <<
+	blt::bgexec myVar -session $tclsh files/cat.tcl <<
     } msg] $msg
 } {1 {can't specify "<<" as last word in command}}
 
-test bgexec.173 { redirect input w/ missing channel } {
+test bgexec.177 { redirect input w/ missing channel } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/cat.tcl <@
+	blt::bgexec myVar -session $tclsh files/cat.tcl <@
     } msg] $msg
 } {1 {can't specify "<@" as last word in command}}
 
-test bgexec.174 { multiple input redirections /w literal and file } {
+test bgexec.178 { multiple input redirections /w literal and file } {
     list [catch {
 	blt::bgexec myVar -session \
-	    tclsh files/cat.tcl < files/null.tcl << "hi"
+	    $tclsh files/cat.tcl < files/null.tcl << "hi"
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.175 { multiple input redirections w/ two literals. } {
+test bgexec.179 { multiple input redirections w/ two literals. } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/cat.tcl << "hi" << "there"
+	blt::bgexec myVar -session $tclsh files/cat.tcl << "hi" << "there"
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.176 { multiple input redirections w/ literal and channel } {
-    list [catch {
-	seek $file 0
-	blt::bgexec myVar -session tclsh files/cat.tcl << "hi" <@ $file
-    } msg] $msg
-} {1 {ambigious input redirect.}}
-
-test bgexec.177 { redirect input /w channel } {
+test bgexec.180 { multiple input redirections w/ literal and channel } {
     list [catch {
 	seek $file 0
-	blt::bgexec myVar -session tclsh files/cat.tcl <@ $file
+	blt::bgexec myVar -session $tclsh files/cat.tcl << "hi" <@ $file
+    } msg] $msg
+} {1 {ambigious input redirect.}}
+
+test bgexec.181 { redirect input /w channel } {
+    list [catch {
+	seek $file 0
+	blt::bgexec myVar -session $tclsh files/cat.tcl <@ $file
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.178 { redirect input /w channel and pipe } {
+test bgexec.182 { redirect input /w channel and pipe } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -session \
-	    tclsh files/cat.tcl <@ $file | tclsh files/cat.tcl
+	    $tclsh files/cat.tcl <@ $file | $tclsh files/cat.tcl
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.179 {  redirect input from file w/ no command } {
+test bgexec.183 {  redirect input from file w/ no command } {
     list [catch {
 	blt::bgexec myVar -session < files/null.tcl
     } msg] $msg
 } {1 {missing command for "<"}}
 
-test bgexec.180 { redirect input from literal w/ no command } {
+test bgexec.184 { redirect input from literal w/ no command } {
     list [catch {
 	blt::bgexec myVar -session << "hi"
     } msg] $msg
 } {1 {missing command for "<<"}}
 
-test bgexec.181 { redirect input from channel w/ no command } {
+test bgexec.185 { redirect input from channel w/ no command } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -session <@ $file
     } msg] $msg
 } {1 {missing command for "<@"}}
 
-test bgexec.182 { pipe w/ no commands } {
+test bgexec.186 { pipe w/ no commands } {
     list [catch {
 	blt::bgexec myVar -session |
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.183 { pipe w/ no output command } {
+test bgexec.187 { pipe w/ no output command } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/stdout.tcl |
+	blt::bgexec myVar -session $tclsh files/stdout.tcl |
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.184 {  pipe w/ no input command } {
+test bgexec.188 {  pipe w/ no input command } {
     list [catch {
-	blt::bgexec myVar -session | tclsh files/stdout.tcl
+	blt::bgexec myVar -session | $tclsh files/stdout.tcl
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.185 { pipe both |& w/ no commands } {
+test bgexec.189 { pipe both |& w/ no commands } {
     list [catch {
 	blt::bgexec myVar -session |&
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.186 { pipe both |& w/ no output command } {
+test bgexec.190 { pipe both |& w/ no output command } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/stdout.tcl |&
+	blt::bgexec myVar -session $tclsh files/stdout.tcl |&
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.187 { pipe both |& w/ no input command } {
+test bgexec.191 { pipe both |& w/ no input command } {
     list [catch {
-	blt::bgexec myVar -session |& tclsh files/stdout.tcl
+	blt::bgexec myVar -session |& $tclsh files/stdout.tcl
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.188 { echo of switches -- } {
+test bgexec.192 { echo of switches -- } {
     list [catch {
-	blt::bgexec myVar -session -- tclsh files/stdout.tcl
+	blt::bgexec myVar -session -- $tclsh files/stdout.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.189 { redirect output to no file } {
+test bgexec.193 { redirect output to no file } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/stdout.tcl > 
+	blt::bgexec myVar -session $tclsh files/stdout.tcl > 
     } msg] $msg
 } {1 {can't specify ">" as last word in command}}
 
-test bgexec.190 { redirect output to bad file } {
+test bgexec.194 { redirect output to bad file } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/stdout.tcl > badDir/badFile
+	blt::bgexec myVar -session $tclsh files/stdout.tcl > badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.191 { redirect output to file } {
+test bgexec.195 { redirect output to file } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar -session tclsh files/stdout.tcl > testfile
+	blt::bgexec myVar -session $tclsh files/stdout.tcl > testfile
 	file size testfile
     } msg] $msg
 } {0 15}
 
-test bgexec.192 { redirect output and append to file } {
+test bgexec.196 { redirect output and append to file } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar -session tclsh files/stdout.tcl > testfile
-	blt::bgexec myVar -session tclsh files/stdout.tcl >> testfile
+	blt::bgexec myVar -session $tclsh files/stdout.tcl > testfile
+	blt::bgexec myVar -session $tclsh files/stdout.tcl >> testfile
 	file size testfile
     } msg] $msg
 } {0 30}
 
-test bgexec.193 { redirect output append to no file } {
+test bgexec.197 { redirect output append to no file } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/stdout.tcl >> 
+	blt::bgexec myVar -session $tclsh files/stdout.tcl >> 
     } msg] $msg
 } {1 {can't specify ">>" as last word in command}}
 
-test bgexec.194 { redirect output append to bad file } {
+test bgexec.198 { redirect output append to bad file } {
     list [catch {
-	blt::bgexec myVar -session tclsh files/stdout.tcl >> badDir/badFile
+	blt::bgexec myVar -session $tclsh files/stdout.tcl >> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.195 { redirect output append to file (file doesn't exist) } {
+test bgexec.199 { redirect output append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
-	blt::bgexec myVar -session tclsh files/stdout.tcl >> testfile
+	blt::bgexec myVar -session $tclsh files/stdout.tcl >> testfile
 	file size testfile
     } msg] $msg
 } {0 15}
 
-test bgexec.196 { multiple output redirections w/ two files } {
+test bgexec.200 { multiple output redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
@@ -1409,7 +1437,7 @@ test bgexec.196 { multiple output redirections w/ two files } {
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.197 { multiple output redirections w/ two files } {
+test bgexec.201 { multiple output redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
@@ -1417,7 +1445,7 @@ test bgexec.197 { multiple output redirections w/ two files } {
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.198 { redirect stdout to channel } {
+test bgexec.202 { redirect stdout to channel } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/stdout.tcl >@ $f
@@ -1426,26 +1454,26 @@ test bgexec.198 { redirect stdout to channel } {
     } msg] $msg
 } {0 15}
 
-test bgexec.199 { redirect stdout to no channel } {
+test bgexec.203 { redirect stdout to no channel } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/stdout.tcl >@ 
     } msg] $msg
 } {1 {can't specify ">@" as last word in command}}
 
-test bgexec.200 { redirect stdout to bad channel } {
+test bgexec.204 { redirect stdout to bad channel } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/stdout.tcl >@ badChannel
     } msg] $msg
 } {1 {can not find channel named "badChannel"}}
 
-test bgexec.201 { redirect stdout to file (verify empty string is result) } {
+test bgexec.205 { redirect stdout to file (verify empty string is result) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/stdout.tcl > testfile
     } msg] $msg
 } {0 {}}
 
-test bgexec.202 { multiple output redirections /w two channels } {
+test bgexec.206 { multiple output redirections /w two channels } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/stdout.tcl >@ $f >@ $f
@@ -1454,7 +1482,7 @@ test bgexec.202 { multiple output redirections /w two channels } {
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.203 { redirect stderr to file } {
+test bgexec.207 { redirect stderr to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2> testfile
@@ -1462,7 +1490,7 @@ test bgexec.203 { redirect stderr to file } {
     } msg] $msg
 } {0 15}
 
-test bgexec.204 { redirect input (literal) and output (file) } {
+test bgexec.208 { redirect input (literal) and output (file) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
@@ -1471,20 +1499,20 @@ test bgexec.204 { redirect input (literal) and output (file) } {
     } msg] $msg
 } {0 6}
 
-test bgexec.205 { redirect stderr to no file } {
+test bgexec.209 { redirect stderr to no file } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2> 
     } msg] $msg
 } {1 {can't specify "2>" as last word in command}}
 
-test bgexec.206 { redirect stderr to bad file } {
+test bgexec.210 { redirect stderr to bad file } {
     list [catch {
 	blt::bgexec myVar -session \
 	    tclsh files/stderr.tcl 2> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.207 { redirect stderr append to file } {
+test bgexec.211 { redirect stderr append to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2> testfile
@@ -1493,19 +1521,19 @@ test bgexec.207 { redirect stderr append to file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.208 { redirect stderr append to no file } {
+test bgexec.212 { redirect stderr append to no file } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>>
     } msg] $msg
 } {1 {can't specify "2>>" as last word in command}}
 
-test bgexec.209 { redirect stderr append to bad file } {
+test bgexec.213 { redirect stderr append to bad file } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.210 { redirect stderr append to file (file doesn't exist) } {
+test bgexec.214 { redirect stderr append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>> testfile
@@ -1513,7 +1541,7 @@ test bgexec.210 { redirect stderr append to file (file doesn't exist) } {
     } msg] $msg
 } {0 15}
 
-test bgexec.211 { multiple stderr redirections w/ two files } {
+test bgexec.215 { multiple stderr redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
@@ -1521,7 +1549,7 @@ test bgexec.211 { multiple stderr redirections w/ two files } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.212 { multiple stderr redirections w/ two files } {
+test bgexec.216 { multiple stderr redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
@@ -1529,7 +1557,7 @@ test bgexec.212 { multiple stderr redirections w/ two files } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.213 { redirect both stderr and stdout to files } {
+test bgexec.217 { redirect both stderr and stdout to files } {
     list [catch {
 	file delete -force testfile1 testfile2
 	blt::bgexec myVar -session \
@@ -1538,7 +1566,7 @@ test bgexec.213 { redirect both stderr and stdout to files } {
     } msg] $msg
 } {0 30}
 
-test bgexec.214 { redirect both stderr and stdout append to files } {
+test bgexec.218 { redirect both stderr and stdout append to files } {
     list [catch {
 	file delete -force testfile1 testfile2
 	blt::bgexec myVar -session \
@@ -1547,7 +1575,7 @@ test bgexec.214 { redirect both stderr and stdout append to files } {
     } msg] $msg
 } {0 30}
 
-test bgexec.215 { redirect both stderr and stdout to one file } {
+test bgexec.219 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
@@ -1556,7 +1584,7 @@ test bgexec.215 { redirect both stderr and stdout to one file } {
     } msg] $msg
 } {0 15}
 
-test bgexec.216 { redirect both stderr and stdout appending to one file } {
+test bgexec.220 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
@@ -1565,7 +1593,7 @@ test bgexec.216 { redirect both stderr and stdout appending to one file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.217 { redirect both stderr and stdout to one file } {
+test bgexec.221 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/both.tcl >& testfile
@@ -1573,19 +1601,19 @@ test bgexec.217 { redirect both stderr and stdout to one file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.218 { redirect both stderr and stdout to no file } {
+test bgexec.222 { redirect both stderr and stdout to no file } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/both.tcl >& 
     } msg] $msg
 } {1 {can't specify ">&" as last word in command}}
 
-test bgexec.219 { redirect both stderr and stdout to bad file } {
+test bgexec.223 { redirect both stderr and stdout to bad file } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/both.tcl >& badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.220 { redirect both stderr and stdout appending to one file } {
+test bgexec.224 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/both.tcl >>& testfile
@@ -1593,7 +1621,7 @@ test bgexec.220 { redirect both stderr and stdout appending to one file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.221 { redirect stderr to channel } {
+test bgexec.225 { redirect stderr to channel } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>@ $f
@@ -1602,19 +1630,19 @@ test bgexec.221 { redirect stderr to channel } {
     } msg] $msg
 } {0 15}
 
-test bgexec.222 { redirect stderr to no channel } {
+test bgexec.226 { redirect stderr to no channel } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>@ 
     } msg] $msg
 } {1 {can't specify "2>@" as last word in command}}
 
-test bgexec.223 { redirect stderr to bad channel } {
+test bgexec.227 { redirect stderr to bad channel } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>@ badChannel
     } msg] $msg
 } {1 {can not find channel named "badChannel"}}
 
-test bgexec.224 { redirect stderr to file (verify empty string is result) } {
+test bgexec.228 { redirect stderr to file (verify empty string is result) } {
     list [catch {
 	file delete -force testfile
 	set myErr {}
@@ -1624,7 +1652,7 @@ test bgexec.224 { redirect stderr to file (verify empty string is result) } {
     } msg] $msg
 } {0 {}}
 
-test bgexec.225 { multiple stderr redirections /w two channels } {
+test bgexec.229 { multiple stderr redirections /w two channels } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -1634,7 +1662,7 @@ test bgexec.225 { multiple stderr redirections /w two channels } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.226 { redirect both stderr and stdout to one channel } {
+test bgexec.230 { redirect both stderr and stdout to one channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -1644,13 +1672,13 @@ test bgexec.226 { redirect both stderr and stdout to one channel } {
     } msg] $msg
 } {0 30}
 
-test bgexec.227 { redirect both stderr and stdout to no channel } {
+test bgexec.231 { redirect both stderr and stdout to no channel } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/both.tcl >&@ 
     } msg] $msg
 } {1 {can't specify ">&@" as last word in command}}
 
-test bgexec.228 { multiple stderr/stdout redirections /w channels } {
+test bgexec.232 { multiple stderr/stdout redirections /w channels } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -1660,7 +1688,7 @@ test bgexec.228 { multiple stderr/stdout redirections /w channels } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.229 { multiple output redirections /w file and channel } {
+test bgexec.233 { multiple output redirections /w file and channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -1670,7 +1698,7 @@ test bgexec.229 { multiple output redirections /w file and channel } {
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.230 { multiple output redirections /w file and channel } {
+test bgexec.234 { multiple output redirections /w file and channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -1680,19 +1708,19 @@ test bgexec.230 { multiple output redirections /w file and channel } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.231 { redirect both stderr and stdout  } {
+test bgexec.235 { redirect both stderr and stdout  } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/both.tcl 2>@1
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\nThis is stdout}}
 
-test bgexec.232 { redirect both stderr and stdout /w extraArg } {
+test bgexec.236 { redirect both stderr and stdout /w extraArg } {
     list [catch {
 	blt::bgexec myVar -session tclsh files/both.tcl 2>@1 extraArg
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {1 {must specify "2>@1" as last word in command}}
 
-test bgexec.233 { kill by setting status variable } {
+test bgexec.237 { kill by setting status variable } {
     list [catch {
 	set myVar -1
 	set myOut {}
@@ -1705,7 +1733,7 @@ test bgexec.233 { kill by setting status variable } {
 } {0 {}}
 
 
-test bgexec.234 {bgexec -tty kill with myVar } {
+test bgexec.238 {bgexec -tty kill with myVar } {
     list [catch {
 	set myVar -1
 	set myOut {}
@@ -1717,7 +1745,7 @@ test bgexec.234 {bgexec -tty kill with myVar } {
     } msg] $msg
 } {0 {}}
 
-test bgexec.235 {bgexec -tty kill grandchildren with myVar } {
+test bgexec.239 {bgexec -tty kill grandchildren with myVar } {
     list [catch {
 	set myVar {}
 	set myOut {}
@@ -1733,19 +1761,19 @@ test bgexec.235 {bgexec -tty kill grandchildren with myVar } {
 #	tty tests
 ########################################################################
 
-test bgexec.236 { redirect input from file } {
+test bgexec.240 { redirect input from file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl < files/null.tcl
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.237 { redirect input from literal } {
+test bgexec.241 { redirect input from literal } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl << "test me"
     } msg] $msg
 } {0 {test me}}
 
-test bgexec.238 { redirect input from channel } {
+test bgexec.242 { redirect input from channel } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -tty tclsh files/cat.tcl <@ $file
@@ -1753,14 +1781,14 @@ test bgexec.238 { redirect input from channel } {
 } {0 {exit 0}}
 
 
-test bgexec.239 { bad redirect syntax is considered arg } {
+test bgexec.243 { bad redirect syntax is considered arg } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -tty tclsh files/cat.tcl @< $file
     } msg] $msg
 } {1 {child process exited abnormally}}
 
-test bgexec.240 { -keepnewline yes } {
+test bgexec.244 { -keepnewline yes } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    -keepnewline yes  \
@@ -1769,7 +1797,7 @@ test bgexec.240 { -keepnewline yes } {
 } {0 {exit 0
 }}
 
-test bgexec.241 { -keepnewline yes } {
+test bgexec.245 { -keepnewline yes } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    -keepnewline yes \
@@ -1777,7 +1805,7 @@ test bgexec.241 { -keepnewline yes } {
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {exit 0\n}}
 
-test bgexec.242 { collect stderr w/ -errorvariable } {
+test bgexec.246 { collect stderr w/ -errorvariable } {
     list [catch {
 	set myErr {}
 	blt::bgexec myVar -tty -errorvariable myErr tclsh files/stderr.tcl
@@ -1785,7 +1813,7 @@ test bgexec.242 { collect stderr w/ -errorvariable } {
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.243 { collect stderr w/ -errorvariable -keepnewline } {
+test bgexec.247 { collect stderr w/ -errorvariable -keepnewline } {
     list [catch {
 	set myErr {}
 	blt::bgexec myVar -tty -errorvariable myErr -keepnewline yes \
@@ -1794,7 +1822,7 @@ test bgexec.243 { collect stderr w/ -errorvariable -keepnewline } {
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\n}}
 
-test bgexec.244 { collect stdout w/ -outputvariable } {
+test bgexec.248 { collect stdout w/ -outputvariable } {
     list [catch {
 	set myOut {}
 	blt::bgexec myVar -tty -outputvariable myOut \
@@ -1804,7 +1832,7 @@ test bgexec.244 { collect stdout w/ -outputvariable } {
 } {0 {This is stdout}}
 
 
-test bgexec.245 { collect stdout /w -updatevariable } {
+test bgexec.249 { collect stdout /w -updatevariable } {
     list [catch {
 	set myOut {}
 	trace variable myUpdateVar w CollectStdout
@@ -1819,54 +1847,54 @@ test bgexec.245 { collect stdout /w -updatevariable } {
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.246 { collect stdout (command result) } {
+test bgexec.250 { collect stdout (command result) } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.247 { pipe output } {
+test bgexec.251 { pipe output } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl | tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.248 { command returns exit code 0 } {
+test bgexec.252 { command returns exit code 0 } {
     set code [catch {
 	blt::bgexec myVar -tty tclsh files/exitcode.tcl 0
     } msg]
     list $code [lindex $myVar 2]
 } {0 0}
 
-test bgexec.249 { command returns exit code 1 } {
+test bgexec.253 { command returns exit code 1 } {
     set code [catch {
 	blt::bgexec myVar -tty tclsh files/exitcode.tcl 1
     } msg]
     list $code [lindex $myVar 2]
 } {1 1}
 
-test bgexec.250 { command returns exit code 100 } {
+test bgexec.254 { command returns exit code 100 } {
     set code [catch {
 	blt::bgexec myVar -tty tclsh files/exitcode.tcl 100
     } msg]
     list $code [lindex $myVar 2]
 } {1 100}
 
-test bgexec.251 { command returns exit code -1 } {
+test bgexec.255 { command returns exit code -1 } {
     set code [catch {
 	blt::bgexec myVar -tty tclsh files/exitcode.tcl -1
     } msg]
     list $code [lindex $myVar 2]
 } {1 255}
 
-test bgexec.252 { multiple pipes } {
+test bgexec.256 { multiple pipes } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    tclsh files/stdout.tcl | tclsh files/cat.tcl | tclsh files/cat.tcl 
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.253 { -ignoreexitcode yes (exit code 1) } {
+test bgexec.257 { -ignoreexitcode yes (exit code 1) } {
     set code [catch {
 	blt::bgexec myVar -tty -ignoreexitcode yes \
 	    tclsh files/exitcode.tcl 1
@@ -1874,7 +1902,7 @@ test bgexec.253 { -ignoreexitcode yes (exit code 1) } {
     list $code [lindex $myVar 2]
 } {0 1}
 
-test bgexec.254 { -ignoreexitcode yes (exit code 0) } {
+test bgexec.258 { -ignoreexitcode yes (exit code 0) } {
     set code [catch {
 	blt::bgexec myVar -tty -ignoreexitcode yes \
 	    tclsh files/exitcode.tcl 0
@@ -1882,7 +1910,7 @@ test bgexec.254 { -ignoreexitcode yes (exit code 0) } {
     list $code [lindex $myVar 2]
 } {0 0}
 
-test bgexec.255 { -ignoreexitcode no (exit code 100) } {
+test bgexec.259 { -ignoreexitcode no (exit code 100) } {
     set code [catch {
 	blt::bgexec myVar -tty -ignoreexitcode no \
 	    tclsh files/exitcode.tcl 100
@@ -1890,52 +1918,52 @@ test bgexec.255 { -ignoreexitcode no (exit code 100) } {
     list $code [lindex $myVar 2]
 } {1 100}
 
-test bgexec.256 { -environ "MYVAR myValue" } {
+test bgexec.260 { -environ "MYVAR myValue" } {
     list [catch {
 	blt::bgexec myVar -tty -environ "MYVAR myValue" \
 	    tclsh files/printenv.tcl MYVAR
     } msg] $msg
 } {0 {MYVAR myValue}}
 
-test bgexec.257 { -environ "" } {
+test bgexec.261 { -environ "" } {
     list [catch {
 	blt::bgexec myVar -tty -environ "" \
 	    tclsh files/printenv.tcl MYVAR
     } msg] $msg
 } {0 {}}
 
-test bgexec.258 { -environ "PATH myPath" } {
+test bgexec.262 { -environ "PATH myPath" } {
     list [catch {
 	blt::bgexec myVar -tty -environ "PATH myPath" \
 	    tclsh files/printenv.tcl PATH
     } msg] $msg
 } {0 {PATH myPath}}
 
-test bgexec.259 { -echo error (see on screen) } {
+test bgexec.263 { -echo error (see on screen) } {
     list [catch {
 	blt::bgexec myVar -tty -echo error tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.260 { -echo output (see on screen) } {
+test bgexec.264 { -echo output (see on screen) } {
     list [catch {
 	blt::bgexec myVar -tty -echo output tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.261 { -echo both (see on screen) } {
+test bgexec.265 { -echo both (see on screen) } {
     list [catch {
 	blt::bgexec myVar -tty -echo both tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.262 { -echo none } {
+test bgexec.266 { -echo none } {
     list [catch {
 	blt::bgexec myVar -tty -echo none tclsh files/both.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.263 { collect stdout w/ -onoutput } {
+test bgexec.267 { collect stdout w/ -onoutput } {
     list [catch {
 	set myOut {}
 	proc CollectStdout { data } {
@@ -1948,7 +1976,7 @@ test bgexec.263 { collect stdout w/ -onoutput } {
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.264 { collect stdout w/ -onoutput -keepnewline } {
+test bgexec.268 { collect stdout w/ -onoutput -keepnewline } {
     list [catch {
 	set myOut {}
 	proc CollectStdout { data } {
@@ -1963,7 +1991,7 @@ test bgexec.264 { collect stdout w/ -onoutput -keepnewline } {
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stdout\n}}
 
-test bgexec.265 { collect stderr w/ -onerror } {
+test bgexec.269 { collect stderr w/ -onerror } {
     list [catch {
 	set myErr {}
 	proc CollectStderr { data } {
@@ -1976,7 +2004,7 @@ test bgexec.265 { collect stderr w/ -onerror } {
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.266 { collect stderr w/ -onerror -keepnewline } {
+test bgexec.270 { collect stderr w/ -onerror -keepnewline } {
     list [catch {
 	set myErr {}
 	proc CollectStderr { data } {
@@ -1989,92 +2017,92 @@ test bgexec.266 { collect stderr w/ -onerror -keepnewline } {
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\n}}
 
-test bgexec.267 { pipe both stderr and stdout w/ |&  } {
+test bgexec.271 { pipe both stderr and stdout w/ |&  } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    tclsh files/both.tcl |& tclsh files/cat.tcl
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\nThis is stdout}}
 
-test bgexec.268 { pipe just stderr w/ |&  } {
+test bgexec.272 { pipe just stderr w/ |&  } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    tclsh files/stderr.tcl |& tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stderr}}
 
-test bgexec.269 { pipe just stdout w/ |&  } {
+test bgexec.273 { pipe just stdout w/ |&  } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    tclsh files/stdout.tcl |& tclsh files/cat.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.270 { redirect input from file } {
+test bgexec.274 { redirect input from file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl < files/null.tcl
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.271 { redirect input badFile } {
+test bgexec.275 { redirect input badFile } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl < badFile
     } msg] $msg
 } {1 {can't read file "badFile": no such file or directory}}
 
-test bgexec.272 { multiple input redirections w/ two files } {
+test bgexec.276 { multiple input redirections w/ two files } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    tclsh files/cat.tcl < files/null.tcl < files/null.tcl
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.273 { redirect input w/ missing file } {
+test bgexec.277 { redirect input w/ missing file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl <
     } msg] $msg
 } {1 {can't specify "<" as last word in command}}
 
-test bgexec.274 { redirect input w/ missing literal } {
+test bgexec.278 { redirect input w/ missing literal } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl <<
     } msg] $msg
 } {1 {can't specify "<<" as last word in command}}
 
-test bgexec.275 { redirect input w/ missing channel } {
+test bgexec.279 { redirect input w/ missing channel } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl <@
     } msg] $msg
 } {1 {can't specify "<@" as last word in command}}
 
-test bgexec.276 { multiple input redirections /w literal and file } {
+test bgexec.280 { multiple input redirections /w literal and file } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    tclsh files/cat.tcl < files/null.tcl << "hi"
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.277 { multiple input redirections w/ two literals. } {
+test bgexec.281 { multiple input redirections w/ two literals. } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl << "hi" << "there"
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.278 { multiple input redirections w/ literal and channel } {
+test bgexec.282 { multiple input redirections w/ literal and channel } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -tty tclsh files/cat.tcl << "hi" <@ $file
     } msg] $msg
 } {1 {ambigious input redirect.}}
 
-test bgexec.279 { redirect input /w channel } {
+test bgexec.283 { redirect input /w channel } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -tty tclsh files/cat.tcl <@ $file
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.280 { redirect input /w channel and pipe } {
+test bgexec.284 { redirect input /w channel and pipe } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -tty \
@@ -2082,80 +2110,80 @@ test bgexec.280 { redirect input /w channel and pipe } {
     } msg] $msg
 } {0 {exit 0}}
 
-test bgexec.281 {  redirect input from file w/ no command } {
+test bgexec.285 {  redirect input from file w/ no command } {
     list [catch {
 	blt::bgexec myVar -tty < files/null.tcl
     } msg] $msg
 } {1 {missing command for "<"}}
 
-test bgexec.282 { redirect input from literal w/ no command } {
+test bgexec.286 { redirect input from literal w/ no command } {
     list [catch {
 	blt::bgexec myVar -tty << "hi"
     } msg] $msg
 } {1 {missing command for "<<"}}
 
-test bgexec.283 { redirect input from channel w/ no command } {
+test bgexec.287 { redirect input from channel w/ no command } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -tty <@ $file
     } msg] $msg
 } {1 {missing command for "<@"}}
 
-test bgexec.284 { pipe w/ no commands } {
+test bgexec.288 { pipe w/ no commands } {
     list [catch {
 	blt::bgexec myVar -tty |
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.285 { pipe w/ no output command } {
+test bgexec.289 { pipe w/ no output command } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl |
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.286 {  pipe w/ no input command } {
+test bgexec.290 {  pipe w/ no input command } {
     list [catch {
 	blt::bgexec myVar -tty | tclsh files/stdout.tcl
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.287 { pipe both |& w/ no commands } {
+test bgexec.291 { pipe both |& w/ no commands } {
     list [catch {
 	blt::bgexec myVar -tty |&
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.288 { pipe both |& w/ no output command } {
+test bgexec.292 { pipe both |& w/ no output command } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl |&
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.289 { pipe both |& w/ no input command } {
+test bgexec.293 { pipe both |& w/ no input command } {
     list [catch {
 	blt::bgexec myVar -tty |& tclsh files/stdout.tcl
     } msg] $msg
 } {1 {illegal use of | or |& in command}}
 
-test bgexec.290 { echo of switches -- } {
+test bgexec.294 { echo of switches -- } {
     list [catch {
 	blt::bgexec myVar -tty -- tclsh files/stdout.tcl
     } msg] $msg
 } {0 {This is stdout}}
 
-test bgexec.291 { redirect output to no file } {
+test bgexec.295 { redirect output to no file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl > 
     } msg] $msg
 } {1 {can't specify ">" as last word in command}}
 
-test bgexec.292 { redirect output to bad file } {
+test bgexec.296 { redirect output to bad file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl > badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.293 { redirect output to file } {
+test bgexec.297 { redirect output to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stdout.tcl > testfile
@@ -2163,7 +2191,7 @@ test bgexec.293 { redirect output to file } {
     } msg] $msg
 } {0 15}
 
-test bgexec.294 { redirect output and append to file } {
+test bgexec.298 { redirect output and append to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stdout.tcl > testfile
@@ -2172,19 +2200,19 @@ test bgexec.294 { redirect output and append to file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.295 { redirect output append to no file } {
+test bgexec.299 { redirect output append to no file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >> 
     } msg] $msg
 } {1 {can't specify ">>" as last word in command}}
 
-test bgexec.296 { redirect output append to bad file } {
+test bgexec.300 { redirect output append to bad file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.297 { redirect output append to file (file doesn't exist) } {
+test bgexec.301 { redirect output append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >> testfile
@@ -2192,7 +2220,7 @@ test bgexec.297 { redirect output append to file (file doesn't exist) } {
     } msg] $msg
 } {0 15}
 
-test bgexec.298 { multiple output redirections w/ two files } {
+test bgexec.302 { multiple output redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
@@ -2200,7 +2228,7 @@ test bgexec.298 { multiple output redirections w/ two files } {
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.299 { multiple output redirections w/ two files } {
+test bgexec.303 { multiple output redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
@@ -2208,7 +2236,7 @@ test bgexec.299 { multiple output redirections w/ two files } {
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.300 { redirect stdout to channel } {
+test bgexec.304 { redirect stdout to channel } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >@ $f
@@ -2217,26 +2245,26 @@ test bgexec.300 { redirect stdout to channel } {
     } msg] $msg
 } {0 15}
 
-test bgexec.301 { redirect stdout to no channel } {
+test bgexec.305 { redirect stdout to no channel } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >@ 
     } msg] $msg
 } {1 {can't specify ">@" as last word in command}}
 
-test bgexec.302 { redirect stdout to bad channel } {
+test bgexec.306 { redirect stdout to bad channel } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >@ badChannel
     } msg] $msg
 } {1 {can not find channel named "badChannel"}}
 
-test bgexec.303 { redirect stdout to file (verify empty string is result) } {
+test bgexec.307 { redirect stdout to file (verify empty string is result) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stdout.tcl > testfile
     } msg] $msg
 } {0 {}}
 
-test bgexec.304 { multiple output redirections /w two channels } {
+test bgexec.308 { multiple output redirections /w two channels } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >@ $f >@ $f
@@ -2245,7 +2273,7 @@ test bgexec.304 { multiple output redirections /w two channels } {
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.305 { redirect stderr to file } {
+test bgexec.309 { redirect stderr to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2> testfile
@@ -2253,7 +2281,7 @@ test bgexec.305 { redirect stderr to file } {
     } msg] $msg
 } {0 15}
 
-test bgexec.306 { redirect input (literal) and output (file) } {
+test bgexec.310 { redirect input (literal) and output (file) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
@@ -2262,20 +2290,20 @@ test bgexec.306 { redirect input (literal) and output (file) } {
     } msg] $msg
 } {0 6}
 
-test bgexec.307 { redirect stderr to no file } {
+test bgexec.311 { redirect stderr to no file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2> 
     } msg] $msg
 } {1 {can't specify "2>" as last word in command}}
 
-test bgexec.308 { redirect stderr to bad file } {
+test bgexec.312 { redirect stderr to bad file } {
     list [catch {
 	blt::bgexec myVar -tty \
 	    tclsh files/stderr.tcl 2> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.309 { redirect stderr append to file } {
+test bgexec.313 { redirect stderr append to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2> testfile
@@ -2284,19 +2312,19 @@ test bgexec.309 { redirect stderr append to file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.310 { redirect stderr append to no file } {
+test bgexec.314 { redirect stderr append to no file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>>
     } msg] $msg
 } {1 {can't specify "2>>" as last word in command}}
 
-test bgexec.311 { redirect stderr append to bad file } {
+test bgexec.315 { redirect stderr append to bad file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>> badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.312 { redirect stderr append to file (file doesn't exist) } {
+test bgexec.316 { redirect stderr append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>> testfile
@@ -2304,7 +2332,7 @@ test bgexec.312 { redirect stderr append to file (file doesn't exist) } {
     } msg] $msg
 } {0 15}
 
-test bgexec.313 { multiple stderr redirections w/ two files } {
+test bgexec.317 { multiple stderr redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
@@ -2312,7 +2340,7 @@ test bgexec.313 { multiple stderr redirections w/ two files } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.314 { multiple stderr redirections w/ two files } {
+test bgexec.318 { multiple stderr redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
@@ -2320,7 +2348,7 @@ test bgexec.314 { multiple stderr redirections w/ two files } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.315 { redirect both stderr and stdout to files } {
+test bgexec.319 { redirect both stderr and stdout to files } {
     list [catch {
 	file delete -force testfile1 testfile2
 	blt::bgexec myVar -tty \
@@ -2329,7 +2357,7 @@ test bgexec.315 { redirect both stderr and stdout to files } {
     } msg] $msg
 } {0 30}
 
-test bgexec.316 { redirect both stderr and stdout append to files } {
+test bgexec.320 { redirect both stderr and stdout append to files } {
     list [catch {
 	file delete -force testfile1 testfile2
 	blt::bgexec myVar -tty \
@@ -2338,7 +2366,7 @@ test bgexec.316 { redirect both stderr and stdout append to files } {
     } msg] $msg
 } {0 30}
 
-test bgexec.317 { redirect both stderr and stdout to one file } {
+test bgexec.321 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
@@ -2347,7 +2375,7 @@ test bgexec.317 { redirect both stderr and stdout to one file } {
     } msg] $msg
 } {0 15}
 
-test bgexec.318 { redirect both stderr and stdout appending to one file } {
+test bgexec.322 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
@@ -2356,7 +2384,7 @@ test bgexec.318 { redirect both stderr and stdout appending to one file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.319 { redirect both stderr and stdout to one file } {
+test bgexec.323 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/both.tcl >& testfile
@@ -2364,19 +2392,19 @@ test bgexec.319 { redirect both stderr and stdout to one file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.320 { redirect both stderr and stdout to no file } {
+test bgexec.324 { redirect both stderr and stdout to no file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/both.tcl >& 
     } msg] $msg
 } {1 {can't specify ">&" as last word in command}}
 
-test bgexec.321 { redirect both stderr and stdout to bad file } {
+test bgexec.325 { redirect both stderr and stdout to bad file } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/both.tcl >& badDir/badFile
     } msg] $msg
 } {1 {can't write file "badDir/badFile": no such file or directory}}
 
-test bgexec.322 { redirect both stderr and stdout appending to one file } {
+test bgexec.326 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/both.tcl >>& testfile
@@ -2384,7 +2412,7 @@ test bgexec.322 { redirect both stderr and stdout appending to one file } {
     } msg] $msg
 } {0 30}
 
-test bgexec.323 { redirect stderr to channel } {
+test bgexec.327 { redirect stderr to channel } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>@ $f
@@ -2393,19 +2421,19 @@ test bgexec.323 { redirect stderr to channel } {
     } msg] $msg
 } {0 15}
 
-test bgexec.324 { redirect stderr to no channel } {
+test bgexec.328 { redirect stderr to no channel } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>@ 
     } msg] $msg
 } {1 {can't specify "2>@" as last word in command}}
 
-test bgexec.325 { redirect stderr to bad channel } {
+test bgexec.329 { redirect stderr to bad channel } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>@ badChannel
     } msg] $msg
 } {1 {can not find channel named "badChannel"}}
 
-test bgexec.326 { redirect stderr to file (verify empty string is result) } {
+test bgexec.330 { redirect stderr to file (verify empty string is result) } {
     list [catch {
 	file delete -force testfile
 	set myErr {}
@@ -2415,7 +2443,7 @@ test bgexec.326 { redirect stderr to file (verify empty string is result) } {
     } msg] $msg
 } {0 {}}
 
-test bgexec.327 { multiple stderr redirections /w two channels } {
+test bgexec.331 { multiple stderr redirections /w two channels } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -2425,7 +2453,7 @@ test bgexec.327 { multiple stderr redirections /w two channels } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.328 { redirect both stderr and stdout to one channel } {
+test bgexec.332 { redirect both stderr and stdout to one channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -2435,13 +2463,13 @@ test bgexec.328 { redirect both stderr and stdout to one channel } {
     } msg] $msg
 } {0 30}
 
-test bgexec.329 { redirect both stderr and stdout to no channel } {
+test bgexec.333 { redirect both stderr and stdout to no channel } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/both.tcl >&@ 
     } msg] $msg
 } {1 {can't specify ">&@" as last word in command}}
 
-test bgexec.330 { multiple stderr/stdout redirections /w channels } {
+test bgexec.334 { multiple stderr/stdout redirections /w channels } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -2451,7 +2479,7 @@ test bgexec.330 { multiple stderr/stdout redirections /w channels } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.331 { multiple output redirections /w file and channel } {
+test bgexec.335 { multiple output redirections /w file and channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -2461,7 +2489,7 @@ test bgexec.331 { multiple output redirections /w file and channel } {
     } msg] $msg
 } {1 {ambigious output redirect.}}
 
-test bgexec.332 { multiple output redirections /w file and channel } {
+test bgexec.336 { multiple output redirections /w file and channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
@@ -2471,19 +2499,19 @@ test bgexec.332 { multiple output redirections /w file and channel } {
     } msg] $msg
 } {1 {ambigious error redirect.}}
 
-test bgexec.333 { redirect both stderr and stdout  } {
+test bgexec.337 { redirect both stderr and stdout  } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/both.tcl 2>@1
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {0 {This is stderr\nThis is stdout}}
 
-test bgexec.334 { redirect both stderr and stdout /w extraArg } {
+test bgexec.338 { redirect both stderr and stdout /w extraArg } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/both.tcl 2>@1 extraArg
     } msg] [string map { \0 {\0} \r {\r} \n {\n}} $msg]
 } {1 {must specify "2>@1" as last word in command}}
 
-test bgexec.335 { kill by setting status variable } {
+test bgexec.339 { kill by setting status variable } {
     list [catch {
 	set myVar -1
 	set myOut {}
@@ -2496,7 +2524,7 @@ test bgexec.335 { kill by setting status variable } {
 } {0 {}}
 
 
-test bgexec.336 {bgexec -tty kill with myVar } {
+test bgexec.340 {bgexec -tty kill with myVar } {
     list [catch {
 	set myVar -1
 	set myOut {}
@@ -2508,7 +2536,7 @@ test bgexec.336 {bgexec -tty kill with myVar } {
     } msg] $msg
 } {0 {}}
 
-test bgexec.337 {bgexec -tty kill grandchildren with myVar } {
+test bgexec.341 {bgexec -tty kill grandchildren with myVar } {
     list [catch {
 	set myVar {}
 	set myOut {}
@@ -2520,7 +2548,7 @@ test bgexec.337 {bgexec -tty kill grandchildren with myVar } {
     } msg] $msg
 } {0 {}}
 
-test bgexec.338 { kill with myVar } {
+test bgexec.342 { kill with myVar } {
     list [catch {
 	set myVar -1
 	set myOut {}
@@ -2532,7 +2560,7 @@ test bgexec.338 { kill with myVar } {
     } msg] $msg
 } {0 {}}
 
-test bgexec.339 { kill grandchildren with myVar } {
+test bgexec.343 { kill grandchildren with myVar } {
     list [catch {
 	set myVar {}
 	set myOut {}
@@ -2546,7 +2574,7 @@ test bgexec.339 { kill grandchildren with myVar } {
 
 ##################
 
-test bgexec.340 { cleanup } {
+test bgexec.344 { cleanup } {
     list [catch {
 	file delete -force testfile testfile1 testfile2
 	close $file
@@ -2555,11 +2583,3 @@ test bgexec.340 { cleanup } {
 
 
 exit 0
-
-
-
-
-
-
-
-

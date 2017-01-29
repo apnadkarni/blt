@@ -188,3 +188,4 @@ The following switches are available:
 test utils.14 {string between d a z} {
     list [catch {blt::utils::string between d a z} msg] $msg
 } {0 1}
+

@@ -126,7 +126,7 @@ typedef struct _ParserToken ParserToken;
 struct _ParserToken {
     const char *string;                 /* String representing this
                                          * token. */
-    uint64_t lvalue;                    /* Numeric value of token. */
+    int64_t lvalue;                     /* Numeric value of token. */
     Tcl_Obj *objPtr;                    /* Points to the timezone offsets. */
     ParserTokenId id;                   /* Serial ID of token. */
     int length;                         /* Length of the string. */
@@ -1625,7 +1625,7 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
         first = tokenPtr;
         /* Assume that any 6-digit number is ISO time format (hhmmss). */
         if ((tokenPtr->id == _NUMBER) && (tokenPtr->length == 6)) {
-            long value;
+            int64_t value;
 
             value = tokenPtr->lvalue;
             parserPtr->date.sec = value % 100;
@@ -1649,7 +1649,7 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
              tokenPtr = tokenPtr->nextPtr) {
             if ((tokenPtr->id == _NUMBER) && ((tokenPtr->length == 6) ||
                                               (tokenPtr->length == 14))) {
-                long value;
+                int64_t value;
                 /* Iso time format hhmmss */
                 value = tokenPtr->lvalue;
                 
@@ -1845,7 +1845,7 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
 
         case _ISO7:                    /* 0000-9999,1-366  */
             {
-                long value;
+                int64_t value;
                 /* Iso date format */
                 value = tokenPtr->lvalue;
                 
@@ -1858,7 +1858,7 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
 
         case _ISO8:                    /* 0000-9999,1-12,1-31 */
             {
-                long value;
+                int64_t value;
                 /* Iso date format */
                 value = tokenPtr->lvalue;
                 
@@ -1925,11 +1925,11 @@ NumberDaysFromStartOfYear(int year, int month, int mday)
  *
  *-----------------------------------------------------------------------------
  */
-static long
+static int64_t
 NumberDaysFromEpoch(int year)
 {
     int y;
-    long numDays;
+    int64_t numDays;
 
     numDays = 0;
     if (year >= EPOCH) {
@@ -1960,7 +1960,7 @@ NumberDaysFromEpoch(int year)
 static int
 GetWeek(int year, int mon, int mday)
 {
-    long numDays;
+    int64_t numDays;
     int wdayJan1st;                     /* Weekday of Jan 1st. */
 
     numDays = NumberDaysFromEpoch(year);
@@ -1989,7 +1989,7 @@ GetWeek(int year, int mon, int mday)
 static int
 GetIsoWeek(int year, int mon, int day, int *wyearPtr)
 {
-    long a, b, c, s, e, f, d, g, n;
+    int64_t a, b, c, s, e, f, d, g, n;
     int week, wyear;
 
     if (mon < 2) {
@@ -2170,9 +2170,9 @@ CheckDateAgainstMktime(Tcl_Interp *interp, TimeStampParser *parserPtr,
     Blt_DateTime *datePtr;
     struct tm tm;
     time_t ticks;
-    long sec;
+    int64_t sec;
     extern char *tzname[2];
-    extern long timezone;
+    extern int64_t timezone;
     extern int daylight;
 
     datePtr = &parserPtr->date;
@@ -2192,7 +2192,7 @@ CheckDateAgainstMktime(Tcl_Interp *interp, TimeStampParser *parserPtr,
     ticks = mktime(&tm);
     setenv("TZ", "UTC", 1);
     tzset();
-    sec = (long)seconds;
+    sec = (int64_t)seconds;
     if ((sec - ticks) != 0) {
         fprintf(stderr, "tmzone=%s tzname[0]=%s tzname[1]=%s timezone=%ld daylight=%d\n", parserPtr->tmZone, tzname[0], tzname[1], timezone, daylight);
         fprintf(stderr, "sec=%d min=%d hour=%d mday=%d mon=%d year=%d\n",
@@ -2806,7 +2806,7 @@ void
 Blt_DateToSeconds(Blt_DateTime *datePtr, double *secondsPtr)
 {
     double t;
-    long numDays;
+    int64_t numDays;
 
 #ifdef notdef
     fprintf(stderr, "Entering Blt_DateToSeconds: year=%d mon=%d mday=%d week=%d hour=%d min=%d sec=%d, frac=%.15g\n", 
@@ -2875,15 +2875,15 @@ void
 Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
 {
     long mon, year;
-    long rem;
-    long numDays;
+    int64_t rem;
+    int64_t numDays;
 
 #ifdef notdef
     fprintf(stderr, "Entering Blt_SecondsToDate: seconds=%.15g\n", seconds);
 #endif
     memset(datePtr, 0, sizeof(Blt_DateTime));
-    numDays = ((long)seconds) / SECONDS_DAY;
-    rem  = ((long)seconds) % SECONDS_DAY;
+    numDays = ((int64_t)seconds) / SECONDS_DAY;
+    rem  = ((int64_t)seconds) % SECONDS_DAY;
     if (rem < 0) {
         rem += SECONDS_DAY;
         numDays--;
@@ -3058,6 +3058,9 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
         case 'e':                       /* Day of month, space padded */
             count += 3;
             break;
+        case 'f':                       /* Fractional seconds. */
+            count += 17;
+            break;
         case 'F':                       /* Full date yyyy-mm-dd */
             count += 10;
             break;
@@ -3208,6 +3211,14 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             sprintf(bp, "%2d", datePtr->mday);
             bp += 2;
             break;
+        case 'f':                       /* Fractional seconds. (nonstd) */
+            if (datePtr->sec < 10) {
+                numBytes = sprintf(bp, "0%01.6g", datePtr->sec + datePtr->frac);
+            } else {
+                numBytes = sprintf(bp, "%02.6g", datePtr->sec + datePtr->frac);
+            }
+            bp += numBytes;
+            break;
         case 'F':                       /* Full date yyyy-mm-dd */
             sprintf(bp, "%04d-%02d-%02d", datePtr->year, datePtr->mon + 1, 
                     datePtr->mday);
@@ -3253,7 +3264,15 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'N':                       /* nanoseconds (000000000..999999999) */
             Blt_DateToSeconds(datePtr, &seconds);
-            numBytes = sprintf(bp, "%ld", (long)(seconds * 1e9));
+#if SIZEOF_LONG == 4
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+            numBytes = sprintf(bp, "%I64d", (int64_t)(seconds * 1e9));
+#else 
+            numBytes = sprintf(bp, "%lld", (int64_t)(seconds * 1e9));
+#endif  /* MINGW32 || CYGWIN */
+#else
+            numBytes = sprintf(bp, "%ld", (int64_t)(seconds * 1e9));
+#endif  /* SIZEOF_LONG == 4 */
             bp += numBytes;
             break;
         case 'P':
@@ -3278,11 +3297,16 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 's':                       /* Seconds since epoch, may contain
                                          * fraction. */
-            if (datePtr->sec < 10) {
-                numBytes = sprintf(bp, "0%01.6g", datePtr->sec + datePtr->frac);
-            } else {
-                numBytes = sprintf(bp, "%02.6g", datePtr->sec + datePtr->frac);
-            }
+            Blt_DateToSeconds(datePtr, &seconds);
+#if SIZEOF_LONG == 4
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+            numBytes = sprintf(bp, "%I64d", (int32_t)seconds);
+#else 
+            numBytes = sprintf(bp, "%lld", (int64_t)seconds);
+#endif  /* MINGW32 || CYGWIN */
+#else
+            numBytes = sprintf(bp, "%ld", (int64_t)seconds);
+#endif  /* SIZEOF_LONG == 4 */
             bp += numBytes;
             break;
         case 'S':                       /* Second (00-60) */

@@ -119,8 +119,6 @@
 /*
  * Forward declarations for procedures defined later in this file:
  */
-static void setargv(int *argcPtr, char ***argvPtr);
-static Tcl_PanicProc WishPanic;
 
 #ifdef HAVE_TCL_STUBS
 #undef Tcl_InitStubs
@@ -129,6 +127,46 @@ extern const char *Tcl_InitStubs(Tcl_Interp *interp, const char *version,
 #endif
 
 static BOOL consoleRequired = TRUE;
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PanicProc --
+ *
+ *      Display a message and exit.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      Exits the program.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+PanicProc(const char *fmt, ...)
+{
+    va_list args;
+    char buf[TK_MAX_WARN_LEN];
+    WCHAR msgString[TK_MAX_WARN_LEN + 5];
+
+    va_start(args, fmt);
+    vsnprintf(buf, TK_MAX_WARN_LEN, fmt, args);
+    va_end(args);
+    MultiByteToWideChar(CP_UTF8, 0, buf, -1, msgString, TK_MAX_WARN_LEN);
+    memcpy(msgString + TK_MAX_WARN_LEN, L" ...", 5 * sizeof(WCHAR));
+    MessageBeep(MB_ICONEXCLAMATION);
+    MessageBoxW(NULL, msgString, L"Fatal Error in Bltwish",
+	    MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
+#if defined(_MSC_VER) 
+    DebugBreak();
+#endif /* _MSC_VER || __BORLANDC__ */
+    ExitProcess(1);
+}
+
+
+#ifndef TCL_ONLY
+#if defined(__CYGWIN__) || defined(__MINGW32__)
 
 /*
  *---------------------------------------------------------------------------
@@ -241,6 +279,8 @@ setargv(
     *argcPtr = argc;
     *argvPtr = argv;
 }
+#endif /* CYGWIN || MINGW32 */
+#endif /* !TCL_ONLY */
 
 #ifdef TCL_ONLY
 extern Tcl_AppInitProc Blt_TclInit;
@@ -304,7 +344,7 @@ main(int argc, char **argv)
 {
     char *p;
     
-    Tcl_SetPanicProc(WishPanic);
+    Tcl_SetPanicProc(PanicProc);
 
     /*
      * Set up the default locale to be standard "C" locale so parsing is
@@ -450,9 +490,7 @@ WinMain(
     int argc;
     char *p;
     
-#ifdef notdef
-    Tcl_SetPanicProc(WishPanic);
-#endif
+    Tcl_SetPanicProc(PanicProc);
     /*
      * Create the console channels and install them as the standard channels.
      * All I/O will be discarded until Tk_CreateConsoleWindow is called to
@@ -492,41 +530,3 @@ WinMain(
 }
 
 #endif /* TCL_ONLY */
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * WishPanic --
- *
- *      Display a message and exit.
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      Exits the program.
- *
- *---------------------------------------------------------------------------
- */
-static void
-WishPanic(const char *fmt, ...)
-{
-    va_list args;
-    char buf[TK_MAX_WARN_LEN];
-    WCHAR msgString[TK_MAX_WARN_LEN + 5];
-
-    va_start(args, fmt);
-    vsnprintf(buf, TK_MAX_WARN_LEN, fmt, args);
-    va_end(args);
-    MultiByteToWideChar(CP_UTF8, 0, buf, -1, msgString, TK_MAX_WARN_LEN);
-    memcpy(msgString + TK_MAX_WARN_LEN, L" ...", 5 * sizeof(WCHAR));
-    MessageBeep(MB_ICONEXCLAMATION);
-    MessageBoxW(NULL, msgString, L"Fatal Error in Bltwish",
-	    MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
-#if defined(_MSC_VER) 
-    DebugBreak();
-#endif /* _MSC_VER || __BORLANDC__ */
-    ExitProcess(1);
-}
-

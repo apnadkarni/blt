@@ -321,18 +321,6 @@ RowIterSwitchProc(
     return TCL_OK;
 }
 
-static int charCounts[10];
-
-static int
-CompareCharCounts(const void *a, const void *b)
-{
-    int i1, i2;
-
-    i1 = *(int *)a;
-    i2 = *(int *)b;
-    return (charCounts[i2] - charCounts[i1]);
-}
-
 static void
 StartCsvRecord(ExportArgs *exportPtr)
 {
@@ -647,10 +635,10 @@ ImportGetLine(Tcl_Interp *interp, ImportArgs *importPtr, const char **bufferPtr,
 static int
 GuessSeparator(Tcl_Interp *interp, int maxRows, ImportArgs *importPtr)
 {
-    int sepIndices[10];
+    int charCounts[10];
     int i, numSeparators;
     off_t pos;
-    const char defSepTokens[] = { ",\t|;"};
+    const char defSepTokens[] = { ",\t|;" };
     const char *sepTokens;
 
     sepTokens = (importPtr->testSeparators != NULL) ? 
@@ -665,7 +653,6 @@ GuessSeparator(Tcl_Interp *interp, int maxRows, ImportArgs *importPtr)
     }
     for (i = 0; i < numSeparators; i++) {
         charCounts[i] = 0;
-        sepIndices[i] = i;
     }
     for (i = 0; i < importPtr->maxRows; i++) {
         const char *bp, *bend;
@@ -693,8 +680,18 @@ GuessSeparator(Tcl_Interp *interp, int maxRows, ImportArgs *importPtr)
         importPtr->next = importPtr->buffer;
         importPtr->bytesLeft = importPtr->numBytes;
     }
-    qsort(sepIndices, numSeparators, sizeof(int), CompareCharCounts);
-    importPtr->separatorChar = sepTokens[sepIndices[0]];
+
+    {
+	int maxCount;
+
+        maxCount = -1;
+        for (i = 0; i < numSeparators; i++) {
+            if (maxCount < charCounts[i]) {
+	        maxCount = charCounts[i];
+                importPtr->separatorChar = sepTokens[i];
+            }
+        }
+    }
     return importPtr->separatorChar;
 }
 

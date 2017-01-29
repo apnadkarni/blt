@@ -2166,7 +2166,7 @@ test timestamp.300 {timestamp scan "2007-11-02 12:00 America/Los_Angeles PDT"} {
 
 # Digital camera Exif tag timestamp. Why put colons in the date?
 set d2 [clock scan "June 2, 2011 13:49:18" -gmt yes]
-test timestamp.300 {timestamp scan "2011:06:02 13:49:18"} {
+test timestamp.301 {timestamp scan "2011:06:02 13:49:18"} {
     list [catch {
 	set d1 [blt::timestamp scan "2011:06:02 13:49:18"]
 	expr { $d1 - double($d2) }
@@ -2174,8 +2174,8 @@ test timestamp.300 {timestamp scan "2011:06:02 13:49:18"} {
 } {0 0.0}
 
 # Digital camera Exif tag timestamp. Why put colons in the date?
-set d2 [clock scan "2014-04-04 14:28:38 0200" -gmt yes]
-test timestamp.300 {timestamp scan "2014-04-04T14:28:38+02:00"} {
+set d2 [clock scan "2014-04-04 14:28:38b" -gmt yes]
+test timestamp.302 {timestamp scan "2014-04-04T14:28:38+02:00"} {
     list [catch {
 	set d1 [blt::timestamp scan "2014-04-04T14:28:38+02:00"]
 	expr { $d1 - double($d2) }
@@ -2194,3 +2194,4 @@ foreach name [array names blt::timezones] {
     incr count
 }
     
+

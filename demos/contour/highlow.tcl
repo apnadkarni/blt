@@ -23,7 +23,7 @@ foreach  i [$y2 values] {
 blt::contour .g -highlightthickness 0
 set mesh [blt::mesh create irregular -y $x -x $y]
 .g element create myContour -values $z -mesh $mesh 
-.g element isoline steps myContour 10 
+.g isoline steps 10 -element myContour 
 .g legend configure -hide yes
 .g axis configure z -palette $palette
 proc UpdateColors {} {

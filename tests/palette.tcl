@@ -609,8 +609,4 @@ test palette.134 {palette delete myPalette} {
     list [catch {eval blt::palette delete myPalette} msg] $msg
 } {0 {}}
 
-#####
 exit 0
-
-
-

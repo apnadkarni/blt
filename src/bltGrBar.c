@@ -1646,7 +1646,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
     }
     barWidth = (elemPtr->barWidth > 0.0) 
         ? elemPtr->barWidth : graphPtr->barWidth;
-    baseline = (IsLogScale(elemPtr->axes.y)) ? 0.0 : graphPtr->baseline;
+    baseline = (IsLogScale(elemPtr->axes.y)) ? 1.0 : graphPtr->baseline;
     barOffset = (IsTimeScale(elemPtr->axes.x)) ? 0.0 : barWidth * 0.5;
     /*
      * Create an array of bars representing the screen coordinates of all
@@ -1781,6 +1781,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
                 right = Tk_Width(graphPtr->tkwin);
             }
         }
+
         CLAMP(c1.y, top, bottom);
         CLAMP(c2.y, top, bottom);
         CLAMP(c1.x, left, right);

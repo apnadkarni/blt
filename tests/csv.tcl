@@ -410,5 +410,3 @@ test csv.33 {csv guess -comment } {
 
 exit 0
 
-
-

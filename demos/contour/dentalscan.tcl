@@ -10,7 +10,7 @@ blt::contour .g -highlightthickness 0
 
 set palette spectral.rgb
 .g element create myContour -values dentalscan -mesh $mesh 
-.g element isoline steps myContour 6
+.g isoline steps 6 -element myContour
 .g legend configure -hide yes
 .g axis configure z -palette $palette -margin left -colorbarthickness 20 
 proc UpdateColors {} {
@@ -114,11 +114,11 @@ set x [blt::vector create]
 $x linspace [expr $min + ($w * 0.5)] [expr $max - ($w - 0.5)] $numBins
 
 blt::barchart .g2 \
-    -barwidth $w  -height 1i -highlightthickness 0
+    -barwidth $w  -height 1i -highlightthickness 0 
 .g2 axis configure x -stepsize 0  -palette $palette
 .g2 axis configure y -logscale yes -grid no -subdivisions 0
 .g2 element create hist -x $x -y $freq -relief flat -colormap x \
-    -outline ""
+   -outline ""
 .g2 legend configure -hide yes
 Blt_ZoomStack .g2
 

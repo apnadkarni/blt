@@ -9,8 +9,31 @@ if [file exists ../library] {
     set blt_library ../library
 }
 
-set testfile /tmp/testfile
+set testfile [pwd]/testfile
 
+proc CreateSample { fileName data } {
+    global tcl_platform
+
+    set f [open $fileName "w"]
+    if { $tcl_platform(platform) == "windows" } { 
+        fconfigure $f  -translation binary
+    }
+    puts -nonewline $f $data
+    close $f
+    if { [file size $fileName] != [string length $data] } {
+      error "$fileName is [file size $fileName] bytes, string was [string length $data] bytes"
+    }
+}
+
+proc MakeReadOnly { fileName } {
+    global tcl_platform
+
+   if { $tcl_platform(platform) == "windows" } { 
+      file attributes $fileName -readonly yes
+   } else {
+      file attributes $fileName -permission -w
+   }
+}
 #set VERBOSE 1
 
 # Encode 
@@ -263,31 +286,31 @@ test base64.30 {encode ascii85 -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.31 {encode ascii85 -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set str ""
     append str "The short red fox ran quickly through the green field "
     append str "and jumped over the tall brown bear\n"
     set msg [list [catch {
-	blt::encode ascii85 $str -file /tmp/myFile
+	blt::encode ascii85 $str -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.32 {encode ascii85 -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.32 {encode ascii85 -file myFile} {
+    file delete myFile
     set str ""
     append str "The short red fox ran quickly through the green field "
     append str "and jumped over the tall brown bear\n"
     list [catch {
-	blt::encode ascii85 $str -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::encode ascii85 $str -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {<+ohcF(fK4F<GU8A0>K&GT_$8DBNqABk(ppGp%3BEc6)5BHVD1AKYW+AS#a%
@@ -493,31 +516,31 @@ test base64.55 {encode hexadecimal -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.56 {encode hexadecimal -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set str ""
     append str "The short red fox ran quickly through the green field "
     append str "and jumped over the tall brown bear\n"
     set msg [list [catch {
-	blt::encode hexadecimal $str -file /tmp/myFile
+	blt::encode hexadecimal $str -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.57 {encode hexadecimal -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.57 {encode hexadecimal -file myFile} {
+    file delete myFile
     set str ""
     append str "The short red fox ran quickly through the green field "
     append str "and jumped over the tall brown bear\n"
     list [catch {
-	blt::encode hexadecimal $str -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::encode hexadecimal $str -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {5468652073686F72742072656420666F782072616E20717569636B6C7920
@@ -696,31 +719,31 @@ test base64.78 {encode base64 -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.79 {encode base64 -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set str ""
     append str "The short red fox ran quickly through the green field "
     append str "and jumped over the tall brown bear\n"
     set msg [list [catch {
-	blt::encode base64 $str -file /tmp/myFile
+	blt::encode base64 $str -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.80 {encode base64 -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.80 {encode base64 -file myFile} {
+    file delete myFile
     set str ""
     append str "The short red fox ran quickly through the green field "
     append str "and jumped over the tall brown bear\n"
     list [catch {
-	blt::encode base64 $str -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::encode base64 $str -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {VGhlIHNob3J0IHJlZCBmb3ggcmFuIHF1aWNrbHkgdGhyb3VnaCB0aGUgZ3JlZW4gZmllbGQgYW5k
@@ -882,29 +905,29 @@ test base64.99 {decode ascii85 -file no permissions} {
 	<+ohcF(fK4F<GU8A0>K&GT_$8DBNqABk(ppGp%3BEc6)5BHVD1AKYW+AS#a%
 	AnbgmA0>;uA0>W0D/a&s+E)F7EZfI;AKZ)'Cht5'Ec6/>+C\njEXD
     }
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::decode ascii85 $str -file /tmp/myFile
+	blt::decode ascii85 $str -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.100 {decode ascii85 -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.100 {decode ascii85 -file myFile} {
+    file delete myFile
     set str {
 	<+ohcF(fK4F<GU8A0>K&GT_$8DBNqABk(ppGp%3BEc6)5BHVD1AKYW+AS#a%
 	AnbgmA0>;uA0>W0D/a&s+E)F7EZfI;AKZ)'Cht5'Ec6/>+C\njEXD
     }
     list [catch {
-	blt::decode ascii85 $str -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::decode ascii85 $str -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {The short red fox ran quickly through the green field and jumped over the tall brown bear
@@ -1116,30 +1139,30 @@ test base64.131 {decode hexadecimal -file no permissions} {
 	7468726F7567682074686520677265656E206669656C6420616E64206A75
 	6D706564206F766572207468652074616C6C2062726F776E20626561720A
     }
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::decode hexadecimal $str -file /tmp/myFile
+	blt::decode hexadecimal $str -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.132 {decode hexadecimal -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.132 {decode hexadecimal -file myFile} {
+    file delete myFile
     set str {
 	5468652073686F72742072656420666F782072616E20717569636B6C7920
 	7468726F7567682074686520677265656E206669656C6420616E64206A75
 	6D706564206F766572207468652074616C6C2062726F776E20626561720A
     }
     list [catch {
-	blt::decode hexadecimal $str -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::decode hexadecimal $str -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {The short red fox ran quickly through the green field and jumped over the tall brown bear
@@ -1316,29 +1339,29 @@ test base64.161 {decode base64 -file no permissions} {
 	VGhlIHNob3J0IHJlZCBmb3ggcmFuIHF1aWNrbHkgdGhyb3VnaCB0aGUgZ3Jl
 	ZW4gZmllbGQgYW5kIGp1bXBlZCBvdmVyIHRoZSB0YWxsIGJyb3duIGJlYXIK
     }
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::decode base64 $str -file /tmp/myFile
+	blt::decode base64 $str -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.162 {decode base64 -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.162 {decode base64 -file myFile} {
+    file delete myFile
     set str {
 	VGhlIHNob3J0IHJlZCBmb3ggcmFuIHF1aWNrbHkgdGhyb3VnaCB0aGUgZ3Jl
 	ZW4gZmllbGQgYW5kIGp1bXBlZCBvdmVyIHRoZSB0YWxsIGJyb3duIGJlYXIK
     }
     list [catch {
-	blt::decode base64 $str -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::decode base64 $str -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {The short red fox ran quickly through the green field and jumped over the tall brown bear
@@ -1434,12 +1457,6 @@ test base64.181 {fencode ascii85 badFile} {
     list [catch {blt::fencode ascii85 badFile} msg] $msg
 } {1 {couldn't open "badFile": no such file or directory}}
 
-
-proc CreateSample { fileName data } {
-    set f [open $fileName "w"]
-    puts -nonewline $f $data
-    close $f
-}
 
 test base64.182 {fencode ascii85 "abc"} {
     list [catch {
@@ -1617,25 +1634,25 @@ test base64.206 {fencode ascii85 -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.207 {fencode ascii85 -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::fencode ascii85 $testfile -file /tmp/myFile
+	blt::fencode ascii85 $testfile -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.208 {fencode ascii85 -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.208 {fencode ascii85 -file myFile} {
+    file delete myFile
     list [catch {
-	blt::fencode ascii85 $testfile -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::fencode ascii85 $testfile -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {<+ohcF(fK4F<GU8A0>K&GT_$8DBNqABk(ppGp%3BEc6)5BHVD1AKYW+AS#a%
@@ -1807,25 +1824,25 @@ test base64.231 {fencode hexadecimal -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.232 {fencode hexadecimal -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::fencode hexadecimal $testfile -file /tmp/myFile
+	blt::fencode hexadecimal $testfile -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.233 {fencode hexadecimal -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.233 {fencode hexadecimal -file myFile} {
+    file delete myFile
     list [catch {
-	blt::fencode hexadecimal $testfile -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::fencode hexadecimal $testfile -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {5468652073686F72742072656420666F782072616E20717569636B6C7920
@@ -1967,25 +1984,25 @@ test base64.254 {fencode base64 -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.255 {fencode base64 -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::fencode base64 $testfile -file /tmp/myFile
+	blt::fencode base64 $testfile -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.256 {fencode base64 -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.256 {fencode base64 -file myFile} {
+    file delete myFile
     list [catch {
-	blt::fencode base64 $testfile -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::fencode base64 $testfile -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {VGhlIHNob3J0IHJlZCBmb3ggcmFuIHF1aWNrbHkgdGhyb3VnaCB0aGUgZ3JlZW4gZmllbGQgYW5k
@@ -2143,25 +2160,25 @@ test base64.274 {fdecode ascii85 -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.275 {fdecode ascii85 -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::fdecode ascii85 $testfile -file /tmp/myFile
+	blt::fdecode ascii85 $testfile -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.276 {fdecode ascii85 -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.276 {fdecode ascii85 -file myFile} {
+    file delete myFile
     list [catch {
-	blt::fdecode ascii85 $testfile -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::fdecode ascii85 $testfile -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {The short red fox ran quickly through the green field and jumped over the tall brown bear
@@ -2374,25 +2391,25 @@ test base64.306 {fdecode hexadecimal -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.307 {fdecode hexadecimal -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::fdecode hexadecimal $testfile -file /tmp/myFile
+	blt::fdecode hexadecimal $testfile -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.308 {fdecode hexadecimal -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.308 {fdecode hexadecimal -file myFile} {
+    file delete myFile
     list [catch {
-	blt::fdecode hexadecimal $testfile -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::fdecode hexadecimal $testfile -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {The short red fox ran quickly through the green field and jumped over the tall brown bear
@@ -2570,25 +2587,25 @@ test base64.336 {fdecode base64 -file badDir/badFile} {
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
 test base64.337 {fdecode base64 -file no permissions} {
-    file delete /tmp/myFile
-    set f [open "/tmp/myFile" "w"]
+    file delete myFile
+    set f [open "myFile" "w"]
     close $f
-    file attributes /tmp/myFile -permission -w
+    MakeReadOnly myFile
     set msg [list [catch {
-	blt::fdecode base64 $testfile -file /tmp/myFile
+	blt::fdecode base64 $testfile -file myFile
     } msg] $msg]
-    file delete /tmp/myFile
+    file delete myFile
     set msg
-} {1 {couldn't open "/tmp/myFile": permission denied}}
+} {1 {couldn't open "myFile": permission denied}}
 
-test base64.338 {fdecode base64 -file /tmp/myFile} {
-    file delete /tmp/myFile
+test base64.338 {fdecode base64 -file myFile} {
+    file delete myFile
     list [catch {
-	blt::fdecode base64 $testfile -file /tmp/myFile
-	set f [open "/tmp/myFile" "r"]
+	blt::fdecode base64 $testfile -file myFile
+	set f [open "myFile" "r"]
 	set contents [read $f]
 	close $f
-	file delete /tmp/myFile
+	file delete myFile
 	set contents
     } msg] $msg
 } {0 {The short red fox ran quickly through the green field and jumped over the tall brown bear
@@ -2662,6 +2679,7 @@ test base64.351 {fdecode base64 "abc"} {
 } {1 {premature end of base64 data}}
 
 exit 0
+
 
 
 

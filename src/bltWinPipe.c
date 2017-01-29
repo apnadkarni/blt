@@ -582,6 +582,7 @@ DeletePipeHandler(PipeHandler * pipePtr)
     }
     if (pipePtr->hPipe != INVALID_HANDLE_VALUE) {
         CloseHandle(pipePtr->hPipe);
+	pipePtr->hPipe = INVALID_HANDLE_VALUE;
     }
     CloseHandle(pipePtr->readyEvent);
     CloseHandle(pipePtr->idleEvent);
@@ -1454,6 +1455,7 @@ StartProcess(
          */
         if (CreatePipe(&si.hStdInput, &hPipe, &securityAttrs, 0)) {
             CloseHandle(hPipe);
+	    hPipe = INVALID_HANDLE_VALUE;
         }
     } else {
         DuplicateHandle(hProcess, hStdin, hProcess, &si.hStdInput, 0, TRUE,
@@ -1484,6 +1486,7 @@ StartProcess(
             && (applType == APPL_DOS)) {
             if (CreatePipe(&hPipe, &si.hStdOutput, &securityAttrs, 0)) {
                 CloseHandle(hPipe);
+	        hPipe = INVALID_HANDLE_VALUE;
             }
         } else {
             si.hStdOutput = CreateFileA("NUL:", GENERIC_WRITE, 0,
@@ -1605,9 +1608,11 @@ StartProcess(
         &pi);                           /* (out) Information about newly
                                          * created process */
     Tcl_DStringFree(&ds);
+#ifdef notdef
     if (env != NULL) {
         Blt_Free(env);
     }
+#endif
     if (!result) {
         Tcl_AppendResult(interp, "can't execute \"", argv[0], "\": ",
             Blt_LastError(), (char *)NULL);
@@ -1649,12 +1654,15 @@ StartProcess(
   closeHandles:
     if (si.hStdInput != INVALID_HANDLE_VALUE) {
         CloseHandle(si.hStdInput);
+	si.hStdInput = INVALID_HANDLE_VALUE;
     }
     if (si.hStdOutput != INVALID_HANDLE_VALUE) {
         CloseHandle(si.hStdOutput);
+	si.hStdOutput = INVALID_HANDLE_VALUE;
     }
     if (si.hStdError != INVALID_HANDLE_VALUE) {
         CloseHandle(si.hStdError);
+	si.hStdError = INVALID_HANDLE_VALUE;
     }
     return result;
 }
@@ -2079,7 +2087,9 @@ Blt_CreatePipeline(
                 goto error;
             }
             in.mustClose = TRUE;
+#ifdef notdef
             *inPipePtr = (int)in.file;
+#endif
         } else {
             /*
              * The input for the first process comes from stdin.
@@ -2101,7 +2111,9 @@ Blt_CreatePipeline(
                 goto error;
             }
             out.mustClose = TRUE;
+#ifdef notdef
             *outPipePtr = (int)out.file;
+#endif
         } else {
             /*
              * The output for the last process goes to stdout.
@@ -2127,7 +2139,9 @@ Blt_CreatePipeline(
                 goto error;
             }
             err.mustClose = TRUE;
+#ifdef notdef
             *errPipePtr = (int)err.file;
+#endif
         } else {
             /*
              * Errors from the pipeline go to stderr.
@@ -2182,20 +2196,16 @@ Blt_CreatePipeline(
          * Otherwise create an intermediate pipe.  hPipe will become the input
          * for the next segment of the pipe. */
         if (lastArg == objc) {
-            out.currFile = in.file;
+            out.currFile = out.file;
         } else {
-            if (CreatePipe(&hPipe, &in.currFile, NULL, 0) == 0) {
+            if (CreatePipe(&hPipe, &out.currFile, NULL, 0) == 0) {
                 Tcl_AppendResult(interp, "can't create pipe: ",
                     Tcl_PosixError(interp), (char *)NULL);
                 goto error;
             }
         }
 
-        if (joinThisError) {
-            err.currFile = out.currFile;
-        } else {
-            err.currFile = err.file;
-        }
+        err.currFile = (joinThisError) ? out.currFile : err.file;
 
         if (StartProcess(interp, lastArg - i, argv + i, in.currFile,
                 out.currFile, err.currFile, env, &hProcess, &dw_pid)
@@ -2262,21 +2272,27 @@ Blt_CreatePipeline(
   error:
     if (hPipe != INVALID_HANDLE_VALUE) {
         CloseHandle(hPipe);
+	hPipe = INVALID_HANDLE_VALUE;
     }
     if ((out.currFile != INVALID_HANDLE_VALUE) && (out.currFile != out.file)) {
         CloseHandle(out.currFile);
+	out.currFile = INVALID_HANDLE_VALUE;
     }
     if ((in.currFile != INVALID_HANDLE_VALUE) && (in.currFile != in.file)) {
-        CloseHandle(in.file);
+        CloseHandle(in.currFile);
+	in.currFile = INVALID_HANDLE_VALUE;
     }
     if (in.pipe != INVALID_HANDLE_VALUE) {
         CloseHandle(in.pipe);
+	in.pipe = INVALID_HANDLE_VALUE;
     }
     if (out.pipe != INVALID_HANDLE_VALUE) {
         CloseHandle(out.pipe);
+	out.pipe = INVALID_HANDLE_VALUE;
     }
     if (err.pipe != INVALID_HANDLE_VALUE) {
         CloseHandle(err.pipe);
+	err.pipe = INVALID_HANDLE_VALUE;
     }
     if (pids != NULL) {
         for (i = 0; i < numPids; i++) {

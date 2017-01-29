@@ -1319,6 +1319,9 @@ DecodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
                 goto error;             /* Can't open file. */
             }
         }
+        if (Tcl_SetChannelOption(interp, channel, "-translation", "binary") != TCL_OK) {
+             goto error;
+        } 
         Tcl_WriteObj(channel, objPtr);
         if (closeChannel) {
             Tcl_Close(interp, channel);
@@ -1421,6 +1424,9 @@ EncodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
                 goto error;             /* Can't open output file. */
             }
         }
+        if (Tcl_SetChannelOption(interp, channel, "-translation", "binary") != TCL_OK) {
+             goto error;
+        } 
         Tcl_WriteObj(channel, objPtr);
         if (closeChannel) {
             Tcl_Close(interp, channel);
@@ -1531,6 +1537,9 @@ FileDecodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
                 goto error;             /* Can't open file. */
             }
         }
+        if (Tcl_SetChannelOption(interp, channel, "-translation", "binary") != TCL_OK) {
+             goto error;
+        } 
         Tcl_WriteObj(channel, objPtr);
         if (closeChannel) {
             Tcl_Close(interp, channel);
@@ -1640,6 +1649,9 @@ FileEncodeCmd(ClientData clientData, Tcl_Interp *interp, int objc,
                 goto error;             /* Can't open output file. */
             }
         }
+        if (Tcl_SetChannelOption(interp, channel, "-translation", "binary") != TCL_OK) {
+             goto error;
+        } 
         Tcl_WriteObj(channel, objPtr);
         if (closeChannel) {
             Tcl_Close(interp, channel);
