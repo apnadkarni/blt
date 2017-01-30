@@ -692,7 +692,6 @@ ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
     return (numBytes > 0) ? TCL_ERROR : TCL_OK;
 }
 #endif /*!WIN32*/
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -789,6 +788,30 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
     /* Step 4: Add the name/value pairs from the hashtable to the array as
      *         "name=value". */
     {
+#ifdef WIN32
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
+        char **array;
+        char *p;
+        int n, arraySize;
+        
+        array = Blt_AssertMalloc(numBytes * sizeof(char));
+	p = array;
+        for (hPtr = Blt_FirstHashEntry(&envTable, &iter); hPtr != NULL;
+             hPtr = Blt_NextHashEntry(&iter)) {
+            size_t numBytes;
+            const char *name, *value;
+            
+            name = Blt_GetHashKey(&envTable, hPtr);
+            value = Blt_GetHashValue(hPtr);
+            numBytes = sprintf(p, "%s=%s", name, value);
+            p += numBytes;
+            *p++ = '\0';
+        }
+        *p++='\0';
+        Blt_DeleteHashTable(&envTable);
+        *envPtrPtr = (char **)array;
+#else
         Blt_HashEntry *hPtr;
         Blt_HashSearch iter;
         char **array;
@@ -813,9 +836,11 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
             *p++ = '\0';
             n++;
         }
-        array[n] = '\0';                       /* Add final NUL byte. */
+        array[n] = NULL;                       /* Add final NUL byte. */
+        *p++='\0';
         Blt_DeleteHashTable(&envTable);
         *envPtrPtr = (char **)array;
+#endif
     }
     return TCL_OK;
 }  

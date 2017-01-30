@@ -3043,7 +3043,11 @@ SequenceOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (numSteps == 0) {
-        numSteps = (int)((stop - start) / step) + 1;
+        double r, s;
+
+	r = stop - start;
+	s = r / step;
+        numSteps = (int)(s) + 1;
     }
     if (numSteps > 0) {
         if (Blt_Vec_SetLength(interp, vPtr, numSteps) != TCL_OK) {

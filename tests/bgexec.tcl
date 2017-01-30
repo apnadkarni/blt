@@ -10,19 +10,14 @@ if [file exists ../library] {
     set blt_library ../library
 }
 
-set VERBOSE 1
-test bgexec.39 { redirect input from literal } {
-    list [catch {
-	blt::bgexec myVar $tclsh files/cat.tcl << "test me"
-    } msg] $msg
-} {0 {test me}}
-exit 0
+#set VERBOSE 1
 
 test bgexec.1 {set up file channel } {
     list [catch {
 	set file [open files/null.tcl "r"]
+	string match "file*" $file
     } msg] $msg
-} {0 file3}
+} {0 1}
 
 test bgexec.2 {bgexec (no args) } {
     list [catch {blt::bgexec} msg] $msg
@@ -511,7 +506,7 @@ test bgexec.74 { multiple input redirections w/ two files } {
     list [catch {
 	blt::bgexec myVar $tclsh files/cat.tcl < files/null.tcl < files/null.tcl
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.75 { redirect input w/ missing file } {
     list [catch {
@@ -535,20 +530,20 @@ test bgexec.78 { multiple input redirections /w literal and file } {
     list [catch {
 	blt::bgexec myVar $tclsh files/cat.tcl < files/null.tcl << "hi"
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.79 { multiple input redirections w/ two literals. } {
     list [catch {
 	blt::bgexec myVar $tclsh files/cat.tcl << "hi" << "there"
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.80 { multiple input redirections w/ literal and channel } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar $tclsh files/cat.tcl << "hi" <@ $file
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.81 { redirect input /w channel } {
     list [catch {
@@ -679,14 +674,14 @@ test bgexec.100 { multiple output redirections w/ two files } {
 	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stdout.tcl > testfile > testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.101 { multiple output redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stdout.tcl > testfile >> testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.102 { redirect stdout to channel } {
     list [catch {
@@ -723,7 +718,7 @@ test bgexec.106 { multiple output redirections /w two channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.107 { redirect stderr to file } {
     list [catch {
@@ -787,14 +782,14 @@ test bgexec.115 { multiple stderr redirections w/ two files } {
 	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile 2> testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.116 { multiple stderr redirections w/ two files } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile 2>> testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.117 { redirect both stderr and stdout to files } {
     list [catch {
@@ -895,7 +890,7 @@ test bgexec.129 { multiple stderr redirections /w two channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.130 { redirect both stderr and stdout to one channel } {
     list [catch {
@@ -921,7 +916,7 @@ test bgexec.132 { multiple stderr/stdout redirections /w channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.133 { multiple output redirections /w file and channel } {
     list [catch {
@@ -929,19 +924,19 @@ test bgexec.133 { multiple output redirections /w file and channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar $tclsh files/both.tcl >&@ $f > testfile
 	close $f
-	file size tetfile
+	file size testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.134 { multiple output redirections /w file and channel } {
     list [catch {
 	catch { close $f }
 	set f [open testfile "w"]
-	blt::bgexec myVar $tclsh files/both.tcl >&@ $f 2> testfile
+	blt::bgexec myVar  $tclsh files/both.tcl >&@ $f 2> testfile
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.135 { redirect both stderr and stdout  } {
     list [catch {
@@ -1270,7 +1265,7 @@ test bgexec.174 { multiple input redirections w/ two files } {
 	blt::bgexec myVar -session \
 	    $tclsh files/cat.tcl < files/null.tcl < files/null.tcl
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.175 { redirect input w/ missing file } {
     list [catch {
@@ -1295,20 +1290,20 @@ test bgexec.178 { multiple input redirections /w literal and file } {
 	blt::bgexec myVar -session \
 	    $tclsh files/cat.tcl < files/null.tcl << "hi"
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.179 { multiple input redirections w/ two literals. } {
     list [catch {
 	blt::bgexec myVar -session $tclsh files/cat.tcl << "hi" << "there"
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.180 { multiple input redirections w/ literal and channel } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -session $tclsh files/cat.tcl << "hi" <@ $file
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.181 { redirect input /w channel } {
     list [catch {
@@ -1441,7 +1436,7 @@ test bgexec.200 { multiple output redirections w/ two files } {
 	blt::bgexec myVar -session \
 	    tclsh files/stdout.tcl > testfile > testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.201 { multiple output redirections w/ two files } {
     list [catch {
@@ -1449,7 +1444,7 @@ test bgexec.201 { multiple output redirections w/ two files } {
 	blt::bgexec myVar -session \
 	    tclsh files/stdout.tcl > testfile >> testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.202 { redirect stdout to channel } {
     list [catch {
@@ -1486,7 +1481,7 @@ test bgexec.206 { multiple output redirections /w two channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.207 { redirect stderr to file } {
     list [catch {
@@ -1553,7 +1548,7 @@ test bgexec.215 { multiple stderr redirections w/ two files } {
 	blt::bgexec myVar -session \
 	    tclsh files/stderr.tcl 2> testfile 2> testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.216 { multiple stderr redirections w/ two files } {
     list [catch {
@@ -1561,7 +1556,7 @@ test bgexec.216 { multiple stderr redirections w/ two files } {
 	blt::bgexec myVar -session \
 	    tclsh files/stderr.tcl 2> testfile 2>> testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.217 { redirect both stderr and stdout to files } {
     list [catch {
@@ -1666,7 +1661,7 @@ test bgexec.229 { multiple stderr redirections /w two channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.230 { redirect both stderr and stdout to one channel } {
     list [catch {
@@ -1692,7 +1687,7 @@ test bgexec.232 { multiple stderr/stdout redirections /w channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.233 { multiple output redirections /w file and channel } {
     list [catch {
@@ -1702,7 +1697,7 @@ test bgexec.233 { multiple output redirections /w file and channel } {
 	close $f
 	file size tetfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.234 { multiple output redirections /w file and channel } {
     list [catch {
@@ -1712,7 +1707,7 @@ test bgexec.234 { multiple output redirections /w file and channel } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.235 { redirect both stderr and stdout  } {
     list [catch {
@@ -2061,7 +2056,7 @@ test bgexec.276 { multiple input redirections w/ two files } {
 	blt::bgexec myVar -tty \
 	    tclsh files/cat.tcl < files/null.tcl < files/null.tcl
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.277 { redirect input w/ missing file } {
     list [catch {
@@ -2086,20 +2081,20 @@ test bgexec.280 { multiple input redirections /w literal and file } {
 	blt::bgexec myVar -tty \
 	    tclsh files/cat.tcl < files/null.tcl << "hi"
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.281 { multiple input redirections w/ two literals. } {
     list [catch {
 	blt::bgexec myVar -tty tclsh files/cat.tcl << "hi" << "there"
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.282 { multiple input redirections w/ literal and channel } {
     list [catch {
 	seek $file 0
 	blt::bgexec myVar -tty tclsh files/cat.tcl << "hi" <@ $file
     } msg] $msg
-} {1 {ambigious input redirect.}}
+} {1 {ambiguous input redirect.}}
 
 test bgexec.283 { redirect input /w channel } {
     list [catch {
@@ -2232,7 +2227,7 @@ test bgexec.302 { multiple output redirections w/ two files } {
 	blt::bgexec myVar -tty \
 	    tclsh files/stdout.tcl > testfile > testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.303 { multiple output redirections w/ two files } {
     list [catch {
@@ -2240,7 +2235,7 @@ test bgexec.303 { multiple output redirections w/ two files } {
 	blt::bgexec myVar -tty \
 	    tclsh files/stdout.tcl > testfile >> testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.304 { redirect stdout to channel } {
     list [catch {
@@ -2277,7 +2272,7 @@ test bgexec.308 { multiple output redirections /w two channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.309 { redirect stderr to file } {
     list [catch {
@@ -2344,7 +2339,7 @@ test bgexec.317 { multiple stderr redirections w/ two files } {
 	blt::bgexec myVar -tty \
 	    tclsh files/stderr.tcl 2> testfile 2> testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.318 { multiple stderr redirections w/ two files } {
     list [catch {
@@ -2352,7 +2347,7 @@ test bgexec.318 { multiple stderr redirections w/ two files } {
 	blt::bgexec myVar -tty \
 	    tclsh files/stderr.tcl 2> testfile 2>> testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.319 { redirect both stderr and stdout to files } {
     list [catch {
@@ -2457,7 +2452,7 @@ test bgexec.331 { multiple stderr redirections /w two channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.332 { redirect both stderr and stdout to one channel } {
     list [catch {
@@ -2483,7 +2478,7 @@ test bgexec.334 { multiple stderr/stdout redirections /w channels } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.335 { multiple output redirections /w file and channel } {
     list [catch {
@@ -2493,7 +2488,7 @@ test bgexec.335 { multiple output redirections /w file and channel } {
 	close $f
 	file size tetfile
     } msg] $msg
-} {1 {ambigious output redirect.}}
+} {1 {ambiguous output redirect.}}
 
 test bgexec.336 { multiple output redirections /w file and channel } {
     list [catch {
@@ -2503,7 +2498,7 @@ test bgexec.336 { multiple output redirections /w file and channel } {
 	close $f
 	file size testfile
     } msg] $msg
-} {1 {ambigious error redirect.}}
+} {1 {ambiguous error redirect.}}
 
 test bgexec.337 { redirect both stderr and stdout  } {
     list [catch {

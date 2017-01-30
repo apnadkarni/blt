@@ -1876,7 +1876,6 @@ Blt_CreatePipeline(
         *errPipePtr = -1;
     }
     Tcl_DStringInit(&execBuffer);
-
     numPids = 0;
 
     /*
@@ -1925,6 +1924,11 @@ Blt_CreatePipeline(
             break;
 
         case '<':
+            if (in.redirected) {
+                Tcl_AppendResult(interp, "ambiguous input redirect.",
+                        (char *)NULL);
+                goto error;
+            }
             if (in.mustClose) {
                 in.mustClose = FALSE;
                 CloseHandle(in.file);
@@ -1950,6 +1954,7 @@ Blt_CreatePipeline(
                     goto error;
                 }
             }
+            in.redirected = TRUE;
             break;
 
         case '>':
@@ -1961,12 +1966,22 @@ Blt_CreatePipeline(
                 flags = OPEN_ALWAYS;
             }
             if (*p == '&') {
+                if (err.redirected) {
+                    Tcl_AppendResult(interp, "ambiguous error redirect.",
+                                     (char *)NULL);
+                    goto error;
+                }
                 if (err.mustClose) {
                     err.mustClose = FALSE;
                     CloseHandle(err.file);
                 }
                 errorToOutput = TRUE;
                 p++;
+            }
+            if (out.redirected) {
+                Tcl_AppendResult(interp, "ambiguous output redirect.",
+                                 (char *)NULL);
+                goto error;
             }
             /*
 	     * Close the old output file, but only if the error file is not
@@ -1991,7 +2006,9 @@ Blt_CreatePipeline(
                     CloseHandle(err.file);
                 }
                 err.file = out.file;
+                err.redirected = TRUE;                
             }
+            out.redirected = TRUE;
             break;
 
         case '2':
@@ -2006,11 +2023,16 @@ Blt_CreatePipeline(
                 atOK = FALSE;
                 flags = OPEN_ALWAYS;
             }
+            if (err.redirected) {
+                Tcl_AppendResult(interp, "ambiguous error redirect.",
+                                 (char *)NULL);
+                goto error;
+            }
             if (err.mustClose) {
                 err.mustClose = FALSE;
                 CloseHandle(err.file);
             }
-	    if ((atOK) && (p[0] == '@') && (p[1] == '1') && (p[2] == '\0')) {
+ 	    if ((atOK) && (p[0] == '@') && (p[1] == '1') && (p[2] == '\0')) {
 		/*
 		 * Special case handling of 2>@1 to redirect stderr to the
 		 * exec/open output pipe as well. This is meant for the end of
@@ -2026,12 +2048,13 @@ Blt_CreatePipeline(
 		errorToOutput = 2;
 		skip = 1;
 	    } else {
-                err.file = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1], 
+                err.file = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1],
                     GENERIC_WRITE, flags, &skip, &err.mustClose);
 		if (err.file == INVALID_HANDLE_VALUE) {
 		    goto error;
 		}
 	    }
+            err.redirected = TRUE;
             break;
     
         default:
@@ -2073,9 +2096,6 @@ Blt_CreatePipeline(
                 goto error;
             }
             in.mustClose = TRUE;
-#ifdef notdef
-            *inPipePtr = (int)in.file;
-#endif
         } else if (inPipePtr != NULL) {
             /*
              * The input for the first process in the pipeline is to
@@ -2089,9 +2109,6 @@ Blt_CreatePipeline(
                 goto error;
             }
             in.mustClose = TRUE;
-#ifdef notdef
-            *inPipePtr = (int)in.file;
-#endif
         } else {
             /*
              * The input for the first process comes from stdin.
@@ -2113,9 +2130,6 @@ Blt_CreatePipeline(
                 goto error;
             }
             out.mustClose = TRUE;
-#ifdef notdef
-            *outPipePtr = (int)out.file;
-#endif
         } else {
             /*
              * The output for the last process goes to stdout.
@@ -2141,9 +2155,6 @@ Blt_CreatePipeline(
                 goto error;
             }
             err.mustClose = TRUE;
-#ifdef notdef
-            *errPipePtr = (int)err.file;
-#endif
         } else {
             /*
              * Errors from the pipeline go to stderr.
