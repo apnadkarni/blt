@@ -10,6 +10,15 @@ if [file exists ../library] {
     set blt_library ../library
 }
 
+
+proc ReadAndDeleteFile { fileName } {
+    set f [open $fileName "r"]
+    set contents [read $f]
+    close $f
+    file delete -force $fileName
+    return $contents
+}
+
 #set VERBOSE 1
 
 test bgexec.1 {set up file channel } {
@@ -634,20 +643,22 @@ test bgexec.94 { redirect output to bad file } {
 
 test bgexec.95 { redirect output to file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stdout.tcl > testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
+
 
 test bgexec.96 { redirect output and append to file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stdout.tcl > testfile
 	blt::bgexec myVar $tclsh files/stdout.tcl >> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stdout
+This is stdout
+}}
 
 test bgexec.97 { redirect output append to no file } {
     list [catch {
@@ -665,20 +676,19 @@ test bgexec.99 { redirect output append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stdout.tcl >> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.100 { multiple output redirections w/ two files } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stdout.tcl > testfile > testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
 
 test bgexec.101 { multiple output redirections w/ two files } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stdout.tcl > testfile >> testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
@@ -688,9 +698,10 @@ test bgexec.102 { redirect stdout to channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar $tclsh files/stdout.tcl >@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.103 { redirect stdout to no channel } {
     list [catch {
@@ -706,35 +717,37 @@ test bgexec.104 { redirect stdout to bad channel } {
 
 test bgexec.105 { redirect stdout to file (verify empty string is result) } {
     list [catch {
-	file delete -force testfile
-	blt::bgexec myVar $tclsh files/stdout.tcl > testfile
+	set out1 [blt::bgexec myVar $tclsh files/stdout.tcl > testfile]
+	set out2 [ReadAndDeleteFile testfile]
+	list $out1 $out2
     } msg] $msg
-} {0 {}}
+} {0 {{} {This is stdout
+}}}
 
 test bgexec.106 { multiple output redirections /w two channels } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar $tclsh files/stdout.tcl >@ $f >@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
 
 test bgexec.107 { redirect stderr to file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
+
 
 test bgexec.108 { redirect input (literal) and output (file) } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/cat.tcl << "testme" > testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 6}
+} {0 testme}
 
 test bgexec.109 { redirect stderr to no file } {
     list [catch {
@@ -750,12 +763,13 @@ test bgexec.110 { redirect stderr to bad file } {
 
 test bgexec.111 { redirect stderr append to file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile
 	blt::bgexec myVar $tclsh files/stderr.tcl 2>> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stderr
+}}
 
 test bgexec.112 { redirect stderr append to no file } {
     list [catch {
@@ -773,63 +787,73 @@ test bgexec.114 { redirect stderr append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stderr.tcl 2>> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
 
 test bgexec.115 { multiple stderr redirections w/ two files } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile 2> testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
 test bgexec.116 { multiple stderr redirections w/ two files } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile 2>> testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
 test bgexec.117 { redirect both stderr and stdout to files } {
     list [catch {
-	file delete -force testfile1 testfile2
 	blt::bgexec myVar $tclsh files/both.tcl 2> testfile1 > testfile2
-	expr [file size testfile1] + [file size testfile2]
+	set first [ReadAndDeleteFile testfile1]
+	set second [ReadAndDeleteFile testfile2]
+	list $first $second
     } msg] $msg
-} {0 30}
+} {0 {{This is stderr
+} {This is stdout
+}}}
 
 test bgexec.118 { redirect both stderr and stdout append to files } {
     list [catch {
-	file delete -force testfile1 testfile2
 	blt::bgexec myVar $tclsh files/both.tcl 2>> testfile1 >> testfile2
-	expr [file size testfile1] + [file size testfile2]
+	set first [ReadAndDeleteFile testfile1]
+	set second [ReadAndDeleteFile testfile2]
+	list $first $second
     } msg] $msg
-} {0 30}
+} {0 {{This is stderr
+} {This is stdout
+}}}
+
 
 test bgexec.119 { redirect both stderr and stdout to one file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/both.tcl 2> testfile > testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
+
 
 test bgexec.120 { redirect both stderr and stdout appending to one file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/both.tcl 2>> testfile >> testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
+
 
 test bgexec.121 { redirect both stderr and stdout to one file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/both.tcl >& testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.122 { redirect both stderr and stdout to no file } {
     list [catch {
@@ -845,20 +869,23 @@ test bgexec.123 { redirect both stderr and stdout to bad file } {
 
 test bgexec.124 { redirect both stderr and stdout appending to one file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar $tclsh files/both.tcl >>& testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.125 { redirect stderr to channel } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar $tclsh files/stderr.tcl 2>@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
+
 
 test bgexec.126 { redirect stderr to no channel } {
     list [catch {
@@ -874,13 +901,14 @@ test bgexec.127 { redirect stderr to bad channel } {
 
 test bgexec.128 { redirect stderr to file (verify empty string is result) } {
     list [catch {
-	file delete -force testfile
 	set myErr {}
 	blt::bgexec myVar -errorvariable myErr \
 	    $tclsh files/stderr.tcl 2> testfile 
-	set myErr
+	set err [ReadAndDeleteFile testfile]
+	list $myErr $err
     } msg] $msg
-} {0 {}}
+} {0 {{} {This is stderr
+}}}
 
 test bgexec.129 { multiple stderr redirections /w two channels } {
     list [catch {
@@ -888,7 +916,7 @@ test bgexec.129 { multiple stderr redirections /w two channels } {
 	set f [open testfile "w"]
 	blt::bgexec myVar $tclsh files/stdout.tcl 2>@ $f 2>@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
@@ -898,9 +926,11 @@ test bgexec.130 { redirect both stderr and stdout to one channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar $tclsh files/both.tcl >&@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.131 { redirect both stderr and stdout to no channel } {
     list [catch {
@@ -914,7 +944,7 @@ test bgexec.132 { multiple stderr/stdout redirections /w channels } {
 	set f [open testfile "w"]
 	blt::bgexec myVar $tclsh files/both.tcl >&@ $f >&@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
@@ -924,7 +954,7 @@ test bgexec.133 { multiple output redirections /w file and channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar $tclsh files/both.tcl >&@ $f > testfile
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
 
@@ -934,7 +964,7 @@ test bgexec.134 { multiple output redirections /w file and channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar  $tclsh files/both.tcl >&@ $f 2> testfile
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
@@ -1395,20 +1425,21 @@ test bgexec.194 { redirect output to bad file } {
 
 test bgexec.195 { redirect output to file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar -session $tclsh files/stdout.tcl > testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.196 { redirect output and append to file } {
     list [catch {
-	file delete -force testfile
 	blt::bgexec myVar -session $tclsh files/stdout.tcl > testfile
 	blt::bgexec myVar -session $tclsh files/stdout.tcl >> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stdout
+This is stdout
+}}
 
 test bgexec.197 { redirect output append to no file } {
     list [catch {
@@ -1426,9 +1457,10 @@ test bgexec.199 { redirect output append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session $tclsh files/stdout.tcl >> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.200 { multiple output redirections w/ two files } {
     list [catch {
@@ -1451,9 +1483,10 @@ test bgexec.202 { redirect stdout to channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/stdout.tcl >@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.203 { redirect stdout to no channel } {
     list [catch {
@@ -1469,17 +1502,19 @@ test bgexec.204 { redirect stdout to bad channel } {
 
 test bgexec.205 { redirect stdout to file (verify empty string is result) } {
     list [catch {
-	file delete -force testfile
-	blt::bgexec myVar -session tclsh files/stdout.tcl > testfile
+	set out1 [blt::bgexec myVar -session tclsh files/stdout.tcl > testfile]
+	set out2 [ReadAndDeleteFile testfile]
+	list $out1 $out2
     } msg] $msg
-} {0 {}}
+} {0 {{} {This is stdout
+}}}
 
 test bgexec.206 { multiple output redirections /w two channels } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/stdout.tcl >@ $f >@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
 
@@ -1487,18 +1522,19 @@ test bgexec.207 { redirect stderr to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
 
 test bgexec.208 { redirect input (literal) and output (file) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
 	    tclsh files/cat.tcl << "testme" > testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 6}
+} {0 testme}
 
 test bgexec.209 { redirect stderr to no file } {
     list [catch {
@@ -1518,9 +1554,11 @@ test bgexec.211 { redirect stderr append to file } {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2> testfile
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stderr
+}}
 
 test bgexec.212 { redirect stderr append to no file } {
     list [catch {
@@ -1538,9 +1576,10 @@ test bgexec.214 { redirect stderr append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
 
 test bgexec.215 { multiple stderr redirections w/ two files } {
     list [catch {
@@ -1560,47 +1599,59 @@ test bgexec.216 { multiple stderr redirections w/ two files } {
 
 test bgexec.217 { redirect both stderr and stdout to files } {
     list [catch {
-	file delete -force testfile1 testfile2
 	blt::bgexec myVar -session \
 	    tclsh files/both.tcl 2> testfile1 > testfile2
-	expr [file size testfile1] + [file size testfile2]
+	set first [ReadAndDeleteFile testfile1]
+	set second [ReadAndDeleteFile testfile2]
+	list $first $second
     } msg] $msg
-} {0 30}
+} {0 {{This is stderr
+} {This is stdout
+}}}
 
 test bgexec.218 { redirect both stderr and stdout append to files } {
     list [catch {
-	file delete -force testfile1 testfile2
 	blt::bgexec myVar -session \
 	    tclsh files/both.tcl 2>> testfile1 >> testfile2
-	expr [file size testfile1] + [file size testfile2]
+	set first [ReadAndDeleteFile testfile1]
+	set second [ReadAndDeleteFile testfile2]
+	list $first $second
     } msg] $msg
-} {0 30}
+} {0 {{This is stderr
+} {This is stdout
+}}}
 
 test bgexec.219 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
 	    tclsh files/both.tcl 2> testfile > testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.220 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session \
 	    tclsh files/both.tcl 2>> testfile >> testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
+
 
 test bgexec.221 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/both.tcl >& testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.222 { redirect both stderr and stdout to no file } {
     list [catch {
@@ -1618,18 +1669,21 @@ test bgexec.224 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -session tclsh files/both.tcl >>& testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.225 { redirect stderr to channel } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/stderr.tcl 2>@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
 
 test bgexec.226 { redirect stderr to no channel } {
     list [catch {
@@ -1645,13 +1699,14 @@ test bgexec.227 { redirect stderr to bad channel } {
 
 test bgexec.228 { redirect stderr to file (verify empty string is result) } {
     list [catch {
-	file delete -force testfile
 	set myErr {}
 	blt::bgexec myVar -session -errorvariable myErr \
 	    tclsh files/stderr.tcl 2> testfile 
-	set myErr
+	set err [ReadAndDeleteFile testfile]
+	list $myErr $err
     } msg] $msg
-} {0 {}}
+} {0 {{} {This is stderr
+}}}
 
 test bgexec.229 { multiple stderr redirections /w two channels } {
     list [catch {
@@ -1659,7 +1714,7 @@ test bgexec.229 { multiple stderr redirections /w two channels } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/stdout.tcl 2>@ $f 2>@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
@@ -1669,9 +1724,11 @@ test bgexec.230 { redirect both stderr and stdout to one channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/both.tcl >&@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.231 { redirect both stderr and stdout to no channel } {
     list [catch {
@@ -1685,7 +1742,7 @@ test bgexec.232 { multiple stderr/stdout redirections /w channels } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/both.tcl >&@ $f >&@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
@@ -1695,7 +1752,7 @@ test bgexec.233 { multiple output redirections /w file and channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/both.tcl >&@ $f > testfile
 	close $f
-	file size tetfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
 
@@ -1705,7 +1762,7 @@ test bgexec.234 { multiple output redirections /w file and channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -session tclsh files/both.tcl >&@ $f 2> testfile
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
@@ -2188,18 +2245,21 @@ test bgexec.297 { redirect output to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stdout.tcl > testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.298 { redirect output and append to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stdout.tcl > testfile
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stdout
+This is stdout
+}}
 
 test bgexec.299 { redirect output append to no file } {
     list [catch {
@@ -2217,9 +2277,10 @@ test bgexec.301 { redirect output append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.302 { multiple output redirections w/ two files } {
     list [catch {
@@ -2242,9 +2303,10 @@ test bgexec.304 { redirect stdout to channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.305 { redirect stdout to no channel } {
     list [catch {
@@ -2260,17 +2322,19 @@ test bgexec.306 { redirect stdout to bad channel } {
 
 test bgexec.307 { redirect stdout to file (verify empty string is result) } {
     list [catch {
-	file delete -force testfile
-	blt::bgexec myVar -tty tclsh files/stdout.tcl > testfile
+	set out1 [blt::bgexec myVar -tty tclsh files/stdout.tcl > testfile]
+	set out2 [ReadAndDeleteFile testfile]
+	list $out1 $out2 
     } msg] $msg
-} {0 {}}
+} {0 {{} {This is stdout
+}}}
 
 test bgexec.308 { multiple output redirections /w two channels } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/stdout.tcl >@ $f >@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
 
@@ -2278,18 +2342,19 @@ test bgexec.309 { redirect stderr to file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
 
 test bgexec.310 { redirect input (literal) and output (file) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
 	    tclsh files/cat.tcl << "testme" > testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 6}
+} {0 testme}
 
 test bgexec.311 { redirect stderr to no file } {
     list [catch {
@@ -2309,9 +2374,11 @@ test bgexec.313 { redirect stderr append to file } {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2> testfile
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stderr
+}}
 
 test bgexec.314 { redirect stderr append to no file } {
     list [catch {
@@ -2329,9 +2396,10 @@ test bgexec.316 { redirect stderr append to file (file doesn't exist) } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>> testfile
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
 
 test bgexec.317 { multiple stderr redirections w/ two files } {
     list [catch {
@@ -2351,47 +2419,58 @@ test bgexec.318 { multiple stderr redirections w/ two files } {
 
 test bgexec.319 { redirect both stderr and stdout to files } {
     list [catch {
-	file delete -force testfile1 testfile2
 	blt::bgexec myVar -tty \
 	    tclsh files/both.tcl 2> testfile1 > testfile2
-	expr [file size testfile1] + [file size testfile2]
+	set first [ReadAndDeleteFile testfile1]
+	set second [ReadAndDeleteFile testfile2]
+	list $first $second
     } msg] $msg
-} {0 30}
+} {0 {{This is stderr
+} {This is stdout
+}}}
 
 test bgexec.320 { redirect both stderr and stdout append to files } {
     list [catch {
-	file delete -force testfile1 testfile2
 	blt::bgexec myVar -tty \
 	    tclsh files/both.tcl 2>> testfile1 >> testfile2
-	expr [file size testfile1] + [file size testfile2]
+	set first [ReadAndDeleteFile testfile1]
+	set second [ReadAndDeleteFile testfile2]
+	list $first $second
     } msg] $msg
-} {0 30}
+} {0 {{This is stderr
+} {This is stdout
+}}}
 
 test bgexec.321 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
 	    tclsh files/both.tcl 2> testfile > testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stdout
+}}
 
 test bgexec.322 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty \
 	    tclsh files/both.tcl 2>> testfile >> testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.323 { redirect both stderr and stdout to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/both.tcl >& testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.324 { redirect both stderr and stdout to no file } {
     list [catch {
@@ -2409,18 +2488,21 @@ test bgexec.326 { redirect both stderr and stdout appending to one file } {
     list [catch {
 	file delete -force testfile
 	blt::bgexec myVar -tty tclsh files/both.tcl >>& testfile
-	expr [file size testfile]
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.327 { redirect stderr to channel } {
     list [catch {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/stderr.tcl 2>@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 15}
+} {0 {This is stderr
+}}
 
 test bgexec.328 { redirect stderr to no channel } {
     list [catch {
@@ -2436,13 +2518,14 @@ test bgexec.329 { redirect stderr to bad channel } {
 
 test bgexec.330 { redirect stderr to file (verify empty string is result) } {
     list [catch {
-	file delete -force testfile
 	set myErr {}
 	blt::bgexec myVar -tty -errorvariable myErr \
 	    tclsh files/stderr.tcl 2> testfile 
-	set myErr
+	set err [ReadAndDeleteFile testfile]
+	list $myErr $err
     } msg] $msg
-} {0 {}}
+} {0 {{} {This is stderr
+}}}
 
 test bgexec.331 { multiple stderr redirections /w two channels } {
     list [catch {
@@ -2450,7 +2533,7 @@ test bgexec.331 { multiple stderr redirections /w two channels } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/stdout.tcl 2>@ $f 2>@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
@@ -2460,9 +2543,11 @@ test bgexec.332 { redirect both stderr and stdout to one channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/both.tcl >&@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
-} {0 30}
+} {0 {This is stderr
+This is stdout
+}}
 
 test bgexec.333 { redirect both stderr and stdout to no channel } {
     list [catch {
@@ -2476,7 +2561,7 @@ test bgexec.334 { multiple stderr/stdout redirections /w channels } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/both.tcl >&@ $f >&@ $f
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 
@@ -2486,7 +2571,7 @@ test bgexec.335 { multiple output redirections /w file and channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/both.tcl >&@ $f > testfile
 	close $f
-	file size tetfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
 
@@ -2496,7 +2581,7 @@ test bgexec.336 { multiple output redirections /w file and channel } {
 	set f [open testfile "w"]
 	blt::bgexec myVar -tty tclsh files/both.tcl >&@ $f 2> testfile
 	close $f
-	file size testfile
+	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous error redirect.}}
 

@@ -858,18 +858,13 @@ TempFileName(char *name)                /* (out) Buffer to hold name of
  *---------------------------------------------------------------------------
  */
 static HANDLE
-OpenRedirectFile(
-    const char *path, 
-    DWORD accessFlags, 
-    DWORD createFlags)
+OpenRedirectFile(const char *path, DWORD accessFlags, DWORD createFlags)
 {
     HANDLE hFile;
     DWORD attribFlags;
-    int useExisting;
 
     attribFlags = 0;
-    useExisting = (createFlags & (TRUNCATE_EXISTING | OPEN_EXISTING));
-    if (useExisting) {
+    if (createFlags & (TRUNCATE_EXISTING | OPEN_EXISTING)) {
         attribFlags = GetFileAttributes(path);
         if (attribFlags == 0xFFFFFFFF) {
             attribFlags = 0;
@@ -888,7 +883,7 @@ OpenRedirectFile(
 
         lastError = GetLastError();
         if ((lastError & 0xffffL) == ERROR_OPEN_FAILED) {
-            lastError = (useExisting)
+            lastError = (createFlags & (TRUNCATE_EXISTING | OPEN_EXISTING)) 
                 ? ERROR_FILE_NOT_FOUND : ERROR_FILE_EXISTS;
         }
         TclWinConvertError(lastError);
@@ -897,7 +892,7 @@ OpenRedirectFile(
     /*
      * Seek to the end of file if we are writing.
      */
-    if (createFlags & GENERIC_WRITE) {
+    if (accessFlags & GENERIC_WRITE) {
         SetFilePointer(hFile, 0, NULL, FILE_END);
     }
     return hFile;
@@ -2075,7 +2070,7 @@ Blt_CreatePipeline(
     if (needCmd) {
 	/* We had a bar followed only by redirections. */
 
-        Tcl_AppendResult(interp, "illegal use of | or |& in command",
+        Tcl_AppendResult(interp, "missing command for \"", argv[0], "\"",
                          (char *)NULL);
 	goto error;
     }
