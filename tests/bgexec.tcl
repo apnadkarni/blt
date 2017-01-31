@@ -23,8 +23,8 @@ proc ReadAndDeleteFile { fileName } {
 
 test bgexec.1 {set up file channel } {
     list [catch {
-	set file [open files/null.tcl "r"]
-	string match "file*" $file
+	set channel [open files/null.tcl "r"]
+	string match "file*" $channel
     } msg] $msg
 } {0 1}
 
@@ -239,16 +239,16 @@ test bgexec.39 { redirect input from literal } {
 
 test bgexec.40 { redirect input from channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar $tclsh files/cat.tcl <@ $file
+	seek $channel 0
+	blt::bgexec myVar $tclsh files/cat.tcl <@ $channel
     } msg] $msg
 } {0 {exit 0}}
 
 
 test bgexec.41 { bad redirect syntax is considered arg } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar $tclsh files/cat.tcl @< $file
+	seek $channel 0
+	blt::bgexec myVar $tclsh files/cat.tcl @< $channel
     } msg] $msg
 } {1 {child process exited abnormally}}
 
@@ -549,22 +549,22 @@ test bgexec.79 { multiple input redirections w/ two literals. } {
 
 test bgexec.80 { multiple input redirections w/ literal and channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar $tclsh files/cat.tcl << "hi" <@ $file
+	seek $channel 0
+	blt::bgexec myVar $tclsh files/cat.tcl << "hi" <@ $channel
     } msg] $msg
 } {1 {ambiguous input redirect.}}
 
 test bgexec.81 { redirect input /w channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar $tclsh files/cat.tcl <@ $file
+	seek $channel 0
+	blt::bgexec myVar $tclsh files/cat.tcl <@ $channel
     } msg] $msg
 } {0 {exit 0}}
 
 test bgexec.82 { redirect input /w channel and pipe } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar $tclsh files/cat.tcl <@ $file | $tclsh files/cat.tcl
+	seek $channel 0
+	blt::bgexec myVar $tclsh files/cat.tcl <@ $channel | $tclsh files/cat.tcl
     } msg] $msg
 } {0 {exit 0}}
 
@@ -582,8 +582,8 @@ test bgexec.84 { redirect input from literal w/ no command } {
 
 test bgexec.85 { redirect input from channel w/ no command } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar <@ $file
+	seek $channel 0
+	blt::bgexec myVar <@ $channel
     } msg] $msg
 } {1 {missing command for "<@"}}
 
@@ -732,7 +732,7 @@ test bgexec.106 { multiple output redirections /w two channels } {
 	ReadAndDeleteFile testfile
     } msg] $msg
 } {1 {ambiguous output redirect.}}
-
+close $f
 test bgexec.107 { redirect stderr to file } {
     list [catch {
 	blt::bgexec myVar $tclsh files/stderr.tcl 2> testfile
@@ -1015,16 +1015,16 @@ test bgexec.139 { redirect input from literal } {
 
 test bgexec.140 { redirect input from channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -session $tclsh files/cat.tcl <@ $file
+	seek $channel 0
+	blt::bgexec myVar -session $tclsh files/cat.tcl <@ $channel
     } msg] $msg
 } {0 {exit 0}}
 
 
 test bgexec.141 { bad redirect syntax is considered arg } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -session $tclsh files/cat.tcl @< $file
+	seek $channel 0
+	blt::bgexec myVar -session $tclsh files/cat.tcl @< $channel
     } msg] $msg
 } {1 {child process exited abnormally}}
 
@@ -1330,23 +1330,23 @@ test bgexec.179 { multiple input redirections w/ two literals. } {
 
 test bgexec.180 { multiple input redirections w/ literal and channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -session $tclsh files/cat.tcl << "hi" <@ $file
+	seek $channel 0
+	blt::bgexec myVar -session $tclsh files/cat.tcl << "hi" <@ $channel
     } msg] $msg
 } {1 {ambiguous input redirect.}}
 
 test bgexec.181 { redirect input /w channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -session $tclsh files/cat.tcl <@ $file
+	seek $channel 0
+	blt::bgexec myVar -session $tclsh files/cat.tcl <@ $channel
     } msg] $msg
 } {0 {exit 0}}
 
 test bgexec.182 { redirect input /w channel and pipe } {
     list [catch {
-	seek $file 0
+	seek $channel 0
 	blt::bgexec myVar -session \
-	    $tclsh files/cat.tcl <@ $file | $tclsh files/cat.tcl
+	    $tclsh files/cat.tcl <@ $channel | $tclsh files/cat.tcl
     } msg] $msg
 } {0 {exit 0}}
 
@@ -1364,8 +1364,8 @@ test bgexec.184 { redirect input from literal w/ no command } {
 
 test bgexec.185 { redirect input from channel w/ no command } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -session <@ $file
+	seek $channel 0
+	blt::bgexec myVar -session <@ $channel
     } msg] $msg
 } {1 {missing command for "<@"}}
 
@@ -1833,16 +1833,16 @@ test bgexec.241 { redirect input from literal } {
 
 test bgexec.242 { redirect input from channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -tty tclsh files/cat.tcl <@ $file
+	seek $channel 0
+	blt::bgexec myVar -tty tclsh files/cat.tcl <@ $channel
     } msg] $msg
 } {0 {exit 0}}
 
 
 test bgexec.243 { bad redirect syntax is considered arg } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -tty tclsh files/cat.tcl @< $file
+	seek $channel 0
+	blt::bgexec myVar -tty tclsh files/cat.tcl @< $channel
     } msg] $msg
 } {1 {child process exited abnormally}}
 
@@ -2148,23 +2148,23 @@ test bgexec.281 { multiple input redirections w/ two literals. } {
 
 test bgexec.282 { multiple input redirections w/ literal and channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -tty tclsh files/cat.tcl << "hi" <@ $file
+	seek $channel 0
+	blt::bgexec myVar -tty tclsh files/cat.tcl << "hi" <@ $channel
     } msg] $msg
 } {1 {ambiguous input redirect.}}
 
 test bgexec.283 { redirect input /w channel } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -tty tclsh files/cat.tcl <@ $file
+	seek $channel 0
+	blt::bgexec myVar -tty tclsh files/cat.tcl <@ $channel
     } msg] $msg
 } {0 {exit 0}}
 
 test bgexec.284 { redirect input /w channel and pipe } {
     list [catch {
-	seek $file 0
+	seek $channel 0
 	blt::bgexec myVar -tty \
-	    tclsh files/cat.tcl <@ $file | tclsh files/cat.tcl
+	    tclsh files/cat.tcl <@ $channel | tclsh files/cat.tcl
     } msg] $msg
 } {0 {exit 0}}
 
@@ -2182,8 +2182,8 @@ test bgexec.286 { redirect input from literal w/ no command } {
 
 test bgexec.287 { redirect input from channel w/ no command } {
     list [catch {
-	seek $file 0
-	blt::bgexec myVar -tty <@ $file
+	seek $channel 0
+	blt::bgexec myVar -tty <@ $channel
     } msg] $msg
 } {1 {missing command for "<@"}}
 
@@ -2663,7 +2663,7 @@ test bgexec.343 { kill grandchildren with myVar } {
 test bgexec.344 { cleanup } {
     list [catch {
 	file delete -force testfile testfile1 testfile2
-	close $file
+	close $channel
     } msg] $msg
 } {0 {}}
 
