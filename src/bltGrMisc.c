@@ -68,6 +68,8 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 
+#define ARROW_IPAD 2
+
 static Blt_OptionParseProc ObjToPoint;
 static Blt_OptionPrintProc PointToObj;
 Blt_CustomOption bltPointOption =
@@ -1454,7 +1456,6 @@ Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, int x, int y,
     int  s2, s;
     int ax, ay;
 
-#define ARROW_IPAD 1
     w -= 2 * (ARROW_IPAD + borderWidth);
     h -= 2 * (ARROW_IPAD + borderWidth);
     x += ARROW_IPAD + borderWidth;
@@ -1522,7 +1523,6 @@ Blt_DrawArrow(Display *display, Drawable drawable, XColor *color, int x, int y,
     int dx, dy;
     GC gc;
 
-#define ARROW_IPAD 2
     w -= 2 * (ARROW_IPAD + borderWidth);
     h -= 2 * (ARROW_IPAD + borderWidth);
     x += ARROW_IPAD + borderWidth;

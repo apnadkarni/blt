@@ -2166,7 +2166,7 @@ ObjToCellStateProc(
         cellPtr->viewPtr->postPtr = NULL;
     }
     if (mask & POSTED) {
-            cellPtr->viewPtr->postPtr = cellPtr;
+        cellPtr->viewPtr->postPtr = cellPtr;
     }        
     *flagsPtr &= ~CELL_FLAGS_MASK;
     *flagsPtr |= mask;
@@ -5294,29 +5294,30 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
     }
     relief = filterPtr->relief;
     if (colPtr->flags & DISABLED) {     /* Disabled  */
+        fg = filterPtr->disabledFg;
         filterBg = bg = filterPtr->disabledBg;
         gc = filterPtr->disabledGC;
-        fg = filterPtr->disabledFg;
-    } else if (colPtr == filterPtr->postPtr) {   /* Selected */
-        filterBg = bg = filterPtr->selectBg;
-        gc = filterPtr->selectGC;
-        relief = filterPtr->selectRelief;
-        fg = filterPtr->selectFg;
-    } else if (colPtr == filterPtr->activePtr) {  /* Active */
-        filterBg = filterPtr->normalBg;
+    } else if (colPtr == filterPtr->postPtr) {   /* Posted */
         bg = filterPtr->activeBg;
+        fg = filterPtr->activeFg;
+        filterBg = filterPtr->normalBg;
+        gc = filterPtr->activeGC;
+        relief = filterPtr->selectRelief;
+    } else if (colPtr == filterPtr->activePtr) {  /* Active */
+        bg = filterPtr->activeBg;
+        fg = filterPtr->activeFg;
+        filterBg = filterPtr->normalBg;
         gc = filterPtr->activeGC;
         relief = filterPtr->activeRelief;
-        fg = filterPtr->activeFg;
     } else if (colPtr->flags & FILTERHIGHLIGHT) { /* Highlighted */
+        fg = filterPtr->highlightFg;
         filterBg = bg = filterPtr->highlightBg;
         gc = filterPtr->highlightGC;
-        fg = filterPtr->highlightFg;
         relief = TK_RELIEF_FLAT;
     } else {                            /* Normal */
+        fg = filterPtr->normalFg;
         filterBg = bg = filterPtr->normalBg;
         gc = filterPtr->normalGC;
-        fg = filterPtr->normalFg;
         relief = TK_RELIEF_FLAT;
     }
 
@@ -8591,6 +8592,7 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     FilterInfo *filterPtr;
     int x1, y1, x2, y2;
     int rootX, rootY;
+    int result;
 
     filterPtr = &viewPtr->filter;
     if (objc == 3) {
@@ -8639,9 +8641,9 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     y1 = viewPtr->inset + viewPtr->colTitleHeight + rootY;
     y2 = y1 + viewPtr->colFilterHeight;
     
+    result = TCL_ERROR;
     if (filterPtr->postCmdObjPtr != NULL) {
         Tcl_Obj *cmdObjPtr;
-        int result;
 
         /* Call the designated post command for the filter menu. Pass it the
          * bounding box of the filter button so it can arrange itself */
@@ -8664,7 +8666,6 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (strcmp(Tk_Class(tkwin), "BltComboMenu") == 0) {
         Tcl_Obj *cmdObjPtr, *objPtr, *listObjPtr;
-        int result;
 
         cmdObjPtr = Tcl_DuplicateObj(filterPtr->menuObjPtr);
         /* menu post -align right -box {x1 y1 x2 y2}  */
@@ -8690,9 +8691,16 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (result == TCL_OK) {
             filterPtr->postPtr = colPtr;
         }
-        return result;
     }
-    return TCL_OK;
+    if ((viewPtr->flags & REDRAW_PENDING) == 0) {
+        if (filterPtr->postPtr != NULL) {
+            Drawable drawable;
+            
+            drawable = Tk_WindowId(viewPtr->tkwin);
+            DisplayColumnFilter(viewPtr, filterPtr->postPtr, drawable);
+        }
+    }
+    return result;
 }
 
 /*
