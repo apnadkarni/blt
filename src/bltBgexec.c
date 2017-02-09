@@ -793,7 +793,6 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
         Blt_HashSearch iter;
         char **array;
         char *p;
-        int n, arraySize;
         
         array = Blt_AssertMalloc(numBytes * sizeof(char));
 	p = array;

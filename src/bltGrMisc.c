@@ -82,6 +82,7 @@ Blt_CustomOption bltLimitsOption =
     ObjToLimitsProc, LimitsToObjProc, NULL, (ClientData)0
 };
 
+#define ARROW_IPAD 2
 
 /*
  *---------------------------------------------------------------------------
@@ -1454,7 +1455,6 @@ Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, int x, int y,
     int  s2, s;
     int ax, ay;
 
-#define ARROW_IPAD 1
     w -= 2 * (ARROW_IPAD + borderWidth);
     h -= 2 * (ARROW_IPAD + borderWidth);
     x += ARROW_IPAD + borderWidth;
@@ -1522,7 +1522,6 @@ Blt_DrawArrow(Display *display, Drawable drawable, XColor *color, int x, int y,
     int dx, dy;
     GC gc;
 
-#define ARROW_IPAD 2
     w -= 2 * (ARROW_IPAD + borderWidth);
     h -= 2 * (ARROW_IPAD + borderWidth);
     x += ARROW_IPAD + borderWidth;

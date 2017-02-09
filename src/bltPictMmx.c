@@ -70,9 +70,11 @@ typedef struct  {
     unsigned int edx;
 } X86Registers;
 
+#if (SIZEOF_LONG == 8) 
 static uint8_t bytes16[16] __attribute__((aligned(16))) = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
+#endif /* SIZEOF_LONG == 8 */
 
 /* 
  * unmultiply,  zoomvertically, zoomhorizontally
@@ -1342,6 +1344,8 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
 }
 #endif
 
+#if (SIZEOF_LONG == 8) 
+
 /* 
  *---------------------------------------------------------------------------
  *
@@ -2101,7 +2105,7 @@ ZoomHorizontally2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
     /* Free the memory allocated for horizontal filter weights. */
     Blt_Free(samples);
 }
-
+#endif /* SIZEOF_LONG == 8 */
 
 /* 
  *---------------------------------------------------------------------------
