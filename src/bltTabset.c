@@ -3785,6 +3785,7 @@ ConfigureTabset(
         setPtr->angle += 360.0;
     }
     setPtr->quad = (int)(setPtr->angle / 90.0);
+    showTabs = TRUE;
     if (setPtr->showTabs == SHOW_TABS_MULTIPLE) {
         showTabs = (setPtr->numVisible > 1);
     } else if (setPtr->showTabs == SHOW_TABS_ALWAYS) {
@@ -6359,6 +6360,7 @@ ComputeLayout(Tabset *setPtr)
     setPtr->flags &= ~OVERFULL;
     numTabs = ComputeWorldGeometry(setPtr);
 
+    showTabs = TRUE;
     if (setPtr->showTabs == SHOW_TABS_MULTIPLE) {
         showTabs = (numTabs > 1);
     } else if (setPtr->showTabs == SHOW_TABS_ALWAYS) {
