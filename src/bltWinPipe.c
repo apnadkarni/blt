@@ -84,7 +84,6 @@
 
 /*
  * Todo:
- *      Test on win95
  *      Does terminating bltwish kill child processes?
  *      Handle EOL translation more cleanly.
  */

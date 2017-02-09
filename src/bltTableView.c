@@ -4943,7 +4943,7 @@ CsvAppendValue(CsvWriter *writerPtr, TableView *viewPtr, Row *rowPtr,
     BLT_TABLE_COLUMN_TYPE type;
     
     string = blt_table_get_string(viewPtr->table, rowPtr->row, colPtr->column);
-    length = strlen(string);
+    length = (string == NULL) ? 0 : strlen(string);
     type = blt_table_column_type(colPtr->column);
     CsvAppendRecord(writerPtr, string, length, type);
 }
@@ -5391,10 +5391,10 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
 
         aw = viewPtr->arrowWidth + (2 * filterPtr->borderWidth);
         ah = filterHeight;
-        ax = x + filterWidth - aw - 1;
+        ax = x + filterWidth - aw;
         ay = y;
         if ((aw > 0) && (ah > 0)) {
-            Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax - 1, ay,
+            Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay,
                                  aw, ah, filterPtr->borderWidth, relief);
             aw -= 2 * filterPtr->borderWidth;
             ax += filterPtr->borderWidth;

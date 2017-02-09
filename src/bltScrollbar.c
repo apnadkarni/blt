@@ -1055,7 +1055,7 @@ DisplayScrollbar(ClientData clientData) /* Information about window. */
        scrollPtr->inset, width, width, elementBW, relief); 
     
     Blt_DrawArrow(scrollPtr->display, pixmap, scrollPtr->arrowColor,
-        scrollPtr->inset+1, scrollPtr->inset+1, width-2, width-2, elementBW, 
+        scrollPtr->inset, scrollPtr->inset, width, width, elementBW, 
         (scrollPtr->vertical) ? ARROW_UP : ARROW_LEFT);
     /*
      * Display the bottom or right arrow.
@@ -1098,9 +1098,9 @@ DisplayScrollbar(ClientData clientData) /* Information about window. */
                        width, width, elementBW, relief); 
     
     Blt_DrawArrow(scrollPtr->display, pixmap, scrollPtr->arrowColor, 
-        Tk_Width(tkwin) - scrollPtr->inset - width + 1, 
-        Tk_Height(tkwin) - scrollPtr->inset - width + 1, 
-        width - 2, width - 2, 
+        Tk_Width(tkwin) - scrollPtr->inset - width, 
+        Tk_Height(tkwin) - scrollPtr->inset - width, 
+        width, width, 
         elementBW, (scrollPtr->vertical) ? ARROW_DOWN : ARROW_RIGHT);
 #endif    
     /*

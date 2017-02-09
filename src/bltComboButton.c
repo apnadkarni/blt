@@ -1961,12 +1961,10 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
         Tk_Width(comboPtr->tkwin), Tk_Height(comboPtr->tkwin),
         comboPtr->borderWidth, TK_RELIEF_FLAT);
 
-    x = comboPtr->inset + comboPtr->padX.side1;
-    y = comboPtr->inset + comboPtr->padY.side2;
+    x = comboPtr->inset + comboPtr->padX.side1 + XPAD;
+    y = comboPtr->inset + comboPtr->padY.side1 + YPAD;
     w  = Tk_Width(comboPtr->tkwin)  - 2 * (comboPtr->inset + XPAD) - PADDING(comboPtr->padX);
     h = Tk_Height(comboPtr->tkwin) -  2 * (comboPtr->inset + YPAD) - PADDING(comboPtr->padY);
-    x += XPAD;
-    y += YPAD;
     /* Draw Icon. */
     if (comboPtr->icon != NULL) {
         int gap, ix, iy, iw, ih;
@@ -2002,17 +2000,19 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
     /* Arrow button. */
     if (comboPtr->flags & ARROW) {
         XColor *color;
-
+        int ax, ay;
+        
         /*  */
-        x = Tk_Width(comboPtr->tkwin) - XPAD -  comboPtr->padX.side2 - comboPtr->inset - comboPtr->arrowWidth;
-        y = comboPtr->inset;
+        ax = Tk_Width(comboPtr->tkwin) - XPAD -  comboPtr->padX.side2 -
+            comboPtr->inset - comboPtr->arrowWidth;
+        ay = y;
         if (h > comboPtr->arrowHeight) {
-            y += (h - comboPtr->arrowHeight) / 2;
+            ay += (h - comboPtr->arrowHeight) / 2;
         }
-        if (x < 0) {
-            x = comboPtr->inset;
+        if (ax < 0) {
+            ax = comboPtr->inset;
         }
-        Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x, y, 
+        Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, ax, ay, 
             comboPtr->arrowWidth, comboPtr->arrowHeight, comboPtr->arrowBW,
             comboPtr->arrowRelief);
         if (comboPtr->flags & STATE_POSTED) {
@@ -2024,7 +2024,7 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
         } else {
             color = comboPtr->textNormalColor;
         }
-        Blt_DrawArrow(comboPtr->display, drawable, color, x, y, 
+        Blt_DrawArrow(comboPtr->display, drawable, color, ax, ay, 
                 comboPtr->arrowWidth, comboPtr->arrowHeight,
                 comboPtr->arrowBW, ARROW_DOWN);
     }

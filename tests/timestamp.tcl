@@ -1639,6 +1639,14 @@ test timestamp.194 {timestamp format %S} {
     } msg] $msg
 } {0 59}
 
+# Fractional seconds (non-standard) 
+test timestamp.194 {timestamp format %f} { 
+    list [catch {
+ 	set d1 [blt::timestamp scan "Jan 1, 1970 00:00:59.9999123"]
+	blt::timestamp format $d1 -format "%f"
+    } msg] $msg
+} {0 .9999123}
+
 # Time hh:mm:ss
 test timestamp.195 {timestamp format %T} { 
     list [catch {
@@ -1753,20 +1761,20 @@ test timestamp.208 {timestamp format "abcd%aefghi"} {
 } {0 abcdSunefghi}
 
 # Non-substitutions.
-test timestamp.209 {timestamp format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z"} { 
+test timestamp.209 {timestamp format "%E%i%J%K%L%n%q%Q%t%v%X%Z"} { 
     list [catch {
  	set d1 [blt::timestamp scan "Jan 5, 2014 PST"]
-	blt::timestamp format $d1 -format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z"
+	blt::timestamp format $d1 -format "%E%i%J%K%L%n%q%Q%t%v%X%Z"
     } msg] $msg
-} {0 %E%f%i%J%K%L%n%q%Q%t%v%X%Z}
+} {0 %E%i%J%K%L%n%q%Q%t%v%X%Z}
 
 # Non-substitutions.
-test timestamp.210 {timestamp format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z%%s"} { 
+test timestamp.210 {timestamp format "%E%i%J%K%L%n%q%Q%t%v%X%Z%%s"} { 
     list [catch {
  	set d1 [blt::timestamp scan "Jan 5, 2014 PST"]
-	blt::timestamp format $d1 -format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z%%s"
+	blt::timestamp format $d1 -format "%E%i%J%K%L%n%q%Q%t%v%X%Z%%s"
     } msg] $msg
-} {0 %E%f%i%J%K%L%n%q%Q%t%v%X%Z%s}
+} {0 %E%i%J%K%L%n%q%Q%t%v%X%Z%s}
 
 
 test timestamp.211 {timestamp scan "dd month yyyy"} { 
@@ -2194,4 +2202,18 @@ foreach name [array names blt::timezones] {
     incr count
 }
     
+test timestamp.150 {timestamp scan "Dec 25, 1960"} { 
+    list [catch {
+	blt::timestamp format -284601600.0
+    } msg] $msg
+} {0 {Sun Dec 25 00:00:00 +0000 1960}}
+
+
+test timestamp.151 {timestamp scan "Dec 25, 1960"} { 
+    list [catch {
+	blt::timestamp format -284601600.9999 -format "%a %b %d %H:%M:%S%f %z %Y"
+    } msg] $msg
+} {0 {Sun Dec 25 00:00:00 +0000 1960}}
+
+
 

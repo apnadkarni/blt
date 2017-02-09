@@ -104,10 +104,10 @@ typedef struct {
     int hour;                           /* Hour 0-23. */
     int min;                            /* Minute 0-59 */
     int sec;                            /* Second. 0-60. */
-    double frac;                        /* Fractional seconds. */
     int tzoffset;                       /* Timezone offset. */
     int isdst;
     int isLeapYear;
+    double frac;                        /* Fractional seconds. */
 } Blt_DateTime;
 
 BLT_EXTERN int Blt_CreatePipeline(Tcl_Interp *interp, int objc, 

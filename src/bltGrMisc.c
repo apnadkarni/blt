@@ -1447,8 +1447,8 @@ Blt_DrawSegments2d(
 }
 
 void
-Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, int x, int y, int w, 
-              int h, int borderWidth, int orientation)
+Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, int x, int y,
+                 int w, int h, int borderWidth, int orientation)
 {
     XPoint arrow[4];
     int  s2, s;
@@ -1522,7 +1522,7 @@ Blt_DrawArrow(Display *display, Drawable drawable, XColor *color, int x, int y,
     int dx, dy;
     GC gc;
 
-#define ARROW_IPAD 1
+#define ARROW_IPAD 2
     w -= 2 * (ARROW_IPAD + borderWidth);
     h -= 2 * (ARROW_IPAD + borderWidth);
     x += ARROW_IPAD + borderWidth;

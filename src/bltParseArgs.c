@@ -403,7 +403,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc,
         DestroyArg(argPtr);
         return TCL_ERROR;
     }
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), argsPtr->name);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), argsPtr->name, -1);
     return TCL_OK;
 }
 

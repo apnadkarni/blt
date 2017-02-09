@@ -157,8 +157,7 @@
 #define CLOSE_NEEDED       (1<<13)      /* Draw a "x" button on each
                                          * tab. Clicking on the button will
                                          * automatically close the tab. */
-#define NO_TABS            (1<<14)      /* Display window in a tab even if
-                                         * there is only one tab displayed. */
+#define SHOW_TABS          (1<<14)      /* Display tabs. */
 #define SCROLL_TABS        (1<<15)      /* Allow tabs to be scrolled if
                                          * needed. Otherwise tab sizes will
                                          * shrink to fit the space. */
@@ -166,6 +165,12 @@
 #define DELETED            (1<<20)      /* Indicates the tab has been deleted
                                          * and will be freed when the widget
                                          * is no longer in use. */
+
+enum ShowTabs {
+    SHOW_TABS_ALWAYS,
+    SHOW_TABS_MULTIPLE,
+    SHOW_TABS_NEVER
+};
 
 #define TAB_LABEL          (ClientData)0
 #define TAB_PERFORATION    (ClientData)1
@@ -205,7 +210,7 @@
 #define DEF_SELECTRELIEF                "raised"
 #define DEF_SHADOWCOLOR                 RGB_BLACK
 #define DEF_CLOSEBUTTON                 "0"
-#define DEF_NOTABS                      "0"
+#define DEF_SHOW_TABS                   "always"
 #define DEF_SIDE                        "top"
 #define DEF_SLANT                       "none"
 #define DEF_TABRELIEF                   "raised"
@@ -281,6 +286,8 @@ static Blt_OptionParseProc ObjToTabWidthProc;
 static Blt_OptionPrintProc TabWidthToObjProc;
 static Blt_OptionParseProc ObjToStateProc;
 static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToShowTabsProc;
+static Blt_OptionPrintProc ShowTabsToObjProc;
 
 /*
  * Contains a pointer to the widget that's currently being configured.  This
@@ -305,6 +312,10 @@ static Blt_CustomOption tabWidthOption = {
 
 static Blt_CustomOption stateOption = {
     ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+};
+
+static Blt_CustomOption showTabsOption = {
+    ObjToShowTabsProc, ShowTabsToObjProc, NULL, (ClientData)0
 };
 
 typedef struct {
@@ -629,6 +640,7 @@ struct _Tabset {
     unsigned int flags;                 /* For bitfield definitions, see
                                          * below */
 
+    int showTabs;
     short int inset;                    /* Total width of all borders,
                                          * including traversal highlight and
                                          * 3-D border.  Indicates how much
@@ -744,7 +756,7 @@ struct _Tabset {
                                          * means to dynamically scroll if
                                          * there are * too many tabs to be
                                          * display on a single * tier. */
-    int numTiers;                               /* Actual number of tiers. */
+    int numTiers;                       /* Actual number of tiers. */
     Blt_HashTable iconTable;
     Tab *plusPtr;                       /* Special tab always at end of tab
                                          * set. */
@@ -867,9 +879,9 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-shadowcolor", "shadowColor", "ShadowColor",
         DEF_SHADOWCOLOR, Blt_Offset(Tabset, shadowColor), 0},
-    {BLT_CONFIG_BITMASK, "-notabs", "noTabs", "NoTabs", 
-        DEF_NOTABS, Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)NO_TABS},
+    {BLT_CONFIG_CUSTOM, "-showtabs", "showTabs", "ShowTabs", DEF_SHOW_TABS, 
+        Blt_Offset(Tabset, showTabs), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &showTabsOption},
     {BLT_CONFIG_SIDE, "-side", "side", "side", DEF_SIDE, 
         Blt_Offset(Tabset, side), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-slant", "slant", "Slant", DEF_SLANT, 
@@ -1621,18 +1633,21 @@ ObjToStateProc(
 {
     Tab *tabPtr = (Tab *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
-    char *string;
+    const char *string;
     Tabset *setPtr;
+    int length;
+    char c;
     int flag;
 
-    string = Tcl_GetString(objPtr);
-    if (strcmp(string, "active") == 0) {
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'a') && (strncmp(string, "active", length) == 0)) {
         flag = ACTIVE;
-    } else if (strcmp(string, "disabled") == 0) {
+    } else if ((c == 'd') && (strncmp(string, "disabled", length) == 0)) {
         flag = DISABLED;
-    } else if (strcmp(string, "hidden") == 0) {
+    } else if ((c == 'h') && (strncmp(string, "hidden", length) == 0)) {
         flag = HIDDEN;
-    } else if (strcmp(string, "normal") == 0) {
+    } else if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
         flag = NORMAL;
     } else {
         Tcl_AppendResult(interp, "unknown state \"", string, 
@@ -1688,6 +1703,91 @@ StateToObjProc(
         objPtr = Tcl_NewStringObj("active", -1);
     } else {
         objPtr = Tcl_NewStringObj("normal", -1);
+    }
+    return objPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToShowTabsProc --
+ *
+ *      Convert the string representation of a flag indicating whether or
+ *      not to show tabs.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The flags are
+ *      updated.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToShowTabsProc(
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing state. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
+{
+    unsigned int *valuePtr = (unsigned int *)(widgRec + offset);
+    const char *string;
+    char c;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'a') && (strncmp(string, "always", length) == 0)) {
+        *valuePtr = SHOW_TABS_ALWAYS;
+    } else if ((c == 'n') && (strncmp(string, "never", length) == 0)) {
+        *valuePtr = SHOW_TABS_NEVER;
+    } else if ((c == 'm') && (strncmp(string, "multiple", length) == 0)) {
+        *valuePtr = SHOW_TABS_MULTIPLE;
+    } else {
+        Tcl_AppendResult(interp, "unknown show tabs value \"", string, 
+                "\": should be always, never, or multiple.", 
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ShowTabsToObjProc --
+ *
+ *      Return the name of the show tabs value.
+ *
+ * Results:
+ *      The name representing the show tabs value is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+ShowTabsToObjProc(
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
+{
+    unsigned int value = *(unsigned int *)(widgRec + offset);
+    Tcl_Obj *objPtr;
+
+    switch (value) {
+    case SHOW_TABS_ALWAYS:
+        objPtr = Tcl_NewStringObj("always", 6);         break;
+    case SHOW_TABS_NEVER:
+        objPtr = Tcl_NewStringObj("never", 5);          break;
+    case SHOW_TABS_MULTIPLE:
+        objPtr = Tcl_NewStringObj("multiple", 8);       break;
+    default: 
+        objPtr = Tcl_NewStringObj("???", 3);            break;
     }
     return objPtr;
 }
@@ -3631,7 +3731,8 @@ ConfigureTabset(
     GC newGC;
     int slantLeft, slantRight;
     TabStyle *stylePtr;
-    
+    int showTabs;
+
     iconOption.clientData = setPtr;
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, configSpecs, 
            objc, objv, (char *)setPtr, flags) != TCL_OK) {
@@ -3684,11 +3785,23 @@ ConfigureTabset(
         setPtr->angle += 360.0;
     }
     setPtr->quad = (int)(setPtr->angle / 90.0);
-    if (setPtr->flags & NO_TABS) {
-        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth;
+    if (setPtr->showTabs == SHOW_TABS_MULTIPLE) {
+        showTabs = (setPtr->numVisible > 1);
+    } else if (setPtr->showTabs == SHOW_TABS_ALWAYS) {
+        showTabs = TRUE;
+    } else if (setPtr->showTabs == SHOW_TABS_NEVER) {
+        showTabs = FALSE;
+    }
+    if (showTabs) {
+        setPtr->flags |= SHOW_TABS;
     } else {
+        setPtr->flags &= ~SHOW_TABS;
+    }
+    if (showTabs) {
         setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth + 
             setPtr->outerPad;
+    } else {
+        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth;
     }
     if (Blt_ConfigModified(configSpecs, "-font", "-*foreground", "-rotate",
                 "-*background", "-side", "-iconposition", "-tiers", "-tabwidth",
@@ -3719,10 +3832,10 @@ ConfigureTabset(
     if (slantRight) {
         setPtr->flags |= SLANT_RIGHT;
     }
-    if (setPtr->flags & NO_TABS) {
-        setPtr->inset2 = 0;
-    } else {
+    if (showTabs) {
         setPtr->inset2 = stylePtr->borderWidth + setPtr->corner;
+    } else {
+        setPtr->inset2 = 0;
     }
     EventuallyRedraw(setPtr);
     return TCL_OK;
@@ -6236,7 +6349,7 @@ ComputeLayout(Tabset *setPtr)
 {
     int width;
     int x, extra;
-    int numTiers, numTabs;
+    int numTiers, numTabs, showTabs;
 
     setPtr->numTiers = 0;
     setPtr->pageTop = setPtr->borderWidth;
@@ -6245,6 +6358,20 @@ ComputeLayout(Tabset *setPtr)
     ReindexTabs(setPtr);
     setPtr->flags &= ~OVERFULL;
     numTabs = ComputeWorldGeometry(setPtr);
+
+    if (setPtr->showTabs == SHOW_TABS_MULTIPLE) {
+        showTabs = (numTabs > 1);
+    } else if (setPtr->showTabs == SHOW_TABS_ALWAYS) {
+        showTabs = TRUE;
+    } else if (setPtr->showTabs == SHOW_TABS_NEVER) {
+        showTabs = FALSE;
+    }
+    if (showTabs) {
+        setPtr->flags |= SHOW_TABS;
+    } else {
+        setPtr->flags &= ~SHOW_TABS;
+    }
+
     if (numTabs == 0) {
         return;
     }
@@ -6259,7 +6386,7 @@ ComputeLayout(Tabset *setPtr)
         setPtr->focusPtr = setPtr->selectPtr;
         Blt_SetFocusItem(setPtr->bindTable, setPtr->focusPtr, NULL);
     }
-    if (setPtr->flags & NO_TABS) {
+    if ((setPtr->flags & SHOW_TABS) == 0) {
         setPtr->pageTop = setPtr->borderWidth;
         setPtr->numVisible = 0;
         return;                         /* Don't bother it there's only 
@@ -7078,7 +7205,7 @@ DisplayTabset(ClientData clientData)    /* Information about widget. */
         Tk_Width(setPtr->tkwin), Tk_Height(setPtr->tkwin), 
         0, TK_RELIEF_FLAT);
 
-    if (((setPtr->flags & NO_TABS) == 0) && (setPtr->numVisible > 0)) {
+    if ((setPtr->flags & SHOW_TABS) && (setPtr->numVisible > 0)) {
         int i;
         Tab *tabPtr;
         Blt_ChainLink link;
