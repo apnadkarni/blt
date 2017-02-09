@@ -68,6 +68,8 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 
+#define ARROW_IPAD 2
+
 static Blt_OptionParseProc ObjToPoint;
 static Blt_OptionPrintProc PointToObj;
 Blt_CustomOption bltPointOption =
