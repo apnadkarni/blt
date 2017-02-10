@@ -3337,7 +3337,7 @@ GetLastColumn(TableView *viewPtr)
  *
  * NearestColumn --
  *
- *      Finds the row closest to the given screen Y-coordinate in the
+ *      Finds the row closest to the given screen X-coordinate in the
  *      viewport.
  *
  * Results:
@@ -6132,7 +6132,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BboxOp --
  *
- *      pathName bbox cell ?cell?...
+ *      pathName bbox cell ?cellName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6908,18 +6908,18 @@ CellWritableOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec cellOps[] =
 {
-    {"activate",   1, CellActivateOp,    3, 4, "?cell?",},
-    {"bbox",       1, CellBboxOp,        4, 4, "cell",},
-    {"cget",       2, CellCgetOp,        5, 5, "cell option",},
-    {"configure",  2, CellConfigureOp,   4, 0, "cell ?option value?...",},
+    {"activate",   1, CellActivateOp,    3, 4, "?cellName?",},
+    {"bbox",       1, CellBboxOp,        4, 4, "cellName",},
+    {"cget",       2, CellCgetOp,        5, 5, "cellName option",},
+    {"configure",  2, CellConfigureOp,   4, 0, "cellName ?option value ...?",},
     {"deactivate", 1, CellDeactivateOp,  3, 3, "",},
-    {"focus",      2, CellFocusOp,       4, 0, "?cell?",},
-    {"identify",   2, CellIdentifyOp,    6, 6, "cell x y",},
-    {"index",      3, CellIndexOp,       4, 4, "cell",},
-    {"invoke",     3, CellInvokeOp,      4, 4, "cell",},
-    {"see",        3, CellSeeOp,         4, 4, "cell",},
-    {"style",      3, CellStyleOp,       4, 4, "cell",},
-    {"writable",   3, CellWritableOp,    4, 4, "cell",},
+    {"focus",      2, CellFocusOp,       4, 0, "?cellName?",},
+    {"identify",   2, CellIdentifyOp,    6, 6, "cellName x y",},
+    {"index",      3, CellIndexOp,       4, 4, "cellName",},
+    {"invoke",     3, CellInvokeOp,      4, 4, "cellName",},
+    {"see",        3, CellSeeOp,         4, 4, "cellName",},
+    {"style",      3, CellStyleOp,       4, 4, "cellName",},
+    {"writable",   3, CellWritableOp,    4, 4, "cellName",},
 };
 static int numCellOps = sizeof(cellOps) / sizeof(Blt_OpSpec);
 
@@ -7381,7 +7381,7 @@ ColumnExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnExposeOp --
  *
- *      pathName column expose ?col...?
+ *      pathName column expose ?colName...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7440,9 +7440,90 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ColumnFindOp --
+ *
+ *      pathName column find x1 y1 x2 y2 ?switches ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    Column *colPtr;
+    int x1, y1, x2, y2;
+
+#ifdef notdef
+    int isRoot;
+
+    isRoot = FALSE;
+    string = Tcl_GetString(objv[3]);
+
+    if (strcmp("-root", string) == 0) {
+        isRoot = TRUE;
+        objv++, objc--;
+    }
+    if (objc != 5) {
+        Tcl_AppendResult(interp, "wrong # args: should be \"", 
+                Tcl_GetString(objv[0]), " ", Tcl_GetString(objv[1]), 
+                Tcl_GetString(objv[2]), " ?-root? x y\"", (char *)NULL);
+        return TCL_ERROR;
+                         
+    }
+#endif
+    if ((Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[3], &x1) != TCL_OK) ||
+        (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[4], &y1) != TCL_OK) ||
+        (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[5], &x2) != TCL_OK) ||
+        (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[6], &y2) != TCL_OK)) {
+        return TCL_ERROR;
+    } 
+    if (x1 > x2) {
+        int tmp;
+
+        tmp = x2; x2 = x1; x1 = tmp;
+    }
+    if (y1 > y2) {
+        int tmp;
+
+        tmp = y2; y2 = y1; y1 = tmp;
+    }
+    if ((y2 < viewPtr->inset) || 
+        (y1 >= (viewPtr->inset + viewPtr->colTitleHeight))) {
+        Tcl_SetLongObj(Tcl_GetObjResult(interp), -1);
+        return TCL_OK;
+    }
+    /*
+     * Since the entry positions were previously computed in world
+     * coordinates, convert x-coordinates from screen to world coordinates
+     * too.
+     */
+    x1 = WORLDX(viewPtr, x1);
+    x2 = WORLDX(viewPtr, x2);
+    lastPtr = NULL;                     /* Suppress compiler warning. */
+    for (i = 0; i < viewPtr->numVisibleColumns; i++) {
+        Column *colPtr;
+
+        colPtr = viewPtr->visibleColumns[i];
+        if ((x1 < (colPtr->worldX + colPtr->width)) && 
+            (x2 > colPtr->worldX)) {
+            long index;
+
+            index = blt_table_column_index(colPtr->column);
+            Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+            return TCL_OK;
+        }
+    }
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), -1);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ColumnHideOp --
  *
- *      pathName column hide ?col...?
+ *      pathName column hide ?colName...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -8131,24 +8212,25 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 
 static Blt_OpSpec columnOps[] = {
-    {"activate",   1, ColumnActivateOp,   4, 4, "col",}, 
+    {"activate",   1, ColumnActivateOp,   4, 4, "colName",}, 
     {"bind",       1, ColumnBindOp,       4, 6, "tagName ?sequence command?",},
-    {"cget",       2, ColumnCgetOp,       5, 5, "col option",}, 
-    {"configure",  2, ColumnConfigureOp,  4, 0, "coltag ?option value?...",}, 
+    {"cget",       2, ColumnCgetOp,       5, 5, "colName option",}, 
+    {"configure",  2, ColumnConfigureOp,  4, 0, "colName ?option value ...?",}, 
     {"deactivate", 2, ColumnDeactivateOp, 3, 3, "",},
-    {"delete",     2, ColumnDeleteOp,     3, 0, "coltag...",}, 
-    {"exists",     3, ColumnExistsOp,     4, 4, "coltag",}, 
-    {"expose",     3, ColumnExposeOp,     3, 0, "?coltag...?",},
-    {"hide",       1, ColumnHideOp,       3, 0, "?coltag...?",},
-    {"index",      3, ColumnIndexOp,      4, 4, "col",}, 
-    {"insert",     3, ColumnInsertOp,     5, 0, "col pos ?option value?...",},  
-    {"invoke",     3, ColumnInvokeOp,     4, 4, "col",},  
-    {"move",       1, ColumnMoveOp,       5, 5, "col pos",},  
+    {"delete",     2, ColumnDeleteOp,     3, 0, "colName...",}, 
+    {"exists",     3, ColumnExistsOp,     4, 4, "colName",}, 
+    {"expose",     3, ColumnExposeOp,     3, 0, "?colName ...?",},
+    {"find",       1, ColumnFindOp,       7, 7, "x1 y1 x2 y2",},
+    {"hide",       1, ColumnHideOp,       3, 0, "?colName ...?",},
+    {"index",      3, ColumnIndexOp,      4, 4, "colName",}, 
+    {"insert",     3, ColumnInsertOp,     5, 0, "colName pos ?option value ...?",},  
+    {"invoke",     3, ColumnInvokeOp,     4, 4, "colName",},  
+    {"move",       1, ColumnMoveOp,       5, 5, "colName pos",},  
     {"names",      2, ColumnNamesOp,      3, 3, "",},
-    {"nearest",    2, ColumnNearestOp,    4, 4, "y",},
+    {"nearest",    2, ColumnNearestOp,    4, 4, "x",},
     {"resize",     1, ColumnResizeOp,     3, 0, "args",},
-    {"see",        2, ColumnSeeOp,        4, 4, "col",}, 
-    {"show",       2, ColumnExposeOp,     3, 0, "?coltag...?",},
+    {"see",        2, ColumnSeeOp,        4, 4, "colName",}, 
+    {"show",       2, ColumnExposeOp,     3, 0, "?colName ...?",},
 };
 static int numColumnOps = sizeof(columnOps) / sizeof(Blt_OpSpec);
 
@@ -8772,7 +8854,7 @@ static Blt_OpSpec filterOps[] =
 {
     {"activate",   1, FilterActivateOp,    4, 4, "col",},
     {"cget",       2, FilterCgetOp,        4, 4, "option",},
-    {"configure",  2, FilterConfigureOp,   4, 0, "col ?option value?...",},
+    {"configure",  2, FilterConfigureOp,   4, 0, "col ?option value ...?",},
     {"deactivate", 1, FilterDeactivateOp,  3, 3, "",},
     {"inside",     1, FilterInsideOp,      6, 6, "col x y",},
     {"post",       1, FilterPostOp,        3, 4, "?col?",},
@@ -9485,7 +9567,7 @@ RowExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowExposeOp --
  *
- *      pathName row expose ?row...?
+ *      pathName row expose ?rowName ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -9546,7 +9628,7 @@ RowExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowHideOp --
  *
- *      pathName row hide ?row...?
+ *      pathName row hide ?rowName ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -9780,7 +9862,7 @@ RowInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowNamesOp --
  *
- *      pathName row names ?pattern...?
+ *      pathName row names ?patternName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -10096,23 +10178,23 @@ RowSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec rowOps[] =
 {
-    {"activate",   1, RowActivateOp,   4, 4, "row",},
+    {"activate",   1, RowActivateOp,   4, 4, "rowName",},
     {"bind",       1, RowBindOp,       4, 6, "tagName ?sequence command?",},
-    {"cget",       2, RowCgetOp,       5, 5, "row option",},
-    {"configure",  2, RowConfigureOp,  4, 0, "row ?option value?...",},
+    {"cget",       2, RowCgetOp,       5, 5, "rowName option",},
+    {"configure",  2, RowConfigureOp,  4, 0, "rowName ?option value ...?",},
     {"deactivate", 3, RowDeactivateOp, 3, 3, "",},
-    {"delete",     3, RowDeleteOp,     4, 0, "row...",},
-    {"exists",     3, RowExistsOp,     4, 4, "row",},
-    {"expose",     3, RowExposeOp,     3, 0, "?row...?",},
-    {"hide",       1, RowHideOp,       3, 0, "?row...?",},
-    {"index",      3, RowIndexOp,      4, 4, "row",},
-    {"insert",     3, RowInsertOp,     5, 0, "row position ?option value?...",},
-    {"invoke",     3, RowInvokeOp,     4, 4, "row",},
+    {"delete",     3, RowDeleteOp,     4, 0, "rowName...",},
+    {"exists",     3, RowExistsOp,     4, 4, "rowName",},
+    {"expose",     3, RowExposeOp,     3, 0, "?rowName ...?",},
+    {"hide",       1, RowHideOp,       3, 0, "?rowName ...?",},
+    {"index",      3, RowIndexOp,      4, 4, "rowName",},
+    {"insert",     3, RowInsertOp,     5, 0, "rowName position ?option value ...?",},
+    {"invoke",     3, RowInvokeOp,     4, 4, "rowName",},
     {"names",      2, RowNamesOp,      3, 3, "",},
     {"nearest",    2, RowNearestOp,    4, 4, "y",},
     {"resize",     1, RowResizeOp,     3, 0, "args",},
-    {"see",        2, RowSeeOp,        4, 4, "row",},
-    {"show",       2, RowExposeOp,     3, 0, "?row...?",},
+    {"see",        2, RowSeeOp,        4, 4, "rowName",},
+    {"show",       2, RowExposeOp,     3, 0, "?rowName ...?",},
 };
 static int numRowOps = sizeof(rowOps) / sizeof(Blt_OpSpec);
 
@@ -10815,7 +10897,7 @@ static Blt_OpSpec sortOps[] =
 {
     {"auto",      1, SortAutoOp,      3, 4, "?boolean?",},
     {"cget",      2, SortCgetOp,      4, 4, "option",},
-    {"configure", 2, SortConfigureOp, 3, 0, "?option value?...",},
+    {"configure", 2, SortConfigureOp, 3, 0, "?option value ...?",},
     {"once",      1, SortOnceOp,      3, 3, "",},
 };
 static int numSortOps = sizeof(sortOps) / sizeof(Blt_OpSpec);
@@ -10840,7 +10922,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleApplyOp --
  *
- *        pathName style apply styleName cell...
+ *        pathName style apply styleName cellName ...
  *
  *---------------------------------------------------------------------------
  */
@@ -11036,7 +11118,7 @@ StyleCreateOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
  *
- *      pathName style forget styleName...
+ *      pathName style forget styleName ...
  *
  *---------------------------------------------------------------------------
  */
@@ -11206,20 +11288,20 @@ StyleTypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *      pathName style configure styleName -fg blue -bg green
  *      pathName style create type styleName ?options?
  *      pathName style delete styleName
- *      pathName style get cell
+ *      pathName style get cellName
  *      pathName style names ?pattern?
  *      pathName style type styleName 
  *
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec styleOps[] = {
-    {"apply",     1, StyleApplyOp,     4, 0, "styleName cell...",},
+    {"apply",     1, StyleApplyOp,     4, 0, "styleName cellName...",},
     {"cget",      2, StyleCgetOp,      5, 5, "styleName option",},
     {"configure", 2, StyleConfigureOp, 4, 0, "styleName options...",},
     {"create",    2, StyleCreateOp,    5, 0, "type styleName options...",},
     {"delete",    1, StyleDeleteOp,    3, 0, "styleName...",},
     {"exists",    1, StyleExistsOp,    4, 4, "styleName",},
-    {"get",       1, StyleGetOp,       4, 4, "cell",},
+    {"get",       1, StyleGetOp,       4, 4, "cellName",},
     {"names",     1, StyleNamesOp,     3, 3, "",}, 
     {"type",      1, StyleTypeOp,      4, 4, "styleName",},
 };
@@ -11430,35 +11512,35 @@ YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec viewOps[] =
 {
-    {"activate",     1, ActivateOp,      3, 3, "cell"},
-    {"bbox",         2, BboxOp,          3, 0, "cell ?cell...?",}, 
-    {"bind",         2, BindOp,          3, 5, "cell ?sequence command?",}, 
+    {"activate",     1, ActivateOp,      3, 3, "cellName"},
+    {"bbox",         2, BboxOp,          3, 0, "cellName ?cellName ...?",}, 
+    {"bind",         2, BindOp,          3, 5, "cellName ?sequence command?",}, 
     {"cell",         2, CellOp,          2, 0, "args",}, 
     {"cget",         2, CgetOp,          3, 3, "option",}, 
     {"column",       3, ColumnOp,        2, 0, "oper args",}, 
-    {"configure",    3, ConfigureOp,     2, 0, "?option value?...",},
+    {"configure",    3, ConfigureOp,     2, 0, "?option value ...?",},
     {"curselection", 2, CurselectionOp,  2, 2, "",},
     {"deactivate",   1, DeactivateOp,    2, 2, ""},
     {"filter",       3, FilterOp,        2, 0, "args",},
     {"find",         3, FindOp,          2, 0, "expr",}, 
-    {"focus",        2, FocusOp,         2, 3, "?cell?",}, 
-    {"grab",         1, GrabOp,          2, 3, "?cell?",}, 
-    {"highlight",    1, HighlightOp,     3, 3, "cell",}, 
-    {"identify",     2, IdentifyOp,      5, 5, "cell x y",}, 
-    {"index",        3, IndexOp,         3, 3, "cell",}, 
-    {"inside",       3, InsideOp,        5, 5, "cell x y",}, 
-    {"invoke",       3, InvokeOp,        3, 3, "cell",}, 
-    {"ishidden",     2, IsHiddenOp,      3, 3, "cell",},
+    {"focus",        2, FocusOp,         2, 3, "?cellName?",}, 
+    {"grab",         1, GrabOp,          2, 3, "?cellName?",}, 
+    {"highlight",    1, HighlightOp,     3, 3, "cellName",}, 
+    {"identify",     2, IdentifyOp,      5, 5, "cellName x y",}, 
+    {"index",        3, IndexOp,         3, 3, "cellName",}, 
+    {"inside",       3, InsideOp,        5, 5, "cellName x y",}, 
+    {"invoke",       3, InvokeOp,        3, 3, "cellName",}, 
+    {"ishidden",     2, IsHiddenOp,      3, 3, "cellName",},
     {"row",          1, RowOp,           2, 0, "oper args",}, 
     {"scan",         2, ScanOp,          5, 5, "dragto|mark x y",},
-    {"see",          3, SeeOp,           3, 3, "cell",},
+    {"see",          3, SeeOp,           3, 3, "cellName",},
     {"selection",    3, SelectionOp,     2, 0, "oper args",},
     {"sort",         2, SortOp,          2, 0, "args",},
     {"style",        2, StyleOp,         2, 0, "args",},
-    {"type",         1, TypeOp,          3, 3, "cell",},
-    {"unhighlight",  3, HighlightOp,     3, 3, "cell",}, 
+    {"type",         1, TypeOp,          3, 3, "cellName",},
+    {"unhighlight",  3, HighlightOp,     3, 3, "cellName",}, 
     {"updates",      2, UpdatesOp,       2, 3, "?bool?",},
-    {"writable",     1, WritableOp,      3, 3, "cell",},
+    {"writable",     1, WritableOp,      3, 3, "cellName",},
     {"xview",        1, XViewOp,         2, 5, "?moveto fract? ?scroll number what?",},
     {"yview",        1, YViewOp,         2, 5, "?moveto fract? ?scroll number what?",},
 };
@@ -12757,7 +12839,7 @@ TableViewCmdProc(
     tkwin = NULL;
     if (objc < 2) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " pathName ?option value?...\"", 
+                Tcl_GetString(objv[0]), " pathName ?option value ...?\"", 
                 (char *)NULL);
         return TCL_ERROR;
     }
