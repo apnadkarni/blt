@@ -863,7 +863,6 @@ NodeToEntry(TreeView *viewPtr, Blt_TreeNode node)
     return Blt_GetHashValue(hPtr);
 }
 
-
 static Entry *
 FindEntry(TreeView *viewPtr, Blt_TreeNode node)
 {
@@ -1337,6 +1336,37 @@ CloseEntry(TreeView *viewPtr, Entry *entryPtr)
         }
     }
     return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetVertLineCoordinates --
+ *
+ *      Computes the y-coordinates of the vertical line from an entry to 
+ *      its bottom-most child.  If the root node is hidden (and this is
+ *      the root entry), start with the first child.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void 
+GetVertLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)   
+{
+    Entry *topPtr, *botPtr;
+    TreeView *viewPtr = entryPtr->viewPtr; 
+    int h1, h2;
+
+    botPtr = entryPtr->lastChildPtr;
+    topPtr = entryPtr;
+    if ((viewPtr->rootPtr == entryPtr) && (viewPtr->flags & HIDE_ROOT)) {
+        topPtr = NextEntry(entryPtr, HIDDEN | CLOSED);
+        assert(topPtr != NULL);
+    }
+    h1 = MAX3(topPtr->iconHeight, topPtr->lineHeight, topPtr->labelHeight);
+    *y1Ptr = SCREENY(viewPtr, topPtr->worldY) + (h1 / 2);
+    h2 = MAX3(botPtr->iconHeight, botPtr->lineHeight, botPtr->labelHeight);
+    *y2Ptr = SCREENY(viewPtr, botPtr->worldY) + (h2 / 2);
 }
 
 
@@ -6704,7 +6734,6 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     int depth, height;
 
     entryPtr->worldY = -1;
-    entryPtr->vertLineLength = -1;
     if ((entryPtr != viewPtr->rootPtr) && (EntryIsHidden(entryPtr))) {
         return;                         /* If the entry is hidden, then do
                                          * nothing. */
@@ -6712,7 +6741,6 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     entryPtr->worldY = *yPtr;
     height = MAX3(entryPtr->lineHeight, entryPtr->iconHeight, 
                   viewPtr->button.height);
-    entryPtr->vertLineLength = -(*yPtr + height / 2);
     *yPtr += entryPtr->height;
     entryPtr->flatIndex = *indexPtr;
     (*indexPtr)++;
@@ -6729,18 +6757,13 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     viewPtr->levelInfo[depth].iconWidth |= 0x01;
 
     if (IsOpen(entryPtr)) {
-        Entry *bottomPtr, *childPtr;
+        Entry *childPtr;
 
         /* Recursively handle each child of this node. */
-        bottomPtr = entryPtr;
         for (childPtr = FirstChild(entryPtr, HIDDEN); childPtr != NULL; 
              childPtr = NextSibling(childPtr, HIDDEN)){
             ResetCoordinates(viewPtr, childPtr, yPtr, indexPtr);
-            bottomPtr = childPtr;
         }
-        height = MAX3(bottomPtr->lineHeight, bottomPtr->iconHeight, 
-                      viewPtr->button.height);
-        entryPtr->vertLineLength += bottomPtr->worldY + height / 2;
     }
 }
 
@@ -6993,7 +7016,6 @@ ComputeFlatLayout(TreeView *viewPtr)
         entryPtr = *p;
         entryPtr->flatIndex = count++;
         entryPtr->worldY = y;
-        entryPtr->vertLineLength = 0;
         y += entryPtr->height;
         if (viewPtr->levelInfo[0].labelWidth < entryPtr->labelWidth) {
             viewPtr->levelInfo[0].labelWidth = entryPtr->labelWidth;
@@ -7574,9 +7596,9 @@ DrawLines(
             break;
         }
         level = EntryDepth(viewPtr, entryPtr);
-        if (entryPtr->vertLineLength > 0) {
+        if (entryPtr->lastChildPtr != NULL) {
             int ax, ay, by;
-            int x, y;
+            int x;
 
             /*
              * World X-coordinates aren't computed for entries that are
@@ -7584,19 +7606,11 @@ DrawLines(
              * compute it here too.
              */
             entryPtr->worldX = LEVELOFFSET(level) + viewPtr->treeColumn.worldX;
-            x = SCREENX(viewPtr, entryPtr->worldX);
-            y = SCREENY(viewPtr, entryPtr->worldY);
-            ax = x + ICONWIDTH(level) + ICONWIDTH(level + 1) / 2;
-            ay = y + (entryPtr->height / 2);
-            by = ay + entryPtr->vertLineLength;
-            if ((entryPtr == viewPtr->rootPtr) && (viewPtr->flags & HIDE_ROOT)){
-                Entry *nextPtr;
 
-                /* If the root node is hidden, go to the next entry to
-                 * start the vertical line. */
-                nextPtr = NextEntry(viewPtr->rootPtr, HIDDEN | CLOSED);
-                ay = SCREENY(viewPtr, nextPtr->worldY) + entryPtr->height / 2;
-            }
+            x = SCREENX(viewPtr, entryPtr->worldX);
+            ax = x + ICONWIDTH(level) + ICONWIDTH(level + 1) / 2;
+            GetVertLineCoordinates(entryPtr, &ay, &by);
+
             /*
              * Clip the line's Y-coordinates at the viewport's borders.
              */
@@ -7640,8 +7654,8 @@ DrawLines(
             y1 |= 0x1;
             XDrawLine(viewPtr->display, drawable, gc, x1, y1, x2, y1);
         }
-        if ((IsOpen(entryPtr)) && (entryPtr->vertLineLength > 0)) {
-            y2 = y1 + entryPtr->vertLineLength;
+        if ((IsOpen(entryPtr)) && (entryPtr->lastChildPtr != NULL)) {
+            GetVertLineCoordinates(entryPtr, &y1, &y2);
             if (y2 > Tk_Height(viewPtr->tkwin)) {
                 y2 = Tk_Height(viewPtr->tkwin); /* Clip line at window border.*/
             }

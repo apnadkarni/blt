@@ -7443,7 +7443,7 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ColumnFindOp --
  *
  *      pathName column find x1 y1 x2 y2 ?switches ...?
- *
+ *              -enclosing -overlapping -root 
  *---------------------------------------------------------------------------
  */
 static int
@@ -7451,33 +7451,27 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    Column *colPtr;
     int x1, y1, x2, y2;
+    long i;
+    int rootX, rootY;
 
-#ifdef notdef
-    int isRoot;
-
-    isRoot = FALSE;
-    string = Tcl_GetString(objv[3]);
-
-    if (strcmp("-root", string) == 0) {
-        isRoot = TRUE;
-        objv++, objc--;
-    }
-    if (objc != 5) {
-        Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " ", Tcl_GetString(objv[1]), 
-                Tcl_GetString(objv[2]), " ?-root? x y\"", (char *)NULL);
-        return TCL_ERROR;
-                         
-    }
-#endif
     if ((Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[3], &x1) != TCL_OK) ||
         (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[4], &y1) != TCL_OK) ||
         (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[5], &x2) != TCL_OK) ||
         (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[6], &y2) != TCL_OK)) {
         return TCL_ERROR;
     } 
+    rootX = rootY = 0;
+#ifdef notdef
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, colFindSwitches, objc - 7, objv + 7, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if (switches.flags & FIND_ROOT) {
+        Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+    }
+#endif
     if (x1 > x2) {
         int tmp;
 
@@ -7488,6 +7482,8 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         tmp = y2; y2 = y1; y1 = tmp;
     }
+    y1 = WORLDX(viewPtr, y1 - rootY);
+    y2 = WORLDX(viewPtr, y2 - rootY);
     if ((y2 < viewPtr->inset) || 
         (y1 >= (viewPtr->inset + viewPtr->colTitleHeight))) {
         Tcl_SetLongObj(Tcl_GetObjResult(interp), -1);
@@ -7498,9 +7494,8 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
      * coordinates, convert x-coordinates from screen to world coordinates
      * too.
      */
-    x1 = WORLDX(viewPtr, x1);
-    x2 = WORLDX(viewPtr, x2);
-    lastPtr = NULL;                     /* Suppress compiler warning. */
+    x1 = WORLDX(viewPtr, x1 - rootX);
+    x2 = WORLDX(viewPtr, x2 - rootX);
     for (i = 0; i < viewPtr->numVisibleColumns; i++) {
         Column *colPtr;
 

@@ -547,12 +547,10 @@ struct _Entry {
                                          * columns. */
     short int rowHeight;
     short int colWidth;
+    short int lineHeight;               /* Height of first line of text. */
     Blt_Pad rowPad;
     int reqHeight;                      /* Requested height of the entry.
                                          * Overrides computed height. */
-    int vertLineLength;                 /* Length of the vertical line
-                                         * segment. */
-    short int lineHeight;               /* Height of first line of text. */
     Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
                                          * entry. */
     Tcl_Obj *openCmdObjPtr;
@@ -612,8 +610,12 @@ struct _Entry {
     GC gc;
     Entry *bottomPtr;
     Entry *parentPtr;                   /* Parent entry. NULL if root. */
-    Entry *firstChildPtr, *lastChildPtr; /* First and last child
-                                         * entry. NULL if no children. */
+    Entry *firstChildPtr;               /* First child of the entry.  NULL
+                                         * if no children.  */
+    Entry *lastChildPtr;                /* Last child of the entry. NULL if
+                                         * no children.  Used to draw the
+                                         * vertical line from the entry
+                                         * through all its children. */
     Entry *nextSiblingPtr, *prevSiblingPtr; /* Next and previous siblings. */
     int numChildren;
 };
