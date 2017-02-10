@@ -3412,7 +3412,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static const char *
 GetTypeFromMode(int mode)
 {
-#ifdef WIN32
+#ifdef notdef
    if (mode == -1) {
        return "unknown";
    } else if (mode & FILE_ATTRIBUTE_DIRECTORY) {

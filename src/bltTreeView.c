@@ -4975,7 +4975,6 @@ CreateEntry(
         if (parent != NULL) {
             hPtr = Blt_FindHashEntry(&viewPtr->entryTable, (char *)parent);
             if (hPtr == NULL) {
-                fprintf(stderr, "can't find parent in entry table\n");
                 parentPtr = NULL;
             } else {
                 parentPtr = Blt_GetHashValue(hPtr);
@@ -6731,7 +6730,7 @@ ConfigureStyle(TreeView *viewPtr, CellStyle *stylePtr)
 static void
 ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
 {
-    int depth, height;
+    int depth;
 
     entryPtr->worldY = -1;
     if ((entryPtr != viewPtr->rootPtr) && (EntryIsHidden(entryPtr))) {
@@ -6739,8 +6738,6 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
                                          * nothing. */
     }
     entryPtr->worldY = *yPtr;
-    height = MAX3(entryPtr->lineHeight, entryPtr->iconHeight, 
-                  viewPtr->button.height);
     *yPtr += entryPtr->height;
     entryPtr->flatIndex = *indexPtr;
     (*indexPtr)++;
