@@ -1220,6 +1220,7 @@ Blt_Ts_UnderlineLayout( Tk_Window tkwin, Drawable drawable,
                         int x, int y)
 {
     float angle;
+    int w, h;
 
     if ((stylePtr->gc == NULL) || (stylePtr->flags & UPDATE_GC)) {
         Blt_Ts_ResetStyle(tkwin, stylePtr);
@@ -1228,6 +1229,13 @@ Blt_Ts_UnderlineLayout( Tk_Window tkwin, Drawable drawable,
     if (angle < 0.0) {
         angle += 360.0;
     }
+    w = layoutPtr->width;
+    h = layoutPtr->height;
+    if ((stylePtr->maxLength > 0) && (stylePtr->maxLength < w)) {
+        w = stylePtr->maxLength;
+    }
+    /* FIXME: Handle any degree font rotation. */
+    RotateStartingTextPositions(layoutPtr, w, h, angle);
     if (angle == 0.0) {
         TextFragment *fp, *fend;
 

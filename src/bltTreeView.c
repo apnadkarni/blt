@@ -1355,7 +1355,6 @@ GetVertLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)
 {
     Entry *topPtr, *botPtr;
     TreeView *viewPtr = entryPtr->viewPtr; 
-    int h1, h2;
 
     botPtr = entryPtr->lastChildPtr;
     topPtr = entryPtr;
@@ -1363,10 +1362,8 @@ GetVertLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)
         topPtr = NextEntry(entryPtr, HIDDEN | CLOSED);
         assert(topPtr != NULL);
     }
-    h1 = MAX3(topPtr->iconHeight, topPtr->lineHeight, topPtr->labelHeight);
-    *y1Ptr = SCREENY(viewPtr, topPtr->worldY) + (h1 / 2);
-    h2 = MAX3(botPtr->iconHeight, botPtr->lineHeight, botPtr->labelHeight);
-    *y2Ptr = SCREENY(viewPtr, botPtr->worldY) + (h2 / 2);
+    *y1Ptr = SCREENY(viewPtr, topPtr->worldY) + (topPtr->height / 2);
+    *y2Ptr = SCREENY(viewPtr, botPtr->worldY) + (botPtr->height / 2);
 }
 
 

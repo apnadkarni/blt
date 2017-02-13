@@ -157,7 +157,7 @@
 #define CLOSE_NEEDED       (1<<13)      /* Draw a "x" button on each
                                          * tab. Clicking on the button will
                                          * automatically close the tab. */
-#define SHOW_TABS          (1<<14)      /* Display tabs. */
+#define HIDE_TABS          (1<<24)      /* Display tabs. */
 #define SCROLL_TABS        (1<<15)      /* Allow tabs to be scrolled if
                                          * needed. Otherwise tab sizes will
                                          * shrink to fit the space. */
@@ -3731,7 +3731,6 @@ ConfigureTabset(
     GC newGC;
     int slantLeft, slantRight;
     TabStyle *stylePtr;
-    int showTabs;
 
     iconOption.clientData = setPtr;
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, configSpecs, 
@@ -3740,7 +3739,7 @@ ConfigureTabset(
     }
     if (Blt_ConfigModified(configSpecs, "-width", "-height", "-side", "-gap",
         "-slant", "-iconposition", "-rotate", "-tiers", "-tabwidth", 
-        "-scrolltabs", "-showsingletab", "-closebutton", "-justify",
+        "-scrolltabs", "-showtabs", "-closebutton", "-justify",
         "-iconposition", (char *)NULL)) {
         setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
     }
@@ -3785,25 +3784,6 @@ ConfigureTabset(
         setPtr->angle += 360.0;
     }
     setPtr->quad = (int)(setPtr->angle / 90.0);
-    showTabs = TRUE;
-    if (setPtr->showTabs == SHOW_TABS_MULTIPLE) {
-        showTabs = (setPtr->numVisible > 1);
-    } else if (setPtr->showTabs == SHOW_TABS_ALWAYS) {
-        showTabs = TRUE;
-    } else if (setPtr->showTabs == SHOW_TABS_NEVER) {
-        showTabs = FALSE;
-    }
-    if (showTabs) {
-        setPtr->flags |= SHOW_TABS;
-    } else {
-        setPtr->flags &= ~SHOW_TABS;
-    }
-    if (showTabs) {
-        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth + 
-            setPtr->outerPad;
-    } else {
-        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth;
-    }
     if (Blt_ConfigModified(configSpecs, "-font", "-*foreground", "-rotate",
                 "-*background", "-side", "-iconposition", "-tiers", "-tabwidth",
                 (char *)NULL)) {
@@ -3832,11 +3812,6 @@ ConfigureTabset(
     }
     if (slantRight) {
         setPtr->flags |= SLANT_RIGHT;
-    }
-    if (showTabs) {
-        setPtr->inset2 = stylePtr->borderWidth + setPtr->corner;
-    } else {
-        setPtr->inset2 = 0;
     }
     EventuallyRedraw(setPtr);
     return TCL_OK;
@@ -6369,9 +6344,17 @@ ComputeLayout(Tabset *setPtr)
         showTabs = FALSE;
     }
     if (showTabs) {
-        setPtr->flags |= SHOW_TABS;
+        setPtr->flags &= ~HIDE_TABS;
     } else {
-        setPtr->flags &= ~SHOW_TABS;
+        setPtr->flags |= HIDE_TABS;
+    }
+    if (showTabs) {
+        setPtr->inset2 = setPtr->defStyle.borderWidth + setPtr->corner;
+        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth + 
+            setPtr->outerPad;
+    } else {
+        setPtr->inset2 = 0;
+        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth;
     }
 
     if (numTabs == 0) {
@@ -6388,7 +6371,7 @@ ComputeLayout(Tabset *setPtr)
         setPtr->focusPtr = setPtr->selectPtr;
         Blt_SetFocusItem(setPtr->bindTable, setPtr->focusPtr, NULL);
     }
-    if ((setPtr->flags & SHOW_TABS) == 0) {
+    if (setPtr->flags & HIDE_TABS) {
         setPtr->pageTop = setPtr->borderWidth;
         setPtr->numVisible = 0;
         return;                         /* Don't bother it there's only 
@@ -7207,7 +7190,7 @@ DisplayTabset(ClientData clientData)    /* Information about widget. */
         Tk_Width(setPtr->tkwin), Tk_Height(setPtr->tkwin), 
         0, TK_RELIEF_FLAT);
 
-    if ((setPtr->flags & SHOW_TABS) && (setPtr->numVisible > 0)) {
+    if (((setPtr->flags & HIDE_TABS) == 0) && (setPtr->numVisible > 0)) {
         int i;
         Tab *tabPtr;
         Blt_ChainLink link;
@@ -7604,13 +7587,18 @@ RotateRegion(Tab *tabPtr, int x, int y, unsigned int w, unsigned int h)
  *      4. focus rectangle
  *      5. 
  *   x,y
- *    |1|2|3| 4 |5|  4  |3|2|1|
+ *    |1|2|3|icon|3|text|3|2|1|
+ *    1
+ *    2
+ *    3
+ *    max icon | text | image 
+ *    3
  *
  *   1. tab borderwidth
  *   2. corner offset or slant
- *   3. label pad
- *   4. label or text width
- *   5. pad
+ *   3. pad
+ *   4. icon
+ *   5. label or text width
  */
 static void
 ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
@@ -8035,9 +8023,13 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         Blt_Ts_SetMaxLength(ts, maxLength);
         Blt_Ts_DrawLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr, &ts, 
                           x + rPtr->x, y + rPtr->y);
+        if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
+            Blt_Ts_UnderlineLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr,
+                        &ts,  x + rPtr->x, y + rPtr->y);
+        }
     }
     rPtr = &tabPtr->focusRegion;
-    if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr) && 
+    if (0 && (setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr) && 
         (rPtr->w > 0) && (rPtr->h > 0)) {
         XColor *fg;
         int w, h;

@@ -2,7 +2,7 @@
 package require BLT
 
 blt::tabset .ts \
-    -notabs 1
+   -showtabs never
     
 blt::graph .ts.g1 -bg blue
 blt::graph .ts.g2 -bg green
