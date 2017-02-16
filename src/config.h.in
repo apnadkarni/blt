@@ -82,6 +82,9 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
+/* Define to 1 if you have the `execvpe' function. */
+#undef HAVE_EXECVPE
+
 /* Define to 1 if you have the <expat.h> header file. */
 #undef HAVE_EXPAT_H
 
@@ -348,9 +351,6 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
-
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION

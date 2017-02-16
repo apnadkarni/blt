@@ -2272,7 +2272,7 @@ FreetypeIdProc(_Blt_Font *fontPtr)
 }
 
 static void
-FreetypeGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *mPtr)
+FreetypeGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
 {
     FreetypeFontset *setPtr = fontPtr->clientData;
     Blt_HashEntry *hPtr;
@@ -2287,12 +2287,12 @@ FreetypeGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *mPtr)
         xftPtr = Blt_GetHashValue(hPtr);
         glyph = XftCharIndex(setPtr->display, xftPtr, '0');
         XftGlyphExtents(setPtr->display, xftPtr, &glyph, 1, &metrics);
-        mPtr->ascent = xftPtr->ascent;
-        mPtr->descent = xftPtr->descent;
-        mPtr->linespace = mPtr->ascent + mPtr->descent;
-        mPtr->tabWidth = setPtr->tabWidth;
-        mPtr->underlinePos = setPtr->underlinePos;
-        mPtr->underlineHeight = setPtr->underlineHeight;
+        fmPtr->ascent = xftPtr->ascent;
+        fmPtr->descent = xftPtr->descent;
+        fmPtr->linespace = fmPtr->ascent + fmPtr->descent;
+        fmPtr->tabWidth = setPtr->tabWidth;
+        fmPtr->underlinePos = setPtr->underlinePos;
+        fmPtr->underlineHeight = setPtr->underlineHeight;
     }
 }
 

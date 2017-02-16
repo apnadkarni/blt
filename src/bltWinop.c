@@ -318,7 +318,7 @@ FindTopWindow(WindowNode *rootPtr, int x, int y)
     return nodePtr;
 }
 
-#if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
+#if defined(HAVE_RANDR) && defined(HAVE_XRRGETSCREENRESOURCES)
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
 #include <X11/Xproto.h>
@@ -786,7 +786,7 @@ RaiseOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ------------------------------------------------------------------------ 
  */
-#if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
+#if defined(HAVE_RANDR) && defined(HAVE_XRRGETSCREENRESOURCES)
 static int
 SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
@@ -873,7 +873,7 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     XRRFreeScreenConfigInfo(sc);
     return TCL_OK;
 }
-#endif  /* HAVE_RANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
+#endif  /* HAVE_RANDR && HAVE_XRRGETSCREENRESOURCES */
 
 /*
  *---------------------------------------------------------------------------
@@ -1030,9 +1030,9 @@ static Blt_OpSpec winOps[] =
     {"move",     2, MoveOp,     5, 5, "windowName x y",},
     {"query",    1, QueryOp,    2, 2, "",},
     {"raise",    1, RaiseOp,    2, 0, "?windowName ...?",},
-#if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
+#if defined(HAVE_RANDR) && defined(HAVE_XRRGETSCREENRESOURCES)
     {"screensize", 1, SetScreenSizeOp, 4, 4, "w h",},
-#endif  /* HAVE_RANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
+#endif  /* HAVE_RANDR && HAVE_XRRGETSCREENRESOURCES */
     {"top",      2, TopOp,      4, 4, "x y",},
     {"tree",     2, TreeOp,     4, 4, "windowName treeName",},
     {"unmap",    1, UnmapOp,    2, 0, "?windowName ...?",},

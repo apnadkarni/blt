@@ -450,6 +450,8 @@ AC_CHECK_FUNCS(posix_openpt ptsname getpt grantpt unlockpt isastream setsid)
 AC_CHECK_FUNCS(tcflush openpty)
 AC_CHECK_FUNCS(open_controlling_pty)
 
+AC_CHECK_FUNCS(execvpe)
+
 # FREETYPE2 header
 if test "${blt_with_ft2_include_dir}" != "no" ; then
   ft2_inc_spec=`freetype-config --cflags`

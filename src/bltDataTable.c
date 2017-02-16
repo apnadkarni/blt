@@ -1984,8 +1984,7 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
  *---------------------------------------------------------------------------
  */
 static void
-CallTraces(Table *tablePtr, Row *rowPtr, Column *colPtr, 
-                 unsigned int flags)
+CallTraces(Table *tablePtr, Row *rowPtr, Column *colPtr, unsigned int flags)
 {
     Blt_ChainLink link, next;
 
@@ -5337,6 +5336,75 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
     assert(Blt_Chain_GetLength(chain) > 0);
     Blt_Chain_Destroy(chain);
     return TCL_OK;
+}
+
+void
+blt_table_clear(Table *tablePtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    Blt_ChainLink link;
+    long i;
+
+    if (tablePtr->magic != TABLE_MAGIC) {
+        Blt_Warn("invalid table object token 0x%lx\n", 
+                 (unsigned long)tablePtr);
+        return;
+    }
+    /* Remove any traces that were set by this client. */
+    for (hPtr = Blt_FirstHashEntry(&tablePtr->traces, &iter); hPtr != NULL; 
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Trace *tracePtr;
+
+        tracePtr = Blt_GetHashValue(hPtr);
+        blt_table_delete_trace(tablePtr, tracePtr);
+    }
+    /* Also remove all event handlers created by this client. */
+    for (link = Blt_Chain_FirstLink(tablePtr->rowNotifiers); link != NULL; 
+         link = Blt_Chain_NextLink(link)) {
+        Notifier *notifierPtr;
+
+        notifierPtr = Blt_Chain_GetValue(link);
+        notifierPtr->link = NULL;
+        blt_table_delete_notifier(tablePtr, notifierPtr);
+    }
+    for (link = Blt_Chain_FirstLink(tablePtr->columnNotifiers); link != NULL; 
+         link = Blt_Chain_NextLink(link)) {
+        Notifier *notifierPtr;
+
+        notifierPtr = Blt_Chain_GetValue(link);
+        notifierPtr->link = NULL;
+        blt_table_delete_notifier(tablePtr, notifierPtr);
+    }
+    blt_table_unset_keys(tablePtr);
+    if (tablePtr->tags != NULL) {
+        blt_table_release_tags(tablePtr);
+    }
+    for (i = 0; i < blt_table_num_rows(tablePtr); i++) {
+        Row *rowPtr;
+
+        rowPtr = blt_table_row(tablePtr, i);
+        if (rowPtr->label != NULL) {
+            UnsetLabel(&tablePtr->corePtr->rows, (Header *)rowPtr);
+        }
+        UnsetRowValues(tablePtr, rowPtr);
+        Blt_Pool_FreeItem(tablePtr->corePtr->rows.headerPool, rowPtr);
+    }
+    Blt_Free(tablePtr->corePtr->rows.map);
+    tablePtr->corePtr->rows.map = NULL;
+    tablePtr->corePtr->rows.numUsed = 0;
+    for (i = 0; i < blt_table_num_columns(tablePtr); i++) {
+        Column *colPtr;
+
+        colPtr = blt_table_column(tablePtr, i);
+        if (colPtr->label != NULL) {
+            UnsetLabel(&tablePtr->corePtr->columns, (Header *)colPtr);
+        }
+        Blt_Pool_FreeItem(tablePtr->corePtr->columns.headerPool, colPtr);
+    }
+    Blt_Free(tablePtr->corePtr->columns.map);
+    tablePtr->corePtr->columns.numUsed = 0;
+    tablePtr->corePtr->columns.map = NULL;
 }
 
 int

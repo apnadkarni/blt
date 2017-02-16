@@ -178,7 +178,7 @@ ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
     return (numBytes > 0) ? TCL_ERROR : TCL_OK;
 }
 
-#ifdef MACOSX
+#ifndef HAVE_EXECVPE
 
 /* The following routines are used to emulate the "execvpe" system call for
  * MacOSX. */
@@ -396,7 +396,7 @@ execvpe(const char *file, char *const *argv, char *const *env)
     return result;
 }
 
-#endif /* MACOSX */
+#endif /* !HAVE_EXECVPE */
 
 static int
 GetFdFromChannel(Tcl_Channel channel, int direction)

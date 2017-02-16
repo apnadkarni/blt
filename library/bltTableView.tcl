@@ -1597,7 +1597,7 @@ proc blt::TableView::EqualsNumberSearch { w } {
     blt::tk::label $f.label \
         -text "Search for values that equal:" 
     blt::tk::label $f.hint \
-        -text "(one or more values separated by commas)" \
+        -text "(one or more values separated by spaces)" \
         -font "Arial 9 italic"
     blt::tk::button $f.ok \
         -text "Apply" \
@@ -1623,7 +1623,7 @@ proc blt::TableView::EqualsNumberSearch { w } {
 
     DestroySearchDialog $top
 
-    regsub -all , $list " " list
+    set list [split $list]
     foreach value $list {
         if { ![string is double -strict $value] } {
             set result 0
@@ -1661,7 +1661,7 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
     blt::tk::label $f.label \
         -text "Search for values that do not equal:" 
     blt::tk::label $f.hint \
-        -text "(one or more values separated by commas)" \
+        -text "(one or more values separated by spaces)" \
         -font "Arial 9 italic"
     blt::tk::button $f.ok \
         -text "Apply" -command { set blt::TableView::_private(search) 1 }
@@ -1685,7 +1685,7 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
     set list [$f.entry get]
     DestroySearchDialog $top
 
-    regsub -all , $list " " list
+    set list [split $list]
     foreach value $list {
         if { ![string is double -strict $value] } {
             set result 0
@@ -1985,7 +1985,7 @@ proc blt::TableView::EqualsTextSearch { w } {
     blt::tk::label $f.label \
         -text "Search for values that equal:"  
     blt::tk::label $f.hint \
-        -text "(one or more values separated by commas)" \
+        -text "(one or more values separated by spaces)" \
         -font "Arial 9 italic" 
     blt::tk::checkbutton $f.ignore \
         -text "Ignore case" \
@@ -2029,8 +2029,8 @@ proc blt::TableView::EqualsTextSearch { w } {
     if { $result && [llength $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
-        regsub -all , $list " " list
-        set list [list $list]
+#        set list [split $list]
+#        set list [list $list]
         set expr "\[info exists ${index}\] &&
             (\[blt::utils::string inlist \$${index} $list $flags])"
         #puts stderr expr=$expr
@@ -2060,7 +2060,7 @@ proc blt::TableView::NotEqualsTextSearch { w } {
     blt::tk::label $f.label \
         -text "Search for values that do not equal:" 
     blt::tk::label $f.hint \
-        -text "(one or more values separated by commas)" \
+        -text "(one or more values separated by spaces)" \
         -font "Arial 9 italic"
     blt::tk::checkbutton $f.ignore \
         -text "Ignore case" \
@@ -2104,8 +2104,8 @@ proc blt::TableView::NotEqualsTextSearch { w } {
     if { $result && [llength $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
-        regsub -all , $list " " list
-        set list [list $list]
+#        set list [split $list]
+#        set list [list $list]
         set expr "(!\[info exists ${index}\]) ||
             (!\[blt::utils::string inlist \$${index} $list $flags])"
         #puts stderr expr=$expr
