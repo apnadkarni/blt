@@ -4104,14 +4104,18 @@ blt_table_iterate_all_rows(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
     Row *firstPtr, *lastPtr;
     
-    iterPtr->table = table;
-    iterPtr->type = TABLE_ITERATOR_ALL;
-    iterPtr->link = NULL;
     iterPtr->chain = NULL;
+    iterPtr->link = NULL;
+    iterPtr->numEntries = 0;
+    iterPtr->table = table;
     iterPtr->tag = "all";
+    iterPtr->type = TABLE_ITERATOR_ALL;
+
     firstPtr = blt_table_first_row(table);
     lastPtr = blt_table_last_row(table);
-    iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+    if (firstPtr != NULL) {
+        iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+    } 
     iterPtr->firstPtr = firstPtr;
     iterPtr->lastPtr = lastPtr;
 }
@@ -4142,14 +4146,18 @@ blt_table_iterate_all_columns(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
     Column *firstPtr, *lastPtr;
 
-    iterPtr->table = table;
-    iterPtr->type = TABLE_ITERATOR_ALL;
-    iterPtr->link = NULL;
-    iterPtr->tag = "all";
     iterPtr->chain = NULL;
+    iterPtr->link = NULL;
+    iterPtr->numEntries = 0;
+    iterPtr->table = table;
+    iterPtr->tag = "all";
+    iterPtr->type = TABLE_ITERATOR_ALL;
+
     firstPtr = blt_table_first_column(table);
     lastPtr = blt_table_last_column(table);
-    iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+    if (firstPtr != NULL) {
+        iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+    } 
     iterPtr->firstPtr = firstPtr;
     iterPtr->lastPtr = lastPtr;
 }

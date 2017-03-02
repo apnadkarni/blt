@@ -1257,9 +1257,6 @@ $orig restore -data {
     d 4 5 5.5
 }
 
-puts stderr orig=[$orig export csv]
-puts stderr orig=[$orig dump]
-puts stderr orig=[$orig row values 0 ]
 if 0 {
 test datatable.232 {datatable1 dump} {
     list [catch {
@@ -1569,12 +1566,6 @@ test datatable.264 {find expr} {
 	datatable1 find { $c1 > 3.1 }
     } msg] $msg
 } {0 {3 4}}
-
-test datatable.260 {export csv} {
-    list [catch { 
-	$orig export csv
-    } msg] $msg
-} {0 {c1 c2 c3 c4 c5 c6}}
 
 test datatable.265 {find expr} {
     list [catch {
@@ -2038,8 +2029,6 @@ test datatable.358 {row index @end} {
 test datatable.359 {blt::datatable duplicate} {
     list [catch {datatable4 duplicate $orig} msg] $msg
 } {0 {}}
-
-exit 0
 
 test datatable.360 {row index @end badArg} {
     list [catch {datatable1 row index @end badArg} msg] $msg
