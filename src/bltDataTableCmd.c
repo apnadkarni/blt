@@ -615,6 +615,24 @@ LoadFormat(Tcl_Interp *interp, const char *name)
     return TRUE;
 }
 
+static Tcl_Obj *
+GetColumnIndexObj(BLT_TABLE table, BLT_TABLE_COLUMN col) 
+{
+    long index;
+
+    index = blt_table_column_index(table, col);
+    return Tcl_NewLongObj(index);
+}
+
+static Tcl_Obj *
+GetRowIndexObj(BLT_TABLE table, BLT_TABLE_ROW row) 
+{
+    long index;
+
+    index = blt_table_row_index(table, row);
+    return Tcl_NewLongObj(index);
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -847,7 +865,7 @@ PositionSwitch(
             return TCL_ERROR;
         }
         if (clientData == INSERT_AFTER) {
-            col = blt_table_next_column(table, col);
+            col = blt_table_next_column(col);
         }
         insertPtr->column = col;
     } else if (flags & INSERT_ROW) {
@@ -858,7 +876,7 @@ PositionSwitch(
             return TCL_ERROR;
         }
         if (clientData == INSERT_AFTER) {
-            row = blt_table_next_row(table, row);
+            row = blt_table_next_row(row);
         }
         insertPtr->row = row;
     }
@@ -1498,7 +1516,7 @@ PrintTraceInfo(Tcl_Interp *interp, TraceInfo *tiPtr, Tcl_Obj *listObjPtr)
         Tcl_ListObjAppendElement(interp, listObjPtr, 
                                  Tcl_NewStringObj("row", 3));
         Tcl_ListObjAppendElement(interp, listObjPtr, 
-                        Tcl_NewLongObj(blt_table_row_index(tracePtr->row)));
+             GetRowIndexObj(tracePtr->table, tracePtr->row));
     }
     if (tracePtr->colTag != NULL) {
         Tcl_ListObjAppendElement(interp, listObjPtr, 
@@ -1510,7 +1528,7 @@ PrintTraceInfo(Tcl_Interp *interp, TraceInfo *tiPtr, Tcl_Obj *listObjPtr)
         Tcl_ListObjAppendElement(interp, listObjPtr, 
                                  Tcl_NewStringObj("column", 6));
         Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewLongObj(blt_table_column_index(tracePtr->column)));
+          GetColumnIndexObj(tracePtr->table, tracePtr->column));
     }
     PrintTraceFlags(tracePtr->flags, string);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj("flags", 5));
@@ -1565,9 +1583,9 @@ TraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 
     interp = eventPtr->interp;
     cmdObjPtr = Tcl_DuplicateObj(tracePtr->cmdObjPtr);
-    objPtr = Tcl_NewLongObj(blt_table_row_index(eventPtr->row));
+    objPtr = GetRowIndexObj(eventPtr->table, eventPtr->row);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-    objPtr = Tcl_NewLongObj(blt_table_column_index(eventPtr->column));
+    objPtr = GetColumnIndexObj(eventPtr->table, eventPtr->column);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     PrintTraceFlags(eventPtr->mask, string);
     objPtr = Tcl_NewStringObj(string, -1);
@@ -1658,9 +1676,9 @@ NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     objPtr = Tcl_NewStringObj(GetEventName(eventPtr->type), -1);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     if (eventPtr->type & TABLE_NOTIFY_ROW) {
-        index = blt_table_row_index(eventPtr->row);
+        index = blt_table_row_index(eventPtr->table, eventPtr->row);
     } else {
-        index = blt_table_column_index(eventPtr->column);
+        index = blt_table_column_index(eventPtr->table, eventPtr->column);
     }   
     objPtr = Tcl_NewLongObj(index);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
@@ -1705,7 +1723,7 @@ ColumnVarResolverProc(
     c = name[0];
     if ((c == '#') && (strcmp(name, "#") == 0)) {
         /* Look up the column from the variable name given. */
-        valueObjPtr = Tcl_NewLongObj(blt_table_row_index(switchesPtr->row));
+        valueObjPtr = GetRowIndexObj(switchesPtr->table, switchesPtr->row);
         *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
         return TCL_OK;
     } 
@@ -1800,7 +1818,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
                 }
             }
             numMatches++;
-            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+            objPtr = GetRowIndexObj(table, row);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             if ((switchesPtr->maxMatches > 0) && 
                 (numMatches >= switchesPtr->maxMatches)) {
@@ -1860,12 +1878,13 @@ AppendColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
 
 static int
 CopyColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
-    BLT_TABLE_COLUMN c1,                /* Column in the source table. */
-    BLT_TABLE_COLUMN c2)                /* Column in the destination table. */
+    BLT_TABLE_COLUMN scol,                /* Column in the source table. */
+    BLT_TABLE_COLUMN dcol)                /* Column in the destination table. */
 {
+    BLT_TABLE_ROW srow, drow;
     long i, srcNumRows, dstNumRows;
 
-    if ((blt_table_same_object(src, dst)) && (c1 == c2)) {
+    if ((blt_table_same_object(src, dst)) && (scol == dcol)) {
         return TCL_OK;                  /* Source and destination columns are
                                          * the same column in the same
                                          * table. */
@@ -1880,29 +1899,28 @@ CopyColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
             return TCL_ERROR;
         }
     }
-    if (blt_table_set_column_type(interp, dst, c2, blt_table_column_type(c1))
-        != TCL_OK) {
+    if (blt_table_set_column_type(interp, dst, dcol,
+        blt_table_column_type(scol)) != TCL_OK) {
         return TCL_ERROR;
     }
-    for (i = 0; i < srcNumRows; i++) {
-        BLT_TABLE_ROW r1, r2;
+    for (srow = blt_table_first_row(src), drow = blt_table_first_row(dst);
+         srow != NULL;
+         srow = blt_table_next_row(srow), drow = blt_table_next_row(drow)) {
         BLT_TABLE_VALUE value;
-
-        r1 = blt_table_row(src, i);
-        value = blt_table_get_value(src, r1, c1);
+        
+        value = blt_table_get_value(src, srow, scol);
         if (value == NULL) {
             continue;
         }
-        r2 = blt_table_row(dst, i);
-        if (blt_table_set_value(dst, r2, c2, value) != TCL_OK) {
+        if (blt_table_set_value(dst, drow, dcol, value) != TCL_OK) {
             return TCL_ERROR;
         }
     }
     for (i = srcNumRows; i < dstNumRows; i++) {
-        BLT_TABLE_ROW r2;
+        BLT_TABLE_ROW drow;
 
-        r2 = blt_table_row(dst, i);
-        blt_table_unset_value(dst, r2, c2);
+        drow = blt_table_row(dst, i);
+        blt_table_unset_value(dst, drow, dcol);
     }
     return TCL_OK;
 }           
@@ -1933,11 +1951,11 @@ ClearTable(BLT_TABLE table)
     BLT_TABLE_ROW row, nextRow;
 
     for (col = blt_table_first_column(table); col != NULL; col = nextCol) {
-        nextCol = blt_table_next_column(table, col);
+        nextCol = blt_table_next_column(col);
         blt_table_delete_column(table, col);
     }
     for (row = blt_table_first_row(table); row != NULL;  row = nextRow) {
-        nextRow = blt_table_next_row(table, row);
+        nextRow = blt_table_next_row(row);
         blt_table_delete_row(table, row);
     }
 }
@@ -2125,8 +2143,8 @@ DumpValue(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row,
     }
     /* d row column value \n */
     Tcl_DStringAppendElement(dumpPtr->dsPtr, "d");
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_column_index(col)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(table, row)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_column_index(table, col)));
     Tcl_DStringAppendElement(dumpPtr->dsPtr, string);
     Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
     if (dumpPtr->channel != NULL) {
@@ -2154,7 +2172,7 @@ DumpColumn(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_COLUMN col)
     /* c index label type tags \n */
     Tcl_DStringAppendElement(dumpPtr->dsPtr, "c");
     Tcl_DStringAppendElement(dumpPtr->dsPtr, 
-        Blt_Ltoa(blt_table_column_index(col)));
+           Blt_Ltoa(blt_table_column_index(table, col)));
     Tcl_DStringAppendElement(dumpPtr->dsPtr, blt_table_column_label(col));
     name = blt_table_column_type_to_name(blt_table_column_type(col));
     if (name == NULL) {
@@ -2197,7 +2215,7 @@ DumpRow(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row)
 
     /* r index label tags \n */
     Tcl_DStringAppendElement(dumpPtr->dsPtr, "r");
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(table, row)));
     Tcl_DStringAppendElement(dumpPtr->dsPtr, (char *)blt_table_row_label(row));
     Tcl_DStringStartSublist(dumpPtr->dsPtr);
     rowTags = blt_table_get_row_tags(table, row);
@@ -2303,7 +2321,7 @@ PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
                 objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
             }
         } else {
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+            objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
         }
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
@@ -2341,7 +2359,7 @@ PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
         objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
     } else {
         /* Convert the table offset back to a client index. */
-        objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+        objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
     }
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     for (i++; i < numRows; i++) {
@@ -2352,7 +2370,7 @@ PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
             objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
         } else {
             /* Convert the table offset back to a client index. */
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+            objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
         }
         if (objPtr != NULL) {
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -2854,7 +2872,7 @@ ColumnJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
             goto error;
         }
         for (srcRow = blt_table_first_row(src); srcRow != NULL; 
-             srcRow = blt_table_next_row(src, srcRow)) {
+             srcRow = blt_table_next_row(srcRow)) {
             BLT_TABLE_VALUE value;
             BLT_TABLE_ROW dstRow;
 
@@ -2986,7 +3004,7 @@ ColumnDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
             goto error;
         }
         CopyColumnTags(table, table, srcCol, dstCol);
-        i = blt_table_column_index(dstCol);
+        i = blt_table_column_index(table, dstCol);
         Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
     }
     blt_table_free_iterator_objv(&ci);
@@ -3032,11 +3050,11 @@ ColumnEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-         row = blt_table_next_row(cmdPtr->table, row)) {
+         row = blt_table_next_row(row)) {
         if (!blt_table_value_exists(cmdPtr->table, row, col))  {
             Tcl_Obj *objPtr;
             
-            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+            objPtr = GetRowIndexObj(cmdPtr->table, row);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
     }
@@ -3139,7 +3157,7 @@ ColumnExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
         for (i = 0; i < numColumns; i++) {
             Tcl_Obj *objPtr;
             
-            objPtr = Tcl_NewLongObj(blt_table_column_index(cols[i]));
+            objPtr = GetColumnIndexObj(table, cols[i]);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
         Tcl_SetObjResult(interp, listObjPtr);
@@ -3195,13 +3213,13 @@ ColumnGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_ROW row;
 
         for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-             row = blt_table_next_row(cmdPtr->table, row)) {
+             row = blt_table_next_row(row)) {
             Tcl_Obj *objPtr;
 
             if (needLabels) {
                 objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
             } else {
-                objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+                objPtr = GetRowIndexObj(cmdPtr->table, row);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -3225,7 +3243,7 @@ ColumnGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (needLabels) {
                 objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
             } else {
-                objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+                objPtr = GetRowIndexObj(cmdPtr->table, row);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -3274,7 +3292,7 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (col != NULL) {
             BLT_TABLE_COLUMN next;
             
-            index = blt_table_column_index(col);
+            index = blt_table_column_index(cmdPtr->table, col);
             next = blt_table_next_tagged_column(&iter);
             if (next != NULL) {
                 /* It's not an error to look for an index of a column that
@@ -3356,7 +3374,7 @@ ColumnIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_Obj *objPtr;
                 
                 col = Blt_GetHashValue(hPtr);
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(cmdPtr->table, col);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         } else {
@@ -3369,7 +3387,7 @@ ColumnIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_Obj *objPtr;
                 
                 col = Blt_GetHashValue(hPtr);
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(cmdPtr->table, col);
                 Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
@@ -3445,7 +3463,7 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
     }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_column_index(col)));
+    Tcl_SetObjResult(interp, GetColumnIndexObj(cmdPtr->table, col));
     Blt_FreeSwitches(insertSwitches, &switches, flags);
     return TCL_OK;
  error:
@@ -3547,7 +3565,7 @@ ColumnLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-             col = blt_table_next_column(cmdPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             const char *label;
             Tcl_Obj *objPtr;
             
@@ -3661,7 +3679,7 @@ ColumnNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-         col = blt_table_next_column(cmdPtr->table, col)) {
+         col = blt_table_next_column(col)) {
         const char *label;
         int match;
         int i;
@@ -3720,11 +3738,11 @@ ColumnNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-         row = blt_table_next_row(cmdPtr->table, row)) {
+         row = blt_table_next_row(row)) {
         if (blt_table_value_exists(cmdPtr->table, row, col))  {
             Tcl_Obj *objPtr;
             
-            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+            objPtr = GetRowIndexObj(cmdPtr->table, row);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
     }
@@ -3993,7 +4011,7 @@ ColumnTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_ChainLink link;
         int isNew;
         
-        if (blt_table_column_index(col) == lastIndex) {
+        if (blt_table_column_index(table, col) == lastIndex) {
             Blt_CreateHashEntry(&tagTable, "end", &isNew);
         }
         chain = blt_table_get_column_tags(table, col);
@@ -4084,7 +4102,7 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
             long j;
 
             col = Blt_Chain_GetValue(link);
-             j = blt_table_column_index(col);
+            j = blt_table_column_index(table, col);
             assert(j >= 0);
             matches[j] = TRUE;
         }
@@ -4202,7 +4220,7 @@ ColumnTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (to == NULL) {
         return TCL_ERROR;
     }
-    if (blt_table_column_index(from) > blt_table_column_index(to)) {
+    if (blt_table_column_index(table, from) > blt_table_column_index(table, to)) {
         return TCL_OK;
     }
     for (i = 6; i < objc; i++) {
@@ -4210,7 +4228,7 @@ ColumnTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         long j;
         
         tag = Tcl_GetString(objv[i]);
-        for (j = blt_table_column_index(from); j <= blt_table_column_index(to); 
+        for (j = blt_table_column_index(table, from); j <= blt_table_column_index(table, to); 
              j++) {
             BLT_TABLE_COLUMN col;
 
@@ -4613,7 +4631,7 @@ ColumnValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-             row = blt_table_next_row(cmdPtr->table, row)) {
+             row = blt_table_next_row(row)) {
             Tcl_Obj *objPtr;
             
             objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -4627,6 +4645,7 @@ ColumnValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj **elv;
         int elc;
         int i;
+        BLT_TABLE_ROW row;
 
         if (Tcl_ListObjGetElements(interp, objv[4], &elc, &elv) != TCL_OK) {
             return TCL_ERROR;
@@ -4639,10 +4658,9 @@ ColumnValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 return TCL_ERROR;
             }
         }
-        for (i = 0; i < elc; i++) {
-            BLT_TABLE_ROW row;
+        for (i = 0, row = blt_table_first_row(cmdPtr->table); i < elc; 
+             i++, row = blt_table_next_row(row)) {
 
-            row = blt_table_row(cmdPtr->table, i);
             if (blt_table_set_obj(interp, table, row, col, elv[i]) != TCL_OK) {
                 return TCL_ERROR;
             }
@@ -5415,7 +5433,7 @@ LookupOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (blt_table_key_lookup(interp, table, objc-2, objv+2, &row) != TCL_OK) {
         return TCL_ERROR;
     }
-    i = (row == NULL) ? -1 : blt_table_row_index(row);
+    i = (row == NULL) ? -1 : blt_table_row_index(table, row);
     Tcl_SetLongObj(Tcl_GetObjResult(interp), i);
     return TCL_OK;
 }
@@ -5460,7 +5478,7 @@ MinMaxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_COLUMN col;
 
         for (col = blt_table_first_column(table); col != NULL;
-             col = blt_table_next_column(table, col)) {
+             col = blt_table_next_column(col)) {
             Tcl_Obj *minObjPtr, *maxObjPtr;
 
             if (blt_table_get_column_limits(interp, table, col, &minObjPtr, 
@@ -5532,11 +5550,10 @@ NumColumnsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (count < blt_table_num_columns(table)) {
             BLT_TABLE_COLUMN col, next;
 
-            for (col = blt_table_first_column(table); col != NULL; col = next) {
-                next = blt_table_next_column(table, col);
-                if (blt_table_column_index(col) >= count) {
-                    blt_table_delete_column(table, col);
-                }
+            for (col = blt_table_column(table, count); col != NULL; 
+                 col = next) {
+                next = blt_table_next_column(col);
+                blt_table_delete_column(table, col);
             }
         } else if (count > blt_table_num_columns(table)) {
             long extra;
@@ -5581,11 +5598,10 @@ NumRowsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (count < blt_table_num_rows(table)) {
             BLT_TABLE_ROW row, next;
 
-            for (row = blt_table_first_row(table); row != NULL; row = next) {
-                next = blt_table_next_row(table, row);
-                if (blt_table_row_index(row) >= count) {
-                    blt_table_delete_row(table, row);
-                }
+            for (row = blt_table_row(table, count); row != NULL; 
+                 row = next) {
+                next = blt_table_next_row(row);
+                blt_table_delete_row(table, row);
             }
         } else if (count > blt_table_num_rows(table)) {
             long extra;
@@ -5772,7 +5788,7 @@ RowCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
     }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_row_index(row)));
+    Tcl_SetObjResult(interp, GetRowIndexObj(table, row));
     Blt_FreeSwitches(insertSwitches, &switches, flags);
     return TCL_OK;
  error:
@@ -5872,7 +5888,7 @@ RowDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
             goto error;
         }
         CopyRowTags(cmdPtr->table, cmdPtr->table, src, dest);
-        j = blt_table_row_index(dest);
+        j = blt_table_row_index(cmdPtr->table, dest);
         Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(j));
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -5920,14 +5936,14 @@ RowEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_COLUMN col;
         
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-             col = blt_table_next_column(cmdPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             BLT_TABLE_VALUE value;
 
             value = blt_table_get_value(cmdPtr->table, row, col);
             if (value == NULL) {
                 Tcl_Obj *objPtr;
 
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(cmdPtr->table, col);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
@@ -6025,7 +6041,7 @@ RowExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
         for (i = 0; i < numRows; i++) {
             Tcl_Obj *objPtr;
             
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+            objPtr = GetRowIndexObj(table, rows[i]);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
         Tcl_SetObjResult(interp, listObjPtr);
@@ -6082,13 +6098,13 @@ RowGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_COLUMN col;
 
         for (col = blt_table_first_column(table); col != NULL;
-             col = blt_table_next_column(table, col)) {
+             col = blt_table_next_column(col)) {
             Tcl_Obj *objPtr;
             
             if (needLabels) {
                 objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
             } else {
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(table, col);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             objPtr = blt_table_get_obj(table, row, col);
@@ -6112,7 +6128,7 @@ RowGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (needLabels) {
                 objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
             } else {
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(table, col);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             objPtr = blt_table_get_obj(table, row, col);
@@ -6162,7 +6178,7 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (row != NULL) {
             BLT_TABLE_ROW next;
             
-            index = blt_table_row_index(row);
+            index = blt_table_row_index(cmdPtr->table, row);
             next = blt_table_next_tagged_row(&iter);
             if (next != NULL) {
                 /* It's not an error to look for an index of a row that
@@ -6216,7 +6232,7 @@ RowIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
          row = blt_table_next_tagged_row(&ri)) {
         Tcl_Obj *objPtr;
 
-        objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+        objPtr = GetRowIndexObj(cmdPtr->table, row);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -6254,7 +6270,7 @@ RowIsNumericOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     state = TRUE;
     for (col = blt_table_first_column(cmdPtr->table); col != NULL; 
-         col = blt_table_next_column(cmdPtr->table, col)) {
+         col = blt_table_next_column(col)) {
         double d;
         
         d = blt_table_get_double(interp, cmdPtr->table, row, col);
@@ -6302,7 +6318,7 @@ RowIsHeaderOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_InitHashTable(&table, BLT_STRING_KEYS);
     state = TRUE;
     for (col = blt_table_first_column(cmdPtr->table); col != NULL; 
-         col = blt_table_next_column(cmdPtr->table, col)) {
+         col = blt_table_next_column(col)) {
         const char *value;
         int isNew;
         
@@ -6375,7 +6391,7 @@ RowJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     for (srcCol = blt_table_first_column(srcTable); srcCol != NULL; 
-         srcCol = blt_table_next_column(srcTable, srcCol)) {
+         srcCol = blt_table_next_column(srcCol)) {
         const char *label;
         BLT_TABLE_COLUMN dstCol;
         BLT_TABLE_ROW srcRow;
@@ -6520,7 +6536,7 @@ RowLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (row = blt_table_first_row(table); row != NULL;
-             row = blt_table_next_row(table, row)) {
+             row = blt_table_next_row(row)) {
             Tcl_Obj *objPtr;
             
             objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
@@ -6538,7 +6554,7 @@ RowLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         n = MIN(elc, blt_table_num_rows(table));
         for (i = 0, row = blt_table_first_row(table); (row != NULL) && (i < n); 
-             row = blt_table_next_row(table, row), i++) {
+             row = blt_table_next_row(row), i++) {
             const char *label;
 
             label = Tcl_GetString(elv[i]);
@@ -6636,7 +6652,7 @@ RowNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     table = cmdPtr->table;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_row(table); row != NULL;
-         row = blt_table_next_row(table, row)) {
+         row = blt_table_next_row(row)) {
         const char *label;
         int match;
         int i;
@@ -6698,14 +6714,14 @@ RowNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_COLUMN col;
         
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-             col = blt_table_next_column(cmdPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             BLT_TABLE_VALUE value;
 
             value = blt_table_get_value(cmdPtr->table, row, col);
             if (value != NULL) {
                 Tcl_Obj *objPtr;
 
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(cmdPtr->table, col);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
@@ -7065,7 +7081,7 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
             long j;
 
             row = Blt_Chain_GetValue(link);
-            j = blt_table_row_index(row);
+            j = blt_table_row_index(table, row);
             assert(j >= 0);
             matches[j] = TRUE;
         }
@@ -7131,14 +7147,13 @@ RowTagLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     matches = GetRowTagMatches(cmdPtr->table, objc - 4, objv + 4);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     if (matches != NULL) {
-        long j;
+        BLT_TABLE_ROW row;
 
-        for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
-            if (matches[j]) {
-                BLT_TABLE_ROW row;
+        for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+             row = blt_table_next_row(row)) {
+            if (matches[blt_table_row_index(cmdPtr->table, row)]) {
                 Tcl_Obj *objPtr;
                 
-                row = blt_table_row(cmdPtr->table, j);
                 objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
@@ -7166,10 +7181,10 @@ static int
 RowTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
-    Cmd *cmdPtr = clientData;
     BLT_TABLE table;
-    int i;
     BLT_TABLE_ROW from, to;
+    Cmd *cmdPtr = clientData;
+    int i;
 
     table = cmdPtr->table;
     from = blt_table_get_row(interp, table, objv[4]);
@@ -7180,20 +7195,20 @@ RowTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (to == NULL) {
         return TCL_ERROR;
     }
-    if (blt_table_row_index(from) > blt_table_row_index(to)) {
+    if (blt_table_row_index(table, from) > blt_table_row_index(table, to)) {
         return TCL_OK;
     }
     for (i = 6; i < objc; i++) {
+        BLT_TABLE_ROW row;
         const char *tag;
-        long j;
         
         tag = Tcl_GetString(objv[i]);
-        for (j = blt_table_row_index(from); j <= blt_table_row_index(to); j++) {
-            BLT_TABLE_ROW row;
-
-            row = blt_table_row(table, j);
+        for (row = from; /*empty*/; row = blt_table_next_row(row)) {
             if (blt_table_set_row_tag(interp, table, row, tag) != TCL_OK) {
                 return TCL_ERROR;
+            }
+            if (row == to) {
+                break;
             }
         }    
     }
@@ -7493,7 +7508,7 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-             col = blt_table_next_column(cmdPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             Tcl_Obj *objPtr;
             
             objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -8349,7 +8364,7 @@ UnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 WatchColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
-               Tcl_Obj *const *objv)
+              Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
@@ -8524,8 +8539,7 @@ WatchInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_NewStringObj(notifierPtr->tag, -1));
         } else {
             Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewLongObj(blt_table_row_index(notifierPtr->row)));
-        
+               GetRowIndexObj(watchPtr->cmdPtr->table, notifierPtr->row));
         }
     } else {
         Tcl_ListObjAppendElement(interp, listObjPtr, 
@@ -8535,7 +8549,7 @@ WatchInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_NewStringObj(notifierPtr->tag, -1));
         } else {
             Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewLongObj(blt_table_column_index(notifierPtr->column)));
+                GetColumnIndexObj(watchPtr->cmdPtr->table, notifierPtr->column));
         }
     }
     Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->cmdObjPtr);

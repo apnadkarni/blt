@@ -145,23 +145,6 @@ static Blt_SwitchSpec exportSwitches[] =
     {BLT_SWITCH_END}
 };
 
-#ifdef HAVE_LIBEXPAT
-
-#include <expat.h>
-
-typedef struct {
-    BLT_TABLE_ROW row;
-    BLT_TABLE_COLUMN col;
-    BLT_TABLE table;
-    Tcl_Interp *interp;
-    int flags;
-    Blt_HashTable attrTable;
-    Blt_HashTable elemTable;
-    Blt_HashTable stringTable;
-    Blt_List elemList;
-    Blt_ListNode node;
-} ImportData;
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -288,6 +271,23 @@ RowIterSwitchProc(
     }
     return TCL_OK;
 }
+
+#ifdef HAVE_LIBEXPAT
+
+#include <expat.h>
+
+typedef struct {
+    BLT_TABLE_ROW row;
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE table;
+    Tcl_Interp *interp;
+    int flags;
+    Blt_HashTable attrTable;
+    Blt_HashTable elemTable;
+    Blt_HashTable stringTable;
+    Blt_List elemList;
+    Blt_ListNode node;
+} ImportData;
 
 static Tcl_Obj *
 GetStringObj(ImportData *importPtr, const char *string, size_t length)

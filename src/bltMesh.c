@@ -925,7 +925,7 @@ TableDataSourcePrintProc(DataSource *basePtr)
     name = blt_table_name(srcPtr->table);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj(name, -1));
     
-    index = blt_table_column_index(srcPtr->column);
+    index = blt_table_column_index(srcPtr->table, srcPtr->column);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(index));
     return listObjPtr;
 }
@@ -934,8 +934,9 @@ static int
 TableDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr, 
                        DataSourceResult *resultPtr)
 {
-    TableDataSource *srcPtr = (TableDataSource *)basePtr;
     BLT_TABLE table;
+    BLT_TABLE_ROW row;
+    TableDataSource *srcPtr = (TableDataSource *)basePtr;
     double *values;
     double minValue, maxValue;
     long i;
@@ -946,10 +947,8 @@ TableDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr,
         return TCL_ERROR;
     }
     minValue = FLT_MAX, maxValue = -FLT_MAX;
-    for (i = 0; i < blt_table_num_rows(table); i++) {
-        BLT_TABLE_ROW row;
-
-        row = blt_table_row(table, i);
+    for (i = 0, row = blt_table_first_row(table); row != NULL; 
+         row = blt_table_next_row(row), i++) {
         values[i] = blt_table_get_double(interp, table, row, srcPtr->column);
         if (values[i] < minValue) {
             minValue = values[i];

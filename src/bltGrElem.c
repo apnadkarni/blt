@@ -834,7 +834,8 @@ ValuesToObj(
             Tcl_ListObjAppendElement(interp, listObjPtr, 
                 Tcl_NewStringObj(tableName, -1));
             
-            i = blt_table_column_index(valuesPtr->tableSource.column);
+            i = blt_table_column_index(valuesPtr->tableSource.table,
+                                       valuesPtr->tableSource.column);
             Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
             return listObjPtr;
         }

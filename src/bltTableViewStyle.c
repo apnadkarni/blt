@@ -1336,9 +1336,11 @@ GetFormattedCellObj(Tcl_Interp *interp, Cell *cellPtr, Row *rowPtr,
     
     /* command rowIndex columnIndex */
     cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
-    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->viewPtr->table, 
+                                                rowPtr->row));
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->viewPtr->table, 
+                                                   colPtr->column));
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     Tcl_IncrRefCount(cmdObjPtr);
     result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
@@ -1990,8 +1992,8 @@ PushButtonVarTraceProc(
     if (flags & TCL_TRACE_UNSETS) {
         if (flags & TCL_TRACE_DESTROYED) {
             Tcl_SetVar2Ex(interp, name1, name2,
-                Tcl_NewLongObj(blt_table_row_index(stylePtr->row)),
-                TCL_GLOBAL_ONLY);
+             Tcl_NewLongObj(blt_table_row_index(stylePtr->viewPtr->table,
+             stylePtr->row)), TCL_GLOBAL_ONLY);
             Tcl_TraceVar2(interp, name1, name2, TRACE_VAR_FLAGS,
                           PushButtonVarTraceProc, clientData);
             stylePtr->flags |= ICON_VAR_TRACED;
