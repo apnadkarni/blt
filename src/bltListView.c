@@ -3271,7 +3271,7 @@ RebuildTableItems(Tcl_Interp *interp, ListView *viewPtr, BLT_TABLE table)
     }
     chain = Blt_Chain_Create();
     for (row = blt_table_first_row(table); row != NULL; 
-         row = blt_table_next_row(table, row)) {
+         row = blt_table_next_row(row)) {
         Item *itemPtr;
         Blt_HashEntry *hPtr;
 
@@ -3286,7 +3286,7 @@ RebuildTableItems(Tcl_Interp *interp, ListView *viewPtr, BLT_TABLE table)
         } else {
             itemPtr = Blt_GetHashValue(hPtr);
         }
-        itemPtr->index = blt_table_row_index(row) - 1;
+        itemPtr->index = blt_table_row_index(table, row) - 1;
         /* Move the item to the new list. */
         Blt_Chain_UnlinkLink(viewPtr->items, itemPtr->link);
         Blt_Chain_AppendLink(chain, itemPtr->link);

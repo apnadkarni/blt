@@ -812,6 +812,26 @@ PossiblyRedraw(TableView *viewPtr)
     }
 }
 
+static Tcl_Obj *
+GetColumnIndexObj(TableView *viewPtr, Column *colPtr) 
+{
+    long index;
+
+    index = blt_table_column_index(viewPtr->table, colPtr->column);
+    return Tcl_NewLongObj(index);
+}
+
+static Tcl_Obj *
+GetRowIndexObj(TableView *viewPtr, Row *rowPtr) 
+{
+    long index;
+
+    index = blt_table_row_index(viewPtr->table, rowPtr->row);
+    return Tcl_NewLongObj(index);
+}
+
+
+
 static void
 RenumberColumns(TableView *viewPtr) 
 {
@@ -906,7 +926,7 @@ EventuallyDeleteColumn(TableView *viewPtr, BLT_TABLE_COLUMN col)
     colPtr = GetColumnContainer(viewPtr, col);
     if (colPtr == NULL) {
         /* Debug row delete and column delete */
-        fprintf(stderr, "col=%x, %s numCols=%ld\n", col, 
+        fprintf(stderr, "col=%lx, %s numCols=%ld\n", (unsigned long)col, 
                 blt_table_column_label(col), viewPtr->numColumns);
     }
     assert(colPtr != NULL);
@@ -1090,8 +1110,8 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
 static int
 CompareRows(const void *a, const void *b)
 {
-    const Row *r1Ptr = *(Row **)a;
-    const Row *r2Ptr = *(Row **)b;
+    Row *r1Ptr = *(Row **)a;
+    Row *r2Ptr = *(Row **)b;
     TableView *viewPtr;
     int result;
     SortInfo *sortPtr;
@@ -1117,16 +1137,16 @@ CompareRows(const void *a, const void *b)
             objPtr = Tcl_NewStringObj(blt_table_name(viewPtr->table), -1);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
             /* Row */
-            objPtr = Tcl_NewLongObj(blt_table_row_index(r1Ptr->row));
+            objPtr = GetRowIndexObj(viewPtr, r1Ptr);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
             /* Column */
-            objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+            objPtr = GetColumnIndexObj(viewPtr, colPtr);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
             /* Row */
-            objPtr = Tcl_NewLongObj(blt_table_row_index(r2Ptr->row));
+            objPtr = GetRowIndexObj(viewPtr, r2Ptr);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
             /* Column */
-            objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+            objPtr = GetColumnIndexObj(viewPtr, colPtr);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
 
             Tcl_IncrRefCount(cmdObjPtr);
@@ -1581,7 +1601,7 @@ SortColumnToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if (colPtr == NULL) {
         return Tcl_NewStringObj("", -1);
     }
-    return Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+    return GetColumnIndexObj(colPtr->viewPtr, colPtr);
 }
 
 
@@ -1673,7 +1693,7 @@ SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         Tcl_Obj *objPtr;
 
         colPtr = Blt_Chain_GetValue(link);
-        objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+        objPtr = GetColumnIndexObj(colPtr->viewPtr, colPtr);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
@@ -3099,7 +3119,9 @@ DestroyColumn(Column *colPtr)
     if (colPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&viewPtr->columnTable, colPtr->hashPtr);
     }
-    blt_table_clear_column_traces(viewPtr->table, colPtr->column);
+    if (colPtr->column != NULL) {
+        blt_table_clear_column_traces(viewPtr->table, colPtr->column);
+    }
     if ((colPtr->flags & DELETED) == 0) {
         RemoveColumnCells(viewPtr, colPtr);
     }
@@ -6578,9 +6600,9 @@ CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
             keyPtr = GetKey(viewPtr->focusPtr);
             rowPtr = keyPtr->rowPtr;
             colPtr = keyPtr->colPtr;
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+            objPtr = GetRowIndexObj(viewPtr, rowPtr);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-            objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+            objPtr = GetColumnIndexObj(viewPtr, colPtr);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
         Tcl_SetObjResult(interp, listObjPtr);
@@ -6699,9 +6721,9 @@ CellIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
     colPtr = keyPtr->colPtr;
     rowPtr = keyPtr->rowPtr;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+    objPtr = GetRowIndexObj(viewPtr, rowPtr);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+    objPtr = GetColumnIndexObj(viewPtr, colPtr);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -6742,9 +6764,9 @@ CellInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *cmdObjPtr, *objPtr;
 
         cmdObjPtr = Tcl_DuplicateObj(stylePtr->cmdObjPtr);
-        objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+        objPtr = GetRowIndexObj(viewPtr, rowPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+        objPtr = GetColumnIndexObj(viewPtr, colPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
         Tcl_IncrRefCount(cmdObjPtr);
         Tcl_Preserve(cellPtr);
@@ -7024,20 +7046,20 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (viewPtr->selectMode == SELECT_CELLS) {
         Tcl_Obj *objPtr;
-        BLT_TABLE_ROW row;
-        BLT_TABLE_COLUMN col;
-
-        row = viewPtr->selectCells.anchorPtr->rowPtr->row;
-        objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+        Row *rowPtr;
+        Column *colPtr;
+        
+        rowPtr = viewPtr->selectCells.anchorPtr->rowPtr;
+        objPtr = GetRowIndexObj(viewPtr, rowPtr);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        col = viewPtr->selectCells.anchorPtr->colPtr->column;
-        objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+        colPtr = viewPtr->selectCells.anchorPtr->colPtr;
+        objPtr = GetColumnIndexObj(viewPtr, colPtr);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        row = viewPtr->selectCells.markPtr->rowPtr->row;
-        objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+        rowPtr = viewPtr->selectCells.markPtr->rowPtr;
+        objPtr = GetRowIndexObj(viewPtr, rowPtr);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        col = viewPtr->selectCells.markPtr->colPtr->column;
-        objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+        colPtr = viewPtr->selectCells.markPtr->colPtr;
+        objPtr = GetColumnIndexObj(viewPtr, colPtr);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     } else {
         if (viewPtr->flags & SELECT_SORTED) {
@@ -7049,7 +7071,7 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
                 Tcl_Obj *objPtr;
                 
                 rowPtr = Blt_Chain_GetValue(link);
-                objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+                objPtr = GetRowIndexObj(viewPtr, rowPtr);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         } else {
@@ -7062,7 +7084,7 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
                 if (rowPtr->flags & SELECTED) {
                     Tcl_Obj *objPtr;
                     
-                    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+                    objPtr = GetRowIndexObj(viewPtr, rowPtr);
                     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
                 }
             }
@@ -7403,7 +7425,7 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if ((colPtr->flags & HIDDEN) == 0) {
                 Tcl_Obj *objPtr;
 
-                objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+                objPtr = GetColumnIndexObj(viewPtr, colPtr);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
@@ -7504,7 +7526,7 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
             (x2 > colPtr->worldX)) {
             long index;
 
-            index = blt_table_column_index(colPtr->column);
+            index = blt_table_column_index(viewPtr->table, colPtr->column);
             Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
             return TCL_OK;
         }
@@ -7540,7 +7562,7 @@ ColumnHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (colPtr->flags & HIDDEN) {
                 Tcl_Obj *objPtr;
 
-                objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+                objPtr = GetColumnIndexObj(viewPtr, colPtr);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
@@ -7579,7 +7601,7 @@ ColumnHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnIndexOp --
  *
- *      pathName colun index col
+ *      pathName column index col
  *
  *---------------------------------------------------------------------------
  */
@@ -7595,7 +7617,8 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    index = (colPtr != NULL) ? blt_table_column_index(colPtr->column) : -1;
+    index = (colPtr != NULL) ? 
+        blt_table_column_index(viewPtr->table, colPtr->column) : -1;
     Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
@@ -7634,7 +7657,8 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     /* Test for position before creating the column.  */
-    if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &insertPos) != TCL_OK){        return TCL_ERROR;
+    if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &insertPos) != TCL_OK){
+        return TCL_ERROR;
     }
     /* 
      * Column doesn't have to exist.  We'll add it when the table adds
@@ -7735,7 +7759,7 @@ ColumnInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);  
     objPtr = Tcl_NewStringObj(Tk_PathName(viewPtr->tkwin), -1);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+    objPtr = GetColumnIndexObj(viewPtr, colPtr);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     Tcl_IncrRefCount(cmdObjPtr);
     result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
@@ -7908,7 +7932,8 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     colPtr = NearestColumn(viewPtr, x, TRUE);
-    index = (colPtr != NULL) ? blt_table_column_index(colPtr->column) : -1;
+    index = (colPtr != NULL) ? 
+        blt_table_column_index(viewPtr->table, colPtr->column) : -1;
     Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
@@ -8205,7 +8230,6 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-
 static Blt_OpSpec columnOps[] = {
     {"activate",   1, ColumnActivateOp,   4, 4, "colName",}, 
     {"bind",       1, ColumnBindOp,       4, 6, "tagName ?sequence command?",},
@@ -8430,7 +8454,7 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
                     break;
                 }
             }
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+            objPtr = GetRowIndexObj(viewPtr, rowPtr);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
     }
@@ -8678,7 +8702,8 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         /* Report the column that has the filter menu posted. */
         index = -1;
         if (filterPtr->postPtr != NULL) {
-            index = blt_table_column_index(filterPtr->postPtr->column);
+            index = blt_table_column_index(viewPtr->table, 
+                                           filterPtr->postPtr->column);
         }
         Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
         return TCL_OK;
@@ -8941,9 +8966,9 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
             keyPtr = GetKey(viewPtr->focusPtr);
             rowPtr = keyPtr->rowPtr;
             colPtr = keyPtr->colPtr;
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+            objPtr = GetRowIndexObj(viewPtr, rowPtr);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-            objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+            objPtr = GetColumnIndexObj(viewPtr, colPtr);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
         Tcl_SetObjResult(interp, listObjPtr);
@@ -9003,9 +9028,9 @@ GrabOp(ClientData clientData, Tcl_Interp *interp, int objc,
             keyPtr = GetKey(viewPtr->postPtr);
             colPtr = keyPtr->colPtr;
             rowPtr = keyPtr->rowPtr;
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+            objPtr = GetRowIndexObj(viewPtr, rowPtr);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-            objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+            objPtr = GetColumnIndexObj(viewPtr, colPtr);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
         Tcl_SetObjResult(interp, listObjPtr);
@@ -9144,9 +9169,9 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
     colPtr = keyPtr->colPtr;
     rowPtr = keyPtr->rowPtr;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+    objPtr = GetRowIndexObj(viewPtr, rowPtr);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+    objPtr = GetColumnIndexObj(viewPtr, colPtr);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -9238,9 +9263,9 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *cmdObjPtr, *objPtr;
 
         cmdObjPtr = Tcl_DuplicateObj(stylePtr->cmdObjPtr);
-        objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+        objPtr = GetRowIndexObj(viewPtr, rowPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+        objPtr = GetColumnIndexObj(viewPtr, colPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
         Tcl_IncrRefCount(cmdObjPtr);
         Tcl_Preserve(cellPtr);
@@ -9584,7 +9609,7 @@ RowExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if ((rowPtr->flags & HIDDEN) == 0) {
                 Tcl_Obj *objPtr;
 
-                objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+                objPtr = GetRowIndexObj(viewPtr, rowPtr);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
@@ -9645,7 +9670,7 @@ RowHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (rowPtr->flags & HIDDEN) {
                 Tcl_Obj *objPtr;
 
-                objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+                objPtr = GetRowIndexObj(viewPtr, rowPtr);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
@@ -9700,7 +9725,8 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetRow(interp, viewPtr, objv[3], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    index = (rowPtr != NULL) ? blt_table_row_index(rowPtr->row) : -1;
+    index = (rowPtr != NULL) ? 
+        blt_table_row_index(viewPtr->table, rowPtr->row) : -1;
     Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
@@ -9831,7 +9857,7 @@ RowInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     Tcl_Preserve(viewPtr);
     cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);  
-    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+    objPtr = GetRowIndexObj(viewPtr, rowPtr);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     Tcl_IncrRefCount(cmdObjPtr);
     result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
@@ -9924,7 +9950,8 @@ RowNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     rowPtr = NearestRow(viewPtr, y, TRUE);
-    index = (rowPtr != NULL) ? blt_table_row_index(rowPtr->row) : -1;
+    index = (rowPtr != NULL) ? 
+        blt_table_row_index(viewPtr->table, rowPtr->row) : -1;
     Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
@@ -12021,7 +12048,7 @@ RebuildTableView(TableView *viewPtr)
         numRows = blt_table_num_rows(viewPtr->table);
         rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
         for (row = blt_table_first_row(viewPtr->table); row != NULL;  
-             row = blt_table_next_row(viewPtr->table, row)) {
+             row = blt_table_next_row(row)) {
             Blt_HashEntry *hPtr;
             int isNew;
             Row *rowPtr;
@@ -12047,7 +12074,7 @@ RebuildTableView(TableView *viewPtr)
         numColumns = blt_table_num_columns(viewPtr->table);
         columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
         for (col = blt_table_first_column(viewPtr->table); col != NULL;  
-             col = blt_table_next_column(viewPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             Blt_HashEntry *hPtr;
             int isNew;
             Column *colPtr;
@@ -12460,6 +12487,256 @@ AddRowsWhenIdleProc(ClientData clientData)
     PossiblyRedraw(viewPtr);
 }
 
+static int
+ReplaceTable(TableView *viewPtr, BLT_TABLE table)
+{
+    Column **columns;
+    Row **rows;
+    long i;
+    size_t oldSize, newSize, numColumns, numRows;
+    unsigned int flags;
+
+    /* Step 1: Cancel any pending idle callbacks for this table. */
+    if (viewPtr->flags & ROWS_PENDING) {
+        Tcl_CancelIdleCall(AddRowsWhenIdleProc, viewPtr);
+    }
+    if (viewPtr->flags & COLUMNS_PENDING) {
+        Tcl_CancelIdleCall(AddColumnsWhenIdleProc, viewPtr);
+    }
+    if (viewPtr->flags & ROWS_DELETED) {
+        Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
+    }
+    if (viewPtr->flags & COLUMNS_DELETED) {
+        Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
+    }
+    if (viewPtr->flags & SELECT_PENDING) {
+        Tcl_CancelIdleCall(SelectCommandProc, viewPtr);
+    }
+
+    /* 2. Get rid of the arrays of visible rows and columns. */
+    if (viewPtr->visibleRows != NULL) {
+        Blt_Free(viewPtr->visibleRows);
+        viewPtr->visibleRows = NULL;
+    }
+    if (viewPtr->visibleColumns != NULL) {
+        Blt_Free(viewPtr->visibleColumns);
+        viewPtr->visibleColumns = NULL;
+    }
+    viewPtr->numVisibleRows = viewPtr->numVisibleColumns = 0;
+    ClearSelections(viewPtr);
+
+    /* 3. Allocate an array for new columns. */
+    oldSize = viewPtr->numColumns;
+    newSize = blt_table_num_columns(table);
+    numColumns = (viewPtr->flags & AUTO_COLUMNS) 
+        ? MAX(oldSize, newSize) : newSize;
+    columns = Blt_Calloc(numColumns, sizeof(Column *));
+    if (columns == NULL) {
+        return TCL_ERROR;
+    }
+    if (viewPtr->flags & AUTO_COLUMNS) {
+        BLT_TABLE_COLUMN col;
+        long i, j;
+
+        /* 4. Move columns that exist in both the old and new tables into
+         *    the merge array. */
+        for (i = 0; i < viewPtr->numColumns; i++) {
+            BLT_TABLE_COLUMN newCol;
+            Column *colPtr;
+            const char *label;
+
+            colPtr = viewPtr->columns[i];
+            label = blt_table_column_label(colPtr->column);
+            /* Find the old column in the new table. */
+            newCol = blt_table_get_column_by_label(table, label);
+            if (newCol != NULL) {
+                Blt_HashEntry *hPtr;
+                int isNew;
+
+                /* Replace the previous hash entry with a new one. */
+                hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, 
+                        (char *)newCol, &isNew);
+                assert(isNew);
+                if (colPtr->hashPtr != NULL) {
+                    Blt_DeleteHashEntry(&viewPtr->columnTable, colPtr->hashPtr);
+                }
+                colPtr->hashPtr = hPtr;
+                colPtr->column = newCol;
+                columns[i] = colPtr;
+                viewPtr->columns[i] = NULL; /* Mark the old slot as empty. */
+            }
+        }
+
+        /* 5. Create columns in the viewer that aren't already there. */
+        for (i = 0, col = blt_table_first_column(table); col != NULL;  
+             col = blt_table_next_column(col)) {
+            Blt_HashEntry *hPtr;
+            Column *colPtr;
+            int isNew;
+            
+            hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, 
+                                       &isNew);
+            if (!isNew) {
+                continue;               /* Handled in the previous
+                                         * step.  */
+            }
+            colPtr = CreateColumn(viewPtr, col, hPtr);
+            while (columns[i] != NULL) {    /* Find the next open slot. */
+                i++;                        
+            }
+            columns[i] = colPtr;
+        }
+
+        /* 6. Compress the columns, removing empty column slots. */
+        for (i = j = 0; i < numColumns; i++) {
+            if (columns[i] == NULL) {
+                continue;
+            }
+            j++;
+            if (i < j) {
+                columns[j] = columns[i];
+            }
+            columns[j]->index = j;
+        }
+        numColumns = j;
+        columns = Blt_Realloc(columns, numColumns * sizeof(Column *));
+    }
+
+    /* 7. Remove the left over columns that are not in the new table. */
+    for (i = 0; i < viewPtr->numColumns; i++) {
+        Column *colPtr;
+
+        colPtr = viewPtr->columns[i];
+        if (colPtr != NULL) {
+            DestroyColumn(colPtr);
+        }
+    }
+    if (viewPtr->columns != NULL) {
+        Blt_Free(viewPtr->columns);
+    }
+    viewPtr->columns = columns;
+    viewPtr->numColumns = numColumns;
+
+    /* 8. Allocate a new row array that can hold all the rows. */
+    oldSize = viewPtr->numRows;
+    newSize = blt_table_num_rows(table);
+    numRows = (viewPtr->flags & AUTO_ROWS) ? MAX(oldSize, newSize) : newSize;
+    rows = Blt_Calloc(numRows, sizeof(Row *));
+    if (rows == NULL) {
+        return TCL_ERROR;
+    }
+
+    if (viewPtr->flags & AUTO_ROWS) {
+        BLT_TABLE_ROW row;
+        long i, j;
+
+        /* 9. Move rows that exist in both the old and new tables into the
+         *    merge array. */
+        for (i = 0; i < viewPtr->numRows; i++) {
+            BLT_TABLE_ROW newRow;
+            Row *rowPtr;
+            const char *label;
+
+            rowPtr = viewPtr->rows[i];
+            label = blt_table_row_label(rowPtr->row);
+            newRow = blt_table_get_row_by_label(table, label);
+            if (newRow != NULL) {
+                Blt_HashEntry *hPtr;
+                int isNew;
+
+                hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)newRow, 
+                                           &isNew);
+                assert(isNew);
+                if (rowPtr->hashPtr != NULL) {
+                    Blt_DeleteHashEntry(&viewPtr->rowTable, rowPtr->hashPtr);
+                }
+                rowPtr->hashPtr = hPtr;
+                rowPtr->row = newRow;
+                rows[i] = rowPtr;
+                viewPtr->rows[i] = NULL;
+            }
+        }
+        /* 10. Add rows from the the new table that don't already exist. */
+        for (i = 0, row = blt_table_first_row(table); row != NULL;  
+             row = blt_table_next_row(row)) {
+            Blt_HashEntry *hPtr;
+            Row *rowPtr;
+            int isNew;
+
+            hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
+            if (!isNew) {
+                /* This works because we're matching against the row
+                 * pointer not the row label.  */
+                continue;
+            }
+            rowPtr = CreateRow(viewPtr, row, hPtr);
+            while (rows[i] != NULL) {    /* Get the next open slot. */
+                i++;                        
+            }
+            rows[i] = rowPtr;
+        }
+        /* 11. Compress empty slots in row array. Re-number the row
+         *     indices. */
+        for (i = j = 0; i < numRows; i++) {
+            if (rows[i] == NULL) {
+                continue;
+            }
+            j++;
+            if (i < j) {
+                rows[j] = rows[i];
+            }
+            rows[j]->index = j;
+        }
+        numRows = j;
+        rows = Blt_Realloc(rows, numRows * sizeof(Row *));
+    }
+
+    /* 12. Remove all non-NULL rows. These are rows from the old table, not
+     *     used in the new table. */
+    for (i = 0; i < viewPtr->numRows; i++) {
+        Row *rowPtr;
+
+        rowPtr = viewPtr->rows[i];
+        if (rowPtr != NULL) {
+            DestroyRow(rowPtr);
+        }
+    }
+    if (viewPtr->rows != NULL) {
+        Blt_Free(viewPtr->rows);
+    }
+    viewPtr->rows = rows;
+    viewPtr->numRows = numRows;
+
+    /* 13. Create cells */
+    for (i = 0; i < viewPtr->numRows; i++) {
+        CellKey key;
+        long j;
+        
+        key.rowPtr = viewPtr->rows[i];
+        for (j = 0; j < viewPtr->numColumns; j++) {
+            Blt_HashEntry *hPtr;
+            Cell *cellPtr;
+            int isNew;
+            
+            key.colPtr = viewPtr->columns[j];
+            hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
+                &isNew);
+            if (isNew) {
+                cellPtr = NewCell(viewPtr, hPtr);
+                Blt_SetHashValue(hPtr, cellPtr);
+            }
+        }
+    }
+
+    viewPtr->table = table;
+    flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
+    blt_table_trace_row(table, TABLE_TRACE_ALL_ROWS, flags, 
+        RowTraceProc, NULL, viewPtr);
+    blt_table_trace_column(table, TABLE_TRACE_ALL_COLUMNS, flags, 
+        ColumnTraceProc, NULL, viewPtr);
+    return TCL_OK;
+}
+
 
 static int
 AttachTable(Tcl_Interp *interp, TableView *viewPtr)
@@ -12482,8 +12759,10 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
     if (viewPtr->flags & SELECT_PENDING) {
         Tcl_CancelIdleCall(SelectCommandProc, viewPtr);
     }
+
     /* Try to match the current rows and columns in the view with the new
-     * table names. */
+     * table names. This is so that we can keep various configuration
+     * options that might have been set. */
 
     ResetTableView(viewPtr);
     viewPtr->colNotifier = blt_table_create_column_notifier(interp, 
@@ -12504,7 +12783,7 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
             return TCL_ERROR;
         }
         for (i = 0, row = blt_table_first_row(viewPtr->table); row != NULL;  
-             row = blt_table_next_row(viewPtr->table, row), i++) {
+             row = blt_table_next_row(row), i++) {
             Blt_HashEntry *hPtr;
             int isNew;
             Row *rowPtr;
@@ -12531,7 +12810,7 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
             return TCL_ERROR;
         }
         for (i = 0, col = blt_table_first_column(viewPtr->table); col != NULL;  
-             col = blt_table_next_column(viewPtr->table, col), i++) {
+             col = blt_table_next_column(col), i++) {
             Blt_HashEntry *hPtr;
             int isNew;
             Column *colPtr;

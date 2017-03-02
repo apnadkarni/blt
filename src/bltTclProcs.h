@@ -1245,8 +1245,7 @@ BLT_EXTERN BLT_TABLE_COLUMN blt_table_first_column(BLT_TABLE table);
 #ifndef blt_table_next_column_DECLARED
 #define blt_table_next_column_DECLARED
 /* 203 */
-BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE table,
-				BLT_TABLE_COLUMN column);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_first_row_DECLARED
 #define blt_table_first_row_DECLARED
@@ -1256,8 +1255,7 @@ BLT_EXTERN BLT_TABLE_ROW blt_table_first_row(BLT_TABLE table);
 #ifndef blt_table_next_row_DECLARED
 #define blt_table_next_row_DECLARED
 /* 205 */
-BLT_EXTERN BLT_TABLE_ROW blt_table_next_row(BLT_TABLE table,
-				BLT_TABLE_ROW row);
+BLT_EXTERN BLT_TABLE_ROW blt_table_next_row(BLT_TABLE_ROW row);
 #endif
 #ifndef blt_table_row_spec_DECLARED
 #define blt_table_row_spec_DECLARED
@@ -1935,9 +1933,9 @@ typedef struct BltTclProcs {
     int (*blt_table_unset_row_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *tag); /* 200 */
     int (*blt_table_unset_column_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, const char *tag); /* 201 */
     BLT_TABLE_COLUMN (*blt_table_first_column) (BLT_TABLE table); /* 202 */
-    BLT_TABLE_COLUMN (*blt_table_next_column) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 203 */
+    BLT_TABLE_COLUMN (*blt_table_next_column) (BLT_TABLE_COLUMN column); /* 203 */
     BLT_TABLE_ROW (*blt_table_first_row) (BLT_TABLE table); /* 204 */
-    BLT_TABLE_ROW (*blt_table_next_row) (BLT_TABLE table, BLT_TABLE_ROW row); /* 205 */
+    BLT_TABLE_ROW (*blt_table_next_row) (BLT_TABLE_ROW row); /* 205 */
     BLT_TABLE_ROWCOLUMN_SPEC (*blt_table_row_spec) (BLT_TABLE table, Tcl_Obj *objPtr, const char **sp); /* 206 */
     BLT_TABLE_ROWCOLUMN_SPEC (*blt_table_column_spec) (BLT_TABLE table, Tcl_Obj *objPtr, const char **sp); /* 207 */
     int (*blt_table_iterate_rows) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter); /* 208 */

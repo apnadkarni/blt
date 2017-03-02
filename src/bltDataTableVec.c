@@ -80,8 +80,9 @@ ExportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
         Blt_Vector *vector;
         size_t size;
         double *array;
-        int k;
+        size_t count;
         BLT_TABLE_COLUMN col;
+        BLT_TABLE_ROW row;
 
         col = blt_table_get_column(interp, table, objv[i+1]);
         if (col == NULL) {
@@ -97,11 +98,9 @@ ExportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
         }
         array = Blt_VecData(vector);
         size = Blt_VecSize(vector);
-        for (k = 0; k < Blt_VecLength(vector); k++) {
-            BLT_TABLE_ROW row;
-
-            row = blt_table_row(table, k);
-            array[k] = blt_table_get_double(interp, table, row, col);
+        for (count = 0, row = blt_table_first_row(table); row != NULL; 
+             row = blt_table_next_row(row), count++) {
+            array[count] = blt_table_get_double(interp, table, row, col);
         }
         if (Blt_ResetVector(vector, array, numRows, size, TCL_STATIC) 
             != TCL_OK) {

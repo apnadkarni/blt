@@ -433,7 +433,8 @@ MysqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
                 size_t numCols, BLT_TABLE_COLUMN *cols) 
 {
     size_t numRows;
-    size_t i;
+    size_t count;
+    BLT_TABLE_ROW row;
     
     numRows = mysql_num_rows(myResults);
     /* First check that there are enough rows in the table to accomodate
@@ -446,16 +447,16 @@ MysqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
             return TCL_ERROR;
         }
     }
-    for (i = 0; /*empty*/; i++) {
-        BLT_TABLE_ROW row;
+    count = 0;
+    for (row = blt_table_first_row(table); /*empty*/; 
+         row = blt_table_next_row(row), count++) {
         MYSQL_ROW myRow;
         size_t j;
         unsigned long *lengths;
 
-        row = blt_table_row(table, i);
         myRow = mysql_fetch_row(myResults);
         if (myRow == NULL) {
-            if (i < numRows) {
+            if (count < numRows) {
                 Tcl_AppendResult(interp, "didn't complete fetching all rows",
                                  (char *)NULL);
                 return TCL_ERROR;

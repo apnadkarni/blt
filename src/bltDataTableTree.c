@@ -309,7 +309,7 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
             if (blt_table_extend_columns(interp, table, 1, &col) != TCL_OK) {
                 return TCL_ERROR;
             }
-            colIndex = blt_table_column_index(col);
+            colIndex = blt_table_column_index(table, col);
             maxDepth = depth;
         } else {
             colIndex = depth - topDepth - 1;
