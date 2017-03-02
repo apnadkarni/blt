@@ -795,9 +795,21 @@ blt_table_value_length(Value *valuePtr)
 }
 
 static INLINE int
-IsEmpty(Value *valuePtr)
+IsEmptyValue(Value *valuePtr)
 {
     return ((valuePtr == NULL) || (valuePtr->string == NULL));
+}
+
+static INLINE int
+IsEmpty(Row *rowPtr, Column *colPtr)
+{
+    if (colPtr->vector != NULL) {
+        Value *valuePtr;
+
+        valuePtr = colPtr->vector + rowPtr->offset;
+        return IsEmptyValue(valuePtr);
+    }
+    return TRUE;
 }
 
 static INLINE void
@@ -813,24 +825,17 @@ ResetValue(Value *valuePtr)
 
 
 static Value *
-AllocateColumnVector(size_t numColumns, Column *colPtr)
-{
-    Value *vector;
-
-    assert(numColumns > 0);
-    vector = Blt_Calloc(numColumns, sizeof(Value));
-    if (vector == NULL) {
-        return NULL;
-    }
-    colPtr->vector = vector;
-    return colPtr->vector;
-}
-
-static Value *
 GetValue(Table *tablePtr, Row *rowPtr, Column *colPtr)
 {
     if (colPtr->vector == NULL) {
-        AllocateColumnVector(tablePtr->corePtr->columns.numAllocated, colPtr);
+        Value *vector;
+
+        assert(tablePtr->corePtr->rows.numAllocated > 0);
+        vector = Blt_Calloc(tablePtr->corePtr->rows.numAllocated,sizeof(Value));
+        if (vector == NULL) {
+            return NULL;
+        }
+        colPtr->vector = vector;
     }
     return colPtr->vector + rowPtr->offset;
 }
@@ -840,7 +845,7 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
 {
     Tcl_Obj *objPtr;
 
-    assert(!IsEmpty(valuePtr));
+    assert(!IsEmptyValue(valuePtr));
     objPtr = NULL;                      /* Suppress compiler warning. */
     assert(type != TABLE_COLUMN_TYPE_UNKNOWN);
     switch (type) {
@@ -1669,12 +1674,11 @@ SetColumnType(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
     /* First test that every value in the column can be converted. */
     for (rowPtr = tablePtr->corePtr->rows.headPtr; rowPtr != NULL; 
          rowPtr = rowPtr->nextPtr) {
-        Value *valuePtr;
-
-        valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-        if (!IsEmpty(valuePtr)) {
+        if (!IsEmpty(rowPtr, colPtr)) {
             Value value;
-            
+            Value *valuePtr;
+
+            valuePtr = GetValue(tablePtr, rowPtr, colPtr);
             memset(&value, 0, sizeof(Value));
             if (SetValueFromString(interp, type, GetValueString(valuePtr),
                         GetValueLength(valuePtr), &value) != TCL_OK) {
@@ -1686,12 +1690,12 @@ SetColumnType(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
     /* Now replace the column with the converted the values. */
     for (rowPtr = tablePtr->corePtr->rows.headPtr; rowPtr != NULL; 
          rowPtr = rowPtr->nextPtr) {
-        Value *valuePtr;
+        if (!IsEmpty(rowPtr, colPtr)) {
+            Value *valuePtr;
 
-        valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-        if (!IsEmpty(valuePtr)) {
+            valuePtr = GetValue(tablePtr, rowPtr, colPtr);
             if (SetValueFromString(interp, type, GetValueString(valuePtr),
-                GetValueLength(valuePtr), valuePtr) != TCL_OK) {
+                 GetValueLength(valuePtr), valuePtr) != TCL_OK) {
                 return TCL_ERROR;
             }
         }
@@ -1726,7 +1730,7 @@ UnsetValue(Table *tablePtr, Row *rowPtr, Column *colPtr)
         return;
     }
     valuePtr = colPtr->vector + rowPtr->offset;
-    if (!IsEmpty(valuePtr)) {
+    if (!IsEmptyValue(valuePtr)) {
         /* Indicate the keytables need to be regenerated. */
         if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
             tablePtr->flags |= TABLE_KEYS_DIRTY;
@@ -2315,20 +2319,20 @@ CompareDictionaryStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
     valuePtr1 = valuePtr2 = NULL;
     if (colPtr->vector != NULL) {
         valuePtr1 = colPtr->vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
         valuePtr2 = colPtr->vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     assert(valuePtr1 != NULL);
@@ -2348,20 +2352,20 @@ CompareFrequencyRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
     valuePtr1 = valuePtr2 = NULL;
     if (colPtr->vector != NULL) {
         valuePtr1 = colPtr->vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
         valuePtr2 = colPtr->vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     /* FIXME: Frequency only works for string types. */
@@ -2381,20 +2385,20 @@ CompareAsciiStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
     valuePtr1 = valuePtr2 = NULL;
     if (colPtr->vector != NULL) {
         valuePtr1 = colPtr->vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
         valuePtr2 = colPtr->vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     return strcmp(GetValueString(valuePtr1), GetValueString(valuePtr2));
@@ -2409,20 +2413,20 @@ CompareAsciiStringsIgnoreCase(ClientData clientData, Column *colPtr,
     valuePtr1 = valuePtr2 = NULL;
     if (colPtr->vector != NULL) {
         valuePtr1 = colPtr->vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
         valuePtr2 = colPtr->vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     return strcasecmp(GetValueString(valuePtr1), GetValueString(valuePtr2));
@@ -2437,20 +2441,20 @@ CompareIntegers(ClientData clientData, Column *colPtr, Row *rowPtr1,
     valuePtr1 = valuePtr2 = NULL;
     if (colPtr->vector != NULL) {
         valuePtr1 = colPtr->vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
         valuePtr2 = colPtr->vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     return valuePtr1->datum.l - valuePtr2->datum.l;
@@ -2466,20 +2470,20 @@ CompareDoubles(ClientData clientData, Column *colPtr, Row *rowPtr1,
     valuePtr1 = valuePtr2 = NULL;
     if (colPtr->vector != NULL) {
         valuePtr1 = colPtr->vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
         valuePtr2 = colPtr->vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     if (valuePtr1->datum.d < valuePtr2->datum.d) {
@@ -4875,10 +4879,10 @@ blt_table_set_value(Table *tablePtr, Row *rowPtr, Column *colPtr, Value *newPtr)
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     flags = TABLE_TRACE_WRITES;
-    if (IsEmpty(newPtr)) {              /* New value is empty. This is the
+    if (IsEmptyValue(newPtr)) {         /* New value is empty. This is the
                                          * same as unsetting the value. */
         flags |= TABLE_TRACE_UNSETS;
-    } else if (IsEmpty(valuePtr)) {
+    } else if (IsEmptyValue(valuePtr)) {
         flags |= TABLE_TRACE_CREATES;   /* Old value was empty. */
     } 
     if (newPtr != valuePtr) {
@@ -4917,10 +4921,10 @@ blt_table_get_obj(Table *tablePtr, Row *rowPtr, Column *colPtr)
     Tcl_Obj *objPtr;
 
     CallTraces(tablePtr, rowPtr, colPtr, TABLE_TRACE_READS);
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return NULL;
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     objPtr = GetObjFromValue(colPtr->type, valuePtr);
     return objPtr;
 }
@@ -4951,10 +4955,10 @@ blt_table_set_obj(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     flags = TABLE_TRACE_WRITES;
-    if (objPtr == NULL) {               /* New value is empty, effectively
-                                         * unsetting the value. */
+    if (objPtr == NULL) {               /* New value is empty. This is the 
+                                         * same as unsetting the value. */
         flags |= TABLE_TRACE_UNSETS;
-    } else if (IsEmpty(valuePtr)) {
+    } else if (IsEmptyValue(valuePtr)) {
         flags |= TABLE_TRACE_CREATES;
     } 
     if (SetValueFromObj(interp, colPtr->type, objPtr, valuePtr) != TCL_OK) {
@@ -4983,10 +4987,10 @@ blt_table_set_obj(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 int
 blt_table_unset_value(Table *tablePtr, Row *rowPtr, Column *colPtr)
 {
-    Value *valuePtr;
+    if (!IsEmpty(rowPtr, colPtr)) {
+        Value *valuePtr;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (!IsEmpty(valuePtr)) {
+        valuePtr = GetValue(tablePtr, rowPtr, colPtr);
         CallTraces(tablePtr, rowPtr, colPtr, TABLE_TRACE_UNSETS);
         /* Indicate the keytables need to be regenerated. */
         if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
@@ -5630,7 +5634,7 @@ blt_table_value_exists(Table *tablePtr, Row *rowPtr, Column *colPtr)
     if ((colPtr == NULL) || (rowPtr == NULL)) {
         return 0;
     }
-    return !IsEmpty(GetValue(tablePtr, rowPtr, colPtr));
+    return !IsEmpty(rowPtr, colPtr);
 }
 
 
@@ -6329,17 +6333,17 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
         for (j = 0; j < tablePtr->numKeys; j++) {
             Blt_HashTable *keyTablePtr;
             Column *colPtr;
-            Value *valuePtr;
             int isNew;
             Blt_HashEntry *hPtr;
-        
+            Value *valuePtr;
+            
             colPtr = tablePtr->primaryKeys[j];
-            valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-            if (IsEmpty(valuePtr)) {
+            if (IsEmpty(rowPtr, colPtr)) {
                 break;                  /* Skip this row since one of the
                                          * key values is empty. */
             }
             keyTablePtr = tablePtr->keyTables + j;
+            valuePtr = GetValue(tablePtr, rowPtr, colPtr);
             switch (colPtr->type) {
             case TABLE_COLUMN_TYPE_DOUBLE:
             case TABLE_COLUMN_TYPE_TIME:
@@ -6708,7 +6712,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     Tcl_Obj *objPtr;
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmptyValue(valuePtr)) {
         objPtr = Tcl_NewStringObj(s, length);
     } else {
         objPtr = Tcl_NewStringObj(GetValueString(valuePtr),
@@ -6889,10 +6893,10 @@ blt_table_get_string(Table *tablePtr, Row *rowPtr, Column *colPtr)
 {
     Value *valuePtr;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return NULL;
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     return GetValueString(valuePtr);
 }
 
@@ -6919,10 +6923,10 @@ blt_table_get_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     Value *valuePtr;
     double d;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return Blt_NaN();
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     if ((colPtr->type == TABLE_COLUMN_TYPE_DOUBLE) ||
         (colPtr->type == TABLE_COLUMN_TYPE_TIME)) {
         return valuePtr->datum.d;
@@ -6957,10 +6961,10 @@ blt_table_get_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     Value *valuePtr;
     long l;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return defVal;
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     if (colPtr->type == TABLE_COLUMN_TYPE_LONG) {
         return valuePtr->datum.l;
     }
@@ -6993,10 +6997,10 @@ blt_table_get_boolean(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     Value *valuePtr;
     int state;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return defVal;
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     if (colPtr->type == TABLE_COLUMN_TYPE_BOOLEAN) {
         return (int)valuePtr->datum.l;
     }
@@ -7014,6 +7018,7 @@ blt_table_clear(Table *tablePtr)
     corePtr = tablePtr->corePtr;
     FreeColumns(corePtr);
     FreeRows(corePtr);
+    /* Re-initialize rows and columns. */
     Blt_InitHashTableWithPool(&corePtr->columns.labelTable, BLT_STRING_KEYS);
     Blt_InitHashTableWithPool(&corePtr->rows.labelTable, BLT_STRING_KEYS);
     corePtr->columns.pool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
@@ -7023,3 +7028,86 @@ blt_table_clear(Table *tablePtr)
     corePtr->rows.nextRowId = 1;
 }
 
+void
+blt_table_pack(Table *tablePtr)
+{
+    Column *colPtr;
+    Columns *columnsPtr;
+    Rows *rowsPtr;
+
+    rowsPtr = &tablePtr->corePtr->rows;
+    columnsPtr = &tablePtr->corePtr->columns;
+    /* Replace each vector with one exactly the number of used rows.  */
+    for (colPtr = columnsPtr->headPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
+        if (colPtr->vector != NULL) {
+            Row *rowPtr;
+            Value *vector, *valuePtr;
+
+            vector = Blt_Malloc(rowsPtr->numUsed * sizeof(Value));
+            if (vector == NULL) {
+            }    
+            valuePtr = vector;
+            for (rowPtr = rowsPtr->headPtr; rowPtr != NULL;
+                 rowPtr = rowPtr->nextPtr) {
+                *valuePtr = colPtr->vector[rowPtr->offset];
+                valuePtr++;
+            }
+            Blt_Free(colPtr->vector);
+            colPtr->vector = vector;
+        }
+    }
+    {
+        size_t count;
+        Row *rowPtr;
+        
+        count = 0;
+        for (rowPtr = rowsPtr->headPtr; rowPtr != NULL;
+             rowPtr = rowPtr->nextPtr) {
+            rowPtr->offset = count;
+            rowPtr->index = count;
+            count++;
+        }
+        assert(count == rowsPtr->numUsed);
+        if (count > 0) {
+            Row **map;
+            
+            /* Resize the row map to the exact number of rows. */
+            if (rowsPtr->map == NULL) {
+                map = Blt_Malloc(sizeof(Row *) * count);
+            } else {
+                map = Blt_Realloc(rowsPtr->map, sizeof(Row *) * count);
+            }
+            rowsPtr->map = map;
+            rowsPtr->numAllocated = count;
+        }
+        if (rowsPtr->freeList != NULL) {
+            /* Dump the free list. */
+            Blt_Chain_Destroy(rowsPtr->freeList);
+            rowsPtr->freeList = Blt_Chain_Create();
+        }
+    }
+    {
+        size_t count;
+        Column *colPtr;
+        
+        count = 0;
+        for (colPtr = columnsPtr->headPtr; colPtr != NULL;
+             colPtr = colPtr->nextPtr) {
+            count++;
+        }
+        assert(count == columnsPtr->numUsed);
+        if (count > 0) {
+            Column **map;
+
+            /* Resize the column map to the exact number of columns. */
+            if (columnsPtr->map == NULL) {
+                map = Blt_Malloc(sizeof(Column *) * count);
+            } else {
+                map = Blt_Realloc(columnsPtr->map, sizeof(Column *) * count);
+            }
+            columnsPtr->map = map;
+            columnsPtr->numAllocated = count;
+        }
+    }
+}
