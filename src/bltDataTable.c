@@ -700,11 +700,11 @@ blt_table_column(BLT_TABLE table, long index)
 }
 
 long 
-blt_table_row_index(BLT_TABLE table, Row *rowPtr)
+blt_table_row_index(Table *tablePtr, Row *rowPtr)
 {
     Rows *rowsPtr;
 
-    rowsPtr = blt_table_rows(table);
+    rowsPtr = &tablePtr->corePtr->rows;
     if (rowsPtr->flags & REINDEX) {
         ResetRowMap(rowsPtr);
     }
@@ -2627,120 +2627,87 @@ ReplaceColumnMap(Columns *columnsPtr, Column **map)
 }
 
 static int
-MoveRows(Rows *rowsPtr, Row *srcPtr, Row *destPtr, size_t numRows, int before)
+MoveRows(Rows *rowsPtr, Row *destPtr, Row *firstPtr, Row *lastPtr, int after)
 {
-    Row *startPtr, *endPtr;
-
-    if (srcPtr == destPtr) {
-        return TRUE;
-    }
     if (rowsPtr->flags & REINDEX) {
         ResetRowMap(rowsPtr);
     }
-    startPtr = srcPtr;
-    if ((numRows + srcPtr->index) > rowsPtr->numUsed) {
-        return FALSE;
-    }
-    endPtr = rowsPtr->map[srcPtr->index + numRows - 1];
-    if (startPtr->index > endPtr->index) {
-        /* Assume that nothing needs to be done. */
-        return TRUE;
-    }
     /* Check is destination outside the range of rows to be moved. */
-    if ((destPtr->index >= startPtr->index) &&
-        (destPtr->index <= endPtr->index)) {
-        return FALSE;
-    }
+    assert ((destPtr->index < firstPtr->index) ||
+            (destPtr->index > lastPtr->index));
+
     /* Unlink the sub-list from the list of rows. */
-    if (rowsPtr->headPtr == startPtr) {
-        rowsPtr->headPtr = endPtr->nextPtr;
+    if (rowsPtr->headPtr == firstPtr) {
+        rowsPtr->headPtr = lastPtr->nextPtr;
     }
-    if (rowsPtr->tailPtr == endPtr) {
-        rowsPtr->tailPtr = endPtr->prevPtr;
+    if (rowsPtr->tailPtr == lastPtr) {
+        rowsPtr->tailPtr = lastPtr->prevPtr;
     }
-    if (endPtr->nextPtr != NULL) {
-        endPtr->nextPtr->prevPtr = startPtr->prevPtr;
+    if (lastPtr->nextPtr != NULL) {
+        lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
     }
-    if (startPtr->prevPtr != NULL) {
-        startPtr->prevPtr->nextPtr = endPtr->nextPtr;
+    if (firstPtr->prevPtr != NULL) {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
     }
-    startPtr->prevPtr = endPtr->nextPtr = NULL;
+    firstPtr->prevPtr = lastPtr->nextPtr = NULL;
     /* Now attach the detached list to the destination. */
-    if (before) {
-        if (destPtr->prevPtr == NULL) {
-            rowsPtr->headPtr = startPtr;
-        } else {
-            destPtr->prevPtr->nextPtr = startPtr;
-        }
-        startPtr->prevPtr = destPtr->prevPtr;
-        endPtr->nextPtr = destPtr;
-        destPtr->prevPtr = endPtr;
+    if (after) {
+        firstPtr->prevPtr = destPtr;
+        lastPtr->nextPtr = destPtr->nextPtr;
+        destPtr->prevPtr = firstPtr;
     } else {
-        startPtr->prevPtr = destPtr;
-        endPtr->nextPtr = destPtr->nextPtr;
-        destPtr->prevPtr = startPtr;
+        if (destPtr->prevPtr == NULL) {
+            rowsPtr->headPtr = firstPtr;
+        } else {
+            destPtr->prevPtr->nextPtr = firstPtr;
+        }
+        firstPtr->prevPtr = destPtr->prevPtr;
+        lastPtr->nextPtr = destPtr;
+        destPtr->prevPtr = lastPtr;
     }
+    /* FIXME: You don't have to reset the entire map. */
     ResetRowMap(rowsPtr);
     return TRUE;
 }
 
 static int
-MoveColumns(Columns *columnsPtr, Column *srcPtr, Column *destPtr, 
-            size_t numColumns, int before)
+MoveColumns(Columns *columnsPtr, Column *destPtr, Column *firstPtr, 
+            Column *lastPtr, int after)
 {
-    Column *startPtr, *endPtr;
-
-    if (srcPtr == destPtr) {
-        return TRUE;
-    }
     if (columnsPtr->flags & REINDEX) {
         ResetColumnMap(columnsPtr);
     }
-    startPtr = srcPtr;
-    if ((numColumns + srcPtr->index) > columnsPtr->numUsed) {
-        /* list of columns extend beyond the end  */
-        return FALSE;
-    }
-    endPtr = columnsPtr->map[srcPtr->index + numColumns - 1];
-    if (startPtr->index > endPtr->index) {
-        /* Assume that nothing needs to be done. */
-        return TRUE;
-    }
-    /* Check is destination outside the range of columns to be moved. */
-    if ((destPtr->index >= startPtr->index) &&
-        (destPtr->index <= endPtr->index)) {
-        return FALSE;
-    }
     /* Unlink the sub-list from the list of columns. */
-    if (columnsPtr->headPtr == startPtr) {
-        columnsPtr->headPtr = endPtr->nextPtr;
+    if (columnsPtr->headPtr == firstPtr) {
+        columnsPtr->headPtr = lastPtr->nextPtr;
     }
-    if (columnsPtr->tailPtr == endPtr) {
-        columnsPtr->tailPtr = endPtr->prevPtr;
+    if (columnsPtr->tailPtr == lastPtr) {
+        columnsPtr->tailPtr = lastPtr->prevPtr;
     }
-    if (endPtr->nextPtr != NULL) {
-        endPtr->nextPtr->prevPtr = startPtr->prevPtr;
+    if (lastPtr->nextPtr != NULL) {
+        lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
     }
-    if (startPtr->prevPtr != NULL) {
-        startPtr->prevPtr->nextPtr = endPtr->nextPtr;
+    if (firstPtr->prevPtr != NULL) {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
     }
-    startPtr->prevPtr = endPtr->nextPtr = NULL;
+    firstPtr->prevPtr = lastPtr->nextPtr = NULL;
 
     /* Now attach the detached list to the destination. */
-    if (before) { 
-        if (destPtr->prevPtr == NULL) {
-            columnsPtr->headPtr = startPtr;
-        } else {
-            destPtr->prevPtr->nextPtr = startPtr;
-        }
-        startPtr->prevPtr = destPtr->prevPtr;
-        endPtr->nextPtr = destPtr;
-        destPtr->prevPtr = endPtr;
+    if (after) { 
+        firstPtr->prevPtr = destPtr;
+        lastPtr->nextPtr = destPtr->nextPtr;
+        destPtr->prevPtr = firstPtr;
     } else {
-        startPtr->prevPtr = destPtr;
-        endPtr->nextPtr = destPtr->nextPtr;
-        destPtr->prevPtr = startPtr;
+        if (destPtr->prevPtr == NULL) {
+            columnsPtr->headPtr = firstPtr;
+        } else {
+            destPtr->prevPtr->nextPtr = firstPtr;
+        }
+        firstPtr->prevPtr = destPtr->prevPtr;
+        lastPtr->nextPtr = destPtr;
+        destPtr->prevPtr = lastPtr;
     }
+    /* FIXME: You don't have to reset the entire map. */
     ResetColumnMap(columnsPtr);
     return TRUE;
 }
@@ -3387,6 +3354,7 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_INDEX;
     iterPtr->link = NULL;
+    iterPtr->numEntries = 0;
 
     spec = blt_table_row_spec(table, objPtr, &tag);
     switch (spec) {
@@ -3413,7 +3381,9 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
                 return TCL_ERROR;
             }               
             iterPtr->firstPtr = iterPtr->lastPtr = blt_table_row(table, index);
-            iterPtr->numEntries = 1;
+            if (iterPtr->firstPtr != NULL) {
+                iterPtr->numEntries = 1;
+            }
             iterPtr->tag = tag;
             return TCL_OK;
         }
@@ -3440,15 +3410,20 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
                 firstPtr = blt_table_first_row(table);
                 lastPtr = blt_table_last_row(table);
                 iterPtr->tag = tag;
-                iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+                if (firstPtr != NULL) {
+                    iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+                }
                 iterPtr->firstPtr = firstPtr;
                 iterPtr->lastPtr = lastPtr;
                 return TCL_OK;
             }
             if (strcmp(tag, "end") == 0) {
                 iterPtr->tag = tag;
-                iterPtr->firstPtr = iterPtr->lastPtr = blt_table_last_row(table);
-                iterPtr->numEntries = 1;
+                iterPtr->firstPtr = iterPtr->lastPtr = 
+                    blt_table_last_row(table);
+                if (iterPtr->firstPtr != NULL) {
+                    iterPtr->numEntries = 1;
+                }
                 return TCL_OK;
             }
             chain = blt_table_get_tagged_rows(iterPtr->table, tag);
@@ -3491,7 +3466,9 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
             iterPtr->type = TABLE_ITERATOR_RANGE;
             iterPtr->table = table;
             iterPtr->tag = tag;
-            iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+            if (firstPtr != NULL) {
+                iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+            }
         }
         return TCL_OK;
 
@@ -3731,7 +3708,6 @@ int
 blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
                          BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_COLUMN from, to;
     const char *tag, *p;
     int result;
     Tcl_Obj *fromObjPtr, *toObjPtr;
@@ -3746,6 +3722,7 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_INDEX;
     iterPtr->link = NULL;
+    iterPtr->numEntries = 0;
 
     spec = blt_table_column_spec(table, objPtr, &tag);
 #ifdef notdef
@@ -3774,6 +3751,9 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
             return TCL_ERROR;
         }               
         iterPtr->firstPtr = iterPtr->lastPtr = blt_table_column(table, index);
+        if (iterPtr->firstPtr != NULL) {
+            iterPtr->numEntries = 1;
+        }
         iterPtr->tag = tag;
         return TCL_OK;
 
@@ -3782,62 +3762,83 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
         if (iterPtr->tablePtr != NULL) {
             iterPtr->type = TABLE_ITERATOR_LABEL;
             iterPtr->tag = tag;
+            iterPtr->numEntries = iterPtr->tablePtr->numEntries;
             return TCL_OK;
         }
         break;
         
     case TABLE_SPEC_TAG:
-        if (strcmp(tag, "all") == 0) {
-            iterPtr->type = TABLE_ITERATOR_ALL;
-            iterPtr->firstPtr = blt_table_first_column(table);
-            iterPtr->lastPtr = blt_table_last_column(table);
-            iterPtr->tag = tag;
-            return TCL_OK;
-        }
-        if (strcmp(tag, "end") == 0) {
-            iterPtr->tag = tag;
-            iterPtr->firstPtr = iterPtr->lastPtr = blt_table_last_column(table);
-            return TCL_OK;
-        }
         {
             Blt_Chain chain;
 
+            if (strcmp(tag, "all") == 0) {
+                Column *firstPtr, *lastPtr;
+
+                iterPtr->type = TABLE_ITERATOR_ALL;
+                iterPtr->tag = tag;
+                firstPtr = blt_table_first_column(table);
+                lastPtr = blt_table_last_column(table);
+                if (firstPtr != NULL) {
+                    iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+                }
+                iterPtr->firstPtr = firstPtr;
+                iterPtr->lastPtr = lastPtr;
+                return TCL_OK;
+            }
+            if (strcmp(tag, "end") == 0) {
+                iterPtr->tag = tag;
+                iterPtr->firstPtr = iterPtr->lastPtr = 
+                    blt_table_last_column(table);
+                if (iterPtr->firstPtr != NULL) {
+                    iterPtr->numEntries = 1;
+                }
+                return TCL_OK;
+            }
+            
             chain = blt_table_get_tagged_columns(iterPtr->table, tag);
             if (chain != NULL) {
                 iterPtr->link = Blt_Chain_FirstLink(chain);
                 iterPtr->type = TABLE_ITERATOR_TAG;
                 iterPtr->tag = tag;
                 iterPtr->chain = NULL;  /* Don't free column tag chain.  */
+                iterPtr->numEntries = Blt_Chain_GetLength(chain);
                 return TCL_OK;
             }
         }
         break;
 
     case TABLE_SPEC_RANGE:
-        p = strchr(tag, '-');
-        if (p == NULL) {
-            if (interp != NULL) {
-                Tcl_AppendResult(interp, "bad range specification \"", tag, 
-                        "\"", (char *)NULL);
+        {
+            Column *firstPtr, *lastPtr;
+            
+            p = strchr(tag, '-');
+            if (p == NULL) {
+                if (interp != NULL) {
+                    Tcl_AppendResult(interp, "bad range specification \"", tag, 
+                                     "\"", (char *)NULL);
+                }
+                return TCL_ERROR;
             }
-            return TCL_ERROR;
+            fromObjPtr = Tcl_NewStringObj(tag, p - tag);
+            firstPtr = blt_table_get_column(interp, table, fromObjPtr);
+            Tcl_DecrRefCount(fromObjPtr);
+            if (firstPtr == NULL) {
+                return TCL_ERROR;
+            }
+            toObjPtr = Tcl_NewStringObj(p + 1, -1);
+            lastPtr = blt_table_get_column(interp, table, toObjPtr);
+            Tcl_DecrRefCount(toObjPtr);
+            if (lastPtr == NULL) {
+                return TCL_ERROR;
+            }
+            iterPtr->firstPtr = firstPtr;
+            iterPtr->lastPtr = lastPtr;
+            iterPtr->type  = TABLE_ITERATOR_RANGE;
+            iterPtr->tag = tag;
+            if (firstPtr != NULL) {
+                iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+            }
         }
-        fromObjPtr = Tcl_NewStringObj(tag, p - tag);
-        from = blt_table_get_column(interp, table, fromObjPtr);
-        Tcl_DecrRefCount(fromObjPtr);
-        if (from == NULL) {
-            return TCL_ERROR;
-        }
-        toObjPtr = Tcl_NewStringObj(p + 1, -1);
-        to = blt_table_get_column(interp, table, toObjPtr);
-        Tcl_DecrRefCount(toObjPtr);
-        if (to == NULL) {
-            return TCL_ERROR;
-        }
-        iterPtr->firstPtr = from;
-        iterPtr->lastPtr = to;
-        iterPtr->type  = TABLE_ITERATOR_RANGE;
-        iterPtr->tag = tag;
         return TCL_OK;
 
     default:
@@ -5726,7 +5727,7 @@ blt_table_create_row(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_move_row --
+ * blt_table_move_rows --
  *
  *      Move one of more rows to a new location in the tuple.
  *
@@ -5734,13 +5735,13 @@ blt_table_create_row(Tcl_Interp *interp, BLT_TABLE table, const char *label)
  */
 /*ARGSUSED*/
 int
-blt_table_move_row(Tcl_Interp *interp, Table *tablePtr, Row *srcPtr, 
-                   Row *destPtr, size_t count)
+blt_table_move_rows(Tcl_Interp *interp, Table *tablePtr, Row *destPtr, 
+                   Row *firstPtr, Row *lastPtr, int after)
 {
-    if (srcPtr == destPtr) {
-        return TCL_OK;          /* Move to the same location. */
-    }
-    if (!MoveRows(&tablePtr->corePtr->rows, srcPtr, destPtr, count, 1)) {
+    Rows *rowsPtr;
+
+    rowsPtr = &tablePtr->corePtr->rows;
+    if (!MoveRows(rowsPtr, destPtr, firstPtr, lastPtr, after)) {
         Tcl_AppendResult(interp, "can't allocate new map for \"", 
                 blt_table_name(tablePtr), "\"", (char *)NULL);
         return TCL_ERROR;
@@ -5961,7 +5962,7 @@ blt_table_set_column_map(Table *tablePtr, Column **map)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_move_column --
+ * blt_table_move_columns --
  *
  *      Move one of more rows to a new location in the tuple.
  *
@@ -5969,13 +5970,13 @@ blt_table_set_column_map(Table *tablePtr, Column **map)
  */
 /*ARGSUSED*/
 int
-blt_table_move_column(Tcl_Interp *interp, Table *tablePtr, Column *srcPtr, 
-                      Column *destPtr, size_t count)
+blt_table_move_columns(Tcl_Interp *interp, Table *tablePtr, Column *destPtr, 
+                       Column *firstPtr, Column *lastPtr, int after)
 {
-    if (srcPtr == destPtr) {
-        return TCL_OK;          /* Move to the same location. */
-    }
-    if (!MoveColumns(&tablePtr->corePtr->columns, srcPtr, destPtr, count, 1)) {
+    Columns *columnsPtr;
+
+    columnsPtr = &tablePtr->corePtr->columns;
+    if (!MoveColumns(columnsPtr, destPtr, firstPtr, lastPtr, after)) {
         Tcl_AppendResult(interp, "can't move columns in \"", 
                 blt_table_name(tablePtr), "\"", (char *)NULL);
         return TCL_ERROR;
