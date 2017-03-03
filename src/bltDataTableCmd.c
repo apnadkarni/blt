@@ -246,17 +246,17 @@ static Blt_SwitchCustom rowsSwitch = {
 
 #endif
 
-#define INSERT_BEFORE   (ClientData)(1<<0)
-#define INSERT_AFTER    (ClientData)(1<<1)
+#define INSERT_BEFORE   (1<<0)
+#define INSERT_AFTER    (1<<1)
 
 #define INSERT_ROW      (BLT_SWITCH_USER_BIT<<1)
 #define INSERT_COL      (BLT_SWITCH_USER_BIT<<2)
 
 static Blt_SwitchCustom beforeSwitch = {
-    PositionSwitch, NULL, NULL, INSERT_BEFORE,
+    PositionSwitch, NULL, NULL, (ClientData)INSERT_BEFORE,
 };
 static Blt_SwitchCustom afterSwitch = {
-    PositionSwitch, NULL, NULL, INSERT_AFTER,
+    PositionSwitch, NULL, NULL, (ClientData)INSERT_AFTER,
 };
 
 typedef struct {
@@ -342,6 +342,7 @@ typedef struct {
     Tcl_Obj *tags;                      /* List of tags to be applied to
                                          * this row or column. */
     BLT_TABLE_COLUMN_TYPE type;
+    unsigned int flags;
 } InsertSwitches;
 
 static Blt_SwitchSpec insertSwitches[] = 
@@ -447,6 +448,19 @@ static Blt_SwitchSpec addSwitches[] =
         Blt_Offset(AddSwitches, ci),   0, 0, &columnIterSwitch},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
         Blt_Offset(AddSwitches, ri),   0, 0, &rowIterSwitch},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    unsigned int flags;
+} MoveSwitches;
+
+#define MOVE_AFTER     (1<<1)
+
+static Blt_SwitchSpec moveSwitches[] = 
+{
+    {BLT_SWITCH_BITS_NOARG, "-after", "", (char *)NULL,
+        Blt_Offset(CopySwitches, flags), 0, MOVE_AFTER},
     {BLT_SWITCH_END}
 };
 
@@ -864,9 +878,7 @@ PositionSwitch(
         if (col == NULL) {
             return TCL_ERROR;
         }
-        if (clientData == INSERT_AFTER) {
-            col = blt_table_next_column(col);
-        }
+        insertPtr->flags = clientData;
         insertPtr->column = col;
     } else if (flags & INSERT_ROW) {
         BLT_TABLE_ROW row;
@@ -875,9 +887,7 @@ PositionSwitch(
         if (row == NULL) {
             return TCL_ERROR;
         }
-        if (clientData == INSERT_AFTER) {
-            row = blt_table_next_row(row);
-        }
+        insertPtr->flags = clientData;
         insertPtr->row = row;
     }
     return TCL_OK;
@@ -3442,8 +3452,8 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (switches.column != NULL) {
-        if (blt_table_move_column(interp, cmdPtr->table, col, 
-                switches.column, 1) != TCL_OK) {
+        if (blt_table_move_columns(interp, cmdPtr->table, switches.column, 
+                col, col, switches.flags & INSERT_AFTER) != TCL_OK) {
             goto error;
         }
     }
@@ -3612,7 +3622,7 @@ ColumnLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the column index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- *      tableName column move fromColumn toColumn ?numColumns?
+ *      tableName column move destColumn firstColumn lastColumn ?switches...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3621,38 +3631,36 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    BLT_TABLE_COLUMN from, to;
-    long count;
+    MoveSwitches switches;
+    BLT_TABLE_COLUMN destColumn, firstColumn, lastColumn;
 
-    from = blt_table_get_column(interp, cmdPtr->table, objv[3]);
-    if (from == NULL) {
+    destColumn = blt_table_get_column(interp, cmdPtr->table, objv[3]);
+    if (destColumn == NULL) {
         return TCL_ERROR;
     }
-    to = blt_table_get_column(interp, cmdPtr->table, objv[4]);
-    if (to == NULL) {
+    firstColumn = blt_table_get_column(interp, cmdPtr->table, objv[4]);
+    if (firstColumn == NULL) {
         return TCL_ERROR;
     }
-    count = 1;
-    if (objc == 6) {
-        long lcount;
-
-        if (Blt_GetLongFromObj(interp, objv[5], &lcount) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (lcount == 0) {
-            return TCL_OK;
-        }
-        if (lcount < 0) {
-            Tcl_AppendResult(interp, 
-                        "can't move columns: # of columns can't be negative",
-                        (char *)NULL);
-            return TCL_ERROR;
-        }
-        count = lcount;
+    lastColumn = blt_table_get_column(interp, cmdPtr->table, objv[5]);
+    if (lastColumn == NULL) {
+        return TCL_ERROR;
     }
-    return blt_table_move_column(interp, cmdPtr->table, from, to, count);
+    /* Check is destination outside the range of rows to be moved. */
+    if ((blt_table_column_index(cmdPtr->table, destColumn) >= 
+         blt_table_column_index(cmdPtr->table, firstColumn)) &&
+        (blt_table_column_index(cmdPtr->table, destColumn) <= 
+         blt_table_column_index(cmdPtr->table, lastColumn))) {
+        return TCL_ERROR;
+    }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, moveSwitches, objc - 6, objv + 6, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    return blt_table_move_columns(interp, cmdPtr->table, destColumn, 
+          firstColumn, lastColumn, switches.flags & MOVE_AFTER);
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -5768,7 +5776,8 @@ RowCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (switches.row != NULL) {
-        if (blt_table_move_row(interp, table, row, switches.row, 1) != TCL_OK) {
+        if (blt_table_move_rows(interp, table, switches.row, row, row, 
+                    switches.flags & INSERT_AFTER) != TCL_OK) {
             goto error;
         }
     }
@@ -6580,7 +6589,7 @@ RowLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      
  * Example:
  *      
-$t row move from to ?n?
+ *      tableName row move destRow firstRow lastRow ?switches...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6589,36 +6598,35 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    BLT_TABLE_ROW from, to;
-    long count;
+    MoveSwitches switches;
+    BLT_TABLE_ROW destRow, firstRow, lastRow;
 
-    from = blt_table_get_row(interp, cmdPtr->table, objv[3]);
-    if (from == NULL) {
+    destRow = blt_table_get_row(interp, cmdPtr->table, objv[3]);
+    if (destRow == NULL) {
         return TCL_ERROR;
     }
-    to = blt_table_get_row(interp, cmdPtr->table, objv[4]);
-    if (to == NULL) {
+    firstRow = blt_table_get_row(interp, cmdPtr->table, objv[4]);
+    if (firstRow == NULL) {
         return TCL_ERROR;
     }
-    count = 1;
-    if (objc == 6) {
-        long lcount;
-
-        if (Blt_GetLongFromObj(interp, objv[5], &lcount) != TCL_OK) {
-            return TCL_ERROR;
-
-        }
-        if (lcount == 0) {
-            return TCL_OK;
-        }
-        if (lcount < 0) {
-            Tcl_AppendResult(interp, "# of rows can't be negative",
-                             (char *)NULL);
-            return TCL_ERROR;
-        }
-        count = lcount;
+    lastRow = blt_table_get_row(interp, cmdPtr->table, objv[5]);
+    if (lastRow == NULL) {
+        return TCL_ERROR;
     }
-    return blt_table_move_row(interp, cmdPtr->table, from, to, count);
+    /* Check is destination outside the range of rows to be moved. */
+    if ((blt_table_row_index(cmdPtr->table, destRow) >= 
+         blt_table_row_index(cmdPtr->table, firstRow)) &&
+        (blt_table_row_index(cmdPtr->table, destRow) <= 
+         blt_table_row_index(cmdPtr->table, lastRow))) {
+        return TCL_ERROR;
+    }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, moveSwitches, objc - 6, objv + 6, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    return blt_table_move_rows(interp, cmdPtr->table, destRow, firstRow, 
+        lastRow, switches.flags & MOVE_AFTER);
 }
 
 

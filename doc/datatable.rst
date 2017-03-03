@@ -290,12 +290,20 @@ the command.  The operations available for *datatables* are listed below.
   *labelList* argument is present, then the column labels are set from the
   list of labels.
 
-*tableName* **column move** *srcColumn* *destColumn* ?\ *numColumns*\ ?
-  Move *numColumns* columns in *tableName.  *SrcColumn* and *destColumn* may
-  be a label, index, or tag, but may not represent more than one column.
-  If a *numColumns* argument isn't specified then only 1 column is moved.
-  Moves cannot overlap.
-  
+*tableName* **column move** *destColumn* *firstColumn* *lastColumn* ?\ *switches* ... ?
+  Move one or more columns in *tableName.  *DestColumn*, *firstColumn*, and
+  *lastColumn* are columns in *tableName*.  Each may be a label, index, or
+  tag, but may not represent more than one column.  *FirstColumn and
+  *lastColumn* designate a range of columns to move.  To move one column,
+  specify *firstColumn* and *lastColumn* as the same column.  *DestColumn*
+  is the destination location where to move the columns.  It can not be in
+  the designated range of columns.  The following *switches* are available.
+
+  **-after** 
+    Specifies that the destination location is the column after *destColumn*.
+    The default is to position the columns before *destColumn*.  This allows
+    you to move columns to the end.
+
 *tableName* **column names**  ?\ *pattern* ... ?
   Returns the labels of the columns in *tableName*.  If one of *pattern*
   arguments are present, then the label of any column matching one
@@ -798,12 +806,20 @@ the command.  The operations available for *datatables* are listed below.
   index, or tag, but may not represent more than one row. If a *labelList*
   argument is present, then the row labels are set from the list of labels.
 
-*tableName* **row move** *srcRow* *destRow* ?\ *numRows*\ ?
-  Move *numRows* rows in *tableName.  *SrcRow* and *destRow* may be a
-  label, index, or tag, but may not represent more than one row.  If a
-  *numRows* argument isn't specified then only 1 row is moved.  Moves
-  cannot overlap.
-  
+*tableName* **row move** *destRow* *firstRow* *lastRow* ?\ *switches* ... ?
+  Move one or more rows in *tableName.  *DestRow*, *firstRow*, and
+  *lastRow* are rows in *tableName*.  Each may be a label, index, or
+  tag, but may not represent more than one row.  *FirstRow and
+  *lastRow* designate a range of rows to move.  To move one row,
+  specify *firstRow* and *lastRow* as the same row.  *DestRow*
+  is the destination location where to move the rows.  It can not be in
+  the designated range of rows.  The following *switches* are available.
+
+  **-after** 
+    Specifies that the destination location is the row after *destRow*.
+    The default is to position the rows before *destRow*.  This allows
+    you to move rows to the end.
+
 *tableName* **row names**  ?\ *pattern* ... ?
   Returns the labels of the rows in *tableName*.  If one of *pattern*
   arguments are present, then the label of any row matching one of the

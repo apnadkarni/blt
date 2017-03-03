@@ -2627,120 +2627,87 @@ ReplaceColumnMap(Columns *columnsPtr, Column **map)
 }
 
 static int
-MoveRows(Rows *rowsPtr, Row *srcPtr, Row *destPtr, size_t numRows, int before)
+MoveRows(Rows *rowsPtr, Row *destPtr, Row *firstPtr, Row *lastPtr, int after)
 {
-    Row *startPtr, *endPtr;
-
-    if (srcPtr == destPtr) {
-        return TRUE;
-    }
     if (rowsPtr->flags & REINDEX) {
         ResetRowMap(rowsPtr);
     }
-    startPtr = srcPtr;
-    if ((numRows + srcPtr->index) > rowsPtr->numUsed) {
-        return FALSE;
-    }
-    endPtr = rowsPtr->map[srcPtr->index + numRows - 1];
-    if (startPtr->index > endPtr->index) {
-        /* Assume that nothing needs to be done. */
-        return TRUE;
-    }
     /* Check is destination outside the range of rows to be moved. */
-    if ((destPtr->index >= startPtr->index) &&
-        (destPtr->index <= endPtr->index)) {
-        return FALSE;
-    }
+    assert ((destPtr->index < firstPtr->index) ||
+            (destPtr->index > lastPtr->index));
+
     /* Unlink the sub-list from the list of rows. */
-    if (rowsPtr->headPtr == startPtr) {
-        rowsPtr->headPtr = endPtr->nextPtr;
+    if (rowsPtr->headPtr == firstPtr) {
+        rowsPtr->headPtr = lastPtr->nextPtr;
     }
-    if (rowsPtr->tailPtr == endPtr) {
-        rowsPtr->tailPtr = endPtr->prevPtr;
+    if (rowsPtr->tailPtr == lastPtr) {
+        rowsPtr->tailPtr = lastPtr->prevPtr;
     }
-    if (endPtr->nextPtr != NULL) {
-        endPtr->nextPtr->prevPtr = startPtr->prevPtr;
+    if (lastPtr->nextPtr != NULL) {
+        lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
     }
-    if (startPtr->prevPtr != NULL) {
-        startPtr->prevPtr->nextPtr = endPtr->nextPtr;
+    if (firstPtr->prevPtr != NULL) {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
     }
-    startPtr->prevPtr = endPtr->nextPtr = NULL;
+    firstPtr->prevPtr = lastPtr->nextPtr = NULL;
     /* Now attach the detached list to the destination. */
-    if (before) {
-        if (destPtr->prevPtr == NULL) {
-            rowsPtr->headPtr = startPtr;
-        } else {
-            destPtr->prevPtr->nextPtr = startPtr;
-        }
-        startPtr->prevPtr = destPtr->prevPtr;
-        endPtr->nextPtr = destPtr;
-        destPtr->prevPtr = endPtr;
+    if (after) {
+        firstPtr->prevPtr = destPtr;
+        lastPtr->nextPtr = destPtr->nextPtr;
+        destPtr->prevPtr = firstPtr;
     } else {
-        startPtr->prevPtr = destPtr;
-        endPtr->nextPtr = destPtr->nextPtr;
-        destPtr->prevPtr = startPtr;
+        if (destPtr->prevPtr == NULL) {
+            rowsPtr->headPtr = firstPtr;
+        } else {
+            destPtr->prevPtr->nextPtr = firstPtr;
+        }
+        firstPtr->prevPtr = destPtr->prevPtr;
+        lastPtr->nextPtr = destPtr;
+        destPtr->prevPtr = lastPtr;
     }
+    /* FIXME: You don't have to reset the entire map. */
     ResetRowMap(rowsPtr);
     return TRUE;
 }
 
 static int
-MoveColumns(Columns *columnsPtr, Column *srcPtr, Column *destPtr, 
-            size_t numColumns, int before)
+MoveColumns(Columns *columnsPtr, Column *destPtr, Column *firstPtr, 
+            Column *lastPtr, int after)
 {
-    Column *startPtr, *endPtr;
-
-    if (srcPtr == destPtr) {
-        return TRUE;
-    }
     if (columnsPtr->flags & REINDEX) {
         ResetColumnMap(columnsPtr);
     }
-    startPtr = srcPtr;
-    if ((numColumns + srcPtr->index) > columnsPtr->numUsed) {
-        /* list of columns extend beyond the end  */
-        return FALSE;
-    }
-    endPtr = columnsPtr->map[srcPtr->index + numColumns - 1];
-    if (startPtr->index > endPtr->index) {
-        /* Assume that nothing needs to be done. */
-        return TRUE;
-    }
-    /* Check is destination outside the range of columns to be moved. */
-    if ((destPtr->index >= startPtr->index) &&
-        (destPtr->index <= endPtr->index)) {
-        return FALSE;
-    }
     /* Unlink the sub-list from the list of columns. */
-    if (columnsPtr->headPtr == startPtr) {
-        columnsPtr->headPtr = endPtr->nextPtr;
+    if (columnsPtr->headPtr == firstPtr) {
+        columnsPtr->headPtr = lastPtr->nextPtr;
     }
-    if (columnsPtr->tailPtr == endPtr) {
-        columnsPtr->tailPtr = endPtr->prevPtr;
+    if (columnsPtr->tailPtr == lastPtr) {
+        columnsPtr->tailPtr = lastPtr->prevPtr;
     }
-    if (endPtr->nextPtr != NULL) {
-        endPtr->nextPtr->prevPtr = startPtr->prevPtr;
+    if (lastPtr->nextPtr != NULL) {
+        lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
     }
-    if (startPtr->prevPtr != NULL) {
-        startPtr->prevPtr->nextPtr = endPtr->nextPtr;
+    if (firstPtr->prevPtr != NULL) {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
     }
-    startPtr->prevPtr = endPtr->nextPtr = NULL;
+    firstPtr->prevPtr = lastPtr->nextPtr = NULL;
 
     /* Now attach the detached list to the destination. */
-    if (before) { 
-        if (destPtr->prevPtr == NULL) {
-            columnsPtr->headPtr = startPtr;
-        } else {
-            destPtr->prevPtr->nextPtr = startPtr;
-        }
-        startPtr->prevPtr = destPtr->prevPtr;
-        endPtr->nextPtr = destPtr;
-        destPtr->prevPtr = endPtr;
+    if (after) { 
+        firstPtr->prevPtr = destPtr;
+        lastPtr->nextPtr = destPtr->nextPtr;
+        destPtr->prevPtr = firstPtr;
     } else {
-        startPtr->prevPtr = destPtr;
-        endPtr->nextPtr = destPtr->nextPtr;
-        destPtr->prevPtr = startPtr;
+        if (destPtr->prevPtr == NULL) {
+            columnsPtr->headPtr = firstPtr;
+        } else {
+            destPtr->prevPtr->nextPtr = firstPtr;
+        }
+        firstPtr->prevPtr = destPtr->prevPtr;
+        lastPtr->nextPtr = destPtr;
+        destPtr->prevPtr = lastPtr;
     }
+    /* FIXME: You don't have to reset the entire map. */
     ResetColumnMap(columnsPtr);
     return TRUE;
 }
@@ -5760,7 +5727,7 @@ blt_table_create_row(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_move_row --
+ * blt_table_move_rows --
  *
  *      Move one of more rows to a new location in the tuple.
  *
@@ -5768,13 +5735,13 @@ blt_table_create_row(Tcl_Interp *interp, BLT_TABLE table, const char *label)
  */
 /*ARGSUSED*/
 int
-blt_table_move_row(Tcl_Interp *interp, Table *tablePtr, Row *srcPtr, 
-                   Row *destPtr, size_t count)
+blt_table_move_rows(Tcl_Interp *interp, Table *tablePtr, Row *destPtr, 
+                   Row *firstPtr, Row *lastPtr, int after)
 {
-    if (srcPtr == destPtr) {
-        return TCL_OK;          /* Move to the same location. */
-    }
-    if (!MoveRows(&tablePtr->corePtr->rows, srcPtr, destPtr, count, 1)) {
+    Rows *rowsPtr;
+
+    rowsPtr = &tablePtr->corePtr->rows;
+    if (!MoveRows(rowsPtr, destPtr, firstPtr, lastPtr, after)) {
         Tcl_AppendResult(interp, "can't allocate new map for \"", 
                 blt_table_name(tablePtr), "\"", (char *)NULL);
         return TCL_ERROR;
@@ -5995,7 +5962,7 @@ blt_table_set_column_map(Table *tablePtr, Column **map)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_move_column --
+ * blt_table_move_columns --
  *
  *      Move one of more rows to a new location in the tuple.
  *
@@ -6003,13 +5970,13 @@ blt_table_set_column_map(Table *tablePtr, Column **map)
  */
 /*ARGSUSED*/
 int
-blt_table_move_column(Tcl_Interp *interp, Table *tablePtr, Column *srcPtr, 
-                      Column *destPtr, size_t count)
+blt_table_move_columns(Tcl_Interp *interp, Table *tablePtr, Column *destPtr, 
+                       Column *firstPtr, Column *lastPtr, int after)
 {
-    if (srcPtr == destPtr) {
-        return TCL_OK;          /* Move to the same location. */
-    }
-    if (!MoveColumns(&tablePtr->corePtr->columns, srcPtr, destPtr, count, 1)) {
+    Columns *columnsPtr;
+
+    columnsPtr = &tablePtr->corePtr->columns;
+    if (!MoveColumns(columnsPtr, destPtr, firstPtr, lastPtr, after)) {
         Tcl_AppendResult(interp, "can't move columns in \"", 
                 blt_table_name(tablePtr), "\"", (char *)NULL);
         return TCL_ERROR;

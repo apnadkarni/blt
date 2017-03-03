@@ -352,10 +352,12 @@ BLT_EXTERN int blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table,
         size_t n, BLT_TABLE_COLUMN *columms);
 BLT_EXTERN int blt_table_delete_row(BLT_TABLE table, BLT_TABLE_ROW row);
 BLT_EXTERN int blt_table_delete_column(BLT_TABLE table, BLT_TABLE_COLUMN column);
-BLT_EXTERN int blt_table_move_row(Tcl_Interp *interp, BLT_TABLE table, 
-        BLT_TABLE_ROW from, BLT_TABLE_ROW to, size_t n);
-BLT_EXTERN int blt_table_move_column(Tcl_Interp *interp, BLT_TABLE table, 
-        BLT_TABLE_COLUMN from, BLT_TABLE_COLUMN to, size_t n);
+BLT_EXTERN int blt_table_move_rows(Tcl_Interp *interp, BLT_TABLE table, 
+        BLT_TABLE_ROW destRow, BLT_TABLE_ROW firstRow, BLT_TABLE_ROW lastRow, 
+        int after);
+BLT_EXTERN int blt_table_move_columns(Tcl_Interp *interp, BLT_TABLE table, 
+        BLT_TABLE_COLUMN destColumn, BLT_TABLE_COLUMN firstColumn, 
+        BLT_TABLE_COLUMN lastColumn, int after);
 
 BLT_EXTERN Tcl_Obj *blt_table_get_obj(BLT_TABLE table, BLT_TABLE_ROW row, 
         BLT_TABLE_COLUMN column);
