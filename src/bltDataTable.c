@@ -2639,9 +2639,11 @@ MoveRows(Rows *rowsPtr, Row *destPtr, Row *firstPtr, Row *lastPtr, int after)
     /* Unlink the sub-list from the list of rows. */
     if (rowsPtr->headPtr == firstPtr) {
         rowsPtr->headPtr = lastPtr->nextPtr;
+        lastPtr->nextPtr->prevPtr = NULL;
     }
     if (rowsPtr->tailPtr == lastPtr) {
         rowsPtr->tailPtr = lastPtr->prevPtr;
+        lastPtr->prevPtr->nextPtr = NULL;
     }
     if (lastPtr->nextPtr != NULL) {
         lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
@@ -2652,12 +2654,17 @@ MoveRows(Rows *rowsPtr, Row *destPtr, Row *firstPtr, Row *lastPtr, int after)
     firstPtr->prevPtr = lastPtr->nextPtr = NULL;
     /* Now attach the detached list to the destination. */
     if (after) {
+        if (destPtr->nextPtr == NULL) {
+            rowsPtr->tailPtr = lastPtr; /* Append to the end. */
+        } else {
+            destPtr->nextPtr->prevPtr = lastPtr;
+        }
         firstPtr->prevPtr = destPtr;
         lastPtr->nextPtr = destPtr->nextPtr;
-        destPtr->prevPtr = firstPtr;
+        destPtr->nextPtr = firstPtr;
     } else {
         if (destPtr->prevPtr == NULL) {
-            rowsPtr->headPtr = firstPtr;
+            rowsPtr->headPtr = firstPtr; /* Prepend to the beginning. */
         } else {
             destPtr->prevPtr->nextPtr = firstPtr;
         }
@@ -2677,35 +2684,46 @@ MoveColumns(Columns *columnsPtr, Column *destPtr, Column *firstPtr,
     if (columnsPtr->flags & REINDEX) {
         ResetColumnMap(columnsPtr);
     }
+    assert (firstPtr->index <= lastPtr->index);
     /* Unlink the sub-list from the list of columns. */
     if (columnsPtr->headPtr == firstPtr) {
         columnsPtr->headPtr = lastPtr->nextPtr;
+        lastPtr->nextPtr->prevPtr = NULL;
+    } else {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
     }
     if (columnsPtr->tailPtr == lastPtr) {
-        columnsPtr->tailPtr = lastPtr->prevPtr;
-    }
-    if (lastPtr->nextPtr != NULL) {
+        columnsPtr->tailPtr = firstPtr->prevPtr;
+        firstPtr->prevPtr->nextPtr = NULL;
+    } else {
         lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
-    }
-    if (firstPtr->prevPtr != NULL) {
-        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
     }
     firstPtr->prevPtr = lastPtr->nextPtr = NULL;
 
     /* Now attach the detached list to the destination. */
     if (after) { 
-        firstPtr->prevPtr = destPtr;
+        /* [a]->[dest]->[b] */
+        /*            [first]->[last] */
+        if (destPtr->nextPtr == NULL) {
+            assert(destPtr == columnsPtr->tailPtr);
+            columnsPtr->tailPtr = lastPtr; /* Append to the end. */
+        } else {
+            destPtr->nextPtr->prevPtr = lastPtr;
+        }
         lastPtr->nextPtr = destPtr->nextPtr;
-        destPtr->prevPtr = firstPtr;
+        destPtr->nextPtr = firstPtr;
+        firstPtr->prevPtr = destPtr;
     } else {
+        /*           [a]->[dest]->[b] */
+        /* [first]->[last] */
         if (destPtr->prevPtr == NULL) {
             columnsPtr->headPtr = firstPtr;
         } else {
             destPtr->prevPtr->nextPtr = firstPtr;
         }
         firstPtr->prevPtr = destPtr->prevPtr;
-        lastPtr->nextPtr = destPtr;
         destPtr->prevPtr = lastPtr;
+        lastPtr->nextPtr = destPtr;
     }
     /* FIXME: You don't have to reset the entire map. */
     ResetColumnMap(columnsPtr);
@@ -3349,7 +3367,7 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     Tcl_Obj *rangeObjPtr;
     long index;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
-
+    Rows *rowsPtr;
     memset(iterPtr, 0, sizeof(BLT_TABLE_ITERATOR));
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_INDEX;
@@ -3357,6 +3375,10 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     iterPtr->numEntries = 0;
 
     spec = blt_table_row_spec(table, objPtr, &tag);
+    rowsPtr = blt_table_rows(table);
+    if (rowsPtr->flags & REINDEX) {
+        ResetRowMap(rowsPtr);
+    }
     switch (spec) {
     case TABLE_SPEC_INDEX:
         {
@@ -3460,6 +3482,9 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
             Tcl_DecrRefCount(rangeObjPtr);
             if (lastPtr == NULL) {
                 return TCL_ERROR;
+            }
+            if (firstPtr->index > lastPtr->index) {
+                return TCL_OK;
             }
             iterPtr->firstPtr = firstPtr;
             iterPtr->lastPtr = lastPtr;
@@ -4100,6 +4125,7 @@ blt_table_iterate_rows_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
     iterPtr->link = Blt_Chain_FirstLink(chain);
     /* Indicate to free created chain. */
     iterPtr->chain = chain;
+    iterPtr->numEntries = Blt_Chain_GetLength(chain);
     iterPtr->tag = "";
     return TCL_OK;
 }
@@ -4108,7 +4134,13 @@ void
 blt_table_iterate_all_rows(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
     Row *firstPtr, *lastPtr;
+    Rows *rowsPtr;
     
+    rowsPtr = blt_table_rows(table);
+    if (rowsPtr->flags & REINDEX) {
+        ResetRowMap(rowsPtr);
+    }
+
     iterPtr->chain = NULL;
     iterPtr->link = NULL;
     iterPtr->numEntries = 0;
@@ -4142,6 +4174,7 @@ blt_table_iterate_columns_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
     iterPtr->link = Blt_Chain_FirstLink(chain);    
     /* Indicate to free created chain. */
     iterPtr->chain = chain;
+    iterPtr->numEntries = Blt_Chain_GetLength(chain);
     iterPtr->tag = "";
     return TCL_OK;
 }
@@ -4150,6 +4183,12 @@ void
 blt_table_iterate_all_columns(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
     Column *firstPtr, *lastPtr;
+    Columns *columnsPtr;
+
+    columnsPtr = blt_table_columns(table);
+    if (columnsPtr->flags & REINDEX) { 
+        ResetColumnMap(columnsPtr);
+    }
 
     iterPtr->chain = NULL;
     iterPtr->link = NULL;

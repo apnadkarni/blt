@@ -214,8 +214,9 @@ BLT_EXTERN Blt_SwitchParseProc blt_table_column_iter_switch_proc;
 BLT_EXTERN Blt_SwitchParseProc blt_table_row_iter_switch_proc;
 static Blt_SwitchParseProc TableSwitchProc;
 static Blt_SwitchFreeProc TableFreeProc;
-static Blt_SwitchParseProc PositionSwitch;
 static Blt_SwitchParseProc ColumnTypeSwitchProc;
+static Blt_SwitchParseProc AfterColumnSwitch;
+static Blt_SwitchParseProc AfterRowSwitch;
 
 static Blt_SwitchCustom columnIterSwitch = {
     blt_table_column_iter_switch_proc, NULL, blt_table_column_iter_free_proc, 0,
@@ -249,14 +250,11 @@ static Blt_SwitchCustom rowsSwitch = {
 #define INSERT_BEFORE   (0)
 #define INSERT_AFTER    (1<<0)
 
-#define INSERT_ROW      (BLT_SWITCH_USER_BIT<<1)
-#define INSERT_COL      (BLT_SWITCH_USER_BIT<<2)
-
-static Blt_SwitchCustom beforeSwitch = {
-    PositionSwitch, NULL, NULL, (ClientData)INSERT_BEFORE,
+static Blt_SwitchCustom afterRowSwitch = {
+    AfterRowSwitch, NULL, NULL, 0
 };
-static Blt_SwitchCustom afterSwitch = {
-    PositionSwitch, NULL, NULL, (ClientData)INSERT_AFTER,
+static Blt_SwitchCustom afterColumnSwitch = {
+    AfterColumnSwitch, NULL, NULL, 0
 };
 
 typedef struct {
@@ -335,32 +333,50 @@ static Blt_SwitchSpec dirSwitches[] =
 
 typedef struct {
     Cmd *cmdPtr;
-    BLT_TABLE_ROW row;                  /* Index where to install new row
-                                         * or column. */
-    BLT_TABLE_COLUMN column;
+    BLT_TABLE_ROW destRow;              /* Index where to install new
+                                         * row. */
+    const char *label;                  /* New label. */
+    Tcl_Obj *tags;                      /* List of tags to be applied to
+                                         * this column. */
+    unsigned int flags;
+} InsertRowSwitches;
+
+static Blt_SwitchSpec insertRowSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-after",  "rowName",       (char *)NULL,
+        Blt_Offset(InsertRowSwitches, destRow),    0, 0, &afterRowSwitch},
+    {BLT_SWITCH_CUSTOM, "-before", "rowName",       (char *)NULL,
+         Blt_Offset(InsertRowSwitches, destRow),   0, 0, &afterRowSwitch},
+    {BLT_SWITCH_STRING, "-label",  "string",    (char *)NULL,
+        Blt_Offset(InsertRowSwitches, label),  0},
+    {BLT_SWITCH_OBJ,    "-tags",   "tagList",      (char *)NULL,
+        Blt_Offset(InsertRowSwitches, tags),   0},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    Cmd *cmdPtr;
+    BLT_TABLE_COLUMN destColumn;        /* Index where to install new
+                                         * column. */
     const char *label;                  /* New label. */
     Tcl_Obj *tags;                      /* List of tags to be applied to
                                          * this row or column. */
     BLT_TABLE_COLUMN_TYPE type;
     unsigned int flags;
-} InsertSwitches;
+} InsertColumnSwitches;
 
-static Blt_SwitchSpec insertSwitches[] = 
+static Blt_SwitchSpec insertColumnSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-after",  "columnName",    (char *)NULL,
-        Blt_Offset(InsertSwitches, column), INSERT_COL, 0, &afterSwitch},
-    {BLT_SWITCH_CUSTOM, "-after",  "rowName",       (char *)NULL,
-        Blt_Offset(InsertSwitches, row),    INSERT_ROW, 0, &afterSwitch},
+        Blt_Offset(InsertColumnSwitches, destColumn), 0, 0, &afterColumnSwitch},
     {BLT_SWITCH_CUSTOM, "-before", "columnName",    (char *)NULL,
-        Blt_Offset(InsertSwitches, column), INSERT_COL, 0, &beforeSwitch},
-    {BLT_SWITCH_CUSTOM, "-before", "rowName",       (char *)NULL,
-         Blt_Offset(InsertSwitches, row),   INSERT_ROW, 0, &beforeSwitch},
+        Blt_Offset(InsertColumnSwitches, destColumn), 0, 0, &afterColumnSwitch},
     {BLT_SWITCH_STRING, "-label",  "string",    (char *)NULL,
-        Blt_Offset(InsertSwitches, label),  INSERT_ROW | INSERT_COL},
+        Blt_Offset(InsertColumnSwitches, label),  0},
     {BLT_SWITCH_OBJ,    "-tags",   "tagList",      (char *)NULL,
-        Blt_Offset(InsertSwitches, tags),   INSERT_ROW | INSERT_COL},
+        Blt_Offset(InsertColumnSwitches, tags),   0},
     {BLT_SWITCH_CUSTOM, "-type",   "columnType",      (char *)NULL,
-        Blt_Offset(InsertSwitches, type),   INSERT_COL, 0, &columnTypeSwitch},
+        Blt_Offset(InsertColumnSwitches, type),   0, 0, &columnTypeSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -844,7 +860,7 @@ PermSwitchProc(
 /*
  *---------------------------------------------------------------------------
  *
- * PositionSwitch --
+ * AfterRowSwitch --
  *
  *      Convert a Tcl_Obj representing an offset in the table.
  *
@@ -855,7 +871,7 @@ PermSwitchProc(
  */
 /*ARGSUSED*/
 static int
-PositionSwitch(
+AfterRowSwitch(
     ClientData clientData,              /* Flag indicating if the node is
                                          * considered before or after the
                                          * insertion position. */
@@ -867,8 +883,9 @@ PositionSwitch(
     int flags)                          /* Indicates whether this is a row or
                                          * column index. */
 {
-    InsertSwitches *insertPtr = (InsertSwitches *)record;
+    InsertRowSwitches *insertPtr = (InsertRowSwitches *)record;
     BLT_TABLE table;
+    BLT_TABLE_ROW row;
 
     table = insertPtr->cmdPtr->table;
     if (strcmp(switchName, "-after") == 0) {
@@ -876,23 +893,55 @@ PositionSwitch(
     } else {
         insertPtr->flags = INSERT_BEFORE;
     }
-    if (flags & INSERT_COL) {
-        BLT_TABLE_COLUMN col;
-
-        col = blt_table_get_column(interp, table, objPtr);
-        if (col == NULL) {
-            return TCL_ERROR;
-        }
-        insertPtr->column = col;
-    } else if (flags & INSERT_ROW) {
-        BLT_TABLE_ROW row;
-
-        row = blt_table_get_row(interp, table, objPtr);
-        if (row == NULL) {
-            return TCL_ERROR;
-        }
-        insertPtr->row = row;
+    row = blt_table_get_row(interp, table, objPtr);
+    if (row == NULL) {
+        return TCL_ERROR;
     }
+    insertPtr->destRow = row;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AfterColumnSwitch --
+ *
+ *      Convert a Tcl_Obj representing an offset in the table.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+AfterColumnSwitch(
+    ClientData clientData,              /* Flag indicating if the node is
+                                         * considered before or after the
+                                         * insertion position. */
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Not used. */
+    int flags)                          /* Indicates whether this is a row or
+                                         * column index. */
+{
+    InsertColumnSwitches *insertPtr = (InsertColumnSwitches *)record;
+    BLT_TABLE table;
+    BLT_TABLE_COLUMN col;
+
+    table = insertPtr->cmdPtr->table;
+    if (strcmp(switchName, "-after") == 0) {
+        insertPtr->flags = INSERT_AFTER;
+    } else {
+        insertPtr->flags = INSERT_BEFORE;
+    }
+    col = blt_table_get_column(interp, table, objPtr);
+    if (col == NULL) {
+        return TCL_ERROR;
+    }
+    insertPtr->destColumn = col;
     return TCL_OK;
 }
 
@@ -2749,6 +2798,25 @@ AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ClearOp --
+ *
+ *      tableName clear
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ClearOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+
+    blt_table_clear(cmdPtr->table);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ColumnCopyOp --
  *
  *      Copies the specified columns to the table.  A different table may
@@ -3440,17 +3508,15 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
                Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    InsertSwitches switches;
+    InsertColumnSwitches switches;
     BLT_TABLE_COLUMN col;
-    unsigned int flags;
 
     memset(&switches, 0, sizeof(switches));
     switches.cmdPtr = cmdPtr;
     switches.type = TABLE_COLUMN_TYPE_STRING;
 
-    flags = INSERT_COL;
-    if (Blt_ParseSwitches(interp, insertSwitches, objc - 3, objv + 3, 
-        &switches, flags) < 0) {
+    if (Blt_ParseSwitches(interp, insertColumnSwitches, objc - 3, objv + 3, 
+        &switches, 0) < 0) {
         goto error;
     }
     col = blt_table_create_column(interp, cmdPtr->table, switches.label);
@@ -3461,8 +3527,8 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         != TCL_OK) {
         goto error;
     }
-    if (switches.column != NULL) {
-        if (blt_table_move_columns(interp, cmdPtr->table, switches.column, 
+    if (switches.destColumn != NULL) {
+        if (blt_table_move_columns(interp, cmdPtr->table, switches.destColumn, 
                 col, col, switches.flags & INSERT_AFTER) != TCL_OK) {
             goto error;
         }
@@ -3484,10 +3550,10 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     Tcl_SetObjResult(interp, GetColumnIndexObj(cmdPtr->table, col));
-    Blt_FreeSwitches(insertSwitches, &switches, flags);
+    Blt_FreeSwitches(insertColumnSwitches, &switches, 0);
     return TCL_OK;
  error:
-    Blt_FreeSwitches(insertSwitches, &switches, flags);
+    Blt_FreeSwitches(insertColumnSwitches, &switches, 0);
     return TCL_ERROR;
 }
 
@@ -3656,11 +3722,21 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (lastColumn == NULL) {
         return TCL_ERROR;
     }
-    /* Check is destination outside the range of rows to be moved. */
+    /* Check if range is valid. */
+    if ((blt_table_column_index(cmdPtr->table, firstColumn) > 
+         blt_table_column_index(cmdPtr->table, lastColumn))) {
+        return TCL_OK;                  /* No range. */
+    }
+
+    /* Check that destination is outside the range of columns to be moved. */
     if ((blt_table_column_index(cmdPtr->table, destColumn) >= 
          blt_table_column_index(cmdPtr->table, firstColumn)) &&
         (blt_table_column_index(cmdPtr->table, destColumn) <= 
          blt_table_column_index(cmdPtr->table, lastColumn))) {
+        Tcl_AppendResult(interp, "destination column \"", 
+                Tcl_GetString(objv[3]),
+                 "\" can't be in the range of columns to be moved.", 
+                (char *)NULL);
         return TCL_ERROR;
     }
     memset(&switches, 0, sizeof(switches));
@@ -5635,6 +5711,25 @@ NumRowsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * PackOp --
+ *
+ *      tableName pack
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PackOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+
+    blt_table_pack(cmdPtr->table);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * RestoreOp --
  *
  * $t restore $string -overwrite -notags
@@ -5771,26 +5866,22 @@ RowCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
     BLT_TABLE_ROW row;
-    InsertSwitches switches;
-    unsigned int flags;
+    InsertRowSwitches switches;
     
-    switches.row = NULL;
-    switches.label = NULL;
-    switches.tags = NULL;
+    memset(&switches, 0, sizeof(switches));
     switches.cmdPtr = cmdPtr;
     table = cmdPtr->table;
 
-    flags = INSERT_ROW;
-    if (Blt_ParseSwitches(interp, insertSwitches, objc - 3, objv + 3, 
-                &switches, flags) < 0) {
+    if (Blt_ParseSwitches(interp, insertRowSwitches, objc - 3, objv + 3, 
+                &switches, 0) < 0) {
         goto error;
     }
     row = blt_table_create_row(interp, table, switches.label);
     if (row == NULL) {
         goto error;
     }
-    if (switches.row != NULL) {
-        if (blt_table_move_rows(interp, table, switches.row, row, row, 
+    if (switches.destRow != NULL) {
+        if (blt_table_move_rows(interp, table, switches.destRow, row, row, 
                     switches.flags & INSERT_AFTER) != TCL_OK) {
             goto error;
         }
@@ -5812,10 +5903,10 @@ RowCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     Tcl_SetObjResult(interp, GetRowIndexObj(table, row));
-    Blt_FreeSwitches(insertSwitches, &switches, flags);
+    Blt_FreeSwitches(insertRowSwitches, &switches, 0);
     return TCL_OK;
  error:
-    Blt_FreeSwitches(insertSwitches, &switches, flags);
+    Blt_FreeSwitches(insertRowSwitches, &switches, 0);
     return TCL_ERROR;
 }
 
@@ -6627,11 +6718,20 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (lastRow == NULL) {
         return TCL_ERROR;
     }
-    /* Check is destination outside the range of rows to be moved. */
+    /* Check if range is valid. */
+    if ((blt_table_row_index(cmdPtr->table, firstRow) > 
+         blt_table_row_index(cmdPtr->table, lastRow))) {
+        return TCL_OK;                  /* No range. */
+    }
+
+    /* Check that destination is outside the range of rows to be moved. */
     if ((blt_table_row_index(cmdPtr->table, destRow) >= 
          blt_table_row_index(cmdPtr->table, firstRow)) &&
         (blt_table_row_index(cmdPtr->table, destRow) <= 
          blt_table_row_index(cmdPtr->table, lastRow))) {
+        Tcl_AppendResult(interp, "destination row \"", Tcl_GetString(objv[3]),
+                 "\" can't be in the range of rows to be moved.", 
+                (char *)NULL);
         return TCL_ERROR;
     }
     memset(&switches, 0, sizeof(switches));
@@ -8777,6 +8877,7 @@ static Blt_OpSpec tableOps[] =
     {"attach",     2, AttachOp,     2, 3, "tableName",},
     {"column",     3, ColumnOp,     3, 0, "op args...",},
     {"copy",       3, CopyOp,       3, 3, "tableName",},
+    {"clear",      2, ClearOp,      2, 2, "",},
     {"dir",        2, DirOp,        3, 0, "path ?switches?",},
     {"dump",       3, DumpOp,       2, 0, "?switches?",},
     {"duplicate",  3, DuplicateOp,  2, 3, "?tableName?",},
@@ -8794,6 +8895,7 @@ static Blt_OpSpec tableOps[] =
     {"minimum",    2, MinMaxOp,     2, 3, "?columnName?",},
     {"numcolumns", 4, NumColumnsOp, 2, 3, "?numColumns?",},
     {"numrows",    4, NumRowsOp,    2, 3, "?numRows?",},
+    {"pack",       1, PackOp,       2, 2, "",},
     {"restore",    2, RestoreOp,    2, 0, "?switches?",},
     {"row",        2, RowOp,        3, 0, "op args...",},
     {"set",        2, SetOp,        3, 0, "?rowName columnName value ...?",},
