@@ -3463,7 +3463,6 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
         {
             Row *firstPtr, *lastPtr;
 
-       fprintf(stderr, "spec=%s\n", tag);
             p = strchr(tag, '-');
             if (p == NULL) {
                 if (interp != NULL) {
@@ -4187,8 +4186,8 @@ blt_table_iterate_all_columns(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
     Columns *columnsPtr;
 
     columnsPtr = blt_table_columns(table);
-    if (columnsPtr->flags & REINDEX) {
-        ResetRowMap(columnsPtr);
+    if (columnsPtr->flags & REINDEX) { 
+        ResetColumnMap(columnsPtr);
     }
 
     iterPtr->chain = NULL;

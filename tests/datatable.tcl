@@ -356,6 +356,10 @@ test datatable.41 {row extend 5} {
     list [catch {datatable0 row extend 5} msg] $msg
 } {0 {0 1 2 3 4}}
 
+test datatable.42 {pack} {
+    list [catch {datatable0 pack} msg] $msg
+} {0 {}}
+
 test datatable.42 {row names} {
     list [catch {datatable0 row names} msg] $msg
 } {0 {r1 r2 r3 r4 r5}}
@@ -2064,10 +2068,6 @@ test datatable.369 {row label @end label-with-minus} {
     list [catch {datatable1 row label @end label-with-minus} msg] $msg
 } {0 {}}
 
-test datatable.370 {row label @end -abc} {
-    list [catch {datatable1 row label @end -abc} msg] $msg
-} {1 {row label "-abc" can't start with a '-'.}}
-
 test datatable.371 {row names *Label} {
     list [catch {datatable1 row names *Label} msg] $msg
 } {0 {myLabel myLabel}}
@@ -2677,12 +2677,12 @@ test datatable.482 {datatable1 row move} {
 
 test datatable.483 {datatable1 row move 0} {
     list [catch {datatable1 row move 0} msg] $msg
-} {1 {wrong # args: should be "datatable1 row move destRows firstRow lastRow ?switches?"}}
+} {1 {wrong # args: should be "datatable1 row move destRow firstRow lastRow ?switches?"}}
 
 # Source equals destination.
 test datatable.484 {datatable1 row move 0 0 0} {
     list [catch {datatable1 row move 0 0 0} msg] $msg
-} {0 {}}
+} {1 {destination row "0" can't be in the range of rows to be moved.}}
 
 test datatable.485 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
@@ -2697,8 +2697,8 @@ test datatable.487 {datatable1 row names} {
 } {0 {r85 r62 one r83 two r63 three r64 r65 r66 myRow r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 # Move 10 to 0. The row is labeled "myRow"
-test datatable.488 {datatable1 row move 10 0} {
-    list [catch {datatable1 row move 10 0} msg] $msg
+test datatable.488 {datatable1 row move 0 10 10} {
+    list [catch {datatable1 row move 0 10 10} msg] $msg
 } {0 {}}
 
 test datatable.489 {datatable1 row names} {
@@ -2706,11 +2706,11 @@ test datatable.489 {datatable1 row names} {
 } {0 {myRow r85 r62 one r83 two r63 three r64 r65 r66 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 # Can't move all rows.
-test datatable.490 {datatable1 row move @all 10} {
-    list [catch {datatable1 row move @all 10} msg] $msg
+test datatable.490 {datatable1 row move @all 10 10} {
+    list [catch {datatable1 row move @all 10 10} msg] $msg
 } {1 {multiple rows specified by "all"}}
 
-# Move 1 to 10, 0 rows. Does nothing.
+# Move 10 to 0, 0 rows. Does nothing.
 test datatable.491 {datatable1 row move 1 10 0} {
     list [catch { 
 	datatable1 row move 1 10 0
@@ -2724,36 +2724,44 @@ test datatable.492 {datatable1 row names} {
 
 
 # Move 1 to 1. Does nothing.
-test datatable.493 {datatable1 row move 1 1} {
+test datatable.493 {datatable1 row move 2 1 1} {
     list [catch { 
-	datatable1 row move 1 1 
+	datatable1 row move 2 1 1
 	datatable1 row names
     } msg] $msg
 } {0 {myRow r85 r62 one r83 two r63 three r64 r65 r66 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 # Move 1 to 10 (1 row)
-test datatable.494 {datatable1 row move 1 10} {
+test datatable.494 {datatable1 row move 10 1 1} {
     list [catch { 
-	datatable1 row move 1 10 
+	datatable1 row move 10 1 1 -after
 	datatable1 row names
     } msg] $msg
 } {0 {myRow r62 one r83 two r63 three r64 r65 r66 r85 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
-# Move 1 to 2 (1 row)
-test datatable.495 {datatable1 row move 1 2} {
+test datatable.495 {datatable1 row labels} {
     list [catch {
-	datatable1 row move 1 2
+	datatable1 numrows 10
+	datatable1 row labels { r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 }
+    } msg] $msg
+} {0 {}}
+
+# Move 1 to 2 (1 row)
+test datatable.495 {datatable1 row move 7 0 6} {
+    list [catch {
+	datatable1 row move 7 0 6 -after
 	datatable1 row names
     } msg] $msg
-} {0 {myRow one r62 r83 two r63 three r64 r65 r66 r85 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
+} {0 {r8 r1 r2 r3 r4 r5 r6 r7 r9 r10}}
 
 # Move 1 to 10 (5 rows)
-test datatable.496 {datatable1 row move 1 10 5} {
+test datatable.496 {datatable1 row move 9 1 5} {
     list [catch {
-	datatable1 row move 1 10 5
+	datatable1 row labels { r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 }
+	datatable1 row move 9 1 5
 	datatable1 row names
     } msg] $msg
-} {0 {myRow three r64 r65 r66 r85 r68 r69 r70 r71 one r62 r83 two r63 r74 r75 r76 r77 r78 r82 one r86 r87}}
+} {0 {r1 r7 r8 r9 r2 r3 r4 r5 r6 r10}}
 
 test datatable.497 {export csv} {
     list [catch {datatable1 export csv} msg] $msg

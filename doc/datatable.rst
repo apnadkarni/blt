@@ -155,7 +155,7 @@ the command.  The operations available for *datatables* are listed below.
   using it.  The current set of tags, watches, and traces in *tableName*
   are discarded.
 
-*tableName* **column copy** *srcColumn* *destColumn* ?\ *switches* ... ?
+*tableName* **column copy** *destColumn* *srcColumn* ?\ *switches* ... ?
   Copies the values and tags from *srcColumn* into *destColumn*.
   *SrcColumn* and *destColumn* may be a column label, index, or tag, but
   may not represent more than one column.  If a column *destColumn* doesn't
@@ -176,7 +176,7 @@ the command.  The operations available for *datatables* are listed below.
 
   **-table** *srcTable*
     Copy the column *srcColumn* from the datatable *srcTable*.  By default
-    to *tableName* is also the source table.
+    *tableName* is the source table.
 
 *tableName* **column create** ?\ *switches* ... ?
   Creates a new column in *tableName*. The cells of the new column
@@ -684,7 +684,7 @@ the command.  The operations available for *datatables* are listed below.
   **-overwrite**  
     Overwrite any rows or columns.
 
-*tableName* **row copy** *srcRow* *destRow* ?\ *switches* ... ?
+*tableName* **row copy** *destRow* *srcRow* ?\ *switches* ... ?
   Copies the values and tags from *srcRow* into *destRow*.  *SrcRow* and
   *destRow* may be a row label, index, or tag, but may not represent more
   than one row.  If a row *destRow* doesn't already exist in *tableName*,
@@ -703,7 +703,7 @@ the command.  The operations available for *datatables* are listed below.
 
   **-table** *srcTable*
     Copy the row *srcRow* from the datatable *srcTable*.  By default
-    to *tableName* is also the source table.
+    *tableName* is the source table.
 
 *tableName* **row create** ?\ *switches* ... ?
   Creates a new row in *tableName*. The cells of the new row is initially

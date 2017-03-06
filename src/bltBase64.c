@@ -421,6 +421,7 @@ InitAscii85DecodeTable(unsigned char *decodeTable)
     }
 }
 
+#ifdef notdef
 static void
 InitBase64DecodeTable(unsigned char *decodeTable, BinaryDecoder *decodePtr)
 {
@@ -433,6 +434,7 @@ InitBase64DecodeTable(unsigned char *decodeTable, BinaryDecoder *decodePtr)
         decodeTable['/'] = 63;
     }
 }
+#endif
 
 size_t 
 Blt_HexadecimalEncodeBufferSize(size_t numBytes, BinaryEncoder *encodePtr)
