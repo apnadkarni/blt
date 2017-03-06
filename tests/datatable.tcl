@@ -246,7 +246,7 @@ test datatable.31 {datatable0 column badOp} {
 	datatable0 column badOp
     } msg] $msg
 } {1 {bad operation "badOp": should be one of...
-  datatable0 column copy srcColumn destColumn ?switches?
+  datatable0 column copy destColumn srcColumn ?switches?
   datatable0 column create ?switches?
   datatable0 column delete ?columnName ...?
   datatable0 column duplicate ?columnName ...?
@@ -259,7 +259,7 @@ test datatable.31 {datatable0 column badOp} {
   datatable0 column join tableName ?switches?
   datatable0 column label columnName ?label?
   datatable0 column labels ?labelList?
-  datatable0 column move fromColumn toColumn ?numColumns?
+  datatable0 column move destColumn firstColumn lastColumn ?switches?
   datatable0 column names ?pattern ...?
   datatable0 column nonempty columnName
   datatable0 column set columnName rowName ?value ...?
@@ -280,7 +280,7 @@ test datatable.33 {datatable0 row badOp} {
 	datatable0 row badOp
     } msg] $msg
 } {1 {bad operation "badOp": should be one of...
-  datatable0 row copy srcRow destRow ?switches?
+  datatable0 row copy destRow srcRow ?switches?
   datatable0 row create ?switches...?
   datatable0 row delete ?rowName ...?
   datatable0 row duplicate ?rowName ...?
@@ -295,7 +295,7 @@ test datatable.33 {datatable0 row badOp} {
   datatable0 row join srcTableName ?switches?
   datatable0 row label rowName ?label?
   datatable0 row labels ?labelList?
-  datatable0 row move fromRow toRow ?numRows?
+  datatable0 row move destRow firstRow lastRow ?switches?
   datatable0 row names ?pattern ...?
   datatable0 row nonempty rowName
   datatable0 row set rowName columnName ?value...?
@@ -318,7 +318,7 @@ test datatable.36 {datatable0 numcolumns badArg} {
 test datatable.37 {datatable0 column -label xyz create} {
     list [catch {datatable0 column -label xyz create} msg] $msg
 } {1 {bad operation "-label": should be one of...
-  datatable0 column copy srcColumn destColumn ?switches?
+  datatable0 column copy destColumn srcColumn ?switches?
   datatable0 column create ?switches?
   datatable0 column delete ?columnName ...?
   datatable0 column duplicate ?columnName ...?
@@ -331,7 +331,7 @@ test datatable.37 {datatable0 column -label xyz create} {
   datatable0 column join tableName ?switches?
   datatable0 column label columnName ?label?
   datatable0 column labels ?labelList?
-  datatable0 column move fromColumn toColumn ?numColumns?
+  datatable0 column move destColumn firstColumn lastColumn ?switches?
   datatable0 column names ?pattern ...?
   datatable0 column nonempty columnName
   datatable0 column set columnName rowName ?value ...?
@@ -1070,10 +1070,8 @@ test datatable.204 {column create -before 1 -badSwitch} {
     list [catch {datatable0 column create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 The following switches are available:
-   -after column
-   -after row
-   -before column
-   -before row
+   -after columnName
+   -before columnName
    -label string
    -tags tagList
    -type columnType}}
@@ -1082,10 +1080,8 @@ test datatable.205 {datatable0 column create -badSwitch -before 1} {
     list [catch {datatable0 column create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 The following switches are available:
-   -after column
-   -after row
-   -before column
-   -before row
+   -after columnName
+   -before columnName
    -label string
    -tags tagList
    -type columnType}}
@@ -1094,10 +1090,8 @@ test datatable.206 {datatable0 column create -before 1 -badSwitch arg} {
     list [catch {datatable0 column create -badSwitch arg} msg] $msg
 } {1 {unknown switch "-badSwitch"
 The following switches are available:
-   -after column
-   -after row
-   -before column
-   -before row
+   -after columnName
+   -before columnName
    -label string
    -tags tagList
    -type columnType}}
@@ -1360,22 +1354,22 @@ test datatable.233 {datatable1 restore -data} {
 
 test datatable.234 {datatable0 column move} {
     list [catch {datatable0 column move} msg] $msg
-} {1 {wrong # args: should be "datatable0 column move fromColumn toColumn ?numColumns?"}}
+} {1 {wrong # args: should be "datatable0 column move destColumn firstColumn lastColumn ?switches?"}}
 
 test datatable.235 {datatable0 column move -1} {
     list [catch {datatable0 column move -1} msg] $msg
-} {1 {wrong # args: should be "datatable0 column move fromColumn toColumn ?numColumns?"}}
+} {1 {wrong # args: should be "datatable0 column move destColumn firstColumn lastColumn ?switches?"}}
 
-test datatable.236 {datatable0 column move 50 50} {
-    list [catch {datatable0 column move 50 50} msg] $msg
+test datatable.236 {datatable0 column move 50 50 50} {
+    list [catch {datatable0 column move 50 50 50} msg] $msg
 } {1 {bad column index "50"}}
 
-test datatable.237 {datatable0 column move 10 50} {
-    list [catch {datatable0 column move 10 50} msg] $msg
+test datatable.237 {datatable0 column move 10 50 50} {
+    list [catch {datatable0 column move 10 50 50} msg] $msg
 } {1 {bad column index "50"}}
 
-test datatable.238 {datatable0 column move @all 10} {
-    list [catch {datatable0 column move @all 10} msg] $msg
+test datatable.238 {datatable0 column move @all 10 10} {
+    list [catch {datatable0 column move @all 10 10} msg] $msg
 } {1 {multiple columns specified by "all"}}
 
 test datatable.239 {column label} {
@@ -1460,12 +1454,12 @@ test datatable.249 {datatable1 column move 0 9  0} {
     } msg] $msg
 } {0 1}
 
-test datatable.250 {column move 0 0} {
+test datatable.250 {column move 1 0 0} {
     list [catch { 
 	# This should be a no-op.
 	datatable1 duplicate $orig
 	set before [datatable1 column names]
-	datatable0 column move 0 0
+	datatable0 column move 1 0 0
 	set after [datatable1 column names]
 	expr {$before == $after}
     } msg] $msg
@@ -1541,22 +1535,22 @@ test datatable.260 {duplicate} {
     } msg] $msg
 } {0 {c1 c2 c3 c4 c5 c6}}
 
-test datatable.261 {column move 0 2} {
+test datatable.261 {column move 2 0 0 -after} {
     list [catch {
 	datatable1 duplicate $orig
-	datatable1 column move 0 2
+	datatable1 column move 2 0 0 -after
 	datatable1 column names
     } msg] $msg
 } {0 {c2 c3 c1 c4 c5 c6}}
 
-test datatable.262 {datatable0 column move -1 2} {
-    list [catch {datatable0 column move -1 2} msg] $msg
+test datatable.262 {datatable0 column move -1 2 2} {
+    list [catch {datatable0 column move -1 2 2} msg] $msg
 } {1 {unknown column specification "-1" in ::datatable0}}
 
-test datatable.263 {datatable0 column move 0 @end} {
+test datatable.263 {datatable0 column move @end 0 0 -after} {
     list [catch {
 	datatable1 duplicate $orig
-	datatable1 column move 0 @end
+	datatable1 column move @end 0 0 -after
 	datatable1 column names
     } msg] $msg
 } {0 {c2 c3 c4 c5 c6 c1}}
@@ -1959,7 +1953,7 @@ test datatable.346 {row names} {
 test datatable.347 {row -label xyz create} {
     list [catch {datatable4 row -label xyz create} msg] $msg
 } {1 {bad operation "-label": should be one of...
-  datatable4 row copy srcRow destRow ?switches?
+  datatable4 row copy destRow srcRow ?switches?
   datatable4 row create ?switches...?
   datatable4 row delete ?rowName ...?
   datatable4 row duplicate ?rowName ...?
@@ -1974,7 +1968,7 @@ test datatable.347 {row -label xyz create} {
   datatable4 row join srcTableName ?switches?
   datatable4 row label rowName ?label?
   datatable4 row labels ?labelList?
-  datatable4 row move fromRow toRow ?numRows?
+  datatable4 row move destRow firstRow lastRow ?switches?
   datatable4 row names ?pattern ...?
   datatable4 row nonempty rowName
   datatable4 row set rowName columnName ?value...?
@@ -2558,37 +2552,28 @@ test datatable.457 {datatable1 row create -before 1 -badSwitch} {
     list [catch {datatable1 row create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 The following switches are available:
-   -after column
-   -after row
-   -before column
-   -before row
+   -after rowName
+   -before rowName
    -label string
-   -tags tagList
-   -type columnType}}
+   -tags tagList}}
 
 test datatable.458 {datatable1 row create -badSwitch -before 1} {
     list [catch {datatable1 row create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 The following switches are available:
-   -after column
-   -after row
-   -before column
-   -before row
+   -after rowName
+   -before rowName
    -label string
-   -tags tagList
-   -type columnType}}
+   -tags tagList}}
 
 test datatable.459 {datatable1 row create -before 1 -badSwitch arg} {
     list [catch {datatable1 row create -badSwitch arg} msg] $msg
 } {1 {unknown switch "-badSwitch"
 The following switches are available:
-   -after column
-   -after row
-   -before column
-   -before row
+   -after rowName
+   -before rowName
    -label string
-   -tags tagList
-   -type columnType}}
+   -tags tagList}}
 
 test datatable.460 {datatable1 row create -before 1 -label one} {
     list [catch {datatable1 row create -before 1 -label one} msg] $msg
@@ -2688,15 +2673,15 @@ test datatable.481 {datatable1 row tag indices myTag2 myTag1} {
 
 test datatable.482 {datatable1 row move} {
     list [catch {datatable1 row move} msg] $msg
-} {1 {wrong # args: should be "datatable1 row move fromRow toRow ?numRows?"}}
+} {1 {wrong # args: should be "datatable1 row move destRow firstRow lastRow ?switches?"}}
 
 test datatable.483 {datatable1 row move 0} {
     list [catch {datatable1 row move 0} msg] $msg
-} {1 {wrong # args: should be "datatable1 row move fromRow toRow ?numRows?"}}
+} {1 {wrong # args: should be "datatable1 row move destRows firstRow lastRow ?switches?"}}
 
 # Source equals destination.
-test datatable.484 {datatable1 row move 0 0} {
-    list [catch {datatable1 row move 0 0} msg] $msg
+test datatable.484 {datatable1 row move 0 0 0} {
+    list [catch {datatable1 row move 0 0 0} msg] $msg
 } {0 {}}
 
 test datatable.485 {datatable1 row names} {
