@@ -1021,6 +1021,7 @@ BLT_EXTERN int		blt_table_delete_row(BLT_TABLE table,
 BLT_EXTERN int		blt_table_delete_column(BLT_TABLE table,
 				BLT_TABLE_COLUMN column);
 #endif
+<<<<<<< HEAD
 #ifndef blt_table_move_rows_DECLARED
 #define blt_table_move_rows_DECLARED
 /* 169 */
@@ -1036,6 +1037,21 @@ BLT_EXTERN int		blt_table_move_columns(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_COLUMN destColumn,
 				BLT_TABLE_COLUMN firstColumn,
 				BLT_TABLE_COLUMN lastColumn, int after);
+=======
+#ifndef blt_table_move_row_DECLARED
+#define blt_table_move_row_DECLARED
+/* 169 */
+BLT_EXTERN int		blt_table_move_row(Tcl_Interp *interp,
+				BLT_TABLE table, BLT_TABLE_ROW from,
+				BLT_TABLE_ROW to, size_t n);
+#endif
+#ifndef blt_table_move_column_DECLARED
+#define blt_table_move_column_DECLARED
+/* 170 */
+BLT_EXTERN int		blt_table_move_column(Tcl_Interp *interp,
+				BLT_TABLE table, BLT_TABLE_COLUMN from,
+				BLT_TABLE_COLUMN to, size_t n);
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
 #endif
 #ifndef blt_table_get_obj_DECLARED
 #define blt_table_get_obj_DECLARED
@@ -1954,8 +1970,13 @@ typedef struct BltTclProcs {
     int (*blt_table_extend_columns) (Tcl_Interp *interp, BLT_TABLE table, size_t n, BLT_TABLE_COLUMN *columms); /* 166 */
     int (*blt_table_delete_row) (BLT_TABLE table, BLT_TABLE_ROW row); /* 167 */
     int (*blt_table_delete_column) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 168 */
+<<<<<<< HEAD
     int (*blt_table_move_rows) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW destRow, BLT_TABLE_ROW firstRow, BLT_TABLE_ROW lastRow, int after); /* 169 */
     int (*blt_table_move_columns) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN destColumn, BLT_TABLE_COLUMN firstColumn, BLT_TABLE_COLUMN lastColumn, int after); /* 170 */
+=======
+    int (*blt_table_move_row) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW from, BLT_TABLE_ROW to, size_t n); /* 169 */
+    int (*blt_table_move_column) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN from, BLT_TABLE_COLUMN to, size_t n); /* 170 */
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     Tcl_Obj * (*blt_table_get_obj) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 171 */
     int (*blt_table_set_obj) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, Tcl_Obj *objPtr); /* 172 */
     const char * (*blt_table_get_string) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 173 */
@@ -2759,6 +2780,7 @@ extern BltTclProcs *bltTclProcsPtr;
 #define blt_table_delete_column \
 	(bltTclProcsPtr->blt_table_delete_column) /* 168 */
 #endif
+<<<<<<< HEAD
 #ifndef blt_table_move_rows
 #define blt_table_move_rows \
 	(bltTclProcsPtr->blt_table_move_rows) /* 169 */
@@ -2766,6 +2788,15 @@ extern BltTclProcs *bltTclProcsPtr;
 #ifndef blt_table_move_columns
 #define blt_table_move_columns \
 	(bltTclProcsPtr->blt_table_move_columns) /* 170 */
+=======
+#ifndef blt_table_move_row
+#define blt_table_move_row \
+	(bltTclProcsPtr->blt_table_move_row) /* 169 */
+#endif
+#ifndef blt_table_move_column
+#define blt_table_move_column \
+	(bltTclProcsPtr->blt_table_move_column) /* 170 */
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
 #endif
 #ifndef blt_table_get_obj
 #define blt_table_get_obj \

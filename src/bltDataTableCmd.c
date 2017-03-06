@@ -247,6 +247,7 @@ static Blt_SwitchCustom rowsSwitch = {
 
 #endif
 
+<<<<<<< HEAD
 #define INSERT_BEFORE   (0)
 #define INSERT_AFTER    (1<<0)
 
@@ -255,6 +256,19 @@ static Blt_SwitchCustom afterRowSwitch = {
 };
 static Blt_SwitchCustom afterColumnSwitch = {
     AfterColumnSwitch, NULL, NULL, 0
+=======
+#define INSERT_BEFORE   (1<<0)
+#define INSERT_AFTER    (1<<1)
+
+#define INSERT_ROW      (BLT_SWITCH_USER_BIT<<1)
+#define INSERT_COL      (BLT_SWITCH_USER_BIT<<2)
+
+static Blt_SwitchCustom beforeSwitch = {
+    PositionSwitch, NULL, NULL, (ClientData)INSERT_BEFORE,
+};
+static Blt_SwitchCustom afterSwitch = {
+    PositionSwitch, NULL, NULL, (ClientData)INSERT_AFTER,
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
 };
 
 typedef struct {
@@ -363,6 +377,7 @@ typedef struct {
                                          * this row or column. */
     BLT_TABLE_COLUMN_TYPE type;
     unsigned int flags;
+<<<<<<< HEAD
 } InsertColumnSwitches;
 
 static Blt_SwitchSpec insertColumnSwitches[] = 
@@ -371,6 +386,20 @@ static Blt_SwitchSpec insertColumnSwitches[] =
         Blt_Offset(InsertColumnSwitches, destColumn), 0, 0, &afterColumnSwitch},
     {BLT_SWITCH_CUSTOM, "-before", "columnName",    (char *)NULL,
         Blt_Offset(InsertColumnSwitches, destColumn), 0, 0, &afterColumnSwitch},
+=======
+} InsertSwitches;
+
+static Blt_SwitchSpec insertSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-after",  "column",    (char *)NULL,
+        Blt_Offset(InsertSwitches, column), INSERT_COL, 0, &afterSwitch},
+    {BLT_SWITCH_CUSTOM, "-after",  "row",       (char *)NULL,
+        Blt_Offset(InsertSwitches, row),    INSERT_ROW, 0, &afterSwitch},
+    {BLT_SWITCH_CUSTOM, "-before", "column",    (char *)NULL,
+        Blt_Offset(InsertSwitches, column), INSERT_COL, 0, &beforeSwitch},
+    {BLT_SWITCH_CUSTOM, "-before", "row",       (char *)NULL,
+         Blt_Offset(InsertSwitches, row),   INSERT_ROW, 0, &beforeSwitch},
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     {BLT_SWITCH_STRING, "-label",  "string",    (char *)NULL,
         Blt_Offset(InsertColumnSwitches, label),  0},
     {BLT_SWITCH_OBJ,    "-tags",   "tagList",      (char *)NULL,
@@ -901,6 +930,7 @@ AfterRowSwitch(
     return TCL_OK;
 }
 
+<<<<<<< HEAD
 /*
  *---------------------------------------------------------------------------
  *
@@ -940,6 +970,23 @@ AfterColumnSwitch(
     col = blt_table_get_column(interp, table, objPtr);
     if (col == NULL) {
         return TCL_ERROR;
+=======
+        col = blt_table_get_column(interp, table, objPtr);
+        if (col == NULL) {
+            return TCL_ERROR;
+        }
+        insertPtr->flags = clientData;
+        insertPtr->column = col;
+    } else if (flags & INSERT_ROW) {
+        BLT_TABLE_ROW row;
+
+        row = blt_table_get_row(interp, table, objPtr);
+        if (row == NULL) {
+            return TCL_ERROR;
+        }
+        insertPtr->flags = clientData;
+        insertPtr->row = row;
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     }
     insertPtr->destColumn = col;
     return TCL_OK;
@@ -3527,8 +3574,13 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         != TCL_OK) {
         goto error;
     }
+<<<<<<< HEAD
     if (switches.destColumn != NULL) {
         if (blt_table_move_columns(interp, cmdPtr->table, switches.destColumn, 
+=======
+    if (switches.column != NULL) {
+        if (blt_table_move_columns(interp, cmdPtr->table, switches.column, 
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
                 col, col, switches.flags & INSERT_AFTER) != TCL_OK) {
             goto error;
         }
@@ -3550,7 +3602,11 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     Tcl_SetObjResult(interp, GetColumnIndexObj(cmdPtr->table, col));
+<<<<<<< HEAD
     Blt_FreeSwitches(insertColumnSwitches, &switches, 0);
+=======
+    Blt_FreeSwitches(insertSwitches, &switches, flags);
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     return TCL_OK;
  error:
     Blt_FreeSwitches(insertColumnSwitches, &switches, 0);
@@ -3722,6 +3778,7 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (lastColumn == NULL) {
         return TCL_ERROR;
     }
+<<<<<<< HEAD
     /* Check if range is valid. */
     if ((blt_table_column_index(cmdPtr->table, firstColumn) > 
          blt_table_column_index(cmdPtr->table, lastColumn))) {
@@ -3729,10 +3786,14 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 
     /* Check that destination is outside the range of columns to be moved. */
+=======
+    /* Check is destination outside the range of rows to be moved. */
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     if ((blt_table_column_index(cmdPtr->table, destColumn) >= 
          blt_table_column_index(cmdPtr->table, firstColumn)) &&
         (blt_table_column_index(cmdPtr->table, destColumn) <= 
          blt_table_column_index(cmdPtr->table, lastColumn))) {
+<<<<<<< HEAD
         Tcl_AppendResult(interp, "destination column \"", 
                 Tcl_GetString(objv[3]),
                  "\" can't be in the range of columns to be moved.", 
@@ -3744,6 +3805,15 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
+=======
+        return TCL_ERROR;
+    }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, moveSwitches, objc - 6, objv + 6, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     return blt_table_move_columns(interp, cmdPtr->table, destColumn, 
           firstColumn, lastColumn, switches.flags & MOVE_AFTER);
 }
@@ -5880,8 +5950,13 @@ RowCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (row == NULL) {
         goto error;
     }
+<<<<<<< HEAD
     if (switches.destRow != NULL) {
         if (blt_table_move_rows(interp, table, switches.destRow, row, row, 
+=======
+    if (switches.row != NULL) {
+        if (blt_table_move_rows(interp, table, switches.row, row, row, 
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
                     switches.flags & INSERT_AFTER) != TCL_OK) {
             goto error;
         }
@@ -5903,7 +5978,11 @@ RowCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     Tcl_SetObjResult(interp, GetRowIndexObj(table, row));
+<<<<<<< HEAD
     Blt_FreeSwitches(insertRowSwitches, &switches, 0);
+=======
+    Blt_FreeSwitches(insertSwitches, &switches, flags);
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     return TCL_OK;
  error:
     Blt_FreeSwitches(insertRowSwitches, &switches, 0);
@@ -6001,7 +6080,11 @@ RowDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (CopyRow(interp, cmdPtr->table, cmdPtr->table, srcRow, dest)!= TCL_OK) {
             goto error;
         }
+<<<<<<< HEAD
         CopyRowTags(cmdPtr->table, cmdPtr->table, srcRow, dest);
+=======
+        CopyRowTags(cmdPtr->table, cmdPtr->table, src, dest);
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
         j = blt_table_row_index(cmdPtr->table, dest);
         Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(j));
     }
@@ -6718,6 +6801,7 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (lastRow == NULL) {
         return TCL_ERROR;
     }
+<<<<<<< HEAD
     /* Check if range is valid. */
     if ((blt_table_row_index(cmdPtr->table, firstRow) > 
          blt_table_row_index(cmdPtr->table, lastRow))) {
@@ -6725,10 +6809,14 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 
     /* Check that destination is outside the range of rows to be moved. */
+=======
+    /* Check is destination outside the range of rows to be moved. */
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     if ((blt_table_row_index(cmdPtr->table, destRow) >= 
          blt_table_row_index(cmdPtr->table, firstRow)) &&
         (blt_table_row_index(cmdPtr->table, destRow) <= 
          blt_table_row_index(cmdPtr->table, lastRow))) {
+<<<<<<< HEAD
         Tcl_AppendResult(interp, "destination row \"", Tcl_GetString(objv[3]),
                  "\" can't be in the range of rows to be moved.", 
                 (char *)NULL);
@@ -6739,6 +6827,15 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
+=======
+        return TCL_ERROR;
+    }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, moveSwitches, objc - 6, objv + 6, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     return blt_table_move_rows(interp, cmdPtr->table, destRow, firstRow, 
         lastRow, switches.flags & MOVE_AFTER);
 }

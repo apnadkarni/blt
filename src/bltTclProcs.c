@@ -182,8 +182,13 @@ BltTclProcs bltTclProcs = {
     blt_table_extend_columns, /* 166 */
     blt_table_delete_row, /* 167 */
     blt_table_delete_column, /* 168 */
+<<<<<<< HEAD
     blt_table_move_rows, /* 169 */
     blt_table_move_columns, /* 170 */
+=======
+    blt_table_move_row, /* 169 */
+    blt_table_move_column, /* 170 */
+>>>>>>> 426a96574866e9dbdf2ea2b5f808c9156dcf9583
     blt_table_get_obj, /* 171 */
     blt_table_set_obj, /* 172 */
     blt_table_get_string, /* 173 */
