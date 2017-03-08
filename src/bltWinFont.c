@@ -1151,7 +1151,7 @@ static Blt_Font_MeasureProc             WinMeasureProc;
 static Blt_Font_NameProc                WinNameProc;
 static Blt_Font_PostscriptNameProc      WinPostscriptNameProc;
 static Blt_Font_TextWidthProc           WinTextWidthProc;
-static Blt_Font_UnderlineCharProc       WinUnderlineCharsProc;
+static Blt_Font_UnderlineCharsProc      WinUnderlineCharsProc;
 
 static Blt_FontClass winFontClass = {
     FONTSET_WIN,
