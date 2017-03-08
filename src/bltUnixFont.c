@@ -2661,9 +2661,15 @@ FreetypeDrawProc(
             
             charLen = XftUtf8ToUcs4((XftChar8 *)source, &c, numBytes);
             if (charLen <= 0) {
+                int i;
+
                 /* This should not happen, but it can. */
-                fprintf(stderr, "charLen=%d, source=%s, numBytes=%d\n",
-                        charLen, source, numBytes);
+                fprintf(stderr, "charLen=%d, numBytes=%d ", charLen, numBytes);
+                for (i = 0; i < numBytes; i++) {
+                    fprintf(stderr, "source[%d]=(%c) %x\n", i, source[i],
+                            source[i]);
+                }
+                fprintf(stderr, "\n");
                 abort();
                 return;
             }

@@ -5712,8 +5712,8 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
 int
 blt_table_delete_row(Table *tablePtr, Row *rowPtr)
 {
-    UnsetRowValues(tablePtr, rowPtr);
     NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_DELETED);
+    UnsetRowValues(tablePtr, rowPtr);
     Blt_Tags_ClearTagsFromItem(tablePtr->rowTags, rowPtr);
     blt_table_clear_row_traces(tablePtr, rowPtr);
     ClearRowNotifiers(tablePtr, rowPtr);
