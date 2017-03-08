@@ -89,7 +89,7 @@ typedef int (Blt_Font_PostscriptNameProc)(Blt_Font font,
         Tcl_DString *resultPtr);
 typedef const char *(Blt_Font_FamilyProc)(Blt_Font font);
 typedef int (Blt_Font_CanRotateProc)(Blt_Font font, float angle);
-typedef void (Blt_Font_UnderlineProc)(Display *display, Drawable drawable, 
+typedef void (Blt_Font_UnderlineCharsProc)(Display *display, Drawable drawable, 
         GC gc, Blt_Font font, const char *text, int textLen, int x, int y, 
         int first, int last, int xMax);
 
@@ -105,7 +105,7 @@ struct _Blt_FontClass {
     Blt_Font_NameProc *nameProc;
     Blt_Font_PostscriptNameProc *psNameProc;
     Blt_Font_TextWidthProc *textWidthProc;
-    Blt_Font_UnderlineProc *underlineProc;
+    Blt_Font_UnderlineCharsProc *underlineCharsProc;
 };
 
 /* 
@@ -134,8 +134,8 @@ struct _Blt_Font {
 #define Blt_Font_Family(f)      (*(f)->classPtr->familyProc)(f)
 #define Blt_Font_CanRotate(f,a) (*(f)->classPtr->canRotateProc)(f,a)
 #define Blt_Font_Free(f)        (*(f)->classPtr->freeProc)(f)
-#define Blt_Font_Underline(d,w,g,f,s,l,x,y,a,b,m)               \
-        (*(f)->classPtr->underlineProc)(d,w,g,f,s,l,x,y,a,b,m)
+#define Blt_Font_UnderlineChars(d,w,g,f,s,l,x,y,a,b,m)               \
+        (*(f)->classPtr->underlineCharsProc)(d,w,g,f,s,l,x,y,a,b,m)
 #define Blt_Font_SetClipRegion(f,r) \
         ((f)->rgn = (r))
 

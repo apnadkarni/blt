@@ -1898,17 +1898,11 @@ KillPipeline(Bgexec *bgPtr)             /* Background info record. */
         int i;
 
         for (i = 0; i < bgPtr->numProcs; i++) {
-            Tcl_Pid tclPid;
-            unsigned long pid;
-
             if (bgPtr->signalNum > 0) {
                 kill(bgPtr->procIds[i].pid, bgPtr->signalNum);
             }
-
-            pid = (long)bgPtr->procIds[i].pid;
-            tclPid = (Tcl_Pid)pid;
-            Tcl_DetachPids(1, &tclPid);
         }
+        Blt_DetachPids(bgPtr->numProcs, bgPtr->procIds);
     }
     Tcl_ReapDetachedProcs();
 }

@@ -240,14 +240,14 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_DrawLayout, /* 230 */
     Blt_GetTextExtents, /* 231 */
     Blt_RotateStartingTextPositions, /* 232 */
-    Blt_ComputeTextLayout, /* 233 */
-    Blt_DrawTextLayout, /* 234 */
-    Blt_CharBbox, /* 235 */
-    Blt_UnderlineTextLayout, /* 236 */
-    Blt_Ts_UnderlineLayout, /* 237 */
+    Blt_TkTextLayout_Compute, /* 233 */
+    Blt_TkTextLayout_Draw, /* 234 */
+    Blt_TkTextLayout_CharBbox, /* 235 */
+    Blt_TkTextLayout_UnderlineChars, /* 236 */
+    Blt_Ts_UnderlineCharsInLayout, /* 237 */
     Blt_Ts_DrawText, /* 238 */
     Blt_MeasureText, /* 239 */
-    Blt_FreeTextLayout, /* 240 */
+    Blt_TkTextLayout_Free, /* 240 */
 };
 
 /* !END!: Do not edit above this line. */

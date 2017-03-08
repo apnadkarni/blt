@@ -1396,41 +1396,41 @@ BLT_EXTERN void		Blt_GetTextExtents(Blt_Font font, int leader,
 BLT_EXTERN void		Blt_RotateStartingTextPositions(TextLayout *textPtr,
 				float angle);
 #endif
-#ifndef Blt_ComputeTextLayout_DECLARED
-#define Blt_ComputeTextLayout_DECLARED
+#ifndef Blt_TkTextLayout_Compute_DECLARED
+#define Blt_TkTextLayout_Compute_DECLARED
 /* 233 */
-BLT_EXTERN Tk_TextLayout Blt_ComputeTextLayout(Blt_Font font,
+BLT_EXTERN Tk_TextLayout Blt_TkTextLayout_Compute(Blt_Font font,
 				const char *string, int numChars,
 				int wrapLength, Tk_Justify justify,
 				int flags, int *widthPtr, int *heightPtr);
 #endif
-#ifndef Blt_DrawTextLayout_DECLARED
-#define Blt_DrawTextLayout_DECLARED
+#ifndef Blt_TkTextLayout_Draw_DECLARED
+#define Blt_TkTextLayout_Draw_DECLARED
 /* 234 */
-BLT_EXTERN void		Blt_DrawTextLayout(Display *display,
+BLT_EXTERN void		Blt_TkTextLayout_Draw(Display *display,
 				Drawable drawable, GC gc,
 				Tk_TextLayout layout, int x, int y,
 				int firstChar, int lastChar);
 #endif
-#ifndef Blt_CharBbox_DECLARED
-#define Blt_CharBbox_DECLARED
+#ifndef Blt_TkTextLayout_CharBbox_DECLARED
+#define Blt_TkTextLayout_CharBbox_DECLARED
 /* 235 */
-BLT_EXTERN int		Blt_CharBbox(Tk_TextLayout layout, int index,
-				int *xPtr, int *yPtr, int *widthPtr,
+BLT_EXTERN int		Blt_TkTextLayout_CharBbox(Tk_TextLayout layout, 
+                                int index, int *xPtr, int *yPtr, int *widthPtr,
 				int *heightPtr);
 #endif
-#ifndef Blt_UnderlineTextLayout_DECLARED
-#define Blt_UnderlineTextLayout_DECLARED
+#ifndef Blt_TkTextLayout_UnderlineChars_DECLARED
+#define Blt_TkTextLayout_UnderlineChars_DECLARED
 /* 236 */
-BLT_EXTERN void		Blt_UnderlineTextLayout(Display *display,
+BLT_EXTERN void		Blt_TkTextLayout_UnderlineChars(Display *display,
 				Drawable drawable, GC gc,
 				Tk_TextLayout layout, int x, int y,
 				int underline);
 #endif
-#ifndef Blt_Ts_UnderlineLayout_DECLARED
-#define Blt_Ts_UnderlineLayout_DECLARED
+#ifndef Blt_Ts_UnderlineCharsInLayout_DECLARED
+#define Blt_Ts_UnderlineCharsInLayout_DECLARED
 /* 237 */
-BLT_EXTERN void		Blt_Ts_UnderlineLayout(Tk_Window tkwin,
+BLT_EXTERN void		Blt_Ts_UnderlineCharsInLayout(Tk_Window tkwin,
 				Drawable drawable, TextLayout *layoutPtr,
 				TextStyle *tsPtr, int x, int y);
 #endif
@@ -1447,10 +1447,10 @@ BLT_EXTERN void		Blt_Ts_DrawText(Tk_Window tkwin, Drawable drawable,
 BLT_EXTERN int		Blt_MeasureText(Blt_Font font, const char *text,
 				int textLen, int maxLength, int *nBytesPtr);
 #endif
-#ifndef Blt_FreeTextLayout_DECLARED
-#define Blt_FreeTextLayout_DECLARED
+#ifndef Blt_TkTextLayout_Free_DECLARED
+#define Blt_TkTextLayout_Free_DECLARED
 /* 240 */
-BLT_EXTERN void		Blt_FreeTextLayout(Tk_TextLayout layout);
+BLT_EXTERN void		Blt_TkTextLayout_Free(Tk_TextLayout layout);
 #endif
 
 typedef struct BltTkIntProcs {
@@ -1690,14 +1690,14 @@ typedef struct BltTkIntProcs {
     void (*blt_DrawLayout) (Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font, int depth, float angle, int x, int y, TextLayout *layoutPtr, int maxLength); /* 230 */
     void (*blt_GetTextExtents) (Blt_Font font, int leader, const char *text, int textLen, unsigned int *widthPtr, unsigned int *heightPtr); /* 231 */
     void (*blt_RotateStartingTextPositions) (TextLayout *textPtr, float angle); /* 232 */
-    Tk_TextLayout (*blt_ComputeTextLayout) (Blt_Font font, const char *string, int numChars, int wrapLength, Tk_Justify justify, int flags, int *widthPtr, int *heightPtr); /* 233 */
-    void (*blt_DrawTextLayout) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int firstChar, int lastChar); /* 234 */
-    int (*blt_CharBbox) (Tk_TextLayout layout, int index, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 235 */
-    void (*blt_UnderlineTextLayout) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int underline); /* 236 */
-    void (*blt_Ts_UnderlineLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y); /* 237 */
+    Tk_TextLayout (*blt_TkTextLayout_Compute) (Blt_Font font, const char *string, int numChars, int wrapLength, Tk_Justify justify, int flags, int *widthPtr, int *heightPtr); /* 233 */
+    void (*blt_TkTextLayout_Draw) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int firstChar, int lastChar); /* 234 */
+    int (*blt_TkTextLayout_CharBbox) (Tk_TextLayout layout, int index, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 235 */
+    void (*blt_TkTextLayout_UnderlineChars) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int underline); /* 236 */
+    void (*blt_Ts_UnderlineCharsInLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y); /* 237 */
     void (*blt_Ts_DrawText) (Tk_Window tkwin, Drawable drawable, const char *text, int textLen, TextStyle *tsPtr, int x, int y); /* 238 */
     int (*blt_MeasureText) (Blt_Font font, const char *text, int textLen, int maxLength, int *nBytesPtr); /* 239 */
-    void (*blt_FreeTextLayout) (Tk_TextLayout layout); /* 240 */
+    void (*blt_TkTextLayout_Free) (Tk_TextLayout layout); /* 240 */
 } BltTkIntProcs;
 
 #ifdef __cplusplus
@@ -2643,25 +2643,25 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_RotateStartingTextPositions \
 	(bltTkIntProcsPtr->blt_RotateStartingTextPositions) /* 232 */
 #endif
-#ifndef Blt_ComputeTextLayout
-#define Blt_ComputeTextLayout \
-	(bltTkIntProcsPtr->blt_ComputeTextLayout) /* 233 */
+#ifndef Blt_TkTextLayout_Compute
+#define Blt_TkTextLayout_Compute \
+	(bltTkIntProcsPtr->blt_TkTextLayout_Compute) /* 233 */
 #endif
-#ifndef Blt_DrawTextLayout
-#define Blt_DrawTextLayout \
-	(bltTkIntProcsPtr->blt_DrawTextLayout) /* 234 */
+#ifndef Blt_TkTextLayout_Draw
+#define Blt_TkTextLayout_Draw \
+	(bltTkIntProcsPtr->blt_TkTextLayout_Draw) /* 234 */
 #endif
-#ifndef Blt_CharBbox
-#define Blt_CharBbox \
-	(bltTkIntProcsPtr->blt_CharBbox) /* 235 */
+#ifndef Blt_TkTextLayout_CharBbox
+#define Blt_TkTextLayout_CharBbox \
+	(bltTkIntProcsPtr->blt_TkTextLayout_CharBbox) /* 235 */
 #endif
-#ifndef Blt_UnderlineTextLayout
-#define Blt_UnderlineTextLayout \
-	(bltTkIntProcsPtr->blt_UnderlineTextLayout) /* 236 */
+#ifndef Blt_TkTextLayout_UnderlineChars
+#define Blt_TkTextLayout_UnderlineChars \
+	(bltTkIntProcsPtr->blt_TkTextLayout_UnderlineChars) /* 236 */
 #endif
-#ifndef Blt_Ts_UnderlineLayout
-#define Blt_Ts_UnderlineLayout \
-	(bltTkIntProcsPtr->blt_Ts_UnderlineLayout) /* 237 */
+#ifndef Blt_Ts_UnderlineCharsInLayout
+#define Blt_Ts_UnderlineCharsInLayout \
+	(bltTkIntProcsPtr->blt_Ts_UnderlineCharsInLayout) /* 237 */
 #endif
 #ifndef Blt_Ts_DrawText
 #define Blt_Ts_DrawText \
@@ -2671,9 +2671,9 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_MeasureText \
 	(bltTkIntProcsPtr->blt_MeasureText) /* 239 */
 #endif
-#ifndef Blt_FreeTextLayout
-#define Blt_FreeTextLayout \
-	(bltTkIntProcsPtr->blt_FreeTextLayout) /* 240 */
+#ifndef Blt_TkTextLayout_Free
+#define Blt_TkTextLayout_Free \
+	(bltTkIntProcsPtr->blt_TkTextLayout_Free) /* 240 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TK_PROCS) */

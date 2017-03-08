@@ -121,7 +121,7 @@
 #define DELETED         (1<<10)         /* The row or column has been
                                          * deleted. */
 
-#define POSTED          (1<<11)
+#define POSTED          (1<<11)         /* Cells can be posted. */
 #define STICKY          (1<<12)
 
 /* These are tableview only flags. */
@@ -132,10 +132,8 @@
 #define SCROLL_PENDING  (SCROLLX|SCROLLY)
 #define SELECT_PENDING  (1<<17)         /* A "selection" command idle task is
                                          * pending.  */
-#define ROWS_PENDING    (1<<18)
-#define COLUMNS_PENDING (1<<19)
-#define ROWS_DELETED    (1<<20)
-#define COLUMNS_DELETED (1<<21)
+#define REINDEX_ROWS    (1<<18)
+#define REINDEX_COLUMNS (1<<19)
 
 #define SELECT_SORTED   (1<<22)         /* Indicates if the entries in the
                                          * selection should be sorted or
@@ -164,7 +162,6 @@
 #define FILTERHIGHLIGHT (1<<30)         /* Display the filter with
                                          * highlighted
                                          * foreground/background colors */
-
 /* Sort-related flags */
 #define SORT_PENDING    (1<<0)          
 #define SORT_ALWAYS     (1<<1)
@@ -265,7 +262,7 @@ typedef const char *(CellStyleIdentifyProc)(Cell *cellPtr, CellStyle *stylePtr,
         int x, int y);
 
 typedef struct _TableObj {
-    unsigned int flags;                 /* Flags of the object. DELETE
+    unsigned int flags;                /* Flags of the object. DELETE
                                          * indicates the object has been
                                          * deleted and should not be
                                          * picked. */
@@ -401,9 +398,10 @@ struct _CellStyle {
  */
 struct _Row {
     unsigned int flags;
+    Blt_HashEntry *hashPtr;
     TableView *viewPtr;                 /* The parent tableview widget that
                                          * manages this row. */
-    Blt_HashEntry *hashPtr;
+    struct _Row *nextPtr, *prevPtr;
     CellStyle *stylePtr;                /* Style for cells in the row.  If
                                          * NULL, uses global and row
                                          * defaults. Changing the style
@@ -440,7 +438,7 @@ struct _Row {
     long worldY;                        /* Offset of row in world
                                          * coordinates. from the top of the
                                          * table. */
-    Blt_ChainLink link;
+    Blt_ChainLink link;                 /* Selection link. */
 };
 
 /*
@@ -457,9 +455,10 @@ struct _Row {
  */
 struct _Column {
     unsigned int flags;
+    Blt_HashEntry *hashPtr;
     TableView *viewPtr;                 /* The parent tableview widget that
                                          * manages this column. */
-    Blt_HashEntry *hashPtr;
+    struct _Column *nextPtr, *prevPtr;
     CellStyle *stylePtr;                /* Style for cells in the column.
                                          * If NULL, uses the global default
                                          * style. Changing the style means
@@ -502,7 +501,7 @@ struct _Column {
     Tcl_Obj *sortCmdObjPtr;             /* TCL script used to compare two
                                          * cells in the column. */
     short int textWidth, textHeight;
-    Blt_ChainLink link;
+    Blt_ChainLink link;                 /* Selection link. */
     Tcl_Obj *fmtCmdObjPtr;              /* If non-NULL, TCL procedure
                                          * called to format the data
                                          * whenever data has changed and
@@ -536,10 +535,10 @@ struct _CellKey {
  */
 struct _Cell {
     unsigned int flags;
-    TableView *viewPtr;                 /* The parent tableview widget that
-                                         * manages this cell. */
     Blt_HashEntry *hashPtr;             /* Row,column of table entry this
                                          * cell represents. */
+    TableView *viewPtr;                 /* The parent tableview widget that
+                                         * manages this cell. */
     
     const char *text;                   /* If non-NULL, represents the
                                          * formatted string of the cell
@@ -755,10 +754,12 @@ struct _TableView {
     Blt_HashTable rowBindTagTable;      /* Table of row bindtags. */
     Blt_HashTable colBindTagTable;      /* Table of column bindtags. */
     Blt_HashTable cellBindTagTable;     /* Table of cell bindtags. */
-    Row **rows;                         /* Array of pointers to rows. This
+    Row *rowHeadPtr, *rowTailPtr;
+    Column *colHeadPtr, *colTailPtr;
+    Row **rowMap;                       /* Array of pointers to rows. This
                                          * represents the sorted view of
                                          * the table. */
-    Column **columns;                   /* Array of pointers to
+    Column **columnMap;                 /* Array of pointers to
                                          * columns. This represents the
                                          * sorted view of the table. */
     Row **visibleRows;                  /* Array of pointers to visible
@@ -773,9 +774,10 @@ struct _TableView {
                                          * contains only pointers to
                                          * columns that are currently
                                          * visible on the screen. */
-    long numRows, numColumns;           /* Number or rows and columns in
+    size_t numRows, numColumns;         /* Number or rows and columns in
                                          * the above arrays. */
-    long numVisibleRows, numVisibleColumns;
+    size_t numVisibleRows, numVisibleColumns;
+    size_t numMappedRows, numMappedColumns;
 
     BLT_TABLE_NOTIFIER rowNotifier, colNotifier; 
                                         /* Notifier used to tell the viewer

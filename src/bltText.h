@@ -57,13 +57,16 @@ typedef struct {
     short x, y;                         /* X-Y offset of the baseline from the
                                          * upper-left corner of the bbox. */
 
-    short sx, sy;                       /* Starting offset of text using rotated
-                                         * font. */
+    short x1, y1;                       /* Starting offset of text using
+                                         * rotated font. */
+    short x2, y2;                       /* Ending offset of text using
+                                         * rotated font. */
 
-    int width;                          /* Width of segment in pixels. This
-                                         * information is used to draw
-                                         * PostScript strings the same width
-                                         * as X. */
+    int w;                              /* Width of segment in pixels. This
+                                         * is used justify the fragment
+                                         * with other fragments and to
+                                         * indicate if an ellipsis is
+                                         * needed. */
 } TextFragment;
 
 
@@ -166,34 +169,11 @@ typedef struct {
     TkRegion rgn;
 } TextStyle;
 
-BLT_EXTERN TextLayout *Blt_Ts_CreateLayout(const char *string, int length, 
-        TextStyle *tsPtr);
-
-BLT_EXTERN TextLayout *Blt_Ts_TitleLayout(const char *string, int length, 
-        TextStyle *tsPtr);
-
-BLT_EXTERN void Blt_Ts_DrawLayout(Tk_Window tkwin, Drawable drawable, 
-        TextLayout *textPtr, TextStyle *tsPtr, int x, int y);
-
-BLT_EXTERN void Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text, 
-        unsigned int *widthPtr, unsigned int *heightPtr);
-
-BLT_EXTERN void Blt_Ts_ResetStyle(Tk_Window tkwin, TextStyle *tsPtr);
-
-BLT_EXTERN void Blt_Ts_FreeStyle(Display *display, TextStyle *tsPtr);
-
-BLT_EXTERN void Blt_Ts_SetDrawStyle (TextStyle *tsPtr, Blt_Font font, GC gc, 
-        XColor *fgColor, float angle, Tk_Anchor anchor, Tk_Justify justify, 
-        int leader);
-
 BLT_EXTERN void Blt_DrawText(Tk_Window tkwin, Drawable drawable, 
         const char *string, TextStyle *tsPtr, int x, int y);
 
 BLT_EXTERN void Blt_DrawText2(Tk_Window tkwin, Drawable drawable, 
         const char *string, TextStyle *tsPtr, int x, int y, Dim2d * dimPtr);
-
-BLT_EXTERN Pixmap Blt_Ts_Bitmap(Tk_Window tkwin, TextLayout *textPtr, 
-        TextStyle *tsPtr, int *widthPtr, int *heightPtr);
 
 BLT_EXTERN int Blt_DrawTextWithRotatedFont(Tk_Window tkwin, Drawable drawable, 
         float angle, TextStyle *tsPtr, TextLayout *textPtr, int x, int y);
@@ -205,32 +185,58 @@ BLT_EXTERN void Blt_DrawLayout(Tk_Window tkwin, Drawable drawable, GC gc,
 BLT_EXTERN void Blt_GetTextExtents(Blt_Font font, int leader, const char *text, 
         int textLen, unsigned int *widthPtr, unsigned int *heightPtr);
 
+BLT_EXTERN int Blt_MeasureText(Blt_Font font, const char *text, int textLen,
+        int maxLength, int *nBytesPtr);
+
 BLT_EXTERN void Blt_RotateStartingTextPositions(TextLayout *textPtr,
         float angle);
 
-BLT_EXTERN Tk_TextLayout Blt_ComputeTextLayout(Blt_Font font, 
+BLT_EXTERN int Blt_TkTextLayout_CharBbox(Tk_TextLayout layout, int index, 
+        int *xPtr, int *yPtr, int *widthPtr, int *heightPtr);
+
+BLT_EXTERN Tk_TextLayout Blt_TkTextLayout_Compute(Blt_Font font, 
         const char *string, int numChars, int wrapLength, Tk_Justify justify, 
         int flags, int *widthPtr, int *heightPtr);
 
-BLT_EXTERN void Blt_DrawTextLayout(Display *display, Drawable drawable, GC gc, 
-        Tk_TextLayout layout, int x, int y, int firstChar, int lastChar);
+BLT_EXTERN void Blt_TkTextLayout_Draw(Display *display, Drawable drawable, 
+        GC gc, Tk_TextLayout layout, int x, int y, int firstChar, int lastChar);
 
-BLT_EXTERN int Blt_CharBbox(Tk_TextLayout layout, int index, int *xPtr, 
-        int *yPtr, int *widthPtr, int *heightPtr);
+BLT_EXTERN void Blt_TkTextLayout_Free(Tk_TextLayout layout);
 
-BLT_EXTERN void Blt_UnderlineTextLayout(Display *display, Drawable drawable,
-        GC gc, Tk_TextLayout layout, int x, int y, int underline);
+BLT_EXTERN void Blt_TkTextLayout_UnderlineSingleChar(Display *display, 
+        Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, 
+        int underline);
 
-BLT_EXTERN void Blt_Ts_UnderlineLayout(Tk_Window tkwin, Drawable drawable,
-        TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y);
+BLT_EXTERN Pixmap Blt_Ts_Bitmap(Tk_Window tkwin, TextLayout *textPtr, 
+        TextStyle *tsPtr, int *widthPtr, int *heightPtr);
+
+BLT_EXTERN TextLayout *Blt_Ts_CreateLayout(const char *string, int length, 
+        TextStyle *tsPtr);
+
+BLT_EXTERN void Blt_Ts_DrawLayout(Tk_Window tkwin, Drawable drawable, 
+        TextLayout *textPtr, TextStyle *tsPtr, int x, int y);
 
 BLT_EXTERN void Blt_Ts_DrawText(Tk_Window tkwin, Drawable drawable, 
         const char *text, int textLen, TextStyle *tsPtr, int x, int y);
 
-BLT_EXTERN int Blt_MeasureText(Blt_Font font, const char *text, int textLen,
-        int maxLength, int *nBytesPtr);
+BLT_EXTERN void Blt_Ts_FreeStyle(Display *display, TextStyle *tsPtr);
 
-BLT_EXTERN void Blt_FreeTextLayout(Tk_TextLayout layout);
+BLT_EXTERN void Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text, 
+        unsigned int *widthPtr, unsigned int *heightPtr);
+
+BLT_EXTERN void Blt_Ts_ResetStyle(Tk_Window tkwin, TextStyle *tsPtr);
+
+BLT_EXTERN void Blt_Ts_SetDrawStyle (TextStyle *tsPtr, Blt_Font font, GC gc, 
+        XColor *fgColor, float angle, Tk_Anchor anchor, Tk_Justify justify, 
+        int leader);
+
+BLT_EXTERN TextLayout *Blt_Ts_TitleLayout(const char *string, int length, 
+        TextStyle *tsPtr);
+
+BLT_EXTERN void Blt_Ts_UnderlineCharsInLayout(Tk_Window tkwin, 
+        Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, 
+        int y);
+
 
 #define Blt_Ts_GetAnchor(ts)            ((ts).anchor)
 #define Blt_Ts_GetAngle(ts)             ((ts).angle)
@@ -257,7 +263,7 @@ BLT_EXTERN void Blt_FreeTextLayout(Tk_TextLayout layout);
         (ts).padY.side1 = (t),                  \
         (ts).padY.side2 = (b))
 #define Blt_Ts_SetState(ts, s)          ((ts).state = (s))
-#define Blt_Ts_SetUnderline(ts, ul)     ((ts).underline = (ul))
+#define Blt_Ts_SetUnderlineChar(ts, ul)     ((ts).underline = (ul))
 #define Blt_Ts_SetFontClipRegion(ts, r) ((ts).rgn = (r))
 
 #define Blt_Ts_InitStyle(ts)                    \

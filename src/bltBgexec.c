@@ -2194,8 +2194,6 @@ KillPipeline(Bgexec *bgPtr)            /* Background info record. */
         int i;
 
         for (i = 0; i < bgPtr->numPids; i++) {
-            Tcl_Pid tclPid;
-
             if (bgPtr->signalNum > 0) {
 #ifdef WIN32
                 kill(bgPtr->pids[i], bgPtr->signalNum);
@@ -2203,18 +2201,8 @@ KillPipeline(Bgexec *bgPtr)            /* Background info record. */
                 kill(bgPtr->pids[i].pid, bgPtr->signalNum);
 #endif
             }
-#ifdef WIN32
-            tclPid = (Tcl_Pid)bgPtr->pids[i].pid;
-#else
-            {
-                unsigned long pid;
-
-                pid = (long)bgPtr->pids[i].pid;
-                tclPid = (Tcl_Pid)pid;
-            }
-#endif /* WIN32 */
-            Tcl_DetachPids(1, &tclPid);
         }
+        Blt_DetachPids(bgPtr->numPids, bgPtr->pids);
     }
     Tcl_ReapDetachedProcs();
 }
@@ -2431,9 +2419,8 @@ ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
 static void
 KillSession(Bgexec *bgPtr)            /* Background info record. */
 {
-    unsigned long pid;
-    Tcl_Pid tclPid;
-    
+    Blt_Pid pid;
+
     if (bgPtr->master != -1) {
         close(bgPtr->master);
         bgPtr->master = -1;
@@ -2441,9 +2428,8 @@ KillSession(Bgexec *bgPtr)            /* Background info record. */
     if ((bgPtr->numPids > 0) && (bgPtr->signalNum > 0)) {
         kill(-bgPtr->sid, bgPtr->signalNum);
     }
-    pid = (long)bgPtr->sid;
-    tclPid = (Tcl_Pid)pid;
-    Tcl_DetachPids(1, &tclPid);
+    pid.pid = bgPtr->sid;
+    Blt_DetachPids(1, &pid);
     Tcl_ReapDetachedProcs();
 }
 

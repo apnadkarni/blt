@@ -1426,7 +1426,7 @@ TextLayoutToPostScript(Blt_Ps ps, int x, int y, TextLayout *textPtr)
         bp[count] = '\0';
         Blt_Ps_Append(ps, bp);
         Blt_Ps_Format(ps, ") %d %d %d DrawAdjText\n",
-            fragPtr->width, x + fragPtr->x, y + fragPtr->y);
+            fragPtr->w, x + fragPtr->x, y + fragPtr->y);
     }
 }
 

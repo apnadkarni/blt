@@ -1002,7 +1002,7 @@ PsToPbm(
     if (numPids < 0) {
         return TCL_ERROR;
     }
-    Tcl_DetachPids(numPids, (Tcl_Pid *)pids);
+    Blt_DetachPids(numPids, pids);
     Blt_Free(pids);
     child = WriteToGhostscript(interp, in, dbuffer);
     if (child == 0) {

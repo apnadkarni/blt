@@ -1413,8 +1413,9 @@ PropagateGeometryFlags(TableView *viewPtr, CellStyle *stylePtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
-    long i;
-
+    Row *rowPtr;
+    Column *colPtr;
+    
     /* Step 1: Check for specially applied cells.  */
     for (hPtr = Blt_FirstHashEntry(&stylePtr->table, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
@@ -1424,19 +1425,15 @@ PropagateGeometryFlags(TableView *viewPtr, CellStyle *stylePtr)
         cellPtr->flags |= GEOMETRY;
     }
     /* Step 2: Check for rows with the same style.  */
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+         rowPtr = rowPtr->nextPtr) {
         if (rowPtr->stylePtr == stylePtr) {
             rowPtr->flags |= GEOMETRY;
         }
     }
     /* Step 3: Check for columns with the same style.  */
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL;
+         colPtr = colPtr->nextPtr) {
         if (colPtr->stylePtr == stylePtr) {
             colPtr->flags |= GEOMETRY;
         }
@@ -2809,7 +2806,8 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+               &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -3334,7 +3332,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+               &ts, tx, ty);
         }
     }
 }
@@ -3871,7 +3870,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+               &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -4416,7 +4416,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+               &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -4835,7 +4836,8 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, x, y);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,x,y);
+            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+               &ts, x, y);
         }
         Blt_Free(textPtr);
     }

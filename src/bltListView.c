@@ -6901,7 +6901,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                 x + stylePtr->borderWidth + itemPtr->textX, 
                 y + stylePtr->borderWidth +  itemPtr->textY);
         if (itemPtr == viewPtr->activePtr) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable,
+            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable,
                 itemPtr->layoutPtr, &ts,
                 x + stylePtr->borderWidth + itemPtr->textX, 
                 y + stylePtr->borderWidth + itemPtr->textY);

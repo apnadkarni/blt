@@ -616,7 +616,7 @@ static Blt_Font_MeasureProc             TkMeasureProc;
 static Blt_Font_NameProc                TkNameProc;
 static Blt_Font_PostscriptNameProc      TkPostscriptNameProc;
 static Blt_Font_TextWidthProc           TkTextWidthProc;
-static Blt_Font_UnderlineProc           TkUnderlineProc;
+static Blt_Font_UnderlineCharsProc      TkUnderlineCharsProc;
 
 static Blt_FontClass tkFontClass = {
     FONTSET_TK,
@@ -630,7 +630,7 @@ static Blt_FontClass tkFontClass = {
     TkNameProc,                         /* Blt_Font_NameProc */
     TkPostscriptNameProc,               /* Blt_Font_PostscriptNameProc */
     TkTextWidthProc,                    /* Blt_Font_TextWidthProc */
-    TkUnderlineProc,                    /* Blt_Font_UnderlineProc */
+    TkUnderlineCharsProc,               /* Blt_Font_UnderlineCharsProc */
 };
 
 static TkFontPattern *
@@ -1227,7 +1227,7 @@ TkFreeProc(_Blt_Font *fontPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * TkUnderlineProc --
+ * TkUnderlineCharsProc --
  *
  *      This procedure draws an underline for a given range of characters
  *      in a given string.  It doesn't draw the characters (which are
@@ -1246,7 +1246,7 @@ TkFreeProc(_Blt_Font *fontPtr)
  *---------------------------------------------------------------------------
  */
 static void
-TkUnderlineProc(
+TkUnderlineCharsProc(
     Display *display,                   /* Display on which to draw. */
     Drawable drawable,                  /* Window or pixmap in which to
                                          * draw. */
@@ -1291,7 +1291,7 @@ static Blt_Font_MeasureProc             FreetypeMeasureProc;
 static Blt_Font_NameProc                FreetypeNameProc;
 static Blt_Font_PostscriptNameProc      FreetypePostscriptNameProc;
 static Blt_Font_TextWidthProc           FreetypeTextWidthProc;
-static Blt_Font_UnderlineProc           FreetypeUnderlineProc;
+static Blt_Font_UnderlineCharsProc      FreetypeUnderlineCharsProc;
 
 static Blt_FontClass freetypeFontClass = {
     FONTSET_FREETYPE,
@@ -1305,7 +1305,7 @@ static Blt_FontClass freetypeFontClass = {
     FreetypeNameProc,                   /* Blt_Font_NameProc */
     FreetypePostscriptNameProc,         /* Blt_Font_PostscriptNameProc */
     FreetypeTextWidthProc,              /* Blt_Font_TextWidthProc */
-    FreetypeUnderlineProc,              /* Blt_Font_UnderlineProc */
+    FreetypeUnderlineCharsProc,         /* Blt_Font_UnderlineCharsProc */
 };
 
 /* 
@@ -2381,7 +2381,7 @@ FreetypePostscriptNameProc(_Blt_Font *fontPtr, Tcl_DString *resultPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * FreetypeUnderlineProc --
+ * FreetypeUnderlineCharsProc --
  *
  *      This procedure draws an underline for a given range of characters
  *      in a given string.  It doesn't draw the characters (which are
@@ -2401,7 +2401,7 @@ FreetypePostscriptNameProc(_Blt_Font *fontPtr, Tcl_DString *resultPtr)
  */
 
 static void
-FreetypeUnderlineProc(
+FreetypeUnderlineCharsProc(
     Display *display,                   /* Display on which to draw. */
     Drawable drawable,                  /* Window or pixmap in which to
                                          * draw. */

@@ -737,11 +737,12 @@ static int GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 static int GetRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
         Blt_Chain *rowsPtr);
 static int AttachTable(Tcl_Interp *interp, TableView *viewPtr);
-static void RebuildTableView(TableView *viewPtr);
-static Tcl_IdleProc AddRowsWhenIdleProc;
-static Tcl_IdleProc AddColumnsWhenIdleProc;
-static Tcl_IdleProc DeleteRowsWhenIdleProc;
-static Tcl_IdleProc DeleteColumnsWhenIdleProc;
+static void ReorderColumns(TableView *viewPtr);
+static void ReorderRows(TableView *viewPtr);
+static void AddRow(TableView *viewPtr, BLT_TABLE_ROW row);
+static void AddColumn(TableView *viewPtr, BLT_TABLE_COLUMN col);
+static void DeleteRow(TableView *viewPtr, BLT_TABLE_ROW row);
+static void DeleteColumn(TableView *viewPtr, BLT_TABLE_COLUMN col);
 
 /*
  *---------------------------------------------------------------------------
@@ -830,52 +831,66 @@ GetRowIndexObj(TableView *viewPtr, Row *rowPtr)
     return Tcl_NewLongObj(index);
 }
 
-
-
 static void
 RenumberColumns(TableView *viewPtr) 
 {
-    long i;
+    size_t i;
+    Column *colPtr;
 
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-        
-        colPtr = viewPtr->columns[i];
+    for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr, i++) {
         colPtr->index = i;
     }
+    assert(i == viewPtr->numColumns);
+    /* Rebuild the column map. */
+    if (viewPtr->numMappedColumns != viewPtr->numColumns) {
+        Column **map;
+        size_t i;
+        Column *colPtr;
+
+        map = Blt_AssertMalloc(viewPtr->numColumns * sizeof(Column *));
+        for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+             colPtr = colPtr->nextPtr, i++) {
+            map[i] = colPtr;
+        }
+        if (viewPtr->columnMap != NULL) {
+            Blt_Free(viewPtr->columnMap);
+        }
+        viewPtr->columnMap = map;
+        viewPtr->numMappedColumns = viewPtr->numColumns;
+    }
+    viewPtr->flags &= ~REINDEX_COLUMNS;
 }
 
 static void
 RenumberRows(TableView *viewPtr) 
 {
-    long i;
+    size_t i;
+    Row *rowPtr;
 
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-        
-        rowPtr = viewPtr->rows[i];
+    for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+         rowPtr = rowPtr->nextPtr, i++) {
         rowPtr->index = i;
     }
-}
+    assert(i == viewPtr->numRows);
+    /* Rebuild the row map. */
+    if (viewPtr->numMappedRows != viewPtr->numRows) {
+        Row **map;
+        size_t i;
+        Row *rowPtr;
 
-static void
-EventuallyAddRows(TableView *viewPtr) 
-{
-    if ((viewPtr->tkwin != NULL) && 
-        ((viewPtr->flags & (DONT_UPDATE|ROWS_PENDING)) == 0)) {
-        viewPtr->flags |= ROWS_PENDING;
-        Tcl_DoWhenIdle(AddRowsWhenIdleProc, viewPtr);
+        map = Blt_AssertMalloc(viewPtr->numRows * sizeof(Row *));
+        for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+             rowPtr = rowPtr->nextPtr, i++) {
+            map[i] = rowPtr;
+        }
+        if (viewPtr->rowMap != NULL) {
+            Blt_Free(viewPtr->rowMap);
+        }
+        viewPtr->rowMap = map;
+        viewPtr->numMappedRows = viewPtr->numRows;
     }
-}
-
-static void
-EventuallyAddColumns(TableView *viewPtr) 
-{
-    if ((viewPtr->tkwin != NULL) && 
-        ((viewPtr->flags & (DONT_UPDATE|COLUMNS_PENDING)) == 0)) {
-        viewPtr->flags |= COLUMNS_PENDING;
-        Tcl_DoWhenIdle(AddColumnsWhenIdleProc, viewPtr);
-    }
+    viewPtr->flags &= ~REINDEX_ROWS;
 }
 
 static Row *
@@ -903,41 +918,127 @@ GetColumnContainer(TableView *viewPtr, BLT_TABLE_COLUMN col)
     return Blt_GetHashValue(hPtr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MoveRows --
+ *
+ *      Moves one or more row.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
-EventuallyDeleteRow(TableView *viewPtr, BLT_TABLE_ROW row) 
+MoveRows(TableView *viewPtr, Row *destPtr, Row *firstPtr, Row *lastPtr, 
+         int after) 
 {
-    Row *rowPtr;
-
-    rowPtr = GetRowContainer(viewPtr, row);
-    assert(rowPtr);
-    rowPtr->flags |= DELETED;
-    if ((viewPtr->tkwin != NULL) && 
-        ((viewPtr->flags & (DONT_UPDATE|ROWS_DELETED)) == 0)) {
-        viewPtr->flags |= ROWS_DELETED;
-        Tcl_DoWhenIdle(DeleteRowsWhenIdleProc, viewPtr);
+    assert (firstPtr->index <= lastPtr->index);
+    /* Unlink the sub-list from the list of rows. */
+    if (viewPtr->rowHeadPtr == firstPtr) {
+        viewPtr->rowHeadPtr = lastPtr->nextPtr;
+        lastPtr->nextPtr->prevPtr = NULL;
+    } else {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
     }
+    if (viewPtr->rowTailPtr == lastPtr) {
+        viewPtr->rowTailPtr = firstPtr->prevPtr;
+        firstPtr->prevPtr->nextPtr = NULL;
+    } else {
+        lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
+    }
+    firstPtr->prevPtr = lastPtr->nextPtr = NULL;
+
+    /* Now attach the detached list to the destination. */
+    if (after) { 
+        /* [a]->[dest]->[b] */
+        /*            [first]->[last] */
+        if (destPtr->nextPtr == NULL) {
+            assert(destPtr == viewPtr->rowTailPtr);
+            viewPtr->rowTailPtr = lastPtr; /* Append to the end. */
+        } else {
+            destPtr->nextPtr->prevPtr = lastPtr;
+        }
+        lastPtr->nextPtr = destPtr->nextPtr;
+        destPtr->nextPtr = firstPtr;
+        firstPtr->prevPtr = destPtr;
+    } else {
+        /*           [a]->[dest]->[b] */
+        /* [first]->[last] */
+        if (destPtr->prevPtr == NULL) {
+            viewPtr->rowHeadPtr = firstPtr;
+        } else {
+            destPtr->prevPtr->nextPtr = firstPtr;
+        }
+        firstPtr->prevPtr = destPtr->prevPtr;
+        destPtr->prevPtr = lastPtr;
+        lastPtr->nextPtr = destPtr;
+    }
+    /* FIXME: You don't have to reset the entire map. */
+    RenumberRows(viewPtr);
+    /* FIXME: Layout changes with move but not geometry. */
+    viewPtr->flags |= GEOMETRY;
+    EventuallyRedraw(viewPtr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MoveColumns --
+ *
+ *      Moves one or more columns.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
-EventuallyDeleteColumn(TableView *viewPtr, BLT_TABLE_COLUMN col) 
+MoveColumns(TableView *viewPtr, Column *destPtr, Column *firstPtr, 
+            Column *lastPtr, int after) 
 {
-    Column *colPtr;
+    assert (firstPtr->index <= lastPtr->index);
+    /* Unlink the sub-list from the list of columns. */
+    if (viewPtr->colHeadPtr == firstPtr) {
+        viewPtr->colHeadPtr = lastPtr->nextPtr;
+        lastPtr->nextPtr->prevPtr = NULL;
+    } else {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
+    }
+    if (viewPtr->colTailPtr == lastPtr) {
+        viewPtr->colTailPtr = firstPtr->prevPtr;
+        firstPtr->prevPtr->nextPtr = NULL;
+    } else {
+        lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
+    }
+    firstPtr->prevPtr = lastPtr->nextPtr = NULL;
 
-    colPtr = GetColumnContainer(viewPtr, col);
-    if (colPtr == NULL) {
-        /* Debug row delete and column delete */
-        fprintf(stderr, "col=%lx, %s numCols=%ld\n", (unsigned long)col, 
-                blt_table_column_label(col), viewPtr->numColumns);
+    /* Now attach the detached list to the destination. */
+    if (after) { 
+        /* [a]->[dest]->[b] */
+        /*            [first]->[last] */
+        if (destPtr->nextPtr == NULL) {
+            assert(destPtr == viewPtr->colTailPtr);
+            viewPtr->colTailPtr = lastPtr; /* Append to the end. */
+        } else {
+            destPtr->nextPtr->prevPtr = lastPtr;
+        }
+        lastPtr->nextPtr = destPtr->nextPtr;
+        destPtr->nextPtr = firstPtr;
+        firstPtr->prevPtr = destPtr;
+    } else {
+        /*           [a]->[dest]->[b] */
+        /* [first]->[last] */
+        if (destPtr->prevPtr == NULL) {
+            viewPtr->colHeadPtr = firstPtr;
+        } else {
+            destPtr->prevPtr->nextPtr = firstPtr;
+        }
+        firstPtr->prevPtr = destPtr->prevPtr;
+        destPtr->prevPtr = lastPtr;
+        lastPtr->nextPtr = destPtr;
     }
-    assert(colPtr != NULL);
-    colPtr->flags |= DELETED;
-    if ((viewPtr->tkwin != NULL) && 
-        ((viewPtr->flags & (DONT_UPDATE|COLUMNS_DELETED)) == 0)) {
-        viewPtr->flags |= COLUMNS_DELETED;
-        Tcl_DoWhenIdle(DeleteColumnsWhenIdleProc, viewPtr);
-    }
+    /* FIXME: You don't have to reset the entire map. */
+    RenumberColumns(viewPtr);
+    /* FIXME: Layout changes with move but not geometry. */
+    viewPtr->flags |= GEOMETRY;
+    EventuallyRedraw(viewPtr);
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -1007,12 +1108,10 @@ ClearSelections(TableView *viewPtr)
     if (viewPtr->selectMode == SELECT_CELLS) {
         viewPtr->selectCells.anchorPtr = viewPtr->selectCells.markPtr = NULL;
     } else {
-        int i;
+        Row *rowPtr;
 
-        for (i = 0; i < viewPtr->numRows; i++) {
-            Row *rowPtr;
-
-            rowPtr = viewPtr->rows[i];
+        for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+             rowPtr = rowPtr->nextPtr) {
             rowPtr->flags &= ~SELECTED;
             rowPtr->link = NULL;
         }
@@ -1185,6 +1284,7 @@ static void
 SortTableView(TableView *viewPtr)
 {
     SortInfo *sortPtr = &viewPtr->sort;
+    size_t i;
 
     tableViewInstance = viewPtr;
     viewPtr->sort.flags &= ~SORT_PENDING;
@@ -1192,7 +1292,8 @@ SortTableView(TableView *viewPtr)
         return;
     }
     if (sortPtr->flags & SORTED) {
-        long first, last;
+        Row *rowPtr;
+        size_t i;
 
         if (sortPtr->decreasing == sortPtr->viewIsDecreasing) {
             return;
@@ -1201,22 +1302,29 @@ SortTableView(TableView *viewPtr)
          * The view is already sorted but in the wrong direction.  Reverse
          * the entries in the array.
          */
-        for (first = 0, last = viewPtr->numRows - 1; last > first; 
-             first++, last--) {
-            Row *hold;
-
-            hold = viewPtr->rows[first];
-            viewPtr->rows[first] = viewPtr->rows[last];
-            viewPtr->rows[last] = hold;
+        for (i = 0, rowPtr = viewPtr->rowTailPtr; rowPtr != NULL; 
+             rowPtr = rowPtr->prevPtr, i++) {
+            viewPtr->rowMap[i] = rowPtr;
         }
         sortPtr->viewIsDecreasing = sortPtr->decreasing;
-        sortPtr->flags |= SORTED;
-        viewPtr->flags |= LAYOUT_PENDING;
-        return;
+    } else {
+        qsort((char *)viewPtr->rowMap, viewPtr->numRows, sizeof(Row *),
+              (QSortCompareProc *)CompareRows);
     }
-    qsort((char *)viewPtr->rows, viewPtr->numRows, sizeof(Row *),
-        (QSortCompareProc *)CompareRows);
+    /* Rethread list of rows according to the sorted map. */
+    for (i = 0; i < viewPtr->numRows; i++) {
+        Row *rowPtr;
+        Row *prevPtr, *nextPtr;
 
+        prevPtr = (i > 0) ? viewPtr->rowMap[i-1] : NULL;
+        nextPtr = ((i+i) < viewPtr->numRows) ? viewPtr->rowMap[i+1] : NULL;
+        rowPtr = viewPtr->rowMap[i];
+        rowPtr->prevPtr = prevPtr;
+        rowPtr->nextPtr = nextPtr;
+        rowPtr->index = i;
+    }
+    viewPtr->rowHeadPtr = viewPtr->rowMap[0];
+    viewPtr->rowTailPtr = viewPtr->rowMap[viewPtr->numRows-1];
     sortPtr->viewIsDecreasing = sortPtr->decreasing;
     sortPtr->flags |= SORTED;
     viewPtr->flags |= LAYOUT_PENDING;
@@ -2979,15 +3087,14 @@ static void
 RemoveRowCells(TableView *viewPtr, Row *rowPtr)
 {
     CellKey key;
-    long i;
+    Column *colPtr;
 
     /* For each column remove the row, column combination in the table. */
     key.rowPtr = rowPtr;
-    for (i = 0; i < viewPtr->numColumns; i++) {
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
         Blt_HashEntry *hPtr;
-        Column *colPtr;
 
-        colPtr = viewPtr->columns[i];
         key.colPtr = colPtr;
         hPtr = Blt_FindHashEntry(&viewPtr->cellTable, &key);
         if (hPtr != NULL) {
@@ -3003,15 +3110,14 @@ static void
 RemoveColumnCells(TableView *viewPtr, Column *colPtr)
 {
     CellKey key;
-    long i;
+    Row *rowPtr;
 
     /* For each row remove the row,column combination in the table. */
     key.colPtr = colPtr;
-    for (i = 0; i < viewPtr->numRows; i++) {
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
         Blt_HashEntry *hPtr;
-        Row *rowPtr;
 
-        rowPtr = viewPtr->rows[i];
         key.rowPtr = rowPtr;
         hPtr = Blt_FindHashEntry(&viewPtr->cellTable, &key);
         if (hPtr != NULL) {
@@ -3051,6 +3157,20 @@ DestroyRow(Row *rowPtr)
     if ((rowPtr->flags & DELETED) == 0) {
         RemoveRowCells(viewPtr, rowPtr);
     }
+    if (viewPtr->rowHeadPtr == rowPtr) {
+        viewPtr->rowHeadPtr = rowPtr->nextPtr;
+    }
+    if (viewPtr->rowTailPtr == rowPtr) {
+        viewPtr->rowTailPtr = rowPtr->prevPtr;
+    }
+    if (rowPtr->nextPtr != NULL) {
+        rowPtr->nextPtr->prevPtr = rowPtr->prevPtr;
+    }
+    if (rowPtr->prevPtr != NULL) {
+        rowPtr->prevPtr->nextPtr = rowPtr->nextPtr;
+    }
+    rowPtr->prevPtr = rowPtr->nextPtr = NULL;
+    viewPtr->numRows--;
     rowPtr->flags |= DELETED;
     Tcl_EventuallyFree(rowPtr, RowFreeProc);
 }
@@ -3072,8 +3192,19 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
     rowPtr->titleRelief = rowPtr->activeTitleRelief = TK_RELIEF_RAISED;
     rowPtr->hashPtr = hPtr;
+    rowPtr->index = viewPtr->numRows;
     ResetLimits(&rowPtr->reqHeight);
     Blt_SetHashValue(hPtr, rowPtr);
+    if (viewPtr->rowHeadPtr == NULL) {
+        viewPtr->rowTailPtr = viewPtr->rowHeadPtr = rowPtr;
+    } else {
+        rowPtr->prevPtr = viewPtr->rowTailPtr;
+        if (viewPtr->rowTailPtr != NULL) {
+            viewPtr->rowTailPtr->nextPtr = rowPtr;
+        }
+        viewPtr->rowTailPtr = rowPtr;
+    }
+    viewPtr->numRows++;
     return rowPtr;
 }
 
@@ -3125,6 +3256,20 @@ DestroyColumn(Column *colPtr)
     if ((colPtr->flags & DELETED) == 0) {
         RemoveColumnCells(viewPtr, colPtr);
     }
+    if (viewPtr->colHeadPtr == colPtr) {
+        viewPtr->colHeadPtr = colPtr->nextPtr;
+    }
+    if (viewPtr->colTailPtr == colPtr) {
+        viewPtr->colTailPtr = colPtr->prevPtr;
+    }
+    if (colPtr->nextPtr != NULL) {
+        colPtr->nextPtr->prevPtr = colPtr->prevPtr;
+    }
+    if (colPtr->prevPtr != NULL) {
+        colPtr->prevPtr->nextPtr = colPtr->nextPtr;
+    }
+    colPtr->prevPtr = colPtr->nextPtr = NULL;
+    viewPtr->numColumns--;
     colPtr->flags |= DELETED;
     Tcl_EventuallyFree(colPtr, ColumnFreeProc);
 }
@@ -3148,8 +3293,19 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->titleJustify = TK_JUSTIFY_CENTER;
     colPtr->titleRelief = colPtr->activeTitleRelief = TK_RELIEF_RAISED;
     colPtr->hashPtr = hPtr;
+    colPtr->index = viewPtr->numColumns;
     Blt_SetHashValue(hPtr, colPtr);
     ResetLimits(&colPtr->reqWidth);
+    if (viewPtr->colHeadPtr == NULL) {
+        viewPtr->colTailPtr = viewPtr->colHeadPtr = colPtr;
+    } else {
+        colPtr->prevPtr = viewPtr->colTailPtr;
+        if (viewPtr->colTailPtr != NULL) {
+            viewPtr->colTailPtr->nextPtr = colPtr;
+        }
+        viewPtr->colTailPtr = colPtr;
+    }
+    viewPtr->numColumns++;
     return colPtr;
 }
 
@@ -3208,18 +3364,17 @@ static void
 GetColumnFiltersGeometry(TableView *viewPtr)
 {
     unsigned int ah;
-    int i;
     FilterInfo *filterPtr;
+    Column *colPtr;
 
     filterPtr = &viewPtr->filter;
     viewPtr->colFilterHeight = 0;
     viewPtr->arrowWidth = ah = Blt_TextWidth(filterPtr->font, "0", 1) + 
         2 * (filterPtr->borderWidth + 1);
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
         unsigned int tw, th, ih, iw;
 
-        colPtr = viewPtr->columns[i];
         tw = th = ih = iw = 0;
         if (colPtr->filterIcon != NULL) {
             ih = IconHeight(colPtr->filterIcon);
@@ -3295,12 +3450,10 @@ CreateColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
 static Column *
 GetFirstColumn(TableView *viewPtr)
 {
-    long i;
+    Column *colPtr;
 
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
         if ((colPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
             return colPtr;
         }
@@ -3311,11 +3464,7 @@ GetFirstColumn(TableView *viewPtr)
 static Column *
 GetNextColumn(Column *colPtr)
 {
-    TableView *viewPtr = colPtr->viewPtr;
-    long i;
-
-    for (i = colPtr->index + 1; i < viewPtr->numColumns; i++) {
-        colPtr = viewPtr->columns[i];
+    for (colPtr = colPtr->nextPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
         if ((colPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
             return colPtr;
         }
@@ -3326,11 +3475,7 @@ GetNextColumn(Column *colPtr)
 static Column *
 GetPrevColumn(Column *colPtr)
 {
-    long i;
-    TableView *viewPtr = colPtr->viewPtr;
-
-    for (i = colPtr->index - 1; i >= 0; i--) {
-        colPtr = viewPtr->columns[i];
+    for (colPtr = colPtr->prevPtr; colPtr != NULL; colPtr = colPtr->prevPtr) {
         if ((colPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
             return colPtr;
         }
@@ -3341,12 +3486,10 @@ GetPrevColumn(Column *colPtr)
 static Column *
 GetLastColumn(TableView *viewPtr)
 {
-    long i;
+    Column *colPtr;
 
-    for (i = viewPtr->numColumns - 1; i >= 0; i--) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
+    for (colPtr = viewPtr->colTailPtr; colPtr != NULL; 
+         colPtr = colPtr->prevPtr) {
         if ((colPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
             return colPtr;
         }
@@ -3503,9 +3646,6 @@ GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
     if (col == NULL) {
         return TCL_ERROR;
     }
-    if (viewPtr->flags & COLUMNS_PENDING) {
-        AddColumnsWhenIdleProc(viewPtr);
-    }
     hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
     if (hPtr == NULL) {
         if (interp != NULL) {
@@ -3521,12 +3661,10 @@ GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 static Row *
 GetFirstRow(TableView *viewPtr)
 {
-    long i;
+    Row *rowPtr;
 
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
         if ((rowPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
             return rowPtr;
         }
@@ -3537,11 +3675,7 @@ GetFirstRow(TableView *viewPtr)
 static Row *
 GetNextRow(Row *rowPtr)
 {
-    long i;
-    TableView *viewPtr = rowPtr->viewPtr;
-
-    for (i = rowPtr->index + 1; i < viewPtr->numRows; i++) {
-        rowPtr = viewPtr->rows[i];
+    for (rowPtr = rowPtr->nextPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
         if ((rowPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
             return rowPtr;
         }
@@ -3552,11 +3686,7 @@ GetNextRow(Row *rowPtr)
 static Row *
 GetPrevRow(Row *rowPtr)
 {
-    long i;
-    TableView *viewPtr = rowPtr->viewPtr;
-
-    for (i = rowPtr->index - 1; i >= 0; i--) {
-        rowPtr = viewPtr->rows[i];
+    for (rowPtr = rowPtr->prevPtr; rowPtr != NULL; rowPtr = rowPtr->prevPtr) {
         if ((rowPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
             return rowPtr;
         }
@@ -3567,12 +3697,10 @@ GetPrevRow(Row *rowPtr)
 static Row *
 GetLastRow(TableView *viewPtr)
 {
-    long i;
+    Row *rowPtr;
 
-    for (i = viewPtr->numRows -1; i >= 0; i--) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
+    for (rowPtr = viewPtr->rowTailPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->prevPtr) {
         if ((rowPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
             return rowPtr;
         }
@@ -3743,9 +3871,6 @@ GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
     row = blt_table_get_row(interp, viewPtr->table, objPtr);
     if (row == NULL) {
         return TCL_ERROR;
-    }
-    if (viewPtr->flags & ROWS_PENDING) {
-        AddRowsWhenIdleProc(viewPtr);
     }
     hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
     if (hPtr == NULL) {
@@ -4300,56 +4425,50 @@ DeselectRow(TableView *viewPtr, Row *rowPtr)
 static int
 SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
 {
-    long from, to;
-
     RenumberRows(viewPtr);
-    from = fromPtr->index;
-    to = toPtr->index;
-    if (from > to) {
-        int i;
+    if (fromPtr->index > toPtr->index) {
+        Row *rowPtr;
 
-        for (i = from; i >= to; i--) {
-            Row *rowPtr;
-
-            rowPtr = viewPtr->rows[i];
-            if (rowPtr->flags & HIDDEN) {
-                continue;
-            }
-            switch (viewPtr->selectRows.flags & SELECT_MASK) {
-            case SELECT_CLEAR:
-                DeselectRow(viewPtr, rowPtr); break;
-            case SELECT_SET:
-                SelectRow(viewPtr, rowPtr);   break;
-            case SELECT_TOGGLE:
-                if (rowPtr->flags & SELECTED) {
-                    DeselectRow(viewPtr, rowPtr);
-                } else {
-                    SelectRow(viewPtr, rowPtr);
+        for (rowPtr = fromPtr; rowPtr != NULL; rowPtr = rowPtr->prevPtr) {
+            if ((rowPtr->flags & HIDDEN) == 0) {
+                switch (viewPtr->selectRows.flags & SELECT_MASK) {
+                case SELECT_CLEAR:
+                    DeselectRow(viewPtr, rowPtr); break;
+                case SELECT_SET:
+                    SelectRow(viewPtr, rowPtr);   break;
+                case SELECT_TOGGLE:
+                    if (rowPtr->flags & SELECTED) {
+                        DeselectRow(viewPtr, rowPtr);
+                    } else {
+                        SelectRow(viewPtr, rowPtr);
+                    }
+                    break;
                 }
+            }
+            if (rowPtr == toPtr) {
                 break;
             }
         }
     } else {
-        int i;
+        Row *rowPtr;
 
-        for (i = from; i <= to; i++) {
-            Row *rowPtr;
-
-            rowPtr = viewPtr->rows[i];
-            if (rowPtr->flags & HIDDEN) {
-                continue;
-            }
-            switch (viewPtr->selectRows.flags & SELECT_MASK) {
-            case SELECT_CLEAR:
-                DeselectRow(viewPtr, rowPtr);   break;
-            case SELECT_SET:
-                SelectRow(viewPtr, rowPtr);     break;
-            case SELECT_TOGGLE:
-                if (rowPtr->flags & SELECTED) {
-                    DeselectRow(viewPtr, rowPtr);
-                } else {
-                    SelectRow(viewPtr, rowPtr);
+        for (rowPtr = fromPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
+            if ((rowPtr->flags & HIDDEN) == 0) {
+                switch (viewPtr->selectRows.flags & SELECT_MASK) {
+                case SELECT_CLEAR:
+                    DeselectRow(viewPtr, rowPtr);   break;
+                case SELECT_SET:
+                    SelectRow(viewPtr, rowPtr);     break;
+                case SELECT_TOGGLE:
+                    if (rowPtr->flags & SELECTED) {
+                        DeselectRow(viewPtr, rowPtr);
+                    } else {
+                        SelectRow(viewPtr, rowPtr);
+                    }
+                    break;
                 }
+            }
+            if (rowPtr == toPtr) {
                 break;
             }
         }
@@ -4441,16 +4560,24 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
    if (eventPtr->type & (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_CREATE)) {
        if (eventPtr->type == TABLE_NOTIFY_ROWS_CREATED) {
            if (viewPtr->flags & AUTO_ROWS) {
-               EventuallyAddRows(viewPtr);
+               /* Add the row and eventually reindex */
+               AddRow(viewPtr, eventPtr->row);
            }
        } else if (eventPtr->type == TABLE_NOTIFY_COLUMNS_CREATED) {
            if (viewPtr->flags & AUTO_COLUMNS) {
-               EventuallyAddColumns(viewPtr);
+               /* Add the column and eventually reindex */
+               AddColumn(viewPtr, eventPtr->column);
            }
        } else if (eventPtr->type == TABLE_NOTIFY_ROWS_DELETED) {
-           EventuallyDeleteRow(viewPtr, eventPtr->row);
+           if (viewPtr->flags & AUTO_ROWS) {
+               /* Delete the row and eventually reindex */
+               DeleteRow(viewPtr, eventPtr->row);
+           }
        } else if (eventPtr->type == TABLE_NOTIFY_COLUMNS_DELETED) {
-           EventuallyDeleteColumn(viewPtr, eventPtr->column);
+           if (viewPtr->flags & AUTO_COLUMNS) {
+               /* Delete the column and eventually reindex */
+               DeleteColumn(viewPtr, eventPtr->column);
+           }
        }
        return TCL_OK;
     } 
@@ -4463,8 +4590,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
                 GetColumnTitleGeometry(viewPtr, colPtr);
             }
         } else if (eventPtr->type & TABLE_NOTIFY_MOVE) {
-            RebuildTableView(viewPtr);
-            /* FIXME: handle column moves */
+            ReorderColumns(viewPtr);
         }       
     }
     if (eventPtr->type & TABLE_NOTIFY_ROW_CHANGED) {
@@ -4476,8 +4602,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
                 GetRowTitleGeometry(viewPtr, rowPtr);
             }
         } else if (eventPtr->type & TABLE_NOTIFY_MOVE) {
-            RebuildTableView(viewPtr);
-            /* FIXME: handle row moves */
+            ReorderRows(viewPtr);
         }       
     }
     return TCL_OK;
@@ -4749,13 +4874,13 @@ ResetTableView(TableView *viewPtr)
     Blt_InitHashTable(&viewPtr->cellTable, sizeof(CellKey)/sizeof(int));
     Blt_InitHashTable(&viewPtr->rowTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
-    if (viewPtr->rows != NULL) {
-        Blt_Free(viewPtr->rows);
-        viewPtr->rows = NULL;
+    if (viewPtr->rowMap != NULL) {
+        Blt_Free(viewPtr->rowMap);
+        viewPtr->rowMap = NULL;
     }
-    if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
-        viewPtr->columns = NULL;
+    if (viewPtr->columnMap != NULL) {
+        Blt_Free(viewPtr->columnMap);
+        viewPtr->columnMap = NULL;
     }
     if (viewPtr->visibleRows != NULL) {
         Blt_Free(viewPtr->visibleRows);
@@ -4973,13 +5098,11 @@ CsvAppendValue(CsvWriter *writerPtr, TableView *viewPtr, Row *rowPtr,
 static void
 CsvAppendRow(CsvWriter *writerPtr, TableView *viewPtr, Row *rowPtr)
 {
-    long i;
+    Column *colPtr;
 
     CsvStartRecord(writerPtr);
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
         if ((colPtr->flags & HIDDEN) == 0) {
             CsvAppendValue(writerPtr, viewPtr, rowPtr, colPtr);
         }
@@ -5035,23 +5158,25 @@ SelectionProc(
     writer.length = 0;
     writer.count = 0;
     if (viewPtr->selectMode == SELECT_CELLS) {
-        long i;
+        Row *rowPtr;
 
-        for (i = viewPtr->selectCells.anchorPtr->rowPtr->index; 
-             i <= viewPtr->selectCells.markPtr->rowPtr->index; i++) {
-            long j;
-            Row *rowPtr;
+        for (rowPtr = viewPtr->selectCells.anchorPtr->rowPtr; rowPtr != NULL;
+             rowPtr = rowPtr->nextPtr) {
+            Column *colPtr;
 
-            rowPtr = viewPtr->rows[i];
             CsvStartRecord(&writer);
-            for (j = viewPtr->selectCells.anchorPtr->colPtr->index; 
-                 j <= viewPtr->selectCells.markPtr->colPtr->index; j++) {
-                Column *colPtr;
-
-                colPtr = viewPtr->columns[i];
+            for (colPtr = viewPtr->selectCells.anchorPtr->colPtr; 
+                 colPtr != NULL; colPtr = colPtr->nextPtr) {
                 CsvAppendValue(&writer, viewPtr, rowPtr, colPtr);
+                if (colPtr == viewPtr->selectCells.markPtr->colPtr) {
+                    break;
+                }
+
             }
             CsvEndRecord(&writer);
+            if (rowPtr == viewPtr->selectCells.markPtr->rowPtr) {
+                break;
+            }
         }
     } else {
         if (viewPtr->flags & SELECT_SORTED) {
@@ -5066,12 +5191,10 @@ SelectionProc(
                 CsvAppendRow(&writer, viewPtr, rowPtr);
             }
         } else {
-            long i;
+            Row *rowPtr;
 
-            for (i = 0; i < viewPtr->numRows; i++) {
-                Row *rowPtr;
-
-                rowPtr = viewPtr->rows[i];
+            for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+                 rowPtr = rowPtr->nextPtr) {
                 if (rowPtr->flags & SELECTED) {
                     CsvAppendRow(&writer, viewPtr, rowPtr);
                 }
@@ -5908,7 +6031,8 @@ static void
 AdjustColumns(TableView *viewPtr)
 {
     Column *lastPtr;
-    long i, x;
+    long x;
+    Column *colPtr;
     double weight;
     int growth;
     long numOpen;
@@ -5919,11 +6043,10 @@ AdjustColumns(TableView *viewPtr)
 
     numOpen = 0;
     weight = 0.0;
-    /* Find out how many columns still have space available */
-    for (i = 0; i < viewPtr->numColumns; i++) { 
-        Column *colPtr;
 
-        colPtr = viewPtr->columns[i];
+    /* Find out how many columns still have space available */
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
         if (colPtr->flags & HIDDEN) {
             continue;
         }
@@ -5936,19 +6059,19 @@ AdjustColumns(TableView *viewPtr)
     }
     while ((numOpen > 0) && (weight > 0.0) && (growth > 0)) {
         int ration;
+        Column *colPtr;
 
         ration = (int)(growth / weight);
         if (ration == 0) {
             ration = 1;
         }
-        for (i = 0; i < viewPtr->numColumns; i++) {
-            Column *colPtr;
+        for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+             colPtr = colPtr->nextPtr) {
             int size, avail;
-
+            
             if ((numOpen <= 0) || (growth <= 0) || (weight <= 0.0)) {
                 break;
             }
-            colPtr = viewPtr->columns[i];
             if (colPtr->flags & HIDDEN) {
                 continue;
             }
@@ -5974,10 +6097,8 @@ AdjustColumns(TableView *viewPtr)
         lastPtr->width += growth;
     }
     x = 0;
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
         if (colPtr->flags & HIDDEN) {
             continue;                   /* Ignore hidden columns. */
         }
@@ -5998,6 +6119,7 @@ AdjustRows(TableView *viewPtr)
     int growth;
     long numOpen;
     long i, y;
+    Row *rowPtr;
 
     growth = VPORTHEIGHT(viewPtr) - viewPtr->worldHeight;
     assert(growth > 0);
@@ -6005,10 +6127,8 @@ AdjustRows(TableView *viewPtr)
     numOpen = 0;
     weight = 0.0;
     /* Find out how many columns still have space available */
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr-nextPtr) {
         if (rowPtr->flags & HIDDEN) {
             continue;
         }
@@ -6024,16 +6144,16 @@ AdjustRows(TableView *viewPtr)
     while ((numOpen > 0) && (weight > 0.0) && (growth > 0)) {
         int ration;
         long i;
+        Row *rowPtr;
 
         ration = (int)(growth / weight);
         if (ration == 0) {
             ration = 1;
         }
-        for (i = 0; i < viewPtr->numRows; i++) { 
-            Row *rowPtr;
+        for (rowPtr = rowPtr->rowHeadPtr; rowPtr != NULL;
+             rowPtr = rowPtr->nextPtr) { 
             int size, avail;
 
-            rowPtr = viewPtr->rows[i];
             if (rowPtr->flags & HIDDEN) {
                 continue;
             }
@@ -6063,10 +6183,8 @@ AdjustRows(TableView *viewPtr)
         lastPtr->height += growth;
     }
     y = 0;
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
+    for (rowPtr = rowPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
         if (rowPtr->flags & HIDDEN) {
             continue;                   /* Ignore hidden columns. */
         }
@@ -7075,12 +7193,10 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         } else {
-            long i;
+            Row *rowPtr;
             
-            for (i = 0; i < viewPtr->numRows; i++) {
-                Row *rowPtr;
-                
-                rowPtr = viewPtr->rows[i];
+            for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+                 rowPtr = rowPtr->nextPtr) {
                 if (rowPtr->flags & SELECTED) {
                     Tcl_Obj *objPtr;
                     
@@ -7335,7 +7451,6 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
                Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    long i, count;
     Blt_Chain columns;
     Blt_ChainLink link;
 
@@ -7349,23 +7464,10 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Column *colPtr;
 
         colPtr = Blt_Chain_GetValue(link);
-        colPtr->flags |= DELETED;
+        DestroyColumn(colPtr);
     }
     Blt_Chain_Destroy(columns);
 
-    /* Now compress the columns array while freeing the marked columns. */
-    count = 0;
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-        
-        colPtr = viewPtr->columns[i];
-        if (colPtr->flags & DELETED) {
-            DestroyColumn(colPtr);
-            continue;
-        }
-        viewPtr->columns[count] = colPtr;
-        count++;
-    }
     /* Requires a new layout. Sort order and individual geometries stay the
      * same. */
     viewPtr->flags |= LAYOUT_PENDING;
@@ -7414,14 +7516,12 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
 
     if (objc == 3) {
-        long i;
+        Column *colPtr;
         Tcl_Obj *listObjPtr;
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        for (i = 0; i < viewPtr->numColumns; i++) {
-            Column *colPtr;
-
-            colPtr = viewPtr->columns[i];
+        for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+             colPtr = colPtr->nextPtr) {
             if ((colPtr->flags & HIDDEN) == 0) {
                 Tcl_Obj *objPtr;
 
@@ -7551,14 +7651,12 @@ ColumnHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
 
     if (objc == 3) {
-        long i;
+        Column *colPtr;
         Tcl_Obj *listObjPtr;
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        for (i = 0; i < viewPtr->numColumns; i++) {
-            Column *colPtr;
-
-            colPtr = viewPtr->columns[i];
+        for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+             colPtr = colPtr->nextPtr) {
             if (colPtr->flags & HIDDEN) {
                 Tcl_Obj *objPtr;
 
@@ -7631,7 +7729,7 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Add new columns to the table.
  *
- *      pathName column insert name position ?option values?
+ *      pathName column insert colName position ?option values?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7642,11 +7740,11 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     BLT_TABLE_COLUMN col;
     Blt_HashEntry *hPtr;
     CellKey key;
-    Column **columns;
     Column *colPtr;
+    Row *rowPtr;
     TableView *viewPtr = clientData;
     int isNew;
-    long i, insertPos;
+    long insertPos;
 
     if (viewPtr->table == NULL) {
         Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
@@ -7671,9 +7769,6 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 "\"", (char *)NULL);
         return TCL_ERROR;
     }
-    if ((insertPos == -1) || (insertPos >= viewPtr->numRows)) {
-        insertPos = viewPtr->numColumns; /* Insert at end of list. */
-    }
     colPtr = NewColumn(viewPtr, col, hPtr);
     Blt_SetHashValue(hPtr, colPtr);
     colPtr->flags |= STICKY;            /* Don't allow column to be
@@ -7687,26 +7782,20 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
         DestroyColumn(colPtr);
         return TCL_ERROR;
     }
-    columns = Blt_AssertCalloc(viewPtr->numColumns + 1, sizeof(Column *));
-    if (insertPos > 0) {
-        memcpy(columns, viewPtr->columns, insertPos * sizeof(Column *));
+    if ((insertPos != -1) && (insertPos < (viewPtr->numColumns - 1))) {
+        Column *destPtr;
+
+        destPtr = viewPtr->columnMap[insertPos];
+        MoveColumns(viewPtr, destPtr, colPtr, colPtr, FALSE);
     }
-    columns[insertPos] = colPtr;
-    if (insertPos < viewPtr->numColumns) {
-        memcpy(columns + insertPos + 1, viewPtr->columns + insertPos, 
-               (viewPtr->numColumns - insertPos) * sizeof(Column *));
-    }   
-    viewPtr->numColumns++;
-    if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
-    }
-    viewPtr->columns = columns;
     key.colPtr = colPtr;
-    for (i = 0; i < viewPtr->numRows; i++) {
+    /* Automatically populate cells for each row in the new column. */
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
         Blt_HashEntry *hPtr;
         int isNew;
 
-        key.rowPtr = viewPtr->rows[i];
+        key.rowPtr = rowPtr;
         hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, &isNew);
         if (isNew) {
             Cell *cellPtr;
@@ -7773,9 +7862,10 @@ ColumnInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnMoveOp --
  *
- *      Move a column.
+ *      Move one or more columns.
  *
- * .    h column move field1 position 
+ *      tableName column move destCol firstCol lastCol ?switches?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7783,91 +7873,38 @@ static int
 ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
 {
-    Column *colPtr;
+    Column *destPtr, *firstPtr, *lastPtr;
     TableView *viewPtr = clientData;
-    long src, dest, count;
-    Column **columns;
-    
-    if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
+    int after = TRUE;
+
+    if (GetColumn(interp, viewPtr, objv[3], &destPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &dest) != TCL_OK){
+    if (GetColumn(interp, viewPtr, objv[4], &firstPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    RenumberColumns(viewPtr);
-    src = colPtr->index;
-    if ((dest < 0) || (dest >= viewPtr->numColumns)) {
-        dest = viewPtr->numColumns - 1;
-    } 
-    if (src == dest) {
-        return TCL_OK;
+    if (GetColumn(interp, viewPtr, objv[5], &lastPtr) != TCL_OK) {
+        return TCL_ERROR;
     }
-    count = 1;
-    columns = Blt_AssertCalloc(viewPtr->numColumns, sizeof(Column *));
-    if (dest < src) {
-        long i, j;
+    if (viewPtr->flags & REINDEX_COLUMNS) {
+        RenumberColumns(viewPtr);
+    }
 
-        /*
-         *     dest   src
-         *      v     v
-         * | | | | | |x|x|x|x| |
-         *  A A B B B C C C C D
-         * | | |x|x|x|x| | | | |
-         *
-         * Section C is the selected region to move.
-         */
-        /* Section A: copy everything from 0 to "dest" */
-        for (i = 0; i < dest; i++) {
-            columns[i] = viewPtr->columns[i];
-        }
-        /* Section C: append the selected region. */
-        for (i = src, j = dest; i < (src + count); i++, j++) {
-            columns[j] = viewPtr->columns[i];
-        }
-        /* Section B: shift the preceding indices from "dest" to "src".  */
-        for (i = dest; i < src; i++, j++) {
-            columns[j] = viewPtr->columns[i];
-        }
-        /* Section D: append trailing indices until the end. */
-        for (i = src + count; i < viewPtr->numColumns; i++, j++) {
-            columns[j] = viewPtr->columns[i];
-        }
-    } else if (src < dest) {
-        long i, j;
+    /* Check if range is valid. */
+    if (firstPtr->index > lastPtr->index) {
+        return TCL_OK;                  /* No range. */
+    }
 
-        /*
-         *     src        dest
-         *      v           v
-         * | | |x|x|x|x| | | | |
-         *  A A C C C C B B B D
-         * | | | | | |x|x|x|x| |
-         *
-         * Section C is the selected region to move.
-         */
-        /* Section A: copy everything from 0 to "src" */
-        for (j = 0; j < src; j++) {
-            columns[j] = viewPtr->columns[j];
-        }
-        /* Section B: shift the trailing indices from "src" to "dest".  */
-        for (i = (src + count); j < dest; i++, j++) {
-            columns[j] = viewPtr->columns[i];
-        }
-        /* Section C: append the selected region. */
-        for (i = src; i < (src + count); i++, j++) {
-            columns[j] = viewPtr->columns[i];
-        }
-        /* Section D: append trailing indices until the end. */
-        for (i = dest + count; i < viewPtr->numColumns; i++, j++) {
-            columns[j] = viewPtr->columns[i];
-        }
+    /* Check that destination is outside the range of columns to be moved. */
+    if ((destPtr->index >= firstPtr->index) &&
+        (destPtr->index <= lastPtr->index)) {
+        Tcl_AppendResult(interp, "destination column \"", 
+                Tcl_GetString(objv[3]),
+                 "\" can't be in the range of columns to be moved.", 
+                (char *)NULL);
+        return TCL_ERROR;
     }
-    if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
-    }
-    viewPtr->columns = columns;
-    RenumberColumns(viewPtr);
-    viewPtr->flags |= GEOMETRY;
-    EventuallyRedraw(viewPtr);
+    MoveColumns(viewPtr, destPtr, firstPtr, lastPtr, after);
     return TCL_OK;
 }
 
@@ -7877,6 +7914,7 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnNamesOp --
  *
+ *      tableName column names ?pattern?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7886,14 +7924,13 @@ ColumnNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
     Tcl_Obj *listObjPtr;
-    long i;
+    Column *colPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
         Tcl_Obj *objPtr;
 
-        colPtr = viewPtr->columns[i];
         objPtr = Tcl_NewStringObj(blt_table_column_label(colPtr->column), -1);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
@@ -8244,7 +8281,7 @@ static Blt_OpSpec columnOps[] = {
     {"index",      3, ColumnIndexOp,      4, 4, "colName",}, 
     {"insert",     3, ColumnInsertOp,     5, 0, "colName pos ?option value ...?",},  
     {"invoke",     3, ColumnInvokeOp,     4, 4, "colName",},  
-    {"move",       1, ColumnMoveOp,       5, 5, "colName pos",},  
+    {"move",       1, ColumnMoveOp,       6, 0, "destCol firstCol lastCol ?switches?",},  
     {"names",      2, ColumnNamesOp,      3, 3, "",},
     {"nearest",    2, ColumnNearestOp,    4, 4, "x",},
     {"resize",     1, ColumnResizeOp,     3, 0, "args",},
@@ -8406,11 +8443,11 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
          FindSwitches *switchesPtr)
 {
     Blt_HashEntry *hPtr;
-     Tcl_Namespace *nsPtr;
+    Tcl_Namespace *nsPtr;
     Tcl_Obj *listObjPtr;
-     int isNew;
+    int isNew;
     int result = TCL_OK;
-    long i;
+    Row *rowPtr;
 
     Tcl_AddInterpResolvers(interp, TABLEVIEW_FIND_KEY, 
         (Tcl_ResolveCmdProc*)NULL, ColumnVarResolverProc, 
@@ -8428,11 +8465,10 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 
     /* Now process each row, evaluating the expression. */
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (i = 0; i < viewPtr->numRows; i++) {
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
         int bool;
-        Row *rowPtr;
-        
-        rowPtr = viewPtr->rows[i];
+
         if (rowPtr->flags & HIDDEN) {
             continue;                   /* Ignore hidden rows. */
         }
@@ -9513,13 +9549,12 @@ RowDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *---------------------------------------------------------------------------
  */
-/*ARGSUSED*/
+/* ARGSUSED */
 static int
 RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    long i, count;
     Blt_Chain chain;
     Blt_ChainLink link;
 
@@ -9533,26 +9568,13 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Row *rowPtr;
 
         rowPtr = Blt_Chain_GetValue(link);
-        rowPtr->flags |= DELETED;
+        DestroyRow(rowPtr);
     }
     Blt_Chain_Destroy(chain);
 
-    /* Now compress the rows array while freeing the marked rows. */
-    count = 0;
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-        
-        rowPtr = viewPtr->rows[i];
-        if (rowPtr->flags & DELETED) {
-            DestroyRow(rowPtr);
-            continue;
-        }
-        viewPtr->rows[count] = rowPtr;
-        count++;
-    }
     /* Requires a new layout. Sort order and individual geometies stay the
      * same. */
-    viewPtr->flags |= LAYOUT_PENDING;
+    viewPtr->flags |= LAYOUT_PENDING | REINDEX_ROWS;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
@@ -9598,14 +9620,12 @@ RowExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
 
     if (objc == 3) {
-        long i;
+        Row *rowPtr;
         Tcl_Obj *listObjPtr;
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        for (i = 0; i < viewPtr->numRows; i++) {
-            Row *rowPtr;
-
-            rowPtr = viewPtr->rows[i];
+        for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+             rowPtr = rowPtr->nextPtr) {
             if ((rowPtr->flags & HIDDEN) == 0) {
                 Tcl_Obj *objPtr;
 
@@ -9659,14 +9679,12 @@ RowHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
 
     if (objc == 3) {
-        long i;
+        Row *rowPtr;
         Tcl_Obj *listObjPtr;
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        for (i = 0; i < viewPtr->numRows; i++) {
-            Row *rowPtr;
-
-            rowPtr = viewPtr->rows[i];
+        for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+             rowPtr = rowPtr->nextPtr) {
             if (rowPtr->flags & HIDDEN) {
                 Tcl_Obj *objPtr;
 
@@ -9750,11 +9768,11 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     BLT_TABLE_ROW row;
     Blt_HashEntry *hPtr;
     CellKey key;
-    Row **rows;
     Row *rowPtr;
     TableView *viewPtr = clientData;
     int isNew;
-    long i, insertPos;
+    Column *colPtr;
+    long insertPos;
 
     if (viewPtr->table == NULL) {
         Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
@@ -9774,9 +9792,6 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &insertPos) != TCL_OK){
         return TCL_ERROR;
     }
-    if ((insertPos == -1) || (insertPos >= viewPtr->numRows)) {
-        insertPos = viewPtr->numRows;           /* Insert at end of list. */
-    }
     rowPtr = NewRow(viewPtr, row, hPtr);
     iconOption.clientData = viewPtr;
     cachedObjOption.clientData = viewPtr;
@@ -9787,26 +9802,20 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
         DestroyRow(rowPtr);
         return TCL_ERROR;
     }
-    rows = Blt_AssertCalloc(viewPtr->numRows + 1, sizeof(Row *));
-    if (insertPos > 0) {
-        memcpy(rows, viewPtr->rows, insertPos * sizeof(Row *));
+    if ((insertPos != -1) && (insertPos < (viewPtr->numRows - 1))) {
+        Row *destPtr;
+
+        destPtr = viewPtr->rowMap[insertPos];
+        MoveRows(viewPtr, destPtr, rowPtr, rowPtr, FALSE);
     }
-    rows[insertPos] = rowPtr;
-    if (insertPos < viewPtr->numRows) {
-        memcpy(rows + insertPos + 1, viewPtr->rows + insertPos, 
-               (viewPtr->numRows - insertPos) * sizeof(Row *));
-    }   
-    EventuallyRedraw(viewPtr);
-    if (viewPtr->rows != NULL) {
-        Blt_Free(viewPtr->rows);
-    }
-    viewPtr->rows = rows;
+    /* Generate cells for the new row. */
     key.rowPtr = rowPtr;
-    for (i = 0; i < viewPtr->numColumns; i++) {
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL;
+         colPtr = colPtr->nextPtr) {
         Blt_HashEntry *hPtr;
         int isNew;
 
-        key.colPtr = viewPtr->columns[i];
+        key.colPtr = colPtr;
         hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, &isNew);
         if (isNew) {
             Cell *cellPtr;
@@ -9815,7 +9824,8 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Blt_SetHashValue(hPtr, cellPtr);
         }
     }
-    viewPtr->flags |= GEOMETRY;
+    viewPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
 
@@ -9873,17 +9883,56 @@ RowInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Move one or more rows.
  *
- *      pathName row move first last newPos
+ *      pathName row move dest first last ?switches?
  *
  *---------------------------------------------------------------------------
  */
+/*ARGSUSED*/
+static int
+RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+               Tcl_Obj *const *objv)
+{
+    Row *destPtr, *firstPtr, *lastPtr;
+    TableView *viewPtr = clientData;
+    int after = TRUE;
+
+    if (GetRow(interp, viewPtr, objv[3], &destPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (GetRow(interp, viewPtr, objv[4], &firstPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (GetRow(interp, viewPtr, objv[5], &lastPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (viewPtr->flags & REINDEX_ROWS) {
+        RenumberRows(viewPtr);
+    }
+
+    /* Check if range is valid. */
+    if (firstPtr->index > lastPtr->index) {
+        return TCL_OK;                  /* No range. */
+    }
+
+    /* Check that destination is outside the range of columns to be moved. */
+    if ((destPtr->index >= firstPtr->index) &&
+        (destPtr->index <= lastPtr->index)) {
+        Tcl_AppendResult(interp, "destination row \"", 
+                Tcl_GetString(objv[3]),
+                 "\" can't be in the range of rows to be moved.", 
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    MoveRows(viewPtr, destPtr, firstPtr, lastPtr, after);
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
  *
  * RowNamesOp --
  *
- *      pathName row names ?patternName ...?
+ *      pathName row names ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -9894,14 +9943,13 @@ RowNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
     Tcl_Obj *listObjPtr;
-    long i;
+    Row *rowPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
         Tcl_Obj *objPtr;
 
-        rowPtr = viewPtr->rows[i];
         objPtr = Tcl_NewStringObj(blt_table_row_label(rowPtr->row), -1);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
@@ -10212,6 +10260,7 @@ static Blt_OpSpec rowOps[] =
     {"index",      3, RowIndexOp,      4, 4, "rowName",},
     {"insert",     3, RowInsertOp,     5, 0, "rowName position ?option value ...?",},
     {"invoke",     3, RowInvokeOp,     4, 4, "rowName",},
+    {"move",       1, RowMoveOp,       6, 0, "destCol firstCol lastCol ?switches?",},  
     {"names",      2, RowNamesOp,      3, 3, "",},
     {"nearest",    2, RowNearestOp,    4, 4, "y",},
     {"resize",     1, RowResizeOp,     3, 0, "args",},
@@ -11659,18 +11708,18 @@ ComputeGeometry(TableView *viewPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
+    Column *colPtr;
+    Row *rowPtr;
     long i;
- 
+
     viewPtr->flags &= ~GEOMETRY;        
     viewPtr->rowTitleWidth = viewPtr->colTitleHeight = 0;
 
     /* Step 1. Set the initial size of the row or column by computing its
      *         title size. Get the geometry of hidden rows and columns so
      *         that it doesn't cost to show/hide them. */
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
+    for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL;
+         colPtr = colPtr->nextPtr, i++) {
         if (colPtr->flags & GEOMETRY) {
             if (viewPtr->flags & COLUMN_TITLES) {
                 GetColumnTitleGeometry(viewPtr, colPtr);
@@ -11686,10 +11735,8 @@ ComputeGeometry(TableView *viewPtr)
             }
         }
     }
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
+    for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+         rowPtr = rowPtr->nextPtr, i++) {
         if (rowPtr->flags & GEOMETRY) {
             if (viewPtr->flags & ROW_TITLES) {
                 GetRowTitleGeometry(viewPtr, rowPtr);
@@ -11752,13 +11799,13 @@ ComputeLayout(TableView *viewPtr)
 {
     unsigned long x, y;
     long i;
+    Column *colPtr;
+    Row *rowPtr;
 
     viewPtr->flags &= ~LAYOUT_PENDING;
     x = y = 0;
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
+    for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr, i++) {
         rowPtr->flags &= ~GEOMETRY;     /* Always remove the geometry
                                          * flag. */
         rowPtr->index = i;              /* Reset the index. */
@@ -11788,10 +11835,9 @@ ComputeLayout(TableView *viewPtr)
     }
 #endif
 
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
+    for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr, i++) {
 
-        colPtr = viewPtr->columns[i];
         colPtr->flags &= ~GEOMETRY;     /* Always remove the geometry
                                          * flag. */
         colPtr->index = i;              /* Reset the index. */
@@ -11839,13 +11885,13 @@ ComputeLayout(TableView *viewPtr)
 static void
 ReorderVisibleIndices(TableView *viewPtr)
 {
-    long i, count;
+    long count;
+    Row *rowPtr;
 
     /* Reorder visible indices. */
-    for (count = i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-        
-        rowPtr = viewPtr->rows[i];
+    count = 0;
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+         rowPtr = rowPtr->nextPtr) {
         if ((rowPtr->flags & HIDDEN) == 0) {
             rowPtr->visibleIndex = count;
             count++;
@@ -11886,7 +11932,7 @@ ComputeVisibleEntries(TableView *viewPtr)
         Row *rowPtr;
         
         mid = (low + high) >> 1;
-        rowPtr = viewPtr->rows[mid];
+        rowPtr = viewPtr->rowMap[mid];
         if (viewPtr->yOffset >
             (rowPtr->worldY + rowPtr->height)) {
             low = mid + 1;
@@ -11902,7 +11948,7 @@ ComputeVisibleEntries(TableView *viewPtr)
     for (i = first; i < viewPtr->numRows; i++) {
         Row *rowPtr;
             
-        rowPtr = viewPtr->rows[i];
+        rowPtr = viewPtr->rowMap[i];
         if (rowPtr->flags & HIDDEN) {
             continue;
         }
@@ -11925,7 +11971,7 @@ ComputeVisibleEntries(TableView *viewPtr)
         for (j = 0, i = first; i < last; i++) {
             Row *rowPtr;
             
-            rowPtr = viewPtr->rows[i];
+            rowPtr = viewPtr->rowMap[i];
             if ((rowPtr->flags & HIDDEN) == 0) {
                 viewPtr->visibleRows[j] = rowPtr;
                 j++;
@@ -11947,7 +11993,7 @@ ComputeVisibleEntries(TableView *viewPtr)
         Column *colPtr;
         
         mid = (low + high) >> 1;
-        colPtr = viewPtr->columns[mid];
+        colPtr = viewPtr->columnMap[mid];
         if (viewPtr->xOffset > 
             (colPtr->worldX + colPtr->width + colPtr->ruleWidth)) {
             low = mid + 1;
@@ -11962,7 +12008,7 @@ ComputeVisibleEntries(TableView *viewPtr)
     for (i = first; i < viewPtr->numColumns; i++) {
         Column *colPtr;
         
-        colPtr = viewPtr->columns[i];
+        colPtr = viewPtr->columnMap[i];
         if (colPtr->flags & HIDDEN) {
             continue;
         }
@@ -11985,7 +12031,7 @@ ComputeVisibleEntries(TableView *viewPtr)
         for (j = 0, i = first; i < last; i++) {
             Column *colPtr;
             
-            colPtr = viewPtr->columns[i];
+            colPtr = viewPtr->columnMap[i];
             if ((colPtr->flags & HIDDEN) == 0) {
                 viewPtr->visibleColumns[j] = colPtr;
                 j++;
@@ -11999,190 +12045,59 @@ ComputeVisibleEntries(TableView *viewPtr)
     assert(viewPtr->numVisibleColumns <= viewPtr->numColumns);
 }
 
-
 static void
-RebuildTableView(TableView *viewPtr)
+ReorderRows(TableView *viewPtr)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    long i;
-    Column **columns;
-    Row **rows;
-    unsigned long numRows, numColumns;
-    Blt_Chain deleted;
-    Blt_ChainLink link;
+    size_t i;
+    Row *lastPtr;
+    BLT_TABLE_ROW row;
 
-    numRows = numColumns = 0;
-    rows = NULL;
-    columns = NULL;
-    /* 
-     * Step 1:  Unmark rows and columns are in the table.
-     */
-    if (viewPtr->flags & AUTO_COLUMNS) {
-        for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter);
-             hPtr != NULL;
-             hPtr = Blt_NextHashEntry(&iter)) {
-            Column *colPtr;
-            
-            colPtr = Blt_GetHashValue(hPtr);
-            colPtr->flags |= DELETED;
-        }
-    }
-    if (viewPtr->flags & AUTO_ROWS) {
-        for (hPtr = Blt_FirstHashEntry(&viewPtr->rowTable, &iter); hPtr != NULL;
-             hPtr = Blt_NextHashEntry(&iter)) {
-            Row *rowPtr;
-            
-            rowPtr = Blt_GetHashValue(hPtr);
-            rowPtr->flags |= DELETED;
-        }
-    }
-    /* 
-     * Step 2: Add and unmark rows and columns are in the table.
-     */
-    if (viewPtr->flags & AUTO_ROWS) {
-        BLT_TABLE_ROW row;
-        unsigned long count;
-
-        count = 0;
-        numRows = blt_table_num_rows(viewPtr->table);
-        rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
-        for (row = blt_table_first_row(viewPtr->table); row != NULL;  
-             row = blt_table_next_row(row)) {
-            Blt_HashEntry *hPtr;
-            int isNew;
-            Row *rowPtr;
-            
-            hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
-            if (isNew) {
-                rowPtr = CreateRow(viewPtr, row, hPtr);
-            } else if (viewPtr->flags & AUTO_ROWS) {
-                rowPtr = Blt_GetHashValue(hPtr);
-            } else {
-                continue;
-            }
-            rowPtr->flags &= ~DELETED;
-            rows[count] = rowPtr;
-            count++;
-        }
-    }
-    if (viewPtr->flags & AUTO_COLUMNS) {
-        BLT_TABLE_COLUMN col;
-        unsigned long count;
-
-        count = 0;
-        numColumns = blt_table_num_columns(viewPtr->table);
-        columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
-        for (col = blt_table_first_column(viewPtr->table); col != NULL;  
-             col = blt_table_next_column(col)) {
-            Blt_HashEntry *hPtr;
-            int isNew;
-            Column *colPtr;
-            
-            hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col,
-                                       &isNew);
-            if (isNew) {
-                colPtr = CreateColumn(viewPtr, col, hPtr);
-                Blt_SetHashValue(hPtr, colPtr);
-            } else if (viewPtr->flags & AUTO_COLUMNS) {
-                colPtr = Blt_GetHashValue(hPtr);
-            } else {
-                continue;
-            }
-            colPtr->flags &= ~DELETED;
-            columns[count] = colPtr;
-            count++;
-        }
-    }
-    /* 
-     * Step 3:  Remove cells of rows and columns that were deleted.
-     */
-    deleted = Blt_Chain_Create();
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->cellTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Cell *cellPtr;
-        CellKey *keyPtr;
+    lastPtr = NULL;
+    for (i = 0, row = blt_table_first_row(viewPtr->table); row != NULL; 
+         row = blt_table_next_row(row), i++) {
         Row *rowPtr;
-        Column *colPtr;
 
-        /* Remove any cells that whose row and columns are no longer
-         * valid. */
-        keyPtr = Blt_GetHashKey(&viewPtr->cellTable, hPtr);
-        colPtr = keyPtr->colPtr;
-        rowPtr = keyPtr->rowPtr;
-        cellPtr = Blt_GetHashValue(hPtr);
-        if ((rowPtr->flags | colPtr->flags) & DELETED) {
-            Blt_Chain_Append(deleted, cellPtr);
+        rowPtr = GetRowContainer(viewPtr, row);
+        assert(rowPtr != NULL);
+        viewPtr->rowMap[i] = rowPtr;
+        if (lastPtr != NULL) {
+            lastPtr->nextPtr = rowPtr;
         }
+        rowPtr->prevPtr = lastPtr;
+        lastPtr = rowPtr;
     }
-    for (link = Blt_Chain_FirstLink(deleted); link != NULL; 
-         link = Blt_Chain_NextLink(link)) {
-        Cell *cellPtr;
-        
-        cellPtr = Blt_Chain_GetValue(link);
-        if (cellPtr->hashPtr != NULL) {
-            Blt_DeleteHashEntry(&viewPtr->cellTable, cellPtr->hashPtr);
-        }
-        DestroyCell(cellPtr);
-    }
-    Blt_Chain_Destroy(deleted);
-    /* 
-     * Step 4:  Remove rows and columns that were deleted.
-     */
-    if (viewPtr->flags & AUTO_ROWS) {
-        for (i = 0; i < viewPtr->numRows; i++) {
-            Row *rowPtr;
-            
-            rowPtr = viewPtr->rows[i];
-            if (rowPtr->flags & DELETED) {
-                DestroyRow(rowPtr);
-            }
-        }
-        if (viewPtr->rows != NULL) {
-            Blt_Free(viewPtr->rows);
-        }
-        viewPtr->numRows = numRows;
-        viewPtr->rows = rows;
-    }
-    if (viewPtr->flags & AUTO_COLUMNS) {
-        for (i = 0; i < viewPtr->numColumns; i++) {
-            Column *colPtr;
-            
-            colPtr = viewPtr->columns[i];
-            if (colPtr->flags & DELETED) {
-                DestroyColumn(colPtr);
-            }
-        }
-        if (viewPtr->columns != NULL) {
-            Blt_Free(viewPtr->columns);
-        }
-        viewPtr->columns = columns;
-        viewPtr->numColumns = numColumns;
-    }
-    /* Step 5. Create cells */
-    for (i = 0; i < viewPtr->numRows; i++) {
-        CellKey key;
-        long j;
-
-        key.rowPtr = viewPtr->rows[i];
-        for (j = 0; j < viewPtr->numColumns; j++) {
-            Cell *cellPtr;
-            Blt_HashEntry *hPtr;
-            int isNew;
-
-            key.colPtr = viewPtr->columns[j];
-            hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
-                &isNew);
-            if (isNew) {
-                cellPtr = NewCell(viewPtr, hPtr);
-                Blt_SetHashValue(hPtr, cellPtr);
-            }
-        }
-    }
-    viewPtr->flags |= LAYOUT_PENDING | SCROLL_PENDING;
+    viewPtr->rowHeadPtr = viewPtr->rowMap[0];
+    viewPtr->rowTailPtr = viewPtr->rowMap[i - 1];
+    viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
 }
 
+static void
+ReorderColumns(TableView *viewPtr)
+{
+    size_t i;
+    Column *lastPtr;
+    BLT_TABLE_COLUMN col;
+
+    lastPtr = NULL;
+    for (i = 0, col = blt_table_first_column(viewPtr->table); col != NULL; 
+         col = blt_table_next_column(col), i++) {
+        Column *colPtr;
+
+        colPtr = GetColumnContainer(viewPtr, col);
+        assert(colPtr != NULL);
+        viewPtr->columnMap[i] = colPtr;
+        if (lastPtr != NULL) {
+            lastPtr->nextPtr = colPtr;
+        }
+        colPtr->prevPtr = lastPtr;
+        lastPtr = colPtr;
+    }
+    viewPtr->colHeadPtr = viewPtr->columnMap[0];
+    viewPtr->colTailPtr = viewPtr->columnMap[i - 1];
+    viewPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(viewPtr);
+}
 
 static void
 AddCellGeometry(TableView *viewPtr, Cell *cellPtr)
@@ -12257,262 +12172,108 @@ AddRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
     }
 }
 
-static long
-GetNumberOfColumns(TableView *viewPtr)
+static void
+AddRow(TableView *viewPtr, BLT_TABLE_ROW row)
 {
     Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
+    Row *rowPtr;
+    Column *colPtr;
+    int isNew;
+    CellKey key;
 
-    long numColumns;
-    numColumns = 0;
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Column *colPtr;
-
-        colPtr = Blt_GetHashValue(hPtr);
-        if (colPtr->flags & DELETED) {
-            continue;
-        }
-        numColumns++;
+    hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
+    assert(isNew);
+    rowPtr = CreateRow(viewPtr, row, hPtr);
+    AddRowTitleGeometry(viewPtr, rowPtr);
+    key.rowPtr = rowPtr;
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
+        Cell *cellPtr;
+        Blt_HashEntry *h2Ptr;
+        int isNew;
+        
+        key.colPtr = colPtr;
+        h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, &isNew);
+        assert(isNew);
+        cellPtr = NewCell(viewPtr, h2Ptr);
+        AddCellGeometry(viewPtr, cellPtr);
+        Blt_SetHashValue(h2Ptr, cellPtr);
     }
-    return numColumns;
+    viewPtr->flags |= LAYOUT_PENDING | REINDEX_ROWS;
+    PossiblyRedraw(viewPtr);
 }
 
+static void
+AddColumn(TableView *viewPtr, BLT_TABLE_COLUMN col)
+{
+    Blt_HashEntry *hPtr;
+    CellKey key;
+    Column *colPtr;
+    Row *rowPtr;
+    int isNew;
+
+    hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, &isNew);
+    assert(isNew);
+    colPtr = CreateColumn(viewPtr, col, hPtr);
+    AddColumnTitleGeometry(viewPtr, colPtr);
+    key.colPtr = colPtr;
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
+        Cell *cellPtr;
+        Blt_HashEntry *h2Ptr;
+        int isNew;
+        
+        key.rowPtr = rowPtr;
+        h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, &isNew);
+        assert(isNew);
+        cellPtr = NewCell(viewPtr, h2Ptr);
+        AddCellGeometry(viewPtr, cellPtr);
+        Blt_SetHashValue(h2Ptr, cellPtr);
+    }
+    viewPtr->flags |= LAYOUT_PENDING | REINDEX_COLUMNS;
+    PossiblyRedraw(viewPtr);
+}
 
 static void
-DeleteColumnsWhenIdleProc(ClientData clientData)
+DeleteRow(TableView *viewPtr, BLT_TABLE_ROW row)
 {
-    Column **columns;
-    TableView *viewPtr = clientData;
-    long i, j, numColumns;
+    Row *rowPtr;
     
-    /* Step 1: Count the number of rows marked for deletion. */
-    numColumns = GetNumberOfColumns(viewPtr);
-    /* Step 2: Delete the marked columns, first removing all the associated
-     * cells. */
-    columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
-    for (i = j = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
-        if (colPtr->flags & DELETED) {
-            colPtr->flags &= ~DELETED;
-            RemoveColumnCells(viewPtr, colPtr);
-            if (viewPtr->flags & AUTO_COLUMNS) {
-                DestroyColumn(colPtr);
-            }
-        } else {
-            columns[j++] = colPtr;
-        }
-    }
-    if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
-    }
-    viewPtr->columns = columns;
-    viewPtr->numColumns = numColumns;
-    viewPtr->flags |= LAYOUT_PENDING;
-    viewPtr->flags &= ~COLUMNS_DELETED;
+    rowPtr = GetRowContainer(viewPtr, row);
+    assert(rowPtr);
+    RemoveRowCells(viewPtr, rowPtr);
+    DestroyRow(rowPtr);
+    viewPtr->flags |= LAYOUT_PENDING | REINDEX_ROWS;
     EventuallyRedraw(viewPtr);
 }
 
 static void
-AddColumnsWhenIdleProc(ClientData clientData)
+DeleteColumn(TableView *viewPtr, BLT_TABLE_COLUMN col)
 {
-    TableView *viewPtr = clientData;
-    long i;
-    unsigned long count, oldNumColumns, newNumColumns;
-
-    viewPtr->flags &= ~COLUMNS_PENDING;
-    if (viewPtr->flags & COLUMNS_DELETED) {
-        Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
-        DeleteColumnsWhenIdleProc(viewPtr);
-    }
-    oldNumColumns = viewPtr->numColumns;
-    newNumColumns = blt_table_num_columns(viewPtr->table);
-    assert(newNumColumns >= oldNumColumns);
-    viewPtr->columns = Blt_AssertRealloc(viewPtr->columns, 
-        sizeof(Column *) * newNumColumns);
+    Column *colPtr;
     
-    count = oldNumColumns;
-    /* Loop through the table looking for new columns (i.e. columns that
-     * the tableview widget doesn't know about yet). */
-    for (i = 0; i < newNumColumns; i++) {
-        Blt_HashEntry *hPtr;
-        int isNew;
-        Column *colPtr;
-        BLT_TABLE_COLUMN col;
-
-        col = blt_table_column(viewPtr->table, i);
-        hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, &isNew);
-        if (isNew) {
-            CellKey key;
-            long j;
-            
-            colPtr = CreateColumn(viewPtr, col, hPtr);
-            Blt_SetHashValue(hPtr, colPtr);
-            AddColumnTitleGeometry(viewPtr, colPtr);
-            key.colPtr = colPtr;
-            for (j = 0; j < viewPtr->numRows; j++) {
-                Cell *cellPtr;
-                Blt_HashEntry *h2Ptr;
-                int isNew;
-
-                key.rowPtr = viewPtr->rows[j];
-                h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
-                                            &isNew);
-                assert(isNew);
-                cellPtr = NewCell(viewPtr, h2Ptr);
-                AddCellGeometry(viewPtr, cellPtr);
-                Blt_SetHashValue(h2Ptr, cellPtr);
-            }
-            viewPtr->columns[count] = colPtr;
-            count++;
-        }
-    }
-    viewPtr->numColumns = newNumColumns;
-    viewPtr->flags |= LAYOUT_PENDING;
-    viewPtr->flags &= ~COLUMNS_PENDING;
-    PossiblyRedraw(viewPtr);
-}
-
-static long
-GetNumberOfRows(TableView *viewPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    long numRows;
-
-    numRows = 0;
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->rowTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Row *rowPtr;
-
-        rowPtr = Blt_GetHashValue(hPtr);
-        if (rowPtr->flags & DELETED) {
-            continue;
-        }
-        numRows++;
-    }
-    return numRows;
-}
-
-static void
-DeleteRowsWhenIdleProc(ClientData clientData)
-{
-    Row **rows;
-    TableView *viewPtr = clientData;
-    long i, j, numRows;
-    
-    /* Step 1: Count the number of rows marked for deletion. */
-    numRows = GetNumberOfRows(viewPtr);
-    /* Step 2: Delete the marked rows, first removing all the associated
-     * cells. */
-    rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
-    for (i = j = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
-        if (rowPtr->flags & DELETED) {
-            rowPtr->flags &= ~DELETED;
-            RemoveRowCells(viewPtr, rowPtr);
-            if (viewPtr->flags & AUTO_ROWS) {
-                DestroyRow(rowPtr);
-            }
-        } else {
-            rows[j++] = rowPtr;
-        }
-    }
-    if (viewPtr->rows != NULL) {
-        Blt_Free(viewPtr->rows);
-    }
-    viewPtr->rows = rows;
-    viewPtr->numRows = numRows;
-    viewPtr->flags |= LAYOUT_PENDING;
-    viewPtr->flags &= ~ROWS_DELETED;
+    colPtr = GetColumnContainer(viewPtr, col);
+    assert(colPtr);
+    RemoveColumnCells(viewPtr, colPtr);
+    DestroyColumn(colPtr);
+    viewPtr->flags |= LAYOUT_PENDING | REINDEX_COLUMNS;
     EventuallyRedraw(viewPtr);
-}
-
-static void
-AddRowsWhenIdleProc(ClientData clientData)
-{
-    TableView *viewPtr = clientData;
-    long i;
-    unsigned long count, newNumRows, oldNumRows;
-
-    viewPtr->flags &= ~ROWS_PENDING;
-    if (viewPtr->flags & ROWS_DELETED) {
-        Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
-        DeleteRowsWhenIdleProc(viewPtr);
-    }
-    oldNumRows = viewPtr->numRows;
-    newNumRows = blt_table_num_rows(viewPtr->table);
-    assert(newNumRows >= oldNumRows);
-    viewPtr->rows = Blt_AssertRealloc(viewPtr->rows, sizeof(Row *)*newNumRows);
-    count = oldNumRows;
-    for (i = 0; i < newNumRows; i++) {
-        Blt_HashEntry *hPtr;
-        int isNew;
-        Row *rowPtr;
-        BLT_TABLE_ROW row;
-
-        row = blt_table_row(viewPtr->table, i);
-        hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
-        if (isNew) {
-            CellKey key;
-            long j;
-            
-            rowPtr = CreateRow(viewPtr, row, hPtr);
-            AddRowTitleGeometry(viewPtr, rowPtr);
-            key.rowPtr = rowPtr;
-            for (j = 0; j < viewPtr->numColumns; j++) {
-                Cell *cellPtr;
-                Blt_HashEntry *h2Ptr;
-                int isNew;
-
-                key.colPtr = viewPtr->columns[j];
-                h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
-                        &isNew);
-                assert(isNew);
-                cellPtr = NewCell(viewPtr, h2Ptr);
-                AddCellGeometry(viewPtr, cellPtr);
-                Blt_SetHashValue(h2Ptr, cellPtr);
-            }
-            viewPtr->rows[count] = rowPtr;
-            count++;
-        }
-    }
-    viewPtr->numRows = newNumRows;
-    viewPtr->flags |= LAYOUT_PENDING;
-    viewPtr->flags &= ~COLUMNS_PENDING;
-    PossiblyRedraw(viewPtr);
 }
 
 static int
 ReplaceTable(TableView *viewPtr, BLT_TABLE table)
 {
-    Column **columns;
-    Row **rows;
+    Column **columnMap;
+    Row **rowMap;
+    Column *colPtr;
     long i;
     size_t oldSize, newSize, numColumns, numRows;
     unsigned int flags;
 
     /* Step 1: Cancel any pending idle callbacks for this table. */
-    if (viewPtr->flags & ROWS_PENDING) {
-        Tcl_CancelIdleCall(AddRowsWhenIdleProc, viewPtr);
-    }
-    if (viewPtr->flags & COLUMNS_PENDING) {
-        Tcl_CancelIdleCall(AddColumnsWhenIdleProc, viewPtr);
-    }
-    if (viewPtr->flags & ROWS_DELETED) {
-        Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
-    }
-    if (viewPtr->flags & COLUMNS_DELETED) {
-        Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
-    }
     if (viewPtr->flags & SELECT_PENDING) {
         Tcl_CancelIdleCall(SelectCommandProc, viewPtr);
     }
-
     /* 2. Get rid of the arrays of visible rows and columns. */
     if (viewPtr->visibleRows != NULL) {
         Blt_Free(viewPtr->visibleRows);
@@ -12525,49 +12286,65 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
     viewPtr->numVisibleRows = viewPtr->numVisibleColumns = 0;
     ClearSelections(viewPtr);
 
-    /* 3. Allocate an array for new columns. */
+    /* 3. Allocate a map big enough for all columns.  Worst case is oldSize
+     * + newSize. */
     oldSize = viewPtr->numColumns;
     newSize = blt_table_num_columns(table);
-    numColumns = (viewPtr->flags & AUTO_COLUMNS) 
-        ? MAX(oldSize, newSize) : newSize;
-    columns = Blt_Calloc(numColumns, sizeof(Column *));
-    if (columns == NULL) {
+    numColumns = newSize;
+    if (viewPtr->flags & AUTO_COLUMNS)  {
+        numColumns += oldSize;
+    }
+    columnMap = Blt_Calloc(numColumns, sizeof(Column *));
+    if (columnMap == NULL) {
         return TCL_ERROR;
     }
+    /* Puts the sticky columns in the map first.  This will retain their
+     * original locations. */
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
+        if (colPtr->flags & STICKY) {
+            assert(columnMap[colPtr->index] == NULL);
+            columnMap[colPtr->index] = colPtr;
+            viewPtr->columnMap[colPtr->index] = NULL;
+        }
+    }
+    /* Next add columns from the new table, that already have a column. */
     if (viewPtr->flags & AUTO_COLUMNS) {
         BLT_TABLE_COLUMN col;
         long i, j;
 
-        /* 4. Move columns that exist in both the old and new tables into
-         *    the merge array. */
-        for (i = 0; i < viewPtr->numColumns; i++) {
-            BLT_TABLE_COLUMN newCol;
-            Column *colPtr;
+        for (col = blt_table_first_column(table); col != NULL; 
+             col = blt_table_next_column(col)) {
+            BLT_TABLE_COLUMN oldCol;
             const char *label;
 
-            colPtr = viewPtr->columns[i];
-            label = blt_table_column_label(colPtr->column);
-            /* Find the old column in the new table. */
-            newCol = blt_table_get_column_by_label(table, label);
-            if (newCol != NULL) {
+            label = blt_table_column_label(col);
+            /* Does this column label exist in the old table? */
+            oldCol = blt_table_get_column_by_label(viewPtr->table, label);
+            if (oldCol != NULL) {
                 Blt_HashEntry *hPtr;
                 int isNew;
 
+                /* Get the column container and replace its column
+                 * reference and hash with a new entry. */
+                colPtr = GetColumnContainer(viewPtr, oldCol);
+
                 /* Replace the previous hash entry with a new one. */
                 hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, 
-                        (char *)newCol, &isNew);
+                        (char *)oldCol, &isNew);
                 assert(isNew);
                 if (colPtr->hashPtr != NULL) {
                     Blt_DeleteHashEntry(&viewPtr->columnTable, colPtr->hashPtr);
                 }
                 colPtr->hashPtr = hPtr;
-                colPtr->column = newCol;
-                columns[i] = colPtr;
-                viewPtr->columns[i] = NULL; /* Mark the old slot as empty. */
+                colPtr->column = col;
+                viewPtr->columnMap[colPtr->index] = NULL;
+                columnMap[colPtr->index] = colPtr;
             }
         }
 
-        /* 5. Create columns in the viewer that aren't already there. */
+        /* 5. New fill in the map with columns from the new table that
+         * weren't in the old. */
         for (i = 0, col = blt_table_first_column(table); col != NULL;  
              col = blt_table_next_column(col)) {
             Blt_HashEntry *hPtr;
@@ -12581,48 +12358,65 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
                                          * step.  */
             }
             colPtr = CreateColumn(viewPtr, col, hPtr);
-            while (columns[i] != NULL) {    /* Find the next open slot. */
+            while (columnMap[i] != NULL) { /* Find the next open slot. */
                 i++;                        
             }
-            columns[i] = colPtr;
+            columnMap[i] = colPtr;
         }
 
-        /* 6. Compress the columns, removing empty column slots. */
+        /* 6. Find any enpty slots and remove them. */
         for (i = j = 0; i < numColumns; i++) {
-            if (columns[i] == NULL) {
+            if (columnMap[i] == NULL) {
                 continue;
             }
             j++;
             if (i < j) {
-                columns[j] = columns[i];
+                columnMap[j] = columnMap[i];
             }
-            columns[j]->index = j;
+            columnMap[j]->index = j;
         }
         numColumns = j;
-        columns = Blt_Realloc(columns, numColumns * sizeof(Column *));
+        columnMap = Blt_Realloc(columnMap, numColumns * sizeof(Column *));
     }
 
-    /* 7. Remove the left over columns that are not in the new table. */
+    /* 7. Go through the old map and remove any left over columns that are
+     * not in the new table. */
     for (i = 0; i < viewPtr->numColumns; i++) {
         Column *colPtr;
 
-        colPtr = viewPtr->columns[i];
+        colPtr = viewPtr->columnMap[i];
         if (colPtr != NULL) {
             DestroyColumn(colPtr);
         }
     }
-    if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
+    if (viewPtr->columnMap != NULL) {
+        Blt_Free(viewPtr->columnMap);
     }
-    viewPtr->columns = columns;
+
+    /* Rethread list of columns according to the sorted map. */
+    for (i = 0; i < viewPtr->numColumns; i++) {
+        Column *rowPtr;
+        Column *prevPtr, *nextPtr;
+
+        prevPtr = (i > 0) ? viewPtr->columnMap[i-1] : NULL;
+        nextPtr = ((i+i) < viewPtr->numColumns) ? viewPtr->columnMap[i+1] : NULL;
+        colPtr = viewPtr->columnMap[i];
+        colPtr->prevPtr = prevPtr;
+        colPtr->nextPtr = nextPtr;
+        colPtr->index = i;
+    }
+    viewPtr->colHeadPtr = viewPtr->columnMap[0];
+    viewPtr->colTailPtr = viewPtr->columnMap[viewPtr->numColumns-1];
+    viewPtr->columnMap = columnMap;
     viewPtr->numColumns = numColumns;
+    RenumberColumns(viewPtr);
 
     /* 8. Allocate a new row array that can hold all the rows. */
     oldSize = viewPtr->numRows;
     newSize = blt_table_num_rows(table);
     numRows = (viewPtr->flags & AUTO_ROWS) ? MAX(oldSize, newSize) : newSize;
-    rows = Blt_Calloc(numRows, sizeof(Row *));
-    if (rows == NULL) {
+    rowMap = Blt_Calloc(numRows, sizeof(Row *));
+    if (rowMap == NULL) {
         return TCL_ERROR;
     }
 
@@ -12637,7 +12431,7 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
             Row *rowPtr;
             const char *label;
 
-            rowPtr = viewPtr->rows[i];
+            rowPtr = viewPtr->rowMap[i];
             label = blt_table_row_label(rowPtr->row);
             newRow = blt_table_get_row_by_label(table, label);
             if (newRow != NULL) {
@@ -12652,8 +12446,8 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
                 }
                 rowPtr->hashPtr = hPtr;
                 rowPtr->row = newRow;
-                rows[i] = rowPtr;
-                viewPtr->rows[i] = NULL;
+                rowMap[i] = rowPtr;
+                viewPtr->rowMap[i] = NULL;
             }
         }
         /* 10. Add rows from the the new table that don't already exist. */
@@ -12670,25 +12464,25 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
                 continue;
             }
             rowPtr = CreateRow(viewPtr, row, hPtr);
-            while (rows[i] != NULL) {    /* Get the next open slot. */
+            while (rowMap[i] != NULL) {    /* Get the next open slot. */
                 i++;                        
             }
-            rows[i] = rowPtr;
+            rowMap[i] = rowPtr;
         }
         /* 11. Compress empty slots in row array. Re-number the row
          *     indices. */
         for (i = j = 0; i < numRows; i++) {
-            if (rows[i] == NULL) {
+            if (rowMap[i] == NULL) {
                 continue;
             }
             j++;
             if (i < j) {
-                rows[j] = rows[i];
+                rowMap[j] = rowMap[i];
             }
-            rows[j]->index = j;
+            rowMap[j]->index = j;
         }
         numRows = j;
-        rows = Blt_Realloc(rows, numRows * sizeof(Row *));
+        rowMap = Blt_Realloc(rowMap, numRows * sizeof(Row *));
     }
 
     /* 12. Remove all non-NULL rows. These are rows from the old table, not
@@ -12696,15 +12490,15 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
     for (i = 0; i < viewPtr->numRows; i++) {
         Row *rowPtr;
 
-        rowPtr = viewPtr->rows[i];
+        rowPtr = viewPtr->rowMap[i];
         if (rowPtr != NULL) {
             DestroyRow(rowPtr);
         }
     }
-    if (viewPtr->rows != NULL) {
-        Blt_Free(viewPtr->rows);
+    if (viewPtr->rowMap != NULL) {
+        Blt_Free(viewPtr->rowMap);
     }
-    viewPtr->rows = rows;
+    viewPtr->rowMap = rowMap;
     viewPtr->numRows = numRows;
 
     /* 13. Create cells */
@@ -12712,13 +12506,13 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
         CellKey key;
         long j;
         
-        key.rowPtr = viewPtr->rows[i];
+        key.rowPtr = viewPtr->rowMap[i];
         for (j = 0; j < viewPtr->numColumns; j++) {
             Blt_HashEntry *hPtr;
             Cell *cellPtr;
             int isNew;
             
-            key.colPtr = viewPtr->columns[j];
+            key.colPtr = viewPtr->columnMap[j];
             hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
                 &isNew);
             if (isNew) {
@@ -12741,21 +12535,9 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
 static int
 AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 {
-    long i;
+    Row *rowPtr;
     unsigned int flags;
 
-    if (viewPtr->flags & ROWS_PENDING) {
-        Tcl_CancelIdleCall(AddRowsWhenIdleProc, viewPtr);
-    }
-    if (viewPtr->flags & COLUMNS_PENDING) {
-        Tcl_CancelIdleCall(AddColumnsWhenIdleProc, viewPtr);
-    }
-    if (viewPtr->flags & ROWS_DELETED) {
-        Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
-    }
-    if (viewPtr->flags & COLUMNS_DELETED) {
-        Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
-    }
     if (viewPtr->flags & SELECT_PENDING) {
         Tcl_CancelIdleCall(SelectCommandProc, viewPtr);
     }
@@ -12775,11 +12557,11 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
     /* Rows. */
     if (viewPtr->flags & AUTO_ROWS) {
         BLT_TABLE_ROW row;
-        long i;
+        size_t i, numRows;
 
-        viewPtr->numRows = blt_table_num_rows(viewPtr->table);
-        viewPtr->rows = Blt_Malloc(viewPtr->numRows * sizeof(Row *));
-        if (viewPtr->rows == NULL) {
+        numRows = blt_table_num_rows(viewPtr->table);
+        viewPtr->rowMap = Blt_Malloc(numRows * sizeof(Row *));
+        if (viewPtr->rowMap == NULL) {
             return TCL_ERROR;
         }
         for (i = 0, row = blt_table_first_row(viewPtr->table); row != NULL;  
@@ -12791,21 +12573,21 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
             hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
             assert(isNew);
             rowPtr = CreateRow(viewPtr, row, hPtr);
-            viewPtr->rows[i] = rowPtr;
+            viewPtr->rowMap[i] = rowPtr;
         }
         assert(i == viewPtr->numRows);
     }
     /* Columns. */
     if (viewPtr->flags & AUTO_COLUMNS) {
         BLT_TABLE_COLUMN col;
-        long i;
+        size_t i, numColumns;
 
-        viewPtr->numColumns = blt_table_num_columns(viewPtr->table);
-        viewPtr->columns = Blt_Malloc(viewPtr->numColumns *sizeof(Column *));
-        if (viewPtr->columns == NULL) {
-            if (viewPtr->rows != NULL) {
-                Blt_Free(viewPtr->rows);
-                viewPtr->rows = NULL;
+        numColumns = blt_table_num_columns(viewPtr->table);
+        viewPtr->columnMap = Blt_Malloc(numColumns *sizeof(Column *));
+        if (viewPtr->columnMap == NULL) {
+            if (viewPtr->rowMap != NULL) {
+                Blt_Free(viewPtr->rowMap);
+                viewPtr->rowMap = NULL;
             }
             return TCL_ERROR;
         }
@@ -12820,22 +12602,24 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
             assert(isNew);
             colPtr = CreateColumn(viewPtr, col, hPtr);
             Blt_SetHashValue(hPtr, colPtr);
-            viewPtr->columns[i] = colPtr;
+            viewPtr->columnMap[i] = colPtr;
         }
         assert(i == viewPtr->numColumns);
     }
     /* Create cells */
-    for (i = 0; i < viewPtr->numRows; i++) {
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+         rowPtr = rowPtr->nextPtr) {
         CellKey key;
-        long j;
+        Column *colPtr;
         
-        key.rowPtr = viewPtr->rows[i];
-        for (j = 0; j < viewPtr->numColumns; j++) {
+        key.rowPtr = rowPtr;
+        for (colPtr = viewPtr->colHeadPtr; colPtr != NULL;
+             colPtr = colPtr->nextPtr) {
             Cell *cellPtr;
             Blt_HashEntry *hPtr;
             int isNew;
             
-            key.colPtr = viewPtr->columns[j];
+            key.colPtr = colPtr;
             hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
                 &isNew);
             cellPtr = NewCell(viewPtr, hPtr);
@@ -12894,6 +12678,12 @@ DisplayProc(ClientData clientData)
 #ifdef notdef
     fprintf(stderr, "DisplayProc %s\n", Tk_PathName(viewPtr->tkwin));
 #endif
+    if (viewPtr->flags & REINDEX_ROWS) {
+        RenumberRows(viewPtr);
+    }
+    if (viewPtr->flags & REINDEX_COLUMNS) {
+        RenumberColumns(viewPtr);
+    }
     if (viewPtr->sort.flags & SORT_PENDING) {
         /* If the table needs resorting do it now before recalculating the
          * geometry. */

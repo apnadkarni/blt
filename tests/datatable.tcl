@@ -3210,5 +3210,10 @@ test datatable.552 {dirtest dir /tmp} {
 }}
 
 #----------------------
+
+foreach table [blt::datatable names] {
+  blt::datatable destroy $table
+}
+
 exit 0
 

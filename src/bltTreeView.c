@@ -7952,7 +7952,8 @@ DrawEntryLabel(
         }
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, x, y);
         if (isActive) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr, &ts,x,y);
+            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr, 
+                &ts, x, y);
         }
         Blt_Free(textPtr);
     }

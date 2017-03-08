@@ -513,10 +513,11 @@ static int
 ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
 {
     Rows *rowsPtr;
-    size_t i, prevUsed;
+    size_t i, oldSize, oldUsed;
 
     rowsPtr = &tablePtr->corePtr->rows;
-    prevUsed = rowsPtr->numUsed;
+    oldSize = rowsPtr->numAllocated;
+    oldUsed = rowsPtr->numUsed;
 
     /* If we are going to exceed the current number of allocated rows,
      * re-allocate a bigger row map and column vectors. */
@@ -546,7 +547,7 @@ ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
                 Value *vector;
                 
                 vector = Blt_Realloc(colPtr->vector, newSize * sizeof(Value));
-                memset(vector + prevUsed, 0, numExtraRows * sizeof(Value));
+                memset(vector + oldSize, 0, (newSize-oldSize) * sizeof(Value));
                 colPtr->vector = vector;
             }
         }        
@@ -560,7 +561,7 @@ ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
         size_t offset, nextIndex;
 
         rowPtr = NewRow(rowsPtr);
-        offset = nextIndex = i + prevUsed;
+        offset = nextIndex = i + oldUsed;
         if (Blt_Chain_GetLength(rowsPtr->freeList) > 0) {
             Blt_ChainLink link;
             
@@ -829,9 +830,11 @@ GetValue(Table *tablePtr, Row *rowPtr, Column *colPtr)
 {
     if (colPtr->vector == NULL) {
         Value *vector;
+        Rows *rowsPtr;
 
-        assert(tablePtr->corePtr->rows.numAllocated > 0);
-        vector = Blt_Calloc(tablePtr->corePtr->rows.numAllocated,sizeof(Value));
+        rowsPtr = &tablePtr->corePtr->rows;
+        assert(rowsPtr->numAllocated > 0);
+        vector = Blt_Calloc(rowsPtr->numAllocated, sizeof(Value));
         if (vector == NULL) {
             return NULL;
         }
@@ -2931,30 +2934,6 @@ RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         numRows += restorePtr->numRows;
         numCols += restorePtr->numCols;
     }
-#ifdef notdef
-    if (numCols > blt_table_num_columns(table)) {
-        long needed;
-
-        needed = numCols - blt_table_num_columns(table);
-        if (!GrowColumnStorage(table, needed)) {
-            RestoreError(interp, restorePtr);
-            Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(needed),
-                        "\"", " extra columns.", (char *)NULL);
-            return TCL_ERROR;
-        }
-    }
-    if (numRows > blt_table_num_rows(table)) {
-        long needed;
-
-        needed = numRows - blt_table_num_rows(table);
-        if (!GrowRowMap(table, needed)) {
-            RestoreError(interp, restorePtr);
-            Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(needed), 
-                "\" extra rows.", (char *)NULL);
-            return TCL_ERROR;
-        }
-    }
-#endif
     if (Blt_GetLong(interp, restorePtr->argv[3], &time) != TCL_OK) {
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
@@ -3750,9 +3729,6 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     iterPtr->numEntries = 0;
 
     spec = blt_table_column_spec(table, objPtr, &tag);
-#ifdef notdef
-    fprintf(stderr, "iterate_column: tag=%s spec=%d\n", tag, spec);
-#endif
     switch (spec) {
     case TABLE_SPEC_INDEX:
         p = Tcl_GetString(objPtr);
@@ -5717,15 +5693,16 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
         Blt_Chain_Destroy(chain);
         return TCL_ERROR;
     }
+    /* For each new row generate a notify event. */
     for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
          link = Blt_Chain_NextLink(link), i++) {
-        BLT_TABLE_ROW row;
+        Row *rowPtr;
 
-        row = Blt_Chain_GetValue(link);
+        rowPtr = Blt_Chain_GetValue(link);
         if (rows != NULL) {
-            rows[i] = row;
+            rows[i] = rowPtr;
         }
-        NotifyRowChanged(tablePtr, row, TABLE_NOTIFY_ROWS_CREATED);
+        NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_CREATED);
     }
     assert(Blt_Chain_GetLength(chain) > 0);
     Blt_Chain_Destroy(chain);
@@ -5959,6 +5936,7 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t numExtra,
         Blt_Chain_Destroy(chain);
         return TCL_ERROR;
     }
+    /* For each new column generate a notify event. */
     for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
          link = Blt_Chain_NextLink(link), i++) {
         Column *colPtr;
@@ -6200,10 +6178,10 @@ blt_table_file_restore(Tcl_Interp *interp, BLT_TABLE table,
             result = TCL_ERROR;
         }
         if (result != TCL_OK) {
-            Blt_Free(restore.argv);
+            Tcl_Free((char *)restore.argv); /* Allocated by Tcl_SplitList */
             break;
         }
-        Blt_Free(restore.argv);
+        Tcl_Free((char *)restore.argv); /* Allocated by Tcl_SplitList */
     }
     Blt_DeleteHashTable(&restore.rowIndices);
     Blt_DeleteHashTable(&restore.colIndices);
