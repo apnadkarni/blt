@@ -4885,7 +4885,7 @@ DrawLabel(ComboTree *comboPtr, Entry *entryPtr, Drawable drawable, int x, int y,
                 x, y);
 #ifdef notdef
         if (entryPtr == comboPtr->activePtr) {
-            Blt_Ts_UnderlineCharsInLayout(comboPtr->tkwin, drawable, 
+            Blt_Ts_UnderlineChars(comboPtr->tkwin, drawable, 
                entryPtr->textPtr, &ts, x, y);
         }
 #endif

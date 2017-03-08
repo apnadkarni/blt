@@ -243,8 +243,8 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_TkTextLayout_Compute, /* 233 */
     Blt_TkTextLayout_Draw, /* 234 */
     Blt_TkTextLayout_CharBbox, /* 235 */
-    Blt_TkTextLayout_UnderlineChars, /* 236 */
-    Blt_Ts_UnderlineCharsInLayout, /* 237 */
+    Blt_TkTextLayout_UnderlineSingleChar, /* 236 */
+    Blt_Ts_UnderlineChars, /* 237 */
     Blt_Ts_DrawText, /* 238 */
     Blt_MeasureText, /* 239 */
     Blt_TkTextLayout_Free, /* 240 */

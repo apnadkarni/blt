@@ -2806,7 +2806,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
                &ts, tx, ty);
         }
         Blt_Free(textPtr);
@@ -3332,7 +3332,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
                &ts, tx, ty);
         }
     }
@@ -3870,7 +3870,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
                &ts, tx, ty);
         }
         Blt_Free(textPtr);
@@ -4416,7 +4416,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
                &ts, tx, ty);
         }
         Blt_Free(textPtr);
@@ -4836,7 +4836,7 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, x, y);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineCharsInLayout(viewPtr->tkwin, drawable, textPtr,
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
                &ts, x, y);
         }
         Blt_Free(textPtr);

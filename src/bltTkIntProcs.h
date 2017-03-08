@@ -1419,18 +1419,18 @@ BLT_EXTERN int		Blt_TkTextLayout_CharBbox(Tk_TextLayout layout,
                                 int index, int *xPtr, int *yPtr, int *widthPtr,
 				int *heightPtr);
 #endif
-#ifndef Blt_TkTextLayout_UnderlineChars_DECLARED
-#define Blt_TkTextLayout_UnderlineChars_DECLARED
+#ifndef Blt_TkTextLayout_UnderlineSingleChar_DECLARED
+#define Blt_TkTextLayout_UnderlineSingleChar_DECLARED
 /* 236 */
-BLT_EXTERN void		Blt_TkTextLayout_UnderlineChars(Display *display,
+BLT_EXTERN void		Blt_TkTextLayout_UnderlineSingleChar(Display *display,
 				Drawable drawable, GC gc,
 				Tk_TextLayout layout, int x, int y,
 				int underline);
 #endif
-#ifndef Blt_Ts_UnderlineCharsInLayout_DECLARED
-#define Blt_Ts_UnderlineCharsInLayout_DECLARED
+#ifndef Blt_Ts_UnderlineChars_DECLARED
+#define Blt_Ts_UnderlineChars_DECLARED
 /* 237 */
-BLT_EXTERN void		Blt_Ts_UnderlineCharsInLayout(Tk_Window tkwin,
+BLT_EXTERN void		Blt_Ts_UnderlineChars(Tk_Window tkwin,
 				Drawable drawable, TextLayout *layoutPtr,
 				TextStyle *tsPtr, int x, int y);
 #endif
@@ -1693,8 +1693,8 @@ typedef struct BltTkIntProcs {
     Tk_TextLayout (*blt_TkTextLayout_Compute) (Blt_Font font, const char *string, int numChars, int wrapLength, Tk_Justify justify, int flags, int *widthPtr, int *heightPtr); /* 233 */
     void (*blt_TkTextLayout_Draw) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int firstChar, int lastChar); /* 234 */
     int (*blt_TkTextLayout_CharBbox) (Tk_TextLayout layout, int index, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 235 */
-    void (*blt_TkTextLayout_UnderlineChars) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int underline); /* 236 */
-    void (*blt_Ts_UnderlineCharsInLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y); /* 237 */
+    void (*blt_TkTextLayout_UnderlineSingleChar) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int underline); /* 236 */
+    void (*blt_Ts_UnderlineChars) (Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y); /* 237 */
     void (*blt_Ts_DrawText) (Tk_Window tkwin, Drawable drawable, const char *text, int textLen, TextStyle *tsPtr, int x, int y); /* 238 */
     int (*blt_MeasureText) (Blt_Font font, const char *text, int textLen, int maxLength, int *nBytesPtr); /* 239 */
     void (*blt_TkTextLayout_Free) (Tk_TextLayout layout); /* 240 */
@@ -2655,13 +2655,13 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_TkTextLayout_CharBbox \
 	(bltTkIntProcsPtr->blt_TkTextLayout_CharBbox) /* 235 */
 #endif
-#ifndef Blt_TkTextLayout_UnderlineChars
-#define Blt_TkTextLayout_UnderlineChars \
-	(bltTkIntProcsPtr->blt_TkTextLayout_UnderlineChars) /* 236 */
+#ifndef Blt_TkTextLayout_UnderlineSingleChar
+#define Blt_TkTextLayout_UnderlineSingleChar \
+	(bltTkIntProcsPtr->blt_TkTextLayout_UnderlineSingleChar) /* 236 */
 #endif
-#ifndef Blt_Ts_UnderlineCharsInLayout
-#define Blt_Ts_UnderlineCharsInLayout \
-	(bltTkIntProcsPtr->blt_Ts_UnderlineCharsInLayout) /* 237 */
+#ifndef Blt_Ts_UnderlineChars
+#define Blt_Ts_UnderlineChars \
+	(bltTkIntProcsPtr->blt_Ts_UnderlineChars) /* 237 */
 #endif
 #ifndef Blt_Ts_DrawText
 #define Blt_Ts_DrawText \

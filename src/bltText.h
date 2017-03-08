@@ -233,9 +233,8 @@ BLT_EXTERN void Blt_Ts_SetDrawStyle (TextStyle *tsPtr, Blt_Font font, GC gc,
 BLT_EXTERN TextLayout *Blt_Ts_TitleLayout(const char *string, int length, 
         TextStyle *tsPtr);
 
-BLT_EXTERN void Blt_Ts_UnderlineCharsInLayout(Tk_Window tkwin, 
-        Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, 
-        int y);
+BLT_EXTERN void Blt_Ts_UnderlineChars(Tk_Window tkwin, Drawable drawable, 
+        TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y);
 
 
 #define Blt_Ts_GetAnchor(ts)            ((ts).anchor)

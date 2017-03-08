@@ -1215,7 +1215,7 @@ Blt_Ts_DrawLayout(
 }
 
 void
-Blt_Ts_UnderlineCharsInLayout(Tk_Window tkwin, Drawable drawable,
+Blt_Ts_UnderlineChars(Tk_Window tkwin, Drawable drawable,
                               TextLayout *layoutPtr, TextStyle *stylePtr,
                               int x, int y)
 {
