@@ -49,19 +49,19 @@
  */
 typedef struct {
     const char *text;                   /* Text string to be displayed */
-
-    size_t count;                       /* Number of bytes in text. The actual
-                                         * character count may differ because of
-                                         * multi-byte UTF encodings. */
-
-    short x, y;                         /* X-Y offset of the baseline from the
-                                         * upper-left corner of the bbox. */
-
-    short x1, y1;                       /* Starting offset of text using
+    size_t numBytes;                    /* Number of bytes in text. The
+                                         * actual character count may
+                                         * differ because of multi-byte UTF
+                                         * encodings. */
+    short x, y;                         /* X-Y offset of the baseline from
+                                         * the upper-left corner of the
+                                         * bbox. */
+    short x1, y1;                       /* Starting offset of fragment
+                                         * after rotation. This is used to
+                                         * position the text when using a
                                          * rotated font. */
-    short x2, y2;                       /* Ending offset of text using
-                                         * rotated font. */
-
+    short x2, y2;                       /* Ending offset of fragment 
+                                         * after rotation. */
     int w;                              /* Width of segment in pixels. This
                                          * is used justify the fragment
                                          * with other fragments and to
@@ -98,26 +98,22 @@ typedef struct {
  */
 typedef struct {
     const char *text;                   /* Text string to be displayed */
-
-    size_t count;                       /* Number of bytes in text. The actual
-                                         * character count may differ because of
-                                         * multi-byte UTF encodings. */
-
-    short int x, y;                     /* X-Y offset of the baseline from the
-                                         * upper-left corner of the bbox. */
-
-    short int sx, sy;                   /* Starting offset of text using rotated
-                                         * font. */
-
-    Blt_Font font;                      /* Allocated font for this chunk. 
+    size_t numBytes;                    /* Number of bytes in text. The
+                                         * actual character count may
+                                         * differ because of multi-byte UTF
+                                         * encodings. */
+    short int x, y;                     /* X-Y offset of the baseline from
+                                         * the upper-left corner of the
+                                         * bbox. */
+    short int sx, sy;                   /* Starting offset of text using
+                                         * rotated font. */
+    Blt_Font font;                      /* Allocated font for this chunk.
                                          * If NULL, use the global font. */
-
     int underline;                      /* Text is underlined */
-
     int width;                          /* Width of segment in pixels. This
                                          * information is used to draw
-                                         * PostScript strings the same width
-                                         * as X. (deprecated) */
+                                         * PostScript strings the same
+                                         * width as X. (deprecated) */
 } TextItem;
 
 /*
@@ -142,27 +138,29 @@ typedef struct {
  *      and less cumbersome way of passing parameters.
  */
 typedef struct {
-    unsigned int state;                 /* If non-zero, indicates to draw text
-                                         * in the active color */
+    unsigned int state;                 /* If non-zero, indicates to draw
+                                         * text in the active color */
     XColor *color;                      /* Color to draw the text. */
     Blt_Font font;                      /* Font to use to draw text */
-    Blt_Bg bg;                  /* Background color of text.  This is
-                                         * also used for drawing disabled
-                                         * text. */
+    Blt_Bg bg;                          /* Background color of text.  This
+                                         * is also used for drawing
+                                         * disabled text. */
     float angle;                        /* Rotation of text in degrees. */
     Tk_Justify justify;                 /* Justification of the text
                                          * string. This only matters if the
                                          * text is composed of multiple
                                          * lines. */
-    Tk_Anchor anchor;                   /* Indicates how the text is anchored
-                                         * around its x,y coordinates. */
+    Tk_Anchor anchor;                   /* Indicates how the text is
+                                         * anchored around its x,y
+                                         * coordinates. */
     Blt_Pad padX, padY;                 /* # pixels padding of around text
                                          * region. */
-    unsigned short int leader;          /* # pixels spacing between lines of
-                                         * text. */
+    unsigned short int leader;          /* # pixels spacing between lines
+                                         * of text. */
     short int underline;                /* Index of character to be underlined,
                                          * -1 if no underline. */
-    int maxLength;                      /* Maximum length in pixels of text */
+    int maxLength;                      /* Maximum length in pixels of
+                                         * text */
     /* Private fields. */
     unsigned short flags;
     GC gc;                              /* GC used to draw the text */

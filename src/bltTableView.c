@@ -814,15 +814,6 @@ PossiblyRedraw(TableView *viewPtr)
 }
 
 static Tcl_Obj *
-GetColumnIndexObj(TableView *viewPtr, Column *colPtr) 
-{
-    long index;
-
-    index = blt_table_column_index(viewPtr->table, colPtr->column);
-    return Tcl_NewLongObj(index);
-}
-
-static Tcl_Obj *
 GetRowIndexObj(TableView *viewPtr, Row *rowPtr) 
 {
     long index;
@@ -831,82 +822,166 @@ GetRowIndexObj(TableView *viewPtr, Row *rowPtr)
     return Tcl_NewLongObj(index);
 }
 
-static void
-RenumberColumns(TableView *viewPtr) 
+static Tcl_Obj *
+GetColumnIndexObj(TableView *viewPtr, Column *colPtr) 
 {
-    size_t i;
-    Column *colPtr;
+    long index;
 
-    for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
-         colPtr = colPtr->nextPtr, i++) {
-        colPtr->index = i;
-    }
-    assert(i == viewPtr->numColumns);
-    /* Rebuild the column map. */
-    if (viewPtr->numMappedColumns != viewPtr->numColumns) {
-        Column **map;
-        size_t i;
-        Column *colPtr;
-
-        map = Blt_AssertMalloc(viewPtr->numColumns * sizeof(Column *));
-        for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
-             colPtr = colPtr->nextPtr, i++) {
-            map[i] = colPtr;
-        }
-        if (viewPtr->columnMap != NULL) {
-            Blt_Free(viewPtr->columnMap);
-        }
-        viewPtr->columnMap = map;
-        viewPtr->numMappedColumns = viewPtr->numColumns;
-    } else {
-        size_t i;
-        Column *colPtr;
-
-        for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
-             colPtr = colPtr->nextPtr, i++) {
-            viewPtr->columnMap[i] = colPtr;
-        }
-    }
-    viewPtr->flags &= ~REINDEX_COLUMNS;
+    index = blt_table_column_index(viewPtr->table, colPtr->column);
+    return Tcl_NewLongObj(index);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RethreadRows --
+ *
+ *      Rethreads the list of rows according to the current row map.  This
+ *      is done after the rows are sorted and the list needs to reflect the
+ *      reordering in the map.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RethreadRows(TableView *viewPtr) 
+{
+    Row *prevPtr, *rowPtr;
+    size_t i;
+    
+    /* Relink the first N-1 rows. */
+    prevPtr = NULL;
+    for (i = 0; i < (viewPtr->numRows - 1); i++) {
+        Row *rowPtr;
+        
+        rowPtr = viewPtr->rowMap[i];
+        rowPtr->index = i;
+        rowPtr->prevPtr = prevPtr;
+        rowPtr->nextPtr = viewPtr->rowMap[i+1];
+        prevPtr = rowPtr;
+    }
+    /* Relink the last row. */
+    rowPtr = viewPtr->rowMap[i];
+    rowPtr->index = i;
+    rowPtr->prevPtr = prevPtr;
+    rowPtr->nextPtr = NULL;
+    /* Reset the head and tail. */
+    viewPtr->rowTailPtr = rowPtr;
+    viewPtr->rowHeadPtr = viewPtr->rowMap[0];
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RethreadColumns --
+ *
+ *      Rethreads the list of columns according to the current row map.  This
+ *      is done after the columns are sorted and the list needs to reflect the
+ *      reordering in the map.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RethreadColumns(TableView *viewPtr) 
+{
+    Column *prevPtr, *colPtr;
+    size_t i;
+    
+    /* Relink the first N-1 columns. */
+    prevPtr = NULL;
+    for (i = 0; i < (viewPtr->numColumns - 1); i++) {
+        Column *colPtr;
+        
+        colPtr = viewPtr->columnMap[i];
+        colPtr->index = i;
+        colPtr->prevPtr = prevPtr;
+        colPtr->nextPtr = viewPtr->columnMap[i+1];
+        prevPtr = colPtr;
+    }
+    /* Relink the last column. */
+    colPtr = viewPtr->columnMap[i];
+    colPtr->index = i;
+    colPtr->prevPtr = prevPtr;
+    colPtr->nextPtr = NULL;
+    /* Reset the head and tail. */
+    viewPtr->colTailPtr = colPtr;
+    viewPtr->colHeadPtr = viewPtr->columnMap[0];
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RenumberRows --
+ *
+ *      Reindexes the rows according to their current location in the row
+ *      list.  This is reflected in both the row map and in the index in
+ *      the individual row structure.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 RenumberRows(TableView *viewPtr) 
 {
     size_t i;
     Row *rowPtr;
 
-    for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
-         rowPtr = rowPtr->nextPtr, i++) {
-        rowPtr->index = i;
-    }
-    assert(i == viewPtr->numRows);
-    /* Rebuild the row map. */
+    /* If the sizes are different reallocate the row map. */
     if (viewPtr->numMappedRows != viewPtr->numRows) {
         Row **map;
-        size_t i;
-        Row *rowPtr;
 
         map = Blt_AssertMalloc(viewPtr->numRows * sizeof(Row *));
-        for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
-             rowPtr = rowPtr->nextPtr, i++) {
-            map[i] = rowPtr;
-        }
         if (viewPtr->rowMap != NULL) {
             Blt_Free(viewPtr->rowMap);
         }
         viewPtr->rowMap = map;
         viewPtr->numMappedRows = viewPtr->numRows;
-    } else {
-        size_t i;
-        Row *rowPtr;
-
-        for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
-             rowPtr = rowPtr->nextPtr, i++) {
-            viewPtr->rowMap[i] = rowPtr;
-        }
+    } 
+    /* Reset the row map and reindex the rows. */
+    for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+         rowPtr = rowPtr->nextPtr, i++) {
+        rowPtr->index = i;
+        viewPtr->rowMap[i] = rowPtr;
     }
+    assert(i == viewPtr->numRows);
     viewPtr->flags &= ~REINDEX_ROWS;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RenumberColumns --
+ *
+ *      Reindexes the columns according to their current location in the
+ *      column list.  This is reflected in both the column map and in the
+ *      index in the individual column structure.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RenumberColumns(TableView *viewPtr) 
+{
+    size_t i;
+    Column *colPtr;
+
+    /* If the sizes are different reallocate the column map. */
+    if (viewPtr->numMappedColumns != viewPtr->numColumns) {
+        Column **map;
+
+        map = Blt_AssertMalloc(viewPtr->numColumns * sizeof(Column *));
+        if (viewPtr->columnMap != NULL) {
+            Blt_Free(viewPtr->columnMap);
+        }
+        viewPtr->columnMap = map;
+        viewPtr->numMappedColumns = viewPtr->numColumns;
+    } 
+    /* Reset the column map and reindex the columns. */
+    for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL;
+         colPtr = colPtr->nextPtr, i++) {
+        colPtr->index = i;
+        viewPtr->columnMap[i] = colPtr;
+    }
+    assert(i == viewPtr->numColumns);
+    viewPtr->flags &= ~REINDEX_COLUMNS;
 }
 
 static Row *
@@ -1142,7 +1217,7 @@ ClearSelections(TableView *viewPtr)
 static TableView *tableViewInstance;
 
 static int
-CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
+CompareRowValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
 {
     TableView *viewPtr;
     const char *s1, *s2;
@@ -1209,6 +1284,45 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
 }
 
 
+static int
+CompareRowsWithCommand(TableView *viewPtr, Column *colPtr, Row *r1Ptr, 
+                       Row *r2Ptr)
+{
+    Tcl_Interp *interp;
+    Tcl_Obj *objPtr, *cmdObjPtr, *resultObjPtr;
+    int result;
+
+    interp = viewPtr->interp;
+    cmdObjPtr = Tcl_DuplicateObj(colPtr->sortCmdObjPtr);
+    /* Table name */
+    objPtr = Tcl_NewStringObj(blt_table_name(viewPtr->table), -1);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    /* Row */
+    objPtr = GetRowIndexObj(viewPtr, r1Ptr);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    /* Column */
+    objPtr = GetColumnIndexObj(viewPtr, colPtr);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    /* Row */
+    objPtr = GetRowIndexObj(viewPtr, r2Ptr);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    /* Column */
+    objPtr = GetColumnIndexObj(viewPtr, colPtr);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    
+    Tcl_IncrRefCount(cmdObjPtr);
+    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+    Tcl_DecrRefCount(cmdObjPtr);
+    if (result != TCL_OK) {
+        Tcl_BackgroundError(interp);
+    }
+    resultObjPtr = Tcl_GetObjResult(interp);
+    if (Tcl_GetIntFromObj(interp, resultObjPtr, &result) != TCL_OK) {
+        Tcl_BackgroundError(interp);
+    }
+    return result;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1243,39 +1357,9 @@ CompareRows(const void *a, const void *b)
         /* Fetch the data for sorting. */
         if ((colPtr->sortType == SORT_COMMAND) && 
             (colPtr->sortCmdObjPtr != NULL)) {
-            Tcl_Interp *interp;
-            Tcl_Obj *objPtr, *cmdObjPtr, *resultObjPtr;
-
-            interp = viewPtr->interp;
-            cmdObjPtr = Tcl_DuplicateObj(colPtr->sortCmdObjPtr);
-            /* Table name */
-            objPtr = Tcl_NewStringObj(blt_table_name(viewPtr->table), -1);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-            /* Row */
-            objPtr = GetRowIndexObj(viewPtr, r1Ptr);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-            /* Column */
-            objPtr = GetColumnIndexObj(viewPtr, colPtr);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-            /* Row */
-            objPtr = GetRowIndexObj(viewPtr, r2Ptr);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-            /* Column */
-            objPtr = GetColumnIndexObj(viewPtr, colPtr);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-
-            Tcl_IncrRefCount(cmdObjPtr);
-            result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-            Tcl_DecrRefCount(cmdObjPtr);
-            if (result != TCL_OK) {
-                Tcl_BackgroundError(interp);
-            }
-            resultObjPtr = Tcl_GetObjResult(interp);
-            if (Tcl_GetIntFromObj(interp, resultObjPtr, &result) != TCL_OK) {
-                Tcl_BackgroundError(interp);
-            }
+            result = CompareRowsWithCommand(viewPtr, colPtr, r1Ptr, r2Ptr);
         } else {
-            result = CompareValues(colPtr, r1Ptr, r2Ptr);
+            result = CompareRowValues(colPtr, r1Ptr, r2Ptr);
         }
         if (result != 0) {
             break;
@@ -1300,7 +1384,6 @@ static void
 SortTableView(TableView *viewPtr)
 {
     SortInfo *sortPtr = &viewPtr->sort;
-    size_t i;
 
     tableViewInstance = viewPtr;
     viewPtr->sort.flags &= ~SORT_PENDING;
@@ -1327,20 +1410,7 @@ SortTableView(TableView *viewPtr)
         qsort((char *)viewPtr->rowMap, viewPtr->numRows, sizeof(Row *),
               (QSortCompareProc *)CompareRows);
     }
-    /* Rethread list of rows according to the sorted map. */
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-        Row *prevPtr, *nextPtr;
-
-        prevPtr = (i > 0) ? viewPtr->rowMap[i-1] : NULL;
-        nextPtr = ((i+i) < viewPtr->numRows) ? viewPtr->rowMap[i+1] : NULL;
-        rowPtr = viewPtr->rowMap[i];
-        rowPtr->prevPtr = prevPtr;
-        rowPtr->nextPtr = nextPtr;
-        rowPtr->index = i;
-    }
-    viewPtr->rowHeadPtr = viewPtr->rowMap[0];
-    viewPtr->rowTailPtr = viewPtr->rowMap[viewPtr->numRows-1];
+    RethreadRows(viewPtr);
     sortPtr->viewIsDecreasing = sortPtr->decreasing;
     sortPtr->flags |= SORTED;
     viewPtr->flags |= LAYOUT_PENDING;
@@ -12409,23 +12479,7 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
         Blt_Free(viewPtr->columnMap);
     }
 
-    /* Rethread list of columns according to the sorted map. */
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-        Column *prevPtr, *nextPtr;
-
-        prevPtr = (i > 0) ? viewPtr->columnMap[i-1] : NULL;
-        nextPtr = ((i+i) < viewPtr->numColumns) ? viewPtr->columnMap[i+1] : NULL;
-        colPtr = viewPtr->columnMap[i];
-        colPtr->prevPtr = prevPtr;
-        colPtr->nextPtr = nextPtr;
-        colPtr->index = i;
-    }
-    viewPtr->colHeadPtr = viewPtr->columnMap[0];
-    viewPtr->colTailPtr = viewPtr->columnMap[viewPtr->numColumns-1];
-    viewPtr->columnMap = columnMap;
-    viewPtr->numColumns = numColumns;
-    RenumberColumns(viewPtr);
+    RethreadColumns(viewPtr);
 
     /* 8. Allocate a new row array that can hold all the rows. */
     oldSize = viewPtr->numRows;
@@ -12516,6 +12570,8 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
     }
     viewPtr->rowMap = rowMap;
     viewPtr->numRows = numRows;
+
+    RethreadRows(viewPtr);
 
     /* 13. Create cells */
     for (i = 0; i < viewPtr->numRows; i++) {

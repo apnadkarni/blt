@@ -194,7 +194,6 @@ bind BltTreeView <KeyPress-Left> {
 #   Open the current node.
 bind BltTreeView <KeyPress-Right> {
     %W open focus
-    %W see focus -anchor w
 }
 
 # Up (arrow key)
@@ -357,7 +356,7 @@ bind BltTreeView <ButtonRelease-2> {
 #
 # Initialize --
 #
-#	Invoked by internally by Treeview_Init routine.  Initializes the
+#	Invoked internally by Treeview_Init routine.  Initializes the
 #	default bindings for the treeview widget entries.  These are local
 #	to the widget, so they can't be set through the widget's class bind
 #	tags.
@@ -390,7 +389,6 @@ proc blt::TreeView::Initialize { w } {
     $w button bind all <ButtonRelease-1> {
         blt::TreeView::trace "ButtonRelease-1 for Button"
 	if { [%W button contains %x %y] == $blt::TreeView::_private(lastButton) } {
-	    %W see -anchor nw current
 	    %W toggle current
 	} else {
             blt::TreeView::trace "not over button"

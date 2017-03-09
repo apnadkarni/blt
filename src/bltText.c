@@ -629,7 +629,7 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
                 width = 0;
             }
             fp->w = width;
-            fp->count = count;
+            fp->numBytes = count;
             fp->y1 = fp->y = maxHeight + fm.ascent;
             fp->text = start;
             maxHeight += lineHeight;
@@ -649,7 +649,7 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
             maxWidth = width;
         }
         fp->w = width;
-        fp->count = count;
+        fp->numBytes = count;
         fp->y1 = fp->y = maxHeight + fm.ascent;
         fp->text = start;
         maxHeight += lineHeight;
@@ -679,7 +679,7 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
             int first, last;
 
             first = fp->text - text;
-            last = first + fp->count;
+            last = first + fp->numBytes;
             if ((tsPtr->underline >= first) && (tsPtr->underline < last)) {
                 layoutPtr->underlinePtr = fp;
                 layoutPtr->underline = tsPtr->underline - first;
@@ -792,17 +792,17 @@ Blt_DrawLayout(Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font,
         x1 = x + fp->x1, y1 = y + fp->y1;
         if ((maxLength > 0) && ((fp->w + fp->x) > maxLength)) {
             Blt_DrawWithEllipsis(tkwin, drawable, gc, font, depth, angle, 
-                fp->text, fp->count, x1, y1, maxLength - fp->x);
+                fp->text, fp->numBytes, x1, y1, maxLength - fp->x);
         } else {
             Blt_Font_Draw(Tk_Display(tkwin), drawable, gc, font, depth, angle, 
-                fp->text, fp->count, x1, y1);
+                fp->text, fp->numBytes, x1, y1);
         }
     }
     if (layoutPtr->underlinePtr != NULL) {
         /* Single underlined character. */
         fp = layoutPtr->underlinePtr;
         Blt_Font_UnderlineChars(Tk_Display(tkwin), drawable, gc, font, fp->text,
-                fp->count, x + fp->x1, y + fp->y1, layoutPtr->underline, 
+                fp->numBytes, x + fp->x1, y + fp->y1, layoutPtr->underline, 
                 layoutPtr->underline + 1, maxLength);
     }
 }
@@ -1215,9 +1215,8 @@ Blt_Ts_DrawLayout(
 }
 
 void
-Blt_Ts_UnderlineChars(Tk_Window tkwin, Drawable drawable,
-                              TextLayout *layoutPtr, TextStyle *stylePtr,
-                              int x, int y)
+Blt_Ts_UnderlineChars(Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr,
+                      TextStyle *stylePtr, int x, int y)
 {
     float angle;
     int w, h;
@@ -1248,7 +1247,7 @@ Blt_Ts_UnderlineChars(Tk_Window tkwin, Drawable drawable,
 
             x1 = x + fp->x1, y1 = y + fp->y1;
             Blt_Font_UnderlineChars(Tk_Display(tkwin), drawable, stylePtr->gc, 
-                stylePtr->font, fp->text, fp->count, x1, y1, 0, -1, 
+                stylePtr->font, fp->text, fp->numBytes, x1, y1, 0, -1, 
                 stylePtr->maxLength);
         }
         if (stylePtr->rgn != NULL) {
@@ -2206,7 +2205,7 @@ Blt_Ts_TitleLayout(const char *text, int numBytes, TextStyle *tsPtr)
             }
         }
         fp->text  = text;
-        fp->count = numBytes;
+        fp->numBytes = numBytes;
         fp->w = w;
         fp->y = fp->y1 = maxHeight + fm.ascent;
         if (w > maxWidth) {
