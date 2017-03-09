@@ -1799,7 +1799,9 @@ IconVarTraceProc(
     if (flags & TCL_TRACE_WRITES) {
         Icon icon;
         Tcl_Obj *objPtr;
-
+        const char *imageName;
+        int length;
+        
         /*
          * Update the style's icon with the image whose name is stored in
          * the variable.
@@ -1809,9 +1811,14 @@ IconVarTraceProc(
         if (objPtr == NULL) {
             return GetInterpResult(interp);
         }
-        icon = GetIcon((CellStyle *)stylePtr, Tcl_GetString(objPtr));
-        if (icon == NULL) {
-            return GetInterpResult(interp);
+        imageName = Tcl_GetStringFromObj(objPtr, &length);
+        if (length > 0) {
+            icon = GetIcon((CellStyle *)stylePtr, imageName);
+            if (icon == NULL) {
+                return GetInterpResult(interp);
+            }
+        } else {
+            icon = NULL;
         }
         if (stylePtr->icon != NULL) {
             FreeIcon(stylePtr->icon);
