@@ -7401,7 +7401,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             Blt_Ts_SetFont(ts, stylePtr->textFont);
             Blt_Ts_SetForeground(ts, fg);
             Blt_Ts_SetAnchor(ts, TK_ANCHOR_NW);
-            Blt_Ts_SetUnderline(ts, itemPtr->underline);
+            Blt_Ts_SetUnderlineChar(ts, itemPtr->underline);
             Blt_Ts_SetJustify(ts, TK_JUSTIFY_LEFT);
             Blt_DrawText(comboPtr->tkwin, drawable, (char *)itemPtr->text, &ts,
                          tx, ty);

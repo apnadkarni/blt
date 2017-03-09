@@ -8024,8 +8024,8 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         Blt_Ts_DrawLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr, &ts, 
                           x + rPtr->x, y + rPtr->y);
         if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
-            Blt_Ts_UnderlineLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr,
-                        &ts,  x + rPtr->x, y + rPtr->y);
+            Blt_Ts_UnderlineChars(setPtr->tkwin, drawable, 
+                tabPtr->layoutPtr, &ts,  x + rPtr->x, y + rPtr->y);
         }
     }
     rPtr = &tabPtr->focusRegion;

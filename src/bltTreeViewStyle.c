@@ -2584,7 +2584,8 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -3074,7 +3075,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
     }
     stylePtr->flags &= ~STYLE_DIRTY;
@@ -3583,7 +3585,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -4098,7 +4101,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -4578,7 +4582,8 @@ RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStyleP
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }

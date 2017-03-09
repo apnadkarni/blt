@@ -178,6 +178,33 @@ ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
     return (numBytes > 0) ? TCL_ERROR : TCL_OK;
 }
 
+void
+Blt_DetachPids(int numPids, Blt_Pid *pids)
+{
+    Tcl_Pid *tclPids;
+    Tcl_Pid staticStorage[64];
+    int i, count;
+
+    if (numPids > 64) {
+        tclPids = Blt_AssertMalloc(numPids * sizeof(Tcl_Pid));
+    } else {
+        tclPids = staticStorage;
+    }
+    for (i = count = 0; i < numPids; i++) {
+        if (pids[i].pid != -1) {
+            long lpid;
+
+            lpid = pids[i].pid;
+            tclPids[count] = (Tcl_Pid)lpid;
+            count++;
+        }
+    }
+    Tcl_DetachPids(count, tclPids);
+    if (tclPids != staticStorage) {
+        Blt_Free(tclPids);
+    }
+}
+
 #ifndef HAVE_EXECVPE
 
 /* The following routines are used to emulate the "execvpe" system call for
@@ -1538,11 +1565,7 @@ Blt_CreatePipeline(
         *stderrPipePtr = -1;
     }
     if (pids != NULL) {
-        for (i = 0; i < numPids; i++) {
-            if (pids[i].pid != -1) {
-                Tcl_DetachPids(1, (Tcl_Pid *)(pids + i));
-            }
-        }
+        Blt_DetachPids(numPids, pids);
         Blt_Free(pids);
     }
     numPids = -1;

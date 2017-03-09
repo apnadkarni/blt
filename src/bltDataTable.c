@@ -513,10 +513,11 @@ static int
 ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
 {
     Rows *rowsPtr;
-    size_t i, prevUsed;
+    size_t i, oldSize, oldUsed;
 
     rowsPtr = &tablePtr->corePtr->rows;
-    prevUsed = rowsPtr->numUsed;
+    oldSize = rowsPtr->numAllocated;
+    oldUsed = rowsPtr->numUsed;
 
     /* If we are going to exceed the current number of allocated rows,
      * re-allocate a bigger row map and column vectors. */
@@ -546,7 +547,7 @@ ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
                 Value *vector;
                 
                 vector = Blt_Realloc(colPtr->vector, newSize * sizeof(Value));
-                memset(vector + prevUsed, 0, numExtraRows * sizeof(Value));
+                memset(vector + oldSize, 0, (newSize-oldSize) * sizeof(Value));
                 colPtr->vector = vector;
             }
         }        
@@ -560,7 +561,7 @@ ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
         size_t offset, nextIndex;
 
         rowPtr = NewRow(rowsPtr);
-        offset = nextIndex = i + prevUsed;
+        offset = nextIndex = i + oldUsed;
         if (Blt_Chain_GetLength(rowsPtr->freeList) > 0) {
             Blt_ChainLink link;
             
@@ -829,9 +830,11 @@ GetValue(Table *tablePtr, Row *rowPtr, Column *colPtr)
 {
     if (colPtr->vector == NULL) {
         Value *vector;
+        Rows *rowsPtr;
 
-        assert(tablePtr->corePtr->rows.numAllocated > 0);
-        vector = Blt_Calloc(tablePtr->corePtr->rows.numAllocated,sizeof(Value));
+        rowsPtr = &tablePtr->corePtr->rows;
+        assert(rowsPtr->numAllocated > 0);
+        vector = Blt_Calloc(rowsPtr->numAllocated, sizeof(Value));
         if (vector == NULL) {
             return NULL;
         }
@@ -5709,8 +5712,8 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
 int
 blt_table_delete_row(Table *tablePtr, Row *rowPtr)
 {
-    UnsetRowValues(tablePtr, rowPtr);
     NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_DELETED);
+    UnsetRowValues(tablePtr, rowPtr);
     Blt_Tags_ClearTagsFromItem(tablePtr->rowTags, rowPtr);
     blt_table_clear_row_traces(tablePtr, rowPtr);
     ClearRowNotifiers(tablePtr, rowPtr);
@@ -6175,10 +6178,10 @@ blt_table_file_restore(Tcl_Interp *interp, BLT_TABLE table,
             result = TCL_ERROR;
         }
         if (result != TCL_OK) {
-            Blt_Free(restore.argv);
+            Tcl_Free((char *)restore.argv); /* Allocated by Tcl_SplitList */
             break;
         }
-        Blt_Free(restore.argv);
+        Tcl_Free((char *)restore.argv); /* Allocated by Tcl_SplitList */
     }
     Blt_DeleteHashTable(&restore.rowIndices);
     Blt_DeleteHashTable(&restore.colIndices);

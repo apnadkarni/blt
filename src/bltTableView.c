@@ -858,6 +858,14 @@ RenumberColumns(TableView *viewPtr)
         }
         viewPtr->columnMap = map;
         viewPtr->numMappedColumns = viewPtr->numColumns;
+    } else {
+        size_t i;
+        Column *colPtr;
+
+        for (i = 0, colPtr = viewPtr->colHeadPtr; colPtr != NULL; 
+             colPtr = colPtr->nextPtr, i++) {
+            viewPtr->columnMap[i] = colPtr;
+        }
     }
     viewPtr->flags &= ~REINDEX_COLUMNS;
 }
@@ -889,6 +897,14 @@ RenumberRows(TableView *viewPtr)
         }
         viewPtr->rowMap = map;
         viewPtr->numMappedRows = viewPtr->numRows;
+    } else {
+        size_t i;
+        Row *rowPtr;
+
+        for (i = 0, rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+             rowPtr = rowPtr->nextPtr, i++) {
+            viewPtr->rowMap[i] = rowPtr;
+        }
     }
     viewPtr->flags &= ~REINDEX_ROWS;
 }
@@ -12199,7 +12215,7 @@ AddRow(TableView *viewPtr, BLT_TABLE_ROW row)
         AddCellGeometry(viewPtr, cellPtr);
         Blt_SetHashValue(h2Ptr, cellPtr);
     }
-    viewPtr->flags |= LAYOUT_PENDING | REINDEX_ROWS;
+    viewPtr->flags |= GEOMETRY | LAYOUT_PENDING | REINDEX_ROWS;
     PossiblyRedraw(viewPtr);
 }
 
@@ -12230,7 +12246,7 @@ AddColumn(TableView *viewPtr, BLT_TABLE_COLUMN col)
         AddCellGeometry(viewPtr, cellPtr);
         Blt_SetHashValue(h2Ptr, cellPtr);
     }
-    viewPtr->flags |= LAYOUT_PENDING | REINDEX_COLUMNS;
+    viewPtr->flags |= GEOMETRY | LAYOUT_PENDING | REINDEX_COLUMNS;
     PossiblyRedraw(viewPtr);
 }
 
@@ -12392,6 +12408,21 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
     if (viewPtr->columnMap != NULL) {
         Blt_Free(viewPtr->columnMap);
     }
+
+    /* Rethread list of columns according to the sorted map. */
+    for (i = 0; i < viewPtr->numColumns; i++) {
+        Column *colPtr;
+        Column *prevPtr, *nextPtr;
+
+        prevPtr = (i > 0) ? viewPtr->columnMap[i-1] : NULL;
+        nextPtr = ((i+i) < viewPtr->numColumns) ? viewPtr->columnMap[i+1] : NULL;
+        colPtr = viewPtr->columnMap[i];
+        colPtr->prevPtr = prevPtr;
+        colPtr->nextPtr = nextPtr;
+        colPtr->index = i;
+    }
+    viewPtr->colHeadPtr = viewPtr->columnMap[0];
+    viewPtr->colTailPtr = viewPtr->columnMap[viewPtr->numColumns-1];
     viewPtr->columnMap = columnMap;
     viewPtr->numColumns = numColumns;
     RenumberColumns(viewPtr);
@@ -12761,6 +12792,7 @@ DisplayProc(ClientData clientData)
 
             colPtr = viewPtr->visibleColumns[j];
             cellPtr = GetCell(viewPtr, rowPtr, colPtr);
+            assert(cellPtr != NULL);
             DisplayCell(cellPtr, drawable, FALSE);
         }
     }

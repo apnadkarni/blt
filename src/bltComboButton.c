@@ -1929,7 +1929,7 @@ DrawLabel(ComboButton *comboPtr, Drawable drawable, int x, int y, int w, int h)
         Blt_Ts_SetFont(ts, comboPtr->font);
         Blt_Ts_SetAnchor(ts, TK_ANCHOR_NW);
         Blt_Ts_SetJustify(ts, comboPtr->justify);
-        Blt_Ts_SetUnderline(ts, comboPtr->underline);
+        Blt_Ts_SetUnderlineChar(ts, comboPtr->underline);
         Blt_Ts_SetMaxLength(ts, w);
         Blt_Ts_SetForeground(ts, fg);
         Blt_Ts_DrawText(comboPtr->tkwin, drawable, comboPtr->text, 

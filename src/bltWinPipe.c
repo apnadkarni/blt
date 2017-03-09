@@ -2302,13 +2302,7 @@ Blt_CreatePipeline(
 	err.pipe = INVALID_HANDLE_VALUE;
     }
     if (pids != NULL) {
-        for (i = 0; i < numPids; i++) {
-            if (pids[i].hProcess != INVALID_HANDLE_VALUE) {
-                /* It's Ok to use Tcl_DetachPids, since for WIN32 it's really
-                 * using process handles, not process ids. */
-                Tcl_DetachPids(1, (Tcl_Pid *)&pids[i].pid);
-            }
-        }
+        Blt_DetachPids(numPids, pids);
         Blt_Free(pids);
     }
     numPids = -1;
@@ -2498,3 +2492,28 @@ Blt_AsyncWrite(int f, const char *buffer, size_t size)
     SetEvent(pipePtr->idleEvent);
     return size;
 }
+
+void
+Blt_DetachPids(int numPids, Blt_Pid *pids)
+{
+    Tcl_Pid *tclPids;
+    Tcl_Pid staticStorage[64];
+    int i, count;
+
+    if (numPids > 64) {
+        tclPids = Blt_AssertMalloc(numPids * sizeof(Tcl_Pid));
+    } else {
+        tclPids = staticStorage;
+    }
+    for (i = count = 0; i < numPids; i++) {
+        if (pids[i].hProcess != INVALID_HANDLE_VALUE) {
+            tclPids[count] = (Tcl_Pid)pids[i].pid;
+            count++;
+        }
+    }
+    Tcl_DetachPids(count, tclPids);
+    if (tclPids != staticStorage) {
+        Blt_Free(tclPids);
+    }
+}
+

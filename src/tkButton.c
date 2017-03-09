@@ -1211,7 +1211,7 @@ DestroyButton(Button *butPtr)
             TCL_GLOBAL_ONLY | TCL_TRACE_WRITES | TCL_TRACE_UNSETS,
             ButtonVarProc, (ClientData)butPtr);
     }
-    Blt_FreeTextLayout(butPtr->textLayout);
+    Blt_TkTextLayout_Free(butPtr->textLayout);
     Blt_FreeOptions(configSpecs, (char *)butPtr, butPtr->display,
         configFlags[butPtr->type]);
     Tcl_EventuallyFree((ClientData)butPtr, FreeButton);
@@ -1739,9 +1739,9 @@ DisplayButton(ClientData clientData)
             x += offset;
             y += offset;
         }
-        Blt_DrawTextLayout(butPtr->display, pixmap, gc, butPtr->textLayout,
+        Blt_TkTextLayout_Draw(butPtr->display, pixmap, gc, butPtr->textLayout,
             x, y, 0, -1);
-        Blt_UnderlineTextLayout(butPtr->display, pixmap, gc,
+        Blt_TkTextLayout_UnderlineSingleChar(butPtr->display, pixmap, gc,
             butPtr->textLayout, x, y, butPtr->underline);
         y += butPtr->textHeight / 2;
     }
@@ -1886,9 +1886,9 @@ ComputeButtonGeometry(Button *butPtr)
         Blt_FontMetrics fm;
 
         if (butPtr->textLayout != NULL) {
-            Blt_FreeTextLayout(butPtr->textLayout);
+            Blt_TkTextLayout_Free(butPtr->textLayout);
         }
-        butPtr->textLayout = Blt_ComputeTextLayout(butPtr->font,
+        butPtr->textLayout = Blt_TkTextLayout_Compute(butPtr->font,
             butPtr->text, -1, butPtr->wrapLength, butPtr->justify, 0,
             &butPtr->textWidth, &butPtr->textHeight);
         width = butPtr->textWidth;
