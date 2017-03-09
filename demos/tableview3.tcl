@@ -159,8 +159,8 @@ set top [file normalize ./images]
 set trim "$top"
 
 set table [blt::datatable create]    
-puts stderr [time { $table dir $top -pattern "*"}]
-$table column copy name button
+puts stderr [time { $table dir $top -pattern "*" -fields all}]
+$table column copy button name
 
 blt::scrollset .ss \
     -window $view \

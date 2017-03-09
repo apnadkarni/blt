@@ -2931,30 +2931,6 @@ RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         numRows += restorePtr->numRows;
         numCols += restorePtr->numCols;
     }
-#ifdef notdef
-    if (numCols > blt_table_num_columns(table)) {
-        long needed;
-
-        needed = numCols - blt_table_num_columns(table);
-        if (!GrowColumnStorage(table, needed)) {
-            RestoreError(interp, restorePtr);
-            Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(needed),
-                        "\"", " extra columns.", (char *)NULL);
-            return TCL_ERROR;
-        }
-    }
-    if (numRows > blt_table_num_rows(table)) {
-        long needed;
-
-        needed = numRows - blt_table_num_rows(table);
-        if (!GrowRowMap(table, needed)) {
-            RestoreError(interp, restorePtr);
-            Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(needed), 
-                "\" extra rows.", (char *)NULL);
-            return TCL_ERROR;
-        }
-    }
-#endif
     if (Blt_GetLong(interp, restorePtr->argv[3], &time) != TCL_OK) {
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
@@ -3750,9 +3726,6 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     iterPtr->numEntries = 0;
 
     spec = blt_table_column_spec(table, objPtr, &tag);
-#ifdef notdef
-    fprintf(stderr, "iterate_column: tag=%s spec=%d\n", tag, spec);
-#endif
     switch (spec) {
     case TABLE_SPEC_INDEX:
         p = Tcl_GetString(objPtr);
@@ -5717,15 +5690,16 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
         Blt_Chain_Destroy(chain);
         return TCL_ERROR;
     }
+    /* For each new row generate a notify event. */
     for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
          link = Blt_Chain_NextLink(link), i++) {
-        BLT_TABLE_ROW row;
+        Row *rowPtr;
 
-        row = Blt_Chain_GetValue(link);
+        rowPtr = Blt_Chain_GetValue(link);
         if (rows != NULL) {
-            rows[i] = row;
+            rows[i] = rowPtr;
         }
-        NotifyRowChanged(tablePtr, row, TABLE_NOTIFY_ROWS_CREATED);
+        NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_CREATED);
     }
     assert(Blt_Chain_GetLength(chain) > 0);
     Blt_Chain_Destroy(chain);
@@ -5959,6 +5933,7 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t numExtra,
         Blt_Chain_Destroy(chain);
         return TCL_ERROR;
     }
+    /* For each new column generate a notify event. */
     for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
          link = Blt_Chain_NextLink(link), i++) {
         Column *colPtr;
