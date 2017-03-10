@@ -11994,6 +11994,12 @@ ComputeVisibleEntries(TableView *viewPtr)
     long low, high;
     long first, last;
 
+    if (viewPtr->flags & REINDEX_ROWS) {
+        RenumberRows(viewPtr);
+    }
+    if (viewPtr->flags & REINDEX_COLUMNS) {
+        RenumberColumns(viewPtr);
+    }
     xOffset = Blt_AdjustViewport(viewPtr->xOffset, viewPtr->worldWidth,
         VPORTWIDTH(viewPtr), viewPtr->xScrollUnits, viewPtr->scrollMode);
     yOffset = Blt_AdjustViewport(viewPtr->yOffset, 

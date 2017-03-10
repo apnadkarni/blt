@@ -468,7 +468,7 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
                 w = 0;
             }
             fp->w = w;
-            fp->count = count;
+            fp->numBytes = count;
             fp->y1 = fp->y = maxHeight + fontPtr->ascent;
             fp->text = start;
             maxHeight += lineHeight;
@@ -489,7 +489,7 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
             maxWidth = w;
         }
         fp->w = w;
-        fp->count = count;
+        fp->numBytes = count;
         fp->y1 = fp->y = maxHeight + fontPtr->ascent;
         fp->text = start;
         maxHeight += lineHeight;
@@ -519,7 +519,7 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
             int first, last;
 
             first = fp->text - text;
-            last = first + fp->count;
+            last = first + fp->numBytes;
             if ((tsPtr->underline >= first) && (tsPtr->underline < last)) {
                 layoutPtr->underlinePtr = fp;
                 layoutPtr->underline = tsPtr->underline - first;
@@ -1191,7 +1191,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
             RotateFont(fontPtr, switches.angle);
             for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments;
                 fp < fend; fp++) {
-                PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->x1, 
+                PaintText(destPtr, fontPtr, fp->text, fp->numBytes, x + fp->x1, 
                         y + fp->y1, switches.kerning, switches.brush);
             }
         } else {
@@ -1205,7 +1205,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(tmp, fontPtr, fp->text, fp->count, fp->x1, fp->y1, 
+                PaintText(tmp, fontPtr, fp->text, fp->numBytes, fp->x1, fp->y1, 
                         switches.kerning, switches.brush);
             }
             rotPtr = Blt_RotatePicture(tmp, switches.angle);
@@ -1246,7 +1246,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
+                PaintText(tmpPtr, fontPtr, fp->text, fp->numBytes, 
                           fp->x + shadowPtr->width, 
                           fp->y + shadowPtr->width, 
                           switches.kerning, brush);
@@ -1259,7 +1259,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(destPtr, fontPtr, fp->text, fp->count, 
+                PaintText(destPtr, fontPtr, fp->text, fp->numBytes, 
                     x + fp->x + shadowPtr->width - shadowPtr->offset,
                     y + fp->y + shadowPtr->width - shadowPtr->offset, 
                     switches.kerning, switches.brush);
@@ -1272,7 +1272,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(destPtr, fontPtr, fp->text, fp->count, 
+                PaintText(destPtr, fontPtr, fp->text, fp->numBytes, 
                         x + fp->x, y + fp->y, switches.kerning, 
                         switches.brush);
             }

@@ -1375,14 +1375,14 @@ TextLayoutToPostScript(Blt_Ps ps, int x, int y, TextLayout *textPtr)
     limit = POSTSCRIPT_BUFSIZ - 4; /* High water mark for scratch buffer. */
     fragPtr = textPtr->fragments;
     for (i = 0; i < textPtr->numFragments; i++, fragPtr++) {
-        if (fragPtr->count < 1) {
+        if (fragPtr->numBytes < 1) {
             continue;
         }
         Blt_Ps_Append(ps, "(");
         count = 0;
         dst = Blt_Ps_GetScratchBuffer(ps);
         src = fragPtr->text;
-        end = fragPtr->text + fragPtr->count;
+        end = fragPtr->text + fragPtr->numBytes;
         while (src < end) {
             if (count > limit) {
                 /* Don't let the scatch buffer overflow */
