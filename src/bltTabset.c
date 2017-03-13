@@ -120,6 +120,7 @@
 #define GETATTR(t,attr)         \
    (((t)->attr != NULL) ? (t)->attr : (t)->setPtr->defStyle.attr)
 
+/* Tabset flags. */
 #define LAYOUT_PENDING     (1<<0)       /* Indicates the tabset has been
                                          * changed so that it geometry needs
                                          * to be recalculated before its
@@ -165,6 +166,16 @@
 #define DELETED            (1<<20)      /* Indicates the tab has been deleted
                                          * and will be freed when the widget
                                          * is no longer in use. */
+
+/* Button flags. */
+#define NORMAL          (0)
+#define ACTIVE          (1<<0)
+#define DISABLED        (1<<1)
+#define HIDDEN          (1<<2)
+#define STATE_MASK      (ACTIVE|DISABLED|HIDDEN)
+#define ONSCREEN        (1<<3)
+#define TEAROFF_REDRAW  (1<<4)
+
 
 enum ShowTabs {
     SHOW_TABS_ALWAYS,
@@ -264,64 +275,42 @@ enum ShowTabs {
 #define DEF_TAB_WINDOWWIDTH             "0"
 
 typedef struct _Tabset Tabset;
+typedef struct _Tab Tab;
 
-static Tk_GeomRequestProc EmbeddedWidgetGeometryProc;
-static Tk_GeomLostSlaveProc EmbeddedWidgetCustodyProc;
-static Tk_GeomMgr tabMgrInfo = {
-    (char *)"tabset",                /* Name of geometry manager used by
-                                      * winfo */
-    EmbeddedWidgetGeometryProc,      /* Procedure to for new geometry
-                                      * requests */
-    EmbeddedWidgetCustodyProc,       /* Procedure when window is taken away */
-};
-
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
-static Blt_OptionFreeProc  FreeIconProc;
-static Blt_OptionParseProc ObjToChildProc;
-static Blt_OptionPrintProc ChildToObjProc;
-static Blt_OptionParseProc ObjToSlantProc;
-static Blt_OptionPrintProc SlantToObjProc;
-static Blt_OptionParseProc ObjToTabWidthProc;
-static Blt_OptionPrintProc TabWidthToObjProc;
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
-static Blt_OptionParseProc ObjToShowTabsProc;
-static Blt_OptionPrintProc ShowTabsToObjProc;
+typedef enum { 
+    ITER_SINGLE, ITER_ALL, ITER_TAG, ITER_PATTERN, 
+} IteratorType;
 
 /*
- * Contains a pointer to the widget that's currently being configured.  This
- * is used in the custom configuration parse routine for icons.
+ * TabIterator --
+ *
+ *      Tabs may be tagged with strings.  A tab may have many tags.  The
+ *      same tag may be used for many tabs.
+ *      
  */
+typedef struct _Iterator {
+    Tabset *setPtr;                    /* Tabset that we're iterating
+                                          over. */
+    IteratorType type;                  /* Type of iteration:
+                                         * ITER_TAG      By item tag.
+                                         * ITER_ALL      By every item.
+                                         * ITER_SINGLE   Single item: either 
+                                         *               tag or index.
+                                         * ITER_PATTERN  Over a consecutive 
+                                         *               range of indices.
+                                         */
+    Tab *startPtr;                      /* Starting item.  Starting point
+                                         * of search, saved if iterator is
+                                         * reused.  Used for ITER_ALL and
+                                         * ITER_SINGLE searches. */
+    Tab *endPtr;                        /* Ending item (inclusive). */
+    Tab *nextPtr;                       /* Next item. */
+                                        /* For tag-based searches. */
+    char *tagName;                      /* If non-NULL, is the tag that we
+                                         * are currently iterating over. */
+    Blt_ChainLink link;
+} TabIterator;
 
-static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, (ClientData)0,
-};
-
-static Blt_CustomOption childOption = {
-    ObjToChildProc, ChildToObjProc, NULL, (ClientData)0,
-};
-
-static Blt_CustomOption slantOption = {
-    ObjToSlantProc, SlantToObjProc, NULL, (ClientData)0,
-};
-
-static Blt_CustomOption tabWidthOption = {
-    ObjToTabWidthProc, TabWidthToObjProc, NULL, (ClientData)0,
-};
-
-static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
-};
-
-static Blt_CustomOption showTabsOption = {
-    ObjToShowTabsProc, ShowTabsToObjProc, NULL, (ClientData)0
-};
-
-typedef struct {
-    short int x, y;                     /* Location of region. */
-    short int w, h;                     /* Dimensions of region. */
-} GadgetRegion;
 
 /*
  * Icon --
@@ -335,7 +324,6 @@ typedef struct {
  *      The workaround, employed below, is to maintain a hash table of images
  *      that maintains a reference count for each image.
  */
-
 typedef struct _Icon {
     Blt_HashEntry *hashPtr;             /* Hash table pointer to the image. */
     Tk_Image tkImage;                   /* The Tk image being cached. */
@@ -352,7 +340,7 @@ typedef struct _Icon {
 /*
  * Button --
  */
-typedef struct {
+typedef struct _Button {
     int borderWidth;                    /* Width of 3D border around this
                                          * button. */
     int pad;                            /* Amount of extra padding around
@@ -386,39 +374,13 @@ typedef struct {
     short int width, height;            /* The dimensions of the button. */
 } Button;
 
-static Blt_ConfigSpec buttonSpecs[] =
-{
-    {BLT_CONFIG_COLOR, "-activebackground", "activeBackrgound", 
-        "ActiveBackground", DEF_CLOSEBUTTON_ACTIVEBACKGROUND, 
-        Blt_Offset(Button, activeBgColor), 0},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForergound", 
-        "ActiveForeground", DEF_CLOSEBUTTON_ACTIVEFOREGROUND, 
-        Blt_Offset(Button, activeFg), 0},
-    {BLT_CONFIG_COLOR, "-background", "backrgound", "Background", 
-        DEF_CLOSEBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
-    {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
-        DEF_CLOSEBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
-    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
-        DEF_CLOSEBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-        DEF_CLOSEBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CLOSEBUTTON_RELIEF, 
-        Blt_Offset(Button, relief), 0},
-    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
-        (char *)NULL, 0, 0}
-};
-
-#define NORMAL          (0)
-#define ACTIVE          (1<<0)
-#define DISABLED        (1<<1)
-#define HIDDEN          (1<<2)
-#define STATE_MASK      (ACTIVE|DISABLED|HIDDEN)
-#define ONSCREEN        (1<<3)
-#define TEAROFF_REDRAW  (1<<4)
 
 typedef struct {
+    short int x, y;                     /* Location of region. */
+    short int w, h;                     /* Dimensions of region. */
+} GadgetRegion;
+
+struct _Tab {
     const char *name;                   /* Identifier for tab. */
     Blt_HashEntry *hashPtr;
     int index;                          /* Index of the tab. */
@@ -521,76 +483,8 @@ typedef struct {
     GadgetRegion textRegion;
     GadgetRegion iconRegion;
     GadgetRegion focusRegion;
-} Tab;
-
-static Blt_ConfigSpec tabSpecs[] =
-{
-    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground",
-        "ActiveBackground", DEF_TAB_ACTIVEBACKGROUND,
-        Blt_Offset(Tab, activeBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
-        "ActiveForeground", DEF_TAB_ACTIVEFOREGROUND, 
-        Blt_Offset(Tab, activeFg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_TAB_ANCHOR, 
-        Blt_Offset(Tab, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        (char *)NULL, Blt_Offset(Tab, bg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
-        DEF_TAB_CLOSEBUTTON, Blt_Offset(Tab, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)CLOSE_NEEDED},
-    {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
-        DEF_CLOSE_COMMAND, Blt_Offset(Tab, closeObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
-        Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_STRING, "-data", "data", "data", DEF_TAB_DATA, 
-        Blt_Offset(Tab, data), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
-        DEF_TAB_DELETE_COMMAND, Blt_Offset(Tab, deleteCmdObjPtr),
-        BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_TAB_FILL, 
-        Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", (char *)NULL,
-        Blt_Offset(Tab, textColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", (char *)NULL, 
-        Blt_Offset(Tab, font), 0},
-    {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_TAB_IMAGE, 
-        Blt_Offset(Tab, icon), BLT_CONFIG_NULL_OK, &iconOption},
-    {BLT_CONFIG_PAD, "-ipadx", "iPadX", "PadX", DEF_TAB_IPAD, 
-        Blt_Offset(Tab, iPadX), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PAD, "-ipady", "iPadY", "PadY", DEF_TAB_IPAD, 
-        Blt_Offset(Tab, iPadY), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PAD, "-padx", "padX", "PadX",   DEF_TAB_PAD, 
-        Blt_Offset(Tab, padX), 0},
-    {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_TAB_PAD, 
-        Blt_Offset(Tab, padY), 0},
-    {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
-        "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
-        Blt_Offset(Tab, perfCmdObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-        "Background", DEF_TAB_SELECTBACKGROUND, Blt_Offset(Tab, selBg), 
-        BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
-        DEF_TAB_SELECTFOREGROUND, Blt_Offset(Tab, selColor), 
-        BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_TAB_STATE, 
-        Blt_Offset(Tab, flags), BLT_CONFIG_DONT_SET_DEFAULT, &stateOption},
-    {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_TAB_STIPPLE, 
-        Blt_Offset(Tab, stipple), 0},
-    {BLT_CONFIG_STRING, "-text", "Text", "Text", DEF_TAB_TEXT, 
-        Blt_Offset(Tab, text), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CUSTOM, "-window", "window", "Window", DEF_TAB_WINDOW, 
-        Blt_Offset(Tab, tkwin), BLT_CONFIG_NULL_OK, &childOption},
-    {BLT_CONFIG_PIXELS_NNEG, "-windowheight", "windowHeight", "WindowHeight",
-        DEF_TAB_WINDOWHEIGHT, Blt_Offset(Tab, reqSlaveHeight), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-windowwidth", "windowWidth", "WindowWidth",
-        DEF_TAB_WINDOWWIDTH, Blt_Offset(Tab, reqSlaveWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
-        (char *)NULL, 0, 0}
 };
+
 
 /*
  * TabStyle --
@@ -694,6 +588,7 @@ struct _Tabset {
                                          * highlight. */
 
     GC highlightGC;                     /* GC for focus highlight. */
+    GC perfGC;
 
     const char *takeFocus;              /* Says whether to select this widget
                                          * during tab traveral operations.
@@ -782,6 +677,143 @@ struct _Tabset {
     Blt_BindTable bindTable;            /* Tab binding information */
     struct _Blt_Tags tags;
     Blt_HashTable bindTagTable;         /* Table of binding tags. */
+};
+
+
+static Blt_OptionParseProc ObjToIconProc;
+static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionFreeProc  FreeIconProc;
+static Blt_OptionParseProc ObjToChildProc;
+static Blt_OptionPrintProc ChildToObjProc;
+static Blt_OptionParseProc ObjToSlantProc;
+static Blt_OptionPrintProc SlantToObjProc;
+static Blt_OptionParseProc ObjToTabWidthProc;
+static Blt_OptionPrintProc TabWidthToObjProc;
+static Blt_OptionParseProc ObjToStateProc;
+static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToShowTabsProc;
+static Blt_OptionPrintProc ShowTabsToObjProc;
+
+/*
+ * Contains a pointer to the widget that's currently being configured.  This
+ * is used in the custom configuration parse routine for icons.
+ */
+
+static Blt_CustomOption iconOption = {
+    ObjToIconProc, IconToObjProc, FreeIconProc, (ClientData)0,
+};
+
+static Blt_CustomOption childOption = {
+    ObjToChildProc, ChildToObjProc, NULL, (ClientData)0,
+};
+
+static Blt_CustomOption slantOption = {
+    ObjToSlantProc, SlantToObjProc, NULL, (ClientData)0,
+};
+
+static Blt_CustomOption tabWidthOption = {
+    ObjToTabWidthProc, TabWidthToObjProc, NULL, (ClientData)0,
+};
+
+static Blt_CustomOption stateOption = {
+    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+};
+
+static Blt_CustomOption showTabsOption = {
+    ObjToShowTabsProc, ShowTabsToObjProc, NULL, (ClientData)0
+};
+
+static Blt_ConfigSpec buttonSpecs[] =
+{
+    {BLT_CONFIG_COLOR, "-activebackground", "activeBackrgound", 
+        "ActiveBackground", DEF_CLOSEBUTTON_ACTIVEBACKGROUND, 
+        Blt_Offset(Button, activeBgColor), 0},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForergound", 
+        "ActiveForeground", DEF_CLOSEBUTTON_ACTIVEFOREGROUND, 
+        Blt_Offset(Button, activeFg), 0},
+    {BLT_CONFIG_COLOR, "-background", "backrgound", "Background", 
+        DEF_CLOSEBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
+    {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
+        DEF_CLOSEBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
+    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
+        DEF_CLOSEBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
+        DEF_CLOSEBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CLOSEBUTTON_RELIEF, 
+        Blt_Offset(Button, relief), 0},
+    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
+        (char *)NULL, 0, 0}
+};
+
+static Blt_ConfigSpec tabSpecs[] =
+{
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground",
+        "ActiveBackground", DEF_TAB_ACTIVEBACKGROUND,
+        Blt_Offset(Tab, activeBg), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
+        "ActiveForeground", DEF_TAB_ACTIVEFOREGROUND, 
+        Blt_Offset(Tab, activeFg), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_TAB_ANCHOR, 
+        Blt_Offset(Tab, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
+        (char *)NULL, Blt_Offset(Tab, bg), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
+        DEF_TAB_CLOSEBUTTON, Blt_Offset(Tab, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)CLOSE_NEEDED},
+    {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
+        DEF_CLOSE_COMMAND, Blt_Offset(Tab, closeObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
+        Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_STRING, "-data", "data", "data", DEF_TAB_DATA, 
+        Blt_Offset(Tab, data), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
+        DEF_TAB_DELETE_COMMAND, Blt_Offset(Tab, deleteCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_TAB_FILL, 
+        Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", (char *)NULL,
+        Blt_Offset(Tab, textColor), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", (char *)NULL, 
+        Blt_Offset(Tab, font), 0},
+    {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_TAB_IMAGE, 
+        Blt_Offset(Tab, icon), BLT_CONFIG_NULL_OK, &iconOption},
+    {BLT_CONFIG_PAD, "-ipadx", "iPadX", "PadX", DEF_TAB_IPAD, 
+        Blt_Offset(Tab, iPadX), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PAD, "-ipady", "iPadY", "PadY", DEF_TAB_IPAD, 
+        Blt_Offset(Tab, iPadY), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PAD, "-padx", "padX", "PadX",   DEF_TAB_PAD, 
+        Blt_Offset(Tab, padX), 0},
+    {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_TAB_PAD, 
+        Blt_Offset(Tab, padY), 0},
+    {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
+        "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
+        Blt_Offset(Tab, perfCmdObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
+        "Background", DEF_TAB_SELECTBACKGROUND, Blt_Offset(Tab, selBg), 
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
+        DEF_TAB_SELECTFOREGROUND, Blt_Offset(Tab, selColor), 
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_TAB_STATE, 
+        Blt_Offset(Tab, flags), BLT_CONFIG_DONT_SET_DEFAULT, &stateOption},
+    {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_TAB_STIPPLE, 
+        Blt_Offset(Tab, stipple), 0},
+    {BLT_CONFIG_STRING, "-text", "Text", "Text", DEF_TAB_TEXT, 
+        Blt_Offset(Tab, text), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-window", "window", "Window", DEF_TAB_WINDOW, 
+        Blt_Offset(Tab, tkwin), BLT_CONFIG_NULL_OK, &childOption},
+    {BLT_CONFIG_PIXELS_NNEG, "-windowheight", "windowHeight", "WindowHeight",
+        DEF_TAB_WINDOWHEIGHT, Blt_Offset(Tab, reqSlaveHeight), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-windowwidth", "windowWidth", "WindowWidth",
+        DEF_TAB_WINDOWWIDTH, Blt_Offset(Tab, reqSlaveWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
+        (char *)NULL, 0, 0}
 };
 
 static Blt_ConfigSpec configSpecs[] =
@@ -902,42 +934,17 @@ static Blt_ConfigSpec configSpecs[] =
         (char *)NULL, 0, 0}
 };
 
-/*
- * TabIterator --
- *
- *      Tabs may be tagged with strings.  A tab may have many tags.  The
- *      same tag may be used for many tabs.
- *      
- */
-typedef enum { 
-    ITER_SINGLE, ITER_ALL, ITER_TAG, ITER_PATTERN, 
-} IteratorType;
-
-typedef struct _Iterator {
-    Tabset *setPtr;                    /* Tabset that we're iterating over. */
-
-    IteratorType type;                  /* Type of iteration:
-                                         * ITER_TAG      By item tag.
-                                         * ITER_ALL      By every item.
-                                         * ITER_SINGLE   Single item: either 
-                                         *               tag or index.
-                                         * ITER_PATTERN  Over a consecutive 
-                                         *               range of indices.
-                                         */
-
-    Tab *startPtr;                      /* Starting item.  Starting point of
-                                         * search, saved if iterator is reused.
-                                         * Used for ITER_ALL and ITER_SINGLE
-                                         * searches. */
-    Tab *endPtr;                        /* Ending item (inclusive). */
-    Tab *nextPtr;                       /* Next item. */
-                                        /* For tag-based searches. */
-    char *tagName;                      /* If non-NULL, is the tag that we are
-                                         * currently iterating over. */
-    Blt_ChainLink link;
-} TabIterator;
-
 /* Forward Declarations */
+static Tk_GeomRequestProc EmbeddedWidgetGeometryProc;
+static Tk_GeomLostSlaveProc EmbeddedWidgetCustodyProc;
+static Tk_GeomMgr tabMgrInfo = {
+    (char *)"tabset",                /* Name of geometry manager used by
+                                      * winfo */
+    EmbeddedWidgetGeometryProc,      /* Procedure to for new geometry
+                                      * requests */
+    EmbeddedWidgetCustodyProc,       /* Procedure when window is taken away */
+};
+
 static Blt_BindPickProc PickTabProc;
 static Blt_BindAppendTagsProc AppendTagsProc;
 static Tcl_CmdDeleteProc TabsetInstDeletedCmd;
@@ -969,9 +976,6 @@ static int GetTabIterator(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr,
 static int GetTabFromObj(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr, 
         Tab **tabPtrPtr);
 static void ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr);
-
-typedef int (TabsetCmdProc)(Tabset *setPtr, Tcl_Interp *interp, int objc, 
-        Tcl_Obj *const *objv);
 
 /*
  *---------------------------------------------------------------------------
@@ -3629,6 +3633,9 @@ FreeTabset(DestroyData dataPtr)
     if (setPtr->highlightGC != NULL) {
         Tk_FreeGC(setPtr->display, setPtr->highlightGC);
     }
+    if (setPtr->perfGC != NULL) {
+        Tk_FreeGC(setPtr->display, setPtr->perfGC);
+    }
     if (setPtr->defStyle.activeGC != NULL) {
         Blt_FreePrivateGC(setPtr->display, setPtr->defStyle.activeGC);
     }
@@ -3758,6 +3765,21 @@ ConfigureTabset(
     }
     setPtr->highlightGC = newGC;
 
+    /*
+     * GC for performation.
+     */
+    gcValues.line_width = 0;
+    gcMask |= (GCLineStyle | GCDashList | GCForeground);
+    gcValues.line_style = LineOnOffDash;
+    gcValues.dashes = 3;
+    gcValues.foreground = Blt_Bg_BorderColor(setPtr->defStyle.bg)->pixel;
+
+    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
+    if (setPtr->perfGC != NULL) {
+        Tk_FreeGC(setPtr->display, setPtr->perfGC);
+    }
+    setPtr->perfGC = newGC;
+
     if (setPtr->bg != NULL) {
         Blt_Bg_SetChangedProc(setPtr->bg, BackgroundChangedProc, setPtr);
     }
@@ -3835,9 +3857,11 @@ ConfigureTabset(
  */
 /*ARGSUSED*/
 static int
-ActivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     const char *string;
 
     string = Tcl_GetString(objv[2]);
@@ -3864,15 +3888,16 @@ ActivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Adds a new tab to the tabset widget.  The tab is automatically placed
  *      on the end of the tab list.
  *
- *      .t add ?label? ?option-value...?
+ *      pathName add ?label? ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-AddOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     const char *string;
 
     string = NULL;
@@ -3921,15 +3946,17 @@ AddOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * BindOp --
  *
- *        .t bind index sequence command
+ *        pathName bind index sequence command
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-BindOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+BindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
 {
     ClientData tag;
+    Tabset *setPtr = clientData; 
 
     tag = MakeBindTag(setPtr, Tcl_GetString(objv[2]));
     return Blt_ConfigureBindingsFromObj(interp, setPtr->bindTable, tag, 
@@ -3953,10 +3980,11 @@ BindOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-ButtonActivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc, 
+ButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                  Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     const char *string;
 
     string = Tcl_GetString(objv[3]);
@@ -3984,8 +4012,11 @@ ButtonActivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ButtonCgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
+
     iconOption.clientData = setPtr;
     return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, buttonSpecs,
         (char *)&setPtr->closeButton, objv[2], 0);
@@ -4011,9 +4042,11 @@ ButtonCgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ButtonConfigureOp(Tabset *setPtr, Tcl_Interp *interp, int objc, 
+ButtonConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                   Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
+
     iconOption.clientData = setPtr;
     if (objc == 2) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, buttonSpecs,
@@ -4053,19 +4086,17 @@ static Blt_OpSpec buttonOps[] =
 static int numButtonOps = sizeof(buttonOps) / sizeof(Blt_OpSpec);
 
 static int
-ButtonOp(Tabset *setPtr, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
+ButtonOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
-    TabsetCmdProc *proc;
-    int result;
+    Tcl_ObjCmdProc *proc;
 
-    proc = Blt_GetOpFromObj(interp, numButtonOps, buttonOps, 
-        BLT_OP_ARG2, objc, objv, 0);
+    proc = Blt_GetOpFromObj(interp, numButtonOps, buttonOps, BLT_OP_ARG2, 
+        objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (setPtr, interp, objc, objv);
-    return result;
+    return (*proc) (clientData, interp, objc, objv);
 }
 
 /*
@@ -4077,8 +4108,11 @@ ButtonOp(Tabset *setPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-CgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
+
     iconOption.clientData = setPtr;
     return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, configSpecs,
         (char *)setPtr, objv[2], 0);
@@ -4091,19 +4125,21 @@ CgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  *      Invokes a TCL command when a tab is closed.
  *
- *        .t close tab
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
+ *
+ *        pathName close tabName
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-CloseOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CloseOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+        Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     Tcl_Obj *cmdObjPtr;
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
@@ -4148,9 +4184,11 @@ CloseOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(Tabset *setPtr, Tcl_Interp *interp, int objc, 
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
+
     iconOption.clientData = setPtr;
     if (objc == 2) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, configSpecs,
@@ -4175,13 +4213,17 @@ ConfigureOp(Tabset *setPtr, Tcl_Interp *interp, int objc,
  *
  *      Makes all tabs appear normal again.
  *
- *      .t deactivate 
+ *      pathName deactivate 
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-DeactivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
+
     if (setPtr->activePtr != NULL) {
         setPtr->activePtr = NULL;
         EventuallyRedraw(setPtr);
@@ -4201,9 +4243,11 @@ DeactivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-DeleteOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
     Blt_HashTable delTable;
+    Tabset *setPtr = clientData; 
     int i;
 
     Blt_InitHashTable(&delTable, BLT_ONE_WORD_KEYS);
@@ -4253,11 +4297,13 @@ DeleteOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-DockallOp(Tabset *bookPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DockallOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+          Tcl_Obj *const *objv)
 {
     Blt_ChainLink link;
+    Tabset *setPtr = clientData; 
 
-    for (link = Blt_Chain_FirstLink(bookPtr->chain); link != NULL;
+    for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
          link = Blt_Chain_NextLink(link)) {
         Tab *tabPtr;
 
@@ -4284,8 +4330,10 @@ DockallOp(Tabset *bookPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-ExistsOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     Tab *tabPtr;
     int state;
 
@@ -4310,8 +4358,10 @@ ExistsOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-ExtentsOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+          Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     Tab *tabPtr;
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
@@ -4354,9 +4404,11 @@ ExtentsOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-FocusOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FocusOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+        Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     long index;
 
     if (objc == 3) {
@@ -4393,9 +4445,11 @@ FocusOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-IndexOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IndexOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+        Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     int index;
 
     index = -1;
@@ -4424,9 +4478,10 @@ IndexOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-IdOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IdOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -4448,16 +4503,18 @@ IdOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  *      Add new entries into a tab set.
  *
- *      .t insert position ?label? option-value label option-value...
+ *      pathName insert position ?label? option-value label option-value...
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-InsertOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+InsertOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
-    Tab *tabPtr;
     Blt_ChainLink link, before;
+    Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     char c;
     const char *string;
 
@@ -4560,9 +4617,11 @@ InsertOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-InvokeOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     Tcl_Obj *cmdObjPtr;
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
@@ -4607,9 +4666,11 @@ InvokeOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-MoveOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+MoveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
 {
     Tab *tabPtr, *fromPtr;
+    Tabset *setPtr = clientData; 
     char c;
     const char *string;
     int isBefore;
@@ -4666,8 +4727,10 @@ MoveOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-NamesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)     
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+        Tcl_Obj *const *objv)     
 {
+    Tabset *setPtr = clientData; 
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -4705,10 +4768,12 @@ NamesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-NearestOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NearestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+          Tcl_Obj *const *objv)
 {
-    int x, y;                   /* Screen coordinates of the test point. */
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
+    int x, y;                   /* Screen coordinates of the test point. */
 
     if ((Tk_GetPixelsFromObj(interp, setPtr->tkwin, objv[2], &x) != TCL_OK) ||
         (Tk_GetPixelsFromObj(interp, setPtr->tkwin, objv[3], &y) != TCL_OK)) {
@@ -4745,9 +4810,11 @@ NearestOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-SelectOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SelectOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -4766,8 +4833,10 @@ SelectOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static int
-ViewOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ViewOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     int width;
 
     width = VPORTWIDTH(setPtr);
@@ -4884,9 +4953,11 @@ NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
  */
 /*ARGSUSED*/
 static int
-TabCgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TabCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+          Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
 
     if (GetTabFromObj(interp, setPtr, objv[3], &tabPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -4925,11 +4996,12 @@ TabCgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TabConfigureOp(Tabset *setPtr, Tcl_Interp *interp, int objc, 
+TabConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
     TabIterator iter;
+    Tabset *setPtr = clientData; 
 
     iconOption.clientData = setPtr;
     if ((objc == 4) || (objc == 5)) {
@@ -4994,18 +5066,16 @@ static Blt_OpSpec tabOps[] =
 static int numTabOps = sizeof(tabOps) / sizeof(Blt_OpSpec);
 
 static int
-TabOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TabOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    TabsetCmdProc *proc;
-    int result;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numTabOps, tabOps, BLT_OP_ARG2, 
-                    objc, objv, 0);
+           objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (setPtr, interp, objc, objv);
-    return result;
+    return (*proc) (clientData, interp, objc, objv);
 }
 
 /*
@@ -5025,12 +5095,10 @@ TabOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-PerforationActivateOp(
-    Tabset *setPtr,
-    Tcl_Interp *interp,         /* Not used. */
-    int objc,
-    Tcl_Obj *const *objv)
+PerforationActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                      Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     int bool;
 
     if (Tcl_GetBooleanFromObj(interp, objv[3], &bool) != TCL_OK) {
@@ -5052,7 +5120,7 @@ PerforationActivateOp(
  *
  *      This procedure is called to invoke a perforation command.
  *
- *        .t perforation invoke
+ *        pathName perforation invoke
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
@@ -5062,11 +5130,12 @@ PerforationActivateOp(
  */
 /*ARGSUSED*/
 static int
-PerforationInvokeOp(Tabset *setPtr, Tcl_Interp *interp, int objc, 
+PerforationInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                     Tcl_Obj *const *objv)
 {
-    Tcl_Obj *perfCmdObjPtr;
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
+    Tcl_Obj *perfCmdObjPtr;
 
     if (setPtr->selectPtr == NULL) {
         return TCL_OK;
@@ -5111,19 +5180,17 @@ static Blt_OpSpec perforationOps[] =
 static int numPerforationOps = sizeof(perforationOps) / sizeof(Blt_OpSpec);
 
 static int
-PerforationOp(Tabset *setPtr, Tcl_Interp *interp, int objc, 
+PerforationOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
-    TabsetCmdProc *proc;
-    int result;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numPerforationOps, perforationOps, 
         BLT_OP_ARG2, objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc) (setPtr, interp, objc, objv);
-    return result;
+    return (*proc)(clientData, interp, objc, objv);
 }
 
 /*
@@ -5137,8 +5204,10 @@ PerforationOp(Tabset *setPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ScanOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ScanOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     char c;
     const char *string;
     int length;
@@ -5189,9 +5258,10 @@ ScanOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-SeeOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -5206,8 +5276,10 @@ SeeOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-SizeOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     int numTabs;
 
     numTabs = Blt_Chain_GetLength(setPtr->chain);
@@ -5220,13 +5292,15 @@ SizeOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TagAddOp --
  *
- *      .t tag add tagName tab1 tab2 tab2 tab4
+ *      pathName tag add tag ?tabName ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagAddOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     const char *tag;
     long tagId;
 
@@ -5269,16 +5343,18 @@ TagAddOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TagDeleteOp --
  *
- *      .t delete tagName tab1 tab2 tab3
+ *      pathName delete tag ?tabName ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagDeleteOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     const char *tag;
-    long tagId;
     int i;
+    long tagId;
 
     tag = Tcl_GetString(objv[3]);
     if (Blt_GetLongFromObj(NULL, objv[3], &tagId) == TCL_OK) {
@@ -5312,19 +5388,21 @@ TagDeleteOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TagExistsOp --
  *
- *      Returns the existence of the one or more tags in the given node.  If
- *      the node has any the tags, true is return in the interpreter.
+ *      Returns the existence of the one or more tags in the given node.
+ *      If the node has any the tags, true is return in the interpreter.
  *
- *      .t tag exists tab tag1 tag2 tag3...
+ *      pathName tag exists tab ?tagName ...?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-TagExistsOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
 {
-    int i;
     TabIterator iter;
+    Tabset *setPtr = clientData; 
+    int i;
 
     if (GetTabIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
         return TCL_ERROR;
@@ -5353,14 +5431,16 @@ TagExistsOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  *      Removes the given tags from all tabs.
  *
- *      .ts tab forget tag1 tag2 tag3...
+ *      pathName tag forget ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-TagForgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -5386,15 +5466,17 @@ TagForgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Returns tag names for a given node.  If one of more pattern arguments
  *      are provided, then only those matching tags are returned.
  *
- *      .t tag get tab pat1 pat2...
+ *      pathName tag get tabName ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagGetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
     Tab *tabPtr; 
     TabIterator iter;
+    Tabset *setPtr = clientData; 
     Tcl_Obj *listObjPtr;
 
     if (GetTabIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
@@ -5457,17 +5539,19 @@ TagGetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TagNamesOp --
  *
- *      Returns the names of all the tags in the tabset.  If one of more node
- *      arguments are provided, then only the tags found in those nodes are
- *      returned.
+ *      Returns the names of all the tags in the tabset.  If one of more
+ *      node arguments are provided, then only the tags found in those
+ *      nodes are returned.
  *
- *      .t tag names tab tab tab...
+ *      pathName tag names ?tagName ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagNamesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
 {
+    Tabset *setPtr = clientData; 
     Tcl_Obj *listObjPtr, *objPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -5532,14 +5616,16 @@ TagNamesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      Returns the indices associated with the given tags.  The indices
  *      returned will represent the union of tabs for all the given tags.
  *
- *      .t tag indices tag1 tag2 tag3...
+ *      pathName tag indices ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagIndicesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
 {
     Blt_HashTable tabTable;
+    Tabset *setPtr = clientData; 
     int i;
         
     Blt_InitHashTable(&tabTable, BLT_ONE_WORD_KEYS);
@@ -5611,15 +5697,17 @@ TagIndicesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      digit (to distinquish them from node ids) and can't be a reserved tag
  *      ("all").
  *
- *      .t tag set tab tag1 tag2...
+ *      pathName tag set tabName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagSetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
-    int i;
     TabIterator iter;
+    Tabset *setPtr = clientData; 
+    int i;
 
     if (GetTabIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
         return TCL_ERROR;
@@ -5657,15 +5745,17 @@ TagSetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      is a reserved tag ("all"), nothing will be done and no error
  *      message will be returned.
  *
- *      .t tag unset tab tag1 tag2...
+ *      pathName tag unset tabName ?tag ...?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagUnsetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
     TabIterator iter;
+    Tabset *setPtr = clientData; 
 
     if (GetTabIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
         return TCL_ERROR;
@@ -5714,18 +5804,16 @@ static Blt_OpSpec tagOps[] =
 static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
 
 static int
-TagOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    TabsetCmdProc *proc;
-    int result;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numTagOps, tagOps, BLT_OP_ARG2,
         objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
-    result = (*proc)(setPtr, interp, objc, objv);
-    return result;
+    return (*proc)(clientData, interp, objc, objv);
 }
 
 /*
@@ -5739,9 +5827,11 @@ TagOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TearoffOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TearoffOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+          Tcl_Obj *const *objv)
 {
     Tab *tabPtr;
+    Tabset *setPtr = clientData; 
     Tk_Window tkwin;
     const char *string;
     int result;
@@ -6622,7 +6712,7 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     x += setPtr->xOffset;
     y += setPtr->yOffset;
     bg = GETATTR(tabPtr, selBg);
-    segmentWidth = 3;
+    segmentWidth = 4;
     if (setPtr->flags & ACTIVE_PERFORATION) {
         perfBg = GETATTR(tabPtr, activeBg);
     } else {
@@ -6630,21 +6720,31 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }   
     if (setPtr->side & (SIDE_TOP|SIDE_BOTTOM)) {
         XPoint points[2];
-
+        int x1, x2, y1;
         points[0].x = x;
         points[0].y = points[1].y = y;
         max = tabPtr->screenX + setPtr->xOffset + tabPtr->screenWidth - 2;
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, x-2, y-4, 
                 tabPtr->screenWidth, 8, 0, TK_RELIEF_FLAT);
-        while (points[0].x < max) {
-            points[1].x = points[0].x + segmentWidth;
-            if (points[1].x > max) {
-                points[1].x = max;
+        x1 = x;
+        y1 = y;
+        XDrawLine(setPtr->display, drawable, setPtr->perfGC, x1, y1, max, y1);  
+#ifdef notdef
+      while (x1 < max) {
+            x2 = x1 + segmentWidth;
+            if (x2 > max) {
+                x2 = max;
             }
-            Blt_Bg_DrawPolygon(setPtr->tkwin, drawable, bg, points, 
-                2, 1, TK_RELIEF_RAISED);
+            fprintf(stderr, "drawing polygon\n");
+
+#ifdef notdef
+            Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, x1, y1, 
+                                 x2 - x1, 2, 1, TK_RELIEF_SUNKEN);
+#endif
+            x1 += 2 * segmentWidth;
             points[0].x += 2 * segmentWidth;
         }
+#endif
     } else {
         XPoint points[2];
 
@@ -6652,7 +6752,7 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         points[0].y = y;
         max  = tabPtr->screenY + tabPtr->screenHeight - 2;
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg,
-               x - 4, y - 2, 8, tabPtr->screenHeight, 0, TK_RELIEF_FLAT);
+               x - 4, y - 2, 8, tabPtr->screenHeight, 0, TK_RELIEF_RAISED);
         while (points[0].y < max) {
             points[1].y = points[0].y + segmentWidth;
             if (points[1].y > max) {
@@ -7380,7 +7480,7 @@ static Blt_OpSpec tabsetOps[] =
     {"index",       3, IndexOp,       3, 3, "tab",},
     {"insert",      3, InsertOp,      3, 0, "position ?option value?",},
     {"invoke",      3, InvokeOp,      3, 3, "tab",},
-    {"move",        1, MoveOp,        5, 5, "tab after|before tab",},
+    {"move",        1, MoveOp,        5, 5, "destTab firstTab lastTab ?switches?",},
     {"names",       2, NamesOp,       2, 0, "?pattern...?",},
     {"nearest",     2, NearestOp,     4, 4, "x y",},
     {"perforation", 1, PerforationOp, 2, 0, "args",},
@@ -7404,8 +7504,8 @@ TabsetInstCmd(
     int objc,                           /* # of arguments. */
     Tcl_Obj *const *objv)               /* Vector of argument strings. */
 {
-    TabsetCmdProc *proc;
     Tabset *setPtr = clientData;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numTabsetOps, tabsetOps, BLT_OP_ARG1, 
@@ -7414,7 +7514,7 @@ TabsetInstCmd(
         return TCL_ERROR;
     }
     Tcl_Preserve(setPtr);
-    result = (*proc) (setPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     Tcl_Release(setPtr);
     return result;
 }
@@ -7469,7 +7569,7 @@ TabsetInstDeletedCmd(ClientData clientData)
  *      See the user documentation.
  *
  *
- *      blt::tabset pathName ?option value?...
+ *      blt::tabset pathName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -7488,7 +7588,7 @@ TabsetCmd(
 
     if (objc < 2) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), " pathName ?option value?...\"", 
+                Tcl_GetString(objv[0]), " pathName ?option value ...?\"", 
                 (char *)NULL);
         return TCL_ERROR;
     }

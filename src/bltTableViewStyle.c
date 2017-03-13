@@ -1804,7 +1804,7 @@ IconVarTraceProc(
         
         /*
          * Update the style's icon with the image whose name is stored in
-         * the variable.
+         * the variable.  We assume that an empty string means "no icon".
          */
         objPtr = Tcl_GetVar2Ex(interp, name1, name2,
                                TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
