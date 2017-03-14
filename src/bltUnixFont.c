@@ -1881,7 +1881,9 @@ FreetypeSetFontParams(Tk_Window tkwin, FreetypeFontset *setPtr, XftFont *xftPtr)
     glyph = XftCharIndex(setPtr->display, xftPtr, '0');
     XftGlyphExtents(setPtr->display, xftPtr, &glyph, 1, &metrics);
     
-    setPtr->underlinePos = xftPtr->descent / 2;
+    /* Added -1 to underline position to move up to coincide with underbar
+     * character in text. */
+    setPtr->underlinePos = xftPtr->descent / 2 - 1; 
     result = FcPatternGetDouble(xftPtr->pattern, FC_SIZE, 0, &size);
     if (result != FcResultMatch) {
         size = 12.0;
