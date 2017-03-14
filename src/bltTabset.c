@@ -5193,6 +5193,57 @@ PerforationOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return (*proc)(clientData, interp, objc, objv);
 }
 
+#ifdef notdef
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DragOp --
+ *
+ *      This procedure handles tab operations.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *      pathName drag start tabName x y
+ *              Indicates the start of a drag operation for the tab.
+ *              Possibly draw other tabs in non-active colors.
+ *      pathName drag continue tabName x y
+ *              Indicates if the tab is over a drop site. Draw the right
+ *              side of the site specially.
+ *      pathName drag finish tabName x y
+ *              Indicates to drop the tab over the current drop site.
+ *
+ *      Moving before or after all the tabs?
+ *      Moving among tiered tabs?  Can only move on the same tier.
+ *      Moving more than one tab?
+ *      Use toplevel window for token?
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec dragOps[] =
+{
+    {"continue", 1, DragContinueOp, 5, 5, "tabName x y" }, 
+    {"finish",   1, DragFinishOp,   5, 5, "tabName x y" }, 
+    {"start",    1, DragStartOp,    5, 5, "tabName x y" }, 
+};
+
+static int numDragOps = sizeof(dragOps) / sizeof(Blt_OpSpec);
+
+static int
+DragOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+
+    proc = Blt_GetOpFromObj(interp, numDragOps, dragOps, BLT_OP_ARG2,
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    return (*proc)(clientData, interp, objc, objv);
+}
+#endif
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -5821,7 +5872,7 @@ TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TearoffOp --
  *
- *        .h tearoff index ?title?
+ *        pathName tearoff tabName ?title?
  *
  *---------------------------------------------------------------------------
  */
@@ -5868,6 +5919,14 @@ TearoffOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return result;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ComputeTabGeometry --
+ *
+ *      |padleft|icon|labelpad|text|labelpad|cbw|close|cbw|padright|
+ *---------------------------------------------------------------------------
+ */
 static void
 ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
 {
@@ -5882,7 +5941,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
 
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
-        Blt_Ts_SetPadding(ts, 2, 2, 0, 0);
+        Blt_Ts_SetPadding(ts, 2, 2, 2, 2);
         if (tabPtr->layoutPtr != NULL) {
             Blt_Free(tabPtr->layoutPtr);
         }
