@@ -315,22 +315,6 @@ available for *tabset* widgets:
     real value representing the number of degrees to rotate the text
     labels.  The default is "0.0" degrees.
 
-  **-tabwidth** *widthName*
-    Indicates the width of each tab.  *WidthName* can be one of the
-    following:
-
-    **variable**
-      The width of the tab is determined by its text and image.
-
-    **same**
-      The width of every tab is the maximum size.
-
-    *numPixels*
-      The width of the tab is set to *numPixels*. *NumPixels* is a positive
-      screen distance.
-
-    The default is "same".
-
   **-scrollcommand** *cmdPrefix*
     Specifies the prefix for a command for communicating with scrollbars.
     Whenever the view in the widget's window changes, the widget will
@@ -365,6 +349,22 @@ available for *tabset* widgets:
     Specifies extra padding to be displayed around the selected tab.  The
     default value is "3".
 
+  **-showtabs** *how*
+    Specifies how to display tabs.  *How* can be one of the
+    following:
+
+    **always**
+      Always display tabs. 
+
+    **never**
+      Do not display tabs.  No folder outline will be displayed. Tabs can
+      still be selected to display different folders.
+
+    **multiple**
+      Display tabs when there is more than one tab. 
+
+    The default is "always".
+
   **-side** *sideName*
     Specifies the side of the widget to place tabs.  *SideName* can be any
     of the following values.
@@ -395,6 +395,22 @@ available for *tabset* widgets:
 
     The default is "none".
 
+  **-tabwidth** *widthName*
+    Indicates the width of each tab.  *WidthName* can be one of the
+    following:
+
+    **variable**
+      The width of the tab is determined by its text and image.
+
+    **same**
+      The width of every tab is the maximum size.
+
+    *numPixels*
+      The width of the tab is set to *numPixels*. *NumPixels* is a positive
+      screen distance.
+
+    The default is "same".
+
   **-takefocus** *focus* 
     Provides information used when moving the focus from window to window
     via keyboard traversal (e.g., Tab and Shift-Tab).  If *focus* is "0",
@@ -404,7 +420,10 @@ available for *tabset* widgets:
     whether to focus on the window.  The default is "1".
 
   **-tearoff** *boolean*
-    FIXME
+    Indicates if tabs can be torn off (redrawing the tab in a new toplevel
+    window) by clicking on the perforation on the lower portion of the tab.
+    The tab's **-tearoff** option must also be set to true.  The default
+    is "0".
 
   **-textside** *sideName*
     If both images and text are specified for a tab, this option determines
@@ -663,6 +682,11 @@ available for *tabset* widgets:
     Specifies a stipple pattern to use for the background of the folder
     when the window is torn off.  *BitmapName* specifies a bitmap to use as
     the stipple pattern. The default is "BLT".
+
+  **-tearoff** *boolean*
+    Indicates if the tab can be torn off (redrawing the tab in a new
+    toplevel window) by clicking on the perforation.  The widget
+    **-tearoff** option must also be set to true.  The default is "1".
 
   **-text** *labelString*
     Specifies the text of the tab's label.  The exact way the text is drawn

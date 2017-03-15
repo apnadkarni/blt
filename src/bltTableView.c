@@ -6704,10 +6704,13 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
         keyPtr = GetKey(cellPtr);
         if (cellPtr->stylePtr != NULL) {
             int isNew;
+            Blt_HashEntry *hPtr;
 
             cellPtr->stylePtr->refCount++;      
-            Blt_CreateHashEntry(&cellPtr->stylePtr->table, (char *)keyPtr, 
-                &isNew);
+            hPtr = Blt_CreateHashEntry(&cellPtr->stylePtr->table, 
+                                       (char *)keyPtr, &isNew);
+            assert(isNew);
+            Blt_SetHashValue(hPtr, cellPtr);
         }
         if (oldStylePtr != NULL) {
             Blt_HashEntry *hPtr;
@@ -11290,6 +11293,9 @@ StyleDeleteOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 
         if (GetStyle(interp, viewPtr, objv[i], &stylePtr) != TCL_OK) {
             return TCL_ERROR;
+        }
+        if (stylePtr == viewPtr->stylePtr) {
+            continue;                   /* Can't delete fallback style. */
         }
         /* 
          * Removing the style from the hash tables frees up the style name

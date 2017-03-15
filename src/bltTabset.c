@@ -130,53 +130,58 @@
 #define SCROLL_PENDING     (1<<2)       /* Indicates a scroll offset is out of
                                          * sync and the widget needs to be
                                          * redrawn.  */
-#define FOCUS              (1<<3)       /* Indicates the tabset/tab has
-                                         * focus. The widget is receiving
-                                         * keyboard events.  Draw the focus
-                                         * highlight border around the
-                                         * widget. */
-#define TEAROFF            (1<<4)       /* Indicates if the perforation should
-                                         * be drawn (see -tearoff). */
-#define OVERFULL           (1<<5)       /* Tabset has enough tabs to be
-                                         * scrolled. */
-#define MULTIPLE_TIER      (1<<6)       /* Indicates the tabset is using
-                                         * multiple tiers of tabs. */
-#define ACTIVE_PERFORATION (1<<7)       /* Indicates if the perforation should
-                                         * should be drawn with active
-                                         * colors. */
-#define REDRAW_ALL         (1<<9)       /* Draw the entire tabset including
+#define REDRAW_ALL         (1<<3)       /* Draw the entire tabset including
                                          * the folder.  If not set, indicates
                                          * that only the tabs need to be drawn
                                          * (activate, deactivate, scroll,
                                          * etc).  This avoids drawing the
                                          * folder again. */
+#define FOCUS              (1<<4)       /* Indicates the tabset/tab has
+                                         * focus. The widget is receiving
+                                         * keyboard events.  Draw the focus
+                                         * highlight border around the
+                                         * widget. */
+#define TEAROFF            (1<<5)       /* Indicates if the perforation should
+                                         * be drawn (see -tearoff). */
+#define OVERFULL           (1<<6)       /* Tabset has enough tabs to be
+                                         * scrolled. */
+#define MULTIPLE_TIER      (1<<7)       /* Indicates the tabset is using
+                                         * multiple tiers of tabs. */
+#define ACTIVE_PERFORATION (1<<8)       /* Indicates if the perforation should
+                                         * should be drawn with active
+                                         * colors. */
+#define HIDE_TABS          (1<<9)      /* Display tabs. */
+#define SCROLL_TABS        (1<<10)     /* Allow tabs to be scrolled if
+                                        * needed. Otherwise tab sizes will
+                                        * shrink to fit the space. */
+/* Slant flags. */
 #define SLANT_NONE          0
-#define SLANT_LEFT         (1<<10)
-#define SLANT_RIGHT        (1<<11)
+#define SLANT_LEFT         (1<<11)
+#define SLANT_RIGHT        (1<<12)
 #define SLANT_BOTH         (SLANT_LEFT | SLANT_RIGHT)
 
-#define CLOSE_NEEDED       (1<<13)      /* Draw a "x" button on each
-                                         * tab. Clicking on the button will
-                                         * automatically close the tab. */
-#define HIDE_TABS          (1<<24)      /* Display tabs. */
-#define SCROLL_TABS        (1<<15)      /* Allow tabs to be scrolled if
-                                         * needed. Otherwise tab sizes will
-                                         * shrink to fit the space. */
+/* Tab flags. */
 
-#define DELETED            (1<<20)      /* Indicates the tab has been deleted
-                                         * and will be freed when the widget
-                                         * is no longer in use. */
-
-/* Button flags. */
+/* State flags for tabs. */
 #define NORMAL          (0)
 #define ACTIVE          (1<<0)
 #define DISABLED        (1<<1)
 #define HIDDEN          (1<<2)
 #define STATE_MASK      (ACTIVE|DISABLED|HIDDEN)
-#define ONSCREEN        (1<<3)
-#define TEAROFF_REDRAW  (1<<4)
 
-
+#define VISIBLE         (1<<3)         /* Indicates the tab is at least
+                                         * partially visible on screen. */
+#define DELETED         (1<<4)          /* Indicates the tab has been
+                                         * deleted and will be freed when
+                                         * the widget is no longer in
+                                         * use. */
+/*#define TEAROFF (1<<5)                 Indicates the tab will have a 
+ *                                        perforation drawn.*/
+#define TEAROFF_REDRAW  (1<<7)          /* Indicates that the tab's tearoff
+                                         * window needs to be redraw. */
+#define CLOSE_NEEDED    (1<<8)          /* Draw a "x" button on each
+                                         * tab. Clicking on the button will
+                                         * automatically close the tab. */
 enum ShowTabs {
     SHOW_TABS_ALWAYS,
     SHOW_TABS_MULTIPLE,
@@ -267,6 +272,7 @@ enum ShowTabs {
 #define DEF_TAB_SELECTFOREGROUND        (char *)NULL
 #define DEF_TAB_STATE                   "normal"
 #define DEF_TAB_STIPPLE                 "BLT"
+#define DEF_TAB_TEAROFF                 "1"
 #define DEF_TAB_TEXT                    (char *)NULL
 #define DEF_TAB_VISUAL                  (char *)NULL
 #define DEF_TAB_WIDTH                   "0"
@@ -802,6 +808,9 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, flags), BLT_CONFIG_DONT_SET_DEFAULT, &stateOption},
     {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_TAB_STIPPLE, 
         Blt_Offset(Tab, stipple), 0},
+    {BLT_CONFIG_BITMASK, "-tearoff", "tearoff", "Tearoff", DEF_TAB_TEAROFF, 
+        Blt_Offset(Tab, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)TEAROFF},
     {BLT_CONFIG_STRING, "-text", "Text", "Text", DEF_TAB_TEXT, 
         Blt_Offset(Tab, text), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", DEF_TAB_WINDOW, 
@@ -1970,7 +1979,7 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
         *contextPtr = NULL;
     }
     tabPtr = setPtr->selectPtr;
-    if ((setPtr->flags & TEAROFF) && (tabPtr != NULL) && 
+    if ((tabPtr != NULL) && (setPtr->flags & tabPtr->flags & TEAROFF) &&  
         (tabPtr->container == NULL) && (tabPtr->tkwin != NULL)) {
         int top, bottom, left, right;
         int sx, sy;
@@ -2006,7 +2015,7 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
          tabPtr = NextTab(tabPtr, HIDDEN)) {
         GadgetRegion *rPtr;
 
-        if ((tabPtr->flags & ONSCREEN) == 0) {
+        if ((tabPtr->flags & VISIBLE) == 0) {
             continue;
         }
         if ((x >= tabPtr->screenX) && (y >= tabPtr->screenY) &&
@@ -3053,10 +3062,10 @@ NewTab(Tcl_Interp *interp, Tabset *setPtr, const char *tabName)
         setPtr->plusPtr = tabPtr;
     }
     tabPtr->text = Blt_AssertStrdup(tabName);
-    tabPtr->fill = FILL_NONE;
+    tabPtr->fill = FILL_BOTH;
     tabPtr->anchor = TK_ANCHOR_CENTER;
     tabPtr->container = NULL;
-    tabPtr->flags = NORMAL | CLOSE_NEEDED;
+    tabPtr->flags = NORMAL | CLOSE_NEEDED | TEAROFF;
     tabPtr->name = Blt_GetHashKey(&setPtr->tabTable, hPtr);
     Blt_SetHashValue(hPtr, tabPtr);
     tabPtr->hashPtr = hPtr;
@@ -4373,7 +4382,7 @@ ExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 "\"", (char *)NULL);
         return TCL_ERROR;
     }
-    if (tabPtr->flags & ONSCREEN) {
+    if (tabPtr->flags & VISIBLE) {
         Tcl_Obj *listObjPtr, *objPtr;
         int rootX, rootY;
         
@@ -6006,7 +6015,7 @@ ComputeWorldGeometry(Tabset *setPtr)
          tabPtr = NextTab(tabPtr, 0)) {
 
         /* Reset visibility flag and order of tabs. */
-        tabPtr->flags &= ~ONSCREEN;
+        tabPtr->flags &= ~VISIBLE;
         if (tabPtr->flags & HIDDEN) {
             continue;
         }
@@ -6681,14 +6690,14 @@ ComputeVisibleTabs(Tabset *setPtr)
         for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
              tabPtr = NextTab(tabPtr, HIDDEN)) {
             if (tabPtr->flags & HIDDEN) {
-                tabPtr->flags &= ~ONSCREEN;
+                tabPtr->flags &= ~VISIBLE;
                 continue;
             }
             if ((tabPtr->worldX >= width) ||
                 ((tabPtr->worldX + tabPtr->worldWidth) < offset)) {
-                tabPtr->flags &= ~ONSCREEN;
+                tabPtr->flags &= ~VISIBLE;
             } else {
-                tabPtr->flags |= ONSCREEN;
+                tabPtr->flags |= VISIBLE;
                 numVisibleTabs++;
             }
         }
@@ -6698,14 +6707,14 @@ ComputeVisibleTabs(Tabset *setPtr)
 
         for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
              tabPtr = NextTab(tabPtr, HIDDEN)) {
-            tabPtr->flags |= ONSCREEN;
+            tabPtr->flags |= VISIBLE;
             numVisibleTabs++;
         }
     }
     for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
          tabPtr = NextTab(tabPtr, HIDDEN)) {
         tabPtr->screenX = tabPtr->screenY = -1000;
-        if (tabPtr->flags & ONSCREEN) {
+        if (tabPtr->flags & VISIBLE) {
             WorldToScreen(setPtr, tabPtr->worldX, tabPtr->worldY,
                 &tabPtr->screenX, &tabPtr->screenY);
             switch (setPtr->side) {
@@ -6962,7 +6971,7 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
             TopRight(x, y);
             NextPoint(x, yBot);
         }
-    } else if ((tabPtr->flags & ONSCREEN) == 0) {
+    } else if ((tabPtr->flags & VISIBLE) == 0) {
         /*
          * Case 2: Selected tab not visible in viewport.  Draw folder only.
          *
@@ -7361,12 +7370,12 @@ DisplayTabset(ClientData clientData)    /* Information about widget. */
                 link = Blt_Chain_LastLink(setPtr->chain);
             }
             tabPtr = Blt_Chain_GetValue(link);
-            if ((tabPtr != setPtr->selectPtr) && (tabPtr->flags & ONSCREEN)) {
+            if ((tabPtr != setPtr->selectPtr) && (tabPtr->flags & VISIBLE)) {
                 DrawFolder(setPtr, tabPtr, pixmap);
             }
         }
         DrawFolder(setPtr, setPtr->selectPtr, pixmap);
-        if (setPtr->flags & TEAROFF) {
+        if (setPtr->flags & setPtr->selectPtr->flags & TEAROFF) {
             DrawPerforation(setPtr, setPtr->selectPtr, pixmap);
         }
     }
@@ -8041,7 +8050,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     int xSelPad, ySelPad;
     GadgetRegion *rPtr;
 
-    if ((tabPtr->flags & ONSCREEN) == 0) {
+    if ((tabPtr->flags & VISIBLE) == 0) {
         return;
     }
     ComputeLabelOffsets(setPtr, tabPtr);

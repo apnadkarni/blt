@@ -240,15 +240,15 @@ static Blt_SwitchSpec rectangleSwitches[] =
         Blt_Offset(RectangleSwitches, antialiased), 0},
     {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
         Blt_Offset(RectangleSwitches, brush),    0, 0, &paintbrushSwitch},
-    {BLT_SWITCH_INT_NNEG, "-height", "number", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-height", "numPixels", (char *)NULL,
         Blt_Offset(RectangleSwitches, height), 0},
     {BLT_SWITCH_INT_NNEG, "-linewidth", "number", (char *)NULL,
         Blt_Offset(RectangleSwitches, lineWidth), 0}, 
-    {BLT_SWITCH_INT_NNEG, "-radius", "number", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-radius", "numPixels", (char *)NULL,
         Blt_Offset(RectangleSwitches, radius), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
         Blt_Offset(RectangleSwitches, shadow), 0, 0, &shadowSwitch},
-    {BLT_SWITCH_INT_NNEG, "-width", "number", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-width", "numPixels", (char *)NULL,
         Blt_Offset(RectangleSwitches, width), 0},
     {BLT_SWITCH_END}
 };
