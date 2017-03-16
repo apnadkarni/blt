@@ -143,17 +143,20 @@
                                          * widget. */
 #define TEAROFF            (1<<5)       /* Indicates if the perforation should
                                          * be drawn (see -tearoff). */
-#define OVERFULL           (1<<6)       /* Tabset has enough tabs to be
+#define CLOSE_BUTTON       (1<<6)       /* Draw a "x" button on each
+                                         * tab. Clicking on the button will
+                                         * automatically close the tab. */
+#define OVERFULL           (1<<7)       /* Tabset has enough tabs to be
                                          * scrolled. */
-#define MULTIPLE_TIER      (1<<7)       /* Indicates the tabset is using
+#define MULTIPLE_TIER      (1<<8)       /* Indicates the tabset is using
                                          * multiple tiers of tabs. */
-#define ACTIVE_PERFORATION (1<<8)       /* Indicates if the perforation should
+#define ACTIVE_PERFORATION (1<<9)       /* Indicates if the perforation should
                                          * should be drawn with active
                                          * colors. */
-#define HIDE_TABS          (1<<9)      /* Display tabs. */
-#define SCROLL_TABS        (1<<10)     /* Allow tabs to be scrolled if
-                                        * needed. Otherwise tab sizes will
-                                        * shrink to fit the space. */
+#define HIDE_TABS          (1<<10)      /* Display tabs. */
+#define SCROLL_TABS        (1<<11)      /* Allow tabs to be scrolled if
+                                         * needed. Otherwise tab sizes will
+                                         * shrink to fit the space. */
 /* Slant flags. */
 #define SLANT_NONE          0
 #define SLANT_LEFT         (1<<11)
@@ -169,19 +172,21 @@
 #define HIDDEN          (1<<2)
 #define STATE_MASK      (ACTIVE|DISABLED|HIDDEN)
 
-#define VISIBLE         (1<<3)         /* Indicates the tab is at least
+#define VISIBLE         (1<<3)          /* Indicates the tab is at least
                                          * partially visible on screen. */
 #define DELETED         (1<<4)          /* Indicates the tab has been
                                          * deleted and will be freed when
                                          * the widget is no longer in
                                          * use. */
-/*#define TEAROFF (1<<5)                 Indicates the tab will have a 
- *                                        perforation drawn.*/
-#define TEAROFF_REDRAW  (1<<7)          /* Indicates that the tab's tearoff
-                                         * window needs to be redraw. */
-#define CLOSE_NEEDED    (1<<8)          /* Draw a "x" button on each
+#ifdef notdef
+#define TEAROFF         (1<<5)          /* Indicates the tab will have a
+                                         * perforation drawn.*/
+#define CLOSE_BUTTON    (1<<6)          /* Draw a "x" button on each
                                          * tab. Clicking on the button will
                                          * automatically close the tab. */
+#endif  /* defined above */
+#define TEAROFF_REDRAW  (1<<7)          /* Indicates that the tab's tearoff
+                                         * window needs to be redraw. */
 enum ShowTabs {
     SHOW_TABS_ALWAYS,
     SHOW_TABS_MULTIPLE,
@@ -768,7 +773,7 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
         DEF_TAB_CLOSEBUTTON, Blt_Offset(Tab, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)CLOSE_NEEDED},
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)CLOSE_BUTTON},
     {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
         DEF_CLOSE_COMMAND, Blt_Offset(Tab, closeObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
@@ -842,7 +847,7 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
         DEF_CLOSEBUTTON, Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)CLOSE_NEEDED},
+        (Blt_CustomOption *)CLOSE_BUTTON},
     {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
         DEF_CLOSE_COMMAND, Blt_Offset(Tabset, closeObjPtr),
         BLT_CONFIG_NULL_OK},
@@ -2026,7 +2031,7 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
                 *contextPtr = TAB_LABEL;
             }
             rPtr = &tabPtr->buttonRegion;
-            if ((tabPtr->flags & CLOSE_NEEDED) && 
+            if ((tabPtr->flags & CLOSE_BUTTON) && 
                 (x >= (tabPtr->screenX + rPtr->x)) && 
                  (x < (tabPtr->screenX + rPtr->x + rPtr->w)) && 
                  (y >= (tabPtr->screenY + rPtr->y)) && 
@@ -3065,7 +3070,7 @@ NewTab(Tcl_Interp *interp, Tabset *setPtr, const char *tabName)
     tabPtr->fill = FILL_BOTH;
     tabPtr->anchor = TK_ANCHOR_CENTER;
     tabPtr->container = NULL;
-    tabPtr->flags = NORMAL | CLOSE_NEEDED | TEAROFF;
+    tabPtr->flags = NORMAL | CLOSE_BUTTON | TEAROFF;
     tabPtr->name = Blt_GetHashKey(&setPtr->tabTable, hPtr);
     Blt_SetHashValue(hPtr, tabPtr);
     tabPtr->hashPtr = hPtr;
@@ -5971,7 +5976,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
         w += LABEL_PAD;
     }
     h = MAX(iconHeight0, tabPtr->textHeight0) + PADDING(tabPtr->iPadY);
-    if ((setPtr->flags & tabPtr->flags & CLOSE_NEEDED) &&
+    if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
         (setPtr->plusPtr != tabPtr)) {
         w += CLOSE_WIDTH + LABEL_PAD + 2 * setPtr->closeButton.borderWidth;
         h = MAX(CLOSE_WIDTH + LABEL_PAD + 2, h);
@@ -7839,7 +7844,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
 
     /* Close button geometry. */
     if ((setPtr->plusPtr != tabPtr) && 
-        (setPtr->flags & tabPtr->flags & CLOSE_NEEDED)) {
+        (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
         int bx, by, bw, bh;
 
         /* Close button is always located on the right side of the tab,
@@ -7892,7 +7897,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     
     labelWidth = tabPtr->labelWidth0;
     if ((tabPtr != setPtr->plusPtr) && 
-        (setPtr->flags & tabPtr->flags & CLOSE_NEEDED)) {
+        (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
         labelWidth -= CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
     }
     if (w > labelWidth) {
@@ -8097,7 +8102,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }
     rPtr = &tabPtr->buttonRegion;
     if ((setPtr->plusPtr != tabPtr) &&  (rPtr->w > 0) && (rPtr->h > 0) &&
-        (setPtr->flags & tabPtr->flags & CLOSE_NEEDED)) {
+        (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
         Blt_Picture picture;
         int bx, by;
 
