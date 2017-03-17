@@ -49,7 +49,7 @@
  *      x Imagebox cells
  *      x Combobox cells
  *      x Combobox column filters
- *      o Text editor widget for cells
+ *      x Text editor widget for cells
  *      o XCopyArea for scrolling non-damaged areas.
  *      o Manage scrollbars geometry.
  *      o -padx -pady for styles 
