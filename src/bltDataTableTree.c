@@ -281,10 +281,10 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
     long rowIndex;
 
     /* 
-     * Fill in the table data in 2 passes.  We need to know the
-     * maximum depth of the leaf nodes, to generate columns for each
-     * level of the hierarchy.  We have to do this before adding
-     * node data values.
+     * Fill in the table data in 2 passes.  We need to know the maximum
+     * depth of the leaf nodes so that we can generate columns for each
+     * level of the hierarchy.  We have to do this before adding node data
+     * values.
      */
 
     /* Pass 1.  Create row entries for all the nodes. Add entries for 
