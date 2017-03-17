@@ -3145,13 +3145,20 @@ DestroyCell(Cell *cellPtr)
         Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, 
                          (ClientData)ITEM_CELL);
     }
+    keyPtr = GetKey(cellPtr);
     if (cellPtr->stylePtr != NULL) {
+        Blt_HashEntry *hPtr;
+
         cellPtr->stylePtr->refCount--;
+        /* Remove the cell from the style's cell table. */
+        hPtr = Blt_FindHashEntry(&cellPtr->stylePtr->table, (char *)keyPtr);
+        if (hPtr != NULL) {
+            Blt_DeleteHashEntry(&cellPtr->stylePtr->table, hPtr);
+        }
         if (cellPtr->stylePtr->refCount <= 0) {
             (*cellPtr->stylePtr->classPtr->freeProc)(cellPtr->stylePtr);
         }
     }
-    keyPtr = GetKey(cellPtr);
     if ((keyPtr->rowPtr == viewPtr->selectRows.anchorPtr) || 
         (keyPtr->rowPtr == viewPtr->selectRows.markPtr)) {
         viewPtr->selectRows.markPtr = viewPtr->selectRows.anchorPtr = NULL;
