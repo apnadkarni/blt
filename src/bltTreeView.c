@@ -1355,6 +1355,7 @@ GetVertLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)
 {
     Entry *topPtr, *botPtr;
     TreeView *viewPtr = entryPtr->viewPtr; 
+    int y1, y2;
 
     botPtr = entryPtr->lastChildPtr;
     topPtr = entryPtr;
@@ -1362,8 +1363,14 @@ GetVertLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)
         topPtr = NextEntry(entryPtr, HIDDEN | CLOSED);
         assert(topPtr != NULL);
     }
-    *y1Ptr = SCREENY(viewPtr, topPtr->worldY) + (topPtr->height / 2);
-    *y2Ptr = SCREENY(viewPtr, botPtr->worldY) + (botPtr->height / 2);
+    y1 = SCREENY(viewPtr, topPtr->worldY) + (topPtr->height / 2);
+    y2 = SCREENY(viewPtr, botPtr->worldY) + (botPtr->height / 2);
+
+    /* Make sure the vertical line starts and ends on odd pixels. */
+    y1 |= 0x1;
+    y2 |= 0x1;
+    *y1Ptr = y1;
+    *y2Ptr = y2;
 }
 
 
@@ -7608,10 +7615,6 @@ DrawLines(
             /*
              * Clip the line's Y-coordinates at the viewport's borders.
              */
-            if (ay < 0) {
-                ay &= 0x1;              /* Make sure the dotted line starts
-                                         * on the same even/odd pixel. */
-            }
             if (by > Tk_Height(viewPtr->tkwin)) {
                 by = Tk_Height(viewPtr->tkwin);
             }
