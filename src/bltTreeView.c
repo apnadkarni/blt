@@ -1342,7 +1342,7 @@ CloseEntry(TreeView *viewPtr, Entry *entryPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * GetVertLineCoordinates --
+ * GetVerticalLineCoordinates --
  *
  *      Computes the y-coordinates of the vertical line from an entry to 
  *      its bottom-most child.  If the root node is hidden (and this is
@@ -1351,7 +1351,7 @@ CloseEntry(TreeView *viewPtr, Entry *entryPtr)
  *---------------------------------------------------------------------------
  */
 static void 
-GetVertLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)   
+GetVerticalLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)   
 {
     Entry *topPtr, *botPtr;
     TreeView *viewPtr = entryPtr->viewPtr; 
@@ -7610,7 +7610,7 @@ DrawLines(
 
             x = SCREENX(viewPtr, entryPtr->worldX);
             ax = x + ICONWIDTH(level) + ICONWIDTH(level + 1) / 2;
-            GetVertLineCoordinates(entryPtr, &ay, &by);
+            GetVerticalLineCoordinates(entryPtr, &ay, &by);
 
             /*
              * Clip the line's Y-coordinates at the viewport's borders.
@@ -7619,7 +7619,6 @@ DrawLines(
                 by = Tk_Height(viewPtr->tkwin);
             }
             if ((ay < Tk_Height(viewPtr->tkwin)) && (by > 0)) {
-                ay |= 0x1;
                 XDrawLine(viewPtr->display, drawable, gc, ax, ay, ax, by);
             }
         }
@@ -7652,7 +7651,7 @@ DrawLines(
             XDrawLine(viewPtr->display, drawable, gc, x1, y1, x2, y1);
         }
         if ((IsOpen(entryPtr)) && (entryPtr->lastChildPtr != NULL)) {
-            GetVertLineCoordinates(entryPtr, &y1, &y2);
+            GetVerticalLineCoordinates(entryPtr, &y1, &y2);
             if (y2 > Tk_Height(viewPtr->tkwin)) {
                 y2 = Tk_Height(viewPtr->tkwin); /* Clip line at window border.*/
             }
@@ -8138,7 +8137,9 @@ DrawFlatEntry(
     if (icon != NULL) {
         DrawEntryIcon(viewPtr, entryPtr, icon, drawable, x, y);
     } else {
+#ifdef notdef
         x -= (DEF_ICON_WIDTH * 2) / 3;
+#endif
     }
     level = 0;
     x += ICONWIDTH(level);
@@ -8226,7 +8227,9 @@ DrawEntryInHierarchy(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     if (icon != NULL) {
         DrawEntryIcon(viewPtr, entryPtr, icon, drawable, x, y);
     } else {
+#ifdef notdef
         x -= (DEF_ICON_WIDTH * 2) / 3;
+#endif
     }
     x += ICONWIDTH(level + 1);
 
