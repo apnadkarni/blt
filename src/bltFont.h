@@ -92,6 +92,7 @@ typedef int (Blt_Font_CanRotateProc)(Blt_Font font, float angle);
 typedef void (Blt_Font_UnderlineCharsProc)(Display *display, Drawable drawable, 
         GC gc, Blt_Font font, const char *text, int textLen, int x, int y, 
         int first, int last, int xMax);
+typedef double (Blt_Font_SizeProc)(Blt_Font font);
 
 struct _Blt_FontClass {
     int type;                           /* Indicates the type of font used. */
@@ -106,6 +107,7 @@ struct _Blt_FontClass {
     Blt_Font_PostscriptNameProc *psNameProc;
     Blt_Font_TextWidthProc *textWidthProc;
     Blt_Font_UnderlineCharsProc *underlineCharsProc;
+    Blt_Font_SizeProc *sizeProc;
 };
 
 /* 
@@ -132,6 +134,7 @@ struct _Blt_Font {
 #define Blt_Font_PostscriptName(f,rp) \
         (*(f)->classPtr->psNameProc)(f,rp)
 #define Blt_Font_Family(f)      (*(f)->classPtr->familyProc)(f)
+#define Blt_Font_Size(f)        (*(f)->classPtr->sizeProc)(f)
 #define Blt_Font_CanRotate(f,a) (*(f)->classPtr->canRotateProc)(f,a)
 #define Blt_Font_Free(f)        (*(f)->classPtr->freeProc)(f)
 #define Blt_Font_UnderlineChars(d,w,g,f,s,l,x,y,a,b,m)               \

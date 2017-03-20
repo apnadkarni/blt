@@ -458,7 +458,8 @@ Blt_Pool_Create(int type)
         poolPtr->freeProc = StringPoolFreeItem;
         break;
     }
-    poolPtr->headPtr = poolPtr->freePtr = NULL;
+    poolPtr->headPtr = NULL;
+    poolPtr->freePtr = NULL;
     poolPtr->waste = poolPtr->bytesLeft = 0;
     poolPtr->poolSize = poolPtr->itemSize = 0;
     return (Blt_Pool)poolPtr;
