@@ -1820,9 +1820,6 @@ ftFontDeleteFontset(ftFontset *setPtr)
     }
     Blt_DeleteHashTable(&setPtr->fontTable);
     
-    if (setPtr->name != NULL) {
-        Blt_Free(setPtr->name);
-    }
     if (setPtr->draw != 0) {
         XftDrawDestroy(setPtr->draw);
     }
@@ -2331,7 +2328,7 @@ ftFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     FcPattern *pattern;
     XftFont *xftPtr;
     _Blt_Font *dupPtr; 
-    ftFontsetx *newPtr;
+    ftFontset *newPtr;
     ftFontset *setPtr = fontPtr->clientData;
     int isNew;
     
