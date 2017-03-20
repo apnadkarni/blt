@@ -247,9 +247,9 @@ static FontAlias xlfdFontAliases[] = {
 
 static int font_initialized = 0;
 static Blt_HashTable aliasTable;
-static Blt_HashTable fontTable;
+static Blt_HashTable fontSetTable;
 
-static void tkGetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr);
+static void tkFontGetFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr);
 
 static double
 PointsToPixels(Tk_Window tkwin, int size)
@@ -440,7 +440,7 @@ MakeAliasTable(Tk_Window tkwin)
     FontAlias *table;
 
     Blt_InitHashTable(&familyTable, TCL_STRING_KEYS);
-    tkGetFontFamilies(tkwin, &familyTable);
+    tkFontGetFamilies(tkwin, &familyTable);
     Blt_InitHashTable(&aliasTable, TCL_STRING_KEYS);
     table = xlfdFontAliases;
     for(faPtr = table; faPtr->name != NULL; faPtr++) {
@@ -814,7 +814,7 @@ tkFontParseNameValuePairs(Tcl_Interp *interp, Tcl_Obj *objPtr)
 static tkFontPattern *
 tkFontParseObj(Tcl_Interp *interp, Tcl_Obj *objPtr) 
 {
-    tkFontFontPattern *patternPtr;
+    tkFontPattern *patternPtr;
     Tcl_Obj *cmd[3];
     int result;
 
@@ -962,7 +962,7 @@ tkFontGetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
     tkFontPattern *patternPtr;
 
     if (!font_initialized) {
-        Blt_InitHashTable(&fontTable, BLT_STRING_KEYS);
+        Blt_InitHashTable(&fontSetTable, BLT_STRING_KEYS);
         MakeAliasTable(tkwin);
         font_initialized++;
     }
@@ -1232,7 +1232,7 @@ typedef struct {
     Blt_HashTable fontTable;            /* Hash table containing an Win32 font
                                          * for each angle it's used at. Will
                                          * always contain a 0 degree entry. */
-    Tk_Font tkfont;                     /* The zero degree Tk font.  We use it
+    Tk_Font tkFont;                     /* The zero degree Tk font.  We use it
                                          * to get the Win32 font handle to
                                          * generate non-zero degree rotated
                                          * fonts. */
@@ -1254,7 +1254,7 @@ typedef struct {
  */
 static HFONT
 winFontDuplicate(
-    TkFont *fontPtr,                    /* Font identifier (actually a
+    Tk_Font tkFont,                    /* Font identifier (actually a
                                          * Tk_Font) */
     long size,                          /* Size of new font. */
     long angle10)                       /* # of degrees to rotate font */
@@ -1262,8 +1262,9 @@ winFontDuplicate(
     TkFontAttributes *faPtr;            /* Set of attributes to match. */
     HFONT hfont;
     LOGFONTW lf;
+    TkFont *tkFontPtr = (TkFont *)tkFont;
 
-    faPtr = &fontPtr->fa;
+    faPtr = &tkFontPtr->fa;
     ZeroMemory(&lf, sizeof(LOGFONT));
     lf.lfHeight = -size;
     if (lf.lfHeight < 0) {
@@ -1365,9 +1366,9 @@ winFontDestroyFont(winFontset *setPtr)
         hfont = Blt_GetHashValue(hPtr);
         DeleteFont(hfont);
     }
-    Tk_FreeFont(setPtr->tkfont);
+    Tk_FreeFont(setPtr->tkFont);
     Blt_DeleteHashTable(&setPtr->fontTable);
-    Blt_DeleteHashEntry(&fontTable, setPtr->hashPtr);
+    Blt_DeleteHashEntry(&fontSetTable, setPtr->hashPtr);
     Blt_Free(setPtr);
 }
 
@@ -1409,19 +1410,19 @@ winFontGetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         desc++;                         /* Skip leading blanks. */
     }
     /* Is the font already in the cache? */
-    hPtr = Blt_CreateHashEntry(&fontTable, desc, &isNew);
+    hPtr = Blt_CreateHashEntry(&fontSetTable, desc, &isNew);
     if (isNew) {
         Tk_Font tkFont;
 
         tkFont = tkFontGetFromObj(interp, tkwin, objPtr);
         if (tkFont == NULL) {
-            Blt_DeleteHashEntry(&fontTable, hPtr);
+            Blt_DeleteHashEntry(&fontSetTable, hPtr);
             return NULL;
         }
         setPtr = Blt_AssertCalloc(1, sizeof(winFontset));
         setPtr->refCount = 1;
-        setPtr->tkfont = tkFont;
-        setPtr->name = Blt_GetHashKey(&fontTable, hPtr);
+        setPtr->tkFont = tkFont;
+        setPtr->name = Blt_GetHashKey(&fontSetTable, hPtr);
         setPtr->hashPtr = hPtr;
         Blt_SetHashValue(hPtr, setPtr);
         Blt_InitHashTable(&setPtr->fontTable, BLT_ONE_WORD_KEYS);
@@ -1437,7 +1438,7 @@ winFontNameProc(_Blt_Font *fontPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return Tk_NameOfFont(setPtr->tkfont);
+    return Tk_NameOfFont(setPtr->tkFont);
 }
 
 static const char *
@@ -1445,7 +1446,7 @@ winFontFamilyProc(_Blt_Font *fontPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return ((TkFont *)setPtr->tkfont)->fa.family;
+    return ((TkFont *)setPtr->tkFont)->fa.family;
 }
 
 static double
@@ -1453,7 +1454,7 @@ winFontSizeProc(_Blt_Font *fontPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return ((TkFont *)setPtr->tkfont)->fa.size;
+    return ((TkFont *)setPtr->tkFont)->fa.size;
 }
 
 static winFontset *
@@ -1464,13 +1465,9 @@ winFontNewFontset(Tk_Font tkFont, const char *fontName, HFONT hFont)
     int isNew;
 
     setPtr = Blt_AssertCalloc(1, sizeof(winFontset));
-    setPtr->name = Blt_AssertStrdup(fontName);
-    setPtr->visual = Tk_Visual(tkwin);
-    setPtr->colormap = Tk_Colormap(tkwin);
-    setPtr->display = Tk_Display(tkwin);
-    setPtr->tkFont = tkFont;
     setPtr->refCount = 1;
-
+    setPtr->tkFont = tkFont;
+    setPtr->name = Blt_GetHashKey(&fontSetTable, hPtr);
     /* 
      * Initialize the font table for this font.  Add the initial font for
      * the case of 0 degrees rotation.
@@ -1496,16 +1493,17 @@ winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     HFONT hFont;
     _Blt_Font *dupPtr;
     static int nextId = -1;
-    winFontset *newPtr;
-    winFontset *setPtr = fontPtr->clientData;
-    
+    winFontset *setPtr, *newPtr;
+    char string[200];
+ 
+    setPtr = fontPtr->clientData;
     /* Create the scaled font. */
     hFont = winFontDuplicate(setPtr->tkFont, size, 0L);
     if (hFont == NULL) {
         return NULL;
     }
     sprintf(string, "scaledfont%d", nextId++);
-    newPtr = winFontNewFontset(setPtr->tkFontPtr, string, hFont);
+    newPtr = winFontNewFontset(setPtr->tkFont, string, hFont);
     if (newPtr == NULL) {
         return NULL;
     }
@@ -1514,7 +1512,6 @@ winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
         return NULL;                    /* Out of memory. */
     }
     dupPtr->classPtr = &tkFontClass;
-    dupPtr->clientData = tkFont;
     dupPtr->interp = fontPtr->interp;
     dupPtr->display = fontPtr->display;
     dupPtr->clientData = newPtr;
@@ -1526,17 +1523,17 @@ winFontIdProc(_Blt_Font *fontPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return Tk_FontId(setPtr->tkfont);
+    return Tk_FontId(setPtr->tkFont);
 }
 
 static void
 winFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
-    TkFont *tkFontPtr = (TkFont *)setPtr->tkfont;
+    TkFont *tkFontPtr = (TkFont *)setPtr->tkFont;
     Tk_FontMetrics fm;
 
-    Tk_GetFontMetrics(setPtr->tkfont, &fm);
+    Tk_GetFontMetrics(setPtr->tkFont, &fm);
     fmPtr->ascent = fm.ascent;
     fmPtr->descent = fm.descent;
     fmPtr->linespace = fm.linespace;
@@ -1551,7 +1548,7 @@ winFontMeasureProc(_Blt_Font *fontPtr, const char *text, int numBytes,
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return Tk_MeasureChars(setPtr->tkfont, text, numBytes, max, flags, 
+    return Tk_MeasureChars(setPtr->tkFont, text, numBytes, max, flags, 
                 lengthPtr);
 }
 
@@ -1560,7 +1557,7 @@ winFontTextWidthProc(_Blt_Font *fontPtr, const char *text, int numBytes)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return Tk_TextWidth(setPtr->tkfont, text, numBytes);
+    return Tk_TextWidth(setPtr->tkFont, text, numBytes);
 }    
 
 
@@ -1617,7 +1614,7 @@ winFontDrawProc(
             TkWinReleaseDrawableDC(drawable, hdc, &state);
         }
     } else {
-        Tk_DrawChars(display, drawable, gc, setPtr->tkfont, text, numBytes, 
+        Tk_DrawChars(display, drawable, gc, setPtr->tkFont, text, numBytes, 
                      x, y);
     }
 }
@@ -1628,7 +1625,7 @@ winFontPostscriptNameProc(_Blt_Font *fontPtr, Tcl_DString *resultPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return Tk_PostscriptFontName(setPtr->tkfont, resultPtr);
+    return Tk_PostscriptFontName(setPtr->tkFont, resultPtr);
 }
 
 static int
@@ -1652,7 +1649,7 @@ winFontCanRotateProc(_Blt_Font *fontPtr, float angle)
         return TRUE;                    /* Rotated font already exists. */
     }
     /* Create the rotated font. */
-    hfont = winFontDuplicate(tkFontPtr, tkFontPtr->fa.size, angle10);
+    hfont = winFontDuplicate(setPtr->tkFont, tkFontPtr->fa.size, angle10);
     if (hfont == NULL) {
         Blt_DeleteHashEntry(&setPtr->fontTable, hPtr);
         return FALSE;
@@ -1724,7 +1721,7 @@ winFontUnderlineCharsProc(
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    Tk_UnderlineChars(display, drawable, gc, setPtr->tkfont, string, x, y, 
+    Tk_UnderlineChars(display, drawable, gc, setPtr->tkFont, string, x, y, 
         first, last);
 }
 
@@ -1764,7 +1761,7 @@ Blt_GetFontFromObj(
    
     fontPtr = Blt_AssertCalloc(1, sizeof(_Blt_Font));
     if (!font_initialized) {
-        Blt_InitHashTable(&fontTable, BLT_STRING_KEYS);
+        Blt_InitHashTable(&fontSetTable, BLT_STRING_KEYS);
         MakeAliasTable(tkwin);
         font_initialized++;
     }
@@ -1773,7 +1770,7 @@ Blt_GetFontFromObj(
     /* Try to get a windows rotated first.  If that fails, fall back to the
      * normal Tk font.  We rotate the font by drawing into a bitmap and
      * rotating the bitmap.  */
-    fontPtr->clientData = winFontGetFontObj(interp, tkwin, objPtr);
+    fontPtr->clientData = winFontGetFromObj(interp, tkwin, objPtr);
     if (fontPtr->clientData != NULL) {
         fontPtr->classPtr = &winFontClass;
     } else {
@@ -1984,7 +1981,7 @@ Blt_Font_GetFile(Tcl_Interp *interp, Tcl_Obj *objPtr, double *sizePtr)
     int result;
 
     if (!font_initialized) {
-        Blt_InitHashTable(&fontTable, BLT_STRING_KEYS);
+        Blt_InitHashTable(&fontSetTable, BLT_STRING_KEYS);
         MakeAliasTable(Tk_MainWindow(interp));
         font_initialized++;
     }
