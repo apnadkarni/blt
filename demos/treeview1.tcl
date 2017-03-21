@@ -162,6 +162,7 @@ blt::tk::scrollbar $view.editor.xbar
 blt::tk::scrollbar $view.editor.ybar
 $view column configure ctime -style textbox 
 $view column configure treeView -style textbox 
+#$view configure -icons ""
 
 wm protocol . WM_DELETE_WINDOW { destroy . }
 

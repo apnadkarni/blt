@@ -216,25 +216,25 @@ bind BltTreeView <KeyPress-Down> {
 # Home
 #   Move the first entry.  Ignores nodes whose ancestors are closed.
 bind BltTreeView <KeyPress-Home> {
-    blt::TreeView::MoveFocus %W top
+    blt::TreeView::MoveFocus %W first
 }
 
 # End 
 #   Move the last entry. Ignores nodes whose ancestors are closed.
 bind BltTreeView <KeyPress-End> {
-    blt::TreeView::MoveFocus %W bottom
+    blt::TreeView::MoveFocus %W end
 }
 
 # PgUp 
 #   Move the first entry in the view.
 bind BltTreeView <KeyPress-Prior> {
-    blt::TreeView::MovePage %W view.first
+    %W yview scroll -1 pages
 }
 
 # PgDn
 #   Move the last entry in the view.
 bind BltTreeView <KeyPress-Next> {
-    blt::TreeView::MovePage %W view.last
+    %W yview scroll 1 pages
 }
 
 # Shift+Up (arrow key)
@@ -1106,41 +1106,6 @@ proc blt::TreeView::MoveFocus { w index } {
 	$w selection anchor focus
     }
     $w see focus
-}
-
-# ----------------------------------------------------------------------
-#
-# MovePage --
-#
-#	Invoked by KeyPress bindings.  Pages the current view up or down.
-#	The <where> argument should be either "top" or "bottom".
-#
-# ----------------------------------------------------------------------
-proc blt::TreeView::MovePage { w where } {
-
-    # If the focus is already at the top/bottom of the window, we want to
-    # scroll a page. It's really one page minus an entry because we want to
-    # see the last entry on the next/last page.
-    if { [$w index focus] == [$w index view.$where] } {
-        if {$where == "top"} {
-	    $w yview scroll -1 pages
-	    $w yview scroll 1 units
-        } else {
-	    $w yview scroll 1 pages
-	    $w yview scroll -1 units
-        }
-    }
-    update
-
-    # Adjust the entry focus and the view.  Also activate the entry.  just
-    # in case the mouse point is not in the widget.
-    $w entry highlight view.$where
-    $w focus view.$where
-    $w see view.$where
-    if { [$w cget -selectmode] == "single" } {
-        $w selection clearall
-        $w selection set focus
-    }
 }
 
 # ----------------------------------------------------------------------

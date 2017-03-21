@@ -111,7 +111,7 @@
 #define LEVELOFFSET(d)  (viewPtr->levelInfo[(d)].offset)
 
 #ifdef notdef
-#define DEPTH(t, n)     (((t)->flags & FLATTEN) ? 0 : Blt_Tree_NodeDepth(n))
+#define DEPTH(t, n)     (((t)->flags & FLAT) ? 0 : Blt_Tree_NodeDepth(n))
 #endif
 
 /* Shared flags. */
@@ -148,7 +148,7 @@
 /* Both X-scroll and  Y-scroll requests are pending. */
 #define SCROLL_PENDING  (SCROLLX | SCROLLY)
 
-#define FLATTEN                 (1<<14) /* Indicates if the view of the
+#define FLAT                    (1<<14) /* Indicates if the view of the
                                          * tree has been flattened. */
 #define UPDATE                  (1<<15)
 #define RESORT                  (1<<16) /* The tree has changed such that

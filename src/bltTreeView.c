@@ -493,7 +493,7 @@ static Blt_ConfigSpec viewSpecs[] =
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_BITMASK, "-flat", "flat", "Flat", DEF_FLAT, 
         Blt_Offset(TreeView, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-       (Blt_CustomOption *)FLATTEN},
+       (Blt_CustomOption *)FLAT},
     {BLT_CONFIG_DASHES, "-focusdashes", "focusDashes", "FocusDashes",
         DEF_FOCUS_DASHES, Blt_Offset(TreeView, focusDashes), 
         BLT_CONFIG_NULL_OK},
@@ -816,7 +816,7 @@ Blt_TreeView_EventuallyRedraw(TreeView *viewPtr)
 static int
 EntryDepth(TreeView *viewPtr, Entry *entryPtr)
 {
-    if (viewPtr->flags & FLATTEN) {
+    if (viewPtr->flags & FLAT) {
         return 0;
     }
     return Blt_Tree_NodeDepth(entryPtr->node) -
@@ -1631,7 +1631,7 @@ LostSelection(ClientData clientData)
 static int
 SelectRange(TreeView *viewPtr, Entry *fromPtr, Entry *toPtr)
 {
-    if (viewPtr->flags & FLATTEN) {
+    if (viewPtr->flags & FLAT) {
         int i;
 
         if (fromPtr->flatIndex > toPtr->flatIndex) {
@@ -4221,7 +4221,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         }
     } else if ((c == 'd') && (strncmp(string, "down", length) == 0)) {
         entryPtr = fromPtr;
-        if (viewPtr->flags & FLATTEN) {
+        if (viewPtr->flags & FLAT) {
             int i;
             
             i = entryPtr->flatIndex + 1;
@@ -4239,7 +4239,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
             }
         }
     } else if ((c == 'e') && (strncmp(string, "end", length) == 0)) {
-        if (viewPtr->flags & FLATTEN) {
+        if (viewPtr->flags & FLAT) {
             entryPtr = viewPtr->flatArr[viewPtr->numEntries - 1];
         } else {
             entryPtr = LastEntry(viewPtr, viewPtr->rootPtr, mask);
@@ -4248,7 +4248,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         return TCL_OK;
     } else if ((c == 'f') && (length > 1) &&
                (strncmp(string, "first", length) == 0)) {
-        if (viewPtr->flags & FLATTEN) {
+        if (viewPtr->flags & FLAT) {
             entryPtr = viewPtr->flatArr[0];
         } else {
             entryPtr = viewPtr->rootPtr;
@@ -4266,7 +4266,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         }
     } else if ((c == 'n') && (strncmp(string, "next", length) == 0)) {
         entryPtr = fromPtr;
-        if (viewPtr->flags & FLATTEN) {
+        if (viewPtr->flags & FLAT) {
             int i;
             
             i = entryPtr->flatIndex + 1; 
@@ -4286,7 +4286,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         }
     } else if ((c == 'p') && (strncmp(string, "previous", length) == 0)) {
         entryPtr = fromPtr;
-        if (viewPtr->flags & FLATTEN) {
+        if (viewPtr->flags & FLAT) {
             int i;
             
             i = entryPtr->flatIndex - 1;
@@ -4306,7 +4306,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         }
     } else if ((c == 'u') && (strcmp(string, "up") == 0)) {
         entryPtr = fromPtr;
-        if (viewPtr->flags & FLATTEN) {
+        if (viewPtr->flags & FLAT) {
             int i;
                 
             i = entryPtr->flatIndex - 1;
@@ -5482,7 +5482,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 
             Blt_Ts_InitStyle(ts);
             Blt_Ts_SetFont(ts, font);
-            if (viewPtr->flags & FLATTEN) {
+            if (viewPtr->flags & FLAT) {
                 label = PathFromRoot(viewPtr, entryPtr);
             }
             Blt_Ts_GetExtents(&ts, label, &tw, &th);
@@ -5809,7 +5809,7 @@ InvokeCompare(Column *colPtr, Entry *e1, Entry *e2, Tcl_Obj *cmdPtr)
     objPtr = Tcl_NewStringObj(colPtr->key, -1);         
     Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
              
-    if (viewPtr->flags & FLATTEN) {
+    if (viewPtr->flags & FLAT) {
         objPtr = Tcl_NewStringObj(PathFromRoot(viewPtr, e1), -1);
         Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
         objPtr = Tcl_NewStringObj(PathFromRoot(viewPtr, e2), -1);
@@ -5975,7 +5975,7 @@ CompareEntries(const void *a, const void *b)
             } else {
                 const char *s1, *s2;
 
-                if (viewPtr->flags & FLATTEN) {
+                if (viewPtr->flags & FLAT) {
                     s1 = PathFromRoot(viewPtr, e1);
                     s2 = PathFromRoot(viewPtr, e2);
                 } else {
@@ -6600,10 +6600,11 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
     /*
      * GC for active label. Dashed outline.
      */
-    gcMask = GCForeground | GCLineStyle;
+    gcMask = GCForeground | GCLineStyle | GCJoinStyle;
     gcValues.foreground = viewPtr->focusColor->pixel;
     gcValues.line_style = (LineIsDashed(viewPtr->focusDashes))
         ? LineOnOffDash : LineSolid;
+    gcValues.join_style = JoinMiter;
     newGC = Blt_GetPrivateGC(viewPtr->tkwin, gcMask, &gcValues);
     if (LineIsDashed(viewPtr->focusDashes)) {
         viewPtr->focusDashes.offset = 2;
@@ -6617,10 +6618,11 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
     /*
      * GC for selection. Dashed outline.
      */
-    gcMask = GCForeground | GCLineStyle;
+    gcMask = GCForeground | GCLineStyle | GCJoinStyle;
     gcValues.foreground = viewPtr->selectedFg->pixel;
     gcValues.line_style = (LineIsDashed(viewPtr->focusDashes))
         ? LineOnOffDash : LineSolid;
+    gcValues.join_style = JoinMiter;
     newGC = Blt_GetPrivateGC(viewPtr->tkwin, gcMask, &gcValues);
     if (LineIsDashed(viewPtr->focusDashes)) {
         viewPtr->focusDashes.offset = 2;
@@ -6663,7 +6665,7 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
     if (Blt_ConfigModified(viewSpecs, "-hideleaves", "-flat", (char *)NULL)) {
         
         viewPtr->flags |= LAYOUT_PENDING;
-        if (((viewPtr->flags & FLATTEN) == 0) && (viewPtr->flatArr != NULL)) {
+        if (((viewPtr->flags & FLAT) == 0) && (viewPtr->flatArr != NULL)) {
             Blt_Free(viewPtr->flatArr);
             viewPtr->flatArr = NULL;
         }
@@ -7289,7 +7291,7 @@ ComputeLayout(TreeView *viewPtr)
     Cell *cellPtr;
 
 
-    if (viewPtr->flags & FLATTEN) {
+    if (viewPtr->flags & FLAT) {
         ComputeFlatLayout(viewPtr);
     } else {
         ComputeTreeLayout(viewPtr);
@@ -7385,7 +7387,7 @@ ComputeVisibleEntries(TreeView *viewPtr)
         return TCL_OK;                  /* Root node is hidden. */
     }
     /* Find the node where the view port starts. */
-    if (viewPtr->flags & FLATTEN) {
+    if (viewPtr->flags & FLAT) {
         Entry **epp;
         int y;
         long i;
@@ -7610,6 +7612,7 @@ DrawLines(
 
             x = SCREENX(viewPtr, entryPtr->worldX);
             ax = x + ICONWIDTH(level) + ICONWIDTH(level + 1) / 2;
+            ax |= 0x1;
             GetVerticalLineCoordinates(entryPtr, &ay, &by);
 
             /*
@@ -7642,12 +7645,14 @@ DrawLines(
         x1 = x + (w / 2);
         y1 = buttonY + (butPtr->height / 2);
         x2 = x1 + (ICONWIDTH(level) + ICONWIDTH(level + 1)) / 2;
+        x1 |= 0x1;
+        y1 |= 0x1;
+        x2 |= 0x1;
         if (Blt_Tree_ParentNode(entryPtr->node) != NULL) {
             /*
              * For every node except root, draw a horizontal line from the
              * vertical bar to the middle of the icon.
              */
-            y1 |= 0x1;
             XDrawLine(viewPtr->display, drawable, gc, x1, y1, x2, y1);
         }
         if ((IsOpen(entryPtr)) && (entryPtr->lastChildPtr != NULL)) {
@@ -7839,7 +7844,7 @@ DrawEntryIcon(
     level = EntryDepth(viewPtr, entryPtr);
     ih = IconHeight(icon);
     iw = IconWidth(icon);
-    if (viewPtr->flags & FLATTEN) {
+    if (viewPtr->flags & FLAT) {
         x += (ICONWIDTH(0) - iw) / 2;
     } else {
         x += (ICONWIDTH(level + 1) - iw) / 2;
@@ -7895,6 +7900,8 @@ DrawEntryLabel(
     }
     /* Focus outline */
     if (isFocused) {                    
+        XSegment segments[4];
+
         if (isSelected) {
             XColor *color;
 
@@ -7909,8 +7916,29 @@ DrawEntryLabel(
         if (rgn != NULL) {
             TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
         }       
-        XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, 
-                x + 1, y + 1, width - 3, height - 3);
+        /*
+         *  +----0----+
+         *  3         1
+         *  +----2----+
+         */
+        width -= 2; height -= 2;
+        segments[0].x1 = x | 0x1;
+        segments[0].x2 = (x + width)| 0x1;
+        segments[0].y1 = segments[0].y2 = y | 0x1;
+
+        segments[1].x1 = x | 0x1;
+        segments[1].x2 = (x + width)| 0x1;
+        segments[1].y1 = segments[1].y2 = (y + height) | 0x1;
+
+        segments[2].x1 = segments[2].x2 = x | 0x1;
+        segments[2].y1 = y | 0x1;
+        segments[2].y2 = (y + height) | 0x1;
+
+        segments[3].x1 = segments[3].x2 = (x + width) | 0x1;
+        segments[3].y1 = y | 0x1;
+        segments[3].y2 = (y + height + 1) | 0x1;
+
+        XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments, 4);
         if (isSelected) {
             XSetForeground(viewPtr->display, viewPtr->focusGC, 
                 viewPtr->focusColor->pixel);
@@ -7946,7 +7974,7 @@ DrawEntryLabel(
         Blt_Ts_SetFontClipRegion(ts, rgn);
         Blt_Ts_SetMaxLength(ts, maxLength);
 
-        if (viewPtr->flags & FLATTEN) {
+        if (viewPtr->flags & FLAT) {
             textPtr = Blt_Ts_CreateLayout(PathFromRoot(viewPtr, entryPtr),
                 -1, &ts);
         } else {
@@ -8218,8 +8246,9 @@ DrawEntryInHierarchy(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
          * one.  The displayed button can be either an icon (Tk image) or a
          * line drawing (rectangle with plus or minus sign).
          */
-        DrawButton(viewPtr, entryPtr, drawable, x + entryPtr->buttonX, 
-                y + entryPtr->buttonY);
+        DrawButton(viewPtr, entryPtr, drawable,
+                   (x + entryPtr->buttonX) | 0x1, 
+                   (y + entryPtr->buttonY) | 0x1);
     }
     x += ICONWIDTH(level);
 
@@ -8683,7 +8712,7 @@ DisplayProc(ClientData clientData)      /* Information about widget. */
                 }
             }
         } else {
-            if (viewPtr->flags & FLATTEN) {
+            if (viewPtr->flags & FLAT) {
                 DrawFlatView(viewPtr, drawable, x);
             } else {
                 DrawTree(viewPtr, drawable, x);
@@ -8734,7 +8763,7 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
         colPtr->titleBW - colPtr->pad.side2;
 
     icon = GetEntryIcon(viewPtr, entryPtr);
-    if (viewPtr->flags & FLATTEN) {
+    if (viewPtr->flags & FLAT) {
         x += ICONWIDTH(0);
         w -= ICONWIDTH(0);
         if (icon == NULL) {
@@ -8742,13 +8771,14 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
         }
     } else {
         level = EntryDepth(viewPtr, entryPtr);
-        if ((viewPtr->flags & FLATTEN) == 0) {
-            x += ICONWIDTH(level);
-            w -= ICONWIDTH(level);
-        }
+        x += ICONWIDTH(level);
+        w -= ICONWIDTH(level);
         if (icon != NULL) {
             x += ICONWIDTH(level + 1);
             w -= ICONWIDTH(level + 1);
+        } else {
+            x += ICONWIDTH(level);
+            w -= ICONWIDTH(level);
         }
     }
     if (EntryIsSelected(viewPtr, entryPtr)) {
@@ -8815,7 +8845,8 @@ DisplayButton(TreeView *viewPtr, Entry *entryPtr)
         width, height, Tk_Depth(viewPtr->tkwin));
     /* Draw the background of the cell. */
     DrawButton(viewPtr, entryPtr, drawable, 0, 0);
-
+    dx |= 1;
+    dy |= 1;
     /* Clip the drawable if necessary */
     sx = sy = 0;
     if (dx < left) {
@@ -12725,7 +12756,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
             iw = IconWidth(icon);
             ix = entryPtr->worldX + ICONWIDTH(depth);
             iy = entryPtr->worldY;
-            if (viewPtr->flags & FLATTEN) {
+            if (viewPtr->flags & FLAT) {
                 ix += (ICONWIDTH(0) - iw) / 2;
             } else {
                 ix += (ICONWIDTH(depth + 1) - iw) / 2;
@@ -12738,7 +12769,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         lx = entryPtr->worldX + ICONWIDTH(depth);
         ly = entryPtr->worldY;
-        if ((viewPtr->flags & FLATTEN) == 0) {
+        if ((viewPtr->flags & FLAT) == 0) {
             lx += ICONWIDTH(depth + 1) + 4;
         }           
         if ((x >= lx) && (x < (lx + entryPtr->labelWidth)) &&
@@ -13655,7 +13686,7 @@ SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
 
-    if (viewPtr->flags & FLATTEN) {
+    if (viewPtr->flags & FLAT) {
         SortFlatView(viewPtr);
     } else {
         SortTreeView(viewPtr);
