@@ -6774,8 +6774,7 @@ static void
 DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 {
     int x, y;
-    int segmentWidth, max;
-    Blt_Bg bg, perfBg;
+    Blt_Bg perfBg;
 
     if ((tabPtr->container != NULL) || (tabPtr->tkwin == NULL)) {
         return;
@@ -6784,57 +6783,25 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
           tabPtr->worldY + tabPtr->worldHeight + 2, &x, &y);
     x += setPtr->xOffset;
     y += setPtr->yOffset;
-    bg = GETATTR(tabPtr, selBg);
-    segmentWidth = 4;
     if (setPtr->flags & ACTIVE_PERFORATION) {
         perfBg = GETATTR(tabPtr, activeBg);
     } else {
         perfBg = GETATTR(tabPtr, selBg);
     }   
     if (setPtr->side & (SIDE_TOP|SIDE_BOTTOM)) {
-        XPoint points[2];
-        int x1, x2, y1;
-        points[0].x = x;
-        points[0].y = points[1].y = y;
+        int max;
+
         max = tabPtr->screenX + setPtr->xOffset + tabPtr->screenWidth - 2;
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, x-2, y-4, 
                 tabPtr->screenWidth, 8, 0, TK_RELIEF_FLAT);
-        x1 = x;
-        y1 = y;
-        XDrawLine(setPtr->display, drawable, setPtr->perfGC, x1, y1, max, y1);  
-#ifdef notdef
-      while (x1 < max) {
-            x2 = x1 + segmentWidth;
-            if (x2 > max) {
-                x2 = max;
-            }
-            fprintf(stderr, "drawing polygon\n");
-
-#ifdef notdef
-            Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, x1, y1, 
-                                 x2 - x1, 2, 1, TK_RELIEF_SUNKEN);
-#endif
-            x1 += 2 * segmentWidth;
-            points[0].x += 2 * segmentWidth;
-        }
-#endif
+        XDrawLine(setPtr->display, drawable, setPtr->perfGC, x, y, max, y);  
     } else {
-        XPoint points[2];
+        int max;
 
-        points[0].x = points[1].x = x;
-        points[0].y = y;
         max  = tabPtr->screenY + tabPtr->screenHeight - 2;
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg,
                x - 4, y - 2, 8, tabPtr->screenHeight, 0, TK_RELIEF_RAISED);
-        while (points[0].y < max) {
-            points[1].y = points[0].y + segmentWidth;
-            if (points[1].y > max) {
-                points[1].y = max;
-            }
-            Blt_Bg_DrawPolygon(setPtr->tkwin, drawable, bg, points, 
-                2, 1, TK_RELIEF_RAISED);
-            points[0].y += 2 * segmentWidth;
-        }
+        XDrawLine(setPtr->display, drawable, setPtr->perfGC, x, y, x, max);  
     }
 }
 
