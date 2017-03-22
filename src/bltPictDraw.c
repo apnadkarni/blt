@@ -232,6 +232,7 @@ typedef struct {
     int radius;                         /* Radius of rounded corner. */
     int antialiased;
     int width, height;
+    Array coords;
 } RectangleSwitches;
 
 static Blt_SwitchSpec rectangleSwitches[] = 
@@ -240,6 +241,8 @@ static Blt_SwitchSpec rectangleSwitches[] =
         Blt_Offset(RectangleSwitches, antialiased), 0},
     {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
         Blt_Offset(RectangleSwitches, brush),    0, 0, &paintbrushSwitch},
+    {BLT_SWITCH_CUSTOM, "-coords", "{x0 y0 x1 y1}", (char *)NULL,
+        Blt_Offset(RectangleSwitches, coords), 0, 0, &arraySwitch},
     {BLT_SWITCH_INT_NNEG, "-height", "numPixels", (char *)NULL,
         Blt_Offset(RectangleSwitches, height), 0},
     {BLT_SWITCH_INT_NNEG, "-linewidth", "number", (char *)NULL,
@@ -2202,7 +2205,10 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      None.
  *
- *      imageName draw rectangle x y ?switches ...?
+ *      imageName draw rectangle x y w h ?switches ...?
+ *      imageName draw rectangle x1 y1 x2 y2 ?switches ...?
+ *      imageName draw rectangle -coords {x1 y1 x2 y2} ?switches ...?
+ *      imageName draw rectangle -coords {x1 y1 x2 y2} ?switches ...?
  *---------------------------------------------------------------------------
  */
 int

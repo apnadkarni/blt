@@ -1367,10 +1367,8 @@ GetVerticalLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)
     y2 = SCREENY(viewPtr, botPtr->worldY) + (botPtr->height / 2);
 
     /* Make sure the vertical line starts and ends on odd pixels. */
-    y1 |= 0x1;
-    y2 |= 0x1;
-    *y1Ptr = y1;
-    *y2Ptr = y2;
+    *y1Ptr = y1 | 0x1;
+    *y2Ptr = y2 | 0x1;
 }
 
 
@@ -4430,7 +4428,7 @@ GetEntryIterator(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr,
     } else if (Blt_Tree_GetNodeIterator(interp, tree, objPtr, &iter)
                == TCL_OK) {
         iterPtr->iter = iter;
-        iterPtr->tagType = (TAG_RESERVED | TAG_MULTIPLE);
+        iterPtr->tagType = TAG_MULTIPLE;
         node = Blt_Tree_FirstTaggedNode(&iter);
         iterPtr->entryPtr = NodeToEntry(viewPtr, node);
     } else {
@@ -4450,10 +4448,13 @@ NextTaggedEntry(EntryIterator *iterPtr)
 {
     Blt_TreeNode node;
 
-    if (iterPtr->tagType != TAG_MULTIPLE) {
+    if ((iterPtr->tagType & TAG_MULTIPLE) == 0) {
         return NULL;
     }
     node = Blt_Tree_NextTaggedNode(&iterPtr->iter);
+    if (node == NULL) {
+        return NULL;
+    }
     return NodeToEntry(iterPtr->viewPtr, node);
 }
 
@@ -6343,7 +6344,7 @@ DestroyTreeView(DestroyData dataPtr)    /* Pointer to the widget record. */
         Blt_FreePrivateGC(viewPtr->display, viewPtr->focusGC);
     }
     if (viewPtr->selectedGC != NULL) {
-        Blt_FreePrivateGC(viewPtr->display, viewPtr->selectedGC);
+        Tk_FreeGC(viewPtr->display, viewPtr->selectedGC);
     }
     if (viewPtr->visibleEntries != NULL) {
         Blt_Free(viewPtr->visibleEntries);
@@ -6598,6 +6599,25 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
     viewPtr->lineGC = newGC;
 
     /*
+     * GC for selection. Dotted line, focus rectangle.
+     */
+    gcMask = GCForeground | GCLineWidth;
+    gcValues.foreground = viewPtr->selectedFg->pixel;
+    gcValues.line_width = viewPtr->lineWidth;
+    newGC = Blt_GetPrivateGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (viewPtr->dashes > 0) {
+        gcMask |= (GCLineStyle | GCDashList);
+        gcValues.line_style = LineOnOffDash;
+        gcValues.dashes = viewPtr->dashes;
+    }
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (viewPtr->selectedGC != NULL) {
+        Tk_FreeGC(viewPtr->display, viewPtr->selectedGC);
+    }
+    viewPtr->selectedGC = newGC;
+
+
+    /*
      * GC for active label. Dashed outline.
      */
     gcMask = GCForeground | GCLineStyle | GCJoinStyle;
@@ -6614,24 +6634,6 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
         Blt_FreePrivateGC(viewPtr->display, viewPtr->focusGC);
     }
     viewPtr->focusGC = newGC;
-
-    /*
-     * GC for selection. Dashed outline.
-     */
-    gcMask = GCForeground | GCLineStyle | GCJoinStyle;
-    gcValues.foreground = viewPtr->selectedFg->pixel;
-    gcValues.line_style = (LineIsDashed(viewPtr->focusDashes))
-        ? LineOnOffDash : LineSolid;
-    gcValues.join_style = JoinMiter;
-    newGC = Blt_GetPrivateGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (LineIsDashed(viewPtr->focusDashes)) {
-        viewPtr->focusDashes.offset = 2;
-        Blt_SetDashes(viewPtr->display, newGC, &viewPtr->focusDashes);
-    }
-    if (viewPtr->selectedGC != NULL) {
-        Blt_FreePrivateGC(viewPtr->display, viewPtr->selectedGC);
-    }
-    viewPtr->selectedGC = newGC;
 
     ConfigureButtons(viewPtr);
     viewPtr->inset = viewPtr->highlightWidth + viewPtr->borderWidth + INSET_PAD;
@@ -7921,7 +7923,7 @@ DrawEntryLabel(
          *  3         1
          *  +----2----+
          */
-        width -= 2; height -= 2;
+        y += 2, width -= 2; height -= 4;
         segments[0].x1 = x | 0x1;
         segments[0].x2 = (x + width)| 0x1;
         segments[0].y1 = segments[0].y2 = y | 0x1;
@@ -7938,7 +7940,7 @@ DrawEntryLabel(
         segments[3].y1 = y | 0x1;
         segments[3].y2 = (y + height + 1) | 0x1;
 
-        XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments, 4);
+        XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments,4);
         if (isSelected) {
             XSetForeground(viewPtr->display, viewPtr->focusGC, 
                 viewPtr->focusColor->pixel);
@@ -11005,10 +11007,13 @@ EntryConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     iconsOption.clientData = viewPtr;
     cachedObjOption.clientData = viewPtr;
-    if (objc < 6) {
-        if (GetEntry(interp, viewPtr, objv[3], &entryPtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
+
+    /* If we're setting a configuration values, we handle multiple entries. */
+    if (GetEntryIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
+         entryPtr = NextTaggedEntry(&iter)) {
         if (objc == 4) {
             return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, 
                 entrySpecs, (char *)entryPtr, (Tcl_Obj *)NULL, 0);
@@ -11016,14 +11021,6 @@ EntryConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, 
                 entrySpecs, (char *)entryPtr, objv[4], 0);
         }
-        return TCL_OK;
-    }
-    /* If we're setting a configuration values, we handle multiple entries. */
-    if (GetEntryIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
-         entryPtr = NextTaggedEntry(&iter)) {
         if (ConfigureEntry(viewPtr, entryPtr, objc - 4, objv + 4, 
                            BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
             return TCL_ERROR;
@@ -14611,6 +14608,7 @@ TagNodesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagAddOp --
  *
+ *      pathName tag add tag nodeName
  *---------------------------------------------------------------------------
  */
 static int

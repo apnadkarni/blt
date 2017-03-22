@@ -954,7 +954,6 @@ tkFontWriteXLFDDescription(Tk_Window tkwin, tkFontPattern *patternPtr,
     Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
 }
     
-
 static Tk_Font 
 tkFontGetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 {
@@ -1000,6 +999,13 @@ tkFontSizeProc(_Blt_Font *fontPtr)
     return ((TkFont *)fontPtr->clientData)->fa.size;
 }
 
+/* 
+ *  tkFontDupProc --
+ *
+ *      This is the simpler of the two duplicate procedures since there's
+ *      no fontset (no font rotation).  Using the name of the old font.
+ *      create a new pattern and set the size.
+ */
 static Blt_Font
 tkFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size) 
 {
@@ -1008,7 +1014,9 @@ tkFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     Tk_Font tkFont;
     _Blt_Font *dupPtr; 
     tkFontPattern *patternPtr;
-    
+    const char *fontName;
+
+    /* Get the pattern from the old font. */
     objPtr = Tcl_NewStringObj(Tk_NameOfFont(fontPtr->clientData), -1);
     patternPtr = tkFontGetPattern(fontPtr->interp, objPtr);
     Tcl_DecrRefCount(objPtr);
@@ -1016,22 +1024,19 @@ tkFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
         /* Not rescalable. */
         return NULL;
     }
-    /* Set the new size */
     patternPtr->size = size;
+    Tcl_DStringInit(&ds);
+    tkFontWriteXLFDDescription(tkwin, patternPtr, &ds);
+    fontName = Tcl_DStringValue(&ds);
+    tkFontFreePattern(patternPtr);
 
     /* Rewrite the font description using the aliased family. */
-    tkFontWriteXLFDDescription(tkwin, patternPtr, &ds);
-    tkFont = Tk_GetFont(fontPtr->interp, tkwin, Tcl_DStringValue(&ds));
+    tkFont = Tk_GetFont(fontPtr->interp, tkwin, fontName);
     Tcl_DStringFree(&ds);
-    tkFontFreePattern(patternPtr);
     if (tkFont == NULL) {
         return NULL;
     }
-    dupPtr = Blt_Calloc(1, sizeof(_Blt_Font));
-    if (dupPtr == NULL) {
-        Tk_FreeFont(tkFont);
-        return NULL;                    /* Out of memory. */
-    }
+    dupPtr = Blt_AssertCalloc(1, sizeof(_Blt_Font));
     dupPtr->classPtr = &tkFontClass;
     dupPtr->clientData = tkFont;
     dupPtr->interp = fontPtr->interp;

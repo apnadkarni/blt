@@ -93,6 +93,8 @@ typedef void (Blt_Font_UnderlineCharsProc)(Display *display, Drawable drawable,
         GC gc, Blt_Font font, const char *text, int textLen, int x, int y, 
         int first, int last, int xMax);
 typedef double (Blt_Font_SizeProc)(Blt_Font font);
+typedef Blt_Font (Blt_Font_DuplicateProc)(Tk_Window tkwin, Blt_Font font, 
+             double size);
 
 struct _Blt_FontClass {
     int type;                           /* Indicates the type of font used. */
@@ -108,6 +110,7 @@ struct _Blt_FontClass {
     Blt_Font_TextWidthProc *textWidthProc;
     Blt_Font_UnderlineCharsProc *underlineCharsProc;
     Blt_Font_SizeProc *sizeProc;
+    Blt_Font_DuplicateProc *dupProc;
 };
 
 /* 
@@ -137,6 +140,8 @@ struct _Blt_Font {
 #define Blt_Font_Size(f)        (*(f)->classPtr->sizeProc)(f)
 #define Blt_Font_CanRotate(f,a) (*(f)->classPtr->canRotateProc)(f,a)
 #define Blt_Font_Free(f)        (*(f)->classPtr->freeProc)(f)
+#define Blt_Font_Duplicate(t,f,s) \
+        (*(f)->classPtr->dupProc)(t,f,s)
 #define Blt_Font_UnderlineChars(d,w,g,f,s,l,x,y,a,b,m)               \
         (*(f)->classPtr->underlineCharsProc)(d,w,g,f,s,l,x,y,a,b,m)
 #define Blt_Font_SetClipRegion(f,r) \

@@ -615,6 +615,7 @@ static Blt_Font_PostscriptNameProc      tkFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           tkFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      tkFontUnderlineCharsProc;
 static Blt_Font_SizeProc                tkFontSizeProc;
+static Blt_Font_DuplicateProc           tkFontDupProc;
 
 static Blt_FontClass tkFontClass = {
     FONTSET_TK,
@@ -630,6 +631,7 @@ static Blt_FontClass tkFontClass = {
     tkFontTextWidthProc,                    /* Blt_Font_TextWidthProc */
     tkFontUnderlineCharsProc,               /* Blt_Font_UnderlineCharsProc */
     tkFontSizeProc,                         /* Blt_Font_SizeProc */
+    tkFontDupProc,                          /* Blt_Font_DuplicateProc */
 };
 
 static tkFontPattern *
@@ -680,7 +682,6 @@ tkFontGetFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
     }
     XFreeFontNames(list);
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -1062,6 +1063,34 @@ tkFontWriteXLFDDescription(Tk_Window tkwin, tkFontPattern *patternPtr,
     Tcl_DStringAppend(resultPtr, "-*-*-*-", 7);
 }
     
+static char *
+tkFontFindMatch(Tk_Window tkwin, tkFontPattern *patternPtr, int size, 
+                Tcl_DString *resultPtr)
+{
+    char **list;
+    const char *pattern;
+    int i;
+    int numMatches;
+
+    patternPtr->size = 0;
+    Tcl_DStringInit(resultPtr);
+    tkFontWriteXLFDDescription(tkwin, patternPtr, resultPtr);
+    pattern = Tcl_DStringValue(resultPtr);
+    list = XListFonts(Tk_Display(tkwin), pattern, 10000, &numMatches);
+    for (i = 0; i < numMatches; i++) {
+        char *name;
+
+        name = list[i];
+        fprintf(stderr, "font=%s\n", name);
+    }
+#ifdef notdef
+    Tcl_DStringSetLength(resultPtr, 0);
+    Tcl_DStringAppend(resultPtr, name, -1);
+#endif
+    XFreeFontNames(list);
+    return Tcl_DStringValue(resultPtr);
+}
+
 /* 
  *---------------------------------------------------------------------------
  *
@@ -1130,6 +1159,13 @@ tkFontSizeProc(_Blt_Font *fontPtr)
     return ((TkFont *)fontPtr->clientData)->fa.size;
 }
 
+/* 
+ *  tkFontDupProc --
+ *
+ *      This is the simpler of the two duplicate procedures since there's
+ *      no fontset (no font rotation).  Using the name of the old font.
+ *      create a new pattern and set the size.
+ */
 static Blt_Font
 tkFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size) 
 {
@@ -1138,7 +1174,9 @@ tkFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     Tk_Font tkFont;
     _Blt_Font *dupPtr; 
     tkFontPattern *patternPtr;
-    
+    const char *closestFontName;
+
+    /* Get the pattern from the old font. */
     objPtr = Tcl_NewStringObj(Tk_NameOfFont(fontPtr->clientData), -1);
     patternPtr = tkFontGetPattern(fontPtr->interp, objPtr);
     Tcl_DecrRefCount(objPtr);
@@ -1146,22 +1184,18 @@ tkFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
         /* Not rescalable. */
         return NULL;
     }
-    /* Set the new size */
-    patternPtr->size = size;
-
-    /* Rewrite the font description using the aliased family. */
-    tkFontWriteXLFDDescription(tkwin, patternPtr, &ds);
-    tkFont = Tk_GetFont(fontPtr->interp, tkwin, Tcl_DStringValue(&ds));
-    Tcl_DStringFree(&ds);
+    closestFontName = tkFontFindMatch(tkwin, patternPtr, size, &ds);
     tkFontFreePattern(patternPtr);
+    if (closestFontName == NULL) {
+        return NULL;
+    }
+    /* Rewrite the font description using the aliased family. */
+    tkFont = Tk_GetFont(fontPtr->interp, tkwin, closestFontName);
+    Tcl_DStringFree(&ds);
     if (tkFont == NULL) {
         return NULL;
     }
-    dupPtr = Blt_Calloc(1, sizeof(_Blt_Font));
-    if (dupPtr == NULL) {
-        Tk_FreeFont(tkFont);
-        return NULL;                    /* Out of memory. */
-    }
+    dupPtr = Blt_AssertCalloc(1, sizeof(_Blt_Font));
     dupPtr->classPtr = &tkFontClass;
     dupPtr->clientData = tkFont;
     dupPtr->interp = fontPtr->interp;
@@ -1337,6 +1371,7 @@ static Blt_Font_PostscriptNameProc      ftFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           ftFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      ftFontUnderlineCharsProc;
 static Blt_Font_SizeProc                ftFontSizeProc;
+static Blt_Font_DuplicateProc           ftFontDupProc;
 
 static Blt_FontClass ftFontClass = {
     FONTSET_FREETYPE,
@@ -1352,6 +1387,7 @@ static Blt_FontClass ftFontClass = {
     ftFontTextWidthProc,              /* Blt_Font_TextWidthProc */
     ftFontUnderlineCharsProc,         /* Blt_Font_UnderlineCharsProc */
     ftFontSizeProc,                   /* Blt_Font_SizeProc */
+    ftFontDupProc,                    /* Blt_Font_DuplicateProc */
 };
 
 /* 
