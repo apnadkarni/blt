@@ -87,7 +87,6 @@
 #define DEF_DISABLED_OUTLINE_COLOR      (char *)NULL
 #define DEF_FONT                        STD_FONT
 #define DEF_HEIGHT                      "0"
-#define DEF_JUSTIFY                     "center"
 #define DEF_LINEWIDTH                   "0"
 #define DEF_MAXFONTSIZE                 "-1"
 #define DEF_MINFONTSIZE                 "-1"
@@ -98,13 +97,14 @@
 #define DEF_STATE                       "normal"
 #define DEF_TAGS                        (char *)NULL
 #define DEF_TEXT                        (char *)NULL
+#define DEF_TEXTANCHOR                  "center"
 #define DEF_WIDTH                       "0"
 
 /*
  * The structure below defines the record for each label item.
  */
 typedef struct {
-    Tk_Item item;                       /* Generic stuff that's the same for
+    Tk_Item header;                     /* Generic stuff that's the same for
                                          * all types.  MUST BE FIRST IN
                                          * STRUCTURE. */
     Tk_Canvas canvas;                   /* Canvas containing the label item. */
@@ -123,46 +123,27 @@ typedef struct {
 					 * item. */
     double fontScale;			/* Font scaling factor. */
 
-    Blt_Painter painter;
-    Blt_Picture original;               /* The original photo or PostScript
-                                         * preview image converted to a
-                                         * picture. */
-    int origFromPicture;
-    Blt_Picture picture;                /* Holds resized preview image.
-                                         * Created and deleted internally. */
-    int firstLine, lastLine;            /* First and last line numbers of the
-                                         * PostScript preview.  They are used
-                                         * to skip over the preview when
-                                         * encapsulating PostScript for the
-                                         * canvas item. */
     GC fillGC;                          /* Graphics context to fill background
                                          * of image outline if no preview
                                          * image was present. */
-    int llx, lly, urx, ury;             /* Lower left and upper right
-                                         * coordinates of PostScript bounding
-                                         * box, retrieved from file's
-                                         * "BoundingBox:" field. */
-    const char *title;                  /* Title, retrieved from the file's
-                                         * "Title:" field, to be displayed
-                                         * over the top of the EPS preview
-                                         * (malloc-ed).  */
-    Tcl_DString ds;                     /* Contains the encapsulated
-                                         * PostScript. */
-
     /* User configurable fields */
 
     double x, y;                        /* Requested anchor in canvas
                                          * coordinates of the label item */
     Tk_Anchor anchor;
 
-    Region2d bbox;
+    Region2d bbox;                      /* Represent the location and
+                                         * dimensions of the unrotated
+                                         * text. */
 
-    int width, height;                  /* Requested dimension of EPS item in
-                                         * canvas coordinates.  If non-zero,
-                                         * this overrides the dimension
-                                         * computed from the "%%BoundingBox:"
-                                         * specification in the EPS file
-                                         * used. */
+    int reqWidth, reqHeight;            /* Requested dimension of label
+                                         * item in canvas
+                                         * coordinates. These are the
+                                         * unrotated dimensions of the
+                                         * item.  If non-zero, they
+                                         * override the dimension computed
+                                         * from the normal size of the
+                                         * text. */
     int state;                          /* State of item: TK_STATE_HIDDEN, 
                                          * TK_STATE_NORMAL, TK_STATE_ACTIVE,
                                          * or TK_STATE_DISABLED */
@@ -180,12 +161,21 @@ typedef struct {
     Blt_Bg activeBg;                    /* If non-NULL, active fill
                                          * background color. Otherwise uses
                                          * normal the background color. */
-    int justify;                        /* Justification of multi-line
-                                         * text. */
     TextStyle titleStyle;               /* Font, color, etc. for title */
     Blt_Font baseFont;                  /* Base font for item.  This is the
                                          * unscale font. */
-    Blt_Font scaledFont;
+    Blt_Font scaledFont;                /* If non-NULL, is the base font at
+                                         * the current scale factor. */
+    Point2d outlinePts[5];              /* Points representing the rotated
+                                         * polygon (outline) of the
+                                         * bounding box.  This is used to
+                                         * draw the rotated background and
+                                         * rectangle and to determine if
+                                         * the text is visible on the
+                                         * screen.  */
+    int textAnchor;                     /* Anchors the text within the
+                                         * background.  The default is
+                                         * center. */
 } LabelItem;
 
 /*
@@ -290,10 +280,10 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_SYNONYM, (char *)"-foreground", "fill", (char *)NULL, 
         (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-height", (char *)NULL, (char *)NULL,
-        DEF_HEIGHT, Blt_Offset(LabelItem, height),
+        DEF_HEIGHT, Blt_Offset(LabelItem, reqHeight),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
-    {TK_CONFIG_JUSTIFY, (char *)"-justify", "justify", "Justify",
-        DEF_JUSTIFY, Blt_Offset(LabelItem, justify),
+    {TK_CONFIG_ANCHOR, (char *)"-textanchor", (char *)NULL, (char *)NULL,
+        DEF_JUSTIFY, Blt_Offset(LabelItem, textAnchor),
         TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_CUSTOM, (char *)"-linewidth", (char *)NULL, (char *)NULL,
         DEF_LINEWIDTH, Blt_Offset(LabelItem, lineWidth),
@@ -326,7 +316,7 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_STRING, (char *)"-text", (char *)NULL, (char *)NULL,
         DEF_TEXT, Blt_Offset(LabelItem, text), TK_CONFIG_NULL_OK},
     {TK_CONFIG_CUSTOM, (char *)"-width", (char *)NULL, (char *)NULL,
-        DEF_WIDTH, Blt_Offset(LabelItem, width),
+        DEF_WIDTH, Blt_Offset(LabelItem, reqWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
@@ -567,16 +557,20 @@ DeleteProc(
  * Side effects:
  *      A new label item is created.
  *
+ *      pathName create label x y ?option value...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
 CreateProc(
     Tcl_Interp *interp,                 /* Interpreter for error reporting. */
     Tk_Canvas canvas,                   /* Canvas to hold new item. */
-    Tk_Item *itemPtr,               /* Record to hold new item; header has
-                                         * been initialized by caller. */
-    int argc,                           /* Number of arguments in argv. */
-    char **argv)                        /* Arguments describing rectangle. */
+    Tk_Item *itemPtr,                   /* Pointer to the structure of the
+                                         * new item; header has been
+                                         * previously initialized by the
+                                         * caller. */
+    int argc,                           /* # of arguments in argv. */
+    char **argv)                        /* Arguments describing item. */
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     Tk_Window tkwin;
@@ -586,28 +580,26 @@ CreateProc(
     if (argc < 2) {
         Tcl_AppendResult(interp, "wrong # args: should be \"",
             Tk_PathName(tkwin), " create ", itemPtr->typePtr->name,
-            " x1 y1 ?options?\"", (char *)NULL);
+            " x y ?option value...?\"", (char *)NULL);
         return TCL_ERROR;
     }
-    /* Initialize the label item structure. */
+    /* Get the anchor point of the label on the canvas. */
+    if ((Tk_CanvasGetCoord(interp, canvas, argv[0], &x) != TCL_OK) ||
+        (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+
+    /* Initialize the rest of label item structure, below the header. */
     memset((char *)labelPtr + sizeof(Tk_Item), 0, 
            sizeof(LabelItem) - sizeof(Tk_Item));
+    labelPtr->x = x;
+    labelPtr->y = y;
     labelPtr->anchor = TK_ANCHOR_NW;
     labelPtr->canvas = canvas;
     labelPtr->interp = interp;
-    Tcl_DStringInit(&labelPtr->ds);
     Blt_Ts_InitStyle(labelPtr->titleStyle);
 #define PAD     8
     Blt_Ts_SetPadding(labelPtr->titleStyle, PAD, PAD, PAD, PAD);
-
-    /* Process the arguments to fill in the item record. */
-    if ((Tk_CanvasGetCoord(interp, canvas, argv[0], &x) != TCL_OK) ||
-        (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
-        DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
-        return TCL_ERROR;
-    }
-    labelPtr->x = x;
-    labelPtr->y = y;
     if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
         != TCL_OK) {
         DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
@@ -637,7 +629,7 @@ static int
 ConfigureProc(
     Tcl_Interp *interp,                 /* Used for error reporting. */
     Tk_Canvas canvas,                   /* Canvas containing labelPtr. */
-    Tk_Item *itemPtr,               /* Label item to reconfigure. */
+    Tk_Item *itemPtr,                   /* Label item to reconfigure. */
     int argc,                           /* # of elements in argv.  */
     char **argv,                        /* Arguments describing things to
                                          * configure. */
@@ -646,139 +638,24 @@ ConfigureProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     Tk_Window tkwin;
-    XGCValues gcValues;
-    unsigned long gcMask;
-    GC newGC;
-    int width, height;
-    Blt_Painter painter;
 
     tkwin = Tk_CanvasTkwin(canvas);
     if (Tk_ConfigureWidget(interp, tkwin, configSpecs, argc, (const char**)argv,
                 (char *)labelPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
-    painter = Blt_GetPainter(tkwin, 1.0);
-    if (labelPtr->painter != NULL) {
-        Blt_FreePainter(labelPtr->painter);
-    }
-    labelPtr->painter = painter;
+    /* Update the text style. */
+    Blt_Ts_SetPadding(labelPtr->textStyle, labelPtr->xPad.side1, 
+                      labelPtr->xPad.side2, labelPtr->yPad.side1, 
+                      labelPtr->yPad.side2);
+    Blt_Ts_SetAngle(labelPtr->textStyle, labelPtr->angle);
 
-    /* Determine the size of the label item */
-    /*
-     * Check for a "-image" option specifying an image to be displayed
-     * representing the label canvas item.
-     */
-    if (Blt_OldConfigModified(configSpecs, "-image", (char *)NULL)) {
-        if (labelPtr->preview != NULL) {
-            Tk_FreeImage(labelPtr->preview);     /* Release old Tk image */
-            if ((!labelPtr->origFromPicture) && (labelPtr->original != NULL)) {
-                Blt_FreePicture(labelPtr->original);
-            }
-            labelPtr->original = NULL;
-            if (labelPtr->picture != NULL) {
-                Blt_FreePicture(labelPtr->picture);
-            }
-            labelPtr->picture = NULL;
-            labelPtr->preview = NULL;
-            labelPtr->origFromPicture = FALSE;
-        }
-        if (labelPtr->previewImageName != NULL) {
-            int result;
-
-            /* Allocate a new image, if one was named. */
-            labelPtr->preview = Tk_GetImage(interp, tkwin, 
-                        labelPtr->previewImageName, ImageChangedProc, labelPtr);
-            if (labelPtr->preview == NULL) {
-                Tcl_AppendResult(interp, "can't find an image \"",
-                    labelPtr->previewImageName, "\"", (char *)NULL);
-                Blt_Free(labelPtr->previewImageName);
-                labelPtr->previewImageName = NULL;
-                return TCL_ERROR;
-            }
-            result = Blt_GetPicture(interp, labelPtr->previewImageName, 
-                                    &labelPtr->original);
-            if (result == TCL_OK) {
-                labelPtr->origFromPicture = TRUE;
-            } else {
-                Tk_PhotoHandle photo;   /* Photo handle to Tk image. */
-
-                photo = Tk_FindPhoto(interp, labelPtr->previewImageName);
-                if (photo == NULL) {
-                    Tcl_AppendResult(interp, "image \"", 
-                        labelPtr->previewImageName,
-                        "\" is not a picture or photo image", (char *)NULL);
-                    return TCL_ERROR;
-                }
-                labelPtr->original = Blt_PhotoToPicture(photo);
-                labelPtr->origFromPicture = FALSE;
-            }
-        }
+    if (Blt_OldConfigModified(configSpecs, "-rotate", "-*fontsize", 
+                              "-font", "-pad*", "-width",
+                              "-height", "-anchor", "-linewidth",
+                              (char *)NULL)) {
+        ComputeGeometry(labelPtr);
     }
-    if (Blt_OldConfigModified(configSpecs, "-file", (char *)NULL)) {
-        CloseEpsFile(labelPtr);
-        if ((!labelPtr->origFromPicture) && (labelPtr->original != NULL)) {
-            Blt_FreePicture(labelPtr->original);
-            labelPtr->original = NULL;
-        }
-        if (labelPtr->picture != NULL) {
-            Blt_FreePicture(labelPtr->picture);
-            labelPtr->picture = NULL;
-        }
-        labelPtr->firstLine = labelPtr->lastLine = -1;
-        if (labelPtr->fileName != NULL) {
-            if (OpenEpsFile(interp, labelPtr) != TCL_OK) {
-                return TCL_ERROR;
-            }
-        }
-    }
-    /* Compute the normal width and height of the item, but let the
-     * user-requested dimensions override them. */
-    width = height = 0;
-    if (labelPtr->preview != NULL) {
-        /* Default dimension is the size of the image. */
-        Tk_SizeOfImage(labelPtr->preview, &width, &height);
-    }
-    if (labelPtr->fileName != NULL) {
-        /* Use dimensions provided by the BoundingBox. */
-        width = (labelPtr->urx - labelPtr->llx); 
-        height = (labelPtr->ury - labelPtr->lly); 
-    }
-    if (labelPtr->width == 0) {
-        labelPtr->width = width;
-    }
-    if (labelPtr->height == 0) {
-        labelPtr->height = height;
-    }
-
-    if (Blt_OldConfigModified(configSpecs, "-quick", (char *)NULL)) {
-        labelPtr->lastWidth = labelPtr->lastHeight = 0;
-    }
-    /* Fill color GC */
-
-    newGC = NULL;
-    if (labelPtr->fillColor != NULL) {
-        gcMask = GCForeground;
-        gcValues.foreground = labelPtr->fillColor->pixel;
-        if (labelPtr->stipple != None) {
-            gcMask |= (GCStipple | GCFillStyle);
-            gcValues.stipple = labelPtr->stipple;
-            if (labelPtr->border != NULL) {
-                gcValues.foreground = Tk_3DBorderColor(labelPtr->border)->pixel;
-                gcValues.background = labelPtr->fillColor->pixel;
-                gcMask |= GCBackground;
-                gcValues.fill_style = FillOpaqueStippled;
-            } else {
-                gcValues.fill_style = FillStippled;
-            }
-        }
-        newGC = Tk_GetGC(tkwin, gcMask, &gcValues);
-    }
-    if (labelPtr->fillGC != NULL) {
-        Tk_FreeGC(Tk_Display(tkwin), labelPtr->fillGC);
-    }
-    labelPtr->fillGC = newGC;
-    CloseEpsFile(labelPtr);
-    ComputeBbox(canvas, labelPtr);
     return TCL_OK;
 }
 
@@ -827,8 +704,7 @@ CoordsProc(
         }
         labelPtr->x = x;
         labelPtr->y = y;
-        ComputeBbox(canvas, labelPtr);
-        return TCL_OK;
+        ComputeGeometry(labelPtr);
     }
     Tcl_AppendElement(interp, Blt_Dtoa(interp, labelPtr->x));
     Tcl_AppendElement(interp, Blt_Dtoa(interp, labelPtr->y));
@@ -844,46 +720,79 @@ CoordsProc(
 static void
 ComputeGeometry(LabelItem *labelPtr)
 {
-    labelPtr->width = labelPtr->height = 0;
-    Graph *graphPtr = markerPtr->obj.graphPtr;
-    TextMarker *tmPtr = (TextMarker *)markerPtr;
-    Region2d extents;
-    Point2d anchorPt;
-    int i;
     unsigned int w, h;
-    double rw, rh;
 
-    tmPtr->width = tmPtr->height = 0;
-    if (tmPtr->string == NULL) {
+    labelPtr->width = labelPtr->height = 0;
+    if (labelPtr->text == NULL) {
         return;
     }
-    Blt_Ts_GetExtents(&labelPtr->style, labelPtr->text, &w, &h);
+    Blt_Ts_GetExtents(&labelPtr->textStyle, labelPtr->text, &w, &h);
     labelPtr->textWidth = w;
     labelPtr->textHeight = h;
-    Blt_GetBoundingBox(w, h, labelPtr->style.angle, &rw, &rh,
-		       labelPtr->outlinePts);
-    labelPtr->width = ROUND(rw);
-    labelPtr->height = ROUND(rh);
+}
+
+
+static void
+MapItem(Tk_Canvas canvas, LabelItem *labelPtr)
+{
+    double rw, rh;
+    int x, y;
+    int w, h;
+    int xOffset, yOffset;
+    short int xCanv, yCanv;
+
+    w = labelPtr->width;
+    h = labelPtr->height;
+
+
+    Tk_CanvasDrawableCoords(canvas, labelPtr->x, labelPtr->y, &xCanv, &yCanv);
+    Blt_TranslateAnchor(xCanv, yCanv, rw, rh, labelPtr->anchor, &x, &y);
+
+    /* Override the computed dimensions of the text if the user has set
+     * -width or -height. */
+    if (labelPtr->reqWidth > 0) {
+        xOffset = labelPtr->reqWidth - w;
+        w = labelPtr->reqWidth;
+    }
+    if (labelPtr->reqHeight > 0) {
+        yOffset = labelPtr->reqHeight - h;
+        h = labelPtr->reqHeight;
+    }
+
+    /* Compute the outline polygon (isolateral or rectangle) given the
+     * width and height. The center of the box is 0,0. */
+    Blt_GetBoundingBox(labelPtr->width, labelPtr->height, labelPtr->angle, 
+        &rw, &rh, labelPtr->outlinePts);
+
+    labelPtr->rotWidth = ROUND(rw);
+    labelPtr->rotHeight = ROUND(rh);
+
+    /* Computes the upper-left corner of the item from its anchor point. */
+    labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y,
+              rw, rh, labelPtr->anchor);
+
+    /* Map the outline relative to the upper-left corner. */
     for (i = 0; i < 4; i++) {
-        labelPtr->outlinePts[i].x += ROUND(rw * 0.5);
-        labelPtr->outlinePts[i].y += ROUND(rh * 0.5);
+        labelPtr->outlinePts[i].x += labelPtr->anchorPos.x + rw * 0.5;
+        labelPtr->outlinePts[i].y += labelPtr->anchorPos.y + rh * 0.5;
     }
     labelPtr->outlinePts[4].x = labelPtr->outlinePts[0].x;
     labelPtr->outlinePts[4].y = labelPtr->outlinePts[0].y;
-    anchorPos = MapPoint(markerPtr->worldPts, &markerPtr->axes);
-    anchorPos = Blt_AnchorPoint(anchorPos.x, anchorPos.y,
-	(double)(labelPtr->width), (double)(labelPtr->height), labelPtr->anchor);
-    /*
-     * Determine the bounding box of the text and test to see if it is at
-     * least partially contained within the plotting area.
-     */
-    extents.x1 = anchorPos.x;
-    extents.y1 = anchorPos.y;
-    extents.x2 = anchorPos.x + tmPtr->width - 1;
-    extents.y2 = anchorPos.y + tmPtr->height - 1;
-    markerPtr->offScreen = BoxesDontOverlap(graphPtr, &extents);
-    labelPtr->anchorPos = anchorPos;
-    
+    labelPtr->flags &= LAYOUT_PENDING;
+}
+
+static void
+LabelInsideRegion(LabelItem *labelPtr, int rx, int dy, int rw, int rh)
+{
+    Region2d region;
+
+    /* Test to see if the rotated bounding box of the label is inside the
+     * region. */
+    region.x1 = rx;
+    region.y1 = ry;
+    region.x2 = rx + rw;
+    region.y2 = ry + rh;
+    return Blt_RegionInPolygon(&region, labelPtr->outlinePts, 5, TRUE);
 }
 
 
@@ -956,32 +865,21 @@ DisplayProc(
                                          * draw item. */
     int rx, int ry, 
     int rw, int rh)                     /* Describes region of canvas that
-                                         * must be redisplayed (not
-                                         * used). */
+                                         * must be redisplayed. */
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     Tk_Window tkwin;
     const char *title;
     int w, h;
     short int dx, dy;
-    Region2d region;
 
     if (labelPtr->state == TK_STATE_HIDDEN) {
         return;                         /* Item is hidden. */
     }
-
-    /* Test to see if the rotated bounding box of the label is inside the
-     * region. */
-    region.x1 = rx;
-    region.y1 = ry;
-    region.x2 = rx + rw;
-    region.y2 = ry + rh;
-    if (!Blt_RegionInPolygon(&region, labelPtr->outlinePts, 5, TRUE)) {
-        return;                         /* Outside region. */
+    if (labelPtr->flags & LAYOUT_PENDING) {
+        MapItem(labelPtr);
     }
-    w = (int)(labelPtr->bbox.x2 - labelPtr->bbox.x1);
-    h = (int)(labelPtr->bbox.y2 - labelPtr->bbox.y1);
-    if ((w < 1) || (h < 1)) {
+    if (!LabelInsideRegion(labelPtr, rx, ry, rw, rh)) {
         return;
     }
     tkwin = Tk_CanvasTkwin(canvas);
@@ -989,8 +887,8 @@ DisplayProc(
     /*
      * Translate the coordinates to the label item, then redisplay it.
      */
-    Tk_CanvasDrawableCoords(canvas, labelPtr->bbox.x1, labelPtr->bbox.y1, 
-        &dx, &dy);
+    Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
+                            labelPtr->anchorPos.y, &dx, &dy);
 
     if (labelPtr->text != NULL) {
         TextLayout *textPtr;
