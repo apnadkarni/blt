@@ -1002,41 +1002,49 @@ DrawStandardLayout(Tk_Window tkwin, Drawable drawable, TextStyle *stylePtr,
 
 
 static void
-RotateStartingTextPositions(TextLayout *lPtr, int w, int h, float angle)
+RotateStartingTextPositions(TextLayout *layoutPtr, int w, int h, float angle)
 {
     Point2d off1, off2;
-    TextFragment *fp, *fend;
     double radians;
     double rw, rh;
     double sinTheta, cosTheta;
-    
+    int i;
+
     Blt_GetBoundingBox(w, h, angle, &rw, &rh, (Point2d *)NULL);
+    /* Offset to center of unrotated box. */
     off1.x = (double)w * 0.5;
     off1.y = (double)h * 0.5;
+    /* Offset to center of rotated box. */
     off2.x = rw * 0.5;
     off2.y = rh * 0.5;
     radians = -angle * DEG2RAD;
-    
     sinTheta = sin(radians), cosTheta = cos(radians);
-    for (fp = lPtr->fragments, fend = fp + lPtr->numFragments; 
-         fp < fend; fp++) {
+
+    for (i = 0; i < layoutPtr->numFragments; i++) {
         Point2d p, q;
-        
-        p.x = fp->x - off1.x;
-        p.y = fp->y - off1.y;
+        TextFragment *fragPtr;
+
+        fragPtr = layoutPtr->fragments + i;
+        /* Translate the start of the fragement to the center of box. */
+        p.x = fragPtr->x - off1.x;
+        p.y = fragPtr->y - off1.y;
+        /* Rotate the point. */
         q.x = (p.x * cosTheta) - (p.y * sinTheta);
         q.y = (p.x * sinTheta) + (p.y * cosTheta);
+        /* Translate the point back toward the upper-left corner of the
+         * rotated bounding box. */
         q.x += off2.x;
         q.y += off2.y;
-        fp->x1 = ROUND(q.x);
-        fp->y1 = ROUND(q.y);
+        fragPtr->x1 = ROUND(q.x);
+        fragPtr->y1 = ROUND(q.y);
     }
 }
 
 void
-Blt_RotateStartingTextPositions(TextLayout *lPtr, float angle)
+Blt_RotateStartingTextPositions(TextLayout *layoutPtr, float angle)
 {
-    RotateStartingTextPositions(lPtr, lPtr->width, lPtr->height, angle);
+    RotateStartingTextPositions(layoutPtr, layoutPtr->width, layoutPtr->height,
+                                angle);
 }
 
 int
