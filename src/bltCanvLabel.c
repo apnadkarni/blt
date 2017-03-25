@@ -744,7 +744,6 @@ MapItem(Tk_Canvas canvas, LabelItem *labelPtr)
     w = labelPtr->width;
     h = labelPtr->height;
 
-
     Tk_CanvasDrawableCoords(canvas, labelPtr->x, labelPtr->y, &xCanv, &yCanv);
     Blt_TranslateAnchor(xCanv, yCanv, rw, rh, labelPtr->anchor, &x, &y);
 
@@ -782,16 +781,16 @@ MapItem(Tk_Canvas canvas, LabelItem *labelPtr)
 }
 
 static void
-LabelInsideRegion(LabelItem *labelPtr, int rx, int dy, int rw, int rh)
+LabelInsideRegion(LabelItem *labelPtr, int x, int y, int w, int h)
 {
     Region2d region;
 
     /* Test to see if the rotated bounding box of the label is inside the
      * region. */
-    region.x1 = rx;
-    region.y1 = ry;
-    region.x2 = rx + rw;
-    region.y2 = ry + rh;
+    region.x1 = x;
+    region.y1 = y;
+    region.x2 = x + w;
+    region.y2 = y + h;
     return Blt_RegionInPolygon(&region, labelPtr->outlinePts, 5, TRUE);
 }
 
@@ -942,7 +941,7 @@ DisplayProc(
 static double
 PointProc(
     Tk_Canvas canvas,                   /* Canvas containing item. */
-    Tk_Item *itemPtr,               /* Label item to check. */
+    Tk_Item *itemPtr,                   /* Label item to check. */
     double *pts)                        /* Array of x and y coordinates
                                          * representing the sample
                                          * point. */
@@ -1022,7 +1021,7 @@ PointProc(
 static int
 AreaProc(
     Tk_Canvas canvas,                   /* Canvas containing the item. */
-    Tk_Item *itemPtr,               /* Label item to check. */
+    Tk_Item *itemPtr,                   /* Label item to check. */
     double pts[])                       /* Array of four coordinates (x1,
                                          * y1, x2, y2) describing the
                                          * region to test.  */
