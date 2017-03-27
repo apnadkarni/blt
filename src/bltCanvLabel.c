@@ -100,6 +100,21 @@
 #define DEF_TEXTANCHOR                  "center"
 #define DEF_WIDTH                       "0"
 
+typedef struct {
+    Display display;
+    XColor color;
+} LabelGCKey;
+
+typedef struct {
+    int refCount;
+    GC gc;
+    Blt_HashEntry *hashPtr;
+} LabelGC;
+
+/* Global table of label GCs, shared among all the label items. */
+static Blt_HashTable gcTable;
+static int initialized = 0;
+
 /*
  * The structure below defines the record for each label item.
  */
@@ -132,6 +147,9 @@ typedef struct {
                                          * coordinates of the label item */
     Tk_Anchor anchor;
 
+    int textAnchor;                     /* Anchors the text within the
+                                         * background.  The default is
+                                         * center. */
     Region2d bbox;                      /* Represent the location and
                                          * dimensions of the unrotated
                                          * text. */
@@ -161,9 +179,16 @@ typedef struct {
     Blt_Bg activeBg;                    /* If non-NULL, active fill
                                          * background color. Otherwise uses
                                          * normal the background color. */
-    TextStyle titleStyle;               /* Font, color, etc. for title */
+    LabelGC *normalLabelGC;             /* Graphics context to draw
+                                         * text and outline normally. */
+    LabelGC *disabledLabelGC;           /* Graphics context to draw a
+                                         * disabled label's text and
+                                         * outline. */
+    LabelGC *activeLabelGC;             /* Graphics context to draw a
+                                         * active label's text and
+                                         * outline. */
     Blt_Font baseFont;                  /* Base font for item.  This is the
-                                         * unscale font. */
+                                         * unscaled font. */
     Blt_Font scaledFont;                /* If non-NULL, is the base font at
                                          * the current scale factor. */
     Point2d outlinePts[5];              /* Points representing the rotated
@@ -173,9 +198,11 @@ typedef struct {
                                          * rectangle and to determine if
                                          * the text is visible on the
                                          * screen.  */
-    int textAnchor;                     /* Anchors the text within the
-                                         * background.  The default is
-                                         * center. */
+    XPoint points[5];
+    int rotWidth, rotHeight;            /* Rotated width and height of
+                                         * region occupied by label. */
+    TkRegion clipRegion;
+
 } LabelItem;
 
 /*
@@ -508,6 +535,48 @@ StringToState(ClientData clientData, Tk_Window tkwin, char *widgRec,
     return (char *)string;
 }
 
+static LabelGC *
+GetLabelGC(Tk_Window tkwin, XColor *colorPtr)
+{
+    LabelGCKey key;
+    LabelGC *gcPtr;
+
+    key.color = *colorPtr;
+    key.display = Tk_Display(tkwin);
+    hPtr = Blt_CreateHashEntry(&gcTable, (char *)&key, &isNew);
+    if (isNew) {
+        unsigned int gcMask;
+        XGCValues gcValues;
+        int isNew;
+
+        gcMask = GCForeground;
+        gcValues.foreground = colorPtr->pixel;
+        newGC = Blt_GetPrivateGC(tkwin, gcMask, &gcValues);
+        gcPtr = Blt_AssertMalloc(sizeof(LabelGC));
+        gcPtr->gc = newGC;
+        gcPtr->refCount = 1;
+        gcPtr->hashPtr = hPtr;
+        Blt_SetHashValue(hPtr, gcPtr);
+    } else {
+        gcPtr = Blt_GetHashValue(hPtr);
+        gcPtr->refCount++;
+    }
+    return gcPtr;
+}
+
+static void
+FreeLabelGC(Display display, LabelGC *gcPtr)
+{
+    gcPtr->refCount--;
+    if (gcPtr->refCount <= 0) {
+        if (gcPtr->gc != NULL) {
+            Blt_FreePrivateGC(display, gcPtr->gc);
+        }
+        Blt_DeleteHashEntry(&gcTable, gcPtr->hashPtr);
+    }
+    Blt_Free(gcPtr);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -529,7 +598,7 @@ static void
 DeleteProc( 
     Tk_Canvas canvas,                   /* Info about overall canvas
                                          * widget. */
-    Tk_Item *itemPtr,               /* Item that is being deleted. */
+    Tk_Item *itemPtr,                   /* Item that is being deleted. */
     Display *display)                   /* Display containing window for
                                          * canvas. */
 {
@@ -538,6 +607,18 @@ DeleteProc(
     Tk_FreeOptions(configSpecs, (char *)labelPtr, display, 0);
     if (labelPtr->scaledFont != NULL) {
         Blt_Font_Free(labelPtr->scaledFont);
+    }
+    if (labelPtr->clipRegion != NULL) {
+        TkDestroyRegion(labelPtr->clipRegion);
+    }
+    if (labelPtr->normalLabelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->normalLabelGC);
+    }
+    if (labelPtr->disabledLabelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->disabledLabelGC);
+    }
+    if (labelPtr->activeLabelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->activeLabelGC);
     }
 }
 
@@ -592,14 +673,14 @@ CreateProc(
     /* Initialize the rest of label item structure, below the header. */
     memset((char *)labelPtr + sizeof(Tk_Item), 0, 
            sizeof(LabelItem) - sizeof(Tk_Item));
+
     labelPtr->x = x;
     labelPtr->y = y;
     labelPtr->anchor = TK_ANCHOR_NW;
     labelPtr->canvas = canvas;
     labelPtr->interp = interp;
-    Blt_Ts_InitStyle(labelPtr->titleStyle);
-#define PAD     8
-    Blt_Ts_SetPadding(labelPtr->titleStyle, PAD, PAD, PAD, PAD);
+    labelPtr->tkwin  = tkwin;
+    labelPtr->display = Tk_Display(tkwin);
     if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
         != TCL_OK) {
         DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
@@ -638,24 +719,50 @@ ConfigureProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     Tk_Window tkwin;
+    LabelGC *newLabelGC;
 
     tkwin = Tk_CanvasTkwin(canvas);
     if (Tk_ConfigureWidget(interp, tkwin, configSpecs, argc, (const char**)argv,
                 (char *)labelPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
-    /* Update the text style. */
-    Blt_Ts_SetPadding(labelPtr->textStyle, labelPtr->xPad.side1, 
-                      labelPtr->xPad.side2, labelPtr->yPad.side1, 
-                      labelPtr->yPad.side2);
-    Blt_Ts_SetAngle(labelPtr->textStyle, labelPtr->angle);
-
     if (Blt_OldConfigModified(configSpecs, "-rotate", "-*fontsize", 
                               "-font", "-pad*", "-width",
                               "-height", "-anchor", "-linewidth",
                               (char *)NULL)) {
         ComputeGeometry(labelPtr);
     }
+    labelPtr->angle = (float)FMOD(labelPtr->angle, 360.0);
+    if (labelPtr->angle < 0.0f) {
+        labelPtr->angle += 360.0f;
+    }
+    newLabelGC = NULL;
+
+    /* These are all LabelGCs because we will be changing the font as the
+     * label item scales. */
+    if (labelPtr->normalFg != NULL) {
+        newLabelGC = GetLabelGC(tkwin, labelPtr->normalFg);
+    }
+    if (labelPtr->normalLabelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->normalLabelGC);
+    }
+    labelPtr->normalLabelGC = newLabelGC;
+    newLabelGC = NULL;
+    if (labelPtr->disabledFg != NULL) {
+        newLabelGC = GetLabelGC(tkwin, labelPtr->disabledFg);
+    }
+    if (labelPtr->disabledLabelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->disabledLabelGC);
+    }
+    labelPtr->disabledLabelGC = newLabelGC;
+    newLabelGC = NULL;
+    if (labelPtr->activeFg != NULL) {
+        newLabelGC = GetLabelGC(tkwin, labelPtr->activeFg);
+    }
+    if (labelPtr->activeLabelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->activeLabelGC);
+    }
+    labelPtr->activeLabelGC = newLabelGC;
     return TCL_OK;
 }
 
@@ -680,7 +787,7 @@ static int
 CoordsProc(
     Tcl_Interp *interp,                 /* Used for error reporting. */
     Tk_Canvas canvas,                   /* Canvas containing item. */
-    Tk_Item *itemPtr,               /* Item whose coordinates are to be
+    Tk_Item *itemPtr,                   /* Item whose coordinates are to be
                                          * read or modified. */
     int argc,                           /* Number of coordinates supplied in
                                          * argv. */
@@ -714,6 +821,10 @@ CoordsProc(
 /*
  *---------------------------------------------------------------------------
  *
+ * ComputeGeometry --
+ *
+ *      Computes the geometry of the possibly rotated label.  
+ *      
  *---------------------------------------------------------------------------
  */
  /* ARGSUSED */
@@ -721,35 +832,25 @@ static void
 ComputeGeometry(LabelItem *labelPtr)
 {
     unsigned int w, h;
+    TextLayout *layoutPtr;
 
     labelPtr->width = labelPtr->height = 0;
     if (labelPtr->text == NULL) {
         return;
     }
-    Blt_Ts_GetExtents(&labelPtr->textStyle, labelPtr->text, &w, &h);
-    labelPtr->textWidth = w;
-    labelPtr->textHeight = h;
-}
+    labelPtr->numBytes = strlen(labelPtr->text);
+    Blt_Ts_InitStyle(&ts);
+    Blt_Ts_SetFont(&ts, font);
+    Blt_Ts_SetPadding(&ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
+                      labelPtr->yPad.side1, labelPtr->yPad.side2);
+    layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
 
-
-static void
-MapItem(Tk_Canvas canvas, LabelItem *labelPtr)
-{
-    double rw, rh;
-    int x, y;
-    int w, h;
-    int xOffset, yOffset;
-    short int xCanv, yCanv;
-
-    w = labelPtr->width;
-    h = labelPtr->height;
-
-
-    Tk_CanvasDrawableCoords(canvas, labelPtr->x, labelPtr->y, &xCanv, &yCanv);
-    Blt_TranslateAnchor(xCanv, yCanv, rw, rh, labelPtr->anchor, &x, &y);
-
-    /* Override the computed dimensions of the text if the user has set
-     * -width or -height. */
+    if (labelPtr->layoutPtr != NULL) {
+        Blt_Free(labelPtr->layoutPtr);
+    }
+    labelPtr->layoutPtr = layoutPtr;
+    w = layoutPtr->width;
+    h = layoutPtr->height;
     if (labelPtr->reqWidth > 0) {
         xOffset = labelPtr->reqWidth - w;
         w = labelPtr->reqWidth;
@@ -758,26 +859,114 @@ MapItem(Tk_Canvas canvas, LabelItem *labelPtr)
         yOffset = labelPtr->reqHeight - h;
         h = labelPtr->reqHeight;
     }
-
     /* Compute the outline polygon (isolateral or rectangle) given the
      * width and height. The center of the box is 0,0. */
-    Blt_GetBoundingBox(labelPtr->width, labelPtr->height, labelPtr->angle, 
-        &rw, &rh, labelPtr->outlinePts);
+    Blt_GetBoundingBox(w, h, labelPtr->angle, &rw, &rh, labelPtr->outlinePts);
+    labelPtr->rotWidth = rw;
+    labelPtr->rotHeight = rh;
 
-    labelPtr->rotWidth = ROUND(rw);
-    labelPtr->rotHeight = ROUND(rh);
+    /* The label's x,y position is in world coordinates. This point and the
+     * anchor tell us where is the anchor position of the label, which is
+     * the upper-left corner of the bounding box around the possible
+     * rotated item. */
+    labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
+        labelPtr->anchor);
 
-    /* Computes the upper-left corner of the item from its anchor point. */
-    labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y,
-              rw, rh, labelPtr->anchor);
+    /* Translate back to the the upper-left corner. */
+    for (i = 0; i < 4; i++) {
+        labelPtr->outlinePts[i].x += rw * 0.5;
+        labelPtr->outlinePts[i].y += rh * 0.5;
+    }
+    labelPtr->outlinePts[4] = labelPtr->outlinePts[0];
+
+    /* Compute the starting positions of the text. This also encompasses
+     * justification. */
+    switch (labelPtr->textAnchor) {
+    case TK_ANCHOR_NW:
+    case TK_ANCHOR_W:
+    case TK_ANCHOR_SW:
+        xOffset = 0;
+        break;
+    case TK_ANCHOR_N:
+    case TK_ANCHOR_C:
+    case TK_ANCHOR_S:
+        xOffset = (w - layoutPtr->width) / 2;
+        break;
+    case TK_ANCHOR_NE:
+    case TK_ANCHOR_E:
+    case TK_ANCHOR_SE:
+        xOffset = w - layoutPtr->width;
+        break;
+    }
+    switch (labelPtr->textAnchor) {
+    case TK_ANCHOR_NW:
+    case TK_ANCHOR_N:
+    case TK_ANCHOR_NE:
+        yOffset = 0;
+        break;
+    case TK_ANCHOR_W:
+    case TK_ANCHOR_C:
+    case TK_ANCHOR_E:
+        yOffset = (h - layoutPtr->height) / 2;
+        break;
+    case TK_ANCHOR_SW:
+    case TK_ANCHOR_S:
+    case TK_ANCHOR_SE:
+        yOffset = h - layoutPtr->height;
+        break;
+    }
+    /* Offset to center of unrotated box. */
+    off1.x = (double)w * 0.5 + xOffset;
+    off1.y = (double)h * 0.5 + yOffset;
+    /* Offset to center of rotated box. */
+    off2.x = rw * 0.5;
+    off2.y = rh * 0.5;
+    radians = -angle * DEG2RAD;
+    sinTheta = sin(radians), cosTheta = cos(radians);
+
+    /* Rotate starting positions of the text. */
+    for (i = 0; i < layoutPtr->numFragments; i++) {
+        Point2d p, q;
+        TextFragment *fragPtr;
+
+        fragPtr = layoutPtr->fragments + i;
+        /* Translate the start of the fragement to the center of box. */
+        p.x = (fragPtr->x + xOffset) - off1.x;
+        p.y = (fragPtr->y + yOffset) - off1.y;
+        /* Rotate the point. */
+        q.x = (p.x * cosTheta) - (p.y * sinTheta);
+        q.y = (p.x * sinTheta) + (p.y * cosTheta);
+        /* Translate the point back toward the upper-left corner of the
+         * rotated bounding box. */
+        q.x += off2.x;
+        q.y += off2.y;
+        fragPtr->x1 = ROUND(q.x);
+        fragPtr->y1 = ROUND(q.y);
+    }
+}
+
+static void
+MapItem(Tk_Canvas canvas, LabelItem *labelPtr)
+{
+    short int sx, sy;                   /* Screen coordinates */
+    int rw2, rh2;
+
+    /* Convert anchor from world coordinates to screen. */
+    Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
+                            labelPtr->anchorPos.y, &sx, &sy);
 
     /* Map the outline relative to the upper-left corner. */
-    for (i = 0; i < 4; i++) {
-        labelPtr->outlinePts[i].x += labelPtr->anchorPos.x + rw * 0.5;
-        labelPtr->outlinePts[i].y += labelPtr->anchorPos.y + rh * 0.5;
+    rw2 = (int)(labelPtr->rotWidth * 0.5);
+    rh2 = (int)(labelPtr->rowHeight * 0.5);
+    for (i = 0; i < 5; i++) {
+        labelPtr->points[i].x += sx + rw2;
+        labelPtr->points[i].y += sy + rh2;
     }
-    labelPtr->outlinePts[4].x = labelPtr->outlinePts[0].x;
-    labelPtr->outlinePts[4].y = labelPtr->outlinePts[0].y;
+    labelPtr->points[4] = labelPtr->points[0];
+    if (labelPtr->clipsRegion != NULL) {
+        TkDestroyRegion(labelPtr->clipsRegion);
+    }
+    labelPtr->clipRegion = XPolygonRegion(labelPtr->points, 5, EvenOddRule);
     labelPtr->flags &= LAYOUT_PENDING;
 }
 
@@ -793,50 +982,6 @@ LabelInsideRegion(LabelItem *labelPtr, int rx, int dy, int rw, int rh)
     region.x2 = rx + rw;
     region.y2 = ry + rh;
     return Blt_RegionInPolygon(&region, labelPtr->outlinePts, 5, TRUE);
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * ComputeBbox --
- *
- *      This procedure is invoked to compute the bounding box of all the
- *      pixels that may be drawn as part of a label item.  This procedure
- *      is where the preview image's placement is computed.
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      The fields x1, y1, x2, and y2 are updated in the item for labelPtr.
- *
- *---------------------------------------------------------------------------
- */
- /* ARGSUSED */
-static void
-ComputeBbox(Tk_Canvas canvas, LabelItem *labelPtr)
-{
-    Point2d anchorPos;
-
-    /* Translate the coordinates wrt the anchor. */
-    anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, (double)labelPtr->width, 
-        (double)labelPtr->height, labelPtr->anchor);
-
-    /*
-     * Note: The x2 and y2 coordinates are exterior the label item.
-     */
-    labelPtr->bbox.x1 = anchorPos.x;
-    labelPtr->bbox.y1 = anchorPos.y;
-    labelPtr->bbox.x2 = labelPtr->bbox.x1 + labelPtr->width;
-    labelPtr->bbox.y2 = labelPtr->bbox.y1  + labelPtr->height;
-    /* Computes the bounding box of the label. This is the rectangular
-     * region the enclosed the possibly rotated text. */
-    /* Min x,y one corner, max x,y the other. */
-    labelPtr->item.x1 = ROUND(labelPtr->bbox.x1);
-    labelPtr->item.y1 = ROUND(labelPtr->bbox.y1);
-    labelPtr->item.x2 = ROUND(labelPtr->bbox.x2);
-    labelPtr->item.y2 = ROUND(labelPtr->bbox.y2);
 }
 
 /*
@@ -872,6 +1017,8 @@ DisplayProc(
     const char *title;
     int w, h;
     short int dx, dy;
+    GC gc;
+    Blt_Bg bg;
 
     if (labelPtr->state == TK_STATE_HIDDEN) {
         return;                         /* Item is hidden. */
@@ -885,43 +1032,48 @@ DisplayProc(
     tkwin = Tk_CanvasTkwin(canvas);
 
     /*
-     * Translate the coordinates to the label item, then redisplay it.
+     * Translate the world coordinates of the anchor to screen coordinates.
      */
     Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
-                            labelPtr->anchorPos.y, &dx, &dy);
-
-    if (labelPtr->text != NULL) {
-        TextLayout *textPtr;
-        double rw, rh;
-        int dw, dh;
-
-        /* Translate the anchor position within the label item */
-        labelPtr->titleStyle.font = labelPtr->font;
-        textPtr = Blt_Ts_CreateLayout(title, -1, &labelPtr->titleStyle);
-        Blt_GetBoundingBox(textPtr->width, textPtr->height, 
-             labelPtr->titleStyle.angle, &rw, &rh, (Point2d *)NULL);
-        dw = (int)ceil(rw);
-        dh = (int)ceil(rh);
-        if ((dw <= w) && (dh <= h)) {
-            int tx, ty;
-
-            Blt_TranslateAnchor(dx, dy, w, h, labelPtr->titleStyle.anchor, 
-                &tx, &ty);
-            if (picture == NULL) {
-                tx += labelPtr->borderWidth;
-                ty += labelPtr->borderWidth;
-            }
-            Blt_Ts_DrawLayout(tkwin, drawable, textPtr, &labelPtr->titleStyle, 
-                tx, ty);
-        }
-        Blt_Free(textPtr);
+                            labelPtr->anchorPos.y, &x, &y);
+    switch (labelPtr->state) {
+    case TK_STATE_DISABLED:
+        gc = labelPtr->disabledLabelGC->gc;  
+        bg = labelPtr->disabledBg;  
+        break;
+    case TK_STATE_ACTIVE:
+        bg = labelPtr->activeBg;  
+        gc = labelPtr->activeLabelGC->gc;    
+        break;
+    case TK_STATE_NORMAL:
+        bg = labelPtr->normalBg;   
+        gc = labelPtr->normalLabelGC->gc;    
+        break;
+    case TK_STATE_HIDDEN:
+        break;
     }
-    if ((picture == NULL) && (labelPtr->border != NULL) && 
-        (labelPtr->borderWidth > 0)) {
-        Blt_Draw3DRectangle(tkwin, drawable, labelPtr->border, dx, dy,
-            labelPtr->width, labelPtr->height, labelPtr->borderWidth, 
-                            labelPtr->relief);
+    TkSetRegion(labelPtr->display, gc, labelPtr->clipRegion);
+    if (bg != NULL) {                   /* Background polygon */
+        Blt_Bg_FillPolygon(tkwin, drawable, bg, x, y, labelPtr->points, 5, 0,
+                           TK_RELIEF_FLAT);
     }
+    if (labelPtr->lineWidth > 0) {      /* Outline */
+        XDrawLines(labelPtr->display, drawable, gc, labelPtr->points, 5, 
+                   CoordModeOrigin);
+    }
+    if (labelPtr->text != NULL) {       /* Text itself */
+        Blt_Font font;
+        int maxLength;
+
+        maxLength = (labelPtr->flags & ELLIPSIS) ? labelPtr->width : -1;
+        font = (labelPtr->scaledFont != NULL) ?
+            labelPtr->scaledFont : labelPtr->baseFont;
+        XSetFont(labelPtr->display, gc, font);
+        Blt_DrawLayout(tkwin, drawable, gc, font, Tk_Depth(tkwin),
+            labelPtr->angle, x, y, labelPtr->layoutPtr, maxLength);
+        XSetFont(labelPtr->display, gc, None);
+    }
+    XSetClipMask(labelPtr->display, gc, None);
 }
 
 /*
@@ -942,41 +1094,33 @@ DisplayProc(
 static double
 PointProc(
     Tk_Canvas canvas,                   /* Canvas containing item. */
-    Tk_Item *itemPtr,               /* Label item to check. */
-    double *pts)                        /* Array of x and y coordinates
-                                         * representing the sample
-                                         * point. */
+    Tk_Item *itemPtr,                   /* Label item to check. */
+    double *pts)                        /* Array of 2 values representing
+                                         * the x,y world coordinate of the
+                                         * sample point on the canvas. */
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     double minDist;
-    Point2d points[5];
     Point2d sample, p, q;
     int i;
 
-    sample.x = pts[0];
-    sample.y = pts[1];
+    /* Translate the point where the origin is the label's center. */
+    sample.x = pts[0] - (labelPtr->anchorPos.x + labelPtr->rotWidth * 0.5);
+    sample.y = pts[1] - (labelPtr->anchorPos.y + labelPtr->rotHeight * 0.5);
 
     if ((labelPtr->state == TK_STATE_DISABLED) ||
         (labelPtr->state == TK_STATE_HIDDEN)) {
         return FLT_MAX;
     }
-    /*  
-     * Generate the bounding polygon (rectangle or isolateral) representing
-     * the label's possibly rotated bounding box and see if the point is
-     * inside of it.
-     */
-    for (i = 0; i < 4; i++) {
-        points[i].x = labelPtr->outlinePts[i].x + labelPtr->anchorPos.x;
-        points[i].y = labelPtr->outlinePts[i].y + labelPtr->anchorPos.y;
-    }
-    if (Blt_PointInPolygon(&sample, points, 4)) {
+    /* Test the sample point to see if it is inside the polygon. */
+    if (Blt_PointInPolygon(&sample, labelPtr->outlinePts, 4)) {
         return 0.0;
     }
     /* Otherwise return the distance to the nearest segment of the
      * polygon. */
     p = points[0];
     q = points[1];
-    minDist = 10000;
+    minDist = 1e36;
     for (i = 0; i < 4; i++) {
         Point2d t;
         double x1, x2, y1, y2;
@@ -995,7 +1139,7 @@ PointProc(
         }
         p.x = BOUND(t.x, x1, x2);
         p.y = BOUND(t.y, y1, y2);
-        dist = hypot(p.x - samplePtr->x, p.y - samplePtr->y);
+        dist = hypot(p.x - sample.x, p.y - sample.y);
         if (dist < minDist) {
             minDist = dist;
         }
@@ -1022,10 +1166,11 @@ PointProc(
 static int
 AreaProc(
     Tk_Canvas canvas,                   /* Canvas containing the item. */
-    Tk_Item *itemPtr,               /* Label item to check. */
-    double pts[])                       /* Array of four coordinates (x1,
-                                         * y1, x2, y2) describing the
-                                         * region to test.  */
+    Tk_Item *itemPtr,                   /* Label item to check. */
+    double pts[])                       /* Array of 4 values representing
+                                         * the opposite two corners in
+                                         * world coordinates (x1, y1, x2,
+                                         * y2) of the region to test.  */
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
 
@@ -1034,38 +1179,39 @@ AreaProc(
         return -1;
     }
     if (labelPtr->style.angle != 0.0f) {
-        Point2d points[5];
         Region2d region;
-        int i;
 
-        region.x1 = pts[0];
-        region.y1 = pts[1];
-        region.x2 = pts[2];
-        region.y2 = pts[3];
+        /* Translate region so that the center the label is the origin. */
+        region.x1 = pts[0] - labelPtr->anchorPos.x + (labelPtr->rotWidth * 0.5);
+        region.y1 = pts[1] - labelPtr->anchorPos.y + (labelPtr->rotHeight*0.5);
+        region.x2 = pts[2] - labelPtr->anchorPos.x + (labelPtr->rotWidth*0.5);
+        region.y2 = pts[3] - labelPtr->anchorPos.y + (labelPtr->rotHeight*0.5);
 
         /*  
-         * Generate the bounding polygon (rectangle or isolateral)
-         * representing the label's possibly rotated bounding box and see
-         * if the region is inside of it.
+         * First check if the polygon (outline of the label) overlaps the
+         * region.  If it doesn't, that means the label is completely
+         * outside of the region.
          */
-        for (i = 0; i < 5; i++) {
-            points[i].x = labelPtr->outlinePts[i].x + labelPtr->anchorPos.x;
-            points[i].y = labelPtr->outlinePts[i].y + labelPtr->anchorPos.y;
-        }
-        if (!Blt_RegionInPolygon(&region, points, 5, TRUE /*overlapping*/)) {
+        if (!Blt_RegionInPolygon(&region, labelPtr->outlinePts, 5, TRUE)) {
             return -1;                   /* Outside. */
         }
-        /* Test again if it's enclosed. */
-        return Blt_RegionInPolygon(&region, points, 5, FALSE /*enclosed*/);
+        /* Test again checking if the polygon is completely enclosed in the
+         * region. */
+        return Blt_RegionInPolygon(&region, labelPtr->outlinePts, points, 5, 
+                                   FALSE /*enclosed*/);
     } 
     /* Simpler test of unrotated label. */
     /* Min-max test of two rectangles. */
-    if ((pts[2] <= labelPtr->bbox.x1) || (pts[0] >= labelPtr->bbox.x2) ||
-        (pts[3] <= labelPtr->bbox.y1) || (pts[1] >= labelPtr->bbox.y2)) {
+    if ((pts[2] < labelPtr->anchorPos.x) || 
+        (pts[0] >= (labelPtr->anchorPos.x + labelPtr->rotWidth)) ||
+        (pts[3] < labelPtr->anchorPos.y) || 
+        (pts[1] >= (labelPtr->anchosPos.y + labelPtr->rotHeight))) {
         return -1;                      /* Completely outside. */
     }
-    if ((pts[0] <= labelPtr->bbox.x1) && (pts[1] <= labelPtr->bbox.y1) &&
-        (pts[2] >= labelPtr->bbox.x2) && (pts[3] >= labelPtr->bbox.y2)) {
+    if ((pts[0] >= labelPtr->anchosPos.x) && 
+        (pts[2] < (labelPtr->anchorPos.x + labelPtr->rotWidth)) && 
+        (pts[1] >= labelPtr->anchorPos.y) &&
+        (pts[3] < (labelPtr->anchorPos.y + labelPtr->rotHeight))) {
         return 1;                       /* Completely inside. */
     }
     return 0;                           /* Overlaps. */
@@ -1092,7 +1238,7 @@ AreaProc(
 static void
 ScaleProc(
     Tk_Canvas canvas,                   /* Canvas containing rectangle. */
-    Tk_Item *itemPtr,		/* Label item to be scaled. */
+    Tk_Item *itemPtr,                   /* Label item to be scaled. */
     double x0, double y0,               /* Origin wrt scale rect. */
     double xs, double ys)
 {
@@ -1123,23 +1269,9 @@ ScaleProc(
     /* Need to track overall scale. */
     /* Handle min/max size limits.  If too small, don't display anything.
     * If too big stop growing. */
-    
-    /* Use the smaller scale */
-    labelPtr->bbox.x1 = x0 + xs * (labelPtr->bbox.x1 - x0);
-    labelPtr->bbox.x2 = x0 + xs * (labelPtr->bbox.x2 - x0);
-    labelPtr->bbox.y1 = y0 + ys * (labelPtr->bbox.y1 - y0);
-    labelPtr->bbox.y2 = y0 + ys * (labelPtr->bbox.y2 - y0);
-
-    /* Reset the user-requested values to the newly scaled values. */
-    labelPtr->width  = ROUND(labelPtr->bbox.x2 - labelPtr->bbox.x1);
-    labelPtr->height = ROUND(labelPtr->bbox.y2 - labelPtr->bbox.y1);
-    labelPtr->x = ROUND(labelPtr->bbox.x1);
-    labelPtr->y = ROUND(labelPtr->bbox.y1);
-
-    labelPtr->item.x1 = ROUND(labelPtr->bbox.x1);
-    labelPtr->item.y1 = ROUND(labelPtr->bbox.y1);
-    labelPtr->item.x2 = ROUND(labelPtr->bbox.x2);
-    labelPtr->item.y2 = ROUND(labelPtr->bbox.y2);
+    labelPtr->width = (labelPtr->width * xs);
+    labelPtr->height = (labelPtr->height * ys);
+    ComputeGeometry(labelPtr);
 }
 
 /*
@@ -1161,24 +1293,21 @@ ScaleProc(
 static void
 TranslateProc(
     Tk_Canvas canvas,                   /* Canvas containing item. */
-    Tk_Item *itemPtr,		/* Item that is being moved. */
+    Tk_Item *itemPtr,                   /* Item that is being moved. */
     double dx, double dy)               /* Amount by which item is to be
                                          * moved. */
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
 
-    labelPtr->bbox.x1 += dx;
-    labelPtr->bbox.x2 += dx;
-    labelPtr->bbox.y1 += dy;
-    labelPtr->bbox.y2 += dy;
+    /* Translate anchor. */
+    labelPtr->anchorPos.x += dx;
+    labelPtr->anchorPos.y += dy;
 
-    labelPtr->x = labelPtr->bbox.x1;
-    labelPtr->y = labelPtr->bbox.y1;
-
-    labelPtr->item.x1 = ROUND(labelPtr->bbox.x1);
-    labelPtr->item.x2 = ROUND(labelPtr->bbox.x2);
-    labelPtr->item.y1 = ROUND(labelPtr->bbox.y1);
-    labelPtr->item.y2 = ROUND(labelPtr->bbox.y2);
+    /* Translate bounding box. */
+    labelPtr->item.x1 = ROUND(labelPtr->anchorPos.x);
+    labelPtr->item.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
+    labelPtr->item.y1 = ROUND(labelPtr->anchorPos.y);
+    labelPtr->item.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight);
 }
 
 /*
@@ -1226,10 +1355,10 @@ PostScriptProc(
     ps = Blt_Ps_Create(interp, &setup);
 
     /* Lower left corner of item on page. */
-    x = labelPtr->bbox.x1;
-    y = Tk_CanvasPsY(canvas, labelPtr->bbox.y2);
-    w = labelPtr->bbox.x2 - labelPtr->bbox.x1;
-    h = labelPtr->bbox.y2 - labelPtr->bbox.y1;
+    x = labelPtr->anchorPos.x;
+    y = Tk_CanvasPsY(canvas, labelPtr->anchorPos.y);
+    w = labelPtr->rotWidth;
+    h = labelPtr->rotHeight;
 
     if (labelPtr->fileName == NULL) {
         /* No PostScript file, generate PostScript of resized image instead. */

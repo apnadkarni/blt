@@ -2869,3 +2869,36 @@ Blt_TextOut(
     }
 }
 
+TkRegion
+Blt_EmulateXPolygonRegion(XPoint xPointArr[], int numPoints, int rule)
+{
+    HRGN hRgn; 
+    POINT *points;
+    POINT staticPoints[5];
+
+    if (numPoints > 5) {
+        points = Blt_Malloc(sizeof(POINT) * numPoints);
+        if (points == NULL) {
+            return;
+        }
+    } else {
+        points = staticPoints;
+    }
+    for (i = 0; i < numPoints; i++) {
+        points[i].x = (int)xPointArr[i].x;
+        points[i].y = (int)xPointArr[i].y;
+    }
+    if (rule == OddEvenRule) {
+        hRgn = CreatePolygonRgn(points, numPoints, ALTERNATE);
+    } else if (rule == WindingRule) {
+        hRgn = CreatePolygonRgn(points, numPoints, WINDING);
+    } else {
+        hRgn = NULL;
+    }
+    if (hRgn == NULL) {
+    }
+    if (points != staticPoints) {
+        Blt_Free(points);
+    }
+    return (TkRegion)hRgn;
+}

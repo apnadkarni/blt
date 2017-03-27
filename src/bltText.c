@@ -581,7 +581,7 @@ Blt_MeasureText(
  *---------------------------------------------------------------------------
  */
 TextLayout *
-Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
+Blt_Ts_CreateLayout(const char *text, int numBytes, TextStyle *tsPtr)
 {
     TextFragment *fp;
     TextLayout *layoutPtr;
@@ -597,7 +597,7 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
     size_t size;
 
     numFrags = 0;
-    endp = text + ((textLen < 0) ? strlen(text) : textLen);
+    endp = text + ((numBytes < 0) ? strlen(text) : numBytes);
     for (p = text; p < endp; p++) {
         if (*p == '\n') {
             numFrags++;
