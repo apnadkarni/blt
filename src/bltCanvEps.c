@@ -1856,7 +1856,7 @@ static Tk_ItemType itemType = {
 
 /*ARGSUSED*/
 void
-Blt_RegisterEpsCanvasItem(void)
+Blt_RegisterCanvasEpsItem(void)
 {
     Tk_CreateItemType(&itemType);
     /* Initialize custom canvas option routines. */

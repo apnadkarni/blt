@@ -72,6 +72,8 @@
   #include <string.h>
 #endif /* HAVE_STRING_H */
 
+#include <X11/Xutil.h>
+
 #include <bltAlloc.h>
 #include "bltMath.h"
 #include "bltChain.h"
@@ -79,6 +81,13 @@
 #include "bltPs.h"
 #include "bltImage.h"
 #include "bltPainter.h"
+
+#define BOUND(x, lo, hi)         \
+        (((x) > (hi)) ? (hi) : ((x) < (lo)) ? (lo) : (x))
+
+#define LAYOUT_PENDING          (1<<0)
+#define ELLIPSIS                (1<<1)
+#define DISPLAY_TEXT            (1<<2)
 
 #define DEF_ACTIVE_FILL_COLOR           (char *)NULL
 #define DEF_ACTIVE_OUTLINE_COLOR        (char *)NULL
@@ -99,10 +108,13 @@
 #define DEF_TEXT                        (char *)NULL
 #define DEF_TEXTANCHOR                  "center"
 #define DEF_WIDTH                       "0"
+#define DEF_PADX                        "2"
+#define DEF_PADY                        "2"
 
 typedef struct {
-    Display display;
+    Display *display;
     XColor color;
+    int lineWidth;
 } LabelGCKey;
 
 typedef struct {
@@ -122,17 +134,21 @@ typedef struct {
     Tk_Item header;                     /* Generic stuff that's the same for
                                          * all types.  MUST BE FIRST IN
                                          * STRUCTURE. */
+    unsigned int flags;
+    Display *display;
+    Tcl_Interp *interp;
+    Tk_Window tkwin;
     Tk_Canvas canvas;                   /* Canvas containing the label item. */
     int lastWidth, lastHeight;          /* Last known dimensions of the label
                                          * item.  This is used to know if the
                                          * picture preview needs to be
                                          * resized. */
-    Tcl_Interp *interp;
 
-    float angle;			/* Angle to rotate the label. */
+    double angle;			/* Angle to rotate the label. */
     const char *text;			/* Text string to be displayed.
 					 * The string may contain newlines,
 					 * but not tabs. */
+    int numBytes;                       /* # of bytes in above string. */
     int textWidth, textHeight;		/* Unrotated dimensions of item. */
     int width, height;			/* Possibly rotated dimensions of
 					 * item. */
@@ -162,6 +178,8 @@ typedef struct {
                                          * override the dimension computed
                                          * from the normal size of the
                                          * text. */
+    int lineWidth;
+    Blt_Pad xPad, yPad;
     int state;                          /* State of item: TK_STATE_HIDDEN, 
                                          * TK_STATE_NORMAL, TK_STATE_ACTIVE,
                                          * or TK_STATE_DISABLED */
@@ -187,6 +205,7 @@ typedef struct {
     LabelGC *activeLabelGC;             /* Graphics context to draw a
                                          * active label's text and
                                          * outline. */
+    int maxFontSize, minFontSize;
     Blt_Font baseFont;                  /* Base font for item.  This is the
                                          * unscaled font. */
     Blt_Font scaledFont;                /* If non-NULL, is the base font at
@@ -202,7 +221,9 @@ typedef struct {
     int rotWidth, rotHeight;            /* Rotated width and height of
                                          * region occupied by label. */
     TkRegion clipRegion;
-
+    double scale;
+    TextLayout *layoutPtr;
+    Point2d anchorPos;
 } LabelItem;
 
 /*
@@ -266,7 +287,7 @@ static Tk_ConfigSpec configSpecs[] = {
         (char *)NULL, (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-activefill", "activeFill", (char *)NULL,
         DEF_ACTIVE_FILL_COLOR, Blt_Offset(LabelItem, activeBg), 
-        TK_CONFIG_NULL_OK, &fillOption},
+        TK_CONFIG_NULL_OK, &bgOption},
     {TK_CONFIG_SYNONYM, (char *)"-activeforeground", "activeOutline", 
         (char *)NULL, (char *)NULL, 0, 0},
     {TK_CONFIG_COLOR, (char *)"-activeoutline", "activeOutline", (char *)NULL,
@@ -278,9 +299,6 @@ static Tk_ConfigSpec configSpecs[] = {
         0, 0},
     {TK_CONFIG_SYNONYM, (char *)"-background", "fill", (char *)NULL, 
         (char *)NULL, 0, 0},
-    {TK_CONFIG_CUSTOM, (char *)"-borderwidth", "borderWidth", (char *)NULL,
-        DEF_BORDERWIDTH, Blt_Offset(LabelItem, borderWidth),
-        TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_SYNONYM, (char *)"-disabledbg", "disabledFill", (char *)NULL, 
         (char *)NULL, 0, 0},
     {TK_CONFIG_SYNONYM, (char *)"-disabledbackground", "disabledFill", 
@@ -301,7 +319,7 @@ static Tk_ConfigSpec configSpecs[] = {
         TK_CONFIG_NULL_OK, &bgOption},
 
     {TK_CONFIG_CUSTOM, (char *)"-font", (char *)NULL, (char *)NULL,
-        DEF_FONT, Blt_Offset(LabelItem, font), 0, &fontOption},
+        DEF_FONT, Blt_Offset(LabelItem, baseFont), 0, &fontOption},
     {TK_CONFIG_SYNONYM, (char *)"-fg", "fill", (char *)NULL, (char *)NULL, 
         0, 0},
     {TK_CONFIG_SYNONYM, (char *)"-foreground", "fill", (char *)NULL, 
@@ -310,7 +328,7 @@ static Tk_ConfigSpec configSpecs[] = {
         DEF_HEIGHT, Blt_Offset(LabelItem, reqHeight),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_ANCHOR, (char *)"-textanchor", (char *)NULL, (char *)NULL,
-        DEF_JUSTIFY, Blt_Offset(LabelItem, textAnchor),
+        DEF_TEXTANCHOR, Blt_Offset(LabelItem, textAnchor),
         TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_CUSTOM, (char *)"-linewidth", (char *)NULL, (char *)NULL,
         DEF_LINEWIDTH, Blt_Offset(LabelItem, lineWidth),
@@ -322,7 +340,7 @@ static Tk_ConfigSpec configSpecs[] = {
         DEF_MINFONTSIZE, Blt_Offset(LabelItem, minFontSize), 
         TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_COLOR, (char *)"-outline", "outline", (char *)NULL,
-        DEF_NORMAL_OUTLINE_COLOR, Blt_Offset(LabelItem, outline), 0},
+        DEF_NORMAL_OUTLINE_COLOR, Blt_Offset(LabelItem, normalFg), 0},
     {TK_CONFIG_CUSTOM, (char *)"-padx", (char *)NULL, (char *)NULL,
         DEF_PADX, Blt_Offset(LabelItem, xPad),
         TK_CONFIG_DONT_SET_DEFAULT, &bltPadOption},
@@ -350,7 +368,6 @@ static Tk_ConfigSpec configSpecs[] = {
 };
 
 /* Prototypes for procedures defined in this file: */
-static Tk_ImageChangedProc ImageChangedProc;
 static Tk_ItemCoordProc CoordsProc;
 static Tk_ItemAreaProc AreaProc;
 static Tk_ItemPointProc PointProc;
@@ -362,8 +379,7 @@ static Tk_ItemScaleProc ScaleProc;
 static Tk_ItemTranslateProc TranslateProc;
 static Tk_ItemPostscriptProc PostScriptProc;
 
-static void ComputeBbox(Tk_Canvas canvas, LabelItem *imgPtr);
-static int ReadPostScript(Tcl_Interp *interp, LabelItem *labelPtr);
+static void ComputeGeometry(LabelItem *imgPtr);
 
 
 /*
@@ -431,7 +447,7 @@ static int
 StringToBg(ClientData clientData,Tcl_Interp *interp, Tk_Window tkwin,
            const char *string,  char *widgRec, int offset)
 {
-    Blt_Bg *bgPtr = (Blt_Font *)(widgRec + offset);
+    Blt_Bg *bgPtr = (Blt_Bg *)(widgRec + offset);
 
     return Blt_GetBg(interp, tkwin, string, bgPtr);
 }
@@ -481,7 +497,7 @@ StringToState(ClientData clientData,Tcl_Interp *interp, Tk_Window tkwin,
     int length;
 
     c = string[0];
-    length = strlen(value);
+    length = strlen(string);
     if ((c == 'd') && (strncmp(string, "disabled", length) == 0)) {
         *statePtr = TK_STATE_DISABLED;
     } else if ((c == 'a') && (strncmp(string, "active", length) == 0)) {
@@ -489,9 +505,9 @@ StringToState(ClientData clientData,Tcl_Interp *interp, Tk_Window tkwin,
     } else if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
         *statePtr = TK_STATE_NORMAL;
     } else if ((c == 'h') && (strncmp(string, "hidden", length) == 0)) {
-        *statePtr = TK_STATE_HIDDEN:
+        *statePtr = TK_STATE_HIDDEN;
     } else {
-        Tcl_ApepndResult(interp, "unknown state \"", string, 
+        Tcl_AppendResult(interp, "unknown state \"", string, 
              "\": should be active, disabled, hidden or normal", (char *)NULL);
         return TCL_ERROR;
     }
@@ -513,14 +529,14 @@ static const char *
 #else
 static char *
 #endif
-StringToState(ClientData clientData, Tk_Window tkwin, char *widgRec,
+StateToString(ClientData clientData, Tk_Window tkwin, char *widgRec,
               int offset, Tcl_FreeProc **freeProcPtr)
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;
 
     switch (state) {
-    case TK_STATE_DISABLE:
+    case TK_STATE_DISABLED:
         string = "disabled";          break;
     case TK_STATE_HIDDEN:
         string = "hidden";            break;
@@ -536,21 +552,25 @@ StringToState(ClientData clientData, Tk_Window tkwin, char *widgRec,
 }
 
 static LabelGC *
-GetLabelGC(Tk_Window tkwin, XColor *colorPtr)
+GetLabelGC(Tk_Window tkwin, XColor *colorPtr, int lineWidth)
 {
     LabelGCKey key;
     LabelGC *gcPtr;
-
+    Blt_HashEntry *hPtr;
+    int isNew;
+    
     key.color = *colorPtr;
     key.display = Tk_Display(tkwin);
+    key.lineWidth = lineWidth;
     hPtr = Blt_CreateHashEntry(&gcTable, (char *)&key, &isNew);
     if (isNew) {
         unsigned int gcMask;
         XGCValues gcValues;
-        int isNew;
-
-        gcMask = GCForeground;
+        GC newGC;
+        
+        gcMask = GCForeground | GCLineWidth;
         gcValues.foreground = colorPtr->pixel;
+        gcValues.line_width = lineWidth;
         newGC = Blt_GetPrivateGC(tkwin, gcMask, &gcValues);
         gcPtr = Blt_AssertMalloc(sizeof(LabelGC));
         gcPtr->gc = newGC;
@@ -565,7 +585,7 @@ GetLabelGC(Tk_Window tkwin, XColor *colorPtr)
 }
 
 static void
-FreeLabelGC(Display display, LabelGC *gcPtr)
+FreeLabelGC(Display *display, LabelGC *gcPtr)
 {
     gcPtr->refCount--;
     if (gcPtr->refCount <= 0) {
@@ -657,6 +677,10 @@ CreateProc(
     Tk_Window tkwin;
     double x, y;
 
+    if (!initialized) {
+        Blt_InitHashTable(&gcTable, sizeof(LabelGCKey) / sizeof(int));
+        initialized = TRUE;
+    }
     tkwin = Tk_CanvasTkwin(canvas);
     if (argc < 2) {
         Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -674,13 +698,16 @@ CreateProc(
     memset((char *)labelPtr + sizeof(Tk_Item), 0, 
            sizeof(LabelItem) - sizeof(Tk_Item));
 
-    labelPtr->x = x;
-    labelPtr->y = y;
     labelPtr->anchor = TK_ANCHOR_NW;
     labelPtr->canvas = canvas;
-    labelPtr->interp = interp;
-    labelPtr->tkwin  = tkwin;
     labelPtr->display = Tk_Display(tkwin);
+    labelPtr->interp = interp;
+    labelPtr->textAnchor = TK_ANCHOR_NW;
+    labelPtr->tkwin  = tkwin;
+    labelPtr->x = x;
+    labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
+    labelPtr->y = y;
+    labelPtr->yPad.side1 = labelPtr->yPad.side2 = 2;
     if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
         != TCL_OK) {
         DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
@@ -741,7 +768,7 @@ ConfigureProc(
     /* These are all LabelGCs because we will be changing the font as the
      * label item scales. */
     if (labelPtr->normalFg != NULL) {
-        newLabelGC = GetLabelGC(tkwin, labelPtr->normalFg);
+        newLabelGC = GetLabelGC(tkwin, labelPtr->normalFg, labelPtr->lineWidth);
     }
     if (labelPtr->normalLabelGC != NULL) {
         FreeLabelGC(labelPtr->display, labelPtr->normalLabelGC);
@@ -749,7 +776,8 @@ ConfigureProc(
     labelPtr->normalLabelGC = newLabelGC;
     newLabelGC = NULL;
     if (labelPtr->disabledFg != NULL) {
-        newLabelGC = GetLabelGC(tkwin, labelPtr->disabledFg);
+        newLabelGC = GetLabelGC(tkwin, labelPtr->disabledFg,
+                                labelPtr->lineWidth);
     }
     if (labelPtr->disabledLabelGC != NULL) {
         FreeLabelGC(labelPtr->display, labelPtr->disabledLabelGC);
@@ -757,12 +785,13 @@ ConfigureProc(
     labelPtr->disabledLabelGC = newLabelGC;
     newLabelGC = NULL;
     if (labelPtr->activeFg != NULL) {
-        newLabelGC = GetLabelGC(tkwin, labelPtr->activeFg);
+        newLabelGC = GetLabelGC(tkwin, labelPtr->activeFg, labelPtr->lineWidth);
     }
     if (labelPtr->activeLabelGC != NULL) {
         FreeLabelGC(labelPtr->display, labelPtr->activeLabelGC);
     }
     labelPtr->activeLabelGC = newLabelGC;
+    labelPtr->flags |= LAYOUT_PENDING;
     return TCL_OK;
 }
 
@@ -832,16 +861,25 @@ static void
 ComputeGeometry(LabelItem *labelPtr)
 {
     unsigned int w, h;
+    double rw, rh;
     TextLayout *layoutPtr;
-
+    Blt_Font font;
+    TextStyle ts;
+    int xOffset, yOffset;
+    int i;
+    Point2d off1, off2;
+    double radians, sinTheta, cosTheta;
+    
     labelPtr->width = labelPtr->height = 0;
     if (labelPtr->text == NULL) {
         return;
     }
     labelPtr->numBytes = strlen(labelPtr->text);
-    Blt_Ts_InitStyle(&ts);
-    Blt_Ts_SetFont(&ts, font);
-    Blt_Ts_SetPadding(&ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
+    font = (labelPtr->scaledFont != NULL) ?
+        labelPtr->scaledFont : labelPtr->baseFont;
+    Blt_Ts_InitStyle(ts);
+    Blt_Ts_SetFont(ts, font);
+    Blt_Ts_SetPadding(ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
                       labelPtr->yPad.side1, labelPtr->yPad.side2);
     layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
 
@@ -851,6 +889,7 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->layoutPtr = layoutPtr;
     w = layoutPtr->width;
     h = layoutPtr->height;
+    xOffset = yOffset = 0;
     if (labelPtr->reqWidth > 0) {
         xOffset = labelPtr->reqWidth - w;
         w = labelPtr->reqWidth;
@@ -888,7 +927,7 @@ ComputeGeometry(LabelItem *labelPtr)
         xOffset = 0;
         break;
     case TK_ANCHOR_N:
-    case TK_ANCHOR_C:
+    case TK_ANCHOR_CENTER:
     case TK_ANCHOR_S:
         xOffset = (w - layoutPtr->width) / 2;
         break;
@@ -905,7 +944,7 @@ ComputeGeometry(LabelItem *labelPtr)
         yOffset = 0;
         break;
     case TK_ANCHOR_W:
-    case TK_ANCHOR_C:
+    case TK_ANCHOR_CENTER:
     case TK_ANCHOR_E:
         yOffset = (h - layoutPtr->height) / 2;
         break;
@@ -915,13 +954,14 @@ ComputeGeometry(LabelItem *labelPtr)
         yOffset = h - layoutPtr->height;
         break;
     }
+               
     /* Offset to center of unrotated box. */
     off1.x = (double)w * 0.5 + xOffset;
     off1.y = (double)h * 0.5 + yOffset;
     /* Offset to center of rotated box. */
     off2.x = rw * 0.5;
     off2.y = rh * 0.5;
-    radians = -angle * DEG2RAD;
+    radians = -labelPtr->angle * DEG2RAD;
     sinTheta = sin(radians), cosTheta = cos(radians);
 
     /* Rotate starting positions of the text. */
@@ -931,8 +971,8 @@ ComputeGeometry(LabelItem *labelPtr)
 
         fragPtr = layoutPtr->fragments + i;
         /* Translate the start of the fragement to the center of box. */
-        p.x = (fragPtr->x + xOffset) - off1.x;
-        p.y = (fragPtr->y + yOffset) - off1.y;
+        p.x = fragPtr->x - off1.x;
+        p.y = fragPtr->y - off1.y;
         /* Rotate the point. */
         q.x = (p.x * cosTheta) - (p.y * sinTheta);
         q.y = (p.x * sinTheta) + (p.y * cosTheta);
@@ -950,37 +990,39 @@ MapItem(Tk_Canvas canvas, LabelItem *labelPtr)
 {
     short int sx, sy;                   /* Screen coordinates */
     int rw2, rh2;
-
+    int i;
+    
     /* Convert anchor from world coordinates to screen. */
     Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
                             labelPtr->anchorPos.y, &sx, &sy);
 
     /* Map the outline relative to the upper-left corner. */
     rw2 = (int)(labelPtr->rotWidth * 0.5);
-    rh2 = (int)(labelPtr->rowHeight * 0.5);
+    rh2 = (int)(labelPtr->rotHeight * 0.5);
     for (i = 0; i < 5; i++) {
         labelPtr->points[i].x += sx + rw2;
         labelPtr->points[i].y += sy + rh2;
     }
     labelPtr->points[4] = labelPtr->points[0];
-    if (labelPtr->clipsRegion != NULL) {
-        TkDestroyRegion(labelPtr->clipsRegion);
+    if (labelPtr->clipRegion != NULL) {
+        TkDestroyRegion(labelPtr->clipRegion);
     }
-    labelPtr->clipRegion = XPolygonRegion(labelPtr->points, 5, EvenOddRule);
+    labelPtr->clipRegion = (TkRegion)XPolygonRegion(labelPtr->points, 5,
+                                                   EvenOddRule);
     labelPtr->flags &= LAYOUT_PENDING;
 }
 
-static void
-LabelInsideRegion(LabelItem *labelPtr, int rx, int dy, int rw, int rh)
+static int
+LabelInsideRegion(LabelItem *labelPtr, int rx, int ry, int rw, int rh)
 {
     Region2d region;
 
     /* Test to see if the rotated bounding box of the label is inside the
      * region. */
-    region.x1 = rx;
-    region.y1 = ry;
-    region.x2 = rx + rw;
-    region.y2 = ry + rh;
+    region.left = rx;
+    region.top = ry;
+    region.right = rx + rw;
+    region.bottom = ry + rh;
     return Blt_RegionInPolygon(&region, labelPtr->outlinePts, 5, TRUE);
 }
 
@@ -1014,21 +1056,22 @@ DisplayProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     Tk_Window tkwin;
-    const char *title;
-    int w, h;
-    short int dx, dy;
+     short int x, y;
     GC gc;
     Blt_Bg bg;
 
     if (labelPtr->state == TK_STATE_HIDDEN) {
+        fprintf(stderr, "item is hidden\n");
         return;                         /* Item is hidden. */
     }
     if (labelPtr->flags & LAYOUT_PENDING) {
-        MapItem(labelPtr);
+        MapItem(canvas, labelPtr);
     }
+#ifdef notdef
     if (!LabelInsideRegion(labelPtr, rx, ry, rw, rh)) {
         return;
     }
+#endif
     tkwin = Tk_CanvasTkwin(canvas);
 
     /*
@@ -1036,6 +1079,8 @@ DisplayProc(
      */
     Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
                             labelPtr->anchorPos.y, &x, &y);
+    bg = NULL;
+    gc = NULL;
     switch (labelPtr->state) {
     case TK_STATE_DISABLED:
         gc = labelPtr->disabledLabelGC->gc;  
@@ -1052,9 +1097,11 @@ DisplayProc(
     case TK_STATE_HIDDEN:
         break;
     }
+#ifdef notdef
     TkSetRegion(labelPtr->display, gc, labelPtr->clipRegion);
+#endif
     if (bg != NULL) {                   /* Background polygon */
-        Blt_Bg_FillPolygon(tkwin, drawable, bg, x, y, labelPtr->points, 5, 0,
+        Blt_Bg_FillPolygon(tkwin, drawable, bg, labelPtr->points, 5, 0,
                            TK_RELIEF_FLAT);
     }
     if (labelPtr->lineWidth > 0) {      /* Outline */
@@ -1068,7 +1115,7 @@ DisplayProc(
         maxLength = (labelPtr->flags & ELLIPSIS) ? labelPtr->width : -1;
         font = (labelPtr->scaledFont != NULL) ?
             labelPtr->scaledFont : labelPtr->baseFont;
-        XSetFont(labelPtr->display, gc, font);
+        XSetFont(labelPtr->display, gc, Blt_Font_Id(font));
         Blt_DrawLayout(tkwin, drawable, gc, font, Tk_Depth(tkwin),
             labelPtr->angle, x, y, labelPtr->layoutPtr, maxLength);
         XSetFont(labelPtr->display, gc, None);
@@ -1118,14 +1165,14 @@ PointProc(
     }
     /* Otherwise return the distance to the nearest segment of the
      * polygon. */
-    p = points[0];
-    q = points[1];
     minDist = 1e36;
     for (i = 0; i < 4; i++) {
         Point2d t;
         double x1, x2, y1, y2;
         double dist;
         
+        p = labelPtr->outlinePts[i];
+        q = labelPtr->outlinePts[i+1];
         t = Blt_GetProjection((int)sample.x, (int)sample.y, &p, &q);
         if (p.x > q.x) {
             x2 = p.x, x1 = q.x;
@@ -1178,14 +1225,14 @@ AreaProc(
         (labelPtr->state == TK_STATE_HIDDEN)) {
         return -1;
     }
-    if (labelPtr->style.angle != 0.0f) {
+    if (labelPtr->angle != 0.0f) {
         Region2d region;
 
         /* Translate region so that the center the label is the origin. */
-        region.x1 = pts[0] - labelPtr->anchorPos.x + (labelPtr->rotWidth * 0.5);
-        region.y1 = pts[1] - labelPtr->anchorPos.y + (labelPtr->rotHeight*0.5);
-        region.x2 = pts[2] - labelPtr->anchorPos.x + (labelPtr->rotWidth*0.5);
-        region.y2 = pts[3] - labelPtr->anchorPos.y + (labelPtr->rotHeight*0.5);
+        region.left = pts[0] - labelPtr->anchorPos.x + (labelPtr->rotWidth * 0.5);
+        region.top = pts[1] - labelPtr->anchorPos.y + (labelPtr->rotHeight*0.5);
+        region.right = pts[2] - labelPtr->anchorPos.x + (labelPtr->rotWidth*0.5);
+        region.bottom = pts[3] - labelPtr->anchorPos.y + (labelPtr->rotHeight*0.5);
 
         /*  
          * First check if the polygon (outline of the label) overlaps the
@@ -1197,18 +1244,17 @@ AreaProc(
         }
         /* Test again checking if the polygon is completely enclosed in the
          * region. */
-        return Blt_RegionInPolygon(&region, labelPtr->outlinePts, points, 5, 
-                                   FALSE /*enclosed*/);
+        return Blt_RegionInPolygon(&region, labelPtr->outlinePts, 5, FALSE);
     } 
     /* Simpler test of unrotated label. */
     /* Min-max test of two rectangles. */
     if ((pts[2] < labelPtr->anchorPos.x) || 
         (pts[0] >= (labelPtr->anchorPos.x + labelPtr->rotWidth)) ||
         (pts[3] < labelPtr->anchorPos.y) || 
-        (pts[1] >= (labelPtr->anchosPos.y + labelPtr->rotHeight))) {
+        (pts[1] >= (labelPtr->anchorPos.y + labelPtr->rotHeight))) {
         return -1;                      /* Completely outside. */
     }
-    if ((pts[0] >= labelPtr->anchosPos.x) && 
+    if ((pts[0] >= labelPtr->anchorPos.x) && 
         (pts[2] < (labelPtr->anchorPos.x + labelPtr->rotWidth)) && 
         (pts[1] >= labelPtr->anchorPos.y) &&
         (pts[3] < (labelPtr->anchorPos.y + labelPtr->rotHeight))) {
@@ -1243,27 +1289,27 @@ ScaleProc(
     double xs, double ys)
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
-    double scale;
     double newFontSize;
     double incrScale;
 
     incrScale = MAX(xs, ys);
     labelPtr->scale *= incrScale;        /* Used to track overall scale */
-    newFontSize = scale * Blt_Font_Size(labelPtr->baseFont);
+    newFontSize = labelPtr->scale * Blt_Font_Size(labelPtr->baseFont);
     labelPtr->flags |= DISPLAY_TEXT;
     if (newFontSize < labelPtr->minFontSize) {
         labelPtr->flags &= ~DISPLAY_TEXT;
     } else if (newFontSize <= labelPtr->maxFontSize) {
         Blt_Font font;
         
-        font = Blt_Font_Duplicate(labelPtr->baseFont, newFontSize);
+        font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
+                                  newFontSize);
         if (font == NULL) {
             labelPtr->flags &= ~DISPLAY_TEXT;
         }
-        if (labelPtr->scaleFont != NULL) {
-            Blt_Font_Free(labelPtr->scaleFont);
+        if (labelPtr->scaledFont != NULL) {
+            Blt_Font_Free(labelPtr->scaledFont);
         }
-        labelPtr->scaleFont = font;
+        labelPtr->scaledFont = font;
     } 
     /* Compute new size of font based upon the xScale and yScale */
     /* Need to track overall scale. */
@@ -1304,10 +1350,10 @@ TranslateProc(
     labelPtr->anchorPos.y += dy;
 
     /* Translate bounding box. */
-    labelPtr->item.x1 = ROUND(labelPtr->anchorPos.x);
-    labelPtr->item.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
-    labelPtr->item.y1 = ROUND(labelPtr->anchorPos.y);
-    labelPtr->item.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight);
+    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x);
+    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
+    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y);
+    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight);
 }
 
 /*
@@ -1360,58 +1406,27 @@ PostScriptProc(
     w = labelPtr->rotWidth;
     h = labelPtr->rotHeight;
 
-    if (labelPtr->fileName == NULL) {
-        /* No PostScript file, generate PostScript of resized image instead. */
-        if (labelPtr->picture != NULL) {
-            Blt_Ps_Format(ps, "gsave\n");
-            /*
-             * First flip the PostScript y-coordinate axis so that the origin
-             * is the upper-left corner like our picture.
-             */
-            Blt_Ps_Format(ps, "  %g %g translate\n", x, y + h);
-            Blt_Ps_Format(ps, "  1 -1 scale\n");
-
-            Blt_Ps_DrawPicture(ps, labelPtr->picture, 0.0, 0.0);
-            Blt_Ps_Format(ps, "grestore\n");
-
-            Blt_Ps_SetInterp(ps, interp);
-            Blt_Ps_Free(ps);
-        }
-        return TCL_OK;
-    }
-
-    /* Copy in the PostScript prolog for EPS encapsulation. */
-    if (Blt_Ps_IncludeFile(interp, ps, "bltCanvEps.pro") != TCL_OK) {
-        goto error;
-    }
     Blt_Ps_Append(ps, "BeginEPSF\n");
 
-    xScale = w / (double)(labelPtr->urx - labelPtr->llx);
-    yScale = h / (double)(labelPtr->ury - labelPtr->lly);
+    xScale = w / (double)(labelPtr->header.x2 - labelPtr->header.x1);
+    yScale = h / (double)(labelPtr->header.y2 - labelPtr->header.y1);
 
     /* Set up scaling and translation transformations for the EPS item */
 
     Blt_Ps_Format(ps, "%g %g translate\n", x, y);
     Blt_Ps_Format(ps, "%g %g scale\n", xScale, yScale);
-    Blt_Ps_Format(ps, "%d %d translate\n", -(labelPtr->llx), -(labelPtr->lly));
+    Blt_Ps_Format(ps, "%d %d translate\n", -(labelPtr->header.x1),
+                  -(labelPtr->header.y1));
 
     /* FIXME: Why clip against the old bounding box? */
-    Blt_Ps_Format(ps, "%d %d %d %d SetClipRegion\n", labelPtr->llx, 
-        labelPtr->lly, labelPtr->urx, labelPtr->ury);
+    Blt_Ps_Format(ps, "%d %d %d %d SetClipRegion\n", labelPtr->header.x1, 
+        labelPtr->header.y1, labelPtr->header.x2, labelPtr->header.y2);
 
-    Blt_Ps_VarAppend(ps, "%% including \"", labelPtr->fileName, "\"\n\n",
-         (char *)NULL);
 
-    Blt_Ps_AppendBytes(ps, Tcl_DStringValue(&labelPtr->ds), 
-        Tcl_DStringLength(&labelPtr->ds));
     Blt_Ps_Append(ps, "EndEPSF\n");
     Blt_Ps_SetInterp(ps, interp);
     Blt_Ps_Free(ps);
     return TCL_OK;
-
-  error:
-    Blt_Ps_Free(ps);
-    return TCL_ERROR;
 }
 
 

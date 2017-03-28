@@ -259,6 +259,15 @@ BLT_EXTERN int Blt_GetCountFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 BLT_EXTERN int Blt_SimplifyLine (Point2d *origPts, int low, int high, 
         double tolerance, int *indices);
 
+BLT_EXTERN int Blt_PointInPolygon(Point2d *samplePtr, Point2d *points, 
+        int numPoints);
+
+BLT_EXTERN int Blt_RegionInPolygon(Region2d *extsPtr, Point2d *points, 
+        int numPoints, int enclosed);
+
+BLT_EXTERN int Blt_PointInSegments(Point2d *samplePtr, Segment2d *segments, 
+        int numSegments, double halo);
+
 BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s, long *longPtr);
 BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         long *longPtr);

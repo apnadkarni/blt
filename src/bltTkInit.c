@@ -201,7 +201,8 @@ Blt_TkInit(Tcl_Interp *interp)         /* Interpreter to add extra commands */
         return TCL_ERROR;
     }
     Blt_RegisterPictureImageType(interp);
-    Blt_RegisterEpsCanvasItem();
+    Blt_RegisterCanvasEpsItem();
+    Blt_RegisterCanvasLabelItem();
     Blt_InitXRandrConfig(interp);
 
     /* Initialize the BLT commands that only use Tk. */
