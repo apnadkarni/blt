@@ -135,6 +135,8 @@ typedef struct {
 #define XFillPolygon            Blt_EmulateXFillPolygon
 #undef XFillRectangle           
 #define XFillRectangle          Blt_EmulateXFillRectangle
+#undef XFillRectangle           
+#define XFillRectangle          Blt_EmulateXFillRectangle
 #undef XFillRectangles          
 #define XFillRectangles         Blt_EmulateXFillRectangles
 #undef XFree                    
@@ -145,6 +147,8 @@ typedef struct {
 #define XLowerWindow            Blt_EmulateXLowerWindow
 #undef XMaxRequestSize          
 #define XMaxRequestSize         Blt_EmulateXMaxRequestSize
+#undef XPolygonRegion             
+#define XPolygonRegion          Blt_EmulateXPolygonRegion
 #undef XRaiseWindow             
 #define XRaiseWindow            Blt_EmulateXRaiseWindow
 #undef XReparentWindow          
@@ -193,6 +197,7 @@ extern void Blt_EmulateXFillRectangles(Display *display, Drawable drawable,
 extern void Blt_EmulateXFree(void *ptr);
 extern int Blt_EmulateXGetWindowAttributes(Display *display, Window window,
     XWindowAttributes * attrsPtr);
+extern void Blt_EmulateXPolygonRegion(Display *display, XPoint *points, int numPoints,  int mode);
 extern void Blt_EmulateXLowerWindow(Display *display, Window window);
 extern void Blt_EmulateXMapWindow(Display *display, Window window);
 extern long Blt_EmulateXMaxRequestSize(Display *display);

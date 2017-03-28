@@ -2875,11 +2875,12 @@ Blt_EmulateXPolygonRegion(XPoint xPointArr[], int numPoints, int rule)
     HRGN hRgn; 
     POINT *points;
     POINT staticPoints[5];
+    int i;
 
     if (numPoints > 5) {
         points = Blt_Malloc(sizeof(POINT) * numPoints);
         if (points == NULL) {
-            return;
+            return NULL;
         }
     } else {
         points = staticPoints;
@@ -2888,7 +2889,7 @@ Blt_EmulateXPolygonRegion(XPoint xPointArr[], int numPoints, int rule)
         points[i].x = (int)xPointArr[i].x;
         points[i].y = (int)xPointArr[i].y;
     }
-    if (rule == OddEvenRule) {
+    if (rule == EvenOddRule) {
         hRgn = CreatePolygonRgn(points, numPoints, ALTERNATE);
     } else if (rule == WindingRule) {
         hRgn = CreatePolygonRgn(points, numPoints, WINDING);
