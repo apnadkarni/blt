@@ -197,10 +197,10 @@ extern void Blt_EmulateXFillRectangles(Display *display, Drawable drawable,
 extern void Blt_EmulateXFree(void *ptr);
 extern int Blt_EmulateXGetWindowAttributes(Display *display, Window window,
     XWindowAttributes * attrsPtr);
-extern void Blt_EmulateXPolygonRegion(Display *display, XPoint *points, int numPoints,  int mode);
 extern void Blt_EmulateXLowerWindow(Display *display, Window window);
 extern void Blt_EmulateXMapWindow(Display *display, Window window);
 extern long Blt_EmulateXMaxRequestSize(Display *display);
+extern Region Blt_EmulateXPolygonRegion(XPoint *points, int numPoints,  int mode);
 extern void Blt_EmulateXRaiseWindow(Display *display, Window window);
 extern void Blt_EmulateXReparentWindow(Display *display, Window window,
     Window parent, int x, int y);

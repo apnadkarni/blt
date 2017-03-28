@@ -2869,7 +2869,7 @@ Blt_TextOut(
     }
 }
 
-TkRegion
+Region
 Blt_EmulateXPolygonRegion(XPoint xPointArr[], int numPoints, int rule)
 {
     HRGN hRgn; 
@@ -2901,5 +2901,5 @@ Blt_EmulateXPolygonRegion(XPoint xPointArr[], int numPoints, int rule)
     if (points != staticPoints) {
         Blt_Free(points);
     }
-    return (TkRegion)hRgn;
+    return (Region)hRgn;
 }

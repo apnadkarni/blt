@@ -405,6 +405,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltBitmap.o \
 			bltBusy.o \
 			bltCanvEps.o \
+			bltCanvLabel.o \
 			bltComboButton.o \
 			bltComboEditor.o \
 			bltComboEntry.o \
