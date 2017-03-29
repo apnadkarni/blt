@@ -1856,7 +1856,7 @@ ftFontDeleteFontset(ftFontset *setPtr)
     }
     Blt_DeleteHashTable(&setPtr->fontTable);
     
-    if (setPtr->draw != 0) {
+    if (setPtr->draw != NULL) {
         XftDrawDestroy(setPtr->draw);
     }
     if (setPtr->fid) {
@@ -2734,7 +2734,7 @@ ftFontDrawProc(
         return;                 /* Can't find instance at requested angle. */
     }
     xftPtr = Blt_GetHashValue(hPtr);
-    if ((setPtr->draw == 0) || (setPtr->drawDepth != depth)) {
+    if ((setPtr->draw == NULL) || (setPtr->drawDepth != depth)) {
         XftDraw *draw;
 
         if (depth == 1) {
@@ -2743,7 +2743,7 @@ ftFontDrawProc(
             draw = XftDrawCreate(display, drawable, setPtr->visual, 
                 setPtr->colormap);
         }
-        if (setPtr->draw != 0) {
+        if (setPtr->draw != NULL) {
             XftDrawDestroy(setPtr->draw);
         }
         setPtr->drawDepth = depth;
