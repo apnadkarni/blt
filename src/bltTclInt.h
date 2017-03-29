@@ -262,8 +262,8 @@ BLT_EXTERN int Blt_SimplifyLine (Point2d *origPts, int low, int high,
 BLT_EXTERN int Blt_PointInPolygon(Point2d *samplePtr, Point2d *points, 
         int numPoints);
 
-BLT_EXTERN int Blt_RegionInPolygon(Region2d *extsPtr, Point2d *points, 
-        int numPoints, int enclosed);
+BLT_EXTERN int Blt_PolygonInRegion(Point2d *points, int numPoints, 
+            Region2d *extsPtr, int enclosed);
 
 BLT_EXTERN int Blt_PointInSegments(Point2d *samplePtr, Segment2d *segments, 
         int numSegments, double halo);

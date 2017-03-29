@@ -380,11 +380,8 @@ Blt_PointInPolygon(
 }
 
 int
-Blt_RegionInPolygon(
-    Region2d *regionPtr,
-    Point2d *points,
-    int numPoints,
-    int enclosed)
+Blt_PolygonInRegion(Point2d *points, int numPoints, Region2d *regionPtr,
+                    int enclosed)
 {
     Point2d *pp, *pend;
 

@@ -155,7 +155,7 @@ typedef int     (MarkerConfigProc)(Marker *markerPtr);
 typedef void    (MarkerMapProc)(Marker *markerPtr);
 typedef void    (MarkerPostscriptProc)(Marker *markerPtr, Blt_Ps ps);
 typedef int     (MarkerPointProc)(Marker *markerPtr, Point2d *samplePtr);
-typedef int     (MarkerAreaProc)(Marker *markerPtr, Region2d *extsPtr, 
+typedef int     (MarkerAreaProc)(Marker *markerPtr, Region2d *rgnPtr, 
                                    int enclosed);
 
 typedef struct {
@@ -1422,17 +1422,17 @@ FreeMarker(DestroyData data)
  *---------------------------------------------------------------------------
  */
 static int
-BoxesDontOverlap(Graph *graphPtr, Region2d *extsPtr)
+BoxesDontOverlap(Graph *graphPtr, Region2d *rgnPtr)
 {
-    assert(extsPtr->right >= extsPtr->left);
-    assert(extsPtr->bottom >= extsPtr->top);
+    assert(rgnPtr->right >= rgnPtr->left);
+    assert(rgnPtr->bottom >= rgnPtr->top);
     assert(graphPtr->x2 >= graphPtr->x1);
     assert(graphPtr->y2 >= graphPtr->y1);
 
-    return (((double)graphPtr->x2 < extsPtr->left) ||
-            ((double)graphPtr->y2 < extsPtr->top) ||
-            (extsPtr->right < (double)graphPtr->x1) ||
-            (extsPtr->bottom < (double)graphPtr->y1));
+    return (((double)graphPtr->x2 < rgnPtr->left) ||
+            ((double)graphPtr->y2 < rgnPtr->top) ||
+            (rgnPtr->right < (double)graphPtr->x1) ||
+            (rgnPtr->bottom < (double)graphPtr->y1));
 }
 
 
@@ -2714,7 +2714,7 @@ BitmapPointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-BitmapAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+BitmapAreaProc(Marker *markerPtr, Region2d *rgnPtr, int enclosed)
 {
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
 
@@ -2733,19 +2733,19 @@ BitmapAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
             points[i].x = bmPtr->outlinePts[i].x + bmPtr->anchorPt.x;
             points[i].y = bmPtr->outlinePts[i].y + bmPtr->anchorPt.y;
         }
-        return Blt_RegionInPolygon(extsPtr, points, bmPtr->numOutlinePts, 
+        return Blt_PolygonInRegion(points, bmPtr->numOutlinePts, rgnPtr,
                    enclosed);
     }
     if (enclosed) {
-        return ((bmPtr->anchorPt.x >= extsPtr->left) &&
-                (bmPtr->anchorPt.y >= extsPtr->top) && 
-                ((bmPtr->anchorPt.x + bmPtr->destWidth) <= extsPtr->right) &&
-                ((bmPtr->anchorPt.y + bmPtr->destHeight) <= extsPtr->bottom));
+        return ((bmPtr->anchorPt.x >= rgnPtr->left) &&
+                (bmPtr->anchorPt.y >= rgnPtr->top) && 
+                ((bmPtr->anchorPt.x + bmPtr->destWidth) <= rgnPtr->right) &&
+                ((bmPtr->anchorPt.y + bmPtr->destHeight) <= rgnPtr->bottom));
     }
-    return !((bmPtr->anchorPt.x >= extsPtr->right) ||
-             (bmPtr->anchorPt.y >= extsPtr->bottom) ||
-             ((bmPtr->anchorPt.x + bmPtr->destWidth) <= extsPtr->left) ||
-             ((bmPtr->anchorPt.y + bmPtr->destHeight) <= extsPtr->top));
+    return !((bmPtr->anchorPt.x >= rgnPtr->right) ||
+             (bmPtr->anchorPt.y >= rgnPtr->bottom) ||
+             ((bmPtr->anchorPt.x + bmPtr->destWidth) <= rgnPtr->left) ||
+             ((bmPtr->anchorPt.y + bmPtr->destHeight) <= rgnPtr->top));
 }
 
 /*
@@ -3406,7 +3406,7 @@ TextPointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-TextAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+TextAreaProc(Marker *markerPtr, Region2d *rgnPtr, int enclosed)
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
 
@@ -3425,18 +3425,18 @@ TextAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
             points[i].x = tmPtr->outlinePts[i].x + tmPtr->anchorPt.x;
             points[i].y = tmPtr->outlinePts[i].y + tmPtr->anchorPt.y;
         }
-        return Blt_RegionInPolygon(extsPtr, points, 4, enclosed);
+        return Blt_PolygonInRegion(points, 4, rgnPtr, enclosed);
     } 
     if (enclosed) {
-        return ((tmPtr->anchorPt.x >= extsPtr->left) &&
-                (tmPtr->anchorPt.y >= extsPtr->top) && 
-                ((tmPtr->anchorPt.x + tmPtr->width) <= extsPtr->right) &&
-                ((tmPtr->anchorPt.y + tmPtr->height) <= extsPtr->bottom));
+        return ((tmPtr->anchorPt.x >= rgnPtr->left) &&
+                (tmPtr->anchorPt.y >= rgnPtr->top) && 
+                ((tmPtr->anchorPt.x + tmPtr->width) <= rgnPtr->right) &&
+                ((tmPtr->anchorPt.y + tmPtr->height) <= rgnPtr->bottom));
     }
-    return !((tmPtr->anchorPt.x >= extsPtr->right) ||
-             (tmPtr->anchorPt.y >= extsPtr->bottom) ||
-             ((tmPtr->anchorPt.x + tmPtr->width) <= extsPtr->left) ||
-             ((tmPtr->anchorPt.y + tmPtr->height) <= extsPtr->top));
+    return !((tmPtr->anchorPt.x >= rgnPtr->right) ||
+             (tmPtr->anchorPt.y >= rgnPtr->bottom) ||
+             ((tmPtr->anchorPt.x + tmPtr->width) <= rgnPtr->left) ||
+             ((tmPtr->anchorPt.y + tmPtr->height) <= rgnPtr->top));
 }
 
 /*
@@ -3738,7 +3738,7 @@ WindowPointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-WindowAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+WindowAreaProc(Marker *markerPtr, Region2d *rgnPtr, int enclosed)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -3746,15 +3746,15 @@ WindowAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
         return FALSE;
     }
     if (enclosed) {
-        return ((wmPtr->anchorPt.x >= extsPtr->left) &&
-                (wmPtr->anchorPt.y >= extsPtr->top) && 
-                ((wmPtr->anchorPt.x + wmPtr->width) <= extsPtr->right) &&
-                ((wmPtr->anchorPt.y + wmPtr->height) <= extsPtr->bottom));
+        return ((wmPtr->anchorPt.x >= rgnPtr->left) &&
+                (wmPtr->anchorPt.y >= rgnPtr->top) && 
+                ((wmPtr->anchorPt.x + wmPtr->width) <= rgnPtr->right) &&
+                ((wmPtr->anchorPt.y + wmPtr->height) <= rgnPtr->bottom));
     }
-    return !((wmPtr->anchorPt.x >= extsPtr->right) ||
-             (wmPtr->anchorPt.y >= extsPtr->bottom) ||
-             ((wmPtr->anchorPt.x + wmPtr->width) <= extsPtr->left) ||
-             ((wmPtr->anchorPt.y + wmPtr->height) <= extsPtr->top));
+    return !((wmPtr->anchorPt.x >= rgnPtr->right) ||
+             (wmPtr->anchorPt.y >= rgnPtr->bottom) ||
+             ((wmPtr->anchorPt.x + wmPtr->width) <= rgnPtr->left) ||
+             ((wmPtr->anchorPt.y + wmPtr->height) <= rgnPtr->top));
 }
 
 /*
@@ -4094,7 +4094,7 @@ LinePointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-LineAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+LineAreaProc(Marker *markerPtr, Region2d *rgnPtr, int enclosed)
 {
     if (markerPtr->numWorldPts < 2) {
         return FALSE;
@@ -4107,8 +4107,8 @@ LineAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
             Point2d p;
 
             p = MapPoint(pp, &markerPtr->axes);
-            if ((p.x < extsPtr->left) && (p.x > extsPtr->right) &&
-                (p.y < extsPtr->top) && (p.y > extsPtr->bottom)) {
+            if ((p.x < rgnPtr->left) && (p.x > rgnPtr->right) &&
+                (p.y < rgnPtr->top) && (p.y > rgnPtr->bottom)) {
                 return FALSE;
             }
         }
@@ -4125,7 +4125,7 @@ LineAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 
             p = MapPoint(pp, &markerPtr->axes);
             q = MapPoint(pp + 1, &markerPtr->axes);
-            if (Blt_LineRectClip(extsPtr, &p, &q)) {
+            if (Blt_LineRectClip(rgnPtr, &p, &q)) {
                 count++;
             }
         }
@@ -4794,13 +4794,13 @@ PolygonPointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-PolygonAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+PolygonAreaProc(Marker *markerPtr, Region2d *regionPtr, int enclosed)
 {
     PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
     
     if ((markerPtr->numWorldPts >= 3) && (pmPtr->screenPts != NULL)) {
-        return Blt_RegionInPolygon(extsPtr, pmPtr->screenPts, 
-                markerPtr->numWorldPts, enclosed);
+        return Blt_PolygonInRegion(pmPtr->screenPts, markerPtr->numWorldPts, 
+                regionPtr, enclosed);
     }
     return FALSE;
 }
@@ -5280,20 +5280,20 @@ RectanglePointProc(Marker *basePtr, Point2d *p)
  *---------------------------------------------------------------------------
  */
 static int
-RectangleAreaProc(Marker *basePtr, Region2d *extsPtr, int enclosed)
+RectangleAreaProc(Marker *basePtr, Region2d *rgnPtr, int enclosed)
 {
     RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
     
     if (enclosed) {
-        return ((markerPtr->corner1.x >= extsPtr->left) &&
-                (markerPtr->corner2.x < extsPtr->right) &&
-                (markerPtr->corner1.y >= extsPtr->top) &&
-                (markerPtr->corner2.y < extsPtr->bottom));
+        return ((markerPtr->corner1.x >= rgnPtr->left) &&
+                (markerPtr->corner2.x < rgnPtr->right) &&
+                (markerPtr->corner1.y >= rgnPtr->top) &&
+                (markerPtr->corner2.y < rgnPtr->bottom));
     } else {
-        return ((markerPtr->corner1.x >= extsPtr->right) ||
-                (markerPtr->corner2.x < extsPtr->left) ||
-                (markerPtr->corner1.y >= extsPtr->bottom) ||
-                (markerPtr->corner2.y < extsPtr->top));
+        return ((markerPtr->corner1.x >= rgnPtr->right) ||
+                (markerPtr->corner2.x < rgnPtr->left) ||
+                (markerPtr->corner1.y >= rgnPtr->bottom) ||
+                (markerPtr->corner2.y < rgnPtr->top));
     }
 }
 
