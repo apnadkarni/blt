@@ -33,6 +33,15 @@ set autocolors {
 #FFF9C4
 #EFFFD8
 }
+
+set bg1 [blt::paintbrush create color -color blue -opacity 30]
+set bg1 [blt::paintbrush create linear -jitter 3 \
+	     -colorscale linear \
+	     -from w \
+	     -to e \
+	     -high grey90 -low grey98 \
+	     -repeat reversing]
+
 proc NextColor {} {
   global nextColor autocolors
   incr nextColor
@@ -58,21 +67,21 @@ proc Activate { canvas id } {
   MarchingAnts $canvas $id
 }
 proc Deactivate { canvas id } {
-  global afterId
-  $canvas itemconfigure $id -state normal -bg [NextColor]
+  global afterId bg1
+  $canvas itemconfigure $id -state normal -bg $bg1
   after cancel $afterId
 }
 .c create rectangle 100 100 300 200 -fill lightblue3
 
 set id [.c create label 100 100 \
 	    -text "Hello, World" \
-	    -bg lightgreen \
+	    -bg $bg1 \
 	    -activebg red3 -linewidth 2 \
 	    -anchor nw \
 	    -textanchor c \
 	    -padx .2i \
 	    -activedashes 4 \
-	    -rotate 45 \
+	    -rotate 90 \
 	    -width 0 \
 	    -height 75]
 
@@ -83,6 +92,5 @@ blt::table . \
 .c bind $id <Leave> [list Deactivate .c $id]
 
 after 2000 {
-  set id [.c find overlapping 90 90 99 99]
-  puts id=$id
+    .c scale all 0 0 1.2 1.2
 }

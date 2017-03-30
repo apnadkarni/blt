@@ -78,6 +78,7 @@
 #include <bltAlloc.h>
 #include "bltMath.h"
 #include "bltChain.h"
+#include "bltPaintBrush.h"
 #include "bltPicture.h"
 #include "bltPs.h"
 #include "bltImage.h"
@@ -197,13 +198,13 @@ typedef struct {
                                          * color. */
     XColor *activeFg;                   /* Active label text and outline
                                          * color. */
-    Blt_Bg normalBg;                    /* If non-NULL, fill background
+    Blt_PaintBrush normalBrush;         /* If non-NULL, fill background
                                          * color. Otherwise the background
                                          * is transparent. */
-    Blt_Bg disabledBg;                  /* If non-NULL, disabled fill
+    Blt_PaintBrush disabledBrush;       /* If non-NULL, disabled fill
                                          * background color. Otherwise uses
                                          * the normal background color. */
-    Blt_Bg activeBg;                    /* If non-NULL, active fill
+    Blt_PaintBrush activeBrush;         /* If non-NULL, active fill
                                          * background color. Otherwise uses
                                          * normal the background color. */
     const char *text;			/* Text string to be displayed.
@@ -264,18 +265,18 @@ static Tk_CustomOption fontOption = {
     StringToFont, FontToString, (ClientData)0
 };
 
-static int StringToBg(ClientData clientData, Tcl_Interp *interp,
+static int StringToBrush(ClientData clientData, Tcl_Interp *interp,
         Tk_Window tkwin, const char *string, char *widgRec, int offset);
 #if (_TCL_VERSION >= _VERSION(8,6,0)) 
-static const char *BgToString (ClientData clientData, Tk_Window tkwin, 
+static const char *BrushToString (ClientData clientData, Tk_Window tkwin, 
         char *widgRec, int offset, Tcl_FreeProc **proc);
 #else
-static char *BgToString (ClientData clientData, Tk_Window tkwin, 
+static char *BrushToString (ClientData clientData, Tk_Window tkwin, 
         char *widgRec, int offset, Tcl_FreeProc **proc);
 #endif
 
-static Tk_CustomOption bgOption = {
-    StringToBg, BgToString, (ClientData)0
+static Tk_CustomOption brushOption = {
+    StringToBrush, BrushToString, (ClientData)0
 };
 
 static int StringToState(ClientData clientData, Tcl_Interp *interp,
@@ -311,8 +312,8 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_SYNONYM, (char *)"-activefg", "activeOutline", 
         (char *)NULL, (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-activefill", "activeFill", (char *)NULL,
-        DEF_ACTIVE_FILL_COLOR, Tk_Offset(LabelItem, activeBg), 
-        TK_CONFIG_NULL_OK, &bgOption},
+        DEF_ACTIVE_FILL_COLOR, Tk_Offset(LabelItem, activeBrush), 
+        TK_CONFIG_NULL_OK, &brushOption},
     {TK_CONFIG_SYNONYM, (char *)"-activeforeground", "activeOutline", 
         (char *)NULL, (char *)NULL, 0, 0},
     {TK_CONFIG_COLOR, (char *)"-activeoutline", "activeOutline", (char *)NULL,
@@ -343,16 +344,16 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_SYNONYM, (char *)"-disabledfg", "disabledOutline", (char *)NULL, 
         (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-disabledfill", "disabledFill", (char *)NULL,
-        DEF_DISABLED_FILL_COLOR, Tk_Offset(LabelItem, disabledBg), 
-        TK_CONFIG_NULL_OK, &bgOption},
+        DEF_DISABLED_FILL_COLOR, Tk_Offset(LabelItem, disabledBrush), 
+        TK_CONFIG_NULL_OK, &brushOption},
     {TK_CONFIG_SYNONYM, (char *)"-disabledforeground", "disabledOutline", 
         (char *)NULL, (char *)NULL, 0, 0},
     {TK_CONFIG_COLOR, (char *)"-disabledoutline", "disabledOutline", 
         (char *)NULL, DEF_DISABLED_OUTLINE_COLOR, 
         Tk_Offset(LabelItem, disabledFg)},
     {TK_CONFIG_CUSTOM, (char *)"-fill", "fill", (char *)NULL,
-        DEF_NORMAL_FILL_COLOR, Tk_Offset(LabelItem, normalBg), 
-        TK_CONFIG_NULL_OK, &bgOption},
+        DEF_NORMAL_FILL_COLOR, Tk_Offset(LabelItem, normalBrush), 
+        TK_CONFIG_NULL_OK, &brushOption},
     {TK_CONFIG_CUSTOM, (char *)"-font", (char *)NULL, (char *)NULL,
         DEF_FONT, Tk_Offset(LabelItem, baseFont), 0, &fontOption},
     {TK_CONFIG_SYNONYM, (char *)"-fg", "fill", (char *)NULL, (char *)NULL, 
@@ -471,28 +472,28 @@ FontToString(ClientData clientData, Tk_Window tkwin, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * StringToBg --
+ * StringToBrush --
  *
- *      Converts string to Blt_Bg structure.
+ *      Converts string to Blt_PainBrush structure.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-StringToBg(ClientData clientData,Tcl_Interp *interp, Tk_Window tkwin,
-           const char *string,  char *widgRec, int offset)
+StringToBrush(ClientData clientData,Tcl_Interp *interp, Tk_Window tkwin,
+              const char *string,  char *widgRec, int offset)
 {
-    Blt_Bg *bgPtr = (Blt_Bg *)(widgRec + offset);
+    Blt_PaintBrush *brushPtr = (Blt_PaintBrush *)(widgRec + offset);
 
-    return Blt_GetBg(interp, tkwin, string, bgPtr);
+    return Blt_GetPaintBrush(interp, string, brushPtr);
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * BgToString --
+ * BrushToString --
  *
- *      Returns the name of the Blt_Bg.
+ *      Returns the name of the Blt_PaintBrush.
  *
  *---------------------------------------------------------------------------
  */
@@ -502,13 +503,13 @@ static const char *
 #else
 static char *
 #endif
-BgToString(ClientData clientData, Tk_Window tkwin, char *widgRec,
-             int offset, Tcl_FreeProc **freeProcPtr)
+BrushToString(ClientData clientData, Tk_Window tkwin, char *widgRec,
+              int offset, Tcl_FreeProc **freeProcPtr)
 {
-    Blt_Bg bg = *(Blt_Bg *)(widgRec + offset);
+    Blt_PaintBrush brush = *(Blt_PaintBrush *)(widgRec + offset);
     const char *string;
 
-    string = (bg != NULL) ? Blt_Bg_Name(bg) : "";
+    string = (brush != NULL) ? Blt_GetBrushName(brush) : "";
     *freeProcPtr = (Tcl_FreeProc *)TCL_STATIC;
     return (char *)string;
 }
@@ -684,6 +685,15 @@ DeleteProc(
     }
     if (labelPtr->activeLabelGC != NULL) {
         FreeLabelGC(labelPtr->display, labelPtr->activeLabelGC);
+    }
+    if (labelPtr->normalBrush != NULL) {
+        Blt_FreeBrush(labelPtr->normalBrush);
+    }
+    if (labelPtr->activeBrush != NULL) {
+        Blt_FreeBrush(labelPtr->activeBrush);
+    }
+    if (labelPtr->disabledBrush != NULL) {
+        Blt_FreeBrush(labelPtr->disabledBrush);
     }
 }
 
@@ -935,7 +945,6 @@ ComputeGeometry(LabelItem *labelPtr)
 #if DEBUG
     fprintf(stderr, "Enter ComputeGeometry label=%s\n", labelPtr->text);
 #endif
-    labelPtr->width = labelPtr->height = 0;
     if (labelPtr->text == NULL) {
         return;
     }
@@ -1090,6 +1099,44 @@ LabelInsideRegion(LabelItem *labelPtr, int rx, int ry, int rw, int rh)
 /*
  *---------------------------------------------------------------------------
  *
+ * PaintLabelBackground --
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+PaintLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
+                     int x, int y, Blt_PaintBrush brush)
+{
+    Blt_Painter painter;
+    Blt_Picture picture;
+    Point2f vertices[5];
+    int i;
+    int w, h;
+
+    w = (int)labelPtr->rotWidth;
+    h = (int)labelPtr->rotHeight;
+    picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
+    if (picture == NULL) {
+        return;                         /* Background is obscured. */
+    }
+    /* Translate the polygon */
+    for (i = 0; i < 5; i++) {
+        vertices[i].x = labelPtr->outlinePts[i].x;
+        vertices[i].y = labelPtr->outlinePts[i].y;
+    }
+    Blt_SetBrushRegion(brush, 0, 0, w, h);
+    Blt_PaintPolygon(picture, 5, vertices, brush);
+    painter = Blt_GetPainter(tkwin, 1.0);
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
+    Blt_FreePicture(picture);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * DisplayProc --
  *
  *      This procedure is invoked to draw the label item in a given
@@ -1118,7 +1165,7 @@ DisplayProc(
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     Tk_Window tkwin;
     GC gc;
-    Blt_Bg bg;
+    Blt_PaintBrush brush;
     short int x, y;
     TkRegion clipRegion;
 
@@ -1142,19 +1189,19 @@ DisplayProc(
     tkwin = Tk_CanvasTkwin(canvas);
 
     clipRegion = (TkRegion)XPolygonRegion(labelPtr->points, 5, EvenOddRule);
-    bg = NULL;
+    brush = NULL;
     gc = NULL;
     switch (labelPtr->state) {
     case TK_STATE_DISABLED:
+        brush = labelPtr->disabledBrush;  
         gc = labelPtr->disabledLabelGC->gc;  
-        bg = labelPtr->disabledBg;  
         break;
     case TK_STATE_ACTIVE:
-        bg = labelPtr->activeBg;  
+        brush = labelPtr->activeBrush;  
         gc = labelPtr->activeLabelGC->gc;    
         break;
     case TK_STATE_NORMAL:
-        bg = labelPtr->normalBg;   
+        brush = labelPtr->normalBrush;   
         gc = labelPtr->normalLabelGC->gc;    
         break;
     case TK_STATE_HIDDEN:
@@ -1162,9 +1209,8 @@ DisplayProc(
     }
     assert(gc != NULL);
     TkSetRegion(display, gc, clipRegion);
-    if (bg != NULL) {                   /* Background polygon */
-        Blt_Bg_FillPolygon(tkwin, drawable, bg, labelPtr->points, 5, 0,
-                           TK_RELIEF_FLAT);
+    if (brush != NULL) {                /* Background polygon */
+        PaintLabelBackground(tkwin, drawable, labelPtr, x, y, brush);
     }
     if (labelPtr->lineWidth > 0) {      /* Outline */
         XDrawLines(display, drawable, gc, labelPtr->points, 5, CoordModeOrigin);
@@ -1362,17 +1408,18 @@ ScaleProc(
     double newFontSize;
     double incrScale;
 
-#if DEBUG
-    fprintf(stderr, "Enter ScaleProc label=%s x0=%g, y0=%g xs=%g ys=%g\n", 
-            labelPtr->text, x0, y0, xs, ys);
-#endif
     incrScale = MAX(xs, ys);
     labelPtr->scale *= incrScale;        /* Used to track overall scale */
+#if DEBUG
+    fprintf(stderr, "Enter ScaleProc label=%s x0=%g, y0=%g xs=%g ys=%g new=%g\n", 
+            labelPtr->text, x0, y0, xs, ys, labelPtr->scale);
+#endif
     newFontSize = labelPtr->scale * Blt_Font_Size(labelPtr->baseFont);
     labelPtr->flags |= DISPLAY_TEXT;
-    if (newFontSize < labelPtr->minFontSize) {
+    if ((labelPtr->minFontSize > 0) && (newFontSize < labelPtr->minFontSize)) {
         labelPtr->flags &= ~DISPLAY_TEXT;
-    } else if (newFontSize <= labelPtr->maxFontSize) {
+    } else if ((labelPtr->maxFontSize > 0) &&
+               (newFontSize <= labelPtr->maxFontSize)) {
         Blt_Font font;
         
         font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
@@ -1389,8 +1436,8 @@ ScaleProc(
     /* Need to track overall scale. */
     /* Handle min/max size limits.  If too small, don't display anything.
     * If too big stop growing. */
-    labelPtr->width = (labelPtr->width * xs);
-    labelPtr->height = (labelPtr->height * ys);
+    labelPtr->reqWidth = (labelPtr->width * xs);
+    labelPtr->reqHeight = (labelPtr->height * ys);
     ComputeGeometry(labelPtr);
 }
 
