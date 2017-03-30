@@ -81,7 +81,7 @@ set id [.c create label 100 100 \
 	    -textanchor c \
 	    -padx .2i \
 	    -activedashes 4 \
-	    -rotate 90 \
+	    -rotate 0 \
 	    -width 0 \
 	    -height 75]
 
@@ -91,6 +91,6 @@ blt::table . \
 .c bind $id <Enter> [list Activate .c $id]
 .c bind $id <Leave> [list Deactivate .c $id]
 
-after 2000 {
-    .c scale all 0 0 1.2 1.2
-}
+bind .c  <4>  { .c scale all 0 0 1.1 1.1 }
+bind .c  <5>  { .c scale all 0 0 0.9 0.9 }
+

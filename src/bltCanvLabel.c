@@ -90,6 +90,8 @@
 #define LAYOUT_PENDING          (1<<0)
 #define ELLIPSIS                (1<<1)
 #define DISPLAY_TEXT            (1<<2)
+#define LABEL_GEOMETRY          (1<<3)
+#define SAVE_GEOMETRY           (1<<4)
 
 #define DEF_ACTIVE_DASHES               "0"
 #define DEF_ACTIVE_DASH_OFFSET          "0"
@@ -759,15 +761,16 @@ CreateProc(
     labelPtr->anchor = TK_ANCHOR_NW;
     labelPtr->canvas = canvas;
     labelPtr->display = Tk_Display(tkwin);
+    labelPtr->flags = LABEL_GEOMETRY | SAVE_GEOMETRY;
     labelPtr->interp = interp;
+    labelPtr->scale = 1.0;
+    labelPtr->state = TK_STATE_NORMAL;
     labelPtr->textAnchor = TK_ANCHOR_NW;
     labelPtr->tkwin  = tkwin;
-    labelPtr->state = TK_STATE_NORMAL;
     labelPtr->x = x;
     labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
     labelPtr->y = y;
     labelPtr->yPad.side1 = labelPtr->yPad.side2 = 2;
-    labelPtr->scale = 1.0;
     if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
         != TCL_OK) {
         DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
@@ -919,6 +922,33 @@ CoordsProc(
     return TCL_OK;
 }
 
+static void
+ComputeLabelGeometry(LabelItem *labelPtr, Blt_Font font)
+{
+    TextStyle ts;
+    TextLayout *layoutPtr;
+
+    Blt_Ts_InitStyle(ts);
+    Blt_Ts_SetFont(ts, font);
+    Blt_Ts_SetPadding(ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
+                      labelPtr->yPad.side1, labelPtr->yPad.side2);
+    layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
+    if (labelPtr->layoutPtr != NULL) {
+        Blt_Free(labelPtr->layoutPtr);
+    }
+    labelPtr->layoutPtr = layoutPtr;
+
+    if (labelPtr->flags & SAVE_GEOMETRY) {
+        /* Let the requested width and height override the computed size. */
+        labelPtr->width = (labelPtr->reqWidth > 0) ? 
+            labelPtr->reqWidth : layoutPtr->width;
+        labelPtr->height = (labelPtr->reqHeight > 0) ? 
+            labelPtr->reqHeight : layoutPtr->height;
+        labelPtr->flags &= ~SAVE_GEOMETRY;
+    }
+    labelPtr->flags &= ~LABEL_GEOMETRY;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -932,16 +962,10 @@ CoordsProc(
 static void
 ComputeGeometry(LabelItem *labelPtr)
 {
-    unsigned int w, h;
     double rw, rh;
-    TextLayout *layoutPtr;
-    Blt_Font font;
-    TextStyle ts;
     int xOffset, yOffset;
     int i;
-    Point2d off1, off2;
-    double radians, sinTheta, cosTheta;
-    
+
 #if DEBUG
     fprintf(stderr, "Enter ComputeGeometry label=%s\n", labelPtr->text);
 #endif
@@ -949,43 +973,26 @@ ComputeGeometry(LabelItem *labelPtr)
         return;
     }
     labelPtr->numBytes = strlen(labelPtr->text);
-    font = (labelPtr->scaledFont != NULL) ?
-        labelPtr->scaledFont : labelPtr->baseFont;
-    Blt_Ts_InitStyle(ts);
-    Blt_Ts_SetFont(ts, font);
-    Blt_Ts_SetPadding(ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
-                      labelPtr->yPad.side1, labelPtr->yPad.side2);
-    layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
+    if (labelPtr->flags & LABEL_GEOMETRY) {
+        Blt_Font font;
 
-    if (labelPtr->layoutPtr != NULL) {
-        Blt_Free(labelPtr->layoutPtr);
-    }
-    labelPtr->layoutPtr = layoutPtr;
-    w = layoutPtr->width;
-    h = layoutPtr->height;
-    xOffset = yOffset = 0;
-    if (labelPtr->reqWidth > 0) {
-        xOffset = labelPtr->reqWidth - w;
-        w = labelPtr->reqWidth;
-    }
-    if (labelPtr->reqHeight > 0) {
-        yOffset = labelPtr->reqHeight - h;
-        h = labelPtr->reqHeight;
+        font = (labelPtr->scaledFont != NULL) ?
+            labelPtr->scaledFont : labelPtr->baseFont;
+        ComputeLabelGeometry(labelPtr, font);
     }
     /* Compute the outline polygon (isolateral or rectangle) given the
      * width and height. The center of the box is 0,0. */
-    Blt_GetBoundingBox(w, h, labelPtr->angle, &rw, &rh, labelPtr->outlinePts);
+    Blt_GetBoundingBox(labelPtr->width, labelPtr->height, labelPtr->angle, 
+        &rw, &rh, labelPtr->outlinePts);
     labelPtr->rotWidth = rw;
     labelPtr->rotHeight = rh;
 
     /* The label's x,y position is in world coordinates. This point and the
      * anchor tell us where is the anchor position of the label, which is
-     * the upper-left corner of the bounding box around the possible
+     * the upper-left corner of the bounding box around the possibly
      * rotated item. */
     labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
-        labelPtr->anchor);
-    
-    /* Translate the origin back to the the upper-left corner. */
+                                          labelPtr->anchor);
     for (i = 0; i < 4; i++) {
         labelPtr->outlinePts[i].x += rw * 0.5;
         labelPtr->outlinePts[i].y += rh * 0.5;
@@ -1003,12 +1010,12 @@ ComputeGeometry(LabelItem *labelPtr)
     case TK_ANCHOR_N:
     case TK_ANCHOR_CENTER:
     case TK_ANCHOR_S:
-        xOffset = (w - layoutPtr->width) / 2;
+        xOffset = (labelPtr->width - labelPtr->layoutPtr->width) / 2;
         break;
     case TK_ANCHOR_NE:
     case TK_ANCHOR_E:
     case TK_ANCHOR_SE:
-        xOffset = w - layoutPtr->width;
+        xOffset = labelPtr->width - labelPtr->layoutPtr->width;
         break;
     }
     switch (labelPtr->textAnchor) {
@@ -1020,47 +1027,52 @@ ComputeGeometry(LabelItem *labelPtr)
     case TK_ANCHOR_W:
     case TK_ANCHOR_CENTER:
     case TK_ANCHOR_E:
-        yOffset = (h - layoutPtr->height) / 2;
+        yOffset = (labelPtr->height - labelPtr->layoutPtr->height) / 2;
         break;
     case TK_ANCHOR_SW:
     case TK_ANCHOR_S:
     case TK_ANCHOR_SE:
-        yOffset = h - layoutPtr->height;
+        yOffset = labelPtr->height - labelPtr->layoutPtr->height;
         break;
     }
                
-    /* Offset to center of unrotated box. */
-    off1.x = (double)w * 0.5 - xOffset;
-    off1.y = (double)h * 0.5 - yOffset;
-    /* Offset to center of rotated box. */
-    off2.x = rw * 0.5;
-    off2.y = rh * 0.5;
-    radians = -labelPtr->angle * DEG2RAD;
-    sinTheta = sin(radians), cosTheta = cos(radians);
-
-    /* Rotate starting positions of the text. */
-    for (i = 0; i < layoutPtr->numFragments; i++) {
-        Point2d p, q;
-        TextFragment *fragPtr;
-
-        fragPtr = layoutPtr->fragments + i;
-        /* Translate the start of the fragement to the center of box. */
-        p.x = fragPtr->x - off1.x;
-        p.y = fragPtr->y - off1.y;
-        /* Rotate the point. */
-        q.x = (p.x * cosTheta) - (p.y * sinTheta);
-        q.y = (p.x * sinTheta) + (p.y * cosTheta);
-        /* Translate the point back toward the upper-left corner of the
-         * rotated bounding box. */
-        q.x += off2.x;
-        q.y += off2.y;
-        fragPtr->x1 = ROUND(q.x);
-        fragPtr->y1 = ROUND(q.y);
+    {
+        Point2d off1, off2;
+        double radians, sinTheta, cosTheta;
+        
+        /* Offset to center of unrotated box. */
+        off1.x = (double)labelPtr->width * 0.5 - xOffset;
+        off1.y = (double)labelPtr->height * 0.5 - yOffset;
+        /* Offset to center of rotated box. */
+        off2.x = rw * 0.5;
+        off2.y = rh * 0.5;
+        radians = -labelPtr->angle * DEG2RAD;
+        sinTheta = sin(radians), cosTheta = cos(radians);
+        
+        /* Rotate starting positions of the text. */
+        for (i = 0; i < labelPtr->layoutPtr->numFragments; i++) {
+            Point2d p, q;
+            TextFragment *fragPtr;
+            
+            fragPtr = labelPtr->layoutPtr->fragments + i;
+            /* Translate the start of the fragement to the center of box. */
+            p.x = fragPtr->x - off1.x;
+            p.y = fragPtr->y - off1.y;
+            /* Rotate the point. */
+            q.x = (p.x * cosTheta) - (p.y * sinTheta);
+            q.y = (p.x * sinTheta) + (p.y * cosTheta);
+            /* Translate the point back toward the upper-left corner of the
+             * rotated bounding box. */
+            q.x += off2.x;
+            q.y += off2.y;
+            fragPtr->x1 = ROUND(q.x);
+            fragPtr->y1 = ROUND(q.y);
+        }
     }
-    labelPtr->header.x1 = (int)(labelPtr->anchorPos.x);
-    labelPtr->header.x2 = (int)(labelPtr->anchorPos.x + labelPtr->rotWidth);
-    labelPtr->header.y1 = (int)(labelPtr->anchorPos.y);
-    labelPtr->header.y2 = (int)(labelPtr->anchorPos.y + labelPtr->rotHeight);
+    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x);
+    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
+    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y);
+    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight);
 }
 
 static void
@@ -1073,8 +1085,8 @@ MapItem(Tk_Canvas canvas, int x, int y, LabelItem *labelPtr)
 #endif
     /* Map the outline relative to the screen anchor point. */
     for (i = 0; i < 5; i++) {
-        labelPtr->points[i].x = (int)(x + labelPtr->outlinePts[i].x);
-        labelPtr->points[i].y = (int)(y + labelPtr->outlinePts[i].y);
+        labelPtr->points[i].x = ROUND(x + labelPtr->outlinePts[i].x);
+        labelPtr->points[i].y = ROUND(y + labelPtr->outlinePts[i].y);
     }
     labelPtr->flags &= ~LAYOUT_PENDING;
 }
@@ -1116,8 +1128,8 @@ PaintLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
     int i;
     int w, h;
 
-    w = (int)labelPtr->rotWidth;
-    h = (int)labelPtr->rotHeight;
+    w = ROUND(labelPtr->rotWidth);
+    h = ROUND(labelPtr->rotHeight);
     picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
     if (picture == NULL) {
         return;                         /* Background is obscured. */
@@ -1285,7 +1297,7 @@ PointProc(
         
         p = labelPtr->outlinePts[i];
         q = labelPtr->outlinePts[i+1];
-        t = Blt_GetProjection((int)sample.x, (int)sample.y, &p, &q);
+        t = Blt_GetProjection(ROUND(sample.x), ROUND(sample.y), &p, &q);
         if (p.x > q.x) {
             x2 = p.x, x1 = q.x;
         } else {
@@ -1407,6 +1419,7 @@ ScaleProc(
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     double newFontSize;
     double incrScale;
+    double x1, y1, x2, y2;
 
     incrScale = MAX(xs, ys);
     labelPtr->scale *= incrScale;        /* Used to track overall scale */
@@ -1414,6 +1427,7 @@ ScaleProc(
     fprintf(stderr, "Enter ScaleProc label=%s x0=%g, y0=%g xs=%g ys=%g new=%g\n", 
             labelPtr->text, x0, y0, xs, ys, labelPtr->scale);
 #endif
+#ifdef notdef
     newFontSize = labelPtr->scale * Blt_Font_Size(labelPtr->baseFont);
     labelPtr->flags |= DISPLAY_TEXT;
     if ((labelPtr->minFontSize > 0) && (newFontSize < labelPtr->minFontSize)) {
@@ -1432,12 +1446,22 @@ ScaleProc(
         }
         labelPtr->scaledFont = font;
     } 
+#endif
     /* Compute new size of font based upon the xScale and yScale */
     /* Need to track overall scale. */
     /* Handle min/max size limits.  If too small, don't display anything.
-    * If too big stop growing. */
-    labelPtr->reqWidth = (labelPtr->width * xs);
-    labelPtr->reqHeight = (labelPtr->height * ys);
+     * if too big stop growing. */
+    x1 = labelPtr->x;
+    y1 = labelPtr->y;
+    x2 = labelPtr->x + labelPtr->width;
+    y2 = labelPtr->y + labelPtr->height;
+    
+    labelPtr->x = x0 + xs * (x1 - x0);
+    labelPtr->y = y0 + ys * (y1 - y0);
+    x2 = x0 + xs * (x2 - x0);
+    y2 = y0 + ys * (y2 - y0);
+    labelPtr->width = x2 - x1;
+    labelPtr->height = y2 - y1;
     ComputeGeometry(labelPtr);
 }
 
@@ -1473,6 +1497,8 @@ TranslateProc(
     /* Translate anchor. */
     labelPtr->anchorPos.x += dx;
     labelPtr->anchorPos.y += dy;
+    labelPtr->x += dx;
+    labelPtr->y += dy;
 
     /* Translate bounding box. */
     labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x);
