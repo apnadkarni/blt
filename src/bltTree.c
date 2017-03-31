@@ -2972,7 +2972,7 @@ int
 Blt_Tree_ListAppendValueByKey(Tcl_Interp *interp, Tree *treePtr,
     Node *nodePtr,                      /* Node to be updated. */
     Blt_TreeKey key,                    /* Identifies the field key. */
-    Tcl_Obj *valueObjPtr)               /* New value of field. */
+    Tcl_Obj *valueObjPtr)               /* Value to be appended. */
 {
     TreeObject *corePtr = nodePtr->corePtr;
     Value *valuePtr;
@@ -2991,11 +2991,10 @@ Blt_Tree_ListAppendValueByKey(Tcl_Interp *interp, Tree *treePtr,
         return TCL_ERROR;
     }
     if (valuePtr->objPtr == NULL) {
-        Tcl_IncrRefCount(valueObjPtr);
-        valuePtr->objPtr = valueObjPtr;
-    } else {
-        Tcl_ListObjAppendElement(interp, valuePtr->objPtr, valueObjPtr);
-    }
+        valuePtr->objPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+        Tcl_IncrRefCount(valuePtr->objPtr);
+    } 
+    Tcl_ListObjAppendElement(interp, valuePtr->objPtr, valueObjPtr);
     flags = TREE_TRACE_WRITES;
     if (isNew) {
         flags |= TREE_TRACE_CREATES;

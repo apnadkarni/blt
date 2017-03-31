@@ -160,7 +160,7 @@ typedef struct {
     Blt_Tree tree;                      /* Token holding internal tree. */
     Blt_HashEntry *hashPtr;
     Blt_HashTable *tablePtr;
-    TreeCmdInterpData *tdPtr;           /*  */
+    TreeCmdInterpData *interpDataPtr;   /*  */
     int traceCounter;                   /* Used to generate trace id
                                          * strings.  */
     Blt_HashTable traceTable;           /* Table of active traces. Maps
@@ -1338,7 +1338,7 @@ GetTreeCmdInterpData(Tcl_Interp *interp)
  */
 static TreeCmd *
 GetTreeCmd(
-    TreeCmdInterpData *tdPtr, 
+    TreeCmdInterpData *dataPtr, 
     Tcl_Interp *interp, 
     const char *string)
 {
@@ -1362,7 +1362,7 @@ GetTreeCmd(
     if (!result) {
         return NULL;
     }
-    hPtr = Blt_FindHashEntry(&tdPtr->treeTable, 
+    hPtr = Blt_FindHashEntry(&dataPtr->treeTable, 
                              (char *)(cmdInfo.objClientData));
     if (hPtr == NULL) {
         return NULL;
@@ -1879,7 +1879,7 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
 static TreeCmd *
 CreateTreeCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
 {
-    TreeCmdInterpData *tdPtr = clientData;
+    TreeCmdInterpData *dataPtr = clientData;
     Tcl_DString ds;
     Blt_Tree tree;
 
@@ -1934,7 +1934,7 @@ CreateTreeCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
         TreeCmd *cmdPtr;
 
         cmdPtr = Blt_AssertCalloc(1, sizeof(TreeCmd));
-        cmdPtr->tdPtr = tdPtr;
+        cmdPtr->interpDataPtr = dataPtr;
         cmdPtr->tree = tree;
         cmdPtr->interp = interp;
         Blt_InitHashTable(&cmdPtr->traceTable, BLT_STRING_KEYS);
@@ -1942,7 +1942,7 @@ CreateTreeCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
         cmdPtr->notifiers = Blt_Chain_Create();
         cmdPtr->cmdToken = Tcl_CreateObjCommand(interp, (char *)name, 
                 (Tcl_ObjCmdProc *)TreeInstObjCmd, cmdPtr, TreeInstDeleteProc);
-        cmdPtr->tablePtr = &tdPtr->treeTable;
+        cmdPtr->tablePtr = &dataPtr->treeTable;
         cmdPtr->hashPtr = Blt_CreateHashEntry(cmdPtr->tablePtr, (char *)cmdPtr,
               &isNew);
         Blt_SetHashValue(cmdPtr->hashPtr, cmdPtr);
@@ -2834,7 +2834,7 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
          * choice) or an internal tree object.
          */
         string = Tcl_GetString(objv[3]);
-        srcPtr = GetTreeCmd(cmdPtr->tdPtr, interp, string);
+        srcPtr = GetTreeCmd(cmdPtr->interpDataPtr, interp, string);
         if (srcPtr != NULL) {
             srcTree = srcPtr->tree;
         } else {
@@ -3130,7 +3130,7 @@ DupOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         return TCL_ERROR;
     }
     srcPtr = cmdPtr;
-    destPtr = CreateTreeCmd(cmdPtr->tdPtr, interp, NULL);
+    destPtr = CreateTreeCmd(cmdPtr->interpDataPtr, interp, NULL);
     if (destPtr == NULL) {
         return TCL_ERROR;
     }
@@ -6712,7 +6712,7 @@ static int
 TreeDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
-    TreeCmdInterpData *tdPtr = clientData;
+    TreeCmdInterpData *dataPtr = clientData;
     int i;
 
     for (i = 2; i < objc; i++) {
@@ -6720,7 +6720,7 @@ TreeDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char *string;
 
         string = Tcl_GetString(objv[i]);
-        cmdPtr = GetTreeCmd(tdPtr, interp, string);
+        cmdPtr = GetTreeCmd(dataPtr, interp, string);
         if (cmdPtr == NULL) {
             Tcl_AppendResult(interp, "can't find a tree named \"", string,
                              "\"", (char *)NULL);
@@ -6745,12 +6745,12 @@ TreeExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     TreeCmd *cmdPtr;
-    TreeCmdInterpData *tdPtr = clientData;
+    TreeCmdInterpData *dataPtr = clientData;
     const char *string;
     int state;
     
     string = Tcl_GetString(objv[3]);
-    cmdPtr = GetTreeCmd(tdPtr, interp, string);
+    cmdPtr = GetTreeCmd(dataPtr, interp, string);
     state = (cmdPtr != NULL);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -6769,7 +6769,7 @@ static int
 TreeNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
-    TreeCmdInterpData *tdPtr = clientData;
+    TreeCmdInterpData *dataPtr = clientData;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Tcl_Obj *listObjPtr;
@@ -6777,7 +6777,7 @@ TreeNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     Tcl_DStringInit(&ds);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (hPtr = Blt_FirstHashEntry(&tdPtr->treeTable, &iter); hPtr != NULL; 
+    for (hPtr = Blt_FirstHashEntry(&dataPtr->treeTable, &iter); hPtr != NULL; 
         hPtr = Blt_NextHashEntry(&iter)) {
         Blt_ObjectName objName;
         TreeCmd *cmdPtr;
@@ -6919,15 +6919,15 @@ TreeObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 static void
 TreeInterpDeleteProc(ClientData clientData, Tcl_Interp *interp)
 {
-    TreeCmdInterpData *tdPtr = clientData;
+    TreeCmdInterpData *dataPtr = clientData;
 
     /* 
      * All tree instances should already have been destroyed when their
      * respective TCL commands were deleted.
      */
-    Blt_DeleteHashTable(&tdPtr->treeTable);
+    Blt_DeleteHashTable(&dataPtr->treeTable);
     Tcl_DeleteAssocData(interp, TREE_THREAD_KEY);
-    Blt_Free(tdPtr);
+    Blt_Free(dataPtr);
 }
 
 /*
