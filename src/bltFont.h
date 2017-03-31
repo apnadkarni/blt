@@ -93,6 +93,7 @@ typedef void (Blt_Font_UnderlineCharsProc)(Display *display, Drawable drawable,
         GC gc, Blt_Font font, const char *text, int textLen, int x, int y, 
         int first, int last, int xMax);
 typedef double (Blt_Font_SizeProc)(Blt_Font font);
+typedef double (Blt_Font_PixelSizeProc)(Blt_Font font);
 typedef Blt_Font (Blt_Font_DuplicateProc)(Tk_Window tkwin, Blt_Font font, 
              double size);
 
@@ -110,6 +111,7 @@ struct _Blt_FontClass {
     Blt_Font_TextWidthProc *textWidthProc;
     Blt_Font_UnderlineCharsProc *underlineCharsProc;
     Blt_Font_SizeProc *sizeProc;
+    Blt_Font_PixelSizeProc *pixelSizeProc;
     Blt_Font_DuplicateProc *dupProc;
 };
 
@@ -138,6 +140,7 @@ struct _Blt_Font {
         (*(f)->classPtr->psNameProc)(f,rp)
 #define Blt_Font_Family(f)      (*(f)->classPtr->familyProc)(f)
 #define Blt_Font_Size(f)        (*(f)->classPtr->sizeProc)(f)
+#define Blt_Font_PixelSize(f)   (*(f)->classPtr->pixelSizeProc)(f)
 #define Blt_Font_CanRotate(f,a) (*(f)->classPtr->canRotateProc)(f,a)
 #define Blt_Font_Free(f)        (*(f)->classPtr->freeProc)(f)
 #define Blt_Font_Duplicate(t,f,s) \

@@ -615,6 +615,7 @@ static Blt_Font_PostscriptNameProc      tkFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           tkFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      tkFontUnderlineCharsProc;
 static Blt_Font_SizeProc                tkFontSizeProc;
+static Blt_Font_PixelSizeProc           tkFontPixelSizeProc;
 static Blt_Font_DuplicateProc           tkFontDupProc;
 
 static Blt_FontClass tkFontClass = {
@@ -631,6 +632,7 @@ static Blt_FontClass tkFontClass = {
     tkFontTextWidthProc,                    /* Blt_Font_TextWidthProc */
     tkFontUnderlineCharsProc,               /* Blt_Font_UnderlineCharsProc */
     tkFontSizeProc,                         /* Blt_Font_SizeProc */
+    tkFontPixelSizeProc,                    /* Blt_Font_PixelSizeProc */
     tkFontDupProc,                          /* Blt_Font_DuplicateProc */
 };
 
@@ -1159,6 +1161,12 @@ tkFontSizeProc(_Blt_Font *fontPtr)
     return ((TkFont *)fontPtr->clientData)->fa.size;
 }
 
+static double
+tkFontPixelSizeProc(_Blt_Font *fontPtr) 
+{
+    return ((TkFont *)fontPtr->clientData)->fa.size;
+}
+
 /* 
  *  tkFontDupProc --
  *
@@ -1176,6 +1184,7 @@ tkFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     tkFontPattern *patternPtr;
     const char *closestFontName;
 
+    fprintf(stderr, "In tkFontDupProc size=%g\n", size);
     /* Get the pattern from the old font. */
     objPtr = Tcl_NewStringObj(Tk_NameOfFont(fontPtr->clientData), -1);
     patternPtr = tkFontGetPattern(fontPtr->interp, objPtr);
@@ -1371,6 +1380,7 @@ static Blt_Font_PostscriptNameProc      ftFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           ftFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      ftFontUnderlineCharsProc;
 static Blt_Font_SizeProc                ftFontSizeProc;
+static Blt_Font_PixelSizeProc           ftFontPixelSizeProc;
 static Blt_Font_DuplicateProc           ftFontDupProc;
 
 static Blt_FontClass ftFontClass = {
@@ -1387,6 +1397,7 @@ static Blt_FontClass ftFontClass = {
     ftFontTextWidthProc,              /* Blt_Font_TextWidthProc */
     ftFontUnderlineCharsProc,         /* Blt_Font_UnderlineCharsProc */
     ftFontSizeProc,                   /* Blt_Font_SizeProc */
+    ftFontPixelSizeProc,              /* Blt_Font_PixelSizeProc */
     ftFontDupProc,                    /* Blt_Font_DuplicateProc */
 };
 
@@ -2356,35 +2367,92 @@ ftFontSizeProc(_Blt_Font *fontPtr)
     return size;
 }
 
+static double
+ftFontPixelSizeProc(_Blt_Font *fontPtr) 
+{
+    ftFontset *setPtr = fontPtr->clientData;
+    double size; 
+    FcResult result;
+
+    result = FcPatternGetDouble(setPtr->pattern, FC_PIXEL_SIZE, 0, &size);
+    if (result != FcResultMatch) {
+        size = 12.0;
+    }
+    return size;
+}
+
+
 static Blt_Font
 ftFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size) 
 {
     Blt_HashEntry *hPtr;
-    FcChar8 *name;
-    FcPattern *pattern;
+    FcChar8 *name, *family;
+    FcPattern *pattern, *matchingPattern;
+    FcResult result;
     XftFont *xftPtr;
     _Blt_Font *dupPtr; 
     ftFontset *newPtr;
     ftFontset *setPtr = fontPtr->clientData;
     int isNew;
+    int width, slant, weight;
     
-    pattern = FcPatternDuplicate(setPtr->pattern);
+    pattern = FcPatternCreate();
+    FcPatternAddBool(pattern, FC_ANTIALIAS, FcTrue);
+    FcPatternAddBool(pattern, FC_SCALABLE, FcTrue);
+    /* Family */
+    result = FcPatternGetString(setPtr->pattern, FC_FAMILY, 0, &family);
+    if (result != FcResultMatch) {
+        family = "fixed";
+    }
+    FcPatternAddString(pattern, FC_FAMILY, family);
+    /* Weight */
+    result = FcPatternGetInteger(pattern, FC_WEIGHT, 0, &weight);
+    if (result != FcResultMatch) {
+        weight = FC_WEIGHT_MEDIUM;
+    }
+    FcPatternAddInteger(pattern, FC_WEIGHT, weight);
+    /* Slant */
+    result = FcPatternGetInteger(pattern, FC_SLANT, 0, &slant);
+    if (result != FcResultMatch) {
+        slant = FC_SLANT_ROMAN;
+    }
+    FcPatternAddInteger(pattern, FC_SLANT, slant);
+    /* Width */
+    result = FcPatternGetInteger(setPtr->pattern, FC_WIDTH, 0, &width);
+    if (result != FcResultMatch) {
+        width = FC_WEIGHT_MEDIUM;
+    }
+    FcPatternAddInteger(pattern, FC_WIDTH, width);
+    /* Size */
     FcPatternAddDouble(pattern, FC_SIZE, size);
-    name = FcNameUnparse(pattern);
 
+    /* 
+     * XftFontMatch only sets *result* on complete match failures.  So
+     * initialize it here for a successful match. We'll accept partial
+     * matches.
+     */
+    result = FcResultMatch; 
+    matchingPattern = XftFontMatch(Tk_Display(tkwin), Tk_ScreenNumber(tkwin),
+                                   pattern, &result);
+    if (matchingPattern == NULL) {
+        fprintf(stderr, "doesn't match family=%s\n", family);
+        return NULL;
+    }
+    name = FcNameUnparse(matchingPattern);
     /* Check if we already have this font. */
     hPtr = Blt_CreateHashEntry(&fontSetTable, (char *)name, &isNew);
     free(name);
 
     if (!isNew) {
-        FcPatternDestroy(pattern);
+        FcPatternDestroy(matchingPattern);
         newPtr = Blt_GetHashValue(hPtr);
     } else {
         /* We don't have it. So see if we can open the font via the
          * modified new pattern. */
-        xftPtr = XftFontOpenPattern(fontPtr->display, pattern);
+        xftPtr = XftFontOpenPattern(fontPtr->display, matchingPattern);
         if (xftPtr == NULL) {
-            FcPatternDestroy(pattern);
+            FcPatternDestroy(matchingPattern);
+            fprintf(stderr, "Can't open font\n");
             return NULL;                    /* Can't open font using new
                                              * pattern. */
         }
@@ -2734,6 +2802,9 @@ ftFontDrawProc(
         return;                 /* Can't find instance at requested angle. */
     }
     xftPtr = Blt_GetHashValue(hPtr);
+#ifdef notdef
+    fprintf(stderr, "font is %s\n", FcNameUnparse(xftPtr->pattern));
+#endif
     if ((setPtr->draw == NULL) || (setPtr->drawDepth != depth)) {
         XftDraw *draw;
 

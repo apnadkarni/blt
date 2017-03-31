@@ -80,10 +80,11 @@ set id [.c create label 100 100 \
 	    -anchor nw \
 	    -textanchor c \
 	    -padx .2i \
+	    -font "Arial 13" \
 	    -activedashes 4 \
-	    -rotate 0 \
-	    -width 0 \
-	    -height 75]
+	    -rotate 45 \
+	    -width 200 \
+	    -height 0]
 
 blt::table . \
     0,0 .c -fill both
