@@ -250,8 +250,8 @@ Blt_RotateBitmap(
     root = Tk_RootWindow(tkwin);
 
     /* Create a bitmap and image big enough to contain the rotated text */
-    Blt_GetBoundingBox(srcWidth, srcHeight, angle, &rotWidth, &rotHeight,
-        (Point2d *)NULL);
+    Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, angle, 
+        &rotWidth, &rotHeight, (Point2d *)NULL);
     destWidth = ROUND(rotWidth);
     destHeight = ROUND(rotHeight);
     destBitmap = Blt_GetPixmap(display, root, destWidth, destHeight, 1);
@@ -560,8 +560,8 @@ Blt_ScaleRotateBitmapArea(
         regionHeight, 1, ZPixmap);
     angle = FMOD(angle, 360.0);
 
-    Blt_GetBoundingBox(srcWidth, srcHeight, angle, &rotWidth, &rotHeight,
-        (Point2d *)NULL);
+    Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, angle, 
+        &rotWidth, &rotHeight, (Point2d *)NULL);
 
     xScale = rotWidth / (double)destWidth;
     yScale = rotHeight / (double)destHeight;

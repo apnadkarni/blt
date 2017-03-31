@@ -360,8 +360,8 @@ BLT_EXTERN void		Blt_GetLineExtents(size_t numPoints, Point2d *points,
 #ifndef Blt_GetBoundingBox_DECLARED
 #define Blt_GetBoundingBox_DECLARED
 /* 59 */
-BLT_EXTERN void		Blt_GetBoundingBox(int width, int height,
-				float angle, double *widthPtr,
+BLT_EXTERN void		Blt_GetBoundingBox(double width, double height,
+				double angle, double *widthPtr,
 				double *heightPtr, Point2d *points);
 #endif
 #ifndef Blt_ParseTifTags_DECLARED
@@ -1516,7 +1516,7 @@ typedef struct BltTkIntProcs {
     void (*blt_ScreenDPI) (Tk_Window tkwin, int *xPtr, int *yPtr); /* 56 */
     int (*blt_OldConfigModified) (Tk_ConfigSpec *specs, ...); /* 57 */
     void (*blt_GetLineExtents) (size_t numPoints, Point2d *points, Region2d *r); /* 58 */
-    void (*blt_GetBoundingBox) (int width, int height, float angle, double *widthPtr, double *heightPtr, Point2d *points); /* 59 */
+    void (*blt_GetBoundingBox) (double width, double height, double angle, double *widthPtr, double *heightPtr, Point2d *points); /* 59 */
     int (*blt_ParseTifTags) (Tcl_Interp *interp, const char *varName, const unsigned char *bytes, off_t offset, size_t numBytes); /* 60 */
     Blt_Font (*blt_GetFont) (Tcl_Interp *interp, Tk_Window tkwin, const char *string); /* 61 */
     Blt_Font (*blt_AllocFontFromObj) (Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr); /* 62 */

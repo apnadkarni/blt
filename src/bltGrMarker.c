@@ -2637,8 +2637,8 @@ BitmapMapProc(Marker *markerPtr)
          * bitmap.  This is needed for backgrounds of arbitrarily rotated
          * bitmaps.  We also use it to print a background in PostScript.
          */
-        Blt_GetBoundingBox(srcWidth, srcHeight, bmPtr->angle, &rotWidth, 
-                           &rotHeight, polygon);
+        Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, bmPtr->angle, 
+                        &rotWidth, &rotHeight, polygon);
         xScale = (double)destWidth / rotWidth;
         yScale = (double)destHeight / rotHeight;
         
@@ -3343,7 +3343,8 @@ TextMapProc(Marker *markerPtr)
         return;
     }
     Blt_Ts_GetExtents(&tmPtr->style, tmPtr->string, &w, &h);
-    Blt_GetBoundingBox(w, h, tmPtr->style.angle, &rw, &rh, tmPtr->outlinePts);
+    Blt_GetBoundingBox((double)w, (double)h, tmPtr->style.angle, &rw, &rh, 
+                tmPtr->outlinePts);
     tmPtr->width = ROUND(rw);
     tmPtr->height = ROUND(rh);
     for (i = 0; i < 4; i++) {

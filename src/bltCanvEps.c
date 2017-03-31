@@ -1526,7 +1526,7 @@ DisplayProc(
         /* Translate the title to an anchor position within the EPS item */
         itemPtr->titleStyle.font = itemPtr->font;
         textPtr = Blt_Ts_CreateLayout(title, -1, &itemPtr->titleStyle);
-        Blt_GetBoundingBox(textPtr->width, textPtr->height, 
+        Blt_GetBoundingBox((double)textPtr->width, (double)textPtr->height, 
              itemPtr->titleStyle.angle, &rw, &rh, (Point2d *)NULL);
         dw = (int)ceil(rw);
         dh = (int)ceil(rh);

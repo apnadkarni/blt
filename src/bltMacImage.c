@@ -1421,8 +1421,8 @@ Blt_RotateBitmap(
 
     display = Tk_Display(tkwin);
     root = Tk_RootWindow(tkwin);
-    Blt_GetBoundingBox(srcWidth, srcHeight, angle, &rotWidth, &rotHeight,
-        (Point2d *)NULL);
+    Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, angle, 
+        &rotWidth, &rotHeight, (Point2d *)NULL);
 
     destWidth = (int)ceil(rotWidth);
     destHeight = (int)ceil(rotHeight);
@@ -1704,8 +1704,8 @@ Blt_ScaleRotateBitmapRegion(
     destHeight = regionHeight;
 
     angle = FMOD(angle, 360.0);
-    Blt_GetBoundingBox(srcWidth, srcHeight, angle, &rWidth, &rHeight,
-               (Point2d *)NULL);
+    Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, angle, 
+        &rWidth, &rHeight, (Point2d *)NULL);
     xScale = rWidth / (double)virtWidth;
     yScale = rHeight / (double)virtHeight;
 

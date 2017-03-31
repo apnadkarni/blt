@@ -72,12 +72,12 @@ proc Deactivate { canvas id } {
   $canvas itemconfigure $id -state normal -bg $bg1
   after cancel $afterId
 }
-.c create rectangle 100 100 300 200 -fill lightblue3
+.c create rectangle 100 100 300 200 -fill lightblue3 -tags "r"
 
 set id [.c create label 100 100 \
 	    -text "Hello, World" \
 	    -bg $bg1 \
-	    -activebg red3 -linewidth 2 \
+	    -activebg red3 -linewidth 0 \
 	    -anchor nw \
 	    -textanchor c \
 	    -padx .2i \
@@ -93,6 +93,10 @@ blt::table . \
 .c bind $id <Enter> [list Activate .c $id]
 .c bind $id <Leave> [list Deactivate .c $id]
 
-bind .c  <4>  { .c scale all 0 0 1.1 1.1 }
+bind .c  <4>  { 
+    .c scale all 0 0 1.1 1.1 
+    puts stderr "1=[.c bbox $id] [.c coords $id]"
+    puts stderr "2=[.c bbox r] [.c coords r]"
+}
 bind .c  <5>  { .c scale all 0 0 0.9 0.9 }
 

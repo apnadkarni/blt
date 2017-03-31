@@ -40,6 +40,8 @@
 
 #include "bltInt.h"
 
+#include "bltMath.h"
+
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
@@ -47,8 +49,6 @@
 #ifdef HAVE_FLOAT_H
   #include <float.h>
 #endif /* HAVE_FLOAT_H */
-
-#include "bltMath.h"
 
 #include <X11/Xutil.h>
 #include "bltAlloc.h"
@@ -3979,7 +3979,8 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 
             if (axisPtr->tickAngle != 0.0f) {
                 double rlw, rlh;        /* Rotated label width and height. */
-                Blt_GetBoundingBox(labelPtr->width, labelPtr->height, 
+                Blt_GetBoundingBox((double)labelPtr->width, 
+                        (double)labelPtr->height, 
                         axisPtr->tickAngle, &rlw, &rlh, NULL);
                 lw = ROUND(rlw), lh = ROUND(rlh);
             } else {
@@ -7166,7 +7167,8 @@ Blt_NearestAxis(Graph *graphPtr, int x, int y)
                 Point2d bbox[5];
 
                 labelPtr = Blt_Chain_GetValue(link);
-                Blt_GetBoundingBox(labelPtr->width, labelPtr->height, 
+                Blt_GetBoundingBox((double)labelPtr->width, 
+                        (double)labelPtr->height, 
                         axisPtr->tickAngle, &rw, &rh, bbox);
                 t = Blt_AnchorPoint(labelPtr->anchorPos.x, 
                         labelPtr->anchorPos.y, rw, rh, axisPtr->tickAnchor);
@@ -7187,7 +7189,8 @@ Blt_NearestAxis(Graph *graphPtr, int x, int y)
             unsigned int w, h;
 
             Blt_GetTextExtents(axisPtr->titleFont, 0, axisPtr->title,-1,&w,&h);
-            Blt_GetBoundingBox(w, h, axisPtr->titleAngle, &rw, &rh, bbox);
+            Blt_GetBoundingBox((double)w, (double)h, axisPtr->titleAngle, 
+                &rw, &rh, bbox);
             t = Blt_AnchorPoint(axisPtr->titlePos.x, axisPtr->titlePos.y, 
                 rw, rh, axisPtr->titleAnchor);
             /* Translate the point so that the 0,0 is the upper left 

@@ -18,8 +18,15 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
+/* Define to 1 if you have the `ceil' function. */
+#undef HAVE_CEIL
+
 /* Define to 1 if you have the <ctype.h> header file. */
 #undef HAVE_CTYPE_H
+
+/* Define to 1 if you have the declaration of `ceil', and to 0 if you don't.
+   */
+#undef HAVE_DECL_CEIL
 
 /* Define to 1 if you have the declaration of `drand48', and to 0 if you
    don't. */
@@ -28,6 +35,10 @@
 /* Define to 1 if you have the declaration of `finite', and to 0 if you don't.
    */
 #undef HAVE_DECL_FINITE
+
+/* Define to 1 if you have the declaration of `floor', and to 0 if you don't.
+   */
+#undef HAVE_DECL_FLOOR
 
 /* Define to 1 if you have the declaration of `free', and to 0 if you don't.
    */
@@ -47,6 +58,10 @@
 
 /* Define to 1 if you have the declaration of `j1', and to 0 if you don't. */
 #undef HAVE_DECL_J1
+
+/* Define to 1 if you have the declaration of `round', and to 0 if you don't.
+   */
+#undef HAVE_DECL_ROUND
 
 /* Define to 1 if you have the declaration of `snprintf', and to 0 if you
    don't. */
@@ -96,6 +111,9 @@
 
 /* Define to 1 if you have the <float.h> header file. */
 #undef HAVE_FLOAT_H
+
+/* Define to 1 if you have the `floor' function. */
+#undef HAVE_FLOOR
 
 /* Define to 1 if you have the <ft2build.h> header file. */
 #undef HAVE_FT2BUILD_H
@@ -228,6 +246,9 @@
 
 /* Define to 1 if you have the <pty.h> header file. */
 #undef HAVE_PTY_H
+
+/* Define to 1 if you have the `round' function. */
+#undef HAVE_ROUND
 
 /* Define to 1 if you have the <setjmp.h> header file. */
 #undef HAVE_SETJMP_H

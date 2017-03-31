@@ -237,8 +237,8 @@ Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text, unsigned int *widthPtr,
  */
 void
 Blt_GetBoundingBox(
-    int width, int height,              /* Unrotated region */
-    float angle,                        /* Rotation of box */
+    double width, double height,        /* Unrotated region */
+    double angle,                        /* Rotation of box */
     double *rotWidthPtr, 
     double *rotHeightPtr,               /* (out) Bounding box region */
     Point2d *bbox)                      /* (out) Points of the rotated
@@ -1010,7 +1010,7 @@ RotateStartingTextPositions(TextLayout *layoutPtr, int w, int h, float angle)
     double sinTheta, cosTheta;
     int i;
 
-    Blt_GetBoundingBox(w, h, angle, &rw, &rh, (Point2d *)NULL);
+    Blt_GetBoundingBox((double)w, (double)h, angle, &rw, &rh, (Point2d *)NULL);
     /* Offset to center of unrotated box. */
     off1.x = (double)w * 0.5;
     off1.y = (double)h * 0.5;
@@ -1061,7 +1061,7 @@ Blt_DrawTextWithRotatedFont(Tk_Window tkwin, Drawable drawable, float angle,
         w = stylePtr->maxLength;
     }
     RotateStartingTextPositions(layoutPtr, w, h, angle);
-    Blt_GetBoundingBox(w, h, angle, &rw, &rh, (Point2d *)NULL);
+    Blt_GetBoundingBox((double)w, (double)h, angle, &rw, &rh, (Point2d *)NULL);
     Blt_TranslateAnchor(x, y, (int)rw, (int)rh, stylePtr->anchor, &x, &y);
     if (stylePtr->state & (STATE_DISABLED | STATE_EMPHASIS)) {
         TkBorder *borderPtr = (TkBorder *)Blt_Bg_Border(stylePtr->bg);
@@ -1334,8 +1334,8 @@ Blt_DrawText2(
     if (angle != 0.0) {
         double rotWidth, rotHeight;
 
-        Blt_GetBoundingBox(width, height, angle, &rotWidth, &rotHeight, 
-           (Point2d *)NULL);
+        Blt_GetBoundingBox((double)width, (double)height, angle, 
+                &rotWidth, &rotHeight, (Point2d *)NULL);
         width = ROUND(rotWidth);
         height = ROUND(rotHeight);
     }

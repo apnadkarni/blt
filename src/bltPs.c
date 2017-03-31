@@ -1468,8 +1468,8 @@ Blt_Ps_DrawText(
         double rw, rh;
         
         angle = FMOD(tsPtr->angle, (double)360.0);
-        Blt_GetBoundingBox(textPtr->width, textPtr->height, angle, &rw, &rh, 
-        (Point2d *)NULL);
+        Blt_GetBoundingBox((double)textPtr->width, (double)textPtr->height, 
+                angle, &rw, &rh, (Point2d *)NULL);
         /*
          * Find the center of the bounding box
          */

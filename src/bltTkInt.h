@@ -395,7 +395,7 @@ BLT_EXTERN int Blt_OldConfigModified(Tk_ConfigSpec *specs, ...);
 BLT_EXTERN void Blt_GetLineExtents(size_t numPoints, Point2d *points, 
         Region2d *r);
 
-BLT_EXTERN void Blt_GetBoundingBox (int width, int height, float angle, 
+BLT_EXTERN void Blt_GetBoundingBox (double width, double height, double angle, 
         double *widthPtr, double *heightPtr, Point2d *points);
 
 BLT_EXTERN int Blt_ParseTifTags(Tcl_Interp *interp, const char *varName,

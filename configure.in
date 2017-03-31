@@ -431,9 +431,14 @@ else
 fi      
 AC_CHECK_HEADERS(limits.h sys/param.h)
 AC_CHECK_HEADERS(sys/types.h)
-AC_CHECK_HEADERS(fcntl.h signal.h time.h)
+AC_CHECK_HEADERS(fcntl.h)
+AC_CHECK_HEADERS(signal.h)
+AC_CHECK_HEADERS(time.h)
 AC_CHECK_HEADERS(string.h ctype.h)
-AC_CHECK_HEADERS(errno.h float.h math.h ieeefp.h)
+AC_CHECK_HEADERS(errno.h)
+AC_CHECK_HEADERS(float.h)
+AC_CHECK_HEADERS(math.h)
+AC_CHECK_HEADERS(ieeefp.h)
 AC_CHECK_HEADERS(sys/time.h waitflags.h sys/wait.h)
 AC_CHECK_HEADERS(malloc.h memory.h)
 AC_CHECK_HEADERS(pty.h)
@@ -567,7 +572,7 @@ fi
 #
 # -----------------------------------------------------------------------
 
-AC_HAVE_FUNCS(strtolower strcasecmp strncasecmp drand48 srand48 finite isnan)
+AC_HAVE_FUNCS(strtolower strcasecmp strncasecmp drand48 srand48 finite isnan ceil floor round)
 
 # For HPUX it's a little more complicated to search for isfinite
 AC_MSG_CHECKING([for isfinite])
@@ -638,6 +643,9 @@ main () {
 fi
 
 
+AC_CHECK_DECLS(ceil)
+AC_CHECK_DECLS(floor)
+AC_CHECK_DECLS(round)
 AC_CHECK_DECLS(drand48)
 AC_CHECK_DECLS(srand48)
 AC_CHECK_DECLS(j1,,,[
@@ -665,6 +673,7 @@ AC_CHECK_DECLS(finite,,,[
 #include <math.h>
 #endif
 ])
+
 AC_CHECK_DECLS(free)
 AC_CHECK_DECLS(snprintf)
 AC_CHECK_DECLS(vsnprintf)

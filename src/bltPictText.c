@@ -1184,7 +1184,8 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
             TextFragment *fp, *fend;
 
             Blt_RotateStartingTextPositions(layoutPtr, switches.angle);
-            Blt_GetBoundingBox(layoutPtr->width, layoutPtr->height, 
+            Blt_GetBoundingBox((double)layoutPtr->width, 
+                (double)layoutPtr->height, 
                 switches.angle, &rw, &rh, (Point2d *)NULL);
             Blt_TranslateAnchor(x, y, (int)(rw), (int)(rh), switches.anchor, 
                 &x, &y);

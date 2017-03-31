@@ -205,6 +205,18 @@ BLT_EXTERN int finite(double x);
 #endif /* !HAVE_DECL_FINITE */
 #endif /* HAVE_FINITE */
 
+#if !HAVE_DECL_CEIL
+BLT_EXTERN double ceil(double x);
+#endif /* !HAVE_DECL_CEIL */
+
+#if !HAVE_DECL_FLOOR
+BLT_EXTERN double floor(double x);
+#endif /* !HAVE_DECL_DRAND48 */
+
+#if !HAVE_DECL_ROUND
+BLT_EXTERN double round(double x);
+#endif /* !HAVE_DECL_ROUND */
+
 typedef struct {
     unsigned int value;
 } Blt_Random;

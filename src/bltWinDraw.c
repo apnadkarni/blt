@@ -2067,8 +2067,8 @@ Blt_DrawTextWithRotatedFont(
         return FALSE;
     }
     Blt_RotateStartingTextPositions(layoutPtr, angle);
-    Blt_GetBoundingBox(layoutPtr->width, layoutPtr->height, angle, 
-                &rotWidth, &rotHeight, (Point2d *)NULL);
+    Blt_GetBoundingBox((double)layoutPtr->width, (double)layoutPtr->height, 
+                angle, &rotWidth, &rotHeight, (Point2d *)NULL);
     Blt_TranslateAnchor(x, y, ROUND(rotWidth), ROUND(rotHeight), tsPtr->anchor, 
                 &x, &y);
 

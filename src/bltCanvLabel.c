@@ -58,6 +58,15 @@
  *      -height numPixels
  *      -anchor anchorName
  *      
+ * o Try to match rectangle item size on rescale.
+ * o Use XDrawRectangle for drawing right-angle rotations.
+ * o PostScriptProc.  Can it handle gradients?
+ * o Test -ellipsis flag
+ * o Figure out better minSize, maxSize to dynamically accommodate 
+ *   initialize font size better.
+ * o Does alwaysRedraw flag fix problem with clipped drawable?
+ * o Problem with snapping drawable.  
+ * o Write documentation
  */
 #define USE_OLD_CANVAS  1
 #define DEBUG 1
@@ -91,7 +100,7 @@
 #define ELLIPSIS                (1<<1)
 #define DISPLAY_TEXT            (1<<2)
 #define LABEL_GEOMETRY          (1<<3)
-#define SAVE_GEOMETRY           (1<<4)
+#define ORTHOGONAL              (1<<4)
 
 #define DEF_ACTIVE_DASHES               "0"
 #define DEF_ACTIVE_DASH_OFFSET          "0"
@@ -154,8 +163,8 @@ typedef struct {
     Tk_Window tkwin;
     Tk_Canvas canvas;                   /* Canvas containing the label item. */
     int textWidth, textHeight;		/* Unrotated dimensions of item. */
-    int width, height;			/* Possibly rotated dimensions of
-					 * item. */
+    double width, height;               /* Unrotated dimensions of the item. 
+                                         * Could be scaled. */
     double fontSize;			/* Current font size. */
 
     /* User configurable fields */
@@ -416,12 +425,12 @@ static Tk_ItemPointProc PointProc;
 static Tk_ItemConfigureProc ConfigureProc;
 static Tk_ItemCreateProc CreateProc;
 static Tk_ItemDeleteProc DeleteProc;
-static Tk_ItemDisplayProc DisplayProc;
 static Tk_ItemScaleProc ScaleProc;
 static Tk_ItemTranslateProc TranslateProc;
+static Tk_ItemDisplayProc DisplayProc;
 static Tk_ItemPostscriptProc PostScriptProc;
 
-static void ComputeGeometry(LabelItem *imgPtr);
+static void ComputeGeometry(LabelItem *itemPtr);
 
 
 /*
@@ -765,7 +774,7 @@ CreateProc(
     labelPtr->anchor = TK_ANCHOR_NW;
     labelPtr->canvas = canvas;
     labelPtr->display = Tk_Display(tkwin);
-    labelPtr->flags = LABEL_GEOMETRY | SAVE_GEOMETRY;
+    labelPtr->flags = LABEL_GEOMETRY;
     labelPtr->interp = interp;
     labelPtr->xScale = labelPtr->yScale = 1.0;
     labelPtr->state = TK_STATE_NORMAL;
@@ -833,6 +842,11 @@ ConfigureProc(
                               "-height", "-anchor", "-linewidth", "-text",
                               (char *)NULL)) {
         ComputeGeometry(labelPtr);
+    }
+    if (FMOD(labelPtr->angle, 90.0) == 0.0) {
+        labelPtr->flags |= ORTHOGONAL;
+    } else {
+        labelPtr->flags &= ~ORTHOGONAL;
     }
     if (labelPtr->text == NULL) {
         labelPtr->numBytes = 0;
@@ -948,6 +962,10 @@ ComputeGeometry(LabelItem *labelPtr)
     double w, h, rw, rh;
     int i;
 
+        Blt_Font font;
+        
+        font = (labelPtr->scaledFont != NULL) ?
+            labelPtr->scaledFont : labelPtr->baseFont;
 #if DEBUG
     fprintf(stderr, "Enter ComputeGeometry label=%s\n", labelPtr->text);
 #endif
@@ -956,10 +974,6 @@ ComputeGeometry(LabelItem *labelPtr)
     } else {
         TextStyle ts;
         TextLayout *layoutPtr;
-        Blt_Font font;
-        
-        font = (labelPtr->scaledFont != NULL) ?
-            labelPtr->scaledFont : labelPtr->baseFont;
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
         Blt_Ts_SetPadding(ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
@@ -973,11 +987,10 @@ ComputeGeometry(LabelItem *labelPtr)
         /* Let the requested width and height override the computed size. */
         w = (labelPtr->reqWidth > 0) ? labelPtr->reqWidth : layoutPtr->width;
         h = (labelPtr->reqHeight > 0) ? labelPtr->reqHeight : layoutPtr->height;
-    fprintf(stderr, "w=%g h=%g fontsize=%g pixelsize=%g\n", w, h,
-            Blt_Font_Size(font), Blt_Font_PixelSize(font));
     }
     labelPtr->width = labelPtr->xScale * w;
     labelPtr->height = labelPtr->yScale * h;
+    fprintf(stderr, "sw=%g sh=%g\n", labelPtr->width, labelPtr->height);
     /* Compute the outline polygon (isolateral or rectangle) given the
      * width and height. The center of the box is 0,0. */
     Blt_GetBoundingBox(labelPtr->width, labelPtr->height, labelPtr->angle, 
@@ -990,6 +1003,12 @@ ComputeGeometry(LabelItem *labelPtr)
      * rotated item. */
     labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
                                           labelPtr->anchor);
+    fprintf(stderr, "x1=%g y1=%g x2=%g y2=%g x2r=%g y2r=%g\n", 
+            labelPtr->anchorPos.x, labelPtr->anchorPos.y,
+            labelPtr->anchorPos.x + labelPtr->width, 
+            labelPtr->anchorPos.y + labelPtr->height,
+            labelPtr->anchorPos.x + labelPtr->rotWidth, 
+            labelPtr->anchorPos.y + labelPtr->rotHeight);
     for (i = 0; i < 4; i++) {
         labelPtr->outlinePts[i].x += rw * 0.5;
         labelPtr->outlinePts[i].y += rh * 0.5;
@@ -1068,8 +1087,8 @@ ComputeGeometry(LabelItem *labelPtr)
         }
     }
     labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x);
-    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
-    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y) + 1;
+    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 1;
+    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y);
     labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 1;
 }
 
@@ -1083,8 +1102,14 @@ MapItem(Tk_Canvas canvas, int x, int y, LabelItem *labelPtr)
 #endif
     /* Map the outline relative to the screen anchor point. */
     for (i = 0; i < 5; i++) {
-        labelPtr->points[i].x = ROUND(x + labelPtr->outlinePts[i].x);
-        labelPtr->points[i].y = ROUND(y + labelPtr->outlinePts[i].y);
+        short int x, y;
+
+        Tk_CanvasDrawableCoords(canvas, 
+             labelPtr->anchorPos.x + labelPtr->outlinePts[i].x, 
+             labelPtr->anchorPos.y + labelPtr->outlinePts[i].y, 
+             &x, &y);
+        labelPtr->points[i].x = x;
+        labelPtr->points[i].y = y;
     }
     labelPtr->flags &= ~LAYOUT_PENDING;
 }
@@ -1139,8 +1164,13 @@ DrawLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
         color.blue  = pixelPtr->Blue * 257;
         colorPtr = Tk_GetColorByValue(tkwin, &color);
         gc = Tk_GCForColor(colorPtr, drawable);
-        XFillPolygon(Tk_Display(tkwin), drawable, gc, labelPtr->points, 5, 
+        if (labelPtr->flags & ORTHOGONAL) {
+            XFillRectangle(Tk_Display(tkwin), drawable, gc, x, y, 
+                ROUND(labelPtr->width), ROUND(labelPtr->height));
+        } else {
+            XFillPolygon(Tk_Display(tkwin), drawable, gc, labelPtr->points, 5, 
                 Convex, CoordModeOrigin);
+        }
         return;
     }
     w = ROUND(labelPtr->rotWidth);
@@ -1161,105 +1191,6 @@ DrawLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
     Blt_FreePicture(picture);
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * DisplayProc --
- *
- *      This procedure is invoked to draw the label item in a given
- *      drawable.
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      ItemPtr is drawn in drawable using the transformation information in
- *      canvas.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DisplayProc(
-    Tk_Canvas canvas,                   /* Canvas that contains item. */
-    Tk_Item *itemPtr,                   /* Item to be displayed. */
-    Display *display,                   /* Display on which to draw item. */
-    Drawable drawable,                  /* Pixmap or window in which to
-                                         * draw item. */
-    int rx, int ry, 
-    int rw, int rh)                     /* Describes region of canvas that
-                                         * must be redisplayed. */
-{
-    LabelItem *labelPtr = (LabelItem *)itemPtr;
-    Tk_Window tkwin;
-    GC gc;
-    Blt_PaintBrush brush;
-    short int x, y;
-    TkRegion clipRegion;
-
-#if DEBUG
-    fprintf(stderr, "Enter DisplayProc rx=%d, ry=%d, rw=%d rh=%d\n",
-            rx, ry, rw, rh);
-#endif
-    if (labelPtr->state == TK_STATE_HIDDEN) {
-        fprintf(stderr, "item is hidden\n");
-        return;                         /* Item is hidden. */
-    }
-    /* Convert anchor from world coordinates to screen. */
-    Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
-                            labelPtr->anchorPos.y, &x, &y);
-    MapItem(canvas, x, y, labelPtr);
-#ifdef notdef
-    if (!LabelInsideRegion(labelPtr, rx, ry, rw, rh)) {
-        return;
-    }
-#endif
-    tkwin = Tk_CanvasTkwin(canvas);
-
-    clipRegion = (TkRegion)XPolygonRegion(labelPtr->points, 5, EvenOddRule);
-    brush = NULL;
-    gc = NULL;
-    switch (labelPtr->state) {
-    case TK_STATE_DISABLED:
-        brush = labelPtr->disabledBrush;  
-        gc = labelPtr->disabledLabelGC->gc;  
-        break;
-    case TK_STATE_ACTIVE:
-        brush = labelPtr->activeBrush;  
-        gc = labelPtr->activeLabelGC->gc;    
-        break;
-    case TK_STATE_NORMAL:
-        brush = labelPtr->normalBrush;   
-        gc = labelPtr->normalLabelGC->gc;    
-        break;
-    case TK_STATE_HIDDEN:
-        break;
-    }
-    assert(gc != NULL);
-    TkSetRegion(display, gc, clipRegion);
-    if (brush != NULL) {                /* Background polygon */
-        DrawLabelBackground(tkwin, drawable, labelPtr, x, y, brush);
-    }
-    if (labelPtr->lineWidth > 0) {      /* Outline */
-        XDrawLines(display, drawable, gc, labelPtr->points, 5, CoordModeOrigin);
-    }
-    if (labelPtr->text != NULL) {       /* Text itself */
-        Blt_Font font;
-        int maxLength;
-        short int x, y;
-
-        Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
-                            labelPtr->anchorPos.y, &x, &y);
-        maxLength = (labelPtr->flags & ELLIPSIS) ? labelPtr->width : -1;
-        font = (labelPtr->scaledFont) ?
-            labelPtr->scaledFont : labelPtr->baseFont;
-        Blt_Font_SetClipRegion(font, clipRegion);
-        XSetFont(display, gc, Blt_Font_Id(font));
-        Blt_DrawLayout(tkwin, drawable, gc, font, Tk_Depth(tkwin),
-            labelPtr->angle, x, y, labelPtr->layoutPtr, maxLength);
-    }
-    XSetClipMask(display, gc, None);
-    TkDestroyRegion(clipRegion);
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -1520,6 +1451,121 @@ TranslateProc(
 /*
  *---------------------------------------------------------------------------
  *
+ * DisplayProc --
+ *
+ *      This procedure is invoked to draw the label item in a given
+ *      drawable.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      ItemPtr is drawn in drawable using the transformation information in
+ *      canvas.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DisplayProc(
+    Tk_Canvas canvas,                   /* Canvas that contains item. */
+    Tk_Item *itemPtr,                   /* Item to be displayed. */
+    Display *display,                   /* Display on which to draw item. */
+    Drawable drawable,                  /* Pixmap or window in which to
+                                         * draw item. */
+    int rx, int ry, 
+    int rw, int rh)                     /* Describes region of canvas that
+                                         * must be redisplayed. */
+{
+    LabelItem *labelPtr = (LabelItem *)itemPtr;
+    Tk_Window tkwin;
+    GC gc;
+    Blt_PaintBrush brush;
+    short int x, y;
+    TkRegion clipRegion;
+
+#if DEBUG
+    fprintf(stderr, "Enter DisplayProc rx=%d, ry=%d, rw=%d rh=%d\n",
+            rx, ry, rw, rh);
+#endif
+    if (labelPtr->state == TK_STATE_HIDDEN) {
+        fprintf(stderr, "item is hidden\n");
+        return;                         /* Item is hidden. */
+    }
+    /* Convert anchor from world coordinates to screen. */
+    Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
+                            labelPtr->anchorPos.y, &x, &y);
+    MapItem(canvas, x, y, labelPtr);
+#ifdef notdef
+    if (!LabelInsideRegion(labelPtr, rx, ry, rw, rh)) {
+        return;
+    }
+#endif
+    tkwin = Tk_CanvasTkwin(canvas);
+
+    if (labelPtr->flags & ORTHOGONAL) {
+        XRectangle rect;
+
+        rect.x = x;
+        rect.y = y;
+        rect.width = x + ROUND(labelPtr->width) + 10;
+        rect.height = y + ROUND(labelPtr->height) + 10;
+        clipRegion = TkCreateRegion();
+        TkUnionRectWithRegion(&rect, clipRegion, clipRegion);
+    } else {
+        clipRegion = (TkRegion)XPolygonRegion(labelPtr->points, 5, EvenOddRule);
+    }
+    brush = NULL;
+    gc = NULL;
+    switch (labelPtr->state) {
+    case TK_STATE_DISABLED:
+        brush = labelPtr->disabledBrush;  
+        gc = labelPtr->disabledLabelGC->gc;  
+        break;
+    case TK_STATE_ACTIVE:
+        brush = labelPtr->activeBrush;  
+        gc = labelPtr->activeLabelGC->gc;    
+        break;
+    case TK_STATE_NORMAL:
+        brush = labelPtr->normalBrush;   
+        gc = labelPtr->normalLabelGC->gc;    
+        break;
+    case TK_STATE_HIDDEN:
+        break;
+    }
+    assert(gc != NULL);
+#ifdef notdef
+    TkSetRegion(display, gc, clipRegion);
+#endif
+    if (brush != NULL) {                /* Background polygon */
+        DrawLabelBackground(tkwin, drawable, labelPtr, x, y, brush);
+    }
+    if (labelPtr->lineWidth > 0) {      /* Outline */
+        XDrawLines(display, drawable, gc, labelPtr->points, 5, CoordModeOrigin);
+    }
+    if (labelPtr->text != NULL) {       /* Text itself */
+        Blt_Font font;
+        int maxLength;
+        short int x, y;
+
+        Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
+                            labelPtr->anchorPos.y, &x, &y);
+        maxLength = (labelPtr->flags & ELLIPSIS) ? labelPtr->width : -1;
+        font = (labelPtr->scaledFont) ?
+            labelPtr->scaledFont : labelPtr->baseFont;
+#ifdef notdef
+        Blt_Font_SetClipRegion(font, clipRegion);
+#endif
+        XSetFont(display, gc, Blt_Font_Id(font));
+        Blt_DrawLayout(tkwin, drawable, gc, font, Tk_Depth(tkwin),
+            labelPtr->angle, x, y, labelPtr->layoutPtr, maxLength);
+    }
+    XSetClipMask(display, gc, None);
+    TkDestroyRegion(clipRegion);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * PostScriptProc --
  *
  *      This procedure is called to generate PostScript for label items.
@@ -1608,7 +1654,7 @@ static Tk_ItemType itemType = {
     CoordsProc,
     DeleteProc,
     DisplayProc,
-    0,                                  /* alwaysRedraw */
+    1,                                  /* alwaysRedraw */
     PointProc,
     AreaProc,
     PostScriptProc,
