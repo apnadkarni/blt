@@ -2698,7 +2698,7 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (corePtr->brush != NULL) {
         Tcl_SetStringObj(Tcl_GetObjResult(interp),
-                     Blt_GetBrushType(corePtr->brush), -1);
+                     Blt_GetBrushTypeName(corePtr->brush), -1);
     }
     return TCL_OK;
 }

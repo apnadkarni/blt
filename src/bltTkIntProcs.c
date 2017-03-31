@@ -83,9 +83,9 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_NewRadialGradientBrush, /* 73 */
     Blt_NewConicalGradientBrush, /* 74 */
     Blt_NewColorBrush, /* 75 */
-    Blt_GetBrushType, /* 76 */
+    Blt_GetBrushTypeName, /* 76 */
     Blt_GetBrushName, /* 77 */
-    Blt_GetBrushColor, /* 78 */
+    Blt_GetBrushColorName, /* 78 */
     Blt_ConfigurePaintBrush, /* 79 */
     Blt_GetBrushTypeFromObj, /* 80 */
     Blt_FreeBrush, /* 81 */

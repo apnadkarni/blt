@@ -427,9 +427,11 @@ BLT_EXTERN Blt_PaintBrush Blt_NewRadialGradientBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewConicalGradientBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewColorBrush(unsigned int color);
 
-BLT_EXTERN const char *Blt_GetBrushType(Blt_PaintBrush brush);
+BLT_EXTERN const char *Blt_GetBrushTypeName(Blt_PaintBrush brush);
 BLT_EXTERN const char *Blt_GetBrushName(Blt_PaintBrush brush);
-BLT_EXTERN const char *Blt_GetBrushColor(Blt_PaintBrush brush);
+BLT_EXTERN const char *Blt_GetBrushColorName(Blt_PaintBrush brush);
+BLT_EXTERN Blt_Pixel *Blt_GetBrushPixel(Blt_PaintBrush brush);
+BLT_EXTERN Blt_PaintBrushType Blt_GetBrushType(Blt_PaintBrush brush);
 
 BLT_EXTERN int Blt_ConfigurePaintBrush(Tcl_Interp *interp,
         Blt_PaintBrush brush);

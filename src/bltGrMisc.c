@@ -820,6 +820,12 @@ typedef struct {
                            (c)->green = (int)((g) * 65535.0), \
                            (c)->blue = (int)((b) * 65535.0))
 
+void
+Blt_PixelToXColor(Blt_Pixel *pixelPtr, XColor *colorPtr)
+{
+    SetColor(colorPtr, pixelPtr->Red, pixelPtr->Green, pixelPtr->Blue);
+}
+
 #ifdef notdef
 void
 Blt_XColorToHSV(XColor *colorPtr, HSV *hsvPtr)

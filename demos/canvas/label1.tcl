@@ -34,8 +34,9 @@ set autocolors {
 #EFFFD8
 }
 
-set bg1 [blt::paintbrush create color -color blue -opacity 30]
-set bg1 [blt::paintbrush create linear -jitter 3 \
+set bg1 grey90
+set bg2 [blt::paintbrush create color -color blue -opacity 30]
+set bg3 [blt::paintbrush create linear -jitter 3 \
 	     -colorscale linear \
 	     -from w \
 	     -to e \
@@ -82,9 +83,9 @@ set id [.c create label 100 100 \
 	    -padx .2i \
 	    -font "Arial 13" \
 	    -activedashes 4 \
-	    -rotate 45 \
+	    -rotate 0 \
 	    -width 200 \
-	    -height 0]
+	    -height 30]
 
 blt::table . \
     0,0 .c -fill both

@@ -456,20 +456,20 @@ BLT_EXTERN Blt_PaintBrush Blt_NewConicalGradientBrush(void );
 /* 75 */
 BLT_EXTERN Blt_PaintBrush Blt_NewColorBrush(unsigned int color);
 #endif
-#ifndef Blt_GetBrushType_DECLARED
-#define Blt_GetBrushType_DECLARED
+#ifndef Blt_GetBrushTypeName_DECLARED
+#define Blt_GetBrushTypeName_DECLARED
 /* 76 */
-BLT_EXTERN const char *	 Blt_GetBrushType(Blt_PaintBrush brush);
+BLT_EXTERN const char *	 Blt_GetBrushTypeName(Blt_PaintBrush brush);
 #endif
 #ifndef Blt_GetBrushName_DECLARED
 #define Blt_GetBrushName_DECLARED
 /* 77 */
 BLT_EXTERN const char *	 Blt_GetBrushName(Blt_PaintBrush brush);
 #endif
-#ifndef Blt_GetBrushColor_DECLARED
-#define Blt_GetBrushColor_DECLARED
+#ifndef Blt_GetBrushColorName_DECLARED
+#define Blt_GetBrushColorName_DECLARED
 /* 78 */
-BLT_EXTERN const char *	 Blt_GetBrushColor(Blt_PaintBrush brush);
+BLT_EXTERN const char *	 Blt_GetBrushColorName(Blt_PaintBrush brush);
 #endif
 #ifndef Blt_ConfigurePaintBrush_DECLARED
 #define Blt_ConfigurePaintBrush_DECLARED
@@ -1533,9 +1533,9 @@ typedef struct BltTkIntProcs {
     Blt_PaintBrush (*blt_NewRadialGradientBrush) (void); /* 73 */
     Blt_PaintBrush (*blt_NewConicalGradientBrush) (void); /* 74 */
     Blt_PaintBrush (*blt_NewColorBrush) (unsigned int color); /* 75 */
-    const char * (*blt_GetBrushType) (Blt_PaintBrush brush); /* 76 */
+    const char * (*blt_GetBrushTypeName) (Blt_PaintBrush brush); /* 76 */
     const char * (*blt_GetBrushName) (Blt_PaintBrush brush); /* 77 */
-    const char * (*blt_GetBrushColor) (Blt_PaintBrush brush); /* 78 */
+    const char * (*blt_GetBrushColorName) (Blt_PaintBrush brush); /* 78 */
     int (*blt_ConfigurePaintBrush) (Tcl_Interp *interp, Blt_PaintBrush brush); /* 79 */
     int (*blt_GetBrushTypeFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_PaintBrushType *typePtr); /* 80 */
     void (*blt_FreeBrush) (Blt_PaintBrush brush); /* 81 */
@@ -2015,17 +2015,17 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_NewColorBrush \
 	(bltTkIntProcsPtr->blt_NewColorBrush) /* 75 */
 #endif
-#ifndef Blt_GetBrushType
-#define Blt_GetBrushType \
-	(bltTkIntProcsPtr->blt_GetBrushType) /* 76 */
+#ifndef Blt_GetBrushTypeName
+#define Blt_GetBrushTypeName \
+	(bltTkIntProcsPtr->blt_GetBrushTypeName) /* 76 */
 #endif
 #ifndef Blt_GetBrushName
 #define Blt_GetBrushName \
 	(bltTkIntProcsPtr->blt_GetBrushName) /* 77 */
 #endif
-#ifndef Blt_GetBrushColor
-#define Blt_GetBrushColor \
-	(bltTkIntProcsPtr->blt_GetBrushColor) /* 78 */
+#ifndef Blt_GetBrushColorName
+#define Blt_GetBrushColorName \
+	(bltTkIntProcsPtr->blt_GetBrushColorName) /* 78 */
 #endif
 #ifndef Blt_ConfigurePaintBrush
 #define Blt_ConfigurePaintBrush \

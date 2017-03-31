@@ -92,7 +92,7 @@ typedef void (PaintBrushRegionProc)(Blt_PaintBrush brush, int x, int y,
         int w, int h);
 
 struct _Blt_PaintBrushClass {
-    int type;
+    Blt_PaintBrushType type;
     const char *name;                   /* Class name of paintbrush. */
     PaintBrushConfigProc *configProc;
     PaintBrushRegionProc *initProc;
@@ -2073,11 +2073,19 @@ ConicalGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 }
 
 const char *
-Blt_GetBrushType(Blt_PaintBrush brush)
+Blt_GetBrushTypeName(Blt_PaintBrush brush)
 {
     PaintBrush *brushPtr = (PaintBrush *)brush;
     return brushPtr->classPtr->name;
 }
+
+Blt_PaintBrushType
+Blt_GetBrushType(Blt_PaintBrush brush)
+{
+    PaintBrush *brushPtr = (PaintBrush *)brush;
+    return brushPtr->classPtr->type;
+}
+
 
 int 
 Blt_GetBrushTypeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
@@ -2369,6 +2377,7 @@ Blt_NewColorBrush(unsigned int color)
     brushPtr->refCount = 1;
     brushPtr->classPtr = &colorBrushClass;
     brushPtr->color.u32 = color;
+    brushPtr->reqColor.u32 = color;
     brushPtr->alpha = brushPtr->color.Alpha;
     Blt_PremultiplyColor(&brushPtr->color);
     JitterInit(&brushPtr->jitter);
@@ -2695,7 +2704,7 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaintBrushCmdFromObj(interp, dataPtr, objv[2], &cmdPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    objPtr = Tcl_NewStringObj(Blt_GetBrushType(cmdPtr->brush), -1);
+    objPtr = Tcl_NewStringObj(Blt_GetBrushTypeName(cmdPtr->brush), -1);
     Tcl_SetObjResult(interp, objPtr);
     return TCL_OK;
 }
@@ -3125,7 +3134,7 @@ Blt_GetBrushName(Blt_PaintBrush brush)
 }
 
 const char *
-Blt_GetBrushColor(Blt_PaintBrush brush)
+Blt_GetBrushColorName(Blt_PaintBrush brush)
 {
      Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
      
@@ -3133,6 +3142,17 @@ Blt_GetBrushColor(Blt_PaintBrush brush)
          return "???";
      }
      return Blt_NameOfPixel(&brushPtr->reqColor);
+}
+
+Blt_Pixel *
+Blt_GetBrushPixel(Blt_PaintBrush brush)
+{
+     Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
+     
+     if (brushPtr->classPtr->type != BLT_PAINTBRUSH_COLOR) {
+         return NULL;
+     }
+     return &brushPtr->reqColor;
 }
 
 void

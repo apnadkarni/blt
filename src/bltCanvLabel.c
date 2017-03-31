@@ -616,7 +616,7 @@ GetLabelGC(Tk_Window tkwin, XColor *colorPtr, int lineWidth, int dashes,
         
         gcMask = GCForeground | GCLineWidth;
         gcValues.foreground = colorPtr->pixel;
-        gcValues.line_width = lineWidth;
+         gcValues.line_width = lineWidth;
         if (dashes > 0) {
             gcMask |= (GCLineStyle | GCDashList | GCDashOffset);
             gcValues.line_style = LineOnOffDash;
@@ -1117,8 +1117,8 @@ LabelInsideRegion(LabelItem *labelPtr, int rx, int ry, int rw, int rh)
  *---------------------------------------------------------------------------
  */
 static void
-PaintLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
-                     int x, int y, Blt_PaintBrush brush)
+DrawLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
+                    int x, int y, Blt_PaintBrush brush)
 {
     Blt_Painter painter;
     Blt_Picture picture;
@@ -1126,6 +1126,23 @@ PaintLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
     int i;
     int w, h;
 
+    if ((Blt_GetBrushType(brush) == BLT_PAINTBRUSH_COLOR) &&
+        (Blt_GetBrushAlpha(brush) == 0xFF)) {
+        GC gc;
+        XColor color, *colorPtr;
+        Blt_Pixel *pixelPtr;
+
+        pixelPtr = Blt_GetBrushPixel(brush);
+
+        color.red   = pixelPtr->Red * 257;
+        color.green = pixelPtr->Green * 257;
+        color.blue  = pixelPtr->Blue * 257;
+        colorPtr = Tk_GetColorByValue(tkwin, &color);
+        gc = Tk_GCForColor(colorPtr, drawable);
+        XFillPolygon(Tk_Display(tkwin), drawable, gc, labelPtr->points, 5, 
+                Convex, CoordModeOrigin);
+        return;
+    }
     w = ROUND(labelPtr->rotWidth);
     h = ROUND(labelPtr->rotHeight);
     picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
@@ -1220,7 +1237,7 @@ DisplayProc(
     assert(gc != NULL);
     TkSetRegion(display, gc, clipRegion);
     if (brush != NULL) {                /* Background polygon */
-        PaintLabelBackground(tkwin, drawable, labelPtr, x, y, brush);
+        DrawLabelBackground(tkwin, drawable, labelPtr, x, y, brush);
     }
     if (labelPtr->lineWidth > 0) {      /* Outline */
         XDrawLines(display, drawable, gc, labelPtr->points, 5, CoordModeOrigin);

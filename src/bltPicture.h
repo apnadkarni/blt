@@ -417,6 +417,7 @@ BLT_EXTERN int Blt_SnapPicture(Tcl_Interp *interp, Tk_Window tkwin,
         Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, 
         const char *imageName, float gamma);
 BLT_EXTERN unsigned int Blt_XColorToPixel(XColor *colorPtr);
+BLT_EXTERN void Blt_PixelToXColor(Blt_Pixel *pixelPtr, XColor *colorPtr);
 BLT_EXTERN int Blt_IsPicture(Tk_Image tkImage);
 BLT_EXTERN struct _Blt_Chain *Blt_GetPicturesFromPictureImage(
         Tcl_Interp *interp, Tk_Image tkImage);
