@@ -3175,3 +3175,20 @@ Blt_IsVerticalLinearBrush(Blt_PaintBrush brush)
     }
     return 0;
 }
+
+XColor *
+Blt_GetXColorFromBrush(Tk_Window tkwin, Blt_PaintBrush brush)
+{
+    Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
+    XColor *colorPtr;
+    XColor color;
+    
+    if (brushPtr->classPtr->type != BLT_PAINTBRUSH_COLOR) {
+        return NULL;
+    }
+    color.red   = brushPtr->reqColor.Red * 257;
+    color.green = brushPtr->reqColor.Green * 257;
+    color.blue  = brushPtr->reqColor.Blue * 257;
+    colorPtr = Tk_GetColorByValue(tkwin, &color);
+    return colorPtr;
+}

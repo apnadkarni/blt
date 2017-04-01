@@ -99,37 +99,39 @@
 #define LAYOUT_PENDING          (1<<0)
 #define ELLIPSIS                (1<<1)
 #define DISPLAY_TEXT            (1<<2)
-#define LABEL_GEOMETRY          (1<<3)
-#define ORTHOGONAL              (1<<4)
+#define ORTHOGONAL              (1<<3)
+#define CLIP                    (1<<4)
 
 #define DEF_ACTIVE_DASHES               "0"
 #define DEF_ACTIVE_DASH_OFFSET          "0"
 #define DEF_ACTIVE_FILL_COLOR           (char *)NULL
+#define DEF_ACTIVE_LINEWIDTH            "0"
 #define DEF_ACTIVE_OUTLINE_COLOR        STD_ACTIVE_FOREGROUND
 #define DEF_ANCHOR                      "nw"
 #define DEF_DISABLED_DASHES             "0"
 #define DEF_DISABLED_DASH_OFFSET        "0"
 #define DEF_DISABLED_FILL_COLOR         (char *)NULL
+#define DEF_DISABLED_LINEWIDTH          "0"
 #define DEF_DISABLED_OUTLINE_COLOR      STD_DISABLED_FOREGROUND
 #define DEF_FONT                        STD_FONT_NORMAL
 #define DEF_HEIGHT                      "0"
-#define DEF_LINEWIDTH                   "0"
 #define DEF_MAXFONTSIZE                 "-1"
 #define DEF_MINFONTSIZE                 "-1"
 #define DEF_NORMAL_DASHES               "0"
 #define DEF_NORMAL_DASH_OFFSET          "0"
 #define DEF_NORMAL_FILL_COLOR           (char *)NULL
+#define DEF_NORMAL_LINEWIDTH            "0"
 #define DEF_NORMAL_OUTLINE_COLOR        STD_NORMAL_FOREGROUND
 #define DEF_PADX                        "2"
 #define DEF_PADY                        "2"
 #define DEF_ROTATE                      "0"
-#define DEF_XSCALE                      "1.0"
-#define DEF_YSCALE                      "1.0"
 #define DEF_STATE                       "normal"
 #define DEF_TAGS                        (char *)NULL
 #define DEF_TEXT                        (char *)NULL
 #define DEF_TEXTANCHOR                  "center"
 #define DEF_WIDTH                       "0"
+#define DEF_XSCALE                      "1.0"
+#define DEF_YSCALE                      "1.0"
 
 /* Key that uniquely describes the label's GC. */
 typedef struct {
@@ -145,6 +147,21 @@ typedef struct {
     GC gc;
     Blt_HashEntry *hashPtr;
 } LabelGC;
+
+typedef  struct {
+    int dashes;                         /* Dashes on/off pattern. If zero,
+                                         * outline is drawn solid. */
+    int dashOffset;                     /* Offset of dash pattern. This is
+                                         * used to create the "marching
+                                         * ants" effect. */
+    int lineWidth;                      /* Line width of outline. If zero,
+                                         * no outline is drawn. */
+    XColor *fgColor;                    /* Outline and text color. */
+    XColor *bgColor;                    /* Fill color. */
+    Blt_PaintBrush brush;               /* Fill background color. */
+    LabelGC *labelGC;                   /* Graphics context to draw text
+                                         * and outline. */
+}  StateAttributes;
 
 /* Global table of label GCs, shared among all the label items. */
 static Blt_HashTable gcTable;
@@ -185,40 +202,18 @@ typedef struct {
                                          * override the dimension computed
                                          * from the normal size of the
                                          * text. */
-    int lineWidth;                      /* If greater than zero, indicates
-                                         * to draw the outline around the
-                                         * text and the width of the
-                                         * line. */
     Blt_Pad xPad, yPad;                 /* Horizonal and vertical padding
                                          * around the label's text (adds to
                                          * the width and height of the
                                          * background. */
-    int state;                          /* State of item: TK_STATE_HIDDEN, 
-                                         * TK_STATE_NORMAL, TK_STATE_ACTIVE,
-                                         * or TK_STATE_DISABLED */
-    int normalDashes;
-    int disabledDashes;
-    int activeDashes;
-    int normalDashOffset;
-    int disabledDashOffset;
-    int activeDashOffset;
+    int state;                          /* State of item: TK_STATE_HIDDEN,
+                                         * TK_STATE_NORMAL,
+                                         * TK_STATE_ACTIVE, or
+                                         * TK_STATE_DISABLED. Selects one of
+                                         * the attributes structures
+                                         * below. */
+    StateAttributes normal, active, disabled;
 
-    XColor *normalFg;                   /* Text and outline color of
-                                         * normally displayed label
-                                         * item. */
-    XColor *disabledFg;                 /* Disabled label text and outline
-                                         * color. */
-    XColor *activeFg;                   /* Active label text and outline
-                                         * color. */
-    Blt_PaintBrush normalBrush;         /* If non-NULL, fill background
-                                         * color. Otherwise the background
-                                         * is transparent. */
-    Blt_PaintBrush disabledBrush;       /* If non-NULL, disabled fill
-                                         * background color. Otherwise uses
-                                         * the normal background color. */
-    Blt_PaintBrush activeBrush;         /* If non-NULL, active fill
-                                         * background color. Otherwise uses
-                                         * normal the background color. */
     const char *text;			/* Text string to be displayed.
 					 * The string may contain newlines,
 					 * but not tabs. */
@@ -227,14 +222,6 @@ typedef struct {
     Blt_Font baseFont;                  /* Base font for item.  This is the
                                          * unscaled font. */
     /* Computed values. */
-    LabelGC *normalLabelGC;             /* Graphics context to draw
-                                         * text and outline normally. */
-    LabelGC *disabledLabelGC;           /* Graphics context to draw a
-                                         * disabled label's text and
-                                         * outline. */
-    LabelGC *activeLabelGC;             /* Graphics context to draw a
-                                         * active label's text and
-                                         * outline. */
     Blt_Font scaledFont;                /* If non-NULL, is the base font at
                                          * the current scale factor. */
     double rotWidth, rotHeight;         /* Rotated width and height of
@@ -316,20 +303,23 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_SYNONYM, (char *)"-activebackground", "activeFill", 
         (char *)NULL, (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-activedashes", (char *)NULL, (char *)NULL,  
-        DEF_ACTIVE_DASHES, Tk_Offset(LabelItem, activeDashes), 
+        DEF_ACTIVE_DASHES, Tk_Offset(LabelItem, active.dashes), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_CUSTOM, (char *)"-activedashoffset", (char *)NULL, (char *)NULL, 
-        DEF_ACTIVE_DASH_OFFSET, Tk_Offset(LabelItem, activeDashOffset), 
+        DEF_ACTIVE_DASH_OFFSET, Tk_Offset(LabelItem, active.dashOffset), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_SYNONYM, (char *)"-activefg", "activeOutline", 
         (char *)NULL, (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-activefill", "activeFill", (char *)NULL,
-        DEF_ACTIVE_FILL_COLOR, Tk_Offset(LabelItem, activeBrush), 
+        DEF_ACTIVE_FILL_COLOR, Tk_Offset(LabelItem, active.brush), 
         TK_CONFIG_NULL_OK, &brushOption},
     {TK_CONFIG_SYNONYM, (char *)"-activeforeground", "activeOutline", 
         (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_CUSTOM, (char *)"-activelinewidth", (char *)NULL, (char *)NULL,
+        DEF_ACTIVE_LINEWIDTH, Tk_Offset(LabelItem, active.lineWidth),
+        TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_COLOR, (char *)"-activeoutline", "activeOutline", (char *)NULL,
-        DEF_ACTIVE_OUTLINE_COLOR, Tk_Offset(LabelItem, activeFg)},
+        DEF_ACTIVE_OUTLINE_COLOR, Tk_Offset(LabelItem, active.fgColor)},
     {TK_CONFIG_ANCHOR, (char *)"-anchor", (char *)NULL, (char *)NULL,
         DEF_ANCHOR, Blt_Offset(LabelItem, anchor), TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_SYNONYM, (char *)"-bg", "fill", (char *)NULL, (char *)NULL, 
@@ -337,34 +327,37 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_SYNONYM, (char *)"-background", "fill", (char *)NULL, 
         (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-dashes", (char *)NULL, (char *)NULL,  
-        DEF_NORMAL_DASHES, Blt_Offset(LabelItem, normalDashes), 
+        DEF_NORMAL_DASHES, Blt_Offset(LabelItem, normal.dashes), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_CUSTOM, (char *)"-dashoffset", (char *)NULL, (char *)NULL,  
-        DEF_NORMAL_DASH_OFFSET, Tk_Offset(LabelItem, normalDashOffset), 
+        DEF_NORMAL_DASH_OFFSET, Tk_Offset(LabelItem, normal.dashOffset), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_SYNONYM, (char *)"-disabledbg", "disabledFill", (char *)NULL, 
         (char *)NULL, 0, 0},
     {TK_CONFIG_SYNONYM, (char *)"-disabledbackground", "disabledFill", 
         (char *)NULL, (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-disableddashes", (char *)NULL, (char *)NULL,  
-        DEF_DISABLED_DASHES, Tk_Offset(LabelItem, disabledDashes), 
+        DEF_DISABLED_DASHES, Tk_Offset(LabelItem, disabled.dashes), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_CUSTOM, (char *)"-disableddashoffset", (char *)NULL, 
         (char *)NULL,  DEF_ACTIVE_DASH_OFFSET, 
-        Blt_Offset(LabelItem, disabledDashOffset), TK_CONFIG_DONT_SET_DEFAULT, 
+        Blt_Offset(LabelItem, disabled.dashOffset), TK_CONFIG_DONT_SET_DEFAULT, 
         &bltDistanceOption},
     {TK_CONFIG_SYNONYM, (char *)"-disabledfg", "disabledOutline", (char *)NULL, 
         (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-disabledfill", "disabledFill", (char *)NULL,
-        DEF_DISABLED_FILL_COLOR, Tk_Offset(LabelItem, disabledBrush), 
+        DEF_DISABLED_FILL_COLOR, Tk_Offset(LabelItem, disabled.brush), 
         TK_CONFIG_NULL_OK, &brushOption},
     {TK_CONFIG_SYNONYM, (char *)"-disabledforeground", "disabledOutline", 
         (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_CUSTOM, (char *)"-disabledlinewidth", (char *)NULL, (char *)NULL,
+        DEF_DISABLED_LINEWIDTH, Tk_Offset(LabelItem, disabled.lineWidth),
+        TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_COLOR, (char *)"-disabledoutline", "disabledOutline", 
         (char *)NULL, DEF_DISABLED_OUTLINE_COLOR, 
-        Tk_Offset(LabelItem, disabledFg)},
+        Tk_Offset(LabelItem, disabled.fgColor)},
     {TK_CONFIG_CUSTOM, (char *)"-fill", "fill", (char *)NULL,
-        DEF_NORMAL_FILL_COLOR, Tk_Offset(LabelItem, normalBrush), 
+        DEF_NORMAL_FILL_COLOR, Tk_Offset(LabelItem, normal.brush), 
         TK_CONFIG_NULL_OK, &brushOption},
     {TK_CONFIG_CUSTOM, (char *)"-font", (char *)NULL, (char *)NULL,
         DEF_FONT, Tk_Offset(LabelItem, baseFont), 0, &fontOption},
@@ -379,7 +372,7 @@ static Tk_ConfigSpec configSpecs[] = {
         DEF_TEXTANCHOR, Blt_Offset(LabelItem, textAnchor),
         TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_CUSTOM, (char *)"-linewidth", (char *)NULL, (char *)NULL,
-        DEF_LINEWIDTH, Tk_Offset(LabelItem, lineWidth),
+        DEF_NORMAL_LINEWIDTH, Tk_Offset(LabelItem, normal.lineWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_INT, (char *)"-maxfontsize", (char *)NULL, (char *)NULL,
         DEF_MAXFONTSIZE, Tk_Offset(LabelItem, maxFontSize), 
@@ -388,7 +381,7 @@ static Tk_ConfigSpec configSpecs[] = {
         DEF_MINFONTSIZE, Tk_Offset(LabelItem, minFontSize), 
         TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_COLOR, (char *)"-outline", "outline", (char *)NULL,
-        DEF_NORMAL_OUTLINE_COLOR, Tk_Offset(LabelItem, normalFg)},
+        DEF_NORMAL_OUTLINE_COLOR, Tk_Offset(LabelItem, normal.fgColor)},
     {TK_CONFIG_CUSTOM, (char *)"-padx", (char *)NULL, (char *)NULL,
         DEF_PADX, Tk_Offset(LabelItem, xPad),
         TK_CONFIG_DONT_SET_DEFAULT, &bltPadOption},
@@ -661,294 +654,6 @@ FreeLabelGC(Display *display, LabelGC *gcPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * DeleteProc --
- *
- *      This procedure is called to clean up the data structure associated
- *      with a label item.
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      Resources associated with labelPtr are released.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static void
-DeleteProc( 
-    Tk_Canvas canvas,                   /* Info about overall canvas
-                                         * widget. */
-    Tk_Item *itemPtr,                   /* Item that is being deleted. */
-    Display *display)                   /* Display containing window for
-                                         * canvas. */
-{
-    LabelItem *labelPtr = (LabelItem *)itemPtr;
-
-#if DEBUG
-    fprintf(stderr, "Enter DeleteProc label=%s\n", labelPtr->text);
-#endif
-    Tk_FreeOptions(configSpecs, (char *)labelPtr, display, 0);
-    if (labelPtr->scaledFont != NULL) {
-        Blt_Font_Free(labelPtr->scaledFont);
-    }
-    if (labelPtr->normalLabelGC != NULL) {
-        FreeLabelGC(labelPtr->display, labelPtr->normalLabelGC);
-    }
-    if (labelPtr->disabledLabelGC != NULL) {
-        FreeLabelGC(labelPtr->display, labelPtr->disabledLabelGC);
-    }
-    if (labelPtr->activeLabelGC != NULL) {
-        FreeLabelGC(labelPtr->display, labelPtr->activeLabelGC);
-    }
-    if (labelPtr->normalBrush != NULL) {
-        Blt_FreeBrush(labelPtr->normalBrush);
-    }
-    if (labelPtr->activeBrush != NULL) {
-        Blt_FreeBrush(labelPtr->activeBrush);
-    }
-    if (labelPtr->disabledBrush != NULL) {
-        Blt_FreeBrush(labelPtr->disabledBrush);
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * CreateProc --
- *
- *      This procedure is invoked to create a new label item.
- *
- * Results:
- *      A standard TCL return value.  If an error occurred in creating the
- *      item, then an error message is left in interp->result; in this case
- *      labelPtr is left uninitialized, so it can be safely freed by the
- *      caller.
- *
- * Side effects:
- *      A new label item is created.
- *
- *      pathName create label x y ?option value...?
- *
- *---------------------------------------------------------------------------
- */
-static int
-CreateProc(
-    Tcl_Interp *interp,                 /* Interpreter for error reporting. */
-    Tk_Canvas canvas,                   /* Canvas to hold new item. */
-    Tk_Item *itemPtr,                   /* Pointer to the structure of the
-                                         * new item; header has been
-                                         * previously initialized by the
-                                         * caller. */
-    int argc,                           /* # of arguments in argv. */
-    char **argv)                        /* Arguments describing item. */
-{
-    LabelItem *labelPtr = (LabelItem *)itemPtr;
-    Tk_Window tkwin;
-    double x, y;
-
-#if DEBUG
-    fprintf(stderr, "Enter CreateProc\n");
-#endif
-    if (!initialized) {
-        Blt_InitHashTable(&gcTable, sizeof(LabelGCKey) / sizeof(int));
-        initialized = TRUE;
-    }
-    tkwin = Tk_CanvasTkwin(canvas);
-    if (argc < 2) {
-        Tcl_AppendResult(interp, "wrong # args: should be \"",
-            Tk_PathName(tkwin), " create ", itemPtr->typePtr->name,
-            " x y ?option value...?\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    /* Get the anchor point of the label on the canvas. */
-    if ((Tk_CanvasGetCoord(interp, canvas, argv[0], &x) != TCL_OK) ||
-        (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
-        return TCL_ERROR;
-    }
-
-    /* Initialize the rest of label item structure, below the header. */
-    memset((char *)labelPtr + sizeof(Tk_Item), 0, 
-           sizeof(LabelItem) - sizeof(Tk_Item));
-
-    labelPtr->anchor = TK_ANCHOR_NW;
-    labelPtr->canvas = canvas;
-    labelPtr->display = Tk_Display(tkwin);
-    labelPtr->flags = LABEL_GEOMETRY;
-    labelPtr->interp = interp;
-    labelPtr->xScale = labelPtr->yScale = 1.0;
-    labelPtr->state = TK_STATE_NORMAL;
-    labelPtr->textAnchor = TK_ANCHOR_NW;
-    labelPtr->tkwin  = tkwin;
-    labelPtr->x = x;
-    labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
-    labelPtr->y = y;
-    labelPtr->yPad.side1 = labelPtr->yPad.side2 = 2;
-    if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
-        != TCL_OK) {
-        DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
-        return TCL_ERROR;
-    }
-    ComputeGeometry(labelPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ConfigureProc --
- *
- *      This procedure is invoked to configure various aspects of an label
- *      item, such as its background color.
- *
- * Results:
- *      A standard TCL result code.  If an error occurs, then an error message
- *      is left in interp->result.
- *
- * Side effects:
- *      Configuration information may be set for labelPtr.
- *
- *---------------------------------------------------------------------------
- */
-static int
-ConfigureProc(
-    Tcl_Interp *interp,                 /* Used for error reporting. */
-    Tk_Canvas canvas,                   /* Canvas containing labelPtr. */
-    Tk_Item *itemPtr,                   /* Label item to reconfigure. */
-    int argc,                           /* # of elements in argv.  */
-    char **argv,                        /* Arguments describing things to
-                                         * configure. */
-    int flags)                          /* Flags to pass to
-                                         * Tk_ConfigureWidget. */
-{
-    LabelItem *labelPtr = (LabelItem *)itemPtr;
-    Tk_Window tkwin;
-    LabelGC *newLabelGC;
-
-#if DEBUG
-    fprintf(stderr, "Enter ConfigureProc label=%s\n", labelPtr->text);
-#endif
-    tkwin = Tk_CanvasTkwin(canvas);
-    if (Tk_ConfigureWidget(interp, tkwin, configSpecs, argc, (const char**)argv,
-                (char *)labelPtr, flags) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    labelPtr->angle = FMOD(labelPtr->angle, 360.0);
-    if (labelPtr->angle < 0.0) {
-        labelPtr->angle += 360.0;
-    }
-    if (Blt_OldConfigModified(configSpecs, "-rotate", "-*fontsize", 
-                              "-font", "-pad*", "-width",
-                              "-height", "-anchor", "-linewidth", "-text",
-                              (char *)NULL)) {
-        ComputeGeometry(labelPtr);
-    }
-    if (FMOD(labelPtr->angle, 90.0) == 0.0) {
-        labelPtr->flags |= ORTHOGONAL;
-    } else {
-        labelPtr->flags &= ~ORTHOGONAL;
-    }
-    if (labelPtr->text == NULL) {
-        labelPtr->numBytes = 0;
-    } else {
-        labelPtr->numBytes = strlen(labelPtr->text);
-    }
-    labelPtr->fontSize = Blt_Font_Size(labelPtr->baseFont);
-    if (labelPtr->angle != 0.0) {
-        if (!Blt_Font_CanRotate(labelPtr->baseFont, labelPtr->angle)) {
-            fprintf(stderr, "can't rotate font %s\n", 
-                    Blt_Font_Name(labelPtr->baseFont));
-        }
-    }
-    /* Update only the GC for the specified-state. */
-    switch (labelPtr->state) {
-    case TK_STATE_NORMAL:
-        newLabelGC = GetLabelGC(tkwin, labelPtr->normalFg, labelPtr->lineWidth,
-             labelPtr->normalDashes, labelPtr->normalDashOffset);
-        if (labelPtr->normalLabelGC != NULL) {
-            FreeLabelGC(labelPtr->display, labelPtr->normalLabelGC);
-        }
-        labelPtr->normalLabelGC = newLabelGC;
-        break;
-    case TK_STATE_DISABLED:
-        newLabelGC = GetLabelGC(tkwin, labelPtr->disabledFg, 
-                labelPtr->lineWidth, labelPtr->disabledDashes, 
-                labelPtr->disabledDashOffset);
-        if (labelPtr->disabledLabelGC != NULL) {
-            FreeLabelGC(labelPtr->display, labelPtr->disabledLabelGC);
-        }
-        labelPtr->disabledLabelGC = newLabelGC;
-        break;
-    case TK_STATE_ACTIVE:
-        newLabelGC = GetLabelGC(tkwin, labelPtr->activeFg, labelPtr->lineWidth,
-            labelPtr->activeDashes, labelPtr->activeDashOffset);
-        if (labelPtr->activeLabelGC != NULL) {
-            FreeLabelGC(labelPtr->display, labelPtr->activeLabelGC);
-        }
-        labelPtr->activeLabelGC = newLabelGC;
-        break;
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * CoordsProc --
- *
- *      This procedure is invoked to process the "coords" widget command on
- *      label items.  See the user documentation for details on what it
- *      does.
- *
- * Results:
- *      Returns TCL_OK or TCL_ERROR, and sets interp->result.
- *
- * Side effects:
- *      The coordinates for the given item may be changed.
- *
- *---------------------------------------------------------------------------
- */
-static int
-CoordsProc(
-    Tcl_Interp *interp,                 /* Used for error reporting. */
-    Tk_Canvas canvas,                   /* Canvas containing item. */
-    Tk_Item *itemPtr,                   /* Item whose coordinates are to be
-                                         * read or modified. */
-    int argc,                           /* Number of coordinates supplied in
-                                         * argv. */
-    char **argv)                        /* Array of coordinates: x1, y1, x2,
-                                         * y2, ... */
-{
-    LabelItem *labelPtr = (LabelItem *)itemPtr;
-
-#if DEBUG
-    fprintf(stderr, "Enter CoordsProc label=%s\n", labelPtr->text);
-#endif
-    if ((argc != 0) && (argc != 2)) {
-        Tcl_AppendResult(interp, "wrong # coordinates: expected 0 or 2, got ",
-            Blt_Itoa(argc), (char *)NULL);
-        return TCL_ERROR;
-    }
-    if (argc == 2) {
-        double x, y;                    /* Don't overwrite old coordinates
-                                         * on errors */
-
-        if ((Tk_CanvasGetCoord(interp, canvas, argv[0], &x) != TCL_OK) ||
-            (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
-            return TCL_ERROR;
-        }
-        labelPtr->x = x;
-        labelPtr->y = y;
-        ComputeGeometry(labelPtr);
-    }
-    Tcl_AppendElement(interp, Blt_Dtoa(interp, labelPtr->x));
-    Tcl_AppendElement(interp, Blt_Dtoa(interp, labelPtr->y));
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * ComputeGeometry --
  *
  *      Computes the geometry of the possibly rotated label.  
@@ -969,6 +674,7 @@ ComputeGeometry(LabelItem *labelPtr)
 #if DEBUG
     fprintf(stderr, "Enter ComputeGeometry label=%s\n", labelPtr->text);
 #endif
+    labelPtr->flags &= ~CLIP;
     if (labelPtr->numBytes == 0) {
         w = h = 0;
     } else {
@@ -990,6 +696,10 @@ ComputeGeometry(LabelItem *labelPtr)
     }
     labelPtr->width = labelPtr->xScale * w;
     labelPtr->height = labelPtr->yScale * h;
+    if ((labelPtr->width < labelPtr->layoutPtr->width) ||
+        (labelPtr->height < labelPtr->layoutPtr->height)) {
+        labelPtr->flags |= CLIP;    /* Turn on clipping of text. */
+    }
     fprintf(stderr, "sw=%g sh=%g\n", labelPtr->width, labelPtr->height);
     /* Compute the outline polygon (isolateral or rectangle) given the
      * width and height. The center of the box is 0,0. */
@@ -1092,26 +802,75 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 1;
 }
 
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetClipRegion --
+ *
+ *      For right-angle rotations, generate the clip region from the extents
+ *      of the label item.
+ *
+ *      For other rotations, generate the clip region from the translated
+ *      (to drawable coordinates) outline polygon.
+ *
+ *---------------------------------------------------------------------------
+ */
+static TkRegion
+GetClipRegion(LabelItem *labelPtr, int x, int y)
+{
+    TkRegion clipRegion;
+
+    if ((labelPtr->flags & CLIP) == 0) {
+        return None;
+    }
+    if (labelPtr->flags & ORTHOGONAL) {
+        XRectangle r;
+
+        /* Text clip routines don't like negative clip coordinates. */
+        r.x = (x < 0) ? 0 : x;
+        r.y = (y < 0) ? 0 : y;
+        r.width  = x + ROUND(labelPtr->width);
+        r.height = y + ROUND(labelPtr->height);
+        if ((r.width <= 0) || (r.height <= 0)) {
+            return None;
+        }
+        clipRegion = TkCreateRegion();
+        TkUnionRectWithRegion(&r, clipRegion, clipRegion);
+    } else {
+        XPoint points[5];
+        int i;
+            
+        /* Text clip routines don't like negative clip coordinates. */
+        for (i = 0; i < 5; i++) {
+            points[i].x = labelPtr->points[i].x;
+            points[i].y = labelPtr->points[i].y;
+            if (points[i].x < 0) {
+                points[i].x = 0;
+            }
+            if (points[i].y < 0) {
+                points[i].y = 0;
+            }
+        }
+        clipRegion = (TkRegion)XPolygonRegion(points, 5, EvenOddRule);
+    }
+    return clipRegion;
+}
+
 static void
-MapItem(Tk_Canvas canvas, int x, int y, LabelItem *labelPtr)
+MapLabel(LabelItem *labelPtr, int x, int y)
 {
     int i;
     
 #if DEBUG
-    fprintf(stderr, "Enter MapItem label=%s\n", labelPtr->text);
+    fprintf(stderr, "Enter MapLabel label=%s\n", labelPtr->text);
 #endif
     /* Map the outline relative to the screen anchor point. */
     for (i = 0; i < 5; i++) {
-        short int x, y;
-
-        Tk_CanvasDrawableCoords(canvas, 
-             labelPtr->anchorPos.x + labelPtr->outlinePts[i].x, 
-             labelPtr->anchorPos.y + labelPtr->outlinePts[i].y, 
-             &x, &y);
-        labelPtr->points[i].x = x;
-        labelPtr->points[i].y = y;
+        labelPtr->points[i].x = ROUND(labelPtr->outlinePts[i].x + x);
+        labelPtr->points[i].y = ROUND(labelPtr->outlinePts[i].y + y);
     }
-    labelPtr->flags &= ~LAYOUT_PENDING;
 }
 
 static int
@@ -1131,39 +890,32 @@ LabelInsideRegion(LabelItem *labelPtr, int rx, int ry, int rw, int rh)
     return state;
 }
 
+
 /*
  *---------------------------------------------------------------------------
  *
- * PaintLabelBackground --
+ * FillBackground --
  *
- * Results:
- *      None.
+ *      For opaque backgrounds, use the normal X drawing routine to draw
+ *      either background rectangle or isolateral.
+ *
+ *      For special paintbrushes (semi-transparent or gradients, etc) draw
+ *      the polygon into a picture and then composite the picture into the
+ *      canvas. This means taking a snapshot of the canvas drawable. 
  *
  *---------------------------------------------------------------------------
  */
 static void
-DrawLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
-                    int x, int y, Blt_PaintBrush brush)
+FillBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
+               int x, int y, Blt_PaintBrush brush, XColor *bgColor)
 {
-    Blt_Painter painter;
-    Blt_Picture picture;
-    Point2f vertices[5];
-    int i;
-    int w, h;
-
     if ((Blt_GetBrushType(brush) == BLT_PAINTBRUSH_COLOR) &&
         (Blt_GetBrushAlpha(brush) == 0xFF)) {
         GC gc;
-        XColor color, *colorPtr;
-        Blt_Pixel *pixelPtr;
 
-        pixelPtr = Blt_GetBrushPixel(brush);
-
-        color.red   = pixelPtr->Red * 257;
-        color.green = pixelPtr->Green * 257;
-        color.blue  = pixelPtr->Blue * 257;
-        colorPtr = Tk_GetColorByValue(tkwin, &color);
-        gc = Tk_GCForColor(colorPtr, drawable);
+        /* For opaque backgrounds, use the normal X drawing routine to draw
+         * either background rectangle or isolateral. */
+        gc = Tk_GCForColor(bgColor, drawable);
         if (labelPtr->flags & ORTHOGONAL) {
             XFillRectangle(Tk_Display(tkwin), drawable, gc, x, y, 
                 ROUND(labelPtr->width), ROUND(labelPtr->height));
@@ -1171,27 +923,352 @@ DrawLabelBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
             XFillPolygon(Tk_Display(tkwin), drawable, gc, labelPtr->points, 5, 
                 Convex, CoordModeOrigin);
         }
-        return;
+    } else {
+        int w, h;
+        Blt_Painter painter;
+        Blt_Picture picture;
+        
+        w = ROUND(labelPtr->rotWidth);
+        h = ROUND(labelPtr->rotHeight);
+        picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
+        if (picture == NULL) {
+            return;                         /* Background is obscured. */
+        }
+        Blt_SetBrushRegion(brush, 0, 0, w, h);
+        Blt_PaintPolygon(picture, 5, labelPtr->outlinePts, brush);
+        painter = Blt_GetPainter(tkwin, 1.0);
+        Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
+        Blt_FreePicture(picture);
     }
-    w = ROUND(labelPtr->rotWidth);
-    h = ROUND(labelPtr->rotHeight);
-    picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
-    if (picture == NULL) {
-        return;                         /* Background is obscured. */
-    }
-    /* Translate the polygon */
-    for (i = 0; i < 5; i++) {
-        vertices[i].x = labelPtr->outlinePts[i].x;
-        vertices[i].y = labelPtr->outlinePts[i].y;
-    }
-    Blt_SetBrushRegion(brush, 0, 0, w, h);
-    Blt_PaintPolygon(picture, 5, vertices, brush);
-    painter = Blt_GetPainter(tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
-    Blt_FreePicture(picture);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DeleteProc --
+ *
+ *      This procedure is called to clean up the data structure associated
+ *      with a label item.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      Resources associated with labelPtr are released.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static void
+DeleteProc( 
+    Tk_Canvas canvas,                   /* Info about overall canvas
+                                         * widget. */
+    Tk_Item *itemPtr,                   /* Item that is being deleted. */
+    Display *display)                   /* Display containing window for
+                                         * canvas. */
+{
+    LabelItem *labelPtr = (LabelItem *)itemPtr;
 
+#if DEBUG
+    fprintf(stderr, "Enter DeleteProc label=%s\n", labelPtr->text);
+#endif
+    Tk_FreeOptions(configSpecs, (char *)labelPtr, display, 0);
+    if (labelPtr->scaledFont != NULL) {
+        Blt_Font_Free(labelPtr->scaledFont);
+    }
+    if (labelPtr->normal.labelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->normal.labelGC);
+    }
+    if (labelPtr->disabled.labelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->disabled.labelGC);
+    }
+    if (labelPtr->active.labelGC != NULL) {
+        FreeLabelGC(labelPtr->display, labelPtr->active.labelGC);
+    }
+    if (labelPtr->normal.brush != NULL) {
+        Blt_FreeBrush(labelPtr->normal.brush);
+    }
+    if (labelPtr->active.brush != NULL) {
+        Blt_FreeBrush(labelPtr->active.brush);
+    }
+    if (labelPtr->disabled.brush != NULL) {
+        Blt_FreeBrush(labelPtr->disabled.brush);
+    }
+    if (labelPtr->normal.bgColor != NULL) {
+        Tk_FreeColor(labelPtr->normal.bgColor);
+    }
+    if (labelPtr->active.bgColor != NULL) {
+        Tk_FreeColor(labelPtr->active.bgColor);
+    }
+    if (labelPtr->disabled.bgColor != NULL) {
+        Tk_FreeColor(labelPtr->disabled.bgColor);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CreateProc --
+ *
+ *      This procedure is invoked to create a new label item.
+ *
+ * Results:
+ *      A standard TCL return value.  If an error occurred in creating the
+ *      item, then an error message is left in interp->result; in this case
+ *      labelPtr is left uninitialized, so it can be safely freed by the
+ *      caller.
+ *
+ * Side effects:
+ *      A new label item is created.
+ *
+ *      pathName create label x y ?option value...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+CreateProc(
+    Tcl_Interp *interp,                 /* Interpreter for error reporting. */
+    Tk_Canvas canvas,                   /* Canvas to hold new item. */
+    Tk_Item *itemPtr,                   /* Pointer to the structure of the
+                                         * new item; header has been
+                                         * previously initialized by the
+                                         * caller. */
+    int argc,                           /* # of arguments in argv. */
+    char **argv)                        /* Arguments describing item. */
+{
+    LabelItem *labelPtr = (LabelItem *)itemPtr;
+    Tk_Window tkwin;
+    double x, y;
+
+#if DEBUG
+    fprintf(stderr, "Enter CreateProc\n");
+#endif
+    if (!initialized) {
+        Blt_InitHashTable(&gcTable, sizeof(LabelGCKey) / sizeof(int));
+        initialized = TRUE;
+    }
+    tkwin = Tk_CanvasTkwin(canvas);
+    if (argc < 2) {
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+            Tk_PathName(tkwin), " create ", itemPtr->typePtr->name,
+            " x y ?option value...?\"", (char *)NULL);
+        return TCL_ERROR;
+    }
+    /* Get the anchor point of the label on the canvas. */
+    if ((Tk_CanvasGetCoord(interp, canvas, argv[0], &x) != TCL_OK) ||
+        (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+
+    /* Initialize the rest of label item structure, below the header. */
+    memset((char *)labelPtr + sizeof(Tk_Item), 0, 
+           sizeof(LabelItem) - sizeof(Tk_Item));
+
+    labelPtr->anchor = TK_ANCHOR_NW;
+    labelPtr->canvas = canvas;
+    labelPtr->display = Tk_Display(tkwin);
+    labelPtr->interp = interp;
+    labelPtr->xScale = labelPtr->yScale = 1.0;
+    labelPtr->state = TK_STATE_NORMAL;
+    labelPtr->textAnchor = TK_ANCHOR_NW;
+    labelPtr->tkwin  = tkwin;
+    labelPtr->x = x;
+    labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
+    labelPtr->y = y;
+    labelPtr->yPad.side1 = labelPtr->yPad.side2 = 2;
+    if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
+        != TCL_OK) {
+        DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
+        return TCL_ERROR;
+    }
+    ComputeGeometry(labelPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConfigureProc --
+ *
+ *      This procedure is invoked to configure various aspects of an label
+ *      item, such as its background color.
+ *
+ * Results:
+ *      A standard TCL result code.  If an error occurs, then an error message
+ *      is left in interp->result.
+ *
+ * Side effects:
+ *      Configuration information may be set for labelPtr.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ConfigureProc(
+    Tcl_Interp *interp,                 /* Used for error reporting. */
+    Tk_Canvas canvas,                   /* Canvas containing labelPtr. */
+    Tk_Item *itemPtr,                   /* Label item to reconfigure. */
+    int argc,                           /* # of elements in argv.  */
+    char **argv,                        /* Arguments describing things to
+                                         * configure. */
+    int flags)                          /* Flags to pass to
+                                         * Tk_ConfigureWidget. */
+{
+    LabelItem *labelPtr = (LabelItem *)itemPtr;
+    Tk_Window tkwin;
+    LabelGC *newLabelGC;
+    XColor *colorPtr;
+    
+#if DEBUG
+    fprintf(stderr, "Enter ConfigureProc label=%s\n", labelPtr->text);
+#endif
+    tkwin = Tk_CanvasTkwin(canvas);
+    if (Tk_ConfigureWidget(interp, tkwin, configSpecs, argc, (const char**)argv,
+                (char *)labelPtr, flags) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    labelPtr->angle = FMOD(labelPtr->angle, 360.0);
+    if (labelPtr->angle < 0.0) {
+        labelPtr->angle += 360.0;
+    }
+    if (Blt_OldConfigModified(configSpecs, "-rotate", "-*fontsize", 
+                              "-font", "-pad*", "-width",
+                              "-height", "-anchor", "-linewidth", "-text",
+                              (char *)NULL)) {
+        ComputeGeometry(labelPtr);
+    }
+    /* Check if the label is a right-angle rotation.  */
+    if (FMOD(labelPtr->angle, 90.0) == 0.0) {
+        labelPtr->flags |= ORTHOGONAL;
+    } else {
+        labelPtr->flags &= ~ORTHOGONAL;
+    }
+    if (labelPtr->text == NULL) {
+        labelPtr->numBytes = 0;
+    } else {
+        labelPtr->numBytes = strlen(labelPtr->text);
+    }
+    labelPtr->fontSize = Blt_Font_Size(labelPtr->baseFont);
+    if (labelPtr->angle != 0.0) {
+        if (!Blt_Font_CanRotate(labelPtr->baseFont, labelPtr->angle)) {
+            fprintf(stderr, "can't rotate font %s\n", 
+                    Blt_Font_Name(labelPtr->baseFont));
+        }
+    }
+
+    /* Update only the GC for the specified-state. */
+    switch (labelPtr->state) {
+    case TK_STATE_NORMAL:
+        newLabelGC = GetLabelGC(tkwin, labelPtr->normal.fgColor,
+             labelPtr->normal.lineWidth, labelPtr->normal.dashes,
+             labelPtr->normal.dashOffset);
+        if (labelPtr->normal.labelGC != NULL) {
+            FreeLabelGC(labelPtr->display, labelPtr->normal.labelGC);
+        }
+        labelPtr->normal.labelGC = newLabelGC;
+        if (labelPtr->normal.brush != NULL) {
+            colorPtr = Blt_GetXColorFromBrush(tkwin, labelPtr->normal.brush);
+        } else {
+            colorPtr = NULL;
+        }
+        if (labelPtr->normal.bgColor != NULL) {
+            Tk_FreeColor(labelPtr->normal.bgColor);
+        }
+        labelPtr->normal.bgColor = colorPtr;
+        break;
+    case TK_STATE_DISABLED:
+        newLabelGC = GetLabelGC(tkwin, labelPtr->disabled.fgColor, 
+                labelPtr->disabled.lineWidth, labelPtr->disabled.dashes, 
+                labelPtr->disabled.dashOffset);
+        if (labelPtr->disabled.labelGC != NULL) {
+            FreeLabelGC(labelPtr->display, labelPtr->disabled.labelGC);
+        }
+        labelPtr->disabled.labelGC = newLabelGC;
+        if (labelPtr->disabled.brush != NULL) {
+            colorPtr = Blt_GetXColorFromBrush(tkwin, labelPtr->disabled.brush);
+        } else {
+            colorPtr = NULL;
+        }
+        if (labelPtr->disabled.bgColor != NULL) {
+            Tk_FreeColor(labelPtr->disabled.bgColor);
+        }
+        labelPtr->disabled.bgColor = colorPtr;
+        break;
+    case TK_STATE_ACTIVE:
+        newLabelGC = GetLabelGC(tkwin, labelPtr->active.fgColor,
+                labelPtr->active.lineWidth, labelPtr->active.dashes,
+                labelPtr->active.dashOffset);
+        if (labelPtr->active.labelGC != NULL) {
+            FreeLabelGC(labelPtr->display, labelPtr->active.labelGC);
+        }
+        labelPtr->active.labelGC = newLabelGC;
+        if (labelPtr->active.brush != NULL) {
+            colorPtr = Blt_GetXColorFromBrush(tkwin, labelPtr->active.brush);
+        } else {
+            colorPtr = NULL;
+        }
+        if (labelPtr->active.bgColor != NULL) {
+            Tk_FreeColor(labelPtr->active.bgColor);
+        }
+        labelPtr->active.bgColor = colorPtr;
+        break;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CoordsProc --
+ *
+ *      This procedure is invoked to process the "coords" widget command on
+ *      label items.  See the user documentation for details on what it
+ *      does.
+ *
+ * Results:
+ *      Returns TCL_OK or TCL_ERROR, and sets interp->result.
+ *
+ * Side effects:
+ *      The coordinates for the given item may be changed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+CoordsProc(
+    Tcl_Interp *interp,                 /* Used for error reporting. */
+    Tk_Canvas canvas,                   /* Canvas containing item. */
+    Tk_Item *itemPtr,                   /* Item whose coordinates are to be
+                                         * read or modified. */
+    int argc,                           /* Number of coordinates supplied in
+                                         * argv. */
+    char **argv)                        /* Array of coordinates: x1, y1, x2,
+                                         * y2, ... */
+{
+    LabelItem *labelPtr = (LabelItem *)itemPtr;
+
+#if DEBUG
+    fprintf(stderr, "Enter CoordsProc label=%s\n", labelPtr->text);
+#endif
+    if ((argc != 0) && (argc != 2)) {
+        Tcl_AppendResult(interp, "wrong # coordinates: expected 0 or 2, got ",
+            Blt_Itoa(argc), (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (argc == 2) {
+        double x, y;                    /* Don't overwrite old coordinates
+                                         * on errors */
+
+        if ((Tk_CanvasGetCoord(interp, canvas, argv[0], &x) != TCL_OK) ||
+            (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
+            return TCL_ERROR;
+        }
+        labelPtr->x = x;
+        labelPtr->y = y;
+        ComputeGeometry(labelPtr);
+    }
+    Tcl_AppendElement(interp, Blt_Dtoa(interp, labelPtr->x));
+    Tcl_AppendElement(interp, Blt_Dtoa(interp, labelPtr->y));
+    return TCL_OK;
+}
 /*
  *---------------------------------------------------------------------------
  *
@@ -1478,11 +1555,8 @@ DisplayProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     Tk_Window tkwin;
-    GC gc;
-    Blt_PaintBrush brush;
     short int x, y;
-    TkRegion clipRegion;
-
+    StateAttributes *attrPtr;
 #if DEBUG
     fprintf(stderr, "Enter DisplayProc rx=%d, ry=%d, rw=%d rh=%d\n",
             rx, ry, rw, rh);
@@ -1494,73 +1568,59 @@ DisplayProc(
     /* Convert anchor from world coordinates to screen. */
     Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
                             labelPtr->anchorPos.y, &x, &y);
-    MapItem(canvas, x, y, labelPtr);
+    MapLabel(labelPtr, x, y);
 #ifdef notdef
     if (!LabelInsideRegion(labelPtr, rx, ry, rw, rh)) {
         return;
     }
 #endif
-    tkwin = Tk_CanvasTkwin(canvas);
-
-    if (labelPtr->flags & ORTHOGONAL) {
-        XRectangle rect;
-
-        rect.x = x;
-        rect.y = y;
-        rect.width = x + ROUND(labelPtr->width) + 10;
-        rect.height = y + ROUND(labelPtr->height) + 10;
-        clipRegion = TkCreateRegion();
-        TkUnionRectWithRegion(&rect, clipRegion, clipRegion);
-    } else {
-        clipRegion = (TkRegion)XPolygonRegion(labelPtr->points, 5, EvenOddRule);
-    }
-    brush = NULL;
-    gc = NULL;
     switch (labelPtr->state) {
     case TK_STATE_DISABLED:
-        brush = labelPtr->disabledBrush;  
-        gc = labelPtr->disabledLabelGC->gc;  
+        attrPtr = &labelPtr->disabled;
         break;
     case TK_STATE_ACTIVE:
-        brush = labelPtr->activeBrush;  
-        gc = labelPtr->activeLabelGC->gc;    
+        attrPtr = &labelPtr->active;
         break;
     case TK_STATE_NORMAL:
-        brush = labelPtr->normalBrush;   
-        gc = labelPtr->normalLabelGC->gc;    
+        attrPtr = &labelPtr->normal;
         break;
     case TK_STATE_HIDDEN:
+    default:
+        attrPtr = NULL;
         break;
     }
-    assert(gc != NULL);
-#ifdef notdef
-    TkSetRegion(display, gc, clipRegion);
-#endif
-    if (brush != NULL) {                /* Background polygon */
-        DrawLabelBackground(tkwin, drawable, labelPtr, x, y, brush);
+    assert(attrPtr != NULL);
+    tkwin = Tk_CanvasTkwin(canvas);
+    if (attrPtr->brush != NULL) {       /* Fill rectangle or isolateral. */
+        FillBackground(tkwin, drawable, labelPtr, x, y, attrPtr->brush,
+                       attrPtr->bgColor);
     }
-    if (labelPtr->lineWidth > 0) {      /* Outline */
-        XDrawLines(display, drawable, gc, labelPtr->points, 5, CoordModeOrigin);
+    if (attrPtr->lineWidth > 0) {      /* Outline */
+        XDrawLines(display, drawable, attrPtr->labelGC->gc, labelPtr->points, 5,
+            CoordModeOrigin);
     }
     if (labelPtr->text != NULL) {       /* Text itself */
         Blt_Font font;
         int maxLength;
-        short int x, y;
+        TkRegion clipRegion;
 
-        Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
-                            labelPtr->anchorPos.y, &x, &y);
         maxLength = (labelPtr->flags & ELLIPSIS) ? labelPtr->width : -1;
         font = (labelPtr->scaledFont) ?
             labelPtr->scaledFont : labelPtr->baseFont;
-#ifdef notdef
-        Blt_Font_SetClipRegion(font, clipRegion);
-#endif
-        XSetFont(display, gc, Blt_Font_Id(font));
-        Blt_DrawLayout(tkwin, drawable, gc, font, Tk_Depth(tkwin),
-            labelPtr->angle, x, y, labelPtr->layoutPtr, maxLength);
+        clipRegion = GetClipRegion(labelPtr, x, y);
+        if (clipRegion != None) {
+            fprintf(stderr, "setting clipRegion to font\n");
+            Blt_Font_SetClipRegion(font, clipRegion);
+        }
+        XSetFont(display, attrPtr->labelGC->gc, Blt_Font_Id(font));
+        Blt_DrawLayout(tkwin, drawable, attrPtr->labelGC->gc, font,
+                Tk_Depth(tkwin), labelPtr->angle, x, y, labelPtr->layoutPtr,
+                maxLength);
+        if (clipRegion != None) {
+            Blt_Font_SetClipRegion(font, None);
+            TkDestroyRegion(clipRegion);
+        }
     }
-    XSetClipMask(display, gc, None);
-    TkDestroyRegion(clipRegion);
 }
 
 /*
@@ -1654,7 +1714,7 @@ static Tk_ItemType itemType = {
     CoordsProc,
     DeleteProc,
     DisplayProc,
-    1,                                  /* alwaysRedraw */
+    0,                                  /* alwaysRedraw */
     PointProc,
     AreaProc,
     PostScriptProc,

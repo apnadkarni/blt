@@ -1,6 +1,5 @@
 
 package require BLT
-source scripts/demo.tcl
 
 blt::scrollset .ss \
     -xscrollbar .ss.xsbar \

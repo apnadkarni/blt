@@ -4233,7 +4233,7 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
     Blt_PaintBrush brush;
     Blt_Painter painter;
     Blt_Picture picture;
-    Point2f *vertices;
+    Point2d *vertices;
     int i;
     int w, h;
     int x1, x2, y1, y2;
@@ -4250,11 +4250,11 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
     if (picture == NULL) {
         return;                         /* Background is obscured. */
     }
-    vertices = Blt_AssertMalloc(numPoints * sizeof(Point2f));
+    vertices = Blt_AssertMalloc(numPoints * sizeof(Point2d));
     /* Translate the polygon */
     for (i = 0; i < numPoints; i++) {
-        vertices[i].x = (float)(points[i].x - x1);
-        vertices[i].y = (float)(points[i].y - y1);
+        vertices[i].x = points[i].x - x1;
+        vertices[i].y = points[i].y - y1;
     }
     if ((elemPtr->zAxisPtr != NULL) && (elemPtr->zAxisPtr->palette != NULL)) {
         brush = Blt_NewLinearGradientBrush();

@@ -4631,7 +4631,7 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable,
     Blt_PaintBrush brush;
     Blt_Painter painter;
     Blt_Picture bg;
-    Point2f *vertices;
+    Point2d *vertices;
     int i;
     int w, h;
     int x1, x2, y1, y2;
@@ -4650,13 +4650,12 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable,
     if (bg == NULL) {
         return;                         /* Background is obscured. */
     }
-    vertices = Blt_AssertMalloc(n * sizeof(Point2f));
+    vertices = Blt_AssertMalloc(n * sizeof(Point2d));
     /* Translate the polygon */
     for (i = 0; i < n; i++) {
-        vertices[i].x = (float)(points[i].x - x1);
-        vertices[i].y = (float)(points[i].y - y1);
+        vertices[i].x = points[i].x - x1;
+        vertices[i].y = points[i].y - y1;
     }
-    
     brush = Blt_NewLinearGradientBrush();
     Blt_SetBrushOrigin(brush, -x1, -y1);
     Blt_SetLinearGradientBrushPalette(brush, markerPtr->palette);

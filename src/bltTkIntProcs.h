@@ -584,7 +584,7 @@ BLT_EXTERN void		Blt_PaintRectangle(Blt_Picture picture, int x, int y,
 #define Blt_PaintPolygon_DECLARED
 /* 97 */
 BLT_EXTERN void		Blt_PaintPolygon(Blt_Picture picture, int n,
-				Point2f *vertices, Blt_PaintBrush brush);
+				Point2d *vertices, Blt_PaintBrush brush);
 #endif
 #ifndef Blt_CreateBrushNotifier_DECLARED
 #define Blt_CreateBrushNotifier_DECLARED
@@ -1554,7 +1554,7 @@ typedef struct BltTkIntProcs {
     int (*blt_GetAssociatedColorFromBrush) (Blt_PaintBrush brush, int x, int y); /* 94 */
     int (*blt_IsVerticalLinearBrush) (Blt_PaintBrush brush); /* 95 */
     void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_PaintBrush brush, int composite); /* 96 */
-    void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_PaintBrush brush); /* 97 */
+    void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2d *vertices, Blt_PaintBrush brush); /* 97 */
     void (*blt_CreateBrushNotifier) (Blt_PaintBrush brush, Blt_BrushChangedProc *notifyProc, ClientData clientData); /* 98 */
     void (*blt_DeleteBrushNotifier) (Blt_PaintBrush brush, Blt_BrushChangedProc *notifyProc, ClientData clientData); /* 99 */
     int (*blt_GetBg) (Tcl_Interp *interp, Tk_Window tkwin, const char *bgName, Blt_Bg *bgPtr); /* 100 */

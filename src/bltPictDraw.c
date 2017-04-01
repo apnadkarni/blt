@@ -108,7 +108,7 @@ typedef struct {
                                          * circle. */
     Blt_Shadow shadow;
     int antialiased;
-    float lineWidth;                    /* Width of outline.  If zero,
+    double lineWidth;                   /* Width of outline.  If zero,
                                          * indicates to draw a solid
                                          * circle. */
     int blend;
@@ -122,7 +122,7 @@ static Blt_SwitchSpec circleSwitches[] =
         Blt_Offset(CircleSwitches, antialiased), 0},
     {BLT_SWITCH_BOOLEAN, "-blend", "bool", (char *)NULL,
         Blt_Offset(CircleSwitches, blend), 0},
-    {BLT_SWITCH_FLOAT, "-linewidth", "value", (char *)NULL,
+    {BLT_SWITCH_DOUBLE, "-linewidth", "value", (char *)NULL,
         Blt_Offset(CircleSwitches, lineWidth), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
         Blt_Offset(CircleSwitches, shadow), 0, 0, &shadowSwitch},
@@ -136,7 +136,7 @@ typedef struct {
     Blt_Pixel outline;                  /* Outline color of circle. */
     Blt_Shadow shadow;
     int antialiased;
-    float lineWidth;                    /* Line width of outline.  If zero,
+    double lineWidth;                   /* Line width of outline.  If zero,
                                          * indicates to draw a solid
                                          * circle. */
     int blend;
@@ -383,7 +383,7 @@ ArrayFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * ArraySwitchProc --
  *
- *      Convert a Tcl_Obj list of numbers into an array of floats.
+ *      Convert a Tcl_Obj list of numbers into an array of doubles.
  *
  * Results:
  *      The return value is a standard TCL result.
@@ -403,27 +403,24 @@ ArraySwitchProc(
 {
     Tcl_Obj **objv;
     Array *arrayPtr = (Array *)(record + offset);
-    float *values;
+    double *values;
     int i;
     int objc;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
     }
-    values = Blt_Malloc(sizeof(float) * objc);
+    values = Blt_Malloc(sizeof(double) * objc);
     if (values == NULL) {
         Tcl_AppendResult(interp, "can't allocated coordinate array of ",
                 Blt_Itoa(objc), " elements", (char *)NULL);
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        double x;
-
-        if (Tcl_GetDoubleFromObj(interp, objv[i], &x) != TCL_OK) {
+        if (Tcl_GetDoubleFromObj(interp, objv[i], values + i) != TCL_OK) {
             Blt_Free(values);
             return TCL_ERROR;
         }
-        values[i] = (float)x;
     }
     arrayPtr->values = values;
     arrayPtr->numValues = objc;
@@ -894,20 +891,20 @@ FillVerticalLine(Pict *destPtr, int x, int y1, int y2, Blt_Pixel *colorPtr,
     }
 }
 
-static INLINE float 
-sqr(float x) 
+static INLINE double 
+sqr(double x) 
 {
     return x * x;
 }
     
 static void
-PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth, 
+PaintCircle4(Pict *destPtr, double cx, double cy, double r, double lineWidth, 
              Blt_PaintBrush brush, int blend)
 {
     int x, y, i;
     int x1, x2, y1, y2;
-    float outer, inner, outer2, inner2;
-    float *squares;
+    double outer, inner, outer2, inner2;
+    double *squares;
     Blt_Pixel *destRowPtr;
 
     /* Determine some helpful values (singles) */
@@ -938,7 +935,7 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
         y2 = destPtr->height;
     }
     /* Optimization run: find squares of X first */
-    squares = Blt_AssertMalloc(sizeof(float) * (x2 - x1));
+    squares = Blt_AssertMalloc(sizeof(double) * (x2 - x1));
     for (i = 0, x = x1; x < x2; x++, i++) {
         squares[i] = (x - cx) * (x - cx);
     }
@@ -946,13 +943,13 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
     destRowPtr = destPtr->bits + (y1 * destPtr->pixelsPerRow) + x1;
     for (y = y1; y < y2; y++) {
         Blt_Pixel *dp;
-        float dy2;
+        double dy2;
         
         dy2 = (y - cy) * (y - cy);
         for (dp = destRowPtr, x = x1; x < x2; x++, dp++) {
-            float dx2, d2, d;
+            double dx2, d2, d;
             unsigned int a;
-            float outerf, innerf;
+            double outerf, innerf;
 
             dx2 = squares[x - x1];
             /* Compute distance from circle center to this pixel. */
@@ -1244,16 +1241,16 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
         break;
     }   
     for (dy = y1; dy < y2; dy++) {
-        float dy2;
+        double dy2;
 
         if (((y + dy) < 0) || ((y + dy) >= destPtr->height)) {
             continue;
         }
         dy2 = (dy - r) * (dy - r);
         for (dx = x1; dx < x2; dx++) {
-            float dx2, d2, d;
+            double dx2, d2, d;
             unsigned int a;
-            float outerf, innerf;
+            double outerf, innerf;
             Blt_Pixel *dp;
 
             if (((x + dx) < 0) || ((x + dx) >= destPtr->width)) {
@@ -1422,20 +1419,20 @@ static void
 PaintPolyline(
     Pict *destPtr,
     int numPoints, 
-    Point2f *points, 
+    Point2d *points, 
     int lineWidth,
     Blt_Pixel *colorPtr)
 {
     int i;
     Region2d r;
-    Point2f p;
+    Point2d p;
 
     r.left = r.top = 0;
     r.right = destPtr->width - 1;
     r.bottom = destPtr->height - 1;
     p.x = points[0].x, p.y = points[0].y;
     for (i = 1; i < numPoints; i++) {
-        Point2f q, next;
+        Point2d q, next;
 
         q.x = points[i].x, q.y = points[i].y;
         next = q;
@@ -1530,7 +1527,7 @@ typedef struct {
 
 /* Comparison routines for qsort */
 static int n;                           /* # of vertices */
-static Point2f *pt;                     /* vertices */
+static Point2d *pt;                     /* vertices */
 
 static int 
 CompareIndices(const void *a, const void *b)
@@ -1573,10 +1570,10 @@ cdelete(AET *tablePtr, int i)           /* Remove edge i from active
 
 /* append edge i to end of active list */
 static void
-cinsert(AET *tablePtr, size_t n, Point2f *points, int i, int y)
+cinsert(AET *tablePtr, size_t n, Point2d *points, int i, int y)
 {
     int j;
-    Point2f *p, *q;
+    Point2d *p, *q;
     ActiveEdge *edgePtr;
 
     j = (i < (n - 1)) ? i + 1 : 0;
@@ -1597,7 +1594,7 @@ cinsert(AET *tablePtr, size_t n, Point2f *points, int i, int y)
 }
 
 void
-Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2f *vertices, 
+Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2d *vertices, 
                  Blt_PaintBrush brush)
 {
     int y, k;
@@ -1692,47 +1689,50 @@ Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2f *vertices,
 }
 
 static void
-GetPolygonBoundingBox(size_t numVertices, Point2f *vertices, 
-                      Region2f *regionPtr)
+GetPolygonBoundingBox(size_t numVertices, Point2d *vertices, 
+                      Region2d *regionPtr)
 {
-    Point2f *pp, *pend;
-
+    int i;
+    
     regionPtr->left = regionPtr->top = FLT_MAX;
     regionPtr->right = regionPtr->bottom = -FLT_MAX;
-    for (pp = vertices, pend = pp + numVertices; pp < pend; pp++) {
-        if (pp->x < regionPtr->left) {
-            regionPtr->left = pp->x;
-        } else if (pp->x > regionPtr->right) {
-            regionPtr->right = pp->x;
+    for (i = 0; i < numVertices; i++) {
+        Point2d *p;
+
+        p = vertices + i;
+        if (p->x < regionPtr->left) {
+            regionPtr->left = p->x;
+        } else if (p->x > regionPtr->right) {
+            regionPtr->right = p->x;
         }
-        if (pp->y < regionPtr->top) {
-            regionPtr->top = pp->y;
-        } else if (pp->y > regionPtr->bottom) {
-            regionPtr->bottom = pp->y;
+        if (p->y < regionPtr->top) {
+            regionPtr->top = p->y;
+        } else if (p->y > regionPtr->bottom) {
+            regionPtr->bottom = p->y;
         }
     }
 }
 
 static void
-TranslatePolygon(size_t numVertices, Point2f *vertices, float x, float y, 
-                 float scale)
+TranslatePolygon(Point2d *src, Point2d *dst, size_t numVertices,
+                 double x, double y, double scale)
 {
-    Point2f *pp, *pend;
+    size_t i;
 
-    for (pp = vertices, pend = pp + numVertices; pp < pend; pp++) {
-        pp->x = (pp->x + x) * scale;
-        pp->y = (pp->y + y) * scale;
+    for (i = 0; i < numVertices; i++) {
+        dst[i].x = (src[i].x + x) * scale;
+        dst[i].y = (src[i].y + y) * scale;
     }
 }
 
 static void
-PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices, 
-                   Region2f *regionPtr, Blt_Shadow *shadowPtr)
+PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2d *vertices, 
+                   Region2d *regionPtr, Blt_Shadow *shadowPtr)
 {
     Blt_PaintBrush brush;
     Blt_Picture blur, tmp;
-    Point2f *v;
-    Region2f r2;
+    Point2d *v;
+    Region2d r2;
     int w, h;
     int x1, x2, y1, y2;
 
@@ -1751,9 +1751,8 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
         y2 = (int)ceil(regionPtr->bottom);
     }
     if ((x1 > 0) || (y1 > 0)) {
-        v = Blt_AssertMalloc(numVertices * sizeof(Point2f));
-        memcpy(v, vertices, sizeof(Point2f) * numVertices);
-        TranslatePolygon(numVertices, v, -x1, -y1, 1.0f);
+        v = Blt_AssertMalloc(numVertices * sizeof(Point2d));
+        TranslatePolygon(vertices, v, numVertices, -x1, -y1, 1.0);
     } else {
         v = vertices;
     }
@@ -1780,12 +1779,12 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
 }
 
 static void
-PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices, 
-                Region2f *regionPtr, Blt_PaintBrush brush, 
+PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2d *vertices, 
+                Region2d *regionPtr, Blt_PaintBrush brush, 
                 Blt_Shadow *shadowPtr)
 {
     Blt_Picture big, tmp;
-    Region2f r2;
+    Region2d r2;
     /* 
      * Get the minimum size region to draw both a supersized polygon and
      * shadow.
@@ -1797,7 +1796,7 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
      * destination picture.
      */
     big = Blt_CreatePicture(destPtr->width * 4, destPtr->height * 4);
-    TranslatePolygon(numVertices, vertices, 0.0f, 0.0f, 4.0f);
+    TranslatePolygon(vertices, vertices, numVertices, 0.0f, 0.0f, 4.0);
     Blt_BlankPicture(big, 0x0);
     GetPolygonBoundingBox(numVertices, vertices, &r2);
     if ((shadowPtr != NULL) && (shadowPtr->width > 0)) {
@@ -1812,8 +1811,8 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
 }
 
 static void
-DrawCircleShadow(Blt_Picture picture, int x, int y, float r, 
-                 float lineWidth, int blend, Blt_Shadow *shadowPtr)
+DrawCircleShadow(Blt_Picture picture, int x, int y, double r, 
+                 double lineWidth, int blend, Blt_Shadow *shadowPtr)
 {
     Pict *tmpPtr;
     int w, h;
@@ -1845,7 +1844,7 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float r,
 }
 
 static void
-DrawCircle(Blt_Picture picture, int x, int y, int r, float lineWidth, 
+DrawCircle(Blt_Picture picture, int x, int y, int r, double lineWidth, 
            Blt_PaintBrush brush, int blend)
 {
     PaintCircle4(picture, x, y, r, lineWidth, brush, blend);
@@ -1989,7 +1988,7 @@ Blt_Picture_LineOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_Picture picture = clientData;
     LineSwitches switches;
     size_t numPoints;
-    Point2f *points;
+    Point2d *points;
     
     memset(&switches, 0, sizeof(switches));
     switches.bg.u32 = 0xFFFFFFFF;
@@ -2005,17 +2004,17 @@ Blt_Picture_LineOp(ClientData clientData, Tcl_Interp *interp, int objc,
     points = NULL;
     if (switches.x.numValues > 0) {
         size_t i;
-        float *x, *y;
+        double *x, *y;
 
         numPoints = switches.x.numValues;
-        points = Blt_Malloc(sizeof(Point2f) * numPoints);
+        points = Blt_Malloc(sizeof(Point2d) * numPoints);
         if (points == NULL) {
             Tcl_AppendResult(interp, "can't allocate memory for ", 
                 Blt_Itoa(numPoints + 1), " points", (char *)NULL);
             return TCL_ERROR;
         }
-        x = (float *)switches.x.values;
-        y = (float *)switches.y.values;
+        x = switches.x.values;
+        y = switches.y.values;
         for (i = 0; i < numPoints; i++) {
             points[i].x = x[i];
             points[i].y = y[i];
@@ -2025,7 +2024,7 @@ Blt_Picture_LineOp(ClientData clientData, Tcl_Interp *interp, int objc,
         switches.x.values = switches.y.values = NULL;
     } else if (switches.coords.numValues > 0) {
         size_t i, j;
-        float *coords;
+        double *coords;
 
         if (switches.coords.numValues & 0x1) {
             Tcl_AppendResult(interp, "bad -coords list: ",
@@ -2033,13 +2032,13 @@ Blt_Picture_LineOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         numPoints = (switches.coords.numValues / 2);
-        points = Blt_Malloc(sizeof(Point2f)* numPoints);
+        points = Blt_Malloc(sizeof(Point2d)* numPoints);
         if (points == NULL) {
             Tcl_AppendResult(interp, "can't allocate memory for ", 
                 Blt_Itoa(numPoints + 1), " points", (char *)NULL);
             return TCL_ERROR;
         }
-        coords = (float *)switches.coords.values;
+        coords = switches.coords.values;
         for (i = 0, j = 0; i < switches.coords.numValues; i += 2, j++) {
             points[j].x = coords[i];
             points[j].y = coords[i+1];
@@ -2077,8 +2076,8 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Pict *destPtr = clientData;
     PolygonSwitches switches;
     size_t numVertices;
-    Point2f *vertices;
-    Region2f r;
+    Point2d *vertices;
+    Region2d r;
     Blt_PaintBrush brush;
 
     if (Blt_GetPaintBrush(interp, "black", &brush) != TCL_OK) {
@@ -2099,17 +2098,17 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
     r.top = r.left = FLT_MAX, r.bottom = r.right = -FLT_MAX;
     if (switches.x.numValues > 0) {
         size_t i;
-        float *x, *y;
+        double *x, *y;
 
         numVertices = switches.x.numValues;
-        vertices = Blt_Malloc(sizeof(Point2f) * (switches.x.numValues + 1));
+        vertices = Blt_Malloc(sizeof(Point2d) * (switches.x.numValues + 1));
         if (vertices == NULL) {
             Tcl_AppendResult(interp, "can't allocate memory for ", 
                 Blt_Itoa(numVertices + 1), " vertices", (char *)NULL);
             return TCL_ERROR;
         }
-        x = (float *)switches.x.values;
-        y = (float *)switches.y.values;
+        x = switches.x.values;
+        y = switches.y.values;
         for (i = 0; i < switches.x.numValues; i++) {
             vertices[i].x = x[i];
             vertices[i].y = y[i];
@@ -2134,7 +2133,7 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
         switches.x.values = switches.y.values = NULL;
     } else if (switches.coords.numValues > 0) {
         size_t i, j;
-        float *coords;
+        double *coords;
 
         if (switches.coords.numValues & 0x1) {
             Tcl_AppendResult(interp, "bad -coords list: ",
@@ -2142,13 +2141,13 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         numVertices = (switches.coords.numValues / 2);
-        vertices = Blt_Malloc(sizeof(Point2f)* (numVertices + 1));
+        vertices = Blt_Malloc(sizeof(Point2d)* (numVertices + 1));
         if (vertices == NULL) {
             Tcl_AppendResult(interp, "can't allocate memory for ", 
                 Blt_Itoa(numVertices + 1), " vertices", (char *)NULL);
             return TCL_ERROR;
         }
-        coords = (float *)switches.coords.values;
+        coords = switches.coords.values;
         for (i = 0, j = 0; i < switches.coords.numValues; i += 2, j++) {
             vertices[j].x = coords[i];
             vertices[j].y = coords[i+1];
@@ -2277,8 +2276,8 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
     x += 2, y += 2;
     w -= 5, h -= 5;
     if (on) {
-        Point2f points[7];
-        Region2f r;
+        Point2d points[7];
+        Region2d r;
 
         points[0].x = points[1].x = points[6].x = x;
         points[0].y = points[6].y = y + (0.4 * h);
@@ -2473,8 +2472,8 @@ Blt_PaintDelete(
     int isActive)
 {
     Blt_Picture picture;
-    Point2f points[4];
-    Region2f reg;
+    Point2d points[4];
+    Region2d reg;
     Blt_Shadow shadow;
     int x, y, r;
     Blt_PaintBrush brush;

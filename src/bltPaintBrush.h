@@ -432,7 +432,8 @@ BLT_EXTERN const char *Blt_GetBrushName(Blt_PaintBrush brush);
 BLT_EXTERN const char *Blt_GetBrushColorName(Blt_PaintBrush brush);
 BLT_EXTERN Blt_Pixel *Blt_GetBrushPixel(Blt_PaintBrush brush);
 BLT_EXTERN Blt_PaintBrushType Blt_GetBrushType(Blt_PaintBrush brush);
-
+BLT_EXTERN XColor *Blt_GetXColorFromBrush(Tk_Window tkwin,
+        Blt_PaintBrush brush);
 BLT_EXTERN int Blt_ConfigurePaintBrush(Tcl_Interp *interp,
         Blt_PaintBrush brush);
 BLT_EXTERN int Blt_GetBrushTypeFromObj(Tcl_Interp *interp,
@@ -469,7 +470,7 @@ BLT_EXTERN void Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w,
         int h, int dx, int dy, Blt_PaintBrush brush, int composite);
 
 #ifdef _BLT_INT_H
-BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,
+BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2d *vertices,
         Blt_PaintBrush brush);
 #endif  /* _BLT_INT_H */
 

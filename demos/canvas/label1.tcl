@@ -1,7 +1,6 @@
 
 package require BLT
 
-canvas .c -bg white
 set afterId -1
 set dashOffset 0
 set nextColor -1
@@ -72,31 +71,52 @@ proc Deactivate { canvas id } {
   $canvas itemconfigure $id -state normal -bg $bg1
   after cancel $afterId
 }
-.c create rectangle 100 100 300 200 -fill lightblue3 -tags "r"
 
-set id [.c create label 100 100 \
+blt::scrollset .ss \
+    -xscrollbar .ss.xs \
+    -yscrollbar .ss.ys \
+    -window .ss.c 
+blt::tk::scrollbar .ss.ys
+blt::tk::scrollbar .ss.xs
+canvas .ss.c -bg white
+
+blt::table . \
+    0,0 .ss -fill both
+
+.ss.c create rectangle 100 100 300 200 -fill lightblue3 -tags "r" -width 0
+
+set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
 	    -bg $bg1 \
-	    -activebg red3 -linewidth 0 \
+	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -anchor nw \
 	    -textanchor c \
 	    -padx .2i \
 	    -font "Arial 13" \
-	    -activedashes 4 \
-	    -rotate 0 \
+	    -rotate 45 \
 	    -width 200 \
 	    -height 30]
 
 blt::table . \
-    0,0 .c -fill both
+    0,0 .ss -fill both
 
-.c bind $id <Enter> [list Activate .c $id]
-.c bind $id <Leave> [list Deactivate .c $id]
+.ss.c bind $id <Enter> [list Activate .ss.c $id]
+.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
 
-bind .c  <4>  { 
-    .c scale all 0 0 1.1 1.1 
-    puts stderr "1=[.c bbox $id] [.c coords $id]"
-    puts stderr "2=[.c bbox r] [.c coords r]"
+bind .ss.c  <4>  { 
+    set cx [expr [winfo width .ss.c] / 2]
+    set cy [expr [winfo height .ss.c] / 2]
+    .ss.c scale all $cx $cy 1.1 1.1 
+    puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"
+    puts stderr "2=[.ss.c bbox r] [.ss.c coords r]"
+    .ss.c configure -scrollregion [.ss.c bbox all]
 }
-bind .c  <5>  { .c scale all 0 0 0.9 0.9 }
+bind .ss.c  <5>  {
+    .ss.c scale all $cx $cy 0.9 0.9
+    puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"
+    puts stderr "2=[.ss.c bbox r] [.ss.c coords r]"
+    .ss.c configure -scrollregion [.ss.c bbox all]
+}
 
+    puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"
+    puts stderr "2=[.ss.c bbox r] [.ss.c coords r]"
