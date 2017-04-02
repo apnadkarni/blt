@@ -1465,7 +1465,6 @@ BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
     if (Blt_IsVerticalLinearBrush(brush)) {
         Blt_Pixel color;
 
-        fprintf(stderr, "is vertical linear brush\n");
         color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
         for (x = x1; x <= x2; x++, dp++) {
             BlendPixels(dp, &color);
@@ -1538,10 +1537,11 @@ CompareIndices(const void *a, const void *b)
 static int 
 CompareActive(const void *a, const void *b)
 {
-    const ActiveEdge *u, *v;
+    const ActiveEdge *e1, *e2;
 
-    u = a, v = b;
-    return (u->x <= v->x) ? -1 : 1;
+    e1 = a;
+    e2 = b;
+    return (e1->x <= e2->x) ? -1 : 1;
 }
 
 static void

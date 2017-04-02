@@ -90,18 +90,21 @@ set id [.ss.c create label 100 100 \
 	    -bg $bg1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -anchor nw \
-	    -textanchor c \
+	    -textanchor w \
 	    -padx .2i \
 	    -font "Arial 13" \
-	    -rotate 45 \
-	    -width 200 \
-	    -height 30]
+	    -rotate 0 \
+	    -width 100 \
+	    -height 50]
 
 blt::table . \
     0,0 .ss -fill both
 
-.ss.c bind $id <Enter> [list Activate .ss.c $id]
-.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
+#.ss.c bind $id <Enter> [list Activate .ss.c $id]
+#.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
+set x2 [expr [winfo reqwidth .ss.c] - 10]
+set y2 [expr [winfo reqheight .ss.c] - 10]
+#.ss.c configure -scrollregion [list 0 0  $x2 $y2]
 
 bind .ss.c  <4>  { 
     set cx [expr [winfo width .ss.c] / 2]
@@ -109,13 +112,13 @@ bind .ss.c  <4>  {
     .ss.c scale all $cx $cy 1.1 1.1 
     puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"
     puts stderr "2=[.ss.c bbox r] [.ss.c coords r]"
-    .ss.c configure -scrollregion [.ss.c bbox all]
 }
 bind .ss.c  <5>  {
+    set cx [expr [winfo width .ss.c] / 2]
+    set cy [expr [winfo height .ss.c] / 2]
     .ss.c scale all $cx $cy 0.9 0.9
     puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"
     puts stderr "2=[.ss.c bbox r] [.ss.c coords r]"
-    .ss.c configure -scrollregion [.ss.c bbox all]
 }
 
     puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"

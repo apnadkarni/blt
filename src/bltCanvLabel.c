@@ -45,7 +45,6 @@
  *      -rotate numDegrees
  *      -minfontsize numPoints
  *      -maxfontsize numPoints       
- *      -truncate ellipsis | no | yes
  *      -fill colorName
  *      -font fontName
  *      -foreground colorName  ; same as -outline
@@ -61,7 +60,6 @@
  * o Try to match rectangle item size on rescale.
  * o Use XDrawRectangle for drawing right-angle rotations.
  * o PostScriptProc.  Can it handle gradients?
- * o Test -ellipsis flag
  * o Figure out better minSize, maxSize to dynamically accommodate 
  *   initialize font size better.
  * o Does alwaysRedraw flag fix problem with clipped drawable?
@@ -97,7 +95,6 @@
         (((x) > (hi)) ? (hi) : ((x) < (lo)) ? (lo) : (x))
 
 #define LAYOUT_PENDING          (1<<0)
-#define ELLIPSIS                (1<<1)
 #define DISPLAY_TEXT            (1<<2)
 #define ORTHOGONAL              (1<<3)
 #define CLIP                    (1<<4)
@@ -828,14 +825,24 @@ GetClipRegion(LabelItem *labelPtr, int x, int y)
     if (labelPtr->flags & ORTHOGONAL) {
         XRectangle r;
 
+        r.x = x;
+        r.y = y;
+        r.width  = ROUND(labelPtr->width);
+        r.height = ROUND(labelPtr->height);
         /* Text clip routines don't like negative clip coordinates. */
-        r.x = (x < 0) ? 0 : x;
-        r.y = (y < 0) ? 0 : y;
-        r.width  = x + ROUND(labelPtr->width);
-        r.height = y + ROUND(labelPtr->height);
+        if (x < 0) {
+            r.x = 0;
+            r.width += x;
+        }
+        if (y < 0) {
+            r.y = 0;
+            r.height += y;
+        }
         if ((r.width <= 0) || (r.height <= 0)) {
             return None;
         }
+        fprintf(stderr, "rectangular clip region x=%d y=%d w=%d h=%d\n",
+                r.x, r.y, r.width, r.height);
         clipRegion = TkCreateRegion();
         TkUnionRectWithRegion(&r, clipRegion, clipRegion);
     } else {
@@ -927,16 +934,38 @@ FillBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
         int w, h;
         Blt_Painter painter;
         Blt_Picture picture;
-        
+        Point2d vertices[5];
+        int i;
+            
         w = ROUND(labelPtr->rotWidth);
         h = ROUND(labelPtr->rotHeight);
+        fprintf(stderr, "drawbletopicture %d,%d %dx%d\n", x, y, w, h);
         picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
         if (picture == NULL) {
             return;                         /* Background is obscured. */
         }
+        w = Blt_Picture_Width(picture);
+        h = Blt_Picture_Height(picture);
+        for (i = 0; i < 5; i++) {
+            vertices[i].x = labelPtr->outlinePts[i].x;
+            vertices[i].y = labelPtr->outlinePts[i].y;
+            if (x < 0) {
+                vertices[i].x += x;
+            }
+            if (y < 0) {
+                vertices[i].y += y;
+            }
+        }
+        fprintf(stderr, "picture at %d,%d %dx%d\n", x, y, w, h);
         Blt_SetBrushRegion(brush, 0, 0, w, h);
-        Blt_PaintPolygon(picture, 5, labelPtr->outlinePts, brush);
+        Blt_PaintPolygon(picture, 5, vertices, brush);
         painter = Blt_GetPainter(tkwin, 1.0);
+        if (x < 0) {
+            x = 0;
+        }
+        if (y < 0) {
+            y = 0;
+        }
         Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
         Blt_FreePicture(picture);
     }
@@ -1601,10 +1630,8 @@ DisplayProc(
     }
     if (labelPtr->text != NULL) {       /* Text itself */
         Blt_Font font;
-        int maxLength;
         TkRegion clipRegion;
 
-        maxLength = (labelPtr->flags & ELLIPSIS) ? labelPtr->width : -1;
         font = (labelPtr->scaledFont) ?
             labelPtr->scaledFont : labelPtr->baseFont;
         clipRegion = GetClipRegion(labelPtr, x, y);
@@ -1614,8 +1641,7 @@ DisplayProc(
         }
         XSetFont(display, attrPtr->labelGC->gc, Blt_Font_Id(font));
         Blt_DrawLayout(tkwin, drawable, attrPtr->labelGC->gc, font,
-                Tk_Depth(tkwin), labelPtr->angle, x, y, labelPtr->layoutPtr,
-                maxLength);
+            Tk_Depth(tkwin), labelPtr->angle, x, y, labelPtr->layoutPtr, -1);
         if (clipRegion != None) {
             Blt_Font_SetClipRegion(font, None);
             TkDestroyRegion(clipRegion);
