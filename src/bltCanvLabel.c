@@ -1,4 +1,4 @@
-/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
+/* -*- mode: c; c-asic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltCanvLabel.c --
  *
@@ -58,7 +58,8 @@
  *      -anchor anchorName
  *      
  * o Try to match rectangle item size on rescale.
- * o Use XDrawRectangle for drawing right-angle rotations.
+ *     off because of outline.
+ * x Use XFillRectangle for drawing right-angle rotations.
  * o PostScriptProc.  Can it handle gradients?
  * o Figure out better minSize, maxSize to dynamically accommodate 
  *   initialize font size better.
@@ -592,6 +593,23 @@ StateToString(ClientData clientData, Tk_Window tkwin, char *widgRec,
     return (char *)string;
 }
 
+static StateAttributes *
+GetStateAttributes(LabelItem *labelPtr)
+{
+    switch (labelPtr->state) {
+    case TK_STATE_DISABLED:
+        return &labelPtr->disabled;
+    case TK_STATE_ACTIVE:
+        return &labelPtr->active;
+    case TK_STATE_NORMAL:
+        return &labelPtr->normal;
+    case TK_STATE_HIDDEN:
+    default:
+        return NULL;
+    }
+}
+
+
 static LabelGC *
 GetLabelGC(Tk_Window tkwin, XColor *colorPtr, int lineWidth, int dashes, 
            int dashOffset)
@@ -663,11 +681,10 @@ ComputeGeometry(LabelItem *labelPtr)
 {
     double w, h, rw, rh;
     int i;
-
-        Blt_Font font;
+    Blt_Font font;
         
-        font = (labelPtr->scaledFont != NULL) ?
-            labelPtr->scaledFont : labelPtr->baseFont;
+    font = (labelPtr->scaledFont != NULL) ?
+        labelPtr->scaledFont : labelPtr->baseFont;
 #if DEBUG
     fprintf(stderr, "Enter ComputeGeometry label=%s\n", labelPtr->text);
 #endif
@@ -794,9 +811,9 @@ ComputeGeometry(LabelItem *labelPtr)
         }
     }
     labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x);
-    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 1;
+    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
     labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y);
-    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 1;
+    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight);
 }
 
 
@@ -824,7 +841,7 @@ GetClipRegion(LabelItem *labelPtr, int x, int y)
     }
     if (labelPtr->flags & ORTHOGONAL) {
         XRectangle r;
-
+        
         r.x = x;
         r.y = y;
         r.width  = ROUND(labelPtr->width);
@@ -1536,18 +1553,18 @@ TranslateProc(
                                          * moved. */
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
-
+    
 #if DEBUG
     fprintf(stderr, "Enter TranslateProc label=%s dx=%g, dy=%g\n", 
             labelPtr->text, dx, dy);
 #endif
-    /* Translate anchor. */
+    /* Move the item by translating the anchor. */
     labelPtr->anchorPos.x += dx;
     labelPtr->anchorPos.y += dy;
     labelPtr->x += dx;
     labelPtr->y += dy;
 
-    /* Translate bounding box. */
+    /* Translate from world coordinates to drawable coordinates. */
     labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x);
     labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
     labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y);
@@ -1603,30 +1620,22 @@ DisplayProc(
         return;
     }
 #endif
-    switch (labelPtr->state) {
-    case TK_STATE_DISABLED:
-        attrPtr = &labelPtr->disabled;
-        break;
-    case TK_STATE_ACTIVE:
-        attrPtr = &labelPtr->active;
-        break;
-    case TK_STATE_NORMAL:
-        attrPtr = &labelPtr->normal;
-        break;
-    case TK_STATE_HIDDEN:
-    default:
-        attrPtr = NULL;
-        break;
-    }
-    assert(attrPtr != NULL);
+
     tkwin = Tk_CanvasTkwin(canvas);
+    attrPtr = GetStateAttributes(labelPtr);
+    assert(attrPtr != NULL);    
     if (attrPtr->brush != NULL) {       /* Fill rectangle or isolateral. */
         FillBackground(tkwin, drawable, labelPtr, x, y, attrPtr->brush,
                        attrPtr->bgColor);
     }
     if (attrPtr->lineWidth > 0) {      /* Outline */
-        XDrawLines(display, drawable, attrPtr->labelGC->gc, labelPtr->points, 5,
-            CoordModeOrigin);
+        if (labelPtr->flags & ORTHOGONAL) {
+            XDrawRectangle(display, drawable, attrPtr->labelGC->gc,
+                           x, y, labelPtr->width, labelPtr->height);
+        } else {
+            XDrawLines(display, drawable, attrPtr->labelGC->gc,
+                        labelPtr->points, 5, CoordModeOrigin);
+        }
     }
     if (labelPtr->text != NULL) {       /* Text itself */
         Blt_Font font;

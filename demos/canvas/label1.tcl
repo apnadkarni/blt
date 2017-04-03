@@ -100,8 +100,8 @@ set id [.ss.c create label 100 100 \
 blt::table . \
     0,0 .ss -fill both
 
-#.ss.c bind $id <Enter> [list Activate .ss.c $id]
-#.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
+.ss.c bind $id <Enter> [list Activate .ss.c $id]
+.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
 set x2 [expr [winfo reqwidth .ss.c] - 10]
 set y2 [expr [winfo reqheight .ss.c] - 10]
 #.ss.c configure -scrollregion [list 0 0  $x2 $y2]
