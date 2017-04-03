@@ -1,4 +1,4 @@
-/* -*- mode: c; c-asic-offset: 4; indent-tabs-mode: nil -*- */
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltCanvLabel.c --
  *
@@ -68,7 +68,7 @@
  * o Write documentation
  */
 #define USE_OLD_CANVAS  1
-#define DEBUG 1
+#define DEBUG 0
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
@@ -714,7 +714,6 @@ ComputeGeometry(LabelItem *labelPtr)
         (labelPtr->height < labelPtr->layoutPtr->height)) {
         labelPtr->flags |= CLIP;    /* Turn on clipping of text. */
     }
-    fprintf(stderr, "sw=%g sh=%g\n", labelPtr->width, labelPtr->height);
     /* Compute the outline polygon (isolateral or rectangle) given the
      * width and height. The center of the box is 0,0. */
     Blt_GetBoundingBox(labelPtr->width, labelPtr->height, labelPtr->angle, 
@@ -727,12 +726,14 @@ ComputeGeometry(LabelItem *labelPtr)
      * rotated item. */
     labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
                                           labelPtr->anchor);
+#if DEBUG
     fprintf(stderr, "x1=%g y1=%g x2=%g y2=%g x2r=%g y2r=%g\n", 
             labelPtr->anchorPos.x, labelPtr->anchorPos.y,
             labelPtr->anchorPos.x + labelPtr->width, 
             labelPtr->anchorPos.y + labelPtr->height,
             labelPtr->anchorPos.x + labelPtr->rotWidth, 
             labelPtr->anchorPos.y + labelPtr->rotHeight);
+#endif
     for (i = 0; i < 4; i++) {
         labelPtr->outlinePts[i].x += rw * 0.5;
         labelPtr->outlinePts[i].y += rh * 0.5;
@@ -810,10 +811,10 @@ ComputeGeometry(LabelItem *labelPtr)
             fragPtr->y1 = ROUND(q.y);
         }
     }
-    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x);
-    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
-    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y);
-    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight);
+    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x) - 1;
+    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 2;
+    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y) - 1;
+    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 2;
 }
 
 
@@ -858,8 +859,10 @@ GetClipRegion(LabelItem *labelPtr, int x, int y)
         if ((r.width <= 0) || (r.height <= 0)) {
             return None;
         }
+#if DEBUG
         fprintf(stderr, "rectangular clip region x=%d y=%d w=%d h=%d\n",
                 r.x, r.y, r.width, r.height);
+#endif
         clipRegion = TkCreateRegion();
         TkUnionRectWithRegion(&r, clipRegion, clipRegion);
     } else {
@@ -910,7 +913,6 @@ LabelInsideRegion(LabelItem *labelPtr, int rx, int ry, int rw, int rh)
     region.right = rx + rw;
     region.bottom = ry + rh;
     state = Blt_PolygonInRegion(labelPtr->outlinePts, 5, &region, FALSE);
-    fprintf(stderr, "LabelInsideRegion state =%d\n", state);
     return state;
 }
 
@@ -956,7 +958,6 @@ FillBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
             
         w = ROUND(labelPtr->rotWidth);
         h = ROUND(labelPtr->rotHeight);
-        fprintf(stderr, "drawbletopicture %d,%d %dx%d\n", x, y, w, h);
         picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
         if (picture == NULL) {
             return;                         /* Background is obscured. */
@@ -973,7 +974,6 @@ FillBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
                 vertices[i].y += y;
             }
         }
-        fprintf(stderr, "picture at %d,%d %dx%d\n", x, y, w, h);
         Blt_SetBrushRegion(brush, 0, 0, w, h);
         Blt_PaintPolygon(picture, 5, vertices, brush);
         painter = Blt_GetPainter(tkwin, 1.0);
@@ -1565,10 +1565,10 @@ TranslateProc(
     labelPtr->y += dy;
 
     /* Translate from world coordinates to drawable coordinates. */
-    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x);
-    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth);
-    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y);
-    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight);
+    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x) - 1;
+    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 2;
+    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y) - 2;
+    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 2;
 }
 
 /*
@@ -1645,7 +1645,9 @@ DisplayProc(
             labelPtr->scaledFont : labelPtr->baseFont;
         clipRegion = GetClipRegion(labelPtr, x, y);
         if (clipRegion != None) {
+#if DEBUG
             fprintf(stderr, "setting clipRegion to font\n");
+#endif
             Blt_Font_SetClipRegion(font, clipRegion);
         }
         XSetFont(display, attrPtr->labelGC->gc, Blt_Font_Id(font));

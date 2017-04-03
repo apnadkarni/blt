@@ -53,7 +53,6 @@ proc NextColor {} {
 
 proc MarchingAnts { canvas id } {
   global afterId dashOffset
-puts stderr "MarchingAnts $dashOffset"
   incr dashOffset
   $canvas itemconfigure $id -activedashoffset $dashOffset
   set afterId [after 100 [list MarchingAnts $canvas $id]]
@@ -110,16 +109,10 @@ bind .ss.c  <4>  {
     set cx [expr [winfo width .ss.c] / 2]
     set cy [expr [winfo height .ss.c] / 2]
     .ss.c scale all $cx $cy 1.1 1.1 
-    puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"
-    puts stderr "2=[.ss.c bbox r] [.ss.c coords r]"
 }
 bind .ss.c  <5>  {
     set cx [expr [winfo width .ss.c] / 2]
     set cy [expr [winfo height .ss.c] / 2]
     .ss.c scale all $cx $cy 0.9 0.9
-    puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"
-    puts stderr "2=[.ss.c bbox r] [.ss.c coords r]"
 }
 
-    puts stderr "1=[.ss.c bbox $id] [.ss.c coords $id]"
-    puts stderr "2=[.ss.c bbox r] [.ss.c coords r]"
