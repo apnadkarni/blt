@@ -292,6 +292,12 @@ Blt_Ps_GetValue(PostScript *psPtr, int *lengthPtr)
     return (const char *)Blt_DBuffer_Bytes(psPtr->dbuffer);
 }
 
+const char *
+Blt_Ps_GetString(PostScript *psPtr)
+{
+    return Blt_DBuffer_String(psPtr->dbuffer);
+}
+
 void
 Blt_Ps_SetInterp(PostScript *psPtr, Tcl_Interp *interp)
 {
@@ -1356,6 +1362,88 @@ Blt_Ps_XSetFont(PostScript *psPtr, Blt_Font font)
     }
     Blt_Ps_Append(psPtr, "12.0 /Helvetica-Bold SetFont\n");
 }
+
+void
+Blt_Ps_TextString(Blt_Ps ps, const char *string, int numBytes) 
+{
+    char *bp, *dst;
+    int count;                  /* Counts the # of bytes written to the
+                                 * intermediate scratch buffer. */
+    const char *src, *end;
+    unsigned char c;
+#if HAVE_UTF
+    Tcl_UniChar ch;
+#endif
+    int limit;
+
+    limit = POSTSCRIPT_BUFSIZ - 4; /* High water mark for scratch buffer. */
+
+    Blt_Ps_Append(ps, "(");
+    count = 0;
+    dst = Blt_Ps_GetScratchBuffer(ps);
+    src = string;
+    end = string + numBytes;
+    while (src < end) {
+        if (count > limit) {
+            /* Don't let the scatch buffer overflow */
+            dst = Blt_Ps_GetScratchBuffer(ps);
+            dst[count] = '\0';
+            Blt_Ps_Append(ps, dst);
+            count = 0;
+        }
+#if HAVE_UTF
+        /*
+         * INTL: For now we just treat the characters as binary data and
+         * display the lower byte.  Eventually this should be revised to
+         * handle international postscript fonts.
+         */
+        src += Tcl_UtfToUniChar(src, &ch);
+        c = (unsigned char)(ch & 0xff);
+#else 
+        c = *src++;
+#endif
+        
+        if ((c == '\\') || (c == '(') || (c == ')')) {
+            /*
+             * If special PostScript characters characters "\", "(", and
+             * ")" are contained in the text string, prepend backslashes
+             * to them.
+             */
+            *dst++ = '\\';
+            *dst++ = c;
+            count += 2;
+        } else if ((c < ' ') || (c > '~')) {
+            /* Convert non-printable characters into octal. */
+            Blt_FormatString(dst, 5, "\\%03o", c);
+            dst += 4;
+            count += 4;
+        } else {
+            *dst++ = c;
+            count++;
+        }
+    }
+    bp = Blt_Ps_GetScratchBuffer(ps);
+    bp[count] = '\0';
+    Blt_Ps_Append(ps, bp);
+    Blt_Ps_Append(ps, ")");
+}    
+
+void
+Blt_Ps_TextLayout(Blt_Ps ps, int x, int y, TextLayout *textPtr)
+{
+    TextFragment *fragPtr;
+    int i;
+
+    fragPtr = textPtr->fragments;
+    for (i = 0; i < textPtr->numFragments; i++, fragPtr++) {
+        if (fragPtr->numBytes > 0) {
+            Blt_Ps_TextString(ps, fragPtr->text, fragPtr->numBytes);
+            Blt_Ps_Format(ps, " %d %d %d DrawAdjText\n",
+                          fragPtr->w, x + fragPtr->x, y + fragPtr->y);
+        }
+    }
+}
+
 
 static void
 TextLayoutToPostScript(Blt_Ps ps, int x, int y, TextLayout *textPtr)

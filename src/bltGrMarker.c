@@ -153,7 +153,7 @@ typedef void    (MarkerDrawProc)(Marker *markerPtr, Drawable drawable);
 typedef void    (MarkerFreeProc)(Marker *markerPtr);
 typedef int     (MarkerConfigProc)(Marker *markerPtr);
 typedef void    (MarkerMapProc)(Marker *markerPtr);
-typedef void    (MarkerPostscriptProc)(Marker *markerPtr, Blt_Ps ps);
+typedef void    (MarkerPostScriptProc)(Marker *markerPtr, Blt_Ps ps);
 typedef int     (MarkerPointProc)(Marker *markerPtr, Point2d *samplePtr);
 typedef int     (MarkerAreaProc)(Marker *markerPtr, Region2d *rgnPtr, 
                                    int enclosed);
@@ -167,7 +167,7 @@ typedef struct {
     MarkerMapProc *mapProc;
     MarkerPointProc *pointProc;
     MarkerAreaProc *regionProc;
-    MarkerPostscriptProc *psProc;
+    MarkerPostScriptProc *psProc;
 
 }  MarkerClass;
 
@@ -372,7 +372,7 @@ static MarkerDrawProc BitmapDrawProc;
 static MarkerFreeProc BitmapFreeProc;
 static MarkerMapProc BitmapMapProc;
 static MarkerPointProc BitmapPointProc;
-static MarkerPostscriptProc BitmapPostscriptProc;
+static MarkerPostScriptProc BitmapPostScriptProc;
 static MarkerAreaProc BitmapAreaProc;
 
 static MarkerClass bitmapMarkerClass = {
@@ -383,7 +383,7 @@ static MarkerClass bitmapMarkerClass = {
     BitmapMapProc,
     BitmapPointProc,
     BitmapAreaProc,
-    BitmapPostscriptProc,
+    BitmapPostScriptProc,
 };
 
 /*
@@ -481,7 +481,7 @@ static MarkerDrawProc ImageDrawProc;
 static MarkerFreeProc ImageFreeProc;
 static MarkerMapProc ImageMapProc;
 static MarkerPointProc ImagePointProc;
-static MarkerPostscriptProc ImagePostscriptProc;
+static MarkerPostScriptProc ImagePostScriptProc;
 static MarkerAreaProc ImageAreaProc;
 
 static MarkerClass imageMarkerClass = {
@@ -492,7 +492,7 @@ static MarkerClass imageMarkerClass = {
     ImageMapProc,
     ImagePointProc,
     ImageAreaProc,
-    ImagePostscriptProc,
+    ImagePostScriptProc,
 };
 
 /*
@@ -607,7 +607,7 @@ static MarkerDrawProc LineDrawProc;
 static MarkerFreeProc LineFreeProc;
 static MarkerMapProc LineMapProc;
 static MarkerPointProc LinePointProc;
-static MarkerPostscriptProc LinePostscriptProc;
+static MarkerPostScriptProc LinePostScriptProc;
 static MarkerAreaProc LineAreaProc;
 
 static MarkerClass lineMarkerClass = {
@@ -618,7 +618,7 @@ static MarkerClass lineMarkerClass = {
     LineMapProc,
     LinePointProc,
     LineAreaProc,
-    LinePostscriptProc,
+    LinePostScriptProc,
 };
 
 /*
@@ -760,7 +760,7 @@ static MarkerDrawProc PolygonDrawProc;
 static MarkerFreeProc PolygonFreeProc;
 static MarkerMapProc PolygonMapProc;
 static MarkerPointProc PolygonPointProc;
-static MarkerPostscriptProc PolygonPostscriptProc;
+static MarkerPostScriptProc PolygonPostScriptProc;
 static MarkerAreaProc PolygonAreaProc;
 
 static MarkerClass polygonMarkerClass = {
@@ -771,7 +771,7 @@ static MarkerClass polygonMarkerClass = {
     PolygonMapProc,
     PolygonPointProc,
     PolygonAreaProc,
-    PolygonPostscriptProc,
+    PolygonPostScriptProc,
 };
 
 /*
@@ -909,7 +909,7 @@ static MarkerDrawProc RectangleDrawProc;
 static MarkerFreeProc RectangleFreeProc;
 static MarkerMapProc RectangleMapProc;
 static MarkerPointProc RectanglePointProc;
-static MarkerPostscriptProc RectanglePostscriptProc;
+static MarkerPostScriptProc RectanglePostScriptProc;
 static MarkerAreaProc RectangleAreaProc;
 
 static MarkerClass rectangleMarkerClass = {
@@ -920,7 +920,7 @@ static MarkerClass rectangleMarkerClass = {
     RectangleMapProc,
     RectanglePointProc,
     RectangleAreaProc,
-    RectanglePostscriptProc,
+    RectanglePostScriptProc,
 };
 
 
@@ -1044,7 +1044,7 @@ static MarkerDrawProc TextDrawProc;
 static MarkerFreeProc TextFreeProc;
 static MarkerMapProc TextMapProc;
 static MarkerPointProc TextPointProc;
-static MarkerPostscriptProc TextPostscriptProc;
+static MarkerPostScriptProc TextPostScriptProc;
 static MarkerAreaProc TextAreaProc;
 
 static MarkerClass textMarkerClass = {
@@ -1055,7 +1055,7 @@ static MarkerClass textMarkerClass = {
     TextMapProc,
     TextPointProc,
     TextAreaProc,
-    TextPostscriptProc,
+    TextPostScriptProc,
 };
 
 /*
@@ -1152,7 +1152,7 @@ static MarkerDrawProc WindowDrawProc;
 static MarkerFreeProc WindowFreeProc;
 static MarkerMapProc WindowMapProc;
 static MarkerPointProc WindowPointProc;
-static MarkerPostscriptProc WindowPostscriptProc;
+static MarkerPostScriptProc WindowPostScriptProc;
 static MarkerAreaProc WindowAreaProc;
 
 static MarkerClass windowMarkerClass = {
@@ -1163,7 +1163,7 @@ static MarkerClass windowMarkerClass = {
     WindowMapProc,
     WindowPointProc,
     WindowAreaProc,
-    WindowPostscriptProc,
+    WindowPostScriptProc,
 };
 
 static Tk_ImageChangedProc ImageChangedProc;
@@ -1180,7 +1180,7 @@ static MarkerClass ovalMarkerClass = {
     OvalMapProc,
     OvalPointProc,
     OvalAreaProc,
-    OvalPostscriptProc,
+    OvalPostScriptProc,
 };
 #endif
 
@@ -2809,7 +2809,7 @@ BitmapDrawProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * BitmapPostscriptProc --
+ * BitmapPostScriptProc --
  *
  *      Generates PostScript to print a bitmap marker.
  *
@@ -2819,7 +2819,7 @@ BitmapDrawProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-BitmapPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+BitmapPostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
@@ -3176,7 +3176,7 @@ ImageDrawProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * ImagePostscriptProc --
+ * ImagePostScriptProc --
  *
  *      This procedure is invoked to print a image marker.
  *
@@ -3186,7 +3186,7 @@ ImageDrawProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-ImagePostscriptProc(Marker *markerPtr, Blt_Ps ps)
+ImagePostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     ImageMarker *imPtr = (ImageMarker *)markerPtr;
     Blt_Picture picture;
@@ -3490,7 +3490,7 @@ TextDrawProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * TextPostscriptProc --
+ * TextPostScriptProc --
  *
  *      Outputs PostScript commands to draw a text marker at a given x,y
  *      coordinate, rotation, anchor, and font.
@@ -3504,7 +3504,7 @@ TextDrawProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-TextPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+TextPostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
 
@@ -3789,12 +3789,12 @@ WindowDrawProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * WindowPostscriptProc --
+ * WindowPostScriptProc --
  *
  *---------------------------------------------------------------------------
  */
 static void
-WindowPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+WindowPostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -4251,7 +4251,7 @@ LineConfigureProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * LinePostscriptProc --
+ * LinePostScriptProc --
  *
  *      Prints postscript commands to display the connect line.  Dashed
  *      lines need to be handled specially, especially if a background
@@ -4267,7 +4267,7 @@ LineConfigureProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static void
-LinePostscriptProc(Marker *markerPtr, Blt_Ps ps)
+LinePostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     LineMarker *lmPtr = (LineMarker *)markerPtr;
 
@@ -4705,7 +4705,7 @@ PolygonDrawProc(Marker *markerPtr, Drawable drawable)
 
 
 static void
-PolygonPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+PolygonPostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
@@ -5189,7 +5189,7 @@ RectangleDrawProc(Marker *basePtr, Drawable drawable)
 
 
 static void
-RectanglePostscriptProc(Marker *basePtr, Blt_Ps ps)
+RectanglePostScriptProc(Marker *basePtr, Blt_Ps ps)
 {
     Graph *graphPtr = basePtr->obj.graphPtr;
     RectangleMarker *markerPtr = (RectangleMarker *)basePtr;

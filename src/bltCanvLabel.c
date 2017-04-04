@@ -68,7 +68,7 @@
  * o Write documentation
  */
 #define USE_OLD_CANVAS  1
-#define DEBUG 0
+#define DEBUG 1
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
@@ -409,18 +409,6 @@ static Tk_ConfigSpec configSpecs[] = {
         (char *)NULL, 0, 0}
 };
 
-/* Prototypes for procedures defined in this file: */
-static Tk_ItemCoordProc CoordsProc;
-static Tk_ItemAreaProc AreaProc;
-static Tk_ItemPointProc PointProc;
-static Tk_ItemConfigureProc ConfigureProc;
-static Tk_ItemCreateProc CreateProc;
-static Tk_ItemDeleteProc DeleteProc;
-static Tk_ItemScaleProc ScaleProc;
-static Tk_ItemTranslateProc TranslateProc;
-static Tk_ItemDisplayProc DisplayProc;
-static Tk_ItemPostscriptProc PostScriptProc;
-
 static void ComputeGeometry(LabelItem *itemPtr);
 
 
@@ -682,7 +670,8 @@ ComputeGeometry(LabelItem *labelPtr)
     double w, h, rw, rh;
     int i;
     Blt_Font font;
-        
+    StateAttributes *attrPtr;
+
     font = (labelPtr->scaledFont != NULL) ?
         labelPtr->scaledFont : labelPtr->baseFont;
 #if DEBUG
@@ -727,10 +716,11 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
                                           labelPtr->anchor);
 #if DEBUG
-    fprintf(stderr, "x1=%g y1=%g x2=%g y2=%g x2r=%g y2r=%g\n", 
+    fprintf(stderr, "x1=%g y1=%g x2=%g y2=%g rw=%g, rh=%g, x2r=%g y2r=%g\n", 
             labelPtr->anchorPos.x, labelPtr->anchorPos.y,
             labelPtr->anchorPos.x + labelPtr->width, 
             labelPtr->anchorPos.y + labelPtr->height,
+            labelPtr->rotWidth, labelPtr->rotHeight,
             labelPtr->anchorPos.x + labelPtr->rotWidth, 
             labelPtr->anchorPos.y + labelPtr->rotHeight);
 #endif
@@ -811,10 +801,14 @@ ComputeGeometry(LabelItem *labelPtr)
             fragPtr->y1 = ROUND(q.y);
         }
     }
-    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x) - 1;
-    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 2;
-    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y) - 1;
-    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 2;
+    /* Extend the bounding box to the current state's line width.  */
+    attrPtr = GetStateAttributes(labelPtr);
+    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x) - attrPtr->lineWidth;
+    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 
+        2 * attrPtr->lineWidth;
+    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y) - attrPtr->lineWidth;
+    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 
+        2 * attrPtr->lineWidth;
 }
 
 
@@ -843,10 +837,10 @@ GetClipRegion(LabelItem *labelPtr, int x, int y)
     if (labelPtr->flags & ORTHOGONAL) {
         XRectangle r;
         
-        r.x = x;
-        r.y = y;
-        r.width  = ROUND(labelPtr->width);
-        r.height = ROUND(labelPtr->height);
+        r.x = ROUND(x);
+        r.y = ROUND(y);
+        r.width  = ROUND(labelPtr->rotWidth);
+        r.height = ROUND(labelPtr->rotHeight);
         /* Text clip routines don't like negative clip coordinates. */
         if (x < 0) {
             r.x = 0;
@@ -944,7 +938,7 @@ FillBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
         gc = Tk_GCForColor(bgColor, drawable);
         if (labelPtr->flags & ORTHOGONAL) {
             XFillRectangle(Tk_Display(tkwin), drawable, gc, x, y, 
-                ROUND(labelPtr->width), ROUND(labelPtr->height));
+                ROUND(labelPtr->rotWidth), ROUND(labelPtr->rotHeight));
         } else {
             XFillPolygon(Tk_Display(tkwin), drawable, gc, labelPtr->points, 5, 
                 Convex, CoordModeOrigin);
@@ -1051,85 +1045,6 @@ DeleteProc(
     }
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * CreateProc --
- *
- *      This procedure is invoked to create a new label item.
- *
- * Results:
- *      A standard TCL return value.  If an error occurred in creating the
- *      item, then an error message is left in interp->result; in this case
- *      labelPtr is left uninitialized, so it can be safely freed by the
- *      caller.
- *
- * Side effects:
- *      A new label item is created.
- *
- *      pathName create label x y ?option value...?
- *
- *---------------------------------------------------------------------------
- */
-static int
-CreateProc(
-    Tcl_Interp *interp,                 /* Interpreter for error reporting. */
-    Tk_Canvas canvas,                   /* Canvas to hold new item. */
-    Tk_Item *itemPtr,                   /* Pointer to the structure of the
-                                         * new item; header has been
-                                         * previously initialized by the
-                                         * caller. */
-    int argc,                           /* # of arguments in argv. */
-    char **argv)                        /* Arguments describing item. */
-{
-    LabelItem *labelPtr = (LabelItem *)itemPtr;
-    Tk_Window tkwin;
-    double x, y;
-
-#if DEBUG
-    fprintf(stderr, "Enter CreateProc\n");
-#endif
-    if (!initialized) {
-        Blt_InitHashTable(&gcTable, sizeof(LabelGCKey) / sizeof(int));
-        initialized = TRUE;
-    }
-    tkwin = Tk_CanvasTkwin(canvas);
-    if (argc < 2) {
-        Tcl_AppendResult(interp, "wrong # args: should be \"",
-            Tk_PathName(tkwin), " create ", itemPtr->typePtr->name,
-            " x y ?option value...?\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    /* Get the anchor point of the label on the canvas. */
-    if ((Tk_CanvasGetCoord(interp, canvas, argv[0], &x) != TCL_OK) ||
-        (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
-        return TCL_ERROR;
-    }
-
-    /* Initialize the rest of label item structure, below the header. */
-    memset((char *)labelPtr + sizeof(Tk_Item), 0, 
-           sizeof(LabelItem) - sizeof(Tk_Item));
-
-    labelPtr->anchor = TK_ANCHOR_NW;
-    labelPtr->canvas = canvas;
-    labelPtr->display = Tk_Display(tkwin);
-    labelPtr->interp = interp;
-    labelPtr->xScale = labelPtr->yScale = 1.0;
-    labelPtr->state = TK_STATE_NORMAL;
-    labelPtr->textAnchor = TK_ANCHOR_NW;
-    labelPtr->tkwin  = tkwin;
-    labelPtr->x = x;
-    labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
-    labelPtr->y = y;
-    labelPtr->yPad.side1 = labelPtr->yPad.side2 = 2;
-    if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
-        != TCL_OK) {
-        DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
-        return TCL_ERROR;
-    }
-    ComputeGeometry(labelPtr);
-    return TCL_OK;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -1258,6 +1173,86 @@ ConfigureProc(
         labelPtr->active.bgColor = colorPtr;
         break;
     }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CreateProc --
+ *
+ *      This procedure is invoked to create a new label item.
+ *
+ * Results:
+ *      A standard TCL return value.  If an error occurred in creating the
+ *      item, then an error message is left in interp->result; in this case
+ *      labelPtr is left uninitialized, so it can be safely freed by the
+ *      caller.
+ *
+ * Side effects:
+ *      A new label item is created.
+ *
+ *      pathName create label x y ?option value...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+CreateProc(
+    Tcl_Interp *interp,                 /* Interpreter for error reporting. */
+    Tk_Canvas canvas,                   /* Canvas to hold new item. */
+    Tk_Item *itemPtr,                   /* Pointer to the structure of the
+                                         * new item; header has been
+                                         * previously initialized by the
+                                         * caller. */
+    int argc,                           /* # of arguments in argv. */
+    char **argv)                        /* Arguments describing item. */
+{
+    LabelItem *labelPtr = (LabelItem *)itemPtr;
+    Tk_Window tkwin;
+    double x, y;
+
+#if DEBUG
+    fprintf(stderr, "Enter CreateProc\n");
+#endif
+    if (!initialized) {
+        Blt_InitHashTable(&gcTable, sizeof(LabelGCKey) / sizeof(int));
+        initialized = TRUE;
+    }
+    tkwin = Tk_CanvasTkwin(canvas);
+    if (argc < 2) {
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+            Tk_PathName(tkwin), " create ", itemPtr->typePtr->name,
+            " x y ?option value...?\"", (char *)NULL);
+        return TCL_ERROR;
+    }
+    /* Get the anchor point of the label on the canvas. */
+    if ((Tk_CanvasGetCoord(interp, canvas, argv[0], &x) != TCL_OK) ||
+        (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+
+    /* Initialize the rest of label item structure, below the header. */
+    memset((char *)labelPtr + sizeof(Tk_Item), 0, 
+           sizeof(LabelItem) - sizeof(Tk_Item));
+
+    labelPtr->anchor = TK_ANCHOR_NW;
+    labelPtr->canvas = canvas;
+    labelPtr->display = Tk_Display(tkwin);
+    labelPtr->interp = interp;
+    labelPtr->xScale = labelPtr->yScale = 1.0;
+    labelPtr->state = TK_STATE_NORMAL;
+    labelPtr->textAnchor = TK_ANCHOR_NW;
+    labelPtr->tkwin  = tkwin;
+    labelPtr->x = x;
+    labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
+    labelPtr->y = y;
+    labelPtr->yPad.side1 = labelPtr->yPad.side2 = 2;
+    if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
+        != TCL_OK) {
+        DeleteProc(canvas, itemPtr, Tk_Display(tkwin));
+        return TCL_ERROR;
+    }
+    ComputeGeometry(labelPtr);
     return TCL_OK;
 }
 
@@ -1565,10 +1560,10 @@ TranslateProc(
     labelPtr->y += dy;
 
     /* Translate from world coordinates to drawable coordinates. */
-    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x) - 1;
-    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 2;
-    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y) - 2;
-    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 2;
+    labelPtr->header.x1 += dx;
+    labelPtr->header.x2 += dx;
+    labelPtr->header.y1 += dy;
+    labelPtr->header.y2 += dy;
 }
 
 /*
@@ -1631,7 +1626,7 @@ DisplayProc(
     if (attrPtr->lineWidth > 0) {      /* Outline */
         if (labelPtr->flags & ORTHOGONAL) {
             XDrawRectangle(display, drawable, attrPtr->labelGC->gc,
-                           x, y, labelPtr->width, labelPtr->height);
+                           x, y, labelPtr->rotWidth, labelPtr->rotHeight);
         } else {
             XDrawLines(display, drawable, attrPtr->labelGC->gc,
                         labelPtr->points, 5, CoordModeOrigin);
@@ -1691,11 +1686,15 @@ PostScriptProc(
                                          * font information; 0 means final *
                                          * PostScript is being created. */
 {
-    LabelItem *labelPtr = (LabelItem *)itemPtr;
+    Blt_Font font;
     Blt_Ps ps;
-    double xScale, yScale;
-    double x, y, w, h;
+    LabelItem *labelPtr = (LabelItem *)itemPtr;
     PageSetup setup;
+    StateAttributes *attrPtr;
+    TextLayout *layoutPtr;
+    double x, y, w, h, rw, rh;
+    int xOffset, yOffset;
+    Point2d anchorPos;
 
 #if DEBUG
     fprintf(stderr, "Enter PostScriptProc label=%s prepass=%d\n",  
@@ -1708,31 +1707,142 @@ PostScriptProc(
     memset(&setup, 0, sizeof(setup));
     ps = Blt_Ps_Create(interp, &setup);
 
+    /* Turn on PostScript measurements when computing the label's layout. */
+    Blt_Ps_SetPrinting(ps, TRUE);
+    font = (labelPtr->scaledFont != NULL) ?
+        labelPtr->scaledFont : labelPtr->baseFont;
+    if (labelPtr->numBytes == 0) {
+        w = labelPtr->reqWidth;
+        h = labelPtr->reqHeight;
+        layoutPtr = NULL;
+    } else {
+        TextStyle ts;
+
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetFont(ts, font);
+        Blt_Ts_SetPadding(ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
+                          labelPtr->yPad.side1, labelPtr->yPad.side2);
+        layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
+        /* Let the requested width and height override the computed size. */
+        w = (labelPtr->reqWidth > 0) ? labelPtr->reqWidth : layoutPtr->width;
+        h = (labelPtr->reqHeight > 0) ? labelPtr->reqHeight : layoutPtr->height;
+    }
+    Blt_Ps_SetPrinting(ps, FALSE);
+
     /* Lower left corner of item on page. */
     x = labelPtr->anchorPos.x;
     y = Tk_CanvasPsY(canvas, labelPtr->anchorPos.y);
-    w = labelPtr->rotWidth;
-    h = labelPtr->rotHeight;
 
-    Blt_Ps_Append(ps, "BeginEPSF\n");
+    w *= labelPtr->xScale;
+    h *= labelPtr->yScale;
+    Blt_GetBoundingBox(w, h, labelPtr->angle, &rw, &rh, NULL);
+    anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y - h, rw, rh, 
+                                labelPtr->anchor);
+    xOffset = yOffset = 0;
+    if (layoutPtr != NULL) {
+        /* Justify the text within the bounding rectangle. */
+        switch (labelPtr->textAnchor) {
+        case TK_ANCHOR_NW:
+        case TK_ANCHOR_W:
+        case TK_ANCHOR_SW:
+            xOffset = 0;
+            break;
+        case TK_ANCHOR_N:
+        case TK_ANCHOR_CENTER:
+        case TK_ANCHOR_S:
+            xOffset = (w - layoutPtr->width) / 2;
+            break;
+        case TK_ANCHOR_NE:
+        case TK_ANCHOR_E:
+        case TK_ANCHOR_SE:
+            xOffset = w - layoutPtr->width;
+            break;
+        }
+        switch (labelPtr->textAnchor) {
+        case TK_ANCHOR_NW:
+        case TK_ANCHOR_N:
+        case TK_ANCHOR_NE:
+            yOffset = 0;
+            break;
+        case TK_ANCHOR_W:
+        case TK_ANCHOR_CENTER:
+        case TK_ANCHOR_E:
+            yOffset = (h - layoutPtr->height) / 2;
+            break;
+        case TK_ANCHOR_SW:
+        case TK_ANCHOR_S:
+        case TK_ANCHOR_SE:
+            yOffset = h - layoutPtr->height;
+            break;
+        }
+    }
+    Blt_Ps_Append(ps, 
+                  "/SetFont { 	\n"
+                  "  % Stack: pointSize fontName\n"
+                  "  findfont exch scalefont ISOEncode setfont\n"
+                  "} def\n");
 
-    xScale = w / (double)(labelPtr->header.x2 - labelPtr->header.x1);
-    yScale = h / (double)(labelPtr->header.y2 - labelPtr->header.y1);
+    Blt_Ps_Format(ps, "gsave\n");
+    Blt_Ps_Format(ps, "  %g %g translate\n", x + w * .5, y + h * .5);
+    Blt_Ps_Format(ps, "  %g rotate\n", labelPtr->angle);
+    Blt_Ps_Format(ps, "  %g %g translate\n", -(x + w * .5), -(y + h * .5));
 
-    /* Set up scaling and translation transformations for the EPS item */
+    Blt_Ps_Format(ps, "  newpath\n", x, y);
+    Blt_Ps_Format(ps, "    %g %g moveto\n", x, y);
+    Blt_Ps_Format(ps, "    %g %g lineto\n", x + w, y);
+    Blt_Ps_Format(ps, "    %g %g lineto\n", x + w, y - h);
+    Blt_Ps_Format(ps, "    %g %g lineto\n", x, y - h);
+    Blt_Ps_Format(ps, "    %g %g lineto\n", x, y);
+    Blt_Ps_Format(ps, "  closepath\n");
+    Blt_Ps_Format(ps, "  clip\n");
 
-    Blt_Ps_Format(ps, "%g %g translate\n", x, y);
-    Blt_Ps_Format(ps, "%g %g scale\n", xScale, yScale);
-    Blt_Ps_Format(ps, "%d %d translate\n", -(labelPtr->header.x1),
-                  -(labelPtr->header.y1));
+    attrPtr = GetStateAttributes(labelPtr);
+    if (attrPtr->bgColor != NULL) {
+        Blt_Ps_XSetBackground(ps, attrPtr->bgColor);
+        Blt_Ps_Format(ps, "  gsave fill grestore\n");
+    }
+    if (attrPtr->lineWidth > 0) {
+        Blt_Ps_XSetForeground(ps, attrPtr->fgColor);
+        Blt_Ps_XSetLineWidth(ps, attrPtr->lineWidth);
+        if (attrPtr->dashes > 0) {
+            Blt_Ps_Format(ps, "[ %d ] 0 setdash", attrPtr->dashes);
+            if (attrPtr->bgColor != NULL) {
+                Blt_Ps_Append(ps, "/DashesProc {\n  gsave\n    ");
+                Blt_Ps_XSetBackground(ps, attrPtr->bgColor);
+                Blt_Ps_Append(ps, "    ");
+                Blt_Ps_XSetDashes(ps, (Blt_Dashes *)NULL);
+                Blt_Ps_VarAppend(ps,
+                                 "stroke\n",
+                             "  grestore\n",
+                                 "} def\n", (char *)NULL);
+            }
+        } else {
+            Blt_Ps_Append(ps, "/DashesProc {} def\n");
+        }
+        Blt_Ps_Append(ps, "  DashesProc stroke\n");
+    }
+    if (layoutPtr != NULL) {
+        int i;
 
-    /* FIXME: Why clip against the old bounding box? */
-    Blt_Ps_Format(ps, "%d %d %d %d SetClipRegion\n", labelPtr->header.x1, 
-        labelPtr->header.y1, labelPtr->header.x2, labelPtr->header.y2);
-
-
-    Blt_Ps_Append(ps, "EndEPSF\n");
-    Blt_Ps_SetInterp(ps, interp);
+        Blt_Ps_XSetFont(ps, font);
+        Blt_Ps_XSetForeground(ps, attrPtr->fgColor);
+        for (i = 0; i < layoutPtr->numFragments; i++) {
+            TextFragment *fragPtr;
+            
+            fragPtr = layoutPtr->fragments + i;
+            if (fragPtr->numBytes > 0) {
+                Blt_Ps_Format(ps, " %d %d moveto\n",
+                              x + fragPtr->x + xOffset, 
+                              Tk_CanvasPsY(canvas, anchorPos.y - h + 
+                                           fragPtr->y + yOffset));
+                Blt_Ps_TextString(ps, fragPtr->text, fragPtr->numBytes);
+                Blt_Ps_Append(ps, " show\n");
+            }
+        }
+        Blt_Free(layoutPtr);
+    }
+    Blt_Ps_Append(ps, "grestore\n");
+    Tcl_AppendResult(interp, Blt_Ps_GetString(ps), (char *)NULL);
     Blt_Ps_Free(ps);
     return TCL_OK;
 }

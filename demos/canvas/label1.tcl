@@ -88,9 +88,10 @@ set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
 	    -bg $bg1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
-	    -anchor nw \
-	    -textanchor w \
-	    -padx .2i \
+	    -linewidth 2 -dashes 3 \
+	    -anchor c \
+	    -textanchor c \
+	    -padx 0 \
 	    -font "Arial 13" \
 	    -rotate 0 \
 	    -width 100 \
@@ -116,3 +117,7 @@ bind .ss.c  <5>  {
     .ss.c scale all $cx $cy 0.9 0.9
 }
 
+update
+set f [open "/tmp/label.ps" "w"]
+puts $f [.ss.c postscript ]
+close $f
