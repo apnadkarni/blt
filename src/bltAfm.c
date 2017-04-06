@@ -1560,6 +1560,7 @@ AfmGetMetricsFromFont(Blt_Font font)
 
     Tcl_DStringInit(&ds);
     pointSize = Blt_Font_PostscriptName(font, &ds);
+    pointSize = Blt_Font_PixelSize(font);
     interp = Blt_Font_GetInterp(font);
     afmPtr = AfmGetMetrics(interp, Tcl_DStringValue(&ds));
     Tcl_DStringFree(&ds);

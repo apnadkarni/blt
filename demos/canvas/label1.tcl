@@ -121,3 +121,5 @@ update
 set f [open "/tmp/label.ps" "w"]
 puts $f [.ss.c postscript ]
 close $f
+
+#after 2000 exit
