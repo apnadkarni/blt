@@ -137,14 +137,11 @@ unset var path\n\
 
 static Tcl_AppInitProc *cmdProcs[] =
 {
-#ifndef NO_BGEXEC
+#ifndef NO_BASE64
     Blt_Base64CmdInitProc,
 #endif
 #ifndef NO_BGEXEC
     Blt_BgexecCmdInitProc,
-#endif
-#ifndef NO_PTYEXEC
-    Blt_PtyExecCmdInitProc,
 #endif
 #ifndef NO_CHECKSUM
     Blt_ChecksumCmdInitProc,

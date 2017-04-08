@@ -63,8 +63,8 @@
  * o PostScriptProc.  Can it handle gradients?
  * o Figure out better minSize, maxSize to dynamically accommodate 
  *   initialize font size better.
- * o Does alwaysRedraw flag fix problem with clipped drawable?
- * o Problem with snapping drawable.  
+ * x Does alwaysRedraw flag fix problem with clipped drawable?
+ * x Problem with snapping drawable.  
  * o Write documentation
  */
 #define USE_OLD_CANVAS  1
@@ -815,8 +815,6 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y);
     labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight);
 }
-
-
 
 /*
  *---------------------------------------------------------------------------
@@ -1694,7 +1692,8 @@ PostScriptProc(
     double xScale, yScale;
     double x, y, w, h;
     PageSetup setup;
-
+    StateAttributes *attrPtr;
+    
 #if DEBUG
     fprintf(stderr, "Enter PostScriptProc label=%s prepass=%d\n",  
             labelPtr->text, prepass);
@@ -1712,12 +1711,16 @@ PostScriptProc(
     w = labelPtr->rotWidth;
     h = labelPtr->rotHeight;
 
-    Blt_Ps_Append(ps, "BeginEPSF\n");
-
     xScale = w / (double)(labelPtr->header.x2 - labelPtr->header.x1);
     yScale = h / (double)(labelPtr->header.y2 - labelPtr->header.y1);
 
-    /* Set up scaling and translation transformations for the EPS item */
+    /* Set up scaling and translation transformations for the label item */
+
+    /* 
+     * FIXME:  Simply set the transformation matrix to rotate and scale 
+     *         the item then draw non-rotated text, fill and outline 
+     *         rectangles.
+     */
 
     Blt_Ps_Format(ps, "%g %g translate\n", x, y);
     Blt_Ps_Format(ps, "%g %g scale\n", xScale, yScale);
@@ -1727,9 +1730,35 @@ PostScriptProc(
     /* FIXME: Why clip against the old bounding box? */
     Blt_Ps_Format(ps, "%d %d %d %d SetClipRegion\n", labelPtr->header.x1, 
         labelPtr->header.y1, labelPtr->header.x2, labelPtr->header.y2);
+    /* Draw the background */
+    attrPtr = GetStateAttributes(labelPtr);
+    assert(attrPtr != NULL);    
+    if (attrPtr->brush != NULL) {       /* Fill rectangle or isolateral. */
+        Blt_Ps_XSetBackground(ps, attrPtr->bgColor);
+#ifdef notdef
+        /* FIXME: Convert to Point2d + outline + anchor. */
+        Blt_Ps_XFillPolygon(ps, 5, labelPtr->points);
+#endif
+    }
+    if (attrPtr->lineWidth > 0) {      /* Outline */
+        Blt_Ps_XDrawLines(ps, 5, labelPtr->points);
+    }
+    if (labelPtr->text != NULL) {       /* Text itself */
+        Blt_Font font;
+        TkRegion clipRegion;
 
-
-    Blt_Ps_Append(ps, "EndEPSF\n");
+        font = (labelPtr->scaledFont) ?
+            labelPtr->scaledFont : labelPtr->baseFont;
+        clipRegion = GetClipRegion(labelPtr, x, y);
+        if (clipRegion != None) {
+            fprintf(stderr, "setting clipRegion to font\n");
+            Blt_Font_SetClipRegion(font, clipRegion);
+        }
+        Blt_Ps_XSetFont(ps, font);
+#ifdef notdef
+        Blt_Ps_DrawLayout(ps, &ts, angle, x, y, labelPtr->layoutPtr, -1);
+#endif
+    }
     Blt_Ps_SetInterp(ps, interp);
     Blt_Ps_Free(ps);
     return TCL_OK;
