@@ -433,6 +433,7 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
     return objPtr;
 }
 
+#ifdef notdef
 static int
 GetTwoDigitCentury(Tcl_Interp *interp)
 {
@@ -455,6 +456,7 @@ GetTwoDigitCentury(Tcl_Interp *interp)
     }
     return century;
 }
+#endif
 
 /* 
  *-----------------------------------------------------------------------------

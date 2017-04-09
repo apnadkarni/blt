@@ -2402,7 +2402,7 @@ ftFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     /* Family */
     result = FcPatternGetString(setPtr->pattern, FC_FAMILY, 0, &family);
     if (result != FcResultMatch) {
-        family = "fixed";
+        family = (FcChar 8 *)"fixed";
     }
     FcPatternAddString(pattern, FC_FAMILY, family);
     /* Weight */
