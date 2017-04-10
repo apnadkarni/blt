@@ -377,7 +377,6 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltTclProcs.o \
 			bltTimeStamp.o \
 			bltTri.o \
-			bltUnixBgexec.o \
 			bltUnixPipe.o \
 			bltUtil.o \
 			bltVar.o \

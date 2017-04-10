@@ -70,9 +70,6 @@ extern Tcl_AppInitProc Blt_Base64CmdInitProc;
 #ifndef NO_BGEXEC
 extern Tcl_AppInitProc Blt_BgexecCmdInitProc;
 #endif
-#ifndef NO_PTYEXEC
-extern Tcl_AppInitProc Blt_PtyExecCmdInitProc;
-#endif
 #ifndef NO_CHECKSUM
 extern Tcl_AppInitProc Blt_ChecksumCmdInitProc;
 #endif

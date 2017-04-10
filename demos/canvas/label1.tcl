@@ -83,6 +83,7 @@ blt::table . \
     0,0 .ss -fill both
 
 .ss.c create rectangle 100 100 300 200 -fill lightblue3 -tags "r" -width 0
+.ss.c create text 200 150 -anchor c -text "This a test" -fill blue -font "Arial 20"
 
 set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
@@ -121,5 +122,3 @@ update
 set f [open "/tmp/label.ps" "w"]
 puts $f [.ss.c postscript ]
 close $f
-
-#after 2000 exit
