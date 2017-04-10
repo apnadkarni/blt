@@ -981,6 +981,19 @@ FillBackground(Tk_Window tkwin, Drawable drawable, LabelItem *labelPtr,
     }
 }
 
+static double
+FontPica(Tk_Window tkwin, Blt_Font font)
+{
+    int size;
+    double d;
+
+    size = Blt_Font_PixelSize(font);
+    d = size * 72.0 / 25.4;
+    d *= WidthMMOfScreen(Tk_Screen(tkwin));
+    d /= WidthOfScreen(Tk_Screen(tkwin));
+    return d;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1694,6 +1707,7 @@ PostScriptProc(
     double x, y, w, h, rw, rh;
     int xOffset, yOffset;
     Point2d anchorPos;
+    Tk_Window tkwin;
 
 #if DEBUG
     fprintf(stderr, "Enter PostScriptProc label=%s prepass=%d\n",  
@@ -1781,48 +1795,62 @@ PostScriptProc(
                   "  findfont exch scalefont ISOEncode setfont\n"
                   "} def\n");
 
-    Blt_Ps_Format(ps, "gsave\n");
-    Blt_Ps_Format(ps, "  %g %g translate\n", x + w * .5, y + h * .5);
-    Blt_Ps_Format(ps, "  %g rotate\n", labelPtr->angle);
-    Blt_Ps_Format(ps, "  %g %g translate\n", -(x + w * .5), -(y + h * .5));
+    Blt_Ps_Append(ps, "newpath\n");
+    Blt_Ps_Format(ps, "  %g %g moveto\n", x, y);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x + 1, y);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x + 1, y - 2);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y - 2);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y);
+    Blt_Ps_Append(ps, "closepath\n");
+    Blt_Ps_Append(ps, "fill\n");
 
-    Blt_Ps_Format(ps, "  newpath\n", x, y);
-    Blt_Ps_Format(ps, "    %g %g moveto\n", x, y);
-    Blt_Ps_Format(ps, "    %g %g lineto\n", x + w, y);
-    Blt_Ps_Format(ps, "    %g %g lineto\n", x + w, y - h);
-    Blt_Ps_Format(ps, "    %g %g lineto\n", x, y - h);
-    Blt_Ps_Format(ps, "    %g %g lineto\n", x, y);
-    Blt_Ps_Format(ps, "  closepath\n");
-    Blt_Ps_Format(ps, "  clip\n");
+    Blt_Ps_Append(ps, "gsave % Label item\n");
+    Blt_Ps_Append(ps, "\n% Setup label transformations.\n");
+    Blt_Ps_Format(ps, "%g %g translate\n", (x + w * .5), (y - h * .5));
+    Blt_Ps_Format(ps, "%g rotate\n", labelPtr->angle);
+    Blt_Ps_Format(ps, "%g %g translate\n", -(x + w * .5), -(y - h * .5));
+
+    Blt_Ps_Append(ps, "\n% Define the rectangular bounding box for the item\n");
+    Blt_Ps_Append(ps, "newpath\n");
+    Blt_Ps_Format(ps, "  %g %g moveto\n", x, y);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x + w, y);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x + w, y - h);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y - h);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y);
+    Blt_Ps_Append(ps, "closepath\n");
+
+    Blt_Ps_Append(ps, "\n% Clip against the region.\n");
+    Blt_Ps_Append(ps, "%clip\n");
 
     attrPtr = GetStateAttributes(labelPtr);
     if (attrPtr->bgColor != NULL) {
+        Blt_Ps_Append(ps, "\n% Draw the label's background\n");
         Blt_Ps_XSetBackground(ps, attrPtr->bgColor);
-        Blt_Ps_Format(ps, "  gsave fill grestore\n");
+        Blt_Ps_Append(ps, 
+                      "gsave\n"
+                      "  fill\n"
+                      "grestore\n");
     }
     if (attrPtr->lineWidth > 0) {
+        Blt_Ps_Append(ps, "\n% Draw the label's outline\n");
         Blt_Ps_XSetForeground(ps, attrPtr->fgColor);
         Blt_Ps_XSetLineWidth(ps, attrPtr->lineWidth);
-        if (attrPtr->dashes > 0) {
-            Blt_Ps_Format(ps, "[ %d ] 0 setdash", attrPtr->dashes);
-            if (attrPtr->bgColor != NULL) {
-                Blt_Ps_Append(ps, "/DashesProc {\n  gsave\n    ");
-                Blt_Ps_XSetBackground(ps, attrPtr->bgColor);
-                Blt_Ps_Append(ps, "    ");
-                Blt_Ps_XSetDashes(ps, (Blt_Dashes *)NULL);
-                Blt_Ps_VarAppend(ps,
-                                 "stroke\n",
-                             "  grestore\n",
-                                 "} def\n", (char *)NULL);
-            }
-        } else {
-            Blt_Ps_Append(ps, "/DashesProc {} def\n");
-        }
-        Blt_Ps_Append(ps, "  DashesProc stroke\n");
+        Blt_Ps_Format(ps, "[ %d ] 0 setdash\n", attrPtr->dashes);
+        Blt_Ps_Append(ps, 
+                      "gsave\n"
+                      "  stroke\n"
+                      "grestore\n");
     }
     if (layoutPtr != NULL) {
         int i;
 
+        Blt_Ps_Append(ps, "\n% Draw the label's text\n");
+    tkwin = Tk_CanvasTkwin(canvas);
+#ifdef notdef
+        Blt_Ps_Format(ps, "\n% font %s: size=%g, pixelsize=%d, pica=%g\n", 
+                      Blt_Font_Name(font), Blt_Font_Size(font), 
+                      Blt_Font_PixelSize(font), FontPica(tkwin, font));
+#endif
         Blt_Ps_XSetFont(ps, font);
         Blt_Ps_XSetForeground(ps, attrPtr->fgColor);
         for (i = 0; i < layoutPtr->numFragments; i++) {
@@ -1830,17 +1858,16 @@ PostScriptProc(
             
             fragPtr = layoutPtr->fragments + i;
             if (fragPtr->numBytes > 0) {
-                Blt_Ps_Format(ps, " %d %d moveto\n",
+                Blt_Ps_Format(ps, "%g %g moveto\n",
                               x + fragPtr->x + xOffset, 
-                              Tk_CanvasPsY(canvas, anchorPos.y - h + 
-                                           fragPtr->y + yOffset));
+                              y - (layoutPtr->height - fragPtr->y + yOffset));
                 Blt_Ps_TextString(ps, fragPtr->text, fragPtr->numBytes);
                 Blt_Ps_Append(ps, " show\n");
             }
         }
         Blt_Free(layoutPtr);
     }
-    Blt_Ps_Append(ps, "grestore\n");
+    Blt_Ps_Append(ps, "grestore % Label item\n");
     Tcl_AppendResult(interp, Blt_Ps_GetString(ps), (char *)NULL);
     Blt_Ps_Free(ps);
     return TCL_OK;
