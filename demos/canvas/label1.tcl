@@ -86,6 +86,7 @@ blt::table . \
 
 set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
+	    -text "This is a test" \
 	    -bg $bg1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 2 -dashes 3 \
@@ -93,8 +94,8 @@ set id [.ss.c create label 100 100 \
 	    -textanchor c \
 	    -padx 0 \
 	    -font "Arial 13" \
-	    -rotate 0 \
-	    -width 100 \
+	    -rotate 45 \
+	    -width 150 \
 	    -height 50]
 
 blt::table . \
