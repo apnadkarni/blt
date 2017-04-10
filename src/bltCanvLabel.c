@@ -63,8 +63,8 @@
  * o PostScriptProc.  Can it handle gradients?
  * o Figure out better minSize, maxSize to dynamically accommodate 
  *   initialize font size better.
- * o Does alwaysRedraw flag fix problem with clipped drawable?
- * o Problem with snapping drawable.  
+ * x Does alwaysRedraw flag fix problem with clipped drawable?
+ * x Problem with snapping drawable.  
  * o Write documentation
  */
 #define USE_OLD_CANVAS  1
@@ -735,6 +735,7 @@ ComputeGeometry(LabelItem *labelPtr)
         double radians, sinTheta, cosTheta;
         int xOffset, yOffset;
 
+        xOffset = yOffset = 0;          /* Suppress compiler warning. */
         /* Compute the starting positions of the text. This also encompasses
          * justification. */
         switch (labelPtr->textAnchor) {
@@ -810,8 +811,6 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 
         2 * attrPtr->lineWidth;
 }
-
-
 
 /*
  *---------------------------------------------------------------------------

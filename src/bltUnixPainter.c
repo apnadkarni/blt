@@ -1774,7 +1774,7 @@ Blt_PaintPicture(
 {
     int x1, y1, x2, y2;
 
-#ifndef notdef
+#ifdef notdef
     fprintf(stderr, "Blt_PaintPicture: drawable=%x, picture=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d picture flags=%x, opaque=%x\n",
             drawable, picture, x, y, w, h, dx, dy, Blt_Picture_Flags(picture),
             Blt_Picture_IsOpaque(picture));
