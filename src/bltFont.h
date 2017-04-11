@@ -92,7 +92,7 @@ typedef int (Blt_Font_CanRotateProc)(Blt_Font font, float angle);
 typedef void (Blt_Font_UnderlineCharsProc)(Display *display, Drawable drawable, 
         GC gc, Blt_Font font, const char *text, int textLen, int x, int y, 
         int first, int last, int xMax);
-typedef double (Blt_Font_SizeProc)(Blt_Font font);
+typedef double (Blt_Font_PointSizeProc)(Blt_Font font);
 typedef double (Blt_Font_PixelSizeProc)(Blt_Font font);
 typedef Blt_Font (Blt_Font_DuplicateProc)(Tk_Window tkwin, Blt_Font font, 
              double size);
@@ -101,18 +101,18 @@ struct _Blt_FontClass {
     int type;                           /* Indicates the type of font used. */
     Blt_Font_CanRotateProc *canRotateProc;
     Blt_Font_DrawProc *drawProc;
+    Blt_Font_DuplicateProc *dupProc;
     Blt_Font_FamilyProc *familyProc;
     Blt_Font_FreeProc *freeProc;
     Blt_Font_GetMetricsProc *getMetricsProc;
     Blt_Font_IdProc *idProc;
     Blt_Font_MeasureProc *measureProc;
     Blt_Font_NameProc *nameProc;
+    Blt_Font_PixelSizeProc *pixelSizeProc;
+    Blt_Font_PointSizeProc *pointSizeProc;
     Blt_Font_PostscriptNameProc *psNameProc;
     Blt_Font_TextWidthProc *textWidthProc;
     Blt_Font_UnderlineCharsProc *underlineCharsProc;
-    Blt_Font_SizeProc *sizeProc;
-    Blt_Font_PixelSizeProc *pixelSizeProc;
-    Blt_Font_DuplicateProc *dupProc;
 };
 
 /* 
@@ -139,7 +139,7 @@ struct _Blt_Font {
 #define Blt_Font_PostscriptName(f,rp) \
         (*(f)->classPtr->psNameProc)(f,rp)
 #define Blt_Font_Family(f)      (*(f)->classPtr->familyProc)(f)
-#define Blt_Font_Size(f)        (*(f)->classPtr->sizeProc)(f)
+#define Blt_Font_PointSize(f)   (*(f)->classPtr->pointSizeProc)(f)
 #define Blt_Font_PixelSize(f)   (*(f)->classPtr->pixelSizeProc)(f)
 #define Blt_Font_CanRotate(f,a) (*(f)->classPtr->canRotateProc)(f,a)
 #define Blt_Font_Free(f)        (*(f)->classPtr->freeProc)(f)

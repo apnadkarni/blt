@@ -409,8 +409,6 @@ static Tk_ConfigSpec configSpecs[] = {
         (char *)NULL, 0, 0}
 };
 
-static void ComputeGeometry(LabelItem *itemPtr);
-
 
 /*
  *---------------------------------------------------------------------------
@@ -699,6 +697,12 @@ ComputeGeometry(LabelItem *labelPtr)
     }
     labelPtr->width = labelPtr->xScale * w;
     labelPtr->height = labelPtr->yScale * h;
+#if DEBUG
+    fprintf(stderr, "ComputeGeometry: x=%g, y=%g w=%g h=%g\n", 
+            labelPtr->x,  labelPtr->y, w, h);
+    fprintf(stderr, "ComputeGeometry: xs=%g, ys=%g\n", 
+            labelPtr->xScale,  labelPtr->yScale);
+#endif
     if ((labelPtr->width < labelPtr->layoutPtr->width) ||
         (labelPtr->height < labelPtr->layoutPtr->height)) {
         labelPtr->flags |= CLIP;    /* Turn on clipping of text. */
@@ -723,6 +727,9 @@ ComputeGeometry(LabelItem *labelPtr)
             labelPtr->rotWidth, labelPtr->rotHeight,
             labelPtr->anchorPos.x + labelPtr->rotWidth, 
             labelPtr->anchorPos.y + labelPtr->rotHeight);
+    fprintf(stderr, "ComputeGeometry: after x=%g, y=%g w=%g h=%g\n", 
+            labelPtr->anchorPos.x,  labelPtr->anchorPos.y, 
+            labelPtr->width, labelPtr->height);
 #endif
     for (i = 0; i < 4; i++) {
         labelPtr->outlinePts[i].x += rw * 0.5;
@@ -1026,6 +1033,7 @@ DeleteProc(
 #endif
     Tk_FreeOptions(configSpecs, (char *)labelPtr, display, 0);
     if (labelPtr->scaledFont != NULL) {
+        fprintf(stderr, "DELETING FONT\n");
         Blt_Font_Free(labelPtr->scaledFont);
     }
     if (labelPtr->normal.labelGC != NULL) {
@@ -1120,7 +1128,7 @@ ConfigureProc(
     } else {
         labelPtr->numBytes = strlen(labelPtr->text);
     }
-    labelPtr->fontSize = Blt_Font_Size(labelPtr->baseFont);
+    labelPtr->fontSize = Blt_Font_PointSize(labelPtr->baseFont);
     if (labelPtr->angle != 0.0) {
         if (!Blt_Font_CanRotate(labelPtr->baseFont, labelPtr->angle)) {
             fprintf(stderr, "can't rotate font %s\n", 
@@ -1242,7 +1250,6 @@ CreateProc(
         (Tk_CanvasGetCoord(interp, canvas, argv[1], &y) != TCL_OK)) {
         return TCL_ERROR;
     }
-
     /* Initialize the rest of label item structure, below the header. */
     memset((char *)labelPtr + sizeof(Tk_Item), 0, 
            sizeof(LabelItem) - sizeof(Tk_Item));
@@ -1494,12 +1501,13 @@ ScaleProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     double newFontSize;
-    
+    double x, y;
+
     labelPtr->xScale *= xScale;        /* Used to track overall scale */
     labelPtr->yScale *= yScale;
 
     newFontSize = MAX(labelPtr->xScale, labelPtr->yScale) *
-        Blt_Font_Size(labelPtr->baseFont);
+        Blt_Font_PointSize(labelPtr->baseFont);
 #if DEBUG
     fprintf(stderr, "Enter ScaleProc label=%s xOrigin=%g, yOrigin=%g xScale=%g yScale=%g new=%g,%g, newFontSize=%g\n", 
             labelPtr->text, xOrigin, yOrigin, xScale, yScale, labelPtr->xScale,
@@ -1515,10 +1523,12 @@ ScaleProc(
         
         font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
                                   newFontSize);
+        fprintf(stderr, "new scaledfont=%x\n", font);
         if (font == NULL) {
             fprintf(stderr, "can't resize font\n");
             labelPtr->flags &= ~DISPLAY_TEXT;
         }
+            fprintf(stderr, "old scaledfont=%x\n", labelPtr->scaledFont);
         if (labelPtr->scaledFont != NULL) {
             Blt_Font_Free(labelPtr->scaledFont);
         }
@@ -1529,10 +1539,19 @@ ScaleProc(
                         Blt_Font_Name(font));
             }
         }
-        labelPtr->fontSize = Blt_Font_Size(font);
+        labelPtr->fontSize = Blt_Font_PointSize(font);
     } 
-    labelPtr->x = xOrigin + xScale * (labelPtr->x - xOrigin);
-    labelPtr->y = yOrigin + yScale * (labelPtr->y - yOrigin);
+    x = xOrigin + xScale * (labelPtr->x - xOrigin);
+    y = yOrigin + yScale * (labelPtr->y - yOrigin);
+#if DEBUG
+    fprintf(stderr, "ScaleProc label=%s x=%g y=%g, xO=%g, yO=%g xs=%g ys=%g x=%g y=%g\n", 
+            labelPtr->text, 
+            labelPtr->x, labelPtr->y,
+            xOrigin, yOrigin, xScale, yScale, 
+            x, y);
+#endif
+    labelPtr->x = x;
+    labelPtr->y = y;
     ComputeGeometry(labelPtr);
 }
 
@@ -1848,7 +1867,7 @@ PostScriptProc(
     tkwin = Tk_CanvasTkwin(canvas);
 #ifdef notdef
         Blt_Ps_Format(ps, "\n% font %s: size=%g, pixelsize=%d, pica=%g\n", 
-                      Blt_Font_Name(font), Blt_Font_Size(font), 
+                      Blt_Font_Name(font), Blt_Font_PointSize(font), 
                       Blt_Font_PixelSize(font), FontPica(tkwin, font));
 #endif
         Blt_Ps_XSetFont(ps, font);

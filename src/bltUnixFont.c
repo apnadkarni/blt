@@ -605,35 +605,35 @@ GetAlias(const char *family)
 
 static Blt_Font_CanRotateProc           tkFontCanRotateProc;
 static Blt_Font_DrawProc                tkFontDrawProc;
+static Blt_Font_DuplicateProc           tkFontDupProc;
 static Blt_Font_FamilyProc              tkFontFamilyProc;
 static Blt_Font_FreeProc                tkFontFreeProc;
 static Blt_Font_GetMetricsProc          tkFontGetMetricsProc;
 static Blt_Font_IdProc                  tkFontIdProc;
 static Blt_Font_MeasureProc             tkFontMeasureProc;
 static Blt_Font_NameProc                tkFontNameProc;
+static Blt_Font_PixelSizeProc           tkFontPixelSizeProc;
+static Blt_Font_PointSizeProc           tkFontPointSizeProc;
 static Blt_Font_PostscriptNameProc      tkFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           tkFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      tkFontUnderlineCharsProc;
-static Blt_Font_SizeProc                tkFontSizeProc;
-static Blt_Font_PixelSizeProc           tkFontPixelSizeProc;
-static Blt_Font_DuplicateProc           tkFontDupProc;
 
 static Blt_FontClass tkFontClass = {
     FONTSET_TK,
     tkFontCanRotateProc,                    /* Blt_Font_CanRotateProc */
     tkFontDrawProc,                         /* Blt_Font_DrawProc */
+    tkFontDupProc,                          /* Blt_Font_DuplicateProc */
     tkFontFamilyProc,                       /* Blt_Font_FamilyProc */
     tkFontFreeProc,                         /* Blt_Font_FreeProc */
     tkFontGetMetricsProc,                   /* Blt_Font_GetMetricsProc */
     tkFontIdProc,                           /* Blt_Font_IdProc */
     tkFontMeasureProc,                      /* Blt_Font_MeasureProc */
     tkFontNameProc,                         /* Blt_Font_NameProc */
+    tkFontPixelSizeProc,                    /* Blt_Font_PixelSizeProc */
+    tkFontPointSizeProc,                    /* Blt_Font_PointSizeProc */
     tkFontPostscriptNameProc,               /* Blt_Font_PostscriptNameProc */
     tkFontTextWidthProc,                    /* Blt_Font_TextWidthProc */
     tkFontUnderlineCharsProc,               /* Blt_Font_UnderlineCharsProc */
-    tkFontSizeProc,                         /* Blt_Font_SizeProc */
-    tkFontPixelSizeProc,                    /* Blt_Font_PixelSizeProc */
-    tkFontDupProc,                          /* Blt_Font_DuplicateProc */
 };
 
 static tkFontPattern *
@@ -1156,7 +1156,7 @@ tkFontFamilyProc(_Blt_Font *fontPtr)
 }
 
 static double
-tkFontSizeProc(_Blt_Font *fontPtr) 
+tkFontPointSizeProc(_Blt_Font *fontPtr) 
 {
     return ((TkFont *)fontPtr->clientData)->fa.size;
 }
@@ -1370,35 +1370,35 @@ tkFontUnderlineCharsProc(
 
 static Blt_Font_CanRotateProc           ftFontCanRotateProc;
 static Blt_Font_DrawProc                ftFontDrawProc;
+static Blt_Font_DuplicateProc           ftFontDupProc;
 static Blt_Font_FamilyProc              ftFontFamilyProc;
 static Blt_Font_FreeProc                ftFontFreeProc;
 static Blt_Font_GetMetricsProc          ftFontGetMetricsProc;
 static Blt_Font_IdProc                  ftFontIdProc;
 static Blt_Font_MeasureProc             ftFontMeasureProc;
 static Blt_Font_NameProc                ftFontNameProc;
+static Blt_Font_PixelSizeProc           ftFontPixelSizeProc;
+static Blt_Font_PointSizeProc           ftFontPointSizeProc;
 static Blt_Font_PostscriptNameProc      ftFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           ftFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      ftFontUnderlineCharsProc;
-static Blt_Font_SizeProc                ftFontSizeProc;
-static Blt_Font_PixelSizeProc           ftFontPixelSizeProc;
-static Blt_Font_DuplicateProc           ftFontDupProc;
 
 static Blt_FontClass ftFontClass = {
     FONTSET_FREETYPE,
     ftFontCanRotateProc,              /* Blt_Font_CanRotateProc */
     ftFontDrawProc,                   /* Blt_Font_DrawProc */
+    ftFontDupProc,                    /* Blt_Font_DuplicateProc */
     ftFontFamilyProc,                 /* Blt_Font_FamilyProc */
     ftFontFreeProc,                   /* Blt_Font_FreeProc */
     ftFontGetMetricsProc,             /* Blt_Font_GetMetricsProc */
     ftFontIdProc,                     /* Blt_Font_IdProc */
     ftFontMeasureProc,                /* Blt_Font_MeasureProc */
     ftFontNameProc,                   /* Blt_Font_NameProc */
+    ftFontPixelSizeProc,              /* Blt_Font_PixelSizeProc */
+    ftFontPointSizeProc,              /* Blt_Font_PixelSizeProc */
     ftFontPostscriptNameProc,         /* Blt_Font_PostscriptNameProc */
     ftFontTextWidthProc,              /* Blt_Font_TextWidthProc */
     ftFontUnderlineCharsProc,         /* Blt_Font_UnderlineCharsProc */
-    ftFontSizeProc,                   /* Blt_Font_SizeProc */
-    ftFontPixelSizeProc,              /* Blt_Font_PixelSizeProc */
-    ftFontDupProc,                    /* Blt_Font_DuplicateProc */
 };
 
 /* 
@@ -2287,6 +2287,7 @@ ftFontGetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 
         setPtr = Blt_GetHashValue(hPtr);
         setPtr->refCount++;
+    fprintf(stderr, "1. Found font=%s RefCnt=%d\n", setPtr->name, setPtr->refCount);
         return setPtr;
     } 
     return NULL;
@@ -2354,7 +2355,7 @@ ftFontFamilyProc(_Blt_Font *fontPtr)
 }
 
 static double
-ftFontSizeProc(_Blt_Font *fontPtr) 
+ftFontPointSizeProc(_Blt_Font *fontPtr) 
 {
     ftFontset *setPtr = fontPtr->clientData;
     double size; 
@@ -2912,9 +2913,12 @@ ftFontFreeProc(_Blt_Font *fontPtr)
 {
     ftFontset *setPtr = fontPtr->clientData;
 
+    assert(setPtr != NULL);
+ fprintf(stderr, "2. FreeFont font=%s refcnt=%d\n", setPtr->name, setPtr->refCount);
     setPtr->refCount--;
     if (setPtr->refCount <= 0) {
         ftFontDeleteFontset(setPtr);
+        fontPtr->clientData = NULL;
     }
     Blt_Free(fontPtr);
 }

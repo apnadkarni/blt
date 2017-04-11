@@ -82,12 +82,9 @@ canvas .ss.c -bg white
 blt::table . \
     0,0 .ss -fill both
 
-.ss.c create rectangle 100 100 300 200 -fill lightblue3 -tags "r" -width 0
-.ss.c create text 200 150 -anchor c -text "This a test" -fill blue -font "Arial 13"
 
-set id [.ss.c create label 100 100 250 150 \
+set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
-	    -text "This is a test" \
 	    -bg $bg1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 2 -dashes 3 \
@@ -95,7 +92,23 @@ set id [.ss.c create label 100 100 250 150 \
 	    -textanchor c \
 	    -padx 0 \
 	    -font "Arial 13" \
-	    -rotate 45 \
+	    -rotate 0 \
+	    -width 150 \
+	    -height 50]
+
+.ss.c bind $id <Enter> [list Activate .ss.c $id]
+.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
+
+set id [.ss.c create label 100 150 \
+	    -text "Hello, World" \
+	    -bg $bg1 \
+	    -activebg red3 -activelinewidth 2 -activedashes 4 \
+	    -linewidth 2 -dashes 3 \
+	    -anchor c \
+	    -textanchor c \
+	    -padx 0 \
+	    -font "Arial 13" \
+	    -rotate 0 \
 	    -width 150 \
 	    -height 50]
 
@@ -119,7 +132,3 @@ bind .ss.c  <5>  {
     .ss.c scale all $cx $cy 0.9 0.9
 }
 
-update
-set f [open "/tmp/label.ps" "w"]
-puts $f [.ss.c postscript ]
-close $f

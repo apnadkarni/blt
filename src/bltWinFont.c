@@ -485,10 +485,11 @@ static Blt_Font_GetMetricsProc          tkFontGetMetricsProc;
 static Blt_Font_IdProc                  tkFontIdProc;
 static Blt_Font_MeasureProc             tkFontMeasureProc;
 static Blt_Font_NameProc                tkFontNameProc;
+static Blt_Font_PixelSizeProc           tkFontPixelSizeProc;
+static Blt_Font_PointSizeProc           tkFontPointSizeProc;
 static Blt_Font_PostscriptNameProc      tkFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           tkFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      tkFontUnderlineCharsProc;
-static Blt_Font_SizeProc                tkFontSizeProc;
 
 static Blt_FontClass tkFontClass = {
     FONTSET_TK,
@@ -500,10 +501,11 @@ static Blt_FontClass tkFontClass = {
     tkFontIdProc,                       /* Blt_Font_IdProc */
     tkFontMeasureProc,                  /* Blt_Font_MeasureProc */
     tkFontNameProc,                     /* Blt_Font_NameProc */
+    tkFontPixelSizeProc,                /* Blt_Font_PixelSizeProc */
+    tkFontPointSizeProc,                /* Blt_Font_PointSizeProc */
     tkFontPostscriptNameProc,           /* Blt_Font_PostscriptNameProc */
     tkFontTextWidthProc,                /* Blt_Font_TextWidthProc */
     tkFontUnderlineCharsProc,           /* Blt_Font_UnderlineCharsProc */
-    tkFontSizeProc,                     /* Blt_Font_SizeProc */
 };
 
 static tkFontPattern *
@@ -994,7 +996,13 @@ tkFontFamilyProc(_Blt_Font *fontPtr)
 }
 
 static double
-tkFontSizeProc(_Blt_Font *fontPtr) 
+tkFontPointSizeProc(_Blt_Font *fontPtr) 
+{
+    return ((TkFont *)fontPtr->clientData)->fa.size;
+}
+
+static double
+tkFontPixelSizeProc(_Blt_Font *fontPtr) 
 {
     return ((TkFont *)fontPtr->clientData)->fa.size;
 }
@@ -1200,10 +1208,11 @@ static Blt_Font_GetMetricsProc          winFontGetMetricsProc;
 static Blt_Font_IdProc                  winFontIdProc;
 static Blt_Font_MeasureProc             winFontMeasureProc;
 static Blt_Font_NameProc                winFontNameProc;
+static Blt_Font_PixelSizeProc           winFontPixelSizeProc;
+static Blt_Font_PointSizeProc           winFontPointSizeProc;
 static Blt_Font_PostscriptNameProc      winFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           winFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      winFontUnderlineCharsProc;
-static Blt_Font_SizeProc                winFontSizeProc;
 
 static Blt_FontClass winFontClass = {
     FONTSET_WIN,
@@ -1215,10 +1224,11 @@ static Blt_FontClass winFontClass = {
     winFontIdProc,                      /* Blt_Font_IdProc */
     winFontMeasureProc,                 /* Blt_Font_MeasureProc */
     winFontNameProc,                    /* Blt_Font_NameProc */
+    winFontPixelSizeProc,               /* Blt_Font_PixelSizeProc */
+    winFontPointSizeProc,               /* Blt_Font_PointSizeProc */
     winFontPostscriptNameProc,          /* Blt_Font_PostscriptNameProc */
     winFontTextWidthProc,               /* Blt_Font_TextWidthProc */
     winFontUnderlineCharsProc,          /* Blt_Font_UnderlineCharsProc */
-    winFontSizeProc,                    /* Blt_Font_SizeProc */
 };
 
 /* 
@@ -1455,12 +1465,21 @@ winFontFamilyProc(_Blt_Font *fontPtr)
 }
 
 static double
-winFontSizeProc(_Blt_Font *fontPtr) 
+winFontPointSizeProc(_Blt_Font *fontPtr) 
 {
     winFontset *setPtr = fontPtr->clientData;
 
     return ((TkFont *)setPtr->tkFont)->fa.size;
 }
+
+static double
+winFontPixelSizeProc(_Blt_Font *fontPtr) 
+{
+    winFontset *setPtr = fontPtr->clientData;
+
+    return ((TkFont *)setPtr->tkFont)->fa.size;
+}
+
 
 static winFontset *
 winFontNewFontset(Tk_Font tkFont, const char *fontName, HFONT hFont)

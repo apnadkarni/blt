@@ -1355,13 +1355,14 @@ Blt_Ps_XSetFont(PostScript *psPtr, Blt_Font font)
         
         Tcl_DStringInit(&ds);
         pointSize = (double)Blt_Font_PostscriptName(font, &ds);
-        pointSize = Blt_Font_Size(font);
+        pointSize = Blt_Font_PointSize(font);
         Blt_Ps_Format(psPtr, "%g /%s SetFont\n", pointSize, 
                 Tcl_DStringValue(&ds));
         Tcl_DStringFree(&ds);
         return;
     }
-    Blt_Ps_Format(psPtr, "%g /Helvetica-Bold SetFont\n", Blt_Font_Size(font));
+    Blt_Ps_Format(psPtr, "%g /Helvetica-Bold SetFont\n", 
+                  Blt_Font_PointSize(font));
 }
 
 void
