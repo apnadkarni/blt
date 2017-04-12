@@ -1033,7 +1033,7 @@ DeleteProc(
 #endif
     Tk_FreeOptions(configSpecs, (char *)labelPtr, display, 0);
     if (labelPtr->scaledFont != NULL) {
-        fprintf(stderr, "DELETING FONT\n");
+        fprintf(stderr, "DELETING FONT %s\n", labelPtr->text);
         Blt_Font_Free(labelPtr->scaledFont);
     }
     if (labelPtr->normal.labelGC != NULL) {
@@ -1523,12 +1523,10 @@ ScaleProc(
         
         font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
                                   newFontSize);
-        fprintf(stderr, "new scaledfont=%x\n", font);
         if (font == NULL) {
             fprintf(stderr, "can't resize font\n");
             labelPtr->flags &= ~DISPLAY_TEXT;
         }
-            fprintf(stderr, "old scaledfont=%x\n", labelPtr->scaledFont);
         if (labelPtr->scaledFont != NULL) {
             Blt_Font_Free(labelPtr->scaledFont);
         }

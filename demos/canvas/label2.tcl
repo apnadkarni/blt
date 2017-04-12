@@ -64,6 +64,7 @@ proc Activate { canvas id } {
   set dashOffset -1
   after cancel $afterId
   MarchingAnts $canvas $id
+  $canvas raise $id
 }
 proc Deactivate { canvas id } {
   global afterId bg1
@@ -87,24 +88,40 @@ set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
 	    -bg $bg1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
-	    -linewidth 2 -dashes 3 \
-	    -anchor c \
+	    -linewidth 1 \
+	    -anchor nw \
 	    -textanchor c \
 	    -padx 0 \
 	    -font "Arial 13" \
-	    -rotate 0 \
+	    -rotate 90 \
 	    -width 150 \
 	    -height 50]
 
 .ss.c bind $id <Enter> [list Activate .ss.c $id]
 .ss.c bind $id <Leave> [list Deactivate .ss.c $id]
 
-set id [.ss.c create label 100 150 \
+set id [.ss.c create label 150 100 \
 	    -text "Hello, World" \
 	    -bg $bg1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
-	    -linewidth 2 -dashes 3 \
-	    -anchor c \
+	    -linewidth 1 \
+	    -anchor nw \
+	    -textanchor c \
+	    -padx 0 \
+	    -font "Arial 13" \
+	    -rotate 90 \
+	    -width 150 \
+	    -height 50]
+
+.ss.c bind $id <Enter> [list Activate .ss.c $id]
+.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
+
+set id [.ss.c create label 100 50 \
+	    -text "Hello, World" \
+	    -bg $bg2 \
+	    -activebg red3 -activelinewidth 2 -activedashes 4 \
+	    -linewidth 1 \
+	    -anchor nw \
 	    -textanchor c \
 	    -padx 0 \
 	    -font "Arial 13" \

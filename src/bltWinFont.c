@@ -1369,7 +1369,7 @@ winFontDuplicate(
 }
 
 static void
-winFontDestroyFont(winFontset *setPtr)
+winFontDestroyFontset(winFontset *setPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
@@ -1511,6 +1511,46 @@ winFontNewFontset(Tk_Font tkFont, const char *fontName, HFONT hFont)
 }
 
     
+static void
+winFontWriteDescription(Tk_Window tkwin, HFONT hFont, Tcl_DString *resultPtr)
+{
+    int size;
+    LOGFONT lf;
+    const char *string;
+    
+    GetObject (hFont, sizeof(LOGFONT), &lf);
+    /* Rewrite the font description using the aliased family. */
+    Tcl_DStringInit(resultPtr);
+
+    /* Family */
+    if (patternPtr->family != NULL) {
+        Tcl_DStringAppendElement(resultPtr, "-family");
+        Tcl_DStringAppendElement(resultPtr, lf.lfFaceName);
+    }
+    /* Weight */
+    if (patternPtr->weight != NULL) {
+        Tcl_DStringAppendElement(resultPtr, "-weight");
+        string = (lf.lfWeight == FW_BOLD) ? "bold" : "normal";
+        Tcl_DStringAppendElement(resultPtr, string);
+    }
+    /* Slant */
+    if (patternPtr->slant != NULL) {
+        Tcl_DStringAppendElement(resultPtr, "-slant");
+        string = (lf.lfItalic) ? "italic" : "roman";
+        Tcl_DStringAppendElement(resultPtr, string);
+    }
+    /* Width */
+    if (patternPtr->width != NULL) {
+        Tcl_DStringAppendElement(resultPtr, "-width");
+        Tcl_DStringAppendElement(resultPtr, Blt_Itoa(lf.lfWidth));
+    }
+    /* Size */
+    Tcl_DStringAppendElement(resultPtr, "-size");
+    size = (int)(PointsToPixels(tkwin, lf.lfHeight) + 0.5);
+    size = patternPtr->size;
+    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
+}
+
 static Blt_Font
 winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size) 
 {
@@ -1696,7 +1736,7 @@ winFontFreeProc(_Blt_Font *fontPtr)
 
     setPtr->refCount--;
     if (setPtr->refCount <= 0) {
-        winFontDestroyFont(setPtr);
+        winFontDestroyFontset(setPtr);
         fontPtr->clientData = NULL;
     }
 }

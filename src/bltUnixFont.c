@@ -1184,7 +1184,6 @@ tkFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     tkFontPattern *patternPtr;
     const char *closestFontName;
 
-    fprintf(stderr, "In tkFontDupProc size=%g\n", size);
     /* Get the pattern from the old font. */
     objPtr = Tcl_NewStringObj(Tk_NameOfFont(fontPtr->clientData), -1);
     patternPtr = tkFontGetPattern(fontPtr->interp, objPtr);
@@ -2287,7 +2286,6 @@ ftFontGetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 
         setPtr = Blt_GetHashValue(hPtr);
         setPtr->refCount++;
-    fprintf(stderr, "1. Found font=%s RefCnt=%d\n", setPtr->name, setPtr->refCount);
         return setPtr;
     } 
     return NULL;
@@ -2447,6 +2445,7 @@ ftFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     if (!isNew) {
         FcPatternDestroy(matchingPattern);
         newPtr = Blt_GetHashValue(hPtr);
+        newPtr->refCount++;
     } else {
         /* We don't have it. So see if we can open the font via the
          * modified new pattern. */
@@ -2914,7 +2913,6 @@ ftFontFreeProc(_Blt_Font *fontPtr)
     ftFontset *setPtr = fontPtr->clientData;
 
     assert(setPtr != NULL);
- fprintf(stderr, "2. FreeFont font=%s refcnt=%d\n", setPtr->name, setPtr->refCount);
     setPtr->refCount--;
     if (setPtr->refCount <= 0) {
         ftFontDeleteFontset(setPtr);
