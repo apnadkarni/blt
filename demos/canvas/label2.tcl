@@ -149,3 +149,5 @@ bind .ss.c  <5>  {
     .ss.c scale all $cx $cy 0.9 0.9
 }
 
+puts stderr bbox=[.ss.c bbox all]
+

@@ -2992,7 +2992,6 @@ Blt_Tree_ListAppendValueByKey(Tcl_Interp *interp, Tree *treePtr,
     }
     if (valuePtr->objPtr == NULL) {
         valuePtr->objPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-        Tcl_IncrRefCount(valuePtr->objPtr);
     } 
     Tcl_ListObjAppendElement(interp, valuePtr->objPtr, valueObjPtr);
     flags = TREE_TRACE_WRITES;
