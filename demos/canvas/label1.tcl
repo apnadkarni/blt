@@ -39,8 +39,7 @@ set bg3 [blt::paintbrush create linear -jitter 3 \
 	     -colorscale linear \
 	     -from w \
 	     -to e \
-	     -high grey90 -low grey98 \
-	     -repeat reversing]
+	     -high grey90 -low grey98]
 
 proc NextColor {} {
   global nextColor autocolors
@@ -85,7 +84,7 @@ blt::table . \
 .ss.c create rectangle 100 100 300 200 -fill lightblue3 -tags "r" -width 0
 .ss.c create text 200 150 -anchor c -text "This a test" -fill blue -font "Arial 13"
 
-set id [.ss.c create label 100 100 250 150 \
+set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
 	    -text "This is a test" \
 	    -bg $bg1 \

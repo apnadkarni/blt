@@ -68,7 +68,7 @@
  * o Write documentation
  */
 #define USE_OLD_CANVAS  1
-#define DEBUG 1
+#define DEBUG 0
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
@@ -711,31 +711,6 @@ ComputeGeometry(LabelItem *labelPtr)
      * width and height. The center of the box is 0,0. */
     Blt_GetBoundingBox(labelPtr->width, labelPtr->height, labelPtr->angle, 
         &rw, &rh, labelPtr->outlinePts);
-    labelPtr->rotWidth = rw;
-    labelPtr->rotHeight = rh;
-    /* The label's x,y position is in world coordinates. This point and the
-     * anchor tell us where is the anchor position of the label, which is
-     * the upper-left corner of the bounding box around the possibly
-     * rotated item. */
-    labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
-                                          labelPtr->anchor);
-#if DEBUG
-    fprintf(stderr, "x1=%g y1=%g x2=%g y2=%g rw=%g, rh=%g, x2r=%g y2r=%g\n", 
-            labelPtr->anchorPos.x, labelPtr->anchorPos.y,
-            labelPtr->anchorPos.x + labelPtr->width, 
-            labelPtr->anchorPos.y + labelPtr->height,
-            labelPtr->rotWidth, labelPtr->rotHeight,
-            labelPtr->anchorPos.x + labelPtr->rotWidth, 
-            labelPtr->anchorPos.y + labelPtr->rotHeight);
-    fprintf(stderr, "ComputeGeometry: after x=%g, y=%g w=%g h=%g\n", 
-            labelPtr->anchorPos.x,  labelPtr->anchorPos.y, 
-            labelPtr->width, labelPtr->height);
-#endif
-    for (i = 0; i < 4; i++) {
-        labelPtr->outlinePts[i].x += rw * 0.5;
-        labelPtr->outlinePts[i].y += rh * 0.5;
-    }
-    labelPtr->outlinePts[4] = labelPtr->outlinePts[0];
 
     if (labelPtr->layoutPtr != NULL) {
         Point2d off1, off2;
@@ -809,6 +784,33 @@ ComputeGeometry(LabelItem *labelPtr)
             fragPtr->y1 = ROUND(q.y);
         }
     }
+
+    labelPtr->rotWidth = rw;
+    labelPtr->rotHeight = rh;
+    /* The label's x,y position is in world coordinates. This point and the
+     * anchor tell us where is the anchor position of the label, which is
+     * the upper-left corner of the bounding box around the possibly
+     * rotated item. */
+    labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
+                                          labelPtr->anchor);
+#if DEBUG
+    fprintf(stderr, "x1=%g y1=%g x2=%g y2=%g rw=%g, rh=%g, x2r=%g y2r=%g\n", 
+            labelPtr->anchorPos.x, labelPtr->anchorPos.y,
+            labelPtr->anchorPos.x + labelPtr->width, 
+            labelPtr->anchorPos.y + labelPtr->height,
+            labelPtr->rotWidth, labelPtr->rotHeight,
+            labelPtr->anchorPos.x + labelPtr->rotWidth, 
+            labelPtr->anchorPos.y + labelPtr->rotHeight);
+    fprintf(stderr, "ComputeGeometry: after x=%g, y=%g w=%g h=%g\n", 
+            labelPtr->anchorPos.x,  labelPtr->anchorPos.y, 
+            labelPtr->width, labelPtr->height);
+#endif
+    for (i = 0; i < 4; i++) {
+        labelPtr->outlinePts[i].x += rw * 0.5;
+        labelPtr->outlinePts[i].y += rh * 0.5;
+    }
+    labelPtr->outlinePts[4] = labelPtr->outlinePts[0];
+
     /* Extend the bounding box to the current state's line width.  */
     attrPtr = GetStateAttributes(labelPtr);
     labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x) - attrPtr->lineWidth;
@@ -1033,7 +1035,6 @@ DeleteProc(
 #endif
     Tk_FreeOptions(configSpecs, (char *)labelPtr, display, 0);
     if (labelPtr->scaledFont != NULL) {
-        fprintf(stderr, "DELETING FONT %s\n", labelPtr->text);
         Blt_Font_Free(labelPtr->scaledFont);
     }
     if (labelPtr->normal.labelGC != NULL) {
@@ -1502,9 +1503,11 @@ ScaleProc(
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     double newFontSize;
     double x, y;
+    double maxScale;
 
-    labelPtr->xScale *= xScale;        /* Used to track overall scale */
-    labelPtr->yScale *= yScale;
+    maxScale = MIN(xScale, yScale);
+    labelPtr->xScale *= maxScale;        /* Used to track overall scale */
+    labelPtr->yScale *= maxScale;
 
     newFontSize = MAX(labelPtr->xScale, labelPtr->yScale) *
         Blt_Font_PointSize(labelPtr->baseFont);
@@ -1539,8 +1542,8 @@ ScaleProc(
         }
         labelPtr->fontSize = Blt_Font_PointSize(font);
     } 
-    x = xOrigin + xScale * (labelPtr->x - xOrigin);
-    y = yOrigin + yScale * (labelPtr->y - yOrigin);
+    x = xOrigin + maxScale * (labelPtr->x - xOrigin);
+    y = yOrigin + maxScale * (labelPtr->y - yOrigin);
 #if DEBUG
     fprintf(stderr, "ScaleProc label=%s x=%g y=%g, xO=%g, yO=%g xs=%g ys=%g x=%g y=%g\n", 
             labelPtr->text, 
