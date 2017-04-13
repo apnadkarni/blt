@@ -64,7 +64,27 @@ proc Activate { canvas id } {
   set dashOffset -1
   after cancel $afterId
   MarchingAnts $canvas $id
-  $canvas raise $id
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    $canvas raise $id
 }
 proc Deactivate { canvas id } {
   global afterId bg1
