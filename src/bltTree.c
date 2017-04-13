@@ -97,10 +97,16 @@ typedef struct {
     Tree *treePtr;
     unsigned int flags;
     Node *rootPtr;
+    int version;
+    Node *nodePtr;
     Blt_HashTable idTable;
     int numLines;
     Blt_HashTable dataTable;
 } RestoreInfo;
+
+#define RESTORE_ASCII   0
+#define RESTORE_UTF8    1
+#define RESTORE_BINARY  2
 
 #include <stdio.h>
 #include <string.h>
@@ -160,9 +166,6 @@ static Blt_Hash HashOneWord(uint64_t mask, unsigned int downshift,
 typedef struct _Blt_TreeInterpData {
     Tcl_Interp *interp;
     Blt_HashTable treeTable;            /* Table of trees. */
-    Blt_HashTable keyTable;             /* Table of string keys, shared
-                                         * among all the trees within an
-                                         * interpreter. */
     unsigned int nextId;                /* Identifier used to generate
                                          * automatic tree names. */
 } TreeInterpData;
@@ -236,7 +239,6 @@ Blt_Tree_GetInterpData(Tcl_Interp *interp)
         Tcl_SetAssocData(interp, TREE_THREAD_KEY, TreeInterpDeleteProc,
                  dataPtr);
         Blt_InitHashTable(&dataPtr->treeTable, BLT_STRING_KEYS);
-        Blt_InitHashTable(&dataPtr->keyTable, BLT_STRING_KEYS);
     }
     return dataPtr;
 }
@@ -711,6 +713,7 @@ DestroyTreeObject(TreeObject *corePtr)
     Blt_Pool_Destroy(corePtr->nodePool);
     Blt_Pool_Destroy(corePtr->valuePool);
     Blt_DeleteHashTable(&corePtr->nodeTable);
+    Blt_DeleteHashTable(&corePtr->keyTable);
     Blt_Free(corePtr);
 }
 
@@ -776,7 +779,9 @@ NewTreeObject(TreeInterpData *dataPtr)
     corePtr->clients = Blt_Chain_Create();
     corePtr->depth = 1;
     corePtr->notifyFlags = 0;
+    Blt_InitHashTable(&corePtr->keyTable, BLT_STRING_KEYS);
     Blt_InitHashTableWithPool(&corePtr->nodeTable, BLT_ONE_WORD_KEYS);
+    /* Put root node in table. */
     hPtr = Blt_CreateHashEntry(&corePtr->nodeTable, (char *)0, &isNew);
     corePtr->root = NewNode(corePtr, "", 0);
     Blt_SetHashValue(hPtr, corePtr->root);
@@ -932,7 +937,6 @@ TreeInterpDeleteProc(ClientData clientData, Tcl_Interp *interp)
         DestroyTree(treePtr);
     }
     Blt_DeleteHashTable(&dataPtr->treeTable);
-    Blt_DeleteHashTable(&dataPtr->keyTable);
     Tcl_DeleteAssocData(interp, TREE_THREAD_KEY);
     Blt_Free(dataPtr);
 }
@@ -1470,28 +1474,26 @@ TreeCreateValue(
     int *isNewPtr)                      /* (out) If non-zero, indicates a new
                                          * hash entry was created. */
 {
-    Value *vp, *prevPtr;
+    Value *valuePtr, *prevPtr;
     
     prevPtr = NULL;
     *isNewPtr = FALSE;
-    for (vp = nodePtr->values; vp != NULL; vp = vp->next) {
-        if (vp->key == key) {
-            return vp;
+    for (valuePtr = nodePtr->values; valuePtr != NULL; 
+         valuePtr = valuePtr->next) {
+        if (valuePtr->key == key) {
+            return valuePtr;
         }
-        prevPtr = vp;
+        prevPtr = valuePtr;
     }
     /* Value not found. Add a new value to the list. */
     *isNewPtr = TRUE;
-    vp = Blt_Pool_AllocItem(nodePtr->corePtr->valuePool, sizeof(Value));
-    vp->key = key;
-    vp->owner = NULL;
-    vp->next = NULL;
-    vp->hnext = NULL;
-    vp->objPtr = NULL;
+    valuePtr = Blt_Pool_AllocItem(nodePtr->corePtr->valuePool, sizeof(Value));
+    memset(valuePtr, 0, sizeof(Value));
+    valuePtr->key = key;
     if (prevPtr == NULL) {
-        nodePtr->values = vp;
+        nodePtr->values = valuePtr;
     } else {
-        prevPtr->next = vp;
+        prevPtr->next = valuePtr;
     }
     nodePtr->numValues++;
 
@@ -1513,8 +1515,8 @@ TreeCreateValue(
         mask = numBuckets - 1;
         downshift = DOWNSHIFT_START - nodePtr->valueTableSize2;
         bucketPtr = nodePtr->valueTable + RANDOM_INDEX((void *)key);
-        vp->hnext = *bucketPtr;
-        *bucketPtr = vp;
+        valuePtr->hnext = *bucketPtr;
+        *bucketPtr = valuePtr;
         /*
          * If the table has exceeded a decent size, rebuild it with many more
          * buckets.
@@ -1523,7 +1525,53 @@ TreeCreateValue(
             RebuildValueTable(nodePtr);
         }
     } 
-    return vp;
+    return valuePtr;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ReadHeader --
+ *
+ *      Reads the next full record from the given channel, returning the
+ *      record as a list. Blank lines and comments are ignored.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ReadHeader(
+    Tcl_Interp *interp,
+    Tcl_Channel channel,                /* Channel from which to read the next
+                                         * record. */
+    RestoreInfo *restorePtr)
+{
+    Tcl_DString ds;
+    int numChars;
+    const char *string;
+
+    Tcl_DStringInit(&ds);
+    /* Get first line. */
+    numChars = Tcl_Gets(channel, &ds);
+    if (numChars < 0) {
+        if (Tcl_Eof(channel)) {
+            return TCL_OK;
+        }
+        return TCL_ERROR;
+    }
+    string = Tcl_DStringValue(&ds);
+    if (strncmp(string, "# BLT Tree Dump ", 16) != 0) {
+        Tcl_Seek(channel, 0, SEEK_SET);
+        Tcl_DStringFree(&ds);
+        return TCL_OK;
+    }
+    int version;
+
+    if (Tcl_GetInt(interp, string + 16, &version) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    restorePtr->version = version;
+    return TCL_OK;
 }
 
 
@@ -2033,6 +2081,189 @@ RestoreNode3(Tcl_Interp *interp, int argc, const char **argv,
     return TCL_ERROR;
 }
 
+static int
+RestoreFromFileV2(Tcl_Interp *interp, Tcl_Channel channel,
+                  RestoreInfo *restorePtr)
+{
+    int argc;
+    const char **argv;
+    int result;
+
+    argv = NULL;
+    for (;;) {
+        result = ReadDumpRecord(interp, channel, &argc, &argv, restorePtr);
+        if (result != TCL_OK) {
+            break;                      /* Found error or EOF */
+        }
+        if (argc == 0) {
+            result = TCL_OK;            /* Do nothing. */
+        } else if (argc == 3) {
+            result = RestoreNode3(interp, argc, argv, restorePtr);
+        } else if ((argc == 5) || (argc == 6)) {
+            result = RestoreNode5(interp, argc, argv, restorePtr);
+        } else {
+            Tcl_AppendResult(interp, "line #", Blt_Itoa(restorePtr->numLines), 
+                ": wrong # elements in restore entry", (char *)NULL);
+            result = TCL_ERROR;
+        }
+        Tcl_Free((char *)argv);
+        if (result != TCL_OK) {
+            break;
+        }
+    } 
+    return result;
+}
+
+static int
+RestoreNodeCmd(Tcl_Interp *interp, int argc, const char **argv, 
+               RestoreInfo *restorePtr)
+{
+    Tree *treePtr;
+    Node *nodePtr, *parentPtr;
+    long pid, id;
+
+    if ((Blt_GetLong(interp, argv[2], &pid) != TCL_OK) ||
+        (Blt_GetLong(interp, argv[3], &id) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    treePtr = restorePtr->treePtr;
+    if (pid == -1) {
+        nodePtr = treePtr->root;
+        Blt_Tree_RelabelNode(treePtr, nodePtr, argv[1]);
+    } else {
+        parentPtr = Blt_Tree_GetNodeFromIndex(treePtr, pid);
+        if (parentPtr == NULL) {
+            Tcl_AppendResult(interp, "Can't find node \"", argv[2], 
+                             "\" in tree.",  (char *)NULL);
+            return TCL_ERROR;
+        }
+        nodePtr = Blt_Tree_FindChild(parentPtr, argv[1]);
+        if ((nodePtr == NULL) || (restorePtr->flags & TREE_RESTORE_OVERWRITE)) {
+            nodePtr = Blt_Tree_CreateNodeWithId(treePtr, parentPtr, argv[1], 
+                                                id, -1);
+        }
+        assert(nodePtr != NULL);
+        if (nodePtr == NULL) {
+            Tcl_AppendResult(interp, "Can't create node \"", argv[1], 
+                             "\" in tree.", (char *)NULL);
+            return TCL_ERROR;
+        }
+    }
+    restorePtr->nodePtr = nodePtr;
+    return TCL_OK;
+}
+
+static int
+RestoreTagCmd(Tcl_Interp *interp, int argc, const char **argv, 
+               RestoreInfo *restorePtr)
+{
+    Tree *treePtr;
+    Node *nodePtr;
+
+    treePtr = restorePtr->treePtr;
+    nodePtr = restorePtr->nodePtr;
+    Blt_Tree_AddTag(treePtr, nodePtr, argv[1]);
+    return TCL_OK;
+}
+
+typedef struct _TclList {
+    int refCount;
+    int maxElemCount;		/* Total number of element array slots. */
+    int elemCount;		/* Current number of list elements. */
+    int canonicalFlag;		/* Set if the string representation was
+				 * derived from the list representation. May
+				 * be ignored if there is no string rep at
+				 * all.*/
+    Tcl_Obj *elements;		/* First list element; the struct is grown to
+				 * accomodate all elements. */
+} TclList;
+
+
+static int
+RestoreDataCmd(Tcl_Interp *interp, int argc, const char **argv, 
+               RestoreInfo *restorePtr)
+{
+    Tree *treePtr;
+    Node *nodePtr;
+    Tcl_Obj *valueObjPtr;
+    int result;
+
+    treePtr = restorePtr->treePtr;
+    nodePtr = restorePtr->nodePtr;
+    assert(nodePtr != NULL);
+    valueObjPtr = GetStringObj(restorePtr, argv[2], -1);
+    Tcl_IncrRefCount(valueObjPtr);
+    result = Blt_Tree_SetValue(interp, treePtr, nodePtr, argv[1], valueObjPtr);
+    Tcl_DecrRefCount(valueObjPtr);
+    return result;
+}
+
+static int
+RestoreAppendToListCmd(Tcl_Interp *interp, int argc, const char **argv, 
+                       RestoreInfo *restorePtr)
+{
+    Tree *treePtr;
+    Node *nodePtr;
+    Tcl_Obj *valueObjPtr;
+    int result;
+    Blt_TreeKey key;
+
+    treePtr = restorePtr->treePtr;
+    nodePtr = restorePtr->nodePtr;
+    assert(nodePtr != NULL);
+    valueObjPtr = GetStringObj(restorePtr, argv[2], -1);
+    Tcl_IncrRefCount(valueObjPtr);
+    key = Blt_Tree_GetKeyFromNode(nodePtr, argv[1]);
+    result = Blt_Tree_ListAppendValueByKey(interp, treePtr, nodePtr, key,   
+                                           valueObjPtr);
+    Tcl_DecrRefCount(valueObjPtr);
+    return result;
+}
+
+static int
+RestoreFromFileV3(Tcl_Interp *interp, Tcl_Channel channel,
+                  RestoreInfo *restorePtr)
+{
+    int argc;
+    const char **argv;
+    int result;
+
+    argv = NULL;
+    for (;;) {
+        char c;
+
+        result = ReadDumpRecord(interp, channel, &argc, &argv, restorePtr);
+        if (result != TCL_OK) {
+            break;                      /* Found error or EOF */
+        }
+        result = TCL_ERROR;
+        c = argv[0][0];
+        if  (argv[0][1] == '\0') {
+            if (c == 'n') {
+                result = RestoreNodeCmd(interp, argc, argv, restorePtr);
+            } else if (c == 'd') {
+                result = RestoreDataCmd(interp, argc, argv, restorePtr);
+            } else if (c == 'a') {
+                result = RestoreAppendToListCmd(interp, argc, argv, restorePtr);
+            } else if (c == 't') {
+                result = RestoreTagCmd(interp, argc, argv, restorePtr);
+            }
+        } 
+        if (result != TCL_OK) {
+            Tcl_AppendResult(interp, "line #", 
+                             Blt_Itoa(restorePtr->numLines), 
+                             ": unknown key \"", argv[0], "\"",
+                             (char *)NULL);
+            break;
+        }
+        Tcl_Free((char *)argv);
+        if (result != TCL_OK) {
+            break;
+        }
+    } 
+    return result;
+}
+
 /* Public Routines */
 
 /*
@@ -2051,7 +2282,7 @@ Blt_Tree_GetKey(Tree *treePtr, const char *string) /* String to convert. */
     int isNew;
     Blt_HashTable *tablePtr;
 
-    tablePtr = &treePtr->corePtr->dataPtr->keyTable;
+    tablePtr = &treePtr->corePtr->keyTable;
     hPtr = Blt_CreateHashEntry(tablePtr, string, &isNew);
     return (Blt_TreeKey)Blt_GetHashKey(tablePtr, hPtr);
 }
@@ -2072,30 +2303,9 @@ Blt_Tree_GetKeyFromNode(Node *nodePtr, const char *string)
     int isNew;
     Blt_HashTable *tablePtr;
 
-    tablePtr = &nodePtr->corePtr->dataPtr->keyTable;
+    tablePtr = &nodePtr->corePtr->keyTable;
     hPtr = Blt_CreateHashEntry(tablePtr, string, &isNew);
     return (Blt_TreeKey)Blt_GetHashKey(tablePtr, hPtr);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_Tree_GetKeyFromInterp --
- *
- *      Given a string, returns a unique identifier for the string.
- *
- *---------------------------------------------------------------------------
- */
-Blt_TreeKey
-Blt_Tree_GetKeyFromInterp(Tcl_Interp *interp, const char *string)
-{
-    Blt_HashEntry *hPtr;
-    TreeInterpData *dataPtr;
-    int isNew;
-
-    dataPtr = Blt_Tree_GetInterpData(interp);
-    hPtr = Blt_CreateHashEntry(&dataPtr->keyTable, string, &isNew);
-    return (Blt_TreeKey)Blt_GetHashKey(&dataPtr->keyTable, hPtr);
 }
 
 /*
@@ -2990,17 +3200,38 @@ Blt_Tree_ListAppendValueByKey(Tcl_Interp *interp, Tree *treePtr,
         }
         return TCL_ERROR;
     }
-    if (valuePtr->objPtr == NULL) {
-        valuePtr->objPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    } 
-    Tcl_ListObjAppendElement(interp, valuePtr->objPtr, valueObjPtr);
     flags = TREE_TRACE_WRITES;
     if (isNew) {
+        valuePtr->objPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+        Tcl_IncrRefCount(valuePtr->objPtr);
         flags |= TREE_TRACE_CREATES;
-    }
+    } 
+    Tcl_ListObjAppendElement(interp, valuePtr->objPtr, valueObjPtr);
     if (!(nodePtr->flags & TREE_TRACE_ACTIVE)) {
         CallTraces(interp, treePtr, corePtr, nodePtr, valuePtr->key, flags);
     }
+    return TCL_OK;
+}
+
+int
+Blt_Tree_GetValueListLength(Tcl_Interp *interp, Tree *treePtr, Node *nodePtr,
+                            Blt_TreeKey key, size_t *lengthPtr)
+{
+    Value *valuePtr;
+    int length;
+
+    valuePtr = GetTreeValue(interp, treePtr, nodePtr, key);
+    if (valuePtr == NULL) {
+        return TCL_ERROR;
+    }
+    if (valuePtr->objPtr == NULL) {
+        length = 0;
+    } else { 
+        if (Tcl_ListObjLength(interp, valuePtr->objPtr, &length) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    *lengthPtr = length;
     return TCL_OK;
 }
 
@@ -3813,6 +4044,70 @@ Blt_Tree_NodeRelativePath(
 /*
  *---------------------------------------------------------------------------
  *
+ * Blt_Tree_PathFromNode --
+ *
+ *---------------------------------------------------------------------------
+ */
+Tcl_Obj *
+Blt_Tree_NodeRelativePathObj(Tcl_Interp *interp,
+    Node *rootPtr,                      /* Root of subtree. */
+    Node *nodePtr,                      /* Node whose path is to be
+                                         * returned. */
+    const char *separator,              /* Character string to separator
+                                         * elements. */
+    unsigned int flags)                 /* Indicates how to print the path. */
+{
+    const char **names;                 /* Used to stack the component
+                                         * names. */
+    const char *staticSpace[64];
+    long i;
+    long numLevels;
+    Tcl_Obj *resultObjPtr;                /* (out) Contains the path of the
+                                         * node. */
+
+    resultObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    if (rootPtr == NULL) {
+        rootPtr = nodePtr->corePtr->root;
+    }
+    numLevels = Blt_Tree_NodeDepth(nodePtr) - Blt_Tree_NodeDepth(rootPtr);
+    if (flags & TREE_INCLUDE_ROOT) {
+        numLevels++;
+    }
+    if (numLevels > 64) {
+        names = Blt_AssertMalloc(numLevels * sizeof(const char *));
+    } else {
+        names = staticSpace;
+    }
+    for (i = numLevels; i > 0; i--) {
+        /* Save the name of each ancestor in the name array.  Note that we
+         * ignore the root. */
+        names[i - 1] = nodePtr->label;
+        nodePtr = nodePtr->parent;
+    }
+    /* Append each the names in the array. */
+    if ((numLevels > 0) && (separator != NULL)) {
+        Tcl_AppendToObj(resultObjPtr, names[0], -1);
+        for (i = 1; i < numLevels; i++) {
+            Tcl_AppendToObj(resultObjPtr, separator, -1);
+            Tcl_AppendToObj(resultObjPtr, names[i], -1);
+        }
+    } else {
+        for (i = 0; i < numLevels; i++) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewStringObj(names[i], -1);
+            Tcl_ListObjAppendElement(interp, resultObjPtr, objPtr);
+        }
+    }
+    if (names != staticSpace) {
+        Blt_Free(names);
+    }
+    return resultObjPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * Blt_Tree_NodePath --
  *
  *---------------------------------------------------------------------------
@@ -4405,7 +4700,7 @@ Blt_Tree_DumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
         Blt_TreeKeyIterator iter;
         Blt_TreeKey key;
 
-        /* Add list of key-value pairs. */
+        /* Add list of data fields. key-value pairs. */
         for (key = Blt_Tree_FirstKey(treePtr, nodePtr, &iter); key != NULL; 
              key = Blt_Tree_NextKey(treePtr, &iter)) {
             Tcl_Obj *objPtr;
@@ -4438,76 +4733,59 @@ Blt_Tree_DumpNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
     Tcl_DStringAppend(dsPtr, "\n", -1);
 }
 
-#ifdef notdef
-
-static void
-DumpLong(DumpInfo *dumpPtr, int value)
-{
-    unsign char buf[4];
-#ifdef WORDS_BIGENDIAN
-    buf[0] = (value >> 24) & 0xFF;
-    buf[1] = (value >> 16) & 0xFF;
-    buf[2] = (value >> 8)  & 0xFF;
-    buf[3] = (value)       & 0xFF;
-#else
-    buf[0] = (value)       & 0xFF;
-    buf[1] = (value >> 8)  & 0xFF;
-    buf[2] = (value >> 16) & 0xFF;
-    buf[3] = (value >> 24) & 0xFF;
-#endif
-    fwrite(buf, 1, 4, dumpPtr->fp);
-}
-
-static void
-DumpString(DumpInfo *dumpPtr, const char *string, int length)
-{
-    DumpLong(dumpPtr, length);
-    fwrite(string, 1, length, dumpPtr->fp);
-}
-
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_Tree_BinaryDumpNode --
+ * Blt_Tree_DumpNode --
  *
  *---------------------------------------------------------------------------
  */
-void
-Blt_Tree_DumpBinaryNode(Tree *treePtr, Node *rootPtr, Node *nodePtr, 
-                        DumpInfo *dumpPtr)
+Tcl_Obj *
+Blt_Tree_DumpNodeAsObj(Tree *treePtr, Node *rootPtr, Node *nodePtr)
 {
-    const char *label;
-    int length;
-    
-    /* Compute length of entry. */
-    label = Blt_Tree_NodeLabel(nodePtr);
-    length = strlen(label);
-    DumpLong(dumpPtr, nodePtr->parent);
-    DumpLong(dumpPtr, nodePtr->id);
-    Tcl_DStringInit(&ds);
-    Blt_Tree_NodeRelativePath(rootPtr, nodePtr, NULL, 0, &ds);
-    DumpString(dumpPtr, Tcl_DStringValue(&ds), Tcl_DStringLength(&ds));
+    long id;
+    Tcl_Obj *objPtr, *listObjPtr, *resultObjPtr;
+    Tcl_Interp *interp = treePtr->interp;
+
+    resultObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    /* Parent Id. */
+    if (nodePtr == rootPtr) {
+        id = -1;
+    } else {
+        id = Blt_Tree_NodeId(nodePtr->parent);
+    }   
+    Tcl_ListObjAppendElement(interp, resultObjPtr, Tcl_NewLongObj(id));
+    /* Node Id. */
+    id = Blt_Tree_NodeId(nodePtr);
+    Tcl_ListObjAppendElement(interp, resultObjPtr, Tcl_NewLongObj(id));
+    /* Relative path. */
+    objPtr = Blt_Tree_NodeRelativePathObj(treePtr->interp, rootPtr, 
+               nodePtr, NULL, TREE_INCLUDE_ROOT);
+    Tcl_ListObjAppendElement(interp, resultObjPtr, objPtr);
+    /* Data list */
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     {
         Blt_TreeKeyIterator iter;
         Blt_TreeKey key;
 
-        /* Add list of key-value pairs. */
+        /* Add list of data fields. key-value pairs. */
         for (key = Blt_Tree_FirstKey(treePtr, nodePtr, &iter); key != NULL; 
              key = Blt_Tree_NextKey(treePtr, &iter)) {
-            Tcl_Obj *objPtr;
+            Tcl_Obj *valueObjPtr;
 
             if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, treePtr, nodePtr, 
-                        key, &objPtr) == TCL_OK) {
-                const char *value;
-                
-                value = Tcl_GetStringFromObj(objPtr, &length);
-                keyLength = strlen(key);
-                DumpString(dumpPtr, key, keyLength);
-                DumpString(dumpPtr, value, length)
+                        key, &valueObjPtr) == TCL_OK) {
+                Tcl_Obj *objPtr;
+
+                objPtr = Tcl_NewStringObj(key, -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                Tcl_ListObjAppendElement(interp, listObjPtr, valueObjPtr);
             }
         }           
     }
-    DumpLong(dumpPtr, 0);
+    Tcl_ListObjAppendElement(interp, resultObjPtr, listObjPtr);
+    /* Tags list */
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     {
         Blt_HashEntry *hPtr;
         Blt_HashSearch cursor;
@@ -4519,205 +4797,164 @@ Blt_Tree_DumpBinaryNode(Tree *treePtr, Node *rootPtr, Node *nodePtr,
 
             tePtr = Blt_GetHashValue(hPtr);
             if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr) != NULL) {
-                length = strlen(tePtr->tagName);
-                DumpString(dumpPtr, key, length);
+                Tcl_Obj *objPtr;
+
+                objPtr = Tcl_NewStringObj(tePtr->tagName, -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr); 
             }
         }
     }
-    DumpLong(dumpPtr, 0);
+    Tcl_ListObjAppendElement(interp, resultObjPtr, listObjPtr);
+    return resultObjPtr;
 }
 
+static int
+DumpListValues(Tcl_Obj *valueObjPtr, const char *key, Tcl_Channel channel)
+{
+    TclList *listPtr;
+    int i;
+    Tcl_DString ds;
+    Tcl_Obj **objv;
+
+    listPtr = (TclList *)valueObjPtr->internalRep.twoPtrValue.ptr1;
+    Tcl_DStringInit(&ds);
+    objv = &listPtr->elements;
+    for (i = 0; i < listPtr->elemCount; i++) {
+        ssize_t numWritten;
+        int length;
+        const char *string;
+
+        Tcl_DStringAppendElement(&ds, "a");
+        Tcl_DStringAppendElement(&ds, key);
+        Tcl_DStringAppendElement(&ds, Tcl_GetString(objv[i]));
+        string = Tcl_DStringValue(&ds);
+        length = Tcl_DStringLength(&ds);
+#if HAVE_UTF
+        numWritten = Tcl_WriteChars(channel, string, length);
+        numWritten = Tcl_WriteChars(channel, "\n", 1);
+#else
+        numWritten = Tcl_Write(channel, string, length);
+        numWritten = Tcl_Write(channel, "\n", 1);
+#endif
+        Tcl_DStringSetLength(&ds, 0);
+        if (numWritten < 0) {
+            return TCL_ERROR;
+        }
+    }
+    return TCL_OK;
+}
 /*
  *---------------------------------------------------------------------------
  *
- * RestoreBinaryNode --
+ * DumpNodeToFileV3 --
  *
- *      Parses and creates a node based upon the first 3 fields of a five
- *      field entry.  This is the new restore file format.
- *
- *         parentId nodeId pathList dataList tagList 
- *
- *      The purpose is to attempt to save and restore the node ids embedded in
- *      the restore file information.  The old format could not distinquish
- *      between two sibling nodes with the same label unless they were both
- *      leaves.  I'm trying to avoid dependencies upon labels.
- *
- *      If you're starting from an empty tree, this obviously should work
- *      without a hitch.  We only need to map the file's root id to 0.  It's a
- *      little more complicated when adding node to an already full tree.
- *
- *      First see if the node id isn't already in use.  Otherwise, map the
- *      node id (via a hashtable) to the real node. We'll need it later when
- *      subsequent entries refer to their parent id.
- *
- *      If a parent id is unknown (the restore file may be out of order), then
- *      follow plan B and use its path.
- *      
  *---------------------------------------------------------------------------
  */
 static int
-RestoreBinaryNode(Tcl_Interp *interp, int argc, const char **argv, 
-                  RestoreInfo *restorePtr)
+DumpNodeToFileV3(Tree *treePtr, Node *rootPtr, Node *nodePtr, 
+                 Tcl_Channel channel)
 {
-    Tree *treePtr;
-    Blt_HashEntry *hPtr;
-    Node *nodePtr, *parentPtr;
-    int isNew;
-    long pid, id;
-    const char **tags, **values, **names;
-    int numTags, numValues, numNames;
+    Tcl_DString ds;
+    const char *string;
+    int length;
+    ssize_t numWritten;
 
-    treePtr = restorePtr->treePtr;
-
-    pid = ReadLong(restorePtr);
-    id = ReadLong(restorePtr);
-    label = ReadString(restorePtr);
-
-    /* 
-     * The third, fourth, and fifth fields respectively are the list of
-     * component names representing the path to the node including the name of
-     * the node, a key-value list of data values, and a list of tag names.
-     */     
-
-    if ((Tcl_SplitList(interp, argv[2], &numNames,  &names)  != TCL_OK) ||
-        (Tcl_SplitList(interp, argv[3], &numValues, &values) != TCL_OK) || 
-        (Tcl_SplitList(interp, argv[4], &numTags,   &tags)   != TCL_OK)) {
-        goto error;
-    }    
-
-    /* Get the parent of the node. */
-
-    if (pid == -1) {                    /* Map -1 id to the root node of the
-                                         * subtree. */
-        nodePtr = restorePtr->rootPtr;
-        hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id, &isNew);
-        Blt_SetHashValue(hPtr, nodePtr);
-        Blt_Tree_RelabelNode(treePtr, nodePtr, label);
+    Tcl_DStringInit(&ds);
+    Tcl_DStringAppendElement(&ds, "n");
+    Tcl_DStringAppendElement(&ds, Blt_Tree_NodeLabel(nodePtr));
+    if (nodePtr == rootPtr) {
+        Tcl_DStringAppendElement(&ds, "-1");
     } else {
+        Tcl_DStringAppendElement(&ds, 
+                Blt_Tree_NodeIdAscii(nodePtr->parent));
+    }   
+    Tcl_DStringAppendElement(&ds, Blt_Tree_NodeIdAscii(nodePtr));
+    string = Tcl_DStringValue(&ds);
+    length = Tcl_DStringLength(&ds);
+#if HAVE_UTF
+    numWritten = Tcl_WriteChars(channel, string, length);
+    numWritten = Tcl_WriteChars(channel, "\n", 1);
+#else
+    numWritten = Tcl_Write(channel, string, length);
+    numWritten = Tcl_Write(channel, "\n", 1);
+#endif
+    if (numWritten < 0) {
+        return TCL_ERROR;
+    }
+    Tcl_DStringSetLength(&ds, 0);
+    {
+        Blt_TreeKeyIterator iter;
+        Blt_TreeKey key;
 
-        /* 
-         * Check if the parent has been mapped to another id in the tree.
-         * This can happen when there's a id collision with an existing node.
-         */
+        /* Add list of data fields. key-value pairs. */
+        for (key = Blt_Tree_FirstKey(treePtr, nodePtr, &iter); key != NULL; 
+             key = Blt_Tree_NextKey(treePtr, &iter)) {
+            Tcl_Obj *valueObjPtr;
 
-        hPtr = Blt_FindHashEntry(&restorePtr->idTable, (char *)pid);
-        if (hPtr != NULL) {
-            parentPtr = Blt_GetHashValue(hPtr);
-        } else {
-            parentPtr = Blt_Tree_GetNodeFromIndex(treePtr, pid);
-            if (parentPtr == NULL) {
-                /* 
-                 * Normally the parent node should already exist in the tree,
-                 * but in a partial restore it might not.  "Plan B" is to use
-                 * the list of path components to create the missing
-                 * components, including the parent.
-                 */
-                if (numNames == 0) {
-                    parentPtr = restorePtr->rootPtr;
+            if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, treePtr, nodePtr, 
+                        key, &valueObjPtr) == TCL_OK) {
+                if (strcmp(valueObjPtr->typePtr->name, "list") == 0) {
+                    int result;
+
+                    result = DumpListValues(valueObjPtr, key, channel);
+                    if (result != TCL_OK) {
+                        return TCL_ERROR;
+                    }
                 } else {
-                    int i;
-
-                    for (i = 1; i < (numNames - 2); i++) {
-                        nodePtr = Blt_Tree_FindChild(parentPtr, names[i]);
-                        if (nodePtr == NULL) {
-                            nodePtr = Blt_Tree_CreateNode(treePtr, parentPtr, 
-                                names[i], -1);
-                        }
-                        parentPtr = nodePtr;
+                    Tcl_DStringAppendElement(&ds, "d");
+                    Tcl_DStringAppendElement(&ds, key);
+                    Tcl_DStringAppendElement(&ds, Tcl_GetString(valueObjPtr));
+                    string = Tcl_DStringValue(&ds);
+                    length = Tcl_DStringLength(&ds);
+#if HAVE_UTF
+                    numWritten = Tcl_WriteChars(channel, string, length);
+                    numWritten = Tcl_WriteChars(channel, "\n", 1);
+#else
+                    numWritten = Tcl_Write(channel, string, length);
+                    numWritten = Tcl_Write(channel, "\n", 1);
+#endif
+                    Tcl_DStringSetLength(&ds, 0);
+                    if (numWritten < 0) {
+                        return TCL_ERROR;
                     }
-                    /* 
-                     * If there's a node with the same label as the parent,
-                     * we'll use that node. Otherwise, try to create a new
-                     * node with the desired parent id.
-                     */
-                    nodePtr = Blt_Tree_FindChild(parentPtr, names[numNames-2]);
-                    if (nodePtr == NULL) {
-                        nodePtr = Blt_Tree_CreateNodeWithId(treePtr, parentPtr,
-                                names[numNames - 2], pid, -1);
-                        if (nodePtr == NULL) {
-                            goto error;
-                        }
-                    }
-                    parentPtr = nodePtr;
                 }
             }
-        } 
-
-        /* 
-         * It's an error if the desired id has already been remapped.  That
-         * means there were two nodes in the dump with the same id.
-         */
-        hPtr = Blt_FindHashEntry(&restorePtr->idTable, (char *)id);
-        if (hPtr != NULL) {
-            Tcl_AppendResult(interp, "node \"", Blt_Ltoa(id), 
-                "\" has already been restored", (char *)NULL);
-            goto error;
-        }
-
-
-        if (restorePtr->flags & TREE_RESTORE_OVERWRITE) {
-            /* Can you find the child by name. */
-            nodePtr = Blt_Tree_FindChild(parentPtr, names[numNames - 1]);
-            if (nodePtr != NULL) {
-                hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id,
-                        &isNew);
-                Blt_SetHashValue(hPtr, nodePtr);
-            }
-        }
-
-        if (nodePtr == NULL) {
-            nodePtr = Blt_Tree_GetNodeFromIndex(treePtr, id);
-            if (nodePtr == NULL) {
-                nodePtr = Blt_Tree_CreateNodeWithId(treePtr, parentPtr, 
-                        names[numNames - 1], id, -1);
-            } else {
-                nodePtr = Blt_Tree_CreateNode(treePtr, parentPtr, 
-                        names[numNames - 1], -1);
-                hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id,
-                        &isNew);
-                Blt_SetHashValue(hPtr, nodePtr);
-            }
-        }
-    } 
-        
-    if (nodePtr == NULL) {
-        goto error;                     /* Couldn't create node with requested
-                                         * id. */
+        }           
     }
-    Tcl_Free((char *)names);
-    names = NULL;
+    /* Tags list */
+    {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch cursor;
 
-    /* Values */
-    if (RestoreValues(restorePtr, interp, nodePtr, numValues, values)!=TCL_OK) {
-        goto error;
-    }
-    Tcl_Free((char *)values);
-    values = NULL;
+        /* Add list of tags. */
+        for (hPtr = Blt_Tree_FirstTag(treePtr, &cursor); hPtr != NULL; 
+             hPtr = Blt_NextHashEntry(&cursor)) {
+            Blt_TreeTagEntry *tePtr;
 
-    /* Tags */
-    if (!(restorePtr->flags & TREE_RESTORE_NO_TAGS)) {
-        RestoreTags(treePtr, nodePtr, numTags, tags);
-    }
-    Tcl_Free((char *)tags);
-    tags = NULL;
-    return TCL_OK;
+            tePtr = Blt_GetHashValue(hPtr);
+            if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr) != NULL) {
+                Tcl_DStringAppendElement(&ds, "t");
+                Tcl_DStringAppendElement(&ds, tePtr->tagName);
 
- error:
-    if (tags != NULL) {
-        Tcl_Free((char *)tags);
-    }
-    if (values != NULL) {
-        Tcl_Free((char *)values);
-    }
-    if (names != NULL) {
-        Tcl_Free((char *)names);
-    }
-    if (nodePtr != NULL) {
-        Blt_Tree_DeleteNode(treePtr, nodePtr);
-    }
-    return TCL_ERROR;
-}
+                string = Tcl_DStringValue(&ds);
+                length = Tcl_DStringLength(&ds);
+#if HAVE_UTF
+                numWritten = Tcl_WriteChars(channel, string, length);
+                numWritten = Tcl_WriteChars(channel, "\n", 1);
+#else
+                numWritten = Tcl_Write(channel, string, length);
+                numWritten = Tcl_Write(channel, "\n", 1);
 #endif
+                Tcl_DStringSetLength(&ds, 0);
+                if (numWritten < 0) {
+                    return TCL_ERROR;
+                }
+            }
+        }
+    }
+    Tcl_DStringFree(&ds);
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -4785,15 +5022,11 @@ Blt_Tree_Depth(Tree *treePtr)
  *---------------------------------------------------------------------------
  */
 int
-Blt_Tree_DumpToFile(
-    Tcl_Interp *interp,
-    Tree *treePtr,
-    Node *rootPtr,                      /* Root node of subtree. */
-    const char *fileName)
+Blt_Tree_DumpToFile(Tcl_Interp *interp, Tree *treePtr, Node *rootPtr,
+                    const char *fileName)
 {
     Tcl_Channel channel;
     Node *nodePtr;
-    Tcl_DString ds;
     int closeChannel;
     
     closeChannel = TRUE;
@@ -4816,30 +5049,46 @@ Blt_Tree_DumpToFile(
             return TCL_ERROR;
         }
     }
-    Tcl_DStringInit(&ds);
+    Tcl_WriteChars(channel, "# BLT Tree Dump 3\n", -1);
+    for (nodePtr = rootPtr; nodePtr != NULL; 
+         nodePtr = Blt_Tree_NextNode(rootPtr, nodePtr)) {
+        if (DumpNodeToFileV3(treePtr, rootPtr, nodePtr, channel) != TCL_OK) {
+            Tcl_AppendResult(interp, fileName, ": write error:", 
+                             Tcl_PosixError(interp), (char *)NULL);
+            if (closeChannel) {
+                Tcl_Close(interp, channel);
+            }
+            return TCL_ERROR;
+        }
+
+    }
+#ifdef notdef
     for (nodePtr = rootPtr; nodePtr != NULL; 
          nodePtr = Blt_Tree_NextNode(rootPtr, nodePtr)) {
         int numWritten, length;
+        const char *string;
+        Tcl_Obj *objPtr;
 
-        Tcl_DStringSetLength(&ds, 0);
-        Blt_Tree_DumpNode(treePtr, rootPtr, nodePtr, &ds);
-        length = Tcl_DStringLength(&ds);
+        objPtr = Blt_Tree_DumpNodeAsObj(treePtr, rootPtr, nodePtr);
+        string = Tcl_GetStringFromObj(objPtr, &length);
 #if HAVE_UTF
-        numWritten = Tcl_WriteChars(channel, Tcl_DStringValue(&ds), length);
+        numWritten = Tcl_WriteChars(channel, string, length);
+        numWritten = Tcl_WriteChars(channel, "\n", 1);
 #else
-        numWritten = Tcl_Write(channel, Tcl_DStringValue(&ds), length);
+        numWritten = Tcl_Write(channel, string, length);
+        numWritten = Tcl_Write(channel, "\n", 1);
 #endif
+        Tcl_DecrRefCount(objPtr);
         if (numWritten < 0) {
             Tcl_AppendResult(interp, fileName, ": write error:", 
                              Tcl_PosixError(interp), (char *)NULL);
-            Tcl_DStringFree(&ds);
             if (closeChannel) {
                 Tcl_Close(interp, channel);
             }
             return TCL_ERROR;
         }
     }
-    Tcl_DStringFree(&ds);
+#endif
     if (closeChannel) {
         Tcl_Close(interp, channel);
     }
@@ -4879,8 +5128,6 @@ Blt_Tree_RestoreFromFile(Tcl_Interp *interp, Tree *treePtr, Node *rootPtr,
 {
     Tcl_Channel channel;
     RestoreInfo restore;
-    int argc;
-    const char **argv;
     int closeChannel;
     int result;
 
@@ -4910,29 +5157,13 @@ Blt_Tree_RestoreFromFile(Tcl_Interp *interp, Tree *treePtr, Node *rootPtr,
     restore.rootPtr = rootPtr;
     restore.flags = flags;
     restore.treePtr = treePtr;
-
-    argv = NULL;
-    for (;;) {
-        result = ReadDumpRecord(interp, channel, &argc, &argv, &restore);
-        if (result != TCL_OK) {
-            break;                      /* Found error or EOF */
-        }
-        if (argc == 0) {
-            result = TCL_OK;            /* Do nothing. */
-        } else if (argc == 3) {
-            result = RestoreNode3(interp, argc, argv, &restore);
-        } else if ((argc == 5) || (argc == 6)) {
-            result = RestoreNode5(interp, argc, argv, &restore);
-        } else {
-            Tcl_AppendResult(interp, "line #", Blt_Itoa(restore.numLines), 
-                ": wrong # elements in restore entry", (char *)NULL);
-            result = TCL_ERROR;
-        }
-        Tcl_Free((char *)argv);
-        if (result != TCL_OK) {
-            break;
-        }
-    } 
+    result = ReadHeader(interp, channel, &restore);
+    fprintf(stderr, "restore version=%d\n", restore.version);
+    if (restore.version == 3) {
+        result = RestoreFromFileV3(interp, channel, &restore);
+    } else {
+        result = RestoreFromFileV2(interp, channel, &restore);
+    }
     if (closeChannel) {
         Tcl_Close(interp, channel);
     }

@@ -5738,7 +5738,7 @@ InitColumn(TreeView *viewPtr, Column *colPtr, const char *name,
     Blt_HashEntry *hPtr;
     int isNew;
 
-    colPtr->key = Blt_Tree_GetKeyFromInterp(viewPtr->interp, name);
+    colPtr->key = Blt_Tree_GetKey(viewPtr->tree, name);
     colPtr->text = Blt_AssertStrdup(defTitle);
     colPtr->justify = TK_JUSTIFY_CENTER;
     colPtr->relief = TK_RELIEF_FLAT;

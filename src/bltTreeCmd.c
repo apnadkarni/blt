@@ -4239,6 +4239,37 @@ LastChildOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LlengthOp --
+ *
+ *      pathName llength nodeName fieldName
+ *---------------------------------------------------------------------------
+ */
+static int
+LlengthOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
+{
+    TreeCmd *cmdPtr = clientData;
+    Blt_TreeNode node;
+    const char *key;
+    size_t length;
+
+     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
+        != TCL_OK) {
+        return TCL_ERROR;
+     }
+     key = Blt_Tree_GetKey(cmdPtr->tree, Tcl_GetString(objv[3]));
+    if (Blt_Tree_GetValueListLength(interp, cmdPtr->tree, node, key, &length) 
+        != TCL_OK){
+        return TCL_ERROR;
+    }
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), length);
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -6601,6 +6632,7 @@ static Blt_OpSpec treeOps[] =
     {"label",       3, LabelOp,       3, 4, "node ?newLabel?",},
     {"lappend",     3, LappendOp,     4, 0, "node fieldName ?value ...?",},
     {"lastchild",   3, LastChildOp,   3, 3, "node",},
+    {"llength",     2, LlengthOp,     4, 0, "node fieldName",},
     {"move",        1, MoveOp,        4, 0, "node newParent ?switches ...?",},
     {"names",       2, NamesOp,       3, 4, "node ?fieldName?",},
     {"next",        4, NextOp,        3, 3, "node",},

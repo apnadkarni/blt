@@ -147,6 +147,7 @@ struct _Blt_TreeObject {
     Blt_HashTable nodeTable;            /* Table of node identifiers. Used to
                                          * search for a node pointer given an
                                          * inode.*/
+    Blt_HashTable keyTable;             /* Table of string keys. */
     Blt_TreeInterpData *dataPtr;
     long nextInode;
     long numNodes;                      /* Always counts root node. */
