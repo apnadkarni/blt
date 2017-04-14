@@ -851,68 +851,75 @@ BLT_EXTERN int		Blt_PointInSegments(Point2d *samplePtr,
 				Segment2d *segments, int numSegments,
 				double halo);
 #endif
+#ifndef Blt_PolyRectClip_DECLARED
+#define Blt_PolyRectClip_DECLARED
+/* 141 */
+BLT_EXTERN int		Blt_PolyRectClip(Region2d *extsPtr,
+				Point2d *inputPts, int numInputPts,
+				Point2d *outputPts);
+#endif
 #ifndef Blt_GetLong_DECLARED
 #define Blt_GetLong_DECLARED
-/* 141 */
+/* 142 */
 BLT_EXTERN int		Blt_GetLong(Tcl_Interp *interp, const char *s,
 				long *longPtr);
 #endif
 #ifndef Blt_GetLongFromObj_DECLARED
 #define Blt_GetLongFromObj_DECLARED
-/* 142 */
+/* 143 */
 BLT_EXTERN int		Blt_GetLongFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, long *longPtr);
 #endif
 #ifndef Blt_FormatString_DECLARED
 #define Blt_FormatString_DECLARED
-/* 143 */
+/* 144 */
 BLT_EXTERN int		Blt_FormatString(char *s, size_t size,
 				const char *fmt, ...);
 #endif
 #ifndef Blt_LowerCase_DECLARED
 #define Blt_LowerCase_DECLARED
-/* 144 */
+/* 145 */
 BLT_EXTERN void		Blt_LowerCase(char *s);
 #endif
 #ifndef Blt_UpperCase_DECLARED
 #define Blt_UpperCase_DECLARED
-/* 145 */
+/* 146 */
 BLT_EXTERN void		Blt_UpperCase(char *s);
 #endif
 #ifndef Blt_GetPlatformId_DECLARED
 #define Blt_GetPlatformId_DECLARED
-/* 146 */
+/* 147 */
 BLT_EXTERN int		Blt_GetPlatformId(void );
 #endif
 #ifndef Blt_LastError_DECLARED
 #define Blt_LastError_DECLARED
-/* 147 */
+/* 148 */
 BLT_EXTERN const char *	 Blt_LastError(void );
 #endif
 #ifndef Blt_NaN_DECLARED
 #define Blt_NaN_DECLARED
-/* 148 */
+/* 149 */
 BLT_EXTERN double	Blt_NaN(void );
 #endif
 #ifndef Blt_AlmostEquals_DECLARED
 #define Blt_AlmostEquals_DECLARED
-/* 149 */
+/* 150 */
 BLT_EXTERN int		Blt_AlmostEquals(double x, double y);
 #endif
 #ifndef Blt_ConvertListToList_DECLARED
 #define Blt_ConvertListToList_DECLARED
-/* 150 */
+/* 151 */
 BLT_EXTERN const char ** Blt_ConvertListToList(int argc, const char **argv);
 #endif
 #ifndef Blt_GetCachedVar_DECLARED
 #define Blt_GetCachedVar_DECLARED
-/* 151 */
+/* 152 */
 BLT_EXTERN Tcl_Var	Blt_GetCachedVar(Blt_HashTable *tablePtr,
 				const char *label, Tcl_Obj *objPtr);
 #endif
 #ifndef Blt_FreeCachedVars_DECLARED
 #define Blt_FreeCachedVars_DECLARED
-/* 152 */
+/* 153 */
 BLT_EXTERN void		Blt_FreeCachedVars(Blt_HashTable *tablePtr);
 #endif
 
@@ -1061,18 +1068,19 @@ typedef struct BltTclIntProcs {
     int (*blt_PointInPolygon) (Point2d *samplePtr, Point2d *points, int numPoints); /* 138 */
     int (*blt_PolygonInRegion) (Point2d *points, int numPoints, Region2d *extsPtr, int enclosed); /* 139 */
     int (*blt_PointInSegments) (Point2d *samplePtr, Segment2d *segments, int numSegments, double halo); /* 140 */
-    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, long *longPtr); /* 141 */
-    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *longPtr); /* 142 */
-    int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 143 */
-    void (*blt_LowerCase) (char *s); /* 144 */
-    void (*blt_UpperCase) (char *s); /* 145 */
-    int (*blt_GetPlatformId) (void); /* 146 */
-    const char * (*blt_LastError) (void); /* 147 */
-    double (*blt_NaN) (void); /* 148 */
-    int (*blt_AlmostEquals) (double x, double y); /* 149 */
-    const char ** (*blt_ConvertListToList) (int argc, const char **argv); /* 150 */
-    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 151 */
-    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 152 */
+    int (*blt_PolyRectClip) (Region2d *extsPtr, Point2d *inputPts, int numInputPts, Point2d *outputPts); /* 141 */
+    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, long *longPtr); /* 142 */
+    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *longPtr); /* 143 */
+    int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 144 */
+    void (*blt_LowerCase) (char *s); /* 145 */
+    void (*blt_UpperCase) (char *s); /* 146 */
+    int (*blt_GetPlatformId) (void); /* 147 */
+    const char * (*blt_LastError) (void); /* 148 */
+    double (*blt_NaN) (void); /* 149 */
+    int (*blt_AlmostEquals) (double x, double y); /* 150 */
+    const char ** (*blt_ConvertListToList) (int argc, const char **argv); /* 151 */
+    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 152 */
+    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 153 */
 } BltTclIntProcs;
 
 #ifdef __cplusplus
@@ -1650,53 +1658,57 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_PointInSegments \
 	(bltTclIntProcsPtr->blt_PointInSegments) /* 140 */
 #endif
+#ifndef Blt_PolyRectClip
+#define Blt_PolyRectClip \
+	(bltTclIntProcsPtr->blt_PolyRectClip) /* 141 */
+#endif
 #ifndef Blt_GetLong
 #define Blt_GetLong \
-	(bltTclIntProcsPtr->blt_GetLong) /* 141 */
+	(bltTclIntProcsPtr->blt_GetLong) /* 142 */
 #endif
 #ifndef Blt_GetLongFromObj
 #define Blt_GetLongFromObj \
-	(bltTclIntProcsPtr->blt_GetLongFromObj) /* 142 */
+	(bltTclIntProcsPtr->blt_GetLongFromObj) /* 143 */
 #endif
 #ifndef Blt_FormatString
 #define Blt_FormatString \
-	(bltTclIntProcsPtr->blt_FormatString) /* 143 */
+	(bltTclIntProcsPtr->blt_FormatString) /* 144 */
 #endif
 #ifndef Blt_LowerCase
 #define Blt_LowerCase \
-	(bltTclIntProcsPtr->blt_LowerCase) /* 144 */
+	(bltTclIntProcsPtr->blt_LowerCase) /* 145 */
 #endif
 #ifndef Blt_UpperCase
 #define Blt_UpperCase \
-	(bltTclIntProcsPtr->blt_UpperCase) /* 145 */
+	(bltTclIntProcsPtr->blt_UpperCase) /* 146 */
 #endif
 #ifndef Blt_GetPlatformId
 #define Blt_GetPlatformId \
-	(bltTclIntProcsPtr->blt_GetPlatformId) /* 146 */
+	(bltTclIntProcsPtr->blt_GetPlatformId) /* 147 */
 #endif
 #ifndef Blt_LastError
 #define Blt_LastError \
-	(bltTclIntProcsPtr->blt_LastError) /* 147 */
+	(bltTclIntProcsPtr->blt_LastError) /* 148 */
 #endif
 #ifndef Blt_NaN
 #define Blt_NaN \
-	(bltTclIntProcsPtr->blt_NaN) /* 148 */
+	(bltTclIntProcsPtr->blt_NaN) /* 149 */
 #endif
 #ifndef Blt_AlmostEquals
 #define Blt_AlmostEquals \
-	(bltTclIntProcsPtr->blt_AlmostEquals) /* 149 */
+	(bltTclIntProcsPtr->blt_AlmostEquals) /* 150 */
 #endif
 #ifndef Blt_ConvertListToList
 #define Blt_ConvertListToList \
-	(bltTclIntProcsPtr->blt_ConvertListToList) /* 150 */
+	(bltTclIntProcsPtr->blt_ConvertListToList) /* 151 */
 #endif
 #ifndef Blt_GetCachedVar
 #define Blt_GetCachedVar \
-	(bltTclIntProcsPtr->blt_GetCachedVar) /* 151 */
+	(bltTclIntProcsPtr->blt_GetCachedVar) /* 152 */
 #endif
 #ifndef Blt_FreeCachedVars
 #define Blt_FreeCachedVars \
-	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 152 */
+	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 153 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TCL_PROCS) */

@@ -148,18 +148,19 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_PointInPolygon, /* 138 */
     Blt_PolygonInRegion, /* 139 */
     Blt_PointInSegments, /* 140 */
-    Blt_GetLong, /* 141 */
-    Blt_GetLongFromObj, /* 142 */
-    Blt_FormatString, /* 143 */
-    Blt_LowerCase, /* 144 */
-    Blt_UpperCase, /* 145 */
-    Blt_GetPlatformId, /* 146 */
-    Blt_LastError, /* 147 */
-    Blt_NaN, /* 148 */
-    Blt_AlmostEquals, /* 149 */
-    Blt_ConvertListToList, /* 150 */
-    Blt_GetCachedVar, /* 151 */
-    Blt_FreeCachedVars, /* 152 */
+    Blt_PolyRectClip, /* 141 */
+    Blt_GetLong, /* 142 */
+    Blt_GetLongFromObj, /* 143 */
+    Blt_FormatString, /* 144 */
+    Blt_LowerCase, /* 145 */
+    Blt_UpperCase, /* 146 */
+    Blt_GetPlatformId, /* 147 */
+    Blt_LastError, /* 148 */
+    Blt_NaN, /* 149 */
+    Blt_AlmostEquals, /* 150 */
+    Blt_ConvertListToList, /* 151 */
+    Blt_GetCachedVar, /* 152 */
+    Blt_FreeCachedVars, /* 153 */
 };
 
 /* !END!: Do not edit above this line. */
