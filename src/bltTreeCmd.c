@@ -3115,7 +3115,7 @@ GetNextRecord(Tcl_Interp *interp, RestoreInfo *restorePtr)
     result = Tcl_SplitList(interp, entry, &restorePtr->argc, &restorePtr->argv);
     *eol = saved;
     restorePtr->nextLine = eol + 1;
-    return TCL_OK;
+    return result;
 }
 
 static Tcl_Obj *
@@ -3856,10 +3856,10 @@ static int
 RestoreTreeFromData(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
     int result;
-    const char *string;
     int length;
 
-    string = Tcl_GetStringFromObj(restorePtr->dataObjPtr, &length);
+    restorePtr->nextLine = Tcl_GetStringFromObj(restorePtr->dataObjPtr,
+                                                &length);
     if (length > 4) {
         result = ParseDumpFileHeader(interp, restorePtr);
     }
@@ -4753,6 +4753,7 @@ DumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
     dump.tree = cmdPtr->tree;
     dump.root = root;
     dump.version = 3.0;
+    Tcl_DStringInit(&dump.ds);
     if (Blt_ParseSwitches(interp, dumpSwitches, objc - 3, objv + 3, 
         &dump, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
@@ -4764,20 +4765,20 @@ DumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (dump.dataObjPtr != NULL) {
-        Tcl_DStringInit(&dump.ds);
-        result = DumpTree(interp, &dump);
-        if (result == TCL_OK) {
-            Tcl_Obj *objPtr;
+        Tcl_Obj *objPtr;
 
-            /* Write the image into the designated TCL variable. */
-            objPtr = Tcl_NewStringObj(Tcl_DStringValue(&dump.ds),
-                                      Tcl_DStringLength(&dump.ds));
-            objPtr = Tcl_ObjSetVar2(interp, dump.dataObjPtr, NULL, objPtr, 0);
-            result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
-            Tcl_SetStringObj(dump.dataObjPtr, Tcl_DStringValue(&dump.ds),
-                             Tcl_DStringLength(&dump.ds));
+        result = DumpTree(interp, &dump);
+        if (result != TCL_OK) {
+            goto error;
         }
-        Tcl_DStringFree(&dump.ds);
+
+        /* Write the image into the designated TCL variable. */
+        objPtr = Tcl_NewStringObj(Tcl_DStringValue(&dump.ds),
+                                  Tcl_DStringLength(&dump.ds));
+        objPtr = Tcl_ObjSetVar2(interp, dump.dataObjPtr, NULL, objPtr, 0);
+        result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
+        Tcl_SetStringObj(dump.dataObjPtr, Tcl_DStringValue(&dump.ds),
+                         Tcl_DStringLength(&dump.ds));
     } else if (dump.fileObjPtr != NULL) {
         Tcl_Channel channel;
         int closeChannel;
@@ -4790,31 +4791,38 @@ DumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
             
             channel = Tcl_GetChannel(interp, fileName+1, &mode);
             if (channel == NULL) {
-                return TCL_ERROR;
+                goto error;
             }
             if ((mode & TCL_WRITABLE) == 0) {
                 Tcl_AppendResult(interp, "channel \"", fileName, 
                                  "\" not opened for writing", (char *)NULL);
-                return TCL_ERROR;
+                goto error;
             }
             closeChannel = FALSE;
         } else {
             channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
             if (channel == NULL) {
-                return TCL_ERROR;
+                goto error;
             }
         }
         dump.channel = channel;
         result = DumpTree(interp, &dump);
+        if (closeChannel) {
+            Tcl_Close(NULL, channel);
+        }
     } else {
-        Tcl_DStringInit(&dump.ds);
         result = DumpTree(interp, &dump);
         if (result == TCL_OK) {
             Tcl_DStringResult(interp, &dump.ds);
         }
     }
+    Tcl_DStringFree(&dump.ds);
     Blt_FreeSwitches(dumpSwitches, (char *)&dump, 0);
     return result;
+ error:
+    Tcl_DStringFree(&dump.ds);
+    Blt_FreeSwitches(dumpSwitches, (char *)&dump, 0);
+    return TCL_ERROR;
 }
 
 /*
