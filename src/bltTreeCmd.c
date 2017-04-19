@@ -133,21 +133,56 @@ typedef struct {
                                          * notifiers. */
 } Notifier;
 
+typedef struct {
+    Blt_HashTable dataTable;            /* Hash table of data values.  Used
+                                         * to create one shared Tcl_Obj for
+                                         * each data unique data value. */
+    Blt_HashTable idTable;              /* Hash table of node ids used to
+                                         * map previous node ids to new
+                                         * node ids. */
+    Blt_Tree tree;                      /* Destination tree where nodes are
+                                         * restored.  */
+    Blt_TreeNode node;                  /* Last node restored. This is used
+                                         * to when setting data values and
+                                         * tags for version 3 dump
+                                         * files. */
+    Blt_TreeNode root;                  /* Top node of branch where new 
+                                         * nodes will be created.  */
+    Tcl_Channel channel;                /* Represents file containing the
+                                         * tree dump. */
+    const char *nextLine;               /* Points to the next line to be
+                                         * processed. */
+    const char **argv;                  /* Vector of strings of the
+                                         * last dump record. */
+    int argc;                           /* # of strings in above vector. */
+    int numLines;                       /* Current line number. */
+    double version;                     /* Version of the tree dump. */
+    unsigned int flags;                 /* Flags: see below. */
+    Tcl_Obj *fileObjPtr;                /* Name of dump file. */
+    Tcl_Obj *dataObjPtr;                /* String containing dump
+                                         * information. */
+} RestoreInfo;
+
+#define RESTORE_NO_TAGS         (1<<0)
+#define RESTORE_OVERWRITE       (1<<1)
 
 typedef struct {
-    Blt_HashTable dataTable;
-    Blt_HashTable idTable;
-    Blt_Tree tree;
-    Blt_TreeNode node;
-    Blt_TreeNode root;
-    Tcl_Channel channel;
-    const char *nextLine;
-    const char **argv;
-    int argc;
-    int numLines;
-    int version;
+    Blt_Tree tree;                      /* Source tree from which nodes are
+                                         * dumped.  */
+    Blt_TreeNode root;                  /* Top node of branch from which
+                                         * nodes will be dumped.  */
+    double version;                     /* Version of the tree dump. */
     unsigned int flags;
-} RestoreInfo;
+    Tcl_Channel channel;                /* Represents file to write the
+                                         * tree dump. */
+    Tcl_DString ds;                     /* Dynamic string containing the
+                                         * tree dump.  */
+    Tcl_Obj *fileObjPtr;                /* Name of dump file. */
+    Tcl_Obj *dataObjPtr;                /* String to eventually hold the
+                                         * dump information. */
+} DumpInfo;
+
+#define DUMP_NO_TAGS         (1<<0)
 
 BLT_EXTERN Blt_SwitchParseProc Blt_TreeNodeSwitchProc;
 static Blt_SwitchCustom nodeSwitch = {
@@ -515,40 +550,18 @@ static Blt_SwitchSpec applySwitches[] =
     {BLT_SWITCH_END}
 };
 
-typedef struct {
-    unsigned int flags;
-    Tcl_Obj *fileObjPtr;
-    Tcl_Obj *dataObjPtr;
-} RestoreSwitches;
-
-
-#define RESTORE_NO_TAGS         (1<<0)
-#define RESTORE_OVERWRITE       (1<<1)
-
 static Blt_SwitchSpec restoreSwitches[] = 
 {
     {BLT_SWITCH_OBJ, "-data", "data", (char *)NULL,
-        Blt_Offset(RestoreSwitches, dataObjPtr), 0, 0},
+        Blt_Offset(RestoreInfo, dataObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
-        Blt_Offset(RestoreSwitches, fileObjPtr), 0, 0},
+        Blt_Offset(RestoreInfo, fileObjPtr), 0, 0},
     {BLT_SWITCH_BITS_NOARG, "-notags", "", (char *)NULL,
-        Blt_Offset(RestoreSwitches, flags), 0, RESTORE_NO_TAGS},
+        Blt_Offset(RestoreInfo, flags), 0, RESTORE_NO_TAGS},
     {BLT_SWITCH_BITS_NOARG, "-overwrite", "", (char *)NULL,
-        Blt_Offset(RestoreSwitches, flags), 0, RESTORE_OVERWRITE},
+        Blt_Offset(RestoreInfo, flags), 0, RESTORE_OVERWRITE},
     {BLT_SWITCH_END}
 };
-
-typedef struct {
-    Blt_Tree tree;
-    Blt_TreeNode node;
-    Blt_TreeNode root;
-    int version;
-    unsigned int flags;
-    Tcl_Channel channel;
-    Tcl_DString ds;
-    Tcl_Obj *fileObjPtr;
-    Tcl_Obj *dataObjPtr;
-} DumpInfo;
 
 static Blt_SwitchSpec dumpSwitches[] = 
 {
@@ -556,8 +569,10 @@ static Blt_SwitchSpec dumpSwitches[] =
         Blt_Offset(DumpInfo, dataObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
         Blt_Offset(DumpInfo, fileObjPtr), 0, 0},
-    {BLT_SWITCH_INT, "-version", "versNum", (char *)NULL,
+    {BLT_SWITCH_DOUBLE, "-version", "versNum", (char *)NULL,
         Blt_Offset(DumpInfo, version), 0, 0},
+    {BLT_SWITCH_BITS_NOARG, "-notags", "", (char *)NULL,
+        Blt_Offset(DumpInfo, flags), 0, DUMP_NO_TAGS},
     {BLT_SWITCH_END}
 };
 
@@ -2943,7 +2958,7 @@ ParseDumpFileHeader(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
     Tcl_DString ds;
     const char *string;
-    int version;
+    double version;
 
     if (restorePtr->channel != NULL) {
         int numChars;
@@ -2961,19 +2976,19 @@ ParseDumpFileHeader(Tcl_Interp *interp, RestoreInfo *restorePtr)
     } else {
         string = restorePtr->nextLine;
     }
-    if (strncmp(string, "# BLT Tree Dump ", 16) != 0) {
+    if (strncmp(string, "# V", 3) != 0) {
         if (restorePtr->channel != NULL) {
             Tcl_Seek(restorePtr->channel, 0, SEEK_SET);
         }
         Tcl_DStringFree(&ds);
         return TCL_OK;
     }
-    if (Tcl_GetInt(interp, string + 16, &version) != TCL_OK) {
+    if (Tcl_GetDouble(interp, string + 3, &version) != TCL_OK) {
         return TCL_ERROR;
     }
     if (restorePtr->channel == NULL) {
         const char *p;
-        for (p = string + 16; *p != '\0' ; p++) {
+        for (p = string + 3; *p != '\0' ; p++) {
             if (*p == '\n') {
                 break;
             }
@@ -3478,32 +3493,87 @@ RestoreTreeV2(Tcl_Interp *interp, RestoreInfo *restorePtr)
     return result;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RestoreNodeCmd --
+ *
+ *      Restores a node to the current tree. The format of the command is
+ *      
+ *              n label pid id
+ *
+ *      where "label" is the new node label, "pid" is the node id of the 
+ *      parent node, and "id" is the requested id for the node.
+ *
+ *      The node ids from the dump file and the current tree may collide.
+ *      We use a hash table to map the old node ids to new ones in the
+ *      tree.  It is an error the dump file contains duplicate node ids
+ *      or if there are multiple root nodes (parent id is -1).
+ *
+ * Results:
+ *      A standard TCL result.  If the restore was successful, TCL_OK is
+ *      returned.  Otherwise, TCL_ERROR is returned and an error message is
+ *      left in the interpreter result.
+ *
+ * Side Effects:
+ *      New nodes are created in the tree and may possibly generate notify
+ *      callbacks.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 RestoreNodeCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
-    Blt_Tree tree;
-    Blt_TreeNode node, parent;
+    Blt_TreeNode node;
     long pid, id;
 
     if ((Blt_GetLong(interp, restorePtr->argv[2], &pid) != TCL_OK) ||
         (Blt_GetLong(interp, restorePtr->argv[3], &id) != TCL_OK)) {
         return TCL_ERROR;
     }
-    tree = restorePtr->tree;
     if (pid == -1) {
+        Blt_HashEntry *hPtr;
+        int isNew;
+
         node = restorePtr->root;
-        Blt_Tree_RelabelNode(tree, node, restorePtr->argv[1]);
-    } else {
-        parent = Blt_Tree_GetNodeFromIndex(tree, pid);
-        if (parent == NULL) {
-            Tcl_AppendResult(interp, "Can't find node \"", restorePtr->argv[2], 
-                             "\" in tree.",  (char *)NULL);
+        hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id, &isNew);
+        if (!isNew) {
+            Tcl_AppendResult(interp, "Found more than root node in tree dump.", 
+                        (char *)NULL);
             return TCL_ERROR;
         }
-        node = Blt_Tree_FindChild(parent, restorePtr->argv[1]);
+        Blt_SetHashValue(hPtr, node);
+        Blt_Tree_RelabelNode(restorePtr->tree, node, restorePtr->argv[1]);
+    } else {
+        Blt_HashEntry *hPtr;
+        Blt_TreeNode parent;
+        int isNew;
+
+        /* 
+         * Check that we can find the parent node in the node id table.
+         * We can't process nodes out of order.
+         */
+        hPtr = Blt_FindHashEntry(&restorePtr->idTable, (char *)pid);
+        if (hPtr == NULL) {
+            Tcl_AppendResult(interp, "Can't find parent node \"", 
+                  restorePtr->argv[2],  "\" in tree.",  (char *)NULL);
+            return TCL_ERROR;
+        }
+        parent = Blt_GetHashValue(hPtr);
+        hPtr = Blt_CreateHashEntry(&restorePtr->idTable, (char *)id, &isNew);
+        if (!isNew) {
+            Tcl_AppendResult(interp, "Duplicate id \"",  Blt_Ltoa(id), 
+                             "\" in tree dump.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        /* Try to restore the node to its previous id. */
+        node = Blt_Tree_GetNodeFromIndex(restorePtr->tree, id);
         if ((node == NULL) || (restorePtr->flags & TREE_RESTORE_OVERWRITE)) {
-            node = Blt_Tree_CreateNodeWithId(tree, parent, restorePtr->argv[1],
-                                             id, -1);
+            node = Blt_Tree_CreateNodeWithId(restorePtr->tree, parent, 
+                restorePtr->argv[1], id, -1);
+        } else {
+            node = Blt_Tree_CreateNode(restorePtr->tree, parent, 
+                restorePtr->argv[1], -1);
         }
         assert(node != NULL);
         if (node == NULL) {
@@ -3511,11 +3581,34 @@ RestoreNodeCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
                 restorePtr->argv[1], "\" in tree.", (char *)NULL);
             return TCL_ERROR;
         }
+        Blt_SetHashValue(hPtr, node);   /* Save the mapping.  */
     }
     restorePtr->node = node;
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RestoreTagCmd --
+ *
+ *      Restores a tag to the current node. The format of the command is
+ *      
+ *              t tagName
+ *
+ *      where "tagName" is the tag for the current node. The current node
+ *      is the last node processed by RestoreNodeCmd.
+ *
+ * Results:
+ *      A standard TCL result.  If the restore was successful, TCL_OK is
+ *      returned.  Otherwise, TCL_ERROR is returned and an error message is
+ *      left in the interpreter result.
+ *
+ * Side Effects:
+ *      New tags are added in the tree.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 RestoreTagCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
@@ -3535,7 +3628,30 @@ typedef struct _TclList {
 				 * accomodate all elements. */
 } TclList;
 
-
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RestoreDataCmd --
+ *
+ *      Restores a data value to the current node. The format of the
+ *      command is
+ *      
+ *              d fieldName value
+ *
+ *      where "fieldName" is the name for the data field to be set in the
+ *      current node. The current node is the last node processed by
+ *      RestoreNodeCmd.
+ *
+ * Results:
+ *      A standard TCL result.  If the restore was successful, TCL_OK is
+ *      returned.  Otherwise, TCL_ERROR is returned and an error message is
+ *      left in the interpreter result.
+ *
+ * Side Effects:
+ *      New data fields are created.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 RestoreDataCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
@@ -3550,6 +3666,32 @@ RestoreDataCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
     return result;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RestoreAppendToListCmd --
+ *
+ *      Restores an element a list of data values to the current node. The
+ *      format of the command is
+ *      
+ *              a fieldName value
+ *
+ *      where "fieldName" is the name for the data field to be set in the
+ *      current node. "value" is the new element to be appended to the list
+ *      of values for the current node. The current node is the last node
+ *      processed by RestoreNodeCmd.
+ *
+ * Results:
+ *      A standard TCL result.  If the restore was successful, TCL_OK is
+ *      returned.  Otherwise, TCL_ERROR is returned and an error message is
+ *      left in the interpreter result.
+ *
+ * Side Effects:
+ *      New data fields are possibly created and elements are appended to
+ *      the tree.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 RestoreAppendToListCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
@@ -3592,16 +3734,18 @@ RestoreTreeV3(Tcl_Interp *interp, RestoreInfo *restorePtr)
             } else if (c == 'a') {
                 result = RestoreAppendToListCmd(interp, restorePtr);
             } else if (c == 't') {
-                result = RestoreTagCmd(interp, restorePtr);
-            }
-        } 
-        if (result != TCL_OK) {
-            Tcl_AppendResult(interp, "line #", 
+                if (restorePtr->flags & RESTORE_NO_TAGS) {
+                    result = TCL_OK;
+                } else {
+                    result = RestoreTagCmd(interp, restorePtr);
+                }
+            } else {
+                Tcl_AppendResult(interp, "line #", 
                              Blt_Itoa(restorePtr->numLines), 
                              ": unknown key \"", restorePtr->argv[0], "\"",
                              (char *)NULL);
-            break;
-        }
+            }
+        } 
         Tcl_Free((char *)restorePtr->argv);
         restorePtr->argv = NULL;
         if (result != TCL_OK) {
@@ -3610,6 +3754,7 @@ RestoreTreeV3(Tcl_Interp *interp, RestoreInfo *restorePtr)
     } 
     return result;
 }
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -3638,14 +3783,14 @@ RestoreTreeV3(Tcl_Interp *interp, RestoreInfo *restorePtr)
  *---------------------------------------------------------------------------
  */
 static int
-RestoreTreeFromFile(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode root,
-                    const char *fileName, unsigned int flags)
+RestoreTreeFromFile(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
     Tcl_Channel channel;
-    RestoreInfo restore;
     int closeChannel;
     int result;
+    const char *fileName;
 
+    fileName = Tcl_GetString(restorePtr->fileObjPtr);
     closeChannel = TRUE;
     if ((fileName[0] == '@') && (fileName[1] != '\0')) {
         int mode;
@@ -3666,24 +3811,16 @@ RestoreTreeFromFile(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode root,
             return TCL_ERROR;           /* Can't open dump file. */
         }
     }
-    memset((char *)&restore, 0, sizeof(restore));
-    Blt_InitHashTable(&restore.idTable, BLT_ONE_WORD_KEYS);
-    Blt_InitHashTable(&restore.dataTable, BLT_STRING_KEYS);
-    restore.root = root;
-    restore.flags = flags;
-    restore.tree = tree;
-    restore.channel = channel;
-    result = ParseDumpFileHeader(interp, &restore);
-    if (restore.version == 3) {
-        result = RestoreTreeV3(interp, &restore);
+    restorePtr->channel = channel;
+    result = ParseDumpFileHeader(interp, restorePtr);
+    if (restorePtr->version > 2.9) {
+        result = RestoreTreeV3(interp, restorePtr);
     } else {
-        result = RestoreTreeV2(interp, &restore);
+        result = RestoreTreeV2(interp, restorePtr);
     }
     if (closeChannel) {
         Tcl_Close(interp, channel);
     }
-    Blt_DeleteHashTable(&restore.idTable);
-    Blt_DeleteHashTable(&restore.dataTable);
     if (result == TCL_ERROR) {
         return TCL_ERROR;
     }
@@ -3716,28 +3853,21 @@ RestoreTreeFromFile(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode root,
  *---------------------------------------------------------------------------
  */
 static int
-RestoreTreeFromData(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode root, 
-                    const char *string, unsigned int flags)
+RestoreTreeFromData(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
-    RestoreInfo restore;
     int result;
-        
-    memset((char *)&restore, 0, sizeof(restore));
-    Blt_InitHashTable(&restore.idTable, BLT_ONE_WORD_KEYS);
-    Blt_InitHashTable(&restore.dataTable, BLT_STRING_KEYS);
-    restore.tree = tree;
-    restore.root = root;
-    restore.flags = flags;
-    restore.nextLine = string;
-    result = ParseDumpFileHeader(interp, &restore);
-    if (restore.version == 3) {
-        result = RestoreTreeV3(interp, &restore);
-    } else {
-        result = RestoreTreeV2(interp, &restore);
-    }
-    Blt_DeleteHashTable(&restore.idTable);
-    Blt_DeleteHashTable(&restore.dataTable);
+    const char *string;
+    int length;
 
+    string = Tcl_GetStringFromObj(restorePtr->dataObjPtr, &length);
+    if (length > 4) {
+        result = ParseDumpFileHeader(interp, restorePtr);
+    }
+    if (restorePtr->version > 2.9) {
+        result = RestoreTreeV3(interp, restorePtr);
+    } else {
+        result = RestoreTreeV2(interp, restorePtr);
+    }
     /* result will be TCL_RETURN if successful, TCL_ERROR otherwise. */
     if (result == TCL_ERROR) {
         return TCL_ERROR;
@@ -3818,19 +3948,20 @@ DumpNodeV2(DumpInfo *dumpPtr, Blt_TreeNode node)
         }
     }           
     Tcl_DStringEndSublist(&ds);
-    Tcl_DStringStartSublist(&ds);
-    /* Add list of tags. */
-    for (hPtr = Blt_Tree_FirstTag(dumpPtr->tree, &cursor); hPtr != NULL; 
-         hPtr = Blt_NextHashEntry(&cursor)) {
-        Blt_TreeTagEntry *tePtr;
-        
-        tePtr = Blt_GetHashValue(hPtr);
-        if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)node) != NULL) {
-            Tcl_DStringAppendElement(&ds, tePtr->tagName);
+    if ((dumpPtr->flags & DUMP_NO_TAGS) == 0) {
+        Tcl_DStringStartSublist(&ds);
+        /* Add list of tags. */
+        for (hPtr = Blt_Tree_FirstTag(dumpPtr->tree, &cursor); hPtr != NULL; 
+             hPtr = Blt_NextHashEntry(&cursor)) {
+            Blt_TreeTagEntry *tePtr;
+            
+            tePtr = Blt_GetHashValue(hPtr);
+            if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)node) != NULL) {
+                Tcl_DStringAppendElement(&ds, tePtr->tagName);
+            }
         }
+        Tcl_DStringEndSublist(&ds);
     }
-    Tcl_DStringEndSublist(&ds);
-    Tcl_DStringAppend(&ds, "\n", -1);
     result = WriteDumpData(dumpPtr, &ds);
     Tcl_DStringFree(&ds);
     return result;
@@ -3913,21 +4044,24 @@ DumpNodeV3(DumpInfo *dumpPtr, Blt_TreeNode node)
             }
         }
     }           
-    /* Add list of tags. */
-    for (hPtr = Blt_Tree_FirstTag(dumpPtr->tree, &cursor); hPtr != NULL; 
-         hPtr = Blt_NextHashEntry(&cursor)) {
-        Blt_TreeTagEntry *tePtr;
-
-        tePtr = Blt_GetHashValue(hPtr);
-        if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)node) != NULL) {
-            Tcl_DStringAppendElement(&ds, "t");
-            Tcl_DStringAppendElement(&ds, tePtr->tagName);
-            if (WriteDumpData(dumpPtr, &ds) != TCL_OK) {
-                goto error;
+    if ((dumpPtr->flags & DUMP_NO_TAGS) == 0) {
+        /* Add list of tags. */
+        for (hPtr = Blt_Tree_FirstTag(dumpPtr->tree, &cursor); hPtr != NULL; 
+             hPtr = Blt_NextHashEntry(&cursor)) {
+            Blt_TreeTagEntry *tePtr;
+            
+            tePtr = Blt_GetHashValue(hPtr);
+            if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)node) != NULL) {
+                Tcl_DStringAppendElement(&ds, "t");
+                Tcl_DStringAppendElement(&ds, tePtr->tagName);
+                if (WriteDumpData(dumpPtr, &ds) != TCL_OK) {
+                    goto error;
+                }
             }
         }
     }
     Tcl_DStringFree(&ds);
+
     return TCL_OK;
  error:
     Tcl_DStringFree(&ds);
@@ -3959,16 +4093,16 @@ DumpTree(Tcl_Interp *interp, DumpInfo *dumpPtr)
 {
     Blt_TreeNode node;
 
-    if (dumpPtr->version == 3) {
-        Tcl_WriteChars(dumpPtr->channel, "# BLT Tree Dump Version 3\n", -1);
+    if (dumpPtr->version > 2.9) {
+        Tcl_WriteChars(dumpPtr->channel, "# V3.0\n", 7);
     } else {
-        Tcl_WriteChars(dumpPtr->channel, "# BLT Tree Dump Version 2\n", -1);
+        Tcl_WriteChars(dumpPtr->channel, "# V2.0\n", 7);
     }
     for (node = dumpPtr->root; node != NULL; 
          node = Blt_Tree_NextNode(dumpPtr->root, node)) {
         int result;
 
-        if (dumpPtr->version == 3) {
+        if (dumpPtr->version > 2.9) {
             result = DumpNodeV3(dumpPtr, node);
         } else {
             result = DumpNodeV2(dumpPtr, node);
@@ -4616,6 +4750,9 @@ DumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     memset((char *)&dump, 0, sizeof(DumpInfo));
+    dump.tree = cmdPtr->tree;
+    dump.root = root;
+    dump.version = 3.0;
     if (Blt_ParseSwitches(interp, dumpSwitches, objc - 3, objv + 3, 
         &dump, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
@@ -4626,8 +4763,6 @@ DumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_FreeSwitches(dumpSwitches, (char *)&dump, 0);
         return TCL_ERROR;
     }
-    dump.tree = cmdPtr->tree;
-    dump.root = root;
     if (dump.dataObjPtr != NULL) {
         Tcl_DStringInit(&dump.ds);
         result = DumpTree(interp, &dump);
@@ -6538,7 +6673,7 @@ RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Blt_TreeNode root;                  /* Root node of restored
                                          * subtree. */
-    RestoreSwitches switches;
+    RestoreInfo restore;
     TreeCmd *cmdPtr = clientData;
     int result;
 
@@ -6546,33 +6681,31 @@ RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
         != TCL_OK) {
         return TCL_ERROR;
     }
-    memset((char *)&switches, 0, sizeof(switches));
+    memset((char *)&restore, 0, sizeof(RestoreInfo));
+    restore.tree = cmdPtr->tree;
+    restore.root = root;
     if (Blt_ParseSwitches(interp, restoreSwitches, objc - 3, objv + 3, 
-        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        &restore, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
+    if ((restore.dataObjPtr != NULL) && (restore.fileObjPtr != NULL)) {
         Tcl_AppendResult(interp, "can't set both -file and -data switches.",
                          (char *)NULL);
-        Blt_FreeSwitches(restoreSwitches, (char *)&switches, 0);
+        Blt_FreeSwitches(restoreSwitches, (char *)&restore, 0);
         return TCL_ERROR;
     }
-    if (switches.dataObjPtr != NULL) {
-        const char *string;
-
-        string = Tcl_GetString(switches.dataObjPtr);
-        result = RestoreTreeFromData(interp, cmdPtr->tree, root, string, 
-                switches.flags);
-    } else if (switches.fileObjPtr != NULL) {
-        const char *fileName;
-
-        fileName = Tcl_GetString(switches.fileObjPtr);
-        result = RestoreTreeFromFile(interp, cmdPtr->tree, root, fileName,
-                switches.flags);
+    Blt_InitHashTable(&restore.idTable, BLT_ONE_WORD_KEYS);
+    Blt_InitHashTable(&restore.dataTable, BLT_STRING_KEYS);
+    if (restore.dataObjPtr != NULL) {
+        result = RestoreTreeFromData(interp, &restore);
+    } else if (restore.fileObjPtr != NULL) {
+        result = RestoreTreeFromFile(interp, &restore);
     } else {
         result = TCL_OK;
     }
-    Blt_FreeSwitches(restoreSwitches, (char *)&switches, 0);
+    Blt_DeleteHashTable(&restore.idTable);
+    Blt_DeleteHashTable(&restore.dataTable);
+    Blt_FreeSwitches(restoreSwitches, (char *)&restore, 0);
     return result;
 }
 
@@ -6754,48 +6887,6 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
            }
        }
     }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * TagDumpOp --
- *
- *      Like "dump", but dumps only the contents of nodes tagged by a given
- *      tag.
- *
- *---------------------------------------------------------------------------
- */
-static int
-TagDumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
-{
-    Blt_TreeNode root;
-    Tcl_DString ds;
-    TreeCmd *cmdPtr = clientData;
-    int i;
-
-    Tcl_DStringInit(&ds);
-    root = Blt_Tree_RootNode(cmdPtr->tree);
-    for (i = 3; i < objc; i++) {
-        Blt_TreeIterator iter;
-        Blt_TreeNode node;
-
-        if (Blt_Tree_GetNodeIterator(interp, cmdPtr->tree, objv[i], &iter) 
-            != TCL_OK) {
-            Tcl_DStringFree(&ds);
-            return TCL_ERROR;
-        }
-        for (node = Blt_Tree_FirstTaggedNode(&iter); node != NULL;
-             node = Blt_Tree_NextTaggedNode(&iter)) {
-#ifdef notdef
-            DumpNodeV2(dumpcmdPtr->tree, root, node, &ds);
-#endif
-        }
-    }
-    Tcl_DStringResult(interp, &ds);
-    Tcl_DStringFree(&ds);
     return TCL_OK;
 }
 
@@ -7228,8 +7319,7 @@ TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec tagOps[] = {
     {"add",    1, TagAddOp,    4, 0, "tag ?node...?"},
-    {"delete", 2, TagDeleteOp, 5, 0, "tag node..."},
-    {"dump",   2, TagDumpOp,   4, 0, "tag..."},
+    {"delete", 1, TagDeleteOp, 5, 0, "tag node..."},
     {"exists", 1, TagExistsOp, 4, 5, "tag ?node?"},
     {"forget", 1, TagForgetOp, 4, 0, "tag..."},
     {"get",    1, TagGetOp,    4, 0, "node ?pattern...?"},
@@ -7924,7 +8014,7 @@ TreeLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_HashEntry *hPtr;
     Tcl_DString libName;
     TreeCmdInterpData *dataPtr = clientData;
-    const char *fmt, *safeProcName, *initProcName;
+    char *fmt, *initProcName, *safeProcName;
     int length, result;
 
     fmt = Tcl_GetStringFromObj(objv[2], &length);

@@ -192,7 +192,7 @@ typedef struct {
 
     int xOffset, yOffset;               /* Scroll offsets of viewport in
                                          * world. */ 
-    int worldWidth, worldHeight;        /* Dimension of entire menu. */
+    int worldWidth, worldHeight;        /* Dimension of entire scrolled widget. */
     int cavityWidth, cavityHeight;      /* Dimension of entire menu. */
 
     Tk_Window xScrollbar;               /* Horizontal scrollbar to be used if
@@ -1406,6 +1406,11 @@ SetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         }
         if (Tcl_GetDoubleFromObj(interp, objv[3], &last) != TCL_OK) {
             return TCL_ERROR;
+        }
+        first = FCLAMP(first);
+        last = FCLAMP(last);
+        if ((int)((1.0 - last) * setPtr->worldWidth) == 0) {
+            last = 1.0;
         }
         if ((first <= 0.0) && (last >= 1.0)) {
             setPtr->flags &= ~flag;     /* Hide scrollbar. */
