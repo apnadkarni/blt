@@ -268,6 +268,9 @@ BLT_EXTERN int Blt_PolygonInRegion(Point2d *points, int numPoints,
 BLT_EXTERN int Blt_PointInSegments(Point2d *samplePtr, Segment2d *segments, 
         int numSegments, double halo);
 
+BLT_EXTERN int Blt_PolyRectClip(Region2d *extsPtr, Point2d *inputPts,
+        int numInputPts, Point2d *outputPts);
+
 BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s, long *longPtr);
 BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         long *longPtr);

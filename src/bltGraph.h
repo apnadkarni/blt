@@ -632,9 +632,6 @@ BLT_EXTERN Graph *Blt_GetGraphFromWindowData(Tk_Window tkwin);
 
 BLT_EXTERN void Blt_AdjustAxisPointers(Graph *graphPtr);
 
-BLT_EXTERN int Blt_PolyRectClip(Region2d *extsPtr, Point2d *inputPts,
-        int numInputPts, Point2d *outputPts);
-
 BLT_EXTERN void Blt_ComputeStacks(Graph *graphPtr);
 
 BLT_EXTERN void Blt_ConfigureCrosshairs(Graph *graphPtr);
