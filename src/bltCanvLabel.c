@@ -1559,6 +1559,117 @@ ScaleProc(
 /*
  *---------------------------------------------------------------------------
  *
+ * ScaleProc --
+ *
+ *      This procedure is invoked to rescale a label item.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The item referred to by labelPtr is rescaled so that the
+ *      following transformation is applied to all point coordinates:
+ *              x' = x0 + xs*(x-x0)
+ *              y' = y0 + ys*(y-y0)
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+ScaleProc2(
+    Tk_Canvas canvas,                   /* Canvas containing rectangle. */
+    Tk_Item *itemPtr,                   /* Label item to be scaled. */
+    double xOrigin, double yOrigin,     /* Origin wrt scale rect. */
+    double xScale, double yScale)
+{
+    LabelItem *labelPtr = (LabelItem *)itemPtr;
+    double newFontSize;
+    double x, y;
+    double maxScale;
+    int i;
+    StateAttributes *attrPtr;
+
+    maxScale = MIN(xScale, yScale);
+    labelPtr->xScale *= maxScale;        /* Used to track overall scale */
+    labelPtr->yScale *= maxScale;
+
+    newFontSize = MAX(labelPtr->xScale, labelPtr->yScale) *
+        Blt_Font_PointSize(labelPtr->baseFont);
+#if DEBUG
+    fprintf(stderr, "Enter ScaleProc label=%s xOrigin=%g, yOrigin=%g xScale=%g yScale=%g new=%g,%g, newFontSize=%g\n", 
+            labelPtr->text, xOrigin, yOrigin, xScale, yScale, labelPtr->xScale,
+            labelPtr->yScale, newFontSize);
+#endif
+    labelPtr->flags |= DISPLAY_TEXT;
+    if ((labelPtr->minFontSize > 0) && (newFontSize < labelPtr->minFontSize)) {
+        labelPtr->flags &= ~DISPLAY_TEXT;
+    } else if ((labelPtr->maxFontSize > 0) &&
+               (newFontSize <= labelPtr->maxFontSize)) {
+    } else {
+        Blt_Font font;
+        
+        font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
+                newFontSize);
+        if (font == NULL) {
+            fprintf(stderr, "can't resize font\n");
+            labelPtr->flags &= ~DISPLAY_TEXT;
+        }
+        if (labelPtr->scaledFont != NULL) {
+            Blt_Font_Free(labelPtr->scaledFont);
+        }
+        labelPtr->scaledFont = font;
+        if (labelPtr->angle != 0.0) {
+            if (!Blt_Font_CanRotate(font, labelPtr->angle)) {
+                fprintf(stderr, "can't rotate font %s\n", 
+                        Blt_Font_Name(font));
+            }
+        }
+        labelPtr->fontSize = Blt_Font_PointSize(font);
+    } 
+    /* Scale the anchor */
+    x = xOrigin + maxScale * (labelPtr->x - xOrigin);
+    y = yOrigin + maxScale * (labelPtr->y - yOrigin);
+#if DEBUG
+    fprintf(stderr, "ScaleProc label=%s x=%g y=%g, xO=%g, yO=%g xs=%g ys=%g x=%g y=%g\n", 
+            labelPtr->text, 
+            labelPtr->x, labelPtr->y,
+            xOrigin, yOrigin, xScale, yScale, 
+            x, y);
+#endif
+    labelPtr->x = x;
+    labelPtr->y = y;
+
+    labelPtr->width = labelPtr->xScale * labelPtr->width;
+    labelPtr->height = labelPtr->yScale * labelPtr->height;
+    labelPtr->rotWidth = labelPtr->xScale * labelPtr->rotWidth;
+    labelPtr->rotHeight = labelPtr->yScale * labelPtr->rotHeight;
+
+    /* Scale the outline. */
+    for (i = 0; i < 5; i++) {
+        labelPtr->outlinePts[i].x = labelPtr->outlinePts[i].x * xScale;
+        labelPtr->outlinePts[i].y = labelPtr->outlinePts[i].y * yScale;
+    }
+    /* Scale the starting positions of the text. */
+    for (i = 0; i < labelPtr->layoutPtr->numFragments; i++) {
+        TextFragment *fragPtr;
+        
+        fragPtr = labelPtr->layoutPtr->fragments + i;
+        /* Translate the start of the fragement to the center of box. */
+        fragPtr->x1 = xOrigin + xScale * (fragPtr->x1 - xOrigin);
+        fragPtr->y1 = yOrigin + yScale * (fragPtr->y1 - yOrigin);
+    }
+    /* Extend the bounding box to the current state's line width.  */
+    attrPtr = GetStateAttributes(labelPtr);
+    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x) - attrPtr->lineWidth;
+    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 
+        2 * attrPtr->lineWidth;
+    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y) - attrPtr->lineWidth;
+    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 
+        2 * attrPtr->lineWidth;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * TranslateProc --
  *
  *      This procedure is called to move an item by a given amount.
