@@ -2116,8 +2116,7 @@ Blt_PointInSegments(
         double left, right, top, bottom;
         Point2d p, t;
 
-        t = Blt_GetProjection((int)samplePtr->x, (int)samplePtr->y, 
-                              &sp->p, &sp->q);
+        t = Blt_GetProjection(samplePtr->x, samplePtr->y, &sp->p, &sp->q);
         if (sp->p.x > sp->q.x) {
             right = sp->p.x, left = sp->q.x;
         } else {
@@ -2449,7 +2448,7 @@ Blt_PolyRectClip(
  */
 Point2d
 Blt_GetProjection(
-    int x, int y,                       /* Screen coordinates of the sample
+    double x, double y,                 /* Screen coordinates of the sample
                                          * point. */
     Point2d *p, Point2d *q)             /* Line segment to project point
                                          * onto */
@@ -2462,9 +2461,9 @@ Blt_GetProjection(
 
     /* Test for horizontal and vertical lines */
     if (FABS(dx) < DBL_EPSILON) {
-        t.x = p->x, t.y = (double)y;
+        t.x = p->x, t.y = y;
     } else if (FABS(dy) < DBL_EPSILON) {
-        t.x = (double)x, t.y = p->y;
+        t.x = x, t.y = p->y;
     } else {
         double m1, m2;                  /* Slope of both lines */
         double b1, b2;                  /* y-intercepts */
@@ -2532,7 +2531,7 @@ Blt_GetProjection(
  */
 Point2d
 Blt_GetProjection2(
-    int x, int y,                       /* Screen coordinates of the sample
+    double x, double y,                 /* Screen coordinates of the sample
                                          * point. */
     double x1, double y1,
     double x2, double y2)               /* Line segment to project point
@@ -2546,9 +2545,9 @@ Blt_GetProjection2(
 
     /* Test for horizontal and vertical lines */
     if (FABS(dx) < DBL_EPSILON) {
-        t.x = x1, t.y = (double)y;
+        t.x = x1, t.y = y;
     } else if (FABS(dy) < DBL_EPSILON) {
-        t.x = (double)x, t.y = y1;
+        t.x = x, t.y = y1;
     } else {
         double m1, m2;                  /* Slope of both lines */
         double b1, b2;                  /* y-intercepts */

@@ -210,8 +210,8 @@ typedef struct {
     int state;                          /* State of item: TK_STATE_HIDDEN,
                                          * TK_STATE_NORMAL,
                                          * TK_STATE_ACTIVE, or
-                                         * TK_STATE_DISABLED. Selects one of
-                                         * the attributes structures
+                                         * TK_STATE_DISABLED. Selects one
+                                         * of the attributes structures
                                          * below. */
     StateAttributes normal, active, disabled;
 
@@ -607,8 +607,7 @@ GetStateAttributes(LabelItem *labelPtr)
 
 
 static LabelGC *
-GetLabelGC(Tk_Window tkwin, XColor *colorPtr, int lineWidth, int dashes, 
-           int dashOffset)
+GetLabelGC(Tk_Window tkwin, StateAttributes *attrPtr)
 {
     LabelGCKey key;
     LabelGC *gcPtr;
@@ -616,11 +615,11 @@ GetLabelGC(Tk_Window tkwin, XColor *colorPtr, int lineWidth, int dashes,
     int isNew;
     
     memset(&key, 0, sizeof(key));
-    key.pixel = colorPtr->pixel;
+    key.pixel = attrPtr->fgColor->pixel;
     key.display = Tk_Display(tkwin);
-    key.lineWidth = lineWidth;
-    key.dashes = dashes;
-    key.dashOffset = dashOffset;
+    key.lineWidth = attrPtr->lineWidth;
+    key.dashes = attrPtr->dashes;
+    key.dashOffset = attrPtr->dashOffset;
     hPtr = Blt_CreateHashEntry(&gcTable, (char *)&key, &isNew);
     if (isNew) {
         unsigned int gcMask;
@@ -628,13 +627,13 @@ GetLabelGC(Tk_Window tkwin, XColor *colorPtr, int lineWidth, int dashes,
         GC newGC;
         
         gcMask = GCForeground | GCLineWidth;
-        gcValues.foreground = colorPtr->pixel;
-         gcValues.line_width = lineWidth;
-        if (dashes > 0) {
+        gcValues.foreground = attrPtr->fgColor->pixel;
+         gcValues.line_width = attrPtr->lineWidth;
+        if (attrPtr->dashes > 0) {
             gcMask |= (GCLineStyle | GCDashList | GCDashOffset);
             gcValues.line_style = LineOnOffDash;
-            gcValues.dashes = dashes;
-            gcValues.dash_offset = dashOffset;
+            gcValues.dashes = attrPtr->dashes;
+            gcValues.dash_offset = attrPtr->dashOffset;
         }
         newGC = Blt_GetPrivateGC(tkwin, gcMask, &gcValues);
         gcPtr = Blt_AssertMalloc(sizeof(LabelGC));
@@ -843,11 +842,11 @@ ComputeGeometry(LabelItem *labelPtr)
 
     /* Extend the bounding box to the current state's line width.  */
     attrPtr = GetStateAttributes(labelPtr);
-    labelPtr->header.x1 = ROUND(labelPtr->anchorPos.x) - attrPtr->lineWidth;
-    labelPtr->header.x2 = ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth) + 
+    labelPtr->header.x1 = (int)floor(labelPtr->anchorPos.x)-attrPtr->lineWidth;
+    labelPtr->header.x2 = (int)ceil(labelPtr->anchorPos.x+labelPtr->rotWidth) + 
         2 * attrPtr->lineWidth;
-    labelPtr->header.y1 = ROUND(labelPtr->anchorPos.y) - attrPtr->lineWidth;
-    labelPtr->header.y2 = ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight) + 
+    labelPtr->header.y1 = (int)floor(labelPtr->anchorPos.y)-attrPtr->lineWidth;
+    labelPtr->header.y2 = (int)ceil(labelPtr->anchorPos.y+labelPtr->rotHeight) +
         2 * attrPtr->lineWidth;
 }
 
@@ -865,7 +864,7 @@ ComputeGeometry(LabelItem *labelPtr)
  *---------------------------------------------------------------------------
  */
 static TkRegion
-GetClipRegion(LabelItem *labelPtr, int x, int y)
+GetClipRegion(Tk_Canvas canvas, LabelItem *labelPtr)
 {
     TkRegion clipRegion;
 
@@ -874,19 +873,25 @@ GetClipRegion(LabelItem *labelPtr, int x, int y)
     }
     if (labelPtr->flags & ORTHOGONAL) {
         XRectangle r;
-        
-        r.x = ROUND(x);
-        r.y = ROUND(y);
-        r.width  = ROUND(labelPtr->rotWidth);
-        r.height = ROUND(labelPtr->rotHeight);
+        short int x1, y1, x2, y2;
+
+        Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
+                labelPtr->anchorPos.y, &x1, &y1);
+        Tk_CanvasDrawableCoords(canvas, 
+                labelPtr->anchorPos.x + labelPtr->rotWidth, 
+                labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
+        r.x = x1;
+        r.y = y1;
+        r.width  = x2 - x1;
+        r.height = y2 - y1;
         /* Text clip routines don't like negative clip coordinates. */
-        if (x < 0) {
+        if (x1 < 0) {
             r.x = 0;
-            r.width += x;
+            r.width += x1;
         }
-        if (y < 0) {
+        if (y1 < 0) {
             r.y = 0;
-            r.height += y;
+            r.height += y1;
         }
         if ((r.width <= 0) || (r.height <= 0)) {
             return None;
@@ -918,7 +923,7 @@ GetClipRegion(LabelItem *labelPtr, int x, int y)
 }
 
 static void
-MapLabel(LabelItem *labelPtr, int x, int y)
+MapLabel(Tk_Canvas canvas, LabelItem *labelPtr)
 {
     int i;
     
@@ -927,27 +932,14 @@ MapLabel(LabelItem *labelPtr, int x, int y)
 #endif
     /* Map the outline relative to the screen anchor point. */
     for (i = 0; i < 5; i++) {
-        labelPtr->points[i].x = ROUND(labelPtr->outlinePts[i].x + x);
-        labelPtr->points[i].y = ROUND(labelPtr->outlinePts[i].y + y);
+        short int x, y;
+        Tk_CanvasDrawableCoords(canvas, 
+                labelPtr->anchorPos.x + labelPtr->outlinePts[i].x, 
+                labelPtr->anchorPos.y + labelPtr->outlinePts[i].y, &x, &y);
+        labelPtr->points[i].x = x;
+        labelPtr->points[i].y = y;
     }
 }
-
-static int
-LabelInsideRegion(LabelItem *labelPtr, int rx, int ry, int rw, int rh)
-{
-    Region2d region;
-    int state;
-
-    /* Test to see if the rotated bounding box of the label is inside the
-     * region. */
-    region.left = rx - labelPtr->anchorPos.x;
-    region.top = ry - labelPtr->anchorPos.y;
-    region.right = rx + rw;
-    region.bottom = ry + rh;
-    state = Blt_PolygonInRegion(labelPtr->outlinePts, 5, &region, FALSE);
-    return state;
-}
-
 
 /*
  *---------------------------------------------------------------------------
@@ -995,10 +987,13 @@ FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
         Blt_Picture picture;
         Point2d vertices[5];
         int i;
-            
-        w = ROUND(labelPtr->rotWidth);
-        h = ROUND(labelPtr->rotHeight);
-        picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
+        short int x2, y2;
+
+        Tk_CanvasDrawableCoords(labelPtr->canvas, 
+            labelPtr->anchorPos.x + labelPtr->rotWidth, 
+            labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
+        picture = Blt_DrawableToPicture(tkwin, drawable, x, y, x2 - x, y2 - y, 
+                1.0);
         if (picture == NULL) {
             return;                         /* Background is obscured. */
         }
@@ -1137,6 +1132,7 @@ ConfigureProc(
     Tk_Window tkwin;
     LabelGC *newLabelGC;
     XColor *colorPtr;
+    StateAttributes *attrPtr;
     
 #if DEBUG
     fprintf(stderr, "Enter ConfigureProc label=%s\n", labelPtr->text);
@@ -1181,62 +1177,21 @@ ConfigureProc(
     }
 
     /* Update only the GC for the specified-state. */
-    switch (labelPtr->state) {
-    case TK_STATE_NORMAL:
-        newLabelGC = GetLabelGC(tkwin, labelPtr->normal.fgColor,
-             labelPtr->normal.lineWidth, labelPtr->normal.dashes,
-             labelPtr->normal.dashOffset);
-        if (labelPtr->normal.labelGC != NULL) {
-            FreeLabelGC(labelPtr->display, labelPtr->normal.labelGC);
-        }
-        labelPtr->normal.labelGC = newLabelGC;
-        if (labelPtr->normal.brush != NULL) {
-            colorPtr = Blt_GetXColorFromBrush(tkwin, labelPtr->normal.brush);
-        } else {
-            colorPtr = NULL;
-        }
-        if (labelPtr->normal.bgColor != NULL) {
-            Tk_FreeColor(labelPtr->normal.bgColor);
-        }
-        labelPtr->normal.bgColor = colorPtr;
-        break;
-    case TK_STATE_DISABLED:
-        newLabelGC = GetLabelGC(tkwin, labelPtr->disabled.fgColor, 
-                labelPtr->disabled.lineWidth, labelPtr->disabled.dashes, 
-                labelPtr->disabled.dashOffset);
-        if (labelPtr->disabled.labelGC != NULL) {
-            FreeLabelGC(labelPtr->display, labelPtr->disabled.labelGC);
-        }
-        labelPtr->disabled.labelGC = newLabelGC;
-        if (labelPtr->disabled.brush != NULL) {
-            colorPtr = Blt_GetXColorFromBrush(tkwin, labelPtr->disabled.brush);
-        } else {
-            colorPtr = NULL;
-        }
-        if (labelPtr->disabled.bgColor != NULL) {
-            Tk_FreeColor(labelPtr->disabled.bgColor);
-        }
-        labelPtr->disabled.bgColor = colorPtr;
-        break;
-    case TK_STATE_ACTIVE:
-        newLabelGC = GetLabelGC(tkwin, labelPtr->active.fgColor,
-                labelPtr->active.lineWidth, labelPtr->active.dashes,
-                labelPtr->active.dashOffset);
-        if (labelPtr->active.labelGC != NULL) {
-            FreeLabelGC(labelPtr->display, labelPtr->active.labelGC);
-        }
-        labelPtr->active.labelGC = newLabelGC;
-        if (labelPtr->active.brush != NULL) {
-            colorPtr = Blt_GetXColorFromBrush(tkwin, labelPtr->active.brush);
-        } else {
-            colorPtr = NULL;
-        }
-        if (labelPtr->active.bgColor != NULL) {
-            Tk_FreeColor(labelPtr->active.bgColor);
-        }
-        labelPtr->active.bgColor = colorPtr;
-        break;
+    attrPtr = GetStateAttributes(labelPtr);
+    newLabelGC = GetLabelGC(tkwin, attrPtr);
+    if (attrPtr->labelGC != NULL) {
+        FreeLabelGC(labelPtr->display, attrPtr->labelGC);
     }
+    attrPtr->labelGC = newLabelGC;
+    if (attrPtr->brush != NULL) {
+        colorPtr = Blt_GetXColorFromBrush(tkwin, attrPtr->brush);
+    } else {
+        colorPtr = NULL;
+    }
+    if (attrPtr->bgColor != NULL) {
+        Tk_FreeColor(attrPtr->bgColor);
+    }
+    attrPtr->bgColor = colorPtr;
     return TCL_OK;
 }
 
@@ -1425,7 +1380,7 @@ PointProc(
         
         p = labelPtr->outlinePts[i];
         q = labelPtr->outlinePts[i+1];
-        t = Blt_GetProjection(ROUND(sample.x), ROUND(sample.y), &p, &q);
+        t = Blt_GetProjection(sample.x, sample.y, &p, &q);
         if (p.x > q.x) {
             x2 = p.x, x1 = q.x;
         } else {
@@ -1685,12 +1640,7 @@ DisplayProc(
     /* Convert anchor from world coordinates to screen. */
     Tk_CanvasDrawableCoords(canvas, labelPtr->anchorPos.x, 
                             labelPtr->anchorPos.y, &x, &y);
-    MapLabel(labelPtr, x, y);
-#ifdef notdef
-    if (!LabelInsideRegion(labelPtr, rx, ry, rw, rh)) {
-        return;
-    }
-#endif
+    MapLabel(canvas, labelPtr);
 
     tkwin = Tk_CanvasTkwin(canvas);
     attrPtr = GetStateAttributes(labelPtr);
@@ -1719,7 +1669,7 @@ DisplayProc(
 
         font = (labelPtr->scaledFont) ?
             labelPtr->scaledFont : labelPtr->baseFont;
-        clipRegion = GetClipRegion(labelPtr, x, y);
+        clipRegion = GetClipRegion(canvas, labelPtr);
         if (clipRegion != None) {
 #if DEBUG
             fprintf(stderr, "setting clipRegion to font\n");
