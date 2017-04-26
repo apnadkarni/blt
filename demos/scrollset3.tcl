@@ -1,7 +1,6 @@
 #!../src/bltwish
 
 package require BLT
-source scripts/demo.tcl
 
 proc FormatSize { size } {
    set string ""
