@@ -86,7 +86,7 @@ typedef struct {
 } PaintBrushCmdInterpData;
 
 typedef int (PaintBrushConfigProc)(Tcl_Interp *interp, Blt_PaintBrush brush);
-typedef int (PaintBrushColorProc)(Blt_PaintBrush brush, int x, int y);
+typedef unsigned int (PaintBrushColorProc)(Blt_PaintBrush brush, int x, int y);
 typedef void (PaintBrushFreeProc)(Blt_PaintBrush brush);
 typedef void (PaintBrushRegionProc)(Blt_PaintBrush brush, int x, int y,
         int w, int h);
@@ -1342,7 +1342,7 @@ ColorBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
     return TCL_OK;
 }
 
-static int
+static unsigned int
 ColorBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
@@ -1458,7 +1458,7 @@ LinearGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
@@ -1602,7 +1602,7 @@ TileBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
     return TCL_OK;
 }
 
-static int
+static unsigned int
 TileBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
@@ -1707,7 +1707,7 @@ StripesBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 StripesBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_Pixel color;
@@ -1798,7 +1798,7 @@ CheckersBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 CheckersBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_CheckersBrush *brushPtr = (Blt_CheckersBrush *)brush;
@@ -1916,7 +1916,7 @@ RadialGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 RadialGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_Pixel color;
@@ -2027,7 +2027,7 @@ ConicalGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 ConicalGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_ConicalGradientBrush *brushPtr = (Blt_ConicalGradientBrush *)brush;
@@ -2924,7 +2924,7 @@ Blt_SetLinearGradientBrushCalcProc(Blt_PaintBrush brush,
  *
  *---------------------------------------------------------------------------
  */
-int
+unsigned int
 Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, int x, int y)
 {
     PaintBrush *brushPtr = (PaintBrush *)brush;
@@ -3166,6 +3166,18 @@ Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr)
 
 int
 Blt_IsVerticalLinearBrush(Blt_PaintBrush brush)
+{
+    Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
+
+    if ((brushPtr->classPtr->type == BLT_PAINTBRUSH_LINEAR) && 
+        (brushPtr->flags & BLT_PAINTBRUSH_VERTICAL)) {
+        return 1;
+    }
+    return 0;
+}
+
+int
+Blt_IsHorizontalLinearBrush(Blt_PaintBrush brush)
 {
     Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
 

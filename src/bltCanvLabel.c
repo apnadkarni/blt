@@ -94,8 +94,6 @@
 
 #define BOUND(x, lo, hi)         \
         (((x) > (hi)) ? (hi) : ((x) < (lo)) ? (lo) : (x))
-#undef ROUND
-#define ROUND(x)                dtoi(x)
 
 #define LAYOUT_PENDING          (1<<0)
 #define DISPLAY_TEXT            (1<<2)
@@ -412,13 +410,6 @@ static Tk_ConfigSpec configSpecs[] = {
         (char *)NULL, 0, 0}
 };
 
-
-static inline uint32_t
-dtoi(double x) 
-{
-    x += 4503599627370496.0;  /* 1 << 52 */
-    return *(uint32_t *)&x;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -793,8 +784,8 @@ ComputeGeometry(LabelItem *labelPtr)
              * rotated bounding box. */
             q.x += off2.x;
             q.y += off2.y;
-            fragPtr->x1 = ROUND(q.x);
-            fragPtr->y1 = ROUND(q.y);
+            fragPtr->rx = q.x;
+            fragPtr->ry = q.y;
         }
     }
     labelPtr->rotWidth = rw;
@@ -957,71 +948,93 @@ MapLabel(Tk_Canvas canvas, LabelItem *labelPtr)
  */
 static void
 FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
-               int x, int y, Blt_PaintBrush brush, XColor *bgColor)
+               StateAttributes *attrPtr)
 {
     Tk_Window tkwin;
+    short int x1, y1, x2, y2;
+    int w, h;
+
+    Tk_CanvasDrawableCoords(labelPtr->canvas, labelPtr->anchorPos.x, 
+         labelPtr->anchorPos.y, &x1, &y1);
+    Tk_CanvasDrawableCoords(labelPtr->canvas, 
+         labelPtr->anchorPos.x + labelPtr->rotWidth, 
+         labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
+    w = x2 - x1;
+    h = y2 - y1;
 
     tkwin = Tk_CanvasTkwin(canvas);
-    if ((Blt_GetBrushType(brush) == BLT_PAINTBRUSH_COLOR) &&
-        (Blt_GetBrushAlpha(brush) == 0xFF)) {
+    if ((labelPtr->flags & ORTHOGONAL) && 
+        (Blt_GetBrushAlpha(attrPtr->brush) == 0xFF)) {
+        /* Rectangular opaque background. Either use the XFillRectangle
+         * routine or the paint routines depending upon the type of
+         * brush. */
+        if (Blt_GetBrushType(attrPtr->brush) == BLT_PAINTBRUSH_COLOR) {
+            GC gc;
+
+            gc = Tk_GCForColor(attrPtr->bgColor, drawable);
+            XFillRectangle(Tk_Display(tkwin), drawable, gc, x1, y1, w, h);
+        } else {
+            Blt_Painter painter;
+            Blt_Picture picture;
+
+            picture = Blt_CreatePicture(w, h);
+            Blt_SetBrushRegion(attrPtr->brush, 0, 0, w, h);
+            Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, attrPtr->brush, 0);
+            painter = Blt_GetPainter(tkwin, 1.0);
+            Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x1, y1, 0);
+            Blt_FreePicture(picture);
+        }
+    } else if ((Blt_GetBrushAlpha(attrPtr->brush) == 0xFF) && 
+               (Blt_GetBrushType(attrPtr->brush) == BLT_PAINTBRUSH_COLOR)) {
         GC gc;
 
-        /* For opaque backgrounds, use the normal X drawing routine to draw
-         * either background rectangle or isolateral. */
-        gc = Tk_GCForColor(bgColor, drawable);
-        if (labelPtr->flags & ORTHOGONAL) {
-            short int x2, y2;
-
-            Tk_CanvasDrawableCoords(labelPtr->canvas, 
-                labelPtr->anchorPos.x + labelPtr->rotWidth, 
-                labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
-            XFillRectangle(Tk_Display(tkwin), drawable, gc, x, y, 
-                           x2 - x, y2 - y);
-        } else {
-            XFillPolygon(Tk_Display(tkwin), drawable, gc, labelPtr->points, 5, 
-                Convex, CoordModeOrigin);
-        }
+        /* Polygonal opaque, color background.  Use XFillPolygon. */
+        gc = Tk_GCForColor(attrPtr->bgColor, drawable);
+        XFillPolygon(Tk_Display(tkwin), drawable, gc, labelPtr->points, 5, 
+                     Convex, CoordModeOrigin);
     } else {
-        int w, h;
         Blt_Painter painter;
         Blt_Picture picture;
-        Point2d vertices[5];
-        int i;
-        short int x2, y2;
 
-        Tk_CanvasDrawableCoords(labelPtr->canvas, 
-            labelPtr->anchorPos.x + labelPtr->rotWidth, 
-            labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
-        picture = Blt_DrawableToPicture(tkwin, drawable, x, y, x2 - x, y2 - y, 
-                1.0);
+        /* Non-opaque, or special brush background.  Use
+         * paint routines after snapping the background. */
+        picture = Blt_DrawableToPicture(tkwin, drawable, x1, y1, w, h, 1.0);
         if (picture == NULL) {
             return;                         /* Background is obscured. */
         }
         w = Blt_Picture_Width(picture);
         h = Blt_Picture_Height(picture);
-        for (i = 0; i < 5; i++) {
-            vertices[i].x = labelPtr->outlinePts[i].x;
-            vertices[i].y = labelPtr->outlinePts[i].y;
-            if (x < 0) {
-                vertices[i].x += x;
-            }
-            if (y < 0) {
-                vertices[i].y += y;
-            }
-        }
-        Blt_SetBrushRegion(brush, 0, 0, w, h);
-        Blt_PaintPolygon(picture, 5, vertices, brush);
         painter = Blt_GetPainter(tkwin, 1.0);
-        if (x < 0) {
-            x = 0;
+        Blt_SetBrushRegion(attrPtr->brush, 0, 0, w, h);
+        if (labelPtr->flags & ORTHOGONAL) {
+            Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, attrPtr->brush, 0);
+        } else {
+            Point2d vertices[5];
+            int i;
+
+            for (i = 0; i < 5; i++) {
+                vertices[i].x = labelPtr->outlinePts[i].x;
+                vertices[i].y = labelPtr->outlinePts[i].y;
+                if (x1 < 0) {
+                    vertices[i].x += x1;
+                }
+                if (y1 < 0) {
+                    vertices[i].y += y1;
+                }
+            }
+            Blt_PaintPolygon(picture, 5, vertices, attrPtr->brush);
+            painter = Blt_GetPainter(tkwin, 1.0);
+            if (x1 < 0) {
+                x1 = 0;
+            }
+            if (y1 < 0) {
+                y1 = 0;
+            }
         }
-        if (y < 0) {
-            y = 0;
-        }
-        Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
+        Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x1, y1, 0);
         Blt_FreePicture(picture);
     }
-}
+}    
 
 static double
 FontPica(Tk_Window tkwin, Blt_Font font)
@@ -1646,8 +1659,7 @@ DisplayProc(
     attrPtr = GetStateAttributes(labelPtr);
     assert(attrPtr != NULL);    
     if (attrPtr->brush != NULL) {       /* Fill rectangle or isolateral. */
-        FillBackground(canvas, drawable, labelPtr, x, y, attrPtr->brush,
-                       attrPtr->bgColor);
+        FillBackground(canvas, drawable, labelPtr, attrPtr);
     }
     if (attrPtr->lineWidth > 0) {      /* Outline */
         if (labelPtr->flags & ORTHOGONAL) {

@@ -581,7 +581,7 @@ BLT_EXTERN void		Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr,
 #ifndef Blt_GetAssociatedColorFromBrush_DECLARED
 #define Blt_GetAssociatedColorFromBrush_DECLARED
 /* 97 */
-BLT_EXTERN int		Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush,
+BLT_EXTERN unsigned int	Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush,
 				int x, int y);
 #endif
 #ifndef Blt_IsVerticalLinearBrush_DECLARED
@@ -1570,7 +1570,7 @@ typedef struct BltTkIntProcs {
     void (*blt_SetBrushRegion) (Blt_PaintBrush brush, int x, int y, int w, int h); /* 94 */
     int (*blt_GetBrushAlpha) (Blt_PaintBrush brush); /* 95 */
     void (*blt_GetBrushOrigin) (Blt_PaintBrush brush, int *xPtr, int *yPtr); /* 96 */
-    int (*blt_GetAssociatedColorFromBrush) (Blt_PaintBrush brush, int x, int y); /* 97 */
+    unsigned int (*blt_GetAssociatedColorFromBrush) (Blt_PaintBrush brush, int x, int y); /* 97 */
     int (*blt_IsVerticalLinearBrush) (Blt_PaintBrush brush); /* 98 */
     void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_PaintBrush brush, int composite); /* 99 */
     void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2d *vertices, Blt_PaintBrush brush); /* 100 */

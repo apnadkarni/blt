@@ -815,6 +815,16 @@ PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y,
         x2 = MIN(x2, destPtr->width);
         dp   = destPtr->bits + (y * destPtr->pixelsPerRow) + x1;
         dend = destPtr->bits + (y * destPtr->pixelsPerRow) + x2;
+        if (Blt_IsVerticalLinearBrush(brush)) {
+            int x;
+            Blt_Pixel color;
+            
+            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
+            for (x = x1; x <= x2; x++, dp++) {
+                BlendPixels(dp, &color);
+            }
+            return;
+        }
         if (blend) {
             int x;
 
@@ -888,6 +898,37 @@ FillVerticalLine(Pict *destPtr, int x, int y1, int y2, Blt_Pixel *colorPtr,
                 dp->u32 = colorPtr->u32;
             }
         }           
+    }
+}
+
+static void
+BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
+{
+    Blt_Pixel *dp;
+    int x;
+
+    if (x1 > x2) {
+        int tmp;
+
+        tmp = x1, x1 = x2, x2 = tmp;
+    }
+    dp = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
+    /* Cheat for vertical linear brushes. */
+    /* If linear and vertical get color once and set across */
+    if (Blt_IsVerticalLinearBrush(brush)) {
+        Blt_Pixel color;
+
+        color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
+        for (x = x1; x <= x2; x++, dp++) {
+            BlendPixels(dp, &color);
+        }
+    } else {
+        for (x = x1; x <= x2; x++, dp++) {
+            Blt_Pixel color;
+            
+            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+            BlendPixels(dp, &color);
+        }
     }
 }
 
@@ -1321,7 +1362,6 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
     if (r > (h / 2)) {
         r = h / 2;
     }
-
     if (r > 0) {
         if (lineWidth > 0) {
             int x1, x2, x3, x4, y1, y2, dy;
@@ -1332,16 +1372,26 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < lineWidth; dy++) {
+#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
                 PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
+#else
+                BrushHorizontalLine(picture, x1, x2, y1+dy, brush);
+                BrushHorizontalLine(picture, x1, x2, y2-dy, brush);
+#endif
             }
             x1 = x;
             x2 = x + lineWidth;
             x3 = x + w - lineWidth;
             x4 = x + w;
             for (dy = r; dy < (h - r); dy++) {
+#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
                 PaintHorizontalLine(picture, x3, x4, y+dy, brush, composite);
+#else
+                BrushHorizontalLine(picture, x1, x2, y+dy, brush);
+                BrushHorizontalLine(picture, x3, x4, y+dy, brush);
+#endif
             }
         } else {
             int x1, x2, y1, y2, dy;
@@ -1352,13 +1402,22 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < r; dy++) {
+#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
                 PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
+#else
+                BrushHorizontalLine(picture, x1, x2, y1+dy, brush);
+                BrushHorizontalLine(picture, x1, x2, y2-dy, brush);
+#endif
             }
             x1 = x;
             x2 = x + w;
             for (dy = r; dy < (h - r); dy++) {
+#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
+#else
+                BrushHorizontalLine(picture, x1, x2, y+dy, brush);
+#endif
             }
         }
         { 
@@ -1408,7 +1467,11 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             x1 = x;
             x2 = x + w;
             for (dy = 0; dy < h; dy++) {
+#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
+#else
+                BrushHorizontalLine(picture, x1, x2, y+dy, brush);
+#endif
             }
         }
     } 
@@ -1448,36 +1511,6 @@ PaintPolyline(
     }
 }
 
-static void
-BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
-{
-    Blt_Pixel *dp;
-    int x;
-
-    if (x1 > x2) {
-        int tmp;
-
-        tmp = x1, x1 = x2, x2 = tmp;
-    }
-    dp = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
-    /* Cheat for vertical linear brushes. */
-    /* If linear and vertical get color once and set across */
-    if (Blt_IsVerticalLinearBrush(brush)) {
-        Blt_Pixel color;
-
-        color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
-        for (x = x1; x <= x2; x++, dp++) {
-            BlendPixels(dp, &color);
-        }
-    } else {
-        for (x = x1; x <= x2; x++, dp++) {
-            Blt_Pixel color;
-            
-            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-            BlendPixels(dp, &color);
-        }
-    }
-}
 
 /*
  * Concave Polygon Scan Conversion

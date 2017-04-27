@@ -630,7 +630,7 @@ Blt_Ts_CreateLayout(const char *text, int numBytes, TextStyle *tsPtr)
             }
             fp->w = width;
             fp->numBytes = count;
-            fp->y1 = fp->y = maxHeight + fm.ascent;
+            fp->ry = fp->y = maxHeight + fm.ascent;
             fp->text = start;
             maxHeight += lineHeight;
             fp++;
@@ -650,7 +650,7 @@ Blt_Ts_CreateLayout(const char *text, int numBytes, TextStyle *tsPtr)
         }
         fp->w = width;
         fp->numBytes = count;
-        fp->y1 = fp->y = maxHeight + fm.ascent;
+        fp->ry = fp->y = maxHeight + fm.ascent;
         fp->text = start;
         maxHeight += lineHeight;
         numFrags++;
@@ -663,13 +663,13 @@ Blt_Ts_CreateLayout(const char *text, int numBytes, TextStyle *tsPtr)
         default:
         case TK_JUSTIFY_LEFT:
             /* No offset for left justified text strings */
-            fp->x = fp->x1 = tsPtr->padLeft;
+            fp->rx = fp->x = tsPtr->padLeft;
             break;
         case TK_JUSTIFY_RIGHT:
-            fp->x = fp->x1 = (maxWidth - fp->w) - tsPtr->padRight;
+            fp->rx = fp->x =  (maxWidth - fp->w) - tsPtr->padRight;
             break;
         case TK_JUSTIFY_CENTER:
-            fp->x = fp->x1 = (maxWidth - fp->w) / 2;
+            fp->rx = fp->x = (maxWidth - fp->w) / 2;
             break;
         }
     }
@@ -787,22 +787,25 @@ Blt_DrawLayout(Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font,
     Blt_Font_GetMetrics(font, &fm);
     for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments; 
          fp < fend; fp++) {
-        int x1, y1;
+        int tx, ty;
 
-        x1 = x + fp->x1, y1 = y + fp->y1;
+        tx = x + fp->rx, ty = y + fp->ry;
         if ((maxLength > 0) && ((fp->w + fp->x) > maxLength)) {
             Blt_DrawWithEllipsis(tkwin, drawable, gc, font, depth, angle, 
-                fp->text, fp->numBytes, x1, y1, maxLength - fp->x);
+                fp->text, fp->numBytes, tx, ty, maxLength - fp->x);
         } else {
             Blt_Font_Draw(Tk_Display(tkwin), drawable, gc, font, depth, angle, 
-                fp->text, fp->numBytes, x1, y1);
+                fp->text, fp->numBytes, tx, ty);
         }
     }
     if (layoutPtr->underlinePtr != NULL) {
+        int tx, ty;
+
+        tx = x + fp->rx, ty = y + fp->ry;
         /* Single underlined character. */
         fp = layoutPtr->underlinePtr;
         Blt_Font_UnderlineChars(Tk_Display(tkwin), drawable, gc, font, fp->text,
-                fp->numBytes, x + fp->x1, y + fp->y1, layoutPtr->underline, 
+                fp->numBytes, tx, ty, layoutPtr->underline, 
                 layoutPtr->underline + 1, maxLength);
     }
 }
@@ -1035,8 +1038,8 @@ RotateStartingTextPositions(TextLayout *layoutPtr, int w, int h, float angle)
          * rotated bounding box. */
         q.x += off2.x;
         q.y += off2.y;
-        fragPtr->x1 = ROUND(q.x);
-        fragPtr->y1 = ROUND(q.y);
+        fragPtr->rx = q.x;
+        fragPtr->ry = q.y;
     }
 }
 
@@ -1251,11 +1254,11 @@ Blt_Ts_UnderlineChars(Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr,
         }
         for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments; 
              fp < fend; fp++) {
-            int x1, y1;
+            int tx, ty;
 
-            x1 = x + fp->x1, y1 = y + fp->y1;
+            tx = x + fp->rx, ty = y + fp->ry;
             Blt_Font_UnderlineChars(Tk_Display(tkwin), drawable, stylePtr->gc, 
-                stylePtr->font, fp->text, fp->numBytes, x1, y1, 0, -1, 
+                stylePtr->font, fp->text, fp->numBytes, tx, ty, 0, -1, 
                 stylePtr->maxLength);
         }
         if (stylePtr->rgn != NULL) {
@@ -2215,7 +2218,7 @@ Blt_Ts_TitleLayout(const char *text, int numBytes, TextStyle *tsPtr)
         fp->text  = text;
         fp->numBytes = numBytes;
         fp->w = w;
-        fp->y = fp->y1 = maxHeight + fm.ascent;
+        fp->ry = fp->y = maxHeight + fm.ascent;
         if (w > maxWidth) {
             maxWidth = w;
         }
@@ -2240,13 +2243,13 @@ Blt_Ts_TitleLayout(const char *text, int numBytes, TextStyle *tsPtr)
         default:
         case TK_JUSTIFY_LEFT:
             /* No offset for left justified text strings */
-            fp->x = fp->x1 = tsPtr->padLeft;
+            fp->rx = fp->x = tsPtr->padLeft;
             break;
         case TK_JUSTIFY_RIGHT:
-            fp->x = fp->x1 = (maxWidth - fp->w) - tsPtr->padRight;
+            fp->rx = fp->x = (maxWidth - fp->w) - tsPtr->padRight;
             break;
         case TK_JUSTIFY_CENTER:
-            fp->x = fp->x1 = (maxWidth - fp->w) / 2;
+            fp->rx = fp->x = (maxWidth - fp->w) / 2;
             break;
         }
     }
