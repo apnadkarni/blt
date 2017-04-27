@@ -159,13 +159,13 @@ BLT_EXTERN int		Blt_GetXY(Tcl_Interp *interp, Tk_Window tkwin,
 #ifndef Blt_GetProjection_DECLARED
 #define Blt_GetProjection_DECLARED
 /* 24 */
-BLT_EXTERN Point2d	Blt_GetProjection(int x, int y, Point2d *p,
+BLT_EXTERN Point2d	Blt_GetProjection(double x, double y, Point2d *p,
 				Point2d *q);
 #endif
 #ifndef Blt_GetProjection2_DECLARED
 #define Blt_GetProjection2_DECLARED
 /* 25 */
-BLT_EXTERN Point2d	Blt_GetProjection2(int x, int y, double x1,
+BLT_EXTERN Point2d	Blt_GetProjection2(double x, double y, double x1,
 				double y1, double x2, double y2);
 #endif
 #ifndef Blt_DrawArrowOld_DECLARED
@@ -1497,8 +1497,8 @@ typedef struct BltTkIntProcs {
     const char * (*blt_NameOfFill) (int fill); /* 21 */
     const char * (*blt_NameOfResize) (int resize); /* 22 */
     int (*blt_GetXY) (Tcl_Interp *interp, Tk_Window tkwin, const char *string, int *xPtr, int *yPtr); /* 23 */
-    Point2d (*blt_GetProjection) (int x, int y, Point2d *p, Point2d *q); /* 24 */
-    Point2d (*blt_GetProjection2) (int x, int y, double x1, double y1, double x2, double y2); /* 25 */
+    Point2d (*blt_GetProjection) (double x, double y, Point2d *p, Point2d *q); /* 24 */
+    Point2d (*blt_GetProjection2) (double x, double y, double x1, double y1, double x2, double y2); /* 25 */
     void (*blt_DrawArrowOld) (Display *display, Drawable drawable, GC gc, int x, int y, int w, int h, int borderWidth, int orientation); /* 26 */
     void (*blt_DrawArrow) (Display *display, Drawable drawable, XColor *color, int x, int y, int w, int h, int borderWidth, int orientation); /* 27 */
     void (*blt_MakeTransparentWindowExist) (Tk_Window tkwin, Window parent, int isBusy); /* 28 */
