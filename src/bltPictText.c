@@ -1356,3 +1356,8 @@ Blt_PictureTextInit(Tcl_Interp *interp)
     return TCL_OK;
 }
 
+int 
+Blt_PictureTextSafeInit(Tcl_Interp *interp) 
+{
+    return Blt_PictureTextInit(interp);
+}
