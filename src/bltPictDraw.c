@@ -1372,26 +1372,16 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < lineWidth; dy++) {
-#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
                 PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
-#else
-                BrushHorizontalLine(picture, x1, x2, y1+dy, brush);
-                BrushHorizontalLine(picture, x1, x2, y2-dy, brush);
-#endif
             }
             x1 = x;
             x2 = x + lineWidth;
             x3 = x + w - lineWidth;
             x4 = x + w;
             for (dy = r; dy < (h - r); dy++) {
-#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
                 PaintHorizontalLine(picture, x3, x4, y+dy, brush, composite);
-#else
-                BrushHorizontalLine(picture, x1, x2, y+dy, brush);
-                BrushHorizontalLine(picture, x3, x4, y+dy, brush);
-#endif
             }
         } else {
             int x1, x2, y1, y2, dy;
@@ -1402,22 +1392,13 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < r; dy++) {
-#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
                 PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
-#else
-                BrushHorizontalLine(picture, x1, x2, y1+dy, brush);
-                BrushHorizontalLine(picture, x1, x2, y2-dy, brush);
-#endif
             }
             x1 = x;
             x2 = x + w;
             for (dy = r; dy < (h - r); dy++) {
-#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
-#else
-                BrushHorizontalLine(picture, x1, x2, y+dy, brush);
-#endif
             }
         }
         { 
@@ -1467,11 +1448,7 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             x1 = x;
             x2 = x + w;
             for (dy = 0; dy < h; dy++) {
-#ifdef notdef
                 PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
-#else
-                BrushHorizontalLine(picture, x1, x2, y+dy, brush);
-#endif
             }
         }
     } 

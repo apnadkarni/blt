@@ -4772,6 +4772,8 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Memory is deallocated (the entry is destroyed), etc.  The affected
  *      tables are is re-computed and arranged at the next idle point.
  *
+ *      blt::table forget ?slaveName ...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
