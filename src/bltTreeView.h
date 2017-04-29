@@ -299,6 +299,7 @@ struct _Column {
                                          * definitions of the various bit
                                          * fields see below. */
     Blt_HashEntry *hashPtr;
+    const char *name;                   
     Blt_TreeKey key;                    /* Data cell identifier for current
                                          * tree. */
     int index;                          /* Position of column in list.

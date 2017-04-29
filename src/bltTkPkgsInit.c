@@ -84,6 +84,7 @@ BLT_EXTERN Tcl_AppInitProc Blt_PictureXpmSafeInit;
 #endif  /* HAVE_LIBXPM */
 #ifdef HAVE_LIBFT2
 BLT_EXTERN Tcl_AppInitProc Blt_PictureTextInit;
+BLT_EXTERN Tcl_AppInitProc Blt_PictureTextSafeInit;
 #endif  /* HAVE_LIBFT2 */
 
 int
@@ -172,6 +173,14 @@ Blt_TkPkgsInit(Tcl_Interp *interp)      /* Interpreter for application. */
     Tcl_StaticPackage(interp, "blt_picture_xpm", Blt_PictureXpmInit, 
         Blt_PictureXpmSafeInit);
 #endif /*HAVE_LIBXPM*/
+
+#ifdef HAVE_LIBFT2
+    if (Blt_PictureTextInit(interp) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    Tcl_StaticPackage(interp, "blt_picture_text", Blt_PictureTextInit, 
+        Blt_PictureTextSafeInit);
+#endif /*HAVE_LIBFT2*/
     return TCL_OK;
 }
 

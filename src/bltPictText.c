@@ -469,7 +469,7 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
             }
             fp->w = w;
             fp->numBytes = count;
-            fp->y1 = fp->y = maxHeight + fontPtr->ascent;
+            fp->ry = fp->y = maxHeight + fontPtr->ascent;
             fp->text = start;
             maxHeight += lineHeight;
             fp++;
@@ -490,7 +490,7 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
         }
         fp->w = w;
         fp->numBytes = count;
-        fp->y1 = fp->y = maxHeight + fontPtr->ascent;
+        fp->ry = fp->y = maxHeight + fontPtr->ascent;
         fp->text = start;
         maxHeight += lineHeight;
         numFrags++;
@@ -503,13 +503,13 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
         default:
         case TK_JUSTIFY_LEFT:
             /* No offset for left justified text strings */
-            fp->x = fp->x1 = tsPtr->padLeft;
+            fp->rx = fp->x = tsPtr->padLeft;
             break;
         case TK_JUSTIFY_RIGHT:
-            fp->x = fp->x1 = (maxWidth - fp->w) - tsPtr->padRight;
+            fp->rx = fp->x = (maxWidth - fp->w) - tsPtr->padRight;
             break;
         case TK_JUSTIFY_CENTER:
-            fp->x = fp->x1 = (maxWidth - fp->w) / 2;
+            fp->rx = fp->x = (maxWidth - fp->w) / 2;
             break;
         }
     }
@@ -1192,8 +1192,8 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
             RotateFont(fontPtr, switches.angle);
             for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments;
                 fp < fend; fp++) {
-                PaintText(destPtr, fontPtr, fp->text, fp->numBytes, x + fp->x1, 
-                        y + fp->y1, switches.kerning, switches.brush);
+                PaintText(destPtr, fontPtr, fp->text, fp->numBytes, x + fp->rx, 
+                        y + fp->ry, switches.kerning, switches.brush);
             }
         } else {
             Blt_Picture tmp;
@@ -1206,7 +1206,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(tmp, fontPtr, fp->text, fp->numBytes, fp->x1, fp->y1, 
+                PaintText(tmp, fontPtr, fp->text, fp->numBytes, fp->rx, fp->ry, 
                         switches.kerning, switches.brush);
             }
             rotPtr = Blt_RotatePicture(tmp, switches.angle);
@@ -1356,3 +1356,8 @@ Blt_PictureTextInit(Tcl_Interp *interp)
     return TCL_OK;
 }
 
+int 
+Blt_PictureTextSafeInit(Tcl_Interp *interp) 
+{
+    return Blt_PictureTextInit(interp);
+}

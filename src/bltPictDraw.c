@@ -815,6 +815,16 @@ PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y,
         x2 = MIN(x2, destPtr->width);
         dp   = destPtr->bits + (y * destPtr->pixelsPerRow) + x1;
         dend = destPtr->bits + (y * destPtr->pixelsPerRow) + x2;
+        if (Blt_IsVerticalLinearBrush(brush)) {
+            int x;
+            Blt_Pixel color;
+            
+            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
+            for (x = x1; x <= x2; x++, dp++) {
+                BlendPixels(dp, &color);
+            }
+            return;
+        }
         if (blend) {
             int x;
 
@@ -888,6 +898,37 @@ FillVerticalLine(Pict *destPtr, int x, int y1, int y2, Blt_Pixel *colorPtr,
                 dp->u32 = colorPtr->u32;
             }
         }           
+    }
+}
+
+static void
+BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
+{
+    Blt_Pixel *dp;
+    int x;
+
+    if (x1 > x2) {
+        int tmp;
+
+        tmp = x1, x1 = x2, x2 = tmp;
+    }
+    dp = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
+    /* Cheat for vertical linear brushes. */
+    /* If linear and vertical get color once and set across */
+    if (Blt_IsVerticalLinearBrush(brush)) {
+        Blt_Pixel color;
+
+        color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
+        for (x = x1; x <= x2; x++, dp++) {
+            BlendPixels(dp, &color);
+        }
+    } else {
+        for (x = x1; x <= x2; x++, dp++) {
+            Blt_Pixel color;
+            
+            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+            BlendPixels(dp, &color);
+        }
     }
 }
 
@@ -1321,7 +1362,6 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
     if (r > (h / 2)) {
         r = h / 2;
     }
-
     if (r > 0) {
         if (lineWidth > 0) {
             int x1, x2, x3, x4, y1, y2, dy;
@@ -1448,36 +1488,6 @@ PaintPolyline(
     }
 }
 
-static void
-BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
-{
-    Blt_Pixel *dp;
-    int x;
-
-    if (x1 > x2) {
-        int tmp;
-
-        tmp = x1, x1 = x2, x2 = tmp;
-    }
-    dp = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
-    /* Cheat for vertical linear brushes. */
-    /* If linear and vertical get color once and set across */
-    if (Blt_IsVerticalLinearBrush(brush)) {
-        Blt_Pixel color;
-
-        color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
-        for (x = x1; x <= x2; x++, dp++) {
-            BlendPixels(dp, &color);
-        }
-    } else {
-        for (x = x1; x <= x2; x++, dp++) {
-            Blt_Pixel color;
-            
-            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-            BlendPixels(dp, &color);
-        }
-    }
-}
 
 /*
  * Concave Polygon Scan Conversion

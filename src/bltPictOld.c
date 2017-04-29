@@ -2205,8 +2205,8 @@ PaintTextLayout(Pict *destPtr, FtFont *fontPtr, TextLayout *layoutPtr,
 
     for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments;
          fp < fend; fp++) {
-        PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->sx, 
-                y + fp->sy, switchesPtr->kerning, switchesPtr->brush);
+        PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->rx, 
+                y + fp->ry, switchesPtr->kerning, switchesPtr->brush);
     }
 }
 #endif

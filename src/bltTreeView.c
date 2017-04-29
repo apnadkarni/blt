@@ -1799,6 +1799,8 @@ TraceColumns(TreeView *viewPtr)
         Column *colPtr;
 
         colPtr = Blt_Chain_GetValue(link);
+        /* Keys are on a per-tree basis, re-get the key. */
+        colPtr->key = Blt_Tree_GetKey(viewPtr->tree, colPtr->name);
         Blt_Tree_CreateTrace(
                 viewPtr->tree, 
                 NULL                        /* Node */, 
@@ -5665,7 +5667,6 @@ FreeColumn(DestroyData data)
 static void
 DestroyColumn(Column *colPtr)
 {
-    Blt_HashEntry *hPtr;
     TreeView *viewPtr;
 
     colPtr->flags |= DELETED;           /* Mark the column as destroyed. */
@@ -5696,9 +5697,8 @@ DestroyColumn(Column *colPtr)
     if (colPtr->activeRuleGC != NULL) {
         Blt_FreePrivateGC(viewPtr->display, colPtr->activeRuleGC);
     }
-    hPtr = Blt_FindHashEntry(&viewPtr->columnTable, colPtr->key);
-    if (hPtr != NULL) {
-        Blt_DeleteHashEntry(&viewPtr->columnTable, hPtr);
+    if (colPtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&viewPtr->columnTable, colPtr->hashPtr);
     }
     if (colPtr->link != NULL) {
         Blt_Chain_DeleteLink(viewPtr->columns, colPtr->link);
@@ -5752,10 +5752,10 @@ InitColumn(TreeView *viewPtr, Column *colPtr, const char *name,
     colPtr->titleRelief = TK_RELIEF_RAISED;
     colPtr->titleIcon = NULL;
     colPtr->sortType = SORT_DICTIONARY;
-    hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, colPtr->key, &isNew);
+    hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, name, &isNew);
     Blt_SetHashValue(hPtr, colPtr);
     colPtr->hashPtr = hPtr;
-
+    colPtr->name = Blt_GetHashKey(&viewPtr->columnTable, hPtr);
     cachedObjOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
@@ -6227,7 +6227,7 @@ NewView(Tcl_Interp *interp, Tcl_Obj *objPtr)
     viewPtr->sel.flags = 0;
     Blt_InitHashTable(&viewPtr->sel.table, BLT_ONE_WORD_KEYS);
     Blt_InitHashTableWithPool(&viewPtr->entryTable, BLT_ONE_WORD_KEYS);
-    Blt_InitHashTable(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
+    Blt_InitHashTable(&viewPtr->columnTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->iconTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->cachedObjTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->styleTable, BLT_STRING_KEYS);

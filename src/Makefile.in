@@ -661,7 +661,7 @@ $(blt_pict_xpm_so): bltPictXpm.o $(blt_libs)
 	$(RM) $@
 	$(SO_LD) $(SO_LDFLAGS) -o $@ bltPictXpm.o \
 		$(blt_libs) $(X11_LIB_SPEC) $(XPM_LIB_SPEC) \
-		$(tcl_lib_spec)
+		$(tcl_lib_spec) 
 
 $(blt_pict_text_so): bltPictText.o $(blt_libs)
 	$(RM) $@

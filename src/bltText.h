@@ -56,12 +56,10 @@ typedef struct {
     short x, y;                         /* X-Y offset of the baseline from
                                          * the upper-left corner of the
                                          * bbox. */
-    short x1, y1;                       /* Starting offset of fragment
+    float rx, ry;                       /* Starting offset of fragment
                                          * after rotation. This is used to
                                          * position the text when using a
                                          * rotated font. */
-    short x2, y2;                       /* Ending offset of fragment 
-                                         * after rotation. */
     int w;                              /* Width of segment in pixels. This
                                          * is used justify the fragment
                                          * with other fragments and to

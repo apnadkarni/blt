@@ -1536,7 +1536,7 @@ SkipSeparators(const char *path, const char *separator, int length)
  *---------------------------------------------------------------------------
  */
 static int
-SplitPath(Tcl_Interp *interp, const char *path, Tcl_Obj *pathSepObjPtr, 
+SplitPath(Tcl_Interp *interp, Tcl_Obj *objPtr, Tcl_Obj *sepObjPtr, 
           int *depthPtr, const char ***listPtr)
 {
     int skipLen, pathLen;
@@ -1546,34 +1546,61 @@ SplitPath(Tcl_Interp *interp, const char *path, Tcl_Obj *pathSepObjPtr,
     char *p;
     char *sp;
     const char *pathSeparator;
+    const char *path;
 
-    if ((pathSepObjPtr == NULL) || 
-        ((Tcl_GetString(pathSepObjPtr))[0] == '\0')) {
-        int argc;
-        const char **argv;
+    path = Tcl_GetStringFromObj(objPtr, &pathLen);
+    
+    if ((sepObjPtr == NULL) || ((Tcl_GetString(sepObjPtr))[0] == '\0')) {
+        int objc;
+        Tcl_Obj **objv;
         
-        if (Tcl_SplitList(NULL, path, &argc, &argv) != TCL_OK) {
+        if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
             return TCL_ERROR;
         }
-        /* Convert the list from TCL memory into normal memory. This is
-         * because the list could be either a split list or a (malloc-ed)
-         * generated list (like below). */
-        list = Blt_ConvertListToList(argc, argv);
-        Tcl_Free((char *)argv);
+        /* Pass 1. Determines the size of the storage. */
+        numBytes = objc;                     /* Add NUL bytes. */
+        for (i = 0; i < objc; i++) {
+            int length;
+
+            Tcl_GetStringFromObj(objv[i], &length);
+            numBytes += length;
+        }
+        listSize = (objc + 1) * sizeof(char *);
+        p = (char *)list + numBytes;
+        list = Blt_AssertMalloc(listSize + (numBytes + 1));
+        /* Pass 2. Fill the list with the strings. */
+        for (i = 0; i < objc; i++) {
+            const char *string;
+            int length;
+
+            string = Tcl_GetStringFromObj(objv[i], &length);
+            strncpy(p, string, length);
+            p[length] = '\0';
+            p += length + 1;
+        }
         *listPtr = list;
-        *depthPtr = (long)argc;
+        *depthPtr = objc;
         return TCL_OK;
     }
     pathSeparator = Tcl_GetStringFromObj(pathSepObjPtr, &skipLen);
-    pathLen = strlen(path);
-    path = SkipSeparators(path, pathSeparator, skipLen);
-    depth = pathLen / skipLen;
 
+    /* Skip the first separator. */
+    path = SkipSeparators(path, sepObjPtr);
+    firstPtr = path;
+    for (nextPtr = strstr(path, pathSeparator); 
+         ((*nextPtr != '\0') && (nextPtr != NULL)); 
+         nextPtr = strstr(firstPtr, pathSeparator)) {
+        *sp = '\0';
+        list[depth++] = p;
+        p = (char *)SkipSeparators(sp + skipLen, pathSeparator, skipLen);
+    }
+
+    depth = pathLen / skipLen;
+    /* Allocate a worst case number of entries. */
     listSize = (depth + 1) * sizeof(char *);
     list = Blt_AssertMalloc(listSize + (pathLen + 1));
     p = (char *)list + listSize;
     strcpy(p, path);
-
     depth = 0;
     for (sp = strstr(p, pathSeparator); ((*p != '\0') && (sp != NULL)); 
          sp = strstr(p, pathSeparator)) {
@@ -6189,7 +6216,6 @@ PathCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PathCreateSwitches switches;
     TreeCmd *cmdPtr = clientData;
     const char **argv;
-    const char *path;
     int argc;
     int i;
     int result;
@@ -6207,8 +6233,7 @@ PathCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     parent = switches.root;
-    path = Tcl_GetString(objv[3]);
-    result = SplitPath(interp, path, switches.pathSepObjPtr, &argc, &argv);
+    result = SplitPath(interp, objv[3], switches.pathSepObjPtr, &argc, &argv);
     Blt_FreeSwitches(pathCreateSwitches, (char *)&switches, 0);
     if (argc == 0) {
         goto done;
@@ -6285,7 +6310,6 @@ PathParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PathParseSwitches switches;
     TreeCmd *cmdPtr = clientData;
     const char **argv;
-    const char *path;
     int argc;
     int i;
     int result;
@@ -6303,8 +6327,7 @@ PathParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    path = Tcl_GetString(objv[3]);
-    result = SplitPath(interp, path, switches.pathSepObjPtr, &argc, &argv);
+    result = SplitPath(interp, objv[3], switches.pathSepObjPtr, &argc, &argv);
     Blt_FreeSwitches(pathParseSwitches, (char *)&switches, 0);
     if (argc == 0) {
         inode = Blt_Tree_NodeId(switches.root);
