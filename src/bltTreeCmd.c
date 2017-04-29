@@ -1514,9 +1514,13 @@ GetForeignNode(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 static const char *
-SkipSeparators(const char *path, const char *separator, int length)
+SkipSeparators(const char *path, Tcl_Obj *objPtr)
 {
-    while ((*path == *separator) && (strncmp(path, separator, length) == 0)) {
+    const char *sep;
+    int length;
+
+    sep = Tcl_GetStringFromObj(objPtr, &length);
+    while ((*path == *sep) && (strncmp(path, sep, length) == 0)) {
         path += length;
     }
     return path;
@@ -1539,35 +1543,31 @@ static int
 SplitPath(Tcl_Interp *interp, Tcl_Obj *objPtr, Tcl_Obj *sepObjPtr, 
           int *depthPtr, const char ***listPtr)
 {
-    int skipLen, pathLen;
-    int depth;
-    size_t listSize;
-    const char **list;
-    char *p;
-    char *sp;
-    const char *pathSeparator;
-    const char *path;
+    char **list;
+    int numStrings;
 
-    path = Tcl_GetStringFromObj(objPtr, &pathLen);
-    
     if ((sepObjPtr == NULL) || ((Tcl_GetString(sepObjPtr))[0] == '\0')) {
+        size_t addrSize;
+        size_t totalBytes;
         int objc;
         Tcl_Obj **objv;
-        
+        int i;
+        char *p;
+            
         if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
             return TCL_ERROR;
         }
         /* Pass 1. Determines the size of the storage. */
-        numBytes = objc;                     /* Add NUL bytes. */
+        totalBytes = objc;                     /* Add NUL bytes. */
         for (i = 0; i < objc; i++) {
             int length;
 
             Tcl_GetStringFromObj(objv[i], &length);
-            numBytes += length;
+            totalBytes += length;
         }
-        listSize = (objc + 1) * sizeof(char *);
-        p = (char *)list + numBytes;
-        list = Blt_AssertMalloc(listSize + (numBytes + 1));
+        addrSize = (objc + 1) * sizeof(char *);
+        list = Blt_AssertMalloc(addrSize + totalBytes + 1);
+        p = (char *)list + addrSize;
         /* Pass 2. Fill the list with the strings. */
         for (i = 0; i < objc; i++) {
             const char *string;
@@ -1578,42 +1578,51 @@ SplitPath(Tcl_Interp *interp, Tcl_Obj *objPtr, Tcl_Obj *sepObjPtr,
             p[length] = '\0';
             p += length + 1;
         }
-        *listPtr = list;
-        *depthPtr = objc;
-        return TCL_OK;
-    }
-    pathSeparator = Tcl_GetStringFromObj(pathSepObjPtr, &skipLen);
+        numStrings = objc;
+    } else {
+        char *dp;
+        const char *path, *sp, *endPtr;
+        const char *sep;
+        int sepLen, pathLen;
+        size_t addrSize, totalBytes;
+        
+        path = Tcl_GetStringFromObj(objPtr, &pathLen);
+        sep = Tcl_GetStringFromObj(sepObjPtr, &sepLen);
+        /* Skip the first separator. */
+        path = SkipSeparators(path, sepObjPtr);
 
-    /* Skip the first separator. */
-    path = SkipSeparators(path, sepObjPtr);
-    firstPtr = path;
-    for (nextPtr = strstr(path, pathSeparator); 
-         ((*nextPtr != '\0') && (nextPtr != NULL)); 
-         nextPtr = strstr(firstPtr, pathSeparator)) {
-        *sp = '\0';
-        list[depth++] = p;
-        p = (char *)SkipSeparators(sp + skipLen, pathSeparator, skipLen);
-    }
+        /* Pass 1. Determine the size of the storage. */
+        sp = path;
+        numStrings = 0;
+        totalBytes = 0;
+        for (endPtr = strstr(sp, sep); ((*endPtr != '\0') && (endPtr != NULL)); 
+             endPtr = strstr(sp, sep)) {
+            totalBytes += endPtr - sp + 1;
+            sp = (char *)SkipSeparators(endPtr + sepLen, sepObjPtr);
+            numStrings++;
+        }
+        /* Allocate the list addresses and the storage for the strings. */
+        addrSize = (numStrings + 1) * sizeof(char *);
+        list = Blt_AssertMalloc(addrSize + (totalBytes + 1));
+        sp = path;
+        dp = (char *)list + addrSize;
+        numStrings = 0;
 
-    depth = pathLen / skipLen;
-    /* Allocate a worst case number of entries. */
-    listSize = (depth + 1) * sizeof(char *);
-    list = Blt_AssertMalloc(listSize + (pathLen + 1));
-    p = (char *)list + listSize;
-    strcpy(p, path);
-    depth = 0;
-    for (sp = strstr(p, pathSeparator); ((*p != '\0') && (sp != NULL)); 
-         sp = strstr(p, pathSeparator)) {
-        *sp = '\0';
-        list[depth++] = p;
-        p = (char *)SkipSeparators(sp + skipLen, pathSeparator, skipLen);
+        /* Pass 2. Fill the list with the strings. */
+        for (endPtr = strstr(sp, sep); ((*endPtr != '\0') && (endPtr != NULL)); 
+             endPtr = strstr(sp, sep)) {
+            size_t numBytes;
+            
+            list[numStrings] = dp;
+            numBytes = endPtr - sp;
+            strncpy(dp, sp, numBytes);
+            dp[numBytes] = '\0';
+            sp = (char *)SkipSeparators(endPtr + sepLen, sepObjPtr);
+            numStrings++;
+        }
     }
-    if (*p != '\0') {
-        list[depth++] = p;
-    }
-    list[depth] = NULL;
-    *depthPtr = depth;
-    *listPtr = list;
+    *listPtr = (const char **)list;
+    *depthPtr = numStrings;
     return TCL_OK;
 }
 
