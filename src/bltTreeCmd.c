@@ -1579,6 +1579,7 @@ SplitPath(Tcl_Interp *interp, Tcl_Obj *objPtr, Tcl_Obj *sepObjPtr,
             p += length + 1;
         }
         numStrings = objc;
+        list[numStrings] = NULL;
     } else {
         char *dp;
         const char *path, *sp, *endPtr;
@@ -1595,10 +1596,15 @@ SplitPath(Tcl_Interp *interp, Tcl_Obj *objPtr, Tcl_Obj *sepObjPtr,
         sp = path;
         numStrings = 0;
         totalBytes = 0;
-        for (endPtr = strstr(sp, sep); ((*endPtr != '\0') && (endPtr != NULL)); 
+        for (endPtr = strstr(sp, sep); ((endPtr != NULL) && (*endPtr != '\0'));
              endPtr = strstr(sp, sep)) {
             totalBytes += endPtr - sp + 1;
             sp = (char *)SkipSeparators(endPtr + sepLen, sepObjPtr);
+            numStrings++;
+        }
+        /* Pick up last path component */
+        if (sp[0] != '\0') {
+            totalBytes += strlen(sp) + 1;
             numStrings++;
         }
         /* Allocate the list addresses and the storage for the strings. */
@@ -1607,9 +1613,8 @@ SplitPath(Tcl_Interp *interp, Tcl_Obj *objPtr, Tcl_Obj *sepObjPtr,
         sp = path;
         dp = (char *)list + addrSize;
         numStrings = 0;
-
         /* Pass 2. Fill the list with the strings. */
-        for (endPtr = strstr(sp, sep); ((*endPtr != '\0') && (endPtr != NULL)); 
+        for (endPtr = strstr(sp, sep); ((endPtr != NULL) && (*endPtr != '\0'));
              endPtr = strstr(sp, sep)) {
             size_t numBytes;
             
@@ -1619,7 +1624,15 @@ SplitPath(Tcl_Interp *interp, Tcl_Obj *objPtr, Tcl_Obj *sepObjPtr,
             dp[numBytes] = '\0';
             sp = (char *)SkipSeparators(endPtr + sepLen, sepObjPtr);
             numStrings++;
+            dp += numBytes + 1;
         }
+        /* Pick up last path component */
+        if (sp[0] != '\0') {
+            list[numStrings] = dp;
+            strcpy(dp, sp);
+            numStrings++;
+        }
+        list[numStrings] = NULL;
     }
     *listPtr = (const char **)list;
     *depthPtr = numStrings;
@@ -3912,7 +3925,7 @@ RestoreTreeFromData(Tcl_Interp *interp, RestoreInfo *restorePtr)
 }
 
 static int
-WriteDumpData(DumpInfo *dumpPtr, Tcl_DString *dataPtr)
+WriteDumpRecord(DumpInfo *dumpPtr, Tcl_DString *dataPtr)
 {
     const char *string;
     int length;
@@ -3998,7 +4011,7 @@ DumpNodeV2(DumpInfo *dumpPtr, Blt_TreeNode node)
         }
         Tcl_DStringEndSublist(&ds);
     }
-    result = WriteDumpData(dumpPtr, &ds);
+    result = WriteDumpRecord(dumpPtr, &ds);
     Tcl_DStringFree(&ds);
     return result;
 }
@@ -4018,7 +4031,7 @@ DumpListValues(DumpInfo *dumpPtr, Tcl_Obj *valueObjPtr, const char *key)
         Tcl_DStringAppendElement(&ds, "a");
         Tcl_DStringAppendElement(&ds, key);
         Tcl_DStringAppendElement(&ds, Tcl_GetString(objv[i]));
-        if (WriteDumpData(dumpPtr, &ds) != TCL_OK) {
+        if (WriteDumpRecord(dumpPtr, &ds) != TCL_OK) {
             goto error;
         }
         Tcl_DStringSetLength(&ds, 0);
@@ -4056,7 +4069,7 @@ DumpNodeV3(DumpInfo *dumpPtr, Blt_TreeNode node)
               Blt_Tree_NodeIdAscii(Blt_Tree_ParentNode(node)));
     }   
     Tcl_DStringAppendElement(&ds, Blt_Tree_NodeIdAscii(node));
-    if (WriteDumpData(dumpPtr, &ds) != TCL_OK) {
+    if (WriteDumpRecord(dumpPtr, &ds) != TCL_OK) {
         goto error;
     }
     /* Add list of data fields. key-value pairs. */
@@ -4066,7 +4079,8 @@ DumpNodeV3(DumpInfo *dumpPtr, Blt_TreeNode node)
         
         if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, dumpPtr->tree, node, 
                                    key, &valueObjPtr) == TCL_OK) {
-            if (strcmp(valueObjPtr->typePtr->name, "list") == 0) {
+            if ((valueObjPtr->typePtr != NULL) &&
+                (strcmp(valueObjPtr->typePtr->name, "list") == 0)) {
                 if (DumpListValues(dumpPtr, valueObjPtr, key) != TCL_OK) {
                     goto error;
                 }
@@ -4074,7 +4088,7 @@ DumpNodeV3(DumpInfo *dumpPtr, Blt_TreeNode node)
                 Tcl_DStringAppendElement(&ds, "d");
                 Tcl_DStringAppendElement(&ds, key);
                 Tcl_DStringAppendElement(&ds, Tcl_GetString(valueObjPtr));
-                if (WriteDumpData(dumpPtr, &ds) != TCL_OK) {
+                if (WriteDumpRecord(dumpPtr, &ds) != TCL_OK) {
                     goto error;
                 }
             }
@@ -4090,7 +4104,7 @@ DumpNodeV3(DumpInfo *dumpPtr, Blt_TreeNode node)
             if (Blt_FindHashEntry(&tePtr->nodeTable, (char *)node) != NULL) {
                 Tcl_DStringAppendElement(&ds, "t");
                 Tcl_DStringAppendElement(&ds, tePtr->tagName);
-                if (WriteDumpData(dumpPtr, &ds) != TCL_OK) {
+                if (WriteDumpRecord(dumpPtr, &ds) != TCL_OK) {
                     goto error;
                 }
             }
@@ -4128,12 +4142,18 @@ static int
 DumpTree(Tcl_Interp *interp, DumpInfo *dumpPtr)
 {
     Blt_TreeNode node;
-
+    Tcl_DString ds;
+    
+    Tcl_DStringInit(&ds);
     if (dumpPtr->version > 2.9) {
-        Tcl_WriteChars(dumpPtr->channel, "# V3.0\n", 7);
+        Tcl_DStringAppend(&ds, "# V3.0", 6);
     } else {
-        Tcl_WriteChars(dumpPtr->channel, "# V2.0\n", 7);
+        Tcl_DStringAppend(&ds, "# V2.0", 6);
+    }            
+    if (WriteDumpRecord(dumpPtr, &ds) != TCL_OK) {
+        return TCL_ERROR;
     }
+    Tcl_DStringFree(&ds);
     for (node = dumpPtr->root; node != NULL; 
          node = Blt_Tree_NextNode(dumpPtr->root, node)) {
         int result;
@@ -6212,7 +6232,7 @@ ParentOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PathCreateOp --
  *
- *   $tree path create $path -separator / -leaf -parents -nocomplain -from node
+ *   treeName path create pathName ?switches ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6306,7 +6326,7 @@ PathCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PathParseOp --
  *
- *      $tree path get $path -separator / -from root -nocomplain
+ *      treeName path parse pathName ?switches...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6402,7 +6422,7 @@ PathParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PathPrintOp --
  *
- *      $tree path print $node -separator / 
+ *      treeName path print nodeName ?switches ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6456,7 +6476,7 @@ PathPrintOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Defines the default separator for path operations.
  *
- *      $tree path separator value
+ *      treeName path separator ?sepString?
  *
  *---------------------------------------------------------------------------
  */
@@ -6494,18 +6514,18 @@ PathSeparatorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PathOp --
  *
- *   $tree path parse $path -from node -separator / 
- *   $tree path print $node -separator /
- *   $tree path create $path -parents -from node -separator /
- *   $tree path separator ?string?
+ *   treeName path parse pathName ?switches ...?
+ *   treeName path print nodeName ?switches ...?
+ *   treeName path create pathName ?switches ...?
+ *   treeName path separator ?sepString?
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec pathOps[] =
 {
-    {"create",     1, PathCreateOp,     4, 0, "path ?switches ...?"},
-    {"parse",      2, PathParseOp,      4, 0, "path ?switches ...?"},
-    {"print",      2, PathPrintOp,      4, 0, "node ?switches ...?"},
-    {"separator",  1, PathSeparatorOp,  3, 4, "?string?"},
+    {"create",     1, PathCreateOp,     4, 0, "pathName ?switches ...?"},
+    {"parse",      2, PathParseOp,      4, 0, "pathName ?switches ...?"},
+    {"print",      2, PathPrintOp,      4, 0, "nodeName ?switches ...?"},
+    {"separator",  1, PathSeparatorOp,  3, 4, "?sepString?"},
 };
 
 static int numPathOps = sizeof(pathOps) / sizeof(Blt_OpSpec);
@@ -7358,15 +7378,15 @@ TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec tagOps[] = {
-    {"add",    1, TagAddOp,    4, 0, "tag ?node...?"},
-    {"delete", 1, TagDeleteOp, 5, 0, "tag node..."},
-    {"exists", 1, TagExistsOp, 4, 5, "tag ?node?"},
+    {"add",    1, TagAddOp,    4, 0, "tag ?nodeName...?"},
+    {"delete", 1, TagDeleteOp, 5, 0, "tag nodeName..."},
+    {"exists", 1, TagExistsOp, 4, 5, "tag ?nodeName?"},
     {"forget", 1, TagForgetOp, 4, 0, "tag..."},
-    {"get",    1, TagGetOp,    4, 0, "node ?pattern...?"},
-    {"names",  2, TagNamesOp,  3, 0, "?node...?"},
+    {"get",    1, TagGetOp,    4, 0, "nodeName ?pattern...?"},
+    {"names",  2, TagNamesOp,  3, 0, "?nodeName...?"},
     {"nodes",  2, TagNodesOp,  4, 0, "tag ?tag...?"},
-    {"set",    1, TagSetOp,    4, 0, "node tag..."},
-    {"unset",  1, TagUnsetOp,  4, 0, "node tag..."},
+    {"set",    1, TagSetOp,    4, 0, "nodeName tag..."},
+    {"unset",  1, TagUnsetOp,  4, 0, "nodeName tag..."},
 };
 
 static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
@@ -7813,7 +7833,7 @@ static Blt_OpSpec treeOps[] =
     {"apply",       4, ApplyOp,       3, 0, "nodeName ?switches ...?"},
     {"attach",      2, AttachOp,      3, 0, "treeName ?switches ...?"},
     {"children",    2, ChildrenOp,    3, 5, "nodeName ?first? ?last?"},
-    {"copy",        2, CopyOp,        4, 0, "parentName ?treeName? nodeName ?switches ...?"},
+    {"copy",        2, CopyOp,        4, 0, "parentNode ?treeName? nodeName ?switches ...?"},
     {"degree",      3, DegreeOp,      3, 0, "nodeName"},
     {"delete",      3, DeleteOp,      2, 0, "?nodeName ...?"},
     {"depth",       3, DepthOp,       2, 3, "?nodeName?"},
@@ -7845,7 +7865,7 @@ static Blt_OpSpec treeOps[] =
     {"nextsibling", 5, NextSiblingOp, 3, 3, "nodeName"},
     {"notify",      2, NotifyOp,      2, 0, "args ..."},
     {"parent",      3, ParentOp,      3, 3, "nodeName"},
-    {"path",        3, PathOp,        3, 0, "path ?args ...?"},
+    {"path",        3, PathOp,        3, 0, "?args ...?"},
     {"position",    2, PositionOp,    3, 0, "?switches ...? nodeName..."},
     {"previous",    5, PreviousOp,    3, 3, "nodeName"},
     {"prevsibling", 5, PrevSiblingOp, 3, 3, "nodeName"},

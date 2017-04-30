@@ -117,109 +117,113 @@ test tree.24 {tree0} {
     list [catch {tree0} msg] $msg
 } {1 {wrong # args: should be one of...
   tree0 ancestor node1 node2
-  tree0 append node key ?value ...?
-  tree0 apply node ?switches ...?
-  tree0 attach tree ?switches ...?
-  tree0 children node ?first? ?last?
-  tree0 copy parent ?tree? node ?switches ...?
-  tree0 degree node
-  tree0 delete ?node ...?
-  tree0 depth ?node?
-  tree0 dir node path ?switches ...?
-  tree0 dump node ?switches ...?
-  tree0 dup node
-  tree0 exists node ?fileName?
-  tree0 export format ?switches ...?
-  tree0 find node ?switches ...?
-  tree0 findchild node label
-  tree0 firstchild node
-  tree0 get node ?fieldName? ?defValue?
-  tree0 import format ?switches ...?
+  tree0 append nodeName key ?value ...?
+  tree0 apply nodeName ?switches ...?
+  tree0 attach treeName ?switches ...?
+  tree0 children nodeName ?first? ?last?
+  tree0 copy parentNode ?treeName? nodeName ?switches ...?
+  tree0 degree nodeName
+  tree0 delete ?nodeName ...?
+  tree0 depth ?nodeName?
+  tree0 dir nodeName path ?switches ...?
+  tree0 dump nodeName ?switches ...?
+  tree0 dup nodeName
+  tree0 exists nodeName ?fileName?
+  tree0 export formatName ?switches ...?
+  tree0 find nodeName ?switches ...?
+  tree0 findchild nodeName label
+  tree0 firstchild nodeName
+  tree0 get nodeName ?fieldName? ?defValue?
+  tree0 import formatName ?switches ...?
   tree0 index label|list
-  tree0 insert parent ?switches ...?
+  tree0 insert parentNode ?switches ...?
   tree0 isancestor node1 node2
   tree0 isbefore node1 node2
-  tree0 isleaf node
-  tree0 isroot node
-  tree0 keys node ?node...?
-  tree0 label node ?newLabel?
-  tree0 lappend node fieldName ?value ...?
-  tree0 lastchild node
-  tree0 move node newParent ?switches ...?
-  tree0 names node ?fieldName?
-  tree0 next node
-  tree0 nextsibling node
+  tree0 isleaf nodeName
+  tree0 isroot nodeName
+  tree0 keys nodeName ?nodeName...?
+  tree0 label nodeName ?newLabel?
+  tree0 lappend nodeName fieldName ?value ...?
+  tree0 lastchild nodeName
+  tree0 lindex nodeName fieldName indexNum
+  tree0 llength nodeName fieldName
+  tree0 move nodeName destNode ?switches ...?
+  tree0 names nodeName ?fieldName?
+  tree0 next nodeName
+  tree0 nextsibling nodeName
   tree0 notify args ...
-  tree0 parent node
-  tree0 path path ?args ...?
-  tree0 position ?switches ...? node...
-  tree0 previous node
-  tree0 prevsibling node
-  tree0 restore node ?switches ...?
+  tree0 parent nodeName
+  tree0 path ?args ...?
+  tree0 position ?switches ...? nodeName...
+  tree0 previous nodeName
+  tree0 prevsibling nodeName
+  tree0 restore nodeName ?switches ...?
   tree0 root 
-  tree0 set node ?fieldName value ...?
-  tree0 size node
-  tree0 sort node ?switches ...?
+  tree0 set nodeName ?fieldName value ...?
+  tree0 size nodeName
+  tree0 sort nodeName ?switches ...?
   tree0 tag args ...
   tree0 trace args ...
-  tree0 type node fieldName
-  tree0 unset node ?fieldName ...?}}
+  tree0 type nodeName fieldName
+  tree0 unset nodeName ?fieldName ...?}}
 
 test tree.25 {tree0 badOp} {
     list [catch {tree0 badOp} msg] $msg
 } {1 {bad operation "badOp": should be one of...
   tree0 ancestor node1 node2
-  tree0 append node key ?value ...?
-  tree0 apply node ?switches ...?
-  tree0 attach tree ?switches ...?
-  tree0 children node ?first? ?last?
-  tree0 copy parent ?tree? node ?switches ...?
-  tree0 degree node
-  tree0 delete ?node ...?
-  tree0 depth ?node?
-  tree0 dir node path ?switches ...?
-  tree0 dump node ?switches ...?
-  tree0 dup node
-  tree0 exists node ?fileName?
-  tree0 export format ?switches ...?
-  tree0 find node ?switches ...?
-  tree0 findchild node label
-  tree0 firstchild node
-  tree0 get node ?fieldName? ?defValue?
-  tree0 import format ?switches ...?
+  tree0 append nodeName key ?value ...?
+  tree0 apply nodeName ?switches ...?
+  tree0 attach treeName ?switches ...?
+  tree0 children nodeName ?first? ?last?
+  tree0 copy parentNode ?treeName? nodeName ?switches ...?
+  tree0 degree nodeName
+  tree0 delete ?nodeName ...?
+  tree0 depth ?nodeName?
+  tree0 dir nodeName path ?switches ...?
+  tree0 dump nodeName ?switches ...?
+  tree0 dup nodeName
+  tree0 exists nodeName ?fileName?
+  tree0 export formatName ?switches ...?
+  tree0 find nodeName ?switches ...?
+  tree0 findchild nodeName label
+  tree0 firstchild nodeName
+  tree0 get nodeName ?fieldName? ?defValue?
+  tree0 import formatName ?switches ...?
   tree0 index label|list
-  tree0 insert parent ?switches ...?
+  tree0 insert parentNode ?switches ...?
   tree0 isancestor node1 node2
   tree0 isbefore node1 node2
-  tree0 isleaf node
-  tree0 isroot node
-  tree0 keys node ?node...?
-  tree0 label node ?newLabel?
-  tree0 lappend node fieldName ?value ...?
-  tree0 lastchild node
-  tree0 move node newParent ?switches ...?
-  tree0 names node ?fieldName?
-  tree0 next node
-  tree0 nextsibling node
+  tree0 isleaf nodeName
+  tree0 isroot nodeName
+  tree0 keys nodeName ?nodeName...?
+  tree0 label nodeName ?newLabel?
+  tree0 lappend nodeName fieldName ?value ...?
+  tree0 lastchild nodeName
+  tree0 lindex nodeName fieldName indexNum
+  tree0 llength nodeName fieldName
+  tree0 move nodeName destNode ?switches ...?
+  tree0 names nodeName ?fieldName?
+  tree0 next nodeName
+  tree0 nextsibling nodeName
   tree0 notify args ...
-  tree0 parent node
-  tree0 path path ?args ...?
-  tree0 position ?switches ...? node...
-  tree0 previous node
-  tree0 prevsibling node
-  tree0 restore node ?switches ...?
+  tree0 parent nodeName
+  tree0 path ?args ...?
+  tree0 position ?switches ...? nodeName...
+  tree0 previous nodeName
+  tree0 prevsibling nodeName
+  tree0 restore nodeName ?switches ...?
   tree0 root 
-  tree0 set node ?fieldName value ...?
-  tree0 size node
-  tree0 sort node ?switches ...?
+  tree0 set nodeName ?fieldName value ...?
+  tree0 size nodeName
+  tree0 sort nodeName ?switches ...?
   tree0 tag args ...
   tree0 trace args ...
-  tree0 type node fieldName
-  tree0 unset node ?fieldName ...?}}
+  tree0 type nodeName fieldName
+  tree0 unset nodeName ?fieldName ...?}}
 
 test tree.26 {tree0 insert (wrong # args)} {
     list [catch {tree0 insert} msg] $msg
-} {1 {wrong # args: should be "tree0 insert parent ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 insert parentNode ?switches ...?"}}
 
 test tree.27 {tree0 insert badParent} {
     list [catch {tree0 insert badParent} msg] $msg
@@ -309,7 +313,7 @@ test tree.47 {get} {
 
 test tree.48 {tree0 children} {
     list [catch {tree0 children} msg] $msg
-} {1 {wrong # args: should be "tree0 children node ?first? ?last?"}}
+} {1 {wrong # args: should be "tree0 children nodeName ?first? ?last?"}}
 
 test tree.49 {tree0 children 0} {
     list [catch {tree0 children 0} msg] $msg
@@ -357,7 +361,7 @@ test tree.59 {tree0 children root -1 -20} {
 
 test tree.60 {tree0 firstchild (missing arg)} {
     list [catch {tree0 firstchild} msg] $msg
-} {1 {wrong # args: should be "tree0 firstchild node"}}
+} {1 {wrong # args: should be "tree0 firstchild nodeName"}}
 
 test tree.61 {tree0 firstchild root} {
     list [catch {tree0 firstchild root} msg] $msg
@@ -365,7 +369,7 @@ test tree.61 {tree0 firstchild root} {
 
 test tree.62 {tree0 lastchild (missing arg)} {
     list [catch {tree0 lastchild} msg] $msg
-} {1 {wrong # args: should be "tree0 lastchild node"}}
+} {1 {wrong # args: should be "tree0 lastchild nodeName"}}
 
 test tree.63 {tree0 lastchild root} {
     list [catch {tree0 lastchild root} msg] $msg
@@ -373,7 +377,7 @@ test tree.63 {tree0 lastchild root} {
 
 test tree.64 {tree0 nextsibling (missing arg)} {
     list [catch {tree0 nextsibling} msg] $msg
-} {1 {wrong # args: should be "tree0 nextsibling node"}}
+} {1 {wrong # args: should be "tree0 nextsibling nodeName"}}
 
 test tree.65 {tree0 nextsibling 1)} {
     list [catch {tree0 nextsibling 1} msg] $msg
@@ -437,7 +441,7 @@ test tree.79 {tree0 root badArg)} {
 
 test tree.80 {tree0 parent (missing arg))} {
     list [catch {tree0 parent} msg] $msg
-} {1 {wrong # args: should be "tree0 parent node"}}
+} {1 {wrong # args: should be "tree0 parent nodeName"}}
 
 test tree.81 {tree0 parent root)} {
     list [catch {tree0 parent root} msg] $msg
@@ -453,12 +457,12 @@ test tree.83 {tree0 parent myTag)} {
 
 test tree.84 {tree0 next (missing arg))} {
     list [catch {tree0 next} msg] $msg
-} {1 {wrong # args: should be "tree0 next node"}}
+} {1 {wrong # args: should be "tree0 next nodeName"}}
 
 
 test tree.85 {tree0 next (extra arg))} {
     list [catch {tree0 next root root} msg] $msg
-} {1 {wrong # args: should be "tree0 next node"}}
+} {1 {wrong # args: should be "tree0 next nodeName"}}
 
 test tree.86 {tree0 next root} {
     list [catch {tree0 next root} msg] $msg
@@ -522,11 +526,12 @@ test tree.100 {tree0 depth myTag))} {
 
 test tree.101 {tree0 dump (missing arg)))} {
     list [catch {tree0 dump} msg] $msg
-} {1 {wrong # args: should be "tree0 dump node ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 dump nodeName ?switches ...?"}}
 
-test tree.102 {tree0 dump root} {
-    list [catch {tree0 dump root} msg] $msg
-} {0 {-1 0 {{}} {} {}
+test tree.102 {tree0 dump root -version 2.0} {
+    list [catch {tree0 dump root -version 2.0} msg] $msg
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} node1} {} {}
 1 9 {{} node1 node9} {} {thisTag}
 1 11 {{} node1 node11} {key value} {}
@@ -540,17 +545,19 @@ test tree.102 {tree0 dump root} {
 0 8 {{} myLabel} {} {thisTag}
 }}
 
-test tree.103 {tree0 dump 1} {
-    list [catch {tree0 dump 1} msg] $msg
-} {0 {-1 1 {node1} {} {}
+test tree.103 {tree0 dump 1 -version 2.0} {
+    list [catch {tree0 dump 1 -version 2.0} msg] $msg
+} {0 {# V2.0
+-1 1 {node1} {} {}
 1 9 {node1 node9} {} {thisTag}
 1 11 {node1 node11} {key value} {}
 1 12 {node1 node12} {key1 value1 key2 value2} {}
 }}
 
-test tree.104 {tree0 dump this} {
-    list [catch {tree0 dump myTag} msg] $msg
-} {0 {-1 5 {node5} {} {myTag}
+test tree.104 {tree0 dump this -version 2.0} {
+    list [catch {tree0 dump myTag -version 2.0} msg] $msg
+} {0 {# V2.0
+-1 5 {node5} {} {myTag}
 5 13 {node5 node13} {} {}
 }}
 
@@ -559,11 +566,14 @@ test tree.105 {tree0 dump 1 badSwitch} {
 } {1 {unknown switch "badSwitch"
 The following switches are available:
    -data data
-   -file fileName}}
+   -file fileName
+   -version versNum
+   -notags }}
 
-test tree.106 {tree0 dump 11} {
-    list [catch {tree0 dump 11} msg] $msg
-} {0 {-1 11 {node11} {key value} {}
+test tree.106 {tree0 dump 11 -version 2.0} {
+    list [catch {tree0 dump 11 -version 2.0} msg] $msg
+} {0 {# V2.0
+-1 11 {node11} {key value} {}
 }}
 
 test tree.107 {tree0 dump all} {
@@ -704,11 +714,11 @@ test tree.140 {tree0 isancestor 0 all} {
 
 test tree.141 {tree0 isroot (missing arg)} {
     list [catch {tree0 isroot} msg] $msg
-} {1 {wrong # args: should be "tree0 isroot node"}}
+} {1 {wrong # args: should be "tree0 isroot nodeName"}}
 
 test tree.142 {tree0 isroot 0 20 (extra arg)} {
     list [catch {tree0 isroot 0 20} msg] $msg
-} {1 {wrong # args: should be "tree0 isroot node"}}
+} {1 {wrong # args: should be "tree0 isroot nodeName"}}
 
 test tree.143 {tree0 isroot 0} {
     list [catch {tree0 isroot 0} msg] $msg
@@ -732,11 +742,11 @@ test tree.147 {tree0 isroot all} {
 
 test tree.148 {tree0 isleaf (missing arg)} {
     list [catch {tree0 isleaf} msg] $msg
-} {1 {wrong # args: should be "tree0 isleaf node"}}
+} {1 {wrong # args: should be "tree0 isleaf nodeName"}}
 
 test tree.149 {tree0 isleaf 0 20 (extra arg)} {
     list [catch {tree0 isleaf 0 20} msg] $msg
-} {1 {wrong # args: should be "tree0 isleaf node"}}
+} {1 {wrong # args: should be "tree0 isleaf nodeName"}}
 
 test tree.150 {tree0 isleaf 0} {
     list [catch {tree0 isleaf 0} msg] $msg
@@ -768,7 +778,7 @@ test tree.156 {tree0 isleaf badTag} {
 
 test tree.157 {tree0 set (missing arg)} {
     list [catch {tree0 set} msg] $msg
-} {1 {wrong # args: should be "tree0 set node ?fieldName value ...?"}}
+} {1 {wrong # args: should be "tree0 set nodeName ?fieldName value ...?"}}
 
 test tree.158 {tree0 set 0 (missing arg)} {
     list [catch {tree0 set 0} msg] $msg
@@ -812,14 +822,15 @@ test tree.167 {tree0 set root} {
 
 test tree.168 {tree0 restore stuff} {
     list [catch {
-	set data [tree0 dump root]
+	set data [tree0 dump root -version 2.0]
 	blt::tree create
 	tree1 restore root -data $data
-	set data [tree1 dump root]
+	set data [tree1 dump root -version 2.0]
 	blt::tree destroy tree1
 	set data
 	} msg] $msg
-} {0 {-1 0 {{}} {key value key1 value1 key2 value2 key3 value3 abc 123} {}
+} {0 {# V2.0
+-1 0 {{}} {key value key1 value1 key2 value2 key3 value3 abc 123} {}
 0 1 {{} node1} {abc 123} {}
 1 9 {{} node1 node9} {abc 123} {thisTag}
 1 11 {{} node1 node11} {key value abc 123} {}
@@ -837,12 +848,13 @@ test tree.169 {tree0 restore 0 -file test.dump} {
     list [catch {
 	blt::tree create
 	tree1 restore root -file test.dump
-	set data [tree1 dump root]
+	set data [tree1 dump root -version 2.0]
 	blt::tree destroy tree1
 	file delete test.dump
 	set data
 	} msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} node1} {} {}
 1 9 {{} node1 node9} {} {thisTag}
 1 11 {{} node1 node11} {key value} {}
@@ -887,14 +899,15 @@ test tree.176 {tree0 unset all abc} {
 
 test tree.177 {tree0 restore stuff} {
     list [catch {
-	set data [tree0 dump root]
+	set data [tree0 dump root -version 2.0]
 	blt::tree create tree1
 	tree1 restore root -data $data
-	set data [tree1 dump root]
+	set data [tree1 dump root -version 2.0]
 	blt::tree destroy tree1
 	set data
 	} msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} node1} {} {}
 1 9 {{} node1 node9} {} {thisTag}
 1 11 {{} node1 node11} {key value} {}
@@ -910,7 +923,7 @@ test tree.177 {tree0 restore stuff} {
 
 test tree.178 {tree0 restore (missing arg)} {
     list [catch {tree0 restore} msg] $msg
-} {1 {wrong # args: should be "tree0 restore node ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 restore nodeName ?switches ...?"}}
 
 test tree.179 {tree0 restore 0 badSwitch} {
     list [catch {tree0 restore 0 badSwitch} msg] $msg
@@ -934,7 +947,7 @@ The following switches are available:
 
 test tree.181 {tree0 size (missing arg)} {
     list [catch {tree0 size} msg] $msg
-} {1 {wrong # args: should be "tree0 size node"}}
+} {1 {wrong # args: should be "tree0 size nodeName"}}
 
 test tree.182 {tree0 size 0} {
     list [catch {tree0 size 0} msg] $msg
@@ -946,7 +959,7 @@ test tree.183 {tree0 size all} {
 
 test tree.184 {tree0 size 0 10 (extra arg)} {
     list [catch {tree0 size 0 10} msg] $msg
-} {1 {wrong # args: should be "tree0 size node"}}
+} {1 {wrong # args: should be "tree0 size nodeName"}}
 
 test tree.185 {tree0 delete (no args)} {
     list [catch {tree0 delete} msg] $msg
@@ -964,9 +977,10 @@ test tree.188 {tree0 delete 9 12} {
     list [catch {tree0 delete 9 12} msg] $msg
 } {0 {}}
 
-test tree.189 {tree0 dump 0} {
-    list [catch {tree0 dump 0} msg] $msg
-} {0 {-1 0 {{}} {} {}
+test tree.189 {tree0 dump 0 -version 2.0} {
+    list [catch {tree0 dump 0 -version 2.0} msg] $msg
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} node1} {} {}
 0 2 {{} node2} {} {}
 0 3 {{} node3} {} {}
@@ -979,33 +993,35 @@ test tree.189 {tree0 dump 0} {
 
 test tree.190 {delete all} {
     list [catch {
-	set data [tree0 dump root]
+	set data [tree0 dump root -version 2.0]
 	blt::tree create
 	tree1 restore root -data $data
 	tree1 delete all
-	set data [tree1 dump root]
+	set data [tree1 dump root -version 2.0]
 	blt::tree destroy tree1
 	set data
 	} msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 }}
 
 test tree.191 {delete all all} {
     list [catch {
-	set data [tree0 dump root]
+	set data [tree0 dump root -version 2.0]
 	blt::tree create
 	tree1 restore root -data $data
 	tree1 delete all all
-	set data [tree1 dump root]
+	set data [tree1 dump root -version 2.0]
 	blt::tree destroy tree1
 	set data
 	} msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 }}
 
 test tree.192 {tree0 apply (missing arg)} {
     list [catch {tree0 apply} msg] $msg
-} {1 {wrong # args: should be "tree0 apply node ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 apply nodeName ?switches ...?"}}
 
 test tree.193 {tree0 apply 0} {
     list [catch {tree0 apply 0} msg] $msg
@@ -1120,7 +1136,7 @@ test tree.205 {tree0 apply root -postcommand -regexp node.*} {
 
 test tree.206 {tree0 find (missing arg)} {
     list [catch {tree0 find} msg] $msg
-} {1 {wrong # args: should be "tree0 find node ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 find nodeName ?switches ...?"}}
 
 test tree.207 {tree0 find 0} {
     list [catch {tree0 find 0} msg] $msg
@@ -1270,20 +1286,19 @@ test tree.241 {tree0 tag (missing args)} {
 test tree.242 {tree0 tag badOp} {
     list [catch {tree0 tag badOp} msg] $msg
 } {1 {bad operation "badOp": should be one of...
-  tree0 tag add tag ?node...?
-  tree0 tag delete tag node...
-  tree0 tag dump tag...
-  tree0 tag exists tag ?node?
+  tree0 tag add tag ?nodeName...?
+  tree0 tag delete tag nodeName...
+  tree0 tag exists tag ?nodeName?
   tree0 tag forget tag...
-  tree0 tag get node ?pattern...?
-  tree0 tag names ?node...?
+  tree0 tag get nodeName ?pattern...?
+  tree0 tag names ?nodeName...?
   tree0 tag nodes tag ?tag...?
-  tree0 tag set node tag...
-  tree0 tag unset node tag...}}
+  tree0 tag set nodeName tag...
+  tree0 tag unset nodeName tag...}}
 
 test tree.243 {tree0 tag add} {
     list [catch {tree0 tag add} msg] $msg
-} {1 {wrong # args: should be "tree0 tag add tag ?node...?"}}
+} {1 {wrong # args: should be "tree0 tag add tag ?nodeName...?"}}
 
 test tree.244 {tree0 tag add newTag} {
     list [catch {tree0 tag add newTag} msg] $msg
@@ -1407,15 +1422,15 @@ test tree.271 {tree0 ancestor 7 9} {
 
 test tree.272 {tree0 path (missing arg)} {
     list [catch {tree0 path} msg] $msg
-} {1 {wrong # args: should be "tree0 path path ?args ...?"}}
+} {1 {wrong # args: should be "tree0 path ?args ...?"}}
 
 test tree.273 {tree0 path badArg} {
     list [catch {tree0 path badArg} msg] $msg
 } {1 {bad operation "badArg": should be one of...
-  tree0 path create path ?switches ...?
-  tree0 path parse path ?switches ...?
-  tree0 path print node ?switches ...?
-  tree0 path separator ?string?}}
+  tree0 path create pathName ?switches ...?
+  tree0 path parse pathName ?switches ...?
+  tree0 path print nodeName ?switches ...?
+  tree0 path separator ?sepString?}}
 
 test tree.274 {tree0 path print root} {
     list [catch {tree0 path print root} msg] $msg
@@ -1428,6 +1443,30 @@ test tree.275 {tree0 path print 0} {
 test tree.276 {tree0 path print 15} {
     list [catch {tree0 path print 15} msg] $msg
 } {0 {node1 node15}}
+
+test tree.276 {tree0 path print 15} {
+    list [catch {tree0 path print 15 -separator /} msg] $msg
+} {0 /node1/node15}
+
+test tree.276 {tree0 path print 16} {
+    list [catch {tree0 path print 16 -separator /} msg] $msg
+} {0 /node1/node14/node16}
+
+test tree.276 {tree0 path parse } {
+    list [catch {tree0 path parse /node1/node14/node16 -separator /} msg] $msg
+} {0 16}
+
+test tree.276 {tree0 path parse } {
+    list [catch {tree0 path parse /node1/node14/node16/ -separator /} msg] $msg
+} {0 16}
+
+test tree.276 {tree0 path parse } {
+    list [catch {tree0 path parse //node1//node14//node16// -separator /} msg] $msg
+} {0 16}
+
+test tree.276 {tree0 path parse } {
+    list [catch {tree0 path parse ::node1::node14::node16 -separator ::} msg] $msg
+} {0 16}
 
 test tree.277 {tree0 path print all} {
     list [catch {tree0 path print all} msg] $msg
@@ -1483,11 +1522,11 @@ test tree.284 {tree0 tag forget root} {
 
 test tree.285 {tree0 tag delete} {
     list [catch {tree0 tag delete} msg] $msg
-} {1 {wrong # args: should be "tree0 tag delete tag node..."}}
+} {1 {wrong # args: should be "tree0 tag delete tag nodeName..."}}
 
 test tree.286 {tree0 tag delete tag} {
     list [catch {tree0 tag delete tag} msg] $msg
-} {1 {wrong # args: should be "tree0 tag delete tag node..."}}
+} {1 {wrong # args: should be "tree0 tag delete tag nodeName..."}}
 
 test tree.287 {tree0 tag delete tag 0} {
     list [catch {tree0 tag delete tag 0} msg] $msg
@@ -1499,11 +1538,11 @@ test tree.288 {tree0 tag delete root 0} {
 
 test tree.289 {tree0 move} {
     list [catch {tree0 move} msg] $msg
-} {1 {wrong # args: should be "tree0 move node newParent ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 move nodeName destNode ?switches ...?"}}
 
 test tree.290 {tree0 move 0} {
     list [catch {tree0 move 0} msg] $msg
-} {1 {wrong # args: should be "tree0 move node newParent ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 move nodeName destNode ?switches ...?"}}
 
 test tree.291 {tree0 move 0 0} {
     list [catch {tree0 move 0 0} msg] $msg
@@ -1548,7 +1587,7 @@ test tree.298 {tree0 move 1 17} {
 
 test tree.299 {tree0 attach} {
     list [catch {tree0 attach} msg] $msg
-} {1 {wrong # args: should be "tree0 attach tree ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 attach treeName ?switches ...?"}}
 
 test tree.300 {tree0 attach tree2 badArg} {
     list [catch {tree0 attach tree2 badArg} msg] $msg
@@ -1561,9 +1600,10 @@ test tree.301 {tree1 attach tree0 -newtags} {
     list [catch {
 	blt::tree create
 	tree1 attach tree0 -newtags
-	tree1 dump 0
+	tree1 dump 0 -version 2.0
 	} msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 2 {{} node2} {} {}
 2 1 {{} node2 node1} {} {}
 1 14 {{} node2 node1 node14} {} {}
@@ -1586,9 +1626,10 @@ test tree.302 {tree1 attach tree0} {
     list [catch {
 	blt::tree create
 	tree1 attach tree0
-	tree1 dump 0
+	tree1 dump 0 -version 2.0
 	} msg] $msg
-} {0 {-1 0 {{}} {} {tag2 newTag}
+} {0 {# V2.0
+-1 0 {{}} {} {tag2 newTag}
 0 2 {{} node2} {} {tag2 newTag}
 2 1 {{} node2 node1} {} {tag2 newTag}
 1 14 {{} node2 node1 node14} {} {}
@@ -1709,7 +1750,7 @@ test tree.322 {tree0 find root -key key1 -glob 12*} {
 
 test tree.323 {tree0 sort} {
     list [catch {tree0 sort} msg] $msg
-} {1 {wrong # args: should be "tree0 sort node ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 sort nodeName ?switches ...?"}}
 
 test tree.324 {tree0 sort all} {
     list [catch {tree0 sort all} msg] $msg
@@ -1840,26 +1881,26 @@ test tree.348 {tree0 index root->firstchild->parent} {
 test tree.349 {tree0 trace} {
     list [catch {tree0 trace} msg] $msg
 } {1 {wrong # args: should be one of...
-  tree0 trace create node key how command ?-whenidle?
+  tree0 trace create nodeName key how command ?-whenidle?
   tree0 trace delete traceName ...
   tree0 trace info traceName
   tree0 trace names ?pattern ...?}}
 
 test tree.350 {tree0 trace create} {
     list [catch {tree0 trace create} msg] $msg
-} {1 {wrong # args: should be "tree0 trace create node key how command ?-whenidle?"}}
+} {1 {wrong # args: should be "tree0 trace create nodeName key how command ?-whenidle?"}}
 
 test tree.351 {tree0 trace create root} {
     list [catch {tree0 trace create root} msg] $msg
-} {1 {wrong # args: should be "tree0 trace create node key how command ?-whenidle?"}}
+} {1 {wrong # args: should be "tree0 trace create nodeName key how command ?-whenidle?"}}
 
 test tree.352 {tree0 trace create root * } {
     list [catch {tree0 trace create root * } msg] $msg
-} {1 {wrong # args: should be "tree0 trace create node key how command ?-whenidle?"}}
+} {1 {wrong # args: should be "tree0 trace create nodeName key how command ?-whenidle?"}}
 
 test tree.353 {tree0 trace create root * rwuc} {
     list [catch {tree0 trace create root * rwuc} msg] $msg
-} {1 {wrong # args: should be "tree0 trace create node key how command ?-whenidle?"}}
+} {1 {wrong # args: should be "tree0 trace create nodeName key how command ?-whenidle?"}}
 
 proc Doit args { global mylist; lappend mylist $args }
 
@@ -2037,11 +2078,11 @@ test tree.380 {test delete notify} {
 
 test tree.381 {tree0 copy} {
     list [catch {tree0 copy} msg] $msg
-} {1 {wrong # args: should be "tree0 copy parent ?tree? node ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 copy parentNode ?treeName? nodeName ?switches ...?"}}
 
 test tree.382 {tree0 copy root} {
     list [catch {tree0 copy root} msg] $msg
-} {1 {wrong # args: should be "tree0 copy parent ?tree? node ?switches ...?"}}
+} {1 {wrong # args: should be "tree0 copy parentNode ?treeName? nodeName ?switches ...?"}}
 
 test tree.383 {tree0 copy root 14} {
     list [catch {tree0 copy root 14} msg] $msg
@@ -2068,9 +2109,10 @@ test tree.387 {copy tree to tree -recurse} {
 	foreach node [tree0 children root] {
 	    tree1 copy root tree0 $node -recurse 
 	}
-	tree1 dump root
+	tree1 dump root -version 2.0
     } msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} node2} {key1 myValue} {}
 1 2 {{} node2 node1} {key1 myValue} {}
 2 3 {{} node2 node1 node14} {key1 myValue} {}
@@ -2141,12 +2183,13 @@ test tree.388 {tree dir (no recurse flag)} {
 	    -fields { perms type } \
 	    -pattern defs \
 	    -recurse
-	set contents [$tree dump 0]
+	set contents [$tree dump 0 -version 2.0]
 	blt::tree destroy $tree
 	file delete -force ./testdir
 	set contents
     } msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 2 {{} dir1} {perms 493 type directory} {}
 2 3 {{} dir1 defs} {perms 420 type file} {}
 }}
@@ -2160,11 +2203,12 @@ test tree.389 {tree dir -recurse} {
 	file copy defs ./testdir/dir1/dir2
 	set tree [blt::tree create]
 	$tree dir 0 ./testdir  -recurse -fields { perms type } -type f
-	set contents [$tree dump 0]
+	set contents [$tree dump 0 -version 2.0]
 	blt::tree destroy $tree
 	set contents
     } msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} dir1} {perms 493 type directory} {}
 1 2 {{} dir1 dir2} {perms 493 type directory} {}
 2 3 {{} dir1 dir2 defs} {perms 420 type file} {}
@@ -2179,12 +2223,13 @@ test tree.390 {tree dir -recurse} {
 	file copy defs ./testdir
 	set tree [blt::tree create]
 	$tree dir 0 ./testdir -recurse -fields { size perms type }
-	set contents [$tree dump 0]
+	set contents [$tree dump 0 -version 2.0]
 	blt::tree destroy $tree
 	file delete -force ./testdir
 	set contents
     } msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} defs} {size 2894 perms 420 type file} {}
 }}
 
@@ -2195,12 +2240,13 @@ test tree.391 {tree dir (default settings, no -recurse)} {
 	file copy defs ./testdir/dir1
 	set tree [blt::tree create]
 	$tree dir 0 ./testdir -fields { perms type }
-	set contents [$tree dump 0]
+	set contents [$tree dump 0 -version 2.0]
 	blt::tree destroy $tree
 	file delete -force ./testdir
 	set contents
     } msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} dir1} {perms 493 type directory} {}
 }}
 
@@ -2208,11 +2254,12 @@ test tree.392 {tree dir -type "file pipe"} {
     list [catch {
 	set tree [blt::tree create]
 	$tree dir 0 /dev -fields { size perms type } -type "file pipe"
-	set contents [$tree dump 0]
+	set contents [$tree dump 0 -version 2.0]
 	blt::tree destroy $tree
 	set contents
     } msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 1 {{} core} {size 140737477881856 perms 256 type file} {}
 0 2 {{} stderr} {size 0 perms 384 type fifo} {}
 0 3 {{} stdout} {size 0 perms 384 type fifo} {}
@@ -2227,12 +2274,13 @@ test tree.393 {tree dir -type link -recurse} {
 	file link -symbolic [pwd]/testdir/mylink [pwd]/testdir/dir1/defs 
 	set tree [blt::tree create]
 	$tree dir 0 ./testdir -fields { size perms type } -type "link" -recurse
-	set contents [$tree dump 0]
+	set contents [$tree dump 0 -version 2.0]
 	blt::tree destroy $tree
 	file delete -force ./testdir
 	set contents
     } msg] $msg
-} {0 {-1 0 {{}} {} {}
+} {0 {# V2.0
+-1 0 {{}} {} {}
 0 2 {{} mylink} {size 2894 perms 420 type file} {}
 }}
 
