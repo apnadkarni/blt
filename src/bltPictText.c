@@ -185,7 +185,7 @@ static Blt_SwitchSpec textSwitches[] =
     {BLT_SWITCH_END}
 };
 
-DLLEXPORT extern Tcl_AppInitProc Blt_PictureTextInit;
+DLLEXPORT extern Tcl_AppInitProc Blt_PictureTextInit, Blt_PictureTextSafeInit;
 static Tcl_AppInitProc InitTextOp;
 
 /*ARGSUSED*/

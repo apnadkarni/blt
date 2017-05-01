@@ -2462,28 +2462,6 @@ Blt_Tree_ListAppendValueByKey(Tcl_Interp *interp, Tree *treePtr,
     return TCL_OK;
 }
 
-int
-Blt_Tree_GetValueListLength(Tcl_Interp *interp, Tree *treePtr, Node *nodePtr,
-                            Blt_TreeKey key, size_t *lengthPtr)
-{
-    Value *valuePtr;
-    int length;
-
-    valuePtr = GetTreeValue(interp, treePtr, nodePtr, key);
-    if (valuePtr == NULL) {
-        return TCL_ERROR;
-    }
-    if (valuePtr->objPtr == NULL) {
-        length = 0;
-    } else { 
-        if (Tcl_ListObjLength(interp, valuePtr->objPtr, &length) != TCL_OK) {
-            return TCL_ERROR;
-        }
-    }
-    *lengthPtr = length;
-    return TCL_OK;
-}
-
 static int
 ParseParentheses(Tcl_Interp *interp, const char *string, char **leftPtr, 
                  char **rightPtr)
@@ -3290,70 +3268,6 @@ Blt_Tree_NodeRelativePath(
     return Tcl_DStringValue(dsPtr);
 }
     
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_Tree_PathFromNode --
- *
- *---------------------------------------------------------------------------
- */
-Tcl_Obj *
-Blt_Tree_NodeRelativePathObj(Tcl_Interp *interp,
-    Node *rootPtr,                      /* Root of subtree. */
-    Node *nodePtr,                      /* Node whose path is to be
-                                         * returned. */
-    const char *separator,              /* Character string to separator
-                                         * elements. */
-    unsigned int flags)                 /* Indicates how to print the path. */
-{
-    const char **names;                 /* Used to stack the component
-                                         * names. */
-    const char *staticSpace[64];
-    long i;
-    long numLevels;
-    Tcl_Obj *resultObjPtr;                /* (out) Contains the path of the
-                                         * node. */
-
-    resultObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    if (rootPtr == NULL) {
-        rootPtr = nodePtr->corePtr->root;
-    }
-    numLevels = Blt_Tree_NodeDepth(nodePtr) - Blt_Tree_NodeDepth(rootPtr);
-    if (flags & TREE_INCLUDE_ROOT) {
-        numLevels++;
-    }
-    if (numLevels > 64) {
-        names = Blt_AssertMalloc(numLevels * sizeof(const char *));
-    } else {
-        names = staticSpace;
-    }
-    for (i = numLevels; i > 0; i--) {
-        /* Save the name of each ancestor in the name array.  Note that we
-         * ignore the root. */
-        names[i - 1] = nodePtr->label;
-        nodePtr = nodePtr->parent;
-    }
-    /* Append each the names in the array. */
-    if ((numLevels > 0) && (separator != NULL)) {
-        Tcl_AppendToObj(resultObjPtr, names[0], -1);
-        for (i = 1; i < numLevels; i++) {
-            Tcl_AppendToObj(resultObjPtr, separator, -1);
-            Tcl_AppendToObj(resultObjPtr, names[i], -1);
-        }
-    } else {
-        for (i = 0; i < numLevels; i++) {
-            Tcl_Obj *objPtr;
-
-            objPtr = Tcl_NewStringObj(names[i], -1);
-            Tcl_ListObjAppendElement(interp, resultObjPtr, objPtr);
-        }
-    }
-    if (names != staticSpace) {
-        Blt_Free(names);
-    }
-    return resultObjPtr;
-}
-
 /*
  *---------------------------------------------------------------------------
  *

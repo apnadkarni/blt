@@ -678,7 +678,7 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->flags &= ~CLIP;
     if (labelPtr->numBytes == 0) {
         w = h = 0;
-    } else if (labelPtr->flags & INIT_SIZE) {
+    } else {
         TextStyle ts;
         TextLayout *layoutPtr;
         Blt_Ts_InitStyle(ts);
@@ -1036,6 +1036,7 @@ FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
     }
 }    
 
+#ifdef notdef
 static double
 FontPica(Tk_Window tkwin, Blt_Font font)
 {
@@ -1048,6 +1049,7 @@ FontPica(Tk_Window tkwin, Blt_Font font)
     d /= WidthOfScreen(Tk_Screen(tkwin));
     return d;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
