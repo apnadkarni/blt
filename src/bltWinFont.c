@@ -479,6 +479,7 @@ GetAlias(const char *family)
 
 static Blt_Font_CanRotateProc           tkFontCanRotateProc;
 static Blt_Font_DrawProc                tkFontDrawProc;
+static Blt_Font_DuplicateProc           tkFontDupProc;
 static Blt_Font_FamilyProc              tkFontFamilyProc;
 static Blt_Font_FreeProc                tkFontFreeProc;
 static Blt_Font_GetMetricsProc          tkFontGetMetricsProc;
@@ -495,6 +496,7 @@ static Blt_FontClass tkFontClass = {
     FONTSET_TK,
     tkFontCanRotateProc,                /* Blt_Font_CanRotateProc */
     tkFontDrawProc,                     /* Blt_Font_DrawProc */
+    tkFontDupProc,                      /* Blt_Font_DuplicateProc */
     tkFontFamilyProc,                   /* Blt_Font_FamilyProc */
     tkFontFreeProc,                     /* Blt_Font_FreeProc */
     tkFontGetMetricsProc,               /* Blt_Font_GetMetricsProc */
@@ -1202,6 +1204,7 @@ tkFontUnderlineCharsProc(
 
 static Blt_Font_CanRotateProc           winFontCanRotateProc;
 static Blt_Font_DrawProc                winFontDrawProc;
+static Blt_Font_DuplicateProc           winFontDupProc;
 static Blt_Font_FamilyProc              winFontFamilyProc;
 static Blt_Font_FreeProc                winFontFreeProc;
 static Blt_Font_GetMetricsProc          winFontGetMetricsProc;
@@ -1218,6 +1221,7 @@ static Blt_FontClass winFontClass = {
     FONTSET_WIN,
     winFontCanRotateProc,               /* Blt_Font_CanRotateProc */
     winFontDrawProc,                    /* Blt_Font_DrawProc */
+    winFontDupProc,                     /* Blt_Font_DuplicateProc */
     winFontFamilyProc,                  /* Blt_Font_FamilyProc */
     winFontFreeProc,                    /* Blt_Font_FreeProc */
     winFontGetMetricsProc,              /* Blt_Font_GetMetricsProc */
