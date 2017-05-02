@@ -1481,10 +1481,9 @@ winFontPixelSizeProc(_Blt_Font *fontPtr)
 
 
 static winFontset *
-winFontNewFontset(Tk_Font tkFont, HFONT hFont, Blt_HashEntry *hPtr)
+winFontNewFontset(Tk_Font tkFont, Blt_HashEntry *hPtr)
 {
     winFontset *setPtr;
-    int isNew;
 
     setPtr = Blt_AssertCalloc(1, sizeof(winFontset));
     setPtr->refCount = 1;
@@ -1493,9 +1492,6 @@ winFontNewFontset(Tk_Font tkFont, HFONT hFont, Blt_HashEntry *hPtr)
     setPtr->hashPtr = hPtr;
     Blt_InitHashTable(&setPtr->fontTable, BLT_ONE_WORD_KEYS);
     Blt_SetHashValue(hPtr, setPtr);
-    assert(isNew);
-    Blt_SetHashValue(hPtr, hFont);
-
     return setPtr;
 }
 
@@ -1504,20 +1500,11 @@ static const char *
 winFontWriteDescription(Tk_Window tkwin, TkFont *tkFontPtr, int size, 
                         Tcl_DString *resultPtr)
 {
-    LOGFONT lf;
-    Tcl_DString ds;
     const char *string;
-    Tcl_Encoding encoding;
-
-    GetObject (hFont, sizeof(LOGFONT), &lf);
-    /* Rewrite the font description using the aliased family. */
-    Tcl_DStringInit(resultPtr);
 
     /* Family */
-    encoding = Tcl_GetEncoding(NULL, "unicode");
-    Tcl_ExternalToUtfDString(encoding, tkFontPtr->family, -1, &ds);
     Tcl_DStringAppendElement(resultPtr, "-family");
-    Tcl_DStringAppendElement(resultPtr, Tcl_DStringValue(&ds));
+    Tcl_DStringAppendElement(resultPtr, tkFontPtr->fa.family);
 
     /* Weight */
     Tcl_DStringAppendElement(resultPtr, "-weight");
@@ -1535,7 +1522,6 @@ winFontWriteDescription(Tk_Window tkwin, TkFont *tkFontPtr, int size,
         size = tkFontPtr->fa.size;
     }
     Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
-    Tcl_DStringFree(&ds);
     return Tcl_DStringValue(resultPtr);
 }
 
@@ -1543,7 +1529,6 @@ static Blt_Font
 winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size) 
 {
     Blt_HashEntry *hPtr;
-    HFONT hFont;
     Tcl_DString ds;
     _Blt_Font *dupPtr;
     const char *name;
