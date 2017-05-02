@@ -795,7 +795,7 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
         char *p;
         
         array = Blt_AssertMalloc(numBytes * sizeof(char));
-	p = array;
+	p = (char *)array;
         for (hPtr = Blt_FirstHashEntry(&envTable, &iter); hPtr != NULL;
              hPtr = Blt_NextHashEntry(&iter)) {
             size_t numBytes;

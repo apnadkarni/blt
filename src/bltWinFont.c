@@ -1503,6 +1503,7 @@ winFontWriteDescription(Tk_Window tkwin, Tk_Font tkFont, int size,
     TkFont *tkFontPtr = (TkFont *)tkFont;
     const char *string;
 
+    Tcl_DStringInit(resultPtr);
     /* Family */
     Tcl_DStringAppendElement(resultPtr, "-family");
     Tcl_DStringAppendElement(resultPtr, tkFontPtr->fa.family);
