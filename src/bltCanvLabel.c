@@ -1517,9 +1517,7 @@ ScaleProc(
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     double newFontSize;
     double x, y;
-    double maxScale;
 
-    maxScale = MIN(xScale, yScale);
     labelPtr->xScale *= xScale;        /* Used to track overall scale */
     labelPtr->yScale *= yScale;
 
