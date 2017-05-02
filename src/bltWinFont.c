@@ -1518,41 +1518,39 @@ winFontNewFontset(Tk_Font tkFont, const char *fontName, HFONT hFont)
 static void
 winFontWriteDescription(Tk_Window tkwin, HFONT hFont, Tcl_DString *resultPtr)
 {
-    int size;
     LOGFONT lf;
+    Tcl_DString ds;
     const char *string;
-    
+    int size;
+
     GetObject (hFont, sizeof(LOGFONT), &lf);
     /* Rewrite the font description using the aliased family. */
     Tcl_DStringInit(resultPtr);
 
     /* Family */
-    if (patternPtr->family != NULL) {
-        Tcl_DStringAppendElement(resultPtr, "-family");
-        Tcl_DStringAppendElement(resultPtr, lf.lfFaceName);
-    }
+    Tcl_ExternalToUtfDString(encoding, lf.lfFaceName, -1, &ds);
+    Tcl_DStringAppendElement(resultPtr, "-family");
+    Tcl_DStringAppendElement(resultPtr, Tcl_DStringValue(&ds));
+
     /* Weight */
-    if (patternPtr->weight != NULL) {
-        Tcl_DStringAppendElement(resultPtr, "-weight");
-        string = (lf.lfWeight == FW_BOLD) ? "bold" : "normal";
-        Tcl_DStringAppendElement(resultPtr, string);
-    }
+    Tcl_DStringAppendElement(resultPtr, "-weight");
+    string = (lf.lfWeight == FW_BOLD) ? "bold" : "normal";
+    Tcl_DStringAppendElement(resultPtr, string);
+
     /* Slant */
-    if (patternPtr->slant != NULL) {
-        Tcl_DStringAppendElement(resultPtr, "-slant");
-        string = (lf.lfItalic) ? "italic" : "roman";
-        Tcl_DStringAppendElement(resultPtr, string);
-    }
+    Tcl_DStringAppendElement(resultPtr, "-slant");
+    string = (lf.lfItalic) ? "italic" : "roman";
+    Tcl_DStringAppendElement(resultPtr, string);
+
     /* Width */
-    if (patternPtr->width != NULL) {
-        Tcl_DStringAppendElement(resultPtr, "-width");
-        Tcl_DStringAppendElement(resultPtr, Blt_Itoa(lf.lfWidth));
-    }
+    Tcl_DStringAppendElement(resultPtr, "-width");
+    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(lf.lfWidth));
+
     /* Size */
     Tcl_DStringAppendElement(resultPtr, "-size");
     size = (int)(PointsToPixels(tkwin, lf.lfHeight) + 0.5);
-    size = patternPtr->size;
     Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
+    Tcl_DStringFree(&ds);
 }
 
 static Blt_Font
