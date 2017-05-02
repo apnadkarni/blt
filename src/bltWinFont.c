@@ -1522,12 +1522,14 @@ winFontWriteDescription(Tk_Window tkwin, HFONT hFont, Tcl_DString *resultPtr)
     Tcl_DString ds;
     const char *string;
     int size;
+    Tcl_Encoding encoding;
 
     GetObject (hFont, sizeof(LOGFONT), &lf);
     /* Rewrite the font description using the aliased family. */
     Tcl_DStringInit(resultPtr);
 
     /* Family */
+    encoding = Tcl_GetEncoding(NULL, "unicode");
     Tcl_ExternalToUtfDString(encoding, lf.lfFaceName, -1, &ds);
     Tcl_DStringAppendElement(resultPtr, "-family");
     Tcl_DStringAppendElement(resultPtr, Tcl_DStringValue(&ds));
