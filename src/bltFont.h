@@ -98,7 +98,8 @@ typedef Blt_Font (Blt_Font_DuplicateProc)(Tk_Window tkwin, Blt_Font font,
              double size);
 
 struct _Blt_FontClass {
-    int type;                           /* Indicates the type of font used. */
+    int type;                        /* Indicates the type of font used. */
+    const char *className;
     Blt_Font_CanRotateProc *canRotateProc;
     Blt_Font_DrawProc *drawProc;
     Blt_Font_DuplicateProc *dupProc;

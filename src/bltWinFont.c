@@ -63,7 +63,7 @@
 typedef struct _Blt_Font _Blt_Font;
 
 enum FontsetTypes { 
-    FONTSET_UNKNOWN,                    /* Unknown font type. */
+    FONTSET_UNKNOWN=1,                  /* Unknown font type. */
     FONTSET_TK,                         /* Normal Tk font. */
     FONTSET_WIN                         /* Windows font. */
 };
@@ -265,7 +265,6 @@ PointsToPixels(Tk_Window tkwin, int size)
     return d;
 }
 
-#ifdef notdef
 static double
 PixelsToPoints(Tk_Window tkwin, int size)               
 {
@@ -280,6 +279,7 @@ PixelsToPoints(Tk_Window tkwin, int size)
     return d;
 }
 
+#ifdef notdef
 static void
 ParseXLFD(const char *fontName, int *argcPtr, char ***argvPtr)
 {
@@ -494,6 +494,7 @@ static Blt_Font_UnderlineCharsProc      tkFontUnderlineCharsProc;
 
 static Blt_FontClass tkFontClass = {
     FONTSET_TK,
+    "tkfont",
     tkFontCanRotateProc,                /* Blt_Font_CanRotateProc */
     tkFontDrawProc,                     /* Blt_Font_DrawProc */
     tkFontDupProc,                      /* Blt_Font_DuplicateProc */
@@ -581,7 +582,7 @@ tkFontGetFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
      */
 
     if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
-        EnumFontFamiliesW(hDC, NULL, (FONTENUMPROCW)tkFontFamilyEnumProc,
+        EnumFontFamiliesW(hDC, NULL, (FONTNUMPROCW)tkFontFamilyEnumProc,
                 (LPARAM)tablePtr);
     } else {
         EnumFontFamiliesA(hDC, NULL, (FONTENUMPROCA)tkFontFamilyEnumProc,
@@ -995,13 +996,13 @@ tkFontFamilyProc(_Blt_Font *fontPtr)
 static double
 tkFontPointSizeProc(_Blt_Font *fontPtr) 
 {
-    return ((TkFont *)fontPtr->clientData)->fa.size;
+    return PointsToPixels(((TkFont *)fontPtr->clientData)->fa.size);
 }
 
 static double
 tkFontPixelSizeProc(_Blt_Font *fontPtr) 
 {
-    return ((TkFont *)fontPtr->clientData)->fa.size;
+    return PixelsToPoints(((TkFont *)fontPtr->clientData)->fa.size);
 }
 
 /* 
@@ -1135,7 +1136,7 @@ tkFontPostscriptNameProc(_Blt_Font *fontPtr, Tcl_DString *resultPtr)
         flags |= FONT_BOLD;
     }
     Blt_Afm_GetPostscriptName(tkFontPtr->fa.family, flags, resultPtr);
-    return tkFontPtr->fa.size;
+    return PixelsToPoints(tkFontPtr->fa.size);
 }
 
 static int
@@ -1214,6 +1215,7 @@ static Blt_Font_UnderlineCharsProc      winFontUnderlineCharsProc;
 
 static Blt_FontClass winFontClass = {
     FONTSET_WIN,
+    "winfont",
     winFontCanRotateProc,               /* Blt_Font_CanRotateProc */
     winFontDrawProc,                    /* Blt_Font_DrawProc */
     winFontDupProc,                     /* Blt_Font_DuplicateProc */
@@ -1252,6 +1254,7 @@ typedef struct {
                                          * fonts. */
 } winFontset;
 
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1268,9 +1271,9 @@ typedef struct {
  */
 static HFONT
 winFontDuplicate(
-    Tk_Font tkFont,                    /* Font identifier (actually a
+    Tk_Font tkFont,                     /* Font identifier (actually a
                                          * Tk_Font) */
-    long size,                          /* Size of new font. */
+    double numPoints,                   /* Point size of new font. */
     long angle10)                       /* # of degrees to rotate font */
 {                                       
     TkFontAttributes *faPtr;            /* Set of attributes to match. */
@@ -1283,9 +1286,12 @@ winFontDuplicate(
     lf.lfHeight = -size;
     if (lf.lfHeight < 0) {
         HDC dc;
+        double numPixels;
 
         dc = GetDC(NULL);
-        lf.lfHeight = -MulDiv(size, GetDeviceCaps(dc, LOGPIXELSY), 72);
+        /* Convert from points to integral (rounded) # of pixels. */
+        numPixels = numPoints * GetDeviceCaps(dc, LOGPIXELSY) / 72.0;
+        lf.lfHeight = -((int64_t)(numPixels + 0.5)); 
         ReleaseDC(NULL, dc);
     }
     lf.lfWidth = 0;
@@ -1365,6 +1371,48 @@ winFontDuplicate(
         }
     }
     return hFont;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * winFontAddFont --
+ *
+ *      Creates a rotated copy of the given font.  This only works for
+ *      TrueType fonts.
+ *
+ * Results:
+ *      Returns the newly create font or NULL if the font could not be
+ *      created.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+winFontAddFont(_Blt_Font *fontPtr, double numPoints, float angle)         
+{                                       
+    Blt_HashEntry *hPtr;
+    HFONT hFont;
+    winFontset *setPtr = fontPtr->clientData;
+    int isNew;
+    long angle10;
+    TkFont *tkFontPtr;
+
+    tkFontPtr = (TkFont *)setPtr->tkFont;
+    angle *= 10.0f;
+    angle10 = ROUND(angle);
+    hPtr = Blt_CreateHashEntry(&setPtr->fontTable, (char *)angle10, &isNew);
+    if (!isNew) {
+        return TRUE;                    /* Rotated font already exists. */
+    }
+    /* Create the rotated font. */
+    hFont = winFontDuplicate(setPtr->tkFont, numPoints, angle10);
+    if (hFont == NULL) {
+        Blt_DeleteHashEntry(&setPtr->fontTable, hPtr);
+        return FALSE;
+    }
+    /* Add it to the set of scaled or rotated fonts.  */
+    Blt_SetHashValue(hPtr, hFont);
+    return TRUE;
 }
 
 static void
@@ -1468,7 +1516,7 @@ winFontPointSizeProc(_Blt_Font *fontPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return ((TkFont *)setPtr->tkFont)->fa.size;
+    return PixelsToPoints(((TkFont *)setPtr->tkFont)->fa.size);
 }
 
 static double
@@ -1476,7 +1524,7 @@ winFontPixelSizeProc(_Blt_Font *fontPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return ((TkFont *)setPtr->tkFont)->fa.size;
+    return PointsToPixels(((TkFont *)setPtr->tkFont)->fa.size);
 }
 
 
@@ -1492,13 +1540,22 @@ winFontNewFontset(Tk_Font tkFont, Blt_HashEntry *hPtr)
     setPtr->hashPtr = hPtr;
     Blt_InitHashTable(&setPtr->fontTable, BLT_ONE_WORD_KEYS);
     Blt_SetHashValue(hPtr, setPtr);
+
+    /* 
+     * Initialize the win32 font table for this font.  Add the initial win32
+     * font for the case of 0 degrees rotation.
+     */
+    Blt_InitHashTable(&setPtr->fontTable, BLT_ONE_WORD_KEYS);
+    hPtr = Blt_CreateHashEntry(&setPtr->fontTable, (char *)0L, &isNew);
+    assert(isNew);
+    Blt_SetHashValue(hPtr, hFont);
     return setPtr;
 }
 
     
 static const char *
-winFontWriteDescription(Tk_Window tkwin, Tk_Font tkFont, int size, 
-                        Tcl_DString *resultPtr)
+winFontDescription(Tk_Window tkwin, Tk_Font tkFont, double numPoints, 
+                   Tcl_DString *resultPtr)
 {
     TkFont *tkFontPtr = (TkFont *)tkFont;
     const char *string;
@@ -1520,15 +1577,15 @@ winFontWriteDescription(Tk_Window tkwin, Tk_Font tkFont, int size,
 
     /* Size */
     Tcl_DStringAppendElement(resultPtr, "-size");
-    if (size == -1) {
-        size = tkFontPtr->fa.size;
+    if (numPoints == -1) {
+        numPoints = PixelsToPoints(tkFontPtr->fa.size);
     }
-    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
+    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(numPoints));
     return Tcl_DStringValue(resultPtr);
 }
 
 static Blt_Font
-winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size) 
+winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double numPoints) 
 {
     Blt_HashEntry *hPtr;
     Tcl_DString ds;
@@ -1539,7 +1596,7 @@ winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
 
     setPtr = fontPtr->clientData;
     /* Create a description with the new requested size. */
-    name = winFontWriteDescription(tkwin, setPtr->tkFont, size, &ds);
+    name = winFontDescription(tkwin, setPtr->tkFont, numPoints, &ds);
     /* Check if we already have this font. */
     hPtr = Blt_CreateHashEntry(&fontSetTable, (char *)name, &isNew);
     Tcl_DStringFree(&ds);
@@ -1547,8 +1604,12 @@ winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
         newPtr = Blt_GetHashValue(hPtr);
         newPtr->refCount++;
     } else {
+        HFONT hFont;
+
         /* Create a duplicate of the font at the requested size. */
-        newPtr = winFontNewFontset(setPtr->tkFont, hPtr);
+        hFont = winFontDuplicate(setPtr->tkFont, numPoints, 0L);
+        /* Attach it to the fontset as the base font. */
+        newPtr = winFontNewFontset(setPtr->tkFont, hFont, hPtr);
         if (newPtr == NULL) {
             return NULL;
         }
@@ -1557,7 +1618,7 @@ winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     if (dupPtr == NULL) {
         return NULL;                    /* Out of memory. */
     }
-    dupPtr->classPtr = &tkFontClass;
+    dupPtr->classPtr = &winFontClass;
     dupPtr->interp = fontPtr->interp;
     dupPtr->display = fontPtr->display;
     dupPtr->clientData = newPtr;
@@ -1695,7 +1756,8 @@ winFontCanRotateProc(_Blt_Font *fontPtr, float angle)
         return TRUE;                    /* Rotated font already exists. */
     }
     /* Create the rotated font. */
-    hFont = winFontDuplicate(setPtr->tkFont, tkFontPtr->fa.size, angle10);
+    hFont = winFontDuplicate(setPtr->tkFont, PixelsToPoints(tkFontPtr->fa.size),
+         angle10);
     if (hFont == NULL) {
         Blt_DeleteHashEntry(&setPtr->fontTable, hPtr);
         return FALSE;
@@ -1786,10 +1848,10 @@ winFontUnderlineCharsProc(
  *      will be left in the interp's result.
  *
  * Side effects:
- *      The font is added to an internal database with a reference count.  For
- *      each call to this procedure, there should eventually be a call to
- *      Tk_FreeFont() or Tk_FreeFontFromObj() so that the database is cleaned
- *      up when fonts aren't in use anymore.
+ *      The font is added to an internal database with a reference count.
+ *      For each call to this procedure, there should eventually be a call
+ *      to Tk_FreeFont() or Tk_FreeFontFromObj() so that the database is
+ *      cleaned up when fonts aren't in use anymore.
  *
  *---------------------------------------------------------------------------
  */
@@ -1813,9 +1875,8 @@ Blt_GetFontFromObj(
     }
     fontPtr->interp = interp;
     fontPtr->display = Tk_Display(tkwin);
-    /* Try to get a windows rotated first.  If that fails, fall back to the
-     * normal Tk font.  We rotate the font by drawing into a bitmap and
-     * rotating the bitmap.  */
+    /* Try to get a win32 font first.  If that fails, fall back to the
+     * normal Tk font. */
     fontPtr->clientData = winFontGetFromObj(interp, tkwin, objPtr);
     if (fontPtr->clientData != NULL) {
         fontPtr->classPtr = &winFontClass;
