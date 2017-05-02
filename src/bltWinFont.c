@@ -946,11 +946,6 @@ tkFontWriteXLFDDescription(Tk_Window tkwin, tkFontPattern *patternPtr,
         Tcl_DStringAppendElement(resultPtr, "-slant");
         Tcl_DStringAppendElement(resultPtr, patternPtr->slant);
     }
-    /* Width */
-    if (patternPtr->width != NULL) {
-        Tcl_DStringAppendElement(resultPtr, "-width");
-        Tcl_DStringAppendElement(resultPtr, patternPtr->width);
-    }
     /* Size */
     Tcl_DStringAppendElement(resultPtr, "-size");
     size = (int)(PointsToPixels(tkwin, patternPtr->size) + 0.5);
@@ -1420,10 +1415,10 @@ static winFontset *
 winFontGetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 {
     Blt_HashEntry *hPtr;
-    winFontset *setPtr;
     const char *desc;
     int isNew;
-
+    winFontset *setPtr;
+    
     desc = Tcl_GetString(objPtr);
     while (isspace(UCHAR(*desc))) {
         desc++;                         /* Skip leading blanks. */
@@ -1486,9 +1481,8 @@ winFontPixelSizeProc(_Blt_Font *fontPtr)
 
 
 static winFontset *
-winFontNewFontset(Tk_Font tkFont, const char *fontName, HFONT hFont)
+winFontNewFontset(Tk_Font tkFont, HFONT hFont, Blt_HashEntry *hPtr)
 {
-    Blt_HashEntry *hPtr;
     winFontset *setPtr;
     int isNew;
 
@@ -1496,27 +1490,18 @@ winFontNewFontset(Tk_Font tkFont, const char *fontName, HFONT hFont)
     setPtr->refCount = 1;
     setPtr->tkFont = tkFont;
     setPtr->name = Blt_GetHashKey(&fontSetTable, hPtr);
-    /* 
-     * Initialize the font table for this font.  Add the initial font for
-     * the case of 0 degrees rotation.
-     */
+    setPtr->hashPtr = hPtr;
     Blt_InitHashTable(&setPtr->fontTable, BLT_ONE_WORD_KEYS);
-    hPtr = Blt_CreateHashEntry(&setPtr->fontTable, (char *)0L, &isNew);
+    Blt_SetHashValue(hPtr, setPtr);
     assert(isNew);
     Blt_SetHashValue(hPtr, hFont);
 
-    /* Add the font information to the font table. */
-    hPtr = Blt_CreateHashEntry(&fontSetTable, fontName, &isNew);
-    assert(isNew);
-
-    setPtr->hashPtr = hPtr;
-    Blt_SetHashValue(hPtr, setPtr);
     return setPtr;
 }
 
     
 static const char *
-winFontWriteDescription(Tk_Window tkwin, HFONT hFont, int size, 
+winFontWriteDescription(Tk_Window tkwin, TkFont *tkFontPtr, int size, 
                         Tcl_DString *resultPtr)
 {
     LOGFONT lf;
@@ -1530,27 +1515,25 @@ winFontWriteDescription(Tk_Window tkwin, HFONT hFont, int size,
 
     /* Family */
     encoding = Tcl_GetEncoding(NULL, "unicode");
-    Tcl_ExternalToUtfDString(encoding, lf.lfFaceName, -1, &ds);
+    Tcl_ExternalToUtfDString(encoding, tkFontPtr->family, -1, &ds);
     Tcl_DStringAppendElement(resultPtr, "-family");
     Tcl_DStringAppendElement(resultPtr, Tcl_DStringValue(&ds));
 
     /* Weight */
     Tcl_DStringAppendElement(resultPtr, "-weight");
-    string = (lf.lfWeight == FW_BOLD) ? "bold" : "normal";
+    string = (tkFontPtr->fa.weight == FW_BOLD) ? "bold" : "normal";
     Tcl_DStringAppendElement(resultPtr, string);
 
     /* Slant */
     Tcl_DStringAppendElement(resultPtr, "-slant");
-    string = (lf.lfItalic) ? "italic" : "roman";
+    string = (tkFontPtr->fa.slant) ? "italic" : "roman";
     Tcl_DStringAppendElement(resultPtr, string);
-
-    /* Width */
-    Tcl_DStringAppendElement(resultPtr, "-width");
-    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(lf.lfWidth));
 
     /* Size */
     Tcl_DStringAppendElement(resultPtr, "-size");
-    /* size = (int)(PointsToPixels(tkwin, lf.lfHeight) + 0.5); */
+    if (size == -1) {
+        size = tkFontPtr->fa.size;
+    }
     Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
     Tcl_DStringFree(&ds);
     return Tcl_DStringValue(resultPtr);
@@ -1568,14 +1551,8 @@ winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     winFontset *setPtr, *newPtr;
 
     setPtr = fontPtr->clientData;
-
-    /* Get the base font of the original font. */
-    hPtr = Blt_FindHashEntry(&setPtr->fontTable, (char *)0L);
-    assert(hPtr != NULL);
-    hFont = Blt_GetHashKey(&setPtr->fontTable, hPtr);
-    assert (hFont != NULL);
     /* Create a description with the new requested size. */
-    name = winFontWriteDescription(tkwin, hFont, size, &ds);
+    name = winFontWriteDescription(tkwin, setPtr->tkFont, size, &ds);
     /* Check if we already have this font. */
     hPtr = Blt_CreateHashEntry(&fontSetTable, (char *)name, &isNew);
     Tcl_DStringFree(&ds);
@@ -1584,8 +1561,7 @@ winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
         newPtr->refCount++;
     } else {
         /* Create a duplicate of the font at the requested size. */
-        hFont = winFontDuplicate(setPtr->tkFont, size, 0L);
-        newPtr = winFontNewFontset(setPtr->tkFont, name, hFont);
+        newPtr = winFontNewFontset(setPtr->tkFont, hPtr);
         if (newPtr == NULL) {
             return NULL;
         }
