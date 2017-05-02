@@ -1497,9 +1497,10 @@ winFontNewFontset(Tk_Font tkFont, Blt_HashEntry *hPtr)
 
     
 static const char *
-winFontWriteDescription(Tk_Window tkwin, TkFont *tkFontPtr, int size, 
+winFontWriteDescription(Tk_Window tkwin, Tk_Font tkFont, int size, 
                         Tcl_DString *resultPtr)
 {
+    TkFont *tkFontPtr = (TkFont *)tkFont;
     const char *string;
 
     /* Family */

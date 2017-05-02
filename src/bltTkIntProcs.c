@@ -230,28 +230,31 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_Ps_PolylineFromXPoints, /* 220 */
     Blt_Ps_Polygon, /* 221 */
     Blt_Ps_SetPrinting, /* 222 */
-    Blt_DrawText, /* 223 */
-    Blt_DrawText2, /* 224 */
-    Blt_DrawTextWithRotatedFont, /* 225 */
-    Blt_DrawLayout, /* 226 */
-    Blt_GetTextExtents, /* 227 */
-    Blt_MeasureText, /* 228 */
-    Blt_RotateStartingTextPositions, /* 229 */
-    Blt_TkTextLayout_CharBbox, /* 230 */
-    Blt_TkTextLayout_Compute, /* 231 */
-    Blt_TkTextLayout_Draw, /* 232 */
-    Blt_TkTextLayout_Free, /* 233 */
-    Blt_TkTextLayout_UnderlineSingleChar, /* 234 */
-    Blt_Ts_Bitmap, /* 235 */
-    Blt_Ts_CreateLayout, /* 236 */
-    Blt_Ts_DrawLayout, /* 237 */
-    Blt_Ts_DrawText, /* 238 */
-    Blt_Ts_FreeStyle, /* 239 */
-    Blt_Ts_GetExtents, /* 240 */
-    Blt_Ts_ResetStyle, /* 241 */
-    Blt_Ts_SetDrawStyle, /* 242 */
-    Blt_Ts_TitleLayout, /* 243 */
-    Blt_Ts_UnderlineChars, /* 244 */
+    Blt_Ps_TextLayout, /* 223 */
+    Blt_Ps_TextString, /* 224 */
+    Blt_Ps_GetString, /* 225 */
+    Blt_DrawText, /* 226 */
+    Blt_DrawText2, /* 227 */
+    Blt_DrawTextWithRotatedFont, /* 228 */
+    Blt_DrawLayout, /* 229 */
+    Blt_GetTextExtents, /* 230 */
+    Blt_MeasureText, /* 231 */
+    Blt_RotateStartingTextPositions, /* 232 */
+    Blt_TkTextLayout_CharBbox, /* 233 */
+    Blt_TkTextLayout_Compute, /* 234 */
+    Blt_TkTextLayout_Draw, /* 235 */
+    Blt_TkTextLayout_Free, /* 236 */
+    Blt_TkTextLayout_UnderlineSingleChar, /* 237 */
+    Blt_Ts_Bitmap, /* 238 */
+    Blt_Ts_CreateLayout, /* 239 */
+    Blt_Ts_DrawLayout, /* 240 */
+    Blt_Ts_DrawText, /* 241 */
+    Blt_Ts_FreeStyle, /* 242 */
+    Blt_Ts_GetExtents, /* 243 */
+    Blt_Ts_ResetStyle, /* 244 */
+    Blt_Ts_SetDrawStyle, /* 245 */
+    Blt_Ts_TitleLayout, /* 246 */
+    Blt_Ts_UnderlineChars, /* 247 */
 };
 
 /* !END!: Do not edit above this line. */

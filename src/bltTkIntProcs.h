@@ -1322,23 +1322,40 @@ BLT_EXTERN void		Blt_Ps_Polygon(Blt_Ps ps, Point2d *points,
 /* 222 */
 BLT_EXTERN void		Blt_Ps_SetPrinting(Blt_Ps ps, int value);
 #endif
+#ifndef Blt_Ps_TextLayout_DECLARED
+#define Blt_Ps_TextLayout_DECLARED
+/* 223 */
+BLT_EXTERN void		Blt_Ps_TextLayout(Blt_Ps ps, int x, int y,
+				TextLayout *textPtr);
+#endif
+#ifndef Blt_Ps_TextString_DECLARED
+#define Blt_Ps_TextString_DECLARED
+/* 224 */
+BLT_EXTERN void		Blt_Ps_TextString(Blt_Ps ps, const char *string,
+				int numBytes);
+#endif
+#ifndef Blt_Ps_GetString_DECLARED
+#define Blt_Ps_GetString_DECLARED
+/* 225 */
+BLT_EXTERN const char *	 Blt_Ps_GetString(Blt_Ps ps);
+#endif
 #ifndef Blt_DrawText_DECLARED
 #define Blt_DrawText_DECLARED
-/* 223 */
+/* 226 */
 BLT_EXTERN void		Blt_DrawText(Tk_Window tkwin, Drawable drawable,
 				const char *string, TextStyle *tsPtr, int x,
 				int y);
 #endif
 #ifndef Blt_DrawText2_DECLARED
 #define Blt_DrawText2_DECLARED
-/* 224 */
+/* 227 */
 BLT_EXTERN void		Blt_DrawText2(Tk_Window tkwin, Drawable drawable,
 				const char *string, TextStyle *tsPtr, int x,
 				int y, Dim2d *dimPtr);
 #endif
 #ifndef Blt_DrawTextWithRotatedFont_DECLARED
 #define Blt_DrawTextWithRotatedFont_DECLARED
-/* 225 */
+/* 228 */
 BLT_EXTERN int		Blt_DrawTextWithRotatedFont(Tk_Window tkwin,
 				Drawable drawable, float angle,
 				TextStyle *tsPtr, TextLayout *textPtr, int x,
@@ -1346,7 +1363,7 @@ BLT_EXTERN int		Blt_DrawTextWithRotatedFont(Tk_Window tkwin,
 #endif
 #ifndef Blt_DrawLayout_DECLARED
 #define Blt_DrawLayout_DECLARED
-/* 226 */
+/* 229 */
 BLT_EXTERN void		Blt_DrawLayout(Tk_Window tkwin, Drawable drawable,
 				GC gc, Blt_Font font, int depth, float angle,
 				int x, int y, TextLayout *layoutPtr,
@@ -1354,7 +1371,7 @@ BLT_EXTERN void		Blt_DrawLayout(Tk_Window tkwin, Drawable drawable,
 #endif
 #ifndef Blt_GetTextExtents_DECLARED
 #define Blt_GetTextExtents_DECLARED
-/* 227 */
+/* 230 */
 BLT_EXTERN void		Blt_GetTextExtents(Blt_Font font, int leader,
 				const char *text, int textLen,
 				unsigned int *widthPtr,
@@ -1362,26 +1379,26 @@ BLT_EXTERN void		Blt_GetTextExtents(Blt_Font font, int leader,
 #endif
 #ifndef Blt_MeasureText_DECLARED
 #define Blt_MeasureText_DECLARED
-/* 228 */
+/* 231 */
 BLT_EXTERN int		Blt_MeasureText(Blt_Font font, const char *text,
 				int textLen, int maxLength, int *nBytesPtr);
 #endif
 #ifndef Blt_RotateStartingTextPositions_DECLARED
 #define Blt_RotateStartingTextPositions_DECLARED
-/* 229 */
+/* 232 */
 BLT_EXTERN void		Blt_RotateStartingTextPositions(TextLayout *textPtr,
 				float angle);
 #endif
 #ifndef Blt_TkTextLayout_CharBbox_DECLARED
 #define Blt_TkTextLayout_CharBbox_DECLARED
-/* 230 */
+/* 233 */
 BLT_EXTERN int		Blt_TkTextLayout_CharBbox(Tk_TextLayout layout,
 				int index, int *xPtr, int *yPtr,
 				int *widthPtr, int *heightPtr);
 #endif
 #ifndef Blt_TkTextLayout_Compute_DECLARED
 #define Blt_TkTextLayout_Compute_DECLARED
-/* 231 */
+/* 234 */
 BLT_EXTERN Tk_TextLayout Blt_TkTextLayout_Compute(Blt_Font font,
 				const char *string, int numChars,
 				int wrapLength, Tk_Justify justify,
@@ -1389,7 +1406,7 @@ BLT_EXTERN Tk_TextLayout Blt_TkTextLayout_Compute(Blt_Font font,
 #endif
 #ifndef Blt_TkTextLayout_Draw_DECLARED
 #define Blt_TkTextLayout_Draw_DECLARED
-/* 232 */
+/* 235 */
 BLT_EXTERN void		Blt_TkTextLayout_Draw(Display *display,
 				Drawable drawable, GC gc,
 				Tk_TextLayout layout, int x, int y,
@@ -1397,12 +1414,12 @@ BLT_EXTERN void		Blt_TkTextLayout_Draw(Display *display,
 #endif
 #ifndef Blt_TkTextLayout_Free_DECLARED
 #define Blt_TkTextLayout_Free_DECLARED
-/* 233 */
+/* 236 */
 BLT_EXTERN void		Blt_TkTextLayout_Free(Tk_TextLayout layout);
 #endif
 #ifndef Blt_TkTextLayout_UnderlineSingleChar_DECLARED
 #define Blt_TkTextLayout_UnderlineSingleChar_DECLARED
-/* 234 */
+/* 237 */
 BLT_EXTERN void		Blt_TkTextLayout_UnderlineSingleChar(
 				Display *display, Drawable drawable, GC gc,
 				Tk_TextLayout layout, int x, int y,
@@ -1410,51 +1427,51 @@ BLT_EXTERN void		Blt_TkTextLayout_UnderlineSingleChar(
 #endif
 #ifndef Blt_Ts_Bitmap_DECLARED
 #define Blt_Ts_Bitmap_DECLARED
-/* 235 */
+/* 238 */
 BLT_EXTERN Pixmap	Blt_Ts_Bitmap(Tk_Window tkwin, TextLayout *textPtr,
 				TextStyle *tsPtr, int *widthPtr,
 				int *heightPtr);
 #endif
 #ifndef Blt_Ts_CreateLayout_DECLARED
 #define Blt_Ts_CreateLayout_DECLARED
-/* 236 */
+/* 239 */
 BLT_EXTERN TextLayout *	 Blt_Ts_CreateLayout(const char *string, int length,
 				TextStyle *tsPtr);
 #endif
 #ifndef Blt_Ts_DrawLayout_DECLARED
 #define Blt_Ts_DrawLayout_DECLARED
-/* 237 */
+/* 240 */
 BLT_EXTERN void		Blt_Ts_DrawLayout(Tk_Window tkwin, Drawable drawable,
 				TextLayout *textPtr, TextStyle *tsPtr, int x,
 				int y);
 #endif
 #ifndef Blt_Ts_DrawText_DECLARED
 #define Blt_Ts_DrawText_DECLARED
-/* 238 */
+/* 241 */
 BLT_EXTERN void		Blt_Ts_DrawText(Tk_Window tkwin, Drawable drawable,
 				const char *text, int textLen,
 				TextStyle *tsPtr, int x, int y);
 #endif
 #ifndef Blt_Ts_FreeStyle_DECLARED
 #define Blt_Ts_FreeStyle_DECLARED
-/* 239 */
+/* 242 */
 BLT_EXTERN void		Blt_Ts_FreeStyle(Display *display, TextStyle *tsPtr);
 #endif
 #ifndef Blt_Ts_GetExtents_DECLARED
 #define Blt_Ts_GetExtents_DECLARED
-/* 240 */
+/* 243 */
 BLT_EXTERN void		Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text,
 				unsigned int *widthPtr,
 				unsigned int *heightPtr);
 #endif
 #ifndef Blt_Ts_ResetStyle_DECLARED
 #define Blt_Ts_ResetStyle_DECLARED
-/* 241 */
+/* 244 */
 BLT_EXTERN void		Blt_Ts_ResetStyle(Tk_Window tkwin, TextStyle *tsPtr);
 #endif
 #ifndef Blt_Ts_SetDrawStyle_DECLARED
 #define Blt_Ts_SetDrawStyle_DECLARED
-/* 242 */
+/* 245 */
 BLT_EXTERN void		Blt_Ts_SetDrawStyle(TextStyle *tsPtr, Blt_Font font,
 				GC gc, XColor *fgColor, float angle,
 				Tk_Anchor anchor, Tk_Justify justify,
@@ -1462,13 +1479,13 @@ BLT_EXTERN void		Blt_Ts_SetDrawStyle(TextStyle *tsPtr, Blt_Font font,
 #endif
 #ifndef Blt_Ts_TitleLayout_DECLARED
 #define Blt_Ts_TitleLayout_DECLARED
-/* 243 */
+/* 246 */
 BLT_EXTERN TextLayout *	 Blt_Ts_TitleLayout(const char *string, int length,
 				TextStyle *tsPtr);
 #endif
 #ifndef Blt_Ts_UnderlineChars_DECLARED
 #define Blt_Ts_UnderlineChars_DECLARED
-/* 244 */
+/* 247 */
 BLT_EXTERN void		Blt_Ts_UnderlineChars(Tk_Window tkwin,
 				Drawable drawable, TextLayout *layoutPtr,
 				TextStyle *tsPtr, int x, int y);
@@ -1701,28 +1718,31 @@ typedef struct BltTkIntProcs {
     void (*blt_Ps_PolylineFromXPoints) (Blt_Ps ps, int n, XPoint *points); /* 220 */
     void (*blt_Ps_Polygon) (Blt_Ps ps, Point2d *points, int numPoints); /* 221 */
     void (*blt_Ps_SetPrinting) (Blt_Ps ps, int value); /* 222 */
-    void (*blt_DrawText) (Tk_Window tkwin, Drawable drawable, const char *string, TextStyle *tsPtr, int x, int y); /* 223 */
-    void (*blt_DrawText2) (Tk_Window tkwin, Drawable drawable, const char *string, TextStyle *tsPtr, int x, int y, Dim2d *dimPtr); /* 224 */
-    int (*blt_DrawTextWithRotatedFont) (Tk_Window tkwin, Drawable drawable, float angle, TextStyle *tsPtr, TextLayout *textPtr, int x, int y); /* 225 */
-    void (*blt_DrawLayout) (Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font, int depth, float angle, int x, int y, TextLayout *layoutPtr, int maxLength); /* 226 */
-    void (*blt_GetTextExtents) (Blt_Font font, int leader, const char *text, int textLen, unsigned int *widthPtr, unsigned int *heightPtr); /* 227 */
-    int (*blt_MeasureText) (Blt_Font font, const char *text, int textLen, int maxLength, int *nBytesPtr); /* 228 */
-    void (*blt_RotateStartingTextPositions) (TextLayout *textPtr, float angle); /* 229 */
-    int (*blt_TkTextLayout_CharBbox) (Tk_TextLayout layout, int index, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 230 */
-    Tk_TextLayout (*blt_TkTextLayout_Compute) (Blt_Font font, const char *string, int numChars, int wrapLength, Tk_Justify justify, int flags, int *widthPtr, int *heightPtr); /* 231 */
-    void (*blt_TkTextLayout_Draw) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int firstChar, int lastChar); /* 232 */
-    void (*blt_TkTextLayout_Free) (Tk_TextLayout layout); /* 233 */
-    void (*blt_TkTextLayout_UnderlineSingleChar) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int underline); /* 234 */
-    Pixmap (*blt_Ts_Bitmap) (Tk_Window tkwin, TextLayout *textPtr, TextStyle *tsPtr, int *widthPtr, int *heightPtr); /* 235 */
-    TextLayout * (*blt_Ts_CreateLayout) (const char *string, int length, TextStyle *tsPtr); /* 236 */
-    void (*blt_Ts_DrawLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *textPtr, TextStyle *tsPtr, int x, int y); /* 237 */
-    void (*blt_Ts_DrawText) (Tk_Window tkwin, Drawable drawable, const char *text, int textLen, TextStyle *tsPtr, int x, int y); /* 238 */
-    void (*blt_Ts_FreeStyle) (Display *display, TextStyle *tsPtr); /* 239 */
-    void (*blt_Ts_GetExtents) (TextStyle *tsPtr, const char *text, unsigned int *widthPtr, unsigned int *heightPtr); /* 240 */
-    void (*blt_Ts_ResetStyle) (Tk_Window tkwin, TextStyle *tsPtr); /* 241 */
-    void (*blt_Ts_SetDrawStyle) (TextStyle *tsPtr, Blt_Font font, GC gc, XColor *fgColor, float angle, Tk_Anchor anchor, Tk_Justify justify, int leader); /* 242 */
-    TextLayout * (*blt_Ts_TitleLayout) (const char *string, int length, TextStyle *tsPtr); /* 243 */
-    void (*blt_Ts_UnderlineChars) (Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y); /* 244 */
+    void (*blt_Ps_TextLayout) (Blt_Ps ps, int x, int y, TextLayout *textPtr); /* 223 */
+    void (*blt_Ps_TextString) (Blt_Ps ps, const char *string, int numBytes); /* 224 */
+    const char * (*blt_Ps_GetString) (Blt_Ps ps); /* 225 */
+    void (*blt_DrawText) (Tk_Window tkwin, Drawable drawable, const char *string, TextStyle *tsPtr, int x, int y); /* 226 */
+    void (*blt_DrawText2) (Tk_Window tkwin, Drawable drawable, const char *string, TextStyle *tsPtr, int x, int y, Dim2d *dimPtr); /* 227 */
+    int (*blt_DrawTextWithRotatedFont) (Tk_Window tkwin, Drawable drawable, float angle, TextStyle *tsPtr, TextLayout *textPtr, int x, int y); /* 228 */
+    void (*blt_DrawLayout) (Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font, int depth, float angle, int x, int y, TextLayout *layoutPtr, int maxLength); /* 229 */
+    void (*blt_GetTextExtents) (Blt_Font font, int leader, const char *text, int textLen, unsigned int *widthPtr, unsigned int *heightPtr); /* 230 */
+    int (*blt_MeasureText) (Blt_Font font, const char *text, int textLen, int maxLength, int *nBytesPtr); /* 231 */
+    void (*blt_RotateStartingTextPositions) (TextLayout *textPtr, float angle); /* 232 */
+    int (*blt_TkTextLayout_CharBbox) (Tk_TextLayout layout, int index, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 233 */
+    Tk_TextLayout (*blt_TkTextLayout_Compute) (Blt_Font font, const char *string, int numChars, int wrapLength, Tk_Justify justify, int flags, int *widthPtr, int *heightPtr); /* 234 */
+    void (*blt_TkTextLayout_Draw) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int firstChar, int lastChar); /* 235 */
+    void (*blt_TkTextLayout_Free) (Tk_TextLayout layout); /* 236 */
+    void (*blt_TkTextLayout_UnderlineSingleChar) (Display *display, Drawable drawable, GC gc, Tk_TextLayout layout, int x, int y, int underline); /* 237 */
+    Pixmap (*blt_Ts_Bitmap) (Tk_Window tkwin, TextLayout *textPtr, TextStyle *tsPtr, int *widthPtr, int *heightPtr); /* 238 */
+    TextLayout * (*blt_Ts_CreateLayout) (const char *string, int length, TextStyle *tsPtr); /* 239 */
+    void (*blt_Ts_DrawLayout) (Tk_Window tkwin, Drawable drawable, TextLayout *textPtr, TextStyle *tsPtr, int x, int y); /* 240 */
+    void (*blt_Ts_DrawText) (Tk_Window tkwin, Drawable drawable, const char *text, int textLen, TextStyle *tsPtr, int x, int y); /* 241 */
+    void (*blt_Ts_FreeStyle) (Display *display, TextStyle *tsPtr); /* 242 */
+    void (*blt_Ts_GetExtents) (TextStyle *tsPtr, const char *text, unsigned int *widthPtr, unsigned int *heightPtr); /* 243 */
+    void (*blt_Ts_ResetStyle) (Tk_Window tkwin, TextStyle *tsPtr); /* 244 */
+    void (*blt_Ts_SetDrawStyle) (TextStyle *tsPtr, Blt_Font font, GC gc, XColor *fgColor, float angle, Tk_Anchor anchor, Tk_Justify justify, int leader); /* 245 */
+    TextLayout * (*blt_Ts_TitleLayout) (const char *string, int length, TextStyle *tsPtr); /* 246 */
+    void (*blt_Ts_UnderlineChars) (Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr, TextStyle *tsPtr, int x, int y); /* 247 */
 } BltTkIntProcs;
 
 #ifdef __cplusplus
@@ -2628,93 +2648,105 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_Ps_SetPrinting \
 	(bltTkIntProcsPtr->blt_Ps_SetPrinting) /* 222 */
 #endif
+#ifndef Blt_Ps_TextLayout
+#define Blt_Ps_TextLayout \
+	(bltTkIntProcsPtr->blt_Ps_TextLayout) /* 223 */
+#endif
+#ifndef Blt_Ps_TextString
+#define Blt_Ps_TextString \
+	(bltTkIntProcsPtr->blt_Ps_TextString) /* 224 */
+#endif
+#ifndef Blt_Ps_GetString
+#define Blt_Ps_GetString \
+	(bltTkIntProcsPtr->blt_Ps_GetString) /* 225 */
+#endif
 #ifndef Blt_DrawText
 #define Blt_DrawText \
-	(bltTkIntProcsPtr->blt_DrawText) /* 223 */
+	(bltTkIntProcsPtr->blt_DrawText) /* 226 */
 #endif
 #ifndef Blt_DrawText2
 #define Blt_DrawText2 \
-	(bltTkIntProcsPtr->blt_DrawText2) /* 224 */
+	(bltTkIntProcsPtr->blt_DrawText2) /* 227 */
 #endif
 #ifndef Blt_DrawTextWithRotatedFont
 #define Blt_DrawTextWithRotatedFont \
-	(bltTkIntProcsPtr->blt_DrawTextWithRotatedFont) /* 225 */
+	(bltTkIntProcsPtr->blt_DrawTextWithRotatedFont) /* 228 */
 #endif
 #ifndef Blt_DrawLayout
 #define Blt_DrawLayout \
-	(bltTkIntProcsPtr->blt_DrawLayout) /* 226 */
+	(bltTkIntProcsPtr->blt_DrawLayout) /* 229 */
 #endif
 #ifndef Blt_GetTextExtents
 #define Blt_GetTextExtents \
-	(bltTkIntProcsPtr->blt_GetTextExtents) /* 227 */
+	(bltTkIntProcsPtr->blt_GetTextExtents) /* 230 */
 #endif
 #ifndef Blt_MeasureText
 #define Blt_MeasureText \
-	(bltTkIntProcsPtr->blt_MeasureText) /* 228 */
+	(bltTkIntProcsPtr->blt_MeasureText) /* 231 */
 #endif
 #ifndef Blt_RotateStartingTextPositions
 #define Blt_RotateStartingTextPositions \
-	(bltTkIntProcsPtr->blt_RotateStartingTextPositions) /* 229 */
+	(bltTkIntProcsPtr->blt_RotateStartingTextPositions) /* 232 */
 #endif
 #ifndef Blt_TkTextLayout_CharBbox
 #define Blt_TkTextLayout_CharBbox \
-	(bltTkIntProcsPtr->blt_TkTextLayout_CharBbox) /* 230 */
+	(bltTkIntProcsPtr->blt_TkTextLayout_CharBbox) /* 233 */
 #endif
 #ifndef Blt_TkTextLayout_Compute
 #define Blt_TkTextLayout_Compute \
-	(bltTkIntProcsPtr->blt_TkTextLayout_Compute) /* 231 */
+	(bltTkIntProcsPtr->blt_TkTextLayout_Compute) /* 234 */
 #endif
 #ifndef Blt_TkTextLayout_Draw
 #define Blt_TkTextLayout_Draw \
-	(bltTkIntProcsPtr->blt_TkTextLayout_Draw) /* 232 */
+	(bltTkIntProcsPtr->blt_TkTextLayout_Draw) /* 235 */
 #endif
 #ifndef Blt_TkTextLayout_Free
 #define Blt_TkTextLayout_Free \
-	(bltTkIntProcsPtr->blt_TkTextLayout_Free) /* 233 */
+	(bltTkIntProcsPtr->blt_TkTextLayout_Free) /* 236 */
 #endif
 #ifndef Blt_TkTextLayout_UnderlineSingleChar
 #define Blt_TkTextLayout_UnderlineSingleChar \
-	(bltTkIntProcsPtr->blt_TkTextLayout_UnderlineSingleChar) /* 234 */
+	(bltTkIntProcsPtr->blt_TkTextLayout_UnderlineSingleChar) /* 237 */
 #endif
 #ifndef Blt_Ts_Bitmap
 #define Blt_Ts_Bitmap \
-	(bltTkIntProcsPtr->blt_Ts_Bitmap) /* 235 */
+	(bltTkIntProcsPtr->blt_Ts_Bitmap) /* 238 */
 #endif
 #ifndef Blt_Ts_CreateLayout
 #define Blt_Ts_CreateLayout \
-	(bltTkIntProcsPtr->blt_Ts_CreateLayout) /* 236 */
+	(bltTkIntProcsPtr->blt_Ts_CreateLayout) /* 239 */
 #endif
 #ifndef Blt_Ts_DrawLayout
 #define Blt_Ts_DrawLayout \
-	(bltTkIntProcsPtr->blt_Ts_DrawLayout) /* 237 */
+	(bltTkIntProcsPtr->blt_Ts_DrawLayout) /* 240 */
 #endif
 #ifndef Blt_Ts_DrawText
 #define Blt_Ts_DrawText \
-	(bltTkIntProcsPtr->blt_Ts_DrawText) /* 238 */
+	(bltTkIntProcsPtr->blt_Ts_DrawText) /* 241 */
 #endif
 #ifndef Blt_Ts_FreeStyle
 #define Blt_Ts_FreeStyle \
-	(bltTkIntProcsPtr->blt_Ts_FreeStyle) /* 239 */
+	(bltTkIntProcsPtr->blt_Ts_FreeStyle) /* 242 */
 #endif
 #ifndef Blt_Ts_GetExtents
 #define Blt_Ts_GetExtents \
-	(bltTkIntProcsPtr->blt_Ts_GetExtents) /* 240 */
+	(bltTkIntProcsPtr->blt_Ts_GetExtents) /* 243 */
 #endif
 #ifndef Blt_Ts_ResetStyle
 #define Blt_Ts_ResetStyle \
-	(bltTkIntProcsPtr->blt_Ts_ResetStyle) /* 241 */
+	(bltTkIntProcsPtr->blt_Ts_ResetStyle) /* 244 */
 #endif
 #ifndef Blt_Ts_SetDrawStyle
 #define Blt_Ts_SetDrawStyle \
-	(bltTkIntProcsPtr->blt_Ts_SetDrawStyle) /* 242 */
+	(bltTkIntProcsPtr->blt_Ts_SetDrawStyle) /* 245 */
 #endif
 #ifndef Blt_Ts_TitleLayout
 #define Blt_Ts_TitleLayout \
-	(bltTkIntProcsPtr->blt_Ts_TitleLayout) /* 243 */
+	(bltTkIntProcsPtr->blt_Ts_TitleLayout) /* 246 */
 #endif
 #ifndef Blt_Ts_UnderlineChars
 #define Blt_Ts_UnderlineChars \
-	(bltTkIntProcsPtr->blt_Ts_UnderlineChars) /* 244 */
+	(bltTkIntProcsPtr->blt_Ts_UnderlineChars) /* 247 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TK_PROCS) */
