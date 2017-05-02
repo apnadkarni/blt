@@ -1515,14 +1515,13 @@ winFontNewFontset(Tk_Font tkFont, const char *fontName, HFONT hFont)
 }
 
     
-static void
+static const char *
 winFontWriteDescription(Tk_Window tkwin, HFONT hFont, int size, 
                         Tcl_DString *resultPtr)
 {
     LOGFONT lf;
     Tcl_DString ds;
     const char *string;
-    int size;
     Tcl_Encoding encoding;
 
     GetObject (hFont, sizeof(LOGFONT), &lf);
@@ -1560,6 +1559,7 @@ winFontWriteDescription(Tk_Window tkwin, HFONT hFont, int size,
 static Blt_Font
 winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size) 
 {
+    Blt_HashEntry *hPtr;
     HFONT hFont;
     Tcl_DString ds;
     _Blt_Font *dupPtr;
@@ -1572,10 +1572,8 @@ winFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     /* Get the base font of the original font. */
     hPtr = Blt_FindHashEntry(&setPtr->fontTable, (char *)0L);
     assert(hPtr != NULL);
-    hFont = Blt_GetHashValue(&setPtr->fontTable, hPtr);
-    if (hFont == NULL) {
-        return NULL;                    /* Can't find 0 degree font. */
-    }
+    hFont = Blt_GetHashKey(&setPtr->fontTable, hPtr);
+    assert (hFont != NULL);
     /* Create a description with the new requested size. */
     name = winFontWriteDescription(tkwin, hFont, size, &ds);
     /* Check if we already have this font. */
