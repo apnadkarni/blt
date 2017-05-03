@@ -5238,8 +5238,7 @@ PanesetInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
 /* ARGSUSED */
 static int
 PanesetCmd(
-    ClientData clientData,              /* Main window associated with
-                                         * interpreter. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,                 /* Current interpreter. */
     int objc,                           /* # of arguments. */
     Tcl_Obj *const *objv)               /* Argument strings. */
@@ -5259,7 +5258,9 @@ PanesetCmd(
      * now so that the variable $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::Paneset::Initialize")) {
-        const char cmd[] = "source [file join $blt_library bltPaneset.tcl]\n";
+        static const  char cmd[] = {
+            "source [file join $blt_library bltPaneset.tcl]\n"
+        };
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             char info[200];
             

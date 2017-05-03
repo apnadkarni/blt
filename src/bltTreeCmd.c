@@ -569,7 +569,7 @@ static Blt_SwitchSpec dumpSwitches[] =
         Blt_Offset(DumpInfo, dataObjPtr), 0, 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
         Blt_Offset(DumpInfo, fileObjPtr), 0, 0},
-    {BLT_SWITCH_DOUBLE, "-version", "versNum", (char *)NULL,
+    {BLT_SWITCH_DOUBLE, "-version", "versionNum", (char *)NULL,
         Blt_Offset(DumpInfo, version), 0, 0},
     {BLT_SWITCH_BITS_NOARG, "-notags", "", (char *)NULL,
         Blt_Offset(DumpInfo, flags), 0, DUMP_NO_TAGS},
@@ -2930,15 +2930,14 @@ ComparePositions(Blt_TreeNode *n1Ptr, Blt_TreeNode *n2Ptr)
 static int
 ParseDumpFileHeader(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
-    Tcl_DString ds;
-    const char *string;
-    double version;
-
     if (restorePtr->channel != NULL) {
+        Tcl_DString ds;
+        const char *string;
+        double version;
         int numChars;
 
-        Tcl_DStringInit(&ds);
         /* Get first line. */
+        Tcl_DStringInit(&ds);
         numChars = Tcl_Gets(restorePtr->channel, &ds);
         if (numChars < 0) {
             if (Tcl_Eof(restorePtr->channel)) {
@@ -2947,31 +2946,37 @@ ParseDumpFileHeader(Tcl_Interp *interp, RestoreInfo *restorePtr)
             return TCL_ERROR;
         }
         string = Tcl_DStringValue(&ds);
-    } else {
-        string = restorePtr->nextLine;
-    }
-    if (strncmp(string, "# V", 3) != 0) {
-        if (restorePtr->channel != NULL) {
+        if (strncmp(string, "# V", 3) != 0) {
             Tcl_Seek(restorePtr->channel, 0, SEEK_SET);
+            Tcl_DStringFree(&ds);
+            return TCL_OK;
+        }
+        if (Tcl_GetDouble(interp, string + 3, &version) != TCL_OK) {
+            Tcl_DStringFree(&ds);
+            return TCL_ERROR;
         }
         Tcl_DStringFree(&ds);
-        return TCL_OK;
-    }
-    if (Tcl_GetDouble(interp, string + 3, &version) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (restorePtr->channel == NULL) {
+        restorePtr->version = version;
+    } else {
         const char *p;
+        const char *string;
+        double version;
+
+        string = restorePtr->nextLine;
+        if (strncmp(string, "# V", 3) != 0) {
+            return TCL_OK;
+        }
+        if (Tcl_GetDouble(interp, string + 3, &version) != TCL_OK) {
+            return TCL_ERROR;
+        }
         for (p = string + 3; *p != '\0' ; p++) {
             if (*p == '\n') {
                 break;
             }
         }
         restorePtr->nextLine = p;
-    } else {
-        Tcl_DStringFree(&ds);
+        restorePtr->version = version;
     }
-    restorePtr->version = version;
     return TCL_OK;
 }
 
@@ -2991,6 +2996,7 @@ ReadNextRecord(Tcl_Interp *interp, RestoreInfo *restorePtr)
         numChars = Tcl_Gets(restorePtr->channel, &ds);
         if (numChars < 0) {
             if (Tcl_Eof(restorePtr->channel)) {
+                Tcl_DStringFree(&ds);
                 return TCL_RETURN;
             }
             return TCL_ERROR;
@@ -3030,7 +3036,7 @@ ReadNextRecord(Tcl_Interp *interp, RestoreInfo *restorePtr)
         Tcl_DStringAppend(&ds, "\n", 1);
     }
     result = Tcl_SplitList(interp, Tcl_DStringValue(&ds), &restorePtr->argc, 
-                           &restorePtr->argv);
+                   &restorePtr->argv);
     Tcl_DStringFree(&ds);
     return result;
 }
@@ -3501,6 +3507,13 @@ RestoreNodeCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
     Blt_TreeNode node;
     long pid, id;
 
+    if (restorePtr->argc != 4) {
+        Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
+                         Tcl_Concat(restorePtr->argc, restorePtr->argv),
+                         "\" should \"n label pid id\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
     if ((Blt_GetLong(interp, restorePtr->argv[2], &pid) != TCL_OK) ||
         (Blt_GetLong(interp, restorePtr->argv[3], &id) != TCL_OK)) {
         return TCL_ERROR;
@@ -3581,11 +3594,19 @@ RestoreNodeCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
  * Side Effects:
  *      New tags are added in the tree.
  *
+ *      t tag
  *---------------------------------------------------------------------------
  */
 static int
 RestoreTagCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
+    if (restorePtr->argc != 2) {
+        Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
+                         Tcl_Concat(restorePtr->argc, restorePtr->argv),
+                         "\" should \"t tag\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
     Blt_Tree_AddTag(restorePtr->tree, restorePtr->node, restorePtr->argv[1]);
     return TCL_OK;
 }
@@ -3624,6 +3645,7 @@ typedef struct _TclList {
  * Side Effects:
  *      New data fields are created.
  *
+ *      d name value
  *---------------------------------------------------------------------------
  */
 static int
@@ -3632,6 +3654,13 @@ RestoreDataCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
     Tcl_Obj *valueObjPtr;
     int result;
 
+    if (restorePtr->argc != 3) {
+        Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
+                         Tcl_Concat(restorePtr->argc, restorePtr->argv),
+                         "\" should \"d name value\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
     valueObjPtr = GetStringObj(restorePtr, restorePtr->argv[2], -1);
     Tcl_IncrRefCount(valueObjPtr);
     result = Blt_Tree_SetValue(interp, restorePtr->tree, restorePtr->node, 
@@ -3673,6 +3702,13 @@ RestoreAppendToListCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
     Tcl_Obj *valueObjPtr;
     int result;
 
+    if (restorePtr->argc != 3) {
+        Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
+                         Tcl_Concat(restorePtr->argc, restorePtr->argv),
+                         "\" should be \"a name value\"", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
     valueObjPtr = GetStringObj(restorePtr, restorePtr->argv[2], -1);
     Tcl_IncrRefCount(valueObjPtr);
     key = Blt_Tree_GetKeyFromNode(restorePtr->node, restorePtr->argv[1]);
