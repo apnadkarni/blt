@@ -1683,7 +1683,7 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
             if ((tokenPtr->id == _COLON) || (tokenPtr->id == _DOT) ||
                 (tokenPtr->id == _COMMA)) {
                 tokenPtr = tokenPtr->nextPtr;
-                if ((tokenPtr->id == _NUMBER)) {
+                if (tokenPtr->id == _NUMBER) {
                     double d;
                     
                     d = pow(10.0, tokenPtr->length);

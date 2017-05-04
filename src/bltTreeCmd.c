@@ -96,7 +96,7 @@ typedef struct {
                                          * notify ids back to their
                                          * Notifier records. */
     Blt_Chain notifiers;
-    Tcl_Obj *defPathSepObjPtr;          /* Path separator. */
+    const char *defPathSep;             /* Path separator. */
 } TreeCmd;
 
 typedef struct {
@@ -607,7 +607,7 @@ static Blt_SwitchSpec positionSwitches[] =
 
 typedef struct {
     unsigned int flags;                 /* Parse flags. */
-    Tcl_Obj *pathSepObjPtr;             /* Path separator. */
+    const char *pathSep;                /* Path separator. */
     Blt_TreeNode root;                  /* Starting node of path. */
 } PathCreateSwitches;
 
@@ -619,14 +619,14 @@ static Blt_SwitchSpec pathCreateSwitches[] =
         Blt_Offset(PathCreateSwitches, flags), 0, PATH_NOCOMPLAIN},
     {BLT_SWITCH_BITS_NOARG, "-parents", "", (char *)NULL,
         Blt_Offset(PathCreateSwitches, flags), 0, PATH_PARENTS},
-    {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
-        Blt_Offset(PathCreateSwitches, pathSepObjPtr), 0}, 
+    {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
+        Blt_Offset(PathCreateSwitches, pathSep), BLT_SWITCH_NULL_OK}, 
     {BLT_SWITCH_END}
 };
 
 typedef struct {
     Blt_TreeNode root;                  /* Starting node of path. */
-    Tcl_Obj *pathSepObjPtr;             /* Path separator. */
+    const char *pathSep;                /* Path separator. */
     unsigned int flags;
 } PathPrintSwitches;
 
@@ -636,8 +636,8 @@ static Blt_SwitchSpec pathPrintSwitches[] =
 {
     {BLT_SWITCH_CUSTOM,  "-from",  "node", (char *)NULL,
         Blt_Offset(PathPrintSwitches, root),  0, 0, &nodeSwitch},
-    {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
-        Blt_Offset(PathPrintSwitches, pathSepObjPtr), 0}, 
+    {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
+        Blt_Offset(PathPrintSwitches, pathSep), BLT_SWITCH_NULL_OK}, 
     {BLT_SWITCH_BITS_NOARG,  "-noleadingseparator", "", (char *)NULL,
         Blt_Offset(PathPrintSwitches, flags),  0, PATH_NO_LEADING_SEPARATOR},
     {BLT_SWITCH_END}
@@ -645,7 +645,7 @@ static Blt_SwitchSpec pathPrintSwitches[] =
 
 typedef struct {
     unsigned int flags;                 /* Parse flags. */
-    Tcl_Obj *pathSepObjPtr;             /* Path separator. */
+    const char *pathSep;                /* Path separator. */
     Blt_TreeNode root;                  /* Starting node of path. */
 } PathParseSwitches;
 
@@ -655,8 +655,8 @@ static Blt_SwitchSpec pathParseSwitches[] =
         Blt_Offset(PathParseSwitches, root),  0, 0, &nodeSwitch},
     {BLT_SWITCH_BITS_NOARG, "-nocomplain", "", (char *)NULL,
         Blt_Offset(PathParseSwitches, flags), 0, PATH_NOCOMPLAIN},
-    {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
-        Blt_Offset(PathParseSwitches, pathSepObjPtr), 0}, 
+    {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
+        Blt_Offset(PathParseSwitches, pathSep), BLT_SWITCH_NULL_OK}, 
     {BLT_SWITCH_END}
 };
 
@@ -1514,12 +1514,8 @@ GetForeignNode(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 static const char *
-SkipSeparators(const char *path, Tcl_Obj *objPtr)
+SkipSeparators(const char *path, const char *sep, int length)
 {
-    const char *sep;
-    int length;
-
-    sep = Tcl_GetStringFromObj(objPtr, &length);
     while ((*path == *sep) && (strncmp(path, sep, length) == 0)) {
         path += length;
     }
@@ -1537,27 +1533,30 @@ SkipSeparators(const char *path, Tcl_Obj *objPtr)
  *---------------------------------------------------------------------------
  */
 static Tcl_Obj *
-SplitPath(Tcl_Interp *interp, Tcl_Obj *objPtr, Tcl_Obj *sepObjPtr)
+SplitPath(Tcl_Interp *interp, Tcl_Obj *pathObjPtr, const char *sep)
 {
     const char *path, *p, *endPtr;
-    const char *sep;
     int sepLen;
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    path = Tcl_GetString(objPtr);
-    sep = Tcl_GetStringFromObj(sepObjPtr, &sepLen);
+    path = Tcl_GetString(pathObjPtr);
+    sepLen = strlen(sep);
 
     /* Skip the first separator. */
-    p = SkipSeparators(path, sepObjPtr);
+    p = SkipSeparators(path, sep, sepLen);
     for (endPtr = strstr(p, sep); ((endPtr != NULL) && (*endPtr != '\0'));
          endPtr = strstr(p, sep)) {
+        Tcl_Obj *objPtr;
+        
         objPtr = Tcl_NewStringObj(p, endPtr - p);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        p = SkipSeparators(endPtr + sepLen, sepObjPtr);
+        p = SkipSeparators(endPtr + sepLen, sep, sepLen);
     }
     /* Pick up last path component */
     if (p[0] != '\0') {
+        Tcl_Obj *objPtr;
+        
         objPtr = Tcl_NewStringObj(p, -1);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
@@ -3112,6 +3111,7 @@ GetStringObj(RestoreInfo *restorePtr, const char *string, int length)
             length = strlen(string);
         }
         objPtr = Tcl_NewStringObj(string, length);
+        Tcl_IncrRefCount(objPtr);
         Blt_SetHashValue(hPtr, objPtr);
         return objPtr;
     }
@@ -3127,14 +3127,18 @@ RestoreValues(RestoreInfo *restorePtr, Tcl_Interp *interp, Blt_TreeNode node,
     for (i = 0; i < numValues; i += 2) {
         Tcl_Obj *valueObjPtr;
         int result;
+        Blt_TreeKey key;
 
         if ((i + 1) < numValues) {
             valueObjPtr = GetStringObj(restorePtr, values[i + 1], -1);
         } else {
             valueObjPtr = Tcl_NewStringObj("", -1);
         }
+        key = Blt_Tree_GetKey(restorePtr->tree, values[i]);
+        /* Increment/decrement tje generated/shared valueObj in case it's the
+         * current value. */
         Tcl_IncrRefCount(valueObjPtr);
-        result = Blt_Tree_SetValue(interp, restorePtr->tree, node, values[i], 
+        result = Blt_Tree_SetValueByKey(interp, restorePtr->tree, node, key, 
                 valueObjPtr);
         Tcl_DecrRefCount(valueObjPtr);
         if (result != TCL_OK) {
@@ -3653,6 +3657,8 @@ RestoreDataCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
     Tcl_Obj *valueObjPtr;
     int result;
+    Blt_TreeKey key;
+    int count;
 
     if (restorePtr->argc != 3) {
         Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
@@ -3661,11 +3667,24 @@ RestoreDataCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
                          (char *)NULL);
         return TCL_ERROR;
     }
+    key = Blt_Tree_GetKey(restorePtr->tree, restorePtr->argv[1]);
+    count = 2;
+    while (Blt_Tree_ValueExistsByKey(restorePtr->tree, restorePtr->node, key)) {
+        char string[200];
+        
+        sprintf(string, "%s#%d", restorePtr->argv[1], count);
+        count++;
+        key = Blt_Tree_GetKey(restorePtr->tree, string);
+    }
     valueObjPtr = GetStringObj(restorePtr, restorePtr->argv[2], -1);
-    Tcl_IncrRefCount(valueObjPtr);
-    result = Blt_Tree_SetValue(interp, restorePtr->tree, restorePtr->node, 
-        restorePtr->argv[1], valueObjPtr);
-    Tcl_DecrRefCount(valueObjPtr);
+    fprintf(stderr, "before value=%x (%s), refCount=%d\n", valueObjPtr,
+            restorePtr->argv[2],
+            valueObjPtr->refCount);
+    result = Blt_Tree_SetValueByKey(interp, restorePtr->tree, restorePtr->node, 
+        key, valueObjPtr);
+    fprintf(stderr, "after value=%x (%s), refCount=%d\n", valueObjPtr,
+            Tcl_GetString(valueObjPtr),
+            valueObjPtr->refCount);
     return result;
 }
 
@@ -3701,7 +3720,7 @@ RestoreAppendToListCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
     Blt_TreeKey key;
     Tcl_Obj *valueObjPtr;
     int result;
-
+    
     if (restorePtr->argc != 3) {
         Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
                          Tcl_Concat(restorePtr->argc, restorePtr->argv),
@@ -3709,12 +3728,16 @@ RestoreAppendToListCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
                          (char *)NULL);
         return TCL_ERROR;
     }
+    key = Blt_Tree_GetKey(restorePtr->tree, restorePtr->argv[1]);
     valueObjPtr = GetStringObj(restorePtr, restorePtr->argv[2], -1);
-    Tcl_IncrRefCount(valueObjPtr);
-    key = Blt_Tree_GetKeyFromNode(restorePtr->node, restorePtr->argv[1]);
+    fprintf(stderr, "before value=%x (%s), refCount=%d\n", valueObjPtr,
+            restorePtr->argv[2],
+            valueObjPtr->refCount);
     result = Blt_Tree_ListAppendValueByKey(interp, restorePtr->tree, 
         restorePtr->node, key, valueObjPtr);
-    Tcl_DecrRefCount(valueObjPtr);
+    fprintf(stderr, "after value=%x (%s), refCount=%d\n", valueObjPtr,
+            Tcl_GetString(valueObjPtr),
+            valueObjPtr->refCount);
     return result;
 }
 
@@ -5664,7 +5687,7 @@ ListIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_TreeNode node;
     Tcl_Obj *valueObjPtr, *objPtr;
     TreeCmd *cmdPtr = clientData;
-    const char *key;
+    Blt_TreeKey key;
     int index;
 
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
@@ -5701,7 +5724,7 @@ ListLengthOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_TreeNode node;
     Tcl_Obj *valueObjPtr;
     TreeCmd *cmdPtr = clientData;
-    const char *key;
+    Blt_TreeKey key;
     int length;
 
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
@@ -6216,21 +6239,19 @@ PathCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* Process switches  */
     memset(&switches, 0, sizeof(switches));
     switches.root = Blt_Tree_RootNode(cmdPtr->tree);
-    switches.pathSepObjPtr = cmdPtr->defPathSepObjPtr;
-    if (switches.pathSepObjPtr != NULL) {
-        Tcl_IncrRefCount(switches.pathSepObjPtr);
+    if (cmdPtr->defPathSep != NULL) {
+        switches.pathSep = Blt_AssertStrdup(cmdPtr->defPathSep);
     }
     if (Blt_ParseSwitches(interp, pathCreateSwitches, objc - 4, objv + 4, 
                           &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
     parent = switches.root;
-    if ((switches.pathSepObjPtr == NULL) || 
-        (Tcl_GetString(switches.pathSepObjPtr)[0] == '\0')) {
+    if ((switches.pathSep == NULL) || (switches.pathSep[0] == '\0')) {
         listObjPtr = NULL;
         result = Tcl_ListObjGetElements(interp, objv[3], &numElems, &elems);
     } else {
-        listObjPtr = SplitPath(interp, objv[3], switches.pathSepObjPtr);
+        listObjPtr = SplitPath(interp, objv[3], switches.pathSep);
         result = Tcl_ListObjGetElements(interp, listObjPtr, &numElems, &elems);
     }
     if (result != TCL_OK) {
@@ -6329,20 +6350,18 @@ PathParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
     nodeSwitch.clientData = cmdPtr->tree;
     memset(&switches, 0, sizeof(switches));
     switches.root = Blt_Tree_RootNode(cmdPtr->tree);
-    switches.pathSepObjPtr = cmdPtr->defPathSepObjPtr;
-    if (switches.pathSepObjPtr != NULL) {
-        Tcl_IncrRefCount(switches.pathSepObjPtr);
+    if (cmdPtr->defPathSep != NULL) {
+        switches.pathSep = Blt_AssertStrdup(cmdPtr->defPathSep);
     }
     if (Blt_ParseSwitches(interp, pathParseSwitches, objc - 4, objv + 4, 
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    if ((switches.pathSepObjPtr == NULL) || 
-        (Tcl_GetString(switches.pathSepObjPtr)[0] == '\0')) {
+    if ((switches.pathSep == NULL) || (switches.pathSep[0] == '\0')) {
         listObjPtr = NULL;
         result = Tcl_ListObjGetElements(interp, objv[3], &numElems, &elems);
     } else {
-        listObjPtr = SplitPath(interp, objv[3], switches.pathSepObjPtr);
+        listObjPtr = SplitPath(interp, objv[3], switches.pathSep);
         result = Tcl_ListObjGetElements(interp, listObjPtr, &numElems, &elems);
     }
     if (result != TCL_OK) {
@@ -6430,7 +6449,6 @@ PathPrintOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PathPrintSwitches switches;
     Tcl_DString ds;
     TreeCmd *cmdPtr = clientData;
-    const char *pathSeparator;
     int flags;
 
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[3], &node)
@@ -6439,26 +6457,23 @@ PathPrintOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     /* Process switches  */
     memset(&switches, 0, sizeof(switches));
-    switches.pathSepObjPtr = cmdPtr->defPathSepObjPtr;
-    if (switches.pathSepObjPtr != NULL) {
-        Tcl_IncrRefCount(switches.pathSepObjPtr);
-    }
     switches.root = Blt_Tree_RootNode(cmdPtr->tree);
+    if (cmdPtr->defPathSep != NULL) {
+        switches.pathSep = Blt_AssertStrdup(cmdPtr->defPathSep);
+    }
     if (Blt_ParseSwitches(interp, pathPrintSwitches, objc - 4, objv + 4, 
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
     Tcl_DStringInit(&ds);
     flags = 0;
-    pathSeparator = NULL;
-    if (switches.pathSepObjPtr != NULL) {
+    if ((switches.pathSep != NULL) && (switches.pathSep[0] != '\0')) {
         flags = TREE_INCLUDE_ROOT;
-        pathSeparator = Tcl_GetString(switches.pathSepObjPtr);
     }
     if (switches.flags & PATH_NO_LEADING_SEPARATOR) {
         flags = 0;
     }
-    Blt_Tree_NodeRelativePath(switches.root, node, pathSeparator, flags, &ds);
+    Blt_Tree_NodeRelativePath(switches.root, node, switches.pathSep, flags,&ds);
     Tcl_DStringResult(interp, &ds);
     Blt_FreeSwitches(pathPrintSwitches, (char *)&switches, 0);
     return TCL_OK;
@@ -6484,20 +6499,19 @@ PathSeparatorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (objc == 4) { 
         int length;
-
-        if (cmdPtr->defPathSepObjPtr != NULL) {
-            Tcl_DecrRefCount(cmdPtr->defPathSepObjPtr);
-            cmdPtr->defPathSepObjPtr = NULL;
+        const char *string;
+        
+        if (cmdPtr->defPathSep != NULL) {
+            Blt_Free(cmdPtr->defPathSep);
+            cmdPtr->defPathSep = NULL;
         }
-        Tcl_GetStringFromObj(objv[3], &length);
+        string = Tcl_GetStringFromObj(objv[3], &length);
         if (length > 0) {
-            cmdPtr->defPathSepObjPtr = objv[3];
-            Tcl_IncrRefCount(cmdPtr->defPathSepObjPtr);
+            cmdPtr->defPathSep = Blt_AssertStrdup(string);
         }
     }
-    if (cmdPtr->defPathSepObjPtr != NULL) {
-        Tcl_IncrRefCount(cmdPtr->defPathSepObjPtr);
-        Tcl_SetObjResult(interp, cmdPtr->defPathSepObjPtr);
+    if (cmdPtr->defPathSep != NULL) {
+        Tcl_SetStringObj(Tcl_GetObjResult(interp), cmdPtr->defPathSep, -1);
     }
     return TCL_OK;
 }
@@ -7138,13 +7152,13 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeCmd *cmdPtr = clientData;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    objPtr = Tcl_NewStringObj("all", -1);
+    objPtr = Tcl_NewStringObj("all", 3);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     if (objc == 3) {
         Blt_HashEntry *hPtr;
         Blt_HashSearch iter;
 
-        objPtr = Tcl_NewStringObj("root", -1);
+        objPtr = Tcl_NewStringObj("root", 4);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         for (hPtr = Blt_Tree_FirstTag(cmdPtr->tree, &iter); hPtr != NULL; 
              hPtr = Blt_NextHashEntry(&iter)) {
@@ -7921,8 +7935,8 @@ TreeInstDeleteProc(ClientData clientData)
     Blt_Chain_Destroy(cmdPtr->notifiers);
     Blt_DeleteHashTable(&cmdPtr->notifyTable);
     Blt_DeleteHashTable(&cmdPtr->traceTable);
-    if (cmdPtr->defPathSepObjPtr != NULL) {
-        Tcl_DecrRefCount(cmdPtr->defPathSepObjPtr);
+    if (cmdPtr->defPathSep != NULL) {
+        Blt_Free(cmdPtr->defPathSep);
     }
     Blt_Free(cmdPtr);
 }
