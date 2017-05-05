@@ -2343,8 +2343,6 @@ Blt_Tree_SetValueByKey(Tcl_Interp *interp, Tree *treePtr,
         return TCL_ERROR;
     }
     /* Increment the new value, before decrementing the old. */
-    fprintf(stderr, "node=%ld, key=%s new obj=%x %d (%s), old=%x %d\n",
-            nodePtr->inode, key, valueObjPtr, valueObjPtr->refCount, Tcl_GetString(valueObjPtr), valuePtr->objPtr, (valuePtr->objPtr == NULL) ? -1 : valuePtr->objPtr->refCount);
     Tcl_IncrRefCount(valueObjPtr);
     if (valuePtr->objPtr != NULL) {
         Tcl_DecrRefCount(valuePtr->objPtr);

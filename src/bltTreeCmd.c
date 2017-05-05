@@ -497,6 +497,8 @@ static Blt_SwitchSpec copySwitches[] =
         Blt_Offset(CopySwitches, flags), 0, COPY_TAGS},
     {BLT_SWITCH_BITS_NOARG, "-overwrite", "", (char *)NULL,
         Blt_Offset(CopySwitches, flags), 0, COPY_OVERWRITE},
+    {BLT_SWITCH_OBJ, "-tree", "", (char *)NULL,
+        Blt_Offset(CopySwitches, destTree), 0},
     {BLT_SWITCH_END}
 };
 
@@ -1683,15 +1685,15 @@ SetValues(TreeCmd *cmdPtr, Blt_TreeNode node, int objc, Tcl_Obj *const *objv)
     int i;
 
     for (i = 0; i < objc; i += 2) {
-        const char *string;
-        
-        string = Tcl_GetString(objv[i]);
+        Blt_TreeKey key;
+
         if ((i + 1) == objc) {
             Tcl_AppendResult(cmdPtr->interp, "missing value for field \"", 
-                string, "\"", (char *)NULL);
+                             Tcl_GetString(objv[i]), "\"", (char *)NULL);
             return TCL_ERROR;
         }
-        if (Blt_Tree_SetValue(cmdPtr->interp, cmdPtr->tree, node, string, 
+        key = Blt_Tree_GetKey(cmdPtr->tree, Tcl_GetString(objv[i]));
+        if (Blt_Tree_SetValueByKey(cmdPtr->interp, cmdPtr->tree, node, key, 
                              objv[i + 1]) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -3111,7 +3113,6 @@ GetStringObj(RestoreInfo *restorePtr, const char *string, int length)
             length = strlen(string);
         }
         objPtr = Tcl_NewStringObj(string, length);
-        Tcl_IncrRefCount(objPtr);
         Blt_SetHashValue(hPtr, objPtr);
         return objPtr;
     }
@@ -3512,10 +3513,13 @@ RestoreNodeCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
     long pid, id;
 
     if (restorePtr->argc != 4) {
-        Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
-                         Tcl_Concat(restorePtr->argc, restorePtr->argv),
-                         "\" should \"n label pid id\"", 
-                         (char *)NULL);
+        const char *cmdString;
+
+        cmdString = Tcl_Concat(restorePtr->argc, restorePtr->argv);
+        Tcl_AppendResult(interp, "line ", Blt_Itoa(restorePtr->numLines), ": ",
+                "wrong # args in restore node command: \"", cmdString, 
+                "\" should be \"n label pid id\"", (char *)NULL);
+        Tcl_Free((char *)cmdString);
         return TCL_ERROR;
     }
     if ((Blt_GetLong(interp, restorePtr->argv[2], &pid) != TCL_OK) ||
@@ -3605,10 +3609,13 @@ static int
 RestoreTagCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
     if (restorePtr->argc != 2) {
-        Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
-                         Tcl_Concat(restorePtr->argc, restorePtr->argv),
-                         "\" should \"t tag\"", 
-                         (char *)NULL);
+        const char *cmdString;
+
+        cmdString = Tcl_Concat(restorePtr->argc, restorePtr->argv);
+        Tcl_AppendResult(interp, "line ", Blt_Itoa(restorePtr->numLines), ": ",
+                "wrong # args in restore tag command: \"", cmdString, 
+                "\" should be \"t tag\"", (char *)NULL);
+        Tcl_Free((char *)cmdString);
         return TCL_ERROR;
     }
     Blt_Tree_AddTag(restorePtr->tree, restorePtr->node, restorePtr->argv[1]);
@@ -3661,10 +3668,13 @@ RestoreDataCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
     int count;
 
     if (restorePtr->argc != 3) {
-        Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
-                         Tcl_Concat(restorePtr->argc, restorePtr->argv),
-                         "\" should \"d name value\"", 
-                         (char *)NULL);
+        const char *cmdString;
+
+        cmdString = Tcl_Concat(restorePtr->argc, restorePtr->argv);
+        Tcl_AppendResult(interp, "line ", Blt_Itoa(restorePtr->numLines), ": ",
+                "wrong # args in restore data command: \"", cmdString, 
+                "\" should be \"d name value\"", (char *)NULL);
+        Tcl_Free((char *)cmdString);
         return TCL_ERROR;
     }
     key = Blt_Tree_GetKey(restorePtr->tree, restorePtr->argv[1]);
@@ -3677,14 +3687,8 @@ RestoreDataCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
         key = Blt_Tree_GetKey(restorePtr->tree, string);
     }
     valueObjPtr = GetStringObj(restorePtr, restorePtr->argv[2], -1);
-    fprintf(stderr, "before value=%x (%s), refCount=%d\n", valueObjPtr,
-            restorePtr->argv[2],
-            valueObjPtr->refCount);
     result = Blt_Tree_SetValueByKey(interp, restorePtr->tree, restorePtr->node, 
         key, valueObjPtr);
-    fprintf(stderr, "after value=%x (%s), refCount=%d\n", valueObjPtr,
-            Tcl_GetString(valueObjPtr),
-            valueObjPtr->refCount);
     return result;
 }
 
@@ -3719,26 +3723,21 @@ RestoreAppendToListCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
     Blt_TreeKey key;
     Tcl_Obj *valueObjPtr;
-    int result;
     
     if (restorePtr->argc != 3) {
-        Tcl_AppendResult(interp, "Restore error: wrong # args: \"", 
-                         Tcl_Concat(restorePtr->argc, restorePtr->argv),
-                         "\" should be \"a name value\"", 
-                         (char *)NULL);
+        const char *cmdString;
+
+        cmdString = Tcl_Concat(restorePtr->argc, restorePtr->argv);
+        Tcl_AppendResult(interp, "line ", Blt_Itoa(restorePtr->numLines), ": ",
+                "wrong # args in restore append command: \"", cmdString, 
+                "\" should be \"a name value\"", (char *)NULL);
+        Tcl_Free((char *)cmdString);
         return TCL_ERROR;
     }
     key = Blt_Tree_GetKey(restorePtr->tree, restorePtr->argv[1]);
     valueObjPtr = GetStringObj(restorePtr, restorePtr->argv[2], -1);
-    fprintf(stderr, "before value=%x (%s), refCount=%d\n", valueObjPtr,
-            restorePtr->argv[2],
-            valueObjPtr->refCount);
-    result = Blt_Tree_ListAppendValueByKey(interp, restorePtr->tree, 
+    return Blt_Tree_ListAppendValueByKey(interp, restorePtr->tree, 
         restorePtr->node, key, valueObjPtr);
-    fprintf(stderr, "after value=%x (%s), refCount=%d\n", valueObjPtr,
-            Tcl_GetString(valueObjPtr),
-            valueObjPtr->refCount);
-    return result;
 }
 
 static int
@@ -4154,6 +4153,57 @@ DumpTree(Tcl_Interp *interp, DumpInfo *dumpPtr)
     return TCL_OK;
 }
 
+static int
+ReplaceNode(TreeCmd *cmdPtr, Blt_TreeNode srcNode, Blt_TreeNode destNode)
+{
+    const char *label;
+    Blt_TreeKey key;
+    Blt_TreeKeyIterator keyIter;
+    Blt_HashSearch iter;
+    Blt_HashEntry *hPtr;
+
+    label = Blt_Tree_NodeLabel(srcNode);
+    Blt_Tree_RelabelNode(cmdPtr->tree, destNode, label);
+    
+    /* First unset all the values in the destination. */
+    for (key = Blt_Tree_FirstKey(cmdPtr->tree, destNode, &keyIter); key != NULL;
+         key = Blt_Tree_NextKey(cmdPtr->tree, &keyIter)) {
+        if (Blt_Tree_UnsetValueByKey(cmdPtr->interp, cmdPtr->tree, destNode, 
+                 key) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    /* Now copy the source node's data fields to the destination. */
+    for (key = Blt_Tree_FirstKey(cmdPtr->tree, srcNode, &keyIter); key != NULL; 
+        key = Blt_Tree_NextKey(cmdPtr->tree, &keyIter)) {
+        Tcl_Obj *valueObjPtr;
+        
+        if (Blt_Tree_GetValueByKey(cmdPtr->interp, cmdPtr->tree, srcNode, key, 
+                &valueObjPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (Blt_Tree_SetValueByKey(cmdPtr->interp, cmdPtr->tree, destNode, key,
+                                   valueObjPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    Blt_Tree_ClearTags(cmdPtr->tree, destNode);
+    /* Add tags to destination node. */
+    for (hPtr = Blt_Tree_FirstTag(cmdPtr->tree, &iter); hPtr != NULL; 
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Blt_HashEntry *h2Ptr;
+        Blt_TreeTagEntry *tPtr;
+
+        tPtr = Blt_GetHashValue(hPtr);
+        h2Ptr = Blt_FindHashEntry(&tPtr->nodeTable, (char *)srcNode);
+        if (h2Ptr == NULL) {
+            continue;
+        }
+        Blt_Tree_AddTag(cmdPtr->tree, destNode, tPtr->tagName);
+    }
+    return TCL_OK;
+}
+
 /* Tree command operations. */
 
 /*
@@ -4282,7 +4332,8 @@ AncestorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * AppendOp --
  *
- *      $tree append $node "field" value value value 
+ *     treeName append nodeName fieldName ?value ...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -4506,7 +4557,7 @@ CopyNodes(
  *
  * CopyOp --
  * 
- *      t0 copy node tree node 
+ *      treeName copy parentNode srcNode ?switches ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4739,8 +4790,8 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DepthOp --
  *
- *      $tree depth
- *      $tree depth $node
+ *      treeName depth
+ *      treeName depth nodeName
  *
  *---------------------------------------------------------------------------
  */
@@ -5323,6 +5374,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InsertOp --
  *
+ *      treeName insert parentNode ?switches ...?
  *---------------------------------------------------------------------------
  */
 static int
@@ -5427,7 +5479,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsAncestorOp --
  *
- *      $tree isancestor $node $parent
+ *      treeName isancestor nodeName $parent
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5455,7 +5507,7 @@ IsAncestorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsBeforeOp --
  *
- *      $tree isbefore $node1 $node2
+ *      treeName isbefore nodeName1 nodeName2
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5483,7 +5535,7 @@ IsBeforeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsLeafOp --
  *
- *      $tree isleaf $node
+ *      treeName isleaf nodeName
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5507,7 +5559,7 @@ IsLeafOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsRootOp --
  *
- *      $tree isroot $node
+ *      treeName isroot nodeName
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5615,7 +5667,8 @@ LabelOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ListAppendOp --
  *
- *      $tree lappend $node "field" value value value 
+ *      treeName lappend nodeName fieldName ?value ...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -6723,6 +6776,38 @@ PrevSiblingOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ReplaceOp --
+ * 
+ *      treeName replace destNode srcNode ?switches ...?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    Blt_TreeNode destNode, srcNode;
+    TreeCmd *cmdPtr = clientData;
+    
+    if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &destNode)
+        != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[3], &srcNode)
+        != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (destNode == srcNode) {
+        return TCL_OK;
+    }
+    return ReplaceNode(cmdPtr, srcNode, destNode);
+
 }
 
 /*
@@ -7878,7 +7963,8 @@ static Blt_OpSpec treeOps[] =
     {"position",    2, PositionOp,    3, 0, "?switches ...? nodeName..."},
     {"previous",    5, PreviousOp,    3, 3, "nodeName"},
     {"prevsibling", 5, PrevSiblingOp, 3, 3, "nodeName"},
-    {"restore",     2, RestoreOp,     3, 0, "nodeName ?switches ...?"},
+    {"replace",     3, ReplaceOp,     4, 4, "nodeName destNode"},
+    {"restore",     3, RestoreOp,     3, 0, "nodeName ?switches ...?"},
     {"root",        2, RootOp,        2, 2, ""},
     {"set",         2, SetOp,         3, 0, "nodeName ?fieldName value ...?"},
     {"size",        2, SizeOp,        3, 3, "nodeName"},
