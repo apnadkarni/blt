@@ -740,6 +740,57 @@ static Blt_SwitchSpec childrenSwitches[] = {
 };
 
 typedef struct {
+    unsigned int flags;
+} CloseSwitches;
+
+#define CLOSE_RECURSE     (1<<0)
+
+static Blt_SwitchSpec closeSwitches[] = 
+{
+    {BLT_SWITCH_BITS_NOARG, "-recurse", "", (char *)NULL,
+        Blt_Offset(CloseSwitches, flags), 0, CLOSE_RECURSE},
+    {BLT_SWITCH_END}
+};
+
+
+typedef struct {
+    unsigned int flags;
+    Entry *fromPtr;
+} IndexSwitches;
+
+#define INDEX_USE_PATH  (1<<0)
+
+static Blt_SwitchParseProc EntrySwitchProc;
+static Blt_SwitchCustom entrySwitch = {
+    EntrySwitchProc, NULL, NULL, (ClientData)0,
+};
+
+static Blt_SwitchSpec indexSwitches[] = 
+{
+    {BLT_SWITCH_BITS_NOARG, "-path", "", (char *)NULL,
+        Blt_Offset(IndexSwitches, flags), 0, INDEX_USE_PATH},
+    {BLT_SWITCH_CUSTOM, "-from", "entryName", (char *)NULL,
+        Blt_Offset(IndexSwitches, fromPtr), 0, 0, &entrySwitch},
+    {BLT_SWITCH_END}
+};
+
+
+typedef struct {
+    unsigned int flags;
+    int insertPos;
+    Entry *rootPtr;
+} InsertSwitches;
+
+static Blt_SwitchSpec insertSwitches[] = 
+{
+    {BLT_SWITCH_INT, "-at", "position", (char *)NULL,
+        Blt_Offset(InsertSwitches, insertPos), 0},
+    {BLT_SWITCH_CUSTOM, "-root", "entryName", (char *)NULL,
+        Blt_Offset(InsertSwitches, rootPtr), 0, 0, &entrySwitch},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
     int flags;
 } NearestSwitches;
 
@@ -757,6 +808,19 @@ static Blt_SwitchSpec nearestColumnSwitches[] = {
 static Blt_SwitchSpec nearestEntrySwitches[] = {
     {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
         Blt_Offset(NearestSwitches, flags), 0, NEAREST_ROOT},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    unsigned int flags;
+} OpenSwitches;
+
+#define OPEN_RECURSE     (1<<0)
+
+static Blt_SwitchSpec openSwitches[] = 
+{
+    {BLT_SWITCH_BITS_NOARG, "-recurse", "", (char *)NULL,
+        Blt_Offset(OpenSwitches, flags), 0, OPEN_RECURSE},
     {BLT_SWITCH_END}
 };
 
@@ -780,6 +844,9 @@ static Tk_SelectionProc SelectionProc;
 static int ComputeVisibleEntries(TreeView *viewPtr);
 static void UpdateView(TreeView *viewPtr);
 static void DrawRule(TreeView *viewPtr, Column *colPtr, Drawable drawable);
+
+static int GetEntryFromObj(Tcl_Interp *interp, TreeView *viewPtr, 
+        Tcl_Obj *objPtr, Entry **entryPtrPtr);
 
 /*
  *---------------------------------------------------------------------------
@@ -2117,6 +2184,34 @@ FreeTreeProc(ClientData clientData, Display *display, char *widgRec, int offset)
         Blt_Tree_Close(*treePtr);
         *treePtr = NULL;
     }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * EntrySwitchProc --
+ *
+ *      Convert a Tcl_Obj representing a node number into its integer
+ *      value.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+EntrySwitchProc(ClientData clientData, Tcl_Interp *interp, 
+               const char *switchName, Tcl_Obj *objPtr, char *record,
+               int offset, int flags) 
+{
+    Entry **entryPtrPtr = (Entry **)(record + offset);
+    TreeView *viewPtr = clientData;
+
+    if (GetEntryFromObj(interp, viewPtr, objPtr, entryPtrPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    return TCL_OK;
 }
 
 /*
@@ -3775,28 +3870,6 @@ Apply(
 /*
  *---------------------------------------------------------------------------
  *
- * SkipSeparators --
- *
- *      Moves the character pointer past one of more separators.
- *
- * Results:
- *      Returns the updates character pointer.
- *
- *---------------------------------------------------------------------------
- */
-static const char *
-SkipSeparators(const char *path, const char *separator, int length)
-{
-    while ((path[0] == separator[0]) && 
-           (strncmp(path, separator, length) == 0)) {
-        path += length;
-    }
-    return path;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * DeleteNode --
  *
  *      Delete the node and its descendants.  Don't remove the root node,
@@ -3824,6 +3897,52 @@ DeleteNode(TreeView *viewPtr, Blt_TreeNode node)
     } else if (Blt_Tree_IsAncestor(root, node)) {
         Blt_Tree_DeleteNode(viewPtr->tree, node);
     }
+}
+
+static Tcl_Obj *
+TrimPathObj(TreeView *viewPtr, Tcl_Obj *objPtr)
+{
+    if (viewPtr->trimLeft != NULL) {
+        const char *path;
+        const char *s1, *s2;
+
+        /* Trim off characters that we don't want */
+        path = Tcl_GetString(objPtr);
+        /* Trim off leading character string if one exists. */
+        for (s1 = path, s2 = viewPtr->trimLeft; *s2 != '\0'; s2++, s1++) {
+            if (*s1 != *s2) {
+                break;
+            }
+        }
+        if (*s2 == '\0') {
+            return Tcl_NewStringObj(s1, s1 - path);
+        }
+    }
+    Tcl_IncrRefCount(objPtr);
+    return objPtr;
+}
+
+#ifdef notdef
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SkipSeparators --
+ *
+ *      Moves the character pointer past one of more separators.
+ *
+ * Results:
+ *      Returns the updates character pointer.
+ *
+ *---------------------------------------------------------------------------
+ */
+static const char *
+SkipSeparators(const char *path, const char *separator, int length)
+{
+    while ((path[0] == separator[0]) && 
+           (strncmp(path, separator, length) == 0)) {
+        path += length;
+    }
+    return path;
 }
 
 /*
@@ -3891,6 +4010,70 @@ SplitPath(TreeView *viewPtr, const char *path, long *depthPtr,
     *depthPtr = depth;
     *listPtr = list;
     return TCL_OK;
+}
+#endif
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SkipSeparators --
+ *
+ *      Moves the character pointer past one of more separators.
+ *
+ * Results:
+ *      Returns the updates character pointer.
+ *
+ *---------------------------------------------------------------------------
+ */
+static const char *
+SkipSeparators(const char *path, const char *sep, int length)
+{
+    while ((*path == *sep) && (strncmp(path, sep, length) == 0)) {
+        path += length;
+    }
+    return path;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SplitPath --
+ *
+ *      Returns a Tcl_Obj list of the path components.  Trailing and
+ *      multiple separators are ignored.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Tcl_Obj *
+SplitPath(Tcl_Interp *interp, Tcl_Obj *pathObjPtr, const char *sep)
+{
+    const char *path, *p, *endPtr;
+    int sepLen;
+    Tcl_Obj *listObjPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    path = Tcl_GetString(pathObjPtr);
+    sepLen = strlen(sep);
+
+    /* Skip the first separator. */
+    p = SkipSeparators(path, sep, sepLen);
+    for (endPtr = strstr(p, sep); ((endPtr != NULL) && (*endPtr != '\0'));
+         endPtr = strstr(p, sep)) {
+        Tcl_Obj *objPtr;
+        
+        objPtr = Tcl_NewStringObj(p, endPtr - p);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        p = SkipSeparators(endPtr + sepLen, sep, sepLen);
+    }
+    /* Pick up last path component */
+    if (p[0] != '\0') {
+        Tcl_Obj *objPtr;
+        
+        objPtr = Tcl_NewStringObj(p, -1);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    return listObjPtr;
 }
 
 
@@ -4012,62 +4195,68 @@ MapAncestorsApplyProc(TreeView *viewPtr, Entry *entryPtr)
  *---------------------------------------------------------------------------
  */
 static Entry *
-FindPath(TreeView *viewPtr, Entry *rootPtr, const char *path)
+FindPath(Tcl_Interp *interp, TreeView *viewPtr, Entry *rootPtr, Tcl_Obj *objPtr)
 {
-    const char **argv;
-    const char *name;
-    long numComp;
-    const char **p;
-    Entry *entryPtr;
+    const char *name, *path;
+    int numElems, result, i;
+    Tcl_Obj **elems;
+    Entry *entryPtr, *parentPtr;
+    Tcl_Obj *listObjPtr;
+    int length;
 
-    /* Trim off characters that we don't want */
-    if (viewPtr->trimLeft != NULL) {
-        const char *s1, *s2;
-        
-        /* Trim off leading character string if one exists. */
-        for (s1 = path, s2 = viewPtr->trimLeft; *s2 != '\0'; s2++, s1++) {
-            if (*s1 != *s2) {
-                break;
-            }
-        }
-        if (*s2 == '\0') {
-            path = s1;
-        }
-    }
-    if (*path == '\0') {
+    path = Tcl_GetStringFromObj(objPtr, &length);
+    if (length == 0) {
         return rootPtr;
     }
     name = path;
-    entryPtr = rootPtr;
+    objPtr = TrimPathObj(viewPtr, objPtr);
+    parentPtr = rootPtr;
     if (viewPtr->pathSep == SEPARATOR_NONE) {
-        entryPtr = FindChild(entryPtr, name);
+        entryPtr = FindChild(parentPtr, name);
         if (entryPtr == NULL) {
             goto error;
         }
         return entryPtr;
     }
-
-    if (SplitPath(viewPtr, path, &numComp, &argv) != TCL_OK) {
-        return NULL;
+    if ((viewPtr->pathSep == SEPARATOR_NONE) || (viewPtr->pathSep[0] == '\0')) {
+        listObjPtr = NULL;
+        result = Tcl_ListObjGetElements(interp, objPtr, &numElems, &elems);
+    } else {
+        listObjPtr = SplitPath(interp, objPtr, viewPtr->pathSep);
+        result = Tcl_ListObjGetElements(interp, listObjPtr, &numElems, &elems);
     }
-    for (p = argv; *p != NULL; p++) {
-        name = *p;
-        entryPtr = FindChild(entryPtr, name);
+    if (result != TCL_OK) {
+        goto error;
+    }
+    for (i = 0; i < numElems; i++) {
+        const char *name;
+
+        name = Tcl_GetString(elems[i]);
+        entryPtr = FindChild(parentPtr, name);
         if (entryPtr == NULL) {
-            Tcl_Free((char *)argv);
             goto error;
         }
+        parentPtr = entryPtr;
     }
-    Tcl_Free((char *)argv);
+    if (listObjPtr != NULL) {
+        Tcl_DecrRefCount(listObjPtr);
+    }
+    Tcl_DecrRefCount(objPtr);
     return entryPtr;
  error:
+    if (listObjPtr != NULL) {
+        Tcl_DecrRefCount(listObjPtr);
+    }
+    Tcl_DecrRefCount(objPtr);
     {
         Tcl_DString ds;
-
-        GetPathFromRoot(viewPtr, entryPtr, FALSE, &ds);
-        Tcl_AppendResult(viewPtr->interp, "can't find node \"", name,
-                 "\" in parent node \"", Tcl_DStringValue(&ds), "\"", 
-                (char *)NULL);
+        
+        Tcl_DStringInit(&ds);
+        GetPathFromRoot(viewPtr, parentPtr, FALSE, &ds);
+        Tcl_AppendResult(interp, "can't find parent node \"", 
+                         name, "\" in \"", 
+                         Tcl_DStringValue(&ds), "\"", 
+                         "\"", (char *)NULL);
         Tcl_DStringFree(&ds);
     }
     return NULL;
@@ -4419,7 +4608,9 @@ GetEntryIterator(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr,
     Blt_TreeNode node;
     Blt_TreeIterator iter;
     
+#ifdef notdef
     viewPtr->fromPtr = NULL;
+#endif
     iterPtr->viewPtr = viewPtr;
     if (GetEntryFromSpecialId(viewPtr, objPtr, &entryPtr) == TCL_OK) {
         iterPtr->entryPtr = entryPtr;
@@ -4961,7 +5152,7 @@ NewEntry(TreeView *viewPtr, Blt_TreeNode node, Entry *parentPtr)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static Entry *
 CreateEntry(
     TreeView *viewPtr,
     Blt_TreeNode node,                  /* Node that has just been
@@ -4992,7 +5183,7 @@ CreateEntry(
         entryPtr = NewEntry(viewPtr, node, parentPtr);
         if (ConfigureEntry(viewPtr, entryPtr, objc, objv, flags) != TCL_OK) {
             DestroyEntry(entryPtr);
-            return TCL_ERROR;               /* Error configuring the entry. */
+            return NULL;                /* Error configuring the entry. */
         }
     } else {
         entryPtr = Blt_GetHashValue(hPtr);
@@ -5003,9 +5194,8 @@ CreateEntry(
         viewPtr->flags |= SORT_PENDING;
     }
     EventuallyRedraw(viewPtr);
-    return TCL_OK;
+    return entryPtr;
 }
-
 
 static void
 AttachChildren(TreeView *viewPtr, Entry *parentPtr)
@@ -5032,7 +5222,10 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
     node = Blt_Tree_GetNodeFromIndex(eventPtr->tree, eventPtr->inode);
     switch (eventPtr->type) {
     case TREE_NOTIFY_CREATE:
-        return CreateEntry(viewPtr, node, 0, NULL, 0);
+        if (CreateEntry(viewPtr, node, 0, NULL, 0) == NULL) {
+            return TCL_ERROR;
+        }
+        return TCL_OK;
 
     case TREE_NOTIFY_DELETE:
         /*  
@@ -8925,7 +9118,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BindOp --
  *
- *        pathName bind tagOrId sequence command
+ *        pathName bind entryName sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -9938,69 +10131,59 @@ CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
+    CloseSwitches switches;
     Entry *entryPtr;
     EntryIterator iter;
-    int recurse, result;
-    int i;
 
-    recurse = FALSE;
-
-    if (objc > 2) {
-        char *string;
-        int length;
-
-        string = Tcl_GetStringFromObj(objv[2], &length);
-        if ((string[0] == '-') && (length > 1) && 
-            (strncmp(string, "-recurse", length) == 0)) {
-            objv++, objc--;
-            recurse = TRUE;
-        }
+    if (GetEntryIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
+        return TCL_ERROR;
     }
-    for (i = 2; i < objc; i++) {
-        if (GetEntryIterator(interp, viewPtr, objv[i], &iter) != TCL_OK) {
+    /* Process switches  */
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, closeSwitches, objc - 3, objv + 3, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
+         entryPtr = NextTaggedEntry(&iter)) {
+        int result;
+
+        /* 
+         * Clear the selections for any entries that may have become hidden
+         * by closing the node.
+         */
+        PruneSelection(viewPtr, entryPtr);
+        
+        /*
+         *  Check if either the "focus" entry or selection anchor is in
+         *  this hierarchy.  Must move it or disable it before we close the
+         *  node.  Otherwise it may be deleted by a TCL "close" script, and
+         *  we'll be left pointing to a bogus memory location.
+         */
+        if ((viewPtr->focusPtr != NULL) && 
+            (Blt_Tree_IsAncestor(entryPtr->node, viewPtr->focusPtr->node))){
+            viewPtr->focusPtr = entryPtr;
+            Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_ENTRY);
+        }
+        if ((viewPtr->sel.anchorPtr != NULL) && 
+            (Blt_Tree_IsAncestor(entryPtr->node, viewPtr->sel.anchorPtr->node))) {
+            viewPtr->sel.markPtr = viewPtr->sel.anchorPtr=NULL;
+        }
+        if ((viewPtr->activePtr != NULL) && 
+            (Blt_Tree_IsAncestor(entryPtr->node,viewPtr->activePtr->node))){
+            viewPtr->activePtr = entryPtr;
+        }
+        if (switches.flags & CLOSE_RECURSE) {
+            result = Apply(viewPtr, entryPtr, CloseEntry, 0);
+        } else {
+            result = CloseEntry(viewPtr, entryPtr);
+        }
+        if (result != TCL_OK) {
             return TCL_ERROR;
-        }
-        for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
-             entryPtr = NextTaggedEntry(&iter)) {
-            /* 
-             * Clear the selections for any entries that may have become
-             * hidden by closing the node.
-             */
-            PruneSelection(viewPtr, entryPtr);
-            
-            /*
-             *  Check if either the "focus" entry or selection anchor is in
-             *  this hierarchy.  Must move it or disable it before we close
-             *  the node.  Otherwise it may be deleted by a TCL "close"
-             *  script, and we'll be left pointing to a bogus memory location.
-             */
-            if ((viewPtr->focusPtr != NULL) && 
-                (Blt_Tree_IsAncestor(entryPtr->node, viewPtr->focusPtr->node))){
-                viewPtr->focusPtr = entryPtr;
-                Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, 
-                        ITEM_ENTRY);
-            }
-            if ((viewPtr->sel.anchorPtr != NULL) && 
-                (Blt_Tree_IsAncestor(entryPtr->node, 
-                        viewPtr->sel.anchorPtr->node))) {
-                viewPtr->sel.markPtr = viewPtr->sel.anchorPtr=NULL;
-            }
-            if ((viewPtr->activePtr != NULL) && 
-                (Blt_Tree_IsAncestor(entryPtr->node,viewPtr->activePtr->node))){
-                viewPtr->activePtr = entryPtr;
-            }
-            if (recurse) {
-                result = Apply(viewPtr, entryPtr, CloseEntry, 0);
-            } else {
-                result = CloseEntry(viewPtr, entryPtr);
-            }
-            if (result != TCL_OK) {
-                return TCL_ERROR;
-            }   
-        }
+        }   
     }
-    /* Closing a node may affect the visible entries and the the world layout
-     * of the entries. */
+    /* Closing a node may affect the visible entries and the the world
+     * layout of the entries. */
     viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
@@ -11045,7 +11228,7 @@ EntryConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      of each inode found. If an inode could not be found, then the
  *      serial identifier will be the empty string.
  *
- *      .view entry index entryName ?-path? ?-at?
+ *      pathName entry index entryName ?switches ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -11056,49 +11239,29 @@ EntryIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
     Entry *entryPtr;
-    char *string;
-    Entry *fromPtr;
-    int usePath;
     long inode;
+    IndexSwitches switches;
 
-    usePath = FALSE;
-    fromPtr = NULL;
-    string = Tcl_GetString(objv[3]);
-    if ((string[0] == '-') && (strcmp(string, "-path") == 0)) {
-        usePath = TRUE;
-        objv++, objc--;
+    memset(&switches, 0, sizeof(switches));
+    if (viewPtr->focusPtr != NULL) {
+        switches.fromPtr = viewPtr->focusPtr;
+    } else if (viewPtr->rootPtr == NULL) {
+        switches.fromPtr = viewPtr->rootPtr;
     }
-    if ((string[0] == '-') && (strcmp(string, "-at") == 0)) {
-        if (GetEntry(interp, viewPtr, objv[4], &fromPtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        objv += 2, objc -= 2;
-    }
-    if (objc != 4) {
-        Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), 
-                " entry index ?-at tagOrId? ?-path? tagOrId\"", 
-                (char *)NULL);
+    /* Process switches  */
+    entrySwitch.clientData = viewPtr;
+    if (Blt_ParseSwitches(interp, indexSwitches, objc - 4, objv + 4, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    viewPtr->fromPtr = fromPtr;
-    if (viewPtr->fromPtr == NULL) {
-        viewPtr->fromPtr = viewPtr->focusPtr;
-    }
-    if (viewPtr->fromPtr == NULL) {
-        viewPtr->fromPtr = viewPtr->rootPtr;
-    }
     inode = -1;
-    if (usePath) {
-        if (fromPtr == NULL) {
-            fromPtr = viewPtr->rootPtr;
-        }
-        string = Tcl_GetString(objv[3]);
-        entryPtr = FindPath(viewPtr, fromPtr, string);
+    if (switches.flags & INDEX_USE_PATH) {
+        entryPtr = FindPath(interp, viewPtr, switches.fromPtr, objv[3]);
         if (entryPtr != NULL) {
             inode = Blt_Tree_NodeId(entryPtr->node);
         }
     } else {
+        viewPtr->fromPtr = switches.fromPtr;
         if ((GetEntryFromObj2(interp, viewPtr, objv[3], &entryPtr) == TCL_OK) 
             && (entryPtr != NULL)) {
             inode = Blt_Tree_NodeId(entryPtr->node);
@@ -11113,7 +11276,8 @@ EntryIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * EntryInvokeOp --
  *
- *      .view entry invoke entryName
+ *      pathName entry invoke entryName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -11157,6 +11321,7 @@ EntryInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * EntryIsBeforeOp --
  *
  *      pathName entry isbefore e1Name e2Name
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -11183,6 +11348,7 @@ EntryIsBeforeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * EntryIsExposedOp --
  *
  *      pathName entry isexposed entryName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -11209,6 +11375,7 @@ EntryIsExposedOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * EntryIsHiddenOp --
  *
  *      pathName entry ishidden entryName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -11479,31 +11646,30 @@ EntrySizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec entryOps[] =
 {
-    {"activate",  1, EntryActivateOp,  4, 4, "tagOrId",},
+    {"activate",  1, EntryActivateOp,  4, 4, "entryName",},
     /*bbox*/
     /*bind*/
-    {"cget",      2, EntryCgetOp,      5, 5, "tagOrId option",},
-    {"children",  2, EntryChildrenOp,  4, 0, "tagOrId ?switches ...?",},
+    {"cget",      2, EntryCgetOp,      5, 5, "entryName option",},
+    {"children",  2, EntryChildrenOp,  4, 0, "entryName ?switches ...?",},
     /*close*/
-    {"configure", 2, EntryConfigureOp, 4, 0, 
-        "tagOrId ?tagOrId...? ?option value?...",},
-    {"degree",    3, EntryDegreeOp,    4, 4, "tagOrId",},
-    {"delete",    3, EntryDeleteOp,    5, 6, "tagOrId firstPos ?lastPos?",},
+    {"configure", 2, EntryConfigureOp, 4, 0, "entryName ?option value?...",},
+    {"degree",    3, EntryDegreeOp,    4, 4, "entryName",},
+    {"delete",    3, EntryDeleteOp,    5, 6, "entryName firstPos ?lastPos?",},
     /*focus*/
     /*hide*/
-    {"highlight", 1, EntryActivateOp,  4, 4, "tagOrId",},
-    {"index",     3, EntryIndexOp,     4, 7, "?-at tagOrId? ?-path? string",},
-    {"invoke",    3, EntryInvokeOp,    4, 4, "tagOrId",},
-    {"isbefore",  3, EntryIsBeforeOp,  5, 5, "tagOrId tagOrId",},
-    {"isexposed", 3, EntryIsExposedOp, 4, 4, "tagOrId",},
-    {"ishidden",  3, EntryIsHiddenOp,  4, 4, "tagOrId",},
-    {"isopen",    3, EntryIsOpenOp,    4, 4, "tagOrId",},
+    {"highlight", 1, EntryActivateOp,  4, 4, "entryName",},
+    {"index",     3, EntryIndexOp,     4, 0, "entryName ?switches ...?",},
+    {"invoke",    3, EntryInvokeOp,    4, 4, "entryName",},
+    {"isbefore",  3, EntryIsBeforeOp,  5, 5, "entryName beforeEntry",},
+    {"isexposed", 3, EntryIsExposedOp, 4, 4, "entryName",},
+    {"ishidden",  3, EntryIsHiddenOp,  4, 4, "entryName",},
+    {"isopen",    3, EntryIsOpenOp,    4, 4, "entryName",},
     /*move*/
     /*nearest*/
     /*open*/
     /*see*/
     /*show*/
-    {"size",      1, EntrySizeOp,      4, 5, "?-recurse? tagOrId",},
+    {"size",      1, EntrySizeOp,      4, 5, "?-recurse? entryName",},
     /*toggle*/
 };
 static int numEntryOps = sizeof(entryOps) / sizeof(Blt_OpSpec);
@@ -12275,7 +12441,8 @@ ShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      of each inode found. If an inode could not be found, then the
  *      serial identifier will be the empty string.
  *
- *      pathName index ?-path? ?-at fromName?  entryName
+ *      pathName index entryName ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -12285,51 +12452,31 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
     Entry *entryPtr;
-    char *string;
-    Entry *fromPtr;
-    int usePath;
     long inode;
+    IndexSwitches switches;
 
-    usePath = FALSE;
-    fromPtr = NULL;
-    string = Tcl_GetString(objv[2]);
-    if ((string[0] == '-') && (strcmp(string, "-path") == 0)) {
-        usePath = TRUE;
-        objv++, objc--;
+    memset(&switches, 0, sizeof(switches));
+    if (viewPtr->focusPtr != NULL) {
+        switches.fromPtr = viewPtr->focusPtr;
+    } else if (viewPtr->rootPtr == NULL) {
+        switches.fromPtr = viewPtr->rootPtr;
     }
-    if ((string[0] == '-') && (strcmp(string, "-at") == 0)) {
-        if (GetEntry(interp, viewPtr, objv[3], &fromPtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        objv += 2, objc -= 2;
-    }
-    if (objc != 3) {
-        Tcl_AppendResult(interp, "wrong # args: should be \"", 
-                Tcl_GetString(objv[0]), 
-                " index ?-at tagOrId? ?-path? tagOrId\"", 
-                (char *)NULL);
+    /* Process switches  */
+    entrySwitch.clientData = viewPtr;
+    if (Blt_ParseSwitches(interp, indexSwitches, objc - 3, objv + 3, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    viewPtr->fromPtr = fromPtr;
-    if (viewPtr->fromPtr == NULL) {
-        viewPtr->fromPtr = viewPtr->focusPtr;
-    }
-    if (viewPtr->fromPtr == NULL) {
-        viewPtr->fromPtr = viewPtr->rootPtr;
-    }
     inode = -1;
-    if (usePath) {
-        if (fromPtr == NULL) {
-            fromPtr = viewPtr->rootPtr;
-        }
-        string = Tcl_GetString(objv[2]);
-        entryPtr = FindPath(viewPtr, fromPtr, string);
+    if (switches.flags & INDEX_USE_PATH) {
+        entryPtr = FindPath(interp, viewPtr, switches.fromPtr, objv[2]);
         if (entryPtr != NULL) {
             inode = Blt_Tree_NodeId(entryPtr->node);
         }
     } else {
-        if ((GetEntryFromObj2(interp, viewPtr, objv[2], &entryPtr) == TCL_OK) && 
-            (entryPtr != NULL)) {
+        viewPtr->fromPtr = switches.fromPtr;
+        if ((GetEntryFromObj2(interp, viewPtr, objv[2], &entryPtr) 
+             == TCL_OK) && (entryPtr != NULL)) {
             inode = Blt_Tree_NodeId(entryPtr->node);
         }
     }
@@ -12342,7 +12489,8 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InvokeOp --
  *
- *      .view invoke entryName
+ *      pathName invoke entryName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -12385,151 +12533,114 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InsertOp --
  *
- *      Add new entries into a hierarchy.  If no node is specified, new
+ *      Adds new entries into a hierarchy.  If no node is specified, new
  *      entries will be added to the root of the hierarchy.
  *
- *      pathName insert -at parent pos
+ *      pathName insert fullPath ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
 InsertOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
+    Entry *rootPtr, *entryPtr, *parentPtr;
+    InsertSwitches switches;
+    Tcl_Obj **elems;
+    Tcl_Obj *listObjPtr, *pathObjPtr;
     TreeView *viewPtr = clientData;
-    Blt_TreeNode node, parent;
-    Tcl_Obj *const *options;
-    Tcl_Obj *listObjPtr;
-    Entry *rootPtr;
-    const char **argv;
-    const char **p;
-    const char *path;
-    char *string;
-    int count;
-    int n;
-    long depth;
-    long insertPos;
+    const char *name, *string;
+    int count, i, numElems;
+    int result;
 
     rootPtr = viewPtr->rootPtr;
     string = Tcl_GetString(objv[2]);
-    if ((string[0] == '-') && (strcmp(string, "-at") == 0)) {
-        if (objc > 2) {
-            if (GetEntry(interp, viewPtr, objv[3], &rootPtr) != TCL_OK) {
-                return TCL_ERROR;
-            }
-            objv += 2, objc -= 2;
-        } else {
-            Tcl_AppendResult(interp, "missing argument for \"-at\" flag",
-                     (char *)NULL);
-            return TCL_ERROR;
-        }
+    memset(&switches, 0, sizeof(switches));
+    switches.insertPos = -1;
+    if (viewPtr->rootPtr == NULL) {
+        switches.rootPtr = viewPtr->rootPtr;
     }
-    if (objc == 2) {
-        Tcl_AppendResult(interp, "missing position argument", (char *)NULL);
+    /* Process switches  */
+    entrySwitch.clientData = viewPtr;
+    if (Blt_ParseSwitches(interp, insertSwitches, objc - 3, objv + 3, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    if (Blt_GetPositionFromObj(interp, objv[2], &insertPos) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    node = NULL;
-    objc -= 3, objv += 3;
-
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    while (objc > 0) {
-        path = Tcl_GetString(objv[0]);
-        objv++, objc--;
+    
+    pathObjPtr = TrimPathObj(viewPtr, objv[2]);
+    if ((viewPtr->pathSep == SEPARATOR_NONE) || (viewPtr->pathSep[0] == '\0')) {
+        listObjPtr = NULL;
+        result = Tcl_ListObjGetElements(interp, pathObjPtr, &numElems, &elems);
+    } else {
+        listObjPtr = SplitPath(interp, pathObjPtr, viewPtr->pathSep);
+        result = Tcl_ListObjGetElements(interp, listObjPtr, &numElems, &elems);
+    }
+    if (result != TCL_OK) {
+        goto error;
+    }
+    parentPtr = switches.rootPtr;
+    /* Verify each component in the path preceding the tail.  */
+    for (i = 0; i < (numElems - 1); i++) {
+        name = Tcl_GetString(elems[i]);
+        entryPtr = FindChild(parentPtr, name);
+        if (entryPtr == NULL) {
+            Blt_TreeNode node;
 
-        /*
-         * Count the option-value pairs that follow.  Count until we spot one
-         * that looks like an entry name (i.e. doesn't start with a minus
-         * "-").
-         */
-        for (count = 0; count < objc; count += 2) {
-            string = Tcl_GetString(objv[count]);
-            if (string[0] != '-') {
-                break;
-            }
-        }
-        if (count > objc) {
-            count = objc;
-        }
-        options = objv;
-        objc -= count, objv += count;
-
-        if (viewPtr->trimLeft != NULL) {
-            const char *s1, *s2;
-
-            /* Trim off leading character string if one exists. */
-            for (s1 = path, s2 = viewPtr->trimLeft; *s2 != '\0'; s2++, s1++) {
-                if (*s1 != *s2) {
-                    break;
-                }
-            }
-            if (*s2 == '\0') {
-                path = s1;
-            }
-        }
-        /* Split the path and find the parent node of the path. */
-        argv = &path;
-        depth = 1;
-        if (viewPtr->pathSep != SEPARATOR_NONE) {
-            if (SplitPath(viewPtr, path, &depth, &argv) != TCL_OK) {
+            if ((viewPtr->flags & FILL_ANCESTORS) == 0) {
+                Tcl_AppendResult(interp, "can't find path component \"",
+                    name, "\" in \"", Tcl_GetString(pathObjPtr), "\"", 
+                                 (char *)NULL);
                 goto error;
             }
-            if (depth == 0) {
-                Blt_Free(argv);
-                continue;               /* Root already exists. */
-            }
-        }
-        parent = rootPtr->node;
-        depth--;                
-
-        /* Verify each component in the path preceding the tail.  */
-        for (n = 0, p = argv; n < depth; n++, p++) {
-            node = Blt_Tree_FindChild(parent, *p);
+            node = Blt_Tree_CreateNode(viewPtr->tree, parentPtr->node, name, 
+                END);
             if (node == NULL) {
-                if ((viewPtr->flags & FILL_ANCESTORS) == 0) {
-                    Tcl_AppendResult(interp, "can't find path component \"",
-                         *p, "\" in \"", path, "\"", (char *)NULL);
-                    goto error;
-                }
-                node = Blt_Tree_CreateNode(viewPtr->tree, parent, *p, END);
-                if (node == NULL) {
-                    goto error;
-                }
+                goto error;
             }
-            parent = node;
+            entryPtr = CreateEntry(viewPtr, node, count, NULL, 0);
+            if (entryPtr == NULL) {
+                goto error;
+            }
         }
-        node = NULL;
-        if (((viewPtr->flags & ALLOW_DUPLICATES) == 0) && 
-            (Blt_Tree_FindChild(parent, *p) != NULL)) {
-            Tcl_AppendResult(interp, "entry \"", *p, "\" already exists in \"",
-                 path, "\"", (char *)NULL);
+        parentPtr = entryPtr;
+    }
+    /* This is the tail of the path */
+    name = Tcl_GetString(elems[i]);
+    entryPtr = FindChild(parentPtr, name);
+    if (entryPtr != NULL) {
+        if ((viewPtr->flags & ALLOW_DUPLICATES) == 0) {
+            Tcl_AppendResult(interp, "entry \"", name, 
+                        "\" already exists in \"", Tcl_GetString(pathObjPtr), 
+                        "\"", (char *)NULL);
             goto error;
         }
-        node = Blt_Tree_CreateNode(viewPtr->tree, parent, *p, insertPos);
+    } else {
+        Blt_TreeNode node;
+
+        node = Blt_Tree_CreateNode(viewPtr->tree, parentPtr->node, name, 
+                                   switches.insertPos);
         if (node == NULL) {
             goto error;
         }
-        if (CreateEntry(viewPtr, node, count, options, 0) != TCL_OK) {
+        entryPtr = CreateEntry(viewPtr, node, count, NULL, 0);
+        if (entryPtr != TCL_OK) {
             goto error;
         }
-        if (argv != &path) {
-            Blt_Free(argv);
-        }
-        Tcl_ListObjAppendElement(interp, listObjPtr, NodeToObj(node));
     }
+    if (listObjPtr != NULL) {
+        Tcl_DecrRefCount(listObjPtr);
+    }
+    Tcl_DecrRefCount(pathObjPtr);
     viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
-    Tcl_SetObjResult(interp, listObjPtr);
+    Tcl_SetObjResult(interp, NodeToObj(entryPtr->node));
     return TCL_OK;
 
   error:
-    if (argv != &path) {
-        Blt_Free(argv);
-    }
-    Tcl_DecrRefCount(listObjPtr);
-    if (node != NULL) {
-        DeleteNode(viewPtr, node);
+    Tcl_DecrRefCount(pathObjPtr);
+    if (listObjPtr != NULL) {
+        Tcl_DecrRefCount(listObjPtr);
     }
     return TCL_ERROR;
 }
@@ -12685,6 +12796,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Move an entry into a new location in the hierarchy.
  *
  *      pathName nearest screenX screenY ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -12789,7 +12901,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * OpenOp --
  *
- *      pathName open ?-recurse? ?entryName ...?
+ *      pathName open entryName ?-recurse? 
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -12798,41 +12911,33 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    int recurse, result;
-    int i;
+    OpenSwitches switches;
+    Entry *entryPtr;
+    EntryIterator iter;
 
-    recurse = FALSE;
-    if (objc > 2) {
-        int length;
-        char *string;
-
-        string = Tcl_GetStringFromObj(objv[2], &length);
-        if ((string[0] == '-') && (length > 1) && 
-            (strncmp(string, "-recurse", length) == 0)) {
-            objv++, objc--;
-            recurse = TRUE;
-        }
+    if (GetEntryIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
+        return TCL_ERROR;
     }
-    for (i = 2; i < objc; i++) {
-        Entry *entryPtr;
-        EntryIterator iter;
+    /* Process switches  */
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, openSwitches, objc - 3, objv + 3, &switches,
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
+         entryPtr = NextTaggedEntry(&iter)) {
+        int result;
 
-        if (GetEntryIterator(interp, viewPtr, objv[i], &iter) != TCL_OK) {
+        if (switches.flags & OPEN_RECURSE) {
+            result = Apply(viewPtr, entryPtr, OpenEntry, 0);
+        } else {
+            result = OpenEntry(viewPtr, entryPtr);
+        }
+        if (result != TCL_OK) {
             return TCL_ERROR;
         }
-        for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
-             entryPtr = NextTaggedEntry(&iter)) {
-            if (recurse) {
-                result = Apply(viewPtr, entryPtr, OpenEntry, 0);
-            } else {
-                result = OpenEntry(viewPtr, entryPtr);
-            }
-            if (result != TCL_OK) {
-                return TCL_ERROR;
-            }
-            /* Make sure ancestors of this node aren't hidden. */
-            MapAncestors(viewPtr, entryPtr);
-        }
+        /* Make sure ancestors of this node aren't hidden. */
+        MapAncestors(viewPtr, entryPtr);
     }
     /*FIXME: This is only for flattened entries.  */
     viewPtr->flags |= LAYOUT_PENDING;
@@ -13028,7 +13133,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     if (objc == 2) {
         Tcl_AppendResult(interp, "wrong # args: should be \"", objv[0],
-            "see ?-anchor anchor? tagOrId\"", (char *)NULL);
+            "see ?-anchor anchor? entryName\"", (char *)NULL);
         return TCL_ERROR;
     }
     if (GetEntryFromObj(interp, viewPtr, objv[2], &entryPtr) != TCL_OK) {
@@ -13447,14 +13552,14 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec selectionOps[] =
 {
-    {"anchor",   1, SelectionAnchorOp,   4, 4, "tagOrId",},
-    {"clear",    5, SelectionSetOp,      4, 5, "first ?last?",},
+    {"anchor",   1, SelectionAnchorOp,   4, 4, "entryName",},
+    {"clear",    5, SelectionSetOp,      4, 5, "firstEntry ?lastEntry?",},
     {"clearall", 6, SelectionClearallOp, 3, 3, "",},
-    {"includes", 1, SelectionIncludesOp, 4, 4, "tagOrId",},
-    {"mark",     1, SelectionMarkOp,     4, 4, "tagOrId",},
+    {"includes", 1, SelectionIncludesOp, 4, 4, "entryName",},
+    {"mark",     1, SelectionMarkOp,     4, 4, "entryName",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},
-    {"set",      1, SelectionSetOp,      4, 5, "first ?last?",},
-    {"toggle",   1, SelectionSetOp,      4, 5, "first ?last?",},
+    {"set",      1, SelectionSetOp,      4, 5, "firstEntry ?lastEntry?",},
+    {"toggle",   1, SelectionSetOp,      4, 5, "firstEntry ?lastEntry?",},
 };
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
 
@@ -14452,10 +14557,10 @@ static Blt_OpSpec styleOps[] = {
     {"get",         1, StyleGetOp,         4, 4, "cell",},
     {"highlight",   1, StyleHighlightOp,   5, 5, "styleName boolean",},
     {"names",       1, StyleNamesOp,       3, 3, "",}, 
-    {"set",         1, StyleSetOp,         6, 6, "key styleName tagOrId...",},
+    {"set",         1, StyleSetOp,         6, 6, "key styleName entryName...",},
     {"textbox",     2, StyleTextBoxOp,     4, 0, "styleName options...",},
     {"type",        2, StyleTypeOp,        4, 4, "styleName",}, 
-    {"unset",       1, StyleUnsetOp,       5, 5, "key tagOrId",},
+    {"unset",       1, StyleUnsetOp,       5, 5, "key entryName",},
 };
 
 static int numStyleOps = sizeof(styleOps) / sizeof(Blt_OpSpec);
@@ -14961,39 +15066,38 @@ YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec viewOps[] =
 {
     {"activate",     1, ActivateOp,      3, 3, "cell"},
-    {"bbox",         2, BboxOp,          3, 0, "tagOrId...",}, 
+    {"bbox",         2, BboxOp,          3, 0, "entryName ?entryName ...?",}, 
     {"bind",         2, BindOp,          3, 5, "tagName ?sequence command?",}, 
     {"button",       2, ButtonOp,        2, 0, "args",},
     {"cell",         2, CellOp,          2, 0, "args",}, 
     {"cget",         2, CgetOp,          3, 3, "option",}, 
-    {"chroot",       2, ChrootOp,        2, 3, "tagOrId",}, 
-    {"close",        2, CloseOp,         2, 0, "?-recurse? tagOrId...",}, 
+    {"chroot",       2, ChrootOp,        2, 3, "entryName",}, 
+    {"close",        2, CloseOp,         3, 0, "entryName ?switches ...?",}, 
     {"column",       3, ColumnOp,        2, 0, "oper args",}, 
     {"configure",    3, ConfigureOp,     2, 0, "?option value?...",},
     {"curselection", 2, CurselectionOp,  2, 2, "",},
-    {"delete",       3, DeleteOp,        2, 0, "tagOrId ?tagOrId...?",}, 
+    {"delete",       3, DeleteOp,        2, 0, "?entryName ...?",}, 
     {"entry",        2, EntryOp,         2, 0, "oper args",},
     {"find",         2, FindOp,          2, 0, "?flags...? ?first last?",}, 
-    {"focus",        2, FocusOp,         3, 3, "tagOrId",}, 
-    {"get",          1, GetOp,           2, 0, "?-full? tagOrId ?tagOrId...?",},
-    {"hide",         1, HideOp,          2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?tagOrId...?",},
-    {"index",        3, IndexOp,         3, 6, "?-at tagOrId? ?-path? string",},
-    {"insert",       3, InsertOp,        3, 0, 
-        "?-at tagOrId? position label ?label...? ?option value?",},
-    {"invoke",       3, InvokeOp,        3, 3, "tagOrId",}, 
+    {"focus",        2, FocusOp,         3, 3, "entryName",}, 
+    {"get",          1, GetOp,           2, 0, "?-full? entryName ?entryName...?",},
+    {"hide",         1, HideOp,          2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entryName...?",},
+    {"index",        3, IndexOp,         3, 0, "entryName ?switches ...",},
+    {"insert",       3, InsertOp,        3, 0, "fullPath ?switches...?",},
+    {"invoke",       3, InvokeOp,        3, 3, "entryName",}, 
     {"move",         1, MoveOp,          5, 5, 
-        "tagOrId into|before|after tagOrId",},
+        "entryName into|before|after destName",},
     {"nearest",      1, NearestOp,       4, 5, "x y ?varName?",}, 
-    {"open",         1, OpenOp,          2, 0, "?-recurse? tagOrId...",}, 
-    {"range",        1, RangeOp,         4, 5, "?-open? tagOrId tagOrId",},
+    {"open",         1, OpenOp,          3, 0, "entryName ?switches ...?",}, 
+    {"range",        1, RangeOp,         4, 5, "?-open? firstEntry lastEntry",},
     {"scan",         2, ScanOp,          5, 5, "dragto|mark x y",},
-    {"see",          3, SeeOp,           3, 0, "?-anchor anchor? tagOrId",},
+    {"see",          3, SeeOp,           3, 0, "?-anchor anchor? entryName",},
     {"selection",    3, SelectionOp,     2, 0, "oper args",},
-    {"show",         2, ShowOp,          2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?tagOrId...?",},
+    {"show",         2, ShowOp,          2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entryName...?",},
     {"sort",         2, SortOp,          2, 0, "args",},
     {"style",        2, StyleOp,         2, 0, "args",},
     {"tag",          2, TagOp,           2, 0, "oper args",},
-    {"toggle",       2, ToggleOp,        3, 3, "tagOrId",},
+    {"toggle",       2, ToggleOp,        3, 3, "entryName",},
     {"type",         2, TypeOp,          3, 3, "cell",},
     {"updates",      3, UpdatesOp,       2, 3, "?bool?",},
     {"writable",     1, WritableOp,      3, 3, "cell",},

@@ -5026,8 +5026,8 @@ ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     fmtPtr = Blt_GetHashValue(hPtr);
     if (fmtPtr->exportProc == NULL) {
-        Tcl_AppendResult(interp, "no export procedure registered for \"", 
-                         fmtPtr->name, "\"", (char *)NULL);
+        Tcl_AppendResult(interp, "can't find tree export procedure for \"", 
+                         fmtPtr->name, "\" format.", (char *)NULL);
         return TCL_ERROR;
     }
     return (*fmtPtr->exportProc) (interp, cmdPtr->tree, objc, objv);
@@ -5309,8 +5309,8 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     fmtPtr = Blt_GetHashValue(hPtr);
     if (fmtPtr->importProc == NULL) {
-        Tcl_AppendResult(interp, "no import procedure registered for \"", 
-                         fmtPtr->name, "\"", (char *)NULL);
+        Tcl_AppendResult(interp, "can't find tree import procedure for \"", 
+                         fmtPtr->name, "\" format.", (char *)NULL);
         return TCL_ERROR;
     }
     return (*fmtPtr->importProc) (interp, cmdPtr->tree, objc, objv);

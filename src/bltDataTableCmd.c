@@ -5221,8 +5221,8 @@ ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
         LoadFormat(interp, Tcl_GetString(objv[2]));
     }
     if (fmtPtr->exportProc == NULL) {
-        Tcl_AppendResult(interp, "no export procedure registered for \"", 
-                         fmtPtr->name, "\"", (char *)NULL);
+        Tcl_AppendResult(interp, "can't find table export procedure for \"", 
+                         fmtPtr->name, "\" format.", (char *)NULL);
         return TCL_ERROR;
     }
     return (*fmtPtr->exportProc) (cmdPtr->table, interp, objc, objv);
@@ -5365,7 +5365,7 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
         LoadFormat(interp, fmt);
         hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
         if (hPtr == NULL) {
-            Tcl_AppendResult(interp, "can't import \"", fmt,
+            Tcl_AppendResult(interp, "can't import table format \"", fmt,
                              "\": format not registered", (char *)NULL);
             return TCL_ERROR;
         }
@@ -5374,9 +5374,10 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((fmtPtr->flags & FMT_LOADED) == 0) {
         LoadFormat(interp, Tcl_GetString(objv[2]));
     }
+    fprintf(stderr, "interp=%x\n", interp);
     if (fmtPtr->importProc == NULL) {
-        Tcl_AppendResult(interp, "no import procedure registered for \"", 
-                fmtPtr->name, "\"", (char *)NULL);
+        Tcl_AppendResult(interp, "can't find table import procedure for \"", 
+                fmtPtr->name, "\" format.", (char *)NULL);
         return TCL_ERROR;
     }
     return (*fmtPtr->importProc) (cmdPtr->table, interp, objc, objv);

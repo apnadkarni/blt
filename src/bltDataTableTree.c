@@ -494,6 +494,7 @@ ExportTreeProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 int 
 blt_table_tree_init(Tcl_Interp *interp)
 {
+    fprintf(stderr, "blt_table_tree_init interp=%x\n", interp);
 #ifdef USE_TCL_STUBS
     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
         return TCL_ERROR;
@@ -511,6 +512,7 @@ blt_table_tree_init(Tcl_Interp *interp)
     if (Tcl_PkgProvide(interp, "blt_datatable_tree", BLT_VERSION) != TCL_OK) { 
         return TCL_ERROR;
     }
+    fprintf(stderr, "registering format tree interp=%x\n", interp);
     return blt_table_register_format(interp,
         "tree",                 /* Name of format. */
         ImportTreeProc,         /* Import procedure. */
