@@ -452,16 +452,10 @@ static Blt_ConfigSpec viewSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, Blt_Offset(TreeView, activeBg), 0},
-    {BLT_CONFIG_BITMASK, "-allowduplicates", "allowDuplicates", 
-        "AllowDuplicates", DEF_ALLOW_DUPLICATES, Blt_Offset(TreeView, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ALLOW_DUPLICATES},
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
         (char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "AlternateBackground", DEF_ALT_BG, Blt_Offset(TreeView, altBg), 0},
-    {BLT_CONFIG_BITMASK, "-autocreate", "autoCreate", "AutoCreate", 
-        DEF_MAKE_PATH, Blt_Offset(TreeView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)FILL_ANCESTORS},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BG, Blt_Offset(TreeView, normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
@@ -781,10 +775,17 @@ typedef struct {
     Entry *rootPtr;
 } InsertSwitches;
 
+#define INSERT_PARENTS  (1<<0)
+#define INSERT_NODUPS   (1<<1)
+
 static Blt_SwitchSpec insertSwitches[] = 
 {
     {BLT_SWITCH_INT, "-at", "position", (char *)NULL,
         Blt_Offset(InsertSwitches, insertPos), 0},
+    {BLT_SWITCH_BITS_NOARG, "-parents", "", (char *)NULL,
+        Blt_Offset(InsertSwitches, flags), 0, INSERT_PARENTS},
+    {BLT_SWITCH_BITS_NOARG, "-nodups",  "", (char *)NULL,
+        Blt_Offset(InsertSwitches, flags), 0, INSERT_NODUPS},
     {BLT_SWITCH_CUSTOM, "-root", "entryName", (char *)NULL,
         Blt_Offset(InsertSwitches, rootPtr), 0, 0, &entrySwitch},
     {BLT_SWITCH_END}
@@ -4210,7 +4211,8 @@ FindPath(Tcl_Interp *interp, TreeView *viewPtr, Entry *rootPtr, Tcl_Obj *objPtr)
     }
     name = path;
     objPtr = TrimPathObj(viewPtr, objPtr);
-    parentPtr = rootPtr;
+    entryPtr = parentPtr = rootPtr;
+    listObjPtr = NULL;
     if (viewPtr->pathSep == SEPARATOR_NONE) {
         entryPtr = FindChild(parentPtr, name);
         if (entryPtr == NULL) {
@@ -12544,17 +12546,15 @@ static int
 InsertOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
-    Entry *rootPtr, *entryPtr, *parentPtr;
+    Entry *entryPtr, *parentPtr;
     InsertSwitches switches;
     Tcl_Obj **elems;
     Tcl_Obj *listObjPtr, *pathObjPtr;
     TreeView *viewPtr = clientData;
-    const char *name, *string;
-    int count, i, numElems;
+    const char *name;
+    int i, numElems;
     int result;
 
-    rootPtr = viewPtr->rootPtr;
-    string = Tcl_GetString(objv[2]);
     memset(&switches, 0, sizeof(switches));
     switches.insertPos = -1;
     if (viewPtr->rootPtr == NULL) {
@@ -12580,14 +12580,14 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     parentPtr = switches.rootPtr;
-    /* Verify each component in the path preceding the tail.  */
+    /* Verify each component in the path preceding the tail component.  */
     for (i = 0; i < (numElems - 1); i++) {
         name = Tcl_GetString(elems[i]);
         entryPtr = FindChild(parentPtr, name);
         if (entryPtr == NULL) {
             Blt_TreeNode node;
 
-            if ((viewPtr->flags & FILL_ANCESTORS) == 0) {
+            if (switches.flags & INSERT_NODUPS) {
                 Tcl_AppendResult(interp, "can't find path component \"",
                     name, "\" in \"", Tcl_GetString(pathObjPtr), "\"", 
                                  (char *)NULL);
@@ -12598,7 +12598,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (node == NULL) {
                 goto error;
             }
-            entryPtr = CreateEntry(viewPtr, node, count, NULL, 0);
+            entryPtr = CreateEntry(viewPtr, node, 0, NULL, 0);
             if (entryPtr == NULL) {
                 goto error;
             }
@@ -12623,7 +12623,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (node == NULL) {
             goto error;
         }
-        entryPtr = CreateEntry(viewPtr, node, count, NULL, 0);
+        entryPtr = CreateEntry(viewPtr, node, 0, NULL, 0);
         if (entryPtr != TCL_OK) {
             goto error;
         }

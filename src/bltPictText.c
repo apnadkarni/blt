@@ -728,8 +728,8 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
     fprintf(stderr, "dx=%d, dy=%d\n", dx, dy);
     DebugGlyph(slot);
 #endif
-    if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+    if ((xx >= destPtr->width) || ((xx + (int)slot->bitmap.width) <= 0) ||
+        (yy >= destPtr->height) || ((yy + (int)slot->bitmap.rows) <= 0)) {
         return;                 /* No portion of the glyph is visible in the
                                  * picture. */
     }
@@ -798,8 +798,8 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
     fprintf(stderr, "dx=%d, dy=%d\n", dx, dy);
     DebugGlyph(slot);
 #endif
-    if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+    if ((xx >= destPtr->width) || ((xx + (int)slot->bitmap.width) <= 0) ||
+        (yy >= destPtr->height) || ((yy + (int)slot->bitmap.rows) <= 0)) {
         return;                         /* No portion of the glyph is visible
                                          * in the picture. */
     }
@@ -868,8 +868,8 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
     DebugGlyph(slot);
 #endif
     
-    if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+    if ((xx >= destPtr->width) || ((xx + (int)slot->bitmap.width) <= 0) ||
+        (yy >= destPtr->height) || ((yy + (int)slot->bitmap.rows) <= 0)) {
         return;                         /* No portion of the glyph is visible
                                          * in the picture. */
     }
@@ -1098,8 +1098,8 @@ PaintText(Pict *destPtr, FtFont *fontPtr, const char *string, size_t length,
 
                 xx = slot->bitmap_left;
                 yy = h - slot->bitmap_top;
-                if ((xx < destPtr->width) && ((xx + slot->bitmap.width) >= 0) &&
-                    (yy < destPtr->height) && ((yy + slot->bitmap.rows) >= 0)) {
+                if ((xx < destPtr->width) && ((xx + (int)slot->bitmap.width) >= 0) &&
+                    (yy < destPtr->height) && ((yy + (int)slot->bitmap.rows) >= 0)) {
                     PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
                                    h - slot->bitmap_top, brush);
                 }

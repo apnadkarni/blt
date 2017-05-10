@@ -5374,7 +5374,6 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((fmtPtr->flags & FMT_LOADED) == 0) {
         LoadFormat(interp, Tcl_GetString(objv[2]));
     }
-    fprintf(stderr, "interp=%x\n", interp);
     if (fmtPtr->importProc == NULL) {
         Tcl_AppendResult(interp, "can't find table import procedure for \"", 
                 fmtPtr->name, "\" format.", (char *)NULL);
