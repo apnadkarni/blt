@@ -1117,7 +1117,6 @@ proc blt::TreeView::MoveFocus { w index } {
 #
 # ----------------------------------------------------------------------
 proc blt::TreeView::NextMatch { w key } {
-    #blt::debug 100
     if { ![string match {[ -~]} $key] } {
         return
     }
@@ -1126,7 +1125,6 @@ proc blt::TreeView::NextMatch { w key } {
         return;			# No focus. 
     }
     # Get the next index (from focus)
-    puts stderr last=$last
     set next [$w index next]
     if { $next == -1 } {
         set next 0
@@ -1156,7 +1154,6 @@ proc blt::TreeView::NextMatch { w key } {
         }
         $w see focus
     }
-    blt::debug 0
 }
 
 #------------------------------------------------------------------------

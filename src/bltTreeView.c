@@ -6244,9 +6244,6 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
     Entry **entries, *childPtr;
     long i;
 
-    if (parentPtr->numChildren < 2) {
-        return TCL_OK;
-    }
     if ((viewPtr->flags & SORTED) &&
         (viewPtr->sort.decreasing == viewPtr->sort.viewIsDecreasing)) {
         return TCL_OK;
@@ -6261,24 +6258,26 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
          childPtr = childPtr->nextSiblingPtr, i++) {
         entries[i] = childPtr;
     }
-    if (viewPtr->flags & SORTED) {
-        int first, last;
-
-        /* 
-         * The children are already sorted but in the wrong direction.
-         * Reverse the entries in the array.
-         */
-        for (first = 0, last = parentPtr->numChildren - 1; last > first; 
-             first++, last--) {
-            Entry *tmpPtr;
+    if (parentPtr->numChildren > 1) {
+        if (viewPtr->flags & SORTED) {
+            int first, last;
             
-            /* Swap first and last entries */
-            tmpPtr = entries[first];
-            entries[first] = entries[last];
-            entries[last] = tmpPtr;
+            /* 
+             * The children are already sorted but in the wrong direction.
+             * Reverse the entries in the array.
+             */
+            for (first = 0, last = parentPtr->numChildren - 1; last > first; 
+                 first++, last--) {
+                Entry *tmpPtr;
+                
+                /* Swap first and last entries */
+                tmpPtr = entries[first];
+                entries[first] = entries[last];
+                entries[last] = tmpPtr;
+            }
+        } else {
+            qsort(entries, parentPtr->numChildren, sizeof(Entry *), CompareEntries);
         }
-    } else {
-        qsort(entries, parentPtr->numChildren, sizeof(Entry *), CompareEntries);
     }
     parentPtr->firstChildPtr = parentPtr->lastChildPtr = NULL;
     for (i = 0; i < parentPtr->numChildren; i++) {
@@ -6293,11 +6292,9 @@ SortChildren(TreeView *viewPtr, Entry *parentPtr)
             parentPtr->lastChildPtr->nextSiblingPtr = entryPtr;
             parentPtr->lastChildPtr = entryPtr;
         }
-        if (entryPtr->numChildren > 1) {
-            if (SortChildren(viewPtr, entryPtr) != TCL_OK) {
-                Blt_Free(entries);
-                return TCL_ERROR;
-            }
+        if (SortChildren(viewPtr, entryPtr) != TCL_OK) {
+            Blt_Free(entries);
+            return TCL_ERROR;
         }
     }
     Blt_Free(entries);

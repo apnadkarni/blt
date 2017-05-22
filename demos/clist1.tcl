@@ -227,7 +227,7 @@ bind BltComboEntry <3> {
     grab release [grab current]
 }
 
-. configure -bg blue
+#. configure -bg blue
 blt::table . \
     0,0 .l -fill both
 
