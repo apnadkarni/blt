@@ -1739,7 +1739,7 @@ PostScriptProc(
     int xOffset, yOffset;
     Point2d anchorPos;
     Tk_Window tkwin;
-
+    double cx, cy, x0, y0;
 #if DEBUG
     fprintf(stderr, "Enter PostScriptProc label=%s prepass=%d\n",  
             labelPtr->text, prepass);
@@ -1780,8 +1780,15 @@ PostScriptProc(
     w *= labelPtr->xScale;
     h *= labelPtr->yScale;
     Blt_GetBoundingBox(w, h, labelPtr->angle, &rw, &rh, NULL);
-    anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y - h, rw, rh, 
+    anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
                                 labelPtr->anchor);
+    /* Compute the center of the rotated bounding box */
+    cx = anchorPos.x + rw * 0.5;
+    cy = anchorPos.y + rh * 0.5;
+    x0 = cx - w * 0.5;
+    y0 = cy - h * 0.5;
+    cy = Tk_CanvasPsY(canvas, cy);
+        
     xOffset = yOffset = 0;
     if (layoutPtr != NULL) {
         /* Justify the text within the bounding rectangle. */
@@ -1826,21 +1833,13 @@ PostScriptProc(
                   "  findfont exch scalefont ISOEncode setfont\n"
                   "} def\n");
 
-    Blt_Ps_Append(ps, "newpath\n");
-    Blt_Ps_Format(ps, "  %g %g moveto\n", x, y);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x + 1, y);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x + 1, y - 2);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y - 2);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y);
-    Blt_Ps_Append(ps, "closepath\n");
-    Blt_Ps_Append(ps, "fill\n");
-
     Blt_Ps_Append(ps, "gsave % Label item\n");
     Blt_Ps_Append(ps, "\n% Setup label transformations.\n");
-    Blt_Ps_Format(ps, "%g %g translate\n", (x + w * .5), (y - h * .5));
+    Blt_Ps_Format(ps, "%g %g translate\n", cx, cy) ;
     Blt_Ps_Format(ps, "%g rotate\n", labelPtr->angle);
-    Blt_Ps_Format(ps, "%g %g translate\n", -(x + w * .5), -(y - h * .5));
+    Blt_Ps_Format(ps, "%g %g translate\n", -cx, -cy);
 
+    y = Tk_CanvasPsY(canvas, y0);
     Blt_Ps_Append(ps, "\n% Define the rectangular bounding box for the item\n");
     Blt_Ps_Append(ps, "newpath\n");
     Blt_Ps_Format(ps, "  %g %g moveto\n", x, y);
@@ -1889,9 +1888,11 @@ PostScriptProc(
             
             fragPtr = layoutPtr->fragments + i;
             if (fragPtr->numBytes > 0) {
+                fprintf(stderr, "moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%ld\n",
+                        x0, fragPtr->rx, xOffset, w, layoutPtr->width);
                 Blt_Ps_Format(ps, "%g %g moveto\n",
-                              x + fragPtr->x + xOffset, 
-                              y - (layoutPtr->height - fragPtr->y + yOffset));
+                              x0 + fragPtr->rx + xOffset, 
+   Tk_CanvasPsY(canvas, y0 + fragPtr->ry + yOffset));
                 Blt_Ps_TextString(ps, fragPtr->text, fragPtr->numBytes);
                 Blt_Ps_Append(ps, " show\n");
             }
