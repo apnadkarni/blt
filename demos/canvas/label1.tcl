@@ -91,10 +91,10 @@ set id [.ss.c create label 100 100 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 2 -dashes 3 \
 	    -anchor c \
-	    -textanchor c \
+	    -textanchor e \
 	    -padx 0 \
 	    -font "Arial 13" \
-	    -rotate 45 \
+	    -rotate 0 \
 	    -width 150 \
 	    -height 50]
 
