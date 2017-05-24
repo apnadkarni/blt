@@ -104,6 +104,7 @@ blt::table . \
     0,0 .ss -fill both
 
 
+if 0 {
 set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
 	    -bg $bg1 \
@@ -135,7 +136,7 @@ set id [.ss.c create label 150 100 \
 
 .ss.c bind $id <Enter> [list Activate .ss.c $id]
 .ss.c bind $id <Leave> [list Deactivate .ss.c $id]
-
+}
 set id [.ss.c create label 100 50 \
 	    -text "Hello, World" \
 	    -bg $bg2 \

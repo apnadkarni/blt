@@ -86,7 +86,7 @@ bind $graph <Shift-ButtonPress-3> {
     update
     global tcl_platform
     if { $tcl_platform(platform) == "windows" } {
-	%W snap -format emf demo2.emf
+	%W snap CLIPBOARD -format emf
     }
 }
 
@@ -137,6 +137,6 @@ if { $tcl_platform(platform) == "windows" } {
 	}
     }	
     if 1 {
-	after 2000 {$graph snap -format emf CLIPBOARD}
+	after 2000 {$graph snap CLIPBOARD -format emf}
     }
 }
