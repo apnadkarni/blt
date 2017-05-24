@@ -592,6 +592,7 @@ typedef struct {
 
     /* Public values */
     Tcl_Obj *emptyValueObjPtr;
+    Tcl_Obj *prefixObjPtr;
     const char *tag;
     unsigned int flags;
     long maxMatches;
@@ -609,6 +610,8 @@ static Blt_SwitchSpec findSwitches[] =
         Blt_Offset(FindSwitches, flags), 0, FIND_INVERT},
     {BLT_SWITCH_LONG_NNEG, "-maxrows", "numRows", (char *)NULL,
         Blt_Offset(FindSwitches, maxMatches), 0},
+    {BLT_SWITCH_OBJ, "-prefix", "string", (char *)NULL,
+        Blt_Offset(FindSwitches, prefixObjPtr), 0},
     {BLT_SWITCH_CUSTOM, "-rows", "rowList", (char *)NULL,
         Blt_Offset(FindSwitches, iter), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_END}
@@ -1758,7 +1761,7 @@ NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 static int
 ColumnVarResolverProc(
     Tcl_Interp *interp,                 /* Current interpreter. */
-    const char *name,                   /* Variable name being resolved. */
+    const char *varName,                   /* Variable name being resolved. */
     Tcl_Namespace *nsPtr,               /* Current namespace context. */
     int flags,                          /* TCL_LEAVE_ERR_MSG => leave error
                                          * message. */
@@ -1771,37 +1774,52 @@ ColumnVarResolverProc(
     Tcl_Obj *valueObjPtr;
     long index;
     char c;
-    
+    const char *prefix;
+    int prefixLen;
+
     dataPtr = GetTableCmdInterpData(interp);
     hPtr = Blt_FindHashEntry(&dataPtr->findTable, nsPtr);
     if (hPtr == NULL) {
         /* This should never happen.  We can't find data associated with
-         * the current namespace.  But this routine should never be called
+         * the current namespace, but this routine should never be called
          * unless we're in a namespace that with linked with this variable
          * resolver. */
         return TCL_CONTINUE;    
     }
     switchesPtr = Blt_GetHashValue(hPtr);
-    c = name[0];
-    if ((c == '#') && (strcmp(name, "#") == 0)) {
+    prefix = NULL;
+    prefixLen = 0;
+    if (switchesPtr->prefixObjPtr != NULL) {
+        prefix = Tcl_GetStringFromObj(switchesPtr->prefixObjPtr, &prefixLen);
+    }
+    c = varName[0];
+    if ((c == '#') && (strcmp(varName, "#") == 0)) {
+        /* $# returns the row number of the current row. */
         /* Look up the column from the variable name given. */
         valueObjPtr = GetRowIndexObj(switchesPtr->table, switchesPtr->row);
-        *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
+        *varPtr = Blt_GetCachedVar(&switchesPtr->varTable,varName, valueObjPtr);
         return TCL_OK;
     } 
-    if ((isdigit(c)) && (Blt_GetLong((Tcl_Interp *)NULL, (char *)name,
+    if ((isdigit(c)) && (Blt_GetLong((Tcl_Interp *)NULL, (char *)varName,
                                      &index) == TCL_OK)) {
+        /* $N returns the value in the Nth column of the current row. */
         col = blt_table_get_column_by_index(switchesPtr->table, index);
-    } else {
-        col = blt_table_get_column_by_label(switchesPtr->table, name);
+    } else if (prefixLen == 0) {
+        /* $fieldName returns the value of the "fieldName" column of the
+         * current row. */
+        col = blt_table_get_column_by_label(switchesPtr->table, varName);
+    } else if (strncmp(varName, prefix, prefixLen) == 0) {
+        /* $pref_fieldName returns the value of the "fieldName" column of the
+         * current row. "pref_" is the user-defined prefix. */
+        col = blt_table_get_column_by_label(switchesPtr->table, 
+                                            varName + prefixLen);
     }
     if (col == NULL) {
-        /* Variable name doesn't refer to any column. Pass it back to the Tcl
-         * interpreter and let it resolve it normally. */
+        /* Variable name doesn't refer to any column. Pass it back to the TCL
+         * interpreter and let it resolve the variable as usual. */
         return TCL_CONTINUE;
     }
-    valueObjPtr = blt_table_get_obj(switchesPtr->table, switchesPtr->row, 
-        col);
+    valueObjPtr = blt_table_get_obj(switchesPtr->table, switchesPtr->row, col);
     if (valueObjPtr == NULL) {
         valueObjPtr = switchesPtr->emptyValueObjPtr;
         if (valueObjPtr != NULL) {
@@ -1810,7 +1828,7 @@ ColumnVarResolverProc(
             return TCL_CONTINUE;
         }
     }
-    *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
+    *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, varName, valueObjPtr);
     return TCL_OK;
 }
 

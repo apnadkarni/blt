@@ -364,18 +364,26 @@ typedef struct {
     TreeCmd *cmdPtr;                    /* Tree to examine. */
     Tcl_Obj *listObjPtr;                /* List to accumulate the indices
                                          * of matching nodes. */
+    size_t numMatches;                  /* Current number of matches. */
+
+    /* User-set values. */
+    unsigned int flags;                 /* See flags definitions above. */
+
     Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be
                                          * executed for each found node. */
-    unsigned int flags;                 /* See flags definitions above. */
-    size_t numMatches;                  /* Current number of matches. */
+    long maxDepth;                      /* If >= 0, don't descend more than
+                                         * this many levels. */
     size_t maxMatches;                  /* If > 0, stop after this many
                                          * matches. */
     unsigned int order;                 /* Order of search: Can be either
                                          * TREE_PREORDER, TREE_POSTORDER,
                                          * TREE_INORDER,
                                          * TREE_BREADTHFIRST. */
-    long maxDepth;                      /* If >= 0, don't descend more than
-                                         * this many levels. */
+    Tcl_Obj *exprObjPtr;                /* Expression to be evalated at
+                                         * each node. */
+    Tcl_Obj *varNameObjPtr;             /* Name of TCL array variable to be
+                                         * dynamically set with the current
+                                         * values at each node. */
     Blt_List patternList;               /* List of patterns to compare with
                                          * labels or values.  */
     const char *addTag;                 /* If non-NULL, tag added to
@@ -383,6 +391,7 @@ typedef struct {
     Blt_List keyList;                   /* List of key name patterns. */
     Blt_List tagList;                   /* List of tag names. */
     Blt_HashTable excludeTable;         /* Table of nodes to exclude. */
+    Blt_HashTable includeTable;         /* Table of nodes to include. */
 } FindSwitches;
 
 static Blt_SwitchParseProc OrderSwitch;
@@ -424,12 +433,16 @@ static Blt_SwitchSpec findSwitches[] = {
         Blt_Offset(FindSwitches, maxDepth), 0},
     {BLT_SWITCH_CUSTOM, "-exact", "string",  (char *)NULL,
         Blt_Offset(FindSwitches, patternList),0, 0, &exactSwitch},
-    {BLT_SWITCH_CUSTOM, "-excludes", "nodes", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-excludes", "nodeList", (char *)NULL,
         Blt_Offset(FindSwitches, excludeTable),0, 0, &nodesSwitch},
     {BLT_SWITCH_OBJ, "-exec", "command", (char *)NULL,
         Blt_Offset(FindSwitches, cmdObjPtr),    0}, 
+    {BLT_SWITCH_OBJ, "-expr", "exprString", (char *)NULL,
+        Blt_Offset(FindSwitches, exprObjPtr),0},
     {BLT_SWITCH_CUSTOM, "-glob", "pattern", (char *)NULL,
         Blt_Offset(FindSwitches, patternList),0, 0, &globSwitch},
+    {BLT_SWITCH_CUSTOM, "-includes", "nodeList", (char *)NULL,
+        Blt_Offset(FindSwitches, includeTable),0, 0, &nodesSwitch},
     {BLT_SWITCH_BITS_NOARG, "-invert", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_INVERT},
     {BLT_SWITCH_CUSTOM, "-key", "string",  (char *)NULL,
@@ -444,7 +457,7 @@ static Blt_SwitchSpec findSwitches[] = {
         Blt_Offset(FindSwitches, flags), 0, MATCH_LEAFONLY},
     {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_NOCASE},
-    {BLT_SWITCH_CUSTOM, "-order", "order", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-order", "orderName", (char *)NULL,
         Blt_Offset(FindSwitches, order), 0, 0, &orderSwitch},
     {BLT_SWITCH_BITS_NOARG, "-path", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_PATHNAME},
@@ -454,8 +467,6 @@ static Blt_SwitchSpec findSwitches[] = {
         Blt_Offset(FindSwitches, tagList), 0, 0, &tagSwitch},
     {BLT_SWITCH_END}
 };
-#undef _off
-
 
 typedef struct {
     TreeCmd *cmdPtr;                    /* Tree to move nodes. */
@@ -473,7 +484,6 @@ static Blt_SwitchSpec moveSwitches[] =
         Blt_Offset(MoveSwitches, node), 0, 0, &nodeSwitch},
     {BLT_SWITCH_END}
 };
-#undef _off
 
 typedef struct {
     Blt_TreeNode srcNode;

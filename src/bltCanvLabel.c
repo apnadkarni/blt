@@ -1036,7 +1036,7 @@ FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
     }
 }    
 
-#ifdef notdef
+#ifndef notdef
 static double
 FontPica(Tk_Window tkwin, Blt_Font font)
 {
@@ -1739,7 +1739,7 @@ PostScriptProc(
     int xOffset, yOffset;
     Point2d anchorPos;
     Tk_Window tkwin;
-    double cx, cy, x0, y0;
+    double cx, cy, x0, y0, y2;
 #if DEBUG
     fprintf(stderr, "Enter PostScriptProc label=%s prepass=%d\n",  
             labelPtr->text, prepass);
@@ -1840,13 +1840,14 @@ PostScriptProc(
     Blt_Ps_Format(ps, "%g %g translate\n", -cx, -cy);
 
     y = Tk_CanvasPsY(canvas, y0);
+    y2 = y - h;
     Blt_Ps_Append(ps, "\n% Define the rectangular bounding box for the item\n");
     Blt_Ps_Append(ps, "newpath\n");
-    Blt_Ps_Format(ps, "  %g %g moveto\n", x, y);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x + w, y);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x + w, y - h);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y - h);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y);
+    Blt_Ps_Format(ps, "  %g %g moveto\n", x0, y);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x0 + w, y);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x0 + w, y2);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x0, y2);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x0, y);
     Blt_Ps_Append(ps, "closepath\n");
 
     Blt_Ps_Append(ps, "\n% Clip against the region.\n");
@@ -1876,8 +1877,8 @@ PostScriptProc(
 
         Blt_Ps_Append(ps, "\n% Draw the label's text\n");
     tkwin = Tk_CanvasTkwin(canvas);
-#ifdef notdef
-        Blt_Ps_Format(ps, "\n% font %s: size=%g, pixelsize=%d, pica=%g\n", 
+#ifndef notdef
+        Blt_Ps_Format(ps, "\n%% font %s: size=%g, pixelsize=%g, pica=%g\n", 
                       Blt_Font_Name(font), Blt_Font_PointSize(font), 
                       Blt_Font_PixelSize(font), FontPica(tkwin, font));
 #endif
