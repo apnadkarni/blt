@@ -41,6 +41,7 @@ SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/grab.rst \
 		$(srcdir)/graph.rst \
 		$(srcdir)/htext.rst \
+		$(srcdir)/label.rst \
 		$(srcdir)/listview.rst \
 		$(srcdir)/mesh.rst \
 		$(srcdir)/paintbrush.rst \

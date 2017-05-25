@@ -18,14 +18,12 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **label** canvas item lets you place encapulated PostScript (LABEL) on a
-canvas, controlling its size and placement.  The LABEL item is displayed
-either as a solid rectangle or a preview image.  The preview image is
-designated in one of two ways: 1) the LABEL file contains an ASCII
-hexidecimal preview, or 2) a Tk photo or BLT picture image.  When the
-canvas generates PostScript output, the LABEL will be inserted with the
-proper translation and scaling to match that of the LABEL item. So can use
-the canvas widget as a page layout tool.
+A **label** canvas displays a string of characters on the screen.  The text
+must be in a single font, but it can occupy multiple lines on the screen
+(if it contains newlines). The label may also optionally display a
+rectangular filled background or outline. The item can be rotated and the
+font is scaled as the item is scaled.  You can use **scale** canvas option
+ans the label text will scale.  
 
 SYNTAX
 ------
@@ -59,95 +57,195 @@ SYNTAX
      to create a marching ants effect by periodically increasing the
      offset.  The default is 0.
 
-  **-activefill** *colorName*
-     Specifies the background color of the label rectangle when the item's
-     state is active (see the **-state** option).
-
   **-activefg** *colorName*
-     See **-activeoutline** option.
+    See **-activeoutline** option.
+
+  **-activefill** *colorName*
+    Specifies the background color of the label rectangle when the item is
+    active (see the **-state** option).  If *colorSpec* is "", then no
+    background is drawn.  *ColorSpec* may also be a valid BLT *paintbrush*
+    name.
 
   **-activeforeground** *colorName*
-     See **-activeoutline** option.
+    See **-activeoutline** option.
+
+  **-activelinewidth** *numPixels*
+    Specifies the width of the rectangular outline.  If *numPixels* is 0,
+    no outline is drawn.  The default is 0.
 
   **-activeoutline** *colorName*
-     Specifies the color of the label outline and text when the item's state
-     is active (see the **-state** option).
+    Specifies the color of the label's rectangular outline and text when
+    the item's state is active (see the **-state** option).  The default is
+    "black".
 
   **-anchor** *anchorName*
-     Specifies how to position the label item relative to the X-Y coordinate
-     specified. The default is "center".
+    Specifies how to position the label item relative to the X-Y coordinate
+    specified. The default is "center".
 
   **-background** *colorName*
-     Sets the background color of the label rectangle.
+    Same as **-fill** option.
 
-  **-file** *fileName*
-     Specifies the name of the LABEL file.  The first line of an LABEL file
-     must start with "%!PS" and contain a "LABEL" version specification.  The
-     other requirement is that there be a "%%BoundingBox:" entry which
-     contains four integers representing the lower-left and upper-right
-     coordinates of the area bounding the LABEL.  The default is "".
+  **-bg** *colorName*
+    Same as **-fill** option.
+
+  **-dashes** *numPixels*
+    Specifies the interval of on/off dashes of the outline around the label
+    when the item's state is normal (see the **-state** option). If
+    *numPixels* is zero, then the outline is a solid line.  The default is
+    0.
+
+  **-dashoffset** *numPixels*
+     Specifies the offset of dash pattern used to draw the outline when the
+     item's state is normal (see the **-state** option).  The default is 0.
+
+  **-disabledbackground** *colorName*
+     See **-disablefill** option.
+
+  **-disabledbg** *colorName*
+     See **-disabledfill** option.
+
+  **-disableddashes** *numPixels*
+     Specifies the interval of on/off dashes of the outline around the
+     label when the item's state is disabled (see the **-state** option). If
+     *numPixels* is zero, then the outline is a solid line.  The default is
+     0.
+
+  **-disableddashoffset** *numPixels*
+     Specifies the offset of dash pattern used to draw the outline when the
+     item's state is disabled (see the **-state** option). The default is 0.
+
+  **-disabledfg** *colorName*
+    See **-disabledoutline** option.
+
+  **-disabledfill** *colorName*
+    Specifies the background color of the label rectangle when the item is
+    disabled.  If *colorSpec* is "", then no background is drawn.
+    *ColorSpec* may also be a valid BLT *paintbrush* name. The default is
+    "".
+
+  **-disabledforeground** *colorName*
+    See **-disabledoutline** option.
+
+  **-disabledlinewidth** *numPixels*
+    Specifies the width of the rectangular outline drawn when the item's
+    state is disabled.  If *numPixels* is 0, no outline is drawn.  The
+    default is 0.
+
+  **-disabledoutline** *colorName*
+    Specifies the color of the label's rectangular outline and text when
+    the item is disabled (see the **-state** option).  The default is
+    "grey90".
+
+  **-fg** *colorName*
+     Same as the **-outline** option.
+
+  **-fill** *colorSpec*
+    Specifies the background color of the label rectangle.  *ColorSpec* may
+    be a color name or the name of a paintbrush object created by the
+    **blt::paintbrush** command. If *colorSpec* is "", then no background
+    is drawn.  The default is "".
 
   **-font** *fontName* 
-     Specifies the font of the label. The default is "{Sans Serif} 10".
+     Specifies the base font of the label. The default is "{Sans Serif} 10".
 
   **-foreground** *colorName*
-     Specifies the foreground color of the LABEL rectangle.  The option
-     matters only when the **-stipple** option is set.  The default is
-     "white".
+     Same as the **-outline** option.
 
   **-height** *numPixels*
-     Specifies the height LABEL item.  If *numPixels* is "0", then the
-     height is determined from the PostScript "BoundingBox:" entry in the
-     LABEL file.  The default is "0".
+     Specifies the height of the label item.  If *numPixels* is "0", then the
+     height is determined from font size and text.  The default is "0".
 
-  **-image** *imageName*
-     Specifies the name of a Tk photo or BLT picture image to be displayed
-     as in the item as a preview image.  This option overrides any preview
-     specification found in the LABEL file.  The default is "".
+  **-linewidth** *numPixels*
+    Specifies the width of the rectangular outline drawn when the item's
+    state is normal.  If *numPixels* is 0, no outline is drawn.  The
+    default is 0.
 
-  **-justify** *justify*
-     Specifies how the title should be justified.  This matters only when
-     the title contains more than one line of text. *Justify* must be
-     "left", "right", or "center".  The default is "center".
+  **-maxfontsize** *numPoints*
+     Not implemented.
 
-  **-shadowcolor** *colorName*
-     Specifies the color of the drop shadow used for the title.  The option
-     with the **-shadowoffset** option control how the title's drop shadow
-     appears.  The default is "grey".
+  **-minfontsize** *numPoints*
+     Not implemented.
 
-  **-shadowoffset** *numPixels*
-     Specifies the offset of the drop shadow from the title's text.  If
-     *numPixels* is "0", no shadow will be seen.  The default is "0".
+  **-outline** *colorName*
+    Specifies the color of the label's rectangular outline and text when
+    the item is normal (see the **-state** option).  The default is
+    "black".
 
-  **-showimage** *boolean*
-     Indicates whether to display the image preview (if one exists), or a
-     simple rectangle.  The default is "yes".
+  **-padx** *numPixels*
+    Sets how much padding to add to the left and right of the label.
+    *NumPixels* can be a list of one or two numbers.  If *numPixels* has
+    two elements, the left side of the label is padded by the first value
+    and the right side by the second value.  If *numPixels* has just one
+    value, both the left and right sides are padded evenly by the value.
+    The default is "0".
 
-  **-stipple** *bitmap*
-     Specifies a bitmap to used to stipple the rectangle representing the
-     LABEL item.  The default is "".
+  **-pady** *numPixels*
+    Sets how much padding to add above and below the label.  *NumPixels*
+    can be a list of one or two numbers.  If *numPixels* has two elements,
+    the top side of the label is padded by the first value and the bottom
+    side by the second value.  If *numPixels* has just one value, both the
+    top and bottom sides are padded evenly by the value.  The default is
+    "0".
 
-  **-title** *titleString*
-     Sets the title of the LABEL item.  If *titleString* is "", then the
-     title specified by the PostScript "Title:" entry is used.  You can set
-     the string a single space to display no title.  The default is "".
+  **-rotate** *numDegrees*
+    Specifies the rotation of the label.  The default is "0".
 
-  **-titleanchor** *anchorName*
-     Tells how to position the title within LABEL item.  The default is "n".
+  **-state** *stateName*
+    Specifies one of three states for the item: 
 
-  **-titlecolor** *colorName*
-     Specifies the color of the title.  The default is "white".
+    **active**
+      Active state means that the item should appear to active.  In this
+      state the item is displayed according to the **-activefill**,
+      **-activedashes**, **-activedashoffset**, **-activelinewidth**, and
+      **-activeoutline** options.
 
-  **-titlerotate** *numDegrees*
-     Sets the rotation of the title.  *NumDegrees* is a real number
-     representing the angle of rotation.  The title is first rotated in
-     space and then placed according to the **-titleanchor** position.
-     The default rotation is "0.0".
+    **normal**
+      In the normal state he item is displayed using **-fill**,
+      **-dashes**, **-dashoffset**, **-linewidth**, and **-outline**
+      options.
+
+    **disabled**
+      Active state means that the item should appear to insensitive.  In
+      this state the item is displayed according to the **-disabledfill**,
+      **-disableddashes**, **-disableddashoffset**, **-disabledlinewidth**,
+      and **-disabledoutline** options.
+
+    The default is "normal".
+
+  **-tags** *tagList*
+    Specifies a set of tags to apply to the item.  *TagList*  consists
+    of  a list of tag names, which replace any existing tags for the
+    item.  *TagList* may be an empty list.  The default is "".
+
+  **-text** *string*
+    Indicates whether to display the image preview (if one exists), or a
+    simple rectangle.  The default is "yes".
+
+  **-textanchor** *anchorName*
+    Specifies a bitmap to used to stipple the rectangle representing the
+    LABEL item.  The default is "".
 
   **-width** *numPixels*
-     Specifies the width LABEL item.  If *numPixels* is "0", then the width
-     is determined from the PostScript "BoundingBox:" entry in the LABEL
-     file.  The default is "0". 
+    Specifies the height of the label item.  If *numPixels* is "0", then
+    the width is determined from font size and text.  If the text is does
+    not fit the width, it will be clipped according to the **-textanchor**
+    option. The default is "0".
+
+  **-xscale** *numPixels*
+    Used to query the current X scale of the item.  Setting *numPixels* 
+    has no effect.
+
+  **-yscale** *numPixels*
+    Used to query the current Y scale of the item.  Setting *numPixels* 
+    has no effect.
+
+NOTES
+-----
+
+The label item does not perform anisomorphic scaling correctly as this
+would mean distorting the base font.  It will scale the rectangle
+background correctly, but the text will be scale to the maximum of the X
+and Y scales.
 
 EXAMPLE
 -------
@@ -175,7 +273,7 @@ label, canvas
 COPYRIGHT
 ---------
 
-2015 George A. Howlett. All rights reserved.
+2017 George A. Howlett. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
