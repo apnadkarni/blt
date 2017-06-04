@@ -297,10 +297,10 @@ BLT_EXTERN Tk_CustomOption bltPadOption;
 BLT_EXTERN Tk_CustomOption bltDistanceOption;
 
 static Tk_ConfigSpec configSpecs[] = {
-    {TK_CONFIG_SYNONYM, (char *)"-activebg", "activeFill", (char *)NULL, 
-        (char *)NULL, 0, 0},
     {TK_CONFIG_SYNONYM, (char *)"-activebackground", "activeFill", 
         (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-activebg", "activeFill", (char *)NULL, 
+        (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-activedashes", (char *)NULL, (char *)NULL,  
         DEF_ACTIVE_DASHES, Tk_Offset(LabelItem, active.dashes), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
@@ -355,21 +355,18 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_COLOR, (char *)"-disabledoutline", "disabledOutline", 
         (char *)NULL, DEF_DISABLED_OUTLINE_COLOR, 
         Tk_Offset(LabelItem, disabled.fgColor)},
+    {TK_CONFIG_SYNONYM, (char *)"-fg", "fill", (char *)NULL, (char *)NULL, 
+        0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-fill", "fill", (char *)NULL,
         DEF_NORMAL_FILL_COLOR, Tk_Offset(LabelItem, normal.brush), 
         TK_CONFIG_NULL_OK, &brushOption},
     {TK_CONFIG_CUSTOM, (char *)"-font", (char *)NULL, (char *)NULL,
         DEF_FONT, Tk_Offset(LabelItem, baseFont), 0, &fontOption},
-    {TK_CONFIG_SYNONYM, (char *)"-fg", "fill", (char *)NULL, (char *)NULL, 
-        0, 0},
     {TK_CONFIG_SYNONYM, (char *)"-foreground", "fill", (char *)NULL, 
         (char *)NULL, 0, 0},
     {TK_CONFIG_CUSTOM, (char *)"-height", (char *)NULL, (char *)NULL,
         DEF_HEIGHT, Tk_Offset(LabelItem, reqHeight),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
-    {TK_CONFIG_ANCHOR, (char *)"-textanchor", (char *)NULL, (char *)NULL,
-        DEF_TEXTANCHOR, Blt_Offset(LabelItem, textAnchor),
-        TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_CUSTOM, (char *)"-linewidth", (char *)NULL, (char *)NULL,
         DEF_NORMAL_LINEWIDTH, Tk_Offset(LabelItem, normal.lineWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
@@ -397,6 +394,9 @@ static Tk_ConfigSpec configSpecs[] = {
         DEF_TAGS, 0, TK_CONFIG_NULL_OK, &tagsOption},
     {TK_CONFIG_STRING, (char *)"-text", (char *)NULL, (char *)NULL,
         DEF_TEXT, Tk_Offset(LabelItem, text), TK_CONFIG_NULL_OK},
+    {TK_CONFIG_ANCHOR, (char *)"-textanchor", (char *)NULL, (char *)NULL,
+        DEF_TEXTANCHOR, Blt_Offset(LabelItem, textAnchor),
+        TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_CUSTOM, (char *)"-width", (char *)NULL, (char *)NULL,
         DEF_WIDTH, Tk_Offset(LabelItem, reqWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
@@ -678,7 +678,7 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->flags &= ~CLIP;
     if (labelPtr->numBytes == 0) {
         w = h = 0;
-    } else if (labelPtr->flags & INIT_SIZE) {
+    } else {
         TextStyle ts;
         TextLayout *layoutPtr;
         Blt_Ts_InitStyle(ts);
@@ -1036,6 +1036,7 @@ FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
     }
 }    
 
+#ifndef notdef
 static double
 FontPica(Tk_Window tkwin, Blt_Font font)
 {
@@ -1048,6 +1049,7 @@ FontPica(Tk_Window tkwin, Blt_Font font)
     d /= WidthOfScreen(Tk_Screen(tkwin));
     return d;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -1515,9 +1517,7 @@ ScaleProc(
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     double newFontSize;
     double x, y;
-    double maxScale;
 
-    maxScale = MIN(xScale, yScale);
     labelPtr->xScale *= xScale;        /* Used to track overall scale */
     labelPtr->yScale *= yScale;
 
@@ -1739,7 +1739,7 @@ PostScriptProc(
     int xOffset, yOffset;
     Point2d anchorPos;
     Tk_Window tkwin;
-
+    double cx, cy, x0, y0, y2;
 #if DEBUG
     fprintf(stderr, "Enter PostScriptProc label=%s prepass=%d\n",  
             labelPtr->text, prepass);
@@ -1780,8 +1780,15 @@ PostScriptProc(
     w *= labelPtr->xScale;
     h *= labelPtr->yScale;
     Blt_GetBoundingBox(w, h, labelPtr->angle, &rw, &rh, NULL);
-    anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y - h, rw, rh, 
+    anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
                                 labelPtr->anchor);
+    /* Compute the center of the rotated bounding box */
+    cx = anchorPos.x + rw * 0.5;
+    cy = anchorPos.y + rh * 0.5;
+    x0 = cx - w * 0.5;
+    y0 = cy - h * 0.5;
+    cy = Tk_CanvasPsY(canvas, cy);
+        
     xOffset = yOffset = 0;
     if (layoutPtr != NULL) {
         /* Justify the text within the bounding rectangle. */
@@ -1826,28 +1833,21 @@ PostScriptProc(
                   "  findfont exch scalefont ISOEncode setfont\n"
                   "} def\n");
 
-    Blt_Ps_Append(ps, "newpath\n");
-    Blt_Ps_Format(ps, "  %g %g moveto\n", x, y);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x + 1, y);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x + 1, y - 2);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y - 2);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y);
-    Blt_Ps_Append(ps, "closepath\n");
-    Blt_Ps_Append(ps, "fill\n");
-
     Blt_Ps_Append(ps, "gsave % Label item\n");
     Blt_Ps_Append(ps, "\n% Setup label transformations.\n");
-    Blt_Ps_Format(ps, "%g %g translate\n", (x + w * .5), (y - h * .5));
+    Blt_Ps_Format(ps, "%g %g translate\n", cx, cy) ;
     Blt_Ps_Format(ps, "%g rotate\n", labelPtr->angle);
-    Blt_Ps_Format(ps, "%g %g translate\n", -(x + w * .5), -(y - h * .5));
+    Blt_Ps_Format(ps, "%g %g translate\n", -cx, -cy);
 
+    y = Tk_CanvasPsY(canvas, y0);
+    y2 = y - h;
     Blt_Ps_Append(ps, "\n% Define the rectangular bounding box for the item\n");
     Blt_Ps_Append(ps, "newpath\n");
-    Blt_Ps_Format(ps, "  %g %g moveto\n", x, y);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x + w, y);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x + w, y - h);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y - h);
-    Blt_Ps_Format(ps, "  %g %g lineto\n", x, y);
+    Blt_Ps_Format(ps, "  %g %g moveto\n", x0, y);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x0 + w, y);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x0 + w, y2);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x0, y2);
+    Blt_Ps_Format(ps, "  %g %g lineto\n", x0, y);
     Blt_Ps_Append(ps, "closepath\n");
 
     Blt_Ps_Append(ps, "\n% Clip against the region.\n");
@@ -1877,8 +1877,8 @@ PostScriptProc(
 
         Blt_Ps_Append(ps, "\n% Draw the label's text\n");
     tkwin = Tk_CanvasTkwin(canvas);
-#ifdef notdef
-        Blt_Ps_Format(ps, "\n% font %s: size=%g, pixelsize=%d, pica=%g\n", 
+#ifndef notdef
+        Blt_Ps_Format(ps, "\n%% font %s: size=%g, pixelsize=%g, pica=%g\n", 
                       Blt_Font_Name(font), Blt_Font_PointSize(font), 
                       Blt_Font_PixelSize(font), FontPica(tkwin, font));
 #endif
@@ -1889,9 +1889,11 @@ PostScriptProc(
             
             fragPtr = layoutPtr->fragments + i;
             if (fragPtr->numBytes > 0) {
+                fprintf(stderr, "moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%ld\n",
+                        x0, fragPtr->rx, xOffset, w, layoutPtr->width);
                 Blt_Ps_Format(ps, "%g %g moveto\n",
-                              x + fragPtr->x + xOffset, 
-                              y - (layoutPtr->height - fragPtr->y + yOffset));
+                              x0 + fragPtr->rx + xOffset, 
+   Tk_CanvasPsY(canvas, y0 + fragPtr->ry + yOffset));
                 Blt_Ps_TextString(ps, fragPtr->text, fragPtr->numBytes);
                 Blt_Ps_Append(ps, " show\n");
             }

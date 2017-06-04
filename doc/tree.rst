@@ -182,10 +182,10 @@ command.  The operations available for trees are listed below.
     *nodeName*.
 
   **-exact** *labelString*
-    Matches each node with the label *labelString*.  
+    Test each node label against the string *labelString*.  
 
   **-glob** *pattern*
-    Test each node label and *pattern* using global pattern matching.
+    Test each node label against *pattern* using global pattern matching.
     Matching is done in a fashion similar to that used by the C-shell.
 
   **-invert**

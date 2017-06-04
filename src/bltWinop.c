@@ -429,7 +429,7 @@ GetWindowProperties(Tcl_Interp *interp, Display *display, Window window,
 
         if (GetAtomName(display, atoms[i], &name)) {
             union {
-                char *data;
+                unsigned char *data;
                 int window;
             } prop;
             int result, format;
@@ -454,26 +454,24 @@ GetWindowProperties(Tcl_Interp *interp, Display *display, Window window,
                                          * format. */
                 &numBytesAfter,         /* (out) # of bytes remaining to be
                                          * read. */
-                (unsigned char **)&prop.data);
+                &prop.data);
 #ifdef notdef
             fprintf(stderr, "%x: property name is %s (format=%d(%d) type=%d result=%d)\n", window, name, format, numItems, typeAtom, result == Success);
 #endif
             if (result == Success) {
-                if (format == 8) {
-                    if (prop.data != NULL) {
-                        Blt_Tree_SetValue(interp, tree, parent, name, 
-                                Tcl_NewStringObj(prop.data, numItems));
-                    }
+                Tcl_Obj *objPtr;
+
+                if ((format == 8) && (prop.data != NULL)) {
+                    objPtr = Tcl_NewStringObj((char *)prop.data, numItems);
                 } else if ((typeAtom == XA_WINDOW) && (format == 32)) {
                     char string[200];
 
                     sprintf(string, "0x%x", prop.window);
-                    Blt_Tree_SetValue(interp, tree, parent, name, 
-                        Tcl_NewStringObj(string, -1));
+                    objPtr = Tcl_NewStringObj(string, -1);
                 } else {
-                    Blt_Tree_SetValue(interp, tree, parent, name, 
-                        Tcl_NewStringObj("???", -1));
+                    objPtr = Tcl_NewStringObj("???", 3);
                 }
+                Blt_Tree_SetValue(interp, tree, parent, name, objPtr);
                 XFree(prop.data);
             }
         }

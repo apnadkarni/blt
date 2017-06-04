@@ -1966,6 +1966,7 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         break;
 
 #ifdef WIN32
+        /* FIXME: Can't snap background from hDC of metafiles. */
     case FMT_WMF:
     case FMT_EMF:
         {

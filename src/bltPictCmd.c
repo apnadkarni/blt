@@ -3777,8 +3777,8 @@ ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
         LoadPackage(interp, fmt);
     }
     if (fmtPtr->exportProc == NULL) {
-        Tcl_AppendResult(interp, "no export procedure registered for \"", 
-                         fmtPtr->name, "\"", (char *)NULL);
+        Tcl_AppendResult(interp, "can't find picture export procedure for \"", 
+                        fmtPtr->name, "\" format.", (char *)NULL);
         return TCL_ERROR;
     }
     result = (*fmtPtr->exportProc)(interp, imgPtr->current, imgPtr->chain, 
@@ -4070,8 +4070,8 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
         LoadPackage(interp, fmt);
     }
     if (fmtPtr->importProc == NULL) {
-        Tcl_AppendResult(interp, "no import procedure registered for \"", 
-                fmtPtr->name, "\"", (char *)NULL);
+        Tcl_AppendResult(interp, "can't find picture import procedure for \"", 
+                fmtPtr->name, "\" format.", (char *)NULL);
         return TCL_ERROR;
     }
     chain = (*fmtPtr->importProc)(interp, objc, objv, &fileName);

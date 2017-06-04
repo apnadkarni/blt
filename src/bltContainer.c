@@ -1840,7 +1840,6 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
 static void
 FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
 {
-    char string[200];
     Atom *atoms;
     int i;
     int numProps;
@@ -1852,7 +1851,10 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
         char *name;
 
         if (GetAtomName(conPtr->display, atoms[i], &name)) {
-            char *data;
+            union {
+                unsigned char *data;
+                int window;
+            } prop;
             int result, format;
             Atom typeAtom;
             unsigned long numItems, bytesAfter;
@@ -1875,26 +1877,26 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
                                          * format. */
                 &bytesAfter,            /* (out) # of bytes remaining to be
                                          * read. */
-                (unsigned char **)&data);
+                &prop.data);
 #ifdef notdef
             fprintf(stderr, "%x: property name is %s (format=%d(%d) type=%d result=%d)\n", window, name, format, numItems, typeAtom, result == Success);
 #endif
             if (result == Success) {
-                if (format == 8) {
-                    if (data != NULL) {
-                        Blt_Tree_SetValue(conPtr->interp, tree, parent, name, 
-                                Tcl_NewStringObj(data, numItems));
-                    }
-                } else if (typeAtom == XA_WINDOW) {
-                    int *iPtr = (int *)&data;
-                    sprintf(string, "0x%x", *iPtr);
-                    Blt_Tree_SetValue(conPtr->interp, tree, parent, name, 
-                        Tcl_NewStringObj(string, -1));
+                Tcl_Obj *objPtr;
+
+                objPtr = NULL;
+                if ((format == 8) && (prop.data != NULL)) {
+                    objPtr = Tcl_NewStringObj((char *)prop.data, numItems);
+                } else if ((typeAtom == XA_WINDOW) && (format == 32)) {
+                    char string[200];
+
+                    sprintf(string, "0x%x", prop.window);
+                    objPtr = Tcl_NewStringObj(string, -1);
                 } else {
-                    Blt_Tree_SetValue(conPtr->interp, tree, parent, name, 
-                        Tcl_NewStringObj("???", -1));
+                    objPtr = Tcl_NewStringObj("???", 3);
                 }
-                XFree(data);
+                Blt_Tree_SetValue(conPtr->interp, tree, parent, name, objPtr);
+                XFree(prop.data);
             }
         }
     }   
@@ -1910,6 +1912,7 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
             Blt_TreeNode child;
             char *wmName;
             Window w;
+            char string[200];
 
             w = (Window)Blt_Chain_GetValue(link);
             sprintf(string, "0x%x", (int)w);

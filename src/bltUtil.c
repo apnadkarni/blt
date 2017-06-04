@@ -1758,8 +1758,9 @@ IsNaN(const Bits x)
     return (((EXPBITMASK & x) == EXPBITMASK) && ((FRACBITMASK & x) != 0));
 }
  
+#ifdef notdef
 static INLINE int
-isInfinite(const Bits  x)
+IsInfinite(const Bits  x)
 {
     return ((x & INFBITMASK) == EXPBITMASK);
 }
@@ -1769,6 +1770,7 @@ Signof(const Bits x)
 {
     return (x & SIGNBITMASK);
 }
+#endif
 
 static INLINE Bits 
 SignAndMagnitudeToBiased(const Bits sam)

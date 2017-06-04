@@ -953,6 +953,7 @@ RecordEdit(ComboEditor *editPtr, RecordType type, CharIndex index,
     editPtr->undoPtr = recPtr;
 }
 
+#ifdef notdef
 static void
 CleanText(ComboEditor *editPtr)
 {
@@ -978,6 +979,7 @@ CleanText(ComboEditor *editPtr)
     Blt_DBuffer_SetLength(editPtr->dbuffer, editPtr->numBytes);
     Tcl_DecrRefCount(objPtr);
 } 
+#endif
 
 static void
 BlinkCursor(ComboEditor *editPtr)

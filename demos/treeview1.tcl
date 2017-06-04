@@ -68,18 +68,10 @@ proc Find { tree parent dir } {
     }
 }
 
-proc GetAbsolutePath { dir } {
-    set saved [pwd]
-    cd $dir
-    set path [pwd] 
-    cd $saved
-    return $path
-}
-
 button .b -font { Helvetica 11 bold }
-#set top [GetAbsolutePath ..]
-set top [GetAbsolutePath "$env(HOME)"]
-set top [GetAbsolutePath ".."]
+#set top [file normalize ..]
+set top [file normalize "$env(HOME)"]
+set top [file normalize ".."]
 set trim "$top"
 
 set tree [blt::tree create]    

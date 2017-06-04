@@ -82,7 +82,7 @@ blt::table . \
     0,0 .ss -fill both
 
 .ss.c create rectangle 100 100 300 200 -fill lightblue3 -tags "r" -width 0
-.ss.c create text 200 150 -anchor c -text "This a test" -fill blue -font "Arial 13"
+.ss.c create text 200 150 -anchor c -text "This is a test" -fill blue -font "Arial 13"
 
 set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
@@ -91,8 +91,8 @@ set id [.ss.c create label 100 100 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 2 -dashes 3 \
 	    -anchor c \
-	    -textanchor c \
-	    -padx 10 \
+	    -textanchor e \
+	    -padx 0 \
 	    -font "Arial 13" \
 	    -rotate 45 \
 	    -width 200 \
@@ -118,7 +118,19 @@ bind .ss.c  <5>  {
     .ss.c scale all $cx $cy 0.9 0.9
 }
 
-update
-set f [open "/tmp/label.ps" "w"]
-puts $f [.ss.c postscript ]
-close $f
+bind .ss.c  <KeyPress-Up>  {
+    set cx [expr [winfo width .ss.c] / 2]
+    set cy [expr [winfo height .ss.c] / 2]
+    .ss.c scale all $cx $cy 1.1 1.2
+}
+bind .ss.c  <KeyPress-Down>  {
+    set cx [expr [winfo width .ss.c] / 2]
+    set cy [expr [winfo height .ss.c] / 2]
+    .ss.c scale all $cx $cy 0.9 0.8
+}
+
+focus .ss.c
+after 2000 { set done 1 }
+tkwait variable done
+.ss.c postscript -file /tmp/junk.ps
+exit 0

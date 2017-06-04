@@ -274,6 +274,7 @@ Blt_CopyPictures(Blt_Picture dest, Blt_Picture src)
 #define JITTER_A        1099087573U
 #define RANDOM_SCALE    2.3283064370807974e-10
 
+#ifdef notdef
 static INLINE void 
 RandomSeed(Blt_Random *randomPtr, unsigned int seed) {
     randomPtr->value = seed;
@@ -284,6 +285,7 @@ RandomInit(Blt_Random *randomPtr)
 {
     RandomSeed(randomPtr, JITTER_SEED);
 }
+#endif
 
 static INLINE double
 RandomNumber(Blt_Random *randomPtr)
@@ -298,6 +300,7 @@ RandomNumber(Blt_Random *randomPtr)
     return (double)randomPtr->value * RANDOM_SCALE;
 }
 
+#ifdef notdef
 static INLINE void
 JitterInit(Blt_Jitter *jitterPtr) 
 {
@@ -305,6 +308,7 @@ JitterInit(Blt_Jitter *jitterPtr)
     jitterPtr->range = 0.1;
     jitterPtr->offset = -0.05;          /* Jitter +/-  */
 }
+#endif
 
 static INLINE double 
 Jitter(Blt_Jitter *jitterPtr) {

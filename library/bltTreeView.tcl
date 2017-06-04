@@ -1117,29 +1117,42 @@ proc blt::TreeView::MoveFocus { w index } {
 #
 # ----------------------------------------------------------------------
 proc blt::TreeView::NextMatch { w key } {
-    if {[string match {[ -~]} $key]} {
-	set last [$w index focus]
-	if { $last == -1 } {
-	    return;			# No focus. 
-	}
-	set next [$w index next]
-	if { $next == -1 } {
-	    set next $last
-	}
-	while { $next != $last } {
-	    set label [$w entry cget $next -label]
-	    set label [string index $label 0]
-	    if { [string tolower $label] == [string tolower $key] } {
-		break
-	    }
-	    set next [$w index -at $next next]
-	}
-	$w focus $next
-	if {[$w cget -selectmode] == "single"} {
-	    $w selection clearall
-	    $w selection set focus
-	}
-	$w see focus
+    if { ![string match {[ -~]} $key] } {
+        return
+    }
+    set last [$w index focus]
+    if { $last == -1 } {
+        return;			# No focus. 
+    }
+    # Get the next index (from focus)
+    set next [$w index next]
+    if { $next == -1 } {
+        set next 0
+    }
+    set next $last
+    while 1 {
+        puts current=$next
+        set next [$w index next -from $next]
+        puts next=$next
+        set label [$w entry cget $next -label]
+        set char [string index $label 0]
+        if { [string compare -nocase $char $key] == 0 } {
+            break
+        }
+        if { $next == $last } {
+            break
+        }
+        if { $next == -1 } {
+            set next 0
+        }
+    }
+    if { $next != $last } {
+        $w focus $next
+        if {[$w cget -selectmode] == "single"} {
+            $w selection clearall
+            $w selection set focus
+        }
+        $w see focus
     }
 }
 
