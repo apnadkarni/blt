@@ -92,10 +92,10 @@ set id [.ss.c create label 100 100 \
 	    -linewidth 2 -dashes 3 \
 	    -anchor c \
 	    -textanchor c \
-	    -padx 0 \
+	    -padx 10 \
 	    -font "Arial 13" \
 	    -rotate 45 \
-	    -width 150 \
+	    -width 200 \
 	    -height 50]
 
 blt::table . \
