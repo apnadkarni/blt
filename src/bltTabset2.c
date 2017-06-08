@@ -76,8 +76,8 @@
 #define INVALID_FAIL            0
 #define INVALID_OK              1
 
-#define TAB_WIDTH_SAME           -1
-#define TAB_WIDTH_VARIABLE       0
+#define TAB_SAME_WIDTH          -1
+#define TAB_VARIABLE_WIDTH       0
 
 #define PERF_OFFSET_X           2
 #define PERF_OFFSET_Y           4
@@ -618,9 +618,15 @@ struct _Tabset {
     int overlap;                        /* Amount of  */
     int gap;
     int reqTabWidth;                    /* Requested tab size. */
-    short int tabWidth, tabHeight;
-    int xSelectPad, ySelectPad;         /* Padding around label of the
-                                         * selected tab. */
+    short int maxTabHeight;             /* Unrotated maximum height of all
+                                         * visible tabs. Tab heights do not
+                                         * vary. */
+    short int maxTabWidth;              /* Unrotated maximum width of all
+                                         * visible tabs. This is the width
+                                         * of all tabs when the -tabwidth
+                                         * option is "same".  */
+    int xSelectPad, ySelectPad;         /* Unrotated padding around label
+                                         * of the selected tab. */
     int outerPad;                       /* Padding around the exterior of the
                                          * tabset and folder. */
 
@@ -1583,9 +1589,9 @@ ObjToTabWidthProc(
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
     if ((c == 'v') && (strncmp(string, "variable", length) == 0)) {
-        *widthPtr = TAB_WIDTH_VARIABLE;
+        *widthPtr = TAB_VARIABLE_WIDTH;
     } else if ((c == 's') && (strncmp(string, "same", length) == 0)) {
-        *widthPtr = TAB_WIDTH_SAME;
+        *widthPtr = TAB_SAME_WIDTH;
     } else if (Blt_GetPixelsFromObj(interp, tkwin, objPtr, PIXELS_POS, 
                 widthPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -1618,9 +1624,9 @@ TabWidthToObjProc(
     int width = *(int *)(widgRec + offset);
 
     switch (width) {
-    case TAB_WIDTH_VARIABLE:
+    case TAB_VARIABLE_WIDTH:
         return Tcl_NewStringObj("variable", 8);
-    case TAB_WIDTH_SAME:
+    case TAB_SAME_WIDTH:
         return Tcl_NewStringObj("same", 4);
     default:
         return Tcl_NewIntObj(width);
@@ -1818,7 +1824,7 @@ WorldY(Tab *tabPtr)
     int tier;
 
     tier = tabPtr->setPtr->numTiers - tabPtr->tier;
-    return tier * tabPtr->setPtr->tabHeight;
+    return tier * tabPtr->setPtr->maxTabHeight;
 }
 
 static INLINE Tab *
@@ -2014,9 +2020,9 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
     } 
     /* Adjust the label's area according to the tab's slant. */
     if (setPtr->side & (SIDE_RIGHT | SIDE_LEFT)) {
-        y -= (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
+        y -= (setPtr->flags & SLANT_LEFT) ? setPtr->maxTabHeight : setPtr->inset2;
     } else {
-        x -= (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
+        x -= (setPtr->flags & SLANT_LEFT) ? setPtr->maxTabHeight : setPtr->inset2;
     }
     for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
          tabPtr = NextTab(tabPtr, HIDDEN)) {
@@ -2092,7 +2098,7 @@ TabUp(Tab *tabPtr)
         
         setPtr = tabPtr->setPtr;
         worldX = tabPtr->worldX + (tabPtr->worldWidth / 2);
-        worldY = tabPtr->worldY - (setPtr->tabHeight / 2);
+        worldY = tabPtr->worldY - (setPtr->maxTabHeight / 2);
         WorldToScreen(setPtr, worldX, worldY, &x, &y);
         
         tabPtr = (Tab *)PickTabProc(setPtr, x, y, NULL);
@@ -2106,7 +2112,7 @@ TabUp(Tab *tabPtr)
         }
         if ((tabPtr == NULL) &&
             (setPtr->focusPtr->tier < (setPtr->numTiers - 1))) {
-            worldY -= setPtr->tabHeight;
+            worldY -= setPtr->maxTabHeight;
             WorldToScreen(setPtr, worldX, worldY, &x, &y);
             tabPtr = (Tab *)PickTabProc(setPtr, x, y, NULL);
         }
@@ -2127,7 +2133,7 @@ TabDown(Tab *tabPtr)
 
         setPtr = tabPtr->setPtr;
         worldX = tabPtr->worldX + (tabPtr->worldWidth / 2);
-        worldY = tabPtr->worldY + (3 * setPtr->tabHeight) / 2;
+        worldY = tabPtr->worldY + (3 * setPtr->maxTabHeight) / 2;
         WorldToScreen(setPtr, worldX, worldY, &x, &y);
         tabPtr = (Tab *)PickTabProc(setPtr, x, y, NULL);
         if (tabPtr == NULL) {
@@ -2139,7 +2145,7 @@ TabDown(Tab *tabPtr)
             tabPtr = (Tab *)PickTabProc(setPtr, x, y, NULL);
         }
         if ((tabPtr == NULL) && (setPtr->focusPtr->tier > 2)) {
-            worldY += setPtr->tabHeight;
+            worldY += setPtr->maxTabHeight;
             WorldToScreen(setPtr, worldX, worldY, &x, &y);
             tabPtr = (Tab *)PickTabProc(setPtr, x, y, NULL);
         }
@@ -3695,7 +3701,7 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr->iconPos = SIDE_LEFT;
     setPtr->angle = 0.0f;
     setPtr->justify = TK_JUSTIFY_CENTER;
-    setPtr->reqTabWidth = TAB_WIDTH_SAME;
+    setPtr->reqTabWidth = TAB_SAME_WIDTH;
     setPtr->reqTiers = 1;
     setPtr->reqSlant = SLANT_NONE;
     setPtr->display = Tk_Display(tkwin);
@@ -6129,15 +6135,53 @@ ComputeWorldGeometry(Tabset *setPtr)
         }
     }
     setPtr->overlap = 0;
+    setPtr->maxTabWidth  = maxTabWidth;
+    setPtr->maxTabHeight = maxTabHeight;
+
     /*
      * Step 2:  Set the sizes for each tab.  This is different
      *          for constant and variable width tabs.  Add the extra space
      *          needed for slanted tabs, now that we know maximum tab
      *          height.
      */
-    if (setPtr->reqTabWidth != TAB_WIDTH_VARIABLE) {
+    if (setPtr->reqTabWidth == TAB_VARIABLE_WIDTH) {
         int slant;
-        Tab *tabPtr;
+        int w, h;
+
+        if (setPtr->flags & SLANT_LEFT) {
+            setPtr->overlap += maxTabHeight / 2;
+        }
+        if (setPtr->flags & SLANT_RIGHT) {
+            setPtr->overlap += maxTabHeight / 2;
+        }
+        slant = maxTabHeight;
+        slant += (setPtr->flags & SLANT_LEFT)  ? slant : setPtr->inset2;
+        slant += (setPtr->flags & SLANT_RIGHT) ? slant : setPtr->inset2;
+        if (setPtr->side & (SIDE_LEFT | SIDE_RIGHT)) {
+            Tab *tabPtr;
+            int y;
+
+            y = 0;
+            for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+                 tabPtr = NextTab(tabPtr, HIDDEN)) {
+                tabPtr->worldWidth = maxTabHeight;
+                tabPtr->worldHeight = tabPtr->labelWidth0 + slant;
+                y += tabPtr->worldHeight;
+            }
+        } else {
+            Tab *tabPtr;
+            int x;
+
+            x = 0;
+            for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+                 tabPtr = NextTab(tabPtr, HIDDEN)) {
+                tabPtr->worldWidth = tabPtr->labelWidth0 + slant;
+                tabPtr->worldHeight = maxTabHeight;
+                x += tabPtr->worldWidth;
+            }
+        }
+    } else {
+        int slant;
         int w, h;
         
         /* All tabs are the same width.  It's either the size set by the
@@ -6155,62 +6199,46 @@ ComputeWorldGeometry(Tabset *setPtr)
             setPtr->overlap += slant / 2;
         }
         if (setPtr->side & (SIDE_LEFT|SIDE_RIGHT)) {
-            SWAP(w, h);
-        }
-        setPtr->tabWidth  = w;
-        setPtr->tabHeight = h;
+            Tab *tabPtr;
+            int y;
 
-        for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL; 
-             tabPtr = NextTab(tabPtr, HIDDEN)) {
-            if (setPtr->plusPtr == tabPtr) {
-                tabPtr->worldWidth = tabPtr->labelWidth0;
-                tabPtr->worldWidth += (setPtr->flags & SLANT_LEFT)  
-                    ? slant : setPtr->inset2;
-                tabPtr->worldWidth += (setPtr->flags & SLANT_RIGHT) 
-                    ? slant : setPtr->inset2;
-            } else {
-                tabPtr->worldWidth = w;
-            }   
-            tabPtr->worldHeight = h;
-        }
-    } else {                            /* Variable width tabs. */
-        int slant;
-        Tab *tabPtr;
-        int tabWidth, tabHeight;
-        int w, h;
+            y = 0;
+            for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL; 
+                 tabPtr = NextTab(tabPtr, HIDDEN)) {
+                if (setPtr->plusPtr == tabPtr) {
+                    tabPtr->worldHeight = tabPtr->labelWidth0;
+                    tabPtr->worldHeight += (setPtr->flags & SLANT_LEFT)  
+                        ? slant : setPtr->inset2;
+                    tabPtr->worldHeight += (setPtr->flags & SLANT_RIGHT) 
+                        ? slant : setPtr->inset2;
+                } else {
+                    tabPtr->worldHeight = w;
+                }   
+                tabPtr->worldWidth = h;
+                y += tabPtr->worldHeight;
+            }
+        } else {
+            Tab *tabPtr;
+            int x;
 
-        tabWidth = tabHeight = 0;
-        for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
-             tabPtr = NextTab(tabPtr, HIDDEN)) {
-
-            w = tabPtr->labelWidth0;
-            h = maxTabHeight;
-            if ((setPtr->quad == ROTATE_90) || (setPtr->quad == ROTATE_270)) {
-                SWAP(w, h);
-            }
-            if (setPtr->side & (SIDE_LEFT | SIDE_RIGHT)) {
-                SWAP(w, h);
-            }
-            slant = h;
-            w += (setPtr->flags & SLANT_LEFT)  ? slant : setPtr->inset2;
-            w += (setPtr->flags & SLANT_RIGHT) ? slant : setPtr->inset2;
-            tabPtr->worldWidth = w;
-            tabPtr->worldHeight = h;
-            if (tabWidth < w) {
-                tabWidth = w;
-            }
-            if (tabHeight < h) {
-                tabHeight = h;
+            x = 0;
+            for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL; 
+                 tabPtr = NextTab(tabPtr, HIDDEN)) {
+                tabPtr->worldX = x;
+                tabPtr->worldY = y;
+                if (setPtr->plusPtr == tabPtr) {
+                    tabPtr->worldWidth = tabPtr->labelWidth0;
+                    tabPtr->worldWidth += (setPtr->flags & SLANT_LEFT)  
+                        ? slant : setPtr->inset2;
+                    tabPtr->worldWidth += (setPtr->flags & SLANT_RIGHT) 
+                        ? slant : setPtr->inset2;
+                } else {
+                    tabPtr->worldWidth = w;
+                }   
+                tabPtr->worldHeight = h;
+                x += tabPtr->worldWidth;
             }
         }
-        if (setPtr->flags & SLANT_LEFT) {
-            setPtr->overlap += tabHeight / 2;
-        }
-        if (setPtr->flags & SLANT_RIGHT) {
-            setPtr->overlap += tabHeight / 2;
-        }
-        setPtr->tabWidth  = tabWidth;
-        setPtr->tabHeight = tabHeight;
     }
 
     /*
@@ -6229,7 +6257,7 @@ ComputeWorldGeometry(Tabset *setPtr)
 
 
 static void
-ShrinkTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
+ShrinkHorizontalTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
 {
     int x;
     int i;
@@ -6268,8 +6296,8 @@ ShrinkTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
         }
     }
     /*
-     * Go back and reset the world X-coordinates of the tabs, now that their
-     * widths have changed.
+     * Go back and reset the world X-coordinates of the tabs, now that
+     * their widths have changed.
      */
     x = 0;
     for (tabPtr = startPtr, i = 0; (i < numTabs) && (tabPtr != NULL); 
@@ -6279,8 +6307,59 @@ ShrinkTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
     }
 }
 
+static void
+ShrinkVerticalTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
+{
+    int y;
+    int i;
+    Tab *tabPtr;
+
+    y = startPtr->tier;
+    while (shrink > 0) {
+        int count;
+        int ration;
+        Tab *tabPtr;
+
+        count = 0;
+        for (tabPtr = startPtr, i = 0; 
+             (tabPtr != NULL) && (i < numTabs) && (shrink > 0); 
+             tabPtr = NextTab(tabPtr, HIDDEN), i++) {
+            if (tabPtr != setPtr->plusPtr) {
+                count++;
+            }
+        }
+        if (count == 0) { 
+            break;
+        }
+        ration = shrink / count;
+        if (ration == 0) {
+            ration = 1;
+        }
+        
+        for (tabPtr = startPtr, i = 0; 
+             (tabPtr != NULL) && (i < numTabs) && (shrink > 0); 
+             tabPtr = NextTab(tabPtr, HIDDEN), i++) {
+            if (tabPtr != setPtr->plusPtr) {
+                shrink -= ration;
+                tabPtr->worlHeight -= ration;
+                assert(y == tabPtr->tier);
+            }
+        }
+    }
+    /*
+     * Go back and reset the world Y-coordinates of the tabs, now that
+     * their height have changed.
+     */
+    y = 0;
+    for (tabPtr = startPtr, i = 0; (i < numTabs) && (tabPtr != NULL); 
+         tabPtr = NextTab(tabPtr, HIDDEN), i++) {
+        tabPtr->worldY = y;
+        y += tabPtr->worldHeight + setPtr->gap - setPtr->overlap;
+    }
+}
+
 static int 
-CompareTabSizes(const void *a, const void *b)
+CompareHorizontalTabSizes(const void *a, const void *b)
 {
     Tab *tab1Ptr, *tab2Ptr;
     Tabset *setPtr;
@@ -6298,7 +6377,27 @@ CompareTabSizes(const void *a, const void *b)
     result = tab1Ptr->worldWidth - tab2Ptr->worldWidth;
     return -result;
 }
-    
+
+static int 
+CompareVerticalTabSizes(const void *a, const void *b)
+{
+    Tab *tabPtr1, *tabPtr2;
+    Tabset *setPtr;
+    int result;
+
+    tabPtr1 = *(Tab **)a;
+    tabPtr2 = *(Tab **)b;
+    setPtr = tabPtr1->setPtr;
+    if (tabPtr1 == setPtr->plusPtr) {
+        return -1;
+    }
+    if (tabPtr2 == setPtr->plusPtr) {
+        return 1;
+    }
+    result = tabPtr1->worldHeight - tabPtr2->worldHeight;
+    return -result;
+}
+
 /* 
  * Two pass shrink.  
  *      1) Any space beyond the normal size.
@@ -6309,7 +6408,7 @@ CompareTabSizes(const void *a, const void *b)
  *
  */
 static void
-ShrinkVariableSizeTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
+ShrinkHorizontalVariableTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
 {
     int x;
     int i, count;
@@ -6317,7 +6416,7 @@ ShrinkVariableSizeTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
     Tab **tabs; 
     
 #if DEBUG1
-    fprintf(stderr, "ShrinkVariableSizeTabs: shrink=%d\n", shrink);
+    fprintf(stderr, "ShrinkHorizontalVariableSizeTabs: shrink=%d\n", shrink);
 #endif
     /* Build an array of the displayed tabs. */
     count = 0;
@@ -6421,15 +6520,138 @@ ShrinkVariableSizeTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
         ShrinkTabs(setPtr, startPtr, numTabs, shrink);
     }
 }
+/* 
+ * Two pass shrink.  
+ *      1) Any space beyond the normal size.
+ *      2) Any space beyong the defined minimum.                
+ *
+ * Sort tabs by size.
+ * compare differne
+ *
+ */
+static void
+ShrinkVerticalVariableTabs(Tabset *setPtr, Tab *startPtr, int numTabs, 
+                           int shrink)
+{
+    int y;
+    int i, count;
+    Tab *tabPtr;
+    Tab **tabs; 
+    
+#if DEBUG1
+    fprintf(stderr, "ShrinkVariableSizeTabs: shrink=%d\n", shrink);
+#endif
+    /* Build an array of the displayed tabs. */
+    count = 0;
+    tabs = Blt_AssertMalloc(numTabs * sizeof(Tab *));
+    for (tabPtr = startPtr, i = 0; (tabPtr != NULL) && (i < numTabs); 
+         tabPtr = NextTab(tabPtr, HIDDEN)) {
+        if (tabPtr != setPtr->plusPtr) {
+            tabs[count] = tabPtr;
+            count++;
+        }
+    }
+    /* Sort the array according to tab size (biggest to smallest). */
+    qsort(tabs, count, sizeof(Tab *), CompareTabSizes);
+
+#if DEBUG1
+    for (i = 0; i < count; i++) {
+        tabPtr = tabs[i];
+        fprintf(stderr, "before: tab=%s worldHeight=%d\n", tabPtr->name,
+                tabPtr->worldHeight);
+    }
+#endif
+
+    /* Reduce the tab sizes, biggest to the smallest, until we have
+     * recouped enough space.  */
+    for (i = 1; (i < count) && (shrink > 0); i++) {
+        int j, space;
+
+        /* Figure out how much space would be gained by making the bigger
+         * tabs the same size as the next smaller tab. */
+        space = 0;
+        for (j = 0; j < i; j++) {
+            space += tabs[j]->worldHeight - tabs[i]->worldHeight;
+        }
+#if DEBUG1
+        fprintf(stderr, "i=%d space=%d, shrink=%d\n", i, space, shrink);
+#endif
+        if (space == 0) {
+            continue;
+        }
+        if (space < shrink) {
+            /* Not enough reduction yet.  Shrink the bigger tabs to next
+             * level and try again with the next tab. */
+            for (j = 0; j < i; j++) {
+                int avail;
+
+                avail = tabs[j]->worldHeight - tabs[i]->worldHeight;
+                if (shrink < avail) {
+                    avail = shrink;
+                }
+                assert(tabs[j]->worldHeight >= tabs[i]->worldHeight);
+                tabs[j]->worldHeight -= avail;
+                shrink -= avail;
+            }
+        } else {
+            while (shrink > 0) {
+                int ration;
+
+                ration = shrink;
+                if (i > 1) {
+                    ration /=  (i - 1);
+                }
+                if (ration == 0) {
+                    ration = 1;
+                }
+                for (j = 0; (j < i) && (shrink > 0); j++) {
+                    int avail;
+
+                    avail =  tabs[j]->worldHeight - tabs[i]->worldHeight;
+                    if (ration < avail) {
+                        tabs[j]->worldHeight -= ration;
+                        shrink -= ration;
+                    } else {
+                        tabs[j]->worldHeight -= avail;
+                        shrink -= avail;
+                    }
+                }
+            }
+            break;
+        }
+    }    
+    Blt_Free(tabs);
+
+    /*
+     * Reset the world X-coordinates of the tabs, now that their widths
+     * have changed.
+     */
+    y = 0;
+    for (tabPtr = startPtr; tabPtr != NULL; tabPtr = NextTab(tabPtr, HIDDEN)) {
+        tabPtr->worldY = y;
+#if DEBUG1
+        fprintf(stderr, "after: tab=%s worldHeight=%d\n", tabPtr->name,
+                tabPtr->worldHeight);
+#endif
+        y += tabPtr->worldHeight + setPtr->gap - setPtr->overlap;
+    }
+    if (shrink > 0) {
+#if DEBUG1
+        fprintf(stderr, "Still want to shrink tabs shrink=%d\n",
+                shrink);
+#endif
+        ShrinkVerticalTabs(setPtr, startPtr, numTabs, shrink);
+    }
+}
 
 static void
-GrowTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int grow)
+GrowHorizontalTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int grow)
 {
     int x;
     int i;
     Tab *tabPtr;
 
-    if (setPtr->reqTabWidth == TAB_WIDTH_VARIABLE) {
+    if (setPtr->reqTabWidth == TAB_VARIABLE_WIDTH) {
         return;
     }
     x = startPtr->tier;
@@ -6474,7 +6696,58 @@ GrowTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int grow)
 }
 
 static void
-AdjustTabSizes(Tabset *setPtr, int numTabs)
+GrowVerticalTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int grow)
+{
+    int y;
+    int i;
+    Tab *tabPtr;
+
+    if (setPtr->reqTabWidth == TAB_VARIABLE_WIDTH) {
+        return;
+    }
+    y = startPtr->tier;
+    while (grow > 0) {
+        int count;
+        int ration;
+        Tab *tabPtr;
+
+        count = 0;
+        for (tabPtr = startPtr, i = 0; 
+             (tabPtr != NULL) && (i < numTabs) && (grow > 0); 
+             tabPtr = NextTab(tabPtr, HIDDEN), i++) {
+            if (tabPtr != setPtr->plusPtr) {
+                count++;
+            }
+        }
+        ration = grow / count;
+        if (ration == 0) {
+            ration = 1;
+        }
+        
+        for (tabPtr = startPtr, i = 0; 
+             (tabPtr != NULL) && (i < numTabs) && (grow > 0); 
+             tabPtr = NextTab(tabPtr, HIDDEN), i++) {
+            if (tabPtr != setPtr->plusPtr) {
+                tabPtr->worldHeight += ration;
+                assert(y == tabPtr->tier);
+                grow -= ration;
+            }
+        }
+    }
+    /*
+     * Go back and reset the world Y-coordinates of the tabs, now that
+     * their heights have changed.
+     */
+    y = 0;
+    for (tabPtr = startPtr, i = 0; (i < numTabs) && (tabPtr != NULL); 
+         tabPtr = NextTab(tabPtr, HIDDEN), i++) {
+        tabPtr->worldY = y;
+        y += tabPtr->worldHeight + setPtr->gap - setPtr->overlap;
+    }
+}
+
+static void
+AdjustHorizontalTabSizes(Tabset *setPtr, int numTabs)
 {
     int tabsPerTier;
     int total, count, extra, plus;
@@ -6487,7 +6760,7 @@ AdjustTabSizes(Tabset *setPtr, int numTabs)
     x = 0;
     link = NULL;
     maxWidth = 0;
-    if (setPtr->reqTabWidth != TAB_WIDTH_VARIABLE) {
+    if (setPtr->reqTabWidth != TAB_VARIABLE_WIDTH) {
         link = Blt_Chain_FirstLink(setPtr->chain);
         count = 1;
         while (link != NULL) {
@@ -6515,7 +6788,7 @@ AdjustTabSizes(Tabset *setPtr, int numTabs)
   done:
     /* Add to tab widths to fill out row. */
     if (((numTabs % tabsPerTier) != 0) && 
-        (setPtr->reqTabWidth != TAB_WIDTH_VARIABLE)) {
+        (setPtr->reqTabWidth != TAB_VARIABLE_WIDTH)) {
         return;
     }
     startPtr = NULL;
@@ -6545,14 +6818,101 @@ AdjustTabSizes(Tabset *setPtr, int numTabs)
         extra = setPtr->worldWidth - plus - total;
         assert(count > 0);
         if ((extra > 0) && (setPtr->numTiers > 1)) {
-            if (setPtr->reqTabWidth != TAB_WIDTH_VARIABLE) {
-                GrowTabs(setPtr, startPtr, count, extra);
+            if (setPtr->reqTabWidth != TAB_VARIABLE_WIDTH) {
+                GrowHorizontalTabs(setPtr, startPtr, count, extra);
             }
         } else if (extra < 0) {
-            if (setPtr->reqTabWidth == TAB_WIDTH_VARIABLE) {
-                ShrinkVariableSizeTabs(setPtr, startPtr, count, -extra);
+            if (setPtr->reqTabWidth == TAB_VARIABLE_WIDTH) {
+                ShrinkHorizontalVariableTabs(setPtr, startPtr, count, -extra);
             } else {
-                ShrinkTabs(setPtr, startPtr, count, -extra);
+                ShrinkHorizontalTabs(setPtr, startPtr, count, -extra);
+            }           
+        }
+        count = total = 0;
+        startPtr = NULL;
+    }
+}
+
+static void
+AdjustVerticalTabSizes(Tabset *setPtr, int numTabs)
+{
+    int tabsPerTier;
+    int total, count, extra, plus;
+    Tab *startPtr, *nextPtr;
+    Blt_ChainLink link;
+    Tab *tabPtr;
+    int x, maxWidth;
+
+    tabsPerTier = (numTabs + (setPtr->numTiers - 1)) / setPtr->numTiers;
+    x = 0;
+    link = NULL;
+    maxWidth = 0;
+    if (setPtr->reqTabWidth != TAB_VARIABLE_WIDTH) {
+        link = Blt_Chain_FirstLink(setPtr->chain);
+        count = 1;
+        while (link != NULL) {
+            int i;
+
+            for (i = 0; i < tabsPerTier; i++) {
+                tabPtr = Blt_Chain_GetValue(link);
+                if ((tabPtr->flags & HIDDEN) == 0) {
+                    tabPtr->tier = count;
+                    tabPtr->worldX = x;
+                    x += tabPtr->worldWidth + setPtr->gap - setPtr->overlap;
+                    if (x > maxWidth) {
+                        maxWidth = x;
+                    }
+                }
+                link = Blt_Chain_NextLink(link);
+                if (link == NULL) {
+                    goto done;
+                }
+            }
+            count++;
+            x = 0;
+        }
+    }
+  done:
+    /* Add to tab widths to fill out row. */
+    if (((numTabs % tabsPerTier) != 0) && 
+        (setPtr->reqTabWidth != TAB_VARIABLE_WIDTH)) {
+        return;
+    }
+    startPtr = NULL;
+    count = total = 0;
+    plus = 0;
+#ifndef notdef
+    if (setPtr->plusPtr != NULL) {
+        plus += setPtr->inset2 * 2;
+    }
+#endif
+    for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+         tabPtr = NextTab(tabPtr, HIDDEN)) {
+        if (startPtr == NULL) {
+            startPtr = tabPtr;
+        }
+        count++;
+        total += tabPtr->worldWidth + setPtr->gap - setPtr->overlap;
+        link = Blt_Chain_NextLink(tabPtr->link);
+        if (link != NULL) {
+            nextPtr = Blt_Chain_GetValue(link);
+            if (tabPtr->tier == nextPtr->tier) {
+                continue;
+            }
+        }
+        total += setPtr->overlap;
+        
+        extra = setPtr->worldWidth - plus - total;
+        assert(count > 0);
+        if ((extra > 0) && (setPtr->numTiers > 1)) {
+            if (setPtr->reqTabWidth != TAB_VARIABLE_WIDTH) {
+                GrowVerticalTabs(setPtr, startPtr, count, extra);
+            }
+        } else if (extra < 0) {
+            if (setPtr->reqTabWidth == TAB_VARIABLE_WIDTH) {
+                ShrinkVerticalVariableTabs(setPtr, startPtr, count, -extra);
+            } else {
+                ShrinkVerticalTabs(setPtr, startPtr, count, -extra);
             }           
         }
         count = total = 0;
@@ -6568,7 +6928,7 @@ AdjustTabSizes(Tabset *setPtr, int numTabs)
  *
  */
 static void
-ComputeLayout(Tabset *setPtr)
+ComputeHorizontalLayout(Tabset *setPtr)
 {
     int width;
     int x, extra;
@@ -6624,13 +6984,8 @@ ComputeLayout(Tabset *setPtr)
         return;                         /* Don't bother it there's only 
                                          * one tab.*/
     }
-    if (setPtr->side & (SIDE_LEFT | SIDE_RIGHT)) {
-        width = Tk_ReqHeight(setPtr->tkwin) - 2 * 
-            (setPtr->inset2 + setPtr->xSelectPad);
-    } else {
-        width = Tk_ReqWidth(setPtr->tkwin) - (2 * setPtr->inset) -
-                setPtr->xSelectPad - setPtr->inset2;
-    }
+    width = Tk_ReqWidth(setPtr->tkwin) - (2 * setPtr->inset) -
+        setPtr->xSelectPad - setPtr->inset2;
     if (setPtr->reqTiers > 1) {
         int total, maxWidth;
         Tab *tabPtr;
@@ -6659,7 +7014,7 @@ ComputeLayout(Tabset *setPtr)
              * The tabs do not fit into the requested number of tiers.
              * Go into scrolling mode.
              */
-            width = ((total + setPtr->tabWidth) / setPtr->reqTiers);
+            width = ((total + setPtr->maxTabWidth) / setPtr->reqTiers);
             x = 0;
             numTiers = 1;
             for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
@@ -6684,7 +7039,7 @@ ComputeLayout(Tabset *setPtr)
         setPtr->numTiers = numTiers;
 
         if (numTiers > 1) {
-            AdjustTabSizes(setPtr, numTabs);
+            AdjustHorizontalTabSizes(setPtr, numTabs);
         }
         if ((setPtr->flags & (OVERFULL|SCROLL_TABS))==(OVERFULL|SCROLL_TABS)) {
             /* Do you add an offset ? */
@@ -6720,38 +7075,193 @@ ComputeLayout(Tabset *setPtr)
     }
     setPtr->numTiers = numTiers;
     if (numTiers == 1) {
-        /* We only need the extra space at top of the widget for selected tab
-         * if there's only one tier. */
+        /* We only need the extra space at top of the widget for selected
+         * tab if there's only one tier. */
         if ((setPtr->flags & (OVERFULL|SCROLL_TABS)) == OVERFULL) {
             if (VPORTWIDTH(setPtr) > 1) {
                 setPtr->worldWidth = VPORTWIDTH(setPtr) - 
                     (setPtr->xSelectPad + setPtr->inset2);
             }
-            AdjustTabSizes(setPtr, numTabs);
+            AdjustHorizontalTabSizes(setPtr, numTabs);
         }
     }
     setPtr->numTiers = numTiers;
     setPtr->pageTop = setPtr->inset + setPtr->inset2 + 
-        (setPtr->numTiers * setPtr->tabHeight);
+        (setPtr->numTiers * setPtr->maxTabHeight);
     if (setPtr->numTiers == 1) {
         setPtr->pageTop += setPtr->ySelectPad;
     }
-    if (setPtr->side & (SIDE_LEFT | SIDE_RIGHT)) {
+}
+/*
+ *
+ * tabWidth = textWidth0 + gap + (2 * (pad + outerBW));
+ *
+ * tabHeight = textHeight0 + 2 * (pad + outerBW) + topMargin;
+ *
+ */
+static void
+ComputeVerticalLayout(Tabset *setPtr)
+{
+    int width;
+    int x, extra;
+    int numTiers, numTabs, showTabs;
+
+    setPtr->numTiers = 0;
+    setPtr->pageTop = setPtr->borderWidth;
+    setPtr->worldHeight = 1;
+
+    ReindexTabs(setPtr);
+    setPtr->flags &= ~OVERFULL;
+    numTabs = ComputeWorldGeometry(setPtr);
+
+    showTabs = TRUE;
+    if (setPtr->showTabs == SHOW_TABS_MULTIPLE) {
+        showTabs = (numTabs > 1);
+    } else if (setPtr->showTabs == SHOW_TABS_ALWAYS) {
+        showTabs = TRUE;
+    } else if (setPtr->showTabs == SHOW_TABS_NEVER) {
+        showTabs = FALSE;
+    }
+    if (showTabs) {
+        setPtr->flags &= ~HIDE_TABS;
+    } else {
+        setPtr->flags |= HIDE_TABS;
+    }
+    if (showTabs) {
+        setPtr->inset2 = setPtr->defStyle.borderWidth + setPtr->corner;
+        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth + 
+            setPtr->outerPad;
+    } else {
+        setPtr->inset2 = 0;
+        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth;
+    }
+
+    if (numTabs == 0) {
+        return;
+    }
+    /* Reset the pointers to the selected and starting tab. */
+    if (setPtr->selectPtr == NULL) {
+        setPtr->selectPtr = FirstTab(setPtr, HIDDEN|DISABLED);
+    }
+    if (setPtr->startPtr == NULL) {
+        setPtr->startPtr = setPtr->selectPtr;
+    }
+    if (setPtr->focusPtr == NULL) {
+        setPtr->focusPtr = setPtr->selectPtr;
+        Blt_SetFocusItem(setPtr->bindTable, setPtr->focusPtr, NULL);
+    }
+    if (setPtr->flags & HIDE_TABS) {
+        setPtr->pageTop = setPtr->borderWidth;
+        setPtr->numVisible = 0;
+        return;                         /* Don't bother it there's only 
+                                         * one tab.*/
+    }
+    height = Tk_ReqHeight(setPtr->tkwin) - 2 * 
+        (setPtr->inset2 + setPtr->xSelectPad);
+    if (setPtr->reqTiers > 1) {
+        int total, maxHeight;
         Tab *tabPtr;
 
+        /* Static multiple tier mode. */
+
+        /* Sum tab widths and determine the number of tiers needed. */
+        numTiers = 1;
+        total = y = 0;
         for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
-             tabPtr = NextTab(tabPtr, HIDDEN)) {
-            tabPtr->screenWidth = (short int)setPtr->tabHeight;
-            tabPtr->screenHeight = (short int)tabPtr->worldWidth;
+                tabPtr = NextTab(tabPtr, HIDDEN)) {
+            if ((y + tabPtr->worldHeight) > height) {
+                numTiers++;
+                y = 0;
+            }
+            tabPtr->worldY = y;
+            tabPtr->tier = numTiers;
+            extra = tabPtr->worldHeight + setPtr->gap - setPtr->overlap;
+            total += extra, y += extra;
+        }
+        maxHeight = height;
+
+        if (numTiers > setPtr->reqTiers) {
+            Tab *tabPtr;
+            /*
+             * The tabs do not fit into the requested number of tiers.
+             * Go into scrolling mode.
+             */
+            height = ((total + setPtr->maxTabWidth) / setPtr->reqTiers);
+            x = 0;
+            numTiers = 1;
+            for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+                 tabPtr = NextTab(tabPtr, HIDDEN)) {
+                tabPtr->tier = numTiers;
+                /*
+                 * Keep adding tabs to a tier until we overfill it.
+                 */
+                tabPtr->worldY = y;
+                y += tabPtr->worldHeight + setPtr->gap - setPtr->overlap;
+                if (y > height) {
+                    numTiers++;
+                    if (y > maxHeight) {
+                        maxHeight = y;
+                    }
+                    y = 0;
+                }
+            }
+            setPtr->flags |= OVERFULL;
+        }
+        setPtr->worldHeight = maxHeight;
+        setPtr->numTiers = numTiers;
+
+        if (numTiers > 1) {
+            AdjustVerticalTabSizes(setPtr, numTabs);
+        }
+        if ((setPtr->flags & (OVERFULL|SCROLL_TABS))==(OVERFULL|SCROLL_TABS)) {
+            /* Do you add an offset ? */
+            setPtr->worldHeight += (setPtr->xSelectPad + setPtr->inset2);
+            setPtr->worldHeight += setPtr->overlap;
+        } else {
+            if (VPORTWIDTH(setPtr) > 1) {
+                setPtr->worldHeight = VPORTWIDTH(setPtr) - 
+                    (setPtr->xSelectPad + setPtr->inset2);
+            }
+        }
+        if (setPtr->selectPtr != NULL) {
+            RenumberTiers(setPtr, setPtr->selectPtr);
         }
     } else {
         Tab *tabPtr;
-
+        /*
+         * Scrollable single tier mode.
+         */
+        numTiers = 1;
+        y = 0;
         for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
              tabPtr = NextTab(tabPtr, HIDDEN)) {
-            tabPtr->screenWidth = (short int)tabPtr->worldWidth;
-            tabPtr->screenHeight = (short int)setPtr->tabHeight;
+            tabPtr->tier = numTiers;
+            tabPtr->worldY = y;
+            tabPtr->worldX = 0;
+            y += tabPtr->worldHeight + setPtr->gap - setPtr->overlap;
         }
+        /* Subtract off the last gap. */
+        setPtr->worldHeight = y + setPtr->inset2 - setPtr->gap +
+            setPtr->xSelectPad + setPtr->overlap;
+        setPtr->flags |= OVERFULL;
+    }
+    setPtr->numTiers = numTiers;
+    if (numTiers == 1) {
+        /* We only need the extra space at top of the widget for selected tab
+         * if there's only one tier. */
+        if ((setPtr->flags & (OVERFULL|SCROLL_TABS)) == OVERFULL) {
+            if (VPORTWIDTH(setPtr) > 1) {
+                setPtr->worldHeight = VPORTWIDTH(setPtr) - 
+                    (setPtr->xSelectPad + setPtr->inset2);
+            }
+            AdjustVerticalTabSizes(setPtr, numTabs);
+        }
+    }
+    setPtr->numTiers = numTiers;
+    setPtr->pageTop = setPtr->inset + setPtr->inset2 + 
+        (setPtr->numTiers * setPtr->maxTabHeight);
+    if (setPtr->numTiers == 1) {
+        setPtr->pageTop += setPtr->ySelectPad;
     }
 }
 
@@ -6808,11 +7318,11 @@ ComputeVisibleTabs(Tabset *setPtr)
                 &tabPtr->screenX, &tabPtr->screenY);
             switch (setPtr->side) {
             case SIDE_RIGHT:
-                tabPtr->screenX -= setPtr->tabHeight;
+                tabPtr->screenX -= setPtr->maxTabHeight;
                 break;
 
             case SIDE_BOTTOM:
-                tabPtr->screenY -= setPtr->tabHeight;
+                tabPtr->screenY -= setPtr->maxTabHeight;
                 break;
             }
         }
@@ -6857,36 +7367,62 @@ Draw3dFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int side,
 static void
 DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 {
-    int x, y;
     Blt_Bg perfBg;
+    int x, y, w, h;
+    int x1, y1, x2, y2;
 
     if ((tabPtr->container != NULL) || (tabPtr->tkwin == NULL)) {
         return;
     }
-    WorldToScreen(setPtr, tabPtr->worldX + 2, 
-          tabPtr->worldY + tabPtr->worldHeight + 2, &x, &y);
-    x += setPtr->xOffset;
-    y += setPtr->yOffset;
+    x = SCREENX(setPtr, tabPtr->worldX);
+    y = SCREENY(setPtr, tabPtr->worldY);
+    w = h = 8;
+    switch (setPtr->side) {
+    case SIDE_TOP:
+        /* Perforation area is 8 pixels tall, tab width - 4 wide. */
+        /* Located 2 pixels up from the bottom of the tab. */
+        x += 2;
+        y += setPtr->maxTabHeight - 10;
+        w = tabPtr->worldWidth - 4;
+        x1 = x + 4;
+        x2 = x + tabPtr->worldWidth - 4;
+        y1 = y2 = y + 4;
+        break;
+    case SIDE_BOTTOM:
+        /* Perforation area is 8 pixels tall, tab width - 4 wide. */
+        /* Located 2 pixels down from the top of the tab. */
+        x += 2;
+        y += 2;
+        w = tabPtr->worldWidth - 4;
+        x1 = x + 4;
+        x2 = x + tabPtr->worldWidth - 4;
+        y1 = y2 = y + 4;
+        break;
+    case SIDE_LEFT:
+        /* Perforation area is 8 pixels wide, tab height - 4 tall. */
+        /* Located 2 pixels right from the right side of the tab. */
+        x1 = x2 = x + setPtr->maxTabHeight - 2;
+        y1 = y + 2;
+        y2 = y1 + tablePtr->worldHeight - 4;
+        h = y2 - y1;
+        break;
+    case SIDE_RIGHT:
+        /* Perforation area is 8 pixels wide, tab height - 4 tall. */
+        /* Located 2 pixels left from the left side of the tab. */
+        x1 = x2 = x + 2;
+        y1 = y + 2;
+        y2 = y1 + tablePtr->worldHeight - 4;
+        h = y2 - y1;
+        break;
+    }
     if (setPtr->flags & ACTIVE_PERFORATION) {
         perfBg = GETATTR(tabPtr, activeBg);
     } else {
         perfBg = GETATTR(tabPtr, selBg);
     }   
-    if (setPtr->side & (SIDE_TOP|SIDE_BOTTOM)) {
-        int max;
-
-        max = tabPtr->screenX + setPtr->xOffset + tabPtr->screenWidth - 2;
-        Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, x-2, y-4, 
-                tabPtr->screenWidth, 8, 0, TK_RELIEF_FLAT);
-        XDrawLine(setPtr->display, drawable, setPtr->perfGC, x, y, max, y);  
-    } else {
-        int max;
-
-        max  = tabPtr->screenY + tabPtr->screenHeight - 2;
-        Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg,
-               x - 4, y - 2, 8, tabPtr->screenHeight, 0, TK_RELIEF_RAISED);
-        XDrawLine(setPtr->display, drawable, setPtr->perfGC, x, y, x, max);  
-    }
+    Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, x1, y1, 
+        w, h, 0, TK_RELIEF_FLAT);
+    XDrawLine(setPtr->display, drawable, setPtr->perfGC, x1, y1, x2, y2);  
 }
 
 #define NextPoint(px, py) \
@@ -7013,14 +7549,14 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         if (setPtr->flags & SLANT_LEFT) {
             NextPoint(x, yBot);
             NextPoint(x, yTop);
-            NextPoint(x + setPtr->tabHeight, y);
+            NextPoint(x + setPtr->maxTabHeight, y);
         } else {
             NextPoint(x, yBot);
             TopLeft(x, y);
         }
         x += tabPtr->worldWidth;
         if (setPtr->flags & SLANT_RIGHT) {
-            NextPoint(x - setPtr->tabHeight, y);
+            NextPoint(x - setPtr->maxTabHeight, y);
             NextPoint(x, yTop);
             NextPoint(x, yBot);
         } else {
@@ -7084,14 +7620,14 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
             }
             if (setPtr->flags & SLANT_LEFT) {
                 NextPoint(x, yTop);
-                NextPoint(x + setPtr->tabHeight + ySelectPad, y);
+                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
             } else {
                 NextPoint(x, top);
                 TopLeft(x, y);
             }
             x += tabWidth;
             if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->tabHeight - ySelectPad, y);
+                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
                 NextPoint(x, yTop);
             } else {
                 TopRight(x, y);
@@ -7127,7 +7663,7 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
             if (setPtr->flags & SLANT_LEFT) {
                 NextPoint(x, yBot);
                 NextPoint(x, yTop);
-                NextPoint(x + setPtr->tabHeight + ySelectPad, y);
+                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
             } else {
                 BottomLeft(x, yBot);
                 TopLeft(x, y);
@@ -7135,7 +7671,7 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 
             x += tabWidth;
             if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->tabHeight - ySelectPad, y);
+                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
                 NextPoint(x, yTop);
                 NextPoint(x, top);
             } else {
@@ -7180,13 +7716,13 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 
             if (setPtr->flags & SLANT_LEFT) {
                 NextPoint(x, yTop);
-                NextPoint(x + setPtr->tabHeight + ySelectPad, y);
+                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
             } else {
                 TopLeft(x, y);
             }
             x += tabWidth;
             if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->tabHeight - ySelectPad, y);
+                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
                 NextPoint(x, yTop);
                 NextPoint(x, yBot);
             } else {
@@ -7216,14 +7752,14 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
             if (setPtr->flags & SLANT_LEFT) {
                 NextPoint(x, yBot);
                 NextPoint(x, yTop);
-                NextPoint(x + setPtr->tabHeight + ySelectPad, y);
+                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
             } else {
                 BottomLeft(x, yBot);
                 TopLeft(x, y);
             }
             x += tabPtr->worldWidth;
             if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->tabHeight - ySelectPad, y);
+                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
                 NextPoint(x, yTop);
                 NextPoint(x, yBot);
             } else {
@@ -7836,7 +8372,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     int xSelPad, ySelPad;
 
     worldWidth = tabPtr->worldWidth;
-    worldHeight = setPtr->tabHeight + setPtr->inset2;
+    worldHeight = setPtr->maxTabHeight + setPtr->inset2;
 
     /* The world width of tab has to be fixed to remove the extra padding for
      * the slant/corner and the rotation based upon the side. */
@@ -8119,17 +8655,17 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 
     /* Adjust according the side. */
     if (setPtr->side & SIDE_BOTTOM) {
-        y -= setPtr->tabHeight + tabPtr->padY.side1;
+        y -= setPtr->maxTabHeight + tabPtr->padY.side1;
     } else if (setPtr->side & SIDE_LEFT) {
         /*      y -= tabPtr->worldWidth; */
     } else if (setPtr->side & SIDE_RIGHT) {
-        x -= setPtr->tabHeight + tabPtr->padY.side1;
+        x -= setPtr->maxTabHeight + tabPtr->padY.side1;
     }
     /* Adjust the label's area according to the tab's slant. */
     if (setPtr->side & (SIDE_RIGHT | SIDE_LEFT)) {
-        y += (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
+        y += (setPtr->flags & SLANT_LEFT) ? setPtr->maxTabHeight : setPtr->inset2;
     } else {
-        x += (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
+        x += (setPtr->flags & SLANT_LEFT) ? setPtr->maxTabHeight : setPtr->inset2;
     }
     cavityWidth = tabPtr->worldWidth;
     cavityHeight = tabPtr->worldHeight;
@@ -8137,7 +8673,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     fprintf(stderr, "DrawLabel: tab=%s x=%d,y=%d wx=%d,wy=%d,ww=%d,wh=%d tabwidth=%d tabheight=%d\n",
             tabPtr->text, x, y, tabPtr->worldX, tabPtr->worldY, 
             tabPtr->worldWidth, tabPtr->worldHeight, 
-            setPtr->tabWidth, setPtr->tabHeight);
+            setPtr->maxTabWidth, setPtr->maxTabHeight);
 #endif
     stylePtr = &setPtr->defStyle;
     bg = GETATTR(tabPtr, bg);
@@ -8307,8 +8843,8 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 }
 
 #define GetSlantLeft(s) \
-    (((s)->flags & SLANT_LEFT) ? (s)->tabHeight : (s)->inset2)
+    (((s)->flags & SLANT_LEFT) ? (s)->maxTabHeight : (s)->inset2)
 #define GetSlantRight(s) \
-    (((s)->flags & SLANT_RIGHT) ? (s)->tabHeight : (s)->inset2)
+    (((s)->flags & SLANT_RIGHT) ? (s)->maxTabHeight : (s)->inset2)
 
 

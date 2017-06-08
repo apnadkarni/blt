@@ -16,7 +16,7 @@ blt::tabset .t \
     -rotate 0 \
     -selectcommand {  MakePicture .t }  \
     -pagewidth 500 -pageheight 500 \
-    -scrolltabs 1
+  -scrolltabs 1
 
 scrollbar .s -command { .t view } -orient horizontal
  
