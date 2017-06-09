@@ -46,6 +46,7 @@ blt::tabset .t \
     -tearoff yes \
     -iconposition left \
     -tabwidth same \
+    -slant left \
     -tiers 1 \
     -scrollcommand { .s set } \
     -scrollincrement 1 
