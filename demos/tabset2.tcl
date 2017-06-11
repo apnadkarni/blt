@@ -39,13 +39,15 @@ image create picture label1 -file ./images/mini-book1.gif
 image create picture testImage -file ./images/txtrflag.gif
 blt::tk::scrollbar .s -command { .t view } -orient horizontal
 blt::tabset .t \
+    -scrolltabs no \
     -outerrelief flat \
     -font "Arial 8" \
     -outerborderwidth 2 \
     -tearoff yes \
     -iconposition left \
     -tabwidth same \
-    -tiers 2 \
+    -slant left \
+    -tiers 1 \
     -scrollcommand { .s set } \
     -scrollincrement 1 
 
@@ -60,11 +62,13 @@ set attributes {
 }
 
 foreach { entry label color window } $attributes {
-    .t insert end $entry -text $label -fill both -ipady 4
+    .t insert end $entry -text $label -fill both -ipady 4 \
+    	-padx 1 -pady 0 -ipadx 0 -ipady 0 \
 }
 
 foreach page { there bunky another test of a widget } {
-    .t insert end $page -image label2  -ipady 4
+    .t insert end $page -image label2  -ipady 4 \
+    	-padx 1 -pady 0 -ipadx 0 -ipady 0 
 }
 
 blt::table . \
