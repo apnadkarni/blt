@@ -983,7 +983,7 @@ static Tcl_CmdDeleteProc TabsetInstDeletedCmd;
 static Tcl_FreeProc FreeTabset;
 static Tcl_FreeProc FreeTab;
 static Tcl_IdleProc AdoptWindowProc;
-static Tcl_IdleProc DisplayTabset;
+static Tcl_IdleProc DisplayProc;
 static Tcl_IdleProc DisplayTearoff;
 static Tcl_ObjCmdProc TabsetCmd;
 static Tcl_ObjCmdProc TabsetInstCmd;
@@ -1007,7 +1007,9 @@ static int GetTabIterator(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr,
         TabIterator *iterPtr);
 static int GetTabFromObj(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr, 
         Tab **tabPtrPtr);
-static void ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr);
+
+#define SCREENX(s, x)    (x - setPtr->scrollOffset + setPtr->inset)
+#define SCREENY(s, y)    (y - setPtr->scrollOffset + setPtr->inset)
 
 /*
  *---------------------------------------------------------------------------
@@ -1082,7 +1084,7 @@ EventuallyRedraw(Tabset *setPtr)
 {
     if ((setPtr->tkwin != NULL) && !(setPtr->flags & REDRAW_PENDING)) {
         setPtr->flags |= REDRAW_PENDING;
-        Tcl_DoWhenIdle(DisplayTabset, setPtr);
+        Tcl_DoWhenIdle(DisplayProc, setPtr);
     }
 }
 
@@ -1997,19 +1999,18 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
 {
     Tabset *setPtr = clientData;
     Tab *tabPtr;
+    int sx, sy;
 
     if (contextPtr != NULL) {
         *contextPtr = NULL;
     }
     tabPtr = setPtr->selectPtr;
+    /* Perforation */
     if ((tabPtr != NULL) && (setPtr->flags & tabPtr->flags & TEAROFF) &&  
         (tabPtr->container == NULL) && (tabPtr->tkwin != NULL)) {
         int top, bottom, left, right;
-        int sx, sy;
 
         /* Check first for perforation on the selected tab. */
-        WorldToScreen(setPtr, tabPtr->worldX, 
-              tabPtr->worldY + tabPtr->height + PERF_OFFSET_Y, &sx, &sy);
         if (setPtr->side & (SIDE_TOP|SIDE_BOTTOM)) {
             left = sx - PERF_OFFSET_X;
             right = left + tabPtr->screenWidth;
@@ -2034,20 +2035,29 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
     } else {
         x -= (setPtr->flags & SLANT_LEFT) ? setPtr->maxTabHeight : setPtr->inset2;
     }
-    for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
-         tabPtr = NextTab(tabPtr, HIDDEN)) {
-        GadgetRegion *rPtr;
+    for (tabPtr = FirstTab(setPtr, HIDDEN | VISIBLE); tabPtr != NULL;
+         tabPtr = NextTab(tabPtr, HIDDEN | VISIBLE)) {
+        int sx, sy;
+        
+        sx = SCREENX(setPtr, tabPtr->worldX);
+        sy = SCREENX(setPtr, tabPtr->worldY);
 
-        if ((tabPtr->flags & VISIBLE) == 0) {
-            continue;
-        }
-        if ((x >= tabPtr->screenX) && (y >= tabPtr->screenY) &&
-            (x <= (tabPtr->screenX + tabPtr->screenWidth)) &&
-            (y < (tabPtr->screenY + tabPtr->screenHeight + 4 + 
-                  setPtr->ySelectPad))) {
+        if ((x >= sx) && (y >= sy) &&
+            (x <= (sx + tabPtr->width)) &&
+            (y < (sy + tabPtr->height + 4 + setPtr->ySelectPad))) {
             if (contextPtr != NULL) {
                 *contextPtr = TAB_LABEL;
             }
+            break;
+        }
+    }
+    if (tabPtr != NULL) {
+        /* Found a tab. */
+        /* Check perforation. */
+        /* Check button. */
+        /* Check icon. */
+        /* Check text. */
+
             rPtr = &tabPtr->buttonRegion;
             if ((tabPtr->flags & CLOSE_BUTTON) && 
                 (x >= (tabPtr->screenX + rPtr->x)) && 
@@ -2778,7 +2788,7 @@ SelectTab(Tabset *setPtr, Tab *tabPtr)
 
 
 static void
-SeeTab(Tabset *setPtr, Tab *tabPtr)
+SeeHorizontalTab(Tabset *setPtr, Tab *tabPtr)
 {
     int left, right, width;
     
@@ -2798,6 +2808,39 @@ SeeTab(Tabset *setPtr, Tab *tabPtr)
         
         setPtr->scrollOffset = tabPtr->worldX + tabPtr->width -
             (width - 2 * setPtr->xSelectPad);
+        link = Blt_Chain_NextLink(tabPtr->link); 
+        if (link != NULL) {
+            Tab *nextPtr;
+            
+            nextPtr = Blt_Chain_GetValue(link);
+            if (nextPtr->tier == tabPtr->tier) {
+                setPtr->scrollOffset += TAB_SCROLL_OFFSET;
+            }
+        }
+    }
+}
+
+static void
+SeeVerticalTab(Tabset *setPtr, Tab *tabPtr)
+{
+    int top, bot, h;
+    
+    h = VPORTHEIGHT(setPtr);
+    top = setPtr->scrollOffset + setPtr->xSelectPad;
+    bot = setPtr->scrollOffset + h - setPtr->xSelectPad;
+    
+    /* If the tab is partially obscured, scroll so that it's entirely in
+     * view. */
+    if (tabPtr->worldY < top) {
+        setPtr->scrollOffset = tabPtr->worldY;
+        if (tabPtr->index > 0) {
+            setPtr->scrollOffset -= TAB_SCROLL_OFFSET;
+        }
+    } else if ((tabPtr->worldY + tabPtr->height) >= bot) {
+        Blt_ChainLink link;
+        
+        setPtr->scrollOffset = tabPtr->worldY + tabPtr->height -
+            (h - 2 * setPtr->xSelectPad);
         link = Blt_Chain_NextLink(tabPtr->link); 
         if (link != NULL) {
             Tab *nextPtr;
@@ -3625,7 +3668,7 @@ TabsetEventProc(ClientData clientData, XEvent *eventPtr)
             Tcl_DeleteCommandFromToken(setPtr->interp, setPtr->cmdToken);
         }
         if (setPtr->flags & REDRAW_PENDING) {
-            Tcl_CancelIdleCall(DisplayTabset, setPtr);
+            Tcl_CancelIdleCall(DisplayProc, setPtr);
         }
         Tcl_EventuallyFree(setPtr, FreeTabset);
         break;
@@ -3658,7 +3701,7 @@ FreeTabset(DestroyData dataPtr)
     Blt_ChainLink link, next;
 
     if (setPtr->flags & REDRAW_PENDING) {
-        Tcl_CancelIdleCall(DisplayTabset, setPtr);
+        Tcl_CancelIdleCall(DisplayProc, setPtr);
     }
     iconOption.clientData = setPtr;
     Blt_FreeOptions(configSpecs, (char *)setPtr, setPtr->display, 0);
@@ -3871,6 +3914,79 @@ ConfigureTabset(
     return TCL_OK;
 }
 
+
+static void
+AdoptWindowProc(ClientData clientData)
+{
+    Tab *tabPtr = clientData;
+    int x, y;
+    Tabset *setPtr = tabPtr->setPtr;
+
+    x = setPtr->inset + setPtr->inset2 + tabPtr->padX.side1;
+#define TEAR_OFF_TAB_SIZE       5
+    y = setPtr->inset + setPtr->inset2 + setPtr->outerPad + 
+        TEAR_OFF_TAB_SIZE + tabPtr->padX.side1;
+    if (setPtr->numTiers == 1) {
+        y += setPtr->ySelectPad;
+    }
+    Blt_RelinkWindow(tabPtr->tkwin, tabPtr->container, x, y);
+    Tk_MapWindow(tabPtr->tkwin);
+}
+
+
+static int
+NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
+{
+    Tk_Window tkwin;
+    const char *name;
+    int w, h;
+
+    name = Tcl_GetString(objPtr);
+    tkwin = Tk_CreateWindowFromPath(setPtr->interp, setPtr->tkwin, name,
+        (char *)NULL);
+    if (tkwin == NULL) {
+        return TCL_ERROR;
+    }
+    tabPtr->container = tkwin;
+    if (Tk_WindowId(tkwin) == None) {
+        Tk_MakeWindowExist(tkwin);
+    }
+    Tk_SetClass(tkwin, "BltTabsetTearoff");
+    Tk_CreateEventHandler(tkwin, (ExposureMask | StructureNotifyMask),
+        TearoffEventProc, tabPtr);
+    if (Tk_WindowId(tabPtr->tkwin) == None) {
+        Tk_MakeWindowExist(tabPtr->tkwin);
+    }
+    w = Tk_Width(tabPtr->tkwin);
+    if (w < 2) {
+        w = (tabPtr->reqSlaveWidth > 0) 
+            ? tabPtr->reqSlaveWidth : Tk_ReqWidth(tabPtr->tkwin);
+    }
+    w += PADDING(tabPtr->padX) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
+    w += 2 * (setPtr->inset2 + setPtr->inset);
+#define TEAR_OFF_TAB_SIZE       5
+    h = Tk_Height(tabPtr->tkwin);
+    if (h < 2) {
+        h = (tabPtr->reqSlaveHeight > 0)
+            ? tabPtr->reqSlaveHeight : Tk_ReqHeight(tabPtr->tkwin);
+    }
+    h += PADDING(tabPtr->padY) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
+    h += setPtr->inset + setPtr->inset2 + TEAR_OFF_TAB_SIZE + setPtr->outerPad;
+    if (setPtr->numTiers == 1) {
+        h += setPtr->ySelectPad;
+    }
+    Tk_GeometryRequest(tkwin, w, h);
+    Tk_UnmapWindow(tabPtr->tkwin);
+    /* Tk_MoveWindow(tabPtr->tkwin, 0, 0); */
+#ifdef WIN32
+    AdoptWindowProc(tabPtr);
+#else
+    Tcl_DoWhenIdle(AdoptWindowProc, tabPtr);
+#endif
+    Tcl_SetStringObj(Tcl_GetObjResult(setPtr->interp), Tk_PathName(tkwin), -1);
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -3884,6 +4000,8 @@ ConfigureTabset(
  * ActivateOp --
  *
  *      Selects the tab to appear active.
+ *
+ *      pathName activate tabName
  *
  *---------------------------------------------------------------------------
  */
@@ -4002,11 +4120,11 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to highlight the button.
  *
- *        .h button activate tab 
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
+ *
+ *      pathName button activate tabName
  *
  *---------------------------------------------------------------------------
  */
@@ -4040,6 +4158,7 @@ ButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ButtonCgetOp --
  *
+ *      pathName button cget tabName option
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4070,6 +4189,9 @@ ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Configuration information, such as text string, colors, font, etc. get
  *      set for setPtr; old resources get freed, if there were any.  The widget
  *      is redisplayed.
+ *
+ *
+ *      pathName button configure tabName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4135,6 +4257,8 @@ ButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  *
  * CgetOp --
+ *
+ *      pathName cget tabName option
  *
  *---------------------------------------------------------------------------
  */
@@ -4213,6 +4337,8 @@ CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      set for setPtr; old resources get freed, if there were any.  The widget
  *      is redisplayed.
  *
+ *      pathName configure tabName ?option value ...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -4271,6 +4397,8 @@ DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Deletes tab from the set. Deletes either a range of tabs or a single
  *      node.
  *
+ *      pathName delete ?tabName ...?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4323,7 +4451,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DockallOp --
  *
- *        .h dockall
+ *      pathName dockall
  *
  *---------------------------------------------------------------------------
  */
@@ -4358,6 +4486,8 @@ DockallOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  Interp->result will contain a boolean 
  *      result.
  *
+ *      pathName exists tabName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4385,6 +4515,8 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ExtentsOp --
  *
  *      Returns the extents of the tab in root coordinates.  
+ *
+ *      pathName extents tabName
  *
  *---------------------------------------------------------------------------
  */
@@ -4432,6 +4564,8 @@ ExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Sets focus on the specified tab.  A dotted outline will be drawn
  *      around this tab.
  *
+ *      pathName focus tabName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4473,6 +4607,8 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      each index found. If an index could not be found, then the serial
  *      identifier will be the empty string.
  *
+ *      pathName index tabName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4505,6 +4641,8 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  Interp->result will contain the identifier of
  *      each index found. If an index could not be found, then the serial
  *      identifier will be the empty string.
+ *
+ *      pathName id tabName
  *
  *---------------------------------------------------------------------------
  */
@@ -4634,8 +4772,6 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to invoke a selection command.
  *
- *        .h invoke index
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
@@ -4644,6 +4780,8 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Configuration information, such as text string, colors, font, etc. get
  *      set; old resources get freed, if there were any.  The widget is
  *      redisplayed if needed.
+ *
+ *      pathName invoke tabName
  *
  *---------------------------------------------------------------------------
  */
@@ -4663,7 +4801,11 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     SelectTab(setPtr, tabPtr);
-    SeeTab(setPtr, tabPtr);
+    if (setPtr->side & SIDE_VERTICAL) {
+        SeeVerticalTab(setPtr, tabPtr);
+    } else {
+        SeeHorizontalTab(setPtr, tabPtr);
+    }
     cmdObjPtr = GETATTR(tabPtr, cmdObjPtr);
     if (cmdObjPtr != NULL) {
         Tcl_Obj *objPtr;
@@ -4693,6 +4835,8 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * MoveOp --
  *
  *      Moves a tab to a new location.
+ *
+ *      pathName move tabName before|after fromTabName
  *
  *---------------------------------------------------------------------------
  */
@@ -4753,7 +4897,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *        .h names pattern
+ *        pathname names ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4798,6 +4942,15 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NearestOp --
+ *
+ *        pathname nearest x y
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static int
 NearestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -4827,16 +4980,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to select a tab.
  *
- *        .h select index
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then
- *      interp->result contains an error message.
- *
- * Side Effects:
- *      Configuration information, such as text string, colors, font,
- *      etc. get set;  old resources get freed, if there were any.
- *      The widget is redisplayed if needed.
+ *        pathname select tabName
  *
  *---------------------------------------------------------------------------
  */
@@ -4855,7 +4999,11 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     SelectTab(setPtr, tabPtr);
-    SeeTab(setPtr, tabPtr);
+    if (setPtr->side & SIDE_VERTICAL) {
+        SeeVerticalTab(setPtr, tabPtr);
+    } else {
+        SeeHorizontalTab(setPtr, tabPtr);
+    }
     setPtr->flags |= SCROLL_PENDING;
     if (tabPtr->container != NULL) {
         EventuallyRedrawTearoff(tabPtr);
@@ -4864,6 +5012,17 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ViewOp --
+ *
+ *      This procedure is called to view a tab.
+ *
+ *        pathname view first last
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 ViewOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
@@ -4902,84 +5061,12 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 
-static void
-AdoptWindowProc(ClientData clientData)
-{
-    Tab *tabPtr = clientData;
-    int x, y;
-    Tabset *setPtr = tabPtr->setPtr;
-
-    x = setPtr->inset + setPtr->inset2 + tabPtr->padX.side1;
-#define TEAR_OFF_TAB_SIZE       5
-    y = setPtr->inset + setPtr->inset2 + setPtr->outerPad + 
-        TEAR_OFF_TAB_SIZE + tabPtr->padX.side1;
-    if (setPtr->numTiers == 1) {
-        y += setPtr->ySelectPad;
-    }
-    Blt_RelinkWindow(tabPtr->tkwin, tabPtr->container, x, y);
-    Tk_MapWindow(tabPtr->tkwin);
-}
-
-
-static int
-NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
-{
-    Tk_Window tkwin;
-    const char *name;
-    int w, h;
-
-    name = Tcl_GetString(objPtr);
-    tkwin = Tk_CreateWindowFromPath(setPtr->interp, setPtr->tkwin, name,
-        (char *)NULL);
-    if (tkwin == NULL) {
-        return TCL_ERROR;
-    }
-    tabPtr->container = tkwin;
-    if (Tk_WindowId(tkwin) == None) {
-        Tk_MakeWindowExist(tkwin);
-    }
-    Tk_SetClass(tkwin, "BltTabsetTearoff");
-    Tk_CreateEventHandler(tkwin, (ExposureMask | StructureNotifyMask),
-        TearoffEventProc, tabPtr);
-    if (Tk_WindowId(tabPtr->tkwin) == None) {
-        Tk_MakeWindowExist(tabPtr->tkwin);
-    }
-    w = Tk_Width(tabPtr->tkwin);
-    if (w < 2) {
-        w = (tabPtr->reqSlaveWidth > 0) 
-            ? tabPtr->reqSlaveWidth : Tk_ReqWidth(tabPtr->tkwin);
-    }
-    w += PADDING(tabPtr->padX) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
-    w += 2 * (setPtr->inset2 + setPtr->inset);
-#define TEAR_OFF_TAB_SIZE       5
-    h = Tk_Height(tabPtr->tkwin);
-    if (h < 2) {
-        h = (tabPtr->reqSlaveHeight > 0)
-            ? tabPtr->reqSlaveHeight : Tk_ReqHeight(tabPtr->tkwin);
-    }
-    h += PADDING(tabPtr->padY) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
-    h += setPtr->inset + setPtr->inset2 + TEAR_OFF_TAB_SIZE + setPtr->outerPad;
-    if (setPtr->numTiers == 1) {
-        h += setPtr->ySelectPad;
-    }
-    Tk_GeometryRequest(tkwin, w, h);
-    Tk_UnmapWindow(tabPtr->tkwin);
-    /* Tk_MoveWindow(tabPtr->tkwin, 0, 0); */
-#ifdef WIN32
-    AdoptWindowProc(tabPtr);
-#else
-    Tcl_DoWhenIdle(AdoptWindowProc, tabPtr);
-#endif
-    Tcl_SetStringObj(Tcl_GetObjResult(setPtr->interp), Tk_PathName(tkwin), -1);
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
  * TabCgetOp --
  *
- *        .h tab cget index option
+ *        pathName tab cget tabName option
  *
  *---------------------------------------------------------------------------
  */
@@ -5014,8 +5101,6 @@ TabCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      database, in order to reconfigure the options for one or more tabs in
  *      the widget.
  *
- *        .h tab configure index ?index...? ?option value?...
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
@@ -5024,6 +5109,8 @@ TabCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Configuration information, such as text string, colors, font, etc. get
  *      set; old resources get freed, if there were any.  The widget is
  *      redisplayed if needed.
+ *
+ *        pathName tab configure tabName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5117,11 +5204,11 @@ TabOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  *      This procedure is called to highlight the perforation.
  *
- *        .h perforation activate boolean
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
+ *
+ *        pathName perforation activate bool
  *
  *---------------------------------------------------------------------------
  */
@@ -5152,11 +5239,11 @@ PerforationActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to invoke a perforation command.
  *
- *        pathName perforation invoke
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
+ *
+ *        pathName perforation invoke
  *
  *---------------------------------------------------------------------------
  */
@@ -5283,6 +5370,9 @@ DragOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Implements the quick scan.
  *
+ *        pathName scan mark x y
+ *        pathName scan dragto x y
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5339,6 +5429,16 @@ ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ScanOp --
+ *
+
+ *        pathName set tabName
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static int
 SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
@@ -5350,13 +5450,28 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         return TCL_ERROR;
     }
     if (tabPtr != NULL) {
-        SeeTab(setPtr, tabPtr);
+        if (setPtr->side & SIDE_VERTICAL) {
+            SeeVerticalTab(setPtr, tabPtr);
+        } else {
+            SeeHorizontalTab(setPtr, tabPtr);
+        }
         setPtr->flags |= SCROLL_PENDING;
         EventuallyRedraw(setPtr);
     }
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SizeOp --
+ *
+ *      Returns the number of tabs in the widget.
+ *
+ *        pathName size
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static int
 SizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -6029,66 +6144,7 @@ ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ComputeTabGeometry --
- *
- *      |padleft|icon|labelpad|text|labelpad|cbw|close|cbw|padright|
- *---------------------------------------------------------------------------
- */
-static void
-ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
-{
-    Blt_Font font;
-    int iconWidth0, iconHeight0;
-    int closeWidth0, closeHeight0;
-    unsigned int w, h;
-    int count;
-
-    font = GETATTR(tabPtr, font);
-    w = PADDING(tabPtr->iPadX);
-    h = PADDING(tabPtr->iPadY);
-    count = 0;
-    tabPtr->textWidth0 = tabPtr->textHeight0 = 0;
-    iconWidth0 = iconHeight0 = 0;
-    closeWidth0 = closeHeight0 = 0;
-    if (tabPtr->text != NULL) {
-        TextStyle ts;
-
-        Blt_Ts_InitStyle(ts);
-        Blt_Ts_SetFont(ts, font);
-        Blt_Ts_SetPadding(ts, 2, 2, 2, 2);
-        if (tabPtr->layoutPtr != NULL) {
-            Blt_Free(tabPtr->layoutPtr);
-        }
-        tabPtr->layoutPtr = Blt_Ts_CreateLayout(tabPtr->text, -1, &ts);
-        tabPtr->textWidth0  = ODD(tabPtr->layoutPtr->width);
-        tabPtr->textHeight0 = ODD(tabPtr->layoutPtr->height);
-        count++;
-    }
-    if (tabPtr->icon != NULL) {
-        iconWidth0  = IconWidth(tabPtr->icon);
-        iconHeight0 = IconHeight(tabPtr->icon);
-        count++;
-    }
-    if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
-        (setPtr->plusPtr != tabPtr)) {
-        closeWidth0 = closeHeight0 = 
-            CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
-        count++;
-    }
-    w += iconWidth0 + tabPtr->textWidth0 + closeWidth0;
-    h += MAX3(iconHeight0, tabPtr->textHeight0, closeHeight0);
-    if (count > 0) {
-        w += LABEL_PAD * (count - 1);
-    }
-    tabPtr->labelWidth0  = w;
-    tabPtr->labelHeight0 = h;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * ComputeWorldGeometry --
+ * ComputeGeometry --
  *
  *      Compute the sizes of the tabset and each tab in world coordinates.
  *      World coordinates are not rotated according to the side the widget 
@@ -6098,7 +6154,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
  */
 /*ARGSUSED*/
 static int
-ComputeWorldGeometry(Tabset *setPtr)
+ComputeGeometry(Tabset *setPtr)
 {
     int count;
     int maxPageWidth, maxPageHeight;
@@ -6208,7 +6264,7 @@ ComputeWorldGeometry(Tabset *setPtr)
         if (setPtr->flags & SLANT_RIGHT) {
             setPtr->overlap += slant / 2;
         }
-        if (setPtr->side & (SIDE_LEFT|SIDE_RIGHT)) {
+        if (setPtr->side & SIDE_HORIZONTAL) {
             Tab *tabPtr;
             int y;
 
@@ -6950,7 +7006,7 @@ ComputeHorizontalLayout(Tabset *setPtr)
 
     ReindexTabs(setPtr);
     setPtr->flags &= ~OVERFULL;
-    numTabs = ComputeWorldGeometry(setPtr);
+    numTabs = ComputeGeometry(setPtr);
 
     showTabs = TRUE;
     if (setPtr->showTabs == SHOW_TABS_MULTIPLE) {
@@ -7122,7 +7178,7 @@ ComputeVerticalLayout(Tabset *setPtr)
 
     ReindexTabs(setPtr);
     setPtr->flags &= ~OVERFULL;
-    numTabs = ComputeWorldGeometry(setPtr);
+    numTabs = ComputeGeometry(setPtr);
 
     showTabs = TRUE;
     if (setPtr->showTabs == SHOW_TABS_MULTIPLE) {
@@ -7491,7 +7547,7 @@ static int
 TopFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
 {
     XPoint *pointPtr;
-    int width, height;
+    int tabWidth, tabHeight;
     int left, bottom, right, top, yBot, yTop;
     int folderX1, folderX2, folderY1, folderY2;
     int slant;
@@ -7519,7 +7575,9 @@ TopFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
     folderY1 = setPtr->inset;
     folderY2 = Tk_Height(setPtr->tkwin) - setPtr->inset;
     slant = setPtr->maxTabHeight;
-
+    tabWidth = tabPtr->width;
+    tabHeight = tabPtr->height;
+    
     /* Remember these are all world coordinates. */
     /*
      *          x,y
@@ -7552,7 +7610,7 @@ TopFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
         yBot = bottom;
     } 
     if (tabPtr != setPtr->selectPtr) {
-
+        
         /*
          * Case 1: Unselected tab
          *
@@ -7561,10 +7619,10 @@ TopFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
          *     1+         +4
          *      .         .
          *      .         .
-         *     0+-------- +5
+         *     0+ . . . . +5
          *
          */
-        NextPoint(x, y + tabHeight);
+        NextPoint(x, y + tabHeight + setPtr->inset);
         if (setPtr->flags & SLANT_RIGHT) {
             NextPoint(x, y - slant);
             NextPoint(x + slant, y);
@@ -7578,7 +7636,7 @@ TopFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
         } else {
             TopRight(x, y);
         }
-        NextPoint(x, y + tabHeight);
+        NextPoint(x, y + tabHeight + setPtr->inset);
 
     } else if ((tabPtr->flags & VISIBLE) == 0) {
         /*
@@ -7599,17 +7657,17 @@ TopFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
         NextPoint(folderX2, folderY2);
     } else {
         int flags;
-        int tabWidth;
 
         x -= setPtr->xSelectPad;
         y -= setPtr->ySelectPad;
-        tabWidth = tabPtr->width + 2 * setPtr->xSelectPad;
-
+        tabWidth  += 2 * setPtr->xSelectPad;
+        tabHeight += setPtr->ySelectPad;
+        
         flags = 0;
-        if (x < left) {
+        if (x < folderX1) {
             flags |= TAB_CLIP_LEFT;
         }
-        if ((x + tabWidth) > right) {
+        if ((x + tabWidth) > folderX2) {
             flags |= TAB_CLIP_RIGHT;
         }
         switch (flags) {
@@ -7637,158 +7695,152 @@ TopFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
                     TopLeft(folderX1, y);
                 }
             } else {
+                TopLeft(folderX1, y + tabHeight);
+                NextPoint(x, y + tabHeight);
                 if (setPtr->flags & SLANT_LEFT) {
-                    NextPoint(x, y + tabHeight);
                     NextPoint(x + slant, y);
                 } else {
                     TopLeft(x, y);
                 }
             }
             x += tabWidth;
-
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
+            if (x > (folderX2 - setPtr->corner)) {
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(folderX2 - slant, y);
+                    NextPoint(folderX2, y + tabHeight);
+                } else {
+                    TopRight(folderX2, y);
+                }
             } else {
-                TopRight(x, y);
-                NextPoint(x, top);
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(x - slant, y);
+                    NextPoint(x, y + tabHeight);
+                } else {
+                    TopRight(x, y);
+                }
+                TopRight(folderX2, y + tabHeight);
             }
-            if (x > (right - setPtr->corner)) {
-                NextPoint(right, top + setPtr->corner);
-            } else {
-                TopRight(right, top);
-            }
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
+            NextPoint(folderX2, folderY2);
             break;
 
         case TAB_CLIP_LEFT:
-
+            /* Selected tab is partially offscreen to the left. */
             /*
-             *  worldX, worldY
-             *          |
-             *          * 4+ . . +5
+             *            4+ . . +5
              *          3+         +6
              *           .         .
              *           .         .
-             *          2+--------+7 . . . .+8
-             *            1+ . . . +0          +9
-             *                     .           .
-             *                     .           .
-             *                     .           .
-             *                   11+ . . . . . +10
+             *          2+ _1+     +7 _ _ _ _ _+8
+             *               |                   +9
+             *               |                   |
+             *               |                   |
+             *               |                   |
+             *              0+ _ _ _  _ _ _ _ _ _+10
              */
 
-            NextPoint(left, yBot);
+            NextPoint(folderX1, folderY2);
+            NextPoint(folderX1, y + tabHeight);
+            NextPoint(x, y + tabHeight);
             if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yBot);
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
+                NextPoint(x + slant, y);
             } else {
-                BottomLeft(x, yBot);
                 TopLeft(x, y);
             }
-
             x += tabWidth;
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, top);
+            if (x > (folderX2 - setPtr->corner)) {
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(folderX2 - slant, y);
+                    NextPoint(folderX2, y + tabHeight);
+                } else {
+                    TopRight(folderX2, y);
+                }
             } else {
-                TopRight(x, y);
-                NextPoint(x, top);
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(x - slant, y);
+                    NextPoint(x, y + tabHeight);
+                } else {
+                    TopRight(x, y);
+                }
+                NextPoint(x, y + tabHeight);
+                TopRight(folderX2, y + tabHeight);
             }
-            if (x > (right - setPtr->corner)) {
-                NextPoint(right, top + setPtr->corner);
-            } else {
-                TopRight(right, top);
-            }
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
+            NextPoint(folderX2, folderY2);
             break;
 
         case TAB_CLIP_RIGHT:
 
-            /*
-             *              worldX, worldY
-             *                     |
-             *                     * 7+ . . +8
-             *                     6+         +9
-             *                      .         .
-             *                      .         .
-             *           4+ . . . .5+---------+10
-             *         3+          0+ . . . +11
-             *          .           .
-             *          .           .
-             *          .           .
-             *         2+ . . . . . +1
+            /*                     x,y
+             *                       5+ . . . .+6
+             *                     4+            +7
+             *                      .            .
+             *                      .            .
+             *           2+ _ _ _ _3+       +9 _ +8
+             *         1+                   |
+             *          |                   |
+             *          |                   |
+             *          |                   |
+             *         0+ _ _ _ _ _ _ _ _ _ +10
              */
 
-            NextPoint(right, yBot);
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
-            if (x < (left + setPtr->corner)) {
-                NextPoint(left, top);
+            NextPoint(folderX1, folderY2);
+            if (x < (folderX1 + setPtr->corner)) {
+                if (setPtr->flags & SLANT_LEFT) {
+                    NextPoint(folderX1, y + tabHeight);
+                    NextPoint(folderX1 + slant, y);
+                } else {
+                    TopLeft(folderX1, y);
+                }
             } else {
-                TopLeft(left, top);
-            }
-            NextPoint(x, top);
-
-            if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
-            } else {
-                TopLeft(x, y);
+                TopLeft(folderX1, y + tabHeight);
+                NextPoint(x, y + tabHeight);
+                if (setPtr->flags & SLANT_LEFT) {
+                    NextPoint(x + slant, y);
+                } else {
+                    TopLeft(x, y);
+                }
             }
             x += tabWidth;
             if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, yBot);
+                NextPoint(x - slant, y);
             } else {
                 TopRight(x, y);
-                BottomRight(x, yBot);
             }
+            NextPoint(x, y + tabHeight);
+            NextPoint(folderX2, y + tabHeight);
+            NextPoint(folderX2, folderY2);
             break;
 
         case (TAB_CLIP_LEFT | TAB_CLIP_RIGHT):
 
-            /*
-             *  worldX, worldY
-             *     |
-             *     * 4+ . . . . . . . . +5
-             *     3+                     +6
-             *      .                     .
-             *      .                     .
-             *     1+---------------------+7
-             *       2+ 0+          +9 .+8
-             *           .          .
-             *           .          .
-             *           .          .
-             *         11+ . . . . .+10
+            /*     x,y
+             *       4+ . . . . . . . .+5
+             *     3+                    +6
+             *      .                    .
+             *      .                    .
+             *     2+ . 1+          +8 . +7
+             *           |          |
+             *           |          |
+             *           |          |
+             *          0+ _ _ _ _ _+9
              */
 
-            NextPoint(left, yBot);
+            NextPoint(folderX1, folderY2);
+            NextPoint(folderX1, y + tabHeight);
+            NextPoint(x, y + tabHeight);
             if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yBot);
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
+                NextPoint(x + slant, y);
             } else {
-                BottomLeft(x, yBot);
                 TopLeft(x, y);
             }
             x += tabPtr->width;
             if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, yBot);
+                NextPoint(x - slant, y);
             } else {
                 TopRight(x, y);
-                BottomRight(x, yBot);
             }
-            NextPoint(right, yBot);
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
+            NextPoint(x, y + tabHeight);
+            NextPoint(folderX2, y + tabHeight);
+            NextPoint(folderX2, folderY2);
             break;
         }
     }
@@ -7827,11 +7879,11 @@ TopFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
  *  worldX, worldY
  *
  */
-static void
+static int 
 BottomFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
 {
     XPoint *pointPtr;
-    int width, height;
+    int tabWidth, tabHeight;
     int left, bottom, right, top, yBot, yTop;
     int folderX1, folderX2, folderY1, folderY2;
     int slant;
@@ -7843,8 +7895,8 @@ BottomFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
     width = VPORTWIDTH(setPtr);
     height = VPORTHEIGHT(setPtr);
 
-    x = tabPtr->worldX;
-    y = tabPtr->worldY;
+    x = SCREENX(tabPtr->worldX);
+    y = SCREENY(tabPtr->worldY);
 
     numPoints = 0;
     pointPtr = points;
@@ -7853,6 +7905,14 @@ BottomFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
     if (setPtr->numTiers == 1) {
         ySelectPad = setPtr->ySelectPad;
     }
+
+    folderX1 = setPtr->inset;
+    folderX2 = Tk_Width(setPtr->tkwin) - setPtr->inset;
+    folderY1 = setPtr->inset;
+    folderY2 = Tk_Height(setPtr->tkwin) - setPtr->inset;
+    slant = setPtr->maxTabHeight;
+    tabWidth = tabPtr->width;
+    tabHeight = tabPtr->height;
 
     /* Remember these are all world coordinates. */
     /*
@@ -7873,12 +7933,7 @@ BottomFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
      * tTop     Top of tab.
      * tBot     Bottom of tab.
      */
-    folderX1 = setPtr->inset;
-    folderX2 = Tk_Width(setPtr->tkwin) - setPtr->inset;
-    folderY1 = setPtr->inset;
-    folderY2 = Tk_Height(setPtr->tkwin) - setPtr->inset;
-    slant = setPtr->maxTabHeight;
-
+    
     left = setPtr->scrollOffset - setPtr->xSelectPad;
     right = left + width;
     yTop = y + tabPtr->height;
@@ -7901,9 +7956,9 @@ BottomFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
     if (tabPtr != setPtr->selectPtr) {
         /*
          * Case 1: Unselected tab
-         *
+         *    
          *     0+-------- +5
-         * x,y--*         .
+         * x,y .          .
          *     1+         +4
          *      2+ . . . +3
          *
@@ -8286,18 +8341,17 @@ LeftFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
         NextPoint(folderX2, folderY2);
     } else {
         int flags;
-        int tabWidth;
 
         x -= setPtr->ySelectPad;
         y -= setPtr->xSelectPad;
-        tabWidth += 2 * setPtr->ySelectPad;
+        tabWidth += setPtr->ySelectPad;
         tabHeight += 2 * setPtr->xSelectPad;
 
         flags = 0;
         if (y < folderY1) {
             flags |= TAB_CLIP_TOP;
         }
-        if ((y + tabPtr->height) > folderY2) {
+        if ((y + tabHeight) > folderY2) {
             flags |= TAB_CLIP_BOTTOM;
         }
         switch (flags) {
@@ -8307,14 +8361,14 @@ LeftFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
              *            1+ _ _ _ _ _ +0
              *          2+             |
              *           |             |
-             * x,y       |             |
-             *   4+. . .3+             |
-             * 5+                      |
-             *  .                      |
-             *  .                      |
-             *  .                      |
-             * 6+                      | 
-             *   7+ . . 8+             |
+             *   x,y     |             |
+             *      4+ . +3            |
+             *    5+                   |
+             *     .                   |
+             *     .                   |
+             *     .                   |
+             *    6+                   | 
+             *      7+ . +8            |
              *           |             |
              *           |             |
              *           |             |
@@ -8367,7 +8421,7 @@ LeftFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
             /*
              * x,y 
              *   3+. . . +2             
-             * 4+        |             
+             * 4+        .             
              *  .       1+ _ _ _ _ _ _ +0
              *  .                      |
              *  .                      |
@@ -8382,14 +8436,13 @@ LeftFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
 
             NextPoint(folderX2, folderY1);
             NextPoint(folderX1, folderY1);
-            NextPoint(x + tabPtr->width, y);
+            NextPoint(x + tabWidth, y);
             if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, y);
                 NextPoint(x, y + slant);
             } else {
                 TopLeft(x, y);
             }
-            y += tabPtr->height;
+            y += tabHeight;
             /* If the end of the tab is within the corner then extend the
              * tab to end of folder and draw a straight edge.  */
             if (y > (folderY2 - setPtr->corner)) {
@@ -8402,11 +8455,11 @@ LeftFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
             } else {
                 if (setPtr->flags & SLANT_RIGHT) {
                     NextPoint(x, y - slant);
-                    NextPoint(x + tabWidth, y);
                 } else {
                     BottomLeft(x, y);
                 }
-                BottomRight(x + tabPtr->width, folderY2);
+                NextPoint(x + tabWidth, y);
+                BottomLeft(x + tabWidth, folderY2);
             }
             NextPoint(folderX2, folderY2);
             break;
@@ -8449,11 +8502,10 @@ LeftFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
             y += tabHeight;
             if (setPtr->flags & SLANT_LEFT) {
                 NextPoint(x, y - slant);
-                NextPoint(x + tabWidth, y);
             } else {
                 TopLeft(x, y);
-                NextPoint(x + tabWidth, y);
             }
+            NextPoint(x + tabWidth, y);
             NextPoint(x + tabWidth, folderY2);
             NextPoint(folderX2, folderY2);
             break;
@@ -8478,7 +8530,6 @@ LeftFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
             NextPoint(x + tabWidth, folderY1);
             NextPoint(x + tabWidth, y);
             if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x + tabWidth, y);
                 NextPoint(x, y + slant);
             } else {
                 TopLeft(x, y);
@@ -8530,13 +8581,14 @@ LeftFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
  *  12+-------------------------+11
  *
  */
-static void
-DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
+static int
+RightFolder(Tabset *setPtr, Tab *tabPtr, XPoint *points)
 {
-    XPoint points[16];
     XPoint *pointPtr;
     int width, height;
     int left, bottom, right, top, yBot, yTop;
+    int folderX1, folderX2, folderY1, folderY2;
+    int slant;
     int x, y;
     int i;
     int numPoints;
@@ -8545,8 +8597,14 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     width = VPORTWIDTH(setPtr);
     height = VPORTHEIGHT(setPtr);
 
-    x = tabPtr->worldX;
-    y = tabPtr->worldY;
+    x = SCREENX(setPtr, tabPtr->worldX);
+    y = SCREENY(setPtr, tabPtr->worldY);
+
+    folderX1 = setPtr->inset;
+    folderX2 = Tk_Width(setPtr->tkwin) - setPtr->inset;
+    folderY1 = setPtr->inset;
+    folderY2 = Tk_Height(setPtr->tkwin) - setPtr->inset;
+    slant = setPtr->maxTabHeight;
 
     numPoints = 0;
     pointPtr = points;
@@ -8592,590 +8650,307 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         /*
          * Case 1: Unselected tab
          *
-         * * 2+ . . +3
-         * 1+         +4
-         *  .         .
-         * 0+-------- +5
+         *    x,y
+         *  0+ . . +1
+         *   .       +2
+         *   .       .
+         *   .       +3
+         *  5+ . . +4
          *
          */
-        
+        NextPoint(x - setPtr->corner, y);
         if (setPtr->flags & SLANT_LEFT) {
-            NextPoint(x, yBot);
-            NextPoint(x, yTop);
-            NextPoint(x + setPtr->maxTabHeight, y);
+            NextPoint(x + tabWidth, y + slant);
         } else {
-            NextPoint(x, yBot);
-            TopLeft(x, y);
+            TopRight(x + tabWidth, y);
         }
-        x += tabPtr->width;
+        y += tabHeight;
         if (setPtr->flags & SLANT_RIGHT) {
-            NextPoint(x - setPtr->maxTabHeight, y);
-            NextPoint(x, yTop);
-            NextPoint(x, yBot);
+            NextPoint(x + tabWidth, y - slant);
+            NextPoint(x + tabWidth, y);
         } else {
-            TopRight(x, y);
-            NextPoint(x, yBot);
+            BottomRight(x + tabWidth, y);
         }
+        NextPoint(x - setPtr->corner, y);
+
     } else if ((tabPtr->flags & VISIBLE) == 0) {
         /*
          * Case 2: Selected tab not visible in viewport.  Draw folder only.
          *
-         * * 2+ . . +3
-         * 1+         +4
-         *  .         .
-         * 0+-------- +5
+         *   0+_ _ _ _ _ +1 
+         *   |             +2
+         *   |             | 
+         *   |             | 
+         *   |             | 
+         *   |             | 
+         *   |             +3 
+         *   5+_ _ _ _ _ +4 
          */
+        NextPoint(folderX1, folderY1);
+        TopRight(folderX2, folderY1);
+        BottomRight(folderX2, folderY2);
+        NextPoint(folderX1, folderY2);
 
-        TopLeft(left, top);
-        TopRight(right, top);
-        NextPoint(right, bottom);
-        NextPoint(left, bottom);
     } else {
         int flags;
-        int tabWidth;
 
-        x -= setPtr->xSelectPad;
-        y -= setPtr->ySelectPad;
-        tabWidth = tabPtr->width + 2 * setPtr->xSelectPad;
+        y -= setPtr->xSelectPad;
+        tabWidth += setPtr->ySelectPad;
+        tabHeight += 2 * setPtr->xSelectPad;
 
-#define TAB_CLIP_NONE   0
-#define TAB_CLIP_LEFT   (1<<0)
-#define TAB_CLIP_RIGHT  (1<<1)
         flags = 0;
-        if (x < left) {
-            flags |= TAB_CLIP_LEFT;
+        if (y < folderY1) {
+            flags |= TAB_CLIP_TOP;
         }
-        if ((x + tabWidth) > right) {
-            flags |= TAB_CLIP_RIGHT;
+        if ((y + tabHeight) > folderY2) {
+            flags |= TAB_CLIP_BOTTOM;
         }
         switch (flags) {
         case TAB_CLIP_NONE:
 
             /*
-             *  worldX, worldY
-             *          |
-             *          * 4+ . . +5
-             *          3+         +6
-             *           .         .
-             *           .         .
-             *   1+. . .2+---------+7 . . . .+8
-             * 0+                              +9
-             *  .                              .
-             *  .                              .
-             *  .                              .
-             *11+ . . . . . . . . . . . . .  . +10
+             * 0+ _ _ _ _ _ +1           
+             *  |             +2            
+             *  |             |            
+             *  |          x,y|  
+             *  |            3+ . +4 
+             *  |                   +5      
+             *  |                   .      
+             *  |                   .      
+             *  |                   .      
+             *  |                   +6      
+             *  |            8+ . +7   
+             *  |             |            
+             *  |             |            
+             *  |             |            
+             *  |             +9+            
+             *11+ _ _ _ _ _ +10
              */
 
-            if (x < (left + setPtr->corner)) {
-                NextPoint(left, top);
+          NextPoint(folderX1, folderY1);
+            /* If the start of the tab is within the corner then extend the
+             * tab to start of folder and draw a straight edge.  */
+            if (y < (folderY1 + setPtr->corner)) {
+                if (setPtr->flags & SLANT_LEFT) {
+                    NextPoint(x, folderY1);
+                    NextPoint(x + tabWidth, folderY1 + slant);
+                } else {
+                    TopRight(x + tabWidth, folderY1);
+                }
             } else {
-                TopLeft(left, top);
+                TopLeft(x, folderY1);
+                NextPoint(x, y);
+                if (setPtr->flags & SLANT_LEFT) {
+                    NextPoint(x + tabWidth, y + slant);
+                } else {
+                    TopRight(x + tabWidth, y);
+                }
             }
-            if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
+            y += tabHeight;
+            /* If the end of the tab is within the corner then extend the
+             * tab to end of folder and draw a straight edge.  */
+            if (y > (folderY2 - setPtr->corner)) {
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(x + tabWidth, folderY2 - slant);
+                    NextPoint(x, folderY2);
+                } else {
+                    BottomLeft(x + tabWidth, folderY2);
+                }
             } else {
-                NextPoint(x, top);
-                TopLeft(x, y);
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(x + tabWidth, y - slant);
+                    NextPoint(x, y);
+                } else {
+                    BottomRight(x + tabWidth, y);
+                }
+                BottomRight(x, folderY2);
             }
-            x += tabWidth;
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-            } else {
-                TopRight(x, y);
-                NextPoint(x, top);
-            }
-            if (x > (right - setPtr->corner)) {
-                NextPoint(right, top + setPtr->corner);
-            } else {
-                TopRight(right, top);
-            }
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
+            NextPoint(folderX2, folderY1);
             break;
 
-        case TAB_CLIP_LEFT:
+        case TAB_CLIP_TOP:
 
             /*
-             *  worldX, worldY
-             *          |
-             *          * 4+ . . +5
-             *          3+         +6
-             *           .         .
-             *           .         .
-             *          2+--------+7 . . . .+8
-             *            1+ . . . +0          +9
-             *                     .           .
-             *                     .           .
-             *                     .           .
-             *                   11+ . . . . . +10
+             *               x,y 
+             *               2+ . . +3             
+             *                .       +4
+             *  0+ _ _ _ _ _ +1       . 
+             *   |                    .           
+             *   |                    .           
+             *   |                    +5           
+             *   |           7+ . . +6  
+             *   |            |  
+             *   |            |  
+             *   |            |  
+             *   |            +8  
+             * 10+ _ _ _ _ _+9
              */
 
-            NextPoint(left, yBot);
+            NextPoint(folderX1, folderY1);
+            NextPoint(folderX2, folderY1);
+            NextPoint(x, y);
             if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yBot);
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
+                NextPoint(x + tabWidth, y + slant);
             } else {
-                BottomLeft(x, yBot);
-                TopLeft(x, y);
+                TopRight(x + tabWidth, y);
             }
-
-            x += tabWidth;
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, top);
+            y += tabHeight;
+            /* If the end of the tab is within the corner then extend the
+             * tab to end of folder and draw a straight edge.  */
+            if (y > (folderY2 - setPtr->corner)) {
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(x + tabWidth, folderY2 - slant);
+                    NextPoint(x, folderY2);
+                } else {
+                    BottomRight(x + tabWidth, folderY2);
+                }
             } else {
-                TopRight(x, y);
-                NextPoint(x, top);
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(x + tabWidth, y - slant);
+                } else {
+                    BottomRight(x + tabWidth, y);
+                }
+                NextPoint(x, y);
+                BottomRight(x, folderY2);
             }
-            if (x > (right - setPtr->corner)) {
-                NextPoint(right, top + setPtr->corner);
-            } else {
-                TopRight(right, top);
-            }
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
+            NextPoint(folderX1, folderY2);
             break;
 
-        case TAB_CLIP_RIGHT:
+        case TAB_CLIP_BOTTOM:
 
             /*
-             *              worldX, worldY
-             *                     |
-             *                     * 7+ . . +8
-             *                     6+         +9
-             *                      .         .
-             *                      .         .
-             *           4+ . . . .5+---------+10
-             *         3+          0+ . . . +11
-             *          .           .
-             *          .           .
-             *          .           .
-             *         2+ . . . . . +1
+             *  0+ _ _ _ _ _+1
+             *   |            +2  
+             *   |            |  
+             *   |            |  
+             *   |            |  
+             *   |           3+ . . +4  
+             *   |           x,y      +5           
+             *   |                    .           
+             *   |                    .           
+             * 10+ _ _ _ _ _ +9       . 
+             *                .       +6
+             *               8+ . . +7             
              */
 
-            NextPoint(right, yBot);
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
-            if (x < (left + setPtr->corner)) {
-                NextPoint(left, top);
+            NextPoint(folderX1, folderY1);
+            if (y < (folderY1 + setPtr->corner)) {
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(x, folderY1);
+                    NextPoint(x + tabWidth, folderY1 + slant);
+                } else {
+                    TopLeft(x + tabWidth, folderY1);
+                } 
             } else {
-                TopLeft(left, top);
+                TopRight(x, folderY1);
+                NextPoint(x, y);
+                if (setPtr->flags & SLANT_RIGHT) {
+                    NextPoint(x + tabWidth, y + slant);
+                } else {
+                    TopLeft(x + tabWidth, y);
+                }
             }
-            NextPoint(x, top);
-
+            y += tabHeight;
             if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
+                NextPoint(x + tabWidth, y - slant);
             } else {
-                TopLeft(x, y);
+                TopLeft(x + tabWidth, y);
             }
-            x += tabWidth;
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, yBot);
-            } else {
-                TopRight(x, y);
-                BottomRight(x, yBot);
-            }
+            NextPoint(x, y);
+            NextPoint(x, folderY2);
+            NextPoint(folderX1, folderY2);
             break;
 
-        case (TAB_CLIP_LEFT | TAB_CLIP_RIGHT):
+        case (TAB_CLIP_TOP | TAB_CLIP_BOTTOM):
 
             /*
-             *  worldX, worldY
-             *     |
-             *     * 4+ . . . . . . . . +5
-             *     3+                     +6
-             *      .                     .
-             *      .                     .
-             *     1+---------------------+7
-             *       2+ 0+          +9 .+8
-             *           .          .
-             *           .          .
-             *           .          .
-             *         11+ . . . . .+10
+             *                    x,y 
+             *                    2+ . . +3 
+             *                     |       +4  
+             *        0+ _ _ _ _ _ +1      .  
+             *         |                   .   
+             *         |                   .   
+             *         |                   .   
+             *         |                   .   
+             *        9+ _ _ _ _ _ +8      .  
+             *                     |       +5  
+             *                    7+ . . +6
              */
 
-            NextPoint(left, yBot);
+            NextPoint(folderX1, folderY1);
+            NextPoint(x, folderY1);
+            NextPoint(x, y);
             if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yBot);
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
+                NextPoint(x + tabWidth, y + slant);
             } else {
-                BottomLeft(x, yBot);
-                TopLeft(x, y);
+                TopRight(x + tabWidth, y);
             }
-            x += tabPtr->width;
+            y += tabHeight;
             if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, yBot);
+                NextPoint(x + tabWidth, y - slant);
             } else {
-                TopRight(x, y);
-                BottomRight(x, yBot);
+                BottomRight(x + tabWidth, y);
             }
-            NextPoint(right, yBot);
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
+            NextPoint(x, y);
+            NextPoint(x, folderY2);
+            NextPoint(folderX1, folderY2);
             break;
+
         }
     }
     EndPoint(points[0].x, points[0].y);
-    for (i = 0; i < numPoints; i++) {
-        WorldToScreen(setPtr, points[i].x, points[i].y, &x, &y);
-        points[i].x = x + setPtr->xOffset;
-        points[i].y = y + setPtr->yOffset;
-    }
-    Draw3dFolder(setPtr, tabPtr, drawable, setPtr->side, points, numPoints);
-    DrawLabel(setPtr, tabPtr, drawable);
-    if (tabPtr->container != NULL) {
-        XRectangle rect;
-
-        /* Draw a rectangle covering the spot representing the window  */
-        GetWindowRectangle(tabPtr, setPtr->tkwin, FALSE, &rect);
-        XFillRectangles(setPtr->display, drawable, tabPtr->backGC,
-            &rect, 1);
-    }
+    return numPoints;
 }
 
-/*
- * From the left edge:
- *
- *   |a|b|c|d|e| f |d|e|g|h| i |h|g|e|d|f|    j    |e|d|c|b|a|
- *
- *      a. highlight ring
- *      b. tabset 3D border
- *      c. outer gap
- *      d. page border
- *      e. page corner
- *      f. gap + select pad
- *      g. label pad x (worldX)
- *      h. internal pad x
- *      i. label width
- *      j. rest of page width
- *
- *  worldX, worldY
- *          |
- *          |
- *          * 4+ . . +5
- *          3+         +6
- *           .         .
- *           .         .
- *   1+. . .2+         +7 . . . .+8
- * 0+                              +9
- *  .                              .
- *  .                              .
- *13+                              +10
- *  12+-------------------------+11
- *
- */
 static void
 DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 {
+    Blt_Bg bg;
     XPoint points[16];
-    XPoint *pointPtr;
-    int width, height;
-    int left, bottom, right, top, yBot, yTop;
-    int x, y;
-    int i;
     int numPoints;
-    int ySelectPad;
+    int relief, borderWidth;
 
-    width = VPORTWIDTH(setPtr);
-    height = VPORTHEIGHT(setPtr);
-
-    x = tabPtr->worldX;
-    y = tabPtr->worldY;
-
-    numPoints = 0;
-    pointPtr = points;
-
-    ySelectPad = 0;
-    if (setPtr->numTiers == 1) {
-        ySelectPad = setPtr->ySelectPad;
+    switch (setPtr->side) {
+    case SIDE_TOP:
+        numPoints = TopFolder(setPtr, tabPtr, points);
+        break;
+    case SIDE_BOTTOM:
+        numPoints = BottomFolder(setPtr, tabPtr, points);
+        break;
+    case SIDE_LEFT:
+        numPoints = LeftFolder(setPtr, tabPtr, points);
+        break;
+    case SIDE_RIGHT:
+        numPoints = RightFolder(setPtr, tabPtr, points);
+        break;
+    default:
+        assert(0);
     }
 
-    /* Remember these are all world coordinates. */
-    /*
-     *          x,y
-     *           |
-     *           * + . . + 
-     *           +         +
-     *           .         .
-     *  left     .         .
-     *    +. . .2+---------+7 . . . .+8
-     * 0+                              +9
-     * x        Left side of tab.
-     * y        Top of tab.
-     * yTop     Top of folder.
-     * yBot     Bottom of the tab.
-     * left     Left side of the folder.
-     * right    Right side of the folder.
-     * top      Top of folder.
-     * bottom   Bottom of folder.
-     */
-    left = setPtr->scrollOffset - setPtr->xSelectPad;
-    right = left + width;
-    yTop = y + tabPtr->height;
-    yBot = setPtr->pageTop - (setPtr->inset + ySelectPad) + 1;
-    top = yBot - setPtr->inset2 /* - 4 */;
-
-    bottom = MAX(height - ySelectPad, yBot);
-    if (setPtr->pageHeight == 0) {
-        top = yBot - 1;
-        yTop = bottom - setPtr->corner;
-        yBot = bottom;
-    } 
-    if (tabPtr != setPtr->selectPtr) {
-
-        /*
-         * Case 1: Unselected tab
-         *
-         * * 2+ . . +3
-         * 1+         +4
-         *  .         .
-         * 0+-------- +5
-         *
-         */
-        
-        if (setPtr->flags & SLANT_LEFT) {
-            NextPoint(x, yBot);
-            NextPoint(x, yTop);
-            NextPoint(x + setPtr->maxTabHeight, y);
-        } else {
-            NextPoint(x, yBot);
-            TopLeft(x, y);
-        }
-        x += tabPtr->width;
-        if (setPtr->flags & SLANT_RIGHT) {
-            NextPoint(x - setPtr->maxTabHeight, y);
-            NextPoint(x, yTop);
-            NextPoint(x, yBot);
-        } else {
-            TopRight(x, y);
-            NextPoint(x, yBot);
-        }
-    } else if ((tabPtr->flags & VISIBLE) == 0) {
-        /*
-         * Case 2: Selected tab not visible in viewport.  Draw folder only.
-         *
-         * * 2+ . . +3
-         * 1+         +4
-         *  .         .
-         * 0+-------- +5
-         */
-
-        TopLeft(left, top);
-        TopRight(right, top);
-        NextPoint(right, bottom);
-        NextPoint(left, bottom);
+    if (tabPtr == setPtr->selectPtr) {
+        bg = GETATTR(tabPtr, selBg);
+    } else if ((tabPtr == setPtr->activePtr) || 
+               (tabPtr == setPtr->activeButtonPtr)) {
+        bg = GETATTR(tabPtr, activeBg);
+    } else if (tabPtr->bg != NULL) {
+        bg = tabPtr->bg;
     } else {
-        int flags;
-        int tabWidth;
-
-        x -= setPtr->xSelectPad;
-        y -= setPtr->ySelectPad;
-        tabWidth = tabPtr->width + 2 * setPtr->xSelectPad;
-
-#define TAB_CLIP_NONE   0
-#define TAB_CLIP_LEFT   (1<<0)
-#define TAB_CLIP_RIGHT  (1<<1)
-        flags = 0;
-        if (x < left) {
-            flags |= TAB_CLIP_LEFT;
-        }
-        if ((x + tabWidth) > right) {
-            flags |= TAB_CLIP_RIGHT;
-        }
-        switch (flags) {
-        case TAB_CLIP_NONE:
-
-            /*
-             *  worldX, worldY
-             *          |
-             *          * 4+ . . +5
-             *          3+         +6
-             *           .         .
-             *           .         .
-             *   1+. . .2+---------+7 . . . .+8
-             * 0+                              +9
-             *  .                              .
-             *  .                              .
-             *  .                              .
-             *11+ . . . . . . . . . . . . .  . +10
-             */
-
-            if (x < (left + setPtr->corner)) {
-                NextPoint(left, top);
-            } else {
-                TopLeft(left, top);
-            }
-            if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
-            } else {
-                NextPoint(x, top);
-                TopLeft(x, y);
-            }
-            x += tabWidth;
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-            } else {
-                TopRight(x, y);
-                NextPoint(x, top);
-            }
-            if (x > (right - setPtr->corner)) {
-                NextPoint(right, top + setPtr->corner);
-            } else {
-                TopRight(right, top);
-            }
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
-            break;
-
-        case TAB_CLIP_LEFT:
-
-            /*
-             *  worldX, worldY
-             *          |
-             *          * 4+ . . +5
-             *          3+         +6
-             *           .         .
-             *           .         .
-             *          2+--------+7 . . . .+8
-             *            1+ . . . +0          +9
-             *                     .           .
-             *                     .           .
-             *                     .           .
-             *                   11+ . . . . . +10
-             */
-
-            NextPoint(left, yBot);
-            if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yBot);
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
-            } else {
-                BottomLeft(x, yBot);
-                TopLeft(x, y);
-            }
-
-            x += tabWidth;
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, top);
-            } else {
-                TopRight(x, y);
-                NextPoint(x, top);
-            }
-            if (x > (right - setPtr->corner)) {
-                NextPoint(right, top + setPtr->corner);
-            } else {
-                TopRight(right, top);
-            }
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
-            break;
-
-        case TAB_CLIP_RIGHT:
-
-            /*
-             *              worldX, worldY
-             *                     |
-             *                     * 7+ . . +8
-             *                     6+         +9
-             *                      .         .
-             *                      .         .
-             *           4+ . . . .5+---------+10
-             *         3+          0+ . . . +11
-             *          .           .
-             *          .           .
-             *          .           .
-             *         2+ . . . . . +1
-             */
-
-            NextPoint(right, yBot);
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
-            if (x < (left + setPtr->corner)) {
-                NextPoint(left, top);
-            } else {
-                TopLeft(left, top);
-            }
-            NextPoint(x, top);
-
-            if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
-            } else {
-                TopLeft(x, y);
-            }
-            x += tabWidth;
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, yBot);
-            } else {
-                TopRight(x, y);
-                BottomRight(x, yBot);
-            }
-            break;
-
-        case (TAB_CLIP_LEFT | TAB_CLIP_RIGHT):
-
-            /*
-             *  worldX, worldY
-             *     |
-             *     * 4+ . . . . . . . . +5
-             *     3+                     +6
-             *      .                     .
-             *      .                     .
-             *     1+---------------------+7
-             *       2+ 0+          +9 .+8
-             *           .          .
-             *           .          .
-             *           .          .
-             *         11+ . . . . .+10
-             */
-
-            NextPoint(left, yBot);
-            if (setPtr->flags & SLANT_LEFT) {
-                NextPoint(x, yBot);
-                NextPoint(x, yTop);
-                NextPoint(x + setPtr->maxTabHeight + ySelectPad, y);
-            } else {
-                BottomLeft(x, yBot);
-                TopLeft(x, y);
-            }
-            x += tabPtr->width;
-            if (setPtr->flags & SLANT_RIGHT) {
-                NextPoint(x - setPtr->maxTabHeight - ySelectPad, y);
-                NextPoint(x, yTop);
-                NextPoint(x, yBot);
-            } else {
-                TopRight(x, y);
-                BottomRight(x, yBot);
-            }
-            NextPoint(right, yBot);
-            NextPoint(right, bottom);
-            NextPoint(left, bottom);
-            break;
-        }
+        bg = setPtr->defStyle.bg;
     }
-    EndPoint(points[0].x, points[0].y);
-    for (i = 0; i < numPoints; i++) {
-        WorldToScreen(setPtr, points[i].x, points[i].y, &x, &y);
-        points[i].x = x + setPtr->xOffset;
-        points[i].y = y + setPtr->yOffset;
+    relief = setPtr->defStyle.relief;
+    if ((setPtr->side == SIDE_RIGHT) || (setPtr->side == SIDE_TOP)) {
+        borderWidth = -setPtr->defStyle.borderWidth;
+        if (relief == TK_RELIEF_SUNKEN) {
+            relief = TK_RELIEF_RAISED;
+        } else if (relief == TK_RELIEF_RAISED) {
+            relief = TK_RELIEF_SUNKEN;
+        }
+    } else {
+        borderWidth = setPtr->defStyle.borderWidth;
     }
-    Draw3dFolder(setPtr, tabPtr, drawable, setPtr->side, points, numPoints);
+    Blt_Bg_FillPolygon(setPtr->tkwin, drawable, bg, points, numPoints,
+            borderWidth, relief);
+
     DrawLabel(setPtr, tabPtr, drawable);
     if (tabPtr->container != NULL) {
         XRectangle rect;
@@ -9223,7 +8998,7 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayTabset --
+ * DisplayProc --
  *
  *      This procedure is invoked to display the widget.
  *
@@ -9241,7 +9016,7 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayTabset(ClientData clientData)    /* Information about widget. */
+DisplayProc(ClientData clientData)    /* Information about widget. */
 {
     Tabset *setPtr = clientData;
     Pixmap pixmap;
@@ -9352,6 +9127,8 @@ DisplayTabset(ClientData clientData)    /* Information about widget. */
         Tab *tabPtr;
         Blt_ChainLink link;
 
+        /* Draw the tabs in reverse order from the starting point
+         * (i.e. the first tab on the current tier). */
         link = setPtr->startPtr->link;
         for (i = 0; i < Blt_Chain_GetLength(setPtr->chain); i++) {
             link = Blt_Chain_PrevLink(link);
@@ -9710,283 +9487,9 @@ Blt_TabsetCmdInitProc(Tcl_Interp *interp)
 
 #endif /* NO_TABSET */
 
-static GadgetRegion
-RotateRegion(Tab *tabPtr, int x, int y, unsigned int w, unsigned int h)
-{
-    Tabset *setPtr;
-    GadgetRegion r;
-
-    setPtr = tabPtr->setPtr;
-    if (setPtr->quad == ROTATE_90) {
-        r.x = y;
-        r.y = tabPtr->rotWidth - (x + w);
-        r.w = h;
-        r.h = w;
-    } else if (setPtr->quad == ROTATE_270) {
-        r.x = tabPtr->rotHeight - (y + h);
-        r.y = x;
-        r.w = h;
-        r.h = w;
-    } else {
-        r.x = x;
-        r.y = y;
-        r.w = w, r.h = h;
-    }
-    return r;
-}
-
-/*
- * Computes the location and dimensions of the 
- *      
- *      1. icon 
- *      2. text or image
- *      3. close button.
- *      4. focus rectangle
- *      5. 
- *   x,y
- *    |1|2|3|icon|3|text|3|2|1|
- *    1
- *    2
- *    3
- *    max icon | text | image 
- *    3
- *
- *   1. tab borderwidth
- *   2. corner offset or slant
- *   3. pad
- *   4. icon
- *   5. label or text width
- */
 static void
-ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
-{
-    int w, h;
-    int x1, x2, y1, y2;
-    int tx, ty, tw, th;
-    int ix, iy, iw, ih;
-    int fx, fy, fw, fh;
-    int worldWidth, worldHeight, labelWidth;
-    int xSelPad, ySelPad;
-
-    worldWidth = tabPtr->width;
-    worldHeight = setPtr->maxTabHeight + setPtr->inset2;
-
-    /* The world width of tab has to be fixed to remove the extra padding for
-     * the slant/corner and the rotation based upon the side. */
-    worldWidth -= (setPtr->flags & SLANT_LEFT) 
-        ? tabPtr->height : setPtr->inset2;
-    worldWidth -= (setPtr->flags & SLANT_RIGHT) 
-        ? tabPtr->height : setPtr->inset2;
-
-    xSelPad = ySelPad = 0;
-    if (tabPtr == setPtr->selectPtr) {
-        worldWidth += setPtr->xSelectPad;
-        xSelPad = setPtr->xSelectPad / 2;
-        ySelPad = setPtr->ySelectPad / 2;
-    }
-    if (setPtr->side & (SIDE_TOP | SIDE_BOTTOM)) {
-        worldWidth -= LABEL_PAD - setPtr->inset2;
-    }
-    if ((setPtr->quad == ROTATE_90) || (setPtr->quad == ROTATE_270)) {
-        SWAP(worldWidth, worldHeight);
-    }
-    if (setPtr->side & (SIDE_RIGHT | SIDE_LEFT)) {
-        SWAP(worldWidth, worldHeight);
-    } 
-    tabPtr->rotWidth  = worldWidth;
-    tabPtr->rotHeight = worldHeight;
-
-    x1 = y1 = 0;
-    x2 = tabPtr->rotWidth;
-    y2 = tabPtr->rotHeight;
-
-#if DEBUG1
-    fprintf(stderr, "ComputeLabelOffset: -1. tab=%s x1=%d,y1=%d,x2=%d,y2=%d,w=%d,h=%d, w0=%d h0=%d\n",
-                tabPtr->text, x1, y1, x2, y2, w, h, tabPtr->rotWidth, 
-                tabPtr->rotHeight);
-#endif
-
-    /* Compute the positions of the tab in world coordinates (rotated 0
-     * degrees). */
-    
-    /* Start with the upper/left and lower/right corners of the label
-     * inside of the tab.  This excludes the tab's borderwidth. */
-    
-    /* This is the available area for the label. */
-    w = x2 - x1;
-    h = y2 - y1;
-
-    if ((w < 0) || (h < 0)) {
-        return;
-    }
-    tx = ty = ix = iy = 0;              /* Suppress compiler warning. */
-#if DEBUG1
-    fprintf(stderr, "ComputeLabelOffset: 0. tab=%s x1=%d,y1=%d,x2=%d,y2=%d,w=%d,h=%d, w0=%d h0=%d\n",
-                tabPtr->text, x1, y1, x2, y2, w, h, tabPtr->rotWidth, 
-                tabPtr->rotHeight);
-#endif
-
-    /* Close button geometry. */
-    if ((setPtr->plusPtr != tabPtr) && 
-        (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
-        int bx, by, bw, bh;
-
-        /* Close button is always located on the right side of the tab,
-         * it's height is centered. */
-        bx = x2 - CLOSE_WIDTH - setPtr->closeButton.borderWidth;
-        by = y1;
-        bw = CLOSE_WIDTH;
-        bh = CLOSE_HEIGHT;
-        if (h > bh) {
-            by += (h - bh) / 2;
-        } else {
-            bh = h;
-        }
-        if (bw > w) {
-            bw = w;
-        }
-        if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
-            bx += 2 * xSelPad;
-        }
-        tabPtr->buttonRegion = RotateRegion(tabPtr, bx, by, bw, bh);
-#if DEBUG1
-        fprintf(stderr, "ComputeLabelOffset: button tab=%s x=%d,y=%d,w=%d,h=%d => x=%d,y=%d w=%d,h=%d\n",
-                tabPtr->text, bx, by, bw, bh, tabPtr->buttonRegion.x, 
-                tabPtr->buttonRegion.y, tabPtr->buttonRegion.width, 
-                tabPtr->buttonRegion.height);
-#endif
-        x2 -= bw + 2 * setPtr->closeButton.borderWidth;
-    }
-
-    /* Label/image and icon. Their positioning is related because of
-     * the -iconposition option.  */
-
-    w = x2 - x1;
-    h = y2 - y1;
-
-    if (tabPtr->icon != NULL) {
-        iw = IconWidth(tabPtr->icon);
-        ih = IconHeight(tabPtr->icon);
-    } else {
-        iw = ih = 0;
-    }
-    if (iw > w) {
-        iw = w;
-    }
-    if (ih > h) {
-        ih = h;
-    }
-    w = x2 - x1;
-    h = y2 - y1;
-    
-    labelWidth = tabPtr->labelWidth0;
-    if ((tabPtr != setPtr->plusPtr) && 
-        (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
-        labelWidth -= CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
-    }
-    if (w > labelWidth) {
-        if (setPtr->justify == TK_JUSTIFY_CENTER) {
-            x1 += (w - labelWidth) / 2;
-        } else if (setPtr->justify == TK_JUSTIFY_RIGHT) {
-            x1 += (w - labelWidth);
-        }
-    }
-    if (tabPtr->text != NULL) {
-        tw = tabPtr->textWidth0;
-        th = tabPtr->textHeight0;
-    } else {
-        tw = th = 0;
-    }
-    w = x2 - x1;
-    h = y2 - y1;
-#if DEBUG1
-    fprintf(stderr, "ComputeLabelOffset: 1 tab=%s x=%d,y=%d,w=%d,h=%d, ww=%d wh=%d tabLabelWidth=%d lw=%d\n",
-                tabPtr->text, x1, y1, w, h, tabPtr->width, 
-                tabPtr->height, tabPtr->labelWidth0, labelWidth);
-#endif
-    if (tw > w) {
-        tw = w; 
-    }
-    /* Now compute the text/image and icon positions according to the text
-     * side. Don't use the text/image width/height to compute the position
-     * of the icon because the text will shrink with the available
-     * room.  */
-    switch (setPtr->iconPos) {
-    case SIDE_LEFT:
-        if (iw > w) {                   /* Not enough space for icon. */
-            iw = w;
-            w = 0;
-        } else {
-            w -= iw;                    /* Subtract space taken by icon. */
-        }
-        if (tw > w) {                   /* Not enough space for text. */
-            tw = w;
-            w = 0;
-        } else {
-            w -= tw;                    /* Subtract space taken by text. */
-        }
-        if (w < 0) {
-            w = 0;
-        }
-        /* The text/image is to the right of the icon. */
-        ix = x1;
-        iy = y1;
-        if (h > ih) {
-            iy += (h - ih) / 2;
-        }
-        tx = ix + iw;
-        if ((iw > 0) && (tw > 0))  {
-            tx += LABEL_PAD;
-        }
-        ty = y1;
-        if (h > th) {
-            ty += (h - th) / 2;
-        }
-#if DEBUG1
-        fprintf(stderr, "tab=%s textWidth=%d, textHeight=%d => %d,%d %dx%d iw=%d ih=%d\n", 
-                tabPtr->text, tabPtr->textWidth0, tabPtr->textHeight0, tx, ty, tw, th,
-                iw, ih);
-#endif
-        break;
-
-    case SIDE_RIGHT:
-        /* The text/image is to the left of the icon. */
-        tx = x1;
-        ty = y1 + (h - th) / 2;
-        ix = x2 - iw;
-        iy = y1 + (h - ih) / 2;
-        if ((iw > 0) && (tw > 0))  {
-            ix += LABEL_PAD;
-        }
-        break;
-    }
-    tabPtr->iconRegion = RotateRegion(tabPtr, ix, iy, iw, ih);
-#if DEBUG1
-        fprintf(stderr, "ComputeLabelOffset: icon tab=%s x=%d,y=%d,w=%d,h=%d => x=%d,y=%d w=%d,h=%d\n",
-                tabPtr->text, ix, iy, iw, ih, tabPtr->iconRegion.x, 
-                tabPtr->iconRegion.y, tabPtr->iconRegion.w, 
-                tabPtr->iconRegion.h);
-#endif
-    tabPtr->textRegion = RotateRegion(tabPtr, tx, ty, ODD(tw), ODD(th));
-#if DEBUG1
-        fprintf(stderr, "ComputeLabelOffset: text tab=%s x=%d,y=%d,w=%d,h=%d => x=%d,y=%d w=%d,h=%d\n",
-                tabPtr->text, tx, ty, tw, th, tabPtr->textRegion.x, 
-                tabPtr->textRegion.y, tabPtr->textRegion.w, 
-                tabPtr->textRegion.h);
-#endif
-    /* Focus dashed rectangle. */
-    {
-        fx = tx - 2;
-        fy = ty - 2;
-        fw = ODD(tw);
-        fh = ODD(th) + 2;
-        tabPtr->focusRegion = RotateRegion(tabPtr, fx, fy, fw, fh);
-    }
-
-}
-
-static Blt_Picture
-DrawButton(Tabset *setPtr, Tab *tabPtr)
+DrawButton(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y, int w,
+           int h)
 {
     Button *butPtr = &setPtr->closeButton;
     Blt_Picture picture;
@@ -10010,149 +9513,139 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
     }
     picture = Blt_PaintDelete(CLOSE_WIDTH, CLOSE_HEIGHT, Blt_Bg_BorderColor(bg),
         fill, symbol, (tabPtr == setPtr->activeButtonPtr));
-    if (setPtr->angle != 0.0) {
+    if (setPtr->painter == NULL) {
+        setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
+    }
+    if (setPtr->angle == 0.0) {
+        Blt_PaintPicture(setPtr->painter, drawable, picture, 0, 0,
+                         x, y, w, h, 0);
+    } else {
         Blt_Picture rotated;
 
         rotated = Blt_RotatePicture(picture, setPtr->angle);
-        Blt_FreePicture(picture);
-        picture = rotated;
+        Blt_PaintPicture(setPtr->painter, drawable, picture, 0, 0, x, y,
+                 w, h, 0);
+        Blt_FreePicture(rotated);
     }
-    return picture;
+    Blt_FreePicture(picture);
+}
+
+static void
+DrawIcon(Tabset *setPtr, Icon icon, int x, int y, int w, int h)
+{
+    Tk_Image tkImage;
+
+    tkImage = IconBits(tabPtr->icon);
+    if (setPtr->angle != 0.0) {
+        Tk_RedrawImage(tkImage, 0, 0, iw, ih, drawable, ix, iy);
+    } else {
+        Blt_Picture src, dest;
+
+        src = Blt_GetPictureFromImage(interp, tkImage, &isPicture);
+        dest = Blt_RotatePicture(src, setPtr->angle);
+        if (setPtr->painter == NULL) {
+            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
+        }
+        Blt_PaintPictureWithBlend(setPtr->painter, drawable, 
+                dest, 0, 0, iw, ih, ix, iy, 0);
+        Blt_FreePicture(src);
+        Blt_FreePicture(dest);
+    }
 }
 
 /*
- *   x,y
- *    |1|2|3| 4 |5|  4  |3|2|1|
+ * DrawLabel0 --
  *
- *   1. tab borderwidth
- *   2. corner offset or slant
- *   3. label pad
- *   4. label or text width
- *   5. pad
+ *      Draw the label with no rotation.
+ *
+ *     x,y
+ *      | |icon| |text| |close| |
+ *
  */
 static void
-DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
+DrawLabelRotate0(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y)
 {
-    int x, y;
     Blt_Bg bg;
     TabStyle *stylePtr;
-    int xSelPad, ySelPad;
-    GadgetRegion *rPtr;
-    int cavityWidth, cavityHeight;
 
     if ((tabPtr->flags & VISIBLE) == 0) {
         return;
     }
-    ComputeLabelOffsets(setPtr, tabPtr);
+    x += setPtr->inset2 + tabPtr->padX.side1;
+    y += setPtr->inset2 + tabPtr->padY.side1;
+    labelWidth = tabPtr->width - 2 * setPtr->inset - PADDING(tabPtr->padX);
+    labelHeight = tabPtr->height - setPtr->inset - PADDING(tabPtr->padY);
 
-    /* Get origin of tab. */
-    WorldToScreen(setPtr, tabPtr->worldX, tabPtr->worldY, &x, &y);
-    x += setPtr->xOffset;               /* Adjust for pixmap offsets. */
-    y += setPtr->yOffset;
-
-    /* Adjust according the side. */
-    if (setPtr->side & SIDE_BOTTOM) {
-        y -= setPtr->maxTabHeight + tabPtr->padY.side1;
-    } else if (setPtr->side & SIDE_LEFT) {
-        /*      y -= tabPtr->width; */
-    } else if (setPtr->side & SIDE_RIGHT) {
-        x -= setPtr->maxTabHeight + tabPtr->padY.side1;
-    }
-    /* Adjust the label's area according to the tab's slant. */
-    if (setPtr->side & (SIDE_RIGHT | SIDE_LEFT)) {
-        y += (setPtr->flags & SLANT_LEFT) ? setPtr->maxTabHeight : setPtr->inset2;
-    } else {
-        x += (setPtr->flags & SLANT_LEFT) ? setPtr->maxTabHeight : setPtr->inset2;
-    }
-    cavityWidth = tabPtr->width;
-    cavityHeight = tabPtr->height;
-#if DEBUG0
-    fprintf(stderr, "DrawLabel: tab=%s x=%d,y=%d wx=%d,wy=%d,ww=%d,wh=%d tabwidth=%d tabheight=%d\n",
-            tabPtr->text, x, y, tabPtr->worldX, tabPtr->worldY, 
-            tabPtr->width, tabPtr->height, 
-            setPtr->maxTabWidth, setPtr->maxTabHeight);
-#endif
-    stylePtr = &setPtr->defStyle;
-    bg = GETATTR(tabPtr, bg);
-    xSelPad = ySelPad = 0;
     if (tabPtr == setPtr->selectPtr) {
-        x -= setPtr->xSelectPad / 2;
-        if (setPtr->side & SIDE_TOP) {
-            y -= setPtr->ySelectPad;
-        }
-        if (setPtr->side & SIDE_BOTTOM) {
-            y += setPtr->ySelectPad;
-        }
-        xSelPad = setPtr->xSelectPad / 2;
-        ySelPad = setPtr->ySelectPad / 2;
-        bg = GETATTR(tabPtr, selBg);
+        y -= setPtr->ySelectPad;
+        x -= setPtr->xSelectPad;
+        labelWidth += 2 * setPtr->xSelectPad;
     }
-    cavityWidth += xSelPad;
-    cavityHeight += ySelPad;
+    if (setPtr->flags & SLANT_LEFT) {
+        labelWidth -= setPtr->maxTabHeight;
+        x += setPtr->maxTabHeight;
+    } else {
+        labelWidth -= setPtr->corner;
+        x += setPtr->corner;
+    }
+    if (setPtr->flags & SLANT_RIGHT) {
+        labelWidth -= setPtr->maxTabHeight;
+    } else {
+        labelWidth -= setPtr->corner;
+    }
+    /* Draw the close button first. It's always the rightmost in the tab. */
     /* Close button */
-    rPtr = &tabPtr->buttonRegion;
     if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
-        (setPtr->plusPtr != tabPtr) &&  (rPtr->w > 0) && (rPtr->h > 0)) {
-        Blt_Picture picture;
-        int bx, by;
+        (setPtr->plusPtr != tabPtr)) { 
+        int bx, by, bw, bh;
 
-        picture = DrawButton(setPtr, tabPtr);
-        if (setPtr->painter == NULL) {
-            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
-        }
-        bx = x + rPtr->x;
-        by = y + rPtr->y;
-        Blt_PaintPicture(setPtr->painter, drawable, picture, 0, 0, rPtr->w, 
-                rPtr->h, bx, by, 0);
-        Blt_FreePicture(picture);
-        cavityWidth -= rPtr->w;
-    }
-    /* Icon */
-    rPtr = &tabPtr->iconRegion;
-    if ((tabPtr->icon != NULL) && (rPtr->w > 0) && (rPtr->h > 0)) {
-        Tk_Image tkImage;
-
-        tkImage = IconBits(tabPtr->icon);
-        if (setPtr->angle == 0.0) {
-            Tk_RedrawImage(tkImage, 0, 0, rPtr->w, rPtr->h, drawable, 
-                x + rPtr->x, y + rPtr->y);
+        bw = CLOSE_WIDTH;
+        bh = CLOSE_HEIGHT;
+        bx = x + labelWidth - bw;
+        by = y;
+        if (labelHeight < bh) {
+            bh = labelHeight;
         } else {
-            struct _Icon *iconPtr;
-            
-            iconPtr = tabPtr->icon;
-            if (iconPtr->angle != setPtr->angle) {
-                int isPicture;
-                Blt_Picture picture, rotated;
-
-                if (iconPtr->picture != NULL) {
-                    Blt_FreePicture(iconPtr->picture);
-                }
-                picture = Blt_GetPictureFromImage(setPtr->interp, tkImage,
-                        &isPicture);
-                rotated = Blt_RotatePicture(picture, setPtr->angle);
-                iconPtr->picture = rotated;
-                iconPtr->angle = setPtr->angle;
-                if (!isPicture) {
-                    Blt_FreePicture(picture);
-                }
-            }
-            if (setPtr->painter == NULL) {
-                setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
-            }
-            Blt_PaintPictureWithBlend(setPtr->painter, drawable, 
-                iconPtr->picture, 0, 0, rPtr->w, rPtr->h, x + rPtr->x, 
-                y + rPtr->y, 0);
+            by += (labelHeight - bh) / 2;
         }
-        cavityWidth -= rPtr->w;
+        if ((bw > 0) && (bh > 0)) {
+            DrawButton(setPtr, tabPtr, drawable, bx, by, bw, bh);
+            labelWidth -= bw;
+        }
     }
-    /* Text */
-    rPtr = &tabPtr->textRegion;
-    if ((tabPtr->text != NULL) && (rPtr->w > 0) && (rPtr->h > 0)) {
+    /* Next draw the icon in whatever free space is left. It's always the
+     * leftmost in the label. */
+    /* Icon */
+    if (tabPtr->icon != NULL) {
+        int ix, iy, iw, ih;
+
+        iw = IconWidth(tabPtr->icon);
+        ih = IconWidth(tabPtr->icon);
+        ix = x;
+        ih = y;
+        if (iw > labelWidth) {
+            iw = labelWidth;
+        }
+        if (ih > labelHeight) {
+            ih = labelHeight;
+        } else {
+            iy += (labelHeight - ih) / 2;
+        }
+        DrawIcon(setPtr, tabPtr, drawable, ix, iy, iw, ih);
+        labelWidth -= iw;
+        x += iw + LABEL_PAD;
+    }
+    /* Finally draw the text in whatever free space is left. Depending if
+     * there's an icon, then there will padding between them. */
+    if (tabPtr->text != NULL) {
         TextStyle ts;
         XColor *fgColor;
         Blt_Font font;
         int maxLength = -1;
+        int tx, ty, tw, th;
 
+        tw = tabPtr->textWidth0;
+        th = tabPtr->textHeight0;
         font = GETATTR(tabPtr, font);
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
@@ -10163,55 +9656,39 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
             fgColor = GETATTR(tabPtr, textColor);
         }
         Blt_Ts_InitStyle(ts);
-        Blt_Ts_SetAngle(ts, setPtr->angle);
         Blt_Ts_SetBackground(ts, bg);
         Blt_Ts_SetFont(ts, font);
-        Blt_Ts_SetPadding(ts, 2, 2, 0, 0);
+        Blt_Ts_SetPadding(ts, tabPtr->iPadX.side1, tabPtr->ipadX.side2,
+                          tabPtr->ipadY.side1, tabPtr->ipadY.side2);
         if (tabPtr->flags & DISABLED) {
             Blt_Ts_SetState(ts, STATE_DISABLED);
         } else if (tabPtr->flags & ACTIVE) {
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
-        if ((setPtr->quad == ROTATE_90) || (setPtr->quad == ROTATE_270)) {
-            maxLength = rPtr->h;
-        } else {
-            int slant;
-            /* FIXME: This is wrong. maxLength should be set to the
-             * available width. How is shrinkage supposed to work? Shrink
-             * text first, then icon, then button.  */
-            slant = tabPtr->height;
-            maxLength = cavityWidth - LABEL_PAD;
-            maxLength -= (setPtr->flags & SLANT_RIGHT) ? slant : setPtr->inset2;
-            maxLength -= (setPtr->flags & SLANT_LEFT) ? slant : setPtr->inset2;
-        }
-        maxLength -= tabPtr->iPadX.side2;
-        if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
-            (setPtr->plusPtr != tabPtr)) {
-            maxLength -= LABEL_PAD + CLOSE_WIDTH + 
-                setPtr->closeButton.borderWidth;
-        }
-        if (tabPtr == setPtr->selectPtr) {
-            maxLength += setPtr->xSelectPad;
+        maxLength = labelWidth;
+        tx = x;
+        ty = y;
+        if (labelHeight > th) {
+            ty += (labelHeight - th) / 2;
         }
 #if DEBUG0
         fprintf(stderr, "DrawLayout: text tab=(%s) coords=%d,%d text=%dx%d ml=%d => region: x=%d,y=%d w=%d,h=%d, maxLength=%d\n",
                 tabPtr->text, x, y, tabPtr->textWidth0, tabPtr->textHeight0, 
-                maxLength, rPtr->x, rPtr->y, rPtr->w, rPtr->h, maxLength);
+                maxLength, tx, ty, tw, th, maxLength);
 #endif
         if (maxLength > 0) {
             Blt_Ts_SetMaxLength(ts, maxLength);
             Blt_Ts_DrawLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr, &ts, 
-                          x + rPtr->x, y + rPtr->y);
+                          tx, ty);
             if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
                 Blt_Ts_UnderlineChars(setPtr->tkwin, drawable, 
-                tabPtr->layoutPtr, &ts,  x + rPtr->x, y + rPtr->y);
+                tabPtr->layoutPtr, &ts,  tx, ty);
             }
         }
     }
-    rPtr = &tabPtr->focusRegion;
-    if (0 && (setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr) && 
-        (rPtr->w > 0) && (rPtr->h > 0)) {
+    /* Finally the focus ring. */
+    if (0 && (setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
         XColor *fg;
         int w, h;
         
@@ -10239,9 +9716,515 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }
 }
 
-#define GetSlantLeft(s) \
-    (((s)->flags & SLANT_LEFT) ? (s)->maxTabHeight : (s)->inset2)
-#define GetSlantRight(s) \
-    (((s)->flags & SLANT_RIGHT) ? (s)->maxTabHeight : (s)->inset2)
+/*
+ * DrawLabel180 --
+ *
+ *      Draw the label with the icon and text rotated 180 degrees.
+ *
+ *     x,y
+ *      | |icon| |text| |close| |
+ *
+ */
+static void
+DrawLabelRotate180(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y)
+{
+    Blt_Bg bg;
+    TabStyle *stylePtr;
 
+    if ((tabPtr->flags & VISIBLE) == 0) {
+        return;
+    }
+    x += setPtr->inset2 + tabPtr->padX.side1;
+    y += setPtr->inset2 + tabPtr->padY.side1;
+    labelWidth = tabPtr->width - 2 * setPtr->inset - PADDING(tabPtr->padX);
+    labelHeight = tabPtr->height - setPtr->inset - PADDING(tabPtr->padY);
 
+    if (tabPtr == setPtr->selectPtr) {
+        y -= setPtr->ySelectPad;
+        x -= setPtr->xSelectPad;
+        labelWidth += 2 * setPtr->xSelectPad;
+    }
+    if (setPtr->flags & SLANT_LEFT) {
+        labelWidth -= setPtr->maxTabHeight;
+        x += setPtr->maxTabHeight;
+    } else {
+        labelWidth -= setPtr->corner;
+        x += setPtr->corner;
+    }
+    if (setPtr->flags & SLANT_RIGHT) {
+        labelWidth -= setPtr->maxTabHeight;
+    } else {
+        labelWidth -= setPtr->corner;
+    }
+    /* Draw the close button first. It's always the rightmost in the tab. */
+    /* Close button */
+    if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
+        (setPtr->plusPtr != tabPtr) &&  (rPtr->w > 0) && (rPtr->h > 0)) {
+        int bx, by, bw, bh;
+
+        bw = CLOSE_WIDTH;
+        bh = CLOSE_HEIGHT;
+        bx = x + labelWidth - bw;
+        by = y;
+        if (labelHeight < bh) {
+            bh = labelHeight;
+        } else {
+            by += (labelHeight - bh) / 2;
+        }
+        if ((bw > 0) && (bh > 0)) {
+            DrawButton(setPtr, tabPtr, drawable, bx, by, bw, bh);
+            labelWidth -= bw;
+        }
+    }
+    /* Next draw the icon in whatever free space is left. It's always the
+     * leftmost in the label. */
+    /* Icon */
+    if (tabPtr->icon != NULL) {
+        int ix, iy, iw, ih;
+
+        iw = IconWidth(tabPtr->icon);
+        ih = IconWidth(tabPtr->icon);
+        ix = x;
+        ih = y;
+        if (iw > labelWidth) {
+            iw = labelWidth;
+        }
+        if (ih > labelHeight) {
+            ih = labelHeight;
+        } else {
+            iy += (labelHeight - ih) / 2;
+        }
+        DrawIcon(setPtr, tabPtr, drawable, ix, iy, iw, ih);
+        labelWidth -= iw;
+        x += iw + LABEL_PAD;
+    }
+    /* Finally draw the text in whatever free space is left. Depending if
+     * there's an icon, then there will padding between them. */
+    if (tabPtr->text != NULL) {
+        TextStyle ts;
+        XColor *fgColor;
+        Blt_Font font;
+        int maxLength = -1;
+        int tx, ty, tw, th;
+
+        tw = tabPtr->textWidth0;
+        th = tabPtr->textHeight0;
+        font = GETATTR(tabPtr, font);
+        if (tabPtr == setPtr->selectPtr) {
+            fgColor = GETATTR(tabPtr, selColor);
+        } else if ((tabPtr == setPtr->activePtr) || 
+                   (tabPtr == setPtr->activeButtonPtr)) {
+            fgColor = GETATTR(tabPtr, activeFg);
+        } else {
+            fgColor = GETATTR(tabPtr, textColor);
+        }
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetBackground(ts, bg);
+        Blt_Ts_SetFont(ts, font);
+        Blt_Ts_SetAngle(ts, setPtr->angle);
+        Blt_Ts_SetPadding(ts, tabPtr->iPadX.side1, tabPtr->ipadX.side2,
+                          tabPtr->ipadY.side1, tabPtr->ipadY.side2);
+        if (tabPtr->flags & DISABLED) {
+            Blt_Ts_SetState(ts, STATE_DISABLED);
+        } else if (tabPtr->flags & ACTIVE) {
+            Blt_Ts_SetState(ts, STATE_ACTIVE);
+        }
+        Blt_Ts_SetForeground(ts, fgColor);
+        maxLength = labelWidth;
+        tx = x;
+        ty = y;
+        if (labelHeight > th) {
+            ty += (labelHeight - th) / 2;
+        }
+#if DEBUG0
+        fprintf(stderr, "DrawLayout: text tab=(%s) coords=%d,%d text=%dx%d ml=%d => region: x=%d,y=%d w=%d,h=%d, maxLength=%d\n",
+                tabPtr->text, x, y, tabPtr->textWidth0, tabPtr->textHeight0, 
+                maxLength, tx, ty, tw, th, maxLength);
+#endif
+        if (maxLength > 0) {
+            Blt_Ts_SetMaxLength(ts, maxLength);
+            Blt_Ts_DrawLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr, &ts, 
+                          tx, ty);
+            if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
+                Blt_Ts_UnderlineChars(setPtr->tkwin, drawable, 
+                tabPtr->layoutPtr, &ts,  tx, ty);
+            }
+        }
+    }
+    /* Finally the focus ring. */
+    if (0 && (setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
+        XColor *fg;
+        int w, h;
+        
+        if (tabPtr == setPtr->selectPtr) {
+            fg = GETATTR(tabPtr, selColor);
+        } else if (tabPtr == setPtr->activePtr) {
+            fg = GETATTR(tabPtr, activeFg);
+        } else {
+            fg = GETATTR(tabPtr, textColor);
+        }
+        XSetForeground(setPtr->display, stylePtr->activeGC, fg->pixel);
+        w = rPtr->w + xSelPad;
+        w &= ~0x1;                      /* Width has to be odd for the dots
+                                         * in the focus rectangle to
+                                         * align. */
+        h = rPtr->h;
+        h |= 0x1;
+        if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
+            XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
+                x + rPtr->x + 1, y + rPtr->y + 1, w, h);
+        } else {
+            XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
+                x + rPtr->x, y + rPtr->y - 1, w, h);
+        }
+    }
+}
+
+/*
+ * DrawLabel90 --
+ *
+ *      Draw the label with the icon and text rotated 90 degrees.
+ *
+ *     x,y
+ *      | |icon| |text| |close| |
+ *
+ */
+static void
+DrawLabelRotate90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y)
+{
+    Blt_Bg bg;
+    TabStyle *stylePtr;
+    int labelWidth, labelHeight;
+    
+    if ((tabPtr->flags & VISIBLE) == 0) {
+        return;
+    }
+    x += setPtr->inset2 + tabPtr->padY.side1;
+    y += setPtr->inset2 + tabPtr->padX.side1;
+    labelWidth = tabPtr->width - setPtr->inset - PADDING(tabPtr->padY);
+    labelHeight = tabPtr->height - 2 * setPtr->inset - PADDING(tabPtr->padX);
+
+    if (tabPtr == setPtr->selectPtr) {
+        x -= setPtr->ySelectPad;
+        y -= setPtr->xSelectPad;
+        labelHeight += 2 * setPtr->xSelectPad;
+    }
+    if (setPtr->flags & SLANT_LEFT) {
+        labelHeight -= setPtr->maxTabHeight;
+        y += setPtr->maxTabHeight;
+    } else {
+        labelHeight -= setPtr->corner;
+        y += setPtr->corner;
+    }
+    if (setPtr->flags & SLANT_RIGHT) {
+        labelHeight -= setPtr->maxTabHeight;
+    } else {
+        labelHeight -= setPtr->corner;
+    }
+    /* Draw the close button first. It's always the topmost in the label. */
+    /* Close button */
+    if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
+        (setPtr->plusPtr != tabPtr)) {
+        int bx, by, bw, bh;
+
+        bw = CLOSE_HEIGHT;
+        bh = CLOSE_WIDTH;
+        by = y + labelHeight - bh;
+        bx = x;
+        if (labelWidth < bw) {
+            bw = labelWidth;
+        } else {
+            bx += (labelWidth - bw) / 2;
+        }
+        if ((bw > 0) && (bh > 0)) {
+            DrawButton(setPtr, tabPtr, drawable, bx, by, bw, bh);
+            labelHeight -= bh;
+        }
+        y += bh + LABEL_PAD;
+    }
+    /* Next draw the icon in whatever free space is left. It's always
+     * bottommost in the label. */
+    /* Icon */
+    if ((tabPtr->icon != NULL) && (labelHeight > 0)) {
+        int ix, iy, iw, ih;
+
+        iw = IconHeight(tabPtr->icon);
+        ih = IconWidth(tabPtr->icon);
+        if (ih > labelHeight) {
+            ih = labelHeight;
+        }
+        ix = x;
+        iy = y + labelHeight - ih;
+        if (iw > labelWidth) {
+            iw = labelWidth;
+        } else {
+            ix += (labelWidth - iw) / 2;
+        }
+        DrawIcon(setPtr, tabPtr, drawable, ix, iy, iw, ih);
+        labelHeight -= ih;
+    }
+    /* Finally draw the text in whatever free space is left. Depending if
+     * there's an icon, then there will padding between them. */
+    if (tabPtr->text != NULL) {
+        TextStyle ts;
+        XColor *fgColor;
+        Blt_Font font;
+        int maxLength = -1;
+        int tx, ty, tw, th;
+
+        tw = tabPtr->textHeight0;
+        th = tabPtr->textWidth0;
+        font = GETATTR(tabPtr, font);
+        if (tabPtr == setPtr->selectPtr) {
+            fgColor = GETATTR(tabPtr, selColor);
+        } else if ((tabPtr == setPtr->activePtr) || 
+                   (tabPtr == setPtr->activeButtonPtr)) {
+            fgColor = GETATTR(tabPtr, activeFg);
+        } else {
+            fgColor = GETATTR(tabPtr, textColor);
+        }
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetBackground(ts, bg);
+        Blt_Ts_SetFont(ts, font);
+        Blt_Ts_SetAngle(ts, setPtr->angle);
+        Blt_Ts_SetPadding(ts, tabPtr->iPadY.side1, tabPtr->ipadY.side2,
+                          tabPtr->ipadX.side1, tabPtr->ipadX.side2);
+        if (tabPtr->flags & DISABLED) {
+            Blt_Ts_SetState(ts, STATE_DISABLED);
+        } else if (tabPtr->flags & ACTIVE) {
+            Blt_Ts_SetState(ts, STATE_ACTIVE);
+        }
+        Blt_Ts_SetForeground(ts, fgColor);
+        maxLength = labelWidth;
+        tx = x;
+        ty = y;
+        if (labelWidth > tw) {
+            tx += (labelWidth - tw) / 2;
+        }
+#if DEBUG0
+        fprintf(stderr, "DrawLayout: text tab=(%s) coords=%d,%d text=%dx%d ml=%d => region: x=%d,y=%d w=%d,h=%d, maxLength=%d\n",
+                tabPtr->text, x, y, tabPtr->textWidth0, tabPtr->textHeight0, 
+                maxLength, tx, ty, tw, th, maxLength);
+#endif
+        if (maxLength > 0) {
+            Blt_Ts_SetMaxLength(ts, maxLength);
+            Blt_Ts_DrawLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr, &ts, 
+                          tx, ty);
+            if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
+                Blt_Ts_UnderlineChars(setPtr->tkwin, drawable, 
+                tabPtr->layoutPtr, &ts,  tx, ty);
+            }
+        }
+    }
+    /* Finally the focus ring. */
+    if (0 && (setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
+        XColor *fg;
+        int w, h;
+        
+        if (tabPtr == setPtr->selectPtr) {
+            fg = GETATTR(tabPtr, selColor);
+        } else if (tabPtr == setPtr->activePtr) {
+            fg = GETATTR(tabPtr, activeFg);
+        } else {
+            fg = GETATTR(tabPtr, textColor);
+        }
+        XSetForeground(setPtr->display, stylePtr->activeGC, fg->pixel);
+        w = rPtr->w + xSelPad;
+        w &= ~0x1;                      /* Width has to be odd for the dots
+                                         * in the focus rectangle to
+                                         * align. */
+        h = rPtr->h;
+        h |= 0x1;
+        if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
+            XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
+                x + rPtr->x + 1, y + rPtr->y + 1, w, h);
+        } else {
+            XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
+                x + rPtr->x, y + rPtr->y - 1, w, h);
+        }
+    }
+}
+
+/*
+ * DrawLabelRotate270 --
+ *
+ *      Draw the label with the icon and text rotated 90 degrees.
+ *
+ *     x,y
+ *      | |icon| |text| |close| |
+ *
+ */
+static void
+DrawLabelRotate270(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y)
+{
+    Blt_Bg bg;
+    TabStyle *stylePtr;
+    int labelWidth, labelHeight;
+    
+    x += setPtr->inset2 + tabPtr->padY.side1;
+    y += setPtr->inset2 + tabPtr->padX.side1;
+    labelWidth = tabPtr->width - setPtr->inset - PADDING(tabPtr->padY);
+    labelHeight = tabPtr->height - 2 * setPtr->inset - PADDING(tabPtr->padX);
+
+    if (tabPtr == setPtr->selectPtr) {
+        x -= setPtr->ySelectPad;
+        y -= setPtr->xSelectPad;
+        labelHeight += 2 * setPtr->xSelectPad;
+    }
+    if (setPtr->flags & SLANT_LEFT) {
+        labelHeight -= setPtr->maxTabHeight;
+        y += setPtr->maxTabHeight;
+    } else {
+        labelHeight -= setPtr->corner;
+        y += setPtr->corner;
+    }
+    if (setPtr->flags & SLANT_RIGHT) {
+        labelHeight -= setPtr->maxTabHeight;
+    } else {
+        labelHeight -= setPtr->corner;
+    }
+    /* Draw the close button first. It's always the bottommost in the tab. */
+    /* Close button */
+    if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
+        (setPtr->plusPtr != tabPtr)) {
+        int bx, by, bw, bh;
+
+        bw = CLOSE_HEIGHT;
+        bh = CLOSE_WIDTH;
+        by = y + labelHeight - bh;
+        bx = x;
+        if (labelWidth < bw) {
+            bw = labelWidth;
+        } else {
+            bx += (labelWidth - bw) / 2;
+        }
+        if ((bw > 0) && (bh > 0)) {
+            DrawButton(setPtr, tabPtr, drawable, bx, by, bw, bh);
+            labelHeight -= bh;
+        }
+    }
+    /* Next draw the icon in whatever free space is left. It's always
+     * topmost in the label. */
+    /* Icon */
+    if (tabPtr->icon != NULL) {
+        int ix, iy, iw, ih;
+
+        iw = IconWidth(tabPtr->icon);
+        ih = IconHeight(tabPtr->icon);
+        ix = x;
+        ih = y;
+        if (ih > labelHeight) {
+            ih = labelHeight;
+        }
+        if (iw > labelWidth) {
+            iw = labelWidth;
+        } else {
+            ix += (labelWidth - iw) / 2;
+        }
+        DrawIcon(setPtr, tabPtr, drawable, ix, iy, iw, ih);
+        labelHeight -= ih;
+        y += ih + LABEL_PAD;
+    }
+    /* Finally draw the text in whatever free space is left. Depending if
+     * there's an icon, then there will padding between them. */
+    if (tabPtr->text != NULL) {
+        TextStyle ts;
+        XColor *fgColor;
+        Blt_Font font;
+        int maxLength = -1;
+        int tx, ty, tw, th;
+
+        tw = tabPtr->textHeight0;
+        th = tabPtr->textWidth0;
+        font = GETATTR(tabPtr, font);
+        if (tabPtr == setPtr->selectPtr) {
+            fgColor = GETATTR(tabPtr, selColor);
+        } else if ((tabPtr == setPtr->activePtr) || 
+                   (tabPtr == setPtr->activeButtonPtr)) {
+            fgColor = GETATTR(tabPtr, activeFg);
+        } else {
+            fgColor = GETATTR(tabPtr, textColor);
+        }
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetBackground(ts, bg);
+        Blt_Ts_SetFont(ts, font);
+        Blt_Ts_SetAngle(ts, setPtr->angle);
+        Blt_Ts_SetPadding(ts, tabPtr->iPadY.side1, tabPtr->ipadY.side2,
+                          tabPtr->ipadX.side1, tabPtr->ipadX.side2);
+        if (tabPtr->flags & DISABLED) {
+            Blt_Ts_SetState(ts, STATE_DISABLED);
+        } else if (tabPtr->flags & ACTIVE) {
+            Blt_Ts_SetState(ts, STATE_ACTIVE);
+        }
+        Blt_Ts_SetForeground(ts, fgColor);
+        maxLength = labelWidth;
+        tx = x;
+        ty = y;
+        if (labelWidth > tw) {
+            tx += (labelWidth - tw) / 2;
+        }
+#if DEBUG0
+        fprintf(stderr, "DrawLayout: text tab=(%s) coords=%d,%d text=%dx%d ml=%d => region: x=%d,y=%d w=%d,h=%d, maxLength=%d\n",
+                tabPtr->text, x, y, tabPtr->textWidth0, tabPtr->textHeight0, 
+                maxLength, tx, ty, tw, th, maxLength);
+#endif
+        if (maxLength > 0) {
+            Blt_Ts_SetMaxLength(ts, maxLength);
+            Blt_Ts_DrawLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr, &ts, 
+                          tx, ty);
+            if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
+                Blt_Ts_UnderlineChars(setPtr->tkwin, drawable, 
+                tabPtr->layoutPtr, &ts,  tx, ty);
+            }
+        }
+    }
+    /* Finally the focus ring. */
+    if (0 && (setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
+        XColor *fg;
+        int w, h;
+        
+        if (tabPtr == setPtr->selectPtr) {
+            fg = GETATTR(tabPtr, selColor);
+        } else if (tabPtr == setPtr->activePtr) {
+            fg = GETATTR(tabPtr, activeFg);
+        } else {
+            fg = GETATTR(tabPtr, textColor);
+        }
+        XSetForeground(setPtr->display, stylePtr->activeGC, fg->pixel);
+        w = rPtr->w + xSelPad;
+        w &= ~0x1;                      /* Width has to be odd for the dots
+                                         * in the focus rectangle to
+                                         * align. */
+        h = rPtr->h;
+        h |= 0x1;
+        if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
+            XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
+                x + rPtr->x + 1, y + rPtr->y + 1, w, h);
+        } else {
+            XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
+                x + rPtr->x, y + rPtr->y - 1, w, h);
+        }
+    }
+}
+
+static void
+DrawLabel2(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y)
+{
+    if ((tabPtr->flags & VISIBLE) == 0) {
+        return;
+    }
+    switch (setPtr->quad) {
+    case ROTATE_0:
+        DrawLabelRotate0(setPtr, tabPtr, drawable, x, y);
+        break;
+    case ROTATE_90:
+        DrawLabelRotate90(setPtr, tabPtr, drawable, x, y);
+        break;
+    case ROTATE_180:
+        DrawLabelRotate180(setPtr, tabPtr, drawable, x, y);
+        break;
+    case ROTATE_270:
+        DrawLabelRotate270(setPtr, tabPtr, drawable, x, y);
+        break;
+    }
+} 
