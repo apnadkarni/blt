@@ -1667,7 +1667,7 @@ BLT_EXTERN int		Blt_VectorNotifyPending(Blt_VectorId clientId);
 #define Blt_CreateVector_DECLARED
 /* 267 */
 BLT_EXTERN int		Blt_CreateVector(Tcl_Interp *interp,
-				const char *vecName, int size,
+				const char *vecName, size_t size,
 				Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_CreateVector2_DECLARED
@@ -1675,7 +1675,7 @@ BLT_EXTERN int		Blt_CreateVector(Tcl_Interp *interp,
 /* 268 */
 BLT_EXTERN int		Blt_CreateVector2(Tcl_Interp *interp,
 				const char *vecName, const char *cmdName,
-				const char *varName, int initialSize,
+				const char *varName, size_t initialSize,
 				Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_GetVector_DECLARED
@@ -1700,12 +1700,13 @@ BLT_EXTERN int		Blt_VectorExists(Tcl_Interp *interp,
 #define Blt_ResetVector_DECLARED
 /* 272 */
 BLT_EXTERN int		Blt_ResetVector(Blt_Vector *vecPtr, double *dataArr,
-				int n, int arraySize, Tcl_FreeProc *freeProc);
+        			size_t n, size_t arraySize,
+                                Tcl_FreeProc *freeProc);
 #endif
 #ifndef Blt_ResizeVector_DECLARED
 #define Blt_ResizeVector_DECLARED
 /* 273 */
-BLT_EXTERN int		Blt_ResizeVector(Blt_Vector *vecPtr, int n);
+BLT_EXTERN int		Blt_ResizeVector(Blt_Vector *vecPtr, size_t n);
 #endif
 #ifndef Blt_DeleteVectorByName_DECLARED
 #define Blt_DeleteVectorByName_DECLARED
@@ -2013,13 +2014,13 @@ typedef struct BltTclProcs {
     const char * (*blt_NameOfVectorId) (Blt_VectorId clientId); /* 264 */
     const char * (*blt_NameOfVector) (Blt_Vector *vecPtr); /* 265 */
     int (*blt_VectorNotifyPending) (Blt_VectorId clientId); /* 266 */
-    int (*blt_CreateVector) (Tcl_Interp *interp, const char *vecName, int size, Blt_Vector **vecPtrPtr); /* 267 */
-    int (*blt_CreateVector2) (Tcl_Interp *interp, const char *vecName, const char *cmdName, const char *varName, int initialSize, Blt_Vector **vecPtrPtr); /* 268 */
+    int (*blt_CreateVector) (Tcl_Interp *interp, const char *vecName, size_t size, Blt_Vector **vecPtrPtr); /* 267 */
+    int (*blt_CreateVector2) (Tcl_Interp *interp, const char *vecName, const char *cmdName, const char *varName, size_t initialSize, Blt_Vector **vecPtrPtr); /* 268 */
     int (*blt_GetVector) (Tcl_Interp *interp, const char *vecName, Blt_Vector **vecPtrPtr); /* 269 */
     int (*blt_GetVectorFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Vector **vecPtrPtr); /* 270 */
     int (*blt_VectorExists) (Tcl_Interp *interp, const char *vecName); /* 271 */
-    int (*blt_ResetVector) (Blt_Vector *vecPtr, double *dataArr, int n, int arraySize, Tcl_FreeProc *freeProc); /* 272 */
-    int (*blt_ResizeVector) (Blt_Vector *vecPtr, int n); /* 273 */
+    int (*blt_ResetVector) (Blt_Vector *vecPtr, double *dataArr, size_t n, size_t arraySize, Tcl_FreeProc *freeProc); /* 272 */
+    int (*blt_ResizeVector) (Blt_Vector *vecPtr, size_t n); /* 273 */
     int (*blt_DeleteVectorByName) (Tcl_Interp *interp, const char *vecName); /* 274 */
     int (*blt_DeleteVector) (Blt_Vector *vecPtr); /* 275 */
     int (*blt_ExprVector) (Tcl_Interp *interp, char *expr, Blt_Vector *vecPtr); /* 276 */

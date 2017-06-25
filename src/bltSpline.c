@@ -1194,9 +1194,9 @@ SplineCmd(
     SplineProc *proc;
     Blt_Vector *x, *y, *splX, *splY;
     double *xArr, *yArr;
-    int i;
+    long i;
     Point2d *origPts, *intpPts;
-    int numOrigPts, numIntpPts;
+    size_t numOrigPts, numIntpPts;
     
     proc = Blt_GetOpFromObj(interp, numSplineOps, splineOps, BLT_OP_ARG1, 
         objc, objv, 0);

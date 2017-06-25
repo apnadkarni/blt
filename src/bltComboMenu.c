@@ -1207,6 +1207,27 @@ NewItem(ComboMenu *comboPtr)
     return itemPtr;
 }
 
+#ifdef notdef
+static INLINE Item *
+FindItemByText(ComboMenu *comboPtr, const char *text)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&comboPtr->textTable, text);
+    if (hPtr != NULL) {
+        Blt_HashTable *tablePtr;
+        Blt_HashEntry *hPtr2;
+        Blt_HashSearch iter;
+
+        tablePtr = Blt_GetHashValue(hPtr);
+        hPtr2 = Blt_FirstHashEntry(tablePtr, &iter);
+        if (hPtr2 != NULL) {
+            return Blt_GetHashValue(hPtr2);
+        }
+    }
+    return NULL;
+}
+
 static INLINE Item *
 FindItemByIndex(ComboMenu *comboPtr, long index)
 {
@@ -1218,6 +1239,32 @@ FindItemByIndex(ComboMenu *comboPtr, long index)
     link = Blt_Chain_GetNthLink(comboPtr->chain, index - 1);
     return Blt_Chain_GetValue(link);
 }
+
+static INLINE Item *
+BeginItem(ComboMenu *comboPtr)
+{
+    Blt_ChainLink link;
+
+    link = Blt_Chain_FirstLink(comboPtr->chain); 
+    if (link != NULL) {
+        return Blt_Chain_GetValue(link);
+    }
+    return NULL;
+}
+
+static INLINE Item *
+EndItem(ComboMenu *comboPtr)
+{
+    Blt_ChainLink link;
+
+    link = Blt_Chain_LastLink(comboPtr->chain); 
+    if (link != NULL) {
+        return Blt_Chain_GetValue(link);
+    }
+    return NULL;
+}
+
+#endif
 
 static INLINE Item *
 FirstItem(ComboMenu *comboPtr)
@@ -1292,29 +1339,6 @@ PrevItem(Item *itemPtr)
     return NULL;
 }
 
-static INLINE Item *
-BeginItem(ComboMenu *comboPtr)
-{
-    Blt_ChainLink link;
-
-    link = Blt_Chain_FirstLink(comboPtr->chain); 
-    if (link != NULL) {
-        return Blt_Chain_GetValue(link);
-    }
-    return NULL;
-}
-
-static INLINE Item *
-EndItem(ComboMenu *comboPtr)
-{
-    Blt_ChainLink link;
-
-    link = Blt_Chain_LastLink(comboPtr->chain); 
-    if (link != NULL) {
-        return Blt_Chain_GetValue(link);
-    }
-    return NULL;
-}
 
 static Item *
 StepItem(Item *itemPtr)
@@ -2670,25 +2694,6 @@ DestroyIcons(ComboMenu *comboPtr)
     Blt_DeleteHashTable(&comboPtr->iconTable);
 }
 
-static INLINE Item *
-FindItemByText(ComboMenu *comboPtr, const char *text)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&comboPtr->textTable, text);
-    if (hPtr != NULL) {
-        Blt_HashTable *tablePtr;
-        Blt_HashEntry *hPtr2;
-        Blt_HashSearch iter;
-
-        tablePtr = Blt_GetHashValue(hPtr);
-        hPtr2 = Blt_FirstHashEntry(tablePtr, &iter);
-        if (hPtr2 != NULL) {
-            return Blt_GetHashValue(hPtr2);
-        }
-    }
-    return NULL;
-}
 
 static char *
 NewText(Item *itemPtr, const char *text)

@@ -134,10 +134,10 @@ four1(double *data, unsigned long nn, int isign)
 }
 #undef SWAP
 
-static int 
-smallest_power_of_2_not_less_than(int x)
+static long 
+smallest_power_of_2_not_less_than(long x)
 {
-    int pow2 = 1;
+    long pow2 = 1;
 
     while (pow2 < x){
         pow2 <<= 1;
@@ -166,13 +166,13 @@ Blt_Vec_FFT(
                                          * FFT_BARTLETT. */
     Vector *srcPtr) 
 {
-    int length;
-    int pow2len;
+    long length;
+    long pow2len;
     double *pad;
-    int i;
+    long i;
     double Wss = 0.0;
     /* TENTATIVE */
-    int middle = 1;
+    long middle = 1;
     int noconstant;
 
     noconstant = (flags & FFT_NO_CONSTANT) ? 1 : 0;
@@ -308,11 +308,9 @@ int
 Blt_Vec_InverseFFT(Tcl_Interp *interp, Vector *srcImagPtr, Vector *destRealPtr, 
                    Vector *destImagPtr, Vector *srcPtr)
 {
-    int length;
-    int pow2len;
     double *pad;
-    int i;
     double oneOverN;
+    long i, length, pow2len;
 
     if ((destRealPtr == srcPtr) || (destImagPtr == srcPtr )){
         Tcl_AppendResult(interp,

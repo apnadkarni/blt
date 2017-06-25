@@ -829,8 +829,8 @@ BLT_EXTERN int		Blt_GetCountFromObj(Tcl_Interp *interp,
 #ifndef Blt_SimplifyLine_DECLARED
 #define Blt_SimplifyLine_DECLARED
 /* 137 */
-BLT_EXTERN int		Blt_SimplifyLine(Point2d *origPts, int low, int high,
-				double tolerance, int *indices);
+BLT_EXTERN long		Blt_SimplifyLine(Point2d *origPts, long low, long high,
+				double tolerance, long *indices);
 #endif
 #ifndef Blt_PointInPolygon_DECLARED
 #define Blt_PointInPolygon_DECLARED
@@ -1064,7 +1064,7 @@ typedef struct BltTclIntProcs {
     void (*blt_FormatDate) (Blt_DateTime *datePtr, const char *format, Tcl_DString *resultPtr); /* 134 */
     int (*blt_GetPositionFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *indexPtr); /* 135 */
     int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, long *valuePtr); /* 136 */
-    int (*blt_SimplifyLine) (Point2d *origPts, int low, int high, double tolerance, int *indices); /* 137 */
+    long (*blt_SimplifyLine) (Point2d *origPts, long low, long high, double tolerance, long *indices); /* 137 */
     int (*blt_PointInPolygon) (Point2d *samplePtr, Point2d *points, int numPoints); /* 138 */
     int (*blt_PolygonInRegion) (Point2d *points, int numPoints, Region2d *extsPtr, int enclosed); /* 139 */
     int (*blt_PointInSegments) (Point2d *samplePtr, Segment2d *segments, int numSegments, double halo); /* 140 */
