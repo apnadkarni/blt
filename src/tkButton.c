@@ -1613,7 +1613,7 @@ DisplayButton(ClientData clientData)
                                  * compiler warning. */
     int y, relief;
     Tk_Window tkwin = butPtr->tkwin;
-    int width, height;
+    int w, h;
     int offset;                 /* 0 means this is a label widget.  1 means
                                  * it is a flavor of button, so we offset
                                  * the text to make the button appear to
@@ -1623,7 +1623,9 @@ DisplayButton(ClientData clientData)
     if ((butPtr->tkwin == NULL) || !Tk_IsMapped(tkwin)) {
         return;
     }
-    if ((Tk_Width(butPtr->tkwin) < 2) || (Tk_Height(butPtr->tkwin) < 2)) {
+    w = Tk_Width(butPtr->tkwin);
+    h = Tk_Height(butPtr->tkwin);
+    if ((w < 2) || (h < 2)) {
         return;
     }
     bg = butPtr->normalBg;
@@ -1663,20 +1665,19 @@ DisplayButton(ClientData clientData)
      * point in time where the on-sreen image has been cleared.
      */
 
-    pixmap = Tk_GetPixmap(butPtr->display, Tk_WindowId(tkwin),
-        Tk_Width(tkwin), Tk_Height(tkwin), Tk_Depth(tkwin));
-    Blt_Bg_FillRectangle(tkwin, pixmap, bg, 0, 0, Tk_Width(tkwin),
-        Tk_Height(tkwin), 0, TK_RELIEF_FLAT);
+    pixmap = Tk_GetPixmap(butPtr->display, Tk_WindowId(tkwin), w, h,
+                          Tk_Depth(tkwin));
+    Blt_Bg_FillRectangle(tkwin, pixmap, bg, 0, 0, w, h, 0, TK_RELIEF_FLAT);
 
     /*
      * Display image or bitmap or text for button.
      */
 
-    if (butPtr->image != None) {
+    if (butPtr->image != NULL) {
         int iw, ih;
+        int dx, dy;
 
         Tk_SizeOfImage(butPtr->image, &iw, &ih);
-      imageOrBitmap:
         TkComputeAnchor(butPtr->anchor, tkwin, butPtr->padX, butPtr->padY,
             butPtr->indicatorSpace + iw, ih, &x, &y);
         x += butPtr->indicatorSpace;
@@ -1689,40 +1690,49 @@ DisplayButton(ClientData clientData)
             x += offset;
             y += offset;
         }
-        if (butPtr->image != NULL) {
-            int dx, dy;
-            
-            dx = x, dy = y;
-            if (dx < 0) {
-                iw += dx;
-                dx = 0;
-            }
-            if (dy < 0) {
-                ih += dy;
-                dy = 0;
-            }
-            if ((dx + iw) > Tk_Width(tkwin)) {
-                iw = Tk_Width(tkwin) - dx;
-            }
-            if ((dy + ih) > Tk_Height(tkwin)) {
-                ih = Tk_Height(tkwin) - dy;
-            }
-            if ((butPtr->selectImage != NULL) && (butPtr->flags & SELECTED)) {
-                Tk_RedrawImage(butPtr->selectImage, 0, 0, iw, ih, pixmap,
-                    dx, dy);
-            } else {
-                Tk_RedrawImage(butPtr->image, 0, 0, iw, ih, pixmap, dx, dy);
-            }
-        } else {
-            XSetClipOrigin(butPtr->display, gc, x, y);
-            XCopyPlane(butPtr->display, butPtr->bitmap, pixmap, gc, 0, 0,
-                (unsigned int)width, (unsigned int)height, x, y, 1);
-            XSetClipOrigin(butPtr->display, gc, 0, 0);
+        dx = x, dy = y;
+        if (dx < 0) {
+            iw += dx;
+            dx = 0;
         }
-        y += height / 2;
+        if (dy < 0) {
+            ih += dy;
+            dy = 0;
+        }
+        if ((dx + iw) > w) {
+            iw = w - dx;
+        }
+        if ((dy + ih) > h) {
+            ih = h - dy;
+        }
+        if ((butPtr->selectImage != NULL) && (butPtr->flags & SELECTED)) {
+            Tk_RedrawImage(butPtr->selectImage, 0, 0, iw, ih, pixmap,
+                           dx, dy);
+        } else {
+            Tk_RedrawImage(butPtr->image, 0, 0, iw, ih, pixmap, dx, dy);
+        }
+        y += h / 2;
     } else if (butPtr->bitmap != None) {
-        Tk_SizeOfBitmap(butPtr->display, butPtr->bitmap, &width, &height);
-        goto imageOrBitmap;
+        int iw, ih;
+
+        Tk_SizeOfBitmap(butPtr->display, butPtr->bitmap, &iw, &ih);
+        TkComputeAnchor(butPtr->anchor, tkwin, butPtr->padX, butPtr->padY,
+            butPtr->indicatorSpace + iw, ih, &x, &y);
+        x += butPtr->indicatorSpace;
+        x += offset;
+        y += offset;
+        if (relief == TK_RELIEF_RAISED) {
+            x -= offset;
+            y -= offset;
+        } else if (relief == TK_RELIEF_SUNKEN) {
+            x += offset;
+            y += offset;
+        }
+        XSetClipOrigin(butPtr->display, gc, x, y);
+        XCopyPlane(butPtr->display, butPtr->bitmap, pixmap, gc, 0, 0,
+                   (unsigned int)w, (unsigned int)h, x, y, 1);
+        XSetClipOrigin(butPtr->display, gc, 0, 0);
+        y += h / 2;
     } else {
         TkComputeAnchor(butPtr->anchor, tkwin, butPtr->padX, butPtr->padY,
             butPtr->indicatorSpace + butPtr->textWidth,
@@ -1774,8 +1784,8 @@ DisplayButton(ClientData clientData)
         }
         XFillRectangle(butPtr->display, pixmap, butPtr->disabledGC,
             butPtr->inset, butPtr->inset,
-            (unsigned)(Tk_Width(tkwin) - 2 * butPtr->inset),
-            (unsigned)(Tk_Height(tkwin) - 2 * butPtr->inset));
+            (unsigned)(w - 2 * butPtr->inset),
+            (unsigned)(h - 2 * butPtr->inset));
         if ((butPtr->flags & SELECTED) && !butPtr->indicatorOn
             && (butPtr->selectBg != NULL)) {
             XSetForeground(butPtr->display, butPtr->disabledGC,
@@ -1789,18 +1799,18 @@ DisplayButton(ClientData clientData)
      */
     if (relief != TK_RELIEF_FLAT) {
         int inset = butPtr->highlightWidth;
-        int w, h;
+        int rw, rh;
 
-        w = Tk_Width(tkwin) - 2 * inset;
-        h = Tk_Height(tkwin) - 2 * inset;
-        if ((w > 0) && (h > 0))  {
+        rw = w - 2 * inset;
+        rh = h - 2 * inset;
+        if ((rw > 0) && (rh > 0))  {
             if (butPtr->defaultState == STATE_ACTIVE) {
                 inset += 2;
-                Blt_Bg_DrawRectangle(tkwin, pixmap, bg, inset, inset, w, h,
+                Blt_Bg_DrawRectangle(tkwin, pixmap, bg, inset, inset, rw, rh,
                         1, TK_RELIEF_SUNKEN);
                 inset += 3;
             }
-            Blt_Bg_DrawRectangle(tkwin, pixmap, bg, inset, inset, w, h, 
+            Blt_Bg_DrawRectangle(tkwin, pixmap, bg, inset, inset, rw, rh, 
                 butPtr->borderWidth, relief);
         }
     }
@@ -1821,7 +1831,7 @@ DisplayButton(ClientData clientData)
      * then delete the pixmap.
      */
     XCopyArea(butPtr->display, pixmap, Tk_WindowId(tkwin), butPtr->copyGC, 
-        0, 0, (unsigned)Tk_Width(tkwin), (unsigned)Tk_Height(tkwin), 0, 0);
+        0, 0, (unsigned)w, (unsigned)h, 0, 0);
     Tk_FreePixmap(butPtr->display, pixmap);
 }
 

@@ -91,7 +91,7 @@ static Blt_SwitchCustom indexSwitch = {
 
 typedef struct {
     Tcl_Obj *formatObjPtr;
-    int from, to;
+    long from, to;
     int empty;
 } ValuesSwitches;
 
@@ -109,7 +109,7 @@ static Blt_SwitchSpec valuesSwitches[] =
 };
 
 typedef struct {
-    int from, to;
+    long from, to;
     int empty;
     Tcl_Obj *dataObjPtr;
     Tcl_Obj *fileObjPtr;
@@ -131,7 +131,7 @@ static Blt_SwitchSpec exportSwitches[] =
 };
 
 typedef struct {
-    int from, to;
+    long from, to;
 } PrintSwitches;
 
 static Blt_SwitchSpec printSwitches[] = 
@@ -296,8 +296,8 @@ ObjToIndex(
     int flags)                          /* Not used. */
 {
     Vector *vPtr = clientData;
-    int *indexPtr = (int *)(record + offset);
-    int index;
+    long *indexPtr = (long *)(record + offset);
+    long index;
 
     if (Blt_Vec_GetIndex(interp, vPtr, Tcl_GetString(objPtr), &index, 
         INDEX_CHECK, (Blt_VectorIndexProc **)NULL) != TCL_OK) {
@@ -309,10 +309,10 @@ ObjToIndex(
 }
 
 static Tcl_Obj *
-GetValues(Vector *srcPtr, int first, int last)
+GetValues(Vector *srcPtr, long first, long last)
 { 
     Tcl_Obj *listObjPtr;
-    int i;
+    long i;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (i = first; i <= last; i++) {
@@ -325,9 +325,9 @@ GetValues(Vector *srcPtr, int first, int last)
 }
 
 static void
-ReplicateValue(Vector *destPtr, int first, int last, double value)
+ReplicateValue(Vector *destPtr, long first, long last, double value)
 { 
-    int i;
+    long i;
  
     for (i = first; i <= last; i++) {
         destPtr->valueArr[i] = value; 
@@ -509,8 +509,8 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Vector *vPtr = clientData;
     unsigned char *unsetArr;
-    int i, j;
-    int count;
+    long i, j;
+    long count;
 
     /* FIXME: Don't delete vector with no indices.  */
     if (objc == 2) {
@@ -636,12 +636,12 @@ FrequencyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_HashTable freqTable;
     Vector *srcPtr;
     double range;
-    int i, numBins;
+    long i, numBins;
 
     if (GetVector(interp, destPtr->dataPtr, objv[2], &srcPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (Tcl_GetIntFromObj(interp, objv[3], &numBins) != TCL_OK) {
+    if (Tcl_GetLongFromObj(interp, objv[3], &numBins) != TCL_OK) {
         return TCL_ERROR;
     }
     if (numBins < 1) {
@@ -799,9 +799,9 @@ LengthOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Vector *vPtr = clientData;
 
     if (objc == 3) {
-        int numElem;
+        long numElem;
 
-        if (Tcl_GetIntFromObj(interp, objv[2], &numElem) != TCL_OK) {
+        if (Tcl_GetLongFromObj(interp, objv[2], &numElem) != TCL_OK) {
             return TCL_ERROR;
         }
         if (numElem < 0) {
@@ -818,7 +818,7 @@ LengthOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         Blt_Vec_UpdateClients(vPtr);
     }
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), vPtr->length);
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), vPtr->length);
     return TCL_OK;
 }
 
@@ -927,8 +927,8 @@ MergeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Vector *vPtr = clientData;
     Vector **vecArr;
-    int refSize, numElem;
-    int i;
+    long refSize, numElem;
+    long i;
     double *valuePtr, *valueArr;
     Vector **vPtrPtr;
     
@@ -1025,7 +1025,7 @@ NormalizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     Vector *vPtr = clientData;
-    int i;
+    long i;
     double range;
     
     Blt_Vec_UpdateRange(vPtr);
@@ -1152,7 +1152,7 @@ PackOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     Vector *vPtr = clientData;
-    int i, j;
+    long i, j;
 
     for (i = 0, j = 0; i < vPtr->length; i++) {
         if (FINITE(vPtr->valueArr[i])) {
@@ -1167,7 +1167,7 @@ PackOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
     }
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), i - j);
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), i - j);
     return TCL_OK;
 }
 
@@ -1191,12 +1191,11 @@ static int
 PopulateOp(ClientData clientData, Tcl_Interp *interp, int objc,
            Tcl_Obj *const *objv)
 {
-    Vector *vPtr = clientData;
     Vector *srcPtr;
-    int size, density;
-    int i, j;
+    Vector *vPtr = clientData;
     double *valuePtr;
-    int count;
+    long i, j, count;
+    long size, density;
 
     if (GetVector(interp, vPtr->dataPtr, objv[2], &srcPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -1204,7 +1203,7 @@ PopulateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (srcPtr->length == 0) {
         return TCL_OK;                  /* Source vector is empty. */
     }
-    if (Tcl_GetIntFromObj(interp, objv[3], &density) != TCL_OK) {
+    if (Tcl_GetLongFromObj(interp, objv[3], &density) != TCL_OK) {
         return TCL_ERROR;
     }
     if (density < 1) {
@@ -1261,7 +1260,7 @@ ValueGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
            Tcl_Obj *const *objv)
 {
     Vector *vPtr = clientData;
-    int first, last;
+    long first, last;
     const char *string;
     Tcl_Obj *listObjPtr;
 
@@ -2179,8 +2178,8 @@ RangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Vector *vPtr = clientData;
     Tcl_Obj *listObjPtr;
-    int first, last;
-    int i;
+    long first, last;
+    long i;
 
     if (objc == 2) {
         first = 0;
@@ -2290,7 +2289,7 @@ enum NativeFormats {
  *---------------------------------------------------------------------------
  */
 static enum NativeFormats
-GetBinaryFormat(Tcl_Interp *interp, char *string, int *sizePtr)
+GetBinaryFormat(Tcl_Interp *interp, const char *string, int *sizePtr)
 {
     char c;
 
@@ -2345,11 +2344,11 @@ GetBinaryFormat(Tcl_Interp *interp, char *string, int *sizePtr)
 }
 
 static int
-CopyValues(Vector *vPtr, char *byteArr, enum NativeFormats fmt, int size, 
-        int length, int swap, int *indexPtr)
+CopyValues(Vector *vPtr, char *byteArr, enum NativeFormats fmt, size_t size, 
+        size_t length, int swap, long *indexPtr)
 {
-    int i, n;
-    int newSize;
+    long i, n;
+    size_t newSize;
 
     if ((swap) && (size > 1)) {
         int numBytes = size * length;
@@ -2461,17 +2460,17 @@ static int
 BinreadOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
-    Vector *vPtr = clientData;
     Tcl_Channel channel;
+    Vector *vPtr = clientData;
     char *byteArr;
-    char *string;
+    const char *string;
     enum NativeFormats fmt;
-    int arraySize, bytesRead;
-    int count, total;
-    int first;
-    int size, length, mode;
-    int swap;
-    int i;
+    int fmtSize;
+    int mode, swap;
+    long count, total, first, i;
+    long length;
+    size_t arraySize;
+    ssize_t bytesRead;
 
     string = Tcl_GetString(objv[2]);
     channel = Tcl_GetChannel(interp, string, &mode);
@@ -2485,7 +2484,7 @@ BinreadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     first = vPtr->length;
     fmt = NF_DOUBLE;
-    size = sizeof(double);
+    fmtSize = sizeof(double);
     swap = FALSE;
     count = 0;
 
@@ -2519,7 +2518,7 @@ BinreadOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 return TCL_ERROR;
             }
             string = Tcl_GetString(objv[i]);
-            fmt = GetBinaryFormat(interp, string, &size);
+            fmt = GetBinaryFormat(interp, string, &fmtSize);
             if (fmt == NF_UNKNOWN) {
                 return TCL_ERROR;
             }
@@ -2545,9 +2544,9 @@ BinreadOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 #define BUFFER_SIZE 1024
     if (count == 0) {
-        arraySize = BUFFER_SIZE * size;
+        arraySize = BUFFER_SIZE * fmtSize;
     } else {
-        arraySize = count * size;
+        arraySize = count * fmtSize;
     }
 
     byteArr = Blt_AssertMalloc(arraySize);
@@ -2564,13 +2563,13 @@ BinreadOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_PosixError(interp), (char *)NULL);
             return TCL_ERROR;
         }
-        if ((bytesRead % size) != 0) {
+        if ((bytesRead % fmtSize) != 0) {
             Tcl_AppendResult(interp, "error reading channel: short read",
                 (char *)NULL);
             return TCL_ERROR;
         }
-        length = bytesRead / size;
-        if (CopyValues(vPtr, byteArr, fmt, size, length, swap, &first)
+        length = bytesRead / fmtSize;
+        if (CopyValues(vPtr, byteArr, fmt, fmtSize, length, swap, &first)
             != TCL_OK) {
             return TCL_ERROR;
         }
@@ -2587,7 +2586,7 @@ BinreadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_Vec_UpdateClients(vPtr);
 
     /* Set the result as the number of values read.  */
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), total);
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), total);
     return TCL_OK;
 }
 
@@ -2788,7 +2787,7 @@ CountOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 (char *)NULL);
         return TCL_ERROR;
     }
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), count);
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), count);
     return TCL_OK;
 }
 
@@ -2952,14 +2951,17 @@ OffsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Vector *vPtr = clientData;
     if (objc == 3) {
-        int newOffset;
+        long newOffset;
 
-        if (Tcl_GetIntFromObj(interp, objv[2], &newOffset) != TCL_OK) {
+        if (Tcl_GetLongFromObj(interp, objv[2], &newOffset) != TCL_OK) {
             return TCL_ERROR;
+        }
+        if (newOffset < 0) {
+            newOffset = 0;
         }
         vPtr->offset = newOffset;
     }
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), vPtr->offset);
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), vPtr->offset);
     return TCL_OK;
 }
 
@@ -3084,7 +3086,7 @@ LinspaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
            Tcl_Obj *const *objv)
 {
     Vector *destPtr = clientData;
-    int numSteps;
+    long numSteps;
     double first, last;
     
     if (Tcl_GetDoubleFromObj(interp, objv[2], &first) != TCL_OK) {
@@ -3096,12 +3098,12 @@ LinspaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     numSteps = destPtr->length;         /* By default, generate one step
                                          * for each entry in the vector. */
     if ((objc > 4) && 
-        (Tcl_GetIntFromObj(interp, objv[4], &numSteps) != TCL_OK)) {
+        (Tcl_GetLongFromObj(interp, objv[4], &numSteps) != TCL_OK)) {
         return TCL_ERROR;
     }
     if (numSteps > 1) {                 /* Silently ignore non-positive
                                          * numSteps */
-        int i;
+        long i;
         double step;
 
         if (Blt_Vec_SetLength(interp, destPtr, numSteps) != TCL_OK) {
@@ -3217,9 +3219,9 @@ SimplifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Vector *vPtr = clientData;
     Vector *x, *y;
-    size_t i, n;
-    int numPoints;
-    int *indices;
+    long i, n;
+    long numPoints;
+    long *indices;
     double tolerance = 10.0;
     Point2d *origPts;
     double *xArr, *yArr;
@@ -3256,9 +3258,9 @@ SimplifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         origPts[i].x = xArr[i];
         origPts[i].y = yArr[i];
     }
-    indices = Blt_Malloc(sizeof(int) * numPoints);
+    indices = Blt_Malloc(sizeof(long) * numPoints);
     if (indices == NULL) {
-        Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(numPoints), 
+        Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(numPoints), 
                 "\" indices for simplication array", (char *)NULL);
         Blt_Free(origPts);
         return TCL_ERROR;
@@ -3374,14 +3376,9 @@ static int
 ComparePoints(const void *aPtr, const void *bPtr)
 {
     int i;
-    const char *i1Ptr;
-    const char *i2Ptr;
-    int i1, i2;
+    const size_t i1 = *(size_t *)aPtr;
+    const size_t i2 = *(size_t *)bPtr;
 
-    i1Ptr = aPtr;
-    i1 = *i1Ptr;
-    i2Ptr = bPtr;
-    i2 = *i2Ptr;
     for (i = 0; i < numSortVectors; i++) {
         int cond;
         Vector *vPtr;
@@ -3415,20 +3412,20 @@ ComparePoints(const void *aPtr, const void *bPtr)
  *---------------------------------------------------------------------------
  */
 void
-Blt_Vec_SortMap(Vector **vectors, int numVectors, size_t **mapPtr)
+Blt_Vec_SortMap(Vector **vectors, int numVectors, long **mapPtr)
 {
-    size_t *map;
-    int i;
+    long *map;
+    long i;
     Vector *vPtr = vectors[0];
 
-    map = Blt_AssertMalloc(sizeof(size_t) * vPtr->length);
+    map = Blt_AssertMalloc(sizeof(long) * vPtr->length);
     for (i = 0; i < vPtr->length; i++) {
         map[i] = i;
     }
     /* Set global variables for sorting routine. */
     sortVectors = vectors;
     numSortVectors = numVectors;
-    qsort((char *)map, vPtr->length, sizeof(size_t), ComparePoints);
+    qsort((char *)map, vPtr->length, sizeof(long), ComparePoints);
     *mapPtr = map;
 }
 
@@ -3453,10 +3450,10 @@ Blt_Vec_SortMap(Vector **vectors, int numVectors, size_t **mapPtr)
  */
 
 int
-Blt_Vec_NonemptySortMap(Vector *vPtr, size_t **mapPtr)
+Blt_Vec_NonemptySortMap(Vector *vPtr, long **mapPtr)
 {
-    size_t *map;
-    int i, j, count;
+    long *map;
+    long i, j, count;
 
     count = 0;
     for (i = 0; i < vPtr->length; i++) {
@@ -3464,7 +3461,7 @@ Blt_Vec_NonemptySortMap(Vector *vPtr, size_t **mapPtr)
             count++;
         }
     }
-    map = Blt_AssertMalloc(sizeof(size_t) * count);
+    map = Blt_AssertMalloc(sizeof(long) * count);
     for (i = 0, j = 0; i < vPtr->length; i++) {
         if (FINITE(vPtr->valueArr[i])) {
             map[j] = i;
@@ -3474,7 +3471,7 @@ Blt_Vec_NonemptySortMap(Vector *vPtr, size_t **mapPtr)
     /* Set global variables for sorting routine. */
     sortVectors = &vPtr;
     numSortVectors = 1;
-    qsort((char *)map, count, sizeof(size_t), ComparePoints);
+    qsort((char *)map, count, sizeof(long), ComparePoints);
     *mapPtr = map;
     return count;
 }
@@ -3507,7 +3504,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Vector **vectors;
     double *copy;
     int i;
-    size_t *map;
+    long *map;
     size_t numBytes, sortLength, numVectors;
 
     /* Global flag to to pass to comparison routines.  */
@@ -3553,7 +3550,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     /* If all we care about is the unique values then compress the map. */
     if (switches.flags & SORT_UNIQUE) {
-        size_t count, i;
+        long count, i;
 
         count = 1;
         for (i = 1; i < vPtr->length; i++) {
@@ -3573,7 +3570,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
      * do that now. */
     if (switches.flags & (SORT_VALUES | SORT_INDICES)) {
         Tcl_Obj *listObjPtr;
-        size_t i;
+        long i;
         
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 
@@ -3586,7 +3583,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }            
         } else {
             for (i = 0; i < sortLength; i++) {
-                int j;
+                long j;
                 
                 for (j = 0; j < numVectors; j++) {
                     Vector *vPtr;

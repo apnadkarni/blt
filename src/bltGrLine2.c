@@ -3619,27 +3619,28 @@ MapActiveSymbols(LineElement *elemPtr)
 static void
 ReducePoints(MapInfo *mapPtr, double tolerance)
 {
-    int i, np;
+    long i, numPoints;
     Point2d *screenPts, *origPts;
-    int *map, *simple;
+    long *map, *simple;
 
-    simple    = Blt_AssertMalloc(tracePtr->numPoints * sizeof(int));
-    map       = Blt_AssertMalloc(tracePtr->numPoints * sizeof(int));
+    simple    = Blt_AssertMalloc(tracePtr->numPoints * sizeof(long));
+    map       = Blt_AssertMalloc(tracePtr->numPoints * sizeof(long));
     screenPts = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
     origPts = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
 
-    np = Blt_SimplifyLine(origPts, 0, tracePtr->numScreenPts - 1, 
+    numPoints = Blt_SimplifyLine(origPts, 0, tracePtr->numScreenPts - 1, 
         tolerance, simple);
-    for (i = 0; i < np; i++) {
-        int k;
+    for (i = 0; i < numPoints; i++) {
+        long k;
 
         k = simple[i];
         screenPts[i] = mapPtr->screenPts[k];
         map[i] = mapPtr->map[k];
     }
 #ifdef notdef
-    if (np < mapPtr->numScreenPts) {
-        fprintf(stderr, "reduced from %d to %d\n", mapPtr->numScreenPts, np);
+    if (numPoints < mapPtr->numScreenPts) {
+        fprintf(stderr, "reduced from %d to %d\n", mapPtr->numScreenPts,
+                numPoints);
     }
 #endif
     Blt_Free(mapPtr->screenPts);
@@ -3647,7 +3648,7 @@ ReducePoints(MapInfo *mapPtr, double tolerance)
     Blt_Free(simple);
     mapPtr->screenPts = screenPts;
     mapPtr->map = map;
-    mapPtr->numScreenPts = np;
+    mapPtr->numScreenPts = numPoints;
 }
 #endif
 

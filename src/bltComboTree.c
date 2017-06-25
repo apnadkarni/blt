@@ -1056,6 +1056,7 @@ static Tk_GeomMgr comboMgrInfo = {
 
 static int ComputeVisibleEntries(ComboTree *comboPtr);
 
+#ifdef notdef
 static inline int
 GetWidth(ComboTree *comboPtr)
 {
@@ -1085,6 +1086,7 @@ GetHeight(ComboTree *comboPtr)
     }
     return h;
 }
+#endif
 
 static Tcl_Obj *
 GetEntryBBox(ComboTree *comboPtr, Entry *entryPtr)
