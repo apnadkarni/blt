@@ -1721,6 +1721,28 @@ NewItem(ListView *viewPtr)
     return itemPtr;
 }
 
+#ifdef notdef
+
+static INLINE Item *
+FindItemByText(ListView *viewPtr, const char *text)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&viewPtr->textTable, text);
+    if (hPtr != NULL) {
+        Blt_HashTable *tablePtr;
+        Blt_HashEntry *h2Ptr;
+        Blt_HashSearch iter;
+
+        tablePtr = Blt_GetHashValue(hPtr);
+        h2Ptr = Blt_FirstHashEntry(tablePtr, &iter);
+        if (h2Ptr != NULL) {
+            return Blt_GetHashValue(h2Ptr);
+        }
+    }
+    return NULL;
+}
+
 static INLINE Item *
 FindItemByIndex(ListView *viewPtr, long index)
 {
@@ -1757,6 +1779,7 @@ EndItem(ListView *viewPtr)
     }
     return NULL;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2744,25 +2767,6 @@ DestroyIcons(ListView *viewPtr)
     Blt_DeleteHashTable(&viewPtr->iconTable);
 }
 
-static INLINE Item *
-FindItemByText(ListView *viewPtr, const char *text)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&viewPtr->textTable, text);
-    if (hPtr != NULL) {
-        Blt_HashTable *tablePtr;
-        Blt_HashEntry *h2Ptr;
-        Blt_HashSearch iter;
-
-        tablePtr = Blt_GetHashValue(hPtr);
-        h2Ptr = Blt_FirstHashEntry(tablePtr, &iter);
-        if (h2Ptr != NULL) {
-            return Blt_GetHashValue(h2Ptr);
-        }
-    }
-    return NULL;
-}
 
 static char *
 NewText(Item *itemPtr, const char *text)

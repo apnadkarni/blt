@@ -130,12 +130,12 @@ static Tcl_ObjCmdProc VectorCmd;
 static Tcl_InterpDeleteProc VectorInterpDeleteProc;
 
 typedef struct {
-    char *varName;                      /* Requested variable name. */
-    char *cmdName;                      /* Requested command name. */
+    const char *varName;                /* Requested variable name. */
+    const char *cmdName;                /* Requested command name. */
     int flush;                          /* Flush */
     int watchUnset;                     /* Watch when variable is unset. */
-    int size;
-    int first, last;
+    long size;
+    long first, last;
 } CreateSwitches;
 
 static Blt_SwitchSpec createSwitches[] = 
@@ -148,7 +148,7 @@ static Blt_SwitchSpec createSwitches[] =
         Blt_Offset(CreateSwitches, watchUnset), 0},
     {BLT_SWITCH_BOOLEAN, "-flush", "bool", (char *)NULL,
         Blt_Offset(CreateSwitches, flush), 0},
-    {BLT_SWITCH_INT_POS, "-length", "length", (char *)NULL,
+    {BLT_SWITCH_LONG_POS, "-length", "length", (char *)NULL,
         Blt_Offset(CreateSwitches, size), 0},
     {BLT_SWITCH_END}
 };
@@ -257,10 +257,10 @@ Blt_Vec_UpdateRange(Vector *vPtr)
  */
 int
 Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
-                 int *indexPtr, int flags, Blt_VectorIndexProc **procPtrPtr)
+                 long *indexPtr, int flags, Blt_VectorIndexProc **procPtrPtr)
 {
     char c;
-    int index;
+    long index;
 
     c = string[0];
 
@@ -290,14 +290,13 @@ Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
             return TCL_OK;
         }
     }
-    if (Tcl_GetInt(interp, (char *)string, &index) != TCL_OK) {
-        long int lvalue;
+    if (Blt_GetLong(interp, (char *)string, &index) != TCL_OK) {
         /*   
          * Unlike Tcl_GetInt, Tcl_ExprLong needs a valid interpreter, but
          * the interp passed in may be NULL.  So we have to use
          * vPtr->interp and then reset the result.
          */
-        if (Tcl_ExprLong(vPtr->interp, (char *)string, &lvalue) != TCL_OK) {
+        if (Tcl_ExprLong(vPtr->interp, (char *)string, &index) != TCL_OK) {
             Tcl_ResetResult(vPtr->interp);
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad index \"", string, "\"", 
@@ -305,7 +304,6 @@ Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
             }
             return TCL_ERROR;
         }
-        index = (int)lvalue;
     }
     /*
      * Correct the index by the current value of the offset. This makes all
@@ -313,7 +311,6 @@ Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
      * special non-numeric indices.
      */
     index -= vPtr->offset;
-
     if ((flags & INDEX_CHECK) && ((index < 0) || (index >= vPtr->length))) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "index \"", string, "\" is out of range", 
@@ -349,7 +346,7 @@ Blt_Vec_GetIndexRange(
     int flags,
     Blt_VectorIndexProc **procPtrPtr)
 {
-    int ielem;
+    long ielem;
     char *colon;
     char c;
 
@@ -654,7 +651,7 @@ Blt_Vec_Find(VectorCmdInterpData *dataPtr, const char *vecName,
 double
 Blt_Vec_Min(Vector *vPtr)
 {
-    int i;
+    long i;
     double min;
 
     for (i = vPtr->first; i <= vPtr->last; i++) {
@@ -681,7 +678,7 @@ Blt_Vec_Min(Vector *vPtr)
 double
 Blt_Vec_Max(Vector *vPtr)
 {
-    int i;
+    long i;
     double max;
 
     for (i = vPtr->first; i <= vPtr->last; i++) {
@@ -882,12 +879,9 @@ Blt_Vec_MapVariable(
  *---------------------------------------------------------------------------
  */
 int
-Blt_Vec_SetSize(
-    Tcl_Interp *interp, 
-    Vector *vPtr, 
-    int newSize)                        /* Size of array in elements */
+Blt_Vec_SetSize(Tcl_Interp *interp, Vector *vPtr, size_t newSize)
 {
-    if (newSize <= 0) {
+    if (newSize == 0) {
         newSize = DEF_ARRAY_SIZE;
     }
     if (newSize == vPtr->size) {
@@ -902,7 +896,7 @@ Blt_Vec_SetSize(
         if (newArr == NULL) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "can't reallocate ", 
-                                 Blt_Itoa(newSize), " elements for vector \"", 
+                                 Blt_Ltoa(newSize), " elements for vector \"", 
                                  vPtr->name, "\"", (char *)NULL); 
             }
             return TCL_ERROR;
@@ -922,13 +916,13 @@ Blt_Vec_SetSize(
         if (newArr == NULL) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "can't allocate ", 
-                                 Blt_Itoa(newSize), " elements for vector \"", 
+                                 Blt_Ltoa(newSize), " elements for vector \"", 
                                  vPtr->name, "\"", (char *)NULL); 
             }
             return TCL_ERROR;
         }
         {
-            int used, wanted;
+            size_t used, wanted;
             
             /* Copy the contents of the old memory into the new. */
             used = vPtr->length;
@@ -985,10 +979,7 @@ Blt_Vec_SetSize(
  *---------------------------------------------------------------------------
  */
 int
-Blt_Vec_SetLength(
-    Tcl_Interp *interp, 
-    Vector *vPtr, 
-    int newLength)                      /* Size of array in elements */
+Blt_Vec_SetLength(Tcl_Interp *interp, Vector *vPtr, size_t newLength)
 {
     if (vPtr->size < newLength) {
         if (Blt_Vec_SetSize(interp, vPtr, newLength) != TCL_OK) {
@@ -997,7 +988,7 @@ Blt_Vec_SetLength(
     }
     if (newLength > vPtr->length) {
         double emptyValue;
-        int i;
+        long i;
 
         emptyValue = Blt_NaN();
         for (i = vPtr->length; i < newLength; i++) {
@@ -1006,7 +997,7 @@ Blt_Vec_SetLength(
     }
     vPtr->length = newLength;
     vPtr->first = 0;
-    vPtr->last = newLength - 1;
+    vPtr->last = (long)newLength - 1;
     return TCL_OK;
 }
 
@@ -1040,14 +1031,11 @@ Blt_Vec_SetLength(
  */
 
 int
-Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr, int newLength)
+Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr, size_t newLength)
 {
     double emptyValue;
-    int i;
+    long i;
 
-    if (newLength < 0) {
-        newLength = 0;
-    } 
     if (newLength > vPtr->size) {
         int newSize;                    /* Size of array in elements */
     
@@ -1069,7 +1057,7 @@ Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr, int newLength)
     }
     vPtr->length = newLength;
     vPtr->first = 0;
-    vPtr->last = newLength - 1;
+    vPtr->last = (long)newLength - 1;
     return TCL_OK;
     
 }
@@ -1102,9 +1090,9 @@ Blt_Vec_Reset(
                                          * the vector. If NULL, indicates
                                          * to reset the vector size to the
                                          * default. */
-    int length,                         /* # of elements that the vector
+    size_t length,                      /* # of elements that the vector
                                          * currently holds. */
-    int size,                           /* The # of elements that the
+    size_t size,                        /* The # of elements that the
                                          * array can hold. */
     Tcl_FreeProc *freeProc)             /* Address of memory deallocation
                                          * routine for the array of values.
@@ -1120,7 +1108,7 @@ Blt_Vec_Reset(
             size = DEF_ARRAY_SIZE;
             if (valueArr == NULL) {
                 Tcl_AppendResult(vPtr->interp, "can't allocate ", 
-                        Blt_Itoa(size), " elements for vector \"", 
+                        Blt_Ltoa(size), " elements for vector \"", 
                         vPtr->name, "\"", (char *)NULL);
                 return TCL_ERROR;
             }
@@ -1133,7 +1121,7 @@ Blt_Vec_Reset(
             newArr = Blt_Malloc(size * sizeof(double));
             if (newArr == NULL) {
                 Tcl_AppendResult(vPtr->interp, "can't allocate ", 
-                        Blt_Itoa(size), " elements for vector \"", 
+                        Blt_Ltoa(size), " elements for vector \"", 
                         vPtr->name, "\"", (char *)NULL);
                 return TCL_ERROR;
             }
@@ -1434,8 +1422,8 @@ Blt_Vec_Duplicate(Vector *destPtr, Vector *srcPtr)
     if (destPtr == srcPtr) {
         /* Copying the same vector. */
     }
-    if (Blt_Vec_ChangeLength(destPtr->interp, destPtr, 
-                             srcPtr->length) != TCL_OK) {
+    if (Blt_Vec_ChangeLength(destPtr->interp, destPtr, srcPtr->length)
+        != TCL_OK) {
         return TCL_ERROR;
     }
     numBytes = srcPtr->length * sizeof(double);
@@ -1530,7 +1518,7 @@ OldVectorCreate(ClientData clientData, Tcl_Interp *interp, int argStart,
 {
     VectorCmdInterpData *dataPtr = clientData;
     Vector *vPtr;
-    int count, i;
+    long count, i;
     CreateSwitches switches;
 
     /*
@@ -1574,7 +1562,7 @@ OldVectorCreate(ClientData clientData, Tcl_Interp *interp, int argStart,
         char *leftParen, *rightParen;
         char *string;
         int isNew;
-        int size, first, last;
+        long size, first, last;
 
         size = first = last = 0;
         string = Tcl_GetString(objv[i + argStart]);
@@ -1597,9 +1585,9 @@ OldVectorCreate(ClientData clientData, Tcl_Interp *interp, int argStart,
 
                 /* Specification is in the form vecName(first:last) */
                 *colon = '\0';
-                result = Tcl_GetInt(interp, leftParen + 1, &first);
+                result = Blt_GetLong(interp, leftParen + 1, &first);
                 if ((*(colon + 1) != '\0') && (result == TCL_OK)) {
-                    result = Tcl_GetInt(interp, colon + 1, &last);
+                    result = Blt_GetLong(interp, colon + 1, &last);
                     if (first > last) {
                         Tcl_AppendResult(interp, "bad vector range \"",
                             string, "\"", (char *)NULL);
@@ -1610,7 +1598,7 @@ OldVectorCreate(ClientData clientData, Tcl_Interp *interp, int argStart,
                 *colon = ':';
             } else {
                 /* Specification is in the form vecName(size) */
-                result = Tcl_GetInt(interp, leftParen + 1, &size);
+                result = Blt_GetLong(interp, leftParen + 1, &size);
             }
             *rightParen = ')';
             if (result != TCL_OK) {
@@ -2060,9 +2048,9 @@ SimplifyCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_Vector *x, *y, *xr, *yr;
     Point2d *origPts;
     double *xArr, *yArr;
-    int *indices;
-    int i;
-    int numOrigPts, numReducedPts;
+    long *indices;
+    long i;
+    long numOrigPts, numReducedPts;
     double tolerance = 0.05;
     
     if ((objc < 5) || (objc > 6)) {
@@ -2096,7 +2084,7 @@ SimplifyCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 
     origPts = Blt_Malloc(sizeof(Point2d) * numOrigPts);
     if (origPts == NULL) {
-        Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(numOrigPts), 
+        Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(numOrigPts), 
                 "\" points", (char *)NULL);
         return TCL_ERROR;
     }
@@ -2106,9 +2094,9 @@ SimplifyCmd(ClientData clientData, Tcl_Interp *interp, int objc,
         origPts[i].x = xArr[i];
         origPts[i].y = yArr[i];
     }
-    indices = Blt_Malloc(sizeof(int) * numOrigPts);
+    indices = Blt_Malloc(sizeof(long) * numOrigPts);
     if (indices == NULL) {
-        Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(numOrigPts), 
+        Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(numOrigPts), 
                 "\" indices for simplication array", (char *)NULL);
         Blt_Free(origPts);
         return TCL_ERROR;
@@ -2199,7 +2187,7 @@ int
 Blt_CreateVector2(
     Tcl_Interp *interp,
     const char *vecName, const char *cmdName, const char *varName,
-    int initialSize,
+    size_t initialSize,
     Blt_Vector **vecPtrPtr)
 {
     VectorCmdInterpData *dataPtr;       /* Interpreter-specific data. */
@@ -2207,11 +2195,6 @@ Blt_CreateVector2(
     int isNew;
     const char *nameCopy;
 
-    if (initialSize < 0) {
-        Tcl_AppendResult(interp, "bad vector size \"", Blt_Itoa(initialSize),
-            "\"", (char *)NULL);
-        return TCL_ERROR;
-    }
     dataPtr = Blt_Vec_GetInterpData(interp);
 
     nameCopy = Blt_AssertStrdup(vecName);
@@ -2233,11 +2216,8 @@ Blt_CreateVector2(
 }
 
 int
-Blt_CreateVector(
-    Tcl_Interp *interp,
-    const char *name,
-    int size,
-    Blt_Vector **vecPtrPtr)
+Blt_CreateVector(Tcl_Interp *interp, const char *name, size_t size,
+                 Blt_Vector **vecPtrPtr)
 {
     return Blt_CreateVector2(interp, name, name, name, size, vecPtrPtr);
 }
@@ -2470,9 +2450,9 @@ Blt_ResetVector(
     double *valueArr,                   /* Array containing the elements of
                                          * the vector. If NULL, indicates
                                          * to reset the vector.*/
-    int length,                         /* The number of elements that the
+    size_t length,                      /* The number of elements that the
                                          * vector currently holds. */
-    int size,                           /* The maximum number of elements
+    size_t size,                        /* The maximum number of elements
                                          * that the array can hold. */
     Tcl_FreeProc *freeProc)             /* Address of memory deallocation
                                          * routine for the array of values.
@@ -2481,10 +2461,6 @@ Blt_ResetVector(
 {
     Vector *vPtr = (Vector *)vecPtr;
 
-    if (size < 0) {
-        Tcl_AppendResult(vPtr->interp, "bad array size", (char *)NULL);
-        return TCL_ERROR;
-    }
     return Blt_Vec_Reset(vPtr, valueArr, length, size, freeProc);
 }
 
@@ -2507,7 +2483,7 @@ Blt_ResetVector(
  *---------------------------------------------------------------------------
  */
 int
-Blt_ResizeVector(Blt_Vector *vecPtr, int length)
+Blt_ResizeVector(Blt_Vector *vecPtr, size_t length)
 {
     Vector *vPtr = (Vector *)vecPtr;
 

@@ -92,64 +92,57 @@ typedef struct {
      * Blt_Vector in bltInt.h and blt.h too.
      */
 
-    double *valueArr;           /* Array of values (malloc-ed) */
-
-    int length;                 /* Current number of values in the array. */
-
-    int size;                   /* Maximum number of values that can be stored
-                                 * in the value array. */
-
-    double min, max;            /* Minimum and maximum values in the vector */
-
-    int dirty;                  /* Indicates if the vector has been updated */
-
+    double *valueArr;                   /* Array of values (malloc-ed) */
+    size_t length;                      /* Current number of values in the
+                                         * array. */
+    size_t size;                        /* Maximum number of values that
+                                         * can be stored in the value
+                                         * array. */
+    double min, max;                    /* Minimum and maximum values in
+                                         * the vector */
+    int dirty;                          /* Indicates if the vector has been
+                                         * updated */
     int reserved;
 
     /* The following fields are local to this module  */
-
-    const char *name;           /* The namespace-qualified name of the vector.
-                                 * It points to the hash key allocated for the
-                                 * entry in the vector hash table. */
-
+    const char *name;                   /* The namespace-qualified name of
+                                         * the vector.  It points to the
+                                         * hash key allocated for the entry
+                                         * in the vector hash table. */
     VectorCmdInterpData *dataPtr;
-    Tcl_Interp *interp;         /* Interpreter associated with the
-                                 * vector */
-
-    Blt_HashEntry *hashPtr;     /* If non-NULL, pointer in a hash table to
-                                 * track the vectors in use. */
-
-    Tcl_FreeProc *freeProc;     /* Address of procedure to call to release
-                                 * storage for the value array, Optionally can
-                                 * be one of the following: TCL_STATIC,
-                                 * TCL_DYNAMIC, or TCL_VOLATILE. */
-
-    const char *arrayName;      /* The name of the TCL array variable mapped
-                                 * to the vector (malloc'ed). If NULL,
-                                 * indicates that the vector isn't mapped to
-                                 * any variable */
-
-    Tcl_Namespace *nsPtr;       /* Namespace context of the vector itself. */
-
-    int offset;                 /* Offset from zero of the vector's starting
-                                 * index */
-
-    Tcl_Command cmdToken;       /* Token for vector's TCL command. */
-
-    Blt_Chain chain;            /* List of clients using this vector */
-
-    int notifyFlags;            /* Notification flags. See definitions
-                                 * below */
-
-    int varFlags;               /* Indicate if the variable is global,
-                                 * namespace, or local */
-
-    int freeOnUnset;            /* For backward compatibility only: If
-                                 * non-zero, free the vector when its variable
-                                 * is unset. */
+    Tcl_Interp *interp;                 /* Interpreter associated with the
+                                         * vector */
+    Blt_HashEntry *hashPtr;             /* If non-NULL, pointer in a hash
+                                         * table to track the vectors in use. */
+    Tcl_FreeProc *freeProc;             /* Address of procedure to call to
+                                         * release storage for the value
+                                         * array, Optionally can be one of
+                                         * the following: TCL_STATIC,
+                                         * TCL_DYNAMIC, or TCL_VOLATILE. */
+    const char *arrayName;              /* The name of the TCL array
+                                         * variable mapped to the vector
+                                         * (malloc'ed). If NULL, indicates
+                                         * that the vector isn't mapped to
+                                         * any variable */
+    Tcl_Namespace *nsPtr;               /* Namespace context of the vector
+                                         * itself. */
+    size_t offset;                      /* Offset from zero of the vector's
+                                         * starting index */
+    Tcl_Command cmdToken;               /* Token for vector's TCL
+                                         * command. */
+    Blt_Chain chain;                    /* List of clients using this
+                                         * vector. */
+    int notifyFlags;                    /* Notification flags. See
+                                         * definitions below */
+    int varFlags;                       /* Indicate if the variable is
+                                         * global, namespace, or local. */
     int flush;
-
-    int first, last;            /* Selected region of vector. This is used
-                                 * mostly for the math routines */
+    int freeOnUnset;                    /* For backward compatibility only:
+                                         * If non-zero, free the vector
+                                         * when its variable is unset. */
+    size_t first, last;                 /* Selected region of vector. This
+                                         * is used mostly for the math
+                                         * routines */
 } Vector;
 
 #define NOTIFY_UPDATED          ((int)BLT_VECTOR_NOTIFY_UPDATE)
@@ -205,13 +198,13 @@ BLT_EXTERN Vector *Blt_Vec_New(VectorCmdInterpData *dataPtr);
 BLT_EXTERN int Blt_Vec_Duplicate(Vector *destPtr, Vector *srcPtr);
 
 BLT_EXTERN int Blt_Vec_SetLength(Tcl_Interp *interp, Vector *vPtr, 
-        int length);
+        size_t length);
 
 BLT_EXTERN int Blt_Vec_SetSize(Tcl_Interp *interp, Vector *vPtr, 
-        int size);
+        size_t size);
 
 BLT_EXTERN int Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr, 
-        int length);
+        size_t length);
 
 BLT_EXTERN Vector *Blt_Vec_ParseElement(Tcl_Interp *interp, 
         VectorCmdInterpData *dataPtr, const char *start, const char **endPtr, 
@@ -219,10 +212,9 @@ BLT_EXTERN Vector *Blt_Vec_ParseElement(Tcl_Interp *interp,
 
 BLT_EXTERN void Blt_Vec_Free(Vector *vPtr);
 
-BLT_EXTERN void Blt_Vec_SortMap(Vector **vectors, int numVectors,
-        size_t **mapPtr);
+BLT_EXTERN void Blt_Vec_SortMap(Vector **vectors, int numVectors,long **mapPtr);
 
-BLT_EXTERN int Blt_Vec_NonemptySortMap(Vector *vPtr, size_t **mapPtr);
+BLT_EXTERN int Blt_Vec_NonemptySortMap(Vector *vPtr, long **mapPtr);
 
 BLT_EXTERN int Blt_Vec_Find(VectorCmdInterpData *dataPtr, const char *vecName,
         Vector **vPtrPtr);
@@ -238,10 +230,10 @@ BLT_EXTERN void Blt_Vec_UpdateClients(Vector *vPtr);
 BLT_EXTERN void Blt_Vec_FlushCache(Vector *vPtr);
 
 BLT_EXTERN int Blt_Vec_Reset(Vector *vPtr, double *dataArr,
-        int numValues, int arraySize, Tcl_FreeProc *freeProc);
+        size_t numValues, size_t arraySize, Tcl_FreeProc *freeProc);
 
 BLT_EXTERN int  Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, 
-        const char *string, int *indexPtr, int flags, 
+        const char *string, long *indexPtr, int flags, 
         Blt_VectorIndexProc **procPtrPtr);
 
 BLT_EXTERN int  Blt_Vec_GetIndexRange(Tcl_Interp *interp, Vector *vPtr, 

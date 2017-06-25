@@ -780,6 +780,7 @@ JitterInit(Blt_Jitter *jitterPtr)
     jitterPtr->offset = -0.05;          /* Jitter +/-  */
 }
 
+#ifdef notdef
 static INLINE double 
 Jitter(Blt_Jitter *jitterPtr) 
 {
@@ -788,6 +789,7 @@ Jitter(Blt_Jitter *jitterPtr)
     t = RandomNumber(&jitterPtr->random);  /* Returns number 0..1 */
     return (t * jitterPtr->range) + jitterPtr->offset;
 }
+#endif
 
 static Blt_ChainLink
 GetFirstImageIndex(PictImage *imgPtr, int *indexPtr)

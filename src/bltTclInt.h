@@ -256,8 +256,8 @@ BLT_EXTERN int Blt_GetPositionFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 BLT_EXTERN int Blt_GetCountFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         int check, long *valuePtr);
 
-BLT_EXTERN int Blt_SimplifyLine (Point2d *origPts, int low, int high, 
-        double tolerance, int *indices);
+BLT_EXTERN long Blt_SimplifyLine (Point2d *origPts, long low, long high, 
+        double tolerance, long *indices);
 
 BLT_EXTERN int Blt_PointInPolygon(Point2d *samplePtr, Point2d *points, 
         int numPoints);

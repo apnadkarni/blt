@@ -1793,6 +1793,7 @@ ColumnVarResolverProc(
         prefix = Tcl_GetStringFromObj(switchesPtr->prefixObjPtr, &prefixLen);
     }
     c = varName[0];
+    col = NULL;
     if ((c == '#') && (strcmp(varName, "#") == 0)) {
         /* $# returns the row number of the current row. */
         /* Look up the column from the variable name given. */

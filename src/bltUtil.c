@@ -2000,13 +2000,13 @@ Blt_GetSideFromObj(
 }
 
 static double
-FindSplit(Point2d *points, int i, int j, int *split)    
+FindSplit(Point2d *points, long i, long j, long *split)    
 {    
     double maxDist2;
     
     maxDist2 = -1.0;
     if ((i + 1) < j) {
-        int k;
+        long k;
         double a, b, c; 
 
         /* 
@@ -2040,19 +2040,19 @@ FindSplit(Point2d *points, int i, int j, int *split)
 }
 
 /* Douglas-Peucker line simplification algorithm */
-int
-Blt_SimplifyLine(Point2d *inputPts, int low, int high, double tolerance,
-                 int *indices)
+long
+Blt_SimplifyLine(Point2d *inputPts, long low, long high, double tolerance,
+                 long *indices)
 {
 #define StackPush(a)    s++, stack[s] = (a)
 #define StackPop(a)     (a) = stack[s], s--
 #define StackEmpty()    (s < 0)
 #define StackTop()      stack[s]
-    int *stack;
-    int split = -1; 
+    long *stack;
+    long split = -1; 
     double dist2, tolerance2;
-    int s = -1;                 /* Points to top stack item. */
-    int count;
+    long s = -1;                 /* Points to top stack item. */
+    long count;
 
     stack = Blt_AssertMalloc(sizeof(int) * (high - low + 1));
     StackPush(high);
