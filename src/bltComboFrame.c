@@ -79,6 +79,7 @@ static const char emptyString[] = "";
                                          * of the parent widget that posted
                                          * the menu. */
 #define RESTRICT_NONE           (0)
+#define RESTRICT_BOTH           (RESTRICT_MIN|RESTRICT_MAX)
 #define INITIALIZED             (1<<22)
 
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
@@ -89,10 +90,14 @@ static const char emptyString[] = "";
 #define DEF_ANCHOR        "center"
 #define DEF_BACKGROUND    RGB_WHITE
 #define DEF_BORDERWIDTH   "1"
+#define DEF_CLASS         "BltComboFrame"
 #define DEF_COMMAND       ((char *)NULL)
 #define DEF_CURSOR        ((char *)NULL)
 #define DEF_FILL          "both"
 #define DEF_HEIGHT        "0"
+#define DEF_HIGHLIGHT_BG  STD_NORMAL_BACKGROUND
+#define DEF_HIGHLIGHT_COLOR             RGB_BLACK
+#define DEF_HIGHLIGHT_WIDTH             "2"
 #define DEF_ICON_VARIABLE ((char *)NULL)
 #define DEF_PADX          "0"
 #define DEF_PADY          "0"
@@ -103,13 +108,6 @@ static const char emptyString[] = "";
 #define DEF_UNPOSTCOMMAND ((char *)NULL)
 #define DEF_WIDTH         "0"
 #define DEF_WINDOW        ((char *)NULL)
-
-static Blt_OptionFreeProc FreeTraceVarProc;
-static Blt_OptionParseProc ObjToTraceVarProc;
-static Blt_OptionPrintProc TraceVarToObjProc;
-static Blt_CustomOption traceVarOption = {
-    ObjToTraceVarProc, TraceVarToObjProc, FreeTraceVarProc, (ClientData)0
-};
 
 static Blt_OptionParseProc ObjToRestrictProc;
 static Blt_OptionPrintProc RestrictToObjProc;
@@ -158,39 +156,44 @@ struct _ComboFrame {
                                          * command. */
     Tcl_Command cmdToken;               /* Token for widget's command. */
     Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be
-                                         * executed when this menu item is
-                                         * selected. */
+                                         * executed when this menu is
+                                         * has been updated. */
     Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
                                          * executed when this menu is
                                          * posted. */
     Tcl_Obj *unpostCmdObjPtr;           /* If non-NULL, command to be
                                          * executed when this menu is
-                                         * posted. */
+                                         * unposted. */
     unsigned int flags;
-    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If
-                                         * non-NULL, this variable will be
-                                         * set to the name of the Tk image
-                                         * representing the icon of the
-                                         * selected item.  */
-    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If
-                                         * non-NULL, this variable will be
-                                         * set to the text string of the
-                                         * text of the selected item. */
     Tcl_Obj *takeFocusObjPtr;           /* Value of -takefocus option; not
                                          * used in the C code, but used by
                                          * keyboard * traversal scripts. */
     const char *menuName;               /* Textual description of menu to
                                          * use for menubar. Malloc-ed, may
                                          * be NULL. */
+    const char *className;              /* Class name for widget (from
+                                         * configuration option).
+                                         * Malloc-ed. */
     Tk_Cursor cursor;                   /* Current cursor for window or
                                          * None. */
 
+    Tcl_Obj *childObjPtr;               /* Path name of child window. */
     Tk_Window child;
-
+    short int width, height;
+    int normalWidth, normalHeight;
     Blt_Limits reqWidth, reqHeight;     
     int relief;
     int borderWidth;
-
+    Blt_Bg bg;
+    int highlightWidth;                 /* Width in pixels of highlight to
+                                         * draw around widget when it has
+                                         * the focus.  <= 0 means don't
+                                         * draw a highlight. */
+    XColor *highlightBgColor;           /* Color for drawing traversal
+                                         * highlight area when highlight is
+                                         * off. */
+    XColor *highlightColor;             /* Color for drawing traversal
+                                         * highlight. */
     Tk_Anchor anchor;                   /* Specifies how the child is
                                          * positioned if extra space is
                                          * available in the widget */
@@ -201,9 +204,6 @@ struct _ComboFrame {
     int fill;                           /* Indicates if the child should
                                          * fill the unused space in the
                                          * widget. */
-    int normalWidth, normalHeight;
-    
-    short int width, height;
     GC copyGC;
     PostInfo post;
 };
@@ -220,7 +220,7 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_BORDERWIDTH, Blt_Offset(ComboFrame, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-class", "class", "Class", DEF_CLASS, 
-        Blt_Offset(Frame, className)},
+        Blt_Offset(ComboFrame, className)},
     {BLT_CONFIG_OBJ, "-command", (char *)NULL, (char *)NULL, DEF_COMMAND, 
         Blt_Offset(ComboFrame, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor", DEF_CURSOR, 
@@ -233,15 +233,12 @@ static Blt_ConfigSpec configSpecs[] =
         &bltLimitsOption},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
         "HighlightBackground", DEF_HIGHLIGHT_BG,
-        Blt_Offset(ComboFrame, highlightBgColorPtr), 0},
+        Blt_Offset(ComboFrame, highlightBgColor), 0},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-        DEF_HIGHLIGHT, Blt_Offset(ComboFrame, highlightColorPtr), 0},
+        DEF_HIGHLIGHT_COLOR, Blt_Offset(ComboFrame, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
         "HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
         Blt_Offset(ComboFrame, highlightWidth), 0},
-    {BLT_CONFIG_OBJ, "-iconvariable", "iconVariable", "IconVariable", 
-        DEF_ICON_VARIABLE, Blt_Offset(ComboFrame, iconVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX", DEF_PADX,
         Blt_Offset(ComboFrame, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_PADY,
@@ -254,11 +251,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-restrictwidth", "restrictWidth", "RestrictWidth", 
         (char *)NULL, Blt_Offset(ComboFrame, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, &restrictOption},
-    {BLT_CONFIG_OBJ, "-textvariable", "textVariable", "TextVariable", 
-        DEF_TEXT_VARIABLE, Blt_Offset(ComboFrame, textVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus",
-        DEF_TAKE_FOCUS, Blt_Offset(ComboMenu, takeFocusObjPtr), 
+        DEF_TAKE_FOCUS, Blt_Offset(ComboFrame, takeFocusObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-unpostcommand", "unpostCommand", "UnpostCommand", 
         DEF_UNPOSTCOMMAND, Blt_Offset(ComboFrame, unpostCmdObjPtr), 
@@ -266,8 +260,10 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-width", "width", "Width", DEF_WIDTH, 
         Blt_Offset(ComboFrame, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT,
         &bltLimitsOption},
-    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
-        0, 0}
+    {BLT_CONFIG_OBJ, "-window", "window", "Window", DEF_WINDOW, 
+        Blt_Offset(ComboFrame, childObjPtr), 
+        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END}
 };
 
 static Tk_GeomRequestProc ChildGeometryProc;
@@ -332,7 +328,6 @@ static Blt_SwitchSpec postSwitches[] =
     {BLT_SWITCH_END}
 };
 
-static Tcl_IdleProc ConfigureChildProc;
 static Tcl_IdleProc DisplayProc;
 static Tcl_FreeProc DestroyProc;
 static Tk_EventProc ChildEventProc;
@@ -558,7 +553,7 @@ static void
 UnmanageChild(ComboFrame *comboPtr)
 {
     if (comboPtr->child != NULL) {
-        Tk_DeleteEventHandler(child, StructureNotifyMask,
+        Tk_DeleteEventHandler(comboPtr->child, StructureNotifyMask,
               ChildEventProc, comboPtr);
         Tk_ManageGeometry(comboPtr->child, (Tk_GeomMgr *)NULL, comboPtr);
         if (Tk_IsMapped(comboPtr->child)) {
@@ -571,8 +566,8 @@ static void
 ManageChild(ComboFrame *comboPtr, Tk_Window child)
 {
     if (child != NULL) {
-        Tk_CreateEventHandler(scrollbar, StructureNotifyMask, 
-                ChildEventProc, comboPtr);
+        Tk_CreateEventHandler(child, StructureNotifyMask, ChildEventProc, 
+                comboPtr);
         Tk_ManageGeometry(child, &comboMgrInfo, comboPtr);
     }
 }
@@ -586,29 +581,35 @@ ManageChild(ComboFrame *comboPtr, Tk_Window child)
  */
 /*ARGSUSED*/
 static void
-InstallChild(Tcl_Interp *interp, ComboFrame *comboPtr, Tcl_Obj *objPtr,
-             Tk_Window *tkwinPtr)
+InstallChild(ClientData clientData) 
 {
+    ComboFrame *comboPtr = clientData;
     Tk_Window tkwin;
+    const char *string;
+    int length;
 
-    if (objPtr == NULL) {
-        *tkwinPtr = NULL;
+    if (comboPtr->childObjPtr == NULL) {
+        comboPtr->child = NULL;
         return;
     }
-    tkwin = Tk_NameToWindow(interp, Tcl_GetString(objPtr), comboPtr->tkwin);
+    string = Tcl_GetStringFromObj(comboPtr->childObjPtr, &length);
+    if (length == 0) {
+        comboPtr->child = NULL;
+        return;
+    }
+    tkwin = Tk_NameToWindow(comboPtr->interp, string, comboPtr->tkwin);
     if (tkwin == NULL) {
-        Tcl_BackgroundError(interp);
+        Tcl_BackgroundError(comboPtr->interp);
         return;
     }
     if (Tk_Parent(tkwin) != comboPtr->tkwin) {
-        Tcl_AppendResult(interp, "widget \"", Tk_PathName(tkwin), 
+        Tcl_AppendResult(comboPtr->interp, "widget \"", Tk_PathName(tkwin), 
                          "\" must be a child of comboframe.", (char *)NULL);
-        Tcl_BackgroundError(interp);
+        Tcl_BackgroundError(comboPtr->interp);
         return;
     }
     ManageChild(comboPtr, tkwin);
-    *tkwinPtr = tkwin;
-    return;
+    comboPtr->child = tkwin;
 }
 
 
@@ -806,7 +807,7 @@ ObjToRestrictProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     } else if (strcmp(string, "max") == 0) {
         flag = RESTRICT_MAX;
     } else if (strcmp(string, "both") == 0) {
-        flag = RESTRICT_MIN|RESTRICT_MAX;
+        flag = RESTRICT_BOTH;
     } else if (strcmp(string, "none") == 0) {
         flag = 0;
     } else {
@@ -814,7 +815,7 @@ ObjToRestrictProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 "\": should be active, disabled, or normal.", (char *)NULL);
         return TCL_ERROR;
     }
-    *flagsPtr &= ~(RESTRICT_MIN|RESTRICT_MAX);
+    *flagsPtr &= ~RESTRICT_BOTH;
     *flagsPtr |= flag;
     return TCL_OK;
 }
@@ -838,19 +839,18 @@ RestrictToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
 
-    switch (*flagsPtr & (RESTRICT_MIN|RESTRICT_MAX)) {
+    switch (*flagsPtr & RESTRICT_BOTH) {
     case RESTRICT_MIN:
         return Tcl_NewStringObj("min", -1);     
     case RESTRICT_MAX:
         return Tcl_NewStringObj("max", -1);
-    case (RESTRICT_MIN|RESTRICT_MAX):
+    case RESTRICT_BOTH:
         return Tcl_NewStringObj("both", -1);
     case RESTRICT_NONE:
         return Tcl_NewStringObj("none", -1);
     }
     return NULL;
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -868,20 +868,20 @@ RestrictToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 static int
 GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
 {
-    int elc;
-    Tcl_Obj **elv;
+    int objc;
+    Tcl_Obj **objv;
     int x, y;
     
-    if (Tcl_ListObjGetElements(interp, objPtr, &elc, &elv) != TCL_OK) {
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (elc != 2) {
+    if (objc != 2) {
         Tcl_AppendResult(interp, "wrong # of arguments: should be \"x y\"",
                 (char *)NULL);
         return TCL_ERROR;
     }
-    if ((Tcl_GetIntFromObj(interp, elv[0], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[1], &y) != TCL_OK)) {
+    if ((Tcl_GetIntFromObj(interp, objv[0], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[1], &y) != TCL_OK)) {
         return TCL_ERROR;
     }
     *xPtr = x;
@@ -942,23 +942,23 @@ GetAlignFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *alignPtr)
 static int
 GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
 {
-    int elc;
-    Tcl_Obj **elv;
+    int objc;
+    Tcl_Obj **objv;
     int x1, y1, x2, y2;
 
-    if (Tcl_ListObjGetElements(interp, objPtr, &elc, &elv) != TCL_OK) {
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (elc != 4) {
+    if (objc != 4) {
         Tcl_AppendResult(interp,
                 "wrong # of arguments: should be \"x1 y1 x2 y2\"",
                 (char *)NULL);
         return TCL_ERROR;
     }
-    if ((Tcl_GetIntFromObj(interp, elv[0], &x1) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[1], &y1) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[2], &x2) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[3], &y2) != TCL_OK)) {
+    if ((Tcl_GetIntFromObj(interp, objv[0], &x1) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[1], &y1) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[2], &x2) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[3], &y2) != TCL_OK)) {
         return TCL_ERROR;
     }
     boxPtr->x1 = MIN(x1, x2);
@@ -991,10 +991,11 @@ PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
     ComboFrame *comboPtr = (ComboFrame *)record;
     Tk_Window tkwin;
     const char *string;
+    int length;
 
     tkwin = NULL;
-    string = Tcl_GetString(objPtr);
-    if (string[0] == '\0') {
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    if (length == 0) {
         tkwin = NULL;
     } else {
         tkwin = Tk_NameToWindow(interp, string, comboPtr->tkwin);
@@ -1184,14 +1185,10 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Posts this menu at the given root window coordinates.
  *
- *      pathName post align x y ?x2 y2?
- *   0   1     2   3 4   5  6 
- *
- *
- *      menu post -window button -align align 
- *      menu post -bbox "x1 y1 x2 y2" -align align
- *      menu post -cascade "x1 y1" 
- *      menu post (assume parent) -align bottom (default alignment is left).
+ *      pathName post ?switches ...?
+ *              -align left|right|center
+ *              -box coordList
+ *              -window path
  *
  *---------------------------------------------------------------------------
  */
@@ -1628,6 +1625,72 @@ ComboFrameCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
     
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TranslateAnchor --
+ *
+ *      Translate the coordinates of a given bounding box based upon the
+ *      anchor specified.  The anchor indicates where the given xy position is
+ *      in relation to the bounding box.
+ *
+ *              nw --- n --- ne
+ *              |            |     x,y ---+
+ *              w   center   e      |     |
+ *              |            |      +-----+
+ *              sw --- s --- se
+ *
+ * Results:
+ *      The translated coordinates of the bounding box are returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+TranslateAnchor(
+    int dx, int dy,             /* Difference between outer and inner
+                                 * regions */
+    Tk_Anchor anchor,           /* Direction of the anchor */
+    int *xPtr, int *yPtr)
+{
+    int x, y;
+
+    x = y = 0;
+    switch (anchor) {
+    case TK_ANCHOR_NW:          /* Upper left corner */
+        break;
+    case TK_ANCHOR_W:           /* Left center */
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_SW:          /* Lower left corner */
+        y = dy;
+        break;
+    case TK_ANCHOR_N:           /* Top center */
+        x = (dx / 2);
+        break;
+    case TK_ANCHOR_CENTER:      /* Centered */
+        x = (dx / 2);
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_S:           /* Bottom center */
+        x = (dx / 2);
+        y = dy;
+        break;
+    case TK_ANCHOR_NE:          /* Upper right corner */
+        x = dx;
+        break;
+    case TK_ANCHOR_E:           /* Right center */
+        x = dx;
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_SE:          /* Lower right corner */
+        x = dx;
+        y = dy;
+        break;
+    }
+    *xPtr = (*xPtr) + x;
+    *yPtr = (*yPtr) + y;
+}
+
 static void
 ArrangeChild(ComboFrame *comboPtr)
 {
@@ -1635,7 +1698,8 @@ ArrangeChild(ComboFrame *comboPtr)
     int cavityWidth, cavityHeight;
     int winWidth, winHeight;
     int x, y;
-    
+    int inset;
+
     x = comboPtr->padX.side1 + Tk_Changes(comboPtr->child)->border_width;
     y = comboPtr->padY.side1 + Tk_Changes(comboPtr->child)->border_width;
 
@@ -1645,14 +1709,14 @@ ArrangeChild(ComboFrame *comboPtr)
         }
         return;
     }
-    inset = comboPtr->borderWidth + comboPtr->highlightThickness;
+    inset = comboPtr->borderWidth + comboPtr->highlightWidth;
     cavityWidth = Tk_Width(comboPtr->tkwin) - PADDING(comboPtr->padX) - 
         2 * inset;
     cavityHeight = Tk_Height(comboPtr->tkwin) - PADDING(comboPtr->padY) -
         2 * inset;
 
-    winWidth = GetReqWidth(entryPtr);
-    winHeight = GetReqHeight(entryPtr);
+    winWidth = Tk_ReqWidth(comboPtr->child);
+    winHeight = Tk_ReqHeight(comboPtr->child);
 
     /*
      *
@@ -1691,11 +1755,11 @@ ArrangeChild(ComboFrame *comboPtr)
     /*
      * Clip the widget at the bottom and/or right edge of the container.
      */
-    if (winWidth > (xMax - x)) {
-        winWidth = (xMax - x);
+    if (winWidth > (Tk_Width(comboPtr->tkwin) - x)) {
+        winWidth = (Tk_Width(comboPtr->tkwin) - x);
     }
-    if (winHeight > (yMax - y)) {
-        winHeight = (yMax - y);
+    if (winHeight > (Tk_Height(comboPtr->tkwin) - y)) {
+        winHeight = (Tk_Height(comboPtr->tkwin) - y);
     }
 
     /*
@@ -1712,26 +1776,24 @@ ArrangeChild(ComboFrame *comboPtr)
     /*
      * Resize and/or move the widget as necessary.
      */
-    comboPtr->x = x;
-    comboPtr->y = y;
-
-#ifdef notdef
+#ifndef notdef
     fprintf(stderr, "ArrangeChild: %s rw=%d rh=%d w=%d h=%d\n",
                 Tk_PathName(comboPtr->child), Tk_ReqWidth(comboPtr->child),
                 Tk_ReqHeight(comboPtr->child), winWidth, winHeight);
 #endif
+    x += inset;
+    y += inset;
     if ((x != Tk_X(comboPtr->child)) || (y != Tk_Y(comboPtr->child)) ||
         (winWidth != Tk_Width(comboPtr->child)) ||
         (winHeight != Tk_Height(comboPtr->child))) {
-#ifdef notdef
-        fprintf(stderr, "ArrangeChild: %s rw=%d rh=%d w=%d h=%d\n",
-                Tk_PathName(comboPtr->child), Tk_ReqWidth(comboPtr->child),
-                Tk_ReqHeight(comboPtr->child), winWidth, winHeight);
+#ifndef notdef
+        fprintf(stderr, "MoveResize: %s x=%d y=%d w=%d h=%d\n",
+                Tk_PathName(comboPtr->child), x, y, winWidth, winHeight);
 #endif
         Tk_MoveResizeWindow(comboPtr->child, x, y, winWidth, winHeight);
     }
-    if (!Tk_IsMapped(comboPtr->tkwin)) {
-        Tk_MapWindow(comboPtr->tkwin);
+    if (!Tk_IsMapped(comboPtr->child)) {
+        Tk_MapWindow(comboPtr->child);
     }
 }
 
@@ -1823,7 +1885,9 @@ DisplayProc(ClientData clientData)
     XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
         comboPtr->copyGC, 0, 0, w, h, 0, 0);
     Tk_FreePixmap(comboPtr->display, drawable);
-    ArrangeChild(comboPtr);
+    if (comboPtr->child != NULL) {
+        ArrangeChild(comboPtr);
+    }
 }
 
 int

@@ -38,7 +38,6 @@ namespace eval blt {
     namespace eval ComboFrame {
 	variable _private
 	array set _private {
-	    ignoreRelease   0
 	    popOnRelease    0
 	    trace           0
 	}
@@ -93,8 +92,10 @@ proc ::blt::ComboFrame::ButtonPressEvent { menu x y } {
     variable _private
 
     # Next handle top most menu.
-    set item [$menu index @$x,$y]
-    if { $item != -1 } {
+    set rootx [expr [winfo rootx $menu] + $x]
+    set rooty [expr [winfo rooty $menu] + $y]
+
+    if { [winfo containing $rootx $rooty] == $menu } {
 	return;				# Found it.
     }
     # This is called only when the grab is on.  This means that menu will
@@ -117,22 +118,17 @@ proc ::blt::ComboFrame::ButtonPressEvent { menu x y } {
 proc ::blt::ComboFrame::ButtonReleaseEvent { menu x y } {
     variable _private
 					
-    # If the mouse hasn't moved, then ignore the button release event.
-    set bool $_private(ignoreRelease)
-    set _private(ignoreRelease) 0
-    if { $bool } {
-	return
-    }
     # Next handle the first menu.
-    set item [$menu index @$x,$y]
-    if { $item != -1 } {
-	$menu unpost
-	# Pop the grab before invoking the menu item command.
-	blt::grab pop $menu
-	event generate $menu <<MenuSelect>>
-	$menu invoke $item
-	return
-    }
+    set rootx [expr [winfo rootx $menu] + $x]
+    set rooty [expr [winfo rooty $menu] + $y]
+   if { [winfo containing $rootx $rooty] == $menu } {
+       $menu unpost
+       # Pop the grab before invoking the menu item command.
+       blt::grab pop $menu
+       event generate $menu <<MenuSelect>>
+       $menu invoke $item
+       return
+   }
     set popOnRelease 1
     if { !$_private(popOnRelease) } {
 	set popOnRelease 0

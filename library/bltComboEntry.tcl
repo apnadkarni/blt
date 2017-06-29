@@ -572,7 +572,7 @@ proc ::blt::ComboEntry::PostMenu { w } {
     
     set _private(postingButton) $w
     set _private(lastFocus) [focus]
-    $menu activate none
+    catch { $menu activate none }
     #blt::ComboEntry::GenerateMenuSelect $menu
 
 
@@ -594,10 +594,12 @@ proc ::blt::ComboEntry::PostMenu { w } {
 
     focus $menu
     set value [$w get]
+    catch {
     set index [$menu index $value]
     if { $index != -1 } {
 	$menu see $index
 	$menu activate $index
+    }
     }
     if { [winfo viewable $menu] } {
         # Automatically turn off grab on unposted menu
