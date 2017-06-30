@@ -39,7 +39,7 @@ namespace eval blt {
 	variable _private
 	array set _private {
 	    popOnRelease    0
-	    trace           0
+	    trace           1
 	}
 	proc trace { mesg } {
 	    variable _private 
@@ -92,10 +92,7 @@ proc ::blt::ComboFrame::ButtonPressEvent { menu x y } {
     variable _private
 
     # Next handle top most menu.
-    set rootx [expr [winfo rootx $menu] + $x]
-    set rooty [expr [winfo rooty $menu] + $y]
-
-    if { [winfo containing $rootx $rooty] == $menu } {
+    if { [winfo containing $x $y] == $menu } {
 	return;				# Found it.
     }
     # This is called only when the grab is on.  This means that menu will
@@ -117,22 +114,22 @@ proc ::blt::ComboFrame::ButtonPressEvent { menu x y } {
 #
 proc ::blt::ComboFrame::ButtonReleaseEvent { menu x y } {
     variable _private
-					
+    
     # Next handle the first menu.
-    set rootx [expr [winfo rootx $menu] + $x]
-    set rooty [expr [winfo rooty $menu] + $y]
-   if { [winfo containing $rootx $rooty] == $menu } {
-       $menu unpost
-       # Pop the grab before invoking the menu item command.
-       blt::grab pop $menu
-       event generate $menu <<MenuSelect>>
-       $menu invoke $item
-       return
-   }
+    puts stderr "containing x=$x y=$y [winfo containing $x $y]"
+    if { [winfo containing $x $y] == $menu } {
+	$menu unpost
+	# Pop the grab before invoking the menu item command.
+	blt::grab pop $menu
+	event generate $menu <<MenuSelect>>
+	$menu invoke $item
+	return
+    }
     set popOnRelease 1
     if { !$_private(popOnRelease) } {
 	set popOnRelease 0
     }
+puts stderr "popOnRelease is $popOnRelease"
     if { $popOnRelease } {
 	# This isn't the first time the menu was posted.  That happens when
 	# the menubutton is pressed, the menu is posted, and the grab is

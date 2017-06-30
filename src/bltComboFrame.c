@@ -511,11 +511,11 @@ FixMenuCoords(ComboFrame *comboPtr, int *xPtr, int *yPtr)
 static int
 WithdrawMenu(ComboFrame *comboPtr)
 {
-    if (!Tk_IsMapped(comboPtr->tkwin)) {
+    if (!Tk_IsMapped(comboPtr->child)) {
         return FALSE;                /* This frame is already withdrawn. */
     }
-    if (Tk_IsMapped(comboPtr->child)) {
-        Tk_UnmapWindow(comboPtr->child);
+    if (Tk_IsMapped(comboPtr->tkwin)) {
+        Tk_UnmapWindow(comboPtr->tkwin);
     }
     return TRUE;
 }
@@ -1361,6 +1361,7 @@ UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ComboFrame *comboPtr = clientData;
 
     if (!WithdrawMenu(comboPtr)) {
+        fprintf(stderr, "menu is already unposted\n");
         return TCL_OK;          /* This menu is already unposted. */
     }
     /*
