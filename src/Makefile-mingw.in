@@ -429,6 +429,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltComboButton.o \
 			bltComboEditor.o \
 			bltComboEntry.o \
+			bltComboFrame.o \
 			bltComboMenu.o \
 			bltComboTree.o \
 			bltConfig.o \

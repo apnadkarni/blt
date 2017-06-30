@@ -67,6 +67,7 @@ static Tcl_AppInitProc *cmdProcs[] =
     Blt_ComboButtonInitProc,
     Blt_ComboEditorInitProc,
     Blt_ComboEntryInitProc,
+    Blt_ComboFrameInitProc,
     Blt_ComboMenuInitProc,
     Blt_ComboTreeInitProc,
 #ifndef NO_CONTAINER

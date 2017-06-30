@@ -38,6 +38,7 @@ FILES = \
 		$(srcdir)/bltComboButton.tcl \
 		$(srcdir)/bltComboEditor.tcl \
 		$(srcdir)/bltComboEntry.tcl \
+		$(srcdir)/bltComboFrame.tcl \
 		$(srcdir)/bltComboMenu.tcl \
 		$(srcdir)/bltComboTree.tcl \
 		$(srcdir)/bltComboView.tcl \

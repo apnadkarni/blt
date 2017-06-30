@@ -54,7 +54,8 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
-#define YPAD            3               /* External pad between components. */
+#define YPAD            3               /* External pad between
+                                         * components. */
 #define XPAD            3               /* External pad between border and
                                          * button. */
 #define MENU_EVENT_MASK (ExposureMask|StructureNotifyMask)
@@ -169,21 +170,23 @@ static const char *emptyString = "";
  * Icon --
  *
  *      Since instances of the same Tk image can be displayed in different
- *      windows with possibly different color palettes, Tk internally stores
- *      each instance in a linked list.  But if the instances are used in the
- *      same widget and therefore use the same color palette, this adds a lot
- *      of overhead, especially when deleting instances from the linked list.
+ *      windows with possibly different color palettes, Tk internally
+ *      stores each instance in a linked list.  But if the instances are
+ *      used in the same widget and therefore use the same color palette,
+ *      this adds a lot of overhead, especially when deleting instances
+ *      from the linked list.
  *
- *      For the combobutton widget, we never need more than a single instance
- *      of an image, regardless of how many times it's used.  Cache the image,
- *      maintaining a reference count for each image used in the widget.  It's
- *      likely that the comboview widget will use many instances of the same
- *      image.
+ *      For the combobutton widget, we never need more than a single
+ *      instance of an image, regardless of how many times it's used.
+ *      Cache the image, maintaining a reference count for each image used
+ *      in the widget.  It's likely that the comboview widget will use many
+ *      instances of the same image.
  */
 
 typedef struct _Icon {
     Tk_Image tkImage;                   /* The Tk image being cached. */
-    short int width, height;            /* Dimensions of the cached image. */
+    short int width, height;            /* Dimensions of the cached
+                                         * image. */
 } *Icon;
 
 #define IconHeight(i)   ((i)->height)
@@ -196,13 +199,13 @@ typedef struct  {
                                          * button. */
     Tk_Window tkwin;                    /* Window that embodies the combo
                                          * button. If NULL, indicates the
-                                         * window has been destroyed but the
-                                         * data structures haven't yet been
-                                         * cleaned up.*/
-    Display *display;                   /* Display containing widget.  Used,
-                                         * among other things, so that
-                                         * resources can be freed even after
-                                         * tkwin has gone away. */
+                                         * window has been destroyed but
+                                         * the data structures haven't yet
+                                         * been cleaned up.*/
+    Display *display;                   /* Display containing widget.
+                                         * Used, among other things, so
+                                         * that resources can be freed even
+                                         * after tkwin has gone away. */
     Tcl_Command cmdToken;               /* Token for widget command. */
     int reqWidth, reqHeight;
     int relief, postedRelief, activeRelief;
@@ -227,35 +230,38 @@ typedef struct  {
     /* 
      * The button contains an optional icon and text string. 
      */
-    Icon icon;                          /* If non-NULL, image to be displayed
-                                         * in button. Its value may be
-                                         * overridden by the -iconvariable
-                                         * option. */
+    Icon icon;                          /* If non-NULL, image to be
+                                         * displayed in button. Its value
+                                         * may be overridden by the
+                                         * -iconvariable option. */
 
-    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If non-NULL,
-                                         * this variable contains the name of
-                                         * an image representing the icon.
-                                         * This overrides the value of the
-                                         * above field. */
-    Icon image;                         /* If non-NULL, image to be displayed
-                                         * instead of text in the button. */
-    const char *text;                   /* Text string to be displayed in the
-                                         * button if an image has no been
-                                         * designated. Its value is overridden
-                                         * by the -textvariable option. */
-    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If non-NULL,
-                                         * this variable contains the text
-                                         * string to be displayed in the
-                                         * button. This overrides the above
+    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable contains
+                                         * the name of an image
+                                         * representing the icon.  This
+                                         * overrides the value of the above
                                          * field. */
+    Icon image;                         /* If non-NULL, image to be
+                                         * displayed instead of text in the
+                                         * button. */
+    const char *text;                   /* Text string to be displayed in
+                                         * the button if an image has no
+                                         * been designated. Its value is
+                                         * overridden by the -textvariable
+                                         * option. */
+    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable contains
+                                         * the text string to be displayed
+                                         * in the button. This overrides
+                                         * the above field. */
     Blt_Font font;                      /* Font of text to be display in
                                          * button. */
     Tk_Justify justify;                 /* Justification to use for text
                                          * within the button. */
     int textLen;                        /* # bytes of text. */
-    int underline;                      /* Character index of character to be
-                                         * underlined. If -1, no character is
-                                         * underlined. */
+    int underline;                      /* Character index of character to
+                                         * be underlined. If -1, no
+                                         * character is underlined. */
     XColor *textNormalColor;
     XColor *textActiveColor;
     XColor *textPostedColor;
@@ -270,21 +276,26 @@ typedef struct  {
     int arrowRelief;
     int reqArrowWidth;
 
-    Tk_Cursor cursor;                   /* Current cursor or * None. */
-    int prefWidth;                      /* Desired width of window, measured
-                                         * in average characters. */
+    Tk_Cursor cursor;                   /* The current active cursor. If
+                                         * None, the parent's cursor is
+                                         * inherited. */
+    int prefWidth;                      /* Desired width of window,
+                                         * measured in average
+                                         * characters. */
     int inset;
     Blt_Pad padX, padY;
     short int arrowWidth, arrowHeight;
     short int iconWidth, iconHeight;
     short int textWidth, textHeight;
     short int width, height;
-    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be executed
-                                         * when this menu is posted. */
+    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be
+                                         * executed when this menu is
+                                         * posted. */
     Tcl_Obj *menuObjPtr;        
     Tk_Window menuWin;
-    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be executed
-                                         * when this menu is posted. */
+    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
+                                         * executed when this menu is
+                                         * posted. */
     unsigned int flags;
 } ComboButton;
 
@@ -399,9 +410,9 @@ static Tcl_CmdDeleteProc ComboButtonInstCmdDeletedProc;
  *
  * EventuallyRedraw --
  *
- *      Tells the Tk dispatcher to call the combobutton display routine at the
- *      next idle point.  This request is made only if the window is displayed
- *      and no other redraw request is pending.
+ *      Tells the Tk dispatcher to call the combobutton display routine at
+ *      the next idle point.  This request is made only if the window is
+ *      displayed and no other redraw request is pending.
  *
  * Results: None.
  *
@@ -550,8 +561,8 @@ GetIconFromObj(
  *
  * ComboButtonEventProc --
  *
- *      This procedure is invoked by the Tk dispatcher for various events on
- *      combobutton widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events
+ *      on combobutton widgets.
  *
  * Results:
  *      None.
@@ -599,8 +610,8 @@ ComboButtonEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * MenuEventProc --
  *
- *      This procedure is invoked by the Tk dispatcher for various events on
- *      sub-menus of combobutton widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events
+ *      on sub-menus of combobutton widgets.
  *
  * Results:
  *      None.
@@ -676,8 +687,8 @@ TextVarTraceProc(
         /*
          * Update the combobutton's text with the value of the variable,
          * unless the widget already has that value (this happens when the
-         * variable changes value because we changed it because someone typed
-         * in the entry).
+         * variable changes value because we changed it because someone
+         * typed in the entry).
          */
         valueObjPtr = Tcl_ObjGetVar2(interp, comboPtr->textVarObjPtr, NULL, 
                 TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
@@ -1725,8 +1736,8 @@ NewComboButton(Tcl_Interp *interp, Tk_Window tkwin)
  *
  * ComboButtonCmd --
  *
- *      This procedure is invoked to process the "combobutton" command.  See
- *      the user documentation for details on what it does.
+ *      This procedure is invoked to process the "combobutton" command.
+ *      See the user documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
@@ -1763,8 +1774,8 @@ ComboButtonInstCmdProc(
     ComboButton *comboPtr = clientData;
     int result;
 
-    proc = Blt_GetOpFromObj(interp, numComboButtonOps, comboButtonOps, BLT_OP_ARG1, 
-        objc, objv, 0);
+    proc = Blt_GetOpFromObj(interp, numComboButtonOps, comboButtonOps, 
+          BLT_OP_ARG1, objc, objv, 0);
     if (proc == NULL) {
         return TCL_ERROR;
     }
@@ -1779,9 +1790,9 @@ ComboButtonInstCmdProc(
  *
  * ComboButtonInstCmdDeletedProc --
  *
- *      This procedure can be called if the window was destroyed (tkwin will
- *      be NULL) and the command was deleted automatically.  In this case, we
- *      need to do nothing.
+ *      This procedure can be called if the window was destroyed (tkwin
+ *      will be NULL) and the command was deleted automatically.  In this
+ *      case, we need to do nothing.
  *
  *      Otherwise this routine was called because the command was deleted.
  *      Then we need to clean-up and destroy the widget.
@@ -1813,9 +1824,9 @@ ComboButtonInstCmdDeletedProc(ClientData clientData)
  *
  * ComboButtonCmd --
  *
- *      This procedure is invoked to process the TCL command that corresponds
- *      to a widget managed by this module. See the user documentation for
- *      details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module. See the user
+ *      documentation for details on what it does.
  *
  * Results:
  *      A standard TCL result.
