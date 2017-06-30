@@ -8,6 +8,8 @@ namespace eval periodicTable {
     variable _table
     variable _types
     variable _tableData
+    variable _chkImage
+    variable _selected
 
     array set _colors {
 	actinoid-activebackground                       \#cd679a 
@@ -138,7 +140,7 @@ namespace eval periodicTable {
 	
 	Cesium          55 Cs 132.905   6 1     alkali-metal
 	Barium          56 Ba 137.327(7) 6 2    alkaline-earth-metal
-	Lanthanides     57-71 * *       6 3     lanthanoid
+
 	Hafnium         72 Hf 178.49(2) 6 4     transition-metal
 	Tantalum        73 Ta 180.948   6 5     transition-metal
 	Tungsten        74 W  183.84(1) 6 6     transition-metal
@@ -157,7 +159,7 @@ namespace eval periodicTable {
 	
 	Francium        87 Fr [223.020] 7 1     alkali-metal
 	Radium          88 Ra [226.0254] 7 2    alkaline-earth-metal
-	Actinides       89-103 * * 7 3          actinoid
+
 	Rutherfordium   104 Rf [263.113] 7 4    transition-metal
 	Dubnium         105 Db [262.114] 7 5    transition-metal
 	Seaborgium      106 Sg [266.122] 7 6    transition-metal
@@ -207,84 +209,119 @@ namespace eval periodicTable {
 	Lawrencium      103 Lr [262.110] 9 17   actinoid
     }
     foreach { name number symbol weight row column type } $_tableData {
-	set _table($name) \
+	set _table($symbol) \
 	    [list name $name number $number symbol $symbol \
 		 weight $weight row $row column $column type $type]
     }
 
     array set _types {
 	actinoid {
-	    Actinides Actinium Americium Berkelium Californium Curium 
-	    Einsteinium Fermium Mendelevium Neptunium Plutonium Protactinium 
-	    Thorium Uranium Lawrencium Nobelium 
+	    Ac Am Bk Cf Cm Es Fm Md Np Pu Pa Th U Lr No 
 	}
 	alkali-metal {
-	    Cesium Francium Lithium Potassium Rubidium Sodium           
+	    Cs Fr Li K Rb Na           
 	}
 	alkaline-earth-metal {
-	    Barium Beryllium Calcium Magnesium Radium Strontium 
+	    Ba Be Ca Mg Ra Sr 
 	}
 	halogen {
-	    Astatine Bromine Chlorine Fluorine Iodine           
+	    At Br Cl F I           
 	}
 	lanthanoid {
-	    Cerium Erbium Europium Gadolinium Holmium Lanthanides Lanthanum     
-	    Lutetium Neodymium Praseodymium Promethium Samarium Terbium 
-	    Thulium Ytterbium Dysprosium        
+	    Ce Er Eu Gd Ho La Lu Nd Pr Pm Sm Tb Tm Yb Dy        
 	}
 	metalloid {
-	    Arsenic Boron Germanium Polonium Silicon Tellurium Antimony 
+	    As B Ge Po Si Te Sb 
 	}
 	noble-gas {
-	    Argon Helium Krypton Neon Radon Xenon 
+	    Ar He Kr Ne Rn Xe
 	}
 	other-non-metal {
-	    Carbon Hydrogen Nitrogen Sulfur Oxygen Phosphorus Selenium  
+	    C H N S O P Se  
 	}
 	post-transition-metal {
-	    Aluminium Bismuth Gallium Indium Lead Thallium Tin Ununhexium 
-	    Ununpentium Ununquadium Ununtrium   
+	    Al Bi Ga In Pb Tl Tin Uuh Uup Uuq Uut   
 	}
 	transition-metal {
-	    Chromium Cobalt Copper Dubnium Gold Hafnium Hassium Iridium         
-	    Iron Manganese Meitnerium Mercury Molybdenum Nickel Niobium         
-	    Osmium Palladium Rhenium Rhodium Roentgenium Ruthenium 
-	    Rutherfordium Scandium Seaborgium Silver Tantalum Technetium 
-	    Titanium Tungsten Ununbium Vanadium Yttrium Zinc Zirconium 
-	    Bohrium Cadmium Darmstadtium Platinum       
+	    Cr Co Cu Db Au Hf Hs Ir Fe Mn Mt Hg Mo Ni Nb         
+	    Os Pd Re Rh Rg Ru Rf Sc Sg Ag Ta Tc Ti W Uub 
+	    V Y Zn Zr Bh Cd Ds Pt       
 	}
 	unknown {
-	    Ununoctium  
-	    Ununseptium 
+	    Uus Uuo
 	}
     }
+}
+
+proc periodicTable::MakeCheckImage { w h } {
+    variable _chkImage
+
+    set cw [expr $w - 4]
+    set ch [expr $h - 4]
+    set x 2
+    set y 2
+    lappend points \
+	$x [expr $y + (0.4 * $ch)] \
+	$x [expr $y + (0.6 * $ch)] \
+	[expr $x + (0.4 * $cw)] [expr $y + $ch] \
+	[expr $x + $cw] [expr $y + (0.2 * $ch)] \
+	[expr $x + $cw] $y \
+	[expr $x + (0.4 * $cw)] [expr $y + (0.7 * $ch)] \
+	$x [expr $y + (0.4 * $ch)] 
+    set img [image create picture -width $w -height $h]
+    $img blank 0x0
+    $img draw polygon -coords $points \
+	-antialiased yes -color red2 \
+	-shadow {-offset 2 -width 2 -color 0x5F000000}
+    set _chkImage $img
 }
 
 proc periodicTable::NewTable { w } {
     variable _table
     variable _state
-    
-    frame $w
-    foreach name [array names _table] {
-	set _state($name) "normal"
+    variable _types 
+    variable _typeSelected
+
+    frame $w -bg white
+    foreach sym [array names _table] {
+	set _state($sym) "normal"
     }
     canvas $w.table \
 	-highlightthickness 0
 
-    # add bindings so the table can react to selections
-    bind RappturePeriodicTable <ButtonRelease-1> [list periodicTable::react $w]
-    bind RappturePeriodicTable <KeyPress-Return> [list periodicTable::react $w]
-    bind RappturePeriodicTable <KeyPress-space> [list periodicTable::react $w]
-    bind RappturePeriodicTable <KeyPress-Escape> [list periodicTable::react $w]
-    set btags [bindtags $w.table]
-    set i [lsearch $btags [winfo class $w.table]]
-    if {$i < 0} {
-	set i end
+    MakeCheckImage 11 11
+
+    blt::scrollset $w.types \
+	-yscrollbar $w.types.ys \
+	-window $w.types.view 
+    blt::tk::scrollbar $w.types.ys
+    blt::comboview $w.types.view \
+	-checkbuttonoutlinecolor grey80  \
+	-height 1.5i -borderwidth 0
+
+    $w.types.view add -type checkbutton -text (all) \
+	-command [list periodicTable::SelectType $w all]  \
+	-variable ::periodicTable::_typeSelected(all)
+	
+    foreach type [lsort -dictionary [array names _types]] {
+	regsub -all -- {-} $type { } name
+	set name [string totitle $name]
+	$w.types.view add -type checkbutton -text $name \
+	    -command [list periodicTable::SelectType $w $type] \
+	    -variable ::periodicTable::_typeSelected($type)
     }
-    set btags [linsert $btags [expr {$i+1}] RappturePeriodicTable]
-    bindtags $w.table $btags
+    blt::tk::button $w.cancel -text "Cancel" -font "Arial 9" \
+	-command [list ::periodicTable::Cancel $w] \
+	-relief flat -padx 1 -pady 1 -highlightthickness 0
+    blt::tk::button $w.ok -text "OK" -font "Arial 9" \
+	-command [list ::periodicTable::Ok $w] \
+	-relief flat -padx 1 -pady 1 -highlightthickness 0
     blt::table $w \
-	0,0 $w.table -fill both
+	0,0 $w.table -fill both -cspan 3 \
+	1,0 $w.types -fill x -cspan 3 \
+	2,1 $w.cancel -padx 10 -pady 5 -width 0.8i \
+	2,2 $w.ok -padx 10 -pady 5 -width 0.8i
+    
     RedrawTable $w
 }
     
@@ -292,7 +329,8 @@ proc periodicTable::RedrawTable { w } {
     variable _table
     variable _colors
     variable _state
-    
+    variable _chkImage
+
     set sqwidth [winfo pixels . 0.22i]
     set sqheight [winfo pixels . 0.22i]
     set xoffset 4
@@ -300,14 +338,14 @@ proc periodicTable::RedrawTable { w } {
     set last ""
     set c $w.table
     $c delete all
-    foreach name [array names _table] {
-        array set info $_table($name)
+    foreach sym [array names _table] {
+        array set info $_table($sym)
         set x1 [expr ($info(column)-1)*$sqwidth+$xoffset]
         set y1 [expr ($info(row)-1)*$sqheight+$yoffset]
         set x2 [expr ($info(column)*$sqwidth)-2+$xoffset]
         set y2 [expr ($info(row)*$sqheight)-2+$yoffset]
         set type $info(type)
-        if { $_state($name) == "disabled" } {
+        if { $_state($sym) == "selected" } {
             set fg $_colors($type-disabledforeground)
             set bg $_colors($type-disabledbackground)
         } else { 
@@ -325,17 +363,38 @@ proc periodicTable::RedrawTable { w } {
                 -text $info(number) -fill $fg \
                 -font "math1 4" -tags $info(name)-number
         }
+	if { $_state($info(symbol)) == "selected" } {
+	    $c create image $x1 $y1 -image $_chkImage -tags $info(name) -anchor nw
+	}
         $c create rectangle $x1 $y1 $x2 $y2 -outline "" -fill "" \
             -tags $info(name) 
-        if { $_state($name) == "normal" } {
+        if { $_state($info(symbol)) != "disabled" } {
 	    $c bind $info(name) <Enter> \
-		[list periodicTable::ActivateElement %W $info(name) %X %Y]
+		[list periodicTable::ActivateElement %W $info(symbol) %X %Y]
 	    $c bind $info(name) <Leave> \
-		[list periodicTable::DeactivateElement %W $info(name)]
+		[list periodicTable::DeactivateElement %W $info(symbol)]
 	    $c bind $info(name) <ButtonRelease-1> \
-		[list value $info(name)]
+		[list periodicTable::ToggleSelection $w $info(symbol)]
         }
     }
+
+    set x [expr 2*$sqwidth+$xoffset+5]
+    set y [expr $yoffset+3]
+    
+    set x [expr 3*$sqwidth+$xoffset+5]
+    $c create text [expr $x - 5] $y -text "?" -tag "symbolName info" \
+	-font "Arial 8 bold" -anchor ne
+    set x [expr 3*$sqwidth+$xoffset+5]
+    $c create text [expr $x + 5] $y -text "?" -tag "elementName info" \
+	-font "Arial 8 italic" -anchor nw
+    set x [expr 11*$sqwidth+$xoffset]
+    $c create text [expr $x - 5] $y -text "?" \
+	-tag "atomicNumber info" \
+	-font "Arial 8" -anchor ne
+    $c create text [expr $x + 5] $y -text "?" \
+	-tag "elementType info" \
+	-font "Arial 8 italic" -anchor nw
+    $c itemconfigure info -state hidden
     update
     foreach { x1 y1 x2 y2 } [$c bbox all] break
     set width [expr $x2-$x1+$xoffset*2]
@@ -343,153 +402,90 @@ proc periodicTable::RedrawTable { w } {
     $c configure -height $height -width $width -background white
 }
 
-#
-# active <list of elements> 
-#
-#       Enables zero or more elements in the periodic table so that 
-#       they can be selected.  All elements are first disabled.  Each
-#       argument can one of the following forms:
-#       1. element name.
-#       2. element symbol. 
-#       3. element number.
-#       4. type of element.  The argument is expanded into all 
-#          elements of that type.
-#
-proc periodicTable::active { w list } {
-    variable _table
-    variable _types
-    
-    set c $w.table
-    foreach elem [array names _table] { 
-        set _state($elem) "disabled"
-        $c bind $elem <Enter> {}
-        $c bind $elem <Leave> {}
-        $c bind $elem <ButtonRelease-1> {}
-    }
-    # Expand any arguments that represent a group of elements.
-    set arglist {}
-    foreach arg $list {
-        if { [info exists _types($arg)] } {
-            set arglist [concat $arglist $_types($arg)]
-        } else {
-            lappend arglist $arg
-        }
-    }
-    foreach arg $arglist {
-        set elem [FindElement $arg]
-        if { $elem == "" } {
-            puts stderr "unknown element \"$arg\""
-        } else {
-            set _state($elem) "normal"
-            $c bind $elem <Enter> \
-                [list periodicTable::ActivateElement %W $elem %X %Y]
-            $c bind $elem <Leave> \
-		[list periodicTable::DeactivateElement %W $elem]
-            $c bind $elem <ButtonRelease-1> [list $this value $elem]
-        }
-    }
-    after idle [list periodicTable::Redraw $w]
+
+proc periodicTable::Cancel { w } {
+    set menu [winfo parent $w]
+    set mb [winfo parent $menu]
+    $mb configure -text "Unselected"
+    $menu unpost
 }
 
-#
-# inactive <list of elements> 
-#
-#       Disables zero or more elements in the periodic table so that 
-#       they can't be selected.  All elements are first enabled.  Each
-#       argument can one of the following forms:
-#       1. element name.
-#       2. element symbol. 
-#       3. element number.
-#       4. type of element.  The argument is expanded into all 
-#          elements of that type.
-#
-proc periodicTable::inactive { w list } {
-    variable _table
-    variable _types
-
-    set c $w.table
-    foreach elem [array names _table] { 
-        set _state($elem) "normal"
-        $c bind $elem <Enter> \
-            [list periodicTable::ActivateElement %W $elem %X %Y]
-        $c bind $elem <Leave> [list periodicTable::DeactivateElement %W $elem]
-        $c bind $elem <ButtonRelease-1> [list  value $elem]
-    }
-    # Expand any arguments that represent a group of elements.
-    set arglist {}
-    foreach arg $list {
-        if { [info exists _types($arg)] } {
-            set arglist [concat $arglist $_types($arg)]
-        } else {
-            lappend arglist $arg
-        }
-    }
-    foreach arg $arglist {
-        set elem [FindElement $arg]
-        if { $elem == "" } {
-            puts stderr "unknown element \"$arg\""
-        } else {
-            set _state($elem) "disabled"
-            $c bind $elem <Enter> {}
-            $c bind $elem <Leave> {}
-            $c bind $elem <ButtonRelease-1> {}
-        }
-    }
-    after idle [list periodicTable::Redraw $w]
-}
-
-# ----------------------------------------------------------------------
-# USAGE: get ?-symbol|-name|-all? ?name?
-#
-# Queries one or more values from the drop-down list.  With no args,
-# it returns a list of all values and labels in the list.  If the
-# index is specified, then it returns the value or label (or both)
-# for the specified index.
-# ----------------------------------------------------------------------
-proc periodicTable::getElement { args } {
-    variable _current
-    
-    set first [lindex $args 0]
-    set choices {-symbol -weight -number -name -all}
-    set format "-name"
-    if {[string index $first 0] == "-"} {
-        if {[lsearch $choices $first] < 0} {
-            error "bad option \"$first\": should be [join [lsort $choices] {, }]"
-        }
-        set format $first
-        set args [lrange $args 1 end]
-    }
-    # return the whole list or just a single value
-    if {[llength $args] > 1} {
-        error "wrong # args: should be [join [lsort $choices] {, }]"
-    }
-    if {[llength $args] == 0} {
-        set name $_current
-    } else {
-        set name [lindex $args 0]
-    }
-    set elem [FindElement $name]
-    if { $elem == "" || $_state($elem) == "disabled" } {
-	if { $elem != "" } {
-	    puts stderr "element $elem is disabled"
+proc periodicTable::Ok { w } {
+    variable _state
+    set menu [winfo parent $w]
+    set mb [winfo parent $menu]
+    set selected {}
+    foreach sym [array names _state] {
+	if { $_state($sym) == "selected" } {
+	    lappend selected $sym
 	}
-        return ""
     }
-    array set info $_table($elem)
-    # scan through and build up the return list
-    switch -- $format {
-        -name   { set value $info(name)   }
-        -symbol { set value $info(symbol) }
-        -weight { set value $info(weight) }
-        -number { set value $info(number) }
-        -all { 
-            foreach key { symbol name number weight } { 
-                lappend value $key $info($key) 
-            }
-        }
-    }
-    return $value
+    set text [lsort -dictionary $selected]
+    $mb configure -text [join $text {, }]
+    $menu unpost
 }
+
+# ----------------------------------------------------------------------
+# USAGE: select <name> 
+#
+# Used to manipulate the selection in the table.
+#
+# ----------------------------------------------------------------------
+proc periodicTable::SelectType { w type } {
+    variable _types
+    variable _state
+    variable _typeSelected
+    variable _table
+
+    if { $type == "all" } {
+	if { $_typeSelected($type) } {
+	    foreach sym [array names _table] {
+		set _state($sym) "selected"
+	    }
+	} else {
+	    foreach sym [array names _table] {
+		set _state($sym) "normal"
+	    }
+	    foreach type [array names _typeSelected] {
+		set _typeSelected($type) 0
+	    }
+	}
+    } else {
+	if { $_typeSelected($type) } {
+	    foreach sym $_types($type) {
+		set _state($sym) "selected"
+	    }
+	} else {
+	    foreach sym $_types($type) {
+		set _state($sym) "normal"
+	    }
+	}
+    }
+    after idle [list periodicTable::RedrawTable $w]
+}
+
+# ----------------------------------------------------------------------
+# USAGE: select <name> 
+#
+# Used to manipulate the selection in the table.
+#
+# ----------------------------------------------------------------------
+proc periodicTable::ToggleSelection { w sym } {
+    variable _state
+
+    if { ![info exists _state($sym)] } {
+	set _state($sym) "selected"
+    } else {
+	set state $_state($sym)
+	if { $state == "selected" } {
+	    set _state($sym) "normal"
+	} else {
+	    set _state($sym) "selected"
+	}
+    }
+    after idle [list periodicTable::RedrawTable $w]
+}
+
 
 # ----------------------------------------------------------------------
 # USAGE: select <name> 
@@ -503,7 +499,7 @@ proc periodicTable::selectElement { what } {
         set elem "Hydrogen"
     }
     set _current $elem
-    after idle [list periodicTable::Redraw $w]
+    after idle [list periodicTable::RedrawTable $w]
 }
 
 # ----------------------------------------------------------------------
@@ -570,6 +566,14 @@ proc periodicTable::ActivateElement { c id x y } {
     $c itemconfigure $id-rect -outline black -width 1 -fill $bg
     $c itemconfigure $id-number -fill white
     $c itemconfigure $id-symbol -fill white
+
+    $c itemconfigure elementName -text $info(name)
+    $c itemconfigure symbolName -text $info(symbol)
+    $c itemconfigure atomicNumber -text "#$info(number)"
+    $c itemconfigure atomicWeight -text $info(weight)
+    regsub -all -- {-} $info(type) { } type
+    $c itemconfigure elementType -text [string totitle $type]
+    $c itemconfigure info -state normal
 }
 
 proc periodicTable::DeactivateElement { c id } {
@@ -583,6 +587,7 @@ proc periodicTable::DeactivateElement { c id } {
     $c itemconfigure $id-rect -outline $fg -width 1 -fill $bg
     $c itemconfigure $id-number -fill $fg
     $c itemconfigure $id-symbol -fill $fg
+    $c itemconfigure info -state hidden
 }
 
 proc periodicTable::value {{value "" }} {
@@ -627,7 +632,8 @@ blt::comboentry .e \
 
 blt::comboframe .e.m  \
     -restrictwidth min \
-    -window .e.m.ptable
+    -window .e.m.ptable \
+    -highlightthickness 0
 
 periodicTable::NewTable .e.m.ptable
 
