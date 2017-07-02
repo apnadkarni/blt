@@ -266,7 +266,7 @@ namespace eval periodicTable {
 	    Nitrogen Phosphorus Arsenic Antimony Bismuth Moscovium
 	}
 	chalcogens {
-	    Oxygen Sulfur Selenium Tellurium Polonium
+	    Oxygen Sulfur Selenium Tellurium Polonium Livermorium
 	}
     }
 }

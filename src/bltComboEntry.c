@@ -68,8 +68,6 @@
                                          * arrow. */
 #define ARROW_WIDTH     13
 #define ARROW_HEIGHT    13
-#define BUTTON_WIDTH    16
-#define BUTTON_HEIGHT   16
 
 #define EVENT_MASK       (ExposureMask|StructureNotifyMask|FocusChangeMask)
 #define CHILD_EVENT_MASK (ExposureMask|StructureNotifyMask)
@@ -269,6 +267,7 @@ typedef struct {
     short int x, y;                     /* Location of the button in the 
                                          * entry. Used for picking. */
     short int width, height;            /* Dimension of the button. */
+    short int defWidth, defHeight;       /* Dimension of the button. */
 } Button;
 
 
@@ -1073,8 +1072,8 @@ ComputeGeometry(ComboEntry *comboPtr)
     if (comboPtr->flags & CLRBUTTON) {
         Button *butPtr = &comboPtr->clearButton;
 
-        butPtr->height = BUTTON_HEIGHT;
-        butPtr->width = BUTTON_WIDTH;
+        butPtr->width = butPtr->defWidth;
+        butPtr->height = butPtr->defHeight;
         butPtr->width  += 2 * (butPtr->borderWidth + butPtr->pad);
         butPtr->height += 2 * (butPtr->borderWidth + butPtr->pad);
         if (butPtr->height > comboPtr->entryHeight) {
@@ -2390,8 +2389,8 @@ ConfigureButton(
     }
     butPtr->width = butPtr->height = 0;
     if (comboPtr->flags & CLRBUTTON) {
-        butPtr->width = BUTTON_WIDTH + 2 * butPtr->borderWidth;
-        butPtr->height = BUTTON_HEIGHT + 2 * butPtr->borderWidth;
+        butPtr->width = butPtr->defWidth + 2 * butPtr->borderWidth;
+        butPtr->height = butPtr->defHeight + 2 * butPtr->borderWidth;
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -3983,7 +3982,8 @@ static ComboEntry *
 NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin)
 {
     ComboEntry *comboPtr;
-
+    int xDpi, yDpi;
+    
     comboPtr = Blt_AssertCalloc(1, sizeof(ComboEntry));
 
     comboPtr->activeArrowRelief = TK_RELIEF_SUNKEN;
@@ -4004,6 +4004,9 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin)
     comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     comboPtr->tkwin = tkwin;
     comboPtr->flags |= ARROW;
+    Blt_ScreenDPI(tkwin, &xDpi, &yDpi);
+    comboPtr->clearButton.defHeight = yDpi / 9;
+    comboPtr->clearButton.defWidth = xDpi / 9;
     return comboPtr;
 }
 
@@ -4523,8 +4526,8 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         }
         if (comboPtr->flags & ACTIVE_BUTTON) {
             if (butPtr->activePicture == NULL) {
-                butPtr->activePicture = Blt_PaintDelete(BUTTON_WIDTH, 
-                                                        BUTTON_HEIGHT, 
+                butPtr->activePicture = Blt_PaintDelete(butPtr->defWidth, 
+                                                        butPtr->defHeight, 
                                                         Blt_Bg_BorderColor(bg),
                                                         butPtr->activeBg, 
                                                         butPtr->activeFg, 
@@ -4534,7 +4537,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         } else {
             if (butPtr->normalPicture == NULL) {
                 butPtr->normalPicture = 
-                        Blt_PaintDelete(BUTTON_WIDTH, BUTTON_HEIGHT, 
+                        Blt_PaintDelete(butPtr->defWidth, butPtr->defHeight, 
                                 Blt_Bg_BorderColor(bg),
                                 butPtr->normalBg, butPtr->normalFg, FALSE);
             } 
