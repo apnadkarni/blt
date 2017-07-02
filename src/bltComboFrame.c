@@ -1777,7 +1777,7 @@ ArrangeChild(ComboFrame *comboPtr)
     /*
      * Resize and/or move the widget as necessary.
      */
-#ifndef notdef
+#ifdef notdef
     fprintf(stderr, "ArrangeChild: %s rw=%d rh=%d w=%d h=%d\n",
                 Tk_PathName(comboPtr->child), Tk_ReqWidth(comboPtr->child),
                 Tk_ReqHeight(comboPtr->child), winWidth, winHeight);
@@ -1787,7 +1787,7 @@ ArrangeChild(ComboFrame *comboPtr)
     if ((x != Tk_X(comboPtr->child)) || (y != Tk_Y(comboPtr->child)) ||
         (winWidth != Tk_Width(comboPtr->child)) ||
         (winHeight != Tk_Height(comboPtr->child))) {
-#ifndef notdef
+#ifdef notdef
         fprintf(stderr, "MoveResize: %s x=%d y=%d w=%d h=%d\n",
                 Tk_PathName(comboPtr->child), x, y, winWidth, winHeight);
 #endif

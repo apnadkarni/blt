@@ -300,7 +300,6 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	set _private(cascades) ""
 	#blt::grab pop $view
 	event generate $view <<MenuSelect>>
- puts stderr "grab stack = [blt::grab list]"
 	$view invoke $item
 	return
     }
@@ -323,7 +322,6 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	} 
 	$m unpost
 	set _private(cascades) ""
- puts stderr "grab stack = [blt::grab list]"
 	blt::grab pop $view
 	event generate $view <<MenuSelect>>
 	$m invoke $item
@@ -485,7 +483,6 @@ proc ::blt::ComboView::SelectItem { view } {
     } 
     $m unpost
     set _private(cascades) ""
- puts stderr "grab stack = [blt::grab list]"
     blt::grab pop $m
     event generate $m <<MenuSelect>>
     $m invoke $item

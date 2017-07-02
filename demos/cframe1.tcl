@@ -6,249 +6,267 @@ namespace eval periodicTable {
     variable _state
     variable _colors
     variable _table
-    variable _types
+    variable _families
     variable _tableData
     variable _chkImage
     variable _selected
+    variable _isSelected
 
     array set _colors {
-	actinoid-activebackground                       \#cd679a 
-	actinoid-activeforeground                       white 
-	actinoid-disabledbackground                     \#ff99cc  
-	actinoid-disabledforeground                     \#D97DAB
-	actinoid-background                             \#ff99cc 
-	actinoid-foreground                             black 
-	alkali-metal-activebackground                   \#cd3434 
-	alkali-metal-activeforeground                   white 
-	alkali-metal-disabledbackground                 \#ff6666 
-	alkali-metal-disabledforeground                 \#D04747
-	alkali-metal-background                         \#ff6666 
-	alkali-metal-foreground                         black 
-	alkaline-earth-metal-activebackground           \#cdac7b 
-	alkaline-earth-metal-activeforeground           white 
-	alkaline-earth-metal-disabledbackground         \#ffdead 
-	alkaline-earth-metal-disabledforeground         \#C19A64
-	alkaline-earth-metal-background                 \#ffdead 
-	alkaline-earth-metal-foreground                 black 
-	halogen-activebackground                        \#cdcd67 
-	halogen-activeforeground                        white 
-	halogen-disabledbackground                      \#ffff99 
-	halogen-disabledforeground                      \#D5D562
-	halogen-background                              \#ffff99 
-	halogen-foreground                              black 
-	lanthanoid-activebackground                     \#cd8dcd
-	lanthanoid-activeforeground                     white
-	lanthanoid-disabledbackground                   \#ffbfff
-	lanthanoid-disabledforeground                   \#D884D8
-	lanthanoid-background                           \#ffbfff 
-	lanthanoid-foreground                           black
-	metalloid-activebackground                      \#9a9a67 
-	metalloid-activeforeground                      white 
-	metalloid-disabledbackground                    \#cccc99 
-	metalloid-disabledforeground                    \#92922C
-	metalloid-background                            \#cccc99
-	metalloid-foreground                            black 
-	noble-gas-activebackground                      \#8ecdcd 
-	noble-gas-activeforeground                      white 
-	noble-gas-disabledbackground                    \#c0ffff 
-	noble-gas-disabledforeground                    \#7FC1C1
-	noble-gas-background                            \#c0ffff 
-	noble-gas-foreground                            black 
-	other-non-metal-activebackground                \#6ecd6e 
-	other-non-metal-activeforeground                white 
-	other-non-metal-disabledbackground              \#a0ffa0 
-	other-non-metal-disabledforeground              \#6ACD6A
-	other-non-metal-background                      \#a0ffa0 
-	other-non-metal-foreground                      black 
-	post-transition-metal-activebackground          \#9a9a9a        
-	post-transition-metal-activeforeground          white 
-	post-transition-metal-disabledbackground        \#cccccc 
-	post-transition-metal-disabledforeground        \#999999
-	post-transition-metal-background                \#cccccc 
-	post-transition-metal-foreground                black 
-	transition-metal-activebackground               \#cd8e8e 
-	transition-metal-activeforeground               white 
-	transition-metal-disabledbackground             \#ffc0c0 
-	transition-metal-disabledforeground             \#C77E7E
-	transition-metal-background                     \#ffc0c0 
-	transition-metal-foreground                     black 
+	actinoids-activebackground                       \#cd679a 
+	actinoids-activeforeground                       white 
+	actinoids-disabledbackground                     \#ff99cc  
+	actinoids-disabledforeground                     \#D97DAB
+	actinoids-background                             \#ff99cc 
+	actinoids-foreground                             black 
+	alkali-metals-activebackground                   \#cd3434 
+	alkali-metals-activeforeground                   white 
+	alkali-metals-disabledbackground                 \#ff6666 
+	alkali-metals-disabledforeground                 \#D04747
+	alkali-metals-background                         \#ff6666 
+	alkali-metals-foreground                         black 
+	alkaline-earth-metals-activebackground           \#cdac7b 
+	alkaline-earth-metals-activeforeground           white 
+	alkaline-earth-metals-disabledbackground         \#ffdead 
+	alkaline-earth-metals-disabledforeground         \#C19A64
+	alkaline-earth-metals-background                 \#ffdead 
+	alkaline-earth-metals-foreground                 black 
+	halogens-activebackground                        \#cdcd67 
+	halogens-activeforeground                        white 
+	halogens-disabledbackground                      \#ffff99 
+	halogens-disabledforeground                      \#D5D562
+	halogens-background                              \#ffff99 
+	halogens-foreground                              black 
+	lanthanoids-activebackground                     \#cd8dcd
+	lanthanoids-activeforeground                     white
+	lanthanoids-disabledbackground                   \#ffbfff
+	lanthanoids-disabledforeground                   \#D884D8
+	lanthanoids-background                           \#ffbfff 
+	lanthanoids-foreground                           black
+	metalloids-activebackground                      \#9a9a67 
+	metalloids-activeforeground                      white 
+	metalloids-disabledbackground                    \#cccc99 
+	metalloids-disabledforeground                    \#92922C
+	metalloids-background                            \#cccc99
+	metalloids-foreground                            black 
+	inert-gases-activebackground                      \#8ecdcd 
+	inert-gases-activeforeground                      white 
+	inert-gases-disabledbackground                    \#c0ffff 
+	inert-gases-disabledforeground                    \#7FC1C1
+	inert-gases-background                            \#c0ffff 
+	inert-gases-foreground                            black 
+	other-non-metals-activebackground                \#6ecd6e 
+	other-non-metals-activeforeground                white 
+	other-non-metals-disabledbackground              \#a0ffa0 
+	other-non-metals-disabledforeground              \#6ACD6A
+	other-non-metals-background                      \#a0ffa0 
+	other-non-metals-foreground                      black 
+	post-transition-metals-activebackground          \#9a9a9a        
+	post-transition-metals-activeforeground          white 
+	post-transition-metals-disabledbackground        \#cccccc 
+	post-transition-metals-disabledforeground        \#999999
+	post-transition-metals-background                \#cccccc 
+	post-transition-metals-foreground                black 
+	transition-metals-activebackground               \#cd8e8e 
+	transition-metals-activeforeground               white 
+	transition-metals-disabledbackground             \#ffc0c0 
+	transition-metals-disabledforeground             \#C77E7E
+	transition-metals-background                     \#ffc0c0 
+	transition-metals-foreground                     black 
 	unknown-activebackground                        \#cdcdcd 
 	unknown-activeforeground                        white 
 	unknown-disabledbackground                      \#ffffff 
 	unknown-disabledforeground                      \#B9B9B9
 	unknown-background                              \#ffffff 
 	unknown-foreground                              black 
+	pnictogens-activebackground                        \#cdcdcd 
+	pnictogens-activeforeground                        white 
+	pnictogens-disabledbackground                      \#ffffff 
+	pnictogens-disabledforeground                      \#B9B9B9
+	pnictogens-background                              \#ffffff 
+	pnictogens-foreground                              black 
     }
     set _tableData {
-	Hydrogen        1  H  1.0079    1 1     other-non-metal
-	Helium          2  He 4.0026    1 18    noble-gas
-	Lithium         3  Li 6.941(2)  2 1     alkali-metal
-	Beryllium       4  Be 9.0122    2 2     alkaline-earth-metal
-	Boron           5  B  10.811(7) 2 13    metalloid
-	Carbon          6  C  12.011    2 14    other-non-metal
-	Nitrogen        7  N  14.007    2 15    other-non-metal
-	Oxygen          8  O  15.999    2 16    other-non-metal 
-	Fluorine        9  F  18.998    2 17    halogen
-	Neon            10 Ne 20.180    2 18    noble-gas
+	Hydrogen        1  H  1.0079    1 1     other-non-metals
+	Helium          2  He 4.0026    1 18    inert-gases
+	Lithium         3  Li 6.941(2)  2 1     alkali-metals
+	Beryllium       4  Be 9.0122    2 2     alkaline-earth-metals
+	Boron           5  B  10.811(7) 2 13    metalloids
+	Carbon          6  C  12.011    2 14    other-non-metals
+	Nitrogen        7  N  14.007    2 15    other-non-metals
+	Oxygen          8  O  15.999    2 16    other-non-metals 
+	Fluorine        9  F  18.998    2 17    halogens
+	Neon            10 Ne 20.180    2 18    inert-gases
 	
-	Sodium          11 Na 22.990    3 1     alkali-metal
-	Magnesium       12 Mg 24.305    3 2     alkaline-earth-metal
-	Aluminium       13 Al 26.982    3 13    post-transition-metal
-	Silicon         14 Si 28.086    3 14    metalloid
-	Phosphorus      15 P  30.974    3 15    other-non-metal 
-	Sulfur          16 S  32.066(6) 3 16    other-non-metal
-	Chlorine        17 Cl 35.453    3 17    halogen
-	Argon           18 Ar 39.948(1) 3 18    noble-gas
+	Sodium          11 Na 22.990    3 1     alkali-metals
+	Magnesium       12 Mg 24.305    3 2     alkaline-earth-metals
+	Aluminium       13 Al 26.982    3 13    post-transition-metals
+	Silicon         14 Si 28.086    3 14    metalloids
+	Phosphorus      15 P  30.974    3 15    other-non-metals 
+	Sulfur          16 S  32.066(6) 3 16    other-non-metals
+	Chlorine        17 Cl 35.453    3 17    halogens
+	Argon           18 Ar 39.948(1) 3 18    inert-gases
 	
-	Potassium       19 K  39.098    4 1     alkali-metal
-	Calcium         20 Ca 40.078(4) 4 2     alkaline-earth-metal
-	Scandium        21 Sc 44.956    4 3     transition-metal
-	Titanium        22 Ti 47.867(1) 4 4     transition-metal
-	Vanadium        23 V  50.942(1) 4 5     transition-metal
-	Chromium        24 Cr 51.996    4 6     transition-metal
-	Manganese       25 Mn 54.938    4 7     transition-metal
-	Iron            26 Fe 55.845(2) 4 8     transition-metal
-	Cobalt          27 Co 58.933    4 9     transition-metal
-	Nickel          28 Ni 58.693    4 10    transition-metal
-	Copper          29 Cu 63.546(3) 4 11    transition-metal
-	Zinc            30 Zn 65.39(2)  4 12    transition-metal
-	Gallium         31 Ga 69.723(1) 4 13    post-transition-metal
-	Germanium       32 Ge 72.61(2)  4 14    metalloid
-	Arsenic         33 As 74.922    4 15    metalloid
-	Selenium        34 Se 78.96(3)  4 16    other-non-metal 
-	Bromine         35 Br 79.904(1) 4 17    halogen
-	Krypton         36 Kr 83.80(1)  4 18    noble-gas
+	Potassium       19 K  39.098    4 1     alkali-metals
+	Calcium         20 Ca 40.078(4) 4 2     alkaline-earth-metals
+	Scandium        21 Sc 44.956    4 3     transition-metals
+	Titanium        22 Ti 47.867(1) 4 4     transition-metals
+	Vanadium        23 V  50.942(1) 4 5     transition-metals
+	Chromium        24 Cr 51.996    4 6     transition-metals
+	Manganese       25 Mn 54.938    4 7     transition-metals
+	Iron            26 Fe 55.845(2) 4 8     transition-metals
+	Cobalt          27 Co 58.933    4 9     transition-metals
+	Nickel          28 Ni 58.693    4 10    transition-metals
+	Copper          29 Cu 63.546(3) 4 11    transition-metals
+	Zinc            30 Zn 65.39(2)  4 12    transition-metals
+	Gallium         31 Ga 69.723(1) 4 13    post-transition-metals
+	Germanium       32 Ge 72.61(2)  4 14    metalloids
+	Arsenic         33 As 74.922    4 15    metalloids
+	Selenium        34 Se 78.96(3)  4 16    other-non-metals 
+	Bromine         35 Br 79.904(1) 4 17    halogens
+	Krypton         36 Kr 83.80(1)  4 18    inert-gases
 	
-	Rubidium        37 Rb 85.468    5 1     alkali-metal
-	Strontium       38 Sr 87.62(1)  5 2     alkaline-earth-metal
-	Yttrium         39 Y  88.906    5 3     transition-metal
-	Zirconium       40 Zr 91.224(2) 5 4     transition-metal
-	Niobium         41 Nb 92.906    5 5     transition-metal
-	Molybdenum      42 Mo 95.94(1)  5 6     transition-metal
-	Technetium      43 Tc [97.907]  5 7     transition-metal
-	Ruthenium       44 Ru 101.07(2) 5 8     transition-metal
-	Rhodium         45 Rh 102.906   5 9     transition-metal
-	Palladium       46 Pd 106.42(1) 5 10    transition-metal
-	Silver          47 Ag 107.868   5 11    transition-metal
-	Cadmium         48 Cd 112.411(8) 5 12   transition-metal
-	Indium          49 In 114.818(3) 5 13   post-transition-metal
-	Tin             50 Sn 118.710(7) 5 14   post-transition-metal
-	Antimony        51 Sb 121.760(1) 5 15   metalloid
-	Tellurium       52 Te 127.60(3) 5 16    metalloid
-	Iodine          53 I  126.904   5 17    halogen
-	Xenon           54 Xe 131.29(2) 5 18    noble-gas
+	Rubidium        37 Rb 85.468    5 1     alkali-metals
+	Strontium       38 Sr 87.62(1)  5 2     alkaline-earth-metals
+	Yttrium         39 Y  88.906    5 3     transition-metals
+	Zirconium       40 Zr 91.224(2) 5 4     transition-metals
+	Niobium         41 Nb 92.906    5 5     transition-metals
+	Molybdenum      42 Mo 95.94(1)  5 6     transition-metals
+	Technetium      43 Tc [97.907]  5 7     transition-metals
+	Ruthenium       44 Ru 101.07(2) 5 8     transition-metals
+	Rhodium         45 Rh 102.906   5 9     transition-metals
+	Palladium       46 Pd 106.42(1) 5 10    transition-metals
+	Silver          47 Ag 107.868   5 11    transition-metals
+	Cadmium         48 Cd 112.411(8) 5 12   transition-metals
+	Indium          49 In 114.818(3) 5 13   post-transition-metals
+	Tin             50 Sn 118.710(7) 5 14   post-transition-metals
+	Antimony        51 Sb 121.760(1) 5 15   metalloids
+	Tellurium       52 Te 127.60(3) 5 16    metalloids
+	Iodine          53 I  126.904   5 17    halogens
+	Xenon           54 Xe 131.29(2) 5 18    inert-gases
 	
-	Cesium          55 Cs 132.905   6 1     alkali-metal
-	Barium          56 Ba 137.327(7) 6 2    alkaline-earth-metal
+	Cesium          55 Cs 132.905   6 1     alkali-metals
+	Barium          56 Ba 137.327(7) 6 2    alkaline-earth-metals
 
-	Hafnium         72 Hf 178.49(2) 6 4     transition-metal
-	Tantalum        73 Ta 180.948   6 5     transition-metal
-	Tungsten        74 W  183.84(1) 6 6     transition-metal
-	Rhenium         75 Re 186.207(1) 6 7    transition-metal
-	Osmium          76 Os 190.23(3) 6 8     transition-metal
-	Iridium         77 Ir 192.217(3) 6 9    transition-metal
-	Platinum        78 Pt 195.084(9) 6 10   transition-metal
-	Gold            79 Au 196.967 6 11      transition-metal
-	Mercury         80 Hg 200.59(2) 6 12    transition-metal
-	Thallium        81 Tl 204.383   6 13    post-transition-metal
-	Lead            82 Pb 207.2(1) 6 14     post-transition-metal
-	Bismuth         83 Bi 208.980   6 15    post-transition-metal
-	Polonium        84 Po [208.982] 6 16    metalloid
-	Astatine        85 At [209.987] 6 17    halogen
-	Radon           86 Rn [222.018] 6 18    noble-gas
+	Hafnium         72 Hf 178.49(2) 6 4     transition-metals
+	Tantalum        73 Ta 180.948   6 5     transition-metals
+	Tungsten        74 W  183.84(1) 6 6     transition-metals
+	Rhenium         75 Re 186.207(1) 6 7    transition-metals
+	Osmium          76 Os 190.23(3) 6 8     transition-metals
+	Iridium         77 Ir 192.217(3) 6 9    transition-metals
+	Platinum        78 Pt 195.084(9) 6 10   transition-metals
+	Gold            79 Au 196.967 6 11      transition-metals
+	Mercury         80 Hg 200.59(2) 6 12    transition-metals
+	Thallium        81 Tl 204.383   6 13    post-transition-metals
+	Lead            82 Pb 207.2(1) 6 14     post-transition-metals
+	Bismuth         83 Bi 208.980   6 15    post-transition-metals
+	Polonium        84 Po [208.982] 6 16    metalloids
+	Astatine        85 At [209.987] 6 17    halogens
+	Radon           86 Rn [222.018] 6 18    inert-gases
 	
-	Francium        87 Fr [223.020] 7 1     alkali-metal
-	Radium          88 Ra [226.0254] 7 2    alkaline-earth-metal
+	Francium        87 Fr [223.020] 7 1     alkali-metals
+	Radium          88 Ra [226.0254] 7 2    alkaline-earth-metals
 
-	Rutherfordium   104 Rf [263.113] 7 4    transition-metal
-	Dubnium         105 Db [262.114] 7 5    transition-metal
-	Seaborgium      106 Sg [266.122] 7 6    transition-metal
-	Bohrium         107 Bh [264.1247] 7 7   transition-metal
-	Hassium         108 Hs [269.134] 7 8    transition-metal
-	Meitnerium      109 Mt [268.139] 7 9    transition-metal
-	Darmstadtium    110 Ds [272.146] 7 10   transition-metal
-	Roentgenium     111 Rg [272.154] 7 11   transition-metal
-	Ununbium        112 Uub [277]   7 12    transition-metal
-	Ununtrium       113 Uut [284] 7 13      post-transition-metal
-	Ununquadium     114 Uuq [289] 7 14      post-transition-metal
-	Ununpentium     115 Uup [288] 7 15      post-transition-metal
-	Ununhexium      116 Uuh [292]  7 16     post-transition-metal
-	Ununseptium     117 Uus ? 7 17          unknown
-	Ununoctium      118 Uuo [294] 7 18      unknown
+	Rutherfordium   104 Rf [263.113] 7 4    transition-metals
+	Dubnium         105 Db [262.114] 7 5    transition-metals
+	Seaborgium      106 Sg [266.122] 7 6    transition-metals
+	Bohrium         107 Bh [264.1247] 7 7   transition-metals
+	Hassium         108 Hs [269.134] 7 8    transition-metals
+	Meitnerium      109 Mt [268.139] 7 9    transition-metals
+	Darmstadtium    110 Ds [272.146] 7 10   transition-metals
+	Roentgenium     111 Rg [272.154] 7 11   transition-metals
+	Copernicium     112 Cn [277]   7 12     transition-metals
+	Nihonium        113 Nh  [284] 7 13      post-transition-metals
+	Flerovium       114 Fl  [289] 7 14      post-transition-metals
+	Moscovium       115 Mc  [288] 7 15      post-transition-metals
+	Livermorium     116 Lv  [292]  7 16     post-transition-metals
+	Tennessine      117 Ts ? 7 17           halogens
+        Oganesson       118 Og [294] 7 18       inert-gases
 	
-	Lanthanum       57 La 138.905 8 3       lanthanoid
-	Cerium          58 Ce 140.116(1) 8 4    lanthanoid
-	Praseodymium    59 Pr 140.908 8 5       lanthanoid
-	Neodymium       60 Nd 144.242(3) 8 6    lanthanoid
-	Promethium      61 Pm [144.913] 8 7     lanthanoid
-	Samarium        62 Sm 150.36(2) 8 8     lanthanoid
-	Europium        63 Eu 151.964(1) 8 9    lanthanoid
-	Gadolinium      64 Gd 157.25(3) 8 10    lanthanoid
-	Terbium         65 Tb 158.925   8 11    lanthanoid
-	Dysprosium      66 Dy 162.500(1) 8 12   lanthanoid
-	Holmium         67 Ho 164.930 8 13      lanthanoid
-	Erbium          68 Er 167.259(3) 8 14   lanthanoid
-	Thulium         69 Tm 168.934   8 15    lanthanoid
-	Ytterbium       70 Yb 173.04(3) 8 16    lanthanoid
-	Lutetium        71 Lu 174.967(1) 8 17   lanthanoid
+	Lanthanum       57 La 138.905 8 3       lanthanoids
+	Cerium          58 Ce 140.116(1) 8 4    lanthanoids
+	Praseodymium    59 Pr 140.908 8 5       lanthanoids
+	Neodymium       60 Nd 144.242(3) 8 6    lanthanoids
+	Promethium      61 Pm [144.913] 8 7     lanthanoids
+	Samarium        62 Sm 150.36(2) 8 8     lanthanoids
+	Europium        63 Eu 151.964(1) 8 9    lanthanoids
+	Gadolinium      64 Gd 157.25(3) 8 10    lanthanoids
+	Terbium         65 Tb 158.925   8 11    lanthanoids
+	Dysprosium      66 Dy 162.500(1) 8 12   lanthanoids
+	Holmium         67 Ho 164.930 8 13      lanthanoids
+	Erbium          68 Er 167.259(3) 8 14   lanthanoids
+	Thulium         69 Tm 168.934   8 15    lanthanoids
+	Ytterbium       70 Yb 173.04(3) 8 16    lanthanoids
+	Lutetium        71 Lu 174.967(1) 8 17   lanthanoids
 	
-	Actinium        89 Ac [227.027] 9 3     actinoid
-	Thorium         90 Th 232.038   9 4     actinoid
-	Protactinium    91 Pa 231.036 9 5       actinoid
-	Uranium         92 U 238.029 9 6        actinoid
-	Neptunium       93 Np [237.048] 9 7     actinoid
-	Plutonium       94 Pu [244.064] 9 8     actinoid
-	Americium       95 Am [243.061] 9 9     actinoid
-	Curium          96 Cm [247.070] 9 10    actinoid
-	Berkelium       97 Bk [247.070] 9 11    actinoid
-	Californium     98 Cf [251.080] 9 12    actinoid
-	Einsteinium     99 Es [252.083] 9 13    actinoid
-	Fermium         100 Fm [257.095] 9 14   actinoid
-	Mendelevium     101 Md [258.098] 9 15   actinoid
-	Nobelium        102 No [259.101] 9 16   actinoid
-	Lawrencium      103 Lr [262.110] 9 17   actinoid
+	Actinium        89 Ac [227.027] 9 3     actinoids
+	Thorium         90 Th 232.038   9 4     actinoids
+	Protactinium    91 Pa 231.036 9 5       actinoids
+	Uranium         92 U 238.029 9 6        actinoids
+	Neptunium       93 Np [237.048] 9 7     actinoids
+	Plutonium       94 Pu [244.064] 9 8     actinoids
+	Americium       95 Am [243.061] 9 9     actinoids
+	Curium          96 Cm [247.070] 9 10    actinoids
+	Berkelium       97 Bk [247.070] 9 11    actinoids
+	Californium     98 Cf [251.080] 9 12    actinoids
+	Einsteinium     99 Es [252.083] 9 13    actinoids
+	Fermium         100 Fm [257.095] 9 14   actinoids
+	Mendelevium     101 Md [258.098] 9 15   actinoids
+	Nobelium        102 No [259.101] 9 16   actinoids
+	Lawrencium      103 Lr [262.110] 9 17   actinoids
     }
-    foreach { name number symbol weight row column type } $_tableData {
-	set _table($symbol) \
+    foreach { name number symbol weight row column family } $_tableData {
+	set _table($name) \
 	    [list name $name number $number symbol $symbol \
-		 weight $weight row $row column $column type $type]
+		 weight $weight row $row column $column family $family]
     }
-
-    array set _types {
-	actinoid {
-	    Ac Am Bk Cf Cm Es Fm Md Np Pu Pa Th U Lr No 
+    array set _families {
+        actinoids {
+            Actinium Americium Berkelium Californium Curium 
+            Einsteinium Fermium Mendelevium Neptunium Plutonium Protactinium 
+            Thorium Uranium Lawrencium Nobelium 
+        }
+        alkali-metals {
+            Cesium Francium Lithium Potassium Rubidium Sodium           
+        }
+        alkaline-earth-metals {
+            Barium Beryllium Calcium Magnesium Radium Strontium 
+        }
+        halogens {
+            Astatine Bromine Chlorine Fluorine Iodine Tennessine
+        }
+        lanthanoids {
+            Cerium Erbium Europium Gadolinium Holmium  Lanthanum     
+            Lutetium Neodymium Praseodymium Promethium Samarium Terbium 
+            Thulium Ytterbium Dysprosium        
+        }
+        metalloids {
+            Arsenic Boron Germanium Polonium Silicon Tellurium Antimony 
+        }
+        inert-gases {
+            Argon Helium Krypton Neon Radon Xenon 
+            Oganesson
+        }
+        other-non-metals {
+            Carbon Hydrogen Nitrogen Sulfur Oxygen Phosphorus Selenium  
+        }
+        post-transition-metals {
+            Aluminium Bismuth Gallium Indium Lead Thallium Tin Livermorium
+            Flerovium Nihonium
+        }
+        transition-metals {
+            Chromium Cobalt Copper Dubnium Gold Hafnium Hassium Iridium         
+            Iron Manganese Meitnerium Mercury Molybdenum Nickel Niobium         
+            Osmium Palladium Rhenium Rhodium Roentgenium Ruthenium 
+            Rutherfordium Scandium Seaborgium Silver Tantalum Technetium 
+            Titanium Tungsten Copernicium Vanadium Yttrium Zinc Zirconium 
+            Bohrium Cadmium Darmstadtium Platinum       
+        }
+	pnictogens {
+	    Nitrogen Phosphorus Arsenic Antimony Bismuth Moscovium
 	}
-	alkali-metal {
-	    Cs Fr Li K Rb Na           
-	}
-	alkaline-earth-metal {
-	    Ba Be Ca Mg Ra Sr 
-	}
-	halogen {
-	    At Br Cl F I           
-	}
-	lanthanoid {
-	    Ce Er Eu Gd Ho La Lu Nd Pr Pm Sm Tb Tm Yb Dy        
-	}
-	metalloid {
-	    As B Ge Po Si Te Sb 
-	}
-	noble-gas {
-	    Ar He Kr Ne Rn Xe
-	}
-	other-non-metal {
-	    C H N S O P Se  
-	}
-	post-transition-metal {
-	    Al Bi Ga In Pb Tl Tin Uuh Uup Uuq Uut   
-	}
-	transition-metal {
-	    Cr Co Cu Db Au Hf Hs Ir Fe Mn Mt Hg Mo Ni Nb         
-	    Os Pd Re Rh Rg Ru Rf Sc Sg Ag Ta Tc Ti W Uub 
-	    V Y Zn Zr Bh Cd Ds Pt       
-	}
-	unknown {
-	    Uus Uuo
+	chalcogens {
+	    Oxygen Sulfur Selenium Tellurium Polonium
 	}
     }
 }
@@ -279,36 +297,44 @@ proc periodicTable::MakeCheckImage { w h } {
 proc periodicTable::NewTable { w } {
     variable _table
     variable _state
-    variable _types 
-    variable _typeSelected
+    variable _families 
+    variable _isSelected
 
     frame $w -bg white
-    foreach sym [array names _table] {
-	set _state($sym) "normal"
+    foreach name [array names _table] {
+	set _state($name) "normal"
     }
     canvas $w.table \
 	-highlightthickness 0
 
     MakeCheckImage 11 11
 
-    blt::scrollset $w.types \
-	-yscrollbar $w.types.ys \
-	-window $w.types.view 
-    blt::tk::scrollbar $w.types.ys
-    blt::comboview $w.types.view \
+    blt::scrollset $w.selections \
+	-yscrollbar $w.selections.ys \
+	-window $w.selections.view 
+    blt::tk::scrollbar $w.selections.ys
+    blt::comboview $w.selections.view \
 	-checkbuttonoutlinecolor grey80  \
-	-height 1.5i -borderwidth 0
+	-height 1.5i -borderwidth 0 -font "Arial 9"
 
-    $w.types.view add -type checkbutton -text (all) \
-	-command [list periodicTable::SelectType $w all]  \
-	-variable ::periodicTable::_typeSelected(all)
-	
-    foreach type [lsort -dictionary [array names _types]] {
-	regsub -all -- {-} $type { } name
-	set name [string totitle $name]
-	$w.types.view add -type checkbutton -text $name \
-	    -command [list periodicTable::SelectType $w $type] \
-	    -variable ::periodicTable::_typeSelected($type)
+    $w.selections.view add -type checkbutton -text (all) \
+	-command [list periodicTable::Select $w all]  \
+	-variable ::periodicTable::_isSelected(all)
+
+    foreach family [lsort -dictionary [array names _families]] {
+	regsub -all -- {-} $family { } label
+	set label [string totitle $label]
+	$w.selections.view add -type checkbutton -text $label \
+	    -command [list periodicTable::Select $w $family] \
+	    -variable ::periodicTable::_isSelected($family)
+    }
+    $w.selections.view add -type separator
+    foreach name [lsort -dictionary [array names _table]] {
+        array set elem $_table($name)
+	set label [string totitle $elem(name)]
+	$w.selections.view add -type checkbutton -text $label \
+	    -command [list periodicTable::Select $w $name] \
+	    -variable ::periodicTable::_isSelected($name)
     }
     blt::tk::button $w.cancel -text "Cancel" -font "Arial 9" \
 	-command [list ::periodicTable::Cancel $w] \
@@ -318,7 +344,7 @@ proc periodicTable::NewTable { w } {
 	-relief flat -padx 1 -pady 1 -highlightthickness 0
     blt::table $w \
 	0,0 $w.table -fill both -cspan 3 \
-	1,0 $w.types -fill x -cspan 3 \
+	1,0 $w.selections -fill x -cspan 3 \
 	2,1 $w.cancel -padx 10 -pady 5 -width 0.8i \
 	2,2 $w.ok -padx 10 -pady 5 -width 0.8i
     
@@ -338,43 +364,45 @@ proc periodicTable::RedrawTable { w } {
     set last ""
     set c $w.table
     $c delete all
-    foreach sym [array names _table] {
-        array set info $_table($sym)
-        set x1 [expr ($info(column)-1)*$sqwidth+$xoffset]
-        set y1 [expr ($info(row)-1)*$sqheight+$yoffset]
-        set x2 [expr ($info(column)*$sqwidth)-2+$xoffset]
-        set y2 [expr ($info(row)*$sqheight)-2+$yoffset]
-        set type $info(type)
-        if { $_state($sym) == "selected" } {
-            set fg $_colors($type-disabledforeground)
-            set bg $_colors($type-disabledbackground)
+    foreach name [array names _table] {
+        array set elem $_table($name)
+        set x1 [expr ($elem(column)-1)*$sqwidth+$xoffset]
+        set y1 [expr ($elem(row)-1)*$sqheight+$yoffset]
+        set x2 [expr ($elem(column)*$sqwidth)-2+$xoffset]
+        set y2 [expr ($elem(row)*$sqheight)-2+$yoffset]
+        set family $elem(family)
+        if { $_state($name) == "selected" } {
+            set fg $_colors($family-foreground)
+            set bg $_colors($family-background)
         } else { 
-            set fg $_colors($type-foreground)
-            set bg $_colors($type-background)
+            set fg $_colors($family-foreground)
+            set fg white
+            set bg $_colors($family-disabledforeground)
         }
         $c create rectangle $x1 $y1 $x2 $y2 -outline $fg -fill $bg \
-            -tags $info(name)-rect
-        if { $info(symbol) != "*" } {
+            -tags $elem(name)-rect
+        if { $elem(symbol) != "*" } {
             $c create text [expr ($x2+$x1)/2+1] [expr ($y2+$y1)/2+4] \
                 -anchor c -fill $fg \
-                -text [string range $info(symbol) 0 4] \
-                -font "Arial 6" -tags $info(name)-symbol
+                -text [string range $elem(symbol) 0 4] \
+                -font "Arial 6" -tags $elem(name)-symbol
             $c create text [expr $x2-2] [expr $y1+2] -anchor ne \
-                -text $info(number) -fill $fg \
-                -font "math1 4" -tags $info(name)-number
+                -text $elem(number) -fill $fg \
+                -font "math1 4" -tags $elem(name)-number
         }
-	if { $_state($info(symbol)) == "selected" } {
-	    $c create image $x1 $y1 -image $_chkImage -tags $info(name) -anchor nw
+	if { $_state($elem(name)) == "selected" } {
+	    $c create image $x1 $y1 -image $_chkImage -tags $elem(name) \
+		-anchor nw
 	}
         $c create rectangle $x1 $y1 $x2 $y2 -outline "" -fill "" \
-            -tags $info(name) 
-        if { $_state($info(symbol)) != "disabled" } {
-	    $c bind $info(name) <Enter> \
-		[list periodicTable::ActivateElement %W $info(symbol) %X %Y]
-	    $c bind $info(name) <Leave> \
-		[list periodicTable::DeactivateElement %W $info(symbol)]
-	    $c bind $info(name) <ButtonRelease-1> \
-		[list periodicTable::ToggleSelection $w $info(symbol)]
+            -tags $elem(name) 
+        if { $_state($elem(name)) != "disabled" } {
+	    $c bind $elem(name) <Enter> \
+		[list periodicTable::ActivateElement %W $elem(name) %X %Y]
+	    $c bind $elem(name) <Leave> \
+		[list periodicTable::DeactivateElement %W $elem(name)]
+	    $c bind $elem(name) <ButtonRelease-1> \
+		[list periodicTable::ToggleSelection $w $elem(name)]
         }
     }
 
@@ -382,19 +410,19 @@ proc periodicTable::RedrawTable { w } {
     set y [expr $yoffset+3]
     
     set x [expr 3*$sqwidth+$xoffset+5]
-    $c create text [expr $x - 5] $y -text "?" -tag "symbolName info" \
+    $c create text [expr $x - 5] $y -text "?" -tag "symbolName elemInfo" \
 	-font "Arial 8 bold" -anchor ne
     set x [expr 3*$sqwidth+$xoffset+5]
-    $c create text [expr $x + 5] $y -text "?" -tag "elementName info" \
+    $c create text [expr $x + 5] $y -text "?" -tag "elementName elemInfo" \
 	-font "Arial 8 italic" -anchor nw
     set x [expr 11*$sqwidth+$xoffset]
     $c create text [expr $x - 5] $y -text "?" \
-	-tag "atomicNumber info" \
+	-tag "atomicNumber elemInfo" \
 	-font "Arial 8" -anchor ne
     $c create text [expr $x + 5] $y -text "?" \
-	-tag "elementType info" \
+	-tag "elementFamily elemInfo" \
 	-font "Arial 8 italic" -anchor nw
-    $c itemconfigure info -state hidden
+    $c itemconfigure elemInfo -state hidden
     update
     foreach { x1 y1 x2 y2 } [$c bbox all] break
     set width [expr $x2-$x1+$xoffset*2]
@@ -412,15 +440,18 @@ proc periodicTable::Cancel { w } {
 
 proc periodicTable::Ok { w } {
     variable _state
-    set menu [winfo parent $w]
-    set mb [winfo parent $menu]
+    variable _table
+    
     set selected {}
-    foreach sym [array names _state] {
-	if { $_state($sym) == "selected" } {
-	    lappend selected $sym
+    foreach name [array names _state] {
+	if { $_state($name) == "selected" } {
+	    array set elem $_table($name)
+	    lappend selected $elem(symbol)
 	}
     }
     set text [lsort -dictionary $selected]
+    set menu [winfo parent $w]
+    set mb [winfo parent $menu]
     $mb configure -text [join $text {, }]
     $menu unpost
 }
@@ -431,36 +462,42 @@ proc periodicTable::Ok { w } {
 # Used to manipulate the selection in the table.
 #
 # ----------------------------------------------------------------------
-proc periodicTable::SelectType { w type } {
-    variable _types
+proc periodicTable::Select { w family } {
+    variable _families
     variable _state
-    variable _typeSelected
+    variable _isSelected
     variable _table
 
-    if { $type == "all" } {
-	if { $_typeSelected($type) } {
-	    foreach sym [array names _table] {
-		set _state($sym) "selected"
+    if { $family == "all" } {
+	if { $_isSelected($family) } {
+	    foreach name [array names _table] {
+		set _state($name) "selected"
 	    }
 	} else {
-	    foreach sym [array names _table] {
-		set _state($sym) "normal"
+	    foreach name [array names _table] {
+		set _state($name) "normal"
 	    }
-	    foreach type [array names _typeSelected] {
-		set _typeSelected($type) 0
+	    foreach family [array names _isSelected] {
+		set _isSelected($family) 0
 	    }
 	}
-    } else {
-	if { $_typeSelected($type) } {
-	    foreach sym $_types($type) {
-		set _state($sym) "selected"
+    } elseif { [info exists _families($family)] } {
+	if { $_isSelected($family) } {
+	    foreach name $_families($family) {
+		set _state($name) "selected"
 	    }
 	} else {
-	    foreach sym $_types($type) {
-		set _state($sym) "normal"
+	    foreach name $_families($family) {
+		set _state($name) "normal"
 	    }
 	}
-    }
+    } elseif { [info exists _state($family)] } {
+	if { $_isSelected($family) } {
+	    set _state($family) "selected"
+	} else {
+	    set _state($family) "normal"
+	}
+    }	
     after idle [list periodicTable::RedrawTable $w]
 }
 
@@ -470,124 +507,64 @@ proc periodicTable::SelectType { w type } {
 # Used to manipulate the selection in the table.
 #
 # ----------------------------------------------------------------------
-proc periodicTable::ToggleSelection { w sym } {
+proc periodicTable::ToggleSelection { w name } {
     variable _state
 
-    if { ![info exists _state($sym)] } {
-	set _state($sym) "selected"
+    if { ![info exists _state($name)] } {
+	set _state($name) "selected"
     } else {
-	set state $_state($sym)
+	set state $_state($name)
 	if { $state == "selected" } {
-	    set _state($sym) "normal"
+	    set _state($name) "normal"
 	} else {
-	    set _state($sym) "selected"
+	    set _state($name) "selected"
 	}
     }
     after idle [list periodicTable::RedrawTable $w]
-}
-
-
-# ----------------------------------------------------------------------
-# USAGE: select <name> 
-#
-# Used to manipulate the selection in the table.
-#
-# ----------------------------------------------------------------------
-proc periodicTable::selectElement { what } {
-    set elem [FindElement $what]
-    if { $elem == "" } {
-        set elem "Hydrogen"
-    }
-    set _current $elem
-    after idle [list periodicTable::RedrawTable $w]
-}
-
-# ----------------------------------------------------------------------
-# USAGE: FindElement <what>
-#
-# Checks to see if the given string <what> is recognized as an element
-# name, symbol, or number.  Returns the corresponding element name
-# or "" if the element is not recognized.
-# ----------------------------------------------------------------------
-proc periodicTable::FindElement { what } {
-    variable _table
-    foreach name [array names _table] { 
-        array unset info
-        array set info $_table($name)
-        if { $what eq $info(name) || $what eq $info(number) || 
-             $what eq $info(symbol) } {
-	    return $info(name)
-        }
-    }
-    return ""
-}
-
-# ----------------------------------------------------------------------
-# USAGE: ElementIsType <name> <type> <type>...
-#
-# Checks to see if the given element <name> is one of the specified
-# <type> values.  Returns true if the element is one of the types
-# (logical or), or false if it is not.
-# ----------------------------------------------------------------------
-proc periodicTable::ElementIsType { name args } {
-    variable _types
-    
-    foreach type $args {
-        if {[info exists _types($type)]} {
-            if {[lsearch -exact $_types($type) $name] >= 0} {
-                return 1
-            }
-        }
-    }
-    return 0
-}
-
-# ----------------------------------------------------------------------
-# USAGE: _react
-#
-# Invoked automatically when the user has selected something from
-# the listbox.  Unposts the drop-down and generates an event letting
-# the client know that the selection has changed.
-# ----------------------------------------------------------------------
-proc  periodicTable::React { w } {
-    set menu [winfo parent $w]
-    $menu unpost
-    event generate $w <<PeriodicTableSelect>>
 }
 
 proc periodicTable::ActivateElement { c id x y } {
     variable _colors
     variable _table
     
-    array set info $_table($id)
-    set type $info(type)
-    set fg $_colors($type-activeforeground)
-    set bg $_colors($type-activebackground)
+    array set elem $_table($id)
+    set family $elem(family)
+    set fg $_colors($family-activeforeground)
+    set bg $_colors($family-activebackground)
     $c itemconfigure $id-rect -outline black -width 1 -fill $bg
     $c itemconfigure $id-number -fill white
     $c itemconfigure $id-symbol -fill white
 
-    $c itemconfigure elementName -text $info(name)
-    $c itemconfigure symbolName -text $info(symbol)
-    $c itemconfigure atomicNumber -text "#$info(number)"
-    $c itemconfigure atomicWeight -text $info(weight)
-    regsub -all -- {-} $info(type) { } type
-    $c itemconfigure elementType -text [string totitle $type]
-    $c itemconfigure info -state normal
+    $c itemconfigure elementName -text $elem(name)
+    $c itemconfigure symbolName -text $elem(symbol)
+    $c itemconfigure atomicNumber -text "#$elem(number)"
+    $c itemconfigure atomicWeight -text $elem(weight)
+    regsub -all -- {-} $elem(family) { } family
+    $c itemconfigure elementFamily -text [string totitle $family]
+    $c itemconfigure elemInfo -state normal
 }
 
 proc periodicTable::DeactivateElement { c id } {
     variable _table
     variable _colors
+    variable _state
     
-    array set info $_table($id)
-    set type $info(type)
-    set fg $_colors($type-foreground)
-    set bg $_colors($type-background)
+    array set elem $_table($id)
+    set family $elem(family)
+    set fg $_colors($family-foreground)
+    set bg $_colors($family-background)
+    if { $_state($id) == "selected" } {
+	set fg $_colors($family-foreground)
+	set bg $_colors($family-background)
+    } else { 
+	set fg $_colors($family-foreground)
+	set fg white
+	set bg $_colors($family-disabledforeground)
+    }
     $c itemconfigure $id-rect -outline $fg -width 1 -fill $bg
     $c itemconfigure $id-number -fill $fg
     $c itemconfigure $id-symbol -fill $fg
-    $c itemconfigure info -state hidden
+    $c itemconfigure elemInfo -state hidden
 }
 
 proc periodicTable::value {{value "" }} {
