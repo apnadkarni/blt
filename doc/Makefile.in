@@ -29,6 +29,7 @@ SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/combobutton.rst \
 		$(srcdir)/comboeditor.rst \
 		$(srcdir)/comboentry.rst \
+		$(srcdir)/comboframe.rst \
 		$(srcdir)/combomenu.rst \
 		$(srcdir)/combotree.rst \
 		$(srcdir)/compare.rst \

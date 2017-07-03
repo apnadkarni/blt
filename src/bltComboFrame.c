@@ -225,7 +225,6 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(ComboFrame, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor", DEF_CURSOR, 
         Blt_Offset(ComboFrame, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_FILL, 
         Blt_Offset(ComboFrame, fill), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-height", "height", "Height", DEF_HEIGHT, 
