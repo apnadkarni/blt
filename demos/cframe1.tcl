@@ -11,7 +11,8 @@ namespace eval periodicTable {
     variable _chkImage
     variable _selected
     variable _isSelected
-
+    variable _symToName
+    
     array set _colors {
 	actinoids-activebackground                       \#cd679a 
 	actinoids-activeforeground                       white 
@@ -299,9 +300,12 @@ proc periodicTable::NewTable { w } {
     variable _state
     variable _families 
     variable _isSelected
-
+    variable _symToName
+    
     frame $w -bg white
     foreach name [array names _table] {
+	array set elemInfo $_table($name)
+	set _symToName($elemInfo(symbol)) $elemInfo(name)
 	set _state($name) "normal"
     }
     canvas $w.table \
@@ -454,6 +458,20 @@ proc periodicTable::Ok { w } {
     set mb [winfo parent $menu]
     $mb configure -text [join $text {, }]
     $menu unpost
+}
+
+proc periodicTable::ResetMenu { w string } {
+    variable _symToName
+    variable _state
+    regsub -all {,} $string { } string
+    foreach name [array names _state] {
+	set _state($name) "normal"
+    }
+    foreach sym $string {
+	set name $_symToName($sym)
+	set _state($name) selected
+    }
+    after idle [list periodicTable::RedrawTable $w]
 }
 
 # ----------------------------------------------------------------------
@@ -610,7 +628,8 @@ blt::comboentry .e \
 blt::comboframe .e.m  \
     -restrictwidth min \
     -window .e.m.ptable \
-    -highlightthickness 0
+    -highlightthickness 0 \
+    -resetcommand [list periodicTable::ResetMenu .e.m.ptable]
 
 periodicTable::NewTable .e.m.ptable
 

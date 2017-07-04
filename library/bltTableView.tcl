@@ -701,6 +701,37 @@ proc blt::TableView::Initialize { w } {
 }
 
 #
+# InitColumnFilters --
+#
+#   If is doesn't aleady exist, creates the column filter menu used by 
+#   all columns including the scrollbars.  
+#
+proc blt::TableView::InitColumnFilters { w } {
+    if { ![winfo exists $w._filter] } {
+        # We'll migrate to the comboframe menu in the future.
+        blt::combomenu $w._filter  \
+            -restrictwidth min \
+            -height { 0 2i }  \
+            -yscrollbar $w._filter.ybar \
+            -xscrollbar $w._filter.xbar \
+            -activebackground [$w filter cget -activebackground] \
+            -activeforeground [$w filter cget -activeforeground] \
+            -activerelief [$w filter cget -activerelief] \
+            -background [$w filter cget -background] \
+            -borderwidth [$w filter cget -borderwidth] \
+            -disabledbackground [$w filter cget -disabledbackground] \
+            -disabledforeground [$w filter cget -disabledforeground] \
+            -font [$w filter cget -font] \
+            -foreground [$w filter cget -foreground] \
+            -relief [$w filter cget -relief] 
+        blt::tk::scrollbar $w._filter.xbar 
+        blt::tk::scrollbar $w._filter.ybar
+        # FIXME: don't let user override this
+        $w filter configure -menu $w._filter
+    }
+}
+
+#
 # PostComboBoxMenu --
 #
 #   Posts the combo menu at the location of the cell requesting it.  The
@@ -725,6 +756,7 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     set table [$w cget -table]
     foreach { row col } [$w index $cell] break
     set value [$table get $row $col ""]
+    # FIXME: May be a comboframe someday.
     set item [$menu index -value $value]
     if { $item >= 0 } {
         $menu select $item
@@ -734,7 +766,8 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     # the selected value when we get one.
     set _private(posting) [$w index $cell]
     bind $menu <<MenuSelect>> \
-        [list blt::TableView::ImportFromComboBoxMenu $w $_private(posting) $menu]
+        [list blt::TableView::ImportFromComboBoxMenu $w $_private(posting) \
+             $menu]
 
     # Post the combo menu at the bottom of the cell.
     foreach { x1 y1 x2 y2 } [$w bbox $cell] break
@@ -755,6 +788,7 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
 #   from the combo menu and sets the corresponding table cell to it.
 #
 proc blt::TableView::ImportFromComboBoxMenu { w cell menu } {
+    # FIXME: May be a comboframe someday.
     set value [$menu value active]
     set table [$w cget -table]
     if { $table != "" } {
@@ -1145,9 +1179,9 @@ proc blt::TableView::SortColumn { w col } {
 proc blt::TableView::BuildFiltersMenu { w col } {
     variable _private
 
-    set menu [$w filter cget -menu]
+    set menu $w._filter
     set table [$w cget -table]
-    if { $menu == "" || $table == "" } {
+    if { $table == "" } {
         return
     }
     set col [$w column index $col]
@@ -1155,6 +1189,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     set _private(lastFilterIcon) [$w column cget $col -filtericon]
     set _private(lastFilterHighlight) [$w column cget $col -filterhighlight]
     
+    # FIXME: Migrate to comboframe.
     $menu configure -command [list blt::TableView::UpdateFilter $w]
     $menu configure -font "Arial 9"
     if { ![$menu style exists mystyle] } {
@@ -1201,6 +1236,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
             BuildTextSearchFilterMenu $w $search
         }
     }
+    # FIXME:  May be a comboframe someday.
     $menu delete all
     $menu add -text "All" \
         -command [list blt::TableView::AllFilter $w] \
@@ -1267,7 +1303,10 @@ proc blt::TableView::UpdateFilter { w } {
     variable _private
 
     set col $_private(column)
-    set menu [$w filter cget -menu]
+    set menu $w._filter
+    if { ![winfo exists $menu] } {
+        return
+    }
     set item [$menu index selected]
     set text $_private(textvariable)
     set icon $_private(iconvariable)
@@ -1393,7 +1432,10 @@ proc blt::TableView::SingleValueFilter { w } {
 
     set col $_private(column)
     set index [$w column index $col]
-    set menu [$w filter cget -menu]
+    set menu $w._filter
+    if { ![winfo exists $menu] } {
+        return
+    }
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
@@ -1450,8 +1492,8 @@ proc blt::TableView::ApplyFilters { w } {
 proc blt::TableView::PostFilterMenu { w col } {
     variable _private
 
-    set menu [$w filter cget -menu]
-    if { $menu == "" } {
+    set menu $w._filter
+    if { ![winfo exists $menu] } {
         puts stderr "no menu specified"
         return;                         # No menu specified.
     }
@@ -1468,6 +1510,7 @@ proc blt::TableView::PostFilterMenu { w col } {
     $w see [list view.top $col]
     update
     $w filter post $col
+
   update
     bind $menu <Unmap> [list blt::TableView::UnpostFilterMenu $w]
     blt::grab push $menu -global
@@ -1491,7 +1534,7 @@ proc ::blt::TableView::UnpostFilterMenu { w } {
     catch { focus $_private(focus) }
     set _private(posting) none
     $w filter unpost
-    set menu [$w filter cget -menu]
+    set menu $w._filter
     bind $menu <Unmap> {}
     blt::grab pop $menu
 }
@@ -1505,6 +1548,7 @@ proc ::blt::TableView::BuildNumberSearchFilterMenu { w menu } {
         -iconvariable blt::TableView::_private(iconvariable) \
         -command [list blt::TableView::UpdateFilter $w]
 
+    # FIXME: May be a comboframe someday.
     if { ![$menu style exists mystyle] } {
         $menu style create mystyle -font "Arial 9 italic"
     }
@@ -1548,6 +1592,7 @@ proc ::blt::TableView::BuildTextSearchFilterMenu { w menu } {
         -iconvariable blt::TableView::_private(iconvariable) \
         -command [list blt::TableView::UpdateFilter $w]
 
+    # FIXME: May be a comboframe someday.
     if { ![$menu style exists mystyle] } {
         $menu style create mystyle -font "Arial 9 italic"
     }

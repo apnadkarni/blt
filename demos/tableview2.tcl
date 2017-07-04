@@ -233,15 +233,3 @@ $view.menu add -text directory -value directory
 $view.menu add -text file -value file
 
 #$view column configure type -style combo 
-
-$view filter configure -menu $view.filter 
-
-
-blt::combomenu $view.filter  \
-    -restrictwidth min \
-    -height { 0 2i }  \
-    -yscrollbar $view.filter.ybar \
-    -xscrollbar $view.filter.xbar
-blt::tk::scrollbar $view.filter.xbar 
-blt::tk::scrollbar $view.filter.ybar
-

@@ -1266,6 +1266,84 @@ EndItem(ComboMenu *comboPtr)
 
 #endif
 
+    
+static void
+SeeItem(ComboMenu *comboPtr, Item *itemPtr, Tk_Anchor anchor)
+{
+    int x, y, w, h;
+    int left, right, top, bottom;
+
+    w = VPORTWIDTH(comboPtr);
+    h = VPORTHEIGHT(comboPtr);
+
+    /*
+     * XVIEW:   If the entry is left or right of the current view, adjust
+     *          the offset.  If the entry is nearby, adjust the view just
+     *          a bit.  Otherwise, center the entry.
+     */
+    left = comboPtr->xOffset;
+    right = comboPtr->xOffset + w;
+
+    switch (anchor) {
+    case TK_ANCHOR_W:
+    case TK_ANCHOR_NW:
+    case TK_ANCHOR_SW:
+        x = 0;
+        break;
+    case TK_ANCHOR_E:
+    case TK_ANCHOR_NE:
+    case TK_ANCHOR_SE:
+        x = itemPtr->worldX + itemPtr->width - w;
+        break;
+    default:
+        if (itemPtr->worldX < left) {
+            x = itemPtr->worldX;
+        } else if ((itemPtr->worldX + itemPtr->width) > right) {
+            x = itemPtr->worldX + itemPtr->width - w;
+        } else {
+            x = comboPtr->xOffset;
+        }
+        break;
+    }
+
+    /*
+     * YVIEW:   If the entry is above or below the current view, adjust
+     *          the offset.  If the entry is nearby, adjust the view just
+     *          a bit.  Otherwise, center the entry.
+     */
+    top = comboPtr->yOffset;
+    bottom = comboPtr->yOffset + h;
+
+    switch (anchor) {
+    case TK_ANCHOR_N:
+        y = comboPtr->yOffset;
+        break;
+    case TK_ANCHOR_NE:
+    case TK_ANCHOR_NW:
+        y = itemPtr->worldY - (h / 2);
+        break;
+    case TK_ANCHOR_S:
+    case TK_ANCHOR_SE:
+    case TK_ANCHOR_SW:
+        y = itemPtr->worldY + itemPtr->height - h;
+        break;
+    default:
+        if (itemPtr->worldY < top) {
+            y = itemPtr->worldY;
+        } else if ((itemPtr->worldY + itemPtr->height) > bottom) {
+            y = itemPtr->worldY + itemPtr->height - h;
+        } else {
+            y = comboPtr->yOffset;
+        }
+        break;
+    }
+    if ((y != comboPtr->yOffset) || (x != comboPtr->xOffset)) {
+        comboPtr->xOffset = x;
+        comboPtr->yOffset = y;
+        comboPtr->flags |= SCROLL_PENDING;
+    }
+}
+
 static INLINE Item *
 FirstItem(ComboMenu *comboPtr)
 {
@@ -6017,6 +6095,48 @@ PreviousOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ResetOp --
+ *
+ *      Invokes the reset command is one is configured.  This is typically
+ *      called by ComboButton or ComboEntry code to reset the menu before
+ *      it's being used.
+ *
+ * Results:
+ *      Always returns TCL_OK;
+ *
+ *      pathName reset string
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+    Item *itemPtr;
+    
+    if (GetItemFromObj(NULL, comboPtr, objv[2], &itemPtr) != TCL_OK) {
+        return TCL_OK;
+    }
+    SeeItem(comboPtr, itemPtr, TK_ANCHOR_W);
+    if (SelectItem(interp, comboPtr, itemPtr, -1) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    /* Deactivate any active item. */
+    ActivateItem(comboPtr, NULL);
+    comboPtr->activePtr = NULL;
+    if ((itemPtr != NULL) &&
+        ((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN)) == 0)) {
+        ActivateItem(comboPtr, itemPtr);
+        comboPtr->activePtr = itemPtr;
+    }
+    EventuallyRedraw(comboPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ScanOp --
  *
  *      Implements the quick scan.
@@ -6102,9 +6222,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     ComboMenu *comboPtr = clientData;
     Item *itemPtr;
-    int x, y, w, h;
     Tk_Anchor anchor;
-    int left, right, top, bottom;
     char *string;
 
     string = Tcl_GetString(objv[2]);
@@ -6132,75 +6250,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
 
-    w = VPORTWIDTH(comboPtr);
-    h = VPORTHEIGHT(comboPtr);
-
-    /*
-     * XVIEW:   If the entry is left or right of the current view, adjust
-     *          the offset.  If the entry is nearby, adjust the view just
-     *          a bit.  Otherwise, center the entry.
-     */
-    left = comboPtr->xOffset;
-    right = comboPtr->xOffset + w;
-
-    switch (anchor) {
-    case TK_ANCHOR_W:
-    case TK_ANCHOR_NW:
-    case TK_ANCHOR_SW:
-        x = 0;
-        break;
-    case TK_ANCHOR_E:
-    case TK_ANCHOR_NE:
-    case TK_ANCHOR_SE:
-        x = itemPtr->worldX + itemPtr->width - w;
-        break;
-    default:
-        if (itemPtr->worldX < left) {
-            x = itemPtr->worldX;
-        } else if ((itemPtr->worldX + itemPtr->width) > right) {
-            x = itemPtr->worldX + itemPtr->width - w;
-        } else {
-            x = comboPtr->xOffset;
-        }
-        break;
-    }
-
-    /*
-     * YVIEW:   If the entry is above or below the current view, adjust
-     *          the offset.  If the entry is nearby, adjust the view just
-     *          a bit.  Otherwise, center the entry.
-     */
-    top = comboPtr->yOffset;
-    bottom = comboPtr->yOffset + h;
-
-    switch (anchor) {
-    case TK_ANCHOR_N:
-        y = comboPtr->yOffset;
-        break;
-    case TK_ANCHOR_NE:
-    case TK_ANCHOR_NW:
-        y = itemPtr->worldY - (h / 2);
-        break;
-    case TK_ANCHOR_S:
-    case TK_ANCHOR_SE:
-    case TK_ANCHOR_SW:
-        y = itemPtr->worldY + itemPtr->height - h;
-        break;
-    default:
-        if (itemPtr->worldY < top) {
-            y = itemPtr->worldY;
-        } else if ((itemPtr->worldY + itemPtr->height) > bottom) {
-            y = itemPtr->worldY + itemPtr->height - h;
-        } else {
-            y = comboPtr->yOffset;
-        }
-        break;
-    }
-    if ((y != comboPtr->yOffset) || (x != comboPtr->xOffset)) {
-        comboPtr->xOffset = x;
-        comboPtr->yOffset = y;
-        comboPtr->flags |= SCROLL_PENDING;
-    }
+    SeeItem(comboPtr, itemPtr, anchor);
     EventuallyRedraw(comboPtr);
     return TCL_OK;
 }
@@ -6914,6 +6964,7 @@ static Blt_OpSpec menuOps[] =
     {"post",        4, PostOp,        2, 0, "switches ...",},
     {"postcascade", 5, PostCascadeOp, 2, 3, "?itemName?",},
     {"previous",    2, PreviousOp,    3, 3, "itemName",},
+    {"reset",       1, ResetOp,       3, 3, "itemName",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},
     {"see",         3, SeeOp,         3, 5, "itemName",},
     {"select",      3, SelectOp,      3, 3, "itemName",},

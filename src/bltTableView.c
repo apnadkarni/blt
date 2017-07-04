@@ -206,7 +206,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_ROW_STATE                   "normal"
 #define DEF_ROW_STYLE                   (char *)NULL
 #define DEF_ROW_TITLE_BORDERWIDTH       STD_BORDERWIDTH
-#define DEF_ROW_TITLE_FONT              STD_FONT_SMALL
+#define DEF_ROW_TITLE_FONT              STD_FONT_NORMAL
 #define DEF_ROW_TITLE_JUSTIFY           "center"
 #define DEF_ROW_TITLE_RELIEF            "raised"
 #define DEF_ROW_WEIGHT                  "1.0"
@@ -642,6 +642,9 @@ static Blt_ConfigSpec sortSpecs[] =
         (char *)NULL, 0, 0}
 };
 
+/* 
+ * Some of the configuration options here are holders for TCL code to use.
+ */
 static Blt_ConfigSpec filterSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
@@ -743,6 +746,8 @@ static void AddRow(TableView *viewPtr, BLT_TABLE_ROW row);
 static void AddColumn(TableView *viewPtr, BLT_TABLE_COLUMN col);
 static void DeleteRow(TableView *viewPtr, BLT_TABLE_ROW row);
 static void DeleteColumn(TableView *viewPtr, BLT_TABLE_COLUMN col);
+static int InitColumnFilters(Tcl_Interp *interp, TableView *viewPtr);
+static int ConfigureFilters(Tcl_Interp *interp, TableView *viewPtr);
 
 /*
  *---------------------------------------------------------------------------
@@ -3442,6 +3447,38 @@ GetColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
     colPtr->titleHeight += MAX3(ih, th, ah);
 }
 
+
+/*
+ * InitColumnFilters -- 
+ *
+ *      Called by ConfigureTableView routine to initialize the column
+ *      filters menu used by all columns.  This calls TCL code to 
+ *      create the column filter menu and scrollbars.
+ */
+static int
+InitColumnFilters(Tcl_Interp *interp, TableView *viewPtr)
+{
+    int result;
+    Tcl_Obj *cmdObjPtr, *objPtr;
+
+    if ((viewPtr->flags & COLUMN_FILTERS) == 0) {
+        return TCL_OK;
+    }
+    if (!Blt_CommandExists(interp,"::blt::TableView::InitColumnFilters")) {
+        return TCL_OK;
+    }
+    cmdObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    objPtr = Tcl_NewStringObj("::blt::TableView::InitColumnFilters", -1);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    objPtr = Tcl_NewStringObj(Tk_PathName(viewPtr->tkwin), -1);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    Tcl_IncrRefCount(cmdObjPtr);
+    Tcl_Preserve(viewPtr);
+    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+    Tcl_Release(viewPtr);
+    Tcl_DecrRefCount(cmdObjPtr);
+    return result;
+}
 
 /*
  * GetColumnFiltersGeometry -- 
@@ -13064,7 +13101,12 @@ TableViewCmdProc(
         filterSpecs, 0, NULL, (char *)viewPtr, 0) != TCL_OK) {
         goto error;
     }
-    ConfigureFilters(interp, viewPtr);
+    if (Blt_ConfigModified(tableSpecs, "-columnfilters", (char *)NULL)) {
+        ConfigureFilters(interp, viewPtr);
+        if (InitColumnFilters(interp, viewPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
 
     cmdObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     objPtr = Tcl_NewStringObj("::blt::TableView::Initialize", -1);

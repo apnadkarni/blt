@@ -797,13 +797,19 @@ command.  The following operations are available for *combomenu* widgets:
   may be a label, index, or tag, but may not represent more than one menu
   item.
 
-*pathName* **scan dragto** *x* *y*
-  This command computes the difference between *x* and *y* and the
-  coordinates to the last **scan mark** command for the widget.  It then
-  adjusts the view by 10 times the difference in coordinates.  This command
-  is typically associated with mouse motion events in the widget, to
-  produce the effect of dragging the item list at high speed through the
-  window.  The return value is an empty string.
+*pathName* **reset** *itemName*
+  Resets the menu to have *itemName* selected and in view.  *ItemName* may
+  be a label, index, or tag, but may not represent more than one menu item.
+  This operation might be used in the **-postcommand** command when you
+  want to reuse the menu but want to have a specific item active and in
+  view when it is posted.
+
+*pathName* **scan dragto** *x* *y* This command computes the difference
+  between *x* and *y* and the coordinates to the last **scan mark** command
+  for the widget.  It then adjusts the view by 10 times the difference in
+  coordinates.  This command is typically associated with mouse motion
+  events in the widget, to produce the effect of dragging the item list at
+  high speed through the window.  The return value is an empty string.
    
 *pathName* **scan mark** *x* *y*
   Records *x* and *y* and the current view in the menu window; to be used

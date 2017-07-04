@@ -91,7 +91,7 @@ static const char emptyString[] = "";
 #define DEF_BACKGROUND    RGB_WHITE
 #define DEF_BORDERWIDTH   "1"
 #define DEF_CLASS         "BltComboFrame"
-#define DEF_COMMAND       ((char *)NULL)
+#define DEF_RESET_CMD     ((char *)NULL)
 #define DEF_CURSOR        ((char *)NULL)
 #define DEF_FILL          "both"
 #define DEF_HEIGHT        "0"
@@ -155,9 +155,9 @@ struct _ComboFrame {
                                          * widget.  Used to delete widget
                                          * command. */
     Tcl_Command cmdToken;               /* Token for widget's command. */
-    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be
+    Tcl_Obj *resetCmdObjPtr;            /* If non-NULL, command to be
                                          * executed when this menu is
-                                         * has been updated. */
+                                         * has been reset. */
     Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
                                          * executed when this menu is
                                          * posted. */
@@ -221,8 +221,6 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-class", "class", "Class", DEF_CLASS, 
         Blt_Offset(ComboFrame, className)},
-    {BLT_CONFIG_OBJ, "-command", (char *)NULL, (char *)NULL, DEF_COMMAND, 
-        Blt_Offset(ComboFrame, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor", DEF_CURSOR, 
         Blt_Offset(ComboFrame, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_FILL, 
@@ -247,6 +245,9 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
         Blt_Offset(ComboFrame, relief), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-resetcommand", "resetCommand", "ResetCommand",
+        DEF_RESET_CMD, Blt_Offset(ComboFrame, resetCmdObjPtr),
+        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-restrictwidth", "restrictWidth", "RestrictWidth", 
         (char *)NULL, Blt_Offset(ComboFrame, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, &restrictOption},
@@ -1345,6 +1346,44 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ResetOp --
+ *
+ *      Invokes the reset command is one is configured.  This is typically
+ *      called by ComboButton or ComboEntry code to reset the menu before
+ *      it's being used.
+ *
+ * Results:
+ *      Always returns TCL_OK;
+ *
+ *      pathName reset string
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    ComboFrame *comboPtr = clientData;
+
+    if (comboPtr->resetCmdObjPtr != NULL) {
+        int result;
+        Tcl_Obj *cmdObjPtr;
+        
+        cmdObjPtr = Tcl_DuplicateObj(comboPtr->resetCmdObjPtr);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, objv[2]);
+        Tcl_IncrRefCount(cmdObjPtr);
+        result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+        Tcl_DecrRefCount(cmdObjPtr);
+        if (result != TCL_OK) {
+            Tcl_BackgroundError(interp);
+        }
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * UnpostOp --
  *
  *      Unposts this menu.
@@ -1484,7 +1523,8 @@ static Blt_OpSpec frameOps[] =
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value ...?",},
     {"overbutton",  1, OverButtonOp,  4, 4, "x y",},
-    {"post",        4, PostOp,        2, 0, "switches ...",},
+    {"post",        1, PostOp,        2, 0, "switches ...",},
+    {"reset",       1, ResetOp,       3, 3, "string",},
     {"unpost",      1, UnpostOp,      2, 2, "",},
     {"withdraw",    1, WithdrawOp,    2, 2, "",},
 };
