@@ -18,14 +18,11 @@ DESCRIPTION
 -----------
 
 The **blt::comboframe** command creates and manages *comboframe* widgets.
-A *comboframe* widget provides a shell for custom drop-down menus. The
-**-window** option lets you specify a widget to use as the menu. The widget
-can be a Tk **frame** widget that you pack other widgets into.
-
-Like the **blt::combomenu**, the *comboframe* works with the
-**blt::comboentry** or **blt::combobutton** widgets to expose and hide the
-menu as needed. Unlike the *combomenu*, the *comboframe* items are district
-widgets create and assembled by user code.
+A *comboframe* widget lets you create custom drop-down menus. A child
+widget of the *comboframe* can be embedded with the **-window** option that
+you can use to build your own custom menu.  Like the **blt::combomenu**,
+the *comboframe* works with the **blt::comboentry** or **blt::combobutton**
+widgets to expose and hide the menu as needed. 
 
 SYNTAX
 ------
@@ -43,9 +40,9 @@ argument.  There must not already exist a window named *pathName*, but
 *pathName*'s parent must exist.
 
 The *comboframe* embeds a Tk widget that must be a child of the
-*comboframe* widget.  Typically this is a Tk frame that the user populates
+*comboframe* widget.  Typically this is a Tk frame that is populated
 with other widgets.  The normal size of the *comboframe* is the requested
-size of the embedded widget. You can override this size by specifying the
+size of the child widget. You can override this size by specifying the
 maximum and minimum width and height of the *comboframe* window using the
 **-width** and **-height** widget options.
 
@@ -196,6 +193,20 @@ command.  The following operations are available for *comboframe* widgets:
     the forms acceptable to **Tk_GetPixels**.  If *numPixels* is "0.0", no
     focus highlight is drawn around the widget.  The default is "2".
 
+  **-icon** *imageName*
+    Holds the name of an image associated with the selected item.
+    *ImageName* is the name of an Tk photo or BLT picture.  The image
+    is not displayed by the *comboframe* widget.  If the **-iconvariable**
+    option is set, the value of that variable will be set to *imageName*.
+    The default is "".
+
+  **-iconvariable** *varName*
+    Specifies the name of a global TCL variable that contains the name of
+    an image associated with the selected item.  *VarName* is the name of a
+    TCL variable. This variable is used to communicate with the
+    **blt::comboentry** or **blt::combobutton** how to change its icon.  If
+    *varName* is "", no variable is set. The default is "".
+
   **-padx**  *numPixels*
     Sets the padding to the left and right of the embedded child widget.
     *NumPixels* can be a list of one or two screen distances.  If
@@ -253,21 +264,37 @@ command.  The following operations are available for *comboframe* widgets:
     input focus.  An empty value means that the traversal scripts make the
     decision whether to focus on the window.  The default is "".
 
-  **-textvariable** *varName* 
-    Specifies the name of a global TCL variable that contains the label of
-    the selected item.  *VarName* is the name of a TCL variable. When an
-    item is selected, *varName* is set to its label.  If *varName* is
-    "", no variable is set. The default is "".
+  **-text** *string*
+    Holds the text associated with the selected item.
+    *String* is an arbitrary string.  The string
+    is not displayed by the *comboframe* widget.  If the **-textvariable**
+    option is set, the value of that variable will be set to *string*.
+    The default is "".
+
+  **-textvariable** *varName*
+    Specifies the name of a global TCL variable that contains the text of
+    the selected item.  *VarName* is the name of a TCL variable. This
+    variable is used to communicate with the **blt::comboentry** or
+    **blt::combobutton** how to change its text.  If *varName* is "", no
+    variable is set. The default is "".
 
   **-unpostcommand** *cmdString*
     Specifies the TCL command to be invoked when the menu is unposted.  If
     *cmdString* is "", no command is invoked. The default is "".
 
+  **-value** *string*
+    Holds the value associated with the selected item.
+    *String* is an arbitrary string.  The string
+    is not displayed by the *comboframe* widget.  If the **-valuevariable**
+    option is set, the value of that variable will be set to *string*.
+    The default is "".
+
   **-valuevariable** *varName* 
     Specifies the name of a global TCL variable that contains the value of
-    the selected item.  *VarName* is the name of a TCL variable. When an
-    item is selected, *varName* is set to its value. If *varName* is "",
-    no variable is set. The default is "".
+    the selected item.  *VarName* is the name of a TCL variable. This
+    variable is used to hold the selected value especially if it is
+    different from text to be displayed of the selected item.  If *varName*
+    is "", no variable is set. The default is "".
 
   **-width** *numPixels*
     Specifies the width in the *comboframe*.  *NumPixels* can be single
@@ -287,30 +314,10 @@ command.  The following operations are available for *comboframe* widgets:
   used by widget bindings to un-highlight menu items as the pointer is
   moved over the menu. 
 
-*pathName* **delete** *itemName*\ ...
-  Deletes one or more items from the menu. *ItemName* may be a label,
-  index, or tag and may refer to multiple items (example: "all").
-
-*pathName* **deselect** *itemName*
-  Deselects *itemName* and sets the associated variables to their off values.
-  *ItemName* may be a label, index, or tag, but may not represent more than one
-  menu item.  If this item was not currently selected, the command has no
-  effect.
-
-*pathName* **exists** *itemName*
-  Returns the *itemName* exists in the menu. *ItemName* may be a label,
-  index, or tag, but may not represent more than one menu item.  Returns
-  "1" is the item exists, "0" otherwise.
-  
 *pathName* **index** *itemName* 
   Returns the index of *itemName*. *ItemName* may be a label, index, or
   tag, but may not represent more than one menu item.  If the item does not
   exist, "-1" is returned.
-  
-*pathName* **invoke** *itemName* 
-  Selects the *item and invokes the TCL command specified by *itemName*'s
-  **-command** option. *ItemName* may be a label, index, or tag, but may
-  not represent more than one menu item.
   
 *pathName* **overbutton** *x* *y* 
   Indicates if the x and y coordinates specified are over the button region
@@ -337,6 +344,17 @@ command.  The following operations are available for *comboframe* widgets:
     Aligns the menu horizontally to its parent according to *how*.  *How*
     can be "left", "center", or "right".
 
+    **left**
+      Align the left edge of the menu with the left edge of the parent
+      widget.
+    **right**
+      Align the right edge of the menu with the left edge of the parent
+      widget.
+    **center**
+      Align the centers of the menu and the parent widget.
+ 
+    The default is "left".
+    
   **-box** *coordList*
     Specifies the region of the parent window that represent the button.
     Normally comboframes are aligned to the parent window.  This allows you
@@ -348,11 +366,6 @@ command.  The following operations are available for *comboframe* widgets:
     *comboframe*s are aligned to its parent window.  *WindowName* is the
     name of another widget.
 
-*pathName* **see** *itemName* 
-  Scrolls the menu so that *itemName* is visible in the widget's window.
-  *ItemName* may be a label, index, or tag, but may not represent more than
-  one menu item.
-  
 *pathName* **select** *itemName* 
   Selects *itemName* in the menu. The item is drawn in its selected colors
   and its TCL command is invoked (see the **-command** menu item option).
@@ -361,17 +374,14 @@ command.  The following operations are available for *comboframe* widgets:
   
 *pathName* **unpost**
   Unposts the *comboframe* window so it is no longer displayed onscreen.
-  This is used by user code to unmap the menu.
+  You use this operation to unmap the menu when an item is selected or the
+  menu has been canceled.  If the **--unpostcommand** option has been set,
+  its command will be invoked after the menu has been unmapped.
 
-*pathName* **value** *itemName*
-  Returns the value associated with *itemName*.  The value is specified by
-  the menu item's **-value** option.  *ItemName* may be a label, index, or
-  tag, but may not represent more than one menu item.
-   
 DEFAULT BINDINGS
 ----------------
 
-There are many default class bindings for *comboframe* widgets.
+There are no default class bindings for *comboframe* widgets.
 
 EXAMPLE
 -------

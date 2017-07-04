@@ -1,4 +1,4 @@
-# -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
+# -*- mode: tcl; tcl-indent-level: 4; indent-tabs-mode: nil -*- 
 #
 # bltComboFrame.tcl
 #
@@ -57,17 +57,6 @@ namespace eval blt {
 # the event comes from a grab release, though: such an event can happen
 # after as part of unposting a cascaded chain of menus, after the focus has
 # already been restored to wherever it was before menu selection started.
-
-bind BltComboFrame <Enter> { 
-    blt::ComboFrame::trace "blt::ComboFrame %# <Enter> %W"
-}
-
-bind BltComboFrame <Leave> { 
-    blt::ComboFrame::trace "blt::ComboFrame %# %W <Leave> %s"
-    if { %s == 0 } {
-	#%W deactivate
-    }
-}
 
 bind BltComboFrame <ButtonPress-1> { 
     blt::ComboFrame::trace "blt::ComboFrame %# <ButtonPress-1>  %W"

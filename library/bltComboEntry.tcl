@@ -1,4 +1,4 @@
-# -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
+# -*- mode: tcl; tcl-indent-level: 4; indent-tabs-mode: nil -*- 
 #
 # bltComboEntry.tcl
 #
@@ -595,11 +595,11 @@ proc ::blt::ComboEntry::PostMenu { w } {
     focus $menu
     set value [$w get]
     catch {
-    set index [$menu index $value]
-    if { $index != -1 } {
-	$menu see $index
-	$menu activate $index
-    }
+	set index [$menu index $value]
+	if { $index != -1 } {
+	    $menu see $index
+	    $menu activate $index
+	}
     }
     if { [winfo viewable $menu] } {
         # Automatically turn off grab on unposted menu
