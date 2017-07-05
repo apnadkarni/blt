@@ -252,7 +252,7 @@ static Blt_HashTable fontSetTable;
 static void tkFontGetFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr);
 
 static double
-PointsToPixels(Tk_Window tkwin, int size)
+PointsToPixels(Display *display, int size)
 {
     double d;
 
@@ -260,13 +260,13 @@ PointsToPixels(Tk_Window tkwin, int size)
         return -size;
     }
     d = size * 25.4 / 72.0;
-    d *= WidthOfScreen(Tk_Screen(tkwin));
-    d /= WidthMMOfScreen(Tk_Screen(tkwin));
+    d *= WidthOfScreen(DefaultScreenOfDisplay(display));
+    d /= WidthMMOfScreen(DefaultScreenOfDisplay(display));
     return d;
 }
 
 static double
-PixelsToPoints(Tk_Window tkwin, int size)               
+PixelsToPoints(Display *display, int size)               
 {
     double d;
 
@@ -274,8 +274,8 @@ PixelsToPoints(Tk_Window tkwin, int size)
         return size;
     }
     d = -size * 72.0 / 25.4;
-    d *= WidthMMOfScreen(Tk_Screen(tkwin));
-    d /= WidthOfScreen(Tk_Screen(tkwin));
+    d *= WidthMMOfScreen(DefaultScreenOfDisplay(display));
+    d /= WidthOfScreen(DefaultScreenOfDisplay(display));
     return d;
 }
 
@@ -582,7 +582,7 @@ tkFontGetFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
      */
 
     if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
-        EnumFontFamiliesW(hDC, NULL, (FONTNUMPROCW)tkFontFamilyEnumProc,
+        EnumFontFamiliesW(hDC, NULL, (FONTENUMPROCW)tkFontFamilyEnumProc,
                 (LPARAM)tablePtr);
     } else {
         EnumFontFamiliesA(hDC, NULL, (FONTENUMPROCA)tkFontFamilyEnumProc,
@@ -744,7 +744,7 @@ tkFontParseNameValuePairs(Tcl_Interp *interp, Tcl_Obj *objPtr)
                 goto error;
             }
 #ifdef notdef
-            patternPtr->size = PointsToPixels(Tk_MainWindow(interp), size);
+            patternPtr->size = PointsToPixels(Tk_Display(Tk_MainWindow(interp)), size);
 #else
             patternPtr->size = size;
 #endif
@@ -949,7 +949,7 @@ tkFontWriteXLFDDescription(Tk_Window tkwin, tkFontPattern *patternPtr,
     }
     /* Size */
     Tcl_DStringAppendElement(resultPtr, "-size");
-    size = (int)(PointsToPixels(tkwin, patternPtr->size) + 0.5);
+    size = (int)(PointsToPixels(Tk_Display(tkwin), patternPtr->size) + 0.5);
     size = patternPtr->size;
     Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
 }
@@ -996,13 +996,13 @@ tkFontFamilyProc(_Blt_Font *fontPtr)
 static double
 tkFontPointSizeProc(_Blt_Font *fontPtr) 
 {
-    return PointsToPixels(((TkFont *)fontPtr->clientData)->fa.size);
+    return PointsToPixels(fontPtr->display, ((TkFont *)fontPtr->clientData)->fa.size);
 }
 
 static double
 tkFontPixelSizeProc(_Blt_Font *fontPtr) 
 {
-    return PixelsToPoints(((TkFont *)fontPtr->clientData)->fa.size);
+    return PixelsToPoints(fontPtr->display, ((TkFont *)fontPtr->clientData)->fa.size);
 }
 
 /* 
@@ -1136,7 +1136,7 @@ tkFontPostscriptNameProc(_Blt_Font *fontPtr, Tcl_DString *resultPtr)
         flags |= FONT_BOLD;
     }
     Blt_Afm_GetPostscriptName(tkFontPtr->fa.family, flags, resultPtr);
-    return PixelsToPoints(tkFontPtr->fa.size);
+    return PixelsToPoints(fontPtr->display, tkFontPtr->fa.size);
 }
 
 static int
@@ -1283,7 +1283,7 @@ winFontDuplicate(
 
     faPtr = &tkFontPtr->fa;
     ZeroMemory(&lf, sizeof(LOGFONT));
-    lf.lfHeight = -size;
+    lf.lfHeight = -faPtr->size;
     if (lf.lfHeight < 0) {
         HDC dc;
         double numPixels;
@@ -1395,9 +1395,7 @@ winFontAddFont(_Blt_Font *fontPtr, double numPoints, float angle)
     winFontset *setPtr = fontPtr->clientData;
     int isNew;
     long angle10;
-    TkFont *tkFontPtr;
 
-    tkFontPtr = (TkFont *)setPtr->tkFont;
     angle *= 10.0f;
     angle10 = ROUND(angle);
     hPtr = Blt_CreateHashEntry(&setPtr->fontTable, (char *)angle10, &isNew);
@@ -1516,7 +1514,7 @@ winFontPointSizeProc(_Blt_Font *fontPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return PixelsToPoints(((TkFont *)setPtr->tkFont)->fa.size);
+    return PixelsToPoints(fontPtr->display, ((TkFont *)setPtr->tkFont)->fa.size);
 }
 
 static double
@@ -1524,14 +1522,15 @@ winFontPixelSizeProc(_Blt_Font *fontPtr)
 {
     winFontset *setPtr = fontPtr->clientData;
 
-    return PointsToPixels(((TkFont *)setPtr->tkFont)->fa.size);
+    return PointsToPixels(fontPtr->display, ((TkFont *)setPtr->tkFont)->fa.size);
 }
 
 
 static winFontset *
-winFontNewFontset(Tk_Font tkFont, Blt_HashEntry *hPtr)
+winFontNewFontset(Tk_Font tkFont, HFONT hFont, Blt_HashEntry *hPtr)
 {
     winFontset *setPtr;
+    int isNew;
 
     setPtr = Blt_AssertCalloc(1, sizeof(winFontset));
     setPtr->refCount = 1;
@@ -1578,7 +1577,7 @@ winFontDescription(Tk_Window tkwin, Tk_Font tkFont, double numPoints,
     /* Size */
     Tcl_DStringAppendElement(resultPtr, "-size");
     if (numPoints == -1) {
-        numPoints = PixelsToPoints(tkFontPtr->fa.size);
+        numPoints = PixelsToPoints(Tk_Display(tkwin), tkFontPtr->fa.size);
     }
     Tcl_DStringAppendElement(resultPtr, Blt_Itoa(numPoints));
     return Tcl_DStringValue(resultPtr);
@@ -1756,7 +1755,7 @@ winFontCanRotateProc(_Blt_Font *fontPtr, float angle)
         return TRUE;                    /* Rotated font already exists. */
     }
     /* Create the rotated font. */
-    hFont = winFontDuplicate(setPtr->tkFont, PixelsToPoints(tkFontPtr->fa.size),
+    hFont = winFontDuplicate(setPtr->tkFont, PixelsToPoints(fontPtr->display, tkFontPtr->fa.size),
          angle10);
     if (hFont == NULL) {
         Blt_DeleteHashEntry(&setPtr->fontTable, hPtr);
