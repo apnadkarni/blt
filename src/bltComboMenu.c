@@ -7433,6 +7433,10 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             if (h > itemPtr->textHeight) {
                 iy += (h - IconHeight(itemPtr->image)) / 2;
             }
+            fprintf(stderr, "%s: ix=%d iy=%d w=%d h=%d\n",
+                    IconName(itemPtr->image),
+                    ix, iy, 
+                    IconWidth(itemPtr->image), IconHeight(itemPtr->image));
             Tk_RedrawImage(IconImage(itemPtr->image), 0, 0, 
                 IconWidth(itemPtr->image), IconHeight(itemPtr->image), 
                 drawable, ix, iy);
@@ -7729,7 +7733,6 @@ DisplayProc(ClientData clientData)
     Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, comboPtr->defStyle.normalBg,
         0, 0, w, h, 0, TK_RELIEF_FLAT);
     DrawComboMenu(comboPtr, drawable);
-
     Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, comboPtr->defStyle.normalBg,
         0, 0, w, h, comboPtr->borderWidth, comboPtr->relief);
     XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
@@ -7746,4 +7749,3 @@ Blt_ComboMenuInitProc(Tcl_Interp *interp)
     };
     return Blt_InitCmds(interp, "::blt", cmdSpec, 2);
 }
-

@@ -6,10 +6,7 @@ set imgData {
     ZTKAsiCtWq0JADs=
 }
 
-#set icon [image create picture -data $imgData]
-set icon [image create picture -file images/mini-book1.gif]
-#set icon [image create picture -file images/blt98.gif]
-#set image [image create picture -file ~/images.jpeg]
+set icon [image create picture -data $imgData]
 set activebg [blt::background create linear \
 		  -highcolor  grey70 -lowcolor grey85 \
 		  -jitter 10 -colorscale log]
