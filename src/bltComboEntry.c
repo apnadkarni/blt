@@ -245,7 +245,8 @@ typedef struct _Icon {
 typedef struct {
     int borderWidth;                    /* Width of 3D border around the tab's
                                          * button. */
-    int pad;                            /* Extra padding around button. */
+    Blt_Pad padX;                       /* Extra padding around button. */
+    Blt_Pad padY;                       /* Extra padding around button. */
     int activeRelief;                   /* 3D relief when the button is
                                          * active. */
     int relief;                         /* 3D relief of button. */
@@ -267,7 +268,6 @@ typedef struct {
     short int x, y;                     /* Location of the button in the 
                                          * entry. Used for picking. */
     short int width, height;            /* Dimension of the button. */
-    short int defWidth, defHeight;       /* Dimension of the button. */
 } Button;
 
 
@@ -1005,7 +1005,6 @@ ComputeGeometry(ComboEntry *comboPtr)
     comboPtr->entryWidth = comboPtr->entryHeight = 0;
     comboPtr->textWidth  = comboPtr->textHeight  = 0;
     comboPtr->arrowWidth = comboPtr->arrowHeight = 0;
-    butPtr->width = butPtr->height = 0;
 
     comboPtr->inset = comboPtr->borderWidth + comboPtr->highlightWidth;
     comboPtr->width = comboPtr->height = 0;
@@ -1071,15 +1070,17 @@ ComputeGeometry(ComboEntry *comboPtr)
     }
     if (comboPtr->flags & CLRBUTTON) {
         Button *butPtr = &comboPtr->clearButton;
+        int bw, bh;
 
-        butPtr->width = butPtr->defWidth;
-        butPtr->height = butPtr->defHeight;
-        butPtr->width  += 2 * (butPtr->borderWidth + butPtr->pad);
-        butPtr->height += 2 * (butPtr->borderWidth + butPtr->pad);
-        if (butPtr->height > comboPtr->entryHeight) {
-            comboPtr->height = comboPtr->entryHeight = butPtr->height;
+        fprintf(stderr, "ComputeGeometry: bw=%d bh=%d\n", butPtr->width, 
+                butPtr->height);
+
+        bw = butPtr->width + 2  * butPtr->borderWidth + PADDING(butPtr->padX);
+        bh = butPtr->height + 2 * butPtr->borderWidth + PADDING(butPtr->padY);
+        if (bh > comboPtr->entryHeight) {
+            comboPtr->height = comboPtr->entryHeight = bh;
         }
-        comboPtr->width += butPtr->width;
+        comboPtr->width += bw;
     }
     comboPtr->width  += 2 * comboPtr->inset + IPAD;
     comboPtr->height += 2 * comboPtr->inset;
@@ -2389,8 +2390,14 @@ ConfigureButton(
     }
     butPtr->width = butPtr->height = 0;
     if (comboPtr->flags & CLRBUTTON) {
-        butPtr->width = butPtr->defWidth + 2 * butPtr->borderWidth;
-        butPtr->height = butPtr->defHeight + 2 * butPtr->borderWidth;
+        int xDpi, yDpi;
+
+
+        Blt_ScreenDPI(comboPtr->tkwin, &xDpi, &yDpi);
+        butPtr->width = xDpi / 5;       /* 1/9 inch. */
+        butPtr->height = yDpi / 5;      /* 1/9 inch. */
+        fprintf(stderr, "ConfigureButton: bw=%d bh=%d\n", butPtr->width, 
+                butPtr->height);
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -3982,7 +3989,6 @@ static ComboEntry *
 NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin)
 {
     ComboEntry *comboPtr;
-    int xDpi, yDpi;
     
     comboPtr = Blt_AssertCalloc(1, sizeof(ComboEntry));
 
@@ -4004,9 +4010,6 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin)
     comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     comboPtr->tkwin = tkwin;
     comboPtr->flags |= ARROW;
-    Blt_ScreenDPI(tkwin, &xDpi, &yDpi);
-    comboPtr->clearButton.defHeight = yDpi / 9;
-    comboPtr->clearButton.defWidth = xDpi / 9;
     return comboPtr;
 }
 
@@ -4450,7 +4453,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     }
     buttonNeeded = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
     if (buttonNeeded) {
-        w -= butPtr->width;
+        w -= butPtr->width + 2 * butPtr->borderWidth + PADDING(butPtr->padX);
     }
     if (h > comboPtr->entryHeight) {
         y += (h - comboPtr->entryHeight) / 2;
@@ -4506,28 +4509,30 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     if (buttonNeeded) {
         Button *butPtr = &comboPtr->clearButton;
         Blt_Picture picture;
-        int bx;
+        int bx, by, bw, bh;
 
-        comboPtr->viewWidth -= butPtr->width + comboPtr->inset + 
-            2 * (butPtr->borderWidth + butPtr->pad);
-        bx = width - (comboPtr->inset + comboPtr->arrowWidth + 
-                      butPtr->width);
-        y = comboPtr->inset + comboPtr->arrowPad;
+  fprintf(stderr, "DrawComboEntry: bw=%d bh=%d\n", butPtr->width, 
+        butPtr->height);
+        bw = butPtr->width + 2 * butPtr->borderWidth + PADDING(butPtr->padX);
+        bh = butPtr->height + 2 * butPtr->borderWidth + PADDING(butPtr->padY);
+        comboPtr->viewWidth -= bw + comboPtr->inset;
+        bx = width - comboPtr->inset - comboPtr->arrowWidth - bw;
+        by = comboPtr->inset + comboPtr->arrowPad + butPtr->borderWidth +
+            butPtr->padY.side1;
         if (bx < 0) {
             bx = comboPtr->inset;
         }
-
-        butPtr->x = bx + butPtr->borderWidth + butPtr->pad;
-        butPtr->y = y;
-        x += butPtr->width;
-        w -= 6;
-        if (comboPtr->entryHeight > butPtr->height) {
-            butPtr->y +=  (comboPtr->entryHeight - butPtr->height) / 2;
+        x += bw;
+        w -= bw;
+        fprintf(stderr, "bh=%d by=%d comboPtr->entryHeight=%d\n",
+                bh, by, comboPtr->entryHeight);
+        if (comboPtr->entryHeight > bh) {
+            by +=  (comboPtr->entryHeight - bh) / 2;
         }
         if (comboPtr->flags & ACTIVE_BUTTON) {
             if (butPtr->activePicture == NULL) {
-                butPtr->activePicture = Blt_PaintDelete(butPtr->defWidth, 
-                                                        butPtr->defHeight, 
+                butPtr->activePicture = Blt_PaintDelete(butPtr->width, 
+                                                        butPtr->height, 
                                                         Blt_Bg_BorderColor(bg),
                                                         butPtr->activeBg, 
                                                         butPtr->activeFg, 
@@ -4536,23 +4541,28 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
             picture = butPtr->activePicture;
         } else {
             if (butPtr->normalPicture == NULL) {
-                butPtr->normalPicture = 
-                        Blt_PaintDelete(butPtr->defWidth, butPtr->defHeight, 
-                                Blt_Bg_BorderColor(bg),
-                                butPtr->normalBg, butPtr->normalFg, FALSE);
+                butPtr->normalPicture = Blt_PaintDelete(butPtr->width, 
+                                                        butPtr->height, 
+                                                        Blt_Bg_BorderColor(bg),
+                                                        butPtr->normalBg, 
+                                                        butPtr->normalFg, 
+                                                        FALSE);
             } 
             picture = butPtr->normalPicture;
         }
         if (butPtr->painter == NULL) {
             butPtr->painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
         }
+        fprintf(stderr, "paint bx=%d by=%d bw=%d bh=%d\n", bx, by, bw, bh);
         Blt_PaintPicture(butPtr->painter, drawable, picture, 0, 0, 
-                butPtr->width, butPtr->height, butPtr->x, butPtr->y, 0);
+                butPtr->width, butPtr->height, bx, by, 0);
+        butPtr->x = bx + butPtr->borderWidth + butPtr->padX.side1;
+        butPtr->y = by + butPtr->borderWidth + butPtr->padY.side1;
     }
     /* Arrow. */
     if (comboPtr->flags & ARROW) {
         XColor *color;
-        int bw, bh;
+        int aw, ah, ax, ay;
         GC gc;
         int relief;
 
@@ -4567,26 +4577,26 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         } else {
             color = comboPtr->normalColor;
         }
-        x = width - comboPtr->inset - comboPtr->arrowWidth;
-        y = comboPtr->inset;
-        if (x < 0) {
-            x = comboPtr->inset;
+        ax = width - comboPtr->inset - comboPtr->arrowWidth;
+        ay = comboPtr->inset;
+        if (ax < 0) {
+            ax = comboPtr->inset;
         }
-        bw = comboPtr->arrowWidth - 2 * comboPtr->arrowPad;
-        bh = h;
-        x += comboPtr->arrowPad;
+        aw = comboPtr->arrowWidth - 2 * comboPtr->arrowPad;
+        ah = h;
+        ax += comboPtr->arrowPad;
 
-        if ((bw > 2) && (bh > 2)) {
-            Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x + 1, y + 1, 
-                bw - 2, bh - 2, comboPtr->arrowBorderWidth, relief);
+        if ((aw > 2) && (ah > 2)) {
+            Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, ax + 1, ay + 1, 
+                aw - 2, ah - 2, comboPtr->arrowBorderWidth, relief);
             gc = Blt_Bg_BorderGC(comboPtr->tkwin, bg, TK_3D_FLAT_GC);
-            XDrawRectangle(comboPtr->display, drawable, gc, x, y, bw-1, bh-1);
-            x += comboPtr->arrowBorderWidth;
-            y += comboPtr->arrowBorderWidth;
-            bw -= 2 * comboPtr->arrowBorderWidth + XPAD;
-            bh -= 2 * comboPtr->arrowBorderWidth;
+            XDrawRectangle(comboPtr->display, drawable, gc, x, y, aw-1, ah-1);
+            ax += comboPtr->arrowBorderWidth + XPAD;
+            ay += comboPtr->arrowBorderWidth;
+            aw -= 2 * comboPtr->arrowBorderWidth + XPAD;
+            ah -= 2 * comboPtr->arrowBorderWidth;
             Blt_DrawArrow(comboPtr->display, drawable, color, 
-                x + XPAD, y, bw, bh, comboPtr->arrowBorderWidth, ARROW_DOWN);
+                ax, ay, aw, ah, comboPtr->arrowBorderWidth, ARROW_DOWN);
         }
     }
     comboPtr->viewWidth = w;

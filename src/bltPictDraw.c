@@ -2474,12 +2474,8 @@ Blt_PaintRadioButton(
 }
 
 Blt_Picture
-Blt_PaintDelete(
-    int w, int h, 
-    XColor *bgColorPtr, 
-    XColor *fillColorPtr, 
-    XColor *symbolColorPtr, 
-    int isActive)
+Blt_PaintDelete(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr, 
+                XColor *symbolColorPtr, int isActive)
 {
     Blt_Picture picture;
     Point2d points[4];
