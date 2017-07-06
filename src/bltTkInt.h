@@ -70,6 +70,7 @@
 #define RGB_LIGHTBLUE00         "#D9F5FF"
 #define RGB_LIGHTBLUE1          "#bfefff"
 #define RGB_LIGHTBLUE2          "#b2dfee"
+#define RGB_LIGHTBLUE3          "#a0dfee"
 #define RGB_LIGHTSKYBLUE1       "#b0e2ff"
 #define RGB_MAROON              "#b03060"
 #define RGB_NAVYBLUE            "#000080"

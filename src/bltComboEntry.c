@@ -170,7 +170,7 @@
 #define DEF_BUTTON_BACKGROUND           RGB_LIGHTBLUE0
 #define DEF_BUTTON_BORDERWIDTH          "1"
 #define DEF_BUTTON_COMMAND              (char *)NULL
-#define DEF_BUTTON_FOREGROUND           RGB_LIGHTBLUE2
+#define DEF_BUTTON_FOREGROUND           RGB_LIGHTBLUE3
 #define DEF_BUTTON_RELIEF               "flat"
 
 static Tcl_VarTraceProc TextVarTraceProc;
@@ -1046,11 +1046,11 @@ ComputeGeometry(ComboEntry *comboPtr)
         }
         comboPtr->entryWidth += IPAD;
     } 
-    if (comboPtr->textHeight > comboPtr->entryHeight) {
+    if (comboPtr->entryHeight < comboPtr->textHeight) {
         comboPtr->entryHeight = comboPtr->textHeight;
     }
-    comboPtr->width += comboPtr->entryWidth;
-    comboPtr->height += comboPtr->entryHeight;
+    comboPtr->width = comboPtr->entryWidth;
+    comboPtr->height = comboPtr->entryHeight;
     if (comboPtr->flags & ARROW) {
         comboPtr->arrowHeight = ARROW_HEIGHT;
         if (comboPtr->reqArrowWidth > 0) {
@@ -1062,7 +1062,7 @@ ComputeGeometry(ComboEntry *comboPtr)
         comboPtr->arrowWidth  += 2 * (comboPtr->arrowBorderWidth +
                                       comboPtr->arrowPad + 1);
         comboPtr->arrowHeight += 2 * (comboPtr->arrowBorderWidth + 1);
-        if (comboPtr->arrowHeight > comboPtr->entryHeight) {
+        if (comboPtr->entryHeight < comboPtr->arrowHeight) {
             comboPtr->height = comboPtr->entryHeight = comboPtr->arrowHeight;
         }
         comboPtr->arrowWidth |= 0x1;
@@ -2394,8 +2394,8 @@ ConfigureButton(
 
 
         Blt_ScreenDPI(comboPtr->tkwin, &xDpi, &yDpi);
-        butPtr->width = xDpi / 5;       /* 1/9 inch. */
-        butPtr->height = yDpi / 5;      /* 1/9 inch. */
+        butPtr->width = xDpi / 6;       /* 1/9 inch. */
+        butPtr->height = yDpi / 6;      /* 1/9 inch. */
         fprintf(stderr, "ConfigureButton: bw=%d bh=%d\n", butPtr->width, 
                 butPtr->height);
     }
@@ -4439,7 +4439,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     Blt_Bg bg;
     int x, y, w, h, tx, ty;
     Button *butPtr = &comboPtr->clearButton;
-    int buttonNeeded;
+    int drawButton;
 
     /* Background (just inside of focus highlight ring). */
     x = y = comboPtr->inset;
@@ -4451,8 +4451,8 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     if (comboPtr->flags & ARROW) {
         w -= comboPtr->arrowWidth;
     }
-    buttonNeeded = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
-    if (buttonNeeded) {
+    drawButton = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
+    if (drawButton) {
         w -= butPtr->width + 2 * butPtr->borderWidth + PADDING(butPtr->padX);
     }
     if (h > comboPtr->entryHeight) {
@@ -4506,9 +4506,9 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         bg = comboPtr->normalBg;
     }
     /* Clear button. */
-    if (buttonNeeded) {
-        Button *butPtr = &comboPtr->clearButton;
+    if (drawButton) {
         Blt_Picture picture;
+        Button *butPtr = &comboPtr->clearButton;
         int bx, by, bw, bh;
 
   fprintf(stderr, "DrawComboEntry: bw=%d bh=%d\n", butPtr->width, 
@@ -4517,17 +4517,18 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         bh = butPtr->height + 2 * butPtr->borderWidth + PADDING(butPtr->padY);
         comboPtr->viewWidth -= bw + comboPtr->inset;
         bx = width - comboPtr->inset - comboPtr->arrowWidth - bw;
-        by = comboPtr->inset + comboPtr->arrowPad + butPtr->borderWidth +
-            butPtr->padY.side1;
+        by = butPtr->borderWidth + butPtr->padY.side1; /*comboPtr->inset + comboPtr->arrowPad + butPtr->borderWidth +
+                  butPtr->padY.side1;*/
         if (bx < 0) {
             bx = comboPtr->inset;
         }
         x += bw;
         w -= bw;
-        fprintf(stderr, "bh=%d by=%d comboPtr->entryHeight=%d\n",
-                bh, by, comboPtr->entryHeight);
-        if (comboPtr->entryHeight > bh) {
-            by +=  (comboPtr->entryHeight - bh) / 2;
+        fprintf(stderr, "comboHeight=%d inset=%d bh=%d by=%d eh=%d\n",
+                comboPtr->height, comboPtr->inset, bh, by, 
+                comboPtr->entryHeight);
+        if (comboPtr->height > bh) {
+            by +=  (comboPtr->height - bh) / 2;
         }
         if (comboPtr->flags & ACTIVE_BUTTON) {
             if (butPtr->activePicture == NULL) {
