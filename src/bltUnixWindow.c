@@ -614,3 +614,34 @@ Blt_GetChildrenFromWindow(Display *display, Window window)
     }
     return NULL;
 }
+
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <X11/extensions/XShm.h>
+
+void
+Blt_ShmFormat(Display *display)
+{
+    int major, minor;
+    Bool feature_shm_pixmap;
+    int screenNum, depth;
+
+    if (!XShmQueryVersion(display, &major, &minor, &feature_shm_pixmap)) {
+        fprintf(stderr, "no MIT-SHM extension available\n");
+        return;
+    }
+    fprintf(stderr, "MIT-SHM: %d.%d\n", major, minor);
+    if (!feature_shm_pixmap) {
+        fprintf(stderr, "No support for shared memory pixmap\n");
+    }
+    if (XShmPixmapFormat(display) != ZPixmap) {
+        fprintf(stderr, "ShmPixmapFormat not ZPixmap\n");       /* should never happen */
+    }
+    screenNum = DefaultScreen(display);
+    depth = DefaultDepth(display, screenNum);
+    if (depth != 32 && depth != 24 && depth != 16) {
+        fprintf(stderr, "Unsupported depth. Depth must be 32, 24 or 16.\n");
+        return;
+    }
+    fprintf(stderr, "depth=%d\n", depth);
+}

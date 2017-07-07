@@ -960,6 +960,11 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
     if (n > h ) {
         n = h;
     }
+#ifdef notdef
+    if (n > 90) {
+        n = 90;
+    }
+#endif
     for (y = 0; y < h; y += n) {
         if ((y + n) > h) {
             n = h - y;
@@ -1346,8 +1351,9 @@ PaintPicture(
     unsigned char *destRowPtr;
 
 #ifdef notdef
-    fprintf(stderr, "PaintPicture: x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
-            sx, sy, w, h, dx, dy);
+    fprintf(stderr, "PaintPicture: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+
+            drawable, sx, sy, w, h, dx, dy);
 #endif
     ditherPtr = NULL;
     if (flags & BLT_PAINTER_DITHER) {

@@ -7433,10 +7433,6 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             if (h > itemPtr->textHeight) {
                 iy += (h - IconHeight(itemPtr->image)) / 2;
             }
-            fprintf(stderr, "%s: ix=%d iy=%d w=%d h=%d\n",
-                    IconName(itemPtr->image),
-                    ix, iy, 
-                    IconWidth(itemPtr->image), IconHeight(itemPtr->image));
             Tk_RedrawImage(IconImage(itemPtr->image), 0, 0, 
                 IconWidth(itemPtr->image), IconHeight(itemPtr->image), 
                 drawable, ix, iy);
@@ -7666,7 +7662,8 @@ DisplayProc(ClientData clientData)
         return;                         /* Window destroyed (should not get
                                          * here) */
     }
-#ifdef notdef
+#ifndef notdef
+    Blt_ShmFormat(comboPtr->display);
     fprintf(stderr, "Calling DisplayProc(%s) w=%d h=%d\n", 
             Tk_PathName(comboPtr->tkwin), Tk_Width(comboPtr->tkwin),
             Tk_Height(comboPtr->tkwin));
