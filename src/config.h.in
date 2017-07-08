@@ -193,6 +193,9 @@
 /* Define to 1 if you have the `XDMCP' library (-lXdmcp). */
 #undef HAVE_LIBXDMCP
 
+/* Define to 1 if you have the `Xext' library (-lXext). */
+#undef HAVE_LIBXEXT
+
 /* Define to 1 if you have the `XFT' library (-lXft). */
 #undef HAVE_LIBXFT
 
@@ -256,6 +259,18 @@
 /* Define to 1 if you have the `setsid' function. */
 #undef HAVE_SETSID
 
+/* Define to 1 if you have the `shmat' function. */
+#undef HAVE_SHMAT
+
+/* Define to 1 if you have the `shmctl' function. */
+#undef HAVE_SHMCTL
+
+/* Define to 1 if you have the `shmdt' function. */
+#undef HAVE_SHMDT
+
+/* Define to 1 if you have the `shmget' function. */
+#undef HAVE_SHMGET
+
 /* Define to 1 if you have the <signal.h> header file. */
 #undef HAVE_SIGNAL_H
 
@@ -295,6 +310,9 @@
 /* Define to 1 if you have the <sys/ioctl.h> header file. */
 #undef HAVE_SYS_IOCTL_H
 
+/* Define to 1 if you have the <sys/ipc.h> header file. */
+#undef HAVE_SYS_IPC_H
+
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H
 
@@ -303,6 +321,9 @@
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/sym.h> header file. */
+#undef HAVE_SYS_SYM_H
 
 /* Define to 1 if you have the <sys/time.h> header file. */
 #undef HAVE_SYS_TIME_H
@@ -346,8 +367,14 @@
 /* Define to 1 if you have the <X11/extensions/Xrandr.h> header file. */
 #undef HAVE_X11_EXTENSIONS_XRANDR_H
 
+/* Define to 1 if you have the <X11/extensions/XShm.h> header file. */
+#undef HAVE_X11_EXTENSIONS_XSHM_H
+
 /* Define to 1 if you have the <X11/Xft/Xft.h> header file. */
 #undef HAVE_X11_XFT_XFT_H
+
+/* Define to 1 if you have the <X11/Xlib.h> header file. */
+#undef HAVE_X11_XLIB_H
 
 /* Define to 1 if you have the <X11/xpm.h> header file. */
 #undef HAVE_X11_XPM_H
@@ -357,6 +384,21 @@
 
 /* Define to 1 if you have the `XRRGetScreenResources' function. */
 #undef HAVE_XRRGETSCREENRESOURCES
+
+/* Define to 1 if you have the `XShmAttach' function. */
+#undef HAVE_XSHMATTACH
+
+/* Define to 1 if you have the `XShmCreateImage' function. */
+#undef HAVE_XSHMCREATEIMAGE
+
+/* Define to 1 if you have the `XShmCreatePixmap' function. */
+#undef HAVE_XSHMCREATEPIXMAP
+
+/* Define to 1 if you have the `XShmDetach' function. */
+#undef HAVE_XSHMDETACH
+
+/* Define to 1 if you have the `XShmQueryExtension' function. */
+#undef HAVE_XSHMQUERYEXTENSION
 
 /* Define if building for MacOSX. */
 #undef MACOSX
@@ -372,6 +414,9 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION

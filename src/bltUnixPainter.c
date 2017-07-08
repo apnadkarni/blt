@@ -1331,350 +1331,6 @@ DrawableToPicture(
  *---------------------------------------------------------------------------
  */
 static int
-PaintPictureWithShm(
-    Painter *p,
-    Drawable drawable,
-    Pict *srcPtr,
-    int sx, int sy,                     /* Coordinates of region in the
-                                         * picture. */
-    int w, int h,                       /* Dimension of the source region.
-                                         * Area cannot extend beyond the
-                                         * end of the picture. */
-    int dx, int dy,                     /* Coordinates of destination
-                                         * region in the drawable.  */
-    unsigned int flags)
-{
-#ifdef WORD_BIGENDIAN
-    static int nativeByteOrder = MSBFirst;
-#else
-    static int nativeByteOrder = LSBFirst;
-#endif
-    int dw, dh;
-    Pict *ditherPtr;
-    Blt_Pixel *srcRowPtr;
-    XImage *imgPtr;
-    int y;
-    unsigned char *destRowPtr;
-    XShmSegmentInfo xssi;
-
-#ifdef notdef
-    fprintf(stderr, "PaintPicture: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
-
-            drawable, sx, sy, w, h, dx, dy);
-#endif
-    ditherPtr = NULL;
-    if (flags & BLT_PAINTER_DITHER) {
-        ditherPtr = Blt_DitherPicture(srcPtr, p->palette);
-        if (ditherPtr != NULL) {
-            srcPtr = ditherPtr;
-        }
-    }
-
-    /* for the XShmPixmap */
-    xssi.shmid = -1;
-    xssi.shmaddr = (char *)-1;
-    xssi.readOnly = False;
-
-    imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
-                             (char *)NULL, &xssi, w, h);
-    assert(imgPtr);
-    xssi.shmid = shmget(IPC_PRIVATE, imgPtr->bytes_per_line * imgPtr->height,
-            IPC_CREAT | 0600);
-    if (xssi.shmid == -1) {
-        Blt_Warn("shmget: %s\n", strerror(errno));
-        return 0;
-    }
-
-    xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
-    shmctl(xssi.shmid, IPC_RMID, 0);
-
-    if ((xssi.shmaddr == (void *)-1) ||  (xssi.shmaddr == NULL)) {
-        Blt_Warn("shmat: %s\n", strerror(errno));
-        return 0;
-    }
-    XShmAttach(p->display, &xssi);
-    XSync(p->display, True);
-    /* 
-     * Set the byte order to the platform's native byte order. We'll let
-     * Xlib handle byte swapping.
-     */
-    imgPtr->byte_order = nativeByteOrder;
-    srcRowPtr = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
-    destRowPtr = (unsigned char *)imgPtr->data;
-    
-    dw = MIN(w, srcPtr->width);
-    dh = MIN(h, srcPtr->height);
-    switch (p->visualPtr->class) {
-    case TrueColor:
-
-        /* Directly compute the pixel 8, 16, 24, or 32 bit values from the
-         * RGB components. */
-
-        switch (imgPtr->bits_per_pixel) {
-        case 32:
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned int *dp;
-
-                dp = (unsigned int *)destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned int r, g, b;
-
-                    r = (p->igammaTable[sp->Red]   >> p->rAdjust) << p->rShift;
-                    g = (p->igammaTable[sp->Green] >> p->gAdjust) << p->gShift;
-                    b = (p->igammaTable[sp->Blue]  >> p->bAdjust) << p->bShift;
-                    *dp = r | g | b;
-                    dp++;
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-            break;
-        case 24:
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned char *dp;
-
-                dp = destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned long pixel;
-                    unsigned int r, g, b;
-                    
-                    r = (p->igammaTable[sp->Red]   >> p->rAdjust) << p->rShift;
-                    g = (p->igammaTable[sp->Green] >> p->gAdjust) << p->gShift;
-                    b = (p->igammaTable[sp->Blue]  >> p->bAdjust) << p->bShift;
-                    pixel = r | g | b;
-                    
-                    *dp++ = pixel & 0xFF;
-                    *dp++ = (pixel >> 8) & 0xFF;
-                    *dp++ = (pixel >> 16) & 0xFF;
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-            break;
-
-        case 16:
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned short *dp;
-
-                dp = (unsigned short *)destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned long pixel;
-                    unsigned int r, g, b;
-                    
-                    r = (p->igammaTable[sp->Red]   >> p->rAdjust) << p->rShift;
-                    g = (p->igammaTable[sp->Green] >> p->gAdjust) << p->gShift;
-                    b = (p->igammaTable[sp->Blue]  >> p->bAdjust) << p->bShift;
-                    pixel = r | g | b;
-                    *dp = pixel;
-                    dp++;
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-            break;
-
-        case 8:
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned char *dp;
-
-                dp = destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned long pixel;
-                    unsigned int r, g, b;
-                    
-                    r = (p->igammaTable[sp->Red]   >> p->rAdjust) << p->rShift;
-                    g = (p->igammaTable[sp->Green] >> p->gAdjust) << p->gShift;
-                    b = (p->igammaTable[sp->Blue]  >> p->bAdjust) << p->bShift;
-
-                    pixel = r | g | b;
-                    *dp++ = pixel & 0xFF;
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-            break;
-        }
-        break;
-
-    case DirectColor:
-
-        /* Translate the RGB components to 8, 16, 24, or 32-bit pixel
-         * values. */
-
-        switch (imgPtr->bits_per_pixel) {
-        case 32:
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned char *dp;
-                
-                dp = destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned long pixel;
-                    
-                    pixel = (p->rBits[sp->Red] | p->gBits[sp->Green] |
-                             p->bBits[sp->Blue]);
-                    *(unsigned int *)dp = pixel;
-                    dp += 4;
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-            break;
-
-        case 24:
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned char *dp;
-                
-                dp = destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned long pixel;
-                    
-                    pixel = (p->rBits[sp->Red] | p->gBits[sp->Green] |
-                             p->bBits[sp->Blue]);
-                    *dp++ = pixel & 0xFF;
-                    *dp++ = (pixel >> 8) & 0xFF;
-                    *dp++ = (pixel >> 16) & 0xFF;
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-            break;
-
-        case 16:
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned char *dp;
-                
-                dp = destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned long pixel;
-                    
-                    pixel = (p->rBits[sp->Red] | p->gBits[sp->Green] |
-                             p->bBits[sp->Blue]);
-                    *(unsigned short *)dp = pixel;
-                    dp += 2;
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-            break;
-
-        case 8:
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned char *dp;
-                
-                dp = destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned long pixel;
-                    
-                    pixel = (p->rBits[sp->Red] | p->gBits[sp->Green] |
-                             p->bBits[sp->Blue]);
-                    *dp++ = pixel & 0xFF;
-                }
-                break;
-            }
-            destRowPtr += imgPtr->bytes_per_line;
-            srcRowPtr += srcPtr->pixelsPerRow;
-        }
-        break;
-
-    case PseudoColor:
-    case StaticColor:
-    case GrayScale:
-    case StaticGray:
-
-        /* Translate RGB components to the correct 8-bit or 4-bit
-         * pixel values. */
-
-        if (imgPtr->bits_per_pixel == 8) {
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp, *send;
-                unsigned char *dp;
-
-                dp = destRowPtr;
-                for (sp = srcRowPtr, send = sp + dw; sp < send; sp++) {
-                    unsigned long pixel;
-
-                    pixel = (p->rBits[sp->Red] + p->gBits[sp->Green] +
-                             p->bBits[sp->Blue]);
-                    pixel = p->pixels[pixel];
-                    *dp++ = (pixel & 0xFF);
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-        } else {
-            for (y = 0; y < dh; y++) {
-                Blt_Pixel *sp;
-                int x;
-                unsigned char *dp;
-
-                dp = destRowPtr, sp = srcRowPtr;
-                for (x = 0; x < dw; x++, sp++) {
-                    unsigned long pixel;
-
-                    pixel = (p->rBits[sp->Red] + p->gBits[sp->Green] +
-                             p->bBits[sp->Blue]);
-                    pixel = p->pixels[pixel];
-                    if (x & 1) {        
-                        *dp |= (pixel & 0x0F) << 4;
-                        /* Move to the next address after odd nybbles. */
-                        dp++;
-                    } else {
-                        *dp = (pixel & 0x0F);
-                    }
-                }
-                destRowPtr += imgPtr->bytes_per_line;
-                srcRowPtr += srcPtr->pixelsPerRow;
-            }
-        }
-        break;
-
-    default:
-        if (ditherPtr != NULL) {
-            Blt_FreePicture(ditherPtr);
-        }
-        XDestroyImage(imgPtr);
-        return FALSE;
-    }
-    XShmPutImage(p->display, drawable, p->gc, imgPtr, 0, 0, dx, dy, w, h,
-                 False /*send_event*/);
-    if (ditherPtr != NULL) {
-        Blt_FreePicture(ditherPtr);
-    }
-    XDestroyImage(imgPtr);
-    XShmDetach(p->display, &xssi);
-    shmdt(xssi.shmaddr);
-    XSync(p->display, False);
-    return TRUE;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * PaintPicture --
- *
- *      Paints the picture to the given drawable. The region of the picture
- *      is specified and the coordinates where in the destination drawable
- *      is the image to be displayed.
- *
- *      The image may be dithered depending upon the bit set in the flags
- *      parameter: 0 no dithering, 1 for dithering.
- * 
- * Results:
- *      Returns TRUE is the picture was successfully displayed.  Otherwise
- *      FALSE is returned if the particular combination visual and image
- *      depth is not handled.
- *
- *---------------------------------------------------------------------------
- */
-static int
 PaintPicture(
     Painter *p,
     Drawable drawable,
@@ -1692,17 +1348,22 @@ PaintPicture(
     static int nativeByteOrder = MSBFirst;
 #else
     static int nativeByteOrder = LSBFirst;
-#endif
-    int dw, dh;
-    Pict *ditherPtr;
+#endif  /* WORD_BIGENDIAN */
     Blt_Pixel *srcRowPtr;
+    Pict *ditherPtr;
     XImage *imgPtr;
+    int dw, dh;
     int y;
     unsigned char *destRowPtr;
-
+    int result;
+#ifdef HAVE_XSHMQUERYEXTENSION
+    int haveShm;
+    XShmSegmentInfo xssi;
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    
 #ifdef notdef
-    fprintf(stderr, "PaintPicture: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
-
+    fprintf(stderr,
+            "PaintPicture: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, sx, sy, w, h, dx, dy);
 #endif
     ditherPtr = NULL;
@@ -1712,15 +1373,47 @@ PaintPicture(
             srcPtr = ditherPtr;
         }
     }
-    imgPtr = XCreateImage(p->display, p->visualPtr, p->depth, ZPixmap, 0, 
-        (char *)NULL, w, h, 32, 0);
-    assert(imgPtr);
+#ifdef HAVE_XSHMQUERYEXTENSION
+    haveShm = XShmQueryExtension(p->display);
+    if (haveShm) {
+        /* for the XShmPixmap */
+        xssi.shmid = -1;
+        xssi.shmaddr = (char *)-1;
+        xssi.readOnly = False;
+
+        imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
+                                 (char *)NULL, &xssi, w, h);
+        assert(imgPtr);
+        xssi.shmid = shmget(IPC_PRIVATE,
+                            imgPtr->bytes_per_line * imgPtr->height,
+                            IPC_CREAT | 0600);
+        if (xssi.shmid == -1) {
+            Blt_Warn("shmget: %s\n", strerror(errno));
+            return 0;
+        }
+
+        xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
+        shmctl(xssi.shmid, IPC_RMID, 0);
+
+        if ((xssi.shmaddr == (void *)-1) ||  (xssi.shmaddr == NULL)) {
+            Blt_Warn("shmat: %s\n", strerror(errno));
+            return 0;
+        }
+        XShmAttach(p->display, &xssi);
+        XSync(p->display, False);
+    } else
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    {
+        imgPtr = XCreateImage(p->display, p->visualPtr, p->depth, ZPixmap, 0, 
+                              (char *)NULL, w, h, 32, 0);
+        assert(imgPtr);
+        imgPtr->data = Blt_AssertMalloc(sizeof(Blt_Pixel) * w * h);
+    }
     /* 
      * Set the byte order to the platform's native byte order. We'll let
      * Xlib handle byte swapping.
      */
     imgPtr->byte_order = nativeByteOrder;
-    imgPtr->data = Blt_AssertMalloc(sizeof(Blt_Pixel) * w * h);
     srcRowPtr = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
     destRowPtr = (unsigned char *)imgPtr->data;
     
@@ -1959,18 +1652,32 @@ PaintPicture(
         break;
 
     default:
-        if (ditherPtr != NULL) {
-            Blt_FreePicture(ditherPtr);
-        }
-        XDestroyImage(imgPtr);
-        return FALSE;
+        result = FALSE;
+        goto error;
     }
-    PaintXImage(p, drawable, imgPtr, 0, 0, w, h, dx, dy);
+#ifdef HAVE_XSHMQUERYEXTENSION
+    if (haveShm) {
+        XShmPutImage(p->display, drawable, p->gc, imgPtr, 0, 0, dx, dy, w, h,
+                     False /*send_event*/);
+    } else
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    {
+        PaintXImage(p, drawable, imgPtr, 0, 0, w, h, dx, dy);
+    }
+    result = TRUE;
+ error:
+#ifdef HAVE_XSHMQUERYEXTENSION
+    if (haveShm) {
+        XShmDetach(p->display, &xssi);
+        shmdt(xssi.shmaddr);
+        XSync(p->display, False);
+    }
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    XDestroyImage(imgPtr);
     if (ditherPtr != NULL) {
         Blt_FreePicture(ditherPtr);
     }
-    XDestroyImage(imgPtr);
-    return TRUE;
+    return result;
 }
 
 /*
@@ -2216,7 +1923,7 @@ Blt_PaintPicture(
         return TRUE;
     }
     if (Blt_Picture_IsOpaque(picture)) {
-        return PaintPictureWithShm(painter, drawable, picture, x1, y1, x2 - x1, 
+        return PaintPicture(painter, drawable, picture, x1, y1, x2 - x1, 
                             y2 - y1, dx, dy, flags);
     } else {
         return PaintPictureWithBlend(painter, drawable, picture, x1, y1, 
