@@ -91,6 +91,9 @@
 #include <sys/shm.h>
 #include <errno.h>
 #include <string.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrender.h>
+#include <X11/extensions/Xcomposite.h>
 #include <X11/Xutil.h>
 #include <X11/Xproto.h>
 #include <X11/extensions/XShm.h>
@@ -904,12 +907,8 @@ FreePainter(DestroyData data)
  *---------------------------------------------------------------------------
  */
 static Painter *
-GetPainter(
-    Display *display, 
-    Colormap colormap, 
-    Visual *visualPtr,
-    int depth,
-    float gamma)
+GetPainter(Display *display, Colormap colormap, Visual *visualPtr, int depth,
+           float gamma)
 {
     Painter *p;
     PainterKey key;
@@ -993,9 +992,7 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
  */
 /* ARGSUSED */
 static int
-XGetImageErrorProc(
-    ClientData clientData, 
-    XErrorEvent *errEventPtr)           /* Not used. */
+XGetImageErrorProc(ClientData clientData, XErrorEvent *errEventPtr) 
 {
     int *errorPtr = clientData;
 
@@ -1019,10 +1016,8 @@ XGetImageErrorProc(
  *---------------------------------------------------------------------------
  */
 static XImage *
-DrawableToXImage(
-    Display *display,
-    Drawable drawable, 
-    int x, int y, int w, int h)
+DrawableToXImage(Display *display, Drawable drawable, int x, int y, int w,
+                 int h)
 {
     XImage *imgPtr;
     int code;
@@ -1683,7 +1678,7 @@ PaintPicture(
 /*
  *---------------------------------------------------------------------------
  *
- * PaintPictureWithBlend --
+ * BlendPicture --
  *
  *      Blends and paints the picture in the given drawable. The region of
  *      the picture is specified and the coordinates where in the
@@ -1701,7 +1696,7 @@ PaintPicture(
  *---------------------------------------------------------------------------
  */
 static int
-PaintPictureWithBlend(
+BlendPicture(
     Painter *p,
     Drawable drawable,
     Blt_Picture fg,
@@ -1717,7 +1712,7 @@ PaintPictureWithBlend(
     Pict *bgPtr;
 
 #ifdef notdef
-    fprintf(stderr, "PaintPictureWithBlend: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+    fprintf(stderr, "BlendPicture: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, x, y, w, h, dx, dy);
 #endif
     if (dx < 0) {
@@ -1748,6 +1743,259 @@ PaintPictureWithBlend(
     PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height, dx, dy,
                  flags);
     Blt_FreePicture(bgPtr);
+    return TRUE;
+}
+
+#define FMT_ARGB32      (PictFormatType | PictFormatDepth | \
+                        PictFormatRedMask | PictFormatRed | \
+                        PictFormatGreenMask | PictFormatGreen | \
+                        PictFormatBlueMask | PictFormatBlue | \
+                        PictFormatAlphaMask | PictFormatAlpha)
+static int
+CompositePictureWithXRender(
+    Painter *p,
+    Drawable drawable,
+    Pict *srcPtr,
+    int sx, int sy,                     /* Coordinates of source region in
+                                         * the picture. */
+    int w, int h,                       /* Dimension of the source region.
+                                         * Region cannot extend beyond the
+                                         * end of the picture. */
+    int dx, int dy)                     /* Coordinates of destination
+                                         * region in the drawable.  */
+{
+#ifdef WORD_BIGENDIAN
+    static int nativeByteOrder = MSBFirst;
+#else
+    static int nativeByteOrder = LSBFirst;
+#endif  /* WORD_BIGENDIAN */
+    XRenderPictureAttributes pa;
+    Picture srcPict, dstPict;
+    Blt_Pixel *srcRowPtr;
+    Pixmap pixmap;
+    XImage *imgPtr;
+    int y;
+    unsigned char *destRowPtr;
+    Colormap colormap;
+#ifdef HAVE_XSHMQUERYEXTENSION
+    XShmSegmentInfo xssi;
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    XRenderPictFormat *pfPtr;
+    Visual *visualPtr;
+    
+    Blt_PremultiplyColors(srcPtr);
+#ifdef notdef
+    fprintf(stderr, "CompositePictureWithXRender: "
+            "drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+            drawable, sx, sy, w, h, dx, dy);
+#endif
+    pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
+    if (pfPtr == NULL) {
+        XRenderPictFormat pf;
+
+        fprintf(stderr, "Can't find standard format for ARGB32\n");
+        
+        /* lookup another ARGB32 picture format */
+        pf.type = PictTypeDirect;
+        pf.depth = 32;
+        pf.direct.alphaMask = 0xff;
+        pf.direct.redMask = 0xff;
+        pf.direct.greenMask = 0xff;
+        pf.direct.blueMask = 0xff;
+        pf.direct.alpha = 24;
+        pf.direct.red = 16;
+        pf.direct.green = 8;
+        pf.direct.blue = 0;
+        pfPtr = XRenderFindFormat(p->display, FMT_ARGB32, &pf, 0);
+    }
+    visualPtr = NULL;
+    if (pfPtr != NULL) {
+        XVisualInfo *visuals, template;
+        int numVisuals;
+        int i;
+        
+        /* Try to lookup a RGB visual with depth 32. */
+        numVisuals = 0;
+        template.screen = DefaultScreen(p->display);
+        template.depth = 32;
+        template.bits_per_rgb = 8;
+        
+        visuals = XGetVisualInfo(p->display,
+               (VisualScreenMask | VisualDepthMask | VisualBitsPerRGBMask),
+                                 &template, &numVisuals);
+
+        if (visuals == NULL) {
+            fprintf(stderr, "No visual matching criteria\n");
+            return FALSE;
+        }
+
+        for (i = 0; i < numVisuals; i++) {
+            XRenderPictFormat *fmtPtr;
+            
+            fmtPtr = XRenderFindVisualFormat(p->display, visuals[i].visual);
+            if ((fmtPtr != NULL) && (fmtPtr->id == pfPtr->id)) {
+                visualPtr = visuals[i].visual;
+                break;
+            }
+        }
+        XFree(visuals);
+    }                   /* pict_format_alpha != NULL */
+    if (visualPtr == NULL) {
+        return FALSE;
+    }
+#ifdef HAVE_XSHMQUERYEXTENSION
+    if (!XShmQueryExtension(p->display)) {
+        return FALSE;
+    }
+                                        
+    /* for the XShmPixmap */
+    xssi.shmid = -1;
+    xssi.shmaddr = (char *)-1;
+    xssi.readOnly = False;
+    
+    imgPtr = XShmCreateImage(p->display, visualPtr, 32, ZPixmap,
+                             (char *)NULL, &xssi, w, h);
+    assert(imgPtr);
+    xssi.shmid = shmget(IPC_PRIVATE, imgPtr->bytes_per_line * imgPtr->height,
+                        IPC_CREAT | 0600);
+    if (xssi.shmid == -1) {
+        Blt_Warn("shmget: %s\n", strerror(errno));
+        return FALSE;
+    }
+
+    xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
+    shmctl(xssi.shmid, IPC_RMID, 0);
+    
+    if ((xssi.shmaddr == (void *)-1) ||  (xssi.shmaddr == NULL)) {
+        Blt_Warn("shmat: %s\n", strerror(errno));
+        return FALSE;
+    }
+    XShmAttach(p->display, &xssi);
+    XSync(p->display, False);
+#else
+    return FALSE;
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    imgPtr->byte_order = nativeByteOrder;
+    srcRowPtr = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
+    destRowPtr = (unsigned char *)imgPtr->data;
+    
+    for (y = 0; y < h; y++) {
+        Blt_Pixel *sp, *send;
+        unsigned int *dp;
+        
+        dp = (unsigned int *)destRowPtr;
+        for (sp = srcRowPtr, send = sp + w; sp < send; sp++) {
+            unsigned int a, r, g, b;
+            /* Format is ARGB */
+            a = sp->Alpha << 24;
+            r = p->igammaTable[sp->Red] << 16;
+            g = p->igammaTable[sp->Green] << 8;
+            b = p->igammaTable[sp->Blue];
+            *dp = r | g | b | a;
+            if (a == 0) {
+                fprintf(stderr, "dp=%x\n", *dp);
+            }
+            dp++;
+        }
+        destRowPtr += imgPtr->bytes_per_line;
+        srcRowPtr += srcPtr->pixelsPerRow;
+    }
+    pixmap = XShmCreatePixmap(p->display, drawable, xssi.shmaddr, &xssi,
+                              w, h, 32);
+    fprintf(stderr, "2nd XRenderComposite\n");
+    pa.component_alpha = True;
+    srcPict = XRenderCreatePicture(p->display, pixmap, pfPtr,
+                                   CPComponentAlpha, &pa);
+    fprintf(stderr, "1st XRenderComposite\n");
+    pa.component_alpha = False;
+    dstPict = XRenderCreatePicture(p->display, drawable,
+                   XRenderFindStandardFormat(p->display, PictStandardRGB24),
+                                   CPComponentAlpha, &pa);
+    XRenderComposite(p->display, PictOpSrc, dstPict, None, srcPict, 0, 0, 0, 0,
+                     dx, dy, w, h);
+    XShmDetach(p->display, &xssi);
+    shmdt(xssi.shmaddr);
+    XSync(p->display, False);
+    XRenderFreePicture(p->display, srcPict);
+    XRenderFreePicture(p->display, dstPict);
+    XDestroyImage(imgPtr);
+    return TRUE;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * BlendPicture2 --
+ *
+ *      Blends and paints the picture in the given drawable. The region of
+ *      the picture is specified and the coordinates where in the
+ *      destination drawable is the image to be displayed.
+ *
+ *      The background is snapped from the drawable and converted into a
+ *      picture.  This picture is then blended with the current picture
+ *      (the background always assumed to be 100% opaque).
+ * 
+ * Results:
+ *      Returns TRUE is the picture was successfully displayed.  Otherwise
+ *      FALSE is returned.  This may happen if the background can not be
+ *      obtained from the drawable.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+BlendPicture2(
+    Painter *p,
+    Drawable drawable,
+    Blt_Picture fg,
+    int x, int y,                       /* Coordinates of source region in
+                                         * the picture. */
+    int w, int h,                       /* Dimension of the source region.
+                                         * Region cannot extend beyond the
+                                         * end of the picture. */
+    int dx, int dy,                     /* Coordinates of destination
+                                         * region in the drawable.  */
+    unsigned int flags)
+{
+    int dw, dh;
+#ifdef notdef
+    fprintf(stderr, "BlendPicture2: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+            drawable, x, y, w, h, dx, dy);
+#endif
+    if (dx < 0) {
+        w -= -dx;                       /* Shrink the width. */
+        x += -dx;                       /* Change the left of the source
+                                         * region. */
+        dx = 0;                         /* Start at the left of the
+
+                                         * destination. */
+    } 
+    if (dy < 0) {
+        h -= -dy;                       /* Shrink the height. */
+        y += -dy;                       /* Change the top of the source
+                                         * region. */
+        dy = 0;                         /* Start at the top of the
+                                         * destination. */
+    }
+    if ((w < 0) || (h < 0)) {
+        return FALSE;
+    }
+    dw = MIN(w, Blt_Picture_Width(fg));
+    dh = MIN(h, Blt_Picture_Height(fg));
+    if (!CompositePictureWithXRender(p, drawable, fg, x, y, dw, dh, dx, dy)) {
+        Pict *bgPtr;
+
+        bgPtr = DrawableToPicture(p, drawable, dx, dy, dw, dh);
+        if (bgPtr == NULL) {
+            return FALSE;
+        }
+        /* Dimension of source region may be adjusted by the actual size of the
+         * drawable.  This is reflected in the size of the background
+         * picture. */
+        Blt_CompositeRegion(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
+        PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height,
+                     dx, dy, flags);
+        Blt_FreePicture(bgPtr);
+    }
     return TRUE;
 }
 
@@ -1874,7 +2122,7 @@ Blt_PaintPicture(
     }
     /* 
      * Correct the dimensions if the origin starts before the picture
-     * (i.e. coordinate is negative).  Reset the coordinate the 0.
+     * (i.e. coordinate is negative).  Reset the coordinate to 0.
      *
      * x,y                     
      *   +---------+               0,0                 
@@ -1926,8 +2174,8 @@ Blt_PaintPicture(
         return PaintPicture(painter, drawable, picture, x1, y1, x2 - x1, 
                             y2 - y1, dx, dy, flags);
     } else {
-        return PaintPictureWithBlend(painter, drawable, picture, x1, y1, 
-                x2 - x1, y2 - y1, dx, dy, flags);
+        return BlendPicture2(painter, drawable, picture, x1, y1, x2 - x1,
+                            y2 - y1, dx, dy, flags);
     }
 }
 
@@ -2028,8 +2276,8 @@ Blt_PaintPictureWithBlend(
     if (((x2 - x1) <= 0) || ((y2 - y1) <= 0)) {
         return TRUE;
     }
-    return PaintPictureWithBlend(painter, drawable, picture, x1, y1, x2 - x1, 
-                y2 - y1, dx, dy, flags);
+    return BlendPicture2(painter, drawable, picture, x1, y1, x2 - x1, y2 - y1,
+                        dx, dy, flags);
 }
 
 /*
