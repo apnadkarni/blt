@@ -1129,6 +1129,7 @@ Blt_DecodeAscii85(Tcl_Interp *interp, const char *src, size_t numChars,
     }
     dp = dest;
     numBytesInBlock = 0;                         
+    memset(byte, 0, sizeof(byte));
     for (p = src, pend = p + numChars; p < pend; /*empty*/) {
         unsigned int c;
         

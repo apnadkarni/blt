@@ -7662,8 +7662,7 @@ DisplayProc(ClientData clientData)
         return;                         /* Window destroyed (should not get
                                          * here) */
     }
-#ifndef notdef
-    Blt_ShmFormat(comboPtr->display);
+#ifdef notdef
     fprintf(stderr, "Calling DisplayProc(%s) w=%d h=%d\n", 
             Tk_PathName(comboPtr->tkwin), Tk_Width(comboPtr->tkwin),
             Tk_Height(comboPtr->tkwin));

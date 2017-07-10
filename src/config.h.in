@@ -364,8 +364,14 @@
 /* Define to 1 if you have the <X11/extensions/randr.h> header file. */
 #undef HAVE_X11_EXTENSIONS_RANDR_H
 
+/* Define to 1 if you have the <X11/extensions/Xcomposite.h> header file. */
+#undef HAVE_X11_EXTENSIONS_XCOMPOSITE_H
+
 /* Define to 1 if you have the <X11/extensions/Xrandr.h> header file. */
 #undef HAVE_X11_EXTENSIONS_XRANDR_H
+
+/* Define to 1 if you have the <X11/extensions/Xrender.h> header file. */
+#undef HAVE_X11_EXTENSIONS_XRENDER_H
 
 /* Define to 1 if you have the <X11/extensions/XShm.h> header file. */
 #undef HAVE_X11_EXTENSIONS_XSHM_H
@@ -381,6 +387,15 @@
 
 /* Define if we're compiling for an X86. */
 #undef HAVE_X86
+
+/* Define to 1 if you have the `XRenderComposite' function. */
+#undef HAVE_XRENDERCOMPOSITE
+
+/* Define to 1 if you have the `XRenderCreatePicture' function. */
+#undef HAVE_XRENDERCREATEPICTURE
+
+/* Define to 1 if you have the `XRenderQueryExtension' function. */
+#undef HAVE_XRENDERQUERYEXTENSION
 
 /* Define to 1 if you have the `XRRGetScreenResources' function. */
 #undef HAVE_XRRGETSCREENRESOURCES
@@ -414,9 +429,6 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
-
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION

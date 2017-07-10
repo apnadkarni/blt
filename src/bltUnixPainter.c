@@ -92,11 +92,17 @@
 #include <errno.h>
 #include <string.h>
 #include <X11/Xlib.h>
-#include <X11/extensions/Xrender.h>
-#include <X11/extensions/Xcomposite.h>
 #include <X11/Xutil.h>
 #include <X11/Xproto.h>
+#ifdef HAVE_X11_EXTENSIONS_XRENDER_H
+#include <X11/extensions/Xrender.h>
+#endif  /* HAVE_X11_EXTENSIONS_XRENDER_H */
+#ifdef HAVE_X11_EXTENSIONS_XCOMPOSITE_H
+#include <X11/extensions/Xcomposite.h>
+#endif  /* HAVE_X11_EXTENSIONS_XCOMPOSITE_H */
+#ifdef HAVE_X11_EXTENSIONS_XSHM_H
 #include <X11/extensions/XShm.h>
+#endif  /* HAVE_X11_EXTENSIONS_XSHM_H */
 
 #include "bltAlloc.h"
 #include "bltMath.h"
@@ -965,11 +971,9 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
     if (n > h ) {
         n = h;
     }
-#ifdef notdef
     if (n > 90) {
         n = 90;
     }
-#endif
     for (y = 0; y < h; y += n) {
         if ((y + n) > h) {
             n = h - y;
@@ -1370,6 +1374,8 @@ PaintPicture(
     }
 #ifdef HAVE_XSHMQUERYEXTENSION
     haveShm = XShmQueryExtension(p->display);
+    haveShm = FALSE;
+    Blt_ShmFormat(p->display);
     if (haveShm) {
         /* for the XShmPixmap */
         xssi.shmid = -1;
@@ -1746,11 +1752,6 @@ BlendPicture(
     return TRUE;
 }
 
-#define FMT_ARGB32      (PictFormatType | PictFormatDepth | \
-                        PictFormatRedMask | PictFormatRed | \
-                        PictFormatGreenMask | PictFormatGreen | \
-                        PictFormatBlueMask | PictFormatBlue | \
-                        PictFormatAlphaMask | PictFormatAlpha)
 static int
 CompositePictureWithXRender(
     Painter *p,
@@ -1764,6 +1765,12 @@ CompositePictureWithXRender(
     int dx, int dy)                     /* Coordinates of destination
                                          * region in the drawable.  */
 {
+#ifdef HAVE_LIBXRENDER
+#define FMT_ARGB32      (PictFormatType | PictFormatDepth | \
+                        PictFormatRedMask | PictFormatRed | \
+                        PictFormatGreenMask | PictFormatGreen | \
+                        PictFormatBlueMask | PictFormatBlue | \
+                        PictFormatAlphaMask | PictFormatAlpha)
 #ifdef WORD_BIGENDIAN
     static int nativeByteOrder = MSBFirst;
 #else
@@ -1782,13 +1789,18 @@ CompositePictureWithXRender(
 #endif  /* HAVE_XSHMQUERYEXTENSION */
     XRenderPictFormat *pfPtr;
     Visual *visualPtr;
-    
-    Blt_PremultiplyColors(srcPtr);
-#ifdef notdef
+    int majorNum, minorNum;
+
+#ifndef notdef
     fprintf(stderr, "CompositePictureWithXRender: "
             "drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, sx, sy, w, h, dx, dy);
 #endif
+    if (!XRenderQueryVersion(p->display, &majorNum, &minorNum)) {
+        return FALSE;
+    }
+    fprintf(stderr, "XRender %d.%d\n", majorNum, minorNum);
+    Blt_PremultiplyColors(srcPtr);
     pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
     if (pfPtr == NULL) {
         XRenderPictFormat pf;
@@ -1920,6 +1932,9 @@ CompositePictureWithXRender(
     XRenderFreePicture(p->display, dstPict);
     XDestroyImage(imgPtr);
     return TRUE;
+#else 
+    return FALSE;
+#endif /* HAVE_LIBXRENDER */
 }
 
 /*
@@ -2174,7 +2189,7 @@ Blt_PaintPicture(
         return PaintPicture(painter, drawable, picture, x1, y1, x2 - x1, 
                             y2 - y1, dx, dy, flags);
     } else {
-        return BlendPicture2(painter, drawable, picture, x1, y1, x2 - x1,
+        return BlendPicture(painter, drawable, picture, x1, y1, x2 - x1,
                             y2 - y1, dx, dy, flags);
     }
 }
@@ -2276,7 +2291,7 @@ Blt_PaintPictureWithBlend(
     if (((x2 - x1) <= 0) || ((y2 - y1) <= 0)) {
         return TRUE;
     }
-    return BlendPicture2(painter, drawable, picture, x1, y1, x2 - x1, y2 - y1,
+    return BlendPicture(painter, drawable, picture, x1, y1, x2 - x1, y2 - y1,
                         dx, dy, flags);
 }
 
