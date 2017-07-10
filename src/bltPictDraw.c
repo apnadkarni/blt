@@ -975,8 +975,12 @@ PaintCircle4(Pict *destPtr, double cx, double cy, double r, double lineWidth,
     if (y2 >= destPtr->height) {
         y2 = destPtr->height;
     }
+    if ((x1 >= destPtr->width) || (y1 >= destPtr->height) ||
+        (x2 < 0) || (y2 < 0)) {
+        return;
+    }
     /* Optimization run: find squares of X first */
-    squares = Blt_AssertMalloc(sizeof(double) * (x2 - x1));
+    squares = Blt_AssertMalloc(sizeof(double) * ABS(x2 - x1));
     for (i = 0, x = x1; x < x2; x++, i++) {
         squares[i] = (x - cx) * (x - cx);
     }

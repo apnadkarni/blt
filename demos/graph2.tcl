@@ -66,10 +66,10 @@ $graph legend configure \
 if 1 {
     blt::palette create red -colorformat name -cdata {
 	"white" "red" 
-    } -fade 50
+    } -fade 50 
     blt::palette create green -colorformat name -cdata {
 	"white" "green" 
-    } -fade 50
+    } -fade 50 
     blt::palette create bluegreen -colorformat name -cdata {
 	"navyblue"  "lightblue" 
     } 

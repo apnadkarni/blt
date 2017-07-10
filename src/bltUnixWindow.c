@@ -45,6 +45,9 @@
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
+#ifdef HAVE_STDLIB_H
+  #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 
 #include <X11/Xlib.h>
 
@@ -615,6 +618,7 @@ Blt_GetChildrenFromWindow(Display *display, Window window)
     return NULL;
 }
 
+
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <X11/extensions/XShm.h>
@@ -645,3 +649,61 @@ Blt_ShmFormat(Display *display)
     }
     fprintf(stderr, "depth=%d\n", depth);
 }
+
+#ifdef notdef
+Pixmap
+Blt_GetShmPixmap(Display *display, Drawable drawable, int w, int h, int depth,
+                 int lineNum, const char *fileName)
+{
+    XShmSegmentInfo segInfo;
+    XImage *imgPtr;
+    
+    if (w <= 0) {
+        Blt_Warn("line %d of %s: width is %d\n", lineNum, fileName, w);
+        abort();
+    }
+    if (h <= 0) {
+        Blt_Warn("line %d of %s: height is %d\n", lineNum, fileName, h);
+        abort();
+    }
+    /* for the XShmPixmap */
+    segInfo.shmid = -1;
+    segInfo.shmaddr = (char *)-1;
+    segInfo.readOnly = False;
+
+    imgPtr = XShmCreateImage(display, visual, depth, ZPixmap, NULL, &segInfo,
+                               w, h);
+    if (imgPtr == NULL) {
+        fprintf(stderr, "Can't create XImage for SHM Pixmap\n");
+        return 1;
+    }
+
+    segInfo.shmid = shmget(IPC_PRIVATE, imgPtr->bytes_per_line * imgPtr->height,
+            IPC_CREAT | 0600);
+
+    if (segInfo.shmid == -1) {
+        perror("shmget()");
+        return 1;
+    }
+
+    segInfo.shmaddr = imgPtr->data = shmat(segInfo.shmid, NULL, 0);
+
+    shmctl(segInfo.shmid, IPC_RMID, 0);
+
+    if (segInfo.shmaddr == (void *)-1 ||  segInfo.shmaddr == NULL) {
+        perror("shmat()");
+        return 1;
+    }
+
+    XShmAttach(display, &segInfo);
+    pixmap = XShmCreatePixmap(display, drawable, segInfo.shmaddr,
+            &segInfo, w, h, depth);
+    return pixmap;
+}
+
+Pixmap
+Blt_FreeShmPixmap(Display *display, Pixmap pixmap)
+{
+    Tk_FreeXId(display, (XID) pixmap);
+}
+#endif

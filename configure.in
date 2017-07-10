@@ -450,7 +450,9 @@ AC_CHECK_HEADERS(sys/socket.h)
 AC_CHECK_HEADERS(netinet/in.h)
 AC_CHECK_HEADERS(arpa/inet.h)
 AC_CHECK_HEADERS(ioctl.h sys/ioctl.h)
+AC_CHECK_HEADERS(sys/ipc.h sys/sym.h)
 
+AC_CHECK_FUNCS(shmget shmat shmctl shmdt)
 AC_CHECK_FUNCS(posix_openpt ptsname getpt grantpt unlockpt isastream setsid)
 AC_CHECK_FUNCS(tcflush openpty)
 AC_CHECK_FUNCS(open_controlling_pty)
@@ -974,6 +976,12 @@ else
     AC_ERROR([Can't find tk.h header file.])
   fi
 fi
+
+AC_CHECK_LIB(Xext, main)
+AC_CHECK_HEADERS([X11/Xlib.h X11/extensions/XShm.h],[],[],
+[[#include <X11/Xlib.h>]]
+)
+AC_CHECK_FUNCS(XShmQueryExtension XShmCreateImage XShmCreatePixmap XShmAttach XShmDetach)
 
 case $target in
   *-sunos4*|*-*-netbsd|NetBSD-*|FreeBSD-*|OpenBSD-*|*-*-cygwin*|*-*-mingw*)
