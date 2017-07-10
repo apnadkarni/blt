@@ -2098,4 +2098,3 @@ Blt_UnsetPainterClipRegion(Painter *p)
 {
     XSetClipMask(p->display, p->gc, None);
 }
-
