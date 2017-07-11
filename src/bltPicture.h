@@ -125,7 +125,7 @@ struct _Blt_Picture {
                                          * and MASK flags are so that don't
                                          * premultiply alphas for masks. */
 
-#define BLT_PIC_UNINITIALIZED (1<<10)   /* Indicates that the contents of
+#define BLT_PIC_UNINITIALIZED (1<<20)   /* Indicates that the contents of
                                          * the picture haven't been
                                          * initialized yet. */
 

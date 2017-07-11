@@ -104,7 +104,7 @@ blt::table . \
     0,0 .ss -fill both
 
 
-if 0 {
+if 1 {
 set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
 	    -bg $bg1 \

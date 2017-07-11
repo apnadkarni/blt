@@ -1035,6 +1035,7 @@ DrawableToXImage(Painter *p, Drawable drawable, int x, int y, int w, int h)
                                     XGetImageErrorProc, &code);
 #ifdef HAVE_XSHMQUERYEXTENSION
     haveShm = XShmQueryExtension(p->display);
+    haveShm = FALSE;
     if (haveShm) {
         imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
                                  NULL, &xssi, w, h); 
@@ -1386,10 +1387,10 @@ PaintPicture(
     XShmSegmentInfo xssi;
 #endif  /* HAVE_XSHMQUERYEXTENSION */
     
-#ifdef notdef
+#ifndef notdef
     fprintf(stderr,
-            "PaintPicture: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
-            drawable, sx, sy, w, h, dx, dy);
+            "PaintPicture: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d flags=%x\n",
+            drawable, sx, sy, w, h, dx, dy, srcPtr->flags);
 #endif
     ditherPtr = NULL;
     if (flags & BLT_PAINTER_DITHER) {
@@ -1741,7 +1742,7 @@ BlendPicture(
 {
     Pict *bgPtr;
 
-#ifdef notdef
+#ifndef notdef
     fprintf(stderr, "BlendPicture: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, x, y, w, h, dx, dy);
 #endif
@@ -1820,6 +1821,7 @@ CompositePictureWithXRender(
             drawable, sx, sy, w, h, dx, dy);
 #endif
     if (!XRenderQueryVersion(p->display, &majorNum, &minorNum)) {
+        fprintf(stderr, "Not XRender extension\n");
         return FALSE;
     }
     if (!Blt_Picture_IsPremultiplied(srcPtr)) {
@@ -1877,6 +1879,7 @@ CompositePictureWithXRender(
         XFree(visuals);
     }                   /* pict_format_alpha != NULL */
     if (visualPtr == NULL) {
+        fprintf(stderr, "Can't find matching visual\n");
         return FALSE;
     }
 #ifdef HAVE_XSHMQUERYEXTENSION
@@ -1991,7 +1994,7 @@ BlendPicture2(
     unsigned int flags)
 {
     int dw, dh;
-#ifdef notdef
+#ifndef notdef
     fprintf(stderr, "BlendPicture2: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, x, y, w, h, dx, dy);
 #endif
@@ -2018,6 +2021,7 @@ BlendPicture2(
     if (!CompositePictureWithXRender(p, drawable, fg, x, y, dw, dh, dx, dy)) {
         Pict *bgPtr;
 
+        fprintf(stderr, "CompositePictureWithXRender failed\n");
         bgPtr = DrawableToPicture(p, drawable, dx, dy, dw, dh);
         if (bgPtr == NULL) {
             return FALSE;

@@ -129,7 +129,9 @@ bind .ss.c  <KeyPress-Down>  {
 }
 
 focus .ss.c
+if 0 {
 after 2000 { set done 1 }
 tkwait variable done
 .ss.c postscript -file /tmp/junk.ps
 exit 0
+}

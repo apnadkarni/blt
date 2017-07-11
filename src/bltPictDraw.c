@@ -1456,6 +1456,10 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             }
         }
     } 
+    if ((Blt_GetBrushAlpha(brush) != 0xFF) && (!composite)) {
+        Pict *dstPtr = picture;
+        dstPtr->flags |= BLT_PIC_COMPOSITE;
+    }
 }
 
 
