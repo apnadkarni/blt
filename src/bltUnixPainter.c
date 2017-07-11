@@ -1020,23 +1020,49 @@ XGetImageErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
  *---------------------------------------------------------------------------
  */
 static XImage *
-DrawableToXImage(Display *display, Drawable drawable, int x, int y, int w,
-                 int h)
+DrawableToXImage(Painter *p, Drawable drawable, int x, int y, int w, int h)
 {
     XImage *imgPtr;
     int code;
     code = TCL_OK;
-
     Tk_ErrorHandler handler;
+#ifdef HAVE_XSHMQUERYEXTENSION
+    int haveShm;
+    XShmSegmentInfo xssi;
+#endif  /* HAVE_XSHMQUERYEXTENSION */
 
-    handler = Tk_CreateErrorHandler(display, -1, X_GetImage, -1, 
-        XGetImageErrorProc, &code);
-    imgPtr = XGetImage(display, drawable, x, y, w, h, AllPlanes, ZPixmap);
+    handler = Tk_CreateErrorHandler(p->display, -1, X_GetImage, -1, 
+                                    XGetImageErrorProc, &code);
+#ifdef HAVE_XSHMQUERYEXTENSION
+    haveShm = XShmQueryExtension(p->display);
+    if (haveShm) {
+        imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
+                                 NULL, &xssi, w, h); 
+
+        xssi.shmid = shmget(IPC_PRIVATE, imgPtr->bytes_per_line * imgPtr->height,
+                            IPC_CREAT|0777);
+        
+        xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
+        xssi.readOnly = False;
+        
+        XShmAttach(p->display, &xssi);
+        XShmGetImage(p->display, drawable, imgPtr, x, y, AllPlanes);
+        XSync(p->display, False);
+
+        XShmDetach(p->display, &xssi);
+        shmdt(xssi.shmaddr);
+        shmctl (xssi.shmid, IPC_RMID, 0);
+        XSync(p->display, False);
+    } else 
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    {
+        imgPtr = XGetImage(p->display, drawable, x, y, w, h, AllPlanes, ZPixmap);
+        XSync(p->display, False);
+    }
     Tk_DeleteErrorHandler(handler);
-    XSync(display, False);
     if ((imgPtr == NULL) || (code != TCL_OK)) {
-#if DEBUG
         Blt_Warn("can't snap picture of drawable\n");
+#if DEBUG
 #endif
         return NULL;
     }
@@ -1083,7 +1109,7 @@ DrawableToPicture(
         h += y;
         y = 0;
     }
-    imgPtr = DrawableToXImage(p->display, drawable, x, y, w, h);
+    imgPtr = DrawableToXImage(p, drawable, x, y, w, h);
     if (imgPtr == NULL) {
         int dw, dh;
 
@@ -1101,7 +1127,7 @@ DrawableToPicture(
             if ((y + h) > dh) {
                 h = dh - y;
             }
-            imgPtr = DrawableToXImage(p->display, drawable, x, y, w, h);
+            imgPtr = DrawableToXImage(p, drawable, x, y, w, h);
         }
     }
     if (imgPtr == NULL) {
@@ -1374,8 +1400,6 @@ PaintPicture(
     }
 #ifdef HAVE_XSHMQUERYEXTENSION
     haveShm = XShmQueryExtension(p->display);
-    haveShm = FALSE;
-    Blt_ShmFormat(p->display);
     if (haveShm) {
         /* for the XShmPixmap */
         xssi.shmid = -1;
@@ -1783,7 +1807,6 @@ CompositePictureWithXRender(
     XImage *imgPtr;
     int y;
     unsigned char *destRowPtr;
-    Colormap colormap;
 #ifdef HAVE_XSHMQUERYEXTENSION
     XShmSegmentInfo xssi;
 #endif  /* HAVE_XSHMQUERYEXTENSION */
@@ -1791,7 +1814,7 @@ CompositePictureWithXRender(
     Visual *visualPtr;
     int majorNum, minorNum;
 
-#ifndef notdef
+#ifdef notdef
     fprintf(stderr, "CompositePictureWithXRender: "
             "drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, sx, sy, w, h, dx, dy);
@@ -1799,8 +1822,9 @@ CompositePictureWithXRender(
     if (!XRenderQueryVersion(p->display, &majorNum, &minorNum)) {
         return FALSE;
     }
-    fprintf(stderr, "XRender %d.%d\n", majorNum, minorNum);
-    Blt_PremultiplyColors(srcPtr);
+    if (!Blt_Picture_IsPremultiplied(srcPtr)) {
+        Blt_PremultiplyColors(srcPtr);
+    }
     pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
     if (pfPtr == NULL) {
         XRenderPictFormat pf;
@@ -1904,9 +1928,6 @@ CompositePictureWithXRender(
             g = p->igammaTable[sp->Green] << 8;
             b = p->igammaTable[sp->Blue];
             *dp = r | g | b | a;
-            if (a == 0) {
-                fprintf(stderr, "dp=%x\n", *dp);
-            }
             dp++;
         }
         destRowPtr += imgPtr->bytes_per_line;
@@ -1914,16 +1935,14 @@ CompositePictureWithXRender(
     }
     pixmap = XShmCreatePixmap(p->display, drawable, xssi.shmaddr, &xssi,
                               w, h, 32);
-    fprintf(stderr, "2nd XRenderComposite\n");
     pa.component_alpha = True;
     srcPict = XRenderCreatePicture(p->display, pixmap, pfPtr,
                                    CPComponentAlpha, &pa);
-    fprintf(stderr, "1st XRenderComposite\n");
     pa.component_alpha = False;
     dstPict = XRenderCreatePicture(p->display, drawable,
                    XRenderFindStandardFormat(p->display, PictStandardRGB24),
                                    CPComponentAlpha, &pa);
-    XRenderComposite(p->display, PictOpSrc, dstPict, None, srcPict, 0, 0, 0, 0,
+    XRenderComposite(p->display, PictOpOver, srcPict, None, dstPict, 0, 0, 0, 0,
                      dx, dy, w, h);
     XShmDetach(p->display, &xssi);
     shmdt(xssi.shmaddr);
@@ -2189,7 +2208,7 @@ Blt_PaintPicture(
         return PaintPicture(painter, drawable, picture, x1, y1, x2 - x1, 
                             y2 - y1, dx, dy, flags);
     } else {
-        return BlendPicture(painter, drawable, picture, x1, y1, x2 - x1,
+        return BlendPicture2(painter, drawable, picture, x1, y1, x2 - x1,
                             y2 - y1, dx, dy, flags);
     }
 }
@@ -2291,7 +2310,7 @@ Blt_PaintPictureWithBlend(
     if (((x2 - x1) <= 0) || ((y2 - y1) <= 0)) {
         return TRUE;
     }
-    return BlendPicture(painter, drawable, picture, x1, y1, x2 - x1, y2 - y1,
+    return BlendPicture2(painter, drawable, picture, x1, y1, x2 - x1, y2 - y1,
                         dx, dy, flags);
 }
 
