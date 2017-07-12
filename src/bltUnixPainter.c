@@ -102,6 +102,7 @@
 #endif  /* HAVE_X11_EXTENSIONS_XCOMPOSITE_H */
 #ifdef HAVE_X11_EXTENSIONS_XSHM_H
 #include <X11/extensions/XShm.h>
+#include <X11/extensions/shmproto.h>
 #endif  /* HAVE_X11_EXTENSIONS_XSHM_H */
 
 #include "bltAlloc.h"
@@ -125,7 +126,7 @@ typedef struct _Blt_Picture Pict;
 #define DEBUG 0
 
 static Blt_HashTable painterTable;
-static int initialized = 0;
+static int painterTableInitialized = 0;
 
 #define COLOR_WINDOW            (1<<0)
 #define BLACK_AND_WHITE         (1<<1)
@@ -921,9 +922,9 @@ GetPainter(Display *display, Colormap colormap, Visual *visualPtr, int depth,
     int isNew;
     Blt_HashEntry *hPtr;
 
-    if (!initialized) {
+    if (!painterTableInitialized) {
         Blt_InitHashTable(&painterTable, sizeof(PainterKey) / sizeof(int));
-        initialized = TRUE;
+        painterTableInitialized = TRUE;
     }
     key.display = display;
     key.colormap = colormap;
@@ -986,28 +987,6 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
 /*
  *---------------------------------------------------------------------------
  *
- * XGetImageErrorProc --
- *
- *      Error handling routine for the XGetImage request below. Sets the
- *      flag passed via *clientData* to TCL_ERROR indicating an error
- *      occurred.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
-static int
-XGetImageErrorProc(ClientData clientData, XErrorEvent *errEventPtr) 
-{
-    int *errorPtr = clientData;
-
-    *errorPtr = TCL_ERROR;
-    return 0;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
  * XImageToPicture --
  *
  *      Converts an XImage to a picture image. 
@@ -1060,7 +1039,6 @@ XImageToPicture(Painter *p, XImage *imgPtr)
         }
         srcRowPtr = (unsigned char *)imgPtr->data;
         destRowPtr = destPtr->bits; 
-        fprintf(stderr, "width=%d, height=%d\n", imgPtr->width, imgPtr->height);
         switch (imgPtr->bits_per_pixel) {
         case 32:
             for (y = 0; y < imgPtr->height; y++) {
@@ -1236,6 +1214,27 @@ XImageToPicture(Painter *p, XImage *imgPtr)
 /*
  *---------------------------------------------------------------------------
  *
+ * XGetImageErrorProc --
+ *
+ *      Error handling routine for the XGetImage request below. Sets the
+ *      flag passed via *clientData* to TCL_ERROR indicating an error
+ *      occurred.
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static int
+XGetImageErrorProc(ClientData clientData, XErrorEvent *errEventPtr) 
+{
+    int *errorPtr = clientData;
+
+    *errorPtr = TCL_ERROR;
+    return 0;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SnapDrawable --
  *
  *      Attempts to snap the image from the drawable into an XImage
@@ -1261,28 +1260,29 @@ SnapDrawable(Painter *p, Drawable drawable, int x, int y, int w, int h)
 #endif  /* HAVE_XSHMQUERYEXTENSION */
 
     code = TCL_OK;
-    handler = Tk_CreateErrorHandler(p->display, -1, X_GetImage, -1, 
-                                    XGetImageErrorProc, &code);
 #ifdef HAVE_XSHMQUERYEXTENSION
     haveShm = XShmQueryExtension(p->display);
     if (haveShm) {
+        handler = Tk_CreateErrorHandler(p->display, -1, -1, X_ShmGetImage, 
+                                        XGetImageErrorProc, &code);
         imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
                                  NULL, &xssi, w, h); 
 
         xssi.shmid = shmget(IPC_PRIVATE,
                             imgPtr->bytes_per_line * imgPtr->height,
                             IPC_CREAT|0777);
-        
+
         xssi.shmaddr = imgPtr->data = (char *)shmat(xssi.shmid, NULL, 0);
         xssi.readOnly = False;
         XShmAttach(p->display, &xssi);
-        fprintf(stderr, "ShmPixmapFormat=%d\n", XShmPixmapFormat(p->display));
         XShmGetImage(p->display, drawable, imgPtr, x, y, AllPlanes);
         XSync(p->display, False);
 
     } else 
 #endif  /* HAVE_XSHMQUERYEXTENSION */
     {
+        handler = Tk_CreateErrorHandler(p->display, -1, X_GetImage, -1, 
+                                        XGetImageErrorProc, &code);
         imgPtr = XGetImage(p->display, drawable, x, y, w, h, AllPlanes,
             ZPixmap);
         XSync(p->display, False);
@@ -1739,79 +1739,25 @@ PaintPicture(
     return result;
 }
 
-#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
- * BlendPicture --
+ * CompositePictureWithXRender --
  *
- *      Blends and paints the picture in the given drawable. The region of
- *      the picture is specified and the coordinates where in the
- *      destination drawable is the image to be displayed.
- *
- *      The background is snapped from the drawable and converted into a
- *      picture.  This picture is then blended with the current picture
- *      (the background always assumed to be 100% opaque).
+ *      Blends and paints the picture in the given drawable using
+ *      XRenderComposite. This has the advantage of not requiring the
+ *      background to be snapped from the drawable on the server,
+ *      composited on the client, and then redisplayed on the server.  We
+ *      also using a shared memory pixmap.  If XRender or XShm and not
+ *      available or fail for some reason, return FALSE so that the
+ *      calling routine can fall back to another compositing method.
  * 
  * Results:
  *      Returns TRUE is the picture was successfully displayed.  Otherwise
- *      FALSE is returned.  This may happen if the background can not be
- *      obtained from the drawable.
+ *      FALSE is returned.  
  *
  *---------------------------------------------------------------------------
  */
-static int
-BlendPicture(
-    Painter *p,
-    Drawable drawable,
-    Blt_Picture fg,
-    int x, int y,                       /* Coordinates of source region in
-                                         * the picture. */
-    int w, int h,                       /* Dimension of the source region.
-                                         * Region cannot extend beyond the
-                                         * end of the picture. */
-    int dx, int dy,                     /* Coordinates of destination
-                                         * region in the drawable.  */
-    unsigned int flags)
-{
-    Pict *bgPtr;
-
-#ifndef notdef
-    fprintf(stderr, "BlendPicture: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
-            drawable, x, y, w, h, dx, dy);
-#endif
-    if (dx < 0) {
-        w -= -dx;                       /* Shrink the width. */
-        x += -dx;                       /* Change the left of the source
-                                         * region. */
-        dx = 0;                         /* Start at the left of the
-                                         * destination. */
-    } 
-    if (dy < 0) {
-        h -= -dy;                       /* Shrink the height. */
-        y += -dy;                       /* Change the top of the source
-                                         * region. */
-        dy = 0;                         /* Start at the top of the
-                                         * destination. */
-    }
-    if ((w < 0) || (h < 0)) {
-        return FALSE;
-    }
-    bgPtr = DrawableToPicture(p, drawable, dx, dy, w, h);
-    if (bgPtr == NULL) {
-        return FALSE;
-    }
-    /* Dimension of source region may be adjusted by the actual size of the
-     * drawable.  This is reflected in the size of the background
-     * picture. */
-    Blt_CompositeRegion(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
-    PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height, dx, dy,
-                 flags);
-    Blt_FreePicture(bgPtr);
-    return TRUE;
-}
-#endif
-
 static int
 CompositePictureWithXRender(
     Painter *p,
@@ -1850,11 +1796,14 @@ CompositePictureWithXRender(
     Visual *visualPtr;
     int majorNum, minorNum;
 
-#ifndef notdef
+#ifdef notdef
     fprintf(stderr, "CompositePictureWithXRender: "
             "drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, sx, sy, w, h, dx, dy);
 #endif
+    if (p->flags & PAINTER_NO_32BIT_VISUAL) {
+        return FALSE;
+    }
     if (!XRenderQueryVersion(p->display, &majorNum, &minorNum)) {
         fprintf(stderr, "Not XRender extension\n");
         return FALSE;
@@ -1882,7 +1831,10 @@ CompositePictureWithXRender(
         pfPtr = XRenderFindFormat(p->display, FMT_ARGB32, &pf, 0);
     }
     visualPtr = NULL;
-    if (pfPtr != NULL) {
+    if (pfPtr == NULL) {
+        fprintf(stderr, "Can't find 32 bit picture format\n");
+        return FALSE;
+    } else {
         XVisualInfo *visuals, template;
         int numVisuals;
         int i;
@@ -1899,6 +1851,7 @@ CompositePictureWithXRender(
 
         if (visuals == NULL) {
             fprintf(stderr, "No visual matching criteria\n");
+            p->flags |= PAINTER_NO_32BIT_VISUAL;
             return FALSE;
         }
 
@@ -1914,7 +1867,8 @@ CompositePictureWithXRender(
         XFree(visuals);
     }                   /* pict_format_alpha != NULL */
     if (visualPtr == NULL) {
-        fprintf(stderr, "Can't find matching visual\n");
+        fprintf(stderr, "Can't find matching visual.\n");
+        p->flags |= PAINTER_NO_32BIT_VISUAL;
         return FALSE;
     }
 #ifdef HAVE_XSHMQUERYEXTENSION
@@ -1997,7 +1951,7 @@ CompositePictureWithXRender(
 /*
  *---------------------------------------------------------------------------
  *
- * BlendPicture2 --
+ * CompositePicture --
  *
  *      Blends and paints the picture in the given drawable. The region of
  *      the picture is specified and the coordinates where in the
@@ -2015,7 +1969,7 @@ CompositePictureWithXRender(
  *---------------------------------------------------------------------------
  */
 static int
-BlendPicture2(
+CompositePicture(
     Painter *p,
     Drawable drawable,
     Blt_Picture fg,
@@ -2029,8 +1983,8 @@ BlendPicture2(
     unsigned int flags)
 {
     int dw, dh;
-#ifndef notdef
-    fprintf(stderr, "BlendPicture2: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+#ifdef notdef
+    fprintf(stderr, "CompositePicture: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, x, y, w, h, dx, dy);
 #endif
     if (dx < 0) {
@@ -2056,7 +2010,9 @@ BlendPicture2(
     if (!CompositePictureWithXRender(p, drawable, fg, x, y, dw, dh, dx, dy)) {
         Pict *bgPtr;
 
+#ifdef notdef
         fprintf(stderr, "CompositePictureWithXRender failed\n");
+#endif
         bgPtr = DrawableToPicture(p, drawable, dx, dy, dw, dh);
         if (bgPtr == NULL) {
             return FALSE;
@@ -2100,7 +2056,6 @@ Blt_DrawableToPicture(
     Blt_Painter painter;
     Blt_Picture picture;
 
-    fprintf(stderr, "Blt_DrawableToPicture %s\n", Tk_PathName(tkwin));
     painter = Blt_GetPainter(tkwin, gamma);
     picture =  DrawableToPicture(painter, drawable, x, y, w, h);
     Blt_FreePainter(painter);
@@ -2248,7 +2203,7 @@ Blt_PaintPicture(
         return PaintPicture(painter, drawable, picture, x1, y1, x2 - x1, 
                             y2 - y1, dx, dy, flags);
     } else {
-        return BlendPicture2(painter, drawable, picture, x1, y1, x2 - x1,
+        return CompositePicture(painter, drawable, picture, x1, y1, x2 - x1,
                             y2 - y1, dx, dy, flags);
     }
 }
@@ -2350,8 +2305,8 @@ Blt_PaintPictureWithBlend(
     if (((x2 - x1) <= 0) || ((y2 - y1) <= 0)) {
         return TRUE;
     }
-    return BlendPicture2(painter, drawable, picture, x1, y1, x2 - x1, y2 - y1,
-                        dx, dy, flags);
+    return CompositePicture(painter, drawable, picture, x1, y1, x2 - x1, 
+                            y2 - y1, dx, dy, flags);
 }
 
 /*
@@ -2477,3 +2432,107 @@ Blt_UnsetPainterClipRegion(Painter *p)
 {
     XSetClipMask(p->display, p->gc, None);
 }
+
+#ifdef notdef
+
+typedef struct {
+    Pixmap pixmap;
+    Display *display;
+    int w, h;
+    int depth;
+#ifdef HAVE_XSHMQUERYEXTENSION
+    XShmSegmentInfo xssi;
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+} Blt_PixmapInfo;
+
+static int pixmapTableInitialized = 0;
+static Blt_HashTable pixmapTable;
+
+Blt_PixmapInfo  *
+Blt_GetPixmapInfo(Pixmap pixmap)
+{
+    if (!pixmapTableInitialized) {
+        Blt_InitHashTable(&pixmapTable, BLT_ONE_WORD_KEYS);
+        pixmapTableInitialized = TRUE;
+    }
+    hPtr = Blt_FindHashEntry(&pixmapTable, pixmap);
+    if (hPtr == NULL) {
+        return NULL;
+    }
+    return Blt_GetHashValue(hPtr);
+}
+
+static void
+AddPixmapInfoEntry(Display *display, Pixmap pixmap, int w, int h, int depth)
+{
+    int isNew;
+    Blt_HashEntry *hPtr;
+    Blt_PixmapInfo *pmiPtr;
+
+    if (!pixmapTableInitialized) {
+        Blt_InitHashTable(&pixmapTable, BLT_ONE_WORD_KEYS);
+        pixmapTableInitialized = TRUE;
+    }
+    hPtr = Blt_CreateHashEntry(&pixmapTable, pixmap, &isNew);
+    assert(isNew);
+    pmiPtr = Blt_AssertMalloc(sizeof(Blt_PixmapInfo));
+    pmiPtr->display = display;
+    pmiPtr->pixmap = pixmap;
+    pmiPtr->hashPtr = hPtr;
+    pmiPtr->w = w;
+    pmiPtr->h = h;
+    pmiPtr->depth = depth;
+#ifdef HAVE_XSHMQUERYEXTENSION
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    Blt_SetHashValue(hPtr, pmiPtr);
+}
+
+static void
+DeletePixmapInfoEntry(Pixmap pixmap)
+{
+    Blt_HashEntry *hPtr;
+
+    if (!pixmapTableInitialized) {
+        Blt_InitHashTable(&pixmapTable, BLT_ONE_WORD_KEYS);
+        pixmapTableInitialized = TRUE;
+    }
+    hPtr = Blt_FindHashEntry(&pixmapTable, pixmap);
+    if (hPtr != NULL) {
+        Blt_PixmapInfo *pmiPtr;
+
+        pmiPtr = Blt_GetHashValue(hPtr);
+        Blt_DeleteHashEntry(&pixmapTable, pmiPtr->hashPtr);
+#ifdef HAVE_XSHMQUERYEXTENSION
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+        Blt_Free(pmiPtr);
+    }
+}
+
+Pixmap 
+Blt_GetPixmapAbortOnError(Display *display, Drawable drawable, int w, int h, 
+                          int depth, int lineNum, const char *fileName)
+{
+    if (w <= 0) {
+        Blt_Warn("line %d of %s: width is %d\n", lineNum, fileName, w);
+        abort();
+    }
+    if (h <= 0) {
+        Blt_Warn("line %d of %s: height is %d\n", lineNum, fileName, h);
+        abort();
+    }
+    pixmap = Tk_GetPixmap(display, drawable, w, h, depth);
+#ifdef HAVE_XSHMQUERYEXTENSION
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    AddPixmapInfoEntry(display, pixmap, w, h, depth);
+    return pixmap;
+}
+
+void
+Blt_FreePixmap(Display *display, Pixmap pixmap) 
+{
+    DeletePixmapInfoEntry(pixmap);
+#ifdef HAVE_XSHMQUERYEXTENSION
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    Tk_FreePixmap(display, pixmap);
+}
+#endif

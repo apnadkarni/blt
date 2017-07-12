@@ -136,4 +136,15 @@ struct _Blt_Painter {
 
 typedef struct _Blt_Painter Painter;
 
+#define PAINTER_NO_32BIT_VISUAL (1<<2)  /* Indicates that we previously
+                                         * could not find a matching 32 bit
+                                         * visual on the painter's display.
+                                         * Don't use XRenderComposite to
+                                         * composite pictures. */
+#define PAINTER_NO_SHM_IMAGES   (1<<3)  /* Indicates that we previously
+                                         * could not find the XShm
+                                         * extension.  Don't use
+                                         * XShmPutImage or XShmGetImage. */
+
 #endif /* _BLT_UNIX_PAINTER_H */
+
