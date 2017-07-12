@@ -465,7 +465,7 @@ GetBusyWindowCoordinates(Busy *busyPtr, int *xPtr, int *yPtr)
 
 
 static Blt_Picture
-SnapReferenceWindow(Tk_Window tkwin, int width, int height)
+SnapReferenceWindow(Tk_Window tkwin, int w, int h)
 {
     int rootX, rootY;
     int x, y;
@@ -484,29 +484,30 @@ SnapReferenceWindow(Tk_Window tkwin, int width, int height)
     Tk_GetRootCoords(tkwin, &rootX, &rootY);
     clipped = FALSE;
     if (rootX < 0) {
-        width += rootX;
+        w += rootX;
         x = -rootX;
         rootX = 0;
         clipped++;
     }
     if (rootY < 0) {
-        height += rootY;
+        h += rootY;
         y = -rootY;
         rootY = 0;
         clipped++;
     }
     Blt_SizeOfScreen(tkwin, &screenWidth, &screenHeight);
-    if ((rootX > width) > screenWidth) {
-        width = screenWidth - rootX;
+    if ((rootX > w) > screenWidth) {
+        w = screenWidth - rootX;
         clipped++;
     }
-    if ((rootY > height) > screenHeight) {
-        width = screenHeight - rootY;
+    if ((rootY > h) > screenHeight) {
+        h = screenHeight - rootY;
         clipped++;
     }
     /* Get a snapshot of the portion of the window that's on-screen. */
+    fprintf(stderr, "Snapping %s, w=%d, h=%d\n", Tk_PathName(tkwin), w, h);
     picture = Blt_DrawableToPicture(tkwin, Tk_WindowId(tkwin), x, y,
-                width, height, 1.0);
+                w, h, 1.0);
     if (picture == NULL) {
         Blt_Warn("can't grab window (possibly obscured?)\n");
         return NULL;
@@ -518,7 +519,7 @@ SnapReferenceWindow(Tk_Window tkwin, int width, int height)
          * the reference window and copy the snapshot region into it.  */
         copy = Blt_CreatePicture(Tk_Width(tkwin), Tk_Height(tkwin));
         Blt_BlankPicture(copy, 0xFFFFFFFF);
-        Blt_CopyRegion(copy, picture, 0, 0, width, height, x, y);
+        Blt_CopyRegion(copy, picture, 0, 0, w, h, x, y);
         Blt_FreePicture(picture);
         picture = copy;
     } 

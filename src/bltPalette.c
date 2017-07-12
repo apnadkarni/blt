@@ -1674,6 +1674,7 @@ InterpolateColorAndOpacity(Palette *palPtr, double value, Blt_Pixel *colorPtr)
     Blt_Pixel color;
 
     if (InterpolateColor(palPtr, value, &color))  {
+        color.Alpha = palPtr->alpha;
         if (palPtr->numOpacities > 0) {
             unsigned int alpha;
 

@@ -158,6 +158,7 @@ struct _Blt_Chain;
 #define Blt_Picture_IsColor(p)   (((p)->flags & BLT_PIC_GREYSCALE) == 0)
 #define Blt_Picture_IsGreyscale(p)     ((p)->flags & BLT_PIC_GREYSCALE)
 #define Blt_Picture_IsPremultiplied(p) ((p)->flags & BLT_PIC_PREMULT_COLORS)
+#define Blt_Picture_SetCompositeFlag(p) ((p)->flags |= BLT_PIC_COMPOSITE)
 
 typedef enum PictureArithOps {
     PIC_ARITH_ADD,

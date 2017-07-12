@@ -4646,10 +4646,11 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable,
     GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h, 1.0);
+    bg = Blt_CreatePicture(w, h);
     if (bg == NULL) {
         return;                         /* Background is obscured. */
     }
+    Blt_BlankPicture(bg, 0x0);
     vertices = Blt_AssertMalloc(n * sizeof(Point2d));
     /* Translate the polygon */
     for (i = 0; i < n; i++) {
@@ -5135,10 +5136,11 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable,
     GetRectangleBBox(points, n, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h, 1.0);
+    bg = Blt_CreatePicture(w, h);
     if (bg == NULL) {
         return;                         /* Background is obscured. */
     }
+    Blt_BlankPicture(bg, 0x0);
     vertices = Blt_AssertMalloc(n * sizeof(Point2f));
     /* Translate the rectangle */
     for (i = 0; i < n; i++) {

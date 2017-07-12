@@ -4246,11 +4246,12 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
     GetPolygonBBox(points, numPoints, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
-    picture = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h,
-        1.0);
+    picture = Blt_CreatePicture(w, h);
     if (picture == NULL) {
         return;                         /* Background is obscured. */
     }
+    Blt_BlankPicture(picture, 0x0);
+    Blt_Picture_SetCompositeFlag(picture);
     vertices = Blt_AssertMalloc(numPoints * sizeof(Point2d));
     /* Translate the polygon */
     for (i = 0; i < numPoints; i++) {
@@ -4272,6 +4273,7 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
         Blt_Free(vertices);
         return;
     }
+    fprintf(stderr, "Alpha=%x\n", Blt_GetBrushAlpha(brush));
     Blt_PaintPolygon(picture, numPoints, vertices, brush);
     if ((elemPtr->zAxisPtr != NULL) && (elemPtr->zAxisPtr->palette != NULL)) {
         Blt_FreeBrush(brush);

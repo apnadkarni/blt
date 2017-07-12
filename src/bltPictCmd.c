@@ -5347,6 +5347,7 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
             return TCL_ERROR;
         }
+        fprintf(stderr, "initialize w=%d h=%d\n", w, h);
         args.from.x = args.from.y = 0;
         args.width = args.from.w = w;
         args.height = args.from.h = h;
@@ -5360,6 +5361,9 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if ((args.from.h + args.from.y) > h) {
             args.from.h = (h - args.from.y);
         }
+        args.width = args.from.w;
+        args.height = args.from.h;
+        fprintf(stderr, "after parse w=%d h=%d\n", args.from.w, args.from.h);
         if (args.flags & RAISE) {
             XRaiseWindow(imgPtr->display, window);
         }
