@@ -5258,7 +5258,6 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_Picture picture;
     PictImage *imgPtr = clientData;
     SnapArgs args;
-    Tk_Uid classUid;
     Tk_Window tkwin;
     const char *string;
 
@@ -5267,75 +5266,107 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
     string = Tcl_GetString(objv[2]);
     tkwin = Tk_NameToWindow(NULL, string, Tk_MainWindow(interp));
     if (tkwin != NULL) {
+        Tk_Uid classUid;
+
         classUid = Tk_Class(tkwin);
-    }
-    if ((tkwin != NULL) && (strcmp(classUid, "Canvas") == 0)) {
-        int w, h;
-
-        w = Tk_Width(tkwin);
-        h = Tk_Height(tkwin);
-        args.from.x = args.from.y = 0;
-        args.width  = args.from.w = w;
-        args.height = args.from.h = h;
-        if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
-                              &args, BLT_SWITCH_DEFAULTS) < 0) {
-            return TCL_ERROR;
-        }
-        if ((args.from.w + args.from.x) > w) {
-            args.from.w = (w - args.from.x);
-        }
-        if ((args.from.h + args.from.y) > h) {
-            args.from.h = (h - args.from.y);
-        }
-        picture = Blt_CanvasToPicture(interp, tkwin, imgPtr->gamma);
-        if (Blt_SwitchChanged(snapSwitches, "-from", (char *)NULL)) {
-            Blt_Picture newPict;
-
-            newPict = Blt_CreatePicture(args.from.w, args.from.h);
-            Blt_CopyRegion(newPict, picture, args.from.x, args.from.y, 
-                args.from.w, args.from.h, 0, 0);
-            Blt_FreePicture(picture);
-            picture = newPict;
-        }
-    } else if ((tkwin != NULL) && ((strcmp(classUid, "BltGraph") == 0) ||
-                                   (strcmp(classUid, "BltBarchart") == 0) ||
-                                   (strcmp(classUid, "BltStripchart") == 0) ||
-                                   (strcmp(classUid, "BltContour") == 0))) {
-        int w, h;
-
-        w = Tk_Width(tkwin);
-        h = Tk_Height(tkwin);
-        if (w < 2) {
-            w = Tk_ReqWidth(tkwin);
-        }
-        if (h < 2) {
-            h = Tk_ReqHeight(tkwin);
-        }
-        args.from.x = args.from.y = 0;
-        args.width  = args.from.w = w;
-        args.height = args.from.h = h;
-        if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
-                              &args, BLT_SWITCH_DEFAULTS) < 0) {
-            return TCL_ERROR;
-        }
-        if ((args.from.w + args.from.x) > w) {
-            args.from.w = (w - args.from.x);
-        }
-        if ((args.from.h + args.from.y) > h) {
-            args.from.h = (h - args.from.y);
-        }
-        picture = Blt_GraphToPicture(interp, tkwin, imgPtr->gamma);
-        if (Blt_SwitchChanged(snapSwitches, "-from", (char *)NULL)) {
-            Blt_Picture newPict;
-
-            newPict = Blt_CreatePicture(args.from.w, args.from.h);
-            Blt_CopyRegion(newPict, picture, args.from.x, args.from.y, 
-                args.from.w, args.from.h, 0, 0);
-            Blt_FreePicture(picture);
-            picture = newPict;
+        if (strcmp(classUid, "Canvas") == 0) {
+            int w, h;
+            
+            w = Tk_Width(tkwin);
+            h = Tk_Height(tkwin);
+            args.from.x = args.from.y = 0;
+            args.width  = args.from.w = w;
+            args.height = args.from.h = h;
+            if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
+                                  &args, BLT_SWITCH_DEFAULTS) < 0) {
+                return TCL_ERROR;
+            }
+            if ((args.from.w + args.from.x) > w) {
+                args.from.w = (w - args.from.x);
+            }
+            if ((args.from.h + args.from.y) > h) {
+                args.from.h = (h - args.from.y);
+            }
+            picture = Blt_CanvasToPicture(interp, tkwin, imgPtr->gamma);
+            if (Blt_SwitchChanged(snapSwitches, "-from", (char *)NULL)) {
+                Blt_Picture newPict;
+                
+                newPict = Blt_CreatePicture(args.from.w, args.from.h);
+                Blt_CopyRegion(newPict, picture, args.from.x, args.from.y, 
+                               args.from.w, args.from.h, 0, 0);
+                Blt_FreePicture(picture);
+                picture = newPict;
+            }
+        } else if ((strcmp(classUid, "BltGraph") == 0) ||
+                   (strcmp(classUid, "BltBarchart") == 0) ||
+                   (strcmp(classUid, "BltStripchart") == 0) ||
+                   (strcmp(classUid, "BltContour") == 0)) {
+            int w, h;
+            
+            w = Tk_Width(tkwin);
+            h = Tk_Height(tkwin);
+            if (w < 2) {
+                w = Tk_ReqWidth(tkwin);
+            }
+            if (h < 2) {
+                h = Tk_ReqHeight(tkwin);
+            }
+            args.from.x = args.from.y = 0;
+            args.width  = args.from.w = w;
+            args.height = args.from.h = h;
+            if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
+                                  &args, BLT_SWITCH_DEFAULTS) < 0) {
+                return TCL_ERROR;
+            }
+            if ((args.from.w + args.from.x) > w) {
+                args.from.w = (w - args.from.x);
+            }
+            if ((args.from.h + args.from.y) > h) {
+                args.from.h = (h - args.from.y);
+            }
+            picture = Blt_GraphToPicture(interp, tkwin, imgPtr->gamma);
+            if (Blt_SwitchChanged(snapSwitches, "-from", (char *)NULL)) {
+                Blt_Picture newPict;
+                
+                newPict = Blt_CreatePicture(args.from.w, args.from.h);
+                Blt_CopyRegion(newPict, picture, args.from.x, args.from.y, 
+                               args.from.w, args.from.h, 0, 0);
+                Blt_FreePicture(picture);
+                picture = newPict;
+            }
+        } else {
+            fprintf(stderr, "initialize %s w=%d h=%d\n", Tk_PathName(tkwin),
+                    Tk_Width(tkwin), Tk_Height(tkwin));
+            args.from.x = args.from.y = 0;
+            args.width = args.from.w = Tk_Width(tkwin);
+            args.height = args.from.h = Tk_Height(tkwin);
+            if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
+                                  &args, BLT_SWITCH_DEFAULTS) < 0) {
+                return TCL_ERROR;
+            }
+            if ((args.from.w + args.from.x) > Tk_Width(tkwin)) {
+                args.from.w = (Tk_Width(tkwin) - args.from.x);
+            }
+            if ((args.from.h + args.from.y) > Tk_Height(tkwin)) {
+                args.from.h = (Tk_Height(tkwin) - args.from.y);
+            }
+            args.width = args.from.w;
+            args.height = args.from.h;
+            fprintf(stderr, "after parse w=%d h=%d\n", args.from.w, args.from.h);
+            if (args.flags & RAISE) {
+                XRaiseWindow(imgPtr->display, Tk_WindowId(tkwin));
+            }
+            picture = Blt_DrawableToPicture(tkwin, Tk_WindowId(tkwin),
+                                            args.from.x, args.from.y,
+                                            args.from.w, args.from.h,
+                                            imgPtr->gamma);
+            if (picture == NULL) {
+                Tcl_AppendResult(interp, "can't obtain snapshot of window \"", 
+                                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
+            }
         }
     } else {
-        Window window;
+            Window window;
         int w, h;
 
         if (Blt_GetWindowFromObj(interp, objv[2], &window) != TCL_OK) {
