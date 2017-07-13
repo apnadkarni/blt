@@ -5262,7 +5262,6 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
     const char *string;
 
     memset(&args, 0, sizeof(args));
-    classUid = NULL;
     string = Tcl_GetString(objv[2]);
     tkwin = Tk_NameToWindow(NULL, string, Tk_MainWindow(interp));
     if (tkwin != NULL) {

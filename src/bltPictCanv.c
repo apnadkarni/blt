@@ -395,6 +395,7 @@ Blt_CanvasToPicture(Tcl_Interp *interp, Tk_Window tkwin, float gamma)
         (*itemPtr->typePtr->displayProc)((Tk_Canvas) canvasPtr, itemPtr,
                 canvasPtr->display, pixmap, screenX1, screenY1, width, height);
     }
+    /* Snap a picture of the freshly drawn pixmap. */
     picture = Blt_DrawableToPicture(tkwin, pixmap, 0, 0, width, height, gamma);
     Tk_FreePixmap(Tk_Display(tkwin), pixmap);
     if (picture == NULL) {

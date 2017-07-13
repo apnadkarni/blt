@@ -54,6 +54,8 @@ BLT_EXTERN Tcl_AppInitProc Blt_PictureBmpInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureBmpSafeInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureGifInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureGifSafeInit;
+BLT_EXTERN Tcl_AppInitProc Blt_PictureIcoInit;
+BLT_EXTERN Tcl_AppInitProc Blt_PictureIcoSafeInit;
 #ifdef HAVE_LIBJPG
 BLT_EXTERN Tcl_AppInitProc Blt_PictureJpgInit;
 BLT_EXTERN Tcl_AppInitProc Blt_PictureJpgSafeInit;

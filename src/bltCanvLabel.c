@@ -998,16 +998,16 @@ FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
 
         /* Non-opaque, or special brush background.  Use
          * paint routines after snapping the background. */
-        picture = Blt_DrawableToPicture(tkwin, drawable, x1, y1, w, h, 1.0);
+        picture = Blt_CreatePicture(w, h);
         if (picture == NULL) {
-            return;                         /* Background is obscured. */
+            return;                         /* Can't allocate picture. */
         }
-        w = Blt_Picture_Width(picture);
-        h = Blt_Picture_Height(picture);
+        Blt_BlankPicture(picture, 0x0);
         painter = Blt_GetPainter(tkwin, 1.0);
         Blt_SetBrushRegion(attrPtr->brush, 0, 0, w, h);
         if (labelPtr->flags & ORTHOGONAL) {
             Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, attrPtr->brush, 0);
+            Blt_Picture_SetCompositeFlag(picture);
         } else {
             Point2d vertices[5];
             int i;
@@ -1668,6 +1668,8 @@ DisplayProc(
             Tk_CanvasDrawableCoords(canvas, 
                 labelPtr->anchorPos.x + labelPtr->rotWidth, 
                 labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
+            fprintf(stderr, "drawing outline at x=%d y=%d w=%d h=%d\n",
+                    x, y, x2 -x, y2 - y);
             XDrawRectangle(display, drawable, attrPtr->labelGC->gc, x, y, 
                            x2 - x, y2 - y);
         } else {

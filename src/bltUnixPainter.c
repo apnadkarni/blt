@@ -1289,7 +1289,9 @@ SnapDrawable(Painter *p, Drawable drawable, int x, int y, int w, int h)
     }
     Tk_DeleteErrorHandler(handler);
     if ((imgPtr == NULL) || (code != TCL_OK)) {
+#ifdef notdef
         Blt_Warn("can't snap picture of drawable\n");
+#endif
         return NULL;
     }
     picture = XImageToPicture(p, imgPtr);
@@ -1988,11 +1990,10 @@ CompositePicture(
             drawable, x, y, w, h, dx, dy);
 #endif
     if (dx < 0) {
-        w -= -dx;                       /* Shrink the width. */
+        w += dx;                        /* Shrink the width. */
         x += -dx;                       /* Change the left of the source
                                          * region. */
         dx = 0;                         /* Start at the left of the
-
                                          * destination. */
     } 
     if (dy < 0) {
@@ -2013,7 +2014,7 @@ CompositePicture(
 #ifdef notdef
         fprintf(stderr, "CompositePictureWithXRender failed\n");
 #endif
-        bgPtr = DrawableToPicture(p, drawable, dx, dy, dw, dh);
+        bgPtr = DrawableToPicture(p, drawable, x, y, dw, dh);
         if (bgPtr == NULL) {
             return FALSE;
         }

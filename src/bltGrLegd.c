@@ -2649,6 +2649,7 @@ IconOp(ClientData clientData, Tcl_Interp *interp, int objc,
     x = (w / 2);
     y = (h / 2);
     
+    /* Draw the symbol into a pixmap and snap a picture of it */
     pixmap = Blt_GetPixmap(graphPtr->display, Tk_RootWindow(graphPtr->tkwin),
         w, h, Tk_Depth(graphPtr->tkwin));
     Blt_Bg_FillRectangle(graphPtr->tkwin, pixmap, graphPtr->plotBg, 
@@ -2660,7 +2661,8 @@ IconOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_AppendResult(interp, "can't get picture of symbol.", (char *)NULL);
         return TCL_ERROR;
     }
-    /* Make the background transparent. */
+    /* Make the background transparent. Not quite as good as compositing
+     * it. */
     {
         int y;
         Blt_Pixel bg;

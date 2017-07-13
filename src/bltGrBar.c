@@ -1941,27 +1941,27 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
 {
     Blt_PaintBrush brush;
     Blt_Painter painter;
-    Blt_Picture bg;
+    Blt_Picture picture;
     
     if ((elemPtr->zAxisPtr == NULL) || (elemPtr->zAxisPtr->palette == NULL)) {
         return;                         /* No palette defined. */
     }
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, rectPtr->x, 
-        rectPtr->y, rectPtr->width, rectPtr->height, 1.0);
-    if (bg == NULL) {
+    picture = Blt_CreatePicture(rectPtr->width, rectPtr->height);
+    if (picture == NULL) {
         return;                         /* Background is obscured. */
     }
+    Blt_BlankPicture(picture, 0x0);
     brush = Blt_NewLinearGradientBrush();
     Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
     Blt_SetLinearGradientBrushPalette(brush, elemPtr->zAxisPtr->palette);
     Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, elemPtr);
-    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush,
-                       TRUE);
+    Blt_PaintRectangle(picture, 0, 0, rectPtr->width, rectPtr->height, 0, 0, 
+        brush, TRUE);
     Blt_FreeBrush(brush);
     painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, rectPtr->width, 
                      rectPtr->height, rectPtr->x, rectPtr->y, 0);
-    Blt_FreePicture(bg);
+    Blt_FreePicture(picture);
 }
 
 /*
@@ -1978,19 +1978,19 @@ static void
 DrawColorRectangle(Graph *graphPtr, Drawable drawable, Blt_Painter painter,
                    Blt_PaintBrush brush, XRectangle *rectPtr)
 {
-    Blt_Picture bg;
+    Blt_Picture picture;
     
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, rectPtr->x, 
-        rectPtr->y, rectPtr->width, rectPtr->height, 1.0);
-    if (bg == NULL) {
-        return;                         /* Background is obscured. */
+    picture = Blt_CreatePicture(rectPtr->width, rectPtr->height);
+    if (picture == NULL) {
+        return;                         /* Can't allocate picture. */
     }
+    Blt_BlankPicture(picture);
     Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
-    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush,
-                       TRUE);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
+    Blt_PaintRectangle(picture, 0, 0, rectPtr->width, rectPtr->height, 0, 0, 
+        brush, TRUE);
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, rectPtr->width, 
                      rectPtr->height, rectPtr->x, rectPtr->y, 0);
-    Blt_FreePicture(bg);
+    Blt_FreePicture(picture);
 }
 
 /*

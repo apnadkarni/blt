@@ -120,12 +120,12 @@ bind .ss.c  <5>  {
 bind .ss.c  <KeyPress-Up>  {
     set cx [expr [winfo width .ss.c] / 2]
     set cy [expr [winfo height .ss.c] / 2]
-    .ss.c scale all $cx $cy 1.1 1.2
+    .ss.c scale all $cx $cy 1.1 1.1
 }
 bind .ss.c  <KeyPress-Down>  {
     set cx [expr [winfo width .ss.c] / 2]
     set cy [expr [winfo height .ss.c] / 2]
-    .ss.c scale all $cx $cy 0.9 0.8
+    .ss.c scale all $cx $cy 0.9 0.9
 }
 
 focus .ss.c
