@@ -1984,7 +1984,7 @@ DrawColorRectangle(Graph *graphPtr, Drawable drawable, Blt_Painter painter,
     if (picture == NULL) {
         return;                         /* Can't allocate picture. */
     }
-    Blt_BlankPicture(picture);
+    Blt_BlankPicture(picture, 0x0);
     Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
     Blt_PaintRectangle(picture, 0, 0, rectPtr->width, rectPtr->height, 0, 0, 
         brush, TRUE);
