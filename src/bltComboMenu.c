@@ -7426,16 +7426,34 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
         }
         /* Image or text. */
         if (itemPtr->image != NULL) {
-            int ix, iy;
+            int dx, dy, ix, iy, iw, ih;
 
-            ix = x;
-            iy = y;
-            if (h > itemPtr->textHeight) {
-                iy += (h - IconHeight(itemPtr->image)) / 2;
+            ix = iy = 0;
+            iw = IconWidth(itemPtr->image);
+            ih = IconHeight(itemPtr->image);
+            dx = x, dy = y;
+            if (dx < 0) { 
+                ix += -dx;
+                iw += dx;
+                dx = 0;
+            } else if ((dx + iw) > w) {
+                iw = w - (dx + iw);
             }
-            Tk_RedrawImage(IconImage(itemPtr->image), 0, 0, 
-                IconWidth(itemPtr->image), IconHeight(itemPtr->image), 
-                drawable, ix, iy);
+            if (dy < 0) { 
+                iy += -dy;
+                ih += dy;
+                dy = 0;
+            } else if ((dy + ih) > h) {
+                ih = h - dy;
+            }
+            if (h > ih) {
+                iy += (h - ih) / 2;
+            }
+            /*  */
+            fprintf(stderr, "image=%s ix=%d iy=%d iw=%d ih=%d dx=%d dy=%d x=%d y=%d w=%d h=%d\n",
+                    IconName(itemPtr->image), ix, iy, iw, ih, dx, dy, x, y, w, h);
+            Tk_RedrawImage(IconImage(itemPtr->image), ix, iy, iw, ih, 
+                drawable, dx, dy);
         } else if (itemPtr->text != emptyString) {
             TextStyle ts;
             XColor *fg;

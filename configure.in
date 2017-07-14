@@ -659,14 +659,17 @@ AC_CHECK_LIB(Xext, main)
 AC_CHECK_LIB(Xrender, main)
 AC_CHECK_LIB(Xrandr, main)
 
-AC_CHECK_FUNCS(shmget shmat shmctl shmdt)
+AC_CHECK_FUNCS(strtolower strcasecmp strncasecmp)
 AC_CHECK_FUNCS(posix_openpt ptsname getpt grantpt unlockpt isastream setsid)
 AC_CHECK_FUNCS(tcflush openpty)
 AC_CHECK_FUNCS(open_controlling_pty)
-
-AC_CHECK_FUNCS(XShmQueryExtension XShmCreateImage XShmCreatePixmap XShmAttach XShmDetach)
-AC_CHECK_FUNCS(XRenderQueryExtension XRenderComposite XRenderCreatePicture)
 AC_CHECK_FUNCS(execvpe)
+AC_CHECK_FUNCS(shmget shmat shmctl shmdt)
+
+AC_CHECK_FUNCS(XShmQueryExtension XShmCreateImage XShmCreatePixmap)
+AC_CHECK_FUNCS(XShmAttach XShmDetach XShmPutImage XShmGetImage)
+AC_CHECK_FUNCS(XRenderQueryExtension XRenderComposite XRenderCreatePicture)
+AC_CHECK_FUNCS(XRRQueryExtension XRRGetScreenResources)
 
 
 # -----------------------------------------------------------------------
@@ -675,7 +678,7 @@ AC_CHECK_FUNCS(execvpe)
 #
 # -----------------------------------------------------------------------
 
-AC_HAVE_FUNCS(strtolower strcasecmp strncasecmp drand48 srand48 finite isnan ceil floor round)
+AC_HAVE_FUNCS(drand48 srand48 finite isnan ceil floor round)
 
 # For HPUX it's a little more complicated to search for isfinite
 AC_MSG_CHECKING([for isfinite])

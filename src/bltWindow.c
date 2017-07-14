@@ -46,8 +46,23 @@
 
 #include <X11/Xlib.h>
 
-#ifdef notdef /* WIN32 */
+#ifndef WIN32
   #include <X11/Xproto.h>
+  #include <X11/Xlibint.h>
+  #ifdef HAVE_X11_EXTENSIONS_XRENDER_H
+    #include <X11/extensions/Xrender.h>
+  #endif  /* HAVE_X11_EXTENSIONS_XRENDER_H */
+  #ifdef HAVE_X11_EXTENSIONS_XCOMPOSITE_H
+    #include <X11/extensions/Xcomposite.h>
+  #endif  /* HAVE_X11_EXTENSIONS_XCOMPOSITE_H */
+  #ifdef HAVE_X11_EXTENSIONS_XSHM_H
+    #include <X11/extensions/XShm.h>
+    #include <X11/extensions/shmproto.h>
+  #endif  /* HAVE_X11_EXTENSIONS_XSHM_H */
+  #ifdef HAVE_RANDR
+    #include <X11/extensions/randr.h>
+    #include <X11/extensions/Xrandr.h>
+  #endif
 #endif
 
 #include "bltAlloc.h"
@@ -521,5 +536,73 @@ Blt_SizeOfScreen(Tk_Window tkwin, int *widthPtr, int *heightPtr)
 {
     *widthPtr = WidthOfScreen(Tk_Screen(tkwin));
     *heightPtr = HeightOfScreen(Tk_Screen(tkwin));
+}
+
+void
+Blt_CollectExtInfo(Tcl_Interp *interp) 
+{
+    Tk_Window tkwin;
+    Display *display;
+    int state, majorNum, minorNum;
+    Tcl_Obj *objPtr;
+
+    tkwin = Tk_MainWindow(interp);
+    display = Tk_Display(tkwin);
+#ifdef HAVE_XRRQUERYEXTENSION
+    if (XRRQueryExtension(display, &majorNum, &minorNum)) {
+        objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
+        Tcl_SetVar2Ex(interp, "::blt::features", "XRandr", objPtr, 
+                  TCL_GLOBAL_ONLY);
+    }
+#endif /* HAVE_XRRQUERYEXTENSION */
+#ifdef HAVE_XSHMQUERYEXTENSION
+    if (XShmQueryVersion(display, &majorNum, &minorNum, &state)) {
+        objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
+        Tcl_SetVar2Ex(interp, "::blt::features", "XShm", objPtr, 
+                  TCL_GLOBAL_ONLY);
+        objPtr = Tcl_NewIntObj(state);
+        Tcl_SetVar2Ex(interp, "::blt::features", "XShmPixmap", objPtr, 
+                  TCL_GLOBAL_ONLY);
+    }
+#ifdef HAVE_XSHMCREATEPIXMAP
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* HAVE_XSHMCREATEPIXMAP */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "XShmCreatePixmap", objPtr, 
+                  TCL_GLOBAL_ONLY);
+#ifdef HAVE_XSHMPUTIMAGE
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* HAVE_XSHMPUTIMAGE */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "XShmPutImage", objPtr, 
+                  TCL_GLOBAL_ONLY);
+#ifdef HAVE_XSHMGETIMAGE
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* HAVE_XSHMPUTIMAGE */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "XShmGetImage", objPtr, 
+                  TCL_GLOBAL_ONLY);
+#endif /* HAVE_XSHMQUERYEXTENSION */
+#ifdef HAVE_XRENDERQUERYEXTENSION
+    if (XRenderQueryExtension(display, &majorNum, &minorNum)) {
+        objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
+        Tcl_SetVar2Ex(interp, "::blt::features", "XRender", objPtr, 
+                  TCL_GLOBAL_ONLY);
+    }
+#ifdef HAVE_XRENDERCOMPOSITE
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* HAVE_XRENDERCOMPOSITE */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "XRenderComposite", objPtr, 
+                  TCL_GLOBAL_ONLY);
+#endif /* HAVE_XRENDERQUERYEXTENSION */
 }
 

@@ -91,15 +91,14 @@ struct _Blt_Ps;
  *---------------------------------------------------------------------------
  */
 struct _Blt_Picture {
+    unsigned int flags;                 /* Flags describing the picture. */
     short int width, height;            /* Size of the image in pixels. */
-    short int flags;                    /* Flags describing the picture. */
     short int pixelsPerRow;             /* Stride of the image. Row width
                                          * plus possible padding to ensure
                                          * each row starts on a 16-byte
                                          * boundary. */
     short int delay;                    /* Delay before displaying this
                                          * picture. */
-    short int reserved;
     void *buffer;                       /* Unaligned (malloc'ed) memory for
                                          * pixels. */
     Blt_Pixel *bits;                    /* Aligned start of picture's
