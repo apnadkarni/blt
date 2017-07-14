@@ -1288,13 +1288,10 @@ SnapDrawable(Painter *p, Drawable drawable, int x, int y, int w, int h)
         XSync(p->display, False);
     }
     Tk_DeleteErrorHandler(handler);
-    if ((imgPtr == NULL) || (code != TCL_OK)) {
-#ifdef notdef
-        Blt_Warn("can't snap picture of drawable\n");
-#endif
-        return NULL;
+    picture = NULL;
+    if ((imgPtr != NULL) && (code == TCL_OK)) {
+        picture = XImageToPicture(p, imgPtr);
     }
-    picture = XImageToPicture(p, imgPtr);
 #ifdef HAVE_XSHMQUERYEXTENSION
     if (haveShm) {
         XShmDetach(p->display, &xssi);
@@ -1303,7 +1300,9 @@ SnapDrawable(Painter *p, Drawable drawable, int x, int y, int w, int h)
         XSync(p->display, False);
     }
 #endif  /* HAVE_XSHMQUERYEXTENSION */
-    XDestroyImage(imgPtr);
+    if (imgPtr != NULL) {
+        XDestroyImage(imgPtr);
+    }
     return picture;
 }
 
@@ -1731,6 +1730,7 @@ PaintPicture(
     if (haveShm) {
         XShmDetach(p->display, &xssi);
         shmdt(xssi.shmaddr);
+        shmctl (xssi.shmid, IPC_RMID, 0);
         XSync(p->display, False);
     }
 #endif  /* HAVE_XSHMQUERYEXTENSION */
