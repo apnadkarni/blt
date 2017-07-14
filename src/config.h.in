@@ -400,6 +400,9 @@
 /* Define to 1 if you have the `XRRGetScreenResources' function. */
 #undef HAVE_XRRGETSCREENRESOURCES
 
+/* Define to 1 if you have the `XRRQueryExtension' function. */
+#undef HAVE_XRRQUERYEXTENSION
+
 /* Define to 1 if you have the `XShmAttach' function. */
 #undef HAVE_XSHMATTACH
 
@@ -411,6 +414,12 @@
 
 /* Define to 1 if you have the `XShmDetach' function. */
 #undef HAVE_XSHMDETACH
+
+/* Define to 1 if you have the `XShmGetImage' function. */
+#undef HAVE_XSHMGETIMAGE
+
+/* Define to 1 if you have the `XShmPutImage' function. */
+#undef HAVE_XSHMPUTIMAGE
 
 /* Define to 1 if you have the `XShmQueryExtension' function. */
 #undef HAVE_XSHMQUERYEXTENSION

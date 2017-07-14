@@ -348,15 +348,17 @@ Blt_CreatePicture(int w, int h)
      * Be careful. There's a bunch of picture routines that assume an even
      * number of pixels per row. 
      */
-    pixelsPerRow = (w + 3) & ~3;        /* Align each row on a 16-byte
-                                         * boundary. */
+    pixelsPerRow = (w + 3) & ~3;        /* Pad the row so that the row size
+                                         * is a 4-pixel multiple.  This is
+                                         * for SIMD routines: ensures
+                                         * aligned and let's process 4
+                                         * pixels at a time. */
     destPtr = Blt_AssertMalloc(sizeof(Pict));
     destPtr->pixelsPerRow = pixelsPerRow;
     destPtr->width  = w;
     destPtr->height = h;
     destPtr->flags  = BLT_PIC_UNINITIALIZED;
     destPtr->delay = 0;
-    destPtr->reserved = 0;
     /* Over-allocate a buffer so that we can align it (if needed) to a
      * 16-byte boundary. */
     h = ((h + 1) / 2) * 2;              /* Make even number of rows. */

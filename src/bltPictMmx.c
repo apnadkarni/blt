@@ -2279,7 +2279,7 @@ GetCpuFlags(void)
  *
  * SaveFeatures --
  *
- *     Sets a TCL variable "::blt::cpu_flags" that is a list representing
+ *     Sets a TCL variable "::blt::cpuflags" that is a list representing
  *     the X86 cpu feature flags.
  *      
  * Results: 
@@ -2332,7 +2332,7 @@ SaveFeatures(Tcl_Interp *interp, unsigned long flags)
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
 #endif
-    Tcl_SetVar2Ex(interp, "::blt::cpu_info", NULL, listObjPtr, 
+    Tcl_SetVar2Ex(interp, "::blt::cpuflags", NULL, listObjPtr, 
                   TCL_GLOBAL_ONLY);
 }
 

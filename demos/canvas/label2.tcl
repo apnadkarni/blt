@@ -64,31 +64,11 @@ proc Activate { canvas id } {
   set dashOffset -1
   after cancel $afterId
   MarchingAnts $canvas $id
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     $canvas raise $id
 }
-proc Deactivate { canvas id } {
-  global afterId bg1
-  $canvas itemconfigure $id -state normal -bg $bg1
+proc Deactivate { canvas id bg } {
+  global afterId 
+  $canvas itemconfigure $id -state normal -bg $bg
   after cancel $afterId
 }
 
@@ -119,7 +99,7 @@ set id [.ss.c create label 100 100 \
 	    -height 50]
 
 .ss.c bind $id <Enter> [list Activate .ss.c $id]
-.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
+.ss.c bind $id <Leave> [list Deactivate .ss.c $id $bg1]
 
 set id [.ss.c create label 150 100 \
 	    -text "Hello, World" \
@@ -135,9 +115,9 @@ set id [.ss.c create label 150 100 \
 	    -height 50]
 
 .ss.c bind $id <Enter> [list Activate .ss.c $id]
-.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
+.ss.c bind $id <Leave> [list Deactivate .ss.c $id $bg1]
 }
-set id [.ss.c create label 100 50 \
+set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
 	    -bg $bg2 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
@@ -154,7 +134,7 @@ blt::table . \
     0,0 .ss -fill both
 
 .ss.c bind $id <Enter> [list Activate .ss.c $id]
-.ss.c bind $id <Leave> [list Deactivate .ss.c $id]
+.ss.c bind $id <Leave> [list Deactivate .ss.c $id $bg2]
 set x2 [expr [winfo reqwidth .ss.c] - 10]
 set y2 [expr [winfo reqheight .ss.c] - 10]
 #.ss.c configure -scrollregion [list 0 0  $x2 $y2]
