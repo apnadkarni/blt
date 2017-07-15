@@ -1536,7 +1536,7 @@ SnapPictureWithXShm(Painter *p, Drawable drawable, int x, int y, int w, int h,
 
     xssi.shmid = shmget(IPC_PRIVATE,
                         imgPtr->bytes_per_line * imgPtr->height,
-                        IPC_CREAT|0777);
+                        IPC_CREAT|0600);
     if (xssi.shmid == -1) {
         Blt_Warn("shmget: %s\n", strerror(errno));
         return FALSE;
@@ -1545,6 +1545,7 @@ SnapPictureWithXShm(Painter *p, Drawable drawable, int x, int y, int w, int h,
     xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
     if ((xssi.shmaddr == (void *)-1) ||  (xssi.shmaddr == NULL)) {
         Blt_Warn("shmat: %s\n", strerror(errno));
+        shmctl (xssi.shmid, IPC_RMID, 0);
         return FALSE;
     }
     handler = Tk_CreateErrorHandler(p->display, -1, -1, X_ShmAttach, 
@@ -1568,6 +1569,8 @@ SnapPictureWithXShm(Painter *p, Drawable drawable, int x, int y, int w, int h,
         if (imgPtr != NULL) {
             XDestroyImage(imgPtr);
         }
+        shmdt(xssi.shmaddr);
+        shmctl (xssi.shmid, IPC_RMID, 0);
         return FALSE;
     }
     *picturePtr = XImageToPicture(p, imgPtr);
@@ -1748,7 +1751,7 @@ PaintPictureWithXShm(
     assert(imgPtr);
     xssi.shmid = shmget(IPC_PRIVATE,
                         imgPtr->bytes_per_line * imgPtr->height,
-                        IPC_CREAT | 0777);
+                        IPC_CREAT | 0600);
     if (xssi.shmid == -1) {
         Blt_Warn("shmget: %s\n", strerror(errno));
         return FALSE;
@@ -2004,7 +2007,7 @@ CompositePictureWithXRender(
                              (char *)NULL, &xssi, w, h);
     assert(imgPtr);
     xssi.shmid = shmget(IPC_PRIVATE, imgPtr->bytes_per_line * imgPtr->height,
-                        IPC_CREAT | 0777);
+                        IPC_CREAT | 0600);
     if (xssi.shmid == -1) {
         Blt_Warn("shmget: %s\n", strerror(errno));
         return FALSE;
@@ -2064,7 +2067,7 @@ CompositePictureWithXRender(
                      dx, dy, w, h);
     XShmDetach(p->display, &xssi);
     shmdt(xssi.shmaddr);
-    XSync(p->display, False);
+    shmctl (xssi.shmid, IPC_RMID, 0);
     XRenderFreePicture(p->display, srcPict);
     XRenderFreePicture(p->display, dstPict);
     XDestroyImage(imgPtr);

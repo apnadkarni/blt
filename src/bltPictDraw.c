@@ -2488,47 +2488,39 @@ Blt_PaintDelete(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr,
     Blt_Picture picture;
     Point2d points[4];
     Region2d reg;
-    Blt_Shadow shadow;
-    int x, y, r;
+    int cx, cy, r, d;
     Blt_PaintBrush brush;
 
     brush = Blt_NewColorBrush(Blt_XColorToPixel(fillColorPtr));
-    Blt_Shadow_Set(&shadow, 1, 2, 0x0, 0xA0);
-    x = y = 0;
-    reg.left = x, reg.right = x + w;
-    reg.top = y, reg.bottom = y + h;
-
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
     picture = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(picture, 0x0);
-    x = y = w / 2 - 1;
-    r = x - 1;
-#ifdef notdef
-    if ((isActive) && (shadow.width > 0)) {
-        DrawCircleShadow(picture, x, y, r, 0.0, TRUE, &shadow);
-    }
-#endif
-    DrawCircle(picture, x, y, r, 0.0, brush, FALSE);
-
-    points[0].x = x - 2;
-    points[0].y = y - 3;
-    points[1].x = x - 3;
-    points[1].y = y - 2;
-    points[2].x = x + 2;
-    points[2].y = y + 3;
-    points[3].x = x + 3;
-    points[3].y = y + 2;
+    Blt_BlankPicture(picture, 0x00);
+    cx = cy = w / 2;
+    r = cx - 1;
+    d = r - 3;
+    DrawCircle(picture, cx, cy, r, 0.0, brush, FALSE);
+    points[0].x = cx - (d - 2);
+    points[0].y = cy - (d - 3);
+    points[1].x = cx - (d - 3);
+    points[1].y = cy - (d - 2);
+    points[2].x = cx + (d - 2);
+    points[2].y = cy + (d - 3);
+    points[3].x = cx + (d - 3);
+    points[3].y = cy + (d - 2);
 
     Blt_SetColorBrushColor(brush, Blt_XColorToPixel(symbolColorPtr));
     PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
 
-    points[0].x = x + 3;
-    points[0].y = y - 2;
-    points[1].x = x + 2;
-    points[1].y = y - 3;
-    points[2].x = x - 3;
-    points[2].y = y + 2;
-    points[3].x = x - 2;
-    points[3].y = y + 3;
+    points[0].x = cx + (d - 3);
+    points[0].y = cy - (d - 2);
+    points[1].x = cx + (d - 2);
+    points[1].y = cy - (d - 3);
+    points[2].x = cx - (d - 3);
+    points[2].y = cy + (d - 2);
+    points[3].x = cx - (d - 2);
+    points[3].y = cy + (d - 3);
 
     PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);

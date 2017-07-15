@@ -7227,6 +7227,9 @@ DrawItemBackground(Item *itemPtr, Drawable drawable, int x, int y)
     } else {
         bg = stylePtr->normalBg;
     }       
+    if ((itemPtr->flags & ITEM_CASCADE) && (itemPtr->menuObjPtr == NULL)) {
+        bg = stylePtr->disabledBg;
+    }
     w = VPORTWIDTH(comboPtr);
     w = MAX(comboPtr->worldWidth, w);
 #ifdef notdef
@@ -7348,7 +7351,9 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
     ComboMenu *comboPtr;    
     Style *stylePtr;
     int x0, w, h;
+    int itemDisabled;
 
+    itemDisabled = FALSE;
     itemPtr->flags &= ~ITEM_REDRAW;
     stylePtr = itemPtr->stylePtr;
     comboPtr = itemPtr->comboPtr;
@@ -7358,6 +7363,10 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
     h = itemPtr->height - 2 * stylePtr->borderWidth;
     y += stylePtr->borderWidth;
     x += ITEM_PADX;
+    if ((itemPtr->flags & ITEM_DISABLED) ||
+        ((itemPtr->flags & ITEM_CASCADE) && (itemPtr->menuObjPtr == NULL))) {
+        itemDisabled = TRUE;
+    }
     if (itemPtr->flags & ITEM_SEPARATOR) {
         DrawSeparator(itemPtr, drawable, x, y, w, h);
         y += ITEM_SEP_HEIGHT;
@@ -7399,8 +7408,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             if (h > itemPtr->iconHeight) {
                 iy += (h - itemPtr->iconHeight) / 2;
             }
-            if ((Blt_IsPicture(IconImage(itemPtr->icon))) && 
-                (itemPtr->flags & ITEM_DISABLED)) {
+            if ((Blt_IsPicture(IconImage(itemPtr->icon))) && (itemDisabled)) {
                 Blt_Picture src, dst;
                 Blt_Painter painter;
 
@@ -7466,7 +7474,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             if (h > itemPtr->textHeight) {
                 ty += (h - itemPtr->textHeight) / 2;
             }
-            if (itemPtr->flags & ITEM_DISABLED) {
+            if (itemDisabled) {
                 fg = stylePtr->disabledTextFg;
             } else if (comboPtr->activePtr == itemPtr) {
                 fg = stylePtr->activeTextFg;
@@ -7492,12 +7500,15 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
         if (itemPtr->flags & ITEM_CASCADE) {
             XColor *color;
 
-            if (itemPtr->flags & ITEM_DISABLED) {
+            if (itemDisabled) {
                 color = stylePtr->disabledTextFg;
             } else if (comboPtr->activePtr == itemPtr) {
                 color = stylePtr->activeTextFg;
             } else {
                 color = stylePtr->normalTextFg;
+            }
+            if (itemPtr->menuObjPtr == NULL) {
+                color = stylePtr->disabledTextFg;
             }
             x -= itemPtr->rightIndWidth;
             Blt_DrawArrow(comboPtr->display, drawable, color, x, 
@@ -7508,7 +7519,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             TextStyle ts;
             XColor *fg;
             
-            if (itemPtr->flags & ITEM_DISABLED) {
+            if (itemDisabled) {
                 fg = stylePtr->disabledAccelFg;
             } else if (comboPtr->activePtr == itemPtr) {
                 fg = stylePtr->activeAccelFg;
