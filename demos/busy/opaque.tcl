@@ -7,7 +7,7 @@ package require BLT
 # 
 proc MakeBusy {} {
     global spinner
-    blt::busy .f1 -opacity 15 -color grey10 -image $spinner -delay 50
+    blt::busy .f1 -opacity 50 -color grey10 -image $spinner -delay 50
     blt::busy .#menu
 }
 	       

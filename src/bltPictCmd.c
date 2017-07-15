@@ -5287,6 +5287,11 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 args.from.h = (h - args.from.y);
             }
             picture = Blt_CanvasToPicture(interp, tkwin, imgPtr->gamma);
+            if (picture == NULL) {
+                Tcl_AppendResult(interp, "can't obtain snapshot of window \"", 
+                                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
+                return TCL_ERROR;
+            }
             if (Blt_SwitchChanged(snapSwitches, "-from", (char *)NULL)) {
                 Blt_Picture newPict;
                 
@@ -5324,6 +5329,11 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 args.from.h = (h - args.from.y);
             }
             picture = Blt_GraphToPicture(interp, tkwin, imgPtr->gamma);
+            if (picture == NULL) {
+                Tcl_AppendResult(interp, "can't obtain snapshot of window \"", 
+                                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
+                return TCL_ERROR;
+            }
             if (Blt_SwitchChanged(snapSwitches, "-from", (char *)NULL)) {
                 Blt_Picture newPict;
                 
@@ -5334,6 +5344,8 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 picture = newPict;
             }
         } else {
+            int rootX, rootY;
+
             fprintf(stderr, "initialize %s w=%d h=%d\n", Tk_PathName(tkwin),
                     Tk_Width(tkwin), Tk_Height(tkwin));
             args.from.x = args.from.y = 0;
@@ -5355,17 +5367,13 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (args.flags & RAISE) {
                 XRaiseWindow(imgPtr->display, Tk_WindowId(tkwin));
             }
-            picture = Blt_DrawableToPicture(tkwin, Tk_WindowId(tkwin),
-                                            args.from.x, args.from.y,
-                                            args.from.w, args.from.h,
-                                            imgPtr->gamma);
-            if (picture == NULL) {
-                Tcl_AppendResult(interp, "can't obtain snapshot of window \"", 
-                                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
-            }
+            Tk_GetRootCoords(tkwin, &rootX, &rootY);
+            picture = Blt_DrawableToPicture(tkwin, Tk_RootWindow(tkwin),
+                rootX + args.from.x, rootY + args.from.y,
+                args.from.w, args.from.h, imgPtr->gamma);
         }
     } else {
-            Window window;
+        Window window;
         int w, h;
 
         if (Blt_GetWindowFromObj(interp, objv[2], &window) != TCL_OK) {
@@ -5399,10 +5407,11 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         picture = Blt_WindowToPicture(imgPtr->display, window, args.from.x,
                 args.from.y, args.from.w, args.from.h, imgPtr->gamma);
-        if (picture == NULL) {
-            Tcl_AppendResult(interp, "can't obtain snapshot of window \"", 
-                Tcl_GetString(objv[2]), "\"", (char *)NULL);
-        }
+    }
+    if (picture == NULL) {
+        Tcl_AppendResult(interp, "can't obtain snapshot of window \"", 
+                         Tcl_GetString(objv[2]), "\"", (char *)NULL);
+        return TCL_ERROR;
     }
     /* Now that we have the snapshot, resample the picture if needed.  */
     if ((args.flags | imgPtr->flags) & MAXPECT) {

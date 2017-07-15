@@ -1005,8 +1005,6 @@ InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes,
 static void
 ComputeGeometry(ComboEntry *comboPtr)
 {
-    Button *butPtr = &comboPtr->clearButton;
-
     /* Determine the height of the entry.  It's the maximum height of all
      * it's components: icon, label, clear button, and arrow. */
     comboPtr->iconWidth  = comboPtr->iconHeight  = 0;
@@ -4552,7 +4550,6 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     if (comboPtr->flags & ARROW) {
         XColor *color;
         int aw, ah, ax, ay;
-        GC gc;
         int relief;
 
         relief = comboPtr->arrow.relief;
