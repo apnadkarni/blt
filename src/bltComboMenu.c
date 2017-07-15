@@ -7437,7 +7437,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                 iw += dx;
                 dx = 0;
             } else if ((dx + iw) > w) {
-                iw = w - (dx + iw);
+                iw = w - dx;
             }
             if (dy < 0) { 
                 iy += -dy;
@@ -7450,8 +7450,10 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                 iy += (h - ih) / 2;
             }
             /*  */
+#ifdef notdef
             fprintf(stderr, "image=%s ix=%d iy=%d iw=%d ih=%d dx=%d dy=%d x=%d y=%d w=%d h=%d\n",
                     IconName(itemPtr->image), ix, iy, iw, ih, dx, dy, x, y, w, h);
+#endif
             Tk_RedrawImage(IconImage(itemPtr->image), ix, iy, iw, ih, 
                 drawable, dx, dy);
         } else if (itemPtr->text != emptyString) {

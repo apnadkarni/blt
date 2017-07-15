@@ -141,7 +141,7 @@ typedef struct _Blt_Painter Painter;
                                          * visual on the painter's display.
                                          * Don't use XRenderComposite to
                                          * composite pictures. */
-#define PAINTER_NO_SHM_IMAGES   (1<<3)  /* Indicates that we previously
+#define PAINTER_DONT_USE_SHM    (1<<3)  /* Indicates that we previously
                                          * could not find the XShm
                                          * extension.  Don't use
                                          * XShmPutImage or XShmGetImage. */
