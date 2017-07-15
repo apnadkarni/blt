@@ -505,8 +505,7 @@ SnapReferenceWindow(Tk_Window tkwin, int w, int h)
         clipped++;
     }
     /* Get a snapshot of the portion of the window that's on-screen. */
-    fprintf(stderr, "Snapping %s, w=%d, h=%d\n", Tk_PathName(tkwin), w, h);
-    picture = Blt_DrawableToPicture(tkwin, Tk_WindowId(tkwin), x, y,
+    picture = Blt_DrawableToPicture(tkwin, Tk_RootWindow(tkwin), rootX, rootY,
                 w, h, 1.0);
     if (picture == NULL) {
         Blt_Warn("can't grab window (possibly obscured?)\n");

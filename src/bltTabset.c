@@ -93,8 +93,6 @@
 #define OUTER_PAD               0
 #define LABEL_PAD               3
 #define CORNER_OFFSET           3
-#define CLOSE_WIDTH             16
-#define CLOSE_HEIGHT            16
  
 #define TAB_SCROLL_OFFSET       10
 
@@ -3114,7 +3112,7 @@ ConfigureTab(Tabset *setPtr, Tab *tabPtr)
     GC newGC;
     XGCValues gcValues;
     unsigned long gcMask;
-        
+    
     font = GETATTR(tabPtr, font);
     newGC = NULL;
     if (tabPtr->text != NULL) {
@@ -3231,6 +3229,7 @@ ConfigureButton(
     int flags)
 {
     Button *butPtr = &setPtr->closeButton;
+    Blt_FontMetrics fm;
 
     iconOption.clientData = setPtr;
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, buttonSpecs, 
@@ -3243,6 +3242,8 @@ ConfigureButton(
         Tk_GeometryRequest(setPtr->tkwin, setPtr->reqWidth, setPtr->reqHeight);
     }
 #endif
+    Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
+    butPtr->width = butPtr->height = fm.linespace - (2 * butPtr->borderWidth);
     setPtr->flags |= REDRAW_ALL;
     EventuallyRedraw(setPtr);
     return TCL_OK;
@@ -5960,7 +5961,6 @@ ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
     int count;
 
     /* Compute the geometry unrotated (0 degrees). */
-    
     font = GETATTR(tabPtr, font);
     w = PADDING(tabPtr->padX);
     h = PADDING(tabPtr->padY);
@@ -5988,7 +5988,7 @@ ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
     }
     if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
         (setPtr->plusPtr != tabPtr)) {
-        bw = bh = CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
+        bw = bh = setPtr->closeButton.width;
         count++;
     }
     w += iw + th + bw;
@@ -6055,8 +6055,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
     }
     if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
         (setPtr->plusPtr != tabPtr)) {
-        closeWidth0 = closeHeight0 = 
-            CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
+        closeWidth0 = closeHeight0 = setPtr->closeButton.width;
         count++;
     }
     w += iconWidth0 + tabPtr->textWidth0 + closeWidth0;
@@ -7834,7 +7833,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     int fx, fy, fw, fh;
     int worldWidth, worldHeight, labelWidth;
     int xSelPad, ySelPad;
-
+    
     worldWidth = tabPtr->worldWidth;
     worldHeight = setPtr->tabHeight + setPtr->inset2;
 
@@ -7900,10 +7899,9 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
 
         /* Close button is always located on the right side of the tab,
          * it's height is centered. */
-        bx = x2 - CLOSE_WIDTH - setPtr->closeButton.borderWidth;
+        bw = bh = setPtr->closeButton.width;
+        bx = x2 - bw - setPtr->closeButton.borderWidth;
         by = y1;
-        bw = CLOSE_WIDTH;
-        bh = CLOSE_HEIGHT;
         if (h > bh) {
             by += (h - bh) / 2;
         } else {
@@ -7949,7 +7947,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     labelWidth = tabPtr->labelWidth0;
     if ((tabPtr != setPtr->plusPtr) && 
         (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
-        labelWidth -= CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
+        labelWidth -= setPtr->closeButton.width;
     }
     if (w > labelWidth) {
         if (setPtr->justify == TK_JUSTIFY_CENTER) {
@@ -8059,7 +8057,7 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
     Blt_Picture picture;
     XColor *fill, *symbol;
     Blt_Bg bg;
-    
+
     if (tabPtr == setPtr->selectPtr) {
         bg = GETATTR(tabPtr, selBg);
     } else if ((tabPtr == setPtr->activeButtonPtr) || 
@@ -8075,7 +8073,10 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
         fill = butPtr->normalBgColor;
         symbol = butPtr->normalFg;
     }
-    picture = Blt_PaintDelete(CLOSE_WIDTH, CLOSE_HEIGHT, Blt_Bg_BorderColor(bg),
+
+    picture = Blt_PaintDelete(setPtr->closeButton.width,
+                              setPtr->closeButton.height,
+                              Blt_Bg_BorderColor(bg),
         fill, symbol, (tabPtr == setPtr->activeButtonPtr));
     if (setPtr->angle != 0.0) {
         Blt_Picture rotated;
@@ -8255,7 +8256,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         maxLength -= tabPtr->iPadX.side2;
         if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
             (setPtr->plusPtr != tabPtr)) {
-            maxLength -= LABEL_PAD + CLOSE_WIDTH + 
+            maxLength -= LABEL_PAD + setPtr->closeButton.width + 
                 setPtr->closeButton.borderWidth;
         }
         if (tabPtr == setPtr->selectPtr) {

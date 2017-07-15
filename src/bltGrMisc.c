@@ -1028,7 +1028,7 @@ Blt_DrawArrow(Display *display, Drawable drawable, XColor *color, int x, int y,
 {
     int s;
     int s2;
-    int ax, ay;
+    int cx, cy;
     int dx, dy;
     GC gc;
 
@@ -1048,33 +1048,33 @@ Blt_DrawArrow(Display *display, Drawable drawable, XColor *color, int x, int y,
         break;
     }
     s2 = (s / 2) + 1;
-    ax = x + w / 2;
-    ay = y + h / 2;
+    cx = x + w / 2 - 1;
+    cy = y + h / 2;
 
     gc = Tk_GCForColor(color, drawable);
     switch (orientation) {
     case ARROW_UP:
-        ay -= s2 / 2;
-        for (dx = 0; dx < s2; dx++, ay++) {
-            XDrawLine(display, drawable, gc, ax - dx, ay, ax + dx, ay);
+        cy -= s2 / 2;
+        for (dx = 0; dx < s2; dx++, cy++) {
+            XDrawLine(display, drawable, gc, cx - dx, cy, cx + dx, cy);
         }
         break;
     case ARROW_DOWN:
-        ay += s2 / 2;
-        for (dx = 0; dx < s2; dx++, ay--) {
-            XDrawLine(display, drawable, gc, ax - dx, ay, ax + dx, ay);
+        cy += s2 / 2;
+        for (dx = 0; dx < s2; dx++, cy--) {
+            XDrawLine(display, drawable, gc, cx - dx, cy, cx + dx, cy);
         }
         break;
     case ARROW_LEFT:
-        ax -= s2 / 2;
-        for (dy = 0; dy < s2; dy++, ax++) {
-            XDrawLine(display, drawable, gc, ax, ay - dy, ax, ay + dy);
+        cx -= s2 / 2;
+        for (dy = 0; dy < s2; dy++, cx++) {
+            XDrawLine(display, drawable, gc, cx, cy - dy, cx, cy + dy);
         }
         break;
     case ARROW_RIGHT:
-        ax += s2 / 2;
-        for (dy = 0; dy < s2; dy++, ax--) {
-            XDrawLine(display, drawable, gc, ax, ay - dy, ax, ay + dy);
+        cx += s2 / 2;
+        for (dy = 0; dy < s2; dy++, cx--) {
+            XDrawLine(display, drawable, gc, cx, cy - dy, cx, cy + dy);
         }
         break;
     }
