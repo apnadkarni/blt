@@ -1435,7 +1435,6 @@ PaintPicture(
     }
 #ifdef HAVE_XSHMQUERYEXTENSION
     haveShm = XShmQueryExtension(p->display);
-    haveShm = FALSE;
     if (haveShm) {
         /* for the XShmPixmap */
         xssi.shmid = -1;
