@@ -824,7 +824,6 @@ NewPainter(PainterKey *keyPtr)
     p->display = keyPtr->display;
     p->gamma = keyPtr->gamma;
     p->visualPtr = keyPtr->visualPtr;
-    p->flags = PAINTER_DONT_USE_SHM;
     
     p->refCount = 0;
     p->rMask = (unsigned int)p->visualPtr->red_mask;
@@ -1518,7 +1517,6 @@ static int
 SnapPictureWithXShm(Painter *p, Drawable drawable, int x, int y, int w, int h,
                      Blt_Picture *picturePtr)
 {
-    Pixmap pixmap;
     XImage *imgPtr;
     int code;
     Tk_ErrorHandler handler;
