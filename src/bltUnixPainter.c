@@ -1503,13 +1503,13 @@ PainterErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
  *
  * SnapPictureWithXShm --
  *
- *      Attempts to snap the image from the drawable into an XImage
- *      structure (using XShmGetImage).  This may fail if the coordinates
- *      of the region in the drawable are obscured.
+ *      Try to snap the image from the drawable (using XShmGetImage) and
+ *      convert it into a picture image.  This may fail if the drawable is
+ *      a window and a region of the drawable is obscured.
  *
  * Results:
- *      Returns a pointer to the XImage if successful. Otherwise NULL is
- *      returned.
+ *      Returns TRUE if successful, FALSE otherwise. The pointer
+ *      *picturePtr* will point to the malloc-ed picture image.
  *
  *---------------------------------------------------------------------------
  */
@@ -1584,13 +1584,13 @@ SnapPictureWithXShm(Painter *p, Drawable drawable, int x, int y, int w, int h,
  *
  * SnapPicture --
  *
- *      Attempts to snap the image from the drawable into an XImage
- *      structure (using XGetImage).  This may fail is the coordinates of
- *      the region in the drawable are obscured.
+ *      Try to snap the image from the drawable (using XGetImage) and
+ *      convert it into a picture image.  This may fail if the drawable is
+ *      a window and a region of the drawable is obscured.
  *
  * Results:
- *      Returns a pointer to the XImage if successful. Otherwise NULL is
- *      returned.
+ *      Returns TRUE if successful, FALSE otherwise. The pointer
+ *      *picturePtr* will point to the malloc-ed picture image.
  *
  *---------------------------------------------------------------------------
  */
