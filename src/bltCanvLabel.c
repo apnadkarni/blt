@@ -57,14 +57,9 @@
  *      -height numPixels
  *      -anchor anchorName
  *      
- * o Try to match rectangle item size on rescale.
- *     off because of outline.
- * x Use XFillRectangle for drawing right-angle rotations.
  * o PostScriptProc.  Can it handle gradients?
  * o Figure out better minSize, maxSize to dynamically accommodate 
  *   initialize font size better.
- * x Does alwaysRedraw flag fix problem with clipped drawable?
- * x Problem with snapping drawable.  
  * o Write documentation
  */
 #define USE_OLD_CANVAS  1
@@ -467,7 +462,7 @@ FontToString(ClientData clientData, Tk_Window tkwin, char *widgRec,
  *
  * StringToBrush --
  *
- *      Converts string to Blt_PainBrush structure.
+ *      Converts string to Blt_PaintBrush structure.
  *
  *---------------------------------------------------------------------------
  */
@@ -673,7 +668,8 @@ ComputeGeometry(LabelItem *labelPtr)
     font = (labelPtr->scaledFont != NULL) ?
         labelPtr->scaledFont : labelPtr->baseFont;
 #if DEBUG
-    fprintf(stderr, "Enter ComputeGeometry label=%s\n", labelPtr->text);
+    fprintf(stderr, "Enter ComputeGeometry label=%s reqw=%d reqh=%d\n",
+            labelPtr->text, labelPtr->reqWidth, labelPtr->reqHeight);
 #endif
     labelPtr->flags &= ~CLIP;
     if (labelPtr->numBytes == 0) {
@@ -695,27 +691,28 @@ ComputeGeometry(LabelItem *labelPtr)
         w = (labelPtr->reqWidth > 0) ? labelPtr->reqWidth : layoutPtr->width;
         h = (labelPtr->reqHeight > 0) ? labelPtr->reqHeight : layoutPtr->height;
     }
-    labelPtr->width  = w;
-    labelPtr->height = h;
-#if DEBUG
-    fprintf(stderr, "ComputeGeometry: x=%g, y=%g w=%g h=%g\n", 
-            labelPtr->x,  labelPtr->y, w, h);
-    fprintf(stderr, "ComputeGeometry: xs=%g, ys=%g\n", 
-            labelPtr->xScale,  labelPtr->yScale);
-#endif
+    /* Compute the outline polygon (isolateral or rectangle) given the
+     * width and height. The center of the box is 0,0. */
+    Blt_GetBoundingBox(w, h, labelPtr->angle, &rw, &rh, labelPtr->outlinePts);
+    /* This assumes that X and Y are scaled evenly. Or that label is rotated
+     * 0 or 180 degrees. */
+    rw *= labelPtr->xScale;
+    rh *= labelPtr->yScale;
+    labelPtr->width = w * labelPtr->xScale;
+    labelPtr->height = h * labelPtr->yScale;
+
     if ((labelPtr->width < labelPtr->layoutPtr->width) ||
         (labelPtr->height < labelPtr->layoutPtr->height)) {
         labelPtr->flags |= CLIP;    /* Turn on clipping of text. */
     }
-    /* Compute the outline polygon (isolateral or rectangle) given the
-     * width and height. The center of the box is 0,0. */
-    Blt_GetBoundingBox(labelPtr->width, labelPtr->height, labelPtr->angle, 
-        &rw, &rh, labelPtr->outlinePts);
-    rw *= labelPtr->xScale;
-    rh *= labelPtr->yScale;
-    labelPtr->width *= labelPtr->xScale;
-    labelPtr->height *= labelPtr->yScale;
-
+#if DEBUG
+    fprintf(stderr, "1. ComputeGeometry: x=%g, y=%g w=%g h=%g xs=%g, ys=%g\n",
+            labelPtr->x,  labelPtr->y, labelPtr->width, labelPtr->height,
+            labelPtr->xScale,  labelPtr->yScale);
+    fprintf(stderr, "2. Cliptest rw=%g rh=%g lw=%d lh=%d clip=%d\n", 
+            rw, rh, labelPtr->layoutPtr->width,
+            labelPtr->layoutPtr->height, labelPtr->flags & CLIP);
+#endif
     if (labelPtr->layoutPtr != NULL) {
         Point2d off1, off2;
         double radians, sinTheta, cosTheta;
@@ -797,7 +794,7 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->outlinePts[4] = labelPtr->outlinePts[0];
 
 #if DEBUG
-    fprintf(stderr, "ComputeGeometry %s: Setting rw=%g rh=%g\n", 
+    fprintf(stderr, "4. ComputeGeometry %s: Setting rw=%g rh=%g\n", 
             labelPtr->text, rw, rh);
 #endif
     /* The label's x,y position is in world coordinates. This point and the
@@ -807,21 +804,21 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
                                           labelPtr->anchor);
 #if DEBUG
-    fprintf(stderr, "x1=%g y1=%g x2=%g y2=%g rw=%g, rh=%g, x2r=%g y2r=%g\n", 
+    fprintf(stderr, "5. x1=%g y1=%g x2=%g y2=%g rw=%g, rh=%g, x2r=%g y2r=%g\n", 
             labelPtr->anchorPos.x, labelPtr->anchorPos.y,
             labelPtr->anchorPos.x + labelPtr->width, 
             labelPtr->anchorPos.y + labelPtr->height,
             labelPtr->rotWidth, labelPtr->rotHeight,
             labelPtr->anchorPos.x + labelPtr->rotWidth, 
             labelPtr->anchorPos.y + labelPtr->rotHeight);
-    fprintf(stderr, "ComputeGeometry: after x=%g, y=%g w=%g h=%g ix=%d iy=%d iw=%d ih=%d ix2=%d iy2=%d\n", 
+    fprintf(stderr, "6. ComputeGeometry: after x=%g, y=%g w=%g h=%g ix=%d iy=%d iw=%d ih=%d ix2=%d iy2=%d\n", 
             labelPtr->anchorPos.x,  labelPtr->anchorPos.y, 
             labelPtr->rotWidth, labelPtr->rotHeight,
             ROUND(labelPtr->anchorPos.x),  ROUND(labelPtr->anchorPos.y), 
             ROUND(labelPtr->rotWidth), ROUND(labelPtr->rotHeight),
             ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth), 
             ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight));
-    fprintf(stderr, "ComputeGeometry: after rh=%g, irh=%d rh2=%d\n",
+    fprintf(stderr, "7. ComputeGeometry: after rh=%g, irh=%d rh2=%d\n",
             labelPtr->rotHeight, (int)labelPtr->rotHeight,
             ROUND(labelPtr->rotHeight));
 #endif
@@ -961,7 +958,9 @@ FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
          labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
     w = x2 - x1;
     h = y2 - y1;
-
+    if ((w < 1) || (h < 1)) {
+        return;
+    }
     tkwin = Tk_CanvasTkwin(canvas);
     if ((labelPtr->flags & ORTHOGONAL) && 
         (Blt_GetBrushAlpha(attrPtr->brush) == 0xFF)) {
@@ -1518,6 +1517,10 @@ ScaleProc(
     double newFontSize;
     double x, y;
 
+    if (xScale != yScale) {
+        Blt_Warn("Canvas label can't be scaled asymetrically. Picking X scale\n:");
+        yScale = xScale;
+    }
     labelPtr->xScale *= xScale;        /* Used to track overall scale */
     labelPtr->yScale *= yScale;
 
@@ -1668,8 +1671,6 @@ DisplayProc(
             Tk_CanvasDrawableCoords(canvas, 
                 labelPtr->anchorPos.x + labelPtr->rotWidth, 
                 labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
-            fprintf(stderr, "drawing outline at x=%d y=%d w=%d h=%d\n",
-                    x, y, x2 -x, y2 - y);
             XDrawRectangle(display, drawable, attrPtr->labelGC->gc, x, y, 
                            x2 - x, y2 - y);
         } else {

@@ -78,19 +78,19 @@ blt::scrollset .ss \
     -window .ss.c 
 blt::tk::scrollbar .ss.ys
 blt::tk::scrollbar .ss.xs
-canvas .ss.c -bg white
+canvas .ss.c -bg white -width 600 -height 400
 
 blt::table . \
     0,0 .ss -fill both
 
 
 if 1 {
-set id [.ss.c create label 100 100 \
+set id [.ss.c create label 300 200 \
 	    -text "Hello, World" \
 	    -bg $bg1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 1 \
-	    -anchor nw \
+	    -anchor w \
 	    -textanchor c \
 	    -padx 0 \
 	    -font "Arial 13" \
@@ -101,12 +101,12 @@ set id [.ss.c create label 100 100 \
 .ss.c bind $id <Enter> [list Activate .ss.c $id]
 .ss.c bind $id <Leave> [list Deactivate .ss.c $id $bg1]
 
-set id [.ss.c create label 150 100 \
+set id [.ss.c create label 300 200 \
 	    -text "Hello, World" \
 	    -bg $bg1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 1 \
-	    -anchor nw \
+	    -anchor e \
 	    -textanchor c \
 	    -padx 0 \
 	    -font "Arial 13" \
@@ -117,12 +117,13 @@ set id [.ss.c create label 150 100 \
 .ss.c bind $id <Enter> [list Activate .ss.c $id]
 .ss.c bind $id <Leave> [list Deactivate .ss.c $id $bg1]
 }
-set id [.ss.c create label 100 100 \
+
+set id [.ss.c create label 300 200 \
 	    -text "Hello, World" \
 	    -bg $bg2 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 1 \
-	    -anchor nw \
+	    -anchor c \
 	    -textanchor c \
 	    -padx 0 \
 	    -font "Arial 13" \
@@ -153,12 +154,12 @@ bind .ss.c  <5>  {
 bind .ss.c  <KeyPress-Up>  { 
     set cx [expr [winfo width .ss.c] / 2]
     set cy [expr [winfo height .ss.c] / 2]
-    .ss.c scale all $cx $cy 1.1 1.2 
+    .ss.c scale all $cx $cy 1.1 1.1 
 }
 bind .ss.c  <KeyPress-Down>  {
     set cx [expr [winfo width .ss.c] / 2]
     set cy [expr [winfo height .ss.c] / 2]
-    .ss.c scale all $cx $cy 0.9 0.8
+    .ss.c scale all $cx $cy 0.9 0.9
 }
 focus .ss.c
 puts stderr bbox=[.ss.c bbox all]
