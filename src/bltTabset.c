@@ -3243,7 +3243,7 @@ ConfigureButton(
     }
 #endif
     Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
-    butPtr->width = butPtr->height = fm.linespace - (2 * butPtr->borderWidth);
+    butPtr->width = butPtr->height = 8 * fm.linespace / 10 - (2 * butPtr->borderWidth);
     setPtr->flags |= REDRAW_ALL;
     EventuallyRedraw(setPtr);
     return TCL_OK;

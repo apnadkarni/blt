@@ -1277,120 +1277,8 @@ XImageToPicture(Painter *p, XImage *imgPtr)
     /* Get the palette of the current painter/window */
     QueryPalette(p, palette);
 
-<<<<<<< HEAD
-        /* 
-         * Failed to acquire an XImage from the drawable. The drawable may
-         * be partially obscured (if it's a window) or too small for the
-         * requested area.  Try it again, after fixing the area with the
-         * dimensions of the drawable.
-         */
-        if (Blt_GetWindowRegion(p->display, drawable, NULL, NULL, &dw, &dh)
-            == TCL_OK) {
-            if ((x + w) > dw) {
-                w = dw - x;
-            }
-            if ((y + h) > dh) {
-                h = dh - y;
-            }
-            destPtr = SnapDrawable(p, drawable, x, y, w, h);
-        }
-    }
-    if (destPtr == NULL) {
-        return NULL;
-    }
-    /* Opaque image, set associate colors flag.  */
-    destPtr->flags |= BLT_PIC_PREMULT_COLORS;
-    return destPtr;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * PaintPicture --
- *
- *      Paints the picture to the given drawable. The region of the picture
- *      is specified and the coordinates where in the destination drawable
- *      is the image to be displayed.
- *
- *      The image may be dithered depending upon the bit set in the flags
- *      parameter: 0 no dithering, 1 for dithering.
- * 
- * Results:
- *      Returns TRUE is the picture was successfully displayed.  Otherwise
- *      FALSE is returned if the particular combination visual and image
- *      depth is not handled.
- *
- *---------------------------------------------------------------------------
- */
-static int
-PaintPicture(
-    Painter *p,
-    Drawable drawable,
-    Pict *srcPtr,
-    int sx, int sy,                     /* Coordinates of region in the
-                                         * picture. */
-    int w, int h,                       /* Dimension of the source region.
-                                         * Area cannot extend beyond the
-                                         * end of the picture. */
-    int dx, int dy,                     /* Coordinates of destination
-                                         * region in the drawable.  */
-    unsigned int flags)
-{
-#ifdef WORD_BIGENDIAN
-    static int nativeByteOrder = MSBFirst;
-#else
-    static int nativeByteOrder = LSBFirst;
-#endif  /* WORD_BIGENDIAN */
-    Blt_Pixel *srcRowPtr;
-    Pict *ditherPtr;
-    XImage *imgPtr;
-    int dw, dh;
-    int y;
-    unsigned char *destRowPtr;
-    int result;
-#ifdef HAVE_XSHMQUERYEXTENSION
-    int haveShm;
-    XShmSegmentInfo xssi;
-#endif  /* HAVE_XSHMQUERYEXTENSION */
-    
-#ifdef notdef
-    fprintf(stderr,
-            "PaintPicture: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d flags=%x\n",
-            drawable, sx, sy, w, h, dx, dy, srcPtr->flags);
-#endif
-    ditherPtr = NULL;
-    if (flags & BLT_PAINTER_DITHER) {
-        ditherPtr = Blt_DitherPicture(srcPtr, p->palette);
-        if (ditherPtr != NULL) {
-            srcPtr = ditherPtr;
-        }
-    }
-#ifdef HAVE_XSHMQUERYEXTENSION
-    haveShm = XShmQueryExtension(p->display);
-    if (haveShm) {
-        /* for the XShmPixmap */
-        xssi.shmid = -1;
-        xssi.shmaddr = (char *)-1;
-        xssi.readOnly = False;
-
-        imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
-                                 (char *)NULL, &xssi, w, h);
-        assert(imgPtr);
-        xssi.shmid = shmget(IPC_PRIVATE,
-                            imgPtr->bytes_per_line * imgPtr->height,
-                            IPC_CREAT | 0600);
-        if (xssi.shmid == -1) {
-            Blt_Warn("shmget: %s\n", strerror(errno));
-            return 0;
-        }
-
-        xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
-        shmctl(xssi.shmid, IPC_RMID, 0);
-=======
     /* Suppress compiler warnings. */
     shift[0] = shift[1] = shift[2] = shift[3] = 0; 
->>>>>>> f459846110eb04a942d68a3cfa411380995cb379
 
     switch (p->visualPtr->class) {
     case TrueColor:
@@ -1648,7 +1536,7 @@ SnapPictureWithXShm(Painter *p, Drawable drawable, int x, int y, int w, int h,
 
     xssi.shmid = shmget(IPC_PRIVATE,
                         imgPtr->bytes_per_line * imgPtr->height,
-                        IPC_CREAT|0600);
+                        IPC_CREAT|0610);
     if (xssi.shmid == -1) {
         Blt_Warn("shmget: %s\n", strerror(errno));
         return FALSE;
@@ -1863,7 +1751,7 @@ PaintPictureWithXShm(
     assert(imgPtr);
     xssi.shmid = shmget(IPC_PRIVATE,
                         imgPtr->bytes_per_line * imgPtr->height,
-                        IPC_CREAT | 0600);
+                        IPC_CREAT | 0620);
     if (xssi.shmid == -1) {
         Blt_Warn("shmget: %s\n", strerror(errno));
         return FALSE;
@@ -2119,7 +2007,7 @@ CompositePictureWithXRender(
                              (char *)NULL, &xssi, w, h);
     assert(imgPtr);
     xssi.shmid = shmget(IPC_PRIVATE, imgPtr->bytes_per_line * imgPtr->height,
-                        IPC_CREAT | 0600);
+                        IPC_CREAT | 0630);
     if (xssi.shmid == -1) {
         Blt_Warn("shmget: %s\n", strerror(errno));
         return FALSE;
