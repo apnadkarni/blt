@@ -1890,14 +1890,14 @@ CompositePictureWithXRender(
     int dx, int dy)                     /* Coordinates of destination
                                          * region in the drawable.  */
 {
-   int code;
+    int code;
     Tk_ErrorHandler handler;
 #ifdef HAVE_LIBXRENDER
-#define FMT_ARGB32      (PictFormatType | PictFormatDepth | \
-                        PictFormatRedMask | PictFormatRed | \
-                        PictFormatGreenMask | PictFormatGreen | \
-                        PictFormatBlueMask | PictFormatBlue | \
-                        PictFormatAlphaMask | PictFormatAlpha)
+#define FMT_ARGB32      (PictFormatType | PictFormatDepth |      \
+                         PictFormatRedMask | PictFormatRed |     \
+                         PictFormatGreenMask | PictFormatGreen | \
+                         PictFormatBlueMask | PictFormatBlue |   \
+                         PictFormatAlphaMask | PictFormatAlpha)
 #ifdef WORD_BIGENDIAN
     static int nativeByteOrder = MSBFirst;
 #else
@@ -1915,14 +1915,14 @@ CompositePictureWithXRender(
 #endif  /* HAVE_XSHMQUERYEXTENSION */
     XRenderPictFormat *pfPtr;
     Visual *visualPtr;
-    int majorNum, minorNum;
+    int majorNum, minorNum, haveShmPixmaps;
 
 #ifdef notdef
     fprintf(stderr, "CompositePictureWithXRender: "
             "drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, sx, sy, w, h, dx, dy);
 #endif
-    code = TCL_OK;
+code = TCL_OK;
     if (p->flags & (PAINTER_DONT_USE_SHM|PAINTER_NO_32BIT_VISUAL)) {
         return FALSE;
     }
@@ -1932,7 +1932,7 @@ CompositePictureWithXRender(
     if (!Blt_Picture_IsPremultiplied(srcPtr)) {
         Blt_PremultiplyColors(srcPtr);
     }
-    pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
+pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
     if (pfPtr == NULL) {
         XRenderPictFormat pf;
 
@@ -1993,7 +1993,7 @@ CompositePictureWithXRender(
         return FALSE;
     }
 #ifdef HAVE_XSHMQUERYEXTENSION
-    if (!XShmQueryExtension(p->display)) {
+    if (!XShmQueryVersion(p->display, &majorNum, &minorNum, &haveShmPixmaps)) {
         p->flags |= PAINTER_DONT_USE_SHM;
         return FALSE;
     }
@@ -2054,8 +2054,14 @@ CompositePictureWithXRender(
         destRowPtr += imgPtr->bytes_per_line;
         srcRowPtr += srcPtr->pixelsPerRow;
     }
-    pixmap = XShmCreatePixmap(p->display, drawable, xssi.shmaddr, &xssi,
+    if (haveShmPixmaps) {
+        pixmap = XShmCreatePixmap(p->display, drawable, xssi.shmaddr, &xssi,
                               w, h, 32);
+    } else {
+        pixmap = XCreatePixmap(p->display, drawable, w, h, 32);
+        XShmPutImage(p->display, pixmap, p->gc, imgPtr, 0, 0, 0, 0, w, h,
+                     False /*send_event*/);
+    }
     pa.component_alpha = True;
     srcPict = XRenderCreatePicture(p->display, pixmap, pfPtr,
                                    CPComponentAlpha, &pa);
@@ -2071,6 +2077,7 @@ CompositePictureWithXRender(
     XRenderFreePicture(p->display, srcPict);
     XRenderFreePicture(p->display, dstPict);
     XDestroyImage(imgPtr);
+    XFreePixmap(p->display, pixmap);
     return TRUE;
 #else 
     return FALSE;
