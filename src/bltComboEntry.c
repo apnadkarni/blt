@@ -2395,11 +2395,11 @@ ConfigureButton(
     }
     butPtr->width = butPtr->height = 0;
     if (comboPtr->flags & CLRBUTTON) {
-        int xDpi, yDpi;
+        Blt_FontMetrics fm;
 
-        Blt_ScreenDPI(comboPtr->tkwin, &xDpi, &yDpi);
-        butPtr->width = xDpi / 7;       /* 1/6 inch. */
-        butPtr->height = yDpi / 7;      /* 1/6 inch. */
+        Blt_Font_GetMetrics(comboPtr->font, &fm);
+        butPtr->width = butPtr->height = 8 * fm.linespace / 10 -
+            (2 * butPtr->borderWidth);
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -4496,22 +4496,20 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
 
         if (comboPtr->flags & ACTIVE_BUTTON) {
             if (butPtr->activePicture == NULL) {
-                butPtr->activePicture = Blt_PaintDelete(butPtr->width, 
-                                                        butPtr->height, 
-                                                        Blt_Bg_BorderColor(bg),
-                                                        butPtr->activeBg, 
-                                                        butPtr->activeFg, 
-                                                        TRUE);
+                butPtr->activePicture =
+                    Blt_PaintDelete(butPtr->width, butPtr->height, 
+                                    Blt_XColorToPixel(butPtr->activeBg),
+                                    Blt_XColorToPixel(butPtr->activeFg),
+                                    TRUE);
             } 
             picture = butPtr->activePicture;
         } else {
             if (butPtr->normalPicture == NULL) {
-                butPtr->normalPicture = Blt_PaintDelete(butPtr->width, 
-                                                        butPtr->height, 
-                                                        Blt_Bg_BorderColor(bg),
-                                                        butPtr->normalBg, 
-                                                        butPtr->normalFg, 
-                                                        FALSE);
+                butPtr->normalPicture =
+                    Blt_PaintDelete(butPtr->width, butPtr->height, 
+                                    Blt_XColorToPixel(butPtr->normalBg),
+                                    Blt_XColorToPixel(butPtr->normalFg),
+                                    FALSE);
             } 
             picture = butPtr->normalPicture;
         }

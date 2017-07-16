@@ -2482,8 +2482,8 @@ Blt_PaintRadioButton(
 }
 
 Blt_Picture
-Blt_PaintDelete(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr, 
-                XColor *symbolColorPtr, int isActive)
+Blt_PaintDelete(int w, int h, unsigned int fill, unsigned int symbol,
+                int isActive)
 {
     Blt_Picture picture;
     Point2d points[4];
@@ -2491,7 +2491,7 @@ Blt_PaintDelete(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr,
     int cx, cy, r, d;
     Blt_PaintBrush brush;
 
-    brush = Blt_NewColorBrush(Blt_XColorToPixel(fillColorPtr));
+    brush = Blt_NewColorBrush(fill);
     reg.left = reg.top = 0;
     reg.right = w;
     reg.bottom = h;
@@ -2500,6 +2500,7 @@ Blt_PaintDelete(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr,
     cx = cy = w / 2;
     r = cx - 1;
     d = r - 3;
+    
     DrawCircle(picture, cx, cy, r, 0.0, brush, FALSE);
     points[0].x = cx - (d - 2);
     points[0].y = cy - (d - 3);
@@ -2510,7 +2511,7 @@ Blt_PaintDelete(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr,
     points[3].x = cx + (d - 3);
     points[3].y = cy + (d - 2);
 
-    Blt_SetColorBrushColor(brush, Blt_XColorToPixel(symbolColorPtr));
+    Blt_SetColorBrushColor(brush, symbol);
     PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
 
     points[0].x = cx + (d - 3);

@@ -23,7 +23,7 @@ blt::tabset .t \
 .t add First \
     -image img1 \
     -anchor center \
-    -selectbackground darkolivegreen2  
+   
 
 
 foreach page { Again Next another test of a widget } {

@@ -242,14 +242,16 @@ enum ShowTabs {
 #define DEF_TROUGHCOLOR                 "grey60"
 #define DEF_WIDTH                       "0"
 
-#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND        "red2"
-#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND        RGB_WHITE
-#define DEF_CLOSEBUTTON_ACTIVERELIEF            "raised"
-#define DEF_CLOSEBUTTON_BACKGROUND              RGB_GREY70
-#define DEF_CLOSEBUTTON_BORDERWIDTH             "0"
+#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND "red2"
+#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND RGB_WHITE
+#define DEF_CLOSEBUTTON_ACTIVERELIEF    "raised"
+#define DEF_CLOSEBUTTON_BACKGROUND      RGB_GREY82
+#define DEF_CLOSEBUTTON_BORDERWIDTH     "0"
 #define DEF_CLOSEBUTTON_COMMAND         (char *)NULL
-#define DEF_CLOSEBUTTON_FOREGROUND              RGB_GREY95
+#define DEF_CLOSEBUTTON_FOREGROUND      RGB_WHITE
 #define DEF_CLOSEBUTTON_RELIEF          "flat"
+#define DEF_CLOSEBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
+#define DEF_CLOSEBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
 
 #define DEF_TAB_ACTIVEBACKGROUND        (char *)NULL
 #define DEF_TAB_ACTIVEFOREGROUND        (char *)NULL
@@ -366,6 +368,10 @@ typedef struct _Button {
                                          * when the button is active. */
     XColor *activeBgColor;              /* Background color of the button
                                          * when the button is active. */
+    XColor *selFg;                      /* Foreground color of the button
+                                         * when the button is selected. */
+    XColor *selBgColor;                 /* Background color of the button
+                                         * when the button is selected. */
     Tcl_Obj *cmdObjPtr;                 /* Command to be executed when the the
                                          * button is invoked. */
     Blt_Picture normal0;                /* Contains the image to be displayed
@@ -754,6 +760,12 @@ static Blt_ConfigSpec buttonSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CLOSEBUTTON_RELIEF, 
         Blt_Offset(Button, relief), 0},
+    {BLT_CONFIG_COLOR, "-selectbackground", "selectBackrgound", 
+        "SelectBackground", DEF_CLOSEBUTTON_SELECTBACKGROUND, 
+        Blt_Offset(Button, selBgColor), 0},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForergound", 
+        "SelectForeground", DEF_CLOSEBUTTON_SELECTFOREGROUND, 
+        Blt_Offset(Button, selFg), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -8055,29 +8067,32 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
 {
     Button *butPtr = &setPtr->closeButton;
     Blt_Picture picture;
-    XColor *fill, *symbol;
-    Blt_Bg bg;
+    Blt_Pixel fill, symbol;
 
-    if (tabPtr == setPtr->selectPtr) {
-        bg = GETATTR(tabPtr, selBg);
-    } else if ((tabPtr == setPtr->activeButtonPtr) || 
-               (tabPtr == setPtr->activePtr)) {
-        bg = GETATTR(tabPtr, activeBg);
-    } else {
-        bg = GETATTR(tabPtr, bg);
-    }
     if (tabPtr == setPtr->activeButtonPtr) {
-        fill = butPtr->activeBgColor;
-        symbol = butPtr->activeFg;
+        fill.u32 = Blt_XColorToPixel(butPtr->activeBgColor);
+        symbol.u32 = Blt_XColorToPixel(butPtr->activeFg);
     } else {
-        fill = butPtr->normalBgColor;
-        symbol = butPtr->normalFg;
+        if (tabPtr == setPtr->selectPtr) {
+            fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, selBg)));
+            fill.Alpha = 0x60;
+            symbol.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, selBg)));
+        } else if (tabPtr == setPtr->activePtr) {
+            fill.u32 = Blt_XColorToPixel(GETATTR(tabPtr, activeFg));
+            fill.Alpha = 0xB0;
+            symbol.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, activeBg)));
+        } else {
+            fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, bg)));
+            symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
+        }
+        fill.u32 = 0x0;
+            symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
     }
 
     picture = Blt_PaintDelete(setPtr->closeButton.width,
                               setPtr->closeButton.height,
-                              Blt_Bg_BorderColor(bg),
-        fill, symbol, (tabPtr == setPtr->activeButtonPtr));
+                              fill.u32, symbol.u32,
+                              (tabPtr == setPtr->activeButtonPtr));
     if (setPtr->angle != 0.0) {
         Blt_Picture rotated;
 

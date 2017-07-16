@@ -80,6 +80,10 @@
 #define RGB_RED3                "#cd0000"
 #define RGB_WHITE               "#ffffff"
 #define RGB_YELLOW              "#ffff00"
+#define RGB_SKYBLUE0            "#87ceeb"
+#define RGB_SKYBLUE1            "#87ceff"
+#define RGB_SKYBLUE2            "#7ec0ee"
+#define RGB_SKYBLUE3            "#6ca6cd"
 #define RGB_SKYBLUE4            "#4a708b"
 
 #ifdef OLD_TK_COLORS
