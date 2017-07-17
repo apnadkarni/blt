@@ -1932,7 +1932,7 @@ code = TCL_OK;
     if (!Blt_Picture_IsPremultiplied(srcPtr)) {
         Blt_PremultiplyColors(srcPtr);
     }
-pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
+    pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
     if (pfPtr == NULL) {
         XRenderPictFormat pf;
 
@@ -2058,9 +2058,13 @@ pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
         pixmap = XShmCreatePixmap(p->display, drawable, xssi.shmaddr, &xssi,
                               w, h, 32);
     } else {
+        GC gc;
+        
         pixmap = XCreatePixmap(p->display, drawable, w, h, 32);
-        XShmPutImage(p->display, pixmap, p->gc, imgPtr, 0, 0, 0, 0, w, h,
+        gc = XCreateGC(p->display, pixmap, 0L, NULL);
+        XShmPutImage(p->display, pixmap, gc, imgPtr, 0, 0, 0, 0, w, h,
                      False /*send_event*/);
+        XFreeGC(p->display, gc);
     }
     pa.component_alpha = True;
     srcPict = XRenderCreatePicture(p->display, pixmap, pfPtr,
