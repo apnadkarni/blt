@@ -350,9 +350,9 @@ Blt_CreatePicture(int w, int h)
      */
     pixelsPerRow = (w + 3) & ~3;        /* Pad the row so that the row size
                                          * is a 4-pixel multiple.  This is
-                                         * for SIMD routines: ensures
-                                         * aligned and let's process 4
-                                         * pixels at a time. */
+                                         * for SIMD routines: ensures data
+                                         * is quad aligned and lets us
+                                         * process 4 pixels at a time. */
     destPtr = Blt_AssertMalloc(sizeof(Pict));
     destPtr->pixelsPerRow = pixelsPerRow;
     destPtr->width  = w;
