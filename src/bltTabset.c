@@ -93,8 +93,6 @@
 #define OUTER_PAD               0
 #define LABEL_PAD               3
 #define CORNER_OFFSET           3
-#define CLOSE_WIDTH             16
-#define CLOSE_HEIGHT            16
  
 #define TAB_SCROLL_OFFSET       10
 
@@ -244,14 +242,16 @@ enum ShowTabs {
 #define DEF_TROUGHCOLOR                 "grey60"
 #define DEF_WIDTH                       "0"
 
-#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND        "red2"
-#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND        RGB_WHITE
-#define DEF_CLOSEBUTTON_ACTIVERELIEF            "raised"
-#define DEF_CLOSEBUTTON_BACKGROUND              RGB_GREY70
-#define DEF_CLOSEBUTTON_BORDERWIDTH             "0"
+#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND "red2"
+#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND RGB_WHITE
+#define DEF_CLOSEBUTTON_ACTIVERELIEF    "raised"
+#define DEF_CLOSEBUTTON_BACKGROUND      RGB_GREY82
+#define DEF_CLOSEBUTTON_BORDERWIDTH     "0"
 #define DEF_CLOSEBUTTON_COMMAND         (char *)NULL
-#define DEF_CLOSEBUTTON_FOREGROUND              RGB_GREY95
+#define DEF_CLOSEBUTTON_FOREGROUND      RGB_WHITE
 #define DEF_CLOSEBUTTON_RELIEF          "flat"
+#define DEF_CLOSEBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
+#define DEF_CLOSEBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
 
 #define DEF_TAB_ACTIVEBACKGROUND        (char *)NULL
 #define DEF_TAB_ACTIVEFOREGROUND        (char *)NULL
@@ -368,6 +368,10 @@ typedef struct _Button {
                                          * when the button is active. */
     XColor *activeBgColor;              /* Background color of the button
                                          * when the button is active. */
+    XColor *selFg;                      /* Foreground color of the button
+                                         * when the button is selected. */
+    XColor *selBgColor;                 /* Background color of the button
+                                         * when the button is selected. */
     Tcl_Obj *cmdObjPtr;                 /* Command to be executed when the the
                                          * button is invoked. */
     Blt_Picture normal0;                /* Contains the image to be displayed
@@ -756,6 +760,12 @@ static Blt_ConfigSpec buttonSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CLOSEBUTTON_RELIEF, 
         Blt_Offset(Button, relief), 0},
+    {BLT_CONFIG_COLOR, "-selectbackground", "selectBackrgound", 
+        "SelectBackground", DEF_CLOSEBUTTON_SELECTBACKGROUND, 
+        Blt_Offset(Button, selBgColor), 0},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForergound", 
+        "SelectForeground", DEF_CLOSEBUTTON_SELECTFOREGROUND, 
+        Blt_Offset(Button, selFg), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -3114,7 +3124,7 @@ ConfigureTab(Tabset *setPtr, Tab *tabPtr)
     GC newGC;
     XGCValues gcValues;
     unsigned long gcMask;
-        
+    
     font = GETATTR(tabPtr, font);
     newGC = NULL;
     if (tabPtr->text != NULL) {
@@ -3231,6 +3241,7 @@ ConfigureButton(
     int flags)
 {
     Button *butPtr = &setPtr->closeButton;
+    Blt_FontMetrics fm;
 
     iconOption.clientData = setPtr;
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, buttonSpecs, 
@@ -3243,6 +3254,8 @@ ConfigureButton(
         Tk_GeometryRequest(setPtr->tkwin, setPtr->reqWidth, setPtr->reqHeight);
     }
 #endif
+    Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
+    butPtr->width = butPtr->height = 8 * fm.linespace / 10 - (2 * butPtr->borderWidth);
     setPtr->flags |= REDRAW_ALL;
     EventuallyRedraw(setPtr);
     return TCL_OK;
@@ -5960,7 +5973,6 @@ ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
     int count;
 
     /* Compute the geometry unrotated (0 degrees). */
-    
     font = GETATTR(tabPtr, font);
     w = PADDING(tabPtr->padX);
     h = PADDING(tabPtr->padY);
@@ -5988,7 +6000,7 @@ ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
     }
     if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
         (setPtr->plusPtr != tabPtr)) {
-        bw = bh = CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
+        bw = bh = setPtr->closeButton.width;
         count++;
     }
     w += iw + th + bw;
@@ -6055,8 +6067,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
     }
     if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
         (setPtr->plusPtr != tabPtr)) {
-        closeWidth0 = closeHeight0 = 
-            CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
+        closeWidth0 = closeHeight0 = setPtr->closeButton.width;
         count++;
     }
     w += iconWidth0 + tabPtr->textWidth0 + closeWidth0;
@@ -7834,7 +7845,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     int fx, fy, fw, fh;
     int worldWidth, worldHeight, labelWidth;
     int xSelPad, ySelPad;
-
+    
     worldWidth = tabPtr->worldWidth;
     worldHeight = setPtr->tabHeight + setPtr->inset2;
 
@@ -7900,10 +7911,9 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
 
         /* Close button is always located on the right side of the tab,
          * it's height is centered. */
-        bx = x2 - CLOSE_WIDTH - setPtr->closeButton.borderWidth;
+        bw = bh = setPtr->closeButton.width;
+        bx = x2 - bw - setPtr->closeButton.borderWidth;
         by = y1;
-        bw = CLOSE_WIDTH;
-        bh = CLOSE_HEIGHT;
         if (h > bh) {
             by += (h - bh) / 2;
         } else {
@@ -7949,7 +7959,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     labelWidth = tabPtr->labelWidth0;
     if ((tabPtr != setPtr->plusPtr) && 
         (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
-        labelWidth -= CLOSE_WIDTH + 2 * setPtr->closeButton.borderWidth;
+        labelWidth -= setPtr->closeButton.width;
     }
     if (w > labelWidth) {
         if (setPtr->justify == TK_JUSTIFY_CENTER) {
@@ -8057,26 +8067,32 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
 {
     Button *butPtr = &setPtr->closeButton;
     Blt_Picture picture;
-    XColor *fill, *symbol;
-    Blt_Bg bg;
-    
-    if (tabPtr == setPtr->selectPtr) {
-        bg = GETATTR(tabPtr, selBg);
-    } else if ((tabPtr == setPtr->activeButtonPtr) || 
-               (tabPtr == setPtr->activePtr)) {
-        bg = GETATTR(tabPtr, activeBg);
-    } else {
-        bg = GETATTR(tabPtr, bg);
-    }
+    Blt_Pixel fill, symbol;
+
     if (tabPtr == setPtr->activeButtonPtr) {
-        fill = butPtr->activeBgColor;
-        symbol = butPtr->activeFg;
+        fill.u32 = Blt_XColorToPixel(butPtr->activeBgColor);
+        symbol.u32 = Blt_XColorToPixel(butPtr->activeFg);
     } else {
-        fill = butPtr->normalBgColor;
-        symbol = butPtr->normalFg;
+        if (tabPtr == setPtr->selectPtr) {
+            fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, selBg)));
+            fill.Alpha = 0x60;
+            symbol.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, selBg)));
+        } else if (tabPtr == setPtr->activePtr) {
+            fill.u32 = Blt_XColorToPixel(GETATTR(tabPtr, activeFg));
+            fill.Alpha = 0xB0;
+            symbol.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, activeBg)));
+        } else {
+            fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, bg)));
+            symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
+        }
+        fill.u32 = 0x0;
+            symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
     }
-    picture = Blt_PaintDelete(CLOSE_WIDTH, CLOSE_HEIGHT, Blt_Bg_BorderColor(bg),
-        fill, symbol, (tabPtr == setPtr->activeButtonPtr));
+
+    picture = Blt_PaintDelete(setPtr->closeButton.width,
+                              setPtr->closeButton.height,
+                              fill.u32, symbol.u32,
+                              (tabPtr == setPtr->activeButtonPtr));
     if (setPtr->angle != 0.0) {
         Blt_Picture rotated;
 
@@ -8255,7 +8271,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         maxLength -= tabPtr->iPadX.side2;
         if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
             (setPtr->plusPtr != tabPtr)) {
-            maxLength -= LABEL_PAD + CLOSE_WIDTH + 
+            maxLength -= LABEL_PAD + setPtr->closeButton.width + 
                 setPtr->closeButton.borderWidth;
         }
         if (tabPtr == setPtr->selectPtr) {

@@ -1005,8 +1005,6 @@ InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes,
 static void
 ComputeGeometry(ComboEntry *comboPtr)
 {
-    Button *butPtr = &comboPtr->clearButton;
-
     /* Determine the height of the entry.  It's the maximum height of all
      * it's components: icon, label, clear button, and arrow. */
     comboPtr->iconWidth  = comboPtr->iconHeight  = 0;
@@ -1082,9 +1080,8 @@ ComputeGeometry(ComboEntry *comboPtr)
         Button *butPtr = &comboPtr->clearButton;
         int bw, bh;
 
-
-        bw = butPtr->width + 2  * butPtr->borderWidth + PADDING(butPtr->padX);
-        bh = butPtr->height + 2 * butPtr->borderWidth + PADDING(butPtr->padY);
+        bw = butPtr->width +  (2 * butPtr->borderWidth) + PADDING(butPtr->padX);
+        bh = butPtr->height + (2 * butPtr->borderWidth) + PADDING(butPtr->padY);
         if (bh > comboPtr->entryHeight) {
             comboPtr->height = comboPtr->entryHeight = bh;
         }
@@ -2398,11 +2395,11 @@ ConfigureButton(
     }
     butPtr->width = butPtr->height = 0;
     if (comboPtr->flags & CLRBUTTON) {
-        int xDpi, yDpi;
+        Blt_FontMetrics fm;
 
-        Blt_ScreenDPI(comboPtr->tkwin, &xDpi, &yDpi);
-        butPtr->width = xDpi / 6;       /* 1/6 inch. */
-        butPtr->height = yDpi / 6;      /* 1/6 inch. */
+        Blt_Font_GetMetrics(comboPtr->font, &fm);
+        butPtr->width = butPtr->height = 8 * fm.linespace / 10 -
+            (2 * butPtr->borderWidth);
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -4195,7 +4192,7 @@ Blt_ComboEntryInitProc(Tcl_Interp *interp)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawEntry --
+ * DrawTextForEntry --
  *
  *      Draw the editable text associated with the entry.  The widget may
  *      be scrolled so the text may be clipped.  We use a temporary pixmap
@@ -4213,7 +4210,7 @@ Blt_ComboEntryInitProc(Tcl_Interp *interp)
  *---------------------------------------------------------------------------
  */
 static void
-DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h) 
+DrawTextForEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h) 
 {
     Blt_FontMetrics fm;
     Pixmap pixmap;
@@ -4427,38 +4424,39 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
 }
 
 static void
-DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
+DrawEntry(ComboEntry *comboPtr, Drawable drawable)
 {
     Blt_Bg bg;
     Button *butPtr = &comboPtr->clearButton;
     int drawButton;
-    int x, y, w, h, tx, ty;
+    int x0, y0, cavityWidth, cavityHeight, tx, ty, w, h;
 
+    cavityWidth = Tk_Width(comboPtr->tkwin) - (2 * comboPtr->inset);
+    cavityHeight = Tk_Height(comboPtr->tkwin) - (2 * comboPtr->inset);
+    
     /* Background (just inside of focus highlight ring). */
-    x = y = comboPtr->inset;
-    w = width  - (2 * comboPtr->inset);
-    h = height - (2 * comboPtr->inset);
+    x0 = y0 = comboPtr->inset;
 
     /* Label: includes icon and text. */
         
     if (comboPtr->flags & ARROW) {
-        w -= comboPtr->arrow.width;
+        cavityWidth -= comboPtr->arrow.width;
     }
     drawButton = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
     if (drawButton) {
-        w -= butPtr->width + 2 * butPtr->borderWidth + PADDING(butPtr->padX);
+        cavityWidth -= butPtr->width + 2 * butPtr->borderWidth + PADDING(butPtr->padX);
     }
-    if (h > comboPtr->entryHeight) {
-        y += (h - comboPtr->entryHeight) / 2;
+    if (cavityHeight > comboPtr->entryHeight) {
+        y0 += (cavityHeight - comboPtr->entryHeight) / 2;
     }
     /* Draw Icon. */
     if (comboPtr->icon != NULL) {
         int ix, iy, iw, ih;
         
-        ix = x + IPAD;
-        iy = y + YPAD;
-        iw = MIN(w, comboPtr->iconWidth);
-        ih = MIN(h, comboPtr->iconHeight);
+        ix = x0 + IPAD;
+        iy = y0 + YPAD;
+        iw = MIN(cavityWidth, comboPtr->iconWidth);
+        ih = MIN(cavityHeight, comboPtr->iconHeight);
         if (comboPtr->iconHeight < comboPtr->entryHeight) {
             iy += (comboPtr->entryHeight - comboPtr->iconHeight) / 2;
         }
@@ -4466,31 +4464,23 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
             (comboPtr->flags & DISABLED)) {
             Blt_Picture src, dst;
             Blt_Painter painter;
-            int w, h;
 
             painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
             src = Blt_GetPictureFromPictureImage(IconImage(comboPtr->icon));
-            w = Blt_Picture_Width(src);
-            h = Blt_Picture_Height(src);
             dst = Blt_ClonePicture(src);
-            Blt_FadePicture(dst, 0, 0, w, h, 1.0 - (100 / 255.0));
+            Blt_FadePicture(dst, 0, 0, Blt_Picture_Width(dst),
+                            Blt_Picture_Height(dst), 1.0 - (100 / 255.0));
             Blt_PaintPicture(painter, drawable, dst, 0, 0, iw, ih,ix,iy,0);
             Blt_FreePicture(dst);
         } else {
             Tk_RedrawImage(IconImage(comboPtr->icon), 0, 0, iw, ih, drawable, 
                 ix, iy);
         }
-        x += comboPtr->iconWidth;
-        w -= comboPtr->iconWidth;
+        x0 += comboPtr->iconWidth;
+        cavityWidth -= comboPtr->iconWidth;
     }
-    tx = x + IPAD;
-    ty = y + 1;
-    if ((w > 0) && (h > 0)) {
-#ifdef notdef
-        DrawEntry(comboPtr, drawable, x + IPAD, y + 1, w, h - 2);
-        x += comboPtr->entryWidth;
-#endif
-    }
+    tx = x0 + IPAD;
+    ty = y0 + 1;
     if (comboPtr->flags & DISABLED) {
         bg = comboPtr->disabledBg;
     } else if (comboPtr->flags & ACTIVE_ARROW) {
@@ -4506,43 +4496,45 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
 
         if (comboPtr->flags & ACTIVE_BUTTON) {
             if (butPtr->activePicture == NULL) {
-                butPtr->activePicture = Blt_PaintDelete(butPtr->width, 
-                                                        butPtr->height, 
-                                                        Blt_Bg_BorderColor(bg),
-                                                        butPtr->activeBg, 
-                                                        butPtr->activeFg, 
-                                                        TRUE);
+                butPtr->activePicture =
+                    Blt_PaintDelete(butPtr->width, butPtr->height, 
+                                    Blt_XColorToPixel(butPtr->activeBg),
+                                    Blt_XColorToPixel(butPtr->activeFg),
+                                    TRUE);
             } 
             picture = butPtr->activePicture;
         } else {
             if (butPtr->normalPicture == NULL) {
-                butPtr->normalPicture = Blt_PaintDelete(butPtr->width, 
-                                                        butPtr->height, 
-                                                        Blt_Bg_BorderColor(bg),
-                                                        butPtr->normalBg, 
-                                                        butPtr->normalFg, 
-                                                        FALSE);
+                butPtr->normalPicture =
+                    Blt_PaintDelete(butPtr->width, butPtr->height, 
+                                    Blt_XColorToPixel(butPtr->normalBg),
+                                    Blt_XColorToPixel(butPtr->normalFg),
+                                    FALSE);
             } 
             picture = butPtr->normalPicture;
         }
         bw = butPtr->width + 2 * butPtr->borderWidth + PADDING(butPtr->padX);
         bh = butPtr->height + 2 * butPtr->borderWidth + PADDING(butPtr->padY);
         comboPtr->viewWidth -= bw + comboPtr->inset;
-        bx = width - comboPtr->inset - comboPtr->arrow.width - bw;
-        by = comboPtr->inset;
+        bx = Tk_Width(comboPtr->tkwin) -
+            comboPtr->inset - comboPtr->arrow.width - bw;
         if (bx < 0) {
             bx = comboPtr->inset;
         }
-        x += bw;
-        w -= bw;
+        by = y0;
+        x0 += bw;
+        cavityWidth -= bw;
         if (comboPtr->entryHeight > bh) {
-            by +=  (comboPtr->entryHeight - bh) / 2;
+            by += ((comboPtr->entryHeight - bh) + 1) / 2;
         }
         if (butPtr->painter == NULL) {
             butPtr->painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
         }
         bx += butPtr->borderWidth + butPtr->padX.side1;
         by += butPtr->borderWidth + butPtr->padY.side1;
+        fprintf(stderr, "bx=%d by=%d bw=%d bh=%d b->w=%d b->h=%d eh=%d y0=%d wh=%d\n",
+                bx, by, bw, bh, butPtr->width, butPtr->height,
+                comboPtr->entryHeight, y0, Tk_Height(comboPtr->tkwin));
         Blt_PaintPicture(butPtr->painter, drawable, picture, 0, 0, 
                 butPtr->width, butPtr->height, bx, by, 0);
         butPtr->x = bx;
@@ -4552,7 +4544,6 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     if (comboPtr->flags & ARROW) {
         XColor *color;
         int aw, ah, ax, ay;
-        GC gc;
         int relief;
 
         relief = comboPtr->arrow.relief;
@@ -4566,13 +4557,14 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         } else {
             color = comboPtr->normalColor;
         }
-        ax = width - comboPtr->inset - comboPtr->arrow.width;
-        ay = comboPtr->inset;
+        ax = Tk_Width(comboPtr->tkwin) - comboPtr->inset -
+            comboPtr->arrow.width;
+        ay = y0;
         if (ax < 0) {
             ax = comboPtr->inset;
         }
         aw = comboPtr->arrow.width - 2 * comboPtr->arrow.pad;
-        ah = h;
+        ah = cavityHeight;
         ax += comboPtr->arrow.pad;
         if ((aw > 2) && (ah > 2)) {
             Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, ax + 1, ay + 1, 
@@ -4591,9 +4583,9 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
         comboPtr->arrow.x = ax;
         comboPtr->arrow.y = ay;
     }
-    comboPtr->viewWidth = w;
-    if ((w > 0) && (h > 0)) {
-        DrawEntry(comboPtr, drawable, tx, ty, w - 4, h - 2);
+    comboPtr->viewWidth = cavityWidth;
+    if ((cavityWidth > 0) && (cavityHeight > 0)) {
+        DrawTextForEntry(comboPtr, drawable, tx, ty, cavityWidth - 4, cavityHeight- 2);
     }
 
     /* Draw focus highlight ring. */
@@ -4609,8 +4601,8 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
                 comboPtr->highlightWidth, drawable);
         }           
     }
-    w = width  - 2 * comboPtr->highlightWidth;
-    h = height - 2 * comboPtr->highlightWidth;
+    w = Tk_Width(comboPtr->tkwin)  - 2 * comboPtr->highlightWidth;
+    h = Tk_Height(comboPtr->tkwin) - 2 * comboPtr->highlightWidth;
     if ((comboPtr->relief != TK_RELIEF_FLAT) && (w > 0) && (h > 0) &&
         (comboPtr->borderWidth > 0)) {
         Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, 
@@ -4678,7 +4670,7 @@ DisplayComboEntry(ClientData clientData)
             comboPtr->outFocusBg;
         Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, 0, 0, w, h, 0, 
                              TK_RELIEF_FLAT);
-        DrawComboEntry(comboPtr, drawable, w, h);
+        DrawEntry(comboPtr, drawable);
         XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
                   comboPtr->highlightGC, 0, 0, w, h, 0, 0);
         Tk_FreePixmap(comboPtr->display, drawable);

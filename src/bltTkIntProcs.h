@@ -1052,8 +1052,8 @@ BLT_EXTERN Blt_Picture	Blt_PaintRadioButtonOld(int width, int height,
 #define Blt_PaintDelete_DECLARED
 /* 175 */
 BLT_EXTERN Blt_Picture	Blt_PaintDelete(int width, int height,
-				XColor *bgColor, XColor *fillColor,
-				XColor *symColor, int isActive);
+                                unsigned int fill, unsigned int symbol,
+                                int isActive);
 #endif
 #ifndef Blt_Ps_Create_DECLARED
 #define Blt_Ps_Create_DECLARED
@@ -1670,7 +1670,7 @@ typedef struct BltTkIntProcs {
     Blt_Picture (*blt_PaintCheckbox) (int width, int height, XColor *fillColor, XColor *outlineColor, XColor *checkColor, int isOn); /* 172 */
     Blt_Picture (*blt_PaintRadioButton) (int width, int height, Blt_Bg bg, XColor *fill, XColor *outline, int isOn); /* 173 */
     Blt_Picture (*blt_PaintRadioButtonOld) (int width, int height, XColor *bg, XColor *fill, XColor *outline, XColor *check, int isOn); /* 174 */
-    Blt_Picture (*blt_PaintDelete) (int width, int height, XColor *bgColor, XColor *fillColor, XColor *symColor, int isActive); /* 175 */
+    Blt_Picture (*blt_PaintDelete) (int width, int height, unsigned int fill, unsigned int symbol, int isActive); /* 175 */
     Blt_Ps (*blt_Ps_Create) (Tcl_Interp *interp, PageSetup *setupPtr); /* 176 */
     void (*blt_Ps_Free) (Blt_Ps ps); /* 177 */
     const char * (*blt_Ps_GetValue) (Blt_Ps ps, int *lengthPtr); /* 178 */
