@@ -5080,7 +5080,7 @@ ConfigureButtons(TreeView *viewPtr)
             
             font = GetStyleFont(&viewPtr->treeColumn);
             Blt_Font_GetMetrics(font, &fm);
-            size = fm.linespace * 32 / 100;
+            size = fm.linespace * 375 / 1000;
         }
         butPtr->width = butPtr->height = ODD(size);
     }
