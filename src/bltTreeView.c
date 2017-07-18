@@ -80,7 +80,6 @@
 
 #define BUTTON_IPAD             1
 #define BUTTON_PAD              2
-#define BUTTON_SIZE             7
 #define COLUMN_PAD              2
 #define ENTRY_PADX              2
 #define ENTRY_PADY              1
@@ -130,7 +129,7 @@
 #define DEF_BUTTON_NORMAL_BG_MONO       STD_NORMAL_BG_MONO
 #define DEF_BUTTON_NORMAL_FOREGROUND    STD_NORMAL_FOREGROUND
 #define DEF_BUTTON_NORMAL_FG_MONO       STD_NORMAL_FG_MONO
-#define DEF_BUTTON_SIZE                 "7"
+#define DEF_BUTTON_SIZE                 "0"
 
 #define DEF_CELL_STATE                  "normal"
 #define DEF_CELL_STYLE                  (char *)NULL
@@ -397,7 +396,7 @@ static Blt_ConfigSpec buttonSpecs[] =
         DEF_BUTTON_OPEN_RELIEF, Blt_Offset(TreeView, button.openRelief),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-size", "size", "Size", DEF_BUTTON_SIZE, 
-        Blt_Offset(TreeView, button.reqSize), 0},
+        Blt_Offset(TreeView, button.reqSize), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -5071,7 +5070,19 @@ ConfigureButtons(TreeView *viewPtr)
         butPtr->height = bh;
         butPtr->width = bw;
     } else {
-        butPtr->width = butPtr->height = ODD(butPtr->reqSize);
+        int size;
+        
+        if (butPtr->reqSize > 0) {
+            size = butPtr->reqSize;
+        } else {
+            Blt_FontMetrics fm;
+            Blt_Font font;
+            
+            font = GetStyleFont(&viewPtr->treeColumn);
+            Blt_Font_GetMetrics(font, &fm);
+            size = fm.linespace * 32 / 100;
+        }
+        butPtr->width = butPtr->height = ODD(size);
     }
     butPtr->width  += 2 * butPtr->borderWidth;
     butPtr->height += 2 * butPtr->borderWidth;

@@ -135,7 +135,7 @@
 #define DEF_CHECKBOX_ONVALUE            "1"
 #define DEF_CHECKBOX_RELIEF             "flat"
 #define DEF_CHECKBOX_SHOWVALUE          "yes"
-#define DEF_CHECKBOX_SIZE               "15"
+#define DEF_CHECKBOX_SIZE               "0"
 #define DEF_CHECKBOX_UNDERLINE_ACTIVE   "1"
 #define DEF_COMBOBOX_ACTIVE_ARROW_BG    RGB_GREY95
 #define DEF_COMBOBOX_ACTIVE_COLORS      "0"
@@ -2658,7 +2658,6 @@ NewCheckBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->classPtr = &checkBoxStyleClass;
     stylePtr->viewPtr = viewPtr;
     stylePtr->gap = 4;
-    stylePtr->size = 15;
     stylePtr->lineWidth = 2;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
@@ -2695,15 +2694,23 @@ CheckBoxStyleConfigureProc(CellStyle *cellStylePtr)
     TreeView *viewPtr;
     XGCValues gcValues;
     unsigned long gcMask;
-
+    Blt_Font font;
+    
     viewPtr = stylePtr->viewPtr;
-
+    font = CHOOSE(viewPtr->font, stylePtr->font);
     gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
     gcValues.dashes = 1;
-    gcValues.font = Blt_Font_Id(CHOOSE(viewPtr->font, stylePtr->font));
+    gcValues.font = Blt_Font_Id(font);
     gcValues.line_width = 0;
     gcValues.line_style = LineOnOffDash;
 
+    if (stylePtr->size <= 0) {
+        Blt_FontMetrics fm;
+
+        Blt_Font_GetMetrics(font, &fm);
+        stylePtr->size = fm.linespace * 7 / 10;
+    }
+    
     /* Normal text. */
     gcValues.foreground = CHOOSE(viewPtr->normalFg, stylePtr->normalFg)->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);

@@ -2488,7 +2488,7 @@ Blt_PaintDelete(int w, int h, unsigned int fill, unsigned int symbol,
     Blt_Picture picture;
     Point2d points[4];
     Region2d reg;
-    int cx, cy, r, d, s1, s2;
+    int cx, cy, r, d, s;
     Blt_PaintBrush brush;
 
     brush = Blt_NewColorBrush(fill);
@@ -2499,31 +2499,31 @@ Blt_PaintDelete(int w, int h, unsigned int fill, unsigned int symbol,
     Blt_BlankPicture(picture, 0x00);
     cx = cy = w / 2;
     r = cx - 1;
-    s2 = 3 /* (r * 5) / 190 */;
-    s1 = 2 /* (r * 5) / 90 */;
-    d = r - 2;
-
+    s = 4 * r / 10;
+    d = r;
+    s = r - 3;
+    fprintf(stderr, "s=%d r=%d, w=%d\n", s,r,w);
     DrawCircle(picture, cx, cy, r, 0.0, brush, FALSE);
-    points[0].x = cx - (d - s1);
-    points[0].y = cy - (d - s2);
-    points[1].x = cx - (d - s2);
-    points[1].y = cy - (d - s1);
-    points[2].x = cx + (d - s1);
-    points[2].y = cy + (d - s2);
-    points[3].x = cx + (d - s2);
-    points[3].y = cy + (d - s1);
+    points[0].x = cx - s;
+    points[0].y = cy - s;
+    points[1].x = cx - s;
+    points[1].y = cy - s;
+    points[2].x = cx + s;
+    points[2].y = cy + s;
+    points[3].x = cx + s;
+    points[3].y = cy + s;
 
     Blt_SetColorBrushColor(brush, symbol);
     PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
 
-    points[0].x = cx + (d - s2);
-    points[0].y = cy - (d - s1);
-    points[1].x = cx + (d - s1);
-    points[1].y = cy - (d - s2);
-    points[2].x = cx - (d - s2);
-    points[2].y = cy + (d - s1);
-    points[3].x = cx - (d - s1);
-    points[3].y = cy + (d - s2);
+    points[0].x = cx + s;
+    points[0].y = cy - s;
+    points[1].x = cx + s;
+    points[1].y = cy - s;
+    points[2].x = cx - s;
+    points[2].y = cy + s;
+    points[3].x = cx - s;
+    points[3].y = cy + s;
 
     PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);
