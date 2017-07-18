@@ -61,3 +61,4 @@ blt::table . \
 blt::table configure . r1 -resize none
 focus .t
 
+puts stderr [.t button configure]

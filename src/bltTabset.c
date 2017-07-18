@@ -742,15 +742,15 @@ static Blt_CustomOption showTabsOption = {
 
 static Blt_ConfigSpec buttonSpecs[] =
 {
-    {BLT_CONFIG_COLOR, "-activebackground", "activeBackrgound", 
+    {BLT_CONFIG_COLOR, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_CLOSEBUTTON_ACTIVEBACKGROUND, 
         Blt_Offset(Button, activeBgColor), 0},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForergound", 
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_CLOSEBUTTON_ACTIVEFOREGROUND, 
         Blt_Offset(Button, activeFg), 0},
-    {BLT_CONFIG_COLOR, "-background", "backrgound", "Background", 
+    {BLT_CONFIG_COLOR, "-background", "background", "Background", 
         DEF_CLOSEBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
-    {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
         DEF_CLOSEBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
         DEF_CLOSEBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
@@ -760,10 +760,10 @@ static Blt_ConfigSpec buttonSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CLOSEBUTTON_RELIEF, 
         Blt_Offset(Button, relief), 0},
-    {BLT_CONFIG_COLOR, "-selectbackground", "selectBackrgound", 
+    {BLT_CONFIG_COLOR, "-selectbackground", "selectBackground", 
         "SelectBackground", DEF_CLOSEBUTTON_SELECTBACKGROUND, 
         Blt_Offset(Button, selBgColor), 0},
-    {BLT_CONFIG_COLOR, "-selectforeground", "selectForergound", 
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", 
         "SelectForeground", DEF_CLOSEBUTTON_SELECTFOREGROUND, 
         Blt_Offset(Button, selFg), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
@@ -3256,6 +3256,7 @@ ConfigureButton(
 #endif
     Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
     butPtr->width = butPtr->height = 8 * fm.linespace / 10 - (2 * butPtr->borderWidth);
+fprintf(stderr, "bw=%d bh=%d linespace=%d\n", butPtr->width, butPtr->height, fm.linespace);
     setPtr->flags |= REDRAW_ALL;
     EventuallyRedraw(setPtr);
     return TCL_OK;
@@ -4068,6 +4069,7 @@ ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      set for setPtr; old resources get freed, if there were any.  The widget
  *      is redisplayed.
  *
+ *      pathName button configure ?option value...?
  *---------------------------------------------------------------------------
  */
 static int
@@ -4077,12 +4079,12 @@ ButtonConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tabset *setPtr = clientData; 
 
     iconOption.clientData = setPtr;
-    if (objc == 2) {
+    if (objc == 3) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, buttonSpecs,
             (char *)&setPtr->closeButton, (Tcl_Obj *)NULL, 0);
-    } else if (objc == 3) {
+    } else if (objc == 4) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, buttonSpecs,
-            (char *)&setPtr->closeButton, objv[2], 0);
+            (char *)&setPtr->closeButton, objv[3], 0);
     }
     if (ConfigureButton(interp, setPtr, objc - 3, objv + 3, 
                         BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
