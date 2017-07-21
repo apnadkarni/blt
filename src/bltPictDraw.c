@@ -2500,13 +2500,13 @@ Blt_PaintDelete(int w, int h, unsigned int fill, unsigned int symbol,
     Blt_BlankPicture(picture, 0x00);
     cx = cy = w / 2;
     r = cx - 1;
-    DrawCircle(picture, cx, cy, r, 0.0, brush, FALSE);
+    if (fill != 0x0) {
+        DrawCircle(picture, cx, cy, r, 0.0, brush, FALSE);
+    }
     r -= 2;
     d = r * 0.28;
     d = d / M_SQRT2;
     s = r * M_SQRT2 * 0.5;
-    fprintf(stderr, "s=%g dd=%g d=%g cx=%g,cy=%g r=%g, w=%d\n",
-            s, r*0.28, d, cx, cy, r, w);
     points[0].x = cx - s;
     points[0].y = cy - s + d; 
     points[1].x = cx - s + d;

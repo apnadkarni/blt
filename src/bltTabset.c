@@ -248,7 +248,7 @@ enum ShowTabs {
 #define DEF_CLOSEBUTTON_BACKGROUND      RGB_GREY82
 #define DEF_CLOSEBUTTON_BORDERWIDTH     "0"
 #define DEF_CLOSEBUTTON_COMMAND         (char *)NULL
-#define DEF_CLOSEBUTTON_FOREGROUND      RGB_GREY90
+#define DEF_CLOSEBUTTON_FOREGROUND      RGB_GREY50
 #define DEF_CLOSEBUTTON_RELIEF          "flat"
 #define DEF_CLOSEBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
 #define DEF_CLOSEBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
@@ -3255,7 +3255,7 @@ ConfigureButton(
     }
 #endif
     Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
-    butPtr->width = butPtr->height = 8 * fm.linespace / 10 - (2 * butPtr->borderWidth);
+    butPtr->width = butPtr->height = 9 * fm.linespace / 10 - (2 * butPtr->borderWidth);
 fprintf(stderr, "bw=%d bh=%d linespace=%d\n", butPtr->width, butPtr->height, fm.linespace);
     setPtr->flags |= REDRAW_ALL;
     EventuallyRedraw(setPtr);
@@ -8075,14 +8075,12 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
         fill.u32 = Blt_XColorToPixel(butPtr->activeBgColor);
         symbol.u32 = Blt_XColorToPixel(butPtr->activeFg);
     } else {
+        fill.u32 = 0x0;
         if (tabPtr == setPtr->selectPtr) {
-            fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, selBg)));
-            symbol.u32 = Blt_XColorToPixel(butPtr->activeFg);
+            symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
         } else if (tabPtr == setPtr->activePtr) {
-            fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, activeBg)));
             symbol.u32 = Blt_XColorToPixel(GETATTR(tabPtr, activeFg));
         } else {
-            fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, bg)));
             symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
         }
     }
