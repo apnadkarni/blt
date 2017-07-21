@@ -2499,8 +2499,9 @@ Blt_PaintDelete(int w, int h, unsigned int fill, unsigned int symbol,
     picture = Blt_CreatePicture(w, h);
     Blt_BlankPicture(picture, 0x00);
     cx = cy = w / 2;
-    r = cx - 2;
+    r = cx - 1;
     DrawCircle(picture, cx, cy, r, 0.0, brush, FALSE);
+    r -= 2;
     d = r * 0.28;
     d = d / M_SQRT2;
     s = r * M_SQRT2 * 0.5;
