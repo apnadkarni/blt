@@ -2291,21 +2291,34 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(outlineColorPtr));
         Blt_PaintRectangle(destPtr, x, y, w, h, 0, 1, brush, TRUE);
     }
-    x += 2, y += 2;
-    w -= 5, h -= 5;
+    x += 1, y += 1;
+    w -= 4, h -= 4;
     if (on) {
         Point2d points[7];
         Region2d r;
+        double t, dt, dx, dy;
+        double m1, m2;
 
-        points[0].x = points[1].x = points[6].x = x;
-        points[0].y = points[6].y = y + (0.4 * h);
-        points[1].y = y + (0.6 * h);
-        points[2].x = points[5].x = x + (0.4 * w);
-        points[2].y = y + h;
-        points[3].x = points[4].x = x + w;
-        points[3].y = y + (0.2 * h);
-        points[4].y = y;
-        points[5].y = y + (0.7 * h);
+        t = MAX(w,h) * 0.15;
+        points[0].x = x;
+        points[0].y = y + (0.6 * h);
+        points[4].x = x + w;
+        points[4].y = y + (0.25 * h);
+        points[5].x = x + (0.4 * w);
+        points[5].y = y + h;
+        m1 = (points[4].x - points[5].x) / (points[4].y - points[5].y);
+        dx = sin(-m1) * t;
+        dy = cos(-m1) * t;
+        dt = t / sin(M_PI_2 - m1);
+        points[3].x = points[4].x - dx;
+        points[3].y = points[4].y - dy;
+        points[2].x = points[5].x;
+        points[2].y = points[5].y - dt;
+        m2 = (points[0].x - points[5].x) / (points[0].y - points[5].y);
+        dx = sin(m2) * t;
+        dy = cos(m2) * t;
+        points[1].x = points[0].x + dx;
+        points[1].y = points[0].y - dy;
         points[6].x = points[0].x;
         points[6].y = points[0].y;
         shadow.width = 2, shadow.offset = 2;
