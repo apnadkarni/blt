@@ -30,7 +30,7 @@
  *   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  *   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  *   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- *   BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ *   BUSINESS INTERRUPTION) HOWEVER CAUSE AND ON ANY THEORY OF LIABILITY,
  *   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -248,7 +248,7 @@ enum ShowTabs {
 #define DEF_CLOSEBUTTON_BACKGROUND      RGB_GREY82
 #define DEF_CLOSEBUTTON_BORDERWIDTH     "0"
 #define DEF_CLOSEBUTTON_COMMAND         (char *)NULL
-#define DEF_CLOSEBUTTON_FOREGROUND      RGB_WHITE
+#define DEF_CLOSEBUTTON_FOREGROUND      RGB_GREY90
 #define DEF_CLOSEBUTTON_RELIEF          "flat"
 #define DEF_CLOSEBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
 #define DEF_CLOSEBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
@@ -8077,18 +8077,14 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
     } else {
         if (tabPtr == setPtr->selectPtr) {
             fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, selBg)));
-            fill.Alpha = 0x60;
-            symbol.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, selBg)));
+            symbol.u32 = Blt_XColorToPixel(butPtr->activeFg);
         } else if (tabPtr == setPtr->activePtr) {
-            fill.u32 = Blt_XColorToPixel(GETATTR(tabPtr, activeFg));
-            fill.Alpha = 0xB0;
-            symbol.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, activeBg)));
+            fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, activeBg)));
+            symbol.u32 = Blt_XColorToPixel(GETATTR(tabPtr, activeFg));
         } else {
             fill.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(GETATTR(tabPtr, bg)));
             symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
         }
-        fill.u32 = 0x0;
-            symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
     }
 
     picture = Blt_PaintDelete(setPtr->closeButton.width,
