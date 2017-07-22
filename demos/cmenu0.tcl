@@ -9,7 +9,7 @@ set imgData {
 
 set src [image create picture -file images/blt98.gif]
 set bg white
-set dst [image create picture -width 600 -height 600]
+set dst [image create picture -width 60 -height 60]
 $dst resample $src 
 if { [file exists ../library] } {
     set blt_library ../library
@@ -37,9 +37,13 @@ blt::tk::scrollbar .e.m.ybar
 
 .e.m add -text "Text" -type command
 .e.m add -text "Image Fail" -type command -image $dst
+.e.m add -text "CheckButton #1" -type checkbutton -variable "var1"
+.e.m add -text "CheckButton #2" -type checkbutton -variable "var2"
 label .l -image $src
 blt::table . \
     0,0 .e -fill x -anchor n  \
     1,0 .l -fill both
 
-
+after 10000 {
+    set var1 1
+}
