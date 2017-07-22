@@ -4438,14 +4438,16 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
     x0 = y0 = comboPtr->inset;
 
     /* Label: includes icon and text. */
-        
     if (comboPtr->flags & ARROW) {
         cavityWidth -= comboPtr->arrow.width;
     }
+        
     drawButton = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
+#ifdef notdef
     if (drawButton) {
         cavityWidth -= butPtr->width + 2 * butPtr->borderWidth + PADDING(butPtr->padX);
     }
+#endif
     if (cavityHeight > comboPtr->entryHeight) {
         y0 += (cavityHeight - comboPtr->entryHeight) / 2;
     }
@@ -4567,8 +4569,8 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
         ah = cavityHeight;
         ax += comboPtr->arrow.pad;
         if ((aw > 2) && (ah > 2)) {
-            Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, ax + 1, ay + 1, 
-                aw - 2, ah - 2, comboPtr->arrow.borderWidth, relief);
+            Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, ax, ay, 
+                aw, ah, comboPtr->arrow.borderWidth, relief);
 #ifdef notdef
             gc = Blt_Bg_BorderGC(comboPtr->tkwin, bg, TK_3D_FLAT_GC);
             XDrawRectangle(comboPtr->display, drawable, gc, ax, ay, aw, ah);

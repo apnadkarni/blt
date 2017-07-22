@@ -2708,7 +2708,7 @@ CheckBoxStyleConfigureProc(CellStyle *cellStylePtr)
         Blt_FontMetrics fm;
 
         Blt_Font_GetMetrics(font, &fm);
-        stylePtr->size = fm.linespace * 7 / 10;
+        stylePtr->size = fm.linespace * 8 / 10;
     }
     
     /* Normal text. */

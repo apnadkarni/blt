@@ -46,7 +46,7 @@ blt::tk::scrollbar .e.m.ybar
 
 set onOff 1
 set wwho ""
-foreach {item type} { 
+foreach {item type } { 
     Undo	command 
     X1		checkbutton 
     Y1		radiobutton
@@ -71,9 +71,10 @@ foreach {item type} {
 	-underline 0 \
 	-tag "$type [string tolower $char]" \
 	-icon $icon \
-	-variable $item \
-	-value $item \
-
+	-variable x$item 
+    if { $type == "radiobutton" } {
+	.e.m item configure $item -value $item 
+    }
 }
 set X1 1
 set Redo 1
@@ -102,14 +103,13 @@ foreach item {
     set char [string range $item 0 0] 
     .e.m.m add \
 	-type checkbutton \
-	-text $item \
+	-text "$item" \
 	-accel "Ctrl+$char" \
 	-accel "" \
 	-underline 0 \
 	-tag [string tolower $char] \
 	-icon $icon \
-	-variable $item \
-	-value $item \
+	-variable $item 
 
 }
 set wwho2 ""
@@ -238,11 +238,11 @@ blt::table . \
 #blt::table configure . r1 -resize both
 
 after 5000 {
-  .e.m item configure Paste -state hidden
-   after 5000 {
-     .e.m item configure Paste -state disabled
-      after 5000 {
-         .e.m item configure Paste -state normal
-      }
-   }
+    .e.m item configure Paste -state hidden
+    after 5000 {
+	.e.m item configure Paste -state disabled
+	after 5000 {
+	    .e.m item configure Paste -state normal
+	}
+    }
 }

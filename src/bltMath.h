@@ -64,6 +64,22 @@
 #define M_SQRT1_2       0.70710678118654752440
 #endif /* M_SQRT1_2 */
 
+#ifndef M_COS_30
+#define M_COS_30       0.86602540378
+#endif /* M_COS_30 */
+
+#ifndef M_COS_60
+#define M_COS_60       0.5
+#endif /* M_COS_60 */
+
+#ifndef M_SIN_30
+#define M_SIN_30       0.5
+#endif /* M_SIN_30 */
+
+#ifndef M_SIN_60
+#define M_SIN_60       0.86602540378
+#endif /* M_SIN_60 */
+
 #ifndef SHRT_MAX
 #define SHRT_MAX        0x7FFF
 #endif /* SHRT_MAX */
