@@ -801,9 +801,9 @@ Blt_DrawLayout(Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font,
     if (layoutPtr->underlinePtr != NULL) {
         int tx, ty;
 
-        tx = x + fp->rx, ty = y + fp->ry;
         /* Single underlined character. */
         fp = layoutPtr->underlinePtr;
+        tx = x + fp->rx, ty = y + fp->ry;
         Blt_Font_UnderlineChars(Tk_Display(tkwin), drawable, gc, font, fp->text,
                 fp->numBytes, tx, ty, layoutPtr->underline, 
                 layoutPtr->underline + 1, maxLength);

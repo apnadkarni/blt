@@ -1432,20 +1432,27 @@ StepItem(Item *itemPtr)
     return NULL;
 }
 
-static int
-SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr, int newState)
-{
-    int result;
 
-    comboPtr->selectPtr = itemPtr;
+/*
+ *---------------------------------------------------------------------------
+ *
+ * UpdateTextAndIconVars --
+ *
+ *      Sets the -textvariable and -iconvariable variables.
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+UpdateTextAndIconVars(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
+                      int newState)
+{
     if (itemPtr->flags & (ITEM_CASCADE|ITEM_SEPARATOR)) {
         return TCL_OK;
     }
 
-    result = TCL_OK;
-    if (newState == -1) {
-        newState = (itemPtr->flags & ITEM_SELECTED) == 0;
-    }
     if (comboPtr->iconVarObjPtr != NULL) {
         Tcl_Obj *objPtr;
         
@@ -1467,6 +1474,36 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr, int newState)
                            TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
             return TCL_ERROR;
         }
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectItem --
+ *
+ *      Sets the given item as selected. The -textvariable, -iconvariable,
+ *      -valuevariable, and -variable TCL variables are set.
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
+          int newState)
+{
+    comboPtr->selectPtr = itemPtr;
+    if (itemPtr->flags & (ITEM_CASCADE|ITEM_SEPARATOR)) {
+        return TCL_OK;
+    }
+    if (newState == -1) {
+        newState = (itemPtr->flags & ITEM_SELECTED) == 0;
+    }
+    if (UpdateTextAndIconVars(interp, comboPtr, itemPtr, newState) != TCL_OK) {
+        return TCL_ERROR;
     }
     if (comboPtr->valueVarObjPtr != NULL) {
         Tcl_Obj *objPtr;
@@ -1494,22 +1531,18 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr, int newState)
             }
         }
         if (objPtr != NULL) {
+            Tcl_Obj *resultObjPtr;
+            
             Tcl_IncrRefCount(objPtr);
-            if (Tcl_ObjSetVar2(interp, itemPtr->variableObjPtr, NULL, objPtr, 
-                               TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
-                result = TCL_ERROR;
-            }
+            resultObjPtr = Tcl_ObjSetVar2(interp, itemPtr->variableObjPtr, NULL,
+                        objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
             Tcl_DecrRefCount(objPtr);
+            if (resultObjPtr == NULL) {
+                return TCL_ERROR;
+            }
         }
     }
-    /* Don't execute -command callback until we set have the variables. */
-    if (comboPtr->cmdObjPtr != NULL) {
-        if (Tcl_EvalObjEx(interp, comboPtr->cmdObjPtr, TCL_EVAL_GLOBAL) 
-            != TCL_OK) {
-            return TCL_ERROR;
-        }
-    }
-    return result;
+    return TCL_OK;
 }
 
 static ComboMenu *comboMenuInstance;
@@ -1849,12 +1882,12 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
             itemPtr->textWidth = IconWidth(itemPtr->image);
             itemPtr->textHeight = IconHeight(itemPtr->image);
         } else if (itemPtr->text != emptyString) {
-            unsigned int iw, ih;
+            unsigned int tw, th;
             
             Blt_GetTextExtents(stylePtr->textFont, 0, itemPtr->text, -1,
-                        &iw, &ih);
-            itemPtr->textWidth = iw;
-            itemPtr->textHeight = ih;
+                        &tw, &th);
+            itemPtr->textWidth = tw;
+            itemPtr->textHeight = th;
         }
     } else {
         if (itemPtr->flags & (ITEM_RADIOBUTTON | ITEM_CHECKBUTTON)) {
@@ -1862,7 +1895,7 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
             size_t size, reqSize;
 
             Blt_Font_GetMetrics(stylePtr->textFont, &fm);
-            size = fm.linespace;
+            size = 75 * fm.linespace / 100;
             if (itemPtr->flags & ITEM_RADIOBUTTON) {
                 reqSize = (stylePtr->radioButtonSize > 0) ?
                     stylePtr->radioButtonSize : comboPtr->radioButtonReqSize;
@@ -1883,15 +1916,14 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
             itemPtr->textWidth = IconWidth(itemPtr->image);
             itemPtr->textHeight = IconHeight(itemPtr->image);
         } else if (itemPtr->text != emptyString) {
-            unsigned int tw, th, h;
+            unsigned int tw, th;
             Blt_FontMetrics fm;
 
             Blt_Font_GetMetrics(stylePtr->textFont, &fm);
-            h = fm.linespace;
             Blt_GetTextExtents(stylePtr->textFont, 0, itemPtr->text, -1,
                 &tw, &th);
             itemPtr->textWidth = tw;
-            itemPtr->textHeight = MAX(th, h);
+            itemPtr->textHeight = MAX(th, fm.linespace);
         }
         if (itemPtr->flags & ITEM_CASCADE) {
             Blt_FontMetrics fm;
@@ -5423,15 +5455,25 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = TCL_OK;
     Tcl_Preserve(itemPtr);
+
+    comboPtr->selectPtr = itemPtr;
     result = SelectItem(interp, comboPtr, itemPtr, -1);
-    /*
-     * We check numItems in addition to whether the item has a command because
-     * that goes to zero if the combomenu is deleted (e.g., during command
-     * evaluation).
-     */
-    if ((Blt_Chain_GetLength(comboPtr->chain) > 0) && (result == TCL_OK) && 
-        (itemPtr->cmdObjPtr != NULL)) {
-        result = Tcl_EvalObjEx(interp, itemPtr->cmdObjPtr, TCL_EVAL_GLOBAL);
+    if (result == TCL_OK) {
+        if (comboPtr->cmdObjPtr != NULL) {
+            result = Tcl_EvalObjEx(interp, comboPtr->cmdObjPtr,
+                                   TCL_EVAL_GLOBAL);
+        }
+    }
+    if (result == TCL_OK) {
+        /*
+         * We check numItems in addition to whether the item has a command
+         * because that goes to zero if the combomenu is deleted (e.g.,
+         * during command evaluation).
+         */
+        if ((Blt_Chain_GetLength(comboPtr->chain) > 0) && 
+            (itemPtr->cmdObjPtr != NULL)) {
+            result = Tcl_EvalObjEx(interp, itemPtr->cmdObjPtr, TCL_EVAL_GLOBAL);
+        }
     }
     Tcl_Release(itemPtr);
     return result;
@@ -6119,7 +6161,8 @@ ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     SeeItem(comboPtr, itemPtr, TK_ANCHOR_W);
-    if (SelectItem(interp, comboPtr, itemPtr, -1) != TCL_OK) {
+    comboPtr->selectPtr = itemPtr;
+    if (UpdateTextAndIconVars(interp, comboPtr, itemPtr, -1) != TCL_OK) {
         return TCL_ERROR;
     }
     /* Deactivate any active item. */
@@ -6260,6 +6303,10 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectOp --
  *
+ *      Sets the given item as selected. The -textvariable, -iconvariable,
+ *      -valuevariable, and -variable TCL variables are set, but the TCL
+ *      commands are *not* invoked.
+ *
  * Results:
  *      Standard TCL result.
  *
@@ -6285,7 +6332,8 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     cmd = Tcl_GetString(objv[1]);
     Tcl_Preserve(itemPtr);
-    result = SelectItem(interp, comboPtr, itemPtr, cmd[0] == 's');
+    comboPtr->selectPtr = itemPtr;
+    result = UpdateTextAndIconVars(interp, comboPtr, itemPtr, cmd[0] == 's');
     Tcl_Release(itemPtr);
     return result;
 }
@@ -7440,23 +7488,6 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
             iw = IconWidth(itemPtr->image);
             ih = IconHeight(itemPtr->image);
             dx = x, dy = y;
-            if (dx < 0) { 
-                ix += -dx;
-                iw += dx;
-                dx = 0;
-            } else if ((dx + iw) > w) {
-                iw = w - dx;
-            }
-            if (dy < 0) { 
-                iy += -dy;
-                ih += dy;
-                dy = 0;
-            } else if ((dy + ih) > h) {
-                ih = h - dy;
-            }
-            if (h > ih) {
-                iy += (h - ih) / 2;
-            }
             /*  */
 #ifdef notdef
             fprintf(stderr, "image=%s ix=%d iy=%d iw=%d ih=%d dx=%d dy=%d x=%d y=%d w=%d h=%d\n",

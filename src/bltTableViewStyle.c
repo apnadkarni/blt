@@ -121,7 +121,7 @@
 #define DEF_CHECKBOX_ONVALUE            "1"
 #define DEF_CHECKBOX_RELIEF             "flat"
 #define DEF_CHECKBOX_SHOWVALUE          "yes"
-#define DEF_CHECKBOX_SIZE               "11"
+#define DEF_CHECKBOX_SIZE               "0"
 #define DEF_COMBOBOX_ACTIVE_RELIEF      "raised"
 #define DEF_COMBOBOX_ARROW_BORDERWIDTH  "1"
 #define DEF_COMBOBOX_ARROW_RELIEF       "raised"
@@ -2888,7 +2888,7 @@ NewCheckBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->classPtr = &checkBoxStyleClass;
     stylePtr->viewPtr = viewPtr;
     stylePtr->gap = 4;
-    stylePtr->size = 15;
+    stylePtr->size = 0;
     stylePtr->lineWidth = 2;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
@@ -2932,6 +2932,12 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     gcValues.line_width = 0;
     gcValues.line_style = LineOnOffDash;
 
+    if (stylePtr->size <= 0) {
+        Blt_FontMetrics fm;
+
+        Blt_Font_GetMetrics(stylePtr->font, &fm);
+        stylePtr->size = fm.linespace * 75 / 100;
+    }
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);

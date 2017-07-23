@@ -2303,7 +2303,7 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
         points[0].x = x;
         points[0].y = y + (0.6 * h);
         points[4].x = x + w;
-        points[4].y = y + (0.25 * h);
+        points[4].y = y + (0.2 * h);
         points[5].x = x + (0.4 * w);
         points[5].y = y + h;
         m1 = (points[4].x - points[5].x) / (points[4].y - points[5].y);

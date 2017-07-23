@@ -1867,9 +1867,9 @@ PaintPicture(
  *      XRenderComposite. This has the advantage of not requiring the
  *      background to be snapped from the drawable on the server,
  *      composited on the client, and then redisplayed on the server.  We
- *      also using a shared memory pixmap.  If XRender or XShm and not
- *      available or fail for some reason, return FALSE so that the
- *      calling routine can fall back to another compositing method.
+ *      are also using a shared memory pixmap.  If XRender or XShm and not
+ *      available or fail for some reason, return FALSE so that the calling
+ *      routine can fall back to another compositing method.
  * 
  * Results:
  *      Returns TRUE is the picture was successfully displayed.  Otherwise
@@ -1903,7 +1903,7 @@ CompositePictureWithXRender(
 #else
     static int nativeByteOrder = LSBFirst;
 #endif  /* WORD_BIGENDIAN */
-    XRenderPictureAttributes pa;
+    XRenderPictureAttributes xrpa;
     Picture srcPict, dstPict;
     Blt_Pixel *srcRowPtr;
     Pixmap pixmap;
@@ -1913,7 +1913,7 @@ CompositePictureWithXRender(
 #ifdef HAVE_XSHMQUERYEXTENSION
     XShmSegmentInfo xssi;
 #endif  /* HAVE_XSHMQUERYEXTENSION */
-    XRenderPictFormat *pfPtr;
+    XRenderPictFormat *fmtPtr;
     Visual *visualPtr;
     int majorNum, minorNum, haveShmPixmaps;
 
@@ -1932,27 +1932,27 @@ code = TCL_OK;
     if (!Blt_Picture_IsPremultiplied(srcPtr)) {
         Blt_PremultiplyColors(srcPtr);
     }
-    pfPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
-    if (pfPtr == NULL) {
-        XRenderPictFormat pf;
+    fmtPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
+    if (fmtPtr == NULL) {
+        XRenderPictFormat xrpf;
 
         fprintf(stderr, "Can't find standard format for ARGB32\n");
         
         /* lookup another ARGB32 picture format */
-        pf.type = PictTypeDirect;
-        pf.depth = 32;
-        pf.direct.alphaMask = 0xff;
-        pf.direct.redMask = 0xff;
-        pf.direct.greenMask = 0xff;
-        pf.direct.blueMask = 0xff;
-        pf.direct.alpha = 24;
-        pf.direct.red = 16;
-        pf.direct.green = 8;
-        pf.direct.blue = 0;
-        pfPtr = XRenderFindFormat(p->display, FMT_ARGB32, &pf, 0);
+        xrpf.type = PictTypeDirect;
+        xrpf.depth = 32;
+        xrpf.direct.alphaMask = 0xff;
+        xrpf.direct.redMask = 0xff;
+        xrpf.direct.greenMask = 0xff;
+        xrpf.direct.blueMask = 0xff;
+        xrpf.direct.alpha = 24;
+        xrpf.direct.red = 16;
+        xrpf.direct.green = 8;
+        xrpf.direct.blue = 0;
+        fmtPtr = XRenderFindFormat(p->display, FMT_ARGB32, &xrpf, 0);
     }
     visualPtr = NULL;
-    if (pfPtr == NULL) {
+    if (fmtPtr == NULL) {
         fprintf(stderr, "Can't find 32 bit picture format\n");
         return FALSE;
     } else {
@@ -1977,10 +1977,10 @@ code = TCL_OK;
         }
 
         for (i = 0; i < numVisuals; i++) {
-            XRenderPictFormat *fmtPtr;
+            XRenderPictFormat *fmtPtr2;
             
-            fmtPtr = XRenderFindVisualFormat(p->display, visuals[i].visual);
-            if ((fmtPtr != NULL) && (fmtPtr->id == pfPtr->id)) {
+            fmtPtr2 = XRenderFindVisualFormat(p->display, visuals[i].visual);
+            if ((fmtPtr2 != NULL) && (fmtPtr2->id == fmtPtr->id)) {
                 visualPtr = visuals[i].visual;
                 break;
             }
@@ -2066,13 +2066,13 @@ code = TCL_OK;
                      False /*send_event*/);
         XFreeGC(p->display, gc);
     }
-    pa.component_alpha = True;
-    srcPict = XRenderCreatePicture(p->display, pixmap, pfPtr,
-                                   CPComponentAlpha, &pa);
-    pa.component_alpha = False;
+    xrpa.component_alpha = True;
+    srcPict = XRenderCreatePicture(p->display, pixmap, fmtPtr,
+                                   CPComponentAlpha, &xrpa);
+    xrpa.component_alpha = False;
     dstPict = XRenderCreatePicture(p->display, drawable,
                    XRenderFindStandardFormat(p->display, PictStandardRGB24),
-                                   CPComponentAlpha, &pa);
+                                   CPComponentAlpha, &xrpa);
     XRenderComposite(p->display, PictOpOver, srcPict, None, dstPict, 0, 0, 0, 0,
                      dx, dy, w, h);
     XShmDetach(p->display, &xssi);
@@ -2156,8 +2156,8 @@ CompositePicture(
         if (bgPtr == NULL) {
             return FALSE;
         }
-        /* Dimension of source region may be adjusted by the actual size of the
-         * drawable.  This is reflected in the size of the background
+        /* Dimension of source region may be adjusted by the actual size of
+         * the drawable.  This is reflected in the size of the background
          * picture. */
         Blt_CompositeRegion(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
         PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height,
