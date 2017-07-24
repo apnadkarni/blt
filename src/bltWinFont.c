@@ -69,8 +69,8 @@ typedef struct _Blt_Font _Blt_Font;
 
 enum FontsetTypes { 
     FONTSET_UNKNOWN=1,                  /* Unknown font type. */
-    FONTSET_TK,                         /* Normal Tk font. */
-    FONTSET_WIN                         /* Windows font. */
+    FONTSET_STD,                        /* Normal Tk font. */
+    FONTSET_EXT                         /* Extended Tk font. */
 };
 
 #ifndef HAVE_LIBXFT
@@ -972,9 +972,9 @@ static Blt_Font_PostscriptNameProc      StdFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           StdFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      StdFontUnderlineCharsProc;
 
-static Blt_FontClass StdFontClass = {
-    FONTSET_TK,
-    "tkfont",
+static Blt_FontClass stdFontClass = {
+    FONTSET_STD,
+    "stdfont",
     StdFontCanRotateProc,                /* Blt_Font_CanRotateProc */
     StdFontDrawProc,                     /* Blt_Font_DrawProc */
     StdFontDupProc,                      /* Blt_Font_DuplicateProc */
@@ -1253,7 +1253,7 @@ static Blt_Font_PostscriptNameProc      ExtFontPostscriptNameProc;
 static Blt_Font_TextWidthProc           ExtFontTextWidthProc;
 static Blt_Font_UnderlineCharsProc      ExtFontUnderlineCharsProc;
 
-static Blt_FontClass ExtFontClass = {
+static Blt_FontClass extFontClass = {
     FONTSET_EXT,
     "extfont",
     ExtFontCanRotateProc,               /* Blt_Font_CanRotateProc */
@@ -1395,17 +1395,17 @@ DuplicateExtFont(
     if (hFont != NULL) {
         HFONT oldFont;
         TEXTMETRIC tm;
-        HDC hdc;
+        HDC hDC;
         int result;
 
         /* Check if the rotated font is really a TrueType font. */
 
-        hdc = GetDC(NULL);              /* Get the desktop device context */
-        oldFont = SelectFont(hdc, hFont);
-        result = ((GetTextMetrics(hdc, &tm)) && 
+        hDC = GetDC(NULL);              /* Get the desktop device context */
+        oldFont = SelectFont(hDC, hFont);
+        result = ((GetTextMetrics(hDC, &tm)) && 
                   (tm.tmPitchAndFamily & TMPF_TRUETYPE));
-        (void)SelectFont(hdc, oldFont);
-        ReleaseDC(NULL, hdc);
+        (void)SelectFont(hDC, oldFont);
+        ReleaseDC(NULL, hDC);
         if (!result) {
             DeleteFont(hFont);
             return NULL;
@@ -1419,8 +1419,9 @@ MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
                     int maxLength, int flags, int *lengthPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
-    HDC hdc;
-    HFONT oldFont;
+    HDC hDC;
+    HFONT hFont, oldFont;
+    Blt_HashEntry *hPtr;
     WinFont *winFontPtr;
     int curX, moretomeasure;
     Tcl_UniChar ch;
@@ -1435,7 +1436,7 @@ MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
 	return 0;
     }
 
-    winFontPtr = (WinFont *) setPtr->tkfont;
+    winFontPtr = (WinFont *) setPtr->tkFont;
     hPtr = Blt_FindHashEntry(&setPtr->fontTable, (char *)0L);
     assert(hPtr != NULL);
     hFont = Blt_GetHashValue(hPtr);
@@ -1453,7 +1454,7 @@ MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
 
     moretomeasure = 0;
     curX = 0;
-    start = source;
+    start = text;
     end = start + numBytes;
     for (p = start; p < end; ) {
 	next = p + Tcl_UtfToUniChar(p, &ch);
@@ -1470,7 +1471,7 @@ MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
 	Tcl_UtfToExternalDString(familyPtr->encoding, start,
 		(int) (p - start), &runString);
 	size.cx = 0;
-	(*familyPtr->getTextExtentPoint32Proc)(hdc,
+	(*familyPtr->getTextExtentPoint32Proc)(hDC,
 		Tcl_DStringValue(&runString),
 		Tcl_DStringLength(&runString) >> familyPtr->isWideFont,
 		&size);
@@ -1504,7 +1505,7 @@ MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
 		    &dstWrote, NULL);
 	    Tcl_DStringAppend(&runString,buf,dstWrote);
 	    size.cx = 0;
-	    (*familyPtr->getTextExtentPoint32Proc)(hdc,
+	    (*familyPtr->getTextExtentPoint32Proc)(hDC,
 		    Tcl_DStringValue(&runString),
 		    Tcl_DStringLength(&runString) >> familyPtr->isWideFont,
 		    &size);
@@ -1523,7 +1524,7 @@ MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
 	 */
 
 	if ((p < end) && (((flags & TK_PARTIAL_OK) && (curX != maxLength))
-		|| ((p==source) && (flags&TK_AT_LEAST_ONE) && (curX==0)))) {
+		|| ((p==text) && (flags&TK_AT_LEAST_ONE) && (curX==0)))) {
 	    /*
 	     * Include the first character that didn't quite fit in the
 	     * desired span. The width returned will include the width of that
@@ -1549,7 +1550,7 @@ MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
 	Tcl_UniChar ch2;
 
 	end = p;
-	p = source;
+	p = text;
 	ch = ' ';
 	while (p < end) {
 	    next = p + Tcl_UtfToUniChar(p, &ch2);
@@ -1561,19 +1562,19 @@ MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
 	}
 
 	if (lastWordBreak != NULL) {
-	    return Tk_MeasureChars(setPtr->tkfont, source, lastWordBreak-source,
+	    return Tk_MeasureChars(setPtr->tkFont, text, lastWordBreak-text,
 		    -1, 0, lengthPtr);
 	}
 	if (flags & TK_AT_LEAST_ONE) {
 	    p = end;
 	} else {
-	    p = source;
+	    p = text;
 	    curX = 0;
 	}
     }
 
     *lengthPtr = curX;
-    return p - source;
+    return p - text;
 }
 
 /*
@@ -1682,7 +1683,7 @@ GetExtFontFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
             Blt_DeleteHashEntry(&fontSetTable, hPtr);
             return NULL;
         }
-        setPtr = Blt_AssertCalloc(1, sizeof(tkExtFontset));
+        setPtr = Blt_AssertCalloc(1, sizeof(ExtFontset));
         setPtr->refCount = 1;
         setPtr->tkFont = tkFont;
         setPtr->name = Blt_GetHashKey(&fontSetTable, hPtr);
@@ -1702,7 +1703,7 @@ NewExtFontset(Tk_Font tkFont, HFONT hFont, Blt_HashEntry *hPtr)
     ExtFontset *setPtr;
     int isNew;
 
-    setPtr = Blt_AssertCalloc(1, sizeof(tkExtFontset));
+    setPtr = Blt_AssertCalloc(1, sizeof(ExtFontset));
     setPtr->refCount = 1;
     setPtr->tkFont = tkFont;
     setPtr->name = Blt_GetHashKey(&fontSetTable, hPtr);
@@ -1886,14 +1887,14 @@ ExtFontDrawProc(
 
         display->request++;
         if (drawable != None) {
-            HDC hdc;
+            HDC hDC;
             HFONT hFont;
             TkWinDCState state;
             
             hFont = Blt_GetHashValue(hPtr);
-            hdc = TkWinGetDrawableDC(display, drawable, &state);
-            Blt_TextOut(hdc, gc, hFont, text, numBytes, x, y);
-            TkWinReleaseDrawableDC(drawable, hdc, &state);
+            hDC = TkWinGetDrawableDC(display, drawable, &state);
+            Blt_TextOut(hDC, gc, hFont, text, numBytes, x, y);
+            TkWinReleaseDrawableDC(drawable, hDC, &state);
         }
     } else {
         Tk_DrawChars(display, drawable, gc, setPtr->tkFont, text, numBytes, 

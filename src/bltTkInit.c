@@ -205,7 +205,9 @@ Blt_TkInit(Tcl_Interp *interp)         /* Interpreter to add extra commands */
     Blt_RegisterCanvasEpsItem();
     Blt_RegisterCanvasLabelItem();
     Blt_InitXRandrConfig(interp);
+#ifndef WIN32
     Blt_CollectExtInfo(interp);
+#endif
 
     /* Initialize the BLT commands that only use Tk. */
     for (p = cmdProcs; *p != NULL; p++) {
