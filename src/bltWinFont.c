@@ -1176,30 +1176,6 @@ static Blt_FontClass extFontClass = {
     ExtFontUnderlineCharsProc,          /* Blt_Font_UnderlineCharsProc */
 };
 
-/* 
- * Extended Tk font container.
- */
-typedef struct {
-    const char *name;                   /* Name of the font. Points to the
-                                         * hash table key. */
-    int refCount;                       /* Reference count for this
-                                         * structure.  When refCount
-                                         * reaches zero, it means to free
-                                         * the resources associated with
-                                         * this structure. */
-    Blt_HashEntry *hashPtr;             /* Pointer to this entry in global
-                                         * font hash table. Used to remove
-                                         * the entry from the table. */
-    Blt_HashTable fontTable;            /* Hash table containing an Win32
-                                         * font for each angle it's used
-                                         * at. Will always contain a 0
-                                         * degree entry. */
-    Tk_Font tkFont;                     /* The zero degree Tk font.  We use
-                                         * it to get the Win32 font handle
-                                         * to generate non-zero degree
-                                         * rotated fonts. */
-} ExtFontset;
-
 /*
  *---------------------------------------------------------------------------
  *
