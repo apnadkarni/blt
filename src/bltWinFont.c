@@ -4,14 +4,19 @@
  *
  * This module implements rotated/scaled fonts for the BLT toolkit.  
  *
- * For rotated fonts, the idea is to jack up the Tk font structure and
- * replace it with Blt_Font structure that allows you to create a single
- * font that can be displayed at various angles.  Rotated fonts are created
- * by digging out the Windows font handle from the Tk font and then calling
- * CreateFontIndirect to generate a font for that angle.  The rotated fonts
- * are stored in a hash table.
+ * This is different from the Unix fonts. Here, we're really just
+ * augmenting the existing Tk font, not replacing it with a secondary
+ * implementation (like Xft).
  *
- * For scale fonts, duplicate the original font at the new size.
+ * For rotated fonts, the idea is to create a super Blt_Font structure the
+ * subsumes the Tk font structure but also can display a single font at
+ * various angles.  Rotated fonts are created by digging out the Windows
+ * font handle from the Tk font and then calling CreateFontIndirect to
+ * generate a new font for that angle.  The rotated fonts are stored/cached
+ * in a hash table.
+ *
+ * For scaled fonts, this is a routine to duplicate the original font at
+ * the new size from C code.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *
@@ -146,17 +151,16 @@ typedef struct {
                                          * reaches zero, it means to free
                                          * the resources associated with
                                          * this structure. */
-    Blt_HashEntry *hashPtr;             /* Pointer to this entry in global
-                                         * font hash table. Used to remove
-                                         * the entry from the table. */
+    Blt_HashEntry *hashPtr;             /* Pointer to this entry in the
+                                         * global font hash table. Used to
+                                         * remove the entry from the
+                                         * table. */
     Blt_HashTable fontTable;            /* Hash table containing an Win32
-                                         * font for each angle it's used
-                                         * at. Will always contain a 0
-                                         * degree entry. */
+                                         * font for each angle it's
+                                         * used. */
     Tk_Font tkFont;                     /* The zero degree Tk font.  We use
                                          * it to get the Win32 font handle
-                                         * to generate non-zero degree
-                                         * rotated fonts. */
+                                         * to generate rotated fonts. */
 } ExtFontset;
 
 typedef struct {
@@ -1073,12 +1077,11 @@ GetPatternFromFont(Tk_Font tkFont)
 }
 
 static void
-WriteXLFDDescription(Tk_Window tkwin, FontPattern *patternPtr, 
+FontPatternToDString(Tk_Window tkwin, FontPattern *patternPtr, 
                      Tcl_DString *resultPtr)
 {
     int size;
     
-    /* Rewrite the font description using the aliased family. */
     Tcl_DStringInit(resultPtr);
 
     /* Family */
@@ -1103,6 +1106,17 @@ WriteXLFDDescription(Tk_Window tkwin, FontPattern *patternPtr,
     Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
 }
 
+/* 
+ * GetFontFromPattern --
+ *
+ *      Tries to open a font based upon the given font pattern.  The
+ *      pattern is converted into a string in canonical format, and then we
+ *      use the normal Tk routines to open it.  
+ *
+ *  Results:
+ *      If successful, returns a Tk_Font, otherwise NULL;
+ *
+ */
 static Tk_Font 
 GetFontFromPattern(Tcl_Interp *interp, Tk_Window tkwin, FontPattern *patternPtr)
 {
@@ -1110,12 +1124,22 @@ GetFontFromPattern(Tcl_Interp *interp, Tk_Window tkwin, FontPattern *patternPtr)
     Tcl_DString ds;
 
     /* Rewrite the font description using the aliased family. */
-    WriteXLFDDescription(tkwin, patternPtr, &ds);
+    FontPatternToDString(tkwin, patternPtr, &ds);
     tkFont = Tk_GetFont(interp, tkwin, Tcl_DStringValue(&ds));
     Tcl_DStringFree(&ds);
     return tkFont;
 }
 
+/* 
+ * NewExtFontset --
+ *
+ *      Allocates and fills a new fontset structure. The name of the
+ *      fontset is detemined from the hash entry pointer passed in.
+ *
+ *  Results:
+ *      Returns a pointer to the newly allocated ExtFontset structure.
+ *
+ */
 static ExtFontset *
 NewExtFontset(Tk_Font tkFont, Blt_HashEntry *hPtr)
 {
@@ -1131,6 +1155,19 @@ NewExtFontset(Tk_Font tkFont, Blt_HashEntry *hPtr)
     return setPtr;
 }
 
+/* 
+ * GetFontsetFromObj --
+ *
+ *      Tries to allocate a new fontset. The name of the fontset is
+ *      standardized and then used to open the font. If the font already
+ *      exists, a pointer to the existing fontset is returned. Otherwise a
+ *      new fontset is allocated.
+ *
+ *  Results:
+ *      Returns a pointer to the ExtFontset structure or NULL if an 
+ *      error occurred.
+ *
+ */
 static ExtFontset *
 GetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 {
@@ -1153,7 +1190,7 @@ GetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         return NULL;
     }
     /* This re-generates the font description in a canonical format. */
-    WriteXLFDDescription(tkwin, patternPtr, &ds);
+    FontPatternToDString(tkwin, patternPtr, &ds);
     fontName = Tcl_DStringValue(&ds);
 
     /* See if we already have this fontset. */
@@ -1172,48 +1209,12 @@ GetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         }
         /* Attach it to the fontset as the base font. */
         setPtr = NewExtFontset(tkFont, hPtr);
-fprintf(stderr, "New setPtr = %x\n", setPtr);
     } else {
-fprintf(stderr, "Reuse setPtr = %x\n", setPtr);
         setPtr = Tcl_GetHashValue(hPtr);
 	setPtr->refCount++;
     }
     return setPtr;
 }
-
-static Blt_Font_CanRotateProc           ExtFontCanRotateProc;
-static Blt_Font_DrawProc                ExtFontDrawProc;
-static Blt_Font_DuplicateProc           ExtFontDupProc;
-static Blt_Font_FamilyProc              ExtFontFamilyProc;
-static Blt_Font_FreeProc                ExtFontFreeProc;
-static Blt_Font_GetMetricsProc          ExtFontGetMetricsProc;
-static Blt_Font_IdProc                  ExtFontIdProc;
-static Blt_Font_MeasureProc             ExtFontMeasureProc;
-static Blt_Font_NameProc                ExtFontNameProc;
-static Blt_Font_PixelSizeProc           ExtFontPixelSizeProc;
-static Blt_Font_PointSizeProc           ExtFontPointSizeProc;
-static Blt_Font_PostscriptNameProc      ExtFontPostscriptNameProc;
-static Blt_Font_TextWidthProc           ExtFontTextWidthProc;
-static Blt_Font_UnderlineCharsProc      ExtFontUnderlineCharsProc;
-
-static Blt_FontClass extFontClass = {
-    FONTSET_EXT,
-    "extfont",
-    ExtFontCanRotateProc,               /* Blt_Font_CanRotateProc */
-    ExtFontDrawProc,                    /* Blt_Font_DrawProc */
-    ExtFontDupProc,                     /* Blt_Font_DuplicateProc */
-    ExtFontFamilyProc,                  /* Blt_Font_FamilyProc */
-    ExtFontFreeProc,                    /* Blt_Font_FreeProc */
-    ExtFontGetMetricsProc,              /* Blt_Font_GetMetricsProc */
-    ExtFontIdProc,                      /* Blt_Font_IdProc */
-    ExtFontMeasureProc,                 /* Blt_Font_MeasureProc */
-    ExtFontNameProc,                    /* Blt_Font_NameProc */
-    ExtFontPixelSizeProc,               /* Blt_Font_PixelSizeProc */
-    ExtFontPointSizeProc,               /* Blt_Font_PointSizeProc */
-    ExtFontPostscriptNameProc,          /* Blt_Font_PostscriptNameProc */
-    ExtFontTextWidthProc,               /* Blt_Font_TextWidthProc */
-    ExtFontUnderlineCharsProc,          /* Blt_Font_UnderlineCharsProc */
-};
 
 /*
  *---------------------------------------------------------------------------
@@ -1351,6 +1352,145 @@ DestroyExtFontset(ExtFontset *setPtr)
     Blt_Free(setPtr);
 }
 
+static int
+GetFile(Tcl_Interp *interp, const char *fontName, Tcl_DString *namePtr, 
+        Tcl_DString *valuePtr)
+{
+    HKEY hkey;
+    char *name;
+    char *value;
+    const char *fileName;
+    const char *fontSubKey;
+    unsigned long maxBytesKey, maxBytesName, maxBytesValue;
+    unsigned long numSubKeys, numValues;
+    int result, length;
+    int i;
+
+    if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
+        fontSubKey = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts";
+    } else {
+        fontSubKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Fonts";
+    }
+    length = strlen(fontName);
+    fileName = NULL;
+    /* Open the registry key. */
+    result = RegOpenKeyEx(
+        HKEY_LOCAL_MACHINE,             /* Predefined key. */
+        fontSubKey,                     /* Registry subkey. */
+        0,                              /* Reserved. Must be zero. */
+        KEY_READ,                       /* Access rights. */
+        &hkey);                         /* (out) Handle to resulting key. */
+    if (result != ERROR_SUCCESS) {
+        Tcl_AppendResult(interp, "can't open font registry: ", 
+                Blt_LastError(), (char *)NULL);
+        return TCL_ERROR;
+    }
+    /* Get the number of values. */
+    result = RegQueryInfoKey(
+        hkey,                           /* key handle */
+        NULL,                           /* Buffer for class name */
+        NULL,                           /* Size of class string. */
+        NULL,                           /* Reserved. Must be NULL. */ 
+        &numSubKeys,                    /* # of subkeys. */
+        &maxBytesKey,                   /* Longest subkey size. */
+        NULL,                           /* Longest class string. */
+        &numValues,                     /* # of values for this key. */
+        &maxBytesName,                  /* Longest value name  */
+        &maxBytesValue,                 /* Longest value data */
+        NULL,                           /* Security descriptor. */
+        NULL);                          /* Last write time. */
+    if (result != ERROR_SUCCESS) {
+        Tcl_AppendResult(interp, "can't query registry info: ", 
+                Blt_LastError(), (char *)NULL);
+        goto error;
+    }
+    Tcl_DStringSetLength(namePtr, maxBytesName);
+    name = Tcl_DStringValue(namePtr);
+    Tcl_DStringSetLength(valuePtr, maxBytesValue);
+    value = Tcl_DStringValue(valuePtr);
+    /* Look for the font value. */
+    for (i = 0; i < numValues; i++) {
+        unsigned long numBytesName, numBytesValue;
+        unsigned long regType;
+
+        numBytesName = maxBytesName;    
+        numBytesValue = maxBytesValue;  
+        result = RegEnumValue(
+                hkey, 
+                i, 
+                name, 
+                &numBytesName, 
+                NULL,                   /* Reserved. Must be NULL. */
+                &regType,               /* (out) Registry value type  */
+                (unsigned char *)value, 
+                &numBytesValue);
+        if (result != ERROR_SUCCESS) {
+            Tcl_AppendResult(interp, "can't retrieve registry value: ", 
+                Blt_LastError(), (char *)NULL);
+            goto error;
+        }
+        /* Perform anchored case-insensitive string comparison. */
+        if (strncasecmp(name, fontName, length) == 0) {
+            fileName = value;
+            break;
+        }
+    }
+    if (fileName == NULL) {
+        Tcl_AppendResult(interp, "can't find font \"", fontName, "\": ",
+                Blt_LastError(), (char *)NULL);
+    }
+ error:
+    RegCloseKey(hkey);
+    if (fileName == NULL) {
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+
+/* 
+ * ExtFontset --
+ *
+ *      Set of routine specific to the ExtFontset.  Many of them are
+ *      simply wrappers for Tk font routines. The differences are the
+ *      CanRotateProc, DuplicateProc, DrawProc (for rotated fonts).
+ *
+ */
+
+static Blt_Font_CanRotateProc           ExtFontCanRotateProc;
+static Blt_Font_DrawProc                ExtFontDrawProc;
+static Blt_Font_DuplicateProc           ExtFontDupProc;
+static Blt_Font_FamilyProc              ExtFontFamilyProc;
+static Blt_Font_FreeProc                ExtFontFreeProc;
+static Blt_Font_GetMetricsProc          ExtFontGetMetricsProc;
+static Blt_Font_IdProc                  ExtFontIdProc;
+static Blt_Font_MeasureProc             ExtFontMeasureProc;
+static Blt_Font_NameProc                ExtFontNameProc;
+static Blt_Font_PixelSizeProc           ExtFontPixelSizeProc;
+static Blt_Font_PointSizeProc           ExtFontPointSizeProc;
+static Blt_Font_PostscriptNameProc      ExtFontPostscriptNameProc;
+static Blt_Font_TextWidthProc           ExtFontTextWidthProc;
+static Blt_Font_UnderlineCharsProc      ExtFontUnderlineCharsProc;
+
+static Blt_FontClass extFontClass = {
+    FONTSET_EXT,
+    "extfont",
+    ExtFontCanRotateProc,               /* Blt_Font_CanRotateProc */
+    ExtFontDrawProc,                    /* Blt_Font_DrawProc */
+    ExtFontDupProc,                     /* Blt_Font_DuplicateProc */
+    ExtFontFamilyProc,                  /* Blt_Font_FamilyProc */
+    ExtFontFreeProc,                    /* Blt_Font_FreeProc */
+    ExtFontGetMetricsProc,              /* Blt_Font_GetMetricsProc */
+    ExtFontIdProc,                      /* Blt_Font_IdProc */
+    ExtFontMeasureProc,                 /* Blt_Font_MeasureProc */
+    ExtFontNameProc,                    /* Blt_Font_NameProc */
+    ExtFontPixelSizeProc,               /* Blt_Font_PixelSizeProc */
+    ExtFontPointSizeProc,               /* Blt_Font_PointSizeProc */
+    ExtFontPostscriptNameProc,          /* Blt_Font_PostscriptNameProc */
+    ExtFontTextWidthProc,               /* Blt_Font_TextWidthProc */
+    ExtFontUnderlineCharsProc,          /* Blt_Font_UnderlineCharsProc */
+};
+
 static const char *
 ExtFontNameProc(_Blt_Font *fontPtr) 
 {
@@ -1402,10 +1542,10 @@ ExtFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double numPoints)
     * if we've already created a font this size. */
     patternPtr = GetPatternFromFont(setPtr->tkFont);
     patternPtr->size = numPoints;   /* Override the size. */
-    WriteXLFDDescription(tkwin, patternPtr, &ds);
+    FontPatternToDString(tkwin, patternPtr, &ds);
     fontName = Tcl_DStringValue(&ds);
 
-    /* See if we already have this font. */
+    /* See if we already have this fontset. */
     hPtr = Blt_CreateHashEntry(&fontSetTable, (char *)fontName, &isNew);
     Tcl_DStringFree(&ds);
     if (!isNew) {
@@ -1468,7 +1608,6 @@ ExtFontMeasureProc(_Blt_Font *fontPtr, const char *text, int numBytes,
 {
     ExtFontset *setPtr = fontPtr->clientData;
 
-fprintf(stderr, "Measure setPtr = %x\n", setPtr);
     return Tk_MeasureChars(setPtr->tkFont, text, numBytes, max, flags, 
                 lengthPtr);
 }
@@ -1648,6 +1787,7 @@ ExtFontUnderlineCharsProc(
         first, last);
 }
 
+/* Public routines. */
 
 /*
  *---------------------------------------------------------------------------
@@ -1788,101 +1928,6 @@ Blt_Font_GetMetrics(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
         }
     }
     (*fontPtr->classPtr->getMetricsProc)(fontPtr, fmPtr);
-}
-
-static int
-GetFile(Tcl_Interp *interp, const char *fontName, Tcl_DString *namePtr, 
-        Tcl_DString *valuePtr)
-{
-    HKEY hkey;
-    char *name;
-    char *value;
-    const char *fileName;
-    const char *fontSubKey;
-    unsigned long maxBytesKey, maxBytesName, maxBytesValue;
-    unsigned long numSubKeys, numValues;
-    int result, length;
-    int i;
-
-    if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
-        fontSubKey = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts";
-    } else {
-        fontSubKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Fonts";
-    }
-    length = strlen(fontName);
-    fileName = NULL;
-    /* Open the registry key. */
-    result = RegOpenKeyEx(
-        HKEY_LOCAL_MACHINE,             /* Predefined key. */
-        fontSubKey,                     /* Registry subkey. */
-        0,                              /* Reserved. Must be zero. */
-        KEY_READ,                       /* Access rights. */
-        &hkey);                         /* (out) Handle to resulting key. */
-    if (result != ERROR_SUCCESS) {
-        Tcl_AppendResult(interp, "can't open font registry: ", 
-                Blt_LastError(), (char *)NULL);
-        return TCL_ERROR;
-    }
-    /* Get the number of values. */
-    result = RegQueryInfoKey(
-        hkey,                           /* key handle */
-        NULL,                           /* Buffer for class name */
-        NULL,                           /* Size of class string. */
-        NULL,                           /* Reserved. Must be NULL. */ 
-        &numSubKeys,                    /* # of subkeys. */
-        &maxBytesKey,                   /* Longest subkey size. */
-        NULL,                           /* Longest class string. */
-        &numValues,                     /* # of values for this key. */
-        &maxBytesName,                  /* Longest value name  */
-        &maxBytesValue,                 /* Longest value data */
-        NULL,                           /* Security descriptor. */
-        NULL);                          /* Last write time. */
-    if (result != ERROR_SUCCESS) {
-        Tcl_AppendResult(interp, "can't query registry info: ", 
-                Blt_LastError(), (char *)NULL);
-        goto error;
-    }
-    Tcl_DStringSetLength(namePtr, maxBytesName);
-    name = Tcl_DStringValue(namePtr);
-    Tcl_DStringSetLength(valuePtr, maxBytesValue);
-    value = Tcl_DStringValue(valuePtr);
-    /* Look for the font value. */
-    for (i = 0; i < numValues; i++) {
-        unsigned long numBytesName, numBytesValue;
-        unsigned long regType;
-
-        numBytesName = maxBytesName;    
-        numBytesValue = maxBytesValue;  
-        result = RegEnumValue(
-                hkey, 
-                i, 
-                name, 
-                &numBytesName, 
-                NULL,                   /* Reserved. Must be NULL. */
-                &regType,               /* (out) Registry value type  */
-                (unsigned char *)value, 
-                &numBytesValue);
-        if (result != ERROR_SUCCESS) {
-            Tcl_AppendResult(interp, "can't retrieve registry value: ", 
-                Blt_LastError(), (char *)NULL);
-            goto error;
-        }
-        /* Perform anchored case-insensitive string comparison. */
-        if (strncasecmp(name, fontName, length) == 0) {
-            fileName = value;
-            break;
-        }
-    }
-    if (fileName == NULL) {
-        Tcl_AppendResult(interp, "can't find font \"", fontName, "\": ",
-                Blt_LastError(), (char *)NULL);
-    }
- error:
-    RegCloseKey(hkey);
-    if (fileName == NULL) {
-        return TCL_ERROR;
-    }
-    return TCL_OK;
 }
 
 Tcl_Obj *
