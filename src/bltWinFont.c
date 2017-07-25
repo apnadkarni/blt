@@ -282,7 +282,6 @@ PixelsToPoints(Display *display, int size)
     return d;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1117,6 +1116,7 @@ GetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
                          Tcl_GetString(objPtr), "\"", (char *)NULL);
         return NULL;
     }
+    /* This re-generates the font description in a canonical format. */
     WriteXLFDDescription(tkwin, patternPtr, &ds);
     fontName = Tcl_DStringValue(&ds);
 
@@ -1335,68 +1335,6 @@ DestroyExtFontset(ExtFontset *setPtr)
     Blt_DeleteHashEntry(&fontSetTable, setPtr->hashPtr);
     Blt_Free(setPtr);
 }
-
-/* 
- *---------------------------------------------------------------------------
- *
- * GetExtFontFromObj --
- * 
- *      Opens a Tk font based on the description in the Tcl_Obj.  We first
- *      parse the description and if necessary rewrite it using the proper
- *      font aliases.  The font names
- *
- *        "Sans Serif", "Serif", "Math", "Monospace"
- *
- *      correspond to the proper font regardless if the standard X fonts or
- *      XFT fonts are being used.
- *
- *      Leave XLFD font descriptions alone.  Let users describe exactly the
- *      font they wish.
- *
- *      Outside of reimplementing the Tk font mechanism, rewriting the
- *      font allows use to better handle programs that must work with
- *      X servers with and without the XRender extension.  It means 
- *      that the widget's default font settings do not have to use
- *      XLFD fonts even if XRender is available.
- *      
- *---------------------------------------------------------------------------
- */
-static ExtFontset *
-GetExtFontFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
-{
-    Blt_HashEntry *hPtr;
-    const char *desc;
-    int isNew;
-    ExtFontset *setPtr;
-    
-    desc = Tcl_GetString(objPtr);
-    while (isspace(UCHAR(*desc))) {
-        desc++;                         /* Skip leading blanks. */
-    }
-    /* Is the font already in the cache? */
-    hPtr = Blt_CreateHashEntry(&fontSetTable, desc, &isNew);
-    if (isNew) {
-        Tk_Font tkFont;
-
-        tkFont = GetStdFontFromObj(interp, tkwin, objPtr);
-        if (tkFont == NULL) {
-            Blt_DeleteHashEntry(&fontSetTable, hPtr);
-            return NULL;
-        }
-        setPtr = Blt_AssertCalloc(1, sizeof(ExtFontset));
-        setPtr->refCount = 1;
-        setPtr->tkFont = tkFont;
-        setPtr->name = Blt_GetHashKey(&fontSetTable, hPtr);
-        setPtr->hashPtr = hPtr;
-        Blt_SetHashValue(hPtr, setPtr);
-        Blt_InitHashTable(&setPtr->fontTable, BLT_ONE_WORD_KEYS);
-    } else {
-        setPtr = Tcl_GetHashValue(hPtr);
-        setPtr->refCount++;
-    }
-    return setPtr;
-}
-
 
 static const char *
 ExtFontNameProc(_Blt_Font *fontPtr) 
