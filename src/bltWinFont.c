@@ -1172,8 +1172,11 @@ GetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         }
         /* Attach it to the fontset as the base font. */
         setPtr = NewExtFontset(tkFont, hPtr);
+fprintf(stderr, "New setPtr = %x\n", setPtr);
     } else {
+fprintf(stderr, "Reuse setPtr = %x\n", setPtr);
         setPtr = Tcl_GetHashValue(hPtr);
+	setPtr->refCount++;
     }
     return setPtr;
 }
@@ -1387,14 +1390,14 @@ static Blt_Font
 ExtFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double numPoints) 
 {
     Blt_HashEntry *hPtr;
-    ExtFontset *setPtr, *newPtr;
+    ExtFontset *newPtr;
+    ExtFontset *setPtr = fontPtr->clientData;
     FontPattern *patternPtr;
     Tcl_DString ds;
     _Blt_Font *dupPtr;
     const char *fontName;
     int isNew;
 
-    setPtr = fontPtr->clientData;
     /* Create a font description with the new requested size. Use it to see
     * if we've already created a font this size. */
     patternPtr = GetPatternFromFont(setPtr->tkFont);
@@ -1423,6 +1426,7 @@ ExtFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double numPoints)
             return NULL;
         }
     }
+    /* Create a new Blt_Font shell for this fontset. */
     dupPtr = Blt_Calloc(1, sizeof(_Blt_Font));
     if (dupPtr == NULL) {
         return NULL;                    /* Out of memory. */
@@ -1464,6 +1468,7 @@ ExtFontMeasureProc(_Blt_Font *fontPtr, const char *text, int numBytes,
 {
     ExtFontset *setPtr = fontPtr->clientData;
 
+fprintf(stderr, "Measure setPtr = %x\n", setPtr);
     return Tk_MeasureChars(setPtr->tkFont, text, numBytes, max, flags, 
                 lengthPtr);
 }
