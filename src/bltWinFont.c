@@ -283,75 +283,6 @@ PixelsToPoints(Display *display, int size)
     return d;
 }
 
-#ifdef notdef
-static void
-ParseXLFD(const char *fontName, int *argcPtr, char ***argvPtr)
-{
-    char *p, *pend, *desc, *buf;
-    size_t arrayLen, stringLen;
-    int count;
-    char **field;
-
-    arrayLen = (sizeof(char *) * (XLFD_NUMFIELDS + 1));
-    stringLen = strlen(fontName);
-    buf = Blt_AssertCalloc(1, arrayLen + stringLen + 1);
-    desc = buf + arrayLen;
-    strcpy(desc, fontName);
-    field = (char **)buf;
-
-    count = 0;
-    for (p = desc, pend = p + stringLen; p < pend; p++, count++) {
-        char *word;
-
-        field[count] = NULL;
-        /* Get the next word, separated by dashes (-). */
-        word = p;
-        while ((*p != '\0') && (*p != '-')) {
-            if (((*p & 0x80) == 0) && Tcl_UniCharIsUpper(UCHAR(*p))) {
-                *p = (char)Tcl_UniCharToLower(UCHAR(*p));
-            }
-            p++;
-        }
-        if (*p != '\0') {
-            *p = '\0';
-        }
-        if ((word[0] == '\0') || 
-            (((word[0] == '*') || (word[0] == '?')) && (word[1] == '\0'))) {
-            continue;                   /* Field not specified. -- -*- -?- */
-        }
-        field[count] = word;
-    }
-
-    /*
-     * An XLFD of the form -adobe-times-medium-r-*-12-*-* is pretty common,
-     * but it is (strictly) malformed, because the first * is eliding both the
-     * Setwidth and the Addstyle fields. If the Addstyle field is a number,
-     * then assume the above incorrect form was used and shift all the rest of
-     * the fields right by one, so the number gets interpreted as a pixelsize.
-     * This fix is so that we don't get a million reports that "it works under
-     * X (as a native font name), but gives a syntax error under Windows (as a
-     * parsed set of attributes)".
-     */
-
-    if ((count > XLFD_ADD_STYLE) && (field[XLFD_ADD_STYLE] != NULL)) {
-        int dummy;
-
-        if (Tcl_GetInt(NULL, field[XLFD_ADD_STYLE], &dummy) == TCL_OK) {
-            int j;
-            
-            for (j = XLFD_NUMFIELDS - 1; j >= XLFD_ADD_STYLE; j--) {
-                field[j + 1] = field[j];
-            }
-            field[XLFD_ADD_STYLE] = NULL;
-            count++;
-        }
-    }
-    *argcPtr = count;
-    *argvPtr = field;
-
-    field[XLFD_NUMFIELDS] = NULL;
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -537,17 +468,17 @@ GetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
     hDC = GetDC(hWnd);
 
     /*
-     * On any version NT, there may fonts with international names.  
-     * Use the NT-only Unicode version of EnumFontFamilies to get the 
-     * font names.  If we used the ANSI version on a non-internationalized 
-     * version of NT, we would get font names with '?' replacing all 
-     * the international characters.
+     * On any version NT, there may fonts with international names.  Use
+     * the NT-only Unicode version of EnumFontFamilies to get the font
+     * names.  If we used the ANSI version on a non-internationalized
+     * version of NT, we would get font names with '?' replacing all the
+     * international characters.
      *
      * On a non-internationalized verson of 95, fonts with international
-     * names are not allowed, so the ANSI version of EnumFontFamilies will 
-     * work.  On an internationalized version of 95, there may be fonts with 
-     * international names; the ANSI version will work, fetching the 
-     * name in the system code page.  Can't use the Unicode version of 
+     * names are not allowed, so the ANSI version of EnumFontFamilies will
+     * work.  On an internationalized version of 95, there may be fonts
+     * with international names; the ANSI version will work, fetching the
+     * name in the system code page.  Can't use the Unicode version of
      * EnumFontFamilies because it only exists under NT.
      */
 
@@ -559,6 +490,169 @@ GetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
                 (LPARAM)tablePtr);
     }       
     ReleaseDC(hWnd, hDC);
+}
+
+static void
+SplitXLFD(Tcl_Obj *objPtr, int *argcPtr, char ***argvPtr)
+{
+    char *p, *pend, *desc, *buf;
+    size_t arrayLen, stringLen;
+    int count;
+    char **field;
+
+    fontName = Tcl_GetStringFromObj(objPtr, &stringLen);
+    if (fontName[0] == '-') {
+        fontName++;
+        stringLen--;
+    }
+    arrayLen = (sizeof(char *) * (XLFD_NUMFIELDS + 1));
+    buf = Blt_AssertCalloc(1, arrayLen + stringLen + 1);
+    desc = buf + arrayLen;
+    strcpy(desc, fontName);
+    field = (char **)buf;
+
+    count = 0;
+    for (p = desc, pend = p + stringLen; p < pend; p++, count++) {
+        char *word;
+
+        field[count] = NULL;
+        /* Get the next word, separated by dashes (-). */
+        word = p;
+        while ((*p != '\0') && (*p != '-')) {
+            if (((*p & 0x80) == 0) && Tcl_UniCharIsUpper(UCHAR(*p))) {
+                *p = (char)Tcl_UniCharToLower(UCHAR(*p));
+            }
+            p++;
+        }
+        if (*p != '\0') {
+            *p = '\0';
+        }
+        if ((word[0] == '\0') || 
+            (((word[0] == '*') || (word[0] == '?')) && (word[1] == '\0'))) {
+            continue;                   /* Field not specified. -- -*- -?- */
+        }
+        field[count] = word;
+    }
+
+    /*
+     * An XLFD of the form -adobe-times-medium-r-*-12-*-* is pretty common,
+     * but it is (strictly) malformed, because the first is eliding both
+     * the Setwidth and the Addstyle fields. If the Addstyle field is a
+     * number, then assume the above incorrect form was used and shift all
+     * the rest of the fields right by one, so the number gets interpreted
+     * as a pixelsize.  This fix is so that we don't get a million reports
+     * that "it works under X (as a native font name), but gives a syntax
+     * error under Windows (as a parsed set of attributes)".
+     */
+
+    if ((count > XLFD_ADD_STYLE) && (field[XLFD_ADD_STYLE] != NULL)) {
+        int dummy;
+
+        if (Tcl_GetInt(NULL, field[XLFD_ADD_STYLE], &dummy) == TCL_OK) {
+            int j;
+            
+            for (j = XLFD_NUMFIELDS - 1; j >= XLFD_ADD_STYLE; j--) {
+                field[j + 1] = field[j];
+            }
+            field[XLFD_ADD_STYLE] = NULL;
+            count++;
+        }
+    }
+    *argcPtr = count;
+    *argvPtr = field;
+
+    field[XLFD_NUMFIELDS] = NULL;
+}
+
+static FontPattern *
+ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
+{
+    FontPattern *patternPtr;
+    FontSpec *specPtr;
+    int argc;
+    char **argv;
+    double size;
+    
+    SplitLFD(objPtr, &argc, &argv);
+    patternPtr = NewFontPattern();
+    if (argv[XLFD_FAMILY] != NULL) {
+        patternPtr->family = Blt_AssertStrdup(argv[XLFD_FAMILY]);
+    }
+    if (argv[XLFD_WEIGHT] != NULL) {
+        specPtr = FindSpec(interp, weightSpecs, numWeightSpecs, 
+                           argv[XLFD_WEIGHT], -1);
+        if (specPtr == NULL) {
+            goto error;
+        }
+        patternPtr->weight = specPtr->oldvalue;
+    }
+    if (argv[XLFD_SLANT] != NULL) {
+        specPtr = FindSpec(interp, slantSpecs, numSlantSpecs, argv[XLFD_SLANT], 
+                -1);
+        if (specPtr == NULL) {
+            goto error;
+        }
+        patternPtr->slant = specPtr->oldvalue;
+    }
+    if (argv[XLFD_SETWIDTH] != NULL) {
+        specPtr = FindSpec(interp, widthSpecs, numWidthSpecs, 
+                           argv[XLFD_SETWIDTH], -1);
+        if (specPtr == NULL) {
+            goto error;
+        }
+        patternPtr->width = specPtr->oldvalue;
+    }
+    size = 12.0;
+    if (argv[XLFD_PIXEL_SIZE] != NULL) {
+        int value;
+        if (argv[XLFD_PIXEL_SIZE][0] == '[') {
+            /*
+             * Some X fonts have the point size specified as follows:
+             *
+             *      [ N1 N2 N3 N4 ]
+             *
+             * where N1 is the point size (in points, not decipoints!), and
+             * N2, N3, and N4 are some additional numbers that I don't know
+             * the purpose of, so I ignore them.
+             */
+            value = atoi(argv[XLFD_PIXEL_SIZE]+1);
+        } else if (Tcl_GetInt(NULL, argv[XLFD_PIXEL_SIZE], &value) == TCL_OK) {
+            /* empty */
+        } else {
+            goto error;
+        }
+        size = PixelsToPoints(tkwin, -value);
+    }
+    patternPtr->size = size;
+
+    if (argv[XLFD_SPACING] != NULL) {
+        specPtr = FindSpec(interp, spacingSpecs, numSpacingSpecs, 
+                           argv[XLFD_SPACING], -1);
+        if (specPtr == NULL) {
+            goto error;
+        }
+        patternPtr->spacing = specPtr->oldvalue;
+    }
+    if (argv[XLFD_SETWIDTH] != NULL) {
+        specPtr = FindSpec(interp, widthSpecs, numWidthSpecs, 
+                           argv[XLFD_SETWIDTH], -1);
+        if (specPtr == NULL) {
+            goto error;
+        }
+        patternPtr->width = specPtr->oldvalue;
+    }
+    Blt_Free((char *)argv);
+#if DEBUG_FONT_SELECTION
+    fprintf(stderr, "parsed XLFD font \"%s\"\n", fontName);
+#endif
+    return patternPtr;
+ error:
+#if DEBUG_FONT_SELECTION
+    fprintf(stderr, "can't open font \"%s\" as XLFD\n", fontName);
+#endif
+    Blt_Free((char *)argv);
+    FreeFontPattern(patternPtr);
+    return NULL;
 }
 
 /*
@@ -580,15 +674,17 @@ GetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
  *---------------------------------------------------------------------------
  */
 static FontPattern *
-ParseTkDesc(Tcl_Interp *interp, int objc, Tcl_Obj **objv)
+ParseTkDesc(Tcl_Interp *interp, Tcl_Obj *objPtr)
 {
     FontPattern *patternPtr;
-    Tcl_Obj **aobjv;
-    int aobjc;
+    Tcl_Obj **objv, **aobjv;
+    int objc, aobjc;
     int i;
 
+    if (ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return NULL;
+    }
     patternPtr = NewFontPattern();
-
     /* Font family. */
     {
         char *family, *dash;
@@ -855,39 +951,38 @@ GetFontPattern(Tcl_Interp *interp, Tcl_Obj *objPtr)
          */
         patternPtr = ParseNameValuePairs(interp, objPtr);
         if (patternPtr == NULL) {
-            return NULL;                /* XLFD font description */
+            patternPtr = ParseXLFDDesc(interp, objPtr);
         }
     } else if (*desc == '*') {
-        return NULL;                    /* XLFD font description */
+        patternPtr = ParseXLFDDesc(interp, objPtr);
     } else if (strpbrk(desc, "::") != NULL) {
         patternPtr = ParseFontObj(interp, objPtr);
     } else {
-        int objc;
-        Tcl_Obj **objv;
+        int numElems;
         /* 
          * Case 3: Tk-style description.   
          */
-        if ((Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv) != TCL_OK) || 
+        if ((Tcl_ListObjLength(NULL, objPtr, &numElems) != TCL_OK) || 
             (objc < 1)) {
             return NULL;                /* Can't split into a list or
                                          * list is empty. */
         }
         patternPtr = NULL;
-        if (objc == 1) {
+        if (numElems == 1) {
             /* 
              * Case 3a: Tk font object name.
              *
              *   Assuming that Tk font object names won't contain whitespace,
              *   see if its a font object.
              */
-            patternPtr = ParseFontObj(interp, objv[0]);
+            patternPtr = ParseFontObj(interp, objPtr);
         } 
         if (patternPtr == NULL) {
             /* 
              * Case 3b: List of font attributes in the form "family size
              *          ?attrs?"
              */
-            patternPtr = ParseTkDesc(interp, objc, objv);
+            patternPtr = ParseTkDesc(interp, objPtr);
         }
     }   
     return patternPtr;
@@ -932,9 +1027,10 @@ GetPatternFromFont(Tk_Window tkwin, Tk_Font tkFont)
 
     patternPtr = NewFontPattern();
     patternPtr->family = Blt_AssertStrdup(tkFontPtr->fa.family);
-    patternPtr->weight = tkFontPtr->fa.weight;
-    patternPtr->slant = tkFontPtr->fa.slant;
+    patternPtr->slant = (tkFontPtr->fa.slant) ? "italic" : "roman";
+    patternPtr->weight = (tkFontPtr->fa.weight == FW_BOLD) ? "bold" : "normal";
     patternPtr->size = tkFontPtr->fa.size;
+    patternPtr->spacing = "*";
     return patternPtr;
 }
 
@@ -1017,6 +1113,11 @@ GetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         font_initialized++;
     }
     patternPtr = GetFontPattern(interp, objPtr);
+    if (patternPtr == NULL) {
+        Tcl_AppendResult(interp, "can't parse font description \"", 
+                         Tcl_GetString(objPtr), "\"", (char *)NULL);
+        return NULL;
+    }
     WriteXLFDDescription(tkwin, patternPtr, &ds);
     fontName = Tcl_DStringValue(&ds);
 
