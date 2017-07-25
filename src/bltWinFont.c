@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltWinFont.c --
  *
@@ -1042,260 +1041,6 @@ GetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
     return setPtr;
 }
 
-static Blt_Font_CanRotateProc           StdFontCanRotateProc;
-static Blt_Font_DrawProc                StdFontDrawProc;
-static Blt_Font_DuplicateProc           StdFontDupProc;
-static Blt_Font_FamilyProc              StdFontFamilyProc;
-static Blt_Font_FreeProc                StdFontFreeProc;
-static Blt_Font_GetMetricsProc          StdFontGetMetricsProc;
-static Blt_Font_IdProc                  StdFontIdProc;
-static Blt_Font_MeasureProc             StdFontMeasureProc;
-static Blt_Font_NameProc                StdFontNameProc;
-static Blt_Font_PixelSizeProc           StdFontPixelSizeProc;
-static Blt_Font_PointSizeProc           StdFontPointSizeProc;
-static Blt_Font_PostscriptNameProc      StdFontPostscriptNameProc;
-static Blt_Font_TextWidthProc           StdFontTextWidthProc;
-static Blt_Font_UnderlineCharsProc      StdFontUnderlineCharsProc;
-
-static Blt_FontClass stdFontClass = {
-    FONTSET_STD,
-    "stdfont",
-    StdFontCanRotateProc,                /* Blt_Font_CanRotateProc */
-    StdFontDrawProc,                     /* Blt_Font_DrawProc */
-    StdFontDupProc,                      /* Blt_Font_DuplicateProc */
-    StdFontFamilyProc,                   /* Blt_Font_FamilyProc */
-    StdFontFreeProc,                     /* Blt_Font_FreeProc */
-    StdFontGetMetricsProc,               /* Blt_Font_GetMetricsProc */
-    StdFontIdProc,                       /* Blt_Font_IdProc */
-    StdFontMeasureProc,                  /* Blt_Font_MeasureProc */
-    StdFontNameProc,                     /* Blt_Font_NameProc */
-    StdFontPixelSizeProc,                /* Blt_Font_PixelSizeProc */
-    StdFontPointSizeProc,                /* Blt_Font_PointSizeProc */
-    StdFontPostscriptNameProc,           /* Blt_Font_PostscriptNameProc */
-    StdFontTextWidthProc,                /* Blt_Font_TextWidthProc */
-    StdFontUnderlineCharsProc,           /* Blt_Font_UnderlineCharsProc */
-};
-
-static const char *
-StdFontNameProc(_Blt_Font *fontPtr) 
-{
-    return Tk_NameOfFont(fontPtr->clientData);
-}
-
-static const char *
-StdFontFamilyProc(_Blt_Font *fontPtr) 
-{
-    return ((TkFont *)fontPtr->clientData)->fa.family;
-}
-
-static double
-StdFontPointSizeProc(_Blt_Font *fontPtr) 
-{
-    return PointsToPixels(fontPtr->display,
-                          ((TkFont *)fontPtr->clientData)->fa.size);
-}
-
-static double
-StdFontPixelSizeProc(_Blt_Font *fontPtr) 
-{
-    return PixelsToPoints(fontPtr->display,
-                          ((TkFont *)fontPtr->clientData)->fa.size);
-}
-
-/* 
- *  StdFontDupProc --
- *
- *      This is the simpler of the two duplicate procedures since there's
- *      no fontset (no font rotation).  Using the name of the old font.
- *      create a new pattern and set the size.
- */
-static Blt_Font
-StdFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size) 
-{
-    Tcl_DString ds;
-    Tcl_Obj *objPtr;
-    Tk_Font tkFont;
-    _Blt_Font *dupPtr; 
-    FontPattern *patternPtr;
-    const char *fontName;
-
-    /* Get the pattern from the old font. */
-    objPtr = Tcl_NewStringObj(Tk_NameOfFont(fontPtr->clientData), -1);
-    patternPtr = GetFontPattern(fontPtr->interp, objPtr);
-    Tcl_DecrRefCount(objPtr);
-    if (patternPtr == NULL) {
-        /* Not rescalable. */
-        return NULL;
-    }
-    patternPtr->size = size;
-    Tcl_DStringInit(&ds);
-    WriteXLFDDescription(tkwin, patternPtr, &ds);
-    fontName = Tcl_DStringValue(&ds);
-    FreeFontPattern(patternPtr);
-
-    /* Rewrite the font description using the aliased family. */
-    tkFont = Tk_GetFont(fontPtr->interp, tkwin, fontName);
-    Tcl_DStringFree(&ds);
-    if (tkFont == NULL) {
-        return NULL;
-    }
-    dupPtr = Blt_AssertCalloc(1, sizeof(_Blt_Font));
-    dupPtr->classPtr = &stdFontClass;
-    dupPtr->clientData = tkFont;
-    dupPtr->interp = fontPtr->interp;
-    dupPtr->display = fontPtr->display;
-    return dupPtr;             
-}
-
-static Font
-StdFontIdProc(_Blt_Font *fontPtr) 
-{
-    return Tk_FontId(fontPtr->clientData);
-}
-
-static void
-StdFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
-{
-    TkFont *tkFontPtr = fontPtr->clientData;
-    Tk_FontMetrics fm;
-
-    Tk_GetFontMetrics(fontPtr->clientData, &fm);
-    fmPtr->ascent = fm.ascent;
-    fmPtr->descent = fm.descent;
-    fmPtr->linespace = fm.linespace;
-    fmPtr->tabWidth = tkFontPtr->tabWidth;
-    fmPtr->underlinePos = tkFontPtr->underlinePos;
-    fmPtr->underlineHeight = tkFontPtr->underlineHeight;
-}
-
-static int
-StdFontMeasureProc(_Blt_Font *fontPtr, const char *text, int numBytes, int max, 
-                   int flags, int *lengthPtr)
-{
-    return Tk_MeasureChars(fontPtr->clientData, text, numBytes, max, flags, 
-                           lengthPtr);
-}
-
-static int
-StdFontTextWidthProc(_Blt_Font *fontPtr, const char *string, int numBytes)
-{
-    return Tk_TextWidth(fontPtr->clientData, string, numBytes);
-}    
-
-static void
-StdFontDrawProc(
-    Display *display,                   /* Display on which to draw. */
-    Drawable drawable,                  /* Window or pixmap in which to
-                                         * draw. */
-    GC gc,                              /* Graphics context for drawing
-                                         * characters. */
-    _Blt_Font *fontPtr,                 /* Font in which characters will be
-                                         * drawn; must be the same as font
-                                         * used in GC. */
-    int depth,                          /* Not used. */
-    float angle,                        /* Not used. */
-    const char *text,                   /* UTF-8 string to be displayed.  Need
-                                         * not be '\0' terminated.  All Tk
-                                         * meta-characters (tabs, control
-                                         * characters, and newlines) should be
-                                         * stripped out of the string that is
-                                         * passed to this function.  If they
-                                         * are not stripped out, they will be
-                                         * displayed as regular printing
-                                         * characters. */
-    int numBytes,                               /* Number of bytes in string. */
-    int x, int y)                       /* Coordinates at which to place
-                                         * origin of string when drawing. */
-{
-    if (fontPtr->rgn != NULL) {
-        TkSetRegion(display, gc, fontPtr->rgn);
-        Tk_DrawChars(display, drawable, gc, fontPtr->clientData, text, numBytes,
-                x, y);
-        XSetClipMask(display, gc, None);
-    } else {
-        Tk_DrawChars(display, drawable, gc, fontPtr->clientData, text, numBytes,
-                x, y);
-    }
-}
-
-static int
-StdFontPostscriptNameProc(_Blt_Font *fontPtr, Tcl_DString *resultPtr) 
-{
-    TkFont *tkFontPtr;
-    unsigned int flags;
-
-    tkFontPtr = (TkFont *)fontPtr->clientData;
-    flags = 0;
-    if (tkFontPtr->fa.slant != TK_FS_ROMAN) {
-        flags |= FONT_ITALIC;
-    }
-    if (tkFontPtr->fa.weight != TK_FW_NORMAL) {
-        flags |= FONT_BOLD;
-    }
-    Blt_Afm_GetPostscriptName(tkFontPtr->fa.family, flags, resultPtr);
-    return PixelsToPoints(fontPtr->display, tkFontPtr->fa.size);
-}
-
-static int
-StdFontCanRotateProc(_Blt_Font *fontPtr, float angle) 
-{
-    return FALSE;
-}
-
-static void
-StdFontFreeProc(_Blt_Font *fontPtr) 
-{
-    Tk_FreeFont(fontPtr->clientData);
-    Blt_Free(fontPtr);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * StdFontUnderlineCharsProc --
- *
- *      This procedure draws an underline for a given range of characters in a
- *      given string.  It doesn't draw the characters (which are assumed to
- *      have been displayed previously); it just draws the underline.  This
- *      procedure would mainly be used to quickly underline a few characters
- *      without having to construct an underlined font.  To produce properly
- *      underlined text, the appropriate underlined font should be constructed
- *      and used.
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      Information gets displayed in "drawable".
- *
- *---------------------------------------------------------------------------
- */
-static void
-StdFontUnderlineCharsProc(
-    Display *display,                   /* Display on which to draw. */
-    Drawable drawable,                  /* Window or pixmap in which to
-                                         * draw. */
-    GC gc,                              /* Graphics context for actually
-                                         * drawing line. */
-    _Blt_Font *fontPtr,                 /* Font used in GC; must have been
-                                         * allocated by Tk_GetFont().  Used
-                                         * for character dimensions,
-                                         * etc. */
-    const char *text,                   /* String containing characters to
-                                         * be underlined or overstruck. */
-    int textLen,                        /* Unused. */
-    int x, int y,                       /* Coordinates at which first
-                                         * character of string is drawn. */
-    int first,                          /* Byte offset of the first
-                                         * character. */
-    int last,                           /* Byte offset after the last
-                                         * character. */
-    int xMax)
-{
-    Tk_UnderlineChars(display, drawable, gc, fontPtr->clientData, text, x, y, 
-        first, last);
-}
-
 static Blt_Font_CanRotateProc           ExtFontCanRotateProc;
 static Blt_Font_DrawProc                ExtFontDrawProc;
 static Blt_Font_DuplicateProc           ExtFontDupProc;
@@ -1372,7 +1117,6 @@ static HFONT
 MakeRotatedFont(
     Tk_Font tkFont,                     /* Font identifier (actually a
                                          * Tk_Font) */
-    double numPoints,                   /* Point size of new font. */
     long angle10)                       /* # of degrees to rotate font */
 {                                       
     TkFontAttributes *faPtr;            /* Set of attributes to match. */
@@ -1389,7 +1133,7 @@ MakeRotatedFont(
 
         hDC = GetDC(NULL);
         /* Convert from points to integral (rounded) # of pixels. */
-        numPixels = numPoints * GetDeviceCaps(hDC, LOGPIXELSY) / 72.0;
+        numPixels = faPtr->size * GetDeviceCaps(hDC, LOGPIXELSY) / 72.0;
         lf.lfHeight = -((LONG)(numPixels + 0.5)); 
         ReleaseDC(NULL, hDC);
     }
@@ -1470,209 +1214,6 @@ MakeRotatedFont(
         }
     }
     return hFont;
-}
-
-static int
-MeasureExtFontChars(_Blt_Font *fontPtr, const char *text, int numBytes,
-                    int maxLength, int flags, int *lengthPtr)
-{
-    ExtFontset *setPtr = fontPtr->clientData;
-    HDC hDC;
-    HFONT hFont, oldFont;
-    Blt_HashEntry *hPtr;
-    WinFont *winFontPtr;
-    int curX, moretomeasure;
-    Tcl_UniChar ch;
-    SIZE size;
-    FontFamily *familyPtr;
-    Tcl_DString runString;
-    SubFont *subFontPtr;
-    CONST char *p, *end, *next = NULL, *start;
-
-    if (numBytes == 0) {
-	*lengthPtr = 0;
-	return 0;
-    }
-
-    winFontPtr = (WinFont *) setPtr->tkFont;
-    hPtr = Blt_FindHashEntry(&setPtr->fontTable, (char *)0L);
-    assert(hPtr != NULL);
-    hFont = Blt_GetHashValue(hPtr);
-    hDC = GetDC(winFontPtr->hwnd);
-    oldFont = SelectFont(hDC, hFont);
-
-    subFontPtr = winFontPtr->subFontArray;
-    /*
-     * A three step process:
-     * 1. Find a contiguous range of characters that can all be represented by
-     *    a single screen font.
-     * 2. Convert those chars to the encoding of that font.
-     * 3. Measure converted chars.
-     */
-
-    moretomeasure = 0;
-    curX = 0;
-    start = text;
-    end = start + numBytes;
-    for (p = start; p < end; ) {
-	next = p + Tcl_UtfToUniChar(p, &ch);
-	p = next;
-    }
-
-    if (!moretomeasure) {
-	/*
-	 * We get here if the previous loop was just finished normally,
-	 * without a break. Just measure the last run and that's it.
-	 */
-
-	familyPtr = subFontPtr->familyPtr;
-	Tcl_UtfToExternalDString(familyPtr->encoding, start,
-		(int) (p - start), &runString);
-	size.cx = 0;
-	(*familyPtr->getTextExtentPoint32Proc)(hDC,
-		Tcl_DStringValue(&runString),
-		Tcl_DStringLength(&runString) >> familyPtr->isWideFont,
-		&size);
-	Tcl_DStringFree(&runString);
-	if (maxLength >= 0 && (curX+size.cx) > maxLength) {
-	    moretomeasure = 1;
-	} else {
-	    curX += size.cx;
-	    p = end;
-	}
-    }
-
-    if (moretomeasure) {
-	/*
-	 * We get here if the measurement of the last run was over the
-	 * maxLength limit. We need to restart this run and do it char by
-	 * char, but always in context with the previous text to account for
-	 * kerning (especially italics).
-	 */
-
-	char buf[16];
-	int dstWrote;
-	int lastSize = 0;
-
-	familyPtr = subFontPtr->familyPtr;
-	Tcl_DStringInit(&runString);
-	for (p = start; p < end; ) {
-	    next = p + Tcl_UtfToUniChar(p, &ch);
-	    Tcl_UtfToExternal(NULL, familyPtr->encoding, p,
-		    (int) (next - p), 0, NULL, buf, sizeof(buf), NULL,
-		    &dstWrote, NULL);
-	    Tcl_DStringAppend(&runString,buf,dstWrote);
-	    size.cx = 0;
-	    (*familyPtr->getTextExtentPoint32Proc)(hDC,
-		    Tcl_DStringValue(&runString),
-		    Tcl_DStringLength(&runString) >> familyPtr->isWideFont,
-		    &size);
-	    if ((curX+size.cx) > maxLength) {
-		break;
-	    }
-	    lastSize = size.cx;
-	    p = next;
-	}
-	Tcl_DStringFree(&runString);
-
-	/*
-	 * "p" points to the first character that doesn't fit in the desired
-	 * span. Look at the flags to figure out whether to include this next
-	 * character.
-	 */
-
-	if ((p < end) && (((flags & TK_PARTIAL_OK) && (curX != maxLength))
-		|| ((p==text) && (flags&TK_AT_LEAST_ONE) && (curX==0)))) {
-	    /*
-	     * Include the first character that didn't quite fit in the
-	     * desired span. The width returned will include the width of that
-	     * extra character.
-	     */
-
-	    p = next;
-	    curX += size.cx;
-	} else {
-	    curX += lastSize;
-	}
-    }
-
-    SelectObject(hDC, oldFont);
-    ReleaseDC(winFontPtr->hwnd, hDC);
-    if ((flags & TK_WHOLE_WORDS) && (p < end)) {
-	/*
-	 * Scan the string for the last word break and than repeat the whole
-	 * procedure without the maxLength limit or any flags.
-	 */
-
-	CONST char *lastWordBreak = NULL;
-	Tcl_UniChar ch2;
-
-	end = p;
-	p = text;
-	ch = ' ';
-	while (p < end) {
-	    next = p + Tcl_UtfToUniChar(p, &ch2);
-	    if ((ch != ' ') && (ch2 == ' ')) {
-		lastWordBreak = p;
-	    }
-	    p = next;
-	    ch = ch2;
-	}
-
-	if (lastWordBreak != NULL) {
-	    return Tk_MeasureChars(setPtr->tkFont, text, lastWordBreak-text,
-		    -1, 0, lengthPtr);
-	}
-	if (flags & TK_AT_LEAST_ONE) {
-	    p = end;
-	} else {
-	    p = text;
-	    curX = 0;
-	}
-    }
-
-    *lengthPtr = curX;
-    return p - text;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * AddExtFont --
- *
- *      Creates a rotated copy of the given font.  This only works for
- *      TrueType fonts.
- *
- * Results:
- *      Returns the newly create font or NULL if the font could not be
- *      created.
- *
- *---------------------------------------------------------------------------
- */
-static int
-AddExtFont(_Blt_Font *fontPtr, double numPoints, float angle)         
-{                                       
-    Blt_HashEntry *hPtr;
-    HFONT hFont;
-    ExtFontset *setPtr = fontPtr->clientData;
-    int isNew;
-    long angle10;
-
-    angle *= 10.0f;
-    angle10 = ROUND(angle);
-    hPtr = Blt_CreateHashEntry(&setPtr->fontTable, (char *)angle10, &isNew);
-    if (!isNew) {
-        return TRUE;                    /* Rotated font already exists. */
-    }
-    /* Create the rotated font. */
-    hFont = MakeRotatedFont(setPtr->tkFont, numPoints, angle10);
-    if (hFont == NULL) {
-        Blt_DeleteHashEntry(&setPtr->fontTable, hPtr);
-        return FALSE;
-    }
-    /* Add it to the set of scaled or rotated fonts.  */
-    Blt_SetHashValue(hPtr, hFont);
-    return TRUE;
 }
 
 static void
@@ -1919,13 +1460,17 @@ ExtFontDrawProc(
         angle *= 10.0f;
         angle10 = ROUND(angle);
         hPtr = Blt_FindHashEntry(&setPtr->fontTable, (char *)angle10);
-        if (hPtr == NULL) {
-            Blt_Warn("can't find font %s at %g rotated\n", setPtr->name, 
-                angle);
-           return;                      /* Can't find instance at requested
+        if (hPtr == NULL) { 
+            hFont = MakeRotatedFont(setPtr->tkFont, angle10);
+            if (hFont == NULL) {
+                Blt_Warn("can't find font %s at %g rotated\n", setPtr->name, 
+                         angle);
+                return;                 /* Can't find instance at requested
                                          * angle. */
+            } 
+            /* Add it to the set of scaled or rotated fonts.  */
+            Blt_SetHashValue(hPtr, hFont);
         }
-
         display->request++;
         if (drawable != None) {
             HDC hDC;
@@ -1973,9 +1518,7 @@ ExtFontCanRotateProc(_Blt_Font *fontPtr, float angle)
         return TRUE;                    /* Rotated font already exists. */
     }
     /* Create the rotated font and add it to the fontset. */
-    hFont = MakeRotatedFont(setPtr->tkFont, 
-               PixelsToPoints(fontPtr->display, tkFontPtr->fa.size),
-               angle10);
+    hFont = MakeRotatedFont(setPtr->tkFont, angle10);
     if (hFont == NULL) {
         Blt_DeleteHashEntry(&setPtr->fontTable, hPtr);
         return FALSE;
