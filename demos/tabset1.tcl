@@ -18,6 +18,7 @@ blt::tabset .t \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
     -closebutton yes \
+    -font "Arial 10" \
     -width 7i
 
 .t add First \
