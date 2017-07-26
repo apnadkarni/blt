@@ -1125,6 +1125,7 @@ GetFontFromPattern(Tcl_Interp *interp, Tk_Window tkwin, FontPattern *patternPtr)
 
     /* Rewrite the font description using the aliased family. */
     FontPatternToDString(tkwin, patternPtr, &ds);
+fprintf(stderr, "trying to open %s for %s\n",  Tcl_DStringValue(&ds), Tk_PathName(tkwin));
     tkFont = Tk_GetFont(interp, tkwin, Tcl_DStringValue(&ds));
     Tcl_DStringFree(&ds);
     return tkFont;
