@@ -1,7 +1,6 @@
 #!../src/bltwish
 
 package require BLT
-source scripts/demo.tcl
 option add *Tabset.Tab.padY 0
 #option add *Tabset.Tab.background green
 
@@ -18,9 +17,11 @@ blt::tabset .t \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
     -closebutton yes \
-    -font "Arial 10" \
     -width 7i
-
+font create myFont -family Arial -size 9
+puts stderr myFont=[font configure myFont]
+puts stderr fm=[font metrics myFont]
+puts stderr meas=[font measure myFont "Hello World"]
 .t add First \
     -image img1 \
     -anchor center \

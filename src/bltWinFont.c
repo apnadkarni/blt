@@ -660,7 +660,7 @@ ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         }
         numPoints = PixelsToPoints(Tk_Display(tkwin), value);
     }
-    patternPtr->numPoints = size;
+    patternPtr->numPoints = numPoints;
 
     if (argv[XLFD_SPACING] != NULL) {
         specPtr = FindSpec(interp, spacingSpecs, numSpacingSpecs, 
@@ -928,7 +928,7 @@ ParseNameValuePairs(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
  *---------------------------------------------------------------------------
  */
 static FontPattern *
-ParseFontObj(Tcl_Interp *interp, Tk_Window, tkwin, Tcl_Obj *objPtr) 
+ParseFontObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr) 
 {
     FontPattern *patternPtr;
     Tcl_Obj *cmd[3];
@@ -1057,8 +1057,6 @@ static void
 FontPatternToDString(Tk_Window tkwin, FontPattern *patternPtr, 
                      Tcl_DString *resultPtr)
 {
-    int numPoints;
-
     Tcl_DStringInit(resultPtr);
     /* Family */
     if (patternPtr->family != NULL) {
@@ -1579,15 +1577,26 @@ ExtFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
     TkFont *tkFontPtr = (TkFont *)setPtr->tkFont;
-    Tk_FontMetrics fm;
+    SubFont *subFontPtr;
+    TEXTMETRIC tm;
+    HDC hDC;
+    WinFont *winFontPtr;
+    HFONT oldFont;
 
-    Tk_GetFontMetrics(setPtr->tkFont, &fm);
-    fmPtr->ascent = fm.ascent;
-    fmPtr->descent = fm.descent;
-    fmPtr->linespace = fm.linespace;
+    winFontPtr = (WinFont *)tkFontPtr;
+    subFontPtr = &winFontPtr->subFontArray[0];
+    hDC = GetDC(NULL);
+    oldFont = SelectObject(hDC, subFontPtr->hFont);
+    GetTextMetrics(hDC, &tm);
+    fmPtr->ascent = tm.tmAscent;
+    fmPtr->descent = tm.tmDescent;
+    fmPtr->linespace = tm.tmHeight + tm.tmInternalLeading;
+fprintf(stderr, "font=%s asc=%d des=%d ls=%d\n", Tk_NameOfFont(setPtr->tkFont), fmPtr->ascent, fmPtr->descent, fmPtr->linespace);
     fmPtr->tabWidth = tkFontPtr->tabWidth;
     fmPtr->underlinePos = tkFontPtr->underlinePos;
     fmPtr->underlineHeight = tkFontPtr->underlineHeight;
+    SelectObject(hDC, oldFont);
+    ReleaseDC(NULL, hDC);
 }
 
 static int
@@ -1595,7 +1604,6 @@ ExtFontMeasureProc(_Blt_Font *fontPtr, const char *text, int numBytes,
                    int max, int flags, int *lengthPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
-
     return Tk_MeasureChars(setPtr->tkFont, text, numBytes, max, flags, 
                 lengthPtr);
 }
@@ -1817,6 +1825,7 @@ Blt_GetFontFromObj(
         MakeAliasTable(tkwin);
         font_initialized++;
     }
+fprintf(stderr, "Blt_GetFontFromObj: font is %s\n", Tcl_GetString(objPtr));
     setPtr = GetFontsetFromObj(interp, tkwin, objPtr);
     if (setPtr == NULL) {
 #if DEBUG_FONT_SELECTION

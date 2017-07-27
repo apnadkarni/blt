@@ -800,8 +800,8 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", (char *)NULL,
         Blt_Offset(Tab, textColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", (char *)NULL, 
-        Blt_Offset(Tab, font), 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TAB_FONT, 
+        Blt_Offset(Tab, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_TAB_IMAGE, 
         Blt_Offset(Tab, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_PAD, "-ipadx", "iPadX", "PadX", DEF_TAB_IPAD, 
@@ -871,8 +871,8 @@ static Blt_ConfigSpec configSpecs[] =
         0, 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_FOREGROUND, Blt_Offset(Tabset, defStyle.textColor), 0},
-    {BLT_CONFIG_FONT, "-font", "font", "Font",
-        DEF_FONT, Blt_Offset(Tabset, defStyle.font), 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
+        Blt_Offset(Tabset, defStyle.font), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
         Blt_Offset(Tabset, gap), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
@@ -8231,8 +8231,11 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         XColor *fgColor;
         Blt_Font font;
         int maxLength = -1;
+	Blt_FontMetrics fm;
 
         font = GETATTR(tabPtr, font);
+    Blt_Font_GetMetrics(font, &fm);
+fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.linespace);
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
         } else if ((tabPtr == setPtr->activePtr) || 

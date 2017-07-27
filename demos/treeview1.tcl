@@ -93,7 +93,7 @@ blt::treeview $view \
     -height 4i \
     -selectmode multiple \
     -separator / \
-    -tree $tree  -font "Arial 10"
+    -tree $tree  -font "Arial 9"
 
 $view column configure treeView -text "name" -edit yes \
     -sorttype dictionary 

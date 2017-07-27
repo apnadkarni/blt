@@ -2274,6 +2274,7 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
     Pict *destPtr;
     Blt_PaintBrush brush;
 
+fprintf(stderr, "PaintCheckbox w=%d h=%d\n", w, h);
     destPtr = Blt_CreatePicture(w, h);
     Blt_Shadow_Set(&shadow, 1, 1, 0x0, 0xA0);
     brush = Blt_NewColorBrush(0x00000000);
