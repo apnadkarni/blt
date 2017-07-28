@@ -128,7 +128,7 @@
 #define DEF_TAKE_FOCUS          (char *)NULL
 #define DEF_TROUGH_COLOR        "grey" /*TROUGH*/
 #define DEF_TROUGH_MONO         RGB_WHITE
-#define DEF_WIDTH               ".15i"
+#define DEF_WIDTH               ".3c"
 #define DEF_SELECT_RELIEF       "sunken"
 
 /*

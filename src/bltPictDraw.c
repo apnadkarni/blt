@@ -2553,3 +2553,71 @@ Blt_PaintDelete(int w, int h, unsigned int fill, unsigned int symbol,
     Blt_FreeBrush(brush);
     return picture;
 }
+
+
+Blt_Picture
+Blt_PaintArrow(int w, int h, unsigned int fill, unsigned int symbol,
+                int direction)
+{
+    Blt_Picture picture;
+    Point2d points[4];
+    Region2d reg;
+    int x, y;
+    Blt_PaintBrush brush;
+
+    brush = Blt_NewColorBrush(fill);
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    picture = Blt_CreatePicture(w, h);
+    Blt_BlankPicture(picture, fill);
+    x = y = 2;
+    w -= 4;
+    h -= 4;
+    switch (direction) {
+    case ARROW_UP:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.9 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = points[0].x;
+        points[3].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.5 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = points[0].x;
+        points[3].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.5 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = points[0].x;
+        points[3].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = points[0].x;
+        points[3].y = points[0].y;
+        break;
+    }
+    Blt_SetColorBrushColor(brush, symbol);
+    PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
+    Blt_FreeBrush(brush);
+    return picture;
+}

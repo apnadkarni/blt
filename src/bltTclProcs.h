@@ -1,7 +1,7 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #include "bltAlloc.h"
 #include "bltChain.h"
-#include "bltHash.h.in"
+#include "bltHash.h"
 #include "bltTags.h"
 #include "bltList.h"
 #include "bltPool.h"

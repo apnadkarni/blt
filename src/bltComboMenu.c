@@ -1895,7 +1895,7 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
             size_t size, reqSize;
 
             Blt_Font_GetMetrics(stylePtr->textFont, &fm);
-            size = 75 * fm.linespace / 100;
+            size = 7 * fm.linespace / 100;
             if (itemPtr->flags & ITEM_RADIOBUTTON) {
                 reqSize = (stylePtr->radioButtonSize > 0) ?
                     stylePtr->radioButtonSize : comboPtr->radioButtonReqSize;
@@ -1929,8 +1929,8 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
             Blt_FontMetrics fm;
 
             Blt_Font_GetMetrics(stylePtr->textFont, &fm);
-            itemPtr->rightIndWidth = fm.ascent;
-            itemPtr->rightIndHeight = fm.ascent;;
+            itemPtr->rightIndWidth = fm.ascent * 75 / 100;
+            itemPtr->rightIndHeight = fm.ascent;
         } else if (itemPtr->accel != NULL) {
             unsigned int tw, th;
             
@@ -7542,10 +7542,25 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                 color = stylePtr->disabledTextFg;
             }
             x -= itemPtr->rightIndWidth;
+            {
+                Blt_Picture picture;
+                fprintf(stderr, "aw=%d ah=%d\n",
+                        itemPtr->rightIndWidth, itemPtr->rightIndHeight);
+            picture = Blt_PaintArrow(itemPtr->rightIndWidth - 0,
+                                     itemPtr->rightIndHeight,
+                                     0x0, Blt_XColorToPixel(color),
+                                     ARROW_RIGHT);
+            Blt_PaintPicture(comboPtr->painter, drawable, picture, 0, 0,
+                             itemPtr->rightIndWidth, itemPtr->rightIndHeight,
+                             x + 0, y + (h - itemPtr->rightIndHeight) / 2, 0);
+            Blt_FreePicture(picture);
+            }
+#ifdef notdef
             Blt_DrawArrow(comboPtr->display, drawable, color, x, 
                 y + (h - itemPtr->rightIndHeight) / 2,
                 itemPtr->rightIndWidth, itemPtr->rightIndHeight, 1, 
                 ARROW_RIGHT);
+#endif
         } else if (itemPtr->accel != NULL) {
             TextStyle ts;
             XColor *fg;

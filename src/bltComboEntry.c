@@ -4577,10 +4577,24 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
 #endif
             ax += comboPtr->arrow.borderWidth + XPAD;
             ay += comboPtr->arrow.borderWidth;
+            ah = aw * 75 / 100;
             aw -= 2 * comboPtr->arrow.borderWidth + XPAD;
             ah -= 2 * comboPtr->arrow.borderWidth;
+            {
+                Blt_Picture picture;
+                fprintf(stderr, "aw=%d ah=%d\n", aw, ah);
+                ay += (cavityHeight - ah) / 2;
+                picture = Blt_PaintArrow(aw, ah,
+                                     0x0, Blt_XColorToPixel(color),
+                                     ARROW_DOWN);
+            Blt_PaintPicture(comboPtr->clearButton.painter, drawable, picture, 0, 0,
+                             aw, aw, ax, ay, 0);
+            Blt_FreePicture(picture);
+            }
+#ifdef notdef
             Blt_DrawArrow(comboPtr->display, drawable, color, 
                 ax, ay, aw, ah, comboPtr->arrow.borderWidth, ARROW_DOWN);
+#endif
         }
         comboPtr->arrow.x = ax;
         comboPtr->arrow.y = ay;
