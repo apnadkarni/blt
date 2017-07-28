@@ -61,9 +61,9 @@
 #define STD_SELECT_BACKGROUND   "SystemHighlight"
 #define STD_SELECT_FOREGROUND   "SystemHighlightText"
 #define STD_TEXT_FOREGROUND     "SystemWindowText"
-#define STD_FONT                "Arial 8"
+#define STD_FONT                "Arial 10"
 #define STD_FONT_LARGE          "Arial 12"
-#define STD_FONT_SMALL          "Arial 6"
+#define STD_FONT_SMALL          "Arial 9"
 
 /* DOS Encapsulated PostScript File Header */
 #pragma pack(2)

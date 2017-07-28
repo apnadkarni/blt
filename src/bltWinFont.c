@@ -8,7 +8,7 @@
  * augmenting the existing Tk font, not replacing it with a secondary
  * implementation (like Xft).
  *
- * For rotated fonts, the idea is to create a super Blt_Font structure the
+ * For rotated fonts, the idea is to create a super Blt_Font structure that
  * subsumes the Tk font structure but also can display a single font at
  * various angles.  Rotated fonts are created by digging out the Windows
  * font handle from the Tk font and then calling CreateFontIndirect to
@@ -169,8 +169,7 @@ typedef struct {
     const char *slant;
     const char *width;
     const char *spacing;
-    int size;                           /* If negative, pixels, otherwise
-                                         * points */
+    int numPoints;                      
 } FontPattern;
 
 typedef struct {
@@ -296,32 +295,28 @@ static Blt_HashTable fontSetTable;
 
 static void GetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr);
 
-static double
-PointsToPixels(Display *display, int size)
+static int
+PointsToPixels(Display *display, int numPoints)
 {
     double d;
 
-    if (size < 0) {
-        return -size;
-    }
-    d = size * 25.4 / 72.0;
+    assert (numPoints > 0);
+    d = numPoints * 25.4 / 72.0;
     d *= WidthOfScreen(DefaultScreenOfDisplay(display));
     d /= WidthMMOfScreen(DefaultScreenOfDisplay(display));
-    return d;
+    return ROUND(d);
 }
 
-static double
-PixelsToPoints(Display *display, int size)               
+static int
+PixelsToPoints(Display *display, int numPixels)               
 {
     double d;
 
-    if (size >= 0) {
-        return size;
-    }
-    d = -size * 72.0 / 25.4;
+    assert (numPixels > 0);
+    d = numPixels * 72.0 / 25.4;
     d *= WidthMMOfScreen(DefaultScreenOfDisplay(display));
     d /= WidthOfScreen(DefaultScreenOfDisplay(display));
-    return d;
+    return ROUND(d);
 }
 
 /*
@@ -613,7 +608,7 @@ ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
     FontSpec *specPtr;
     int argc;
     char **argv;
-    double size;
+    int numPoints;
     
     SplitXLFD(objPtr, &argc, &argv);
     patternPtr = NewFontPattern();
@@ -644,7 +639,7 @@ ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         }
         patternPtr->width = specPtr->oldvalue;
     }
-    size = 12.0;
+    numPoints = 12;
     if (argv[XLFD_PIXEL_SIZE] != NULL) {
         int value;
         if (argv[XLFD_PIXEL_SIZE][0] == '[') {
@@ -663,9 +658,9 @@ ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         } else {
             goto error;
         }
-        size = PixelsToPoints(Tk_Display(tkwin), -value);
+        numPoints = PixelsToPoints(Tk_Display(tkwin), value);
     }
-    patternPtr->size = size;
+    patternPtr->numPoints = numPoints;
 
     if (argv[XLFD_SPACING] != NULL) {
         specPtr = FindSpec(interp, spacingSpecs, numSpacingSpecs, 
@@ -716,7 +711,7 @@ ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
  *---------------------------------------------------------------------------
  */
 static FontPattern *
-ParseTkDesc(Tcl_Interp *interp, Tcl_Obj *objPtr)
+ParseTkDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 {
     FontPattern *patternPtr;
     Tcl_Obj **objv, **aobjv;
@@ -739,7 +734,11 @@ ParseTkDesc(Tcl_Interp *interp, Tcl_Obj *objPtr)
             if (Tcl_GetInt(NULL, dash + 1, &size) != TCL_OK) {
                 goto error;
             }
-            patternPtr->size = size;
+            if (size < 0) {
+                patternPtr->numPoints = PixelsToPoints(Tk_Display(tkwin),-size);
+            } else {
+                patternPtr->numPoints = size;
+            }
         }
         if (dash != NULL) {
             *dash = '\0';
@@ -754,7 +753,11 @@ ParseTkDesc(Tcl_Interp *interp, Tcl_Obj *objPtr)
         int size;
 
         if (Tcl_GetIntFromObj(NULL, objv[0], &size) == TCL_OK) {
-            patternPtr->size = size;
+            if (size < 0) {
+                patternPtr->numPoints = PixelsToPoints(Tk_Display(tkwin),-size);
+            } else {
+                patternPtr->numPoints = size;
+            }
             objv++, objc--;
         }
     }
@@ -814,7 +817,7 @@ ParseTkDesc(Tcl_Interp *interp, Tcl_Obj *objPtr)
  *---------------------------------------------------------------------------
  */
 static FontPattern *
-ParseNameValuePairs(Tcl_Interp *interp, Tcl_Obj *objPtr) 
+ParseNameValuePairs(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr) 
 {
     FontPattern *patternPtr;
     Tcl_Obj **objv;
@@ -851,11 +854,11 @@ ParseNameValuePairs(Tcl_Interp *interp, Tcl_Obj *objPtr)
             if (Tcl_GetIntFromObj(interp, objv[i+1], &size) != TCL_OK) {
                 goto error;
             }
-#ifdef notdef
-            patternPtr->size = PointsToPixels(Tk_Display(Tk_MainWindow(interp)), size);
-#else
-            patternPtr->size = size;
-#endif
+            if (size < 0) {
+                patternPtr->numPoints = PixelsToPoints(Tk_Display(tkwin),-size);
+            } else {
+                patternPtr->numPoints = size;
+            }
         } else if (strcmp(key, "-weight") == 0) {
             FontSpec *specPtr;
 
@@ -925,7 +928,7 @@ ParseNameValuePairs(Tcl_Interp *interp, Tcl_Obj *objPtr)
  *---------------------------------------------------------------------------
  */
 static FontPattern *
-ParseFontObj(Tcl_Interp *interp, Tcl_Obj *objPtr) 
+ParseFontObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr) 
 {
     FontPattern *patternPtr;
     Tcl_Obj *cmd[3];
@@ -943,7 +946,8 @@ ParseFontObj(Tcl_Interp *interp, Tcl_Obj *objPtr)
     Tcl_DecrRefCount(cmd[1]);
     Tcl_DecrRefCount(cmd[0]);
     if (result == TCL_OK) {
-        patternPtr = ParseNameValuePairs(interp,Tcl_GetObjResult(interp));
+        patternPtr = ParseNameValuePairs(interp, tkwin, 
+                                         Tcl_GetObjResult(interp));
     }
     Tcl_ResetResult(interp);
 #if DEBUG_FONT_SELECTION
@@ -991,14 +995,14 @@ GetFontPattern(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
          *   old fashion XLFD font description or a Tk font attribute
          *   option-value list.
          */
-        patternPtr = ParseNameValuePairs(interp, objPtr);
+        patternPtr = ParseNameValuePairs(interp, tkwin, objPtr);
         if (patternPtr == NULL) {
             patternPtr = ParseXLFDDesc(interp, tkwin, objPtr);
         }
     } else if (*desc == '*') {
         patternPtr = ParseXLFDDesc(interp, tkwin, objPtr);
     } else if (strpbrk(desc, "::") != NULL) {
-        patternPtr = ParseFontObj(interp, objPtr);
+        patternPtr = ParseFontObj(interp, tkwin, objPtr);
     } else {
         int numElems;
         /* 
@@ -1017,52 +1021,21 @@ GetFontPattern(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
              *   Assuming that Tk font object names won't contain whitespace,
              *   see if its a font object.
              */
-            patternPtr = ParseFontObj(interp, objPtr);
+            patternPtr = ParseFontObj(interp, tkwin, objPtr);
         } 
         if (patternPtr == NULL) {
             /* 
              * Case 3b: List of font attributes in the form "family size
              *          ?attrs?"
              */
-            patternPtr = ParseTkDesc(interp, objPtr);
+            patternPtr = ParseTkDesc(interp, tkwin, objPtr);
         }
     }   
     return patternPtr;
 }
 
-static const char *
-GetFontDescription(Tk_Window tkwin, Tk_Font tkFont, double numPoints, 
-                   Tcl_DString *resultPtr)
-{
-    TkFont *tkFontPtr = (TkFont *)tkFont;
-    const char *string;
-
-    Tcl_DStringInit(resultPtr);
-    /* Family */
-    Tcl_DStringAppendElement(resultPtr, "-family");
-    Tcl_DStringAppendElement(resultPtr, tkFontPtr->fa.family);
-
-    /* Weight */
-    Tcl_DStringAppendElement(resultPtr, "-weight");
-    string = (tkFontPtr->fa.weight == FW_BOLD) ? "bold" : "normal";
-    Tcl_DStringAppendElement(resultPtr, string);
-
-    /* Slant */
-    Tcl_DStringAppendElement(resultPtr, "-slant");
-    string = (tkFontPtr->fa.slant) ? "italic" : "roman";
-    Tcl_DStringAppendElement(resultPtr, string);
-
-    /* Size */
-    Tcl_DStringAppendElement(resultPtr, "-size");
-    if (numPoints == -1) {
-        numPoints = PixelsToPoints(Tk_Display(tkwin), tkFontPtr->fa.size);
-    }
-    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(numPoints));
-    return Tcl_DStringValue(resultPtr);
-}
-
 static FontPattern *
-GetPatternFromFont(Tk_Font tkFont)
+GetPatternFromFont(Display *display, Tk_Font tkFont)
 {
     FontPattern *patternPtr;
     TkFont *tkFontPtr = (TkFont *)tkFont;
@@ -1071,7 +1044,11 @@ GetPatternFromFont(Tk_Font tkFont)
     patternPtr->family = Blt_AssertStrdup(tkFontPtr->fa.family);
     patternPtr->slant = (tkFontPtr->fa.slant) ? "italic" : "roman";
     patternPtr->weight = (tkFontPtr->fa.weight == FW_BOLD) ? "bold" : "normal";
-    patternPtr->size = tkFontPtr->fa.size;
+    if (tkFontPtr->fa.size < 0) {
+        patternPtr->numPoints = PixelsToPoints(display, -tkFontPtr->fa.size);
+    } else {
+        patternPtr->numPoints = tkFontPtr->fa.size;
+    }
     patternPtr->spacing = "*";
     return patternPtr;
 }
@@ -1080,10 +1057,7 @@ static void
 FontPatternToDString(Tk_Window tkwin, FontPattern *patternPtr, 
                      Tcl_DString *resultPtr)
 {
-    int size;
-    
     Tcl_DStringInit(resultPtr);
-
     /* Family */
     if (patternPtr->family != NULL) {
         Tcl_DStringAppendElement(resultPtr, "-family");
@@ -1101,9 +1075,7 @@ FontPatternToDString(Tk_Window tkwin, FontPattern *patternPtr,
     }
     /* Size */
     Tcl_DStringAppendElement(resultPtr, "-size");
-    size = (int)(PointsToPixels(Tk_Display(tkwin), patternPtr->size) + 0.5);
-    size = patternPtr->size;
-    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(size));
+    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(patternPtr->numPoints));
 }
 
 /* 
@@ -1125,6 +1097,7 @@ GetFontFromPattern(Tcl_Interp *interp, Tk_Window tkwin, FontPattern *patternPtr)
 
     /* Rewrite the font description using the aliased family. */
     FontPatternToDString(tkwin, patternPtr, &ds);
+fprintf(stderr, "trying to open %s for %s\n",  Tcl_DStringValue(&ds), Tk_PathName(tkwin));
     tkFont = Tk_GetFont(interp, tkwin, Tcl_DStringValue(&ds));
     Tcl_DStringFree(&ds);
     return tkFont;
@@ -1451,7 +1424,7 @@ GetFile(Tcl_Interp *interp, const char *fontName, Tcl_DString *namePtr,
 /* 
  * ExtFontset --
  *
- *      Set of routine specific to the ExtFontset.  Many of them are
+ *      Set of routines specific to the ExtFontset.  Many of them are
  *      simply wrappers for Tk font routines. The differences are the
  *      CanRotateProc, DuplicateProc, DrawProc (for rotated fonts).
  *
@@ -1511,20 +1484,33 @@ static double
 ExtFontPointSizeProc(_Blt_Font *fontPtr) 
 {
     ExtFontset *setPtr = fontPtr->clientData;
-
-    return PixelsToPoints(fontPtr->display,
-                          ((TkFont *)setPtr->tkFont)->fa.size);
+    TkFont *tkFontPtr;
+    int numPoints;
+    
+    tkFontPtr = (TkFont *)setPtr->tkFont;
+    if (tkFontPtr->fa.size < 0) { 
+        numPoints = PixelsToPoints(fontPtr->display, -tkFontPtr->fa.size);
+    } else {
+        numPoints = tkFontPtr->fa.size;
+    }
+    return numPoints;
 }
 
 static double
 ExtFontPixelSizeProc(_Blt_Font *fontPtr) 
 {
     ExtFontset *setPtr = fontPtr->clientData;
+    TkFont *tkFontPtr;
+    int numPixels;
 
-    return PointsToPixels(fontPtr->display,
-                          ((TkFont *)setPtr->tkFont)->fa.size);
+    tkFontPtr = (TkFont *)setPtr->tkFont;
+    if (tkFontPtr->fa.size < 0) { 
+        numPixels = -tkFontPtr->fa.size; 
+    } else {
+        numPixels = PointsToPixels(fontPtr->display, tkFontPtr->fa.size); 
+    }
+    return numPixels;
 }
-
 
 static Blt_Font
 ExtFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double numPoints) 
@@ -1540,8 +1526,8 @@ ExtFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double numPoints)
 
     /* Create a font description with the new requested size. Use it to see
     * if we've already created a font this size. */
-    patternPtr = GetPatternFromFont(setPtr->tkFont);
-    patternPtr->size = numPoints;   /* Override the size. */
+    patternPtr = GetPatternFromFont(Tk_Display(tkwin), setPtr->tkFont);
+    patternPtr->numPoints = numPoints;   /* Override the size. */
     FontPatternToDString(tkwin, patternPtr, &ds);
     fontName = Tcl_DStringValue(&ds);
 
@@ -1591,15 +1577,26 @@ ExtFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
     TkFont *tkFontPtr = (TkFont *)setPtr->tkFont;
-    Tk_FontMetrics fm;
+    SubFont *subFontPtr;
+    TEXTMETRIC tm;
+    HDC hDC;
+    WinFont *winFontPtr;
+    HFONT oldFont;
 
-    Tk_GetFontMetrics(setPtr->tkFont, &fm);
-    fmPtr->ascent = fm.ascent;
-    fmPtr->descent = fm.descent;
-    fmPtr->linespace = fm.linespace;
+    winFontPtr = (WinFont *)tkFontPtr;
+    subFontPtr = &winFontPtr->subFontArray[0];
+    hDC = GetDC(NULL);
+    oldFont = SelectObject(hDC, subFontPtr->hFont);
+    GetTextMetrics(hDC, &tm);
+    fmPtr->ascent = tm.tmAscent;
+    fmPtr->descent = tm.tmDescent;
+    fmPtr->linespace = tm.tmHeight + tm.tmInternalLeading;
+fprintf(stderr, "font=%s asc=%d des=%d ls=%d\n", Tk_NameOfFont(setPtr->tkFont), fmPtr->ascent, fmPtr->descent, fmPtr->linespace);
     fmPtr->tabWidth = tkFontPtr->tabWidth;
     fmPtr->underlinePos = tkFontPtr->underlinePos;
     fmPtr->underlineHeight = tkFontPtr->underlineHeight;
+    SelectObject(hDC, oldFont);
+    ReleaseDC(NULL, hDC);
 }
 
 static int
@@ -1607,7 +1604,6 @@ ExtFontMeasureProc(_Blt_Font *fontPtr, const char *text, int numBytes,
                    int max, int flags, int *lengthPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
-
     return Tk_MeasureChars(setPtr->tkFont, text, numBytes, max, flags, 
                 lengthPtr);
 }
@@ -1632,7 +1628,8 @@ ExtFontDrawProc(
                                          * drawn; must be the same as font
                                          * used in GC. */
     int depth,                          /* Not used. */
-    float angle,                        /* Not used. */
+    float angle,                        /* Angle to rotate text in
+                                         * degrees. */
     const char *text,                   /* UTF-8 string to be displayed.
                                          * Need not be '\0' terminated.
                                          * All Tk meta-characters (tabs,
@@ -1828,6 +1825,7 @@ Blt_GetFontFromObj(
         MakeAliasTable(tkwin);
         font_initialized++;
     }
+fprintf(stderr, "Blt_GetFontFromObj: font is %s\n", Tcl_GetString(objPtr));
     setPtr = GetFontsetFromObj(interp, tkwin, objPtr);
     if (setPtr == NULL) {
 #if DEBUG_FONT_SELECTION
@@ -1931,7 +1929,7 @@ Blt_Font_GetMetrics(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
 }
 
 Tcl_Obj *
-Blt_Font_GetFile(Tcl_Interp *interp, Tcl_Obj *objPtr, double *sizePtr)
+Blt_Font_GetFile(Tcl_Interp *interp, Tcl_Obj *objPtr, double *numPointsPtr)
 {
     Tcl_DString nameStr, valueStr;
     Tcl_Obj *fileObjPtr;
@@ -1950,7 +1948,7 @@ Blt_Font_GetFile(Tcl_Interp *interp, Tcl_Obj *objPtr, double *sizePtr)
     fileObjPtr = NULL;
     Tcl_DStringInit(&nameStr);
     Tcl_DStringInit(&valueStr);
-    *sizePtr = patternPtr->size;
+    *numPointsPtr = patternPtr->numPoints;
 
     result = GetFile(interp, patternPtr->family, &nameStr, &valueStr);
     FreeFontPattern(patternPtr);
