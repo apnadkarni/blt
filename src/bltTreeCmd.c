@@ -235,6 +235,25 @@ static Blt_SwitchParseProc ChildSwitch;
 static Blt_SwitchCustom beforeSwitch = {
     ChildSwitch, NULL, NULL, INSERT_BEFORE,
 };
+
+typedef struct {
+    Blt_TreeNode from, to;
+    int flags;
+} ChildrenSwitches;
+
+#define CHILDREN_NOCOMPLAIN     (1<<0)
+
+static Blt_SwitchSpec childrenSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM,  "-from",  "node", (char *)NULL,
+        Blt_Offset(ChildrenSwitches, from),  0, 0, &nodeSwitch},
+    {BLT_SWITCH_BITS_NOARG, "-nocomplain", "", (char *)NULL,
+        Blt_Offset(ChildrenSwitches, flags), 0, CHILDREN_NOCOMPLAIN},
+    {BLT_SWITCH_CUSTOM,  "-to",  "node", (char *)NULL,
+        Blt_Offset(ChildrenSwitches, to),  0, 0, &nodeSwitch},
+    {BLT_SWITCH_END}
+};
+
 static Blt_SwitchCustom afterSwitch = {
     ChildSwitch, NULL, NULL, INSERT_AFTER,
 };
@@ -4414,84 +4433,59 @@ AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ChildrenOp --
  *
+ *      treeName children node ?switches...?
  *---------------------------------------------------------------------------
  */
 static int
 ChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
            Tcl_Obj *const *objv)
 {
-    Blt_TreeNode node;
+    Blt_TreeNode parent, node;
+    ChildrenSwitches switches;
+    Tcl_Obj *listObjPtr;
     TreeCmd *cmdPtr = clientData;
-    
-    if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
-        != TCL_OK) {
+
+    memset((char *)&switches, 0, sizeof(switches));
+    switches.from = Blt_Tree_FirstChild(parent);
+    switches.to = Blt_Tree_LastChild(parent);
+
+    /* Process switches  */
+    if (Blt_ParseSwitches(interp, copySwitches, objc - 3, objv + 3,
+                &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    if (objc == 3) {
-        Tcl_Obj *listObjPtr;
-
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-        for (node = Blt_Tree_FirstChild(node); node != NULL;
-             node = Blt_Tree_NextSibling(node)) {
-            Tcl_Obj *objPtr;
-
-            objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &parent)
+        != TCL_OK) {
+        if (switches.flags & CHILDREN_NOCOMPLAIN) {
+            return TCL_OK;
         }
-        Tcl_SetObjResult(interp, listObjPtr);
-    } else if (objc == 4) {
-        long childPos;
-        long inode;
-        long count;
-        
-        /* Get the node at  */
-        if (Blt_GetLongFromObj(interp, objv[3], &childPos) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        count = 0;
-        inode = -1;
-        for (node = Blt_Tree_FirstChild(node); node != NULL;
-             node = Blt_Tree_NextSibling(node)) {
-            if (count == childPos) {
-                inode = Blt_Tree_NodeId(node);
-                break;
-            }
-            count++;
-        }
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
-        return TCL_OK;
-    } else if (objc == 5) {
-        long firstPos, lastPos;
-        long count;
-        Tcl_Obj *listObjPtr;
-        char *string;
-
-        firstPos = lastPos = Blt_Tree_NodeDegree(node) - 1;
-        string = Tcl_GetString(objv[3]);
-        if ((strcmp(string, "end") != 0) &&
-            (Blt_GetLongFromObj(interp, objv[3], &firstPos) != TCL_OK)) {
-            return TCL_ERROR;
-        }
-        string = Tcl_GetString(objv[4]);
-        if ((strcmp(string, "end") != 0) &&
-            (Blt_GetLongFromObj(interp, objv[4], &lastPos) != TCL_OK)) {
-            return TCL_ERROR;
-        }
-
-        count = 0;
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-        for (node = Blt_Tree_FirstChild(node); node != NULL;
-             node = Blt_Tree_NextSibling(node)) {
-            if ((count >= firstPos) && (count <= lastPos)) {
-                Tcl_Obj *objPtr;
-
-                objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
-                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-            }
-            count++;
-        }
-        Tcl_SetObjResult(interp, listObjPtr);
+        return TCL_ERROR;
     }
+    if (Blt_Tree_ParentNode(switches.from) != parent) {
+        Tcl_AppendResult(interp, "-from node is not a child of node ", 
+                         Blt_Tree_NodeIdAscii(parent));
+        return TCL_ERROR;
+    }
+    if (Blt_Tree_ParentNode(switches.to) != parent) {
+        Tcl_AppendResult(interp, "-to node is not a child of node ", 
+                         Blt_Tree_NodeIdAscii(parent));
+        return TCL_ERROR;
+    }
+    if (!Blt_Tree_IsBefore(switches.from, switches.to)) {
+        return TCL_OK;
+    }
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (node = switches.from; node != NULL;
+         node = Blt_Tree_NextSibling(node)) {
+        Tcl_Obj *objPtr;
+
+        objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        if (node == switches.to) {
+            break;
+        }
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 
