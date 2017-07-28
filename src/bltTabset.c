@@ -8226,6 +8226,8 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }
     /* Text */
     rPtr = &tabPtr->textRegion;
+        fprintf(stderr, "setPtr->plusPtr=%x tabPtr=%x %s w=%d h=%d\n",
+                setPtr->plusPtr, tabPtr, tabPtr->text, rPtr->w, rPtr->h);
     if ((tabPtr->text != NULL) && (rPtr->w > 0) && (rPtr->h > 0)) {
         TextStyle ts;
         XColor *fgColor;
@@ -8279,7 +8281,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
                 maxLength, rPtr->x, rPtr->y, rPtr->w, rPtr->h, maxLength);
 #endif
         if (maxLength > 0) {
-            Blt_Ts_SetMaxLength(ts, maxLength);
+            Blt_Ts_SetMaxLength(ts, maxLength+100);
             Blt_Ts_DrawLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr, &ts, 
                           x + rPtr->x, y + rPtr->y);
             if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
