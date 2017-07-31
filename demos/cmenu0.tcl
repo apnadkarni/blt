@@ -30,9 +30,11 @@ blt::combomenu .e.m  \
     -height 400 \
     -textvariable myText1 \
     -iconvariable myIcon1 \
+    -checkbuttonoutlinecolor grey80 \
     -yscrollbar .e.m.ybar \
     -xscrollbar .e.m.xbar
-blt::tk::scrollbar .e.m.xbar 
+ 
+blt::tk::scrollbar .e.m.xbar
 blt::tk::scrollbar .e.m.ybar
 
 .e.m add -text "Text" -type command

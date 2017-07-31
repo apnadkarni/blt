@@ -243,9 +243,26 @@ command.  The operations available for trees are listed below.
     By default, the tree will share the tags of the attached tree. If this
     flag is present, the tree will start with an empty tag table.
 
-*treeName* **children** *nodeName*
-  Returns a list of children for *nodeName*.  If *nodeName* is a leaf, then
-  "" is returned.
+*treeName* **children** *parentName* ?\ *switches* ... ?
+  Returns a list of the node ids for children of *parentName*.
+  *ParentNode* is an node index or a tag but may not reference multiple
+  nodes.  *Switches* may be any of the following.
+  
+  **-from** *nodeName*
+    Sets the starting point in the list of children to collect node ids.
+    *NodeName* is an node index or a tag but may not reference multiple
+    nodes. It must be a child node of *parentName*. By default, the
+    starting point is the first child.
+
+  **-nocomplain**
+    If *parentName* is not a valid node id or tag, return an empty list
+    instead of generating an error.
+
+  **-to** *nodeName*
+    Sets the finishing point in the list of children to collect node ids.
+    *NodeName* is an node index or a tag but may not reference multiple
+    nodes. It must be a child node of *parentName*. By default, the
+    finishing point is the last child.
 
 *treeName* **copy** *parentNode* ?\ *srcTree*\ ? *srcNode* ?\ *switches*  ... ?
   Makes a copy of *srcNode* in *parentNode*. Both nodes *srcNode* and

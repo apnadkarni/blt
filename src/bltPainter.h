@@ -83,6 +83,8 @@ BLT_EXTERN Blt_Picture Blt_PaintRadioButtonOld(int width, int height,
 
 BLT_EXTERN Blt_Picture Blt_PaintDelete(int width, int height, 
         unsigned int fill, unsigned int symbol, int isActive);
+BLT_EXTERN void Blt_PaintArrowHead(Blt_Picture picture, int x, int y, int w,
+        int h, unsigned int color, int direction);
 
 
 #endif /* _BLT_PAINTER_H */

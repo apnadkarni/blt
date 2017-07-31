@@ -1895,7 +1895,7 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
             size_t size, reqSize;
 
             Blt_Font_GetMetrics(stylePtr->textFont, &fm);
-            size = 7 * fm.linespace / 100;
+            size = 80 * fm.linespace / 100;
             if (itemPtr->flags & ITEM_RADIOBUTTON) {
                 reqSize = (stylePtr->radioButtonSize > 0) ?
                     stylePtr->radioButtonSize : comboPtr->radioButtonReqSize;
@@ -7393,6 +7393,28 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
     Blt_FreePicture(picture);
 }
 
+
+static void
+DrawRightArrow(ComboMenu *comboPtr, Drawable drawable, int x, int y,
+               int w, int h, XColor *color)
+{
+    Blt_Picture picture;
+    int aw, ah;
+
+    aw = w * 80 / 100;
+    ah = h * 80 / 100;
+    picture = Blt_CreatePicture(aw,ah);
+    Blt_BlankPicture(picture, 0x0);
+    Blt_PaintArrowHead2(picture, 0, 0, aw, ah, Blt_XColorToPixel(color),
+                       ARROW_RIGHT);
+    x += (w - aw) / 2;
+    y += (h - ah) / 2;
+    Blt_PaintPicture(comboPtr->painter, drawable, picture, 0, 0, aw, ah,
+                     x, y, 0);
+    Blt_FreePicture(picture);
+}
+
+
 static void
 DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
 {
@@ -7542,25 +7564,9 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                 color = stylePtr->disabledTextFg;
             }
             x -= itemPtr->rightIndWidth;
-            {
-                Blt_Picture picture;
-                fprintf(stderr, "aw=%d ah=%d\n",
-                        itemPtr->rightIndWidth, itemPtr->rightIndHeight);
-            picture = Blt_PaintArrow(itemPtr->rightIndWidth - 0,
-                                     itemPtr->rightIndHeight,
-                                     0x0, Blt_XColorToPixel(color),
-                                     ARROW_RIGHT);
-            Blt_PaintPicture(comboPtr->painter, drawable, picture, 0, 0,
-                             itemPtr->rightIndWidth, itemPtr->rightIndHeight,
-                             x + 0, y + (h - itemPtr->rightIndHeight) / 2, 0);
-            Blt_FreePicture(picture);
-            }
-#ifdef notdef
-            Blt_DrawArrow(comboPtr->display, drawable, color, x, 
-                y + (h - itemPtr->rightIndHeight) / 2,
-                itemPtr->rightIndWidth, itemPtr->rightIndHeight, 1, 
-                ARROW_RIGHT);
-#endif
+            DrawRightArrow(comboPtr, drawable, x,
+                      y + (h - itemPtr->rightIndHeight) / 2,
+                      itemPtr->rightIndWidth, itemPtr->rightIndHeight, color);
         } else if (itemPtr->accel != NULL) {
             TextStyle ts;
             XColor *fg;

@@ -29,6 +29,7 @@ blt::comboentry .e \
     -menu .e.m \
     -exportselection yes \
     -xscrollcommand { .s set }  \
+    -arrowbackground white \
     -clearbutton yes 
 	
 #    -bg $bg 
@@ -40,8 +41,8 @@ blt::combomenu .e.m  \
     -iconvariable myIcon1 \
     -yscrollbar .e.m.ybar \
     -xscrollbar .e.m.xbar
-blt::tk::scrollbar .e.m.xbar 
-blt::tk::scrollbar .e.m.ybar
+blt::tk::scrollbar .e.m.xbar -style tk
+blt::tk::scrollbar .e.m.ybar -style xp
 .e.m sort configure -auto 1
 
 set onOff 1

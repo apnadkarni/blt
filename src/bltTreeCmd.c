@@ -4446,11 +4446,8 @@ ChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeCmd *cmdPtr = clientData;
 
     memset((char *)&switches, 0, sizeof(switches));
-    switches.from = Blt_Tree_FirstChild(parent);
-    switches.to = Blt_Tree_LastChild(parent);
-
     /* Process switches  */
-    if (Blt_ParseSwitches(interp, copySwitches, objc - 3, objv + 3,
+    if (Blt_ParseSwitches(interp, childrenSwitches, objc - 3, objv + 3,
                 &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
@@ -4461,14 +4458,18 @@ ChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         return TCL_ERROR;
     }
-    if (Blt_Tree_ParentNode(switches.from) != parent) {
+    if (switches.from == NULL) {
+        switches.from = Blt_Tree_FirstChild(parent);
+    } else if (Blt_Tree_ParentNode(switches.from) != parent) {
         Tcl_AppendResult(interp, "-from node is not a child of node ", 
-                         Blt_Tree_NodeIdAscii(parent));
+                         Blt_Tree_NodeIdAscii(parent), (char *)NULL);
         return TCL_ERROR;
     }
-    if (Blt_Tree_ParentNode(switches.to) != parent) {
+    if (switches.to == NULL) {
+        switches.to = Blt_Tree_LastChild(parent);
+    } else if (Blt_Tree_ParentNode(switches.to) != parent) {
         Tcl_AppendResult(interp, "-to node is not a child of node ", 
-                         Blt_Tree_NodeIdAscii(parent));
+                         Blt_Tree_NodeIdAscii(parent), (char *)NULL);
         return TCL_ERROR;
     }
     if (!Blt_Tree_IsBefore(switches.from, switches.to)) {

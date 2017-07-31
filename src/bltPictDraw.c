@@ -1413,16 +1413,16 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             /* Draw the rounded corners. */
             x1 = x - 1;
             y1 = y - 1;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth, 0, brush);
+            PaintCorner(picture, x1, y1, r + 1, lineWidth+1, 0, brush);
             x1 = x + w - d - 2;
             y1 = y - 1;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth, 1, brush);
+            PaintCorner(picture, x1, y1, r + 1, lineWidth+1, 1, brush);
             x1 = x - 1;
             y1 = y + h - d - 2;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth, 2, brush);
+            PaintCorner(picture, x1, y1, r + 1, lineWidth+1, 2, brush);
             x1 = x + w - d - 2;
             y1 = y + h - d - 2;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth, 3, brush);
+            PaintCorner(picture, x1, y1, r + 1, lineWidth+1, 3, brush);
         }
     } else {
         if (lineWidth > 0) {
@@ -2302,22 +2302,22 @@ fprintf(stderr, "PaintCheckbox w=%d h=%d\n", w, h);
 
         t = MAX(w,h) * 0.15;
         points[0].x = x;
-        points[0].y = y + (0.6 * h);
+        points[0].y = y + 0.6 * h;
         points[4].x = x + w;
-        points[4].y = y + (0.2 * h);
-        points[5].x = x + (0.4 * w);
+        points[4].y = y + 0.2 * h;
+        points[5].x = x + 0.4 * w;
         points[5].y = y + h;
-        m1 = (points[4].x - points[5].x) / (points[4].y - points[5].y);
-        dx = sin(-m1) * t;
-        dy = cos(-m1) * t;
-        dt = t / sin(M_PI_2 - m1);
+        m1 = (points[4].y - points[5].y) / (points[4].x - points[5].x);
+        dx = fabs(sin(m1) * t);
+        dy = fabs(cos(m1) * t);
+        dt = fabs(t / sin(M_PI - m1)) + 1;
         points[3].x = points[4].x - dx;
         points[3].y = points[4].y - dy;
         points[2].x = points[5].x;
         points[2].y = points[5].y - dt;
-        m2 = (points[0].x - points[5].x) / (points[0].y - points[5].y);
-        dx = sin(m2) * t;
-        dy = cos(m2) * t;
+        m2 = (points[0].y - points[5].y) / (points[0].x - points[5].x);
+        dx = fabs(sin(m2) * t);
+        dy = fabs(cos(m2) * t);
         points[1].x = points[0].x + dx;
         points[1].y = points[0].y - dy;
         points[6].x = points[0].x;
@@ -2554,26 +2554,17 @@ Blt_PaintDelete(int w, int h, unsigned int fill, unsigned int symbol,
     return picture;
 }
 
-
-Blt_Picture
-Blt_PaintArrow(int w, int h, unsigned int fill, unsigned int symbol,
-                int direction)
+void
+Blt_PaintArrowHead(Blt_Picture picture, int x, int y, int w, int h,
+                   unsigned int color, int direction)
 {
-    Blt_Picture picture;
     Point2d points[4];
     Region2d reg;
-    int x, y;
     Blt_PaintBrush brush;
 
-    brush = Blt_NewColorBrush(fill);
     reg.left = reg.top = 0;
     reg.right = w;
     reg.bottom = h;
-    picture = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(picture, fill);
-    x = y = 2;
-    w -= 4;
-    h -= 4;
     switch (direction) {
     case ARROW_UP:
         points[0].x = x + 0.1 * w;
@@ -2616,8 +2607,142 @@ Blt_PaintArrow(int w, int h, unsigned int fill, unsigned int symbol,
         points[3].y = points[0].y;
         break;
     }
-    Blt_SetColorBrushColor(brush, symbol);
+    brush = Blt_NewColorBrush(color);
     PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);
-    return picture;
+}
+
+void
+Blt_PaintArrowHead2(Blt_Picture picture, int x, int y, int w, int h,
+                   unsigned int color, int direction)
+{
+    Point2d points[7];
+    Region2d reg;
+    Blt_PaintBrush brush;
+    double dx, dy, m1, m2, dt, t;
+    
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    fprintf(stderr, "w=%d h=%d\n", w, h);
+    switch (direction) {
+    case ARROW_UP:
+        t = w * 0.20;
+        y--;
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.8 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.8 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        fprintf(stderr, "u dx=%g dy=%g\n", 
+                (points[1].x - points[2].x), (points[1].y - points[2].y));
+        dx = fabs(sin(m1) * t);
+        dy = fabs(cos(m1) * t);
+        fprintf(stderr, "u m1=%g dx=%g dy=%g\n", m1, dx, dy);
+        points[3].x = points[2].x - dx;
+        points[3].y = points[2].y + dy;
+        dt = fabs(t / sin(M_PI - m1)) + 1;
+        fprintf(stderr, "u t=%g dt=%g\n", t, dt);
+        points[4].x = points[1].x;
+        points[4].y = points[1].y + dt;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = fabs(sin(m2) * t);
+        dy = fabs(cos(m2) * t);
+        fprintf(stderr, "u dx=%g dy=%g\n", dx, dy);
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        t = w * 0.20;
+        y--;
+        points[0].x = x + 0.9 * w;
+        points[0].y = y + 0.2 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.9 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.2 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = fabs(sin(m1) * t);
+        dy = fabs(cos(m1) * t);
+        fprintf(stderr, "v m1=%g dx=%g dy=%g\n", m1, dx, dy);
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = fabs(t / sin(M_PI - m1)) + 1;
+        fprintf(stderr, "v t=%g dt=%g\n", t, dt);
+        points[4].x = points[1].x;
+        points[4].y = points[1].y - dt;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = fabs(sin(m2) * t);
+        dy = fabs(cos(m2) * t);
+        fprintf(stderr, "v dx=%g dy=%g\n", dx, dy);
+        points[5].x = points[0].x - dx;
+        points[5].y = points[0].y - dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        t = h * 0.20;
+        x -= 2;
+        points[0].x = x + 0.8 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.1 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.8 * w;
+        points[2].y = y + 0.9 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = sin(m1) * t;
+        dy = cos(m1) * t;
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = t / sin(-m1);
+        points[4].x = points[1].x - dt + 1;
+        points[4].y = points[1].y;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = sin(-m2) * t;
+        dy = cos(-m2) * t;
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        t = h * 0.20;
+        x++;
+        points[2].x = x + 0.2 * w;
+        points[2].y = y + 0.9 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[0].x = x + 0.2 * w;
+        points[0].y = y + 0.1 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = sin(m1) * t;
+        dy = cos(m1) * t;
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = t / sin(-m1);
+        points[4].x = points[1].x - dt - 1;
+        points[4].y = points[1].y;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = sin(-m2) * t;
+        dy = cos(-m2) * t;
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    }
+    brush = Blt_NewColorBrush(color);
+    {
+        int i;
+        
+        for (i = 0; i < 7; i++) {
+            fprintf(stderr, "points[%d] = %g,%g\n", i, points[i].x, points[i].y);
+        }
+    }
+    PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
+    Blt_FreeBrush(brush);
 }

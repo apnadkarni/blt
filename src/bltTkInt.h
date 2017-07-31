@@ -174,10 +174,10 @@ typedef struct {
 
 BLT_EXTERN void Blt_FreeColorPair (ColorPair *pairPtr);
 
-#define ARROW_LEFT              (0)
-#define ARROW_UP                (1)
-#define ARROW_RIGHT             (2)
-#define ARROW_DOWN              (3)
+#define ARROW_LEFT              (90)
+#define ARROW_UP                (0)
+#define ARROW_RIGHT             (270)
+#define ARROW_DOWN              (180)
 #define ARROW_OFFSET            4
 #define STD_ARROW_HEIGHT        3
 #define STD_ARROW_WIDTH         ((2 * (ARROW_OFFSET - 1)) + 1)
