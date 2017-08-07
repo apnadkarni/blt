@@ -2658,7 +2658,6 @@ Blt_PaintArrowHead2(Blt_Picture picture, int x, int y, int w, int h,
         break;
     case ARROW_DOWN:
         t = w * 0.20;
-        y--;
         points[0].x = x + 0.9 * w;
         points[0].y = y + 0.2 * h;
         points[1].x = x + 0.5 * w;
@@ -2686,7 +2685,141 @@ Blt_PaintArrowHead2(Blt_Picture picture, int x, int y, int w, int h,
         break;
     case ARROW_LEFT:
         t = h * 0.20;
-        x -= 2;
+        x--;
+        points[0].x = x + 0.8 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.1 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.8 * w;
+        points[2].y = y + 0.9 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = sin(m1) * t;
+        dy = cos(m1) * t;
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = t / sin(-m1);
+        points[4].x = points[1].x - dt + 1;
+        points[4].y = points[1].y;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = sin(-m2) * t;
+        dy = cos(-m2) * t;
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        t = h * 0.20;
+        x++;
+        points[2].x = x + 0.2 * w;
+        points[2].y = y + 0.9 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[0].x = x + 0.2 * w;
+        points[0].y = y + 0.1 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = sin(m1) * t;
+        dy = cos(m1) * t;
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = t / sin(-m1);
+        points[4].x = points[1].x - dt - 1;
+        points[4].y = points[1].y;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = sin(-m2) * t;
+        dy = cos(-m2) * t;
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    }
+    brush = Blt_NewColorBrush(color);
+    {
+        int i;
+        
+        for (i = 0; i < 7; i++) {
+            fprintf(stderr, "points[%d] = %g,%g\n", i, points[i].x, points[i].y);
+        }
+    }
+    PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
+    Blt_FreeBrush(brush);
+}
+
+void
+Blt_PaintArrowHead3(Blt_Picture picture, int x, int y, int w, int h,
+                   unsigned int color, int direction)
+{
+    Point2d points[7];
+    Region2d reg;
+    Blt_PaintBrush brush;
+    double dx, dy, m1, m2, dt, t;
+    
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    fprintf(stderr, "w=%d h=%d\n", w, h);
+    switch (direction) {
+    case ARROW_UP:
+        t = w * 0.20;
+        y--;
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.8 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.8 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        fprintf(stderr, "u dx=%g dy=%g\n", 
+                (points[1].x - points[2].x), (points[1].y - points[2].y));
+        dx = fabs(sin(m1) * t);
+        dy = fabs(cos(m1) * t);
+        fprintf(stderr, "u m1=%g dx=%g dy=%g\n", m1, dx, dy);
+        points[3].x = points[2].x - dx;
+        points[3].y = points[2].y + dy;
+        dt = fabs(t / sin(M_PI - m1)) + 1;
+        fprintf(stderr, "u t=%g dt=%g\n", t, dt);
+        points[4].x = points[1].x;
+        points[4].y = points[1].y + dt;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = fabs(sin(m2) * t);
+        dy = fabs(cos(m2) * t);
+        fprintf(stderr, "u dx=%g dy=%g\n", dx, dy);
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        t = w * 0.20;
+        points[0].x = x + 0.9 * w;
+        points[0].y = y + 0.2 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.9 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.2 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = fabs(sin(m1) * t);
+        dy = fabs(cos(m1) * t);
+        fprintf(stderr, "v m1=%g dx=%g dy=%g\n", m1, dx, dy);
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = fabs(t / sin(M_PI - m1)) + 1;
+        fprintf(stderr, "v t=%g dt=%g\n", t, dt);
+        points[4].x = points[1].x;
+        points[4].y = points[1].y - dt;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = fabs(sin(m2) * t);
+        dy = fabs(cos(m2) * t);
+        fprintf(stderr, "v dx=%g dy=%g\n", dx, dy);
+        points[5].x = points[0].x - dx;
+        points[5].y = points[0].y - dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        t = h * 0.20;
+        x--;
         points[0].x = x + 0.8 * w;
         points[0].y = y + 0.1 * h;
         points[1].x = x + 0.1 * w;
