@@ -42,7 +42,7 @@ blt::combomenu .e.m  \
     -yscrollbar .e.m.ybar \
     -xscrollbar .e.m.xbar
 blt::tk::scrollbar .e.m.xbar -style tk
-blt::tk::scrollbar .e.m.ybar -style xp
+blt::tk::scrollbar .e.m.ybar -style xp -arrowcolor grey40
 .e.m sort configure -auto 1
 
 set onOff 1
