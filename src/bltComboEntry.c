@@ -4593,7 +4593,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
             ih = aw * 65 / 100;
             aw -= 2 * comboPtr->arrow.borderWidth + XPAD;
             ah -= 2 * comboPtr->arrow.borderWidth;
-            iw = aw * 90 / 100;
+            iw = aw * 80 / 100;
             {
                 Blt_Picture picture;
                 int ix, iy;
@@ -4606,7 +4606,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
                 ix = (aw - iw) / 2;
                 brush = Blt_NewColorBrush(Blt_XColorToPixel(color));
                 Blt_PaintRectangle(picture, 0, 0, aw, ah, 4, 2, brush, 1);
-                Blt_PaintArrowHead2(picture, ix, iy, iw, ih,
+                Blt_PaintChevron(picture, ix, iy, iw, ih,
                                    Blt_XColorToPixel(color), ARROW_DOWN);
                 Blt_PaintPicture(comboPtr->painter, drawable,
                                  picture, 0, 0, aw, ah, ax, ay, 0);

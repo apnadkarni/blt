@@ -1163,7 +1163,7 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
         ax = bx + borderWidth;
         ay = by + borderWidth;
         aw = cavityWidth * 90 /100;
-        ah = cavityWidth * 65/100;
+        ah = cavityWidth * 75/100;
         break;
     case ARROW_LEFT:
         if (scrollPtr->selField == TOP_ARROW) {
@@ -1180,7 +1180,7 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
         ax = bx + borderWidth;
         ay = by + borderWidth;
         ah = cavityWidth * 90 /100;
-        aw = cavityWidth * 65/100;
+        aw = cavityWidth * 75/100;
         break;
     case ARROW_DOWN:
         if (scrollPtr->selField == BOTTOM_ARROW) {
@@ -1194,7 +1194,7 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
             relief = TK_RELIEF_RAISED;
         }
         aw = cavityWidth * 90 /100;
-        ah = cavityWidth * 65/100;
+        ah = cavityWidth * 75/100;
         bx = Tk_Width(scrollPtr->tkwin) - scrollPtr->inset - size;
         by = Tk_Height(scrollPtr->tkwin) - scrollPtr->inset - size;
         ax = bx + borderWidth;
@@ -1212,7 +1212,7 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
             relief = TK_RELIEF_RAISED;
         }
         ah = cavityWidth * 90 /100;
-        aw = cavityWidth * 65/100;
+        aw = cavityWidth * 75/100;
         bx = by = scrollPtr->inset;
         bx = Tk_Width(scrollPtr->tkwin) - scrollPtr->inset - size;
         by = Tk_Height(scrollPtr->tkwin) - scrollPtr->inset - size;
@@ -1224,7 +1224,7 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
                          borderWidth, relief); 
     picture = Blt_CreatePicture(aw, ah);
     Blt_BlankPicture(picture, 0x0);
-    Blt_PaintArrowHead2(picture, 0, 0, aw, ah,  
+    Blt_PaintChevron(picture, 0, 0, aw, ah,  
                        Blt_XColorToPixel(scrollPtr->arrowColor), direction);
     painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
     ax += (cavityWidth - aw) / 2;

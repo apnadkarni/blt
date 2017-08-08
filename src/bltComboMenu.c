@@ -7405,7 +7405,7 @@ DrawRightArrow(ComboMenu *comboPtr, Drawable drawable, int x, int y,
     ah = h * 80 / 100;
     picture = Blt_CreatePicture(aw,ah);
     Blt_BlankPicture(picture, 0x0);
-    Blt_PaintArrowHead2(picture, 0, 0, aw, ah, Blt_XColorToPixel(color),
+    Blt_PaintChevron(picture, 0, 0, aw, ah, Blt_XColorToPixel(color),
                        ARROW_RIGHT);
     x += (w - aw) / 2;
     y += (h - ah) / 2;

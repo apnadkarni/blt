@@ -2879,3 +2879,99 @@ Blt_PaintArrowHead3(Blt_Picture picture, int x, int y, int w, int h,
     PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);
 }
+
+
+void
+Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
+                 unsigned int color, int direction)
+{
+    Point2d points[7];
+    Region2d reg;
+    Blt_PaintBrush brush;
+    double t;
+    Blt_Shadow shadow;
+    
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    fprintf(stderr, "w=%d h=%d\n", w, h);
+    t = w * 0.25;
+    switch (direction) {
+    case ARROW_UP:
+        t = w * 0.25;
+        y--;
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.9 * h - t;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.9 * h - t;
+        points[3].x = x + 0.9 * w;
+        points[3].y = y + 0.9 * h;
+        points[4].x = x + 0.5 * w;
+        points[4].y = y + 0.1 * h + t;
+        points[5].x = x + 0.1 * w;
+        points[5].y = y + 0.9 * h;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        y--;
+        points[0].x = x + 0.9 * w;
+        points[0].y = y + 0.1 * h + t;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.9 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.1 * h + t;
+        points[3].x = x + 0.1 * w;
+        points[3].y = y + 0.1 * h;
+        points[4].x = x + 0.5 * w;
+        points[4].y = y + 0.9 * h - t;
+        points[5].x = x + 0.9 * w;
+        points[5].y = y + 0.1 * h;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        t = h * 0.25;
+        x -= 2;
+        points[0].x = x + 0.9 * w - t;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.1 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.9 * w - t;
+        points[2].y = y + 0.9 * h;
+        points[3].x = x + 0.9 * w;
+        points[3].y = y + 0.9 * h;
+        points[4].x = x + 0.1 * w + t;
+        points[4].y = y + 0.5 * h;
+        points[5].x = x + 0.9 * w;
+        points[5].y = y + 0.1 * h;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        x++;
+        t = h * 0.25;
+        points[0].x = x + 0.1 * w + t;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.1 * w + t;
+        points[2].y = y + 0.9 * h;
+        points[3].x = x + 0.1 * w;
+        points[3].y = y + 0.9 * h;
+        points[4].x = x + 0.9 * w - t;
+        points[4].y = y + 0.5 * h;
+        points[5].x = x + 0.1 * w;
+        points[5].y = y + 0.1 * h;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    }
+    brush = Blt_NewColorBrush(color);
+        shadow.width = 2, shadow.offset = 2;
+        shadow.color.u32 = 0x5F000000;
+    PaintPolygonAA2(picture, 7, points, &reg, brush, &shadow);
+    Blt_FreeBrush(brush);
+}
