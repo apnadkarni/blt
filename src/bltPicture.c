@@ -6356,7 +6356,10 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
         tablePtr = &colorTable;
     }
     /* Check that the colors are not premultiplied. */
-    assert((srcPtr->flags & BLT_PIC_PREMULT_COLORS) == 0);
+    if ((srcPtr->flags & BLT_PIC_PREMULT_COLORS) == 0) {
+        fprintf(stderr, "Unmultiplying colors\n");
+        Blt_UnmultiplyColors(srcPtr);
+    }
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
         Blt_Pixel *sp, *send;

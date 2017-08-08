@@ -11,6 +11,8 @@ set icon2 [image create picture -file images/blt98.gif]
 set icon [image create picture -data $imgData]
 set bg white
 
+set blt::features(enable_xshm) 0
+parray blt::features
 set image ""
 option add *ComboEntry.takeFocus 1
 
@@ -42,7 +44,7 @@ blt::combomenu .e.m  \
     -yscrollbar .e.m.ybar \
     -xscrollbar .e.m.xbar
 blt::tk::scrollbar .e.m.xbar -style tk
-blt::tk::scrollbar .e.m.ybar -style xp -arrowcolor grey40
+blt::tk::scrollbar .e.m.ybar -style xp -arrowcolor grey20
 .e.m sort configure -auto 1
 
 set onOff 1

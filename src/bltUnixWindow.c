@@ -237,9 +237,66 @@ XQueryTreeErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
     return 0;
 }
 
+#define TRACE_FLAGS (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_GLOBAL_ONLY)
+
+static void
+SetFeature(const char *featureName, int value)
+{
+    char c;
+    
+    c = featureName[0];
+    if ((c == 'e') && (strcmp(featureName, "enable_xshm") == 0)) {
+        extern int bltEnableXShm;
+        bltEnableXShm = value;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FeatureVariableProc --
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static char *
+FeatureVariableProc(ClientData clientData, Tcl_Interp *interp, 
+                    const char *part1, const char *part2, int flags)
+{
+    int varFlags;
+#define MAX_ERR_MSG     1023
+    static char message[MAX_ERR_MSG + 1];
+    fprintf(stderr, "In FeatureVariableProc %s/%s\n", part1, part2);
+
+    varFlags = TCL_LEAVE_ERR_MSG | (TCL_GLOBAL_ONLY & flags);
+    if (flags & TCL_TRACE_WRITES) {
+        int value;
+        Tcl_Obj *objPtr;
+
+        objPtr = Tcl_GetVar2Ex(interp, part1, part2, varFlags);
+        if (objPtr == NULL) {
+            goto error;
+        }
+        if (Tcl_GetBooleanFromObj(interp, objPtr, &value) != TCL_OK) {
+            goto error;
+        }
+        fprintf(stderr, "setting %s to %d\n", part2, value);
+        SetFeature(part2, value);
+    } else if (flags & TCL_TRACE_UNSETS) {
+        SetFeature(part2, FALSE);
+    } else {
+        return (char *)"unknown variable trace flag";
+    }
+    return NULL;
+
+ error: 
+    strncpy(message, Tcl_GetStringResult(interp), MAX_ERR_MSG);
+    message[MAX_ERR_MSG] = '\0';
+    return message;
+}
 
 void
-Blt_CollectExtInfo(Tcl_Interp *interp) 
+Blt_InitFeaturesArray(Tcl_Interp *interp) 
 {
     Tk_Window tkwin;
     Display *display;
@@ -254,8 +311,8 @@ Blt_CollectExtInfo(Tcl_Interp *interp)
 
         if (XRRQueryExtension(display, &majorNum, &minorNum)) {
             objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
-            Tcl_SetVar2Ex(interp, "::blt::features", "XRandr", objPtr, 
-                  TCL_GLOBAL_ONLY);
+            Tcl_SetVar2Ex(interp, "::blt::features", "XRandrQueryExtension", 
+                objPtr, TCL_GLOBAL_ONLY);
         }
     }
 #endif /* HAVE_XRRQUERYEXTENSION */
@@ -265,8 +322,8 @@ Blt_CollectExtInfo(Tcl_Interp *interp)
 
         if (XShmQueryVersion(display, &majorNum, &minorNum, &state)) {
             objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
-            Tcl_SetVar2Ex(interp, "::blt::features", "XShm", objPtr, 
-                  TCL_GLOBAL_ONLY);
+            Tcl_SetVar2Ex(interp, "::blt::features", "XShmQueryExtension", 
+                objPtr, TCL_GLOBAL_ONLY);
             objPtr = Tcl_NewIntObj(state);
             Tcl_SetVar2Ex(interp, "::blt::features", "XShmPixmap", objPtr, 
                   TCL_GLOBAL_ONLY);
@@ -303,8 +360,8 @@ Blt_CollectExtInfo(Tcl_Interp *interp)
 
         if (XRenderQueryExtension(display, &majorNum, &minorNum)) {
             objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
-            Tcl_SetVar2Ex(interp, "::blt::features", "XRender", objPtr, 
-                  TCL_GLOBAL_ONLY);
+            Tcl_SetVar2Ex(interp, "::blt::features", "XRenderQueryExtention", 
+                objPtr, TCL_GLOBAL_ONLY);
         }
     }
 #ifdef HAVE_XRENDERCOMPOSITE
@@ -316,6 +373,17 @@ Blt_CollectExtInfo(Tcl_Interp *interp)
     Tcl_SetVar2Ex(interp, "::blt::features", "XRenderComposite", objPtr, 
                   TCL_GLOBAL_ONLY);
 #endif /* HAVE_XRENDERQUERYEXTENSION */
+#ifdef USE_XSHM
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* USE_XSHM */
+    Tcl_SetVar2Ex(interp, "::blt::features", "enable_xshm", objPtr, 
+                  TCL_GLOBAL_ONLY);
+    objPtr = Tcl_NewBooleanObj(state);
+    SetFeature("enable_xshm", state);
+    Tcl_TraceVar2(interp, "::blt::features", "enable_xshm", TRACE_FLAGS,
+        FeatureVariableProc, NULL);
 }
 
 Window

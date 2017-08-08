@@ -865,6 +865,7 @@ with_libssh2libdir
 with_openssllibdir
 with_gnu_ld
 enable_shared
+enable_xshm
 enable_symbols
 enable_stubs
 with_x
@@ -1508,6 +1509,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-shared         created shared libraries
+  --enable-xshm           use X Shared Memory extension
   --enable-symbols        compile with debugging symbols
   --enable-stubs          compile with stubbed version of Tcl library
 
@@ -2039,9 +2041,9 @@ INC_SPECS=""
 loader_run_path=""
 DEFINES=""
 
-
 blt_enable_symbols="no"
 blt_enable_shared="yes"
+blt_enable_xshm="yes"
 blt_with_expat_include_dir="yes"
 blt_with_expat_lib_dir="yes"
 blt_with_ft2_include_dir="yes"
@@ -2311,6 +2313,12 @@ fi
 # Check whether --enable-shared was given.
 if test "${enable_shared+set}" = set; then
   enableval=$enable_shared; blt_enable_shared=$enableval
+fi
+
+
+# Check whether --enable-xshm was given.
+if test "${enable_xshm+set}" = set; then
+  enableval=$enable_xshm; blt_enable_xshm=$enableval
 fi
 
 
@@ -15049,7 +15057,7 @@ $as_echo "$as_me: error: can not run test program while cross compiling" >&2;}
    { (exit 1); exit 1; }; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 15052 "configure"
+#line 15060 "configure"
 #include "confdefs.h"
 #ifdef __cplusplus
 extern "C" void exit(int);
@@ -22153,6 +22161,14 @@ _ACEOF
   fi
 
   BLT_STUBS_ENABLED=1
+
+fi
+
+if test "${blt_enable_xshm}" = "yes" ; then
+
+cat >>confdefs.h <<_ACEOF
+#define USE_XSHM 1
+_ACEOF
 
 fi
 

@@ -2744,6 +2744,7 @@ Blt_PaintArrowHead2(Blt_Picture picture, int x, int y, int w, int h,
     }
     PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);
+    Blt_Picture_SetCompositeFlag(picture);
 }
 
 void
@@ -2878,6 +2879,7 @@ Blt_PaintArrowHead3(Blt_Picture picture, int x, int y, int w, int h,
     }
     PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);
+    Blt_Picture_SetCompositeFlag(picture);
 }
 
 
@@ -2894,12 +2896,10 @@ Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
     reg.left = reg.top = 0;
     reg.right = w;
     reg.bottom = h;
-    fprintf(stderr, "w=%d h=%d\n", w, h);
     t = w * 0.25;
     switch (direction) {
     case ARROW_UP:
         t = w * 0.25;
-        y--;
         points[0].x = x + 0.1 * w;
         points[0].y = y + 0.9 * h - t;
         points[1].x = x + 0.5 * w;
@@ -2916,7 +2916,6 @@ Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
         points[6].y = points[0].y;
         break;
     case ARROW_DOWN:
-        y--;
         points[0].x = x + 0.9 * w;
         points[0].y = y + 0.1 * h + t;
         points[1].x = x + 0.5 * w;
@@ -2934,7 +2933,7 @@ Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
         break;
     case ARROW_LEFT:
         t = h * 0.25;
-        x -= 2;
+        /*x -= 2; */
         points[0].x = x + 0.9 * w - t;
         points[0].y = y + 0.1 * h;
         points[1].x = x + 0.1 * w;
@@ -2951,7 +2950,7 @@ Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
         points[6].y = points[0].y;
         break;
     case ARROW_RIGHT:
-        x++;
+        /* x++; */
         t = h * 0.25;
         points[0].x = x + 0.1 * w + t;
         points[0].y = y + 0.1 * h;
@@ -2970,8 +2969,12 @@ Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
         break;
     }
     brush = Blt_NewColorBrush(color);
+#ifdef notdef
         shadow.width = 2, shadow.offset = 2;
         shadow.color.u32 = 0x5F000000;
     PaintPolygonAA2(picture, 7, points, &reg, brush, &shadow);
+#endif
+    PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);
+    Blt_Picture_SetCompositeFlag(picture);
 }

@@ -478,6 +478,9 @@
 /* Define if Tk stubs are used. */
 #undef USE_TK_STUBS
 
+/* Define to enable XSHM extension. */
+#undef USE_XSHM
+
 /* Define if building for Win32. */
 #undef WIN32
 

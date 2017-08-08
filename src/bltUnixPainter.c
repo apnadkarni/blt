@@ -160,6 +160,7 @@ typedef struct {
                                          * XCreateGC). */
 
 static Tcl_FreeProc FreePainter;
+int bltEnableXShm = FALSE;
 
 #ifdef notdef
 static void
@@ -972,7 +973,7 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
     if (n > h ) {
         n = h;
     }
-#ifdef notdef
+#ifndef notdef
     if (n > 90) {
         n = 90;
     }
@@ -1606,7 +1607,8 @@ SnapPicture(Painter *p, Drawable drawable, int x, int y, int w, int h,
     Tk_ErrorHandler handler;
 
 #ifdef HAVE_XSHMQUERYEXTENSION
-    if (SnapPictureWithXShm(p, drawable, x, y, w, h, picturePtr)) {
+    if ((bltEnableXShm) &&
+        (SnapPictureWithXShm(p, drawable, x, y, w, h, picturePtr))) {
         return (*picturePtr != NULL);
     }
 #endif  /* HAVE_XSHMQUERYEXTENSION */
@@ -1837,13 +1839,14 @@ PaintPicture(
         }
     }
 #ifdef HAVE_XSHMQUERYEXTENSION
-    if (PaintPictureWithXShm(p, drawable, srcPtr, sx, sy, w, h, dx, dy)) {
+    if ((bltEnableXShm) &&
+        (PaintPictureWithXShm(p, drawable, srcPtr, sx, sy, w, h, dx, dy))) {
         if (ditherPtr != NULL) {
             Blt_FreePicture(ditherPtr);
         }
         return TRUE;
     }
-#endif
+#endif  /* HAVE_XSHMQUERYEXTENSION */
     imgPtr = XCreateImage(p->display, p->visualPtr, p->depth, ZPixmap, 0, 
                           (char *)NULL, w, h, 32, 0);
     assert(imgPtr);
@@ -1858,6 +1861,7 @@ PaintPicture(
     return TRUE;
 }
 
+#ifdef HAVE_XSHMQUERYEXTENSION
 /*
  *---------------------------------------------------------------------------
  *
@@ -1910,9 +1914,7 @@ CompositePictureWithXRender(
     XImage *imgPtr;
     int y;
     unsigned char *destRowPtr;
-#ifdef HAVE_XSHMQUERYEXTENSION
     XShmSegmentInfo xssi;
-#endif  /* HAVE_XSHMQUERYEXTENSION */
     XRenderPictFormat *fmtPtr;
     Visual *visualPtr;
     int majorNum, minorNum, haveShmPixmaps;
@@ -1922,7 +1924,10 @@ CompositePictureWithXRender(
             "drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
             drawable, sx, sy, w, h, dx, dy);
 #endif
-code = TCL_OK;
+    code = TCL_OK;
+    if (!bltEnableXShm) {
+        return FALSE;
+    }
     if (p->flags & (PAINTER_DONT_USE_SHM|PAINTER_NO_32BIT_VISUAL)) {
         return FALSE;
     }
@@ -1992,7 +1997,6 @@ code = TCL_OK;
         p->flags |= PAINTER_NO_32BIT_VISUAL;
         return FALSE;
     }
-#ifdef HAVE_XSHMQUERYEXTENSION
     if (!XShmQueryVersion(p->display, &majorNum, &minorNum, &haveShmPixmaps)) {
         p->flags |= PAINTER_DONT_USE_SHM;
         return FALSE;
@@ -2029,9 +2033,6 @@ code = TCL_OK;
         p->flags |= PAINTER_DONT_USE_SHM;
         return FALSE;
     }
-#else
-    return FALSE;
-#endif  /* HAVE_XSHMQUERYEXTENSION */
     imgPtr->byte_order = nativeByteOrder;
     srcRowPtr = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
     destRowPtr = (unsigned char *)imgPtr->data;
@@ -2088,6 +2089,8 @@ code = TCL_OK;
 #endif /* HAVE_LIBXRENDER */
 }
 
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2113,7 +2116,7 @@ CompositePicture(
     Painter *p,
     Drawable drawable,
     Blt_Picture fg,
-    int x, int y,                       /* Coordinates of source region in
+    int sx, int sy,                     /* Coordinates of source region in
                                          * the picture. */
     int w, int h,                       /* Dimension of the source region.
                                          * Region cannot extend beyond the
@@ -2122,44 +2125,44 @@ CompositePicture(
                                          * region in the drawable.  */
     unsigned int flags)
 {
-    int dw, dh;
 #ifdef notdef
-    fprintf(stderr, "CompositePicture: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
-            drawable, x, y, w, h, dx, dy);
+    fprintf(stderr, "CompositePicture: drawable=%x, sx=%d,sy=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+            drawable, sx, sy, w, h, dx, dy);
 #endif
     if (dx < 0) {
         w += dx;                        /* Shrink the width. */
-        x += -dx;                       /* Change the left of the source
+        sx += -dx;                      /* Change the left of the source
                                          * region. */
         dx = 0;                         /* Start at the left of the
                                          * destination. */
     } 
     if (dy < 0) {
         h -= -dy;                       /* Shrink the height. */
-        y += -dy;                       /* Change the top of the source
+        sy += -dy;                      /* Change the top of the source
                                          * region. */
         dy = 0;                         /* Start at the top of the
                                          * destination. */
     }
-    if ((w < 0) || (h < 0)) {
+    if ((w <= 0) || (h <= 0)) {
         return FALSE;
     }
-    dw = MIN(w, Blt_Picture_Width(fg));
-    dh = MIN(h, Blt_Picture_Height(fg));
-    if (!CompositePictureWithXRender(p, drawable, fg, x, y, dw, dh, dx, dy)) {
+    w = MIN(w, Blt_Picture_Width(fg));
+    h = MIN(h, Blt_Picture_Height(fg));
+#ifdef HAVE_XSHMQUERYEXTENSION
+    if (!CompositePictureWithXRender(p, drawable, fg, sx, sy, w, h, dx, dy)) 
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    {
         Pict *bgPtr;
 
-#ifdef notdef
-        fprintf(stderr, "CompositePictureWithXRender failed\n");
-#endif
-        bgPtr = DrawableToPicture(p, drawable, x, y, dw, dh);
+        bgPtr = DrawableToPicture(p, drawable, dx, dy, w, h);
         if (bgPtr == NULL) {
             return FALSE;
         }
         /* Dimension of source region may be adjusted by the actual size of
          * the drawable.  This is reflected in the size of the background
          * picture. */
-        Blt_CompositeRegion(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
+        Blt_CompositeRegion(bgPtr, fg, sx, sy, bgPtr->width, bgPtr->height, 
+                0, 0);
         PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height,
                      dx, dy, flags);
         Blt_FreePicture(bgPtr);

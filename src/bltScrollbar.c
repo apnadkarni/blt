@@ -669,8 +669,13 @@ ScrollbarWidgetCmd(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_SetStringObj(Tcl_GetObjResult(interp), 
                              NameOfField(scrollPtr->activeField), -1);
         } else {
-            GetFieldFromObj(interp, objv[2], &scrollPtr->activeField);
-            EventuallyRedraw(scrollPtr);
+            int activeField;
+
+            GetFieldFromObj(interp, objv[2], &activeField);
+            if (activeField != scrollPtr->activeField) {
+                scrollPtr->activeField = activeField;
+                EventuallyRedraw(scrollPtr);
+            }
         }
     } else if ((c == 'c') && (length >= 2) && 
                (strncmp(string, "cget", length) == 0)) {

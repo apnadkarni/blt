@@ -4161,9 +4161,15 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("opaque", 6);
+    objPtr = Tcl_NewStringObj("masked", 6);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    state = Blt_Picture_IsOpaque(srcPtr);
+    state = Blt_Picture_IsMasked(srcPtr);
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+
+    objPtr = Tcl_NewStringObj("composite", 9);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    state = Blt_Picture_IsBlended(srcPtr);
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 

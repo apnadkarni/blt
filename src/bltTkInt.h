@@ -306,6 +306,7 @@ BLT_EXTERN int Blt_ReparentWindow (Display *display, Window window,
 extern void Blt_RegisterPictureImageType(Tcl_Interp *interp);
 extern void Blt_RegisterCanvasEpsItem(void);
 extern void Blt_RegisterCanvasLabelItem(void);
+extern void Blt_InitFeaturesArray(Tcl_Interp *interp);
 
 typedef struct {
     Drawable id;

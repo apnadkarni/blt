@@ -2159,7 +2159,7 @@ ComputeCascadeMenuCoords(ComboMenu *comboPtr, Item *itemPtr, int *xPtr,
     }
     x += rootX, y += rootY;
     if ((y + Tk_ReqHeight(comboPtr->menuWin)) > screenHeight) {
-        /* If we go offscreen on the bottom, raised the menu. */
+        /* If we go offscreen on the bottom, move the menu up. */
         y = screenHeight - Tk_ReqHeight(comboPtr->menuWin) - 10;
         if (y < 0) {
             y = 0;

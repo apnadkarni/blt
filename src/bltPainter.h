@@ -85,6 +85,10 @@ BLT_EXTERN Blt_Picture Blt_PaintDelete(int width, int height,
         unsigned int fill, unsigned int symbol, int isActive);
 BLT_EXTERN void Blt_PaintArrowHead(Blt_Picture picture, int x, int y, int w,
         int h, unsigned int color, int direction);
+BLT_EXTERN void Blt_PaintArrowHead2(Blt_Picture picture, int x, int y, int w,
+        int h, unsigned int color, int direction);
+BLT_EXTERN void Blt_PaintChevron(Blt_Picture picture, int x, int y, int w,
+        int h, unsigned int color, int direction);
 
 
 #endif /* _BLT_PAINTER_H */
