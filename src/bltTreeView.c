@@ -9608,9 +9608,9 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         h = VPORTHEIGHT(viewPtr);
 
         /*
-         * Do a min-max text for the intersection of the viewport and the
-         * computed bounding box.  If there is no intersection, return the
-         * empty string.
+         * Test for the intersection of the viewport and the computed
+         * bounding box.  If there is no intersection, return the empty
+         * string.
          */
         if ((x2 < viewPtr->xOffset) || (y2 < viewPtr->yOffset) ||
             (x1 >= (viewPtr->xOffset + w)) || (y1 >= (viewPtr->yOffset + h))) {

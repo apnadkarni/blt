@@ -5067,6 +5067,12 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
         viewPtr->colNotifier = NULL;
         viewPtr->table = NULL;
     }
+    if (viewPtr->sort.upArrow != NULL) {
+        Blt_FreePicture(viewPtr->sort.upArrow);
+    }
+    if (viewPtr->sort.downArrow != NULL) {
+        Blt_FreePicture(viewPtr->sort.downArrow);
+    }
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     tableOption.clientData = viewPtr;
@@ -5788,6 +5794,42 @@ DisplayCell(Cell *cellPtr, Drawable drawable, int buffer)
     }
 }
 
+static Blt_Picture
+GetSortArrowPicture(TableView *viewPtr, int w, int h)
+{
+    if (viewPtr->sort.decreasing) {
+        if (viewPtr->sort.upArrow == NULL) {
+            Blt_Picture picture;
+            int ix, iy, iw, ih;
+            
+            iw = w * 45 / 100;
+            ih = h * 80 / 100;
+            iy = (h - ih) / 2;
+            ix = (w - iw) / 2;
+            picture = Blt_CreatePicture(w, h);
+            Blt_BlankPicture(picture, 0x0);
+            Blt_PaintArrow(picture, ix, iy, iw, ih, 0xFFFF0000, ARROW_UP);
+            viewPtr->sort.upArrow = picture;
+        }
+        return viewPtr->sort.upArrow;
+    } else {
+        if (viewPtr->sort.downArrow == NULL) {
+            Blt_Picture picture;
+            int ix, iy, iw, ih;
+
+            iw = w * 45 / 100;
+            ih = h * 80 / 100;
+            iy = (h - ih) / 2;
+            ix = (w - iw) / 2;
+            picture = Blt_CreatePicture(w, h);
+            Blt_BlankPicture(picture, 0x0);
+            Blt_PaintArrow(picture, ix, iy, iw, ih, 0xFF0000FF, ARROW_DOWN);
+            viewPtr->sort.downArrow = picture;
+        }            
+        return viewPtr->sort.downArrow;
+    }
+}
+
 static void
 DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x, 
                 int y)
@@ -5901,19 +5943,24 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
         x += tw + agap;
     }
     if (colPtr == viewPtr->sort.firstPtr) {
-        int ay;
-
+        int ax, ay;
+        ax = x;
         ay = y + (colHeight - ah) / 2;
         if ((viewPtr->sort.decreasing) && (viewPtr->sort.up != NULL)) {
             Tk_RedrawImage(IconBits(viewPtr->sort.up), 0, 0, aw, ah, drawable, 
-                x, ay);
+                ax, ay);
         } else if (viewPtr->sort.down != NULL) {
             Tk_RedrawImage(IconBits(viewPtr->sort.down), 0, 0, aw, ah, drawable,
-                x, ay);
-        } else {
-            Blt_DrawArrow(viewPtr->display, drawable, fg, x, ay, aw, ah, 
-                viewPtr->colTitleBorderWidth, 
-                (viewPtr->sort.decreasing) ? ARROW_UP : ARROW_DOWN);
+                ax, ay);
+        } else if ((aw > 0) && (ah > 0)) {
+            Blt_Picture picture;
+
+            picture = GetSortArrowPicture(viewPtr, aw, ah);
+            if (viewPtr->painter == NULL) {
+                viewPtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
+            }
+            Blt_PaintPicture(viewPtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
         }
     }
 }

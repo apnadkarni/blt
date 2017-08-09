@@ -2978,3 +2978,101 @@ Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
     Blt_FreeBrush(brush);
     Blt_Picture_SetCompositeFlag(picture);
 }
+
+void
+Blt_PaintArrow(Blt_Picture picture, int x, int y, int w, int h,
+               unsigned int color, int direction)
+{
+    Point2d points[8];
+    Region2d reg;
+    Blt_PaintBrush brush;
+    Blt_Shadow shadow;
+    
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    switch (direction) {
+    case ARROW_UP:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.4 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.4 * h;
+        points[3].x = x + 0.633333333 * w;
+        points[3].y = y + 0.4 * h;
+        points[4].x = x + 0.633333333 * w;
+        points[4].y = y + 0.9 * h;
+        points[5].x = x + 0.366666666 * w;
+        points[5].y = y + 0.9 * h;
+        points[6].x = x + 0.366666666 * w;
+        points[6].y = y + 0.4 * h;
+        points[7].x = points[0].x;
+        points[7].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        points[0].x = x + 0.9 * w;
+        points[0].y = y + 0.6 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.9 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.6 * h;
+        points[3].x = x + 0.366666666 * w;
+        points[3].y = y + 0.6 * h;
+        points[4].x = x + 0.366666666 * w;
+        points[4].y = y + 0.1 * h;
+        points[5].x = x + 0.633333333 * w;
+        points[5].y = y + 0.1 * h;
+        points[6].x = x + 0.633333333 * w;
+        points[6].y = y + 0.6 * h;
+        points[7].x = points[0].x;
+        points[7].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        points[0].x = x + 0.4 * w;
+        points[0].y = y + 0.9 * h;
+        points[1].x = x + 0.1 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.4 * w;
+        points[2].y = y + 0.1 * h;
+        points[3].x = x + 0.4 * w;
+        points[3].y = y + 0.366666666 * h;
+        points[4].x = x + 0.9 * w;
+        points[4].y = y + 0.366666666 * h;
+        points[5].x = x + 0.9 * w;
+        points[5].y = y + 0.633333333 * h;
+        points[6].x = x + 0.4 * w;
+        points[6].y = y + 0.633333333 * h;
+        points[7].x = points[0].x;
+        points[7].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        points[0].x = x + 0.6 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.6 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = x + 0.6 * w;
+        points[3].y = y + 0.633333333 * h;
+        points[4].x = x + 0.1 * w;
+        points[4].y = y + 0.633333333 * h;
+        points[5].x = x + 0.1 * w;
+        points[5].y = y + 0.366666666 * h;
+        points[6].x = x + 0.6 * w;
+        points[6].y = y + 0.366666666 * h;
+        points[7].x = points[0].x;
+        points[7].y = points[0].y;
+        break;
+    }
+    brush = Blt_NewColorBrush(color);
+#ifndef notdef
+    shadow.width = 2, shadow.offset = 2;
+    shadow.color.u32 = 0x5F000000;
+    PaintPolygonAA2(picture, 8, points, &reg, brush, &shadow);
+#else
+    PaintPolygonAA2(picture, 8, points, &reg, brush, NULL);
+#endif
+    Blt_FreeBrush(brush);
+    Blt_Picture_SetCompositeFlag(picture);
+}

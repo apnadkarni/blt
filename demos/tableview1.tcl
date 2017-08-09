@@ -18,7 +18,10 @@ blt::tableview $view \
     -table $table \
     -titles both \
     -selectmode multiple \
+    -increasingicon "" \
+    -decreasingicon "" \
     -columnfilters yes 
+
 blt::table . \
     0,0 .ss -fill both
 

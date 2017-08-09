@@ -651,6 +651,7 @@ typedef struct {
     int flags;
     Icon up;
     Icon down;
+    Blt_Picture upArrow, downArrow;     /*  Cached/generated pictures. */
 } SortInfo;
 
 typedef struct {
