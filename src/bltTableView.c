@@ -5670,12 +5670,34 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
         ax = x + filterWidth - aw;
         ay = y;
         if ((aw > 0) && (ah > 0)) {
+            Blt_Picture picture;
+            int ix, iy, iw, ih;
+            Blt_PaintBrush brush;
+
             Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay,
                                  aw, ah, filterPtr->borderWidth, relief);
             aw -= 2 * filterPtr->borderWidth;
             ax += filterPtr->borderWidth;
-            Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
-                          filterPtr->borderWidth, ARROW_DOWN);
+            ih = aw * 55 / 100;
+            iw = aw * 80 / 100;
+                
+            picture = Blt_CreatePicture(aw, ah);
+            Blt_BlankPicture(picture, 0x0);
+            iy = (ah - ih) / 2;
+            ix = (aw - iw) / 2;
+            brush = Blt_NewColorBrush(Blt_XColorToPixel(fg));
+            /*
+              Blt_PaintRectangle(picture, 0, 0, aw, ah, 4, 2, brush, 1);
+            */
+            Blt_PaintArrowHead(picture, ix, iy, iw, ih,
+                               Blt_XColorToPixel(fg), ARROW_DOWN);
+            if (viewPtr->painter == NULL) {
+                viewPtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
+            }
+            Blt_PaintPicture(viewPtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
+            Blt_FreeBrush(brush);
+            Blt_FreePicture(picture);
         }
     }
 }

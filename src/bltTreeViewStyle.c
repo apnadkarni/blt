@@ -536,6 +536,7 @@ typedef struct {
     Blt_Bg activeArrowBg;
     const char dummy1[2000];
     int arrow;
+    Blt_Painter painter;
 } ComboBoxStyle;
 
 typedef struct {
@@ -1735,7 +1736,9 @@ IconVarTraceProc(
     if (flags & TCL_TRACE_WRITES) {
         Icon icon;
         Tcl_Obj *valueObjPtr;
-
+        const char *iconName;
+        int length;
+        
         /*
          * Update the combobutton's icon with the image whose name is
          * stored in the variable.
@@ -1745,9 +1748,14 @@ IconVarTraceProc(
         if (valueObjPtr == NULL) {
             return GetInterpResult(interp);
         }
-        icon = GetIcon((CellStyle *)stylePtr, Tcl_GetString(valueObjPtr));
-        if (icon == NULL) {
-            return GetInterpResult(interp);
+        iconName = Tcl_GetStringFromObj(valueObjPtr, &length); 
+        if (length > 0) {
+            icon = GetIcon((CellStyle *)stylePtr, iconName);
+            if (icon == NULL) {
+                return GetInterpResult(interp);
+            }
+        } else {
+            icon = NULL;
         }
         if (stylePtr->icon != NULL) {
             FreeIcon(stylePtr->icon);
@@ -3600,7 +3608,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     if ((stylePtr->flags & EDITABLE) && (viewPtr->activeCellPtr == cellPtr)) {
         int ax, ay;
         unsigned int aw, ah;
-
+        XColor *color;
+        
         aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBorderWidth);
         ah = aw;
         ax = x + colWidth - aw - stylePtr->gap;
@@ -3609,7 +3618,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         if (rowHeight > ah) {
             ay += (cellHeight - ah) / 2;
         }
-        fg = stylePtr->activeFg;
+        color = stylePtr->activeFg;
         bg = (viewPtr->activeCellPtr == cellPtr) ? 
             stylePtr->activeArrowBg : 
             CHOOSE(viewPtr->activeBg, stylePtr->activeBg);
@@ -3619,8 +3628,31 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
                 stylePtr->arrowBorderWidth, relief);
         aw -= 2 * stylePtr->arrowBorderWidth;
         ax += stylePtr->arrowBorderWidth;
-        Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
-                stylePtr->arrowBorderWidth, ARROW_DOWN);
+        ih = aw * 55 / 100;
+        iw = aw * 80 / 100;
+        {
+            Blt_Picture picture;
+            int ix, iy;
+            Blt_PaintBrush brush;
+            
+            picture = Blt_CreatePicture(aw, ah);
+            Blt_BlankPicture(picture, 0x0);
+            iy = (ah - ih) / 2;
+            ix = (aw - iw) / 2;
+            brush = Blt_NewColorBrush(Blt_XColorToPixel(color));
+            /*
+              Blt_PaintRectangle(picture, 0, 0, aw, ah, 4, 2, brush, 1);
+            */
+            Blt_PaintArrowHead(picture, ix, iy, iw, ih,
+                               Blt_XColorToPixel(color), ARROW_DOWN);
+            if (stylePtr->painter == NULL) {
+                stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
+            }
+            Blt_PaintPicture(stylePtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
+            Blt_FreeBrush(brush);
+            Blt_FreePicture(picture);
+        }
     }
 }
 

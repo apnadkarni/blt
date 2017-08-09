@@ -10062,18 +10062,18 @@ CellWritableOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec cellOps[] =
 {
-    {"activate",   1, CellActivateOp,    3, 4, "?cell?",},
-    {"bbox",       1, CellBboxOp,        4, 4, "cell",},
-    {"cget",       2, CellCgetOp,        5, 5, "cell option",},
-    {"configure",  2, CellConfigureOp,   4, 0, "cell ?option value?...",},
+    {"activate",   1, CellActivateOp,    3, 4, "?cellName?",},
+    {"bbox",       1, CellBboxOp,        4, 0, "cellName",},
+    {"cget",       2, CellCgetOp,        5, 5, "cellName option",},
+    {"configure",  2, CellConfigureOp,   4, 0, "cellName ?option value?...",},
     {"deactivate", 1, CellDeactivateOp,  3, 3, "",},
-    {"focus",      2, CellFocusOp,       4, 0, "?cell?",},
-    {"identify",   2, CellIdentifyOp,    6, 6, "cell x y",},
-    {"index",      3, CellIndexOp,       4, 4, "cell",},
-    {"invoke",     3, CellInvokeOp,      4, 4, "cell",},
-    {"see",        3, CellSeeOp,         4, 4, "cell",},
-    {"style",      3, CellStyleOp,       4, 4, "cell",},
-    {"writable",   3, CellWritableOp,    4, 4, "cell",},
+    {"focus",      2, CellFocusOp,       4, 0, "?cellName?",},
+    {"identify",   2, CellIdentifyOp,    6, 6, "cellName x y",},
+    {"index",      3, CellIndexOp,       4, 4, "cellName",},
+    {"invoke",     3, CellInvokeOp,      4, 4, "cellName",},
+    {"see",        3, CellSeeOp,         4, 4, "cellName",},
+    {"style",      3, CellStyleOp,       4, 4, "cellName",},
+    {"writable",   3, CellWritableOp,    4, 4, "cellName",},
 };
 static int numCellOps = sizeof(cellOps) / sizeof(Blt_OpSpec);
 
