@@ -916,7 +916,7 @@ struct _TableView {
                                          * coordinates. */
     int scanX, scanY;                   /* X-Y world coordinate where the
                                          * scan started. */
-
+    Blt_Painter painter;
     Tk_Cursor cursor;                   /* X Cursor */
     CellStyle *stylePtr;                /* Default cell style. */
     int reqWidth, reqHeight;            /* Requested dimensions of the
@@ -936,6 +936,7 @@ struct _TableView {
                                          * the column widths beforehand
                                          * (such as when loading a table
                                          * with -table). */
+                                         
 };
 
 BLT_EXTERN CellStyle *Blt_TableView_CreateCellStyle(Tcl_Interp *interp,

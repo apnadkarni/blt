@@ -1168,6 +1168,103 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
         ax = bx + borderWidth;
         ay = by + borderWidth;
         aw = cavityWidth * 90 /100;
+        ah = cavityWidth * 60/100;
+        break;
+    case ARROW_LEFT:
+        if (scrollPtr->selField == TOP_ARROW) {
+            bg = scrollPtr->selBg;
+            relief = scrollPtr->selRelief;
+        } else if (scrollPtr->activeField == TOP_ARROW) {
+            bg = scrollPtr->activeBg;
+            relief = scrollPtr->activeRelief;
+        } else {
+            bg = scrollPtr->bg;
+            relief = TK_RELIEF_RAISED;
+        }
+        bx = by = scrollPtr->inset;
+        ax = bx + borderWidth;
+        ay = by + borderWidth;
+        ah = cavityWidth * 90 /100;
+        aw = cavityWidth * 60/100;
+        break;
+    case ARROW_DOWN:
+        if (scrollPtr->selField == BOTTOM_ARROW) {
+            bg = scrollPtr->selBg;
+            relief = scrollPtr->selRelief;
+        } else if (scrollPtr->activeField == BOTTOM_ARROW) {
+            bg = scrollPtr->activeBg;
+            relief = scrollPtr->activeRelief;
+        } else {
+            bg = scrollPtr->bg;
+            relief = TK_RELIEF_RAISED;
+        }
+        aw = cavityWidth * 90 /100;
+        ah = cavityWidth * 60/100;
+        bx = Tk_Width(scrollPtr->tkwin) - scrollPtr->inset - size;
+        by = Tk_Height(scrollPtr->tkwin) - scrollPtr->inset - size;
+        ax = bx + borderWidth;
+        ay = by + borderWidth;
+        break;
+    case ARROW_RIGHT:
+        if (scrollPtr->selField == BOTTOM_ARROW) {
+            bg = scrollPtr->selBg;
+            relief = scrollPtr->selRelief;
+        } else if (scrollPtr->activeField == BOTTOM_ARROW) {
+            bg = scrollPtr->activeBg;
+            relief = scrollPtr->activeRelief;
+        } else {
+            bg = scrollPtr->bg;
+            relief = TK_RELIEF_RAISED;
+        }
+        ah = cavityWidth * 90 /100;
+        aw = cavityWidth * 60/100;
+        bx = by = scrollPtr->inset;
+        bx = Tk_Width(scrollPtr->tkwin) - scrollPtr->inset - size;
+        by = Tk_Height(scrollPtr->tkwin) - scrollPtr->inset - size;
+        ax = bx + borderWidth;
+        ay = by + borderWidth;
+        break;
+    }
+    Blt_Bg_FillRectangle(scrollPtr->tkwin, drawable, bg, bx, by, size, size,
+                         borderWidth, relief); 
+    picture = Blt_CreatePicture(aw, ah);
+    Blt_BlankPicture(picture, 0x0);
+    Blt_PaintArrowHead(picture, 0, 0, aw, ah,  
+                       Blt_XColorToPixel(scrollPtr->arrowColor), direction);
+    painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
+    ax += (cavityWidth - aw) / 2;
+    ay += (cavityWidth - ah) / 2;
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, aw, ah, ax, ay, 0);
+    Blt_FreePicture(picture);
+}
+
+static void
+DrawArrowVistaStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
+                 int borderWidth, int direction)
+{                
+    int bx, by, ax, ay, aw, ah, cavityWidth;
+    Blt_Picture picture;
+    Blt_Painter painter;
+    int relief;
+    Blt_Bg bg;
+
+    cavityWidth = size - 2 * borderWidth;
+    switch (direction) {
+    case ARROW_UP:
+        if (scrollPtr->selField == TOP_ARROW) {
+            bg = scrollPtr->selBg;
+            relief = scrollPtr->selRelief;
+        } else if (scrollPtr->activeField == TOP_ARROW) {
+            bg = scrollPtr->activeBg;
+            relief = scrollPtr->activeRelief;
+        } else {
+            bg = scrollPtr->bg;
+            relief = TK_RELIEF_RAISED;
+        }
+        bx = by = scrollPtr->inset;
+        ax = bx + borderWidth;
+        ay = by + borderWidth;
+        aw = cavityWidth * 90 /100;
         ah = cavityWidth * 75/100;
         break;
     case ARROW_LEFT:
@@ -1314,6 +1411,9 @@ DisplayScrollbar(ClientData clientData) /* Information about window. */
      */
     switch (scrollPtr->style) {
     case STYLE_VISTA:
+        DrawArrowVistaStyle(scrollPtr, pixmap, width, elementBW, 
+                        (scrollPtr->vertical) ? ARROW_UP : ARROW_LEFT);
+        break;
     case STYLE_XP:
         DrawArrowXPStyle(scrollPtr, pixmap, width, elementBW, 
                         (scrollPtr->vertical) ? ARROW_UP : ARROW_LEFT);
