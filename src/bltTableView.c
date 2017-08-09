@@ -709,6 +709,19 @@ static Blt_ConfigSpec filterSpecs[] =
         0, 0}
 };
 
+typedef struct {
+    unsigned int flags;
+} BBoxSwitches;
+
+#define BBOX_ROOT     (1<<0)
+
+static Blt_SwitchSpec bboxSwitches[] = 
+{
+    {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
+        Blt_Offset(BBoxSwitches, flags), 0, BBOX_ROOT},
+    {BLT_SWITCH_END}
+};
+
 static Blt_HashTable findTable;
 static int initialized = FALSE;
 
@@ -6402,7 +6415,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BboxOp --
  *
- *      pathName bbox cell ?cellName ...?
+ *      pathName bbox cell ?cellName ...? ?switches?
  *
  *---------------------------------------------------------------------------
  */
