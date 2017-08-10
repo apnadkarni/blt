@@ -313,6 +313,7 @@ typedef struct {
     Blt_TreeKey key;                    /* Actual data resides in this tree
                                            cell. */
     Tcl_Obj *cmdObjPtr;
+
     /* TextBox-specific fields */
     Tcl_Obj *editorObjPtr;             /* If non-NULL, TCL procedure
                                          * called to allow the user to edit
@@ -393,6 +394,7 @@ typedef struct {
     Blt_TreeKey key;                    /* Actual data resides in this tree
                                            cell. */
     Tcl_Obj *cmdObjPtr;
+
     /* Checkbox specific fields. */
     int size;                           /* Size of the checkbox. */
     Tcl_Obj *onValueObjPtr;
@@ -484,7 +486,6 @@ typedef struct {
     Tcl_Obj *cmdObjPtr;
 
     /* ComboBox-specific fields */
-
     int arrowBorderWidth;
     int scrollWidth;
     /*  */
@@ -534,9 +535,9 @@ typedef struct {
     int reqArrowWidth;
     Blt_Bg arrowBg;
     Blt_Bg activeArrowBg;
-    const char dummy1[2000];
     int arrow;
     Blt_Painter painter;
+    Blt_Picture downArrow;
 } ComboBoxStyle;
 
 typedef struct {
@@ -2605,10 +2606,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
  *
  * TextBoxStyleFreeProc --
  *
- *      Releases resources allocated for the textbox. The resources freed by
- *      this routine are specific only to the "textbox".  Other resources
- *      (common to all styles) are freed in the Blt_TreeView_FreeStyle
- *      routine.
+ *      Releases resources allocated for the textbox. 
  *
  * Results:
  *      None.
@@ -2643,6 +2641,7 @@ TextBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    /* Style is eventually freed by DestroyStyle */
 }
 
 /*
@@ -3186,6 +3185,7 @@ CheckBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    /* Style is eventually freed by DestroyStyle */
 }
 
 /*
@@ -3432,6 +3432,33 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->height += MAX3(th, ih, ah);
 }
 
+static Blt_Picture
+GetArrowPicture(ComboBoxStyle *stylePtr, int w, int h, XColor *colorPtr)
+{
+    if ((stylePtr->downArrow == NULL) ||
+        (Blt_Picture_Width(stylePtr->downArrow) != w) ||
+        (Blt_Picture_Height(stylePtr->downArrow) != h)) {
+        int ih, iw;
+        Blt_Picture picture;
+        int ix, iy;
+
+        if (stylePtr->downArrow != NULL) {
+            Blt_FreePicture(stylePtr->downArrow);
+        }
+        ih = w * 55 / 100;
+        iw = h * 80 / 100;
+        
+        picture = Blt_CreatePicture(w, h);
+        Blt_BlankPicture(picture, 0x0);
+        iy = (h - ih) / 2;
+        ix = (w - iw) / 2;
+        Blt_PaintArrowHead(picture, ix, iy, iw, ih,
+                           Blt_XColorToPixel(colorPtr), ARROW_DOWN);
+        stylePtr->downArrow = picture;
+    }
+    return stylePtr->downArrow;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -3465,8 +3492,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     unsigned int gap, colWidth, rowHeight, cellWidth, cellHeight;
     unsigned int iw, ih, th;
     int relief;
-    XColor *fg;
     TreeView *viewPtr;
+    int x0, y0;
 
     viewPtr = stylePtr->viewPtr;
     rowPtr = cellPtr->entryPtr;
@@ -3523,6 +3550,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     rowHeight -= 2 * stylePtr->borderWidth;
     colWidth  -= 2 * stylePtr->borderWidth - PADDING(colPtr->pad);
 
+    x0 = x; y0 = y;
     x += stylePtr->borderWidth + colPtr->pad.side1;
     y += stylePtr->borderWidth;
 
@@ -3608,17 +3636,18 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     if ((stylePtr->flags & EDITABLE) && (viewPtr->activeCellPtr == cellPtr)) {
         int ax, ay;
         unsigned int aw, ah;
-        XColor *color;
+        XColor *fg;
         
         aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBorderWidth);
         ah = aw;
-        ax = x + colWidth - aw - stylePtr->gap;
+        ax = x0 + colPtr->width - colPtr->ruleWidth - aw - 
+            stylePtr->borderWidth - colPtr->pad.side1;
         ay = y;
         
         if (rowHeight > ah) {
             ay += (cellHeight - ah) / 2;
         }
-        color = stylePtr->activeFg;
+        fg = stylePtr->activeFg;
         bg = (viewPtr->activeCellPtr == cellPtr) ? 
             stylePtr->activeArrowBg : 
             CHOOSE(viewPtr->activeBg, stylePtr->activeBg);
@@ -3628,30 +3657,15 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
                 stylePtr->arrowBorderWidth, relief);
         aw -= 2 * stylePtr->arrowBorderWidth;
         ax += stylePtr->arrowBorderWidth;
-        ih = aw * 55 / 100;
-        iw = aw * 80 / 100;
         {
             Blt_Picture picture;
-            int ix, iy;
-            Blt_PaintBrush brush;
             
-            picture = Blt_CreatePicture(aw, ah);
-            Blt_BlankPicture(picture, 0x0);
-            iy = (ah - ih) / 2;
-            ix = (aw - iw) / 2;
-            brush = Blt_NewColorBrush(Blt_XColorToPixel(color));
-            /*
-              Blt_PaintRectangle(picture, 0, 0, aw, ah, 4, 2, brush, 1);
-            */
-            Blt_PaintArrowHead(picture, ix, iy, iw, ih,
-                               Blt_XColorToPixel(color), ARROW_DOWN);
+            picture = GetArrowPicture(stylePtr, aw, ah, fg);
             if (stylePtr->painter == NULL) {
                 stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
             }
             Blt_PaintPicture(stylePtr->painter, drawable,
                              picture, 0, 0, aw, ah, ax, ay, 0);
-            Blt_FreeBrush(brush);
-            Blt_FreePicture(picture);
         }
     }
 }
@@ -3733,6 +3747,13 @@ ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    if (stylePtr->painter != NULL) {
+        Blt_FreePainter(stylePtr->painter);
+    }
+    if (stylePtr->downArrow != NULL) {
+        Blt_FreePicture(stylePtr->downArrow);
+    }
+    /* Style is eventually freed by DestroyStyle */
 }
 
 /*
@@ -4218,7 +4239,7 @@ ImageBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
-    Blt_Free(stylePtr);
+    /* Style is eventually freed by DestroyStyle */
 }
 
 

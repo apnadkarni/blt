@@ -583,6 +583,8 @@ typedef struct {
     Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
                                          * executed when this menu is
                                          * posted. */
+    Blt_Painter painter;
+    Blt_Picture downArrow;
 } ComboBoxStyle;
 
 /* 
@@ -3715,6 +3717,33 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->height = ODD(cellPtr->height);
 }
 
+static Blt_Picture
+GetArrowPicture(ComboBoxStyle *stylePtr, int w, int h, XColor *colorPtr)
+{
+    if ((stylePtr->downArrow == NULL) ||
+        (Blt_Picture_Width(stylePtr->downArrow) != w) ||
+        (Blt_Picture_Height(stylePtr->downArrow) != h)) {
+        int ih, iw;
+        Blt_Picture picture;
+        int ix, iy;
+
+        if (stylePtr->downArrow != NULL) {
+            Blt_FreePicture(stylePtr->downArrow);
+        }
+        ih = w * 55 / 100;
+        iw = h * 80 / 100;
+        
+        picture = Blt_CreatePicture(w, h);
+        Blt_BlankPicture(picture, 0x0);
+        iy = (h - ih) / 2;
+        ix = (w - iw) / 2;
+        Blt_PaintArrowHead(picture, ix, iy, iw, ih,
+                           Blt_XColorToPixel(colorPtr), ARROW_DOWN);
+        stylePtr->downArrow = picture;
+    }
+    return stylePtr->downArrow;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -3909,8 +3938,16 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
                 stylePtr->arrowBW, relief);
         aw -= 2 * stylePtr->arrowBW;
         ax += stylePtr->arrowBW;
-        Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
-                stylePtr->arrowBW, ARROW_DOWN);
+        {
+            Blt_Picture picture;
+            
+            picture = GetArrowPicture(stylePtr, aw, ah, fg);
+            if (stylePtr->painter == NULL) {
+                stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
+            }
+            Blt_PaintPicture(stylePtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
+        }
     }
 }
 
@@ -3992,6 +4029,12 @@ ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
     }
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+    if (stylePtr->painter != NULL) {
+        Blt_FreePainter(stylePtr->painter);
+    }
+    if (stylePtr->downArrow != NULL) {
+        Blt_FreePicture(stylePtr->downArrow);
     }
     Blt_Free(stylePtr);
 }

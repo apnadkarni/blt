@@ -208,7 +208,7 @@
 #define DEF_FOCUS_HIGHLIGHT_COLOR       RGB_BLACK
 #define DEF_FOCUS_HIGHLIGHT_WIDTH       "2"
 #define DEF_ICONVARIABLE        ((char *)NULL)
-#define DEF_ICONS "::blt::TreeView::closeIcon ::blt::TreeView::openIcon"
+#define DEF_ICONS               ((char *)NULL)
 #define DEF_LINECOLOR           RGB_GREY30
 #define DEF_LINECOLOR_MONO      STD_NORMAL_FG_MONO
 #define DEF_LINESPACING         "0"
@@ -6568,6 +6568,15 @@ DestroyTreeView(DestroyData dataPtr)    /* Pointer to the widget record. */
     if (viewPtr->stylePtr != NULL) {
         FreeStyle(viewPtr->stylePtr);
     }
+    if (viewPtr->sort.upArrow != NULL) {
+        Blt_FreePicture(viewPtr->sort.upArrow);
+    }
+    if (viewPtr->sort.downArrow != NULL) {
+        Blt_FreePicture(viewPtr->sort.downArrow);
+    }
+    if (viewPtr->painter != NULL) {
+        Blt_FreePainter(viewPtr->painter);
+    }
     DestroyColumns(viewPtr);
     Blt_DestroyBindingTable(viewPtr->bindTable);
     Blt_Chain_Destroy(viewPtr->sel.list);
@@ -8474,6 +8483,42 @@ DrawEntryInHierarchy(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, NULL);
 }
 
+static Blt_Picture
+GetSortArrowPicture(TreeView *viewPtr, int w, int h)
+{
+    if (viewPtr->sort.decreasing) {
+        if (viewPtr->sort.upArrow == NULL) {
+            Blt_Picture picture;
+            int ix, iy, iw, ih;
+            
+            iw = w * 45 / 100;
+            ih = h * 80 / 100;
+            iy = (h - ih) / 2;
+            ix = (w - iw) / 2;
+            picture = Blt_CreatePicture(w, h);
+            Blt_BlankPicture(picture, 0x0);
+            Blt_PaintArrow(picture, ix, iy, iw, ih, 0xFFFF0000, ARROW_UP);
+            viewPtr->sort.upArrow = picture;
+        }
+        return viewPtr->sort.upArrow;
+    } else {
+        if (viewPtr->sort.downArrow == NULL) {
+            Blt_Picture picture;
+            int ix, iy, iw, ih;
+
+            iw = w * 45 / 100;
+            ih = h * 80 / 100;
+            iy = (h - ih) / 2;
+            ix = (w - iw) / 2;
+            picture = Blt_CreatePicture(w, h);
+            Blt_BlankPicture(picture, 0x0);
+            Blt_PaintArrow(picture, ix, iy, iw, ih, 0xFF0000FF, ARROW_DOWN);
+            viewPtr->sort.downArrow = picture;
+        }            
+        return viewPtr->sort.downArrow;
+    }
+}
+
 static void
 DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable, 
                 int x, int y)
@@ -8594,9 +8639,15 @@ DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable,
         } else if (colPtr->sortDown != NULL) {
             Tk_RedrawImage(IconBits(colPtr->sortDown), 0, 0, aw, ah, 
                 drawable, ax, ay);
-        } else {
-            Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
-                colPtr->titleBW, (sortPtr->decreasing) ? ARROW_UP : ARROW_DOWN);
+        } else if ((aw > 0) && (ah > 0)) {
+            Blt_Picture picture;
+
+            picture = GetSortArrowPicture(viewPtr, aw, ah);
+            if (viewPtr->painter == NULL) {
+                viewPtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
+            }
+            Blt_PaintPicture(viewPtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
         }
     }
     Blt_Bg_DrawRectangle(viewPtr->tkwin, drawable, bg, dx, y0, 

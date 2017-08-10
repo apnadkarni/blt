@@ -5073,6 +5073,9 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
     if (viewPtr->sort.downArrow != NULL) {
         Blt_FreePicture(viewPtr->sort.downArrow);
     }
+    if (viewPtr->painter != NULL) {
+        Blt_FreePainter(viewPtr->painter);
+    }
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     tableOption.clientData = viewPtr;
@@ -5946,6 +5949,7 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
         int ax, ay;
         ax = x;
         ay = y + (colHeight - ah) / 2;
+        ay--;
         if ((viewPtr->sort.decreasing) && (viewPtr->sort.up != NULL)) {
             Tk_RedrawImage(IconBits(viewPtr->sort.up), 0, 0, aw, ah, drawable, 
                 ax, ay);

@@ -704,6 +704,7 @@ typedef struct {
     int viewIsDecreasing;               /* Current sorting direction */
     Column *markPtr;                    /* Column to mark as sorted. */
     Blt_Chain order;                    /* Order of columns in sorting. */
+    Blt_Picture upArrow, downArrow;     /* Cached/generated pictures. */
 } SortInfo;
 
 /*
@@ -825,6 +826,8 @@ struct _TreeView {
     Selection sel;
     int leader;                         /* Number of pixels padding between
                                          * entries. */
+
+    Blt_Painter painter;
     Tk_Cursor cursor;                   /* X Cursor */
     Tk_Cursor resizeCursor;             /* Resize Cursor */
     int reqWidth, reqHeight;            /* Requested dimensions of the
@@ -867,6 +870,7 @@ struct _TreeView {
     short int titleHeight;              /* Height of column titles. */
 
     LevelInfo *levelInfo;
+
 
     /* Scanning information: */
     int scanAnchorX, scanAnchorY;       /* Scan anchor in screen

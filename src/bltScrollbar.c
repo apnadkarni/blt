@@ -480,7 +480,9 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     const char *string;
     int *stylePtr = (int *)(widgRec + offset);
     int length;
-    
+    int oldStyle;
+
+    oldStyle = *stylePtr;
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
 
@@ -494,6 +496,18 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         Tcl_AppendResult(interp, "unknown style \"", string,
                          "\": should be tk, xp, or vista.", (char *)NULL);
         return TCL_ERROR;
+    }
+    if (oldStyle != *stylePtr) {
+        Scrollbar *scrollPtr = (Scrollbar *)widgRec;
+
+        if (scrollPtr->upArrow != NULL) {
+            Blt_FreePicture(scrollPtr->upArrow);
+            scrollPtr->upArrow = NULL;
+        }
+        if (scrollPtr->downArrow != NULL) {
+            Blt_FreePicture(scrollPtr->downArrow);
+            scrollPtr->downArrow = NULL;
+        }
     }
     return TCL_OK;
 }
@@ -941,6 +955,15 @@ DestroyScrollbar(DestroyData *memPtr) /* Info about scrollbar widget. */
     if (scrollPtr->copyGC != None) {
         Tk_FreeGC(scrollPtr->display, scrollPtr->copyGC);
     }
+    if (scrollPtr->painter != NULL) {
+        Blt_FreePainter(scrollPtr->painter);
+    }
+    if (scrollPtr->upArrow != NULL) {
+        Blt_FreePicture(scrollPtr->upArrow);
+    }
+    if (scrollPtr->downArrow != NULL) {
+        Blt_FreePicture(scrollPtr->downArrow);
+    }
     Blt_FreeOptions(configSpecs, (char *)scrollPtr, scrollPtr->display, 0);
     Blt_Free(scrollPtr);
 }
@@ -1020,7 +1043,6 @@ ConfigureScrollbar(
             "\": must be vertical or horizontal", (char *)NULL);
         return TCL_ERROR;
     }
-
     if (scrollPtr->command != NULL) {
         scrollPtr->commandSize = strlen(scrollPtr->command);
     } else {
@@ -1054,9 +1076,11 @@ ConfigureScrollbar(
 }
 
 static Blt_Picture
-PaintArrowPicture(Scrollbar *scrollPtr, int w, int h, int type, int direction)
+GetArrowPicture(Scrollbar *scrollPtr, int w, int h, int type, int direction)
 {
-    if ((direction == ARROW_UP) || (direction == ARROW_LEFT)) {
+    switch (direction) {
+    case ARROW_UP:
+    case ARROW_LEFT:
         if (scrollPtr->upArrow == NULL) {
             Blt_Picture picture;
             unsigned int color;
@@ -1072,7 +1096,8 @@ PaintArrowPicture(Scrollbar *scrollPtr, int w, int h, int type, int direction)
             scrollPtr->upArrow = picture;
         }
         return scrollPtr->upArrow;
-    } else if ((direction == ARROW_DOWN) || (direction == ARROW_RIGHT)) {
+    case ARROW_DOWN:
+    case ARROW_RIGHT:
         if (scrollPtr->downArrow == NULL) {
             Blt_Picture picture;
             unsigned int color;
@@ -1088,9 +1113,10 @@ PaintArrowPicture(Scrollbar *scrollPtr, int w, int h, int type, int direction)
             scrollPtr->downArrow = picture;
         }
         return scrollPtr->downArrow;
+    default:
+        abort();
+        return NULL;
     }
-    abort();
-    return NULL;
 }
 
 static void
@@ -1274,7 +1300,7 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
     }
     Blt_Bg_FillRectangle(scrollPtr->tkwin, drawable, bg, bx, by, size, size,
                          borderWidth, relief); 
-    picture = PaintArrowPicture(scrollPtr, aw, ah, STYLE_XP, direction);
+    picture = GetArrowPicture(scrollPtr, aw, ah, STYLE_XP, direction);
     if (scrollPtr->painter == NULL) {
         scrollPtr->painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
     }
@@ -1369,7 +1395,7 @@ DrawArrowVistaStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
     }
     Blt_Bg_FillRectangle(scrollPtr->tkwin, drawable, bg, bx, by, size, size,
                          borderWidth, relief); 
-    picture = PaintArrowPicture(scrollPtr, aw, ah, STYLE_VISTA, direction);
+    picture = GetArrowPicture(scrollPtr, aw, ah, STYLE_VISTA, direction);
     if (scrollPtr->painter == NULL) {
         scrollPtr->painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
     }
@@ -1472,6 +1498,9 @@ DisplayScrollbar(ClientData clientData) /* Information about window. */
      */
     switch (scrollPtr->style) {
     case STYLE_VISTA:
+        DrawArrowVistaStyle(scrollPtr, pixmap, width, elementBW, 
+                        (scrollPtr->vertical) ? ARROW_DOWN : ARROW_RIGHT);
+        break;
     case STYLE_XP:
         DrawArrowXPStyle(scrollPtr, pixmap, width, elementBW, 
                         (scrollPtr->vertical) ? ARROW_DOWN : ARROW_RIGHT);
@@ -1630,55 +1659,75 @@ ScrollbarCmdDeletedProc(ClientData clientData)
  */
 
 static void
-ComputeScrollbarGeometry(Scrollbar *sp) 
+ComputeScrollbarGeometry(Scrollbar *scrollPtr) 
 {
-    int width, fieldLength;
+    int width, fieldLength, xSize, ySize;
 
-    if (sp->highlightWidth < 0) {
-        sp->highlightWidth = 0;
+    if (scrollPtr->highlightWidth < 0) {
+        scrollPtr->highlightWidth = 0;
     }
-    sp->inset = sp->highlightWidth + sp->borderWidth;
-    width = (sp->vertical) ? Tk_Width(sp->tkwin) : Tk_Height(sp->tkwin);
-    sp->arrowLength = width - (2 * sp->inset + 1);
-    fieldLength = (sp->vertical ? Tk_Height(sp->tkwin) : 
-                   Tk_Width(sp->tkwin)) - 2 * (sp->arrowLength + sp->inset);
+    scrollPtr->inset = scrollPtr->highlightWidth + scrollPtr->borderWidth;
+    if (scrollPtr->vertical) {
+        width = Tk_Width(scrollPtr->tkwin);
+        fieldLength = Tk_Height(scrollPtr->tkwin);
+    } else {
+        width = Tk_Height(scrollPtr->tkwin);
+        fieldLength = Tk_Width(scrollPtr->tkwin);
+    }
+    fieldLength -= 2 * (scrollPtr->arrowLength + scrollPtr->inset);
     if (fieldLength < 0) {
         fieldLength = 0;
     }
-    sp->sliderFirst = (int)(fieldLength * sp->firstFraction);
-    sp->sliderLast = (int)(fieldLength * sp->lastFraction);
+    scrollPtr->arrowLength = width - (2 * scrollPtr->inset + 1);
+#ifdef notdef
+    width = (scrollPtr->vertical) ? 
+        Tk_Width(scrollPtr->tkwin) : Tk_Height(scrollPtr->tkwin);
+    scrollPtr->arrowLength = width - (2 * scrollPtr->inset + 1);
+    fieldLength = (scrollPtr->vertical ? 
+                   Tk_Height(scrollPtr->tkwin) : 
+                   Tk_Width(scrollPtr->tkwin)) - 
+        2 * (scrollPtr->arrowLength + scrollPtr->inset);
+    if (fieldLength < 0) {
+        fieldLength = 0;
+    }
+#endif
+    scrollPtr->sliderFirst = (int)(fieldLength * scrollPtr->firstFraction);
+    scrollPtr->sliderLast = (int)(fieldLength * scrollPtr->lastFraction);
 
     /*
-     * Adjust the slider so that some piece of it is always displayed in the
+     * Adjust the slider so that some piece of it is always discrollPtrlayed in the
      * scrollbar and so that it has at least a minimal width (so it can be
      * grabbed with the mouse).
      */
     {
         int minSliderLength, sliderLength;
 
-        minSliderLength = sp->minSliderLength;
+        minSliderLength = scrollPtr->minSliderLength;
         if (minSliderLength > fieldLength) {
             minSliderLength = fieldLength;
         }
-        sliderLength = sp->sliderLast - sp->sliderFirst;
+        sliderLength = scrollPtr->sliderLast - scrollPtr->sliderFirst;
         if (sliderLength < minSliderLength) {
             fieldLength -= minSliderLength - sliderLength;
-            sp->sliderFirst = (int)(fieldLength * sp->firstFraction);
-            sp->sliderLast = sp->sliderFirst + minSliderLength;
+            scrollPtr->sliderFirst = 
+                (int)(fieldLength * scrollPtr->firstFraction);
+            scrollPtr->sliderLast = scrollPtr->sliderFirst + minSliderLength;
         } else {
-            if (sp->sliderFirst > (fieldLength - 2 * sp->borderWidth)) {
-                sp->sliderFirst = fieldLength - 2 * sp->borderWidth;
+            if (scrollPtr->sliderFirst > 
+                (fieldLength - 2 * scrollPtr->borderWidth)) {
+                scrollPtr->sliderFirst = fieldLength - 
+                    2 * scrollPtr->borderWidth;
             }
-            if (sp->sliderFirst < 0) {
-                sp->sliderFirst = 0;
+            if (scrollPtr->sliderFirst < 0) {
+                scrollPtr->sliderFirst = 0;
             }
-            if (sp->sliderLast > fieldLength) {
-                sp->sliderLast = fieldLength;
+            if (scrollPtr->sliderLast > fieldLength) {
+                scrollPtr->sliderLast = fieldLength;
             }
         }
     }
-    sp->sliderFirst += sp->arrowLength + sp->inset;
-    sp->sliderLast += sp->arrowLength + sp->inset;
+    scrollPtr->sliderFirst += scrollPtr->arrowLength + scrollPtr->inset;
+    scrollPtr->sliderLast  += scrollPtr->arrowLength + scrollPtr->inset;
 
     /*
      * Register the desired geometry for the window (leave enough space for
@@ -1686,15 +1735,28 @@ ComputeScrollbarGeometry(Scrollbar *sp)
      * window, if any).  Then arrange for the window to be redisplayed.
      */
 
-    if (sp->vertical) {
-        Tk_GeometryRequest(sp->tkwin, sp->width + 2 * sp->inset,
-            2 * (sp->arrowLength + sp->borderWidth + sp->inset));
+    if (scrollPtr->vertical) {
+        xSize = scrollPtr->width + 2 * scrollPtr->inset;
+        ySize = 2 * (scrollPtr->arrowLength + scrollPtr->borderWidth + 
+                     scrollPtr->inset);
     } else {
-        Tk_GeometryRequest(sp->tkwin, 
-                2 * (sp->arrowLength + sp->borderWidth + sp->inset), 
-                sp->width + 2 * sp->inset);
+        xSize = 2 * (scrollPtr->arrowLength + scrollPtr->borderWidth + 
+                     scrollPtr->inset);
+        ySize = scrollPtr->width + 2 * scrollPtr->inset;
     }
-    Tk_SetInternalBorder(sp->tkwin, sp->inset);
+    Tk_GeometryRequest(scrollPtr->tkwin, xSize, ySize);
+    Tk_SetInternalBorder(scrollPtr->tkwin, scrollPtr->inset);
+
+    /* Assume that any geometry change requires the arrows to be
+     * redrawn. */
+    if (scrollPtr->upArrow != NULL) {
+        Blt_FreePicture(scrollPtr->upArrow);
+        scrollPtr->upArrow = NULL;
+    }
+    if (scrollPtr->downArrow != NULL) {
+        Blt_FreePicture(scrollPtr->downArrow);
+        scrollPtr->downArrow = NULL;
+    }
 }
 
 /*

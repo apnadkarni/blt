@@ -11,7 +11,7 @@ blt::scrollset .ss \
     -window $view \
     -xscrollbar .ss.x \
     -yscrollbar .ss.y 
-blt::tk::scrollbar .ss.x
+blt::tk::scrollbar .ss.x 
 blt::tk::scrollbar .ss.y
 
 blt::tableview $view \
