@@ -142,32 +142,35 @@
  */
 
 typedef struct {
-    Tk_Window tkwin;                    /* Window that embodies the scrollbar.
-                                         * NULL means that the window has been
-                                         * destroyed but the data structures
-                                         * haven't yet been cleaned up.*/
-    Display *display;                   /* Display containing widget.  Used,
-                                         * among other things, so that
-                                         * resources can be freed even after
-                                         * tkwin has gone away. */
+    Tk_Window tkwin;                    /* Window that embodies the
+                                         * scrollbar.  NULL means that the
+                                         * window has been destroyed but
+                                         * the data structures haven't yet
+                                         * been cleaned up.*/
+    Display *display;                   /* Display containing widget.
+                                         * Used, among other things, so
+                                         * that resources can be freed even
+                                         * after tkwin has gone away. */
     Tcl_Interp *interp;                 /* Interpreter associated with
                                          * scrollbar. */
     Tcl_Command widgetCmd;              /* Token for scrollbar's widget
                                          * command. */
-    char *orientation;                  /* Orientation for window ("vertical"
-                                         * or "horizontal"). */
-    int vertical;                       /* Non-zero means vertical orientation
-                                         * requested, zero means horizontal. */
+    char *orientation;                  /* Orientation for window
+                                         * ("vertical" or "horizontal"). */
+    int vertical;                       /* Non-zero means vertical
+                                         * orientation requested, zero
+                                         * means horizontal. */
     int width;                          /* Desired narrow dimension of
                                          * scrollbar, in pixels. */
-    char *command;                      /* Command prefix to use when invoking
-                                         * scrolling commands.  NULL means don't
-                                         * invoke commands.  Malloc'ed. */
+    char *command;                      /* Command prefix to use when
+                                         * invoking scrolling commands.
+                                         * NULL means don't invoke
+                                         * commands.  Malloc'ed. */
     int commandSize;                    /* Number of non-NULL bytes in
                                          * command. */
     int repeatDelay;                    /* How long to wait before
-                                         * auto-repeating on scrolling actions
-                                         * (in * ms). */
+                                         * auto-repeating on scrolling
+                                         * actions (in * ms). */
     int repeatInterval;                 /* Interval between autorepeats (in
                                          * ms). */
     int jump;                           /* Value of -jump option. */
@@ -224,22 +227,24 @@ typedef struct {
                                          * bottom or right edge of slider
                                          * area, including border. */
     int activeField;                    /* Names field to be displayed in
-                                         * active colors, such as TOP_ARROW,
-                                         * or 0 for no field. */
+                                         * active colors, such as
+                                         * TOP_ARROW, or 0 for no field. */
     int activeRelief;                   /* Value of -activeRelief option:
-                                         * relief to use for active element. */
+                                         * relief to use for active
+                                         * element. */
     int selRelief;
     int selField;                       /* Names field to be displayed in
-                                         * active colors, such as TOP_ARROW,
-                                         * or 0 for no field. */
+                                         * active colors, such as
+                                         * TOP_ARROW, or 0 for no field. */
    /*
-     * Information describing the application related to the scrollbar.  This
-     * information is provided by the application by invoking the "set" widget
-     * command.  This information can now be provided in two ways: the "old"
-     * form (totalUnits, windowUnits, firstUnit, and lastUnit), or the "new"
-     * form (firstFraction and lastFraction).  FirstFraction and lastFraction
-     * will always be valid, but the old-style information is only valid if
-     * the NEW_STYLE_COMMANDS flag is 0.
+     * Information describing the application related to the scrollbar.
+     * This information is provided by the application by invoking the
+     * "set" widget command.  This information can now be provided in two
+     * ways: the "old" form (totalUnits, windowUnits, firstUnit, and
+     * lastUnit), or the "new" form (firstFraction and lastFraction).
+     * FirstFraction and lastFraction will always be valid, but the
+     * old-style information is only valid if the NEW_STYLE_COMMANDS flag
+     * is 0.
      */
 
     int totalUnits;                     /* Total dimension of application, in
@@ -252,18 +257,19 @@ typedef struct {
                                          * NEW_STYLE_COMMANDS flag isn't
                                          * set. */
     int firstUnit;                      /* Number of last unit visible in
-                                         * application's window.  Valid only
-                                         * if the NEW_STYLE_COMMANDS flag
-                                         * isn't set. */
+                                         * application's window.  Valid
+                                         * only if the NEW_STYLE_COMMANDS
+                                         * flag isn't set. */
     int lastUnit;                       /* Index of last unit visible in
                                          * window.  Valid only if the
-                                         * NEW_STYLE_COMMANDS flag isn't set. */
-    double firstFraction;               /* Position of first visible thing in
-                                         * window, specified as a fraction
-                                         * between 0 and 1.0. */
-    double lastFraction;                /* Position of last visible thing in
-                                         * window, specified as a fraction
-                                         * between 0 and 1.0. */
+                                         * NEW_STYLE_COMMANDS flag isn't
+                                         * set. */
+    double firstFraction;               /* Position of first visible thing
+                                         * in window, specified as a
+                                         * fraction between 0 and 1.0. */
+    double lastFraction;                /* Position of last visible thing
+                                         * in window, specified as a
+                                         * fraction between 0 and 1.0. */
     /*
      * Miscellaneous information:
      */
@@ -273,8 +279,10 @@ typedef struct {
                                          * used in the C code, but used by
                                          * keyboard traversal scripts.
                                          * Malloc'ed, but may be * NULL. */
-    int flags;                          /* Various flags;  see below for
+    int flags;                          /* Various flags; see below for
                                          * definitions. */
+    Blt_Picture upArrow, downArrow;
+    Blt_Painter painter;
 } Scrollbar;
 
 /*
@@ -1045,6 +1053,46 @@ ConfigureScrollbar(
     return TCL_OK;
 }
 
+static Blt_Picture
+PaintArrowPicture(Scrollbar *scrollPtr, int w, int h, int type, int direction)
+{
+    if ((direction == ARROW_UP) || (direction == ARROW_LEFT)) {
+        if (scrollPtr->upArrow == NULL) {
+            Blt_Picture picture;
+            unsigned int color;
+
+            picture = Blt_CreatePicture(w, h);
+            Blt_BlankPicture(picture, 0x0);
+            color = Blt_XColorToPixel(scrollPtr->arrowColor);
+            if (type == STYLE_XP) {
+                Blt_PaintArrowHead(picture, 0, 0, w, h, color, direction);
+            } else {
+                Blt_PaintChevron(picture, 0, 0, w, h, color, direction);
+            }
+            scrollPtr->upArrow = picture;
+        }
+        return scrollPtr->upArrow;
+    } else if ((direction == ARROW_DOWN) || (direction == ARROW_RIGHT)) {
+        if (scrollPtr->downArrow == NULL) {
+            Blt_Picture picture;
+            unsigned int color;
+
+            picture = Blt_CreatePicture(w, h);
+            Blt_BlankPicture(picture, 0x0);
+            color = Blt_XColorToPixel(scrollPtr->arrowColor);
+            if (type == STYLE_XP) {
+                Blt_PaintArrowHead(picture, 0, 0, w, h, color, direction);
+            } else {
+                Blt_PaintChevron(picture, 0, 0, w, h, color, direction);
+            }
+            scrollPtr->downArrow = picture;
+        }
+        return scrollPtr->downArrow;
+    }
+    abort();
+    return NULL;
+}
+
 static void
 DrawArrowTkStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
                  int borderWidth, int direction)
@@ -1147,7 +1195,6 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
 {                
     int bx, by, ax, ay, aw, ah, cavityWidth;
     Blt_Picture picture;
-    Blt_Painter painter;
     int relief;
     Blt_Bg bg;
 
@@ -1227,15 +1274,14 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
     }
     Blt_Bg_FillRectangle(scrollPtr->tkwin, drawable, bg, bx, by, size, size,
                          borderWidth, relief); 
-    picture = Blt_CreatePicture(aw, ah);
-    Blt_BlankPicture(picture, 0x0);
-    Blt_PaintArrowHead(picture, 0, 0, aw, ah,  
-                       Blt_XColorToPixel(scrollPtr->arrowColor), direction);
-    painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
+    picture = PaintArrowPicture(scrollPtr, aw, ah, STYLE_XP, direction);
+    if (scrollPtr->painter == NULL) {
+        scrollPtr->painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
+    }
     ax += (cavityWidth - aw) / 2;
     ay += (cavityWidth - ah) / 2;
-    Blt_PaintPicture(painter, drawable, picture, 0, 0, aw, ah, ax, ay, 0);
-    Blt_FreePicture(picture);
+    Blt_PaintPicture(scrollPtr->painter, drawable, picture, 0, 0, 
+                     aw, ah, ax, ay, 0);
 }
 
 static void
@@ -1244,7 +1290,6 @@ DrawArrowVistaStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
 {                
     int bx, by, ax, ay, aw, ah, cavityWidth;
     Blt_Picture picture;
-    Blt_Painter painter;
     int relief;
     Blt_Bg bg;
 
@@ -1324,15 +1369,14 @@ DrawArrowVistaStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
     }
     Blt_Bg_FillRectangle(scrollPtr->tkwin, drawable, bg, bx, by, size, size,
                          borderWidth, relief); 
-    picture = Blt_CreatePicture(aw, ah);
-    Blt_BlankPicture(picture, 0x0);
-    Blt_PaintChevron(picture, 0, 0, aw, ah,  
-                       Blt_XColorToPixel(scrollPtr->arrowColor), direction);
-    painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
+    picture = PaintArrowPicture(scrollPtr, aw, ah, STYLE_VISTA, direction);
+    if (scrollPtr->painter == NULL) {
+        scrollPtr->painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
+    }
     ax += (cavityWidth - aw) / 2;
     ay += (cavityWidth - ah) / 2;
-    Blt_PaintPicture(painter, drawable, picture, 0, 0, aw, ah, ax, ay, 0);
-    Blt_FreePicture(picture);
+    Blt_PaintPicture(scrollPtr->painter, drawable, picture, 0, 0, 
+                     aw, ah, ax, ay, 0);
 }
 
 /*
