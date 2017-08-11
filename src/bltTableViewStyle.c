@@ -566,7 +566,7 @@ typedef struct {
      *
      * The arrow is a button with an optional 3D border.
      */
-    int arrowBW;
+    int arrowBorderWidth;
     int arrowPad;
     int arrowRelief;
     int reqArrowWidth;
@@ -986,7 +986,7 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
         "ArrowBorderWidth", DEF_COMBOBOX_ARROW_BORDERWIDTH, 
-        Blt_Offset(ComboBoxStyle, arrowBW), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(ComboBoxStyle, arrowBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(ComboBoxStyle, normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 
@@ -3483,8 +3483,7 @@ NewComboBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->gap = STYLE_GAP;
     stylePtr->arrowRelief = TK_RELIEF_RAISED;
     stylePtr->activeRelief = TK_RELIEF_RAISED;
-    stylePtr->arrowBW = 1;
-    stylePtr->arrowWidth = ARROW_WIDTH;
+    stylePtr->arrowBorderWidth = 1;
     stylePtr->borderWidth = 1;
     stylePtr->relief = TK_RELIEF_FLAT;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
@@ -3707,8 +3706,12 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->textHeight = th;
 
     Blt_Font_GetMetrics(stylePtr->font, &fm);
-    stylePtr->arrowWidth = fm.ascent - 2;
-    aw = ah = (2 * stylePtr->arrowBW) + stylePtr->arrowWidth;
+    stylePtr->arrowHeight = fm.linespace;
+    stylePtr->arrowWidth = stylePtr->arrowHeight * 60 / 100;
+    stylePtr->arrowHeight += 2 * stylePtr->arrowBorderWidth;
+    stylePtr->arrowWidth += 2 * stylePtr->arrowBorderWidth;
+    aw = stylePtr->arrowWidth;
+    ah = stylePtr->arrowHeight;
     aw += 2 * 1;
     ah += 2 * 1;
     cellPtr->width  += iw + gap + aw + tw;
@@ -3730,8 +3733,8 @@ GetArrowPicture(ComboBoxStyle *stylePtr, int w, int h, XColor *colorPtr)
         if (stylePtr->downArrow != NULL) {
             Blt_FreePicture(stylePtr->downArrow);
         }
-        ih = w * 55 / 100;
-        iw = h * 80 / 100;
+        ih = h * 40 / 100;
+        iw = w * 80 / 100;
         
         picture = Blt_CreatePicture(w, h);
         Blt_BlankPicture(picture, 0x0);
@@ -3921,9 +3924,9 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         int ax, ay;
         unsigned int aw, ah;
 
-        aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBW);
-        ah = aw;
-        ax = x + colWidth - aw;
+        aw = stylePtr->arrowWidth;
+        ah = stylePtr->arrowHeight;
+        ax = x + colWidth - stylePtr->arrowWidth;
         ay = y;
         
         if (rowHeight > ah) {
@@ -3935,9 +3938,11 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         relief = (cellPtr->flags & POSTED) ? 
             stylePtr->postedRelief : stylePtr->activeRelief;
         Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
-                stylePtr->arrowBW, relief);
-        aw -= 2 * stylePtr->arrowBW;
-        ax += stylePtr->arrowBW;
+                stylePtr->arrowBorderWidth, relief);
+        aw -= 2 * stylePtr->arrowBorderWidth;
+        ax += stylePtr->arrowBorderWidth;
+        ah -= 2 * stylePtr->arrowBorderWidth;
+        ay += stylePtr->arrowBorderWidth;
         {
             Blt_Picture picture;
             
@@ -3978,7 +3983,7 @@ ComboBoxStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr, int x, int y)
 
     keyPtr = GetKey(cellPtr);
     colPtr = keyPtr->colPtr;
-    aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBW);
+    aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBorderWidth);
     ax = colPtr->width - stylePtr->borderWidth - aw - stylePtr->gap;
     if ((x >= 0) && (x < ax)) {
         return "text";

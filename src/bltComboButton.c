@@ -272,9 +272,14 @@ typedef struct  {
      *
      * The arrow is a button with an optional 3D border.
      */
-    int arrowBW;
+    int arrowBorderWidth;
     int arrowRelief;
     int reqArrowWidth;
+    Blt_Picture disabledArrow;
+    Blt_Picture normalArrow;
+    Blt_Picture activeArrow;
+    Blt_Picture postedArrow;
+    Blt_Painter painter;
 
     Tk_Cursor cursor;                   /* The current active cursor. If
                                          * None, the parent's cursor is
@@ -315,7 +320,7 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ARROW},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
         "ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
-        Blt_Offset(ComboButton, arrowBW), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(ComboButton, arrowBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-arrowrelief", "arrowRelief","ArrowRelief",
         DEF_ARROW_RELIEF, Blt_Offset(ComboButton, arrowRelief), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowwidth", "arrowWidth","ArrowWidth",
@@ -1316,14 +1321,17 @@ ComputeGeometry(ComboButton *comboPtr)
         h = comboPtr->textHeight;
     }
     if (comboPtr->flags & ARROW) {
-        comboPtr->arrowHeight = ARROW_HEIGHT;
+        Blt_FontMetrics fm;
+
+        Blt_Font_GetMetrics(comboPtr->font, &fm);
+        comboPtr->arrowHeight = fm.linespace;
         if (comboPtr->reqArrowWidth > 0) {
             comboPtr->arrowWidth = comboPtr->reqArrowWidth;
         } else {
-            comboPtr->arrowWidth = Blt_TextWidth(comboPtr->font, "0", 1) + 2;
+            comboPtr->arrowWidth = comboPtr->arrowHeight * 60 / 100;
         }
-        comboPtr->arrowWidth  += 2 * comboPtr->arrowBW;
-        comboPtr->arrowHeight += 2 * comboPtr->arrowBW;
+        comboPtr->arrowWidth  += 2 * comboPtr->arrowBorderWidth;
+        comboPtr->arrowHeight += 2 * comboPtr->arrowBorderWidth;
         if (h < comboPtr->arrowHeight) {
             h = comboPtr->arrowHeight;
         }
@@ -1696,6 +1704,21 @@ DestroyComboButton(DestroyData dataPtr) /* Pointer to the widget record. */
         Tk_DeleteEventHandler(comboPtr->menuWin, MENU_EVENT_MASK, 
                 MenuEventProc, comboPtr);
     }
+    if (comboPtr->disabledArrow != NULL) {
+        Blt_FreePicture(comboPtr->disabledArrow);
+    }
+    if (comboPtr->activeArrow != NULL) {
+        Blt_FreePicture(comboPtr->activeArrow);
+    }
+    if (comboPtr->normalArrow != NULL) {
+        Blt_FreePicture(comboPtr->normalArrow);
+    }
+    if (comboPtr->postedArrow != NULL) {
+        Blt_FreePicture(comboPtr->postedArrow);
+    }
+    if (comboPtr->painter != NULL) {
+        Blt_FreePainter(comboPtr->painter);
+    }
     Tcl_DeleteCommandFromToken(comboPtr->interp, comboPtr->cmdToken);
     Blt_Free(comboPtr);
 }
@@ -1718,7 +1741,7 @@ NewComboButton(Tcl_Interp *interp, Tk_Window tkwin)
     comboPtr->display = Tk_Display(tkwin);
     comboPtr->flags = (LAYOUT_PENDING | STATE_NORMAL);
     comboPtr->highlightWidth = 2;
-    comboPtr->arrowBW = 2;
+    comboPtr->arrowBorderWidth = 2;
     comboPtr->arrowRelief = TK_RELIEF_FLAT;
     comboPtr->interp = interp;
     comboPtr->relief = TK_RELIEF_RAISED;
@@ -1948,6 +1971,47 @@ DrawLabel(ComboButton *comboPtr, Drawable drawable, int x, int y, int w, int h)
     }
 }
 
+static Blt_Picture
+GetArrowPicture(ComboButton *comboPtr, int w, int h)
+{
+    Blt_Picture *pictPtr;
+    XColor *colorPtr;
+
+    if (comboPtr->flags & STATE_POSTED) {
+        colorPtr = comboPtr->textPostedColor;
+        pictPtr = &comboPtr->postedArrow;
+    } else if (comboPtr->flags & STATE_ACTIVE) {
+        colorPtr = comboPtr->textActiveColor;
+        pictPtr = &comboPtr->activeArrow;
+    } else if (comboPtr->flags & STATE_DISABLED) {
+        colorPtr = comboPtr->textDisabledColor;
+        pictPtr = &comboPtr->disabledArrow;
+    } else {
+        colorPtr = comboPtr->textNormalColor;
+        pictPtr = &comboPtr->normalArrow;
+    }
+    if (((*pictPtr) == NULL) ||
+        (Blt_Picture_Width(*pictPtr) != w) ||
+        (Blt_Picture_Height(*pictPtr) != h)) {
+        Blt_Picture picture;
+        int ix, iy, ih, iw;
+
+        if (*pictPtr != NULL) {
+            Blt_FreePicture(*pictPtr);
+        }
+        ih = h * 40 / 100;
+        iw = w * 80 / 100;
+        picture = Blt_CreatePicture(w, h);
+        Blt_BlankPicture(picture, 0x0);
+        iy = (h - ih) / 2;
+        ix = (w - iw) / 2;
+        Blt_PaintArrowHead(picture, ix, iy, iw, ih, 
+                           Blt_XColorToPixel(colorPtr), ARROW_DOWN);
+        *pictPtr = picture;
+    }
+    return *pictPtr;
+}
+
 static void
 DrawComboButton(ComboButton *comboPtr, Drawable drawable)
 {
@@ -2010,10 +2074,11 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
     }
     /* Arrow button. */
     if (comboPtr->flags & ARROW) {
-        XColor *color;
-        int ax, ay;
+        int ax, ay, aw, ah;
         
         /*  */
+        ah = comboPtr->arrowHeight;
+        aw = comboPtr->arrowWidth;
         ax = Tk_Width(comboPtr->tkwin) - XPAD -  comboPtr->padX.side2 -
             comboPtr->inset - comboPtr->arrowWidth;
         ay = y;
@@ -2024,20 +2089,22 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
             ax = comboPtr->inset;
         }
         Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, ax, ay, 
-            comboPtr->arrowWidth, comboPtr->arrowHeight, comboPtr->arrowBW,
-            comboPtr->arrowRelief);
-        if (comboPtr->flags & STATE_POSTED) {
-            color = comboPtr->textPostedColor;
-        } else if (comboPtr->flags & STATE_ACTIVE) {
-            color = comboPtr->textActiveColor;
-        } else if (comboPtr->flags & STATE_DISABLED) {
-            color = comboPtr->textDisabledColor;
-        } else {
-            color = comboPtr->textNormalColor;
+            comboPtr->arrowWidth, comboPtr->arrowHeight, 
+            comboPtr->arrowBorderWidth, comboPtr->arrowRelief);
+        aw -= 2 * comboPtr->arrowBorderWidth;
+        ah -= 2 * comboPtr->arrowBorderWidth;
+        ax += comboPtr->arrowBorderWidth;
+        ay += comboPtr->arrowBorderWidth;
+        if ((aw > 0) && (ah > 0)) {
+            Blt_Picture picture;
+
+            picture = GetArrowPicture(comboPtr, aw, ah);
+            if (comboPtr->painter == NULL) {
+                comboPtr->painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
+            }
+            Blt_PaintPicture(comboPtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
         }
-        Blt_DrawArrow(comboPtr->display, drawable, color, ax, ay, 
-                comboPtr->arrowWidth, comboPtr->arrowHeight,
-                comboPtr->arrowBW, ARROW_DOWN);
     }
     /* Draw focus highlight ring. */
     if (comboPtr->highlightWidth > 0) {

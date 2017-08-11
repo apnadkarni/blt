@@ -120,6 +120,8 @@
 #define DEF_ARROW_DISABLED_FG   STD_DISABLED_FOREGROUND
 #define DEF_ARROW_NORMAL_BG     STD_NORMAL_BACKGROUND
 #define DEF_ARROW_NORMAL_FG     STD_NORMAL_FOREGROUND
+#define DEF_ARROW_POSTED_BG     STD_NORMAL_BACKGROUND
+#define DEF_ARROW_POSTED_FG     STD_NORMAL_FOREGROUND
 #define DEF_ARROW_PAD           "0"
 #define DEF_ARROW_RELIEF        "raised"
 #define DEF_ARROW_WIDTH         "0"
@@ -298,34 +300,6 @@ static Blt_ConfigSpec xButtonSpecs[] =
         (char *)NULL, 0, 0}
 };
 
-/*
- * Arrow --
- */
-typedef struct {
-    int borderWidth;
-    int relief;
-    int activeRelief;
-    int reqWidth;
-    int pad;
-    short int width, height;
-    short int x, y;
-    XColor *activeFgColor;              /* Color of the arrow symbol and
-                                         * outline rectangle when it is
-                                         * active. */
-    XColor *disabledFgColor;            /* Color of the arrow symbol and
-                                         * outline rectangle when it is
-                                         * disabled. */
-    XColor *normalFgColor;              /* Color of the arrow symbol and
-                                         * outline rectangle. */
-    Blt_Bg activeBg;                    /* Fill color or the arrow
-                                         * button when it is active. */
-    Blt_Bg disabledBg;                  /* Fill color or the arrow
-                                         * button when it is disabled. */
-    Blt_Bg normalBg;                    /* Fill color or the arrow
-                                         * button */
-} Arrow;
-
-
 typedef int CharIndex;                  /* Character index regardless of
                                          * how many bytes (UTF) are used. */
 typedef int ByteOffset;                 /* Offset in bytes from the start of
@@ -486,7 +460,35 @@ typedef struct  {
     /*  
      * Arrow Information:
      */
-    Arrow arrow;
+    int arrowBorderWidth;
+    int arrowRelief;
+    int arrowActiveRelief;
+    int reqArrowWidth;
+    int arrowPad;
+    short int arrowWidth, arrowHeight;
+    short int arrowX, arrowY;
+    XColor *arrowActiveFgColor;         /* Color of the arrow symbol and
+                                         * outline rectangle when it is
+                                         * active. */
+    XColor *arrowDisabledFgColor;       /* Color of the arrow symbol and
+                                         * outline rectangle when it is
+                                         * disabled. */
+    XColor *arrowNormalFgColor;         /* Color of the arrow symbol and
+                                         * outline rectangle. */
+    XColor *arrowPostedFgColor;         /* Color of the arrow symbol and
+                                         * outline rectangle. */
+    Blt_Bg arrowActiveBg;               /* Fill color or the arrow
+                                         * button when it is active. */
+    Blt_Bg arrowDisabledBg;             /* Fill color or the arrow
+                                         * button when it is disabled. */
+    Blt_Bg arrowNormalBg;               /* Fill color or the arrow
+                                         * button */
+    Blt_Bg arrowPostedBg;               /* Fill color or the arrow
+                                         * button */
+    Blt_Picture disabledArrow;
+    Blt_Picture postedArrow;
+    Blt_Picture activeArrow;
+    Blt_Picture normalArrow;
 
     /*
      * Insertion cursor information:
@@ -542,31 +544,31 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_RELIEF, "-activearrowrelief", "activeArrowRelief",
         "ActiveArrowRelief",  DEF_ARROW_ACTIVE_RELIEF,
-        Blt_Offset(ComboEntry, arrow.activeRelief), 
+        Blt_Offset(ComboEntry, arrowActiveRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-activearrowbackground", "activeArrowBackground", 
         "ActiveArrowBackground", DEF_ARROW_ACTIVE_BG, 
-        Blt_Offset(ComboEntry, arrow.activeBg), 0},
+        Blt_Offset(ComboEntry, arrowActiveBg), 0},
     {BLT_CONFIG_COLOR, "-activearrowforeground", "activeArrowForeground", 
         "ActiveArrowForeground", DEF_ARROW_ACTIVE_FG, 
-        Blt_Offset(ComboEntry, arrow.activeFgColor), 0},
+        Blt_Offset(ComboEntry, arrowActiveFgColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
         "ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
-        Blt_Offset(ComboEntry, arrow.borderWidth), 
+        Blt_Offset(ComboEntry, arrowBorderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_BACKGROUND, "-arrowbackground", "arrowBackground", 
         "arrowBackground", DEF_ARROW_NORMAL_BG, 
-        Blt_Offset(ComboEntry, arrow.normalBg), 0},
+        Blt_Offset(ComboEntry, arrowNormalBg), 0},
     {BLT_CONFIG_COLOR, "-arrowforeground", "arrowForeground", "arrowForeground",
-        DEF_ARROW_NORMAL_FG, Blt_Offset(ComboEntry, arrow.normalFgColor), 0},
+        DEF_ARROW_NORMAL_FG, Blt_Offset(ComboEntry, arrowNormalFgColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowpad", "arrowPad", "ArrowPad", 
-        DEF_ARROW_PAD, Blt_Offset(ComboEntry, arrow.pad), 
+        DEF_ARROW_PAD, Blt_Offset(ComboEntry, arrowPad), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-arrowrelief", "arrowRelief","ArrowRelief",
-        DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, arrow.relief), 
+        DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, arrowRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowwidth", "arrowWidth","ArrowWidth",
-        DEF_ARROW_WIDTH, Blt_Offset(ComboEntry, arrow.reqWidth), 
+        DEF_ARROW_WIDTH, Blt_Offset(ComboEntry, reqArrowWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
         DEF_NORMAL_BG, Blt_Offset(ComboEntry, normalBg), 0 },
@@ -590,10 +592,10 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_NULL_OK, },
     {BLT_CONFIG_BACKGROUND, "-disabledarrowbackground",
         "disabledArrowBackground", "DisabledArrowBackground",
-        DEF_ARROW_DISABLED_BG, Blt_Offset(ComboEntry, arrow.disabledBg), 0, },
+        DEF_ARROW_DISABLED_BG, Blt_Offset(ComboEntry, arrowDisabledBg), 0, },
     {BLT_CONFIG_COLOR, "-disabledarrowforeground", "disabledArrowForeground",
         "DisabledArrowForeground", DEF_ARROW_DISABLED_FG, 
-        Blt_Offset(ComboEntry, arrow.disabledFgColor), 0, },
+        Blt_Offset(ComboEntry, arrowDisabledFgColor), 0, },
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground", 
         "DisabledBackground", DEF_DISABLED_BG, 
         Blt_Offset(ComboEntry, disabledBg), 0, },
@@ -650,6 +652,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
         DEF_CMD, Blt_Offset(ComboEntry, postCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BACKGROUND, "-postedarrowbackground", "postedArrowBackground", 
+        "PostedArrowBackground", DEF_ARROW_POSTED_BG, 
+        Blt_Offset(ComboEntry, arrowPostedBg), 0},
+    {BLT_CONFIG_COLOR, "-postedarrowforeground", "postedArrowForeground", 
+        "PostedArrowForeground", DEF_ARROW_POSTED_FG, 
+        Blt_Offset(ComboEntry, arrowPostedFgColor), 0},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
         Blt_Offset(ComboEntry, relief), 0},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
@@ -1039,7 +1047,7 @@ ComputeGeometry(ComboEntry *comboPtr)
     comboPtr->iconWidth  = comboPtr->iconHeight  = 0;
     comboPtr->entryWidth = comboPtr->entryHeight = 0;
     comboPtr->textWidth  = comboPtr->textHeight  = 0;
-    comboPtr->arrow.width = comboPtr->arrow.height = 0;
+    comboPtr->arrowWidth = comboPtr->arrowHeight = 0;
 
     comboPtr->inset = comboPtr->borderWidth + comboPtr->highlightWidth;
     comboPtr->width = comboPtr->height = 0;
@@ -1087,23 +1095,22 @@ ComputeGeometry(ComboEntry *comboPtr)
     comboPtr->width = comboPtr->entryWidth;
     comboPtr->height = comboPtr->entryHeight;
     if (comboPtr->flags & ARROW) {
-        Arrow *arrowPtr = &comboPtr->arrow;
-        int xDpi, yDpi;
+        Blt_FontMetrics fm;
 
-        Blt_ScreenDPI(comboPtr->tkwin, &xDpi, &yDpi);
-        arrowPtr->height = yDpi / 8;
-        if (arrowPtr->reqWidth > 0) {
-            arrowPtr->width = arrowPtr->reqWidth;
+        Blt_Font_GetMetrics(comboPtr->font, &fm);
+        comboPtr->arrowHeight = fm.linespace;
+        if (comboPtr->reqArrowWidth > 0) {
+            comboPtr->arrowWidth = comboPtr->reqArrowWidth;
         } else {
-            arrowPtr->width = Blt_TextWidth(comboPtr->font, "0", 1) + 4;
+            comboPtr->arrowWidth = comboPtr->arrowHeight * 60 / 100;
         }
-        arrowPtr->width  += 2 * (arrowPtr->borderWidth + arrowPtr->pad + 1);
-        arrowPtr->height += 2 * (arrowPtr->borderWidth + 1);
-        if (comboPtr->entryHeight < arrowPtr->height) {
-            comboPtr->height = comboPtr->entryHeight = arrowPtr->height;
+        comboPtr->arrowWidth  += 2 * (comboPtr->arrowBorderWidth + comboPtr->arrowPad + 1);
+        comboPtr->arrowHeight += 2 * (comboPtr->arrowBorderWidth + 1);
+        if (comboPtr->entryHeight < comboPtr->arrowHeight) {
+            comboPtr->height = comboPtr->entryHeight = comboPtr->arrowHeight;
         }
-        arrowPtr->width |= 0x1;
-        comboPtr->width += arrowPtr->width;
+        comboPtr->arrowWidth |= 0x1;
+        comboPtr->width += comboPtr->arrowWidth;
     }
     if (comboPtr->flags & CLRBUTTON) {
         XButton *butPtr = &comboPtr->xButton;
@@ -3134,10 +3141,8 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     if (comboPtr->flags & ARROW) {
-        Arrow *arrowPtr = &comboPtr->arrow;
-
-        if ((x >= arrowPtr->x) && 
-            (x < (arrowPtr->x + arrowPtr->width))) {
+        if ((x >= comboPtr->arrowX) && 
+            (x < (comboPtr->arrowX + comboPtr->arrowWidth))) {
             Tcl_SetObjResult(interp, Tcl_NewStringObj("arrow", 5));
             return TCL_OK;
         }
@@ -3339,7 +3344,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
             
             Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
             x1 = Tk_Width(comboPtr->tkwin) - 
-                (comboPtr->inset + comboPtr->arrow.width);
+                (comboPtr->inset + comboPtr->arrowWidth);
             if (x1 < 0) {
                 x1 = comboPtr->inset;
             }
@@ -3978,6 +3983,18 @@ FreeComboEntryProc(DestroyData dataPtr) /* Pointer to the widget record. */
     if (comboPtr->painter != NULL) {
         Blt_FreePainter(comboPtr->painter);
     }
+    if (comboPtr->normalArrow != NULL) {
+        Blt_FreePicture(comboPtr->normalArrow);
+    }
+    if (comboPtr->disabledArrow != NULL) {
+        Blt_FreePicture(comboPtr->disabledArrow);
+    }
+    if (comboPtr->postedArrow != NULL) {
+        Blt_FreePicture(comboPtr->postedArrow);
+    }
+    if (comboPtr->activeArrow != NULL) {
+        Blt_FreePicture(comboPtr->activeArrow);
+    }
     Tcl_DeleteCommandFromToken(comboPtr->interp, comboPtr->cmdToken);
     Blt_Free(comboPtr);
 }
@@ -3996,9 +4013,9 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin)
     
     comboPtr = Blt_AssertCalloc(1, sizeof(ComboEntry));
 
-    comboPtr->arrow.activeRelief = TK_RELIEF_SUNKEN;
-    comboPtr->arrow.borderWidth = 2;
-    comboPtr->arrow.relief = TK_RELIEF_RAISED;
+    comboPtr->arrowActiveRelief = TK_RELIEF_SUNKEN;
+    comboPtr->arrowBorderWidth = 2;
+    comboPtr->arrowRelief = TK_RELIEF_RAISED;
     comboPtr->borderWidth = 2;
     comboPtr->display = Tk_Display(tkwin);
     comboPtr->flags |= (LAYOUT_PENDING|SCROLL_PENDING|EXPORT_SELECTION);
@@ -4438,10 +4455,50 @@ DrawTextForEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, i
     Tk_FreePixmap(comboPtr->display, pixmap);
 }
 
+static Blt_Picture
+GetArrowPicture(ComboEntry *comboPtr, int w, int h)
+{
+    Blt_Picture *pictPtr;
+    XColor *colorPtr;
+
+    if (comboPtr->flags & POSTED) {
+        colorPtr = comboPtr->arrowPostedFgColor;
+        pictPtr = &comboPtr->postedArrow;
+    } else if (comboPtr->flags & ACTIVE_ARROW) {
+        colorPtr = comboPtr->arrowActiveFgColor;
+        pictPtr = &comboPtr->activeArrow;
+    } else if (comboPtr->flags & DISABLED) {
+        colorPtr = comboPtr->arrowDisabledFgColor;
+        pictPtr = &comboPtr->disabledArrow;
+    } else {
+        colorPtr = comboPtr->arrowNormalFgColor;
+        pictPtr = &comboPtr->normalArrow;
+    }
+    if (((*pictPtr) == NULL) ||
+        (Blt_Picture_Width(*pictPtr) != w) ||
+        (Blt_Picture_Height(*pictPtr) != h)) {
+        Blt_Picture picture;
+        int ix, iy, ih, iw;
+
+        if (*pictPtr != NULL) {
+            Blt_FreePicture(*pictPtr);
+        }
+        ih = h * 40 / 100;
+        iw = w * 80 / 100;
+        picture = Blt_CreatePicture(w, h);
+        Blt_BlankPicture(picture, 0x0);
+        iy = (h - ih) / 2;
+        ix = (w - iw) / 2;
+        Blt_PaintArrowHead(picture, ix, iy, iw, ih, 
+                           Blt_XColorToPixel(colorPtr), ARROW_DOWN);
+        *pictPtr = picture;
+    }
+    return *pictPtr;
+}
+
 static void
 DrawEntry(ComboEntry *comboPtr, Drawable drawable)
 {
-    XButton *butPtr = &comboPtr->xButton;
     int drawButton;
     int x0, y0, cavityWidth, cavityHeight, tx, ty, w, h;
 
@@ -4453,7 +4510,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
 
     /* Label: includes icon and text. */
     if (comboPtr->flags & ARROW) {
-        cavityWidth -= comboPtr->arrow.width;
+        cavityWidth -= comboPtr->arrowWidth;
     }
         
     drawButton = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
@@ -4484,6 +4541,9 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
             dst = Blt_ClonePicture(src);
             Blt_FadePicture(dst, 0, 0, Blt_Picture_Width(dst),
                             Blt_Picture_Height(dst), 1.0 - (100 / 255.0));
+            if (comboPtr->painter == NULL) {
+                comboPtr->painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
+            }
             Blt_PaintPicture(comboPtr->painter, drawable, dst, 0, 0, iw, ih,
                              ix, iy,0);
             Blt_FreePicture(dst);
@@ -4525,7 +4585,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
         bh = butPtr->height + 2 * butPtr->borderWidth + PADDING(butPtr->padY);
         comboPtr->viewWidth -= bw + comboPtr->inset;
         bx = Tk_Width(comboPtr->tkwin) -
-            comboPtr->inset - comboPtr->arrow.width - bw;
+            comboPtr->inset - comboPtr->arrowWidth - bw;
         if (bx < 0) {
             bx = comboPtr->inset;
         }
@@ -4537,9 +4597,6 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
         }
         bx += butPtr->borderWidth + butPtr->padX.side1;
         by += butPtr->borderWidth + butPtr->padY.side1;
-        fprintf(stderr, "bx=%d by=%d bw=%d bh=%d b->w=%d b->h=%d eh=%d y0=%d wh=%d\n",
-                bx, by, bw, bh, butPtr->width, butPtr->height,
-                comboPtr->entryHeight, y0, Tk_Height(comboPtr->tkwin));
         Blt_PaintPicture(comboPtr->painter, drawable, picture, 0, 0, 
                 butPtr->width, butPtr->height, bx, by, 0);
         butPtr->x = bx;
@@ -4547,77 +4604,49 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
     }
     /* Arrow. */
     if (comboPtr->flags & ARROW) {
-        XColor *color;
         int aw, ah, ax, ay;
         int relief;
         Blt_Bg bg;
 
-        relief = comboPtr->arrow.relief;
+        relief = comboPtr->arrowRelief;
         if (comboPtr->flags & DISABLED) {
-            bg = comboPtr->arrow.disabledBg;
+            bg = comboPtr->arrowDisabledBg;
         } else if (comboPtr->flags & ACTIVE_ARROW) {
-            bg = comboPtr->arrow.activeBg;
+            bg = comboPtr->arrowActiveBg;
         } else {
-            bg = comboPtr->arrow.normalBg;
+            bg = comboPtr->arrowNormalBg;
         }
         if (comboPtr->flags & POSTED) {
-            relief = comboPtr->arrow.activeRelief;
-        }
-        if (comboPtr->flags & ACTIVE_ARROW) {
-            color = comboPtr->arrow.activeFgColor;
-        } else if (comboPtr->flags & DISABLED) {
-            color = comboPtr->arrow.disabledFgColor;
-        } else {
-            color = comboPtr->arrow.normalFgColor;
+            relief = comboPtr->arrowActiveRelief;
         }
         ax = Tk_Width(comboPtr->tkwin) - comboPtr->inset -
-            comboPtr->arrow.width;
+            comboPtr->arrowWidth;
         ay = y0;
         if (ax < 0) {
             ax = comboPtr->inset;
         }
-        aw = comboPtr->arrow.width - 2 * comboPtr->arrow.pad;
-        ah = cavityHeight -  2 * comboPtr->arrow.pad;
-        ax += comboPtr->arrow.pad;
-        ay += comboPtr->arrow.pad;
+        aw = comboPtr->arrowWidth - 2 * comboPtr->arrowPad;
+        ah = cavityHeight -  2 * comboPtr->arrowPad;
+        ax += comboPtr->arrowPad;
+        ay += comboPtr->arrowPad;
         if ((aw > 2) && (ah > 2)) {
-            int ih, iw;
+            Blt_Picture picture;
+
             Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, ax, ay, 
-                aw, ah, comboPtr->arrow.borderWidth, relief);
-#ifdef notdef
-            gc = Blt_Bg_BorderGC(comboPtr->tkwin, bg, TK_3D_FLAT_GC);
-            XDrawRectangle(comboPtr->display, drawable, gc, ax, ay, aw, ah);
-#endif
-            ax += comboPtr->arrow.borderWidth + XPAD;
-            ay += comboPtr->arrow.borderWidth;
-            ih = aw * 40 / 100;
-            aw -= 2 * comboPtr->arrow.borderWidth + XPAD;
-            ah -= 2 * comboPtr->arrow.borderWidth;
-            iw = aw * 80 / 100;
-            {
-                Blt_Picture picture;
-                int ix, iy;
-                Blt_PaintBrush brush;
-                
-                fprintf(stderr, "aw=%d ah=%d\n", aw, ah);
-                picture = Blt_CreatePicture(aw, ah);
-                Blt_BlankPicture(picture, 0x0);
-                iy = (ah - ih) / 2;
-                ix = (aw - iw) / 2;
-                brush = Blt_NewColorBrush(Blt_XColorToPixel(color));
-                /*
-                  Blt_PaintRectangle(picture, 0, 0, aw, ah, 4, 2, brush, 1);
-                */
-                Blt_PaintArrowHead(picture, ix, iy, iw, ih,
-                                   Blt_XColorToPixel(color), ARROW_DOWN);
-                Blt_PaintPicture(comboPtr->painter, drawable,
-                                 picture, 0, 0, aw, ah, ax, ay, 0);
-                Blt_FreeBrush(brush);
-                Blt_FreePicture(picture);
+                aw, ah, comboPtr->arrowBorderWidth, relief);
+            ax += comboPtr->arrowBorderWidth + XPAD;
+            ay += comboPtr->arrowBorderWidth;
+            aw -= 2 * comboPtr->arrowBorderWidth + XPAD;
+            ah -= 2 * comboPtr->arrowBorderWidth;
+            picture = GetArrowPicture(comboPtr, aw, ah);
+            if (comboPtr->painter != NULL) {
+                comboPtr->painter = Blt_GetPainter(comboPtr->tkwin, 1.0);
             }
+            Blt_PaintPicture(comboPtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
         }
-        comboPtr->arrow.x = ax;
-        comboPtr->arrow.y = ay;
+        comboPtr->arrowX = ax;
+        comboPtr->arrowY = ay;
     }
     comboPtr->viewWidth = cavityWidth;
     if ((cavityWidth > 0) && (cavityHeight > 0)) {

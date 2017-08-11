@@ -89,6 +89,8 @@ BLT_EXTERN void Blt_PaintArrowHead2(Blt_Picture picture, int x, int y, int w,
         int h, unsigned int color, int direction);
 BLT_EXTERN void Blt_PaintChevron(Blt_Picture picture, int x, int y, int w,
         int h, unsigned int color, int direction);
+BLT_EXTERN void Blt_PaintArrow(Blt_Picture picture, int x, int y, int w, int h,
+        unsigned int color, int direction);
 
 
 #endif /* _BLT_PAINTER_H */

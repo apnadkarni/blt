@@ -706,6 +706,7 @@ typedef struct {
     GC normalGC;                        /* GC for normal column filters. */
     GC selectGC;                        /* GC for selected filters. */
     GC highlightGC;                     /* GC for highlighted filters. */
+    Blt_Picture downArrow;
 } FilterInfo;
 
 /*

@@ -3424,9 +3424,13 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 
     font = CHOOSE(viewPtr->font, stylePtr->font);
     Blt_Font_GetMetrics(font, &fm);
-    stylePtr->arrowWidth = fm.ascent - 2;
-    aw = ah = (2 * stylePtr->arrowBorderWidth) + stylePtr->arrowWidth;
-     aw += 2 * 1;
+    stylePtr->arrowHeight = fm.linespace;
+    stylePtr->arrowWidth = stylePtr->arrowHeight * 60 / 100;
+    stylePtr->arrowHeight += 2 * stylePtr->arrowBorderWidth;
+    stylePtr->arrowWidth += 2 * stylePtr->arrowBorderWidth;
+    aw = stylePtr->arrowWidth;
+    ah = stylePtr->arrowHeight;
+    aw += 2 * 1;
     ah += 2 * 1;
     cellPtr->width  += iw + 2 * gap + aw + tw;
     cellPtr->height += MAX3(th, ih, ah);
@@ -3445,8 +3449,8 @@ GetArrowPicture(ComboBoxStyle *stylePtr, int w, int h, XColor *colorPtr)
         if (stylePtr->downArrow != NULL) {
             Blt_FreePicture(stylePtr->downArrow);
         }
-        iw = w * 65 / 100;
-        ih = h * 50 / 100;
+        iw = w * 75 / 100;
+        ih = h * 40 / 100;
         
         picture = Blt_CreatePicture(w, h);
         Blt_BlankPicture(picture, 0x0);
@@ -3638,10 +3642,10 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         unsigned int aw, ah;
         XColor *fg;
         
-        aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBorderWidth);
-        ah = aw;
-        ax = x0 + colPtr->width - colPtr->ruleWidth - aw - 
-            stylePtr->borderWidth - colPtr->pad.side1;
+        aw = stylePtr->arrowWidth;
+        ah = stylePtr->arrowHeight;
+        ax = x0 + colPtr->width - colPtr->ruleWidth - stylePtr->arrowWidth - 
+            - colPtr->pad.side1;
         ay = y;
         
         if (rowHeight > ah) {
@@ -3657,6 +3661,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
                 stylePtr->arrowBorderWidth, relief);
         aw -= 2 * stylePtr->arrowBorderWidth;
         ax += stylePtr->arrowBorderWidth;
+        ah -= 2 * stylePtr->arrowBorderWidth;
+        ay += stylePtr->arrowBorderWidth;
         {
             Blt_Picture picture;
             
