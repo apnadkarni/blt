@@ -5813,10 +5813,10 @@ ConfigureColumn(TreeView *viewPtr, Column *colPtr)
     } else {
         aw = ah = 17;
     }
-    colPtr->arrowWidth = aw;
-    colPtr->arrowHeight = ah;
-    colPtr->titleWidth += aw + TITLE_PADX;
     colPtr->titleHeight += MAX3(ih, th, ah);
+    colPtr->arrowHeight = colPtr->titleHeight;
+    colPtr->arrowWidth = colPtr->titleHeight * 60 / 100;
+    colPtr->titleWidth += colPtr->arrowWidth + TITLE_PADX;
     gcMask = (GCFunction | GCLineWidth | GCLineStyle | GCForeground);
 
     /* 
@@ -8487,10 +8487,15 @@ static Blt_Picture
 GetSortArrowPicture(TreeView *viewPtr, int w, int h)
 {
     if (viewPtr->sort.decreasing) {
-        if (viewPtr->sort.upArrow == NULL) {
+        if ((viewPtr->sort.upArrow == NULL) ||
+            (Blt_Picture_Width(viewPtr->sort.upArrow) != w) ||
+            (Blt_Picture_Height(viewPtr->sort.upArrow) != h)) {
             Blt_Picture picture;
             int ix, iy, iw, ih;
             
+            if (viewPtr->sort.upArrow != NULL) {
+                Blt_FreePicture(viewPtr->sort.upArrow);
+            }
             iw = w * 45 / 100;
             ih = h * 80 / 100;
             iy = (h - ih) / 2;
@@ -8502,10 +8507,15 @@ GetSortArrowPicture(TreeView *viewPtr, int w, int h)
         }
         return viewPtr->sort.upArrow;
     } else {
-        if (viewPtr->sort.downArrow == NULL) {
+        if ((viewPtr->sort.downArrow == NULL) ||
+            (Blt_Picture_Width(viewPtr->sort.downArrow) != w) ||
+            (Blt_Picture_Height(viewPtr->sort.downArrow) != h)) {
             Blt_Picture picture;
             int ix, iy, iw, ih;
 
+            if (viewPtr->sort.downArrow != NULL) {
+                Blt_FreePicture(viewPtr->sort.downArrow);
+            }
             iw = w * 45 / 100;
             ih = h * 80 / 100;
             iy = (h - ih) / 2;

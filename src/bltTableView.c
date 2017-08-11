@@ -5891,6 +5891,9 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
             aw = ah = 17;
         }
     }
+    ah = colPtr->textHeight;
+    aw = colPtr->textHeight * 60 / 100;
+    fprintf(stderr, "th=%d\n", colPtr->textHeight);
     if (colPtr->icon != NULL) {
         iw = IconWidth(colPtr->icon);
         ih = IconHeight(colPtr->icon);

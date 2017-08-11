@@ -3445,8 +3445,8 @@ GetArrowPicture(ComboBoxStyle *stylePtr, int w, int h, XColor *colorPtr)
         if (stylePtr->downArrow != NULL) {
             Blt_FreePicture(stylePtr->downArrow);
         }
-        ih = w * 55 / 100;
-        iw = h * 80 / 100;
+        iw = w * 65 / 100;
+        ih = h * 50 / 100;
         
         picture = Blt_CreatePicture(w, h);
         Blt_BlankPicture(picture, 0x0);
