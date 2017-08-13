@@ -3421,26 +3421,19 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
 }
 
 static void
-GetColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
+ComputeColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
 {
     unsigned int aw, ah, iw, ih, tw, th;
 
-    colPtr->titleWidth = 2 * (viewPtr->colTitleBorderWidth + TITLE_PADX);
+    colPtr->titleWidth  = 2 * (viewPtr->colTitleBorderWidth + TITLE_PADX);
     colPtr->titleHeight = 2 * (viewPtr->colTitleBorderWidth + TITLE_PADY);
-
+    colPtr->textHeight = colPtr->textWidth = 0;
     aw = ah = tw = th = iw = ih = 0;
     if (colPtr->icon != NULL) {
         iw = IconWidth(colPtr->icon);
         ih = IconHeight(colPtr->icon);
         colPtr->titleWidth += iw;
     }
-    if ((viewPtr->sort.up != NULL) && (viewPtr->sort.down != NULL)) {
-        aw = MAX(IconWidth(viewPtr->sort.up), IconWidth(viewPtr->sort.down));
-        ah = MAX(IconHeight(viewPtr->sort.up), IconHeight(viewPtr->sort.down));
-    } else {
-        aw = ah = 17;
-    }
-    colPtr->titleWidth += aw + TITLE_PADX;
     if ((colPtr->flags & TEXTALLOC) == 0) {
         colPtr->title = blt_table_column_label(colPtr->column);
     }
@@ -3457,6 +3450,18 @@ GetColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
             colPtr->titleWidth += TITLE_PADX;
         }
     }
+    if ((viewPtr->sort.up != NULL) && (viewPtr->sort.down != NULL)) {
+        aw = MAX(IconWidth(viewPtr->sort.up), IconWidth(viewPtr->sort.down));
+        ah = MAX(IconHeight(viewPtr->sort.up), IconHeight(viewPtr->sort.down));
+    } else {
+        Blt_FontMetrics fm;
+        Blt_Font font;
+
+        Blt_Font_GetMetrics(viewPtr->colTitleFont, &fm);
+        ah = fm.linespace;
+        aw = colPtr->textHeight * 60 / 100;
+    }
+    colPtr->titleWidth  += aw + TITLE_PADX;
     colPtr->titleHeight += MAX3(ih, th, ah);
 }
 
@@ -3494,7 +3499,7 @@ InitColumnFilters(Tcl_Interp *interp, TableView *viewPtr)
 }
 
 /*
- * GetColumnFiltersGeometry -- 
+ * ComputeColumnFiltersGeometry -- 
  *
  *      +---------------------------+   
  *      |b|x|icon|x|text|x|arrow|x|b|   
@@ -3504,7 +3509,7 @@ InitColumnFilters(Tcl_Interp *interp, TableView *viewPtr)
  * x = padx 
  */
 static void
-GetColumnFiltersGeometry(TableView *viewPtr)
+ComputeColumnFiltersGeometry(TableView *viewPtr)
 {
     unsigned int ah;
     FilterInfo *filterPtr;
@@ -3557,11 +3562,11 @@ ConfigureColumn(TableView *viewPtr, Column *colPtr)
     if (Blt_ConfigModified(columnSpecs, "-font", "-title", "-hide", "-icon", 
         "-arrowwidth", "-borderwidth", (char *)NULL)) {
         if (viewPtr->flags & COLUMN_TITLES) {
-            GetColumnTitleGeometry(viewPtr, colPtr);
+            ComputeColumnTitleGeometry(viewPtr, colPtr);
         } 
     }
     if (Blt_ConfigModified(columnSpecs, "-filtertext", (char *)NULL)) {
-        GetColumnFiltersGeometry(viewPtr);
+        ComputeColumnFiltersGeometry(viewPtr);
     }
     if (Blt_ConfigModified(columnSpecs, "-style", (char *)NULL)) {
         /* If the style changed, recompute the geometry of the cells. */
@@ -4620,7 +4625,7 @@ SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
 }
 
 static void
-GetRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
+ComputeRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
 {
     unsigned int iw, ih, tw, th;
     unsigned int gap;
@@ -4656,7 +4661,7 @@ ConfigureRow(TableView *viewPtr, Row *rowPtr)
     if (Blt_ConfigModified(rowSpecs, "-titlefont", "-title", "-hide", "-icon", 
         "-show", "-borderwidth", (char *)NULL)) {
         if (viewPtr->flags & ROW_TITLES) {
-            GetRowTitleGeometry(viewPtr, rowPtr);
+            ComputeRowTitleGeometry(viewPtr, rowPtr);
         } 
     }
     if (Blt_ConfigModified(rowSpecs, "-style", (char *)NULL)) {
@@ -4730,7 +4735,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
             
             colPtr = GetColumnContainer(viewPtr, eventPtr->column);
             if (colPtr != NULL) {
-                GetColumnTitleGeometry(viewPtr, colPtr);
+                ComputeColumnTitleGeometry(viewPtr, colPtr);
             }
         } else if (eventPtr->type & TABLE_NOTIFY_MOVE) {
             ReorderColumns(viewPtr);
@@ -4742,7 +4747,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
             
             rowPtr = GetRowContainer(viewPtr, eventPtr->row);
             if (rowPtr != NULL) {
-                GetRowTitleGeometry(viewPtr, rowPtr);
+                ComputeRowTitleGeometry(viewPtr, rowPtr);
             }
         } else if (eventPtr->type & TABLE_NOTIFY_MOVE) {
             ReorderRows(viewPtr);
@@ -5816,7 +5821,7 @@ GetSortArrowPicture(TableView *viewPtr, int w, int h)
             Blt_Picture picture;
             int ix, iy, iw, ih;
             
-            iw = w * 45 / 100;
+            iw = w * 50 / 100;
             ih = h * 80 / 100;
             iy = (h - ih) / 2;
             ix = (w - iw) / 2;
@@ -5831,7 +5836,7 @@ GetSortArrowPicture(TableView *viewPtr, int w, int h)
             Blt_Picture picture;
             int ix, iy, iw, ih;
 
-            iw = w * 45 / 100;
+            iw = w * 50 / 100;
             ih = h * 80 / 100;
             iy = (h - ih) / 2;
             ix = (w - iw) / 2;
@@ -5851,7 +5856,6 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
     Blt_Bg bg;
     GC gc;
     SortInfo *sortPtr;
-    XColor *fg;
     int relief;
     int wanted, colWidth, colHeight;
     unsigned int aw, ah, iw, ih, tw, th;
@@ -5870,16 +5874,13 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
     if (colPtr->flags & DISABLED) {     /* Disabled  */
         bg = viewPtr->colDisabledTitleBg;
         gc = viewPtr->colDisabledTitleGC;
-        fg = viewPtr->colDisabledTitleFg;
     } else if (colPtr == viewPtr->colActiveTitlePtr) {  /* Active */
         bg = viewPtr->colActiveTitleBg;
         gc = viewPtr->colActiveTitleGC;
         relief = colPtr->activeTitleRelief;
-        fg = viewPtr->colActiveTitleFg;
     } else {                            /* Normal */
         bg = viewPtr->colNormalTitleBg;
         gc = viewPtr->colNormalTitleGC;
-        fg = viewPtr->colNormalTitleFg;
     }
 
     /* Clear the title area by drawing the background. */
@@ -5899,12 +5900,13 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
             aw = MAX(IconWidth(sortPtr->up), IconWidth(sortPtr->down));
             ah = MAX(IconHeight(sortPtr->up), IconHeight(sortPtr->down));
         } else {
-            aw = ah = 17;
+            Blt_FontMetrics fm;
+
+            Blt_Font_GetMetrics(viewPtr->colTitleFont, &fm);
+            ah = fm.linespace;
+            aw = ah * 60 / 100;
         }
     }
-    ah = colPtr->textHeight;
-    aw = colPtr->textHeight * 60 / 100;
-    fprintf(stderr, "th=%d\n", colPtr->textHeight);
     if (colPtr->icon != NULL) {
         iw = IconWidth(colPtr->icon);
         ih = IconHeight(colPtr->icon);
@@ -11927,7 +11929,7 @@ TableViewInstCmdDeleteProc(ClientData clientData)
 }
 
 static void
-GetCellGeometry(Cell *cellPtr)
+ComputeCellGeometry(Cell *cellPtr)
 {
     CellStyle *stylePtr;
     CellKey *keyPtr;
@@ -11958,7 +11960,7 @@ ComputeGeometry(TableView *viewPtr)
          colPtr = colPtr->nextPtr, i++) {
         if (colPtr->flags & GEOMETRY) {
             if (viewPtr->flags & COLUMN_TITLES) {
-                GetColumnTitleGeometry(viewPtr, colPtr);
+                ComputeColumnTitleGeometry(viewPtr, colPtr);
             } else {
                 colPtr->titleWidth = colPtr->titleHeight = 0;
             }
@@ -11975,7 +11977,7 @@ ComputeGeometry(TableView *viewPtr)
          rowPtr = rowPtr->nextPtr, i++) {
         if (rowPtr->flags & GEOMETRY) {
             if (viewPtr->flags & ROW_TITLES) {
-                GetRowTitleGeometry(viewPtr, rowPtr);
+                ComputeRowTitleGeometry(viewPtr, rowPtr);
             } else {
                 rowPtr->titleHeight = rowPtr->titleWidth = 0;
             }
@@ -12003,7 +12005,7 @@ ComputeGeometry(TableView *viewPtr)
         colPtr = keyPtr->colPtr;
         cellPtr = Blt_GetHashValue(hPtr);
         if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & GEOMETRY) {
-            GetCellGeometry(cellPtr);
+            ComputeCellGeometry(cellPtr);
         }
         /* Override the initial width of the cell if it exceeds the
          * designated maximum.  */
@@ -12025,7 +12027,7 @@ ComputeGeometry(TableView *viewPtr)
         }
     }
     if (viewPtr->flags & COLUMN_FILTERS) {
-        GetColumnFiltersGeometry(viewPtr);
+        ComputeColumnFiltersGeometry(viewPtr);
     }
     viewPtr->flags |= LAYOUT_PENDING;
 }
@@ -12351,7 +12353,7 @@ AddCellGeometry(TableView *viewPtr, Cell *cellPtr)
     keyPtr = GetKey(cellPtr);
     rowPtr = keyPtr->rowPtr;
     colPtr = keyPtr->colPtr;
-    GetCellGeometry(cellPtr);
+    ComputeCellGeometry(cellPtr);
     /* Override the initial width of the cell if it exceeds the designated
      * maximum.  */
     if ((viewPtr->maxColWidth > 0) && 
@@ -12377,7 +12379,7 @@ AddColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
 {
     if (colPtr->flags & GEOMETRY) {
         if (viewPtr->flags & COLUMN_TITLES) {
-            GetColumnTitleGeometry(viewPtr, colPtr);
+            ComputeColumnTitleGeometry(viewPtr, colPtr);
         } else {
             colPtr->titleWidth = colPtr->titleHeight = 0;
         }
@@ -12389,7 +12391,7 @@ AddColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
         }
     }
     if (viewPtr->flags & COLUMN_FILTERS) {
-        GetColumnFiltersGeometry(viewPtr);
+        ComputeColumnFiltersGeometry(viewPtr);
     }
 }
 
@@ -12398,7 +12400,7 @@ AddRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
 {
     if (rowPtr->flags & GEOMETRY) {
         if (viewPtr->flags & ROW_TITLES) {
-            GetRowTitleGeometry(viewPtr, rowPtr);
+            ComputeRowTitleGeometry(viewPtr, rowPtr);
         } else {
             rowPtr->titleHeight = rowPtr->titleWidth = 0;
         }
@@ -12410,7 +12412,7 @@ AddRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
         }
     }
     if (viewPtr->flags & COLUMN_FILTERS) {
-        GetColumnFiltersGeometry(viewPtr);
+        ComputeColumnFiltersGeometry(viewPtr);
     }
 }
 

@@ -5811,11 +5811,15 @@ ConfigureColumn(TreeView *viewPtr, Column *colPtr)
         ah = MAX(IconHeight(colPtr->sortUp), 
                  IconHeight(colPtr->sortDown));
     } else {
-        aw = ah = 17;
+        Blt_FontMetrics fm;
+        
+        Blt_Font_GetMetrics(colPtr->titleFont, &fm);
+        ah = fm.linespace;
+        aw = ah * 60 / 100;
     }
     colPtr->titleHeight += MAX3(ih, th, ah);
-    colPtr->arrowHeight = colPtr->titleHeight;
-    colPtr->arrowWidth = colPtr->titleHeight * 60 / 100;
+    colPtr->arrowHeight = ah;
+    colPtr->arrowWidth = aw;
     colPtr->titleWidth += colPtr->arrowWidth + TITLE_PADX;
     gcMask = (GCFunction | GCLineWidth | GCLineStyle | GCForeground);
 

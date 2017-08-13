@@ -89,7 +89,6 @@ instdirs =		$(prefix) \
 			$(pkgdir) \
 			$(scriptdir)
 
- 
 # ------------------------------------------------------------------------
 # 	Directories containing Tcl and Tk include files and libraries
 # ------------------------------------------------------------------------

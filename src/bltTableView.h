@@ -506,7 +506,7 @@ struct _Column {
                                          * called to format the data
                                          * whenever data has changed and
                                          * needs to be redisplayed. */
-    short int arrowWidth;
+    short int arrowWidth, arrowHeight;
     short int filterHeight;
     const char *filterText;             /* Text of last filter selected. */
     short int filterTextWidth, filterTextHeight;

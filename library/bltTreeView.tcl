@@ -58,7 +58,21 @@ namespace eval blt {
     }
 }
 
+if { [blt::winop xdpi] > 150 } {
+    image create picture ::blt::TreeView::closeIcon \
+        -file $blt_library/icons/32x32/folder.png 
+    image create picture ::blt::TreeView::openIcon \
+        -file $blt_library/icons/32x32/folder-open.png
+} else {
+    image create picture ::blt::TreeView::closeIcon \
+        -file $blt_library/icons/16x16/folder.png 
+    image create picture ::blt::TreeView::openIcon \
+        -file $blt_library/icons/16x16/folder-open.png
+}    
+
 option add *BltTreeView.ColumnCommand blt::TreeView::SortColumn
+option add *BltTreeView.Icons \
+    [list ::blt::TreeView::closeIcon ::blt::TreeView::openIcon]
 
 if { $tcl_platform(platform) == "windows" } {
     if { $tk_version >= 8.3 } {

@@ -438,7 +438,6 @@ proc periodicTable::RedrawTable { w } {
 proc periodicTable::Cancel { w } {
     set menu [winfo parent $w]
     set mb [winfo parent $menu]
-    $mb configure -text "Unselected"
     $menu unpost
 }
 

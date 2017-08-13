@@ -1018,6 +1018,36 @@ WarpToOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return QueryOp(tkMain, interp, 0, (Tcl_Obj **)NULL);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ *  UnmapOp --
+ *
+ *      Unmaps the named windows.
+ *
+ *      blt::winop xdpi 
+ *
+ * ------------------------------------------------------------------------ 
+ */
+static int
+DpiOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Tk_Window tkwin = clientData;
+    int xdpi, ydpi;
+    const char *string;
+    char c;
+    
+    Blt_ScreenDPI(tkwin, &xdpi, &ydpi);
+    string = Tcl_GetString(objv[1]);
+    c = string[0];
+    if (c == 'x') {
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), xdpi);
+    } else {
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), ydpi);
+    }
+    return TCL_OK;
+}
+
 static Blt_OpSpec winOps[] =
 {
     {"changes",  1, ChangesOp,  3, 3, "windowName",},
@@ -1035,6 +1065,8 @@ static Blt_OpSpec winOps[] =
     {"tree",     2, TreeOp,     4, 4, "windowName treeName",},
     {"unmap",    1, UnmapOp,    2, 0, "?windowName ...?",},
     {"warpto",   1, WarpToOp,   2, 5, "?windowName?",},
+    {"xdpi",     1, DpiOp,      2, 2, ""},
+    {"ydpi",     1, DpiOp,      2, 2, ""},
 };
 
 static int numWinOps = sizeof(winOps) / sizeof(Blt_OpSpec);
@@ -1048,7 +1080,7 @@ WinopCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     int result;
     Tk_Window tkwin;
 
-    proc = Blt_GetOpFromObj(interp, numWinOps, winOps, BLT_OP_ARG1,  objc, objv, 
+    proc = Blt_GetOpFromObj(interp, numWinOps, winOps, BLT_OP_ARG1, objc, objv, 
         0);
     if (proc == NULL) {
         return TCL_ERROR;

@@ -1969,12 +1969,16 @@ AC_CONFIG_FILES(
   demos/data/Makefile
   demos/images/Makefile
   demos/scripts/Makefile
+  doc/Makefile 
   library/Makefile 
   library/afm/Makefile 
   library/dd_protocols/Makefile 
+  library/icons/16x16/Makefile
+  library/icons/32x32/Makefile
+  library/icons/64x64/Makefile
+  library/icons/Makefile
   library/palettes/Makefile 
   man/Makefile 
-  doc/Makefile 
   src/bltHash.h 
 ]
 )
