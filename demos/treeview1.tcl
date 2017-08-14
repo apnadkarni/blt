@@ -71,7 +71,7 @@ proc Find { tree parent dir } {
 button .b -font { Helvetica 11 bold }
 #set top [file normalize ..]
 set top [file normalize "$env(HOME)"]
-set top [file normalize ".."]
+set top [file normalize $blt_library/..]
 set trim "$top"
 
 set tree [blt::tree create]    

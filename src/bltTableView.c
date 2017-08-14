@@ -5729,7 +5729,6 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
         if ((aw > 0) && (ah > 0)) {
             Blt_Picture picture;
 
-            fprintf(stderr, "aw=%d ah=%d\n", aw, ah);
             picture = GetFilterArrowPicture(filterPtr, aw, ah, fg);
             if (viewPtr->painter == NULL) {
                 viewPtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
