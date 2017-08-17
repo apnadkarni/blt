@@ -2411,7 +2411,7 @@ Blt_ResamplePicture2(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
      * the fact that pictures are stored in contiguous rows.
      */
     Blt_ZoomHorizontally2(tmpPtr, srcPtr, hFilter);
-    Blt_ZoomVertically2(destPtr, tmpPtr, vFilter);
+    Blt_ZoomVertically(destPtr, tmpPtr, vFilter);
     Blt_FreePicture(tmpPtr);
     destPtr->flags = srcPtr->flags;
     destPtr->flags |= BLT_PIC_DIRTY;

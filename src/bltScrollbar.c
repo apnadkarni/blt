@@ -89,6 +89,9 @@
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
+#ifdef HAVE_STDLIB_H
+  #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 
 #include "bltAlloc.h"
 #include "bltBg.h"
@@ -1127,6 +1130,8 @@ DrawArrowTkStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
     Blt_Bg bg;
     XPoint points[3];
     
+    bg = NULL;                          /* Suppress compiler warnings. */
+    relief = TK_RELIEF_FLAT;
     switch (direction) {
 
    /*
@@ -1278,6 +1283,7 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
         ax = bx + borderWidth;
         ay = by + borderWidth;
         break;
+    default:
     case ARROW_RIGHT:
         if (scrollPtr->selField == BOTTOM_ARROW) {
             bg = scrollPtr->selBg;
@@ -1373,6 +1379,7 @@ DrawArrowVistaStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
         ax = bx + borderWidth;
         ay = by + borderWidth;
         break;
+    default:
     case ARROW_RIGHT:
         if (scrollPtr->selField == BOTTOM_ARROW) {
             bg = scrollPtr->selBg;
