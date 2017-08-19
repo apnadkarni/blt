@@ -361,7 +361,7 @@ Blt_CreatePicture(int w, int h)
     destPtr->delay = 0;
     /* Over-allocate a buffer so that we can align it (if needed) to a
      * 16-byte boundary. */
-    h = ((h + 1) / 2) * 2;              /* Make even number of rows. */
+    h = ((h + 3) / 4) * 4;              /* Make # of rows multiple of 4. */
     size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
     buffer = Blt_AssertCalloc(1, size); /* All zeros. */
     ptr = (ptrdiff_t)buffer;

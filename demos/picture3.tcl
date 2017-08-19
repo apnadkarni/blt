@@ -1,6 +1,6 @@
 package require BLT
 
-set dest [image create picture -width 800 -height 600]
+set dest [image create picture -width 900 -height 600]
 
 source ./data/usmap.tcl
 
