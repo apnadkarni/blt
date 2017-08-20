@@ -5,11 +5,10 @@ package require BLT
 set file ../images/blt98.gif
 set file test.jpg
 set orig [image create picture -file $file]
-#$orig crop 0 0 10000 1
 set sw [image width $orig]
 set sh [image height $orig]
-set dw [expr $sw / 4]
-set dh [expr $sh / 4]
+set dw [expr $sw / 2]
+set dh [expr $sh / 2]
 
 set dest1 [image create picture -width $dw -height $dh]
 set dest2 [image create picture -width $dw -height $dh]
@@ -22,8 +21,8 @@ blt::tk::label .new -image $dest2
 blt::tk::label .diff1 -image $diff1
 blt::tk::label .diff2 -image $diff2
 
-puts stderr [time {$dest1 resample $orig -filter box}]
-puts stderr [time {$dest2 zresample $orig -filter box}]
+puts stderr [time {$dest1 resample $orig -filter box} 100]
+puts stderr [time {$dest2 zresample $orig -filter box} 100]
 $diff1 copy $dest2
 $diff1 subtract $dest1
 $diff1 or 0xFF000000
@@ -48,3 +47,4 @@ set out [list [catch {
 puts stderr compare=$out
 
 image create picture -file diff.pbm
+exit 0

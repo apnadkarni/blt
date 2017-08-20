@@ -123,7 +123,7 @@ BLT_EXTERN void Blt_DStringAppendElements(Tcl_DString *dsPtr, ...);
 BLT_EXTERN int Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath, 
         const char *initProcName, const char *safeProcName);
 
-extern int  Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *featuresPtr);
+extern unsigned long Blt_CpuFeatureFlags(Tcl_Interp *interp);
 
 #if (_TCL_VERSION < _VERSION(8,1,0))
 BLT_EXTERN const char *Tcl_GetString (Tcl_Obj *objPtr);

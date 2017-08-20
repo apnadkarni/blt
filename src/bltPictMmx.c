@@ -1885,6 +1885,7 @@ static uint8_t weightMap[16] __attribute__((aligned(16))) = {
     0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01
 };
 
+#ifdef notdef
 /* 
  *---------------------------------------------------------------------------
  *
@@ -2118,6 +2119,7 @@ ZoomHorizontally2(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
     /* Free the memory allocated for horizontal filter weights. */
     Blt_Free(samples);
 }
+#endif
 
 /* 
  *---------------------------------------------------------------------------
@@ -2593,7 +2595,7 @@ GetCpuFlags(void)
 /* 
  *---------------------------------------------------------------------------
  *
- * SaveFeatures --
+ * SetCpuFlagsVariable --
  *
  *     Sets a TCL variable "::blt::cpuflags" that is a list representing
  *     the X86 cpu feature flags.
@@ -2604,7 +2606,7 @@ GetCpuFlags(void)
  * -------------------------------------------------------------------------- 
  */
 static void
-SaveFeatures(Tcl_Interp *interp, unsigned long flags)
+SetCpuFlagsVariable(Tcl_Interp *interp, unsigned long flags)
 {
     char version[13];
     Tcl_Obj *objPtr, *listObjPtr;
@@ -2655,7 +2657,7 @@ SaveFeatures(Tcl_Interp *interp, unsigned long flags)
 /* 
  *---------------------------------------------------------------------------
  *
- * Blt_CpuFeatures --
+ * Blt_CpuFeatureFlags --
  *
  *      Gets the cpu features flags and overrides the standard picture
  *      routines with faster SIMD versions.  Also a TCL variable
@@ -2666,8 +2668,8 @@ SaveFeatures(Tcl_Interp *interp, unsigned long flags)
  *
  * -------------------------------------------------------------------------- 
  */
-int
-Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
+unsigned long
+Blt_CpuFeatureFlags(Tcl_Interp *interp)
 {
     unsigned long flags;
 
@@ -2694,24 +2696,18 @@ Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
         }
 #endif  /* SIZEOF_LONG == 8 */
     }
-    if (flagsPtr != NULL) {
-        *flagsPtr = flags;
-    }
     if (interp != NULL) {
-        SaveFeatures(interp, flags);
+        SetCpuFlagsVariable(interp, flags);
     }
-    return TCL_OK;
+    return flags;
 }
 
 #else 
 
-int
-Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
+unsigned long
+Blt_CpuFeatureFlags(Tcl_Interp *interp)
 {
-    if (flagsPtr != NULL) {
-        *flagsPtr = 0L;
-    }
-    return TCL_OK;
+    return 0L;
 }
 
 #endif /* HAVE_X86_ASM */
