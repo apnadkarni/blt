@@ -2194,23 +2194,22 @@ ZoomHorizontally4(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 
             for (wp = sampPtr->weights; wp < sampPtr->wend; wp++) {
                 asm volatile (
-                   "pxor        %%xmm3, %%xmm3       # xmm3 = 0\n\t"
                    /* Load the weighting factor into mm1. */
-                   "movd        (%0), %%xmm0         # xmm0 = 0,0,0,w\n\t" 
+                   "movd        (%0), %%xmm0     # xmm0 = 0,0,0,w\n\t" 
                    /* Get the 1st source RGBA pixel. */
-                   "pinsrd      $0, (%1), %%xmm1     # xmm1 = 0,0,0,sp1\n\t" 
+                   "pinsrd      $0, (%1), %%xmm1 # xmm1 = 0,0,0,sp1\n\t" 
                    /* Get the 3rd source RGBA pixel. */
-                   "pinsrd      $0, (%3), %%xmm2     # xmm2 = 0,0,0,sp3\n\t" 
+                   "pinsrd      $0, (%3), %%xmm2 # xmm2 = 0,0,0,sp3\n\t" 
                    /* Get the 2nd source RGBA pixel. */
-                   "pinsrd      $1, (%2), %%xmm1     # xmm1 = 0,0,sp2,sp1\n\t" 
+                   "pinsrd      $1, (%2), %%xmm1 # xmm1 = 0,0,sp2,sp1\n\t" 
                    /* Get the 4th source RGBA pixel. */
-                   "pinsrd      $1, (%4), %%xmm2     # xmm2 = 0,0,sp4,sp3\n\t" 
+                   "pinsrd      $1, (%4), %%xmm2 # xmm2 = 0,0,sp4,sp3\n\t" 
                    /* Unpack the pixel into xmm1. */
-                   "punpcklbw   %%xmm3, %%xmm1       # xmm1 = _b_g_r_a x 2\n\t" 
+                   "punpcklbw   %%xmm3, %%xmm1  # xmm1 = _b_g_r_a x 2\n\t" 
                    /* Unpack the weighting factor into xmm0. */
-                   "pshufb      %%xmm7, %%xmm0       # xmm0 = _w_w_w_w x 2\n\t"
+                   "pshufb      %%xmm7, %%xmm0  # xmm0 = _w_w_w_w x 2\n\t"
                    /* Unpack the pixel into xmm2. */
-                   "punpcklbw   %%xmm3, %%xmm2       # xmm2 = _b_g_r_a x 2\n\t" 
+                   "punpcklbw   %%xmm3, %%xmm2  # xmm2 = _b_g_r_a x 2\n\t" 
                    /*  */
                    /* Scale the 8-bit color components to 15 bits: (S *
                     * 257) >> 1 */
@@ -2229,6 +2228,7 @@ ZoomHorizontally4(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
                     * that the lower 16-bits of the product are truncated
                     * (bad) creating round-off error in the sum. */
                    "pmulhw      %%xmm0, %%xmm1  # xmm1 = S15 * W14\n\t"  
+                   "pxor        %%xmm3, %%xmm3  # xmm3 = 0\n\t"
                    "pmulhw      %%xmm0, %%xmm2  # xmm2 = S15 * W14\n\t"  
                    /* Add the 16-bit components to mm5. */
                    "paddsw      %%xmm1, %%xmm5  # xmm5 = A13 + mm5\n\t" 
@@ -2245,15 +2245,15 @@ ZoomHorizontally4(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 
             asm volatile (
                 /* Add a rounding bias to the pixel sum. */
-                "paddsw      %%xmm6, %%xmm5  # xmm5 = A13 + BIAS\n\t" 
+                "paddsw        %%xmm6, %%xmm5   # xmm5 = A13 + BIAS\n\t" 
                 /* Add a rounding bias to the pixel sum. */
-                "paddsw      %%xmm6, %%xmm4  # xmm4 = A13 + BIAS\n\t" 
+                "paddsw        %%xmm6, %%xmm4     # xmm4 = A13 + BIAS\n\t" 
                 /* Shift off fractional portion. */
-                "psraw       $5, %%xmm5      # xmm5 = A8\n\t" 
+                "psraw         $5, %%xmm5      # xmm5 = A8\n\t" 
                 /* Shift off fractional portion. */
-                "psraw       $5, %%xmm4      # xmm4 = A8\n\t" 
+                "psraw         $5, %%xmm4      # xmm4 = A8\n\t" 
                 /* Pack 16-bit components into lower 4 bytes. */
-                "packuswb   %%xmm5, %%xmm5   # Pack A8 into low 4 bytes.\n\t" 
+                "packuswb     %%xmm5, %%xmm5   # Pack A8 into low 4 bytes.\n\t" 
                 /* Store the word (pixel) in the destination. */
                 /* Pack 16-bit components into lower 4 bytes. */
                 "packuswb   %%xmm4, %%xmm4   # Pack A8 into low 4 bytes.\n\t" 
@@ -2340,7 +2340,6 @@ ZoomVertically4(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 
             for (wp = sampPtr->weights; wp < sampPtr->wend; wp++) {
                 asm volatile (
-                   "pxor        %%xmm3, %%xmm3       # xmm3 = 0\n\t"
                    /* Load the weighting factor into mm1. */
                    "movd        (%0), %%xmm0         # xmm0 = 0,0,0,w\n\t" 
                    /* Get the 1st source RGBA pixel. */
@@ -2375,6 +2374,7 @@ ZoomVertically4(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
                     * that the lower 16-bits of the product are truncated
                     * (bad) creating round-off error in the sum. */
                    "pmulhw      %%xmm0, %%xmm1  # xmm1 = S15 * W14\n\t"  
+                   "pxor        %%xmm3, %%xmm3  # xmm3 = 0\n\t"
                    "pmulhw      %%xmm0, %%xmm2  # xmm2 = S15 * W14\n\t"  
                    /* Add the 16-bit components to mm5. */
                    "paddsw      %%xmm1, %%xmm5  # xmm5 = A13 + mm5\n\t" 
