@@ -41,27 +41,12 @@
 /*
  * To do:
  *
- *      -background colorName  ; same as -fill
- *      -rotate numDegrees
- *      -minfontsize numPoints
- *      -maxfontsize numPoints       
- *      -fill colorName
- *      -font fontName
- *      -foreground colorName  ; same as -outline
- *      -outline colorName
- *      -padx numPixels
- *      -pady numPixels
- *      -justify left|right|center
- *      -textwidth numPixels or relative
- *      -width numPixels
- *      -height numPixels
- *      -anchor anchorName
- *      
- * o PostScriptProc.  Can it handle gradients?
- * o Figure out better minSize, maxSize to dynamically accommodate 
- *   initialize font size better.
- * o Write documentation
+ * o PS gradients?
+ * o -maxfontsize and -minfontsize to constrain font size changes.
+ * o -scaletofit shrink/grow/both/none option to set initial font size.
+ * o Update documentation.
  */
+
 #define USE_OLD_CANVAS  1
 #define DEBUG 0
 

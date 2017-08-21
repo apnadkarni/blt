@@ -1045,6 +1045,7 @@ Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     top = floor(top), left = floor(left);
     bottom = ceil(bottom), right = ceil(right);
     regionPtr->x = (int)left, regionPtr->y = (int)top;
+    /* Opposite corner */
     regionPtr->w = (int)right - regionPtr->x + 1;
     regionPtr->h = (int)bottom - regionPtr->y + 1;
     return TCL_OK;
