@@ -337,12 +337,19 @@ Blt_Picture
 Blt_CreatePicture(int w, int h)
 {
     Pict *destPtr;
-    int pixelsPerRow;
-    size_t size;
+    int pixelsPerRow, numRows;
+    size_t numBytes;
     unsigned char *buffer;
     ptrdiff_t ptr;
+
     assert((w > 0) && (w <= SHRT_MAX));
     assert((h > 0) && (h <= SHRT_MAX));
+
+    destPtr = Blt_AssertMalloc(sizeof(Pict));
+    destPtr->width  = w;
+    destPtr->height = h;
+    destPtr->flags  = BLT_PIC_UNINITIALIZED;
+    destPtr->delay = 0;
 
     /* 
      * Be careful. There's a bunch of picture routines that assume an even
@@ -353,20 +360,16 @@ Blt_CreatePicture(int w, int h)
                                          * for SIMD routines: ensures data
                                          * is quad aligned and lets us
                                          * process 4 pixels at a time. */
-    destPtr = Blt_AssertMalloc(sizeof(Pict));
-    destPtr->pixelsPerRow = pixelsPerRow;
-    destPtr->width  = w;
-    destPtr->height = h;
-    destPtr->flags  = BLT_PIC_UNINITIALIZED;
-    destPtr->delay = 0;
+    numRows = ((h + 3) / 4) * 4;        /* Make # of rows multiple of 4. */
+
     /* Over-allocate a buffer so that we can align it (if needed) to a
      * 16-byte boundary. */
-    h = ((h + 1) / 2) * 2;              /* Make even number of rows. */
-    size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-    buffer = Blt_AssertCalloc(1, size); /* All zeros. */
+    numBytes = (pixelsPerRow * numRows * sizeof(Blt_Pixel)) + ALIGNMENT;
+    buffer = Blt_AssertCalloc(1, numBytes); /* All zeros. */
     ptr = (ptrdiff_t)buffer;
     destPtr->bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
     destPtr->buffer = buffer;
+    destPtr->pixelsPerRow = pixelsPerRow;
     return destPtr;
 }
 
@@ -424,24 +427,26 @@ Blt_ResizePicture(Pict *srcPtr, int w, int h)
 {
     assert((w > 0) && (w <= SHRT_MAX));
     assert((h > 0) && (h <= SHRT_MAX));
+
     if ((w != srcPtr->width) || (h != srcPtr->height)) {
-        int pixelsPerRow;
-        size_t size;
+        int pixelsPerRow, numRows;
+        size_t numBytes;
         ptrdiff_t ptr;
         void *buffer;
 
         pixelsPerRow = (w + 3) & ~3;    /* Align each row on a 16-byte
                                          * boundary. */
-        size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-        buffer = Blt_Realloc(srcPtr->buffer, size);
+        numRows = ((h + 3) / 4) * 4;    /* Make # of rows multiple of 4. */
+        numBytes = (pixelsPerRow * numRows * sizeof(Blt_Pixel)) + ALIGNMENT;
+        buffer = Blt_Realloc(srcPtr->buffer, numBytes);
         assert(buffer != NULL);
-        srcPtr->pixelsPerRow = pixelsPerRow;
-        srcPtr->width = w;
-        srcPtr->height = h;
+        srcPtr->buffer = buffer;
         ptr = (ptrdiff_t)buffer;
         srcPtr->bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
+        srcPtr->width = w;
+        srcPtr->height = h;
+        srcPtr->pixelsPerRow = pixelsPerRow;
         srcPtr->flags = BLT_PIC_DIRTY;
-        srcPtr->buffer = buffer;
     }
 }
 
@@ -450,25 +455,25 @@ Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)
 {
     assert((w > 0) && (w <= SHRT_MAX));
     assert((h > 0) && (h <= SHRT_MAX));
+
     if ((w != srcPtr->width) || (h != srcPtr->height)) {
-        int pixelsPerRow;
-        int bytesPerRow;
-        size_t size;
+        int pixelsPerRow, numRows, bytesPerRow;
+        size_t numBytes;
         void *buffer;
         ptrdiff_t ptr;
         Blt_Pixel *bits;
 
-        /* 
-         * Be careful. There's a bunch of picture routines that assume an
-         * even number of pixels per row.
-         */
+        /* Reallocate the buffer to the new size. */
         pixelsPerRow = (w + 3) & ~3;    /* Align each row on a 16-byte
                                          * boundary. */
+        numRows = ((h + 3) / 4) * 4;    /* Make # of rows multiple of 4. */
         
-        size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-        buffer = Blt_AssertMalloc(size);
+        numBytes = (pixelsPerRow * numRows * sizeof(Blt_Pixel)) + ALIGNMENT;
+        buffer = Blt_AssertMalloc(numBytes);
+
         ptr = (ptrdiff_t)buffer;
         bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
+
         if (srcPtr->bits != NULL && (srcPtr->pixelsPerRow > 0)) {
             Blt_Pixel *srcRowPtr, *destRowPtr;
             int y, numRows;
@@ -476,7 +481,6 @@ Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)
             bytesPerRow = sizeof(Blt_Pixel) * 
                 MIN(pixelsPerRow, srcPtr->pixelsPerRow);
             numRows = MIN(srcPtr->height, h);
-            
             srcRowPtr = srcPtr->bits, destRowPtr = bits;
             for (y = 0; y < numRows; y++) {
                 memcpy(destRowPtr, srcRowPtr, bytesPerRow);
@@ -2411,7 +2415,7 @@ Blt_ResamplePicture2(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
      * the fact that pictures are stored in contiguous rows.
      */
     Blt_ZoomHorizontally2(tmpPtr, srcPtr, hFilter);
-    Blt_ZoomVertically(destPtr, tmpPtr, vFilter);
+    Blt_ZoomVertically2(destPtr, tmpPtr, vFilter);
     Blt_FreePicture(tmpPtr);
     destPtr->flags = srcPtr->flags;
     destPtr->flags |= BLT_PIC_DIRTY;

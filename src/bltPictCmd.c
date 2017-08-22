@@ -5890,7 +5890,7 @@ Blt_RegisterPictureImageType(Tcl_Interp *interp)
 
     Tk_CreateImageType(&pictureImageType);
 
-    Blt_CpuFeatures(interp, NULL);
+    Blt_CpuFeatureFlags(interp);
 
     Blt_InitHashTable(&fmtTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&procTable, BLT_STRING_KEYS);
