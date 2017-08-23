@@ -12989,7 +12989,7 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Entry *entryPtr;
     EntryIterator iter;
 
-    if (GetEntryIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
+    if (GetEntryIterator(interp, viewPtr, objv[2], &iter) != TCL_OK) {
         return TCL_ERROR;
     }
     /* Process switches  */

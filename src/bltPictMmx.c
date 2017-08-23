@@ -1088,7 +1088,7 @@ ConvolvePictureVertically(Pict *destPtr, Pict *srcPtr,
     asm volatile (
         /* Generate constants needed below. */
         "pxor %mm6, %mm6        # mm6 = 0\n\t"
-        "pcmpeqw %mm2, %mm2     # mm2 = -1 \n\t"
+        "pcmpeqw %mm2, %mm2     # mm2 = -1\n\t"
         "psubw %mm6, %mm2       # mm2 = 1,1,1,1\n\t"
         "psllw $4, %mm2         # mm2 = BIAS\n");
 
@@ -1372,29 +1372,41 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
     
     pixel.u32 = colorValue;
     Blt_PremultiplyColor(&pixel);
-    for (i = 0; i < 16; i += 4) {
-        bytes16[i]   = pixel.Blue;
-        bytes16[i+1] = pixel.Green;
-        bytes16[i+2] = pixel.Red;
-        bytes16[i+3] = pixel.Alpha;
-    }
     asm volatile (
-        "movdqa    (%0), %%xmm6         # xmm6 = color\n\t"
+        "pinsrd    $0, %0, %%xmm1     # xmm1 = 0,0,0,p\n\t" 
+        "pinsrd    $1, %0, %%xmm1     # xmm1 = 0,0,p,p\n\t" 
+        "pinsrd    $2, %0, %%xmm1     # xmm1 = 0,p,p,p\n\t" 
+        "pinsrd    $3, %0, %%xmm1     # xmm1 = p,p,p,p\n\t" 
+        "movdqa    %%xmm1, %%xmm2     # xmm2 = xmm1. \n\t" 
+        "movdqa    %%xmm1, %%xmm3     # xmm3 = xmm1. \n\t" 
+        "movdqa    %%xmm1, %%xmm4     # xmm4 = xmm1. \n\t" 
         : /* outputs */
         : /* inputs */
-          "r" (bytes16));
+          "r" (pixel.u32));
 
     destRowPtr = destPtr->bits;
-    for (y = 0; y < destPtr->height; y++) {
-        Blt_Pixel *dp, *dend;
+    for (y = 0; y < destPtr->height; y += 4) {
+        int x;
+        Blt_Pixel *dp1, *dp2, *dp3, *dp4;
 
-        for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend; dp += 4) {
+        dp1 = destRowPtr;
+        dp2 = dp1 + destPtr->pixelsPerRow;;
+        dp3 = dp2 + destPtr->pixelsPerRow;;
+        dp4 = dp3 + destPtr->pixelsPerRow;;
+        for (x = 0; x < destPtr->width; x += 4) {
             asm volatile (
-                "movdqa %%xmm6, (%0)    # Save the 4 pixels. \n\t" 
+                "movdqa %%xmm1, (%0)    # Fill 4 pixels. \n\t" 
+                "movdqa %%xmm2, (%1)    # Fill 4 pixels. \n\t" 
+                "movdqa %%xmm3, (%2)    # Fill 4 pixels. \n\t" 
+                "movdqa %%xmm4, (%3)    # Fill 4 pixels. \n\t" 
                 : /* outputs */
-                  "+r" (dp));
+                  "+r" (dp1),
+                  "+r" (dp2),
+                  "+r" (dp3),
+                  "+r" (dp4));
+            dp1 += 4, dp2 += 4, dp3 += 4, dp4 += 4;
         }
-        destRowPtr += destPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow * 4;
     }
     destPtr->flags &= ~(BLT_PIC_COMPOSITE | BLT_PIC_MASK);
     destPtr->flags |= (BLT_PIC_DIRTY | BLT_PIC_PREMULT_COLORS);
@@ -1892,11 +1904,6 @@ PremultiplyColors(Pict *srcPtr)
         srcRowPtr += srcPtr->pixelsPerRow;
     }
 }
-
-typedef union _Pixel2 {
-    uint64_t lval;
-    uint32_t ival[2];
-} Pixel2;
 
 static uint8_t weightMap[16] __attribute__((aligned(16))) = {
     /* B G R A B G R A */
