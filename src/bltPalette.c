@@ -2,7 +2,7 @@
 /*
  * bltPalette.c --
  *
- * This module implements palettes for the BLT graph widget.
+ * This module implements palettes.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *
@@ -113,9 +113,10 @@ typedef struct _Blt_Palette {
                                          * 1, 255, ... */
     double min, max;                    /* Absolute min and max
                                          * values. This is needed if the
-                                         * palette contains absolute values.
-                                         * normalize the palette entries
-                                         * to relative 0..1 values. */
+                                         * palette contains absolute
+                                         * values.  normalize the palette
+                                         * entries to relative 0..1
+                                         * values. */
     int numColors;                      /* # of entries in color array. */
     int numOpacities;                   /* # of entries in opacity
                                          * array. */
@@ -1887,13 +1888,13 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DeleteOp --
  *
- *      Deletes one or more palettees from the graph.
+ *      Deletes zero or more palettes.
  *
  * Results:
  *      The return value is a standard TCL result. The interpreter result will
  *      contain a TCL list of the element names.
  *
- *      blt::palette delete $name...
+ *      blt::palette delete ?paletteName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -1921,13 +1922,13 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DrawOp --
  *
- *      Draws the palette onto a picture.
+ *      Draws the named palette onto the named picture. Use for creating
+ *      swatches for displaying the palette.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter
- *      result will contain a TCL list of the element names.
+ *      A standard TCL result.
  *
- *      blt::palette draw $name $picture
+ *      blt::palette draw paletteName pictureName
  *
  *---------------------------------------------------------------------------
  */
@@ -2002,13 +2003,12 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ExistsOp --
  *
- *      Indicates if a palette by the given name exists in the element.
+ *      Indicates if a palette by the given name exists.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter result will
- *      contain a TCL list of the element names.
+ *      Returns 1 is the named palette exists, 0 otherwise. 
  *
- *      blt::palette exists $name
+ *      blt::palette exists paletteName
  *
  *---------------------------------------------------------------------------
  */
@@ -2030,11 +2030,13 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InterpolateOp --
  *
- *      Computes the interpolated color value from the value given.
+ *      Computes the interpolated color from the value given.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter result
- *      will contain a TCL list of the element names.
+ *      Returns a list representing the interpolated color components.
+ *      If opacity is set then a list of 4 components "Alpha Red Green Blue"
+ *      will be returned, otherwise 3 components "Red Green Blue".  If the
+ *      -color 
  *
  *      blt::palette interpolate paletteName value
  *
@@ -2107,15 +2109,15 @@ InterpolateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *      Returns the names of the palette in the graph matching one of more
- *      patterns provided.  If no pattern arguments are given, then all
- *      palette names will be returned.
+ *      Returns the names of the palette matching one of more patterns
+ *      provided.  If no pattern arguments are given, then all palette
+ *      names will be returned.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter result will
- *      contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter result
+ *      will contain a TCL list of the element names.
  *
- *      blt::palette names $pattern
+ *      blt::palette names ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -2264,7 +2266,7 @@ PaletteObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PaletteInterpDeleteProc --
  *
- *      This is called when the interpreter registering the "palette"
+ *      This is called when the interpreter registering the "blt::palette"
  *      command is deleted.
  *
  * Results:

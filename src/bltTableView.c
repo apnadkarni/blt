@@ -9144,7 +9144,7 @@ static Blt_OpSpec filterOps[] =
 {
     {"activate",   1, FilterActivateOp,    4, 4, "col",},
     {"cget",       2, FilterCgetOp,        4, 4, "option",},
-    {"configure",  2, FilterConfigureOp,   4, 0, "col ?option value ...?",},
+    {"configure",  2, FilterConfigureOp,   3, 0, "?option value ...?",},
     {"deactivate", 1, FilterDeactivateOp,  3, 3, "",},
     {"inside",     1, FilterInsideOp,      6, 6, "col x y",},
     {"post",       1, FilterPostOp,        3, 4, "?col?",},
