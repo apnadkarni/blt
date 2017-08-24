@@ -13315,6 +13315,8 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Side effects:
  *      The selection changes.
  *
+ *      pathName selection anchor entryName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -13352,6 +13354,8 @@ SelectionAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The selection changes.
  *
+ *      pathName selection clearall
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -13378,6 +13382,8 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * Side effects:
  *      The selection changes.
+ *
+ *      pathName selection includes entryName
  *
  *---------------------------------------------------------------------------
  */
@@ -13416,6 +13422,8 @@ SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * Side effects:
  *      The selection changes.
+ *
+ *      pathName selection mark entryName
  *
  *---------------------------------------------------------------------------
  */
@@ -13479,6 +13487,8 @@ SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  interp->result will contain a boolean
  *      string indicating if there is a selection.
  *
+ *      pathName selection present
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -13509,7 +13519,10 @@ SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The selection changes.
  *
- * $w selection set first last 
+ *      pathName selection set firstEntry ?lastEntry?
+ *      pathName selection toggle firstEntry ?lastEntry?
+ *      pathName selection unset firstEntry ?lastEntry?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -13686,6 +13699,8 @@ SortAutoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SortCgetOp --
  *
+ *      pathName sort cget option
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -13718,6 +13733,8 @@ SortCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Configuration information, such as text string, colors, font,
  *      etc. get set for viewPtr; old resources get freed, if there were
  *      any.  The hypertext is redisplayed.
+ *
+ *      pathName sort configure ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -13761,8 +13778,7 @@ SortConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Sort the tree node 
  *
- *      pathName sort children $node 
- *
+ *      pathName sort children ?entryName  ...?
  */
 static int
 SortChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -13797,7 +13813,7 @@ SortChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Sorts the flatten array of entries.
  *
- *      pathName sort list $node $col
+ *      pathName sort list entryName columnName
  *
  *---------------------------------------------------------------------------
  */
@@ -13878,8 +13894,8 @@ SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Comparison routine (used by qsort) to sort a chain of subnodes.  A
  *      simple string comparison is performed on each node name.
  *
- *      .h sort auto
- *      .h sort once root -recurse root
+ *      pathName sort auto
+ *      pathName sort once root -recurse root
  *
  * Results:
  *      1 is the first is greater, -1 is the second is greater, 0 if equal.
@@ -13922,11 +13938,11 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Turns on highlighting for a particular style.
  *
- *        pathName style activate entry column
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
+ *
+ *      pathName style activate entryName columnName
  *
  *---------------------------------------------------------------------------
  */
@@ -13979,7 +13995,7 @@ StyleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleCellsOp --
  *
- *        pathName style cells "styleName" 
+ *        pathName style cells styleName
  *
  *---------------------------------------------------------------------------
  */
@@ -14028,7 +14044,7 @@ StyleCellsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleCgetOp --
  *
- *        pathName style cget "styleName" -background
+ *        pathName style cget styleName option
  *
  *---------------------------------------------------------------------------
  */
@@ -14053,7 +14069,7 @@ StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleCheckBoxOp --
  *
- *        pathName style checkbox "styleName" -background blue
+ *        pathName style checkbox styleName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -14081,7 +14097,7 @@ StyleCheckBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleComboBoxOp --
  *
- *        pathName style combobox "styleName" -background blue
+ *        pathName style combobox styleName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -14123,6 +14139,8 @@ StyleComboBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      etc. get set for stylePtr; old resources get freed, if there were
  *      any.
  *
+ *      pathName style configure styleName ?option value ...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -14162,7 +14180,7 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleCreateOp --
  *
- *        pathName style create combobox "styleName" -background blue
+ *        pathName style create styleType styleName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -14215,13 +14233,13 @@ StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleDeactivateOp --
  *
- *      Turns on highlighting for all styles
- *
- *        pathName style deactivate 
+ *      Turns on highlighting for *all* styles
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
+ *
+ *      pathName style deactivate 
  *
  *---------------------------------------------------------------------------
  */
@@ -14247,17 +14265,17 @@ StyleDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleForgetOp --
  *
- *      Eliminates one or more style names.  A style still may be in use
+ *      Eliminates zero or more style names.  A style still may be in use
  *      after its name has been officially removed.  Only its hash table
  *      entry is removed.  The style itself remains until its reference
  *      count returns to zero (i.e. no one else is using it).
- *
- *        pathName style forget "styleName"...
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
  *
+ *        pathName style forget ?styleName ...?
+ * 
  *---------------------------------------------------------------------------
  */
 static int
@@ -14299,11 +14317,11 @@ StyleForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Turns on/off highlighting for a particular style.
  *
- *        pathName style highlight styleName on|off
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
+ *
+ *        pathName style highlight styleName on|off
  *
  *---------------------------------------------------------------------------
  */
@@ -14346,6 +14364,7 @@ StyleHighlightOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Always TCL_OK.
  *
  *      pathName style names ?pattern ...?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -14393,9 +14412,8 @@ StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleGetOp --
  *
- *      pathName style get cell
+ *      pathName style get cellName
  *
- *      pathName style get cellSpec
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -14432,6 +14450,7 @@ StyleGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      contains an error message.
  *
  *      pathName style set styleName fieldName ?entryName ...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -14484,7 +14503,7 @@ StyleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleTextBoxOp --
  *
- *        pathName style text "styleName" -background blue
+ *        pathName style text styleName ?option value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -14514,12 +14533,12 @@ StyleTextBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      Returns the type of the style.
  *
- *        pathName style type styleName
- *
  * Results:
  *      A standard TCL result.  If the styleName exists, the type is 
  *      returned as a string. If TCL_ERROR is returned, then interp->result
  *      contains an error message.
+ *
+ *        pathName style type styleName
  *
  *---------------------------------------------------------------------------
  */
@@ -14547,11 +14566,11 @@ StyleTypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Removes a style for a given key for all the ids given.  The cell's
  *      style is returned to its default state.
  *
- *        pathName style unset styleName key node...
- *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
+ *
+ *        pathName style unset styleName columnName ?entryName ...?
  *
  *---------------------------------------------------------------------------
  */
