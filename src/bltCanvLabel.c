@@ -79,7 +79,7 @@
 #define DISPLAY_TEXT            (1<<2)
 #define ORTHOGONAL              (1<<3)
 #define CLIP                    (1<<4)
-#define INIT_SIZE               (1<<5)
+#define SCALE_FONT              (1<<5)
 
 #define DEF_ACTIVE_DASHES               "0"
 #define DEF_ACTIVE_DASH_OFFSET          "0"
@@ -104,6 +104,7 @@
 #define DEF_PADX                        "2"
 #define DEF_PADY                        "2"
 #define DEF_ROTATE                      "0"
+#define DEF_SCALE_TO_FIT                "0"
 #define DEF_STATE                       "normal"
 #define DEF_TAGS                        (char *)NULL
 #define DEF_TEXT                        (char *)NULL
@@ -173,7 +174,7 @@ typedef struct {
     int textAnchor;                     /* Anchors the text within the
                                          * label background.  The default
                                          * is center. */
-    int reqWidth, reqHeight;            /* Requested dimension of label
+    double reqWidth, reqHeight;         /* Requested dimension of label
                                          * item in canvas
                                          * coordinates. These are the
                                          * unrotated dimensions of the
@@ -191,6 +192,7 @@ typedef struct {
                                          * TK_STATE_DISABLED. Selects one
                                          * of the attributes structures
                                          * below. */
+    int scaleToFit;
     StateAttributes normal, active, disabled;
 
     const char *text;			/* Text string to be displayed.
@@ -229,46 +231,33 @@ typedef struct {
  * Information used for parsing configuration specs:
  */
 
-static int StringToFont(ClientData clientData, Tcl_Interp *interp,
-        Tk_Window tkwin, const char *string, char *widgRec, int offset);
-#if (_TCL_VERSION >= _VERSION(8,6,0)) 
-static const char *FontToString (ClientData clientData, Tk_Window tkwin, 
-        char *widgRec, int offset, Tcl_FreeProc **proc);
-#else
-static char *FontToString (ClientData clientData, Tk_Window tkwin, 
-        char *widgRec, int offset, Tcl_FreeProc **proc);
-#endif
+static Tk_OptionParseProc StringToFont;
+static Tk_OptionPrintProc FontToString;
 
 static Tk_CustomOption fontOption = {
     StringToFont, FontToString, (ClientData)0
 };
 
-static int StringToBrush(ClientData clientData, Tcl_Interp *interp,
-        Tk_Window tkwin, const char *string, char *widgRec, int offset);
-#if (_TCL_VERSION >= _VERSION(8,6,0)) 
-static const char *BrushToString (ClientData clientData, Tk_Window tkwin, 
-        char *widgRec, int offset, Tcl_FreeProc **proc);
-#else
-static char *BrushToString (ClientData clientData, Tk_Window tkwin, 
-        char *widgRec, int offset, Tcl_FreeProc **proc);
-#endif
+static Tk_OptionParseProc StringToBrush;
+static Tk_OptionPrintProc BrushToString;
 
 static Tk_CustomOption brushOption = {
     StringToBrush, BrushToString, (ClientData)0
 };
 
-static int StringToState(ClientData clientData, Tcl_Interp *interp,
-        Tk_Window tkwin, const char *string, char *widgRec, int offset);
-#if (_TCL_VERSION >= _VERSION(8,6,0)) 
-static const char *StateToString (ClientData clientData, Tk_Window tkwin, 
-        char *widgRec, int offset, Tcl_FreeProc **proc);
-#else
-static char *StateToString (ClientData clientData, Tk_Window tkwin, 
-        char *widgRec, int offset, Tcl_FreeProc **proc);
-#endif
+static Tk_OptionParseProc StringToState;
+static Tk_OptionPrintProc StateToString;
 
 static Tk_CustomOption stateOption = {
     StringToState, StateToString, (ClientData)0
+};
+
+static Tk_OptionParseProc StringToDistance;
+static Tk_OptionPrintProc DistanceToString;
+
+static Tk_CustomOption distanceOption =
+{
+    StringToDistance, DistanceToString, (ClientData)0
 };
 
 static Tk_CustomOption tagsOption;
@@ -277,23 +266,19 @@ BLT_EXTERN Tk_CustomOption bltPadOption;
 BLT_EXTERN Tk_CustomOption bltDistanceOption;
 
 static Tk_ConfigSpec configSpecs[] = {
-    {TK_CONFIG_SYNONYM, (char *)"-activebackground", "activeFill", 
-        (char *)NULL, (char *)NULL, 0, 0},
-    {TK_CONFIG_SYNONYM, (char *)"-activebg", "activeFill", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-activebackground", "activeFill"},
+    {TK_CONFIG_SYNONYM, (char *)"-activebg", "activeFill"},
     {TK_CONFIG_CUSTOM, (char *)"-activedashes", (char *)NULL, (char *)NULL,  
         DEF_ACTIVE_DASHES, Tk_Offset(LabelItem, active.dashes), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_CUSTOM, (char *)"-activedashoffset", (char *)NULL, (char *)NULL, 
         DEF_ACTIVE_DASH_OFFSET, Tk_Offset(LabelItem, active.dashOffset), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
-    {TK_CONFIG_SYNONYM, (char *)"-activefg", "activeOutline", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-activefg", "activeOutline"},
     {TK_CONFIG_CUSTOM, (char *)"-activefill", "activeFill", (char *)NULL,
         DEF_ACTIVE_FILL_COLOR, Tk_Offset(LabelItem, active.brush), 
         TK_CONFIG_NULL_OK, &brushOption},
-    {TK_CONFIG_SYNONYM, (char *)"-activeforeground", "activeOutline", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-activeforeground", "activeOutline"},
     {TK_CONFIG_CUSTOM, (char *)"-activelinewidth", (char *)NULL, (char *)NULL,
         DEF_ACTIVE_LINEWIDTH, Tk_Offset(LabelItem, active.lineWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
@@ -301,20 +286,16 @@ static Tk_ConfigSpec configSpecs[] = {
         DEF_ACTIVE_OUTLINE_COLOR, Tk_Offset(LabelItem, active.fgColor)},
     {TK_CONFIG_ANCHOR, (char *)"-anchor", (char *)NULL, (char *)NULL,
         DEF_ANCHOR, Blt_Offset(LabelItem, anchor), TK_CONFIG_DONT_SET_DEFAULT},
-    {TK_CONFIG_SYNONYM, (char *)"-bg", "fill", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {TK_CONFIG_SYNONYM, (char *)"-background", "fill", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-bg", "fill"},
+    {TK_CONFIG_SYNONYM, (char *)"-background", "fill"},
     {TK_CONFIG_CUSTOM, (char *)"-dashes", (char *)NULL, (char *)NULL,  
         DEF_NORMAL_DASHES, Blt_Offset(LabelItem, normal.dashes), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_CUSTOM, (char *)"-dashoffset", (char *)NULL, (char *)NULL,  
         DEF_NORMAL_DASH_OFFSET, Tk_Offset(LabelItem, normal.dashOffset), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
-    {TK_CONFIG_SYNONYM, (char *)"-disabledbg", "disabledFill", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {TK_CONFIG_SYNONYM, (char *)"-disabledbackground", "disabledFill", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-disabledbg", "disabledFill"},
+    {TK_CONFIG_SYNONYM, (char *)"-disabledbackground", "disabledFill"},
     {TK_CONFIG_CUSTOM, (char *)"-disableddashes", (char *)NULL, (char *)NULL,  
         DEF_DISABLED_DASHES, Tk_Offset(LabelItem, disabled.dashes), 
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
@@ -322,31 +303,27 @@ static Tk_ConfigSpec configSpecs[] = {
         (char *)NULL,  DEF_ACTIVE_DASH_OFFSET, 
         Blt_Offset(LabelItem, disabled.dashOffset), TK_CONFIG_DONT_SET_DEFAULT, 
         &bltDistanceOption},
-    {TK_CONFIG_SYNONYM, (char *)"-disabledfg", "disabledOutline", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-disabledfg", "disabledOutline"},
     {TK_CONFIG_CUSTOM, (char *)"-disabledfill", "disabledFill", (char *)NULL,
         DEF_DISABLED_FILL_COLOR, Tk_Offset(LabelItem, disabled.brush), 
         TK_CONFIG_NULL_OK, &brushOption},
-    {TK_CONFIG_SYNONYM, (char *)"-disabledforeground", "disabledOutline", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-disabledforeground", "disabledOutline"},
     {TK_CONFIG_CUSTOM, (char *)"-disabledlinewidth", (char *)NULL, (char *)NULL,
         DEF_DISABLED_LINEWIDTH, Tk_Offset(LabelItem, disabled.lineWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
     {TK_CONFIG_COLOR, (char *)"-disabledoutline", "disabledOutline", 
         (char *)NULL, DEF_DISABLED_OUTLINE_COLOR, 
         Tk_Offset(LabelItem, disabled.fgColor)},
-    {TK_CONFIG_SYNONYM, (char *)"-fg", "fill", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-fg", "fill"},
     {TK_CONFIG_CUSTOM, (char *)"-fill", "fill", (char *)NULL,
         DEF_NORMAL_FILL_COLOR, Tk_Offset(LabelItem, normal.brush), 
         TK_CONFIG_NULL_OK, &brushOption},
     {TK_CONFIG_CUSTOM, (char *)"-font", (char *)NULL, (char *)NULL,
         DEF_FONT, Tk_Offset(LabelItem, baseFont), 0, &fontOption},
-    {TK_CONFIG_SYNONYM, (char *)"-foreground", "fill", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-foreground", "fill"},
     {TK_CONFIG_CUSTOM, (char *)"-height", (char *)NULL, (char *)NULL,
         DEF_HEIGHT, Tk_Offset(LabelItem, reqHeight),
-        TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
+        TK_CONFIG_DONT_SET_DEFAULT, &distanceOption},
     {TK_CONFIG_CUSTOM, (char *)"-linewidth", (char *)NULL, (char *)NULL,
         DEF_NORMAL_LINEWIDTH, Tk_Offset(LabelItem, normal.lineWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
@@ -367,6 +344,9 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_DOUBLE, (char *)"-rotate", (char *)NULL, (char *)NULL,
         DEF_ROTATE, Tk_Offset(LabelItem, angle),
         TK_CONFIG_DONT_SET_DEFAULT},
+    {TK_CONFIG_BOOLEAN, (char *)"-scaletofit", (char *)NULL, (char *)NULL,
+        DEF_SCALE_TO_FIT, Tk_Offset(LabelItem, scaleToFit),
+        TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_CUSTOM, (char *)"-state", (char *)NULL, (char *)NULL,
         DEF_STATE, Tk_Offset(LabelItem, state), TK_CONFIG_DONT_SET_DEFAULT, 
         &stateOption},
@@ -379,7 +359,7 @@ static Tk_ConfigSpec configSpecs[] = {
         TK_CONFIG_DONT_SET_DEFAULT},
     {TK_CONFIG_CUSTOM, (char *)"-width", (char *)NULL, (char *)NULL,
         DEF_WIDTH, Tk_Offset(LabelItem, reqWidth),
-        TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
+        TK_CONFIG_DONT_SET_DEFAULT, &distanceOption},
     {TK_CONFIG_DOUBLE, (char *)"-xscale", (char *)NULL, (char *)NULL,
         DEF_XSCALE, Tk_Offset(LabelItem, xScale),
         TK_CONFIG_DONT_SET_DEFAULT},
@@ -560,6 +540,91 @@ StateToString(ClientData clientData, Tk_Window tkwin, char *widgRec,
     return (char *)string;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StringToDistance --
+ *
+ *      Like TK_CONFIG_PIXELS, but adds an extra check for negative
+ *      values.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+StringToDistance(
+    ClientData clientData,      /* Indicated how to check distance */
+    Tcl_Interp *interp,         /* Interpreter to send results back to */
+    Tk_Window tkwin,            /* Window */
+    const char *string,         /* Pixel value string */
+    char *widgRec,              /* Widget record */
+    int offset)                 /* Offset of pixel size in record */
+{
+    double *valuePtr = (double *)(widgRec + offset);
+    double value;
+    int length;
+
+    if (Tk_GetPixels(NULL, tkwin, string, &length) == TCL_OK) {
+        if (length < 0) {
+            Tcl_AppendResult(interp, "bad distance \"", string, "\": ",
+                "can't be negative", (char *)NULL);
+            return TCL_ERROR;
+        }
+        *valuePtr = (double)length;
+    } else if (Tcl_GetDouble(interp, string, &value) == TCL_OK) {
+        if (value < 0.0) {
+            Tcl_AppendResult(interp, "bad distance \"", string, "\": ",
+                "can't be negative", (char *)NULL);
+            return TCL_ERROR;
+        }
+        *valuePtr = value;
+    } else {
+        Tcl_AppendResult(interp, "bad distance \"", string, "\": ",
+                         "must be number", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DistanceToString --
+ *
+ *      Returns the string representing the positive pixel size.
+ *
+ * Results:
+ *      The pixel size string is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+#if (_TCL_VERSION >= _VERSION(8,6,0)) 
+static const char *
+#else
+static char *
+#endif
+DistanceToString(
+    ClientData clientData,      /* Not used. */
+    Tk_Window tkwin,            /* Not used. */
+    char *widgRec,              /* Widget structure record */
+    int offset,                 /* Offset in widget record */
+    Tcl_FreeProc **freeProcPtr) /* Not used. */
+{
+    double value = *(double *)(widgRec + offset);
+    char mesg[200];
+    const char *result;
+
+    sprintf(mesg, "%g", value);
+    result = Blt_AssertStrdup(mesg);
+    *freeProcPtr = (Tcl_FreeProc *)Blt_Free;
+#if (_TCL_VERSION >= _VERSION(8,6,0)) 
+    return result;
+#else
+    return (char *)result;
+#endif
+}
+
 static StateAttributes *
 GetStateAttributes(LabelItem *labelPtr)
 {
@@ -632,6 +697,46 @@ FreeLabelGC(Display *display, LabelGC *gcPtr)
     }
 }
 
+static Blt_Font
+ScaleFont(LabelItem *labelPtr, double xScale, double yScale)
+{
+    double newFontSize;
+    Blt_Font font;
+
+    newFontSize = MIN(xScale, yScale) *
+        Blt_Font_PointSize(labelPtr->baseFont);
+    fprintf(stderr, "Enter ScaleFont label=%s xScale=%g yScale=%g new=%g,%g, newFontSize=%g\n", 
+            labelPtr->text, xScale, yScale, labelPtr->xScale,
+            labelPtr->yScale, newFontSize);
+    labelPtr->flags |= DISPLAY_TEXT;
+    font = labelPtr->baseFont;
+    if ((labelPtr->minFontSize > 0) && (newFontSize < labelPtr->minFontSize)) {
+        labelPtr->flags &= ~DISPLAY_TEXT;
+    } else if ((labelPtr->maxFontSize > 0) &&
+               (newFontSize <= labelPtr->maxFontSize)) {
+    } else {
+        /* Create a scaled font and replace the base font with it. */
+        font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
+                                  newFontSize);
+        if (font == NULL) {
+            fprintf(stderr, "can't resize font\n");
+            labelPtr->flags &= ~DISPLAY_TEXT;
+        }
+        if (labelPtr->baseFont != NULL) {
+            Blt_Font_Free(labelPtr->baseFont);
+        }
+        labelPtr->baseFont = font;
+        if (labelPtr->angle != 0.0) {
+            if (!Blt_Font_CanRotate(font, labelPtr->angle)) {
+                fprintf(stderr, "can't rotate font %s\n", 
+                        Blt_Font_Name(font));
+            }
+        }
+        labelPtr->fontSize = Blt_Font_PointSize(font);
+    } 
+    return font;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -653,7 +758,7 @@ ComputeGeometry(LabelItem *labelPtr)
     font = (labelPtr->scaledFont != NULL) ?
         labelPtr->scaledFont : labelPtr->baseFont;
 #if DEBUG
-    fprintf(stderr, "Enter ComputeGeometry label=%s reqw=%d reqh=%d\n",
+    fprintf(stderr, "Enter ComputeGeometry label=%s reqw=%g reqh=%g\n",
             labelPtr->text, labelPtr->reqWidth, labelPtr->reqHeight);
 #endif
     labelPtr->flags &= ~CLIP;
@@ -664,23 +769,44 @@ ComputeGeometry(LabelItem *labelPtr)
         TextLayout *layoutPtr;
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
-        Blt_Ts_SetPadding(ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
-                          labelPtr->yPad.side1, labelPtr->yPad.side2);
         layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
         if (labelPtr->layoutPtr != NULL) {
             Blt_Free(labelPtr->layoutPtr);
         }
         labelPtr->layoutPtr = layoutPtr;
-        
+        w = layoutPtr->width;
+        h = layoutPtr->height;
         /* Let the requested width and height override the computed size. */
-        w = (labelPtr->reqWidth > 0) ? labelPtr->reqWidth : layoutPtr->width;
-        h = (labelPtr->reqHeight > 0) ? labelPtr->reqHeight : layoutPtr->height;
+        if (labelPtr->reqWidth > 0.0) {
+            w = labelPtr->reqWidth;
+        }
+        if (labelPtr->reqHeight > 0.0) {
+            h = labelPtr->reqHeight;
+        }
+        if (labelPtr->flags & SCALE_FONT) {
+            double xScale, yScale;
+            
+            /* The size of the label was set and -scaletofit was set. */
+            /* Scale the font so that it fits the given rectangle. */
+            xScale = (w - PADDING(labelPtr->xPad)) / (double)layoutPtr->width;
+            yScale = (h - PADDING(labelPtr->yPad)) / (double)layoutPtr->height;
+            font = ScaleFont(labelPtr, xScale, yScale);
+            Blt_Ts_SetFont(ts, font);
+            layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes,
+                                            &ts);
+            if (labelPtr->layoutPtr != NULL) {
+                Blt_Free(labelPtr->layoutPtr);
+            }
+            labelPtr->layoutPtr = layoutPtr;
+            labelPtr->flags &= ~SCALE_FONT;
+        }
     }
     /* Compute the outline polygon (isolateral or rectangle) given the
      * width and height. The center of the box is 0,0. */
     Blt_GetBoundingBox(w, h, labelPtr->angle, &rw, &rh, labelPtr->outlinePts);
-    /* This assumes that X and Y are scaled evenly. Or that label is rotated
-     * 0 or 180 degrees. */
+
+    /* This assumes that X and Y are scaled evenly. Or that label is
+     * rotated 0 or 180 degrees. */
     rw *= labelPtr->xScale;
     rh *= labelPtr->yScale;
     labelPtr->width = w * labelPtr->xScale;
@@ -704,8 +830,8 @@ ComputeGeometry(LabelItem *labelPtr)
         int xOffset, yOffset;
 
         xOffset = yOffset = 0;          /* Suppress compiler warning. */
-        /* Compute the starting positions of the text. This also encompasses
-         * justification. */
+        /* Compute the starting positions of the text. This also
+         * encompasses justification. */
         switch (labelPtr->textAnchor) {
         case TK_ANCHOR_NW:
         case TK_ANCHOR_W:
@@ -1134,7 +1260,8 @@ ConfigureProc(
     StateAttributes *attrPtr;
     
 #if DEBUG
-    fprintf(stderr, "Enter ConfigureProc label=%s\n", labelPtr->text);
+    fprintf(stderr, "Enter ConfigureProc label=%s flags=%x\n", 
+            labelPtr->text, flags);
 #endif
     tkwin = Tk_CanvasTkwin(canvas);
     if (Tk_ConfigureWidget(interp, tkwin, configSpecs, argc, (const char**)argv,
@@ -1145,16 +1272,18 @@ ConfigureProc(
     if (labelPtr->angle < 0.0) {
         labelPtr->angle += 360.0;
     }
-    if (Blt_OldConfigModified(configSpecs, "-font", "-text", (char *)NULL)) {
-        labelPtr->flags |= INIT_SIZE;
-        ComputeGeometry(labelPtr);
-    }
-    if (Blt_OldConfigModified(configSpecs, "-rotate", "-*fontsize", 
-                              "-pad*", "-width",
+    if (Blt_OldConfigModified(configSpecs, "-rotate", "-*font*", 
+                              "-pad*", "-width", "-text", 
                               "-height", "-anchor", "-linewidth", 
                               (char *)NULL)) {
+        fprintf(stderr, "scaleToFit=%d reqWidth=%g reqHeight=%g\n",
+                labelPtr->scaleToFit, labelPtr->reqWidth, labelPtr->reqHeight);
+        if ((labelPtr->scaleToFit) &&
+            (labelPtr->reqWidth > 0.0) && (labelPtr->reqHeight > 0.0)) {
+        }
         ComputeGeometry(labelPtr);
     }
+            labelPtr->flags |= SCALE_FONT;
 
     /* Check if the label is a right-angle rotation.  */
     if (FMOD(labelPtr->angle, 90.0) == 0.0) {
@@ -1259,7 +1388,6 @@ CreateProc(
     labelPtr->xScale = labelPtr->yScale = 1.0;
     labelPtr->state = TK_STATE_NORMAL;
     labelPtr->textAnchor = TK_ANCHOR_NW;
-    labelPtr->flags = INIT_SIZE;
     labelPtr->tkwin  = tkwin;
     labelPtr->x = x;
     labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
@@ -1756,8 +1884,8 @@ PostScriptProc(
                           labelPtr->yPad.side1, labelPtr->yPad.side2);
         layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
         /* Let the requested width and height override the computed size. */
-        w = (labelPtr->reqWidth > 0) ? labelPtr->reqWidth : layoutPtr->width;
-        h = (labelPtr->reqHeight > 0) ? labelPtr->reqHeight : layoutPtr->height;
+        w = (labelPtr->reqWidth > 0.0) ? labelPtr->reqWidth : layoutPtr->width;
+        h = (labelPtr->reqHeight > 0.0) ? labelPtr->reqHeight : layoutPtr->height;
     }
     Blt_Ps_SetPrinting(ps, FALSE);
 
