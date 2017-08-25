@@ -400,6 +400,27 @@ FontToString(
     return (char *)string;
 }
 
+static int 
+OptionMatches(int argc, char **argv, ...)
+{
+    va_list args;
+    char *option;
+
+    va_start(args, argv);
+    while ((option = va_arg(args, char *)) != NULL) {
+        int i;
+
+        for (i = 0; i < argc; i++) {
+            if (Tcl_StringMatch(argv[i], option)) {
+                va_end(args);
+                return 1;
+            }
+        }
+    }
+    va_end(args);
+    return 0;
+}
+
 static char *
 SkipBlanks(ParseInfo *piPtr)
 {
@@ -1160,7 +1181,7 @@ ConfigureProc(
      * Check for a "-image" option specifying an image to be displayed
      * representing the EPS canvas item.
      */
-    if (Blt_OldConfigModified(configSpecs, "-image", (char *)NULL)) {
+    if (OptionMatches(argc, argv, "-image", (char *)NULL)) {
         if (itemPtr->preview != NULL) {
             Tk_FreeImage(itemPtr->preview);     /* Release old Tk image */
             if ((!itemPtr->origFromPicture) && (itemPtr->original != NULL)) {
@@ -1206,7 +1227,7 @@ ConfigureProc(
             }
         }
     }
-    if (Blt_OldConfigModified(configSpecs, "-file", (char *)NULL)) {
+    if (OptionMatches(argc, argv, "-file", (char *)NULL)) {
         CloseEpsFile(itemPtr);
         if ((!itemPtr->origFromPicture) && (itemPtr->original != NULL)) {
             Blt_FreePicture(itemPtr->original);
@@ -1242,7 +1263,7 @@ ConfigureProc(
         itemPtr->height = height;
     }
 
-    if (Blt_OldConfigModified(configSpecs, "-quick", (char *)NULL)) {
+    if (OptionMatches(argc, argv, "-quick", (char *)NULL)) {
         itemPtr->lastWidth = itemPtr->lastHeight = 0;
     }
     /* Fill color GC */

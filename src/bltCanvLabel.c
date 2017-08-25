@@ -94,8 +94,8 @@
 #define DEF_DISABLED_OUTLINE_COLOR      STD_DISABLED_FOREGROUND
 #define DEF_FONT                        STD_FONT_NORMAL
 #define DEF_HEIGHT                      "0"
-#define DEF_MAXFONTSIZE                 "-1"
-#define DEF_MINFONTSIZE                 "-1"
+#define DEF_MAXFONTSIZE                 "0"
+#define DEF_MINFONTSIZE                 "0"
 #define DEF_NORMAL_DASHES               "0"
 #define DEF_NORMAL_DASH_OFFSET          "0"
 #define DEF_NORMAL_FILL_COLOR           (char *)NULL
@@ -698,7 +698,7 @@ FreeLabelGC(Display *display, LabelGC *gcPtr)
 }
 
 static Blt_Font
-ScaleFont(LabelItem *labelPtr, double xScale, double yScale)
+ScaleToFit(LabelItem *labelPtr, double xScale, double yScale)
 {
     double newFontSize;
     Blt_Font font;
@@ -706,31 +706,24 @@ ScaleFont(LabelItem *labelPtr, double xScale, double yScale)
     newFontSize = (MIN(xScale, yScale) *
                         Blt_Font_PointSize(labelPtr->baseFont));
     labelPtr->flags |= DISPLAY_TEXT;
-    font = labelPtr->baseFont;
-    if ((labelPtr->minFontSize > 0) && (newFontSize < labelPtr->minFontSize)) {
+    /* Create a scaled font and replace the base font with it. */
+    font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
+                              newFontSize);
+    if (font == NULL) {
+        fprintf(stderr, "can't resize font\n");
         labelPtr->flags &= ~DISPLAY_TEXT;
-    } else if ((labelPtr->maxFontSize > 0) &&
-               (newFontSize <= labelPtr->maxFontSize)) {
-    } else {
-        /* Create a scaled font and replace the base font with it. */
-        font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
-                                  newFontSize);
-        if (font == NULL) {
-            fprintf(stderr, "can't resize font\n");
-            labelPtr->flags &= ~DISPLAY_TEXT;
+    }
+    if (labelPtr->baseFont != NULL) {
+        Blt_Font_Free(labelPtr->baseFont);
+    }
+    labelPtr->baseFont = font;
+    if (labelPtr->angle != 0.0) {
+        if (!Blt_Font_CanRotate(font, labelPtr->angle)) {
+            fprintf(stderr, "can't rotate font %s\n", 
+                    Blt_Font_Name(font));
         }
-        if (labelPtr->baseFont != NULL) {
-            Blt_Font_Free(labelPtr->baseFont);
-        }
-        labelPtr->baseFont = font;
-        if (labelPtr->angle != 0.0) {
-            if (!Blt_Font_CanRotate(font, labelPtr->angle)) {
-                fprintf(stderr, "can't rotate font %s\n", 
-                        Blt_Font_Name(font));
-            }
-        }
-        labelPtr->fontSize = Blt_Font_PointSize(font);
-    } 
+    }
+    labelPtr->fontSize = Blt_Font_PointSize(font);
     return font;
 }
 
@@ -788,7 +781,7 @@ ComputeGeometry(LabelItem *labelPtr)
             /* Scale the font so that it fits the given rectangle. */
             xScale = (w - PADDING(labelPtr->xPad)) / (double)layoutPtr->width;
             yScale = (h - PADDING(labelPtr->yPad)) / (double)layoutPtr->height;
-            font = ScaleFont(labelPtr, xScale, yScale);
+            font = ScaleToFit(labelPtr, xScale, yScale);
             Blt_Ts_SetFont(ts, font);
             layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes,
                                             &ts);
@@ -1664,11 +1657,13 @@ ScaleProc(
     labelPtr->flags |= DISPLAY_TEXT;
     if ((labelPtr->minFontSize > 0) && (newFontSize < labelPtr->minFontSize)) {
         labelPtr->flags &= ~DISPLAY_TEXT;
-    } else if ((labelPtr->maxFontSize > 0) &&
-               (newFontSize <= labelPtr->maxFontSize)) {
     } else {
         Blt_Font font;
-        
+
+        if ((labelPtr->maxFontSize > 0) &&
+            (newFontSize > labelPtr->maxFontSize)) {
+            newFontSize = labelPtr->maxFontSize;
+        } 
         font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
                                   newFontSize);
         if (font == NULL) {

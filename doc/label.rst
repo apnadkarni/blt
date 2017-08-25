@@ -22,8 +22,8 @@ A **label** canvas displays a string of characters on the screen.  The text
 must be in a single font, but it can occupy multiple lines on the screen
 (if it contains newlines). The label may also optionally display a
 rectangular filled background or outline. The item can be rotated and the
-font is scaled as the item is scaled.  You can use **scale** canvas option
-ans the label text will scale.  
+font is scaled as the item is scaled.  If you can use canvas' **scale** 
+operation the label text will scale.  
 
 SYNTAX
 ------
@@ -36,26 +36,26 @@ SYNTAX
   the location of item.
 
   Additional options may be specified on the command line to configure
-  aspects of the label item such as its color and font.  The
-  following *option* and *value* pairs are valid.
+  aspects of the label item such as its color and font.  The following
+  *option* and *value* pairs are valid.
 
   **-activebackground** *colorName*
-     See **-activefill** option.
+    See **-activefill** option.
 
   **-activebg** *colorName*
-     See **-activeoutline** option.
+    See **-activeoutline** option.
 
   **-activedashes** *numPixels*
-     Specifies the interval of on/off dashes of the outline around the
-     label when the item's state is active (see the **-state** option). If
-     *numPixels* is zero, then the outline is a solid line.  The default is
-     0.
+    Specifies the interval of on/off dashes of the outline around the
+    label when the item's state is active (see the **-state** option). If
+    *numPixels* is zero, then the outline is a solid line.  The default is
+    "0".
 
   **-activedashoffset** *numPixels*
-     Specifies the offset of dash pattern used to draw the outline when the
-     item's state is active (see the **-state** option). This can be used
-     to create a marching ants effect by periodically increasing the
-     offset.  The default is 0.
+    Specifies the offset of dash pattern used to draw the outline when the
+    item's state is active (see the **-state** option). This can be used
+    to create a marching ants effect by periodically increasing the
+    offset.  The default is "0".
 
   **-activefg** *colorName*
     See **-activeoutline** option.
@@ -92,27 +92,27 @@ SYNTAX
     Specifies the interval of on/off dashes of the outline around the label
     when the item's state is normal (see the **-state** option). If
     *numPixels* is zero, then the outline is a solid line.  The default is
-    0.
+    "0".
 
   **-dashoffset** *numPixels*
-     Specifies the offset of dash pattern used to draw the outline when the
-     item's state is normal (see the **-state** option).  The default is 0.
+    Specifies the offset of dash pattern used to draw the outline when the
+    item's state is normal (see the **-state** option).  The default is 0.
 
   **-disabledbackground** *colorName*
-     See **-disablefill** option.
+    See **-disablefill** option.
 
   **-disabledbg** *colorName*
-     See **-disabledfill** option.
+    See **-disabledfill** option.
 
   **-disableddashes** *numPixels*
-     Specifies the interval of on/off dashes of the outline around the
-     label when the item's state is disabled (see the **-state** option). If
-     *numPixels* is zero, then the outline is a solid line.  The default is
-     0.
+    Specifies the interval of on/off dashes of the outline around the
+    label when the item's state is disabled (see the **-state** option). If
+    *numPixels* is zero, then the outline is a solid line.  The default is
+    "0".
 
   **-disableddashoffset** *numPixels*
-     Specifies the offset of dash pattern used to draw the outline when the
-     item's state is disabled (see the **-state** option). The default is 0.
+    Specifies the offset of dash pattern used to draw the outline when the
+    item's state is disabled (see the **-state** option). The default is 0.
 
   **-disabledfg** *colorName*
     See **-disabledoutline** option.
@@ -137,7 +137,7 @@ SYNTAX
     "grey90".
 
   **-fg** *colorName*
-     Same as the **-outline** option.
+    Same as the **-outline** option.
 
   **-fill** *colorSpec*
     Specifies the background color of the label rectangle.  *ColorSpec* may
@@ -146,25 +146,31 @@ SYNTAX
     is drawn.  The default is "".
 
   **-font** *fontName* 
-     Specifies the base font of the label. The default is "{Sans Serif} 10".
+    Specifies the base font of the label. The default is "{Sans Serif} 10".
 
   **-foreground** *colorName*
-     Same as the **-outline** option.
+    Same as the **-outline** option.
 
   **-height** *numPixels*
-     Specifies the height of the label item.  If *numPixels* is "0", then the
-     height is determined from font size and text.  The default is "0".
+    Specifies the height of the label item.  If *numPixels* is "0", then the
+    height is determined from font size and text.  The default is "0".
 
   **-linewidth** *numPixels*
     Specifies the width of the rectangular outline drawn when the item's
-    state is normal.  If *numPixels* is 0, no outline is drawn.  The
-    default is 0.
+    state is normal.  If *numPixels* is zero, no outline is drawn.  The
+    default is "0".
 
   **-maxfontsize** *numPoints*
-     Not implemented.
+    Specifies the maximum font size to used to display the text.  If
+    *numPoints* is than zero, it represents the number of points for the
+    font's maximum size. If the font is scaled to a size greater than
+    *numPoints*, it will be clamped to *numPoints*. The default is "0".
 
   **-minfontsize** *numPoints*
-     Not implemented.
+    Specifies the minimum size font to used to display the text.  If
+    *numPoints* is greater than zero, it represents the number of points
+    for the font's minimum size. If the font is scaled to a size less than
+    *numPoints*, the text is not displayed.  The default is "0".
 
   **-outline** *colorName*
     Specifies the color of the label's rectangular outline and text when
@@ -189,6 +195,12 @@ SYNTAX
 
   **-rotate** *numDegrees*
     Specifies the rotation of the label.  The default is "0".
+
+  **-scaletofit** *boolean*
+    Specifies if the font in the label should be initially scaled to fit
+    the designated rectangle.  In this case, the font size of the **-font**
+    option value isn't used.  Both **-width** and **-height** must be 
+    non-zero.
 
   **-state** *stateName*
     Specifies one of three states for the item: 
@@ -217,13 +229,17 @@ SYNTAX
     of  a list of tag names, which replace any existing tags for the
     item.  *TagList* may be an empty list.  The default is "".
 
-  **-text** *string*
-    Indicates whether to display the image preview (if one exists), or a
-    simple rectangle.  The default is "yes".
+  **-text** *textString*
+    Specifies the text to be displayed in the label. *TextString* may be
+    any arbitrary string. Newlines in *textString* represent separate lines
+    to be displayed.  The default is "".
 
   **-textanchor** *anchorName*
-    Specifies a bitmap to used to stipple the rectangle representing the
-    LABEL item.  The default is "".
+    Specifies how to position the text within the label item if extra
+    space is available. For example, if *anchorName* is "center" then the
+    text is centered in the the label; if *anchorName* is "n" then the
+    text will be drawn such that the top center point of the text will be
+    the top center point of the label.  This option defaults to "c".
 
   **-width** *numPixels*
     Specifies the height of the label item.  If *numPixels* is "0", then
@@ -242,23 +258,13 @@ SYNTAX
 NOTES
 -----
 
-The label item does not perform anisomorphic scaling correctly as this
-would mean distorting the base font.  It will scale the rectangle
-background correctly, but the text will be scale to the maximum of the X
-and Y scales.
+The label item does not perform anisomorphic scaling (where x and y are
+scaled differently) correctly as this would mean distorting the base font.
+It will scale the rectangle background correctly, but the text will be
+scale to the maximum of the X and Y scales.
 
 EXAMPLE
 -------
-
-Let's say you have for PostScript files of four graphs which you want to
-tile two-by-two on a single page.  Maybe you'd like to annotate the graphs
-by putting a caption at the bottom of each graph.
-
-Normally, you would have to resort to an external tool or write your own
-PostScript program.  The **label** canvas item lets you do this through Tk's
-canvas widget.  An **label** item displays an image (or rectangle)
-representing the encapsulated PostScript file.  It also scales and
-translates the LABEL file when the canvas is printed.
 
 SEE ALSO
 --------

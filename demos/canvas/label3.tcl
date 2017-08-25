@@ -127,8 +127,10 @@ set id [.ss.c create label 500 500 \
 	    -anchor c \
 	    -textanchor c \
 	    -padx 20 \
-	    -font "Arial 288" \
+	    -font "Arial 12" \
 	    -scaletofit 1 \
+	    -minfontsize "6" \
+	    -maxfontsize "44" \
 	    -rotate 0 \
 	    -width 550 \
 	    -height 250]

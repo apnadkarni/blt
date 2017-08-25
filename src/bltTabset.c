@@ -8278,6 +8278,7 @@ fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.
         if (tabPtr == setPtr->selectPtr) {
             maxLength += setPtr->xSelectPad;
         }
+
 #if DEBUG0
         fprintf(stderr, "DrawLayout: text tab=(%s) coords=%d,%d text=%dx%d ml=%d => region: x=%d,y=%d w=%d,h=%d, maxLength=%d\n",
                 tabPtr->text, x, y, tabPtr->textWidth0, tabPtr->textHeight0, 
@@ -8287,10 +8288,12 @@ fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.
             Blt_Ts_SetMaxLength(ts, maxLength+100);
             Blt_Ts_DrawLayout(setPtr->tkwin, drawable, tabPtr->layoutPtr, &ts, 
                           x + rPtr->x, y + rPtr->y);
+#ifdef notdef
             if ((setPtr->flags & FOCUS) && (setPtr->focusPtr == tabPtr)) {
                 Blt_Ts_UnderlineChars(setPtr->tkwin, drawable, 
                 tabPtr->layoutPtr, &ts,  x + rPtr->x, y + rPtr->y);
             }
+#endif
         }
     }
     rPtr = &tabPtr->focusRegion;

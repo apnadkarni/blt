@@ -267,7 +267,7 @@ command.  The following operations are available for *combobutton* widgets:
     decision whether to focus on the window.  The default is "".
 
   **-text** *textString* 
-    Specifies the text to be display in *pathName*. If *textString* is not
+    Specifies the text to be displayed in *pathName*. If *textString* is not
     "", this option overrides the **-textvariable** option.  The default is
     "".
 
