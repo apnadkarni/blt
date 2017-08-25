@@ -703,11 +703,8 @@ ScaleFont(LabelItem *labelPtr, double xScale, double yScale)
     double newFontSize;
     Blt_Font font;
 
-    newFontSize = MIN(xScale, yScale) *
-        Blt_Font_PointSize(labelPtr->baseFont);
-    fprintf(stderr, "Enter ScaleFont label=%s xScale=%g yScale=%g new=%g,%g, newFontSize=%g\n", 
-            labelPtr->text, xScale, yScale, labelPtr->xScale,
-            labelPtr->yScale, newFontSize);
+    newFontSize = (MIN(xScale, yScale) *
+                        Blt_Font_PointSize(labelPtr->baseFont));
     labelPtr->flags |= DISPLAY_TEXT;
     font = labelPtr->baseFont;
     if ((labelPtr->minFontSize > 0) && (newFontSize < labelPtr->minFontSize)) {
@@ -763,6 +760,7 @@ ComputeGeometry(LabelItem *labelPtr)
 #endif
     labelPtr->flags &= ~CLIP;
     if (labelPtr->numBytes == 0) {
+        fprintf(stderr, "layoutPtr=%x\n", labelPtr->layoutPtr);
         w = h = 0;
     } else {
         TextStyle ts;
@@ -947,6 +945,27 @@ ComputeGeometry(LabelItem *labelPtr)
     labelPtr->header.y1 = (int)floor(labelPtr->anchorPos.y)-attrPtr->lineWidth;
     labelPtr->header.y2 = (int)ceil(labelPtr->anchorPos.y+labelPtr->rotHeight) +
         2 * attrPtr->lineWidth;
+}
+
+static int 
+OptionMatches(int argc, char **argv, ...)
+{
+    va_list args;
+    char *option;
+
+    va_start(args, argv);
+    while ((option = va_arg(args, char *)) != NULL) {
+        int i;
+
+        for (i = 0; i < argc; i++) {
+            if (Tcl_StringMatch(argv[i], option)) {
+                va_end(args);
+                return 1;
+            }
+        }
+    }
+    va_end(args);
+    return 0;
 }
 
 /*
@@ -1272,18 +1291,6 @@ ConfigureProc(
     if (labelPtr->angle < 0.0) {
         labelPtr->angle += 360.0;
     }
-    if (Blt_OldConfigModified(configSpecs, "-rotate", "-*font*", 
-                              "-pad*", "-width", "-text", 
-                              "-height", "-anchor", "-linewidth", 
-                              (char *)NULL)) {
-        fprintf(stderr, "scaleToFit=%d reqWidth=%g reqHeight=%g\n",
-                labelPtr->scaleToFit, labelPtr->reqWidth, labelPtr->reqHeight);
-        if ((labelPtr->scaleToFit) &&
-            (labelPtr->reqWidth > 0.0) && (labelPtr->reqHeight > 0.0)) {
-        }
-        ComputeGeometry(labelPtr);
-    }
-            labelPtr->flags |= SCALE_FONT;
 
     /* Check if the label is a right-angle rotation.  */
     if (FMOD(labelPtr->angle, 90.0) == 0.0) {
@@ -1302,6 +1309,16 @@ ConfigureProc(
             fprintf(stderr, "can't rotate font %s\n", 
                     Blt_Font_Name(labelPtr->baseFont));
         }
+    }
+    if (OptionMatches(argc, argv, "-rotate", "-*font*", 
+                              "-pad*", "-width", "-text", 
+                              "-height", "-anchor", "-linewidth", 
+                              (char *)NULL)) {
+        if ((labelPtr->scaleToFit) &&
+            (labelPtr->reqWidth > 0.0) && (labelPtr->reqHeight > 0.0)) {
+            labelPtr->flags |= SCALE_FONT;
+        }
+        ComputeGeometry(labelPtr);
     }
 
     /* Update only the GC for the specified-state. */

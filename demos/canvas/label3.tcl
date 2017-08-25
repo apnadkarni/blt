@@ -78,7 +78,7 @@ blt::scrollset .ss \
     -window .ss.c 
 blt::tk::scrollbar .ss.ys
 blt::tk::scrollbar .ss.xs
-canvas .ss.c -bg white -width 600 -height 400
+canvas .ss.c -bg white -width 1000 -height 1000
 
 blt::table . \
     0,0 .ss -fill both
@@ -119,19 +119,19 @@ set id [.ss.c create label 300 200 \
 .ss.c bind $id <Leave> [list Deactivate .ss.c $id $bg1]
 }
 
-set id [.ss.c create label 300 200 \
+set id [.ss.c create label 500 500 \
 	    -text "Hello, World" \
 	    -bg $bg2 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 1 \
 	    -anchor c \
 	    -textanchor c \
-	    -padx 0 \
-	    -font "Arial 8" \
+	    -padx 20 \
+	    -font "Arial 288" \
 	    -scaletofit 1 \
 	    -rotate 0 \
-	    -width 150 \
-	    -height 50]
+	    -width 550 \
+	    -height 250]
 
 blt::table . \
     0,0 .ss -fill both
@@ -166,4 +166,3 @@ bind .ss.c  <KeyPress-Down>  {
 focus .ss.c
 puts stderr bbox=[.ss.c bbox all]
 
-.ss.c itemconfigure $id -width 300
