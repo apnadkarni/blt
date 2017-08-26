@@ -1803,7 +1803,8 @@ DisplayProc(
                         labelPtr->points, 5, CoordModeOrigin);
         }
     }
-    if (labelPtr->text != NULL) {       /* Text itself */
+    /* Text itself */
+    if ((labelPtr->text != NULL) && (labelPtr->flags & DISPLAY_TEXT)) {
         Blt_Font font;
         TkRegion clipRegion;
 

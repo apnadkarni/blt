@@ -131,7 +131,7 @@ set id [.ss.c create label 500 500 \
 	    -scaletofit 1 \
 	    -minfontsize "6" \
 	    -maxfontsize "44" \
-	    -rotate 0 \
+	    -rotate 90 \
 	    -width 550 \
 	    -height 250]
 
