@@ -888,13 +888,13 @@ Blt_GetNthPicture(Blt_Chain chain, size_t index)
 }
 
 static INLINE void
-CopyPicture(Pict *destPtr, Pict *srcPtr)
+ResizeCopyPictureBits(Pict *destPtr, Pict *srcPtr)
 {
     if ((destPtr->width != srcPtr->width) ||
         (destPtr->height != srcPtr->height)) {
         Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
     }
-    Blt_CopyPictures(destPtr, srcPtr);
+    Blt_CopyPictureBits(destPtr, srcPtr);
 }
 
 static Blt_Picture
@@ -1009,7 +1009,7 @@ int
 Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, 
                     PictRegion *regionPtr)
 {
-    double left, top, right, bottom;
+    double x1, y1, x2, y2;
 
     if ((objc != 2) && (objc != 4)) {
         Tcl_AppendResult(interp, "wrong # elements in bounding box", 
@@ -1017,37 +1017,39 @@ Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
         return TCL_ERROR;
     }
     regionPtr->x = regionPtr->y = regionPtr->w = regionPtr->h = 0;
-    if ((Tcl_GetDoubleFromObj(interp, objv[0], &left) != TCL_OK) ||
-        (Tcl_GetDoubleFromObj(interp, objv[1], &top) != TCL_OK)) {
+    if ((Tcl_GetDoubleFromObj(interp, objv[0], &x1) != TCL_OK) ||
+        (Tcl_GetDoubleFromObj(interp, objv[1], &y1) != TCL_OK)) {
         return TCL_ERROR;
     }
     if (objc == 2) {
-        regionPtr->x = ROUND(left), regionPtr->y = ROUND(top);
+        regionPtr->x = ROUND(x1), regionPtr->y = ROUND(y1);
+        regionPtr->flags |= BLT_PICTURE_COORDS;
         return TCL_OK;
     }
-    if ((Tcl_GetDoubleFromObj(interp, objv[2], &right) != TCL_OK) ||
-        (Tcl_GetDoubleFromObj(interp, objv[3], &bottom) != TCL_OK)) {
+    if ((Tcl_GetDoubleFromObj(interp, objv[2], &x2) != TCL_OK) ||
+        (Tcl_GetDoubleFromObj(interp, objv[3], &y2) != TCL_OK)) {
         return TCL_ERROR;
     }
 
     /* Flip the coordinates of the bounding box if necessary so that its
      * the upper-left and lower-right corners */
-    if (left > right) {
+    if (x1 > x2) {
         double tmp;
 
-        tmp = left, left = right, right = tmp;
+        tmp = x1, x1 = x2, x2 = tmp;
     }
-    if (top > bottom) {
+    if (y1 > y2) {
         double tmp;
 
-        tmp = top, top = bottom, bottom = tmp;
+        tmp = y1, y1 = y2, y2 = tmp;
     }
-    top = floor(top), left = floor(left);
-    bottom = ceil(bottom), right = ceil(right);
-    regionPtr->x = (int)left, regionPtr->y = (int)top;
+    regionPtr->flags |= BLT_PICTURE_COORDS | BLT_PICTURE_SIZE;
+    y1 = floor(y1), x1 = floor(x1);
+    y2 = ceil(y2), x2 = ceil(x2);
+    regionPtr->x = (int)x1, regionPtr->y = (int)y1;
     /* Opposite corner */
-    regionPtr->w = (int)right - regionPtr->x + 1;
-    regionPtr->h = (int)bottom - regionPtr->y + 1;
+    regionPtr->w = (int)x2 - regionPtr->x + 1;
+    regionPtr->h = (int)y2 - regionPtr->y + 1;
     return TCL_OK;
 }
 
@@ -1061,6 +1063,15 @@ GetBBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, PictRegion *regionPtr)
         return TCL_ERROR;
     }
     return Blt_GetBBoxFromObjv(interp, objc, objv, regionPtr);
+}
+
+static void
+InitRegion(Blt_Picture picture, PictRegion *regionPtr)
+{
+    regionPtr->w = Blt_Picture_Width(picture);
+    regionPtr->h = Blt_Picture_Height(picture);
+    regionPtr->flags = 0;
+    regionPtr->x = regionPtr->y = 0;
 }
 
 int
@@ -1089,16 +1100,20 @@ Blt_AdjustRegionToPicture(Blt_Picture picture, PictRegion *regionPtr)
     if (regionPtr->x < 0) {
         regionPtr->w += regionPtr->x;
         regionPtr->x = 0;
+        regionPtr->flags |= BLT_PICTURE_SIZE | BLT_PICTURE_COORDS;
     } 
     if (regionPtr->y < 0) {
         regionPtr->h += regionPtr->y;
         regionPtr->y = 0;
+        regionPtr->flags |= BLT_PICTURE_SIZE | BLT_PICTURE_COORDS;
     }
     if ((regionPtr->x + regionPtr->w) > w) {
         regionPtr->w = w - regionPtr->x;
+        regionPtr->flags |= BLT_PICTURE_SIZE;
     }
     if ((regionPtr->y + regionPtr->h) > h) {
         regionPtr->h = h - regionPtr->y;
+        regionPtr->flags |= BLT_PICTURE_SIZE;
     }
     return TRUE;
 }
@@ -2832,7 +2847,7 @@ DoDissolve(Transition *transPtr)
     next = (int)(position * transPtr->numPixels);
     last = transPtr->last;
     if (next < last) {
-        Blt_CopyPictures(transPtr->picture, transPtr->from);
+        Blt_CopyPictureBits(transPtr->picture, transPtr->from);
         next = Blt_Dissolve2(transPtr->picture, transPtr->to, 0, next);
     } else {
         next = Blt_Dissolve2(transPtr->picture, transPtr->to, last, next);
@@ -3071,7 +3086,7 @@ CompositeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         fg = tmp = Blt_ClonePicture(fg);
     }
     if (dst != bg) {
-        CopyPicture(dst, bg);           /* Make a copy of the
+        ResizeCopyPictureBits(dst, bg); /* Make a copy of the
                                          * background. */
     }
     if ((switches.from.x == 0) && (switches.from.y == 0) &&
@@ -3134,7 +3149,7 @@ ColorBlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     dst = CurrentPictureFromPictImage(imgPtr);
-    CopyPicture(dst, bg);
+    ResizeCopyPictureBits(dst, bg);
     Blt_ColorBlendPictures(dst, fg, switches.mode); 
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -3302,12 +3317,7 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
         return TCL_ERROR;
     }
-    switches.from.x = switches.from.y = 0;
-    switches.from.w = Blt_Picture_Width(src);
-    switches.from.h = Blt_Picture_Height(src);
-    switches.to.x = switches.to.y = 0;
-    switches.to.w = Blt_Picture_Width(src);
-    switches.to.h = Blt_Picture_Height(src);
+    InitRegion(src, &switches.from);
     switches.composite = FALSE;
 
     if (Blt_ParseSwitches(interp, copySwitches, objc - 3, objv + 3, &switches, 
@@ -3319,6 +3329,7 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     imgPtr = clientData;
     dst = CurrentPictureFromPictImage(imgPtr);
+    InitRegion(dst, &switches.to);
     if (!Blt_AdjustRegionToPicture(dst, &switches.to)) {
         return TCL_OK;                  /* Region is not inside of
                                          * destination. */
@@ -3327,10 +3338,36 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_CompositeRegion(dst, src, switches.from.x, 
                 switches.from.y, switches.from.w, switches.from.h,
                 switches.to.x, switches.to.y);
-    } else {
-        Blt_CopyRegion(dst, src, switches.from.x, 
-                switches.from.y, switches.from.w, switches.from.h,
+    } else if ((switches.from.flags & (BLT_PICTURE_SIZE|BLT_PICTURE_COORDS)) ||
+               (switches.to.flags & (BLT_PICTURE_SIZE|BLT_PICTURE_COORDS))) {
+        if ((switches.from.w != switches.to.w) ||
+            (switches.from.h != switches.to.h)) {
+            Blt_Picture sub1, sub2;     /* Sub-picture regions. */
+            Blt_ResampleFilter vFilter, hFilter;
+            
+            /* Resample region */
+            sub1 = Blt_CreatePicture(switches.from.w, switches.from.h);
+            Blt_CopyRegion(sub1, src, switches.from.x, switches.from.y,
+                           switches.from.w, switches.from.h, 0, 0);
+            sub2 = Blt_CreatePicture(switches.to.w, switches.to.h);
+            Blt_CopyRegion(sub2, dst, switches.to.x, switches.to.y,
+                           switches.to.w, switches.to.h, 0, 0);
+            hFilter = (switches.from.w < switches.to.w) ?
+                bltMitchellFilter : bltBoxFilter; 
+            vFilter = (switches.from.h < switches.to.h) ?
+                bltMitchellFilter : bltBoxFilter;
+            Blt_ResamplePicture(sub2, sub1, vFilter, hFilter);
+            Blt_FreePicture(sub1);
+            Blt_CopyRegion(dst, sub2, 0, 0, switches.to.w, switches.to.h,
                 switches.to.x, switches.to.y);
+            Blt_FreePicture(sub2);
+        } else {
+            Blt_CopyRegion(dst, src, switches.from.x, 
+                           switches.from.y, switches.from.w, switches.from.h,
+                           switches.to.x, switches.to.y);
+        }
+    } else {
+        Blt_CopyPictureBits(dst, src);
     }
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -3358,10 +3395,11 @@ CropOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PictImage *imgPtr = clientData;
     PictRegion reg;
 
+    src = CurrentPictureFromPictImage(imgPtr);
+    InitRegion(src, &reg);
     if (Blt_GetBBoxFromObjv(interp, objc - 2, objv + 2, &reg) != TCL_OK) {
         return TCL_ERROR;
     }
-    src = CurrentPictureFromPictImage(imgPtr);
     if (!Blt_AdjustRegionToPicture(src, &reg)) {
         Tcl_AppendResult(interp, "impossible coordinates for region", 
                          (char *)NULL);
@@ -3603,7 +3641,7 @@ DissolveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     transPtr->numPixels = (w * h);
     transPtr->picture = Blt_CreatePicture(w, h);
     if (transPtr->from != NULL) {
-        Blt_CopyPictures(transPtr->picture, transPtr->from);
+        Blt_CopyPictureBits(transPtr->picture, transPtr->from);
     } else {
         Blt_BlankPicture(transPtr->picture, transPtr->fromColor.u32);
     } 
@@ -3650,6 +3688,7 @@ DupOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *objPtr;
 
     memset(&switches, 0, sizeof(switches));
+    InitRegion(imgPtr->picture, &switches.from);
     if (Blt_ParseSwitches(interp, dupSwitches, objc - 2, objv + 2, &switches, 
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
@@ -3678,10 +3717,13 @@ DupOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     picture = Blt_CreatePicture(switches.from.w, switches.from.h);
     if (switches.nocopy) {              /* Set the picture to a blank image. */
         Blt_BlankPicture(picture, 0x0);
-    } else {                            /* Copy region into new picture. */
+    } else if (switches.from.flags & (BLT_PICTURE_SIZE|BLT_PICTURE_COORDS)) {
         Blt_CopyRegion(picture, imgPtr->picture, switches.from.x,
             switches.from.y, switches.from.w, switches.from.h, 0, 0);
+    } else {
+        Blt_CopyPictureBits(picture, imgPtr->picture);
     }
+
     if (Blt_ResetPicture(interp, Tcl_GetString(objPtr), picture) != TCL_OK) {
         Tcl_DecrRefCount(objPtr);
         Blt_FreePicture(picture);
@@ -3821,7 +3863,7 @@ FadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     w = Blt_Picture_Width(src);
     h = Blt_Picture_Height(src);
     if (imgPtr->picture != src) {
-        CopyPicture(imgPtr->picture, src);
+        ResizeCopyPictureBits(imgPtr->picture, src);
     }
     Blt_FadePicture(imgPtr->picture, 0, 0, w, h, percent * 0.01);
     Blt_NotifyImageChanged(imgPtr);
@@ -3864,7 +3906,7 @@ FlipOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         if (src != imgPtr->picture) {
-            CopyPicture(imgPtr->picture, src);
+            ResizeCopyPictureBits(imgPtr->picture, src);
         }
     }
     Blt_FlipPicture(imgPtr->picture, isVertical);

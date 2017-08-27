@@ -209,7 +209,12 @@ BLT_EXTERN Blt_ResampleFilter bltTableFilter;
 
 typedef struct {
     int x, y, w, h;
+    unsigned int flags;
 } PictRegion;
+
+#define BLT_PICTURE_NOCOPY   (1<<0)          /* Don't copy the source image. */
+#define BLT_PICTURE_COORDS   (1<<1)          /* Region coordinates set. */
+#define BLT_PICTURE_SIZE     (1<<2)          /* Region size set. */
 
 #define Blt_AddPictures(dest, src) \
     Blt_ApplyPictureToPicture(dest, src, 0, 0, (src)->width, (src)->height, \
@@ -369,7 +374,7 @@ BLT_EXTERN void Blt_FadePicture(Blt_Picture picture, int x, int y, int w, int h,
 BLT_EXTERN void Blt_CopyRegion(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
 
-BLT_EXTERN void Blt_CopyPictures(Blt_Picture dest, Blt_Picture src);
+BLT_EXTERN void Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src);
 
 BLT_EXTERN void Blt_GammaCorrectPicture(Blt_Picture dest, Blt_Picture src, 
         float gamma);

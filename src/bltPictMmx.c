@@ -1368,7 +1368,6 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
     Blt_Pixel *destRowPtr;
     int y;
     Blt_Pixel pixel;
-    int i;
     
     pixel.u32 = colorValue;
     Blt_PremultiplyColor(&pixel);
@@ -1420,7 +1419,7 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
 /* 
  *---------------------------------------------------------------------------
  *
- * CopyPictures --
+ * CopyPictureBits --
  *
  *      Creates a copy of the given picture using SSE xmm registers.
  *      Pictures are guaranteed to be quadword aligned (16 bytes).  The
@@ -1436,11 +1435,10 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
  * -------------------------------------------------------------------------- 
  */
 static void
-CopyPictures(Pict *destPtr, Pict *srcPtr)
+CopyPictureBits(Pict *destPtr, Pict *srcPtr)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
-
     assert((srcPtr->width == destPtr->width) &&
            (srcPtr->height == destPtr->height));
     srcRowPtr  = srcPtr->bits;
@@ -1449,7 +1447,7 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
         int x;
         Blt_Pixel *sp1, *sp2, *sp3, *sp4, *dp1, *dp2, *dp3, *dp4;
 
-        sp1 = destRowPtr;
+        sp1 = srcRowPtr;
         sp2 = sp1 + srcPtr->pixelsPerRow;
         sp3 = sp2 + srcPtr->pixelsPerRow;
         sp4 = sp3 + srcPtr->pixelsPerRow;
@@ -1459,14 +1457,14 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
         dp4 = dp3 + destPtr->pixelsPerRow;
         for (x = 0; x < srcPtr->width; x += 4) {
             asm volatile (
-                "movdqa (%0), %%xmm1 # 4 pixels 1st source row.\n\t"
-                "movdqa (%1), %%xmm2 # 4 pixels 2nd source row.\n\t"
-                "movdqa (%2), %%xmm3 # 4 pixels 3rd source row.\n\t"
-                "movdqa (%3), %%xmm4 # 4 pixels 4th source row.\n\t"
-                "movdqa %%xmm1, (%4) # 4 pixels 1st destination row.\n\t" 
-                "movdqa %%xmm2, (%5) # 4 pixels 2nd destination row.\n\t"
-                "movdqa %%xmm3, (%6) # 4 pixels 3rd destination row.\n\t" 
-                "movdqa %%xmm4, (%7) # 4 pixels 4th destination row.\n\t" 
+                "movdqa (%4), %%xmm1 # 4 pixels 1st source row.\n\t"
+                "movdqa (%5), %%xmm2 # 4 pixels 2nd source row.\n\t"
+                "movdqa (%6), %%xmm3 # 4 pixels 3rd source row.\n\t"
+                "movdqa (%7), %%xmm4 # 4 pixels 4th source row.\n\t"
+                "movdqa %%xmm1, (%0) # 4 pixels 1st destination row.\n\t" 
+                "movdqa %%xmm2, (%1) # 4 pixels 2nd destination row.\n\t"
+                "movdqa %%xmm3, (%2) # 4 pixels 3rd destination row.\n\t" 
+                "movdqa %%xmm4, (%3) # 4 pixels 4th destination row.\n\t" 
                 : /* outputs */
                   "+r" (dp1), 
                   "+r" (dp2), 
@@ -2713,7 +2711,7 @@ Blt_CpuFeatureFlags(Tcl_Interp *interp)
 #if (SIZEOF_LONG == 8) 
         if (flags & FEATURE_SSE41) {
             bltPictProcsPtr->premultiplyColorsProc = PremultiplyColors;
-            bltPictProcsPtr->copyPicturesProc = CopyPictures;
+            bltPictProcsPtr->copyPictureBitsProc = CopyPictureBits;
             bltPictProcsPtr->compositePicturesProc = CompositePictures;
             bltPictProcsPtr->blankPictureProc = BlankPicture;
             bltPictProcsPtr->crossFadePicturesProc = CrossFadePictures;

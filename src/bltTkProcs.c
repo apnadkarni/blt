@@ -68,7 +68,7 @@ BltTkProcs bltTkProcs = {
     Blt_ColorBlendPictures, /* 52 */
     Blt_FadePicture, /* 53 */
     Blt_CopyRegion, /* 54 */
-    Blt_CopyPictures, /* 55 */
+    Blt_CopyPictureBits, /* 55 */
     Blt_GammaCorrectPicture, /* 56 */
     Blt_SharpenPicture, /* 57 */
     Blt_ApplyColorToPicture, /* 58 */
