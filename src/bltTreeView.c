@@ -1433,9 +1433,20 @@ GetVerticalLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)
     y1 = SCREENY(viewPtr, topPtr->worldY) + (topPtr->height / 2);
     y2 = SCREENY(viewPtr, botPtr->worldY) + (botPtr->height / 2);
 
+    /* Make sure the vertical line starts on an odd pixel. */
+    y1 |= 0x1;
+    /*
+     * Clip the line's Y-coordinates at the viewport's borders.
+     */
+    if (y1 < 0) {
+        y1 = -1;
+    }
+    if (y2 > Tk_Height(viewPtr->tkwin)) {
+        y2 = Tk_Height(viewPtr->tkwin);
+    }
     /* Make sure the vertical line starts and ends on odd pixels. */
-    *y1Ptr = y1 | 0x1;
-    *y2Ptr = y2 | 0x1;
+    *y1Ptr = y1;
+    *y2Ptr = y2;
 }
 
 
@@ -7833,12 +7844,6 @@ DrawLines(
             ax |= 0x1;
             GetVerticalLineCoordinates(entryPtr, &ay, &by);
 
-            /*
-             * Clip the line's Y-coordinates at the viewport's borders.
-             */
-            if (by > Tk_Height(viewPtr->tkwin)) {
-                by = Tk_Height(viewPtr->tkwin);
-            }
             if ((ay < Tk_Height(viewPtr->tkwin)) && (by > 0)) {
                 XDrawLine(viewPtr->display, drawable, gc, ax, ay, ax, by);
             }
@@ -7875,9 +7880,6 @@ DrawLines(
         }
         if ((IsOpen(entryPtr)) && (entryPtr->lastChildPtr != NULL)) {
             GetVerticalLineCoordinates(entryPtr, &y1, &y2);
-            if (y2 > Tk_Height(viewPtr->tkwin)) {
-                y2 = Tk_Height(viewPtr->tkwin); /* Clip line at window border.*/
-            }
             XDrawLine(viewPtr->display, drawable, gc, x2, y1, x2, y2);
         }
     }   
