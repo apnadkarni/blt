@@ -69,7 +69,7 @@
 #define REPEAT_MASK \
     (BLT_PAINTBRUSH_REPEAT_NORMAL|BLT_PAINTBRUSH_REPEAT_OPPOSITE)
 #define ORIENT_MASK \
-    (BLT_PAINTBRUSH_ORIENT_VERTICAL|BLT_PAINTBRUSH_ORIENT_HORIZONTAL)
+    (BLT_PAINTBRUSH_VERTICAL|BLT_PAINTBRUSH_HORIZONTAL)
 #define COLOR_SCALE_MASK \
         (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG)
 
@@ -1019,9 +1019,9 @@ ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_VERTICAL;
+        flag = BLT_PAINTBRUSH_VERTICAL;
     } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_HORIZONTAL;
+        flag = BLT_PAINTBRUSH_HORIZONTAL;
     } else {
         Tcl_AppendResult(interp, "unknown orient value \"", string,
                 "\": should be vertical or horizontal.", (char *)NULL);
@@ -1053,9 +1053,9 @@ OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Tcl_Obj *objPtr;
     
     switch (*flagsPtr & ORIENT_MASK) {
-    case BLT_PAINTBRUSH_ORIENT_VERTICAL:
+    case BLT_PAINTBRUSH_VERTICAL:
         objPtr = Tcl_NewStringObj("vertical", 8);       break;
-    case BLT_PAINTBRUSH_ORIENT_HORIZONTAL:
+    case BLT_PAINTBRUSH_HORIZONTAL:
         objPtr = Tcl_NewStringObj("horizontal", 10);    break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);            break;

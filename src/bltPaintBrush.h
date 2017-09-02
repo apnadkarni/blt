@@ -415,8 +415,6 @@ typedef enum Blt_PaintBrushTypes {
 #define BLT_PAINTBRUSH_SCALING_LOG     (1<<5)
 #define BLT_PAINTBRUSH_REPEAT_NORMAL   (1<<7)
 #define BLT_PAINTBRUSH_REPEAT_OPPOSITE (1<<8)
-#define BLT_PAINTBRUSH_ORIENT_VERTICAL    (1<<9)
-#define BLT_PAINTBRUSH_ORIENT_HORIZONTAL  (1<<10)
 #define BLT_PAINTBRUSH_FREE_PICTURE   (1<<11)
 
 BLT_EXTERN Blt_PaintBrush Blt_NewTileBrush(void);
