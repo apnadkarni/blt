@@ -325,8 +325,8 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-background", "background", "Background",
         DEF_MARKER_BACKGROUND, Blt_Offset(BitmapMarker, fillColor),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_BITMAP, "-bitmap", "bitmap", "Bitmap", DEF_MARKER_BITMAP, 
         Blt_Offset(BitmapMarker, srcBitmap), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -334,9 +334,8 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
         Blt_Offset(BitmapMarker, elemName), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_SYNONYM, "-fill", "background"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_MARKER_FOREGROUND, Blt_Offset(BitmapMarker, outlineColor),
         BLT_CONFIG_NULL_OK},
@@ -349,8 +348,7 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         Blt_Offset(BitmapMarker, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
         Blt_Offset(BitmapMarker, obj.name), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-outline", "foreground"},
     {BLT_CONFIG_FLOAT, "-rotate", "rotate", "Rotate", DEF_MARKER_ANGLE, 
         Blt_Offset(BitmapMarker, reqAngle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
@@ -443,7 +441,7 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(ImageMarker, anchor), 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(ImageMarker, worldPts), BLT_CONFIG_NULL_OK, &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
@@ -555,7 +553,7 @@ typedef struct {
 
 static Blt_ConfigSpec lineConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(LineMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -705,7 +703,7 @@ typedef struct {
 
 static Blt_ConfigSpec polygonConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(PolygonMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -852,7 +850,7 @@ typedef struct {
 
 static Blt_ConfigSpec rectangleConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(RectangleMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -983,22 +981,21 @@ typedef struct {
 
 static Blt_ConfigSpec textConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(TextMarker, anchor), 0},
     {BLT_CONFIG_COLOR, "-background", "background", "MarkerBackground",
         (char *)NULL, Blt_Offset(TextMarker, fillColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", "Background", (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(TextMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element",
         DEF_MARKER_ELEMENT, Blt_Offset(TextMarker, elemName), 
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", "Foreground", (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_SYNONYM, "-fill", "background"},
     {BLT_CONFIG_FONT, "-font", "font", "Font",  DEF_MARKER_FONT, 
         Blt_Offset(TextMarker, style.font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
@@ -1015,8 +1012,7 @@ static Blt_ConfigSpec textConfigSpecs[] =
         Blt_Offset(TextMarker, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
         Blt_Offset(TextMarker, obj.name), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-outline", "foreground"},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX", DEF_MARKER_PAD, 
         Blt_Offset(TextMarker, style.padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_MARKER_PAD, 
@@ -1112,7 +1108,7 @@ static Blt_ConfigSpec windowConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(WindowMarker, anchor), 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(WindowMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},

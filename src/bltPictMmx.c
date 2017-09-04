@@ -1439,8 +1439,7 @@ CopyPictureBits(Pict *destPtr, Pict *srcPtr)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
-    fprintf(stderr, "sw=%d dw=%d sh=%d dh=%d\n", srcPtr->width, destPtr->width,
-            srcPtr->height, destPtr->height);
+
     assert((srcPtr->width == destPtr->width) &&
            (srcPtr->height == destPtr->height));
     srcRowPtr  = srcPtr->bits;

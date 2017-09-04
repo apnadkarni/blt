@@ -1465,9 +1465,9 @@ LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
     Blt_Pixel color;
     double t;
     
+    x -= brushPtr->xOrigin;
+    y -= brushPtr->yOrigin;
     if (brushPtr->calcProc != NULL) {
-        x -= brushPtr->xOrigin;
-        y -= brushPtr->yOrigin;
         if ((*brushPtr->calcProc)(brushPtr->clientData, x, y, &t) != TCL_OK) {
             return 0x0;
         }

@@ -2519,7 +2519,7 @@ Blt_PaintRadioButton(
 
     /* Process switches  */
     newBrush = Blt_Bg_PaintBrush(bg);
-    Blt_SetBrushRegion(newBrush, 0, 0, w, h); 
+    /* Blt_SetBrushRegion(newBrush, 0, 0, w, h);  */
     Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
 
     GetShadowColors(bg, &normal, &light, &dark);
@@ -2535,6 +2535,53 @@ Blt_PaintRadioButton(
     /*Blt_BlurPicture(destPtr, destPtr, 1, 3); */
     Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
     DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
+    if (on) {
+        int r1;
+
+        r1 = (r * 2) / 3;
+        if (r1 < 1) {
+            r1 = 2;
+        }
+        Blt_SetColorBrushColor(brush, Blt_XColorToPixel(indicatorColorPtr));
+        DrawCircle(destPtr, x, y, r1, 0.0, brush, TRUE);
+    }
+    Blt_FreeBrush(brush);
+    return destPtr;
+}
+
+Blt_Picture
+Blt_PaintRadioButton2(
+     int w, int h, 
+     Blt_Bg bg, 
+     XColor *fillColorPtr, 
+     XColor *indicatorColorPtr, 
+     int on)
+{
+    Pict *destPtr;
+    int x, y, r;
+    Blt_PaintBrush brush, newBrush;
+    unsigned int normal, light, dark;
+
+    destPtr = Blt_CreatePicture(w, h);
+    w = Blt_Picture_Width(destPtr);
+    h = Blt_Picture_Height(destPtr);
+
+    /* Process switches  */
+    newBrush = Blt_Bg_PaintBrush(bg);
+    /* Blt_SetBrushRegion(newBrush, 0, 0, w, h);  */
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
+
+    GetShadowColors(bg, &normal, &light, &dark);
+    w &= ~1;
+    x = w / 2 + 1;
+    y = h / 2 + 1;
+    w -= 4, h -= 4;
+    r = (w+1) / 2;
+    brush = Blt_NewColorBrush(dark);
+    DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
+
+    Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
+    DrawCircle(destPtr, x, y, r - 2, 0.0, brush, TRUE);
     if (on) {
         int r1;
 

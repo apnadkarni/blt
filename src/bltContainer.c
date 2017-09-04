@@ -213,8 +213,8 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BORDER, "-background", "background", "Background", 
         DEF_BACKGROUND, Blt_Offset(Container, border), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(Container, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},

@@ -127,7 +127,7 @@ static Blt_ConfigSpec isolineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-activepen", "activePen", "ActivePen",
          DEF_ACTIVE_PEN, Blt_Offset(Isoline, activePenPtr), 
          BLT_CONFIG_NULL_OK, &bltContourPenOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-element", "element", "Element", DEF_ELEMENT, 
          Blt_Offset(Isoline, elemPtr), BLT_CONFIG_NULL_OK,
          &bltContourElementOption},

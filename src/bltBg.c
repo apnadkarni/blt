@@ -114,6 +114,7 @@ typedef struct {
     Blt_ConfigSpec *specs;              /* Configuration specifications
                                          * this background. */
     Blt_HashTable instTable;
+    int xOffset, yOffset;
 } BackgroundObject;
 
 #define REFERENCE_PENDING        (1<<0)
@@ -253,9 +254,8 @@ static Blt_CustomOption orientOption =
 
 static Blt_ConfigSpec bgSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-background", "color", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "color", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-background", "color"},
+    {BLT_CONFIG_SYNONYM, "-bg", "color"},
     {BLT_CONFIG_BORDER, "-border", "color", "Color", DEF_BORDER, 
         Blt_Offset(BackgroundObject, border), 0},
     {BLT_CONFIG_CUSTOM, "-relativeto", (char *)NULL, (char *)NULL, 
@@ -2224,7 +2224,10 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
         BgInstance *instPtr;
         int xOffset, yOffset;           /* Starting upper left corner of
                                          * region. */
+        
         GetOffsets(tkwin, corePtr, 0, 0, &xOffset, &yOffset);
+        xOffset += corePtr->xOffset;
+        yOffset += corePtr->yOffset;
         instPtr = GetBgInstance(tkwin, rw, rh, corePtr);
         if (instPtr == NULL) {
             return;
@@ -2992,6 +2995,8 @@ Blt_Bg_SetOrigin(Tk_Window tkwin, Bg *bgPtr, int x, int y)
     if (bgPtr->corePtr->brush != NULL) {
         Blt_SetBrushOrigin(bgPtr->corePtr->brush, x, y);
     }
+    bgPtr->corePtr->xOffset = x;
+    bgPtr->corePtr->yOffset = y;
 }
 
 /*

@@ -5,10 +5,21 @@ if { [info exists env(BLT_LIBRARY)] } {
 }
 package require BLT
 
-source scripts/demo.tcl
+option add *BltComboButton.relief flat
+option add *BltComboButton.foreground grey33
+option add *BltComboButton.arrowOn true
 
 set normalBg [blt::background create linear \
-		  -lowcolor grey60 -highcolor grey90 -jitter 10]
+		  -highcolor grey80 -lowcolor grey98 -jitter 3]
+
+option add *BltComboButton.background $normalBg
+option add *BltComboButton.font "Arial 10 italic"
+option add *BltTkFrame.background $normalBg
+option add *BltTkLabel.background $normalBg
+option add *BltTabset.selectBackground $normalBg
+set xbg [blt::background create linear -relativeto self\
+		  -highcolor grey80 -lowcolor grey98 -jitter 3]
+option add *BltComboMenu.background $xbg
 
 set graph .g
 blt::graph .g \
@@ -47,6 +58,7 @@ blt::graph .g \
     -activeforeground red3 \
     -tickdirection in \
     -rotate 0 \
+    -scale linear \
     -scrollcommand { .ybar set } \
     -scrollmax 1000 \
     -scrollmin -100  \
@@ -179,7 +191,7 @@ blt::tk::scrollbar .ybar \
 
 blt::table . \
     0,0 .header -cspan 3 -fill x \
-    1,0 .g  -fill both -cspan 3 -rspan 3 \
+    1,0 .g   -cspan 3 -rspan 3 \
     2,3 .ybar -fill y  -padx 0 -pady 0 \
     4,1 .xbar -fill x \
     5,0 .footer -cspan 3 -fill x
@@ -313,6 +325,7 @@ blt::Graph::InitLegend .g
 
 proc FixAxes { g option value } {
     global axisd
+    parray axisd
     foreach a [$g axis names $axisd(axis)] {
 	$g axis configure $a $option $value
     }
@@ -321,7 +334,7 @@ proc FixAxes { g option value } {
 proc AxisOptions { w } {
     global axisd
     $w insert end "Axis" 
-    set t [frame $w.axis]
+    set t [blt::tk::frame $w.axis]
     $w tab configure "Axis" -window $w.axis
 
     blt::tk::label $t.axis_l -text  "Select Axis:" 
@@ -407,9 +420,11 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "none" -value ""
     $m item configure all -variable axisd(-title) \
 	-command { FixAxes .g -title $axisd(-title) }
-
+    $m select 0
     $t.axis.m select 0
     foreach option { color tickdirection showticks linewidth loose title hide } {
+	update idletasks
+    parray axisd
 	set value [.g axis cget $axisd(axis) -$option]
 	set axisd(-$option) $value
     }
@@ -430,13 +445,16 @@ proc AxisOptions { w } {
 	7,1 $t.showticks -fill x  \
 	8,0 $t.title_l -anchor e \
 	8,1 $t.title -fill x 
+    blt::table configure $t c0 -padx { 0 1i }
     blt::table configure $t r0 -pady 8
+    blt::table configure $t r* -resize none
+    blt::table configure $t r9 -resize both
 }
 
 proc GraphOptions { w } {
     global graphd
     $w insert end "Graph" 
-    set t [frame $w.graph]
+    set t [blt::tk::frame $w.graph]
     $w tab configure "Graph" -window $w.graph
     blt::tk::label $t.plotborderwidth_l -text  "-plotborderwidth" 
     blt::combobutton $t.plotborderwidth -textvariable graphd(-plotborderwidth) \
@@ -734,15 +752,20 @@ proc GraphOptions { w } {
 	16,1 $t.topmargin -fill x  \
 	17,0 $t.width_l -anchor e \
 	17,1 $t.width -fill x 
+    blt::table configure $t c0 -padx { 0 1i }
+    blt::table configure $t r* -resize none
+    blt::table configure $t r18 -resize both
+    puts stderr [blt::table save $t]
 }
 
 proc LegendOptions { w } {
     global legend
     $w insert end "Legend" 
-    set t [frame $w.legend]
+    set t [blt::tk::frame $w.legend]
     $w tab configure "Legend" -window $w.legend
     blt::tk::label $t.selectborderwidth_l -text  "-selectborderwidth" 
-    blt::combobutton $t.selectborderwidth -textvariable legend(-selectborderwidth) \
+    blt::combobutton $t.selectborderwidth \
+	-textvariable legend(-selectborderwidth) \
 	-menu $t.selectborderwidth.m
     set m [blt::combomenu $t.selectborderwidth.m]
     $m add -type radiobutton -text [.g legend cget -selectborderwidth]
@@ -970,10 +993,13 @@ proc LegendOptions { w } {
 	12,1 $t.selectforeground -fill x  \
 	13,0 $t.selectrelief_l -anchor e \
 	13,1 $t.selectrelief -fill x 
+    blt::table configure $t c0 -padx { 0 1i }
+    blt::table configure $t r* -resize none
+    blt::table configure $t r14 -resize both
 }
 
 set t [toplevel .cntrl]
-blt::tabnotebook $t.tb
+blt::tabset $t.tb
 blt::table $t \
     0,0 $t.tb -fill both
 GraphOptions $t.tb

@@ -395,11 +395,11 @@ static Blt_ConfigSpec styleConfigSpecs[] =
     {BLT_CONFIG_RELIEF, "-activerelief", (char *)NULL, (char *)NULL, 
         DEF_STYLE_ACTIVE_RELIEF, Blt_Offset(Style, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-background", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_BACKGROUND, "-background", "background", (char *)NULL,
         DEF_STYLE_BG, Blt_Offset(Style, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", (char *)NULL,
         DEF_STYLE_BORDERWIDTH, Blt_Offset(Style, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-checkbuttonfillcolor", (char *)NULL, (char *)NULL, 
@@ -421,10 +421,10 @@ static Blt_ConfigSpec styleConfigSpecs[] =
         DEF_STYLE_DISABLED_BG, Blt_Offset(Style, disabledBg), 0},
     {BLT_CONFIG_COLOR, "-disabledforeground", (char *)NULL, (char *)NULL, 
         DEF_STYLE_DISABLED_FG, Blt_Offset(Style, disabledTextFg), 0},
-    {BLT_CONFIG_SYNONYM, "-fg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, DEF_STYLE_FONT, 
-        Blt_Offset(Style, textFont), 0},
-    {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL,
+        DEF_STYLE_FONT, Blt_Offset(Style, textFont), 0},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", (char *)NULL, DEF_STYLE_FG, 
         Blt_Offset(Style, normalTextFg), 0},
     {BLT_CONFIG_COLOR, "-radiobuttonfillcolor", (char *)NULL, (char *)NULL, 
         DEF_RADIOBUTTON_FILL_COLOR, Blt_Offset(Style, radioButtonFillColor), 
@@ -488,7 +488,7 @@ typedef struct  {
                                          * item is clicked. */
     Tcl_Obj *dataObjPtr;                /* User-data associated with this
                                          * item. */
-    Tcl_Obj *variableObjPtr;            /* Name of TCL variable.  If
+    Tcl_Obj *varNameObjPtr;             /* Name of TCL variable.  If
                                          * non-NULL, this variable will be
                                          * set to the value string of the
                                          * selected item. */
@@ -548,7 +548,7 @@ static Blt_ConfigSpec itemConfigSpecs[] =
     {BLT_CONFIG_OBJ, "-value", (char *)NULL, (char *)NULL, DEF_ITEM_VALUE, 
          Blt_Offset(Item, valueObjPtr), 0},
     {BLT_CONFIG_CUSTOM, "-variable", (char *)NULL, (char *)NULL, 
-        DEF_ITEM_VARIABLE, Blt_Offset(Item, variableObjPtr), BLT_CONFIG_NULL_OK,
+        DEF_ITEM_VARIABLE, Blt_Offset(Item, varNameObjPtr), BLT_CONFIG_NULL_OK,
         &traceVarOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
         0, 0}
@@ -703,6 +703,7 @@ struct _ComboMenu {
     GC copyGC;
     int nextStyleId;
     PostInfo post;
+    short int bgOffsetX, bgOffsetY;
 };
 
 static Blt_ConfigSpec comboConfigSpecs[] =
@@ -727,12 +728,12 @@ static Blt_ConfigSpec comboConfigSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_STYLE_BG, Blt_Offset(ComboMenu, defStyle.normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(ComboMenu, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_OBJ, "-command", (char *)NULL, (char *)NULL, DEF_COMMAND, 
+    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_COMMAND, 
         Blt_Offset(ComboMenu, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor", DEF_CURSOR, 
         Blt_Offset(ComboMenu, cursor), BLT_CONFIG_NULL_OK},
@@ -746,7 +747,7 @@ static Blt_ConfigSpec comboConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
         "DisabledForeground", DEF_STYLE_DISABLED_FG, 
         Blt_Offset(ComboMenu, defStyle.disabledTextFg), 0},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_STYLE_FG, Blt_Offset(ComboMenu, defStyle.normalTextFg), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_STYLE_FONT, 
@@ -1517,7 +1518,7 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
             return TCL_ERROR;
         }
     }
-    if (itemPtr->variableObjPtr != NULL) {
+    if (itemPtr->varNameObjPtr != NULL) {
         Tcl_Obj *objPtr;
         
         objPtr = NULL;
@@ -1534,7 +1535,7 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
             Tcl_Obj *resultObjPtr;
             
             Tcl_IncrRefCount(objPtr);
-            resultObjPtr = Tcl_ObjSetVar2(interp, itemPtr->variableObjPtr, NULL,
+            resultObjPtr = Tcl_ObjSetVar2(interp, itemPtr->varNameObjPtr, NULL,
                         objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
             Tcl_DecrRefCount(objPtr);
             if (resultObjPtr == NULL) {
@@ -3371,7 +3372,7 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
      * Use the value of the variable to update the selected status of the
      * item.
      */
-    objPtr = Tcl_ObjGetVar2(interp, itemPtr->variableObjPtr, NULL, 
+    objPtr = Tcl_ObjGetVar2(interp, itemPtr->varNameObjPtr, NULL, 
                             TCL_GLOBAL_ONLY);
     if (objPtr == NULL) {
         return FALSE;                   /* Can't get value of variable. */
@@ -3450,7 +3451,7 @@ ConfigureItem(Tcl_Interp *interp, Item *itemPtr, int objc,
         objc, objv, (char *)itemPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (itemPtr->variableObjPtr != NULL) {
+    if (itemPtr->varNameObjPtr != NULL) {
         if (Blt_ConfigModified(itemConfigSpecs, "-variable", "-*value", 
                                (char *)NULL)) {
             CheckVariable(interp, itemPtr);
@@ -3833,7 +3834,7 @@ ItemVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
 {
     Item *itemPtr = clientData;
 
-    assert(itemPtr->variableObjPtr != NULL);
+    assert(itemPtr->varNameObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
         return NULL;                    /* Interpreter is going away. */
 
@@ -3846,7 +3847,7 @@ ItemVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
         if (flags & TCL_TRACE_DESTROYED) {
             char *varName;
 
-            varName = Tcl_GetString(itemPtr->variableObjPtr);
+            varName = Tcl_GetString(itemPtr->varNameObjPtr);
             Tcl_TraceVar(interp, varName, VAR_FLAGS, ItemVarTraceProc, 
                 clientData);
         }
@@ -3871,16 +3872,16 @@ FreeTraceVarProc(ClientData clientData, Display *display, char *widgRec,
 {
     Item *itemPtr = (Item *)(widgRec);
 
-    if (itemPtr->variableObjPtr != NULL) {
+    if (itemPtr->varNameObjPtr != NULL) {
         const char *varName;
         ComboMenu *comboPtr;
 
         comboPtr = itemPtr->comboPtr;
-        varName = Tcl_GetString(itemPtr->variableObjPtr);
+        varName = Tcl_GetString(itemPtr->varNameObjPtr);
         Tcl_UntraceVar(comboPtr->interp, varName, VAR_FLAGS, ItemVarTraceProc, 
                 itemPtr);
-        Tcl_DecrRefCount(itemPtr->variableObjPtr);
-        itemPtr->variableObjPtr = NULL;
+        Tcl_DecrRefCount(itemPtr->varNameObjPtr);
+        itemPtr->varNameObjPtr = NULL;
     }
 }
 
@@ -3906,17 +3907,17 @@ ObjToTraceVarProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     const char *varName;
 
     /* Remove the current trace on the variable. */
-    if (itemPtr->variableObjPtr != NULL) {
-        varName = Tcl_GetString(itemPtr->variableObjPtr);
+    if (itemPtr->varNameObjPtr != NULL) {
+        varName = Tcl_GetString(itemPtr->varNameObjPtr);
         Tcl_UntraceVar(interp, varName, VAR_FLAGS, ItemVarTraceProc, itemPtr);
-        Tcl_DecrRefCount(itemPtr->variableObjPtr);
-        itemPtr->variableObjPtr = NULL;
+        Tcl_DecrRefCount(itemPtr->varNameObjPtr);
+        itemPtr->varNameObjPtr = NULL;
     }
     varName = Tcl_GetString(objPtr);
     if ((varName[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
         return TCL_OK;
     }
-    itemPtr->variableObjPtr = objPtr;
+    itemPtr->varNameObjPtr = objPtr;
     Tcl_IncrRefCount(objPtr);
     Tcl_TraceVar(interp, varName, VAR_FLAGS, ItemVarTraceProc, itemPtr);
     return TCL_OK;
@@ -3942,10 +3943,10 @@ TraceVarToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Item *itemPtr = (Item *)(widgRec);
     Tcl_Obj *objPtr;
 
-    if (itemPtr->variableObjPtr == NULL) {
+    if (itemPtr->varNameObjPtr == NULL) {
         objPtr = Tcl_NewStringObj("", -1);
     } else {
-        objPtr = itemPtr->variableObjPtr;
+        objPtr = itemPtr->varNameObjPtr;
     }
     return objPtr;
 }
@@ -6333,7 +6334,7 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     cmd = Tcl_GetString(objv[1]);
     Tcl_Preserve(itemPtr);
     comboPtr->selectPtr = itemPtr;
-    result = UpdateTextAndIconVars(interp, comboPtr, itemPtr, cmd[0] == 's');
+    result = SelectItem(interp, comboPtr, itemPtr, cmd[0] == 's');
     Tcl_Release(itemPtr);
     return result;
 }
@@ -7280,14 +7281,11 @@ DrawItemBackground(Item *itemPtr, Drawable drawable, int x, int y)
     }
     w = VPORTWIDTH(comboPtr);
     w = MAX(comboPtr->worldWidth, w);
-#ifdef notdef
-    Blt_Bg_SetOrigin(comboPtr->tkwin, bg, 0, -y);
-#endif
+    Blt_Bg_SetOrigin(comboPtr->tkwin, bg, -comboPtr->bgOffsetX,
+                     -comboPtr->bgOffsetY);
     Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x, y, w, 
         itemPtr->height, stylePtr->borderWidth, relief);
-#ifdef notdef
     Blt_Bg_SetOrigin(comboPtr->tkwin, bg, 0, 0);
-#endif
 }
 
 static void
@@ -7374,9 +7372,11 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
     } else {
         bg = stylePtr->normalBg;
     }       
+    Blt_Bg_SetOrigin(comboPtr->tkwin, bg, -(comboPtr->bgOffsetX + x),
+                     -(comboPtr->bgOffsetY + y));
     state = (itemPtr->flags & ITEM_SELECTED);
     if (itemPtr->flags & ITEM_DISABLED) {
-        picture = Blt_PaintRadioButton(w, h, bg,
+        picture = Blt_PaintRadioButton2(w, h, bg,
                 Blt_Bg_BorderColor(stylePtr->disabledBg),
                 stylePtr->disabledTextFg,
                 FALSE);
@@ -7387,10 +7387,11 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
             ? stylePtr->radioButtonFillColor : comboPtr->radioButtonFillColor;
         circleColor = (stylePtr->radioButtonColor) 
             ? stylePtr->radioButtonColor : comboPtr->radioButtonColor;
-        picture = Blt_PaintRadioButton(w, h, bg, fillColor, circleColor, state);
+        picture = Blt_PaintRadioButton2(w, h, bg, fillColor, circleColor, state);
     }
     Blt_PaintPicture(comboPtr->painter, drawable, picture, 0, 0, w, h, x, y, 0);
     Blt_FreePicture(picture);
+    Blt_Bg_SetOrigin(comboPtr->tkwin, bg, 0, 0);
 }
 
 
@@ -7613,6 +7614,7 @@ DrawComboMenu(ComboMenu *comboPtr, Drawable drawable)
             }
         }
     }
+
     /* Manage the geometry of the scrollbars. */
     if (comboPtr->yScrollbarWidth > 0) {
         int x, y;
@@ -7709,11 +7711,12 @@ DisplayItem(ClientData clientData)
     if (d > 0) {
         h -= d;
     }
+    comboPtr->bgOffsetX = SCREENX(comboPtr, itemPtr->worldX);
+    comboPtr->bgOffsetY = SCREENY(comboPtr, itemPtr->worldY);
     DrawItemBackground(itemPtr, drawable, -comboPtr->xOffset, 0);
     DrawItem(itemPtr, drawable, -comboPtr->xOffset, 0);
     XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
-        comboPtr->copyGC, 0, sy, w, h, 
-        comboPtr->borderWidth, y);
+        comboPtr->copyGC, 0, sy, w, h, comboPtr->borderWidth, y);
     Tk_FreePixmap(comboPtr->display, drawable);
 }
 
