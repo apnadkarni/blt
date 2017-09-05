@@ -525,7 +525,7 @@ static Blt_ConfigSpec lineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
         "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
         &backgroundOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_PEN_COLOR, 
         Blt_Offset(LineElement, builtinPen.traceColor), 0},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
@@ -661,9 +661,9 @@ static Blt_ConfigSpec stripSpecs[] =
     {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
         "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
         &backgroundOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
-    {BLT_CONFIG_COLOR, "-color", "color", "Color",
-        DEF_PEN_COLOR, Blt_Offset(LineElement, builtinPen.traceColor), 0},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
+    {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_PEN_COLOR,
+        Blt_Offset(LineElement, builtinPen.traceColor), 0},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
         Blt_Offset(LineElement, builtinPen.traceDashes), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-data", "data", "Data", DEF_DATA, 0, 0, 
@@ -4273,7 +4273,6 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
         Blt_Free(vertices);
         return;
     }
-    fprintf(stderr, "Alpha=%x\n", Blt_GetBrushAlpha(brush));
     Blt_PaintPolygon(picture, numPoints, vertices, brush);
     if ((elemPtr->zAxisPtr != NULL) && (elemPtr->zAxisPtr->palette != NULL)) {
         Blt_FreeBrush(brush);

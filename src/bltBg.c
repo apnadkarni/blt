@@ -69,7 +69,7 @@
 #define REPEAT_MASK \
     (BLT_PAINTBRUSH_REPEAT_NORMAL|BLT_PAINTBRUSH_REPEAT_OPPOSITE)
 #define ORIENT_MASK \
-    (BLT_PAINTBRUSH_ORIENT_VERTICAL|BLT_PAINTBRUSH_ORIENT_HORIZONTAL)
+    (BLT_PAINTBRUSH_VERTICAL|BLT_PAINTBRUSH_HORIZONTAL)
 #define COLOR_SCALE_MASK \
         (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG)
 
@@ -114,6 +114,7 @@ typedef struct {
     Blt_ConfigSpec *specs;              /* Configuration specifications
                                          * this background. */
     Blt_HashTable instTable;
+    int xOffset, yOffset;
 } BackgroundObject;
 
 #define REFERENCE_PENDING        (1<<0)
@@ -253,9 +254,8 @@ static Blt_CustomOption orientOption =
 
 static Blt_ConfigSpec bgSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-background", "color", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "color", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-background", "color"},
+    {BLT_CONFIG_SYNONYM, "-bg", "color"},
     {BLT_CONFIG_BORDER, "-border", "color", "Color", DEF_BORDER, 
         Blt_Offset(BackgroundObject, border), 0},
     {BLT_CONFIG_CUSTOM, "-relativeto", (char *)NULL, (char *)NULL, 
@@ -1019,9 +1019,9 @@ ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_VERTICAL;
+        flag = BLT_PAINTBRUSH_VERTICAL;
     } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_HORIZONTAL;
+        flag = BLT_PAINTBRUSH_HORIZONTAL;
     } else {
         Tcl_AppendResult(interp, "unknown orient value \"", string,
                 "\": should be vertical or horizontal.", (char *)NULL);
@@ -1053,9 +1053,9 @@ OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Tcl_Obj *objPtr;
     
     switch (*flagsPtr & ORIENT_MASK) {
-    case BLT_PAINTBRUSH_ORIENT_VERTICAL:
+    case BLT_PAINTBRUSH_VERTICAL:
         objPtr = Tcl_NewStringObj("vertical", 8);       break;
-    case BLT_PAINTBRUSH_ORIENT_HORIZONTAL:
+    case BLT_PAINTBRUSH_HORIZONTAL:
         objPtr = Tcl_NewStringObj("horizontal", 10);    break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);            break;
@@ -2224,7 +2224,10 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
         BgInstance *instPtr;
         int xOffset, yOffset;           /* Starting upper left corner of
                                          * region. */
+        
         GetOffsets(tkwin, corePtr, 0, 0, &xOffset, &yOffset);
+        xOffset += corePtr->xOffset;
+        yOffset += corePtr->yOffset;
         instPtr = GetBgInstance(tkwin, rw, rh, corePtr);
         if (instPtr == NULL) {
             return;
@@ -2992,6 +2995,8 @@ Blt_Bg_SetOrigin(Tk_Window tkwin, Bg *bgPtr, int x, int y)
     if (bgPtr->corePtr->brush != NULL) {
         Blt_SetBrushOrigin(bgPtr->corePtr->brush, x, y);
     }
+    bgPtr->corePtr->xOffset = x;
+    bgPtr->corePtr->yOffset = y;
 }
 
 /*

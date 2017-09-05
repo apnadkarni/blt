@@ -1350,7 +1350,7 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
  *      
  */
 void
-Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r, 
+Blt_PaintRectangle(Pict *destPtr, int x, int y, int w, int h, int r, 
                    int lineWidth, Blt_PaintBrush brush, int composite)
 {
     /* If the linewidth exceeds half the height or width of the rectangle,
@@ -1376,16 +1376,16 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < lineWidth; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + lineWidth;
             x3 = x + w - lineWidth;
             x4 = x + w;
             for (dy = r; dy < (h - r); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
-                PaintHorizontalLine(picture, x3, x4, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x3, x4, y+dy, brush, composite);
             }
         } else {
             int x1, x2, y1, y2, dy;
@@ -1396,13 +1396,13 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < r; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + w;
             for (dy = r; dy < (h - r); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y+dy, brush, composite);
             }
         }
         { 
@@ -1413,52 +1413,107 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             /* Draw the rounded corners. */
             x1 = x - 1;
             y1 = y - 1;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth+1, 0, brush);
+            PaintCorner(destPtr, x1, y1, r + 1, lineWidth+1, 0, brush);
             x1 = x + w - d - 2;
             y1 = y - 1;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth+1, 1, brush);
+            PaintCorner(destPtr, x1, y1, r + 1, lineWidth+1, 1, brush);
             x1 = x - 1;
             y1 = y + h - d - 2;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth+1, 2, brush);
+            PaintCorner(destPtr, x1, y1, r + 1, lineWidth+1, 2, brush);
             x1 = x + w - d - 2;
             y1 = y + h - d - 2;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth+1, 3, brush);
+            PaintCorner(destPtr, x1, y1, r + 1, lineWidth+1, 3, brush);
         }
     } else {
         if (lineWidth > 0) {
             int x1, x2, x3, x4, y1, y2, dy;
             
-            /* Thick, non-rounded, rectangle.  */
+            /* Thick (non-filled), non-rounded, rectangle.  */
             x1 = x;
             x2 = x + w;
             y1 = y;
             y2 = y + h - lineWidth;
             for (dy = 0; dy < lineWidth; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + lineWidth;
             x3 = x + w - lineWidth;
             x4 = x + w;
             for (dy = r; dy < (h - lineWidth); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
-                PaintHorizontalLine(picture, x3, x4, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x3, x4, y+dy, brush, composite);
             }
         } else {
-            int x1, x2, dy;
+            int x1, x2, y1, y2;
 
             /* Filled, non-rounded, rectangle. */
             x1 = x;
             x2 = x + w;
-            for (dy = 0; dy < h; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
+            y1 = y;
+            y2 = y + h;
+            if ((Blt_GetBrushAlpha(brush) != 0xFF) || (composite)) {
+                goto standard;
+            }
+            /* Handle special cases.  Linear, vertical/horizontal
+             * gradients, with opaque colors. */
+            if (Blt_IsVerticalLinearBrush(brush)) {
+                int y;
+                Blt_Pixel *destRowPtr;
+                
+                destRowPtr = destPtr->bits + (y1 * destPtr->pixelsPerRow);
+                for (y = y1; y < y2; y++) {
+                    Blt_Pixel color;
+                    Blt_Pixel *dp;
+                    int x;
+
+                    /* Get the color for the first column and replicate it
+                     * for the remaining columns. */
+                    dp = destRowPtr + x1;
+                    color.u32 = Blt_GetAssociatedColorFromBrush(brush, 0, y);
+                    for (x = x1; x < x2; x++, dp++) {
+                        dp->u32 = color.u32;
+                    }
+                    destRowPtr += destPtr->pixelsPerRow;
+                }
+            } else if (Blt_IsHorizontalLinearBrush(brush)) {
+                int x, y;
+                Blt_Pixel *srcRowPtr, *destRowPtr, *dp;
+
+                /* Draw the first row, then copy it for the remaining rows. */
+                destRowPtr = destPtr->bits + (y1 * destPtr->pixelsPerRow);
+                srcRowPtr = destRowPtr;
+                dp = destRowPtr + x1;
+                for (x = x1; x < x2; x++) {
+                    Blt_Pixel color;
+
+                    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y1);
+                    dp->u32 = color.u32;
+                    dp++;
+                }
+                destRowPtr += destPtr->pixelsPerRow;
+                for (y = y1 + 1; y < y2; y++) {
+                    Blt_Pixel *dp, *sp;
+                    
+                    dp = destRowPtr + x1;
+                    sp = srcRowPtr + x1;
+                    for (x = x1; x < x2; x++) {
+                        dp->u32 = sp->u32;
+                        sp++, dp++;
+                    }
+                    destRowPtr += destPtr->pixelsPerRow;
+                }
+            } else {
+            standard:
+                for (y = y1; y < y2; y++) {
+                    PaintHorizontalLine(destPtr, x1, x2, y, brush, composite);
+                }
             }
         }
     } 
     if ((Blt_GetBrushAlpha(brush) != 0xFF) && (!composite)) {
-        Pict *dstPtr = picture;
-        dstPtr->flags |= BLT_PIC_COMPOSITE;
+        destPtr->flags |= BLT_PIC_COMPOSITE;
     }
 }
 
@@ -2464,7 +2519,7 @@ Blt_PaintRadioButton(
 
     /* Process switches  */
     newBrush = Blt_Bg_PaintBrush(bg);
-    Blt_SetBrushRegion(newBrush, 0, 0, w, h); 
+    /* Blt_SetBrushRegion(newBrush, 0, 0, w, h);  */
     Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
 
     GetShadowColors(bg, &normal, &light, &dark);
@@ -2480,6 +2535,53 @@ Blt_PaintRadioButton(
     /*Blt_BlurPicture(destPtr, destPtr, 1, 3); */
     Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
     DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
+    if (on) {
+        int r1;
+
+        r1 = (r * 2) / 3;
+        if (r1 < 1) {
+            r1 = 2;
+        }
+        Blt_SetColorBrushColor(brush, Blt_XColorToPixel(indicatorColorPtr));
+        DrawCircle(destPtr, x, y, r1, 0.0, brush, TRUE);
+    }
+    Blt_FreeBrush(brush);
+    return destPtr;
+}
+
+Blt_Picture
+Blt_PaintRadioButton2(
+     int w, int h, 
+     Blt_Bg bg, 
+     XColor *fillColorPtr, 
+     XColor *indicatorColorPtr, 
+     int on)
+{
+    Pict *destPtr;
+    int x, y, r;
+    Blt_PaintBrush brush, newBrush;
+    unsigned int normal, light, dark;
+
+    destPtr = Blt_CreatePicture(w, h);
+    w = Blt_Picture_Width(destPtr);
+    h = Blt_Picture_Height(destPtr);
+
+    /* Process switches  */
+    newBrush = Blt_Bg_PaintBrush(bg);
+    /* Blt_SetBrushRegion(newBrush, 0, 0, w, h);  */
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
+
+    GetShadowColors(bg, &normal, &light, &dark);
+    w &= ~1;
+    x = w / 2 + 1;
+    y = h / 2 + 1;
+    w -= 4, h -= 4;
+    r = (w+1) / 2;
+    brush = Blt_NewColorBrush(dark);
+    DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
+
+    Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
+    DrawCircle(destPtr, x, y, r - 2, 0.0, brush, TRUE);
     if (on) {
         int r1;
 

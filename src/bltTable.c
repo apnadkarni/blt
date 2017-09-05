@@ -178,14 +178,11 @@ static Blt_ConfigSpec entryConfigSpecs[] =
     {BLT_CONFIG_CUSTOM, "-columncontrol", "columnControl", (char *)NULL,
         DEF_TABLE_CONTROL, Blt_Offset(TableEntry, column.control),
         BLT_CONFIG_DONT_SET_DEFAULT, &controlOption},
-    {BLT_CONFIG_SYNONYM, "-cspan", "columnSpan", (char *)NULL, (char *)NULL, 
-        Blt_Offset(TableEntry, column.span), 0},
-    {BLT_CONFIG_SYNONYM, "-ccontrol", "columnControl", (char *)NULL, 
-        (char *)NULL, Blt_Offset(TableEntry, column.control), 0},
+    {BLT_CONFIG_SYNONYM, "-cspan", "columnSpan"},
+    {BLT_CONFIG_SYNONYM, "-ccontrol", "columnControl"},
     {BLT_CONFIG_FILL, "-fill", (char *)NULL, (char *)NULL, DEF_TABLE_FILL, 
         Blt_Offset(TableEntry, fill), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL,
-        (char *)NULL, Blt_Offset(TableEntry, reqHeight), 0},
+    {BLT_CONFIG_SYNONYM, "-height", "reqHeight"},
     {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
         (char *)NULL, Blt_Offset(TableEntry, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL,
@@ -203,12 +200,9 @@ static Blt_ConfigSpec entryConfigSpecs[] =
     {BLT_CONFIG_CUSTOM, "-rowcontrol", "rowControl", (char *)NULL,
         DEF_TABLE_CONTROL, Blt_Offset(TableEntry, row.control),
         BLT_CONFIG_DONT_SET_DEFAULT, &controlOption},
-    {BLT_CONFIG_SYNONYM, "-rspan", "rowSpan", (char *)NULL, (char *)NULL, 
-        Blt_Offset(TableEntry, row.span), 0},
-    {BLT_CONFIG_SYNONYM, "-rcontrol", "rowControl", (char *)NULL, (char *)NULL,
-        Blt_Offset(TableEntry, row.control), 0},
-    {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
-        Blt_Offset(TableEntry, reqWidth), 0},
+    {BLT_CONFIG_SYNONYM, "-rspan", "rowSpan"},
+    {BLT_CONFIG_SYNONYM, "-rcontrol", "rowControl"},
+    {BLT_CONFIG_SYNONYM, "-width", "reqWidth"},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -1480,15 +1474,15 @@ PrintEntry(TableEntry *entryPtr, Blt_DBuffer dbuffer)
         Blt_DBuffer_Format(dbuffer, " -anchor %s",
                            Tk_NameOfAnchor(entryPtr->anchor));
     }
-    if ((entryPtr->padLeft != ENTRY_DEF_PAD) ||
-        (entryPtr->padRight != ENTRY_DEF_PAD)) {
-        Blt_DBuffer_Format(dbuffer, " -padx {%d %d}", entryPtr->padLeft,
-                           entryPtr->padRight);
+    if ((entryPtr->padX.side1 != ENTRY_DEF_PAD) ||
+        (entryPtr->padX.side2 != ENTRY_DEF_PAD)) {
+        Blt_DBuffer_Format(dbuffer, " -padx {%d %d}", entryPtr->padX.side1,
+                           entryPtr->padX.side2);
     }
-    if ((entryPtr->padTop != ENTRY_DEF_PAD) ||
-        (entryPtr->padBottom != ENTRY_DEF_PAD)) {
-        Blt_DBuffer_Format(dbuffer, " -pady {%d %d}", entryPtr->padTop,
-                           entryPtr->padBottom);
+    if ((entryPtr->padY.side1 != ENTRY_DEF_PAD) ||
+        (entryPtr->padY.side2 != ENTRY_DEF_PAD)) {
+        Blt_DBuffer_Format(dbuffer, " -pady {%d %d}", entryPtr->padY.side1,
+                           entryPtr->padY.side2);
     }
     if (entryPtr->fill != ENTRY_DEF_FILL) {
         Blt_DBuffer_Format(dbuffer, " -fill %s",
@@ -1553,10 +1547,10 @@ InfoEntry(Tcl_Interp *interp, Table *tablePtr, TableEntry *entryPtr)
  *
  * CreateRowColumn --
  *
- *      Creates and initializes a structure that manages the size of a row or
- *      column in the table. There will be one of these structures allocated
- *      for each row and column in the table, regardless if a widget is
- *      contained in it or not.
+ *      Creates and initializes a structure that manages the size of a row
+ *      or column in the table. There will be one of these structures
+ *      allocated for each row and column in the table, regardless if a
+ *      widget is contained in it or not.
  *
  * Results:
  *      Returns a pointer to the newly allocated row or column structure.
@@ -1630,8 +1624,8 @@ ParseRowColumn(Table *tablePtr, Tcl_Obj *objPtr, int *numberPtr)
  * GetRowColumn --
  *
  *      Gets the designated row or column from the table.  If the row or
- *      column index is greater than the size of the table, new rows/columns
- *      will be automatically allocated.
+ *      column index is greater than the size of the table, new
+ *      rows/columns will be automatically allocated.
  *
  * Results:
  *      Returns a pointer to the row or column structure.
@@ -2012,15 +2006,15 @@ ConfigureTable(
 static void
 PrintTable(Table *tablePtr, Blt_DBuffer dbuffer)
 {
-    if ((tablePtr->padLeft != TABLE_DEF_PAD) ||
-        (tablePtr->padRight != TABLE_DEF_PAD)) {
-        Blt_DBuffer_Format(dbuffer, " -padx {%d %d}", tablePtr->padLeft, 
-                           tablePtr->padRight);
+    if ((tablePtr->padX.side1 != TABLE_DEF_PAD) ||
+        (tablePtr->padX.side2 != TABLE_DEF_PAD)) {
+        Blt_DBuffer_Format(dbuffer, " -padx {%d %d}", tablePtr->padX.side1, 
+                           tablePtr->padX.side2);
     }
-    if ((tablePtr->padTop != TABLE_DEF_PAD) ||
-        (tablePtr->padBottom != TABLE_DEF_PAD)) {
-        Blt_DBuffer_Format(dbuffer, " -pady {%d %d}", tablePtr->padTop, 
-                           tablePtr->padBottom);
+    if ((tablePtr->padY.side1 != TABLE_DEF_PAD) ||
+        (tablePtr->padY.side2 != TABLE_DEF_PAD)) {
+        Blt_DBuffer_Format(dbuffer, " -pady {%d %d}", tablePtr->padY.side1, 
+                           tablePtr->padY.side2);
     }
     if (!tablePtr->propagate) {
         Blt_DBuffer_Format(dbuffer, " -propagate no");
@@ -3619,10 +3613,10 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
     int xMax, yMax;
 
     xMax = tablePtr->container.width -
-        (Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padRight +
+        (Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padX.side2 +
         tablePtr->eTablePad);
     yMax = tablePtr->container.height -
-        (Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padBottom +
+        (Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padY.side2 +
         tablePtr->eTablePad);
 
     for (link = Blt_Chain_FirstLink(tablePtr->chain); link != NULL;
@@ -3638,12 +3632,12 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
 
         x = entryPtr->column.rcPtr->offset +
             entryPtr->column.rcPtr->pad.side1 +
-            entryPtr->padLeft +
+            entryPtr->padX.side1 +
             Tk_Changes(entryPtr->tkwin)->border_width +
             tablePtr->eEntryPad;
         y = entryPtr->row.rcPtr->offset +
             entryPtr->row.rcPtr->pad.side1 +
-            entryPtr->padTop +
+            entryPtr->padY.side1 +
             Tk_Changes(entryPtr->tkwin)->border_width +
             tablePtr->eEntryPad;
 
@@ -3661,7 +3655,7 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
             continue;
         }
         extra = 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
-        spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
+z        spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
             (extra + PADDING(entryPtr->padX));
         spanHeight = GetSpan(&tablePtr->rows, entryPtr) - 
             (extra + PADDING(entryPtr->padY));
@@ -3674,8 +3668,8 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
          * Compare the widget's requested size to the size of the span.
          *
          * 1) If the widget is larger than the span or if the fill flag is
-         *    set, make the widget the size of the span. Check that the new size
-         *    is within the bounds set for the widget.
+         *    set, make the widget the size of the span. Check that the new
+         *    size is within the bounds set for the widget.
          *
          * 2) Otherwise, position the widget in the space according to its
          *    anchor.
@@ -3834,9 +3828,9 @@ ArrangeTable(ClientData clientData)
     outerPad = 2 * (Tk_InternalBorderWidth(tablePtr->tkwin) +
         tablePtr->eTablePad);
     padX = outerPad + tablePtr->columns.ePad + PADDING(tablePtr->padX);
-    padY = outerPad + tablePtr->rows.ePad + PADDING(tablePtr->padY);
+    padY = outerPad + tablePtr->rows.ePad    + PADDING(tablePtr->padY);
 
-    width = GetTotalSpan(&tablePtr->columns) + padX;
+    width  = GetTotalSpan(&tablePtr->columns) + padX;
     height = GetTotalSpan(&tablePtr->rows) + padY;
 
     /*
@@ -3875,7 +3869,7 @@ ArrangeTable(ClientData clientData)
      * border width). To be used later when positioning the widgets.
      */
 
-    offset = Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padLeft +
+    offset = Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padX.side1 +
         tablePtr->eTablePad;
     if (width < tablePtr->container.width) {
         offset += (tablePtr->container.width - width) / 2;
@@ -3889,7 +3883,7 @@ ArrangeTable(ClientData clientData)
         offset += colPtr->size;
     }
 
-    offset = Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padTop +
+    offset = Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padY.side1 +
         tablePtr->eTablePad;
     if (height < tablePtr->container.height) {
         offset += (tablePtr->container.height - height) / 2;
@@ -5591,7 +5585,7 @@ SaveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     dbuffer = Blt_DBuffer_Create();
-    Blt_DBuffer_Format(dbuffer, "# Table layout\n\n");
+    Blt_DBuffer_Format(dbuffer, "\n# Table layout\n\n");
     Blt_DBuffer_Format(dbuffer, "%s %s \\\n", Tcl_GetString(objv[0]),
                        Tk_PathName(tablePtr->tkwin));
 
@@ -5603,7 +5597,7 @@ SaveOp(ClientData clientData, Tcl_Interp *interp, int objc,
         entryPtr = Blt_Chain_GetValue(link);
         PrintEntry(entryPtr, dbuffer);
         if (link != lastl) {
-            Blt_DBuffer_AppendString(dbuffer, " \\\n", 2);
+            Blt_DBuffer_AppendString(dbuffer, " \\\n", 3);
         }
     }
     Blt_DBuffer_Format(dbuffer, "\n\n# Row configuration options\n\n");

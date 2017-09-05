@@ -176,7 +176,7 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Busy, bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_CURSOR, "-cursor", "busyCursor", "BusyCursor",
         DEF_CURSOR, Blt_Offset(Busy, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIX32, "-color", "color", "Color",

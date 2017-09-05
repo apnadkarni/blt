@@ -3312,14 +3312,15 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Blt_Picture src, dst;
     CopySwitches switches;
-    PictImage *imgPtr;
+    PictImage *imgPtr = clientData;
 
+    dst = CurrentPictureFromPictImage(imgPtr);
     if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
         return TCL_ERROR;
     }
     InitRegion(src, &switches.from);
+    InitRegion(dst, &switches.to);
     switches.composite = FALSE;
-
     if (Blt_ParseSwitches(interp, copySwitches, objc - 3, objv + 3, &switches, 
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
@@ -3327,9 +3328,6 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (!Blt_AdjustRegionToPicture(src, &switches.from)) {
         return TCL_OK;                  /* Region is not inside of source. */
     }
-    imgPtr = clientData;
-    dst = CurrentPictureFromPictImage(imgPtr);
-    InitRegion(dst, &switches.to);
     if (!Blt_AdjustRegionToPicture(dst, &switches.to)) {
         return TCL_OK;                  /* Region is not inside of
                                          * destination. */
@@ -3367,7 +3365,14 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
                            switches.to.x, switches.to.y);
         }
     } else {
-        Blt_CopyPictureBits(dst, src);
+        if ((switches.from.w == switches.to.w) &&
+            (switches.from.h == switches.to.h)) {
+            Blt_CopyPictureBits(dst, src);
+        } else {
+            Blt_CopyRegion(dst, src, switches.from.x, 
+                           switches.from.y, switches.from.w, switches.from.h,
+                           switches.to.x, switches.to.y);
+        }            
     }
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;

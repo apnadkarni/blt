@@ -15,6 +15,11 @@ if { [file exists ../library] } {
     set blt_library ../library
 }
 
+set xbg [blt::background create linear -relativeto .e.m \
+		  -highcolor grey0 -lowcolor grey98 -jitter 3]
+
+option add *BltComboMenu.background $xbg
+
 set myIcon ""
 blt::comboentry .e \
     -textvariable myText1 \

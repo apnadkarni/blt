@@ -754,7 +754,7 @@ static Blt_ConfigSpec buttonSpecs[] =
         DEF_CLOSEBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
         DEF_CLOSEBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_CLOSEBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -782,7 +782,7 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         (char *)NULL, Blt_Offset(Tab, bg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
         DEF_TAB_CLOSEBUTTON, Blt_Offset(Tab, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)CLOSE_BUTTON},
@@ -795,7 +795,7 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
         DEF_TAB_DELETE_COMMAND, Blt_Offset(Tab, deleteCmdObjPtr),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_TAB_FILL, 
         Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", (char *)NULL,
@@ -852,8 +852,8 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(Tabset, defStyle.activeFg), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Tabset, defStyle.bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(Tabset, defStyle.borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -867,8 +867,7 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_CURSOR, Blt_Offset(Tabset, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_DASHES, 
         Blt_Offset(Tabset, defStyle.dashes), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_FOREGROUND, Blt_Offset(Tabset, defStyle.textColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
@@ -3244,8 +3243,8 @@ ConfigureButton(
     Blt_FontMetrics fm;
 
     iconOption.clientData = setPtr;
-    if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, buttonSpecs, 
-        objc, objv, (char *)butPtr, flags) != TCL_OK) {
+    if (Blt_ConfigureComponentFromObj(interp, setPtr->tkwin, "button", "Button",
+        buttonSpecs, 0, (Tcl_Obj **)NULL, (char *)butPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
     setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
