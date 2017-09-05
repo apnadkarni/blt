@@ -3655,7 +3655,7 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
             continue;
         }
         extra = 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
-z        spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
+        spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
             (extra + PADDING(entryPtr->padX));
         spanHeight = GetSpan(&tablePtr->rows, entryPtr) - 
             (extra + PADDING(entryPtr->padY));
