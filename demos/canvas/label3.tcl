@@ -120,7 +120,7 @@ set id [.ss.c create label 300 200 \
 }
 
 set id [.ss.c create label 500 500 \
-	    -text "Hello, World" \
+	    -text "r_sdmjluib" \
 	    -bg $bg2 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 1 \
@@ -129,8 +129,6 @@ set id [.ss.c create label 500 500 \
 	    -padx 20 \
 	    -font "Arial 12" \
 	    -scaletofit 1 \
-	    -minfontsize "6" \
-	    -maxfontsize "44" \
 	    -rotate 90 \
 	    -width 550 \
 	    -height 250]
