@@ -69,7 +69,7 @@
 #include "bltInitCmd.h"
 #include "bltTags.h"
 
-#define DEBUG0                  1
+#define DEBUG0                  0
 #define DEBUG1                  0
 #define DEBUG2                  0
 

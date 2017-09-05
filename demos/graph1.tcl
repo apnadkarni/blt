@@ -172,7 +172,7 @@ blt::htext .f.footer \
 blt::tk::button $htext(widget).quit -text quit -command { exit } 
 $htext(widget) append $htext(widget).quit 
 %% button when you've seen enough.%%
-label $htext(widget).logo -bitmap BLT
+blt::tk::label $htext(widget).logo -bitmap BLT
 $htext(widget) append $htext(widget).logo 
 %%}
 
@@ -234,13 +234,14 @@ proc UpdateTable { g p1 p2 how } {
 
 set image1 [image create picture -file bitmaps/sharky.xbm]
 set image2 [image create picture -file images/buckskin.gif]
-set bg1 [blt::paintbrush create color -color blue -opacity 30]
-set bg2 [blt::paintbrush create color -color green -opacity 40]
-set bg3 [blt::paintbrush create color -color red -opacity 40]
 
-$g element configure line1 -areabackground $bg1 -areaforeground blue 
+set bg1 [blt::paintbrush create color -color blue -opacity 20]
+set bg2 [blt::paintbrush create color -color green -opacity 20]
+set bg3 [blt::paintbrush create color -color red -opacity 20]
+
+#$g element configure line3 -areabackground $bg3 -areaforeground blue 
 $g element configure line2 -areabackground $bg2 -areaforeground blue 
-$g element configure line3 -areabackground $bg3 -areaforeground blue 
+$g element configure line1 -areabackground $bg1 -areaforeground blue 
 
 $g marker create line -name "y100" -coords { -Inf 100 Inf 100 } -dashes 1 \
 	-outline green3 -linewidth 1

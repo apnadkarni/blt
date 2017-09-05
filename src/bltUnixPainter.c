@@ -1532,14 +1532,16 @@ SnapPictureWithXShm(Painter *p, Drawable drawable, int x, int y, int w, int h,
         return FALSE;
     }
 
+    assert((w > 0) && (h > 0));
     imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
                              NULL, &xssi, w, h); 
-
     xssi.shmid = shmget(IPC_PRIVATE,
                         imgPtr->bytes_per_line * imgPtr->height,
                         IPC_CREAT|0610);
     if (xssi.shmid == -1) {
-        Blt_Warn("shmget: %s\n", strerror(errno));
+        Blt_Warn("shmget: %s bytesPerLine=%d height=%d w=%d h=%d d=%d\n", 
+                 strerror(errno), imgPtr->bytes_per_line, imgPtr->height,
+                 w, h, p->depth);
         return FALSE;
     }
 
@@ -1676,11 +1678,15 @@ DrawableToPicture(
          */
         if (Blt_GetWindowRegion(p->display, drawable, NULL, NULL, &dw, &dh)
             == TCL_OK) {
+            if ((x >= dw) || (y >= dh)) {
+                return NULL;            /* Region starts outside of
+                                         * destination. */
+            }
             if ((x + w) > dw) {
-                w = dw - x;
+                w = dw - x;             /* Reduce width of region. */
             }
             if ((y + h) > dh) {
-                h = dh - y;
+                h = dh - y;             /* Reduce height of region. */
             }
             if (!SnapPicture(p, drawable, x, y, w, h, &destPtr)) {
                 return NULL;

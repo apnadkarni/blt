@@ -6865,23 +6865,12 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
             int r, g, b, t, beta;
 
             beta = sp->Alpha ^ 0xFF;    /* beta = 1 - alpha */
-            if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
-                fprintf(stderr, "alpha=%d, beta=%d\n", sp->Alpha, beta);
-                fprintf(stderr, "before: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
-                        sp->Blue);
-                
-            }
             r = sp->Red   - imul8x8(beta, colorPtr->Red, t);
             g = sp->Green - imul8x8(beta, colorPtr->Green, t);
             b = sp->Blue  - imul8x8(beta, colorPtr->Blue, t);
             sp->Red   = UCLAMP(r);
             sp->Green = UCLAMP(g);
             sp->Blue  = UCLAMP(b);
-            if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
-                fprintf(stderr, "after: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
-                        sp->Blue);
-                
-            }
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }

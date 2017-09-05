@@ -5718,7 +5718,8 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
                              aw, ah, filterPtr->borderWidth, relief);
         aw -= 2 * filterPtr->borderWidth;
         ax += filterPtr->borderWidth;
-        if ((aw > 0) && (ah > 0)) {
+        if ((ax <= Tk_Width(viewPtr->tkwin)) &&
+             (ay <= Tk_Height(viewPtr->tkwin)) && (aw > 0) && (ah > 0)) {
             Blt_Picture picture;
 
             picture = GetFilterArrowPicture(filterPtr, aw, ah, fg);
