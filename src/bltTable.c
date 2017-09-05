@@ -1547,10 +1547,10 @@ InfoEntry(Tcl_Interp *interp, Table *tablePtr, TableEntry *entryPtr)
  *
  * CreateRowColumn --
  *
- *      Creates and initializes a structure that manages the size of a row or
- *      column in the table. There will be one of these structures allocated
- *      for each row and column in the table, regardless if a widget is
- *      contained in it or not.
+ *      Creates and initializes a structure that manages the size of a row
+ *      or column in the table. There will be one of these structures
+ *      allocated for each row and column in the table, regardless if a
+ *      widget is contained in it or not.
  *
  * Results:
  *      Returns a pointer to the newly allocated row or column structure.
@@ -1624,8 +1624,8 @@ ParseRowColumn(Table *tablePtr, Tcl_Obj *objPtr, int *numberPtr)
  * GetRowColumn --
  *
  *      Gets the designated row or column from the table.  If the row or
- *      column index is greater than the size of the table, new rows/columns
- *      will be automatically allocated.
+ *      column index is greater than the size of the table, new
+ *      rows/columns will be automatically allocated.
  *
  * Results:
  *      Returns a pointer to the row or column structure.
@@ -3655,7 +3655,7 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
             continue;
         }
         extra = 2 * (entryPtr->borderWidth + tablePtr->eEntryPad);
-        spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
+z        spanWidth = GetSpan(&tablePtr->columns, entryPtr) -
             (extra + PADDING(entryPtr->padX));
         spanHeight = GetSpan(&tablePtr->rows, entryPtr) - 
             (extra + PADDING(entryPtr->padY));
@@ -3668,8 +3668,8 @@ ArrangeEntries(Table *tablePtr)         /* Table widget structure */
          * Compare the widget's requested size to the size of the span.
          *
          * 1) If the widget is larger than the span or if the fill flag is
-         *    set, make the widget the size of the span. Check that the new size
-         *    is within the bounds set for the widget.
+         *    set, make the widget the size of the span. Check that the new
+         *    size is within the bounds set for the widget.
          *
          * 2) Otherwise, position the widget in the space according to its
          *    anchor.

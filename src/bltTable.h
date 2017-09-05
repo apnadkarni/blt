@@ -291,8 +291,8 @@ struct _RowColumn {
 
 /*
  * This is the default number of elements in the statically pre-allocated
- * column and row arrays.  This number should reflect a useful number of row
- * and columns, which fit most applications.
+ * column and row arrays.  This number should reflect a useful number of
+ * row and columns, which fit most applications.
  */
 #define DEF_ARRAY_SIZE  32
 
@@ -306,22 +306,24 @@ typedef TableEntry *(EntrySearchProc)(Table *tablePtr, Tk_Window tkwin);
  *
  */
 typedef struct {
-    Blt_Uid type;                 /* String identifying the type of partition:
-                                 * "row" or "column". */
+    Blt_Uid type;                       /* String identifying the type of
+                                         * partition: "row" or "column". */
     Blt_Chain chain;
-    Blt_List list;              /* Linked list of bins of widgets keyed by
-                                 * increasing span. */
+    Blt_List list;                      /* Linked list of bins of widgets
+                                         * keyed by increasing span. */
     Blt_ConfigSpec *configSpecs;
     int reqLength;
-    int ePad;                   /* Extra padding for row/column needed to
-                                 * display editor marks */
+    int ePad;                           /* Extra padding for row/column
+                                         * needed to display editor
+                                         * marks */
 } PartitionInfo;
 
 /*
  * Table structure
  */
 struct _Table {
-    int flags;                  /* See the flags definitions below. */
+    int flags;                          /* See the flags definitions
+                                         * below. */
     Tk_Window tkwin;            /* The container widget into which other
                                  * widgets are arranged. */
     Tcl_Interp *interp;         /* Interpreter associated with all widgets */
