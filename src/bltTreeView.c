@@ -8152,7 +8152,7 @@ DrawEntryLabel(
 
         segments[3].x1 = segments[3].x2 = (x + width) | 0x1;
         segments[3].y1 = y | 0x1;
-        segments[3].y2 = (y + height + 1) | 0x1;
+        segments[3].y2 = (y + height) | 0x1;
 
         XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments,4);
         if (isSelected) {
