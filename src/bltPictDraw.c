@@ -2558,47 +2558,27 @@ Blt_PaintRadioButton2(
      int on)
 {
     Pict *destPtr;
-    double x, y, r;
-    Blt_PaintBrush brush, newBrush;
+    double cx, cy, r;
+    Blt_PaintBrush brush;
     unsigned int normal, light, dark;
 
     destPtr = Blt_CreatePicture(w, h);
-    w = Blt_Picture_Width(destPtr);
-    h = Blt_Picture_Height(destPtr);
-
-    /* Process switches  */
-    newBrush = Blt_Bg_PaintBrush(bg);
-    /* Blt_SetBrushRegion(newBrush, 0, 0, w, h);  */
-    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
-
     GetShadowColors(bg, &normal, &light, &dark);
-    w &= ~1;
     w -= 2, h -= 2;
-    x = w / 2 + 1;
-    y = h / 2 + 1;
+    cx = w * 0.5;
+    cy = h * 0.5;
     r = w * 0.5;
     brush = Blt_NewColorBrush(dark);
-    DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
+    DrawCircle(destPtr, cx, cy, r, 0.0, brush, TRUE);
 
     Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
-    DrawCircle(destPtr, x, y, r - 1.5, 0.0, brush, TRUE);
+    DrawCircle(destPtr, cx, cy, r * 0.833333, 0.0, brush, TRUE);
     if (on) {
-        int r1;
-        Blt_Shadow shadow;
-
-        r1 = (r * 60) / 100;
-        if (r1 < 1) {
-            r1 = 2;
-        }
-        shadow.width = 0, shadow.offset = 2;
-        shadow.color.u32 = 0x5F000000;
-        if (shadow.width > 0) {
-            DrawCircleShadow(destPtr, x, y, r1, 0.0, TRUE, &shadow);
-        }
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(indicatorColorPtr));
-        DrawCircle(destPtr, x, y, r1, 0.0, brush, TRUE);
+        DrawCircle(destPtr, cx, cy, r * 0.6, 0.0, brush, TRUE);
     }
     Blt_FreeBrush(brush);
+    destPtr->flags |= BLT_PIC_COMPOSITE;
     return destPtr;
 }
 
