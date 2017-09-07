@@ -2166,6 +2166,7 @@ proc blt::TableView::BeginsWithTextSearch { w } {
     set value [$f.entry get]
     DestroySearchDialog $top
 
+    set flags {}
     if { $_private(trim) } {
         append flags " -trim both"
     }
@@ -2176,7 +2177,7 @@ proc blt::TableView::BeginsWithTextSearch { w } {
         set col $_private(column)
         set index [$w column index $col]
         set value [list $value]
-        set expr "(\[info exists ${index}\]) ||
+        set expr "(\[info exists ${index}\]) &&
             (\[blt::utils::string begins \$${index} $value $flags])"
         #puts stderr expr=$expr
         $w column configure $col -filterdata $expr
