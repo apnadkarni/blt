@@ -2590,7 +2590,7 @@ Blt_PaintRadioButton2(
         if (r1 < 1) {
             r1 = 2;
         }
-        shadow.width = 2, shadow.offset = 2;
+        shadow.width = 0, shadow.offset = 2;
         shadow.color.u32 = 0x5F000000;
         if (shadow.width > 0) {
             DrawCircleShadow(destPtr, x, y, r1, 0.0, TRUE, &shadow);
