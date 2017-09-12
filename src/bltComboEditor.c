@@ -438,10 +438,10 @@ typedef struct {
     int x, y;
 } ComboEditor;
 
-static Blt_OptionParseProc ObjToTextProc;
-static Blt_OptionPrintProc TextToObjProc;
+static Blt_OptionParseProc ObjToText;
+static Blt_OptionPrintProc TextToObj;
 static Blt_CustomOption textOption = {
-    ObjToTextProc, TextToObjProc, NULL, (ClientData)0
+    ObjToText, TextToObj, NULL, (ClientData)0
 };
 
 extern Blt_CustomOption bltLimitsOption;
@@ -1476,7 +1476,7 @@ SelectionProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextProc --
+ * ObjToText --
  *
  *      Save the text and add the item to the text hashtable.
  *
@@ -1487,8 +1487,8 @@ SelectionProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
+ObjToText(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboEditor *editPtr = (ComboEditor *)(widgRec);
 
@@ -1499,7 +1499,7 @@ ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TextToObjProc --
+ * TextToObj --
  *
  *      Returns the current text of the entry.
  *
@@ -1510,8 +1510,8 @@ ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)     
+TextToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)     
 {
     ComboEditor *editPtr = (ComboEditor *)(widgRec);
 

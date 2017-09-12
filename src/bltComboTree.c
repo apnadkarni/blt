@@ -731,39 +731,39 @@ typedef int (ApplyProc) (ComboTree *comboPtr, Entry *entryPtr);
 
 static Blt_TreeApplyProc CreateApplyProc;
 
-static Blt_OptionParseProc ObjToIconsProc;
-static Blt_OptionPrintProc IconsToObjProc;
+static Blt_OptionParseProc ObjToIcons;
+static Blt_OptionPrintProc IconsToObj;
 static Blt_OptionFreeProc FreeIconsProc;
 static Blt_CustomOption iconsOption = {
-    ObjToIconsProc, IconsToObjProc, FreeIconsProc, NULL,
+    ObjToIcons, IconsToObj, FreeIconsProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToButtonProc;
-static Blt_OptionPrintProc ButtonToObjProc;
+static Blt_OptionParseProc ObjToButton;
+static Blt_OptionPrintProc ButtonToObj;
 static Blt_CustomOption buttonOption = {
-    ObjToButtonProc, ButtonToObjProc, NULL, NULL,
+    ObjToButton, ButtonToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToUidProc;
-static Blt_OptionPrintProc UidToObjProc;
+static Blt_OptionParseProc ObjToUid;
+static Blt_OptionPrintProc UidToObj;
 static Blt_OptionFreeProc FreeUidProc;
 static Blt_CustomOption uidOption = {
-    ObjToUidProc, UidToObjProc, FreeUidProc, NULL,
+    ObjToUid, UidToObj, FreeUidProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToLabelProc;
-static Blt_OptionPrintProc LabelToObjProc;
+static Blt_OptionParseProc ObjToLabel;
+static Blt_OptionPrintProc LabelToObj;
 static Blt_OptionFreeProc FreeLabelProc;
 static Blt_CustomOption labelOption =
 {
-    ObjToLabelProc, LabelToObjProc, FreeLabelProc, NULL,
+    ObjToLabel, LabelToObj, FreeLabelProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToStyleProc;
-static Blt_OptionPrintProc StyleToObjProc;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 static Blt_OptionFreeProc FreeStyleProc;
 static Blt_CustomOption styleOption = {
-    ObjToStyleProc, StyleToObjProc, FreeStyleProc, NULL,
+    ObjToStyle, StyleToObj, FreeStyleProc, NULL,
 };
 
 static Blt_ConfigSpec buttonSpecs[] =
@@ -3204,7 +3204,7 @@ ComputeComboGeometry(ComboTree *comboPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToButtonProc --
+ * ObjToButton --
  *
  *      Convert a string to one of three values.
  *              0 - false, no, off
@@ -3219,8 +3219,8 @@ ComputeComboGeometry(ComboTree *comboPtr)
  */
 /*ARGSUSED*/
 static int
-ObjToButtonProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToButton(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     const char *string;
     int *flagsPtr = (int *)(widgRec + offset);
@@ -3246,7 +3246,7 @@ ObjToButtonProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ButtonToObjProc --
+ * ButtonToObj --
  *
  * Results:
  *      The string representation of the button boolean is returned.
@@ -3255,13 +3255,8 @@ ObjToButtonProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ButtonToObjProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ButtonToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)     
 {
     int bool;
     unsigned int buttonFlags = *(int *)(widgRec + offset);
@@ -3277,7 +3272,7 @@ ButtonToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToLabelProc --
+ * ObjToLabel --
  *
  *      Convert the string representing the label. 
  *
@@ -3290,8 +3285,8 @@ ButtonToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToLabelProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToLabel(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     UID *labelPtr = (UID *)(widgRec + offset);
     const char *string;
@@ -3308,7 +3303,7 @@ ObjToLabelProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * LabelToObjProc --
+ * LabelToObj --
  *
  * Results:
  *      The string of the entry's label is returned.
@@ -3317,8 +3312,8 @@ ObjToLabelProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LabelToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+LabelToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     UID labelUid = *(UID *)(widgRec + offset);
     const char *string;
@@ -3363,7 +3358,7 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStyleProc --
+ * ObjToStyle --
  *
  *      Convert the string representation of a color into a XColor pointer.
  *
@@ -3375,8 +3370,8 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboTree *comboPtr;
     Entry *entryPtr = (Entry *)widgRec;
@@ -3403,7 +3398,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StyleToObjProc --
+ * StyleToObj --
  *
  *      Return the name of the style.
  *
@@ -3414,8 +3409,8 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Style *stylePtr = *(Style **)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -3430,7 +3425,7 @@ StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToUidProc --
+ * ObjToUid --
  *
  *      Converts the string to a Uid. Uid's are hashed, reference counted
  *      strings.
@@ -3439,8 +3434,8 @@ StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToUid(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+         Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboTree *comboPtr = clientData;
     UID *uidPtr = (UID *)(widgRec + offset);
@@ -3452,7 +3447,7 @@ ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * UidToObjProc --
+ * UidToObj --
  *
  *      Returns the uid as a string.
  *
@@ -3463,8 +3458,8 @@ ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-UidToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-             char *widgRec, int offset, int flags)  
+UidToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+         char *widgRec, int offset, int flags)  
 {
     UID uid = *(UID *)(widgRec + offset);
 
@@ -3526,7 +3521,7 @@ IconChangedProc(ClientData clientData, int x, int y, int width, int height,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconsProc --
+ * ObjToIcons --
  *
  *      Convert a list of image names into Tk images.
  *
@@ -3539,8 +3534,8 @@ IconChangedProc(ClientData clientData, int x, int y, int width, int height,
  */
 /*ARGSUSED*/
 static int
-ObjToIconsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToIcons(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Tcl_Obj **objv;
     ComboTree *comboPtr = clientData;
@@ -3574,7 +3569,7 @@ ObjToIconsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * IconsToObjProc --
+ * IconsToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -3585,8 +3580,8 @@ ObjToIconsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+IconsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Icon *icons = *(Icon **)(widgRec + offset);
     Tcl_Obj *listObjPtr;

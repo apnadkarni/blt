@@ -240,74 +240,74 @@ enum SortTypeValues {
     SORT_REAL, SORT_COMMAND, SORT_NONE, SORT_AUTO
 };
 
-static Blt_OptionParseProc ObjToAutoCreateProc;
-static Blt_OptionPrintProc AutoCreateToObjProc;
+static Blt_OptionParseProc ObjToAutoCreate;
+static Blt_OptionPrintProc AutoCreateToObj;
 static Blt_CustomOption autoCreateOption = {
-    ObjToAutoCreateProc, AutoCreateToObjProc, NULL, (ClientData)0
+    ObjToAutoCreate, AutoCreateToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToColumnTitleProc;
-static Blt_OptionPrintProc ColumnTitleToObjProc;
+static Blt_OptionParseProc ObjToColumnTitle;
+static Blt_OptionPrintProc ColumnTitleToObj;
 static Blt_OptionFreeProc FreeColumnTitleProc;
 static Blt_CustomOption columnTitleOption = {
-    ObjToColumnTitleProc, ColumnTitleToObjProc, FreeColumnTitleProc, 
+    ObjToColumnTitle, ColumnTitleToObj, FreeColumnTitleProc, 
     (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToSortColumnProc;
-static Blt_OptionPrintProc SortColumnToObjProc;
+static Blt_OptionParseProc ObjToSortColumn;
+static Blt_OptionPrintProc SortColumnToObj;
 static Blt_CustomOption sortColumnOption = {
-    ObjToSortColumnProc, SortColumnToObjProc, NULL, (ClientData)0
+    ObjToSortColumn, SortColumnToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToSortOrderProc;
-static Blt_OptionPrintProc SortOrderToObjProc;
+static Blt_OptionParseProc ObjToSortOrder;
+static Blt_OptionPrintProc SortOrderToObj;
 static Blt_OptionFreeProc FreeSortOrderProc;
 static Blt_CustomOption sortOrderOption = {
-    ObjToSortOrderProc, SortOrderToObjProc, FreeSortOrderProc, (ClientData)0
+    ObjToSortOrder, SortOrderToObj, FreeSortOrderProc, (ClientData)0
 };
-static Blt_OptionParseProc ObjToEnumProc;
-static Blt_OptionPrintProc EnumToObjProc;
+static Blt_OptionParseProc ObjToEnum;
+static Blt_OptionPrintProc EnumToObj;
 static Blt_CustomOption typeOption = {
-    ObjToEnumProc, EnumToObjProc, NULL, (ClientData)sortTypeStrings
+    ObjToEnum, EnumToObj, NULL, (ClientData)sortTypeStrings
 };
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_OptionFreeProc FreeIconProc;
 static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, 
+    ObjToIcon, IconToObj, FreeIconProc, 
     (ClientData)0,                      /* Needs to point to the tableview
                                          * widget before calling
                                          * routines. */
 };
-static Blt_OptionParseProc ObjToRowTitleProc;
-static Blt_OptionPrintProc RowTitleToObjProc;
+static Blt_OptionParseProc ObjToRowTitle;
+static Blt_OptionPrintProc RowTitleToObj;
 static Blt_OptionFreeProc FreeRowTitleProc;
 static Blt_CustomOption rowTitleOption = {
-    ObjToRowTitleProc, RowTitleToObjProc, FreeRowTitleProc, (ClientData)0
+    ObjToRowTitle, RowTitleToObj, FreeRowTitleProc, (ClientData)0
 };
-static Blt_OptionParseProc ObjToScrollModeProc;
-static Blt_OptionPrintProc ScrollModeToObjProc;
+static Blt_OptionParseProc ObjToScrollMode;
+static Blt_OptionPrintProc ScrollModeToObj;
 static Blt_CustomOption scrollModeOption = {
-    ObjToScrollModeProc, ScrollModeToObjProc, NULL, NULL,
+    ObjToScrollMode, ScrollModeToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToSelectModeProc;
-static Blt_OptionPrintProc SelectModeToObjProc;
+static Blt_OptionParseProc ObjToSelectMode;
+static Blt_OptionPrintProc SelectModeToObj;
 static Blt_CustomOption selectModeOption = {
-    ObjToSelectModeProc, SelectModeToObjProc, NULL, NULL,
+    ObjToSelectMode, SelectModeToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToCellStateProc;
-static Blt_OptionPrintProc CellStateToObjProc;
+static Blt_OptionParseProc ObjToCellState;
+static Blt_OptionPrintProc CellStateToObj;
 static Blt_CustomOption cellStateOption = {
-    ObjToCellStateProc, CellStateToObjProc, NULL, (ClientData)0
+    ObjToCellState, CellStateToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToLimits;
@@ -317,34 +317,34 @@ static Blt_CustomOption limitsOption =
     ObjToLimits, LimitsToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToStyleProc;
-static Blt_OptionPrintProc StyleToObjProc;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 static Blt_OptionFreeProc FreeStyleProc;
 static Blt_CustomOption styleOption = {
-    ObjToStyleProc, StyleToObjProc, FreeStyleProc, 
+    ObjToStyle, StyleToObj, FreeStyleProc, 
     (ClientData)0,                      /* Needs to point to the tableview
                                          * widget before calling
                                          * routines. */
 };
 
-static Blt_OptionParseProc ObjToTableProc;
-static Blt_OptionPrintProc TableToObjProc;
+static Blt_OptionParseProc ObjToTable;
+static Blt_OptionPrintProc TableToObj;
 static Blt_OptionFreeProc FreeTableProc;
 static Blt_CustomOption tableOption = {
-    ObjToTableProc, TableToObjProc, FreeTableProc, NULL,
+    ObjToTable, TableToObj, FreeTableProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToTitlesProc;
-static Blt_OptionPrintProc TitlesToObjProc;
+static Blt_OptionParseProc ObjToTitles;
+static Blt_OptionPrintProc TitlesToObj;
 static Blt_CustomOption titlesOption = {
-    ObjToTitlesProc, TitlesToObjProc, NULL, (ClientData)0
+    ObjToTitles, TitlesToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToCachedObjProc;
-static Blt_OptionPrintProc CachedObjToObjProc;
+static Blt_OptionParseProc ObjToCachedObj;
+static Blt_OptionPrintProc CachedObjToObj;
 static Blt_OptionFreeProc FreeCachedObjProc;
 static Blt_CustomOption cachedObjOption = {
-    ObjToCachedObjProc, CachedObjToObjProc, FreeCachedObjProc, NULL,
+    ObjToCachedObj, CachedObjToObj, FreeCachedObjProc, NULL,
 };
 
 static Blt_ConfigSpec tableSpecs[] =
@@ -1616,14 +1616,14 @@ DestroyIcons(TableView *viewPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToAutoCreateProc --
+ * ObjToAutoCreate --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
+ObjToAutoCreate(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     char c;
     const char *string;
@@ -1653,7 +1653,7 @@ ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * AutoCreateToObjProc --
+ * AutoCreateToObj --
  *
  *      Returns the current -autocreate value as a string.
  *
@@ -1664,7 +1664,7 @@ ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-AutoCreateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+AutoCreateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                      char *widgRec, int offset, int flags)      
 {
     int mask = *(int *)(widgRec + offset);
@@ -1704,14 +1704,14 @@ FreeColumnTitleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColumnTitleProc --
+ * ObjToColumnTitle --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                     Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
+ObjToColumnTitle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                 Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
 {
     Column *colPtr = (Column *)widgRec;
     const char **stringPtr = (const char **)(widgRec + offset);
@@ -1736,7 +1736,7 @@ ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ColumnTitleToObjProc --
+ * ColumnTitleToObj --
  *
  *      Returns the current column title as a string.
  *
@@ -1747,7 +1747,7 @@ ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+ColumnTitleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                      char *widgRec, int offset, int flags)      
 {
     const char *string = *(char **)(widgRec + offset);
@@ -1758,7 +1758,7 @@ ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSortColumnProc --
+ * ObjToSortColumn --
  *
  *      Converts the string, reprsenting a column, to its numeric form.
  *
@@ -1771,8 +1771,8 @@ ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToSortColumnProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
+ObjToSortColumn(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     TableView *viewPtr = (TableView *)widgRec;
     Column **colPtrPtr = (Column **)(widgRec + offset);
@@ -1788,7 +1788,7 @@ ObjToSortColumnProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SortColumnToObjProc --
+ * SortColumnToObj --
  *
  * Results:
  *      The string representation of the column is returned.
@@ -1797,7 +1797,7 @@ ObjToSortColumnProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SortColumnToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+SortColumnToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                     char *widgRec, int offset, int flags)       
 {
     Column *colPtr = *(Column **)(widgRec + offset);
@@ -1825,7 +1825,7 @@ FreeSortOrderProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSortOrderProc --
+ * ObjToSortOrder --
  *
  *      Converts the string reprsenting a column, to its numeric form.
  *
@@ -1838,8 +1838,8 @@ FreeSortOrderProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToSortOrderProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
+ObjToSortOrder(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
 {
     TableView *viewPtr = (TableView *)widgRec;
     Blt_Chain *chainPtr = (Blt_Chain *)(widgRec + offset);
@@ -1874,7 +1874,7 @@ ObjToSortOrderProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SortOrderToObjProc --
+ * SortOrderToObj --
  *
  * Results:
  *      The string representation of the column is returned.
@@ -1883,7 +1883,7 @@ ObjToSortOrderProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+SortOrderToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                    char *widgRec, int offset, int flags)        
 {
     Blt_Chain chain = *(Blt_Chain *)(widgRec + offset);
@@ -1906,7 +1906,7 @@ SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToEnumProc --
+ * ObjToEnum --
  *
  *      Converts the string into its enumerated type.
  *
@@ -1914,8 +1914,8 @@ SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToEnum(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *enumPtr = (int *)(widgRec + offset);
     char c;
@@ -1954,7 +1954,7 @@ ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * EnumToObjProc --
+ * EnumToObj --
  *
  *      Returns the string associated with the enumerated type.
  *
@@ -1962,7 +1962,7 @@ ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-EnumToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+EnumToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
               char *widgRec, int offset, int flags)     
 {
     int value = *(int *)(widgRec + offset);
@@ -1995,7 +1995,7 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Convert the names of an icon into a Tk image.
  *
@@ -2008,8 +2008,8 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     TableView *viewPtr = clientData;
     Icon *iconPtr = (Icon *)(widgRec + offset);
@@ -2035,7 +2035,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * IconToObjProc --
+ * IconToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -2046,7 +2046,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
           char *widgRec, int offset, int flags) 
 {
     Icon icon = *(Icon *)(widgRec + offset);
@@ -2076,14 +2076,14 @@ FreeRowTitleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToRowTitleProc --
+ * ObjToRowTitle --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
+ObjToRowTitle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
 {
     Row *rowPtr = (Row *)widgRec;
     const char **stringPtr = (const char **)(widgRec + offset);
@@ -2109,7 +2109,7 @@ ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * RowTitleToObjProc --
+ * RowTitleToObj --
  *
  *      Returns the current row title as a string.
  *
@@ -2120,7 +2120,7 @@ ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-RowTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+RowTitleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 char *widgRec, int offset, int flags)   
 {
     const char *string = *(char **)(widgRec + offset);
@@ -2131,7 +2131,7 @@ RowTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToScrollModeProc --
+ * ObjToScrollMode --
  *
  *      Convert the string reprsenting a scroll mode, to its numeric form.
  *
@@ -2144,8 +2144,8 @@ RowTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToScrollModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
+ObjToScrollMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     char c;
     const char *string;
@@ -2171,7 +2171,7 @@ ObjToScrollModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ScrollModeToObjProc --
+ * ScrollModeToObj --
  *
  * Results:
  *      The string representation of the scroll mode is returned.
@@ -2180,7 +2180,7 @@ ObjToScrollModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+ScrollModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
                     char *widgRec, int offset, int flags)       
 {
     int mode = *(int *)(widgRec + offset);
@@ -2200,7 +2200,7 @@ ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSelectModeProc --
+ * ObjToSelectMode --
  *
  *      Convert the string reprsenting a scroll mode, to its numeric form.
  *
@@ -2213,8 +2213,8 @@ ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
+ObjToSelectMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     const char *string;
     char c;
@@ -2240,7 +2240,7 @@ ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SelectModeToObjProc --
+ * SelectModeToObj --
  *
  * Results:
  *      The string representation of the select mode is returned.
@@ -2249,7 +2249,7 @@ ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SelectModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+SelectModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                     char *widgRec, int offset, int flags)       
 {
     int mode = *(int *)(widgRec + offset);
@@ -2269,7 +2269,7 @@ SelectModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Convert the name of a state into an integer.
  *
@@ -2282,8 +2282,8 @@ SelectModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     int *flagsPtr = (int *)(widgRec + offset);
     const char *string;
@@ -2311,7 +2311,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Converts the state into its string representation.
  *
@@ -2322,7 +2322,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                char *widgRec, int offset, int flags)    
 {
     int state = *(int *)(widgRec + offset);
@@ -2340,7 +2340,7 @@ StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToCellStateProc --
+ * ObjToCellState --
  *
  *      Converts the string representing a cell state into a bitflag.
  *
@@ -2352,15 +2352,8 @@ StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToCellStateProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report
-                                         * results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToCellState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     Cell *cellPtr = (Cell *)widgRec;
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -2400,7 +2393,7 @@ ObjToCellStateProc(
 /*
  *---------------------------------------------------------------------------
  *
- * CellStateToObjProc --
+ * CellStateToObj --
  *
  *      Return the name of the style.
  *
@@ -2411,7 +2404,7 @@ ObjToCellStateProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CellStateToObjProc(
+CellStateToObj(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,                    /* Not used. */
@@ -2455,7 +2448,7 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStyleProc --
+ * ObjToStyle --
  *
  *      Convert the name of an icon into a tableview style.
  *
@@ -2468,8 +2461,8 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     CellStyle **stylePtrPtr = (CellStyle **)(widgRec + offset);
     CellStyle *stylePtr;
@@ -2501,7 +2494,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StyleToObjProc --
+ * StyleToObj --
  *
  *      Converts the style into its string representation (its name).
  *
@@ -2512,7 +2505,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                char *widgRec, int offset, int flags)    
 {
     CellStyle *stylePtr = *(CellStyle **)(widgRec + offset);
@@ -2548,7 +2541,7 @@ FreeTableProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTableProc --
+ * ObjToTable --
  *
  *      Convert the string representing the name of a table object into a
  *      table token.
@@ -2562,8 +2555,8 @@ FreeTableProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
+ObjToTable(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     TableView *viewPtr = (TableView *)widgRec;
     BLT_TABLE *tablePtr = (BLT_TABLE *)(widgRec + offset);
@@ -2585,7 +2578,7 @@ ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TableToObjProc --
+ * TableToObj --
  *
  * Results:
  *      The string representation of the table is returned.
@@ -2594,7 +2587,7 @@ ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TableToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+TableToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
                char *widgRec, int offset, int flags)    
 {
     BLT_TABLE table = *(BLT_TABLE *)(widgRec + offset);
@@ -2612,7 +2605,7 @@ TableToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTitlesProc --
+ * ObjToTitles --
  *
  *      Converts the string to a titles flag: ROW_TITLES or COLUMN_TITLES. 
  *
@@ -2620,8 +2613,8 @@ TableToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToTitlesProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTitles(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     int *flagsPtr = (int *)(widgRec + offset);
     const char *string;
@@ -2652,7 +2645,7 @@ ObjToTitlesProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TitlesToObjProc --
+ * TitlesToObj --
  *
  *      Returns the titles flags as a string.
  *
@@ -2663,7 +2656,7 @@ ObjToTitlesProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+TitlesToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 char *widgRec, int offset, int flags)   
 {
     int titles = *(int *)(widgRec + offset);
@@ -2686,7 +2679,7 @@ TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToCachedObjProc --
+ * ObjToCachedObj --
  *
  *      Converts the string to a cached Tcl_Obj. Cacheded Tcl_Obj's are
  *      hashed, reference counted strings.
@@ -2695,8 +2688,8 @@ TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToCachedObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
+ObjToCachedObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
 {
     TableView *viewPtr = clientData;
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -2708,7 +2701,7 @@ ObjToCachedObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * CachedObjToObjProc --
+ * CachedObjToObj --
  *
  *      Returns the cached Tcl_Obj.
  *
@@ -2719,8 +2712,8 @@ ObjToCachedObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CachedObjToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-             char *widgRec, int offset, int flags)      
+CachedObjToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)      
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 

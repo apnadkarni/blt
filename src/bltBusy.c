@@ -165,11 +165,11 @@ static Blt_CustomOption opacityOption =
 };
 
 static Blt_OptionFreeProc FreeImageProc;
-static Blt_OptionParseProc ObjToImageProc;
-static Blt_OptionPrintProc ImageToObjProc;
+static Blt_OptionParseProc ObjToImage;
+static Blt_OptionPrintProc ImageToObj;
 static Blt_CustomOption pictImageOption =
 {
-    ObjToImageProc, ImageToObjProc, FreeImageProc, (ClientData)0
+    ObjToImage, ImageToObj, FreeImageProc, (ClientData)0
 };
 
 static Blt_ConfigSpec configSpecs[] =
@@ -318,8 +318,8 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
+ObjToImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     Busy *busyPtr = (Busy *)widgRec;
     Tk_Image tkImage;
@@ -358,7 +358,7 @@ ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ImageToObjProc --
+ * ImageToObj --
  *
  *      Convert the image name into a string Tcl_Obj.
  *
@@ -369,8 +369,8 @@ ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ImageToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)    
+ImageToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)    
 {
     Busy *busyPtr = (Busy *)(widgRec);
     
