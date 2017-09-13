@@ -195,35 +195,35 @@
 #define DEF_TEXTBOX_SIDE                "left"
 #define DEF_TEXTBOX_UNDERLINE_ACTIVE    "1"
 
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_OptionFreeProc FreeIconProc;
 static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, NULL,
+    ObjToIcon, IconToObj, FreeIconProc, NULL,
 };
 
 static Blt_OptionFreeProc FreeIconVarProc;
-static Blt_OptionParseProc ObjToIconVarProc;
-static Blt_OptionPrintProc IconVarToObjProc;
+static Blt_OptionParseProc ObjToIconVar;
+static Blt_OptionPrintProc IconVarToObj;
 static Blt_CustomOption iconVarOption = {
-    ObjToIconVarProc, IconVarToObjProc, FreeIconVarProc, (ClientData)0
+    ObjToIconVar, IconVarToObj, FreeIconVarProc, (ClientData)0
 };
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 static Blt_OptionFreeProc FreeTextVarProc;
-static Blt_OptionParseProc ObjToTextVarProc;
-static Blt_OptionPrintProc TextVarToObjProc;
+static Blt_OptionParseProc ObjToTextVar;
+static Blt_OptionPrintProc TextVarToObj;
 static Blt_CustomOption textVarOption = {
-    ObjToTextVarProc, TextVarToObjProc, FreeTextVarProc, (ClientData)0
+    ObjToTextVar, TextVarToObj, FreeTextVarProc, (ClientData)0
 };
 static Blt_OptionFreeProc FreeTextProc;
-static Blt_OptionParseProc ObjToTextProc;
-static Blt_OptionPrintProc TextToObjProc;
+static Blt_OptionParseProc ObjToText;
+static Blt_OptionPrintProc TextToObj;
 static Blt_CustomOption textOption = {
-    ObjToTextProc, TextToObjProc, FreeTextProc, (ClientData)0
+    ObjToText, TextToObj, FreeTextProc, (ClientData)0
 };
 
 /* 
@@ -1516,7 +1516,7 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Convert the name of an icon into a Tk image.
  *
@@ -1529,8 +1529,8 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     Icon *iconPtr = (Icon *)(widgRec + offset);
     CellStyle *stylePtr = (CellStyle *)widgRec;
@@ -1565,7 +1565,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * IconToObjProc --
+ * IconToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -1576,7 +1576,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
               char *widgRec, int offset, int flags)     
 {
     Icon icon = *(Icon *)(widgRec + offset);
@@ -1744,7 +1744,7 @@ FreeIconVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconVarProc --
+ * ObjToIconVar --
  *
  *      Convert the variable to a traced variable.
  *
@@ -1756,14 +1756,8 @@ FreeIconVarProc(
  */
 /*ARGSUSED*/
 static int
-ObjToIconVarProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToIconVar(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -1804,7 +1798,7 @@ ObjToIconVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * IconVarToObjProc --
+ * IconVarToObj --
  *
  *      Return the name of the style.
  *
@@ -1815,13 +1809,8 @@ ObjToIconVarProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconVarToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+IconVarToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+             char *widgRec, int offset, int flags)     
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
@@ -1835,7 +1824,7 @@ IconVarToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Converts the string representing a state into a bitflag.
  *
@@ -1847,14 +1836,8 @@ IconVarToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     const char *string;
@@ -1878,7 +1861,7 @@ ObjToStateProc(
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the style.
  *
@@ -1889,13 +1872,8 @@ ObjToStateProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+           char *widgRec, int offset, int flags)     
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;
@@ -1933,7 +1911,7 @@ FreeTextVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextVarProc --
+ * ObjToTextVar --
  *
  *      Convert the variable to a traced variable.
  *
@@ -1945,14 +1923,8 @@ FreeTextVarProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTextVarProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToTextVar(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -1990,7 +1962,7 @@ ObjToTextVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TextVarToObjProc --
+ * TextVarToObj --
  *
  *      Return the name of the text variable.
  *
@@ -2001,13 +1973,8 @@ ObjToTextVarProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextVarToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TextVarToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+             char *widgRec, int offset, int flags)     
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
@@ -2034,7 +2001,7 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextProc --
+ * ObjToText --
  *
  *      Save the text and add the item to the text hashtable.
  *
@@ -2045,14 +2012,8 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTextProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToText(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
 
@@ -2073,7 +2034,7 @@ ObjToTextProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TextToObjProc --
+ * TextToObj --
  *
  *      Return the text of the item.
  *
@@ -2084,13 +2045,8 @@ ObjToTextProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TextToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          char *widgRec, int offset, int flags)     
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
 
