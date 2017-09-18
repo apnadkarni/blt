@@ -114,27 +114,27 @@
 #define DEF_RECTANGLE_TAGS      "Rectangle all"
 #define DEF_LINE_TAGS           "Line all"
 
-static Blt_OptionParseProc ObjToCoordsProc;
-static Blt_OptionPrintProc CoordsToObjProc;
+static Blt_OptionParseProc ObjToCoords;
+static Blt_OptionPrintProc CoordsToObj;
 static Blt_OptionFreeProc CoordsFreeProc;
 static Blt_CustomOption coordsOption =
 {
-    ObjToCoordsProc, CoordsToObjProc, CoordsFreeProc, (ClientData)0
+    ObjToCoords, CoordsToObj, CoordsFreeProc, (ClientData)0
 };
+static Blt_OptionParseProc ObjToColorPair;
+static Blt_OptionPrintProc ColorPairToObj;
 static Blt_OptionFreeProc ColorPairFreeProc;
-static Blt_OptionParseProc ObjToColorPairProc;
-static Blt_OptionPrintProc ColorPairToObjProc;
 static Blt_CustomOption colorPairOption =
 {
-    ObjToColorPairProc, ColorPairToObjProc, ColorPairFreeProc, (ClientData)0
+    ObjToColorPair, ColorPairToObj, ColorPairFreeProc, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToPictImageProc;
-static Blt_OptionPrintProc PictImageToObjProc;
+static Blt_OptionParseProc ObjToPictImage;
+static Blt_OptionPrintProc PictImageToObj;
 static Blt_OptionFreeProc PictImageFreeProc;
 static Blt_CustomOption pictImageOption =
 {
-    ObjToPictImageProc, PictImageToObjProc, PictImageFreeProc, (ClientData)0
+    ObjToPictImage, PictImageToObj, PictImageFreeProc, (ClientData)0
 };
 
 BLT_EXTERN Blt_CustomOption bltXAxisOption;
@@ -142,10 +142,10 @@ BLT_EXTERN Blt_CustomOption bltYAxisOption;
 BLT_EXTERN Blt_CustomOption bltFilterOption;
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 static Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 typedef Marker *(MarkerCreateProc)(void);
@@ -1624,7 +1624,7 @@ CoordsFreeProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToCoordsProc --
+ * ObjToCoords --
  *
  *      Given a TCL list of numeric expression representing the element
  *      values, convert into an array of floating point values. In
@@ -1640,8 +1640,8 @@ CoordsFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToCoords(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Marker *markerPtr = (Marker *)widgRec;
     Tcl_Obj **objv;
@@ -1659,7 +1659,7 @@ ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * CoordsToObjProc --
+ * CoordsToObj --
  *
  *      Convert the vector of floating point values into a TCL list.
  *
@@ -1670,8 +1670,8 @@ ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CoordsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                char *widgRec, int offset, int flags)
+CoordsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     Marker *markerPtr = (Marker *)widgRec;
     Tcl_Obj *listObjPtr;
@@ -1762,7 +1762,7 @@ ColorPairFreeProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColorPairProc --
+ * ObjToColorPair --
  *
  *      Convert the color names into pair of XColor pointers.
  *
@@ -1774,8 +1774,8 @@ ColorPairFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToColorPairProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToColorPair(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
     Tcl_Obj **objv;
@@ -1837,7 +1837,7 @@ NameOfColor(XColor *colorPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ColorPairToObjProc --
+ * ColorPairToObj --
  *
  *      Convert the color pairs into color names.
  *
@@ -1848,8 +1848,8 @@ NameOfColor(XColor *colorPtr)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColorPairToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   char *widgRec, int offset, int flags)
+ColorPairToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
     Tcl_Obj *listObjPtr, *objPtr;
@@ -1924,7 +1924,7 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPictImageProc --
+ * ObjToPictImage --
  *
  *      Given an image name, get the Tk image associated with it.
  *
@@ -1935,8 +1935,8 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
+ObjToPictImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
 {
     Blt_Picture *pictPtr = (Blt_Picture *)(widgRec + offset);
     Graph *graphPtr;
@@ -1970,7 +1970,7 @@ ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * PictImageToObjProc --
+ * PictImageToObj --
  *
  *      Convert the image name into a string Tcl_Obj.
  *
@@ -1981,8 +1981,8 @@ ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PictImageToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   char *widgRec, int offset, int flags)        
+PictImageToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)        
 {
     ImageMarker *imPtr = (ImageMarker *)(widgRec);
     
@@ -2079,7 +2079,7 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -2091,8 +2091,8 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Marker *markerPtr = (Marker *)widgRec;
@@ -2119,7 +2119,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Returns the tags associated with the marker.
  *
@@ -2130,8 +2130,8 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Marker *markerPtr = (Marker *)widgRec;

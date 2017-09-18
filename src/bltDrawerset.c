@@ -432,9 +432,9 @@ static Blt_CustomOption tagsOption = {
 };
 
 static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToStateProc, StateToObj, NULL, (ClientData)0
 };
 
 static Blt_ConfigSpec drawerSpecs[] =
@@ -1651,7 +1651,7 @@ ObjToMotionScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static Tcl_Obj *
 MotionScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  char *widgRec, int offset, int flags) 
+                   char *widgRec, int offset, int flags) 
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -1708,7 +1708,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the state.
  *
@@ -1719,8 +1719,8 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;

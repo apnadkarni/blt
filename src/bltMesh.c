@@ -267,23 +267,20 @@ static DataSourceClass tableDataSourceClass = {
 };
 
 static Blt_SwitchFreeProc FreeTrianglesProc;
-static Blt_SwitchParseProc ObjToTrianglesProc;
-static Blt_SwitchPrintProc TrianglesToObjProc;
-static Blt_SwitchCustom trianglesSwitch =
-{
-    ObjToTrianglesProc, TrianglesToObjProc, FreeTrianglesProc, (ClientData)0
+static Blt_SwitchParseProc ObjToTriangles;
+static Blt_SwitchPrintProc TrianglesToObj;
+static Blt_SwitchCustom trianglesSwitch = {
+    ObjToTriangles, TrianglesToObj, FreeTrianglesProc, (ClientData)0
 };
 
 static Blt_SwitchFreeProc FreeDataSourceProc;
-static Blt_SwitchParseProc ObjToDataSourceProc;
-static Blt_SwitchPrintProc DataSourceToObjProc;
-Blt_SwitchCustom bltDataSourceSwitch =
-{
-    ObjToDataSourceProc, DataSourceToObjProc, FreeDataSourceProc, (ClientData)0
+static Blt_SwitchParseProc ObjToDataSource;
+static Blt_SwitchPrintProc DataSourceToObj;
+Blt_SwitchCustom bltDataSourceSwitch = {
+    ObjToDataSource, DataSourceToObj, FreeDataSourceProc, (ClientData)0
 };
 
-static Blt_SwitchSpec cloudMeshSpecs[] =
-{
+static Blt_SwitchSpec cloudMeshSpecs[] = {
     {BLT_SWITCH_CUSTOM, "-x", (char *)NULL, (char *)NULL, 
         Blt_Offset(Mesh, x), 0, 0, &bltDataSourceSwitch},
     {BLT_SWITCH_CUSTOM, "-y", (char *)NULL, (char *)NULL, 
@@ -291,8 +288,7 @@ static Blt_SwitchSpec cloudMeshSpecs[] =
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec regularMeshSpecs[] =
-{
+static Blt_SwitchSpec regularMeshSpecs[] = {
     {BLT_SWITCH_CUSTOM, "-x", (char *)NULL, (char *)NULL, 
         Blt_Offset(Mesh, x), 0, 0, &bltDataSourceSwitch},
     {BLT_SWITCH_CUSTOM, "-y", (char *)NULL, (char *)NULL, 
@@ -300,8 +296,7 @@ static Blt_SwitchSpec regularMeshSpecs[] =
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec irregularMeshSpecs[] =
-{
+static Blt_SwitchSpec irregularMeshSpecs[] = {
     {BLT_SWITCH_CUSTOM, "-x", (char *)NULL, (char *)NULL, 
         Blt_Offset(Mesh, x), 0, 0, &bltDataSourceSwitch},
     {BLT_SWITCH_CUSTOM, "-y", (char *)NULL, (char *)NULL, 
@@ -309,8 +304,7 @@ static Blt_SwitchSpec irregularMeshSpecs[] =
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec triangleMeshSpecs[] =
-{
+static Blt_SwitchSpec triangleMeshSpecs[] = {
     {BLT_SWITCH_CUSTOM, "-x",  (char *)NULL, (char *)NULL, 
         Blt_Offset(Mesh, x), 0, 0, &bltDataSourceSwitch},
     {BLT_SWITCH_CUSTOM, "-y", (char *)NULL, (char *)NULL, 
@@ -356,7 +350,7 @@ static int ComputeMesh(Mesh *meshPtr);
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTrianglesProc --
+ * ObjToTriangles --
  *
  *      Given a string representation of a data source, this routine
  *      converts it into its equivalent data source.  A data source may be
@@ -371,15 +365,9 @@ static int ComputeMesh(Mesh *meshPtr);
  */
 /*ARGSUSED*/
 static int
-ObjToTrianglesProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* TCL list of indices */
-    char *record,                       /* Record */
-    int offset,                         /* Offset to field in record */
-    int flags)                          /* Not used. */
+ObjToTriangles(ClientData clientData, Tcl_Interp *interp,
+               const char *switchName, Tcl_Obj *objPtr, char *record,
+               int offset, int flags)
 {
     Mesh *meshPtr = (Mesh *)record;
     Tcl_Obj **objv;
@@ -452,7 +440,7 @@ ObjToTrianglesProc(
 }
 
 static Tcl_Obj *
-TriangleToObj(Tcl_Interp *interp, Blt_MeshTriangle *t)
+ObjOfTriangle(Tcl_Interp *interp, Blt_MeshTriangle *t)
 {
     Tcl_Obj *listObjPtr;
     
@@ -466,7 +454,7 @@ TriangleToObj(Tcl_Interp *interp, Blt_MeshTriangle *t)
 /*
  *---------------------------------------------------------------------------
  *
- * TrianglesToObjProc --
+ * TrianglesToObj --
  *
  *      Converts the data source to its equivalent string representation.
  *      The data source may be a table, vector, or list.
@@ -478,12 +466,8 @@ TriangleToObj(Tcl_Interp *interp, Blt_MeshTriangle *t)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TrianglesToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+TrianglesToObj(ClientData clientData, Tcl_Interp *interp, char *record, 
+               int offset, int flags)
 {
     Mesh *meshPtr = (Mesh *)record;
     Tcl_Obj *listObjPtr;
@@ -493,7 +477,7 @@ TrianglesToObjProc(
     for (i = 0; i < meshPtr->numReqTriangles; i++) {
         Tcl_Obj *objPtr;
         
-        objPtr = TriangleToObj(interp, meshPtr->reqTriangles + i);
+        objPtr = ObjOfTriangle(interp, meshPtr->reqTriangles + i);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
@@ -983,7 +967,7 @@ FreeDataSourceProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToDataSourceProc --
+ * ObjToDataSource --
  *
  *      Given a string representation of a data source, converts it into
  *      its equivalent data source.  A data source may be a list of
@@ -998,15 +982,9 @@ FreeDataSourceProc(
  */
 /*ARGSUSED*/
 static int
-ObjToDataSourceProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* TCL list of expressions */
-    char *record,                       /* Record */
-    int offset,                         /* Offset to field in record */
-    int flags)                          /* Not used. */
+ObjToDataSource(ClientData clientData, Tcl_Interp *interp,
+                const char *switchName, Tcl_Obj *objPtr, char *record,
+                int offset, int flags)
 {
     Mesh *meshPtr = (Mesh *)record;
     DataSource *srcPtr;
@@ -1041,7 +1019,7 @@ ObjToDataSourceProc(
 /*
  *---------------------------------------------------------------------------
  *
- * DataSourceToObjProc --
+ * DataSourceToObj --
  *
  *      Converts the data source to its equivalent string representation.
  *      The data source may be a table, vector, or list.
@@ -1053,12 +1031,8 @@ ObjToDataSourceProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-DataSourceToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+DataSourceToObj(ClientData clientData, Tcl_Interp *interp, char *record, 
+                int offset, int flags)
 {
     DataSource *srcPtr = *(DataSource **)(record + offset);
 
@@ -2237,7 +2211,7 @@ TrianglesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 0; i < meshPtr->numTriangles; i++) {
         Tcl_Obj *objPtr;
         
-        objPtr = TriangleToObj(interp, meshPtr->triangles + i);
+        objPtr = ObjOfTriangle(interp, meshPtr->triangles + i);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     }
