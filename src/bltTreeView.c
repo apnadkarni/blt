@@ -848,8 +848,8 @@ static int GetEntryFromObj(Tcl_Interp *interp, TreeView *viewPtr,
 static void
 EventuallyRedraw(TreeView *viewPtr)
 {
-    if ((viewPtr->tkwin != NULL) && 
-        (viewPtr->flags & (DONT_UPDATE|REDRAW_PENDING) == 0)) {
+     if ((viewPtr->tkwin != NULL) && 
+        ((viewPtr->flags & (DONT_UPDATE|REDRAW_PENDING)) == 0)) {
         viewPtr->flags |= REDRAW_PENDING;
         Tcl_DoWhenIdle(DisplayProc, viewPtr);
     }
