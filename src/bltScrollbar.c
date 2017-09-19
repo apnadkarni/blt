@@ -325,10 +325,10 @@ typedef struct {
 
 #define MIN_SLIDER_LENGTH       12
 
-static Blt_OptionParseProc ObjToStyleProc;
-static Blt_OptionPrintProc StyleToObjProc;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 static Blt_CustomOption styleOption = {
-    ObjToStyleProc, StyleToObjProc, NULL, (ClientData)0
+    ObjToStyle, StyleToObj, NULL, (ClientData)0
 };
 
 /*
@@ -466,7 +466,7 @@ GetFieldFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *fieldPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStyleProc --
+ * ObjToStyle --
  *
  *      Converts the style name into its integer representation.
  *
@@ -474,8 +474,8 @@ GetFieldFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *fieldPtr)
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     char c;
     const char *string;
@@ -516,7 +516,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StyleToObjProc --
+ * StyleToObj --
  *
  *      Returns the name of the style.
  *
@@ -527,13 +527,8 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     int style = *(int *)(widgRec + offset);
     Tcl_Obj *objPtr;

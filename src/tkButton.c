@@ -442,12 +442,12 @@ static int configFlags[] = {
     RADIO_BUTTON_MASK
 };
 
-static Blt_OptionParseProc ObjToImageProc;
-static Blt_OptionPrintProc ImageToObjProc;
+static Blt_OptionParseProc ObjToImage;
+static Blt_OptionPrintProc ImageToObj;
 static Blt_OptionFreeProc FreeImageProc;
 static Blt_CustomOption imageOption =
 {
-    ObjToImageProc, ImageToObjProc, FreeImageProc, (ClientData)0
+    ObjToImage, ImageToObj, FreeImageProc, (ClientData)0
 };
 
 /*
@@ -736,7 +736,7 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToImageProc --
+ * ObjToImage --
  *
  *      Given an image name, get the Tk image associated with it.
  *
@@ -747,15 +747,8 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToImageProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of value. */
-    char *widgRec,                      /* Widget record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Button *butPtr = (Button *)(widgRec);
     Tk_Image *imagePtr = (Tk_Image *)(widgRec + offset);
@@ -783,7 +776,7 @@ ObjToImageProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ImageToObjProc --
+ * ImageToObj --
  *
  *      Convert the image name into a string Tcl_Obj.
  *
@@ -794,13 +787,8 @@ ObjToImageProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ImageToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ImageToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Tk_Image image = *(Tk_Image *)(widgRec + offset);
 
