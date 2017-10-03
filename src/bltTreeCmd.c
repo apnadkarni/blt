@@ -392,6 +392,9 @@ typedef struct {
                                          * executed for each found node. */
     long maxDepth;                      /* If >= 0, don't descend more than
                                          * this many levels. */
+    long minDepth;                      /* If >= 0, don't report on any
+                                         * node that is less than this many
+                                         * levels deep. */
     size_t maxMatches;                  /* If > 0, stop after this many
                                          * matches. */
     unsigned int order;                 /* Order of search: Can be either
@@ -474,6 +477,8 @@ static Blt_SwitchSpec findSwitches[] = {
         Blt_Offset(FindSwitches, keyList), 0, 0, &regexpSwitch},
     {BLT_SWITCH_BITS_NOARG, "-leafonly", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_LEAFONLY},
+    {BLT_SWITCH_LONG_NNEG, "-mindepth", "number", (char *)NULL,
+        Blt_Offset(FindSwitches, minDepth), 0},
     {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(FindSwitches, flags), 0, MATCH_NOCASE},
     {BLT_SWITCH_CUSTOM, "-order", "orderName", (char *)NULL,
@@ -2103,27 +2108,30 @@ MatchNodeProc(Blt_TreeNode node, ClientData clientData, int order)
                 return TCL_ERROR;
             }
         }
-        /* Save the node id in our list. */
-        objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
-        Tcl_ListObjAppendElement(interp, findPtr->listObjPtr, objPtr);
-        
-        /* Execute a procedure for the matching node. */
-        if (findPtr->cmdObjPtr != NULL) {
-            Tcl_Obj *cmdObjPtr;
+        if ((findPtr->minDepth <= 0) || 
+            (Blt_Tree_NodeDepth(node) >= findPtr->minDepth)) {
+            /* Save the node id in our list. */
+            objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
+            Tcl_ListObjAppendElement(interp, findPtr->listObjPtr, objPtr);
 
-            cmdObjPtr = Tcl_DuplicateObj(findPtr->cmdObjPtr);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-            Tcl_IncrRefCount(cmdObjPtr);
-            result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-            Tcl_DecrRefCount(cmdObjPtr);
-            if (result != TCL_OK) {
-                return result;
+            /* Execute a procedure for the matching node. */
+            if (findPtr->cmdObjPtr != NULL) {
+                Tcl_Obj *cmdObjPtr;
+                
+                cmdObjPtr = Tcl_DuplicateObj(findPtr->cmdObjPtr);
+                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+                Tcl_IncrRefCount(cmdObjPtr);
+                result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+                Tcl_DecrRefCount(cmdObjPtr);
+                if (result != TCL_OK) {
+                    return result;
+                }
             }
-        }
-        findPtr->numMatches++;
-        if ((findPtr->maxMatches > 0) && 
-            (findPtr->numMatches >= findPtr->maxMatches)) {
-            return TCL_BREAK;
+            findPtr->numMatches++;
+            if ((findPtr->maxMatches > 0) && 
+                (findPtr->numMatches >= findPtr->maxMatches)) {
+                return TCL_BREAK;
+            }
         }
     }
     return TCL_OK;
@@ -5103,8 +5111,8 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FindChildOp --
  *
- *      treeName findchild nodeName childName
- *
+ *      treeName findchild nodeName childName ?switches ...?
+ *      -regexp -glob -exact -from node
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/

@@ -1,6 +1,6 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
- * bltTabset.c --
+ * bltTabset2.c --
  *
  * This module implements a tabnotebook widget for the BLT toolkit.
  *
@@ -250,14 +250,16 @@ enum ShowTabs {
 #define DEF_TROUGHCOLOR                 "grey60"
 #define DEF_WIDTH                       "0"
 
-#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND        "red2"
-#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND        RGB_WHITE
-#define DEF_CLOSEBUTTON_ACTIVERELIEF            "raised"
-#define DEF_CLOSEBUTTON_BACKGROUND              RGB_GREY70
-#define DEF_CLOSEBUTTON_BORDERWIDTH             "0"
+#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND "#EE5F5F"
+#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND RGB_WHITE
+#define DEF_CLOSEBUTTON_ACTIVERELIEF    "raised"
+#define DEF_CLOSEBUTTON_BACKGROUND      RGB_GREY82
+#define DEF_CLOSEBUTTON_BORDERWIDTH     "0"
 #define DEF_CLOSEBUTTON_COMMAND         (char *)NULL
-#define DEF_CLOSEBUTTON_FOREGROUND              RGB_GREY95
+#define DEF_CLOSEBUTTON_FOREGROUND      RGB_GREY50
 #define DEF_CLOSEBUTTON_RELIEF          "flat"
+#define DEF_CLOSEBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
+#define DEF_CLOSEBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
 
 #define DEF_TAB_ACTIVEBACKGROUND        (char *)NULL
 #define DEF_TAB_ACTIVEFOREGROUND        (char *)NULL
@@ -374,6 +376,10 @@ typedef struct _Button {
                                          * when the button is active. */
     XColor *activeBgColor;              /* Background color of the button
                                          * when the button is active. */
+    XColor *selFg;                      /* Foreground color of the button
+                                         * when the button is selected. */
+    XColor *selBgColor;                 /* Background color of the button
+                                         * when the button is selected. */
     Tcl_Obj *cmdObjPtr;                 /* Command to be executed when the the
                                          * button is invoked. */
     Blt_Picture normal0;                /* Contains the image to be displayed
@@ -754,15 +760,15 @@ static Blt_CustomOption showTabsOption = {
 
 static Blt_ConfigSpec buttonSpecs[] =
 {
-    {BLT_CONFIG_COLOR, "-activebackground", "activeBackrgound", 
+    {BLT_CONFIG_COLOR, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_CLOSEBUTTON_ACTIVEBACKGROUND, 
         Blt_Offset(Button, activeBgColor), 0},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForergound", 
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_CLOSEBUTTON_ACTIVEFOREGROUND, 
         Blt_Offset(Button, activeFg), 0},
-    {BLT_CONFIG_COLOR, "-background", "backrgound", "Background", 
+    {BLT_CONFIG_COLOR, "-background", "background", "Background", 
         DEF_CLOSEBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
-    {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
         DEF_CLOSEBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
         DEF_CLOSEBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
@@ -773,6 +779,12 @@ static Blt_ConfigSpec buttonSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CLOSEBUTTON_RELIEF, 
         Blt_Offset(Button, relief), 0},
+    {BLT_CONFIG_COLOR, "-selectbackground", "selectBackground", 
+        "SelectBackground", DEF_CLOSEBUTTON_SELECTBACKGROUND, 
+        Blt_Offset(Button, selBgColor), 0},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", 
+        "SelectForeground", DEF_CLOSEBUTTON_SELECTFOREGROUND, 
+        Blt_Offset(Button, selFg), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -807,8 +819,8 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", (char *)NULL,
         Blt_Offset(Tab, textColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", (char *)NULL, 
-        Blt_Offset(Tab, font), 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TAB_FONT, 
+        Blt_Offset(Tab, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_TAB_IMAGE, 
         Blt_Offset(Tab, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_PAD, "-ipadx", "iPadX", "PadX", DEF_TAB_IPAD, 
@@ -877,8 +889,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_FOREGROUND, Blt_Offset(Tabset, defStyle.textColor), 0},
-    {BLT_CONFIG_FONT, "-font", "font", "Font",
-        DEF_FONT, Blt_Offset(Tabset, defStyle.font), 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
+        Blt_Offset(Tabset, defStyle.font), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
         Blt_Offset(Tabset, gap), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 

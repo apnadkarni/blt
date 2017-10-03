@@ -63,7 +63,8 @@
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define IPAD            4               /* Internal pad between components. */
 #define XPAD            1
-#define YPAD            1               /* Internal pad between components. */
+#define YPAD            1               /* Internal pad between
+                                         * components. */
 #define ICWIDTH         2               /* External pad between border and
                                          * arrow. */
 #define ARROW_HEIGHT    13
@@ -76,28 +77,32 @@
 #define LAYOUT_PENDING   (1<<1)         /* The widget's layout needs to be
                                          * recomputed. */
 #define ICURSOR          (1<<2)         /* Insertion cursor is active.
-                                         * Depending upon the timer interval,
-                                         * it may be drawn or not drawn. */
-#define SCROLL_PENDING   (1<<3)         /* The widget needs to be scrolled. */
+                                         * Depending upon the timer
+                                         * interval, it may be drawn or not
+                                         * drawn. */
+#define SCROLL_PENDING   (1<<3)         /* The widget needs to be
+                                           scrolled. */
 #define FOCUS            (1<<4)         /* The widget has focus. */
-#define SELECT_PENDING   (1<<5)         /* The widget is scheduled to invoke a
-                                         * -selectcommand in response to a
-                                         * change in its selection. */
-#define INVOKE_PENDING   (1<<6)         /* The widget is scheduled to invoke a
-                                         * -command. */
+#define SELECT_PENDING   (1<<5)         /* The widget is scheduled to
+                                         * invoke a -selectcommand in
+                                         * response to a change in its
+                                         * selection. */
+#define INVOKE_PENDING   (1<<6)         /* The widget is scheduled to
+                                         * invoke a -command. */
 #define READONLY         (1<<8)         /* The widget's editing functions
                                          * are disabled. */
 #define EXPORT_SELECTION (1<<9)         /* The selection is exported to the
                                          * clipboard. */
+#define OWN_SELECTION    (1<<10)        /* The widget owns the selection. */
 
 #define DISABLED         (1<<11)        /* The widget is is disabled. */
 #define POSTED           (1<<12)        /* The widget has posted a menu. */
 #define STATE_MASK       ((DISABLED)|(POSTED))
 
-#define ICURSOR_ON       (1<<13)        /* The insertion cursor is currently
-                                         * visible on screen. */
-#define ARROW            (1<<14)        /* Display the arrow button on the far
-                                         * right.*/
+#define ICURSOR_ON       (1<<13)        /* The insertion cursor is
+                                         * currently visible on screen. */
+#define ARROW            (1<<14)        /* Display the arrow button on the
+                                         * far right.*/
 #define CLRBUTTON        (1<<15)        /* Display the clear button on the
                                          * right when text has been
                                          * entered. */
@@ -249,8 +254,8 @@ typedef struct _Icon {
  * XButton --
  */
 typedef struct {
-    int borderWidth;                    /* Width of 3D border around the tab's
-                                         * button. */
+    int borderWidth;                    /* Width of 3D border around the
+                                         * tab's button. */
     Blt_Pad padX;                       /* Extra padding around button. */
     Blt_Pad padY;                       /* Extra padding around button. */
     int activeRelief;                   /* 3D relief when the button is
@@ -258,17 +263,19 @@ typedef struct {
     int relief;                         /* 3D relief of button. */
     XColor *normalFgColor;              /* Color or the button's X symbol. */
     XColor *normalBgColor;              /* Background color of the button. */
-    XColor *activeFgColor;              /* Color or the button's X symbol when
-                                         * the button is active. */
-    XColor *activeBgColor;              /* Background color of the button when
-                                         * the button is active. */
+    XColor *activeFgColor;              /* Color or the button's X symbol
+                                         * when the button is active. */
+    XColor *activeBgColor;              /* Background color of the button
+                                         * when the button is active. */
     Tcl_Obj *cmdObjPtr;                 /* Command to be executed when the
                                          * the button is invoked. */
-    Blt_Picture normalPicture;          /* If non-NULL, image to be displayed
-                                         * when button is displayed. */
-    Blt_Picture activePicture;          /* If non-NULL, image to be displayed
-                                         * when the button is active. */
-    short int x, y;                     /* Location of the button in the 
+    Blt_Picture normalPicture;          /* If non-NULL, image to be
+                                         * displayed when button is
+                                         * displayed. */
+    Blt_Picture activePicture;          /* If non-NULL, image to be
+                                         * displayed when the button is
+                                         * active. */
+    short int x, y;                     /* Location of the button in the
                                          * entry. Used for picking. */
     short int width, height;            /* Dimension of the button. */
 } XButton;
@@ -1389,8 +1396,9 @@ ComboEntryLostSelProc(ClientData clientData)
 {
     ComboEntry *comboPtr = clientData;
 
-    if ((comboPtr->selFirst >= 0) && (comboPtr->flags&EXPORT_SELECTION)) {
+    if (comboPtr->flags & (OWN_SELECTION|EXPORT_SELECTION)) {
         comboPtr->selFirst = comboPtr->selLast = -1;
+        comboPtr->flags &= ~OWN_SELECTION;
         EventuallyRedraw(comboPtr);
     }
 }
@@ -1499,9 +1507,11 @@ SelectText(ComboEntry *comboPtr, CharIndex index)
     /*
      * Grab the selection if we don't own it already.
      */
-    if ((comboPtr->flags & EXPORT_SELECTION) && (comboPtr->selFirst == -1)) {
+    if ((comboPtr->flags & (OWN_SELECTION|EXPORT_SELECTION)) == 
+        EXPORT_SELECTION) {
         Tk_OwnSelection(comboPtr->tkwin, XA_PRIMARY, ComboEntryLostSelProc, 
                 comboPtr);
+        comboPtr->flags |= OWN_SELECTION;
     }
     /* If the anchor hasn't been set yet, assume the beginning of the
      * text*/

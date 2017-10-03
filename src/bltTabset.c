@@ -754,6 +754,7 @@ static Blt_ConfigSpec buttonSpecs[] =
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
         DEF_CLOSEBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_CLOSEBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
