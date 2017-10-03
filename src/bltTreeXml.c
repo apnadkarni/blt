@@ -823,8 +823,8 @@ GetExternalEntityRefProc(XML_Parser parser, const XML_Char *context,
         }
         argv[i] = NULL;
         Tcl_JoinPath(argc, argv, &ds);
-        Blt_Free(baseNames);
-        Blt_Free(sysIdNames);
+        Tcl_Free((char *)baseNames);
+        Tcl_Free((char *)sysIdNames);
         Blt_Free(argv);
     } else {
         Tcl_DStringAppend(&ds, systemId, -1);
@@ -888,7 +888,7 @@ ImportXmlFile(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode parent,
             Blt_Tree_SetValue(interp, tree, parent, SYM_BASEURI, 
                Tcl_NewStringObj(Tcl_DStringValue(&ds), Tcl_DStringLength(&ds)));
         }
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
         Tcl_DStringFree(&ds);
     }
     if (flags & IMPORT_EXTREF) {
