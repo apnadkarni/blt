@@ -458,11 +458,11 @@ proc blt::TableView::Initialize { w } {
     }
     $w row bind Resize <B1-Motion> {
         %W row resize mark %y
-        %W row configure active -height [%W row resize current]
-        %W row resize anchor %y
+        %W row resize set
     }
     $w row bind Resize <ButtonRelease-1> {
-        %W row configure active -height [%W row resize current]
+        %W row resize mark %y
+        %W row resize set
     }
     # TextBoxStyle
     $w bind TextBoxStyle <Enter> { 

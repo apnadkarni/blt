@@ -1933,7 +1933,7 @@ DestroyDnd(DestroyData data)
         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
         cmd = Blt_GetHashValue(hPtr);
         if (cmd != NULL) {
-            Blt_Free(cmd);
+            Tcl_Free((char *)cmd);
         }
     }
     Blt_DeleteHashTable(&dndPtr->getDataTable);
@@ -1942,7 +1942,7 @@ DestroyDnd(DestroyData data)
         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
         cmd = Blt_GetHashValue(hPtr);
         if (cmd != NULL) {
-            Blt_Free(cmd);
+            Tcl_Free((char *)cmd);
         }
     }
     Blt_DeleteHashTable(&dndPtr->setDataTable);
@@ -4393,7 +4393,7 @@ SetdataOp(
                 Tcl_GetString(objv[i]), &isNew);
         if (!isNew) {
             argv = Blt_GetHashValue(hPtr);
-            Blt_Free(argv);
+            Tcl_Free(argv);
         }
         if (Tcl_SplitList(interp, Tcl_GetString(objv[i + 1]), &argc, &argv) 
             != TCL_OK) {

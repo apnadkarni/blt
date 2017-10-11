@@ -8275,9 +8275,7 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
 
-    if (objc == 4) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeAnchor);
-    } else {
+    if (objc == 5) { 
         int y;
 
         if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
@@ -8286,6 +8284,7 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         viewPtr->colResizeAnchor = y;
         UpdateColumnMark(viewPtr, y);
     }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeAnchor);
     return TCL_OK;
 }
 
@@ -8331,9 +8330,7 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
 
-    if (objc == 4) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeMark);
-    } else {
+    if (objc == 5) { 
         int y;
 
         if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
@@ -8341,6 +8338,7 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         } 
         UpdateColumnMark(viewPtr, y);
     }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeMark);
     return TCL_OK;
 }
 
@@ -10303,13 +10301,17 @@ RowResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
                   Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    int y;
 
-    if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
-        return TCL_ERROR;
-    } 
-    viewPtr->rowResizeAnchor = y;
-    UpdateRowMark(viewPtr, y);
+    if (objc == 5) { 
+        int y;
+
+        if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
+            return TCL_ERROR;
+        } 
+        viewPtr->rowResizeAnchor = y;
+        UpdateRowMark(viewPtr, y);
+    }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->rowResizeAnchor);
     return TCL_OK;
 }
 
@@ -10356,36 +10358,46 @@ RowResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     int y;
 
-    if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
-        return TCL_ERROR;
-    } 
-    UpdateRowMark(viewPtr, y);
+    if (objc == 5) {
+        if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
+            return TCL_ERROR;
+        } 
+        UpdateRowMark(viewPtr, y);
+    }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->rowResizeMark);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * RowResizeCurrentOp --
+ * RowResizeSetOp --
  *
- *      Returns the new width of the row including the resize delta.
+ *      Sets the nominal height of the column currently being resized.
+ *
+ *      pathName row resize set
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-RowResizeCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                   Tcl_Obj *const *objv)
+RowResizeSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+               Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-
+    Row *rowPtr;
+    
     UpdateRowMark(viewPtr, viewPtr->rowResizeMark);
-    if (viewPtr->rowResizePtr != NULL) {
-        int height, delta;
+    rowPtr = viewPtr->rowResizePtr;
+    if (rowPtr != NULL) {
+        int dy;
 
-        delta = (viewPtr->rowResizeMark - viewPtr->rowResizeAnchor);
-        height = viewPtr->rowResizePtr->height + delta;
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), height);
+        dy = (viewPtr->rowResizeMark - viewPtr->rowResizeAnchor);
+        rowPtr->reqHeight.nom = rowPtr->height + dy;
+        rowPtr->reqHeight.flags |= LIMITS_SET_NOM;
+        viewPtr->rowResizeAnchor = viewPtr->rowResizeMark;
+        viewPtr->flags |= LAYOUT_PENDING;
+        EventuallyRedraw(viewPtr);
     }
     return TCL_OK;
 }
@@ -10393,10 +10405,10 @@ RowResizeCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec rowResizeOps[] =
 { 
     {"activate",   2, RowResizeActivateOp,   5, 5, "row"},
-    {"anchor",     2, RowResizeAnchorOp,     5, 5, "x"},
-    {"current",    1, RowResizeCurrentOp,    4, 4, "",},
+    {"anchor",     2, RowResizeAnchorOp,     4, 5, "?y?"},
     {"deactivate", 1, RowResizeDeactivateOp, 4, 4, ""},
-    {"mark",       1, RowResizeMarkOp,       5, 5, "x"},
+    {"mark",       1, RowResizeMarkOp,       4, 5, "?y?"},
+    {"set",        1, RowResizeSetOp,        4, 4, "",},
 };
 
 static int numRowResizeOps = sizeof(rowResizeOps) / sizeof(Blt_OpSpec);
