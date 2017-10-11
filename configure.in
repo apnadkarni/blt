@@ -1972,6 +1972,7 @@ AC_CONFIG_FILES(
   doc/Makefile 
   library/Makefile 
   library/afm/Makefile 
+  library/cursors/Makefile 
   library/dd_protocols/Makefile 
   library/icons/16x16/Makefile
   library/icons/32x32/Makefile

@@ -111,16 +111,23 @@ option add *BltTableView.ColumnCommand blt::TableView::SortColumn
 
 if { $tcl_platform(platform) == "windows" } {
     if { $tk_version >= 8.3 } {
-        set cursor "@[file join $blt_library tableview.cur]"
+        set columnCursor "@[file join $blt_library tableview.cur]"
+        set rowCursor "@[file join $blt_library tableview.cur]"
     } else {
-        set cursor "size_we"
+        set columnCursor "size_we"
+        set rowCursor "size_ns"
     }
-    option add *BltTableView.ResizeCursor [list $cursor] widgetDefault
+    option add *BltTableView.columnResizeCursor [list $columnCursor] widgetDefault
+    option add *BltTableView.rowResizeCursor [list $rowCursor] widgetDefault
 
 } else {
-    option add *BltTableView.ResizeCursor \
-        [list @$blt_library/tableview.xbm \
-             $blt_library/tableview_m.xbm \
+    option add *BltTableView.columnResizeCursor \
+        [list @$blt_library/icons/columnResize.xbm \
+             $blt_library/icons/columnResizeMask.xbm \
+             black white] 
+    option add *BltTableView.rowResizeCursor \
+        [list @$blt_library/icons/rowResize.xbm \
+             $blt_library/icons/rowResizeMask.xbm \
              black white] 
 }
 

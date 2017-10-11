@@ -610,8 +610,8 @@ ReadXbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer buffer)
     Blt_Chain chain;
     Blt_Pixel bg, fg;
 
-    bg.u32 = 0xFF000000;
-    fg.u32 = 0xFFFFFFFF;
+    bg.u32 = 0xFFFFFFFF;
+    fg.u32 = 0xFF000000;
     picture = XbmToPicture(interp, fileName, buffer, &fg, &bg);
     if (picture == NULL) {
         return NULL;

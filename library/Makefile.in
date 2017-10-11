@@ -21,18 +21,6 @@ RM =		rm -f
 SHELL =		/bin/sh
 MKDIR_P =	@MKDIR_P@
 
-cursors = 	$(srcdir)/treeview.xbm \
-		$(srcdir)/treeview_m.xbm \
-	 	$(srcdir)/tableview.xbm \
-		$(srcdir)/tableview_m.xbm
-
-
-WIN32 = 	@WIN32@
-ifeq ("$(WIN32)", "yes")
-cursors += 	$(srcdir)/treeview.cur \
-	 	$(srcdir)/tableview.cur
-endif
-
 FILES = \
 		$(srcdir)/bltCanvEps.pro \
 		$(srcdir)/bltComboButton.tcl \
@@ -65,7 +53,7 @@ FILES = \
 		$(cursors) \
 		pkgIndex.tcl
 
-subdirs =	dd_protocols afm palettes icons 
+subdirs =	dd_protocols afm palettes icons cursors
 
 all: pkgIndex
 	for i in $(subdirs); do \
@@ -89,6 +77,8 @@ install: pkgIndex
 	for i in $(subdirs); do \
 	   $(MAKE) -C $$i install || exit 1 ; \
 	done
+
+
 
 clean:
 	for i in $(subdirs); do \
