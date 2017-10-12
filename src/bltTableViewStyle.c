@@ -1336,6 +1336,51 @@ FreeCell(Cell *cellPtr)
     cellPtr->tkImage = NULL;
 }
 
+static int
+CellIsSelected(TableView *viewPtr, Cell *cellPtr) 
+{
+    Blt_ChainLink link;
+    CellKey *keyPtr;
+    Blt_HashEntry *hPtr;
+    CellSelection *selPtr;
+
+    keyPtr = GetKey(cellPtr);
+    if ((keyPtr->rowPtr->flags|keyPtr->colPtr->flags) & SELECTED) {
+        return TRUE;
+    }
+    if (viewPtr->selectMode != SELECT_CELLS) {
+        return FALSE;
+    }
+    selPtr = &viewPtr->selectCells;
+    if (selPtr->anchorPtr != NULL) {
+        Row  *firstRowPtr, *lastRowPtr;
+        Column *firstColPtr, *lastColPtr;
+
+        if (selPtr->anchorPtr->rowPtr->index > selPtr->markPtr->rowPtr->index) {
+            lastRowPtr = selPtr->anchorPtr->rowPtr;
+            firstRowPtr = selPtr->markPtr->rowPtr;
+        } else {
+            firstRowPtr = selPtr->anchorPtr->rowPtr;
+            lastRowPtr = selPtr->markPtr->rowPtr;
+        }        
+        if (selPtr->anchorPtr->colPtr->index > selPtr->markPtr->colPtr->index) {
+            lastColPtr = selPtr->anchorPtr->colPtr;
+            firstColPtr = selPtr->markPtr->colPtr;
+        } else {
+            firstColPtr = selPtr->anchorPtr->colPtr;
+            lastColPtr = selPtr->markPtr->colPtr;
+        }        
+        if ((keyPtr->rowPtr->index >= firstRowPtr->index) &&
+            (keyPtr->rowPtr->index <= lastRowPtr->index) &&
+            (keyPtr->colPtr->index >= firstColPtr->index) &&
+            (keyPtr->colPtr->index <= lastColPtr->index)) {
+            return TRUE;
+        }
+    }
+    hPtr = Blt_FindHashEntry(&viewPtr->selectCells.cellTable, cellPtr);
+    return (hPtr != NULL);
+}
+
 static INLINE Blt_Bg 
 GetHighlightBg(CellStyle *stylePtr, Row *rowPtr) 
 {
@@ -2596,7 +2641,8 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         relief = stylePtr->activeRelief;
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
@@ -3113,7 +3159,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         relief = stylePtr->activeRelief;
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
@@ -3721,8 +3768,9 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         relief = stylePtr->activeRelief;
-     } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
-        /* Disabled */
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
+        /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
         fg = stylePtr->selectFg;
@@ -4277,7 +4325,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         relief = stylePtr->activeRelief;
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
@@ -4718,7 +4767,8 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         /* relief = stylePtr->activeRelief; */
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;

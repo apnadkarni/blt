@@ -117,19 +117,18 @@ if { $tcl_platform(platform) == "windows" } {
         set columnCursor "size_we"
         set rowCursor "size_ns"
     }
-    option add *BltTableView.columnResizeCursor [list $columnCursor] widgetDefault
-    option add *BltTableView.rowResizeCursor [list $rowCursor] widgetDefault
-
 } else {
-    option add *BltTableView.columnResizeCursor \
-        [list @$blt_library/cursors/columnResize.xbm \
-             $blt_library/cursors/columnResizeMask.xbm \
-             black white] 
-    option add *BltTableView.rowResizeCursor \
-        [list @$blt_library/cursors/rowResize.xbm \
-             $blt_library/cursors/rowResizeMask.xbm \
-             black white] 
+    set columnCursor [list \
+                          @$blt_library/cursors/columnResize.xbm \
+                          $blt_library/cursors/columnResizeMask.xbm \
+                          black white]
+    set rowCursor [list \
+                       @$blt_library/cursors/rowResize.xbm \
+                       $blt_library/cursors/rowResizeMask.xbm \
+                       black white]
 }
+option add *BltTableView.columnResizeCursor $columnCursor widgetDefault
+option add *BltTableView.rowResizeCursor $rowCursor widgetDefault
 
 # Left (arrow key)
 #   Move left to the previous column. 
@@ -192,7 +191,7 @@ bind BltTableView <Control-KeyPress-d> {
 }
 
 bind BltTableView <KeyPress-space> {
-    if { [%W cget -selectmode] == "single" } {
+    if { [%W cget -selectmode] == "singlerow" } {
         if { [%W selection includes focus] } {
             %W selection clearall
         } else {
@@ -292,7 +291,7 @@ proc blt::TableView::Initialize { w } {
     #   For "multiple" mode only.
     #
     $w bind all <Shift-ButtonPress-1> { 
-        if { [%W cget -selectmode] == "multiple" } {
+        if { [%W cget -selectmode] == "multiplerows" } {
             if { [%W row index anchor] == -1 } {
                 %W selection anchor current
             }
@@ -321,11 +320,11 @@ proc blt::TableView::Initialize { w } {
     #
     $w bind all <Control-ButtonPress-1> { 
         switch -- [%W cget -selectmode] {
-            "multiple" {
+            "multiplerows" {
                 %W selection toggle current
                 %W selection anchor current
             } 
-            "single" {
+            "singlerow" {
                 blt::TableView::SetSelectionAnchor %W current
             }
         }
@@ -344,7 +343,7 @@ proc blt::TableView::Initialize { w } {
 
     $w bind all <Control-Shift-ButtonPress-1> { 
         switch [%W cget -selectmode] {
-            "multiple" {
+            "multiplerows" {
                 if { [%W selection present] } {
                     if { [%W index anchor] == "" } {
                         %W selection anchor current
@@ -499,7 +498,7 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(afterId) -1
         set blt::TableView::_private(scroll) 0
         if { $blt::TableView::_private(activeSelection) } {
-            %W selection mark @%x,%y
+            %W selection set @%x,%y
         } else {
             %W invoke active
         }
@@ -957,7 +956,7 @@ proc blt::TableView::AutoScroll { w } {
     } else {
         set neighbor $cell
     }
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         SetSelectionAnchor $w $neighbor
     } else {
         if { $cell != "" && [$w selection present] } {
@@ -988,12 +987,13 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
             $w focus $cell
             $w selection clearall
             $w selection anchor $cell
-        } "single" {
+            set _private(activeSelection) 1
+        } "singlerow" {
             $w row see $row
             $w focus $cell
             $w selection clearall
             $w selection set $cell 
-        } "multiple" {
+        } "multiplerows" {
             $w row see $row
             $w focus $cell
             $w selection clearall
@@ -1011,7 +1011,7 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
 #
 proc blt::TableView::MoveFocus { w cell } {
     catch {$w focus $cell}
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         $w selection clearall
         $w selection set focus
         $w selection anchor focus
@@ -1046,7 +1046,7 @@ proc blt::TableView::MovePage { w where } {
     $w entry highlight view.$where
     $w focus view.$where
     $w row see view.$where
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         $w selection clearall
         $w selection set focus
     }

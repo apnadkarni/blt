@@ -214,7 +214,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_RULE_WIDTH                  "0"
 #define DEF_SCROLL_INCREMENT            "20"
 #define DEF_SCROLL_MODE                 "hierbox"
-#define DEF_SELECT_MODE                 "single"
+#define DEF_SELECT_MODE                 "singlerow"
 #define DEF_SORT_COLUMN                 (char *)NULL
 #define DEF_SORT_COLUMNS                (char *)NULL
 #define DEF_SORT_COMMAND                (char *)NULL
@@ -1206,17 +1206,24 @@ EventuallyInvokeSelectCommand(TableView *viewPtr)
 static void
 ClearSelections(TableView *viewPtr)
 {
-    if (viewPtr->selectMode == SELECT_CELLS) {
-        viewPtr->selectCells.anchorPtr = viewPtr->selectCells.markPtr = NULL;
-    } else {
-        Row *rowPtr;
-
-        for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
-             rowPtr = rowPtr->nextPtr) {
-            rowPtr->flags &= ~SELECTED;
-            rowPtr->link = NULL;
+    switch (viewPtr->selectMode) {
+    case SELECT_CELLS:
+        Blt_DeleteHashTable(&viewPtr->selectCells.cellTable);
+        Blt_InitHashTable(&viewPtr->selectCells.cellTable, BLT_ONE_WORD_KEYS);
+        break;
+    case SELECT_SINGLE_ROW:
+    case SELECT_MULTIPLE_ROWS:
+        {
+            Row *rowPtr;
+            
+            for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+                 rowPtr = rowPtr->nextPtr) {
+                rowPtr->flags &= ~SELECTED;
+                rowPtr->link = NULL;
+            }
+            Blt_Chain_Reset(viewPtr->selectRows.list);
         }
-        Blt_Chain_Reset(viewPtr->selectRows.list);
+        break;
     }
     EventuallyRedraw(viewPtr);
     if (viewPtr->selectCmdObjPtr != NULL) {
@@ -2223,15 +2230,15 @@ ObjToSelectMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
-    if ((c == 's') && (strncmp(string, "single", length) == 0)) {
+    if ((c == 's') && (strncmp(string, "singlerow", length) == 0)) {
         *modePtr = SELECT_SINGLE_ROW;
-    } else if ((c == 'm') && (strncmp(string, "multiple", length) == 0)) {
+    } else if ((c == 'm') && (strncmp(string, "multiplerows", length) == 0)) {
         *modePtr = SELECT_MULTIPLE_ROWS;
     } else if ((c == 'c') && (strncmp(string, "cells", length) == 0)) {
         *modePtr = SELECT_CELLS;
     } else {
         Tcl_AppendResult(interp, "bad select mode \"", string,
-            "\": should be single, multiple, or cells.",(char *)NULL);
+            "\": should be singlerow, multiplerows, or cells.",(char *)NULL);
         return TCL_ERROR;
     }
     return TCL_OK;
@@ -2256,9 +2263,9 @@ SelectModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 
     switch (mode) {
     case SELECT_SINGLE_ROW:
-        return Tcl_NewStringObj("single", 6);
+        return Tcl_NewStringObj("singlerow", 9);
     case SELECT_MULTIPLE_ROWS:
-        return Tcl_NewStringObj("multiple", 8);
+        return Tcl_NewStringObj("multiplerows", 12);
     case SELECT_CELLS:
         return Tcl_NewStringObj("cells", 5);
     default:
@@ -3440,7 +3447,6 @@ ComputeColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
         ah = MAX(IconHeight(viewPtr->sort.up), IconHeight(viewPtr->sort.down));
     } else {
         Blt_FontMetrics fm;
-        Blt_Font font;
 
         Blt_Font_GetMetrics(viewPtr->colTitleFont, &fm);
         ah = fm.linespace;
@@ -4298,20 +4304,20 @@ GetCellByIndex(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
         }
         return TCL_OK;
     } else if ((c == 'm') && (strncmp(string, "mark", length) == 0)) {
-        CellSelection *selectPtr = &viewPtr->selectCells;
+        CellSelection *selPtr = &viewPtr->selectCells;
 
-        if (selectPtr->markPtr != NULL) {
-            *cellPtrPtr = GetCell(viewPtr, selectPtr->markPtr->rowPtr,
-                selectPtr->markPtr->colPtr);
+        if (selPtr->markPtr != NULL) {
+            *cellPtrPtr = GetCell(viewPtr, selPtr->markPtr->rowPtr,
+                                  selPtr->markPtr->colPtr);
         }
         return TCL_OK;
     } else if ((c == 'a') && (length > 1) && 
                (strncmp(string, "anchor", length) == 0)) {
-        CellSelection *selectPtr = &viewPtr->selectCells;
+        CellSelection *selPtr = &viewPtr->selectCells;
 
-        if (selectPtr->markPtr != NULL) {
-            *cellPtrPtr = GetCell(viewPtr, selectPtr->anchorPtr->rowPtr,
-                selectPtr->anchorPtr->colPtr);
+        if (selPtr->anchorPtr != NULL) {
+            *cellPtrPtr = GetCell(viewPtr, selPtr->anchorPtr->rowPtr,
+                selPtr->anchorPtr->colPtr);
         }
         return TCL_OK;
     } 
@@ -4607,6 +4613,115 @@ SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
         }
     }
     return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectRange --
+ *
+ *      Sets the selection flag for a range of nodes.  The range is
+ *      determined by two pointers which designate the first/last nodes of
+ *      the range.
+ *
+ * Results:
+ *      Always returns TCL_OK.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+AddSelectionRange(TableView *viewPtr)
+{
+    CellSelection *selPtr;
+    Row *rowPtr, *firstRowPtr, *lastRowPtr;
+    Column *firstColPtr, *lastColPtr;
+
+    selPtr = &viewPtr->selectCells;
+    if (selPtr->anchorPtr->rowPtr->index > selPtr->markPtr->rowPtr->index) {
+        lastRowPtr = selPtr->anchorPtr->rowPtr;
+        firstRowPtr = selPtr->markPtr->rowPtr;
+    } else {
+        firstRowPtr = selPtr->anchorPtr->rowPtr;
+        lastRowPtr = selPtr->markPtr->rowPtr;
+    }        
+    if (selPtr->anchorPtr->colPtr->index > selPtr->markPtr->colPtr->index) {
+        lastColPtr = selPtr->anchorPtr->colPtr;
+        firstColPtr = selPtr->markPtr->colPtr;
+    } else {
+        firstColPtr = selPtr->anchorPtr->colPtr;
+        lastColPtr = selPtr->markPtr->colPtr;
+    }        
+    for (rowPtr = firstRowPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
+        Column *colPtr;
+
+        for (colPtr = firstColPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
+            Cell *cellPtr;
+            Blt_HashEntry *hPtr;
+            int isNew;
+
+            cellPtr = GetCell(viewPtr, rowPtr, colPtr);
+            hPtr = Blt_CreateHashEntry(&selPtr->cellTable, cellPtr, &isNew);
+            if (colPtr == lastColPtr) {
+                break;
+            }
+        }
+        if (rowPtr == lastRowPtr) {
+            break;
+        }
+    }
+    selPtr->markPtr = selPtr->anchorPtr = NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetSelectedCells --
+ *
+ *      Sets the selection flag for a range of nodes.  The range is
+ *      determined by two pointers which designate the first/last nodes of
+ *      the range.
+ *
+ * Results:
+ *      Always returns TCL_OK.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+GetSelectedCells(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
+{
+    Row *minRowPtr, *maxRowPtr;
+    Column *minColPtr, *maxColPtr;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    CellSelection *selPtr;
+
+    selPtr = &viewPtr->selectCells;
+    minRowPtr = maxRowPtr = NULL;
+    minColPtr = maxColPtr = NULL;
+    for (hPtr = Blt_FirstHashEntry(&viewPtr->selectCells.cellTable, &iter); 
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+        Cell *cellPtr;
+        CellKey *keyPtr;
+
+        cellPtr = (Cell *)Blt_GetHashKey(&viewPtr->selectCells.cellTable, hPtr);
+        keyPtr = GetKey(cellPtr);
+        if ((minRowPtr == NULL) || (minRowPtr->index > keyPtr->rowPtr->index)){
+            minRowPtr = keyPtr->rowPtr;
+        } 
+        if ((maxRowPtr == NULL) || (maxRowPtr->index < keyPtr->rowPtr->index)){
+            maxRowPtr = keyPtr->rowPtr;
+        } 
+        if ((minColPtr == NULL) || (minColPtr->index > keyPtr->colPtr->index)){
+            minColPtr = keyPtr->colPtr;
+        } 
+        if ((maxColPtr == NULL) || (maxColPtr->index < keyPtr->colPtr->index)){
+            maxColPtr = keyPtr->colPtr;
+        } 
+    }        
+    anchorPtr->rowPtr = minRowPtr;
+    anchorPtr->colPtr = minColPtr;
+    markPtr->rowPtr = maxRowPtr;
+    markPtr->colPtr = maxColPtr;
 }
 
 static void
@@ -5079,6 +5194,7 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
      * icons.  The styles may be using icons. */
     DestroyStyles(viewPtr);
     DestroyIcons(viewPtr);
+    Blt_DeleteHashTable(&viewPtr->selectCells.cellTable);
     Blt_Chain_Destroy(viewPtr->selectRows.list);
     Blt_DeleteHashTable(&viewPtr->cellTable);
     Blt_DeleteHashTable(&viewPtr->rowTable);
@@ -5296,45 +5412,53 @@ SelectionProc(
      * Retrieve the names of the selected entries.
      */
     Tcl_DStringInit(&ds);
+    memset(&writer, 0, sizeof(CsvWriter));
     writer.dsPtr = &ds;
     writer.length = 0;
     writer.count = 0;
-    if (viewPtr->selectMode == SELECT_CELLS) {
-        Row *rowPtr;
+    switch (viewPtr->selectMode) {
+    case SELECT_CELLS:
+        {
+            Row *rowPtr;
+            CellKey anchor, mark;
 
-        for (rowPtr = viewPtr->selectCells.anchorPtr->rowPtr; rowPtr != NULL;
-             rowPtr = rowPtr->nextPtr) {
-            Column *colPtr;
+            GetSelectedCells(viewPtr, &anchor, &mark);
+            
+            for (rowPtr = anchor.rowPtr; rowPtr != NULL; 
+                 rowPtr = rowPtr->nextPtr) {
+                Column *colPtr;
 
-            CsvStartRecord(&writer);
-            for (colPtr = viewPtr->selectCells.anchorPtr->colPtr; 
-                 colPtr != NULL; colPtr = colPtr->nextPtr) {
-                CsvAppendValue(&writer, viewPtr, rowPtr, colPtr);
-                if (colPtr == viewPtr->selectCells.markPtr->colPtr) {
+                CsvStartRecord(&writer);
+                for (colPtr = anchor.colPtr; colPtr != NULL; 
+                     colPtr = colPtr->nextPtr) {
+                    CsvAppendValue(&writer, viewPtr, rowPtr, colPtr);
+                    if (colPtr == mark.colPtr) {
+                        break;
+                    }
+                }
+                CsvEndRecord(&writer);
+                if (rowPtr == mark.rowPtr) {
                     break;
                 }
-
-            }
-            CsvEndRecord(&writer);
-            if (rowPtr == viewPtr->selectCells.markPtr->rowPtr) {
-                break;
             }
         }
-    } else {
+        break;
+
+    case SELECT_SINGLE_ROW:
+    case SELECT_MULTIPLE_ROWS:
         if (viewPtr->flags & SELECT_SORTED) {
             Blt_ChainLink link;
-
             
             for (link = Blt_Chain_FirstLink(viewPtr->selectRows.list); 
                  link != NULL; link = Blt_Chain_NextLink(link)) {
                 Row *rowPtr;
-
+                
                 rowPtr = Blt_Chain_GetValue(link);
                 CsvAppendRow(&writer, viewPtr, rowPtr);
             }
         } else {
             Row *rowPtr;
-
+            
             for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
                  rowPtr = rowPtr->nextPtr) {
                 if (rowPtr->flags & SELECTED) {
@@ -7382,24 +7506,32 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (viewPtr->selectMode == SELECT_CELLS) {
-        Tcl_Obj *objPtr;
-        Row *rowPtr;
-        Column *colPtr;
-        
-        rowPtr = viewPtr->selectCells.anchorPtr->rowPtr;
-        objPtr = GetRowIndexObj(viewPtr, rowPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        colPtr = viewPtr->selectCells.anchorPtr->colPtr;
-        objPtr = GetColumnIndexObj(viewPtr, colPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        rowPtr = viewPtr->selectCells.markPtr->rowPtr;
-        objPtr = GetRowIndexObj(viewPtr, rowPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        colPtr = viewPtr->selectCells.markPtr->colPtr;
-        objPtr = GetColumnIndexObj(viewPtr, colPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    } else {
+    switch (viewPtr->selectMode) {
+    case SELECT_CELLS:
+        {
+            Blt_HashEntry *hPtr;
+            Blt_HashSearch iter;
+            CellSelection *selPtr = &viewPtr->selectCells;
+
+            for (hPtr = Blt_FirstHashEntry(&selPtr->cellTable, &iter); 
+                 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+                Cell *cellPtr;
+                CellKey *keyPtr;
+                Tcl_Obj *objPtr, *subListObjPtr;
+                
+                cellPtr = Blt_GetHashValue(hPtr);
+                keyPtr = GetKey(cellPtr);
+                subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+                objPtr = GetRowIndexObj(viewPtr, keyPtr->rowPtr);
+                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+                objPtr = GetColumnIndexObj(viewPtr, keyPtr->colPtr);
+                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+                Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
+            }
+        }
+        break;
+    case SELECT_SINGLE_ROW:
+    case SELECT_MULTIPLE_ROWS:
         if (viewPtr->flags & SELECT_SORTED) {
             Blt_ChainLink link;
             
@@ -7435,7 +7567,7 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnActivateOp --
  *
- *      Selects the button to appear active.
+ *      Sets the button to appear active.
  *
  *      pathName column activate ?col?
  *
@@ -7624,7 +7756,7 @@ ColumnConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnDeactivateOp --
  *
- *      Selects the column to appear normally.
+ *      Sets the column to appear normally.
  *
  *      pathName column deactivate
  *
@@ -8733,7 +8865,7 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
  *
  * FilterActivateOp --
  *
- *      Selects the filter to appear active.
+ *      Sets the filter to appear active.
  *
  *      pathName filter activate ?col?
  *
@@ -8838,7 +8970,7 @@ FilterConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FilterDeactivateOp --
  *
- *      Selects the filter to appear normally.
+ *      Sets the filter to appear normally.
  *
  *      pathName filter deactivate
  *
@@ -9575,7 +9707,7 @@ IsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowActivateOp --
  *
- *      Selects the button to appear active.
+ *      Sets the button to appear active.
  *
  *      pathName row activate row
  *
@@ -10695,12 +10827,12 @@ SelectionAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     keyPtr = GetKey(cellPtr);
     if (viewPtr->selectMode == SELECT_CELLS) {
-        CellSelection *selectPtr;
+        CellSelection *selPtr;
 
-        selectPtr = &viewPtr->selectCells;
+        selPtr = &viewPtr->selectCells;
         /* Set both the selection anchor and the mark. This indicates that a
          * single cell is selected. */
-        selectPtr->markPtr = selectPtr->anchorPtr = keyPtr;
+        selPtr->markPtr = selPtr->anchorPtr = keyPtr;
     } else {
         RowSelection *selectPtr;
 
@@ -10785,12 +10917,10 @@ SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     rowPtr = keyPtr->rowPtr;
     if (viewPtr->selectMode == SELECT_CELLS) {
         if (((rowPtr->flags|colPtr->flags) & (HIDDEN | DISABLED)) == 0) {
-            CellSelection *selectPtr = &viewPtr->selectCells;
-            
-            if ((selectPtr->anchorPtr->rowPtr->index <= rowPtr->index) &&
-                (selectPtr->anchorPtr->colPtr->index <= rowPtr->index) &&
-                (selectPtr->markPtr->rowPtr->index >= rowPtr->index) &&
-                (selectPtr->markPtr->colPtr->index >= rowPtr->index)) {
+            Blt_HashEntry *hPtr;
+
+            hPtr = Blt_FindHashEntry(&viewPtr->selectCells.cellTable, cellPtr);
+            if (hPtr != NULL) {
                 state = TRUE;
             }
         }
@@ -10838,14 +10968,15 @@ SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     if (viewPtr->selectMode == SELECT_CELLS) {
-        CellSelection *selectPtr;
+        CellSelection *selPtr = &viewPtr->selectCells;
         
-        selectPtr = &viewPtr->selectCells;
-        if (selectPtr->anchorPtr == NULL) {
+        if (selPtr->anchorPtr == NULL) {
             fprintf(stderr, "cell selection anchor must be set first\n");
             return TCL_OK;
         }
-        selectPtr->markPtr = GetKey(cellPtr);
+        selPtr->markPtr = GetKey(cellPtr);
+        selPtr->flags &= ~SELECT_MASK;
+        selPtr->flags |= SELECT_SET;
     } else {
         RowSelection *selectPtr;
         Row *rowPtr;
@@ -10911,7 +11042,7 @@ SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int state;
 
     if (viewPtr->selectMode == SELECT_CELLS) {
-        state = (viewPtr->selectCells.anchorPtr != NULL);
+        state = (viewPtr->selectCells.cellTable.numEntries > 0);
     } else {
         state = (Blt_Chain_GetLength(viewPtr->selectRows.list) > 0);
     }
@@ -10987,15 +11118,21 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     if (viewPtr->selectMode == SELECT_CELLS) {
-        CellSelection *selectPtr = &viewPtr->selectCells;
+        CellSelection *selPtr = &viewPtr->selectCells;
         const char *string;
 
+        selPtr->flags &= ~SELECT_MASK;
         string = Tcl_GetString(objv[2]);
-        if (strcmp(string, "set") != 0) {
-            anchorPtr = markPtr = NULL;
+        switch (string[0]) {
+        case 's':
+            selPtr->flags |= SELECT_SET;     break;
+        case 'c':
+            selPtr->flags |= SELECT_CLEAR;   break;
+        case 't':
+            selPtr->flags |= SELECT_TOGGLE;   break;
         }
-        selectPtr->anchorPtr = anchorPtr;
-        selectPtr->markPtr = markPtr;
+        selPtr->markPtr = markPtr;
+        AddSelectionRange(viewPtr);
     } else {
         RowSelection *selectPtr = &viewPtr->selectRows;
         const char *string;
@@ -11046,14 +11183,14 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec selectionOps[] =
 {
-    {"anchor",   1, SelectionAnchorOp,   4, 4, "cell",},
-    {"clear",    5, SelectionSetOp,      4, 5, "cell ?cell?",},
+    {"anchor",   1, SelectionAnchorOp,   4, 4, "cellName",},
+    {"clear",    5, SelectionSetOp,      4, 5, "cellName ?cellName?",},
     {"clearall", 6, SelectionClearallOp, 3, 3, "",},
-    {"includes", 1, SelectionIncludesOp, 4, 4, "cell",},
-    {"mark",     1, SelectionMarkOp,     4, 4, "cell",},
+    {"includes", 1, SelectionIncludesOp, 4, 4, "cellName",},
+    {"mark",     1, SelectionMarkOp,     4, 4, "cellName",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},
-    {"set",      1, SelectionSetOp,      4, 5, "cell ?cell?",},
-    {"toggle",   1, SelectionSetOp,      4, 5, "cell ?cell?",},
+    {"set",      1, SelectionSetOp,      4, 5, "cellName ?cellName?",},
+    {"toggle",   1, SelectionSetOp,      4, 5, "cellName ?cellName?",},
 };
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
 
@@ -13070,7 +13207,7 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->filter.activeRelief = TK_RELIEF_RAISED;
     viewPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, viewPtr, 
         TableViewPickProc, AppendTagsProc);
-    Blt_InitHashTableWithPool(&viewPtr->cellTable, sizeof(CellKey)/sizeof(int));
+    Blt_InitHashTableWithPool(&viewPtr->cellTable, sizeof(CellKey));
     Blt_InitHashTableWithPool(&viewPtr->rowTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTableWithPool(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->iconTable, BLT_STRING_KEYS);
@@ -13079,7 +13216,8 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_InitHashTable(&viewPtr->colBindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->cellBindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->cachedObjTable, BLT_STRING_KEYS);
-
+    Blt_InitHashTableWithPool(&viewPtr->selectCells.cellTable, 
+                              BLT_ONE_WORD_KEYS);
     viewPtr->rowPool    = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->columnPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->cellPool   = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);

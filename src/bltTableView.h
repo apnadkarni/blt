@@ -609,10 +609,13 @@ typedef struct {
  */
 typedef struct {
     unsigned int flags;
-    CellKey *anchorPtr;                 /* Fixed end of selection (i.e. row
-                                         * at which selection was
-                                         * started.) */
-    CellKey *markPtr;
+    Blt_HashTable cellTable;            /* Currently selected cells. */
+    CellKey *anchorPtr;                 /* Start of current selection
+                                         * (i.e. cell at which selection
+                                         * was started.) */
+    CellKey *markPtr;                   /* End of current selection.
+                                         * (i.e. cell at which selection
+                                         * last stopped.) */
 } CellSelection;
 
 #define SELECT_SINGLE_ROW    (1<<0)     /* Only one row at a time can be
