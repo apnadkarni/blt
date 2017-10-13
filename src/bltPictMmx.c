@@ -1281,7 +1281,7 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
     mask.Alpha = 0xFF;
     asm volatile (
         /* Generate constants needed below. */
-        "pxor %%mm6, %%mm6      # mm6 = 0\n\t"
+        "pxor   %%mm6, %%mm6      # mm6 = 0\n\t"
         "pcmpeqw %%mm5, %%mm5   # mm5 = -1 \n\t"
         "psubw %%mm6, %%mm5     # mm5 = 1,1,1,1\n\t"
         "movd %0, %%mm4         # mm4 = mask\n\t" 
@@ -1368,7 +1368,6 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
     Blt_Pixel *destRowPtr;
     int y;
     Blt_Pixel pixel;
-    int i;
     
     pixel.u32 = colorValue;
     Blt_PremultiplyColor(&pixel);
@@ -1459,14 +1458,14 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
         dp4 = dp3 + destPtr->pixelsPerRow;
         for (x = 0; x < srcPtr->width; x += 4) {
             asm volatile (
-                "movdqa (%0), %%xmm1 # 4 pixels 1st source row.\n\t"
-                "movdqa (%1), %%xmm2 # 4 pixels 2nd source row.\n\t"
-                "movdqa (%2), %%xmm3 # 4 pixels 3rd source row.\n\t"
-                "movdqa (%3), %%xmm4 # 4 pixels 4th source row.\n\t"
-                "movdqa %%xmm1, (%4) # 4 pixels 1st destination row.\n\t" 
-                "movdqa %%xmm2, (%5) # 4 pixels 2nd destination row.\n\t"
-                "movdqa %%xmm3, (%6) # 4 pixels 3rd destination row.\n\t" 
-                "movdqa %%xmm4, (%7) # 4 pixels 4th destination row.\n\t" 
+                "movdqa (%4), %%xmm1 # 4 pixels 1st source row.\n\t"
+                "movdqa (%5), %%xmm2 # 4 pixels 2nd source row.\n\t"
+                "movdqa (%6), %%xmm3 # 4 pixels 3rd source row.\n\t"
+                "movdqa (%7), %%xmm4 # 4 pixels 4th source row.\n\t"
+                "movdqa %%xmm1, (%0) # 4 pixels 1st destination row.\n\t" 
+                "movdqa %%xmm2, (%1) # 4 pixels 2nd destination row.\n\t"
+                "movdqa %%xmm3, (%2) # 4 pixels 3rd destination row.\n\t" 
+                "movdqa %%xmm4, (%3) # 4 pixels 4th destination row.\n\t" 
                 : /* outputs */
                   "+r" (dp1), 
                   "+r" (dp2), 
@@ -2713,9 +2712,11 @@ Blt_CpuFeatureFlags(Tcl_Interp *interp)
 #if (SIZEOF_LONG == 8) 
         if (flags & FEATURE_SSE41) {
             bltPictProcsPtr->premultiplyColorsProc = PremultiplyColors;
+#ifdef notdef
             bltPictProcsPtr->copyPicturesProc = CopyPictures;
-            bltPictProcsPtr->compositePicturesProc = CompositePictures;
+#endif
             bltPictProcsPtr->blankPictureProc = BlankPicture;
+            bltPictProcsPtr->compositePicturesProc = CompositePictures;
             bltPictProcsPtr->crossFadePicturesProc = CrossFadePictures;
             bltPictProcsPtr->zoomVerticallyProc2 = ZoomVertically4;
             bltPictProcsPtr->zoomHorizontallyProc2 = ZoomHorizontally4;
