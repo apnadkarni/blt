@@ -4761,12 +4761,6 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
         /* Disabled */
         bg = stylePtr->disableBg;
         gc = stylePtr->disableGC;
-    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
-               (viewPtr->activePtr == cellPtr)) {
-        /* Active */
-        bg = stylePtr->activeBg;
-        gc = stylePtr->activeGC;
-        /* relief = stylePtr->activeRelief; */
     } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
                (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
@@ -4808,6 +4802,33 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
     x += stylePtr->padX;
     y += stylePtr->padY;
     
+    if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
+        /* Disabled */
+        bg = stylePtr->disableBg;
+        gc = stylePtr->disableGC;
+    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
+               (viewPtr->activePtr == cellPtr)) {
+        /* Active */
+        bg = stylePtr->activeBg;
+        gc = stylePtr->activeGC;
+        /* relief = stylePtr->activeRelief; */
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
+        /* Selected */
+        bg = stylePtr->selectBg;
+        gc = stylePtr->selectGC;
+    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
+        /* Highlighted */
+        bg = GetHighlightBg((CellStyle *)stylePtr, rowPtr);
+        gc = stylePtr->highlightGC;
+    } else {            
+        /* Normal */
+        bg = stylePtr->normalBg;
+        if ((stylePtr->altBg != NULL) && (rowPtr->visibleIndex & 0x1)) {
+            bg = stylePtr->altBg;
+        }
+        gc = stylePtr->normalGC;
+    }
     /* Draw button. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
         rowHeight, stylePtr->borderWidth, relief);

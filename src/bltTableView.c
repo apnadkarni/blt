@@ -1231,6 +1231,70 @@ ClearSelections(TableView *viewPtr)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetColumnXOffset --
+ *
+ *      Computes the closest X offset the the put the column in view.
+ *      If the column is already in view the old X offset is returned.
+ *
+ * Results:
+ *      Returns the X offset to view the column.
+ *
+ *---------------------------------------------------------------------------
+ */
+static long
+GetColumnXOffset(TableView *viewPtr, Column *colPtr)
+{
+    long xOffset;
+
+    xOffset = viewPtr->xOffset;
+    if (colPtr->worldX < viewPtr->xOffset) {
+        xOffset = colPtr->worldX;
+    }
+    if ((colPtr->worldX + colPtr->width) >= 
+        (viewPtr->xOffset + VPORTWIDTH(viewPtr))) {
+        xOffset = (colPtr->worldX + colPtr->width) - VPORTWIDTH(viewPtr);
+    } 
+    if (xOffset < 0) {
+        xOffset = 0;
+    }
+    return xOffset;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetRowYOffset --
+ *
+ *      Computes the closest Y offset the the put the row in view.
+ *      If the row is already in view the old Y offset is returned.
+ *
+ * Results:
+ *      Returns the Y offset to view the row.
+ *
+ *---------------------------------------------------------------------------
+ */
+static long
+GetRowYOffset(TableView *viewPtr, Row *rowPtr)
+{
+    long yOffset;
+
+    yOffset = viewPtr->yOffset;
+    if (rowPtr->worldY < viewPtr->yOffset) {
+        yOffset = rowPtr->worldY;
+    }
+    if ((rowPtr->worldY + rowPtr->height) >= 
+        (viewPtr->yOffset + VPORTHEIGHT(viewPtr))) {
+        yOffset = (rowPtr->worldY + rowPtr->height) - VPORTHEIGHT(viewPtr);
+    } 
+    if (yOffset < 0) {
+        yOffset = 0;
+    }
+    return yOffset;
+}
+
 static TableView *tableViewInstance;
 
 static int
@@ -7257,11 +7321,8 @@ CellSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Cell *cellPtr;
     CellKey *keyPtr;
-    Column *colPtr;
-    Row *rowPtr;
     TableView *viewPtr = clientData;
-    long x, y;
-    int viewWidth, viewHeight;
+    long xOffset, yOffset;
 
     if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -7270,35 +7331,14 @@ CellSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     keyPtr = GetKey(cellPtr);
-    colPtr = keyPtr->colPtr;
-    rowPtr = keyPtr->rowPtr;
-    viewWidth = VPORTWIDTH(viewPtr);
-    viewHeight = VPORTHEIGHT(viewPtr);
-    y = viewPtr->yOffset;
-    x = viewPtr->xOffset;
-    if (rowPtr->worldY < y) {
-        y = rowPtr->worldY;
-    } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
-        y = rowPtr->worldY + rowPtr->height - viewHeight;
-    }
-    if ((colPtr->worldX < x) ||
-        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
-        /* Column starts before the viewport or the column ends after
-         * the viewport. Move the start of the column into the viewport. */
-        x = colPtr->worldX;             
-    } 
-    if (x < 0) {
-        x = 0;
-    }
-    if (y < 0) {
-        y = 0;
-    }
-    if (x != viewPtr->xOffset) {
-        viewPtr->xOffset = x;
+    yOffset = GetRowYOffset(viewPtr, keyPtr->rowPtr);
+    xOffset = GetColumnXOffset(viewPtr, keyPtr->colPtr);
+    if (xOffset != viewPtr->xOffset) {
+        viewPtr->xOffset = xOffset;
         viewPtr->flags |= SCROLLX;
     }
-    if (y != viewPtr->yOffset) {
-        viewPtr->yOffset = y;
+    if (yOffset != viewPtr->yOffset) {
+        viewPtr->yOffset = yOffset;
         viewPtr->flags |= SCROLLY;
     }
     EventuallyRedraw(viewPtr);
@@ -8587,8 +8627,7 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Column *colPtr;
     TableView *viewPtr = clientData;
-    long x;
-    int viewWidth;
+    long xOffset;
 
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -8598,19 +8637,9 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_GetString(objv[3])); 
         return TCL_OK;
     }
-    x = viewPtr->xOffset;
-    viewWidth = VPORTWIDTH(viewPtr);
-    if ((colPtr->worldX < x) ||
-        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
-        /* Column starts before the viewport or the column ends after
-         * the viewport. Move the start of the column into the viewport. */
-        x = colPtr->worldX;             
-    } 
-    if (x < 0) {
-        x = 0;
-    }
-    if (x != viewPtr->xOffset) {
-        viewPtr->xOffset = x;
+    xOffset = GetColumnXOffset(viewPtr, colPtr);
+    if (xOffset != viewPtr->xOffset) {
+        viewPtr->xOffset = xOffset;
         viewPtr->flags |= SCROLLX;
         EventuallyRedraw(viewPtr);
     }
@@ -10584,7 +10613,7 @@ RowSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Row *rowPtr;
     TableView *viewPtr = clientData;
-    long y, viewHeight;
+    long yOffset;
 
     if (GetRow(interp, viewPtr, objv[3], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -10592,18 +10621,9 @@ RowSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (rowPtr == NULL) {
         return TCL_OK;
     }
-    viewHeight = VPORTHEIGHT(viewPtr);
-    y = viewPtr->yOffset;
-    if (rowPtr->worldY < y) {
-        y = rowPtr->worldY;
-    } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
-        y = rowPtr->worldY + rowPtr->height - viewHeight;
-    }
-    if (y < 0) {
-        y = 0;
-    }
-    if (y != viewPtr->yOffset) {
-        viewPtr->yOffset = y;
+    yOffset = GetRowYOffset(viewPtr, rowPtr);
+    if (yOffset != viewPtr->yOffset) {
+        viewPtr->yOffset = yOffset;
         viewPtr->flags |= SCROLLY;
         EventuallyRedraw(viewPtr);
     }
@@ -10742,11 +10762,8 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     CellKey *keyPtr;
-    Column *colPtr;
-    Row *rowPtr;
     TableView *viewPtr = clientData;
-    long x, y;
-    int viewWidth, viewHeight;
+    long xOffset, yOffset;
 
     if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -10755,35 +10772,14 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         return TCL_OK;
     }
     keyPtr = GetKey(cellPtr);
-    colPtr = keyPtr->colPtr;
-    rowPtr = keyPtr->rowPtr;
-    viewWidth = VPORTWIDTH(viewPtr);
-    viewHeight = VPORTHEIGHT(viewPtr);
-    y = viewPtr->yOffset;
-    x = viewPtr->xOffset;
-    if (rowPtr->worldY < y) {
-        y = rowPtr->worldY;
-    } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
-        y = rowPtr->worldY + rowPtr->height - viewHeight;
-    }
-    if ((colPtr->worldX < x) ||
-        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
-        /* Column starts before the viewport or the column ends after
-         * the viewport. Move the start of the column into the viewport. */
-        x = colPtr->worldX;             
-    } 
-    if (x < 0) {
-        x = 0;
-    }
-    if (y < 0) {
-        y = 0;
-    }
-    if (x != viewPtr->xOffset) {
-        viewPtr->xOffset = x;
+    yOffset = GetRowYOffset(viewPtr, keyPtr->rowPtr);
+    xOffset = GetColumnXOffset(viewPtr, keyPtr->colPtr);
+    if (xOffset != viewPtr->xOffset) {
+        viewPtr->xOffset = xOffset;
         viewPtr->flags |= SCROLLX;
     }
-    if (y != viewPtr->yOffset) {
-        viewPtr->yOffset = y;
+    if (yOffset != viewPtr->yOffset) {
+        viewPtr->yOffset = yOffset;
         viewPtr->flags |= SCROLLY;
     }
     EventuallyRedraw(viewPtr);
@@ -10873,6 +10869,44 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ClearSelections(viewPtr);
     return TCL_OK;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionExportOp
+ *
+ *      Exports the current selection.  It is not an error if not selection
+ *      is present.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection is exported.
+ *
+ *      pathName selection export
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                  Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    int state;
+
+    if (viewPtr->selectMode == SELECT_CELLS) {
+        state = (viewPtr->selectCells.cellTable.numEntries > 0);
+    } else {
+        state = (Blt_Chain_GetLength(viewPtr->selectRows.list) > 0);
+    }
+    if (state) {
+        Tk_OwnSelection(viewPtr->tkwin, XA_PRIMARY, LostSelection, viewPtr);
+    }
+    return TCL_OK;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -11186,6 +11220,7 @@ static Blt_OpSpec selectionOps[] =
     {"anchor",   1, SelectionAnchorOp,   4, 4, "cellName",},
     {"clear",    5, SelectionSetOp,      4, 5, "cellName ?cellName?",},
     {"clearall", 6, SelectionClearallOp, 3, 3, "",},
+    {"export",   1, SelectionExportOp,   3, 3, "",},
     {"includes", 1, SelectionIncludesOp, 4, 4, "cellName",},
     {"mark",     1, SelectionMarkOp,     4, 4, "cellName",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},

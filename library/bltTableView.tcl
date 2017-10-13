@@ -1470,7 +1470,7 @@ proc blt::TableView::PostFilterMenu { w col } {
     # selected value when we get one. 
     set _private(posting) [$w column index $col]
     # Post the combo menu at the bottom of the filter button.
-    $w see [list view.top $col]
+    $w column see $col
     update
     $w filter post $col
 

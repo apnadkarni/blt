@@ -13163,6 +13163,37 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * SelectionExportOp
+ *
+ *      Exports the current selection.  It is not an error if not selection
+ *      is present.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection is exported.
+ *
+ *      pathName selection export
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                  Tcl_Obj *const *objv)
+{
+    TreeView *viewPtr = clientData;
+
+    if (Blt_Chain_GetLength(viewPtr->sel.list) > 0) {
+        Tk_OwnSelection(viewPtr->tkwin, XA_PRIMARY, LostSelection, viewPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SelectionIncludesOp
  *
  *      Returns 1 if the element indicated by index is currently
@@ -13433,6 +13464,7 @@ static Blt_OpSpec selectionOps[] =
     {"anchor",   1, SelectionAnchorOp,   4, 4, "entryName",},
     {"clear",    5, SelectionSetOp,      4, 5, "firstEntry ?lastEntry?",},
     {"clearall", 6, SelectionClearallOp, 3, 3, "",},
+    {"export",   1, SelectionExportOp,   3, 3, "",},
     {"includes", 1, SelectionIncludesOp, 4, 4, "entryName",},
     {"mark",     1, SelectionMarkOp,     4, 4, "entryName",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},
